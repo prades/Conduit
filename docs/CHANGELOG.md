@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11j` · branch `claude/start-game-project-HSh7Z` · the roster card's light shows
+- **A follower's card lights up when its hit lands** (the owner: the roster "will highlight and shake the follower card"). Build 11i lit it with a glow the card's own clipped shape cut off and its slanted background covered: only a slight brightening showed (seen in 11i's pictures). The glow, in the follower's element's colour, is now on the card's background. It comes on at once and fades out as the shake ends.
+- **The card answers on the frame the number lands**: its health moved a frame late in 11i.
+- Tests: `tests/battlelook.js` (the card's light and its timing). Docs: `BATTLE-LOOK.md`. Not playtested.
+
 ### Build `2026-11-11i` · branch `claude/start-game-project-HSh7Z` · the numbers (the battle look, step 3)
 - **A hit's number in a fight** (the owner's drafts, then "build it"): 1.8× today's size, in its damage type's face (column C: slashing Bangers, piercing Barlow Condensed, projectile Chakra Petch, crushing Titan One, earthquake Rubik Dirt, elemental Cinzel Decorative; a hit with no type, such as a burn's tick, in Pixelify Sans, the status face).
   - **Knocked off the way the blow went**, from the attacker through the target, so the two sides' numbers part (8 frames, about 38 px).

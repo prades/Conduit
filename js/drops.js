@@ -93,7 +93,7 @@ function drawFloatingTexts() {
         ctx.fillStyle = "#000"; ctx.fillText(t.text, tx + 1, ty + 1);
         ctx.fillStyle = t.color; ctx.fillText(t.text, tx, ty);
     });
-    if (typeof battleDrawWords === "function") { battleDrawWords(); battleDrawRoster(); }   // the battle view: its words, kept apart; the words beside the roster (js/battleview.js)
+    if (typeof battleDrawWords === "function") { battleDrawWords(); battleDrawRoster(); battleCardsTick(); }   // the battle view: its words, kept apart; the words beside the roster; the roster's cards, as the numbers land (js/battleview.js)
     ctx.globalAlpha = 1;
     ctx.restore();
 }

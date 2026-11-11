@@ -3,7 +3,7 @@
 - **Status:** The battle view, the floor's writing, no names and the fading objects (build `2026-11-11h`), and the numbers with the roster's answer (`2026-11-11i`), are **implemented and verified by tests** (the owner: "build it"); not playtested. The attack frames are **designed**, not drafted.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11i`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11j`
 - **Related docs:** `COMBAT.md` (combat readability: the numbers, the bite in two beats), `EFFECTS.md` (the forms' effect pieces; the budget for effects), `UI-STYLE.md` (fonts), `ART-PROCESS.md` (drafts first), `PLAYER-COMBAT.md`
 
 ## 1. Intent
@@ -191,7 +191,7 @@ What it is today:
 3. The numbers and their faces, built: build `2026-11-11i` (js/battleview.js, `BATTLE_VIEW.num`):
    - **The tag**: js/helpers.js `applyDamage` hands each number to `battleNumberTag`, with whom it hit, the face of its damage type (`_bvKindOf`), the blow's way on the screen, and its bonus. The bonus comes from js/damage.js `dmgApply`, which now gives the share of the hit with no weakness, advantage or Opportunity in it (`dmgBaseShare`; resistances stay in it). The tags are kept beside the words (`_bvDraw.hits`), not on them. Heals (js/combat.js `healUnit`) and the weakness words (js/damage.js `_dmgWords`) over a follower are tagged too (`battleWordTag`).
    - **The flight** (`battleDrawNumber`, from js/drops.js `drawFloatingTexts`) is drawn after the zoom, at the zoomed place. A part lands at the end of its glide (a creature's) or its knock (a follower's); `battleBarHealth` adds the parts not yet landed to a unit's health, for its floor bar and its card.
-   - **The roster**: `battleCardsTick` (each frame, from `battleViewPost`) lights and shakes a card whose follower was just hit and moves its health (js/party.js `partySlotHealth`, also used by the roster's own refresh every 6 frames). `battleDrawRoster` draws the words beside the cards.
+   - **The roster**: `battleCardsTick` (each frame, after the numbers: js/drops.js `drawFloatingTexts`, so a card answers on the frame its number lands; build `2026-11-11j`) lights and shakes a card whose follower was just hit and moves its health (js/party.js `partySlotHealth`, also used by the roster's own refresh every 6 frames). The light is the class `sb-hit` (game.html), on the card's background: the card's own shadow is cut off by its clip-path and covered by its slanted background, so build `2026-11-11i`'s glow hardly showed. It comes on at once and fades out over 0.3 s. `battleDrawRoster` draws the words beside the cards.
    - **Outlined texts** are made once and stamped (`_bvText`), as js/draw.js `cachedText` does, once their face has loaded.
    - **Out of a fight** nothing changes: the numbers are drawn as before.
 4. The attack frames, form by form.
@@ -207,7 +207,9 @@ What it is today:
 | The real page: one arena moment before the view, on HIGH and on LOW | Looked at (screenshots) | build `2026-11-11h`; they showed the semi truck fading in patches (fixed in `2026-11-11i`) |
 | `node tests/battlelook.js`, step 3 (7 more checks: a big object fading whole, outlined round it; what is noted of a picture; the faces; the bonus share; a number's tag and the view coming on at once; a creature's flight, its bar and its bonus; a follower's number and its card; the heal and WEAK! out of the card; the other words kept apart; on the real page the seven faces loading and a number landing) | Pass | build `2026-11-11i` |
 | The nearest suites (35: damage, combat, party, squadui, followercombat, ghost, perf, targets, hud, serum, moves, cards, energycards and others) | Pass | build `2026-11-11i` |
-| The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11i` |
+| The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11i` (commit `828e88e`) |
+| The real page, frame by frame: a crushing hit on an ant (13 knocked off and back into the bar, +2 second); a bite on a follower (its card, the −N) | Looked at (filmstrips) | build `2026-11-11i`: the card's light hardly showed (fixed in `2026-11-11j`) |
+| The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11j` |
 
 The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;

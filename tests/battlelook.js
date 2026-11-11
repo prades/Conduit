@@ -348,16 +348,17 @@ function realPage() {
     });
     check('a follower\'s number: knocked off and gone (no bar on the floor); as it lands its card answers: the −N flies out of the card\'s side, the card lights and shakes, and its health moves then and not before', () => {
         const r = J(`(function(){ __calm(); __mid(); __off(); const o = {}, foe = __foe(2, 0), mate = __mate(-1, 0); mate.health = mate.maxHealth = 400; mate.spawnProtection = 0;
-            const parts = { '.sb-hp u': { style: {}, className: '' }, '.sb-hpn': { textContent: '' } }, slot = { _unit: mate, style: {}, querySelector: q => parts[q], getBoundingClientRect: () => ({ left: 0, top: 100, right: 200, bottom: 150, width: 200, height: 50 }) }, keepE = _sbEls;
+            const parts = { '.sb-hp u': { style: {}, className: '' }, '.sb-hpn': { textContent: '' } }, cls = new Set(), slot = { _unit: mate, style: {}, classList: { add: c => cls.add(c), remove: c => cls.delete(c) }, querySelector: q => parts[q], getBoundingClientRect: () => ({ left: 0, top: 100, right: 200, bottom: 150, width: 200, height: 50 }) }, keepE = _sbEls;
             _sbEls = { root: {}, slots: [slot] }; const N = BATTLE_VIEW.num;
             try { applyDamage(mate, 12, foe, null, false, false, { type: 'slashing' }); const t = floatingTexts[floatingTexts.length - 1], h = _bvDraw.hits.get(t); o.text = t.text; o.on = battleViewOn(); o.mine = h && h.unit === mate;
                 const hp0 = mate.health, cards = [];
-                for (let age = 0; age <= N.knock + N.card + 2; age++) { battleDrawNumber(t); battleCardsTick(); cards.push([age, parts['.sb-hpn'].textContent, !!slot.style.transform, (slot.style.boxShadow || '').indexOf('inset') >= 0]); t.life--; frame++; }
+                for (let age = 0; age <= N.knock + N.card + 2; age++) { battleDrawNumber(t); battleCardsTick(); cards.push([age, parts['.sb-hpn'].textContent, !!slot.style.transform, cls.has('sb-hit')]); t.life--; frame++; }
                 o.before = cards[N.knock - 1]; o.landed = cards[N.knock]; o.after = cards[N.knock + N.card + 2]; o.hp0 = hp0; o.pop = _bvDraw.pops.filter(p => p.f === mate).map(p => p.text + '@' + p.kind);
                 o.gone = (function(){ const keepF = ctx.fillText, keepD = ctx.drawImage; let n = 0; ctx.fillText = () => n++; ctx.drawImage = () => n++; try { battleDrawNumber(t); } finally { ctx.fillText = keepF; ctx.drawImage = keepD; } return n === 0; })();
             } finally { _sbEls = keepE; followers.splice(followers.indexOf(mate), 1); actors = actors.filter(a => a !== mate); __calm(); __off(); }
             return o; })()`);
         ok(/^\u2212\d+$/.test(r.text) && r.on && r.mine, 'the number: ' + JSON.stringify(r)); const dmg = +r.text.slice(1), max = 400;
+        ok(/battleDrawWords\(\); battleDrawRoster\(\); battleCardsTick\(\);/.test(rd('js/drops.js')), 'the cards are not answered after the numbers (a frame late)'); ok(/\.sb-slot\.sb-hit \{ box-shadow: inset/.test(rd('game.html')) && /body\.corners #squadBar \.sb-slot\.sb-hit::before \{ box-shadow: inset/.test(rd('game.html')), 'the card\'s light (game.html)');
         same(JSON.stringify(r.before), JSON.stringify([J('BATTLE_VIEW.num.knock') - 1, Math.round(r.hp0 + dmg) + '/' + max, false, false]), 'the card before it lands (its health as before; not lit)');
         same(JSON.stringify(r.landed), JSON.stringify([J('BATTLE_VIEW.num.knock'), Math.round(r.hp0) + '/' + max, true, true]), 'the card as it lands (its health moved; lit and shaking)');
         same(r.after[2], false, 'the card still shaking after the shake'); same(JSON.stringify(r.pop), JSON.stringify([r.text + '@slashing']), 'the −N out of the card, in its face'); same(r.gone, true, 'the number still drawn after it has gone');

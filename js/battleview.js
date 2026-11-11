@@ -98,7 +98,6 @@ function _bvRing(key, W, H, r0, r1, col0, col1) {
     return o;
 }
 function battleViewPost() {
-    battleCardsTick();   // (each frame, in the view and once after: the roster's cards)
     if (!battleViewDefers() || typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas.width) return;
     const W = canvas.width, H = canvas.height, z = _bv.z, e = _bvSmooth(_bv.k), cx = W / 2, cy = H / 2;
     const cp = _bvCv("copy", W, H); if (!cp) return;
@@ -416,13 +415,14 @@ function battleDrawRoster() {
         _bvText(p.text, battleFace(p.word ? "status" : p.kind, px), p.color, px, "left"); ctx.restore();
     }
 }
-// each frame (battleViewPost): a card whose follower was just hit lights in its element's colour and shakes; its health moves as the hits land (js/party.js partySlotHealth)
+// each frame, after the numbers (js/drops.js drawFloatingTexts), so a card answers on the frame its number lands: a card whose follower was just hit lights in its element's colour (the class
+// sb-hit, game.html) and shakes; its health moves as the hits land (js/party.js partySlotHealth)
 function battleCardsTick() {
     const E = typeof _sbEls !== "undefined" ? _sbEls : null; if (!E || !E.slots) return; const f = _bvF(), S = BATTLE_VIEW.num.card, on = battleViewOn();
     for (const el of E.slots) {
         if (!el || !el.style) continue; const u = el._unit, at = u ? _bvDraw.unitHit.get(u) : undefined, k = at === undefined ? 1e9 : f - at;
-        if (u && on && k >= 0 && k < S) { const d = 1 - k / S; el.style.transform = "translateX(" + (Math.sin(k * 2.7) * 6 * d).toFixed(1) + "px)"; el.style.boxShadow = "inset 0 0 0 2px var(--c), inset 0 0 " + Math.round(18 * d) + "px var(--c)"; el.style.filter = "brightness(" + (1 + 0.45 * d).toFixed(2) + ")"; el._bvFx = true; }
-        else if (el._bvFx) { el.style.transform = ""; el.style.boxShadow = ""; el.style.filter = ""; el._bvFx = false; }
+        if (u && on && k >= 0 && k < S) { const d = 1 - k / S; el.style.transform = "translateX(" + (Math.sin(k * 2.7) * 6 * d).toFixed(1) + "px)"; el.style.filter = "brightness(" + (1 + 0.6 * d).toFixed(2) + ")"; if (!el._bvFx && el.classList) el.classList.add("sb-hit"); el._bvFx = true; }
+        else if (el._bvFx) { el.style.transform = ""; el.style.filter = ""; if (el.classList) el.classList.remove("sb-hit"); el._bvFx = false; }
         if (u && (on || el._bvHp) && typeof partySlotHealth === "function") { partySlotHealth(el, u); el._bvHp = on; }   // (and once more as the view goes out: its true health)
     }
 }
