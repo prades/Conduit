@@ -35,11 +35,18 @@ What it is today:
 7. **The faces: column C of the sheet** (the owner, 2026-11-11: "I like dont c", read as "font C"; to be confirmed on the picture). Slashing **Bangers**; piercing **Barlow Condensed Black Italic**; projectile **Chakra Petch Bold Italic**; crushing **Titan One**; earthquake **Rubik Dirt** (150 KB, the heaviest); elemental **Cinzel Decorative Black**; statuses **Pixelify Sans Bold**.
 8. **The attack frames: the Brawlers first** (the owner: "brawlers first").
 9. **A faded object is more visible** than the first draft's faint outline (the owner: "stronger visibility on hidden objects").
-10. **The element's word: WEAK or RESIST on an irregular blur of the attacking element's colours that only slightly gives character.**
+10. **The words on the floor** (the owner, 2026-11-11, replacing the element's word on a background: "Let's forget the little background effect and let's experiment with writing a standardized text on the tiles near the combat, and like highlight the tile to show a bigger style health bar when in combat to make things perhaps more readable. The player's health bar stays where it is, and the stunned and resist the stunned should show up on the floor, but the resist should float off like it's nothing, and the weak should be written on the ground and like shake."):
+    - **WEAK** is written on the ground by the creature hit, and shakes.
+    - **STUNNED** is written on the floor by the stunned creature, while the stun lasts.
+    - **RESIST** floats off like it is nothing: small, pale, drifting up and away.
+    - **One standard face** for the floor's writing.
+    - **In a fight, each fighter's tile is lit**, with a bigger health bar on the floor in front of it, in place of the small bars over the units. Your own bars stay where they are, at the top.
+    - An experiment, drafted (§10).
+11. **Earlier, superseded: the element's word on a background.**
     - The owner first asked: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient". Drafted as A (the number over its element's symbol) and B (the number on a plasma badge).
     - The owner's answer to those: "It should say resist / weak. Just have a rectangular texture behind it that has the element of the opposition attack." So the word stays, as WEAK or RESIST without the element's name, and the element of the attack that hit is the texture of a rectangle behind it. That texture is the energy cards' moving plasma in the element's colour.
     - A and B are **superseded**. So is the rectangle that followed (drafted as the energy cards' plasma in a rectangle); the owner: "No, not necessarily a rectangle, like a irregular ball of plasma or texture that represents each element."
-    - The balls were drafted with each element's details (fire's flames, electric's arcs and so on). The owner: "No just make it a irregular blur that only slightly gives character." So: a soft, irregular blur in the element's colours behind the word, its edge moving a little in the element's way (fire licking up, electric buzzing, ice a touch angular, toxic wobbling, core breathing, flux turning, BLOOM faintly petalled), with no drawn details. The detailed balls are **superseded**.
+    - Then the balls were drafted with each element's details (fire's flames, electric's arcs and so on). The owner: "No just make it a irregular blur that only slightly gives character." So: a soft, irregular blur in the element's colours behind the word, its edge moving a little in the element's way (fire licking up, electric buzzing, ice a touch angular, toxic wobbling, core breathing, flux turning, BLOOM faintly petalled), with no drawn details. The detailed balls are **superseded**, and then the blur too, by the words on the floor (10).
 
 ## 3. Must-have requirements
 
@@ -67,7 +74,7 @@ What it is today:
 
 **The numbers and fonts**
 - **Size:** about **twice as big** (28 px), with a small pop as each appears, and up about a second (today 0.6 s).
-- **Who leads:** the numbers. A status word sits a line above them. The element's weakness or resistance reads WEAK or RESIST on an irregular blur of the attacking element's colours (§2, 10). The physical type's word (SLASHING WEAK!) is only a little bigger than today, until it is decided whether it goes the same way.
+- **Who leads:** the numbers. A status word sits a line above them. WEAK is written on the floor and shakes, RESIST floats off small and pale, STUNNED is on the floor (§2, 10). The physical type's word (SLASHING WEAK!) is only a little bigger than today, until it is decided whether it goes the same way.
 - **No pile-ups:** words that would overlap stack upward, the newest moving up a line until it is clear.
 - **Fonts:** free-licensed (SIL Open Font License), shipped with the game (nothing loaded from elsewhere), and cut down to the letters and digits the game shows.
 - **Which face a number takes:**
@@ -104,6 +111,9 @@ What it is today:
 - Dark rooms.
 - **The network panel and the Crystal's ring** (top right) are drawn with the world today. Under the zoom they slide off the edge and blur, so they must be drawn after the zoom (seen in the drafts).
 - **No floor is drawn under an object.** A faded object needs its floor drawn, or a dark hole shows (seen in the draft).
+- **Writing on the floor needs the floor drawn first.** Today the floor's tiles are sorted in among the units. A marking on the floor is either painted over by a tile in front of it or painted over a unit's feet.
+  - The draft drew the whole floor first, then the markings, then everything standing. That is right on one level, like the arena.
+  - Where a deck stands over a floor, the build must keep the levels apart (seen in the draft).
 - **Words near the edge of the fight end up under the HUD:** the zoom pushes them outward (in the drafts, DEFEATED under the STUN button).
 - A fight at the edge of the screen: the zoom centres on you, as the camera does, so a far creature may leave the picture. The drafts should show whether to centre between you and the fight instead.
 
@@ -127,7 +137,8 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;
 - one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates;
 - the fade: a floodlight standing in front of a fight, today and in the battle view. It is gone, a faint outline of its tile left, and the floor under it stamped from the next tile for the picture.
-- the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. Then on each element's own ball, the seven of them animated and in the fight: fire's licking flames and embers, electric's jagged crackle and arcs, ice's faceted crystal and glints, toxic's wobbling goo, bubbles and a drip, core's breathing orb with a turning hexagon and a ring going out, flux's swirl, BLOOM's five petals and pollen. Then, as the owner corrected it, a soft irregular blur of the element's colours (drawn small and scaled up: the scaling is the blur, no canvas filter), the seven animated and in the fight. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. Then on each element's own ball, the seven of them animated and in the fight: fire's licking flames and embers, electric's jagged crackle and arcs, ice's faceted crystal and glints, toxic's wobbling goo, bubbles and a drip, core's breathing orb with a turning hexagon and a ring going out, flux's swirl, BLOOM's five petals and pollen. Then, as the owner corrected it, a soft irregular blur of the element's colours (drawn small and scaled up: the scaling is the blur, no canvas filter), the seven animated and in the fight.
+- the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
