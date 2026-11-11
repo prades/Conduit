@@ -35,10 +35,10 @@ What it is today:
 7. **The faces: column C of the sheet** (the owner, 2026-11-11: "I like dont c", read as "font C"; to be confirmed on the picture). Slashing **Bangers**; piercing **Barlow Condensed Black Italic**; projectile **Chakra Petch Bold Italic**; crushing **Titan One**; earthquake **Rubik Dirt** (150 KB, the heaviest); elemental **Cinzel Decorative Black**; statuses **Pixelify Sans Bold**.
 8. **The attack frames: the Brawlers first** (the owner: "brawlers first").
 9. **A faded object is more visible** than the first draft's faint outline (the owner: "stronger visibility on hidden objects").
-10. **No more "ELECTRIC RESIST" words: the element is shown on the number** (the owner: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient"). Drafted two ways:
-    - **A:** the number over its element's symbol, the energy cards' symbols. A weakness bright and glowing with turning rays; a resistance dim in a thin ring.
-    - **B:** the number on a small badge of the element's moving plasma, the energy cards' texture. A weakness vivid with a ▲; a resistance muted with a ▼.
-    - Which one is open.
+10. **The element's word: WEAK or RESIST on a rectangle of the attacking element's texture.**
+    - The owner first asked: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient". Drafted as A (the number over its element's symbol) and B (the number on a plasma badge).
+    - The owner's answer to those: "It should say resist / weak. Just have a rectangular texture behind it that has the element of the opposition attack." So the word stays, as WEAK or RESIST without the element's name, and the element of the attack that hit is the texture of a rectangle behind it. That texture is the energy cards' moving plasma in the element's colour.
+    - A and B are **superseded**.
 
 ## 3. Must-have requirements
 
@@ -66,7 +66,7 @@ What it is today:
 
 **The numbers and fonts**
 - **Size:** about **twice as big** (28 px), with a small pop as each appears, and up about a second (today 0.6 s).
-- **Who leads:** the numbers. A status word sits a line above them. The element's weakness or resistance is no longer a word but is shown on the number (§2, 10). The physical type's word (SLASHING WEAK!) is only a little bigger than today, until it is decided whether it goes the same way.
+- **Who leads:** the numbers. A status word sits a line above them. The element's weakness or resistance reads WEAK or RESIST on a rectangle of the attacking element's texture (§2, 10). The physical type's word (SLASHING WEAK!) is only a little bigger than today, until it is decided whether it goes the same way.
 - **No pile-ups:** words that would overlap stack upward, the newest moving up a line until it is clear.
 - **Fonts:** free-licensed (SIL Open Font License), shipped with the game (nothing loaded from elsewhere), and cut down to the letters and digits the game shows.
 - **Which face a number takes:**
@@ -134,7 +134,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 3. Whether creatures and unevolved followers get attack frames too.
 4. One richer attack block per form, or one block per move (the attack, the second attack, the Ultimate).
 5. How strongly a faded object shows (a draft: a ghost at 25% or 45%, over a bright outline of its tile).
-6. The element on the number: A (its symbol) or B (its plasma badge); and whether the physical types' WEAK/RESIST words (SLASHING WEAK!) become marks too.
+6. Whether the physical types' words (SLASHING WEAK!) change too, and how. The element's rectangle carries an element, and a physical type has none.
 
 ## 12. History
 
