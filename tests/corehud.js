@@ -2,6 +2,8 @@
 // The owner, 2026-11-11: "Find a way to combine these 3 elements into a player model 3d emotive/reactive interactive for showing player damage/ shard count / player class interact
 // abilities", "Make it tucked down at the bottom, right", and of the drafts (design/ui-mocks/core): "I like the drafts you created for the HUD player. Information interactive menu."
 // It holds the three bars, the shards and ARMY SURGE (the top left's), GUARD and STUN (the round buttons by the dial) and the PACK (its lid); its screen is a face that reacts.
+// Build 2026-11-11u, the owner's playtest: "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo
+// and the equipped item with it": its pads take a tap (all of its box but the empty strip at its left above the pills), its buttons are bigger, the pill row is in its box.
 // The logic runs in the sandbox, the real page in the real browser (no Chromium: it says so and passes).
 const fs = require('fs');
 const vm = require('vm');
@@ -46,6 +48,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var sOn = siphonEnabled; click('#coreHud .core-siphon'); out.tapSiphon = [sOn, siphonEnabled]; if (siphonEnabled !== sOn) toggleSiphon();
     playerUltimate = PLAYER_ULT_MAX; steps(3); out.readyWord = ($('#coreHud .core-surge') || {}).textContent; click('#coreHud .core-hf'); out.surged = armySurgeTimer > 0; steps(3); out.surgeWord = ($('#coreHud .core-surge') || {}).textContent;
     click('#coreHud .core-pack'); out.packAtOnce = !!invPanelOpen; steps(14); out.packAfter = !!invPanelOpen; out.coreUnderPack = R('#coreHud').shown; if (invPanelOpen) invClose(); steps(2);
+    // build 2026-11-11u: every point of its box is its own (a tap there never reaches the game's canvas); the pill row in it, a tap on a pill the pill's; the ring passes taps; the bigger buttons
+    var cr = $('#coreHud').getBoundingClientRect(), miss = 0, tot = 0, strip = 0, stripMap = 0; for (var yy = cr.top + 3; yy < cr.bottom; yy += 17) for (var xx = cr.left + 3; xx < cr.right; xx += 17) { var el = document.elementFromPoint(xx, yy), mine = !!(el && el.closest('#coreHud'));
+      if (xx - cr.left < CORE_HUD.strip - 4 && yy - cr.top < CORE_HUD.padTop - 4) { strip++; if (!mine) stripMap++; } else if (xx - cr.left > CORE_HUD.strip + 2 || yy - cr.top > CORE_HUD.padTop + 2) { tot++; if (!mine) miss++; } }
+    out.box = [tot, miss, strip, stripMap]; var dp = dialoguePlace(true); out.dlg = [Math.round(dp.x + dp.w), Math.round(cr.left + CORE_HUD.strip - DIALOGUE.gap), dp.w];
+    setPlayerAttackMode(true, true); drawTargetUI(); out.pills = { atk: [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w, _ATKCHIP.h], kit: [_KITCHIP.x, _KITCHIP.y, _KITCHIP.w, _KITCHIP.h], core: [cr.left, cr.top, cr.right, cr.bottom] };
+    var ax = _ATKCHIP.x + _ATKCHIP.w / 2, ay = _ATKCHIP.y + _ATKCHIP.h / 2, under = document.elementFromPoint(ax, ay); out.pills.under = under ? !!under.closest('#coreHud') : null;
+    if (under) under.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: ax, clientY: ay })); out.pills.stowed = !playerAttackMode; setPlayerAttackMode(false, true);
+    commandMode = true; steps(2); var ue = document.elementFromPoint(cr.left + 255, cr.top + 120); out.ring = [$('#coreHud').className, ue ? !ue.closest('#coreHud') : null]; commandMode = false; commandPendingTap = false; steps(2);
+    out.sizes = [Math.round($('#coreHud .core-hg').getBoundingClientRect().width), Math.round($('#coreHud .core-siphon').getBoundingClientRect().width), Math.round($('#coreHud .core-pack').getBoundingClientRect().height)];
     var A = _tgAnchor(); out.dial = { y: A.y, R: A.R, corner: !!A.corner, coreTop: typeof coreTop === 'function' ? coreTop() : null };
   } catch (e) { out.err = String(e && e.stack || e).slice(0, 400); }
   var pre = document.createElement('pre'); pre.id = '__ch'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -139,6 +150,42 @@ function measure(w, h) {
         ok(/if \(typeof coreKnocked === "function"\) coreKnocked\(\);/.test(rd('js/game.js')) && /if \(typeof coreTick === "function"\) coreTick\(\);/.test(rd('js/game.js')), 'the game does not tick it or tell it of a knockout');
     });
 
+    group('FROM THE OWNER\'S PLAYTEST (build 2026-11-11u): a tap on it never walks you, bigger buttons, the ammunition and the item in hand in its box');
+    check('two pads take a tap (game.html .core-pad: all of its box, now 340 x 300, but the empty strip at its left above the pills, where the dialogue\'s box may reach: js/dialogue.js), its buttons over them; while the ring is up it dims and lets taps through to the ring (.ring)', () => {
+        const H = rd('game.html');
+        ok(/body\.core-on #coreHud \{[^}]*height: 300px; pointer-events: none;/.test(H) && /#coreHud \.core-pad \{ position: absolute; z-index: 1; pointer-events: auto;/.test(H), 'the pads do not take a tap');
+        same(J('[CORE_HUD.strip, CORE_HUD.padTop]').join(), '56,210', 'the strip'); ok(/padA\.style\.left = CORE_HUD\.strip \+ "px"; padB\.style\.top = CORE_HUD\.padTop \+ "px";/.test(rd('js/corehud.js')), 'the pads are not placed');
+        ok(/right = Math\.min\(right, Math\.round\(core\.left\) \+ CORE_HUD\.strip - DIALOGUE\.gap\)/.test(rd('js/dialogue.js')), 'the dialogue\'s box does not stop at its strip');
+        ok(/#coreHud\.ring \.core-pad, #coreHud\.ring \.core-hit \{ pointer-events: none; \}/.test(H) && /#coreHud\.ring \{ opacity: 0\.35; \}/.test(H), 'the ring\'s rule');
+        run('commandMode = true; __tick(1);'); const a = J('_core.root.className'); run('commandMode = false; __tick(1);'); const b = J('_core.root.className');
+        ok(/\bring\b/.test(a) && !/\bring\b/.test(b), 'the ring\'s class: ' + a + ' / ' + b);
+    });
+    check('its buttons are bigger: GUARD and STUN 1.3 times the baked size (a tap 66 px across), STUN 12 px lower (clear of GUARD\'s word), the siphon 40 px, the PACK tag 16 px; the surge\'s words take a tap as its face does (ARMY SURGE when full, else a smile)', () => {
+        run('_core.place = ""; __tick(1);');
+        const r = J('(function(){ const E = _core.els, P = _core.art.frames[0]; return [parseInt(E.hitGuard.style.width), parseInt(E.hitStun.style.width), parseInt(E.siphon.style.width), Math.round(_core.stunP[1] - P.stun[1]), Math.round(P.emblemR * CORE_HUD.emblem * 10) / 10, E.surge.className.split(" ").indexOf("core-hit") >= 0]; })()');
+        same(r.join(), '66,66,40,12,23.1,true', 'the sizes');
+        const H = rd('game.html'); ok(/#coreHud \.core-pack \{[^}]*font: italic 900 16px/.test(H) && /#coreHud \.core-siphon \{[^}]*font: 22px\/40px/.test(H) && /#coreHud \.core-lbl \{[^}]*font-size: 13px/.test(H), 'the tag, the siphon or the words');
+        run('globalThis.__fired = 0; globalThis.__keepFire = fireArmySurge; fireArmySurge = () => { __fired++; }; playerUltimate = PLAYER_ULT_MAX; __tick(1); _coreSurgeTap(); playerUltimate = 0; __tick(1); _coreSurgeTap(); fireArmySurge = __keepFire;');
+        same(J('[__fired, _core.react]').join(), '1,boop', 'a tap on the words');
+    });
+    check('the pill row is in its box over the slab (js/targeting.js, from corePills: the ammunition with the weapon in hand, then the potion, the kits...), a pill that does not fit goes a row up, out to the left; hidden while it is hidden; by the dial while it is not shown', () => {
+        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect, keepTC = toCanvas; o.none = corePills();
+            _core.root.getBoundingClientRect = () => ({ left: 834, top: 516, width: 340, height: 300 }); _core.topY = 0; coreTick(); const C = corePills(); o.at = C ? [C.x, C.y, C.maxX] : null;
+            playerInv = { repair_kit: 2 }; health = 1; actors = actors.filter(a => !(a instanceof Predator)); targetDrop(); playerAttackMode = true; ctx.measureText = () => ({ width: 40 });
+            _ATKCHIP.w = 0; _KITCHIP.w = 0; drawTargetUI(); o.ammo = [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w > 0]; o.kit = [_KITCHIP.x >= _ATKCHIP.x + _ATKCHIP.w, _KITCHIP.y, _KITCHIP.w > 0];
+            const mx = C.maxX; C.maxX = C.x + 120; drawTargetUI(); o.wrap = [_KITCHIP.x + _KITCHIP.w < C.x, _KITCHIP.y]; C.maxX = mx; drawTargetUI();
+            toCanvas = (x, y) => [x, y]; const kits = invCount('repair_kit'); _corePillTap({ clientX: _KITCHIP.x + 6, clientY: _KITCHIP.y + 6 }); o.kitTap = [kits - invCount('repair_kit'), health];
+            _corePillTap({ clientX: _ATKCHIP.x + 6, clientY: _ATKCHIP.y + 6 }); o.stowed = playerAttackMode;
+            const tx = player.targetX, ty = player.targetY, k2 = invCount('repair_kit'); _corePillTap({ clientX: 1000, clientY: 600 }); o.elsewhere = [player.targetX === tx && player.targetY === ty, invCount('repair_kit') === k2]; toCanvas = keepTC;
+            _core.root.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 }); frame = Math.ceil((frame + 1) / 30) * 30; coreTick(); o.hidden = corePills(); _ATKCHIP.w = 1; _KITCHIP.w = 1; drawTargetUI(); o.off = [_ATKCHIP.w, _KITCHIP.w];
+            _core.root.getBoundingClientRect = keepR; return o; })()`);
+        same(r.none, null, 'a place before it was measured'); same(r.at && r.at.join(), '844,745,1170', 'where the row goes');
+        same(r.ammo.join(), '840,730,true', 'the ammunition'); same(r.kit.join(), 'true,730,true', 'the kits beside it');
+        same(r.wrap.join(), 'true,700', 'a pill that does not fit'); same(r.kitTap.join(), '1,2', 'a tap on the KIT pill'); same(r.stowed, false, 'a tap on the ammunition while armed');
+        same(r.elsewhere.join(), 'true,true', 'a tap elsewhere in its box'); same(r.hidden, false, 'hidden'); same(r.off.join(), '0,0', 'the pills while it is hidden');
+        ok(/if \(_tgPillsInCore\(\)\) return;/.test(rd('js/targeting.js')) && /if \(!_tgPillsInCore\(\)\) \{ if \(corner\)/.test(rd('js/targeting.js')), 'the dial\'s row does not ask THE CORE');
+    });
+
     group('IN THE REAL PAGE (a real browser, at an iPad\'s sizes)');
     const bin = findChromium();
     if (!bin) { console.log('  (no Chromium here: the real page is not measured)'); }
@@ -158,6 +205,16 @@ function measure(w, h) {
             same(t.readyWord, 'TAP — ARMY SURGE', 'full'); same(t.surged, true, 'the surge did not fire'); ok(/^SURGE \d+ S$/.test(t.surgeWord), 'surging: ' + t.surgeWord);
             same(t.packAtOnce, false, 'the pack opened before its lid'); same(t.packAfter, true, 'the pack did not open'); same(t.coreUnderPack, false, 'THE CORE shows over the pack');
             ok(t.dial.corner && t.dial.coreTop !== null && t.dial.y + t.dial.R <= t.dial.coreTop, 'the dial is not above it: ' + JSON.stringify(t.dial));
+        });
+        await check(`${w}x${h}: build 2026-11-11u: every point of its box is its own (a tap there never reaches the map); the ammunition and the kits in its box, over the slab, a tap on the ammunition puts the gun away; the ring passes taps; its buttons bigger`, () => {
+            ok(t && !t.err, 'the probe');
+            ok(t.box[0] > 300 && t.box[1] === 0, 'points of its pads that reach the map: ' + t.box); ok(t.box[2] > 20 && t.box[3] === t.box[2], 'the empty strip at its left does not let a tap through to the map: ' + t.box);
+            ok(t.dlg[0] <= t.dlg[1] && t.dlg[2] >= 240, 'the dialogue\'s box runs under its buttons: ' + t.dlg);
+            const P = t.pills, c = P.core, inBand = q => q[2] > 0 && q[0] >= c[0] && q[0] + q[2] <= c[2] && q[1] >= c[1] + 200 && q[1] + q[3] <= c[3] - 50;
+            ok(inBand(P.atk), 'the ammunition is not in its box over the slab: ' + JSON.stringify(P)); ok(inBand(P.kit) && P.kit[0] > P.atk[0], 'the kits: ' + JSON.stringify(P));
+            same(P.under, true, 'the pill is not under its box'); same(P.stowed, true, 'a tap on the ammunition did not put the gun away');
+            ok(/\bring\b/.test(t.ring[0]) && t.ring[1] === true, 'the ring: ' + t.ring);
+            ok(t.sizes[0] >= 60 && t.sizes[1] >= 40 && t.sizes[2] >= 26, 'its buttons: ' + t.sizes);
         });
     }
 

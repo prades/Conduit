@@ -221,8 +221,9 @@ function _tgFuelCell(cx, cy, col) {
     ctx.fillStyle = col; ctx.fillRect(cx - 2, cy - 8, 4, 2); ctx.fillRect(cx - 4, cy - 6, 8, 14);                                  // the nub and the body
     ctx.fillStyle = "rgba(6,10,24,0.75)"; ctx.beginPath(); ctx.moveTo(cx + 1, cy - 4); ctx.lineTo(cx - 2, cy + 1); ctx.lineTo(cx, cy + 1); ctx.lineTo(cx - 1, cy + 6); ctx.lineTo(cx + 2, cy); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();   // a bolt on it
 }
-// x: the pill's left edge, y: its middle. Sets the tap area (_ATKCHIP) while the gun is armed.
-function _tgAmmoIcon(x, y, alpha) {
+// x: the pill's left edge, y: its middle. Sets the tap area (_ATKCHIP) while the gun is armed. maxX: how far right the row may run (THE CORE's box, js/corehud.js corePills): a pill that would run past it
+// goes a row up, out to the left of the box (clear of its words and of the dock below), and any after it beside that one, leftwards.
+function _tgAmmoIcon(x, y, alpha, maxX) {
     const h = typeof weaponHud === "function" ? weaponHud() : null; if (!h) { _ATKCHIP.w = 0; return; }
     const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, dry = !!h.dry, f = typeof frame !== "undefined" ? frame : 0, col = dry ? "#ff7766" : armed ? "#ffb070" : "#b8c8e8";
     const txt = h.kind === "melee" ? "MELEE" : h.kind === "hybrid" ? String(h.n) + (h.grid && !h.full ? " · GRID" : "") : String(h.n) + (h.cells ? " +" + h.cells : ""), hh = 22;   // (the gauntlet: its charges, and GRID while a powered room is charging it)
@@ -234,13 +235,27 @@ function _tgAmmoIcon(x, y, alpha) {
     ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
     ctx.restore();
     if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
-    if (typeof drawSerumChip === "function") drawSerumChip(x + w + 8, y, alpha);   // the Mutator's serum, beside it (js/serum.js)
-    let px = x + w + 8 + (typeof _SERUMCHIP !== "undefined" && _SERUMCHIP.w ? _SERUMCHIP.w + 4 : 0);
-    if (typeof drawPotionChip === "function") px += drawPotionChip(px, y, alpha) || 0;   // the Sleeping Potion in hand, for every class (js/potion.js)
-    if (typeof drawKitChip === "function") px += drawKitChip(px, y, alpha) || 0;       // the repair kits you carry (js/playercombat.js)
-    if (typeof drawPoisonChip === "function") drawPoisonChip(px, y, alpha);             // POISONED, while a nymph's bite lasts (js/combat.js)
+    let px = x + w + 8, qx = x;   // (qx: where a pill that does not fit goes, leftwards from the row's start)
+    for (let i = 0; i < 4; i++) {   // the pills beside it (_tgPill); in THE CORE each is measured first (drawn under an empty clip: nothing shows) to see whether it fits
+        if (maxX) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 0, 0); ctx.clip(); const cw = _tgPill(i, px, y, alpha); ctx.restore();
+            if (cw && (qx < x || px + cw - 8 > maxX)) { qx -= cw; _tgPill(i, qx, y - 30, alpha); continue; } }
+        px += _tgPill(i, px, y, alpha);
+    }
 }
-function _tgAmmoDraw() { const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
+// a pill beside the ammunition, its left edge at x and its middle at y: the room it took (0 when it is not shown)
+function _tgPill(i, x, y, alpha) {
+    if (i === 0) { if (typeof drawSerumChip !== "function") return 0; drawSerumChip(x, y, alpha); return typeof _SERUMCHIP !== "undefined" && _SERUMCHIP.w ? _SERUMCHIP.w + 4 : 0; }   // the Mutator's serum (js/serum.js)
+    if (i === 1) return typeof drawPotionChip === "function" ? drawPotionChip(x, y, alpha) || 0 : 0;   // the Sleeping Potion in hand, for every class (js/potion.js)
+    if (i === 2) return typeof drawKitChip === "function" ? drawKitChip(x, y, alpha) || 0 : 0;         // the repair kits you carry (js/playercombat.js)
+    return typeof drawPoisonChip === "function" ? drawPoisonChip(x, y, alpha) || 0 : 0;                 // POISONED, while a nymph's bite lasts (js/combat.js)
+}
+// THE CORE holds the pill row in its box (js/corehud.js corePills: the owner, 2026-11-11, "the new little box should include the ammo and the equipped item with it"), and hides it as it hides; else it is by the dial
+function _tgPillsInCore() {
+    const C = typeof corePills === "function" ? corePills() : null; if (C === null) return false;
+    if (C) _tgAmmoIcon(C.x, C.y, 1, C.maxX); else _tgChipsOff();
+    return true;
+}
+function _tgAmmoDraw() { if (_tgPillsInCore()) return; const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {
     if (typeof uiSlab !== "function") { _ATKCHIP.w = 0; return; }
     const { W, narrow, R, left, x, y, corner } = _tgAnchor(), col = _tgColour(a);
@@ -270,7 +285,7 @@ function _tgDialDraw(a, f) {
     const lx = left - 4, nw = Math.min(230, W - lx - 8);
     if (!corner) uiCaptionFit(targetName(a), lx, y + R + 16, "#ffd9a0", "left", 12, nw);   // (the corner's enemy card says what it is)
     ctx.restore();
-    if (corner) _tgAmmoIcon(x + R + 24, y + 4, ease); else _tgAmmoIcon(lx, y + R + 36, ease);
+    if (!_tgPillsInCore()) { if (corner) _tgAmmoIcon(x + R + 24, y + 4, ease); else _tgAmmoIcon(lx, y + R + 36, ease); }
     _tgDial = { x, y, r: R, ix, iy, ir };
     if (infoOpen) _tgInfo(a, x, y, R, col);
 }

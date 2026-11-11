@@ -85,6 +85,8 @@ function dialoguePlace(force) {
         const sb = _dlgRect("squadBar"), mt = _dlgRect("mixTool"), l = Math.max(sb ? sb.right : 0, mt ? mt.right : 0);
         if (l > 0 && l < W * 0.45) left = Math.max(left, Math.round(l) + DIALOGUE.gap);
         const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214; right = Math.min(right, W - 14 - foeW - DIALOGUE.gap);
+        const core = typeof coreOn === "function" && coreOn() && typeof CORE_HUD !== "undefined" ? _dlgRect("coreHud") : null;   // THE CORE (js/corehud.js): into the empty strip at its left, not under its buttons
+        if (core && core.left > W / 2) right = Math.min(right, Math.round(core.left) + CORE_HUD.strip - DIALOGUE.gap);
     } else {   // a phone: over the squad's row and the tool's chip, and clear of the round buttons at the right edge (SETTINGS, QUESTS: js/settings.js, js/questbox.js)
         for (const id of ["squadBar", "mixTool"]) { const r = _dlgRect(id); if (r && r.top > H * 0.45) bottom = Math.min(bottom, Math.round(r.top)); }
         if (typeof dockHasMenus === "function" && !dockHasMenus()) right = Math.min(right, W - 50);

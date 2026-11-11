@@ -49,7 +49,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the KIT pill sits in the row by the dial while you carry one, and a tap on it uses one; so does H', () => {
         const T = rd('js/targeting.js'), I = rd('js/input.js'), P = rd('js/playercombat.js');
-        ok(/if \(typeof drawKitChip === "function"\) px \+= drawKitChip\(px, y, alpha\) \|\| 0;/.test(T), 'the pill is not drawn in the row');
+        ok(/if \(i === 2\) return typeof drawKitChip === "function" \? drawKitChip\(x, y, alpha\) \|\| 0 : 0;/.test(T) && /px \+= _tgPill\(i, px, y, alpha\);/.test(T), 'the pill is not drawn in the row');   // (the row's pills are js/targeting.js _tgPill's, build 2026-11-11u)
         ok(/kitChipTap\(upX, upY\)\) \{ isPressing=false; return; \}/.test(I), 'a tap on the pill is not taken');
         ok(/kit: \{ item: "repair_kit", key: "h" \}/.test(P) && /String\(e\.key \|\| ""\)\.toLowerCase\(\) !== PLAYER_COMBAT\.kit\.key/.test(P), 'the key');
         const r = J(`(function(){ playerInv = {}; ctx.measureText = () => ({ width: 40 }); const w0 = drawKitChip(100, 100, 1); invAdd('repair_kit', 1); const w1 = drawKitChip(100, 100, 1); health = 1; const hit = kitChipTap(_KITCHIP.x + 2, _KITCHIP.y + 2); return [w0, w1 > 0, hit, health, invCount('repair_kit')]; })()`);

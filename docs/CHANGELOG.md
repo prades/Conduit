@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11u` · branch `claude/start-game-project-HSh7Z` · THE CORE from the owner's playtest
+- **The owner, playing build `2026-11-11t`:** "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".
+- **A tap on THE CORE never walks you.** Its slab, the cube's sides, the arc and the labels let a tap through to the map. Now two pads take the tap: all of its box (340 × 300) but the empty strip at its left above the pills, which stays the map's. Its buttons sit on top of them.
+- **The dialogue's box stops at that strip.** It used to run under GUARD and STUN on narrower iPads (js/dialogue.js); now it ends inside the empty strip, so its taps stay its own.
+- **Bigger buttons.** GUARD and STUN are 1.3 times the size (a tap 66 px across); STUN sits 12 px lower. The PACK tag is 16 px, the siphon 40 px, and the words under the emblems 13 px. The surge's words (TAP — ARMY SURGE) fire the surge when it is full, as the face does.
+- **The ammunition and the items in hand are in its box.** The pill row moves from beside the dial to over THE CORE's slab: the ammunition with the weapon in hand's icon, the serum, the potion, the kits and POISONED. A tap on a pill does what it did. A pill that does not fit (POISONED beside a potion and kits) goes a row up, out to the left of the box. The row hides as THE CORE hides. A phone keeps the row by the dial.
+- **The ring over THE CORE.** While the ring is up (a long press), THE CORE dims and lets taps through, so the ring's buttons over it work.
+- The sizes, where a pill that does not fit goes, and the dimming are the agent's, provisional (`OPEN-QUESTIONS.md`, THE CORE).
+- Files: js/corehud.js, js/targeting.js, game.html, tests/corehud.js (the box takes taps, the sizes, the pill row and its taps, the ring; in the real page at three iPad sizes), tests/playercombat.js; docs/UI-STYLE.md, docs/PLAYER-COMBAT.md, docs/OPEN-QUESTIONS.md, docs/DECISION-LOG.md, bible.html and its iPad pictures.
+- Verified: `tests/corehud.js` and the nearest suites; the full run before the push. Not playtested.
+
 ### Build `2026-11-11t` · branch `claude/start-game-project-HSh7Z` · THE CORE: your cube in the bottom-right corner
 - **THE CORE.** The owner liked the drafts ("I like the drafts you created for the HUD player. Information interactive menu."). On a tablet or a desktop, one piece in the bottom-right corner now holds what the HUD shows of you (js/corehud.js):
   - **The cube.** The game's own cube, plain or in its class's gear. It bobs, jolts, trembles, leans in or topples as you fare.

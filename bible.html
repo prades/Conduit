@@ -217,8 +217,8 @@
         <tr><td><b>Tap a creature</b></td><td>Lock your gun on it; the round dial fires. Its card's ATTACK sends the squad at it (on a tablet the card stands bottom left, over the squad's orders, with ALL, RUN and ATTACK: build <code>2026-11-11m</code>).</td></tr>
         <tr><td><b>Long-press a follower</b></td><td>Its card: numbers, INDEX and DISMISS. Long-press a creature for INFO or ATTACK.</td></tr>
       </table></div>
-      <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right over your cube (THE CORE: its face, GUARD and STUN, the PACK, the surge's arc, the bars and the shards), the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
-        <figcaption>On an iPad (1180 × 820): the squad and its orders bottom left (each card has a thin XP bar under its health bar), you bottom right (THE CORE, since build 2026-11-11t: your cube, its face, GUARD and STUN on its cables, its lid the PACK, the surge's gold arc, your bars and shards under it) with the creature locked above it, the place top right, the dock along the bottom.</figcaption></figure>
+      <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right over your cube (THE CORE: its face, GUARD and STUN, the PACK, the surge's arc, the ammunition and the items in hand, the bars and the shards), the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
+        <figcaption>On an iPad (1180 × 820): the squad and its orders bottom left (each card has a thin XP bar under its health bar), you bottom right (THE CORE, since build 2026-11-11t: your cube, its face, GUARD and STUN on its cables, its lid the PACK, the surge's gold arc, your bars and shards under it; since 2026-11-11u the ammunition and the items in hand over the slab, and a tap on it is its own, never a walk) with the creature locked above it, the place top right, the dock along the bottom.</figcaption></figure>
     </section>
     <section class="part" id="story" style="--c:var(--gold)">
       <h2>The story <small>02</small></h2>
@@ -1350,7 +1350,7 @@
         <li>INFO, for a card with its level, class, element, health, bite and speed.</li>
       </ul>
       A click is a shot, kept until the weapon is ready; a hold keeps firing at the lock.</li>
-    <li><b>The ammunition pill</b> beside it shows a count (or a fuel cell, <code>MELEE</code>, <code>n/6</code>), red when empty. A tap on it while armed stows the weapon and <b>stands down</b> until nothing is in range or you tap a creature.</li>
+    <li><b>The ammunition pill</b> beside it (on a tablet or a desktop, in THE CORE's box over its slab, since build 2026-11-11u) shows a count (or a fuel cell, <code>MELEE</code>, <code>n/6</code>), red when empty. A tap on it while armed stows the weapon and <b>stands down</b> until nothing is in range or you tap a creature.</li>
     <li><b>Long-press a creature</b> for ATTACK (arm, lock and fire) or STOW, and INFO.</li>
   </ul>
   <div class="tw"><table>
@@ -2993,7 +2993,7 @@
   </div></details>
 
   <h3 id="interface-target">The target: the dial, the ammunition, the enemy card</h3>
-  <p>The gun finds its own target. A <b>round dial</b> with the target's picture fires at it, a small <b>ammunition pill</b> sits beside it, and an <b>enemy card</b> names the same creature; a tap on the card sends the squad at it. In the corners the dial stands over the enemy card at the bottom right. On a phone the dial is at the top left, beside the menu hub and under the network panel, and the enemy card sits over the BATTLE chip.</p>
+  <p>The gun finds its own target. A <b>round dial</b> with the target's picture fires at it, a small <b>ammunition pill</b> sits beside it (in the corners, in THE CORE's box: below), and an <b>enemy card</b> names the same creature; a tap on the card sends the squad at it. In the corners the dial stands over the enemy card at the bottom right. On a phone the dial is at the top left, beside the menu hub and under the network panel, and the enemy card sits over the BATTLE chip.</p>
   <h4>The lock</h4>
   <ul>
     <li>Every <span class="n" data-k="TARGET.every">8</span> frames, the nearest creature within <span class="n" data-k="TARGET.range">9</span> tiles that the player can see (no wall between) becomes the target. The gun is armed quietly, and orange-to-red corners close in on it over <span class="n" data-k="TARGET.acquire">24</span> frames; then four red corners stay on it.</li>
@@ -3006,7 +3006,7 @@
   <p>The dial pops in over <span class="n" data-k="TARGET.pop">12</span> frames: the target's portrait in a disc, a health ring (green over 50 %, yellow over 25 %, red), <code>LV n</code> at the upper left, a gun badge at the lower right (red while the trigger is held, amber while the gun cycles, grey when dry; a tentacle with the Mutator's lash, a bolt with the Technomancer's gauntlet) and an <b>i</b> at the upper right. Off the corners the creature's name is written under it.</p>
   <p>The <b>i</b> opens a slab card: level · class · element; HEALTH / BITE / SPEED; a line about the species and one about the class (<code>TARGET_NOTES</code>, the only flavour lines it shows). In the corners it opens to the dial's left, its foot level with the dial's; elsewhere to the right, or under the dial. Escape closes it.</p>
   <h4>The ammunition pill</h4>
-  <p>A small cartridge (a fuel cell, a tentacle or a bolt, by weapon) with the count: blue-grey at rest, amber and breathing while armed, red when dry. With nothing locked it stands where the dial comes up. A tap while armed <b>stows</b> the gun until no creature is in range or one is tapped. The Mutator's serum pill is drawn beside it.</p>
+  <p>A small cartridge (a fuel cell, a tentacle or a bolt, by weapon) with the count: blue-grey at rest, amber and breathing while armed, red when dry. With nothing locked it stands where the dial comes up. A tap while armed <b>stows</b> the gun until no creature is in range or one is tapped. The Mutator's serum pill is drawn beside it, then the potion in hand, the KIT pill and POISONED. In the corners (build 2026-11-11u, the owner: "the new little box should include the ammo and the equipped item with it") the row is in THE CORE's box, over its slab, and hides with it; a pill that does not fit goes a row up, out to the left of the box.</p>
   <h4>The enemy card</h4>
   <ul>
     <li>Its creature is the one the gun is locked on, so the dial and the card are always one creature (with the gun put away: its creature while near and in sight, else the nearest in range). It shows the portrait, the kind (<code>SPIDER STRIKER</code>), <code>LV n · ELEMENT</code> in the element's colour, a health bar and <code>HP h/m · BITE b</code>; it is built once per creature and updated in place, so a press is never lost to a rebuild.</li>
@@ -3296,6 +3296,7 @@
     <li>The armed gun: a press on a creature.</li>
     <li>Otherwise a phone with the battle tool open ignores the press; anywhere else the tile under it is noted for a long press.</li>
   </ol>
+  <p>THE CORE (a tablet or a desktop) is a page element over the canvas: a press on its box (all but an empty strip at its left above its pills) is its own and never reaches these (build 2026-11-11u); it asks the pills drawn under it itself, as below, and while the ring is up it lets taps through to it.</p>
   <p>On release, in order: the serum pill, the ammunition pill (stows the gun), the phone's CLONES helix, the canvas panels, the Clone Bay, the phone's SET, a double-tap on a follower, the ring, else a <b>tap</b>. A press that moved more than 22 px is not a tap.</p>
   <p><b>A tap</b>, first match wins: within 60 px of the Crystal, the battle tool (a phone opens it); the Resurrection Zone's plate; a class station or its plate (the player walks there first); a launcher site's tag; while armed, a creature (a shot); otherwise a <b>walk</b>: the tap becomes a tile (corrected for the floor's height) and a route is planned through the doors. Walking over a supply case takes it.</p>
   <h4>The long-press ring</h4>
@@ -3618,7 +3619,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11t</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11u</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3840,7 +3841,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-11t (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11u (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

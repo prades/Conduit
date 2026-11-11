@@ -16,7 +16,14 @@
 // A BAR BACK (^ ^, a green ring), SHARDS IN (^ ^, they fly into the lid, a hop), SURGE READY (gold diamonds), SURGING (gold stars), GUARD (a set look), STUN ARMED (lightning eyes, leaning in),
 // PACK OPEN (it looks up at its lid), KNOCKED OUT (X eyes, it topples, REBOOT), a tap on its face (it smiles). Nothing here changes a rule of play: every tap is what the old buttons did.
 // The old parts stay in the page, hidden while THE CORE is on (body.core-on: game.html), so a phone keeps them; the dial stands above it (js/targeting.js) and the dock is narrower.
+// Build 2026-11-11u, the owner's playtest: "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and
+// the equipped item with it". Two pads take a tap (never the map's: js/input.js listens on the game's canvas, under it): all of its box but the empty strip at its left above the pills, where the dialogue's
+// box may reach (js/dialogue.js); GUARD, STUN, the PACK tag and the siphon are bigger, and the surge's words take a tap
+// as its face does; THE PILL ROW (the ammunition with the weapon in hand, the serum, the potion, the kits, POISONED: js/targeting.js) is in its box, over the slab. While the ring is up (a long press) it dims
+// and lets taps through to the ring.
 const CORE_HUD = { hit: 40, heal: 70, shards: 70, ko: 150, boop: 36, lid: 16, lidOpen: 10, blinkEvery: 250, blinkFor: 8, bob: 2.5,   // (frames and pixels: the agent's, provisional)
+    emblem: 1.3, stunDown: 12, pills: [10, 229],   // GUARD and STUN 1.3 times the baked size, STUN 12 px lower (clear of GUARD's word); the pill row's left end and middle in its 340 x 300 box (game.html)
+    strip: 56, padTop: 210,                        // the pads: the box but the strip this wide at its left, down to the pill row's top (its buttons start 62 px in)
     cols: { none: "#19e6c1", gunslinger: "#ffb347", technomancer: "#31e8ff", mutator: "#c06bff" } };
 let _core = null, _coreWas = null;
 // what only the drawing keeps (a step with no picture fills none of it: tests/ghost.js IGNORE): its canvas and pen, the pixel ratio, the face's picture and which face it shows, the emblems' and the
@@ -29,6 +36,9 @@ function coreOn() { return typeof hudCorners === "function" && hudCorners() && t
 function coreTop() { return _core && _coreWas && _core.topY > 0 ? _core.topY : null; }
 // a knockout (js/game.js): it topples, then reboots
 function coreKnocked() { if (_core) _coreReact("ko"); }
+// THE PILL ROW's place in its box (js/targeting.js _tgAmmoIcon draws it there, on the game's canvas under it): its left end, its middle and how far right it may run (screen pixels); false while THE CORE is
+// hidden (a panel, the roster: the pills hide with it); null when it is not shown at all (a phone: the pills stay by the dial)
+function corePills() { if (!_core || !_coreWas || !(_core.pills.x > 0)) return null; return _core.topY > 0 ? _core.pills : false; }
 
 function _coreEl(tag, cls, text, parent) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
 function _coreBuild() {
@@ -43,14 +53,32 @@ function _coreBuild() {
         hitGuard: hit("core-hg", "GUARD", () => { if (typeof playerGuardToggle === "function") playerGuardToggle(); }),
         hitStun: hit("core-hs", "STUN", () => { if (typeof playerDiveArm === "function") playerDiveArm(); }),
         hitLid: hit("core-hl", "PACK", _corePackTap),
-        hitFace: hit("core-hf", "ARMY SURGE", () => { if (typeof playerUltimateReady === "function" && playerUltimateReady() && typeof fireArmySurge === "function") fireArmySurge(); else _coreReact("boop"); }),
+        hitFace: hit("core-hf", "ARMY SURGE", _coreSurgeTap),
         lg: _coreEl("div", "core-lbl", "GUARD", root), ls: _coreEl("div", "core-lbl", "STUN", root),
-        pack: hit("core-pack", "PACK", _corePackTap), surge: _coreEl("div", "core-surge", "", root),
+        pack: hit("core-pack", "PACK", _corePackTap), surge: hit("core-surge", "ARMY SURGE", _coreSurgeTap),
         siphon: hit("core-siphon", "SIPHON", () => { if (typeof toggleSiphon === "function") toggleSiphon(); }) };
     _coreEl("span", "", "PACK", els.pack); els.packN = _coreEl("b", "", "0", els.pack); els.siphon.textContent = "⌁";
+    const padA = _coreEl("div", "core-pad core-pad-a", null, root), padB = _coreEl("div", "core-pad core-pad-b", null, root); padA.style.left = CORE_HUD.strip + "px"; padB.style.top = CORE_HUD.padTop + "px";
+    if (root.addEventListener) root.addEventListener("click", _corePillTap);   // (a tap on a pad: its buttons' taps stop at them)
     _coreDrawn.cv = cv; _coreDrawn.g = cv.getContext ? cv.getContext("2d") : null;
-    _core = { root, els, look: null, art: null, img: null, imgs: {},
+    _core = { root, els, look: null, art: null, img: null, imgs: {}, stunP: null, pills: { x: 0, y: 0, maxX: 0 }, bodyCls: null,
         hp: -1, shards: -1, topY: 0, packAt: 0, quiet: 0, lostAt: -1e9, gainAt: -1e9, react: null, reactAt: 0, plusN: 0, plusAt: -1e9, lost: 0, gain: 0, blinkAt: 0, txt: {}, place: "" };
+}
+// a tap on its face or on the surge's words: ARMY SURGE when it is full (js/helpers.js fireArmySurge), else it smiles
+function _coreSurgeTap() { if (typeof playerUltimateReady === "function" && playerUltimateReady() && typeof fireArmySurge === "function") fireArmySurge(); else _coreReact("boop"); }
+// a tap on it that is not one of its buttons (the slab, the cube's sides, the arc, the space round them: its pads) is never the map's. The pill row is drawn under it, on the game's canvas (js/targeting.js), so a tap
+// on a pill is asked of the pills here, as js/input.js asks them on the canvas: the serum, the potion, the kit, and the ammunition while the gun is armed (a tap puts it away)
+function _corePillTap(e) {
+    if (!e || (typeof gameState !== "undefined" && gameState && !gameState.running)) return;
+    const p = typeof toCanvas === "function" ? toCanvas(e.clientX, e.clientY) : [e.clientX, e.clientY], x = p[0], y = p[1];
+    if (typeof serumChipTap === "function" && serumChipTap(x, y)) return;
+    if (typeof potionChipTap === "function" && potionChipTap(x, y)) return;
+    if (typeof kitChipTap === "function" && kitChipTap(x, y)) return;
+    const A = typeof _ATKCHIP !== "undefined" ? _ATKCHIP : null;
+    if (A && A.w > 0 && typeof playerAttackMode !== "undefined" && playerAttackMode && x >= A.x && x <= A.x + A.w && y >= A.y && y <= A.y + A.h) {
+        if (typeof targetStand === "function") targetStand();   // (the gun stays put away while creatures are about: js/targeting.js)
+        if (typeof setPlayerAttackMode === "function") setPlayerAttackMode(false);
+    }
 }
 // a tap on the lid or the tag: the lid flips open, then the pack (js/inventory.js invToggle) a moment later, so the open lid is seen before the pack covers the screen
 function _corePackTap() { if (!_core) { if (typeof invToggle === "function") invToggle(); return; } if (_core.packAt) return; _coreReact("lid"); _core.packAt = (typeof frame !== "undefined" ? frame : 0) + CORE_HUD.lidOpen; }
@@ -109,34 +137,40 @@ function coreTick() {
     const plusOn = f - _core.plusAt < CORE_HUD.shards; _coreSet(E.plus, "textContent", plusOn ? "+" + _core.plusN : "");
     _coreSet(E.packN, "textContent", String(S.packN)); _coreCls(E.pack, "core-hit core-pack" + (S.pack ? " open" : ""));
     const surgeTxt = S.surging ? "SURGE " + S.surgeS + " S" : S.ready ? "TAP — ARMY SURGE" : !S.siphon ? "SIPHON OFF · " + Math.round(S.ult * 100) + "%" : S.stalled ? "NO SQUAD IN RANGE · " + Math.round(S.ult * 100) + "%" : "ULTIMATE " + Math.round(S.ult * 100) + "%";
-    _coreSet(E.surge, "textContent", surgeTxt); _coreCls(E.surge, "core-surge" + (S.ready ? " ready" : S.surging ? " surging" : ""));
+    _coreSet(E.surge, "textContent", surgeTxt); _coreCls(E.surge, "core-hit core-surge" + (S.ready ? " ready" : S.surging ? " surging" : ""));
     _coreCls(E.siphon, "core-hit core-siphon" + (S.siphon ? "" : " off"));
     _coreSet(E.lg, "textContent", S.guard ? "GUARD ON" : "GUARD"); _coreCls(E.lg, "core-lbl" + (S.guard ? " on" : ""));
     _coreSet(E.ls, "textContent", S.rest > 0 ? S.restS + " S" : S.armed ? "PICK A TARGET" : "STUN"); _coreCls(E.ls, "core-lbl core-lst" + (S.armed ? " on" : S.rest > 0 ? " rest" : ""));
-    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "");
+    const ring = typeof commandMode !== "undefined" && !!commandMode;   // (the ring is up: it dims and lets taps through to it, game.html)
+    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "");
     if (_core.txt.state !== state) { _core.txt.state = state; _core.root.className = state.trim(); }
     _corePlace(S);
-    if (f % 30 === 0 || !(_core.topY > 0)) { const r = _core.root.getBoundingClientRect ? _core.root.getBoundingClientRect() : null; _core.topY = r && r.height > 0 ? r.top : 0; }   // (where its top is, for the dial: read twice a second, not every frame)
+    // where it is on the screen, for the dial above it and the pill row in it: read twice a second, not every frame, and at once when the page's classes change (a panel opening hides it)
+    const bc = typeof document !== "undefined" && document.body ? document.body.className : "";
+    if (f % 30 === 0 || !(_core.topY > 0) || bc !== _core.bodyCls) { _core.bodyCls = bc;
+        const r = _core.root.getBoundingClientRect ? _core.root.getBoundingClientRect() : null; _core.topY = r && r.height > 0 ? r.top : 0;
+        if (_core.topY > 0) { const Q = _core.pills; Q.x = r.left + CORE_HUD.pills[0]; Q.y = r.top + CORE_HUD.pills[1]; Q.maxX = r.left + r.width - 4; } }
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // (a step with no picture: nothing is drawn)
     if (_core.react || S.armed || S.hp <= 1 || S.ready || S.surging || f % 2 === 0) _coreDraw(S, f);
 }
 // the look (the plain cube or the class's gear): its sheet and points
 function _coreLook(look) {
     const V = CORE_FRAMES.variants[look] || CORE_FRAMES.variants.plain; _core.look = look; _core.art = V; _core.place = ""; _coreDrawn.emb = {}; _coreDrawn.dome = null;
+    const F0 = V.frames[0]; _core.stunP = [F0.stun[0], F0.stun[1] + CORE_HUD.stunDown];   // (STUN, a little lower than baked: clear of GUARD's word now they are bigger)
     if (!_core.imgs[look] && typeof Image === "function") { const im = new Image(); im.decoding = "async"; im.src = typeof imgSrc === "function" ? imgSrc(V.sheet) : V.sheet; _core.imgs[look] = im; }
     _core.img = _core.imgs[look] || null;
 }
 // the buttons and words round it, from its points (once per look, and when GUARD goes up or down)
 function _corePlace(S) {
     const P = _core.art.frames[0], key = _core.look + (S.guard ? "|g" : ""); if (_core.place === key) return; _core.place = key;
-    const E = _core.els, r = P.emblemR, put = (el, x, y, w, h) => { el.style.left = Math.round(x) + "px"; el.style.top = Math.round(y) + "px"; if (w) { el.style.width = Math.round(w) + "px"; el.style.height = Math.round(h) + "px"; } };
+    const E = _core.els, r = P.emblemR * CORE_HUD.emblem, St = _core.stunP, put = (el, x, y, w, h) => { el.style.left = Math.round(x) + "px"; el.style.top = Math.round(y) + "px"; if (w) { el.style.width = Math.round(w) + "px"; el.style.height = Math.round(h) + "px"; } };
     const G = S.guard ? P.guardUp : P.guard, gs = S.guard ? 1.25 : 1;
-    put(E.hitGuard, G[0] - r * gs - 10, G[1] - r * gs - 10, 2 * r * gs + 20, 2 * r * gs + 20); put(E.hitStun, P.stun[0] - r - 10, P.stun[1] - r - 10, 2 * r + 20, 2 * r + 20);
-    put(E.lg, G[0], S.guard ? G[1] - r * gs - 22 : G[1] + r + 6); put(E.ls, P.stun[0], P.stun[1] + r + 6);
+    put(E.hitGuard, G[0] - r * gs - 10, G[1] - r * gs - 10, 2 * r * gs + 20, 2 * r * gs + 20); put(E.hitStun, St[0] - r - 10, St[1] - r - 10, 2 * r + 20, 2 * r + 20);
+    put(E.lg, G[0], S.guard ? G[1] - r * gs - 24 : G[1] + r + 5); put(E.ls, St[0], St[1] + r + 5);
     const q = P.face, x0 = Math.min(q[0][0], q[2][0]), x1 = q[1][0], y0 = Math.min(q[0][1], q[1][1]), y1 = q[2][1];
     put(E.hitFace, x0 - 6, y0 - 4, x1 - x0 + 12, y1 - y0 + 12); put(E.hitLid, x0 - 6, P.lid[1] - 34, x1 - x0 + 18, Math.max(30, y0 - (P.lid[1] - 34) - 4));
-    put(E.pack, q[1][0] - 14, P.top[1] - 30); put(E.surge, P.arcC[0], P.arcC[1] - P.arcR - 8);
-    const a = P.arcFrom - P.arcSpan; put(E.siphon, P.arcC[0] + Math.cos(a) * P.arcR - 14, P.arcC[1] - Math.sin(a) * P.arcR - 14, 28, 28);
+    put(E.pack, q[1][0] - 14, P.top[1] - 38); put(E.surge, P.arcC[0], P.arcC[1] - P.arcR - 8);
+    const a = P.arcFrom - P.arcSpan, sz = 40; put(E.siphon, P.arcC[0] + Math.cos(a) * P.arcR - sz / 2, P.arcC[1] - Math.sin(a) * P.arcR - sz / 2, sz, sz);
 }
 
 // ── THE DRAWING ──
@@ -244,8 +278,8 @@ function _coreDraw(S, f) {
     }
     if (S.ready) { g.strokeStyle = "#ffe98a"; g.lineWidth = 1.5; for (let i = 0; i < 8; i++) { const a = a0 + span * ((i * 0.137 + f * 0.004) % 1), r0 = ar + 6 + ((f + i * 13) % 20) * 0.6; g.beginPath(); g.moveTo(ac[0] + Math.cos(a) * r0, ac[1] + Math.sin(a) * r0); g.lineTo(ac[0] + Math.cos(a) * (r0 + 6), ac[1] + Math.sin(a) * (r0 + 6)); g.stroke(); } }
     // the cables to GUARD and STUN (from its left flank, behind the cube)
-    const r = P0.emblemR, Gp = S.guard ? P0.guardUp : P0.guard, cable = (s, e, sag) => { g.beginPath(); g.moveTo(s[0] + dx, s[1] + dy); g.quadraticCurveTo((s[0] + e[0]) / 2 - 6, (s[1] + e[1]) / 2 + sag, e[0], e[1]); g.lineWidth = 6; g.strokeStyle = "#040506"; g.stroke(); g.lineWidth = 1.4; g.strokeStyle = "rgba(120,140,170,0.35)"; g.stroke(); };
-    cable(P0.guardSock, [Gp[0] + r * 0.6, Gp[1] + r * 0.3], S.guard ? 4 : 20); cable(P0.stunSock, [P0.stun[0] + r * 0.6, P0.stun[1]], 14);
+    const r = P0.emblemR * CORE_HUD.emblem, St = _core.stunP, Gp = S.guard ? P0.guardUp : P0.guard, cable = (s, e, sag) => { g.beginPath(); g.moveTo(s[0] + dx, s[1] + dy); g.quadraticCurveTo((s[0] + e[0]) / 2 - 6, (s[1] + e[1]) / 2 + sag, e[0], e[1]); g.lineWidth = 6; g.strokeStyle = "#040506"; g.stroke(); g.lineWidth = 1.4; g.strokeStyle = "rgba(120,140,170,0.35)"; g.stroke(); };
+    cable(P0.guardSock, [Gp[0] + r * 0.6, Gp[1] + r * 0.3], S.guard ? 4 : 20); cable(P0.stunSock, [St[0] + r * 0.6, St[1]], 14);
     // the cube, then its face on its screen
     g.save(); g.translate(C[0] + dx, C[1] + dy); g.rotate(rot); g.translate(-C[0], -C[1]);
     const im = _core.img; if (im && im.complete && im.naturalWidth) g.drawImage(im, fi * A.cw, 0, A.cw, A.ch, A.ox / CORE_FRAMES.dpr, A.oy / CORE_FRAMES.dpr, A.cw / CORE_FRAMES.dpr, A.ch / CORE_FRAMES.dpr);
@@ -256,9 +290,9 @@ function _coreDraw(S, f) {
     // GUARD and STUN
     const em = (kind, mode, p, s) => { const E = _coreEmblem(kind, mode, r), h = E.half * s; g.drawImage(E.c, p[0] - h, p[1] - h, h * 2, h * 2); };
     em("guard", S.guard ? "lit" : "", Gp, S.guard ? 1.25 : 1);
-    em("stun", S.rest > 0 ? "rest" : S.armed ? "lit" : "", P0.stun, S.armed ? 1.12 : 1);
-    if (S.rest > 0) { g.fillStyle = "rgba(0,0,0,0.6)"; g.beginPath(); g.moveTo(P0.stun[0], P0.stun[1]); g.arc(P0.stun[0], P0.stun[1], r * 0.96, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * S.rest); g.closePath(); g.fill(); }
-    if (S.armed) { if (f - DR.crackleAt >= 4) { DR.crackleAt = f; DR.crackle = []; let k = f * 7 + 3; const rnd = () => (k = (k * 9301 + 49297) % 233280) / 233280; for (let n = 0; n < 6; n++) { const a = rnd() * Math.PI * 2, pts = []; let x = P0.stun[0] + Math.cos(a) * r * 1.05, y = P0.stun[1] + Math.sin(a) * r * 1.05; for (let i = 0; i < 4; i++) { pts.push(x, y); x += Math.cos(a) * 6 + (rnd() - 0.5) * 9; y += Math.sin(a) * 6 + (rnd() - 0.5) * 9; } DR.crackle.push(pts); } }
+    em("stun", S.rest > 0 ? "rest" : S.armed ? "lit" : "", St, S.armed ? 1.12 : 1);
+    if (S.rest > 0) { g.fillStyle = "rgba(0,0,0,0.6)"; g.beginPath(); g.moveTo(St[0], St[1]); g.arc(St[0], St[1], r * 0.96, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * S.rest); g.closePath(); g.fill(); }
+    if (S.armed) { if (f - DR.crackleAt >= 4) { DR.crackleAt = f; DR.crackle = []; let k = f * 7 + 3; const rnd = () => (k = (k * 9301 + 49297) % 233280) / 233280; for (let n = 0; n < 6; n++) { const a = rnd() * Math.PI * 2, pts = []; let x = St[0] + Math.cos(a) * r * 1.05, y = St[1] + Math.sin(a) * r * 1.05; for (let i = 0; i < 4; i++) { pts.push(x, y); x += Math.cos(a) * 6 + (rnd() - 0.5) * 9; y += Math.sin(a) * 6 + (rnd() - 0.5) * 9; } DR.crackle.push(pts); } }
         g.strokeStyle = "#fff7b0"; g.lineWidth = 1.6; for (const p of DR.crackle) { g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) g.lineTo(p[i], p[i + 1]); g.stroke(); } }
     // what happens round it: shards into the lid, a green ring, sparks and smoke, the guard's dome
     if (R === "shards") { const t = rt / CORE_HUD.shards, sx = 18, sy = C[1] - 10, ex = P.lid[0], ey = P.lid[1] + 6, mx = (sx + ex) / 2 - 10, my = Math.min(sy, ey) - 60;

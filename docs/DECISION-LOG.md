@@ -2851,6 +2851,16 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: THE CORE from the owner's playtest (2026-11-11; built in `2026-11-11u`)
+- The owner, playing build `2026-11-11t`: "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".
+- Decided (the owner's words, built as asked):
+  - a tap on THE CORE never walks you: its pads take the tap;
+  - its buttons are bigger;
+  - the pill row (the ammunition with the weapon in hand, the serum, the potion in hand, the kits, POISONED) is in its box, over the slab.
+- The agent's, provisional: the sizes (GUARD and STUN 1.3 times, a 66 px tap; the PACK tag 16 px; the siphon 40 px), the box 30 px taller (340 × 300), pads over the whole box but an empty strip at its left (where the dialogue's box now stops) rather than its drawn parts, a pill that does not fit going a row up to the left of the box, the surge's words taking a tap, the dimming under the ring.
+- Supersedes, in the decision below: "the KIT and ammunition pills left by the dial".
+- Status: Implemented and tested; not playtested. `UI-STYLE.md` ("THE CORE"), `OPEN-QUESTIONS.md`, `CHANGELOG.md`.
+
 ## DECISION: THE CORE, your cube in the bottom-right corner (2026-11-11; drafted, then built in `2026-11-11t`)
 - The owner, circling the shards, bars and surge bar, GUARD and STUN, and the PACK button: "Find a way to combine these 3 elements into a player model 3d emotive/reactive interactive for showing player damage/ shard count / player class interact abilities"; then "Make it tucked down at the bottom, right".
 - One draft (`design/ui-mocks/core/`, one piece first): the cube with a face, GUARD and STUN on its cables, its lid the PACK, a gold arc for ARMY SURGE, a slab with the bars and shards. The owner: "I like the drafts you created for the HUD player. Information interactive menu." Built.
@@ -2861,7 +2871,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
   - the dial moved above it;
   - the dock between the left edge and it;
   - a quiet moment as it comes on;
-  - the KIT and ammunition pills left by the dial.
+  - the KIT and ammunition pills left by the dial (superseded in `2026-11-11u`: they are in its box).
 - How it is drawn (the agent's): baked frames plus 2D drawing, not a live 3D scene, for older iPads.
 - Not taken (not asked): the repair kit on the cube; opening your roster card from the cube.
 - Status: Implemented and tested; not playtested. `UI-STYLE.md` ("THE CORE"), `PLAYER-COMBAT.md`, `CHANGELOG.md`.

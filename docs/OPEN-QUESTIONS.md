@@ -801,13 +801,17 @@ The agent's choices, to change on the owner's word:
 4. **CAPACITOR DISCHARGE** (the Static Orb's, a Brawler's) still stands still to store its charges, now one every 0.75 s. Whether a Brawler should store them on the move is open.
 5. **The look:** a Brawler no longer winds up, so the rumble it had while winding up no longer shows; nothing marks its cooldown in the world (its squad card and INFO do).
 
-## THE CORE (built in `2026-11-11t`; `UI-STYLE.md`, "THE CORE")
+## THE CORE (built in `2026-11-11t`, changed in `2026-11-11u` from the owner's playtest; `UI-STYLE.md`, "THE CORE")
 The agent's choices, to change on the owner's word:
-1. **Its size**: 340 × 270 at the corner. It could be smaller.
+1. **Its size**: 340 × 300 at the corner since `2026-11-11u` (30 px taller, for the pill row). It could be smaller.
 2. **The lid as the PACK**: the lid flips open, and the pack follows a sixth of a second later.
-3. **The KIT pill** (the repair kit) stays by the dial. It could sit on the slab beside the bars.
+3. ~~**The KIT pill** stays by the dial.~~ Settled in `2026-11-11u`: the owner asked for the ammunition and the item in hand in its box, so the whole pill row (the KIT pill too) is over its slab.
 4. **Its faces and times** (a hit 40 frames, a bar back and shards 70, a knockout 150), and the dome when GUARD is up.
 5. **A tap on its face** when the surge is not full only makes it smile. It could open your card in the roster ("Information interactive menu").
+6. **The bigger buttons** (`2026-11-11u`): GUARD and STUN 1.3 times, a tap 66 px across; the PACK tag 16 px; the siphon 40 px. The pills keep their size (22 px tall, as everywhere).
+7. **A pill that does not fit** in the row (POISONED beside a potion and kits) goes a row up, out to the left of the box.
+8. **Under the ring** (a long press) it dims to a third and lets taps through.
+9. **Its pads take a tap** over all of its box (its empty corners too: a tap there does nothing) but a strip 56 px wide at its left above the pills, which stays the map's and where the dialogue's box now stops. They could take only its drawn parts.
 
 ## BOTH (built in `2026-11-11s`; `COMBAT.md` §7.4, "BOTH")
 The agent's choices, to change on the owner's word:
