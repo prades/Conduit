@@ -27,6 +27,11 @@ What it is today:
    - The statuses: STUNNED, BURN, POISON and the rest.
    - Not chosen: three families (physical, elemental, statuses), or a face per element.
 4. **The attacks: new attack frames per form**, baked from each form's 3-D model as SUNDEW's CONSUME block was, form by form. Not chosen: motion on today's sprites, or motion first and frames later.
+5. **Objects that hide a fighter fade out** (the owner: "let's make it to where the objects become invisible in that battle phase"; then chosen from options).
+   - While the battle view is on, an object standing in front of you, one of your squad or a creature is not drawn; a faint outline of it shows on the floor. Every other object stays as it is, and the walls stay (they never fade, an earlier decision).
+   - Not chosen: all objects but the fight's own; every object.
+   - **They still count:** cover, sight, walking and FLUX MOVE work as always. Chosen over "fully invisible" and over taking them out of the fight.
+6. **The battle view's strength as drafted** (approved 2026-11-11): 1.25×; on HIGH the edges blurred and darkened, on LOW darkened only.
 
 ## 3. Must-have requirements
 
@@ -34,6 +39,7 @@ What it is today:
   - When a creature engages you or your squad, the camera eases in; the edges of the picture soften (blurred a little); it eases out after the fight.
   - The HUD (bars, dial, buttons, squad cards, panels) does not zoom and stays where it is.
   - A tap still lands on what is under the finger.
+- [ ] While the battle view is on, an object in front of a fighter fades to a faint outline on the floor, and it still counts.
 - [ ] The numbers are bigger, in the face of the hit's damage type; statuses in the status face.
 - [ ] Each form's attacks have their own baked frames, form by form.
 
@@ -46,7 +52,7 @@ What it is today:
 ## 5. Chosen by the agent, provisional (to be shown as drafts first)
 
 **The battle view**
-- **Strength and timing:** about **1.25×**, easing in over 0.4 s and out over 0.6 s.
+- **Strength and timing:** **1.25×** (approved as drafted), easing in over 0.4 s and out over 0.6 s (provisional).
 - **Done as one copy of the finished world picture, scaled.** The copy is made after the world and its overlays and before the floating words and the HUD. So nothing that draws the world changes, and the words are drawn sharp at their zoomed place.
 - **When it counts as engaged:** a creature within 7 tiles of you, in sight, that is attacking you or one of your squad, or that you or your squad have hit in the last 2 s. It counts as over 3 s after there is none.
 - **The edges:** a soft blur over the outer part of the picture with a little darkening. On GRAPHICS: LOW (and so on older iPads) only the darkening, which costs one fill a frame.
@@ -60,6 +66,11 @@ What it is today:
   - The type of the hit's attack: a follower's from its form, anyone else's from the hit.
   - A hit with no type (a burn's or a poison's tick, a pool, a reflected hit, a card's echo) takes the status face.
   - A weakness or resistance word takes its part's face (SLASHING WEAK! in slashing's, FIRE RESIST in elemental's).
+
+**The objects that fade:**
+- **"In front of a fighter":** drawn after the fighter, nearer the camera, with its picture overlapping the fighter's.
+- It fades out over 0.2 s and comes back the same way.
+- **The outline:** its tile's edges on the floor, in a faint pale line.
 
 **The attack frames:** for each form, a block for each of its moves (its attack, its second attack, its Ultimate where it has one), with a wind-up, the strike and the recovery, played slower than today's 0.3 s so it reads. One form is drafted first.
 
@@ -113,10 +124,11 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 2. Which form's attack frames come first.
 3. Whether creatures and unevolved followers get attack frames too.
 4. One richer attack block per form, or one block per move (the attack, the second attack, the Ultimate).
-5. The zoom's strength and the edges' blur (from the drafts).
+5. How faint the faded objects' outline is (from a draft).
 
 ## 12. History
 
 - 2026-11-11: the owner's request.
 - The same day, four choices from options: real-time with a JRPG look; the view when a creature engages; a face per damage type and one for statuses; new attack frames per form.
+- Then the first drafts. The owner added objects becoming invisible in the battle phase, and chose from options: only those that hide a fighter, still counting, with a faint outline. The zoom was approved as drafted.
 - Decision record: `DECISION-LOG.md`, "The battle look".

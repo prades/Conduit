@@ -8,7 +8,7 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Open 2026-11-11, old iPads** (asked in build `2026-11-11b`'s handoff, not answered yet): should an iPad too old to show the game properly get an "update your iPad" screen, like the phone one? The game runs from iPadOS 13.4, shows its pictures from 14 (WebP, since build `2026-11-11c`) and every colour from 16.2. The iPad Air 2 and iPad mini 4 stop at iPadOS 15.
 
-**Open 2026-11-11, the battle look** (the owner: combat "more like a JRPG"; answered the same day from options: real-time with a JRPG look, the battle view when a creature engages, a face per damage type and one for statuses, new attack frames per form): still open, the faces, which form's attack frames come first, whether creatures and unevolved followers get frames, one attack block per form or one per move, the zoom's strength and the edges' blur (`BATTLE-LOOK.md` §11; drafts first).
+**Open 2026-11-11, the battle look** (the owner: combat "more like a JRPG"; answered the same day from options: real-time with a JRPG look, the battle view when a creature engages, a face per damage type and one for statuses, new attack frames per form): then the objects that hide a fighter fade to an outline and still count, and the zoom as drafted. Still open: the faces, which form's attack frames come first, whether creatures and unevolved followers get frames, one attack block per form or one per move, how faint the faded objects' outline is (`BATTLE-LOOK.md` §11).
 
 **Open 2026-11-11, the domains** (the map's expansion; the questions are in `DOMAINS.md` §11): the names, what the Nest's development holds and where its sloping tunnel down starts, the volcanic layer's and the crystalline area's look.
 
