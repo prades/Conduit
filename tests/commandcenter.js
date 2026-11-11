@@ -120,7 +120,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('__c.playStyle = "defensive"');
         const snap = run('JSON.stringify(followerRosterSnapshot())'); ok(/"playStyle":"defensive"/.test(snap), 'not in the roster save');
         const game = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8'), save = fs.readFileSync(path.join(ROOT, 'js/facilitysave.js'), 'utf8');
-        ok(/respawnQueue\.push\(\{[\s\S]{0,1500}playStyle: a\.playStyle \|\| undefined, move: a\.move \|\| undefined(, alt: a\.alt \|\| undefined)? \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
+        ok(/respawnQueue\.push\(\{[\s\S]{0,1500}playStyle: a\.playStyle \|\| undefined, move: a\.move \|\| undefined(, alt: a\.alt \|\| undefined(, altBoth: a\.altBoth \|\| undefined)?)? \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
         ok(/if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(save), 'a reload loses it'); run('__c.playStyle = undefined');
     });
 
@@ -207,7 +207,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             back: (function(){ const b = ccApplyMove([__q, __m], 'normal'); return [b.set, evoMoveOf(__q), evoMoveOf(__m)]; })() }; })()`);
         same(r.set, 2, 'set'); same(r.kept, 1, 'kept'); same(r.moves.join(), 'hexfire,hexfire,normal', 'their attacks');
         ok(/FROST MAW KEEPS ITS NORMAL ATTACK \(HEXFIRE IS NOT ONE OF ITS MOVES\)/.test(r.note || ''), 'the note: ' + r.note);
-        same(r.choices, 'normal:2,hexfire:1,chomp:1', 'the choices for an Ember Hood and a Frost Maw'); same(r.quill, 0, 'FIRE BOMBS set on a Quillstone'); same(r.bombs, 0, 'FIRE BOMBS set on an Ember Hood (taken out as an alternate, 2026-11-07)'); same(r.none, null, 'no setter for a form with no move (the retired Aegis Warden)'); same(r.bash, 'normal:2,shell_guard:1,bash:1', 'SHELL GUARD for a Hammer Slug (its own since build 2026-11-09c; BASH from 2026-11-07ss), BASH for a follower not evolved'); same(r.bad, 0, 'a nonsense move');
+        same(r.choices, 'normal:2,hexfire:1,chomp:1,both:hexfire:1,both:chomp:1', 'the choices for an Ember Hood and a Frost Maw (BOTH with each since build 2026-11-11s)'); same(r.quill, 0, 'FIRE BOMBS set on a Quillstone'); same(r.bombs, 0, 'FIRE BOMBS set on an Ember Hood (taken out as an alternate, 2026-11-07)'); same(r.none, null, 'no setter for a form with no move (the retired Aegis Warden)'); same(r.bash, 'normal:2,shell_guard:1,bash:1,both:shell_guard:1,both:bash:1', 'SHELL GUARD for a Hammer Slug (its own since build 2026-11-09c; BASH from 2026-11-07ss), BASH for a follower not evolved'); same(r.bad, 0, 'a nonsense move');
         same(JSON.stringify(r.back), JSON.stringify([2, null, null]), 'NORMAL ATTACK for both: unlocked');
     });
 

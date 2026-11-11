@@ -68,7 +68,7 @@ function convertApply(f) {
     if (!f.evolved && Array.isArray(f.energy)) f.energy = f.energy.map(x => x === CONVERT.from ? CONVERT.to : x);
     if (form) {
         f.evolved = form.id;   // (its stats stay as they are: no level is applied again)
-        if (f.alt && !(typeof evoMoveAllowed === "function" && evoMoveAllowed(f, form, f.alt))) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (an alternate the new form does not have: back to its normal attack)
+        if (f.alt && !(typeof evoMoveAllowed === "function" && evoMoveAllowed(f, form, f.alt))) { f.alt = null; f.altBoth = false; f._altWind = 0; f._altLive = null; }   // (an alternate the new form does not have: back to its normal attack)
     }
     if (typeof rebuildFollowerTable === "function") rebuildFollowerTable();   // (the followers by element, js/helpers.js: rebuilt only when the count changes, and a conversion does not change it)
     if (typeof equipValid === "function") equipValid(f);

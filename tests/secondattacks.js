@@ -106,7 +106,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler'), a = __foe(f.x + 1.2, f.y); followerAltSet(f, 'bash'); f._altWind = 1; frame++; evolutionTick();
             const info = followerInfo(f).attacks.filter(s => /^ALTERNATE/.test(s.h)).map(s => s.h); const cc = ccMoveChoices([f]);
             return { hit: __dmg(a) > 0, alt: f.alt, info, cc: cc && cc.list.map(m => m.id).join() }; })()`);
-        same(r.hit, true, 'it did not bash'); same(r.alt, 'bash', 'its mode'); same(r.info.join(), 'ALTERNATE · BASH · LOCKED ON', 'its INFO'); same(r.cc, 'normal,bash', 'the Command Center\'s ATTACK');
+        same(r.hit, true, 'it did not bash'); same(r.alt, 'bash', 'its mode'); same(r.info.join(), 'ALTERNATE · BASH · LOCKED ON', 'its INFO'); same(r.cc, 'normal,bash,both:bash', 'the Command Center\'s ATTACK');
     });
     await check('a Mage locked on BASH walks in to use it (a close move), where on its normal attack it keeps its distance', () => {
         const r = J(`(function(){ __clear(); const f = __fol('ice', 'sniper'); f.stance = undefined; const a = __foe(f.x + 5, f.y); a.update = () => {};   // (an unevolved Mage: BASH is its second attack since build 2026-11-09c)

@@ -4,6 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11s` · branch `claude/start-game-project-HSh7Z` · BOTH: a follower's normal attack and its move, switching on their own
+- **BOTH in every ATTACK list.** The owner: "We'll just make it to where you can select both of the moves and it will switch automatically." Asked first for a "switching" play style that "will switch back on a repeated timer". The roster's ATTACK list, the HUD card's and INFO's now have **BOTH · the move** after the moves. Picking the move alone keeps it locked on, as before.
+- **On a timer:** its everyday hits for 5 s, then the move's turn. It is locked on the move while it winds up (or strikes at once, a Brawler) and while its effect lasts, then hits as usual again.
+  - A Brawler's rest lasts at least its cooldown.
+  - A close move (BASH and the like) takes its turn once it has an enemy to go for, and a Mage walks in to use it.
+- **On a meter.** The owner: "if a follower has an attack or a meter that fills up for a different charged attack or different special attack move, then it will have it permanently selected until that condition is no longer met."
+  - SUNDEW stings until its stockpile is full, then uses SWEET SCENT until it has healed with it. It does not puff its lure on BOTH.
+  - The Static Orb charges CAPACITOR DISCHARGE, standing still, until it holds 4. It then hits as usual while it holds them, until you release them, then charges again.
+  - This is my reading of the owner's words, for the owner to confirm.
+- Saved with the follower (both saves). An old save loads as before. The 5 s is mine, provisional.
+- Seen in a real fight in the browser: a Quillstone hit 7 times, then QUILL BURST, every 5.3 s. A SUNDEW stung 4 times, then healed. A Static Orb charged to 4 in 3 s, then hit until released. Not playtested.
+- `js/moves.js` (`BOTH_REST_SECONDS`, `followerAltChoice`, `followerAltChoose`, `moveBothText`, `followerAltSet(f, id, both)`, SWEET SCENT's `full`), `js/evolution.js` (`_altBothTurn`, `_altBothRest`), `js/commandcenter.js`, `js/squadfly.js`, `js/unitinfo.js`, `js/facilitysave.js`, `js/game.js`, `js/energy.js`, `js/conversion.js`.
+- Tests: `tests/moves.js` (8 new checks: choosing, a Brawler's and a Mage's timer, a close move, both meters, the save, the screens). The ATTACK lists' expected choices are updated in commandcenter, secondattacks, firebombs, followercombat and unitinfo. Docs: `COMBAT.md` §7.4, `PLAYER-CLASSES.md` §3, `UI-STYLE.md`, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, the Bible.
+
 ### Build `2026-11-11r` · branch `claude/start-game-project-HSh7Z` · from the owner's playtest: objects in front of the fight only, RUN in full, COME on the card
 - **In a fight, objects and walls go see-through only in front of the fight.** The owner, playtesting 11p: "if I'm in combat and I'm in front of an object and everything that's happening is also in front of that object, it shouldn't be transparent."
   - An object, big or small, fades only while it stands in front of someone in the fight. Build 11l had every object of 4 tiles or more flat all fight.

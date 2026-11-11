@@ -402,10 +402,11 @@ const ALT_EFFECT_CAP = 1200;   // (frames: an effect still in the world after th
 const ALT_RETRY = 15;   // (frames: a Brawler whose move found nothing to strike looks again this much later; the agent's, provisional)
 function altTick(f, d, f0) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
-    if (!mv) { f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0; return; }
+    if (!mv) { f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0; f._altTurn = false; return; }
+    if (f.altBoth && !_altBothTurn(f, mv, f0)) return;   // (BOTH, js/moves.js: not the move's turn: its everyday hits)
     if (mv.manual) { capacitorTick(f); return; }   // (CAPACITOR DISCHARGE: no wind-up cycle; it stores charges, and the player releases them)
     if (f.retreatUntil > f0) { f._altWind = 0; return; }
-    if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; if (altCools(f)) f._altReadyAt = f0 + moveWindupFrames(mv.id); }   // (a Brawler's cooldown starts when the effect is over)
+    if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; if (altCools(f)) f._altReadyAt = f0 + moveWindupFrames(mv.id); if (f.altBoth) { _altBothRest(f, f0); return; } }   // (a Brawler's cooldown starts when the effect is over; on BOTH, its everyday hits again)
     if (altCools(f)) {   // A BRAWLER (build 2026-11-10a; the owner: "the brawlers have a cooldown time"): no wind-up; it fires the moment an enemy is in reach, then cools down (above), free to move
         f._altWind = 0; if (f0 < (f._altReadyAt || 0)) return;
         if (_evoFoesSeen(f.x, f.y, moveReach(mv.id)).length) { _altFire(f, mv, f0); if (!f._altLive) f._altReadyAt = f0 + ALT_RETRY; }   // (nothing to strike after all: it looks again a moment later, not every frame)
@@ -414,6 +415,20 @@ function altTick(f, d, f0) {
     if (f._altWind > 0) { if (--f._altWind > 0) return; _altFire(f, mv, f0); return; }
     if (_evoFoesSeen(f.x, f.y, moveReach(mv.id)).length) { f._altWind = moveWindupFrames(mv.id); f._altWindMax = f._altWind; f._fpPath = null; }
 }
+// BOTH (js/moves.js, build 2026-11-11s): whose turn it is now. True: the move's (its cycle runs; f._altTurn, locked on it, while it winds up, fires or its effect lasts); false: its everyday hits.
+function _altBothTurn(f, mv, f0) {
+    if (mv.full) {   // ON A METER (SWEET SCENT: SUNDEW's stings fill its stockpile): full, and the move ready, it is the move's turn until it has used it
+        const go = (mv.full(f) && f0 >= (f._altReadyAt || 0)) || f._altWind > 0 || !!f._altLive;
+        f._altTurn = go; if (!go) f._altWind = 0; return go;
+    }
+    if (mv.manual) { const go = (f._cap || 0) < CAP_MAX; f._altTurn = go; return go; }   // ON A METER: CAPACITOR DISCHARGE charges (standing still) until full; its everyday hits while it holds them
+    if (f._altRest) { if (f0 < (f._altBackAt || 0)) { f._altTurn = false; f._altWind = 0; return false; } f._altRest = false; }   // ON A TIMER: its everyday hits until the move's turn
+    if (altCools(f) && !f._altLive && f0 < (f._altReadyAt || 0)) { f._altTurn = false; return false; }   // (a Brawler still cooling down: its everyday hits meanwhile)
+    const foe = f._nearestEnemy;   // (js/npc.js: the enemy it is going for)
+    f._altTurn = f._altWind > 0 || !!f._altLive || (mv.close ? !!(foe && !foe.dead) : _evoFoesSeen(f.x, f.y, moveReach(mv.id)).length > 0);   // (its turn: locked on the move once there is something in its reach, or, a close move, an enemy to walk in on; till then it hits as usual)
+    return true;
+}
+function _altBothRest(f, f0) { f._altRest = true; f._altTurn = false; f._altWind = 0; f._altBackAt = Math.max(f0 + Math.round(BOTH_REST_SECONDS * 60), altCools(f) ? (f._altReadyAt || 0) : 0); }
 function _altFire(f, mv, f0) {
     const has = a => typeof a !== "undefined" && Array.isArray(a), seen = { fx: new Set(has(elementEffects) ? elementEffects : []), pr: new Set(typeof followerProjectiles !== "undefined" ? followerProjectiles : []), bm: new Set(typeof fireBombs !== "undefined" ? fireBombs : []), dc: new Set(typeof rotDecoys !== "undefined" ? rotDecoys : []) };
     const at = f._sigAt; f._sigAt = -1; if (mv.fn) mv.fn(f);

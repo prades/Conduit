@@ -320,6 +320,7 @@ Five layouts of the roster and the squad viewer were drawn on the same parts (do
 - **The HUD's member card** keeps its short list, with the same rule: only the cards that fit, plus EMPTY and the worn card.
   - Each card shows its name, its short text and its chip.
   - The ATTACK list's long line is short too: LOCKED ON · WINDS UP IN PLACE.
+  - **BOTH** (build `2026-11-11s`; `COMBAT.md`, "BOTH"): every ATTACK list (the roster's, the HUD card's, INFO's) has BOTH · the move after the moves, with its line: SWITCHES ON ITS OWN · EVERYDAY HITS 5 S, THEN the move (on a timer), CHARGES TO FULL, THEN ITS EVERYDAY HITS (CAPACITOR DISCHARGE), ITS HITS FILL IT, FULL IT USES SWEET SCENT (SUNDEW). The value shown is BOTH · the move. INFO's alternate says BOTH, ITS TURN or BOTH, EVERYDAY HITS NOW. The words are the agent's, provisional.
 - **A card's short text** (js/cards.js `equipShortText`) is built from the same numbers as its full text, e.g. 15% PER HIT TO BURN, AURA: +10% ATTACK, 10% TO BURN, ICE ROUNDS · SLOW, FREEZE, SLOWER GUNS.
   - A text of 30 letters or fewer stays as it is.
   - The longest short text is 41 letters.

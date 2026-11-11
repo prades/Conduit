@@ -42,7 +42,8 @@ const MOVES = {
     stake_ring:        { id: "stake_ring",        name: "STAKE RING",        windup: 2, fn: f => stakeRing(f) },
     // SWEET SCENT (SUNDEW's own, build 2026-11-08n: the owner's design, in place of BASH; js/evolution.js sweetScent): a puff that lures the enemies near it, or, its stockpile full, a heal. Its wind-up the
     // agent's, provisional (the owner: "having the wind up that'll be fine")
-    sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 2.5, fn: f => sweetScent(f) },
+    // `full` (build 2026-11-11s): ON A METER on BOTH (below): its turn comes when full(f) (SUNDEW's stockpile, filled by its stings), not on the timer
+    sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 2.5, full: f => (f._nectar || 0) >= 100, fn: f => sweetScent(f) },
     // THE NINE SECOND ATTACKS (build 2026-11-09c; the owner picked each of the agent's drafts, one form at a time, in place of BASH: js/evolution.js "THE NINE SECOND ATTACKS"). Their wind-ups the agent's,
     // provisional (BASH's 4 s for the quick ones, more for the bigger ones). `close`: a Mage or a Technician locked on it walks in to use it, as on BASH.
     zigzag_dash:       { id: "zigzag_dash",       name: "ZIGZAG DASH",       windup: 2, fn: f => zigzagDash(f) },     // the Electro Skink's
@@ -102,17 +103,43 @@ function evoMoveOf(f, d) {
 // A saved choice of BASH on a form whose own second attack has replaced it since (build 2026-11-09c: the nine forms of "THE NINE SECOND ATTACKS"): the form's own, so a follower the player had locked on its
 // second attack stays on its second attack (js/facilitysave.js asks on load). Anything else is kept as it was.
 function moveAltCarried(f, alt) { const d = followerMoveDef(f); return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt; }
-function followerAltLocked(f) { return !!(f && f.alt && evoMoveOf(f)); }
+// BOTH (build 2026-11-11s; the owner: "We'll just make it to where you can select both of the moves and it will switch automatically"; asked first for a "switching" play style that "will
+// switch back on a repeated timer"; then "if a follower has an attack or a meter that fills up for a different charged attack or different special attack move, then it will have it permanently
+// selected until that condition is no longer met"). f.altBoth with f.alt: it fights with BOTH its normal attack and that move, switching on its own (js/evolution.js altTick, _altBothTurn):
+//   ON A TIMER (every move but the two below): its everyday hits for BOTH_REST_SECONDS, then the move's TURN: locked on it while it winds up, fires and its effect lasts (with no enemy in the
+//     move's reach yet it keeps hitting as usual, its turn still waiting; a move that needs it close, BASH, takes its turn once it has an enemy to fight, and it walks in to use it), then its
+//     everyday hits again. A Brawler's rest lasts at least its cooldown.
+//   ON A METER (the agent's reading of the owner's words, for the owner to confirm): a row with `full` (SWEET SCENT: SUNDEW's stings fill its stockpile): its everyday hits until full, then the
+//     move until it has used it (the heal; on BOTH it does not puff). CAPACITOR DISCHARGE (`manual`, the Static Orb: it charges standing still): charging until it holds CAP_MAX, then its
+//     everyday hits while it holds them, and charging again once you release them.
+// The turn is a fight's, not saved; f.altBoth is saved with the follower.
+const BOTH_REST_SECONDS = 5;   // the agent's, PROVISIONAL: its everyday hits between two turns of its move
+function followerAltBoth(f) { return !!(f && f.altBoth && f.alt && evoMoveOf(f)); }
+// the move it fights with THIS moment: its chosen one; on BOTH, the move only on its turn (else null: its normal attack)
+function followerAltNow(f, d) { const m = evoMoveOf(f, d); return m && f.altBoth && !f._altTurn ? null : m; }
+function followerAltLocked(f) { return !!(f && f.alt && followerAltNow(f)); }
 // locked on a move that needs it close (BASH): the reach it closes to, else 0 (js/npc.js: a Mage locked on one walks in, as a Brawler does)
-function followerAltCloseReach(f) { const m = f && f.alt ? evoMoveOf(f) : null; return m && m.close ? moveReach(m.id) : 0; }
-// Switch a follower's attack: a move id it may use, or null (its normal attack). True when it changed. A switch starts the move's cycle afresh (no wind-up carried over); a Brawler's cooldown is kept (f._altReadyAt), so switching away and back does not skip it.
-function followerAltSet(f, id) {
+function followerAltCloseReach(f) { const m = f && f.alt ? followerAltNow(f) : null; return m && m.close ? moveReach(m.id) : 0; }
+// Switch a follower's attack: a move id it may use, or null (its normal attack); `both`: that move AND its normal attack, switching on their own (BOTH, above). True when it changed. A switch starts
+// the move's cycle afresh (no wind-up carried over); a Brawler's cooldown is kept (f._altReadyAt), so switching away and back does not skip it.
+// The choice as the screens give it and show it (the Command Center, its squad card, its INFO): null (its normal attack), a move id (locked on it), or "both:" + a move id (BOTH).
+function followerAltChoice(f) { const m = f ? evoMoveOf(f) : null; return m ? (f.altBoth ? "both:" : "") + m.id : null; }
+function followerAltChoose(f, choice) { const both = typeof choice === "string" && choice.indexOf("both:") === 0; return followerAltSet(f, both ? choice.slice(5) : choice, both); }
+// what BOTH does with move `id`, in the screens' short words
+function moveBothText(id) {
+    const m = MOVES[id]; if (!m) return "";
+    if (m.full) return "ITS HITS FILL IT, FULL IT USES " + m.name;
+    if (m.manual) return "CHARGES TO FULL, THEN ITS EVERYDAY HITS";
+    return "EVERYDAY HITS " + BOTH_REST_SECONDS + " S, THEN " + m.name;
+}
+function followerAltSet(f, id, both) {
     if (!f) return false;
     const d = followerMoveDef(f);
     if (id && !(d && evoMoveAllowed(f, d, id))) return false;   // (a move that is not open to it changes nothing)
-    const next = id || null;
-    if ((f.alt || null) === next) return false;
-    f.alt = next; f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0;   // (a CAPACITOR DISCHARGE's stored charges go with a switch)
+    const next = id || null, nb = !!(both && next);
+    if ((f.alt || null) === next && !!f.altBoth === nb) return false;
+    f.alt = next; f.altBoth = nb; f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0;   // (a CAPACITOR DISCHARGE's stored charges go with a switch)
+    f._altTurn = false; f._altRest = nb; f._altBackAt = (typeof frame !== "undefined" ? frame : 0) + Math.round(BOTH_REST_SECONDS * 60);   // (on BOTH it starts with its everyday hits)
     return true;
 }
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in

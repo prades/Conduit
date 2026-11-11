@@ -801,6 +801,14 @@ The agent's choices, to change on the owner's word:
 4. **CAPACITOR DISCHARGE** (the Static Orb's, a Brawler's) still stands still to store its charges, now one every 0.75 s. Whether a Brawler should store them on the move is open.
 5. **The look:** a Brawler no longer winds up, so the rumble it had while winding up no longer shows; nothing marks its cooldown in the world (its squad card and INFO do).
 
+## BOTH (built in `2026-11-11s`; `COMBAT.md` §7.4, "BOTH")
+The agent's choices, to change on the owner's word:
+1. **The timer:** 5 s of everyday hits between two turns of the move (`BOTH_REST_SECONDS`). A turn is one use of the move: its wind-up or strike, and its effect.
+2. **The meters, as read:** SUNDEW uses SWEET SCENT when its stockpile is full, until it has healed. The Static Orb charges until full, then hits as usual while it holds the charges. Whether the Static Orb should release by itself on BOTH is open; today you release them.
+3. **SUNDEW's lure:** on BOTH it does not puff (its turn is the heal). It could take a timed turn to puff as well.
+4. **A close move's turn** (BASH, WOBBLE SLAM, VENOM BITE) starts once it has an enemy to go for, so a Mage walks in for it.
+5. **Its turn waits** while no enemy is in the move's reach: it goes on hitting as usual.
+
 ## The formation (built in `2026-11-10b`; `COMBAT.md`, "The formation")
 The agent's numbers and readings, to tune once the owner has played with them:
 1. **The places:** Brawlers 1.8 tiles ahead, Mages 3 behind, two of a kind 1.2 apart side by side; Technicians 2.5 tiles out, each making for a point a little way round the ring (0.6 rad) so it walks the round at its own pace; a second Technician goes the other way round.

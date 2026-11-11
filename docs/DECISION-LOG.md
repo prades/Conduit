@@ -2851,6 +2851,18 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: BOTH, a follower's normal attack and its move switching on their own (2026-11-11; built in `2026-11-11s`)
+- The owner: "Whenever a follower has evolved in the roster, whenever a follower is selected, their playstyle should be able to be selectable to new variants, which include permanent and switching. And if it's on permanent, then whatever move is selected is what it will do. And when it's on switching, it will switch back on a repeated timer."
+- Then, before anything was built: "We'll just make it to where you can select both of the moves and it will switch automatically."
+  - Built: every ATTACK choice (the roster, the HUD card, INFO) lists BOTH · the move after the moves. "Permanent" is the move alone, locked on, as since build `2026-11-07ff`. PLAY STYLE (DEFENSIVE, BALANCED, AGGRESSIVE) is not changed.
+- Then: "if a follower has an attack or a meter that fills up for a different charged attack or different special attack move, then it will have it permanently selected until that condition is no longer met."
+  - Read as (the agent's, for the owner to confirm): SUNDEW's stings fill its stockpile, and SWEET SCENT is its move while the stockpile is full, until it has healed with it. The Static Orb's CAPACITOR DISCHARGE charges until full, and then it hits as usual while it holds the charges; you release them as before.
+  - A consequence: SUNDEW on BOTH does not puff its lure (SWEET SCENT with the stockpile not full).
+- The timer (the agent's, provisional): 5 s of everyday hits (`BOTH_REST_SECONDS`), then one turn of the move: its wind-up or strike and its effect. A Brawler's rest is at least its cooldown.
+- A close move takes its turn once the follower has an enemy to go for (else a Mage would never come close enough to use it): the agent's.
+- Not taken: a separate PERMANENT / SWITCHING setting beside the move (the owner's second message replaced it); a timer on the meter moves.
+- Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `PLAYER-CLASSES.md` §3, `UI-STYLE.md`, `CHANGELOG.md`.
+
 ## DECISION: From the owner's playtest of 11p: the fight's objects, RUN, COME (2026-11-11; built in `2026-11-11r`)
 - The owner: "if I'm in combat and I'm in front of an object and everything that's happening is also in front of that object, it shouldn't be transparent. And that's really readable."
   - Built: an object (big or small) and a wall piece fade only while they stand in front of someone in the fight.

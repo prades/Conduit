@@ -164,6 +164,7 @@ function followerRecord(a) {
         post: a.post || undefined,             // the room it holds (js/party.js)
         move: a.move || undefined,             // the signature move it was given (js/moves.js)
         alt: a.alt || undefined,               // the alternate it is locked to (js/moves.js; none: its normal attack)
+        altBoth: a.altBoth || undefined,       // that alternate AND its normal attack, switching on their own (js/moves.js BOTH)
         special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // its SPECIAL ATTACK card (js/cards.js)
         cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
         energy: Array.isArray(a.energy) && typeof energyElementOk === "function" ? a.energy.map(x => energyElementOk(x) ? x : null) : undefined   // its ENERGY CARDS' slots (js/energy.js); a record from before them has none (it is migrated on load)
@@ -191,7 +192,7 @@ function followerBuild(entry) {
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
     if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;   // (set before its level, so the evolved stats apply)
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
-    if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = typeof moveAltCarried === "function" ? moveAltCarried(npc, entry.alt) : entry.alt;
+    if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = typeof moveAltCarried === "function" ? moveAltCarried(npc, entry.alt) : entry.alt; if (entry.altBoth && npc.alt) npc.altBoth = true;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.conv && typeof entry.conv.from === "string") { npc.convertedFrom = entry.conv.from; npc.convertedAt = Number(entry.conv.at) || 0; }   // (what it was before its conversion: js/conversion.js)
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)

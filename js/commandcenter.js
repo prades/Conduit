@@ -118,25 +118,28 @@ function ccApplyPlayStyle(units, id) {
 // SIGNATURE MOVE for a group (the following update's Part 4; docs/PLAYER-CLASSES.md §5: "Move choice is per follower, plus a squad setter"). Each picked follower whose
 // form can use move `id` takes it (as its INFO choice does, js/unitinfo.js); one that cannot keeps its own, and ccMoveNote says why. A follower not evolved has BASH (js/moves.js followerMoveDef, build 2026-11-07ss).
 let _ccMoveNote = null;   // { units, text }: shown under the setter while the same followers are picked
-function ccApplyMove(units, id) {
+// `id`: "normal", a move's id, or "both:" + a move's id (BOTH: its normal attack and that move, switching on their own, js/moves.js).
+function ccApplyMove(units, choice) {
+    const both = typeof choice === "string" && choice.indexOf("both:") === 0, id = both ? choice.slice(5) : choice;
     const out = { set: 0, kept: [] }, normal = id === "normal";
     if (!normal && (typeof MOVES === "undefined" || !MOVES[id])) return out;
     for (const a of units) {
         const d = typeof followerMoveDef === "function" ? followerMoveDef(a) : null;
         if (!a || a.dead || !d) continue;
         if (!normal && !evoMoveAllowed(a, d, id)) { out.kept.push(a); continue; }
-        followerAltSet(a, normal ? null : id); out.set++;
+        followerAltSet(a, normal ? null : id, both); out.set++;
     }
-    const why = a => { const d = followerMoveDef(a), cur = evoMoveOf(a, d); return ((d && d.name) || "IT") + " KEEPS " + (cur ? cur.name : "ITS NORMAL ATTACK") + (evoMoveIds(d).indexOf(id) >= 0 ? " (NOT FOR YOUR CLASS)" : " (" + MOVES[id].name + " IS NOT ONE OF ITS MOVES)"); };
+    const why = a => { const d = followerMoveDef(a), cur = evoMoveOf(a, d); return ((d && d.name) || "IT") + " KEEPS " + (cur ? (a.altBoth ? "BOTH \u00b7 " : "") + cur.name : "ITS NORMAL ATTACK") + (evoMoveIds(d).indexOf(id) >= 0 ? " (NOT FOR YOUR CLASS)" : " (" + MOVES[id].name + " IS NOT ONE OF ITS MOVES)"); };
     _ccMoveNote = out.kept.length ? { units: units.slice(), text: out.kept.map(why).join(" \u00b7 ") } : null;
     return out;
 }
-// The attacks open to the picked: NORMAL ATTACK, then every alternate any of them can use, each with how many can. null when none of them has an alternate.
+// The attacks open to the picked: NORMAL ATTACK, then every alternate any of them can use, each with how many can, then BOTH with each ("both:" + its id). null when none of them has an alternate.
 function ccMoveChoices(units) {
     const evo = units.filter(a => a && !a.dead && typeof followerMoveDef === "function" && followerMoveDef(a)), ids = [];   // (every follower has its moves now: BASH before it evolves)
     for (const a of evo) { const d = followerMoveDef(a); for (const id of evoMoveIds(d).filter(id => evoMoveAllowed(a, d, id))) if (ids.indexOf(id) < 0) ids.push(id); }
     if (!ids.length) return null;
-    return { evo, cur: ccCommon(evo, a => (evoMoveOf(a) || {}).id || "normal"), list: [{ id: "normal", can: evo.length }].concat(ids.map(id => ({ id, can: evo.filter(a => evoMoveAllowed(a, followerMoveDef(a), id)).length }))) };
+    const can = id => evo.filter(a => evoMoveAllowed(a, followerMoveDef(a), id)).length;
+    return { evo, cur: ccCommon(evo, a => followerAltChoice(a) || "normal"), list: [{ id: "normal", can: evo.length }].concat(ids.map(id => ({ id, can: can(id) })), ids.map(id => ({ id: "both:" + id, move: id, can: can(id) }))) };
 }
 // Stance (the battle tool's HOLD and COME, js/mixtool.js): HOLD posts each follower in the room it is in, COME calls it back to the squad (js/party.js partyApplyStance, which
 // hands the clones to _ccApplyStanceUnits: a clone has no post, it holds where it stands).
@@ -581,9 +584,10 @@ function _ccDrawStyles(side, S, sel) {
         PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
     const M = typeof MOVES !== "undefined" ? ccMoveChoices(sel) : null;
     if (M) {
-        const nm = id => id === "normal" ? "NORMAL ATTACK" : (MOVES[id] || {}).name || "\u2014";
+        const nm = id => id === "normal" ? "NORMAL ATTACK" : id.indexOf("both:") === 0 ? "BOTH \u00b7 " + nm(id.slice(5)) : (MOVES[id] || {}).name || "\u2014";   // (BOTH: the owner, 2026-11-11, "select both of the moves and it will switch automatically")
+        const who = m => m.can === M.evo.length ? "ALL CAN USE IT" : m.can + " OF " + M.evo.length + " CAN USE IT";
         _ccDropdown(side, "move", "ATTACK", M.cur === "mixed" ? "MIXED" : nm(M.cur), "#19e6c1",
-            M.list.map(m => ({ label: nm(m.id), col: "#19e6c1", sub: m.id === "normal" ? "NO ALTERNATE: ITS EVERYDAY HITS" : (m.can === M.evo.length ? "ALL CAN USE IT" : m.can + " OF " + M.evo.length + " CAN USE IT") + " · LOCKED ON, " + _ccMoveTiming(sel), on: M.cur === m.id, fn: () => ccApplyMove(sel, m.id) })));
+            M.list.map(m => ({ label: nm(m.id), col: "#19e6c1", sub: m.id === "normal" ? "NO ALTERNATE: ITS EVERYDAY HITS" : m.move ? who(m) + " · SWITCHES ON ITS OWN: " + moveBothText(m.move) : who(m) + " · LOCKED ON, " + _ccMoveTiming(sel), on: M.cur === m.id, fn: () => ccApplyMove(sel, m.id) })));
         const N = _ccMoveNote; if (N && N.units.length === sel.length && sel.every(a => N.units.indexOf(a) >= 0)) side.appendChild(_ccEl("div", "cc-note", N.text));
     }
 }

@@ -69,8 +69,8 @@ function findChromium() {
             const before = pick(); f.evolved = 'igloo'; f._moltAt = -1e9; const after = pick();
             followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return JSON.stringify({ before, after }); })()`));
         ok(r.before.sig && /into the IGLOO SKATER/.test(r.before.sig.note) && /with the move SKATE CHARGE/.test(r.before.sig.note) && !/undefined/.test(r.before.sig.note), 'before: ' + JSON.stringify(r.before.sig));
-        same(r.before.alts.join(), 'ALTERNATE · BASH', 'before: its alternates'); same(r.before.choice.join(), 'NORMAL ATTACK,BASH', 'before: its ATTACK choice');
-        same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · SKATE CHARGE', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,SKATE CHARGE', 'after: its ATTACK choice');
+        same(r.before.alts.join(), 'ALTERNATE · BASH', 'before: its alternates'); same(r.before.choice.join(), 'NORMAL ATTACK,BASH,BOTH · BASH', 'before: its ATTACK choice');
+        same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · SKATE CHARGE', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,SKATE CHARGE,BOTH · SKATE CHARGE', 'after: its ATTACK choice');
     });
     check('the Ultimates are each evolved form\'s own (build 2026-11-09b): every form with one has it described on its card under its own name; an unevolved follower\'s card shows none, of any element; a form without one of its own shows ULTIMATE · NOT DESIGNED YET (none today: the Electro Skink was, until build 2026-11-09c; checked with its entry taken away); a retired form shows none (not flagged)', () => {
         const forms = JSON.parse(run(`JSON.stringify(Object.keys(FORM_ULTIMATES).filter(id => EVOLUTIONS[id]).map(id => { const E = EVOLUTIONS[id], f = __mk(E.element, E.role, 14, id), i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); const u = FORM_ULTIMATES[id];

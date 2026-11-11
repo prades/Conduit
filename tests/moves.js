@@ -102,6 +102,94 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     });
     check('the INFO tab shows each move\'s WIND-UP', () => { for (const id of J('Object.keys(MOVES)')) ok(J(`MOVE_INFO[MOVES.${id}.name]().some(r => r[0] === 'WIND-UP')`), id); });
 
+    // BOTH (build 2026-11-11s; the owner: "We'll just make it to where you can select both of the moves and it will switch automatically", and "if a follower has an attack or a meter that fills up
+    // for a different charged attack or different special attack move, then it will have it permanently selected until that condition is no longer met"). The sandbox does not age effects: a stub move leaves none.
+    group('BOTH: ITS NORMAL ATTACK AND ITS MOVE, SWITCHING ON THEIR OWN (build 2026-11-11s)');
+    run('globalThis.__keepSeen = _evoFoesSeen;');
+    const REST = J('Math.round(BOTH_REST_SECONDS * 60)');
+    check('BOTH is chosen with a move (followerAltSet(f, id, true); the screens give "both:" + its id); the move alone or NORMAL ATTACK takes it off; a move not open to it changes nothing', () => {
+        run(`followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__b = followers[followers.length - 1]; __b.evolved = 'quillstone'; __b._moltAt = -1e9; energyFill(__b);`);
+        same(J('[followerAltChoose(__b, "both:quill_burst"), __b.alt, __b.altBoth, followerAltChoice(__b), followerAltBoth(__b)]').join(), 'true,quill_burst,true,both:quill_burst,true', 'BOTH with QUILL BURST');
+        same(J('[followerAltChoose(__b, "both:chomp"), followerAltChoice(__b)]').join(), 'false,both:quill_burst', 'BOTH with another form\'s move');
+        same(J('[followerAltChoose(__b, "quill_burst"), __b.altBoth, followerAltChoice(__b)]').join(), 'true,false,quill_burst', 'the move alone');
+        same(J('[followerAltChoose(__b, "both:quill_burst"), followerAltChoose(__b, null), __b.alt, __b.altBoth, followerAltChoice(__b)]').join(), 'true,true,,false,', 'NORMAL ATTACK');
+    });
+    check('ON A TIMER (a Brawler: the Quillstone\'s QUILL BURST): its everyday hits (not locked) for BOTH_REST_SECONDS; then, an enemy in reach, the move at once, locked while its effect lasts; then its everyday hits again for BOTH_REST_SECONDS, or its cooldown when that is longer; on its turn with no enemy in reach it keeps hitting as usual', () => {
+        run(`followers.length = 0; followers.push(__b); __b.role = 'brawler'; _evoFoesSeen = () => [{}]; globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; globalThis.__w = MOVES.quill_burst.windup;
+             MOVES.quill_burst.fn = f => { __fired++; f._sigAt = frame; return true; }; followerAltChoose(__b, 'both:quill_burst'); frame++; evolutionTick();`);
+        try {
+            same(J('[__fired, followerAltLocked(__b), __b._altBackAt - frame]').join(), '0,false,' + (REST - 1), 'at first: its everyday hits');
+            run('frame = __b._altBackAt - 1; evolutionTick();'); same(J('[__fired, followerAltLocked(__b)]').join(), '0,false', 'before its turn');
+            run('frame = __b._altBackAt; evolutionTick();'); same(J('[__fired, followerAltLocked(__b), __b._altTurn]').join(), '1,true,true', 'its turn: the move at once, locked while its effect lasts');
+            run('frame++; evolutionTick();'); same(J('[__fired, followerAltLocked(__b), __b._altBackAt - frame]').join(), '1,false,' + REST, 'its effect over: its everyday hits again');
+            run('frame = __b._altBackAt - 1; evolutionTick();'); same(J('__fired'), 1, 'the move in its rest');
+            run('frame = __b._altBackAt; evolutionTick();'); same(J('__fired'), 2, 'not the move again after its rest');
+            run('MOVES.quill_burst.windup = 8; frame++; evolutionTick();'); same(J('__b._altBackAt - frame'), 480, 'a cooldown (8 s) longer than the rest: not the rest');
+            run('_evoFoesSeen = () => []; frame = __b._altBackAt + 10; evolutionTick();'); same(J('[__fired, followerAltLocked(__b)]').join(), '2,false', 'its turn, no enemy in reach: locked');
+            run('_evoFoesSeen = () => [{}]; frame++; evolutionTick();'); same(J('[__fired, followerAltLocked(__b)]').join(), '3,true', 'its turn, an enemy in reach: no move');
+        } finally { run('MOVES.quill_burst.fn = __keep; MOVES.quill_burst.windup = __w; followerAltChoose(__b, null);'); }
+    });
+    check('ON A TIMER (a Mage: the Thunderhead\'s STATIC VORTEX): its turn is its wind-up, standing still, and the move; then its everyday hits again', () => {
+        run(`followers.length = 0; spawnFollowerAtCrystal('electric'); globalThis.__m = followers[followers.length - 1]; __m.evolved = 'thunderhead'; __m._moltAt = -1e9; energyFill(__m); globalThis.__firedM = 0; globalThis.__keepM = MOVES.static_vortex.fn;
+             MOVES.static_vortex.fn = f => { __firedM++; f._sigAt = frame; return true; }; _evoFoesSeen = () => [{}]; followerAltChoose(__m, 'both:static_vortex'); frame = __m._altBackAt; evolutionTick();`);
+        try {
+            same(J('[__m.role, __firedM, __m._altWind, followerAltLocked(__m)]').join(), 'sniper,0,' + J("moveWindupFrames('static_vortex')") + ',true', 'its turn: its wind-up, locked');
+            run('__m._altWind = 1; frame++; evolutionTick();'); same(J('[__firedM, followerAltLocked(__m)]').join(), '1,true', 'the move when its wind-up ran out');
+            run('frame++; evolutionTick();'); same(J('[__firedM, followerAltLocked(__m), __m._altWind, __m._altBackAt - frame]').join(), '1,false,0,' + REST, 'its effect over: its everyday hits');
+        } finally { run('MOVES.static_vortex.fn = __keepM; followerAltChoose(__m, null);'); }
+    });
+    check('ON A TIMER, a move that needs it close (BASH, a Mage before it evolves): its turn comes once it has an enemy to fight, and it walks in to use it (followerAltCloseReach); with none it is not locked', () => {
+        run(`followers.length = 0; _evoFoesSeen = () => []; spawnFollowerAtCrystal('ice'); globalThis.__u = followers[followers.length - 1]; __u.role = 'sniper'; __u._nearestEnemy = null; followerAltChoose(__u, 'both:bash'); frame = __u._altBackAt; evolutionTick();`);
+        same(J('[__u.evolved || null, followerAltChoice(__u), followerAltLocked(__u), followerAltCloseReach(__u)]').join(), ',both:bash,false,0', 'no enemy');
+        run('__u._nearestEnemy = { x: __u.x + 5, y: __u.y, dead: false }; frame++; evolutionTick();');
+        same(J('[followerAltLocked(__u), followerAltCloseReach(__u)]').join(), 'true,' + J('moveReach("bash")'), 'an enemy to fight: BASH\'s turn, walking in');
+        run('__u._nearestEnemy.dead = true; frame++; evolutionTick();'); same(J('followerAltLocked(__u)'), false, 'its enemy dead');
+        run('followerAltChoose(__u, null);');
+    });
+    check('ON A METER (SWEET SCENT, SUNDEW: its stings fill its stockpile): its everyday hits until the stockpile is full, the timer or not; full and SWEET SCENT ready, locked on it until it has used it (the heal empties it); then its stings again', () => {
+        run(`followers.length = 0; _evoFoesSeen = () => [{}]; spawnFollowerAtCrystal('blossom'); globalThis.__s = followers[followers.length - 1]; __s.evolved = 'sundew'; __s._moltAt = -1e9; energyFill(__s); globalThis.__ns = 0; globalThis.__keepS = MOVES.sweet_scent.fn;
+             MOVES.sweet_scent.fn = f => { __ns++; f._nectar = 0; f._sigAt = frame; return true; }; followerAltChoose(__s, 'both:sweet_scent'); __s._nectar = 75; frame = __s._altBackAt + 1; evolutionTick();`);
+        try {
+            same(J('[followerAltChoice(__s), __ns, followerAltLocked(__s)]').join(), 'both:sweet_scent,0,false', 'its stockpile not full, its timer over: its stings');
+            run('__s._nectar = 100; frame++; evolutionTick();'); same(J('[__s.role, __ns, followerAltLocked(__s)]').join(), 'brawler,1,true', 'full: SWEET SCENT');
+            run('frame++; evolutionTick();'); same(J('[__ns, followerAltLocked(__s), __s._nectar]').join(), '1,false,0', 'used: its stings again');
+            run('__s._nectar = 100; frame++; evolutionTick();'); same(J('[__ns, followerAltLocked(__s)]').join(), '1,false', 'full again, SWEET SCENT cooling down: its stings');
+            run('frame = __s._altReadyAt; evolutionTick();'); same(J('[__ns, followerAltLocked(__s)]').join(), '2,true', 'ready: SWEET SCENT');
+        } finally { run('MOVES.sweet_scent.fn = __keepS; followerAltChoose(__s, null);'); }
+    });
+    check('ON A METER (CAPACITOR DISCHARGE, the Static Orb): charging, standing still and locked, until it holds CAP_MAX; full, its everyday hits, free to move, while it holds them (the release still yours, its chip); released, charging again', () => {
+        run(`followers.length = 0; spawnFollowerAtCrystal('electric'); globalThis.__o = followers[followers.length - 1]; __o.evolved = 'staticorb'; __o._moltAt = -1e9; energyFill(__o); followerAltChoose(__o, 'both:capacitor_discharge'); frame++; evolutionTick();`);
+        same(J('[followerAltLocked(__o), capacitorRooted(__o), __o._cap || 0]').join(), 'true,true,0', 'charging: locked, standing still');
+        run('__o._cap = CAP_MAX - 1; __o._capT = moveWindupFrames("capacitor_discharge") - 1; frame++; evolutionTick(); frame++; evolutionTick();');
+        same(J('[__o._cap, followerAltLocked(__o), capacitorRooted(__o), !!altChipState(__o)]').join(), J('CAP_MAX') + ',false,false,true', 'full: its everyday hits, free to move, the chip there');
+        run('__o._cap = 0; frame++; evolutionTick();'); same(J('[followerAltLocked(__o), capacitorRooted(__o)]').join(), 'true,true', 'released: charging again');
+        run('followerAltChoose(__o, null);');
+    });
+    check('BOTH is saved with the follower and loaded (js/facilitysave.js; the respawn queue, js/game.js); a save from before it loads as before; its energy card gone, BOTH goes with the move (js/energy.js)', () => {
+        const r = J(`(function(){ followers.length = 0; spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.evolved = 'quillstone'; f._moltAt = -1e9; energyFill(f); followerAltChoose(f, 'both:quill_burst');
+            const rec = followerRecord(f), back = followerBuild(rec), plain = Object.assign({}, rec); delete plain.altBoth; const old = followerBuild(plain);
+            for (let i = 0; i < energySlotCount(f); i++) energyPut(f, i, null);
+            return { rec: [rec.alt, rec.altBoth], back: [back.alt, !!back.altBoth, followerAltChoice(back)], old: [old.alt, !!old.altBoth, followerAltChoice(old)], out: [f.alt, f.altBoth] }; })()`);
+        same(JSON.stringify(r.rec), JSON.stringify(['quill_burst', true]), 'saved'); same(JSON.stringify(r.back), JSON.stringify(['quill_burst', true, 'both:quill_burst']), 'loaded');
+        same(JSON.stringify(r.old), JSON.stringify(['quill_burst', false, 'quill_burst']), 'a save from before');
+        const g = rd('js/game.js'); ok(/altBoth: a\.altBoth \|\| undefined/.test(g) && /if \(entry\.altBoth && npc\.alt\) npc\.altBoth = true/.test(g), 'the respawn queue loses BOTH');
+        same(JSON.stringify(r.out), JSON.stringify([null, false]), 'its energy cards taken out: its move and BOTH');
+    });
+    check('the screens offer BOTH with each move: the Command Center\'s ATTACK ("both:" + its id, BOTH · its name), its INFO, its squad card; and say how it switches', () => {
+        const r = J(`(function(){ followers.length = 0; spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.evolved = 'staticorb'; f._moltAt = -1e9; energyFill(f);
+            const cc = ccMoveChoices([f]); ccApplyMove([f], 'both:static_rush'); const set = followerAltChoice(f), cur = ccMoveChoices([f]).cur;
+            const info = followerInfo(f).attacks.find(s => s.h === 'ATTACK'), alts = followerInfo(f).attacks.filter(s => /^ALTERNATE/.test(s.h)).map(s => s.h);
+            followerAltChoose(f, null);
+            return { cc: cc.list.map(m => m.id).join(), set, cur, info: info.choices.map(c => c.label + (c.on ? '*' : '')).join(), note: info.note, alts,
+                texts: ['static_rush', 'capacitor_discharge', 'sweet_scent'].map(moveBothText) }; })()`);
+        same(r.cc, 'normal,static_rush,capacitor_discharge,both:static_rush,both:capacitor_discharge', 'the Command Center\'s choices'); same(r.set + '|' + r.cur, 'both:static_rush|both:static_rush', 'set from it');
+        same(r.info, 'NORMAL ATTACK,SONIC ROLL,CAPACITOR DISCHARGE,BOTH · SONIC ROLL*,BOTH · CAPACITOR DISCHARGE', 'its INFO\'s choices'); ok(/BOTH, switching on its own/.test(r.note), 'its INFO says nothing of BOTH: ' + r.note);
+        ok(/^ALTERNATE · SONIC ROLL · BOTH, /.test(r.alts[0]), 'its INFO\'s SONIC ROLL: ' + r.alts[0]);
+        same(r.texts.join('|'), 'EVERYDAY HITS ' + J('BOTH_REST_SECONDS') + ' S, THEN SONIC ROLL|CHARGES TO FULL, THEN ITS EVERYDAY HITS|ITS HITS FILL IT, FULL IT USES SWEET SCENT', 'how each switches');
+        const sf = rd('js/squadfly.js'); ok(/followerAltChoose\(f, id\)/.test(sf) && /"both:" \+ id/.test(sf), 'its squad card does not offer BOTH');
+    });
+    run('_evoFoesSeen = __keepSeen;');
+
     console.log(failures ? `\n${failures} FAILED` : '\nall ok');
     process.exit(failures ? 1 : 0);
 })();

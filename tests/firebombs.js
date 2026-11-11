@@ -130,7 +130,7 @@ function measure() {
     });
     check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
-        const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false]]), 'choices (FIRE BOMBS taken off the fire brawler, 2026-11-07)');
+        const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false], ['BOTH · QUILL BURST', false]]), 'choices (FIRE BOMBS taken off the fire brawler, 2026-11-07; BOTH since build 2026-11-11s)');
         same(run('followerAltSet(__f, "bomb_lob")'), false, 'FIRE BOMBS taken by a Quillstone'); run('followerAltSet(__f, "quill_burst");'); same(J('followerInfo(__f).attacks.filter(s => /LOCKED ON/.test(s.h)).map(s => s.h).join()'), 'ALTERNATE · QUILL BURST · LOCKED ON', 'the alternate it is locked on');
         run('__f.evolved = "warden"; __f.alt = null;'); same(run('followerInfo(__f).attacks.some(s => s.h === "ATTACK")'), false, 'a form with no move has no chooser');   // (the retired Aegis Warden: since build 2026-11-07ss every form in play has a second attack, the Hammer Slug BASH)
     });
@@ -142,7 +142,7 @@ function measure() {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
             check('on a fire form\'s INFO tab the attacks are buttons, NORMAL ATTACK lit: tap HEXFIRE and it is locked on it (and the page says so)', () => {
-                same(r.info.chips, 'NORMAL ATTACK,HEXFIRE', 'chips (FIRE BOMBS taken out, 2026-11-07)'); same(r.info.on, 'NORMAL ATTACK', 'lit'); same(r.info2.move, 'hexfire', 'chosen'); same(r.info2.on, 'HEXFIRE', 'lit after');
+                same(r.info.chips, 'NORMAL ATTACK,HEXFIRE,BOTH · HEXFIRE', 'chips (FIRE BOMBS taken out, 2026-11-07; BOTH since build 2026-11-11s)'); same(r.info.on, 'NORMAL ATTACK', 'lit'); same(r.info2.move, 'hexfire', 'chosen'); same(r.info2.on, 'HEXFIRE', 'lit after');
             });
         }
     }

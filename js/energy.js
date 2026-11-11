@@ -78,7 +78,7 @@ function energyPut(f, slot, el) {
     s[slot] = el || null; f.energy = s;
     if (!f.evolved) energySetElement(f, s[0]);   // (unevolved: its element is its card's)
     else if (typeof partyBarRender === "function") partyBarRender(true);
-    if (f.evolved && f.alt && typeof evoMoveOf === "function" && !evoMoveOf(f)) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (its second attack locked again: back to its normal attack)
+    if (f.evolved && f.alt && typeof evoMoveOf === "function" && !evoMoveOf(f)) { f.alt = null; f.altBoth = false; f._altWind = 0; f._altLive = null; }   // (its second attack locked again: back to its normal attack)
     return true;
 }
 // EXILE (js/party.js partyExile): every card in its slots comes back to your stock (the owner, 2026-11-09: "They come back to you")

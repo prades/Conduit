@@ -778,7 +778,7 @@ function render() {
                 base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
                 level: a.level, xp: a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, move: a.move || undefined, alt: a.alt || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, move: a.move || undefined, alt: a.alt || undefined, altBoth: a.altBoth || undefined });
         }
         // A kill, once: XP to whoever killed it and those fighting near it (js/levels.js).
         // isEnemyUnit, NOT isHostileTarget: the latter refuses anything dead. What is being asked here is whose side the corpse was on.
@@ -1149,6 +1149,7 @@ function render() {
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
                 if (typeof entry.alt === "string") npc.alt = entry.alt;   // the alternate it is locked to (js/moves.js)
+                if (entry.altBoth && npc.alt) npc.altBoth = true;   // and its normal attack too, switching on their own (js/moves.js BOTH)
                 if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
                 if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply

@@ -45,7 +45,7 @@ function partyFlyClick(ev) {
     const f = _sfEls ? _sfEls.subject : null; if (!f) return;
     // A CARD SLOT's list: a card picked goes on (EMPTY takes the card off); the slot's own row opens or shuts its list (one open at a time)
     const o = t.closest(".sf-opt");
-    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "alt") { if (typeof followerAltSet === "function") followerAltSet(f, id); } else if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "alt") { if (typeof followerAltChoose === "function") followerAltChoose(f, id); } else if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
     // ITS ENERGY (_sfEnergyDraw): a token opens its slot's tray (a second tap shuts it); a token in the tray goes in that slot, TAKE OUT takes the card out (js/energy.js energyPut: the roster's rules)
     const et = t.closest(".sf-entok");
     if (et) { if (et.disabled) return; const slot = +et.getAttribute("data-slot"), id = et.getAttribute("data-card") || null; if (typeof energyPut === "function") energyPut(f, slot, id ? energyCardEl(id) : null); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
@@ -86,21 +86,23 @@ function _sfCardsDraw(E, f) {
     const box = E.cards; if (!box) return;
     const can = !!f && f.isFollower === true && !f.isClone && typeof equipSlots === "function" && typeof EQUIP !== "undefined";
     const ev = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => evoMoveAllowed(f, ev, id)) : [];   // (its alternates: js/moves.js; BASH before it evolves, build 2026-11-07ss)
-    const sig = can || altIds.length ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", altIds.join()].join("|") : "";
+    const sig = can || altIds.length ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", f.altBoth ? "both" : "", altIds.join()].join("|") : "";
     if (sig === E.cardSig) return;
     E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can || altIds.length ? "" : "none"; if (!can && !altIds.length) return;
     const all = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
-    // ITS ATTACK (the owner, 2026-11-07: "the alternate attacks must be visible from the index and the pop out menu on the HUD"): NORMAL ATTACK, or one alternate it is locked to (js/moves.js followerAltSet)
+    // ITS ATTACK (the owner, 2026-11-07: "the alternate attacks must be visible from the index and the pop out menu on the HUD"): NORMAL ATTACK, or one alternate it is locked to (js/moves.js followerAltSet),
+    // or BOTH with one (build 2026-11-11s: its normal attack and that move, switching on their own)
     if (altIds.length) {
-        const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt";
+        const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt", both = !!cur && !!f.altBoth;
         const b = mk("button", "sf-slot sp" + (open ? " open" : "")); b.type = "button"; b.setAttribute("data-slot", "alt");
-        b.appendChild(mk("span", "sf-sk", "ATTACK")); b.appendChild(mk("span", "sf-sv", cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : typeof altCools === "function" && altCools(f) && (f._altReadyAt || 0) > (typeof frame !== "undefined" ? frame : 0) ? " · COOLING DOWN" : " · LOCKED ON") : "NORMAL ATTACK")); b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
+        b.appendChild(mk("span", "sf-sk", "ATTACK")); b.appendChild(mk("span", "sf-sv", both ? "BOTH \u00b7 " + cur.name : cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : typeof altCools === "function" && altCools(f) && (f._altReadyAt || 0) > (typeof frame !== "undefined" ? frame : 0) ? " · COOLING DOWN" : " · LOCKED ON") : "NORMAL ATTACK")); b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
         box.appendChild(b);
         if (open) {
             const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };
             opt("NORMAL ATTACK", "ITS EVERYDAY HITS", !cur, null);
-            for (const id of altIds) opt(MOVES[id].name, typeof altCools === "function" && altCools(f) ? "LOCKED ON · STRIKES, THEN COOLS DOWN" : "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id, id);   // (short: the owner, 2026-11-07, "use shortened text"; a Brawler cools down after it since build 2026-11-10a)
+            for (const id of altIds) opt(MOVES[id].name, typeof altCools === "function" && altCools(f) ? "LOCKED ON · STRIKES, THEN COOLS DOWN" : "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id && !both, id);   // (short: the owner, 2026-11-07, "use shortened text"; a Brawler cools down after it since build 2026-11-10a)
+            for (const id of altIds) opt("BOTH \u00b7 " + MOVES[id].name, "SWITCHES ON ITS OWN · " + (typeof moveBothText === "function" ? moveBothText(id) : ""), both && cur.id === id, "both:" + id);   // (BOTH, js/moves.js moveBothText)
             box.appendChild(list);
         }
     }
