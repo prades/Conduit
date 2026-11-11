@@ -29,7 +29,7 @@ function facilitySaveCollect() {
         v: FS.version,
         cls: typeof playerClassKey !== "undefined" ? playerClassKey : null, perks: Array.from(classPerks), inv: playerInv, seen: typeof invSeen !== "undefined" ? Array.from(invSeen) : [], ammo: playerAmmo, shots: playerShotsFired,
         classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,   // the classes you have been, the weapon each last held, the Mutator's clone waiting (js/classes.js)
-        taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
+        taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp && !i.respawn).map(i => i.id),   // (a spot that fills again is not kept as taken: a reload finds it full)
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
         script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
             cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)

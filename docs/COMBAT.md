@@ -90,7 +90,7 @@ It **chases** its prey by the route round the walls; a slow on it still slows it
 | spider striker L4 | 23.9 s, 20 | not dead in 60 s, 1 | 19.7 s, 13 |
 | mantis tank L4 | 27.5 s, 23 | 27.6 s, 12 | 25.1 s, 17 |
 
-Every three hits is a knockback to the Crystal. *(Designed 2026-11-11, not built yet: the bars come back out of danger, a repair kit, and GUARD and STUN DIVE: `PLAYER-COMBAT.md`.)* Before this change every one of these fights cost **0** hits. Trading blows with anything bigger than an ant now costs knockbacks unless the player dodges, arcs from range (6 charges took an ant striker down at 0 hits), or lets the squad take the attention. **These numbers are a first pass and not balance.** The knobs:
+Every three hits is a knockback to the Crystal. *(Since build `2026-11-11e` the bars come back out of danger, and a repair kit gives one back; GUARD and STUN DIVE are designed, not built: `PLAYER-COMBAT.md`.)* Before this change every one of these fights cost **0** hits. Trading blows with anything bigger than an ant now costs knockbacks unless the player dodges, arcs from range (6 charges took an ant striker down at 0 hits), or lets the squad take the attention. **These numbers are a first pass and not balance.** The knobs:
 - `COMBAT.prey`: who a creature picks, and how readily.
 - `COMBAT.bite.windup`: the dodge window, 18 frames.
 - `COMBAT.bite.cooldown`.

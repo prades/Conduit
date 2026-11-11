@@ -418,6 +418,10 @@ const FACILITY_MAP = {
         { id: "pk_security_cache", room: "security_room", at: [880, 360], items: [["ammo_pack", 1]], note: "A drawer's worth of ammunition in the Security Room." },
         { id: "pk_lab_cells", room: "experiment_lab", at: [620, 580], items: [["power_cell", 2]], note: "Charged cells on the lab bench." },
         { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the server racks." },
+        // REPAIR KITS (docs/PLAYER-COMBAT.md, step 1, build 2026-11-11e): spots that fill again (`respawn`, frames) a while after the kit is taken; where the fights are. The places and the wait are the agent's, provisional.
+        { id: "pk_kit_arena_n", room: "arena", at: [520, 840], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena, by its door from the hallway: back three minutes after it is taken." },
+        { id: "pk_kit_arena_s", room: "arena", at: [900, 1140], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena's south-east corner: back three minutes after it is taken." },
+        { id: "pk_kit_sewers", room: "sewers", at: [460, 870], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit on the Sewers' north ledge, near the culvert: back three minutes after it is taken." },
         // FUEL CELLS: the laser rifle's fuel, in the server room (it was the computer lab). A case with `needs` is not in the facility until that relay is online (since build 2026-11-07qq: when the junction is
         // repaired, every relay comes on): then it arrives, in a column of light.
         { id: "pk_lobby_fuel_1", room: "front_lobby", at: [460, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the west server racks (once the room has power)." },

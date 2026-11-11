@@ -302,6 +302,8 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
     // The POTION pill beside those (js/potion.js): a tap throws the Sleeping Potion in hand
     if (!touchMoved && typeof potionChipTap === "function" && potionChipTap(upX, upY)) { isPressing=false; return; }
+    // The KIT pill beside those (js/playercombat.js): a tap uses a repair kit
+    if (!touchMoved && typeof kitChipTap === "function" && kitChipTap(upX, upY)) { isPressing=false; return; }
     // The ammunition pill (js/targeting.js draws it): a tap while armed stows the weapon again
     if (!touchMoved && playerAttackMode && _ATKCHIP.w > 0
         && upX >= _ATKCHIP.x && upX <= _ATKCHIP.x + _ATKCHIP.w

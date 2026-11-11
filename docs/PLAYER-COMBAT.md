@@ -1,9 +1,9 @@
 # The player's part in a fight
 
-- **Status:** Designed (2026-11-11); nothing built yet. Step 1 (the bars come back, the repair kit) is next, then step 2 (GUARD, STUN DIVE).
+- **Status:** Step 1 (the bars come back, the repair kit) is **implemented and verified by tests** in build `2026-11-11e` (not playtested). Step 2 (GUARD, STUN DIVE) is designed, not built.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11d`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11e`
 - **Related docs:** `COMBAT.md` (the player's three hits, the bite), `PLAYER-CLASSES.md`, `UNIVERSAL-AND-PLAYER-CARDS.md` (Player cards), `TECHNICIANS.md` (the Photonic Shield, which also stops shots)
 
 ## 1. Intent
@@ -25,9 +25,9 @@ Offered three directions (A the bars come back; B A plus a part for the player i
 ## 3. Must-have requirements
 
 **Step 1: the bars come back, and the repair kit**
-- [ ] Out of danger (no creature near you, no hit) for 10 s, a bar comes back every 8 s until all three are back; any hit, or a creature coming near, stops it and starts the 10 s again.
-- [ ] The repair kit: a pack item, used from the pack, from a pill by the dial and with a key; it gives one bar back; refused when your bars are full.
-- [ ] Creatures sometimes drop one when killed; some lie at spots in the facility and come back a while after they are taken.
+- [x] Out of danger (no creature near you, no hit) for 10 s, a bar comes back every 8 s until all three are back; any hit, or a creature coming near, stops it and starts the 10 s again.
+- [x] The repair kit: a pack item, used from the pack, from a pill by the dial and with a key; it gives one bar back; refused when your bars are full.
+- [x] Creatures sometimes drop one when killed; some lie at spots in the facility and come back a while after they are taken.
 
 **Step 2: GUARD and STUN DIVE**
 - [ ] GUARD by the dial, a stance on and off: while it is on, a creature's shot that would hit a follower near you hits you instead (one bar, then the usual grace); you move at half speed.
@@ -42,7 +42,9 @@ Offered three directions (A the bars come back; B A plus a part for the player i
 
 ## 5. Chosen by the agent, provisional (the owner's to change)
 
-These are written when each step is built, marked provisional: the repair kit's name and look, how often creatures drop one, where the spots are and how long they take to come back, the pill and the key; GUARD's reach round you; STUN DIVE's reach, how long the stun lasts, how long the chip rests, and whether the swoop protects you.
+**Step 1 (build `2026-11-11e`):** the name REPAIR KIT; its look on the floor (a small grey case, a carry handle, a green plus on its lid) and in the pack (the same, drawn); three at most in the pack; a creature drops one on **8%** of kills (never a test boss), lying there **a minute** as the scrap does; **three spots** (two in the arena: by its door from the hallway and in its south-east corner; one on the Sewers' north ledge by the culvert), each back **three minutes** after it is taken; the **KIT pill** at the end of the row by the dial while you carry one; the key **H**.
+
+**Step 2, still to choose:** GUARD's reach round you; STUN DIVE's reach, how long the stun lasts, how long the chip rests, and whether the swoop protects you.
 
 ## 6. Affected systems
 
@@ -60,13 +62,20 @@ Written per step, with its tests.
 
 ## 9. Implementation notes
 
-None yet.
+**Step 1, build `2026-11-11e`** (js/playercombat.js, `PLAYER_COMBAT`):
+- **The refill** (`playerCombatTick`, each frame of the facility from js/facilitytutorial.js): the wait starts again when `player.lastHitAt` changes or `facilityEnemyNear()` finds a creature (asked every quarter second); after `refill.after` (600 frames) a bar comes back, then one each `refill.every` (480); never past `PLAYER_HITS`. Not in `?attract`.
+- **The repair kit** (`ITEMS.repair_kit`, js/inventory.js; its icon `INV_ICONS.repair`; second in the pack's order): `playerKitUse` gives a bar back or refuses; `invUse` spends one only when it worked. The KIT pill (`drawKitChip`, `kitChipTap`) is drawn in the row by the dial (js/targeting.js) and its tap taken in js/input.js; the H key in js/playercombat.js.
+- **Drops** (`playerKitDrop`, from js/drops.js `onPredatorDeath`): a temporary pickup, as the scrap's (js/facilityspawn.js), gone once taken or after `drop.life`.
+- **Spots that fill again**: a map pickup may carry `respawn` (frames; js/facilitymap.js, carried by js/facility.js); js/facilitytutorial.js `facilityPickupTick` puts a taken one back that long after, in a column of light; js/facilitysave.js does not keep it as taken.
+- **The model** on the floor: `repair_kit` in design/props/models/pickups.js, baked into img/props/pickups.png (the other eleven pickups re-baked pixel for pixel the same). design/props/bake_props.js now uses the machine's Playwright and browser (the old pinned browser is not on this machine).
 
 ## 10. Verification record
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| Nothing built yet | Not run | |
+| `node tests/playercombat.js` (7 checks: the refill's timing and its resets, the kit's use and refusal, the pill and the key, drops, the three spots and their return, the model) | Pass | build `2026-11-11e` |
+| The nearest suites (facility, facilityplay, packs, serum, potion, targets, toolbox, hud, bottomui, mutator, crystalline, bible, bundle, images and others: 24) | Pass | build `2026-11-11e` |
+| The real page: a kit on the arena floor, the KIT pill by the dial, one bar left | Looked at (screenshot) | not playtested |
 
 ## 11. Open questions
 

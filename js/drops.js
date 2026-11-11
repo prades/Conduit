@@ -7,6 +7,7 @@
 function onPredatorDeath(predator) {
     if (predator && predator.noReward) return;   // a test boss and her brood (the Ant Nest's: js/bosses.js) pay nothing
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
+    if (typeof playerKitDrop === "function") playerKitDrop(predator);   // sometimes a repair kit (js/playercombat.js)
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
     if (typeof questAntKilled === "function") questAntKilled(predator);   // and it is counted (Side Quest's appearance needed about ten of them until build 2026-11-09tt: js/quests.js)
     if (typeof questTrioKilled === "function") questTrioKilled(predator);   // one of the purification's three toxic ants: the third, and the queen comes out (js/quests.js)
