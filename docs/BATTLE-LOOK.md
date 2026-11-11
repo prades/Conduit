@@ -95,6 +95,7 @@ What it is today:
 - `?attract` (the website's background): no battle view.
 - Dark rooms.
 - **The network panel and the Crystal's ring** (top right) are drawn with the world today. Under the zoom they slide off the edge and blur, so they must be drawn after the zoom (seen in the drafts).
+- **No floor is drawn under an object.** A faded object needs its floor drawn, or a dark hole shows (seen in the draft).
 - **Words near the edge of the fight end up under the HUD:** the zoom pushes them outward (in the drafts, DEFEATED under the STUN button).
 - A fight at the edge of the screen: the zoom centres on you, as the camera does, so a far creature may leave the picture. The drafts should show whether to centre between you and the fight instead.
 
@@ -116,7 +117,8 @@ Written per step once the drafts are approved.
 
 Nothing built yet. The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;
-- one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates.
+- one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates;
+- the fade: a floodlight standing in front of a fight, today and in the battle view. It is gone, a faint outline of its tile left, and the floor under it stamped from the next tile for the picture.
 
 ## 11. Open questions
 
