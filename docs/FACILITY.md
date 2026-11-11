@@ -245,6 +245,12 @@ ASKED (the owner, 2026-11-10): "I want there to be containers on the map that co
 - **Gone, then back:** a container that went off is taken off its tile (js/facilityplay.js `facilitySolidSet`: its floor is floor, it stops nothing, it is not drawn) and comes back on the same tile after 60 s, waiting while anyone stands there. Nothing of this is saved: a loaded game, or a new one, has every container in place.
 - The numbers (30 at the middle, 2 tiles, 3 every half second, 10 s, 60 s, 12 frames) are the agent's, provisional (`OPEN-QUESTIONS.md`). Tested: `tests/hazards.js`.
 
+## The catwalks and the observation deck swap sides (decided 2026-11-11; not built)
+
+The owner, 2026-11-11: "I also kind of want to move the catwalks where the observatory is, and the armory could stay where it's at, but this would make it a lot easier for the player to understand how to climb things"; asked what becomes of the deck, chose **"Swap them"**: the catwalks go to the arena's **west** side, where the Observation Deck is now, and the **Observation Deck** goes to the **east** side, where the catwalks are now. **The Armory stays where it is.** Why: the climbing (a REEF climb, a Kinetic Launcher throw) is easier to understand with the catwalks there.
+
+Not decided yet (a layout draft comes first): the deck's way in on the east side and the catwalks' on the west (today Teleport Room 1 leads onto the deck); the Armory's stairs, which come down from the deck today; and what moves with the catwalks: the POWER MODULE on them (Side Quest brings it down in the tutorial), the Kinetic Launcher's site, Side Quest's spot under them, the deck's glass.
+
 ## The Server Room, the Warehouse, the relay nodes and the catwalks' ledge (build 2026-11-07qq)
 
 Owner's request (2026-11-07), with answers and an annotated screenshot: docs/TUTORIAL.md, "The server room, the warehouse and the one repair". This section is the map's side; it supersedes the lobby and show-room dressing above (the computer lab, the reception desk, the big sign, the display cases and the show room's north and east glass).

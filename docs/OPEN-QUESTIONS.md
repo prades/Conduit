@@ -8,9 +8,9 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Open 2026-11-11, old iPads** (asked in build `2026-11-11b`'s handoff, not answered yet): should an iPad too old to show the game properly get an "update your iPad" screen, like the phone one? The game runs from iPadOS 13.4, shows its pictures from 14 (WebP, since build `2026-11-11c`) and every colour from 16.2. The iPad Air 2 and iPad mini 4 stop at iPadOS 15.
 
-**Open 2026-11-11, the domains** (the map's expansion; the questions are in `DOMAINS.md` §11): the electrical domain's look (drafts 3A to 3C) and shape, the names, how the nests descend without stairs (the owner's sentence was cut off), what the Nest's development holds, the volcanic layer's and the crystalline area's look.
+**Open 2026-11-11, the domains** (the map's expansion; the questions are in `DOMAINS.md` §11): the names, what the Nest's development holds and where its sloping tunnel down starts, the volcanic layer's and the crystalline area's look.
 
-**Open 2026-11-11, the catwalks moved** (the owner: "I also kind of want to move the catwalks where the observatory is, and the armory could stay where it's at, but this would make it a lot easier for the player to understand how to climb things"): the catwalks (today on the arena's east side, `blocked_off_for_now`, reached only by a Kinetic Launcher throw or a REEF climb) to go where the Observation Deck is (the arena's west side, above the Armory). The Armory stays. Not decided: what becomes of the deck (replaced by the catwalks, or swapped to the east), what becomes of the east side, and what moves with the catwalks (the POWER MODULE on them, which Side Quest brings down in the tutorial; the launcher site; Side Quest's spot under them). Nothing built.
+**Open 2026-11-11, the catwalks and the observation deck swap sides** (decided: "Swap them"; the Armory stays): the details wait for a layout draft: the ways in on each side, the Armory's stairs, what moves with the catwalks (the power module, the launcher site, Side Quest's spot). `FACILITY.md`, "The catwalks and the observation deck swap sides".
 
 ## 1. Answered in round 2 (built and tested)
 

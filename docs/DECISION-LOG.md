@@ -2840,3 +2840,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner: "instead of like a long staircase in the server room that's room length long or wide, we should make it to where there's a little door in the server room that goes to the electric domain"; of the door's three places in the draft, "1": **beside the junction**, in the Server Room's north wall. It supersedes the stairwell (above); the Server Room keeps its size. The way in still opens after the junction repair.
 - Also said: "I want the nests to descend without stairs, and that's a" (cut off; the rest is asked).
 - Proposed, waiting: the domain's look (drafts 3A to 3C), its shape, the names (`DOMAINS.md` §5, §11).
+
+## DECISION: The electrical domain's look; the nests' tunnels; the catwalks swap sides (2026-11-11, nothing built yet)
+- **The look**: of three drafts rendered in the game's camera (A cold blue, the server graveyard; B live yellow current; C a giant circuit board), the owner chose **A** (I had suggested B). `DOMAINS.md` §2.
+- **The nests**: asked how they "descend without stairs", the owner chose **sloping tunnels**: dirt ramps you walk straight down, no stairs, no fade between layers (not holes you drop through). `DOMAINS.md` §2.
+- **The catwalks**: asked what becomes of the observation deck when the catwalks move to its place, the owner chose **swap them**: the catwalks to the arena's west side, the deck to the east; the Armory stays (not: the catwalks replacing the deck; not: catwalks under the deck). The details wait for a layout draft. `FACILITY.md`.

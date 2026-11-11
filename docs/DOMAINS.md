@@ -22,7 +22,8 @@ Three new places:
 2. **The way down opens after the junction repair** (decided for the stairs; kept for the door): the tutorial's one repair, the MAIN POWER JUNCTION beside it (`junctionRepaired()`, js/tutorial.js).
 3. **Lava turns to stone by the ice Technician's bridge.** Its ICE BRIDGE works on lava too (the owner's connected rule, `TECHNICIANS.md`). Over lava the bridge sets as stone and stays, so a path can be built pool by pool. The volcanic layer therefore needs an ice technician, as the Nest's rubble needs a fire one.
 4. **Empty at first.** Each domain is built as a place first, with no creatures, as the Sewers were. Creatures, bosses and quests come next, designed with the owner.
-5. **The nests descend without stairs** (the owner: "I want the nests to descend without stairs, and that's a", the message cut off there: the rest is an open question).
+5. **The nests descend without stairs: sloping tunnels** (the owner: "I want the nests to descend without stairs"; asked how, chose "Sloping tunnels"): the layers are joined by dirt ramps you walk straight down, with no stairs and no fade between them.
+6. **The electrical domain's look is A, the cold blue server graveyard** (draft 3A, chosen from three): the Server Room's blue carried down; dark racks with blue and cyan lights, the fallen ones mostly dead; torn cables and orange sparks where they fell; the circuitry as bundles of thin blue light running through dark steel out of a few big chips.
 
 ## 3. Must-have requirements, by phase
 
@@ -47,8 +48,7 @@ Three new places:
 
 ## 5. Proposed, not approved
 
-- **The electrical domain's look** (drafts 3A to 3C, 2026-11-11, rendered in 3D with the game's camera): **A** cold blue, the server graveyard (the Server Room's blue carried down; thin blue light traces); **B** live current, electric yellow (the element's colour; arcs between the wrecks; bright traces with pulses; copper coils); **C** a giant circuit board (green board, gold traces, giant chips and capacitors).
-- **The electrical domain's shape** (drafts 2A and 2B, made for the stairwell): away from the camera or toward it; the deep server room about 24 × 18 tiles, wide steps down, the circuitry about 32 × 23 tiles (the arena's size). Sizes provisional.
+- **The electrical domain's shape: toward the camera** (draft 2B, and the arrangement of look draft 3A, which the owner chose): you come in at the north end through the door back up; walking south, racks standing, then toppled and strewn; wide steps down into the circuitry, a big open hall in front of you. The deep server room about 24 × 18 tiles, the circuitry about 32 × 23 (the arena's size). Sizes provisional. (The other looks, B live yellow current and C a giant circuit board, were not chosen.)
 - **The door before and after the repair:** its light red, then green, and ▼ ELECTRICAL DOMAIN over it.
 - **Names:** Electrical Domain, The Deep Server Room, The Circuitry (all provisional).
 
@@ -85,9 +85,8 @@ None yet.
 
 ## 11. Open questions
 
-1. The electrical domain's look: draft 3A, 3B or 3C (§5), or a mix.
-2. Its shape (drafts 2A, 2B) and the names (§5).
-3. The nests "descend without stairs, and that's a": the rest of the sentence. What "a lot more development in the nest" holds, and where its way down to the volcanic layer is. (The original sketch has a "further nests" arrow pointing down at the Nest's south-west.)
+1. The names (§5).
+2. What "a lot more development in the nest" holds, and where its sloping tunnel down to the volcanic layer starts. (The original sketch has a "further nests" arrow pointing down at the Nest's south-west.)
 4. The volcanic layer's and the crystalline area's look and size.
 5. Which relay powers the electrical domain, and how dark it is.
 6. Later: each domain's creatures, boss and quest.
@@ -96,3 +95,4 @@ None yet.
 
 - 2026-11-11: the owner's direction (§1); the four decisions (§2), chosen from options; layout drafts 1 (the Server Room's stairs), 2A and 2B (the electrical domain). Decision record: `DECISION-LOG.md`, "The domains".
 - 2026-11-11, later: the stairwell replaced by a little door beside the junction (§2, 1a); the nests to descend without stairs (§2, 5); look drafts 3A to 3C and the door's spots (draft 4). Decision record: `DECISION-LOG.md`, "The electrical domain's way in: a little door".
+- 2026-11-11, later: look A chosen (§2, 6); the nests' sloping tunnels (§2, 5). Decision record: `DECISION-LOG.md`, "The electrical domain's look; the nests' tunnels; the catwalks swap sides".
