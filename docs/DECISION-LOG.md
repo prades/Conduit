@@ -2895,3 +2895,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Decided by the agent, provisional: the quills leave 12 frames after the turn begins (they used to leave at the cast), bare about a second (about 57 frames), regrowth 20 frames, the dive about 13 px.
 - Not changed: the quills' number, fan, speed, damage and range; the move's cooldown length; the everyday hit's damage and rest. **Changed, as a consequence:** a burst's cycle is 12 frames (0.2 s) longer, because its cooldown starts when the quills are done and they now leave after the turn (the agent kept the cooldown's start where it was and said so; shortening the cooldown by 12 frames instead is open).
 - Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `EFFECTS.md`, `CHANGELOG.md`.
+
+## DECISION: The storm's fix: bigger and twistier, a puffy swirling cloud, a flashing glow (2026-11-11, build `2026-11-11o`, branch `claude/tornado-fix`)
+- The owner, of the Thunderhead's storm (design C, merged in `2026-11-11m`): "Need design fix for tornado." Asked what was off: the size or shape, the cloud on top, the colour or lightness. Asked which way: the funnel **"Bigger and twistier"**, the cloud **"Swirling cloud"**, the colour **"Lighter grey-blue"**; fix design C, not another design.
+- Then, of the first revised cloud (a flat spiral): **"a more puffy, chaotic cloud, but I like the formation"**: the spiral arms stay, each puff uneven. (The agent's first attempt filled in the gaps between the arms and lost the formation; it was thinned until the spiral read again. Whether it reads enough is for the owner to say.)
+- And: **"Instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite."** The bolt is gone; a soft yellow glow flashes over the storm.
+- Agent's (provisional): the sizes; the glow's strength (0.45) and radius; two pulses in the middle of every 4th loop; the puffs' sizes and number; baking only the one row and loop the game draws.
+- Not changed: what the move does (reach, radius, life, pull, bite); the 70% the owner asked for earlier.
+- Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.

@@ -169,7 +169,7 @@ const EVOLUTIONS = {
     // four glowing spikes circling its base and gas fins that ripple. The glow flickers, so its sheet carries its own light.
     thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "STATIC VORTEX", shot: "CHAIN LIGHTNING", sheet: "img/evo/thunderhead.png",
               cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33",
-              storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 201.4] } },   // (storm: its STATIC VORTEX's sheet, drawn at the enemy: staticVortexDraw, below)
+              storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 219.7], glow: [0, -125, 125] } },   // (storm: its STATIC VORTEX's sheet, drawn at the enemy: staticVortexDraw, below)
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     // LEGACY: the first flux mage. New evolutions use the Voidstar; a follower already evolved into this keeps it.
     serpent:{ id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
@@ -1416,21 +1416,39 @@ function skinkSwirlDraw(e, px, py, g) {
     g.restore();
 }
 
-// ── THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m) ─────────────────────────────────────────────────────────────
+// ── THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m; revised 2026-11-11o) ─────────────────────────────────────────────────
 // ASKED (the owner, 2026-11-11, of its second attack): "It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect"; then "Give me 6 different
-// designs of that hurricane or tornado" and, of the first flat drafts, "This needs three.js graphics"; of the six modelled ones (design/evolutions/forms41.js, Nos. 928 to 933): "C", the DARK STORM: a dark grey funnel under a
-// small storm cloud, lightning flickering from the cloud (No. 930, baked to img/evo/staticvortex.png). The disc and the dashed ring on the floor are gone: nothing is drawn flat on the ground.
+// designs of that hurricane or tornado" and, of the first flat drafts, "This needs three.js graphics"; of the six modelled ones (design/evolutions/forms41.js, Nos. 928 to 933): "C", the DARK STORM (No. 930, baked to
+// img/evo/staticvortex.png). The disc and the dashed ring on the floor are gone: nothing is drawn flat on the ground.
+// THEN (build 2026-11-11o; "Need design fix for tornado"; of the agent's questions: the funnel "bigger and twistier", the cloud "swirling", the colour "lighter grey-blue"; then "a more puffy, chaotic cloud, but I like the
+// formation"; then "instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite"): a long grey-blue funnel flaring to a wide top and
+// bending in an S as it turns, spiral bands winding up it, under a puffy, uneven cloud of curling arms round a dark eye; and its LIGHTNING is not a bolt: it is a soft yellow glow that flashes over the storm
+// (staticVortexFlash), drawn in code, like the glow under the Thunderhead.
 // It is drawn at the enemy the vortex stands on, over the units like the other effects (js/elements.js drawElementEffects, case "staticVortex"). How the move works is not touched (VORTEX_*, above): the look only.
-// The sheet's idle block (cols 0 to 7) is one loop of its turn with a lightning flash on two frames of it; its action block (cols 8 to 15) the same loop with none. Each sheet frame is shown VORTEX_FRAME game
-// frames (a loop 8 times that: a turn of the cloud), and only every VORTEX_FLASH_EVERY-th loop has its lightning. The funnel grows from its foot as it fades in, and fades out as it ends. PROVISIONAL numbers (the agent's).
-const VORTEX_FRAME = 6, VORTEX_FLASH_EVERY = 4, VORTEX_ALPHA = 0.7;   // (VORTEX_ALPHA: how solid the whole storm is drawn, a little see-through: the owner, 2026-11-11, "make it transparent though a little bit")
-function staticVortexCol(age) { const n = Math.floor(Math.max(0, age) / VORTEX_FRAME), loop = Math.floor(n / 8); return (loop % VORTEX_FLASH_EVERY === 0 ? 0 : 8) + n % 8; }
+// The sheet's idle block (cols 0 to 7, row 0) is one loop of its turn; each cell is shown VORTEX_FRAME game frames (a loop 8 times that). The funnel grows from its foot as it fades in, and fades out as it ends.
+// The flash comes in the middle of every VORTEX_FLASH_EVERY-th loop (two quick pulses). PROVISIONAL numbers (the agent's).
+const VORTEX_FRAME = 6, VORTEX_FLASH_EVERY = 4, VORTEX_ALPHA = 0.7, VORTEX_GLOW = 0.45;   // (VORTEX_ALPHA: how solid the whole storm is drawn, a little see-through: the owner, 2026-11-11, "make it transparent though a little bit"; VORTEX_GLOW: how strong the flash is at its brightest)
+function staticVortexCol(age) { return Math.floor(Math.max(0, age) / VORTEX_FRAME) % 8; }
+// how bright the flash is `age` frames in, 0 to 1: none except in the middle of every VORTEX_FLASH_EVERY-th loop, where two pulses come one after the other (the second the brighter), each dying away
+function staticVortexFlash(age) {
+    const loop = VORTEX_FRAME * 8, i = Math.floor(Math.max(0, age) / loop); if (i % VORTEX_FLASH_EVERY !== 0) return 0;
+    const t = age - i * loop;
+    if (t >= 24 && t < 31) return 0.8 * (1 - (t - 24) / 7);
+    if (t >= 31 && t < 40) return 1 - (t - 31) / 9;
+    return 0;
+}
 function staticVortexDraw(e, px, py, g) {
     const d = EVOLUTIONS.thunderhead && EVOLUTIONS.thunderhead.storm; if (!d) return;
     const img = _evoImg(d); if (!img) return;
-    const age = Math.max(0, e.maxLife - e.life), k = Math.min(1, (age + 1) / 12, e.life / 20), s = EVO_SCALE * (0.4 + 0.6 * k);
+    const age = Math.max(0, e.maxLife - e.life), k = Math.min(1, (age + 1) / 12, e.life / 20), s = EVO_SCALE * (0.4 + 0.6 * k), fy = py + TILE_H;   // (its foot is the floor point the old disc stood on: cy = py + TILE_H)
     g.save(); g.globalAlpha = Math.max(0, k) * VORTEX_ALPHA;
-    evoCellDraw(g, img, d.sheet, d.cell, staticVortexCol(age), 0, px - d.anchor[0] * s, py + TILE_H - d.anchor[1] * s, s);   // (its foot is the floor point the old disc stood on: cy = py + TILE_H)
+    evoCellDraw(g, img, d.sheet, d.cell, staticVortexCol(age), 0, px - d.anchor[0] * s, fy - d.anchor[1] * s, s);
     g.restore();
+    const fl = staticVortexFlash(age);
+    if (fl > 0 && d.glow) {   // the flash: a soft yellow gradient over the cloud and the top of the funnel (d.glow: its middle and its radius, in the sheet's pixels from the foot), like the glow under the Thunderhead
+        const gx = px + d.glow[0] * s, gy = fy + d.glow[1] * s, R = d.glow[2] * s, gr = g.createRadialGradient(gx, gy, 0, gx, gy, R);
+        gr.addColorStop(0, "#fff6b0"); gr.addColorStop(0.4, "#ffe033"); gr.addColorStop(1, "rgba(255,224,51,0)");
+        g.save(); g.globalCompositeOperation = "lighter"; g.globalAlpha = Math.max(0, k) * fl * VORTEX_GLOW; g.fillStyle = gr;
+        g.beginPath(); g.ellipse(gx, gy, R, R * 0.85, 0, 0, Math.PI * 2); g.fill(); g.restore();
+    }
 }
-

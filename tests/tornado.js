@@ -1,8 +1,10 @@
-// THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m; js/evolution.js staticVortexDraw, staticVortexCol, EVOLUTIONS.thunderhead.storm; design No. 930 of six, forms41.js; the owner, 2026-11-11: "a tornado sort of look,
+// THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m, revised 2026-11-11o; js/evolution.js staticVortexDraw, staticVortexCol, EVOLUTIONS.thunderhead.storm; design No. 930 of six, forms41.js; the owner, 2026-11-11: "a tornado sort of look,
 // and remove the highlighted floor effect", then "This needs three.js graphics", then of the six modelled designs: "C", the dark storm).
 //   how it works is as it was: the reach, the radius, the life, the pull, the bite (VORTEX_*), none changed by the look
 //   how it looks: the baked sheet at the enemy, a little see-through (VORTEX_ALPHA; the owner: "make it transparent though a little bit"); no disc and no ring on the floor (nothing is filled or stroked as an ellipse); it grows from its foot as it fades in and fades out as it ends
-//   its sheet: baked, cropped (js/evopack.js), named in the Thunderhead's definition; the idle loop with lightning, the calm loop without, and the lightning only every VORTEX_FLASH_EVERY-th loop
+//   its sheet: baked, cropped (js/evopack.js), named in the Thunderhead's definition; one loop of eight cells (row 0, cols 0 to 7)
+//   its lightning (the owner, 2026-11-11: "instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite"): not in the sheet:
+//   a soft yellow gradient flashing over the storm, two pulses in the middle of every VORTEX_FLASH_EVERY-th loop (staticVortexFlash), drawn in code
 // A test of the drawing's CHOICES (which cell, where, how big, how clear); whether it looks right is the owner's to judge in the game. Every number read here is the code's own, PROVISIONAL constant.
 const fs = require('fs');
 const vm = require('vm');
@@ -24,12 +26,13 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`gameState.running = true;
         // draw a vortex of this age with the sheet "loaded" (a stand-in picture) and record what it asks the canvas for
-        globalThis.__draw = (age, life) => { const keepImg = _evoImg, keepCell = evoCellDraw, rec = { cells: [], ellipses: 0, fills: 0, strokes: 0, alphas: [] };
+        globalThis.__draw = (age, life) => { const keepImg = _evoImg, keepCell = evoCellDraw, rec = { cells: [], ellipses: 0, fills: 0, strokes: 0, grads: [], ells: [], fillOps: [] };
             _evoImg = () => ({ complete: true, naturalWidth: 1 });
             evoCellDraw = (g, img, p, C, col, row, dx, dy, s) => { rec.cells.push({ path: p, C, col, row, dx, dy, s, a: g.globalAlpha }); };
-            const keep = { ellipse: ctx.ellipse, fill: ctx.fill, stroke: ctx.stroke };
-            ctx.ellipse = () => { rec.ellipses++; }; ctx.fill = () => { rec.fills++; }; ctx.stroke = () => { rec.strokes++; };
-            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - age, x: 5, y: 5 }, 400, 300, ctx); } finally { _evoImg = keepImg; evoCellDraw = keepCell; ctx.ellipse = keep.ellipse; ctx.fill = keep.fill; ctx.stroke = keep.stroke; }
+            const keep = { ellipse: ctx.ellipse, fill: ctx.fill, stroke: ctx.stroke, grad: ctx.createRadialGradient };
+            ctx.ellipse = (x, y, rx, ry) => { rec.ellipses++; rec.ells.push([x, y, rx, ry]); }; ctx.fill = () => { rec.fills++; rec.fillOps.push({ op: ctx.globalCompositeOperation, a: ctx.globalAlpha }); }; ctx.stroke = () => { rec.strokes++; };
+            ctx.createRadialGradient = (...a) => { rec.grads.push(a); return { addColorStop() {} }; };
+            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - age, x: 5, y: 5 }, 400, 300, ctx); } finally { _evoImg = keepImg; evoCellDraw = keepCell; ctx.ellipse = keep.ellipse; ctx.fill = keep.fill; ctx.stroke = keep.stroke; ctx.createRadialGradient = keep.grad; }
             return rec; };`);
 
     group('HOW IT WORKS IS AS IT WAS (the look changes only the drawing)');
@@ -49,17 +52,29 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     });
 
     group('WHICH FRAME');
-    check('the idle loop (cols 0 to 7) turns a frame every VORTEX_FRAME game frames, one loop in 8 of them; the lightning only every VORTEX_FLASH_EVERY-th loop, the others from the calm block (cols 8 to 15)', () => {
-        const F = J('[VORTEX_FRAME, VORTEX_FLASH_EVERY]'), col = a => J('staticVortexCol(' + a + ')'), loop = F[0] * 8;
-        same(col(0), 0, 'the first frame'); same(col(F[0]), 1, 'the next'); same(col(loop - 1), 7, 'the loop\'s last');
-        same(col(loop), 8, 'the second loop is the calm one'); same(col(loop + F[0] * 7), 15, 'its last frame'); same(col(loop * F[1]), 0, 'a flash again every ' + F[1] + 'th loop');
-        for (let n = 0; n < F[1] * 3; n++) { const c = col(n * loop); same(c === 0, n % F[1] === 0, 'loop ' + n + ' flashes'); }
+    check('one loop of eight cells (cols 0 to 7): a new one every VORTEX_FRAME game frames, over and over, never a cell outside the loop', () => {
+        const F = J('VORTEX_FRAME'), col = a => J('staticVortexCol(' + a + ')'), loop = F * 8;
+        same(col(0), 0, 'the first frame'); same(col(F - 1), 0, 'the first holds'); same(col(F), 1, 'the next'); same(col(loop - 1), 7, 'the loop\'s last'); same(col(loop), 0, 'the loop comes round');
+        for (let a = 0; a < 5 * loop; a += 5) { const c = col(a); ok(c >= 0 && c <= 7, 'a cell outside cols 0 to 7 at age ' + a + ': ' + c); }
     });
 
+    group('THE FLASH: a gradient in place of a lightning bolt');
+    check('it comes in the middle of every VORTEX_FLASH_EVERY-th loop only: two pulses, the second the brighter, each dying away, between 0 and 1', () => {
+        const F = J('[VORTEX_FRAME, VORTEX_FLASH_EVERY]'), loop = F[0] * 8, fl = a => J('staticVortexFlash(' + a + ')');
+        same(fl(0), 0, 'a flash as it begins'); same(fl(23), 0, 'a flash before its time'); ok(fl(24) > 0.7, 'the first pulse: ' + fl(24)); ok(fl(30) < fl(24), 'the first pulse does not die away'); same(fl(31), 1, 'the second pulse is the brightest'); ok(fl(39) < fl(31), 'the second pulse does not die away'); same(fl(40), 0, 'a flash after it is done');
+        for (let a = 0; a < loop * F[1] * 2 + loop; a++) { const v = fl(a); ok(v >= 0 && v <= 1, 'a flash outside 0 to 1 at ' + a + ': ' + v); const inLoop = Math.floor(a / loop); if (inLoop % F[1] !== 0) same(v, 0, 'a flash in loop ' + inLoop + ', which is not a flashing one'); }
+        ok(fl(loop * F[1] + 31) === 1, 'it does not come again in the next flashing loop');
+    });
     group('NO HIGHLIGHTED FLOOR; THE STORM ON THE ENEMY');
     check('it draws the one cell of the sheet (row 0) and nothing else: no ellipse, no fill, no stroke (no disc, no ring, nothing flat on the floor)', () => {
         const r = J('__draw(60, 0)'); same(r.cells.length, 1, 'cells drawn'); same(r.cells[0].path, 'img/evo/staticvortex.png', 'its sheet'); same(r.cells[0].row, 0, 'its row'); same(r.cells[0].C, 256, 'its cell size');
         same(r.ellipses + r.fills + r.strokes, 0, 'canvas shapes drawn (ellipse, fill, stroke)');
+    });
+    check('at a flash it draws ONE soft yellow gradient over the cloud and the top of the funnel ("lighter", the sheet\'s glow position and size at the storm\'s scale), a little less strong than the flash itself; at any other age none', () => {
+        const d = J('EVOLUTIONS.thunderhead.storm'), T = J('TILE_H'), G = J('VORTEX_GLOW'), flashAge = 31, r = J('__draw(' + flashAge + ', 0)'), q = J('__draw(60, 0)');
+        same(r.cells.length, 1, 'cells at a flash'); same(r.grads.length, 1, 'gradients at a flash'); same(q.grads.length, 0, 'gradients with no flash'); same(q.ells.length, 0, 'ellipses with no flash');
+        const s = r.cells[0].s, g = r.grads[0]; ok(Math.abs(g[0] - (400 + d.glow[0] * s)) < 1e-6 && Math.abs(g[1] - (300 + T + d.glow[1] * s)) < 1e-6, 'the glow\'s middle: ' + g[0] + ', ' + g[1]); same(g[2], 0, 'it starts at a point'); ok(Math.abs(g[5] - d.glow[2] * s) < 1e-6, 'the glow\'s radius: ' + g[5]);
+        ok(g[1] < 300 + T - 20, 'the glow is not on the floor (it is up on the cloud): ' + g[1]); const op = r.fillOps[r.fillOps.length - 1]; same(op.op, 'lighter', 'it is added light'); ok(op.a > 0 && op.a <= G + 1e-9, 'its strength: ' + op.a + ' of at most ' + G);
     });
     check('its foot is at the floor point (the enemy\'s px, py + TILE_H) whatever the size: the anchor lands there', () => {
         const T = J('TILE_H'), d = J('EVOLUTIONS.thunderhead.storm');

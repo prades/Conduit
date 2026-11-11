@@ -44,7 +44,7 @@ const JOBS = [
   { id: 'tornadoF', form: 933, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
   // THE STATIC VORTEX (the owner chose design C of the six, 2026-11-11: "C"): the dark storm funnel, form 930, the game's sheet for the Thunderhead's second attack (js/evolution.js staticVortexDraw): bake it alone:
   //   node design/evolutions/bake.js <three> img/evo staticvortex 256 3.0222   then node design/evolutions/crop_sheets.js
-  { id: 'staticvortex', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.5 },
+  { id: 'staticvortex', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.5, single: true },
   // Nos. 880-882 (forms34.js), the user's pencil sketch (2026-11-01): the HOVER SHELL made sleek (one low hull, two tall prongs; its action fires the launcher) and the JELLY RAM
   // redone (a faceted glass head with a bubble lit blue white inside, a swirly collar orbiting its neck, seven fat tentacles, one curled; it swims and rams). The Jelly Ram was
   // approved ("The brawler looks good") and replaces the game's sheet of its name; the form it replaces bakes as jellyram_867, to compare.
@@ -292,6 +292,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
       for (let f = 0; f < NCOL; f++) {
+        if (job.single && (k > 0 || f > 7)) continue;   // (job.single: a round form that is drawn from one row and one block: only those cells are baked, the rest of the grid left empty, so the sheet is small: the tornado)
         const idle = f < 8, i = f % 8, blk = f >= 16 && job.blocks ? job.blocks[Math.floor(f / 8) - 2][i] : null, cons = f >= 16 && job.consume ? job.consume[i] : null;
         const t = blk ? (blk.t != null ? blk.t : i * P / 8) : cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
         const act = blk ? (blk.act != null ? blk.act : job.idleAct) : cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began

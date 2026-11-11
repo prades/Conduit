@@ -62,9 +62,9 @@ fx(929, "STATIC VORTEX tornado, design B: a faint funnel with three jagged bolts
     axis.core.geometry.dispose(); axis.core.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(ap), 20, 0.025, 4, false); axis.halo.geometry.dispose(); axis.halo.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(ap), 20, 0.07, 4, false); } };
 });
 // 930 · THE DARK STORM, REVISED (the owner chose C of the six, then: "Need design fix for tornado": the funnel "bigger and twistier", the cloud "swirling", the colour "lighter grey-blue"): a long narrow stem flaring wide at the
-// top and bending in an S as it turns, spiral bands winding up it, a swirling cloud of curling arms round a dark eye on top (the hurricane's, No. 931), lightning flickering from the cloud. Bigger than the first C (4.2 tall, 1.45 across
-// at the top, was 3.5 and 1.2). The idle block (act 0) is its loop with the lightning on frames 1 and 2; the action block (act > 0) the same loop with none (js/evolution.js staticVortexCol).
-fx(930, "STATIC VORTEX tornado, design C (revised): a bigger, twistier grey-blue funnel with spiral bands under a swirling cloud, lightning flickering from it.", () => {
+// top and bending in an S as it turns, spiral bands winding up it, a swirling cloud of puffy, uneven curling arms round a dark eye on top ("a more puffy, chaotic cloud, but I like the formation"), a flashing glow in place of lightning (drawn in code). Bigger than the first C (4.2 tall, 1.45
+// across at the top, was 3.5 and 1.2). The sheet's idle block is its loop (js/evolution.js staticVortexCol).
+fx(930, "STATIC VORTEX tornado, design C (revised): a bigger, twistier grey-blue funnel with spiral bands under a puffy, swirling cloud; a flashing glow, drawn in code, for its lightning.", () => {
   const g = G(), root = G(); g.add(root); const H = 4.2, rTop = 1.45, rFoot = 0.13, N = 56;
   const rad = s => rFoot + (rTop - rFoot) * Math.pow(s, 2.2);   // a long narrow stem, flaring wide at the top
   const bx = (s, u) => 0.24 * s * Math.sin(u * TAU + s * 4.2), bz = (s, u) => 0.17 * s * Math.sin(u * TAU + s * 3.1 + 1.3);   // the axis bends in an S that turns with the loop
@@ -72,24 +72,28 @@ fx(930, "STATIC VORTEX tornado, design C (revised): a bigger, twistier grey-blue
   const base = funnel.geometry.attributes.position.array.slice();
   // the spiral bands: four, alternately pale and dark, wound 2.4 times up the funnel
   const bandMat = [_twLight(0xe3ecf8), _twLight(0x4a5b7a), _twLight(0xe3ecf8), _twLight(0x4a5b7a)], bands = bandMat.map(m => { const t = new T.Mesh(new T.BufferGeometry(), m); root.add(t); return t; });
-  // the cloud: a dark underside, four curling arms of flat puffs round a dark eye, the funnel running into it
+  // the cloud: a dark underside, four curling arms of PUFFY, uneven puffs round a dark eye (the owner: "a more puffy, chaotic cloud, but I like the formation": the spiral arms stay; each puff has its own size, place, height and tone),
+  // loose billows over it that do not turn, the funnel running into it. The four arms are alike, so the loop closes (a quarter turn); the chaos is in each arm, and in the billows, which only bob.
   const cloud = G(); cloud.position.y = H; root.add(cloud);
-  const under = new T.Mesh(new T.CylinderGeometry(1.95, 1.55, 0.12, 40), _twGlass(0x3a465e, 0.85, 1)); under.position.y = -0.05; cloud.add(under);
-  const puffG = new T.SphereGeometry(1, 10, 8), pale = _twStd(0x6f80a0, 1), mid = _twStd(0x566688, 1), dim = _twStd(0x445370, 1);   // (the scene's lights brighten the cloud's top: these read as a soft grey-blue, not white)
-  for (let a = 0; a < 4; a++) for (let i = 0; i < 18; i++) { const q = i / 17, an = a * PI / 2 + q * 3.5, r = 1.95 * (0.13 + 0.87 * q), sz = 0.15 + 0.3 * Math.sin(PI * Math.min(1, q * 1.1));
-    for (let layer = 0; layer < 2; layer++) { const m = new T.Mesh(puffG, layer ? pale : (q > 0.55 ? dim : mid)); m.position.set(Math.cos(an) * r, 0.04 + layer * 0.1 + 0.04 * Math.sin(q * PI), Math.sin(an) * r); m.scale.set(sz * 1.5, sz * (layer ? 0.42 : 0.55), sz * (layer ? 0.8 : 1)); m.rotation.y = -an - 0.5; cloud.add(m); } }
+  const under = new T.Mesh(new T.CylinderGeometry(2.05, 1.6, 0.14, 40), _twGlass(0x273248, 0.9, 1)); under.position.y = -0.06; cloud.add(under);
+  const puffG = new T.SphereGeometry(1, 14, 10), tones = [_twStd(0x7d8fb0, 1), _twStd(0x6f80a0, 1), _twStd(0x566688, 1), _twStd(0x445370, 1)];
+  const spin = G(); cloud.add(spin); const R = (i, k) => _twHash(i * 1.7 + 3, k * 3.1 + 5, 9);
+  for (let i = 0; i < 15; i++) { const q = i / 14;
+    for (let layer = 0; layer < 2; layer++) { if (layer && R(i, 21) < 0.4) continue; const k = i * 3 + layer, an0 = q * 3.5 + (R(k, 1) - 0.5) * 0.26, r = 2.1 * (0.17 + 0.83 * q) * (1 + (R(k, 2) - 0.5) * 0.2),
+        sz = (0.13 + 0.24 * Math.sin(PI * Math.min(1, q * 1.08))) * (0.8 + 0.5 * R(k, 3)) * (layer ? 0.8 : 1), y = 0.03 + layer * 0.12 + R(k, 4) * 0.08 + 0.04 * Math.sin(q * PI), tone = tones[Math.floor(R(k, 5) * (layer ? 3 : 4))];
+      for (let a = 0; a < 4; a++) { const an = an0 + a * PI / 2, m = new T.Mesh(puffG, tone); m.position.set(Math.cos(an) * r, y, Math.sin(an) * r); m.scale.set(sz * (1.05 + 0.4 * R(k, 6)), sz * (0.7 + 0.32 * R(k, 7)), sz * (0.9 + 0.3 * R(k, 8))); m.rotation.y = -an + R(k, 9) * 2; spin.add(m); } } }
+  const billows = []; for (let i = 0; i < 7; i++) { const an = R(i, 11) * TAU, r = 1.4 + 0.6 * R(i, 12), sz = 0.16 + 0.16 * R(i, 13), m = new T.Mesh(puffG, tones[i % 3]);
+    const sc = new T.Vector3(sz * (1.1 + 0.3 * R(i, 14)), sz * (0.8 + 0.3 * R(i, 15)), sz); m.position.set(Math.cos(an) * r, 0.16 + 0.12 * R(i, 16), Math.sin(an) * r); m.scale.copy(sc); cloud.add(m); billows.push({ m, sc, ph: R(i, 17) * TAU }); }
   const eye = new T.Mesh(new T.CylinderGeometry(0.3, 0.3, 0.2, 18), _twStd(0x1d2535, 1)); eye.position.y = 0.06; cloud.add(eye);
-  const bolt = new T.Mesh(new T.BufferGeometry(), _twLight(0xfff6b0)), halo = new T.Mesh(new T.BufferGeometry(), _twLight(0xffd21a, 0.4)); root.add(halo); root.add(bolt);
   const tube = (pts, r) => new T.TubeGeometry(new T.CatmullRomCurve3(pts), pts.length * 3, r, 5, false);
-  // (the idle block, act 0, is the loop with its lightning on frames 1 and 2; the action block, act > 0, is the same loop with none, frame i at act (i + 0.5) / 8: the game flashes only every few loops)
-  return { g, core: 1.2, update(t, act) { const calm = act > 0, u = calm ? Math.floor(act * 8) / 8 : _twU(t), fr = Math.round(u * 8);
+  // (one loop of its turn, 8 frames: the lightning is not in the sheet: the game flashes a soft yellow glow over it, like the glow under the Thunderhead, js/evolution.js staticVortexFlash; the owner: "instead of a noodle lightning bolt, just make it a flashing gradient")
+  return { g, core: 1.2, update(t) { const u = _twU(t);
     const pos = funnel.geometry.attributes.position, arr = pos.array; for (let i = 0; i < arr.length; i += 3) { const s = Math.min(1, Math.max(0, base[i + 1] / H)); arr[i] = base[i] + bx(s, u); arr[i + 2] = base[i + 2] + bz(s, u); } pos.needsUpdate = true;
     bands.forEach((m, bi) => { const pts = []; for (let i = 0; i <= N; i++) { const s = i / N, a = bi * PI / 2 + u * PI + s * TAU * 2.4, r = rad(s) * 1.02; pts.push(new T.Vector3(Math.cos(a) * r + bx(s, u), H * s, Math.sin(a) * r + bz(s, u))); }
       m.geometry.dispose(); m.geometry = tube(pts, 0.04 + 0.03 * (bi % 2)); });
-    cloud.position.x = bx(1, u); cloud.position.z = bz(1, u); cloud.rotation.y = -u * TAU / 4;
-    const on = !calm && (fr === 1 || fr === 2); bolt.visible = halo.visible = on;
-    if (on) { const pts = []; let x = 0.9 + bx(1, u), y = H - 0.05, z = 0.3 + bz(1, u); for (let i = 0; i < 8; i++) { pts.push(new T.Vector3(x, y, z)); x += (_twHash(i, fr, 1) - 0.5) * 0.5 - 0.1; y -= 0.46; z += (_twHash(i, fr, 2) - 0.5) * 0.4; }
-      bolt.geometry.dispose(); bolt.geometry = tube(pts, 0.045); halo.geometry.dispose(); halo.geometry = tube(pts, 0.12); } } };
+    cloud.position.x = bx(1, u); cloud.position.z = bz(1, u); spin.rotation.y = -u * TAU / 4;
+    billows.forEach(B => { const k = 1 + 0.1 * Math.sin(u * TAU + B.ph); B.m.scale.set(B.sc.x * k, B.sc.y * (2 - k), B.sc.z * k); B.m.position.y += 0; });   // (the billows bob and swell, a whole cycle a loop: they do not turn)
+  } };
 });
 // 931 · THE HURRICANE
 fx(931, "STATIC VORTEX tornado, design D: a spiral of cloud arms turning overhead round a dark eye, a thin funnel dropping from it.", () => {
