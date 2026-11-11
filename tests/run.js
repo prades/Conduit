@@ -23,6 +23,7 @@ const SUITES = [
     ['the battle look: the battle view when a creature engages (1.25x, the edges blurred on HIGH, darkened on LOW), taps through the zoom, the floor first and written on (lit tiles, a creature\'s bar with its level and element, WEAK! and STUNNED), no names, RESIST off like nothing, objects in front of a fighter as ghosts; the faces; the real page', 'battlelook.js'],
     ['performance + culling',    'perf.js'],
     ['the Electro Skink\'s swirl: its everyday hit a vortex at the enemy and one hit as it closes, no chain, its body hidden and back, every other electric follower keeps its chain, its sheet baked and cropped', 'skinkswirl.js'],
+    ['the Thunderhead\'s STATIC VORTEX as a dark storm (design C of six, baked from three.js): the mechanics as they were, its sheet baked and cropped, which frame, nothing flat on the floor, grown and faded, gone with its life', 'tornado.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
     ['levels and stats',         'levels.js'],
