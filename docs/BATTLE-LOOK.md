@@ -47,8 +47,13 @@ What it is today:
     - **In a fight, each fighter's tile is lit**, with a bigger health bar on the floor in front of it, in place of the small bars over the units. Your own bars stay where they are, at the top.
     - **No names in a fight** (the owner: "We're getting somewhere. Now I want to make it to where the character names are not visible. It converts down to a element tag, if there is one, and a level that appears next to the health bar."). Each fighter's name plate and its status chip ("Lv 7 FIRE TECHNICIAN", ATTACKING) are not drawn. Next to its floor bar: its element's tag, the energy cards' symbol in the element's colour, if it has an element; and its level (LV7).
     - An experiment, drafted (§10).
-11. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay.
-12. **Earlier, superseded: the element's word on a background.**
+11. **A hit's number flies to the bar and knocks it down** (the owner, on a sketch over the draft: "cool little animation here. Whenever you hit a character or an enemy, the number pops out of them and then smashes the ground where the HP bar is to knock it down").
+    - The number pops up and out of whoever was hit, then arcs down and lands on that fighter's floor bar.
+    - The bar keeps its length until the number lands; then it drops.
+    - The agent's, provisional: the piece lost flashes white, breaks off and falls away; the number lands with a squash and a small ring on the floor, and the bar shakes; about a third of a second from the hit to the landing (pop 7 frames, falling to frame 20).
+    - Drafted (§10).
+12. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay.
+13. **Earlier, superseded: the element's word on a background.**
     - The owner first asked: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient". Drafted as A (the number over its element's symbol) and B (the number on a plasma badge).
     - The owner's answer to those: "It should say resist / weak. Just have a rectangular texture behind it that has the element of the opposition attack." So the word stays, as WEAK or RESIST without the element's name, and the element of the attack that hit is the texture of a rectangle behind it. That texture is the energy cards' moving plasma in the element's colour.
     - A and B are **superseded**. So is the rectangle that followed (drafted as the energy cards' plasma in a rectangle); the owner: "No, not necessarily a rectangle, like a irregular ball of plasma or texture that represents each element."
@@ -146,7 +151,8 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. Then on each element's own ball, the seven of them animated and in the fight: fire's licking flames and embers, electric's jagged crackle and arcs, ice's faceted crystal and glints, toxic's wobbling goo, bubbles and a drip, core's breathing orb with a turning hexagon and a ring going out, flux's swirl, BLOOM's five petals and pollen. Then, as the owner corrected it, a soft irregular blur of the element's colours (drawn small and scaled up: the scaling is the blur, no canvas filter), the seven animated and in the fight.
 - the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip.
 - no names in the fight: the plates gone; by each floor bar its level and, if it has one, its element's tag. Drawn two ways, flat on the floor like the bar, and standing upright at the bar's end.
-- the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip; "Ugly"). Then three side by side (A along the tile, B halfway, C standing); A kept. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip; "Ugly"). Then three side by side (A along the tile, B halfway, C standing); A kept.
+- a hit's number flying to the bar: out of whoever was hit, up and over, down onto its floor bar with a squash and a ring; the bar dropping only then, the lost piece breaking off (a still and a clip). The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
