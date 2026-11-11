@@ -4,13 +4,65 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
-### Build `2026-11-11o` · branch `claude/tornado-fix` · the Thunderhead's storm: bigger, twistier, a puffy swirling cloud, a flashing glow for its lightning
+### Build `2026-11-11q` · branch `claude/tornado-fix` · the Thunderhead's storm: bigger, twistier, a puffy swirling cloud, a flashing glow for its lightning
 - **The funnel** (the owner: "Need design fix for tornado"; of the agent's questions: "Bigger and twistier"): 4.2 units tall and 1.45 across at the top (it was 3.5 and 1.2), a long narrow stem flaring to a wide top, bending in an S as it turns, four spiral bands (two pale, two dark) winding up it.
 - **The cloud** ("Swirling cloud", then "a more puffy, chaotic cloud, but I like the formation"): four curling arms of puffy, uneven puffs (each its own size, place, height and tone) round a dark eye, with a few loose billows on the rim that bob; the arms are alike, so the loop closes. **The colour** ("Lighter grey-blue"): a soft grey-blue.
 - **The lightning** ("instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite"): **no bolt.** A soft yellow gradient flashes, two pulses (the second the brighter) in the middle of every 4th turn of the cloud, drawn in code (`staticVortexFlash`, `VORTEX_GLOW`); it is not in the sheet. **It lies on the floor under the storm** (the owner: "The gradient needs to just be on the floor"; the first version drew it over the cloud): a soft yellow glow like the one under the Thunderhead, squashed to the floor's slant, drawn first so the storm stands in it. The old disc and ring stay gone: this glow is all that is flat on the floor, and only while it flashes.
 - **The enemies are gathered in front of the storm** (the owner: "make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden"; of the agent's questions: "In front of the storm", "About 1 tile"): the pull used to gather them at the storm's exact middle, where the tornado stands and hides them; it now gathers them `VORTEX_HOLD` (1) tile **in front of** the middle, on the camera's side (+x and +y together is straight down the screen). **A game rule changed, a little:** where the pull ends. Who is in the storm (2.5 tiles from the middle), the reach, the pull's strength, the shocks and the 4 s are as they were. The unit info card says so.
 - **The sheet:** one row and one loop of eight cells are baked (`job.single` in the baker): 343 KB, not 5.4 MB (the puffy cloud made a full grid heavy). The Thunderhead's definition gains the new anchor and where the glow sits.
 - `js/evolution.js` (`staticVortexCol`, `staticVortexFlash`, `staticVortexDraw`, `staticVortexGather`, `staticVortexTick`, the definition), `js/unitinfo.js`, `design/evolutions/forms41.js` (No. 930), `bake.js`. Tests: `tests/tornado.js` (12 checks), `tests/followercombat.js` (the pull's gathering point). Docs: `EFFECTS.md` §1. The sizes, the 70%, the glow's strength and radius, the timing and the cloud's puffiness are the agent's, provisional. Seen in the real page in frozen frames; **not playtested**.
+
+### Build `2026-11-11p` · branch `claude/start-game-project-HSh7Z` · main's four merges and this branch's five builds together
+- While this branch made builds 11k to 11o, main took four pull requests, numbered 11k to 11n on their own branches (entries below):
+  - the Electro Skink's swirl (`claude/skink-swirl-attack`);
+  - its green tile (`claude/skink-swirl-tile`);
+  - the Thunderhead's STATIC VORTEX (`claude/tornado-designs`);
+  - the Quillstone's dive and QUILL BURST (`claude/quillstone-attacks`).
+- Those letters were used on both lines, so the two merged (main into this branch) are build 11p, a number new to both.
+- Nothing in either changed in the merge. The only conflicts were the build's stamps, the generated page and script bundle (made again), and this log (both kept, this branch's first).
+
+### Build `2026-11-11o` · branch `claude/start-game-project-HSh7Z` · the enemy card's full art, and its orders as cards
+- **The creature fills the enemy card.** The owner circled the full art from ten variations on the trading card ("Very cool"). The card takes the orders' whole height, and the creature is drawn large and sharp on a clear ground (`js/targeting.js` `targetBigPortraitURL`, made once per kind). Its numbers sit on a dark panel at the right.
+- **ALL, RUN and ATTACK are cards.** The owner: "We need to move the buttons and jazz them up". Of seventeen concepts they chose the cards tucked behind ("Right direction"); of six ways in that direction, "Build 1 with 4's ATTACK drawn out".
+  - ALL and RUN are tucked behind the creature's card, fanned a little, their ends showing at its side, each with its emblem over its word.
+  - ATTACK is drawn out in front: a whole card, the claws for its picture, its count on a badge. It reads ATTACK · 3, then ATTACKING · 2/3; with no one to send it goes dark (NO ONE).
+  - RUNNING draws RUN's card out, and it pulses.
+- **The motion:** the tucked cards breathe, ATTACK glows with a light running across it, and the emblems move. All of it is still for a player who asks for reduced motion.
+- What the buttons do and the words on them are unchanged; a narrow window keeps its card. Tests: `tests/enemycard.js` (the full art, the cards under and over the creature's card, the badge). Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
+### Build `2026-11-11n` · branch `claude/start-game-project-HSh7Z` · the enemy card as a trading card, and the orders' emblems
+- **The enemy card at the left is redrawn as a trading card.** The owner asked for "like 10 different designs" and circled design 5 of the ten drafts.
+  - The card is a slab tilted in 3-D, like the equip cards, wearing its creature's element texture under a dark veil (fire's flames, electric's bolts and so on; a creature with no element has none).
+  - The creature's picture is at its left, bigger, with its level and element on a plate at its foot. The name, HP with its numbers, the bar, the bite and the race's chips are at its right.
+  - The chips lose their WEAK and RESISTS words, as in the draft: green is weak, grey resists. The narrow-window card keeps them.
+  - ALL, RUN and ATTACK stay flat under the card, so a tap is never lost to the tilt.
+- **ALL, RUN and ATTACK each get an emblem** before the word. The owner: "set C for the all and the run, but set A for the attack". ALL is three slanted cards stacked (the squad's three), RUN two chevrons pointing back, ATTACK three claw slashes.
+  - They are drawn like the species emblems: one colour, 32 units square, in the word's colour (`js/cardart.js` `CARD_ART_ORDERS`, `cardArtOrderClass`).
+  - RUNNING and ATTACKING · n/m stand smaller under their emblem, so every word fits its button.
+- The buttons, their words and what they do are unchanged. Tests: `tests/enemycard.js` (the look, the emblems, every word inside its button in each state) and `tests/speciesart.js` (the three emblems, the card's text column). Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
+### Build `2026-11-11m` · branch `claude/start-game-project-HSh7Z` · the enemy card over the squad's orders
+- **The enemy card moves to the left** (the owner: "move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together").
+  - While a creature is on it, the card stands where the squad's orders stand, under the three cards, and covers them. It used to stand at the bottom right.
+  - Along its foot are **ALL**, **RUN** and **ATTACK**. ALL is the orders' ALL, lit while the orders go to everyone. RUN is the RETREAT order ("basically like the retreat button"), RUNNING while they fall back. ATTACK sends them at the creature (ATTACK · n, then ATTACKING · n/m). The card itself is no longer a button.
+  - With no creature near, the orders are back as they were: ALL, RETREAT, HOLD, COME.
+- The round dial with GUARD and STUN keeps the bottom right, where it stands with no card. A member's card that is open stands above the enemy card.
+- On a narrow window (not the tablet layout) the card is as it was. Tests: `tests/enemycard.js`, `bottomui.js`, `corners.js`, `squadfly.js` and `speciesart.js` follow the card to the left. Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
+### Build `2026-11-11l` · branch `claude/start-game-project-HSh7Z` · big objects and walls flat in a fight
+- **In a fight the big objects and the walls go flat** (the owner: "hide things like the truck and the oil tanks ... the poison purple tanks, and the walls ... just make them like solid ground with a little bit of transparentness of the object still visible").
+  - Every object of 4 tiles or more fades to a faint ghost whether it hides anyone or not, with the floor under it and its outline round it: the semi truck with its tanks, the two liquid reserves, the server racks and the like.
+  - Every wall is faint: plain walls, the cave's rock, glass, railings, door frames and what hangs on them.
+  - Small objects (crates, barrels, barriers, floodlights) still fade only when they hide a fighter.
+  - Everything still stops shots and blocks the way. Out of a fight, all as before.
+- **Fixed**: a big object's ghost was hardly see-through (build 11i). It was drawn tile by tile, each tile's column of the picture overlapping the next, so the faint copies stacked back up. Its picture is now drawn whole, once a frame.
+- 4 tiles and the 30% ghost are mine, provisional. Tests: `tests/battlelook.js` (3 more checks, and on the real page the truck in a fight see-through). Docs: `BATTLE-LOOK.md`, `FACILITY.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
+### Build `2026-11-11k` · branch `claude/start-game-project-HSh7Z` · Brawlers stand and strike
+- **A Brawler no longer circles its enemy** (the owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield"). It closes in as before, and within reach (1.4 tiles) it stands where it is and strikes. It used to go round the enemy at 0.8× its speed the whole time it fought.
+- Two Brawlers on one enemy are kept apart by the separation pass that was already there (0.75 tiles): they settle side by side.
+- The attack animations are another agent's work (branch `claude/skink-swirl-attack`) and are not touched here.
+- Tests: `tests/formation.js` (one more check: in reach it stays put and strikes). Docs: `COMBAT.md`, `DECISION-LOG.md`, the Bible. Not playtested.
 
 ### Build `2026-11-11n` · branch `claude/quillstone-attacks` · the Quillstone's dive and QUILL BURST
 - **Everyday hit** (the owner: "it just dives forward a little bit for the primary attack"): the Quillstone's body dives forward, nose down, and back (a few pixels: looks only; the hit lands as it always did).

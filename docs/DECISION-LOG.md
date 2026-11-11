@@ -2851,6 +2851,37 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: The enemy card's full art, and its orders as cards (2026-11-11; built in `2026-11-11o`)
+- The owner, on the built trading card: "use this one as a starting off point for the next step of design". Round 2 (ten variations on it): they circled **FULL ART** (the creature filling the card, large; "Very cool"). Then: "We need to move the buttons and jazz them up". Round 3 had seven placements; the owner asked for "Another 10 concepts". Round 4: they circled **TUCKED BEHIND** (the buttons as cards tucked behind the creature's card), "Right direction".
+- Round 5 (six ways in that direction, and the motion and the states): **"Build 1 with 4's ATTACK drawn out"**: ALL and RUN tucked behind, fanned a little, their ends showing at the side (no. 1); ATTACK drawn out in front as a whole card with the claws for its picture (no. 4).
+- The agent's, within the pick: ALL and RUN are a little slimmer and set higher than in no. 1, so the drawn-out ATTACK card does not cover RUN. ATTACK's count is on a badge (the button still reads ATTACK · 3). The motion is the drafts': the tucked cards breathe, ATTACK glows with a light across it, the emblems move, RUNNING draws RUN out. It is all still under reduced motion. The numbers' panel has no blur, which is lighter for an old iPad.
+- Supersedes the look of build `2026-11-11n`'s card (the picture at its left, the buttons flat under it). Its place, its buttons' words and what they do stay. Spec: `UI-STYLE.md`, the corners layout.
+
+## DECISION: The enemy card as a trading card, and the orders' emblems (2026-11-11; built in `2026-11-11n`)
+- The owner: "let's redesign those cards. Give me like 10 different designs. And we need to make little emblems for all, run, and attack."
+- Ten designs of the card at the left were drafted on the real page: neo slab, command window, versus, target lock, trading card, round buttons, element skin, glass, pixel and comic sticker. The emblems came in three sets of three plus a pixel set: A figures, B signs, C motion.
+- Chosen: **design 5, the trading card** (circled on the sheet), and the emblems **ALL from set C** (three slanted cards stacked), **RUN from set C** (two chevrons pointing back) and **ATTACK from set A** (three claw slashes): "I like set C for the all and the run, but I like set A for the attack".
+- The agent's, within the pick: the WEAK and RESISTS words are left off the card's chips, as the draft had them. RUNNING and ATTACKING · n/m stand smaller under their emblem so they fit. A long name takes two lines. A long element wraps under the level on the picture's plate.
+- Supersedes the look of build `2026-11-11m`'s card (its place, its buttons and what they do stay). Spec: `UI-STYLE.md`, the corners layout.
+
+## DECISION: The enemy card over the squad's orders (2026-11-11; built in `2026-11-11m`)
+- The owner: "I want to move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together the one that it's hiding it's gonna have an all button it's gonna have a run button for whenever the creatures are engaged in combat. It's basically like the retreat button and then we'll have a attack button of course."
+- Built: in the tablet layout, while a creature is on the enemy card, the card stands in the orders' place, bottom left, over them, with ALL, RUN (the RETREAT order) and ATTACK. With no creature, the orders return (ALL, RETREAT, HOLD, COME). The dial keeps the bottom right.
+- The agent's reading: RUN is on the card whenever it shows (the card shows only with a creature near); HOLD and COME are not on it (the owner named three buttons); the card's body no longer sends the squad (its ATTACK does); a narrow window keeps the old card.
+- Supersedes, on a tablet, the enemy card at the bottom right (`UI-STYLE.md`, the corners layout).
+
+## DECISION: In a fight, the big objects and the walls go flat (2026-11-11; built in `2026-11-11l`)
+- The owner: "Whenever we go into battle phase or whatever, it needs to hide things like the truck and the oil tanks or whatever, the poison purple tanks, and the walls and stuff like that, and just make them like solid ground with a little bit of transparentness of the object still visible."
+- Built: while the battle view is on, every object of 4 tiles or more fades to its ghost (floor under it, outline round it) whether it hides a fighter or not, and every wall is drawn faint. Small objects keep the earlier rule (they fade when they hide a fighter). They all still stop shots and the way.
+- Supersedes, for big objects and walls in a fight, "every other object stays as it is, and the walls stay" (`BATTLE-LOOK.md` §2, 5) and, in a fight only, "walls never react" (`FACILITY.md`).
+- The agent's, provisional: 4 tiles; the ghost's 30%. Spec: `BATTLE-LOOK.md` §2, 14.
+
+## DECISION: Brawlers stand and strike (2026-11-11; built in `2026-11-11k`)
+- The owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield."
+- Built: within reach (1.4 tiles) a Brawler stands where it is and strikes; it went round its enemy at 0.8× its speed before (js/npc.js). Several on one enemy are kept apart by the separation pass (`FOLLOWER_SEP`). Nothing else about the approach, the formation or the attacks changes.
+- The Brawlers' attack animations are being made by another agent at the same time (the owner, 2026-11-11), on their own branch.
+- Docs: `COMBAT.md` (the formation).
+
 ## DECISION: The battle look, the JRPG feel (2026-11-11; built in `2026-11-11h` and `2026-11-11i`)
 - The owner: combat "more like a JRPG"; each attack with "sort of an animation"; going into a battle the view "zooms in and kind of blurs out the edges a little bit"; the numbers "a little bit bigger"; "the different effects are displayed in different fonts that represent the different types of damage and stuns".
 - Chosen from options: **real-time stays, a JRPG look** (not turn-based battles, not freezes or slow motion on big moves); **the battle view when a creature engages** you or your squad (not on a locked target, not big moves only); **one face per damage type and one for statuses** (not three families, not a face per element); **new attack frames per form**, baked from each form's model (not motion on today's sprites, not motion first).
@@ -2896,7 +2927,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Not changed: the quills' number, fan, speed, damage and range; the move's cooldown length; the everyday hit's damage and rest. **Changed, as a consequence:** a burst's cycle is 12 frames (0.2 s) longer, because its cooldown starts when the quills are done and they now leave after the turn (the agent kept the cooldown's start where it was and said so; shortening the cooldown by 12 frames instead is open).
 - Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `EFFECTS.md`, `CHANGELOG.md`.
 
-## DECISION: The storm's fix: bigger and twistier, a puffy swirling cloud, a flashing glow (2026-11-11, build `2026-11-11o`, branch `claude/tornado-fix`)
+## DECISION: The storm's fix: bigger and twistier, a puffy swirling cloud, a flashing glow (2026-11-11, build `2026-11-11q`, branch `claude/tornado-fix`)
 - The owner, of the Thunderhead's storm (design C, merged in `2026-11-11m`): "Need design fix for tornado." Asked what was off: the size or shape, the cloud on top, the colour or lightness. Asked which way: the funnel **"Bigger and twistier"**, the cloud **"Swirling cloud"**, the colour **"Lighter grey-blue"**; fix design C, not another design.
 - Then, of the first revised cloud (a flat spiral): **"a more puffy, chaotic cloud, but I like the formation"**: the spiral arms stay, each puff uneven. (The agent's first attempt filled in the gaps between the arms and lost the formation; it was thinned until the spiral read again. Whether it reads enough is for the owner to say.)
 - And: **"Instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite."** The bolt is gone; a soft yellow glow flashes over the storm.
@@ -2905,7 +2936,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Not changed: what the move does (reach, radius, life, pull, bite); the 70% the owner asked for earlier.
 - Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.
 
-## DECISION: The Thunderhead's STATIC VORTEX gathers the enemies in front of the storm (2026-11-11, build `2026-11-11o`, branch `claude/tornado-fix`)
+## DECISION: The Thunderhead's STATIC VORTEX gathers the enemies in front of the storm (2026-11-11, build `2026-11-11q`, branch `claude/tornado-fix`)
 - The owner, of the storm (a tornado standing on the enemy it was cast on): "Just need to make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden." The pull used to gather every enemy at the storm's exact middle, where the tornado stands and is drawn over them.
 - Asked where to hold them and how far: **"In front of the storm"** (on the camera's side; not a ring round it, not to one side) and **"About 1 tile"** (not 1.5, not 0.7).
 - A changed game rule, within the owner's own request: the pull's end point is a spot `VORTEX_HOLD` (1) tile in front of the middle (+x and +y together: straight down the screen), not the middle. **Not changed:** who is in the storm (2.5 tiles from the middle, and in sight of it), the reach, the pull's strength (0.06 a frame; not a beetle or a boss), the shocks, the 4 s.

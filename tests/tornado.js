@@ -1,4 +1,4 @@
-// THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m, revised 2026-11-11o; js/evolution.js staticVortexDraw, staticVortexCol, EVOLUTIONS.thunderhead.storm; design No. 930 of six, forms41.js; the owner, 2026-11-11: "a tornado sort of look,
+// THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m, revised 2026-11-11q; js/evolution.js staticVortexDraw, staticVortexCol, EVOLUTIONS.thunderhead.storm; design No. 930 of six, forms41.js; the owner, 2026-11-11: "a tornado sort of look,
 // and remove the highlighted floor effect", then "This needs three.js graphics", then of the six modelled designs: "C", the dark storm).
 //   how it works is as it was: the reach, the radius, the life, the pull, the bite (VORTEX_*), none changed by the look
 //   how it looks: the baked sheet at the enemy, a little see-through (VORTEX_ALPHA; the owner: "make it transparent though a little bit"); no disc and no ring on the floor (nothing is filled or stroked as an ellipse); it grows from its foot as it fades in and fades out as it ends

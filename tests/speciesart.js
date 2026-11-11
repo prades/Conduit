@@ -230,9 +230,20 @@ function measure(w, h) {
         same(J('[cardArtEmblemClass("spinelegged"), cardArtEmblemClass("ant"), cardArtEmblemClass("fire"), cardArtEmblemClass("nothing")].join()'), 'cae-spinelegged,cae-ant,cae-fire,', 'the classes');
         same(J('[cardArtRaceEmblemClass({ speciesName: "moth" }), cardArtRaceEmblemClass({ speciesName: "crustacean" }), cardArtRaceEmblemClass({}), cardArtRaceEmblemClass(null)].join()'), 'cae-moth,,,', 'a creature\'s');
         const html = rd('game.html');
-        ok(/:is\(\[class\^="cae-"\], \[class\*=" cae-"\]\)::before \{[^}]*background-color: currentColor;[^}]*-webkit-mask: var\(--emb\) center \/ contain no-repeat; mask: var\(--emb\) center \/ contain no-repeat;/.test(html), 'the emblem rule');
+        ok(/:is\(\[class\^="cae-"\], \[class\*=" cae-"\], \[class\^="cao-"\], \[class\*=" cao-"\]\)::before \{[^}]*background-color: currentColor;[^}]*-webkit-mask: var\(--emb\) center \/ contain no-repeat; mask: var\(--emb\) center \/ contain no-repeat;/.test(html), 'the emblem rule (the orders\' cao- too: build 2026-11-11n)');
         ok(/#ccRoot\.carousel \.cf-sc::before \{[^}]*width: 14px;[^}]*background-color: var\(--emc, currentColor\)/.test(html), 'the roster tag\'s emblem'); ok(/#mixTool \.mt-foe-name::before \{ width: 16px; height: 16px;/.test(html), 'the enemy card\'s emblem');
         ok(/cardArtMark\(E\.sc, sc \? cardArtEmblemClass\(equipSubclassOf\(f\)\) : "", "emb"\)/.test(rd('js/commandcenter.js')), 'js/commandcenter.js: the roster\'s subclass tag');
+    });
+    await check('THE ORDERS\' EMBLEMS (build 2026-11-11n; the owner\'s picks of the drafts): ALL, RUN and ATTACK, apart from the eighteen, each one flat shape on the 32-unit square in its colour (ALL the teal, RUN and ATTACK the red), a class each (cao-<key>), and the enemy card at the left wears them', () => {
+        same(J('Object.keys(CARD_ART_ORDERS).join()'), 'all,run,attack', 'the three'); same(J('["all", "run", "attack"].map(k => CARD_ART_ORDERS[k].col).join()'), '#19e6c1,#ff4a1c,#ff4a1c', 'their colours');
+        for (const k of ['all', 'run', 'attack']) {
+            const s = J(`cardArtOrderSvg(${JSON.stringify(k)})`), nums = ((s.match(/ d="([^"]+)"/) || [])[1] || '').match(/-?[\d.]+/g) || [];
+            ok(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 32 32" width="32" height="32"><path d="[^"]+" fill="#[0-9a-f]{6}"\/><\/svg>$/.test(s), k + ': ' + s.slice(0, 120)); ok(nums.length > 12 && Math.min(...nums.map(Number)) >= 0 && Math.max(...nums.map(Number)) <= 32, k + ' goes outside its square');
+        }
+        same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("all"))'), 3, 'ALL: three cards'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("run"))'), 2, 'RUN: two chevrons'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("attack"))'), 3, 'ATTACK: three slashes');
+        same(J('[cardArtOrderClass("all"), cardArtOrderClass("run"), cardArtOrderClass("attack"), cardArtOrderClass("nothing"), cardArtOrderSvg("nothing")].join()'), 'cao-all,cao-run,cao-attack,,', 'the classes');
+        same(J('Object.keys(CARD_ART_EMBLEMS).length'), 18, 'the eighteen are as they were');
+        const mt = rd('js/mixtool.js'); ok(/ord\("all"\)/.test(mt) && /ord\("run"\)/.test(mt) && /ord\("attack"\)/.test(mt), 'js/mixtool.js: the card at the left');
     });
 
     group('THE ENEMY CARD\'S ROW (js/mixtool.js mixToolFoeRow, mixToolFoeHTML)');
@@ -252,7 +263,7 @@ function measure(w, h) {
         for (const [r, cl, boss] of RACES.map(r => [r, 'scout', null]).concat([['ant', 'boss', 'THE TOXIC QUEEN']])) {
             const h = J(`(function(){ const a = spawnCreature({ species: ${JSON.stringify(r)}, className: ${JSON.stringify(cl)} }); a.health = a.maxHealth = 50; ${boss ? 'a.bossName = ' + JSON.stringify(boss) + ';' : ''} const s = mixToolFoeHTML(a, [], false); a.dead = true; return s; })()`);
             ok(h.indexOf('<b class="mt-foe-name cae-' + r + '">' + (boss || (r.toUpperCase() + ' SCOUT')) + '</b>') > 0, r + (boss ? ' (the boss)' : '') + ': the name ' + (h.match(/<b class="mt-foe-name[^<]*<\/b>/) || [])[0]);
-            ok(/<em class="mt-foe-num"><\/em><span class="mt-foe-dmg">.*<\/span><\/span><span class="mt-foe-go">/.test(h), r + ': the row is not under the numbers, in the text column');
+            ok(/<em class="mt-foe-num"><\/em>(<span class="mt-foe-hp"><u><\/u><\/span><span class="mt-foe-bite"><\/span>)?<span class="mt-foe-dmg">.*<\/span>(<\/span>)+<span class="mt-foe-(go|acts)">/.test(h), r + ': the row is not under the numbers, in the text column');   // (then the strip, or at the left the ALL / RUN / ATTACK row: build 2026-11-11m; there the bar and the bite come between, in the card's text column: build 2026-11-11n)
             ok(h.indexOf('<i class="wk">' + SHORT[table[r].weak[0]] + '</i>') > 0, r + ': not its row');
         }
     });

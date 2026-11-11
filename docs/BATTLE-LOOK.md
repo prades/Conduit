@@ -3,7 +3,7 @@
 - **Status:** The battle view, the floor's writing, no names and the fading objects (build `2026-11-11h`), and the numbers with the roster's answer (`2026-11-11i`), are **implemented and verified by tests** (the owner: "build it"); not playtested. The attack frames are **designed**, not drafted.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11j`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11l`
 - **Related docs:** `COMBAT.md` (combat readability: the numbers, the bite in two beats), `EFFECTS.md` (the forms' effect pieces; the budget for effects), `UI-STYLE.md` (fonts), `ART-PROCESS.md` (drafts first), `PLAYER-COMBAT.md`
 
 ## 1. Intent
@@ -28,7 +28,7 @@ What it is today:
    - Not chosen: three families (physical, elemental, statuses), or a face per element.
 4. **The attacks: new attack frames per form**, baked from each form's 3-D model as SUNDEW's CONSUME block was, form by form. Not chosen: motion on today's sprites, or motion first and frames later.
 5. **Objects that hide a fighter fade out** (the owner: "let's make it to where the objects become invisible in that battle phase"; then chosen from options).
-   - While the battle view is on, an object standing in front of you, one of your squad or a creature is not drawn; a faint outline of it shows on the floor. Every other object stays as it is, and the walls stay (they never fade, an earlier decision).
+   - While the battle view is on, an object standing in front of you, one of your squad or a creature is not drawn; a faint outline of it shows on the floor. Every other object stays as it is, and the walls stay (they never fade, an earlier decision). *(For the big objects and the walls, **superseded** by item 14: in a fight they go flat whether they hide anyone or not.)*
    - Not chosen: all objects but the fight's own; every object.
    - **They still count:** cover, sight, walking and FLUX MOVE work as always. Chosen over "fully invisible" and over taking them out of the fight.
 6. **The battle view's strength as drafted** (approved 2026-11-11): 1.25×; on HIGH the edges blurred and darkened, on LOW darkened only.
@@ -86,6 +86,12 @@ What it is today:
     - The owner's answer to those: "It should say resist / weak. Just have a rectangular texture behind it that has the element of the opposition attack." So the word stays, as WEAK or RESIST without the element's name, and the element of the attack that hit is the texture of a rectangle behind it. That texture is the energy cards' moving plasma in the element's colour.
     - A and B are **superseded**. So is the rectangle that followed (drafted as the energy cards' plasma in a rectangle); the owner: "No, not necessarily a rectangle, like a irregular ball of plasma or texture that represents each element."
     - Then the balls were drafted with each element's details (fire's flames, electric's arcs and so on). The owner: "No just make it a irregular blur that only slightly gives character." So: a soft, irregular blur in the element's colours behind the word, its edge moving a little in the element's way (fire licking up, electric buzzing, ice a touch angular, toxic wobbling, core breathing, flux turning, BLOOM faintly petalled), with no drawn details. The detailed balls are **superseded**, and then the blur too, by the words on the floor (10).
+14. **In a fight the big objects and the walls go flat** (the owner, 2026-11-11, after build 11k: "Whenever we go into battle phase or whatever, it needs to hide things like the truck and the oil tanks or whatever, the poison purple tanks, and the walls and stuff like that, and just make them like solid ground with a little bit of transparentness of the object still visible"). Built in `2026-11-11l`:
+    - **The big objects** (4 tiles or more: the semi truck with its tanks, the two liquid reserves, the server racks, the freezer bank and the like) fade to a ghost in a fight whether they hide anyone or not. The floor is drawn under them and their outline round them, as for an object in front of a fighter (item 5).
+    - **Every wall** is drawn faint while the view is on: plain walls, the cave's rock, glass, the railings, door frames, posts and what hangs on a wall.
+    - **The small objects** (crates, barrels, barriers, floodlights, the hazard flasks) keep item 5's rule: they fade only when they hide a fighter.
+    - **They all still count**: they stop shots, hide what is behind them and block the way, as always.
+    - The agent's, provisional: what counts as big (4 tiles); the same ghost strength as item 5 (30%, between the 25% and 45% drafted); walls with no outline.
 
 ## 3. Must-have requirements
 
@@ -188,6 +194,7 @@ What it is today:
    - **The objects**: js/propsprites.js `_psBlit` notes where an object's picture went; one nearer the camera whose picture overlaps a fighter's fades (js/facilityplay.js `drawFacilityItem` asks `battleFadeProp`).
    - **No names**: js/draw.js asks `battleHidesUnitHud` (from halfway in). The words: js/drops.js asks `battleWordRole`.
    - **A step with no picture** keeps the view's state (`_bv`) as a drawn one does; what only the drawing keeps is apart (`_bvDraw`, listed in `tests/ghost.js`), with each object's picture, fade and floor level kept beside it, not written on it.
+   - **Build `2026-11-11l`: flat in a fight.** A big object (`_bvBig`: `BATTLE_VIEW.flat.tiles` tiles or more, found once an object) counts as fading all fight (`battleViewDecals`). A wall and what belongs to it (`BV_WALLISH`) is drawn faint by `battleFadeWall` (js/facilityplay.js `drawFacilityItem` asks), following the view's ease. **A ghost of many tiles is drawn whole**: its picture once a frame, unclipped, by the first of its tiles drawn (js/propsprites.js `facilitySpriteDraw(it, whole)`, asked through `battleDrawsWhole`). Drawn tile by tile, each tile's column overlapped the next and the ghost stacked back up to nearly solid (seen on the real page: build 11i's truck hardly faded).
    - **Build `2026-11-11i`'s fix to the objects**: an object fades as a whole (all the tiles of one solid share its id: js/facilityplay.js `_fpPropItems`), when any of its tiles hides a fighter, found once a frame (`battleViewDecals`, `_bvDraw.hideIds`). Each tile notes its own column of the picture (js/propsprites.js `_psBlit`), and a one-tile object its whole picture. The outline is drawn round the object, not between its tiles. An inner tile's floor is the nearest floor (`_bvFloorKey`).
 3. The numbers and their faces, built: build `2026-11-11i` (js/battleview.js, `BATTLE_VIEW.num`):
    - **The tag**: js/helpers.js `applyDamage` hands each number to `battleNumberTag`, with whom it hit, the face of its damage type (`_bvKindOf`), the blow's way on the screen, and its bonus. The bonus comes from js/damage.js `dmgApply`, which now gives the share of the hit with no weakness, advantage or Opportunity in it (`dmgBaseShare`; resistances stay in it). The tags are kept beside the words (`_bvDraw.hits`), not on them. Heals (js/combat.js `healUnit`) and the weakness words (js/damage.js `_dmgWords`) over a follower are tagged too (`battleWordTag`).
@@ -211,6 +218,9 @@ What it is today:
 | The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11i` (commit `828e88e`) |
 | The real page, frame by frame: a crushing hit on an ant (13 knocked off and back into the bar, +2 second); a bite on a follower (its card, the −N) | Looked at (filmstrips) | build `2026-11-11i`: the card's light hardly showed (fixed in `2026-11-11j`) |
 | The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11j` |
+| `node tests/battlelook.js`, flat in a fight (3 more checks: the big objects flat whether they hide anyone or not, the small ones not; a big ghost drawn whole once a frame at the ghost's strength, tile by tile out of a fight; every wall faint in a fight and still stopping a shot; on the real page the truck beside a fight see-through) | Pass | build `2026-11-11l` |
+| The real page: the tanks and the truck in a fight, before and now | Looked at (screenshots) | build `2026-11-11l`; a draft first (build 11i's whole-object fade found not see-through there) |
+| The full run (`node tests/run.js`, 110 suites) | 108 pass, 2 fail, then pass | build `2026-11-11l`: facilityplay's source check expected `facilitySpriteDraw(it)` (widened to the new second argument; passes); techabilities' real-browser throw, the known flake under a full run's load, passes alone |
 
 The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;

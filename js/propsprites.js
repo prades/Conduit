@@ -164,12 +164,13 @@ function _psShadowStamp() {
 function _psShadow(it) { if (typeof gfxLow !== "undefined" && gfxLow) return; /* (LOW graphics: no contact shadows) */ const st = _psShadowStamp(); if (!st) return; const p = _fpP(it.x, it.y, 0), a0 = ctx.globalAlpha; ctx.globalAlpha = a0 * 0.9; ctx.drawImage(st, p[0] - 66, p[1] - 33, 132, 66); ctx.globalAlpha = a0; }
 
 // draw one cell of a prop from its sprite (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew it (the floor under it first: a solid tile is not drawn by itself), false to let the flat drawing do it
-function facilitySpriteDraw(it) {
+// `whole`: the battle view draws a fading object of many tiles as its whole picture, once (js/battleview.js battleDrawsWhole): each tile's column of it overlapping the next stacks a ghost back up to nearly solid
+function facilitySpriteDraw(it, whole) {
     const k = it.kind, fam = PS_FAMILY[k]; if (!fam) return false;
     if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
     if (!_psImg(fam)) return false;
     const f = typeof frame !== "undefined" ? frame : 0, S = _psSolid(it.id), seed = _psHash(String(it.id));
-    if (!it.spriteOnly) { _fpFloorUnder(it); if (!S || !S.multi || _psEdgeCell(S, it)) _psShadow(it); }   // (the shadow only on the cells at the prop's edge: the others are under the sprite)   // (a rim cell is ordinary floor, drawn already)
+    if (!it.spriteOnly && !whole) { _fpFloorUnder(it); if (!S || !S.multi || _psEdgeCell(S, it)) _psShadow(it); }   // (the shadow only on the cells at the prop's edge: the others are under the sprite)   // (a rim cell is ordinary floor, drawn already)
     if (k === "plant") { const dead = seed % 3 === 0; return !!_psBlit("plant", dead ? "d" + (seed % 2) : "p" + (seed % 4), it.x, it.y); }
     if (k === "sentry") {
         const on = typeof sentryOn === "function" ? sentryOn(it) : (typeof facilityFeedOn === "function" && facilityFeedOn(it.id)), step = ((Math.round((it.aim || 0) / (Math.PI * 2 / PS.aimSteps)) % PS.aimSteps) + PS.aimSteps) % PS.aimSteps;   // (on: whole and the Crystal has power: js/antraids.js)
@@ -181,11 +182,11 @@ function facilitySpriteDraw(it) {
         return true;
     }
     if (!S) return false;
-    if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], [it.x, it.y]);
-    if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], [it.x, it.y]);
+    if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
+    if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
     const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : null;   // (the main power junction: broken or repaired, js/stations.js)
     const name = _psResolve(fam, k, S.dims, state, seed); if (!name) return false;
-    const ok = !!_psBlit(fam, name, S.c[0], S.c[1], S.multi ? [it.x, it.y] : null);
+    const ok = !!_psBlit(fam, name, S.c[0], S.c[1], S.multi && !whole ? [it.x, it.y] : null);
     if (ok && k === "server_rack") facilityRackLeds(it, S, seed);
     return ok;
 }

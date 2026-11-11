@@ -1143,7 +1143,7 @@ function staticVortex(f) {
     return true;
 }
 // a frame of a STATIC VORTEX (js/elements.js updateElementEffects): the pull, and the bite every VORTEX_TICK frames
-// WHERE THE PULL GATHERS THEM (build 2026-11-11o; the owner, 2026-11-11: "make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden"; of the agent's questions: "In front of the
+// WHERE THE PULL GATHERS THEM (build 2026-11-11q; the owner, 2026-11-11: "make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden"; of the agent's questions: "In front of the
 // storm", "About 1 tile"): the tornado stands on the storm's middle and is drawn over what is behind it, so enemies pulled to that very spot were hidden by it. They are pulled to a point VORTEX_HOLD tiles IN FRONT of the middle,
 // on the camera's side (+x and +y together is straight down the screen), where the funnel does not cover them. Who is in the storm (VORTEX_RADIUS from its middle), who can be seen from it, the pull's strength and
 // the shocks are as they were; only where the pull ends changes.
@@ -1421,11 +1421,11 @@ function skinkSwirlDraw(e, px, py, g) {
     g.restore();
 }
 
-// ── THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m; revised 2026-11-11o) ─────────────────────────────────────────────────
+// ── THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m; revised 2026-11-11q) ─────────────────────────────────────────────────
 // ASKED (the owner, 2026-11-11, of its second attack): "It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect"; then "Give me 6 different
 // designs of that hurricane or tornado" and, of the first flat drafts, "This needs three.js graphics"; of the six modelled ones (design/evolutions/forms41.js, Nos. 928 to 933): "C", the DARK STORM (No. 930, baked to
 // img/evo/staticvortex.png). The disc and the dashed ring on the floor are gone: nothing is drawn flat on the ground.
-// THEN (build 2026-11-11o; "Need design fix for tornado"; of the agent's questions: the funnel "bigger and twistier", the cloud "swirling", the colour "lighter grey-blue"; then "a more puffy, chaotic cloud, but I like the
+// THEN (build 2026-11-11q; "Need design fix for tornado"; of the agent's questions: the funnel "bigger and twistier", the cloud "swirling", the colour "lighter grey-blue"; then "a more puffy, chaotic cloud, but I like the
 // formation"; then "instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite"): a long grey-blue funnel flaring to a wide top and
 // bending in an S as it turns, spiral bands winding up it, under a puffy, uneven cloud of curling arms round a dark eye; and its LIGHTNING is not a bolt: it is a soft yellow glow that flashes on the FLOOR under the storm
 // (staticVortexFlash; "The gradient needs to just be on the floor"), drawn in code, like the glow under the Thunderhead.

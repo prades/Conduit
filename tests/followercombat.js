@@ -297,7 +297,7 @@ function measure(w, h) {
         ok(r.shot && r.hasHit && r.hit, 'the shot: ' + JSON.stringify(r)); ok(r.a > 0 && r.b > 0 && r.b < r.a, 'struck and conducted: ' + JSON.stringify(r));
         same(r.egg, false, 'an egg\'s shot chains'); same(r.reaver, false, 'the Reaver\'s shot chains'); same(r.name, 'CHAIN LIGHTNING', 'its name'); same(r.info, 'MAIN ATTACK · CHAIN LIGHTNING', 'INFO');
     });
-    check('STATIC VORTEX is STATIONARY (it never travels or grows) and pulls the enemies in it to a spot VORTEX_HOLD tile in front of its middle (the owner, build 2026-11-11o: so the tornado does not hide them); a beetle is too heavy to drag; one outside it is left alone', () => {
+    check('STATIC VORTEX is STATIONARY (it never travels or grows) and pulls the enemies in it to a spot VORTEX_HOLD tile in front of its middle (the owner, build 2026-11-11q: so the tornado does not hide them); a beetle is too heavy to drag; one outside it is left alone', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 5, f.y), p = __foe(f.x + 6.9, f.y + 0.4), b = __foe(f.x + 5, f.y + 1.8, 'beetle'), out = __foe(f.x + 9, f.y);
             __fire(f); __off(f); const v = elementEffects.find(e => e.type === 'staticVortex'), x0 = v.x, y0 = v.y, r0 = v.radius, G = staticVortexGather(v), d0 = Math.hypot(p.x - G.x, p.y - G.y), b0 = [b.x, b.y], o0 = [out.x, out.y];
             let moved = false; for (let i = 0; i < 90; i++) { render(); if (v.x !== x0 || v.y !== y0 || v.radius !== r0) moved = true; }

@@ -228,7 +228,7 @@ function updateRTSNPC(actor) {
             ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
         const _reach = _ord ? 1e3 : (typeof playReach === "function" ? playReach(actor) : 1);   // PLAY STYLE scales how far a unit goes after an enemy (js/commandcenter.js); one sent at a creature goes the whole way
 
-        // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
+        // ── BRAWLER: chase nearest enemy aggressively, stand and strike when in range ──
         if (role === "brawler") {
             if (actor.isClone && typeof cloneFight === "function") {   // a clone: its species' bite, in two beats (js/clone.js), else it walks with you
                 if (nearestEnemy && nearestEnemyDist < 6 * _reach) cloneFight(actor, nearestEnemy);
@@ -237,9 +237,9 @@ function updateRTSNPC(actor) {
             }
             if (nearestEnemy && nearestEnemyDist < 6 * _reach) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
-                // Floored: standing exactly on the target makes dist 0, and the
-                // orbit below divides by it. -dy/0 is NaN, and a NaN position
-                // never recovers — see the net in updateNPC.
+                // Floored: standing exactly on the target makes dist 0, and a
+                // step that divides by it is NaN, and a NaN position never
+                // recovers — see the net in updateNPC.
                 const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
                 if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry; SEARED CHARGE reaches 3 tiles)
                 if (dist > 1.4) {
@@ -247,12 +247,8 @@ function updateRTSNPC(actor) {
                     actor.x+=(dx/dist)*actor.moveSpeed;
                     actor.y+=(dy/dist)*actor.moveSpeed;
                 } else {
-                    // In strike range — orbit the target while attacking
-                    if (!actor.orbitDir) actor.orbitDir = Math.random() < 0.5 ? 1 : -1;
-                    const tangX = (-dy/dist) * actor.orbitDir;
-                    const tangY = ( dx/dist) * actor.orbitDir;
-                    actor.x += tangX * actor.moveSpeed * 0.8;
-                    actor.y += tangY * actor.moveSpeed * 0.8;
+                    // In strike range: it stands where it is and strikes (the owner, 2026-11-11: going round the enemy is "very hectic for reading a battlefield"; until build
+                    // 2026-11-11k it circled the target at 0.8 × its speed). Several on one enemy are kept apart by the separation pass (js/game.js, FOLLOWER_SEP).
                     followerAttack(actor, nearestEnemy);
                 }
             } else {
@@ -269,7 +265,7 @@ function updateRTSNPC(actor) {
 
             if (nearestEnemy && nearestEnemyDist < 10 * _reach) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
-                // Floored for the same reason as the brawler's orbit: the
+                // Floored for the same reason as the brawler's distance: the
                 // back-off below runs for every dist under SNIPER_MIN, zero
                 // included.
                 const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
