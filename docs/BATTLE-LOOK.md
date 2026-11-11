@@ -52,6 +52,11 @@ What it is today:
     - The bar keeps its length until the number lands; then it drops.
     - The agent's, provisional: the piece lost flashes white, breaks off and falls away; the number lands with a squash and a small ring on the floor, and the bar shakes; about a third of a second from the hit to the landing (pop 7 frames, falling to frame 20).
     - **Gone soon after it lands** (the owner: "I like it, but the numbers disappear sooner"): it fades out within 8 frames of landing (it lay there over half a second in the first draft).
+    - **The extra lands second** (the owner: "Make extra damage from an effective attack (weak) or any bonus elemental damage show up after the initial drop and the health bar only reacts to the display animation"):
+      - A hit's number is cut in two. First, the hit without its bonuses: resistances still lower it as now.
+      - The bonuses come second: a weakness's extra on the physical part, an elemental advantage on the elemental part, and the Opportunity cards' share. When the first lands, the bonus, **+N in gold**, hops up from the bar and slams down onto it.
+      - **The bar moves only as each number lands**: twice for a hit with a bonus.
+      - The colour and the hop's timing are the agent's, provisional. The draft found the bonus by working the hit out again with no bonus; the build should have `dmgApply` (js/damage.js) give both.
     - Drafted (§10).
 12. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay.
 13. **Earlier, superseded: the element's word on a background.**
@@ -153,7 +158,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip.
 - no names in the fight: the plates gone; by each floor bar its level and, if it has one, its element's tag. Drawn two ways, flat on the floor like the bar, and standing upright at the bar's end.
 - the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip; "Ugly"). Then three side by side (A along the tile, B halfway, C standing); A kept.
-- a hit's number flying to the bar: out of whoever was hit, up and over, down onto its floor bar with a squash and a ring; the bar dropping only then, the lost piece breaking off (a still and a clip). The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- a hit's number flying to the bar: out of whoever was hit, up and over, down onto its floor bar with a squash and a ring; the bar dropping only then, the lost piece breaking off (a still and a clip). Then gone within 8 frames of landing; then the extra landing second (a crushing BASH on an ant: 23, then +1 in gold hopping up from the bar and down). The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
