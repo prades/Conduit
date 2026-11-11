@@ -96,11 +96,15 @@ function _electroSkink(o) {
   const Lt = new T.PointLight(0xffffff, 0.6, 1.2, 2); Lt.color.copy(lit); unit.add(Lt); LIGHTS.push(Lt);
   // the spine as it moves: the rest curve, the salamander's side-to-side bend (and a wave down the tail), the front reared by the action
   const P = V(0, 0, 0), Pa = V(0, 0, 0), Pb = V(0, 0, 0), fw = V(0, 0, 0), ax = V(0, 0, 0), ay = V(0, 0, 0), up = V(0, 1, 0), m4 = new T.Matrix4(), d = V(0, 0, 0);
-  let ph = 0, rear = 0, strike = 0, calm = 1;
+  let ph = 0, rear = 0, strike = 0, calm = 1, ringK = 0, ringSpin = 0;   // (ringK, ringSpin: the swirl, o.swirl, No. 926 below: 0 for every other form)
   const spine = (s, out) => {
     s = Math.min(1, Math.max(0, s)); curve.getPoint(s, out);   // (clamped first: the frame at the neck asks a little ahead of it, and a power of a negative s is NaN, which hid the head in build 2026-11-08a)
     out.x += o.swimAmp * (0.22 + 0.78 * Math.pow(s, 1.15)) * Math.sin(2 * ph - TAU * o.swimWaves * s) * calm;   // (the eel's wave: small at the head, wide at the tail, two strokes a loop)
     const front = Math.max(0, 1 - s / o.rearReach); out.y += o.rearH * rear * front * front;
+    if (ringK > 0 && o.swirl) {   // THE SWIRL (No. 926): this body, one of o.swirl.n copies spaced evenly round a ring of radius o.swirl.R, its head leading round it, the tail trailing behind
+      const w = o.swirl, a = ringSpin + w.i * TAU / w.n - TAU * (w.cover / w.n) * s;
+      out.x += (Math.sin(a) * w.R - out.x) * ringK; out.z += (Math.cos(a) * w.R - out.z) * ringK; out.y += w.rise * s * ringK;
+    }
     return out;
   };
   const frameAt = s => {   // the spine at s and its frame: fw forward along the body, ax to its left, ay up
@@ -110,10 +114,14 @@ function _electroSkink(o) {
   return { g, core: o.coreY * (o.S || 1), update(t, act) {
     ph = 1.6 * t; const a = act || 0, pr = _prog31(t, act);
     rear = _skS(0, 0.3, pr) * (1 - _skS(0.34, 0.5, pr)); strike = _skS(0.34, 0.5, pr) * (1 - _skS(0.62, 1, pr)); calm = 1 - 0.75 * Math.max(rear, strike);
+    if (o.swirl) {   // THE SWIRL: act >= 2 is the ring spinning steadily (its loop is a third of a turn: the copies are spaced a third apart); act 0 to 1 is the body curling from straight into the ring
+      const steady = act >= 2; ringK = steady ? 1 : _skS(0, 1, act || 0); rear = 0; strike = 0; calm = 1 - 0.9 * ringK;
+      ringSpin = steady ? (t / (TAU / 1.6)) * TAU / o.swirl.n : (act || 0) * TAU * 0.5;
+    }
     unit.position.set(0, 0, o.lunge * strike);
     for (let i = 0; i < N; i++) spine(o.sCut * i / (N - 1), pts[i]);
     body.set(pts, 0, 0, s => rOf(o.sCut * s), 1, o.flat);
-    glow = (0.85 + 0.15 * Math.sin(ph * 4)) * (1 + 1.5 * Math.max(0.5 * rear, strike));
+    glow = (0.85 + 0.15 * Math.sin(ph * 4)) * (1 + 1.5 * Math.max(0.5 * rear, strike) + 1.2 * ringK);
     for (let i = 0; i < NT; i++) { const s = sOf(i); spine(s, tpts[i]); tpts[i].y += zig(s); }
     tail.set(tpts, tailR, tailFx, tailFy, tailCol);
     // the legs: each an arch from the side of the body, up and out, down to a foot on the floor; the diagonal pairs step together
@@ -121,11 +129,11 @@ function _electroSkink(o) {
       const hip = P.clone().addScaledVector(ax, L.sx * r * 0.8);
       const phi = 2 * ph - TAU * o.swimWaves * ld.s + (L.sx > 0 ? PI : 0), stance = Math.sin(phi) > 0;   // (each leg paddles in time with the wave where it is)
       const lift = (stance ? 0 : o.lift * -Math.sin(phi)) * (1 - a * 0.7) + (L.li === 0 ? o.rearLift * rear : 0);
-      const foot = V(hip.x, 0, hip.z).addScaledVector(side, o.reach).addScaledVector(ahead, ld.fwd + o.stride * Math.cos(phi) * (1 - a * 0.7)); foot.y = o.legR1 + lift;
+      const foot = V(hip.x, 0, hip.z).addScaledVector(side, o.reach).addScaledVector(ahead, ld.fwd + o.stride * Math.cos(phi) * (1 - a * 0.7)); foot.y = o.legR1 + lift; if (ringK > 0) foot.lerp(hip, 0.9 * ringK);   // (the swirl tucks its legs in)
       const ctrl = hip.clone().lerp(foot, 0.42); ctrl.y = Math.max(hip.y, foot.y) + 2 * o.arch;   // (a quadratic arch: its top halfway to the control point)
       for (let j = 0; j < NL; j++) { const u = j / (NL - 1), w0 = (1 - u) * (1 - u), w1 = 2 * (1 - u) * u, w2 = u * u;
         L.pts[j].set(hip.x * w0 + ctrl.x * w1 + foot.x * w2, hip.y * w0 + ctrl.y * w1 + foot.y * w2, hip.z * w0 + ctrl.z * w1 + foot.z * w2); }
-      L.tb.set(L.pts, 0, 0, legR, 1, 1); });
+      L.tb.set(L.pts, 0, 0, ringK > 0 ? (s => legR(s) * (1 - 0.85 * ringK)) : legR, 1, 1); });
     // the head: a rounded end ahead of the neck, rearing back, then lunging
     frameAt(0); head.position.copy(P).addScaledVector(fw, o.headFwd).addScaledVector(ay, o.headUp);
     m4.makeBasis(ax, ay, fw); head.quaternion.setFromRotationMatrix(m4); head.rotateX(-o.headTilt - 0.5 * rear + 0.25 * strike); head.rotateY(-0.16 * Math.sin(2 * ph + 0.6) * calm);
