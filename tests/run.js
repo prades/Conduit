@@ -24,6 +24,7 @@ const SUITES = [
     ['performance + culling',    'perf.js'],
     ['the Electro Skink\'s swirl: its everyday hit a vortex at the enemy and one hit as it closes, no chain, its body hidden and back, every other electric follower keeps its chain, its sheet baked and cropped', 'skinkswirl.js'],
     ['the Thunderhead\'s STATIC VORTEX as a dark storm (design C of six, baked from three.js): the mechanics as they were, its sheet baked and cropped, which frame, nothing flat on the floor, grown and faded, gone with its life', 'tornado.js'],
+    ['the Quillstone\'s attacks: its sheet baked and cropped (40 columns), QUILL BURST\'s turn, its quills leaving after it, the bare second and the regrowth in order, the everyday hit\'s dive', 'quillstone.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
     ['levels and stats',         'levels.js'],
