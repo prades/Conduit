@@ -1,9 +1,9 @@
 # The player's part in a fight
 
-- **Status:** Step 1 (the bars come back, the repair kit) is **implemented and verified by tests** in build `2026-11-11e` (not playtested). Step 2 (GUARD, STUN DIVE) is designed, not built.
+- **Status:** Step 1 (the bars come back, the repair kit, build `2026-11-11e`) and step 2 (GUARD and STUN DIVE, build `2026-11-11f`) are **implemented and verified by tests**; not playtested.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11e`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11f`
 - **Related docs:** `COMBAT.md` (the player's three hits, the bite), `PLAYER-CLASSES.md`, `UNIVERSAL-AND-PLAYER-CARDS.md` (Player cards), `TECHNICIANS.md` (the Photonic Shield, which also stops shots)
 
 ## 1. Intent
@@ -30,8 +30,8 @@ Offered three directions (A the bars come back; B A plus a part for the player i
 - [x] Creatures sometimes drop one when killed; some lie at spots in the facility and come back a while after they are taken.
 
 **Step 2: GUARD and STUN DIVE**
-- [ ] GUARD by the dial, a stance on and off: while it is on, a creature's shot that would hit a follower near you hits you instead (one bar, then the usual grace); you move at half speed.
-- [ ] STUN by the dial, then a creature in reach and in sight: you swoop beside it and it is stunned for a moment; then the chip rests.
+- [x] GUARD by the dial, a stance on and off: while it is on, a creature's shot that would hit a follower near you hits you instead (one bar, then the usual grace); you move at half speed.
+- [x] STUN by the dial, then a creature in reach and in sight: you swoop beside it and it is stunned for a moment; then the chip rests.
 
 ## 4. Non-goals
 
@@ -44,7 +44,7 @@ Offered three directions (A the bars come back; B A plus a part for the player i
 
 **Step 1 (build `2026-11-11e`):** the name REPAIR KIT; its look on the floor (a small grey case, a carry handle, a green plus on its lid) and in the pack (the same, drawn); three at most in the pack; a creature drops one on **8%** of kills (never a test boss), lying there **a minute** as the scrap does; **three spots** (two in the arena: by its door from the hallway and in its south-east corner; one on the Sewers' north ledge by the culvert), each back **three minutes** after it is taken; the **KIT pill** at the end of the row by the dial while you carry one; the key **H**.
 
-**Step 2, still to choose:** GUARD's reach round you; STUN DIVE's reach, how long the stun lasts, how long the chip rests, and whether the swoop protects you.
+**Step 2 (build `2026-11-11f`):** GUARD guards your squad (followers and clones) within **2.5 tiles** of you; the two buttons are **round, GUARD above STUN, just left of the dial** (the pill row by the dial had no room left on an iPad); the keys **G** and **V**; STUN DIVE reaches **5 tiles** (in sight, a clear way), the swoop takes **0.2 s** and nothing hits you during it, you stop **0.9 tiles** from the creature, the stun lasts **1.5 s**, the button rests **12 s**. A boss can be stunned like any creature (open question 2); a huge body (THE ANT QUEEN's) is in reach when its edge is, and you stop outside it.
 
 ## 6. Affected systems
 
@@ -67,6 +67,9 @@ Written per step, with its tests.
 - **The repair kit** (`ITEMS.repair_kit`, js/inventory.js; its icon `INV_ICONS.repair`; second in the pack's order): `playerKitUse` gives a bar back or refuses; `invUse` spends one only when it worked. The KIT pill (`drawKitChip`, `kitChipTap`) is drawn in the row by the dial (js/targeting.js) and its tap taken in js/input.js; the H key in js/playercombat.js.
 - **Drops** (`playerKitDrop`, from js/drops.js `onPredatorDeath`): a temporary pickup, as the scrap's (js/facilityspawn.js), gone once taken or after `drop.life`.
 - **Spots that fill again**: a map pickup may carry `respawn` (frames; js/facilitymap.js, carried by js/facility.js); js/facilitytutorial.js `facilityPickupTick` puts a taken one back that long after, in a column of light; js/facilitysave.js does not keep it as taken.
+- **GUARD** (`playerGuardToggle`, `playerGuardSpeed`, `playerGuardBlocks`): js/game.js asks `playerGuardBlocks(p, a)` in the shots' hit test before a creature's shot (`targetsGreen`) hurts one of your squad; it calls `hurtPlayer` (no push), so inside the grace a block is free. js/facilityplay.js multiplies your step by `playerGuardSpeed()`. A knockout (js/game.js) and a new game (js/facilityplay.js) call `playerCombatReset`. The reach is drawn round you on the floor (`drawPlayerCombatFx`).
+- **STUN DIVE** (`playerDiveArm`, `playerDiveAt`, `_pcDiveStep`): armed, the next tap on a creature (js/input.js, before the attack) dives at it if it is in reach, in sight (`facilitySeesFrom`) and the way is clear (`_fpLos`, js/facilityplay.js: the straight-walk test the routes and leaps use); the swoop moves you a frame at a time in `playerCombatTick`, `player.invuln` covers it, and at its end `applyStun` (js/combat.js). Its streak is drawn on the floor.
+- **The buttons** (`drawPlayerCombatChips`, from js/targeting.js `drawTargetUI`; `playerCombatTap` from js/input.js): GUARD lit while up; STUN pulsing while armed, its rest a dark sweep and the seconds left. A panel over the corner (the pack, INFO, the class picker, the Armory) hides them and takes their taps away (`_tgChipsOff`), as it does the serum, potion and kit pills'.
 - **The model** on the floor: `repair_kit` in design/props/models/pickups.js, baked into img/props/pickups.png (the other eleven pickups re-baked pixel for pixel the same). design/props/bake_props.js now uses the machine's Playwright and browser (the old pinned browser is not on this machine).
 
 ## 10. Verification record
@@ -76,6 +79,8 @@ Written per step, with its tests.
 | `node tests/playercombat.js` (7 checks: the refill's timing and its resets, the kit's use and refusal, the pill and the key, drops, the three spots and their return, the model) | Pass | build `2026-11-11e` |
 | The nearest suites (facility, facilityplay, packs, serum, potion, targets, toolbox, hud, bottomui, mutator, crystalline, bible, bundle, images and others: 24) | Pass | build `2026-11-11e` |
 | The real page: a kit on the arena floor, the KIT pill by the dial, one bar left | Looked at (screenshot) | not playtested |
+| `node tests/playercombat.js`, step 2 (6 more checks: GUARD's toggle, pace and reset; its block and costs; a dive's swoop, stun, rest and refusals; a huge body's reach and stop; a panel over the corner taking the buttons' and pills' taps away; the buttons, the keys and the armed tap) | Pass | build `2026-11-11f` |
+| The real page: GUARD up (the ring round the squad, the two buttons by the dial), a dive mid-swoop and after (STUNNED, the button resting) | Looked at (screenshots) | not playtested |
 
 ## 11. Open questions
 

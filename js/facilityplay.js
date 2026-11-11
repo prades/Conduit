@@ -451,7 +451,7 @@ function facilityPlayerStep() {
     const p = player.fpPath;
     if (p && p.length) {
         const w = p[0], d = Math.hypot(w[0] - player.x, w[1] - player.y);
-        const sp = FP_PLAYER_SPEED * (typeof classStat === "function" ? classStat("playerSpeed", 1) : 1);   // (the spider mech is faster: js/classes.js)
+        const sp = FP_PLAYER_SPEED * (typeof classStat === "function" ? classStat("playerSpeed", 1) : 1) * (typeof playerGuardSpeed === "function" ? playerGuardSpeed() : 1);   // (the spider mech is faster: js/classes.js)
         if (d <= sp) { player.x = w[0]; player.y = w[1]; p.shift(); } else { player.x += (w[0] - player.x) / d * sp; player.y += (w[1] - player.y) / d * sp; }
     }
     facilityConstrain(player, px, py);
@@ -493,7 +493,7 @@ function facilityResetState() {
     commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null; commandBodyTarget = null; if (typeof commandTechTarget !== "undefined") commandTechTarget = null;
     playerAttackMode = false; if (typeof gunStow === "function") gunStow();
     isPressing = false; longHoldFired = false; touchMoved = false;
-    health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START;
+    health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START; if (typeof playerCombatReset === "function") playerCombatReset();   // (the guard down: js/playercombat.js)
     if (typeof document !== "undefined") { const ov = document.getElementById("overlay"); if (ov && ov.classList) ov.classList.remove("active"); }
 }
 function facilityPlayStart() {

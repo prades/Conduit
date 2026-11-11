@@ -158,9 +158,18 @@ function _tgBolt(x, y, col, s) {
 }
 function _tgMelee() { return typeof weaponMelee === "function" && weaponMelee(); }
 function _tgHybrid() { return typeof weaponDef === "function" && weaponDef().kind === "hybrid"; }
+// a panel over the corner (or no play) hides the pills by the dial and the two round buttons: their tap areas go with them, so a tap there is the panel's (js/input.js asks them before the panels)
+function _tgChipsOff() {
+    _ATKCHIP.w = 0;
+    if (typeof _SERUMCHIP !== "undefined") _SERUMCHIP.w = 0;
+    if (typeof _POTIONCHIP !== "undefined") _POTIONCHIP.w = 0;
+    if (typeof _KITCHIP !== "undefined") _KITCHIP.w = 0;
+    if (typeof drawPlayerCombatChips === "function") drawPlayerCombatChips(null);   // (nothing to draw by: GUARD's and STUN's taps off)
+}
 function drawTargetUI() {
-    _tgDial = null; if (!targetOn() || typeof ctx === "undefined") return;
-    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen)) { _ATKCHIP.w = 0; return; }
+    _tgDial = null; if (!targetOn() || typeof ctx === "undefined") { _tgChipsOff(); return; }
+    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen)) { _tgChipsOff(); return; }
+    if (typeof drawPlayerCombatChips === "function") drawPlayerCombatChips(_tgAnchor());   // GUARD and STUN, round, just left of the dial (js/playercombat.js)
     const a = targetCurrent(); if (!a) { _tgAmmoDraw(); return; }   // (no creature: the ammunition is still there, where the button comes up)
     const f = typeof frame !== "undefined" ? frame : 0, p = _tgScreen(a), age = f - _acquireAt;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);

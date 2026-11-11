@@ -878,9 +878,11 @@
   <div class="tw"><table>
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
     <tr><td>Hits</td><td class="num"><span class="n" data-k="PLAYER_HITS">3</span></td><td><code>js/config.js:208</code></td></tr>
-    <tr><td>The bars come back: out of danger for (since build <code>2026-11-11e</code>, docs/PLAYER-COMBAT.md)</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.refill.after" data-f="sec">600 s</span></td><td><code>js/playercombat.js</code></td></tr>
-    <tr><td>Then a bar every</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.refill.every" data-f="sec">480 s</span></td><td><code>js/playercombat.js</code></td></tr>
+    <tr><td>The bars come back: out of danger for (since build <code>2026-11-11e</code>, docs/PLAYER-COMBAT.md)</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.refill.after" data-f="f">10 s</span></td><td><code>js/playercombat.js</code></td></tr>
+    <tr><td>Then a bar every</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.refill.every" data-f="f">8 s</span></td><td><code>js/playercombat.js</code></td></tr>
     <tr><td>A repair kit: one bar back (the pack, the KIT pill, H); a creature drops one</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.drop.chance" data-f="pct">8%</span> of kills</td><td><code>js/playercombat.js</code></td></tr>
+    <tr><td>GUARD (since build <code>2026-11-11f</code>): your squad covered within, and your pace while it is up</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.guard.reach">2.5</span> tiles · ×<span class="n" data-k="PLAYER_COMBAT.guard.speed">0.5</span></td><td><code>js/playercombat.js</code></td></tr>
+    <tr><td>STUN DIVE: reach, the stun, the rest</td><td class="num"><span class="n" data-k="PLAYER_COMBAT.dive.reach">5</span> tiles · <span class="n" data-k="PLAYER_COMBAT.dive.stun" data-f="f">1.5 s</span> · <span class="n" data-k="PLAYER_COMBAT.dive.rest" data-f="f">12 s</span></td><td><code>js/playercombat.js</code></td></tr>
     <tr><td>Grace after a hit</td><td class="num"><span class="n" data-k="PLAYER_HIT_GRACE">60 frames</span> (1 s)</td><td><code>js/config.js:209</code></td></tr>
     <tr><td>Grace after a knockdown</td><td class="num"><span class="n" data-k="PLAYER_RESPAWN_GRACE">90 frames</span> (1.5 s)</td><td><code>js/config.js:198</code></td></tr>
     <tr><td>Knockback per hit</td><td class="num"><span class="n" data-k="PLAYER_KNOCKBACK">0.7 tiles</span></td><td><code>js/config.js:298</code></td></tr>
@@ -3598,7 +3600,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11e</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11f</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3820,7 +3822,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-11e (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11f (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

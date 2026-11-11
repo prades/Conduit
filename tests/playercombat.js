@@ -1,4 +1,4 @@
-// THE PLAYER'S PART IN A FIGHT (docs/PLAYER-COMBAT.md), step 1 (build 2026-11-11e): the bars come back, and the repair kit.
+// THE PLAYER'S PART IN A FIGHT (docs/PLAYER-COMBAT.md), step 1 (build 2026-11-11e): the bars come back, and the repair kit; step 2 (build 2026-11-11f): GUARD and STUN DIVE.
 // The owner, 2026-11-11: "B built on A"; the refill "Slow" (after 10 s out of danger, a bar every 8 s); repair kits from "Both" (creature drops, and spots in the facility that fill again).
 //   THE REFILL   no bar before 10 s out of danger, then one, then one every 8 s, never past three; a hit or a creature near starts the wait again
 //   THE KIT      one bar back from the pack (USE), refused when full; the KIT pill by the dial and the H key use one
@@ -76,6 +76,61 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a kit on the floor is drawn as itself, a small case with a green plus (its model on the pickups sheet), not the white supply case', () => {
         same(J('!!(PROP_ATLAS.pickups && PROP_ATLAS.pickups.cells.repair_kit)'), true, 'its model on the pickups sheet');
         ok(/B\.repair_kit = \(\) =>/.test(rd('design/props/models/pickups.js')), 'its model in design/props/models/pickups.js');
+    });
+
+    group('GUARD: a stance; shots at your squad near you hit you instead (step 2, build 2026-11-11f)');
+    check('GUARD toggles on and off; you move at half speed while it is up; the player\'s step asks it; a knockout and a new game drop it', () => {
+        const r = J(`(function(){ playerGuardOn = false; const o = { a: [playerGuardToggle(), playerGuardSpeed()], b: [playerGuardToggle(), playerGuardSpeed()] }; playerGuardToggle(true); playerCombatReset(); o.c = playerGuardOn; return o; })()`);
+        same(r.a.join(), 'true,0.5', 'up, half speed'); same(r.b.join(), 'false,1', 'down, full speed'); same(r.c, false, 'reset left it up');
+        ok(/\* \(typeof playerGuardSpeed === "function" \? playerGuardSpeed\(\) : 1\)/.test(rd('js/facilityplay.js')), 'the player\'s step does not ask the guard');
+        ok(/if \(typeof playerCombatReset === "function"\) playerCombatReset\(\);   \/\/ \(the guard down, no dive/.test(rd('js/game.js')), 'a knockout does not drop the guard');
+    });
+    check('up: a creature\'s shot at a follower within reach is stopped and costs you one bar (inside the grace, nothing); out of reach, or not your squad, or the guard down: not stopped; the shots\' hit test asks it', () => {
+        const r = J(`(function(){ const o = {}; __calm(); const f = followers[0]; f.x = player.x + 1; f.y = player.y; const shot = { targetsGreen: true, x: f.x, y: f.y };
+            playerGuardOn = true; health = 3; player.invuln = 0; o.near = [playerGuardBlocks(shot, f), health]; o.grace = [playerGuardBlocks(shot, f), health]; player.invuln = 0;
+            f.x = player.x + PLAYER_COMBAT.guard.reach + 0.5; o.far = playerGuardBlocks(shot, f); f.x = player.x + 1;
+            o.mine = playerGuardBlocks({ targetsGreen: false, x: f.x, y: f.y }, f); playerGuardOn = false; o.down = playerGuardBlocks(shot, f); health = 3; return o; })()`);
+        same(r.near.join(), 'true,2', 'stopped, one bar'); same(r.grace.join(), 'true,2', 'inside the grace: stopped, no bar'); same(r.far, false, 'stopped out of reach');
+        same(r.mine, false, 'one of your own shots stopped'); same(r.down, false, 'stopped with the guard down');
+        ok(/if \(p\.targetsGreen && typeof playerGuardBlocks === "function" && playerGuardBlocks\(p, a\)\) \{ hit = true; return; \}/.test(rd('js/game.js')), 'the shots\' hit test does not ask the guard');
+    });
+
+    group('STUN DIVE: the button, then a creature (step 2)');
+    check('armed, a creature within reach and in sight: you swoop to its side (nothing hits you on the way) and it is stunned; then the button rests; too far, or resting: refused', () => {
+        const r = J(`(function(){ const o = {}; __calm(); _pcDiveReady = 0; _pcDive = null; const A = _fp.F.byId.get('arena').bb, cx = (A[0] + A[2]) / 2, cy = (A[1] + A[3]) / 2; __put(cx, cy);
+            const foe = spawnCreature({ species: 'ant', className: 'worker', x: cx + 3, y: cy, level: 2 }); foe.speed = 0; foe.stunned = 0;
+            o.armed = playerDiveArm(); const res = playerDiveAt(foe); o.ok = res.ok; o.safe = player.invuln >= PLAYER_COMBAT.dive.frames; o.disarmed = playerDiveArmed;
+            for (let i = 0; i < PLAYER_COMBAT.dive.frames + 2; i++) { frame++; playerCombatTick(); }
+            o.beside = +Math.hypot(foe.x - player.x, foe.y - player.y).toFixed(2); o.stunned = foe.stunned > 0; o.resting = playerDiveAt(foe).why; o.arm = playerDiveArm();
+            _pcDiveReady = 0; const far = spawnCreature({ species: 'ant', className: 'worker', x: player.x + PLAYER_COMBAT.dive.reach + 2, y: player.y, level: 2 }); far.speed = 0; o.far = playerDiveAt(far).why; __calm(); return o; })()`);
+        same(r.armed, true, 'armed'); same(r.ok, true, 'the dive'); same(r.safe, true, 'something can hit you on the way'); same(r.disarmed, false, 'still armed after the dive');
+        ok(Math.abs(r.beside - J('PLAYER_COMBAT.dive.stop')) < 0.2, 'not at its side: ' + r.beside); same(r.stunned, true, 'not stunned'); same(r.resting, 'RESTING', 'dived again at once'); same(r.arm, false, 'armed while resting'); same(r.far, 'TOO FAR', 'dived too far');
+    });
+    check('the two round buttons by the dial: drawn left of it, a tap on GUARD toggles it and on STUN arms the dive; G and V do the same; a tap on a creature while armed dives, anywhere else puts the dive away', () => {
+        const r = J(`(function(){ playerGuardOn = false; playerDiveArmed = false; _pcDiveReady = 0; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 });
+            const g = [_GUARDBTN.x, _GUARDBTN.y, _DIVEBTN.x, _DIVEBTN.y]; const t1 = playerCombatTap(_GUARDBTN.x, _GUARDBTN.y), up = playerGuardOn, t2 = playerCombatTap(_DIVEBTN.x, _DIVEBTN.y), armed = playerDiveArmed, t3 = playerCombatTap(10, 10);
+            playerGuardOn = false; playerDiveArmed = false; return { g, t: [t1, up, t2, armed, t3] }; })()`);
+        same(r.g.join(), '870,574,870,626', 'where they are (left of the dial: GUARD above, STUN below)'); same(r.t.join(), 'true,true,true,true,false', 'the taps');
+        const P = rd('js/playercombat.js'), I = rd('js/input.js'), T = rd('js/targeting.js');
+        ok(/guard: \{ reach: [\d.]+, speed: 0\.5, key: "g" \}/.test(P) && /key: "v" \}/.test(P) && /if \(k === PLAYER_COMBAT\.guard\.key\) playerGuardToggle\(\); else if \(k === PLAYER_COMBAT\.dive\.key\) playerDiveArm\(\);/.test(P), 'the keys');
+        ok(/if \(!touchMoved && typeof playerCombatTap === "function" && playerCombatTap\(upX, upY\)\)/.test(I), 'a tap on the buttons is not taken');
+        ok(/if \(typeof playerDiveArmed !== "undefined" && playerDiveArmed\) \{ const foe = findEnemyAtScreen\(ex, ey\); if \(foe\) \{ playerDiveAt\(foe\); return; \} playerDiveCancel\(\); \}/.test(I), 'the armed tap');
+        ok(/drawPlayerCombatChips\(_tgAnchor\(\)\)/.test(T), 'the buttons are not drawn by the dial');
+    });
+
+    check('a huge body (THE ANT QUEEN\'s bodyR) is in reach when its edge is, and you stop outside it, not in it', () => {
+        const r = J(`(function(){ const o = {}; __calm(); _pcDiveReady = 0; _pcDive = null; const A = _fp.F.byId.get('arena').bb, cx = (A[0] + A[2]) / 2, cy = (A[1] + A[3]) / 2; __put(cx, cy);
+            const big = spawnCreature({ species: 'ant', className: 'worker', x: cx + 4, y: cy, level: 2 }); big.speed = 0; big.bodyR = 1.5;
+            o.ok = playerDiveAt(big).ok; for (let i = 0; i < PLAYER_COMBAT.dive.frames + 2; i++) { frame++; playerCombatTick(); }
+            o.gap = +Math.hypot(big.x - player.x, big.y - player.y).toFixed(2); _pcDiveReady = 0; __put(cx, cy);
+            big.x = cx + PLAYER_COMBAT.dive.reach + 1; o.edge = playerDiveAt(big).ok; _pcDive = null; __calm(); return o; })()`);
+        same(r.ok, true, 'the dive'); ok(Math.abs(r.gap - (1.5 + J('PLAYER_COMBAT.dive.stop'))) < 0.2, 'not outside its body: ' + r.gap); same(r.edge, true, 'its edge in reach, and refused');
+    });
+    check('a panel over the corner (the pack) hides the buttons and the pills by the dial, and their taps go with them: a tap there is the panel\'s', () => {
+        const r = J(`(function(){ playerGuardOn = false; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 }); const gx = _GUARDBTN.x, gy = _GUARDBTN.y;
+            _KITCHIP.w = _POTIONCHIP.w = _SERUMCHIP.w = 40; invOpen(); drawTargetUI();
+            const o = [playerCombatTap(gx, gy), playerGuardOn, _KITCHIP.w, _POTIONCHIP.w, _SERUMCHIP.w, _ATKCHIP.w]; invClose(); playerGuardOn = false; return o; })()`);
+        same(r.join(), 'false,false,0,0,0,0', 'a hidden button or pill still takes a tap (GUARD tap, guard up, KIT, POTION, SERUM, ammunition)');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

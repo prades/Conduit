@@ -137,6 +137,9 @@ const handleInput=(ex,ey)=>{
     // A tap on a launcher site you are near (or its label): set a Kinetic Launcher up there, or send a follower up from the one there (js/techabilities.js).
     if (typeof techSiteTap === "function" && techSiteTap(ex, ey)) return;
 
+    // ── STUN DIVE, armed (js/playercombat.js): a tap on a creature dives at it; anywhere else puts the dive away (and the tap does what it would) ──
+    if (typeof playerDiveArmed !== "undefined" && playerDiveArmed) { const foe = findEnemyAtScreen(ex, ey); if (foe) { playerDiveAt(foe); return; } playerDiveCancel(); }
+
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
     // a predator, so brushing one while moving spent a shot at it.
@@ -302,6 +305,8 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
     // The POTION pill beside those (js/potion.js): a tap throws the Sleeping Potion in hand
     if (!touchMoved && typeof potionChipTap === "function" && potionChipTap(upX, upY)) { isPressing=false; return; }
+    // GUARD and STUN, the two round buttons by the dial (js/playercombat.js)
+    if (!touchMoved && typeof playerCombatTap === "function" && playerCombatTap(upX, upY)) { isPressing=false; return; }
     // The KIT pill beside those (js/playercombat.js): a tap uses a repair kit
     if (!touchMoved && typeof kitChipTap === "function" && kitChipTap(upX, upY)) { isPressing=false; return; }
     // The ammunition pill (js/targeting.js draws it): a tap while armed stows the weapon again

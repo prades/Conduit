@@ -3,7 +3,7 @@
 // numbers, where it lives in the code, the decisions made and what is still open), a card on the home page, story sections left to be written, and pictures from the game.
 //   THE NUMBERS   every number on the page that is read from the code (class "n", data-k = the expression that gives it) is what the code says now: the game is loaded here and each
 //                 expression evaluated, so a change in the code that the page does not follow fails (data-f: "pct" a fraction shown as %, "s" ms shown as seconds, "f" frames at 60 fps
-//                 shown as seconds, "min" ms shown as minutes)
+//                 shown as seconds, "min" ms shown as minutes; any other data-f is wrong)
 //   THE PAGE      the home page has its card; every picture is in the repo and the pictures stay small; every link inside it goes somewhere; the contents list every part; the story's parts
 //                 say they are to be written; it loads nothing from elsewhere
 //   THE SCREEN    in the real browser (no Chromium: it says so and passes): every picture loads, the script runs, and on a phone nothing is wider than the screen
@@ -22,6 +22,7 @@ function group(n) { console.log('\n' + n); }
 function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
 function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+const FORMATS = ['pct', 's', 'f', 'min'];   // (data-f: an unknown one used to be read as no scaling, so "600 s" passed for 600 frames)
 const unesc = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
 // --fix: each number the page shows wrong, rewritten from the code (the same reading as the check below: data-f scales it, the page's own decimals unless the value needs more, its
@@ -32,7 +33,7 @@ function fixNumbers(page, context) {
         let v; try { v = vm.runInContext('(' + unesc(kRaw) + ')', context); } catch (e) { return all; }
         const text = unesc(t).trim(), head = '<span class="n" data-k="' + kRaw + '"' + (fAttr || '') + '>';
         if (typeof v === 'string') { if (v === text) return all; changed.push(unesc(kRaw) + ': "' + text + '" → "' + v + '"'); return head + esc(v) + '</span>'; }
-        if (typeof v !== 'number' || !isFinite(v)) return all;
+        if (typeof v !== 'number' || !isFinite(v) || (f && !FORMATS.includes(f))) return all;
         const shown = f === 'pct' ? v * 100 : f === 's' ? v / 1000 : f === 'f' ? v / 60 : f === 'min' ? v / 60000 : v;
         const txt = text.replace(/−/g, '-').replace(/,/g, ''), m = txt.match(/-?\d+(\.\d+)?/); if (!m) return all;
         const dec = ((txt.match(/\.(\d+)/) || [])[1] || '').length, r = (x, d) => Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
@@ -93,6 +94,7 @@ function measure(w, h) {
         let v; try { v = vm.runInContext('(' + g.k + ')', context); } catch (e) { wrong.push(g.k + ': the code has no such thing (' + e.message + ')'); continue; }
         if (typeof v === 'string') { if (v !== g.t) wrong.push(g.k + ' is "' + v + '", the page says "' + g.t + '"'); continue; }
         if (typeof v !== 'number' || !isFinite(v)) { wrong.push(g.k + ' is not a number (' + v + ')'); continue; }
+        if (g.f && !FORMATS.includes(g.f)) { wrong.push(g.k + ': data-f="' + g.f + '" is not a format this test knows (' + FORMATS.join(', ') + ')'); continue; }
         const shown = g.f === 'pct' ? v * 100 : g.f === 's' ? v / 1000 : g.f === 'f' ? v / 60 : g.f === 'min' ? v / 60000 : v;
         const txt = g.t.replace(/−/g, '-').replace(/,/g, ''), num = parseFloat((txt.match(/-?\d+(\.\d+)?/) || [])[0]), dec = ((txt.match(/\.(\d+)/) || [])[1] || '').length;
         if (!isFinite(num)) { wrong.push(g.k + ': the page says "' + g.t + '", not a number'); continue; }

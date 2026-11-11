@@ -19,7 +19,7 @@ const SUITES = [
     ['the players\' page: play.html and its one script (dist/conduit.js) fresh, the boot check kept, the way in from game.html, and the same names as file by file in a real browser', 'bundle.js'],
     ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['the electrical domain (step 1): the little door beside the junction, shut until it is repaired; the deep server room and down four steps the circuitry; one interior of two rooms', 'elecdomain.js'],
-    ['the player\'s part in a fight (step 1): the bars come back slowly out of danger; the repair kit (the pack, the KIT pill, H); kits dropped by creatures and at spots that fill again', 'playercombat.js'],
+    ['the player\'s part in a fight: the bars come back slowly out of danger; the repair kit (the pack, the KIT pill, H); kits dropped by creatures and at spots that fill again; GUARD (shots at the squad near you hit you, half speed) and STUN DIVE (a swoop, a stun, a rest)', 'playercombat.js'],
     ['performance + culling',    'perf.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
