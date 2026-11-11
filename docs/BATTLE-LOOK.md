@@ -57,6 +57,13 @@ What it is today:
       - The bonuses come second: a weakness's extra on the physical part, an elemental advantage on the elemental part, and the Opportunity cards' share. When the first lands, the bonus, **+N in gold**, hops up from the bar and slams down onto it.
       - **The bar moves only as each number lands**: twice for a hit with a bonus.
       - The colour and the hop's timing are the agent's, provisional. The draft found the bonus by working the hit out again with no bonus; the build should have `dmgApply` (js/damage.js) give both.
+    - **Less jumping, more fitting into place** (the owner: "The numbers should do less jumping more fitting into place"):
+      - A number rises only a few pixels as it appears, then glides, eased, to the point on the bar where the health is cut, turning to lie flat along the bar as it arrives. It fits there with no squash or bounce.
+      - A follower's number lies flat on the floor at its feet.
+      - The bonus (+N) slides along the bar to its own cut.
+      - The bar's shake on a landing is smaller.
+      - Timings the agent's: appearing 5 frames, gliding to frame 18, gone 8 frames after.
+      - Two numbers that appear on the same frame overlap; the build should set them apart.
     - **Your followers' health is on the roster, not the floor** (the owner: "remove the followers' health bars from the floor and just make it to where the on-screen roster will highlight and shake the follower card and health bar when activity occurs").
       - Only the creatures keep a floor bar, with its level and element tag. Your followers keep their lit tile.
       - A follower's number smashes the floor at its feet.
@@ -163,7 +170,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip.
 - no names in the fight: the plates gone; by each floor bar its level and, if it has one, its element's tag. Drawn two ways, flat on the floor like the bar, and standing upright at the bar's end.
 - the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip; "Ugly"). Then three side by side (A along the tile, B halfway, C standing); A kept.
-- a hit's number flying to the bar: out of whoever was hit, up and over, down onto its floor bar with a squash and a ring; the bar dropping only then, the lost piece breaking off (a still and a clip). Then gone within 8 frames of landing; then the extra landing second (a crushing BASH on an ant: 23, then +1 in gold hopping up from the bar and down). Then the followers' health on the roster: no floor bars for them; a bite's number landing at the Fire Technician's feet, its card lighting up and shaking. The draft's fight made one on one, the other followers held back, so each number reads alone (the owner: "make the test have less projectiles"). The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- a hit's number flying to the bar: out of whoever was hit, up and over, down onto its floor bar with a squash and a ring; the bar dropping only then, the lost piece breaking off (a still and a clip). Then gone within 8 frames of landing; then the extra landing second (a crushing BASH on an ant: 23, then +1 in gold hopping up from the bar and down). Then the followers' health on the roster: no floor bars for them; a bite's number landing at the Fire Technician's feet, its card lighting up and shaking. The draft's fight made one on one, the other followers held back, so each number reads alone (the owner: "make the test have less projectiles"). Then the numbers gliding into place: no hop, lying flat along the bar at its cut. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
