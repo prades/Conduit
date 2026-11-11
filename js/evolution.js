@@ -168,7 +168,8 @@ const EVOLUTIONS = {
     // The ELECTRIC MAGE ("sniper" in the code), design No. 541: a smooth cloud of dark gas over a flickering glow, a crown of black spikes,
     // four glowing spikes circling its base and gas fins that ripple. The glow flickers, so its sheet carries its own light.
     thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "STATIC VORTEX", shot: "CHAIN LIGHTNING", sheet: "img/evo/thunderhead.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33" },
+              cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33",
+              storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 201.4] } },   // (storm: its STATIC VORTEX's sheet, drawn at the enemy: staticVortexDraw, below)
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     // LEGACY: the first flux mage. New evolutions use the Voidstar; a follower already evolved into this keeps it.
     serpent:{ id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
@@ -190,7 +191,7 @@ const EVOLUTIONS = {
     // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
     // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
     quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst"],   /* (FIRE BOMBS taken off the fire brawler: the owner, 2026-11-07, build gg) */ sheet: "img/evo/quillstone.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 85], noGlow: true, color: "#ff5a1f" },
+              cell: 192, anchor: [96, 138.2], core: [96, 109], noGlow: true, color: "#ff5a1f", burst: true },   // (a 192 px cell since build 2026-11-11n, 40 columns: its everyday hit's dive, and QUILL BURST's own frames: staticQuillCol, below)
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
@@ -208,7 +209,8 @@ const EVOLUTIONS = {
     // zig-zag bolt. It slithers like an eel, legs paddling, and is quick: its pace is 1.6 × (js/abilities.js tickSlowSpeed; the owner: "it's really fast"; the number is provisional). Its second
     // attack is BASH for now (the owner: "BASH for now"); its own attacks, subclass and Ultimate are open (it uses the electric Ultimate and has no subclass yet).
     electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "ZIGZAG DASH", moves: ["zigzag_dash"], pace: 1.6, sheet: "img/evo/electroskink.png",
-              cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033" },   // (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
+              cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033",
+              swirl: { id: "skinkswirl", sheet: "img/evo/skinkswirl.png", cell: 192, anchor: [96, 138.2] } },   // (swirl: its everyday hit's vortex, drawn round the enemy: SKINK_SWIRL, below.) (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
     // The ELECTRIC BRAWLER until build 2026-11-08a, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
     // SET ASIDE since build 2026-11-08a (aside: true): the owner, 2026-11-07: "the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side
@@ -384,6 +386,7 @@ function evolutionTick() {
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
         if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
+        if (f._quillFire) quillFireTick(f, f0);   // (a QUILL BURST turning round: its quills leave a moment after it begins to turn)
         if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined") altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
@@ -420,6 +423,7 @@ function _altFire(f, mv, f0) {
     if (typeof followerProjectiles !== "undefined") for (const o of followerProjectiles) if (!seen.pr.has(o)) live.push(["pr", o]);
     if (typeof fireBombs !== "undefined") for (const o of fireBombs) if (!seen.bm.has(o)) live.push(["bm", o]);
     if (typeof rotDecoys !== "undefined") for (const o of rotDecoys) if (!seen.dc.has(o)) live.push(["dc", o]);
+    if (f._quillFire) live.push(["qf", f]);   // (a QUILL BURST's quills not yet launched: the move is still going, so its cooldown does not start at the cast: build 2026-11-11n)
     f._altLive = { t0: f0, list: live, by: f };
 }
 function _altLiveAny(L) {
@@ -429,6 +433,7 @@ function _altLiveAny(L) {
         if (k === "pr" && typeof followerProjectiles !== "undefined" && followerProjectiles.indexOf(o) >= 0 && !o.dead) return true;
         if (k === "bm" && typeof fireBombs !== "undefined" && fireBombs.indexOf(o) >= 0 && !o.dead) return true;
         if (k === "dc" && typeof rotDecoys !== "undefined" && rotDecoys.indexOf(o) >= 0 && !o.dead) return true;
+        if (k === "qf" && o._quillFire) return true;
     }
     return false;
 }
@@ -471,15 +476,38 @@ function quillBurst(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, a0 = Math.atan2(t.y - f.y, t.x - f.x), dmg = (f.power || 10) * QUILL_MULT;
-    const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
-    if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
-        const a = a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
-        spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
-    }
+    // THE TURN (build 2026-11-11n; the owner, 2026-11-11: "it should turn around and shoot off all of its projectiles, and they should disappear for a second"): it turns its back to the enemy, and the quills are
+    // launched QUILL_FIRE frames after it begins to turn, as its sheet shows them leaving (quillFireTick); aimed as it was at the cast. Everything else of the move is as it was.
+    f._quillFire = { at: f0 + QUILL_FIRE, a0, dmg }; f._burstAt = f0;
     f._sigAt = f0; f._sigCd = moveWindupFrames("quill_burst");
     if (f.dirX !== undefined) { f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// the quills leave (js/evolution.js evolutionTick): QUILL_COUNT of them at once in the forward fan, as the move was before the turn
+function quillFireTick(f, f0) {
+    const B = f._quillFire; if (!B || f0 < B.at) return;
+    f._quillFire = null;
+    const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
+    if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
+        const a = B.a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
+        const q = spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+        if (q && f._altLive && f._altLive.list) f._altLive.list.push(["pr", q]);   // (the quills in the air are the move's live effect, as they were: its cooldown starts when they are done)
+    }
+}
+// WHICH CELL of the Quillstone's sheet (40 columns: design/evolutions/forms15.js No. 927, bake.js job.blocks) `age` frames into a QUILL BURST (null: past it, the ordinary frames):
+//   cols 16 to 23   it turns its back to the enemy and the quills leave (QUILL_ANIM.turn game frames a cell)
+//   cols 24 to 27   it turns back, bare (QUILL_ANIM.back a cell); then cols 32 to 39, standing bare, QUILL_ANIM.hold frames in all from the cast
+//   cols 28 to 31   the quills grow back (QUILL_ANIM.grow a cell), the last cells of QUILL_ANIM.hold + 4 x QUILL_ANIM.grow frames
+// The owner: "they should disappear for a second", the quills "grow back fast" (of the agent's questions). The frame counts are the agent's, PROVISIONAL.
+const QUILL_FIRE = 12, QUILL_ANIM = { turn: 3, back: 3, hold: 75, grow: 5 };
+const QUILL_ANIM_FRAMES = QUILL_ANIM.hold + 4 * QUILL_ANIM.grow;
+function quillBurstCol(age) {
+    const A = QUILL_ANIM; if (age < 0 || age >= QUILL_ANIM_FRAMES) return -1;
+    if (age < A.turn * 8) return 16 + Math.floor(age / A.turn);
+    if (age < A.turn * 8 + A.back * 4) return 24 + Math.floor((age - A.turn * 8) / A.back);
+    if (age < A.hold) return 32 + Math.floor((age - A.turn * 8 - A.back * 4) / 7) % 8;
+    return 28 + Math.floor((age - A.hold) / A.grow);
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.
 function arcVolley(f) {
@@ -1189,7 +1217,9 @@ function _evoFrame(f, d, f0) {
         const wc = f.walkCycle || 0; if (f._evoWc !== undefined && Math.abs(wc - f._evoWc) > 1e-4) f._evoMoveAt = f0; f._evoWc = wc;
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
-    if (cs >= 0) col = d.consume + cs;
+    const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
+    if (qb >= 0) col = qb;
+    else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
     else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
@@ -1231,6 +1261,7 @@ function _drawEvolvedBody(f, px, py, g) {
     const f0 = typeof frame !== "undefined" ? frame : 0, m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
     if (m < EVO_MOLT * 0.3) return false;                 // still the egg, shaking (the overlay cracks it)
     const img = _evoImg(d); if (!img) return false;
+    if (f.evolved === "electroskink" && skinkSwirling(f)) return true;   // (in its vortex round the enemy: the Skink is not on the floor until it pops back)
     const col = d.color || (d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33");
     const fr = _evoFrame(f, d, f0), rise = fr.rise, sigK = fr.sigK, s = fr.s;
     g.save();
@@ -1337,3 +1368,69 @@ function drawEvolvedOverlay(f, px, py, g) {
     }
     g.restore();
 }
+
+// ── THE ELECTRO SKINK'S SWIRL (build 2026-11-11k) ───────────────────────────────────────────────────────────────────────────
+// ASKED (the owner, 2026-11-11, of the Skink's everyday hit): "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form." Of the
+// agent's questions: "Looks only" (the Skink stays where it stands; the vortex is drawn round the enemy), "Same total, split" was not taken: "It's the primary attack, you should just have one
+// number" (one hit), the chain lightning "Drop it" (one enemy), "Slashing" (its form's type already: DMG_FORM.electroskink.main, so the hit is half Slashing and half electric as every
+// follower's is), and "keep it as is" for the look (design No. 926, design/evolutions/forms40.js: three copies of its body in a fast ring).
+// What it does: its everyday hit (the electric element's CHAIN LIGHTNING for every other electric follower, js/elements.js) is, for the Skink, a vortex of SKINK_SWIRL.coil frames curling in, SKINK_SWIRL.spin
+// spinning and SKINK_SWIRL.release curling out, drawn at the enemy; the hit lands as the ring closes (at the spin's start): the enemy's `target.x, y` as it is then, SKINK_SWIRL.mult × its ATK (the
+// first jump of the old chain's number). The Skink's own body is not drawn from the first frame to the last, and is back as the vortex ends. The frame counts and the number are the agent's, PROVISIONAL.
+// It costs what the old hit did (the WILL, js/combat.js followerAttack) and rests as it did; a target that dies, or a Skink that does, in the coil takes no hit.
+const SKINK_SWIRL = { coil: 6, spin: 12, release: 6, mult: 0.35 };
+const SKINK_SWIRL_FRAMES = SKINK_SWIRL.coil + SKINK_SWIRL.spin + SKINK_SWIRL.release;
+function skinkSwirling(f) { return !!f && f._swirlAt !== undefined && !f.dead && (typeof frame !== "undefined" ? frame : 0) - f._swirlAt < SKINK_SWIRL_FRAMES; }
+function skinkSwirlStrike(f, t) {
+    if (!f || !t || t.dead || skinkSwirling(f)) return;
+    f._swirlAt = typeof frame !== "undefined" ? frame : 0; f.state = "attack"; f.attackAnim = 0;
+    spawnElementEffect({ type: "skinkswirl", by: f, target: t, x: t.x, y: t.y, life: SKINK_SWIRL_FRAMES, maxLife: SKINK_SWIRL_FRAMES, element: "electric" });
+}
+// where the Skink is while it swirls: the vortex (its effect: .x, .y, the enemy's feet), else null. The battle view's lit tile goes there (js/battleview.js battleViewDecals; the owner, 2026-11-11: the green tile "should match where it is attacking the enemy")
+function skinkSwirlSpot(f) { if (!skinkSwirling(f) || typeof elementEffects === "undefined") return null; for (const e of elementEffects) if (e.type === "skinkswirl" && e.by === f) return e; return null; }
+// each frame (js/elements.js updateElementEffects, after the effect's life has counted down): the ring follows the enemy, and the hit lands as it closes
+function skinkSwirlTick(e) {
+    const f = e.by, t = e.target;
+    if (!f || f.dead) { e.life = 0; return; }
+    if (t && !t.dead) { e.x = t.x; e.y = t.y; }
+    if (e.maxLife - e.life === SKINK_SWIRL.coil && t && !t.dead) applyElementalDamage(t, (f.stats && f.stats.attack || 10) * SKINK_SWIRL.mult, f, "electric", DMG_HIT_MAIN);
+}
+// which cell of the swirl's sheet (design/evolutions/forms40.js: the idle block, 0 to 7, is the ring spinning; the action block, 8 to 15, the bodies curling into it) is shown `age` frames in
+function skinkSwirlCol(age) {
+    const S = SKINK_SWIRL;
+    if (age < S.coil) return 8 + Math.round(age / (S.coil - 1) * 7);   // (the first to the last cell of the coil, so the ring is whole as it closes)
+    if (age < S.coil + S.spin) return (age - S.coil) % 8;
+    return 8 + Math.round((1 - Math.min(S.release - 1, age - S.coil - S.spin) / (S.release - 1)) * 7);   // (the coil backward)
+}
+// drawn over the units like the other effects (js/elements.js drawElementEffects, case "skinkswirl"), at the enemy's feet (px, py): the baked ring, and a faint electric glow under it (light is drawn here, not baked)
+function skinkSwirlDraw(e, px, py, g) {
+    const d = EVOLUTIONS.electroskink && EVOLUTIONS.electroskink.swirl; if (!d) return;
+    const img = _evoImg(d); if (!img) return;
+    const age = Math.max(0, e.maxLife - e.life), fade = Math.min(1, e.life / 4), grow = Math.min(1, (age + 1) / SKINK_SWIRL.coil);
+    g.save();
+    g.globalAlpha = 0.35 * fade * grow; g.globalCompositeOperation = "lighter";
+    const rg = g.createRadialGradient(px, py, 0, px, py, 52); rg.addColorStop(0, "#ffe033"); rg.addColorStop(1, "rgba(255,224,51,0)");
+    g.fillStyle = rg; g.beginPath(); g.ellipse(px, py, 52, 26, 0, 0, Math.PI * 2); g.fill();
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = fade;
+    evoCellDraw(g, img, d.sheet, d.cell, skinkSwirlCol(age), 0, px - d.anchor[0] * EVO_SCALE, py - d.anchor[1] * EVO_SCALE, EVO_SCALE);
+    g.restore();
+}
+
+// ── THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m) ─────────────────────────────────────────────────────────────
+// ASKED (the owner, 2026-11-11, of its second attack): "It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect"; then "Give me 6 different
+// designs of that hurricane or tornado" and, of the first flat drafts, "This needs three.js graphics"; of the six modelled ones (design/evolutions/forms41.js, Nos. 928 to 933): "C", the DARK STORM: a dark grey funnel under a
+// small storm cloud, lightning flickering from the cloud (No. 930, baked to img/evo/staticvortex.png). The disc and the dashed ring on the floor are gone: nothing is drawn flat on the ground.
+// It is drawn at the enemy the vortex stands on, over the units like the other effects (js/elements.js drawElementEffects, case "staticVortex"). How the move works is not touched (VORTEX_*, above): the look only.
+// The sheet's idle block (cols 0 to 7) is one loop of its turn with a lightning flash on two frames of it; its action block (cols 8 to 15) the same loop with none. Each sheet frame is shown VORTEX_FRAME game
+// frames (a loop 8 times that: a turn of the cloud), and only every VORTEX_FLASH_EVERY-th loop has its lightning. The funnel grows from its foot as it fades in, and fades out as it ends. PROVISIONAL numbers (the agent's).
+const VORTEX_FRAME = 6, VORTEX_FLASH_EVERY = 4, VORTEX_ALPHA = 0.7;   // (VORTEX_ALPHA: how solid the whole storm is drawn, a little see-through: the owner, 2026-11-11, "make it transparent though a little bit")
+function staticVortexCol(age) { const n = Math.floor(Math.max(0, age) / VORTEX_FRAME), loop = Math.floor(n / 8); return (loop % VORTEX_FLASH_EVERY === 0 ? 0 : 8) + n % 8; }
+function staticVortexDraw(e, px, py, g) {
+    const d = EVOLUTIONS.thunderhead && EVOLUTIONS.thunderhead.storm; if (!d) return;
+    const img = _evoImg(d); if (!img) return;
+    const age = Math.max(0, e.maxLife - e.life), k = Math.min(1, (age + 1) / 12, e.life / 20), s = EVO_SCALE * (0.4 + 0.6 * k);
+    g.save(); g.globalAlpha = Math.max(0, k) * VORTEX_ALPHA;
+    evoCellDraw(g, img, d.sheet, d.cell, staticVortexCol(age), 0, px - d.anchor[0] * s, py + TILE_H - d.anchor[1] * s, s);   // (its foot is the floor point the old disc stood on: cy = py + TILE_H)
+    g.restore();
+}
+

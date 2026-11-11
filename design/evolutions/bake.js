@@ -13,7 +13,7 @@ const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];
 const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 // forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103), forms6.js (the flux brawler, Nos. 104-115), forms7.js (the core mage, Nos. 116-125), forms8.js (the toxic brawler, Nos. 126-141), forms9.js (the core worker, Nos. 142-144), forms10.js (the ice maw, Nos. 145-157), forms11-13.js (the ammonite in its jar, Nos. 158-222), forms14.js (cloaks and pyramids, Nos. 223-331), forms15.js (the rock porcupine, Nos. 332-361) register FORMS2[no].
-const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8'), f23src = fs.readFileSync(path.join(__dirname, 'forms23.js'), 'utf8'), f24src = fs.readFileSync(path.join(__dirname, 'forms24.js'), 'utf8'), f25src = fs.readFileSync(path.join(__dirname, 'forms25.js'), 'utf8'), f26src = fs.readFileSync(path.join(__dirname, 'forms26.js'), 'utf8'), f27src = fs.readFileSync(path.join(__dirname, 'forms27.js'), 'utf8'), f28src = fs.readFileSync(path.join(__dirname, 'forms28.js'), 'utf8'), f29src = fs.readFileSync(path.join(__dirname, 'forms29.js'), 'utf8'), f30src = fs.readFileSync(path.join(__dirname, 'forms30.js'), 'utf8'), f31src = fs.readFileSync(path.join(__dirname, 'forms31.js'), 'utf8'), f32src = fs.readFileSync(path.join(__dirname, 'forms32.js'), 'utf8'), f33src = fs.readFileSync(path.join(__dirname, 'forms33.js'), 'utf8'), f34src = fs.readFileSync(path.join(__dirname, 'forms34.js'), 'utf8'), f36src = fs.readFileSync(path.join(__dirname, 'forms36.js'), 'utf8'), f37src = fs.readFileSync(path.join(__dirname, 'forms37.js'), 'utf8'), f38src = fs.readFileSync(path.join(__dirname, 'forms38.js'), 'utf8'), f39src = fs.readFileSync(path.join(__dirname, 'forms39.js'), 'utf8');
+const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8'), f23src = fs.readFileSync(path.join(__dirname, 'forms23.js'), 'utf8'), f24src = fs.readFileSync(path.join(__dirname, 'forms24.js'), 'utf8'), f25src = fs.readFileSync(path.join(__dirname, 'forms25.js'), 'utf8'), f26src = fs.readFileSync(path.join(__dirname, 'forms26.js'), 'utf8'), f27src = fs.readFileSync(path.join(__dirname, 'forms27.js'), 'utf8'), f28src = fs.readFileSync(path.join(__dirname, 'forms28.js'), 'utf8'), f29src = fs.readFileSync(path.join(__dirname, 'forms29.js'), 'utf8'), f30src = fs.readFileSync(path.join(__dirname, 'forms30.js'), 'utf8'), f31src = fs.readFileSync(path.join(__dirname, 'forms31.js'), 'utf8'), f32src = fs.readFileSync(path.join(__dirname, 'forms32.js'), 'utf8'), f33src = fs.readFileSync(path.join(__dirname, 'forms33.js'), 'utf8'), f34src = fs.readFileSync(path.join(__dirname, 'forms34.js'), 'utf8'), f36src = fs.readFileSync(path.join(__dirname, 'forms36.js'), 'utf8'), f37src = fs.readFileSync(path.join(__dirname, 'forms37.js'), 'utf8'), f38src = fs.readFileSync(path.join(__dirname, 'forms38.js'), 'utf8'), f39src = fs.readFileSync(path.join(__dirname, 'forms39.js'), 'utf8'), f40src = fs.readFileSync(path.join(__dirname, 'forms40.js'), 'utf8'), f41src = fs.readFileSync(path.join(__dirname, 'forms41.js'), 'utf8');
 const JOBS = [
   // No. 923 (forms38.js), the game sprite of No. 914: the CORAL CRAB (its name for now), BLOOM's Technician (approved 2026-11-08; sent to the game: "Coral crab into the game next").
   // Its idle is its walk (it steps on alternate pairs of its stake legs, its crystals glowing); its action rears and drives its head down (its crushing bite).
@@ -33,6 +33,18 @@ const JOBS = [
   // Its idle is its walk, an eel's fast slither with its legs paddling; its action is the rear and lunge; the tail's yellow glow and bolt are its own light.
   // (bigger since 2026-11-08: bake it alone in a 192 px cell with half 2.267, the same pixels a unit as the 144 px sheets: node design/evolutions/bake.js <three> img/evo electroskink 192 2.2667)
   { id: 'electroskink', form: 905, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // No. 926 (forms40.js): the ELECTRO SKINK's SWIRL (draft; the owner, 2026-11-11). Idle block = the ring spinning (idleAct 2), action block = the bodies curling into it (no pulse).
+  { id: 'skinkswirl', form: 926, color: '#ffe033', idleAct: 2, action: [0, 1.0], pulse: false, glowNormal: true },
+  // Nos. 928-933 (forms41.js): six drafts of the Thunderhead's STATIC VORTEX as a tornado (2026-11-11). Round, so the idle block (8 frames) is the loop; bake in a 256 px cell: node design/evolutions/bake.js <three> <out> tornadoA,tornadoB,tornadoC,tornadoD,tornadoE,tornadoF 256 3.0222
+  { id: 'tornadoA', form: 928, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'tornadoB', form: 929, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'tornadoC', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'tornadoD', form: 931, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'tornadoE', form: 932, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'tornadoF', form: 933, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  // THE STATIC VORTEX (the owner chose design C of the six, 2026-11-11: "C"): the dark storm funnel, form 930, the game's sheet for the Thunderhead's second attack (js/evolution.js staticVortexDraw): bake it alone:
+  //   node design/evolutions/bake.js <three> img/evo staticvortex 256 3.0222   then node design/evolutions/crop_sheets.js
+  { id: 'staticvortex', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
   // Nos. 880-882 (forms34.js), the user's pencil sketch (2026-11-01): the HOVER SHELL made sleek (one low hull, two tall prongs; its action fires the launcher) and the JELLY RAM
   // redone (a faceted glass head with a bubble lit blue white inside, a swirly collar orbiting its neck, seven fat tentacles, one curled; it swims and rams). The Jelly Ram was
   // approved ("The brawler looks good") and replaces the game's sheet of its name; the form it replaces bakes as jellyram_867, to compare.
@@ -162,7 +174,13 @@ const JOBS = [
   { id: 'hammerslug', form: 469, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 391 (the game sprite of 388), the electric brawler: the hood with black hex crystals that breathe, three hovering gems in a triangle before the diamond; it bounces.
   // No. 361, the fire brawler: a pitch-black cut gem with red shards, the two front spikes black; its action frames hunch it and bristle the quills, up and back.
-  { id: 'quillstone', form: 361, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true },
+  // No. 927 (forms15.js; draft 2026-11-11), the QUILLSTONE with its own attacks: the action block (cols 8-15) is its everyday hit's dive; then three extra blocks (job.blocks, 8 frames each, values handed to update(t, act, value)):
+  //   16-23 QUILL BURST: it turns its back to the enemy (turn 0 to 1), the quills leave (fly) and shrink to nothing (q);   24-31 it turns back with no quills (turn 1 to 0), then they grow back (q 0 to 1);   32-39 standing with no quills (the idle loop).
+  // Bake it alone in a 192 px cell (the dive needs room): node design/evolutions/bake.js <three> img/evo quillstone 192 2.2667   (it was 144 px, form 361, before: its sheet is bigger now, the same pixels a unit)
+  { id: 'quillstone', form: 927, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, blocks: [
+    [{ turn: 0.12, q: 1 }, { turn: 0.4, q: 1 }, { turn: 0.8, q: 1 }, { turn: 1, q: 1, act: 0.5 }, { turn: 1, q: 0.9, fly: 0.6, act: 0.5 }, { turn: 1, q: 0.5, fly: 1.3 }, { turn: 1, q: 0.1, fly: 2.0 }, { turn: 1, q: 0, fly: 2.6 }],
+    [{ turn: 0.85, q: 0 }, { turn: 0.6, q: 0 }, { turn: 0.3, q: 0 }, { turn: 0, q: 0 }, { turn: 0, q: 0.2 }, { turn: 0, q: 0.5 }, { turn: 0, q: 0.8 }, { turn: 0, q: 1 }],
+    [0, 1, 2, 3, 4, 5, 6, 7].map(() => ({ turn: 0, q: 0 }))] },
   // No. 314 (a game-ready No. 312), the electric brawler: a black hollow pyramid hood drooping over the top half of an octahedron diamond; its action frames bow the hood and flare the diamond.
   { id: 'prism', form: 391, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 220, the core mage: a black shell-jar dragged on its side by fat irregular tentacles, a shard horn at its mouth; the horn drops to aim in its action frames.
@@ -222,6 +240,8 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   ${f37src}
   ${f38src}
   ${f39src}
+  ${f40src}
+  ${f41src}
   const out = {};
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
   renderer.setPixelRatio(1); renderer.setSize(CELL * 2, CELL * 2, false);
@@ -240,7 +260,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   const sheetG = document.createElement('canvas'); sheetG.width = CELL * 16; sheetG.height = CELL * 8; const sgG = sheetG.getContext('2d');
   const isGround = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   for (const job of jobs) {
-    const NCOL = job.consume ? 24 : 16; if (sheetCv.width !== CELL * NCOL) { sheetCv.width = CELL * NCOL; sheetG.width = CELL * NCOL; }   // (24 columns with a CONSUME block)
+    const NCOL = job.blocks ? 16 + 8 * job.blocks.length : job.consume ? 24 : 16; if (sheetCv.width !== CELL * NCOL) { sheetCv.width = CELL * NCOL; sheetG.width = CELL * NCOL; }   // (24 columns with a CONSUME block)
     sg.clearRect(0, 0, sheetCv.width, sheetCv.height); sgG.clearRect(0, 0, sheetG.width, sheetG.height);
     EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number' && !job.brightCrystal) { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
@@ -260,8 +280,9 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     // 2:1 iso: on the (1, h, 1) diagonal, a ground step along x or z projects as (±1, 0.5) when sin(elevation) = 0.5.
     const D = 10;
     const elev = Math.asin(0.5);
-    cam.position.set(D * Math.cos(elev) * Math.SQRT1_2, LOOK_Y + D * Math.sin(elev), D * Math.cos(elev) * Math.SQRT1_2);
-    cam.lookAt(0, LOOK_Y, 0); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+    const LY = job.lookY || LOOK_Y;   // (job.lookY: aim higher, so the ground sits lower in the cell and a tall form fits: the tornadoes)
+    cam.position.set(D * Math.cos(elev) * Math.SQRT1_2, LY + D * Math.sin(elev), D * Math.cos(elev) * Math.SQRT1_2);
+    cam.lookAt(0, LY, 0); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
     const g0 = new T.Vector3(0, 0, 0).project(cam);
     const anchor = { x: (g0.x * 0.5 + 0.5) * CELL, y: (1 - (g0.y * 0.5 + 0.5)) * CELL };
     const cp = new T.Vector3(0, B.core, 0).project(cam);
@@ -271,10 +292,10 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
       for (let f = 0; f < NCOL; f++) {
-        const idle = f < 8, i = f % 8, cons = f >= 16 ? job.consume[i] : null;
-        const t = cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
-        const act = cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
-        if (cons != null) B.update(t, act, cons); else B.update(t, act);
+        const idle = f < 8, i = f % 8, blk = f >= 16 && job.blocks ? job.blocks[Math.floor(f / 8) - 2][i] : null, cons = f >= 16 && job.consume ? job.consume[i] : null;
+        const t = blk ? (blk.t != null ? blk.t : i * P / 8) : cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
+        const act = blk ? (blk.act != null ? blk.act : job.idleAct) : cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
+        if (blk) B.update(t, act, blk); else if (cons != null) B.update(t, act, cons); else B.update(t, act);
         if (!gMeshes.length) { renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL); }
         else {
           gMeshes.forEach(m => m.visible = false); renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);   // the body
@@ -283,7 +304,10 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
         }
       }
     }
-    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: Object.assign({ cell: CELL, rows: 8, cols: NCOL, idle: 8, action: 8 }, job.consume ? { consume: 8 } : {}, { anchor, core: coreAt, unitsPerCell: HALF * 2 }) };
+    if (job.unpremul) { const W = sheetCv.width, H = sheetCv.height, im = sg.getImageData(0, 0, W, H), d = im.data;   // (a see-through pixel comes out of the renderer as colour x alpha: put its colour back, so a pale glass funnel is pale, not grey)
+      for (let i = 0; i < d.length; i += 4) { const a = d[i + 3]; if (a > 0 && a < 255) { const k = 255 / a; d[i] = Math.min(255, d[i] * k); d[i + 1] = Math.min(255, d[i + 1] * k); d[i + 2] = Math.min(255, d[i + 2] * k); } }
+      sg.putImageData(im, 0, 0); }
+    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: Object.assign({ cell: CELL, rows: 8, cols: NCOL, idle: 8, action: 8 }, job.consume ? { consume: 8 } : {}, job.blocks ? { blocks: job.blocks.length } : {}, { anchor, core: coreAt, unitsPerCell: HALF * 2 }) };
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   }
   return out;

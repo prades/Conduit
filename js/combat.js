@@ -383,7 +383,8 @@ function followerAttack(actor, target) {
         actor.attackCooldown = followerRest(actor, 45);
 
     } else if (attackTier === "physical" && attacks.physical) {
-        attacks.physical(actor, target);
+        if (actor.evolved === "electroskink" && typeof skinkSwirlStrike === "function") skinkSwirlStrike(actor, target);   // (the Skink's hit is its swirl, one enemy: js/evolution.js; every other follower uses its element's move)
+        else attacks.physical(actor, target);
         actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_PHYSICAL);
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.attack||5); }
         actor.attackCooldown = followerRest(actor, 40);
