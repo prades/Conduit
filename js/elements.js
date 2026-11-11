@@ -1056,7 +1056,6 @@ function updateElementEffects() {
     fxTidy();
 }
 
-const FX_VORTEX_DASH = [6, 5], FX_NO_DASH = [];   // (STATIC VORTEX's turning edge: made once, not a frame)
 function drawElementEffects() {
 
     // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
@@ -1585,27 +1584,8 @@ function drawElementEffects() {
                 if (b > 0) { ctx.globalAlpha = b * k; const h = 46 * (1 - b * 0.4); const gr = ctx.createLinearGradient(px, cy, px, cy - h); gr.addColorStop(0, "#ffd27a"); gr.addColorStop(1, "rgba(255,90,20,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(px - 8, cy); ctx.lineTo(px, cy - h); ctx.lineTo(px + 8, cy); ctx.closePath(); ctx.fill(); }   // the burst
                 break;
             }
-            // STATIC VORTEX (js/evolution.js staticVortex): a stationary storm VORTEX_RADIUS tiles round: a faint disc, its edge turning, three arms of lightning winding in to a bright eye at its middle.
-            case "staticVortex": {
-                const k = Math.min(1, (e.maxLife - e.life) / 12, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.12;
-                ctx.globalAlpha = 0.12 * k; ctx.fillStyle = "#ffee33";
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalAlpha = 0.55 * k; ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 1.5; ctx.setLineDash(FX_VORTEX_DASH); ctx.lineDashOffset = -frame * 0.6;
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash(FX_NO_DASH);
-                ctx.lineCap = "round"; ctx.lineJoin = "round";
-                for (let arm = 0; arm < 3; arm++) {
-                    ctx.globalAlpha = 0.8 * k; ctx.strokeStyle = arm === 0 ? "#ffffff" : "#ffee33"; ctx.lineWidth = arm === 0 ? 1.5 : 2;
-                    ctx.beginPath();
-                    for (let s = 0; s <= 12; s++) {
-                        const q = s / 12, an = spin + arm * 2.094 + q * 3.2, rr = 1 - q * 0.9, j = (s % 2 ? 2 : -2) * Math.sin(frame * 0.7 + arm + s), vx = px + Math.cos(an) * rx * rr + j, vy = cy + Math.sin(an) * ry * rr - q * 14;
-                        if (s) ctx.lineTo(vx, vy); else ctx.moveTo(vx, vy);
-                    }
-                    ctx.stroke();
-                }
-                ctx.globalAlpha = (0.5 + 0.3 * Math.sin(frame * 0.5)) * k; ctx.fillStyle = "#ffffff";
-                ctx.beginPath(); ctx.ellipse(px, cy - 14, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
-                break;
-            }
+            // STATIC VORTEX (js/evolution.js staticVortex): a stationary dark storm on the enemy, drawn from its baked sheet (js/evolution.js staticVortexDraw; the owner chose design C of six). Nothing flat on the floor.
+            case "staticVortex": { if (typeof staticVortexDraw === "function") staticVortexDraw(e, px, py, ctx); break; }
             // FAULTLINE's path (js/techabilities.js techFaultlineAt): a molten line along the drawn path from the moment it is sent; the stretch the Burrower has passed burns white-hot, the rest pulses
             // ahead of it; it fades once the Burrower is up.
             case "faultTrace": {

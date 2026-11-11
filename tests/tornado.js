@@ -1,0 +1,87 @@
+// THE THUNDERHEAD'S STATIC VORTEX AS A STORM (build 2026-11-11m; js/evolution.js staticVortexDraw, staticVortexCol, EVOLUTIONS.thunderhead.storm; design No. 930 of six, forms41.js; the owner, 2026-11-11: "a tornado sort of look,
+// and remove the highlighted floor effect", then "This needs three.js graphics", then of the six modelled designs: "C", the dark storm).
+//   how it works is as it was: the reach, the radius, the life, the pull, the bite (VORTEX_*), none changed by the look
+//   how it looks: the baked sheet at the enemy, a little see-through (VORTEX_ALPHA; the owner: "make it transparent though a little bit"); no disc and no ring on the floor (nothing is filled or stroked as an ellipse); it grows from its foot as it fades in and fades out as it ends
+//   its sheet: baked, cropped (js/evopack.js), named in the Thunderhead's definition; the idle loop with lightning, the calm loop without, and the lightning only every VORTEX_FLASH_EVERY-th loop
+// A test of the drawing's CHOICES (which cell, where, how big, how clear); whether it looks right is the owner's to judge in the game. Every number read here is the code's own, PROVISIONAL constant.
+const fs = require('fs');
+const vm = require('vm');
+const path = require('path');
+const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+process.on('unhandledRejection', () => {});
+
+let failures = 0;
+function group(n) { console.log('\n' + n); }
+function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
+function ok(c, m) { if (!c) throw new Error(m); }
+function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+(async () => {
+    const context = vm.createContext(makeBrowserSandbox({}));
+    for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
+    run(`gameState.running = true;
+        // draw a vortex of this age with the sheet "loaded" (a stand-in picture) and record what it asks the canvas for
+        globalThis.__draw = (age, life) => { const keepImg = _evoImg, keepCell = evoCellDraw, rec = { cells: [], ellipses: 0, fills: 0, strokes: 0, alphas: [] };
+            _evoImg = () => ({ complete: true, naturalWidth: 1 });
+            evoCellDraw = (g, img, p, C, col, row, dx, dy, s) => { rec.cells.push({ path: p, C, col, row, dx, dy, s, a: g.globalAlpha }); };
+            const keep = { ellipse: ctx.ellipse, fill: ctx.fill, stroke: ctx.stroke };
+            ctx.ellipse = () => { rec.ellipses++; }; ctx.fill = () => { rec.fills++; }; ctx.stroke = () => { rec.strokes++; };
+            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - age, x: 5, y: 5 }, 400, 300, ctx); } finally { _evoImg = keepImg; evoCellDraw = keepCell; ctx.ellipse = keep.ellipse; ctx.fill = keep.fill; ctx.stroke = keep.stroke; }
+            return rec; };`);
+
+    group('HOW IT WORKS IS AS IT WAS (the look changes only the drawing)');
+    check('its reach, radius, life, pull, bite rate and bite are the numbers they were', () => {
+        same(J('[VORTEX_RANGE, VORTEX_RADIUS, VORTEX_LIFE, VORTEX_PULL, VORTEX_TICK, VORTEX_MULT]').join(), '7,2.5,240,0.06,30,0.2', 'VORTEX_*');
+    });
+
+    group('THE SHEET: baked, cropped, named');
+    check('img/evo/staticvortex.png is the cropped sheet js/evopack.js describes (16 columns, 8 rows, 256 px cells), and the Thunderhead\'s definition names it', () => {
+        const png = fs.readFileSync(path.join(ROOT, 'img/evo/staticvortex.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = J(`EVO_PACK['img/evo/staticvortex.png'] || null`);
+        ok(pk, 'js/evopack.js has no entry for it'); same(pk.w, w, 'its width'); same(pk.h, h, 'its height'); same(pk.cell, 256, 'its cell'); same(pk.cols, 16, 'its columns'); same(pk.rows, 8, 'its rows');
+        const d = J('EVOLUTIONS.thunderhead.storm'); same(d.sheet, 'img/evo/staticvortex.png', 'the definition\'s sheet'); same(d.cell, 256, 'its cell'); same(d.id, 'staticvortex', 'its id');
+        const m = JSON.parse(rd('img/evo/staticvortex.json')); ok(Math.abs(d.anchor[0] - m.anchor.x) < 0.5 && Math.abs(d.anchor[1] - m.anchor.y) < 0.5, 'the definition\'s anchor is the bake\'s: ' + d.anchor + ' vs ' + m.anchor.x + ', ' + m.anchor.y);
+    });
+    check('the Thunderhead\'s own sheet and definition are as they were (the storm is an addition)', () => {
+        const d = J('EVOLUTIONS.thunderhead'); same(d.sheet, 'img/evo/thunderhead.png', 'its own sheet'); same(d.cell, 144, 'its cell'); same(d.move, 'STATIC VORTEX', 'its move'); same(d.shot, 'CHAIN LIGHTNING', 'its shot');
+    });
+
+    group('WHICH FRAME');
+    check('the idle loop (cols 0 to 7) turns a frame every VORTEX_FRAME game frames, one loop in 8 of them; the lightning only every VORTEX_FLASH_EVERY-th loop, the others from the calm block (cols 8 to 15)', () => {
+        const F = J('[VORTEX_FRAME, VORTEX_FLASH_EVERY]'), col = a => J('staticVortexCol(' + a + ')'), loop = F[0] * 8;
+        same(col(0), 0, 'the first frame'); same(col(F[0]), 1, 'the next'); same(col(loop - 1), 7, 'the loop\'s last');
+        same(col(loop), 8, 'the second loop is the calm one'); same(col(loop + F[0] * 7), 15, 'its last frame'); same(col(loop * F[1]), 0, 'a flash again every ' + F[1] + 'th loop');
+        for (let n = 0; n < F[1] * 3; n++) { const c = col(n * loop); same(c === 0, n % F[1] === 0, 'loop ' + n + ' flashes'); }
+    });
+
+    group('NO HIGHLIGHTED FLOOR; THE STORM ON THE ENEMY');
+    check('it draws the one cell of the sheet (row 0) and nothing else: no ellipse, no fill, no stroke (no disc, no ring, nothing flat on the floor)', () => {
+        const r = J('__draw(60, 0)'); same(r.cells.length, 1, 'cells drawn'); same(r.cells[0].path, 'img/evo/staticvortex.png', 'its sheet'); same(r.cells[0].row, 0, 'its row'); same(r.cells[0].C, 256, 'its cell size');
+        same(r.ellipses + r.fills + r.strokes, 0, 'canvas shapes drawn (ellipse, fill, stroke)');
+    });
+    check('its foot is at the floor point (the enemy\'s px, py + TILE_H) whatever the size: the anchor lands there', () => {
+        const T = J('TILE_H'), d = J('EVOLUTIONS.thunderhead.storm');
+        for (const age of [2, 60, 200]) { const r = J('__draw(' + age + ', 0)').cells[0]; const fx = r.dx + d.anchor[0] * r.s, fy = r.dy + d.anchor[1] * r.s; ok(Math.abs(fx - 400) < 1e-6 && Math.abs(fy - (300 + T)) < 1e-6, 'the foot at age ' + age + ': ' + fx + ', ' + fy); }
+    });
+    check('it grows from its foot while it fades in (from 0.4 of full size) and is full size by 12 frames; drawn a little see-through (VORTEX_ALPHA) when it is at its fullest, and still more clear while it fades in', () => {
+        const S = J('EVO_SCALE'), V = J('VORTEX_ALPHA'), s = a => J('__draw(' + a + ')').cells[0]; const young = s(0), grown = s(60);
+        ok(V > 0 && V < 1, 'VORTEX_ALPHA is not a little see-through: ' + V); ok(young.s < grown.s && young.a < grown.a, 'it does not grow and clear'); ok(Math.abs(grown.s - S) < 1e-9, 'full size at 60: ' + grown.s);
+        ok(Math.abs(grown.a - V) < 1e-9, 'its alpha at full: ' + grown.a + ' of ' + V); ok(young.s >= 0.4 * S - 1e-9, 'smaller than 0.4 of full size');
+    });
+    check('it fades out over its last 20 frames and is gone with its life (the effects\' own update drops it)', () => {
+        const V = J('VORTEX_ALPHA'), a = x => J('__draw(VORTEX_LIFE - ' + x + ')').cells[0], clear = a(40), ending = a(8); ok(Math.abs(clear.a - V) < 1e-9, 'not at its full alpha before the end'); ok(ending.a < 0.5 * V && ending.a > 0, 'not fading at 8 frames left: ' + ending.a);
+        const left = J(`(function(){ elementEffects.length = 0; elementEffects.push({ type: 'staticVortex', x: 1, y: 1, radius: VORTEX_RADIUS, life: VORTEX_LIFE, maxLife: VORTEX_LIFE, element: 'electric', currentRadius: 0 });
+            for (let i = 0; i < VORTEX_LIFE + 1; i++) updateElementEffects(); const n = elementEffects.filter(e => e.type === 'staticVortex').length; elementEffects.length = 0; return n; })()`);
+        same(left, 0, 'vortexes left after its life');
+    });
+    check('with its sheet not arrived it draws nothing (the effect is never an error)', () => {
+        const r = J(`(function(){ const keep = evoCellDraw, rec = []; evoCellDraw = () => rec.push(1); const d = EVOLUTIONS.thunderhead.storm, had = d._img; d._img = null;   // (a sheet not loaded: _evoImg gives null)
+            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - 30 }, 400, 300, ctx); } finally { evoCellDraw = keep; d._img = had; } return rec.length; })()`);
+        same(r, 0, 'cells drawn with no sheet');
+    });
+
+    console.log(failures ? `\n${failures} FAILING` : '\nall passing');
+    process.exit(failures ? 1 : 0);
+})();
