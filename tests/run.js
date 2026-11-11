@@ -20,6 +20,7 @@ const SUITES = [
     ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['the electrical domain (step 1): the little door beside the junction, shut until it is repaired; the deep server room and down four steps the circuitry; one interior of two rooms', 'elecdomain.js'],
     ['performance + culling',    'perf.js'],
+    ['the Electro Skink\'s swirl: its everyday hit a vortex at the enemy and one hit as it closes, no chain, its body hidden and back, every other electric follower keeps its chain, its sheet baked and cropped', 'skinkswirl.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
     ['levels and stats',         'levels.js'],
