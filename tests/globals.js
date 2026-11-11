@@ -57,6 +57,7 @@ const HOST_PROVIDED = new Set([
     'CanvasRenderingContext2D', 'Storage',
     'HTMLImageElement',   // (the start lists the sheets only when the page has real images to wait for: js/init.js startupAsset; the sandbox has none)
     'Image',              // (a form's sheet is asked for when a follower first evolves, guarded by typeof: js/evolution.js _evoImg; since build 2026-11-09s one evolves at level 8, which the fight below reaches)
+    '__phoneGate',        // (the page's head sets it before any script, on a phone only: js/init.js startupBegin starts nothing then; this sandbox runs the scripts, not game.html's head; build 2026-11-11a)
 ]);
 
 // The facility's save, with a squad in it: the state that crashed is a
