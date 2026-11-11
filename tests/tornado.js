@@ -4,7 +4,7 @@
 //   how it looks: the baked sheet at the enemy, a little see-through (VORTEX_ALPHA; the owner: "make it transparent though a little bit"); no disc and no ring on the floor (nothing is filled or stroked as an ellipse); it grows from its foot as it fades in and fades out as it ends
 //   its sheet: baked, cropped (js/evopack.js), named in the Thunderhead's definition; one loop of eight cells (row 0, cols 0 to 7)
 //   its lightning (the owner, 2026-11-11: "instead of having a noodle lightning bolt, just make it to where there is a flashing gradient, sort of like the gradient that's under Thunderhead Sprite"): not in the sheet:
-//   a soft yellow gradient flashing over the storm, two pulses in the middle of every VORTEX_FLASH_EVERY-th loop (staticVortexFlash), drawn in code
+//   a soft yellow gradient flashing ON THE FLOOR under the storm ("The gradient needs to just be on the floor", 2026-11-11), two pulses in the middle of every VORTEX_FLASH_EVERY-th loop (staticVortexFlash), drawn in code, under the storm
 // A test of the drawing's CHOICES (which cell, where, how big, how clear); whether it looks right is the owner's to judge in the game. Every number read here is the code's own, PROVISIONAL constant.
 const fs = require('fs');
 const vm = require('vm');
@@ -26,13 +26,14 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`gameState.running = true;
         // draw a vortex of this age with the sheet "loaded" (a stand-in picture) and record what it asks the canvas for
-        globalThis.__draw = (age, life) => { const keepImg = _evoImg, keepCell = evoCellDraw, rec = { cells: [], ellipses: 0, fills: 0, strokes: 0, grads: [], ells: [], fillOps: [] };
+        globalThis.__draw = (age, life) => { const keepImg = _evoImg, keepCell = evoCellDraw, rec = { cells: [], ellipses: 0, fills: 0, strokes: 0, grads: [], ells: [], fillOps: [], order: [], tr: [], sc: [], arcs: 0 };
             _evoImg = () => ({ complete: true, naturalWidth: 1 });
-            evoCellDraw = (g, img, p, C, col, row, dx, dy, s) => { rec.cells.push({ path: p, C, col, row, dx, dy, s, a: g.globalAlpha }); };
-            const keep = { ellipse: ctx.ellipse, fill: ctx.fill, stroke: ctx.stroke, grad: ctx.createRadialGradient };
+            evoCellDraw = (g, img, p, C, col, row, dx, dy, s) => { rec.order.push('storm'); rec.cells.push({ path: p, C, col, row, dx, dy, s, a: g.globalAlpha }); };
+            const keep = { ellipse: ctx.ellipse, fill: ctx.fill, stroke: ctx.stroke, grad: ctx.createRadialGradient, translate: ctx.translate, scale: ctx.scale, arc: ctx.arc };
             ctx.ellipse = (x, y, rx, ry) => { rec.ellipses++; rec.ells.push([x, y, rx, ry]); }; ctx.fill = () => { rec.fills++; rec.fillOps.push({ op: ctx.globalCompositeOperation, a: ctx.globalAlpha }); }; ctx.stroke = () => { rec.strokes++; };
-            ctx.createRadialGradient = (...a) => { rec.grads.push(a); return { addColorStop() {} }; };
-            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - age, x: 5, y: 5 }, 400, 300, ctx); } finally { _evoImg = keepImg; evoCellDraw = keepCell; ctx.ellipse = keep.ellipse; ctx.fill = keep.fill; ctx.stroke = keep.stroke; ctx.createRadialGradient = keep.grad; }
+            ctx.createRadialGradient = (...a) => { rec.order.push('glow'); rec.grads.push(a); return { addColorStop() {} }; };
+            ctx.translate = (x, y) => { rec.tr.push([x, y]); }; ctx.scale = (x, y) => { rec.sc.push([x, y]); }; ctx.arc = () => { rec.arcs++; };
+            try { staticVortexDraw({ maxLife: VORTEX_LIFE, life: VORTEX_LIFE - age, x: 5, y: 5 }, 400, 300, ctx); } finally { _evoImg = keepImg; evoCellDraw = keepCell; ctx.ellipse = keep.ellipse; ctx.fill = keep.fill; ctx.stroke = keep.stroke; ctx.createRadialGradient = keep.grad; ctx.translate = keep.translate; ctx.scale = keep.scale; ctx.arc = keep.arc; }
             return rec; };`);
 
     group('HOW IT WORKS IS AS IT WAS (the look changes only the drawing)');
@@ -70,11 +71,13 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         const r = J('__draw(60, 0)'); same(r.cells.length, 1, 'cells drawn'); same(r.cells[0].path, 'img/evo/staticvortex.png', 'its sheet'); same(r.cells[0].row, 0, 'its row'); same(r.cells[0].C, 256, 'its cell size');
         same(r.ellipses + r.fills + r.strokes, 0, 'canvas shapes drawn (ellipse, fill, stroke)');
     });
-    check('at a flash it draws ONE soft yellow gradient over the cloud and the top of the funnel ("lighter", the sheet\'s glow position and size at the storm\'s scale), a little less strong than the flash itself; at any other age none', () => {
-        const d = J('EVOLUTIONS.thunderhead.storm'), T = J('TILE_H'), G = J('VORTEX_GLOW'), flashAge = 31, r = J('__draw(' + flashAge + ', 0)'), q = J('__draw(60, 0)');
-        same(r.cells.length, 1, 'cells at a flash'); same(r.grads.length, 1, 'gradients at a flash'); same(q.grads.length, 0, 'gradients with no flash'); same(q.ells.length, 0, 'ellipses with no flash');
-        const s = r.cells[0].s, g = r.grads[0]; ok(Math.abs(g[0] - (400 + d.glow[0] * s)) < 1e-6 && Math.abs(g[1] - (300 + T + d.glow[1] * s)) < 1e-6, 'the glow\'s middle: ' + g[0] + ', ' + g[1]); same(g[2], 0, 'it starts at a point'); ok(Math.abs(g[5] - d.glow[2] * s) < 1e-6, 'the glow\'s radius: ' + g[5]);
-        ok(g[1] < 300 + T - 20, 'the glow is not on the floor (it is up on the cloud): ' + g[1]); const op = r.fillOps[r.fillOps.length - 1]; same(op.op, 'lighter', 'it is added light'); ok(op.a > 0 && op.a <= G + 1e-9, 'its strength: ' + op.a + ' of at most ' + G);
+    check('at a flash it draws ONE soft yellow gradient ON THE FLOOR under the storm, drawn first (the storm stands in it): centred on the foot, flattened to the floor\'s slant (2:1), added light, the radius the sheet gives at the storm\'s scale, no stronger than VORTEX_GLOW; at any other age none', () => {
+        const d = J('EVOLUTIONS.thunderhead.storm'), T = J('TILE_H'), G = J('VORTEX_GLOW'), r = J('__draw(31, 0)'), q = J('__draw(60, 0)');
+        same(r.cells.length, 1, 'cells at a flash'); same(r.grads.length, 1, 'gradients at a flash'); same(q.grads.length, 0, 'gradients with no flash'); same(q.arcs, 0, 'arcs with no flash'); same(r.order.join(), 'glow,storm', 'the glow is drawn first, under the storm');
+        const s = r.cells[0].s, g = r.grads[0], tr = r.tr[0], sc = r.sc[0];
+        same(d.glow[1], 0, 'its middle is not the foot'); ok(Math.abs(tr[0] - (400 + d.glow[0] * s)) < 1e-6 && Math.abs(tr[1] - (300 + T)) < 1e-6, 'it is not centred on the floor point: ' + tr); same(sc.join(), '1,0.5', 'the floor\'s slant');
+        same(g.slice(0, 5).join(), '0,0,0,0,0', 'a gradient round its own middle'); ok(Math.abs(g[5] - d.glow[2] * s) < 1e-6, 'the glow\'s radius: ' + g[5]); same(r.arcs, 1, 'one disc filled');
+        const op = r.fillOps[r.fillOps.length - 1]; same(op.op, 'lighter', 'it is added light'); ok(op.a > 0 && op.a <= G + 1e-9, 'its strength: ' + op.a + ' of at most ' + G);
     });
     check('its foot is at the floor point (the enemy\'s px, py + TILE_H) whatever the size: the anchor lands there', () => {
         const T = J('TILE_H'), d = J('EVOLUTIONS.thunderhead.storm');

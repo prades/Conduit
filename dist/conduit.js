@@ -10882,7 +10882,7 @@ const EVOLUTIONS = {
         cell: 144, anchor: [72, 114.2], core: [72, 58.4] },
     thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "STATIC VORTEX", shot: "CHAIN LIGHTNING", sheet: "img/evo/thunderhead.png",
         cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33",
-        storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 219.7], glow: [0, -125, 125] } },
+        storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 219.7], glow: [0, 0, 165] } },
     serpent: { id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
         cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
     voidstar: { id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
@@ -12613,7 +12613,7 @@ function skinkSwirlDraw(e, px, py, g) {
     evoCellDraw(g, img, d.sheet, d.cell, skinkSwirlCol(age), 0, px - d.anchor[0] * EVO_SCALE, py - d.anchor[1] * EVO_SCALE, EVO_SCALE);
     g.restore();
 }
-const VORTEX_FRAME = 6, VORTEX_FLASH_EVERY = 4, VORTEX_ALPHA = 0.7, VORTEX_GLOW = 0.45;
+const VORTEX_FRAME = 6, VORTEX_FLASH_EVERY = 4, VORTEX_ALPHA = 0.7, VORTEX_GLOW = 0.6;
 function staticVortexCol(age) { return Math.floor(Math.max(0, age) / VORTEX_FRAME) % 8; }
 function staticVortexFlash(age) {
     const loop = VORTEX_FRAME * 8, i = Math.floor(Math.max(0, age) / loop);
@@ -12634,25 +12634,27 @@ function staticVortexDraw(e, px, py, g) {
     if (!img)
         return;
     const age = Math.max(0, e.maxLife - e.life), k = Math.min(1, (age + 1) / 12, e.life / 20), s = EVO_SCALE * (0.4 + 0.6 * k), fy = py + TILE_H;
-    g.save();
-    g.globalAlpha = Math.max(0, k) * VORTEX_ALPHA;
-    evoCellDraw(g, img, d.sheet, d.cell, staticVortexCol(age), 0, px - d.anchor[0] * s, fy - d.anchor[1] * s, s);
-    g.restore();
     const fl = staticVortexFlash(age);
     if (fl > 0 && d.glow) {
-        const gx = px + d.glow[0] * s, gy = fy + d.glow[1] * s, R = d.glow[2] * s, gr = g.createRadialGradient(gx, gy, 0, gx, gy, R);
+        g.save();
+        g.translate(px + d.glow[0] * s, fy + d.glow[1] * s);
+        g.scale(1, 0.5);
+        const R = d.glow[2] * s, gr = g.createRadialGradient(0, 0, 0, 0, 0, R);
         gr.addColorStop(0, "#fff6b0");
         gr.addColorStop(0.4, "#ffe033");
         gr.addColorStop(1, "rgba(255,224,51,0)");
-        g.save();
         g.globalCompositeOperation = "lighter";
         g.globalAlpha = Math.max(0, k) * fl * VORTEX_GLOW;
         g.fillStyle = gr;
         g.beginPath();
-        g.ellipse(gx, gy, R, R * 0.85, 0, 0, Math.PI * 2);
+        g.arc(0, 0, R, 0, Math.PI * 2);
         g.fill();
         g.restore();
     }
+    g.save();
+    g.globalAlpha = Math.max(0, k) * VORTEX_ALPHA;
+    evoCellDraw(g, img, d.sheet, d.cell, staticVortexCol(age), 0, px - d.anchor[0] * s, fy - d.anchor[1] * s, s);
+    g.restore();
 }
 ;
 /* js/cards.js */
