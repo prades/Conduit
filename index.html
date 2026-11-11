@@ -15,7 +15,7 @@
       overflow-x: hidden;
     }
 
-    /* The live background: the Conduit facility (game.html?attract) in an iframe that takes no clicks, under a scrim that keeps the text readable */
+    /* The live background: the Conduit facility (play.html?attract: the game's scripts as one file, tools/bundle.js) in an iframe that takes no clicks, under a scrim that keeps the text readable */
     #bg {
       position: fixed; inset: 0; z-index: 0; overflow: hidden;
       pointer-events: none;
@@ -253,7 +253,7 @@
     <h2 class="section-title">Public Projects</h2>
     <div class="projects">
       <!-- Conduit -->
-      <a class="project-card featured" href="game.html">
+      <a class="project-card featured" href="play.html">
         <span class="card-arrow">↗</span>
         <span class="card-badge badge-game">Game</span>
         <h3>Conduit</h3>
@@ -332,7 +332,7 @@
 
 </div>
 
-<!-- ── Background: the Conduit facility, dark, with followers searching its halls (game.html?attract, js/attract.js) ── -->
+<!-- ── Background: the Conduit facility, dark, with followers searching its halls (play.html?attract, js/attract.js) ── -->
 <script>
 (function () {
   // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
@@ -341,7 +341,7 @@
   var frame = null, giveUp = null;
   function start() {
     frame = document.createElement('iframe');
-    frame.src = 'game.html?attract';
+    frame.src = 'play.html?attract';   // (the players' page: one script file, tools/bundle.js)
     frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
     bg.appendChild(frame);
     giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays

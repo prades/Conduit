@@ -1,0 +1,3 @@
+# made by tools/bundle.js (node tools/stamp.js runs it): not edited by hand, so not shown in diffs as code
+dist/conduit.js linguist-generated=true -diff
+play.html linguist-generated=true -diff

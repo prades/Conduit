@@ -124,11 +124,11 @@ function measure() {
     });
     check('index.html frames it behind the page: no Three.js, an iframe that takes no clicks, loaded after the page, never for reduced motion or a data saver, faded in when told it is showing', () => {
         const h = rd('index.html');
-        ok(!/three/i.test(h.replace(/Three\.js<\/strong>/, '')) && !/importmap/.test(h), 'the Stonehenge scene is gone'); ok(/game\.html\?attract/.test(h), 'the frame is game.html?attract');
+        ok(!/three/i.test(h.replace(/Three\.js<\/strong>/, '')) && !/importmap/.test(h), 'the Stonehenge scene is gone'); ok(/play\.html\?attract/.test(h), 'the frame is play.html?attract (the players\' page since build 2026-11-11b: the scripts as one file)');
         ok(/#bg \{[^}]*pointer-events: none/.test(h), 'no clicks'); ok(/aria-hidden/.test(h) && /inert = true/.test(h), 'hidden from assistive technology and the keyboard');
         ok(/prefers-reduced-motion: reduce/.test(h) && /saveData/.test(h), 'asks the visitor\'s settings'); ok(/addEventListener\('load'/.test(h) && /requestIdleCallback/.test(h), 'after the page has loaded');
         ok(/attract-ready/.test(h) && /e\.source === frame\.contentWindow/.test(h), 'only its own frame can say it is showing'); ok(/#bg\.ready iframe \{ opacity/.test(h), 'faded in');
-        ok(/class="project-card featured" href="game\.html"/.test(h), 'the Conduit card still opens the game itself');
+        ok(/class="project-card featured" href="play\.html"/.test(h), 'the Conduit card still opens the game itself (play.html, the players\' page since build 2026-11-11b)');
     });
 
     group('THE REAL PAGE: ?attract, stepped by hand for a hundred and fifty seconds of game');

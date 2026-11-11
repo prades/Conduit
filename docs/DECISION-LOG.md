@@ -2816,3 +2816,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: a phone sees PLAY ON AN iPAD and the game does not start (game.html's head `deviceIsPhone`, `#phoneGate`; js/init.js). An iPad (old ones too), an Android tablet and a computer play. `?anydevice` opens it on a phone for development; `?attract` is never stopped.
 - No more phone development: the phone layouts stay in the code, untouched; the phone items in `OPEN-QUESTIONS.md` are closed ("won't do"); AGENTS.md tells every agent.
 - Supersedes the plans for a phone's CARDS screen, pack buying, squad card and SWAP ("Later, as planned").
+
+## DECISION: Players load the game's scripts as one file (2026-11-11, build `2026-11-11b`)
+- The owner: "the page loads 96 separate scripts, 3.3 megabytes on an iPad over the network. A single bundled file at deploy time would load faster. We can work on that, right?"
+- Built: `tools/bundle.js` makes `play.html` and `dist/conduit.js` (the 95 scripts before the boot check, in order, comments taken out), committed, since the site is the repository as it is (GitHub Pages, no build step). `node tools/stamp.js` runs it. Over the web `game.html` sends a visitor to `play.html` (not with `?dev` or `?attract`); the website links to `play.html`.
+- Kept: `game.html` as the working page (the tests, `?dev`), the boot check and `js/init.js` after the bundle. The agent's choices: the names (`play.html`, `dist/`), TypeScript's printer for the comments when it is installed (else the files go in as they are), the hand-over from `game.html`.
+- Measured, not played: 22 requests instead of 116; the scripts 587 KB over the network instead of 954 KB. The images are now the larger part (3.6 MB at the start); each build still asks for every image again, as their addresses carry the build.

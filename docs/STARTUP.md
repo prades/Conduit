@@ -135,3 +135,6 @@ How the design was chosen (each was a run of the same probe, 3 to 5 runs a side,
 - No Web Workers, WebAssembly or WebGL; no change to the renderer.
 - The draw path was profiled and has no single hot function; nothing in it was changed. (The dimmed pen's colour cache key, `_fpDimColour` in `js/facilitystyle.js`, is about 2% of a frame and the setter that calls it 3%: a candidate if an iPad profile points at the dark rooms.)
 - A saved game that fails to apply (`facilitySaveApply` throws) is logged and the game goes on; the next autosave then writes the half-restored state over it. That is how it was, and it is not changed here.
+
+## The players' page (build `2026-11-11b`)
+Over the web the game is `play.html`: the page `game.html` with its scripts before the boot check as one file, `dist/conduit.js` (made by `node tools/bundle.js`, which `node tools/stamp.js` runs). The boot check and `js/init.js` run after it as before, so the stages above are the same. `game.html` sends a visitor there over the web, except with `?dev` (the scripts one by one) or `?attract`.
