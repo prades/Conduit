@@ -423,6 +423,7 @@ function _altFire(f, mv, f0) {
     if (typeof followerProjectiles !== "undefined") for (const o of followerProjectiles) if (!seen.pr.has(o)) live.push(["pr", o]);
     if (typeof fireBombs !== "undefined") for (const o of fireBombs) if (!seen.bm.has(o)) live.push(["bm", o]);
     if (typeof rotDecoys !== "undefined") for (const o of rotDecoys) if (!seen.dc.has(o)) live.push(["dc", o]);
+    if (f._quillFire) live.push(["qf", f]);   // (a QUILL BURST's quills not yet launched: the move is still going, so its cooldown does not start at the cast: build 2026-11-11n)
     f._altLive = { t0: f0, list: live, by: f };
 }
 function _altLiveAny(L) {
@@ -432,6 +433,7 @@ function _altLiveAny(L) {
         if (k === "pr" && typeof followerProjectiles !== "undefined" && followerProjectiles.indexOf(o) >= 0 && !o.dead) return true;
         if (k === "bm" && typeof fireBombs !== "undefined" && fireBombs.indexOf(o) >= 0 && !o.dead) return true;
         if (k === "dc" && typeof rotDecoys !== "undefined" && rotDecoys.indexOf(o) >= 0 && !o.dead) return true;
+        if (k === "qf" && o._quillFire) return true;
     }
     return false;
 }
@@ -489,7 +491,8 @@ function quillFireTick(f, f0) {
     const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
     if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
         const a = B.a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
-        spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+        const q = spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+        if (q && f._altLive && f._altLive.list) f._altLive.list.push(["pr", q]);   // (the quills in the air are the move's live effect, as they were: its cooldown starts when they are done)
     }
 }
 // WHICH CELL of the Quillstone's sheet (40 columns: design/evolutions/forms15.js No. 927, bake.js job.blocks) `age` frames into a QUILL BURST (null: past it, the ordinary frames):

@@ -11162,6 +11162,8 @@ function _altFire(f, mv, f0) {
         for (const o of rotDecoys)
             if (!seen.dc.has(o))
                 live.push(["dc", o]);
+    if (f._quillFire)
+        live.push(["qf", f]);
     f._altLive = { t0: f0, list: live, by: f };
 }
 function _altLiveAny(L) {
@@ -11175,6 +11177,8 @@ function _altLiveAny(L) {
         if (k === "bm" && typeof fireBombs !== "undefined" && fireBombs.indexOf(o) >= 0 && !o.dead)
             return true;
         if (k === "dc" && typeof rotDecoys !== "undefined" && rotDecoys.indexOf(o) >= 0 && !o.dead)
+            return true;
+        if (k === "qf" && o._quillFire)
             return true;
     }
     return false;
@@ -11235,7 +11239,9 @@ function quillFireTick(f, f0) {
     if (typeof spawnFollowerProjectile === "function")
         for (let i = 0; i < QUILL_COUNT; i++) {
             const a = B.a0 + (i - (QUILL_COUNT - 1) / 2) * gap;
-            spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+            const q = spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+            if (q && f._altLive && f._altLive.list)
+                f._altLive.list.push(["pr", q]);
         }
 }
 const QUILL_FIRE = 12, QUILL_ANIM = { turn: 3, back: 3, hold: 75, grow: 5 };

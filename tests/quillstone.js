@@ -79,6 +79,21 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         same(r.ok, false, 'it said it fired'); same(r.n, 0, 'quills'); same(r.turned, false, 'it turned');
     });
 
+    group('THE MOVE\'S CYCLE WAITS FOR THE DELAYED VOLLEY (the quills are not launched at the cast, but the move is still going)');
+    check('through the real cycle: one cast; the move stays live while it turns and the quills fly; its cooldown starts only when they are done, not at the cast (a Brawler\'s cycle, js/moves.js)', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); f.currentWill = 100; f.attackCooldown = 0; const t = __foe(f.x + 2, f.y);
+            f.alt = 'quill_burst'; f._altLive = null; f._altWind = 0; f._altReadyAt = 0; const o = { casts: 0 }, keep = quillBurst; globalThis.quillBurst = function (x) { const ok = keep.apply(this, arguments); if (ok) o.casts++; return ok; };
+            try { frame++; evolutionTick(); o.live0 = !!f._altLive; o.ready0 = f._altReadyAt || 0; const born = frame;
+                for (let i = 0; i < QUILL_FIRE - 1; i++) { frame++; evolutionTick(); } o.liveTurning = !!f._altLive; o.readyTurning = f._altReadyAt || 0; o.proj1 = followerProjectiles.length;
+                frame++; evolutionTick(); o.proj2 = followerProjectiles.length; o.liveFlying = !!f._altLive;
+                let n = 0; while (followerProjectiles.length && n < 400) { frame++; evolutionTick(); followerProjectiles.forEach(p => { p.dead = true; }); followerProjectiles.length = 0; n++; }   // (the quills done)
+                frame++; evolutionTick(); o.liveDone = !!f._altLive; o.readyDone = f._altReadyAt || 0; o.now = frame; o.rest = moveWindupFrames('quill_burst'); }
+            finally { globalThis.quillBurst = keep; } return o; })()`);
+        same(r.casts, 1, 'casts through the cycle'); ok(r.live0, 'the move was not live after the cast'); same(r.ready0, 0, 'its cooldown started at the cast'); ok(r.liveTurning, 'the move was not live while it turned'); same(r.readyTurning, 0, 'its cooldown started while it turned');
+        same(r.proj1, 0, 'quills before QUILL_FIRE'); same(r.proj2, J('QUILL_COUNT'), 'quills at QUILL_FIRE'); ok(r.liveFlying, 'the move was not live while the quills flew');
+        ok(!r.liveDone, 'the move is still live after the quills are done'); ok(r.readyDone >= r.now - 2 + r.rest - 2 && r.readyDone <= r.now + r.rest + 2, 'its cooldown: ready at ' + r.readyDone + ' (now ' + r.now + ', cooldown ' + r.rest + ')');
+    });
+
     group('WHAT THE BODY SHOWS');
     check('while it turns, goes bare and regrows the body is drawn from those cells, and from the ordinary ones before and after', () => {
         const r = J(`(function(){ const f = __qs(), t = __foe(f.x + 2, f.y), d = evolvedDef(f), at = a => { frame = f._burstAt + a; return _evoFrame(f, d, frame).col; }; const before = _evoFrame(f, d, frame).col; quillBurst(f); const b = f._burstAt;

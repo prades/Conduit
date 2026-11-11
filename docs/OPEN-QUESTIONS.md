@@ -718,6 +718,9 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **CAPACITOR DISCHARGE:** should a full Static Orb move (it does now), and should a follower posted in a room (no squad card) be released from anywhere but its INFO?
 - **Accepted, 2026-11-07:** the owner passed build ss as it is ("go ahead and pass it, whatever it is"), so followers before they evolve keep BASH. The points above stay open.
 
+## The QUILLSTONE's attacks (build `2026-11-11n`)
+- **Open:** QUILL BURST's cycle is 12 frames (0.2 s) longer than before, because the quills leave after the turn and its cooldown starts when they are done. Keep it, or take 12 frames off the cooldown so the cycle is as long as it was? The agent's other numbers (the quills leave 12 frames in, bare about a second, regrown in 20 frames, the dive about 13 px) are provisional. The owner has not played it.
+
 ## The ELECTRO SKINK (built in build `2026-11-08a`)
 - **Its own attacks:** ~~BASH stands in as its second attack~~ *(answered 2026-11-09: ZIGZAG DASH, built in build `2026-11-09c`)*; its everyday hit is Slashing (what it hit with as an egg) until you choose. *(Answered 2026-11-11: the SWIRL, built in build `2026-11-11k`: `COMBAT.md` §7.4. Open: its frame counts (6 + 12 + 6) and its number (0.35 × ATK) are the agent's; whether its ring (flat, three bodies, at the Skink's own scale) is the look you want, or tilted, streaked or a different size; the owner has not seen it in the game. The other Brawlers', Mages' and Technicians' everyday hits are still to describe, one at a time.)*
 - ~~**Its subclass**~~ *(answered 2026-11-08, build `2026-11-08h`: **Spine-legged**, the Crustacean renamed; the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider")*: so the Spine-legged cards fit it, it is weak to Crushing and Earthquake and resists Slashing and Piercing, and its lean is −1.
