@@ -105,7 +105,7 @@ async function boot(search) {
             o.middle = [...new Set(main.filter(s => s.cover && !s.low).map(s => s.kind))].sort().join(); o.lowKinds = [...new Set(main.filter(s => s.low && !s.cover).map(s => s.kind))].sort().join();
             o.tallSome = ['generator', 'locker', 'vending', 'teleporter', 'rubble', 'server_rack', 'tank'].every(k => main.some(s => s.kind === k && !s.low && !s.cover)); return o; })()`);
         same(r.cover, 'barrel,barrier,computer_desk,console,crate,crate_stack,desk,hazard_corrosive,hazard_explosive,lab_bench,pump,reception_desk,valve', 'what gives cover (the hazard containers since build 2026-11-09yy)'); same(r.every, true, 'a solid without its kind\'s traits');
-        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '164:55:43:14:95', 'the counts (solids : cover : cover seen over : low without cover : tall; the server room\'s racks and the warehouse\'s shelving, crates and barrels for the lobby\'s and the show room\'s furniture, build 2026-11-07qq; the three hazard containers, low cover, build 2026-11-09yy)');
+        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '170:55:43:14:101', 'the counts (solids : cover : cover seen over : low without cover : tall; the server room\'s racks and the warehouse\'s shelving, crates and barrels for the lobby\'s and the show room\'s furniture, build 2026-11-07qq; the three hazard containers, low cover, build 2026-11-09yy)');
         same(r.middle, 'console,crate_stack', 'cover too high to see over'); same(r.lowKinds, 'cart,couch,gate,pool,river,sentry', 'low objects that give no cover (the lobby\'s table went in build 2026-11-07qq)'); same(r.tallSome, true, 'a tall kind');
     });
     check('THE TEST ROOM HAS ITS OBJECT THAT GIVES COVER (the roadmap\'s room, docs/NEXT-PHASE-ROADMAP.md §3.5): its two crates, barrel and two barriers (that move) and its desk give cover and are seen over, its two consoles give cover and are not, its generator gives none and is tall', () => {
@@ -129,7 +129,7 @@ async function boot(search) {
         const tried = r.glass.filter(g => !/no line$/.test(g)); ok(tried.length >= 14, 'only ' + tried.length + ' of ' + r.glass.length + ' panes of glass tested: ' + r.glass.join(' | '));
         for (const g of tried) ok(/:-:wall$/.test(g), 'glass: ' + g);
         ok(['lab_window_north', 'show_window_west', 'deck_window_arena'].every(id => r.glass.some(g => g.startsWith(id + ':'))), 'a window not tested: ' + r.glass.join(' | '));
-        ok(r.doors.length === 13, 'the doorways: ' + r.doors.join(' | ')); for (const d of r.doors) ok(/:2:seen:through$/.test(d), 'a doorway: ' + d);
+        ok(r.doors.length === 14, 'the doorways: ' + r.doors.join(' | '));   // (14 since build 2026-11-11d: the electrical domain's steps) for (const d of r.doors) ok(/:2:seen:through$/.test(d), 'a doorway: ' + d);
     });
     check('IN PLAY: the auto-lock (js/targeting.js) takes a creature seen over the desk and not one behind the generator; the combat step\'s "enemy near" (js/facilityplay.js) the same', () => {
         const r = J(`(function(){ __wild(); const o = {}, T = __T; __put(...T([11, 4])); const a = __ant(...T([11, 8])); a.provoked = true; o.desk = targetNearest() === a; o.nearDesk = facilityEnemyNear() === a;
