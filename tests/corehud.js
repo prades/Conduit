@@ -219,7 +219,7 @@ function measure(w, h) {
         const t = measure(w, h);
         await check(`${w}x${h}: THE CORE in the bottom-right corner, the old parts hidden, the dock and the squad's corner clear of it, the cube drawn, its words`, () => {
             ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.on, true, 'not on'); same(t.body, true, 'body.core-on'); ok(t.core && t.core.shown, 'not shown');
-            ok(t.vw - t.core.r <= 8 && t.vh - t.core.b <= 8, 'not in the corner: ' + JSON.stringify(t.core));
+            ok(Math.abs(t.vw - t.core.r - 14) <= 1 && Math.abs(t.vh - t.core.b - 14) <= 1, 'not in the corner, 14 px in from the right and the bottom (build 2026-11-11x): ' + JSON.stringify(t.core));
             for (const k of ['shards', 'ui', 'ult', 'pack']) same(t.old[k] && t.old[k].shown, false, 'the old ' + k + ' is shown');
             ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(t.dock.b <= t.mix.t + 1, 'the dock is not over the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
             ok(t.drawn > 400, 'the cube is not drawn (' + t.drawn + ' pixels)');

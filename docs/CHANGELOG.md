@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11x` · branch `claude/start-game-project-HSh7Z` · THE CORE with margins
+- **The owner**, circling THE CORE: "Need to move this up a little. Because it's not nested and need to have margins".
+- THE CORE stands 14 px in from the right and the bottom edge (it was 6 and 4), as the squad's corner stands 14 px in from the left and the bottom: the two bottom corners sit on one line. The dialogue's box follows its new edge.
+- Files: game.html; tests: corehud, bottomui, toolbox (its place); docs/UI-STYLE.md, docs/CHANGELOG.md; the Bible's iPad pictures remade.
+- Verified: those suites and the full run. Not playtested.
+
 ### Build `2026-11-11w` · branch `claude/start-game-project-HSh7Z` · The dock as a vertical bar; NEW GAME in SETTINGS
 - **The owner:** "Make a vertical bar that goes above the mini roster. From the bottom order [roster, cards, quests, clones, map and settings]" and "Also move the 'new game' button to the settings pop up menu".
 - **The vertical bar.** On a tablet or a desktop the dock stands at the left over the squad's cards, one button above another: ROSTER at the foot, then CARDS, QUESTS, CLONES, MAP and SETTINGS, with ? (the guide) at the top. It fits an iPad whole; a shorter window scrolls it. While a member's card is open it gives way, as the stack does.
