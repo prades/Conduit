@@ -51,6 +51,7 @@ What it is today:
     - The number pops up and out of whoever was hit, then arcs down and lands on that fighter's floor bar.
     - The bar keeps its length until the number lands; then it drops.
     - The agent's, provisional: the piece lost flashes white, breaks off and falls away; the number lands with a squash and a small ring on the floor, and the bar shakes; about a third of a second from the hit to the landing (pop 7 frames, falling to frame 20).
+    - **Gone soon after it lands** (the owner: "I like it, but the numbers disappear sooner"): it fades out within 8 frames of landing (it lay there over half a second in the first draft).
     - Drafted (§10).
 12. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay.
 13. **Earlier, superseded: the element's word on a background.**
