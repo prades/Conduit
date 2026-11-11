@@ -32,6 +32,9 @@ What it is today:
    - Not chosen: all objects but the fight's own; every object.
    - **They still count:** cover, sight, walking and FLUX MOVE work as always. Chosen over "fully invisible" and over taking them out of the fight.
 6. **The battle view's strength as drafted** (approved 2026-11-11): 1.25×; on HIGH the edges blurred and darkened, on LOW darkened only.
+7. **The faces: column C of the sheet** (the owner, 2026-11-11: "I like dont c", read as "font C"; to be confirmed on the picture). Slashing **Bangers**; piercing **Barlow Condensed Black Italic**; projectile **Chakra Petch Bold Italic**; crushing **Titan One**; earthquake **Rubik Dirt** (150 KB, the heaviest); elemental **Cinzel Decorative Black**; statuses **Pixelify Sans Bold**.
+8. **The attack frames: the Brawlers first** (the owner: "brawlers first").
+9. **A faded object is more visible** than the first draft's faint outline (the owner: "stronger visibility on hidden objects").
 
 ## 3. Must-have requirements
 
@@ -70,7 +73,7 @@ What it is today:
 **The objects that fade:**
 - **"In front of a fighter":** drawn after the fighter, nearer the camera, with its picture overlapping the fighter's.
 - It fades out over 0.2 s and comes back the same way.
-- **The outline:** its tile's edges on the floor, in a faint pale line.
+- **How it shows:** its tile's edges on the floor in a pale line, more visible than the first draft's (the owner); how much more is drafted.
 
 **The attack frames:** for each form, a block for each of its moves (its attack, its second attack, its Ultimate where it has one), with a wind-up, the strike and the recovery, played slower than today's 0.3 s so it reads. One form is drafted first.
 
@@ -122,11 +125,11 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 
 ## 11. Open questions
 
-1. The faces (from the sheet).
-2. Which form's attack frames come first.
+1. That "font C" is the right reading (the picture with the faces in the fight).
+2. Which Brawler's attack frames come first.
 3. Whether creatures and unevolved followers get attack frames too.
 4. One richer attack block per form, or one block per move (the attack, the second attack, the Ultimate).
-5. How faint the faded objects' outline is (from a draft).
+5. How strongly a faded object shows (a draft).
 
 ## 12. History
 
