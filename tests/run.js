@@ -20,6 +20,7 @@ const SUITES = [
     ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['the electrical domain (step 1): the little door beside the junction, shut until it is repaired; the deep server room and down four steps the circuitry; one interior of two rooms', 'elecdomain.js'],
     ['the player\'s part in a fight: the bars come back slowly out of danger; the repair kit (the pack, the KIT pill, H); kits dropped by creatures and at spots that fill again; GUARD (shots at the squad near you hit you, half speed) and STUN DIVE (a swoop, a stun, a rest)', 'playercombat.js'],
+    ['the battle look: the battle view when a creature engages (1.25x, the edges blurred on HIGH, darkened on LOW), taps through the zoom, the floor first and written on (lit tiles, a creature\'s bar with its level and element, WEAK! and STUNNED), no names, RESIST off like nothing, objects in front of a fighter as ghosts; the faces; the real page', 'battlelook.js'],
     ['performance + culling',    'perf.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],

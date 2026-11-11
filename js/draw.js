@@ -996,9 +996,10 @@ function _drawPredatorBody(actor, px, py, drawCtx) {
 function _drawPredatorBars(actor, px, py, drawCtx) {
     const _isAllyPred = actor.team === "green" || actor.isClone;
     if (!_isAllyPred && typeof spiderLurking === "function" && spiderLurking(actor)) return;   // (lurking at cover: nothing over it gives it away)
-    drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred, typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
+    const _bvHud = typeof battleHidesUnitHud === "function" && battleHidesUnitHud(actor);   // the battle view: its health on the floor, no name over it (js/battleview.js)
+    if (!_bvHud) drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred, typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
     // Its level, kind and what it is doing, over the bar (js/levels.js). A spider of the arena wears no tag (ASKED: "Spiders should have no tag"); one of yours (a clone) does.
-    if (typeof drawUnitTag === "function" && !(actor.speciesName === "spider" && !_isAllyPred)) drawUnitTag(actor, px, py - 96, drawCtx);
+    if (!_bvHud && typeof drawUnitTag === "function" && !(actor.speciesName === "spider" && !_isAllyPred)) drawUnitTag(actor, px, py - 96, drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
     // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen. (_shieldMax, the most it has held, is kept by whatever grants the shield, js/game.js: the draw pass writes nothing on an actor, so a step with no picture is the same step: tests/ghost.js.)
     if (actor.shielded && actor.shieldAmount > 0) {
@@ -1386,10 +1387,11 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
     const _bare = actor.fpSpot || (typeof attractOn === "function" && attractOn());   // (the website's background: a searcher wears no bar and no name, js/attract.js; nor does an egg waiting on a follower spot, js/followerspots.js, which has a label of its own)
-    if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
+    const _bvHud = typeof battleHidesUnitHud === "function" && battleHidesUnitHud(actor);   // the battle view: its health on the roster, no name over it (js/battleview.js)
+    if (!_bare && !_bvHud) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
     if (!_bare && actor.isFollower && actor.team === "green") drawXpBar(px-14, py-69, 28, 3, actor, drawCtx);   // its XP, thin, under the health bar (js/levels.js xpProgress)
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
-    if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
+    if (!_bare && !_bvHud && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────
     if (actor.isFollower && typeof actor.ultimateCharge === "number" && typeof followerUltimate === "function" && followerUltimate(actor)) {   // (none without an Ultimate: an unevolved follower, a flagged form; build 2026-11-09b)

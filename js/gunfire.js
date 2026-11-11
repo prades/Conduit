@@ -12,7 +12,7 @@ const GUN = { lockPick: 90, buffer: 30 };   // how far (px) from a locked enemy 
 let playerLockTarget = null;                // the enemy the player locked on (the ring's ATTACK), or null
 let gunHold = null;                         // a press that began on an enemy while armed: { x, y, pending, released, until }; button: true when it is the targeting dial's (js/targeting.js), which fires at the locked enemy wherever the finger is
 
-function _gunScreen(a) { return { x: (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, y: (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0) - 55 }; }
+function _gunScreen(a) { const p = { x: (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, y: (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0) - 55 };; if (typeof bvZoomPt === "function") { const q = bvZoomPt(p.x, p.y); p.x = q[0]; p.y = q[1]; } return p; }   // (the battle view's zoom: js/battleview.js)
 function _gunLive(a) { return !!a && !a.dead && a.team !== "green" && !a.isClone; }
 // the enemy a press at (ex, ey) means: the one under it, else the locked one if it is near
 function gunTargetAt(ex, ey) {

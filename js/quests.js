@@ -255,6 +255,7 @@ function questQueenTakesYou() {
     if (typeof _fp !== "undefined" && _fp && _fp.channel) _fp.channel = null;
     health = typeof PLAYER_HITS !== "undefined" ? PLAYER_HITS : 3;
     player.x = player.targetX = player.visualX = crystal.x + 2; player.y = player.targetY = player.visualY = crystal.y; player.fpPath = null;
+    if (typeof battleViewDrop === "function") battleViewDrop();   // (the battle view eases out: js/battleview.js)
     player.invuln = typeof PLAYER_RESPAWN_GRACE !== "undefined" ? PLAYER_RESPAWN_GRACE : 90;
     const squad = typeof partyMembers === "function" ? partyMembers() : followers.filter(f => !f.dead && !f.post);
     for (const f of squad) { if (!f || f.dead) continue; f.x = player.x + (Math.random() - 0.5) * 1.6; f.y = player.y + 0.6 + Math.random() * 1.2; f.currentTarget = null; f._prey = null; f.returningToCrystal = false; }

@@ -35,7 +35,8 @@ function onPredatorDeath(predator) {
 function floatingTextScreen(t) {
     if (!t.world) return [t.x, t.y];
     const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
-    return [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
+    const p = [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
+    return typeof bvZoomPt === "function" ? bvZoomPt(p[0], p[1]) : p;   // (drawn after the battle view's copy: where the copy puts the unit: js/battleview.js)
 }
 // ONE VOICE. A banner is a text pushed at the centre of the screen. Only the oldest batch shows and counts down — texts pushed on the same frame are one batch, so a title and its line stay together — and the
 // rest wait their turn. While others wait, a batch gets at most BANNER_QUEUED_LIFE frames. A banner already waiting with the same text is not queued twice.
@@ -72,6 +73,9 @@ function drawFloatingTexts() {
     let _row = 0;
     floatingTexts.forEach(t => {
         if (t._waiting) return;             // queued behind the banner showing now
+        const _bvr = typeof battleWordRole === "function" ? battleWordRole(t) : null;   // THE BATTLE VIEW (js/battleview.js): WEAK and STUNNED are on the floor; RESIST floats off small and pale
+        if (_bvr === "floor") return;
+        if (_bvr === "resist") { const [_rx, _ry] = floatingTextScreen(t); battleDrawResist(t, _rx, _ry); return; }
         const alpha = Math.min(1, t.life / 30);
         const _dy = isBanner(t) ? (_row++) * 18 : 0;   // banners shown together stack, one line under the other
         const [tx, ty] = floatingTextScreen(t);

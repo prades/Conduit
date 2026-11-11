@@ -494,6 +494,7 @@ function facilityResetState() {
     playerAttackMode = false; if (typeof gunStow === "function") gunStow();
     isPressing = false; longHoldFired = false; touchMoved = false;
     health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START; if (typeof playerCombatReset === "function") playerCombatReset();   // (the guard down: js/playercombat.js)
+    if (typeof battleViewReset === "function") battleViewReset();   // (the battle view out: js/battleview.js)
     if (typeof document !== "undefined") { const ov = document.getElementById("overlay"); if (ov && ov.classList) ov.classList.remove("active"); }
 }
 function facilityPlayStart() {
@@ -672,6 +673,7 @@ function facilityDrawItems(drawList) {
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // a step with no picture draws nothing: no item is added to the draw list (see render(), js/game.js)
     for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn inside its tank: after the pad with the tank's far side, before the tank's near side
+    if (typeof battleViewDecals === "function") battleViewDecals(drawList);   // the battle view: what is written on the floor (js/battleview.js)
 }
 
 // ── height: the floors rise and fall (drawing only: movement is flat) ──
@@ -695,6 +697,9 @@ function _fpQuad(pts, fill, stroke, lw) {
 }
 const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall_provisional: ["#26324f", "#1a2340", "#8fa6d8"], rock: ["#4a3a30", "#2e241e", "#9a7a62"], railing_wall: ["#3a4258", "#262d40", "#ffd34d"], deck_wall: ["#3a3f52", "#262a3a", "#8fa6d8"] };
 function drawFacilityItem(it) {
+    if (it.fp === "bvdecal") { it.draw(); return; }   // written on the floor in the battle view (js/battleview.js)
+    if (it.fp === "prop" && typeof battleFadeProp === "function" && battleFadeProp(it)) return;   // an object in front of a fighter, in the battle view: a ghost (js/battleview.js)
+    if (typeof battleViewDrawing === "function") battleViewDrawing(it);   // (its picture's place noted as it is drawn: js/propsprites.js _psBlit)
     _fpBase = it.base || 0;
     const lv = (typeof _fpItemLight === "function" && _fp.light) ? _fpItemLight(it) : 1, real = ctx;
     if (lv < 0.12 && (it.fp === "wdecor" || it.fp === "fixture")) return;   // (posters and signs in a dark room are all but invisible: not drawn)

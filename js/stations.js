@@ -120,6 +120,7 @@ function facilityStationTick() {
 }
 // a tap: on the plate, or on a station (use it if close, walk to it if not). Returns true when it was ours.
 function facilityStationTap(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     if (!_fp || !_fp.stations || !_fp.stations.length) return false;
     const r = _stPlate();
     if (_fp.stationNear && r && ex >= r.x && ex <= r.x + r.w && ey >= r.y && ey <= r.y + r.h) { stationUse(_fp.stationNear); return true; }

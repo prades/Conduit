@@ -4,6 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11h` · branch `claude/start-game-project-HSh7Z` · the battle view (the battle look, step 2)
+- **The battle view** (the owner: "build it", after the drafts): when a creature engages you or your squad, the camera eases in to 1.25× (0.4 s) and the edges soften: blurred and darkened on HIGH, darkened on GRAPHICS: LOW. It eases back out (0.6 s) 3 s after the last creature engaging.
+  - "Engaging": a creature within 7 tiles of you and in sight that is going for you or one of yours, that you or yours hit in the last 2 s, or that your squad is ordered at. A sleeping one does not count. The dialogue box and the website's background keep the view out; a knockout (yours, or the queen's) takes it out at once.
+  - The HUD does not zoom; the network panel and the Ant Nest's meter, which were drawn with the world, wait for after the zoom. Taps go back through the zoom: a creature, a follower, a tile, the Crystal, a station, the specimen, a launcher site, FLUX MOVE's objects and tiles, a body for the Mutator.
+- **The floor in a fight**: drawn first, then what is written on it, then all that stands on it (on your own level only; a deck over a floor stays as it was).
+  - Each fighter's tile is lit, green yours and red theirs.
+  - Before each creature: its health bar on the floor, with its level (LV7) and its element's tag (the energy cards' symbol in its colour). Your followers have no floor bar; their health stays on the roster.
+  - **STUNNED** is written on the floor by a stunned creature while the stun lasts; **WEAK!** where a weakness was hit, shaking. They are no longer in the air. **RESIST** floats off small and pale.
+- **No names over the units** in a fight, and no small bars over them.
+- **An object in front of a fighter** (nearer the camera, its picture over the fighter's) fades to a ghost at 30% over 0.2 s, its floor drawn and its tile outlined, and comes back the same way. It still stops shots, hides what is behind it and blocks the way.
+- **The seven faces of column C** ship with the game in `fonts/battle`, each under the SIL Open Font License and cut down to the letters the game writes. The floor writes in Titan One; the numbers' faces come in the next build. Pixelify Sans came as a WOFF (not a WOFF2) and is shipped as one.
+- **Not in this build**: the numbers' faces, the knock and the glide to the bar, the roster's answer (next, `2026-11-11i`); the attack frames.
+- All numbers are mine, provisional, except the zoom (the owner's, as drafted). Tests: `tests/battlelook.js` (new, 19 checks, the real page among them); `tests/ghost.js` knows the view's drawing-only state. Docs: `BATTLE-LOOK.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11g` · branch `claude/start-game-project-HSh7Z` · no DEFEATED
 - **DEFEATED is gone** (the owner: "We're removing the defeated text"). Nothing floats over a follower, a clone or a creature that falls (`COMBAT.defeatText` 0; it was 90 frames).
 - The boss's "◈ … IS DEFEATED" banner and the Ant Nest console's DEFEATED state are other words and stay.

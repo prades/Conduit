@@ -97,7 +97,8 @@ function _psBlit(fam, name, x, y, clip) {
             else if (bucket === 0) ctx.drawImage(_psSliceSil(sl), px, py);
             else { sl.dim = sl.dim || {}; const d = _psDimmed(sl.cv, sl.cv, 0, 0, sl.cv.width, sl.cv.height, _psSliceSil(sl), bucket, sl.dim); ctx.drawImage(d || sl.cv, px, py); }
         }
-        const p = _fpP(x, y, 0); return [p[0] - c.ax, p[1] - c.ay, c];
+        const p = _fpP(x, y, 0); if (typeof _bvNoteRect === "function") _bvNoteRect(p[0] - c.ax, p[1] - c.ay, c.w, c.h);   // (the battle view: does it hide a fighter: js/battleview.js)
+        return [p[0] - c.ax, p[1] - c.ay, c];
     }
     const p = _fpP(x, y, 0), dx = p[0] - c.ax, dy = p[1] - c.ay;
     if (bucket >= PS_DIM_STEPS) ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);

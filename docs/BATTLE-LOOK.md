@@ -1,9 +1,9 @@
 # The battle look (the JRPG feel)
 
-- **Status:** **Designed** (the direction approved 2026-11-11, from options). The first drafts (the faces, the battle view) are shown to the owner; nothing built.
+- **Status:** The battle view, the floor's writing, no names and the fading objects are **implemented and verified by tests** (build `2026-11-11h`; the owner: "build it"); not playtested. The numbers and the roster's answer are **designed** and come next (`2026-11-11i`). The attack frames are **designed**, not drafted.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11f`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11h`
 - **Related docs:** `COMBAT.md` (combat readability: the numbers, the bite in two beats), `EFFECTS.md` (the forms' effect pieces; the budget for effects), `UI-STYLE.md` (fonts), `ART-PROCESS.md` (drafts first), `PLAYER-COMBAT.md`
 
 ## 1. Intent
@@ -88,12 +88,13 @@ What it is today:
 
 ## 3. Must-have requirements
 
-- [ ] The battle view.
+- [x] The battle view (build `2026-11-11h`).
   - When a creature engages you or your squad, the camera eases in; the edges of the picture soften (blurred a little); it eases out after the fight.
   - The HUD (bars, dial, buttons, squad cards, panels) does not zoom and stays where it is.
   - A tap still lands on what is under the finger.
-- [ ] While the battle view is on, an object in front of a fighter fades to a faint outline on the floor, and it still counts.
-- [ ] The numbers are bigger, in the face of the hit's damage type; statuses in the status face.
+- [x] While the battle view is on, an object in front of a fighter fades (a ghost, its tile outlined on the floor: §2, 9), and it still counts (build `2026-11-11h`).
+- [x] The floor in a fight (§2, 10): each fighter's tile lit; a creature's bar on the floor with its level and its element's tag; WEAK! and STUNNED written on the floor; RESIST floating off; no names over the units (build `2026-11-11h`).
+- [ ] The numbers are bigger, in the face of the hit's damage type; statuses in the status face; each knocked off the way the blow went, then into its bar's cut (§2, 11; next: `2026-11-11i`).
 - [ ] Each form's attacks have their own baked frames, form by form.
 
 ## 4. Non-goals
@@ -107,7 +108,7 @@ What it is today:
 **The battle view**
 - **Strength and timing:** **1.25×** (approved as drafted), easing in over 0.4 s and out over 0.6 s (provisional).
 - **Done as one copy of the finished world picture, scaled.** The copy is made after the world and its overlays and before the floating words and the HUD. So nothing that draws the world changes, and the words are drawn sharp at their zoomed place.
-- **When it counts as engaged:** a creature within 7 tiles of you, in sight, that is attacking you or one of your squad, or that you or your squad have hit in the last 2 s. It counts as over 3 s after there is none.
+- **When it counts as engaged:** a creature within 7 tiles of you, in sight, that is attacking you or one of your squad, or that you or your squad have hit in the last 2 s. It counts as over 3 s after there is none. As built, also the creature your squad is ordered at; a sleeping one never counts; a knockout eases the view out at once.
 - **The edges:** a soft blur over the outer part of the picture with a little darkening. On GRAPHICS: LOW (and so on older iPads) only the darkening, which costs one fill a frame.
 
 **The numbers and fonts**
@@ -147,17 +148,23 @@ What it is today:
 - Panels open over the game: the HUD is unchanged.
 - `?attract` (the website's background): no battle view.
 - Dark rooms.
-- **The network panel and the Crystal's ring** (top right) are drawn with the world today. Under the zoom they slide off the edge and blur, so they must be drawn after the zoom (seen in the drafts).
-- **No floor is drawn under an object.** A faded object needs its floor drawn, or a dark hole shows (seen in the draft).
+- **The network panel and the Crystal's ring** (top right) are drawn with the world today. Under the zoom they slide off the edge and blur, so they must be drawn after the zoom (seen in the drafts). Built so: they and the Ant Nest's meter wait for after the zoom.
+- **No floor is drawn under an object.** A faded object needs its floor drawn, or a dark hole shows (seen in the draft). Built so: a next tile's floor, in the room's light.
 - **Writing on the floor needs the floor drawn first.** Today the floor's tiles are sorted in among the units. A marking on the floor is either painted over by a tile in front of it or painted over a unit's feet.
   - The draft drew the whole floor first, then the markings, then everything standing. That is right on one level, like the arena.
-  - Where a deck stands over a floor, the build must keep the levels apart (seen in the draft).
+  - Where a deck stands over a floor, the build must keep the levels apart (seen in the draft). Built so: only the tiles on your own level go first.
 - **Words near the edge of the fight end up under the HUD:** the zoom pushes them outward (in the drafts, DEFEATED under the STUN button).
-- A fight at the edge of the screen: the zoom centres on you, as the camera does, so a far creature may leave the picture. The drafts should show whether to centre between you and the fight instead.
+- A fight at the edge of the screen: the zoom centres on you, as the camera does, so a far creature may leave the picture. The drafts should show whether to centre between you and the fight instead. Built: centred on you.
 
 ## 8. Acceptance criteria
 
-Written per step once the drafts are approved.
+**Step 2, the battle view** (build `2026-11-11h`; each checked by `tests/battlelook.js`):
+- A creature within 7 tiles, in sight, going for you or yours (or hit by you or yours in the last 2 s, or the one your squad is ordered at) brings the view in over 0.4 s to 1.25×; none for 3 s takes it out over 0.6 s. A sleeper, a clone, one of yours, one too far or out of sight does not. The dialogue box, `?attract` and a knockout take it out.
+- The HUD does not zoom; the network panel and the Nest's meter are drawn after the zoom. A tap where something shows means that thing (a creature, a follower, a tile, the Crystal, every picker).
+- On HIGH the edges are blurred and darkened; on LOW only darkened.
+- The floor on your level is drawn first; written on it: the lit tiles, a creature's bar with LV and its element's tag (none for a follower), STUNNED, WEAK! shaking. No names or small bars over the units. RESIST small and pale, drifting off.
+- An object in front of a fighter fades to its ghost over 0.2 s, its floor drawn and its tile outlined, and comes back the same way; it still stops a shot.
+- A step with no picture leaves the game as a drawn one does (`tests/ghost.js`).
 
 ## 9. Steps
 
@@ -165,13 +172,25 @@ Written per step once the drafts are approved.
    - the battle view (stills from the real game: today, the view on HIGH, the view on LOW);
    - a sheet of candidate faces, three for each of the seven;
    - one form's new attack frames (a filmstrip).
-2. The battle view, built.
-3. The numbers and their faces, built.
+2. The battle view, built: build `2026-11-11h`, with the floor's writing, no names and the fading objects. How it is built (js/battleview.js, `BATTLE_VIEW`):
+   - **The zoom** is one copy of the finished world picture (the world pass and its overlays), scaled about the middle, made in js/game.js `render` just before the floating words (`battleViewPost`). Nothing that draws the world changes. What is drawn after it and sits on the world goes through `bvZoomPt` (the floating words, the lock-on and the dial's brackets, a follower's pick point, a creature's and the Crystal's tap point); every picker that works the world out from a tap takes it back through `bvUnzoom` first, once.
+   - **The edges** on HIGH: the picture shrunk to a quarter, then a fourteenth, and scaled back up (a blur with no canvas filter, for older iPads), kept towards the edges by a mask; then a darkening ring. On LOW the ring alone. The ring and the mask are drawn once a screen size.
+   - **The floor first**: js/game.js `drawDepthOf` sorts the floor tiles on your level before everything (`battleFloorFirst`); the floor's writing goes between (`battleViewDecals`, from js/facilityplay.js `facilityDrawItems`). The floor's face is Titan One (`BV_FLOOR_FACE`).
+   - **The objects**: js/propsprites.js `_psBlit` notes where an object's picture went; one nearer the camera whose picture overlaps a fighter's fades (js/facilityplay.js `drawFacilityItem` asks `battleFadeProp`).
+   - **No names**: js/draw.js asks `battleHidesUnitHud` (from halfway in). The words: js/drops.js asks `battleWordRole`.
+   - **A step with no picture** keeps the view's state (`_bv`) as a drawn one does; what only the drawing keeps is apart (`_bvDraw`, listed in `tests/ghost.js`), with each object's picture, fade and floor level kept beside it, not written on it.
+3. The numbers and their faces, built (next: `2026-11-11i`; the seven faces already ship in `fonts/battle`).
 4. The attack frames, form by form.
 
 ## 10. Verification record
 
-Nothing built yet. The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
+| Check | Result | Evidence / notes |
+|---|---|---|
+| `node tests/battlelook.js` (19 checks: when it engages and its timing, the dialogue box, `?attract`, a knockout, a new game; the zoom's maths and its copy on HIGH and LOW; the HUD held back; taps through the zoom and every picker; the floor first on your level only; the floor's writing; no names; the words; the objects' fade and floor, and a shot still stopped; the faces and their licences; the real page in Chromium: the copy, the edges, a fight) | Pass | build `2026-11-11h` |
+| `node tests/ghost.js` (a step with no picture keeps the game as a drawn one) | Pass | build `2026-11-11h`, with `_bvDraw` listed as drawing-only |
+| The nearest suites (38: facilityplay, facility, targets, weapon, movement, hud, bottomui, plate, combat, techabilities, fluxmove, fluxlab, mutator, specimen, perf, cover, attract, dialogue, playercombat and others) | Pass | build `2026-11-11h`; ghost.js failed there (the drawing's notes were kept on the game's objects) until `_bvDraw` was split off, then passed |
+
+The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;
 - one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates;
 - the fade: a floodlight standing in front of a fight, today and in the battle view. It is gone, a faint outline of its tile left, and the floor under it stamped from the next tile for the picture.
