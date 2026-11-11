@@ -2292,7 +2292,7 @@
 </div></details>
 <h3 id="followers-death">Death and coming back</h3>
 <ul>
-<li><b>At 0 health</b> a follower is dead. DEFEATED floats over it for <span class="n" data-k="COMBAT.defeatText">90</span> frames (its partner no longer rages, and the bond lasts, since build <code>2026-11-09b</code>), and its <b>base HP stat drops by 1</b>. No single hit can take more than <span class="n" data-k="COMBAT.hitCap" data-f="pct">34%</span> of its max health.</li>
+<li><b>At 0 health</b> a follower is dead. Nothing is said over it (<span class="n" data-k="COMBAT.defeatText">0</span> frames of DEFEATED since build <code>2026-11-11g</code>; its partner no longer rages, and the bond lasts, since build <code>2026-11-09b</code>), and its <b>base HP stat drops by 1</b>. No single hit can take more than <span class="n" data-k="COMBAT.hitCap" data-f="pct">34%</span> of its max health.</li>
 <li><b>It comes back</b> 180 frames (3 s) later at the Crystal, as the same follower. It keeps its personality, element, traits, perk, uid (the bond is gone), play style, move, equip cards and evolved form. It keeps its level, all its XP and its HP stat (a death costs it nothing since 2026-11-01). Its return is paid from the Crystal (<a href="#world-crystalpower">its power</a>): at its reserve it waits at the Crystal, the ticker saying NEEDS POWER. It returns to the room it held, whose place it kept while waiting, or joins the squad if there is room. A role switched with ATTACK STYLE is kept: it comes back with the role it had (the respawn used to work the role out from the personality again, which undid the pick). The Crystal shows a ticker, ELEMENT ROLE ns.</li>
 <li><b>It no longer falls for good</b> (the owner, 2026-11-01: “remove the feature [...] where the followers lose HP every time they get revived”): each death took 1 off its HP stat and at 0 it fell for good, its body for an Ice Mage to preserve. The Ice Mage's preservation and the Resurrection Zone now serve the Mutator's clone, as they already did, and the follower bodies and capsules an older save still holds.</li>
 </ul>
@@ -2307,7 +2307,7 @@
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
 <tr><td>A follower comes back after</td><td class="num">180 frames (3 s)</td><td><code>js/game.js:717</code> (literal)</td></tr>
 <tr><td>HP stat lost per death</td><td class="num">1</td><td><code>js/game.js:711</code> (literal)</td></tr>
-<tr><td>DEFEATED shows for</td><td class="num"><span class="n" data-k="COMBAT.defeatText">90 frames</span></td><td><code>js/combat.js:12</code></td></tr>
+<tr><td>DEFEATED over a unit that falls (taken out in build <code>2026-11-11g</code>)</td><td class="num"><span class="n" data-k="COMBAT.defeatText">0 frames</span></td><td><code>js/combat.js:12</code></td></tr>
 <tr><td>The most of max health one hit takes</td><td class="num"><span class="n" data-k="COMBAT.hitCap" data-f="pct">34%</span></td><td><code>js/combat.js:9</code></td></tr>
 <tr><td>Ice Mage: within / freezes for / from within</td><td class="num"><span class="n" data-k="SPECIMEN.mage.range">14</span> tiles / <span class="n" data-k="SPECIMEN.freeze.frames">120</span> frames / <span class="n" data-k="SPECIMEN.freeze.near">2</span> tiles</td><td><code>js/specimen.js:18-19</code></td></tr>
 <tr><td>Take a capsule within / the pack holds</td><td class="num"><span class="n" data-k="SPECIMEN.capsule.pick">0.9</span> tiles / <span class="n" data-k="ITEMS.specimen_capsule.stack">3</span></td><td><code>js/specimen.js:20, js/inventory.js:72</code></td></tr>
@@ -2629,7 +2629,7 @@
     <li><b>Feedback.</b>
       <ul>
         <li>Numbers rise from the unit: in the element's colour over a creature, "−n" in red over yours, "+n" in green for healing. Only hits with a source show one, so burn ticks show none.</li>
-        <li>A pale lag segment drains from the bar, and DEFEATED shows over the dead.</li>
+        <li>A pale lag segment drains from the bar; nothing is said over the dead (DEFEATED taken out in build <code>2026-11-11g</code>).</li>
         <li>Words: MISS, DODGED, INTERRUPTED, REFLECT, WEB!, SNARED!, AMBUSH!, DUST!, BURN.</li>
         <li>Over a creature: a 36 × 6 px bar (orange, then yellow, then red), its plate ("Lv 3 MANTIS SCOUT"; none on an arena spider), its charge ring, and a blue bar while shielded.</li>
       </ul></li>
@@ -2639,7 +2639,7 @@
     <tr><td>Bite wind-up (the dodge window); rest between bites; one cycle</td><td class="num"><span class="n" data-k="COMBAT.bite.windup">18 frames</span> (<span class="n" data-k="COMBAT.bite.windup" data-f="f">0.3 s</span>); <span class="n" data-k="COMBAT.bite.cooldown">45</span>; <span class="n" data-k="COMBAT.bite.windup+COMBAT.bite.cooldown">63</span></td><td><code>js/combat.js:8</code></td></tr>
     <tr><td>Bite reach</td><td class="num"><span class="n" data-k="COMBAT.bite.reach">1.5 tiles</span></td><td><code>js/combat.js:8</code></td></tr>
     <tr><td>The cap; capped hits that kill</td><td class="num"><span class="n" data-k="COMBAT.hitCap">0.34</span>; <span class="n" data-k="Math.ceil(1/COMBAT.hitCap)">3</span></td><td><code>js/combat.js:9</code></td></tr>
-    <tr><td>The lag bar drains over; DEFEATED shows for</td><td class="num"><span class="n" data-k="COMBAT.lagBar">36 frames</span>; <span class="n" data-k="COMBAT.defeatText">90 frames</span></td><td><code>js/combat.js:11-12</code></td></tr>
+    <tr><td>The lag bar drains over; DEFEATED (taken out) shows for</td><td class="num"><span class="n" data-k="COMBAT.lagBar">36 frames</span>; <span class="n" data-k="COMBAT.defeatText">0 frames</span></td><td><code>js/combat.js:11-12</code></td></tr>
     <tr><td>Hit flash; a damage number's life</td><td class="num">6 frames; 36 frames</td><td><code>js/helpers.js:237, 250</code> (literals)</td></tr>
     <tr><td>Your hits; grace after a hit; grace after the knockdown; push per bite</td><td class="num"><span class="n" data-k="PLAYER_HITS">3</span>; <span class="n" data-k="PLAYER_HIT_GRACE">60</span>; <span class="n" data-k="PLAYER_RESPAWN_GRACE">90 frames</span>; <span class="n" data-k="PLAYER_KNOCKBACK">0.7 tiles</span></td><td><code>js/config.js:198-209, 298</code></td></tr>
     <tr><td>The Crystal refills whole, idle</td><td class="num"><span class="n" data-k="CRYSTAL_POWER.refill.fullFrames" data-f="f">300 s</span></td><td><code>js/crystalpower.js</code></td></tr>
@@ -2706,7 +2706,7 @@
   </div></details>
 
   <h3 id="creatures-death">Death and what a kill pays</h3>
-  <p>At 0 health a creature dies (DEFEATED). That frame's sweep pays its XP, runs <code>onPredatorDeath</code>, counts the kill and removes the body.</p>
+  <p>At 0 health a creature dies. That frame's sweep pays its XP, runs <code>onPredatorDeath</code>, counts the kill and removes the body.</p>
   <ul>
     <li><b>Every death pays, whatever killed it:</b> your units, you, a sentry, burning, the tutorial calling its ants off. Only the class-stage training ant leaves without paying.</li>
     <li><b>Shards:</b> the class's <code>shardDrop</code>, not scaled by level, at once ("◆ n"). A nymph pays 0.</li>
@@ -3600,7 +3600,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11f</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11g</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3822,7 +3822,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-11f (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11g (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

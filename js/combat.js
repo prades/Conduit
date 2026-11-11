@@ -9,7 +9,7 @@ const COMBAT = {
     hitCap: 0.34,                                                    // the most of a follower's or clone's max health one hit may take (it was 0.45)
     numbers: { ally: true, heal: true },                             // damage numbers over your own units ("−n", red) and healing ("+n", green); an enemy's numbers were always there
     lagBar: 36,                                                      // a health bar keeps a pale segment of the health just lost, draining over this many frames
-    defeatText: 90,                                                  // "DEFEATED" over a unit that falls, for this long (0: none)
+    defeatText: 0,                                                   // "DEFEATED" over a unit that falls, for this long (0: none). Taken out (the owner, 2026-11-11: "We're removing the defeated text"; build 2026-11-11g): it was 90
     // WHOM A CREATURE GOES FOR (js/predator.js predatorPickPrey; ASKED: "make them target you if you are weak especially. They should target weak targets and the player has a health bar too. They should also
     // target you if you attack them."). Every `every` frames a creature looks at your followers, your clones and YOU. It goes for (in sight, but the one that hit it is known through walls):
     //   - the one that hit it last (or touched it), from up to `revenge` tiles: it turns on whoever attacks it, the player too

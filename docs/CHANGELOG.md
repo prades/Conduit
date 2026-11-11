@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11g` · branch `claude/start-game-project-HSh7Z` · no DEFEATED
+- **DEFEATED is gone** (the owner: "We're removing the defeated text"). Nothing floats over a follower, a clone or a creature that falls (`COMBAT.defeatText` 0; it was 90 frames).
+- The boss's "◈ … IS DEFEATED" banner and the Ant Nest console's DEFEATED state are other words and stay.
+- Tests: `tests/combat.js` and `tests/mutator.js` now check there is none. Docs: `COMBAT.md`, `MUTATOR.md`, `BATTLE-LOOK.md`, the Bible.
+
 ### Build `2026-11-11f` · branch `claude/start-game-project-HSh7Z` · GUARD and STUN DIVE (step 2 of B built on A)
 - **GUARD** (the owner chose "Guard stance"): the GUARD button by the dial, or **G**, holds up a guard until you press it again. A creature's shot that would hit one of your squad within 2.5 tiles of you hits you instead: one bar, and inside the grace after a hit it costs nothing. You move at half speed while guarding. A green ring on the floor shows who is covered. A knockout drops it.
 - **STUN DIVE** (the owner chose "Chip, then tap"): the STUN button, or **V**, then tap a creature within 5 tiles that you can see: you swoop to its side in a fifth of a second (nothing hits you on the way) and it is stunned for 1.5 s. Then the button rests 12 s, its seconds counting down on it. A tap anywhere else puts the dive away.

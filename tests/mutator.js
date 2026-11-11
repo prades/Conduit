@@ -114,14 +114,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             mixToolRetreat(); o.retreat = c.retreatUntil > frame; partyApplyStance([c], 'hold'); o.hold = !!(c.job && c.job.type === 'move') && c.stance === 'hold'; partyApplyStance([c], 'follow'); o.come = !c.job && c.stance === 'follow'; return o; })()`);
         same(r.inPool, true, 'the pool'); same(r.retreat, true, 'RETREAT'); same(r.hold, true, 'HOLD'); same(r.come, true, 'COME');
     });
-    check('when it falls: DEFEATED is said, nothing is queued to bring it back, its body lies where it fell (its kind and level), the player is told, and the bay can grow a new one', () => {
+    check('when it falls: no DEFEATED (taken out, build 2026-11-11g), nothing is queued to bring it back, its body lies where it fell (its kind and level), the player is told, and the bay can grow a new one', () => {
         const r = J(`(function(){ __clear(); __class('mutator'); const c = __grow(); __frames(5); const at = [c.x, c.y], lv = c.level; floatingTexts.length = 0; const foe = { x: c.x + 1, y: c.y, team: 'red' };
             for (let i = 0; i < 10 && !c.dead; i++) applyDamage(c, c.maxHealth, foe); __frames(2);   // (no hit takes more than COMBAT.hitCap of it: a few)
             const b = cloneBodies[0], opt = getCloneOptions().find(x => x.key === 'ant_scout');
             return { queued: respawnQueue.filter(e => e.isClone).length, bodies: cloneBodies.length, kind: b ? b.sp + ' ' + b.cls : null, lv: b ? b.level === lv : false, near: b ? Math.hypot(b.x - at[0], b.y - at[1]) < 0.01 : false,
                      said: floatingTexts.map(t => t.text).join('|'), alive: !!mutatorClone(), ready: opt.ready }; })()`);
         same(r.queued, 0, 'it was queued to come back'); same(r.bodies, 1, 'bodies'); same(r.kind, 'ant scout', 'the body\'s kind'); same(r.lv, true, 'the body\'s level'); same(r.near, true, 'the body is not where it fell');
-        ok(/HAS FALLEN/.test(r.said) && /DEFEATED/.test(r.said), 'what was said: ' + r.said); same(r.alive, false, 'a clone is still out'); same(r.ready, true, 'the bay will not grow a new one');
+        ok(/HAS FALLEN/.test(r.said) && !/DEFEATED/.test(r.said), 'what was said: ' + r.said); same(r.alive, false, 'a clone is still out'); same(r.ready, true, 'the bay will not grow a new one');
     });
     check('a DISMISSED clone does not come back (a dismissed clone used to come back 20 seconds later and fill the slot again), and the Mutator\'s leaves no body', () => {
         const r = J(`(function(){ __clear(); __class('mutator'); __grow(); dismissOldestClone(); __frames(3); const o = { queued: respawnQueue.length, bodies: cloneBodies.length };

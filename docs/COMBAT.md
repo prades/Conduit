@@ -43,7 +43,7 @@ What is true of the code (js/predator.js, js/npc.js, js/combat.js, js/abilities.
 | `COMBAT.hitCap` | 0.34 | the most of a follower's or clone's max health one hit may take (was 0.45): at least three hits, usually four |
 | `COMBAT.numbers.ally` | `true` | damage numbers over your own units too (red, "−n"), and green "+n" for healing |
 | `COMBAT.lagBar` | 36 frames | the health bar keeps a pale segment of the health just lost that drains over this long (RuneScape's way of showing a hit's size) |
-| `COMBAT.defeatText` | 90 frames | "DEFEATED" over a unit that dies, in its side's colour |
+| `COMBAT.defeatText` | 0 (was 90 frames) | "DEFEATED" over a unit that dies: **taken out** (the owner, 2026-11-11: "We're removing the defeated text"; build `2026-11-11g`). The boss's "IS DEFEATED" banner and the Nest console's DEFEATED state stay. |
 
 What the player sees, in order: the creature turns on a unit and **rears back** (a ring over it closes as the bite comes, a chevron on the ring points at its target, the word BITE above, and a mark drops over the unit it is biting); the bite **lands** (a flash on the target, a red number, the bar's pale segment showing how much); the **remaining health** is the bar; a unit that dies says **DEFEATED** and, for a follower, the Crystal's ticker counts its return (clones had this already).
 

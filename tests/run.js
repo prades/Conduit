@@ -41,7 +41,7 @@ const SUITES = [
     ['the hazard containers: explosive and corrosive flasks (a shot sets one off, a blast or an acid pool, back after a minute), moved by FLUX MOVE', 'hazards.js'],
     ['the player\'s ultimate',   'ultimate.js'],
     ['effects plan',             'effects.js'],
-    ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],
+    ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar; no DEFEATED (taken out, build 2026-11-11g)', 'combat.js'],
     ['the damage system: six types, race and subclass rows, the physical/elemental split, the triangle on the elemental part, leans, the words', 'damage.js'],
     ['whom a creature goes for: the player is prey (hit it and it comes for you), the weak first; spiders lurk behind props with no tag', 'prey.js'],
     ['the Mutator: the lash, cloning is the Mutator\'s, the one clone fights as its species and stays fallen', 'mutator.js'],

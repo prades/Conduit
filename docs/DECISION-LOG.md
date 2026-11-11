@@ -2860,4 +2860,5 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Then the blur dropped too: "forget the little background effect". The experiment now: writing on the floor in one standard face. WEAK written on the ground, shaking; STUNNED on the floor; RESIST floating off like nothing. In a fight each fighter's tile lit with a bigger health bar on the floor; the player's bars stay at the top.
 - Then: "the character names are not visible" in a fight; by the floor bar an element tag (if it has an element) and the level.
 - Then, on a sketch over the draft: STUNNED stays the word, turned to face the player ("oriented with the user's eyes"); drafted level across the screen, squashed to the floor's slant. The owner: "Ugly". Of three more (along the tile, halfway, standing), "Revert where stunned is on the ground": the floor's words run along the tile, as before.
+- Then: "We're removing the defeated text": the DEFEATED over a unit that falls, taken out in every fight at once (build `2026-11-11g`). The boss's banner and the Nest console's state stay.
 - The spec, its provisional details and the steps (drafts first): `BATTLE-LOOK.md`.
