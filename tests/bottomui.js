@@ -106,8 +106,8 @@ for (const [w, h] of [[360, 740], [390, 844], [421, 800], [560, 800], [561, 800]
             if (s.round) for (const c of s.round) ok(!cross(c, s.bar), 'a round button ' + c + ' is under the bar ' + s.bar);
         });
     }
-    check(w + ': the bar is over the dock (a tablet) and the middle of the screen as far as the tool and the round buttons let it be; it keeps its height whoever is in it, and its three slots are one height', () => {
-        const b = r.shut.bar; if (!phone) ok(b[3] <= r.shut.dock[1] + 1, 'the bar ' + b + ' is not over the dock ' + r.shut.dock);
+    check(w + ': the bar is under the dock (a tablet: the dock a vertical bar over it, build 2026-11-11w) and the middle of the screen as far as the tool and the round buttons let it be; it keeps its height whoever is in it, and its three slots are one height', () => {
+        const b = r.shut.bar; if (!phone) ok(b[1] >= r.shut.dock[3] - 1, 'the bar ' + b + ' is not under the dock ' + r.shut.dock + ' (the vertical bar over the stack: build 2026-11-11w)');
         same(r.empty.bar[3] - r.empty.bar[1], r.shut.bar[3] - r.shut.bar[1], 'the bar changed height with open slots'); same(r.shut.slots.length, 3, 'slots'); ok(r.shut.slots.every(q => q[3] - q[1] === r.shut.slots[0][3] - r.shut.slots[0][1]), 'the slots are not all one height: ' + JSON.stringify(r.shut.slots));
     });
     if (!phone) check(w + ': the corners: the three cards are stacked over the battle tool at the bottom left, and with a creature near the enemy card stands in the tool\'s place, over its orders (build 2026-11-11m: it stood at the bottom right), the crystals and the bars are at the top left and the zone tag at the top right; a picked member\'s card takes the squad\'s corner (the stack and the orders give way to it, the enemy card does not), clear of the dock and the enemy card, its tab on top of it', () => {

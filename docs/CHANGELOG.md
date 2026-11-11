@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11w` · branch `claude/start-game-project-HSh7Z` · The dock as a vertical bar; NEW GAME in SETTINGS
+- **The owner:** "Make a vertical bar that goes above the mini roster. From the bottom order [roster, cards, quests, clones, map and settings]" and "Also move the 'new game' button to the settings pop up menu".
+- **The vertical bar.** On a tablet or a desktop the dock stands at the left over the squad's cards, one button above another: ROSTER at the foot, then CARDS, QUESTS, CLONES, MAP and SETTINGS, with ? (the guide) at the top. It fits an iPad whole; a shorter window scrolls it. While a member's card is open it gives way, as the stack does.
+- **The squad's corner** comes down to the bottom edge, where the dock was. The dialogue's box sits at the bottom between the squad's corner (and its enemy card's ATTACK) and THE CORE, short of THE CORE's pills and slabs; on a tall screen where that is too narrow (an iPad upright) it stands higher, over THE CORE's lower part (js/dialogue.js).
+- **NEW GAME** was already in SETTINGS (with its YES / CANCEL step); its separate chip at the top left is no longer shown on a tablet or a desktop. A phone keeps it.
+- Files: game.html, js/squadfly.js (the member's card no longer treats a dock above it as its floor), js/uikit.js (the bottom line ignores a vertical dock), js/dialogue.js, js/toolbox.js; tests: toolbox (the vertical bar, its order, its fit and scroll), bottomui, squadfly, party, dialogue, hud, corehud; docs/UI-STYLE.md, docs/CHANGELOG.md, docs/DECISION-LOG.md, docs/OPEN-QUESTIONS.md, bible.html.
+- Verified: those suites and the full run. Not playtested.
+
 ### Build `2026-11-11v` · branch `claude/start-game-project-HSh7Z` · THE CORE: the creature's slab under the cube
 - **The owner:** "I honestly want a way to incorporate the little player to shoot or attack predator little bubble. I want that to be incorporated into that little menu down there as well, but I want the whole thing to look elegant". Of three drafts the owner circled the slab and drew it under the cube, then: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up."
 - **The creature's slab.** While a creature is locked, its slab stands under your cube, over the pills and your slab: its picture in a round socket, its name and level, its health, INFO and the trigger. It replaces the round dial on a tablet or a desktop (a phone keeps the dial).

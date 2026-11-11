@@ -8,7 +8,8 @@
 //   - roll the mouse wheel over it (a vertical wheel slides it sideways),
 //   - or press the arrows at its ends. Where more is hidden an edge fades and an arrow shows.
 // The buttons that open the game's canvas panels (Clones, Settings) are here too, so every menu is in one place.
-// Phones use the radial menu instead (this is for widths above 700px).
+// Phones use the radial menu instead (this is for widths above 700px). Since build 2026-11-11w the corners layout (a tablet or a desktop, the only place the dock shows) stands the dock up as a
+// vertical bar at the left over the squad's cards (game.html: body.corners #topToggles); a short window scrolls it there, and the sideways slide below is not used.
 const TOOLBOX_DRAG = 6;           // pixels of mouse travel before a press is a drag, not a click
 const TOOLBOX_STEP = 0.7;         // an arrow slides this share of the visible width
 

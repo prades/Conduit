@@ -814,6 +814,13 @@ The agent's choices, to change on the owner's word:
 9. **Its pads take a tap** over all of its box (its empty corners too: a tap there does nothing) but a strip 56 px wide at its left above the pills, which stays the map's and where the dialogue's box now stops. They could take only its drawn parts.
 10. ~~**The target bubble in it**~~ settled: the owner circled C SLABS, drew it under the cube and asked for a fixed position; built in `2026-11-11v` (the surge's words stay on the arc). Open: the empty band under the cube with none locked (it could hold a faint NO TARGET); the slab's size; the beam and the damage number.
 
+## The dock as a vertical bar (built in `2026-11-11w`; `UI-STYLE.md`, "The dock as a vertical bar")
+The agent's choices, to change on the owner's word:
+1. **The ? guide**, not in the owner's list: kept, at the top of the bar.
+2. **Its buttons**: 168 x 40, each with its icon and word.
+3. **The squad's corner** comes down to the bottom edge where the dock was.
+4. **While a member's card is open** the bar gives way (hidden), as the stack does; it could stay and the card stand lower.
+
 ## BOTH (built in `2026-11-11s`; `COMBAT.md` §7.4, "BOTH")
 The agent's choices, to change on the owner's word:
 1. **The timer:** 5 s of everyday hits between two turns of the move (`BOTH_REST_SECONDS`). A turn is one use of the move: its wind-up or strike, and its effect.

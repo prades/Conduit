@@ -68,7 +68,7 @@ function findChromium() {
 // THE CORE (js/corehud.js, build 2026-11-11t): on a tablet or a desktop (the corners layout) your cube in the bottom-right corner holds the shards, the bars and the surge bar, which are hidden there.
 const IDS = ['shards', 'ui', 'ultWrap', 'topToggles', 'zoneInfo', 'alarmIcon', 'mixTool',
              'squadBar', 'facilityNewChip', 'radialHub', 'coreHud'];
-const expectedAt = (id, w) => id === 'topToggles' || id === 'coreHud' ? w > 700 : id === 'radialHub' || id === 'shards' || id === 'ui' || id === 'ultWrap' ? w <= 700 : true;
+const expectedAt = (id, w) => id === 'topToggles' || id === 'coreHud' ? w > 700 : id === 'radialHub' || id === 'shards' || id === 'ui' || id === 'ultWrap' || id === 'facilityNewChip' ? w <= 700 : true;   // (NEW GAME is in SETTINGS on a tablet: build 2026-11-11w)
 
 // The longest ultimate caption, which is what used to run out from under the
 // bar and finish underneath the siphon switch.

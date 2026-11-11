@@ -111,7 +111,7 @@ function measure(w, h) {
         const H = rd('game.html');
         ok(/body\.core-on #shards, body\.core-on #ui, body\.core-on #ultWrap, body\.core-on #btnPack \{ display: none !important; \}/.test(H), 'the old parts are not hidden');
         ok(/body\.placing #coreHud, body\.ccOpen #coreHud, body\.panel-open #coreHud \{ display: none !important; \}/.test(H), 'it does not hide with the panels and the roster');
-        ok(/body\.core-on #topToggles \{ left: 14px; right: 352px;/.test(H), 'the dock is not beside it');
+        ok(/body\.corners #topToggles \{ left: 14px; right: auto;/.test(H) && !/body\.core-on #topToggles/.test(H), 'the dock is not the vertical bar at the left (build 2026-11-11w)');
     });
 
     group('HOW IT REACTS (the agent\'s faces and times, provisional)');
@@ -221,7 +221,7 @@ function measure(w, h) {
             ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.on, true, 'not on'); same(t.body, true, 'body.core-on'); ok(t.core && t.core.shown, 'not shown');
             ok(t.vw - t.core.r <= 8 && t.vh - t.core.b <= 8, 'not in the corner: ' + JSON.stringify(t.core));
             for (const k of ['shards', 'ui', 'ult', 'pack']) same(t.old[k] && t.old[k].shown, false, 'the old ' + k + ' is shown');
-            ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(!(t.dock.l < t.mix.r && t.dock.t < t.mix.b - 1), 'the dock runs under the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
+            ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(t.dock.b <= t.mix.t + 1, 'the dock is not over the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
             ok(t.drawn > 400, 'the cube is not drawn (' + t.drawn + ' pixels)');
             same(t.words.count, '1,234', 'the shards'); same(t.words.pack, '2', 'PACK n'); ok(/^ULTIMATE \d+%$/.test(t.words.surge), 'the surge: ' + t.words.surge); same(t.words.cells, 'g,g,g', 'the bars');
         });
