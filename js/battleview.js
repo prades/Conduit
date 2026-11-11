@@ -13,8 +13,12 @@
 //                  on the roster: no bar on the floor for them); WEAK! along the tile, shaking, where a weakness was hit; STUNNED along the tile by one stunned, while it lasts.
 //   THE WORDS      RESIST floats off small and pale, like nothing (js/drops.js); WEAK and STUNNED are on the floor instead of in the air; no names over the units, no small bars
 //                  (js/draw.js asks battleHidesUnitHud).
-//   THE OBJECTS    one standing in front of a fighter (nearer the camera, its picture over the fighter's) fades to a ghost (BATTLE_VIEW.ghost, over BATTLE_VIEW.fade) with a bright outline of its tile and the floor
-//                  under it; it still counts (cover, sight, walking, FLUX MOVE), as always (js/facilityplay.js drawFacilityItem asks battleFadeProp).
+//   THE OBJECTS    one standing in front of a fighter (nearer the camera, its picture over the fighter's) fades to a ghost (BATTLE_VIEW.ghost, over BATTLE_VIEW.fade), the whole object at once
+//                  however many tiles it covers, with a bright outline round its tiles and the floor under them; it still counts (cover, sight, walking, FLUX MOVE), as always (js/facilityplay.js
+//                  drawFacilityItem asks battleFadeProp).
+//   THE NUMBERS    (build 2026-11-11i) a hit's number, bigger and in its damage type's face (BV_FACES), is knocked off whoever was hit the way the blow went; a creature's glides back into its floor
+//                  bar where the health is cut and lies flat there, and the bar drops only as it lands; a bonus in the hit lands second, +N in gold. A follower's just goes, and its card on the
+//                  roster answers: it lights and shakes, its health moves, and the −N, a heal's +N and WEAK! fly out of its side (js/helpers.js applyDamage tags the number: battleNumberTag).
 // Every number here is the agent's, provisional, but the zoom (the owner approved it as drafted).
 const BATTLE_VIEW = {
     zoom: 1.25,                 // the owner: "Yes, as drafted"
@@ -28,11 +32,17 @@ const BATTLE_VIEW = {
     ghost: 0.3,                 // a faded object's ghost (the owner had 25% and 45% to pick from; open)
     fade: 12,                   // frames an object takes to fade to its ghost, and to come back (0.2 s)
     bar: { len: 60, thick: 8 }, // a creature's bar on the floor (px along it, across it)
+    // the numbers (frames, px): the knock; a creature's back in its bar's cut by `glide`, gone `gone` after; a follower's gone `fade` after the knock; how far the knock sends it; its size against
+    // today's; a bar's shake on a landing; a follower's card lit and shaking; a word beside the roster; WEAK! that long after the number; the other words' size in a fight
+    num: { knock: 8, glide: 20, gone: 8, fade: 6, push: 38, scale: 1.8, shake: 6, card: 16, pop: 44, weakAfter: 20, word: 1.35 },
 };
 const _bv = { k: 0, z: 1, engagedAt: -1e9, checkAt: -1e9 };   // the view's state: how far in, the zoom, when a creature last engaged, when it last looked (a step with no picture keeps it as a drawn one does)
 // What only the drawing keeps (a step with no picture fills none of it: tests/ghost.js IGNORE): its canvases, this frame's fighters, the elements' symbols, the object being drawn and the ghost's guard,
 // your floor's level this frame; and, kept beside them rather than written on them, each object's picture as last drawn and how far it has faded, each floating word's first life, each floor tile's level.
-const _bvDraw = { cvs: {}, fighters: null, fightersAt: -1, glyphs: {}, item: null, ghosting: false, lv: 0, lvAt: -1, rects: new WeakMap(), life0: new WeakMap(), tileLv: new WeakMap(), fade: new WeakMap() };
+// The numbers: what each hit's number is (whom it hit, its face, the blow's way, its bonus: set as the hit lands, read only by the drawing), when each part of it landed, the pieces knocked off
+// the bars, the words beside the roster, when each unit was last hit, the words of this frame, the outlined texts made once. An object's fade is by the object (its id), not by the tile.
+const _bvDraw = { cvs: {}, fighters: null, fightersAt: -1, glyphs: {}, item: null, ghosting: false, lv: 0, lvAt: -1, rects: new WeakMap(), life0: new WeakMap(), tileLv: new WeakMap(),
+    fade: new Map(), hideIds: new Set(), hideAt: -1, floorKey: new Map(), hits: new WeakMap(), land: new WeakMap(), popped: new WeakSet(), chunks: [], pops: [], unitHit: new WeakMap(), words: [], txt: new Map() };
 function _bvF() { return typeof frame !== "undefined" ? frame : 0; }
 function _bvSmooth(k) { return k * k * (3 - 2 * k); }
 function battleViewOn() { return _bv.k > 0.001; }
@@ -40,7 +50,7 @@ function battleViewK() { return _bv.k; }
 function battleViewZoom() { return _bv.z; }
 // a knockout (js/game.js; the queen's, js/quests.js questQueenTakesYou): the view eases out now, not 3 s on
 function battleViewDrop() { _bv.engagedAt = -1e9; }
-function battleViewReset() { _bv.k = 0; _bv.z = 1; _bv.engagedAt = -1e9; _bv.checkAt = -1e9; _bvDraw.fade = new WeakMap(); }
+function battleViewReset() { _bv.k = 0; _bv.z = 1; _bv.engagedAt = -1e9; _bv.checkAt = -1e9; _bvDraw.fade = new Map(); _bvDraw.floorKey = new Map(); _bvDraw.chunks = []; _bvDraw.pops = []; }
 // a point drawn before the copy, where the copy puts it on the screen; and back
 function bvZoomPt(x, y) { const z = _bv.z; if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) * z, cy + (y - cy) * z]; }
 function bvUnzoom(x, y) { const z = _bv.z; if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) / z, cy + (y - cy) / z]; }
@@ -88,6 +98,7 @@ function _bvRing(key, W, H, r0, r1, col0, col1) {
     return o;
 }
 function battleViewPost() {
+    battleCardsTick();   // (each frame, in the view and once after: the roster's cards)
     if (!battleViewDefers() || typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas.width) return;
     const W = canvas.width, H = canvas.height, z = _bv.z, e = _bvSmooth(_bv.k), cx = W / 2, cy = H / 2;
     const cp = _bvCv("copy", W, H); if (!cp) return;
@@ -146,17 +157,18 @@ function battleHides(it) {
     for (const F of _bvFighters()) { const a = F.a; if (d <= a.x + a.y + 0.3) continue; const b = _bvUnitBox(a.x, a.y); if (r[0] < b[2] && r[2] > b[0] && r[1] < b[3] && r[3] > b[1]) return true; }
     return false;
 }
-// how far an object has faded (0 itself, 1 its ghost): it fades while it hides a fighter, and comes back after, BATTLE_VIEW.fade frames each way
-function _bvFadeOf(it) { const a = _bvDraw.fade.get(it); return a === undefined ? 0 : a; }
+// an object (all the tiles of one solid: js/facilityplay.js _fpPropItems gives each its id)
+function _bvObj(it) { return it.id !== undefined && it.id !== null ? it.id : it; }
+// how far an object has faded (0 itself, 1 its ghost): it fades while any of its tiles hides a fighter (battleViewDecals finds them, each frame), and comes back after, BATTLE_VIEW.fade frames each way
+function battleFadeOf(it) { const e = _bvDraw.fade.get(_bvObj(it)); return e ? e.f : 0; }
 // js/facilityplay.js drawFacilityItem, for an object: true when it was drawn here, fading or a ghost (its floor and outline are drawn with the floor: battleViewDecals)
 function battleFadeProp(it) {
     if (_bvDraw.ghosting) return false;
-    const hide = battleHides(it); let f = _bvDraw.fade.get(it);
-    if (f === undefined && !hide) return false;
-    f = Math.max(0, Math.min(1, (f || 0) + (hide ? 1 : -1) / BATTLE_VIEW.fade));
-    if (f < 1e-6) { _bvDraw.fade.delete(it); return false; }   // (back: itself again)
-    _bvDraw.fade.set(it, f);
-    const a = 1 - (1 - BATTLE_VIEW.ghost) * f * _bv.k;
+    const key = _bvObj(it), f0 = _bvF(), hide = _bvDraw.hideAt === f0 && _bvDraw.hideIds.has(key); let e = _bvDraw.fade.get(key);
+    if (!e) { if (!hide) return false; e = { f: 0, at: -1 }; _bvDraw.fade.set(key, e); }
+    if (e.at !== f0) { e.at = f0; e.f = Math.max(0, Math.min(1, e.f + (hide ? 1 : -1) / BATTLE_VIEW.fade)); }   // (once a frame for the whole object, however many tiles it has)
+    if (e.f < 1e-6) { _bvDraw.fade.delete(key); return false; }   // (back: itself again)
+    const a = 1 - (1 - BATTLE_VIEW.ghost) * e.f * _bv.k;
     _bvDraw.ghosting = true; const g0 = ctx.globalAlpha; ctx.globalAlpha = g0 * a;
     try { if (typeof drawFacilityItem === "function") drawFacilityItem(it); } finally { ctx.globalAlpha = g0; _bvDraw.ghosting = false; }
     return true;
@@ -197,11 +209,13 @@ function _bvGlyph(id) {
 }
 // a creature's bar on the floor before it, its level and its element's tag at the bar's left end
 function _bvCreatureBar(a, bx, by) {
-    const L = BATTLE_VIEW.bar.len, T = BATTLE_VIEW.bar.thick, f = Math.max(0, Math.min(1, (typeof battleBarHealth === "function" ? battleBarHealth(a) : a.health) / (a.maxHealth || 1)));
+    const L = BATTLE_VIEW.bar.len, T = BATTLE_VIEW.bar.thick, f = Math.max(0, Math.min(1, battleBarHealth(a) / (a.maxHealth || 1))), f0 = _bvF(), at = _bvDraw.unitHit.get(a), k = at === undefined ? 1e9 : f0 - at, S = BATTLE_VIEW.num.shake;
     _bvOnFloor(bx, by, () => {
-        if (typeof battleBarFx === "function") battleBarFx(a, L, T);   // (the numbers' landings shake it and knock its piece off: build 2026-11-11i)
+        if (k >= 0 && k < S) ctx.translate(Math.sin(k * 2.6) * 1.2 * (1 - k / S), 0);   // a number landing shakes it, a little (the owner: less jumping)
         ctx.fillStyle = "rgba(5,7,14,0.8)"; ctx.fillRect(-L / 2 - 2, -T / 2 - 2, L + 4, T + 4); ctx.fillStyle = "#e8443a"; ctx.fillRect(-L / 2, -T / 2, L * f, T);
         ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.fillRect(-L / 2, -T / 2, L * f, 3); ctx.strokeStyle = "rgba(230,240,255,0.7)"; ctx.lineWidth = 1.2; ctx.strokeRect(-L / 2 - 2, -T / 2 - 2, L + 4, T + 4);
+        for (const c of _bvDraw.chunks) { if (c.a !== a) continue; const j = f0 - c.at; if (j < 0 || j > 18) continue;   // the piece a number knocked off: white for a moment, then falling away
+            ctx.save(); ctx.globalAlpha *= 1 - j / 18; ctx.translate(-L / 2 + L * c.f1, j * 1.1); ctx.rotate(j * 0.035); ctx.fillStyle = j < 3 ? "#ffffff" : "#e8443a"; ctx.fillRect(0, -T / 2, L * (c.f0 - c.f1), T); ctx.restore(); }
         const el = a.element && a.element !== "none" && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null, lv = "LV" + (a.level || 1);
         let x = -L / 2 - 6; ctx.font = "12px " + BV_FLOOR_FACE; ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = 3.5; ctx.strokeStyle = "rgba(5,6,12,0.9)";
         ctx.strokeText(lv, x, 0.5); ctx.fillStyle = "#eef3fa"; ctx.fillText(lv, x, 0.5);
@@ -213,16 +227,15 @@ function _bvCreatureBar(a, bx, by) {
 // js/facilityplay.js facilityDrawItems: what is written on the floor joins the draw list, over the floor and under all that stands on it
 function battleViewDecals(drawList) {
     if (!battleViewOn() || typeof _fp === "undefined" || !_fp || typeof _fpP !== "function") return;
-    // a faded object's floor (the map draws none under an object: the next tile's) and its outline
+    // the objects that hide a fighter this frame (any tile of one does: the whole object fades), then each fading object's floor (the map draws none under an object) and its outline
+    const f0 = _bvF(), hide = _bvDraw.hideIds, cells = new Map(); hide.clear(); _bvDraw.hideAt = f0;
+    for (let i = 0, n = drawList.length; i < n; i++) { const it = drawList[i]; if (it && it.fp === "prop" && battleHides(it)) hide.add(_bvObj(it)); }
     for (let i = 0, n = drawList.length; i < n; i++) {
-        const it = drawList[i]; if (!it || it.fp !== "prop" || !(_bvFadeOf(it) > 0 || battleHides(it))) continue;
-        drawList.push({ type: "fp", fp: "bvdecal", x: it.x, y: it.y, depth: BV_STAMP0 + it.x + it.y, draw: () => {
-            _fpBase = it.base || 0; const x = it.x, y = it.y, dia = [_fpP(x - 0.5, y - 0.5, 0), _fpP(x + 0.5, y - 0.5, 0), _fpP(x + 0.5, y + 0.5, 0), _fpP(x - 0.5, y + 0.5, 0)];
-            const nk = [[x - 1, y], [x, y - 1], [x + 1, y], [x, y + 1]].map(([u, v]) => u + "," + v).find(k => _fp.floorOps && _fp.floorOps.get(k));
-            if (nk && typeof _fpDrawOps === "function") { const c = _fpP(x, y, 0); _fpDrawOps(_fp.floorOps.get(nk), c[0], c[1], nk); if (typeof _fpTileLight === "function" && typeof _fpDarkTileOver === "function") _fpDarkTileOver(c[0], c[1], _fpTileLight(x, y, it.room)); }   // (in its room's light)
-            ctx.save(); ctx.globalAlpha *= _bv.k * _bvFadeOf(it); _fpQuad(dia, "rgba(200,220,255,0.10)", "rgba(215,235,255,0.9)", 2.2); ctx.restore();   // (as far as it has faded)
-        } });
+        const it = drawList[i]; if (!it || it.fp !== "prop") continue; const key = _bvObj(it); if (!hide.has(key) && !_bvDraw.fade.has(key)) continue;
+        let set = cells.get(key); if (!set) { set = new Set(); cells.set(key, set); } set.add(it.x + "," + it.y);
+        drawList.push({ type: "fp", fp: "bvdecal", x: it.x, y: it.y, depth: BV_STAMP0 + it.x + it.y, draw: () => _bvStamp(it, key, set) });
     }
+    if (_bvDraw.chunks.length) _bvDraw.chunks = _bvDraw.chunks.filter(c => f0 - c.at <= 18);
     for (const F of _bvFighters()) {
         const a = F.a, tx = a.x - 0.5, ty = a.y - 0.5, col = F.mine ? "#4dff9a" : "#ff5a4a";   // its feet are at the floor's (x - 0.5, y - 0.5)
         drawList.push({ type: "fp", fp: "bvdecal", x: tx, y: ty, depth: BV_DECAL0 + tx + ty, draw: () => {   // its tile, lit
@@ -237,21 +250,181 @@ function battleViewDecals(drawList) {
         drawList.push({ type: "fp", fp: "bvdecal", x: wx, y: wy, depth: BV_DECAL0 + wx + wy + 0.3, draw: () => _bvFloorWord("WEAK!", wx, wy, "#ff4d3a", age < 30 ? 3 : 1.4, Math.min(1, t.life / 25)) });
     }
 }
+// a fading object's tile: its floor (the nearest floor's, in the room's light), and the outline round the object (only the edges that are not between two of its own tiles)
+function _bvStamp(it, key, set) {
+    _fpBase = it.base || 0; const x = it.x, y = it.y, c = _fpP(x, y, 0), k = _bvFloorKey(x, y);
+    if (k && typeof _fpDrawOps === "function") { _fpDrawOps(_fp.floorOps.get(k), c[0], c[1], k); if (typeof _fpTileLight === "function" && typeof _fpDarkTileOver === "function") _fpDarkTileOver(c[0], c[1], _fpTileLight(x, y, it.room)); }
+    const e = _bvDraw.fade.get(key), a = _bv.k * (e ? e.f : 0); if (a <= 0.001) return;   // (as far as it has faded)
+    const P = [_fpP(x - 0.5, y - 0.5, 0), _fpP(x + 0.5, y - 0.5, 0), _fpP(x + 0.5, y + 0.5, 0), _fpP(x - 0.5, y + 0.5, 0)], side = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]];
+    ctx.save(); ctx.globalAlpha *= a; _fpQuad(P, "rgba(200,220,255,0.10)", null); ctx.beginPath();
+    for (let i = 0; i < 4; i++) if (!set.has(side[i][0] + "," + side[i][1])) { const p = P[i], q = P[(i + 1) % 4]; ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+    ctx.lineWidth = 2.2; ctx.strokeStyle = "rgba(215,235,255,0.9)"; ctx.stroke(); ctx.restore();
+}
+// the floor to lay under an object's tile: the nearest tile that has one (a big object's inner tiles have no neighbour with a floor), found once
+function _bvFloorKey(x, y) {
+    const id = x + "," + y; if (_bvDraw.floorKey.has(id)) return _bvDraw.floorKey.get(id);
+    const ops = _fp.floorOps; let found = null;
+    if (ops) for (let r = 1; r <= 6 && !found; r++) for (let dx = -r; dx <= r && !found; dx++) for (let dy = -r; dy <= r; dy++) { if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const k = (x + dx) + "," + (y + dy); if (ops.get(k)) { found = k; break; } }
+    _bvDraw.floorKey.set(id, found); return found;
+}
 // how long a floating word has been up (its life when first seen here, kept beside it)
 function _bvAge(t) { let l0 = _bvDraw.life0.get(t); if (l0 === undefined) { l0 = t.life; _bvDraw.life0.set(t, l0); } return l0 - t.life; }
 // js/draw.js: no names and no small bars over the units while the view is on (their health is on the floor and on the roster)
 function battleHidesUnitHud(a) { return battleViewOn() && _bv.k > 0.5; }
-// js/drops.js drawFloatingTexts: a word the view handles itself. "floor" (WEAK, STUNNED: on the floor instead), "resist" (small and pale, off like nothing), or null
+// js/drops.js drawFloatingTexts: a word the view handles itself. "floor" (WEAK, STUNNED: on the floor instead), "resist" (small and pale, off like nothing), "number" (a hit's: its flight,
+// battleDrawNumber), "word" (any other on the world: in the status face, kept apart: battleWordQueue), or null (as it always was)
 function battleWordRole(t) {
     if (!battleViewOn() || !t || !t.world) return null;
     if (/WEAK/.test(t.text) || t.text === "STUNNED") return "floor";
     if (/RESIST/.test(t.text)) return "resist";
-    return null;
+    const h = _bvDraw.hits.get(t); if (h && !h.word && /^\u2212?\d+$/.test(String(t.text))) return "number";
+    return "word";
 }
 function battleDrawResist(t, tx, ty) {
     const age = _bvAge(t);
     ctx.save(); ctx.globalAlpha = Math.max(0, 1 - age / 26) * 0.85; ctx.font = "bold 11px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(5,6,12,0.8)";
     const x = tx + age * 0.7, y = ty - age * 1.6; ctx.strokeText("resist", x, y); ctx.fillStyle = "#aab6c8"; ctx.fillText("resist", x, y); ctx.restore();
 }
-// the faces load as soon as the page can: the floor's (Titan One) first (game.html declares them: fonts/battle)
-try { if (typeof document !== "undefined" && document.fonts && document.fonts.load) document.fonts.load('19px "BV Titan"').catch(() => {}); } catch (err) { /* no fonts API: the fallback face */ }
+// ── THE NUMBERS (build 2026-11-11i; docs/BATTLE-LOOK.md §2, 11) ──
+// column C (the owner's): one face for each damage type, and one for statuses (fonts/battle, declared in game.html)
+const BV_FACES = { slashing: ["normal", "400", "BV Bangers"], piercing: ["italic", "900", "BV Barlow"], projectile: ["italic", "700", "BV Chakra"], crushing: ["normal", "400", "BV Titan"],
+    earthquake: ["normal", "400", "BV Dirt"], elemental: ["normal", "900", "BV Cinzel"], status: ["normal", "700", "BV Pixelify"] };
+function battleFace(kind, px) { const F = BV_FACES[kind] || BV_FACES.status; return F[0] + " " + F[1] + " " + px + 'px "' + F[2] + '", "Arial Black", Impact, sans-serif'; }
+function _bvMine(u) { return !!u && (u.isFollower === true || (!!u.isClone && u.team === "green")); }
+function _bvFoe(u) { return !!u && !u.isClone && !u.isFollower && u.team !== "green" && (typeof Predator === "undefined" || u instanceof Predator); }
+// a hit's damage type: its own, else a follower's form's for that attack (js/damage.js dmgFormType); none (a burn's or a poison's tick, a pool, a card's echo): the status face
+function _bvKindOf(hit, source) {
+    let k = hit && hit.type ? hit.type : null;
+    if (!k && hit && hit.which && source && source.isFollower && !source.isClone && typeof dmgFormType === "function") k = dmgFormType(source, hit.which);
+    return k && BV_FACES[k] ? k : "status";
+}
+// js/helpers.js applyDamage, once a hit's number is up: whom it hit, its face, the way the blow went (from the attacker through the target, on the screen), and the bonus in it (`share`: the
+// part with no bonus, js/damage.js dmgBaseShare). A hit between yours and a creature near you, in sight, brings the view on at once, so its number already flies.
+function battleNumberTag(t, target, source, hit, share) {
+    if (!t || !target) return;
+    let dx = 0.8, dy = -0.6;   // (no attacker: up and away)
+    if (source && source !== target && Number.isFinite(source.x) && Number.isFinite(source.y)) { const wx = target.x - source.x, wy = target.y - source.y, sx = (wx - wy) * TILE_W, sy = (wx + wy) * TILE_H, L = Math.hypot(sx, sy); if (L > 1e-3) { dx = sx / L; dy = sy / L; } }
+    const all = Math.abs(parseInt(String(t.text).replace("−", ""), 10)) || 0, b0 = share < 1 && all >= 2 ? Math.max(1, Math.round(all * share)) : all;
+    _bvDraw.hits.set(t, { unit: target, kind: _bvKindOf(hit, source), dir: [dx, dy], all, bonus: all - b0 });
+    if (!battleViewOn() && _bvHitEngages(target, source)) { _bv.engagedAt = _bvF(); battleViewTick(); }
+    if (all - b0 > 0 && !_bvMine(target) && battleViewOn()) t.life = Math.max(t.life, 2 * BATTLE_VIEW.num.glide + BATTLE_VIEW.num.gone + 2);   // (its bonus lands second: up long enough)
+    _bvDraw.life0.set(t, t.life);
+}
+function _bvHitEngages(target, source) {
+    if (typeof facilityPlay === "undefined" || !facilityPlay || typeof player === "undefined" || !player) return false;
+    const foe = _bvFoe(target) ? target : _bvFoe(source) ? source : null, ours = foe === target ? source : target;
+    if (!foe || !_bvGreen(ours) || foe.asleep > 0) return false;
+    const dx = foe.x - player.x, dy = foe.y - player.y; if (dx * dx + dy * dy > BATTLE_VIEW.reach * BATTLE_VIEW.reach) return false;
+    return !(typeof facilitySeesFrom === "function" && !facilitySeesFrom(player.x, player.y, foe.x, foe.y));
+}
+// js/damage.js _dmgWords, js/combat.js healUnit: a word or a heal over one of your followers flies out of its card too
+function battleWordTag(t, unit) { if (t && unit && _bvMine(unit)) { _bvDraw.hits.set(t, { unit, word: true }); _bvDraw.life0.set(t, t.life); } }
+// a unit's health as the view shows it: its health, and every number on its way to it not yet landed (its floor bar; its card on the roster). Asked for a number's part (`t0`, `part`): what
+// the bar shows once that part has landed
+function battleBarHealth(a, t0, part) {
+    let hp = a.health || 0; if (!battleViewOn() || typeof floatingTexts === "undefined") return Math.max(0, hp);
+    for (const t of floatingTexts) {
+        const h = _bvDraw.hits.get(t); if (!h || h.word || h.unit !== a) continue; const L = _bvDraw.land.get(t);
+        if (t !== t0 && !(L && L.main)) hp += h.all - h.bonus;
+        if (h.bonus > 0 && !(L && L.bonus) && !(t === t0 && part === "bonus")) hp += h.bonus;
+    }
+    return Math.max(0, Math.min(a.maxHealth || hp, hp));
+}
+// a point of the world (x, y, up px over its floor) where the zoomed picture shows it
+function _bvScr(x, y, up) { return bvZoomPt((x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0) - (up || 0)); }
+function _bvEaseIO(u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+function _bvEaseOut(u) { return 1 - Math.pow(1 - u, 3); }
+// js/drops.js drawFloatingTexts: a hit's number on its way, its main part and then its bonus
+function battleDrawNumber(t) {
+    const h = _bvDraw.hits.get(t); if (!h || h.word) return;
+    const N = BATTLE_VIEW.num, a = h.unit, mine = _bvMine(a), age = _bvAge(t);
+    _bvNumPart(t, h, a, mine, age, "main");
+    if (h.bonus > 0) _bvNumPart(t, h, a, mine, age - (mine ? N.knock + 1 : N.glide + 1), "bonus");
+}
+function _bvNumPart(t, h, a, mine, age, part) {
+    const N = BATTLE_VIEW.num, z = _bv.z, bonus = part === "bonus";
+    if (age < 0 || age >= (mine ? N.knock + N.fade : N.glide + N.gone)) return;
+    const L = BATTLE_VIEW.bar.len, mx = a.maxHealth || 1, d = h.dir, val = bonus ? h.bonus : h.all - h.bonus, hp = battleBarHealth(a, t, part);
+    const B0 = _bvScr(a.x - 0.05, a.y - 0.05, 0), xc = -L / 2 + L * Math.max(0, Math.min(1, hp / mx)), T0 = [B0[0] + xc * z, B0[1] - 0.5 * xc * z];   // a creature's: where its bar is cut once it lands
+    const S0 = bonus && !mine ? [T0[0] - 8 * z, T0[1] - 6 * z] : _bvScr(a.x - 0.5, a.y - 0.5, 34), K0 = [S0[0] + d[0] * N.push * z, S0[1] + d[1] * N.push * z - 8 * z];   // where it starts; where the knock sends it
+    let x, y, fit = 0, sc = 1, alpha = 1;
+    if (bonus && !mine) {   // a creature's bonus: along its bar to its own cut
+        if (age < N.glide) { const u = age / N.glide, e = _bvEaseIO(u); x = S0[0] + (T0[0] - S0[0]) * e; y = S0[1] + (T0[1] - S0[1]) * e; fit = Math.max(0, (u - 0.55) / 0.45); sc = 1 - 0.15 * fit; }
+        else { x = T0[0]; y = T0[1]; fit = 1; sc = 0.85; alpha = Math.max(0, 1 - (age - N.glide) / N.gone); }
+    } else if (age < N.knock) { const u = _bvEaseOut(age / N.knock); x = S0[0] + (K0[0] - S0[0]) * u; y = S0[1] + (K0[1] - S0[1]) * u; sc = 0.7 + 0.3 * u; }   // knocked off
+    else if (mine) { x = K0[0]; y = K0[1]; alpha = Math.max(0, 1 - (age - N.knock) / N.fade); }   // a follower's: it just goes
+    else if (age < N.glide) { const u = (age - N.knock) / (N.glide - N.knock), e = _bvEaseIO(u); x = K0[0] + (T0[0] - K0[0]) * e; y = K0[1] + (T0[1] - K0[1]) * e; fit = Math.max(0, (u - 0.5) / 0.5); sc = 1 - 0.15 * fit; }   // back to its bar, fitting in
+    else { x = T0[0]; y = T0[1]; fit = 1; sc = 0.85; alpha = Math.max(0, 1 - (age - N.glide) / N.gone); }   // lying flat in the cut, then gone
+    if (age >= (mine ? N.knock : N.glide)) _bvLand(t, h, a, mine, part, val, hp);
+    const px = Math.round((t.size || 13) * N.scale), text = (mine ? "−" : bonus ? "+" : "") + val;
+    ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(sc * z, sc * z); ctx.transform(1, -0.5 * fit, fit, 1 - 0.5 * fit, 0, 0);
+    _bvText(text, battleFace(h.kind, px), bonus ? "#ffcf3a" : t.color, px, "center"); ctx.restore();
+}
+// a part landing: the bar drops (the piece it knocked off falls) and shakes; on one of yours, its card answers and the −N flies out of it
+function _bvLand(t, h, a, mine, part, val, hp) {
+    let L = _bvDraw.land.get(t); if (!L) { L = { main: 0, bonus: 0 }; _bvDraw.land.set(t, L); }
+    if (L[part]) return;
+    const f = _bvF() || 1; L[part] = f; _bvDraw.unitHit.set(a, f);
+    if (mine) _bvPop(a, "−" + val, part === "bonus" ? "#ffcf3a" : t.color, h.kind, false, f);
+    else { const mx = a.maxHealth || 1, f1 = Math.max(0, Math.min(1, hp / mx)); _bvDraw.chunks.push({ a, f0: Math.min(1, f1 + val / mx), f1, at: f }); if (_bvDraw.chunks.length > 40) _bvDraw.chunks.shift(); }
+}
+// a text with its dark outline, as a picture made once (outlining every number in a big fight each frame cost too much: js/draw.js cachedText); drawn plainly until its face has loaded
+function _bvText(text, font, color, px, align) {
+    const key = font + "|" + color + "|" + text, C = _bvDraw.txt, lw = Math.max(3, px / 6); let e = C.get(key);
+    if (!e && (typeof document === "undefined" || !document.fonts || !document.fonts.check || document.fonts.check(font))) {
+        const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null, g = cv && cv.getContext ? cv.getContext("2d") : null;
+        if (g && typeof g.measureText === "function") {
+            g.font = font; const w = Math.ceil(((g.measureText(text) || {}).width || text.length * px * 0.6) + lw * 2 + 4), hh = Math.ceil(px * 1.5 + lw * 2);
+            cv.width = w * 2; cv.height = hh * 2; g.scale(2, 2); g.font = font; g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round"; g.lineWidth = lw; g.strokeStyle = "rgba(5,6,12,0.95)";
+            g.strokeText(text, w / 2, hh / 2); g.fillStyle = color; g.fillText(text, w / 2, hh / 2);
+            if (C.size > 400) C.clear(); e = { cv, w, h: hh }; C.set(key, e);
+        }
+    }
+    if (e) { ctx.drawImage(e.cv, align === "left" ? -lw - 2 : -e.w / 2, -e.h / 2, e.w, e.h); return; }
+    ctx.font = font; ctx.textAlign = align; ctx.textBaseline = "middle"; ctx.lineJoin = "round"; ctx.lineWidth = lw; ctx.strokeStyle = "rgba(5,6,12,0.95)"; ctx.strokeText(text, 0, 0); ctx.fillStyle = color; ctx.fillText(text, 0, 0);
+}
+// ── THE OTHER WORDS ON THE WORLD, in a fight: in the status face, a little bigger, and kept apart (the newest moves up a line until it is clear) ──
+function battleWordQueue(t) { _bvDraw.words.push(t); }
+function battleDrawWords() {
+    const W = _bvDraw.words; if (!W.length) return; const items = [], placed = [];
+    for (const t of W) { const p = floatingTextScreen(t), age = _bvAge(t), pop = age < 8 ? 1 + 0.45 * (1 - age / 8) : 1, px = Math.round((t.size || 13) * BATTLE_VIEW.num.word * pop); ctx.font = battleFace("status", px); items.push({ t, x: p[0], y: p[1], px, w: (ctx.measureText(String(t.text)) || {}).width || 0, age }); }
+    W.length = 0; items.sort((a, b) => b.age - a.age);   // (the oldest keeps its place)
+    for (const it of items) {
+        for (let k = 0; k < 6; k++) { if (!placed.some(q => Math.abs(q.x - it.x) < (q.w + it.w) / 2 + 4 && Math.abs(q.y - it.y) < (q.px + it.px) / 2 * 0.95)) break; it.y -= Math.round(it.px * 0.9); }
+        placed.push(it); ctx.save(); ctx.globalAlpha = Math.min(1, it.t.life / 30); ctx.translate(it.x, it.y); _bvText(String(it.t.text), battleFace("status", it.px), it.t.color || "#ffffff", it.px, "center"); ctx.restore();
+    }
+}
+// ── THE ROSTER: a follower's card answers what happens to it ──
+function _bvPop(f, text, color, kind, word, at) { _bvDraw.pops.push({ f, text, color, kind, word, at }); if (_bvDraw.pops.length > 24) _bvDraw.pops.shift(); }
+// js/drops.js drawFloatingTexts, for every word: a word or a heal over one of your followers flies out of its card too (once; WEAK! after its number)
+function battleRosterNote(t) {
+    if (!battleViewOn() || !t || !t.world) return; const h = _bvDraw.hits.get(t); if (!h || !h.word || _bvDraw.popped.has(t)) return;
+    _bvDraw.popped.add(t); const weak = /WEAK/.test(t.text), resist = /RESIST/.test(t.text);
+    _bvPop(h.unit, weak ? "WEAK!" : resist ? "resist" : String(t.text), weak ? "#ff4d3a" : resist ? "#aab6c8" : t.color, "status", weak || resist, _bvF() + (weak ? BATTLE_VIEW.num.weakAfter : 0));
+}
+// the words beside the roster: out of the card's right side, a little way out, then gone; several at once stack upward
+function battleDrawRoster() {
+    const f = _bvF(), N = BATTLE_VIEW.num; if (!_bvDraw.pops.length) return;
+    _bvDraw.pops = _bvDraw.pops.filter(p => f - p.at < N.pop);
+    const E = typeof _sbEls !== "undefined" ? _sbEls : null; if (!E || !E.slots || !canvas.getBoundingClientRect) return;
+    const cr = canvas.getBoundingClientRect(), kx = cr.width ? canvas.width / cr.width : 1, ky = cr.height ? canvas.height / cr.height : 1, used = new Map();
+    for (const p of _bvDraw.pops) {
+        const age = f - p.at; if (age < 0) continue; const el = E.slots.find(e => e._unit === p.f); if (!el || !el.getBoundingClientRect) continue;
+        const r = el.getBoundingClientRect(), n = used.get(el) || 0; used.set(el, n + 1);
+        const x0 = (r.right - cr.left) * kx + 10, y0 = (r.top - cr.top + r.height * 0.45) * ky - n * 18, e = _bvEaseOut(Math.min(1, age / 14)), px = p.word ? 15 : 24, sc = age < 5 ? 0.6 + 0.08 * age : 1;
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = age < 26 ? 1 : Math.max(0, 1 - (age - 26) / 18); ctx.translate(x0 + 34 * e, y0 - 10 * e); ctx.scale(sc, sc);
+        _bvText(p.text, battleFace(p.word ? "status" : p.kind, px), p.color, px, "left"); ctx.restore();
+    }
+}
+// each frame (battleViewPost): a card whose follower was just hit lights in its element's colour and shakes; its health moves as the hits land (js/party.js partySlotHealth)
+function battleCardsTick() {
+    const E = typeof _sbEls !== "undefined" ? _sbEls : null; if (!E || !E.slots) return; const f = _bvF(), S = BATTLE_VIEW.num.card, on = battleViewOn();
+    for (const el of E.slots) {
+        if (!el || !el.style) continue; const u = el._unit, at = u ? _bvDraw.unitHit.get(u) : undefined, k = at === undefined ? 1e9 : f - at;
+        if (u && on && k >= 0 && k < S) { const d = 1 - k / S; el.style.transform = "translateX(" + (Math.sin(k * 2.7) * 6 * d).toFixed(1) + "px)"; el.style.boxShadow = "inset 0 0 0 2px var(--c), inset 0 0 " + Math.round(18 * d) + "px var(--c)"; el.style.filter = "brightness(" + (1 + 0.45 * d).toFixed(2) + ")"; el._bvFx = true; }
+        else if (el._bvFx) { el.style.transform = ""; el.style.boxShadow = ""; el.style.filter = ""; el._bvFx = false; }
+        if (u && (on || el._bvHp) && typeof partySlotHealth === "function") { partySlotHealth(el, u); el._bvHp = on; }   // (and once more as the view goes out: its true health)
+    }
+}
+// the faces load as soon as the page can (game.html declares them: fonts/battle)
+try { if (typeof document !== "undefined" && document.fonts && document.fonts.load) for (const k in BV_FACES) document.fonts.load(battleFace(k, 20)).catch(() => {}); } catch (err) { /* no fonts API: the fallback faces */ }

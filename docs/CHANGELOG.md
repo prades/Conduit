@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11i` · branch `claude/start-game-project-HSh7Z` · the numbers (the battle look, step 3)
+- **A hit's number in a fight** (the owner's drafts, then "build it"): 1.8× today's size, in its damage type's face (column C: slashing Bangers, piercing Barlow Condensed, projectile Chakra Petch, crushing Titan One, earthquake Rubik Dirt, elemental Cinzel Decorative; a hit with no type, such as a burn's tick, in Pixelify Sans, the status face).
+  - **Knocked off the way the blow went**, from the attacker through the target, so the two sides' numbers part (8 frames, about 38 px).
+  - **A creature's number** then glides back into its floor bar where the health is cut, lying flat along it by frame 20, and is gone 8 frames later. The bar drops only as the number lands; the lost piece flashes white and falls away, and the bar shakes a little.
+  - **The bonus lands second**: first the hit without its bonuses (a weakness's extra, an elemental advantage, the Opportunity cards' share; resistances still lower it as before), then +N in gold, sliding along the bar to its own cut. The bar moves twice. `dmgApply` now gives the share with no bonus (`dmgBaseShare`).
+  - **A follower's number** just goes where the knock left it. As it lands, the follower's card on the roster lights in its element's colour and shakes, its health moves then and not before, and the −N flies out of the card's side. Its healing (+N), and WEAK! (after its number) or a pale resist, fly out too.
+- **The other words on the world in a fight** (DODGED, IMMUNE, a heal's +N and the like) are in the status face, a little bigger, and two at one place are kept apart.
+- **A hit between yours and a creature near you** brings the battle view on at once, so the first number already flies.
+- **The fading objects, fixed** (seen in build 11h's pictures):
+  - A big object (the semi truck) fades whole when any of its tiles hides a fighter, not in patches. Its outline goes round it, and its inner tiles get the nearest floor under them.
+  - A one-tile object's whole picture now counts. Build 11h guessed a unit-sized box on its tile, which missed a tall object's top.
+- Out of a fight the numbers are as before. All numbers are mine, provisional. Tests: `tests/battlelook.js` (26 checks, 7 more). Docs: `BATTLE-LOOK.md`, `COMBAT.md`, `UI-STYLE.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11h` · branch `claude/start-game-project-HSh7Z` · the battle view (the battle look, step 2)
 - **The battle view** (the owner: "build it", after the drafts): when a creature engages you or your squad, the camera eases in to 1.25× (0.4 s) and the edges soften: blurred and darkened on HIGH, darkened on GRAPHICS: LOW. It eases back out (0.6 s) 3 s after the last creature engaging.
   - "Engaging": a creature within 7 tiles of you and in sight that is going for you or one of yours, that you or yours hit in the last 2 s, or that your squad is ordered at. A sleeping one does not count. The dialogue box and the website's background keep the view out; a knockout (yours, or the queen's) takes it out at once.

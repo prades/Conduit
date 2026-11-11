@@ -201,7 +201,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // THE DAMAGE SYSTEM (js/damage.js, docs/COMBAT.md §7): a hit that says what it is splits into a physical part (its type, against the target's row) and an
     // elemental part (against the row's Elemental and the element triangle). A hit that says nothing keeps THE ELEMENT WHEEL: the triangle on the whole hit
     // (a burn's or a pool's tick, a reflected hit, a card's echo).
-    if (hit && !fixed && !isReflected && typeof dmgApply === "function") amount = dmgApply(target, amount, source, element, hit);
+    let _share = 1;   // (the hit's part with no bonus in it, js/damage.js dmgBaseShare: the battle view lands the rest second, js/battleview.js)
+    if (hit && !fixed && !isReflected && typeof dmgApply === "function") { amount = dmgApply(target, amount, source, element, hit); if (typeof dmgBaseShare === "number") _share = dmgBaseShare; }
     else { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
     if (target.untargetable) return;   // underground: nothing reaches it
     if (target._consume && typeof consumeGuard === "function") amount = consumeGuard(target, amount);   // (SUNDEW holding a catch: 75% less, js/elements.js)
@@ -267,6 +268,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
                     : element === "toxic"    ? "#88ff44"
                     : "#ffcc88";
         floatingTexts.push({ world: true, x: target.x + (Math.random() - 0.5) * 0.3, y: target.y + (Math.random() - 0.5) * 0.3, text: (_foe ? "" : "\u2212") + Math.round(dmg), color: _dcol, size: _foe ? 14 : 13, life: 36, vy: -0.03 - Math.random() * 0.012 });
+        if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
     // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──

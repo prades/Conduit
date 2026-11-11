@@ -165,6 +165,7 @@ function dmgNorm(f, stat, w) {
 
 // ── A HIT ─────────────────────────────────────────────────
 // The amount after its two parts meet the target (called by applyDamage before defense; a set amount and a reflected hit never come here).
+let dmgBaseShare = 1;   // THE BONUS IN A HIT (docs/BATTLE-LOOK.md §2, 11): the last hit's share with no weakness, advantage or Opportunity in it (resistances kept); the battle view lands the rest second
 function dmgApply(target, amount, source, element, hit) {
     let phys, elem, ptype, el, player = false;
     if (source && source.isFollower && !source.isClone && hit.which) {
@@ -189,11 +190,12 @@ function dmgApply(target, amount, source, element, hit) {
     const pm = dmgRowMult(row, ptype);
     // a hit of NO ELEMENT: its elemental part meets nothing (no race's Elemental row, no triangle, no word): plain, ×1 against everything (docs/ENERGY-CARDS.md §11, the agent's reading)
     const bare = !el && !!source && source.element === "none";
-    let em = 1;
-    if (elem > 0 && !bare) { em = dmgRowMult(row, "elemental"); if (el && target.element && typeof getElementMultiplier === "function") em *= getElementMultiplier(el, target.element); }
+    let em = 1, emBase = 1;   // (emBase: the same with no weakness or advantage in it, only what resists: dmgBaseShare)
+    if (elem > 0 && !bare) { em = dmgRowMult(row, "elemental"); emBase = Math.min(em, 1); if (el && target.element && typeof getElementMultiplier === "function") { const g = getElementMultiplier(el, target.element); em *= g; emBase *= Math.min(g, 1); } }
     // a player's weapon with an element (the laser on a selected element, an elemental lash) still sets the triangle on the whole hit, as it did
     let whole = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function") whole = getElementMultiplier(el, target.element);
+    const wholeBase = Math.min(whole, 1);
     // OPPORTUNITY (a Brawler's cards, js/cards.js equipOpportunity; docs/UNIVERSAL-AND-PLAYER-CARDS.md): each weakness the hit exploits adds the card's share to the whole hit, the openings adding up (the owner, 2026-11-02).
     // The four: the target's race weak to the hit's physical type, weak to Elemental (both parts count), an element match-up (the triangle's ×1.3), a stunned or sleeping target (not a glitched one). On ice against core the
     // elemental part is nothing, and the bonus falls on the physical part that lands.
@@ -209,7 +211,9 @@ function dmgApply(target, amount, source, element, hit) {
         }
     }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
-    return (phys * pm + elem * em) * whole;
+    const total = (phys * pm + elem * em) * whole, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
+    dmgBaseShare = total > 1e-9 && base < total - 1e-9 ? Math.max(0, base / total) : 1;
+    return total;
 }
 // A word for each part that met a weakness or a resistance; one set a target every 12 frames, so a flurry does not stack them
 function _dmgWords(t, ptype, pm, el, em) {
@@ -221,7 +225,7 @@ function _dmgWords(t, ptype, pm, el, em) {
     // BESIDE the creature, clear of its name plate (the owner, 2026-11-02): to its right at its body's height (dx, dy in pixels), each word starting a little past its side
     // (centred text: half its width, about 3.3 px a letter at 11 px, plus the gap), the physical part's word over the elemental part's; they drift up slowly (about 18 px
     // in their 40 frames), so they stay beside the body and never climb into the name plate
-    const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dx: 28 + String(text).length * 3.3, dy: 10 + 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.015 }); n++; };
+    const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dx: 28 + String(text).length * 3.3, dy: 10 + 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.015 }); if (typeof battleWordTag === "function") battleWordTag(floatingTexts[floatingTexts.length - 1], t); n++; };   // (over one of your followers, in a fight, it flies out of its card too: js/battleview.js)
     if (ptype && pm !== 1) put(DMG_LABEL[ptype] + (pm > 1 ? " WEAK!" : " RESIST"), pm > 1);
     const elName = (typeof ELEMENTS !== "undefined" && el && (ELEMENTS.find(e => e.id === el) || {}).label) || el;   // (its element's name: BLOOM's id is "blossom", build 2026-11-08j)
     if (el && em !== 1) put(String(elName).toUpperCase() + (em > 1 ? " WEAK!" : em === 0 ? " IMMUNE" : " RESIST"), em > 1);

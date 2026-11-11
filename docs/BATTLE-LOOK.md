@@ -1,9 +1,9 @@
 # The battle look (the JRPG feel)
 
-- **Status:** The battle view, the floor's writing, no names and the fading objects are **implemented and verified by tests** (build `2026-11-11h`; the owner: "build it"); not playtested. The numbers and the roster's answer are **designed** and come next (`2026-11-11i`). The attack frames are **designed**, not drafted.
+- **Status:** The battle view, the floor's writing, no names and the fading objects (build `2026-11-11h`), and the numbers with the roster's answer (`2026-11-11i`), are **implemented and verified by tests** (the owner: "build it"); not playtested. The attack frames are **designed**, not drafted.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11h`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11i`
 - **Related docs:** `COMBAT.md` (combat readability: the numbers, the bite in two beats), `EFFECTS.md` (the forms' effect pieces; the budget for effects), `UI-STYLE.md` (fonts), `ART-PROCESS.md` (drafts first), `PLAYER-COMBAT.md`
 
 ## 1. Intent
@@ -94,7 +94,7 @@ What it is today:
   - A tap still lands on what is under the finger.
 - [x] While the battle view is on, an object in front of a fighter fades (a ghost, its tile outlined on the floor: §2, 9), and it still counts (build `2026-11-11h`).
 - [x] The floor in a fight (§2, 10): each fighter's tile lit; a creature's bar on the floor with its level and its element's tag; WEAK! and STUNNED written on the floor; RESIST floating off; no names over the units (build `2026-11-11h`).
-- [ ] The numbers are bigger, in the face of the hit's damage type; statuses in the status face; each knocked off the way the blow went, then into its bar's cut (§2, 11; next: `2026-11-11i`).
+- [x] The numbers are bigger, in the face of the hit's damage type; statuses in the status face; each knocked off the way the blow went, then into its bar's cut; a follower's card answering on the roster (§2, 11; build `2026-11-11i`).
 - [ ] Each form's attacks have their own baked frames, form by form.
 
 ## 4. Non-goals
@@ -116,6 +116,7 @@ What it is today:
 - **Who leads:** the numbers. A status word sits a line above them. WEAK is written on the floor and shakes, RESIST floats off small and pale, STUNNED is on the floor (§2, 10). The physical type's word (SLASHING WEAK!) is only a little bigger than today, until it is decided whether it goes the same way.
 - **No pile-ups:** words that would overlap stack upward, the newest moving up a line until it is clear.
 - **Fonts:** free-licensed (SIL Open Font License), shipped with the game (nothing loaded from elsewhere), and cut down to the letters and digits the game shows.
+- **As built** (`2026-11-11i`): the new numbers and words are drawn only in the battle view; out of a fight they are as before. The size is 1.8× (as drafted), not twice.
 - **Which face a number takes:**
   - The type of the hit's attack: a follower's from its form, anyone else's from the hit.
   - A hit with no type (a burn's or a poison's tick, a pool, a reflected hit, a card's echo) takes the status face.
@@ -166,6 +167,13 @@ What it is today:
 - An object in front of a fighter fades to its ghost over 0.2 s, its floor drawn and its tile outlined, and comes back the same way; it still stops a shot.
 - A step with no picture leaves the game as a drawn one does (`tests/ghost.js`).
 
+**Step 3, the numbers** (build `2026-11-11i`; `tests/battlelook.js`):
+- In a fight a hit's number is 1.8× today's size, in its damage type's face (a hit with no type: the status face).
+- It is knocked off the way the blow went. A creature's is back in its bar's cut by frame 20, lying flat; the bar drops only as it lands. A bonus lands second, in gold, and the bar drops again.
+- A follower's is gone after the knock. As it lands, its card lights and shakes, its health moves, and the −N flies out of the card; a heal's +N and WEAK! fly out too.
+- The other words on the world are in the status face and kept apart.
+- A big object fades whole, outlined round it, with a floor under every tile.
+
 ## 9. Steps
 
 1. **Drafts:**
@@ -179,7 +187,13 @@ What it is today:
    - **The objects**: js/propsprites.js `_psBlit` notes where an object's picture went; one nearer the camera whose picture overlaps a fighter's fades (js/facilityplay.js `drawFacilityItem` asks `battleFadeProp`).
    - **No names**: js/draw.js asks `battleHidesUnitHud` (from halfway in). The words: js/drops.js asks `battleWordRole`.
    - **A step with no picture** keeps the view's state (`_bv`) as a drawn one does; what only the drawing keeps is apart (`_bvDraw`, listed in `tests/ghost.js`), with each object's picture, fade and floor level kept beside it, not written on it.
-3. The numbers and their faces, built (next: `2026-11-11i`; the seven faces already ship in `fonts/battle`).
+   - **Build `2026-11-11i`'s fix to the objects**: an object fades as a whole (all the tiles of one solid share its id: js/facilityplay.js `_fpPropItems`), when any of its tiles hides a fighter, found once a frame (`battleViewDecals`, `_bvDraw.hideIds`). Each tile notes its own column of the picture (js/propsprites.js `_psBlit`), and a one-tile object its whole picture. The outline is drawn round the object, not between its tiles. An inner tile's floor is the nearest floor (`_bvFloorKey`).
+3. The numbers and their faces, built: build `2026-11-11i` (js/battleview.js, `BATTLE_VIEW.num`):
+   - **The tag**: js/helpers.js `applyDamage` hands each number to `battleNumberTag`, with whom it hit, the face of its damage type (`_bvKindOf`), the blow's way on the screen, and its bonus. The bonus comes from js/damage.js `dmgApply`, which now gives the share of the hit with no weakness, advantage or Opportunity in it (`dmgBaseShare`; resistances stay in it). The tags are kept beside the words (`_bvDraw.hits`), not on them. Heals (js/combat.js `healUnit`) and the weakness words (js/damage.js `_dmgWords`) over a follower are tagged too (`battleWordTag`).
+   - **The flight** (`battleDrawNumber`, from js/drops.js `drawFloatingTexts`) is drawn after the zoom, at the zoomed place. A part lands at the end of its glide (a creature's) or its knock (a follower's); `battleBarHealth` adds the parts not yet landed to a unit's health, for its floor bar and its card.
+   - **The roster**: `battleCardsTick` (each frame, from `battleViewPost`) lights and shakes a card whose follower was just hit and moves its health (js/party.js `partySlotHealth`, also used by the roster's own refresh every 6 frames). `battleDrawRoster` draws the words beside the cards.
+   - **Outlined texts** are made once and stamped (`_bvText`), as js/draw.js `cachedText` does, once their face has loaded.
+   - **Out of a fight** nothing changes: the numbers are drawn as before.
 4. The attack frames, form by form.
 
 ## 10. Verification record
@@ -189,6 +203,11 @@ What it is today:
 | `node tests/battlelook.js` (19 checks: when it engages and its timing, the dialogue box, `?attract`, a knockout, a new game; the zoom's maths and its copy on HIGH and LOW; the HUD held back; taps through the zoom and every picker; the floor first on your level only; the floor's writing; no names; the words; the objects' fade and floor, and a shot still stopped; the faces and their licences; the real page in Chromium: the copy, the edges, a fight) | Pass | build `2026-11-11h` |
 | `node tests/ghost.js` (a step with no picture keeps the game as a drawn one) | Pass | build `2026-11-11h`, with `_bvDraw` listed as drawing-only |
 | The nearest suites (38: facilityplay, facility, targets, weapon, movement, hud, bottomui, plate, combat, techabilities, fluxmove, fluxlab, mutator, specimen, perf, cover, attract, dialogue, playercombat and others) | Pass | build `2026-11-11h`; ghost.js failed there (the drawing's notes were kept on the game's objects) until `_bvDraw` was split off, then passed |
+| The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11h` (commit `184416a`) |
+| The real page: one arena moment before the view, on HIGH and on LOW | Looked at (screenshots) | build `2026-11-11h`; they showed the semi truck fading in patches (fixed in `2026-11-11i`) |
+| `node tests/battlelook.js`, step 3 (7 more checks: a big object fading whole, outlined round it; what is noted of a picture; the faces; the bonus share; a number's tag and the view coming on at once; a creature's flight, its bar and its bonus; a follower's number and its card; the heal and WEAK! out of the card; the other words kept apart; on the real page the seven faces loading and a number landing) | Pass | build `2026-11-11i` |
+| The nearest suites (35: damage, combat, party, squadui, followercombat, ghost, perf, targets, hud, serum, moves, cards, energycards and others) | Pass | build `2026-11-11i` |
+| The full run (`node tests/run.js`, 110 suites) | Pass | build `2026-11-11i` |
 
 The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;

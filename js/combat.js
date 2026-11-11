@@ -40,7 +40,7 @@ function unitLagPct(a) {
 function healUnit(t, amount, source) {
     if (!t || t.dead || !(amount > 0) || !(t.maxHealth > 0)) return 0;
     const before = t.health; t.health = Math.min(t.maxHealth, t.health + amount); const got = t.health - before;
-    if (got >= 0.5 && COMBAT.numbers.heal && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "+" + Math.round(got), color: "#7dff9a", size: 13, life: 40, vy: -0.035 });
+    if (got >= 0.5 && COMBAT.numbers.heal && typeof floatingTexts !== "undefined") { floatingTexts.push({ world: true, x: t.x, y: t.y, text: "+" + Math.round(got), color: "#7dff9a", size: 13, life: 40, vy: -0.035 }); if (typeof battleWordTag === "function") battleWordTag(floatingTexts[floatingTexts.length - 1], t); }   // (a follower's, in a fight, flies out of its card too: js/battleview.js)
     return got;
 }
 // THE TELEGRAPH, over the scene: every creature rearing back to bite wears a ring that closes as the bite comes, a chevron on it pointing at the unit it is biting, and the word BITE.

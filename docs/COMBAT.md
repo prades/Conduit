@@ -45,6 +45,8 @@ What is true of the code (js/predator.js, js/npc.js, js/combat.js, js/abilities.
 | `COMBAT.lagBar` | 36 frames | the health bar keeps a pale segment of the health just lost that drains over this long (RuneScape's way of showing a hit's size) |
 | `COMBAT.defeatText` | 0 (was 90 frames) | "DEFEATED" over a unit that dies: **taken out** (the owner, 2026-11-11: "We're removing the defeated text"; build `2026-11-11g`). The boss's "IS DEFEATED" banner and the Nest console's DEFEATED state stay. |
 
+In a fight the battle view draws the numbers its own way (builds `2026-11-11h` and `2026-11-11i`, `BATTLE-LOOK.md`): bigger, in the face of the hit's damage type, knocked off the way the blow went, a creature's back into its floor bar, a follower's answered on its roster card. Out of a fight they are as this table says.
+
 What the player sees, in order: the creature turns on a unit and **rears back** (a ring over it closes as the bite comes, a chevron on the ring points at its target, the word BITE above, and a mark drops over the unit it is biting); the bite **lands** (a flash on the target, a red number, the bar's pale segment showing how much); the **remaining health** is the bar; a unit that dies says **DEFEATED** and, for a follower, the Crystal's ticker counts its return (clones had this already).
 
 Counterplay that already exists and now has the time to be used: COME and RETREAT (js/mixtool.js) pull the squad out during a wind-up, and the Mutator's clone with it (docs/MUTATOR.md); HOLD posts them out of reach; the Mutator's serum (docs/MUTATOR.md 2.6) heals the area; the Technomancer's arc cuts a bite short while it is being wound up (docs/TECHNOMANCER.md 2.3).

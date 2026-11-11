@@ -73,9 +73,12 @@ function drawFloatingTexts() {
     let _row = 0;
     floatingTexts.forEach(t => {
         if (t._waiting) return;             // queued behind the banner showing now
-        const _bvr = typeof battleWordRole === "function" ? battleWordRole(t) : null;   // THE BATTLE VIEW (js/battleview.js): WEAK and STUNNED are on the floor; RESIST floats off small and pale
+        if (typeof battleRosterNote === "function") battleRosterNote(t);   // (a word over one of your followers flies out of its card too: js/battleview.js)
+        const _bvr = typeof battleWordRole === "function" ? battleWordRole(t) : null;   // THE BATTLE VIEW (js/battleview.js): WEAK and STUNNED are on the floor; RESIST floats off small and pale; a hit's number flies; the other words are kept apart
         if (_bvr === "floor") return;
         if (_bvr === "resist") { const [_rx, _ry] = floatingTextScreen(t); battleDrawResist(t, _rx, _ry); return; }
+        if (_bvr === "number") { battleDrawNumber(t); return; }
+        if (_bvr === "word") { battleWordQueue(t); return; }
         const alpha = Math.min(1, t.life / 30);
         const _dy = isBanner(t) ? (_row++) * 18 : 0;   // banners shown together stack, one line under the other
         const [tx, ty] = floatingTextScreen(t);
@@ -90,6 +93,7 @@ function drawFloatingTexts() {
         ctx.fillStyle = "#000"; ctx.fillText(t.text, tx + 1, ty + 1);
         ctx.fillStyle = t.color; ctx.fillText(t.text, tx, ty);
     });
+    if (typeof battleDrawWords === "function") { battleDrawWords(); battleDrawRoster(); }   // the battle view: its words, kept apart; the words beside the roster (js/battleview.js)
     ctx.globalAlpha = 1;
     ctx.restore();
 }

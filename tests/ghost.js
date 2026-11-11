@@ -33,7 +33,8 @@ const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simL
 // step 30 since build 2026-11-08a (the Static Orb set aside changed which forms come up), and this run had failed since.
 // .*._evoWc and .*._evoMoveAt (a form that holds still standing, js/evolution.js EVO_STILL: the drawing's memory of its walkCycle and when it last moved, set and read only by _evoFrame): drawing-only, checked with Grep (build 2026-11-09jj).
 // _bvDraw (the battle view's drawing state, js/battleview.js: its canvases, this frame's fighters, the elements' symbols, the object being drawn and the ghost's guard, your floor's level, and beside them
-// each object's picture as last drawn, each floating word's first life and each floor tile's level): set and read only while drawing, checked with Grep (build 2026-11-11h).
+// each object's picture as last drawn, each floating word's first life and each floor tile's level): set and read only while drawing, checked with Grep (build 2026-11-11h). Since build
+// 2026-11-11i also what each hit's number is (whom it hit, its face, its bonus: set as the hit lands, js/helpers.js applyDamage) and the numbers' landings: still read only by the drawing.
 const IGNORE_PATH = /^(_colIndex\w*|_fpRoomCol|_fp\.spr|_fp\.doorMids\w*|_fp\.items\[\]\.(bb|_dd)|world|.*\._gimg|.*\._evoWc|.*\._evoMoveAt)([\W]|$)/;
 // a root that looks like a cache of sprites/measurements: reported separately; it fails the run only with STRICT_CACHES=1 (verify with Grep that only drawing reads it, then add it to IGNORE)
 const CACHEY = /(sprite|cache|atlas|slice|sils|pattern|_img|dim|glyph|memo|tilemap|columns)/i;
