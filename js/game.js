@@ -668,8 +668,8 @@ function render() {
         if (typeof crystalDraw === "function" && !crystalDraw("player")) { health = 0; if (typeof showGameOver === "function") showGameOver("THE CRYSTAL HAS NO POWER LEFT TO BRING YOU BACK"); return; }
         health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
         if (typeof playerCombatReset === "function") playerCombatReset();   // (the guard down, no dive: js/playercombat.js)
-        if (typeof coreKnocked === "function") coreKnocked();   // (THE CORE topples: js/corehud.js)
         if (typeof battleViewDrop === "function") battleViewDrop();   // (the battle view eases out: js/battleview.js)
+        if (typeof coreKnocked === "function") coreKnocked();   // (THE CORE topples: js/corehud.js)
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
         player.visualX  = player.x; player.visualY  = player.y;

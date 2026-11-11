@@ -168,13 +168,13 @@ function _coreFace(F) {
     if (F.flash) { g.fillStyle = F.flash; g.fillRect(0, 0, w, h); }
     if (F.static) { let k = 5 + F.phase; for (let i = 0; i < 700; i++) { k = (k * 9301 + 49297) % 233280; g.fillStyle = "rgba(200,210,230," + (0.08 + (k % 5) * 0.03) + ")"; g.fillRect(k % w, (k * 7) % h, 3, 2); } }
     g.globalAlpha = 0.1; g.fillStyle = F.col; for (let y = 0; y < h; y += 6) g.fillRect(0, y, w, 2); g.globalAlpha = 1;
-    g.save(); g.shadowColor = F.col; g.shadowBlur = 30;
-    for (const side of [-1, 1]) _coreEye(g, F.eye, w / 2 + side * 120 + F.lx * 46 + (F.glitch && side > 0 ? 18 : 0), h * 0.5 + F.ly * 34, side, F.col);
-    g.restore();
+    for (const side of [-1, 1]) { const x = w / 2 + side * 120 + F.lx * 46 + (F.glitch && side > 0 ? 18 : 0), y = h * 0.5 + F.ly * 34;   // (its glow is soft copies, larger and fainter, under it: no shadowBlur, which the game never uses)
+        for (const [s, a] of [[1.45, 0.12], [1.22, 0.22], [1, 1]]) { g.save(); g.globalAlpha = a; g.translate(x, y); g.scale(s, s); _coreEye(g, F.eye, 0, 0, side, F.col); g.restore(); } }
     if (F.glitch) { g.globalAlpha = 0.55; g.drawImage(D.faceCv, 0, 120, w, 40, 26, 120, w, 40); g.drawImage(D.faceCv, 0, 200, w, 22, -22, 200, w, 22); g.globalAlpha = 1; }
-    if (F.crack) { g.save(); g.strokeStyle = "rgba(235,245,255,0.92)"; g.lineWidth = 4; g.shadowColor = "#fff"; g.shadowBlur = 6; g.beginPath(); g.moveTo(30, 18); g.lineTo(150, 110); g.lineTo(196, 96); g.lineTo(290, 190); g.lineTo(350, 182); g.lineTo(490, 306);
-        g.moveTo(196, 96); g.lineTo(226, 30); g.moveTo(290, 190); g.lineTo(262, 290); g.moveTo(150, 110); g.lineTo(96, 170); g.stroke(); g.restore(); }
-    if (F.text) { g.save(); g.fillStyle = F.col; g.font = "italic 900 44px sans-serif"; g.textAlign = "center"; g.shadowColor = F.col; g.shadowBlur = 16; g.fillText(F.text, w / 2, h - 34); g.restore(); }
+    if (F.crack) { g.save(); g.beginPath(); g.moveTo(30, 18); g.lineTo(150, 110); g.lineTo(196, 96); g.lineTo(290, 190); g.lineTo(350, 182); g.lineTo(490, 306);
+        g.moveTo(196, 96); g.lineTo(226, 30); g.moveTo(290, 190); g.lineTo(262, 290); g.moveTo(150, 110); g.lineTo(96, 170);
+        g.strokeStyle = "rgba(235,245,255,0.25)"; g.lineWidth = 10; g.stroke(); g.strokeStyle = "rgba(235,245,255,0.92)"; g.lineWidth = 4; g.stroke(); g.restore(); }
+    if (F.text) { g.save(); g.font = "italic 900 44px sans-serif"; g.textAlign = "center"; g.globalAlpha = 0.3; g.lineWidth = 10; g.strokeStyle = F.col; g.strokeText(F.text, w / 2, h - 34); g.globalAlpha = 1; g.fillStyle = F.col; g.fillText(F.text, w / 2, h - 34); g.restore(); }
 }
 // which face, from the reaction (first) and the state (in this order): knocked out, hit, surging, surge ready, stun armed, guard, last bar, a bar back, shards in, a tap, pack open, calm
 function _corePick(S, f) {
