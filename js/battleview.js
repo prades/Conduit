@@ -15,7 +15,8 @@
 //                  (js/draw.js asks battleHidesUnitHud).
 //   THE OBJECTS    one standing in front of a fighter (nearer the camera, its picture over the fighter's) fades to a ghost (BATTLE_VIEW.ghost, over BATTLE_VIEW.fade), the whole object at once
 //                  however many tiles it covers, with a bright outline round its tiles and the floor under them; it still counts (cover, sight, walking, FLUX MOVE), as always (js/facilityplay.js
-//                  drawFacilityItem asks battleFadeProp).
+//                  drawFacilityItem asks battleFadeProp). A big object (BATTLE_VIEW.flat.tiles or more: the truck, the liquid reserves) goes flat the same way whether it hides anyone or not,
+//                  and every wall goes faint (battleFadeWall): the owner, 2026-11-11, "make them like solid ground with a little bit of transparentness of the object still visible" (build 2026-11-11l).
 //   THE NUMBERS    (build 2026-11-11i) a hit's number, bigger and in its damage type's face (BV_FACES), is knocked off whoever was hit the way the blow went; a creature's glides back into its floor
 //                  bar where the health is cut and lies flat there, and the bar drops only as it lands; a bonus in the hit lands second, +N in gold. A follower's just goes, and its card on the
 //                  roster answers: it lights and shakes, its health moves, and the −N, a heal's +N and WEAK! fly out of its side (js/helpers.js applyDamage tags the number: battleNumberTag).
@@ -32,6 +33,7 @@ const BATTLE_VIEW = {
     ghost: 0.3,                 // a faded object's ghost (the owner had 25% and 45% to pick from; open)
     fade: 12,                   // frames an object takes to fade to its ghost, and to come back (0.2 s)
     bar: { len: 60, thick: 8 }, // a creature's bar on the floor (px along it, across it)
+    flat: { tiles: 4 },         // an object of this many tiles or more goes flat in a fight whether it hides anyone or not (the truck, the liquid reserves, the racks); the walls go faint too
     // the numbers (frames, px): the knock; a creature's back in its bar's cut by `glide`, gone `gone` after; a follower's gone `fade` after the knock; how far the knock sends it; its size against
     // today's; a bar's shake on a landing; a follower's card lit and shaking; a word beside the roster; WEAK! that long after the number; the other words' size in a fight
     num: { knock: 8, glide: 20, gone: 8, fade: 6, push: 38, scale: 1.8, shake: 6, card: 16, pop: 44, weakAfter: 20, word: 1.35 },
@@ -158,6 +160,15 @@ function battleHides(it) {
 }
 // an object (all the tiles of one solid: js/facilityplay.js _fpPropItems gives each its id)
 function _bvObj(it) { return it.id !== undefined && it.id !== null ? it.id : it; }
+// a big object: one of BATTLE_VIEW.flat.tiles tiles or more (found once an object)
+function _bvBig(it) {
+    if (!it || it.id === undefined || it.id === null || typeof _fp === "undefined" || !_fp || !_fp.F) return false;
+    const C = _bvDraw.big || (_bvDraw.big = new Map()); let b = C.get(it.id);
+    if (b === undefined) { const s = _fp.F.solids.find(q => q.id === it.id); b = !!s && typeof _fpSolidCells === "function" && _fpSolidCells(s).size >= BATTLE_VIEW.flat.tiles; C.set(it.id, b); }
+    return b;
+}
+// js/propsprites.js facilitySpriteDraw: is this tile drawing its object's whole picture (the ghost of a big object, once a frame)?
+function battleDrawsWhole(it) { return !!it && _bvDraw.wholeFor === it; }
 // how far an object has faded (0 itself, 1 its ghost): it fades while any of its tiles hides a fighter (battleViewDecals finds them, each frame), and comes back after, BATTLE_VIEW.fade frames each way
 function battleFadeOf(it) { const e = _bvDraw.fade.get(_bvObj(it)); return e ? e.f : 0; }
 // js/facilityplay.js drawFacilityItem, for an object: true when it was drawn here, fading or a ghost (its floor and outline are drawn with the floor: battleViewDecals)
@@ -168,7 +179,19 @@ function battleFadeProp(it) {
     if (e.at !== f0) { e.at = f0; e.f = Math.max(0, Math.min(1, e.f + (hide ? 1 : -1) / BATTLE_VIEW.fade)); }   // (once a frame for the whole object, however many tiles it has)
     if (e.f < 1e-6) { _bvDraw.fade.delete(key); return false; }   // (back: itself again)
     const a = 1 - (1 - BATTLE_VIEW.ghost) * e.f * _bv.k;
-    _bvDraw.ghosting = true; const g0 = ctx.globalAlpha; ctx.globalAlpha = g0 * a;
+    // a picture of many tiles is drawn whole, once a frame, by the first of its tiles drawn (the one farthest back): each tile's column of it overlapping the next would stack the ghost back up
+    const S = it.id !== undefined && typeof _psSolid === "function" ? _psSolid(it.id) : null, fam = S && S.multi && typeof PS_FAMILY !== "undefined" ? PS_FAMILY[it.kind] : null, whole = !!fam && typeof _psImg === "function" && !!_psImg(fam);
+    if (whole) { if (e.wholeAt === f0) return true; e.wholeAt = f0; }
+    _bvDraw.ghosting = true; _bvDraw.wholeFor = whole ? it : null; const g0 = ctx.globalAlpha; ctx.globalAlpha = g0 * a;
+    try { if (typeof drawFacilityItem === "function") drawFacilityItem(it); } finally { ctx.globalAlpha = g0; _bvDraw.ghosting = false; _bvDraw.wholeFor = null; }
+    return true;
+}
+// js/facilityplay.js drawFacilityItem, for a wall and what belongs to it (the rock, glass, railings, door frames, the corner posts, what hangs on a wall): faint in a fight, coming and going
+// with the view, as the owner asked (build 2026-11-11l); it still stops shots and the way, as always
+const BV_WALLISH = new Set(["wall", "rockbend", "door", "pillar", "fixture", "wdecor"]);
+function battleFadeWall(it) {
+    if (_bvDraw.ghosting || !it || !BV_WALLISH.has(it.fp) || !(_bv.k > 0.001)) return false;
+    _bvDraw.ghosting = true; const g0 = ctx.globalAlpha; ctx.globalAlpha = g0 * (1 - (1 - BATTLE_VIEW.ghost) * _bv.k);
     try { if (typeof drawFacilityItem === "function") drawFacilityItem(it); } finally { ctx.globalAlpha = g0; _bvDraw.ghosting = false; }
     return true;
 }
@@ -228,7 +251,7 @@ function battleViewDecals(drawList) {
     if (!battleViewOn() || typeof _fp === "undefined" || !_fp || typeof _fpP !== "function") return;
     // the objects that hide a fighter this frame (any tile of one does: the whole object fades), then each fading object's floor (the map draws none under an object) and its outline
     const f0 = _bvF(), hide = _bvDraw.hideIds, cells = new Map(); hide.clear(); _bvDraw.hideAt = f0;
-    for (let i = 0, n = drawList.length; i < n; i++) { const it = drawList[i]; if (it && it.fp === "prop" && battleHides(it)) hide.add(_bvObj(it)); }
+    for (let i = 0, n = drawList.length; i < n; i++) { const it = drawList[i]; if (it && it.fp === "prop" && (_bvBig(it) || battleHides(it))) hide.add(_bvObj(it)); }   // (a big one whether it hides anyone or not)
     for (let i = 0, n = drawList.length; i < n; i++) {
         const it = drawList[i]; if (!it || it.fp !== "prop") continue; const key = _bvObj(it); if (!hide.has(key) && !_bvDraw.fade.has(key)) continue;
         let set = cells.get(key); if (!set) { set = new Set(); cells.set(key, set); } set.add(it.x + "," + it.y);

@@ -2851,6 +2851,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: In a fight, the big objects and the walls go flat (2026-11-11; built in `2026-11-11l`)
+- The owner: "Whenever we go into battle phase or whatever, it needs to hide things like the truck and the oil tanks or whatever, the poison purple tanks, and the walls and stuff like that, and just make them like solid ground with a little bit of transparentness of the object still visible."
+- Built: while the battle view is on, every object of 4 tiles or more fades to its ghost (floor under it, outline round it) whether it hides a fighter or not, and every wall is drawn faint. Small objects keep the earlier rule (they fade when they hide a fighter). They all still stop shots and the way.
+- Supersedes, for big objects and walls in a fight, "every other object stays as it is, and the walls stay" (`BATTLE-LOOK.md` §2, 5) and, in a fight only, "walls never react" (`FACILITY.md`).
+- The agent's, provisional: 4 tiles; the ghost's 30%. Spec: `BATTLE-LOOK.md` §2, 14.
+
 ## DECISION: Brawlers stand and strike (2026-11-11; built in `2026-11-11k`)
 - The owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield."
 - Built: within reach (1.4 tiles) a Brawler stands where it is and strikes; it went round its enemy at 0.8× its speed before (js/npc.js). Several on one enemy are kept apart by the separation pass (`FOLLOWER_SEP`). Nothing else about the approach, the formation or the attacks changes.

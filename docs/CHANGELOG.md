@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11l` · branch `claude/start-game-project-HSh7Z` · big objects and walls flat in a fight
+- **In a fight the big objects and the walls go flat** (the owner: "hide things like the truck and the oil tanks ... the poison purple tanks, and the walls ... just make them like solid ground with a little bit of transparentness of the object still visible").
+  - Every object of 4 tiles or more fades to a faint ghost whether it hides anyone or not, with the floor under it and its outline round it: the semi truck with its tanks, the two liquid reserves, the server racks and the like.
+  - Every wall is faint: plain walls, the cave's rock, glass, railings, door frames and what hangs on them.
+  - Small objects (crates, barrels, barriers, floodlights) still fade only when they hide a fighter.
+  - Everything still stops shots and blocks the way. Out of a fight, all as before.
+- **Fixed**: a big object's ghost was hardly see-through (build 11i). It was drawn tile by tile, each tile's column of the picture overlapping the next, so the faint copies stacked back up. Its picture is now drawn whole, once a frame.
+- 4 tiles and the 30% ghost are mine, provisional. Tests: `tests/battlelook.js` (3 more checks, and on the real page the truck in a fight see-through). Docs: `BATTLE-LOOK.md`, `FACILITY.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11k` · branch `claude/start-game-project-HSh7Z` · Brawlers stand and strike
 - **A Brawler no longer circles its enemy** (the owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield"). It closes in as before, and within reach (1.4 tiles) it stands where it is and strikes. It used to go round the enemy at 0.8× its speed the whole time it fought.
 - Two Brawlers on one enemy are kept apart by the separation pass that was already there (0.75 tiles): they settle side by side.

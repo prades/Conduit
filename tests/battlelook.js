@@ -57,6 +57,11 @@ window.addEventListener('load', function(){ setTimeout(function(){
     out.faces = Object.keys(BV_FACES).filter(function(k){ return !document.fonts.check(battleFace(k, 20)); });
     var foeHit = floatingTexts.length; applyDamage(ant, 20, player, null, false, false, { type: 'crushing', player: true }); var nt = floatingTexts[floatingTexts.length - 1];
     step(BATTLE_VIEW.num.glide + 2); var ln = _bvDraw.land.get(nt); out.landed = !!(ln && ln.main); out.numErrs = window.__errs.length;
+    // THE TRUCK, FLAT (build 2026-11-11l): beside it in a fight, its picture as drawn with the big objects flat and as drawn with them not (the same frame's zoom): the flat one is mostly floor
+    var T = _fp.F.solids.find(function(s){ return s.kind === 'semi_truck'; }); player.x = player.targetX = player.visualX = T.bb[2] + 3; player.y = player.targetY = player.visualY = (T.bb[1] + T.bb[3]) / 2; player.fpPath = null;
+    ant.x = player.x + 2; ant.y = player.y; ant.currentTarget = player; step(BATTLE_VIEW.easeIn + BATTLE_VIEW.fade + 6);
+    var tc = _bvScr(T.bb[0] + 1.5, (T.bb[1] + T.bb[3]) / 2, 40), lumBox = function(){ var d = ctx.getImageData(Math.round(tc[0]) - 40, Math.round(tc[1]) - 40, 80, 80).data, s2 = 0; for (var i = 0; i < d.length; i += 4) s2 += (d[i] + d[i + 1] + d[i + 2]) / 3; return Math.round(s2 / (d.length / 4)); };
+    out.truckFlat = lumBox(); var keepTiles = BATTLE_VIEW.flat.tiles; BATTLE_VIEW.flat.tiles = 1e9; _bvDraw.big = null; step(BATTLE_VIEW.fade + 4); out.truckSolid = lumBox(); BATTLE_VIEW.flat.tiles = keepTiles; _bvDraw.big = null; out.truckOn = battleViewOn();
   } catch (err) { out.err = String(err && err.stack || err); }
   out.errs = window.__errs.slice(0, 3);
   var pre = document.createElement('pre'); pre.id = '__bv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -247,7 +252,7 @@ function realPage() {
 
     group('OBJECTS: one in front of a fighter fades to a ghost, and still counts');
     check('in a fight an object in front of a fighter (nearer the camera, its picture over the fighter\'s) fades to a ghost over 0.2 s and comes back the same way once it hides nobody; one behind it or beside it, or out of a fight, is itself', () => {
-        const r = J(`(function(){ __calm(); __mid(); const o = {}, P = _fp.items.find(i => i.fp === 'prop' && i.room === 'arena' && Math.hypot(i.x - player.x, i.y - player.y) < 12 && i.kind !== 'semi_truck') || _fp.items.find(i => i.fp === 'prop' && i.room === 'arena');
+        const r = J(`(function(){ __calm(); __mid(); const o = {}, P = _fp.items.find(i => i.fp === 'prop' && i.room === 'arena' && Math.hypot(i.x - player.x, i.y - player.y) < 12 && !_bvBig(i)) || _fp.items.find(i => i.fp === 'prop' && i.room === 'arena' && !_bvBig(i));   // (a small one: a big one stays flat all fight)
             __put(P.x - 4, P.y + 4); const foe = __foe(0, 0); foe.x = P.x - 1; foe.y = P.y - 1; const R = _bvDraw.rects, note = r => R.set(P, { at: frame, r }); __on(); frame++;
             const over = _bvUnitBox(foe.x, foe.y); note(over.slice()); o.front = battleHides(P);
             foe.x = P.x + 1; foe.y = P.y + 1; _bvDraw.fightersAt = -1; o.behind = battleHides(P); foe.x = P.x - 1; foe.y = P.y - 1; _bvDraw.fightersAt = -1;
@@ -381,6 +386,41 @@ function realPage() {
         ok(/^normal 700 2\dpx "BV Pixelify"/.test(r.faces[1]), 'the newest word does not pop in bigger: ' + r.faces[1]); same(r.left, 0, 'words left over');
     });
 
+    group('FLAT IN A FIGHT (build 2026-11-11l): the big objects and the walls, as solid ground with a little of them still showing');
+    check('in a fight a big object (4 tiles or more: the truck, the liquid reserves) goes flat whether it hides anyone or not; a small one only when it hides a fighter', () => {
+        const r = J(`(function(){ __calm(); __mid(); __on(); frame++; const truck = _fp.items.filter(i => i.fp === 'prop' && i.kind === 'semi_truck'), tanks = _fp.items.filter(i => i.fp === 'prop' && i.kind === 'liquid_reserve' && !i.spriteOnly),
+                small = _fp.items.find(i => i.fp === 'prop' && i.kind === 'barrel'); for (const i of [...truck, ...tanks, small]) _bvDraw.rects.set(i, { at: frame, r: [-9e3, -9e3, -8.9e3, -8.9e3] });
+            battleViewDecals([...truck, ...tanks, small]); const o = { flat: [...new Set([...truck, ...tanks].map(i => i.id))].map(id => _bvDraw.hideIds.has(id)), small: _bvDraw.hideIds.has(small.id), tiles: BATTLE_VIEW.flat.tiles, kinds: [truck.length, tanks.length] };
+            __off(); frame++; o.off = [...new Set(truck.map(i => i.id))].map(id => { battleViewDecals(truck.slice()); return battleViewOn() && _bvDraw.hideIds.has(id); });
+            for (const i of [...truck, ...tanks, small]) _bvDraw.rects.delete(i); _bvDraw.fade = new Map(); return o; })()`);
+        ok(r.kinds[0] > 4 && r.kinds[1] > 4, 'no truck or tanks in the arena: ' + r.kinds); same(r.tiles, 4, 'the tiles that make an object big'); same(r.flat.join(), 'true,true,true', 'the truck and both tanks (not hiding anyone)'); same(r.small, false, 'a barrel that hides nobody'); same(r.off.join(), 'false', 'out of a fight');
+    });
+    check('a big object\'s ghost is its whole picture, drawn once a frame by its farthest tile, unclipped, at the ghost\'s strength (each tile\'s column of it overlapping the next stacked it back up to nearly solid); out of a fight, tile by tile as ever', () => {
+        const r = J(`(function(){ __calm(); __mid(); const truck = _fp.items.filter(i => i.fp === 'prop' && i.kind === 'semi_truck').sort((a, b) => a.x + a.y - b.x - b.y), id = truck[0].id, keep = { i: _psImg, c: _psCell, s: _psSlice, b: _psBlit }, calls = [];
+            _psImg = () => ({}); _psCell = () => ({ x: 0, y: 0, w: 100, h: 200, ax: 50, ay: 180 }); _psSlice = () => ({ cv: { width: 30, height: 150 }, dx: -15, dy: -140 });
+            _psBlit = function (fam, name, x, y, clip) { calls.push([fam, clip ? 'clip' : 'whole', +ctx.globalAlpha.toFixed(2)]); return [0, 0, { w: 100, h: 200, ax: 50, ay: 180 }]; };
+            const o = {}; ctx.globalAlpha = 1;
+            try { __on(); frame++; _bvDraw.fade.set(id, { f: 1, at: frame }); battleViewDecals(truck.slice()); for (const it of truck) drawFacilityItem(it); o.on = calls.splice(0);
+                frame++; battleViewDecals(truck.slice()); for (const it of truck) drawFacilityItem(it); o.next = calls.splice(0).length;
+                __off(); _bvDraw.fade = new Map(); frame++; for (const it of truck) drawFacilityItem(it); o.off = calls.splice(0); }
+            finally { _psImg = keep.i; _psCell = keep.c; _psSlice = keep.s; _psBlit = keep.b; _bvDraw.fade = new Map(); __off(); }
+            o.n = truck.length; o.offClip = o.off.every(c => c[1] === 'clip' && c[2] === 1); o.off = o.off.length; return o; })()`);
+        same(JSON.stringify(r.on), JSON.stringify([['truck', 'whole', J('BATTLE_VIEW.ghost')]]), 'in a fight (its pictures drawn: family, clipped or whole, how strong)'); same(r.next, 1, 'drawn more than once in the next frame');
+        same(r.off, r.n, 'out of a fight, one column a tile'); same(r.offClip, true, 'out of a fight, its columns at full strength');
+    });
+    check('in a fight every wall is faint (the ghost\'s strength), as are its door frames, and what hangs on it; out of a fight as ever; a wall still stops a shot', () => {
+        const r = J(`(function(){ __calm(); __mid(); const W = _fp.items.find(i => i.fp === 'wall' && i.kind !== 'rock' && i.kind !== 'open'), R = _fp.items.find(i => i.fp === 'wall' && i.kind === 'rock'), D = _fp.items.find(i => i.fp === 'door'), seen = [];
+            const keep = { w: _fpDrawWall, d: _fpDrawDoor }; _fpDrawWall = it => seen.push(it.kind + '@' + (+ctx.globalAlpha.toFixed(2))); _fpDrawDoor = it => seen.push('door@' + (+ctx.globalAlpha.toFixed(2)));
+            const o = {}; ctx.globalAlpha = 1;
+            try { __on(); for (const it of [W, R, D]) drawFacilityItem(it); o.on = seen.splice(0); __off(); for (const it of [W, R, D]) drawFacilityItem(it); o.off = seen.splice(0); } finally { _fpDrawWall = keep.w; _fpDrawDoor = keep.d; }
+            const a = W.a, b = W.b, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, nx = b[1] - a[1], ny = a[0] - b[0], L = Math.hypot(nx, ny) || 1, line = [mx - nx / L, my - ny / L, mx + nx / L, my + ny / L];
+            const shot = () => { const s = facilityShotStop(line[0], line[1], line[2], line[3], line[0], line[1], _fp.F); return s ? (s.wall ? 'wall' : 'solid') : 'through'; };
+            __on(); o.stopOn = shot(); __off(); o.stopOff = shot(); o.kinds = [W.kind, R.kind]; return o; })()`);
+        const G = J('BATTLE_VIEW.ghost');
+        same(r.on.join(), [r.kinds[0] + '@' + G, 'rock@' + G, 'door@' + G].join(), 'in a fight (a wall, a rock wall, a door)'); same(r.off.join(), [r.kinds[0] + '@1', 'rock@1', 'door@1'].join(), 'out of a fight');
+        same(r.stopOn, r.stopOff, 'a shot across a wall, in a fight and out'); same(r.stopOn, 'wall', 'a shot across a wall goes through');
+    });
+
     group('FONTS: column C, shipped with the game');
     check('game.html declares the seven faces, each from its file in fonts/battle with its SIL Open Font License; the floor writes in Titan One (with a stand-in until it loads); js/battleview.js asks for it', () => {
         const G = rd('game.html'), want = [['BV Titan', 'titan-one'], ['BV Bangers', 'bangers'], ['BV Barlow', 'barlow-condensed-black-italic'], ['BV Chakra', 'chakra-petch-bold-italic'], ['BV Dirt', 'rubik-dirt'], ['BV Cinzel', 'cinzel-decorative-black'], ['BV Pixelify', 'pixelify-sans-bold', 'woff']];
@@ -398,7 +438,7 @@ function realPage() {
     group('THE REAL PAGE (game.html in Chromium)');
     const real = realPage();
     if (real === null) console.log('  (no Chromium on this machine: the real page is not checked)');
-    else check('the copy puts a point where bvZoomPt says; the edges darker than the middle (LOW: darkened only; HIGH: blurred and darkened); a fight in the arena turns the view on and is drawn with no errors; the seven faces load; a hit\'s number lands on its bar', () => {
+    else check('the copy puts a point where bvZoomPt says; the edges darker than the middle (LOW: darkened only; HIGH: blurred and darkened); a fight in the arena turns the view on and is drawn with no errors; the seven faces load; a hit\'s number lands on its bar; the truck beside a fight is see-through', () => {
         ok(real, 'the page did not report'); ok(!real.err, 'it threw: ' + real.err); same((real.errs || []).length, 0, 'errors on the page: ' + JSON.stringify(real.errs));
         ok(real.low.dot > 230 && real.high.dot > 230, 'the dot is not where bvZoomPt puts it: ' + JSON.stringify([real.low.dot, real.high.dot]));
         ok(Math.abs(real.low.was - 128) < 12, 'the picture was not zoomed (the dot still where it was): ' + real.low.was);
@@ -407,6 +447,7 @@ function realPage() {
         same(real.low.blur, false, 'LOW made the blur'); same(real.high.blur, true, 'HIGH made no blur');
         same(real.on, true, 'the view is not on in the fight'); same(real.z, 1.25, 'the zoom'); same(real.still, true, 'the view went out'); ok(real.fighters >= 1, 'no fighter');
         same((real.faces || ['?']).join(), '', 'faces that did not load'); same(real.landed, true, 'a hit\'s number did not land on its bar');
+        same(real.truckOn, true, 'the view went out beside the truck'); ok(real.truckFlat <= real.truckSolid * 0.85, 'the truck is not see-through in a fight (its middle\'s brightness, flat and not): ' + JSON.stringify([real.truckFlat, real.truckSolid]));
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
