@@ -2804,3 +2804,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: EQUIP NOW under each energy card of a pack's reveal (its pop-out lists every follower with its energy slots), and an ENERGY row on the squad member's fly-out card. The rules are the roster's. `ENERGY-CARDS.md` rule 20.
 - The agent's choices: the slots as colour chips in EQUIP NOW's tiles (three card faces do not fit a tile), the ENERGY row over the card's ATTACK and CARD rows, and a tall card scrolling its rows.
 - Supersedes the reading that the energy slots are not on the squad member's card over the HUD (`ENERGY-CARDS.md` §11).
+
+## DECISION: The squad member's card: its ENERGY panel, draft B (2026-11-10, build `2026-11-10e`)
+- The owner: "I need some more drafts of the flyout roster. I need more emphasis on the new energy system. Highlight it, make little energy symbols, and have it to where there's 3 empty slots, like tokens at the top somewhere that you can interact with." Of three drafts (A, B, C), the owner: "B looks great and explains progression. Nice touch."
+- Built as drawn: a bright panel under the name with three hex tokens (an egg's two locked until it evolves: the rule of one slot until it evolves stands), a tray of the energy you hold on a tap, and the unlock pills. `UI-STYLE.md`, "The squad member's card: its ENERGY panel"; `ENERGY-CARDS.md` §9.
+- Supersedes `2026-11-10d`'s ENERGY row of chips on that card.
+- Then, the owner: "make sure we pull it in a little bit further if you can. Readjust some of the elements on the whole flyout so that they are more bunched together and don't push into the map too hard or the world too hard." The card is 290 px wide (was 340), its parts tighter (`UI-STYLE.md`).

@@ -140,7 +140,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.card, 'energy', 'the pop-out does not take an energy card'); same(r.bad, null, 'a card of no element'); same(r.on, null, 'EQUIP NOW is off while you hold one'); same(r.off, 'NONE LEFT · ALL IN SLOTS', 'EQUIP NOW with none left'); same(r.who, true, 'every follower, an elementless one too');
         const ui = rd('js/cardsui.js'), sf = rd('js/squadfly.js');
         ok(/if \(c\.kind === "energy"\) _cdClick\(eq, \(\) => \{ if \(!_cdEquipNowWhy\(c\)\) equipNowOpen\(c\.id\); \}\)/.test(ui), 'the reveal\'s button for an energy card'); ok(/const ok = energyPut\(who, slot, c\.el\);/.test(ui) && /energyWhyNot\(who, slot, c\.el\)/.test(ui), 'the pop-out does not use js/energy.js\'s rules');
-        ok(/if \(en\) _sfEnergyDraw\(box, f, mk\);/.test(sf) && /energyPut\(f, \+raw\.slice\(2\), id \? energyCardEl\(id\) : null\)/.test(sf), 'the fly-out card\'s ENERGY row and its lists');
+        ok(/_sfEnergyDraw\(E, f\);/.test(sf) && /energyPut\(f, slot, id \? energyCardEl\(id\) : null\)/.test(sf), 'the fly-out card\'s ENERGY panel (build 2026-11-10e) and its tray');
     });
 
     group('A FALL AND THE CONVERSION');

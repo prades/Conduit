@@ -28,14 +28,16 @@ function partyFlySubject() {
 function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root) return _sfEls;
     root.innerHTML = '<div class="sf-card"><button class="sf-back" type="button" data-act="back" aria-label="Back to the squad and its orders">◂ SQUAD &amp; ORDERS</button><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
-        + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
-        + '<div class="sf-cards"></div>'
+        + '<div class="sf-energy"></div>'   // (its ENERGY panel, under its name: _sfEnergyDraw)
+        + '<div class="sf-body"><div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
+        + '<div class="sf-cards"></div></div>'   // (the body: what scrolls when the card is taller than its room)
         + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'   // (GRAVITY ENGINEER's SWAP: shown only while that role is awake, js/playercards.js)
         + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
+    if (typeof document !== "undefined" && document.fonts && typeof document.fonts.addEventListener === "function") document.fonts.addEventListener("loadingdone", () => partyFlyRender(true));   // (a font that loads after it was placed changes its height: it is placed again)
     const q = s => root.querySelector(s);
-    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), cards: q(".sf-cards"), cardSig: "", subject: null, thumbKey: null };
+    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), cards: q(".sf-cards"), cardSig: "", energy: q(".sf-energy"), enSig: "", body: q(".sf-body"), subject: null, thumbKey: null };
     return _sfEls;
 }
 function partyFlyClick(ev) {
@@ -43,9 +45,12 @@ function partyFlyClick(ev) {
     const f = _sfEls ? _sfEls.subject : null; if (!f) return;
     // A CARD SLOT's list: a card picked goes on (EMPTY takes the card off); the slot's own row opens or shuts its list (one open at a time)
     const o = t.closest(".sf-opt");
-    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "alt") { if (typeof followerAltSet === "function") followerAltSet(f, id); } else if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (/^en\d$/.test(raw)) { if (typeof energyPut === "function") energyPut(f, +raw.slice(2), id ? energyCardEl(id) : null); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }   // (an energy slot's list: js/energy.js energyPut)
-    const en = t.closest(".sf-en");   // ITS ENERGY CARDS: a chip opens its slot's list (a second tap shuts it)
-    if (en) { if (en.disabled) return; const k = "en" + en.getAttribute("data-en"); _sfDD = _sfDD === k ? null : k; partyFlyRender(true); return; }
+    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "alt") { if (typeof followerAltSet === "function") followerAltSet(f, id); } else if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    // ITS ENERGY (_sfEnergyDraw): a token opens its slot's tray (a second tap shuts it); a token in the tray goes in that slot, TAKE OUT takes the card out (js/energy.js energyPut: the roster's rules)
+    const et = t.closest(".sf-entok");
+    if (et) { if (et.disabled) return; const slot = +et.getAttribute("data-slot"), id = et.getAttribute("data-card") || null; if (typeof energyPut === "function") energyPut(f, slot, id ? energyCardEl(id) : null); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    const hx = t.closest(".sf-hexw");
+    if (hx) { if (hx.disabled) return; const k = "en" + hx.getAttribute("data-en"); _sfDD = _sfDD === k ? null : k; partyFlyRender(true); return; }
     const s = t.closest(".sf-slot");
     if (s) { if (s.disabled) return; const raw = s.getAttribute("data-slot"), slot = raw === "sp" || raw === "alt" ? raw : +raw; _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
     const b = t.closest("[data-act]"); if (!b) return;
@@ -81,13 +86,11 @@ function _sfCardsDraw(E, f) {
     const box = E.cards; if (!box) return;
     const can = !!f && f.isFollower === true && !f.isClone && typeof equipSlots === "function" && typeof EQUIP !== "undefined";
     const ev = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => evoMoveAllowed(f, ev, id)) : [];   // (its alternates: js/moves.js; BASH before it evolves, build 2026-11-07ss)
-    const en = typeof energyFor === "function" && energyFor(f);   // (its ENERGY CARDS: _sfEnergyDraw)
-    const sig = can || altIds.length || en ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", altIds.join(), en ? energySig(f) + "|" + f.element : ""].join("|") : "";
+    const sig = can || altIds.length ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", altIds.join()].join("|") : "";
     if (sig === E.cardSig) return;
-    E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can || altIds.length || en ? "" : "none"; if (!can && !altIds.length && !en) return;
+    E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can || altIds.length ? "" : "none"; if (!can && !altIds.length) return;
     const all = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
-    if (en) _sfEnergyDraw(box, f, mk);   // first: its element, and what unlocks its attacks
     // ITS ATTACK (the owner, 2026-11-07: "the alternate attacks must be visible from the index and the pop out menu on the HUD"): NORMAL ATTACK, or one alternate it is locked to (js/moves.js followerAltSet)
     if (altIds.length) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt";
@@ -122,27 +125,52 @@ function _sfCardsDraw(E, f) {
         box.appendChild(list);
     }
 }
-// ITS ENERGY CARDS (build 2026-11-10d; the owner: "You also need to be able to equip energy cards from the packs after you pull them, and from the pop-out menus as well. Fly-out menu for the roster"):
-// one row, ENERGY and a chip for each slot (1 unevolved, 3 evolved) as on the roster's card (js/cardsui.js energyRow), and the line saying what they do now. A tap on a chip opens its slot's list here, as CARD 1's
-// does: the card in it, EMPTY (it comes back to you) and each element you hold, with how many and what it would do there. The rules are js/energy.js energyWhyNot and energyPut's, as the roster's.
-function _sfEnergyDraw(box, f, mk) {
-    const s = energySlots(f), held = energyHeld(), row = mk("div", "sf-enrow");
-    row.appendChild(mk("span", "sf-sk", "ENERGY"));
-    s.forEach((el, i) => {
-        const b = mk("button", "sf-en" + (el ? " on" : "") + (_sfDD === "en" + i ? " open" : ""), el ? energyLabel(el) : "EMPTY"); b.type = "button"; b.setAttribute("data-en", String(i));
-        if (b.style && typeof b.style.setProperty === "function") b.style.setProperty("--b", el ? energyColor(el) : "#cfd8e3");
-        b.setAttribute("aria-label", "ENERGY " + (i + 1) + ": " + (el ? energyLabel(el) + " · " + energySlotRole(f, i) : "EMPTY"));
-        if (!el && !held.length) b.disabled = true;   // (nothing to put in it)
-        row.appendChild(b);
-    });
-    box.appendChild(row);
-    if (typeof energyRowNote === "function") box.appendChild(mk("div", "sf-en-n", energyRowNote(f, held.length > 0)));
-    const k = typeof _sfDD === "string" && /^en\d$/.test(_sfDD) ? +_sfDD.slice(2) : -1; if (!(k >= 0 && k < s.length)) return;
-    const cur = s[k], list = mk("div", "sf-slot-list");
-    const opt = (label, sub, on, off, id) => { const o = mk("button", "sf-opt" + (on ? " on" : "")); o.type = "button"; o.setAttribute("data-slot", "en" + k); o.setAttribute("data-card", id || ""); o.appendChild(mk("span", "sf-ol", label)); o.appendChild(mk("small", "sf-os", sub)); if (off) o.disabled = true; list.appendChild(o); };
-    if (cur) { opt(energyLabel(cur) + " ENERGY", "IN THIS SLOT · " + (energySlotRole(f, k) || ""), true, true, "energy:" + cur); opt("EMPTY", "TAKE IT OUT · IT COMES BACK TO YOU", false, false, ""); }
-    for (const el of held) if (el !== cur) { const why = energyWhyNot(f, k, el); opt(energyLabel(el) + " ENERGY ×" + energyCount(el), why || (!f.evolved ? "ITS ELEMENT · USED UP WHEN IT EVOLVES" : el === f.element ? "ITS OWN ELEMENT · ITS NEXT ATTACK" : "ANOTHER ELEMENT · A HYBRID, NOT DESIGNED YET"), false, !!why, "energy:" + el); }
-    box.appendChild(list);
+// ITS ENERGY (build 2026-11-10e: the owner picked draft B of three, "B looks great and explains progression. Nice touch"; in place of build 2026-11-10d's ENERGY row, the owner: "You also need to be able to
+// equip energy cards ... from the pop-out menus as well. Fly-out menu for the roster"). A bright band under its name, in its element's colour, with ENERGY and the energy mark (js/energy.js energyGlyph), and three hex
+// tokens: an egg's one slot (ELEMENT) and two locked until it evolves (AT LV 8; the owner's rule: one slot until it evolves), or an evolved one's three (ENERGY 1 to 3). A token shows its card's symbol in its colour,
+// an empty one the energy mark. A tap on one opens its tray here (_sfEnergyTray). Under them, what its cards do now: an egg's element, used up as it evolves; an evolved one's 2ND ATTACK and ULTIMATE, locked or open,
+// and its hybrids. The rules are js/energy.js energyWhyNot and energyPut's, as the roster's.
+function _sfEnergyDraw(E, f) {
+    const box = E.energy; if (!box) return;
+    const on = typeof energyFor === "function" && energyFor(f), held = on ? energyHeld() : [];
+    const sig = on ? [energySig(f), f.element, !!f.evolved, _sfDD, f.uid || f.id || ""].join("|") : "";
+    if (sig === E.enSig) return;
+    E.enSig = sig; box.textContent = ""; if (box.style) box.style.display = on ? "" : "none"; if (!on) return;
+    const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }, gl = energyGlyph;
+    const s = energySlots(f), filled = s.filter(Boolean).length, open = typeof _sfDD === "string" && /^en\d$/.test(_sfDD) ? +_sfDD.slice(2) : -1;
+    if (box.style && typeof box.style.setProperty === "function") box.style.setProperty("--c", energyElementOk(f.element) ? energyColor(f.element) : "#8fe3ff");
+    box.appendChild(mk("div", "sf-en-hd", gl("energy", "sf-en-em") + "ENERGY<small>" + (f.evolved ? filled + " / " + s.length + " FILLED" : s.length + " SLOT · " + (ENERGY.evolvedSlots - s.length) + " MORE AT LV " + ENERGY.evolveLevel) + "</small>"));
+    const toks = mk("div", "sf-en-toks");
+    for (let i = 0; i < ENERGY.evolvedSlots; i++) {
+        const locked = i >= s.length, el = locked ? null : s[i], b = mk("button", "sf-hexw" + (open === i ? " open" : "")); b.type = "button"; b.setAttribute("data-en", String(i));
+        const h = mk("span", "sf-hex " + (locked ? "locked" : el ? "full" : "empty"), "<b>" + gl(locked ? "lock" : el || "energy", "sf-hex-gl") + "</b>"); if (h.style && typeof h.style.setProperty === "function") h.style.setProperty("--c", el ? energyColor(el) : "#cfd8e3");
+        b.appendChild(h); b.appendChild(mk("span", "sf-hex-cap", locked ? "AT LV " + ENERGY.evolveLevel : f.evolved ? "ENERGY " + (i + 1) : "ELEMENT"));
+        b.setAttribute("aria-label", "ENERGY " + (i + 1) + ": " + (locked ? "OPENS WHEN IT EVOLVES" : el ? energyLabel(el) + " · " + energySlotRole(f, i) : "EMPTY"));
+        if (locked) b.disabled = true;   // (it opens when it evolves)
+        toks.appendChild(b);
+    }
+    box.appendChild(toks);
+    if (open >= 0 && open < s.length) box.appendChild(_sfEnergyTray(f, open, s[open], held, mk));
+    const unl = mk("div", "sf-en-unl"), pill = (lit, k, txt) => unl.appendChild(mk("span", lit ? "on" : "", gl(k, "sf-en-pg") + txt));
+    if (!f.evolved) pill(!!s[0], s[0] || "energy", s[0] ? energyLabel(s[0]) + " · USED UP AS IT EVOLVES" : held.length ? "NO ELEMENT · PUT ONE IN" : "NO ELEMENT · ENERGY COMES IN PACKS");
+    else { const a = energyAltOpen(f), u = energyUltOpen(f), hy = energyHybrids(f).length; pill(a, a ? "open" : "lock", "2ND ATTACK"); pill(u, u ? "open" : "lock", "ULTIMATE"); if (hy) pill(false, "energy", hy + " HYBRID" + (hy > 1 ? "S" : "") + " · NOT DESIGNED YET"); }
+    box.appendChild(unl);
+}
+// a token's tray: TAKE OUT for the card in it, then the energy cards you hold (not the element already in it), each a token with how many and what it would do there (ELEMENT, NEXT ATTACK, HYBRID)
+function _sfEnergyTray(f, slot, cur, held, mk) {
+    const tray = mk("div", "sf-en-tray"), gl = energyGlyph, n = typeof energyTotal === "function" ? energyTotal() : 0;
+    tray.appendChild(mk("div", "sf-en-tt", "ENERGY " + (slot + 1) + " · " + (held.some(el => el !== cur) ? "TAP ONE TO SLOT IT · YOU HOLD " + n : "NONE TO PUT IN · ENERGY CARDS COME IN PACKS")));
+    const row = mk("div", "sf-en-row");
+    const tok = (k, col, cap, id, count, cls) => {
+        const b = mk("button", "sf-entok " + cls, gl(k, "sf-entok-gl")); b.type = "button"; b.setAttribute("data-slot", String(slot)); b.setAttribute("data-card", id || "");
+        if (b.style && typeof b.style.setProperty === "function") b.style.setProperty("--c", col);
+        if (count) b.appendChild(mk("span", "sf-entok-n", "×" + count)); b.appendChild(mk("span", "sf-entok-cap", cap));
+        b.setAttribute("aria-label", id ? energyLabel(energyCardEl(id)) + " ENERGY ×" + count + " · " + cap : cap); row.appendChild(b); return b;
+    };
+    if (cur) tok("out", "#cfd8e3", "TAKE OUT", "", 0, "out");
+    for (const el of held) if (el !== cur) { const b = tok(el, energyColor(el), !f.evolved ? "ELEMENT" : el === f.element ? "NEXT ATTACK" : "HYBRID", "energy:" + el, energyCount(el), "full"); if (energyWhyNot(f, slot, el)) b.disabled = true; }
+    if (row.firstChild) tray.appendChild(row);
+    return tray;
 }
 function partyFlyRender(force) {
     const has = u => typeof partySquadHas === "function" ? partySquadHas(u) : partyIsMember(u);
@@ -174,6 +202,7 @@ function partyFlyRender(force) {
       if (E.xpn) _sfSet(E.xpn, "textContent", p ? (p.max ? "MAX" : Math.round(p.into) + " / " + Math.round(p.ask)) : "");
       if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
+    _sfEnergyDraw(E, f);  // its ENERGY panel, under its name
     _sfCardsDraw(E, f);   // its two equip card slots
     _sfSwapDraw(E, f);    // GRAVITY ENGINEER's SWAP, while that role is awake
     const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "");
@@ -191,9 +220,9 @@ function partyFlyRender(force) {
         for (const sel of ["#topToggles", "#mixTool .mt-foe"]) { const b = q(sel); if (b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left) floor = Math.min(floor, b.top - 8); }   // (the dock; the enemy card, while a creature is locked)
         for (const sel of ["#hudLeft", "#hudCentre", "#facilityNewChip"]) { const b = q(sel); if (b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left && b.bottom < H / 2) ceil = Math.max(ceil, b.bottom + 8); }   // (the top left: the crystals, the bars and NEW GAME, over its column)
         const lift = own && tab && tab.height > 0 ? Math.max(0, own.top - tab.top) : 0;   // (how far the tab stands above it)
-        // taller than the room between them (a list open on a short screen, build 2026-11-10d): its slots scroll inside it, so it never runs under the top left or the dock
-        const sc = E.cards, hid = sc && sc.scrollHeight > sc.clientHeight ? sc.scrollHeight - sc.clientHeight : 0, natural = ch + hid, room = floor - ceil - lift;
-        if (sc && sc.style) { const cap = natural > room ? Math.max(120, sc.scrollHeight - (natural - room)) + "px" : ""; if (sc.style.maxHeight !== cap) { sc.style.maxHeight = cap; sc.style.overflowY = cap ? "auto" : ""; } }
+        // taller than the room between them (a list or a tray open on a short screen, builds 2026-11-10d and e): its body scrolls inside it, so it never runs under the top left or the dock
+        const sc = E.body, hid = sc && sc.scrollHeight > sc.offsetHeight ? sc.scrollHeight - sc.offsetHeight : 0, natural = ch + hid, room = floor - ceil - lift;   // (its box, not its client height: a scrollbar is not its content)   // (its body: everything between its ENERGY panel and its buttons, build 2026-11-10e)
+        if (sc && sc.style) { const cap = natural > room ? Math.max(48, Math.floor(sc.scrollHeight - (natural - room))) : 0, was = parseFloat(sc.style.maxHeight) || 0; if (Math.abs(cap - was) >= 1) { sc.style.maxHeight = cap ? cap + "px" : ""; sc.style.overflowY = cap ? "auto" : ""; sc.style.overflowX = cap ? "hidden" : ""; } }   // (whole pixels, written only when it moves: a fraction flipped it every render)
         const top = Math.round(Math.max(ceil + lift, floor - Math.min(natural, room)));
         root.style.left = left + "px"; root.style.top = top + "px";
     }

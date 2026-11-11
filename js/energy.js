@@ -129,3 +129,20 @@ function energyCardOf(el) {
         text: energyLabel(el) + " FOR AN EGG: IT EVOLVES WITH IT AT LV " + ENERGY.evolveLevel + " (USED UP) · " + energyLabel(el) + " FORMS: THEIR NEXT ATTACK" };
 }
 function energyCardEl(id) { return typeof id === "string" && id.indexOf("energy:") === 0 ? id.slice(7) : null; }
+
+// ITS SYMBOLS (build 2026-11-10e; from the drafts of the squad member's card, the owner picking B: "B looks great and explains progression. Nice touch"): a small mark for each element (a flame, a bolt, a
+// snowflake, a drop, a core, a swirl, a flower), for energy itself (a crystal with a spark: an empty slot) and for a slot locked, open or emptied, as SVG on a 24-unit square in the colour around it (currentColor)
+const ENERGY_GLYPHS = {
+    fire: '<path d="M12 2c.4 3.4-3.6 5-3.6 9 0 1.1.4 2 1 2.6-1.4-.4-2.4-1.6-2.6-3C5.4 12.3 5 14 5 15.3 5 19 8.1 22 12 22s7-3 7-6.7C19 9.6 13.9 7.4 12 2z"/>',
+    electric: '<path d="M13.6 2 4.6 13.6h6.2L9.6 22l9.2-11.8h-6.2L13.6 2z"/>',
+    ice: '<g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 2.8v18.4M4 7.4l16 9.2M4 16.6l16-9.2"/><path d="M12 6.3 9.9 4.2M12 6.3l2.1-2.1M12 17.7l-2.1 2.1M12 17.7l2.1 2.1M7.1 9.2 4.2 8.4M7.1 9.2l-.8-2.9M16.9 14.8l2.9.8M16.9 14.8l.8 2.9M16.9 9.2l.8-2.9M16.9 9.2l2.9-.8M7.1 14.8l-.8 2.9M7.1 14.8l-2.9.8"/></g>',
+    toxic: '<path d="M12 2.5S5.4 10.1 5.4 14.6a6.6 6.6 0 0 0 13.2 0C18.6 10.1 12 2.5 12 2.5z"/><circle cx="9.4" cy="14.8" r="1.7" fill="rgba(0,0,0,0.35)"/><circle cx="13.4" cy="17.6" r="1" fill="rgba(0,0,0,0.3)"/>',
+    core: '<path d="M12 2.6 20.1 7.3v9.4L12 21.4l-8.1-4.7V7.3z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.6"/>',
+    flux: '<path d="M12.2 11.4a1.3 1.3 0 1 1-1.6 1.5M10.6 12.9a3.6 3.6 0 1 1 5.1 1.9M15.7 14.8a6.2 6.2 0 1 1-1.9-9.6M13.8 5.2a8.8 8.8 0 0 1 6.3 9.9" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>',
+    blossom: '<circle cx="12" cy="6.3" r="3.6"/><circle cx="17.4" cy="10.2" r="3.6"/><circle cx="15.3" cy="16.6" r="3.6"/><circle cx="8.7" cy="16.6" r="3.6"/><circle cx="6.6" cy="10.2" r="3.6"/><circle cx="12" cy="12" r="2.7" fill="rgba(0,0,0,0.35)"/>',
+    energy: '<path d="M12 1.8 18.8 9 12 22.2 5.2 9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 6.6 9.6 12.4h2.6l-1 4.6 3.4-6h-2.6z"/>',
+    lock: '<path d="M7.5 11V8.2a4.5 4.5 0 0 1 9 0V11" fill="none" stroke="currentColor" stroke-width="2.2"/><rect x="5.5" y="11" width="13" height="10" rx="2"/>',
+    open: '<path d="M7.5 11V8.2a4.5 4.5 0 0 1 8.7-1.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="5.5" y="11" width="13" height="10" rx="2"/>',
+    out: '<path d="M12 14V3M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 14v6h14v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+};
+function energyGlyph(k, cls) { return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" class="' + (cls || "en-gl") + '">' + (ENERGY_GLYPHS[k] || ENERGY_GLYPHS.energy) + "</svg>"; }
