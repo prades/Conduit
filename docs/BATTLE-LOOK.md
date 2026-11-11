@@ -126,6 +126,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - a sheet of three candidate faces for each of the seven, against today's 14 px monospace;
 - one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates;
 - the fade: a floodlight standing in front of a fight, today and in the battle view. It is gone, a faint outline of its tile left, and the floor under it stamped from the next tile for the picture.
+- the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
