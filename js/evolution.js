@@ -194,7 +194,8 @@ const EVOLUTIONS = {
               cell: 192, anchor: [96, 138.2], core: [96, 109], noGlow: true, color: "#ff5a1f", burst: true },   // (a 192 px cell since build 2026-11-11n, 40 columns: its everyday hit's dive, and QUILL BURST's own frames: staticQuillCol, below)
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
+              cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png",
+              jaws: { id: "mawjaws", sheet: "img/evo/mawjaws.png", cell: 256, anchor: [128, 201.36] } },   // (its everyday hit is a lunge (the sheet's action block, design No. 934); jaws: CHOMP's giant jaws, drawn over the enemy: MAW_JAWS, mawJawsDraw)
     // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
     // LEGACY: the first design of the electric brawler, which went to the fire mage (the Ember Hood). A follower already evolved into this keeps it.
     prism:  { id: "prism",  legacy: true, name: "PRISM HOOD", element: "electric", role: "brawler", move: "SONIC ROLL", sheet: "img/evo/prism.png",
@@ -672,24 +673,53 @@ function corrodeShot(f) {
 }
 
 // CHOMP: the fangs slam down on the nearest enemy: ice damage and frozen stiff; those beside it are slowed. True when it fired.
+// GIANT JAWS (build 2026-11-11v; the owner, 2026-11-11: "giant jaws for CHOMP"): a pair of ice jaws, as wide as two tiles, drops over the enemy and snaps shut (an element effect, "mawjaws", drawn at the enemy:
+// mawJawsDraw, below). The bite is what it always was (the same damage, stun and slow, the same reach and sight, the same wind-up and wait) but it lands as the jaws shut, MAW_JAWS.snap frames after the cast, on
+// the enemy as it is then (it follows the nearest enemy down); a Maw that dies in the drop, or an enemy that does, takes or gives no bite.
 function chomp(f) {
     const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("chomp");
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, life: MAW_JAWS.total, maxLife: MAW_JAWS.total, element: "ice" });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// the bite, as the jaws shut (js/elements.js updateElementEffects -> mawJawsTick)
+function mawBite(f, tgt) {
     applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice", false, false, DMG_HIT_ALT);
     tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
     if (typeof applyStun === "function") applyStun(tgt, MAW_STUN);   // (hitStun is read by nothing: the stun is real now, js/combat.js applyStun)
     for (const a of _evoFoesSeen(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
-    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    f._sigAt = f0; f._sigCd = moveWindupFrames("chomp");
     if (typeof elementEffects !== "undefined") {
         elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: MAW_SLOW_R, color: "#9fe8ff", life: 36 });
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#cff4ff", radius: 0.7, life: 24 });
     }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
-    return true;
+}
+// the jaws: 16 cells of the sheet (design No. 935, design/evolutions/forms10.js; the extra blocks, columns 16 to 31): cells 0 to 7 come down open, 8 to 15 are shut, flash and break up. Two frames a cell.
+const MAW_JAWS = { snap: 16, total: 32 };
+function mawJawsTick(e) {
+    const f = e.by, t = e.target, age = e.maxLife - e.life;
+    if (!f || f.dead) { e.life = 0; return; }
+    if (age < MAW_JAWS.snap && t && !t.dead) { e.x = t.x; e.y = t.y; }
+    if (age === MAW_JAWS.snap && t && !t.dead) mawBite(f, t);
+}
+function mawJawsDraw(e, px, py, g) {
+    const d = EVOLUTIONS.maw && EVOLUTIONS.maw.jaws; if (!d) return;
+    const img = _evoImg(d); if (!img) return;
+    const age = Math.max(0, e.maxLife - e.life), cell = Math.min(15, Math.floor(age / 2));
+    g.save();
+    if (age >= MAW_JAWS.snap - 2 && age < MAW_JAWS.total - 6) {   // (a cold light under it as it bites: light is drawn here, not baked)
+        g.globalAlpha = 0.3 * Math.min(1, (age - MAW_JAWS.snap + 3) / 3) * Math.min(1, (MAW_JAWS.total - 6 - age) / 8); g.globalCompositeOperation = "lighter";
+        const rg = g.createRadialGradient(px, py, 0, px, py, 56); rg.addColorStop(0, "#9fe8ff"); rg.addColorStop(1, "rgba(159,232,255,0)");
+        g.fillStyle = rg; g.beginPath(); g.ellipse(px, py, 56, 28, 0, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "source-over";
+    }
+    g.globalAlpha = Math.min(1, e.life / 3);
+    evoCellDraw(g, img, d.sheet, d.cell, 16 + cell, 0, px - d.anchor[0] * EVO_SCALE, py - d.anchor[1] * EVO_SCALE, EVO_SCALE);
+    g.restore();
 }
 
 // BASH (build 2026-11-07ss; the owner, 2026-11-07: "Ram and knock back", then "BASH for now": the second attack of the eight forms the design notes give none, docs/NEXT-PHASE-ROADMAP.md §12.3, and of every follower

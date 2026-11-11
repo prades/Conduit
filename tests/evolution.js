@@ -312,15 +312,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     check('THE ASK: CHOMP — the fangs slam down on the nearest enemy: ice damage, frozen stiff; the ones beside it slowed', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+        const r = run(`(function(){ let out0; actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('ice'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'maw'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(21.9, 2.8), far = mkP(24, 2), apart = mkP(21.2, 5);
             frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
+            out0 = { early: 1e6 - a.health, jaws: elementEffects.some(e => e.type === 'mawjaws') }; for (let i = 0; i < MAW_JAWS.snap + 1; i++) updateElementEffects();   // (the bite lands as the jaws shut)
+            const d = p => 1e6 - p.health, out = { early: out0.early, jaws: out0.jaws, a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
             [a, b, far, apart].forEach(p => p.dead = true);
             const lone = mkP(23.5, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
-        ok(r.a > 0 && r.b === 0, 'one bite, into the nearest: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
+        ok(r.jaws && r.early === 0, 'the giant jaws come down first, no bite yet: ' + JSON.stringify(r)); ok(r.a > 0 && r.b === 0, 'one bite, into the nearest, as the jaws shut: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 125, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 

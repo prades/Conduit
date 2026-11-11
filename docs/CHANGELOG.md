@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11v` · branch `claude/frostmaw-attacks` · the Frost Maw's lunge-bite and CHOMP's giant jaws
+- **Everyday hit** (the owner, from the agent's three ideas: "Lunge-bite for the hit"): the Frost Maw's body is thrown forward toward the enemy, leaning into it, with the fangs swinging down hard, and comes back (the rubble stays on the floor). Looks only: the hit lands as it always did. Its sheet is re-baked from design No. 934 (the same Maw, No. 156, with a lunge in its action frames).
+- **CHOMP** (the owner: "giant jaws for CHOMP"): a pair of ice jaws, as wide as about two tiles, drops over the nearest enemy and snaps shut (design No. 935: dark slate horseshoes with rows of crystal fangs, hinged at the back; the upper jaw swings down onto the lower), then flashes and breaks into shards. 32 frames in all, two to a picture. **The bite now lands as the jaws shut (frame 16), not at the cast:** the same damage, stun (75 frames) and slow beside it, the same reach, sight, wind-up and wait. The jaws follow the enemy down; a Maw that dies in the drop, or an enemy that does, takes or gives no bite. A faint cold light is drawn under it as it bites.
+- Agent's, provisional: the jaws' size and look, the 16-frame drop, the lunge's 0.8 unit, the light under the bite.
+- Tooling: `bake.js` gains `job.oneRow` and `job.blocksOnly` (a form with no facing, baked only in its extra blocks: the jaws); `crop_sheets.js` also packs a form's `jaws` sheet. New sheet `img/evo/mawjaws.png` (2310 × 142 packed).
+- `js/evolution.js` (`chomp`, `mawBite`, `mawJawsTick`, `mawJawsDraw`, `MAW_JAWS`, the Maw's definition), `js/elements.js` (the effect's tick and draw), `design/evolutions/forms10.js` (Nos. 934, 935), `bake.js`, `crop_sheets.js`. Tests: `tests/mawattacks.js` (7 checks); `tests/evolution.js` and `tests/cover.js` now let the jaws shut before reading CHOMP's bite.
+- Not playtested; the lunge is seen in a still sequence only, the jaws in the real page frame by frame (headless).
+
 ### Build `2026-11-11u` · branch `claude/start-game-project-HSh7Z` · THE CORE from the owner's playtest
 - **The owner, playing build `2026-11-11t`:** "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".
 - **A tap on THE CORE never walks you.** Its slab, the cube's sides, the arc and the labels let a tap through to the map. Now two pads take the tap: all of its box (340 × 300) but the empty strip at its left above the pills, which stays the map's. Its buttons sit on top of them.
