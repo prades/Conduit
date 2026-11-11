@@ -2878,3 +2878,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Read as: during the swirl the green tile is lit at the enemy, where the Skink is shown. The agent's detail, provisional: it is drawn a little wider than the enemy's red tile (0.52 of a tile, not 0.42) so both outlines show instead of one on top of the other.
 - Alternatives not taken (not asked): the same size as the red tile (the two would overlap exactly); lighting the tile only when the Skink is not at the enemy.
 - Status: Implemented and tested; not playtested.
+
+## DECISION: The Thunderhead's STATIC VORTEX is a dark storm, modelled in three.js (2026-11-11, build `2026-11-11m`, branch `claude/tornado-designs`)
+- The owner: "For the Thunderhead, I want to work on his secondary attack. It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect." Asked its make, the floor and the size: a wind funnel with sparks, the disc and ring both gone, tall and narrow. Then: "Give me 6 different designs of that hurricane or tornado." On the first flat canvas drafts of them: **"This needs three.js graphics"**: so the six were modelled in three.js and baked (A wind funnel, B lightning funnel, C dark storm, D hurricane, E debris tornado, F energy braid). The owner chose **"C"**.
+- Not taken: A, B, D, E, F (kept as drafts in `forms41.js`); the first canvas version (branch `claude/thunderhead-tornado`), superseded.
+- Consequences: the floor disc, the dashed ring and the three lightning arms are gone; the pull's 2.5-tile reach is no longer drawn.
+- Then: **"make it transparent though a little bit"**: the whole storm is drawn at 70% (`VORTEX_ALPHA`) on top of the funnel's own 75%.
+- Agent's (provisional): the 70%; the funnel baked 75% opaque; a sheet frame every 6 game frames; lightning every 4th loop; the size (about 4 units tall, 3 across at the top).
+- Not changed: what the move does (reach, radius, life, pull, bite): look only.
+- Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.
