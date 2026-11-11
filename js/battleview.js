@@ -236,9 +236,10 @@ function battleViewDecals(drawList) {
     }
     if (_bvDraw.chunks.length) _bvDraw.chunks = _bvDraw.chunks.filter(c => f0 - c.at <= 18);
     for (const F of _bvFighters()) {
-        const a = F.a, tx = a.x - 0.5, ty = a.y - 0.5, col = F.mine ? "#4dff9a" : "#ff5a4a";   // its feet are at the floor's (x - 0.5, y - 0.5)
+        // (the Electro Skink swirling round an enemy is not at its own feet: its tile is lit where its vortex is, round the enemy's, a little wider so both show: js/evolution.js skinkSwirlSpot)
+        const a = F.a, sw = F.mine && typeof skinkSwirlSpot === "function" ? skinkSwirlSpot(a) : null, ax = sw ? sw.x : a.x, ay = sw ? sw.y : a.y, tx = ax - 0.5, ty = ay - 0.5, col = F.mine ? "#4dff9a" : "#ff5a4a";   // its feet are at the floor's (x - 0.5, y - 0.5)
         drawList.push({ type: "fp", fp: "bvdecal", x: tx, y: ty, depth: BV_DECAL0 + tx + ty, draw: () => {   // its tile, lit
-            _fpBase = facilityLiftPx(a.x, a.y); const q = 0.42, d = [_fpP(tx - q, ty - q, 0), _fpP(tx + q, ty - q, 0), _fpP(tx + q, ty + q, 0), _fpP(tx - q, ty + q, 0)];
+            _fpBase = facilityLiftPx(ax, ay); const q = sw ? 0.52 : 0.42, d = [_fpP(tx - q, ty - q, 0), _fpP(tx + q, ty - q, 0), _fpP(tx + q, ty + q, 0), _fpP(tx - q, ty + q, 0)];
             ctx.save(); ctx.globalAlpha *= _bv.k; _fpQuad(d, F.mine ? "rgba(77,255,154,0.10)" : "rgba(255,90,74,0.12)", col, 1.6); ctx.restore();
         } });
         if (!F.mine) { const bx = a.x - 0.05, by = a.y - 0.05; drawList.push({ type: "fp", fp: "bvdecal", x: bx, y: by, depth: BV_DECAL0 + bx + by + 0.1, draw: () => _bvCreatureBar(a, bx, by) }); }   // its health on the floor

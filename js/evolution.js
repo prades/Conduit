@@ -1357,6 +1357,8 @@ function skinkSwirlStrike(f, t) {
     f._swirlAt = typeof frame !== "undefined" ? frame : 0; f.state = "attack"; f.attackAnim = 0;
     spawnElementEffect({ type: "skinkswirl", by: f, target: t, x: t.x, y: t.y, life: SKINK_SWIRL_FRAMES, maxLife: SKINK_SWIRL_FRAMES, element: "electric" });
 }
+// where the Skink is while it swirls: the vortex (its effect: .x, .y, the enemy's feet), else null. The battle view's lit tile goes there (js/battleview.js battleViewDecals; the owner, 2026-11-11: the green tile "should match where it is attacking the enemy")
+function skinkSwirlSpot(f) { if (!skinkSwirling(f) || typeof elementEffects === "undefined") return null; for (const e of elementEffects) if (e.type === "skinkswirl" && e.by === f) return e; return null; }
 // each frame (js/elements.js updateElementEffects, after the effect's life has counted down): the ring follows the enemy, and the hit lands as it closes
 function skinkSwirlTick(e) {
     const f = e.by, t = e.target;
