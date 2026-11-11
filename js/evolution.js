@@ -191,7 +191,7 @@ const EVOLUTIONS = {
     // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
     // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
     quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst"],   /* (FIRE BOMBS taken off the fire brawler: the owner, 2026-11-07, build gg) */ sheet: "img/evo/quillstone.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 85], noGlow: true, color: "#ff5a1f" },
+              cell: 192, anchor: [96, 138.2], core: [96, 109], noGlow: true, color: "#ff5a1f", burst: true },   // (a 192 px cell since build 2026-11-11n, 40 columns: its everyday hit's dive, and QUILL BURST's own frames: staticQuillCol, below)
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
@@ -386,6 +386,7 @@ function evolutionTick() {
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
         if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
+        if (f._quillFire) quillFireTick(f, f0);   // (a QUILL BURST turning round: its quills leave a moment after it begins to turn)
         if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined") altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
@@ -473,15 +474,37 @@ function quillBurst(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, a0 = Math.atan2(t.y - f.y, t.x - f.x), dmg = (f.power || 10) * QUILL_MULT;
-    const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
-    if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
-        const a = a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
-        spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
-    }
+    // THE TURN (build 2026-11-11n; the owner, 2026-11-11: "it should turn around and shoot off all of its projectiles, and they should disappear for a second"): it turns its back to the enemy, and the quills are
+    // launched QUILL_FIRE frames after it begins to turn, as its sheet shows them leaving (quillFireTick); aimed as it was at the cast. Everything else of the move is as it was.
+    f._quillFire = { at: f0 + QUILL_FIRE, a0, dmg }; f._burstAt = f0;
     f._sigAt = f0; f._sigCd = moveWindupFrames("quill_burst");
     if (f.dirX !== undefined) { f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// the quills leave (js/evolution.js evolutionTick): QUILL_COUNT of them at once in the forward fan, as the move was before the turn
+function quillFireTick(f, f0) {
+    const B = f._quillFire; if (!B || f0 < B.at) return;
+    f._quillFire = null;
+    const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
+    if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
+        const a = B.a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
+        spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", B.dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+    }
+}
+// WHICH CELL of the Quillstone's sheet (40 columns: design/evolutions/forms15.js No. 927, bake.js job.blocks) `age` frames into a QUILL BURST (null: past it, the ordinary frames):
+//   cols 16 to 23   it turns its back to the enemy and the quills leave (QUILL_ANIM.turn game frames a cell)
+//   cols 24 to 27   it turns back, bare (QUILL_ANIM.back a cell); then cols 32 to 39, standing bare, QUILL_ANIM.hold frames in all from the cast
+//   cols 28 to 31   the quills grow back (QUILL_ANIM.grow a cell), the last cells of QUILL_ANIM.hold + 4 x QUILL_ANIM.grow frames
+// The owner: "they should disappear for a second", the quills "grow back fast" (of the agent's questions). The frame counts are the agent's, PROVISIONAL.
+const QUILL_FIRE = 12, QUILL_ANIM = { turn: 3, back: 3, hold: 75, grow: 5 };
+const QUILL_ANIM_FRAMES = QUILL_ANIM.hold + 4 * QUILL_ANIM.grow;
+function quillBurstCol(age) {
+    const A = QUILL_ANIM; if (age < 0 || age >= QUILL_ANIM_FRAMES) return -1;
+    if (age < A.turn * 8) return 16 + Math.floor(age / A.turn);
+    if (age < A.turn * 8 + A.back * 4) return 24 + Math.floor((age - A.turn * 8) / A.back);
+    if (age < A.hold) return 32 + Math.floor((age - A.turn * 8 - A.back * 4) / 7) % 8;
+    return 28 + Math.floor((age - A.hold) / A.grow);
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.
 function arcVolley(f) {
@@ -1191,7 +1214,9 @@ function _evoFrame(f, d, f0) {
         const wc = f.walkCycle || 0; if (f._evoWc !== undefined && Math.abs(wc - f._evoWc) > 1e-4) f._evoMoveAt = f0; f._evoWc = wc;
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
-    if (cs >= 0) col = d.consume + cs;
+    const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
+    if (qb >= 0) col = qb;
+    else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
     else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
