@@ -231,22 +231,33 @@
     .archive-right {
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
+      align-items: center;
+      gap: 16px;
+      min-width: 150px;
+    }
+    .follower-egg {
+      width: 110px; height: auto;
+      display: block;
+      filter: drop-shadow(0 6px 24px rgba(60,140,255,0.35));
+    }
+    .archive-stats {
+      display: flex;
       gap: 14px;
-      min-width: 140px;
+      width: 100%;
+      justify-content: center;
     }
     .archive-stat {
-      text-align: right;
+      text-align: center;
     }
     .archive-stat .stat-num {
-      font-size: 1.6rem; font-weight: bold;
+      font-size: 1.15rem; font-weight: bold;
       background: linear-gradient(135deg, #8855ff, #b088ff);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text; line-height: 1;
     }
     .archive-stat .stat-label {
-      font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
-      color: #5a4a7a; margin-top: 2px;
+      font-size: 0.55rem; letter-spacing: 1.5px; text-transform: uppercase;
+      color: #5a4a7a; margin-top: 3px;
     }
 
     /* ── About strip ── */
@@ -489,17 +500,64 @@
         </div>
       </div>
       <div class="archive-right">
-        <div class="archive-stat">
-          <div class="stat-num">21</div>
-          <div class="stat-label">JS modules</div>
-        </div>
-        <div class="archive-stat">
-          <div class="stat-num">6</div>
-          <div class="stat-label">elements</div>
-        </div>
-        <div class="archive-stat">
-          <div class="stat-num">∞</div>
-          <div class="stat-label">waves</div>
+        <svg class="follower-egg" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <radialGradient id="eggShell" cx="45%" cy="38%" r="65%">
+              <stop offset="0%"   stop-color="#6aa8ff"/>
+              <stop offset="55%"  stop-color="#1e3a8a"/>
+              <stop offset="100%" stop-color="#050e30"/>
+            </radialGradient>
+            <radialGradient id="eggCore" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#ffffff"  stop-opacity="1"/>
+              <stop offset="25%"  stop-color="#a8e4ff"  stop-opacity="0.95"/>
+              <stop offset="60%"  stop-color="#3098ff"  stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#0a40b0"  stop-opacity="0"/>
+            </radialGradient>
+            <filter id="eggGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3.5"/>
+            </filter>
+            <filter id="auraGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="6"/>
+            </filter>
+          </defs>
+          <!-- outer aura -->
+          <ellipse cx="60" cy="86" rx="48" ry="62" fill="#4aa0ff" opacity="0.08" filter="url(#auraGlow)"/>
+          <!-- base shadow -->
+          <ellipse cx="60" cy="150" rx="30" ry="3.5" fill="#000" opacity="0.55"/>
+          <!-- egg shell -->
+          <path d="M 60 8 C 92 8, 106 50, 106 92 C 106 128, 86 150, 60 150 C 34 150, 14 128, 14 92 C 14 50, 28 8, 60 8 Z"
+                fill="url(#eggShell)" stroke="#7ac0ff" stroke-width="0.6" stroke-opacity="0.35"/>
+          <!-- shell panel seams -->
+          <path d="M 28 58 Q 60 52, 92 58"  fill="none" stroke="#7ac0ff" stroke-width="0.6" opacity="0.28"/>
+          <path d="M 32 86 Q 60 92, 88 86"  fill="none" stroke="#7ac0ff" stroke-width="0.6" opacity="0.32"/>
+          <path d="M 38 114 Q 60 120, 82 114" fill="none" stroke="#7ac0ff" stroke-width="0.6" opacity="0.26"/>
+          <!-- top-left shell highlight -->
+          <ellipse cx="42" cy="38" rx="11" ry="17" fill="#a0c8ff" opacity="0.22"/>
+          <!-- core energy halo shining through shell -->
+          <ellipse cx="60" cy="90" rx="23" ry="30" fill="url(#eggCore)" filter="url(#eggGlow)">
+            <animate attributeName="opacity" values="0.65;1;0.65" dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="rx"      values="21;25;21"     dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="ry"      values="28;32;28"     dur="2.4s" repeatCount="indefinite"/>
+          </ellipse>
+          <!-- inner bright core node -->
+          <circle cx="60" cy="90" r="5.5" fill="#ffffff">
+            <animate attributeName="r"       values="4.5;6.5;4.5"  dur="2.4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.85;1;0.85"  dur="2.4s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+        <div class="archive-stats">
+          <div class="archive-stat">
+            <div class="stat-num">21</div>
+            <div class="stat-label">JS modules</div>
+          </div>
+          <div class="archive-stat">
+            <div class="stat-num">6</div>
+            <div class="stat-label">elements</div>
+          </div>
+          <div class="archive-stat">
+            <div class="stat-num">∞</div>
+            <div class="stat-label">waves</div>
+          </div>
         </div>
       </div>
     </a>
