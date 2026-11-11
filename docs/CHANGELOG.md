@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11k` · branch `claude/skink-swirl-attack` · the Electro Skink's everyday hit is a swirl
+- **The Skink's everyday hit** (the owner: "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form"; "Looks only", one hit and one number, the chain "Drop it", "Slashing", "keep it as is") is a vortex drawn round the enemy: the body in a fast ring (three copies of it), curling in, spinning and curling out over 24 frames, **one hit** of 0.35 × its ATK as the ring closes on **one enemy**. The chain lightning is dropped for the Skink (every other electric follower keeps it). Its own body is hidden for the vortex and pops back. Same WILL and rest as before. Its damage type is unchanged: its form's type was already Slashing, so the hit is half Slashing, half electric.
+- **Art:** design No. 926 (`design/evolutions/forms40.js`, a swirl mode in No. 905's model, `forms36.js`) baked to `img/evo/skinkswirl.png` (cropped, `js/evopack.js`); `crop_sheets.js` now crops a form's `swirl` sheet too. The ring is flat and the glow under it is drawn in code; the owner saw one draft of the still frames and chose to see it in the game.
+- Numbers (6 + 12 + 6 frames, 0.35) are the agent's, provisional. Tests: `tests/skinkswirl.js` (new, 13 checks). Docs: `COMBAT.md` §7.4, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`. The Bible is not changed. **Not playtested, and not seen in the game by the agent** (the vortex is drawn by code that no test looks at).
+
 ### Build `2026-11-11j` · branch `claude/start-game-project-HSh7Z` · the roster card's light shows
 - **A follower's card lights up when its hit lands** (the owner: the roster "will highlight and shake the follower card"). Build 11i lit it with a glow the card's own clipped shape cut off and its slanted background covered: only a slight brightening showed (seen in 11i's pictures). The glow, in the follower's element's colour, is now on the card's background. It comes on at once and fades out as the shake ends.
 - **The card answers on the frame the number lands**: its health moved a frame late in 11i.

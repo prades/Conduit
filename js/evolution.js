@@ -208,7 +208,8 @@ const EVOLUTIONS = {
     // zig-zag bolt. It slithers like an eel, legs paddling, and is quick: its pace is 1.6 × (js/abilities.js tickSlowSpeed; the owner: "it's really fast"; the number is provisional). Its second
     // attack is BASH for now (the owner: "BASH for now"); its own attacks, subclass and Ultimate are open (it uses the electric Ultimate and has no subclass yet).
     electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "ZIGZAG DASH", moves: ["zigzag_dash"], pace: 1.6, sheet: "img/evo/electroskink.png",
-              cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033" },   // (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
+              cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033",
+              swirl: { id: "skinkswirl", sheet: "img/evo/skinkswirl.png", cell: 192, anchor: [96, 138.2] } },   // (swirl: its everyday hit's vortex, drawn round the enemy: SKINK_SWIRL, below.) (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
     // The ELECTRIC BRAWLER until build 2026-11-08a, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
     // SET ASIDE since build 2026-11-08a (aside: true): the owner, 2026-11-07: "the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side
@@ -1231,6 +1232,7 @@ function _drawEvolvedBody(f, px, py, g) {
     const f0 = typeof frame !== "undefined" ? frame : 0, m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
     if (m < EVO_MOLT * 0.3) return false;                 // still the egg, shaking (the overlay cracks it)
     const img = _evoImg(d); if (!img) return false;
+    if (f.evolved === "electroskink" && skinkSwirling(f)) return true;   // (in its vortex round the enemy: the Skink is not on the floor until it pops back)
     const col = d.color || (d.element === "fire" ? "#ff5a1f" : d.element === "flux" ? "#bb66ff" : "#ffee33");
     const fr = _evoFrame(f, d, f0), rise = fr.rise, sigK = fr.sigK, s = fr.s;
     g.save();
@@ -1335,5 +1337,50 @@ function drawEvolvedOverlay(f, px, py, g) {
             g.strokeStyle = full ? "rgba(255,211,232," + (0.5 + 0.5 * pul).toFixed(3) + ")" : "rgba(255,170,210,0.7)"; g.lineWidth = 1; g.stroke();
         }
     }
+    g.restore();
+}
+
+// ── THE ELECTRO SKINK'S SWIRL (build 2026-11-11k) ───────────────────────────────────────────────────────────────────────────
+// ASKED (the owner, 2026-11-11, of the Skink's everyday hit): "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form." Of the
+// agent's questions: "Looks only" (the Skink stays where it stands; the vortex is drawn round the enemy), "Same total, split" was not taken: "It's the primary attack, you should just have one
+// number" (one hit), the chain lightning "Drop it" (one enemy), "Slashing" (its form's type already: DMG_FORM.electroskink.main, so the hit is half Slashing and half electric as every
+// follower's is), and "keep it as is" for the look (design No. 926, design/evolutions/forms40.js: three copies of its body in a fast ring).
+// What it does: its everyday hit (the electric element's CHAIN LIGHTNING for every other electric follower, js/elements.js) is, for the Skink, a vortex of SKINK_SWIRL.coil frames curling in, SKINK_SWIRL.spin
+// spinning and SKINK_SWIRL.release curling out, drawn at the enemy; the hit lands as the ring closes (at the spin's start): the enemy's `target.x, y` as it is then, SKINK_SWIRL.mult × its ATK (the
+// first jump of the old chain's number). The Skink's own body is not drawn from the first frame to the last, and is back as the vortex ends. The frame counts and the number are the agent's, PROVISIONAL.
+// It costs what the old hit did (the WILL, js/combat.js followerAttack) and rests as it did; a target that dies, or a Skink that does, in the coil takes no hit.
+const SKINK_SWIRL = { coil: 6, spin: 12, release: 6, mult: 0.35 };
+const SKINK_SWIRL_FRAMES = SKINK_SWIRL.coil + SKINK_SWIRL.spin + SKINK_SWIRL.release;
+function skinkSwirling(f) { return !!f && f._swirlAt !== undefined && !f.dead && (typeof frame !== "undefined" ? frame : 0) - f._swirlAt < SKINK_SWIRL_FRAMES; }
+function skinkSwirlStrike(f, t) {
+    if (!f || !t || t.dead || skinkSwirling(f)) return;
+    f._swirlAt = typeof frame !== "undefined" ? frame : 0; f.state = "attack"; f.attackAnim = 0;
+    spawnElementEffect({ type: "skinkswirl", by: f, target: t, x: t.x, y: t.y, life: SKINK_SWIRL_FRAMES, maxLife: SKINK_SWIRL_FRAMES, element: "electric" });
+}
+// each frame (js/elements.js updateElementEffects, after the effect's life has counted down): the ring follows the enemy, and the hit lands as it closes
+function skinkSwirlTick(e) {
+    const f = e.by, t = e.target;
+    if (!f || f.dead) { e.life = 0; return; }
+    if (t && !t.dead) { e.x = t.x; e.y = t.y; }
+    if (e.maxLife - e.life === SKINK_SWIRL.coil && t && !t.dead) applyElementalDamage(t, (f.stats && f.stats.attack || 10) * SKINK_SWIRL.mult, f, "electric", DMG_HIT_MAIN);
+}
+// which cell of the swirl's sheet (design/evolutions/forms40.js: the idle block, 0 to 7, is the ring spinning; the action block, 8 to 15, the bodies curling into it) is shown `age` frames in
+function skinkSwirlCol(age) {
+    const S = SKINK_SWIRL;
+    if (age < S.coil) return 8 + Math.round(age / (S.coil - 1) * 7);   // (the first to the last cell of the coil, so the ring is whole as it closes)
+    if (age < S.coil + S.spin) return (age - S.coil) % 8;
+    return 8 + Math.round((1 - Math.min(S.release - 1, age - S.coil - S.spin) / (S.release - 1)) * 7);   // (the coil backward)
+}
+// drawn over the units like the other effects (js/elements.js drawElementEffects, case "skinkswirl"), at the enemy's feet (px, py): the baked ring, and a faint electric glow under it (light is drawn here, not baked)
+function skinkSwirlDraw(e, px, py, g) {
+    const d = EVOLUTIONS.electroskink && EVOLUTIONS.electroskink.swirl; if (!d) return;
+    const img = _evoImg(d); if (!img) return;
+    const age = Math.max(0, e.maxLife - e.life), fade = Math.min(1, e.life / 4), grow = Math.min(1, (age + 1) / SKINK_SWIRL.coil);
+    g.save();
+    g.globalAlpha = 0.35 * fade * grow; g.globalCompositeOperation = "lighter";
+    const rg = g.createRadialGradient(px, py, 0, px, py, 52); rg.addColorStop(0, "#ffe033"); rg.addColorStop(1, "rgba(255,224,51,0)");
+    g.fillStyle = rg; g.beginPath(); g.ellipse(px, py, 52, 26, 0, 0, Math.PI * 2); g.fill();
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = fade;
+    evoCellDraw(g, img, d.sheet, d.cell, skinkSwirlCol(age), 0, px - d.anchor[0] * EVO_SCALE, py - d.anchor[1] * EVO_SCALE, EVO_SCALE);
     g.restore();
 }

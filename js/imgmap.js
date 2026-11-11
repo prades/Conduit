@@ -96,6 +96,7 @@ const IMG_MAP = {
     "img/evo/seeper_g.png": "img/evo/seeper_g.webp?v=37abbd00",
     "img/evo/serpent.png": "img/evo/serpent.webp?v=acf47eee",
     "img/evo/shrub.png": "img/evo/shrub.webp?v=18deb0bf",
+    "img/evo/skinkswirl.png": "img/evo/skinkswirl.webp?v=d8cf0287",
     "img/evo/staticorb.png": "img/evo/staticorb.webp?v=b6b8c9ba",
     "img/evo/sundew.png": "img/evo/sundew.webp?v=f5e776b1",
     "img/evo/thermite.png": "img/evo/thermite.webp?v=ceb32dd7",

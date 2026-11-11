@@ -22,6 +22,7 @@ const SUITES = [
     ['the player\'s part in a fight: the bars come back slowly out of danger; the repair kit (the pack, the KIT pill, H); kits dropped by creatures and at spots that fill again; GUARD (shots at the squad near you hit you, half speed) and STUN DIVE (a swoop, a stun, a rest)', 'playercombat.js'],
     ['the battle look: the battle view when a creature engages (1.25x, the edges blurred on HIGH, darkened on LOW), taps through the zoom, the floor first and written on (lit tiles, a creature\'s bar with its level and element, WEAK! and STUNNED), no names, RESIST off like nothing, objects in front of a fighter as ghosts; the faces; the real page', 'battlelook.js'],
     ['performance + culling',    'perf.js'],
+    ['the Electro Skink\'s swirl: its everyday hit a vortex at the enemy and one hit as it closes, no chain, its body hidden and back, every other electric follower keeps its chain, its sheet baked and cropped', 'skinkswirl.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
     ['levels and stats',         'levels.js'],

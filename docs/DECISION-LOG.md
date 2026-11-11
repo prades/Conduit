@@ -2864,3 +2864,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Then: "We're removing the defeated text": the DEFEATED over a unit that falls, taken out in every fight at once (build `2026-11-11g`). The boss's banner and the Nest console's state stay.
 - Then, after the last drafts (the numbers knocked off the way the blow went, the roster's pops): "build it". Built in two steps: the battle view and the floor (build `2026-11-11h`), then the numbers and the roster (`2026-11-11i`). The attack frames were never drafted, so they wait.
 - The spec, its provisional details and the steps (drafts first): `BATTLE-LOOK.md`.
+
+## DECISION: The Electro Skink's everyday hit is a swirl (2026-11-11, build `2026-11-11k`, branch `claude/skink-swirl-attack`)
+- The owner, asked how a follower's primary attack should move (Brawlers first, one at a time, "You describe each one"; the Electro Skink first): "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form."
+- Asked whether it really moves round the enemy: **"Looks only"** (the Skink stays; the vortex is drawn). Asked how the damage spreads over the swirl, the owner declined the options: **"It's the primary attack, you should just have one number, a good question would be what's the damage type"**: so **one hit, one number**. The chain to up to two more enemies: **"Drop it"**. The damage type: **"Slashing"**, which was already its form's type (the hit is half Slashing, half electric as every follower's is; the agent had first said the code made it Elemental, which was wrong).
+- Of the first drafted still frames (a flat ring of three bodies): **"keep it as is"**, and put it in the game.
+- Agent's (provisional): 6 + 12 + 6 frames, 0.35 × ATK landing as the ring closes; the ring at the Skink's own scale.
+- Alternatives offered and not taken: damage in four or six ticks across the spin; the swirl passing on to a second and third enemy; Elemental, Piercing or Crushing as the type; a tilted or tornado-shaped vortex, speed streaks, a different size (offered as next steps; "keep it as is").
+- Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `CHANGELOG.md`.
