@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11c` · branch `claude/start-game-project-HSh7Z` · pictures: smaller, and downloaded again only when they change
+- **A picture's address changes only when the picture does** (the owner: "Yes, do the images next"). Its `?v=` is a fingerprint of the picture's own file, not the build. Until now each new build made a player download every picture again; now only the pictures that changed.
+- **Lossless WebP:** 140 of the game's 141 pictures load as a lossless WebP copy: 57.0 MB of PNGs, 32.6 MB as loaded. Each copy is the PNG's exact pixels (every channel of every pixel, decoded by ImageMagick). BUNKER BLOOM's old sheet stays a PNG, as its WebP would be bigger. Measured at the start on an iPad's window: 19 pictures, 3.6 MB as PNG, 1.9 MB now.
+- **On screen:** in Chromium a partly see-through edge pixel can come out 1 shade in 255 different (its WebP decoder rounds those its own way); every opaque and every clear pixel is exact. Not checked on an iPad.
+- **The pictures need iPadOS 14 or later** (WebP). Every iPad that can run iPadOS 13 can update to it; on a Mac, Safari needs macOS 11.
+- **Made, not written:** the PNGs stay what the art tools bake. `node tools/images.js` makes the WebP copies, `js/imgmap.js` (the addresses `imgSrc` in `js/config.js` hands the loaders) and game.html's image preloads; `node tools/stamp.js` runs it before the bundler. `tests/images.js` fails when any of it is stale or a copy is not exact.
+
 ### Build `2026-11-11b` · branch `claude/start-game-project-HSh7Z` · the game's scripts as one file for players
 - **Players load one script file, not 96** (the owner: "the page loads 96 separate scripts, 3.3 megabytes on an iPad over the network. A single bundled file at deploy time would load faster. We can work on that, right?"). `play.html` is the page players open: the same page, with the 95 scripts before the boot check as one file, `dist/conduit.js`, their comments taken out. Measured at the start on an iPad's window: 22 requests instead of 116, and the scripts 587 KB over the network instead of 954 KB (2.5 MB instead of 3.2 MB unpacked). The images (3.6 MB) are now most of what a start downloads.
 - **The same game:** in a real browser `play.html` starts with no error, and every one of the 3,136 top-level names the scripts declare is the same kind of thing as in `game.html`. The boot check and `js/init.js` run as before.

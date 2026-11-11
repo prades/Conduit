@@ -277,13 +277,13 @@ const dom = (P, id) => P.dom[id];
         const z = +(css.match(/#startupOverlay \{[^}]*z-index: (\d+)/) || [])[1]; ok(z > 10000 && z < 99999, 'z-index ' + z + ' (the game\'s panels reach 10000, the crash panels are 99999)');
         ok(/prefers-reduced-motion/.test(css), 'no reduced-motion rule');
     });
-    await check('THE ASK: the props sheets begin downloading with the page — one preload for each family the page loads at start, at the same address the loader uses (the build stamp included), each a file that exists, and nothing else (the website\'s background draws no player)', async () => {
+    await check('THE ASK: the props sheets begin downloading with the page — one preload for each family the page loads at start, at the same address the loader uses (the picture\'s WebP and fingerprint: js/config.js imgSrc, build 2026-11-11c), each a file that exists, and nothing else (the website\'s background draws no player)', async () => {
         const h = rd('game.html'), links = [...h.matchAll(/<link rel="preload" as="image" href="([^"]+)">/g)].map(m => m[1]);
-        const stamp = (h.match(/window\.__PAGE_BUILD = "([^"]+)"/) || [])[1]; for (const l of links) { ok(l.endsWith('?v=' + stamp), l + ' has no build stamp ' + stamp); ok(fs.existsSync(path.join(ROOT, l.replace(/\?.*/, ''))), l + ' is not a file'); ok(/^img\/props\/\w+\.png\?/.test(l), l + ' is not a props sheet'); }
-        const P = makePage(); P.load(); const fams = P.run('Object.keys(PROP_ATLAS)'); for (const f of fams) ok(links.includes('img/props/' + f + '.png?v=' + stamp), 'no preload for the props sheet ' + f); same(links.length, fams.length, 'preloads and families'); same(new Set(links).size, links.length, 'a sheet preloaded twice');
+        for (const l of links) { ok(fs.existsSync(path.join(ROOT, l.replace(/\?.*/, ''))), l + ' is not a file'); ok(/^img\/props\/\w+\.(webp|png)\?v=\w+$/.test(l), l + ' is not a props sheet'); }
+        const P = makePage(); P.load(); const fams = P.run('Object.keys(PROP_ATLAS)'); for (const f of fams) { const want = P.run('imgSrc("img/props/' + f + '.png")'); ok(links.includes(want), 'no preload for the props sheet ' + f + ' at ' + want); } same(links.length, fams.length, 'preloads and families'); same(new Set(links).size, links.length, 'a sheet preloaded twice');
         ok(h.indexOf('rel="preload"') < h.indexOf('<style>'), 'the preloads come after the styles: they would start late');
-        // the address is the loader's: img/props/<family>.png + ?v= + BUILD_VERSION (js/propsprites.js _psImg)
-        ok(/im\.src = "img\/props\/" \+ fam \+ "\.png" \+ \(typeof BUILD_VERSION !== "undefined" \? "\?v=" \+ BUILD_VERSION : ""\);/.test(rd('js/propsprites.js')), 'the loader asks for another address');
+        // the address is the loader's: imgSrc("img/props/<family>.png") (js/propsprites.js _psImg; the map is js/imgmap.js, made by tools/images.js)
+        ok(/const p = "img\/props\/" \+ fam \+ "\.png"; im\.src = typeof imgSrc === "function" \? imgSrc\(p\) : p;/.test(rd('js/propsprites.js')), 'the loader asks for another address');
     });
     await check('the screen\'s words for the stages are the ones the start runs, in order', async () => {
         const P = makePage().boot(); same(P.run('STARTUP_STAGES.join()'), 'INITIALIZING,PREPARING INITIAL GAME STATE,VALIDATING REQUIRED SYSTEMS,RENDERING INITIAL FRAME,LOADING REQUIRED ASSETS,STARTING GAMEPLAY', 'stages');

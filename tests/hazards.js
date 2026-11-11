@@ -99,7 +99,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the rules\' numbers are the ones offered (provisional): a 2-tile blast, a pool about 1.5 tiles across for 10 seconds, back after a minute; and the page loads the script and preloads the sheet', () => {
         const r = J('[HAZARD.blastR, HAZARD.poolR * 2, HAZARD.poolFrames / 60, HAZARD.back / 60]'); same(r.join(), '2,1.5,10,60', 'blast, pool, its seconds, the comeback\'s');
-        const h = rd('game.html'); ok(/<script src="js\/hazards\.js\?v=[^"]+"><\/script>/.test(h) && h.indexOf('js/hazards.js') > h.indexOf('js/firebombs.js'), 'the script'); ok(/<link rel="preload" as="image" href="img\/props\/hazard\.png\?v=/.test(h), 'the preload');
+        const h = rd('game.html'); ok(/<script src="js\/hazards\.js\?v=[^"]+"><\/script>/.test(h) && h.indexOf('js/hazards.js') > h.indexOf('js/firebombs.js'), 'the script'); ok(/<link rel="preload" as="image" href="img\/props\/hazard\.(webp|png)\?v=/.test(h), 'the preload');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

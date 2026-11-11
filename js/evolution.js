@@ -1136,7 +1136,7 @@ function _evoImg(d) {
     if (typeof Image === "undefined") return null;
     const im = new Image();
     im.onload = () => { d._img = im; };
-    im.src = d.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    im.src = typeof imgSrc === "function" ? imgSrc(d.sheet) : d.sheet;
     d._img = im; if (typeof startupAsset === "function") startupAsset(im, "evo/" + d.id);
     return null;
 }
@@ -1147,7 +1147,7 @@ function _evoGroundImg(d) {
     if (typeof Image === "undefined") return null;
     const im = new Image();
     im.onload = () => { d._gimg = im; };
-    im.src = d.ground + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    im.src = typeof imgSrc === "function" ? imgSrc(d.ground) : d.ground;
     d._gimg = im; if (typeof startupAsset === "function") startupAsset(im, "evo/" + d.id + "-ground");
     return null;
 }

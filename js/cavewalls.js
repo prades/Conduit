@@ -27,7 +27,7 @@ function _caveImg(room) {
     const e = _caveImgs[room]; if (e !== undefined) return e && e.complete && e.naturalWidth ? e : null;
     if (typeof document === "undefined" || !document.createElement) return (_caveImgs[room] = null);
     const im = document.createElement("img"); im.decoding = "async";
-    im.src = R.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    im.src = typeof imgSrc === "function" ? imgSrc(R.sheet) : R.sheet;
     _caveImgs[room] = im; return null;
 }
 // a strip in a dim room: its silhouette in the props' dark with the lit strip over it at the room's light level (composed once per level, a twelfth at a time; nearly dark: the silhouette alone)
@@ -71,7 +71,7 @@ function _caveRubbleSheet() {
     if (typeof CAVE_RUBBLE === "undefined") return null;
     if (_caveRubbleImg !== undefined) return _caveRubbleImg && _caveRubbleImg.complete && _caveRubbleImg.naturalWidth ? _caveRubbleImg : null;
     if (typeof document === "undefined" || !document.createElement) return (_caveRubbleImg = null);
-    const im = document.createElement("img"); im.decoding = "async"; im.src = CAVE_RUBBLE.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : ""); _caveRubbleImg = im; return null;
+    const im = document.createElement("img"); im.decoding = "async"; im.src = typeof imgSrc === "function" ? imgSrc(CAVE_RUBBLE.sheet) : CAVE_RUBBLE.sheet; _caveRubbleImg = im; return null;
 }
 // THE HOLE a drilled rubble leaves in the rock, modelled too (the owner, 2026-11-09: "Yes, model the hole in the rock too"; build 2026-11-09m): shown on the preview (?walls=3d) first; approved in the game on
 // 2026-11-09 ("Approve the hole for everyone"), so it is drawn for everyone; the drawn hole (js/techabilities.js techDrawRubbleOn) stays only as the fallback (the sheet not yet arrived)

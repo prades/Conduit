@@ -39,6 +39,7 @@ If code and docs disagree, report what the inspected code does, what the documen
 - Preserve behavior outside the requested scope.
 - Be careful with shared state, entity lifecycle, initialization order, update/draw loops, procedural generation, save/load, and iPad performance.
 - **game.html is the working page; play.html is the players'** (build `2026-11-11b`): `node tools/bundle.js` makes `play.html` and `dist/conduit.js` (the scripts as one file, no comments) from `game.html` and `js/*.js`, and `node tools/stamp.js` runs it for every build. Never edit those two by hand. Over the web `game.html` sends a visitor to `play.html` (not with `?dev`).
+- **The pictures players load are made from the PNGs** (build `2026-11-11c`): `node tools/images.js` makes each picture's lossless WebP copy, `js/imgmap.js` (its address, with a fingerprint) and game.html's image preloads, and the stamp runs it. Bake the PNG; never edit the `.webp` copies or `js/imgmap.js` by hand. A loader asks for a picture through `imgSrc` (js/config.js).
 - **Phones are not supported** (the owner, 2026-11-11): a phone sees PLAY ON AN iPAD and the game does not start (game.html's head, `deviceIsPhone`). Do not develop, fix or test-drive phone layouts; the old phone code stays as it is until the owner says otherwise. The iPad is the target, old iPads included; a computer still plays.
 - Avoid unnecessary allocations or expensive work in per-frame loops.
 - Handle missing, stale, or malformed saved data defensively when touching persistence.

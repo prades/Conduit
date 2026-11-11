@@ -17,6 +17,7 @@ const SUITES = [
     ['the start: the start screen, the staged start, the sheets it waits for, failures and retries, the clock once, the readout', 'startup.js'],
     ['phones are told to play on an iPad (the rule, and the real page as an iPhone, an iPad today and an old one, ?anydevice, ?attract)', 'phonegate.js'],
     ['the players\' page: play.html and its one script (dist/conduit.js) fresh, the boot check kept, the way in from game.html, and the same names as file by file in a real browser', 'bundle.js'],
+    ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['performance + culling',    'perf.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],

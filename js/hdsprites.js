@@ -31,7 +31,7 @@ function _hdImg(key) {
     if (typeof document === "undefined" || !document.createElement) return null;
     const im = document.createElement("img");
     im.onload = () => { _hdImgs[key] = im; };
-    im.src = "img/hd/" + key + ".png" + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    const p = "img/hd/" + key + ".png"; im.src = typeof imgSrc === "function" ? imgSrc(p) : p;
     _hdImgs[key] = im; if (typeof startupAsset === "function") startupAsset(im, "hd/" + key);
     return null;
 }

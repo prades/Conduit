@@ -27,7 +27,7 @@ function _psImg(fam) {
     if (typeof document === "undefined" || !document.createElement || typeof PROP_ATLAS === "undefined" || !PROP_ATLAS[fam]) return null;
     const im = document.createElement("img"); im.onload = () => { _psImgs[fam] = im; };   // (decoded off the main thread, so the first frame that draws it does not stall)
     im.decoding = "async";
-    im.src = "img/props/" + fam + ".png" + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    const p = "img/props/" + fam + ".png"; im.src = typeof imgSrc === "function" ? imgSrc(p) : p;   // (game.html preloads these same addresses: tools/images.js)
     _psImgs[fam] = im; if (typeof startupAsset === "function") startupAsset(im, "props/" + fam); return null;
 }
 // the whole sheet in the dark navy, same alpha (built once)

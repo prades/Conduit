@@ -54,7 +54,7 @@ function _fx3dImg(piece) {
     if (typeof Image === "undefined") return null;
     const im = new Image();
     im.onload = () => { P._img = im; };
-    im.src = P.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
+    im.src = typeof imgSrc === "function" ? imgSrc(P.sheet) : P.sheet;
     P._img = im;
     return null;
 }

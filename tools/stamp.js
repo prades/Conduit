@@ -1,9 +1,10 @@
 // Stamps a new build (the owner, 2026-11-10: "make edits smoother"): `node tools/stamp.js 2026-11-10b`
 // A build is named in three files, and only these places change:
-//   game.html     every ?v=<build> after a file name (each script's and preload's cache-buster) and window.__PAGE_BUILD
+//   game.html     every ?v=<build> after a file name (each script's cache-buster; a picture's is its own fingerprint: tools/images.js) and window.__PAGE_BUILD
 //   js/config.js  const BUILD_VERSION
 //   bible.html    the BUILD_VERSION number and the footer's "written against build <build> (<day> <Month> <year>)"
-// and then makes the players' page again (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js).
+// and then brings the pictures up to date (tools/images.js: a changed picture's WebP copy and fingerprint, js/imgmap.js, game.html's image preloads) and makes the players' page again
+// (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js).
 // It refuses a name that is not a date and letters, and the build already stamped. Anything else that still names the old build (a comment, say) is listed, not changed:
 // a find-and-replace over the whole page used to rewrite such comments too, so they named the wrong build.
 const fs = require('fs'), path = require('path');
@@ -44,10 +45,13 @@ b = b.replace(footRe, 'written against build ' + next + ' (' + when + ')');
 wr('game.html', g); wr('js/config.js', cfg.replace(cm[0], 'const BUILD_VERSION = "' + next + '";')); wr('bible.html', b);
 console.log('stamped ' + next + ' (was ' + old + '): game.html ' + tags + ' cache-busters and __PAGE_BUILD, js/config.js BUILD_VERSION, bible.html its number and footer (' + when + ')');
 
-// the players' page and its one script (tools/bundle.js; build 2026-11-11b): made again from game.html and js/*.js, so they name this build and hold this code
-{ const bd = require('./bundle.js').write(); console.log('bundled ' + bd.files.length + ' scripts into dist/conduit.js and wrote play.html (build ' + bd.build + ')' + (bd.stripped ? '' : ': TypeScript not found, the scripts went in with their comments')); }
-
-// what still names the old build in the page or config: listed for a person to look at, not changed (the Bible's prose names past builds on purpose: "since build …")
-const left = [];
-for (const f of ['game.html', 'js/config.js']) rd(f).split('\n').forEach((line, i) => { if (line.indexOf(old) >= 0) left.push('  ' + f + ':' + (i + 1) + '  ' + line.trim().slice(0, 140)); });
-if (left.length) console.log('still naming ' + old + ' (not changed):\n' + left.join('\n'));
+// the pictures (tools/images.js; build 2026-11-11c): a changed picture's WebP copy and fingerprint, js/imgmap.js and game.html's image preloads; then the players' page and its one script
+// (tools/bundle.js; build 2026-11-11b), made again from game.html and js/*.js, so they name this build and hold this code
+require('./images.js').write({ log: m => console.log('  ' + m) }).then(im => {
+    console.log('pictures: ' + im.stale.length + ' changed, ' + im.converted.length + ' converted to WebP' + (im.magick ? '' : ' (ImageMagick not found: a changed picture loads as its PNG)') + '; js/imgmap.js and game.html\'s preloads written');
+    const bd = require('./bundle.js').write(); console.log('bundled ' + bd.files.length + ' scripts into dist/conduit.js and wrote play.html (build ' + bd.build + ')' + (bd.stripped ? '' : ': TypeScript not found, the scripts went in with their comments'));
+    // what still names the old build in the page or config: listed for a person to look at, not changed (the Bible's prose names past builds on purpose: "since build …")
+    const left = [];
+    for (const f of ['game.html', 'js/config.js']) rd(f).split('\n').forEach((line, i) => { if (line.indexOf(old) >= 0) left.push('  ' + f + ':' + (i + 1) + '  ' + line.trim().slice(0, 140)); });
+    if (left.length) console.log('still naming ' + old + ' (not changed):\n' + left.join('\n'));
+}).catch(e => fail(e.message));

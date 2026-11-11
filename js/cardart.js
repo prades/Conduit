@@ -641,7 +641,7 @@ function cardArtItemsPreview() { try { return typeof location !== "undefined" &&
 // the picture of a card's item, or "" (none baked, or not approved and no preview)
 function cardArtItemUrl(c) {
     if (!c || CARD_ITEMS.ids.indexOf(c.id) < 0 || !(CARD_ITEMS.approved.indexOf(c.id) >= 0 || cardArtItemsPreview())) return "";
-    return "img/cards/" + c.id + ".png?v=" + (typeof BUILD_VERSION !== "undefined" ? BUILD_VERSION : "");
+    const p = "img/cards/" + c.id + ".png"; return typeof imgSrc === "function" ? imgSrc(p) : p;   // (its WebP, versioned by the picture: js/config.js imgSrc)
 }
 // put `cls` on `el` in place of whatever art class it wore under `slot` (one per slot; "" takes it off); cheap when nothing changed, so a card updated in place every redraw can call it
 function cardArtMark(el, cls, slot) {

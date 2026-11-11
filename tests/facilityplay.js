@@ -790,7 +790,7 @@ function measure() {
             o.err = err; o.cells = Object.keys(PROP_ATLAS.pickups.cells).sort().join(); return o; })()`);
         same(r.err, null, 'drawing a pickup threw'); same(r.missing, '', 'an item on the ground with no model (it would be the white case)'); same(r.blits, 'pickups/scrap_metal', 'a pickup of scrap is not drawn as its heap'); same(r.noSheet, false, 'the model is drawn before its sheet has arrived'); ok(!/pickups\//.test(r.noSheetBlits), 'the sheet was drawn before it arrived');
         same(r.cells, 'ammo_pack,flare,fuel_cell,mech_core,mech_leg,mutagen_sample,power_cell,power_module,scrap_metal,sewer_sample,toxic_sample', 'the pickups sheet');
-        ok(/rel="preload" as="image" href="img\/props\/pickups\.png/.test(rd('game.html')), 'the sheet is not preloaded');
+        ok(/rel="preload" as="image" href="img\/props\/pickups\.(webp|png)\?/.test(rd('game.html')), 'the sheet is not preloaded');
     });
     check('the PACK button on the HUD (build 2026-11-09zz): its count is the kinds of item carried, written only when it changes; NEW GAME empties it', () => {
         const r = J(`(function(){ const o = {}, els = { packCount: { textContent: '', isConnected: true }, btnPack: { isConnected: true, setAttribute(k, v) { this[k] = v; } } }, gid = document.getElementById, keep = Object.assign({}, playerInv); let writes = 0;

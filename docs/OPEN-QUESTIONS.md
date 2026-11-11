@@ -6,6 +6,8 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-11, phones are not supported** (the owner: "we're going to quit developing for the phone"; build `2026-11-11a`, a phone is told to play on an iPad): every phone item below is closed as won't-do, and stays only as history. That is N7 (a phone cannot buy a pack or use the market), Side Quest's cards on a phone, SWAP on a phone, a phone's CARDS screen and slots, and a phone's PACK button sizes.
 
+**Open 2026-11-11, old iPads** (asked in build `2026-11-11b`'s handoff, not answered yet): should an iPad too old to show the game properly get an "update your iPad" screen, like the phone one? The game runs from iPadOS 13.4, shows its pictures from 14 (WebP, since build `2026-11-11c`) and every colour from 16.2. The iPad Air 2 and iPad mini 4 stop at iPadOS 15.
+
 ## 1. Answered in round 2 (built and tested)
 
 | # | the question | the owner's answer | what the game does now |
