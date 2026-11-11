@@ -252,7 +252,7 @@ function measure(w, h) {
         for (const [r, cl, boss] of RACES.map(r => [r, 'scout', null]).concat([['ant', 'boss', 'THE TOXIC QUEEN']])) {
             const h = J(`(function(){ const a = spawnCreature({ species: ${JSON.stringify(r)}, className: ${JSON.stringify(cl)} }); a.health = a.maxHealth = 50; ${boss ? 'a.bossName = ' + JSON.stringify(boss) + ';' : ''} const s = mixToolFoeHTML(a, [], false); a.dead = true; return s; })()`);
             ok(h.indexOf('<b class="mt-foe-name cae-' + r + '">' + (boss || (r.toUpperCase() + ' SCOUT')) + '</b>') > 0, r + (boss ? ' (the boss)' : '') + ': the name ' + (h.match(/<b class="mt-foe-name[^<]*<\/b>/) || [])[0]);
-            ok(/<em class="mt-foe-num"><\/em><span class="mt-foe-dmg">.*<\/span><\/span><span class="mt-foe-go">/.test(h), r + ': the row is not under the numbers, in the text column');
+            ok(/<em class="mt-foe-num"><\/em><span class="mt-foe-dmg">.*<\/span><\/span><span class="mt-foe-(go|acts)">/.test(h), r + ': the row is not under the numbers, in the text column');   // (then the strip, or at the left the ALL / RUN / ATTACK row: build 2026-11-11m)
             ok(h.indexOf('<i class="wk">' + SHORT[table[r].weak[0]] + '</i>') > 0, r + ': not its row');
         }
     });

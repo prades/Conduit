@@ -214,7 +214,7 @@
       <div class="tw"><table>
         <tr><th>Move</th><th>What it does</th></tr>
         <tr><td><b>Tap the floor</b></td><td>Walk there, through the doors. Tap a station or a case to use it or take it.</td></tr>
-        <tr><td><b>Tap a creature</b></td><td>Lock your gun on it; the round dial fires. Tap the enemy card to send the squad at it.</td></tr>
+        <tr><td><b>Tap a creature</b></td><td>Lock your gun on it; the round dial fires. Its card's ATTACK sends the squad at it (on a tablet the card stands bottom left, over the squad's orders, with ALL, RUN and ATTACK: build <code>2026-11-11m</code>).</td></tr>
         <tr><td><b>Long-press a follower</b></td><td>Its card: numbers, INDEX and DISMISS. Long-press a creature for INFO or ATTACK.</td></tr>
       </table></div>
       <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right, the shards and bars at the top left, the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
@@ -1343,7 +1343,7 @@
   <ul>
     <li><b>Auto-lock.</b> The nearest creature in range and in sight is locked (a spider lurking at cover is skipped). The gun arms quietly as red corners close in. A creature nearer by the margin takes the lock. An automatic lock drops beyond the keep distance, or out of sight beyond 3 tiles. With nothing in range the gun is put away.</li>
     <li><b>Switching.</b> A tap on <b>another</b> creature locks it, and only locks. A lock you chose holds even if something is nearer, even out of sight, up to the manual keep distance. A press on the <b>locked</b> creature fires: a click is one shot; a hold keeps firing at the enemy under your finger, else the locked one. Neither starts a ring or a walk.</li>
-    <li><b>The dial</b> sits bottom right on a tablet or desktop, over the enemy card; on a phone, top left. It shows:
+    <li><b>The dial</b> sits bottom right on a tablet or desktop (the enemy card stood under it until build <code>2026-11-11m</code>; it is bottom left now); on a phone, top left. It shows:
       <ul>
         <li>the creature in a ring that is its health, and <code>LV n</code>;</li>
         <li>a weapon badge (pistol, tentacle or bolt): red while held, amber while cycling, grey when dry;</li>
@@ -2011,7 +2011,7 @@
 <h4>COME, and FOLLOW ME</h4>
 <p>Each follower in COME's pool leaves its post and rejoins the squad while there is a slot; the rest keep holding. The game says what happened: “COME · NAME IS BACK IN THE SQUAD”, or “SQUAD FULL · 3 OF 3 · NAME KEEPS HOLDING”. COME also ends attack orders, POSITION and a core technician's shield hold. <b>FOLLOW ME</b> is only COME's sub-label (“<span class="n" data-k="MIXTOOL_ORDERS[1].sub">FOLLOW ME</span>”), and it is not drawn. The roster's old STANCE setting (FOLLOW ME / HOLD THIS ROOM) has become ADD TO SQUAD / REMOVE FROM SQUAD.</p>
 <h4>The enemy card's ATTACK</h4>
-<p>The card shows the creature the gun is locked on, or else the nearest in range and in sight: its picture, its kind, LV n · ELEMENT, its health with HP a/b · BITE n, and a strip that reads ATTACK · EVERYONE n (or SELECTED n), then ATTACKING · n OF m. A tap gives every unit in the pool an <b>attack order</b> on that creature for <span class="n" data-k="BATTLE_ATTACK_FRAMES">1800</span> frames (<span class="n" data-k="BATTLE_ATTACK_FRAMES" data-f="f">30 s</span>). Each goes for it whatever is nearer, calm or not, from any distance. The order ends when the creature dies, after 30 s, when the creature is more than <span class="n" data-k="BATTLE_ATTACK_LEASH">22</span> tiles from you, or on RETREAT, HOLD or COME. While a technician's ability is aimed at an enemy, a tap on the card picks that creature for the ability instead.</p>
+<p><b>On a tablet or desktop</b> (build <code>2026-11-11m</code>; the owner: “move the HUD enemy pop-up window to the left to cover up the squad command HUD window”) the card stands bottom left over the squad's orders while a creature is on it, with three buttons: ALL, RUN (the RETREAT order) and ATTACK (ATTACK · n, then ATTACKING · n/m); HOLD and COME come back with the orders when no creature is near. On a narrow window it is as it was: The card shows the creature the gun is locked on, or else the nearest in range and in sight: its picture, its kind, LV n · ELEMENT, its health with HP a/b · BITE n, and a strip that reads ATTACK · EVERYONE n (or SELECTED n), then ATTACKING · n OF m. A tap gives every unit in the pool an <b>attack order</b> on that creature for <span class="n" data-k="BATTLE_ATTACK_FRAMES">1800</span> frames (<span class="n" data-k="BATTLE_ATTACK_FRAMES" data-f="f">30 s</span>). Each goes for it whatever is nearer, calm or not, from any distance. The order ends when the creature dies, after 30 s, when the creature is more than <span class="n" data-k="BATTLE_ATTACK_LEASH">22</span> tiles from you, or on RETREAT, HOLD or COME. While a technician's ability is aimed at an enemy, a tap on the card picks that creature for the ability instead.</p>
 <h4>POSITION (the ground's long-press ring)</h4>
 <p>The pool holds that tile and stays in the squad. Each fights hostiles within 4.5 tiles of itself with <code>followerAttack</code>, every role including the mage, and gives the job up below 50% health.</p>
 <h4>PLAY STYLE</h4>
@@ -3617,7 +3617,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11l</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11m</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3839,7 +3839,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-11l (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11m (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

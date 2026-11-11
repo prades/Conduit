@@ -29,7 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     ok(run('!!__open'), 'no open spot in the facility to test in');
 
     group('THE TARGET\'S CORNER: the dial and the ammunition (js/targeting.js)');
-    check('on a tablet or a desktop the dial stands at the bottom right over the enemy card (its centre in the right half and the lower half, its edge clear of the screen\'s), the ammunition beside it; a phone keeps the top left under the plate', () => {
+    check('on a tablet or a desktop the dial stands at the bottom right, where the enemy card stood before build 2026-11-11m (its centre in the right half and the lower half, its edge clear of the screen\'s), the ammunition beside it; a phone keeps the top left under the plate', () => {
         const r = J(`(function(){ const o = {}; __size(1180, 820); const A = _tgAnchor(); o.wide = [A.corner === true, A.x > canvas.width / 2, A.y > canvas.height / 2, A.x + A.R <= canvas.width - 14, A.y - A.R >= 8, A.top === A.y - A.R, A.R];
             __size(1600, 900); const B = _tgAnchor(); o.big = [B.corner === true, B.x > 1180, B.y > 450]; __size(820, 1180); const C = _tgAnchor(); o.portrait = [C.corner === true, C.x > 410, C.y > 590, C.x + C.R <= 820 - 14];
             __size(390, 800); const D = _tgAnchor(); o.phone = [D.corner === undefined, D.narrow, D.left, D.R]; __size(1180, 820); return o; })()`);
@@ -58,8 +58,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE REST OF THE CORNERS (game.html)');
-    check('me at the top left (the crystals and the two bars side by side), the place at the top right, the stack and the tool at the bottom left, the enemy card at the bottom right: the css is scoped to body.corners, which js/party.js sets only on a tablet or a desktop in the facility', () => {
-        const h = rd('game.html'); ok(/body\.corners #hudRow1 \{ justify-content: flex-start; \}/.test(h) && /body\.corners #hudRight \{ margin-left: auto; \}/.test(h), 'the top row'); ok(/body\.corners #mixTool \.mt-foe-slot \{ position: fixed; right: 14px;/.test(h), 'the enemy card');
+    check('me at the top left (the crystals and the two bars side by side), the place at the top right, the stack and the tool at the bottom left, the enemy card at the bottom left too, over the tool\'s orders (build 2026-11-11m: it stood at the bottom right): the css is scoped to body.corners, which js/party.js sets only on a tablet or a desktop in the facility', () => {
+        const h = rd('game.html'); ok(/body\.corners #hudRow1 \{ justify-content: flex-start; \}/.test(h) && /body\.corners #hudRight \{ margin-left: auto; \}/.test(h), 'the top row'); ok(/body\.corners #mixTool \.mt-foe-slot \{ position: fixed; left: 14px; right: auto;/.test(h) && /body\.corners #mixTool\.foe \.mt-main \{ visibility: hidden; \}/.test(h), 'the enemy card');
         ok(/body\.corners #squadBar \{ left: 14px;/.test(h) && /flex-direction: column;/.test(h.slice(h.indexOf('body.corners #squadBar {'), h.indexOf('body.corners #squadBar {') + 400)), 'the stack'); ok(/--cn-tool: 178px/.test(h), 'the tool\'s height');
         const rules = h.slice(h.indexOf('THE CORNERS (docs/UI-STYLE.md'), h.indexOf('THE GAME INDEX, NEO-FUTURISTIC BLUE')); const bare = rules.split('\n').filter(l => /^\s+(body\.corners|#squadFly|:root|@media)/.test(l) || /^\s+\/\*/.test(l) || /^\s{7}/.test(l) || !l.trim());
         ok(!/^\s+#(mixTool|squadBar|hudRow1|hudRight|hudCentre)\b/m.test(rules), 'a corners rule that is not scoped to body.corners would change a phone');

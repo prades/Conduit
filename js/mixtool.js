@@ -13,6 +13,10 @@
 //                  and resists (the following update's Part 2, below: mixToolFoeRow). TAP IT and the units the tool is set to (WHO: ALL, one element, or the selected
 //                  roster cards, which win) are sent at THAT creature (an attack order, js/npc.js attackOrderTarget): they go for it whatever is nearer, calm or not, until it is dead, thirty seconds have
 //                  gone, it is out of reach of you, or they are given another order (RETREAT, HOLD, COME).
+// THE CARD AT THE LEFT (build 2026-11-11m, the corners layout: a tablet or a desktop; the owner, 2026-11-11: "move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the
+//                  roster card squad feature ... it's gonna have an all button it's gonna have a run button ... basically like the retreat button and then we'll have a attack button"): while a creature
+//                  is on it the card stands where the orders stood, over them, with three buttons: ALL (as the orders' ALL), RUN (the RETREAT order) and ATTACK (as tapping the card did). HOLD and COME
+//                  are the orders' again as soon as there is no creature to show. The other layout keeps the card as it was (a button, above the orders).
 // The Crystal's flag is how everything else opens it: a tap on the Crystal. On a wide screen the flag is just put down; on a phone it is "the tool is open".
 let _mtSig = "";
 // A wide screen keeps the tool open for good; a phone opens and closes it.
@@ -105,6 +109,16 @@ function mixToolFoeRow(foe) {
 function mixToolFoeHTML(foe, pool, fresh) {
     const c = targetCardInfo(foe), img = typeof targetPortraitURL === "function" ? targetPortraitURL(foe) : "", going = mixToolOrdered(foe), emb = typeof cardArtRaceEmblemClass === "function" ? cardArtRaceEmblemClass(foe) : "";
     const sub = [c.level !== null ? "LV " + c.level : "", c.element].filter(Boolean).join(" \u00b7 "), go = !pool.length ? "NO ONE TO SEND" : going ? "ATTACKING \u00b7 " + going + " OF " + pool.length : "ATTACK \u00b7 " + mixToolTarget(pool);
+    if (mixToolCorners()) {   // at the left, over the orders: the card, and ALL, RUN and ATTACK under it
+        const f0 = typeof frame !== "undefined" ? frame : 0, sel = typeof selectedUnits !== "undefined" && selectedUnits.size && typeof ccSelectionList === "function" && ccSelectionList().length, run = mixToolPool().some(a => a.retreatUntil > f0);
+        const atk = !pool.length ? "NO ONE" : going ? "ATTACKING \u00b7 " + going + "/" + pool.length : "ATTACK \u00b7 " + pool.length;
+        return '<div class="mt-foe at-left' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" style="--c:' + c.col + '">'
+            + '<span class="mt-foe-pic">' + (img ? '<img alt="" src="' + img + '">' : '') + '</span>'
+            + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><i class="mt-foe-sub">' + _mtEsc(sub) + '</i><span class="mt-foe-hp"><u></u></span><em class="mt-foe-num"></em>' + mixToolFoeRow(foe) + '</span>'
+            + '<span class="mt-foe-acts"><button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b>ALL</b></button>'
+            + '<button class="mt-fa run' + (run ? ' going' : '') + '" data-act="retreat" aria-label="Run: the squad falls back"><b>' + (run ? 'RUNNING' : 'RUN') + '</b></button>'
+            + '<button class="mt-fa atk" data-act="attack" aria-label="Attack ' + _mtEsc(c.name) + '"><b>' + _mtEsc(atk) + '</b></button></span></div>';
+    }
     return '<button class="mt-foe' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" data-act="attack" style="--c:' + c.col + '" aria-label="Attack ' + _mtEsc(c.name) + '">'
         + '<span class="mt-foe-pic">' + (img ? '<img alt="" src="' + img + '">' : '') + '</span>'
         + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><i class="mt-foe-sub">' + _mtEsc(sub) + '</i><span class="mt-foe-hp"><u></u></span><em class="mt-foe-num"></em>' + mixToolFoeRow(foe) + '</span>'
@@ -118,7 +132,9 @@ function mixToolFoeLive(slot, foe) {
 }
 let _mtFoeSig = "", _mtFoeId = 0, _mtFoeShown = null;   // (the creature on the card: a tap sends them at THAT one, whoever the card is about by the next frame)
 function mixToolFoeRender(root, slot, force) {
-    const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool() : [], sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe)].join("|") : "";
+    const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool() : [], f0 = typeof frame !== "undefined" ? frame : 0, corners = mixToolCorners();
+    const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";   // (at the left: RUN while they run, ALL while it is lit)
+    if (root.classList) root.classList.toggle("foe", !!foe);   // (at the left the card stands over the orders: game.html)
     if (!force && sig === _mtFoeSig) { mixToolFoeLive(slot, foe); return; }
     const fresh = id !== _mtFoeId; _mtFoeSig = sig; _mtFoeId = id; _mtFoeShown = foe;
     slot.innerHTML = foe ? mixToolFoeHTML(foe, pool, fresh) : "";

@@ -113,8 +113,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var p = $('#mixTool .mt-panel'); out.tool = { h: p ? Math.round(p.getBoundingClientRect().height) : 0, css: getComputedStyle(document.documentElement).getPropertyValue('--cn-tool').trim(), kids: p ? p.children.length : 0 };
     // a creature locked on: the picked member names who goes on the card's strip
     actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true);
-    selectedUnits.clear(); partyTick(); mixToolRender(true); await wait(60); out.foe0 = $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null;
-    selectedUnits.add(partyOrdered()[0]); mixToolRender(true); await wait(60); out.foe1 = $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null;
+    var atkText = function(){ var e = $('#mixTool .mt-fa.atk'); return e ? e.textContent + (($('#mixTool .mt-fa.all.on')) ? '|ALL' : '') : null; };   // (the enemy card at the left, build 2026-11-11m: its ATTACK button counts who goes, ALL lit for everyone)
+    selectedUnits.clear(); partyTick(); mixToolRender(true); await wait(60); out.foe0 = atkText();
+    selectedUnits.add(partyOrdered()[0]); mixToolRender(true); await wait(60); out.foe1 = atkText();
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__sf'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -257,8 +258,8 @@ function measure(w, h) {
             same(r.dismiss.slotEmpty, true, 'its slot is not open'); ok(/^\+ CALL /.test(r.dismiss.open || ''), 'the open slot says ' + r.dismiss.open); ok(r.dismiss.said.some(t => /REMOVED FROM THE SQUAD/.test(t)), 'said ' + r.dismiss.said);
             same(r.hold.fly0, true, 'the card opened for the next pick'); same(r.hold.fly1, false, 'HOLD left the card open for a member that has left the squad');
         });
-        check(w + ': the tool is one slab of the height game.html reserves for the stack above it (--cn-tool), and with a creature locked the enemy strip says who goes: EVERYONE, or SELECTED for a picked member', () => {
-            same(r.tool.h, parseInt(r.tool.css, 10), 'the tool is ' + r.tool.h + ' px high, the css says ' + r.tool.css); ok(/ATTACK · EVERYONE \d/.test(r.foe0 || ''), 'no one picked: ' + r.foe0); same(r.foe1, 'ATTACK · SELECTED 1', 'one picked');
+        check(w + ': the tool is one slab of the height game.html reserves for the stack above it (--cn-tool), and with a creature locked the enemy card (at the left, over the orders: build 2026-11-11m) says who goes: ATTACK · all of them with ALL lit, or ATTACK · 1 for a picked member, ALL unlit', () => {
+            same(r.tool.h, parseInt(r.tool.css, 10), 'the tool is ' + r.tool.h + ' px high, the css says ' + r.tool.css); ok(/^ATTACK · \d\|ALL$/.test(r.foe0 || ''), 'no one picked: ' + r.foe0); same(r.foe1, 'ATTACK · 1', 'one picked');
         });
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

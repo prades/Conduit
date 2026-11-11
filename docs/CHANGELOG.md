@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11m` · branch `claude/start-game-project-HSh7Z` · the enemy card over the squad's orders
+- **The enemy card moves to the left** (the owner: "move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together").
+  - While a creature is on it, the card stands where the squad's orders stand, under the three cards, and covers them. It used to stand at the bottom right.
+  - Along its foot are **ALL**, **RUN** and **ATTACK**. ALL is the orders' ALL, lit while the orders go to everyone. RUN is the RETREAT order ("basically like the retreat button"), RUNNING while they fall back. ATTACK sends them at the creature (ATTACK · n, then ATTACKING · n/m). The card itself is no longer a button.
+  - With no creature near, the orders are back as they were: ALL, RETREAT, HOLD, COME.
+- The round dial with GUARD and STUN keeps the bottom right, where it stands with no card. A member's card that is open stands above the enemy card.
+- On a narrow window (not the tablet layout) the card is as it was. Tests: `tests/enemycard.js`, `bottomui.js`, `corners.js`, `squadfly.js` and `speciesart.js` follow the card to the left. Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11l` · branch `claude/start-game-project-HSh7Z` · big objects and walls flat in a fight
 - **In a fight the big objects and the walls go flat** (the owner: "hide things like the truck and the oil tanks ... the poison purple tanks, and the walls ... just make them like solid ground with a little bit of transparentness of the object still visible").
   - Every object of 4 tiles or more fades to a faint ghost whether it hides anyone or not, with the floor under it and its outline round it: the semi truck with its tanks, the two liquid reserves, the server racks and the like.

@@ -2851,6 +2851,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: The enemy card over the squad's orders (2026-11-11; built in `2026-11-11m`)
+- The owner: "I want to move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together the one that it's hiding it's gonna have an all button it's gonna have a run button for whenever the creatures are engaged in combat. It's basically like the retreat button and then we'll have a attack button of course."
+- Built: in the tablet layout, while a creature is on the enemy card, the card stands in the orders' place, bottom left, over them, with ALL, RUN (the RETREAT order) and ATTACK. With no creature, the orders return (ALL, RETREAT, HOLD, COME). The dial keeps the bottom right.
+- The agent's reading: RUN is on the card whenever it shows (the card shows only with a creature near); HOLD and COME are not on it (the owner named three buttons); the card's body no longer sends the squad (its ATTACK does); a narrow window keeps the old card.
+- Supersedes, on a tablet, the enemy card at the bottom right (`UI-STYLE.md`, the corners layout).
+
 ## DECISION: In a fight, the big objects and the walls go flat (2026-11-11; built in `2026-11-11l`)
 - The owner: "Whenever we go into battle phase or whatever, it needs to hide things like the truck and the oil tanks or whatever, the poison purple tanks, and the walls and stuff like that, and just make them like solid ground with a little bit of transparentness of the object still visible."
 - Built: while the battle view is on, every object of 4 tiles or more fades to its ghost (floor under it, outline round it) whether it hides a fighter or not, and every wall is drawn faint. Small objects keep the earlier rule (they fade when they hide a fighter). They all still stop shots and the way.
