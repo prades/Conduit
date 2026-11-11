@@ -2,6 +2,14 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-11
+
+### Build `2026-11-11a` · branch `claude/start-game-project-HSh7Z` · phones are told to play on an iPad
+- **A phone sees PLAY ON AN iPAD, and the game does not start** (the owner: "Can we make a distinction between phones and like my iPad and old iPads? If so, let's make it to where if you log in on a phone, it tells you you have to play on an iPad, and we're going to quit developing for the phone."). The screen is the start screen's look: CONDUIT, a tablet drawn in green, PLAY ON AN iPAD, and "Conduit is made for the iPad. Phones are not supported: open this page on an iPad to play."
+- **What a phone is** (`deviceIsPhone`, in the page's head, before anything is drawn): a tablet's own word (iPad, Tablet) wins; then a phone's (iPhone, iPod, Android's "Mobile", Windows Phone); then the screen: a touch screen whose short side is under 600 CSS px (every phone's is 320 to 440; every iPad's, old ones too, 744 or more). A computer is never one, however small its window. `?anydevice` opens the game on a phone anyway; the website's background (`?attract`) is never stopped.
+- **Phones are no longer developed:** the phone layouts stay in the code as they were, and the phone items in OPEN-QUESTIONS are closed. AGENTS.md says so.
+- Tests: `tests/phonegate.js` (13 devices to the rule; the real page as an iPhone, an iPad today and an old one, `?anydevice`, `?attract`).
+
 ## 2026-11-10
 
 ### Build `2026-11-10e` · branch `claude/start-game-project-HSh7Z` · the squad member's card: its ENERGY panel (draft B)

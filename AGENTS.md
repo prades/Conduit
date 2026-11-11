@@ -37,7 +37,8 @@ If code and docs disagree, report what the inspected code does, what the documen
 ## Implementation safeguards
 - Follow actual project architecture and conventions; do not introduce dependencies/frameworks without a concrete need.
 - Preserve behavior outside the requested scope.
-- Be careful with shared state, entity lifecycle, initialization order, update/draw loops, procedural generation, save/load, and mobile/iPad performance.
+- Be careful with shared state, entity lifecycle, initialization order, update/draw loops, procedural generation, save/load, and iPad performance.
+- **Phones are not supported** (the owner, 2026-11-11): a phone sees PLAY ON AN iPAD and the game does not start (game.html's head, `deviceIsPhone`). Do not develop, fix or test-drive phone layouts; the old phone code stays as it is until the owner says otherwise. The iPad is the target, old iPads included; a computer still plays.
 - Avoid unnecessary allocations or expensive work in per-frame loops.
 - Handle missing, stale, or malformed saved data defensively when touching persistence.
 - Do not remove debug tools, tests, content, or historical documentation without a clear reason.

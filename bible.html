@@ -3101,6 +3101,7 @@
   </div></details>
 
   <h3 id="interface-phone">On a phone: the radial menu, the round buttons, the quest button</h3>
+  <p><b>Phones are not supported since build <code>2026-11-11a</code></b> (the owner: "we're going to quit developing for the phone"): a phone sees PLAY ON AN iPAD and the game does not start. What follows is the phone layout as it was left, for a window 700 px wide or less on a computer.</p>
   <p>At 700 px or less there is no dock. Instead:</p>
   <ul>
     <li><b>The radial menu</b>: a round hub on the left edge, centred on the visible height (three bars that turn into an ✕), fans out <span class="n" data-k="RADIAL_PETALS.length">3</span> petals on its right-hand half circle. A petal opens its panel to the right of the hub (redrawn every <span class="n" data-k="RADIAL_REFRESH_MS">400</span> ms while open); a tap on the dim backdrop closes the menu. It hides while the Command Center or the INFO panel is open.
@@ -3591,7 +3592,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-10e</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3813,7 +3814,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-10e (10 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11a (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

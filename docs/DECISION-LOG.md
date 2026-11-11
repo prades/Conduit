@@ -2810,3 +2810,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built as drawn: a bright panel under the name with three hex tokens (an egg's two locked until it evolves: the rule of one slot until it evolves stands), a tray of the energy you hold on a tap, and the unlock pills. `UI-STYLE.md`, "The squad member's card: its ENERGY panel"; `ENERGY-CARDS.md` §9.
 - Supersedes `2026-11-10d`'s ENERGY row of chips on that card.
 - Then, the owner: "make sure we pull it in a little bit further if you can. Readjust some of the elements on the whole flyout so that they are more bunched together and don't push into the map too hard or the world too hard." The card is 290 px wide (was 340), its parts tighter (`UI-STYLE.md`).
+
+## DECISION: Phones are not supported (2026-11-11, build `2026-11-11a`)
+- The owner: "Can we make a distinction between phones and like my iPad and old iPads? If so, let's make it to where if you log in on a phone, it tells you you have to play on an iPad, and we're going to quit developing for the phone."
+- Built: a phone sees PLAY ON AN iPAD and the game does not start (game.html's head `deviceIsPhone`, `#phoneGate`; js/init.js). An iPad (old ones too), an Android tablet and a computer play. `?anydevice` opens it on a phone for development; `?attract` is never stopped.
+- No more phone development: the phone layouts stay in the code, untouched; the phone items in `OPEN-QUESTIONS.md` are closed ("won't do"); AGENTS.md tells every agent.
+- Supersedes the plans for a phone's CARDS screen, pack buying, squad card and SWAP ("Later, as planned").

@@ -15,6 +15,7 @@ const SUITES = [
     ['declared globals',         'globals.js'],
     ['boot check',               'boot.js'],
     ['the start: the start screen, the staged start, the sheets it waits for, failures and retries, the clock once, the readout', 'startup.js'],
+    ['phones are told to play on an iPad (the rule, and the real page as an iPhone, an iPad today and an old one, ?anydevice, ?attract)', 'phonegate.js'],
     ['performance + culling',    'perf.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],

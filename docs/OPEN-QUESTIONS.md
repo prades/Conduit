@@ -4,6 +4,8 @@
 
 The first version of this file listed fifteen choices I had made that the briefs did not ask for. **Every one now has an answer** (section 1), and so does each of the eight that the market left (section 1c): all are built and tested. Nothing market-related is open any more (section 2).
 
+**Closed 2026-11-11, phones are not supported** (the owner: "we're going to quit developing for the phone"; build `2026-11-11a`, a phone is told to play on an iPad): every phone item below is closed as won't-do, and stays only as history. That is N7 (a phone cannot buy a pack or use the market), Side Quest's cards on a phone, SWAP on a phone, a phone's CARDS screen and slots, and a phone's PACK button sizes.
+
 ## 1. Answered in round 2 (built and tested)
 
 | # | the question | the owner's answer | what the game does now |

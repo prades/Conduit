@@ -141,6 +141,7 @@ const _SU_STEPS = [_suInit, _suWorld, _suValidate, _suFirstPicture, _suAssets, _
 
 // ── the sequence ──
 function startupBegin() {
+    if (typeof window !== "undefined" && window.__phoneGate) return STARTUP;   // a phone starts nothing: it is told to play on an iPad (game.html #phoneGate; build 2026-11-11a, the owner: "we're going to quit developing for the phone")
     if (STARTUP.state === "running" || STARTUP.state === "done") return STARTUP;   // once: asked again while it runs, or after it has run, it does nothing
     STARTUP.state = "running"; STARTUP.tries++; STARTUP.error = null;
     _suWire(); _suRun(Math.max(0, STARTUP.stage));   // (a try after a failure goes on from the stage that failed)
