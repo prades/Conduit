@@ -8,6 +8,8 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Open 2026-11-11, old iPads** (asked in build `2026-11-11b`'s handoff, not answered yet): should an iPad too old to show the game properly get an "update your iPad" screen, like the phone one? The game runs from iPadOS 13.4, shows its pictures from 14 (WebP, since build `2026-11-11c`) and every colour from 16.2. The iPad Air 2 and iPad mini 4 stop at iPadOS 15.
 
+**Open 2026-11-11, the domains** (the map's expansion; the questions are in `DOMAINS.md` §11): the electrical domain's shape (draft A or B), the names, what the Nest's development holds and where it leads down, the volcanic layer's and the crystalline area's look.
+
 ## 1. Answered in round 2 (built and tested)
 
 | # | the question | the owner's answer | what the game does now |
