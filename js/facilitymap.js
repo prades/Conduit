@@ -27,6 +27,7 @@ const FACILITY_MAP = {
     // `height` is in tiles above the ground floor (the hallway). The arena is sunk a little below it; the observation deck and the catwalks stand well above the arena. Heights are for DRAWING
     // (the floor, walls and units rise and fall with them); movement is still flat, and the only way between two heights is a ramp below.
     levels: [
+        { id: -2, label: "deep", height: -3.0 },     // (the electrical domain's circuitry, below its deep server room: docs/DOMAINS.md)
         { id: -1, label: "sunken", height: -1.8 },
         { id: 0, label: "ground", height: 0 },
         { id: 1, label: "raised", height: 1.6 },
@@ -43,7 +44,8 @@ const FACILITY_MAP = {
         { id: "front_lobby", label: "Server Room", level: 0, status: "approximate",
           dressing: "THE SERVER ROOM (the owner, 2026-11-07: \"make that a server room, a dark server room\"; it was the Front Lobby's computer lab): rows of server racks, cables over the floor, the monitoring console, and the facility's main power junction. It stays dim with the power on: the racks' lights blink in the dark.",
           note: "The sketch's faint 'FRONT OFFICE', now the Front Lobby. An arrow points in at the top-left: an entrance from outside is indicated but not drawn as an opening.",
-          polygon: [[380, 222], [824, 222], [824, 410], [380, 410]] },
+          // the alcove in the north wall beside the junction (x 680 to 720, one tile deep) is THE LITTLE DOOR down to the electrical domain (docs/DOMAINS.md; the owner, 2026-11-11: "a little door in the server room")
+          polygon: [[380, 222], [680, 222], [680, 202], [720, 202], [720, 222], [824, 222], [824, 410], [380, 410]] },
         { id: "security_room", label: "Security Room", level: 0, status: "approximate", wall_material: "solid",
           note: "The sketch's unlabelled room beside the show room, once taken for a bathroom: the Security Room. Monitors line its walls (the camera feeds), with a console desk, a chair, filing cabinets and a locker. It has a door to the Front Lobby and a door to the hallway.",
           polygon: [[824, 270], [930, 270], [930, 410], [824, 410]] },
@@ -124,6 +126,17 @@ const FACILITY_MAP = {
           // two tiles to one (a piece at 45 degrees running north-west to south-east would be seen side-on and show no rock); the north-west one at 45 degrees the other way, which the camera sees face on.
           polygon: [[480, 1180], [570, 1180], [570, 1160], [610, 1160], [610, 1180], [720, 1180], [760, 1200], [760, 1360], [740, 1400], [700, 1420], [500, 1420], [460, 1400], [440, 1360], [440, 1220]],
           edge_kinds: ["rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock"] },
+        // THE ELECTRICAL DOMAIN (docs/DOMAINS.md; the owner, 2026-11-11): through the little door beside the Server Room's junction, which opens once the junction is repaired. Two rooms of one interior, drawn
+        //   under the Server Room: the DEEP SERVER ROOM (racks standing near the door, toppled and strewn further in: step 2) and, down wide steps at its south side, THE CIRCUITRY, a big open hall (its
+        //   circuitry: step 3). Look A, the cold blue server graveyard (chosen 2026-11-11). Empty at first: no creatures (decided). Sizes and names provisional.
+        { id: "elec_servers", label: "Deep Server Room", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "The electrical domain's first room: 24 tiles across and 18 deep, the way back up to the Server Room in an alcove in its north wall (under the little door), wide steps down to the circuitry in the middle of its south side, whose edge is a ledge with a rail (deck_rail).",
+          polygon: [[360, 240], [680, 240], [680, 220], [720, 220], [720, 240], [840, 240], [840, 600], [360, 600]],
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "deck_rail", "wall"] },
+        { id: "elec_circuitry", label: "The Circuitry", level: -2, status: "placed", wall_material: "solid", interior: true,
+          note: "The electrical domain's big open hall, 32 tiles across and 23 deep (about the arena's size), below the deep server room: its north edge under the room above is open (the ledge's rail is that room's), the rest wall.",
+          polygon: [[280, 600], [360, 600], [840, 600], [920, 600], [920, 1060], [280, 1060]],
+          edge_kinds: ["wall", "open", "wall", "wall", "wall", "wall"] },
     ],
 
     // INTERIORS: rooms that are not beside any other room but under or inside one. The data draws them where they belong (the armory under the Observation Deck); the building pass (js/facilitygrow.js) puts each in a part of
@@ -135,6 +148,8 @@ const FACILITY_MAP = {
                                                                                 //  out here, beside the crystal chamber's corner of the plan, nothing is within sight of it and the MAP stays as wide as it was)
         { id: "sewers", under: "arena", offset: [-1280, 1280] },               // (64 tiles west and 64 south: the west is the Cold Storage's and the south the nest area's; down here nothing is in sight of it)
         { id: "nest_area", under: "arena", offset: [0, 1920] },                 // THE ANT NEST (96 tiles south: the nest area's part of the map, far enough below the Sewers that neither is in sight of the other)
+        { id: "elec_servers", under: "front_lobby", offset: [2560, 0] },        // THE ELECTRICAL DOMAIN (128 tiles east, beyond the Armory's part of the map: nothing is in sight of it); its two rooms share one
+        { id: "elec_circuitry", under: "front_lobby", offset: [2560, 0] },      //   offset, so the steps between them are one interior (js/facilitygrow.js carries their door and steps; js/facility.js lets them join)
     ],
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
@@ -172,6 +187,11 @@ const FACILITY_MAP = {
           note: "The hole a fire technician drills through the arena's south rubble: a tunnel down to the Ant Nest. Shut until the rubble is drilled through." },
         { id: "portal_nest_arena", room: "nest_area", rect: [570, 1160, 610, 1180], arrive: [590, 1210], to: "portal_arena_nest", label: "ARENA", kind: "stairs_up",
           note: "The tunnel mouth back up to the arena, in an alcove in the Ant Nest's north wall." },
+        // THE ELECTRICAL DOMAIN (docs/DOMAINS.md): `needs: "junction"`: the doorway is shut until the main power junction beside it is repaired (js/facilityportals.js facilityPortalShut).
+        { id: "portal_lobby_elec", room: "front_lobby", rect: [680, 202, 720, 222], arrive: [700, 238], to: "portal_elec_lobby", label: "ELECTRICAL DOMAIN", kind: "stairs_down", needs: "junction",
+          note: "The little door down to the electrical domain, in an alcove in the Server Room's north wall beside the junction. Shut until the junction is repaired." },
+        { id: "portal_elec_lobby", room: "elec_servers", rect: [680, 220, 720, 240], arrive: [700, 262], to: "portal_lobby_elec", label: "SERVER ROOM", kind: "stairs_up",
+          note: "The stairs back up to the Server Room, in an alcove in the deep server room's north wall." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -367,6 +387,12 @@ const FACILITY_MAP = {
         // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
         // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
         { id: "nest_console", room: "nest_area", shape: "rect", rect: [630, 1192, 670, 1206], status: "placed", kind: "console", note: "THE ANT NEST'S TEST CONSOLE (docs/NEST.md, step C): by the tunnel mouth, east of it: the boss reset, the test squad and the damage meter (js/nestconsole.js)." },
+        { id: "elec_rack_1", room: "elec_servers", shape: "rect", rect: [400, 280, 420, 380], status: "placed", kind: "server_rack", note: "THE ELECTRICAL DOMAIN's racks still standing, in rows near the door (docs/DOMAINS.md); the ones further in lie toppled (step 2)." },
+        { id: "elec_rack_2", room: "elec_servers", shape: "rect", rect: [460, 280, 480, 380], status: "placed", kind: "server_rack" },
+        { id: "elec_rack_3", room: "elec_servers", shape: "rect", rect: [520, 280, 540, 380], status: "placed", kind: "server_rack" },
+        { id: "elec_rack_4", room: "elec_servers", shape: "rect", rect: [580, 280, 600, 380], status: "placed", kind: "server_rack" },
+        { id: "elec_rack_5", room: "elec_servers", shape: "rect", rect: [760, 280, 780, 380], status: "placed", kind: "server_rack" },
+        { id: "elec_rack_6", room: "elec_servers", shape: "rect", rect: [800, 280, 820, 380], status: "placed", kind: "server_rack" },
         { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1150, 830, 1190, 850], status: "placed", kind: "console", note: "The Nest's control console, on the dam at the head of the reservoir, below the big barred arch: the purification module mounts here (the PURIFIER MOUNT station)." },
         // SEWER MACHINERY the Flux Technician can move (Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.3; the owner, 2026-11-07: "Sewer machinery" first): pump housings on the dam, low cover that stops shots, turned and moved by FLUX MOVE
         { id: "sewer_pump_1", room: "sewers", shape: "rect", rect: [1220, 1000, 1260, 1020], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing at the south end of the dam, well clear of the Queen's post: move it to make cover." },
@@ -509,7 +535,7 @@ const FACILITY_MAP = {
     relays: [
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
         { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },   // (its sentry runs on the Crystal's power since 2026-11-01)
-        { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room"], feeds: [] },
+        { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
         { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
         { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "sewers"], feeds: [] },   // (and the Sewers under the arena)
@@ -533,6 +559,8 @@ const FACILITY_MAP = {
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
         { room: "nest_area", style: "sand", colour: "#3b2e22" },   // (packed dirt: the room's own style, FP_ROOM_STYLE.nest_area, colours it)
+        { room: "elec_servers", style: "plate" },     // THE ELECTRICAL DOMAIN: dark steel plate (its room style darkens it: js/facilitystyleall.js)
+        { room: "elec_circuitry", style: "plate" },
         { room: "sewers", style: "concrete", colour: "#272d2c" },   // (darker since build 2026-11-07a: Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.1; it was #3e4744)
     ],
 
@@ -597,11 +625,12 @@ const FACILITY_MAP = {
         { id: "cables_7", room: "front_lobby", kind: "cables", path: [[412, 352], [470, 352], [470, 342]], colour: "#6adfff" },
         { id: "cables_8", room: "front_lobby", kind: "cables", path: [[560, 352], [560, 380], [575, 380]], colour: "#43e0a8" },
         { id: "stain_2", room: "front_lobby", kind: "stain", at: [700, 300], radius: 18, colour: "#0a0e18" },
-        { id: "pipe_5", room: "front_lobby", kind: "pipe", a: [390, 230], b: [830, 230], colour: "#3a4a66", z: 66 },
+        { id: "pipe_5", room: "front_lobby", kind: "pipe", a: [390, 230], b: [674, 230], colour: "#3a4a66", z: 66 },   // (in two since the little door: it would cross the alcove)
+        { id: "pipe_5b", room: "front_lobby", kind: "pipe", a: [726, 230], b: [830, 230], colour: "#3a4a66", z: 66 },
         { id: "srv_screen_1", room: "front_lobby", kind: "screen", a: [430, 230], b: [470, 230], colour: "#31e8ff", z: 36 },
         { id: "srv_screen_2", room: "front_lobby", kind: "screen", a: [580, 230], b: [620, 230], colour: "#43e0a8", z: 36 },
         { id: "vent_4", room: "front_lobby", kind: "vent", a: [790, 230], b: [830, 230] },
-        { id: "relay_node_lobby", room: "front_lobby", kind: "relay_node", a: [690, 230], b: [710, 230] },
+        { id: "relay_node_lobby", room: "front_lobby", kind: "relay_node", a: [634, 230], b: [654, 230] },   // (moved west of the little door's alcove, between the third and fourth rows)
         { id: "cable_run_1", room: "front_lobby", kind: "cable_run", a: [390, 270], b: [390, 370] },
         { id: "pipe_6", room: "lab_hallway", kind: "pipe", a: [410, 410], b: [830, 410], colour: "#7d8aa6", z: 64 },
         { id: "exit_sign_1", room: "lab_hallway", kind: "exit_sign", a: [410, 410], b: [450, 410] },
@@ -945,6 +974,25 @@ const FACILITY_MAP = {
         { id: "antnest_light", room: "nest_area", kind: "light", at: [600, 1300], radius: 170, colour: "#d9a860", a: 0.16 },
         { id: "antnest_light_brood_n", room: "nest_area", kind: "light", at: [670, 1210], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
         { id: "antnest_light_brood_w", room: "nest_area", kind: "light", at: [470, 1300], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
+        // THE ELECTRICAL DOMAIN: the little door and its stairs back up (blue, as the deck's), the cold blue lights, cables off the racks, pipes and screens on the north wall
+        { id: "lobby_elec_door", room: "front_lobby", kind: "portal_door", a: [680, 202], b: [720, 202], colour: "#8fe3ff" },
+        { id: "elec_stairs_door", room: "elec_servers", kind: "portal_door", a: [680, 220], b: [720, 220], colour: "#8fe3ff", up: true },
+        { id: "elec_light_1", room: "elec_servers", kind: "light", at: [500, 330], radius: 70, colour: "#3fa9ff", a: 0.14 },
+        { id: "elec_light_2", room: "elec_servers", kind: "light", at: [700, 300], radius: 64, colour: "#31e8ff", a: 0.16 },
+        { id: "elec_light_3", room: "elec_servers", kind: "light", at: [790, 330], radius: 70, colour: "#3fa9ff", a: 0.12, flicker: true },
+        { id: "elec_light_4", room: "elec_servers", kind: "light", at: [600, 500], radius: 90, colour: "#3fa9ff", a: 0.10, flicker: true },
+        { id: "elec_light_5", room: "elec_circuitry", kind: "light", at: [460, 780], radius: 130, colour: "#2f9fe0", a: 0.12 },
+        { id: "elec_light_6", room: "elec_circuitry", kind: "light", at: [740, 820], radius: 130, colour: "#41c7ff", a: 0.10 },
+        { id: "elec_light_7", room: "elec_circuitry", kind: "light", at: [600, 960], radius: 150, colour: "#3fa9ff", a: 0.10 },
+        { id: "elec_cables_1", room: "elec_servers", kind: "cables", path: [[590, 380], [600, 420], [640, 450], [700, 470]], colour: "#3fa9ff" },
+        { id: "elec_cables_2", room: "elec_servers", kind: "cables", path: [[770, 380], [760, 430], [720, 500]], colour: "#6adfff" },
+        { id: "elec_cables_3", room: "elec_servers", kind: "cables", path: [[470, 380], [480, 440], [530, 470]], colour: "#31e8ff" },
+        { id: "elec_cables_4", room: "elec_circuitry", kind: "cables", path: [[520, 650], [500, 720], [420, 780], [340, 800]], colour: "#3fa9ff" },
+        { id: "elec_cables_5", room: "elec_circuitry", kind: "cables", path: [[680, 650], [720, 740], [820, 790], [880, 900]], colour: "#6adfff" },
+        { id: "elec_pipe_1", room: "elec_servers", kind: "pipe", a: [370, 248], b: [674, 248], colour: "#2c3a52", z: 66 },
+        { id: "elec_pipe_2", room: "elec_servers", kind: "pipe", a: [726, 248], b: [830, 248], colour: "#2c3a52", z: 66 },
+        { id: "elec_screen_1", room: "elec_servers", kind: "screen", a: [430, 248], b: [470, 248], colour: "#31e8ff", z: 36 },
+        { id: "elec_screen_2", room: "elec_servers", kind: "screen", a: [560, 248], b: [600, 248], colour: "#3fa9ff", z: 36 },
         { id: "antnest_light_eggs", room: "nest_area", kind: "light", at: [705, 1370], radius: 80, colour: "#ffe9a0", a: 0.1 },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
         { id: "gun_rack_3", room: "armory", kind: "gun_rack", a: [190, 970], b: [190, 1030] },
@@ -1009,6 +1057,8 @@ const FACILITY_MAP = {
           note: "The open foot of the curved staircase, onto the hallway. No door." },
         { id: "door_stair_teleport_2", a: [945, 660], b: [945, 700], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
           note: "A sliding access door between the stair room and Teleport Room 2." },
+        { id: "open_elec_steps", a: [480, 600], b: [720, 600], rooms: ["elec_servers", "elec_circuitry"], door: null, position_status: "approximate",
+          note: "THE ELECTRICAL DOMAIN: the wide steps down from the deep server room into the circuitry (twelve tiles across), an open mouth with no door." },
     ],
     connections: [
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
@@ -1030,6 +1080,8 @@ const FACILITY_MAP = {
         { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_storage"], portal: "portal_lab_cold" },
         { id: "conn_arena_sewers", rooms: ["arena", "sewers"], portal: "portal_arena_sewers" },
         { id: "conn_arena_nest", rooms: ["arena", "nest_area"], portal: "portal_arena_nest" },   // (the sketch's candidate c_arena_nest, made real: through the drilled rubble)
+        { id: "conn_lobby_elec", rooms: ["front_lobby", "elec_servers"], portal: "portal_lobby_elec" },
+        { id: "conn_elec_steps", rooms: ["elec_servers", "elec_circuitry"], opening: "open_elec_steps", ramp: "r_elec_steps" },
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
@@ -1043,6 +1095,9 @@ const FACILITY_MAP = {
           between_levels: [1, 0], descends_toward: "lab_hallway", position_status: "approximate",
           zone: { rect: [870, 600, 945, 760], axis: "x", c0: 940, c1: 880 },
           note: "A rounded (curved) staircase leading DOWN from the stair room to the hallway that passes the experiment lab." },
+        { id: "r_elec_steps", rooms: ["elec_servers", "elec_circuitry"], shape: "steps", between_levels: [-1, -2], descends_toward: "elec_circuitry", position_status: "placed",
+          zone: { rect: [480, 560, 720, 660], axis: "y", c0: 570, c1: 650, steps: 4 },
+          note: "THE ELECTRICAL DOMAIN: four wide steps down from the deep server room into the circuitry." },
     ],
 
     // What the sketch SUGGESTS and the user has not confirmed. None of these is a gap, a link or a ramp until it is moved above.

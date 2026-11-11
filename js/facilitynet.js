@@ -12,6 +12,7 @@ const FP_ROOM_TAG = {
     crystal_chamber: "Crystal Chamber", teleport_room_1: "Teleport Room 1", front_lobby: "Server Room", security_room: "Security Room", show_room: "Warehouse", lab_hallway: "Main Hallway",
     experiment_lab: "Experiment Lab", lab_passage: "Lab Passage", teleport_stair_room: "Stair Room", teleport_room_2: "Teleport Room 2", observation_deck: "Observation Deck", armory: "Armory",
     catwalks: "Catwalks", arena: "Arena", nest_area: "Ant Nest", cold_storage: "Cold Storage", sewers: "Sewers",
+    elec_servers: "Deep Server Room", elec_circuitry: "The Circuitry",   // (the electrical domain's two rooms: docs/DOMAINS.md; the names provisional)
 };
 const FP_NET_STATES = {
     offline: { label: "OFFLINE", col: "#6a7aa0" },

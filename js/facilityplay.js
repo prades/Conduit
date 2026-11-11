@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
 
 // ── the world ──
 function _fpFloorTile(x, y, room) { return { x, y, type: "floor", facility: true, room }; }
@@ -559,7 +559,7 @@ function facilitySpotIn(roomId, x, y, r0, r1) {
 function facilityApproachTile(b, range) {
     let best = null, bd = 1e9;
     for (let x = Math.floor(b[0]) - 1; x <= Math.ceil(b[2]) + 1; x++) for (let y = Math.floor(b[1]) - 1; y <= Math.ceil(b[3]) + 1; y++) {
-        if (!facilityWalkable(x, y, _fp.F)) continue; const dx = Math.max(b[0] - x, 0, x - b[2]), dy = Math.max(b[1] - y, 0, y - b[3]); if (Math.hypot(dx, dy) > range) continue;
+        if (!facilityWalkable(x, y, _fp.F) || (typeof facilityPortalAt === "function" && facilityPortalAt(x, y))) continue; const dx = Math.max(b[0] - x, 0, x - b[2]), dy = Math.max(b[1] - y, 0, y - b[3]); if (Math.hypot(dx, dy) > range) continue;   // (never a doorway's floor: walking there takes you through)
         const d = Math.hypot(x - player.visualX, y - player.visualY); if (d < bd) { bd = d; best = [x, y]; }
     }
     return best;

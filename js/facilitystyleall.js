@@ -24,6 +24,8 @@ const FP_ROOM_STYLE = {
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
     nest_area:           { acc: FP_ACC.mint, wain: "#33281d", fa: "#4a3a2b", fb: "#403224", dark: true },   // (the Ant Nest: packed dirt, build 2026-11-07ll)
     cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
+    elec_servers:        { acc: FP_ACC.blue,   wain: "#22303f", fa: "#2a323c", fb: "#242b34", dark: true, wallLit: "#2c3643", wallDark: "#1f2630", cap: "#1b222b" },   // THE ELECTRICAL DOMAIN: dark steel, blue light (look A, docs/DOMAINS.md)
+    elec_circuitry:      { acc: "#3fa9ff",     wain: "#1a2430", fa: "#1c222b", fb: "#181d25", dark: true, wallLit: "#263040", wallDark: "#1a212b", cap: "#161c24" },
     sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
 };
 function _fpRoomStyle(id) { return FP_ROOM_STYLE[id] || FP_ROOM_STYLE.crystal_chamber; }

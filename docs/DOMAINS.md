@@ -1,9 +1,9 @@
 # The domains (the map's expansion)
 
-- **Status:** Designed in part (decisions of 2026-11-11; the stairwell was replaced the same day by a little door); the look and the layout are proposed (drafts); nothing is built.
+- **Status:** The electrical domain's step 1 is **implemented and verified by tests** in build `2026-11-11d` (the door and the place, empty; not playtested). Its steps 2 and 3 (the fallen racks, the circuitry), the Nest's tunnels, the volcanic layer and the crystalline area are designed in part, not built.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11c`
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11d`
 - **Related docs:** `FACILITY.md` (the map, interiors and portals), `NEST.md`, `TECHNICIANS.md` (the ice bridge), `SEWER-QUEST.md` (the Sewers, built empty first), `TUTORIAL.md` (the junction)
 
 ## 1. Intent
@@ -28,10 +28,10 @@ Three new places:
 ## 3. Must-have requirements, by phase
 
 **Phase 1, the electrical domain** (layout pending: §5)
-- [ ] A little door in the Server Room's north wall, beside the junction (a doorway alcove, as the Armory's are).
-- [ ] Until the junction is repaired, walking into it does nothing. After it, it is a doorway: a fade, and you arrive in the electrical domain with your following squad, as through every doorway.
-- [ ] The electrical domain is an interior (as the Armory, the Cold Storage, the Sewers and the Ant Nest are), with a way back that brings you out in front of the door.
-- [ ] Inside: the deep server room (racks standing near the stairs, toppled and strewn further in), then a big open area with circuitry everywhere.
+- [x] A little door in the Server Room's north wall, beside the junction (a doorway alcove, as the Armory's are). *(step 1)*
+- [x] Until the junction is repaired, walking into it does nothing. After it, it is a doorway: a fade, and you arrive in the electrical domain with your following squad, as through every doorway. *(step 1)*
+- [x] The electrical domain is an interior (as the Armory, the Cold Storage, the Sewers and the Ant Nest are), with a way back that brings you out in front of the door. *(step 1)*
+- [ ] Inside: the deep server room (racks standing near the door: *step 1*; toppled and strewn further in: *step 2*), then a big open area with circuitry everywhere (*step 3*).
 
 **Phase 2, the Nest developed and the volcanic layer** (to design with the owner: §11)
 - [ ] The Ant Nest leads down to the volcanic layer, without stairs.
@@ -75,13 +75,20 @@ Three new places:
 
 ## 9. Implementation notes
 
-None yet.
+**Step 1, build `2026-11-11d`: the door and the place, empty.**
+- **The door**: `portal_lobby_elec`, an alcove in the Server Room's north wall at x 680 to 720 (sketch px), its east side against the junction; `needs: "junction"` keeps it shut until `junctionRepaired()` (js/facilityportals.js `facilityPortalShut`), and its tag then reads ▣ ELECTRICAL DOMAIN · NO POWER: REPAIR THE JUNCTION. The pipe on that wall is in two and the relay node moved west, clear of the alcove. Walking to use a station never ends on a doorway's floor (js/facilityplay.js `facilityApproachTile`): the junction's repair spot could have been the doorway, and the repair would have taken you down at once.
+- **The place**: two rooms of one interior (`interiors`, both `under: "front_lobby"`, the same `offset`, 128 tiles east, beyond the Armory's part of the map): `elec_servers`, the Deep Server Room (24 × 18 tiles, the arena's level, -1.8), and `elec_circuitry`, The Circuitry (32 × 23 tiles, a new level -2 at -3.0), joined by `open_elec_steps`, twelve tiles across, and the ramp `r_elec_steps` (4 steps over 4 tiles). The deep server room's south edge is a ledge with a rail (`deck_rail`), the circuitry's under it open.
+- **The look so far**: dark steel and blue light (`FP_ROOM_STYLE`), as dim as the Server Room (`FP_ROOM_DIM` 0.42), on the Server Room's relay; six racks standing near the door (the office family's `server_rack.1x5`, as upstairs), blue lights, cables, pipes and screens on the north wall. Nothing lives there.
+- **The map's rules** (js/facilitygrow.js, js/facility.js): a door or steps between two rooms of one interior are carried with it; such rooms may join each other, never a room outside, and one doorway into any of them does for all.
+- **Chosen by the agent, provisional**: the sizes, where the domain lies in the map, the circuitry's height, the four steps, the dimness, the relay, the racks' places, the names on the zone tag.
 
 ## 10. Verification record
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| Nothing built yet | Not run | |
+| `node tests/elecdomain.js` (8 checks: the door and its place, shut before the repair, the trip down and back with the squad, the junction's approach never in the doorway, the two rooms, the steps and the ledge, the look and power, the map's rules) | Pass | build `2026-11-11d` |
+| The facility suites (facility, facilityplay, fluxlab, nest, sewers) with the new rooms, doorways and counts | Pass | build `2026-11-11d` |
+| The real page at iPad size: the door in the Server Room, the deep server room, the steps, the circuitry; no page error | Looked at (screenshots) | not playtested |
 
 ## 11. Open questions
 

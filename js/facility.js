@@ -126,8 +126,8 @@ function _facilityBuild(ex) {
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, node: r.node, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));   // (node: its wall node, since build 2026-11-07qq)
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
-    const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), well: !!p.well, within: !!p.within, shut: !!p.shut, rubble: p.rubble || null, note: p.note }; });   // (well: a stairwell in the floor, not an alcove)
-    const interiors = (M.interiors || []).map(i => ({ id: i.id, under: i.under || null }));
+    const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), well: !!p.well, within: !!p.within, shut: !!p.shut, rubble: p.rubble || null, needs: p.needs || null, note: p.note }; });   // (well: a stairwell in the floor, not an alcove; needs: what must be done before it opens, "junction": the electrical domain's)
+    const interiors = (M.interiors || []).map(i => ({ id: i.id, under: i.under || null, offset: (i.offset || [0, 0]).slice() }));
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, portal: c.portal || null, confirmed: true }));
     const cands = ((M.candidates && M.candidates.connections) || []).map(c => ({ id: c.id, rooms: c.rooms, at: _facP(c.at), evidence: c.evidence, ramp: c.ramp_candidate || null, confirmed: false }));
@@ -507,8 +507,10 @@ function facilityValidate(F) {
     }
     for (const i of F.interiors) {
         const room = F.byId.get(i.id); if (!room) { errors.push("interior " + i.id + " is not a room"); continue; }
-        if (F.openings.some(o => (o.rooms || []).includes(i.id))) errors.push("interior " + i.id + " has a door onto another room: it is reached through its portal only");
-        if (!F.portals.some(p => p.room === i.id)) errors.push("interior " + i.id + " has no portal");
+        // (an interior of several rooms, the electrical domain's: they share one offset; a door or steps may join them to each other, never to a room outside, and a doorway into any of them does for all)
+        const mine = F.interiors.filter(j => j.offset[0] === i.offset[0] && j.offset[1] === i.offset[1]).map(j => j.id);
+        if (F.openings.some(o => (o.rooms || []).includes(i.id) && (o.rooms || []).some(r => !mine.includes(r)))) errors.push("interior " + i.id + " has a door onto another room: it is reached through its portal only");
+        if (!F.portals.some(p => mine.includes(p.room))) errors.push("interior " + i.id + " has no portal");
         if (i.under && !F.byId.has(i.under)) errors.push("interior " + i.id + " is under a room that does not exist");
     }
     for (const r of F.ramps) if (!r.between_levels || r.between_levels[0] === r.between_levels[1]) errors.push("ramp " + r.id + " does not join two different levels");

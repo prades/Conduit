@@ -125,6 +125,11 @@
         if (D.via) { const room = M.rooms.find(r => r.id === D.via); if (!tunnel(room, D.a, D.b, D.s)) M._growErrors = (M._growErrors || []).concat("no edge of " + D.via + " for " + o.id); }
     }
 
+    // a door or a flight of steps BETWEEN two rooms of one interior (the same offset: the electrical domain's, docs/DOMAINS.md) is carried with them, as their outlines are
+    const oneInterior = ids => !!(ids && ids.length > 1 && ids.every(id => INTERIOR[id] && INTERIOR[id][0] === INTERIOR[ids[0]][0] && INTERIOR[id][1] === INTERIOR[ids[0]][1]));
+    for (const o of M.openings) if (!DOORS[o.id] && oneInterior(o.rooms)) { const t = INTERIOR[o.rooms[0]]; o.a = mv(o.a, t); o.b = mv(o.b, t); }
+    for (const r of M.ramps) if (r.zone && oneInterior(r.rooms)) { const t = INTERIOR[r.rooms[0]], z = r.zone, k = z.axis === "x" ? 0 : 1; r.zone = Object.assign({}, z, { rect: [z.rect[0] + t[0] * G, z.rect[1] + t[1] * G, z.rect[2] + t[0] * G, z.rect[3] + t[1] * G], c0: z.c0 + t[k] * G, c1: z.c1 + t[k] * G }); }
+
     // RAMPS: the two flights of steps cross the new tunnels; the curved stair moves with the stair room
     for (const r of M.ramps) {
         if (r.id === "r_arena_steps") r.zone = { rect: [360, 715, 450, 855], axis: "y", c0: 725, c1: 825, steps: 5 };

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11d` · branch `claude/start-game-project-HSh7Z` · the electrical domain, step 1: the little door and the place
+- **A little door in the Server Room** (the owner: "a little door in the server room that goes to the electric domain"; its place, "1", beside the junction). It opens once the junction is repaired. Until then it does nothing, and its tag says NO POWER: REPAIR THE JUNCTION. Through it, you and the squad following you come out in the **Deep Server Room**, and its stairs bring you back out at the door.
+- **The place** (look A, the cold blue server graveyard, chosen from three drafts): the Deep Server Room (24 × 18 tiles), racks standing near the door, and down four wide steps **The Circuitry**, a big open hall (32 × 23 tiles) below a railed ledge. Dark steel, blue light, as dim as the Server Room, on its relay. Empty, as decided: nothing lives there yet. The toppled racks (step 2) and the circuitry itself (step 3) come next. Sizes, names and places are mine, provisional.
+- **Under the hood**: two rooms that share an offset are one interior, joined by their steps; a doorway can wait on the junction (`needs`); walking to the junction never ends in the doorway beside it.
+- Tests: `tests/elecdomain.js` (new, 8 checks); facility, facilityplay and fluxlab updated for 19 rooms, 16 doorways and the fourth ramp. Docs: `DOMAINS.md`, `FACILITY.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11c` · branch `claude/start-game-project-HSh7Z` · pictures: smaller, and downloaded again only when they change
 - **A picture's address changes only when the picture does** (the owner: "Yes, do the images next"). Its `?v=` is a fingerprint of the picture's own file, not the build. Until now each new build made a player download every picture again; now only the pictures that changed.
 - **Lossless WebP:** 140 of the game's 141 pictures load as a lossless WebP copy: 57.0 MB of PNGs, 32.6 MB as loaded. Each copy is the PNG's exact pixels (every channel of every pixel, decoded by ImageMagick). BUNKER BLOOM's old sheet stays a PNG, as its WebP would be bigger. Measured at the start on an iPad's window: 19 pictures, 3.6 MB as PNG, 1.9 MB now.

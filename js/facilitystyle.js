@@ -20,7 +20,7 @@ const FP_PAL = {
     teal: "#4f9aa0", tealLit: "#6cb3bb", tealDark: "#2f6a73", case: "#a9c4cc", caseLit: "#dbeaee",
     cyan: "#31e8ff", blue: "#3a7bff", violet: "#9a5cff", amber: "#f2b13a", white: "#eaffff", leaf: "#4fa58a",
 };
-const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lab_passage", "observation_deck", "catwalks", "arena", "nest_area", "cold_storage", "sewers"]);   // every room
+const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lab_passage", "observation_deck", "catwalks", "arena", "nest_area", "cold_storage", "sewers", "elec_servers", "elec_circuitry"]);   // every room
 function facilityStyleRoom(id) { return !!id && FP_STYLE_ROOMS.has(id); }
 
 // floor decals keep their kind and place; their colours are brought into the palette
@@ -484,7 +484,7 @@ function _fpStyleTankFront(it) {
 // or it is a stairway) the room beyond it is lit on the GROUND only, in a pool near the door; it lights up completely only when the player steps on one of its tiles. Levels ease.
 var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
 // a room that stays DIM with you in it and the power on (the owner, 2026-11-07: "a dark server room"): its light level is held at this (the agent's number, provisional); its racks' lights blink over it (js/propsprites.js)
-const FP_ROOM_DIM = { front_lobby: 0.42 };
+const FP_ROOM_DIM = { front_lobby: 0.42, elec_servers: 0.42, elec_circuitry: 0.42 };   // (the electrical domain under the Server Room as dim as it: look A, docs/DOMAINS.md)
 // THE POWERED ROOM'S LEVEL (the owner, 2026-11-09: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for"; then, of four levels in pictures,
 // "C · two fifths darker (0.5)"): the room you stand in, with power, is lit to this (1 was its palette as drawn): floor, walls, doors and props together; units, effects and the screen's controls are never
 // dimmed. A dim room (FP_ROOM_DIM) is that much darker again. The preview ?lit=<0.4 to 1> tries another level (read once: location.search is slow in Safari).

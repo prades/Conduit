@@ -99,18 +99,18 @@ async function boot(search, store) {
     return { run, J, store: sb.localStorage };
 }
 let ARENA9 = null;   // what moves in the game without the flag: the map's own movable objects (the arena's nine, the Sewers' machinery, the hazard containers), read from the map by the first check below (FLUX MOVE's own list of them is tests/fluxmove.js's)
-const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_lab,front_lobby,lab_hallway,lab_passage,nest_area,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';
+const ROOMS = 'arena,armory,catwalks,cold_storage,crystal_chamber,elec_circuitry,elec_servers,experiment_lab,front_lobby,lab_hallway,lab_passage,nest_area,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';   // (19 since build 2026-11-11d: the electrical domain's two rooms)
 
 (async () => {
     group('WITHOUT THE FLAG: THE GAME AS IT WAS');
     {
         const { J } = await boot('');
-        check('without ?fluxlab nothing changes: the map\'s 17 rooms, 14 doorways and 165 props, no test room and no stairwell to it; the arena\'s nine objects, the Sewers\' machinery and the three hazard containers are the only ones that move; the facility\'s tables are as they were; a new game starts as it always did (the three followers, the Crystal Chamber, the tutorial at its first step, the save on)', () => {
+        check('without ?fluxlab nothing changes: the map\'s 19 rooms, 16 doorways and 171 props, no test room and no stairwell to it; the arena\'s nine objects, the Sewers\' machinery and the three hazard containers are the only ones that move; the facility\'s tables are as they were; a new game starts as it always did (the three followers, the Crystal Chamber, the tutorial at its first step, the save on)', () => {
             const r = J(`(function(){ const M = FACILITY_MAP; return { rooms: M.rooms.map(r => r.id).sort().join(), portals: M.portals.length, props: M.props.length, flag: !!M._fluxLab, lab: fluxLabOn(), stair: M.decor.some(d => d.id === 'crystal_lab_stairwell'),
                 moves: fluxObjects().map(s => s.id).sort().join(), mapMoves: M.props.filter(s => s.flux && s.shape === 'rect').map(s => s.id).sort().join(), styled: FP_STYLE_ROOMS.size, tag: 'flux_lab' in FP_ROOM_TAG, look: 'flux_lab' in FP_ROOM_STYLE, squad: followers.map(f => f.element).sort().join(),
                 room: __room(player.x, player.y), step: _fp.tut.script.step, save: !!_fp.saveReady, mode: !!_fp.fluxLab, spy: (render(), facilitySaveWrite(), __opened.concat(__writes).join()) }; })()`);
-            same(r.rooms, ROOMS17, 'the rooms'); same(r.portals, 14, 'the doorways');   /* 165 props since 2026-11-07nn: the Ant Nest's console */   // (12 since build 2026-11-07bb: the drain pipe's two ends; 14 since 2026-11-07ll: the Ant Nest's two) same(r.props, 165, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
-            ARENA9 = r.mapMoves; same(r.moves, r.mapMoves, 'what moves: the map\'s own movable objects'); ok(r.moves && !/lab_/.test(r.moves), 'nothing moves, or something of the test room does'); same(r.styled, 17, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
+            same(r.rooms, ROOMS, 'the rooms'); same(r.portals, 16, 'the doorways');   /* 165 props since 2026-11-07nn: the Ant Nest's console */   // (12 since build 2026-11-07bb: the drain pipe's two ends; 14 since 2026-11-07ll: the Ant Nest's two) same(r.props, 165, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
+            ARENA9 = r.mapMoves; same(r.moves, r.mapMoves, 'what moves: the map\'s own movable objects'); ok(r.moves && !/lab_/.test(r.moves), 'nothing moves, or something of the test room does'); same(r.styled, 19, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
             same(r.squad, 'core,electric,fire', 'the squad'); same(r.room, 'crystal_chamber', 'the start'); same(r.step, 0, 'the tutorial'); same(r.save, true, 'the save');
             ok(/^run start(,set conduit_fp_save)+$/.test(r.spy), 'the spies on the start\'s cards screen and on storage (used below) do not see a new game\'s: ' + r.spy);
         });
@@ -132,7 +132,7 @@ const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_l
             return { errors: v.errors, rooms: M.rooms.map(r => r.id).filter(id => id !== 'flux_lab').sort().join(), interior: JSON.stringify(M.interiors.find(i => i.id === 'flux_lab')), level: R.level, isInt: R.interior, gap, P,
                 conn: F.connections.filter(c => c.rooms.includes('flux_lab')).map(c => c.rooms.join('/') + ':' + c.portal), reach: facilityReachable('crystal_chamber', 'flux_lab', F, false), openings: F.openings.filter(o => (o.rooms || []).includes('flux_lab')).length,
                 well: !!well && JSON.stringify(well.rect) === JSON.stringify(up.rect) && well.kind === 'stairwell', door: !!door && door.kind === 'portal_door' && door.up === true }; })()`);
-        same(r.errors.length, 0, 'the map\'s errors: ' + r.errors.join(' | ')); same(r.rooms, ROOMS17, 'the other rooms'); same(r.isInt && r.level, -1, 'an interior at the arena\'s level');
+        same(r.errors.length, 0, 'the map\'s errors: ' + r.errors.join(' | ')); same(r.rooms, ROOMS, 'the other rooms'); same(r.isInt && r.level, -1, 'an interior at the arena\'s level');
         ok(/"under":"crystal_chamber"/.test(r.interior), 'not under the Crystal Chamber: ' + r.interior); ok(r.gap > 900, 'only ' + Math.round(r.gap) + ' px of screen from another room');
         same(r.P.join(), 'portal_crystal_lab:crystal_chamber:portal_lab_crystal:stairs_down:true,portal_lab_crystal:flux_lab:portal_crystal_lab:stairs_up:false', 'the doorways'); same(r.conn.join(), 'crystal_chamber/flux_lab:portal_crystal_lab', 'the connection');
         same(r.reach, true, 'it cannot be reached from the Crystal Chamber'); same(r.openings, 0, 'it has a door onto another room'); same(r.well, true, 'the stairwell is not drawn at its doorway'); same(r.door, true, 'the stairs up are not drawn at its doorway');
