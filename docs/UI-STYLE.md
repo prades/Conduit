@@ -57,6 +57,14 @@ Ten layouts of the HUD were drawn on one set of parts (docs/images/hud-corners.j
 - With no creature near, the orders are back: ALL, RETREAT, HOLD, COME.
 - The dial and GUARD and STUN keep the bottom right. A member's card that is open stands above the enemy card.
 - The other layout (a narrow window) keeps the card as it was: a button above the orders.
+- **Its look: the trading card** (build `2026-11-11n`; the owner circled design 5 of ten drafts).
+  - The card is a slab tilted in 3-D, like the equip cards, with a back plate along its right edge and foot. It wears the creature's element texture under a dark veil (`cardArtFaceClass`); a creature with no element has plain navy.
+  - The picture fills its left on a wash of the creature's colour, with the level and element on a plate at its foot. The element wraps under the level when it is long.
+  - At its right: the name (two lines at most, after the race's emblem), HP with its numbers, the bar, the bite, and the race's chips. The chips carry no WEAK or RESISTS word: green is weak, grey resists.
+  - ALL, RUN and ATTACK are flat under it, so a tap is never lost to the tilt.
+- **The orders' emblems** stand before the three words (the owner's picks of the drafts: "set C for the all and the run, but set A for the attack"): ALL three slanted cards stacked, RUN two chevrons pointing back, ATTACK three claw slashes.
+  - They are drawn like the species emblems: one colour, 32 units square, in the word's colour (`js/cardart.js` `CARD_ART_ORDERS`, class `cao-<key>`).
+  - RUNNING and ATTACKING · n/m stand smaller under their emblem so every word fits its button.
 
 ## FLUX MOVE's aim (build `2026-11-06f`; docs/FLUX-MOVEMENT.md)
 

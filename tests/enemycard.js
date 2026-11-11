@@ -33,6 +33,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
   var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
   var goText = function(){ var e = $('#mixTool .mt-fa.atk') || $('#mixTool .mt-foe-go'); return e ? e.textContent : null; };   // (at the left, build 2026-11-11m: its ATTACK button; else the card's strip)
+  var fitIn = function(){ return $$('#mixTool .mt-fa').map(function(b){ var t = b.querySelector('b'), rb = b.getBoundingClientRect(), rt = t ? t.getBoundingClientRect() : null; return !!rt && rt.left >= rb.left - 1 && rt.right <= rb.right + 1 && rt.top >= rb.top - 1 && rt.bottom <= rb.bottom + 1; }).join(); };   // (each word, with its emblem, inside its button)
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; actors = actors.filter(function(a){ return !(a instanceof Predator); }); mixToolRender(true); await wait(30);
@@ -58,6 +59,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       emb: $('#mixTool .mt-foe-name').className, row: $('#mixTool .mt-foe-dmg') ? $('#mixTool .mt-foe-dmg').textContent : null, rowIn: !!$('#mixTool .mt-foe-dmg') && $('#mixTool .mt-foe-dmg').getBoundingClientRect().right <= r.right + 1 } : null;   // (the race's emblem and row: build 2026-11-06d, tests/speciesart.js)
     var mainEl = $('#mixTool .mt-main'), bar = document.getElementById('squadBar'), br2 = bar ? bar.getBoundingClientRect() : null;
     out.place = r ? { aboveControls: pn ? r.bottom <= pn.top + 1 : false, left: wide && r.left <= 24 && pn && Math.abs(r.bottom - pn.bottom) <= 2 && !!mainEl && getComputedStyle(mainEl).visibility === 'hidden' && (!br2 || !br2.height || r.top >= br2.bottom - 1), all: !!$('#mixTool .mt-fa.all.on'), acts: $$('#mixTool .mt-foe-acts button').map(function(b){ return b.textContent; }).join('|'), onScreen: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, dock: !!(dr && dr.width && r.right > dr.left && r.left < dr.right && r.bottom > dr.top && r.top < dr.bottom) } : null;   // (a tablet or a desktop: the card is in the bottom right corner, over the dock's line; a phone: above the controls)
+    var slab = $('#mixTool .mt-foe-slab');   // (at the left, the trading card: build 2026-11-11n)
+    if (wide) out.look = { slab: slab ? slab.className : null, tilt: !!slab && getComputedStyle(slab).transform.indexOf('matrix3d') === 0, tex: !!slab && getComputedStyle(slab).backgroundImage.indexOf('url(') >= 0, fit: fitIn(), bite: $('#mixTool .mt-foe-bite') ? $('#mixTool .mt-foe-bite').textContent : null,
+      emb: $$('#mixTool .mt-fa b').map(function(b){ var s = getComputedStyle(b, '::before'); return b.className + ':' + ((s.webkitMaskImage || s.maskImage || '').indexOf('url(') >= 0 ? 'mask' : 'none'); }).join() };
     if (!wide) { click($('#mixTool [data-act=close]')); await wait(30); var c2 = $('#mixTool .mt-foe'), r2 = c2 ? c2.getBoundingClientRect() : null, pod2 = $('#mixTool .mt-pod').getBoundingClientRect(); out.closedCard = { panel: !!$('#mixTool .mt-panel'), card: !!c2, abovePod: !!r2 && r2.bottom <= pod2.top + 1, onScreen: !!r2 && r2.left >= 0 && r2.top >= 0 && r2.right <= innerWidth }; click($('#mixTool .mt-pod')); await wait(30); }
     out.locked = targetCurrent() === foe;
     // re-rendering (a tap on WHO) does not make it pop up again; its health bar follows the creature without a rebuild
@@ -74,9 +78,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     }
     // a tap on the card sends them
     click($('#mixTool .mt-fa.atk') || $('#mixTool .mt-foe')); await wait(30);   // (at the left its ATTACK button; else the card)
-    out.sent = { ordered: followers.filter(function(f){ return f.attackOrder && f.attackOrder.target === foe; }).length, go: goText(), going: $('#mixTool .mt-foe').classList.contains('going'), texts: floatingTexts.slice(-3).map(function(t){ return t.text; }) };
+    out.sent = { ordered: followers.filter(function(f){ return f.attackOrder && f.attackOrder.target === foe; }).length, go: goText(), going: $('#mixTool .mt-foe').classList.contains('going'), texts: floatingTexts.slice(-3).map(function(t){ return t.text; }), fit: fitIn() };
     // RETREAT takes it back
-    click($('#mixTool [data-act=retreat]')); await wait(30); out.retreat = { ordered: followers.filter(function(f){ return f.attackOrder; }).length, go: goText(), run: $('#mixTool .mt-fa.run') ? $('#mixTool .mt-fa.run').textContent : null };   // (at the left: the card's RUN, first in the tool)
+    click($('#mixTool [data-act=retreat]')); await wait(30); out.retreat = { ordered: followers.filter(function(f){ return f.attackOrder; }).length, go: goText(), run: $('#mixTool .mt-fa.run') ? $('#mixTool .mt-fa.run').textContent : null, fit: fitIn() };   // (at the left: the card's RUN, first in the tool)
     // the creature dies: the card goes
     foe.dead = true; targetTick(); frame += TARGET.every; targetTick(); mixToolRender(false); await wait(30); out.gone = { card: !!$('#mixTool .mt-foe'), slotEmpty: $('#mixTool .mt-foe-slot').children.length === 0 };
   } catch (e) { out.err = String(e && e.stack || e); }
@@ -250,6 +254,11 @@ function measure(w, h) {
             if (wide) { same(r.place.left, true, 'at the bottom left, in the orders\' place, over them (they hidden) and under the stack'); same(r.place.acts, 'ALL|RUN|ATTACK · 3', 'its buttons'); same(r.place.all, true, 'ALL is not lit at the start'); } else same(r.place.aboveControls, true, 'above the controls'); same(r.place.onScreen, true, 'off the screen'); same(r.place.dock, false, 'on the dock');
             if (!wide) { same(r.closedCard.panel, false, 'the tool did not close'); same(r.closedCard.card, true, 'the card goes when the tool is shut'); same(r.closedCard.abovePod, true, 'the card is not above the pod'); same(r.closedCard.onScreen, true, 'the card is off the screen'); }
             ok(r.card.w <= (wide ? 262 : 230) && r.card.w >= 150 && r.card.h >= (wide ? 170 : 60) && r.card.h <= (wide ? 260 : 150), 'size ' + r.card.w + 'x' + r.card.h);   // (at the left at least as tall as the orders it covers, --cn-tool)   // (110 at most before build 2026-11-06d: the race's row under the numbers takes two lines for a beetle's five entries, and the card grows upward)
+        });
+        if (wide) check(w + ': its look, the trading card (build 2026-11-11n; the owner circled design 5): a tilted slab wearing its element\'s texture, the bite on its own line, ALL, RUN and ATTACK each with its emblem before its word (the three cards, the chevrons back, the claws), and every word inside its button (ATTACK · 3, then ATTACKING · 3/3, then RUNNING)', () => {
+            ok(/^mt-foe-slab cat-c-fire$/.test(r.look.slab || ''), 'the slab and its texture\'s class: ' + r.look.slab); same(r.look.tilt, true, 'tilted in 3-D'); same(r.look.tex, true, 'the texture under the veil');
+            ok(/^[A-Z]+ [\d.]+$/.test(r.look.bite || ''), 'the bite\'s line: ' + r.look.bite); same(r.look.emb, 'cao-all:mask,cao-run:mask,cao-attack:mask', 'the emblems');
+            same(r.look.fit, 'true,true,true', 'ATTACK · 3'); same(r.sent.fit, 'true,true,true', 'ATTACKING · 3/3'); same(r.retreat.fit, 'true,true,true', 'RUNNING');
         });
         check(w + ': the card carries its race\'s emblem before its name and, under its numbers, its race\'s row (a beetle: WEAK CRUSH QUAKE PIERCE, RESISTS SLASH SHOT, as docs/COMBAT.md §7.3), inside the card (the following update\'s Part 2: tests/speciesart.js has the rest)', () => {
             same(r.card.emb, 'mt-foe-name cae-beetle', 'the name\'s emblem'); same(r.card.row, 'WEAKCRUSHQUAKEPIERCERESISTSSLASHSHOT', 'the row'); same(r.card.rowIn, true, 'the row runs out of the card');

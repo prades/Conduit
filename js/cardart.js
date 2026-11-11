@@ -551,6 +551,20 @@ const _caEmbMemo = {};
 function cardArtEmblemPath(key) { const E = CARD_ART_EMBLEMS[key]; if (!E) return ""; if (_caEmbMemo[key] === undefined) _caEmbMemo[key] = E.d(); return _caEmbMemo[key]; }
 // an emblem as a 32 x 32 picture, in `col` or its own colour
 function cardArtEmblemSvg(key, col) { const d = cardArtEmblemPath(key); return d ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><path d="' + d + '" fill="' + (col || CARD_ART_EMBLEMS[key].col) + '"/></svg>' : ""; }
+// THE ORDERS' EMBLEMS (build 2026-11-11n; the owner's picks from the drafts, 2026-11-11: "set C for the all and the run, but set A for the attack"): the enemy card's ALL, RUN and ATTACK
+// (js/mixtool.js), drawn as the emblems above (one colour, 32 units square). Kept apart from CARD_ART_EMBLEMS, which are the species', the elements' and the races'.
+const _caChev = (ax, ay, ex, dy, w) => { const L = Math.hypot(ex - ax, dy), nx = dy / L * w / 2, ny = (ex - ax) / L * w / 2, m = w / 2 * L / dy;   // a chevron pointing left: its point at (ax, ay), its arms' ends at (ex, ay -+ dy), w thick, its point mitred
+    return _caPoly([[ax - m, ay], [ex - nx, ay - dy - ny], [ex + nx, ay - dy + ny], [ax + m, ay], [ex + nx, ay + dy - ny], [ex - nx, ay + dy + ny]], true); };
+const _caSlash = (a, b, w, bow) => { const n = 18, L = [], R = [], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;   // a claw's slash: bowed by `bow`, w wide, pointed at both ends
+    for (let i = 0; i <= n; i++) { const t = i / n, bw = Math.sin(Math.PI * t) * bow, cx = a[0] + dx * t + nx * bw, cy = a[1] + dy * t + ny * bw, h = w / 2 * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.15)), 0.75); L.push([cx + nx * h, cy + ny * h]); R.push([cx - nx * h, cy - ny * h]); }
+    return _caPoly(L.concat(R.reverse()), true); };
+const CARD_ART_ORDERS = {
+    all: { col: "#19e6c1", d() { return [[[6.6, 3], [30, 3], [27.4, 9.6], [4, 9.6]], [[5, 12.7], [28.4, 12.7], [25.8, 19.3], [2.4, 19.3]], [[3.4, 22.4], [26.8, 22.4], [24.2, 29], [0.8, 29]]].map(p => _caPoly(p, true)).join(""); } },   // three slanted cards stacked: the squad's three
+    run: { col: "#ff4a1c", d() { return _caChev(5, 16, 15.4, 11.6, 4.6) + _caChev(16.6, 16, 27, 11.6, 4.6); } },   // two chevrons pointing back: fall back
+    attack: { col: "#ff4a1c", d() { return _caSlash([20.5, 2], [3, 26], 5.2, 2.2) + _caSlash([26.5, 4.5], [8.5, 29.5], 5.6, 2.2) + _caSlash([30.5, 10], [15, 31], 4.6, 2); } },   // three claw slashes
+};
+const _caOrdMemo = {};
+function cardArtOrderSvg(key) { const E = CARD_ART_ORDERS[key]; if (!E) return ""; if (_caOrdMemo[key] === undefined) _caOrdMemo[key] = E.d(); return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><path d="' + _caOrdMemo[key] + '" fill="' + E.col + '"/></svg>'; }
 
 // ── THE CLASSES ON THE PAGE ──
 // data: URLs, made once each
@@ -597,6 +611,8 @@ function cardArtEmblemClass(key) { const E = CARD_ART_EMBLEMS[key]; return E ? _
 function cardArtKindEmblemClass(c) { return c && c.kind === "subclass" && CARD_ART.species[c.match] ? cardArtEmblemClass(c.match) : ""; }
 // an enemy's race emblem (the enemy card, before its name): its race's (js/damage.js DMG_RACE), "" for a creature of none
 function cardArtRaceEmblemClass(a) { const r = a && a.speciesName; return r && CARD_ART_RACES.indexOf(r) >= 0 ? cardArtEmblemClass(r) : ""; }
+// an order's emblem (the enemy card's ALL, RUN and ATTACK): cao-<key>, drawn before its word as the emblems are (game.html "THE EMBLEMS"); "" for none
+function cardArtOrderClass(key) { const E = CARD_ART_ORDERS[key]; return E ? _caRule("cao-" + key, "--emb", cardArtUrl("o:" + key, () => cardArtOrderSvg(key)), "--emc:" + E.col) : ""; }
 // the class of an equip card's floating object: the cube on a CLASS card, else the crystal, in the card's colour
 function cardArtObjectClass(c, col) {
     const cube = !!(c && c.kind === "class"), h = _caHex(col).map(v => v.toString(16).padStart(2, "0")).join(""), hex = "#" + h;

@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11n` · branch `claude/start-game-project-HSh7Z` · the enemy card as a trading card, and the orders' emblems
+- **The enemy card at the left is redrawn as a trading card.** The owner asked for "like 10 different designs" and circled design 5 of the ten drafts.
+  - The card is a slab tilted in 3-D, like the equip cards, wearing its creature's element texture under a dark veil (fire's flames, electric's bolts and so on; a creature with no element has none).
+  - The creature's picture is at its left, bigger, with its level and element on a plate at its foot. The name, HP with its numbers, the bar, the bite and the race's chips are at its right.
+  - The chips lose their WEAK and RESISTS words, as in the draft: green is weak, grey resists. The narrow-window card keeps them.
+  - ALL, RUN and ATTACK stay flat under the card, so a tap is never lost to the tilt.
+- **ALL, RUN and ATTACK each get an emblem** before the word. The owner: "set C for the all and the run, but set A for the attack". ALL is three slanted cards stacked (the squad's three), RUN two chevrons pointing back, ATTACK three claw slashes.
+  - They are drawn like the species emblems: one colour, 32 units square, in the word's colour (`js/cardart.js` `CARD_ART_ORDERS`, `cardArtOrderClass`).
+  - RUNNING and ATTACKING · n/m stand smaller under their emblem, so every word fits its button.
+- The buttons, their words and what they do are unchanged. Tests: `tests/enemycard.js` (the look, the emblems, every word inside its button in each state) and `tests/speciesart.js` (the three emblems, the card's text column). Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11m` · branch `claude/start-game-project-HSh7Z` · the enemy card over the squad's orders
 - **The enemy card moves to the left** (the owner: "move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together").
   - While a creature is on it, the card stands where the squad's orders stand, under the three cards, and covers them. It used to stand at the bottom right.

@@ -2851,6 +2851,13 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: The enemy card as a trading card, and the orders' emblems (2026-11-11; built in `2026-11-11n`)
+- The owner: "let's redesign those cards. Give me like 10 different designs. And we need to make little emblems for all, run, and attack."
+- Ten designs of the card at the left were drafted on the real page: neo slab, command window, versus, target lock, trading card, round buttons, element skin, glass, pixel and comic sticker. The emblems came in three sets of three plus a pixel set: A figures, B signs, C motion.
+- Chosen: **design 5, the trading card** (circled on the sheet), and the emblems **ALL from set C** (three slanted cards stacked), **RUN from set C** (two chevrons pointing back) and **ATTACK from set A** (three claw slashes): "I like set C for the all and the run, but I like set A for the attack".
+- The agent's, within the pick: the WEAK and RESISTS words are left off the card's chips, as the draft had them. RUNNING and ATTACKING · n/m stand smaller under their emblem so they fit. A long name takes two lines. A long element wraps under the level on the picture's plate.
+- Supersedes the look of build `2026-11-11m`'s card (its place, its buttons and what they do stay). Spec: `UI-STYLE.md`, the corners layout.
+
 ## DECISION: The enemy card over the squad's orders (2026-11-11; built in `2026-11-11m`)
 - The owner: "I want to move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card squad feature and it's going to match the two functions together the one that it's hiding it's gonna have an all button it's gonna have a run button for whenever the creatures are engaged in combat. It's basically like the retreat button and then we'll have a attack button of course."
 - Built: in the tablet layout, while a creature is on the enemy card, the card stands in the orders' place, bottom left, over them, with ALL, RUN (the RETREAT order) and ATTACK. With no creature, the orders return (ALL, RETREAT, HOLD, COME). The dial keeps the bottom right.
