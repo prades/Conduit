@@ -1,6 +1,6 @@
 # The domains (the map's expansion)
 
-- **Status:** Designed in part (four decisions, 2026-11-11); the layouts are proposed (drafts); nothing is built.
+- **Status:** Designed in part (decisions of 2026-11-11; the stairwell was replaced the same day by a little door); the look and the layout are proposed (drafts); nothing is built.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11c`
@@ -17,21 +17,23 @@ Three new places:
 
 ## 2. Approved design (2026-11-11, chosen from options)
 
-1. **The Server Room's stairs are a stairwell you fade down.** The room grows 3 tiles north and its whole north side becomes one wide flight dropping out of sight. Stepping onto it fades you down into the electrical domain, as the lab's stairs take you to the Cold Storage. The racks, the console and the junction stay where they are.
-2. **The stairs open after the junction repair**: the tutorial's one repair, the MAIN POWER JUNCTION in the same room (`junctionRepaired()`, js/tutorial.js).
+1. ~~**The Server Room's stairs are a stairwell you fade down**, the room 3 tiles deeper, its whole north side one wide flight.~~ **Superseded the same day** by 1a.
+1a. **A little door in the Server Room leads to the electrical domain** (the owner: "instead of like a long staircase in the server room that's room length long or wide, we should make it to where there's a little door in the server room that goes to the electric domain"). It is **beside the junction**, in the north wall (spot 1 of the door draft; the owner picked "1"). The Server Room keeps its size; its racks, console and junction stay where they are. Going through it fades you into the electrical domain, as every doorway does.
+2. **The way down opens after the junction repair** (decided for the stairs; kept for the door): the tutorial's one repair, the MAIN POWER JUNCTION beside it (`junctionRepaired()`, js/tutorial.js).
 3. **Lava turns to stone by the ice Technician's bridge.** Its ICE BRIDGE works on lava too (the owner's connected rule, `TECHNICIANS.md`). Over lava the bridge sets as stone and stays, so a path can be built pool by pool. The volcanic layer therefore needs an ice technician, as the Nest's rubble needs a fire one.
 4. **Empty at first.** Each domain is built as a place first, with no creatures, as the Sewers were. Creatures, bosses and quests come next, designed with the owner.
+5. **The nests descend without stairs** (the owner: "I want the nests to descend without stairs, and that's a", the message cut off there: the rest is an open question).
 
 ## 3. Must-have requirements, by phase
 
 **Phase 1, the electrical domain** (layout pending: §5)
-- [ ] The Server Room is 3 tiles deeper to the north; a stairwell runs its whole length (22 tiles) along the new north side.
-- [ ] Until the junction is repaired, stepping onto the stairs does nothing. After it, the stairs are a doorway down: a fade, and you arrive in the electrical domain with your following squad, as through every doorway.
-- [ ] The electrical domain is an interior (as the Armory, the Cold Storage, the Sewers and the Ant Nest are), with stairs back up that bring you out in front of the stairwell.
+- [ ] A little door in the Server Room's north wall, beside the junction (a doorway alcove, as the Armory's are).
+- [ ] Until the junction is repaired, walking into it does nothing. After it, it is a doorway: a fade, and you arrive in the electrical domain with your following squad, as through every doorway.
+- [ ] The electrical domain is an interior (as the Armory, the Cold Storage, the Sewers and the Ant Nest are), with a way back that brings you out in front of the door.
 - [ ] Inside: the deep server room (racks standing near the stairs, toppled and strewn further in), then a big open area with circuitry everywhere.
 
 **Phase 2, the Nest developed and the volcanic layer** (to design with the owner: §11)
-- [ ] The Ant Nest leads down to the volcanic layer.
+- [ ] The Ant Nest leads down to the volcanic layer, without stairs.
 - [ ] The volcanic layer has lava that nobody walks on; an ice technician's bridge over lava sets as stone and stays (saved).
 
 **Phase 3, the crystalline area** (to design with the owner: §11)
@@ -40,32 +42,33 @@ Three new places:
 ## 4. Non-goals
 
 - Creatures, bosses, quests, rewards and recruit posts in the domains (later, with the owner).
-- Moving the Server Room's racks, console, junction or doors; changing the Ant Nest's queen or console.
+- Moving the Server Room's racks, console, junction or doors (the relay node on the wall beside the junction moves aside for the door); changing the Ant Nest's queen or console.
 - Phones (not supported).
 
 ## 5. Proposed, not approved
 
-- **The electrical domain's shape** (drafts, 2026-11-11): **A**, you walk away from the camera (arrive at the south end; the circuitry lies beyond, further from the camera) or **B**, toward it (arrive at the north end; the circuitry opens out below you, in view). Both: the deep server room about 24 × 18 tiles, wide steps down, the circuitry about 32 × 23 tiles (the arena's size). Sizes provisional.
-- **The stairs before and after the repair:** before, dark, a chain and a NO POWER sign across their top; after, the chain gone, blue light up the stairs, and ▼ ELECTRICAL DOMAIN over them.
+- **The electrical domain's look** (drafts 3A to 3C, 2026-11-11, rendered in 3D with the game's camera): **A** cold blue, the server graveyard (the Server Room's blue carried down; thin blue light traces); **B** live current, electric yellow (the element's colour; arcs between the wrecks; bright traces with pulses; copper coils); **C** a giant circuit board (green board, gold traces, giant chips and capacitors).
+- **The electrical domain's shape** (drafts 2A and 2B, made for the stairwell): away from the camera or toward it; the deep server room about 24 × 18 tiles, wide steps down, the circuitry about 32 × 23 tiles (the arena's size). Sizes provisional.
+- **The door before and after the repair:** its light red, then green, and ▼ ELECTRICAL DOMAIN over it.
 - **Names:** Electrical Domain, The Deep Server Room, The Circuitry (all provisional).
 
 ## 6. Dependencies and affected systems
 
-- Map data: `js/facilitymap.js` (rooms, `interiors`, `portals`, props, decor); `js/facilitygrow.js` (the Server Room's growth); `js/facilityportals.js` (`facilityPortalShut` learns the junction); `js/facilitydecor.js` (`_fpDrawStairwell` for a 22-tile flight).
+- Map data: `js/facilitymap.js` (rooms, `interiors`, `portals`, props, decor); `js/facilitygrow.js` (the door's re-placement, as the other doors'); `js/facilityportals.js` (`facilityPortalShut` learns the junction); the door's look (`portal_door` wall decor, as the Armory's).
 - Art: new baked props (toppled server racks; the circuitry's pieces), `design/props`, `img/props`; the circuitry floor.
 - Power: which relay lights the domain.
 - Save: nothing new for the stairs (the junction's repair is saved); stone over lava will need saving (phase 2).
 
 ## 7. Edge cases
 
-- A save from before the change loads into the grown Server Room (nothing movable lives in it).
-- The junction repaired while you stand by the stairs: they open at once.
+- A save from before the change loads as before (the Server Room keeps its size).
+- The junction repaired while you stand at the door: it opens at once.
 - `?attract` (the website's background) uses no doorways.
 - Creatures cannot use a doorway (as now).
 
 ## 8. Acceptance criteria (phase 1)
 
-- [ ] Before the junction repair the stairs do nothing; after it they take you and your following squad down, and the stairs up bring you back.
+- [ ] Before the junction repair the door does nothing; after it, it takes you and your following squad into the electrical domain, and the way back brings you out at the door.
 - [ ] The map's validator passes (doorways in pairs, the domain reached from its doorway, nothing walkable outside a room).
 - [ ] The Server Room's racks, console, junction, doors and pickups are where they were.
 - [ ] The full test run passes.
@@ -82,9 +85,9 @@ None yet.
 
 ## 11. Open questions
 
-1. The electrical domain's shape: draft A or B (§5), or another.
-2. The names (§5).
-3. What "a lot more development in the nest" holds, and where its way down to the volcanic layer is. (The original sketch has a "further nests" arrow pointing down at the Nest's south-west.)
+1. The electrical domain's look: draft 3A, 3B or 3C (§5), or a mix.
+2. Its shape (drafts 2A, 2B) and the names (§5).
+3. The nests "descend without stairs, and that's a": the rest of the sentence. What "a lot more development in the nest" holds, and where its way down to the volcanic layer is. (The original sketch has a "further nests" arrow pointing down at the Nest's south-west.)
 4. The volcanic layer's and the crystalline area's look and size.
 5. Which relay powers the electrical domain, and how dark it is.
 6. Later: each domain's creatures, boss and quest.
@@ -92,3 +95,4 @@ None yet.
 ## 12. History
 
 - 2026-11-11: the owner's direction (§1); the four decisions (§2), chosen from options; layout drafts 1 (the Server Room's stairs), 2A and 2B (the electrical domain). Decision record: `DECISION-LOG.md`, "The domains".
+- 2026-11-11, later: the stairwell replaced by a little door beside the junction (§2, 1a); the nests to descend without stairs (§2, 5); look drafts 3A to 3C and the door's spots (draft 4). Decision record: `DECISION-LOG.md`, "The electrical domain's way in: a little door".

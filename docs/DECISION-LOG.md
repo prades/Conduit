@@ -2834,3 +2834,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner's direction: a staircase the Server Room's whole length down to a new electrical domain (racks strewn further in, then a big open area of circuitry); the Ant Nest developed, leading down to a volcanic layer (the fire domain) where lava turns to stone to make a path to the crystalline area (the flux domain). The words and the spec: `DOMAINS.md`.
 - Chosen from options: the stairs are a **stairwell you fade down** (the room grows 3 tiles north; its whole north side one wide flight), not a flight you walk down into a sunken room; they **open after the junction repair**; **the ice Technician's bridge** turns lava to stone, and over lava it stays, not any ice attack or a machine; each domain is built **empty at first**, its creatures later.
 - Proposed, waiting: the electrical domain's shape (drafts A and B), its names, the Nest's development and the later layers (`DOMAINS.md` §5 and §11).
+- **Superseded the same day (the stairs only)**: see "The electrical domain's way in: a little door", below.
+
+## DECISION: The electrical domain's way in: a little door (2026-11-11, nothing built yet)
+- The owner: "instead of like a long staircase in the server room that's room length long or wide, we should make it to where there's a little door in the server room that goes to the electric domain"; of the door's three places in the draft, "1": **beside the junction**, in the Server Room's north wall. It supersedes the stairwell (above); the Server Room keeps its size. The way in still opens after the junction repair.
+- Also said: "I want the nests to descend without stairs, and that's a" (cut off; the rest is asked).
+- Proposed, waiting: the domain's look (drafts 3A to 3C), its shape, the names (`DOMAINS.md` §5, §11).
