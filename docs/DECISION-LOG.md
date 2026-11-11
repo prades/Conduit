@@ -2851,6 +2851,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: Brawlers stand and strike (2026-11-11; built in `2026-11-11k`)
+- The owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield."
+- Built: within reach (1.4 tiles) a Brawler stands where it is and strikes; it went round its enemy at 0.8× its speed before (js/npc.js). Several on one enemy are kept apart by the separation pass (`FOLLOWER_SEP`). Nothing else about the approach, the formation or the attacks changes.
+- The Brawlers' attack animations are being made by another agent at the same time (the owner, 2026-11-11), on their own branch.
+- Docs: `COMBAT.md` (the formation).
+
 ## DECISION: The battle look, the JRPG feel (2026-11-11; built in `2026-11-11h` and `2026-11-11i`)
 - The owner: combat "more like a JRPG"; each attack with "sort of an animation"; going into a battle the view "zooms in and kind of blurs out the edges a little bit"; the numbers "a little bit bigger"; "the different effects are displayed in different fonts that represent the different types of damage and stuns".
 - Chosen from options: **real-time stays, a JRPG look** (not turn-based battles, not freezes or slow motion on big moves); **the battle view when a creature engages** you or your squad (not on a locked target, not big moves only); **one face per damage type and one for statuses** (not three families, not a face per element); **new attack frames per form**, baked from each form's model (not motion on today's sprites, not motion first).

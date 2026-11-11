@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11k` · branch `claude/start-game-project-HSh7Z` · Brawlers stand and strike
+- **A Brawler no longer circles its enemy** (the owner: "We need to change it where the brawlers don't circle around the enemies. That's very hectic for reading a battlefield"). It closes in as before, and within reach (1.4 tiles) it stands where it is and strikes. It used to go round the enemy at 0.8× its speed the whole time it fought.
+- Two Brawlers on one enemy are kept apart by the separation pass that was already there (0.75 tiles): they settle side by side.
+- The attack animations are another agent's work (branch `claude/skink-swirl-attack`) and are not touched here.
+- Tests: `tests/formation.js` (one more check: in reach it stays put and strikes). Docs: `COMBAT.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11j` · branch `claude/start-game-project-HSh7Z` · the roster card's light shows
 - **A follower's card lights up when its hit lands** (the owner: the roster "will highlight and shake the follower card"). Build 11i lit it with a glow the card's own clipped shape cut off and its slanted background covered: only a slight brightening showed (seen in 11i's pictures). The glow, in the follower's element's colour, is now on the card's background. It comes on at once and fades out as the shake ends.
 - **The card answers on the frame the number lands**: its health moved a frame late in 11i.

@@ -102,6 +102,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             e.dead = true; e.health = 0; actors = actors.filter(a => a !== e); __tick(400); return { near, back: __rel(b) }; })()`);
         ok(r.near < 2, 'the Brawler did not meet the enemy: ' + r.near.toFixed(2)); ok(r.back.ahead > 1.2 && Math.abs(r.back.across) < 0.6, 'it did not go back to its place: ' + JSON.stringify(r.back));
     });
+    check('in reach of an enemy a Brawler stands and strikes: it does not go round it (the owner, 2026-11-11: circling is "very hectic for reading a battlefield"; build 2026-11-11k)', () => {
+        const r = J(`(function(){ const [b] = __squad(['brawler']); __walk(1, 0, 40); __tick(300); const e = __foe(player.x + 4, player.y + 1.5, false); __tick(200);
+            const d0 = Math.hypot(e.x - b.x, e.y - b.y); let moved = 0, last = [b.x, b.y], hits = 0; const keep = followerAttack; followerAttack = function (a, t) { if (a === b && t === e) hits++; return keep.apply(this, arguments); };
+            try { for (let i = 0; i < 180; i++) { __tick(1); moved += Math.hypot(b.x - last[0], b.y - last[1]); last = [b.x, b.y]; } } finally { followerAttack = keep; }
+            const o = { d0: +d0.toFixed(3), moved: +moved.toFixed(3), hits, d1: +Math.hypot(e.x - b.x, e.y - b.y).toFixed(3) }; e.dead = true; e.health = 0; actors = actors.filter(a => a !== e); return o; })()`);
+        ok(r.d0 <= 1.4 + 1e-6, 'the Brawler did not reach the enemy: ' + JSON.stringify(r)); ok(r.moved < 0.05, 'the Brawler went ' + r.moved + ' tiles in 3 s in reach of the enemy (round it): ' + JSON.stringify(r)); ok(r.hits > 0, 'it did not strike: ' + JSON.stringify(r));
+    });
 
     group('WALLS');
     check('a place in a wall or out of your sight comes in toward you: every place is on floor you can see', () => {
