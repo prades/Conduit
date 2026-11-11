@@ -5,6 +5,8 @@
 //   B  TRIO    the bubble joins GUARD and STUN as the top of their column, on its own cable: your three actions, the shot first. A shot runs along the cable.
 //   C  SLABS   the target as a slab across the top of THE CORE, its picture in a round socket at the slab's end and the trigger at the other: the creature's slab above, yours below (the bars).
 //              A shot runs up into it. (The cube's screen as the scope was tried too: at the screen's size the creature cannot be made out.)
+//   C2 SLABS UNDER THE CUBE (the owner circled C and drew it down under the cube): the creature's slab between the cube and the pills, over yours; the box 56 px taller while one is locked.
+//              A shot runs down into it. NONE: no creature locked (THE CORE as it is).
 // Each is drawn LOCKED (aiming) and FIRING (a shot: the cube fires, the bubble takes it, the number). NOW is build 2026-11-11u as it is.
 // node design/ui-mocks/core-target/draft.js [--out=dir] [WxH]   The repo's files are read, never written. Needs playwright and ImageMagick's convert (the sheet).
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright'); const fs = require('fs'), path = require('path'), os = require('os');
@@ -66,32 +68,42 @@ function install() {
       g.font = 'italic 900 12px ' + NEO; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,0.85)'; const nm = targetName(a); g.strokeText(nm, x, y - R - 8); g.fillStyle = _tgColour(a); g.fillText(nm, x, y - R - 8);
       if (fire) burst(s0[0], s0[1], 12);
       bubble(x, y, R, a, fire, true); if (fire) { burst(x + R * 0.62, y + R * 0.5, 20); number(x - R - 8, y - R + 6, 27); }
-    } else if (D.mode === 'C') {   // SLABS: the creature's slab across the top (the socket with its picture, its name and level, its health, the trigger), yours at the foot
-      const col = _tgColour(a), k = hpOf(a), x0 = bx + 40, x1 = bx + 318, yc = by - 34, h = 46, w = x1 - x0, mid = (x0 + x1) / 2, sx = bx + P.arcC[0], st = by + P.arcC[1] - P.arcR - 8 - 24;
-      if (fire) { beam(bx + P.lid[0], by + P.lid[1] - 6, sx, st + 26); beam(sx, st - 1, sx, yc + h / 2 - 2); _core.els.surge.style.boxShadow = '0 0 18px #ffd84a'; } else _core.els.surge.style.boxShadow = '';
-      glow(mid, yc, 20, w * 0.62, fire ? 'rgba(255,96,64,0.32)' : 'rgba(255,128,72,0.1)');
-      g.save(); g.translate(mid, yc); g.transform(1, 0, -0.2126, 1, 0, 0); const gr = g.createLinearGradient(0, -h / 2, 0, h / 2); gr.addColorStop(0, '#121a34'); gr.addColorStop(1, '#05070f'); g.fillStyle = gr; g.fillRect(-w / 2, -h / 2, w, h);
-      g.lineWidth = 2; g.strokeStyle = fire ? '#fff4e8' : col; g.strokeRect(-w / 2, -h / 2, w, h); g.fillStyle = col; g.fillRect(-w / 2 + 50, -h / 2 + 7, 4, h - 14); g.restore();
-      const nm = targetName(a); g.font = 'italic 900 13px ' + NEO; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = col; g.fillText(nm, x0 + 62, yc - 10);
-      const nw = g.measureText(nm).width; g.fillStyle = '#c8d6e8'; g.font = 'italic 900 11px ' + NEO; g.fillText(lvOf(a), x0 + 70 + nw, yc - 10);
-      const bw = w - 130, bh = 9, bxx = x0 + 60; g.save(); g.translate(bxx + bw / 2, yc + 9); g.transform(1, 0, -0.2126, 1, 0, 0); g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(-bw / 2, -bh / 2, bw, bh);
-      g.fillStyle = hpCol(k); g.fillRect(-bw / 2, -bh / 2, bw * k, bh); if (fire) { g.fillStyle = '#fff'; g.fillRect(-bw / 2 + bw * k, -bh / 2, bw * 0.12, bh); } g.restore();
-      // the socket at its left end (the little bubble), the trigger at its right, INFO by the name
-      const px = x0 + 6, R = 30; g.fillStyle = '#0b1226'; g.beginPath(); g.arc(px, yc, R, 0, TAU); g.fill(); const pic = targetPortrait(a);
-      if (pic) { g.save(); g.beginPath(); g.arc(px, yc, R - 4, 0, TAU); g.clip(); g.drawImage(pic, px - R + 4, yc - R + 4, (R - 4) * 2, (R - 4) * 2); if (fire) { g.fillStyle = 'rgba(255,220,200,0.35)'; g.fillRect(px - R, yc - R, R * 2, R * 2); } g.restore(); }
-      g.lineWidth = 2.5; g.strokeStyle = fire ? '#fff4e8' : col; g.beginPath(); g.arc(px, yc, R, 0, TAU); g.stroke();
-      const tx = x1 - 6, ty = yc, tr = 22; glow(tx, ty, 6, tr * 1.6, fire ? 'rgba(255,80,50,0.7)' : 'rgba(255,80,50,0.25)'); g.fillStyle = fire ? '#ff4a3a' : '#0b1226'; g.beginPath(); g.arc(tx, ty, tr, 0, TAU); g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#ff4a3a'; g.stroke();
-      g.strokeStyle = fire ? '#fff' : '#ff6a50'; g.lineWidth = 2.2; g.beginPath(); g.arc(tx, ty, 9, 0, TAU); g.moveTo(tx - 16, ty); g.lineTo(tx - 5, ty); g.moveTo(tx + 5, ty); g.lineTo(tx + 16, ty); g.moveTo(tx, ty - 16); g.lineTo(tx, ty - 5); g.moveTo(tx, ty + 5); g.lineTo(tx, ty + 16); g.stroke();
-      const ix = x1 - 46, iy = yc - 14; g.fillStyle = '#0b1226'; g.beginPath(); g.arc(ix, iy, 9, 0, TAU); g.fill(); g.lineWidth = 1.6; g.strokeStyle = '#8fe3ff'; g.stroke(); g.fillStyle = '#8fe3ff'; g.font = 'italic 900 11px ' + NEO; g.textAlign = 'center'; g.fillText('i', ix, iy + 1);
-      if (fire) { burst(sx, yc + 8, 22); number(bxx + bw * k + 18, yc - 34, 27); }
+    } else if (D.mode === 'C') {   // SLABS: the creature's slab across the top, yours at the foot; the shot runs up through the surge's words into it
+      const sx = bx + P.arcC[0], st = by + P.arcC[1] - P.arcR - 8 - 24, yc = by - 34;
+      if (fire) { beam(bx + P.lid[0], by + P.lid[1] - 6, sx, st + 26); beam(sx, st - 1, sx, yc + 21); _core.els.surge.style.boxShadow = '0 0 18px #ffd84a'; } else _core.els.surge.style.boxShadow = '';
+      const T = targetSlab(bx + 40, bx + 318, yc, 46, a, fire); if (fire) { burst(sx, yc + 8, 22); number(T.end + 18, yc - 34, 27); }
+    } else if (D.mode === 'C2') {   // SLABS UNDER THE CUBE (the owner's arrow): the creature's slab between the cube and the pills, over yours; the box 56 px taller while one is locked, the cube risen; the shot runs down into it
+      const yc = by + 236, cx = bx + 190;
+      if (fire) beam(cx, by + 172, cx, yc - 6);
+      const T = targetSlab(bx + 34, bx + 330, yc, 44, a, fire); if (fire) { burst(cx, yc + 6, 22); number(T.end + 16, yc - 32, 27); }
     }
   }
+  // THE CREATURE'S SLAB, skewed as yours: its picture in a round socket at the left end, its name and level, its health, INFO, and the trigger at the right end (a tap on it shoots)
+  function targetSlab(x0, x1, yc, h, a, fire) {
+    const col = _tgColour(a), k = hpOf(a), w = x1 - x0, mid = (x0 + x1) / 2;
+    glow(mid, yc, 20, w * 0.62, fire ? 'rgba(255,96,64,0.32)' : 'rgba(255,128,72,0.1)');
+    g.save(); g.translate(mid, yc); g.transform(1, 0, -0.2126, 1, 0, 0); const gr = g.createLinearGradient(0, -h / 2, 0, h / 2); gr.addColorStop(0, '#121a34'); gr.addColorStop(1, '#05070f'); g.fillStyle = gr; g.fillRect(-w / 2, -h / 2, w, h);
+    g.lineWidth = 2; g.strokeStyle = fire ? '#fff4e8' : col; g.strokeRect(-w / 2, -h / 2, w, h); g.fillStyle = col; g.fillRect(-w / 2 + 50, -h / 2 + 7, 4, h - 14); g.restore();
+    const nm = targetName(a); g.font = 'italic 900 13px ' + NEO; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillStyle = col; g.fillText(nm, x0 + 62, yc - 10);
+    const nw = g.measureText(nm).width; g.fillStyle = '#c8d6e8'; g.font = 'italic 900 11px ' + NEO; g.fillText(lvOf(a), x0 + 70 + nw, yc - 10);
+    const bw = w - 130, bh = 9, bxx = x0 + 60; g.save(); g.translate(bxx + bw / 2, yc + 9); g.transform(1, 0, -0.2126, 1, 0, 0); g.fillStyle = 'rgba(255,255,255,0.14)'; g.fillRect(-bw / 2, -bh / 2, bw, bh);
+    g.fillStyle = hpCol(k); g.fillRect(-bw / 2, -bh / 2, bw * k, bh); if (fire) { g.fillStyle = '#fff'; g.fillRect(-bw / 2 + bw * k, -bh / 2, bw * 0.12, bh); } g.restore();
+    const px = x0 + 6, R = h <= 44 ? 28 : 30; g.fillStyle = '#0b1226'; g.beginPath(); g.arc(px, yc, R, 0, TAU); g.fill(); const pic = targetPortrait(a);
+    if (pic) { g.save(); g.beginPath(); g.arc(px, yc, R - 4, 0, TAU); g.clip(); g.drawImage(pic, px - R + 4, yc - R + 4, (R - 4) * 2, (R - 4) * 2); if (fire) { g.fillStyle = 'rgba(255,220,200,0.35)'; g.fillRect(px - R, yc - R, R * 2, R * 2); } g.restore(); }
+    g.lineWidth = 2.5; g.strokeStyle = fire ? '#fff4e8' : col; g.beginPath(); g.arc(px, yc, R, 0, TAU); g.stroke();
+    const tx = x1 - 6, ty = yc, tr = 21; glow(tx, ty, 6, tr * 1.6, fire ? 'rgba(255,80,50,0.7)' : 'rgba(255,80,50,0.25)'); g.fillStyle = fire ? '#ff4a3a' : '#0b1226'; g.beginPath(); g.arc(tx, ty, tr, 0, TAU); g.fill(); g.lineWidth = 2.5; g.strokeStyle = '#ff4a3a'; g.stroke();
+    g.strokeStyle = fire ? '#fff' : '#ff6a50'; g.lineWidth = 2.2; g.beginPath(); g.arc(tx, ty, 9, 0, TAU); g.moveTo(tx - 15, ty); g.lineTo(tx - 5, ty); g.moveTo(tx + 5, ty); g.lineTo(tx + 15, ty); g.moveTo(tx, ty - 15); g.lineTo(tx, ty - 5); g.moveTo(tx, ty + 5); g.lineTo(tx, ty + 15); g.stroke();
+    const ix = x1 - 44, iy = yc - 13; g.fillStyle = '#0b1226'; g.beginPath(); g.arc(ix, iy, 9, 0, TAU); g.fill(); g.lineWidth = 1.6; g.strokeStyle = '#8fe3ff'; g.stroke(); g.fillStyle = '#8fe3ff'; g.font = 'italic 900 11px ' + NEO; g.textAlign = 'center'; g.fillText('i', ix, iy + 1);
+    return { end: bxx + bw * k };
+  }
+  // C2's box: 56 px taller while a creature is locked (the cube, its arc and buttons risen; the pills and your slab at the foot)
+  D.setBox = on => { _core.root.style.height = on ? '356px' : ''; CORE_HUD.pills[1] = on ? 285 : 229; _core.topY = 0; };
   // the old dial is not drawn (the pills still are: js/targeting.js _tgPillsInCore); the overlay after every frame's HUD
   const realDial = window._tgDialDraw; window._tgDialDraw = function (a, f) { if (!D.mode) return realDial(a, f); _tgPillsInCore(); _tgDial = null; };
   const realUI = window.drawTargetUI; window.drawTargetUI = function () { realUI(); draw(); };
   // its face looks at the bubble (and sets its look to fire)
   const realPick = window._corePick; window._corePick = function (S, f) { const F = realPick(S, f), on = D.mode && targetCurrent();
-    if (on && !S.surging && !S.ready && !S.armed) { if (D.mode === 'B') { F.lx = -0.8; F.ly = -0.55; } else { F.lx = 0; F.ly = -0.9; } if (D.fire) { F.eye = 'set'; F.flash = 'rgba(255,240,200,0.18)'; } }
+    if (on && !S.surging && !S.ready && !S.armed) { if (D.mode === 'B') { F.lx = -0.8; F.ly = -0.55; } else if (D.mode === 'C2') { F.lx = 0; F.ly = 0.85; } else { F.lx = 0; F.ly = -0.9; } if (D.fire) { F.eye = 'set'; F.flash = 'rgba(255,240,200,0.18)'; } }
     return F; };
   return true;
 }
@@ -132,6 +144,11 @@ function install() {
     await shot(m + '_firing', `__D.fire = 1; __foe.health = __foe.maxHealth * 0.6; _coreDrawn.faceKey = '';`);
     await p.screenshot({ path: path.join(OUT, m + '_screen.png') });
   }
+  // C2: the slab under the cube; then NONE (the creature gone: THE CORE back to its size)
+  await shot('C2_locked', `_core.els.surge.style.boxShadow = ''; __D.mode = 'C2'; __D.fire = 0; __D.setBox(true); __foe.health = __foe.maxHealth * 0.72; _coreDrawn.faceKey = '';`);
+  await shot('C2_firing', `__D.fire = 1; __foe.health = __foe.maxHealth * 0.6; _coreDrawn.faceKey = '';`);
+  await p.screenshot({ path: path.join(OUT, 'C2_screen.png') });
+  await shot('C2_none', `__D.fire = 0; __foe.dead = true; targetDrop(); standDown = true; __D.setBox(false); _coreDrawn.faceKey = '';`);
   console.log(JSON.stringify({ out: OUT, errs: errs.slice(0, 5) }));
   await b.close(); fs.rmSync(dir, { recursive: true, force: true });
   // the review sheet: NOW, then each draft LOCKED | FIRING, titled
@@ -142,5 +159,8 @@ function install() {
     for (const [i, r] of rows.entries()) execFileSync('convert', r.map(f => path.join(OUT, f)).concat(['+append', path.join(OUT, 'row' + i + '.png')]));
     execFileSync('convert', [path.join(OUT, 'row0.png'), path.join(OUT, 'row1.png'), path.join(OUT, 'row2.png'), '-append', '-resize', '50%', path.join(OUT, 'sheet.png')]);
     console.log('sheet: ' + path.join(OUT, 'sheet.png'));
+    t('C2_locked.png', 'C2  SLAB UNDER THE CUBE: LOCKED', 't_C21.png'); t('C2_firing.png', 'C2: FIRING', 't_C22.png'); t('C2_none.png', 'C2: NOTHING LOCKED', 't_C23.png');
+    execFileSync('convert', ['t_C21.png', 't_C22.png', 't_C23.png'].map(f => path.join(OUT, f)).concat(['+append', '-resize', '50%', path.join(OUT, 'sheet_c2.png')]));
+    console.log('sheet: ' + path.join(OUT, 'sheet_c2.png'));
   } catch (e) { console.log('no sheet (ImageMagick?): ' + e.message.split('\n')[0]); }
 })();
