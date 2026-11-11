@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11l` · branch `claude/skink-swirl-tile` · the Skink's green tile goes with its swirl
+- **In the battle view the Electro Skink's lit green tile follows its swirl** (the owner: "Whenever it attacks the little green square tile, highlight should match where it is at attacking the enemy"). While the vortex plays round an enemy the green tile is lit round the enemy's tile, a little wider than the enemy's red one so both show, and the Skink's own spot is not lit (its body is not drawn there). When the swirl ends it is back at its feet. No other follower's tile moves.
+- `js/evolution.js` `skinkSwirlSpot`, `js/battleview.js` `battleViewDecals`. Tests: `tests/skinkswirl.js` (2 new checks, 15 in all). Docs: `BATTLE-LOOK.md` §2, `COMBAT.md` §7.4. Seen in the real page in a frozen frame (before, mid-swirl, after). **Not playtested.**
+
 ### Build `2026-11-11k` · branch `claude/skink-swirl-attack` · the Electro Skink's everyday hit is a swirl
 - **The Skink's everyday hit** (the owner: "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form"; "Looks only", one hit and one number, the chain "Drop it", "Slashing", "keep it as is") is a vortex drawn round the enemy: the body in a fast ring (three copies of it), curling in, spinning and curling out over 24 frames, **one hit** of 0.35 × its ATK as the ring closes on **one enemy**. The chain lightning is dropped for the Skink (every other electric follower keeps it). Its own body is hidden for the vortex and pops back. Same WILL and rest as before. Its damage type is unchanged: its form's type was already Slashing, so the hit is half Slashing, half electric.
 - **Art:** design No. 926 (`design/evolutions/forms40.js`, a swirl mode in No. 905's model, `forms36.js`) baked to `img/evo/skinkswirl.png` (cropped, `js/evopack.js`); `crop_sheets.js` now crops a form's `swirl` sheet too. The ring is flat and the glow under it is drawn in code; the owner saw one draft of the still frames and chose to see it in the game.

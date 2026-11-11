@@ -87,6 +87,23 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         same(r.start, 8, 'the first cell'); same(r.coilEnd, 15, 'the coil\'s last'); same(r.spin0, 0, 'the spin\'s first'); same(r.spin8, 0, 'the spin loops every 8'); same(r.relStart, 15, 'the release starts closed'); same(r.relEnd, 8, 'the release ends open');
     });
 
+    group('ITS LIT TILE FOLLOWS IT (the battle view: each fighter\'s tile lit, green yours and red theirs; the owner, 2026-11-11: the green tile "should match where it is attacking the enemy")');
+    check('while it swirls its green tile is lit round the enemy (a little wider than the enemy\'s red one, so both show) and not at its own feet; before and after it is at its feet', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ const f = __skink(), t = __foe(f.x + 2, f.y); player.x = player.visualX = f.x - 3; player.y = player.visualY = f.y; _bv.k = 1;   // (the player near: the battle view lights fighters within 9 tiles of you)
+            const at = (x, y) => { _bvDraw.fightersAt = -1; const list = []; battleViewDecals(list); return list.filter(it => it.fp === 'bvdecal' && Math.abs(it.x - (x - 0.5)) < 1e-9 && Math.abs(it.y - (y - 0.5)) < 1e-9).length; };
+            const o = { before: [at(f.x, f.y), at(t.x, t.y)] };
+            followerAttack(f, t); o.during = [at(f.x, f.y), at(t.x, t.y)];
+            frame += SKINK_SWIRL_FRAMES - 1; o.last = [at(f.x, f.y), at(t.x, t.y)];
+            frame += 1; elementEffects.length = 0; o.after = [at(f.x, f.y), at(t.x, t.y)]; _bv.k = 0; return o; })())`));
+        same(r.before.join(), '1,1', 'before: its own tile, the enemy\'s'); same(r.during.join(), '0,2', 'during: none at its feet, two (its and the enemy\'s) at the enemy');
+        same(r.last.join(), '0,2', 'on the last frame of the vortex'); same(r.after.join(), '1,1', 'after: back at its feet');
+    });
+    check('only the Skink\'s tile moves: a follower that is not swirling keeps its tile at its feet', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ const f = __skink(), mate = __fol('fire', 'brawler', undefined); mate.x = f.x - 2; mate.y = f.y; const t = __foe(f.x + 2, f.y); player.x = player.visualX = f.x - 3; player.y = player.visualY = f.y; _bv.k = 1; followerAttack(f, t);
+            _bvDraw.fightersAt = -1; const list = []; battleViewDecals(list); const n = list.filter(it => it.fp === 'bvdecal' && Math.abs(it.x - (mate.x - 0.5)) < 1e-9 && Math.abs(it.y - (mate.y - 0.5)) < 1e-9).length; _bv.k = 0; return n; })())`));
+        same(r, 1, 'the other follower\'s tile');
+    });
+
     group('EVERY OTHER ELECTRIC FOLLOWER KEEPS ITS CHAIN LIGHTNING');
     check('a Hover Shell\'s everyday hit is still the chain, with no swirl', () => {
         const r = run(`(function(){ __clear(); const f = __fol('electric', 'camper', 'hovershell'); f.currentWill = 100; f.attackCooldown = 0; const t = __foe(f.x + 1.5, f.y), n = __foe(f.x + 2.5, f.y); followerAttack(f, t);

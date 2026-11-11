@@ -2872,3 +2872,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's (provisional): 6 + 12 + 6 frames, 0.35 × ATK landing as the ring closes; the ring at the Skink's own scale.
 - Alternatives offered and not taken: damage in four or six ticks across the spin; the swirl passing on to a second and third enemy; Elemental, Piercing or Crushing as the type; a tilted or tornado-shaped vortex, speed streaks, a different size (offered as next steps; "keep it as is").
 - Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `CHANGELOG.md`.
+
+## DECISION: The Electro Skink's green tile goes with its swirl (2026-11-11, build `2026-11-11l`, branch `claude/skink-swirl-tile`)
+- The owner, trying the swirl: "Whenever it attacks the little green square tile, highlight should match where it is at attacking the enemy." The green square is the battle view's lit tile for a follower (`BATTLE-LOOK.md` §2): it stayed at the Skink's feet while its body was drawn round the enemy.
+- Read as: during the swirl the green tile is lit at the enemy, where the Skink is shown. The agent's detail, provisional: it is drawn a little wider than the enemy's red tile (0.52 of a tile, not 0.42) so both outlines show instead of one on top of the other.
+- Alternatives not taken (not asked): the same size as the red tile (the two would overlap exactly); lighting the tile only when the Skink is not at the enemy.
+- Status: Implemented and tested; not playtested.
