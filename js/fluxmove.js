@@ -184,6 +184,7 @@ function fluxApply(list) {
 
 // ── picking one on the screen: the prop under a tap (its tiles, or its body standing over them), movable or not; the nearest when two are close ──
 function fluxPropAtScreen(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     const F = _fluxF(); if (!F || typeof _techScr !== "function") return null;
     let best = null, bd = Infinity;
     for (const s of F.solids) {

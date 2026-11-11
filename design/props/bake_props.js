@@ -8,7 +8,7 @@
 // the unit, and a height of H game-pixels (the game's z) is H / UH units (a unit of height is UH px on screen: PX * cos(30 deg)). Use `px(H)` for a height given in game pixels. The map's elevation is 34 px a tile.
 // Output: img/props/<family>.png (all the variants packed in one sheet, each cropped) and design/props/out/<family>.json (where each is in the sheet, and where the ground point under the model's origin and
 // every mark are inside it); then js/propatlas.js (all the families' json, as data, since the page cannot fetch files) is written from every json in design/props/out.
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();   // (the machine's own Playwright and its browser; the old pinned copy if there is none)
 const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], WANT = (process.argv[3] || 'all').split(',');
 const ROOT = path.join(__dirname, '..', '..'), MODELS = path.join(__dirname, 'models'), OUT = path.join(__dirname, 'out');
@@ -75,7 +75,8 @@ window.__bake = async function (fams, PX, UH) {
 </script></body></html>`;
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+  const OLD_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';   // (as the forms' and the effects' bakers: that browser where it is, else Playwright's own)
+  const b = await chromium.launch({ ...(fs.existsSync(OLD_CHROME) ? { executablePath: OLD_CHROME } : {}), args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.route('**/three.min.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(THREE_DIR, 'package/build/three.min.js'), 'utf8') }));
   await p.route('http://bake.local/', r => r.fulfill({ contentType: 'text/html', body: page }));

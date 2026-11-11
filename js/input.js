@@ -32,8 +32,8 @@ const PICK_RADIUS = 45;
 function followerPickPoint(f) {
     const px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2 - facilityLiftRel(f.x, f.y);
-    if (f.isClone) return { x: px, y: py - 22 };
-    return { x: px, y: py - 55 };
+    const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - (f.isClone ? 22 : 55)) : [px, py - (f.isClone ? 22 : 55)];   // (where it is on the screen, the battle view's zoom too: js/battleview.js)
+    return { x: q[0], y: q[1] };
 }
 
 // Each finder returns the CLOSEST match rather than the first one it walks
@@ -44,7 +44,7 @@ function findEnemyAtScreen(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
         const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const d = Math.hypot(ex - apx, ey - (apy - 55));
+        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.hypot(ex - _q[0], ey - _q[1]);   // (the battle view's zoom: js/battleview.js)
         if (d < bestD) { bestD = d; best = a; }
     }
     return best;
@@ -55,7 +55,7 @@ function enemyPickDistance(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
         const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const d = Math.hypot(ex - apx, ey - (apy - 55));
+        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.hypot(ex - _q[0], ey - _q[1]);   // (the battle view's zoom: js/battleview.js)
         if (d < bestD) bestD = d;
     }
     return bestD;
@@ -137,6 +137,9 @@ const handleInput=(ex,ey)=>{
     // A tap on a launcher site you are near (or its label): set a Kinetic Launcher up there, or send a follower up from the one there (js/techabilities.js).
     if (typeof techSiteTap === "function" && techSiteTap(ex, ey)) return;
 
+    // ── STUN DIVE, armed (js/playercombat.js): a tap on a creature dives at it; anywhere else puts the dive away (and the tap does what it would) ──
+    if (typeof playerDiveArmed !== "undefined" && playerDiveArmed) { const foe = findEnemyAtScreen(ex, ey); if (foe) { playerDiveAt(foe); return; } playerDiveCancel(); }
+
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
     // a predator, so brushing one while moving spent a shot at it.
@@ -146,7 +149,8 @@ const handleInput=(ex,ey)=>{
     }
 
     // Movement is never locked — there is no stun any more. A path through the facility's doors (js/facilityplay.js).
-    const dx=ex-canvas.width/2, dy=ey+facilityPickLift(ex, ey)-canvas.height/2-TILE_H;
+    const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
+    const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
@@ -160,7 +164,8 @@ const handleInput=(ex,ey)=>{
 function isTapNearCrystal(ex, ey) {
     const px = (crystal.x - player.visualX - (crystal.y - player.visualY)) * TILE_W + canvas.width/2;
     const py = (crystal.x - player.visualX + (crystal.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-    return Math.hypot(ex - px, ey - py) < 60;
+    const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py) : [px, py];   // (where it shows: the battle view's zoom, js/battleview.js)
+    return Math.hypot(ex - q[0], ey - q[1]) < 60;
 }
 
 // ── THE LONG-PRESS HINT ──────────────────────────────────
@@ -189,7 +194,8 @@ function handleLongHold(ex,ey) {
     commandY = Math.max(140 + _M.top, Math.min(canvas.height - _M.bottom, ey));
     commandShiftX = commandX - ex; commandShiftY = commandY - ey;
     noteRingUsed();
-    const dx=ex-canvas.width/2, dy=ey+facilityPickLift(ex, ey)-canvas.height/2-TILE_H;
+    const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
+    const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -259,7 +265,8 @@ canvas.addEventListener('pointerdown', e=>{
     // The battle tool (js/mixtool.js) is open on a phone: a press on the world is not a game action (its release puts the tool away)
     if (crystalMenuOpen && !(typeof mixToolWide === "function" && mixToolWide())) return;
 
-    const dx=pressX-canvas.width/2, dy=pressY+facilityPickLift(pressX, pressY)-canvas.height/2-TILE_H;
+    const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(pressX, pressY) : [pressX, pressY];   // (the battle view's zoom: js/battleview.js)
+    const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
     const t=getTile(gx,gy);
@@ -302,6 +309,10 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
     // The POTION pill beside those (js/potion.js): a tap throws the Sleeping Potion in hand
     if (!touchMoved && typeof potionChipTap === "function" && potionChipTap(upX, upY)) { isPressing=false; return; }
+    // GUARD and STUN, the two round buttons by the dial (js/playercombat.js)
+    if (!touchMoved && typeof playerCombatTap === "function" && playerCombatTap(upX, upY)) { isPressing=false; return; }
+    // The KIT pill beside those (js/playercombat.js): a tap uses a repair kit
+    if (!touchMoved && typeof kitChipTap === "function" && kitChipTap(upX, upY)) { isPressing=false; return; }
     // The ammunition pill (js/targeting.js draws it): a tap while armed stows the weapon again
     if (!touchMoved && playerAttackMode && _ATKCHIP.w > 0
         && upX >= _ATKCHIP.x && upX <= _ATKCHIP.x + _ATKCHIP.w

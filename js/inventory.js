@@ -57,6 +57,12 @@ const ITEMS = {
         lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
         stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE SERVER ROOM, ONCE ITS POWER IS BACK"],
         use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
+    // THE REPAIR KIT (docs/PLAYER-COMBAT.md, step 1, build 2026-11-11e; the owner, 2026-11-11: "have the player use items to recharge the bars"): one of your bars back, mid-fight too (js/playercombat.js)
+    repair_kit: { id: "repair_kit", name: "REPAIR KIT", cat: "gear", type: "consumable", stack: 3, col: "#7dffa8", icon: "repair", classes: null,
+        desc: "A pocket repair kit for your shell. Use it to get one of your bars back, even in the middle of a fight.",
+        lore: "A palm-sized case of sealant, a coil of patch tape and a driver with three bits. Somebody wrote KEEP ONE ON YOU inside the lid.",
+        stats: ["EFFECT  ONE BAR BACK (NOT PAST THREE)", "FROM  CREATURES, SOMETIMES; AND SPOTS IN THE FACILITY THAT FILL AGAIN", "QUICK USE  THE KIT PILL BY THE DIAL, OR H"],
+        use: () => typeof playerKitUse === "function" ? playerKitUse() : { ok: false, why: "NOT NOW" } },
     // the Mutator's HEALING SERUM (js/serum.js): made at the laboratory over time, or crafted there for DNA; used, it is splashed where the Mutator stands and heals the allies in the pool
     healing_serum: { id: "healing_serum", name: "HEALING SERUM", cat: "sample", type: "consumable", stack: 5, col: "#7dffb0", icon: "vial", classes: ["mutator"],
         desc: "A green serum. Splashed on the ground, it makes a pool that heals your followers and clones standing in it.",
@@ -111,7 +117,7 @@ const ITEMS = {
         get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + (Math.round(P.sleep * P.copyFactor) / 60).toFixed(2).replace(/\.?0+$/, "") + " S (A QUARTER OF THE ORIGINAL), " + P.radius + " TILES", "SPARES  YOU AND YOURS: ENEMIES ONLY", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "MADE AT  THE ANALYSIS BENCH, ◆" + P.copyPrice + ", WITH THE ORIGINAL IN YOUR PACK"] : []; },
         verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion_copy") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion_copy") : { ok: false, why: "NO POTION HERE" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "power_module", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
+const ITEM_ORDER = ["ammo_pack", "repair_kit", "flare", "power_cell", "mutagen_sample", "power_module", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
 
 // ── the pack ──
 let playerInv = {};
@@ -214,6 +220,11 @@ const INV_ICONS = {
         c.fillStyle = "#2b2f3a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.36, y - s * 0.12, s * 0.72, s * 0.44); c.fill(); c.stroke();
         c.beginPath(); c.moveTo(x - s * 0.14, y - s * 0.12); c.lineTo(x - s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.12); c.stroke();
         c.fillStyle = col; c.beginPath(); c.moveTo(x + s * 0.04, y - s * 0.02); c.lineTo(x - s * 0.1, y + s * 0.12); c.lineTo(x, y + s * 0.12); c.lineTo(x - s * 0.04, y + s * 0.26); c.lineTo(x + s * 0.12, y + s * 0.08); c.lineTo(x + s * 0.02, y + s * 0.08); c.closePath(); c.fill();
+    },
+    repair: (c, x, y, s, col) => {   // the repair kit: a small case with a handle, a plus on its lid
+        c.fillStyle = "#2b2f3a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.34, y - s * 0.12, s * 0.68, s * 0.42); c.fill(); c.stroke();
+        c.beginPath(); c.moveTo(x - s * 0.13, y - s * 0.12); c.lineTo(x - s * 0.13, y - s * 0.25); c.lineTo(x + s * 0.13, y - s * 0.25); c.lineTo(x + s * 0.13, y - s * 0.12); c.stroke();
+        c.fillStyle = col; c.fillRect(x - s * 0.045, y - s * 0.03, s * 0.09, s * 0.25); c.fillRect(x - s * 0.125, y + s * 0.05, s * 0.25, s * 0.09);
     },
     leg: (c, x, y, s, col) => {
         c.strokeStyle = "#0b1a20"; c.lineCap = "round"; c.lineJoin = "round"; c.lineWidth = Math.max(5, s * 0.16); c.beginPath(); c.moveTo(x - s * 0.3, y + s * 0.3); c.lineTo(x - s * 0.05, y - s * 0.22); c.lineTo(x + s * 0.3, y - s * 0.02); c.stroke();

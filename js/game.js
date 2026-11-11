@@ -373,6 +373,7 @@ function drawCloneRespawnTicker(cx, topY) {
 // One place decides what draws in front of what: depth is x + y (a bigger sum draws lower and in front).
 function drawDepthOf(o) {
     if ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it; the crystal after its pad (js/facilitydecor.js)
+    if (o.type === 'floor' && typeof battleFloorFirst === "function" && battleFloorFirst(o)) return o.x + o.y + BV_FLOOR0;   // (the battle view: the floor first, so what is written on it lies under all that stands on it: js/battleview.js)
     return o.x + o.y;
 }
 
@@ -666,6 +667,8 @@ function render() {
         // YOUR RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js: 5% of its charge); at or below its reserve it cannot bring you back, and the run is over (the owner, 2026-11-01: "Game over")
         if (typeof crystalDraw === "function" && !crystalDraw("player")) { health = 0; if (typeof showGameOver === "function") showGameOver("THE CRYSTAL HAS NO POWER LEFT TO BRING YOU BACK"); return; }
         health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
+        if (typeof playerCombatReset === "function") playerCombatReset();   // (the guard down, no dive: js/playercombat.js)
+        if (typeof battleViewDrop === "function") battleViewDrop();   // (the battle view eases out: js/battleview.js)
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
         player.visualX  = player.x; player.visualY  = player.y;
@@ -713,6 +716,7 @@ function render() {
 
     // ── THE PLAYER: a path of waypoints and real walls (js/facilityplay.js) ──
     facilityPlayerStep();
+    if (typeof battleViewTick === "function") battleViewTick();   // THE BATTLE VIEW: a creature engaging eases the camera in (js/battleview.js)
 
     // ── UPDATE HAZARDS ──
 
@@ -1077,7 +1081,7 @@ function render() {
     });
 
     // ── THE NETWORK PANEL: the relays and the rooms with power (js/facilitynet.js) ──
-    drawFacilityNetworkHUD();
+    if (!(typeof battleViewDefers === "function" && battleViewDefers())) drawFacilityNetworkHUD();   // (in the battle view it waits for after the zoom: js/battleview.js battleViewPost)
 
     // ── SMOKE ──
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
@@ -1204,13 +1208,14 @@ function render() {
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30 + (a.bodyR || 0) * TILE_W) {   // (bodyR: a huge body, THE ANT QUEEN's, is hit anywhere on it: js/bosses.js)
+                        if (p.targetsGreen && typeof playerGuardBlocks === "function" && playerGuardBlocks(p, a)) { hit = true; return; }   // YOUR GUARD: a creature's shot at your squad near you hits you instead (js/playercombat.js)
                         if (p.damage > 0) applyDamage(a, p.damage, p.source, null, false, false, p.hit || null);   // (a shot with no damage of its own, a HEXFIRE's, only lands: js/evolution.js)
                         if (p.onHit) p.onHit(a);
                         hit = true;
                     }
                 }
             });
-            // A creature's shot never hits the player — it hurts you only by biting you up close (js/predator.js). The round passes you by.
+            // A creature's shot never hits the player — it hurts you only by biting you up close (js/predator.js), or through your GUARD (above). The round passes you by.
         }
         return !hit && p.life > 0;
     });
@@ -1227,6 +1232,7 @@ function render() {
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
     if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
+    if (typeof drawPlayerCombatFx === "function") drawPlayerCombatFx();   // your guard's reach, your stun dive's streak (js/playercombat.js)
     if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash, the Technomancer's punch (js/mutator.js)
     if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Technomancer's arc (js/technomancer.js)
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
@@ -1234,8 +1240,9 @@ function render() {
     if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)
     if (typeof drawFollowerPoisonMarks === "function") drawFollowerPoisonMarks();   // green bubbles over a poisoned follower (js/combat.js)
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
-    if (typeof nestMeterDraw === "function") nestMeterDraw();           // the Ant Nest's damage meter (js/nestconsole.js)
+    if (typeof nestMeterDraw === "function" && !(typeof battleViewDefers === "function" && battleViewDefers())) nestMeterDraw();           // the Ant Nest's damage meter (js/nestconsole.js; in the battle view, after the zoom)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
+    if (typeof battleViewPost === "function") battleViewPost();   // THE BATTLE VIEW: the world picture zoomed, its edges, the HUD the world pass held back (js/battleview.js)
     drawFloatingTexts();
     if (typeof dialogueDraw === "function") dialogueDraw();   // the dialogue box: who is talking, their picture, what they said (js/dialogue.js); the panels below draw over it
     // The clone bay first, then its button over it, so the button that

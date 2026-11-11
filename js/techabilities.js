@@ -572,6 +572,7 @@ function techRingAct(r, act) {
 }
 // the rubble under a press on the screen (js/input.js handleLongHold): { r, d } or null; a hole has no ring
 function techRubbleAtScreen(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return null;
     let best = null; for (const r of _techRubbles()) { if (techRubbleOpen(r)) continue; const p = _techScr(r.at[0], r.at[1]), d = Math.hypot(ex - p.x, ey - (p.y + TILE_H - 14)); if (d < 64 && (!best || d < best.d)) best = { r, d }; }
     return best;
@@ -1392,6 +1393,7 @@ function techAimPickEnemy(e) { return _techAimLast("enemy", e); }
 function techAimPickSpot(p) { return _techAimLast("spot", p); }
 // the floor under a point on the screen (as a tap walks the player there: js/input.js handleInput), not rounded to a tile
 function techScreenToWorld(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPickLift === "function" ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
     return { x: (dy / TILE_H + dx / TILE_W) / 2 + player.visualX, y: (dy / TILE_H - dx / TILE_W) / 2 + player.visualY };
 }
@@ -1419,6 +1421,7 @@ function techAimTap(x, y) {
 function _techOnLabel(key, ex, ey) { const lr = _techLabels[key]; return !!lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h; }
 // a tap on a site (js/input.js handleInput): set a launcher up there, send a follower up from the one there, or (its tag again, with its aim up) ride it yourself; a tap on a ledge's tag: jump down. True when it was a site's
 function techSiteTap(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return false;
     for (const L of _techLedges()) if (_techOnLabel("ledge:" + L.id, ex, ey)) { const r = techLedgeJump(L); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // a ledge's tag (▼ LEDGE): you jump down from it
     for (const C of techClimbs) if (_techOnLabel("climb:" + C.id, ex, ey)) { const r = techClimbGo(C); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // a REEF climb's tag: you go over it

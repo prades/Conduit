@@ -17,6 +17,7 @@ Saved from the roster poster (`docs/images/roster-poster.png`, regenerate with
 | Glow | every outline is 3px in its colour with a 14–30px glow (`shadowBlur`); the selected/active state fills the slab with the colour and flips the text to near-black |
 | Cards | dark gradient (`#0f1730` → `#05070f`), a radial wash of the element colour behind the art, faint diagonal speed lines, a name plate fading in from the bottom with a coloured bar at its left edge; role tags are small slanted tabs top-left. In the game a follower's card carries its **backdrop** (its element's texture under its class's) and an equip card is a **tilted 3D slab** ("The 3D cards and the backdrops", below) |
 | Empty slots | dashed `#3a4a70` outline, a big dim `?`, "IN DEVELOPMENT" / "ROLE ON HOLD" |
+| The battle's faces | the only webfonts the game ships (build `2026-11-11h`, `BATTLE-LOOK.md`): seven faces in `fonts/battle`, SIL Open Font License, cut down to the letters the game writes, declared in game.html. The floor's writing in a fight is Titan One; a hit's number in a fight takes its damage type's face, and the other words the status face (build `2026-11-11i`) |
 
 ## Component sizes (1920×1080 reference; scale with the canvas)
 

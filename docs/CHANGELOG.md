@@ -4,10 +4,61 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
-### Build `2026-11-11e` · branch `claude/skink-swirl-attack` (not on main) · the Electro Skink's everyday hit is a swirl
+### Build `2026-11-11k` · branch `claude/skink-swirl-attack` · the Electro Skink's everyday hit is a swirl
 - **The Skink's everyday hit** (the owner: "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form"; "Looks only", one hit and one number, the chain "Drop it", "Slashing", "keep it as is") is a vortex drawn round the enemy: the body in a fast ring (three copies of it), curling in, spinning and curling out over 24 frames, **one hit** of 0.35 × its ATK as the ring closes on **one enemy**. The chain lightning is dropped for the Skink (every other electric follower keeps it). Its own body is hidden for the vortex and pops back. Same WILL and rest as before. Its damage type is unchanged: its form's type was already Slashing, so the hit is half Slashing, half electric.
 - **Art:** design No. 926 (`design/evolutions/forms40.js`, a swirl mode in No. 905's model, `forms36.js`) baked to `img/evo/skinkswirl.png` (cropped, `js/evopack.js`); `crop_sheets.js` now crops a form's `swirl` sheet too. The ring is flat and the glow under it is drawn in code; the owner saw one draft of the still frames and chose to see it in the game.
 - Numbers (6 + 12 + 6 frames, 0.35) are the agent's, provisional. Tests: `tests/skinkswirl.js` (new, 13 checks). Docs: `COMBAT.md` §7.4, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`. The Bible is not changed. **Not playtested, and not seen in the game by the agent** (the vortex is drawn by code that no test looks at).
+
+### Build `2026-11-11j` · branch `claude/start-game-project-HSh7Z` · the roster card's light shows
+- **A follower's card lights up when its hit lands** (the owner: the roster "will highlight and shake the follower card"). Build 11i lit it with a glow the card's own clipped shape cut off and its slanted background covered: only a slight brightening showed (seen in 11i's pictures). The glow, in the follower's element's colour, is now on the card's background. It comes on at once and fades out as the shake ends.
+- **The card answers on the frame the number lands**: its health moved a frame late in 11i.
+- Tests: `tests/battlelook.js` (the card's light and its timing). Docs: `BATTLE-LOOK.md`. Not playtested.
+
+### Build `2026-11-11i` · branch `claude/start-game-project-HSh7Z` · the numbers (the battle look, step 3)
+- **A hit's number in a fight** (the owner's drafts, then "build it"): 1.8× today's size, in its damage type's face (column C: slashing Bangers, piercing Barlow Condensed, projectile Chakra Petch, crushing Titan One, earthquake Rubik Dirt, elemental Cinzel Decorative; a hit with no type, such as a burn's tick, in Pixelify Sans, the status face).
+  - **Knocked off the way the blow went**, from the attacker through the target, so the two sides' numbers part (8 frames, about 38 px).
+  - **A creature's number** then glides back into its floor bar where the health is cut, lying flat along it by frame 20, and is gone 8 frames later. The bar drops only as the number lands; the lost piece flashes white and falls away, and the bar shakes a little.
+  - **The bonus lands second**: first the hit without its bonuses (a weakness's extra, an elemental advantage, the Opportunity cards' share; resistances still lower it as before), then +N in gold, sliding along the bar to its own cut. The bar moves twice. `dmgApply` now gives the share with no bonus (`dmgBaseShare`).
+  - **A follower's number** just goes where the knock left it. As it lands, the follower's card on the roster lights in its element's colour and shakes, its health moves then and not before, and the −N flies out of the card's side. Its healing (+N), and WEAK! (after its number) or a pale resist, fly out too.
+- **The other words on the world in a fight** (DODGED, IMMUNE, a heal's +N and the like) are in the status face, a little bigger, and two at one place are kept apart.
+- **A hit between yours and a creature near you** brings the battle view on at once, so the first number already flies.
+- **The fading objects, fixed** (seen in build 11h's pictures):
+  - A big object (the semi truck) fades whole when any of its tiles hides a fighter, not in patches. Its outline goes round it, and its inner tiles get the nearest floor under them.
+  - A one-tile object's whole picture now counts. Build 11h guessed a unit-sized box on its tile, which missed a tall object's top.
+- Out of a fight the numbers are as before. All numbers are mine, provisional. Tests: `tests/battlelook.js` (26 checks, 7 more). Docs: `BATTLE-LOOK.md`, `COMBAT.md`, `UI-STYLE.md`, the Bible. Not playtested.
+
+### Build `2026-11-11h` · branch `claude/start-game-project-HSh7Z` · the battle view (the battle look, step 2)
+- **The battle view** (the owner: "build it", after the drafts): when a creature engages you or your squad, the camera eases in to 1.25× (0.4 s) and the edges soften: blurred and darkened on HIGH, darkened on GRAPHICS: LOW. It eases back out (0.6 s) 3 s after the last creature engaging.
+  - "Engaging": a creature within 7 tiles of you and in sight that is going for you or one of yours, that you or yours hit in the last 2 s, or that your squad is ordered at. A sleeping one does not count. The dialogue box and the website's background keep the view out; a knockout (yours, or the queen's) takes it out at once.
+  - The HUD does not zoom; the network panel and the Ant Nest's meter, which were drawn with the world, wait for after the zoom. Taps go back through the zoom: a creature, a follower, a tile, the Crystal, a station, the specimen, a launcher site, FLUX MOVE's objects and tiles, a body for the Mutator.
+- **The floor in a fight**: drawn first, then what is written on it, then all that stands on it (on your own level only; a deck over a floor stays as it was).
+  - Each fighter's tile is lit, green yours and red theirs.
+  - Before each creature: its health bar on the floor, with its level (LV7) and its element's tag (the energy cards' symbol in its colour). Your followers have no floor bar; their health stays on the roster.
+  - **STUNNED** is written on the floor by a stunned creature while the stun lasts; **WEAK!** where a weakness was hit, shaking. They are no longer in the air. **RESIST** floats off small and pale.
+- **No names over the units** in a fight, and no small bars over them.
+- **An object in front of a fighter** (nearer the camera, its picture over the fighter's) fades to a ghost at 30% over 0.2 s, its floor drawn and its tile outlined, and comes back the same way. It still stops shots, hides what is behind it and blocks the way.
+- **The seven faces of column C** ship with the game in `fonts/battle`, each under the SIL Open Font License and cut down to the letters the game writes. The floor writes in Titan One; the numbers' faces come in the next build. Pixelify Sans came as a WOFF (not a WOFF2) and is shipped as one.
+- **Not in this build**: the numbers' faces, the knock and the glide to the bar, the roster's answer (next, `2026-11-11i`); the attack frames.
+- All numbers are mine, provisional, except the zoom (the owner's, as drafted). Tests: `tests/battlelook.js` (new, 19 checks, the real page among them); `tests/ghost.js` knows the view's drawing-only state. Docs: `BATTLE-LOOK.md`, the Bible. Not playtested.
+
+### Build `2026-11-11g` · branch `claude/start-game-project-HSh7Z` · no DEFEATED
+- **DEFEATED is gone** (the owner: "We're removing the defeated text"). Nothing floats over a follower, a clone or a creature that falls (`COMBAT.defeatText` 0; it was 90 frames).
+- The boss's "◈ … IS DEFEATED" banner and the Ant Nest console's DEFEATED state are other words and stay.
+- Tests: `tests/combat.js` and `tests/mutator.js` now check there is none. Docs: `COMBAT.md`, `MUTATOR.md`, `BATTLE-LOOK.md`, the Bible.
+
+### Build `2026-11-11f` · branch `claude/start-game-project-HSh7Z` · GUARD and STUN DIVE (step 2 of B built on A)
+- **GUARD** (the owner chose "Guard stance"): the GUARD button by the dial, or **G**, holds up a guard until you press it again. A creature's shot that would hit one of your squad within 2.5 tiles of you hits you instead: one bar, and inside the grace after a hit it costs nothing. You move at half speed while guarding. A green ring on the floor shows who is covered. A knockout drops it.
+- **STUN DIVE** (the owner chose "Chip, then tap"): the STUN button, or **V**, then tap a creature within 5 tiles that you can see: you swoop to its side in a fifth of a second (nothing hits you on the way) and it is stunned for 1.5 s. Then the button rests 12 s, its seconds counting down on it. A tap anywhere else puts the dive away.
+- **Where the buttons are**: round, GUARD above STUN, just left of the dial; the row of pills beside the dial had no room left on an iPad.
+- **A tap on an open panel** (the pack, INFO, the class picker, the Armory) no longer reaches a pill or button the panel hides by the dial: the serum, potion and kit pills, GUARD and STUN (the ammunition pill already let go).
+- The numbers (2.5 tiles, 5 tiles, 1.5 s, 12 s) are mine, provisional. Tests: `tests/playercombat.js` (6 more checks). Not playtested.
+- **The Bible**: the bars' refill times (since `2026-11-11e`) and the dive's showed frames as seconds ("600 s" for 10 s); they read in seconds now, and `tests/bible.js` refuses a number format it does not know.
+
+### Build `2026-11-11e` · branch `claude/start-game-project-HSh7Z` · the player's bars come back, and the repair kit (step 1 of B built on A)
+- **The bars come back** (the owner chose "B built on A", and "Slow"): after 10 seconds with no creature near you and no hit, one bar comes back, then one every 8 seconds, up to three. A hit, or a creature coming near, starts the wait again. Three gone is still a knockout, as before.
+- **The REPAIR KIT**: one bar back, mid-fight too, from the pack, the **KIT** pill by the dial, or **H**; refused when your bars are full. Creatures sometimes drop one (8% of kills, provisional), and three lie in the facility (two in the arena, one on the Sewers' north ledge), each back three minutes after it is taken. On the floor it is its own little model: a grey case with a green plus.
+- **Next**: GUARD (a stance: shots at followers near you hit you instead) and STUN DIVE (the chip, then a creature).
+- Tests: `tests/playercombat.js` (new, 7 checks); facilityplay updated (18 items, 15 cases, the kit's model); the Bible's numbers. The other eleven floor models re-baked pixel for pixel the same. Not playtested.
 
 ### Build `2026-11-11d` · branch `claude/start-game-project-HSh7Z` · the electrical domain, step 1: the little door and the place
 - **A little door in the Server Room** (the owner: "a little door in the server room that goes to the electric domain"; its place, "1", beside the junction). It opens once the junction is repaired. Until then it does nothing, and its tag says NO POWER: REPAIR THE JUNCTION. Through it, you and the squad following you come out in the **Deep Server Room**, and its stairs bring you back out at the door.

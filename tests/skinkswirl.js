@@ -1,4 +1,4 @@
-// THE ELECTRO SKINK'S SWIRL (build 2026-11-11e; js/evolution.js SKINK_SWIRL; the owner, 2026-11-11: "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops
+// THE ELECTRO SKINK'S SWIRL (build 2026-11-11k; js/evolution.js SKINK_SWIRL; the owner, 2026-11-11: "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops
 // back to natural form"; "Looks only", one hit ("you should just have one number"), the chain "Drop it", "Slashing" (its form's type already), "keep it as is" for the look; design No. 926).
 //   its everyday hit is a vortex at the enemy and ONE hit landing as the ring closes, SKINK_SWIRL.mult × its ATK, one enemy (no chain), the same hit the old chain's first jump made
 //   the Skink's own body is not drawn while it swirls and is back after; a target that dies in the coil takes no hit; a Skink that dies ends the vortex

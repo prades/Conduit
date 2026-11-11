@@ -1340,7 +1340,7 @@ function drawEvolvedOverlay(f, px, py, g) {
     g.restore();
 }
 
-// ── THE ELECTRO SKINK'S SWIRL (build 2026-11-11e) ───────────────────────────────────────────────────────────────────────────
+// ── THE ELECTRO SKINK'S SWIRL (build 2026-11-11k) ───────────────────────────────────────────────────────────────────────────
 // ASKED (the owner, 2026-11-11, of the Skink's everyday hit): "what would be cool is if he like swirls around the enemy in a vortex really fast and then pops back to natural form." Of the
 // agent's questions: "Looks only" (the Skink stays where it stands; the vortex is drawn round the enemy), "Same total, split" was not taken: "It's the primary attack, you should just have one
 // number" (one hit), the chain lightning "Drop it" (one enemy), "Slashing" (its form's type already: DMG_FORM.electroskink.main, so the hit is half Slashing and half electric as every

@@ -313,15 +313,20 @@ function partySlotsUpdate(E, lit) {
           const cs2 = !lit && typeof techChip2State === "function" ? techChip2State(f) : null, ab2 = el.querySelector(".sb-ab2");   // the Thermite Burrower's second chip (FAULTLINE), above the first
           el.classList.toggle("has-ab2", !!cs2); if (ab2) { _sbSet(ab2, "textContent", cs2 ? cs2.text : ""); _sbSet(ab2, "className", "sb-ab2" + (cs2 ? " " + cs2.cls : "")); } }
         const name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", sub = "LV " + (f.level || 1) + (st ? " · " + st.text : "");
-        const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub"), hp = el.querySelector(".sb-hp u");
+        const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub");
         _sbSet(nm, "textContent", name); _sbSet(sb, "textContent", sub); if (st) sb.style.color = st.col;
-        const frac = Math.max(0, Math.min(1, (f.health || 0) / (f.maxHealth || 1))), w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
-        if (hp.style.width !== w) hp.style.width = w; if (hp.className !== cls) hp.className = cls;
-        { const hpn = el.querySelector(".sb-hpn"); if (hpn) _sbSet(hpn, "textContent", Math.max(0, Math.round(f.health || 0)) + "/" + Math.max(1, Math.round(f.maxHealth || 1))); }   // the numbers in the bar
+        partySlotHealth(el, f);   // its health: the bar and the numbers in it
         _partyXpBar(el, f); _partyUltBar(el, f);
         const key = f.evolved + "|" + f.element; if (el._thumbKey !== key && typeof _ccThumb === "function") { el._thumbKey = key; el._thumbDone = false; _ccThumb(el.querySelector(".sb-thumb"), f); }
         if (!el._thumbDone && f.evolved && typeof EVOLUTIONS !== "undefined" && typeof _ccThumb === "function") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { el._thumbDone = true; _ccThumb(el.querySelector(".sb-thumb"), f); } }   // (an evolved form's picture may still have been loading)
     }
+}
+// a member's health on its card: the bar and the numbers in it. In a fight a hit takes its share only as its number lands (js/battleview.js battleBarHealth; each frame, battleCardsTick)
+function partySlotHealth(el, f) {
+    const now = typeof battleBarHealth === "function" ? battleBarHealth(f) : (f.health || 0), hp = el._sbHpU || (el._sbHpU = el.querySelector(".sb-hp u")), hpn = el._sbHpN || (el._sbHpN = el.querySelector(".sb-hpn"));
+    const frac = Math.max(0, Math.min(1, now / (f.maxHealth || 1))), w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
+    if (hp) { if (hp.style.width !== w) hp.style.width = w; if (hp.className !== cls) hp.className = cls; }
+    if (hpn) _sbSet(hpn, "textContent", Math.max(0, Math.round(now)) + "/" + Math.max(1, Math.round(f.maxHealth || 1)));
 }
 function partyBarRender(force) {
     const root = partyBarEl(); if (!root) return;

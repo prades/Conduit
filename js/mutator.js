@@ -373,6 +373,7 @@ function mutatorBodyRing(b) {
 // the body under a point on the screen (the long press, js/input.js), and how far from it the point is
 function _bodyPickPoint(b) { const [x, y] = _mxScr(b.x, b.y); return { x, y: y - 16 }; }
 function cloneBodyAtScreen(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     let best = null, bd = typeof PICK_RADIUS === "number" ? PICK_RADIUS : 45;
     for (const b of cloneBodies) { const p = _bodyPickPoint(b), d = Math.hypot(ex - p.x, ey - p.y); if (d < bd) { bd = d; best = b; } }
     return best ? { body: best, d: bd } : null;

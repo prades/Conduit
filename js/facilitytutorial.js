@@ -95,6 +95,7 @@ function _fpExtraLight(x, y, keys) {
 function facilityTutorialTick() {
     if (typeof attractOn === "function" && attractOn()) { attractTick(); return; }   // the website's background: no pickups, stations, portals, relays, director, save or creatures (js/attract.js)
     facilityPickupTick();
+    if (typeof playerCombatTick === "function") playerCombatTick();   // the bars come back out of danger (js/playercombat.js)
     if (typeof facilityStationTick === "function") facilityStationTick();
     if (typeof facilityFollowerSpotsTick === "function") facilityFollowerSpotsTick();
     if (typeof facilityPortalTick === "function") facilityPortalTick();
@@ -172,7 +173,7 @@ function facilityPickupsStart(F) {
     _fp.items = _fp.items.filter(i => i.fp !== "pickup");
     for (const p of (F.pickups || [])) if (!p.class && !p.needs) _fp.items.push(_fpPickupItem(p));   // (the cases for a class are not here until that class is chosen: facilityClassItemsEnter; a case that `needs` a relay not until it is online: facilityNeedsEnter)
 }
-function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, fetch: p.fetch || null, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
+function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, fetch: p.fetch || null, respawn: p.respawn || 0, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
 // a relay has come online: the cases that were waiting for it (a pickup with `needs`) arrive, each in a column of light (quiet: no message, no light: a saved game putting things back)
 function facilityNeedsEnter(relayId, quiet) {
     if (!_fp || !_fp.items) return 0;
@@ -214,12 +215,14 @@ function _fpPickupOwn(id) { return typeof PROP_ATLAS !== "undefined" && !!PROP_A
 // each frame: take what the player walks over
 function facilityPickupTick() {
     if (!_fp || !_fp.items || typeof invAdd !== "function") return;
+    const f = _fpFrame();
     for (const it of _fp.items) {
+        if (it.fp === "pickup" && it.taken && it.respawn && f - (it.takenAt || 0) >= it.respawn) { it.taken = false; it.said = false; it.arrive = f; }   // a spot that fills again (a repair kit's: js/facilitymap.js `respawn`)
         if (it.fp !== "pickup" || it.taken || it.fetch) continue;   // (a case someone else fetches, the power module on the catwalks: js/sidequest.js)
         if (Math.hypot(it.x - player.visualX, it.y - player.visualY) > FP_PICK_R) continue;
         if (!it.items.every(([id, n]) => invRoom(id) >= n)) { if (!it.said) { it.said = true; invSay("YOUR PACK IS FULL OF THAT", false); } continue; }
         for (const [id, n] of it.items) { invAdd(id, n); const d = itemDef(id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100 - 20 * it.items.indexOf(it.items.find(q => q[0] === id)), text: "+" + n + " " + d.name + (classAllows(d.classes) ? "" : "  (" + d.classes.map(className).join(" / ") + " ONLY)"), color: d.col, life: 110, vy: -0.1, size: 13 }); }
-        it.taken = true;
+        it.taken = true; if (it.respawn) it.takenAt = f;
     }
 }
 

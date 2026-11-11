@@ -5,7 +5,7 @@
 //   ONE BITE, ONE UNIT       the bite lands on the unit it turned on (or the nearest in reach), not on everyone in reach (COMBAT.bite.splash is the old rule, off).
 //   THE CAP                  no hit takes more than COMBAT.hitCap of one of your units' max health (followers and clones alike).
 //   THE NUMBERS              a hit on one of yours floats a red "−n"; healing a green "+n" (healUnit); every such text is anchored to the unit in the world (js/drops.js floatingTextScreen).
-//   THE BAR                  keeps a pale segment of the health just lost for COMBAT.lagBar frames (unitLagPct, pure); DEFEATED is said over a unit that falls; the Crystal's ticker counts followers coming back too.
+//   THE BAR                  keeps a pale segment of the health just lost for COMBAT.lagBar frames (unitLagPct, pure); nothing is said over a unit that falls (DEFEATED taken out, build 2026-11-11g); the Crystal's ticker counts followers coming back too.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -91,11 +91,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.l1 > r.pct && Math.abs(r.l1 - r.top) < 0.02, 'right after the hit: ' + JSON.stringify(r)); same(r.l1, r.l1b, 'pure'); ok(r.l2 < r.l1 && r.l2 > r.pct, 'draining: ' + r.l2); same(r.l3, 0, 'gone'); same(r.kept, true, 'nothing was reset by reading');
         ok(/if \(lag > pct\)/.test(rd('js/draw.js')) && /unitLagPct\(actor\)/.test(rd('js/draw.js')), 'drawHealthBar paints the segment for the followers\' and the creatures\' bars');
     });
-    check('DEFEATED floats over a unit that falls (teal for yours, orange for a creature); a fallen follower is on the Crystal\'s ticker with its element and role', () => {
+    check('no DEFEATED over a unit that falls (the owner took it out, 2026-11-11: COMBAT.defeatText 0); a fallen follower is on the Crystal\'s ticker with its element and role', () => {
         const r = J(`(function(){ __clear(); floatingTexts.length = 0; const f = __follower('fire', 'brawler', 5), c = __creature('ant', 'scout', 3); c.health = c.maxHealth = 10; applyDamage(c, 1e6, f); const tc = floatingTexts.find(t => t.text === 'DEFEATED');
             floatingTexts.length = 0; f.health = 1; applyDamage(f, 1e6, c); const tf = floatingTexts.find(t => t.text === 'DEFEATED'); render(); const q = respawnQueue.find(e => !e.isClone);
             return { tc: tc && tc.color, tf: tf && tf.color, q: q ? [q.element, q.role, q.timer > 0] : null }; })()`);
-        same(r.tc, '#ff8a6a', 'the creature\'s'); same(r.tf, '#19e6c1', 'the follower\'s'); ok(r.q && r.q[0] === 'fire' && r.q[1] === 'brawler' && r.q[2], 'the ticker\'s entry: ' + JSON.stringify(r.q));
+        same(r.tc, undefined, 'DEFEATED over the creature'); same(r.tf, undefined, 'DEFEATED over the follower'); same(J('COMBAT.defeatText'), 0, 'COMBAT.defeatText'); ok(r.q && r.q[0] === 'fire' && r.q[1] === 'brawler' && r.q[2], 'the ticker\'s entry: ' + JSON.stringify(r.q));
         ok(/e\.isClone \|\| e\.element/.test(rd('js/game.js')) && /roleLabel\(e\.role/.test(rd('js/game.js')), 'the ticker lists followers');
     });
     check('the telegraph draws for a creature mid wind-up (a ring, a chevron at its target, the word BITE) and the frame calls it among the overlays', () => {

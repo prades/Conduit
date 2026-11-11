@@ -7,6 +7,7 @@
 function onPredatorDeath(predator) {
     if (predator && predator.noReward) return;   // a test boss and her brood (the Ant Nest's: js/bosses.js) pay nothing
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
+    if (typeof playerKitDrop === "function") playerKitDrop(predator);   // sometimes a repair kit (js/playercombat.js)
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
     if (typeof questAntKilled === "function") questAntKilled(predator);   // and it is counted (Side Quest's appearance needed about ten of them until build 2026-11-09tt: js/quests.js)
     if (typeof questTrioKilled === "function") questTrioKilled(predator);   // one of the purification's three toxic ants: the third, and the queen comes out (js/quests.js)
@@ -34,7 +35,8 @@ function onPredatorDeath(predator) {
 function floatingTextScreen(t) {
     if (!t.world) return [t.x, t.y];
     const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
-    return [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
+    const p = [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
+    return typeof bvZoomPt === "function" ? bvZoomPt(p[0], p[1]) : p;   // (drawn after the battle view's copy: where the copy puts the unit: js/battleview.js)
 }
 // ONE VOICE. A banner is a text pushed at the centre of the screen. Only the oldest batch shows and counts down — texts pushed on the same frame are one batch, so a title and its line stay together — and the
 // rest wait their turn. While others wait, a batch gets at most BANNER_QUEUED_LIFE frames. A banner already waiting with the same text is not queued twice.
@@ -71,6 +73,12 @@ function drawFloatingTexts() {
     let _row = 0;
     floatingTexts.forEach(t => {
         if (t._waiting) return;             // queued behind the banner showing now
+        if (typeof battleRosterNote === "function") battleRosterNote(t);   // (a word over one of your followers flies out of its card too: js/battleview.js)
+        const _bvr = typeof battleWordRole === "function" ? battleWordRole(t) : null;   // THE BATTLE VIEW (js/battleview.js): WEAK and STUNNED are on the floor; RESIST floats off small and pale; a hit's number flies; the other words are kept apart
+        if (_bvr === "floor") return;
+        if (_bvr === "resist") { const [_rx, _ry] = floatingTextScreen(t); battleDrawResist(t, _rx, _ry); return; }
+        if (_bvr === "number") { battleDrawNumber(t); return; }
+        if (_bvr === "word") { battleWordQueue(t); return; }
         const alpha = Math.min(1, t.life / 30);
         const _dy = isBanner(t) ? (_row++) * 18 : 0;   // banners shown together stack, one line under the other
         const [tx, ty] = floatingTextScreen(t);
@@ -85,6 +93,7 @@ function drawFloatingTexts() {
         ctx.fillStyle = "#000"; ctx.fillText(t.text, tx + 1, ty + 1);
         ctx.fillStyle = t.color; ctx.fillText(t.text, tx, ty);
     });
+    if (typeof battleDrawWords === "function") { battleDrawWords(); battleDrawRoster(); battleCardsTick(); }   // the battle view: its words, kept apart; the words beside the roster; the roster's cards, as the numbers land (js/battleview.js)
     ctx.globalAlpha = 1;
     ctx.restore();
 }

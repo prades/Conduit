@@ -5,6 +5,7 @@
 //   power_cell     an upright capsule: steel caps, a glass middle with a glowing cyan core, two steel rings
 //   power_module   a chunky dark module with an amber lit face, two brass contacts, a handle and a hazard-striped side
 //   toxic_sample, sewer_sample   a capped vial in a little two-ring stand, its liquid glowing green or violet
+//   repair_kit     a small grey hard case with a carry handle and a green plus on its lid (build 2026-11-11e, docs/PLAYER-COMBAT.md; provisional)
 //   and, in the same style, the class kits and the fuel (the same build): fuel_cell a square glass-and-steel canister glowing green; flare two red security flares lying crossed; mech_leg a spider mech's leg
 //   lying on the floor, jointed twice, with a cyan strip; mech_core a hexagonal housing, its cyan heart lit; mutagen_sample a stoppered flask of cloudy violet (its pack icon's shape)
 // Footprints well inside a tile (about half), 6 to 26 px high. Everything is in a block: the helpers must not collide with the other families'.
@@ -88,6 +89,14 @@
     for (let i = 0; i < 3; i++) { const a = i * TAU / 3; g.add(at(cyl(0.006, 0.006, px(10), steelDk, 4), Math.cos(a) * 0.06, px(5.5), Math.sin(a) * 0.06)); }
     return g; };
   B.toxic_sample = vial('#8cff5a'); B.sewer_sample = vial('#c77dff');
+  // A REPAIR KIT (docs/PLAYER-COMBAT.md, step 1, build 2026-11-11e; the look the agent's, provisional): a small grey hard case lying a little turned, a carry handle on top, a raised green plus on its lid
+  // that glows like the HUD's bars, two latches on its front
+  B.repair_kit = () => { const g = G(), s = G(); s.rotation.y = -0.3; g.add(s); const green = STY.glow('#7dffa8', 1.1), shell = STY.std('#5a6270', 0.55, 0.45);
+    s.add(at(cbox(0.3, px(8), 0.2, 0.02, shell), 0, px(4), 0)); s.add(at(cbox(0.305, px(1.4), 0.205, 0.004, steelDk), 0, px(5.6), 0));   // the case and the seam of its lid
+    s.add(at(cbox(0.13, px(1.2), 0.035, 0.004, green), 0, px(8.6), 0)); s.add(at(cbox(0.035, px(1.2), 0.13, 0.004, green), 0, px(8.6), 0));   // the plus
+    s.add(at(cbox(0.12, px(1.2), 0.022, 0.004, steelDk), 0, px(11.2), -0.07)); for (const x of [-0.055, 0.055]) s.add(at(cbox(0.018, px(3), 0.022, 0.003, steelDk), x, px(9.6), -0.07));   // the handle
+    for (const x of [-0.09, 0.09]) s.add(at(cbox(0.03, px(2.2), 0.012, 0.003, steel), x, px(5.2), 0.104));   // the latches
+    return g; };
 
   PROPS.pickups = { variants: Object.keys(B), canvas: [200, 200], exposure: 1.0, build(name) { return { g: B[name](), marks: {} }; } };
 }

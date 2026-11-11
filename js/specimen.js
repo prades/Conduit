@@ -190,6 +190,7 @@ function drawSpecimenOverlay() {
 function _spPlate() { const W = canvas.width, H = canvas.height; return { x: Math.round(W / 2 - 200), y: Math.round(H / 2 + 140), w: 400, h: 56 }; }
 // a tap (js/input.js): on the plate, in the zone, restores; true when it was the plate's
 function specimenTap(ex, ey) {
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     if (!specimenReady()) return false;
     const r = _spPlate(); if (ex < r.x || ex > r.x + r.w || ey < r.y || ey > r.y + r.h) return false;
     specimenRestore(); return true;
