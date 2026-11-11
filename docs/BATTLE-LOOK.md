@@ -40,7 +40,10 @@ What it is today:
     - **STUNNED** is written on the floor by the stunned creature, while the stun lasts.
     - **RESIST** floats off like it is nothing: small, pale, drifting up and away.
     - **One standard face** for the floor's writing.
-    - **The floor's words face you** (the owner, on a sketch over the draft: "it's supposed to say stunned, but I wanted you to turn it so it's not exactly oriented with the tile, but oriented with the user's eyes as well"). Each word lies on the floor, but runs level across the screen, squashed to the floor's slant, instead of along a tile's diagonal. STUNNED stays the word; a STUN with a bar of the time left was drafted from the sketch and is not wanted. WEAK! is turned the same way (the agent's, to match).
+    - **The floor's words run along the tile**, written on the ground: STUNNED and WEAK!.
+      - A turn to face the player (the owner's sketch: "oriented with the user's eyes as well") was drafted level across the screen, squashed to the floor's slant. The owner: "Ugly".
+      - Three more ways were then drafted: A along the tile, B halfway, C standing like a sign. The owner: "Revert where stunned is on the ground". So A, as before; the turned versions are **superseded**.
+      - STUNNED stays the word. A STUN with a bar of the time left, drafted from the sketch, is not wanted.
     - **In a fight, each fighter's tile is lit**, with a bigger health bar on the floor in front of it, in place of the small bars over the units. Your own bars stay where they are, at the top.
     - **No names in a fight** (the owner: "We're getting somewhere. Now I want to make it to where the character names are not visible. It converts down to a element tag, if there is one, and a level that appears next to the health bar."). Each fighter's name plate and its status chip ("Lv 7 FIRE TECHNICIAN", ATTACKING) are not drawn. Next to its floor bar: its element's tag, the energy cards' symbol in the element's colour, if it has an element; and its level (LV7).
     - An experiment, drafted (§10).
@@ -142,7 +145,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. Then on each element's own ball, the seven of them animated and in the fight: fire's licking flames and embers, electric's jagged crackle and arcs, ice's faceted crystal and glints, toxic's wobbling goo, bubbles and a drip, core's breathing orb with a turning hexagon and a ring going out, flux's swirl, BLOOM's five petals and pollen. Then, as the owner corrected it, a soft irregular blur of the element's colours (drawn small and scaled up: the scaling is the blur, no canvas filter), the seven animated and in the fight.
 - the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip.
 - no names in the fight: the plates gone; by each floor bar its level and, if it has one, its element's tag. Drawn two ways, flat on the floor like the bar, and standing upright at the bar's end.
-- the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip). The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- the floor's words facing you: STUNNED and WEAK! level across the screen, squashed to the floor's slant (a still and a clip; "Ugly"). Then three side by side (A along the tile, B halfway, C standing); A kept. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
