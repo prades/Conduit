@@ -46,6 +46,8 @@ Offered three directions (A the bars come back; B A plus a part for the player i
 
 **Step 2 (build `2026-11-11f`):** GUARD guards your squad (followers and clones) within **2.5 tiles** of you; the two buttons are **round, GUARD above STUN, just left of the dial** (the pill row by the dial had no room left on an iPad); the keys **G** and **V**; STUN DIVE reaches **5 tiles** (in sight, a clear way), the swoop takes **0.2 s** and nothing hits you during it, you stop **0.9 tiles** from the creature, the stun lasts **1.5 s**, the button rests **12 s**. A boss can be stunned like any creature (open question 2); a huge body (THE ANT QUEEN's) is in reach when its edge is, and you stop outside it.
 
+**Where the buttons are (build `2026-11-11t`)**: in the corners layout (a tablet or a desktop) GUARD and STUN are two emblems THE CORE holds out on its cables, left of your cube in the bottom-right corner (js/corehud.js; `UI-STYLE.md`, "THE CORE"); a tap does the same. The round buttons by the dial remain outside that layout.
+
 ## 6. Affected systems
 
 The player's bars (js/config.js, js/helpers.js `hurtPlayer`, the HUD), the danger test (js/facilityplay.js `facilityEnemyNear`), the pack (js/inventory.js `ITEMS`), drops (js/drops.js), the map's pickups (js/facilitymap.js), the props (a ground model, design/props/models/pickups.js), the dial's chips (js/targeting.js), creature shots (js/predator.js, `targetsGreen`; the shield's stop, js/techabilities.js `techShieldStopsShot`), the stun (js/combat.js `applyStun`), the save (what kits you carry; the spots).

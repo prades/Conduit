@@ -217,8 +217,8 @@
         <tr><td><b>Tap a creature</b></td><td>Lock your gun on it; the round dial fires. Its card's ATTACK sends the squad at it (on a tablet the card stands bottom left, over the squad's orders, with ALL, RUN and ATTACK: build <code>2026-11-11m</code>).</td></tr>
         <tr><td><b>Long-press a follower</b></td><td>Its card: numbers, INDEX and DISMISS. Long-press a creature for INFO or ATTACK.</td></tr>
       </table></div>
-      <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right, the shards and bars at the top left, the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
-        <figcaption>On an iPad (1180 × 820): the squad and its orders bottom left (each card has a thin XP bar under its health bar), the creature locked bottom right, you top left, the place top right, the dock along the bottom.</figcaption></figure>
+      <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right over your cube (THE CORE: its face, GUARD and STUN, the PACK, the surge's arc, the bars and the shards), the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
+        <figcaption>On an iPad (1180 × 820): the squad and its orders bottom left (each card has a thin XP bar under its health bar), you bottom right (THE CORE, since build 2026-11-11t: your cube, its face, GUARD and STUN on its cables, its lid the PACK, the surge's gold arc, your bars and shards under it) with the creature locked above it, the place top right, the dock along the bottom.</figcaption></figure>
     </section>
     <section class="part" id="story" style="--c:var(--gold)">
       <h2>The story <small>02</small></h2>
@@ -860,7 +860,7 @@
   <div class="open"><b>Open / not built</b><ul><li>The lamp is a circle, not a cone: the player has no facing (docs/TUTORIAL.md, phase 2).</li></ul></div>
 
   <h3 id="player-hits">Hits, damage and the knockdown</h3>
-  <p>Health is a count of hits, not hit points: a bar in thirds at the top of the screen (top left on a tablet), green, then yellow, then red.</p>
+  <p>Health is a count of hits, not hit points: three bars, green, then yellow, then red. On a tablet or a desktop they are on THE CORE's slab, under your cube in the bottom-right corner, whose face shows each hit (since build 2026-11-11t; docs/UI-STYLE.md); on a phone, a bar in thirds at the top of the screen.</p>
   <ul>
     <li><b>Every hit takes one</b>, however hard, and nothing lands during the grace after it. A creature's hit also knocks you back from it, stops your walk and shows <code>HIT · n LEFT</code>.</li>
     <li><b>Only a creature's bite and <a href="#player-fire">burning ground</a> hurt you</b>; shots and specials never do. <b>Nothing heals you</b>: your hits come back all at once at a knockdown, a new game or a reload.</li>
@@ -911,7 +911,7 @@
   <div class="open"><b>Open / not built</b><ul><li>“more attacks with cool downs later”: today only the bite reaches you.</li><li>The prey and bite numbers are “a first pass and not balance” (docs/COMBAT.md §4).</li></ul></div>
 
   <h3 id="player-surge">The ultimate: ARMY SURGE</h3>
-  <p>One bar under your health, the same for every class, filled from your squad and spent on it. No class has an ultimate of its own.</p>
+  <p>One bar under your health (on a tablet or a desktop, the gold arc behind your cube: tap the cube when it is full), the same for every class, filled from your squad and spent on it. No class has an ultimate of its own.</p>
   <ul>
     <li>Each follower or clone within siphon range sends a wisp every interval, which lands with its charge. The bar does not fill during a surge, when full, or with the ⌁ switch off (nobody in range: <code>NO SQUAD IN RANGE</code>).</li>
     <li>A tap on the full bar fires <b>ARMY SURGE</b>: every follower and clone, anywhere, is healed, its will refilled and its own ultimate charged, and hits harder for the surge's length. Not your shots, and not you.</li>
@@ -3618,7 +3618,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11s</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-11t</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3840,7 +3840,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-11s (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-11t (11 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

@@ -106,16 +106,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.armed, true, 'armed'); same(r.ok, true, 'the dive'); same(r.safe, true, 'something can hit you on the way'); same(r.disarmed, false, 'still armed after the dive');
         ok(Math.abs(r.beside - J('PLAYER_COMBAT.dive.stop')) < 0.2, 'not at its side: ' + r.beside); same(r.stunned, true, 'not stunned'); same(r.resting, 'RESTING', 'dived again at once'); same(r.arm, false, 'armed while resting'); same(r.far, 'TOO FAR', 'dived too far');
     });
-    check('the two round buttons by the dial: drawn left of it, a tap on GUARD toggles it and on STUN arms the dive; G and V do the same; a tap on a creature while armed dives, anywhere else puts the dive away', () => {
-        const r = J(`(function(){ playerGuardOn = false; playerDiveArmed = false; _pcDiveReady = 0; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 });
+    check('the two round buttons by the dial (outside the corners layout: THE CORE holds GUARD and STUN there, build 2026-11-11t): drawn left of it, a tap on GUARD toggles it and on STUN arms the dive; G and V do the same; a tap on a creature while armed dives, anywhere else puts the dive away', () => {
+        const r = J(`(function(){ const keepW = innerWidth; innerWidth = 600; playerGuardOn = false; playerDiveArmed = false; _pcDiveReady = 0; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 });
             const g = [_GUARDBTN.x, _GUARDBTN.y, _DIVEBTN.x, _DIVEBTN.y]; const t1 = playerCombatTap(_GUARDBTN.x, _GUARDBTN.y), up = playerGuardOn, t2 = playerCombatTap(_DIVEBTN.x, _DIVEBTN.y), armed = playerDiveArmed, t3 = playerCombatTap(10, 10);
-            playerGuardOn = false; playerDiveArmed = false; return { g, t: [t1, up, t2, armed, t3] }; })()`);
+            playerGuardOn = false; playerDiveArmed = false; innerWidth = keepW; return { g, t: [t1, up, t2, armed, t3] }; })()`);
         same(r.g.join(), '870,574,870,626', 'where they are (left of the dial: GUARD above, STUN below)'); same(r.t.join(), 'true,true,true,true,false', 'the taps');
         const P = rd('js/playercombat.js'), I = rd('js/input.js'), T = rd('js/targeting.js');
         ok(/guard: \{ reach: [\d.]+, speed: 0\.5, key: "g" \}/.test(P) && /key: "v" \}/.test(P) && /if \(k === PLAYER_COMBAT\.guard\.key\) playerGuardToggle\(\); else if \(k === PLAYER_COMBAT\.dive\.key\) playerDiveArm\(\);/.test(P), 'the keys');
         ok(/if \(!touchMoved && typeof playerCombatTap === "function" && playerCombatTap\(upX, upY\)\)/.test(I), 'a tap on the buttons is not taken');
         ok(/if \(typeof playerDiveArmed !== "undefined" && playerDiveArmed\) \{ const foe = findEnemyAtScreen\(ex, ey\); if \(foe\) \{ playerDiveAt\(foe\); return; \} playerDiveCancel\(\); \}/.test(I), 'the armed tap');
         ok(/drawPlayerCombatChips\(_tgAnchor\(\)\)/.test(T), 'the buttons are not drawn by the dial');
+    });
+    check('THE CORE on (the corners layout, build 2026-11-11t): the round buttons are not drawn and take no tap; GUARD and STUN are on the cube (js/corehud.js), which calls the same playerGuardToggle and playerDiveArm', () => {
+        const r = J(`(function(){ const keepW = innerWidth; innerWidth = 1180; const on = coreOn(); playerGuardOn = false; drawPlayerCombatChips({ left: 900, y: 600 }); const o = [on, _GUARDBTN.r, _DIVEBTN.r, playerCombatTap(870, 574), playerGuardOn]; innerWidth = keepW; return o; })()`);
+        same(r.join(), 'true,0,0,false,false', 'with THE CORE on (on, GUARD r, STUN r, a tap where GUARD was, guard up)');
+        const C = rd('js/corehud.js'); ok(/playerGuardToggle\(\)/.test(C) && /playerDiveArm\(\)/.test(C), 'THE CORE does not call the same functions');
     });
 
     check('a huge body (THE ANT QUEEN\'s bodyR) is in reach when its edge is, and you stop outside it, not in it', () => {
@@ -127,9 +132,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ok, true, 'the dive'); ok(Math.abs(r.gap - (1.5 + J('PLAYER_COMBAT.dive.stop'))) < 0.2, 'not outside its body: ' + r.gap); same(r.edge, true, 'its edge in reach, and refused');
     });
     check('a panel over the corner (the pack) hides the buttons and the pills by the dial, and their taps go with them: a tap there is the panel\'s', () => {
-        const r = J(`(function(){ playerGuardOn = false; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 }); const gx = _GUARDBTN.x, gy = _GUARDBTN.y;
+        const r = J(`(function(){ const keepW = innerWidth; innerWidth = 600; playerGuardOn = false; ctx.measureText = () => ({ width: 30 }); drawPlayerCombatChips({ left: 900, y: 600 }); const gx = _GUARDBTN.x, gy = _GUARDBTN.y;
             _KITCHIP.w = _POTIONCHIP.w = _SERUMCHIP.w = 40; invOpen(); drawTargetUI();
-            const o = [playerCombatTap(gx, gy), playerGuardOn, _KITCHIP.w, _POTIONCHIP.w, _SERUMCHIP.w, _ATKCHIP.w]; invClose(); playerGuardOn = false; return o; })()`);
+            const o = [playerCombatTap(gx, gy), playerGuardOn, _KITCHIP.w, _POTIONCHIP.w, _SERUMCHIP.w, _ATKCHIP.w]; invClose(); playerGuardOn = false; innerWidth = keepW; return o; })()`);
         same(r.join(), 'false,false,0,0,0,0', 'a hidden button or pill still takes a tap (GUARD tap, guard up, KIT, POTION, SERUM, ammunition)');
     });
 

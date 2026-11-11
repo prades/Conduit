@@ -41,6 +41,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   // as the page comes up: whether the strip overflows at this width, and that fades and arrows follow (none when it all fits)
   out.natural = snap(); out.naturalOver = tr.scrollWidth > tr.clientWidth + 2;
   var pk = document.getElementById('btnPack'), pr = pk.getBoundingClientRect(), br = bar.getBoundingClientRect(); out.pack = { shown: getComputedStyle(pk).display !== 'none' && pr.width > 0, inDock: bar.contains(pk), right: Math.round(innerWidth - pr.right), line: Math.abs(pr.bottom - br.bottom) <= 2, clear: pr.left >= br.right + 8, r: [Math.round(pr.left), Math.round(pr.top), Math.round(pr.right), Math.round(pr.bottom)], dock: [Math.round(br.left), Math.round(br.right), Math.round(br.bottom)] };
+  var core = document.getElementById('coreHud'), cr = core ? core.getBoundingClientRect() : null, ctag = document.querySelector('#coreHud .core-pack'); out.core = { on: document.body.classList.contains('core-on'), shown: !!cr && cr.width > 0 && getComputedStyle(core).display !== 'none', right: cr ? Math.round(innerWidth - cr.right) : null, bottom: cr ? Math.round(innerHeight - cr.bottom) : null, clear: !!cr && cr.left >= br.right + 4, tag: !!ctag && ctag.getBoundingClientRect().width > 0 };   // THE CORE (build 2026-11-11t): the PACK is its lid in the corners layout
   // more than fits: the strip is narrowed (the game cannot know how many tools a build will have) and the slider has to work
   tr.style.flex = 'none'; tr.style.width = '300px'; toolboxSync(); await wait(50);
   out.start = snap(); out.over = tr.scrollWidth > tr.clientWidth;
@@ -105,7 +106,9 @@ else {
         check('every menu is in the strip, and shown: ROSTER, CARDS, QUESTS, CLONES, SETTINGS, MAP, ?', () => {
             same(r.ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
         });
-        check('the PACK is on the HUD, in the bottom-right corner on the dock\'s line, clear of the dock (build 2026-11-09zz; the owner\'s pick: the HUD, bottom right)', () => {
+        check('the PACK is on the HUD, in the bottom-right corner, clear of the dock (build 2026-11-09zz; the owner\'s pick: the HUD, bottom right): since build 2026-11-11t, in the corners layout, it is THE CORE\'s lid (its PACK tag), the cube in that corner, and the old button is hidden', () => {
+            const c = r.core; ok(c, 'THE CORE not measured');
+            if (c.on) { same(r.pack.shown, false, 'the old PACK button is still shown with THE CORE on'); same(c.shown, true, 'THE CORE is not shown'); ok(c.right <= 8 && c.bottom <= 8, 'THE CORE is not in the bottom-right corner: ' + JSON.stringify(c)); same(c.tag, true, 'its PACK tag is not shown'); same(c.clear, true, 'THE CORE overlaps the dock: ' + JSON.stringify(c)); return; }
             const k = r.pack; ok(k, 'not measured'); same(k.shown, true, 'the PACK button is not shown in the facility'); same(k.inDock, false, 'the PACK is in the dock'); same(k.right, 14, 'its gap to the right edge'); same(k.line, true, 'it is not on the dock\'s line: ' + JSON.stringify(k)); same(k.clear, true, 'it overlaps the dock: ' + JSON.stringify(k));
         });
         check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {

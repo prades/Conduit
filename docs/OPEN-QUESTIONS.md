@@ -801,6 +801,14 @@ The agent's choices, to change on the owner's word:
 4. **CAPACITOR DISCHARGE** (the Static Orb's, a Brawler's) still stands still to store its charges, now one every 0.75 s. Whether a Brawler should store them on the move is open.
 5. **The look:** a Brawler no longer winds up, so the rumble it had while winding up no longer shows; nothing marks its cooldown in the world (its squad card and INFO do).
 
+## THE CORE (built in `2026-11-11t`; `UI-STYLE.md`, "THE CORE")
+The agent's choices, to change on the owner's word:
+1. **Its size**: 340 × 270 at the corner. It could be smaller.
+2. **The lid as the PACK**: the lid flips open, and the pack follows a sixth of a second later.
+3. **The KIT pill** (the repair kit) stays by the dial. It could sit on the slab beside the bars.
+4. **Its faces and times** (a hit 40 frames, a bar back and shards 70, a knockout 150), and the dome when GUARD is up.
+5. **A tap on its face** when the surge is not full only makes it smile. It could open your card in the roster ("Information interactive menu").
+
 ## BOTH (built in `2026-11-11s`; `COMBAT.md` §7.4, "BOTH")
 The agent's choices, to change on the owner's word:
 1. **The timer:** 5 s of everyday hits between two turns of the move (`BOTH_REST_SECONDS`). A turn is one use of the move: its wind-up or strike, and its effect.

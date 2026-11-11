@@ -1,5 +1,5 @@
 // The pictures for players (the owner, 2026-11-11: "Yes, do the images next": a picture's address changes only when the picture changes, and the big pictures in a smaller format with no visible loss).
-// `node tools/images.js`; tools/stamp.js runs it for every build. For every picture the game loads (img/{cards,cave,evo,fx,hd,props}/*.png, which the art tools bake), it makes:
+// `node tools/images.js`; tools/stamp.js runs it for every build. For every picture the game loads (img/{cards,cave,evo,fx,hd,hud,props}/*.png, which the art tools bake), it makes:
 //   img/<dir>/<name>.webp  a lossless WebP copy (ImageMagick), kept only when it is smaller and every channel of every pixel is the PNG's, the colour under a clear pixel included
 //   js/imgmap.js           IMG_MAP: each .png path -> the address the game loads it from (js/config.js imgSrc): the WebP, or the PNG where a WebP is not smaller, with ?v= a fingerprint of the
 //                          PNG's bytes, so the address changes when the picture does and not when the build does (a new build used to download every picture again)
@@ -10,7 +10,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { execFile, execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
-const DIRS = ['cards', 'cave', 'evo', 'fx', 'hd', 'props'];
+const DIRS = ['cards', 'cave', 'evo', 'fx', 'hd', 'hud', 'props'];   // (hud: THE CORE's frames, design/hud/bake-core.js; build 2026-11-11t)
 const MAP_FILE = 'js/imgmap.js';
 const PRELOAD = /(<link rel="preload" as="image" href=")(img\/[^"?]+)\.(?:png|webp)\?v=[^"]*(">)/g;
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');

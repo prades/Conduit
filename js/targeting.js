@@ -202,7 +202,7 @@ function _tgAnchor() {
         const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214; if (!_tgSlot || _tgSlot.isConnected === false) _tgSlot = typeof document !== "undefined" && document.querySelector ? document.querySelector("#mixTool .mt-foe-slot") : null;
         const slot = _tgSlot;
         const r = slot && slot.firstElementChild && slot.getBoundingClientRect ? slot.getBoundingClientRect() : null, cardTop = r && r.height > 0 && r.left > W / 2 ? r.top : canvas.height - 100 - 90;   // (the card stands at the left since build 2026-11-11m: the dial keeps the corner, where it stands with no card)
-        const left = W - 14 - foeW, x = left + R + 6, y = Math.max(R + 12, cardTop - 22 - R);
+        const left = W - 14 - foeW, x = left + R + 6, ct = typeof coreTop === "function" ? coreTop() : null, y = Math.max(R + 12, Math.min(cardTop - 22 - R, ct !== null ? ct - 10 - R : Infinity));   // (above THE CORE when it is there: js/corehud.js)
         return { W, narrow, R, left, top: y - R, x, y, corner: true };
     }
     const left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, net = narrow && typeof _fnBottom === "number" ? _fnBottom : 0;

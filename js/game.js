@@ -668,6 +668,7 @@ function render() {
         if (typeof crystalDraw === "function" && !crystalDraw("player")) { health = 0; if (typeof showGameOver === "function") showGameOver("THE CRYSTAL HAS NO POWER LEFT TO BRING YOU BACK"); return; }
         health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
         if (typeof playerCombatReset === "function") playerCombatReset();   // (the guard down, no dive: js/playercombat.js)
+        if (typeof coreKnocked === "function") coreKnocked();   // (THE CORE topples: js/corehud.js)
         if (typeof battleViewDrop === "function") battleViewDrop();   // (the battle view eases out: js/battleview.js)
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
@@ -689,6 +690,7 @@ function render() {
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
+    if (typeof coreTick === "function") coreTick();   // THE CORE: your cube in the bottom-right corner, its face, its bars, shards and surge (js/corehud.js; the corners layout)
     // The ALARM is a red triangle beside the room tag (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive || (typeof raidActive === "function" && raidActive());   // (an ANT RAID shows it too: js/antraids.js)
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }

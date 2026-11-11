@@ -5,6 +5,7 @@
 // node design/ui-mocks/core/sheet.js [--out=dir]   the review sheet (run the two above first)
 // three.js r128 (an unpacked three@0.128.0, as design/evolutions/bake.js); the model code is design/evolutions/forms-core.js, forms2.js, forms29.js (the cube, No. 814), forms30.js (the class gear).
 // This file runs in the page, inside the model code's scope.
+// window.__BAKE: the game's frames only (design/hud/bake-core.js): the cube alone, its screen dark.
 // Runs inside the model code's scope (forms-core.js, forms2.js, forms29.js, forms30.js: T, G, cbox, cyl, V, FORMS2, _pBlack, _pPanel, _pPeg).
 // One cube: its face shows how the player is (calm, hit, last bar, healed, happy, surge, guard, stun, knocked out); its lid is the PACK;
 // GUARD and STUN are held on two of its cables; the gold arc behind it is ARMY SURGE; the slab under it carries the three bars and the shards.
@@ -166,6 +167,7 @@ const STATES = window.__STATES = {
   pack:    { eye: 'up', col: '#00ff88', look: [0, -0.85], lid: 1, items: 1 },
   ko:      { eye: 'x', col: '#ff6a6a', static: 1, hp: 0, ko: 1, surge: 0.62, text: 'REBOOT' },
   sleepy:  { eye: 'sleepy', col: '#00b870', look: [0, 0.3] },
+  bake0:   {}, bake1: { lid: 0.18 }, bake2: { lid: 0.5 },   // (the game's frames, js/corehud.js: shut, peeking, open; open less than the drafts' so it stays in the box)
 };
 let S = Object.assign({}, BASE);
 function set(name) {
@@ -204,6 +206,9 @@ function set(name) {
   if (S.healRing) { const ring = new T.Mesh(new T.TorusGeometry(1.0, 0.03, 8, 64), glowA(0x7dffa8, 0.7)); ring.rotation.x = PI / 2; ring.position.set(0, CY - 0.2, 0); scene.add(ring); fx.add(ring); const r2 = ring.clone(); r2.position.y = CY + 0.3; r2.scale.setScalar(0.85); fx.add(r2); }
   drawFace(S, 0);
   P.update(1.3, 0);
+  if (window.__BAKE) {   // (the game's frames: the cube alone, its screen dark; the face, GUARD, STUN, their cables, the arc and the rest are drawn by the game, js/corehud.js)
+    face.visible = false; guard.g.visible = stun.g.visible = false; if (guardArm) guardArm.visible = false; if (stunArm) stunArm.visible = false; arc.visible = false; dome.visible = false; fx.visible = false; crackle.visible = false;
+    shell.visible = shellEdge.visible = false; goldLight.intensity = redLight.intensity = 0; return; }
   layout();
 }
 // the HTML under and round it: the slab (the three bars, the shards), the PACK tag at the lid, the words under GUARD and STUN, the surge's words, the siphon
@@ -231,4 +236,9 @@ function render() { R3.render(scene, cam); }
 function points() { scene.updateMatrixWorld(true); cam.updateMatrixWorld(true);
   return { guard: proj(guard.g.localToWorld(V(0, 0, 0))), stun: proj(stun.g.localToWorld(V(0, 0, 0))), lid: proj(B.localToWorld(V(0, CY + H / 2 + 0.05, 0.1))), face: proj(B.localToWorld(V(0, CY - 0.05, D / 2 + 0.1))),
     arc: proj(V(Math.cos(PI * 0.62) * ARC_R, CY + 0.02 + Math.sin(PI * 0.62) * ARC_R, -0.5)), siphon: proj(arcEnd(ARC_FROM - ARC_SPAN)) }; }
-window.CORE = { set, render, layout, STATES, points };
+function bakePoints() { scene.updateMatrixWorld(true); cam.updateMatrixWorld(true); const w = W * 0.76 / 2, h = H * 0.66 / 2, z = D / 2 + 0.0965, c = V(0, CY - 0.01, z), L = o => proj(B.localToWorld(o));
+  return { face: [L(V(-w, CY - 0.01 + h, z)), L(V(w, CY - 0.01 + h, z)), L(V(-w, CY - 0.01 - h, z))], centre: L(V(0, CY, 0)), lid: L(V(0, CY + H / 2 + 0.06, 0.1)), vent: L(V(W / 2 + 0.12, CY + 0.2, D * 0.12)),
+    guardSock: L(V(-W / 2 + 0.02, CY + 0.28, 0.15)), stunSock: L(V(-W / 2 + 0.02, CY - 0.3, 0.2)), top: L(V(0, CY + H / 2, D / 2)), bottom: L(V(0, CY - H / 2, D / 2)),
+    guard: L(GUARD_AT), stun: L(STUN_AT), guardUp: L(GUARD_UP), emblemR: Math.hypot(...[0, 1].map(i => L(GUARD_AT.clone().add(V(0.3, 0, 0)))[i] - L(GUARD_AT)[i])),
+    arcC: proj(V(0, CY + 0.02, -0.5)), arcR: proj(V(0, CY + 0.02, -0.5))[1] - proj(V(0, CY + 0.02 + ARC_R, -0.5))[1], arcFrom: ARC_FROM, arcSpan: ARC_SPAN }; }
+window.CORE = { set, render, layout, STATES, points, bakePoints };

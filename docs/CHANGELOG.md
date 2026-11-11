@@ -4,6 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11t` · branch `claude/start-game-project-HSh7Z` · THE CORE: your cube in the bottom-right corner
+- **THE CORE.** The owner liked the drafts ("I like the drafts you created for the HUD player. Information interactive menu."). On a tablet or a desktop, one piece in the bottom-right corner now holds what the HUD shows of you (js/corehud.js):
+  - **The cube.** The game's own cube, plain or in its class's gear. It bobs, jolts, trembles, leans in or topples as you fare.
+  - **The face.** Its screen shows how you are: hit, last bar, a bar back, shards in, surge ready, surging, guard, stun, knocked out.
+  - **GUARD and STUN.** Two emblems on its cables.
+  - **The PACK.** Its lid: it flips open, then the pack opens.
+  - **ARMY SURGE.** The gold arc behind it, with the siphon at its end. Full, a tap on the cube fires it.
+  - **The slab.** Your three bars and your shards.
+- The old top-left group, the round buttons and the PACK button are hidden there; a phone keeps them.
+- The dial stands above it. The dock stands between the left edge and it, a little slimmer: all seven still fit at 1180 × 820; narrower, it slides.
+- The cube's frames are baked from the 3D models (`design/hud/bake-core.js` → `img/hud/core_<look>.png`, `js/coreframes.js`). The face, emblems, arc and effects are drawn in 2D, so there is no live 3D in the game. `tools/images.js` now also covers `img/hud`.
+- The faces, times, colours and size are mine, provisional. Not playtested.
+- Tests: `tests/corehud.js` (new: 9 harness checks, then 3 iPad sizes in the real page, its buttons included). Updated: `tests/hud.js`, `tests/toolbox.js`, `tests/playercombat.js`. Docs: `UI-STYLE.md` ("THE CORE"), `PLAYER-COMBAT.md`, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`.
+
 ### Build `2026-11-11s` · branch `claude/start-game-project-HSh7Z` · BOTH: a follower's normal attack and its move, switching on their own
 - **BOTH in every ATTACK list.** The owner: "We'll just make it to where you can select both of the moves and it will switch automatically." Asked first for a "switching" play style that "will switch back on a repeated timer". The roster's ATTACK list, the HUD card's and INFO's now have **BOTH · the move** after the moves. Picking the move alone keeps it locked on, as before.
 - **On a timer:** its everyday hits for 5 s, then the move's turn. It is locked on the move while it winds up (or strikes at once, a Brawler) and while its effect lasts, then hits as usual again.

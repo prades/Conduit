@@ -23,7 +23,7 @@ const W = 1180, H = 820;                            // an iPad-sized screen: the
 // ── what may legitimately differ between a drawn step and a step with no picture ──
 // (1) the clock's and the readout's own counters, and the pen; (2) values that only DRAWING reads. Anything else that differs is a failure.
 // Keep this list short and give every entry a reader check (Grep for the name) before adding it.
-const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simLast|_simDebt|_simStepsShown|_simStepsCount|_simStepsAt|_simGhost|_nullCtx|_lastDrawScan|_fpCam|_fpBase|_fpDimW|_fpDimFor|_evoGround|_sfFrame|_sfList|_thFrame|_thList|_bondHearts|_caveImgs|_caveDim|_caveWallsPrev|_caveRubbleImg|_caveWallKeys|_evoRect|_evoPartCv|_bvDraw|ctx|canvas)(\W|$)/;
+const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simLast|_simDebt|_simStepsShown|_simStepsCount|_simStepsAt|_simGhost|_nullCtx|_lastDrawScan|_fpCam|_fpBase|_fpDimW|_fpDimFor|_evoGround|_sfFrame|_sfList|_thFrame|_thList|_bondHearts|_caveImgs|_caveDim|_caveWallsPrev|_caveRubbleImg|_caveWallKeys|_evoRect|_evoPartCv|_bvDraw|_coreDrawn|ctx|canvas)(\W|$)/;
 // DRAW-ONLY caches that a step with no picture rightly does not fill (each checked with Grep: only the drawing code reads it): the tile column index (_colIndex*, built
 // lazily from `world` by tileColumns for the draw list), the rooms' colour cache (_fpRoomCol), the baked floor sprites (_fp.spr), a wall's bounds cache and the draw-depth cache (_fp.items[].bb and ._dd, _fpWallOnScreen and the sort).
 // `world` itself is followed through worldTileMap and the actors; as a root it is only the same array under another name.
@@ -35,6 +35,8 @@ const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simL
 // _bvDraw (the battle view's drawing state, js/battleview.js: its canvases, this frame's fighters, the elements' symbols, the object being drawn and the ghost's guard, your floor's level, and beside them
 // each object's picture as last drawn, each floating word's first life and each floor tile's level): set and read only while drawing, checked with Grep (build 2026-11-11h). Since build
 // 2026-11-11i also what each hit's number is (whom it hit, its face, its bonus: set as the hit lands, js/helpers.js applyDamage) and the numbers' landings: still read only by the drawing.
+// _coreDrawn (THE CORE's drawing state, js/corehud.js: its canvas and pen, the pixel ratio, the face's picture and which face it shows, the emblems' and the dome's pictures, the crackle round STUN,
+// and the face being chosen): set and read only by its drawing (_coreDraw, _corePick, _coreFace, _coreEmblem, _coreDome), checked with Grep (build 2026-11-11t).
 const IGNORE_PATH = /^(_colIndex\w*|_fpRoomCol|_fp\.spr|_fp\.doorMids\w*|_fp\.items\[\]\.(bb|_dd)|world|.*\._gimg|.*\._evoWc|.*\._evoMoveAt)([\W]|$)/;
 // a root that looks like a cache of sprites/measurements: reported separately; it fails the run only with STRICT_CACHES=1 (verify with Grep that only drawing reads it, then add it to IGNORE)
 const CACHEY = /(sprite|cache|atlas|slice|sils|pattern|_img|dim|glyph|memo|tilemap|columns)/i;

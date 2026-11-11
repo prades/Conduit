@@ -65,9 +65,10 @@ function findChromium() {
 // hidden until an alarm is up, so the probe reveals it — a box that only
 // appears mid-game is exactly the one nobody checks. The dock is a tablet's and
 // a desktop's; a phone (700px and under) has the radial menu's hub instead.
+// THE CORE (js/corehud.js, build 2026-11-11t): on a tablet or a desktop (the corners layout) your cube in the bottom-right corner holds the shards, the bars and the surge bar, which are hidden there.
 const IDS = ['shards', 'ui', 'ultWrap', 'topToggles', 'zoneInfo', 'alarmIcon', 'mixTool',
-             'squadBar', 'facilityNewChip', 'radialHub'];
-const expectedAt = (id, w) => id === 'topToggles' ? w > 700 : id === 'radialHub' ? w <= 700 : true;
+             'squadBar', 'facilityNewChip', 'radialHub', 'coreHud'];
+const expectedAt = (id, w) => id === 'topToggles' || id === 'coreHud' ? w > 700 : id === 'radialHub' || id === 'shards' || id === 'ui' || id === 'ultWrap' ? w <= 700 : true;
 
 // The longest ultimate caption, which is what used to run out from under the
 // bar and finish underneath the siphon switch.
@@ -120,6 +121,9 @@ setTimeout(function () {
     // a click on the button's own label or icon (a child) reaches the button, so it counts as the button
     return hit ? (el.contains(hit) ? id : (hit.id || hit.tagName)) : 'nothing';
   }
+  function atSel(sel, fx, fy) { var el = document.querySelector(sel); if (!el) return 'missing'; var r = el.getBoundingClientRect(); if (!r.width) return 'hidden'; var hit = document.elementFromPoint(r.x + r.width * fx, r.y + r.height * fy); return hit ? (el.contains(hit) ? sel : (hit.id || hit.className || hit.tagName)) : 'nothing'; }
+  report.core = document.body.classList.contains('core-on');
+  report.hits.coreFace = atSel('#coreHud .core-hf', 0.5, 0.5); report.hits.coreSiphon = atSel('#coreHud .core-siphon', 0.5, 0.5); report.hits.coreGuard = atSel('#coreHud .core-hg', 0.5, 0.5); report.hits.corePack = atSel('#coreHud .core-pack', 0.5, 0.5);
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);
   report.hits.btnRoster = at('btnRoster', 0.5, 0.5);
@@ -331,10 +335,15 @@ check('the ultimate caption stays inside its bar and clear of the switch', () =>
 
 group('the HUD still takes clicks');
 
-check('the ultimate bar, its switch, the dock\'s buttons and the phone\'s hub are all hit', () => {
+check('the ultimate bar, its switch, the dock\'s buttons and the phone\'s hub are all hit (on a tablet or a desktop, THE CORE\'s cube, siphon, GUARD and PACK)', () => {
     for (const run of runs) {
+        if (run.w > 700) {   // THE CORE (build 2026-11-11t): its cube (ARMY SURGE when full), its siphon, its GUARD and its PACK take their taps
+            same(run.r.core, true, `THE CORE is not on at ${run.w}`);
+            for (const [k, sel] of [['coreFace', '#coreHud .core-hf'], ['coreSiphon', '#coreHud .core-siphon'], ['coreGuard', '#coreHud .core-hg'], ['corePack', '#coreHud .core-pack']]) same(run.r.hits[k], sel, `THE CORE's ${k} is unclickable at ${run.w}`);
+        } else {
         same(run.r.hits.ultWrap, 'ultWrap', `the ultimate bar is unclickable at ${run.w}`);
         same(run.r.hits.siphonBtn, 'siphonBtn', `the siphon switch is unclickable at ${run.w}`);
+        }
         same(run.r.topHidden, run.w <= 700, `the dock is ${run.r.topHidden ? 'hidden' : 'shown'} at ${run.w}`);
         if (run.r.topHidden) same(run.r.hits.radialHub, 'radialHub', `the radial menu hub is unclickable at ${run.w}`);   // a phone: the hub stands in for the dock
         else same(run.r.hits.btnRoster, 'btnRoster', `the ROSTER button is unclickable at ${run.w}`);

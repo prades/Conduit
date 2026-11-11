@@ -1,6 +1,6 @@
 // THE PICTURES FOR PLAYERS (build 2026-11-11c; tools/images.js, js/imgmap.js, js/config.js imgSrc). The owner, 2026-11-11: "Yes, do the images next" (a picture's address changes only when the picture
 // does, so a new build does not download every picture again; and the big pictures in a smaller format with no visible loss).
-//   FRESH       js/imgmap.js is what tools/images.js makes from the pictures as they are: every picture the game loads (img/{cards,cave,evo,fx,hd,props}/*.png) at its PNG's fingerprint now, each WebP
+//   FRESH       js/imgmap.js is what tools/images.js makes from the pictures as they are: every picture the game loads (img/{cards,cave,evo,fx,hd,hud,props}/*.png) at its PNG's fingerprint now, each WebP
 //               it names there, none left over; game.html preloads the props sheets at the map's addresses; the page loads the map after js/config.js; the stamp runs the tool before the bundler
 //   EXACT       each WebP is lossless (every channel of every pixel its PNG's, the colour under a clear pixel included: ImageMagick, when it is installed), smaller than its PNG, and a plain lossless
 //               WebP with nothing else in it; a picture left a PNG is one whose WebP would be bigger

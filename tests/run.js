@@ -83,6 +83,7 @@ const SUITES = [
     ['sliding toolbox',          'toolbox.js'],
     ['mix selector',             'mixtool.js'],
     ['enemy card: no ELEMENTS tab, tap the card to send the squad', 'enemycard.js'],
+    ['THE CORE: your cube in the bottom-right corner (its face, GUARD and STUN, the PACK lid, ARMY SURGE, the bars and shards)', 'corehud.js'],
     ['squad of three, rooms the rest hold, the ammunition icon', 'party.js'],
     ['the dialogue box: whoever is talking at the bottom of the screen with their picture (the Crystal gives the tutorial and the class\'s stage, you note the quest line, Side Quest talks at his station), the quest box on the menu with a "!" for a new objective, the objective plate hidden', 'dialogue.js'],
     ['the bottom of the screen: dock, squad bar, tool, enemy card: none over another', 'bottomui.js'],

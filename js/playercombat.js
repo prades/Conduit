@@ -146,7 +146,8 @@ function _pcButton(x, y, r, label, lit, col, glyph, rest) {
     ctx.font = typeof uiMono === "function" ? uiMono(9) : "bold 9px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(label, x, y + r * 0.55);
 }
 function drawPlayerCombatChips(A) {
-    _GUARDBTN.r = _DIVEBTN.r = 0; if (typeof ctx === "undefined" || !A || typeof facilityPlay === "undefined" || !facilityPlay || (typeof attractOn === "function" && attractOn())) return;
+    _GUARDBTN.r = _DIVEBTN.r = 0; if (typeof coreOn === "function" && coreOn()) return;   // (THE CORE holds GUARD and STUN in the corners layout: js/corehud.js)
+    if (typeof ctx === "undefined" || !A || typeof facilityPlay === "undefined" || !facilityPlay || (typeof attractOn === "function" && attractOn())) return;
     const r = 22, x = A.left - 30, f = _pcFrame(), restLeft = Math.max(0, _pcDiveReady - f), rest = restLeft > 0 && !_pcDive ? restLeft / (PLAYER_COMBAT.dive.frames + PLAYER_COMBAT.dive.rest) : 0;
     const shield = (cx, cy) => { ctx.beginPath(); ctx.moveTo(cx, cy - 8); ctx.lineTo(cx + 7, cy - 5); ctx.lineTo(cx + 6, cy + 3); ctx.lineTo(cx, cy + 8); ctx.lineTo(cx - 6, cy + 3); ctx.lineTo(cx - 7, cy - 5); ctx.closePath(); ctx.fill(); };
     const bolt = (cx, cy) => { ctx.beginPath(); ctx.moveTo(cx + 2, cy - 9); ctx.lineTo(cx - 5, cy + 1); ctx.lineTo(cx, cy + 1); ctx.lineTo(cx - 2, cy + 9); ctx.lineTo(cx + 5, cy - 1); ctx.lineTo(cx, cy - 1); ctx.closePath(); ctx.fill(); };
