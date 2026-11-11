@@ -562,6 +562,10 @@ const CARD_ART_ORDERS = {
     all: { col: "#19e6c1", d() { return [[[6.6, 3], [30, 3], [27.4, 9.6], [4, 9.6]], [[5, 12.7], [28.4, 12.7], [25.8, 19.3], [2.4, 19.3]], [[3.4, 22.4], [26.8, 22.4], [24.2, 29], [0.8, 29]]].map(p => _caPoly(p, true)).join(""); } },   // three slanted cards stacked: the squad's three
     run: { col: "#ff4a1c", d() { return _caChev(5, 16, 15.4, 11.6, 4.6) + _caChev(16.6, 16, 27, 11.6, 4.6); } },   // two chevrons pointing back: fall back
     attack: { col: "#ff4a1c", d() { return _caSlash([20.5, 2], [3, 26], 5.2, 2.2) + _caSlash([26.5, 4.5], [8.5, 29.5], 5.6, 2.2) + _caSlash([30.5, 10], [15, 31], 4.6, 2); } },   // three claw slashes
+    come: { col: "#19e6c1", d() {   // (build 2026-11-11r, the agent's, provisional: the owner asked for a way to bring the squad back on the card) four chevrons closing on a dot: come to me
+        let d = _caDisc(16, 16, 4.2);
+        for (const g of [-90, 0, 90, 180]) { const r = g * Math.PI / 180, u = [Math.cos(r), Math.sin(r)], v = [-u[1], u[0]], at = (k, s) => [16 + k * u[0] + s * v[0], 16 + k * u[1] + s * v[1]]; d += _caBar([at(13.6, 5.6), at(8.6, 0), at(13.6, -5.6)], 3.4); }
+        return d; } },
 };
 const _caOrdMemo = {};
 function cardArtOrderSvg(key) { const E = CARD_ART_ORDERS[key]; if (!E) return ""; if (_caOrdMemo[key] === undefined) _caOrdMemo[key] = E.d(); return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><path d="' + _caOrdMemo[key] + '" fill="' + E.col + '"/></svg>'; }

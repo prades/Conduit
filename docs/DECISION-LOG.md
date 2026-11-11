@@ -2851,6 +2851,16 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: From the owner's playtest of 11p: the fight's objects, RUN, COME (2026-11-11; built in `2026-11-11r`)
+- The owner: "if I'm in combat and I'm in front of an object and everything that's happening is also in front of that object, it shouldn't be transparent. And that's really readable."
+  - Built: an object (big or small) and a wall piece fade only while they stand in front of someone in the fight.
+  - Supersedes build `2026-11-11l`'s "every object of 4 tiles or more, and every wall, flat in a fight" (DECISION: In a fight, the big objects and the walls go flat). `BATTLE-LOOK.md` §2, 14.
+- The owner: "the run little button isn't available. Or isn't fully shown."
+  - Built: the tucked cards are placed from the card's right edge, and each is clear of ATTACK's tilted top.
+- The owner: "I wasn't able to retrieve my team that was holding a position. Make sure that you have some way to retrieve your team as well within that kit next to the attack, run, and all."
+  - Built: COME, the orders' COME, as a third tucked card under RUN.
+  - The agent's, provisional: COME's emblem (four chevrons closing on a dot) and its place in the kit. HOLD is not on the card (not asked).
+
 ## DECISION: The enemy card's full art, and its orders as cards (2026-11-11; built in `2026-11-11o`)
 - The owner, on the built trading card: "use this one as a starting off point for the next step of design". Round 2 (ten variations on it): they circled **FULL ART** (the creature filling the card, large; "Very cool"). Then: "We need to move the buttons and jazz them up". Round 3 had seven placements; the owner asked for "Another 10 concepts". Round 4: they circled **TUCKED BEHIND** (the buttons as cards tucked behind the creature's card), "Right direction".
 - Round 5 (six ways in that direction, and the motion and the states): **"Build 1 with 4's ATTACK drawn out"**: ALL and RUN tucked behind, fanned a little, their ends showing at the side (no. 1); ATTACK drawn out in front as a whole card with the claws for its picture (no. 4).

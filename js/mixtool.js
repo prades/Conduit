@@ -23,6 +23,8 @@
 //                  THEN (build 2026-11-11o; the owner's picks of three more rounds of drafts: the full art, the cards tucked behind, "1 with 4's ATTACK drawn out"): the creature fills the
 //                  card, large and sharp (js/targeting.js targetBigPortraitURL), its numbers on a dark panel at the right; ALL and RUN are cards tucked behind it, showing at its side;
 //                  ATTACK is a card drawn out in front of it, the claws for its picture and its count on a badge (game.html).
+//                  THEN (build 2026-11-11r; the owner, playtesting: "I wasn't able to retrieve my team that was holding a position. Make sure that you have some way to retrieve your team as
+//                  well within that kit"): COME is a card tucked behind it too, under RUN: the orders' COME (MIXTOOL_ORDERS "follow", mixToolComePool), which the card covers.
 // The Crystal's flag is how everything else opens it: a tap on the Crystal. On a wide screen the flag is just put down; on a phone it is "the tool is open".
 let _mtSig = "";
 // A wide screen keeps the tool open for good; a phone opens and closes it.
@@ -127,6 +129,7 @@ function mixToolFoeHTML(foe, pool, fresh) {
             + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><em class="mt-foe-num"></em><span class="mt-foe-hp"><u></u></span><span class="mt-foe-bite"></span>' + mixToolFoeRow(foe) + '</span></span></span>'
             + '<span class="mt-foe-acts"><button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b class="' + ord("all") + '">ALL</b></button>'
             + '<button class="mt-fa run' + (run ? ' going' : '') + '" data-act="retreat" aria-label="Run: the squad falls back"><b class="' + ord("run") + '">' + (run ? 'RUNNING' : 'RUN') + '</b></button>'
+            + '<button class="mt-fa come" data-order="follow" aria-label="Come: the squad, and anyone holding a room, comes back to you"><b class="' + ord("come") + '">COME</b></button>'   // (the orders' COME, hidden under the card: the way back from HOLD, build 2026-11-11r)
             + '<button class="mt-fa atk" data-act="attack" aria-label="Attack ' + _mtEsc(c.name) + '"><b class="' + ord("attack") + '">' + atk + '</b></button></span></div>';
     }
     return '<button class="mt-foe' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" data-act="attack" style="--c:' + c.col + '" aria-label="Attack ' + _mtEsc(c.name) + '">'

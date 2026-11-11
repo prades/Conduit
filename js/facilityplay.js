@@ -698,8 +698,8 @@ function _fpQuad(pts, fill, stroke, lw) {
 const FP_WALL = { wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall: ["#26324f", "#1a2340", "#8fa6d8"], outer_wall_provisional: ["#26324f", "#1a2340", "#8fa6d8"], rock: ["#4a3a30", "#2e241e", "#9a7a62"], railing_wall: ["#3a4258", "#262d40", "#ffd34d"], deck_wall: ["#3a3f52", "#262a3a", "#8fa6d8"] };
 function drawFacilityItem(it) {
     if (it.fp === "bvdecal") { it.draw(); return; }   // written on the floor in the battle view (js/battleview.js)
-    if (it.fp === "prop" && typeof battleFadeProp === "function" && battleFadeProp(it)) return;   // an object in front of a fighter, or a big one, in the battle view: a ghost (js/battleview.js)
-    if (it.fp !== "prop" && typeof battleFadeWall === "function" && battleFadeWall(it)) return;   // a wall, in the battle view: faint (js/battleview.js)
+    if (it.fp === "prop" && typeof battleFadeProp === "function" && battleFadeProp(it)) return;   // an object in front of someone in the fight, in the battle view: a ghost (js/battleview.js)
+    if (it.fp !== "prop" && typeof battleFadeWall === "function" && battleFadeWall(it)) return;   // a wall piece in front of someone in the fight, in the battle view: faint (js/battleview.js)
     if (typeof battleViewDrawing === "function") battleViewDrawing(it);   // (its picture's place noted as it is drawn: js/propsprites.js _psBlit)
     _fpBase = it.base || 0;
     const lv = (typeof _fpItemLight === "function" && _fp.light) ? _fpItemLight(it) : 1, real = ctx;
@@ -735,7 +735,7 @@ function _fpSkirts(items) {
 }
 function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
-    // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close (in a fight the battle view draws it faint: js/battleview.js battleFadeWall)
+    // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close (in a fight the battle view draws a piece faint while it stands in front of someone in the fight: js/battleview.js battleFadeWall)
     if (it.kind === "rock") { if (typeof caveWallDraw === "function" && caveWallDraw(it)) return; return _fpDrawRock(it, H); }   // rock formations: the modelled rock (js/cavewalls.js; on the preview, ?walls=3d, until approved), else drawn (js/facilitydecor.js)
     if (it.kind === "spill" && typeof _fpDrawSpillLip === "function") return _fpDrawSpillLip(it);   // a low lip the water spills over (the Sewers' Nest: js/facilitysewers.js)
     if (it.kind === "open") return;                            // an edge with no wall drawn (solid still): the warehouse's floor's edge onto Teleport Room 2's deck (js/facilitygrow.js; build 2026-11-09uu)

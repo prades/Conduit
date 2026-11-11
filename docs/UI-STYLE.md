@@ -66,6 +66,8 @@ Ten layouts of the HUD were drawn on one set of parts (docs/images/hud-corners.j
   - ALL and RUN are cards tucked behind it, their ends showing at its side, each with its emblem over its word. A tap on the end that shows works as before.
   - ATTACK is a card drawn out in front of it, the claws for its picture and its count on a badge (it reads ATTACK · 3, then ATTACKING · 2/3; NO ONE, dark, with no one to send).
   - RUNNING draws RUN's card out, and it pulses. The tucked cards breathe a little; ATTACK glows and a light runs across it; the emblems move. All of it is still for a player who asks for reduced motion.
+  - **COME** (build `2026-11-11r`; the owner, playtesting: "I wasn't able to retrieve my team that was holding a position. Make sure that you have some way to retrieve your team as well within that kit"): a third card tucked behind, under RUN. It is the orders' COME, which the card covers: whoever is picked, or else the squad and anyone holding a room, comes back. Its emblem, four chevrons closing on a dot, is the agent's, provisional.
+  - The tucked cards are placed from the card's right edge, so they keep their place at every width (--cn-w: 244, 232 or 214 px). Each is wholly clear of ATTACK's tilted top (the owner: RUN "isn't fully shown").
 - **The orders' emblems** stand before the three words (the owner's picks of the drafts: "set C for the all and the run, but set A for the attack"): ALL three slanted cards stacked, RUN two chevrons pointing back, ATTACK three claw slashes.
   - They are drawn like the species emblems: one colour, 32 units square, in the word's colour (`js/cardart.js` `CARD_ART_ORDERS`, class `cao-<key>`).
 

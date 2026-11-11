@@ -4,6 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11r` · branch `claude/start-game-project-HSh7Z` · from the owner's playtest: objects in front of the fight only, RUN in full, COME on the card
+- **In a fight, objects and walls go see-through only in front of the fight.** The owner, playtesting 11p: "if I'm in combat and I'm in front of an object and everything that's happening is also in front of that object, it shouldn't be transparent."
+  - An object, big or small, fades only while it stands in front of someone in the fight. Build 11l had every object of 4 tiles or more flat all fight.
+  - A wall piece does the same, piece by piece, fading in and out over the same frames. Build 11l drew every wall faint.
+  - Behind the fight they are themselves. They still stop shots and block the way.
+- **RUN shows in full.** The owner: RUN "isn't available. Or isn't fully shown". ATTACK's tilted top had come up over the foot of RUN's word.
+  - The tucked cards are now placed from the card's right edge, at every width the layout takes (244, 232 or 214 px).
+  - Each is wholly clear of ATTACK, which is a little shorter and less tilted.
+  - Checked on seven iPad sizes, landscape and portrait: every word on top.
+- **COME is on the card.** The owner: "I wasn't able to retrieve my team that was holding a position. Make sure that you have some way to retrieve your team as well within that kit".
+  - A third card is tucked behind, under RUN: the orders' COME, which the card covers. Whoever is picked, or else the squad and anyone holding a room, comes back.
+  - Its emblem, four chevrons closing on a dot, is mine, provisional.
+- Tests: `tests/battlelook.js` (one rule for big and small objects; a wall piece faint only in front of someone, coming and going; on the real page the truck behind the fight itself, made to fade see-through), `tests/enemycard.js` (COME brings a squad told to HOLD back; the four words on top), `tests/speciesart.js` (the four emblems). Docs: `BATTLE-LOOK.md`, `FACILITY.md`, `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested since.
+
 ### Build `2026-11-11p` · branch `claude/start-game-project-HSh7Z` · main's four merges and this branch's five builds together
 - While this branch made builds 11k to 11o, main took four pull requests, numbered 11k to 11n on their own branches (entries below):
   - the Electro Skink's swirl (`claude/skink-swirl-attack`);
