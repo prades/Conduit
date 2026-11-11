@@ -677,13 +677,14 @@ function corrodeShot(f) {
 // mawJawsDraw, below). The bite is what it always was (the same damage, stun and slow, the same reach and sight, the same wind-up and wait) but it lands as the jaws shut, MAW_JAWS.snap frames after the cast, on
 // the enemy as it is then (it follows the nearest enemy down); a Maw that dies in the drop, or an enemy that does, takes or gives no bite.
 function chomp(f) {
-    const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE).filter(a => _evoDashOk(f, a));   // (a brawler closes in: only on an enemy it could walk up to, BASH's rule)
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    f._sigAt = f0; f._sigCd = moveWindupFrames("chomp");
-    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, life: MAW_JAWS.total, maxLife: MAW_JAWS.total, element: "ice" });
+    const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, go = Math.ceil(Math.max(0, L - MAW_STAND) / MAW_STEP);
+    f.dirX = dx / L; f.dirY = dy / L;
+    f._sigCd = moveWindupFrames("chomp"); if (!go) { f._sigAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (its lunge-bite starts as it arrives: mawJawsTick)
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, go, life: go + MAW_JAWS.total, maxLife: go + MAW_JAWS.total, element: "ice" });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
@@ -700,17 +701,27 @@ function mawBite(f, tgt) {
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
 }
 // the jaws: 16 cells of the sheet (design No. 935, design/evolutions/forms10.js; the extra blocks, columns 16 to 31): cells 0 to 7 come down open, 8 to 15 are shut, flash and break up. Two frames a cell.
-const MAW_JAWS = { snap: 16, total: 32 };
+// A BRAWLER CLOSES IN (the owner, 2026-11-11, of the first jaws, which dropped from nowhere with the Maw 2 tiles off: "The jaws should not pop out of the character. He's a brawler, so whenever he attacks, he should
+// move up to the enemy."): CHOMP first walks the Maw up to MAW_STAND tiles from the enemy, MAW_STEP tiles a frame (the effect's first `go` frames: none if it is already there), then its lunge-bite begins and the jaws
+// drop on the enemy; the bite lands MAW_JAWS.snap frames after it arrived. The step goes the straight way to the enemy, which the cast saw clear (_evoDashOk).
+const MAW_JAWS = { snap: 16, total: 32 }, MAW_STAND = 0.8, MAW_STEP = 0.12;
 function mawJawsTick(e) {
-    const f = e.by, t = e.target, age = e.maxLife - e.life;
+    const f = e.by, t = e.target, age = e.maxLife - e.life, go = e.go || 0, f0 = typeof frame !== "undefined" ? frame : 0;
     if (!f || f.dead) { e.life = 0; return; }
-    if (age < MAW_JAWS.snap && t && !t.dead) { e.x = t.x; e.y = t.y; }
-    if (age === MAW_JAWS.snap && t && !t.dead) mawBite(f, t);
+    if (age <= go && t && !t.dead) {   // closing in
+        const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.min(MAW_STEP, Math.max(0, L - MAW_STAND));
+        if (s > 0) { f.x += dx / L * s; f.y += dy / L * s; f._fpPath = null; }
+        f.dirX = dx / L; f.dirY = dy / L;
+        if (age === go) { f._sigAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (arrived: the lunge-bite)
+    }
+    if (age < go + MAW_JAWS.snap && t && !t.dead) { e.x = t.x; e.y = t.y; }
+    if (age === go + MAW_JAWS.snap && t && !t.dead) mawBite(f, t);
 }
 function mawJawsDraw(e, px, py, g) {
     const d = EVOLUTIONS.maw && EVOLUTIONS.maw.jaws; if (!d) return;
     const img = _evoImg(d); if (!img) return;
-    const age = Math.max(0, e.maxLife - e.life), cell = Math.min(15, Math.floor(age / 2));
+    const age = e.maxLife - e.life - (e.go || 0); if (age < 0) return;   // (the Maw is still closing in: no jaws yet)
+    const cell = Math.min(15, Math.floor(age / 2));
     g.save();
     if (age >= MAW_JAWS.snap - 2 && age < MAW_JAWS.total - 6) {   // (a cold light under it as it bites: light is drawn here, not baked)
         g.globalAlpha = 0.3 * Math.min(1, (age - MAW_JAWS.snap + 3) / 3) * Math.min(1, (MAW_JAWS.total - 6 - age) / 8); g.globalCompositeOperation = "lighter";

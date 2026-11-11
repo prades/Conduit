@@ -317,7 +317,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(21.9, 2.8), far = mkP(24, 2), apart = mkP(21.2, 5);
             frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            out0 = { early: 1e6 - a.health, jaws: elementEffects.some(e => e.type === 'mawjaws') }; for (let i = 0; i < MAW_JAWS.snap + 1; i++) updateElementEffects();   // (the bite lands as the jaws shut)
+            out0 = { early: 1e6 - a.health, jaws: elementEffects.some(e => e.type === 'mawjaws') }; for (let i = 0; i < MAW_JAWS.snap + 12; i++) updateElementEffects();   // (the bite lands as the jaws shut)
             const d = p => 1e6 - p.health, out = { early: out0.early, jaws: out0.jaws, a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
             [a, b, far, apart].forEach(p => p.dead = true);
             const lone = mkP(23.5, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);

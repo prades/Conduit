@@ -41,9 +41,16 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(r.fired, 'chomp did not fire'); same(r.n, 1, 'jaws made'); ok(r.onNear, 'on the nearest'); same(r.at0, 0, 'a bite at the cast'); same(r.before, 0, 'a bite before they shut');
     });
     check('the bite lands once as they shut: damage, a real stun, the slow beside it, and nothing after', () => {
-        const r = run(`(function(){ const f = __maw(), t = __foe(f.x + 1.2, f.y), mate = __foe(f.x + 2.2, f.y + 0.4); chomp(f); __tick(MAW_JAWS.snap); const landed = __dmg(t), out = { landed, stun: t.stunned || 0, slow: mate.slowed > 0, mateHurt: __dmg(mate) };
+        const r = run(`(function(){ const f = __maw(), t = __foe(f.x + 1.2, f.y), mate = __foe(f.x + 2.2, f.y + 0.4); chomp(f); __tick(MAW_JAWS.snap + 12); const landed = __dmg(t), out = { landed, stun: t.stunned || 0, slow: mate.slowed > 0, mateHurt: __dmg(mate) };
             __tick(MAW_JAWS.total); out.after = __dmg(t); out.gone = elementEffects.filter(e => e.type === 'mawjaws').length; return out; })()`);
         ok(r.landed > 0, 'no bite'); same(r.after, r.landed, 'a second bite'); ok(r.stun >= 60, 'no real stun'); ok(r.slow, 'the neighbour was not slowed'); same(r.mateHurt, 0, 'the neighbour was bitten'); same(r.gone, 0, 'the jaws are gone at the end');
+    });
+    check('the Maw closes in first (the owner: "he\'s a brawler, so whenever he attacks, he should move up to the enemy"): from 1.7 tiles it walks up to MAW_STAND, a step a frame, and the bite lands only after it arrived plus the jaws\' drop', () => {
+        const r = run(`(function(){ const f = __maw(), t = __foe(f.x + 1.7, f.y); const d0 = Math.hypot(t.x - f.x, t.y - f.y); chomp(f); const e = elementEffects.find(e => e.type === 'mawjaws'), go = e.go;
+            const out = { d0, go, sig0: f._sigAt }; __tick(go - 1); out.mid = Math.hypot(t.x - f.x, t.y - f.y); out.hurtMid = __dmg(t); __tick(1); out.dEnd = Math.hypot(t.x - f.x, t.y - f.y); out.sig = f._sigAt !== undefined; out.state = f.state;
+            __tick(MAW_JAWS.snap - 1); out.before = __dmg(t); __tick(1); out.after = __dmg(t); return out; })()`);
+        ok(r.go >= 1, 'it did not need to close in: ' + JSON.stringify(r)); ok(r.d0 - r.mid > 0.3, 'it did not walk: ' + JSON.stringify(r)); ok(Math.abs(r.dEnd - 0.8) < 0.02, 'it did not stop at MAW_STAND: ' + JSON.stringify(r));
+        same(r.hurtMid, 0, 'bitten while closing in'); ok(r.sig && r.state === 'attack', 'its lunge-bite did not begin as it arrived'); same(r.before, 0, 'a bite before the jaws shut'); ok(r.after > 0, 'no bite as they shut');
     });
     check('the jaws follow the enemy down, and the bite is where it is then', () => {
         const r = run(`(function(){ const f = __maw(), t = __foe(f.x + 1.2, f.y); chomp(f); t.x += 0.4; __tick(4); return { x: elementEffects.find(e => e.type === 'mawjaws').x, tx: t.x }; })()`);

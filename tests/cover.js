@@ -263,7 +263,7 @@ async function boot(search) {
             s = set(true); staticRush(f); o.roll = [hurt(s.A), hurt(s.B)];
             s = set(false); const bx = s.B.x, by = s.B.y; singularityShot(f); o.pull = [!!s.A.slowed, !!s.B.slowed || s.B.x !== bx || s.B.y !== by];
             s = set(false); corrodeShot(f); o.splash = [!!s.A.defenseShredded, !!s.B.defenseShredded];
-            s = set(false); chomp(f); for (let i = 0; i < MAW_JAWS.snap + 1; i++) updateElementEffects(); o.slow = [!!s.A.slowed, !!s.B.slowed];
+            s = set(false); chomp(f); for (let i = 0; i < MAW_JAWS.snap + 12; i++) updateElementEffects(); o.slow = [!!s.A.slowed, !!s.B.slowed];
             s = set(false); fieldBite({ x: s.A.x, y: s.A.y, radius: 2, bite: 10, by: f }, 'fire'); o.field = [hurt(s.A), hurt(s.B)];
             s = set(true); staticVortexTick({ x: s.A.x, y: s.A.y, radius: VORTEX_RADIUS, life: 100, maxLife: 100, bite: 0, by: f }); o.vortex = [!!(s.C.kbVX || s.C.kbVY), !!(s.B.kbVX || s.B.kbVY)];
             s = set(true); o.echo = _equipFoesNear(s.A.x, s.A.y, 2, null).map(u => u === s.A ? 'A' : u === s.B ? 'B' : u === s.C ? 'C' : '?').sort().join('');

@@ -2993,7 +2993,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: The Frost Maw's attacks: a lunge-bite, and giant jaws for CHOMP (2026-11-11, build `2026-11-11v`, branch `claude/frostmaw-attacks`)
 - The owner, after dropping the homepage work and asking for the next creature without attack animations ("Pick another creature that doesn't have animations"): the agent picked the Frost Maw (the next Brawler) and offered three looks for each attack. Chosen: **"Lunge-bite for the hit, giant jaws for CHOMP"** (not the frost breath or the head-slam; not the Maw's own double snap or the freeze-in).
 - Built: the everyday hit is a lunge in the sprite (looks only). CHOMP's jaws drop over the enemy and the bite lands as they shut, 16 frames after the cast (it landed at the cast before): a consequence of drawing a drop before the bite, so the damage and the picture agree. Its damage, stun, slow, reach, sight and wait are unchanged.
-- Agent's, provisional: the jaws' look, size and timing (16 frames down, 16 shut and breaking), the lunge's distance, the cold light under the bite.
+- Then, on the first build: **"The secondary attack looks wild. The jaws should not pop out of the character. He's a brawler, so whenever he attacks, he should move up to the enemy."** CHOMP now walks the Maw up to 0.8 tiles from the enemy first, then the lunge-bite and the jaws begin (the agent read "pop out of the character" as the jaws appearing with no link to the Maw: said so to the owner, not confirmed).
+- Agent's, provisional: the jaws' look, size and timing (16 frames down, 16 shut and breaking), the lunge's distance, the cold light under the bite. The walk's speed (0.12 tiles a frame) and stopping distance (0.8).
 - Open: whether the 0.27 s (16 frames) between the cast and the bite is too slow for a move the owner may want to feel snappy; the agent can shorten the drop.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 

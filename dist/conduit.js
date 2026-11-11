@@ -11508,20 +11508,22 @@ function corrodeShot(f) {
     return true;
 }
 function chomp(f) {
-    const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE).filter(a => _evoDashOk(f, a));
     if (!foes.length)
         return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    {
-        const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1;
-        f.dirX = dx / L;
-        f.dirY = dy / L;
-    }
-    f._sigAt = f0;
+    const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, go = Math.ceil(Math.max(0, L - MAW_STAND) / MAW_STEP);
+    f.dirX = dx / L;
+    f.dirY = dy / L;
     f._sigCd = moveWindupFrames("chomp");
+    if (!go) {
+        f._sigAt = f0;
+        f.state = "attack";
+        f.attackAnim = 0;
+    }
     if (typeof spawnElementEffect === "function")
-        spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, life: MAW_JAWS.total, maxLife: MAW_JAWS.total, element: "ice" });
+        spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, go, life: go + MAW_JAWS.total, maxLife: go + MAW_JAWS.total, element: "ice" });
     if (typeof floatingTexts !== "undefined")
         floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
     return true;
@@ -11541,18 +11543,33 @@ function mawBite(f, tgt) {
     if (typeof shake !== "undefined")
         shake = Math.max(shake || 0, 2);
 }
-const MAW_JAWS = { snap: 16, total: 32 };
+const MAW_JAWS = { snap: 16, total: 32 }, MAW_STAND = 0.8, MAW_STEP = 0.12;
 function mawJawsTick(e) {
-    const f = e.by, t = e.target, age = e.maxLife - e.life;
+    const f = e.by, t = e.target, age = e.maxLife - e.life, go = e.go || 0, f0 = typeof frame !== "undefined" ? frame : 0;
     if (!f || f.dead) {
         e.life = 0;
         return;
     }
-    if (age < MAW_JAWS.snap && t && !t.dead) {
+    if (age <= go && t && !t.dead) {
+        const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.min(MAW_STEP, Math.max(0, L - MAW_STAND));
+        if (s > 0) {
+            f.x += dx / L * s;
+            f.y += dy / L * s;
+            f._fpPath = null;
+        }
+        f.dirX = dx / L;
+        f.dirY = dy / L;
+        if (age === go) {
+            f._sigAt = f0;
+            f.state = "attack";
+            f.attackAnim = 0;
+        }
+    }
+    if (age < go + MAW_JAWS.snap && t && !t.dead) {
         e.x = t.x;
         e.y = t.y;
     }
-    if (age === MAW_JAWS.snap && t && !t.dead)
+    if (age === go + MAW_JAWS.snap && t && !t.dead)
         mawBite(f, t);
 }
 function mawJawsDraw(e, px, py, g) {
@@ -11562,7 +11579,10 @@ function mawJawsDraw(e, px, py, g) {
     const img = _evoImg(d);
     if (!img)
         return;
-    const age = Math.max(0, e.maxLife - e.life), cell = Math.min(15, Math.floor(age / 2));
+    const age = e.maxLife - e.life - (e.go || 0);
+    if (age < 0)
+        return;
+    const cell = Math.min(15, Math.floor(age / 2));
     g.save();
     if (age >= MAW_JAWS.snap - 2 && age < MAW_JAWS.total - 6) {
         g.globalAlpha = 0.3 * Math.min(1, (age - MAW_JAWS.snap + 3) / 3) * Math.min(1, (MAW_JAWS.total - 6 - age) / 8);
