@@ -41,6 +41,7 @@ What it is today:
     - **RESIST** floats off like it is nothing: small, pale, drifting up and away.
     - **One standard face** for the floor's writing.
     - **In a fight, each fighter's tile is lit**, with a bigger health bar on the floor in front of it, in place of the small bars over the units. Your own bars stay where they are, at the top.
+    - **No names in a fight** (the owner: "We're getting somewhere. Now I want to make it to where the character names are not visible. It converts down to a element tag, if there is one, and a level that appears next to the health bar."). Each fighter's name plate and its status chip ("Lv 7 FIRE TECHNICIAN", ATTACKING) are not drawn. Next to its floor bar: its element's tag, the energy cards' symbol in the element's colour, if it has an element; and its level (LV7).
     - An experiment, drafted (§10).
 11. **Earlier, superseded: the element's word on a background.**
     - The owner first asked: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient". Drafted as A (the number over its element's symbol) and B (the number on a plasma badge).
@@ -138,7 +139,8 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 - one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates;
 - the fade: a floodlight standing in front of a fight, today and in the battle view. It is gone, a faint outline of its tile left, and the floor under it stamped from the next tile for the picture.
 - the element's word: WEAK! and RESIST on a rectangle of each element's moving plasma (a sheet of the seven, animated), and the same in the fight. Then on each element's own ball, the seven of them animated and in the fight: fire's licking flames and embers, electric's jagged crackle and arcs, ice's faceted crystal and glints, toxic's wobbling goo, bubbles and a drip, core's breathing orb with a turning hexagon and a ring going out, flux's swirl, BLOOM's five petals and pollen. Then, as the owner corrected it, a soft irregular blur of the element's colours (drawn small and scaled up: the scaling is the blur, no canvas filter), the seven animated and in the fight.
-- the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
+- the floor (2026-11-11): each fighter's tile lit (green yours, red theirs) with a long health bar on the floor before it; WEAK! written on the floor in red, shaking; STUNNED in yellow on the floor while the stun lasts; RESIST small and pale, floating off; one face (Titan One) for the floor's writing. A still in the battle view and a short clip.
+- no names in the fight: the plates gone; by each floor bar its level and, if it has one, its element's tag. Drawn two ways, flat on the floor like the bar, and standing upright at the bar's end. The column-C faces in the fight; a hidden object as a ghost at 25% and at 45%.
 
 ## 11. Open questions
 
@@ -148,6 +150,7 @@ Nothing built yet. The drafts (2026-11-11) were made in the real game in a test 
 4. One richer attack block per form, or one block per move (the attack, the second attack, the Ultimate).
 5. How strongly a faded object shows (a draft: a ghost at 25% or 45%, over a bright outline of its tile).
 6. Whether the physical types' words (SLASHING WEAK!) change too, and how. The element's blur carries an element, and a physical type has none.
+7. The level and element tag by the floor bar: flat on the floor, or standing upright (a draft of each).
 
 ## 12. History
 
