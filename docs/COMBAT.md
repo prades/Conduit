@@ -196,7 +196,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 
 | Form | Class · element | Main attack | Alternates |
 |---|---|---|---|
-| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07) |
+| QUILLSTONE | Brawler · fire | Piercing (quill spikes); **its body dives forward a little and back** (build `2026-11-11n`, look only) | QUILL BURST (five quills in a forward fan, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07). **It turns its back to the enemy and the quills leave 12 frames after the turn begins** (`QUILL_FIRE`; before, at once; aimed as at the cast), then it is bare for about a second and they grow back (`EFFECTS.md`; build `2026-11-11n`) |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
 | ELECTRO SKINK | Brawler · electric (since build `2026-11-08a`) | Slashing, half and half with electric as every follower's hit is: **SWIRL** (build `2026-11-11k`, below; its type was Slashing before, "what it hit with as an egg") | ZIGZAG DASH (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Slashing, electric (BASH before). Its Ultimate LIGHTNING CIRCUIT: electric |
 | STATIC ORB | Brawler · electric (set aside since build `2026-11-08a`: kept by a follower that has it; the magnetic brawler to be) | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; CAPACITOR DISCHARGE (it stands still storing up to 4 charges; you release them into a short chain, build `2026-11-07ss`): Crushing and electric. PINBALL is superseded by it (the design notes) |

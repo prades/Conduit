@@ -115,6 +115,7 @@ function measure(w, h) {
         globalThis.__off = f => { actors = actors.filter(a => a !== f); followers = followers.filter(a => a !== f); };   // (out of the world: its own AI and melee add nothing; its shots and fields keep it as their source)
         globalThis.__dmg = p => 1e6 - p.health;
         globalThis.__fire = f => { frame++; __arm(f); evolutionTick(); };
+        globalThis.__fireQ = f => { __fire(f); for (let i = 0; i < QUILL_FIRE; i++) { frame++; evolutionTick(); } };   // (QUILL BURST: the Quillstone turns, and its quills leave QUILL_FIRE frames after the cast: build 2026-11-11n)
         globalThis.__one = (f, x, y, sp) => { const twin = __foe(x, y, sp); return twin; };
         globalThis.__scr = (wx, wy) => { let sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (let i = 0; i < 8; i++) { const w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
         globalThis.__burrower = () => { const f = __fol('fire', 'camper', 'thermite'); partyAdd([f]); techAbilityTick(); f._abReadyAt = 0; f._ab2ReadyAt = 0; f.attackCooldown = 0; f.ultimateCharge = 100; return f; };   // (FAULTLINE is its Ultimate: charged)
@@ -123,8 +124,8 @@ function measure(w, h) {
 
     // ── QUILLSTONE ──────────────────────────────────────────
     group('QUILLSTONE (fire Brawler): QUILL BURST, five crystal quills at once, each stopping at the first enemy it hits; its main attack kept (FIRE BOMBS taken off it, 2026-11-07)');
-    check('EXACTLY five quills, all launched at once (the same frame, from the Quillstone), in a forward fan QUILL_FAN degrees edge to edge with the middle one at the nearest enemy', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), t = __foe(f.x + 3, f.y + 1); __fire(f);
+    check('EXACTLY five quills, all launched at once (the same frame, QUILL_FIRE frames after the cast, from the Quillstone), in a forward fan QUILL_FAN degrees edge to edge with the middle one at the nearest enemy', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), t = __foe(f.x + 3, f.y + 1); __fireQ(f);
             const q = followerProjectiles.filter(p => p.kind === 'quill'), a0 = Math.atan2(t.y - f.y, t.x - f.x) * 180 / Math.PI, ang = q.map(p => Math.atan2(p.vy, p.vx) * 180 / Math.PI - a0);
             return { n: q.length, all: followerProjectiles.length, born: q.every(p => p.frame === 0 && p.x === f.x && p.y === f.y && p.source === f), ang, fan: QUILL_FAN, count: QUILL_COUNT, cd: f._sigCd, every: moveWindupFrames("quill_burst") }; })()`);
         same(r.count, 5, 'QUILL_COUNT (approved: exactly five)'); same(r.n, 5, 'quills'); same(r.all, 5, 'shots in all'); ok(r.born, 'not all launched together from the Quillstone');
@@ -133,7 +134,7 @@ function measure(w, h) {
         same(r.cd, r.every, 'its wait');
     });
     check('each quill travels on its own: its own heading and speed, the follower shots\' flight, as far as QUILL_RANGE and no farther', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); __foe(f.x + 3, f.y); __fire(f); __off(f); actors = actors.filter(a => !(a instanceof Predator));
+        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); __foe(f.x + 3, f.y); __fireQ(f); __off(f); actors = actors.filter(a => !(a instanceof Predator));
             const q = followerProjectiles.filter(p => p.kind === 'quill'), s0 = q.map(p => [p.x, p.y]); let fr = 0; while (followerProjectiles.length && fr < 200) { render(); fr++; }
             const far = q.map((p, i) => Math.hypot(p.x - s0[i][0], p.y - s0[i][1]));
             return { speeds: q.map(p => Math.hypot(p.vx, p.vy)), heads: new Set(q.map(p => Math.round(Math.atan2(p.vy, p.vx) * 1000))).size, far, range: QUILL_RANGE, speed: QUILL_SPEED, left: followerProjectiles.length }; })()`);
@@ -141,7 +142,7 @@ function measure(w, h) {
         ok(r.far.every(d => d >= r.range - 1e-6 && d <= r.range + r.speed + 1e-6), 'how far each flew with nothing in the way: ' + r.far);
     });
     check('each stops at the FIRST enemy it touches: no piercing (an enemy in line behind the first takes no quill), no explosion, no fragment splash (all the damage is the quills\' own hits, one a quill)', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), front = __foe(f.x + 2, f.y), behind = __foe(f.x + 3.3, f.y), off = __foe(f.x + 2.6, f.y + 2.8); __fire(f); __off(f);
+        const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), front = __foe(f.x + 2, f.y), behind = __foe(f.x + 3.3, f.y), off = __foe(f.x + 2.6, f.y + 2.8); __fireQ(f); __off(f);
             const q = followerProjectiles.filter(p => p.kind === 'quill'), hits = [], dmg = [];
             for (const p of q) { const o = p.onHit; p.onHit = a => { hits.push([q.indexOf(p), a === front ? 'front' : a === behind ? 'behind' : a === off ? 'off' : 'other']); if (o) o(a); }; }
             const keep = applyDamage; globalThis.applyDamage = function (t, amt, src) { dmg.push(t === front ? 'front' : t === behind ? 'behind' : t === off ? 'off' : 'other'); return keep.apply(this, arguments); };
@@ -157,9 +158,9 @@ function measure(w, h) {
     });
     check('a cluster catches several quills and spread-out enemies fewer: five enemies across the fan take one each; one enemy close up takes them all', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), out = {};
-            const near = __foe(f.x + 1.0, f.y); __fire(f); __off(f); { let fr = 0; while (followerProjectiles.length && fr < 200) { render(); fr++; } } out.close = __dmg(near); near.dead = true;
+            const near = __foe(f.x + 1.0, f.y); __fireQ(f); __off(f); { let fr = 0; while (followerProjectiles.length && fr < 200) { render(); fr++; } } out.close = __dmg(near); near.dead = true;
             frame++; followers.push(f); actors.push(f); const ps = [-20, -10, 0, 10, 20].map(d => { const R = d ? 3.9 : 3.8, an = (90 + d) * Math.PI / 180; return __foe(f.x + Math.cos(an) * R, f.y + Math.sin(an) * R); });   // (the middle one the nearest, so the fan is aimed at it; the fan down the floor's y, its quills spread along x, where a shot's touch is narrowest: js/game.js tests 30 px of (dx × TILE_W, dy × TILE_H))
-            __fire(f); __off(f); { let fr = 0; while (followerProjectiles.length && fr < 200) { render(); fr++; } } out.spread = ps.map(__dmg);
+            __fireQ(f); __off(f); { let fr = 0; while (followerProjectiles.length && fr < 200) { render(); fr++; } } out.spread = ps.map(__dmg);
             const twin = __foe(f.x + 40, f.y + 40); applyDamage(twin, f.power * QUILL_MULT, f, null, false, false, DMG_HIT_ALT); out.one = __dmg(twin); return out; })()`);
         ok(Math.abs(r.close - 5 * r.one) < 1e-6 * r.close + 1e-6, 'close up, five quills in one enemy: ' + JSON.stringify(r));
         ok(r.spread.every(d => Math.abs(d - r.one) < 1e-6 * d + 1e-6), 'across the fan, a quill each: ' + JSON.stringify(r));
@@ -541,7 +542,7 @@ function measure(w, h) {
     group('ONE DAMAGE SYSTEM, ONE TABLE, ONE SET OF WORDS');
     check('every new hit goes through applyDamage with the established hit kinds (a move\'s DMG_HIT_ALT, the Mages\' DMG_HIT_SHOT): no health is taken off by hand', () => {
         const E = rd('js/evolution.js'), body = n => { const i = E.indexOf('function ' + n + '('); ok(i >= 0, 'no ' + n); const j = E.indexOf('\nfunction ', i + 10); return E.slice(i, j < 0 ? undefined : j); };
-        for (const [fn, kind] of [['quillBurst', 'DMG_HIT_ALT'], ['fieldBite', 'DMG_HIT_ALT'], ['pinballStep', 'DMG_HIT_ALT'], ['chainLightning', 'DMG_HIT_SHOT']]) { const b = body(fn); ok(b.indexOf(kind) >= 0, fn + ' does not use ' + kind); ok(!/\.health\s*-=|\.health\s*=\s*[^=]/.test(b), fn + ' sets health by hand'); }
+        for (const [fn, kind] of [['quillFireTick', 'DMG_HIT_ALT'], ['fieldBite', 'DMG_HIT_ALT'], ['pinballStep', 'DMG_HIT_ALT'], ['chainLightning', 'DMG_HIT_SHOT']]) { const b = body(fn); ok(b.indexOf(kind) >= 0, fn + ' does not use ' + kind); ok(!/\.health\s*-=|\.health\s*=\s*[^=]/.test(b), fn + ' sets health by hand'); }
         ok(/applyDamage\(t, \(f\.power \|\| 10\) \* PIN_MULT/.test(E) && /applyDamage\(a, e\.bite/.test(E) && /applyDamage\(next, d, f/.test(E), 'not through applyDamage');
     });
     check('MAGMA VENT (the Thermite Burrower\'s move; the owner: "Short and hot"): a vent MAGMA_RADIUS tiles round opens under the enemy it can see within MAGMA_RANGE, bites at once and every MAGMA_TICK frames for MAGMA_LIFE frames, enemies only; then moveWindupFrames("magma_vent") frames before the next', () => {

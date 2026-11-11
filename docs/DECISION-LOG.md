@@ -2887,3 +2887,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's (provisional): the 70%; the funnel baked 75% opaque; a sheet frame every 6 game frames; lightning every 4th loop; the size (about 4 units tall, 3 across at the top).
 - Not changed: what the move does (reach, radius, life, pull, bite): look only.
 - Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.
+
+## DECISION: The Quillstone's attacks: a dive, and a turn, a volley and a bare second (2026-11-11, build `2026-11-11n`, branch `claude/quillstone-attacks`)
+- The owner, describing the Quillstone (Brawlers first, one at a time): "it's really easy. It just dives forward a little bit for the primary attack, and for the secondary attack, it should turn around and shoot off all of its projectiles, and they should disappear for a second."
+- Asked which way the quills go: **back to the enemy** (it turns its back and the quills shoot out of its back toward them; not a full spin, not quills flying away from the enemy). Asked how they come back: **"grow back fast"** (not pop back at once). Then, of the first drafted frames: **"Yes quill stone"**: put it in the game.
+- Consequence (the agent's reading, said at the time): the two black front spikes are quills too, so they go with the rest for the bare second.
+- Decided by the agent, provisional: the quills leave 12 frames after the turn begins (they used to leave at the cast), bare about a second (about 57 frames), regrowth 20 frames, the dive about 13 px.
+- Not changed: the quills' number, fan, speed, damage and range; the move's cooldown length; the everyday hit's damage and rest. **Changed, as a consequence:** a burst's cycle is 12 frames (0.2 s) longer, because its cooldown starts when the quills are done and they now leave after the turn (the agent kept the cooldown's start where it was and said so; shortening the cooldown by 12 frames instead is open).
+- Status: Implemented and tested; not playtested. `COMBAT.md` §7.4, `EFFECTS.md`, `CHANGELOG.md`.

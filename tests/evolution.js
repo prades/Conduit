@@ -170,12 +170,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     // QUILL BURST: the roll-and-splash volley (2026-10-30) is SUPERSEDED by the owner's follower combat brief (2026-11-02): five quills at once, each stopping at its first enemy, no
     // splash, no roll (docs/FOLLOWER-COMBAT-REDESIGN.md). The quills' own checks are in tests/followercombat.js; here, that the Quillstone fires it and the Bunker Bloom keeps its own move.
-    check('QUILL BURST (the redesign): the Quillstone fires five quills at once at the nearest enemy in reach, then waits; the Bunker Bloom keeps its ring of fire (PETAL BLAZE)', () => {
+    check('QUILL BURST (the redesign): the Quillstone turns and fires five quills at once (QUILL_FIRE frames after the cast) at the nearest enemy in reach, then waits; the Bunker Bloom keeps its ring of fire (PETAL BLAZE)', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
             const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: a move that flies is aimed only at what the follower sees, Milestone Two)
             spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1]; f.stance = 'hold';
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 3, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; __arm(f); evolutionTick();
+            frame++; __arm(f); evolutionTick(); for (let i = 0; i < QUILL_FIRE; i++) { frame++; evolutionTick(); }   // (it turns, and its quills leave QUILL_FIRE frames after: build 2026-11-11n)
             const q = followerProjectiles.filter(x => x.kind === 'quill'), out = { n: q.length, cd: f._sigCd, src: q.every(x => x.source === f) };
             followerProjectiles.length = 0; p.dead = true; return out; })()`);
         same(r.n, 5, 'quills'); same(r.cd, 120, 'its wait (half the old 240 since build 2026-11-10a)'); ok(r.src, 'the quills are its own');
@@ -462,12 +462,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
-            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k)
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n)
             const P = run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'), pk = P && JSON.parse(P);   // (cropped since build 2026-11-09r, js/evopack.js: its grid as baked, its size as cropped; or a full grid, left whole)
             if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
             else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
         }
-        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k)
+        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'quillstone,electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k; the QUILLSTONE's: room for its dive and its turn, build 2026-11-11n)
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {
