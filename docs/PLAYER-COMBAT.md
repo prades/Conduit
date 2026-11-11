@@ -81,6 +81,7 @@ Written per step, with its tests.
 | The real page: a kit on the arena floor, the KIT pill by the dial, one bar left | Looked at (screenshot) | not playtested |
 | `node tests/playercombat.js`, step 2 (6 more checks: GUARD's toggle, pace and reset; its block and costs; a dive's swoop, stun, rest and refusals; a huge body's reach and stop; a panel over the corner taking the buttons' and pills' taps away; the buttons, the keys and the armed tap) | Pass | build `2026-11-11f` |
 | The real page: GUARD up (the ring round the squad, the two buttons by the dial), a dive mid-swoop and after (STUNNED, the button resting) | Looked at (screenshots) | not playtested |
+| The full run (`node tests/run.js`, 109 suites) | Pass | build `2026-11-11f` (commit `80ac3e3`); an earlier run before the last fixes had one failure, techabilities' real-browser throw (the thrown follower came down out of reach), which passed alone, in a 12-suite rerun and in this run |
 
 ## 11. Open questions
 
