@@ -180,7 +180,7 @@ function measure(w, h) {
             let fr = 0; while (!followerProjectiles.length && fr < 120) { frame++; updateNPC(f); fr++; }
             const p = followerProjectiles[0], i = followerInfo(f).attacks.find(s => /^MAIN ATTACK/.test(s.h));
             return { got: !!p, el: p && p.element, kind: p ? p.kind || null : null, onHit: p ? !!p.onHit : null, hit: p && p.hit === DMG_HIT_SHOT, dmg: p && p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, shot: EVOLUTIONS.embercowl.shot, info: i && i.h }; })()`);
-        ok(r.got, 'no shot'); same(r.el, 'fire', 'its element'); same(r.kind, null, 'a special look (it is the fire shot, drawn as a fireball)'); same(r.onHit, false, 'an effect of its own'); ok(r.hit, 'not the Mages\' shot');
+        ok(r.got, 'no shot'); same(r.el, 'fire', 'its element'); same(r.kind, 'fireball', 'its look: a glowy blob since build 2026-11-12g (the owner, 2026-11-12: "Make it look like a fun glowy blob"), no other effect of its own'); same(r.onHit, false, 'an effect of its own'); ok(r.hit, 'not the Mages\' shot');
         ok(Math.abs(r.dmg - r.want) < 1e-9, 'damage ' + r.dmg + ' not ' + r.want); same(r.shot, 'FIREBALL', 'its name'); same(r.info, 'MAIN ATTACK · FIREBALL', 'INFO');
     });
     check('HEXFIRE: one shot at the nearest enemy in reach, doing no damage itself; where it lands, a circle HALO_RADIUS tiles round that bites every enemy in it at once and every HALO_TICK frames, then is gone after HALO_LIFE frames', () => {
