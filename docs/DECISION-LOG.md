@@ -3151,3 +3151,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
 - The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
 
+
+## DECISION: The energy cards: real 3D gems over their element's world, moving (2026-11-12, build `2026-11-12q`)
+- The owner: **"Let's make those 3D gems and the backgrounds for the energy cards."** The seven gems were modelled in 3D in the shapes locked in for build `2026-11-12n`. Of the electric geode: **"I don't like the electric one. I was imagining just a rock with some crystal coming out of it. And electricity, of course."** It was remade so.
+- Three background drafts on the real cards (A, the plasma of `2026-11-09nn` back; B, a small world for each element; C, rays and rings): **"B world"**.
+- Built: each card's world (a lava cave, a glacier's aurora, a storm, the void, a reactor, a swamp, a garden) painted once per element, its motes drifting and the storm's lightning flickering; the baked gem hovering over it in place of the card's crystal.
+- The agent's, provisional: the hover (the owner was asked "hover or turn" and did not say), the speeds, the flicker, the scenes' details, the motes over the whole card, the reactor's sparks.
+- Supersedes: build `2026-11-12n`'s SVG gems (and, through them, the plasma of `2026-11-09nn`); the electric geode.
+- Status: Implemented and tested; not playtested. `ENERGY-CARDS.md` §9, `CHANGELOG.md`.

@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12q` · branch `claude/start-game-project-HSh7Z` · the energy cards' 3D gems over their element's world
+- **Each energy card shows its element's world, moving** (the owner: "Let's make those 3D gems and the backgrounds for the energy cards", then, of three drafts on the real cards: "B world"). Fire is a lava cave, ice a glacier under an aurora, electric a storm, flux the void over a warped grid, core a reactor's hex lattice, toxic a dripping swamp, BLOOM a garden under light. Its motes drift (embers, bubbles and the reactor's sparks rise; snow, sparks, stars and petals fall) and the storm's lightning flickers. Each scene is painted once and kept (`js/energygem.js`).
+- **The gems are real 3D models**, baked as pictures (`design/cards/energy/`, `img/cards/energy_<element>.png`), of the shapes locked in for build 12n. They hover where the card's crystal was; the crystal no longer shows on an energy card (it showed over build 12n's gems).
+- **The electric gem is a rock with crystals growing out of it, and lightning** (the owner, of the geode: "I don't like the electric one. I was imagining just a rock with some crystal coming out of it. And electricity, of course").
+- Gone: build 12n's SVG gems and the per-frame loops of its flux and toxic gems. Only transform and opacity move now. A pack's reveal still holds the cards outside it still, and reduced motion holds every card still.
+- The worlds' glows are gradients and wider, fainter strokes, not `shadowBlur` (the game's rule, `docs/EFFECTS.md` §2, kept by `tests/effects.js`); they look as the drafts' did. Each world is painted the first time a card of its element shows (about 10 to 20 ms each on the test machine).
+- The agent's, provisional: the scenes' details, the speeds, the flicker, the hover (asked "hover or turn", the owner did not say). Changed from the drafts: the embers and bubbles reach the top of the card (a drifting layer must have no gap) and the reactor has sparks (its draft had none).
+- Tests: `tests/cardart.js` checks each energy card's world, motes and lightning, its gem's picture (loaded), the hover and drift, the crystal hidden, and the hold under a reveal. Its element check had passed on two empty readings since build 12n (its patterns sit in a template string, which ate their backslashes); fixed.
+
 ### Build `2026-11-12p` · branch `claude/start-game-project-HSh7Z` · main's two fixes and this branch's two builds together
 - While this branch took build 12n (the energy cards' 3D gems, from another session) and made 12o (the fallen wait at the Crystal; the Nest and each domain one place to hold), main took the Thunderhead's string of lightning and the Hornshell's jar fix, lettered 12m to 12o on their own branches (entries below).
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12p, a letter new to both.
