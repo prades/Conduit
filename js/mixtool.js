@@ -168,8 +168,10 @@ const _MT_GEM = (c, s) => '<svg viewBox="0 0 20 20" width="' + (s || 18) + '" he
 function mixToolSignature() {
     const tot = typeof followers !== "undefined" ? followers.filter(f => f && !f.dead).length : 0;
     const f0 = typeof frame !== "undefined" ? frame : 0, pool = mixToolPool();
-    return [mixToolIsOpen(), squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolCorners() ? mixToolWho() : ""].join("|");
+    return [mixToolIsOpen(), squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolCorners() ? mixToolWho() + "|" + mixToolRosterN() : ""].join("|");
 }
+// how many the roster shows (followers, then clones: js/commandcenter.js ccUnits), for the command card's ROSTER (build 2026-11-12l)
+function mixToolRosterN() { return typeof ccUnits === "function" ? ccUnits().length : 0; }
 // who the orders go to, in words, for the corners layout's caption: how many follow, the one member picked, or how many are picked
 function mixToolWho() {
     const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && typeof ccSelectionList === "function" ? ccSelectionList() : [];
@@ -185,8 +187,20 @@ function mixToolHTML() {
     if (!mixToolWide()) h += '<div class="mt-tabs"><span class="mt-title">BATTLE</span><button class="mt-x" data-act="close" aria-label="Close">\u2715</button></div>';   // (a phone: the title and a way to put it away)
     {
         const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && ccSelectionList().length, post = mixToolPostureNow(), pool = mixToolPool(), going = pool.some(a => a.retreatUntil > f0);
-        if (mixToolCorners()) {   // the corners layout: who the orders go to, and ONE button, ALL (lit while nobody's card is picked)
-            h += '<div class="mt-to"><span>ORDERS TO</span><b>' + _mtEsc(mixToolWho()) + '</b></div><button class="mt-all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b>ALL</b></button>';
+        if (mixToolCorners()) {
+            // THE COMMAND CARD (build 2026-11-12l; the owner, 2026-11-12: "make that match the style of the little ... cards coming out of the battle phase little locked on card. So just make a little updated
+            // command card that includes the roster as a part of the mix"; "Retreat can go away in calm mode"; then, of ten drafts, design 5, "This one with no little followers"): ROSTER a long tilted card
+            // (a tap opens the roster), the roster's count and who the orders go to on it; ALL (lit while nobody's card is picked), HOLD and COME standing up behind its top edge, the enemy card's own cards.
+            // With a creature locked the enemy card takes the box and this ROSTER card rises above it (game.html "THE COMMAND CARD").
+            const ord = k => typeof cardArtOrderClass === "function" ? cardArtOrderClass(k) : "";
+            h = h.replace('<div class="mt-panel">', '<div class="mt-panel mt-cmd">');
+            h += '<span class="mt-cmd-tabs"><button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b class="' + ord("all") + '">ALL</b></button>'
+                + '<button class="mt-fa hold" data-order="hold" aria-label="Hold: they stay and hold the room they are in"><b class="' + ord("hold") + '">HOLD</b></button>'
+                + '<button class="mt-fa come" data-order="follow" aria-label="Come: back to you, and anyone holding a room"><b class="' + ord("come") + '">COME</b></button></span>'
+                + '<button class="mt-cmd-roster" data-act="roster" aria-label="Roster and command center: pick your creatures by their cards and give them orders">'
+                + '<span class="mt-cmd-name"><i class="mt-cmd-emb ' + ord("roster") + '"></i><b>ROSTER</b><i class="mt-cmd-n">' + mixToolRosterN() + '</i></span>'
+                + '<span class="mt-to"><span>ORDERS TO</span><b>' + _mtEsc(mixToolWho()) + '</b></span></button>';
+            return h + '</div>';
         } else {
         // WHO: the orders go to ALL, one element, or the selected roster cards (which win)
         h += '<div class="mt-who"><span class="mt-lab">' + (sel ? 'SEL ' + mixToolPool().length : 'WHO') + '</span><button class="mt-chip' + (!sel && squadMode === "all" ? ' on' : '') + '" data-scope="all" style="--c:#fff"><span>ALL</span></button>';
@@ -227,6 +241,7 @@ function mixToolClick(ev) {
     const q = sel => t.closest(sel);
     if (q(".mt-pod")) { mixToolSetOpen(!crystalMenuOpen); return; }
     if (q("[data-act=close]")) { mixToolSetOpen(false); return; }
+    if (q("[data-act=roster]")) { if (typeof ccToggleOpen === "function") ccToggleOpen(); return; }   // (the command card's ROSTER: build 2026-11-12l)
     if (q("[data-act=retreat]")) { mixToolRetreat(); return; }
     const atk = q("[data-act=attack]");
     if (atk && typeof techAimNeed === "function" && techAimNeed() === "enemy") { if (atk.blur) atk.blur(); if (_mtFoeShown && !_mtFoeShown.dead) techAimPickEnemy(_mtFoeShown); return; }   // (a technician's ability waiting for an enemy: the card's creature is the pick, js/techabilities.js)

@@ -1429,6 +1429,47 @@
     @keyframes mt-fa-rally { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.86); } }
     @media (prefers-reduced-motion: reduce) { body.corners #mixTool .mt-fa, body.corners #mixTool .mt-fa::before, body.corners #mixTool .mt-fa::after, body.corners #mixTool .mt-fa b::before { animation: none !important; } }
     body.corners #mixTool .mt-fa:hover { filter: brightness(1.15); }
+    /* ═══ THE COMMAND CARD (build 2026-11-12l; the owner, 2026-11-12: "we need to have the little command menu card on the HUD that has all the buttons, the little menu. We need to make that match the
+       style of the little ... cards coming out of the battle phase little locked on card. So just make a little updated command card that includes the roster as a part of the mix. And then whenever a
+       creature appears ..., that little command card goes away or goes to the side cards, make the roster pop up above it as a long card that's kind of tilted"; "Retreat can go away in calm mode"; then,
+       of ten drafts, design 5: "This one with no little followers"): js/mixtool.js. ROSTER is a long card tilted as the enemy card's cards are, the roster's count and who the orders go to on it (a tap
+       opens the roster); ALL (lit while nobody's card is picked), HOLD and COME stand up behind its top edge, each its emblem over its word (the enemy card's own cards, .mt-fa), rising in turn. With a
+       creature locked the enemy card takes the box and the same ROSTER card rises above it, shorter (the rest of the orders hide: #mixTool.foe .mt-main). The dock's ROSTER is not shown in this layout.
+       The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems (js/cardart.js). ═══ */
+    body.corners #mixTool .mt-panel.mt-cmd { padding: 0; pointer-events: none; }   /* (the box's empty top lets a tap through to the floor) */
+    body.corners #mixTool .mt-panel.mt-cmd::before, body.corners #mixTool .mt-panel.mt-cmd::after { display: none; }   /* (no gold frame: the cards are the menu) */
+    body.corners #mixTool .mt-cmd-roster { --c: #c79bff; position: absolute; left: -4px; bottom: 6px; z-index: 2; width: calc(100% + 4px); height: 70px; margin: 0; padding: 0; box-sizing: border-box; display: block; pointer-events: auto; cursor: pointer; touch-action: manipulation;
+        text-align: left; color: #fff; font-family: var(--neo-font); background: none; border: 0; isolation: isolate; transform: rotate(-3deg); transform-origin: 0 100%; transition: bottom 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2), height 0.3s ease-out; }
+    body.corners #mixTool .mt-cmd-roster::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 6px; border: 2px solid var(--c); box-shadow: 4px 4px 0 rgba(0,0,0,0.55), 0 0 14px -2px var(--c);
+        background: radial-gradient(circle at 14% 40%, rgba(199,155,255,0.45), transparent 42%), repeating-linear-gradient(115deg, transparent 0 10px, rgba(199,155,255,0.06) 10px 12px), linear-gradient(180deg, #2c2662, #0c0a22); }
+    body.corners #mixTool .mt-cmd-roster:hover { filter: brightness(1.12); }
+    body.corners #mixTool .mt-cmd-name { position: absolute; left: 12px; top: 9px; display: flex; align-items: center; gap: 7px; }
+    body.corners #mixTool .mt-cmd-name b { font: italic 900 18px/1 var(--neo-font); letter-spacing: 0.04em; color: #fff; text-shadow: 0 0 10px rgba(199,155,255,0.85), 0 2px 0 #000; }
+    body.corners #mixTool .mt-cmd-emb { display: block; font-style: normal; color: #c79bff; filter: drop-shadow(0 0 6px rgba(199,155,255,0.8)); }   /* the roster's emblem (js/cardart.js CARD_ART_ORDERS.roster) */
+    body.corners #mixTool .mt-cmd-emb::before { display: block; width: 24px; height: 24px; margin: 0; vertical-align: 0; animation: mt-fa-shuffle 3.2s ease-in-out infinite; }
+    body.corners #mixTool .mt-cmd-n { font: italic 900 11px/16px var(--neo-font); padding: 0 6px; border-radius: 8px; color: #fff; background: #05070f; border: 2px solid var(--c); }   /* (the roster's count: everyone the roster shows, js/commandcenter.js ccUnits) */
+    body.corners #mixTool .mt-cmd-roster .mt-to { position: absolute; left: 13px; right: 10px; bottom: 7px; display: flex; justify-content: flex-start; align-items: baseline; gap: 5px; height: auto; font: 700 9px/1.2 monospace; letter-spacing: 0.06em; }
+    body.corners #mixTool .mt-cmd-roster .mt-to b { font: italic 900 11px/1.15 var(--neo-font); letter-spacing: 0.02em; color: #7fe9d6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* ALL, HOLD and COME standing up behind ROSTER's top edge (its right end is higher, so each stands higher than the last), their emblems in their colours */
+    body.corners #mixTool .mt-cmd-tabs { position: absolute; left: 0; right: 0; bottom: 50px; height: 80px; z-index: 1; display: block; padding: 0; pointer-events: none; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa { top: auto; bottom: 0; width: 74px; height: 78px; align-items: flex-start; justify-content: center; padding: 8px 0 0; font-size: 11px; transform: none; transform-origin: 50% 100%; animation: mt-fa-rise 3.2s ease-in-out infinite; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa::before { background: radial-gradient(circle at 50% 22%, color-mix(in srgb, var(--c) 40%, transparent), transparent 55%), linear-gradient(180deg, #24305e, #0a1022); }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa b { width: auto; gap: 3px; } body.corners #mixTool .mt-cmd-tabs .mt-fa b::before { width: 24px; height: 24px; background-color: var(--c); }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.all { left: 10px; rotate: -7deg; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.all.on::before { background: radial-gradient(circle at 50% 22%, rgba(255,255,255,0.5), transparent 55%), linear-gradient(180deg, #b8fff4, #19e6c1 55%, #0fae92); } body.corners #mixTool .mt-cmd-tabs .mt-fa.all.on b::before { background-color: currentColor; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.hold { --c: #8fe3ff; left: 86px; bottom: 5px; rotate: -2deg; animation-delay: -0.8s; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.hold::before { background: radial-gradient(circle at 50% 22%, rgba(143,227,255,0.4), transparent 55%), linear-gradient(180deg, #1f3550, #0a1022); }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.hold b::before { transform-origin: 30% 95%; animation: mt-fa-plant 1.6s ease-in-out infinite; }
+    body.corners #mixTool .mt-cmd-tabs .mt-fa.come { left: 162px; bottom: 11px; rotate: 3deg; animation-delay: -1.6s; }
+    @keyframes mt-fa-rise { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+    @keyframes mt-fa-plant { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-7deg); } }
+    @keyframes mt-fa-shuffle { 0%, 66%, 100% { transform: none; } 76% { transform: translateY(-2px) rotate(-5deg) scale(1.1); } 88% { transform: rotate(3deg); } }
+    /* a creature locked: the enemy card has the box and ROSTER rises above it (shown while the orders under the card hide); the member's card hides it as it hides the rest */
+    body.corners #mixTool.foe .mt-cmd-roster { visibility: visible; bottom: calc(var(--cn-tool) + 10px); height: 44px; }
+    body.corners #mixTool.foe .mt-cmd-roster .mt-to { display: none; }
+    body.corners.flyOpen #mixTool .mt-main .mt-cmd-roster { visibility: hidden; }
+    body.corners #topToggles #btnRoster { display: none !important; }   /* (ROSTER is the command card: the dock's button is for the other layouts) */
+    @media (prefers-reduced-motion: reduce) { body.corners #mixTool .mt-cmd-roster, body.corners #mixTool .mt-cmd-emb::before { transition: none; animation: none !important; } }
     body.corners #mixTool .mt-foe { width: 100%; max-width: none; margin: 0; padding: 9px 16px 10px 18px; border: 0; clip-path: none; background: none; isolation: isolate; position: relative; }
     body.corners #mixTool .mt-foe::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
     body.corners #mixTool .mt-foe-go { position: relative; isolation: isolate; margin: 7px 0 0; padding: 8px 6px; background: none; font-size: 14px; color: #05070f; text-shadow: none; }
@@ -1945,7 +1986,8 @@
 
       <div class="ctrl-title">THE SQUAD BAR AND THE ORDERS</div>
       <div class="ctrl-row cm-dim">Your squad is <span class="cm-stat">three</span> followers: their small cards stand in a strip along the bottom, right of the orders (on a phone, across the top of the dock); the tab at its end slides them away and back. A tap on a card <strong>picks</strong> that member &mdash; the orders go to it alone and its card rolls up at the bottom, with its energy, its attack and its cards (a tap anywhere else puts that card away, and the member stays picked) &mdash; and <span class="cm-stat">ALL</span> lets it go. An open slot opens the roster to pick who fills it.</div>
-      <div class="ctrl-row"><span class="ctrl-key">RETREAT</span> The picked followers break off and fall back to you for six seconds</div>
+      <div class="ctrl-row"><span class="ctrl-key">ROSTER</span> The long card at the bottom left, with ALL, HOLD and COME standing behind it: a tap opens the roster. While a creature's card is up it stands over that card</div>
+      <div class="ctrl-row"><span class="ctrl-key">RUN</span> On a creature's card (RETREAT on a phone): the picked followers break off and fall back to you for six seconds</div>
       <div class="ctrl-row"><span class="ctrl-key">HOLD</span> Each one <strong>holds the room it is in</strong>: it patrols that room and fights what comes into it, and does not follow you. It leaves the squad, so there is room for someone new. Its roster card says which room it holds</div>
       <div class="ctrl-row"><span class="ctrl-key">COME</span> Calls the held ones back, newest first, as long as there is room in the squad</div>
       <div class="ctrl-row"><span class="ctrl-key">&#9635;</span> The <strong>enemy card</strong> above the orders is the creature the gun is locked on (or the nearest): tap it and the picked followers go for <strong>that</strong> creature until it is dead or they are given another order. Under its numbers, what its race is <strong>WEAK</strong> to (green) and <strong>RESISTS</strong> (grey)</div>
@@ -2104,7 +2146,7 @@
 
       <div class="ctrl-title">COMMANDING FOLLOWERS</div>
       <div class="ctrl-row cm-dim"><span class="cm-stat">ALL</span> — the orders go to every follower in the squad; tap a card on the squad bar and they go to that one alone</div>
-      <div class="ctrl-row cm-dim"><span class="cm-stat">RETREAT</span> — they break off and fall back to you for six seconds</div>
+      <div class="ctrl-row cm-dim"><span class="cm-stat">RUN</span> (on a creature's card; RETREAT on a phone) — they break off and fall back to you for six seconds</div>
       <div class="ctrl-row cm-dim"><span class="cm-stat">HOLD</span> — each holds the room it is in (it patrols it and leaves the squad); <span class="cm-stat">COME</span> — the held ones come back while there is room</div>
       <div class="ctrl-row cm-dim">Tap the <strong>enemy card</strong> &rarr; the picked followers attack that creature. The roster's card has the same orders, and FOLLOW ME to call one back.</div>
       <div class="ctrl-row cm-dim"><span class="cm-stat">EXILE</span> — on every follower in the ROSTER (the window with all your creatures): it lets that follower go <strong>for good</strong>, to make room for the next one you find. It asks first: tap again within 4 seconds. Nothing is given back.</div>
@@ -2425,7 +2467,7 @@ function _showError(msg) {
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree): `node tools/stamp.js <build>`.
-window.__PAGE_BUILD = "2026-11-12m";
+window.__PAGE_BUILD = "2026-11-12n";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2461,108 +2503,108 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-12m"></script>
-<script src="js/imgmap.js?v=2026-11-12m"></script>
-<script src="js/icons.js?v=2026-11-12m"></script>
-<script src="js/uikit.js?v=2026-11-12m"></script>
-<script src="js/traits.js?v=2026-11-12m"></script>
-<script src="js/elements.js?v=2026-11-12m"></script>
-<script src="js/damage.js?v=2026-11-12m"></script>
-<script src="js/combat.js?v=2026-11-12m"></script>
-<script src="js/species.js?v=2026-11-12m"></script>
-<script src="js/levels.js?v=2026-11-12m"></script>
-<script src="js/status.js?v=2026-11-12m"></script>
-<script src="js/helpers.js?v=2026-11-12m"></script>
-<script src="js/predator.js?v=2026-11-12m"></script>
-<script src="js/abilities.js?v=2026-11-12m"></script>
-<script src="js/commands.js?v=2026-11-12m"></script>
-<script src="js/npc.js?v=2026-11-12m"></script>
-<script src="js/formation.js?v=2026-11-12m"></script>
-<script src="js/draw.js?v=2026-11-12m"></script>
-<script src="js/beetle3d.js?v=2026-11-12m"></script>
-<script src="js/bugs3d.js?v=2026-11-12m"></script>
-<script src="js/settings.js?v=2026-11-12m"></script>
-<script src="js/alarm.js?v=2026-11-12m"></script>
-<script src="js/drops.js?v=2026-11-12m"></script>
-<script src="js/clone.js?v=2026-11-12m"></script>
-<script src="js/bonds.js?v=2026-11-12m"></script>
-<script src="js/evopack.js?v=2026-11-12m"></script>
-<script src="js/evolution.js?v=2026-11-12m"></script>
-<script src="js/cards.js?v=2026-11-12m"></script>
-<script src="js/energy.js?v=2026-11-12m"></script>
-<script src="js/cardart.js?v=2026-11-12m"></script>
-<script src="js/hdsprites.js?v=2026-11-12m"></script>
-<script src="js/fx3d.js?v=2026-11-12m"></script>
-<script src="js/firebombs.js?v=2026-11-12m"></script>
-<script src="js/hazards.js?v=2026-11-12m"></script>
-<script src="js/moves.js?v=2026-11-12m"></script>
-<script src="js/hudgems.js?v=2026-11-12m"></script>
-<script src="js/commandcenter.js?v=2026-11-12m"></script>
-<script src="js/cardsui.js?v=2026-11-12m"></script>
-<script src="js/unitinfo.js?v=2026-11-12m"></script>
-<script src="js/infodex.js?v=2026-11-12m"></script>
-<script src="js/classes.js?v=2026-11-12m"></script>
-<script src="js/playergear.js?v=2026-11-12m"></script>
-<script src="js/inventory.js?v=2026-11-12m"></script>
-<script src="js/weapons.js?v=2026-11-12m"></script>
-<script src="js/mutator.js?v=2026-11-12m"></script>
-<script src="js/redeem.js?v=2026-11-12m"></script>
-<script src="js/specimen.js?v=2026-11-12m"></script>
-<script src="js/serum.js?v=2026-11-12m"></script>
-<script src="js/potion.js?v=2026-11-12m"></script>
-<script src="js/playercombat.js?v=2026-11-12m"></script>
-<script src="js/battleview.js?v=2026-11-12m"></script>
-<script src="js/coreframes.js?v=2026-11-12m"></script>
-<script src="js/corehud.js?v=2026-11-12m"></script>
-<script src="js/technomancer.js?v=2026-11-12m"></script>
-<script src="js/playercards.js?v=2026-11-12m"></script>
-<script src="js/stations.js?v=2026-11-12m"></script>
-<script src="js/facilityportals.js?v=2026-11-12m"></script>
-<script src="js/tutorial.js?v=2026-11-12m"></script>
-<script src="js/dialogue.js?v=2026-11-12m"></script>
-<script src="js/questbox.js?v=2026-11-12m"></script>
-<script src="js/facilitymap.js?v=2026-11-12m"></script>
-<script src="js/facilitygrow.js?v=2026-11-12m"></script>
-<script src="js/facility.js?v=2026-11-12m"></script>
-<script src="js/attract.js?v=2026-11-12m"></script>
-<script src="js/facilitysave.js?v=2026-11-12m"></script>
-<script src="js/facilityplay.js?v=2026-11-12m"></script>
-<script src="js/facilitydecor.js?v=2026-11-12m"></script>
-<script src="js/nestways.js?v=2026-11-12m"></script>
-<script src="js/chests.js?v=2026-11-12m"></script>
-<script src="js/propatlas.js?v=2026-11-12m"></script>
-<script src="js/propsprites.js?v=2026-11-12m"></script>
-<script src="js/caveatlas.js?v=2026-11-12m"></script>
-<script src="js/caverubble.js?v=2026-11-12m"></script>
-<script src="js/cavewalls.js?v=2026-11-12m"></script>
-<script src="js/facilitystyle.js?v=2026-11-12m"></script>
-<script src="js/facilitystyleall.js?v=2026-11-12m"></script>
-<script src="js/facilitysewers.js?v=2026-11-12m"></script>
-<script src="js/facilitynet.js?v=2026-11-12m"></script>
-<script src="js/population.js?v=2026-11-12m"></script>
-<script src="js/facilityspawn.js?v=2026-11-12m"></script>
-<script src="js/crystalpower.js?v=2026-11-12m"></script>
-<script src="js/antraids.js?v=2026-11-12m"></script>
-<script src="js/followerspots.js?v=2026-11-12m"></script>
-<script src="js/breeding.js?v=2026-11-12m"></script>
-<script src="js/party.js?v=2026-11-12m"></script>
-<script src="js/squadfly.js?v=2026-11-12m"></script>
-<script src="js/techabilities.js?v=2026-11-12m"></script>
-<script src="js/fluxmove.js?v=2026-11-12m"></script>
-<script src="js/fluxlab.js?v=2026-11-12m"></script>
-<script src="js/puzzles.js?v=2026-11-12m"></script>
-<script src="js/quests.js?v=2026-11-12m"></script>
-<script src="js/bosses.js?v=2026-11-12m"></script>
-<script src="js/conversion.js?v=2026-11-12m"></script>
-<script src="js/sidequest.js?v=2026-11-12m"></script>
-<script src="js/facilitytutorial.js?v=2026-11-12m"></script>
-<script src="js/gunfire.js?v=2026-11-12m"></script>
-<script src="js/targeting.js?v=2026-11-12m"></script>
-<script src="js/toolbox.js?v=2026-11-12m"></script>
-<script src="js/mixtool.js?v=2026-11-12m"></script>
-<script src="js/radialmenu.js?v=2026-11-12m"></script>
-<script src="js/input.js?v=2026-11-12m"></script>
-<script src="js/game.js?v=2026-11-12m"></script>
+<script src="js/config.js?v=2026-11-12n"></script>
+<script src="js/imgmap.js?v=2026-11-12n"></script>
+<script src="js/icons.js?v=2026-11-12n"></script>
+<script src="js/uikit.js?v=2026-11-12n"></script>
+<script src="js/traits.js?v=2026-11-12n"></script>
+<script src="js/elements.js?v=2026-11-12n"></script>
+<script src="js/damage.js?v=2026-11-12n"></script>
+<script src="js/combat.js?v=2026-11-12n"></script>
+<script src="js/species.js?v=2026-11-12n"></script>
+<script src="js/levels.js?v=2026-11-12n"></script>
+<script src="js/status.js?v=2026-11-12n"></script>
+<script src="js/helpers.js?v=2026-11-12n"></script>
+<script src="js/predator.js?v=2026-11-12n"></script>
+<script src="js/abilities.js?v=2026-11-12n"></script>
+<script src="js/commands.js?v=2026-11-12n"></script>
+<script src="js/npc.js?v=2026-11-12n"></script>
+<script src="js/formation.js?v=2026-11-12n"></script>
+<script src="js/draw.js?v=2026-11-12n"></script>
+<script src="js/beetle3d.js?v=2026-11-12n"></script>
+<script src="js/bugs3d.js?v=2026-11-12n"></script>
+<script src="js/settings.js?v=2026-11-12n"></script>
+<script src="js/alarm.js?v=2026-11-12n"></script>
+<script src="js/drops.js?v=2026-11-12n"></script>
+<script src="js/clone.js?v=2026-11-12n"></script>
+<script src="js/bonds.js?v=2026-11-12n"></script>
+<script src="js/evopack.js?v=2026-11-12n"></script>
+<script src="js/evolution.js?v=2026-11-12n"></script>
+<script src="js/cards.js?v=2026-11-12n"></script>
+<script src="js/energy.js?v=2026-11-12n"></script>
+<script src="js/cardart.js?v=2026-11-12n"></script>
+<script src="js/hdsprites.js?v=2026-11-12n"></script>
+<script src="js/fx3d.js?v=2026-11-12n"></script>
+<script src="js/firebombs.js?v=2026-11-12n"></script>
+<script src="js/hazards.js?v=2026-11-12n"></script>
+<script src="js/moves.js?v=2026-11-12n"></script>
+<script src="js/hudgems.js?v=2026-11-12n"></script>
+<script src="js/commandcenter.js?v=2026-11-12n"></script>
+<script src="js/cardsui.js?v=2026-11-12n"></script>
+<script src="js/unitinfo.js?v=2026-11-12n"></script>
+<script src="js/infodex.js?v=2026-11-12n"></script>
+<script src="js/classes.js?v=2026-11-12n"></script>
+<script src="js/playergear.js?v=2026-11-12n"></script>
+<script src="js/inventory.js?v=2026-11-12n"></script>
+<script src="js/weapons.js?v=2026-11-12n"></script>
+<script src="js/mutator.js?v=2026-11-12n"></script>
+<script src="js/redeem.js?v=2026-11-12n"></script>
+<script src="js/specimen.js?v=2026-11-12n"></script>
+<script src="js/serum.js?v=2026-11-12n"></script>
+<script src="js/potion.js?v=2026-11-12n"></script>
+<script src="js/playercombat.js?v=2026-11-12n"></script>
+<script src="js/battleview.js?v=2026-11-12n"></script>
+<script src="js/coreframes.js?v=2026-11-12n"></script>
+<script src="js/corehud.js?v=2026-11-12n"></script>
+<script src="js/technomancer.js?v=2026-11-12n"></script>
+<script src="js/playercards.js?v=2026-11-12n"></script>
+<script src="js/stations.js?v=2026-11-12n"></script>
+<script src="js/facilityportals.js?v=2026-11-12n"></script>
+<script src="js/tutorial.js?v=2026-11-12n"></script>
+<script src="js/dialogue.js?v=2026-11-12n"></script>
+<script src="js/questbox.js?v=2026-11-12n"></script>
+<script src="js/facilitymap.js?v=2026-11-12n"></script>
+<script src="js/facilitygrow.js?v=2026-11-12n"></script>
+<script src="js/facility.js?v=2026-11-12n"></script>
+<script src="js/attract.js?v=2026-11-12n"></script>
+<script src="js/facilitysave.js?v=2026-11-12n"></script>
+<script src="js/facilityplay.js?v=2026-11-12n"></script>
+<script src="js/facilitydecor.js?v=2026-11-12n"></script>
+<script src="js/nestways.js?v=2026-11-12n"></script>
+<script src="js/chests.js?v=2026-11-12n"></script>
+<script src="js/propatlas.js?v=2026-11-12n"></script>
+<script src="js/propsprites.js?v=2026-11-12n"></script>
+<script src="js/caveatlas.js?v=2026-11-12n"></script>
+<script src="js/caverubble.js?v=2026-11-12n"></script>
+<script src="js/cavewalls.js?v=2026-11-12n"></script>
+<script src="js/facilitystyle.js?v=2026-11-12n"></script>
+<script src="js/facilitystyleall.js?v=2026-11-12n"></script>
+<script src="js/facilitysewers.js?v=2026-11-12n"></script>
+<script src="js/facilitynet.js?v=2026-11-12n"></script>
+<script src="js/population.js?v=2026-11-12n"></script>
+<script src="js/facilityspawn.js?v=2026-11-12n"></script>
+<script src="js/crystalpower.js?v=2026-11-12n"></script>
+<script src="js/antraids.js?v=2026-11-12n"></script>
+<script src="js/followerspots.js?v=2026-11-12n"></script>
+<script src="js/breeding.js?v=2026-11-12n"></script>
+<script src="js/party.js?v=2026-11-12n"></script>
+<script src="js/squadfly.js?v=2026-11-12n"></script>
+<script src="js/techabilities.js?v=2026-11-12n"></script>
+<script src="js/fluxmove.js?v=2026-11-12n"></script>
+<script src="js/fluxlab.js?v=2026-11-12n"></script>
+<script src="js/puzzles.js?v=2026-11-12n"></script>
+<script src="js/quests.js?v=2026-11-12n"></script>
+<script src="js/bosses.js?v=2026-11-12n"></script>
+<script src="js/conversion.js?v=2026-11-12n"></script>
+<script src="js/sidequest.js?v=2026-11-12n"></script>
+<script src="js/facilitytutorial.js?v=2026-11-12n"></script>
+<script src="js/gunfire.js?v=2026-11-12n"></script>
+<script src="js/targeting.js?v=2026-11-12n"></script>
+<script src="js/toolbox.js?v=2026-11-12n"></script>
+<script src="js/mixtool.js?v=2026-11-12n"></script>
+<script src="js/radialmenu.js?v=2026-11-12n"></script>
+<script src="js/input.js?v=2026-11-12n"></script>
+<script src="js/game.js?v=2026-11-12n"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2617,7 +2659,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-12m"></script>
+<script src="js/init.js?v=2026-11-12n"></script>
 
 </body>
 </html>

@@ -126,7 +126,7 @@ setTimeout(function () {
   report.hits.coreFace = atSel('#coreHud .core-hf', 0.5, 0.5); report.hits.coreSiphon = atSel('#coreHud .core-siphon', 0.5, 0.5); report.hits.coreGuard = atSel('#coreHud .core-hg', 0.5, 0.5); report.hits.corePack = atSel('#btnPack', 0.5, 0.5); report.hits.coreCards = atSel('#kitCards', 0.5, 0.5);   /* (the PACK and CARDS: their own buttons beside THE CORE since build 2026-11-12g) */
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);
-  report.hits.btnRoster = at('btnRoster', 0.5, 0.5);
+  report.hits.btnRoster = document.body.classList.contains('corners') ? (function(){ var h = atSel('#mixTool .mt-cmd-roster', 0.5, 0.6); return h === '#mixTool .mt-cmd-roster' ? 'btnRoster' : 'the command card ROSTER: ' + h; })() : at('btnRoster', 0.5, 0.5);   /* (in the corners layout ROSTER is the command card's long card, the dock's button hidden: build 2026-11-12l) */
   // On a phone (<= 700px) the dock is replaced by the radial menu's hub (js/radialmenu.js).
   report.hits.radialHub = at('radialHub', 0.5, 0.5);
   report.topHidden = getComputedStyle(document.getElementById('topToggles')).display === 'none';

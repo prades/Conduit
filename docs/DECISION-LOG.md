@@ -3117,6 +3117,15 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch, the turn and blur per cell. Open: whether the owner wants a smoother spin (more cells).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
+## DECISION: The command card: ROSTER a long tilted card, ALL, HOLD and COME standing up behind it (2026-11-12, build `2026-11-12l`)
+- The owner: **"we need to have the little command menu card on the HUD that has all the buttons ... match the style of the little ... cards coming out of the battle phase little locked on card ... includes the roster as a part of the mix. And then whenever a creature appears ..., that little command card goes away or goes to the side cards, make the roster pop up above it as a long card that's kind of tilted"**; then **"Retreat can go away in calm mode."**
+- A first try (ROSTER the whole face of a tilted slab, the orders tucked behind it) drew **"I don't like how it's just roster and that's it. So let's give me 10 different designs of this menu."** Of ten drafts drawn in the real page, the owner circled design 5 (LONG CARD): **"This one with no little followers."**
+- Built: ROSTER a long card tilted as the enemy card's cards are, with the roster's count and who the orders go to (a tap opens the roster). ALL, HOLD and COME stand up behind its top edge, each its emblem over its word. With a creature locked the enemy card takes the box and the same ROSTER card rises above it. The dock's ROSTER is not shown in the corners layout.
+- Read as: "no little followers" means the three small faces of the squad that design 5 had on the ROSTER card (taken off). The squad strip stays.
+- The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems.
+- Supersedes: the orders box of build `2026-11-12g` (ALL, RETREAT, HOLD and COME, the dock's ROSTER on it) and the first try.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
 ## DECISION: The Hornshell's ECHO PULSE pulls its arms in and sends out a ring of water (2026-11-12, build `2026-11-12l`, branch `claude/hornshell-pull`)
 - The owner chose the Hornshell ("Static words not really in the game right now pick something") and, of its ECHO PULSE: **"he dips into his ring and then creates a water ring that hits enemies for crushing damage."** Asked whether that changes the move, the owner chose **looks only** and explained: **"The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring."**
 - Built: over the wind-up the tentacles are drawn into the jar; a ring of water spreads at its foot and a wave of water rolls out to the pulse's reach. The move's numbers and effect (a sound ring that breaks wind-ups, core damage) are unchanged.
@@ -3125,6 +3134,6 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 - **Clarified later the same day:** the owner: **"I'm talking about a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire."** So the glowing blue goo ring is the Hornshell's **everyday shot** (built: the arms are drawn in as the ring forms in front of the horn; it flies at the enemy as a ring of glowing blue goo; looks only). Asked what ECHO PULSE should be, the owner chose to **keep what was built** (the arms pulled in, the wave of water on the floor). "Crushing damage" is still open as a rules question.
 
-## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12m`, branch `claude/hornshell-fix`)
+## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
 - The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
 

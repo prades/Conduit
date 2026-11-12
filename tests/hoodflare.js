@@ -112,7 +112,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(blob.length > 300 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(blob), 'the ring uses a gradient or a shadow'); ok(/p\.kind === "gooring"/.test(src), 'the projectile is not drawn as the goo ring');
     });
 
-    group('THE HORNSHELL KEEPS ITS JAR IN EVERY FACING (build 2026-11-12m: a bug of 2026-11-12l: the pull lowered the jar a little more every frame it was drawn, so the sideways and rear facings had lost it)');
+    group('THE HORNSHELL KEEPS ITS JAR IN EVERY FACING (build 2026-11-12n: a bug of 2026-11-12l: the pull lowered the jar a little more every frame it was drawn, so the sideways and rear facings had lost it)');
     check('every cell of its sheet, in every facing, is as tall as the jar and tentacles together (the broken ones were a third as tall), and the builder never moves the jar by a step', () => {
         const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/hornshell.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); const bad = [];
         for (let r = 0; r < pk.rows; r++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(r * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(r + ':' + c + '=' + h); }

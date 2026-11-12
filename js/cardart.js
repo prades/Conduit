@@ -566,6 +566,10 @@ const CARD_ART_ORDERS = {
         let d = _caDisc(16, 16, 4.2);
         for (const g of [-90, 0, 90, 180]) { const r = g * Math.PI / 180, u = [Math.cos(r), Math.sin(r)], v = [-u[1], u[0]], at = (k, s) => [16 + k * u[0] + s * v[0], 16 + k * u[1] + s * v[1]]; d += _caBar([at(13.6, 5.6), at(8.6, 0), at(13.6, -5.6)], 3.4); }
         return d; } },
+    // THE COMMAND CARD (build 2026-11-12l; the owner, 2026-11-12: "make a little updated command card that includes the roster as a part of the mix"; the agent's, provisional): HOLD a flag planted on its
+    // base, hold this ground; ROSTER four cards in a grid, the creatures you keep
+    hold: { col: "#8fe3ff", d() { return _caPoly([[7.4, 3], [11, 3], [11, 26.5], [7.4, 26.5]], true) + _caPoly([[11, 4], [28.5, 9.6], [11, 16.2]], true) + _caPoly([[3, 26.5], [19.5, 26.5], [17.6, 30.5], [4.9, 30.5]], true); } },
+    roster: { col: "#c79bff", d() { return [[3, 3], [17.5, 3], [3, 17.5], [17.5, 17.5]].map(([x, y]) => _caPoly([[x + 1.6, y], [x + 11.5, y], [x + 11.5 - 1.6, y + 11.5], [x, y + 11.5]], true)).join(""); } },
 };
 const _caOrdMemo = {};
 function cardArtOrderSvg(key) { const E = CARD_ART_ORDERS[key]; if (!E) return ""; if (_caOrdMemo[key] === undefined) _caOrdMemo[key] = E.d(); return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32"><path d="' + _caOrdMemo[key] + '" fill="' + E.col + '"/></svg>'; }
