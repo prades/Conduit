@@ -2851,6 +2851,20 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
 - The spec: `PLAYER-COMBAT.md`.
 
+## DECISION: the dock as a vertical bar over the squad's cards; NEW GAME in SETTINGS (2026-11-11; built in `2026-11-11w`)
+- The owner, circling the dock and drawing it up over the squad's cards: "Make a vertical bar that goes above the mini roster. From the bottom order [roster, cards, quests, clones, map and settings]"; "Also move the 'new game' button to the settings pop up menu".
+- Decided (as asked): on a tablet or a desktop the dock is a vertical bar at the left over the squad's cards, from the foot ROSTER, CARDS, QUESTS, CLONES, MAP, SETTINGS; NEW GAME only in SETTINGS there (it was already a row of the settings panel; the chip at the top left is hidden).
+- The agent's, provisional: ? kept at the top; the buttons 168 x 40; the squad's corner down to the bottom edge; the bar giving way while a member's card is open; a short window scrolling the bar. A phone keeps its layout (phones are not developed).
+- Supersedes: the dock along the bottom middle (the corners layout kept it "as it was", build `2026-10-31`), and THE CORE's dock beside it (build `2026-11-11t`).
+- Status: Implemented and tested; not playtested. `UI-STYLE.md`, `OPEN-QUESTIONS.md`, `CHANGELOG.md`.
+
+## DECISION: the creature's slab in THE CORE (2026-11-11; built in `2026-11-11v`)
+- The owner: "I honestly want a way to incorporate the little player to shoot or attack predator little bubble. I want that to be incorporated into that little menu down there as well, but I want the whole thing to look elegant".
+- Three drafts (`design/ui-mocks/core-target/draft.js`): A CROWN (the bubble on top), B TRIO (with GUARD and STUN), C SLABS (a slab across the top). The owner circled C and drew it down under the cube; drafted as C2 (the cube rising while a creature is locked). The owner: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up."
+- Decided: the creature's slab under the cube while one is locked; a press on it shoots as the dial did; THE CORE's box 356 tall for good, the cube fixed in the raised place; the round dial not drawn while THE CORE is shown (a phone keeps it). The surge's words stay on the arc.
+- The agent's, provisional: the slab's size and look, the beam, the damage number, the empty band with none locked.
+- Status: Implemented and tested; not playtested. `UI-STYLE.md` ("THE CORE"), `CHANGELOG.md`.
+
 ## DECISION: THE CORE from the owner's playtest (2026-11-11; built in `2026-11-11u`)
 - The owner, playing build `2026-11-11t`: "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".
 - Decided (the owner's words, built as asked):

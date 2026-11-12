@@ -4,14 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
-### Build `2026-11-11w` · branch `claude/jellyram-attacks` (on top of the Frost Maw's branch, build `2026-11-11v`) · the Jelly Ram's tentacle lash
+### Build `2026-11-11y` (made as 11w on its branch) · branch `claude/jellyram-attacks` · the Jelly Ram's tentacle lash
 - **Everyday hit** (the agent picked the Jelly Ram as the next Brawler; of three looks, the owner chose **"Tentacle lash"**): three of its seven tentacles (the odd ones; the curled one and the others trail back) are thrown up over the head and out in front of it, the tips lagging and cracking down, and curl back, while the head leans in a little. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`). No head ram and no burst flash in this one.
 - **WOBBLE SLAM** (its second attack) keeps the old action block (the head ram and the burst), unchanged: the lash is its own block, columns 16 to 23 of its sheet, which grows from 16 to 24 columns (4088 × 731 packed).
 - Agent's, provisional: which tentacles lash, how far (1.45 of their length) and how high, the 8-frame timing, the lean.
 - `js/evolution.js` (the Jelly Ram's definition, `_evoFrame`: the attack's column), `design/evolutions/forms34.js` (No. 935), `bake.js`. `tests/evolution.js` expects the Ram's 24 columns. The branch is stacked on `claude/frostmaw-attacks`, which is not merged.
 - Not playtested; seen in the real page frame by frame (headless): it turns to its enemy and the three tentacles swing toward it.
 
-### Build `2026-11-11v` · branch `claude/frostmaw-attacks` · the Frost Maw's lunge-bite and CHOMP
+### Build `2026-11-11y` (made as 11v on its branch) · branch `claude/frostmaw-attacks` · the Frost Maw's lunge-bite and CHOMP
 - **Everyday hit** (the owner, from the agent's three ideas: "Lunge-bite for the hit"): the Frost Maw's body is thrown forward toward the enemy, leaning into it, with the fangs swinging down hard, and comes back (the rubble stays on the floor). Looks only: the hit lands as it always did.
 - **CHOMP** (the owner: "giant jaws for CHOMP"; then, of the first build, whose separate jaws dropped on the enemy: "The jaws should not pop out of the character. He's a brawler, so whenever he attacks, he should move up to the enemy", then "I do not like how the jaws pop out of the character"; asked where they should come from: **"Its own mouth, bigger"**): there are no separate jaws. The Maw **walks up to the enemy** (to 0.8 tiles, 0.12 tiles a frame, at most 8 frames from its 1.8 tile reach; the way must be clear, BASH's rule, so it holds behind glass and walls), then **rears up and swells to about 1.65 times its size, its mouth wide and its fangs long, and slams its own body down over the enemy**, and shrinks back. 32 frames, two to a picture. **The bite now lands as it slams (16 frames after the Maw arrives), not at the cast:** the same damage, stun (75 frames) and slow beside it, the same reach, sight, wind-up and wait (the wait starts at the cast). It follows the nearest enemy; a Maw that dies on the way or in the rear, or an enemy that does, takes or gives no bite.
 - Agent's, provisional: the swell (0.65), the rear and slam poses, the 16-frame rear, MAW_STAND 0.8, MAW_STEP 0.12, the lunge's 0.8 unit.
@@ -22,6 +22,28 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - Tooling: none new (the first version's `oneRow` and `blocksOnly` baker options are removed).
 - `js/evolution.js` (`chomp`, `mawBite`, `mawChompTick`, `mawChompCol`, `MAW_CHOMP`, the Maw's definition, `_evoFrame`), `js/elements.js` (the effect's tick), `design/evolutions/forms10.js` (No. 934), `bake.js`. Tests: `tests/mawattacks.js` (9 checks); `tests/evolution.js` (the Maw's grid, 32 columns of 192 px) and `tests/cover.js` now let the Maw finish before reading CHOMP's bite.
 - Not playtested; seen frame by frame in the real page (headless).
+### Build `2026-11-11x` · branch `claude/start-game-project-HSh7Z` · THE CORE with margins
+- **The owner**, circling THE CORE: "Need to move this up a little. Because it's not nested and need to have margins".
+- THE CORE stands 14 px in from the right and the bottom edge (it was 6 and 4), as the squad's corner stands 14 px in from the left and the bottom: the two bottom corners sit on one line. The dialogue's box follows its new edge.
+- Files: game.html; tests: corehud, bottomui, toolbox (its place); docs/UI-STYLE.md, docs/CHANGELOG.md; the Bible's iPad pictures remade.
+- Verified: those suites and the full run. Not playtested.
+
+### Build `2026-11-11w` · branch `claude/start-game-project-HSh7Z` · The dock as a vertical bar; NEW GAME in SETTINGS
+- **The owner:** "Make a vertical bar that goes above the mini roster. From the bottom order [roster, cards, quests, clones, map and settings]" and "Also move the 'new game' button to the settings pop up menu".
+- **The vertical bar.** On a tablet or a desktop the dock stands at the left over the squad's cards, one button above another: ROSTER at the foot, then CARDS, QUESTS, CLONES, MAP and SETTINGS, with ? (the guide) at the top. It fits an iPad whole; a shorter window scrolls it. While a member's card is open it gives way, as the stack does.
+- **The squad's corner** comes down to the bottom edge, where the dock was. The dialogue's box sits at the bottom between the squad's corner (and its enemy card's ATTACK) and THE CORE, short of THE CORE's pills and slabs; on a tall screen where that is too narrow (an iPad upright) it stands higher, over THE CORE's lower part (js/dialogue.js).
+- **NEW GAME** was already in SETTINGS (with its YES / CANCEL step); its separate chip at the top left is no longer shown on a tablet or a desktop. A phone keeps it.
+- Files: game.html, js/squadfly.js (the member's card no longer treats a dock above it as its floor), js/uikit.js (the bottom line ignores a vertical dock), js/dialogue.js, js/toolbox.js; tests: toolbox (the vertical bar, its order, its fit and scroll), bottomui, squadfly, party, dialogue, hud, corehud; docs/UI-STYLE.md, docs/CHANGELOG.md, docs/DECISION-LOG.md, docs/OPEN-QUESTIONS.md, bible.html.
+- Verified: those suites and the full run. Not playtested.
+
+### Build `2026-11-11v` · branch `claude/start-game-project-HSh7Z` · THE CORE: the creature's slab under the cube
+- **The owner:** "I honestly want a way to incorporate the little player to shoot or attack predator little bubble. I want that to be incorporated into that little menu down there as well, but I want the whole thing to look elegant". Of three drafts the owner circled the slab and drew it under the cube, then: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up."
+- **The creature's slab.** While a creature is locked, its slab stands under your cube, over the pills and your slab: its picture in a round socket, its name and level, its health, INFO and the trigger. It replaces the round dial on a tablet or a desktop (a phone keeps the dial).
+- **A press on it shoots**, as the dial's did: a tap is a shot, holding keeps firing; it never walks you. INFO opens the INFO card beside it.
+- **The cube shoots it.** The cube looks down at the slab; as you fire, a beam runs from under the cube into the slab, the slab lights, and the damage pops over it.
+- **Fixed.** THE CORE is 356 px tall for good: the cube stays in the raised place whether or not a creature is locked. With none locked the band under the cube is empty.
+- Files: js/corehud.js, js/targeting.js (`targetFireHold`, no dial while THE CORE is shown), game.html, tests/corehud.js; design/ui-mocks/core-target/draft.js; docs/UI-STYLE.md, docs/CHANGELOG.md, docs/DECISION-LOG.md, docs/OPEN-QUESTIONS.md, bible.html.
+- Verified: `tests/corehud.js` (the slab in the sandbox and in the real page at three iPad sizes: shown, a press shoots and walks nowhere, INFO, gone with the creature, the cube not moved) and the nearest suites. Not playtested.
 
 ### Build `2026-11-11u` · branch `claude/start-game-project-HSh7Z` · THE CORE from the owner's playtest
 - **The owner, playing build `2026-11-11t`:** "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".

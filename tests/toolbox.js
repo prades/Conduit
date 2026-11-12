@@ -5,6 +5,8 @@
 // of the facility (ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?) is in the strip; when it all fits, no fade and no arrow shows. (The Crystal,
 // Shop, Modules, Build and Auto buttons were the strip game's and went with it.) This drives the real page in the real browser. If no
 // browser is available it says so and passes.
+// Build 2026-11-11w (the owner: "Make a vertical bar that goes above the mini roster. From the bottom order [roster, cards, quests, clones, map and settings]"): on a tablet or a desktop (the
+// corners layout, the only place the dock is shown) the dock is a vertical bar at the left over the squad's cards; a short window scrolls it. The sideways slide is not used there.
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -42,31 +44,16 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.natural = snap(); out.naturalOver = tr.scrollWidth > tr.clientWidth + 2;
   var pk = document.getElementById('btnPack'), pr = pk.getBoundingClientRect(), br = bar.getBoundingClientRect(); out.pack = { shown: getComputedStyle(pk).display !== 'none' && pr.width > 0, inDock: bar.contains(pk), right: Math.round(innerWidth - pr.right), line: Math.abs(pr.bottom - br.bottom) <= 2, clear: pr.left >= br.right + 8, r: [Math.round(pr.left), Math.round(pr.top), Math.round(pr.right), Math.round(pr.bottom)], dock: [Math.round(br.left), Math.round(br.right), Math.round(br.bottom)] };
   var core = document.getElementById('coreHud'), cr = core ? core.getBoundingClientRect() : null, ctag = document.querySelector('#coreHud .core-pack'); out.core = { on: document.body.classList.contains('core-on'), shown: !!cr && cr.width > 0 && getComputedStyle(core).display !== 'none', right: cr ? Math.round(innerWidth - cr.right) : null, bottom: cr ? Math.round(innerHeight - cr.bottom) : null, clear: !!cr && cr.left >= br.right + 4, tag: !!ctag && ctag.getBoundingClientRect().width > 0 };   // THE CORE (build 2026-11-11t): the PACK is its lid in the corners layout
-  // more than fits: the strip is narrowed (the game cannot know how many tools a build will have) and the slider has to work
-  tr.style.flex = 'none'; tr.style.width = '300px'; toolboxSync(); await wait(50);
-  out.start = snap(); out.over = tr.scrollWidth > tr.clientWidth;
-  out.nextVisible = getComputedStyle(document.getElementById('dockNext')).display !== 'none';
-  // a mouse drag to the left slides the strip, and does not click the button under it
-  var clicked = 0, b = document.getElementById('btnClones'); b.addEventListener('click', function(ev){ clicked++; ev.stopImmediatePropagation(); ev.preventDefault(); }, true);
-  ptr(b, 'pointerdown', 500); ptr(b, 'pointermove', 400); ptr(b, 'pointermove', 300); ptr(b, 'pointerup', 300); b.click(); await wait(50);
-  out.afterDrag = snap(); out.dragClicks = clicked;
-  // a plain click still works
-  b.click(); out.plainClicks = clicked;
-  // the arrows
-  // (a smooth scroll needs painted frames, which the headless dump has none of: the arrows are checked by what they ask the strip to do)
-  var asked = []; tr.scrollBy = function(o){ asked.push(o.left); }; tr.scrollLeft = 0;
-  document.getElementById('dockNext').click(); document.getElementById('dockPrev').click(); out.asked = asked; delete tr.scrollBy;
-  // the wheel
-  tr.scrollLeft = 0; tr.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); await wait(50); out.afterWheel = snap();
+  // THE VERTICAL BAR (build 2026-11-11w): the buttons one above another, ROSTER at the foot; over the squad's cards; it fits an iPad; a short window scrolls it
+  var btns = Array.prototype.slice.call(tr.querySelectorAll('.top-btn')), sq = document.getElementById('squadBar').getBoundingClientRect(), bb = bar.getBoundingClientRect();
+  out.order = btns.map(function(b){ return [b.id, b.getBoundingClientRect().top]; }).sort(function(x, y){ return y[1] - x[1]; }).map(function(x){ return x[0]; });
+  out.vert = { corners: document.body.classList.contains('corners'), bar: [Math.round(bb.left), Math.round(bb.top), Math.round(bb.right), Math.round(bb.bottom)], squad: [Math.round(sq.left), Math.round(sq.top), Math.round(sq.right), Math.round(sq.bottom)], fits: tr.scrollHeight <= tr.clientHeight + 2, sideways: tr.scrollWidth > tr.clientWidth + 2, oneColumn: btns.every(function(b){ return Math.abs(b.getBoundingClientRect().left - btns[0].getBoundingClientRect().left) <= 1; }) };
+  tr.style.maxHeight = '150px'; await wait(50); var q = document.getElementById('btnCtrl'); out.short = { scrolls: tr.scrollHeight > tr.clientHeight + 2 }; q.scrollIntoView({ block: 'nearest' }); await wait(50);
+  var a = q.getBoundingClientRect(), t = tr.getBoundingClientRect(); out.short.reached = a.top >= t.top - 1 && a.bottom <= t.bottom + 1; tr.style.maxHeight = '';
   // the menu items
   settingsPanelOpen = false; dockSettings(); out.settings = settingsPanelOpen; dockSettings();
   cloneMenuOpen = false; dockClones(); out.clones = cloneMenuOpen; dockClones();
   out.roster = (ccToggleOpen(), ccOpenTab); ccClose();
-  // a hidden button can be slid into view
-  tr.scrollLeft = 0; var q = document.getElementById('btnCtrl'); out.hiddenBefore = q.getBoundingClientRect().right > tr.getBoundingClientRect().right + 1; toolboxReveal(q); await wait(50);
-  var a = q.getBoundingClientRect(), t = tr.getBoundingClientRect(); out.revealed = a.left >= t.left - 1 && a.right <= t.right + 1;
-  // everything fits again: no fade, no arrow
-  tr.style.flex = ''; tr.style.width = ''; tr.scrollLeft = 0; toolboxSync(); await wait(50); out.fitsAgain = snap(); out.fitsOver = tr.scrollWidth > tr.clientWidth + 2;
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__tb'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
@@ -97,7 +84,7 @@ check('the dock is ROSTER, CARDS, QUESTS, CLONES, SETTINGS, MAP, ? and nothing o
     ok(!/btnPack/.test(dock) && /<button id="btnPack" onclick="invToggle\(\)"/.test(bar) && bar.indexOf('id="btnPack"') > dockEnd && /id="packCount"/.test(bar), 'the PACK is still in the dock, or its HUD button (after the dock, in the HUD) does not open the pack or has no count');
     const tb = fs.readFileSync(path.join(ROOT, 'js/toolbox.js'), 'utf8'); ok(/function dockClones\(\)/.test(tb) && /function dockSettings\(\)/.test(tb) && !/dockShop|dockCrystal|dockModules|toggleBuild|toggleAutoplay/.test(tb), 'toolbox.js still opens a menu that is gone');
 });
-console.log('\nTHE SLIDER (real browser, 1080x700)');
+console.log('\nTHE DOCK (real browser, 1080x700)');
 const r = measure(1080, 700);
 if (r === null) console.log('  (no Chromium here: skipped)');
 else {
@@ -108,27 +95,18 @@ else {
         });
         check('the PACK is on the HUD, in the bottom-right corner, clear of the dock (build 2026-11-09zz; the owner\'s pick: the HUD, bottom right): since build 2026-11-11t, in the corners layout, it is THE CORE\'s lid (its PACK tag), the cube in that corner, and the old button is hidden', () => {
             const c = r.core; ok(c, 'THE CORE not measured');
-            if (c.on) { same(r.pack.shown, false, 'the old PACK button is still shown with THE CORE on'); same(c.shown, true, 'THE CORE is not shown'); ok(c.right <= 8 && c.bottom <= 8, 'THE CORE is not in the bottom-right corner: ' + JSON.stringify(c)); same(c.tag, true, 'its PACK tag is not shown'); same(c.clear, true, 'THE CORE overlaps the dock: ' + JSON.stringify(c)); return; }
+            if (c.on) { same(r.pack.shown, false, 'the old PACK button is still shown with THE CORE on'); same(c.shown, true, 'THE CORE is not shown'); ok(Math.abs(c.right - 14) <= 1 && Math.abs(c.bottom - 14) <= 1, 'THE CORE is not in the bottom-right corner: ' + JSON.stringify(c)); same(c.tag, true, 'its PACK tag is not shown'); same(c.clear, true, 'THE CORE overlaps the dock: ' + JSON.stringify(c)); return; }
             const k = r.pack; ok(k, 'not measured'); same(k.shown, true, 'the PACK button is not shown in the facility'); same(k.inDock, false, 'the PACK is in the dock'); same(k.right, 14, 'its gap to the right edge'); same(k.line, true, 'it is not on the dock\'s line: ' + JSON.stringify(k)); same(k.clear, true, 'it overlaps the dock: ' + JSON.stringify(k));
         });
-        check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {
-            if (!r.naturalOver) { same(r.natural.room.left + r.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(r.natural.cls), 'a fade or an arrow with everything fitting: ' + r.natural.cls); }
-            ok(r.over, 'the narrowed strip does not overflow'); same(r.start.room.left, 0, 'nothing hidden on the left at the start'); ok(r.start.room.right > 0, 'nothing hidden on the right');
-            ok(/fade-r/.test(r.start.cls) && /slides/.test(r.start.cls), 'no fade/arrow on the right: ' + r.start.cls); ok(!/fade-l/.test(r.start.cls), 'left fade at the start'); same(r.nextVisible, true, 'the right arrow is not shown');
-            same(r.fitsOver, r.naturalOver, 'the strip does not come back to its own width'); same(/fade-|slides/.test(r.fitsAgain.cls), /fade-|slides/.test(r.natural.cls), 'the fade and the arrow after the strip is let go are not what they were when the page came up: ' + r.fitsAgain.cls + ' / ' + r.natural.cls);   // (seven buttons are more than 1080 px has room for: it slides there, by design; the next check has the width where all seven fit)
+        check('a tablet or a desktop (the corners layout): the dock is a vertical bar at the left over the squad\'s cards, one column, from the foot ROSTER, CARDS, QUESTS, CLONES, MAP, SETTINGS (and ? at the top); it never slides sideways (build 2026-11-11w)', () => {
+            const v = r.vert; same(v.corners, true, 'not the corners layout'); same(r.order.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnFacility,btnSettings,btnCtrl', 'the order from the foot');
+            ok(v.bar[0] <= 20 && v.bar[3] <= v.squad[1] + 1, 'not at the left over the cards: ' + JSON.stringify(v)); same(v.oneColumn, true, 'not one column'); same(v.sideways, false, 'it slides sideways');
         });
-        check('a tablet\'s width (1180x820) has room for all seven: no fade, no arrow, nothing to slide', () => {
-            const t = measure(1180, 820); ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.naturalOver, false, 'the strip overflows at 1180x820'); same(t.natural.room.left + t.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(t.natural.cls), 'a fade or an arrow with everything fitting: ' + t.natural.cls);
-            same(t.shown.join(), t.ids.join(), 'a button is hidden');
+        check('a short window scrolls the bar, and its top button can be brought into view', () => { same(r.short.scrolls, true, 'it does not scroll'); same(r.short.reached, true, 'the ? button cannot be reached'); });
+        check('a tablet\'s sizes (1180x820, 1024x768) have room for all seven: nothing to scroll', () => {
+            for (const [W, Hh] of [[1180, 820], [1024, 768]]) { const t = measure(W, Hh); ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.vert.fits, true, W + 'x' + Hh + ': it scrolls'); same(t.shown.join(), t.ids.join(), W + 'x' + Hh + ': a button is hidden'); }
         });
-        check('dragging with the mouse slides it, and the drag does not click the button under it', () => {
-            ok(r.afterDrag.room.left > 0, 'the drag did not slide the strip'); ok(/fade-l/.test(r.afterDrag.cls), 'no left fade after sliding'); same(r.dragClicks, 0, 'the drag clicked the button');
-            same(r.plainClicks, 1, 'a plain click no longer works');
-        });
-        check('the arrows slide it each way', () => { same(r.asked.length, 2, 'the arrows did not slide the strip'); ok(r.asked[0] > 0 && r.asked[1] < 0, 'the arrows slide the wrong ways: ' + r.asked); });
-        check('the mouse wheel slides it sideways', () => ok(r.afterWheel.room.left > 0, 'the wheel did not slide it'));
         check('the menu buttons open the game panels: SETTINGS, CLONES, and ROSTER opens the Command Center', () => { same(r.settings, true, 'settings'); same(r.clones, true, 'clones'); same(r.roster, 'roster', 'roster'); });
-        check('a hidden button can be slid into view', () => { same(r.hiddenBefore, true, 'the ? button was not hidden to begin with'); same(r.revealed, true, 'button not revealed'); });
     }
 }
 console.log(failures ? `\n${failures} failing` : '\nall passing'); process.exit(failures ? 1 : 0);

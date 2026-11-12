@@ -84,14 +84,18 @@ function targetPress(ex, ey) {
     if (_tgDial && (_tgOnInfo(ex, ey) || _tgOnDial(ex, ey))) {
         if (_tgOnInfo(ex, ey)) { _tgBtnDown = { kind: "info", x: ex, y: ey }; _targetPressed = true; return true; }
         // the dial itself is the FIRE button: a click is a shot, holding it keeps firing at the locked creature
-        const foe = targetCurrent(); if (!foe) return true;
-        const p = typeof _gunScreen === "function" ? _gunScreen(foe) : { x: ex, y: ey };
-        gunHold = { x: p.x, y: p.y, pending: true, released: false, until: 0, button: true }; _gunPressed = true; _targetPressed = false; gunTick(); return true;
+        if (targetFireHold()) { _gunPressed = true; _targetPressed = false; } return true;
     }
     // a creature other than the locked one: lock it instead (the locked one is the gun's: a click fires, holding keeps firing)
     const foe = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(ex, ey) : null;
     if (foe && foe !== targetCurrent()) { targetSet(foe, true); _tgBtnDown = { kind: "switch", x: ex, y: ey }; _targetPressed = true; return true; }
     return false;
+}
+// the FIRE button pressed (the dial's, or THE CORE's slab: js/corehud.js): a click is a shot, holding keeps firing at the locked creature until js/gunfire.js gunRelease. False with none locked.
+function targetFireHold() {
+    const foe = targetCurrent(); if (!foe) return false;
+    const p = typeof _gunScreen === "function" ? _gunScreen(foe) : { x: 0, y: 0 };
+    gunHold = { x: p.x, y: p.y, pending: true, released: false, until: 0, button: true }; if (typeof gunTick === "function") gunTick(); return true;
 }
 function targetMove() { }
 // pointerup of a press that was the targeting's
@@ -258,6 +262,9 @@ function _tgPillsInCore() {
 function _tgAmmoDraw() { if (_tgPillsInCore()) return; const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {
     if (typeof uiSlab !== "function") { _ATKCHIP.w = 0; return; }
+    // THE CORE holds the creature's slab (js/corehud.js, build 2026-11-11v): no dial; its INFO card opens to the slab's left, its foot level with the slab's
+    const F = typeof coreFoe === "function" ? coreFoe() : null;
+    if (F !== null) { _tgDial = null; _tgPillsInCore(); if (F && infoOpen) _tgInfo(a, F.x0 + F.r, F.y, F.r, _tgColour(a)); return; }
     const { W, narrow, R, left, x, y, corner } = _tgAnchor(), col = _tgColour(a);
     const held = typeof gunHold !== "undefined" && gunHold && gunHold.button && !gunHold.released, dry = typeof weaponDry === "function" ? weaponDry() : false, cool = (player.attackCooldown || 0) > 0;
     const pop = Math.max(0, Math.min(1, (f - _acquireAt) / TARGET.pop)), ease = 1 - Math.pow(1 - pop, 3), s = 0.55 + 0.45 * ease + (held ? 0.04 * Math.sin(f * 0.7) : 0);

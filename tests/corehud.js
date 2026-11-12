@@ -4,6 +4,7 @@
 // It holds the three bars, the shards and ARMY SURGE (the top left's), GUARD and STUN (the round buttons by the dial) and the PACK (its lid); its screen is a face that reacts.
 // Build 2026-11-11u, the owner's playtest: "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo
 // and the equipped item with it": its pads take a tap (all of its box but the empty strip at its left above the pills), its buttons are bigger, the pill row is in its box.
+// Build 2026-11-11v: the creature's slab under the cube (the owner circled the slab draft and drew it under the cube; "This should be in a fixed position"): no dial; the box 356 tall for good.
 // The logic runs in the sandbox, the real page in the real browser (no Chromium: it says so and passes).
 const fs = require('fs');
 const vm = require('vm');
@@ -57,6 +58,14 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (under) under.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: ax, clientY: ay })); out.pills.stowed = !playerAttackMode; setPlayerAttackMode(false, true);
     commandMode = true; steps(2); var ue = document.elementFromPoint(cr.left + 255, cr.top + 120); out.ring = [$('#coreHud').className, ue ? !ue.closest('#coreHud') : null]; commandMode = false; commandPendingTap = false; steps(2);
     out.sizes = [Math.round($('#coreHud .core-hg').getBoundingClientRect().width), Math.round($('#coreHud .core-siphon').getBoundingClientRect().width), Math.round($('#coreHud .core-pack').getBoundingClientRect().height)];
+    // build 2026-11-11v: a creature locked: its slab under the cube (no dial), the box where it was; a press on the slab shoots; INFO; gone with the creature
+    var top0 = $('#coreHud').getBoundingClientRect().top; actors = actors.filter(function(a){ return !(a instanceof Predator); });
+    var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y - 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; e.update = function(){}; e.health = e.maxHealth * 0.6;
+    setPlayerAttackMode(true, true); targetSet(e, true); steps(3); drawTargetUI();
+    out.slab = { cls: $('#coreHud').className, shown: R('#coreHud .core-foe'), info: R('#coreHud .core-foe-info'), top: Math.round($('#coreHud').getBoundingClientRect().top - top0), name: ($('#coreHud .core-foe-row') || {}).textContent, bar: ($('#coreHud .core-foe-hp i') || {}).style.width, dial: _tgDial, cube: R('#coreHud .core-cv') };
+    var n0 = playerShotsFired; player.attackCooldown = 0; playerAmmo = Math.max(playerAmmo, 5); var fe = $('#coreHud .core-foe'); fe.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 7 })); fe.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 7 }));
+    out.slab.shot = playerShotsFired - n0; out.slab.walk = !!player.fpPath; click('#coreHud .core-foe-info'); out.slab.infoOn = infoOpen; infoOpen = false;
+    e.dead = true; targetDrop(); standDown = true; steps(3); out.slab.after = [$('#coreHud').className.indexOf('foe') >= 0, R('#coreHud .core-foe').shown, Math.round($('#coreHud').getBoundingClientRect().top - top0)];
     var A = _tgAnchor(); out.dial = { y: A.y, R: A.R, corner: !!A.corner, coreTop: typeof coreTop === 'function' ? coreTop() : null };
   } catch (e) { out.err = String(e && e.stack || e).slice(0, 400); }
   var pre = document.createElement('pre'); pre.id = '__ch'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -102,7 +111,7 @@ function measure(w, h) {
         const H = rd('game.html');
         ok(/body\.core-on #shards, body\.core-on #ui, body\.core-on #ultWrap, body\.core-on #btnPack \{ display: none !important; \}/.test(H), 'the old parts are not hidden');
         ok(/body\.placing #coreHud, body\.ccOpen #coreHud, body\.panel-open #coreHud \{ display: none !important; \}/.test(H), 'it does not hide with the panels and the roster');
-        ok(/body\.core-on #topToggles \{ left: 14px; right: 352px;/.test(H), 'the dock is not beside it');
+        ok(/body\.corners #topToggles \{ left: 14px; right: auto;/.test(H) && !/body\.core-on #topToggles/.test(H), 'the dock is not the vertical bar at the left (build 2026-11-11w)');
     });
 
     group('HOW IT REACTS (the agent\'s faces and times, provisional)');
@@ -151,9 +160,9 @@ function measure(w, h) {
     });
 
     group('FROM THE OWNER\'S PLAYTEST (build 2026-11-11u): a tap on it never walks you, bigger buttons, the ammunition and the item in hand in its box');
-    check('two pads take a tap (game.html .core-pad: all of its box, now 340 x 300, but the empty strip at its left above the pills, where the dialogue\'s box may reach: js/dialogue.js), its buttons over them; while the ring is up it dims and lets taps through to the ring (.ring)', () => {
+    check('two pads take a tap (game.html .core-pad: all of its box, now 340 x 356, but the empty strip at its left above the pills, where the dialogue\'s box may reach: js/dialogue.js), its buttons over them; while the ring is up it dims and lets taps through to the ring (.ring)', () => {
         const H = rd('game.html');
-        ok(/body\.core-on #coreHud \{[^}]*height: 300px; pointer-events: none;/.test(H) && /#coreHud \.core-pad \{ position: absolute; z-index: 1; pointer-events: auto;/.test(H), 'the pads do not take a tap');
+        ok(/body\.core-on #coreHud \{[^}]*height: 356px; pointer-events: none;/.test(H) && /#coreHud \.core-pad \{ position: absolute; z-index: 1; pointer-events: auto;/.test(H), 'the pads do not take a tap');
         same(J('[CORE_HUD.strip, CORE_HUD.padTop]').join(), '56,210', 'the strip'); ok(/padA\.style\.left = CORE_HUD\.strip \+ "px"; padB\.style\.top = CORE_HUD\.padTop \+ "px";/.test(rd('js/corehud.js')), 'the pads are not placed');
         ok(/right = Math\.min\(right, Math\.round\(core\.left\) \+ CORE_HUD\.strip - DIALOGUE\.gap\)/.test(rd('js/dialogue.js')), 'the dialogue\'s box does not stop at its strip');
         ok(/#coreHud\.ring \.core-pad, #coreHud\.ring \.core-hit \{ pointer-events: none; \}/.test(H) && /#coreHud\.ring \{ opacity: 0\.35; \}/.test(H), 'the ring\'s rule');
@@ -168,9 +177,26 @@ function measure(w, h) {
         run('globalThis.__fired = 0; globalThis.__keepFire = fireArmySurge; fireArmySurge = () => { __fired++; }; playerUltimate = PLAYER_ULT_MAX; __tick(1); _coreSurgeTap(); playerUltimate = 0; __tick(1); _coreSurgeTap(); fireArmySurge = __keepFire;');
         same(J('[__fired, _core.react]').join(), '1,boop', 'a tap on the words');
     });
+    check('the creature\'s slab (build 2026-11-11v): with one locked it is shown (its name, level, health; the root .foe), the cube looks down at it and sets its look as it shoots (.shot, a beam), a shot\'s damage pops; the dial is not drawn while THE CORE is shown (js/targeting.js coreFoe); a press is the dial\'s FIRE (targetFireHold)', () => {
+        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect; actors = actors.filter(a => !(a instanceof Predator)); _core.react = null; health = PLAYER_HITS; invPanelOpen = false;
+            const e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y - 1; e.update = () => {}; e.level = 5; e.health = e.maxHealth * 0.5;
+            playerAttackMode = true; targetSet(e, true); _core.root.getBoundingClientRect = () => ({ left: 834, top: 460, width: 340, height: 356 }); _core.topY = 0; __tick(1);
+            o.on = [_coreS.foe === e, / foe/.test(' ' + _core.root.className), _core.els.fname.textContent, _core.els.flv.textContent, _core.els.fbar.style.width, _core.els.fbar.className];
+            o.at = coreFoe() ? [coreFoe().x0, coreFoe().y, coreFoe().r] : null; o.look = _corePick(_coreS, frame).ly > 0.5;
+            player.gunShotAt = frame; e.health -= 12; __tick(1); o.shot = [_coreS.shot, / shot/.test(' ' + _core.root.className), _corePick(_coreS, frame).eye, _core.els.fdmg.textContent];
+            __tick(CORE_HUD.shot + 1); o.after = [_coreS.shot, _core.els.fdmg.textContent !== ''];
+            _tgDial = { x: 1, y: 1, r: 1 }; drawTargetUI(); o.dial = _tgDial;
+            gunHold = null; player.attackCooldown = 99; o.hold = [targetFireHold(), !!gunHold && gunHold.button]; gunHold = null;
+            e.dead = true; targetDrop(); __tick(1); o.gone = [_coreS.foe, / foe/.test(' ' + _core.root.className)]; _core.root.getBoundingClientRect = keepR; _core.pills.x = 0; _core.topY = 0; playerAttackMode = false; return o; })()`);   // (unmeasured again, for the next check)
+        same(r.on.join('|'), 'true|true|BEETLE TANK|LV 5|50%|y', 'shown'); same(r.at && r.at.join(), '868,696,22', 'where it is'); same(r.look, true, 'the cube does not look at it');
+        same(r.shot.join('|'), 'true|true|set|12', 'a shot'); same(r.after.join(), 'false,true', 'after the shot'); same(r.dial, null, 'the dial is drawn with THE CORE shown');
+        same(r.hold.join(), 'true,true', 'the FIRE press'); same(JSON.stringify(r.gone), '[null,false]', 'with the creature gone');
+        const H = rd('game.html'), C = rd('js/corehud.js'); ok(/#coreHud\.foe \.core-foe, #coreHud\.foe \.core-foe-info \{ display: block; \}/.test(H), 'the slab is not shown by .foe');
+        ok(/foe\.addEventListener\("pointerdown"[^\n]*targetFireHold\(\)/.test(C) && /gunRelease\(\)/.test(C) && /setPointerCapture/.test(C), 'a press on the slab is not the FIRE button\'s');
+    });
     check('the pill row is in its box over the slab (js/targeting.js, from corePills: the ammunition with the weapon in hand, then the potion, the kits...), a pill that does not fit goes a row up, out to the left; hidden while it is hidden; by the dial while it is not shown', () => {
         const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect, keepTC = toCanvas; o.none = corePills();
-            _core.root.getBoundingClientRect = () => ({ left: 834, top: 516, width: 340, height: 300 }); _core.topY = 0; coreTick(); const C = corePills(); o.at = C ? [C.x, C.y, C.maxX] : null;
+            _core.root.getBoundingClientRect = () => ({ left: 834, top: 460, width: 340, height: 356 }); _core.topY = 0; coreTick(); const C = corePills(); o.at = C ? [C.x, C.y, C.maxX] : null;
             playerInv = { repair_kit: 2 }; health = 1; actors = actors.filter(a => !(a instanceof Predator)); targetDrop(); playerAttackMode = true; ctx.measureText = () => ({ width: 40 });
             _ATKCHIP.w = 0; _KITCHIP.w = 0; drawTargetUI(); o.ammo = [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w > 0]; o.kit = [_KITCHIP.x >= _ATKCHIP.x + _ATKCHIP.w, _KITCHIP.y, _KITCHIP.w > 0];
             const mx = C.maxX; C.maxX = C.x + 120; drawTargetUI(); o.wrap = [_KITCHIP.x + _KITCHIP.w < C.x, _KITCHIP.y]; C.maxX = mx; drawTargetUI();
@@ -193,9 +219,9 @@ function measure(w, h) {
         const t = measure(w, h);
         await check(`${w}x${h}: THE CORE in the bottom-right corner, the old parts hidden, the dock and the squad's corner clear of it, the cube drawn, its words`, () => {
             ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.on, true, 'not on'); same(t.body, true, 'body.core-on'); ok(t.core && t.core.shown, 'not shown');
-            ok(t.vw - t.core.r <= 8 && t.vh - t.core.b <= 8, 'not in the corner: ' + JSON.stringify(t.core));
+            ok(Math.abs(t.vw - t.core.r - 14) <= 1 && Math.abs(t.vh - t.core.b - 14) <= 1, 'not in the corner, 14 px in from the right and the bottom (build 2026-11-11x): ' + JSON.stringify(t.core));
             for (const k of ['shards', 'ui', 'ult', 'pack']) same(t.old[k] && t.old[k].shown, false, 'the old ' + k + ' is shown');
-            ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(!(t.dock.l < t.mix.r && t.dock.t < t.mix.b - 1), 'the dock runs under the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
+            ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(t.dock.b <= t.mix.t + 1, 'the dock is not over the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
             ok(t.drawn > 400, 'the cube is not drawn (' + t.drawn + ' pixels)');
             same(t.words.count, '1,234', 'the shards'); same(t.words.pack, '2', 'PACK n'); ok(/^ULTIMATE \d+%$/.test(t.words.surge), 'the surge: ' + t.words.surge); same(t.words.cells, 'g,g,g', 'the bars');
         });
@@ -205,6 +231,14 @@ function measure(w, h) {
             same(t.readyWord, 'TAP — ARMY SURGE', 'full'); same(t.surged, true, 'the surge did not fire'); ok(/^SURGE \d+ S$/.test(t.surgeWord), 'surging: ' + t.surgeWord);
             same(t.packAtOnce, false, 'the pack opened before its lid'); same(t.packAfter, true, 'the pack did not open'); same(t.coreUnderPack, false, 'THE CORE shows over the pack');
             ok(t.dial.corner && t.dial.coreTop !== null && t.dial.y + t.dial.R <= t.dial.coreTop, 'the dial is not above it: ' + JSON.stringify(t.dial));
+        });
+        await check(`${w}x${h}: build 2026-11-11v: a creature locked, its slab under the cube (its name and level, its health; no dial), THE CORE where it was (the cube does not move); a press on the slab shoots and walks nowhere; INFO opens; the slab goes with the creature`, () => {
+            ok(t && !t.err, 'the probe'); const S = t.slab; ok(S, 'not measured');
+            ok(/\bfoe\b/.test(S.cls) && S.shown && S.shown.shown && S.info && S.info.shown, 'the slab is not shown: ' + JSON.stringify(S));
+            same(S.top, 0, 'THE CORE moved as the slab came'); ok(S.cube && S.shown.t > S.cube.t + 180, 'the slab is not under the cube: ' + JSON.stringify([S.shown, S.cube]));
+            ok(/BEETLE TANK/.test(S.name) && /LV \d+/.test(S.name), 'its words: ' + S.name); same(S.bar, '60%', 'its health'); same(S.dial, null, 'the dial is still drawn');
+            same(S.shot, 1, 'a press on the slab did not shoot'); same(S.walk, false, 'a press on the slab walked'); same(S.infoOn, true, 'INFO');
+            same(S.after.join(), 'false,false,0', 'with the creature gone');
         });
         await check(`${w}x${h}: build 2026-11-11u: every point of its box is its own (a tap there never reaches the map); the ammunition and the kits in its box, over the slab, a tap on the ammunition puts the gun away; the ring passes taps; its buttons bigger`, () => {
             ok(t && !t.err, 'the probe');

@@ -74,6 +74,8 @@ function dialoguePaused() {
 function _dlgRect(id) {
     try { if (typeof document === "undefined" || !document.getElementById) return null; const el = document.getElementById(id); if (!el || !el.getBoundingClientRect) return null; const r = el.getBoundingClientRect(); return r && r.width > 0 && r.height > 0 && isFinite(r.top) ? r : null; } catch (e) { return null; }
 }
+// a page element's box by a selector, or null when it is not shown
+function _dlgSel(sel) { try { const el = typeof document !== "undefined" && document.querySelector ? document.querySelector(sel) : null; const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null; return r && r.width > 0 && r.height > 0 && isFinite(r.top) ? r : null; } catch (e) { return null; } }
 // { x, w, bottom }: measured every DIALOGUE.place frames (the page's rectangles cost a layout)
 function dialoguePlace(force) {
     if (typeof canvas === "undefined" || !canvas) return { x: DIALOGUE.margin, w: DIALOGUE.w, bottom: 600, W: 0, H: 0 };
@@ -85,8 +87,14 @@ function dialoguePlace(force) {
         const sb = _dlgRect("squadBar"), mt = _dlgRect("mixTool"), l = Math.max(sb ? sb.right : 0, mt ? mt.right : 0);
         if (l > 0 && l < W * 0.45) left = Math.max(left, Math.round(l) + DIALOGUE.gap);
         const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214; right = Math.min(right, W - 14 - foeW - DIALOGUE.gap);
-        const core = typeof coreOn === "function" && coreOn() && typeof CORE_HUD !== "undefined" ? _dlgRect("coreHud") : null;   // THE CORE (js/corehud.js): into the empty strip at its left, not under its buttons
-        if (core && core.left > W / 2) right = Math.min(right, Math.round(core.left) + CORE_HUD.strip - DIALOGUE.gap);
+        // THE CORE (js/corehud.js) at the bottom right: at the foot the box stops short of it (its pills and slabs reach its left edge); where that leaves too little room (a tall screen), the box stands
+        // higher, over THE CORE's lower part (its pads' top, CORE_HUD.padTop), reaching into the empty strip at its left but never under its buttons
+        const core = typeof coreOn === "function" && coreOn() && typeof CORE_HUD !== "undefined" ? _dlgRect("coreHud") : null;
+        if (core && core.left > W / 2) {
+            const fa = _dlgSel("#mixTool .mt-fa.atk"), lb = fa && fa.right < W * 0.45 ? Math.max(left, Math.round(fa.right) + DIALOGUE.gap) : left;   // (at the foot it clears the enemy card's ATTACK too, drawn out past the card)
+            if (Math.round(core.left) - DIALOGUE.gap - lb >= 240) { left = lb; right = Math.min(right, Math.round(core.left) - DIALOGUE.gap); }
+            else { right = Math.min(right, Math.round(core.left) + CORE_HUD.strip - DIALOGUE.gap); bottom = Math.min(bottom, Math.round(core.top) + CORE_HUD.padTop); }
+        }
     } else {   // a phone: over the squad's row and the tool's chip, and clear of the round buttons at the right edge (SETTINGS, QUESTS: js/settings.js, js/questbox.js)
         for (const id of ["squadBar", "mixTool"]) { const r = _dlgRect(id); if (r && r.top > H * 0.45) bottom = Math.min(bottom, Math.round(r.top)); }
         if (typeof dockHasMenus === "function" && !dockHasMenus()) right = Math.min(right, W - 50);
