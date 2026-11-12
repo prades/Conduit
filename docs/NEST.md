@@ -4,6 +4,8 @@ A cavern beyond the arena's south rubble where THE ANT QUEEN lives: a place to t
 
 Status: **Implemented and tested** (not playtested): step A in build `2026-11-07ll`, step B in `2026-11-07mm`, step C in `2026-11-07nn`. Built in three steps, each its own build on `claude/start-game-project-HSh7Z`; this file says which step is built.
 
+**Approved 2026-11-12, not built:** the Nest grows out into tunnels and nests around this cavern (which stays as it is), and the volcanic layer is part of it, down a sloping tunnel: `DOMAINS.md` §2, 10 and 11.
+
 ## The owner's words (2026-11-07)
 
 - "Can we finally create the nest layer? [...] I want to use it to test the player and squad combinations and different moves against a boss ant that's huge."

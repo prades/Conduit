@@ -157,7 +157,7 @@ function elec() {
 
 // ───────────── 2. THE ANT NEST, grown out into tunnels and nests ─────────────
 function nest() {
-  const T = 17, PAD = 18, k = kit(T, PAD), W = 50, H = 52;
+  const T = 17, PAD = 18, k = kit(T, PAD), W = 50, H = 70;
   // the queen's cavern as built (js/facilitymap.js nest_area, a tile = 20 sketch px), moved to this sheet's corner
   const Q = [[24, 59], [28.5, 59], [28.5, 58], [30.5, 58], [30.5, 59], [36, 59], [38, 60], [38, 68], [37, 70], [35, 71], [25, 71], [23, 70], [22, 68], [22, 61]].map(([x, y]) => [x + 8, y - 56]);
   const caves = {
@@ -177,10 +177,18 @@ function nest() {
     { pts: [[16, 20], [19.6, 20.2], [23, 20.4], [26.4, 20.4]], w: 3 },            // T4: east, across the stream, to the stream cave
     { pts: [[33.8, 14.6], [34.2, 17.6], [35.4, 20.6], [36.2, 22.6]], w: 3 },      // T6: the queen's cavern south to the old burrow (the boulder)
     { pts: [[28.2, 33.2], [31, 33.6], [33.8, 33.8]], w: 3 },                       // T7: the deep brood east to the larder (the resin seal)
-    { pts: [[12.6, 36.2], [10.2, 39.6], [7.8, 43.4], [6.6, 47.6], [6.4, 50.4]], w: 3.2 },   // the sloping tunnel down (later)
+    { pts: [[12.6, 36.2], [10.2, 39.6], [7.8, 43.4], [6.6, 47.6], [6.9, 51.6], [8.8, 54.6]], w: 3.2 },   // the sloping tunnel down, into the volcanic layer's spot
   ];
   let s = '';
   const rock = '#6e5238', dirt = '#2b2016', st = T * 0.55;
+  // THE VOLCANIC LAYER'S SPOT (the owner, 2026-11-12: "Just make a spot for the volcanic layer to be included in the nest"): part of the Nest, at its foot, down the sloping tunnel; a spot, its layout not designed
+  const VOLC = [[3.6, 54.4], [12, 53.1], [24, 54.5], [36, 53.3], [46, 55.3], [47.5, 61], [45.2, 66.8], [33, 68.4], [20, 67.7], [8, 68.4], [2.6, 64], [2.1, 58.6]];
+  s += `<path d="${k.blobD(VOLC)}" fill="#1d1112" stroke="#ff7a3a" stroke-width="2.4" stroke-dasharray="10 6"/>`;
+  const lava = pts => `<path d="${k.pathD(pts)}" fill="none" stroke="#ff5a14" stroke-width="${T * 1.5}" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/><path d="${k.pathD(pts)}" fill="none" stroke="#ffb347" stroke-width="${T * 0.45}" stroke-linecap="round" stroke-linejoin="round" opacity="0.65"/>`;
+  s += lava([[12.6, 55.6], [14, 59.8], [12.8, 63.6], [14.2, 66.8]]) + lava([[35, 54.6], [36.6, 58.6], [40.4, 62.2], [45, 61.6]]);
+  s += `<ellipse cx="${k.X(42.4)}" cy="${k.Y(57.6)}" rx="${T * 2.4}" ry="${T * 1.3}" fill="#ff5a14" opacity="0.38"/><ellipse cx="${k.X(42.4)}" cy="${k.Y(57.6)}" rx="${T * 1.2}" ry="${T * 0.55}" fill="#ffb347" opacity="0.6"/>`;
+  // the decided rule, shown once: an ice bridge over lava sets as stone and stays
+  s += k.rect(11.2, 59.3, 15.8, 60.7, 'fill="#6b6460" stroke="#d8d2cc" stroke-width="1.5" stroke-dasharray="4 3"');
   const tun = (t, col, extra) => `<path d="${k.pathD(t.pts)}" fill="none" stroke="${col}" stroke-width="${t.w * T + extra}" stroke-linecap="round" stroke-linejoin="round"/>`;
   // walls (rock) first, then the dirt floors over them
   s += k.poly(Q, `fill="${rock}" stroke="${rock}" stroke-width="${st}" stroke-linejoin="round"`) + k.rect(20.6, 15.2, 23.6, 25.8, `fill="${rock}" stroke="${rock}" stroke-width="${st}" stroke-linejoin="round"`);
@@ -218,24 +226,32 @@ function nest() {
   s += k.rect(29.4, 32, 30.6, 35.2, 'fill="#4f8a2a" stroke="#a6f070" stroke-width="2"') + k.barrel(27.4, 35.3, true) + k.badge(31.1, 38.3, 'acid') + k.chest(37.2, 33.8, 'D');
   s += k.text(36.9, 36.3, 'THE LARDER', { size: 12, col: '#ffd9a0', bold: true });
   // the way down (later): a sloping tunnel, no stairs (decided 2026-11-11)
-  for (let i = 0; i < 4; i++) { const y = 41 + i * 2.3, x = 9.1 - i * 0.6; s += k.text(x, y, '▼', { size: 13, col: '#ffb347', halo: 0 }); }
-  s += k.text(9.4, 51.3, 'THE WAY DOWN · a sloping tunnel, no stairs (decided) · later: to the volcanic layer', { size: 12, col: '#ffcf8a', bold: true, anchor: 'start' });
+  for (let i = 0; i < 5; i++) { const y = 41 + i * 2.6, x = 9.1 - i * 0.55 + (i > 3 ? 0.9 : 0); s += k.text(x, y, '▼', { size: 13, col: '#ffb347', halo: 0 }); }
+  s += k.text(10.4, 46.4, 'THE WAY DOWN · a sloping tunnel, no stairs, no fade (decided)', { size: 12, col: '#ffcf8a', bold: true, anchor: 'start' });
+  // the volcanic layer's spot: its names and the decided rules
+  s += k.text(25, 57.6, 'THE VOLCANIC LAYER · the fire domain', { size: 14, col: '#ffb070', bold: true });
+  s += k.text(25, 58.8, 'a spot kept for it, part of the Nest', { size: 12, col: '#ffcf9a' });
+  s += k.badge(9.2, 60.0, 'ice') + k.text(16.6, 60.0, 'the ice bridge sets as stone over lava,', { size: 11, col: '#e8e2dc', anchor: 'start' }) + k.text(16.6, 61.1, 'and stays (decided)', { size: 11, col: '#e8e2dc', anchor: 'start' });
+  s += k.text(27, 64.6, 'its passages, caves and look: later, with you', { size: 12, col: '#c9a982', italic: true });
+  s += k.text(46.4, 65.6, 'on to the crystalline area (later) →', { size: 11, col: '#d9b8ff', anchor: 'end' });
   // the main way
-  s += mainWay(k, [[37.5, 2.8], [37, 6.4], [32, 8.6], [25.4, 8.6], [19, 9.6], [15, 12.6], [14.6, 17], [15.6, 20], [15.2, 23.4], [16.4, 26.4], [17.2, 30.4], [13, 35.6], [9.8, 40.2], [7.6, 44.4], [6.6, 49.4]]);
+  s += mainWay(k, [[37.5, 2.8], [37, 6.4], [32, 8.6], [25.4, 8.6], [19, 9.6], [15, 12.6], [14.6, 17], [15.6, 20], [15.2, 23.4], [16.4, 26.4], [17.2, 30.4], [13, 35.6], [9.8, 40.2], [7.6, 44.4], [6.7, 49.4], [7.4, 52.6], [9.8, 55.2]]);
   s += k.badge(25.4, 5.4, 'fire', 1) + k.badge(11.4, 23, 'any', 2);
   // the names
   s += k.text(38, 14.2, "THE QUEEN'S CAVERN · as built", { size: 13, col: '#ffe0b0', bold: true }) + k.text(38, 15.3, 'the test ground and its console stay', { size: 11, col: '#c9a982' });
   s += k.text(16.8, 6.9, 'BROOD CHAMBER', { size: 12, col: '#ffe0b0', bold: true }) + k.text(19.4, 31.6, 'THE DEEP BROOD', { size: 13, col: '#ffe0b0', bold: true }) + k.text(29, 16.2, 'STREAM CAVE', { size: 12, col: '#ffd9a0', bold: true });
-  s += k.scale(41, 47, 5);
+  s += k.scale(41, 49.6, 5);
   const Wp = W * T + PAD * 2, Hp = H * T + PAD * 2;
   const svg = `<svg width="${Wp}" height="${Hp}" viewBox="0 0 ${Wp} ${Hp}">${s}</svg>`;
   const notes = `<div class="notes"><ul>
+    <li><b>Approved 2026-11-12</b> ("I like the nest"), with the change you asked: <b>a spot for the volcanic layer in the Nest</b>.</li>
+    <li><b>The volcanic layer's spot</b> (new, at the foot): the sloping tunnel from the deep brood goes down into it, inside the Nest, with no stairs and no fade (as decided). Its lava, and the ice bridge that sets as stone over it, are decided; its passages, caves, size and look are to design with you. The crystalline area lies beyond it (later).</li>
     <li><b>The queen's cavern stays as it is</b> (the test ground, the console, the queen); tunnels go out of its west and south walls. She stays in her cavern and does not follow you into them.</li>
     <li><b>Tunnels 3 tiles wide</b>, winding; nests (brood chambers) along them; the eggs, brood holes and resin of the cavern carried through.</li>
-    <li><b>The main way</b> (the green line): <b>①</b> drill a collapsed tunnel (fire: the Nest's own key, as its way in), <b>②</b> shoot the flask the ants dragged down by a cracked wall (anyone), then through the deep brood to <b>the way down</b>: the sloping tunnel you decided on, to the volcanic layer (later).</li>
+    <li><b>The main way</b> (the green line): <b>①</b> drill a collapsed tunnel (fire: the Nest's own key, as its way in), <b>②</b> shoot the flask the ants dragged down by a cracked wall (anyone), then through the deep brood to <b>the way down</b>: the sloping tunnel you decided on, into the volcanic layer.</li>
     <li><b>Four side pockets</b>, each ending in a chest: <b>A</b> a REEF climb up to the shelf, <b>B</b> an ice bridge over the stream, <b>C</b> FLUX MOVE the boulder into its hollow, <b>D</b> a resin seal an acid flask eats through (<span class="q">a new idea</span>).</li>
-    <li class="q">Every size, name and placement is mine, for you to change.</li></ul>${legend()}</div>`;
-  return page(Wp + 470 + 26, 440, `<h1>2 · The Ant Nest, grown out into tunnels and nests <span class="tag">DRAFT</span></h1><p class="sub">Seen from above, north at the top. You come down through the drilled rubble at the top, into the queen's cavern as it is now, and out through the new tunnels.</p><div class="row">${svg}${notes}</div>`);
+    <li class="q">The sizes and names are mine, provisional.</li></ul>${legend()}</div>`;
+  return page(Wp + 470 + 26, 440, `<h1>2 · The Ant Nest, grown out into tunnels and nests <span class="tag" style="border-color:#7dffa8;color:#7dffa8">APPROVED</span><span class="tag">+ THE VOLCANIC LAYER'S SPOT</span></h1><p class="sub">Seen from above, north at the top. You come down through the drilled rubble at the top, into the queen's cavern as it is now, out through the new tunnels, and down the sloping tunnel into the volcanic layer.</p><div class="row">${svg}${notes}</div>`);
 }
 
 module.exports = { WHO, kit, page, legend, CSS };

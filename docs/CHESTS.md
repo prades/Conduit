@@ -1,6 +1,6 @@
 # The default chest
 
-- **Status:** **Proposed** (2026-11-12). The owner asked for it; its rules and look below are the agent's drafts (draft 9), not approved and not built.
+- **Status:** **Proposed** (2026-11-12). The owner asked for it; the rules below are the agent's draft, not approved. **The look is approved: C, the hex cache** (2026-11-12). Nothing is built.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-12
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11x` (nothing built)
@@ -10,9 +10,14 @@
 
 The owner, 2026-11-12: "Also would like to create a default chest that players can find booster packs and other miscellaneous items within." It came with the domains' new direction (narrow passages, rooms, nests, caves and instances, and ways through by the technicians' utilities: `DOMAINS.md` §2, 7 to 9): a chest is what you find at the end of a passage you worked to open.
 
+The owner, of the three looks (draft 9): "I like the sea chess", read as **the C chest**, the hex cache.
+
 ## 2. Approved design
 
-1. **A default chest** that players can **find**, with **booster packs** and **other miscellaneous items** in it (the owner's words). Nothing else is approved yet.
+1. **A default chest** that players can **find**, with **booster packs** and **other miscellaneous items** in it (the owner's words).
+2. **Its look is C, the HEX CACHE** (approved 2026-11-12; `design/props/drafts/chest.js`, `chest_c` and `chest_c_open`): a squat six-sided cache in the hazard flasks' and THE CORE's hex language, one tile; pale laminate, teal panels on its three faces the camera sees, an amber diamond on the middle one, an amber rim, a green lamp while it is full. Open, its lid lifts off and hovers on a violet light, a booster pack standing in the light and an item or two below it. It is baked into the game's props when the chest is built.
+
+Nothing else is approved yet: its rules (§5) are open.
 
 ## 3. Must-have requirements
 
@@ -31,10 +36,7 @@ The owner, 2026-11-12: "Also would like to create a default chest that players c
 - **Once, and saved:** each chest by its id; a new game shuts them all again. (The other way: a chest that fills again after a while.)
 - **What is in one:** **one booster pack** (PACK 1; SERIES 2 as well once it is open to you, an even chance) and **two items** from: AMMO PACK, REPAIR KIT, SLEEPING POTION, SCRAP METAL (three), FUEL CELL, and your class's own (FLARE, POWER CELL, MUTAGEN SAMPLE, HEALING SERUM). What you cannot carry (a full stack) stays in the chest until you can.
 - **Where:** at the ends of side pockets behind the technicians' ways through, four in each of drafts 5 and 6 (`DOMAINS.md` §5): the further off the main way, the better the find.
-- **The look (draft 9: `design/props/drafts/chest.js`, baked for review only by `design/props/drafts/bake_draft.js`; the game's pictures are untouched):** one tile, the facility's style kit, each shut (a green lamp on it while it is full) and open (the light inside, a booster pack standing in it, an item or two beside it):
-  - **A · SUPPLY CHEST**: the classic chest shape, a domed lid on a box; pale laminate, steel corners, amber bands, a gold light at the seam.
-  - **B · FIELD CASE**: a rugged hard case: two shells, rubber corners, two latches, a handle on top, a cyan seam.
-  - **C · HEX CACHE**: a squat six-sided cache in the hazard flasks' and THE CORE's hex language; its lid lifts off and hovers on a violet light.
+- **The look:** C chosen (§2, 2). Not chosen, of draft 9 (`design/props/drafts/chest.js`, baked for review only by `design/props/drafts/bake_draft.js`): A · SUPPLY CHEST (a domed lid on a box) and B · FIELD CASE (a rugged hard case).
 
 ## 6. Dependencies and affected systems
 
@@ -72,7 +74,7 @@ Nothing built.
 
 ## 11. Open questions
 
-1. The look: A supply chest, B field case or C hex cache (draft 9)?
+1. ~~The look: A supply chest, B field case or C hex cache (draft 9)?~~ **Answered 2026-11-12: C**, the hex cache (§2, 2).
 2. Once (saved), or does a chest fill again?
 3. What is in one: one pack and two items as proposed? Which packs, and how likely each?
 4. The pack opened there and then (proposed), or kept in the PACK to open later?
@@ -82,3 +84,4 @@ Nothing built.
 ## 12. History
 
 - 2026-11-12: the owner's ask (§1); the proposal and draft 9. Decision record: `DECISION-LOG.md`, "The domains are passages, rooms, nests, caves and instances".
+- 2026-11-12, later: the look C chosen (§2, 2). Decision record: `DECISION-LOG.md`, "The Ant Nest grows out as drawn, the volcanic layer in it; the chest is the hex cache".

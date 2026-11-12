@@ -159,8 +159,8 @@ Use existing documents first; add new ones only with a clear owner.
 | Energy cards (a follower's element and attacks from cards it spends; built in `2026-11-09s`) | `ENERGY-CARDS.md` |
 | The conversion apparatus and BLOOM; MAGNETIC, electric's conversion (direction only, 2026-11-07: §13) | `CONVERSION.md` |
 | Sewer quest/purification | `SEWER-QUEST.md` |
-| The domains: the electrical domain under the Server Room, the volcanic layer (fire) below the Ant Nest, the crystalline area (flux) (designed in part 2026-11-11; the new direction 2026-11-12: narrow passages, rooms, nests, caves and instances, with ways through by the technicians' utilities; the layouts proposed, nothing built) | `DOMAINS.md` |
-| The default chest (booster packs and other items to find; proposed 2026-11-12, nothing built) | `CHESTS.md` |
+| The domains: the electrical domain under the Server Room, the volcanic layer (fire) below the Ant Nest, the crystalline area (flux) (designed in part 2026-11-11; the new direction 2026-11-12: narrow passages, rooms, nests, caves and instances, with ways through by the technicians' utilities; the Nest's layout approved, the volcanic layer in it; nothing built) | `DOMAINS.md` |
+| The default chest (booster packs and other items to find; proposed 2026-11-12, its look approved: the hex cache; nothing built) | `CHESTS.md` |
 | The Ant Nest (beyond the arena's south rubble: THE ANT QUEEN and the testing console; designed 2026-11-07) | `NEST.md` |
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |

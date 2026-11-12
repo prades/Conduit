@@ -2853,6 +2853,13 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - **Proposed for the owner (drafts 5 to 9; the agent's sizes, names, places and numbers):** the electrical domain as passages and rooms; the Ant Nest grown out into tunnels and nests; the ways through (a blast breaks a cracked wall or brings down a leaning stack, for good; FLUX MOVE clears a blocker into its niche; the built drill, bridge, launcher and REEF; an acid flask eating resin, the agent's idea); seeing into a narrow passage (A low near walls, the agent's pick; B fading; C outlines); the chest's rules and three looks. `DOMAINS.md` §5, `CHESTS.md`.
 - **Status:** the direction approved; the layouts, rules and looks proposed; nothing built.
 
+## DECISION: The Ant Nest grows out as drawn, the volcanic layer in it; the chest is the hex cache (2026-11-12, nothing built)
+- **The owner**, of drafts 5 to 9: "I like the sea chess and I like the nest. Just make a spot for the volcanic layer to be included in the nest." ("The sea chess" read as the C chest.)
+- **Decided:** the Ant Nest grows out as draft 6 (its tunnels, nests, main way and four side pockets with chests, the acid flask's resin seal among them); the volcanic layer is part of the Nest, down the sloping tunnel from the deep brood with no stairs and no fade, a spot kept for it at the Nest's foot (its passages, caves and look later); the default chest's look is C, the hex cache. `DOMAINS.md` §2, 10 and 11; `CHESTS.md` §2.
+- **Not chosen:** chest looks A (supply chest) and B (field case).
+- **Still open:** the electrical domain's layout (draft 5), seeing into a narrow passage (draft 8), the chest's rules, "instances", "the nests". `DOMAINS.md` §11, `CHESTS.md` §11.
+- **Status:** approved; nothing built.
+
 ## DECISION: The player's part in a fight (2026-11-11; step 1 built in `2026-11-11e`, step 2 in `2026-11-11f`)
 - The owner: the three-hit rule "a bit harsh", "no room for compatibility there with just 3 bars"; ideas: items to recharge the bars, blocking shots for the followers, swooping in to stun, or no health at all ("a monitor of the battlefield"); "I don't want to make it too easy".
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.
