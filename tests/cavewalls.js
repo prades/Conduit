@@ -19,7 +19,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`globalThis.__rocks = () => _fp.items.filter(it => it.fp === 'wall' && it.kind === 'rock');
+    run(`globalThis.__rocks = () => _fp.items.filter(it => it.fp === 'wall' && it.kind === 'rock' && !it.low);   // (a low rim of rock, the Nest's tunnels: drawn rock only, build 2026-11-12a)
         globalThis.__pen = () => { const calls = []; const g = new Proxy({}, { get(t, k) { if (k in t) return t[k]; return function () { calls.push([k].concat(Array.prototype.slice.call(arguments))); }; }, set(t, k, v) { t[k] = v; return true; } }); return { g, calls }; };
         globalThis.__sheets = () => { for (const r in CAVE_ATLAS.rooms) _caveImgs[r] = { complete: true, naturalWidth: CAVE_ATLAS.rooms[r].w, naturalHeight: CAVE_ATLAS.rooms[r].h, room: r }; };`);
 
@@ -118,7 +118,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const r = J(`__rub().map(it => { const P = CAVE_RUBBLE.items[it.rubble], R = _techRubble(it.rubble), segs = Math.max(1, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) / 2));
             return { id: it.rubble, has: P ? Object.keys(P).filter(k => k !== 'ends').sort() : null, ends: P && P.ends, now: [it.a[0], it.a[1], it.b[0], it.b[1]], choke: !!(R && R.solid), segs,
                 seams: P ? CAVE_RUBBLE.shows.map(s => P[s] && P[s][7] ? P[s][7].filter(q => q.length >= 4 && q.length % 2 === 0).length : -1) : [], left: P && P.left ? P.left[7].length : -1 }; })`);
-        ok(r.length >= 4, 'only ' + r.length + ' patches'); same(r.map(p => p.id).sort().join(), 'rubble_arena_south,rubble_sewer_bank,rubble_sewer_choke,rubble_sewer_gate', 'the patches');
+        ok(r.length >= 4, 'only ' + r.length + ' patches'); same(r.map(p => p.id).sort().join(), 'rubble_arena_south,rubble_nest_choke,rubble_sewer_bank,rubble_sewer_choke,rubble_sewer_gate', 'the patches');
         for (const p of r) {
             ok(p.has, p.id + ': no pictures'); same(p.has.join(), ['3', '4', '6', '7', '8', '9'].concat(p.choke ? ['left'] : ['hole']).sort().join(), p.id + ': its pictures (and the hole, for rubble against a wall: build 2026-11-09m)');
             same(JSON.stringify(p.ends), JSON.stringify(p.now), p.id + ': the patch moved since the bake: node design/cave/bake_rubble.js <three>');
@@ -129,7 +129,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('its sheet is the size the atlas says, every picture inside it; the model is the walls\' rock (their brown and their lights)', () => {
         const A = J('CAVE_RUBBLE'); same(A.sheet, 'img/cave/rubble.png', 'the sheet'); same(pngSize(A.sheet).join('x'), A.w + 'x' + A.h, 'its size'); ok(A.w <= 4096 && A.h <= 4096, 'too big for a tablet\'s texture');
         let n = 0, bad = 0; for (const P of Object.values(A.items)) for (const [k, e] of Object.entries(P)) { if (k === 'ends') continue; n++; if (e[1] < 0 || e[2] < 0 || e[1] + e[3] > A.w || e[2] + e[4] > A.h || e[3] < 1 || e[4] < 1) bad++; }
-        same(n, 28, 'pictures'); same(bad, 0, 'pictures outside the sheet');
+        same(n, 35, 'pictures');   // (35 since build 2026-11-12a: the Nest's collapsed tunnel's) same(bad, 0, 'pictures outside the sheet');
         const b = rd('design/cave/bake_rubble.js'), w = rd('design/cave/bake_walls.js'), lights = s => (s.match(/new T\.(HemisphereLight|DirectionalLight)\([^)]*\)/g) || []).join();
         ok(/base = lin\(0x4a3f37\), dark = lin\(0x1d1714\), light = lin\(0x7a6a5c\)/.test(b), 'not the walls\' brown'); ok(lights(b).length > 40 && lights(b) === lights(w), 'not the walls\' lights');
     });

@@ -74,14 +74,14 @@ function _facilityBuild(ex) {
     const M = FACILITY_MAP;
     const closed = ex.closed || [];   // rooms whose openings are CLOSED in this copy (the validator's sealed-room test)
     const widen = (o) => { const pa = _facP(o.a), pb = _facP(o.b), l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]); if (_facSnap && l > 0 && l < 2) { pb[0] = pa[0] + (pb[0] - pa[0]) / l * 2; pb[1] = pa[1] + (pb[1] - pa[1]) / l * 2; } return [pa, pb]; };   // a door is at least two tiles wide on the grid
-    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }; });
+    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door"), cave: !!o.cave }; });   // (cave: a mouth in the rock, no frame)
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
         const p = r.poly;
         for (let i = 0; i < p.length; i++) {
-            const a = p[i], b = p[(i + 1) % p.length], kind = r.edgeKinds ? r.edgeKinds[i] : "wall";
-            for (const seg of _facTrim(a, b, openings)) walls.push({ a: seg[0], b: seg[1], room: r.id, kind, arena: !!r.raw.boundary_blocks_movement });
+            const a = p[i], b = p[(i + 1) % p.length], k0 = r.edgeKinds ? r.edgeKinds[i] : "wall", low = k0 === "rock_low" || k0 === "cliff", kind = low ? "rock" : k0, face = k0 === "cliff";   // (rock_low: a low rim of rock; cliff: one that is a raised floor's open face: build 2026-11-12a, the Nest's tunnels)
+            for (const seg of _facTrim(a, b, openings)) walls.push(Object.assign({ a: seg[0], b: seg[1], room: r.id, kind, arena: !!r.raw.boundary_blocks_movement }, low ? { low: true } : {}, face ? { face: true } : {}));
         }
     }
     // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so that it is drawn as glass.
@@ -234,8 +234,8 @@ function _facSegHit(a, b, c, d) {   // where segment ab crosses segment cd, or n
 //          a teleporter, a rubble pile) stops a shot too ("Yes, they stop shots"), and it is nobody's own cover. A low object that gives no cover (a table, a cart, water, a barred gate) is passed over.
 //   LOW    sight passes over it ("See over low ones"): waist high or less by its 3D model (design/props/models; the player is about 70 px tall), a barred gate (seen through) or water (seen across).
 //          Everything else blocks sight as it always did, the middle heights too (a crate stack, a console's screens, a generator). The heights are a reading: docs/OPEN-QUESTIONS.md §1x.
-const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench", "pump", "valve", "hazard_explosive", "hazard_corrosive"]);   // (a pump: the sewer's machinery, Milestone Four; the hazard containers, build 2026-11-09yy: a shot stops on one and sets it off, js/hazards.js)
-const FAC_LOW = new Set(["barrier", "crate", "barrel", "pump", "valve", "hazard_explosive", "hazard_corrosive", "desk", "computer_desk", "reception_desk", "lab_bench", "cart", "table", "couch", "sentry", "river", "pool", "gate", "boss_gate"]);
+const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench", "pump", "valve", "hazard_explosive", "hazard_corrosive", "chest", "boulder"]);   // (the Nest's chest and boulder, build 2026-11-12a: cover, and seen over;) (a pump: the sewer's machinery, Milestone Four; the hazard containers, build 2026-11-09yy: a shot stops on one and sets it off, js/hazards.js)
+const FAC_LOW = new Set(["barrier", "crate", "barrel", "pump", "valve", "hazard_explosive", "hazard_corrosive", "desk", "computer_desk", "reception_desk", "lab_bench", "cart", "table", "couch", "sentry", "river", "pool", "gate", "boss_gate", "chest", "boulder"]);
 // the first wall line the segment (x0,y0)-(x1,y1) crosses, or null: the walls are every room's outline but its openings, so this is a band between rooms and a thin wall (glass) alike
 function _facWallCrossed(x0, y0, x1, y1, F) {
     const ix = _facIndex(F), B = FAC_BUCKET, a = [x0, y0], b = [x1, y1], seen = new Set();
@@ -552,6 +552,8 @@ function facilityValidate(F) {
     for (const r of F.rooms) {
         let start = null; const c = _facCentroid(r.poly);
         { const at = facilityRoomAt(c[0], c[1], F); if (at && at.id === r.id && facilityWalkable(c[0], c[1], F)) start = c; }   // (the centroid of a C-shaped room can lie in another room)
+        if (!start) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of r.poly) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); }   // (a narrow tunnel's: points in its own box first)
+            for (let t = 0; t < 200 && !start; t++) { const x = x0 + (x1 - x0) * ((t * 0.6180339) % 1), y = y0 + (y1 - y0) * ((t * 0.4142135) % 1); const rr = facilityRoomAt(x, y, F); if (rr && rr.id === r.id && facilityWalkable(x, y, F)) start = [x, y]; } }
         if (!start) for (let t = 0; t < 400 && !start; t++) { const x = F.bounds.minX + (F.bounds.maxX - F.bounds.minX) * ((t * 0.6180339) % 1), y = F.bounds.minY + (F.bounds.maxY - F.bounds.minY) * ((t * 0.4142135) % 1); const rr = facilityRoomAt(x, y, F); if (rr && rr.id === r.id && facilityWalkable(x, y, F)) start = [x, y]; }
         if (!start) { warnings.push(r.id + ": no walkable floor found to test"); continue; }
         const cells = facilityFlood(start[0], start[1], F), reached = new Set();

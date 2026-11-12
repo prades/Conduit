@@ -14,6 +14,8 @@ const FP_ROOM_TAG = {
     catwalks: "Catwalks", arena: "Arena", nest_area: "Ant Nest", cold_storage: "Cold Storage", sewers: "Sewers",
     elec_servers: "Deep Server Room", elec_circuitry: "The Circuitry",   // (the electrical domain's two rooms: docs/DOMAINS.md; the names provisional)
 };
+if (typeof FP_NEST_TAGS !== "undefined") for (const id in FP_NEST_TAGS) if (!FP_ROOM_TAG[id]) FP_ROOM_TAG[id] = FP_NEST_TAGS[id];   // (the Nest grown out, build 2026-11-12a: its tunnels read Ant Nest, its caves their names)
+
 const FP_NET_STATES = {
     offline: { label: "OFFLINE", col: "#6a7aa0" },
     partial: { label: "PARTIAL", col: "#ffe733" },

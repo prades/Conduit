@@ -399,6 +399,7 @@ function _fpRockHeights(it, H) {
 }
 function _fpRockHeightsBase(it, H) {
     const ext = H - FP_WALL_H, j = (x, y, m) => _fpHash(Math.round(x * 4), Math.round(y * 4)) % m, mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2;
+    if (it.low) { const r = it.back ? 30 : 20; return [ext + r + j(it.a[0], it.a[1], 10), ext + r + 4 + j(mx, my, 12), ext + r + j(it.b[0], it.b[1], 10)]; }   // A LOW RIM (rock_low, the Nest's tunnels and caves: docs/DOMAINS.md, draft 8 A): you always see into a tunnel
     if (it.back) return [ext + 120 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 120 + FP_WALL_X + j(mx, my, 50), ext + 120 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
     return [ext + 70 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 70 + FP_WALL_X + j(mx, my, 60), ext + 70 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
 }
@@ -647,6 +648,7 @@ function _fpWallPlace(F) {
         const a = r.a, b = r.b, end = a[0] + a[1] > b[0] + b[1] ? a : b;
         items.push({ type: "fp", fp: "wdecor", room: r.room, kind: "rubble", rubble: r.id, x: r.at[0], y: r.at[1], a, b, id: r.id, base: facilityRoomHeight(r.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.03, seed: _fpHash(Math.round(r.at[0] * 4), Math.round(r.at[1] * 4)) });
     }
+    if (typeof nestWaysItems === "function") for (const it of nestWaysItems(F)) items.push(it);   // the Nest's cracked wall and resin seal (js/nestways.js)
     return items;
 }
 const FP_HIGH_DECOR = new Set(["pipe", "wall_light", "exit_sign", "banner", "bulbs", "cable_run", "chain", "ooze_drip", "crack", "window_blind", "lamp", "clock", "vent"]);   // the kinds that hang near the top of the wall: they rise with it

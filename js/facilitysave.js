@@ -48,7 +48,9 @@ function facilitySaveCollect() {
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],     // the ice bridges standing, each with its technician (js/techabilities.js)
         climbs: typeof techClimbsSnapshot === "function" ? techClimbsSnapshot() : [],       // REEF's climbs standing, each with its coral crab (js/techabilities.js; a game saved before has none)
-        rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
+        rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},
+        nestWays: typeof nestWaysSnapshot === "function" ? nestWaysSnapshot() : [],   // the Nest's cracked walls broken and resin seals eaten through (js/nestways.js)
+        chests: typeof chestsSnapshot === "function" ? chestsSnapshot() : [],          // the chests opened (js/chests.js)           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
         blight: typeof techBlightSnapshot === "function" ? techBlightSnapshot() : null,          // the play clock, and the Blight Spider's pools on it
         quests: typeof questSnapshot === "function" ? questSnapshot() : null,                     // the Sewer purification: each of its states (js/quests.js)
         bosses: typeof bossSnapshot === "function" ? bossSnapshot() : null,                       // each boss encounter's state and outcome (js/bosses.js)
@@ -99,7 +101,9 @@ function facilitySaveApply(d) {
     for (const id of (d.relays || [])) { const R = _fp.relays && _fp.relays[id], def = typeof _relayDef === "function" ? _relayDef(id) : null; if (!R || !def) continue; R.online = true; for (const room of def.powers) facilityPower(room, true); if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, true); }
     // the supply cases: a class's own are there once the class is, and the ones that were taken are gone
     for (const p of (F.pickups || [])) if (p.class && classSeen.has(p.class) && !_fp.items.some(i => i.fp === "pickup" && i.id === p.id)) _fp.items.push(_fpPickupItem(p));   // (every class you have been: its cases came then)
-    if (typeof techRubbleApply === "function") techRubbleApply(d.rubble);   // the rubble (drilled through: its hole, and its rocks, which `taken` puts away next if they were picked up)
+    if (typeof techRubbleApply === "function") techRubbleApply(d.rubble);
+    if (typeof nestWaysApply === "function") nestWaysApply(d.nestWays);   // the Nest's ways opened by a blast or acid (a game saved before has none)
+    if (typeof chestsApply === "function") chestsApply(d.chests);   // the chests opened (a game saved before has none)   // the rubble (drilled through: its hole, and its rocks, which `taken` puts away next if they were picked up)
     const taken = new Set(d.taken || []); for (const it of _fp.items) if (it.fp === "pickup" && taken.has(it.id)) it.taken = true;
     // the tutorial: where it had got to (an assault in progress begins again; the followers that are back are not levelled again)
     if (S && d.script) {

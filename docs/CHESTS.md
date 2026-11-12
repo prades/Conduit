@@ -1,6 +1,6 @@
 # The default chest
 
-- **Status:** **Proposed** (2026-11-12). The owner asked for it; the rules below are the agent's draft, not approved. **The look is approved: C, the hex cache** (2026-11-12). Nothing is built.
+- **Status:** **Implemented and tested** in build `2026-11-12a` (not playtested): the look C (approved) and the rules of §5, the agent's, taken with the owner's "Build it" (2026-11-12), provisional.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-12
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11x` (nothing built)
@@ -17,7 +17,7 @@ The owner, of the three looks (draft 9): "I like the sea chess", read as **the C
 1. **A default chest** that players can **find**, with **booster packs** and **other miscellaneous items** in it (the owner's words).
 2. **Its look is C, the HEX CACHE** (approved 2026-11-12; `design/props/drafts/chest.js`, `chest_c` and `chest_c_open`): a squat six-sided cache in the hazard flasks' and THE CORE's hex language, one tile; pale laminate, teal panels on its three faces the camera sees, an amber diamond on the middle one, an amber rim, a green lamp while it is full. Open, its lid lifts off and hovers on a violet light, a booster pack standing in the light and an item or two below it. It is baked into the game's props when the chest is built.
 
-Nothing else is approved yet: its rules (§5) are open.
+3. **Its rules are §5's** (the agent's proposal, taken with the owner's "Build it", 2026-11-12; the numbers provisional): it opens once (saved); a booster pack opened free and two items; what does not fit stays in it.
 
 ## 3. Must-have requirements
 
@@ -64,7 +64,7 @@ Nothing else is approved yet: its rules (§5) are open.
 
 ## 9. Implementation notes
 
-Nothing built.
+Build `2026-11-12a`: js/chests.js (`CHESTS`, `chestOpen`, the station kind `chest`, `chestsSnapshot`/`chestsApply` as the save's `chests`); js/cards.js `equipPackOpen(seed, pack, free)`; js/cardsui.js `cardsRevealFound` (the CARDS sheet opens on the reveal; CONTINUE closes both); js/propsprites.js (the states `open` and `empty`); design/props/models/chest.js (`chest`, `chest.open` while it opens, `chest.empty`). Four chests in the Nest's side pockets (js/facilitymap.js `chest_nest_a` to `d`). Tested: `tests/nest.js` (THE DEFAULT CHEST).
 
 ## 10. Verification record
 
@@ -75,7 +75,7 @@ Nothing built.
 ## 11. Open questions
 
 1. ~~The look: A supply chest, B field case or C hex cache (draft 9)?~~ **Answered 2026-11-12: C**, the hex cache (§2, 2).
-2. Once (saved), or does a chest fill again?
+2. ~~Once (saved), or does a chest fill again?~~ Built once (the agent's pick, taken with "Build it").
 3. What is in one: one pack and two items as proposed? Which packs, and how likely each?
 4. The pack opened there and then (proposed), or kept in the PACK to open later?
 5. Where: in the domains and nests only, or around the facility too?

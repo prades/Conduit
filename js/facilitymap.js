@@ -125,7 +125,61 @@ const FACILITY_MAP = {
           // drawn just beyond the arena's south rock, under the rubble: the TUNNEL MOUTH is an alcove in the north wall (x 570 to 610, one tile deep), right below the rubble's hole. The cave's corners are cut on slopes of
           // two tiles to one (a piece at 45 degrees running north-west to south-east would be seen side-on and show no rock); the north-west one at 45 degrees the other way, which the camera sees face on.
           polygon: [[480, 1180], [570, 1180], [570, 1160], [610, 1160], [610, 1180], [720, 1180], [760, 1200], [760, 1360], [740, 1400], [700, 1420], [500, 1420], [460, 1400], [440, 1360], [440, 1220]],
-          edge_kinds: ["rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock"] },
+          edge_kinds: ["rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock_low", "rock"] },   // (its west wall, where the tunnels leave, a low rim since build 2026-11-12a: a tall back wall would hide the tunnel behind it)
+        // THE ANT NEST GROWN OUT (docs/DOMAINS.md §2, 10 and 11; the owner, 2026-11-12: "I like the nest. Just make a spot for the volcanic layer to be included in the nest"): rooms of the Nest's one
+        //   interior round the queen's cavern (`nest: true`), joined to it and each other by open mouths (`openings`); 3-tile tunnels, nests and side caves; the sloping tunnel down to the volcanic layer's spot.
+        { id: "nest_t1", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The tunnel west out of the queen's cavern to the brood chamber; a collapsed stretch in it (a choke) is drilled through by a fire technician.",
+          polygon: [[260, 1260], [440, 1260], [440, 1320], [260, 1320]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_brood", label: "Brood Chamber", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "A nest chamber of eggs and brood holes west of the cavern; the shelf's cliff rises over its north side.",
+          polygon: [[20, 1220], [60, 1180], [200, 1180], [220, 1180], [260, 1200], [260, 1340], [220, 1380], [60, 1380], [20, 1360]],
+          edge_kinds: ["rock_low", "cliff", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },   // (its north side under the shelf: a cliff a REEF climb goes up)
+        { id: "nest_shelf", label: "Shelf", tag: "The Shelf", level: 1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "High ground over the brood chamber's north side, reached by a REEF climb up its cliff (or down from it).",
+          polygon: [[0, 1100], [40, 1060], [160, 1060], [200, 1080], [200, 1180], [60, 1180], [20, 1160], [0, 1120]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "open", "rock_low", "rock_low", "rock_low"] },   // (its lip over the brood chamber: open, the cliff below it is the brood chamber's)
+        { id: "nest_t3", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The tunnel south from the brood chamber to the deep brood: a cracked wall across it, and a hollow beside it where the ants left a flask; the stream's tunnel goes east out of it.",
+          polygon: [[110, 1380], [170, 1380], [170, 1560], [210, 1560], [210, 1600], [170, 1600], [170, 1660], [110, 1660]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_t4", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The tunnel east to the stream cave, an underground stream across it (an ice bridge crosses it).",
+          polygon: [[170, 1480], [350, 1480], [350, 1540], [170, 1540]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_stream", label: "Stream Cave", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "A side cave beyond the stream.",
+          polygon: [[350, 1480], [390, 1440], [430, 1440], [470, 1460], [470, 1560], [430, 1600], [390, 1600], [350, 1580]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_t6", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The tunnel south out of the queen's cavern to the old burrow; it narrows to two tiles for three (the boulder blocks the middle row), a two-tile hollow beside that row (FLUX MOVE moves the boulder into it).",
+          polygon: [[510, 1420], [570, 1420], [570, 1450], [550, 1450], [550, 1470], [590, 1470], [590, 1490], [550, 1490], [550, 1510], [570, 1510], [570, 1540], [510, 1540]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_burrow", label: "The Old Burrow", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "A side cave south of the queen's cavern, beyond the boulder.",
+          polygon: [[480, 1560], [500, 1540], [620, 1540], [660, 1560], [660, 1640], [620, 1680], [520, 1680], [480, 1660]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_deep", label: "The Deep Brood", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The big nest chamber at the foot of the main way, eggs and brood holes round it; the larder's tunnel goes east out of it and the way down south-west.",
+          polygon: [[20, 1700], [60, 1660], [380, 1660], [420, 1680], [420, 1860], [380, 1900], [20, 1900]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_t7", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The short tunnel east from the deep brood to the larder, sealed with resin (an acid flask's pool eats it).",
+          polygon: [[420, 1760], [520, 1760], [520, 1820], [420, 1820]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_larder", label: "The Larder", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "A side cave behind the resin seal.",
+          polygon: [[520, 1720], [540, 1700], [620, 1700], [660, 1720], [660, 1820], [620, 1860], [560, 1860], [520, 1840]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_down", label: "The Way Down", level: -1, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The sloping tunnel down from the deep brood (no stairs, no fade: docs/DOMAINS.md §2, 5), its upper half.",
+          polygon: [[20, 1900], [80, 1900], [80, 2020], [20, 2020]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low"] },
+        { id: "nest_down_low", label: "The Way Down", level: -2, status: "placed", wall_material: "solid", interior: true, nest: true,
+          note: "The sloping tunnel's lower half, at the volcanic layer's level; it ends where the volcanic layer will begin (its spot kept: docs/DOMAINS.md §2, 11).",
+          polygon: [[20, 2020], [80, 2020], [80, 2140], [20, 2140]],
+          edge_kinds: ["rock_low", "rock_low", "rock_low", "rock_low"] },
         // THE ELECTRICAL DOMAIN (docs/DOMAINS.md; the owner, 2026-11-11): through the little door beside the Server Room's junction, which opens once the junction is repaired. Two rooms of one interior, drawn
         //   under the Server Room: the DEEP SERVER ROOM (racks standing near the door, toppled and strewn further in: step 2) and, down wide steps at its south side, THE CIRCUITRY, a big open hall (its
         //   circuitry: step 3). Look A, the cold blue server graveyard (chosen 2026-11-11). Empty at first: no creatures (decided). Sizes and names provisional.
@@ -147,7 +201,20 @@ const FACILITY_MAP = {
         { id: "cold_storage", under: "experiment_lab", offset: [-1280, 0] },   // (64 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen;
                                                                                 //  out here, beside the crystal chamber's corner of the plan, nothing is within sight of it and the MAP stays as wide as it was)
         { id: "sewers", under: "arena", offset: [-1280, 1280] },               // (64 tiles west and 64 south: the west is the Cold Storage's and the south the nest area's; down here nothing is in sight of it)
-        { id: "nest_area", under: "arena", offset: [0, 1920] },                 // THE ANT NEST (96 tiles south: the nest area's part of the map, far enough below the Sewers that neither is in sight of the other)
+        { id: "nest_area", under: "arena", offset: [0, 2240] },                 // THE ANT NEST (112 tiles south since build 2026-11-12a, 96 before: the nest area's part of the map, far enough below the Sewers that neither is in sight of the other, its new caves too)
+        { id: "nest_t1", under: "arena", offset: [0, 2240] },   // (the Nest grown out: one interior with it)
+        { id: "nest_brood", under: "arena", offset: [0, 2240] },
+        { id: "nest_shelf", under: "arena", offset: [0, 2240] },
+        { id: "nest_t3", under: "arena", offset: [0, 2240] },
+        { id: "nest_t4", under: "arena", offset: [0, 2240] },
+        { id: "nest_stream", under: "arena", offset: [0, 2240] },
+        { id: "nest_t6", under: "arena", offset: [0, 2240] },
+        { id: "nest_burrow", under: "arena", offset: [0, 2240] },
+        { id: "nest_deep", under: "arena", offset: [0, 2240] },
+        { id: "nest_t7", under: "arena", offset: [0, 2240] },
+        { id: "nest_larder", under: "arena", offset: [0, 2240] },
+        { id: "nest_down", under: "arena", offset: [0, 2240] },
+        { id: "nest_down_low", under: "arena", offset: [0, 2240] },
         { id: "elec_servers", under: "front_lobby", offset: [2560, 0] },        // THE ELECTRICAL DOMAIN (128 tiles east, beyond the Armory's part of the map: nothing is in sight of it); its two rooms share one
         { id: "elec_circuitry", under: "front_lobby", offset: [2560, 0] },      //   offset, so the steps between them are one interior (js/facilitygrow.js carries their door and steps; js/facility.js lets them join)
     ],
@@ -387,6 +454,19 @@ const FACILITY_MAP = {
         // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
         // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
         { id: "nest_console", room: "nest_area", shape: "rect", rect: [630, 1192, 670, 1206], status: "placed", kind: "console", note: "THE ANT NEST'S TEST CONSOLE (docs/NEST.md, step C): by the tunnel mouth, east of it: the boss reset, the test squad and the damage meter (js/nestconsole.js)." },
+        // THE ANT NEST GROWN OUT (docs/DOMAINS.md §2, 10; build 2026-11-12a): its ways through and its chests. Polys are slivers across a tunnel (they block a step across them, like the Sewers' choke);
+        //   rects are whole tiles (a tile is [20k - 10, 20k + 10] sketch px).
+        { id: "nest_choke", room: "nest_t1", shape: "poly", poly: [[337, 1260], [343, 1260], [343, 1320], [337, 1320]], status: "placed", kind: "rubble", note: "① THE COLLAPSED TUNNEL in the tunnel west of the queen's cavern: a fire technician's THERMITE DRILL opens it (rubble_nest_choke), from the cavern's side." },
+        { id: "nest_cracked", room: "nest_t3", shape: "poly", poly: [[100, 1617], [160, 1617], [160, 1623], [100, 1623]], status: "placed", kind: "cracked_wall", note: "② A CRACKED WALL across the tunnel south to the deep brood: an explosive flask's blast within its reach breaks it, for good (js/hazards.js; saved)." },
+        { id: "hazard_x3", room: "nest_t3", shape: "rect", rect: [170, 1590, 190, 1610], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "THE FLASK THE ANTS DRAGGED DOWN, in a hollow beside the cracked wall: shoot it and its blast breaks the wall (stand back: it hurts everyone within 2 tiles)." },
+        { id: "nest_stream_water", room: "nest_t4", shape: "poly", poly: [[220, 1480], [280, 1480], [280, 1540], [220, 1540]], status: "placed", kind: "pool", note: "THE UNDERGROUND STREAM across the tunnel to the stream cave: three tiles of water an ice technician's ICE BRIDGE crosses." },
+        { id: "nest_boulder", room: "nest_t6", shape: "rect", rect: [510, 1470, 550, 1490], status: "placed", kind: "boulder", flux: { range: 2 }, note: "A BOULDER filling the tunnel's narrow middle row south of the queen's cavern: FLUX MOVE it two tiles east into the hollow beside it, and the way to the old burrow is open (it cannot go back: FLUX MOVE never shuts a way)." },
+        { id: "hazard_c2", room: "nest_t7", shape: "rect", rect: [450, 1790, 470, 1810], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "AN ACID FLASK right in front of the resin seal: shoot it and its pool eats the seal away (the owner approved it with the Nest's layout, 2026-11-12; the idea was the agent's)." },
+        { id: "nest_resin_seal", room: "nest_t7", shape: "poly", poly: [[461, 1760], [467, 1760], [467, 1820], [461, 1820]], status: "placed", kind: "resin_seal", note: "A RESIN SEAL across the tunnel to the larder: an acid pool that touches it eats it away, for good (js/hazards.js; saved)." },
+        { id: "chest_nest_a", room: "nest_shelf", shape: "rect", rect: [70, 1110, 90, 1130], status: "placed", kind: "chest", note: "A CHEST on the shelf (A: a REEF climb up its cliff)." },
+        { id: "chest_nest_b", room: "nest_stream", shape: "rect", rect: [410, 1510, 430, 1530], status: "placed", kind: "chest", note: "A CHEST in the stream cave (B: an ice bridge over the stream)." },
+        { id: "chest_nest_c", room: "nest_burrow", shape: "rect", rect: [570, 1610, 590, 1630], status: "placed", kind: "chest", note: "A CHEST in the old burrow (C: FLUX MOVE the boulder)." },
+        { id: "chest_nest_d", room: "nest_larder", shape: "rect", rect: [590, 1770, 610, 1790], status: "placed", kind: "chest", note: "A CHEST in the larder (D: the acid flask eats the resin seal)." },
         { id: "elec_rack_1", room: "elec_servers", shape: "rect", rect: [400, 280, 420, 380], status: "placed", kind: "server_rack", note: "THE ELECTRICAL DOMAIN's racks still standing, in rows near the door (docs/DOMAINS.md); the ones further in lie toppled (step 2)." },
         { id: "elec_rack_2", room: "elec_servers", shape: "rect", rect: [460, 280, 480, 380], status: "placed", kind: "server_rack" },
         { id: "elec_rack_3", room: "elec_servers", shape: "rect", rect: [520, 280, 540, 380], status: "placed", kind: "server_rack" },
@@ -487,6 +567,8 @@ const FACILITY_MAP = {
     ledges: [
         { id: "ledge_catwalks", room: "catwalks", toRoom: "arena", label: "Catwalk ledge", at: [1020, 1120], to: [940, 1120],
           note: "The catwalks' west edge over the arena floor, just south of the power module's spot (where the owner's yellow line goes down, 2026-11-07): hazard paint on the lip, a gap in the railing, arrows pointing down. You land four tiles out, over the crates, where the camera sees you come down (the floor right under the edge is hidden behind the raised deck)." },
+        { id: "ledge_nest_shelf", room: "nest_shelf", toRoom: "nest_brood", label: "Shelf ledge", at: [130, 1170], to: [130, 1250],
+          note: "THE ANT NEST's shelf (docs/DOMAINS.md §2, 10): the one way down from it without a climb, into the brood chamber (up is a REEF climb)." },
     ],
 
     // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
@@ -494,6 +576,8 @@ const FACILITY_MAP = {
     // `a`-`b`: the stretch of the room's edge it covers (drawn on the edge's face, like a wall's decor); `work`: where the technician stands to drill it (the middle of a tile, out from under the rock's overhang so it is seen).
     // Drilled through it leaves a dark hole in the rock, sealed for now: nothing walks in (no wall changes).
     rubble: [
+        { id: "rubble_nest_choke", room: "nest_t1", label: "Collapsed tunnel", a: [345, 1260], b: [345, 1320], work: [380, 1300], solid: "nest_choke",
+          note: "THE ANT NEST's collapsed tunnel (docs/DOMAINS.md §2, 10: the main way's first step, fire the Nest's key): drilled from the queen's cavern's side." },
         { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
           note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
@@ -528,6 +612,10 @@ const FACILITY_MAP = {
         { id: "st_junction", room: "front_lobby", prop: "junction", kind: "junction" },   // the main power junction: the tutorial's one repair (js/stations.js, js/tutorial.js)
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
         { id: "st_nest_console", room: "nest_area", prop: "nest_console", kind: "nest_console" },   // the Ant Nest's test console (js/nestconsole.js)
+        { id: "st_chest_nest_a", room: "nest_shelf", prop: "chest_nest_a", kind: "chest" },   // THE DEFAULT CHEST (docs/CHESTS.md; js/chests.js): open once, a booster pack and two items
+        { id: "st_chest_nest_b", room: "nest_stream", prop: "chest_nest_b", kind: "chest" },
+        { id: "st_chest_nest_c", room: "nest_burrow", prop: "chest_nest_c", kind: "chest" },
+        { id: "st_chest_nest_d", room: "nest_larder", prop: "chest_nest_d", kind: "chest" },
         // THE SEWER PURIFICATION QUEST (js/quests.js, docs/SEWER-QUEST.md): the samples are analysed and the module bought at the cabinet at the Experiment Lab's west end (cabinet_1: away from the sequencer and the serum hood, whose station plate a bench beside them would take over); the boss gate's seal is broken with the module in hand; the module is installed at the cistern's console
         { id: "st_analysis_bench", room: "experiment_lab", prop: "cabinet_1", kind: "analysis_bench" },
         { id: "st_purifier", room: "sewers", prop: "purifier_mount", kind: "purifier_mount" },
@@ -542,7 +630,7 @@ const FACILITY_MAP = {
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
         { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
-        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "sewers"], feeds: [] },   // (and the Sewers under the arena)
+        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers"], feeds: [] },   // (and the Sewers under the arena)
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
@@ -563,6 +651,19 @@ const FACILITY_MAP = {
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
         { room: "nest_area", style: "sand", colour: "#3b2e22" },   // (packed dirt: the room's own style, FP_ROOM_STYLE.nest_area, colours it)
+        { room: "nest_t1", style: "sand", colour: "#3b2e22" },
+        { room: "nest_brood", style: "sand", colour: "#3b2e22" },
+        { room: "nest_shelf", style: "sand", colour: "#3b2e22" },
+        { room: "nest_t3", style: "sand", colour: "#3b2e22" },
+        { room: "nest_t4", style: "sand", colour: "#3b2e22" },
+        { room: "nest_stream", style: "sand", colour: "#3b2e22" },
+        { room: "nest_t6", style: "sand", colour: "#3b2e22" },
+        { room: "nest_burrow", style: "sand", colour: "#3b2e22" },
+        { room: "nest_deep", style: "sand", colour: "#3b2e22" },
+        { room: "nest_t7", style: "sand", colour: "#3b2e22" },
+        { room: "nest_larder", style: "sand", colour: "#3b2e22" },
+        { room: "nest_down", style: "sand", colour: "#3b2e22" },
+        { room: "nest_down_low", style: "sand", colour: "#3b2e22" },
         { room: "elec_servers", style: "plate" },     // THE ELECTRICAL DOMAIN: dark steel plate (its room style darkens it: js/facilitystyleall.js)
         { room: "elec_circuitry", style: "plate" },
         { room: "sewers", style: "concrete", colour: "#272d2c" },   // (darker since build 2026-11-07a: Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.1; it was #3e4744)
@@ -959,13 +1060,11 @@ const FACILITY_MAP = {
         { id: "nest_tunnel_up", room: "nest_area", kind: "portal_door", a: [570, 1160], b: [610, 1160], colour: "#ffb347", burrow: true, up: true },
         { id: "antnest_brood_1", room: "nest_area", kind: "brood_hole", a: [500, 1180], b: [520, 1180] },
         { id: "antnest_brood_2", room: "nest_area", kind: "brood_hole", a: [660, 1180], b: [680, 1180] },
-        { id: "antnest_brood_3", room: "nest_area", kind: "brood_hole", a: [440, 1260], b: [440, 1280] },
-        { id: "antnest_brood_4", room: "nest_area", kind: "brood_hole", a: [440, 1320], b: [440, 1340] },
+        { id: "antnest_brood_3", room: "nest_area", kind: "brood_hole", a: [440, 1232], b: [440, 1252] },   // (moved 2026-11-12 for the west mouth to the tunnels)
+        { id: "antnest_brood_4", room: "nest_area", kind: "brood_hole", a: [440, 1340], b: [440, 1360] },
         { id: "antnest_resin_1", room: "nest_area", kind: "resin", a: [525, 1180], b: [565, 1180] },
         { id: "antnest_resin_2", room: "nest_area", kind: "resin", a: [615, 1180], b: [655, 1180] },
         { id: "antnest_resin_3", room: "nest_area", kind: "resin", a: [685, 1180], b: [720, 1180] },
-        { id: "antnest_resin_4", room: "nest_area", kind: "resin", a: [440, 1225], b: [440, 1255] },
-        { id: "antnest_resin_5", room: "nest_area", kind: "resin", a: [440, 1285], b: [440, 1315] },
         { id: "antnest_eggs_1", room: "nest_area", kind: "egg_cluster", at: [722, 1222], radius: 28, n: 12 },
         { id: "antnest_eggs_2", room: "nest_area", kind: "egg_cluster", at: [740, 1300], radius: 16, n: 6 },
         { id: "antnest_eggs_3", room: "nest_area", kind: "egg_cluster", at: [705, 1385], radius: 26, n: 10 },
@@ -978,6 +1077,71 @@ const FACILITY_MAP = {
         { id: "antnest_light", room: "nest_area", kind: "light", at: [600, 1300], radius: 170, colour: "#d9a860", a: 0.16 },
         { id: "antnest_light_brood_n", room: "nest_area", kind: "light", at: [670, 1210], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
         { id: "antnest_light_brood_w", room: "nest_area", kind: "light", at: [470, 1300], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
+        // THE ANT NEST GROWN OUT (build 2026-11-12a): the eggs, brood holes and resin of the cavern carried through its nests, a dim light in each tunnel, the stream's cool light, and at the way down's foot the warmth of the volcanic layer below
+        { id: "antnest_eggs_b1", room: "nest_brood", kind: "egg_cluster", at: [74, 1214], radius: 22, n: 9 },
+        { id: "antnest_eggs_b2", room: "nest_brood", kind: "egg_cluster", at: [206, 1336], radius: 18, n: 6 },
+        { id: "antnest_eggs_b3", room: "nest_brood", kind: "egg_cluster", at: [58, 1338], radius: 15, n: 5 },
+        { id: "antnest_brood_b1", room: "nest_brood", kind: "brood_hole", a: [20, 1250], b: [20, 1270] },
+        { id: "antnest_resin_b1", room: "nest_brood", kind: "resin", a: [20, 1290], b: [20, 1330] },
+        { id: "antnest_light_b", room: "nest_brood", kind: "light", at: [140, 1280], radius: 120, colour: "#d9a860", a: 0.14 },
+        { id: "antnest_light_b_green", room: "nest_brood", kind: "light", at: [50, 1250], radius: 70, colour: "#8cff5a", a: 0.10, flicker: true },
+        { id: "antnest_eggs_s1", room: "nest_shelf", kind: "egg_cluster", at: [150, 1092], radius: 14, n: 5 },
+        { id: "antnest_light_s", room: "nest_shelf", kind: "light", at: [100, 1120], radius: 90, colour: "#d9a860", a: 0.12 },
+        { id: "antnest_light_t1", room: "nest_t1", kind: "light", at: [350, 1290], radius: 70, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_light_t3", room: "nest_t3", kind: "light", at: [140, 1470], radius: 70, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_light_t4", room: "nest_t4", kind: "light", at: [270, 1510], radius: 70, colour: "#5fd0ff", a: 0.12, flicker: true },
+        { id: "antnest_light_stream", room: "nest_stream", kind: "light", at: [420, 1520], radius: 80, colour: "#5fd0ff", a: 0.10 },
+        { id: "antnest_light_t6", room: "nest_t6", kind: "light", at: [540, 1440], radius: 60, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_eggs_o1", room: "nest_burrow", kind: "egg_cluster", at: [520, 1650], radius: 16, n: 6 },
+        { id: "antnest_light_burrow", room: "nest_burrow", kind: "light", at: [570, 1610], radius: 80, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_eggs_d1", room: "nest_deep", kind: "egg_cluster", at: [82, 1722], radius: 26, n: 10 },
+        { id: "antnest_eggs_d2", room: "nest_deep", kind: "egg_cluster", at: [356, 1704], radius: 20, n: 8 },
+        { id: "antnest_eggs_d3", room: "nest_deep", kind: "egg_cluster", at: [330, 1862], radius: 24, n: 9 },
+        { id: "antnest_eggs_d4", room: "nest_deep", kind: "egg_cluster", at: [140, 1866], radius: 18, n: 6 },
+        { id: "antnest_brood_d1", room: "nest_deep", kind: "brood_hole", a: [220, 1660], b: [240, 1660] },
+        { id: "antnest_brood_d2", room: "nest_deep", kind: "brood_hole", a: [300, 1660], b: [320, 1660] },
+        { id: "antnest_brood_d3", room: "nest_deep", kind: "brood_hole", a: [20, 1760], b: [20, 1780] },
+        { id: "antnest_resin_d1", room: "nest_deep", kind: "resin", a: [250, 1660], b: [290, 1660] },
+        { id: "antnest_resin_d2", room: "nest_deep", kind: "resin", a: [20, 1800], b: [20, 1840] },
+        { id: "antnest_pool_d1", room: "nest_deep", kind: "puddle", at: [210, 1800], radius: 14, colour: "#6fbf3a" },
+        { id: "antnest_light_d", room: "nest_deep", kind: "light", at: [220, 1780], radius: 170, colour: "#d9a860", a: 0.14 },
+        { id: "antnest_light_d_green", room: "nest_deep", kind: "light", at: [260, 1690], radius: 90, colour: "#8cff5a", a: 0.10, flicker: true },
+        { id: "antnest_light_t7", room: "nest_t7", kind: "light", at: [480, 1790], radius: 60, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_light_larder", room: "nest_larder", kind: "light", at: [590, 1780], radius: 80, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_light_down", room: "nest_down", kind: "light", at: [50, 1950], radius: 60, colour: "#d9a860", a: 0.10 },
+        { id: "antnest_light_volcanic", room: "nest_down_low", kind: "light", at: [50, 2120], radius: 80, colour: "#ff6a2a", a: 0.22, flicker: true },
+        // (and a little more of the colony's eggs and resin pools along its tunnels and side caves)
+        { id: "antnest_dress_t1_1", room: "nest_t1", kind: "egg_cluster", at: [300, 1282], radius: 10, n: 3 },
+        { id: "antnest_dress_t1_2", room: "nest_t1", kind: "puddle", at: [350, 1298], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t1_3", room: "nest_t1", kind: "egg_cluster", at: [400, 1282], radius: 14, n: 5 },
+        { id: "antnest_dress_shelf_1", room: "nest_shelf", kind: "egg_cluster", at: [44, 1112], radius: 10, n: 3 },
+        { id: "antnest_dress_shelf_2", room: "nest_shelf", kind: "puddle", at: [100, 1128], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t3_1", room: "nest_t3", kind: "egg_cluster", at: [152, 1442], radius: 10, n: 3 },
+        { id: "antnest_dress_t3_2", room: "nest_t3", kind: "puddle", at: [168, 1520], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t3_3", room: "nest_t3", kind: "egg_cluster", at: [152, 1598], radius: 14, n: 5 },
+        { id: "antnest_dress_t4_1", room: "nest_t4", kind: "egg_cluster", at: [210, 1502], radius: 10, n: 3 },
+        { id: "antnest_dress_t4_2", room: "nest_t4", kind: "puddle", at: [310, 1518], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t4_3", room: "nest_t4", kind: "egg_cluster", at: [285, 1502], radius: 14, n: 5 },
+        { id: "antnest_dress_stream_1", room: "nest_stream", kind: "egg_cluster", at: [402, 1475], radius: 10, n: 3 },
+        { id: "antnest_dress_stream_2", room: "nest_stream", kind: "puddle", at: [418, 1520], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_stream_3", room: "nest_stream", kind: "egg_cluster", at: [402, 1565], radius: 14, n: 5 },
+        { id: "antnest_dress_t6_1", room: "nest_t6", kind: "egg_cluster", at: [542, 1446], radius: 10, n: 3 },
+        { id: "antnest_dress_t6_2", room: "nest_t6", kind: "puddle", at: [558, 1480], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t6_3", room: "nest_t6", kind: "egg_cluster", at: [542, 1514], radius: 14, n: 5 },
+        { id: "antnest_dress_burrow_1", room: "nest_burrow", kind: "egg_cluster", at: [520, 1602], radius: 10, n: 3 },
+        { id: "antnest_dress_burrow_2", room: "nest_burrow", kind: "puddle", at: [570, 1618], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t7_1", room: "nest_t7", kind: "egg_cluster", at: [442, 1782], radius: 10, n: 3 },
+        { id: "antnest_dress_t7_2", room: "nest_t7", kind: "puddle", at: [470, 1798], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_t7_3", room: "nest_t7", kind: "egg_cluster", at: [498, 1782], radius: 14, n: 5 },
+        { id: "antnest_dress_larder_1", room: "nest_larder", kind: "egg_cluster", at: [582, 1735], radius: 10, n: 3 },
+        { id: "antnest_dress_larder_2", room: "nest_larder", kind: "puddle", at: [598, 1780], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_larder_3", room: "nest_larder", kind: "egg_cluster", at: [582, 1825], radius: 14, n: 5 },
+        { id: "antnest_dress_down_1", room: "nest_down", kind: "egg_cluster", at: [42, 1926], radius: 10, n: 3 },
+        { id: "antnest_dress_down_2", room: "nest_down", kind: "puddle", at: [58, 1960], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_down_3", room: "nest_down", kind: "egg_cluster", at: [42, 1994], radius: 14, n: 5 },
+        { id: "antnest_dress_down_low_1", room: "nest_down_low", kind: "egg_cluster", at: [42, 2046], radius: 10, n: 3 },
+        { id: "antnest_dress_down_low_2", room: "nest_down_low", kind: "puddle", at: [58, 2080], radius: 9, colour: "#6fbf3a" },
+        { id: "antnest_dress_down_low_3", room: "nest_down_low", kind: "egg_cluster", at: [42, 2114], radius: 14, n: 5 },
         // THE ELECTRICAL DOMAIN: the little door and its stairs back up (blue, as the deck's), the cold blue lights, cables off the racks, pipes and screens on the north wall
         { id: "lobby_elec_door", room: "front_lobby", kind: "portal_door", a: [680, 202], b: [720, 202], colour: "#8fe3ff" },
         { id: "elec_stairs_door", room: "elec_servers", kind: "portal_door", a: [680, 220], b: [720, 220], colour: "#8fe3ff", up: true },
@@ -1061,6 +1225,19 @@ const FACILITY_MAP = {
           note: "The open foot of the curved staircase, onto the hallway. No door." },
         { id: "door_stair_teleport_2", a: [945, 660], b: [945, 700], rooms: ["teleport_stair_room", "teleport_room_2"], position_status: "approximate",
           note: "A sliding access door between the stair room and Teleport Room 2." },
+        // THE ANT NEST GROWN OUT (docs/DOMAINS.md §2, 10): its open mouths, no doors
+        { id: "open_nest_t1", a: [440, 1260], b: [440, 1320], rooms: ["nest_area", "nest_t1"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the queen's cavern's west mouth." },
+        { id: "open_nest_t1_brood", a: [260, 1260], b: [260, 1320], rooms: ["nest_t1", "nest_brood"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the brood chamber." },
+        { id: "open_nest_brood_t3", a: [110, 1380], b: [170, 1380], rooms: ["nest_brood", "nest_t3"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the brood chamber's south mouth." },
+        { id: "open_nest_t3_t4", a: [170, 1480], b: [170, 1540], rooms: ["nest_t3", "nest_t4"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the stream's tunnel." },
+        { id: "open_nest_t4_stream", a: [350, 1480], b: [350, 1540], rooms: ["nest_t4", "nest_stream"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the stream cave." },
+        { id: "open_nest_t3_deep", a: [110, 1660], b: [170, 1660], rooms: ["nest_t3", "nest_deep"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the deep brood." },
+        { id: "open_nest_t6", a: [510, 1420], b: [570, 1420], rooms: ["nest_area", "nest_t6"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the queen's cavern's south mouth." },
+        { id: "open_nest_t6_burrow", a: [510, 1540], b: [570, 1540], rooms: ["nest_t6", "nest_burrow"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the old burrow." },
+        { id: "open_nest_deep_t7", a: [420, 1760], b: [420, 1820], rooms: ["nest_deep", "nest_t7"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the larder's tunnel." },
+        { id: "open_nest_t7_larder", a: [520, 1760], b: [520, 1820], rooms: ["nest_t7", "nest_larder"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the larder." },
+        { id: "open_nest_deep_down", a: [20, 1900], b: [80, 1900], rooms: ["nest_deep", "nest_down"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the way down's mouth." },
+        { id: "open_nest_down", a: [20, 2020], b: [80, 2020], rooms: ["nest_down", "nest_down_low"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the way down, half way." },
         { id: "open_elec_steps", a: [480, 600], b: [720, 600], rooms: ["elec_servers", "elec_circuitry"], door: null, position_status: "approximate",
           note: "THE ELECTRICAL DOMAIN: the wide steps down from the deep server room into the circuitry (twelve tiles across), an open mouth with no door." },
     ],
@@ -1086,6 +1263,18 @@ const FACILITY_MAP = {
         { id: "conn_arena_nest", rooms: ["arena", "nest_area"], portal: "portal_arena_nest" },   // (the sketch's candidate c_arena_nest, made real: through the drilled rubble)
         { id: "conn_lobby_elec", rooms: ["front_lobby", "elec_servers"], portal: "portal_lobby_elec" },
         { id: "conn_elec_steps", rooms: ["elec_servers", "elec_circuitry"], opening: "open_elec_steps", ramp: "r_elec_steps" },
+        { id: "conn_nest_t1", rooms: ["nest_area", "nest_t1"], opening: "open_nest_t1" },
+        { id: "conn_nest_t1_brood", rooms: ["nest_t1", "nest_brood"], opening: "open_nest_t1_brood" },
+        { id: "conn_nest_brood_t3", rooms: ["nest_brood", "nest_t3"], opening: "open_nest_brood_t3" },
+        { id: "conn_nest_t3_t4", rooms: ["nest_t3", "nest_t4"], opening: "open_nest_t3_t4" },
+        { id: "conn_nest_t4_stream", rooms: ["nest_t4", "nest_stream"], opening: "open_nest_t4_stream" },
+        { id: "conn_nest_t3_deep", rooms: ["nest_t3", "nest_deep"], opening: "open_nest_t3_deep" },
+        { id: "conn_nest_t6", rooms: ["nest_area", "nest_t6"], opening: "open_nest_t6" },
+        { id: "conn_nest_t6_burrow", rooms: ["nest_t6", "nest_burrow"], opening: "open_nest_t6_burrow" },
+        { id: "conn_nest_deep_t7", rooms: ["nest_deep", "nest_t7"], opening: "open_nest_deep_t7" },
+        { id: "conn_nest_t7_larder", rooms: ["nest_t7", "nest_larder"], opening: "open_nest_t7_larder" },
+        { id: "conn_nest_deep_down", rooms: ["nest_deep", "nest_down"], opening: "open_nest_deep_down" },
+        { id: "conn_nest_down", rooms: ["nest_down", "nest_down_low"], opening: "open_nest_down", ramp: "r_nest_down" },
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
@@ -1102,6 +1291,9 @@ const FACILITY_MAP = {
         { id: "r_elec_steps", rooms: ["elec_servers", "elec_circuitry"], shape: "steps", between_levels: [-1, -2], descends_toward: "elec_circuitry", position_status: "placed",
           zone: { rect: [480, 560, 720, 660], axis: "y", c0: 570, c1: 650, steps: 4 },
           note: "THE ELECTRICAL DOMAIN: four wide steps down from the deep server room into the circuitry." },
+        { id: "r_nest_down", rooms: ["nest_down", "nest_down_low"], shape: "slope", between_levels: [-1, -2], descends_toward: "nest_down_low", position_status: "placed",
+          zone: { rect: [20, 1920, 80, 2120], axis: "y", c0: 1930, c1: 2110 },
+          note: "THE ANT NEST: the way down, a sloping tunnel you walk straight down (the owner: 'I want the nests to descend without stairs'; 'Sloping tunnels'): no steps, a slope of dirt over nine tiles, to the volcanic layer's level (a zone without `steps` is a slope: js/facility.js)." },
     ],
 
     // What the sketch SUGGESTS and the user has not confirmed. None of these is a gap, a link or a ramp until it is moved above.
@@ -1137,6 +1329,10 @@ const FACILITY_MAP = {
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
+// THE ANT NEST'S ROOMS (docs/DOMAINS.md §2, 10): the queen's cavern and every room of the Nest grown out (`nest: true`), one place: the tables that colour, name and light a room, the Nest's console and
+// the arming of THE ANT QUEEN take them all (THE ANT QUEEN herself keeps to her cavern, `nest_area`).
+const FP_NEST_ROOMS = new Set(FACILITY_MAP.rooms.filter(r => r.id === "nest_area" || r.nest).map(r => r.id));
+const FP_NEST_TAGS = Object.fromEntries(FACILITY_MAP.rooms.filter(r => r.nest).map(r => [r.id, r.tag || r.label]));   // (the zone tag of each: js/facilitynet.js FP_ROOM_TAG)
 
 // ─────────────────────────────────────────────────────────
 //  THE FLUX TEST ROOM (docs/FLUX-MOVEMENT.md §9.1, Build 2; the owner, 2026-11-06: "Test room + arena"): a room of its own for proving FLUX MOVE, in the map ONLY when the address carries ?fluxlab

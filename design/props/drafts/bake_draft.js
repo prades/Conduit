@@ -1,4 +1,4 @@
-// Bakes a DRAFT prop family (design/props/drafts/<family>.js) for review, without touching the game: the real baker and the shared style kit are copied into a scratch root, the draft is baked
+// Bakes a DRAFT prop family (design/props/drafts/<family>.js, else the game's design/props/models/<family>.js) for review, without touching the game: the real baker and the shared style kit are copied into a scratch root, the draft is baked
 // there (its img/props/<family>.png, design/props/out/<family>.json and js/propatlas.js land in the scratch root, not in the repo), and a review sheet is drawn: each variant large, then all at game size.
 //   node design/props/drafts/bake_draft.js <three-dir> <family> <out-dir> [title]        e.g.  node design/props/drafts/bake_draft.js /tmp/threepkg chest /tmp/review 'The default chest'
 const fs = require('fs'), path = require('path'), { execFileSync } = require('child_process');
@@ -10,7 +10,7 @@ fs.rmSync(ROOT, { recursive: true, force: true });
 const cp = (from, to) => { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.copyFileSync(from, to); };
 cp(path.join(REPO, 'design/props/bake_props.js'), path.join(ROOT, 'design/props/bake_props.js'));
 for (const f of fs.readdirSync(path.join(REPO, 'design/props/models')).filter(f => f.startsWith('_'))) cp(path.join(REPO, 'design/props/models', f), path.join(ROOT, 'design/props/models', f));
-cp(path.join(__dirname, FAM + '.js'), path.join(ROOT, 'design/props/models', FAM + '.js'));
+cp(fs.existsSync(path.join(__dirname, FAM + '.js')) ? path.join(__dirname, FAM + '.js') : path.join(REPO, 'design/props/models', FAM + '.js'), path.join(ROOT, 'design/props/models', FAM + '.js'));   // a draft, else a game family (looked at without baking it into the game)
 for (const f of ['forms-core.js', 'forms29.js', 'forms2.js']) cp(path.join(REPO, 'design/evolutions', f), path.join(ROOT, 'design/evolutions', f));
 fs.mkdirSync(path.join(ROOT, 'js'), { recursive: true });
 execFileSync(process.execPath, [path.join(ROOT, 'design/props/bake_props.js'), path.resolve(THREE_DIR), FAM], { stdio: 'inherit' });

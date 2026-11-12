@@ -44,7 +44,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('dressed as an egg cavern: packed dirt, the colony\'s eggs in clusters round the edge, brood holes and resin on the walls the camera sees, the middle open; the tunnel mouth drawn as a burrow', () => {
         const M = J('FACILITY_MAP'), D = M.decor.filter(d => d.room === 'nest_area'), fl = M.floors.find(f => f.room === 'nest_area');
-        same(fl && fl.style, 'sand', 'the floor'); ok(D.filter(d => d.kind === 'egg_cluster').length >= 6, 'egg clusters'); ok(D.filter(d => d.kind === 'brood_hole').length >= 4, 'brood holes'); ok(D.filter(d => d.kind === 'resin').length >= 4, 'resin');
+        same(fl && fl.style, 'sand', 'the floor'); ok(D.filter(d => d.kind === 'egg_cluster').length >= 6, 'egg clusters'); ok(D.filter(d => d.kind === 'brood_hole').length >= 4, 'brood holes'); ok(D.filter(d => d.kind === 'resin').length >= 3, 'resin');   // (four, then three since build 2026-11-12a: the west wall's two gave way to the mouth to the Nest's tunnels)
         const door = D.find(d => d.kind === 'portal_door'); ok(door && door.burrow && door.up, 'the tunnel mouth');
         const mid = [600, 1300]; ok(D.filter(d => d.kind === 'egg_cluster').every(d => Math.hypot(d.at[0] - mid[0], d.at[1] - mid[1]) > 100), 'eggs in the middle');
         ok(/_fpBurrowDoor/.test(rd('js/facilitystyleall.js')) && /function _fpBurrowDoor/.test(rd('js/facilitysewers.js')), 'the burrow\'s drawing');
@@ -176,6 +176,50 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const afterOut = nestMeterRows().find(x => x.name !== 'YOU').total; _fp.nestc.meter.on = false; applyDamage(q, 10, f, null, false, false, DMG_HIT_MAIN); const off = nestMeterRows().find(x => x.name !== 'YOU').total; _fp.nestc.meter.on = true; nestMeterReset();
             return { kinds: [fr.P > 0, fr.A > 0, fr.S > 0, fr.total === fr.P + fr.A + fr.S], you: [pr.Y > 0, pr.total === pr.Y], outside: afterOut === fr.total, off: off === fr.total, reset: nestMeterRows().length }; })()`);
         same(r.kinds.join(), 'true,true,true,true', 'by kind'); same(r.you.join(), 'true,true', 'yours'); same(r.outside, true, 'a hit outside the Nest counted'); same(r.off, true, 'counted while off'); same(r.reset, 0, 'reset');
+    });
+
+    // THE NEST GROWN OUT (build 2026-11-12a; docs/DOMAINS.md §2, 10 and 11; the owner: "I like the nest. Just make a spot for the volcanic layer to be included in the nest"; then "Build it")
+    group('THE NEST GROWN OUT (build 2026-11-12a): tunnels and nests round the cavern, its ways through, the way down; THE DEFAULT CHEST');
+    check('thirteen rooms of the Nest\'s one interior round the queen\'s cavern, joined to it and each other by mouths in the rock (no door frames); their walls low rims of rock, the cavern\'s west wall too; the shelf high ground with a cliff a REEF climb goes up and a ledge down; the way down a slope (no steps) to the volcanic layer\'s level; all lit with the cavern', () => {
+        const r = J(`(function(){ const F = _fp.F, ids = [...FP_NEST_ROOMS].filter(id => id !== 'nest_area'), I = FACILITY_MAP.interiors, off = id => JSON.stringify((I.find(i => i.id === id) || {}).offset);
+            const caves = F.openings.filter(o => o.cave), lowOf = id => _fp.items.filter(i => i.fp === 'wall' && i.room === id), R = F.ramps.find(x => x.id === 'r_nest_down');
+            return { n: ids.length, sameOff: ids.every(id => off(id) === off('nest_area')), caves: caves.length, frames: _fp.items.filter(i => i.fp === 'door' && caves.some(o => o.id === i.id)).length,
+                low: ids.every(id => lowOf(id).filter(i => i.kind === 'rock').every(i => i.low)), west: lowOf('nest_area').filter(i => i.low).length > 0, tall: lowOf('nest_area').some(i => i.kind === 'rock' && !i.low),
+                shelf: facilityRoomHeight('nest_shelf', F) > facilityRoomHeight('nest_brood', F), face: F.walls.some(w => w.face && w.room === 'nest_brood'), ledge: !!F.ledges.find(l => l.id === 'ledge_nest_shelf'),
+                slope: !!(R && R.zone && !R.zone.steps), deep: facilityRoomHeight('nest_down_low', F) < facilityRoomHeight('nest_down', F), light: ids.every(id => _fpLightKey(id) === 'nest_area'), tags: FP_ROOM_TAG.nest_shelf + '|' + FP_ROOM_TAG.nest_t1 }; })()`);
+        same(r.n, 13, 'rooms'); same(r.sameOff, true, 'one interior with the cavern'); same(r.caves, 12, 'mouths'); same(r.frames, 0, 'a door frame on a mouth in the rock');
+        same(r.low, true, 'a tall wall in the tunnels'); same(r.west, true, 'the cavern\'s west wall a low rim'); same(r.tall, true, 'the cavern\'s other walls as they were');
+        same(r.shelf, true, 'the shelf is not high ground'); same(r.face, true, 'no cliff face for a REEF climb'); same(r.ledge, true, 'no ledge down from the shelf'); same(r.slope, true, 'the way down is not a slope'); same(r.deep, true, 'it does not go down');
+        same(r.light, true, 'a room of the Nest lit apart'); same(r.tags, 'The Shelf|Ant Nest', 'the zone tags');
+    });
+    check('THE WAYS THROUGH: the collapsed tunnel shuts the way west until a fire technician\'s drill is through it; the flask by the cracked wall, shot, breaks the wall for good; the acid flask eats the resin seal; FLUX MOVE puts the boulder in its hollow (and never back across the way); the stream is water an ice bridge crosses; what was opened is saved', () => {
+        const r = J(`(function(){ facilityPlayStart(); const way = (a, b) => { const p = facilityPath(a[0], a[1], b[0], b[1]); return !!(p && p.length); }, out = {};
+            out.choke = way([30, 180], [8, 177]); _fp.rubbleHits.rubble_nest_choke = TECH_AB.drill.hits; techRubbleApply({ rubble_nest_choke: TECH_AB.drill.hits }); out.drilled = way([30, 180], [8, 177]);
+            out.wall0 = way([7, 184], [10, 202]); hazardTrigger(_fp.F.solids.find(q => q.id === 'hazard_x3'), 0); for (let i = 0; i < 3; i++) { frame++; hazardsTick(); } out.wall1 = way([7, 184], [10, 202]);
+            out.resin0 = way([10, 202], [30, 202]); hazardTrigger(_fp.F.solids.find(q => q.id === 'hazard_c2'), 0); for (let i = 0; i < 3; i++) { frame++; hazardsTick(); } out.resin1 = way([10, 202], [30, 202]);
+            out.boulder0 = way([30, 180], [29, 193]); const s = fluxObject('nest_boulder'), H = fluxHere(s), c = fluxCheck(s, H.x0 + 2, H.y0, false, {}); out.move = c.ok && !!fluxMoveTo(s, H.x0 + 2, H.y0, false, {}); out.boulder1 = way([30, 180], [29, 193]);
+            const H2 = fluxHere(s); out.back = fluxCheck(s, H2.x0 - 2, H2.y0, false, {}).ok;
+            const w = _fp.F.solids.find(q => q.id === 'nest_stream_water'); out.water = !!(w && w.water); out.saved = facilitySaveCollect().nestWays.sort().join();
+            return out; })()`);
+        same(r.choke, false, 'the way west open before the drill'); same(r.drilled, true, 'drilled through, the way west still shut');
+        same(r.wall0, false, 'the cracked wall lets you by'); same(r.wall1, true, 'the blast did not break the cracked wall');
+        same(r.resin0, false, 'the resin seal lets you by'); same(r.resin1, true, 'the acid did not eat the resin seal');
+        same(r.boulder0, false, 'the boulder lets you by'); same(r.move, true, 'FLUX MOVE cannot put the boulder in its hollow'); same(r.boulder1, true, 'the way to the old burrow still shut'); same(r.back, false, 'the boulder may be moved back across the way');
+        same(r.water, true, 'the stream is not water'); same(r.saved, 'nest_cracked,nest_resin_seal', 'the ways opened, saved');
+    });
+    check('THE ANT QUEEN keeps to her cavern and a killed one is not armed again by walking into a tunnel and back; the test squad and the meter carry on in the tunnels', () => {
+        const r = J(`(function(){ const at = (x, y) => { __put(x, y); _bossTestEntry(); }; at(30, 178); const q0 = bossUnit('nest'); if (q0) q0.dead = true; actors = actors.filter(a => !a.dead);
+            at(18, 177); const tunnel = partyRoomAt(player.x, player.y); at(30, 178); return { tunnel, rearmed: !!bossUnit('nest'), inNest: _ncInNest(18, 177), leash: BOSS_ENCOUNTERS.nest.room }; })()`);
+        same(r.tunnel, 'nest_t1', 'the tunnel'); same(r.rearmed, false, 'a killed queen came back from a walk into a tunnel'); same(r.inNest, true, 'a tunnel is not in the Nest for the console'); same(r.leash, 'nest_area', 'her own room');
+    });
+    check('THE DEFAULT CHEST (docs/CHESTS.md): tapped or E beside it, it opens once: a booster pack opened free (no shards), two items in your pack; emptied it says so; what does not fit stays in it; saved, and a new game has it shut and full', () => {
+        const r = J(`(function(){ chestsReset(); playerInv = {}; const st = _fp.stations.find(s => s.id === 'st_chest_nest_b'); __put(st.x - 1.2, st.y); const sh = shardCount, cards = equipFound.length + (typeof equipOwnedSet === 'function' ? equipOwnedSet().size : 0);
+            const u = stationUse(st), got = Object.values(playerInv).reduce((a, b) => a + b, 0) > 0, cards1 = equipFound.length + (typeof equipOwnedSet === 'function' ? equipOwnedSet().size : 0), can = stationCan(st);
+            const st2 = _fp.stations.find(s => s.id === 'st_chest_nest_c'); playerInv = { ammo_pack: 9, repair_kit: 3, sleeping_potion: 1, scrap_metal: 30, fuel_cell: 6, flare: 6 }; __put(st2.x - 1.2, st2.y); stationUse(st2); const left = chestLeft('chest_nest_c').length;
+            const saved = JSON.parse(JSON.stringify(facilitySaveCollect().chests)); chestsReset(); const fresh = chestOpened('chest_nest_b'); chestsApply(saved);
+            return { ok: !!(u && u.ok), shards: shardCount === sh, got, cards: cards1 >= cards, done: !can.ok && can.why, left, saved: saved.map(e => e.id).sort().join(), fresh, back: chestOpened('chest_nest_b') && chestOpened('chest_nest_c'), sprite: chestSpriteState('chest_nest_b') }; })()`);
+        same(r.ok, true, 'the chest did not open'); same(r.shards, true, 'its pack cost shards'); same(r.got, true, 'no items in the pack'); same(r.cards, true, 'the pack\'s cards not kept'); same(r.done, 'EMPTY', 'emptied');
+        same(r.left, 2, 'what did not fit is not kept in the chest'); same(r.saved, 'chest_nest_b,chest_nest_c', 'the chests opened, saved'); same(r.fresh, false, 'a new game\'s chest open'); same(r.back, true, 'the save did not put them back'); same(r.sprite, 'empty', 'an emptied chest drawn');
     });
 
     console.log(failures ? `\n${failures} check(s) FAILED` : '\nall checks passed');

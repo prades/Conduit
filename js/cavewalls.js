@@ -18,7 +18,8 @@ function _caveWallKeyOf(it) { let k = _caveWallKeys.get(it); if (k === undefined
 function caveWallsSig() {
     if (typeof _fp === "undefined" || !_fp || !_fp.items) return null;
     let h = 2166136261; const parts = [];
-    for (const it of _fp.items) { if (it.fp !== "wall" || it.kind !== "rock") continue; const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)); parts.push(caveWallKey(it) + ":" + (it.back ? 1 : 0) + ":" + _fpRockHeights(it, H).map(v => Math.round(v)).join("/")); }
+    for (const it of _fp.items) { if (it.fp !== "wall" || it.kind !== "rock" || it.low) continue;   // (a low rim: drawn rock only, never modelled: the Nest's tunnels, build 2026-11-12a)
+        const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)); parts.push(caveWallKey(it) + ":" + (it.back ? 1 : 0) + ":" + _fpRockHeights(it, H).map(v => Math.round(v)).join("/")); }
     const s = parts.join("|"); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(16);
 }
 const _caveImgs = {};

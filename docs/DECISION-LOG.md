@@ -2860,6 +2860,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - **Still open:** the electrical domain's layout (draft 5), seeing into a narrow passage (draft 8), the chest's rules, "instances", "the nests". `DOMAINS.md` §11, `CHESTS.md` §11.
 - **Status:** approved; nothing built.
 
+## DECISION: "Build it": the Nest grown out, low walls in its tunnels, the chest's rules (2026-11-12; built in `2026-11-12a`)
+- **The owner**: "Build it", after the Nest's layout and the chest's look were approved and the agent had offered its picks for what was still open.
+- **Taken as the agent's picks** (provisional, the owner's to change): walls on the camera's side low in tunnels and small caves (draft 8, A), built for the Nest's new rooms with their far walls low too (a tall far wall hid the tunnel behind it) and the cavern's west wall; the chest opens once, a booster pack opened free and two items, what does not fit stays in it.
+- **Built**: `DOMAINS.md` §2, 10 to 12, §9; `CHESTS.md`; `CHANGELOG.md` `2026-11-12a`. The electrical domain's layout (draft 5) stays open.
+
 ## DECISION: The player's part in a fight (2026-11-11; step 1 built in `2026-11-11e`, step 2 in `2026-11-11f`)
 - The owner: the three-hit rule "a bit harsh", "no room for compatibility there with just 3 bars"; ideas: items to recharge the bars, blocking shots for the followers, swooping in to stun, or no health at all ("a monitor of the battlefield"); "I don't want to make it too easy".
 - Offered A (the bars come back), B (A plus a part in the fight) and C (no health: the monitor); chosen: **B built on A**. Then: **GUARD a stance** (tap by the dial; shots at followers near you hit you, a bar each, at most one a second; half speed; not guarding one follower, not automatic); **STUN DIVE a chip, then a tap** (not a double tap); **repair kits from both** creature drops and spots in the facility that come back; the bars refill **slowly** (after 10 s out of danger, a bar every 8 s; not medium, not fast). The knockout stays.

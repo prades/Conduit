@@ -127,14 +127,14 @@ const PS_FAMILY = {
     teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech", junction: "tech",
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo", pallet_rack: "cargo",
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
-    hazard_explosive: "hazard", hazard_corrosive: "hazard",
+    hazard_explosive: "hazard", hazard_corrosive: "hazard", chest: "chest",
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }
     if (_psIndex[fam]) return _psIndex[fam];
     const out = {}, A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null;
     if (A) for (const name of Object.keys(A.cells)) {
-        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (x === "on" || x === "off") e.state = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); }
+        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (x === "on" || x === "off" || x === "open" || x === "empty") e.state = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); }
         (out[t[0]] = out[t[0]] || []).push(e);
     }
     return (_psIndex[fam] = out);
@@ -184,7 +184,7 @@ function facilitySpriteDraw(it, whole) {
     if (!S) return false;
     if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
     if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
-    const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : null;   // (the main power junction: broken or repaired, js/stations.js)
+    const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : k === "chest" ? (typeof chestSpriteState === "function" ? chestSpriteState(it.id) : null) : null;   // (a chest: shut, opening, emptied: js/chests.js)   // (the main power junction: broken or repaired, js/stations.js)
     const name = _psResolve(fam, k, S.dims, state, seed); if (!name) return false;
     const ok = !!_psBlit(fam, name, S.c[0], S.c[1], S.multi && !whole ? [it.x, it.y] : null);
     if (ok && k === "server_rack") facilityRackLeds(it, S, seed);

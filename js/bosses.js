@@ -307,7 +307,7 @@ function bossTick() {
 function _bossTestEntry() {
     for (const id of Object.keys(BOSS_ENCOUNTERS)) {
         const E = BOSS_ENCOUNTERS[id]; if (!E.test) continue;
-        const inside = typeof partyRoomAt === "function" && partyRoomAt(player.x, player.y) === E.room;
+        const at = typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, inside = at === E.room || (E.room === "nest_area" && typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(at));   // (the Nest grown out, build 2026-11-12a: coming DOWN into any of its rooms arms her, walking between them does not; she keeps to her cavern)
         const S = inside || (_fp.bosses && _fp.bosses[id]) ? bossState(id) : null; if (!S) continue;
         if (inside && !S.inRoom && !bossUnit(id)) { S.state = "idle"; S.outcome = null; S.unit = null; S.cast = null; bossArm(id); }
         S.inRoom = inside;

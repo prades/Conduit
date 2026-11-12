@@ -25,7 +25,7 @@ const sigOf = pieces => { let h = 2166136261; const s = pieces.map(p => p.key + 
   const sb = makeBrowserSandbox({}), ctx = vm.createContext(sb);
   for (const rel of scriptOrder()) { try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); } catch (e) {} }
   for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
-  const pieces = JSON.parse(vm.runInContext(`JSON.stringify((_fp.items || []).filter(it => it.fp === "wall" && it.kind === "rock").map(it => {
+  const pieces = JSON.parse(vm.runInContext(`JSON.stringify((_fp.items || []).filter(it => it.fp === "wall" && it.kind === "rock" && !it.low).map(it => {   // (a low rim, the Nest's tunnels since 2026-11-12a, is drawn rock only)
       const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)), dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1;
       let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
       return { key: caveWallKey(it), a: it.a, b: it.b, room: it.room, back: !!it.back, n: [nx, ny], hs: _fpRockHeights(it, H), cap: it.cap || null, drop: it.drop || 0, ice: !!_fpRoomStyle(it.room).ice, down: FP_ROCK_DOWN, ext: H - FP_WALL_H, dk: it.dk || null, mid: (function(){ const R = _fp.F.byId.get(it.room), bb = R && R.bb; return bb ? [(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2] : [it.x, it.y]; })() };

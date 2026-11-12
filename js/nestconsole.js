@@ -19,7 +19,7 @@ function _ncState() {
     return _fp.nestc;
 }
 function _ncClamp(n) { const [a, b] = NEST_CONSOLE.levels; n = Math.round(Number(n)); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : a; }
-function _ncInNest(x, y) { return typeof partyRoomAt === "function" && partyRoomAt(x, y) === NEST_CONSOLE.room; }
+function _ncInNest(x, y) { if (typeof partyRoomAt !== "function") return false; const at = partyRoomAt(x, y); return at === NEST_CONSOLE.room || (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(at)); }   // (any room of the Nest grown out, build 2026-11-12a: the test squad, the meter and the panel keep through its tunnels)
 function nestQueenLevel() { const S = typeof bossState === "function" ? bossState(NEST_CONSOLE.boss) : null, E = typeof bossEnc === "function" ? bossEnc(NEST_CONSOLE.boss) : null; return (S && S.level) || (E && E.level) || 1; }
 
 // ── the forms a test follower can take: every element's three classes, and every evolved form (not the retired ones) ──
