@@ -884,8 +884,8 @@ function echoPulse(f) {
 }
 // INK SPIT (the Voidstar's second attack, build 2026-11-12q; the owner: "I think ink spit should be the new alternate attack", replacing SINGULARITY SHOT; the ink BLINDS, 2 seconds, the target only, a boss takes the damage
 // and is not blinded: "Bosses take the damage but are not blinded"): a spit of dark violet ink at the nearest enemy it can see within INK_RANGE: INK_MULT x its power (flux, elemental) and the enemy is BLINDED for
-// INK_BLIND_FRAMES (the blind the game already has, js/predator.js: it loses its target, cannot attack or shoot and staggers about at half pace). It strikes at once, as SINGULARITY SHOT did; the glob that flies and
-// the stain it leaves are drawn (js/elements.js "inkspit"). The reach, wind-up and damage are SINGULARITY SHOT's, kept so the swap does not move the balance (the owner gave none): the agent's, provisional.
+// INK_BLIND_FRAMES (the blind the game already has, js/predator.js: it loses its target, cannot attack or shoot and staggers about at half pace). It strikes at once, as SINGULARITY SHOT did; the jet of ink that
+// flies and splashes is drawn (js/elements.js "inkspit"). The reach, wind-up and damage are SINGULARITY SHOT's, kept so the swap does not move the balance (the owner gave none): the agent's, provisional.
 const INK_RANGE = 6.5, INK_MULT = 2.2, INK_BLIND_FRAMES = 120;
 function inkSpit(f) {
     const foes = _evoFoesSeen(f.x, f.y, INK_RANGE);
@@ -896,7 +896,7 @@ function inkSpit(f) {
     if (!tgt.dead && !_evoBoss(tgt)) tgt.blinded = Math.max(tgt.blinded || 0, INK_BLIND_FRAMES);
     f._sigAt = f0; f._inkAt = f0; f._sigCd = moveWindupFrames("ink_spit");
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    _evoFx({ type: "inkspit", x0: f.x, y0: f.y, x: tgt.x, y: tgt.y, life: 50, maxLife: 50 });
+    _evoFx({ type: "inkspit", x0: f.x, y0: f.y, x: tgt.x, y: tgt.y, life: 30, maxLife: 30 });
     _evoSay(f, "INK SPIT", "#cc88ff");
     return true;
 }

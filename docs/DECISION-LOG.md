@@ -3158,4 +3158,5 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Open: whether the Serpent should lose SINGULARITY SHOT too; the Voidstar's body (the owner has not asked for a change); the everyday shot's look.
 - Superseded: SINGULARITY SHOT as the Voidstar's move (history kept; the code kept for the Serpent).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **The look, revised the same day:** the owner did not like the first look (a glob of ink that flew and left a stain on the floor): **"I do not like that,"** "The look". Of three new looks the owner chose **"Ink jet"** (a thin, fast jet of ink squirted from the Voidstar to the enemy, a splash on the enemy). The first look is **superseded, not merged**. The rules (blind 2 s, the target only, bosses not blinded, 6.5 tiles, 2.75 s, 2.2 x) did not change.
 
