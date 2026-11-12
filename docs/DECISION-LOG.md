@@ -3073,3 +3073,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the size of the swell and the fireball, the settle's length.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
+## DECISION: HEXFIRE is a lava crater under the enemy, with no shot (2026-11-12, build `2026-11-12h`, branch `claude/hexfire-lava`)
+- The owner: "Let's work on the secondary attack." The agent took it as the Ember Hood's HEXFIRE and offered three looks (hex brand, flame ring, ember bloom). The owner: **"All right for this one we're gonna need to change the trajectory of it as well. I'm not sure what I know is it barely hits the enemy when they're rushing towards you and they typically are but yeah, no satanic pentagram stuff for just a giant pool of lava"**; parts to change: **"The Hood's cast, So there's no projectile it's just he lights up and then a crater erupts lava."**
+- Then, of the first build: **"Give me a more 3D looking effect, please. Maybe bubbles. But definitely more depth."** and **"make it look more cracked and rigid"**: a crater with a lip, depth and domed bubbles; the crust angular plates with glowing cracks.
+- Built: no projectile; the Hood lights up over the wind-up; the crater opens at once under the nearest enemy where it stands (this changes how the move aims: it cannot miss a creature that runs on). Radius, life, bite, sight and reach unchanged. The retired Cinder Halo shares the move.
+- Open: whether the pool (and the circle with it) should be bigger ("giant": a balance change, not made); the owner's view of the cast time (2.75 s of lighting up) now that nothing flies.
+- Agent's, provisional: every size, speed and colour of the look.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+

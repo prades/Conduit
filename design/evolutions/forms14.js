@@ -375,7 +375,7 @@ function _hoodPyramid(o) {
   const hv = o.hover, H = o.H, R = o.R, tilt = o.tilt || 0;
   const pv = G(); pv.rotation.x = tilt; pv.position.set(0, hv, 0); b.add(pv);   // tips forward a little, like a hood bowed toward you
   // three faces: the front (+z) one is missing. A square pyramid cut into 3 segments of 90 degrees each.
-  const hood = new T.Mesh(new T.ConeGeometry(R, H, 3, 1, true, PI / 4, 3 * PI / 2), _hoodBlack); hood.position.y = H / 2; pv.add(hood);
+  const hood = new T.Mesh(new T.ConeGeometry(R, H, 3, 1, true, PI / 4, 3 * PI / 2), o.flare ? _hoodBlack.clone() : _hoodBlack); hood.position.y = H / 2; pv.add(hood);   // (o.flare: its own material, to glow: HEXFIRE's lighting up)
   // the open front's two edges, and the rim: dark steel, or silver
   const trim = o.silver ? _boltSilver : _hoodBlack;
   for (const k of [0, 1, 2, 3]) { const a = PI / 4 + k * PI / 2, bar = limb(o.trim || 0.022, trim); setLink(bar, new T.Vector3(Math.sin(a) * R, 0, Math.cos(a) * R), new T.Vector3(0, H, 0)); pv.add(bar); }
@@ -444,7 +444,7 @@ function _hoodPyramid(o) {
      dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
     for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); }
-    if (o.flare) { const FS = v && v.sw != null ? v : null, sw = FS ? FS.sw : 0, bl = FS ? FS.ball : 0;   // the flare: the hood swells, its diamond and gems blaze and lean forward, the fireball grows in front of it (v: { sw, ball })
+    if (o.flare) { const FS = v && v.sw != null ? v : null, sw = FS ? FS.sw : 0, bl = FS ? FS.ball : 0; hood.material.emissive.set(0xff3a08).multiplyScalar(0.6 * (FS && FS.heat || 0));   // (v.heat, 0 to 1: HEXFIRE lights the hood itself, to a dull glowing red)   // the flare: the hood swells, its diamond and gems blaze and lean forward, the fireball grows in front of it (v: { sw, ball })
       if (FS) { pv.scale.multiplyScalar(1 + 0.2 * sw); dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac + 16 * sw)); L.intensity += 2.4 * sw; cute.tri.forEach(T3 => { T3.gem.position.z += 0.2 * sw; T3.gem.position.y += 0.05 * sw; }); }
       flBall.visible = flHalo.visible = bl > 0.02; if (bl > 0.02) { flHalo.material.color.copy(M.glow.color); const px = 0, py = hv + dY * 1.05 + 0.04 * bl, pz = 0.95 + 0.12 * bl; flBall.position.set(px, py, pz); flHalo.position.set(px, py, pz); flBall.scale.setScalar(0.03 + 0.26 * bl); flHalo.scale.setScalar(0.06 + 0.4 * bl); } }
     for (const q of bsh) if (q.orbit) { const a = ph * 0.8 + q.ph; q.g.position.set(Math.sin(a) * q.rad, hv + H * q.hy + 0.05 * Math.sin(ph * 2 + q.ph), Math.cos(a) * q.rad * 0.7 + 0.05); q.g.rotation.set(0.15 * Math.sin(ph + q.ph), a, 0.2); } } };

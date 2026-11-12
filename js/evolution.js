@@ -220,7 +220,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f", flare: true },   // (24 columns since build 2026-11-12g, design No. 938: columns 16-23 are its everyday FIREBALL's FLARE, flareCol; 8-15, HEXFIRE's, are as they were)
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f", flare: true, blaze: true },   // (32 columns since build 2026-11-12h, design No. 938: columns 16-23 are its everyday FIREBALL's FLARE, flareCol; 24-31 are HEXFIRE's LIGHTING UP, blazeCol; 8-15, the move's old bow, are not used by HEXFIRE now)
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "SHELL GUARD", moves: ["shell_guard"], sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
@@ -580,14 +580,14 @@ function singularityShot(f) {
 // Hood's last one (no stacking). (It was six instant rounds that set their targets burning: superseded.) True when it fired.
 function hexfire(f) {
     const foes = _evoSeen(f, _evoFoes(f.x, f.y, HALO_RANGE));
-    if (!foes.length || typeof spawnFollowerProjectile !== "function") return false;
+    if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1;
-    let landed = false;
-    const land = (x, y) => { if (landed) return; landed = true; hexfireCircle(f, x, y); };   // (once: a shot can touch an enemy the frame it runs out)
-    const p = spawnFollowerProjectile(f, t, "#ff5a1f", 0, 5, a => land(a.x, a.y), DMG_HIT_ALT, { range: L, kind: "hex" });
-    if (p) p.onLand = () => land(p.x, p.y);
-    f._sigAt = f0; f._sigCd = moveWindupFrames("hexfire");
+    // NO SHOT (build 2026-11-12h; the owner, 2026-11-12: "we're gonna need to change the trajectory of it ... it barely hits the enemy when they're rushing towards you and they typically are ... no projectile it's
+    // just he lights up and then a crater erupts lava"): the Hood lights up over the wind-up (blazeCol), and the crater opens under the nearest enemy where it stands at the end of it (hexfireCircle), at once, so a
+    // creature rushing in is caught; nothing flies. The circle, its radius, life, bite and sight are as they were; only its look is changed (a lava pool: lavaPool, js/elements.js drawHexfireOnTile).
+    hexfireCircle(f, t.x, t.y);
+    f._sigAt = f0; f._hexAt = f0; f._sigCd = moveWindupFrames("hexfire");
     f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
@@ -1264,16 +1264,19 @@ function _evoFrame(f, d, f0) {
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
+    const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
+    const hexHold = d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES;   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (bz >= 0) col = bz;
     else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
     else if (mc >= 0) col = mc;
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
-    else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
-    else if (f.state === "attack") col = (d.lash || d.stomp ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash, d.stomp: the everyday hit's own block)
+    else if (sigK >= 0 && sigK < 1 && !hexHold) col = 8 + Math.min(7, Math.floor(sigK * 8));
+    else if (f.state === "attack" && !hexHold) col = (d.lash || d.stomp ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash, d.stomp: the everyday hit's own block)
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
 }
 function _evoFacing(f) {
@@ -1474,6 +1477,15 @@ function mimicShotDraw(e, px, py, g) {
 function flareCol(f, f0) {
     if (f._shotWind > 0 && f._shotWind0 > 0) return 16 + Math.min(5, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 6 + 1e-9));
     if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 10) return 23; }
+    return -1;
+}
+
+// which column of the Ember Hood's sheet (the second extra block, 24 to 31: design No. 938) while HEXFIRE lights it up: over its wind-up (f._altWind of f._altWindMax, js/evolution.js altTick) cells 0 to 5, then 12 frames
+// after the crater opens cells 6 and 7; -1 otherwise
+function blazeCol(f, f0, d) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "hexfire" && f._altWind > 0 && f._altWindMax > 0) return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
+    if (f._hexAt !== undefined) { const a = f0 - f._hexAt; if (a >= 0 && a < 5) return 30; if (a >= 5 && a < 14) return 31; }
     return -1;
 }
 

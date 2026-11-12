@@ -60,10 +60,10 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
-    check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 24 columns: the idle, HEXFIRE and the flare), and the definition says so', () => {
+    check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and HEXFIRE's lighting up), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));
-        ok(pk, 'js/evopack.js has no entry for it'); same(pk.w, w, 'its width'); same(pk.h, h, 'its height'); same(pk.cell, 144, 'its cell'); same(pk.cols, 24, 'its columns'); same(pk.rows, 8, 'its rows');
-        for (let c = 16; c < 24; c++) { let n = 0; for (let row = 0; row < 8; row++) if (pk.cells[(row * pk.cols + c) * 6 + 2] > 0) n++; same(n, 8, 'column ' + c + ' has its eight facings'); }
+        ok(pk, 'js/evopack.js has no entry for it'); same(pk.w, w, 'its width'); same(pk.h, h, 'its height'); same(pk.cell, 144, 'its cell'); same(pk.cols, 32, 'its columns'); same(pk.rows, 8, 'its rows');
+        for (let c = 16; c < 32; c++) { let n = 0; for (let row = 0; row < 8; row++) if (pk.cells[(row * pk.cols + c) * 6 + 2] > 0) n++; same(n, 8, 'column ' + c + ' has its eight facings'); }
         const d = JSON.parse(run('JSON.stringify(EVOLUTIONS.embercowl)')); same(d.sheet, 'img/evo/embercowl.png', 'its sheet'); ok(d.flare, 'flare'); same(d.shot, 'FIREBALL', 'its shot'); same(d.move, 'HEXFIRE', 'its move');
     });
 

@@ -183,12 +183,12 @@ async function boot(search) {
             __fly(60); o.sparks = __sparks().length; __wild(); return o; })()`);
         ok(r.landed !== undefined && r.landed < 0.3, 'the lob did not land where it was thrown: ' + r.landed); same(r.sparks, 0, 'a spark');
     });
-    check('HEXFIRE (the Ember Hood\'s) at an ant behind the crate lands its burning circle on its own side of the crate, not on the ant; at an ant behind the generator (unseen) it is not fired; QUILL BURST the same', () => {
+    check('HEXFIRE (the Ember Hood\'s) opens its burning circle under an ant it sees over the crate (no shot since build 2026-11-12h: nothing flies to be stopped by the crate); at an ant behind the generator (unseen) it is not fired; QUILL BURST the same', () => {
         const r = J(`(function(){ __wild(); const o = {}, T = __T, f = followers[0], put = p => { const t = T(p); f.x = t[0]; f.y = t[1]; }; f.power = 20; put([6, 5]); const a = __ant(...T([6, 0])); render();
             o.hex = hexfire(f); __fly(); const c = elementEffects.find(e => e.type === 'hexfire' && e.by === f); o.circle = c ? [+(c.y - T([6, 2.5])[1]).toFixed(2), +Math.hypot(c.x - a.x, c.y - a.y).toFixed(2)] : null;
             __wild(); put([9, 5]); __ant(...T([9, 0.6])); o.hexGen = hexfire(f); o.quillGen = quillBurst(f); o.flying = followerProjectiles.length;
             __wild(); put([9, 5]); __ant(...T([11, 3])); o.quillSeen = quillBurst(f); for (let i = 0; i < QUILL_FIRE; i++) { frame++; evolutionTick(); } o.quills = followerProjectiles.length; __wild(); __bench(); return o; })()`);
-        same(r.hex, true, 'HEXFIRE was not fired at the ant over the crate'); ok(r.circle && r.circle[0] > 0 && r.circle[1] > 2, 'the circle is not on the shooter\'s side of the crate: ' + JSON.stringify(r.circle));
+        same(r.hex, true, 'HEXFIRE was not fired at the ant over the crate'); ok(r.circle && r.circle[1] < 0.3, 'the circle is not under the ant it sees: ' + JSON.stringify(r.circle));
         same(r.hexGen, false, 'HEXFIRE fired at an ant it cannot see'); same(r.quillGen, false, 'QUILL BURST fired at an ant it cannot see'); same(r.flying, 0, 'shots in the air');
         same(r.quillSeen, true, 'QUILL BURST not fired at an ant it sees'); same(r.quills, 5, 'the quills');
     });

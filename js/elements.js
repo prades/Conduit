@@ -1383,22 +1383,8 @@ function drawElementEffects() {
                 }
                 break;
             }
-            case "hexfire": {
-                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
-                ctx.globalAlpha = 0.26 * k; ctx.fillStyle = "#ff4a12";
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalAlpha = (0.7 + 0.3 * Math.sin(frame * 0.3 + e.x)) * k; ctx.strokeStyle = "#ffb04a"; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-                ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#ff6a1f"; ctx.lineWidth = 1.5; ctx.beginPath();
-                for (let i = 0; i <= 6; i++) { const an = i / 6 * Math.PI * 2 + frame * 0.01, hx = px + Math.cos(an) * rx * 0.72, hy = cy + Math.sin(an) * ry * 0.72; if (i) ctx.lineTo(hx, hy); else ctx.moveTo(hx, hy); }
-                ctx.stroke();
-                ctx.fillStyle = "#ffd27a";
-                for (let i = 0; i < 10; i++) {
-                    const an = i / 10 * Math.PI * 2, h = 5 + 4 * Math.sin(frame * 0.4 + i * 1.7), fx = px + Math.cos(an) * rx, fy = cy + Math.sin(an) * ry;
-                    ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.moveTo(fx - 2.5, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 2.5, fy); ctx.closePath(); ctx.fill();
-                }
-                break;
-            }
+            // HEXFIRE's circle is a POOL OF LAVA on the floor (build 2026-11-12h): drawn tile by tile in the floor's pass (drawHexfireOnTile, below), so walls and units in front cover it
+            case "hexfire": break;
             // SEEDFALL's circle and seeds lie on the floor: drawn tile by tile in the floor's pass (drawSeedfallOnTile, below), so walls and units in front cover them
             case "seedfall": break;
             case "thicket": break;   // (PINK THICKET's bushes and aura lie on the floor too: drawThicketOnTile)
@@ -1794,6 +1780,97 @@ function drawThicketOnTile(tx, ty, px, py) {
             const bx = tx + (_thHash(tx + k * 7, ty, e.seed + 1) - 0.5) * 0.8, by = ty + (_thHash(tx, ty + k * 5, e.seed + 2) - 0.5) * 0.8;
             if ((bx - e.x) * (bx - e.x) + (by - e.y) * (by - e.y) > R * R) continue;
             const [qx, qy] = at(bx, by); _thBush(qx, qy, (0.75 + 0.5 * _thHash(tx, ty, e.seed + 3 + k)) * grow, f0 + tx * 13 + ty * 7);
+        }
+    }
+}
+
+// ── HEXFIRE'S LAVA POOL (build 2026-11-12h) ─────────────────────────────────────────────────────────────────────────────────
+// The owner, 2026-11-12: "no satanic pentagram stuff for just a giant pool of lava", the Hood "lights up and then a crater erupts lava"; then "Give me a more 3D looking effect, please. Maybe bubbles. But definitely
+// more depth."; then "make it look more cracked and rigid": the crust is angular plates with glowing cracks between them, lit along their upper edges. The circle is as it was (js/evolution.js hexfireCircle: its radius, life, bite and sight); it is DRAWN as a CRATER with depth: a lip of rock round it (lit along its far edge, dark along its near
+// one, a wall of rock beneath it on the near side), an inner wall you see on the far side because the lava lies BELOW the lip, the lava in layers that get hotter toward the middle, a glowing edge where it meets the
+// rock, and BUBBLES: domes of lava (a base, a shaded body and a highlight) that swell and burst into a ring and flung drops. It opens over 14 frames, throws up a fountain of shaded blobs (the first 34 frames), then
+// crusts over and dims in its last 24. Flat colours only (no gradient, no shadowBlur: the effects plan); drawn on the floor tile by tile like SEEDFALL's circle, so walls and units in front cover it.
+let _hxFrame = -1, _hxList = [];
+function _hxH(a, b) { const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); }   // (a number from 0 to 1 from two: no random, the same each frame)
+function drawHexfireOnTile(tx, ty, px, py) {
+    if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (_hxFrame !== f0) { _hxFrame = f0; _hxList = elementEffects.filter(e => e.type === "hexfire" && e.life > 0).map(e => ({ e, room: _sfRoomAt(e.x, e.y) })); }   // (once a frame)
+    if (!_hxList.length) return;
+    let room, roomKnown = false;
+    for (const it of _hxList) {
+        const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
+        if (room !== it.room) continue;   // (a tile of another room shows none of it)
+        const age = e.maxLife - e.life, open = Math.min(1, age / 14), fade = Math.min(1, e.life / 24), grow = 0.3 + 0.7 * (1 - Math.pow(1 - open, 2));
+        const rx = R * Math.SQRT2 * TILE_W * grow, ry = R * Math.SQRT2 * TILE_H * grow, at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];
+        const [cx, cy] = at(e.x, e.y), pulse = 1 + 0.04 * Math.sin(f0 * 0.18 + e.x), crust = 1 - fade, drop = ry * 0.16 * grow;   // (crust: 0 while it burns, to 1 as it goes out; drop: how far below the lip the lava lies)
+        const blob = (x, y, w, h, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, Math.max(0.01, w), Math.max(0.01, h), 0, 0, Math.PI * 2); ctx.fill(); };
+        const arc = (x, y, w, h, a0, a1, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, a0, a1); ctx.stroke(); };
+        const ly = cy + drop;   // (the lava's own middle: lower than the lip's)
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+        // the glow it throws on the floor round it, and the scorched ground
+        blob(cx, cy + 2, rx * 1.62, ry * 1.62, "#ff6a14", 0.1 * fade); blob(cx, cy + 2, rx * 1.34, ry * 1.34, "#ff7a1c", 0.12 * fade); blob(cx, cy + 2, rx * 1.22, ry * 1.22, "#140a06", 0.45 * fade);
+        // THE CRATER: the wall of rock under its near edge, the lip of rock on top of it, a bright edge along the lip's far side, the dark inner wall
+        blob(cx, cy + 7 * grow, rx * 1.16, ry * 1.16, "#1c0e09", 0.95 * fade);          // (the outer wall of rock, seen below the lip on the near side)
+        blob(cx, cy, rx * 1.16, ry * 1.16, "#5b3321", 0.97 * fade);                      // (the lip of rock)
+        arc(cx, cy - 1, rx * 1.12, ry * 1.12, Math.PI * 1.04, Math.PI * 1.96, "#a8734b", 3, 0.85 * fade);   // (lit along the far edge)
+        arc(cx, cy, rx * 1.13, ry * 1.13, Math.PI * 0.05, Math.PI * 0.95, "#3a1d12", 2.5, 0.9 * fade);       // (dark along the near edge)
+        blob(cx, cy, rx * 1.0, ry * 1.0, "#1a0a06", 0.97 * fade);                        // (the inner wall: you look down into it)
+        blob(cx, cy + ry * 0.04, rx * 0.97, ry * 0.9, "#34130a", 0.9 * fade);            // (the wall's lower, hotter-lit part)
+        // THE LAVA, lying below the lip: layers hotter toward the middle
+        blob(cx, ly, rx * 0.94, ry * 0.84, "#c8340a", 0.97 * fade);
+        blob(cx, ly, rx * 0.9, ry * 0.8, "#e2400b", 0.97 * fade);
+        blob(cx, ly, rx * 0.68 * pulse, ry * 0.6 * pulse, "#ff7a14", 0.95 * fade);
+        blob(cx, ly, rx * 0.38 * pulse, ry * 0.33 * pulse, "#ffc447", 0.92 * fade);
+        blob(cx, ly - 1, rx * 0.17 * pulse, ry * 0.15 * pulse, "#fff0b0", 0.85 * fade);
+        arc(cx, ly, rx * 0.93, ry * 0.83, 0, Math.PI * 2, "#ff9a3a", 2, 0.6 * fade);   // (the glowing edge where the lava meets the rock)
+        // THE CRUST: rigid, angular plates of dark basalt in rings on the lava, a gap of glowing lava round each: lit along their upper edges, dark along their lower, each heaving a little; as it cools they grow together
+        const RINGS = [[0, 1, 0.3], [0.4, 5, 0.27], [0.76, 9, 0.2]];   // (ring radius as a share of the pool's, plates in it, their size)
+        let pn = 0;
+        for (const [rr0, cnt, sz0] of RINGS) for (let k = 0; k < cnt; k++, pn++) {
+            const an0 = (k + 0.5 * _hxH(pn, 41)) * (6.2832 / cnt) + (rr0 ? 0.6 * rr0 : 0) + Math.sin(age * 0.012 + pn) * 0.05, rr = rr0 * (0.96 + 0.08 * _hxH(pn, 42)), sz = sz0 * (0.78 + 0.28 * _hxH(pn, 43)) * (1 + crust * 0.55) * (age < 14 ? open : 1);
+            const heave = Math.sin(age * 0.045 + pn * 1.7) * 1.1, pxc = cx + Math.cos(an0) * rx * rr * 0.9, pyc = ly + Math.sin(an0) * ry * rr * 0.86 + heave, nv = 5 + Math.floor(_hxH(pn, 44) * 3), pts = [];
+            for (let v = 0; v < nv; v++) { const av = (v + 0.4 * (_hxH(pn * 7 + v, 45) - 0.5)) * 6.2832 / nv + 0.5 * _hxH(pn, 46), rv = sz * (0.72 + 0.5 * _hxH(pn * 7 + v, 47)); pts.push([pxc + Math.cos(av) * rx * rv, pyc + Math.sin(av) * ry * rv * 0.9]); }
+            ctx.globalAlpha = 0.97 * fade; ctx.fillStyle = "#3a190e"; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let v = 1; v < nv; v++) ctx.lineTo(pts[v][0], pts[v][1]); ctx.closePath(); ctx.fill();   // (the slab)
+            ctx.fillStyle = "#4e2414"; ctx.globalAlpha = 0.8 * fade; ctx.beginPath(); ctx.moveTo(pts[0][0] - 0.5, pts[0][1] - 1.2); for (let v = 1; v < nv; v++) ctx.lineTo(pts[v][0] - 0.5, pts[v][1] - 1.2); ctx.closePath(); ctx.fill();   // (its top face, a little above: it stands out of the lava)
+            ctx.lineWidth = 1.4; ctx.lineCap = "round";
+            for (let v = 0; v < nv; v++) {   // (the edges: lit when they face up and to the left, dark when they face down and to the right)
+                const p0 = pts[v], p1 = pts[(v + 1) % nv], nxx = p1[1] - p0[1], nyy = -(p1[0] - p0[0]), lit = nxx * -0.5 + nyy * -0.85;
+                ctx.strokeStyle = lit > 0 ? "#b3794f" : "#160804"; ctx.globalAlpha = (lit > 0 ? 0.75 : 0.85) * fade; ctx.beginPath(); ctx.moveTo(p0[0], p0[1] - 1); ctx.lineTo(p1[0], p1[1] - 1); ctx.stroke();
+                ctx.strokeStyle = "#ffa83c"; ctx.globalAlpha = (0.35 + 0.25 * Math.sin(age * 0.08 + pn + v)) * fade * (1 - crust * 0.5); ctx.beginPath(); ctx.moveTo(p0[0], p0[1] + 1.2); ctx.lineTo(p1[0], p1[1] + 1.2); ctx.stroke();   // (the lava glowing in the crack under its edge)
+            }
+            ctx.strokeStyle = "#2a1008"; ctx.globalAlpha = 0.7 * fade; ctx.lineWidth = 0.9;   // (a hairline crack across it)
+            const c0 = pts[0], c1 = pts[Math.floor(nv / 2)]; ctx.beginPath(); ctx.moveTo((c0[0] + pxc) / 2, (c0[1] + pyc) / 2); ctx.lineTo((c1[0] + pxc) / 2 + 1, (c1[1] + pyc) / 2 + 1); ctx.stroke();
+        }
+        // BUBBLES: domes of lava swelling (a darker base, a shaded body, a highlight) and bursting into a ring and flung drops
+        for (let i = 0; i < 8; i++) {
+            const per = 52 + 18 * _hxH(i, 21), ph = ((f0 + i * 17 + _hxH(i, 22) * 40) % per) / per, an = i * 2.4 + _hxH(i, 9) * 3 + Math.floor((f0 + i * 17) / per) * 1.7, rr = [0.2, 0.58, 0.9, 0.2, 0.58, 0.9, 0.58, 0.2][i] + 0.04 * (_hxH(i + Math.floor((f0 + i * 17) / per), 4) - 0.5);   // (in the gaps between the rings of crust)
+            const bx = cx + Math.cos(an) * rx * rr * 0.9, by = ly + Math.sin(an) * ry * rr * 0.85, sz = 3.5 + 6 * _hxH(i, 31);
+            if (ph < 0.8) {   // (swelling: a dome)
+                const b = sz * (0.25 + 0.75 * ph / 0.8), lift = b * 0.5;
+                blob(bx, by + 1, b * 1.05, b * 0.58, "#b02e08", 0.9 * fade);                       // (where it meets the lava: a darker ring)
+                blob(bx, by - lift * 0.4, b, b * 0.8, "#ff7a14", 0.95 * fade);                    // (the dome)
+                blob(bx + b * 0.12, by - lift * 0.1, b * 0.78, b * 0.6, "#ff9a30", 0.9 * fade);    // (its lit side)
+                blob(bx - b * 0.34, by - lift * 0.8, b * 0.3, b * 0.2, "#fff2b8", 0.95 * fade);    // (the highlight)
+            } else {   // (bursting: a ring on the lava, three drops flung up)
+                const u = (ph - 0.8) / 0.2;
+                arc(bx, by, sz * (1 + 1.8 * u), sz * 0.55 * (1 + 1.8 * u), 0, Math.PI * 2, "#ffd98a", 1.6, 0.8 * fade * (1 - u));
+                for (let k = 0; k < 3; k++) { const ak = k * 2.1 + i; blob(bx + Math.cos(ak) * sz * 1.6 * u, by - Math.sin(Math.PI * u) * sz * 2.2 + Math.sin(ak) * 1.5, 1.7 * (1 - u * 0.5), 2 * (1 - u * 0.5), "#ffb347", 0.9 * fade * (1 - u * 0.5)); }
+            }
+        }
+        if (age < 8) blob(cx, ly, rx * 1.1, ry * 1.1, "#fff0b0", 0.45 * (1 - age / 8));   // (the flash as it opens)
+        ctx.restore();
+        if (age < 34 && Math.round(e.x) === tx && Math.round(e.y) === ty) {   // THE ERUPTION: blobs of lava thrown up out of the crater, in the air, shaded, each with its shadow on the lava
+            ctx.save(); const t = age / 34;
+            for (let i = 0; i < 11; i++) {
+                const an = i * 0.571 + _hxH(i, 1), sp = 0.4 + 0.6 * _hxH(i, 6), u = Math.max(0, Math.min(1, (age - i * 0.8) / 30)); if (u <= 0 || u >= 1) continue;
+                const hgt = Math.sin(Math.PI * u) * (40 + 46 * sp), out = u * sp * rx * 0.6, qx = cx + Math.cos(an) * out, gy = ly + Math.sin(an) * out * ry / rx, qy = gy - hgt, r = 5.6 * (1 - u * 0.35), a = 0.95 * (1 - t * 0.25);
+                blob(qx, gy + 1, r * 0.9, r * 0.4, "#5a1b0a", 0.45 * a);                           // (its shadow on the lava)
+                blob(qx, qy, r, r * 1.2, "#e2400b", a); blob(qx + r * 0.1, qy - r * 0.1, r * 0.78, r * 0.95, "#ff8a1a", a); blob(qx - r * 0.28, qy - r * 0.4, r * 0.3, r * 0.34, "#fff0b0", a);
+            }
+            ctx.restore();
         }
     }
 }
