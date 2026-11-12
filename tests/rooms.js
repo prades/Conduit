@@ -31,17 +31,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__sweep = () => { actors = actors.filter(a => !a.dead); followers = followers.filter(a => !a.dead && a.team === 'green'); };`);
 
     group('THE CAPS');
-    check('every room holds two, the Main Hallway three, the Arena six; the squad is not counted, and one on its way back from the dead keeps its place', () => {
+    check('every room holds two, the Main Hallway three, the Arena six, the Crystal Chamber any number (build 2026-11-12o: "the crystal chamber, which has no limit now"); the squad is not counted, and one on its way back from the dead has let its place go (build 2026-11-12o: it waits at the Crystal)', () => {
         const r = J(`(function(){ const o = {}; o.caps = _fp.F.rooms.map(r => r.id + ':' + partyRoomCap(r.id)); const fs = __fresh(3);
             o.squadCounted = partyRoomCount('crystal_chamber'); respawnQueue.push({ post: 'crystal_chamber', isClone: false }); o.dead = partyRoomCount('crystal_chamber'); respawnQueue.length = 0; return o; })()`);
-        for (const c of r.caps) { const [id, n] = c.split(':'); same(+n, id === 'lab_hallway' ? 3 : id === 'arena' ? 6 : 2, id); }
-        same(r.squadCounted, 0, 'the squad counted in its room'); same(r.dead, 1, 'one coming back from the dead');
+        for (const c of r.caps) { const [id, n] = c.split(':'); same(+n, id === 'lab_hallway' ? 3 : id === 'arena' ? 6 : id === 'crystal_chamber' ? Infinity : 2, id); }
+        same(r.squadCounted, 0, 'the squad counted in its room'); same(r.dead, 0, 'one coming back from the dead still counted');
     });
-    check('HOLD in a full room: it keeps following and the player is told; REMOVE goes to the nearest room with a place; a fourth follower with the squad full holds the nearest room with a place', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; ccApplyStance(fs, 'hold'); o.held = fs.filter(f => f.post).map(f => f.post).join(); o.kept = fs.filter(f => !f.post).length; o.said = floatingTexts.map(t => t.text).join('|');
-            ccApplyStance(fs, 'follow'); const g = __fresh(5); o.fourth = g.filter(f => f.post).map(f => f.post); const m = partyOrdered()[0]; partyRemove([m]); o.removedTo = m.post; o.inChamber = partyRoomCount('crystal_chamber'); return o; })()`);
-        same(r.held, 'crystal_chamber,crystal_chamber', 'two hold the Crystal Chamber'); same(r.kept, 1, 'the third'); ok(/THE CRYSTAL CHAMBER IS FULL · 2 OF 2/.test(r.said), 'said ' + r.said);
-        same(r.fourth.join(), 'crystal_chamber,crystal_chamber', 'the 4th and 5th'); ok(r.removedTo && r.removedTo !== 'crystal_chamber', 'the removed one: ' + r.removedTo); same(r.inChamber, 2, 'the Crystal Chamber after');
+    check('HOLD in a full room: it keeps following and the player is told; REMOVE in a full room goes to the nearest room with a place; a fourth and fifth follower with the squad full hold the Crystal Chamber (it has no cap since build 2026-11-12o)', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; const t = __cell('teleport_room_1'); fs.forEach((f, i) => { f.x = t[0] + 0.3 * i; f.y = t[1]; }); ccApplyStance(fs, 'hold'); o.held = fs.filter(f => f.post).map(f => f.post).join(); o.kept = fs.filter(f => !f.post).length; o.said = floatingTexts.map(t => t.text).join('|');
+            const m = fs.find(f => !f.post); partyRemove([m]); o.removedTo = m.post; o.inRoom = partyRoomCount('teleport_room_1');
+            ccApplyStance(fs, 'follow'); const g = __fresh(5); o.fourth = g.filter(f => f.post).map(f => f.post); return o; })()`);
+        same(r.held, 'teleport_room_1,teleport_room_1', 'two hold the Teleport Room'); same(r.kept, 1, 'the third'); ok(/THE TELEPORT ROOM 1 IS FULL · 2 OF 2/i.test(r.said), 'said ' + r.said);
+        ok(r.removedTo && r.removedTo !== 'teleport_room_1', 'the removed one: ' + r.removedTo); same(r.inRoom, 2, 'the Teleport Room after');
+        same(r.fourth.join(), 'crystal_chamber,crystal_chamber', 'the 4th and 5th');
     });
 
     group('WHO MAKES ROOM (a recruit or an egg with the squad full)');
@@ -92,6 +94,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             fs[6].evolved = undefined; partyVacancy = () => null; partyPost(fs[5], 'arena', true); partyArenaOverflow(); o.exiled = [fs[6].exiled === true, partyRoomCount('arena')]; o.said2 = floatingTexts.map(t => t.text).join('|'); partyVacancy = __keepVac; return o; })()`);
         same(r.six, 6, 'six'); ok(r.moved && r.moved !== 'arena', 'the weakest (level 6, power 5) did not move: ' + r.moved); same(r.arena, 6, 'the arena after'); ok(/THE ARENA IS FULL · .* MOVES TO THE /.test(r.said), 'said ' + r.said);
         same(r.exiled.join(), 'true,6', 'with no room: the weakest (not evolved) is exiled'); ok(/THE ARENA IS FULL · .* IS EXILED/.test(r.said2), 'said ' + r.said2);
+    });
+    check('THE ANT NEST AND EACH DOMAIN ARE ONE PLACE TO HOLD (build 2026-11-12o; the owner: "one checkpoint per domain and the nest", "The whole Nest is one", "2, like most rooms"): HOLD in any of the Nest\'s caves holds the Ant Nest, two at most across all of them, a third is refused and said; one holding it walks its round through more than one cave and fights a creature in another cave; the electrical domain is one place too; the facility\'s rooms are their own', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; const a = __cell('nest_brood'), b = __cell('nest_stream'), c = __cell('nest_larder');
+            [a, b, c].forEach((p, i) => { fs[i].x = p[0]; fs[i].y = p[1]; }); floatingTexts.length = 0;
+            ccApplyStance(fs, 'hold'); o.posts = fs.map(f => f.post || '-').join(); o.said = floatingTexts.map(t => t.text).join('|'); o.count = partyRoomCount('nest_t1'); o.cap = partyRoomCap('nest_deep'); o.name = partyRoomName(fs[0].post);
+            const ids = _fp.F.rooms.map(q => q.id).filter(id => /^nest_/.test(id)); o.cells = [ids.length, partyRoomCells('nest').length === ids.reduce((n, id) => n + partyRoomCells(id).length, 0)];
+            const f = fs[0], seen = new Set(); for (let i = 0; i < 80; i++) { const s = partyPickStop(f); if (!s) break; f.x = s.x; f.y = s.y; seen.add(partyRoomAt(s.x, s.y)); } o.roams = seen.size;
+            // a creature in the next cave: a pair of floor cells in two of the Nest's rooms, close together
+            let best = null; const A = partyRoomCells('nest_area'), T = partyRoomCells('nest_t1'); for (const p of A) for (const q of T) { const d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (d > 1.5 && (!best || d < best.d)) best = { p, q, d }; }
+            o.pair = best ? Math.round(best.d * 10) / 10 : null;
+            if (best) { f.x = best.p[0]; f.y = best.p[1]; f.health = f.maxHealth = 1e6; const ant = spawnCreature({ species: 'ant', className: 'worker', x: best.q[0], y: best.q[1], level: 1 }); ant.x = best.q[0]; ant.y = best.q[1]; ant.update = () => {}; ant.provoked = true; ant.state = 'hunt'; ant.spawnProtection = 0;
+                for (let i = 0; i < 6; i++) render(); o.fights = [partyRoomAt(f.x, f.y) !== partyRoomAt(ant.x, ant.y), f._nearestEnemy === ant]; ant.dead = true; actors = actors.filter(x => x !== ant); }
+            o.elec = [partyPlaceOf('elec_servers'), partyPlaceOf('elec_circuitry'), partyRoomName('electrical'), partyRoomCap('elec_servers'), partyPlaceOf('arena'), partyPlaceOf('sewers'), partyPlaceOf('crystal_chamber')].join();
+            return o; })()`);
+        same(r.posts, 'nest,nest,-', 'two hold the Ant Nest, the third keeps following'); ok(/THE ANT NEST IS FULL · 2 OF 2/.test(r.said), 'said ' + r.said); same(r.count, 2, 'counted as one place'); same(r.cap, 2, 'its cap'); same(r.name, 'Ant Nest', 'its name');
+        ok(r.cells[0] >= 10 && r.cells[1], 'its floor is all its rooms\': ' + r.cells);
+        ok(r.roams >= 3, 'its round stayed in ' + r.roams + ' room(s) of the Nest'); ok(r.pair !== null && r.pair < 6, 'no two caves close together: ' + r.pair); same(r.fights.join(), 'true,true', 'it did not see the creature in the next cave');
+        same(r.elec, 'electrical,electrical,Electrical Domain,2,arena,sewers,crystal_chamber', 'the electrical domain one place; the facility\'s rooms their own');
     });
     check('the catwalks hold two too: the launcher will not send a third up', () => {
         const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.why = techSiteLaunch(s, fs[2]).why; techLaunchersApply([]); return o; })()`);

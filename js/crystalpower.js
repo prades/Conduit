@@ -8,7 +8,10 @@
 //   THE CHARGE        crystal.health / crystal.maxHealth (js/facilityplay.js makes the Crystal; js/facilitysave.js keeps its health).
 //   A DRAW            a turret's shot (js/stations.js facilitySentryTick), a follower's return from the respawn queue and yours from the third hit (js/game.js) each take CRYSTAL_POWER.cost[kind] of its full
 //                     charge, while it is ABOVE the reserve; at or below it they are not paid: the turrets go quiet, a follower waits at the Crystal, and your third hit ends the run. Only an ant's bite takes it
-//                     lower. (A draw is allowed while above the reserve even when it ends a little under it: the costs are small.)
+//                     lower. (A draw is allowed while above the reserve even when it ends under it.)
+//   A FALLEN FOLLOWER (build 2026-11-12o; the owner, 2026-11-12: "I want to make the game have a little bit more risk ... The crystal loses 5 to 10 HP or percent HP, depending on how much energy the follower had",
+//                     then "Keep the 10% floor"): its return costs CRYSTAL_POWER.fallen, 5% of the full charge with no energy card in its slots to 10% with three (crystalFallenCost). The agent's reading,
+//                     provisional: percent (5 to 10 of its 300 would be less than the 3% it was) and the cards it held, in a straight line. A clone's return is still cost.follower.
 //   IDLE REFILL       with no alarm up, no ant raid on (js/antraids.js) and nothing drawn for CRYSTAL_POWER.refill.idleAfter frames it refills whole in refill.fullFrames (it was CRYSTAL_REGEN, 0.01 a frame while no alarm was up).
 //   THE CHARGE AT ◆50 a tap on the network meter (js/facilitynet.js, js/input.js): CRYSTAL_POWER.charge.price shards for charge.amount of the full charge, up to the full.
 //   THE TUTORIAL      while it runs (until _fp.tut.script.doneAt) nothing is paid from the Crystal: its assault keeps its own mercy (js/tutorial.js) and a knock-back there is never a loss.
@@ -18,6 +21,7 @@ const CRYSTAL_POWER = {
     cost: { shot: 0.001, follower: 0.03, player: 0.05 },     // the owner: "Light": a turret's shot 0.1%, a follower's revival 3%, yours 5%
     refill: { fullFrames: 18000, idleAfter: 180 },            // the owner: "Full in ~5 minutes" when idle; idle: no alarm up and nothing drawn for 3 s (PROVISIONAL)
     charge: { price: 50, amount: 0.75 },                      // the owner: "charged up 75% by a 50 shard cost"
+    fallen: [0.05, 0.10],                                     // a fallen follower's return: no energy card, three (the owner, 2026-11-12: "5 to 10 ... depending on how much energy the follower had")
 };
 let _crystalDrawnAt = -1e9;   // the frame of the last draw (for the idle refill)
 
@@ -29,14 +33,19 @@ function crystalPowerOn() { const S = typeof _fp !== "undefined" && _fp && _fp.t
 function crystalCharge() { return typeof crystal !== "undefined" && crystal && crystal.maxHealth ? Math.max(0, Math.min(1, crystal.health / crystal.maxHealth)) : 0; }
 // may it pay for something now? (above the reserve)
 function crystalCanDraw() { return crystalCharge() > CRYSTAL_POWER.reserve + 1e-9; }
-// pay for a use (kind: "shot", "follower", "player"): true when paid (or free: the tutorial), false when it is at or below the reserve
-function crystalDraw(kind) {
+// pay for a use (kind: "shot", "follower", "player"; `amount`: a share of the full charge in its place, a fallen follower's): true when paid (or free: the tutorial), false when it is at or below the reserve
+function crystalDraw(kind, amount) {
     if (!crystalPowerOn()) return true;
     if (!crystalCanDraw()) return false;
-    const c = CRYSTAL_POWER.cost[kind] || 0;
+    const c = Number.isFinite(amount) ? amount : CRYSTAL_POWER.cost[kind] || 0;
     crystal.health = Math.max(0, crystal.health - c * crystal.maxHealth);
     _crystalDrawnAt = _cpFrame();
     return true;
+}
+// what a fallen follower's return costs, from its record (js/game.js: the respawn queue's entry): its energy cards (js/energy.js energyRecord), 0 to 3, from fallen[0] to fallen[1]
+function crystalFallenCost(rec) {
+    const n = rec && Array.isArray(rec.energy) ? rec.energy.filter(Boolean).length : 0, [lo, hi] = CRYSTAL_POWER.fallen;
+    return lo + (hi - lo) * Math.min(1, n / 3);
 }
 // THE IDLE REFILL (js/game.js, each frame): no alarm up and nothing drawn for a while
 function crystalRefillTick() {

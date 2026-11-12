@@ -95,7 +95,7 @@ const menu = HTML.slice(HTML.indexOf('<div id="controlsMenu">'), HTML.indexOf('<
     await check('stale entries are gone: nothing of the strip game is described (pylons, zones, waves, nests, build mode, the work crew)', () => {
         ok(!/Ghostphage/.test(menu), 'the Ghostphage build is still listed');
         ok(!/Elite Vanguard|Apex Unit|Strike Force/.test(menu), 'the zone-control armaments are still listed');
-        const text = menu.replace(/<[^>]+>/g, ' ');
+        const text = menu.replace(/<[^>]+>/g, ' ').replace(/\bAnt Nest\b/g, ' ');   // (the Ant Nest, the place under the arena since build 2026-11-07ll, is not the strip game's nests)
         for (const w of [/\bpylons?\b/i, /\bzones?\b/i, /\bwaves?\b/i, /\bnests?\b/i, /build mode/i, /work crew/i, /\bsieges?\b/i, /shield cells?/i, /\bMK II\b/]) ok(!w.test(text), 'the index still mentions ' + w);
     });
     await check('the element cards give each element\'s matchups (as the game plays them) and its squad\'s attacks', () => {

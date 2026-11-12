@@ -8,7 +8,9 @@
 //   A POST         f.post = a room's id. A posted follower stays in its room: it walks a slow round of the room's floor, resting at each stop, and fights what is in the room (js/npc.js); it does not follow you, does not come through a
 //                  doorway after you, and does not count against the squad, so the squad has room for someone new. HOLD (the battle tool, the roster's stance) posts each unit it is given in the room THAT UNIT is in; COME (or FOLLOW
 //                  ME in the roster) calls them back: each leaves its post and joins the squad if it has room (the rest stay posted: SQUAD FULL).
-//   A NEW FOLLOWER one that is found, recruited, made again or back from the dead joins the squad if there is room; if there is none it is posted where it is (the Crystal Chamber for a recruit, the pad's room for an egg): it does not follow.
+//   A NEW FOLLOWER one that is found, recruited or made again joins the squad if there is room; if there is none it is posted where it is (the Crystal Chamber for a recruit, the pad's room for an egg): it does not follow.
+//   THE FALLEN     one back from the dead waits at the Crystal, holding the Crystal Chamber, until you come there (build 2026-11-12o: partyFallenBack, below).
+//   THE PLACES     outside the facility each domain and the Ant Nest is ONE place to hold, not a room each (build 2026-11-12o: PARTY_PLACES, below); f.post is that place's id.
 //   THE ROSTER     each follower's card says what room it holds (js/commandcenter.js, js/status.js).
 const PARTY = { max: 3, patrol: 0.55, rest: [70, 200], hop: [2.5, 9], engage: 9, exileArm: 4000 };   // exileArm: ms an EXILE button stays armed for its second tap   // patrol: how fast it walks the round, a share of its speed; rest: frames it stands at a stop; hop: how far the next stop is (tiles); engage: how far from its room's edge a creature is still its business
 function partyOn() { return typeof facilityPlay !== "undefined" && !!facilityPlay && !(typeof attractOn === "function" && attractOn()); }
@@ -24,11 +26,22 @@ function partyRoomOf(f) {
     if (!id && typeof _fp !== "undefined" && _fp && _fp.cellsP) { const c = _fpNearestCell(f.x, f.y); if (c) id = partyRoomAt(c[0], c[1]); }
     return id || (typeof crystal !== "undefined" && crystal ? partyRoomAt(crystal.x, crystal.y) : null);
 }
-function partyRoomName(id) { return typeof facilityRoomName === "function" ? facilityRoomName(id) : String(id || "").replace(/_/g, " "); }
-// the floor cells of a room (the planning copy's: clear of the walls), made once
+// THE PLACES TO HOLD OUTSIDE THE FACILITY (build 2026-11-12o; the owner, 2026-11-12: "one checkpoint per domain and the nest", "checkpoint is just another place where you can have followers hold it that aren't a part
+// of your squad so like if you take the nest, you can just have followers down there roaming even though they'll die typically if they're not strong enough"; then "The whole Nest is one", "2, like most rooms"): each domain
+// and the Ant Nest is one place, its rooms together. A follower posted there holds all of it: it roams every room of it (partyPickStop) and fights what it meets in any (js/npc.js), and the place's count and cap are
+// one (two). The electrical domain is one now; the volcanic layer and the crystalline area will be one each when they are built.
+const PARTY_PLACES = [{ id: "nest", name: "Ant Nest", match: /^nest_/ }, { id: "electrical", name: "Electrical Domain", match: /^elec_/ }];
+function partyPlaceDef(id) { for (const p of PARTY_PLACES) if (p.id === id) return p; return null; }
+// the place a room belongs to: its domain's or the Nest's, else the room itself
+function partyPlaceOf(room) { if (!room) return room; for (const p of PARTY_PLACES) if (p.match.test(room)) return p.id; return room; }
+function partyRoomName(id) { const pl = partyPlaceDef(id); if (pl) return pl.name; return typeof facilityRoomName === "function" ? facilityRoomName(id) : String(id || "").replace(/_/g, " "); }
+// the floor cells of a room, or of a place (all its rooms'), (the planning copy's: clear of the walls), made once
 function partyRoomCells(id) {
     if (typeof _fp === "undefined" || !_fp || !_fp.cellsP) return [];
-    if (!_fp.roomCells) { _fp.roomCells = new Map(); for (const c of _fp.cellsP.values()) { const rid = partyRoomAt(c[0], c[1]); if (!rid) continue; if (!_fp.roomCells.has(rid)) _fp.roomCells.set(rid, []); _fp.roomCells.get(rid).push(c); } }
+    if (!_fp.roomCells) {
+        _fp.roomCells = new Map(); const add = (k, c) => { if (!_fp.roomCells.has(k)) _fp.roomCells.set(k, []); _fp.roomCells.get(k).push(c); };
+        for (const c of _fp.cellsP.values()) { const rid = partyRoomAt(c[0], c[1]); if (!rid) continue; add(rid, c); const pid = partyPlaceOf(rid); if (pid !== rid) add(pid, c); }
+    }
     return _fp.roomCells.get(id) || [];
 }
 
@@ -36,11 +49,11 @@ function partyRoomCells(id) {
 // ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots", then the Main Hallway and the Arena are "automatically
 // a level 2 just because of the amount of space in these areas", and every other room is Category 1. A room's count is the followers holding it (posted), the ones on their way back from the dead included (they keep their place); the
 // squad is not counted. Every way of posting a follower goes through partyPlace: the room it means if that room has a place, else the nearest room with one that it can walk to. The arena takes one more and moves its weakest out.
-const PARTY_ROOM_CAP = { lab_hallway: 3, arena: 6 }, PARTY_ROOM_CAP_ELSE = 2;
-function partyRoomCap(id) { return PARTY_ROOM_CAP[id] || PARTY_ROOM_CAP_ELSE; }
+// THE CRYSTAL CHAMBER has no cap (build 2026-11-12o; the owner, 2026-11-12: "the crystal chamber, which has no limit now"): the fallen wait there. A place (the Nest, a domain) has one cap for all its rooms.
+const PARTY_ROOM_CAP = { lab_hallway: 3, arena: 6, crystal_chamber: Infinity }, PARTY_ROOM_CAP_ELSE = 2;
+function partyRoomCap(id) { return PARTY_ROOM_CAP[partyPlaceOf(id)] || PARTY_ROOM_CAP_ELSE; }
 function partyRoomCount(id, except) {
-    let n = 0; for (const f of partyPosted()) if (f.post === id && f !== except) n++;
-    if (typeof respawnQueue !== "undefined") for (const e of respawnQueue) if (e && !e.isClone && e.post === id) n++;   // (one on its way back from the dead keeps its place)
+    const p = partyPlaceOf(id); let n = 0; for (const f of partyPosted()) if (f.post === p && f !== except) n++;   // (one on its way back from the dead has let its place go since build 2026-11-12o)
     return n;
 }
 function partyRoomFree(id, except) { return !!id && partyRoomCount(id, except) < partyRoomCap(id); }
@@ -49,7 +62,7 @@ function partyVacancy(x, y, except, not) {
     if (typeof _fp === "undefined" || !_fp || !_fp.F) return null;
     const comp = typeof _pComp === "function" ? _pComp(x, y) : undefined; let best = null, bd = Infinity;
     for (const r of _fp.F.rooms) {
-        if (r.id === not || !partyRoomFree(r.id, except)) continue;
+        if ((not && partyPlaceOf(r.id) === partyPlaceOf(not)) || !partyRoomFree(r.id, except)) continue;
         let d = Infinity; for (const c of partyRoomCells(r.id)) { if (comp !== undefined && _pComp(c[0], c[1]) !== comp) continue; const q = (c[0] - x) ** 2 + (c[1] - y) ** 2; if (q < d) d = q; }
         if (d < bd) { bd = d; best = r.id; }
     }
@@ -149,7 +162,7 @@ function partyAdmit(f) { if (partyOn() && f) partySync(true); }
 // `quiet`: no message (the caller says it)
 function partyPost(f, room, quiet) {
     if (!f || f.dead || f.isClone || !f.isFollower) return false;
-    room = room || partyRoomOf(f); if (!room) return false;
+    room = partyPlaceOf(room || partyRoomOf(f)); if (!room) return false;   // (a room of the Nest or a domain: that place)
     f.post = room; f.postAt = typeof frame !== "undefined" ? frame : 0; f.stance = "hold"; f.job = null; f.attackOrder = null; f._patrol = null; f._nearestEnemy = null; f._enemyCacheFrame = 0; f.partySlot = undefined; f._fpPath = null;
     if (!quiet) _partySay("HOLDING · " + partyRoomName(room).toUpperCase(), "#8fe3ff");
     return true;
@@ -158,6 +171,7 @@ function partyPost(f, room, quiet) {
 function partyCall(f, quiet) {
     if (!f || f.dead || f.isClone) return false;
     if (!f.post) return true;
+    if (f.fell && !partyAtCrystal()) { if (!quiet) _partySay(_partyName(f) + " WAITS AT THE CRYSTAL · GO BACK FOR IT", "#ff8a6a", true); return false; }   // (fallen: only you, at the Crystal, take it back: build 2026-11-12o)
     if (partyFull(f)) { if (!quiet) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max, "#ff8a6a"); return false; }
     f.post = null; f.stance = "follow"; f.job = null; f._patrol = null; f._fpPath = null; f._nearestEnemy = null; f._enemyCacheFrame = 0; partySync(false);
     return true;
@@ -168,14 +182,15 @@ function partyCall(f, quiet) {
 // the pool unless they were selected), and nothing said so; now COME with nobody selected reaches them too (js/mixtool.js mixToolComePool), the one held last first, and it says who came back, or why one did not (SQUAD FULL). COME also ends an
 // attack order (the enemy card's). The followers HOLD posts leave the selection (they have left the squad bar: a selection nobody can see steers the next orders; see _partyDone).
 function partyApplyStance(units, stance) {
-    let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], full = [], nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
+    let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], full = [], waiting = [], nm = _partyName;
     for (const a of units) {
         if (!a || a.dead) continue;
         if (a.isClone || !a.isFollower) { clones.push(a); continue; }
-        if (stance === "hold") { const room = partyRoomOf(a); if (!room) continue; if (room !== "arena" && !partyRoomFree(room, a)) { full.push(room); continue; } if (partyPlace(a, room, true)) { n++; rooms.add(a.post); posted.push(a); } }   // (a full room takes nobody else: the arena takes one more and moves its weakest out)
+        if (stance === "hold") { const room = partyRoomOf(a); if (!room) continue; if (room !== "arena" && !partyRoomFree(room, a)) { full.push(partyPlaceOf(room)); continue; } if (partyPlace(a, room, true)) { n++; rooms.add(a.post); posted.push(a); } }   // (a full room takes nobody else: the arena takes one more and moves its weakest out)
         else if (stance === "follow") {
             a.attackOrder = null; a._shieldHold = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order, and a core technician's hold behind its shield: js/techabilities.js)
             const was = !!a.post;
+            if (a.fell && !partyAtCrystal()) { waiting.push(a); continue; }   // (fallen: it waits at the Crystal for you, build 2026-11-12o)
             if (partyCall(a, true)) { n++; if (was) called.push(a); } else kept.push(a);
         }
     }
@@ -187,6 +202,7 @@ function partyApplyStance(units, stance) {
         if (kept.length) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max + " · " + who(kept) + (kept.length === 1 ? " KEEPS" : " KEEP") + " HOLDING" + (called.length ? " · " + who(called) + " CAME" : ""), "#ff8a6a", true);
         else if (called.length) _partySay("COME · " + who(called) + (called.length === 1 ? " IS" : " ARE") + " BACK IN THE SQUAD", "#19e6c1", true);
         else if (n) _partySay("COME · " + n + " IN THE SQUAD", "#19e6c1");
+        if (waiting.length) _partySay((waiting.length === 1 ? nm(waiting[0]) + " WAITS" : waiting.length + " WAIT") + " AT THE CRYSTAL · GO BACK FOR " + (waiting.length === 1 ? "IT" : "THEM"), "#ff8a6a", true);
     }
     if (typeof partyBarRender === "function") partyBarRender(true);   // (the cards follow the order at once, not at the next tick)
     return n;
@@ -199,14 +215,15 @@ function partyPlacePosted() {
 
 // ── the round of a posted follower (js/npc.js calls it when there is nothing in the room to fight) ──
 function partyPickStop(a) {
-    const cells = partyRoomCells(a.post); if (!cells.length) return null;
+    let cells = partyRoomCells(a.post); if (!cells.length) return null;
+    if (partyPlaceDef(a.post) && typeof _pComp === "function") { const k = _pComp(a.x, a.y), mine = cells.filter(c => _pComp(c[0], c[1]) === k); if (mine.length) cells = mine; }   // (a place of several rooms: the floor it can walk to, not a shelf it cannot climb to)
     const near = cells.filter(c => { const d = Math.hypot(c[0] - a.x, c[1] - a.y); return d >= PARTY.hop[0] && d <= PARTY.hop[1]; }), pool = near.length ? near : cells, c = pool[Math.floor(Math.random() * pool.length)];
     return { x: c[0], y: c[1], wait: 0, age: 0 };
 }
 function partyPatrol(a) {
     if (!a.post) return;
-    const here = partyRoomAt(a.x, a.y);
-    if (here !== a.post) {   // not in its room (it was put somewhere else, pushed out, or has come back from the dead): back to it, round the walls
+    const here = partyPlaceOf(partyRoomAt(a.x, a.y));
+    if (here !== a.post) {   // not in its room (or its place: the Nest, a domain) (it was put somewhere else, pushed out, or has come back from the dead): back to it, round the walls
         const cells = partyRoomCells(a.post); if (!cells.length) return;
         if (!a._patrol || a._patrol.back !== true) { let best = null, bd = 1e9; for (const c of cells) { const d = (c[0] - a.x) ** 2 + (c[1] - a.y) ** 2; if (d < bd) { bd = d; best = c; } } a._patrol = { x: best[0], y: best[1], wait: 0, age: 0, back: true }; }
         const dx = a._patrol.x - a.x, dy = a._patrol.y - a.y, d = Math.hypot(dx, dy); if (d > 0.3) _walkStep(a, dx, dy, d); else a._patrol = null;
@@ -415,7 +432,37 @@ function partyBoxRender() {
     partySlotsUpdate(_sbxEls, typeof ccCarousel === "function" && ccCarousel() && typeof ccFocusUnit === "function" ? (f => f === ccFocusUnit()) : null);
 }
 // each few frames (js/game.js render): the squad is kept to three, the arena to its six, and the bar follows
-function partyTick() { partySync(false); if (partyOn()) partyArenaOverflow(); partyBarRender(false); }
+function partyTick() { partySync(false); if (partyOn()) { partyArenaOverflow(); partyFallenTick(); } partyBarRender(false); }
+
+// ── THE FALLEN (build 2026-11-12o; the owner, 2026-11-12: "whenever a follower dies, whether it's in the squad or whether it's holding an area in the facility or otherwise, it's returned to the crystal ... When a
+// follower is respawned at the crystal, it stays at the crystal. When the player returns to the crystal, they may join the squad automatically and they may continue on from there, but the other followers who were not
+// in the squad must stay in the ... crystal chamber"; then, asked, COME does not reach them: "No: walk back to the Crystal") ──
+// A follower back from the dead (js/game.js, the respawn queue) holds the Crystal Chamber and is marked `fell`: "squad" (it fell from the squad) or "held" (it fell holding a place, or anywhere else). Nothing calls it from
+// afar while it is marked: not COME, not the roster's ADD TO SQUAD or a swap (partyCall, partyApplyStance, partyAdd, partySwap). When you come into the Crystal Chamber the mark is lifted: the ones that fell from the
+// squad rejoin it while it has room; the rest hold the Crystal Chamber as any follower holds a room. The mark is saved (js/facilitysave.js).
+function _partyName(f) { return typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"; }
+function partyCrystalRoom() { return typeof crystal !== "undefined" && crystal ? partyRoomAt(crystal.x, crystal.y) || "crystal_chamber" : "crystal_chamber"; }
+function partyAtCrystal() { return typeof player !== "undefined" && !!player && partyRoomAt(player.x, player.y) === partyCrystalRoom(); }
+// the respawn queue's follower is in the world: it waits at the Crystal. False outside the facility (the squad takes it as before).
+function partyFallenBack(f, entry) {
+    if (!partyOn() || !f || f.isClone || !f.isFollower) return false;
+    f.post = partyCrystalRoom(); f.postAt = typeof frame !== "undefined" ? frame : 0; f.stance = "hold"; f.partySlot = undefined; f.job = null; f._patrol = null; f._fpPath = null;
+    f.fell = entry && entry.fell === "squad" ? "squad" : "held";
+    const paid = entry && entry.paid > 0 ? Math.round(entry.paid * 100) : 0;
+    _partySay(_partyName(f) + " IS BACK AT THE CRYSTAL" + (paid ? " · CRYSTAL \u2212" + paid + "%" : ""), "#ffb36b", true);
+    return true;
+}
+// each tick: you are in the Crystal Chamber, so the fallen are yours to take again
+function partyFallenTick() {
+    if (typeof followers === "undefined" || !partyAtCrystal()) return;
+    let back = null;
+    for (const f of followers) {
+        if (!_partyFollower(f) || !f.fell) continue;
+        const was = f.fell; f.fell = null;
+        if (was === "squad" && partyCall(f, true)) (back || (back = [])).push(f);
+    }
+    if (back) { _partySay((back.length === 1 ? _partyName(back[0]) + " REJOINS" : back.length + " REJOIN") + " THE SQUAD", "#19e6c1", true); partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true); }
+}
 
 // ── THE SQUAD IS FULL: WHO MAKES ROOM (the Level 1 update) ──
 // ASKED: "When recruiting a follower requires replacing an existing follower, let the player select which follower to replace", then the one replaced "has option to go to a vacancy in the rooms but if not confirm retirement".
@@ -479,9 +526,10 @@ function _partyFollower(f) { return !!f && !f.dead && f.isFollower === true && !
 function _partyDone(list) { if (typeof selectedUnits !== "undefined") for (const f of list) selectedUnits.delete(f); }
 function partyAdd(units) {
     const list = (units || []).filter(f => _partyFollower(f) && !partyIsMember(f)); if (!list.length) return 0;
-    let n = 0, refused = 0; const joined = []; for (const f of list) { if (partyCall(f, true)) { n++; joined.push(f); } else refused++; } _partyDone(joined);
+    let n = 0, refused = 0; const joined = [], waiting = []; for (const f of list) { if (f.fell && !partyAtCrystal()) { waiting.push(f); continue; } if (partyCall(f, true)) { n++; joined.push(f); } else refused++; } _partyDone(joined);
     if (n) _partySay("ADDED TO THE SQUAD · " + partyMembers().length + " OF " + PARTY.max, "#19e6c1");
     if (refused) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max, "#ff8a6a");
+    if (waiting.length) _partySay((waiting.length === 1 ? _partyName(waiting[0]) + " WAITS" : waiting.length + " WAIT") + " AT THE CRYSTAL · GO BACK FOR " + (waiting.length === 1 ? "IT" : "THEM"), "#ff8a6a", true);   // (fallen: build 2026-11-12o)
     partyBarRender(true); return n;
 }
 function partyRemove(units) {
@@ -494,6 +542,7 @@ function partyRemove(units) {
 // `out` is in the squad and goes to hold the room it is in; `inn` holds a room and takes its card
 function partySwap(out, inn) {
     if (!partyIsMember(out) || !_partyFollower(inn) || partyIsMember(inn)) return false;
+    if (inn.fell && !partyAtCrystal()) { _partySay(_partyName(inn) + " WAITS AT THE CRYSTAL · GO BACK FOR IT", "#ff8a6a", true); return false; }   // (fallen: build 2026-11-12o)
     const mine = partyRoomOf(out), theirs = inn.post, to = partyRoomFree(mine, out) || mine === "arena" ? mine : theirs && partyRoomCount(theirs, inn) < partyRoomCap(theirs) ? theirs : partyVacancy(out.x, out.y, out, null);   // (its own room, else the one the follower coming in leaves, else the nearest with a place)
     if (!to || !partyPost(out, to, true)) return false;
     if (!partyCall(inn, true)) { out.post = null; out.stance = "follow"; out._patrol = null; partySync(false); return false; }   // (cannot happen: a slot has just been freed)

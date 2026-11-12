@@ -4,6 +4,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12o` · branch `claude/start-game-project-HSh7Z` · more risk: the fallen wait at the Crystal; the Nest and each domain one place to hold
+- **A fallen follower costs the Crystal more** (the owner: "I want to make the game have a little bit more risk ... The crystal loses 5 to 10 HP or percent HP, depending on how much energy the follower had"). Its return now costs 5% of the Crystal's power with no energy card in its slots, up to 10% with three (it was 3%). A clone's return is still 3%.
+- **The 10% floor is kept** (the owner's choice): at or below it, a fallen follower waits at the Crystal until it refills, so follower deaths alone never end a run. A draw above the floor is paid even when it ends under it.
+- **It waits at the Crystal** (the owner: "When a follower is respawned at the crystal, it stays at the crystal"). One that fell from the squad or holding a place comes back holding the Crystal Chamber; the place it held is let go at once. COME, ADD TO SQUAD and a swap can't call it from afar (the owner's choice: "walk back to the Crystal"); they say "WAITS AT THE CRYSTAL · GO BACK FOR IT". Its card says WAITING.
+- **When you come into the Crystal Chamber**, the ones that fell from the squad rejoin it while it has room ("they may join the squad automatically"); the rest hold the Crystal Chamber. It says who rejoined. On its return it says "NAME IS BACK AT THE CRYSTAL · CRYSTAL −N%".
+- **The Crystal Chamber holds any number** ("which has no limit now"). The other rooms keep their caps.
+- **The Ant Nest is one place to hold** (the owner: a checkpoint "is just another place where you can have followers hold it that aren't a part of your squad"; "The whole Nest is one"; "2, like most rooms"). HOLD anywhere in it holds the Ant Nest, two at most across all its caves and tunnels; they roam all of it they can walk to and fight what they meet in any cave. **The electrical domain** is one place the same way (one per domain).
+- Saves keep the waiting mark; a follower saved holding one of the Nest's or the domain's rooms loads holding the place.
+- The agent's, provisional: percent (5 to 10 HP of the Crystal's 300 would have been less than the old 3%); the cost by the energy cards in a straight line; "returns to the crystal" read as coming into the Crystal Chamber; the place names.
+- Tests: `tests/party.js` (the fallen: the place let go, back waiting, COME and ADD refused and said, the rejoin, saved and loaded), `tests/rooms.js` (the Crystal Chamber with no cap, the Nest and the electrical domain one place, its round and its fights across caves; the full-room checks moved to a Teleport Room), `tests/antraids.js` (the costs).
+- Lettered 12o: another session pushed build 12n (the energy cards' 3D gems, below) to this branch first; this build was put on top of it.
+
 ### Build `2026-11-12n` · branch `claude/start-game-project-HSh7Z` · per-element 3D gems on energy cards
 - **The owner**, after a walk through per-element mock-ups one at a time: locked each gem and said "push" (`docs/ENERGY-CARDS.md` §9; the mock-ups were in the session's scratchpad, not in the repository).
 - **The card's old plasma background is replaced by a per-element 3D gem.** Each energy card picks up an `el-<element>` class on `.cd-card.en`, and its `.cd-en` layer is filled with the right gem by `energyGemInit` (js/energygem.js), replacing the three `<b>` blobs that moved on `cdEnA` (build `2026-11-09nn`).
@@ -17,6 +29,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **The 3D animations** (fire/ice/electric/core/BLOOM) are CSS keyframes defined in game.html under *AN ENERGY CARD'S 3D GEM*. **Flux and toxic** compute their faces each frame through a single rAF loop in `js/energygem.js` (`_ENERGY_GEM_FX`, `_energyGemFxLoop`), which registers each gem as its SVG lands in the DOM and lets it go when it is removed. Reduced motion holds every gem still; a pack's reveal pauses cards outside the overlay (the same `#cardsRoot:has(.cr-overlay)` rule the plasma used, now targeted at the gem SVG), and the rAF loop checks the same overlay for the per-frame ones.
 - Files: `js/energygem.js` (new), `js/cardsui.js` (`_cdSlab`'s ENERGY branch), `game.html` (the CSS block, the script tag after `js/energy.js`, the boot probe for `ENERGY_GEM_SVG`); build stamp bumped on `game.html`, `js/config.js` and `bible.html`. Tests: `tests/cardart.js` (the ENERGY GEM check replaces the plasma one). Docs: `ENERGY-CARDS.md` §9 (the new gem described, the plasma kept as history), `CHANGELOG.md` (this entry).
 - Not playtested. The rAF loop is budget-cheap (two faces of six for flux, eight circles for toxic), but was not measured on an iPad.
+
 ### Build `2026-11-12m` · branch `claude/start-game-project-HSh7Z` · main's Hornshell build and this branch's command card together
 - While this branch made build 12l (the command card), main took the Hornshell's ECHO PULSE pull and its goo-ring shot, lettered 12k and 12l on their own branch (its entry below).
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12m, a letter new to both.

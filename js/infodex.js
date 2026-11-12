@@ -56,7 +56,7 @@ function infoEntries() {
         [["WITH YOU", party.max + " at once"], ["HOLD", "patrols its room until called"], ["COME", "back to the squad, if there is room"], ["RUN", "breaks off for 6 s"]]);
     add("recruit", "allies", "THE CRYSTAL'S RECRUITS", "#19e6c1", "A new follower for shards",
         ["The roster's + RECRUIT (open ROSTER: the long card at the bottom left) buys a follower at the Crystal for " + recruitCost + " ◆. What comes out is a draw: a BRAWLER, a MAGE or a TECHNICIAN, of one of the six elements, with a personality to match its type. You do not choose it, and cannot change it afterwards: you level it and evolve it.",
-         "A follower that falls comes back at the Crystal after a while, as it was, and rejoins the squad if there is room; if there is none it holds the Crystal Chamber."],
+         "A follower that falls comes back at the Crystal after a while, as it was. The Crystal pays for it: 5% of its power, up to 10% for one with three energy cards. It waits there: come back to the Crystal Chamber and the ones from your squad rejoin it, and the rest hold the Crystal Chamber, which takes any number. Nothing calls it from afar."],
         [["PRICE", recruitCost + " ◆", UI_GOLD], ["TYPE", "brawler, mage or technician"], ["ELEMENT", "one of the six"]]);
     add("eggs", "allies", "EGGS ON THE PADS", "#c8d4f0", "Followers found around the facility",
         ["A pad on the floor in an element's colour holds a grey egg, with a label over it saying what hatches: its type and its element, fixed. Walk up to it and it hatches there and then and joins you (or holds the pad's room, if the squad is full).",

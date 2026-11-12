@@ -34,6 +34,7 @@ Status: **Implemented and tested** (not playtested): step A in build `2026-11-07
 3. ~~**The console's tools**: a boss reset, the test squad builder and a damage meter.~~ **Removed** 2026-11-12 (build `2026-11-12d`): "Deep Brood, console gone".
 4. ~~**The test squad** is temporary: it exists only in the Nest, is never saved, and leaves when you leave; your own squad is kept as it was.~~ **Removed** with the console.
 5. **THE ANT QUEEN lives in the Deep Brood** (2026-11-12, build `2026-11-12d`), deeper in the Nest than the first cavern.
+6. **The whole Nest is one place to hold** (2026-11-12, build `2026-11-12o`; the owner: "one checkpoint per domain and the nest", "if you take the nest, you can just have followers down there roaming even though they'll die typically if they're not strong enough"; then "The whole Nest is one", "2, like most rooms"): two followers at most across all its caves and tunnels; they roam all of it and fight what they meet, the queen's Deep Brood included. A fallen one comes back to the Crystal (`FACILITY.md`). "Maybe a few checkpoints in the nest later" (the owner): not decided.
 
 ## Chosen by the agent (provisional, the owner's to change)
 

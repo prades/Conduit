@@ -165,6 +165,7 @@ function followerRecord(a) {
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
+        fell: a.fell || undefined,             // fallen, waiting at the Crystal: "squad" or "held" (js/party.js, build 2026-11-12o)
         move: a.move || undefined,             // the signature move it was given (js/moves.js)
         alt: a.alt || undefined,               // the alternate it is locked to (js/moves.js; none: its normal attack)
         altBoth: a.altBoth || undefined,       // that alternate AND its normal attack, switching on their own (js/moves.js BOTH)
@@ -205,7 +206,8 @@ function followerBuild(entry) {
     // A DEATH NO LONGER COSTS HP (the owner, 2026-11-01): a follower saved with hp stat lost to earlier deaths gets it back, up to what it was born with (js/breeding.js followerHp0)
     let base = entry.base; if (base && Number.isFinite(base.hp) && typeof followerHp0 === "function") { const h0 = followerHp0(npc); if (base.hp < h0) base = Object.assign({}, base, { hp: h0 }); }
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base, level: entry.level, xp: entry.xp });
-    if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
+    if (entry.post) { npc.post = typeof partyPlaceOf === "function" ? partyPlaceOf(entry.post) : entry.post; npc.stance = "hold"; }   // (a Nest's or a domain's room saved before build 2026-11-12o: that place)
+    if (entry.fell) { npc.fell = entry.fell === "squad" ? "squad" : "held"; npc.post = typeof partyCrystalRoom === "function" ? partyCrystalRoom() : "crystal_chamber"; npc.stance = "hold"; }   // (fallen: it waits at the Crystal)
     return npc;
 }
 // ── THE CLONES' RECORD: each live clone (its kind and level), and each one waiting to come back (with the wait still to run); made again from it (js/clone.js makeClone) ──

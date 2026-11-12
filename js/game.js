@@ -812,7 +812,9 @@ function render() {
             // A DEATH COSTS IT NOTHING (the owner, 2026-11-01: "remove the feature [...] where the followers lose HP every time they get revived. They need to be revived with the same amount of HP"; and asked about
             // its XP: "Remove it"): it comes back with its HP stat and its XP as they were. (Each death took 1 off its HP stat, the BASE one, and at 0 it fell for good for an Ice Mage to preserve; and a quarter of
             // its progress toward the next level.) Its return is paid from the Crystal's power (js/crystalpower.js), in the queue below.
-            const keptHp = a.base?.hp ?? a.stats?.hp ?? 1;
+            // IT COMES BACK TO THE CRYSTAL AND WAITS THERE (build 2026-11-12o, js/party.js partyFallenBack): `fell` says whether it fell from the squad (it rejoins when you come to the Crystal) or holding a place
+            // (it stays in the Crystal Chamber); in the facility the place it held is let go at once (it kept it while it came back).
+            const keptHp = a.base?.hp ?? a.stats?.hp ?? 1, _inFacility = typeof partyOn === "function" && partyOn(), _fell = a.fell === "squad" || (a.isFollower === true && !a.isClone && !a.post && !a.returningToCrystal) ? "squad" : "held";   // (one that falls again while it waits keeps its mark)
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
@@ -823,7 +825,7 @@ function render() {
                 base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
                 level: a.level, xp: a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, move: a.move || undefined, alt: a.alt || undefined, altBoth: a.altBoth || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: !_inFacility && a.post || undefined, fell: !a.isClone && _inFacility ? _fell : undefined, playStyle: a.playStyle || undefined, move: a.move || undefined, alt: a.alt || undefined, altBoth: a.altBoth || undefined });
         }
         // A kill, once: XP to whoever killed it and those fighting near it (js/levels.js).
         // isEnemyUnit, NOT isHostileTarget: the latter refuses anything dead. What is being asked here is whose side the corpse was on.
@@ -1159,9 +1161,14 @@ function render() {
     // ── RESPAWN QUEUE ──
     for(let i=respawnQueue.length-1;i>=0;i--) {
         const entry=respawnQueue[i]; entry.timer--;
-        // ITS RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js: 3% of its charge); at or below the reserve it WAITS at the Crystal until there is power for it (the owner, 2026-11-01)
+        // ITS RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js): a follower's 5% to 10% of its charge by the energy cards it had (build 2026-11-12o, crystalFallenCost), a clone's 3%; at or below the reserve it
+        // WAITS until there is power for it (the owner, 2026-11-01; kept 2026-11-12: "Keep the 10% floor")
         // (CRYO GENETICIST, a Player card: a follower's return costs the Crystal nothing while it is awake, js/playercards.js playerReviveFree)
-        if (entry.timer <= 0 && typeof crystalDraw === "function") { if (!(!entry.isClone && typeof playerReviveFree === "function" && playerReviveFree()) && !crystalDraw("follower")) { entry.timer = 0; entry.waitPower = true; continue; } entry.waitPower = false; }
+        if (entry.timer <= 0 && typeof crystalDraw === "function") {
+            const free = !entry.isClone && typeof playerReviveFree === "function" && playerReviveFree(), cost = !entry.isClone && typeof crystalFallenCost === "function" ? crystalFallenCost(entry) : undefined;
+            if (!free && !crystalDraw("follower", cost)) { entry.timer = 0; entry.waitPower = true; continue; }
+            entry.waitPower = false; entry.paid = !free && typeof crystalPowerOn === "function" && crystalPowerOn() ? (Number.isFinite(cost) ? cost : CRYSTAL_POWER.cost.follower) : 0;
+        }
         if(entry.timer<=0){
             if (entry.isClone && entry.speciesName) {
                 // Respawn as clone: makeClone, so a respawned clone is the same thing the summon built.
@@ -1205,11 +1212,12 @@ function render() {
                 if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base carries it; nothing is added again
                 // Its level and its XP, all of them — js/levels.js.
                 if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
-                if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // a follower that held a room goes back to it (js/party.js)
+                if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // (outside the facility: a follower that held a room goes back to it)
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[npc.element]) followerByElement[npc.element]=[];
                 followerByElement[npc.element].push(npc);
-                if (typeof partyAdmit === "function") partyAdmit(npc);   // (the squad's slot may have been taken while it was gone: then it is posted where it stands)
+                // in the facility it waits at the Crystal (build 2026-11-12o, js/party.js partyFallenBack); else the squad takes it if it has room
+                if (!(typeof partyFallenBack === "function" && partyFallenBack(npc, entry)) && typeof partyAdmit === "function") partyAdmit(npc);
             }
             respawnQueue.splice(i,1);
         }

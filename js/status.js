@@ -21,6 +21,7 @@ function _unitStatus(a) {
     if (a.attackOrder && a.attackOrder.target && !a.attackOrder.target.dead && (a.stance || "follow") === "follow" && (typeof frame === "undefined" || frame <= a.attackOrder.until)) return _st("ATTACKING", "fight");   // sent at one creature from the enemy card (js/mixtool.js)
     const foe = a._nearestEnemy || a._guardEnemy;
     if (foe && !foe.dead && Math.hypot(foe.x - a.x, foe.y - a.y) < 9) return _st("FIGHTING", "fight");
+    if (a.post && a.fell) return _st("WAITING", "away");   // fallen: it waits at the Crystal for you (js/party.js, build 2026-11-12o)
     if (a.post) return _st("HOLDING", "hold");
     if (a.stance === "hold") return _st("HOLDING", "hold");
     return _st("FOLLOWING", "follow");

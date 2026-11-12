@@ -35,6 +35,8 @@ Three new places:
 11. **The volcanic layer is part of the Nest** (the owner, 2026-11-12: "Just make a spot for the volcanic layer to be included in the nest"): the sloping tunnel goes down from the deep brood into it, inside the Nest itself (one place: no stairs and no fade, §2, 5). A spot is kept for it at the Nest's foot (draft 6, redrawn). Its lava and the ice bridge that sets as stone over it (§2, 3) are decided; its passages, caves, size and look are to design with the owner; the crystalline area lies beyond it (phase 3).
 12. **Walls on the camera's side are low in tunnels and small caves** (draft 8, A, the agent's pick, taken with the owner's "Build it", 2026-11-12): in the Nest's new rooms every rock wall is a low rim, the far walls too (a tall far wall of one cave hid the tunnel behind it), and the queen's cavern's west wall, where the tunnels leave; nothing reacts. The heights are the agent's, provisional.
 
+13. **One place to hold per domain** (2026-11-12, build `2026-11-12o`; the owner's "one checkpoint per domain and the nest": "just another place where you can have followers hold it that aren't a part of your squad"): each domain is one place to hold, as the Ant Nest is, two followers at most across its rooms (`TECHNICIANS.md`, "Rooms and recruitment"). The electrical domain's two rooms are one place now.
+
 ## 3. Must-have requirements, by phase
 
 **Phase 1, the electrical domain** (layout pending: §5)
@@ -145,6 +147,8 @@ Three new places:
 10. **Seeing into a passage** (draft 8): A low near walls (the agent's pick), B the near wall fades, or C outlines through the walls.
 11. **"Instances"**: a place of its own behind a doorway (the agent's reading)? And does an instance reset when you leave (its creatures back, once it has some), while what you opened and the chests you emptied stay done?
 12. **"The nests"**: the Ant Nest only, or the Sewers' toxic nest too?
+
+- **The volcanic layer and the Nest's place to hold** (2026-11-12): the layer is inside the Nest (rule 11) and each domain is one place to hold (rule 13). Is the layer part of the Nest's place, or one of its own?
 
 ## 12. History
 

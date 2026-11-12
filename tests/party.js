@@ -181,7 +181,21 @@ function measure(w, h) {
             __fresh(0); for (const e of snap) spawnFollowerFromSave(e); o.load = [partyMembers().length, partyPosted().length, partyPosted().map(f => f.post).join()]; partyPlacePosted(); o.at = partyPosted().map(f => __room(f)).join();
             __fresh(0); const old = snap.concat(snap.map(e => Object.assign({}, e, { post: undefined }))); for (const e of old) spawnFollowerFromSave(Object.assign({}, e, { post: e === snap[0] ? e.post : undefined })); o.many = [followers.length, partyMembers().length, partyPosted().length]; return o; })()`);
         same(r.snap, 'lab_hallway,,', 'saved'); same(r.load.join(), '2,1,lab_hallway', 'loaded'); same(r.at, 'lab_hallway', 'put in its room'); ok(r.many[0] === 6 && r.many[1] === 3 && r.many[2] === 3, 'a crowded save: ' + r.many.join());
-        const g = rd('js/game.js'); ok(/post: a\.post \|\| undefined, playStyle: a\.playStyle/.test(g) && /if \(entry\.post\) \{ npc\.post = entry\.post; npc\.stance = "hold"; \}/.test(g), 'a dead follower\'s respawn does not keep its post');
+    });
+    check('THE FALLEN (build 2026-11-12o; the owner: "When a follower is respawned at the crystal, it stays at the crystal. When the player returns to the crystal, they may join the squad automatically"; asked, COME does not reach them): one that falls holding a room lets it go at once; it and one that fell from the squad come back holding the Crystal Chamber, marked; COME and ADD TO SQUAD do not call them from afar (and say so); in the Crystal Chamber the one from the squad rejoins it and the other stays; saved and loaded marked', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; const h = __cell('lab_hallway'); player.x = player.targetX = player.visualX = h[0]; player.y = player.targetY = player.visualY = h[1]; player.fpPath = null; fs.forEach(f => { f.x = h[0]; f.y = h[1]; });
+            ccApplyStance([fs[0]], 'hold'); o.held = fs[0].post; const a = fs[0], b = fs[1], ua = a.uid, ub = b.uid; a.dead = true; a.health = 0; b.dead = true; b.health = 0; render(); o.free = partyRoomCount('lab_hallway');
+            for (let i = 0; i < 220; i++) render(); const A = followers.find(x => x.uid === ua && !x.dead), B = followers.find(x => x.uid === ub && !x.dead);
+            o.back = [!!A, !!B, A && A.post, B && B.post, A && A.fell, B && B.fell, partyMembers().length, B && unitStatus(B).text];
+            floatingTexts.length = 0; ccApplyStance([A, B], 'follow'); o.come = [A.post, B.post, partyMembers().length, floatingTexts.map(t => t.text).join('|')]; partyAdd([B]); o.add = B.post;
+            const snap = followerRosterSnapshot().filter(e => e.uid === ub)[0]; o.saved = [snap && snap.fell, snap && snap.post]; const L = followerBuild(Object.assign({}, snap, { post: 'nest_brood' })); o.loaded = [L.fell, L.post, followerBuild(Object.assign({}, snap, { fell: undefined, post: 'nest_brood' })).post];
+            const c = __cell('crystal_chamber'); player.x = c[0]; player.y = c[1]; partyTick(); o.home = [B.post || null, B.fell || null, A.post, A.fell || null, partyMembers().length];
+            return o; })()`);
+        same(r.held, 'lab_hallway', 'it held the hallway'); same(r.free, 0, 'the hallway still counts the fallen one');
+        same(JSON.stringify(r.back), JSON.stringify([true, true, 'crystal_chamber', 'crystal_chamber', 'held', 'squad', 1, 'WAITING']), 'back at the Crystal, waiting');
+        same(r.come.slice(0, 3).join(), 'crystal_chamber,crystal_chamber,1', 'COME called them from afar'); ok(/WAIT AT THE CRYSTAL · GO BACK FOR THEM/.test(r.come[3]), 'COME did not say why: ' + r.come[3]); same(r.add, 'crystal_chamber', 'ADD TO SQUAD called it from afar');
+        same(r.saved.join(), 'squad,crystal_chamber', 'saved'); same(r.loaded.join(), 'squad,crystal_chamber,nest', 'loaded (and a Nest room saved before is the Nest)');
+        same(JSON.stringify(r.home), JSON.stringify([null, null, 'crystal_chamber', null, 2]), 'at the Crystal: the squad\'s one rejoins, the other holds the Crystal Chamber');
     });
 
     group('THE AMMUNITION: a small icon with the count (js/targeting.js)');

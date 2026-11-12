@@ -31,9 +31,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__ant = (x, y, cls) => { const p = spawnCreature({ species: 'ant', className: cls || 'scout', x, y, level: 3, state: 'wander' }); p.fpCreature = true; p.homeRoom = 'arena'; p.spawnProtection = 0; return p; };`);
 
     group('THE CRYSTAL\'S POWER (js/crystalpower.js): one pool, its health');
-    check('the numbers are the owner\'s answers: a reserve of 10%; a turret\'s shot 0.1%, a follower\'s revival 3%, yours 5% ("Light"); ◆50 for +75%; idle, whole in five minutes', () => {
+    check('the numbers are the owner\'s answers: a reserve of 10%; a turret\'s shot 0.1%, a clone\'s revival 3%, yours 5% ("Light"); ◆50 for +75%; idle, whole in five minutes; a fallen follower\'s return 5% to 10% by its energy cards (build 2026-11-12o: "5 to 10 ... depending on how much energy the follower had")', () => {
         const r = J(`[CRYSTAL_POWER.reserve, CRYSTAL_POWER.cost.shot, CRYSTAL_POWER.cost.follower, CRYSTAL_POWER.cost.player, CRYSTAL_POWER.charge.price, CRYSTAL_POWER.charge.amount, CRYSTAL_POWER.refill.fullFrames / 60]`);
         same(r.join(), '0.1,0.001,0.03,0.05,50,0.75,300', 'the numbers');
+        same(J('CRYSTAL_POWER.fallen.join()'), '0.05,0.1', 'a fallen follower\'s, from none to three cards');
+        same(J('[[], [null], ["fire"], ["fire", null, null], ["fire", "fire", null], ["fire", "ice", "fire"], undefined].map(e => Math.round(crystalFallenCost(e === undefined ? {} : { energy: e }) * 300)).join()'), '15,15,20,20,25,30,15', 'its cost in the Crystal\'s 300: no card 15, one 20, two 25, three 30');
     });
     check('after the tutorial each use is paid from it (a shot 0.3, a follower 9, you 15 of its 300); while the tutorial runs nothing is', () => {
         const r = J(`(function(){ __crystal(300); const o = {}; let h = crystal.health; crystalDraw('shot'); o.shot = Math.round((h - crystal.health) * 1000) / 1000; h = crystal.health; crystalDraw('follower'); o.fol = Math.round(h - crystal.health); h = crystal.health; crystalDraw('player'); o.you = Math.round(h - crystal.health);
@@ -48,7 +50,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __wild(); __crystal(20); respawnQueue.length = 0; spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; const uid = f.uid, hp = f.base.hp;
             f.dead = true; f.health = 0; for (let i = 0; i < 260; i++) render(); const o = { back: followers.some(x => x.uid === uid && !x.dead), q: respawnQueue.length, wait: !!(respawnQueue[0] && respawnQueue[0].waitPower), crys: Math.round(crystal.health * 10) / 10 };
             crystal.health = 150; const h0 = crystal.health; for (let i = 0; i < 3; i++) render(); const g = followers.find(x => x.uid === uid && !x.dead); o.after = [!!g, respawnQueue.length, Math.round(h0 - crystal.health), g && g.base.hp === hp]; __crystal(300); return o; })()`);
-        same([r.back, r.q, r.wait].join(), 'false,1,true', 'with the Crystal at its reserve'); ok(r.crys <= 30, 'the Crystal paid anyway, or refilled past the reserve: ' + r.crys); same(r.after.join(), 'true,0,9,true', 'with power again (back, paid 9, the same HP stat)');
+        same([r.back, r.q, r.wait].join(), 'false,1,true', 'with the Crystal at its reserve'); ok(r.crys <= 30, 'the Crystal paid anyway, or refilled past the reserve: ' + r.crys); same(r.after.join(), 'true,0,20,true', 'with power again (back, paid 20: 5% and a third of 5% more for its one energy card, build 2026-11-12o; the same HP stat)');
     });
     check('your third hit with the Crystal at its reserve is the END of the run ("THE CRYSTAL HAS NO POWER LEFT TO BRING YOU BACK"); above it, you are knocked back and it pays 5%', () => {
         const r = J(`(function(){ __wild(); const keep = showGameOver; let why = null; showGameOver = w => { why = w; gameState.running = false; }; const o = {};

@@ -208,7 +208,7 @@ function updateRTSNPC(actor) {
                 if (a instanceof Predator && a.team !== "green" && !a.isClone && !a.dead && !a.untargetable) {
                     // Skip predators that are wandering and haven't been provoked
                     if (a.state === "wander" && !a.provoked) return;
-                    if (_room && partyRoomAt(a.x, a.y) !== _room) return;
+                    if (_room && (typeof partyPlaceOf === "function" ? partyPlaceOf(partyRoomAt(a.x, a.y)) : partyRoomAt(a.x, a.y)) !== _room) return;   // (its place: the Nest or a domain is all one, build 2026-11-12o)
                     const dx=a.x-actor.x, dy=a.y-actor.y, d=Math.sqrt(dx*dx+dy*dy);
                     if (d < nearestEnemyDist) { nearestEnemyDist=d; actor._nearestEnemy=a; }
                     if (d < 6) _inReach.push(a);
