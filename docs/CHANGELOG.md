@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12n` · branch `claude/hornshell-fix` · FIX: the Hornshell's sheet of build `2026-11-12l` had lost its jar in most facings
+- **The report** (the owner: "the horn shell looks really messed up whenever it's walking around now. I don't know what happened").
+- **What was wrong (the agent's bug, build `2026-11-12l`, PR #34):** the pull's "settle" lowered the jar with a step (`jar.position.y -= ...`) on a model that the baker keeps alive for the whole sheet, so every frame drawn with the pull moved the jar down a little more than the last, and it carried on into the next facing: from about the third facing on, the jar had sunk out of its cell and only the tentacles showed. (I had looked at the first three facings of the bake only.)
+- **The fix:** the jar's height is set from where it rests every frame. The sheet is rebaked: its walking frames and the old bow (columns 0-15), in all eight facings, are **pixel for pixel the sheet of before `2026-11-12l`**; the new frames are as seen.
+- **Test:** `tests/hoodflare.js`: every cell of the Hornshell's sheet, in every facing, is at least 60 px tall (the broken ones were 33 to 39), and the builder never moves the jar by a step.
+- The Hornshell's ECHO PULSE and everyday shot (the owner's looks) are as they were.
 ### Build `2026-11-12m` · branch `claude/start-game-project-HSh7Z` · main's Hornshell build and this branch's command card together
 - While this branch made build 12l (the command card), main took the Hornshell's ECHO PULSE pull and its goo-ring shot, lettered 12k and 12l on their own branch (its entry below).
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12m, a letter new to both.

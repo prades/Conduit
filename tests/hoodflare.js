@@ -112,6 +112,15 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(blob.length > 300 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(blob), 'the ring uses a gradient or a shadow'); ok(/p\.kind === "gooring"/.test(src), 'the projectile is not drawn as the goo ring');
     });
 
+    group('THE HORNSHELL KEEPS ITS JAR IN EVERY FACING (build 2026-11-12n: a bug of 2026-11-12l: the pull lowered the jar a little more every frame it was drawn, so the sideways and rear facings had lost it)');
+    check('every cell of its sheet, in every facing, is as tall as the jar and tentacles together (the broken ones were a third as tall), and the builder never moves the jar by a step', () => {
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/hornshell.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); const bad = [];
+        for (let r = 0; r < pk.rows; r++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(r * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(r + ':' + c + '=' + h); }
+        same(bad.join(), '', 'cells too short (row:column=height)');
+        const src = rd('design/evolutions/forms13.js'), fd = src.slice(src.indexOf('function _fatDragger'), src.indexOf('const _fd = '));
+        ok(!/jar\.position\.y\s*[-+]=/.test(fd) && /jar\.position\.y = jy0/.test(fd), 'the jar is moved by a step: one model draws every cell of a sheet in turn, so a step adds up');
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and the lighting up for HEXFIRE), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));
