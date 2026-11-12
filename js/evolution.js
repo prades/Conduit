@@ -286,7 +286,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", shard: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD SHOT, mimicShotCol; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
+              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png", split: true },   // (24 columns since build 2026-11-12u, design No. 944: columns 16-23 are ROTTEN DECOY's SPLIT, splitCol, in the body's sheet and the pool's; 8-15, its old bow, are not used by the move now)
     // THORNWHIP (the owner named it, 2026-11-08; it came in as the THORNWHIP, a working name), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
     // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
@@ -341,6 +341,18 @@ function evoCheck(f) {
 // mist, set on the floor DECOY_SET tiles from the nearest enemy the Rotshard can see (toward the Rotshard). For DECOY_LIFE frames, or until broken (its HP is DECOY_HP of the Rotshard's maximum), every enemy
 // within DECOY_DRAW tiles goes for it (js/predator.js predatorPickPrey asks decoyLure); a boss does not. Its mist poisons the enemies within DECOY_MIST tiles. Ready again its wind-up (MOVES.rotten_decoy.windup) after it is set.
 // The decoy is not an actor: it lives in rotDecoys, takes hits through applyDamage, and is drawn as an element effect; broken, its black shards keep the green haze a moment.
+// WHERE IT GOES (build 2026-11-12u; the owner, 2026-11-12, of the decoy the Rotshard's crystal makes: "the rotten decoy shouldn't go directly towards the enemy. It should go kind of out to the side where there's less clutter"):
+// not on the line from the enemy to the Rotshard but out to one side of it, on whichever of the spots DECOY_SIDE tiles to either side of the old spot is the least cluttered (walls and objects round it, and creatures
+// crowding it); only a spot that can be stood on; with none, the old spot as it was. The numbers (how far to the side, what counts as clutter) are the agent's, PROVISIONAL (the owner gave none).
+const DECOY_SIDE = [1.5, 3];
+function _decoyClutter(f, x, y) {   // how cluttered a spot is: the tiles round it that cannot be stood on (walls, objects), and the creatures within 1.5 tiles
+    let n = 0;
+    if (typeof facilityStandOk === "function") for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) if ((i || j) && !facilityStandOk(x + i, y + j)) n++;
+    if (typeof actors !== "undefined") for (const a of actors) if (a && a !== f && !a.dead && !a.isDecoy && Math.hypot(a.x - x, a.y - y) < 1.5) n++;
+    if (typeof followers !== "undefined") for (const a of followers) if (a && a !== f && !a.dead && !(typeof actors !== "undefined" && actors.indexOf(a) >= 0) && Math.hypot(a.x - x, a.y - y) < 1.5) n++;
+    return n;
+}
+const DECOY_LOB = 14;   // (frames the black crystal that broke free takes to fly to the decoy; the decoy is drawn from then: the lure itself is at once)
 const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
 let rotDecoys = [];
 function rottenDecoy(f) {
@@ -349,12 +361,16 @@ function rottenDecoy(f) {
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], dx = f.x - t.x, dy = f.y - t.y, L = Math.hypot(dx, dy) || 1, k = Math.min(DECOY_SET, L * 0.5);
     let x = t.x + dx / L * k, y = t.y + dy / L * k;
+    { let best = null; const px = -dy / L, py = dx / L;   // (out to the side of the line: the spots to either side of the old spot, the least cluttered one, the nearer on a tie)
+      if (typeof facilityStandOk === "function") for (const s of [-1, 1]) for (const o of DECOY_SIDE) { const cx = x + px * s * o, cy = y + py * s * o; if (!facilityStandOk(cx, cy)) continue; const sc = _decoyClutter(f, cx, cy) + 0.1 * o; if (!best || sc < best.sc) best = { x: cx, y: cy, sc }; }
+      if (best) { x = best.x; y = best.y; } }
     if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) { const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : null; if (c) { x = c[0]; y = c[1]; } }
     const f0 = typeof frame !== "undefined" ? frame : 0, hp = Math.max(1, (f.maxHealth || 20) * DECOY_HP);
     const d = { isDecoy: true, team: "green", x, y, health: hp, maxHealth: hp, by: f, until: f0 + DECOY_LIFE, dead: false, name: "ROTTEN DECOY" };
     rotDecoys.push(d);
     if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "rotdecoy", x, y, on: d, life: DECOY_LIFE, maxLife: DECOY_LIFE, element: "toxic" });
-    f._sigAt = f0; f._sigCd = moveWindupFrames("rotten_decoy");
+    f._sigAt = f0; f._decoyAt = f0; f._sigCd = moveWindupFrames("rotten_decoy");
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "decoylob", x0: f.x, y0: f.y, x, y, life: DECOY_LOB, maxLife: DECOY_LOB, element: "toxic" });   // (the crystal that broke free flies to where the decoy is set)
     return true;
 }
 function decoyLure(p) {   // the decoy a creature goes for: the nearest standing one within DECOY_DRAW (a boss: none)
@@ -1310,16 +1326,18 @@ function _evoFrame(f, d, f0) {
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const go = d.goo ? gooCol(f, f0) : -1;   // (the Hornshell's everyday shot: its arms are drawn in and a ring of glowing goo forms in front of its horn)
+    const sc = d.split ? splitCol(f, f0, d) : -1;   // (the Rotshard's ROTTEN DECOY: a second black crystal grows out of its pool over the wind-up and breaks free as the decoy is set)
     const fg = d.fling ? flingCol(f, f0, d) : -1;   // (the Thornwhip's vines: rearing round a seed over a shot's or SEEDFALL's wind-up, whipping out as it goes)
     const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
     const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
     const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
-    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES) || (d.reach && f._maelAt !== undefined && f0 - f._maelAt < EVO_ACT_FRAMES) || (d.fling && f._budAt !== undefined && f0 - f._budAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
+    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES) || (d.reach && f._maelAt !== undefined && f0 - f._maelAt < EVO_ACT_FRAMES) || (d.fling && f._budAt !== undefined && f0 - f._budAt < EVO_ACT_FRAMES) || (d.split && f._decoyAt !== undefined && f0 - f._decoyAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (sc >= 0) col = sc;
     else if (fg >= 0) col = fg;
     else if (rc >= 0) col = rc;
     else if (pu >= 0) col = pu;
@@ -1547,6 +1565,15 @@ function flingCol(f, f0, d) {
     if (mv && mv.id === "seedfall" && f._altWind > 0 && f._altWindMax > 0) return 8 + Math.min(3, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 4 + 1e-9));
     if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 12) return 12 + Math.floor(a / 3); }
     if (f._budAt !== undefined) { const a = f0 - f._budAt; if (a >= 0 && a < 16) return 12 + Math.floor(a / 4); }
+    return -1;
+}
+// which column of the Rotshard's sheet (the extra block, 16 to 23: design No. 944) while ROTTEN DECOY goes (the owner, 2026-11-12, "the crystal splits"): over its wind-up (f._altWind of f._altWindMax) cells 0 to 5
+// (a second black crystal growing out of its pool beside it), then, as the decoy is set, 4 frames at cell 6 (it breaks free) and 8 at cell 7 (gone); -1 otherwise. The ground sheet (its pool) has the same
+// columns. Looks only; the frame counts are the agent's.
+function splitCol(f, f0, d) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "rotten_decoy" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
+    if (f._decoyAt !== undefined) { const a = f0 - f._decoyAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 12) return 23; }
     return -1;
 }
 function reachCol(f, f0, d) {
