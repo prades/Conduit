@@ -57,6 +57,11 @@ const STATION_KINDS = {
     sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return Math.round((typeof SENTRY !== "undefined" ? SENTRY.repair : 600) * (typeof playerRepairShare === "function" ? playerRepairShare() : 1)); },   // (FORGEMASTER halves it: js/playercards.js)
         verbFn: () => "REPAIR THE TURRET", canFn: s => typeof sentryRepairCan === "function" ? sentryRepairCan(s) : { ok: false, why: "NOTHING TO REPAIR" },
         use: s => typeof sentryRepairDone === "function" ? sentryRepairDone(s) : { ok: false, why: "NOTHING TO REPAIR" } },
+    // THE CLONE BAY (build 2026-11-12i; the owner, 2026-11-12: "the clones, that's actually going to be found in the experiment lab. You have to go to the experiment lab to activate the clones and buy clones
+    // and stuff. So that gets removed from the permanent HUD"): the Experiment Lab's second glass test chamber opens the Clone Bay (js/clone.js), which the dock's CLONES opened before. Who may grow a clone, and
+    // its upgrades, are the bay's to say (cloneAllowed): anyone may open it.
+    clone_bay: { name: "CLONE BAY", verb: "OPEN THE CLONE BAY", classes: null,
+        use: () => { if (typeof crystalMenuOpen !== "undefined") crystalMenuOpen = false; if (typeof cloneMenuOpen !== "undefined") cloneMenuOpen = true; return { ok: true, msg: "", quiet: true }; } },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
 };

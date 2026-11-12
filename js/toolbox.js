@@ -49,6 +49,8 @@ function toolboxTick() {
 
 function initToolbox() {
     if (typeof document === "undefined" || !document.getElementById) return;
+    // THE HUD'S BAKED ICONS (build 2026-11-12i: the SETTINGS cog and the MAP, design/hud/bake-icons.js): each img[data-ico] is given its address (js/config.js imgSrc: the fingerprinted WebP or PNG)
+    if (document.querySelectorAll) for (const im of document.querySelectorAll("img[data-ico]")) { const p = im.getAttribute("data-ico"); if (p && !im.getAttribute("src")) im.src = typeof imgSrc === "function" ? imgSrc(p) : p; }
     const E = toolboxEls(); if (!E.track || E.track._slider) return; E.track._slider = true;
     // mouse drag: slide the strip; a real drag swallows the click that follows it
     let x0 = null, s0 = 0, dragged = false;

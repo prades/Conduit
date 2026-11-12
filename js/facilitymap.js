@@ -606,6 +606,7 @@ const FACILITY_MAP = {
         { id: "st_tune_bench", room: "teleport_room_1", prop: "console_2", kind: "tune_bench" },
         { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
         { id: "st_serum_hood", room: "experiment_lab", prop: "lab_hood", kind: "serum_hood" },   // the Mutator's laboratory: serum (js/serum.js)
+        { id: "st_clone_bay", room: "experiment_lab", prop: "chamber_2", kind: "clone_bay" },   // THE CLONE BAY (build 2026-11-12i): the second glass test chamber opens it (js/stations.js), off the HUD
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
         { id: "st_junction", room: "front_lobby", prop: "junction", kind: "junction" },   // the main power junction: the tutorial's one repair (js/stations.js, js/tutorial.js)

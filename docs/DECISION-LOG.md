@@ -3079,3 +3079,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's, provisional: the bar's size and place, the buttons' size, PACK before CARDS; the two buttons still give way while a member's card is open (the owner's rule of build `2026-11-12g`).
 - Supersedes: build `2026-11-12g`'s PACK and CARDS left of THE CORE, and THE CORE's bars in its slab (`2026-11-11t`).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The top corners' icons; ? in SETTINGS; the Clone Bay in the Experiment Lab (2026-11-12, build `2026-11-12i`)
+- The owner: **"Put the map button at the top right and make it transparent with a map icon, and put the settings up top next to the quest as just an icon, and make it look more like a 3D cog, and put the question mark next to the settings, or put the question mark inside the settings ... pop-up. And then the clones, that's actually going to be found in the experiment lab. You have to go to the experiment lab to activate the clones and buy clones and stuff. So that gets removed from the permanent HUD. Hopefully there's enough space at the bottom for a roster card squad thing for clones."** Of the first, flat icons: **"Those icons look awful, and the map should be on the opposite side of the location tag because the features should be pushed to the right side and not have a little icon pushing them out towards the middle."**
+- Built: the cog and the map rendered in 3-D (three.js, as THE CORE's cube), MAP left of the room's name; ? as a row of SETTINGS (of the owner's two choices, the one that leaves the HUD clearer); the Clone Bay as a station on the Experiment Lab's second glass test chamber; the Mutator's clone keeps its card on the squad strip (it had one since 2026-11-01).
+- The agent's, provisional: the icons' looks; the chamber the bay stands on.
+- Supersedes: the dock's SETTINGS, MAP, CLONES and ? (`2026-11-11w`), and the flat icons of the first try.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.

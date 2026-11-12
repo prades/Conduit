@@ -69,7 +69,7 @@ const TUT_CLASS_STAGES = {
         { id: "arc", title: "THROW THE ARC", stray: true, text: () => "STEP AWAY FROM IT AND THROW THE ARC: " + Math.min(2, tutCount("arc")) + "/2. OUT OF REACH, A CHARGE THROWS AN ELECTRIC ARC.",
             hint: () => "IT JUMPS TO CREATURES NEARBY. AN ARC ON A CREATURE REARING BACK (BITE) STOPS THE BITE.", done: () => tutCount("arc") >= 2 } ],
     mutator: [TUT_CLASS_STEP,
-        { id: "clone", title: "GROW YOUR CLONE", text: () => "OPEN THE CLONE BAY (CLONES ON THE DOCK) AND GROW A CLONE FROM THE DNA YOUR KILLS DROPPED.",
+        { id: "clone", title: "GROW YOUR CLONE", text: () => "OPEN THE CLONE BAY (THE EXPERIMENT LAB) AND GROW A CLONE FROM THE DNA YOUR KILLS DROPPED.",
             hint: () => "ONE AT A TIME, AND IT DOES NOT COME BACK BY ITSELF. NO DNA? KILLS DROP IT (THE ARENA).",
             done: () => tutCount("clone") >= 1 || (typeof mutatorClone === "function" && !!mutatorClone()) },
         { id: "upgrade", title: "UPGRADE YOUR CLONE", text: () => "WITH YOUR CLONE OUT, THE CLONE BAY SELLS ITS UPGRADES: BUY ONE.",
