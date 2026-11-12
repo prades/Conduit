@@ -318,13 +318,13 @@ let _bodyN = 0;
 function cloneFallen(c) {
     if (!c) return null;
     const f = _mxFrame(), up = Object.assign({}, c.upgrades || {}), ranks = Object.values(up).reduce((s, r) => s + (r | 0), 0);
-    const b = { id: ++_bodyN, sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, x: c.x, y: c.y, dirX: c.dirX || 1, dirY: c.dirY || 0, t0: f, upgrades: up, invested: c.invested || 0 };
+    const b = { id: ++_bodyN, sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, x: c.x, y: c.y, dirX: c.dirX || 1, dirY: c.dirY || 0, t0: f, upgrades: up, invested: c.invested || 0, nm: c.nick || undefined };
     // CRYO GENETICIST (a Player card: js/playercards.js): preserved at once, with no Ice Mage: its body is a specimen capsule (js/specimen.js), its upgrades kept in it
     const kept = typeof playerClonePreserved === "function" && playerClonePreserved();
     if (kept) { b.frozen = true; b.frozenAt = f; if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#aeeaff", radius: 1.0, life: 30 }); }
     cloneBodies.push(b);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
-        const who = "YOUR " + String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE HAS FALLEN";
+        const who = "YOUR " + (b.nm ? String(b.nm).toUpperCase() : String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE") + " HAS FALLEN";
         if (kept) {
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: who + " — PRESERVED AT ONCE" + (ranks ? ", ITS " + ranks + " UPGRADE" + (ranks > 1 ? "S" : "") + " KEPT" : ""), color: "#aeeaff", life: 240, vy: -0.05, size: 16 });
             floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "CRYO GENETICIST: WALK OVER ITS CAPSULE, THEN TAKE IT TO THE RESURRECTION ZONE (THE CRYSTAL)", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
@@ -366,7 +366,7 @@ function mutatorBodiesTick() {
 }
 // THE BODY'S RING (js/draw.js drawRadialMenu, js/input.js, js/commands.js): UP is SALVAGE DNA; RIGHT is a second order when there is one ({ label, act }, act ending in "_body": cloneBodyAct does it)
 function mutatorBodyRing(b) {
-    const n = cloneRecoverable(b && b.invested), ring = { up: { label: "SALVAGE DNA +" + n }, right: null, caption: String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE · FALLEN · LV " + (b.level || "?") };   // (up or right may be null: no button there)
+    const n = cloneRecoverable(b && b.invested), ring = { up: { label: "SALVAGE DNA +" + n }, right: null, caption: (b.nm ? String(b.nm).toUpperCase() : String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE") + " · FALLEN · LV " + (b.level || "?") };   // (up or right may be null: no button there)
     if (typeof cloneBodyRingMore === "function") cloneBodyRingMore(b, ring);   // (the next orders on a body are added there: the brief's step 6)
     return ring;
 }
@@ -402,7 +402,7 @@ function drawCloneBody(b, px, py) {
         finally { ctx.restore(); _drawPredatorBars = keep[0]; drawHealthBar = keep[1]; if (keep[2]) drawUnitTag = keep[2]; }
     }
     if (b.frozen && typeof drawSpecimenCapsule === "function") drawSpecimenCapsule(b, px, py);   // preserved: in its containment capsule (js/specimen.js)
-    const near = typeof player !== "undefined" && Math.hypot(b.x - player.x, b.y - player.y) <= MUTATOR.body.near, who = typeof specimenName === "function" ? specimenName(b) : String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE";
+    const near = typeof player !== "undefined" && Math.hypot(b.x - player.x, b.y - player.y) <= MUTATOR.body.near, who = typeof specimenName === "function" ? specimenName(b) : b.nm ? String(b.nm).toUpperCase() : String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE";
     ctx.save(); ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const name = b.frozen ? "SPECIMEN CAPSULE · " + who : who + (b.kind === "follower" ? " · FALLEN FOR GOOD" : " · FALLEN"), w = ctx.measureText(name).width + 14, y = py - (b.frozen ? 74 : 54), edge = b.frozen || b.kind === "follower" ? "#aeeaff" : col;
     ctx.globalAlpha = 0.9; ctx.fillStyle = "rgba(10,6,20,0.82)"; ctx.fillRect(px - w / 2, y - 9, w, 18); ctx.strokeStyle = edge; ctx.lineWidth = 1.2; ctx.strokeRect(px - w / 2 + 0.5, y - 8.5, w - 1, 17);
@@ -415,7 +415,7 @@ function drawCloneBody(b, px, py) {
 }
 // ── saving (js/facilitysave.js) ──
 // (a follower's body keeps its record, `rec`; a preserved one is `frozen`: a capsule on the floor, js/specimen.js)
-function cloneBodiesSnapshot() { return cloneBodies.map(b => Object.assign({ k: b.kind === "follower" ? "f" : undefined, rec: b.kind === "follower" ? b.rec : undefined, fz: b.frozen ? 1 : undefined, sp: b.sp, cls: b.cls, level: b.level, xp: b.xp, x: Math.round(b.x * 100) / 100, y: Math.round(b.y * 100) / 100, dx: Math.round((b.dirX || 1) * 100) / 100, dy: Math.round((b.dirY || 0) * 100) / 100 }, b.kind === "follower" ? {} : { up: b.upgrades || {}, inv: b.invested || 0 })); }
+function cloneBodiesSnapshot() { return cloneBodies.map(b => Object.assign({ k: b.kind === "follower" ? "f" : undefined, rec: b.kind === "follower" ? b.rec : undefined, fz: b.frozen ? 1 : undefined, sp: b.sp, cls: b.cls, nm: b.nm || undefined, level: b.level, xp: b.xp, x: Math.round(b.x * 100) / 100, y: Math.round(b.y * 100) / 100, dx: Math.round((b.dirX || 1) * 100) / 100, dy: Math.round((b.dirY || 0) * 100) / 100 }, b.kind === "follower" ? {} : { up: b.upgrades || {}, inv: b.invested || 0 })); }
 function cloneBodiesApply(list) {
     cloneBodies = []; if (!Array.isArray(list)) return 0;
     for (const s of list) {
@@ -423,7 +423,7 @@ function cloneBodiesApply(list) {
         const common = { id: ++_bodyN, level: s.level, x: s.x, y: s.y, dirX: Number.isFinite(s.dx) ? s.dx : 1, dirY: Number.isFinite(s.dy) ? s.dy : 0, t0: _mxFrame(), frozen: !!s.fz };
         if (s.k === "f") { if (s.rec && typeof s.rec === "object") cloneBodies.push(Object.assign(common, { kind: "follower", rec: s.rec })); continue; }
         if (typeof SPECIES === "undefined" || !SPECIES[s.sp]) continue;
-        cloneBodies.push(Object.assign(common, { sp: s.sp, cls: s.cls || "scout", xp: s.xp, upgrades: _mxUpClean(s.up), invested: Math.max(0, s.inv | 0) }));
+        cloneBodies.push(Object.assign(common, { sp: s.sp, cls: s.cls || "scout", nm: typeof s.nm === "string" ? s.nm : undefined, xp: s.xp, upgrades: _mxUpClean(s.up), invested: Math.max(0, s.inv | 0) }));
     }
     return cloneBodies.length;
 }
@@ -433,6 +433,7 @@ function _mxUpClean(up) { const o = {}; if (up && typeof up === "object") for (c
 function mutatorCloneRestore(c, rec) {
     if (!c || !rec) return c;
     if (rec.pr) c.primary = true;
+    if (typeof rec.nm === "string" && typeof unitSetNick === "function") unitSetNick(c, rec.nm);   // (its name, js/redeem.js)
     c.upgrades = _mxUpClean(rec.up); c.invested = Math.max(0, rec.inv | 0);
     cloneApplyUpgrades(c); c.health = c.maxHealth;
     return c;
@@ -441,7 +442,7 @@ function mutatorCloneRestore(c, rec) {
 // what it cost, how hurt it is): no body is left, nothing is recovered. The next time you are the Mutator it is put back beside you as it was (not healed: switching is not a way to mend it).
 function mutatorCloneStash() {
     const c = mutatorClone(); if (!c || !c.speciesName) return null;
-    const rec = { sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, pr: 1, up: c.upgrades || {}, inv: c.invested || 0, hp: c.maxHealth > 0 ? Math.max(0.05, Math.min(1, c.health / c.maxHealth)) : 1 };
+    const rec = { sp: c.speciesName, cls: c.className || "scout", nm: c.nick || undefined, level: c.level, xp: c.xp, pr: 1, up: c.upgrades || {}, inv: c.invested || 0, hp: c.maxHealth > 0 ? Math.max(0.05, Math.min(1, c.health / c.maxHealth)) : 1 };
     c.dead = true; c.dismissed = true;   // (gone without a body or a return: js/game.js passes over a dismissed clone)
     return rec;
 }

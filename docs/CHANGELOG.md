@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12f` · branch `claude/start-game-project-HSh7Z` · main's three merges and this branch's two builds together
+- While this branch made builds 12c and 12d (the rock painted once; THE ANT QUEEN in the Deep Brood, the test console gone), main took three pull requests, numbered 12c to 12e on their own branches (entries below): the Seeper's leg stomp (#28, `claude/seeper-attacks`), the Rift Mimic's shard attacks (#29, `claude/mimic-attacks`) and code cards (#30, `claude/code-card`).
+- Those letters were used on both lines, so the two merged (main into this branch) are build 12f, a letter new to both.
+- Nothing in either changed in the merge. The conflicts were the build's stamps, the generated page and script bundle (made again), this log and the decision log (both kept, this branch's first), and the page's script list and boot check, where main's `js/redeem.js` is kept beside the test console's removal.
+
 ### Build `2026-11-12d` · branch `claude/start-game-project-HSh7Z` · THE ANT QUEEN in the Deep Brood; the test console gone
 - **The owner**: "we need to remove the test queen area anyways and move her deeper into the nest"; of the agent's options, **"Deep Brood, console gone"** (`DECISION-LOG.md`).
 - **THE ANT QUEEN lives in the Deep Brood**, at the end of the Nest's main way (past the drilled tunnel and the cracked wall, where the way down starts): her post its middle, held to it, her brood out of its three brood holes (js/bosses.js, the `nest` row). Coming down into the Nest arms her there, as before; walking between its rooms does not. Her moves, numbers and rewards (none yet) are as they were.
@@ -18,6 +23,29 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - The dimmed pen keeps one pen for each canvas it darkens (js/facilitystyle.js `_fpDimCtx`), so the painting canvas has its own.
 - Files: js/facilitydecor.js, js/facilityplay.js, js/facilitystyle.js; tests: `tests/rockpics.js` (new: the wiring and the real page), `tests/cavewalls.js` (the wall draw's line); docs: FACILITY.md ("The rock painted once"), STARTUP.md, DECISION-LOG.md.
 - Not playtested.
+
+### Build `2026-11-12e` · branch `claude/code-card` · code cards, and a naming system
+- **The ask** (the owner: "Go ahead and make a code card feature for my game."): of the agent's questions, a code that is **redeemed** (typed in), on **the pack/card screen**, first **once per save**; then, on the first build: **"It shouldn't mention anything upon save, and it shouldn't be only once."** For now it gives **"a lvl 20 mantis clone that's integrated with the mutator clones"** (the **Tank**); the message **"Emotional Support 💚"**, it adds to the squad; **the codes are "Kylie" or "frommatt"**, the creature's name is **Emotional Support**, and "add a naming system".
+- **REDEEM A CODE** is a box on the Cards sheet's **SHOP** tab (an input and a button; Enter works). Either code (any case, spaces ignored) gives a **level 20 mantis tank clone named Emotional Support 💚** at the Crystal, with the message *EMOTIONAL SUPPORT 💚 JOINS YOUR SQUAD*. It is the Mutator's **one (primary) clone** for a Mutator, an ordinary clone for another class. **As often as it is typed** (nothing is kept of a code; it is not saved), and **the box says nothing about saving or once**. With a clone already out (one at a time, the Mutator's rule), or before a run has started, it makes none and says why: *DISMISS YOURS FIRST, THEN TYPE THE CODE AGAIN*. An unknown code says so.
+- **The naming system:** any unit can carry a name (`unitSetNick`: trimmed, 24 characters, no control characters); it shows wherever the unit's name does, instead of its kind; a clone's save, fallen body and place in the respawn queue keep it. **No screen renames a creature yet**; only a code names one.
+- **The agent's readings (provisional; the owner's answer to the rules question was the message, not a rule):** any class may redeem it; a clone already out refuses the code rather than being replaced (the Mutator's one-clone rule stays). Spec: `docs/CODES.md`.
+- `js/redeem.js` (new), `js/cardsui.js`, `js/levels.js`, `js/mutator.js`, `js/facilitysave.js`, `js/facilityplay.js`, `js/game.js`, `game.html`. Tests: `tests/redeem.js` (9 checks); `tests/cards.js` expects the shop's new section.
+- Not playtested, and not tried on an iPad. Seen in the real page: the box on the shop tab, a wrong code, "Kylie" working with the message, and the clone made with the name.
+
+### Build `2026-11-12d` · branch `claude/mimic-attacks` · the Rift Mimic's shard shot
+- **Everyday hit** (the owner: "Let's do the riff mimic" [the Rift Mimic]; of three looks the agent offered, "Shard stab"; the first two drafts, a fist of spikes and a shard hammering another into the enemy, were not liked: **"Let's just redo it entirely... just this time make it to where the shard comes up and shoots at the enemy and regrows like the quill stone."**): the Rift Mimic's big shard rises out of its back and tips at the enemy, is **shot at the enemy** (a black shard with a purple light and a short trail, on a short arc, 10 frames), and the Mimic stands without it and it **grows back**. 32 frames in all. The first two drafts are replaced.
+- **The hit is the flux hit it always was** (0.6 × its ATK, the chance to disorient, its purple impact: `ELEMENT_ATTACKS.flux.physical`) and **now lands as the shard does, 18 frames after the cast** (it landed at the cast before). Its cost (the WILL) and its rest are as they were, from the cast. A Mimic that dies in it, or an enemy that does, lands no hit. A Mimic still growing its shard back makes the plain flux hit at once, as before. Every other flux follower's hit is unchanged.
+- **GRAVITY SLAM** (its second attack) keeps its own frames (the action block), unchanged: the shot is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4067 × 578 packed; its pool sheet is re-baked with it).
+- Agent's, provisional: the frame counts (8 rising, 10 flying, 32 in all), the arc and look of the flying shard (drawn by the game, not baked), the 8 cells.
+- `js/evolution.js` (`mimicShotStrike`, `mimicShotTick`, `mimicShotCol`, `mimicShotDraw`, `MIMIC_SHOT`, the Mimic's definition, `_evoFrame`), `js/combat.js` (the Mimic's hit), `js/elements.js` (the effect's tick and draw), `design/evolutions/forms6.js` (No. 937), `bake.js`. Tests: `tests/mimicshot.js` (8 checks); `tests/evolution.js` expects the Mimic's 24 columns.
+- Not playtested; seen in the real page frame by frame (headless): the shard rises, flies to the enemy, the hit and its impact show as it lands, the shard grows back.
+
+### Build `2026-11-12c` (made as 11z on its branch) · branch `claude/seeper-attacks` · the Seeper's leg stomp
+- **Everyday hit** (the owner: "Seeper!"; of three looks the agent offered, the owner chose **"Leg stomp"**): the Seeper plants its other legs, rears one front leg up and slams it down in front of it, toward the enemy, flinging goo off the foot, then settles. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
+- **ERUPTION** (its second attack) keeps its own frames (the action block), unchanged: the stomp is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4081 × 448 packed; its pool of goo sheet is re-baked with it).
+- Agent's, provisional: which leg stomps (the front right), how high and far, the goo's size, the 8-frame timing, the lean.
+- `js/evolution.js` (the Seeper's definition, `_evoFrame`), `design/evolutions/forms22.js` (No. 936), `bake.js`. `tests/evolution.js` expects the Seeper's 24 columns.
+- Not playtested; seen in the real page frame by frame (headless): it faces the enemy, a front leg rears and slams toward it, goo flies.
 
 ### Build `2026-11-12b` · branch `claude/start-game-project-HSh7Z` · main's Frost Maw and Jelly Ram merged in
 - While this branch made build 12a, main took one pull request, #27 (`claude/jellyram-attacks`, stacked on `claude/frostmaw-attacks`), stamped `2026-11-11y` (entries below): the Frost Maw's lunge-bite and CHOMP, and the Jelly Ram's tentacle lash.

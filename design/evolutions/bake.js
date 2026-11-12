@@ -154,7 +154,7 @@ const JOBS = [
   // The hooded pyramid with the hovering gems (No. 391, the old electric brawler) is now the fire mage, in fire red.
   { id: 'embercowl', form: 391, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, rim: '#ff6a3a' },   // (warm rim light: the hood reads as ember-black, not navy)
   // No. 579 (the game sprite of 578), the toxic brawler: a black faceted shell with a cone on its back on four splayed pins, one oozing eye, small leaks high on its flanks; the puddle it walks through is its ground sheet. Its action frames burst goo from the crater, up and back.
-  { id: 'seeper', form: 579, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true },
+  { id: 'seeper', form: 936, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, blocks: [[{ up: 0.1, fwd: 0.05, lean: -0.04, splat: 0 }, { up: 0.35, fwd: 0.1, lean: -0.1, splat: 0 }, { up: 0.6, fwd: 0.15, lean: -0.16, splat: 0 }, { up: 0.7, fwd: 0.25, lean: -0.18, splat: 0 }, { up: 0, fwd: 0.5, lean: 0.14, splat: 1 }, { up: 0, fwd: 0.5, lean: 0.1, splat: 0.7 }, { up: 0, fwd: 0.3, lean: 0.04, splat: 0.35 }, { up: 0, fwd: 0.1, lean: 0, splat: 0.1 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 936, forms22.js, since 2026-11-11: No. 579 with its everyday hit a leg stomp: the sheet's extra block, columns 16-23; the owner: "Leg stomp")
   // No. 543 (the game sprite of 541), the electric mage: a smooth cloud of dark gas over a flickering glow, a crown of black spikes, four glowing spikes circling its base, gas fins that ripple.
   // One turn of the beat: the cloud swings rather than turns, and the four identical glowing spikes advance a quarter-turn a loop, so it closes; its action frames spark arcs between the crown spikes.
   { id: 'thunderhead', form: 543, color: '#ffee33', idleAct: 0, action: [0, 1.0], pulse: true, keepSprites: true, glowNormal: true },
@@ -198,7 +198,8 @@ const JOBS = [
   // No. 120, the core mage (the role id is 'sniper'): its action frames are a pulse: the flower tilts forward and the petals fan open towards what it faces, then it settles.
   { id: 'petal', form: 120, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 114, the flux brawler: a Ditto-style blob with big black shards; its action frames are the slam (it flattens and spreads).
-  { id: 'mimic', form: 114, color: '#9933ff', idleAct: 0, action: [0.55, 1.0] },
+  { id: 'mimic', form: 937, color: '#9933ff', idleAct: 0, action: [0.55, 1.0], blocks: [[
+    { up: 0.4, tilt: 0.3, grow: 1 }, { up: 0.9, tilt: 1, grow: 1 }, { up: 1, tilt: 1, grow: 0 }, { up: 0, tilt: 0, grow: 0 }, { up: 0, tilt: 0, grow: 0 }, { up: 0, tilt: 0, grow: 0.3 }, { up: 0, tilt: 0, grow: 0.65 }, { up: 0, tilt: 0, grow: 1 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 937, forms6.js, since 2026-11-11: No. 114 with its everyday hit a SHARD SHOT: the sheet's extra block, columns 16-23: the big shard rises and tips at the enemy (0-1), is shot off (2), gone (3-4), grows back (5-7); the owner)
   { id: 'rotshard', form: 101, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 // optional 5th and 6th arguments: the cell in px and half the view in world units (the class gear is wider than the cube: 186 and 2.2 keep the pixels per unit the same as the 144 / 1.7 of the rest)

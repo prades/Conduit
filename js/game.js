@@ -773,7 +773,7 @@ function render() {
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, partnerUid:a.partnerUid||null, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, nick:a.nick||undefined, hpStat:Math.max(1,keptHp), uid:a.uid, partnerUid:a.partnerUid||null, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 energy: typeof energyRecord === "function" ? energyRecord(a) : undefined,   // (and its energy cards: js/energy.js)
                 // Its level and its XP come back with it, all of them.
                 base: a.base ? Object.assign({}, a.base) : undefined,
@@ -1122,6 +1122,7 @@ function render() {
                 // Respawn as clone: makeClone, so a respawned clone is the same thing the summon built.
                 const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y, undefined, { level: entry.level, xp: entry.xp });
                 if (!clone) { respawnQueue.splice(i,1); continue; }
+                if (entry.nick && typeof unitSetNick === "function") unitSetNick(clone, entry.nick);   // (a named clone comes back named: js/redeem.js)
             } else {
                 // Respawn as a follower: as it fell (a death costs it nothing since 2026-11-01)
                 const def         = NPC_TYPES["virus"];

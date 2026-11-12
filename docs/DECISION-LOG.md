@@ -3045,3 +3045,23 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent measured the fight first (headless Chromium, the real page): no picture was loading mid-fight; the rock walls, drawn afresh every frame, were the biggest share of the drawing. Offered: paint the walls once (recommended), the package anyway, or measure on the iPad first. Chosen: **"Paint walls once"**. Not chosen, not built: a package of every picture loaded when the page opens (a longer first load and more memory on the iPad, and the agent did not expect it to cure this lag).
 - Of the queen, offered the Deep Brood (20 × 12 tiles at the end of the main way, where the way down starts), the console removed or kept. Chosen: **"Deep Brood, console gone"**: she lives in the Deep Brood; the first cavern keeps its eggs and loses the test console (the queen's reset, the test squad, the damage meter); she still pays nothing until her rewards are decided.
 - Status: the rock painted once, implemented and tested in `2026-11-12c` (`FACILITY.md`, "The rock painted once"); the queen's move in `2026-11-12d` (`NEST.md`). Not playtested. `CHANGELOG.md`.
+
+## DECISION: The Seeper's everyday hit is a leg stomp (2026-11-11, build `2026-11-11z`, branch `claude/seeper-attacks`)
+- The owner, naming the next creature: "Seeper!" The agent offered three looks for its everyday hit: a leg stomp, a shell bash, a goo lob. Chosen: **"Leg stomp"**.
+- Built: it rears one front leg and slams it down toward the enemy, goo flung from the foot (its own 8 frames of the sheet). Looks only. ERUPTION keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
+- Agent's, provisional: which leg, how far and high, the goo, the timing, the lean.
+- Status: Implemented; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Rift Mimic's everyday hit is a shard shot (2026-11-11, build `2026-11-12d`, branch `claude/mimic-attacks`)
+- The owner, naming the next creature: "Let's do the riff mimic" (the Rift Mimic). The agent offered three looks for its everyday hit: a blob arm slap, a shard stab, a pounce flop. Chosen: **"Shard stab"**.
+- First build: the shards swung forward into a fist of spikes. The owner: **"How about something where it like pulls one shard straight up and then another shard angled at the opponent and then uses one to ram the other one into the opponent?"** Second build, that: replaced. The owner: **"I don't like that way either. Let's just redo it entirely. I didn't like the first or second animation, so just this time make it to where the shard comes up and shoots at the enemy and regrows like the quill stone."**
+- Built: the big shard rises out of its back, tips at the enemy, is shot (the game draws it flying), the Mimic stands without it and it grows back. The hit is the flux hit it always was and lands as the shard does, 18 frames after the cast (it landed at the cast before): a consequence of drawing a shot before its hit, so the damage and the picture agree. Looks otherwise. GRAVITY SLAM keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
+- Agent's, provisional: the timing (8 rising, 10 flying, 32 in all), the flying shard's look and arc.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: Code cards, and a naming system (2026-11-12, build `2026-11-12e`, branch `claude/code-card`)
+- The owner: "Go ahead and make a code card feature for my game." Nothing about a "code card" was in the repository or the Notion archive; the agent asked. Chosen: a code **redeemed** (typed in), **on the pack/card screen**, and first **once per save**; then, on the first build: **"It shouldn't mention anything upon save, and it shouldn't be only once."** Superseded: a code works as often as it is typed, is not saved, and nothing on the screen speaks of saving or of once. Its gift, for now: **"a lvl 20 mantis clone that's integrated with the mutator clones"**, the **Tank**; to "who may redeem it and with a clone out" the owner wrote **"Emotional Support 💚 is the message adds to squad"**; the codes **"Kylie" or "frommatt"**, the creature's name **Emotional Support**, **"add a naming system"**.
+- Built: the box on the shop tab; the gift (a level 20 mantis tank clone, the Mutator's primary clone for a Mutator); names on units (`nick`). Spec: `CODES.md`.
+- The agent's readings, provisional: any class may redeem it; a clone already out refuses the code rather than being replaced (the Mutator's one-clone rule stays, so the gift can be had again once the clone is dismissed or has fallen); no rename screen yet.
+- Status: Implemented and tested; not playtested. `CODES.md`, `CHANGELOG.md`.
+

@@ -186,13 +186,17 @@ function _groundDesign(o) {
   // A flat skirt of the same liquid spread round the lump: it lies on the floor (tagged ground, so the game paints it under every unit).
   const skirt = o.skirt ? slurryPool(o.skirt, o.skirtSeed || 1.7, 1, mass.material, new T.MeshStandardMaterial({ color: 0x0c0218, metalness: 0.2, roughness: 0.3 })) : null; if (skirt) b.add(skirt);
   const parts = [];   // [shard, x, y, z, rotX, rotY, rotZ]
-  for (const s of o.shards) { const sh = blade(s.w * 1.2, s.h, s.d || 0.1); sh.position.set(s.x, s.y, s.z); sh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0); b.add(sh); parts.push({ sh, y0: s.y, inBlob: !!s.inBlob, rz: s.rz || 0 }); }
+  for (const s of o.shards) { const sh = blade(s.w * 1.2, s.h, s.d || 0.1); sh.position.set(s.x, s.y, s.z); sh.rotation.set(s.rx || 0, s.ry || 0, s.rz || 0); b.add(sh); parts.push({ sh, y0: s.y, inBlob: !!s.inBlob, rz: s.rz || 0, p0: [s.x, s.y, s.z], r0: [s.rx || 0, s.ry || 0, s.rz || 0] }); }
   const eyes = []; if (o.face) for (const sx of [-1, 1]) { const e = sphere(0.045, M.black, 12); e.scale.set(1, 1.3, 0.5); b.add(e); eyes.push([e, sx]); }
   const mouth = o.face ? cbox(0.2, 0.018, 0.02, 0.004, M.black) : null; if (mouth) b.add(mouth);
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.9); b.add(L); LIGHTS.push(L);
-  return { g, core: R * 0.4 * (o.S || 1), update(t, act) {
+  return { g, core: R * 0.4 * (o.S || 1), update(t, act, v) {
+    const SB = o.stab && v && v.up != null;   // (No. 937, the SHARD SHOT: v = { up: the big shard risen, tilt: tipped at the enemy, grow: 1 there, 0 gone (shot), between: growing back })
     mass.wobble(t, act); if (skirt) skirt.shift(t); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq - 0.3 * (act || 0);
     parts.forEach((q, i) => { if (q.inBlob) { q.sh.position.y = q.y0 * up; q.sh.rotation.z = q.rz + 0.04 * Math.sin(1.6 * t + i); } });
+    if (SB) {   // THE SHARD SHOT: the big shard rises out of the blob and tips toward the enemy (v.up, v.tilt), is gone once it has been shot (v.grow 0) and grows back from the blob (v.grow 0 to 1)
+      const A = parts[0], g = v.grow;
+      A.sh.position.set(A.p0[0], A.p0[1] + 0.75 * v.up, A.p0[2]); A.sh.rotation.set(A.r0[0] + 0.95 * v.tilt, A.r0[1] * (1 - v.tilt), A.r0[2] * (1 - v.tilt)); A.sh.scale.set(Math.max(0.001, g), Math.max(0.001, g), Math.max(0.001, g)); }
     const [dx, dy, dz] = mass.dims;   // the face sits on the front of the lump
     eyes.forEach(([e, sx]) => { e.position.set(sx * dx * 0.28, dy * 0.72 * up, dz * 0.82); });
     if (mouth) mouth.position.set(0, dy * 0.52 * up, dz * 0.9); } };
@@ -208,3 +212,7 @@ fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, S: 1.3, sk
 fx(115, "Ground blob, see-through, shards inside.", () => _groundDesign({ R: 0.8, flat: 0.7, clear: true, face: true, shards: [
   { x: 0, y: 0.04, z: 0, w: 0.3, h: 0.7, rz: 0.2, inBlob: true }, { x: -0.4, y: 0.04, z: 0.1, w: 0.24, h: 0.5, rz: -0.5, inBlob: true }, { x: 0.4, y: 0.04, z: -0.15, w: 0.24, h: 0.5, rz: 0.6, inBlob: true },
   { x: 1.1, y: 0, z: 0.3, w: 0.22, h: 0.6, rz: 0.1, ry: 0.5 }, { x: -1.05, y: 0, z: -0.4, w: 0.24, h: 0.65, rz: -0.2, ry: -0.4 }, { x: 0.3, y: 0, z: 1.1, w: 0.2, h: 0.4, rz: 0.25, ry: 2.2 }] }));
+// 937 · THE RIFT MIMIC's SHARD SHOT (the owner, 2026-11-11, of its everyday hit: "Shard stab", then a fist of spikes and a hammer and stake, neither liked; then: "just this time make it to where the shard comes up and shoots at the enemy and regrows like the quill stone"): No. 114 whose big shard rises out of the blob, tips at the enemy, is shot off (gone) and grows back (its everyday hit; the sheet's extra block). The flying shard is drawn by the game (js/evolution.js mimicShotDraw).
+fx(937, "The RIFT MIMIC's shard stab: No. 114: its big shard rises, tips at the enemy, is shot off and grows back.", () => _groundDesign({ R: 0.78, S: 1.3, skirt: 0.8, flat: 0.55, bump: [-0.8, 0.05, 0.5], stab: true, shards: [
+  { x: -0.1, y: 0.1, z: 0, w: 0.34, h: 1.1, rx: 0.08, rz: 0.15, inBlob: true }, { x: 0.45, y: 0.12, z: -0.2, w: 0.28, h: 0.78, rx: -0.2, rz: 0.55, inBlob: true },
+  { x: -1.1, y: 0, z: 0.3, w: 0.28, h: 0.8, rz: -0.15, ry: 0.4 }, { x: 0.9, y: 0, z: 0.75, w: 0.26, h: 0.65, rz: 0.2, ry: -0.6 }] }));

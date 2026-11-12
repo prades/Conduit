@@ -27,6 +27,8 @@ const SUITES = [
     ['the Thunderhead\'s STATIC VORTEX as a dark storm (design C of six, baked from three.js): the mechanics as they were, its sheet baked and cropped, which frame, nothing flat on the floor, grown and faded, gone with its life', 'tornado.js'],
     ['the Quillstone\'s attacks: its sheet baked and cropped (40 columns), QUILL BURST\'s turn, its quills leaving after it, the bare second and the regrowth in order, the everyday hit\'s dive', 'quillstone.js'],
     ['the Frost Maw\'s attacks: CHOMP drops giant jaws and bites as they shut (once, on the enemy as it is then, none from a dead Maw), the reach and wait as they were, its sheets baked and cropped', 'mawattacks.js'],
+    ['the Rift Mimic\'s shard shot: its everyday hit a shard that rises, is shot at the enemy and grows back, the hit it always was landing with it (once, none from a dead Mimic), the cells in order, its sheet baked and cropped', 'mimicshot.js'],
+    ['code cards and the naming system: a code (\"Kylie\" or \"frommatt\") gives a level 20 mantis tank clone named Emotional Support once a save, the Mutator\'s primary clone, not used up with a clone out or before a run; the name, its cleaning and its save; the shop tab\'s box', 'redeem.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],
     ['levels and stats',         'levels.js'],
