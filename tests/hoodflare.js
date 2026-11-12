@@ -133,6 +133,18 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(!/jar\.position\.y\s*[-+]=/.test(fd) && /jar\.position\.y = jy0/.test(fd), 'the jar is moved by a step: one model draws every cell of a sheet in turn, so a step adds up');
     });
 
+    group('THE VOIDSTAR LIFTS ITS FRONT ARMS TOWARDS THE ENEMY OVER MAELSTROM (build 2026-11-12q; the owner: "Lifts his front arms up towards the enemy"; design No. 943)');
+    check('over the move\'s wind-up the cells run 16 to 21, then 22 and 23 after the swirl opens, then its own frames; the old bow is not shown after it; only the Voidstar has it; its sheet is 24 columns of 8 facings, every cell a sensible size', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), d = evolvedDef(f), t = __foe(f.x + 3, f.y); followerAltSet(f, 'maelstrom'); const out = [], c = () => reachCol(f, frame, d); f._altWindMax = 150;
+            for (const w of [150, 125, 100, 75, 50, 25, 1]) { f._altWind = w; out.push(c()); }
+            f._altWind = 0; f.currentWill = 100; frame++; const fired = maelstrom(f), at = f._maelAt === frame;
+            for (const a of [0, 3, 4, 11, 12]) out.push(reachCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col;
+            return { out, fired, at, hold, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].reach).join() }; })())`));
+        same(r.out.join(), '16,17,18,19,20,21,21,22,22,23,23,-1', 'cells'); ok(r.fired, 'MAELSTROM did not fire'); ok(r.at, 'when it went off'); ok(r.hold >= 16, 'the old bow is shown after it: ' + r.hold); same(r.who, 'voidstar', 'who has it');
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 24, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
+        for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and the lighting up for HEXFIRE), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));

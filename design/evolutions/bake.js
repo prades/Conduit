@@ -149,7 +149,8 @@ const JOBS = [
   // No. 791 (the game sprite of 781, darkened), the electric brawler: a near-black ball with an exposed amber diamond core, one slim tread band, open shell plates, and a pair of long thick trapezoid brackets running down its back; static arcs between them. Its action frames spin the tread, flare the core and arc the static, up and back.
   { id: 'staticorb', form: 791, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, keepSprites: true, glowNormal: true },
   // No. 640 (the game sprite of 637), the flux ("void") mage: the dark spined starfish carrying an orb of violet fluid with a diamond in it; the diamond turns and bubbles rise. Its action frames flare the orb, up and back.
-  { id: 'voidstar', form: 640, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, keepSprites: true, glowNormal: true },
+  { id: 'voidstar', form: 943, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, keepSprites: true, glowNormal: true,
+    blocks: [[{ lift: 0.15, thrust: 0 }, { lift: 0.35, thrust: 0 }, { lift: 0.6, thrust: 0 }, { lift: 0.8, thrust: 0 }, { lift: 0.95, thrust: 0 }, { lift: 1, thrust: 0 }, { lift: 1, thrust: 1 }, { lift: 0.4, thrust: 0.3 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 943, forms24.js, since 2026-11-12: No. 640 with the arms that face the enemy lifting and reaching over MAELSTROM's wind-up (columns 16-21), thrust as the swirl opens (22), lowering (23); the owner: "Lifts his front arms up towards the enemy")
   // The electric and fire designs swapped. The ring drone (No. 90, the old fire mage) now stands in for the electric brawler, in electric yellow: a placeholder.
   { id: 'voltring', form: 90, color: '#ffee33', idleAct: 0.1, action: [0.6, 1.0] },
   // The hooded pyramid with the hovering gems (No. 391, the old electric brawler) is now the fire mage, in fire red.

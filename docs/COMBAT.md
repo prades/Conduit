@@ -210,7 +210,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
 | THUNDERHEAD | Mage · electric | Elemental (CHAIN LIGHTNING: the shot conducts on, by distance) | STATIC VORTEX (a stationary pull that bites): Elemental |
-| VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
+| VOIDSTAR | Mage · flux | Elemental | MAELSTROM: Elemental (it replaced SINGULARITY SHOT, build `2026-11-12q`) |
 | EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental (FIRE BOMBS taken out as an alternate, 2026-11-07) |
 | RIMESTAR | Mage · ice | Projectile (ice shards) | ICICLE VOLLEY (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Projectile, three of its shots (reading SP.ATK) (BASH before) |
 | HORNSHELL | Mage · core | Projectile (horn spines) | ECHO PULSE (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Elemental (BASH before) |

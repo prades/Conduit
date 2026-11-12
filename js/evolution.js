@@ -177,7 +177,7 @@ const EVOLUTIONS = {
     // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "MAELSTROM", sheet: "img/evo/voidstar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true },   // (24 columns since build 2026-11-12q, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 8-15, its old bow, are not used by the move now)
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -897,7 +897,7 @@ function maelstrom(f) {
     for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "maelstrom" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (the same Voidstar's last one goes)
     const e = { type: "maelstrom", x: t.x, y: t.y, radius: MAEL_RADIUS, life: MAEL_LIFE, maxLife: MAEL_LIFE, by: f, bite: (f.power || 10) * MAEL_BITE, element: "flux" };
     elementEffects.push(e); maelstromBeat(e);
-    f._sigAt = f0; f._sigCd = moveWindupFrames("maelstrom");
+    f._sigAt = f0; f._maelAt = f0; f._sigCd = moveWindupFrames("maelstrom");
     { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     _evoSay(f, "MAELSTROM", "#cc88ff");
     return true;
@@ -1297,14 +1297,16 @@ function _evoFrame(f, d, f0) {
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const go = d.goo ? gooCol(f, f0) : -1;   // (the Hornshell's everyday shot: its arms are drawn in and a ring of glowing goo forms in front of its horn)
+    const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
     const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
     const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
-    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
+    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES) || (d.reach && f._maelAt !== undefined && f0 - f._maelAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (rc >= 0) col = rc;
     else if (pu >= 0) col = pu;
     else if (go >= 0 && !(sigK >= 0 && sigK < 1)) col = go;
     else if (fn >= 0) col = fn;
@@ -1518,6 +1520,14 @@ function flareCol(f, f0) {
     return -1;
 }
 
+// which column of the Voidstar's sheet (the extra block, 16 to 23: design No. 943) while MAELSTROM goes (the owner, 2026-11-12: "Lifts his front arms up towards the enemy"): over its wind-up (f._altWind of
+// f._altWindMax) cells 0 to 5 (the arms that face the enemy lifting and reaching), then, as the swirl opens, 4 frames at cell 6 (the thrust) and 8 at cell 7 (lowering); -1 otherwise. Looks only; the frame counts are the agent's.
+function reachCol(f, f0, d) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "maelstrom" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
+    if (f._maelAt !== undefined) { const a = f0 - f._maelAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 12) return 23; }
+    return -1;
+}
 // which column of the Hornshell's sheet (the extra block, 16 to 23: design No. 941) while ECHO PULSE goes: over its wind-up (f._altWind of f._altWindMax) cells 0 to 5 (the arms drawn in), then the ring of water: 4 frames at cell 6,
 // 8 at cell 7; -1 otherwise
 function pullCol(f, f0, d) {

@@ -3151,3 +3151,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
 - The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
 
+## DECISION: The Voidstar's second attack is MAELSTROM, replacing SINGULARITY SHOT; its front arms lift towards the enemy (2026-11-12, build `2026-11-12q`, branch `claude/voidstar-maelstrom`)
+- After INK SPIT (built, not liked, dropped: the owner, "I do not like that", then "Delete the branch, we'll skip ink spit"), the owner: **"Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them."** The owner chose: **replace** SINGULARITY SHOT (alternative: keep both), a **lasting swirl** (alternative: one burst), the game's **blind** as the disorient (alternative: GLITCH, the wind-up break). Then: **"Now animate the void star himself"**; of MAELSTROM (alternatives: the other attack, both) and the body: **"Lifts his front arms up towards the enemy."**
+- Built: see `CHANGELOG.md`. The legacy Serpent keeps SINGULARITY SHOT; a Voidstar saved locked on it is carried to MAELSTROM.
+- Agent's, provisional (no numbers given): 1.8 tiles, 3 s, a beat every 0.5 s, 0.3 x power, blind 45 frames, a boss not blinded; the reach and wind-up are SINGULARITY SHOT's.
+- Open: the numbers; whether a boss may be blinded; whether the Serpent loses SINGULARITY SHOT too; the Voidstar's everyday shot.
+- Superseded: SINGULARITY SHOT as the Voidstar's move (history kept; code kept for the Serpent); INK SPIT (never merged).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+

@@ -325,21 +325,27 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 125, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
-    check('the VOIDSTAR (the void mage) fires SINGULARITY SHOT too', () => {
+    check('the VOIDSTAR (the void mage) fires MAELSTROM (build 2026-11-12q; the owner: "Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them"; it replaced SINGULARITY SHOT): a swirl opens on the nearest enemy it can see, everything in it is bitten and BLINDED (a boss is bitten, not blinded), the beat comes round every MAEL_TICK frames, what is outside is not touched, it ends, and it waits its wind-up', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'voidstar'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
-            const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
+            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.2, 2.4), boss = mkP('ant', 25.6, 1.3), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2); boss.isBoss = true;
             frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
-                slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
-            [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
-        ok(r.tgt > 0, 'no hit on the target: ' + JSON.stringify(r));
-        ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
-        same(r.beetleIn, 0, 'a beetle was dragged');
-        ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
-        ok(r.cd > 150, 'it did not wait: ' + r.cd);
+            const d = p => 1e6 - p.health, e = elementEffects.find(q => q.type === 'maelstrom');
+            const first = { tgt: d(tgt), mate: d(mate), boss: d(boss), apart: d(apart), far: d(tooFar), tb: tgt.blinded || 0, mb: mate.blinded || 0, bb: boss.blinded || 0, ab: apart.blinded || 0 };
+            tgt.blinded = 0; for (let i = 0; i < 31; i++) { frame++; updateElementEffects(); }
+            const second = { tgt: d(tgt), tb: tgt.blinded || 0 }, still = !!e && e.x === 25 && e.y === 2;
+            for (let i = 0; i < 200; i++) { frame++; updateElementEffects(); }
+            const out = { first, second, still, ended: !elementEffects.some(q => q.type === 'maelstrom'), cd: f._sigCd, at: f._maelAt !== undefined, move: EVOLUTIONS.voidstar.move, ids: evoMoveIds(EVOLUTIONS.voidstar).join(), k: [MAEL_RANGE, MAEL_RADIUS, MAEL_LIFE, MAEL_TICK, MAEL_BITE, MAEL_BLIND].join() };
+            [tgt, mate, boss, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
+        const F = r.first; ok(F.tgt > 0 && F.mate > 0 && F.boss > 0, 'not everything in it was bitten: ' + JSON.stringify(r)); same(F.tb, 45, 'the target\'s blind'); same(F.mb, 45, 'the one beside it\'s blind'); same(F.bb, 0, 'a boss was blinded'); same(F.apart, 0, 'one outside it was bitten'); same(F.ab, 0, 'one outside it was blinded'); same(F.far, 0, 'one out of reach was hit');
+        ok(r.second.tgt > F.tgt, 'no second beat: ' + JSON.stringify(r.second)); same(r.second.tb, 45, 'the beat starts the blind afresh'); ok(r.still, 'it moved'); ok(r.ended, 'it did not end'); ok(r.cd > 150, 'it did not wait: ' + r.cd); ok(r.at, 'when it went off'); same(r.move, 'MAELSTROM', 'its move'); same(r.ids, 'maelstrom', 'its moves'); same(r.k, '6.5,1.8,180,30,0.3,45', 'its reach, radius, life, beat, bite and blind');
+    });
+
+    check('a Voidstar saved locked on SINGULARITY SHOT comes back locked on MAELSTROM, and the legacy Serpent keeps SINGULARITY SHOT', () => {
+        const r = run(`(function(){ const v = { evolved: 'voidstar', isFollower: true }, sp = { evolved: 'serpent', isFollower: true };
+            return { carried: moveAltCarried(v, 'singularity_shot'), serpent: moveAltCarried(sp, 'singularity_shot'), bash: moveAltCarried(v, 'maelstrom'), serpentIds: evoMoveIds(EVOLUTIONS.serpent).join() }; })()`);
+        same(r.carried, 'maelstrom', 'a saved SINGULARITY SHOT on a Voidstar'); same(r.serpent, 'singularity_shot', 'the Serpent\'s saved choice'); same(r.serpentIds, 'singularity_shot', 'the Serpent\'s move'); same(r.bash, 'maelstrom', 'a saved MAELSTROM is kept');
     });
 
     check('the legacy SERPENT still fires SINGULARITY SHOT for a follower already evolved into it', () => {
@@ -463,7 +469,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
-            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : run('EVOLUTIONS.' + id + '.chomp') ? 32 : (run('EVOLUTIONS.' + id + '.lash') || run('EVOLUTIONS.' + id + '.stomp') || run('EVOLUTIONS.' + id + '.shard') || run('EVOLUTIONS.' + id + '.flare') || run('EVOLUTIONS.' + id + '.pull')) ? (run('EVOLUTIONS.' + id + '.blaze') || run('EVOLUTIONS.' + id + '.fan') || run('EVOLUTIONS.' + id + '.goo') ? 32 : 24) : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n; the Frost Maw's has 32 and a 192 px cell, CHOMP's two blocks: build 2026-11-11v)
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : run('EVOLUTIONS.' + id + '.chomp') ? 32 : (run('EVOLUTIONS.' + id + '.lash') || run('EVOLUTIONS.' + id + '.stomp') || run('EVOLUTIONS.' + id + '.shard') || run('EVOLUTIONS.' + id + '.flare') || run('EVOLUTIONS.' + id + '.pull') || run('EVOLUTIONS.' + id + '.reach')) ? (run('EVOLUTIONS.' + id + '.blaze') || run('EVOLUTIONS.' + id + '.fan') || run('EVOLUTIONS.' + id + '.goo') ? 32 : 24) : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n; the Frost Maw's has 32 and a 192 px cell, CHOMP's two blocks: build 2026-11-11v)
             const P = run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'), pk = P && JSON.parse(P);   // (cropped since build 2026-11-09r, js/evopack.js: its grid as baked, its size as cropped; or a full grid, left whole)
             if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
             else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
