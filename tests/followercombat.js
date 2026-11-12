@@ -180,17 +180,17 @@ function measure(w, h) {
             let fr = 0; while (!followerProjectiles.length && fr < 120) { frame++; updateNPC(f); fr++; }
             const p = followerProjectiles[0], i = followerInfo(f).attacks.find(s => /^MAIN ATTACK/.test(s.h));
             return { got: !!p, el: p && p.element, kind: p ? p.kind || null : null, onHit: p ? !!p.onHit : null, hit: p && p.hit === DMG_HIT_SHOT, dmg: p && p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, shot: EVOLUTIONS.embercowl.shot, info: i && i.h }; })()`);
-        ok(r.got, 'no shot'); same(r.el, 'fire', 'its element'); same(r.kind, null, 'a special look (it is the fire shot, drawn as a fireball)'); same(r.onHit, false, 'an effect of its own'); ok(r.hit, 'not the Mages\' shot');
+        ok(r.got, 'no shot'); same(r.el, 'fire', 'its element'); same(r.kind, 'fireball', 'its look: a glowy blob since build 2026-11-12g (the owner, 2026-11-12: "Make it look like a fun glowy blob"), no other effect of its own'); same(r.onHit, false, 'an effect of its own'); ok(r.hit, 'not the Mages\' shot');
         ok(Math.abs(r.dmg - r.want) < 1e-9, 'damage ' + r.dmg + ' not ' + r.want); same(r.shot, 'FIREBALL', 'its name'); same(r.info, 'MAIN ATTACK · FIREBALL', 'INFO');
     });
-    check('HEXFIRE: one shot at the nearest enemy in reach, doing no damage itself; where it lands, a circle HALO_RADIUS tiles round that bites every enemy in it at once and every HALO_TICK frames, then is gone after HALO_LIFE frames', () => {
+    check('HEXFIRE (no shot since build 2026-11-12h: the owner, "no projectile it\'s just he lights up and then a crater erupts lava"): at the nearest enemy in reach, a circle HALO_RADIUS tiles round opens at once under it and bites every enemy in it at once and every HALO_TICK frames, then is gone after HALO_LIFE frames', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'sniper', 'embercowl'), t = __foe(f.x + 5, f.y + 0.5); __fire(f); __off(f);
             const shot = followerProjectiles.find(p => p.kind === 'hex'); let fr = 0, c = null; while (!c && fr < 200) { render(); fr++; c = elementEffects.find(e => e.type === 'hexfire'); }
             const at = c && { x: c.x, y: c.y, r: c.radius, life: c.life, maxLife: c.maxLife }, first = __dmg(t), bites = []; let last = first, k = 0;
             while (elementEffects.some(e => e.type === 'hexfire') && k < 400) { render(); k++; const d = __dmg(t); if (d !== last) { bites.push(k); last = d; } }
             const twin = __foe(f.x + 40, f.y + 40); applyDamage(twin, f.power * HALO_BITE, f, 'fire', false, false, DMG_HIT_ALT);
             return { shot: shot ? shot.damage : null, landed: fr, at, t: [t.x, t.y], first, bites, after: k, one: __dmg(twin), r: HALO_RADIUS, tick: HALO_TICK, life: HALO_LIFE }; })()`);
-        same(r.shot, 0, 'the shot\'s own damage'); ok(r.at, 'no circle');
+        same(r.shot, null, 'it made a shot'); ok(r.landed <= 1, 'frames before the circle (it is at once): ' + r.landed); ok(r.at, 'no circle');
         ok(Math.hypot(r.at.x - r.t[0], r.at.y - r.t[1]) < 1.1, 'not where it landed on the enemy: ' + JSON.stringify(r)); same(r.at.r, r.r, 'its radius');
         ok(Math.abs(r.first - r.one) < 1e-6 * r.one + 1e-6, 'it bit at once as it landed: ' + JSON.stringify(r));
         ok(r.bites.length >= 6 && r.bites.every((b, i) => i === 0 || b - r.bites[i - 1] === r.tick), 'a bite every ' + r.tick + ' frames: ' + JSON.stringify(r.bites));
@@ -217,11 +217,11 @@ function measure(w, h) {
             out.circles = elementEffects.filter(e => e.type === 'hexfire' && e.by === f).length; out.most = n2; return out; })()`);
         same(r.mate, 0, 'the follower in it was hurt'); same(r.player, 0, 'the player in it was hurt'); same(r.circles, 1, 'circles of one Ember Hood'); same(r.most, 1, 'two at once');
     });
-    check('a shot that touches nobody lands where it was aimed and leaves its circle there; the retired Cinder Halo shares the move; HEXFIRE its one alternate on INFO (FIRE BOMBS taken out, 2026-11-07)', () => {
+    check('the circle opens under the enemy where it stands as HEXFIRE goes off (an enemy that moves on at once is not followed: nothing flies); the retired Cinder Halo shares the move; HEXFIRE its one alternate on INFO (FIRE BOMBS taken out, 2026-11-07)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'sniper', 'embercowl'), t = __foe(f.x + 5, f.y); __fire(f); __off(f); const aim = [t.x, t.y]; t.x += 30;
             let fr = 0, c = null; while (!c && fr < 200) { render(); fr++; c = elementEffects.find(e => e.type === 'hexfire'); }
             return { at: c && [c.x, c.y], aim, halo: evoMoveIds(EVOLUTIONS.halo), ember: evoMoveIds(EVOLUTIONS.embercowl), def: evoMoveOf(f).id }; })()`);
-        ok(r.at && Math.hypot(r.at[0] - r.aim[0], r.at[1] - r.aim[1]) < 0.4, 'not where it was aimed: ' + JSON.stringify(r));
+        ok(r.at && Math.hypot(r.at[0] - r.aim[0], r.at[1] - r.aim[1]) < 0.4, 'not where the enemy stood: ' + JSON.stringify(r));
         same(r.halo.join(), 'hexfire', 'the Cinder Halo'); same(r.ember.join(), 'hexfire', 'the Ember Hood (FIRE BOMBS taken out, 2026-11-07)'); same(r.def, 'hexfire', 'its default');
     });
 
@@ -453,7 +453,7 @@ function measure(w, h) {
         ok(r.hurt > 0, 'the enemy was not hit'); ok(r.mended >= r.share * 0.999, 'the hurt follower was mended ' + r.mended + ', not ' + r.share);
     });
     check('SEEDFALL: cast on the nearest enemy it can see in reach (no shot): a circle SEEDFALL_RADIUS tiles round on it that bites every enemy in it at once and every SEEDFALL_TICK frames, and mends each of your hurt followers in it by SEEDFALL_MEND of its maximum health each time; gone after SEEDFALL_LIFE frames; a follower outside it is not mended by it', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 5, f.y + 0.5), inn = __fol('fire', 'brawler', null), outt = __fol('fire', 'brawler', null);
+        const r = J(`(function(){ __clear(); frame += 7; /* (off the frame the followers' periodic mending lands on: this test's frame depended on how many frames the tests before it had run, which changed when HEXFIRE stopped waiting on a shot, build 2026-11-12h) */ const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 5, f.y + 0.5), inn = __fol('fire', 'brawler', null), outt = __fol('fire', 'brawler', null);
             inn.x = t.x + 0.6; inn.y = t.y; outt.x = t.x + 4; outt.y = t.y + 3; for (const m of [inn, outt]) m.health = m.maxHealth * 0.3;
             const at0 = [t.x, t.y], oPre = outt.health; __fire(f); __off(f); __off(inn); __off(outt); followers.push(inn, outt);
             const c = elementEffects.find(e => e.type === 'seedfall' && e.by === f), at = c && { x: c.x, y: c.y, r: c.radius, life: c.life }, first = __dmg(t), m0 = inn.maxHealth, h0 = inn.health, firstMend = inn.health - inn.maxHealth * 0.3, o0 = outt.health, outFirst = outt.health - oPre;
@@ -467,7 +467,7 @@ function measure(w, h) {
         ok(Math.abs(r.first - r.one) < 1e-6 * r.one + 1e-6, 'it bit at once as it opened: ' + JSON.stringify(r));
         ok(r.bites.length >= 6 && r.bites.every((b, i) => i === 0 || b - r.bites[i - 1] === r.tick), 'a bite every ' + r.tick + ' frames: ' + JSON.stringify(r.bites));
         ok(r.after <= r.life + 2 && r.after >= r.life - 2, 'it lasted ' + r.after + ' frames, not ' + r.life);
-        ok(Math.abs(r.firstMend - r.share) < 1e-6, 'the follower in it was mended ' + r.firstMend + ' as it opened, not ' + r.share);
+        ok(Math.abs(r.firstMend - r.share) < 1e-6, 'the follower in it was mended ' + r.firstMend + ' as it opened, not ' + r.share + ' ' + JSON.stringify({ m0: r.m0, gained: r.gained, outFirst: r.outFirst, beatIn: r.beatIn, share: r.share }));
         ok(r.gained >= r.bites.length * r.mend * r.m0 * 0.999, 'the follower in it was mended each beat: ' + r.gained + ' after the first (' + r.bites.length + ' beats)'); same(r.outFirst, 0, 'the follower outside it was mended as it opened'); ok(Math.abs(r.beatIn - r.beatShare) < 1e-9, 'a beat mended the follower in it ' + r.beatIn + ', not ' + r.beatShare); same(r.beatOut, 0, 'a beat mended the follower outside it');
         ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
     });

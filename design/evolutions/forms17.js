@@ -80,3 +80,7 @@ fx(390, "386 (feet, tufts, bobble) with three hovering gems, one above two.", ()
 
 // The game sprite of No. 388: the hood facing forward, scaled to fill its cell.
 fx(391, "388, the game sprite.", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'up', yaw: 0, S: 1.45 })));
+// 938 · THE EMBER HOOD's FLARE (the owner, 2026-11-12, of the fire mage's everyday FIREBALL; of the agent's three looks: "Hood flare"): No. 391 whose hood swells and whose diamond and gems blaze as a fireball
+// forms in front of it, which then leaves (the game draws the shot flying); the sheet's extra block, columns 16-23, plays over the shot's wind-up and settles after it.
+fx(938, "The EMBER HOOD's flare: No. 391 swelling, blazing, a fireball forming in front of it (its everyday FIREBALL; the sheet's extra block).", () => _hoodPyramid(Object.assign({}, _c380, _b383, { triGems: 'up', yaw: 0, S: 1.45, flare: true })));
+

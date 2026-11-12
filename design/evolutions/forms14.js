@@ -375,7 +375,7 @@ function _hoodPyramid(o) {
   const hv = o.hover, H = o.H, R = o.R, tilt = o.tilt || 0;
   const pv = G(); pv.rotation.x = tilt; pv.position.set(0, hv, 0); b.add(pv);   // tips forward a little, like a hood bowed toward you
   // three faces: the front (+z) one is missing. A square pyramid cut into 3 segments of 90 degrees each.
-  const hood = new T.Mesh(new T.ConeGeometry(R, H, 3, 1, true, PI / 4, 3 * PI / 2), _hoodBlack); hood.position.y = H / 2; pv.add(hood);
+  const hood = new T.Mesh(new T.ConeGeometry(R, H, 3, 1, true, PI / 4, 3 * PI / 2), o.flare ? _hoodBlack.clone() : _hoodBlack); hood.position.y = H / 2; pv.add(hood);   // (o.flare: its own material, to glow: HEXFIRE's lighting up)
   // the open front's two edges, and the rim: dark steel, or silver
   const trim = o.silver ? _boltSilver : _hoodBlack;
   for (const k of [0, 1, 2, 3]) { const a = PI / 4 + k * PI / 2, bar = limb(o.trim || 0.022, trim); setLink(bar, new T.Vector3(Math.sin(a) * R, 0, Math.cos(a) * R), new T.Vector3(0, H, 0)); pv.add(bar); }
@@ -401,6 +401,9 @@ function _hoodPyramid(o) {
     pts.forEach(([x, y], i) => { const gem = G(), dd = _diamond('octa', o.triR || 0.055); gem.add(dd.main); gem.add(dd.core); const gl = glowSprite((o.triR || 0.055) * 6); gem.add(gl); gem.position.set(x, dY + 0.02 + y, gz); pv.add(gem); cute.tri.push({ gem, x, y, i, gz, dd }); }); }
   if (o.feet) for (const [fx2, fz2] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const f = cbox(0.22, 0.17, 0.26, 0.06, _hoodBlack); f.position.set(fx2 * R * 0.45, 0.1, fz2 * R * 0.38); b.add(f); cute.feet.push({ f, fz2, fx2 }); }
   if (o.bobble) { const bb = new T.Mesh(new T.SphereGeometry(0.075, 12, 10), _hoodBlack); bb.position.y = H + 0.06; pv.add(bb); }
+  // THE FLARE (o.flare, No. 938: the EMBER HOOD's everyday FIREBALL): a fireball forming in front of the hood (a ball and a fainter, bigger one round it: meshes, for the sheet carries no sprites)
+  const flBall = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), M.glow) : null, flHalo = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.32, depthWrite: false })) : null;
+  if (o.flare) { flHalo.material.color.copy(M.glow.color); flBall.visible = flHalo.visible = false; b.add(flBall); b.add(flHalo); }
   const jolts = [];   // the coat's shards, to be jolted
   if (o.attached) { const A = o.attached, UPV2 = new T.Vector3(0, 1, 0), faces = [PI / 2, PI, -PI / 2], A0 = R * Math.SQRT1_2, rn = (i, k) => _hz(i * 5 + 1, A.seed + k * 11, k);
     const shapeK = A.shape || 'cone', mkShard = (len, r, i) => { const geo = shapeK === 'hex' ? new T.CylinderGeometry(r * 0.3, r, len, 6, 1) : new T.ConeGeometry(r, len, 4 + Math.floor(rn(i, 40) * 3), 1), p = geo.attributes.position; for (let v = 0; v < p.count; v++) { const x = p.getX(v), y = p.getY(v), z = p.getZ(v), n = _hz(Math.round(x * 400) + i, Math.round(y * 400), Math.round(z * 400)); p.setXYZ(v, x * (0.7 + 0.6 * n) * (shapeK === 'blade' ? 2.4 : shapeK === 'needle' ? 0.5 : 1), y, z * (0.7 + 0.6 * (1 - n)) * (shapeK === 'blade' ? 0.3 : shapeK === 'needle' ? 0.5 : 1)); } geo.translate(0, len / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, _hoodBlack); };
@@ -431,7 +434,7 @@ function _hoodPyramid(o) {
     for (const J of jolts) { const h1 = _hz(J.i * 7 + beat, 3, 1), h2 = _hz(J.i * 5, beat * 9 + 1, 2), h3 = _hz(J.i, beat * 3, 3), pop = h3 > 0.55 ? 1 : 0.4, k = (0.075 + 0.1 * ac) * pop;   // SUBTLE: a few degrees, not a jolt
       _ea.set((h1 - 0.5) * 2 * k, (h2 - 0.5) * 2 * k * 0.6, (h3 - 0.5) * 2 * k); _qa.setFromEuler(_ea); J.m.quaternion.copy(J.q).multiply(_qa);
       J.m.scale.set(1 + 0.04 * pop * h1, 1 + (0.09 * pop + 0.2 * ac) * h2 + 0.02, 1 + 0.04 * pop * h1); } };
-  return { g, core: (hv + dY) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+  return { g, core: (hv + dY) * (o.S || 1), update(t, act, v) { const ph = 1.6 * t, ac = act || 0;
     if (o.jolt) jolt(ph, ac);
     if (o.bounce) { const sq = Math.sin(ph * 2); pv.position.y = hv + 0.05 * Math.abs(Math.sin(ph)); pv.scale.set(1 - 0.035 * sq, 1 + 0.07 * sq, 1 - 0.035 * sq); pv.rotation.z = 0.04 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
     else { pv.position.y = hv + 0.03 * Math.sin(ph); pv.rotation.x = tilt - 0.12 * ac; }
@@ -441,6 +444,9 @@ function _hoodPyramid(o) {
      dc.position.y = d.position.y;
     dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac)); L.intensity = 1.4 + 0.4 * Math.sin(ph * 3) + 0.8 * ac;
     for (const s of shards) { const a = ph + (s.s > 0 ? 0 : PI); s.sg.position.set(s.s * o.shardR + Math.sin(a) * 0.05, hv + H * 0.55 + 0.06 * Math.sin(ph * 2 + s.s), 0.1 + 0.1 * Math.cos(a)); s.sg.rotation.set(0.2 * Math.sin(ph), a, s.s * 0.25); }
+    if (o.flare) { const FS = v && v.sw != null ? v : null, sw = FS ? FS.sw : 0, bl = FS ? FS.ball : 0; hood.material.emissive.set(0xff3a08).multiplyScalar(0.6 * (FS && FS.heat || 0));   // (v.heat, 0 to 1: HEXFIRE lights the hood itself, to a dull glowing red)   // the flare: the hood swells, its diamond and gems blaze and lean forward, the fireball grows in front of it (v: { sw, ball })
+      if (FS) { pv.scale.multiplyScalar(1 + 0.2 * sw); dg.scale.setScalar(o.dR * (8 + 2 * Math.sin(ph * 3) + 5 * ac + 16 * sw)); L.intensity += 2.4 * sw; cute.tri.forEach(T3 => { T3.gem.position.z += 0.2 * sw; T3.gem.position.y += 0.05 * sw; }); }
+      flBall.visible = flHalo.visible = bl > 0.02; if (bl > 0.02) { flHalo.material.color.copy(M.glow.color); const px = 0, py = hv + dY * 1.05 + 0.04 * bl, pz = 0.95 + 0.12 * bl; flBall.position.set(px, py, pz); flHalo.position.set(px, py, pz); flBall.scale.setScalar(0.03 + 0.26 * bl); flHalo.scale.setScalar(0.06 + 0.4 * bl); } }
     for (const q of bsh) if (q.orbit) { const a = ph * 0.8 + q.ph; q.g.position.set(Math.sin(a) * q.rad, hv + H * q.hy + 0.05 * Math.sin(ph * 2 + q.ph), Math.cos(a) * q.rad * 0.7 + 0.05); q.g.rotation.set(0.15 * Math.sin(ph + q.ph), a, 0.2); } } };
 }
 const _hp = { yaw: 0.05, hover: 0.35, H: 1.0, R: 0.62, dR: 0.15, shardR: 0.72 };

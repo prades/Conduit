@@ -3065,6 +3065,22 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's readings, provisional: any class may redeem it; a clone already out refuses the code rather than being replaced (the Mutator's one-clone rule stays, so the gift can be had again once the clone is dismissed or has fallen); no rename screen yet.
 - Status: Implemented and tested; not playtested. `CODES.md`, `CHANGELOG.md`.
 
+## DECISION: The Ember Hood's everyday FIREBALL is a hood flare (2026-11-12, build `2026-11-12g`, branch `claude/mage-attacks`)
+- The owner: "Work on the mages." The agent read it as the Mages' everyday-shot animations, one at a time as the Brawlers' were, took the Ember Hood first and offered three looks: a hood flare, a crystal spit, an overhand throw. Chosen: **"Hood flare"** (and "Ember Hood is fine" as the first mage).
+- Built: over the shot's wind-up the hood swells, its diamond and gems blaze and a fireball forms in front of it; it is gone as the shot leaves, and the hood settles. Looks only: the shot, its 12-frame wind-up and its rest are unchanged. HEXFIRE keeps its own frames.
+- Then, of the first build: **"I like the first phase of that fireball, but whenever it switches to like the gradient, high gradient orb, I don't like it. Make it look like a fun glowy blob."** The shot in flight (the fire shots' gradient orb) is, for the Ember Hood only, a wobbling blob of flat colours with little blobs shed behind it.
+- Open: the other six mages, one at a time (the owner picks a look for each).
+- Agent's, provisional: the size of the swell and the fireball, the settle's length.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: HEXFIRE is a volcanic crater under the enemy, with no shot (2026-11-12, build `2026-11-12h`, branch `claude/hexfire-lava`)
+- The owner: "Let's work on the secondary attack." The agent took it as the Ember Hood's HEXFIRE and offered three looks (hex brand, flame ring, ember bloom). The owner: **"All right for this one we're gonna need to change the trajectory of it as well. I'm not sure what I know is it barely hits the enemy when they're rushing towards you and they typically are but yeah, no satanic pentagram stuff for just a giant pool of lava"**; parts to change: **"The Hood's cast, So there's no projectile it's just he lights up and then a crater erupts lava."**
+- Then, of the first builds: **"Give me a more 3D looking effect, please. Maybe bubbles. But definitely more depth."** and **"make it look more cracked and rigid"** (a round crater with a lip, domed bubbles and angular crust plates); then **"It honestly looks like a bowl of soup or something. Like make it look like a fissure with volcanic activity."** A pure fissure was drafted; the owner: **"Make it still mostly a crater."** Final: a crater with a jagged broken rim (not a smooth bowl), a crust floor split by a glowing fissure, cracks out to the circle's edge, and vents that spit lava and sparks and puff smoke. The smooth round pool, its bubbles and plates are superseded. Then, of the cracks out of the rim (thin orange zigzags): **"Just remove the orange squiggly lines or make those more polished."** They are smooth tapered cracks now.
+- Built: no projectile; the Hood lights up over the wind-up; the crater opens at once under the nearest enemy where it stands (this changes how the move aims: it cannot miss a creature that runs on). Radius, life, bite, sight and reach unchanged. The retired Cinder Halo shares the move.
+- Open: whether the pool (and the circle with it) should be bigger ("giant": a balance change, not made); the owner's view of the cast time (2.75 s of lighting up) now that nothing flies.
+- Agent's, provisional: every size, speed and colour of the look.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
 ## DECISION: The bottom row, the quests at the top left, the landscape member card (2026-11-12, build `2026-11-12g`)
 - The owner: "I want to make it to where the UI is cleaned up a little bit. It looks more natural. Things are packed together where they should be." The command menu bottom left, a ROSTER button "directly on top of the command window, no margin"; to its right a slide-out squad roster of horizontal tiles across the bottom that grows as members join and slides back into "a smaller tab"; "cards and a backpack icon. Two different buttons there next to the health bar and shards count. Probably to the left of the core module."
 - Then: **"keep the roll out card view function but make it fit a horizontal landscape and make the move selection already selectable with out the drop down menu needed and the energy slots should be above the followers picture and they could react to the energy placements in the picture"**; **"you can put the quest information stuff at the top left. Plenty of freedom for that"**; **"We can hide the pack and cards menu button whenever the roster card is out of the pop-out. Keep it down low at the bottom of the screen."**
@@ -3086,3 +3102,18 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's, provisional: the icons' looks; the chamber the bay stands on.
 - Supersedes: the dock's SETTINGS, MAP, CLONES and ? (`2026-11-11w`), and the flat icons of the first try.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Rimestar's everyday shot is a fins flare (2026-11-12, build `2026-11-12i`, branch `claude/rimestar-attacks`)
+- The owner: "We'll talk about the rhyme star" (the Rimestar). The agent described what each of its two attacks does and offered three looks for the everyday shot (fins flare, shard spin, cold pulse). Chosen: the **everyday shot**, **"Fins flare"**; then: **"like the wings separate into two parts each, so there's six."**
+- Built: over the shot's wind-up each fin splits lengthwise into two halves that open like a V (six), the diamond blazes and a ball of frost forms in front; it is gone as the shot leaves and the fins close. The shot in flight is the Ember Hood's glowy blob, frosty (the agent's reading of the owner's earlier note; the old shard is no longer its shot). ICICLE VOLLEY unchanged.
+- Open: the Rimestar's second attack, ICICLE VOLLEY, has no animation of its own yet; the other five mages, one at a time.
+- Agent's, provisional: the opening, the ball's size, the settle.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Rimestar's ICICLE VOLLEY is a spinning fan that shoots crystals (2026-11-12, build `2026-11-12j`, branch `claude/icicle-fan`)
+- The owner: "Yeah, let's take on Icicle Volley. So, what, doesn't it already have like an animation?" The agent said what it had (the old generic cast on release only; nothing during the 2.5 s wind-up) and offered three looks (frost charge, fin icicles, cold bloom). The owner chose none of them and said: **"We can have it to where it turns into a fan and it shoots crystals at the enemy."**
+- The agent first built a folding (hand) fan; the owner corrected it: **"when an American says a fan, they're talking about a spinning fan you'd have in the office."** That draft is **superseded**. Built: over the wind-up the six fin halves become the blades of a spinning fan facing the enemy, faster and hazier each cell, with a crystal at each tip; three crystals are thrown forward as the three icicles leave. Looks only. The move's numbers are unchanged.
+- Open: the other five mages, one at a time.
+- Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch, the turn and blur per cell. Open: whether the owner wants a smoother spin (more cells).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
