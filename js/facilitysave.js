@@ -37,7 +37,6 @@ function facilitySaveCollect() {
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
         energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,   // the run's ENERGY CARDS not in a slot (js/energy.js): NEW GAME clears them
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
-        redeemed: typeof redeemSave === "function" ? redeemSave() : undefined,   // the codes' gifts this save has had (js/redeem.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
         bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, a follower fallen for good, a capsule on the floor (js/mutator.js, js/specimen.js)
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
@@ -126,7 +125,6 @@ function facilitySaveApply(d) {
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (typeof energySaveApply === "function") energySaveApply(d.energy);   // the run's ENERGY CARDS (js/energy.js; a game saved before them has none)
     if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
-    if (typeof redeemApply === "function") redeemApply(d.redeemed);   // (a game saved before the codes has none)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
     if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)

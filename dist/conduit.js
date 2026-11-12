@@ -17903,7 +17903,7 @@ function _cdRedeemBox() {
     inp.addEventListener("pointerdown", ev => ev.stopPropagation());
     inp.addEventListener("click", ev => ev.stopPropagation());
     row.appendChild(inp);
-    row.appendChild(_cdBtn("REDEEM", "A CODE'S GIFT COMES ONCE PER SAVE", "#7be3ff", go));
+    row.appendChild(_cdBtn("REDEEM", "", "#7be3ff", go));
     box.appendChild(row);
     if (_cdCodeSay)
         box.appendChild(_cdEl("div", "cd-note cd-redeem-say " + (_cdCodeSay.ok ? "ok" : "no"), _cdCodeSay.text));
@@ -18260,7 +18260,7 @@ function cardsRevealOpen() { return !!_cdReveal; }
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, _cdTab, _cdView, !!_cdReveal, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(),
-        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), (_cdCodeSay ? _cdCodeSay.text : "") + "|" + (typeof redeemSave === "function" ? redeemSave().join() : ""), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
+        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), (_cdCodeSay ? _cdCodeSay.text : ""), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot");
@@ -18304,7 +18304,7 @@ function cardsRender(force) {
             sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack));
             body.appendChild(_cdPackBox(pack));
         }
-        sec("REDEEM A CODE", "TYPE A CODE AND TAP REDEEM · EACH GIFT COMES ONCE PER SAVE");
+        sec("REDEEM A CODE", "TYPE A CODE AND TAP REDEEM");
         body.appendChild(_cdRedeemBox());
         sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES");
         body.appendChild(_cdMarketBox());
@@ -21534,10 +21534,6 @@ const REDEEM_GIFTS = {
     emotional_support: { species: "mantis", cls: "tank", level: 20, nick: "Emotional Support 💚", say: "EMOTIONAL SUPPORT 💚 JOINS YOUR SQUAD" },
 };
 const REDEEM_NAME_MAX = 24;
-let redeemedGifts = new Set();
-function redeemReset() { redeemedGifts = new Set(); }
-function redeemSave() { return [...redeemedGifts]; }
-function redeemApply(list) { redeemedGifts = new Set(Array.isArray(list) ? list.filter(id => typeof id === "string" && REDEEM_GIFTS[id]) : []); }
 function redeemNorm(code) { return String(code == null ? "" : code).trim().toLowerCase(); }
 function unitSetNick(u, name) {
     if (!u || typeof u !== "object")
@@ -21561,8 +21557,6 @@ function redeemTry(code) {
     if (!id)
         return { ok: false, why: "THAT IS NOT A CODE" };
     const g = REDEEM_GIFTS[id];
-    if (redeemedGifts.has(id))
-        return { ok: false, why: "THIS CODE'S GIFT IS ALREADY YOURS ON THIS SAVE" };
     if (typeof gameState === "undefined" || !gameState.running || typeof crystal === "undefined" || typeof makeClone !== "function")
         return { ok: false, why: "START A RUN FIRST: THE GIFT COMES TO THE CRYSTAL" };
     if (typeof cloneLiveCount === "function" && typeof cloneCap === "function" && cloneLiveCount() >= cloneCap())
@@ -21580,14 +21574,8 @@ function redeemTry(code) {
             cloneApplyUpgrades(k);
     }
     k.health = k.maxHealth;
-    redeemedGifts.add(id);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined")
         floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2, text: g.say, color: (typeof SPECIES !== "undefined" && SPECIES[g.species] ? SPECIES[g.species].color : "#44dd55"), life: 150, vy: -0.4, size: 15 });
-    if (typeof facilitySaveWrite === "function")
-        try {
-            facilitySaveWrite();
-        }
-        catch (e) { }
     return { ok: true, say: g.say, unit: k };
 }
 ;
@@ -29551,7 +29539,6 @@ function facilitySaveCollect() {
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,
         energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,
         dna: typeof getDNA === "function" ? getDNA() : {},
-        redeemed: typeof redeemSave === "function" ? redeemSave() : undefined,
         clones: cloneRosterSnapshot(),
         bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],
@@ -29727,8 +29714,6 @@ function facilitySaveApply(d) {
         energySaveApply(d.energy);
     if (typeof equipSaveApply === "function")
         equipSaveApply(d.cards);
-    if (typeof redeemApply === "function")
-        redeemApply(d.redeemed);
     if (Array.isArray(d.clones))
         cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function")
@@ -30882,8 +30867,6 @@ function facilityResetState() {
     respawnQueue = [];
     if (typeof clearDNA === "function")
         clearDNA();
-    if (typeof redeemReset === "function")
-        redeemReset();
     if (typeof mutatorReset === "function")
         mutatorReset();
     if (typeof specimenReset === "function")

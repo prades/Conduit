@@ -168,7 +168,7 @@ function _cdRedeemBox() {
     inp.addEventListener("input", () => { _cdCode = inp.value; });
     for (const t of ["keydown", "keyup", "keypress"]) inp.addEventListener(t, ev => { if (ev.key === "Escape") return; ev.stopPropagation(); if (t === "keydown" && ev.key === "Enter") { ev.preventDefault(); go(); cardsRender(true); } });   // (the game's keys stay out of the box; Escape still closes the sheet)
     inp.addEventListener("pointerdown", ev => ev.stopPropagation()); inp.addEventListener("click", ev => ev.stopPropagation());
-    row.appendChild(inp); row.appendChild(_cdBtn("REDEEM", "A CODE'S GIFT COMES ONCE PER SAVE", "#7be3ff", go)); box.appendChild(row);
+    row.appendChild(inp); row.appendChild(_cdBtn("REDEEM", "", "#7be3ff", go)); box.appendChild(row);
     if (_cdCodeSay) box.appendChild(_cdEl("div", "cd-note cd-redeem-say " + (_cdCodeSay.ok ? "ok" : "no"), _cdCodeSay.text));
     return box;
 }
@@ -383,7 +383,7 @@ function cardsRevealOpen() { return !!_cdReveal; }   // (is a pack's reveal up: 
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, _cdTab, _cdView, !!_cdReveal, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(),
-        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), (_cdCodeSay ? _cdCodeSay.text : "") + "|" + (typeof redeemSave === "function" ? redeemSave().join() : ""), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
+        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), (_cdCodeSay ? _cdCodeSay.text : ""), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot"); if (!root || !cardsPanelOpen) return;
@@ -404,7 +404,7 @@ function cardsRender(force) {
     if (_cdTab === "shop") {
         // THE SHOP: the booster packs (a pack not on sale, one without its price or odds, is not shown; a locked one is, its button saying when it opens) and the market
         for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }
-        sec("REDEEM A CODE", "TYPE A CODE AND TAP REDEEM · EACH GIFT COMES ONCE PER SAVE"); body.appendChild(_cdRedeemBox());
+        sec("REDEEM A CODE", "TYPE A CODE AND TAP REDEEM"); body.appendChild(_cdRedeemBox());
         sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
     } else {
         // THE CARDS: the collection (OWNED or ALL) on its stage and rail; a card taken into the run is lit gold
