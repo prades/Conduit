@@ -252,7 +252,7 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span><button class="sb-ult" aria-label="Ultimate" hidden><u></u><i class="sb-ultl">ULT</i><em class="sb-ultn"></em></button></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span><button class="sb-ult" aria-label="Ultimate" hidden><u></u><i class="sb-ultl">ULT</i><em class="sb-ultn"></em></button></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span><button class="sb-ultball" type="button" aria-label="Ultimate" tabindex="-1"></button>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
         const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
@@ -280,7 +280,7 @@ function partyStripTuck(on) {
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult"), call: slot._call || null };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult, .sb-ultball"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     if (ev.target && ev.target.closest && ev.target.closest(".sb-tuck")) { partyStripTuck(); return; }   // the strip's tab: in, or out again
@@ -328,6 +328,44 @@ function _partyUltBar(el, f) {
     if (l) _sbSet(l, "textContent", full ? "ULTIMATE \u25b2" : "ULT"); if (n) _sbSet(n, "textContent", full ? "TAP" : pct + "%");
     _sbSet(bar, "title", "ULTIMATE · " + String(u.name || "").toUpperCase() + (full ? " · TAP TO FIRE" : " · " + pct + "%"));
 }
+// THE ULTIMATE'S TAB (build 2026-11-12v; the owner: "the ultimates for the followers show up as little balls or tabs on the roster ... their own icon ... pop up dynamically whenever they have
+// the ultimate"; then: only when ready, on each follower's card, bold flat symbols; then "behind the tile cards and ... elongated shapes that house the icons"). On the strip (the corners layout) a tall
+// tab in the follower's element colour, ringed in gold, with its Ultimate's own symbol, rises from behind its card out of the top edge when the charge is full; a tap fires it (partyBarClick, as the meter's TAP did) and it sinks back. The thin meter is not shown there (game.html).
+// The symbols are 24 × 24 line drawings in the ink's colour (currentColor), one per form with an Ultimate (FORM_ULTIMATES, js/elements.js); ULT_ICON_ANY for one not listed.
+const ULT_ICON_ANY = '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="currentColor"/>';
+const ULT_ICONS = {
+    embercowl:    '<path d="M3 21h18l-5.5-8.5h-7z" fill="currentColor"/><path d="M12 10V3M8.5 9.5 6 5.5M15.5 9.5 18 5.5"/>',   // VOLCANIC ERUPTION: a volcano spouting
+    staticorb:    '<path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.5z" fill="currentColor"/><path d="M2 8h3M1.5 12H4M2 16h3"/>',   // OVERDRIVE: a bolt at a rush
+    maw:          '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>',   // ABSOLUTE ZERO: a snowflake
+    shrub:        '<path d="M12 22v-9M12 16 7 11M12 14l5-5"/><circle cx="7" cy="8" r="3.4" fill="currentColor"/><circle cx="17" cy="6.5" r="3.4" fill="currentColor"/><circle cx="12" cy="5" r="3" fill="currentColor"/><path d="M9.5 18.5 7.5 19M14.5 17l2 .5"/>',   // PINK THICKET: a thorny bush
+    sundew:       '<path d="M12 22c0-6-1-9-5-13M12 22c0-6 1-9 5-13M12 22V7"/><circle cx="6" cy="7.5" r="2.2" fill="currentColor"/><circle cx="18" cy="7.5" r="2.2" fill="currentColor"/><circle cx="12" cy="4.5" r="2.2" fill="currentColor"/>',   // CONSUME: a sundew's sticky tendrils
+    coralcrab:    '<path d="M8.5 22V10h7v12" fill="currentColor"/><path d="M8.5 10 6 5M6 5 4 3M6 5h-3M15.5 10 18 5M18 5l2-2M18 5h3M12 10V3"/>',   // REEF PILLAR: a pillar of coral
+    seeper:       '<path d="M12 12a2 2 0 1 1 2-2 4 4 0 1 1-4-4 6 6 0 1 1-6 6 8 8 0 0 0 8 8"/><path d="M19 15.5c1 1.6 1.5 2.6 1.5 3.3a1.5 1.5 0 0 1-3 0c0-.7.5-1.7 1.5-3.3z" fill="currentColor"/>',   // TOXIC UNDERTOW: a whirlpool and a drip
+    mimic:        '<path d="M12 2l2.2 5L12 9 9.8 7zM22 12l-5 2.2L15 12l2-2.2zM12 22l-2.2-5L12 15l2.2 2zM2 12l5-2.2L9 12l-2 2.2z" fill="currentColor"/><path d="M17 4.5a9 9 0 0 1 2.5 2.5M19.5 17a9 9 0 0 1-2.5 2.5M7 19.5A9 9 0 0 1 4.5 17M4.5 7A9 9 0 0 1 7 4.5"/>',   // SHARD VORTEX: shards turning
+    jellyram:     '<path d="M12 2.5 4 5.5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10v-6z" fill="currentColor"/>',   // JELLY SHIELDS: a shield
+    thermite:     '<path d="M2 15h20"/><path d="M4 15l3-4 2 5 3-7 2.5 6L17 10l3 5" fill="currentColor"/><path d="M7 19l1-2M13 20l-1-3M18 19l-1-2"/>',   // FAULTLINE: the ground cracking
+    rotshard:     '<ellipse cx="12" cy="17.5" rx="9.5" ry="3.8" fill="currentColor"/><circle cx="9" cy="10" r="2.2"/><circle cx="15" cy="7" r="1.6"/><circle cx="12.5" cy="11.5" r="1"/>',   // TOXIC PUDDLE: a puddle bubbling
+    quillstone:   '<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5M4.6 4.6l3.5 3.5M15.9 15.9l3.5 3.5M19.4 4.6l-3.5 3.5M8.1 15.9l-3.5 3.5"/>',   // QUILLSTORM: quills flying out
+    thunderhead:  '<path d="M6.5 14a4.5 4.5 0 0 1-.4-9A6 6 0 0 1 17.5 6 4 4 0 0 1 18 14z" fill="currentColor"/><path d="M12.5 13.5 9.5 18h4l-2 4.5"/>',   // THUNDERSTORM: a cloud and its bolt
+    voidstar:     '<circle cx="12" cy="12" r="4.5" fill="currentColor"/><ellipse cx="12" cy="12" rx="10.5" ry="4" transform="rotate(-25 12 12)"/>',   // EVENT HORIZON: a black hole and its ring
+    rimestar:     '<path d="M2 8h11a3 3 0 1 0-3-3M2 13h16a3 3 0 1 1-3 3M2 18h7"/><circle cx="20" cy="6" r="1.3" fill="currentColor"/><circle cx="13" cy="20" r="1.3" fill="currentColor"/><circle cx="21" cy="21" r="1" fill="currentColor"/>',   // WHITEOUT: a blizzard's gusts
+    blightspider: '<path d="M5 5l7 7-7 7M19 5l-7 7 7 7M5 5h14M5 19h14"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/><circle cx="5" cy="5" r="2" fill="currentColor"/><circle cx="19" cy="5" r="2" fill="currentColor"/><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="19" cy="19" r="2" fill="currentColor"/>',   // CONTAMINATION NETWORK: a web of linked nodes
+    hammerslug:   '<path d="M7 2.5h10v5H7z" fill="currentColor"/><path d="M12 7.5V14M2 20c3-3 6-4 10-4s7 1 10 4M5.5 22.5c2-1.6 4-2.2 6.5-2.2s4.5.6 6.5 2.2"/>',   // SHOCKWAVE SLAM: a hammer and the ground's rings
+    igloo:        '<ellipse cx="12" cy="16" rx="10" ry="5" fill="currentColor"/><path d="M5 9c3-3 7-3.5 11-1.5M8 5.5c3-1.5 6-1.5 9 0"/>',   // ICE RINK: a slick of ice, the slide over it
+    gooproxy:     '<circle cx="8" cy="8" r="3.4" fill="currentColor"/><circle cx="16.5" cy="7" r="2.6" fill="currentColor"/><circle cx="6.5" cy="16.5" r="2.6" fill="currentColor"/><circle cx="15" cy="15.5" r="4" fill="currentColor"/><circle cx="21" cy="12" r="1.4" fill="currentColor"/>',   // PROXY SWARM: a swarm of blobs
+    hornshell:    '<path d="M2 18c3 0 4-2 6-2s3 2 6 2 4-2 6-2M3 12.5C5 6 11 3 16 5c3 1.3 4 4.5 2 6.5-1.8 1.8-4.5.7-4.5-1.5 0-1.5 1.3-2 2-1.5"/>',   // WAVE MAKER: a wave curling
+    hovershell:   '<path d="M3 20C8 14 14 8 21 3"/><path d="M3 12c5 0 11-3 14-9M8 21c5-2 9-7 13-9" stroke-opacity="0.6"/>',   // DRIFT SLASH: slashes in a sweep
+    electroskink: '<path d="M4 4h6v6H4zM14 14h6v6h-6z"/><path d="M10 7h7v7M14 17H7v-7"/><path d="M13.5 8.5 11 12h3l-2.5 3.5" stroke-width="1.8"/>'   // LIGHTNING CIRCUIT: a circuit with a spark
+};
+function ultIconSvg(formId) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ULT_ICONS[formId] || ULT_ICON_ANY) + '</svg>'; }
+function _partyUltBall(el, f) {
+    const ball = el._sbBall || (el._sbBall = el.querySelector(".sb-ultball")); if (!ball) return;
+    const u = f && typeof followerUltimate === "function" ? followerUltimate(f) : null, up = !!(u && f.ultimateCharge >= 100);
+    if (u && ball._form !== f.evolved) { ball._form = f.evolved; ball.innerHTML = ultIconSvg(f.evolved); }
+    if (ball.classList.contains("up") !== up) ball.classList.toggle("up", up);
+    _sbSet(ball, "title", u ? "ULTIMATE · " + String(u.name || "").toUpperCase() + (up ? " · TAP TO FIRE" : "") : "");
+    _sbSet(ball, "tabIndex", up ? 0 : -1);
+}
 // each slot shows the follower in that card slot of the squad (partySlot), or is open
 // An OPEN slot says what a tap on it does: with exactly one follower holding a room it is "+ CALL <that one>" and a tap brings it back (REPORTED: after HOLD, "whenever I click on that follower [...] it doesn't come"); with none or several it is "+ OPEN SLOT" and a
 // tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
@@ -339,7 +377,7 @@ function partySlotsUpdate(E, lit) {
         if (el._unit !== f) { if (f && !el._unit && E.joinable) { el.classList.add("sb-join"); el._joinAt = Date.now(); } el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }   // (a member who joins: the strip grows to take its card, build 2026-11-12g)
         if (el._joinAt && Date.now() - el._joinAt > 700) { el._joinAt = 0; el.classList.remove("sb-join"); }
         if (typeof cardArtUnitClass === "function") cardArtMark(el, f ? cardArtUnitClass(f) : "");   // a member's backdrop: its element's texture under its class's (js/cardart.js); an open slot has none
-        if (!f) { el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
+        if (!f) { _partyUltBall(el, null); el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
         el._call = null; el.classList.remove("call");
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
@@ -352,7 +390,7 @@ function partySlotsUpdate(E, lit) {
         const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub");
         _sbSet(nm, "textContent", name); _sbSet(sb, "textContent", sub); if (st) sb.style.color = st.col;
         partySlotHealth(el, f);   // its health: the bar and the numbers in it
-        _partyXpBar(el, f); _partyUltBar(el, f);
+        _partyXpBar(el, f); _partyUltBar(el, f); _partyUltBall(el, f);
         const key = f.evolved + "|" + f.element; if (el._thumbKey !== key && typeof _ccThumb === "function") { el._thumbKey = key; el._thumbDone = false; _ccThumb(el.querySelector(".sb-thumb"), f); }
         if (!el._thumbDone && f.evolved && typeof EVOLUTIONS !== "undefined" && typeof _ccThumb === "function") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { el._thumbDone = true; _ccThumb(el.querySelector(".sb-thumb"), f); } }   // (an evolved form's picture may still have been loading)
     }
