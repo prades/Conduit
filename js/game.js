@@ -39,6 +39,35 @@ function _drawGooRing(ctx, p, sx, sy) {
     ctx.globalAlpha = 1; ctx.strokeStyle = '#eaffff'; ctx.lineWidth = Math.max(1.2, R * 0.1); ctx.beginPath(); ctx.ellipse(sx, sy - R * 0.06, R * 0.97, R * tilt * 0.97, rot, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();   // (the shine along its upper edge)
     ctx.globalAlpha = 1;
 }
+// THE THUNDERHEAD's EVERYDAY SHOT (the owner, 2026-11-12: "It should have like a string of lightning that connects and breaks off at some point"): the shot flies at the enemy trailing a jagged string of lightning that is still
+// joined to the Thunderhead, tighter and brighter the farther it stretches; at THUNDER_SNAP tiles it SNAPS off at the Thunderhead's end (a few sparks there), and the string is pulled on after the shot, shrinking away as it
+// goes. Flat strokes only (the effects plan, docs/EFFECTS.md). The shot, its damage, speed and CHAIN LIGHTNING's jumps are as they were; the body does not change.
+const THUNDER_SNAP = 1.5, THUNDER_PULL = 1.3;
+function _boltPath(ctx, ax, ay, bx, by, seed, jit) {
+    const n = 9, dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L; ctx.beginPath(); ctx.moveTo(ax, ay);
+    for (let i = 1; i < n; i++) { const u = i / n, h = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453, r = (h - Math.floor(h)) * 2 - 1, w = jit * Math.sin(Math.PI * u) * r; ctx.lineTo(ax + dx * u + nx * w, ay + dy * u + ny * w); }
+    ctx.lineTo(bx, by); ctx.stroke();
+}
+function _drawThunderBolt(ctx, p, sx, sy) {
+    const f = p.frame || 0, r = p.radius || 5, src = p.source, seed = Math.floor(f / 2) + 1;
+    let ox = 0, oy = -26, dist = 0;   // (where the Thunderhead is, from the shot, on the screen: its body's middle; and how far the shot has gone, in tiles)
+    if (src && typeof src.x === "number") { const wx = src.x - p.x, wy = src.y - p.y; ox = (wx - wy) * TILE_W; oy = (wx + wy) * TILE_H - 26; dist = Math.hypot(wx, wy); }
+    const stroke = (w, col, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = w; };
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    let s = 0;   // how much of the string has gone: 0 whole, 1 gone
+    if (dist > THUNDER_SNAP) s = Math.min(1, (dist - THUNDER_SNAP) / THUNDER_PULL);
+    if (s < 1) { const ax = sx + ox * (1 - s), ay = sy + oy * (1 - s), jit = 5 + 7 * Math.min(1, dist / THUNDER_SNAP) * (1 - s);   // (the string's far end rides in towards the shot as it is pulled on)
+        const a = 1 - 0.75 * s, wd = 1 - 0.5 * s;
+        stroke(6 * wd, '#ffe84a', 0.28 * a); _boltPath(ctx, ax, ay, sx, sy, seed, jit * 1.2);
+        stroke(3 * wd, '#fff27a', 0.9 * a); _boltPath(ctx, ax, ay, sx, sy, seed, jit);
+        stroke(1.2, '#ffffff', a); _boltPath(ctx, ax, ay, sx, sy, seed, jit);
+        if (s > 0 && s < 0.5) { stroke(1.6, '#ffffff', 1 - s * 2); for (let i = 0; i < 4; i++) { const an = i * Math.PI / 2 + seed, l = 5 + 6 * ((i * 7 + seed) % 3); ctx.beginPath(); ctx.moveTo(sx + ox, sy + oy); ctx.lineTo(sx + ox + Math.cos(an) * l, sy + oy + Math.sin(an) * l); ctx.stroke(); } } }   // (the sparks where it snapped, at the Thunderhead)
+    ctx.globalAlpha = 0.3; ctx.fillStyle = '#ffe84a'; ctx.beginPath(); ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2); ctx.fill();   // (the shot: a halo, a bright ball and a hot core)
+    ctx.globalAlpha = 1; ctx.fillStyle = '#fff27a'; ctx.beginPath(); ctx.arc(sx, sy, r * 1.25, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(sx, sy, r * 0.65, 0, Math.PI * 2); ctx.fill();
+    stroke(1.4, '#fff9b0', 0.9); for (let i = 0; i < 4; i++) { const an = f * 0.4 + i * Math.PI / 2, l = r * (1.9 + 0.7 * Math.sin(f * 0.6 + i * 2)); ctx.beginPath(); ctx.moveTo(sx + Math.cos(an) * r, sy + Math.sin(an) * r); ctx.lineTo(sx + Math.cos(an) * l, sy + Math.sin(an) * l); ctx.stroke(); }   // (a few arcs off it)
+    ctx.globalAlpha = 1;
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -60,6 +89,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "iceball") { _drawFireBlob(ctx, p, sx, sy, _ICE_BLOB); ctx.restore(); return; }
     // the HORNSHELL's everyday shot (build 2026-11-12l): a ring of glowing blue goo (the ring its sheet forms in front of its horn, so what is formed and what flies are one thing)
     if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
+    // the THUNDERHEAD's everyday shot (build 2026-11-12o): the shot and its string of lightning that connects and breaks off
+    if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below
