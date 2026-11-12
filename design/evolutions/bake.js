@@ -198,7 +198,7 @@ const JOBS = [
   // No. 120, the core mage (the role id is 'sniper'): its action frames are a pulse: the flower tilts forward and the petals fan open towards what it faces, then it settles.
   { id: 'petal', form: 120, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 114, the flux brawler: a Ditto-style blob with big black shards; its action frames are the slam (it flattens and spreads).
-  { id: 'mimic', form: 114, color: '#9933ff', idleAct: 0, action: [0.55, 1.0] },
+  { id: 'mimic', form: 937, color: '#9933ff', idleAct: 0, action: [0.55, 1.0], blocks: [[-0.3, 0, 0.55, 1, 1, 0.75, 0.35, 0].map(v => ({ stab: v, act: 0 }))] },   // (No. 937, forms6.js, since 2026-11-11: No. 114 with its everyday hit a shard stab: the sheet's extra block, columns 16-23; the owner: "Shard stab")
   { id: 'rotshard', form: 101, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 // optional 5th and 6th arguments: the cell in px and half the view in world units (the class gear is wider than the cube: 186 and 2.2 keep the pixels per unit the same as the 144 / 1.7 of the rest)

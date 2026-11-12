@@ -283,7 +283,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground. Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
+              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", stab: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD STAB; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
@@ -1269,7 +1269,7 @@ function _evoFrame(f, d, f0) {
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
-    else if (f.state === "attack") col = (d.lash || d.stomp ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash, d.stomp: the everyday hit's own block)
+    else if (f.state === "attack") col = (d.lash || d.stomp || d.stab ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash, d.stomp, d.stab: the everyday hit's own block)
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
 }
 function _evoFacing(f) {

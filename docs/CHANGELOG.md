@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12d` · branch `claude/mimic-attacks` · the Rift Mimic's shard stab
+- **Everyday hit** (the owner: "Let's do the riff mimic" [the Rift Mimic]; of three looks the agent offered, the owner chose **"Shard stab"**): the Rift Mimic draws its big black shards back, then swings them forward into a fist of spikes and thrusts them at the enemy, the blob leaning into it, and sinks them back. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
+- **GRAVITY SLAM** (its second attack) keeps its own frames (the action block), unchanged: the stab is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4077 × 569 packed; its pool sheet is re-baked with it).
+- Agent's, provisional: how far the shards swing and reach (they lengthen by a quarter), the draw-back, the 8-frame timing.
+- `js/evolution.js` (the Mimic's definition, `_evoFrame`), `design/evolutions/forms6.js` (No. 937), `bake.js`. `tests/evolution.js` expects the Mimic's 24 columns.
+- Not playtested; seen in the real page frame by frame (headless): the shards swing out toward the enemy and back. Facing straight toward the camera the thrust is foreshortened and reads weakly.
+
 ### Build `2026-11-12c` (made as 11z on its branch) · branch `claude/seeper-attacks` · the Seeper's leg stomp
 - **Everyday hit** (the owner: "Seeper!"; of three looks the agent offered, the owner chose **"Leg stomp"**): the Seeper plants its other legs, rears one front leg up and slams it down in front of it, toward the enemy, flinging goo off the foot, then settles. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
 - **ERUPTION** (its second attack) keeps its own frames (the action block), unchanged: the stomp is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4081 × 448 packed; its pool of goo sheet is re-baked with it).

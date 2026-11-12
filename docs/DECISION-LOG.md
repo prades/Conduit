@@ -3045,3 +3045,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: which leg, how far and high, the goo, the timing, the lean.
 - Status: Implemented; not playtested. `CHANGELOG.md`.
 
+## DECISION: The Rift Mimic's everyday hit is a shard stab (2026-11-11, build `2026-11-12d`, branch `claude/mimic-attacks`)
+- The owner, naming the next creature: "Let's do the riff mimic" (the Rift Mimic). The agent offered three looks for its everyday hit: a blob arm slap, a shard stab, a pounce flop. Chosen: **"Shard stab"**.
+- Built: its big black shards swing forward into a fist of spikes, thrust at the enemy and sink back (its own 8 frames of the sheet). Looks only. GRAVITY SLAM keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
+- Agent's, provisional: the swing, the reach, the draw-back, the timing.
+- Status: Implemented; not playtested. `CHANGELOG.md`.
+
