@@ -3068,6 +3068,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: The Ember Hood's everyday FIREBALL is a hood flare (2026-11-12, build `2026-11-12g`, branch `claude/mage-attacks`)
 - The owner: "Work on the mages." The agent read it as the Mages' everyday-shot animations, one at a time as the Brawlers' were, took the Ember Hood first and offered three looks: a hood flare, a crystal spit, an overhand throw. Chosen: **"Hood flare"** (and "Ember Hood is fine" as the first mage).
 - Built: over the shot's wind-up the hood swells, its diamond and gems blaze and a fireball forms in front of it; it is gone as the shot leaves, and the hood settles. Looks only: the shot, its 12-frame wind-up and its rest are unchanged. HEXFIRE keeps its own frames.
+- Then, of the first build: **"I like the first phase of that fireball, but whenever it switches to like the gradient, high gradient orb, I don't like it. Make it look like a fun glowy blob."** The shot in flight (the fire shots' gradient orb) is, for the Ember Hood only, a wobbling blob of flat colours with little blobs shed behind it.
 - Open: the other six mages, one at a time (the owner picks a look for each).
 - Agent's, provisional: the size of the swell and the fireball, the settle's length.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.

@@ -50,6 +50,15 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         same(r.a, -1, 'a settle after a cancelled wind-up'); ok(!r.flag, 'another mage has the flare'); ok(r.hood, 'the hood does not');
     });
 
+    group('THE SHOT IN FLIGHT IS A GLOWY BLOB');
+    check('the Ember Hood\'s shot is a "fireball" (drawn as a flat-colour blob: no gradient, no shadowBlur); another fire mage\'s shot is not', () => {
+        const r = run(`(function(){ const f = __hood(), t = __foe(f.x + 3, f.y); f._shotTarget = t; f._shotWind = 1; const n = followerProjectiles.length; frame++; updateRTSNPC(f); const a = followerProjectiles[n] && followerProjectiles[n].kind;
+            __clear(); const g = __fol('fire', 'sniper', undefined), u = __foe(g.x + 3, g.y); g._shotTarget = u; g._shotWind = 1; const m = followerProjectiles.length; frame++; updateRTSNPC(g); return { a, b: followerProjectiles[m] && followerProjectiles[m].kind }; })()`);
+        same(r.a, 'fireball', 'the Hood\'s shot'); ok(r.b !== 'fireball', 'another fire shot: ' + r.b);
+        const src = rd('js/game.js'), blob = src.slice(src.indexOf('function _drawFireBlob('), src.indexOf('function _drawFollowerProjectile('));
+        ok(blob.length > 200 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(blob), 'the blob uses a gradient or a shadow'); ok(/p\.kind === "fireball"/.test(src), 'the projectile is not drawn as a blob');
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 24 columns: the idle, HEXFIRE and the flare), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));

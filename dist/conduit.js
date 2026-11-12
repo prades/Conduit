@@ -6293,7 +6293,7 @@ function _mageShotFire(actor) {
         return;
     actor._shotFiredAt = typeof frame !== "undefined" ? frame : 0;
     const elDef = ELEMENTS.find(e => e.id === actor.element), col = elDef ? elDef.color : "#fff", dmg = (actor.stats?.specialAttack || 10) * MAGE_SHOT_MULT;
-    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);
+    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT, actor.evolved === "embercowl" ? { kind: "fireball" } : undefined);
     actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);
     if (actor.currentWill !== undefined)
         actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
@@ -49849,6 +49849,39 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 ;
 /* js/game.js */
+function _drawFireBlob(ctx, p, sx, sy) {
+    const f = p.frame || 0, R = (p.radius || 5) * 2.1, vx = p.vx || 0, vy = p.vy || 0;
+    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H;
+    const L = Math.hypot(ux, uy) || 1;
+    ux /= L;
+    uy /= L;
+    const ang = Math.atan2(uy, ux), blob = (x, y, r, wob, fill, a) => {
+        ctx.globalAlpha = a;
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        for (let i = 0; i <= 18; i++) {
+            const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.55 * Math.sin(3 * t + f * 0.33) + 0.45 * Math.sin(2 * t - f * 0.23)), s = 1 + 0.16 * Math.cos(t - ang) * 0, px = Math.cos(t) * r * k, py = Math.sin(t) * r * k;
+            const cx = Math.cos(ang), sn = Math.sin(ang), qx = px * cx + py * sn, qy = -px * sn + py * cx;
+            const ex = qx * 1.18, ey = qy * 0.86, X = x + ex * cx - ey * sn, Y = y + ex * sn + ey * cx;
+            if (i)
+                ctx.lineTo(X, Y);
+            else
+                ctx.moveTo(X, Y);
+        }
+        ctx.closePath();
+        ctx.fill();
+    };
+    ctx.globalAlpha = 1;
+    for (let i = 3; i >= 1; i--) {
+        const d = R * (0.95 + i * 0.85), w = 0.35 + 0.2 * Math.sin(f * 0.4 + i * 2.1);
+        blob(sx - ux * d + uy * R * 0.25 * Math.sin(f * 0.3 + i), sy - uy * d - ux * R * 0.25 * Math.sin(f * 0.3 + i), R * (0.62 - i * 0.13), w, '#ff7a1a', 0.55 - i * 0.12);
+    }
+    blob(sx, sy, R * 1.75, 0.1, '#ff9a2a', 0.22);
+    blob(sx, sy, R * 1.12, 0.16, '#ff7a14', 0.95);
+    blob(sx, sy, R * 0.84, 0.18, '#ffb33a', 1);
+    blob(sx - R * 0.26, sy - R * 0.3, R * 0.34, 0.2, '#fff1a8', 1);
+    ctx.globalAlpha = 1;
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -49860,6 +49893,11 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (p.kind === "quill" || p.kind === "hex") {
         _drawRedesignShot(ctx, p, sx, sy);
+        ctx.restore();
+        return;
+    }
+    if (p.kind === "fireball") {
+        _drawFireBlob(ctx, p, sx, sy);
         ctx.restore();
         return;
     }
