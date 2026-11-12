@@ -1322,6 +1322,27 @@ function drawElementEffects() {
                 for (let i = 0; i < 16; i++) { const an = i * Math.PI / 8 + ep * 0.7, fx = px + Math.cos(an) * rx, fy = cy - hh - (2 + 5 * Math.abs(Math.sin(i * 2.3 + ep * 6))) * (1 - ep) + Math.sin(an) * ry; ctx.beginPath(); ctx.arc(fx, fy, 1.6 + 0.8 * ((i * 7) % 3), 0, Math.PI * 2); ctx.fill(); }   // (foam and spray along the crest)
                 ctx.restore(); break;
             }
+            // The Voidstar's INK SPIT (js/evolution.js inkSpit): a glob of dark violet ink flies from it to the target (a wobbling blob with drops shed behind it), splatters, and leaves a stain of ink that drips and fades; flat shapes only
+            case "inkspit": {
+                const age = e.maxLife - e.life, FLY = 12, k = Math.min(1, age / FLY), sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H;
+                const gx = sx0 + (px - sx0) * k, gy = sy0 + (py - sy0) * k - Math.sin(Math.PI * k) * 18 - 14 * (1 - k);
+                ctx.save();
+                if (age < FLY) {   // the glob in flight
+                    const r = 8 + 2 * Math.sin(age * 1.3), ux = (px - sx0), uy = (py - sy0), L = Math.hypot(ux, uy) || 1;
+                    for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.1; ctx.fillStyle = '#3a1670'; ctx.beginPath(); ctx.arc(gx - ux / L * i * 6, gy - uy / L * i * 6 + 2 * Math.sin(age + i), r * (0.8 - i * 0.15), 0, Math.PI * 2); ctx.fill(); }
+                    ctx.globalAlpha = 1; ctx.fillStyle = '#2a0f55'; ctx.beginPath(); ctx.ellipse(gx, gy, r * 1.25, r * 0.95, Math.atan2(uy, ux), 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#6a2fd0'; ctx.beginPath(); ctx.ellipse(gx, gy, r * 0.8, r * 0.6, Math.atan2(uy, ux), 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#d9b3ff'; ctx.beginPath(); ctx.arc(gx - r * 0.3, gy - r * 0.3, r * 0.22, 0, Math.PI * 2); ctx.fill();
+                } else {   // the splat and the stain
+                    const t = age - FLY, span = e.maxLife - FLY, sp = Math.min(1, t / 5), fade = Math.min(1, e.life / 20), R = TILE_W * 0.34 * (0.5 + 0.5 * sp);
+                    ctx.globalAlpha = 0.85 * fade; ctx.fillStyle = '#220c48'; ctx.beginPath(); ctx.ellipse(px, py + TILE_H * 0.6, R * 1.15, R * 0.58, 0, 0, Math.PI * 2); ctx.fill();
+                    for (let i = 0; i < 7; i++) { const an = i * 0.9 + 0.4, d = R * (0.9 + 0.35 * ((i * 5) % 3)) * sp; ctx.beginPath(); ctx.ellipse(px + Math.cos(an) * d, py + TILE_H * 0.6 + Math.sin(an) * d * 0.5, R * 0.2, R * 0.1, 0, 0, Math.PI * 2); ctx.fill(); }   // (spatters round it)
+                    ctx.globalAlpha = 0.9 * fade; ctx.fillStyle = '#5a25b0'; ctx.beginPath(); ctx.ellipse(px, py + TILE_H * 0.6, R * 0.85, R * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 0.9 * fade; ctx.fillStyle = '#d9b3ff'; ctx.beginPath(); ctx.ellipse(px - R * 0.3, py + TILE_H * 0.6 - R * 0.12, R * 0.22, R * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+                    const dr = Math.min(1, t / span); ctx.globalAlpha = 0.8 * fade; ctx.fillStyle = '#3a1670'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px + (i - 1) * R * 0.55, py + TILE_H * 0.6 + R * 0.35 + dr * 8 * (0.6 + 0.2 * i), 1.6, 3 + dr * 3, 0, 0, Math.PI * 2); ctx.fill(); }   // (it drips)
+                }
+                ctx.restore(); break;
+            }
             case "mimicshot": { if (typeof mimicShotDraw === "function") mimicShotDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             case "skinkswirl": { if (typeof skinkSwirlDraw === "function") skinkSwirlDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.

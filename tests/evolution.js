@@ -325,21 +325,27 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 125, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
-    check('the VOIDSTAR (the void mage) fires SINGULARITY SHOT too', () => {
+    check('the VOIDSTAR (the void mage) fires INK SPIT (build 2026-11-12q; the owner: "I think ink spit should be the new alternate attack"; it replaced SINGULARITY SHOT): the nearest enemy it can see in reach takes 2.2 x its power and is BLINDED for 2 s, that one only; a boss takes the damage and is not blinded; the glob is drawn; it waits its wind-up', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'voidstar'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
-            const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
+            const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), tooFar = mkP('ant', 40, 2), mx = mate.x, my = mate.y;
             frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
-                slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
-            [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
-        ok(r.tgt > 0, 'no hit on the target: ' + JSON.stringify(r));
-        ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
-        same(r.beetleIn, 0, 'a beetle was dragged');
-        ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
-        ok(r.cd > 150, 'it did not wait: ' + r.cd);
+            const d = p => 1e6 - p.health, fx = elementEffects.filter(e => e.type === 'inkspit').length;
+            const out = { tgt: d(tgt), mate: d(mate), blind: tgt.blinded, mateBlind: mate.blinded || 0, mateMoved: mate.x !== mx || mate.y !== my, far: d(tooFar), farBlind: tooFar.blinded || 0, cd: f._sigCd, fx, at: f._inkAt === frame, move: EVOLUTIONS.voidstar.move, ids: evoMoveIds(EVOLUTIONS.voidstar).join(), power: f.power };
+            [tgt, mate, tooFar].forEach(p => p.dead = true); return out; })()`);
+        ok(r.tgt > 0, 'no hit on the target: ' + JSON.stringify(r)); same(run('[INK_RANGE, INK_MULT, INK_BLIND_FRAMES].join()'), '6.5,2.2,120', 'its reach, damage and blind (the numbers SINGULARITY SHOT had, and 2 s)'); same(r.blind, 120, 'its blind (frames)'); same(r.mateBlind, 0, 'the one beside it was blinded'); ok(!r.mateMoved && r.mate === 0, 'the one beside it was dragged or hurt: ' + JSON.stringify(r));
+        same(r.far, 0, 'one out of reach was hit'); same(r.farBlind, 0, 'one out of reach was blinded'); ok(r.cd > 150, 'it did not wait: ' + r.cd); same(r.fx, 1, 'the glob'); ok(r.at, 'when it went off'); same(r.move, 'INK SPIT', 'its move'); same(r.ids, 'ink_spit', 'its moves');
+    });
+
+    check('INK SPIT does not blind a boss (it takes the damage), cannot be seen through a wall, and a Voidstar saved locked on SINGULARITY SHOT comes back locked on INK SPIT (the legacy Serpent keeps SINGULARITY SHOT)', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'voidstar'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+            const S = SPECIES.ant, boss = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 24, 2); boss.team = 'red'; boss.provoked = true; boss.health = boss.maxHealth = 1e6; boss.update = () => {}; boss.isBoss = true; boss.bossAsleep = false; actors.push(boss);
+            frame++; const fired = inkSpit(f), hit = 1e6 - boss.health, bossBlind = boss.blinded || 0; boss.dead = true;
+            const v = { evolved: 'voidstar', isFollower: true }, sp = { evolved: 'serpent', isFollower: true };
+            return { fired, hit, bossBlind, carried: moveAltCarried(v, 'singularity_shot'), serpent: moveAltCarried(sp, 'singularity_shot'), bash: moveAltCarried(v, 'bash'), serpentIds: evoMoveIds(EVOLUTIONS.serpent).join() }; })()`);
+        ok(r.fired, 'it did not fire'); ok(r.hit > 0, 'a boss took no damage'); same(r.bossBlind, 0, 'a boss was blinded'); same(r.carried, 'ink_spit', 'a saved SINGULARITY SHOT on a Voidstar'); same(r.serpent, 'singularity_shot', 'the Serpent\'s saved choice'); same(r.serpentIds, 'singularity_shot', 'the Serpent\'s move');
     });
 
     check('the legacy SERPENT still fires SINGULARITY SHOT for a follower already evolved into it', () => {

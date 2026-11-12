@@ -15,7 +15,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
 // What the old chain in evolutionTick called, by form id (copied from it before it was replaced).
 // (The THUNDERHEAD's is STATIC VORTEX since the owner's follower combat redesign, 2026-11-02: ARC VOLLEY stays with the Reaver. docs/FOLLOWER-COMBAT-REDESIGN.md)
-const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley', thunderhead: 'staticVortex', serpent: 'singularityShot', voidstar: 'singularityShot',
+const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley', thunderhead: 'staticVortex', serpent: 'singularityShot', voidstar: 'inkSpit',
     manta: 'staticRush', prism: 'staticRush', voltring: 'staticRush', staticorb: 'staticRush', halo: 'hexfire', embercowl: 'hexfire',
     rotshard: 'rottenDecoy', mimic: 'gravitySlam', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
 // (the ROTSHARD's first move is ROTTEN DECOY since build 2026-11-07ss: CORRODE SHOT is its everyday shot now, the design notes' primary; js/evolution.js corrodeTouch)
@@ -90,7 +90,7 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
 
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('every move has a TIME of its own (seconds: a Mage\'s or a Technician\'s wind-up, a Brawler\'s cooldown), the old waits halved (build 2026-11-10a: "make it half as slow"), and its function waits exactly that after firing', () => {
-        const OLDWAIT = { petal_blaze: 180, quill_burst: 120, arc_volley: 150, singularity_shot: 165, static_rush: 150, hexfire: 165, corrode_shot: 160, gravity_slam: 165,
+        const OLDWAIT = { petal_blaze: 180, quill_burst: 120, arc_volley: 150, singularity_shot: 165, ink_spit: 165, static_rush: 150, hexfire: 165, corrode_shot: 160, gravity_slam: 165,
             eruption: 165, chomp: 150, pinball: 150, static_vortex: 165, magma_vent: 600, rotten_decoy: 420, bash: 120, capacitor_discharge: 45, seedfall: 165, stake_ring: 120, sweet_scent: 150,
             zigzag_dash: 120, wobble_slam: 120, icicle_volley: 150, echo_pulse: 150, shell_guard: 180, phase_swap: 150, venom_bite: 150, shock_zap: 120, skate_charge: 135 };   // (half the old waits: 360, 240, 300, 330, 300, 330, 320, 330, 330, 300, 300, 330, 1200, 840, 240, 90, 330, 240, 300, 240, 240, 300, 300, 360, 300, 300, 240, 270)   // (the nine of build 2026-11-09c, provisional)   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes; SEEDFALL, the THORNWHIP's: build 2026-11-08j, provisional; STAKE RING, STONEPETAL's, and SWEET SCENT, SUNDEW's: build 2026-11-08n, provisional)
         same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');

@@ -3151,3 +3151,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
 - The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
 
+## DECISION: The Voidstar's second attack is INK SPIT, replacing SINGULARITY SHOT (2026-11-12, build `2026-11-12q`, branch `claude/voidstar-ink`)
+- The owner, after two batches of ideas for the Voidstar's attacks: **"I think ink spit should be the new alternate attack."** The agent put the questions that were the owner's; the owner chose: **replace** SINGULARITY SHOT (alternatives: keep both; only a new look), the ink **blinds** (alternatives: slow and stain; damage over time), for **2 seconds**, **just the target** (alternative: a small splash), and **bosses take the damage but are not blinded** (alternative: bosses can be blinded).
+- Built: see `CHANGELOG.md`. The blind is the game's own (js/predator.js). The legacy Serpent keeps SINGULARITY SHOT. A Voidstar saved locked on SINGULARITY SHOT is carried to INK SPIT.
+- Agent's, provisional (no numbers given): reach 6.5 tiles, wind-up 2.75 s, damage 2.2 x power (SINGULARITY SHOT's, kept so the swap does not move the balance).
+- Open: whether the Serpent should lose SINGULARITY SHOT too; the Voidstar's body (the owner has not asked for a change); the everyday shot's look.
+- Superseded: SINGULARITY SHOT as the Voidstar's move (history kept; the code kept for the Serpent).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+

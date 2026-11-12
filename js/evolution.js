@@ -176,7 +176,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
     // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
-    voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
+    voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "INK SPIT", sheet: "img/evo/voidstar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
@@ -880,6 +880,24 @@ function echoPulse(f) {
     // (the owner, 2026-11-12: "he pulls his arms inside and by doing that it creates a water ring": the ring is water now, a wave rolling out to the pulse's reach; the reach, damage and glitch are as they were)
     _evoFx({ type: "waterring", x: f.x, y: f.y, radius: ECHO_RADIUS, life: 34, maxLife: 34 });
     _evoSay(f, "ECHO PULSE", "#7fffe0");
+    return true;
+}
+// INK SPIT (the Voidstar's second attack, build 2026-11-12q; the owner: "I think ink spit should be the new alternate attack", replacing SINGULARITY SHOT; the ink BLINDS, 2 seconds, the target only, a boss takes the damage
+// and is not blinded: "Bosses take the damage but are not blinded"): a spit of dark violet ink at the nearest enemy it can see within INK_RANGE: INK_MULT x its power (flux, elemental) and the enemy is BLINDED for
+// INK_BLIND_FRAMES (the blind the game already has, js/predator.js: it loses its target, cannot attack or shoot and staggers about at half pace). It strikes at once, as SINGULARITY SHOT did; the glob that flies and
+// the stain it leaves are drawn (js/elements.js "inkspit"). The reach, wind-up and damage are SINGULARITY SHOT's, kept so the swap does not move the balance (the owner gave none): the agent's, provisional.
+const INK_RANGE = 6.5, INK_MULT = 2.2, INK_BLIND_FRAMES = 120;
+function inkSpit(f) {
+    const foes = _evoFoesSeen(f.x, f.y, INK_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(tgt, (f.power || 10) * INK_MULT, f, "flux", false, false, DMG_HIT_ALT);
+    if (!tgt.dead && !_evoBoss(tgt)) tgt.blinded = Math.max(tgt.blinded || 0, INK_BLIND_FRAMES);
+    f._sigAt = f0; f._inkAt = f0; f._sigCd = moveWindupFrames("ink_spit");
+    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    _evoFx({ type: "inkspit", x0: f.x, y0: f.y, x: tgt.x, y: tgt.y, life: 50, maxLife: 50 });
+    _evoSay(f, "INK SPIT", "#cc88ff");
     return true;
 }
 // SHELL GUARD (the Hammer Slug's): with an enemy it can see within GUARD_LURE (not a boss), it braces in its shell for GUARD_FRAMES: it takes GUARD_CUT less damage (js/helpers.js applyDamage asks
