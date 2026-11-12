@@ -186,7 +186,8 @@ const JOBS = [
   // No. 314 (a game-ready No. 312), the electric brawler: a black hollow pyramid hood drooping over the top half of an octahedron diamond; its action frames bow the hood and flare the diamond.
   { id: 'prism', form: 391, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 220, the core mage: a black shell-jar dragged on its side by fat irregular tentacles, a shard horn at its mouth; the horn drops to aim in its action frames.
-  { id: 'hornshell', form: 220, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
+  { id: 'hornshell', form: 941, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true,
+    blocks: [[{ pull: 0.1, ring: 0 }, { pull: 0.3, ring: 0 }, { pull: 0.55, ring: 0 }, { pull: 0.8, ring: 0 }, { pull: 1, ring: 0 }, { pull: 1, ring: 0 }, { pull: 1, ring: 0.2 }, { pull: 0.5, ring: 0.42 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 941, forms13.js, since 2026-11-12: No. 220 pulling its tentacles into the jar over ECHO PULSE's wind-up (columns 16-21), a ring of water on release (22), settling (23); the owner: "he pulls his arms inside and by doing that it creates a water ring")
   // No. 156, the ice brawler: a dome with a cave mouth; the rubble is its ground layer; its action frames are the bite (the fangs swing down), up and back.
   { id: 'maw', form: 934, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, blocks: [
     [{ sw: 0.05, rot: -0.1, z: 0, y: 0.05, fang: 0.06 }, { sw: 0.18, rot: -0.25, z: 0.05, y: 0.15, fang: 0.08 }, { sw: 0.32, rot: -0.4, z: 0.08, y: 0.28, fang: 0.1 }, { sw: 0.45, rot: -0.5, z: 0.1, y: 0.4, fang: 0.11 },

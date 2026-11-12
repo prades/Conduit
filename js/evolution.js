@@ -268,7 +268,7 @@ const EVOLUTIONS = {
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "ECHO PULSE", moves: ["echo_pulse"], sheet: "img/evo/hornshell.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
+              cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4", pull: true },   // (24 columns since build 2026-11-12k, design No. 941: columns 16-23 are ECHO PULSE's PULL, pullCol; 8-15, its old bow, are not used by the move now)
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
     caldera:{ id: "caldera", legacy: true, name: "CALDERA", element: "toxic", role: "brawler", move: "ERUPTION", sheet: "img/evo/caldera.png",
@@ -876,8 +876,9 @@ function echoPulse(f) {
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) { applyDamage(a, (f.power || 10) * ECHO_MULT, f, null, false, false, DMG_HIT_ECHO); if (!a.dead && typeof applyGlitch === "function") applyGlitch(a, ECHO_GLITCH); }
-    f._sigAt = f0; f._sigCd = moveWindupFrames("echo_pulse"); f.state = "attack"; f.attackAnim = 0;
-    _evoFx({ type: "ring", x: f.x, y: f.y, radius: ECHO_RADIUS, color: "#00ccaa", life: 30 }); _evoFx({ type: "ring", x: f.x, y: f.y, radius: ECHO_RADIUS * 0.6, color: "#7fffe0", life: 22 });
+    f._sigAt = f0; f._echoAt = f0; f._sigCd = moveWindupFrames("echo_pulse"); f.state = "attack"; f.attackAnim = 0;
+    // (the owner, 2026-11-12: "he pulls his arms inside and by doing that it creates a water ring": the ring is water now, a wave rolling out to the pulse's reach; the reach, damage and glitch are as they were)
+    _evoFx({ type: "waterring", x: f.x, y: f.y, radius: ECHO_RADIUS, life: 34, maxLife: 34 });
     _evoSay(f, "ECHO PULSE", "#7fffe0");
     return true;
 }
@@ -1264,13 +1265,15 @@ function _evoFrame(f, d, f0) {
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
+    const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
     const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
-    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
+    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (pu >= 0) col = pu;
     else if (fn >= 0) col = fn;
     else if (bz >= 0) col = bz;
     else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
@@ -1485,6 +1488,14 @@ function flareCol(f, f0) {
 // THE RIMESTAR'S FAN (build 2026-11-12j; the owner, 2026-11-12, of ICICLE VOLLEY: "it turns into a fan and it shoots crystals at the enemy"): over the move's wind-up its six fin halves spread into a fan facing the enemy and a crystal
 // grows at the tip of each (the sheet's second extra block, columns 24-31, design No. 940), cells 0 to 5; as the icicles leave (the game's own, as they were) three crystals are gone (cell 6, 4 frames), the fan closes (cell 7, 8
 // frames). Looks only: the move, its wind-up (2.5 s, standing still), its three icicles, their damage and slow are as they were. The frame counts are the agent's.
+// which column of the Hornshell's sheet (the extra block, 16 to 23: design No. 941) while ECHO PULSE goes: over its wind-up (f._altWind of f._altWindMax) cells 0 to 5 (the arms drawn in), then the ring of water: 4 frames at cell 6,
+// 8 at cell 7; -1 otherwise
+function pullCol(f, f0, d) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "echo_pulse" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
+    if (f._echoAt !== undefined) { const a = f0 - f._echoAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 12) return 23; }
+    return -1;
+}
 function fanCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "icicle_volley" && f._altWind > 0 && f._altWindMax > 0) return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));

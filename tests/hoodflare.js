@@ -84,6 +84,21 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(r.rime && !r.hood && !r.rot, JSON.stringify(r)); ok(fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8').includes('return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind)'), 'the fan\'s cells start at 24');
     });
 
+    group('THE HORNSHELL\'S ECHO PULSE PULLS ITS ARMS IN AND SENDS OUT A RING OF WATER (build 2026-11-12k; the owner: "he pulls his arms inside and by doing that it creates a water ring"; design No. 941)');
+    check('over the wind-up the cells run 16 to 21, then 22 and 23 after the pulse, then its own frames; the pulse itself (reach, damage, glitch) is as it was, and the old bow is not shown after it', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('core', 'sniper', 'hornshell'), d = evolvedDef(f), t = __foe(f.x + 1, f.y); followerAltSet(f, 'echo_pulse'); const out = [], c = () => pullCol(f, frame, d); f._altWindMax = 150;
+            for (const w of [150, 125, 100, 75, 50, 25, 1]) { f._altWind = w; out.push(c()); }
+            f._altWind = 0; f.currentWill = 100; frame++; const fired = echoPulse(f), hurt = __dmg(t) > 0, gl = t.glitched > 0, at = f._echoAt === frame;
+            const wr = elementEffects.filter(e => e.type === 'waterring').length, flat = elementEffects.filter(e => e.type === 'ring' && e.color === '#00ccaa').length, rad = (elementEffects.find(e => e.type === 'waterring') || {}).radius;
+            for (const a of [0, 3, 4, 11, 12]) out.push(pullCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col; return { out, fired, hurt, gl, at, wr, flat, rad, hold, reach: ECHO_RADIUS }; })())`));
+        same(r.out.join(), '16,17,18,19,20,21,21,22,22,23,23,-1', 'cells'); ok(r.fired, 'ECHO PULSE did not fire'); ok(r.hurt, 'it did not hurt'); ok(r.gl, 'it did not break the wind-up'); ok(r.at, 'when it went off'); same(r.wr, 1, 'its ring of water'); same(r.flat, 0, 'the old flat ring'); same(r.rad, r.reach, 'the ring goes out to its reach'); ok(r.hold >= 16, 'the old bow is shown after it: ' + r.hold);
+    });
+    check('only the Hornshell pulls; its sheet is 24 columns of 8 facings and its definition says so', () => {
+        const r = JSON.parse(run(`JSON.stringify({ hs: !!EVOLUTIONS.hornshell.pull, other: Object.keys(EVOLUTIONS).filter(k => k !== 'hornshell' && EVOLUTIONS[k].pull).join() })`));
+        ok(r.hs && r.other === '', JSON.stringify(r));
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/hornshell.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 24, 'its columns'); same(pk.rows, 8, 'its rows');
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and the lighting up for HEXFIRE), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));

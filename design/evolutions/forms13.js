@@ -133,18 +133,27 @@ function _fatDragger(o) {
     tents.push({ tt, a, P, ph: i * (TAU / o.tents) * 1.3 + (sd ? rnd(i, 12) * 2 : 0), pts: Array.from({ length: N }, () => new T.Vector3()), rad: new Array(N) }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.3); b.add(L); LIGHTS.push(L);
   const dir = new T.Vector3();
-  return { g, core: jr * (o.S || 1), update(tm, act) { const ph = 1.6 * tm, ac = act || 0, st = Math.sin(ph);
+  // (o.pull, No. 941: the Hornshell's ECHO PULSE: its tentacles drawn in through the jar's mouth, then a ring of water spreading round the jar and a few drops thrown up)
+  const wM = o.pull ? new T.MeshBasicMaterial({ color: new T.Color(0x5fd0ff), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }) : null, wM2 = o.pull ? new T.MeshBasicMaterial({ color: new T.Color(0xeaffff), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }) : null;
+  const wRing = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.05, 6, 40), wM) : null, wFoam = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.022, 4, 40), wM2) : null, drops = [];
+  if (o.pull) { for (const m of [wRing, wFoam]) { m.rotation.x = PI / 2; m.position.set(0, 0.05, -o.gap); m.visible = false; b.add(m); }
+    for (let i = 0; i < 8; i++) { const dm = new T.Mesh(new T.SphereGeometry(0.035, 6, 5), wM2); dm.visible = false; b.add(dm); drops.push({ dm, a: i * TAU / 8 + 0.3, h: 0.7 + 0.5 * ((i * 5) % 3) / 2 }); } }
+  return { g, core: jr * (o.S || 1), update(tm, act, v) { const ph = 1.6 * tm, ac = act || 0, st = Math.sin(ph);
+    const PU = o.pull && v && v.pull != null ? v : null, pl = PU ? PU.pull : 0, wr = PU && PU.ring ? PU.ring : 0;
     jar.position.z = -o.gap + 0.04 * st - 0.05 * ac; jar.rotation.z = 0.04 * Math.sin(ph + 1); jar.rotation.x = t + 0.03 * Math.cos(ph);
+    if (PU) { jar.position.y -= 0.05 * pl; jar.rotation.x -= 0.1 * pl; }   // (it settles and rears back a little as it draws its arms in)
     const mx = 0, my = jar.position.y + mouthLocal * Math.cos(jar.rotation.x), mz = jar.position.z + mouthLocal * Math.sin(jar.rotation.x);
     horn.position.set(o.hornX || 0, my - 0.02, mz - 0.05); horn.rotation.x = o.hornTilt + 0.05 * Math.sin(ph) + 0.3 * ac; horn.rotation.z = -(o.hornX || 0) * 1.6; horn.scale.y = 1 + 0.12 * ac;
-    for (const T0 of tents) { const P = T0.P, sa = Math.sin(T0.a), ca = Math.cos(T0.a), rr = 0.17 * sz, lift = Math.max(0, Math.sin(ph + T0.ph)) * o.lift * P.lift;
+    for (const T0 of tents) { const P = T0.P, sa = Math.sin(T0.a), ca = Math.cos(T0.a), rr = 0.17 * sz, lift = Math.max(0, Math.sin(ph + T0.ph)) * o.lift * P.lift * (1 - pl);
       let px = mx + sa * rr, py = my + ca * rr * 0.9, pz = mz; dir.set(sa * P.out, ca * 0.4 - P.drop, 1).normalize();
       for (let i = 0; i < N; i++) { const u = i / (N - 1), r = o.tr * P.rad * (1 - 0.8 * Math.pow(u, 1.2)) + 0.012; T0.rad[i] = r;
         T0.pts[i].set(px + P.wob * Math.sin(ph + T0.ph + u * 2.5) * u * 1.6, Math.max(r + 0.005, py) + lift * u, pz);
-        const stp = o.step * P.len * (1 - 0.45 * u); px += dir.x * stp; py += dir.y * stp; pz += dir.z * stp;
+        const stp = o.step * P.len * (1 - 0.45 * u) * (1 - 0.96 * pl); px += dir.x * stp; py += dir.y * stp; pz += dir.z * stp;
         if (py <= r + 0.01) { py = r + 0.01; dir.y = Math.max(0, dir.y) * 0.2; } else dir.y -= o.grav * stp;
         dir.x += sa * P.spread * stp; if (u > P.curlFrom) dir.y += P.curl * stp; dir.normalize(); }
-      T0.tt.set(T0.pts, T0.rad); } } };
+      T0.tt.set(T0.pts, T0.rad); }
+    if (o.pull) { const on = wr > 0.01; wRing.visible = wFoam.visible = on; if (on) { const rs = 0.35 + 1.5 * wr, op = Math.max(0, 1 - wr * wr); wRing.scale.set(rs, rs, rs * 0.6); wFoam.scale.set(rs * 1.02, rs * 1.02, rs * 0.6); wFoam.position.y = 0.1; wM.opacity = 0.75 * op; wM2.opacity = 0.9 * op; }
+      drops.forEach(D => { D.dm.visible = on; if (on) { const rr2 = (0.3 + 1.1 * wr) * (0.5 + 0.5 * Math.sin(D.a * 3 + 1) ** 2 + 0.3), hh = D.h * Math.sin(PI * Math.min(1, wr * 1.1)) * 0.55; D.dm.position.set(Math.cos(D.a) * rr2, 0.12 + hh, -o.gap + Math.sin(D.a) * rr2 * 0.8); D.dm.scale.setScalar(1 - 0.5 * wr); } }); } } };
 }
 const _fd = { tilt: 1.5, size: 1.0, gap: 0.6, hornR: 0.07, horn: 0.5, hornTilt: 0.7, prof: _JAR_ROUND, ridges: [0.3, 0.5, 0.68], studs: 3,
   tents: 5, tentArc: 3.8, tentCentre: PI, tn: 16, tr: 0.1, step: 0.065, out: 0.55, drop: 0.5, grav: 1.6, spread: 1.2, curl: 4.0, curlFrom: 0.66, lift: 0.1 };
@@ -169,4 +178,7 @@ fx(218, "Irregular tentacles, flat coil-shell jar.", () => _fatDragger(Object.as
 fx(219, "Irregular tentacles, five, thicker.", () => _fatDragger(Object.assign({}, _fd, { irr: 7, tents: 5, tentArc: 5.0, tr: 0.115, hornX: 0.06 })));
 fx(220, "Irregular tentacles, shell tipped up.", () => _fatDragger(Object.assign({}, _fd, { S: 1.3, irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06 })));
 fx(221, "Irregular tentacles, long horn.", () => _fatDragger(Object.assign({}, _fd, { irr: 9, tents: 6, tentArc: 5.4, horn: 0.85, hornR: 0.075, hornX: 0.07 })));
+// 941 · THE HORNSHELL's ECHO PULSE (the owner, 2026-11-12: "he pulls his arms inside and by doing that it creates a water ring"; the Hornshell is a hermit crab in a jar): No. 220 whose tentacles are drawn into the jar over
+// the wind-up and a ring of water spreads round it as the pulse goes off: the sheet's extra block, columns 16-23 (v: { pull, ring }). The big ring on the floor is the game's own.
+fx(941, "The HORNSHELL's pull: No. 220 drawing its tentacles into the jar, a ring of water spreading round it (its ECHO PULSE; the sheet's extra block).", () => _fatDragger(Object.assign({}, _fd, { S: 1.3, irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06, pull: true })));
 fx(222, "Irregular tentacles, eight, mixed thin and thick.", () => _fatDragger(Object.assign({}, _fd, { irr: 10, tents: 8, tentArc: 6.0, tn: 16, tr: 0.1, hornX: 0.06, horn: 0.55 })));
