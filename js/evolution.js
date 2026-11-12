@@ -177,7 +177,7 @@ const EVOLUTIONS = {
     // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "MAELSTROM", sheet: "img/evo/voidstar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true },   // (24 columns since build 2026-11-12q, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true },   // (24 columns since build 2026-11-12r, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 8-15, its old bow, are not used by the move now)
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -882,7 +882,7 @@ function echoPulse(f) {
     _evoSay(f, "ECHO PULSE", "#7fffe0");
     return true;
 }
-// MAELSTROM (the Voidstar's second attack, build 2026-11-12q; the owner: "Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them", replacing
+// MAELSTROM (the Voidstar's second attack, build 2026-11-12r; the owner: "Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them", replacing
 // SINGULARITY SHOT; asked, the owner chose: a lasting swirl, the game's own blind as the disorient): a small swirl of purple crystals opens on the nearest enemy it can see within MAEL_RANGE and turns for MAEL_LIFE
 // frames, throwing crystals out all round. Every MAEL_TICK frames (and at once as it opens) each enemy in it that can be seen from its middle takes MAEL_BITE x its power (flux, elemental) and is BLINDED for
 // MAEL_BLIND frames (the blind the game already has, js/predator.js: it loses its target, cannot attack or shoot and staggers about at half pace; each beat starts it afresh, so it lasts while the enemy stays in

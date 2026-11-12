@@ -72,15 +72,15 @@ function _cdKindCol(c) {   // a card's colour: its element's (an element card, a
 // edge, and its name, kind and text are a raised hologram with a blurred copy under it for its shadow. `extra` is its state: "hand", "found", "locked" (or "" for none). The callers put what can be done with it
 // (its buttons, who wears it) under the slab, flat: a tap there is never lost to the tilt.
 const _CD_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED" };
-// AN ENERGY CARD'S 3D GEM (the owner, 2026-11-12: "push" on the seven gems the earlier mock-ups agreed; build 2026-11-12n):
-// every element has its own gem on the card's face (js/energygem.js), replacing the plasma background of build 2026-11-09nn.
-// The card picks up an `el-<element>` class so game.html can style the gem's animations per element.
+// AN ENERGY CARD'S WORLD AND ITS 3D GEM (build 2026-11-12q, the owner's "B world"; js/energygem.js): its element's world, moving, and its baked gem hovering over it, in its .cd-en,
+// in place of the card's crystal (hidden on an energy card: game.html). It replaced build 2026-11-12n's SVG gems, which replaced the plasma background of build 2026-11-09nn.
+// The card picks up an `el-<element>` class (its element, for a style or a test).
 function _cdSlab(c, extra, short) {   // (short: its text is its short text, js/cards.js equipShortText: the card picker's cards)
     const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")), col = _cdKindCol(c), fx = short && typeof equipShortText === "function" ? equipShortText(c) : c.text || ""; s.style.setProperty("--c", col);
     const art = _cdEl("div", "cd-art"), slab = _cdEl("div", "cd-slab"), face = _cdEl("div", "cd-face");
     slab.appendChild(_cdEl("i", "cd-back"));   // (its back plate, which shows along its right edge and its foot: its thickness)
     const tex = _cdEl("i", "cd-tex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); face.appendChild(tex);
-    if (c.kind === "energy") { s.classList.add("en", "el-" + (c.el || "none")); const en = _cdEl("i", "cd-en"); en.setAttribute("aria-hidden", "true"); if (typeof energyGemInit === "function") energyGemInit(en, c.el); face.appendChild(en); }   // (its 3D gem, by element: js/energygem.js)
+    if (c.kind === "energy") { s.classList.add("en", "el-" + (c.el || "none")); const en = _cdEl("i", "cd-en"); en.setAttribute("aria-hidden", "true"); if (typeof energyGemInit === "function") energyGemInit(en, c.el); face.appendChild(en); }   // (its world and its 3D gem, by element: js/energygem.js)
     face.appendChild(_cdEl("i", "cd-frame"));
     const top = _cdEl("div", "cd-top"); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); if (_CD_STATE[extra]) top.appendChild(_cdEl("span", "cd-state", _CD_STATE[extra])); face.appendChild(top);
     face.appendChild(_cdChip(c));   // (on the card's right edge)

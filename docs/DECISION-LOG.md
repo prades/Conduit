@@ -3151,7 +3151,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
 - The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
 
-## DECISION: The Voidstar's second attack is MAELSTROM, replacing SINGULARITY SHOT; its front arms lift towards the enemy (2026-11-12, build `2026-11-12q`, branch `claude/voidstar-maelstrom`)
+## DECISION: The Voidstar's second attack is MAELSTROM, replacing SINGULARITY SHOT; its front arms lift towards the enemy (2026-11-12, build `2026-11-12r`, branch `claude/voidstar-maelstrom`)
 - After INK SPIT (built, not liked, dropped: the owner, "I do not like that", then "Delete the branch, we'll skip ink spit"), the owner: **"Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them."** The owner chose: **replace** SINGULARITY SHOT (alternative: keep both), a **lasting swirl** (alternative: one burst), the game's **blind** as the disorient (alternative: GLITCH, the wind-up break). Then: **"Now animate the void star himself"**; of MAELSTROM (alternatives: the other attack, both) and the body: **"Lifts his front arms up towards the enemy."**
 - Built: see `CHANGELOG.md`. The legacy Serpent keeps SINGULARITY SHOT; a Voidstar saved locked on it is carried to MAELSTROM.
 - Agent's, provisional (no numbers given): 1.8 tiles, 3 s, a beat every 0.5 s, 0.3 x power, blind 45 frames, a boss not blinded; the reach and wind-up are SINGULARITY SHOT's.
@@ -3160,3 +3160,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 - **The look, revised the same day:** the owner: **"I don't like the purple ring on the ground. Make that go away."** The floor disc and its two rings were taken out of MAELSTROM; the crystals are as they were. Rules unchanged.
 
+
+## DECISION: The energy cards: real 3D gems over their element's world, moving (2026-11-12, build `2026-11-12q`)
+- The owner: **"Let's make those 3D gems and the backgrounds for the energy cards."** The seven gems were modelled in 3D in the shapes locked in for build `2026-11-12n`. Of the electric geode: **"I don't like the electric one. I was imagining just a rock with some crystal coming out of it. And electricity, of course."** It was remade so.
+- Three background drafts on the real cards (A, the plasma of `2026-11-09nn` back; B, a small world for each element; C, rays and rings): **"B world"**.
+- Built: each card's world (a lava cave, a glacier's aurora, a storm, the void, a reactor, a swamp, a garden) painted once per element, its motes drifting and the storm's lightning flickering; the baked gem hovering over it in place of the card's crystal.
+- The agent's, provisional: the hover (the owner was asked "hover or turn" and did not say), the speeds, the flicker, the scenes' details, the motes over the whole card, the reactor's sparks.
+- Supersedes: build `2026-11-12n`'s SVG gems (and, through them, the plasma of `2026-11-09nn`); the electric geode.
+- Status: Implemented and tested; not playtested. `ENERGY-CARDS.md` §9, `CHANGELOG.md`.

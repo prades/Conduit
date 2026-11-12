@@ -133,7 +133,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(!/jar\.position\.y\s*[-+]=/.test(fd) && /jar\.position\.y = jy0/.test(fd), 'the jar is moved by a step: one model draws every cell of a sheet in turn, so a step adds up');
     });
 
-    group('THE VOIDSTAR LIFTS ITS FRONT ARMS TOWARDS THE ENEMY OVER MAELSTROM (build 2026-11-12q; the owner: "Lifts his front arms up towards the enemy"; design No. 943)');
+    group('THE VOIDSTAR LIFTS ITS FRONT ARMS TOWARDS THE ENEMY OVER MAELSTROM (build 2026-11-12r; the owner: "Lifts his front arms up towards the enemy"; design No. 943)');
     check('over the move\'s wind-up the cells run 16 to 21, then 22 and 23 after the swirl opens, then its own frames; the old bow is not shown after it; only the Voidstar has it; its sheet is 24 columns of 8 facings, every cell a sensible size', () => {
         const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), d = evolvedDef(f), t = __foe(f.x + 3, f.y); followerAltSet(f, 'maelstrom'); const out = [], c = () => reachCol(f, frame, d); f._altWindMax = 150;
             for (const w of [150, 125, 100, 75, 50, 25, 1]) { f._altWind = w; out.push(c()); }
