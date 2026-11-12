@@ -62,7 +62,8 @@ function _hzGoOff(s) {
     _hz.blasts.push({ x: cx, y: cy, t0: f, kind: s.kind });
     if (s.kind === "hazard_explosive") _hzBlast(cx, cy, s);
     else {
-        _hz.pools.push({ x: cx, y: cy, r: HAZARD.poolR, until: f + HAZARD.poolFrames, born: f });
+        const pool = { x: cx, y: cy, r: HAZARD.poolR, until: f + HAZARD.poolFrames, born: f }; _hz.pools.push(pool);
+        if (typeof nestWaysPool === "function") nestWaysPool(pool);   // a resin seal it touches is eaten away, for good (js/nestways.js)
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: cx, y: cy, color: "#8cff3a", radius: 0.9, life: 18, element: "toxic" });
     }
 }
@@ -76,6 +77,7 @@ function _hzBlast(cx, cy, from) {
     }
     if (typeof player !== "undefined" && player && Math.hypot(player.x - cx, player.y - cy) <= R && typeof hurtPlayer === "function") hurtPlayer(HAZARD.blastDmg, 10);
     for (const o of hazardSolids()) { if (o === from || o.open) continue; const [ox, oy] = hazardCentre(o); if (Math.hypot(ox - cx, oy - cy) <= R + 0.5) hazardTrigger(o, HAZARD.chainDelay); }
+    if (typeof nestWaysBlast === "function") nestWaysBlast(cx, cy, R);   // a cracked wall within reach breaks, for good (js/nestways.js)
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 12);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: cx, y: cy, color: "#ff7a1a", radius: 1.4, life: 22, element: "fire" });
 }

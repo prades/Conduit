@@ -359,7 +359,13 @@ function _cdRevealBox(rv) {
     } catch (e) { /* no window: the row at its own size */ }
     return ov;
 }
-function _cdRevealClose() { if (!_cdReveal) return; _cdReveal = null; cardsRender(true); }
+function _cdRevealClose() { if (!_cdReveal) return; _cdReveal = null; if (_cdOpts && _cdOpts.found) { cardsClose(); return; } cardsRender(true); }   // (a pack found in a chest: back to the game)
+// the reveal of the pack just opened (equipPackLast), shown from the world: a chest's (js/chests.js). The sheet opens with it, and CONTINUE closes both.
+function cardsRevealFound() {
+    if (typeof equipPackLast === "undefined" || !equipPackLast) return false;
+    if (!cardsOpen({ found: true })) return false;
+    _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice(), energy: (equipPackLast.energy || []).slice() }; cardsRender(true); return true;
+}
 function cardsRevealOpen() { return !!_cdReveal; }   // (is a pack's reveal up: the tests, and the Escape key)
 
 function _cdSigNow() {

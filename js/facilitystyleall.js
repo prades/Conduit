@@ -28,6 +28,8 @@ const FP_ROOM_STYLE = {
     elec_circuitry:      { acc: "#3fa9ff",     wain: "#1a2430", fa: "#1c222b", fb: "#181d25", dark: true, wallLit: "#263040", wallDark: "#1a212b", cap: "#161c24" },
     sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
 };
+for (const id of FP_NEST_ROOMS) if (!FP_ROOM_STYLE[id]) FP_ROOM_STYLE[id] = FP_ROOM_STYLE.nest_area;   // (the Nest grown out, build 2026-11-12a: every room of it the packed dirt of its cavern)
+
 function _fpRoomStyle(id) { return FP_ROOM_STYLE[id] || FP_ROOM_STYLE.crystal_chamber; }
 function _fpAcc(id) { return _fpRoomStyle(id).acc; }
 

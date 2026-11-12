@@ -23,6 +23,7 @@ const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
+for (const id of FP_NEST_ROOMS) if (!FP_ROOM_COL[id]) FP_ROOM_COL[id] = FP_ROOM_COL.nest_area;   // (the Nest grown out: its rooms the cavern's colour on the map)
 
 // ── the world ──
 function _fpFloorTile(x, y, room) { return { x, y, type: "floor", facility: true, room }; }
@@ -382,6 +383,7 @@ function facilityTapAllowed(gx, gy) {
     const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return true;
     const here = facilityRoomIdAt(player.x, player.y), there = facilityRoomIdAt(c[0], c[1]);
     if (!here || !there || here === there) return true;
+    if (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(here) && FP_NEST_ROOMS.has(there)) return true;   // (the Nest grown out, build 2026-11-12a: its tunnels and caves are one place, a tap reaches across them)
     for (const o of _fp.F.openings || []) {   // through a doorway of the room you are in, a little way into the next
         if (!o || !o.rooms || o.rooms.indexOf(here) < 0 || o.rooms.indexOf(there) < 0 || !o.a || !o.b) continue;
         const ax = o.a[0], ay = o.a[1], bx = o.b[0], by = o.b[1], L2 = (bx - ax) ** 2 + (by - ay) ** 2, t = L2 > 0 ? Math.max(0, Math.min(1, ((c[0] - ax) * (bx - ax) + (c[1] - ay) * (by - ay)) / L2)) : 0;
@@ -478,6 +480,8 @@ function facilityResetState() {
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     if (typeof hazardsReset === "function") hazardsReset();   // the hazard containers' fuses, comebacks, acid pools and blasts (js/hazards.js)
+    if (typeof nestWaysReset === "function") nestWaysReset();   // the Nest's cracked wall and resin seal whole again (a save puts back what was opened: js/nestways.js)
+    if (typeof chestsReset === "function") chestsReset();   // every chest shut and full (a save keeps the opened ones: js/chests.js)
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(elementsFound()); lifetimeKills = 0;
     // (after the clock is back at 0: these count from it)
     if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
@@ -600,7 +604,7 @@ function _fpWallLightRoom(w, a, b, F) {
     return w.room;
 }
 const FP_DRAWN_SOLIDS = new Set(["pump", "valve"]);   // furniture drawn in code, not from a sprite sheet: the sewer's machinery (js/facilitydecor.js; Milestone Four, build 2026-11-07b). A baked 3D sprite for them is open.
-const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate", "rubble"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js; a choke of rubble: js/techabilities.js techDrawRubbleOn), and have no sprite
+const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate", "rubble", "cracked_wall", "resin_seal"]);   // (the Nest's cracked wall and resin seal, build 2026-11-12a: js/nestways.js)   // solids that are not furniture: they draw themselves (js/facilitysewers.js; a choke of rubble: js/techabilities.js techDrawRubbleOn), and have no sprite
 // the cells a solid stands on: the tile centres inside its outline ("x,y"; a small round chamber is at least one cell)
 function _fpSolidCells(s) {
     const box = s.bb, cells = new Set();
@@ -631,13 +635,13 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), inkBack: _fpWallInk(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, low: !!w.low, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), inkBack: _fpWallInk(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
     const at = new Map(); for (const it of items) { if (it.fp !== "wall") continue; const k = Math.round(it.x * 4) + "," + Math.round(it.y * 4); if (!at.has(k)) at.set(k, []); at.get(k).push(it); }
     for (const list of at.values()) for (const it of list) { let top = it.base; for (const o of list) if (o !== it && o.room !== it.room && o.base > top) top = o.base; it.base2 = top; }
-    for (const o of F.openings) { if (F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth)
+    for (const o of F.openings) { if (o.cave || F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth); nor a mouth in the rock (`cave`: the Nest's tunnels)
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my), lroom = _fpWallLightRoom({ room: (o.rooms || [])[0] }, o.a, o.b, F), thin = _fpDoorThin(o, F);   // (lroom: the room whose face the wall round the door shows, which the door's header takes its light from; thin: a door in glass)
         for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, out: _fpDoorOut(o, F), lroom, thin, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
     for (const s of F.solids) for (const it of _fpPropItems(s)) items.push(it);
@@ -790,7 +794,8 @@ function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 =
 const FP_AMBER = "#ffb347";
 function _fpDrawProp(it) {
     const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
-    if ((kind === "hazard_explosive" || kind === "hazard_corrosive") && typeof hazardDrawProp === "function" && hazardDrawProp(it)) return;   // a hazard container: its sprite and its glow, or nothing while it is away (js/hazards.js)
+    if ((kind === "hazard_explosive" || kind === "hazard_corrosive") && typeof hazardDrawProp === "function" && hazardDrawProp(it)) return;
+    if (kind === "boulder" && typeof nestBoulderDraw === "function" && nestBoulderDraw(it)) return;   // the Nest's boulder (js/nestways.js)   // a hazard container: its sprite and its glow, or nothing while it is away (js/hazards.js)
     if (typeof facilitySpriteDraw === "function") { if (facilitySpriteDraw(it, typeof battleDrawsWhole === "function" && battleDrawsWhole(it))) return; if (it.spriteOnly || kind === "bridge") return; }   // every prop in 3D (js/propsprites.js); a rim cell or a bridge piece is nothing without its sprite
     if (_fpDecorProp(it)) return;   // the dressing's furniture (js/facilitydecor.js)
     if (kind === "computer_desk") {

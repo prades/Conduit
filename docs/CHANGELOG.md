@@ -2,9 +2,25 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-12
+
+### Build `2026-11-12b` · branch `claude/start-game-project-HSh7Z` · main's Frost Maw and Jelly Ram merged in
+- While this branch made build 12a, main took one pull request, #27 (`claude/jellyram-attacks`, stacked on `claude/frostmaw-attacks`), stamped `2026-11-11y` (entries below): the Frost Maw's lunge-bite and CHOMP, and the Jelly Ram's tentacle lash.
+- The two merged (main into this branch) are build 12b. Nothing in either changed in the merge. The only conflicts were the build's stamps and the generated page and script bundle (made again); this log kept both, this branch's first.
+
+### Build `2026-11-12a` · branch `claude/start-game-project-HSh7Z` · the Ant Nest grown out; its ways through; the default chest
+- **The owner**: "I like the sea chess and I like the nest. Just make a spot for the volcanic layer to be included in the nest", then "Build it" (on the agent's picks for what was still open: low walls on the camera's side, and the chest's rules).
+- **The Nest grows out** as draft 6 (docs/DOMAINS.md §2, 10 and 11): thirteen rooms of its one interior round the queen's cavern, which stays as it was: tunnels three tiles wide, a brood chamber, the shelf (high ground), a stream cave, the old burrow, the deep brood, the larder, and the way down, a slope (no steps) to the volcanic layer's level, which ends for now where the layer will begin. Mouths in the rock join them (no door frames). The whole Nest is lit as one and a tap reaches across it. It lies 112 tiles south of the arena now (96 before), out of the Sewers' sight.
+- **Walls you can see over**: in the new rooms every rock wall is a low rim, and so is the cavern's west wall, where the tunnels leave (a tall wall hid whoever was in a tunnel). The cavern's other walls are as they were.
+- **The ways through**: ① a collapsed tunnel west of the cavern (a fire technician's THERMITE DRILL); ② a cracked wall in the south tunnel, broken for good by the blast of the flask beside it (shoot it); a stream an ICE BRIDGE crosses; a REEF climb up the shelf's cliff (and a ledge down); a boulder FLUX MOVE puts in the hollow beside it (it cannot go back); a resin seal the acid flask in front of it eats away for good. What a blast or acid opens is saved.
+- **THE ANT QUEEN** keeps to her cavern; coming down into the Nest arms her, walking between its rooms does not. The test squad, the meter and the console's panel carry on in the tunnels.
+- **The default chest** (docs/CHESTS.md; the look C, the hex cache): four in the Nest's side pockets. Tap it (or E): it opens once, a booster pack opened free with the reveal you know (PACK 1, or SERIES 2 too once it is open to you) and two items; what does not fit stays in it. Emptied, it stays open. Saved.
+- Files: js/facilitymap.js (the rooms, mouths, slope, ways, chests, dressing), js/nestways.js and js/chests.js (new), js/facility.js, facilityplay.js, facilitydecor.js, facilitystyle.js, facilitystyleall.js, facilitynet.js, facilitysave.js, hazards.js, techabilities.js, propsprites.js, stations.js, cards.js, cardsui.js, bosses.js, nestconsole.js, cavewalls.js; design/props/models/chest.js (baked: img/props/chest.png); img/cave/nest_area.png and rubble.png rebaked; tests: nest (four new checks) and the suites whose counts the new rooms change.
+- The numbers are the agent's, provisional: the rooms' sizes and names, the rim heights, the chest's contents and odds. Verified: the suites and the full run; looked at in the real page. Not playtested.
+
 ## 2026-11-11
 
-### Build `2026-11-11z` · branch `claude/seeper-attacks` · the Seeper's leg stomp
+### Build `2026-11-12c` (made as 11z on its branch) · branch `claude/seeper-attacks` · the Seeper's leg stomp
 - **Everyday hit** (the owner: "Seeper!"; of three looks the agent offered, the owner chose **"Leg stomp"**): the Seeper plants its other legs, rears one front leg up and slams it down in front of it, toward the enemy, flinging goo off the foot, then settles. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
 - **ERUPTION** (its second attack) keeps its own frames (the action block), unchanged: the stomp is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4081 × 448 packed; its pool of goo sheet is re-baked with it).
 - Agent's, provisional: which leg stomps (the front right), how high and far, the goo's size, the 8-frame timing, the lean.

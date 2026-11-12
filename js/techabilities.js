@@ -869,7 +869,7 @@ function _techReefEdgeAt(w, qx, qy, ca, cb) {
     const lo = h0 < h1 ? 0 : 1, P0 = side[lo], P1 = side[1 - lo], s = lo === 0 ? 1 : -1, cLo = lo === 0 ? c0 : c1, cHi = lo === 0 ? c1 : c0;   // (s: the normal's way from the low floor to the high)
     if (facilityIced(F, P0[0], P0[1]) || facilityIced(F, P1[0], P1[1])) return null;   // ("No": an ice bridge is not floor to climb from)
     let face = false;   // what lies between the two floors: no glass, and the high floor's open face
-    for (const v of F.walls) { if (!facilitySegmentsCross(P0, P1, v.a, v.b)) continue; if (v.window) return null; if (REEF_FACES.has(v.kind)) face = true; }
+    for (const v of F.walls) { if (!facilitySegmentsCross(P0, P1, v.a, v.b)) continue; if (v.window) return null; if (REEF_FACES.has(v.kind) || v.face) face = true; }
     if (!face) return null;
     const ox = -nx * s, oy = -ny * s; let foot = null;   // out onto the low floor, where the camera sees it: `foot` tiles out, less where the floor stops
     for (let k = R.foot; k >= 0; k -= 0.5) { const x = Math.round(P0[0] + ox * k), y = Math.round(P0[1] + oy * k); if (facilityStandOk(x, y) && _techComp(x, y) === cLo && facilityLosFrom(P0[0], P0[1], x, y)) { foot = [x, y]; break; } }

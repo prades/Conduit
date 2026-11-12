@@ -221,6 +221,8 @@ Its name is "coral crab" for now (the owner: "the name should be coral crab for 
 
 **The connected rule, for every Technician** (the owner, 2026-11-08: "Yes, every Technician"): a Technician's utility works wherever its kind of place is (an ice bridge on any water, REEF on any high ground over floor, and so each of the others), with no marked sites. A direction for the utilities still to be built or reworked; none is changed by it yet. The full design is in `CONVERSION.md`.
 
+**The domains' ways through** (the owner, 2026-11-12: "ways for the player to use their utilities from their technicians to get around"): the domains become narrow passages and rooms whose ways are opened by these utilities (the drill, the ice bridge, the launcher, REEF, FLUX MOVE) and by blowing up the explosive flasks. Built in the Nest in `2026-11-12a` (`DOMAINS.md` §2, 10): a REEF climb also goes up a `cliff` edge (the shelf's), as up the catwalks' open face.
+
 ## Designed 2026-11-06, not built: the next phase's technician utilities
 
 In the future update registered on 2026-11-06 (`NEXT-PHASE-ROADMAP.md`; the decision is in `DECISION-LOG.md`):

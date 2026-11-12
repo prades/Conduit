@@ -113,7 +113,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
                     if (!side[0] || !side[1]) continue; const ca = _pComp(side[0][0], side[0][1]), cb = _pComp(side[1][0], side[1][1]); if (ca === cb) continue;
                     const e = _techReefEdgeAt(w, qx, qy, ca, cb); if (!e) continue; n++; const k = __room(e.foot[0], e.foot[1]) + '>' + __room(e.top[0], e.top[1]); hits[k] = (hits[k] || 0) + 1; } }
             return { hits, n }; })()`);
-        same(Object.keys(r.hits).join(), 'arena>catwalks', 'where it can climb: ' + JSON.stringify(r.hits)); ok(r.n >= 60 && r.n <= 80, 'samples along the edge (half a tile apart, both rooms\' pieces): ' + r.n);
+        same(Object.keys(r.hits).sort().join(), 'arena>catwalks,nest_brood>nest_shelf', 'where it can climb (and the Nest\'s shelf since build 2026-11-12a): ' + JSON.stringify(r.hits)); ok(r.hits['arena>catwalks'] >= 60 && r.hits['arena>catwalks'] <= 80, 'samples along the catwalks\' edge (half a tile apart, both rooms\' pieces): ' + r.hits['arena>catwalks']); ok(r.hits['nest_brood>nest_shelf'] >= 20, 'samples along the Nest\'s shelf (since build 2026-11-12a): ' + r.hits['nest_brood>nest_shelf']);
     });
     check('glass stops it ("No, the glass stops it"), a plain wall too, and an ice bridge is not floor to climb from ("No"); out of its sight it is refused', () => {
         const r = J(`(function(){ const at = [Math.floor(__edgeX) - 4, 51], fs = __fresh(['blossom'], at), t = fs[0], o = {}; t.x = at[0]; t.y = at[1]; const F = _fp.F, spot = { x: __edgeX + 2.5, y: 51 };

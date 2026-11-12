@@ -1086,20 +1086,20 @@ function equipPackRoll(seed, pack) {
     return out.map(c => c.id);
 }
 // why a pack cannot be bought now, or null when it can
-function equipPackWhyNot(pack) {
+function equipPackWhyNot(pack, free) {
     pack = pack || EQUIP_PACK;
     if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (a pack without its price, odds or reserved slot)
     if (equipPackLocked(pack)) return pack.unlock === "purified" ? "UNLOCKS AFTER THE PURIFICATION" : "UNLOCKS AFTER THE FIRST BOSS";   // (Series 2: once the Sewers are purified, the owner's rule)
     const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack), gr = equipGuaranteeRarities(pack);
-    if (have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";
+    if (!free && have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";   // (free: a chest's pack, js/chests.js)
     if (pool.length < pack.size || pool.filter(c => gr.indexOf(c.rarity) >= 0).length < pack.guaranteed.count) return "NO CARDS TO FIND";
     return null;
 }
 // buy and open a pack: the price is paid from the run's shards, the cards are dealt; returns their ids, or null (nothing is paid)
-function equipPackOpen(seed, pack) {
-    pack = pack || EQUIP_PACK; if (equipPackWhyNot(pack)) return null;
+function equipPackOpen(seed, pack, free) {
+    pack = pack || EQUIP_PACK; if (equipPackWhyNot(pack, free)) return null;
     const ids = equipPackRoll(seed, pack); if (!ids || ids.length !== pack.size) return null;
-    shardCount -= pack.price;
+    if (!free) shardCount -= pack.price;   // (free: a pack found in a chest, js/chests.js, costs nothing)
     const fresh = [], dupes = []; let credits = 0;
     for (const id of ids) {
         if (equipDuplicate(id)) { dupes.push(id); credits += equipMarketValue(equipCard(id)) * EQUIP_MARKET.share; continue; }   // a card you already have pays credits instead of being found again
