@@ -68,30 +68,34 @@ function _drawThunderBolt(ctx, p, sx, sy) {
     stroke(1.4, '#fff9b0', 0.9); for (let i = 0; i < 4; i++) { const an = f * 0.4 + i * Math.PI / 2, l = r * (1.9 + 0.7 * Math.sin(f * 0.6 + i * 2)); ctx.beginPath(); ctx.moveTo(sx + Math.cos(an) * r, sy + Math.sin(an) * r); ctx.lineTo(sx + Math.cos(an) * l, sy + Math.sin(an) * l); ctx.stroke(); }   // (a few arcs off it)
     ctx.globalAlpha = 1;
 }
-// THE ROTSHARD's EVERYDAY SHOT, CORRODE SHOT (the owner, 2026-11-12: "the corrode shot should look like a shocking soul blob that hits the target"; "Crackling"; "It should be the same color as [the Rotshard]"; "no gradient just
-// highlighter color"): a wobbling blob of the Rotshard's own crystal green with a faint face, a wispy tail of smaller blobs behind it and little arcs of pale light snapping off it, new ones every other frame. Flat
-// colours (the crystal's mint, a lighter facet, a darker green for the face, near-white for the arcs): no gradient and no shadow (the effects plan, docs/EFFECTS.md).
-const _SOUL = { body: '#9adeae', lit: '#c4eed0', dark: '#4f9f6c', arc: '#eafff0', tail: '#68c58a' };
+// THE ROTSHARD's EVERYDAY SHOT, CORRODE SHOT (the owner, 2026-11-12: "the corrode shot should look like a shocking soul blob that hits the target"; "It should be the same color as [the Rotshard]"; "no gradient just highlighter
+// color"; then, of the first draft: "it shouldn't have a fucking skull in it. And the lightning looks bad. It should [...] look like it's zooming, even though it's a slow-moving projectile. But it's like smoke, lightning
+// [...] it should be kind of dullish"): a blob of the Rotshard's own crystal green, no face, stretched along its flight, with speed streaks and a long smoky tail behind it, and dull SMOKE-LIGHTNING snapping off it: ragged
+// arcs in a muddy grey-green with puffs of smoke along them, drifting back. Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+const _SOUL = { body: '#9adeae', lit: '#c4eed0', smoke: '#6f8f7c', arc: '#a9c4b3', tail: '#68c58a' };
 function _drawSoulBlob(ctx, p, sx, sy) {
     const f = p.frame || 0, R = (p.radius || 5) * 2.3, vx = p.vx || 0, vy = p.vy || 0;
     let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
     const ang = Math.atan2(uy, ux), cx = Math.cos(ang), sn = Math.sin(ang);
-    const blob = (x, y, r, wob, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();
-        for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * 1.15, qy = Math.sin(t) * r * k * 0.88, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
+    const blob = (x, y, r, wob, fill, a, st) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();   // (st: how much it is stretched along its flight)
+        for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * st, qy = Math.sin(t) * r * k * 0.8, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
         ctx.closePath(); ctx.fill(); };
-    ctx.globalAlpha = 1;
-    for (let i = 4; i >= 1; i--) { const d = R * (0.9 + i * 0.8), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.22; blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.7 - i * 0.12), 0.3, _SOUL.tail, 0.6 - i * 0.11); }   // (the wisps it sheds)
-    blob(sx, sy, R, 0.14, _SOUL.body, 1);
-    blob(sx - R * 0.25, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1);   // (a lighter facet)
-    ctx.globalAlpha = 1; ctx.fillStyle = _SOUL.dark;   // (its face: two eyes and a little round mouth, looking where it goes)
-    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx + ux * R * 0.18 - uy * sd * R * 0.3, sy + uy * R * 0.18 + ux * sd * R * 0.3 - R * 0.05, R * 0.13, R * 0.2, ang, 0, Math.PI * 2); ctx.fill(); }
-    ctx.beginPath(); ctx.ellipse(sx + ux * R * 0.4, sy + uy * R * 0.4 + R * 0.12, R * 0.12, R * 0.15, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = _SOUL.arc; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const seed = Math.floor(f / 2);
-    for (let i = 0; i < 5; i++) {   // (the crackle: jagged arcs snapping off it, new ones every other frame)
-        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = (h - Math.floor(h)) * Math.PI * 2, len = R * (0.9 + 0.8 * (((seed + i * 3) * 0.37) % 1));
-        ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a0) * R * 0.95, sy + Math.sin(a0) * R * 0.95);
-        for (let k = 1; k <= 3; k++) { const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.7; ctx.lineTo(sx + Math.cos(a0) * (R * 0.95 + len * k / 3) - Math.sin(a0) * jj, sy + Math.sin(a0) * (R * 0.95 + len * k / 3) + Math.cos(a0) * jj); }
-        ctx.stroke(); }
+    const seed = Math.floor(f / 2);
+    // speed streaks: long thin tapering strips behind it along its flight, so it looks like it is zooming (it is slow)
+    ctx.lineCap = 'round'; ctx.strokeStyle = _SOUL.tail;
+    for (let i = 0; i < 4; i++) { const off = (i - 1.5) * R * 0.42, len = R * (3.2 + 0.9 * ((seed + i * 2) % 3)), ox = -uy * off, oy = ux * off; ctx.globalAlpha = 0.5 - i % 2 * 0.15; ctx.lineWidth = 2.6 - 0.4 * (i % 2); ctx.beginPath(); ctx.moveTo(sx + ox - ux * R * 0.7, sy + oy - uy * R * 0.7); ctx.lineTo(sx + ox - ux * (R * 0.7 + len), sy + oy - uy * (R * 0.7 + len)); ctx.stroke(); }
+    for (let i = 5; i >= 1; i--) { const d = R * (0.9 + i * 0.95), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.16; blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.72 - i * 0.1), 0.3, _SOUL.tail, 0.55 - i * 0.09, 1.5); }   // (the smoky tail, long and drawn out)
+    blob(sx, sy, R, 0.14, _SOUL.body, 1, 1.45);
+    blob(sx - R * 0.15, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1, 1.35);   // (a lighter facet)
+    // dull smoke-lightning: ragged arcs in muddy grey-green that stream BACK from the blob (a cone behind it, not sticking out all round), each on a soft smoky underlay with a puff of smoke along it; new ones every other frame
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < 5; i++) {
+        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = ang + Math.PI + ((h - Math.floor(h)) - 0.5) * 2.2, len = R * (1.3 + 1.0 * (((seed + i * 3) * 0.37) % 1)), pts = [];
+        for (let k = 0; k <= 5; k++) { const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.5 * Math.min(1, k / 2), d = R * 0.8 + len * k / 5; pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * jj, sy + Math.sin(a0) * d + Math.cos(a0) * jj]); }
+        ctx.strokeStyle = _SOUL.smoke; ctx.lineWidth = 5.5; ctx.globalAlpha = 0.28; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke();
+        ctx.strokeStyle = _SOUL.arc; ctx.lineWidth = 1.2; ctx.globalAlpha = 0.65; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke();
+        blob(pts[3][0], pts[3][1], R * 0.3, 0.3, _SOUL.smoke, 0.32, 1.2); blob(pts[5][0], pts[5][1], R * 0.22, 0.3, _SOUL.smoke, 0.25, 1.2);   // (puffs of smoke along it)
+    }
     ctx.globalAlpha = 1;
 }
 function _drawFollowerProjectile(ctx, p, sx, sy) {

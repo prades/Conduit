@@ -1586,7 +1586,7 @@ function drawElementEffects() {
                 ctx.fillStyle = '#c4eed0'; ctx.beginPath(); ctx.ellipse(px - 2, cy - 2, 4 * sp, 3 * sp, 0, 0, Math.PI * 2); ctx.fill();
                 for (let i = 0; i < 8; i++) { const an = i * 0.785 + 0.3, d = (7 + (i % 3) * 4) + 14 * sp; ctx.fillStyle = i % 2 ? '#9adeae' : '#68c58a'; ctx.beginPath(); ctx.ellipse(px + Math.cos(an) * d, cy + Math.sin(an) * d * 0.8, 3.2 - age * 0.09, 2.4 - age * 0.07, an, 0, Math.PI * 2); ctx.fill(); }
                 ctx.fillStyle = '#68c58a'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px + (i - 1) * 6, cy + 6 + age * (0.5 + 0.12 * i), 1.6, 2.6 + age * 0.1, 0, 0, Math.PI * 2); ctx.fill(); }
-                ctx.strokeStyle = '#eafff0'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.globalAlpha = fade * 0.9; for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.8 + age * 0.3, d0 = 10 + 8 * sp; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.8); ctx.lineTo(px + Math.cos(an) * (d0 + 7), cy + Math.sin(an) * (d0 + 7) * 0.8); ctx.stroke(); }   // (a few sparks as it lands)
+                ctx.strokeStyle = '#a9c4b3'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.globalAlpha = fade * 0.8; for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.8 + age * 0.3, d0 = 10 + 8 * sp; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.8); ctx.lineTo(px + Math.cos(an) * (d0 + 7), cy + Math.sin(an) * (d0 + 7) * 0.8); ctx.stroke(); }   // (a few dull wisps of it as it lands)
                 ctx.restore(); break;
             }
             case "rotshards": {

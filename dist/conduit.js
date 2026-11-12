@@ -367,8 +367,8 @@ const IMG_MAP = {
     "img/evo/quillstone.png": "img/evo/quillstone.webp?v=ac738c91",
     "img/evo/reaver.png": "img/evo/reaver.webp?v=37696eef",
     "img/evo/rimestar.png": "img/evo/rimestar.webp?v=a0f4e66d",
-    "img/evo/rotshard.png": "img/evo/rotshard.webp?v=15d039d1",
-    "img/evo/rotshard_g.png": "img/evo/rotshard_g.webp?v=1fc2d0de",
+    "img/evo/rotshard.png": "img/evo/rotshard.webp?v=4a73c1ce",
+    "img/evo/rotshard_g.png": "img/evo/rotshard_g.webp?v=6b0826b5",
     "img/evo/seeper.png": "img/evo/seeper.webp?v=9e4462af",
     "img/evo/seeper_g.png": "img/evo/seeper_g.webp?v=7c71e3b3",
     "img/evo/serpent.png": "img/evo/serpent.webp?v=acf47eee",
@@ -2980,10 +2980,10 @@ function drawElementEffects() {
                     ctx.ellipse(px + (i - 1) * 6, cy + 6 + age * (0.5 + 0.12 * i), 1.6, 2.6 + age * 0.1, 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
-                ctx.strokeStyle = '#eafff0';
+                ctx.strokeStyle = '#a9c4b3';
                 ctx.lineWidth = 1.5;
                 ctx.lineCap = 'round';
-                ctx.globalAlpha = fade * 0.9;
+                ctx.globalAlpha = fade * 0.8;
                 for (let i = 0; i < 4; i++) {
                     const an = i * 1.57 + 0.8 + age * 0.3, d0 = 10 + 8 * sp;
                     ctx.beginPath();
@@ -51245,7 +51245,7 @@ function _drawThunderBolt(ctx, p, sx, sy) {
     }
     ctx.globalAlpha = 1;
 }
-const _SOUL = { body: '#9adeae', lit: '#c4eed0', dark: '#4f9f6c', arc: '#eafff0', tail: '#68c58a' };
+const _SOUL = { body: '#9adeae', lit: '#c4eed0', smoke: '#6f8f7c', arc: '#a9c4b3', tail: '#68c58a' };
 function _drawSoulBlob(ctx, p, sx, sy) {
     const f = p.frame || 0, R = (p.radius || 5) * 2.3, vx = p.vx || 0, vy = p.vy || 0;
     let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H;
@@ -51253,12 +51253,12 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     ux /= L;
     uy /= L;
     const ang = Math.atan2(uy, ux), cx = Math.cos(ang), sn = Math.sin(ang);
-    const blob = (x, y, r, wob, fill, a) => {
+    const blob = (x, y, r, wob, fill, a, st) => {
         ctx.globalAlpha = a;
         ctx.fillStyle = fill;
         ctx.beginPath();
         for (let i = 0; i <= 18; i++) {
-            const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * 1.15, qy = Math.sin(t) * r * k * 0.88, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx;
+            const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * st, qy = Math.sin(t) * r * k * 0.8, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx;
             if (i)
                 ctx.lineTo(X, Y);
             else
@@ -51267,38 +51267,49 @@ function _drawSoulBlob(ctx, p, sx, sy) {
         ctx.closePath();
         ctx.fill();
     };
-    ctx.globalAlpha = 1;
-    for (let i = 4; i >= 1; i--) {
-        const d = R * (0.9 + i * 0.8), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.22;
-        blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.7 - i * 0.12), 0.3, _SOUL.tail, 0.6 - i * 0.11);
-    }
-    blob(sx, sy, R, 0.14, _SOUL.body, 1);
-    blob(sx - R * 0.25, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = _SOUL.dark;
-    for (const sd of [-1, 1]) {
-        ctx.beginPath();
-        ctx.ellipse(sx + ux * R * 0.18 - uy * sd * R * 0.3, sy + uy * R * 0.18 + ux * sd * R * 0.3 - R * 0.05, R * 0.13, R * 0.2, ang, 0, Math.PI * 2);
-        ctx.fill();
-    }
-    ctx.beginPath();
-    ctx.ellipse(sx + ux * R * 0.4, sy + uy * R * 0.4 + R * 0.12, R * 0.12, R * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = _SOUL.arc;
-    ctx.lineWidth = 1.7;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     const seed = Math.floor(f / 2);
-    for (let i = 0; i < 5; i++) {
-        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = (h - Math.floor(h)) * Math.PI * 2, len = R * (0.9 + 0.8 * (((seed + i * 3) * 0.37) % 1));
-        ctx.globalAlpha = 0.95;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = _SOUL.tail;
+    for (let i = 0; i < 4; i++) {
+        const off = (i - 1.5) * R * 0.42, len = R * (3.2 + 0.9 * ((seed + i * 2) % 3)), ox = -uy * off, oy = ux * off;
+        ctx.globalAlpha = 0.5 - i % 2 * 0.15;
+        ctx.lineWidth = 2.6 - 0.4 * (i % 2);
         ctx.beginPath();
-        ctx.moveTo(sx + Math.cos(a0) * R * 0.95, sy + Math.sin(a0) * R * 0.95);
-        for (let k = 1; k <= 3; k++) {
-            const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.7;
-            ctx.lineTo(sx + Math.cos(a0) * (R * 0.95 + len * k / 3) - Math.sin(a0) * jj, sy + Math.sin(a0) * (R * 0.95 + len * k / 3) + Math.cos(a0) * jj);
-        }
+        ctx.moveTo(sx + ox - ux * R * 0.7, sy + oy - uy * R * 0.7);
+        ctx.lineTo(sx + ox - ux * (R * 0.7 + len), sy + oy - uy * (R * 0.7 + len));
         ctx.stroke();
+    }
+    for (let i = 5; i >= 1; i--) {
+        const d = R * (0.9 + i * 0.95), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.16;
+        blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.72 - i * 0.1), 0.3, _SOUL.tail, 0.55 - i * 0.09, 1.5);
+    }
+    blob(sx, sy, R, 0.14, _SOUL.body, 1, 1.45);
+    blob(sx - R * 0.15, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1, 1.35);
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < 5; i++) {
+        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = ang + Math.PI + ((h - Math.floor(h)) - 0.5) * 2.2, len = R * (1.3 + 1.0 * (((seed + i * 3) * 0.37) % 1)), pts = [];
+        for (let k = 0; k <= 5; k++) {
+            const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.5 * Math.min(1, k / 2), d = R * 0.8 + len * k / 5;
+            pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * jj, sy + Math.sin(a0) * d + Math.cos(a0) * jj]);
+        }
+        ctx.strokeStyle = _SOUL.smoke;
+        ctx.lineWidth = 5.5;
+        ctx.globalAlpha = 0.28;
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let k = 1; k < pts.length; k++)
+            ctx.lineTo(pts[k][0], pts[k][1]);
+        ctx.stroke();
+        ctx.strokeStyle = _SOUL.arc;
+        ctx.lineWidth = 1.2;
+        ctx.globalAlpha = 0.65;
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let k = 1; k < pts.length; k++)
+            ctx.lineTo(pts[k][0], pts[k][1]);
+        ctx.stroke();
+        blob(pts[3][0], pts[3][1], R * 0.3, 0.3, _SOUL.smoke, 0.32, 1.2);
+        blob(pts[5][0], pts[5][1], R * 0.22, 0.3, _SOUL.smoke, 0.25, 1.2);
     }
     ctx.globalAlpha = 1;
 }
