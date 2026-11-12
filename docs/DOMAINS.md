@@ -1,17 +1,19 @@
 # The domains (the map's expansion)
 
-- **Status:** The electrical domain's step 1 is **implemented and verified by tests** in build `2026-11-11d` (the door and the place, empty; not playtested). Its steps 2 and 3 (the fallen racks, the circuitry), the Nest's tunnels, the volcanic layer and the crystalline area are designed in part, not built.
+- **Status:** The electrical domain's step 1 is **implemented and verified by tests** in build `2026-11-11d` (the door and the place, empty; not playtested). **2026-11-12, the owner's new direction (§2, 7 to 9):** the domains are narrow passages, rooms, nests, caves and instances, not big open halls; the electrical domain is to be rebuilt that way and the Nest grown out into tunnels, both with ways through that use the technicians' utilities; and a default chest. The layouts, the ways through and the chest are **proposed** (drafts 5 to 9, §5 and `CHESTS.md`), not approved and not built. The volcanic layer and the crystalline area are designed in part, not built.
 - **Owner:** the user (creative direction); the agent (implementation support)
-- **Last updated:** 2026-11-11
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11d`
-- **Related docs:** `FACILITY.md` (the map, interiors and portals), `NEST.md`, `TECHNICIANS.md` (the ice bridge), `SEWER-QUEST.md` (the Sewers, built empty first), `TUTORIAL.md` (the junction)
+- **Last updated:** 2026-11-12
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11d` (step 1); drafts 5 to 9 after build `2026-11-11x` (nothing built for them)
+- **Related docs:** `FACILITY.md` (the map, interiors and portals; the hazard containers), `NEST.md`, `TECHNICIANS.md` (the ice bridge, the launcher, REEF, the drill), `FLUX-MOVEMENT.md`, `CHESTS.md` (the default chest), `SEWER-QUEST.md` (the Sewers, built empty first), `TUTORIAL.md` (the junction)
 
 ## 1. Intent
 
 The owner, 2026-11-11: "We're going to need some map expansions to fully integrate the map. So in the server room, there's going to be a downward staircase that stretches the entirety of the length of the room that goes into a new, deeper electrical domain that, as you get further down into it, the server room of it, it's the server racks get are like tossed on the ground and strawn about, and then there's a big open area where there's like circuitry everywhere, and then in the arena, there's going to be, or not the arena, in the nest, there's going to be a lot more development in the nest, and it's going to lead to layers, new layers, like a volcanic layer, and that'll be the fire domain, and you can convert the lava to stone, and create a path to the crystalline area, which just so happens to be the home of the flux domain."
 
+The owner, 2026-11-12: "Okay, so the way we did the electrical domain, I'm starting to realize that that is not the way that I want my game to be designed. I want it to be narrow passages and rooms and nests and caves and instances. Also would like to create a default chest that players can find booster packs and other miscellaneous items within. But the electrical domain and the nests, I would like to expand those out with narrow passages and ways for the player to use their utilities from their technicians to get around." Then: "including but not limited to blowing up barrels to bring down or break through different obstacles, or using flux move to move an object to get it out the way."
+
 Three new places:
-1. **The electrical domain**, down a staircase from the Server Room: a deeper server room whose racks lie tossed and strewn the further in you go, then a big open area with circuitry everywhere.
+1. **The electrical domain**, down a staircase from the Server Room: a deeper server room whose racks lie tossed and strewn the further in you go, then ~~a big open area with circuitry everywhere~~ (the big open area **superseded 2026-11-12**: §2, 7; the circuitry stays, in passages and rooms).
 2. **The volcanic layer** (the fire domain), below the Ant Nest, which is developed further and leads down to it.
 3. **The crystalline area** (the flux domain), reached across the volcanic layer's lava, turned to stone to make a path.
 
@@ -24,6 +26,9 @@ Three new places:
 4. **Empty at first.** Each domain is built as a place first, with no creatures, as the Sewers were. Creatures, bosses and quests come next, designed with the owner.
 5. **The nests descend without stairs: sloping tunnels** (the owner: "I want the nests to descend without stairs"; asked how, chose "Sloping tunnels"): the layers are joined by dirt ramps you walk straight down, with no stairs and no fade between them.
 6. **The electrical domain's look is A, the cold blue server graveyard** (draft 3A, chosen from three): the Server Room's blue carried down; dark racks with blue and cyan lights, the fallen ones mostly dead; torn cables and orange sparks where they fell; the circuitry as bundles of thin blue light running through dark steel out of a few big chips.
+7. **Narrow passages, rooms, nests, caves and instances** (the owner, 2026-11-12, §1): the domains are made of these, not of big open halls. "The way we did the electrical domain" (two big rooms, the circuitry a 32 × 23 hall: build `2026-11-11d`) "is not the way that I want my game to be designed". Supersedes the big open area of §1 and the shape of §5 (2026-11-11).
+8. **Ways through by the technicians' utilities** (the owner, 2026-11-12): the electrical domain and the nests are expanded "with narrow passages and ways for the player to use their utilities from their technicians to get around", "including but not limited to blowing up barrels to bring down or break through different obstacles, or using flux move to move an object to get it out the way". Which obstacles, where, and their rules: proposed (§5).
+9. **A default chest** (the owner, 2026-11-12): "a default chest that players can find booster packs and other miscellaneous items within". Its rules and look: proposed (`CHESTS.md`).
 
 ## 3. Must-have requirements, by phase
 
@@ -31,7 +36,7 @@ Three new places:
 - [x] A little door in the Server Room's north wall, beside the junction (a doorway alcove, as the Armory's are). *(step 1)*
 - [x] Until the junction is repaired, walking into it does nothing. After it, it is a doorway: a fade, and you arrive in the electrical domain with your following squad, as through every doorway. *(step 1)*
 - [x] The electrical domain is an interior (as the Armory, the Cold Storage, the Sewers and the Ant Nest are), with a way back that brings you out in front of the door. *(step 1)*
-- [ ] Inside: the deep server room (racks standing near the door: *step 1*; toppled and strewn further in: *step 2*), then a big open area with circuitry everywhere (*step 3*).
+- [ ] ~~Inside: the deep server room (racks standing near the door: *step 1*; toppled and strewn further in: *step 2*), then a big open area with circuitry everywhere (*step 3*).~~ **Superseded 2026-11-12** (§2, 7): inside, passages and rooms in the same order (racks standing, then toppled, then the circuitry), with ways through (§2, 8). The layout is proposed (§5, draft 5); steps 2 and 3 wait for it. The two rooms built in `11d` are replaced when it is approved.
 
 **Phase 2, the Nest developed and the volcanic layer** (to design with the owner: §11)
 - [ ] The Ant Nest leads down to the volcanic layer, without stairs.
@@ -48,7 +53,29 @@ Three new places:
 
 ## 5. Proposed, not approved
 
-- **The electrical domain's shape: toward the camera** (draft 2B, and the arrangement of look draft 3A, which the owner chose): you come in at the north end through the door back up; walking south, racks standing, then toppled and strewn; wide steps down into the circuitry, a big open hall in front of you. The deep server room about 24 × 18 tiles, the circuitry about 32 × 23 (the arena's size). Sizes provisional. (The other looks, B live yellow current and C a giant circuit board, were not chosen.)
+**The new direction's drafts (2026-11-12; `design/maps/passages-draft.js` draws 5 to 8, `design/props/drafts/chest.js` 9; every size, name, place and number in them is the agent's):**
+- **Draft 5, the electrical domain as passages and rooms.** You come down the little door (as built) and work south, toward the camera: **1 The Landing** (racks standing), a corridor lined with racks, **2 The Fallen Rows** (racks toppled, strewn, sparking), a crawlway, **3 The Riser** (a raised platform), steps down to **4 The Trace Hall**, **5 Chip West** and **6 The Deep Chamber** (its one huge chip; for later: a boss or a quest, not designed). Corridors 3 tiles wide, 2 at a squeeze; rooms 8 to 18 tiles across. **The main way:** ① shoot the flask beside a heap of fallen racks choking the corridor (anyone); ② FLUX MOVE a fallen rack lying across the crawlway into a niche beside it; ③ FLUX MOVE a flask that stands out of reach up to a cracked wall, then shoot it. **Four side pockets**, each ending in a chest: A drill the rubble in a side vault's doorway (fire), B ice-bridge the coolant flooding a corridor to the cooling plant (ice), C ride the launcher or climb a REEF up to the platform (electric or BLOOM), D bring down a leaning stack of racks in Chip East's doorway (anyone). It replaces the two rooms built in `11d` (`elec_servers`, `elec_circuitry`); the little door, look A and its order stay.
+- **Draft 6, the Ant Nest grown out into tunnels and nests.** The queen's cavern stays as built (the test ground, the console, the queen, who stays in it); 3-tile tunnels wind out of its west and south walls to a brood chamber, the shelf (high ground), a stream cave, the old burrow, the deep brood and the larder, and to **the way down**: the sloping tunnel decided in §2, 5, at the south-west, where the first sketch's "further nests" arrow points (later: the volcanic layer). **The main way:** ① drill a collapsed tunnel (fire: the Nest's key, as its way in already is); ② shoot a flask the ants dragged down beside a cracked wall (anyone). **Side pockets with chests:** A a REEF climb up to the shelf, B an ice bridge over the stream, C FLUX MOVE a boulder into the hollow beside it, D a resin seal an acid flask eats through (the agent's idea, not asked for).
+- **Draft 7, the ways through** (each obstacle and who opens it):
+
+  | Way | Who | What | State |
+  |---|---|---|---|
+  | BREAK THROUGH | anyone (a shot) | a flask's blast breaks a cracked wall within its reach | new |
+  | BRING IT DOWN | anyone (a shot) | a flask's blast brings down a leaning stack (racks; in the Nest, a hanging rock?) | new |
+  | OUT OF THE WAY | Flux | FLUX MOVE an object lying across a passage into a niche beside it | built, a new use |
+  | BRING THE BLAST | Flux, then anyone | FLUX MOVE a flask within reach of a cracked wall, then shoot it | new (the move and the shot are built) |
+  | DRILL THROUGH | fire | the THERMITE DRILL through rubble or a collapsed tunnel | built |
+  | BRIDGE IT | ice | an ICE BRIDGE over water (a stream; coolant in the electrical domain) | built |
+  | GET UP THERE | electric or BLOOM | the KINETIC LAUNCHER's ride, or a REEF climb, up to high ground | built |
+  | EAT THROUGH | anyone (a shot) | an acid flask's pool eats a resin seal | the agent's idea |
+
+  Proposed rules for the new ones: a blast (the explosive flask's, 2 tiles, as built) opens a cracked wall or a leaning stack within its reach, **for good** (saved, as drilled rubble is); a flask comes back 60 s after it goes off (as built), so a missed shot can be tried again; a FLUX MOVE blocker has its niche within the move's 2 tiles, stays where it is moved (saved, as built) and cannot be moved back across (a place that cuts the floor in two is refused, as built). **Each domain's main way needs at most one technician, its key** (FLUX in the electrical domain, fire in the Nest); the side pockets need the others and end in chests.
+- **Draft 8, seeing into a narrow passage.** A wall stands 122 px on the screen (`FP_WALL_H`, js/facilityplay.js) and the camera looks from the bottom right, so the wall on the camera's side of a 3-tile passage covers all its floor and nearly all of whoever is in it (big rooms never showed it). **A** low near walls in passages and small rooms, the far walls full height, nothing reacting (the agent's pick); **B** the near wall fades whenever you or your squad are behind it (the battle view's ghost, build `11r`, used everywhere in the tight places; walls react, which the owner turned down for the facility in `09uu`); **C** walls stay, and you, your squad and creatures show as outlines through them (the floor behind stays hidden).
+- **Draft 9, the default chest:** `CHESTS.md`.
+- **"Instances"**, as the agent reads the word: a place of its own behind a doorway, as the game's interiors are (the Armory, the Sewers, the Ant Nest, the electrical domain). Open (§11, 11).
+
+**Earlier (2026-11-11):**
+- ~~**The electrical domain's shape: toward the camera** (draft 2B, and the arrangement of look draft 3A, which the owner chose): you come in at the north end through the door back up; walking south, racks standing, then toppled and strewn; wide steps down into the circuitry, a big open hall in front of you. The deep server room about 24 × 18 tiles, the circuitry about 32 × 23 (the arena's size). Sizes provisional. (The other looks, B live yellow current and C a giant circuit board, were not chosen.)~~ **Superseded 2026-11-12** (§2, 7): built in `11d` as two big rooms; draft 5 keeps its direction (toward the camera) in passages and rooms.
 - **The door before and after the repair:** its light red, then green, and ▼ ELECTRICAL DOMAIN over it.
 - **Names:** Electrical Domain, The Deep Server Room, The Circuitry (all provisional).
 
@@ -58,6 +85,7 @@ Three new places:
 - Art: new baked props (toppled server racks; the circuitry's pieces), `design/props`, `img/props`; the circuitry floor.
 - Power: which relay lights the domain.
 - Save: nothing new for the stairs (the junction's repair is saved); stone over lava will need saving (phase 2).
+- **For the new direction (drafts 5 to 9), when approved:** the two layouts in `js/facilitymap.js` (rooms of one interior joined by their open edges; the map's validator); a blast that opens a solid (js/hazards.js, `facilitySolidOpen`, saved as drilled rubble is); FLUX MOVE blockers (a `flux` field, js/fluxmove.js) and their niches; the walls on the camera's side of a passage (draft 8); THE ANT QUEEN held to her cavern, not just the Nest (js/bosses.js); the chests (`CHESTS.md`); `tests/elecdomain.js` and `tests/nest.js` rewritten for the new rooms.
 
 ## 7. Edge cases
 
@@ -97,9 +125,16 @@ Three new places:
 4. The volcanic layer's and the crystalline area's look and size.
 5. Which relay powers the electrical domain, and how dark it is.
 6. Later: each domain's creatures, boss and quest.
+7. **Draft 5**, the electrical domain as passages and rooms: build it as drawn, or change it (the rooms, the order, the ways through, the chests' places)?
+8. **Draft 6**, the Ant Nest grown out: as drawn, or changed?
+9. **The ways through** (draft 7): which obstacles a blast breaks (a cracked wall and a leaning stack; in the Nest a hanging rock?); the acid flask eating resin, in or out; a key technician for each domain's main way (FLUX here, fire in the Nest), or none.
+10. **Seeing into a passage** (draft 8): A low near walls (the agent's pick), B the near wall fades, or C outlines through the walls.
+11. **"Instances"**: a place of its own behind a doorway (the agent's reading)? And does an instance reset when you leave (its creatures back, once it has some), while what you opened and the chests you emptied stay done?
+12. **"The nests"**: the Ant Nest only, or the Sewers' toxic nest too?
 
 ## 12. History
 
 - 2026-11-11: the owner's direction (§1); the four decisions (§2), chosen from options; layout drafts 1 (the Server Room's stairs), 2A and 2B (the electrical domain). Decision record: `DECISION-LOG.md`, "The domains".
 - 2026-11-11, later: the stairwell replaced by a little door beside the junction (§2, 1a); the nests to descend without stairs (§2, 5); look drafts 3A to 3C and the door's spots (draft 4). Decision record: `DECISION-LOG.md`, "The electrical domain's way in: a little door".
 - 2026-11-11, later: look A chosen (§2, 6); the nests' sloping tunnels (§2, 5). Decision record: `DECISION-LOG.md`, "The electrical domain's look; the nests' tunnels; the catwalks swap sides".
+- 2026-11-12: the owner's new direction (§1; §2, 7 to 9): narrow passages, rooms, nests, caves and instances; ways through by the technicians' utilities; a default chest. The big open area superseded. Drafts 5 to 9 (§5, `CHESTS.md`). Decision record: `DECISION-LOG.md`, "The domains are passages, rooms, nests, caves and instances".

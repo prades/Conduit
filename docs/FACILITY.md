@@ -246,6 +246,7 @@ ASKED (the owner, 2026-11-10): "I want there to be containers on the map that co
 - **Corrosive:** it bursts into a pool about 1.5 tiles across (0.75 tiles from its middle) that lasts 10 s: everyone standing in it takes 3 every half second (the player a heart, with the usual grace after a hit). A green splash, then the pool, with bubbles popping in it.
 - **Gone, then back:** a container that went off is taken off its tile (js/facilityplay.js `facilitySolidSet`: its floor is floor, it stops nothing, it is not drawn) and comes back on the same tile after 60 s, waiting while anyone stands there. Nothing of this is saved: a loaded game, or a new one, has every container in place.
 - The numbers (30 at the middle, 2 tiles, 3 every half second, 10 s, 60 s, 12 frames) are the agent's, provisional (`OPEN-QUESTIONS.md`). Tested: `tests/hazards.js`.
+- **Proposed 2026-11-12, not built:** a blast that breaks a cracked wall or brings down a leaning stack within its reach, opening a way for good; the owner: "blowing up barrels to bring down or break through different obstacles" (`DOMAINS.md` §5, draft 7).
 
 ## The catwalks and the observation deck swap sides (decided 2026-11-11; not built)
 
