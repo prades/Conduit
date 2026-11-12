@@ -2378,23 +2378,6 @@ function drawElementEffects() {
             case "maelstrom": {
                 const age = e.maxLife - e.life, grow = Math.min(1, age / 12), fade = Math.min(1, e.life / 24), R = e.radius * TILE_W * 0.5 * (0.4 + 0.6 * grow), cy = py + TILE_H * 0.6;
                 ctx.save();
-                ctx.globalAlpha = 0.45 * fade;
-                ctx.fillStyle = '#1c0b3a';
-                ctx.beginPath();
-                ctx.ellipse(px, cy, R * 1.05, R * 0.53, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 0.8 * fade;
-                ctx.strokeStyle = '#7a3ee0';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.ellipse(px, cy, R, R * 0.5, 0, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.globalAlpha = 0.45 * fade;
-                ctx.strokeStyle = '#b985ff';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.ellipse(px, cy, R * 0.6, R * 0.3, 0, 0, Math.PI * 2);
-                ctx.stroke();
                 const gem = (x, y, w, h, rot, fill, hi, a) => {
                     const c = Math.cos(rot), sn = Math.sin(rot), P = [[0, -h], [w, 0], [0, h], [-w, 0]].map(q => [x + q[0] * c - q[1] * sn, y + q[0] * sn + q[1] * c]);
                     ctx.globalAlpha = a;

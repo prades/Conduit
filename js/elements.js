@@ -1323,14 +1323,11 @@ function drawElementEffects() {
                 for (let i = 0; i < 16; i++) { const an = i * Math.PI / 8 + ep * 0.7, fx = px + Math.cos(an) * rx, fy = cy - hh - (2 + 5 * Math.abs(Math.sin(i * 2.3 + ep * 6))) * (1 - ep) + Math.sin(an) * ry; ctx.beginPath(); ctx.arc(fx, fy, 1.6 + 0.8 * ((i * 7) % 3), 0, Math.PI * 2); ctx.fill(); }   // (foam and spray along the crest)
                 ctx.restore(); break;
             }
-            // The Voidstar's MAELSTROM (js/evolution.js maelstrom): a small swirl of purple crystals on the floor where it opened: a dark violet disc and ring, three spiral arms of crystals turning in it, and crystals
+            // The Voidstar's MAELSTROM (js/evolution.js maelstrom): a small swirl of purple crystals where it opened (no ring or disc on the floor: the owner, 2026-11-12, "I don't like the purple ring on the ground"): three spiral arms of crystals turning, and crystals
             // thrown out all round on arcs, a new one in a new direction every throw; it grows as it opens and fades as it ends. Flat shapes only (the effects plan, docs/EFFECTS.md).
             case "maelstrom": {
                 const age = e.maxLife - e.life, grow = Math.min(1, age / 12), fade = Math.min(1, e.life / 24), R = e.radius * TILE_W * 0.5 * (0.4 + 0.6 * grow), cy = py + TILE_H * 0.6;
                 ctx.save();
-                ctx.globalAlpha = 0.45 * fade; ctx.fillStyle = '#1c0b3a'; ctx.beginPath(); ctx.ellipse(px, cy, R * 1.05, R * 0.53, 0, 0, Math.PI * 2); ctx.fill();   // (the floor under it)
-                ctx.globalAlpha = 0.8 * fade; ctx.strokeStyle = '#7a3ee0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, R, R * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
-                ctx.globalAlpha = 0.45 * fade; ctx.strokeStyle = '#b985ff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy, R * 0.6, R * 0.3, 0, 0, Math.PI * 2); ctx.stroke();
                 const gem = (x, y, w, h, rot, fill, hi, a) => { const c = Math.cos(rot), sn = Math.sin(rot), P = [[0, -h], [w, 0], [0, h], [-w, 0]].map(q => [x + q[0] * c - q[1] * sn, y + q[0] * sn + q[1] * c]);
                     ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill();
                     ctx.fillStyle = hi; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); ctx.lineTo(P[1][0], P[1][1]); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); };   // (a crystal: a diamond and a lit facet)

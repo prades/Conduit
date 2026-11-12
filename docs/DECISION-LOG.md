@@ -3158,4 +3158,5 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Open: the numbers; whether a boss may be blinded; whether the Serpent loses SINGULARITY SHOT too; the Voidstar's everyday shot.
 - Superseded: SINGULARITY SHOT as the Voidstar's move (history kept; code kept for the Serpent); INK SPIT (never merged).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **The look, revised the same day:** the owner: **"I don't like the purple ring on the ground. Make that go away."** The floor disc and its two rings were taken out of MAELSTROM; the crystals are as they were. Rules unchanged.
 
