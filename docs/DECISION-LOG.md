@@ -3096,3 +3096,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the opening, the ball's size, the settle.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
+## DECISION: The Rimestar's ICICLE VOLLEY is a spinning fan that shoots crystals (2026-11-12, build `2026-11-12j`, branch `claude/icicle-fan`)
+- The owner: "Yeah, let's take on Icicle Volley. So, what, doesn't it already have like an animation?" The agent said what it had (the old generic cast on release only; nothing during the 2.5 s wind-up) and offered three looks (frost charge, fin icicles, cold bloom). The owner chose none of them and said: **"We can have it to where it turns into a fan and it shoots crystals at the enemy."**
+- The agent first built a folding (hand) fan; the owner corrected it: **"when an American says a fan, they're talking about a spinning fan you'd have in the office."** That draft is **superseded**. Built: over the wind-up the six fin halves become the blades of a spinning fan facing the enemy, faster and hazier each cell, with a crystal at each tip; three crystals are thrown forward as the three icicles leave. Looks only. The move's numbers are unchanged.
+- Open: the other five mages, one at a time.
+- Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch, the turn and blur per cell. Open: whether the owner wants a smoother spin (more cells).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+

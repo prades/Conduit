@@ -264,7 +264,7 @@ const EVOLUTIONS = {
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
     rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "ICICLE VOLLEY", moves: ["icicle_volley"], sheet: "img/evo/rimestar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff", flare: true },   // (24 columns since build 2026-11-12i, design No. 939: columns 16-23 are its everyday shot's FLARE, flareCol; its sheet's other frames are as they were)
+              cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff", flare: true, fan: true },   // (32 columns since build 2026-11-12j, design Nos. 939 and 940: columns 16-23 are its everyday shot's FLARE, flareCol; 24-31 are ICICLE VOLLEY'S FAN, fanCol; 8-15, the old cast, are not used by the move now)
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "ECHO PULSE", moves: ["echo_pulse"], sheet: "img/evo/hornshell.png",
@@ -865,7 +865,7 @@ function icicleVolley(f) {
         const ang = a0 + (k - (ICICLE_COUNT - 1) / 2) * ICICLE_FAN, aim = k === (ICICLE_COUNT - 1) / 2 ? t : { x: f.x + Math.cos(ang) * d, y: f.y + Math.sin(ang) * d };
         spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1, kind: "icicle" });   // (kind: its modelled icicle, js/fx3d.js; without it, the ice shot)
     }
-    f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); f._sigAt = f0; f._sigCd = moveWindupFrames("icicle_volley"); f.state = "attack"; f.attackAnim = 0;
+    f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); f._sigAt = f0; f._icAt = f0; f._sigCd = moveWindupFrames("icicle_volley"); f.state = "attack"; f.attackAnim = 0;
     _evoSay(f, "ICICLE VOLLEY", "#bfefff");
     return true;
 }
@@ -1264,12 +1264,14 @@ function _evoFrame(f, d, f0) {
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
+    const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
     const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
-    const hexHold = d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES;   // (after it: not the move's old bow)
+    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (fn >= 0) col = fn;
     else if (bz >= 0) col = bz;
     else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
     else if (mc >= 0) col = mc;
@@ -1480,6 +1482,15 @@ function flareCol(f, f0) {
     return -1;
 }
 
+// THE RIMESTAR'S FAN (build 2026-11-12j; the owner, 2026-11-12, of ICICLE VOLLEY: "it turns into a fan and it shoots crystals at the enemy"): over the move's wind-up its six fin halves spread into a fan facing the enemy and a crystal
+// grows at the tip of each (the sheet's second extra block, columns 24-31, design No. 940), cells 0 to 5; as the icicles leave (the game's own, as they were) three crystals are gone (cell 6, 4 frames), the fan closes (cell 7, 8
+// frames). Looks only: the move, its wind-up (2.5 s, standing still), its three icicles, their damage and slow are as they were. The frame counts are the agent's.
+function fanCol(f, f0, d) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "icicle_volley" && f._altWind > 0 && f._altWindMax > 0) return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
+    if (f._icAt !== undefined) { const a = f0 - f._icAt; if (a >= 0 && a < 4) return 30; if (a >= 4 && a < 12) return 31; }
+    return -1;
+}
 // which column of the Ember Hood's sheet (the second extra block, 24 to 31: design No. 938) while HEXFIRE lights it up: over its wind-up (f._altWind of f._altWindMax, js/evolution.js altTick) cells 0 to 5, then 12 frames
 // after the crater opens cells 6 and 7; -1 otherwise
 function blazeCol(f, f0, d) {

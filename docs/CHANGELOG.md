@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12j` · branch `claude/icicle-fan` · the Rimestar's ICICLE VOLLEY fan
+- **The ask** (the owner, of the Rimestar's second attack: "let's take on Icicle Volley", it already had its generic cast: "We can have it to where it turns into a fan and it shoots crystals at the enemy"). **Corrected by the owner:** "when an American says a fan, they're talking about a spinning fan you'd have in the office." The first draft (a folding fan: the fins laid out in an arc) is **superseded, not merged**.
+- **What it does:** over the move's 2.5 s wind-up (standing still; before, its body did nothing but the game's faint ice glow on the floor) the Rimestar's **six fin halves become the blades of a spinning fan**, six round its core, pitched like a fan's, **faster and hazier each cell** (a soft blur disc), a **crystal grows at the tip of each blade** and the diamond blazes (cells 0 to 5); as **the three icicles leave** (the game's own, as they were) **three of the crystals are thrown forward off the fan** (cell 6) and the fan slows (7). Looks only: the move, its wind-up, its three icicles, their damage and their slow are as they were. The old cast (a third of a turn, a frost ring and shards) is no longer shown after it.
+- The fan is the second extra block of the Rimestar's sheet, columns 24-31: 32 columns now (4052 × 701 packed). It rides on the move's wind-up and a new `_icAt` and `fanCol`, as HEXFIRE's lighting up does. The cells are still frames (six turns, not a continuous spin): the blur hides the jumps; a smoother spin would need more cells, which is the owner's call.
+- Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch (every other blade), the turns and the blur per cell, the frame counts.
+- `js/evolution.js` (`fanCol`, `icicleVolley`, `_evoFrame`, the definition), `design/evolutions/forms32.js` (No. 940) and `bake.js`. Tests: `tests/hoodflare.js` (8 checks now); `tests/evolution.js` expects 32 columns for a form with the fan.
+- Not playtested; the baked cells were looked at (headless): six blades, the haze growing, crystals at the tips, three thrown off.
+- The Thunderhead, Voidstar, Hornshell, Rotshard and Thornwhip still have no new animations.
+
 ### Build `2026-11-12i` · branch `claude/rimestar-attacks` · the Rimestar's fins flare
 - **The ask** (the owner: "We'll talk about the rhyme star", the Rimestar, the ice mage; of the agent's questions: its **everyday shot**, and of three looks **"Fins flare"**; then: **"like the wings separate into two parts each, so there's six."**).
 - **What it does:** over the shot's existing wind-up (12 frames, rooted) its three long fins **each come apart lengthwise into two halves that open like a V, six in all**, its diamond and the lines of light on it blaze, and a **ball of frost forms in front of it**; as the shot leaves the ball is gone and the fins close again (4 and 6 frames). Looks only: the shot's damage, wind-up and rest are as they were. A cancelled wind-up shows no settle. ICICLE VOLLEY keeps its own frames.

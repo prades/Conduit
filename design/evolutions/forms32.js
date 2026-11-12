@@ -188,6 +188,17 @@ function _rimestar(o) {
   // THE FLARE (o.flare, No. 939: the RIMESTAR's everyday shot): a ball of frost forming in front of it, a ball and a fainter bigger one round it (meshes: the sheet carries no sprites)
   const flBall = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.45), toneMapped: false })) : null, flHalo = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.1), transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false })) : null;
   if (o.flare) { flBall.visible = flHalo.visible = false; body.add(flBall); body.add(flHalo); }
+  // THE FAN (o.fan, No. 940: the RIMESTAR's ICICLE VOLLEY): an office fan. The six halves of its three fins become the blades, six round the core, spinning faster over the wind-up with a soft blur at speed;
+  // a crystal grows at each blade's tip and three are thrown forward off the fan at the release (the game draws the icicles)
+  const fanG = G(); fanG.visible = false; body.add(fanG);
+  const fanBlades = [], cryM = o.fan ? new T.MeshBasicMaterial({ color: lit.clone().multiplyScalar(1.35), toneMapped: false }) : null;
+  const fanR = o.core * 0.8 + o.joint + o.finL;
+  const blurM = o.fan ? new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.35), transparent: true, opacity: 0, depthWrite: false, toneMapped: false, side: T.DoubleSide }) : null;
+  const blur = o.fan ? new T.Mesh(new T.CircleGeometry(fanR * 0.96, 40), blurM) : null; if (o.fan) { blur.position.z = -0.01; fanG.add(blur); }
+  if (o.fan) for (let k = 0; k < 3; k++) for (let h = 0; h < 2; h++) { const i = k * 2 + h, sd = h ? 1 : -1, grp = G(); fanG.add(grp);
+    const half = new T.Mesh(_fin32Half(o.finL, o.finW, o.finD, sd), _rsWhite); half.position.y = o.core * 0.8 + o.joint - 0.02; grp.add(half);
+    const cry = new T.Mesh(new T.OctahedronGeometry(1, 0), cryM); cry.position.y = o.core * 0.8 + o.joint + o.finL * 0.98; cry.visible = false; grp.add(cry);
+    fanBlades.push({ grp, half, cry, i, base: k * TAU / 3 + sd * 0.1, target: i * TAU / 6, launched: i % 2 === 1 }); }
   const fl = _glowPool(0.65, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.28; b.add(fl.g);
   const Lt = new T.PointLight(0xffffff, 0.7, 4, 2); Lt.color.copy(lc); Lt.position.set(0, 0, 0.6); body.add(Lt); LIGHTS.push(Lt);
   return { g, core: o.y * (o.S || 1), update(t, act, v) {
@@ -198,6 +209,11 @@ function _rimestar(o) {
     dia.scale.set(0.9 * (1 + 0.04 * Math.sin(ph * 2) + 0.15 * a), 1.3 * (1 + 0.04 * Math.sin(ph * 2) + 0.15 * a), 0.75); dia.userData.relight(0.15 + 0.15 * Math.sin(ph * 2) + 0.8 * a);
     glowM.color.copy(lit).multiplyScalar(0.8 + 0.2 * Math.sin(ph * 2) + 0.5 * a); ringM.color.copy(lit).multiplyScalar(0.75 + 0.25 * Math.sin(ph * 2 + 1.5) + 0.5 * a);
     frost.position.z = o.core + 0.12 + 0.35 * pr; frost.scale.setScalar(0.5 + 1.4 * pr); frostM.opacity = 0.8 * Math.sin(PI * pr);
+    if (o.fan) { const FN = v && v.fan != null ? v : null, fa = FN ? FN.fan : 0, ease = fa * fa * (3 - 2 * fa);   // the fan (v: { fan, cry, rot, blur, go }): the blades come round to six, pitch like a fan's and spin (rot is the turn, blur the haze), crystals grow at the tips, three are thrown forward (go)
+      spin.visible = !FN; fanG.visible = !!FN;
+      if (FN) { fanG.rotation.x = 0.18 * fa; fanG.rotation.z = FN.rot || 0; blurM.opacity = FN.blur || 0;
+        fanBlades.forEach(B => { B.grp.rotation.z = B.base + (B.target - B.base) * ease; B.half.rotation.y = 0.75 * ease; const go = B.launched ? (FN.go || 0) : 0, sc = FN.cry * (1 - 0.5 * go); B.cry.visible = sc > 0.02 && go < 0.999; B.cry.position.z = go * 0.75; B.cry.scale.set(0.07 * sc + 0.001, 0.22 * sc + 0.001, 0.07 * sc + 0.001); });
+        dia.scale.multiplyScalar(1 + 0.25 * fa); dia.userData.relight(0.15 + 0.95 * fa); glowM.color.copy(lit).multiplyScalar(1 + 0.9 * fa); ringM.color.copy(lit).multiplyScalar(1 + 0.9 * fa); Lt.intensity = 0.7 + 1.5 * fa; } }
     if (o.flare) { const FS = v && v.spread != null ? v : null, sp = FS ? FS.spread : 0, bl = FS ? FS.ball : 0;   // the flare: the fins spread, the diamond and the lights blaze, the ball of frost grows in front (v: { spread, ball })
       fins.forEach(F => { F.fin.visible = !FS; F.hg.forEach(H => { H.gr.visible = !!FS; if (FS) { H.gr.rotation.z = -H.sd * 0.5 * sp; H.gr.position.x = H.sd * 0.035 * sp; } }); });   // (each fin comes apart into two halves that open like a V: six in all)
       if (FS) { fins.forEach(F => { F.tilt.rotation.x += -0.3 * sp; }); spin.rotation.z += 0.12 * sp; dia.scale.multiplyScalar(1 + 0.25 * sp); dia.userData.relight(0.15 + 0.95 * sp); glowM.color.copy(lit).multiplyScalar(1 + 0.9 * sp); ringM.color.copy(lit).multiplyScalar(1 + 0.9 * sp); Lt.intensity = 0.7 + 1.6 * sp; }
@@ -210,4 +226,8 @@ fx(861, "The ice mage, the RIMESTAR: a white drone of three long fins round a fa
 // 939 · THE RIMESTAR's FLARE (the owner, 2026-11-12, of the ice mage's everyday shot; of the agent's three looks: "Fins flare"): No. 861 whose fins spread and whose diamond brightens as a ball of frost forms in front of
 // it, which then leaves (the game draws the shot flying); the sheet's extra block, columns 16-23, plays over the shot's wind-up and settles after it.
 fx(939, "The RIMESTAR's flare: No. 861 spreading its fins, its diamond blazing, a ball of frost forming in front of it (its everyday shot; the sheet's extra block).", () => _rimestar(Object.assign({}, _rs0, { flare: true })));
+// 940 · THE RIMESTAR's FAN (the owner, 2026-11-12, of ICICLE VOLLEY: "it turns into a fan and it shoots crystals at the enemy"): No. 939 (the flare for its everyday shot) with a second extra block, columns 24-31: over the
+// move's wind-up its fin halves become the blades of a spinning (office) fan facing the enemy, faster and hazier each cell, with a crystal growing at each tip (cells 0-5), three crystals are thrown forward as the icicles leave (6), the fan slows (7). The icicles themselves are the game's own.
+// (The owner, 2026-11-12: "when an American says a fan, they're talking about a spinning fan you'd have in the office": the first draft, a folding fan, is superseded.)
+fx(940, "The RIMESTAR's fan: No. 939 whose six fin halves become the blades of a spinning fan with a crystal at each tip, three thrown off as ICICLE VOLLEY's icicles (the sheet's second extra block).", () => _rimestar(Object.assign({}, _rs0, { flare: true, fan: true })));
 
