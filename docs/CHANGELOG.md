@@ -4,14 +4,31 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12m` · branch `claude/start-game-project-HSh7Z` · main's Hornshell build and this branch's command card together
+- While this branch made build 12l (the command card), main took the Hornshell's ECHO PULSE pull and its goo-ring shot, lettered 12k and 12l on their own branch (its entry below).
+- Those letters were used on both lines, so the two merged (main into this branch) are build 12m, a letter new to both.
+- Nothing in either changed in the merge. The conflicts were this log and the decision log (both kept, this branch's first). The stamps, the generated page and script bundle and the picture map were made again.
+
 ### Build `2026-11-12l` · branch `claude/start-game-project-HSh7Z` · the command card
 - **The orders at the bottom left are a command card** (the owner: "make a little updated command card that includes the roster as a part of the mix ... make the roster pop up above it as a long card that's kind of tilted"; of ten drafts, design 5: "This one with no little followers"). ROSTER is a long tilted card with the roster's count and who the orders go to; a tap opens the roster. ALL, HOLD and COME stand up behind its top edge as the enemy card's little cards, each its emblem over its word, rising in turn. ALL is lit while nobody's card is picked.
 - **No RETREAT in calm** (the owner: "Retreat can go away in calm mode"). In a fight it is RUN on the enemy card, as before.
 - **In a fight** the enemy card takes the box and the same ROSTER card rises above it, shorter. A member's card hides it, as it hides the rest.
-- The dock's ROSTER button is not shown in the corners layout. The squad strip is back where build 12k had it.
+- The dock's ROSTER button is not shown in the corners layout. The squad strip is back where it was before this build.
 - The guide and the index say RUN for a tablet and point to the ROSTER card.
 - The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems (js/cardart.js).
 - Tests: `tests/enemycard.js` (ROSTER above the card, a tap reaches it, the orders' cards hidden, the dock's button not shown), `tests/mixtool.js` (the controls, the count), `tests/squadfly.js` (hidden under a member's card), `tests/hud.js`, `tests/toolbox.js`.
+
+### Build `2026-11-12l` · branch `claude/hornshell-pull` · the Hornshell: ECHO PULSE pulls its arms in and a ring of water goes out; its everyday shot is a ring of glowing blue goo
+- **The ask** (the owner, of the Hornshell, the black shell-jar: "he dips into his ring and then creates a water ring that hits enemies for crushing damage"; asked whether that meant new rules, the owner chose **looks only**, and said: "The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring").
+- **What it does:** over ECHO PULSE's 2.5 s wind-up the Hornshell **draws its tentacles into the jar** (and settles back a little) (cells 0 to 5); as the pulse goes off **a ring of water spreads round the jar with a few drops thrown up** (cells 6, 7), and on the floor **a wave of water rolls out to the pulse's reach** (a low wave with a pale crest, foam and a ripple behind it; the new effect `waterring`, js/elements.js) in place of the flat teal circles.
+- **Not changed (looks only):** ECHO PULSE's reach (4 tiles), wind-up (2.5 s), damage (0.4 x power, core), its break of the wind-ups (GLITCH 30 frames) and which enemies it reaches. The owner's "crushing damage" is the look of it, **not** a new damage type; if the owner wants a real crushing type, that is a rules change to be decided.
+- **Its everyday shot** (the owner, clarifying: "I'm talking about a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire"; asked what ECHO PULSE should be, the owner chose to **keep what is built there**): over the shot's quick wind-up (12 frames, rooted) the Hornshell **draws its arms in as a ring of glowing blue goo grows in front of its horn** (cells 0 to 5), and the shot **flies at the enemy as that ring** (a tube of blue goo seen at a slant and turning, with a glow, a shine along its edge and drops of goo shed behind it: the new projectile kind `gooring`, js/game.js `_drawGooRing`, flat colours); the arms come out again after it (cells 6, 7). Looks only: the shot's damage, speed, rest and wind-up are as they were.
+- The Hornshell's sheet is 32 columns now (4608 wide): 16-23 ECHO PULSE's pull, 24-31 the everyday shot's goo ring. They ride on the move's wind-up and a new `_echoAt` and `pullCol`, and on the shot's wind-up and `gooCol`, as the fan's, the flare's and HEXFIRE's do.
+- Agent's, provisional: how far the arms go in (a few stubs show at the mouth), the jar settling, the wave's height, colours, foam and spray, the ripple of water drawn at the jar.
+- `js/evolution.js` (`pullCol`, `echoPulse`, `_evoFrame`, the definition), `js/elements.js` (`waterring`), `js/npc.js` (the shot's kind), `js/game.js` (`_drawGooRing`), `design/evolutions/forms13.js` (`_fatDragger` pull and goo modes, Nos. 941 and 942), `bake.js`. Tests: `tests/hoodflare.js` (12 checks now); `tests/evolution.js` expects 32 columns for a form with the goo ring.
+- Not playtested; the baked cells and the real page were looked at (headless).
+- Agent's, provisional (the shot): the ring's size and tilt, its blues, the drops, its turn, the frame counts.
+- The Thunderhead (everyday shot), Voidstar, Rotshard and Thornwhip still have no new animations.
 
 ### Build `2026-11-12k` · branch `claude/start-game-project-HSh7Z` · main's four builds and this branch's two together
 - While this branch made builds 12h and 12i (THE CORE's bars upright with PACK and CARDS in its slab; the top corners' icons and the Clone Bay in the Experiment Lab), main took four builds lettered 12g to 12j on their own branches (entries below): the Ember Hood's flare and fireball, HEXFIRE as a lava crater, the Rimestar's fins and its ICICLE VOLLEY fan.

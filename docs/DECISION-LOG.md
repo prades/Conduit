@@ -3125,3 +3125,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems.
 - Supersedes: the orders box of build `2026-11-12g` (ALL, RETREAT, HOLD and COME, the dock's ROSTER on it) and the first try.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Hornshell's ECHO PULSE pulls its arms in and sends out a ring of water (2026-11-12, build `2026-11-12l`, branch `claude/hornshell-pull`)
+- The owner chose the Hornshell ("Static words not really in the game right now pick something") and, of its ECHO PULSE: **"he dips into his ring and then creates a water ring that hits enemies for crushing damage."** Asked whether that changes the move, the owner chose **looks only** and explained: **"The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring."**
+- Built: over the wind-up the tentacles are drawn into the jar; a ring of water spreads at its foot and a wave of water rolls out to the pulse's reach. The move's numbers and effect (a sound ring that breaks wind-ups, core damage) are unchanged.
+- Open: whether "crushing damage" should become a real damage type for this move (a rules change: it would need the number and whether the wind-up break stays). Also the Hornshell's everyday shot.
+- Agent's, provisional: how far the arms go in, the wave's look, the colours.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **Clarified later the same day:** the owner: **"I'm talking about a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire."** So the glowing blue goo ring is the Hornshell's **everyday shot** (built: the arms are drawn in as the ring forms in front of the horn; it flies at the enemy as a ring of glowing blue goo; looks only). Asked what ECHO PULSE should be, the owner chose to **keep what was built** (the arms pulled in, the wave of water on the floor). "Crushing damage" is still open as a rules question.

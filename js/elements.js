@@ -1310,6 +1310,18 @@ function drawElementEffects() {
                 ctx.stroke();
                 break;
             }
+            // The Hornshell's ECHO PULSE (js/evolution.js echoPulse): a RING OF WATER rolling out from the jar to the pulse's reach: a low wave with a pale crest, a band of water on its front face, foam and a trailing ripple
+            case "waterring": {
+                const ep = Math.min(1, 1 - e.life / (e.maxLife || 34)), ee = 1 - (1 - ep) * (1 - ep), rx = Math.max(2, e.radius * ee * TILE_W * 0.5), ry = rx * 0.5, cy = py + TILE_H * 0.6, hh = 11 * (1 - ep) + 2, fa = alpha * (1 - ep * ep);
+                ctx.save(); ctx.lineCap = "round";
+                ctx.globalAlpha = fa * 0.4; ctx.fillStyle = "#2f8fe0"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI); ctx.ellipse(px, cy - hh, rx, ry, 0, Math.PI, 0, true); ctx.closePath(); ctx.fill();   // (the wave's front face, between its foot and its crest)
+                ctx.globalAlpha = fa * 0.5; ctx.strokeStyle = "#5fd0ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();   // (its foot on the floor)
+                ctx.globalAlpha = fa * 0.9; ctx.strokeStyle = "#eaffff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(px, cy - hh, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();   // (its crest)
+                ctx.globalAlpha = fa * 0.45; ctx.strokeStyle = "#8fe0ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2); ctx.stroke();   // (a ripple behind it)
+                ctx.globalAlpha = fa; ctx.fillStyle = "#ffffff";
+                for (let i = 0; i < 16; i++) { const an = i * Math.PI / 8 + ep * 0.7, fx = px + Math.cos(an) * rx, fy = cy - hh - (2 + 5 * Math.abs(Math.sin(i * 2.3 + ep * 6))) * (1 - ep) + Math.sin(an) * ry; ctx.beginPath(); ctx.arc(fx, fy, 1.6 + 0.8 * ((i * 7) % 3), 0, Math.PI * 2); ctx.fill(); }   // (foam and spray along the crest)
+                ctx.restore(); break;
+            }
             case "mimicshot": { if (typeof mimicShotDraw === "function") mimicShotDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             case "skinkswirl": { if (typeof skinkSwirlDraw === "function") skinkSwirlDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.
