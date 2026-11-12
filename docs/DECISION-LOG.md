@@ -3045,10 +3045,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: which leg, how far and high, the goo, the timing, the lean.
 - Status: Implemented; not playtested. `CHANGELOG.md`.
 
-## DECISION: The Rift Mimic's everyday hit is a shard stab (2026-11-11, build `2026-11-12d`, branch `claude/mimic-attacks`)
+## DECISION: The Rift Mimic's everyday hit is a shard shot (2026-11-11, build `2026-11-12d`, branch `claude/mimic-attacks`)
 - The owner, naming the next creature: "Let's do the riff mimic" (the Rift Mimic). The agent offered three looks for its everyday hit: a blob arm slap, a shard stab, a pounce flop. Chosen: **"Shard stab"**.
-- First build: the shards swung forward into a fist of spikes and thrust at the enemy. The owner: **"How about something where it like pulls one shard straight up and then another shard angled at the opponent and then uses one to ram the other one into the opponent?"** Replaced.
-- Built: one big shard is pulled straight up over another shard that is angled at the enemy; it comes down on the other's back end and drives it into the enemy; both sink back (its own 8 frames of the sheet). Looks only. GRAVITY SLAM keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
-- Agent's, provisional: which two shards, the angle, the heights and the drive, the timing.
-- Status: Implemented; not playtested. `CHANGELOG.md`.
-
+- First build: the shards swung forward into a fist of spikes. The owner: **"How about something where it like pulls one shard straight up and then another shard angled at the opponent and then uses one to ram the other one into the opponent?"** Second build, that: replaced. The owner: **"I don't like that way either. Let's just redo it entirely. I didn't like the first or second animation, so just this time make it to where the shard comes up and shoots at the enemy and regrows like the quill stone."**
+- Built: the big shard rises out of its back, tips at the enemy, is shot (the game draws it flying), the Mimic stands without it and it grows back. The hit is the flux hit it always was and lands as the shard does, 18 frames after the cast (it landed at the cast before): a consequence of drawing a shot before its hit, so the damage and the picture agree. Looks otherwise. GRAVITY SLAM keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
+- Agent's, provisional: the timing (8 rising, 10 flying, 32 in all), the flying shard's look and arc.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.

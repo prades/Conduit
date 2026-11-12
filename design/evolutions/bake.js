@@ -199,8 +199,7 @@ const JOBS = [
   { id: 'petal', form: 120, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 114, the flux brawler: a Ditto-style blob with big black shards; its action frames are the slam (it flattens and spreads).
   { id: 'mimic', form: 937, color: '#9933ff', idleAct: 0, action: [0.55, 1.0], blocks: [[
-    { ar: 0.35, ax: 0, bm: 0.2, sl: 0, ps: 0 }, { ar: 0.8, ax: 0.4, bm: 0.6, sl: 0, ps: 0 }, { ar: 1, ax: 1, bm: 1, sl: 0, ps: 0 }, { ar: 1, ax: 1, bm: 1, sl: 0, ps: 0 },
-    { ar: 0.15, ax: 1, bm: 1, sl: 1, ps: 0.35 }, { ar: 0.1, ax: 1, bm: 1, sl: 1, ps: 1 }, { ar: 0.35, ax: 0.6, bm: 0.7, sl: 0, ps: 0.6 }, { ar: 0, ax: 0, bm: 0, sl: 0, ps: 0 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 937, forms6.js, since 2026-11-11: No. 114 with its everyday hit the HAMMER AND THE STAKE: the sheet's extra block, columns 16-23; the owner: "Shard stab", then his own sketch of it in words)
+    { up: 0.4, tilt: 0.3, grow: 1 }, { up: 0.9, tilt: 1, grow: 1 }, { up: 1, tilt: 1, grow: 0 }, { up: 0, tilt: 0, grow: 0 }, { up: 0, tilt: 0, grow: 0 }, { up: 0, tilt: 0, grow: 0.3 }, { up: 0, tilt: 0, grow: 0.65 }, { up: 0, tilt: 0, grow: 1 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 937, forms6.js, since 2026-11-11: No. 114 with its everyday hit a SHARD SHOT: the sheet's extra block, columns 16-23: the big shard rises and tips at the enemy (0-1), is shot off (2), gone (3-4), grows back (5-7); the owner)
   { id: 'rotshard', form: 101, color: '#14c040', idleAct: 0, action: [0.5, 1.0] },
 ].filter(j => !process.argv[4] || process.argv[4].split(',').includes(j.id));
 // optional 5th and 6th arguments: the cell in px and half the view in world units (the class gear is wider than the cube: 186 and 2.2 keep the pixels per unit the same as the 144 / 1.7 of the rest)

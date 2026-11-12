@@ -384,6 +384,7 @@ function followerAttack(actor, target) {
 
     } else if (attackTier === "physical" && attacks.physical) {
         if (actor.evolved === "electroskink" && typeof skinkSwirlStrike === "function") skinkSwirlStrike(actor, target);   // (the Skink's hit is its swirl, one enemy: js/evolution.js; every other follower uses its element's move)
+        else if (actor.evolved === "mimic" && typeof mimicShotStrike === "function") mimicShotStrike(actor, target);   // (the Rift Mimic's hit is its shard, shot at the enemy: js/evolution.js)
         else attacks.physical(actor, target);
         actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_PHYSICAL);
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.attack||5); }
