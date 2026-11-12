@@ -68,6 +68,32 @@ function _drawThunderBolt(ctx, p, sx, sy) {
     stroke(1.4, '#fff9b0', 0.9); for (let i = 0; i < 4; i++) { const an = f * 0.4 + i * Math.PI / 2, l = r * (1.9 + 0.7 * Math.sin(f * 0.6 + i * 2)); ctx.beginPath(); ctx.moveTo(sx + Math.cos(an) * r, sy + Math.sin(an) * r); ctx.lineTo(sx + Math.cos(an) * l, sy + Math.sin(an) * l); ctx.stroke(); }   // (a few arcs off it)
     ctx.globalAlpha = 1;
 }
+// THE ROTSHARD's EVERYDAY SHOT, CORRODE SHOT (the owner, 2026-11-12: "the corrode shot should look like a shocking soul blob that hits the target"; "Crackling"; "It should be the same color as [the Rotshard]"; "no gradient just
+// highlighter color"): a wobbling blob of the Rotshard's own crystal green with a faint face, a wispy tail of smaller blobs behind it and little arcs of pale light snapping off it, new ones every other frame. Flat
+// colours (the crystal's mint, a lighter facet, a darker green for the face, near-white for the arcs): no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+const _SOUL = { body: '#9adeae', lit: '#c4eed0', dark: '#4f9f6c', arc: '#eafff0', tail: '#68c58a' };
+function _drawSoulBlob(ctx, p, sx, sy) {
+    const f = p.frame || 0, R = (p.radius || 5) * 2.3, vx = p.vx || 0, vy = p.vy || 0;
+    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    const ang = Math.atan2(uy, ux), cx = Math.cos(ang), sn = Math.sin(ang);
+    const blob = (x, y, r, wob, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();
+        for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * 1.15, qy = Math.sin(t) * r * k * 0.88, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
+        ctx.closePath(); ctx.fill(); };
+    ctx.globalAlpha = 1;
+    for (let i = 4; i >= 1; i--) { const d = R * (0.9 + i * 0.8), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.22; blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.7 - i * 0.12), 0.3, _SOUL.tail, 0.6 - i * 0.11); }   // (the wisps it sheds)
+    blob(sx, sy, R, 0.14, _SOUL.body, 1);
+    blob(sx - R * 0.25, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1);   // (a lighter facet)
+    ctx.globalAlpha = 1; ctx.fillStyle = _SOUL.dark;   // (its face: two eyes and a little round mouth, looking where it goes)
+    for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sx + ux * R * 0.18 - uy * sd * R * 0.3, sy + uy * R * 0.18 + ux * sd * R * 0.3 - R * 0.05, R * 0.13, R * 0.2, ang, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(sx + ux * R * 0.4, sy + uy * R * 0.4 + R * 0.12, R * 0.12, R * 0.15, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = _SOUL.arc; ctx.lineWidth = 1.7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; const seed = Math.floor(f / 2);
+    for (let i = 0; i < 5; i++) {   // (the crackle: jagged arcs snapping off it, new ones every other frame)
+        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = (h - Math.floor(h)) * Math.PI * 2, len = R * (0.9 + 0.8 * (((seed + i * 3) * 0.37) % 1));
+        ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a0) * R * 0.95, sy + Math.sin(a0) * R * 0.95);
+        for (let k = 1; k <= 3; k++) { const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.7; ctx.lineTo(sx + Math.cos(a0) * (R * 0.95 + len * k / 3) - Math.sin(a0) * jj, sy + Math.sin(a0) * (R * 0.95 + len * k / 3) + Math.cos(a0) * jj); }
+        ctx.stroke(); }
+    ctx.globalAlpha = 1;
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -91,6 +117,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
     // the THUNDERHEAD's everyday shot (build 2026-11-12o): the shot and its string of lightning that connects and breaks off
     if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
+    // the ROTSHARD's everyday shot (build 2026-11-12v): a soul blob of its own crystal green, crackling
+    if (p.kind === "soulblob") { _drawSoulBlob(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below

@@ -3185,3 +3185,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 - **The placement, the owner's, the same day:** of the decoy: **"the rotten decoy shouldn't go directly towards the enemy. It should go kind of out to the side where there's less clutter."** Built as a rule: out to one side of the line to the enemy (1.5 or 3 tiles), on the least cluttered spot (walls, objects, creatures); the agent's guesses at how far and what counts as clutter are provisional and open.
 
+## DECISION: The Rotshard's everyday shot is a crackling soul blob in its own colour (2026-11-12, build `2026-11-12v`, branch `claude/rotshard-soul`)
+- The owner: **"The corrode shot should look like a shocking soul blob that hits the target."** Asked what "shocking" meant and whether the body should move: **"Crackling with neon, bright neon green, but no gradient just highlighter color"** and **"Yes, a little."** Then, on seeing the neon blob: **"Wrong color. It should be the same color as [the Rotshard]."** The neon draft is **superseded, not merged**; the blob is the Rotshard's own crystal green, flat.
+- Built: see `CHANGELOG.md`. Looks only: the shot's damage and its armour-eating are as they were; the splat on the target replaces the floor ring its landing drew.
+- Agent's, provisional: the face, the tail, the crackle, the tipping of the crystal, the frame counts.
+- Open: the Voidstar's everyday shot is the last mage's everyday shot without a look of its own.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
