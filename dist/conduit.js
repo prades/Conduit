@@ -1640,7 +1640,7 @@ let _fxLater = [];
 function fxLater(effect) { _fxLater.push({ ...effect, currentRadius: 0 }); }
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };
+const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };
 function fxTidy() {
     if (!elementEffects.length)
         return;
@@ -1760,6 +1760,11 @@ function updateElementEffects() {
         }
         if (e.type === "staticVortex" && typeof staticVortexTick === "function")
             staticVortexTick(e);
+        if (e.type === "maelstrom") {
+            const age = e.maxLife - e.life;
+            if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function")
+                maelstromBeat(e);
+        }
         if (e.type === "thicket") {
             const age = e.maxLife - e.life;
             if (age > 0 && e.life > 0 && age % ULT_THICKET.tick === 0 && typeof thicketBeat === "function")
@@ -2367,6 +2372,59 @@ function drawElementEffects() {
                     ctx.arc(fx, fy, 1.6 + 0.8 * ((i * 7) % 3), 0, Math.PI * 2);
                     ctx.fill();
                 }
+                ctx.restore();
+                break;
+            }
+            case "maelstrom": {
+                const age = e.maxLife - e.life, grow = Math.min(1, age / 12), fade = Math.min(1, e.life / 24), R = e.radius * TILE_W * 0.5 * (0.4 + 0.6 * grow), cy = py + TILE_H * 0.6;
+                ctx.save();
+                ctx.globalAlpha = 0.45 * fade;
+                ctx.fillStyle = '#1c0b3a';
+                ctx.beginPath();
+                ctx.ellipse(px, cy, R * 1.05, R * 0.53, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.8 * fade;
+                ctx.strokeStyle = '#7a3ee0';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(px, cy, R, R * 0.5, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 0.45 * fade;
+                ctx.strokeStyle = '#b985ff';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.ellipse(px, cy, R * 0.6, R * 0.3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                const gem = (x, y, w, h, rot, fill, hi, a) => {
+                    const c = Math.cos(rot), sn = Math.sin(rot), P = [[0, -h], [w, 0], [0, h], [-w, 0]].map(q => [x + q[0] * c - q[1] * sn, y + q[0] * sn + q[1] * c]);
+                    ctx.globalAlpha = a;
+                    ctx.fillStyle = fill;
+                    ctx.beginPath();
+                    ctx.moveTo(P[0][0], P[0][1]);
+                    for (let i = 1; i < 4; i++)
+                        ctx.lineTo(P[i][0], P[i][1]);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = hi;
+                    ctx.beginPath();
+                    ctx.moveTo(P[0][0], P[0][1]);
+                    ctx.lineTo(P[1][0], P[1][1]);
+                    ctx.lineTo(x, y);
+                    ctx.closePath();
+                    ctx.fill();
+                };
+                const COL = [['#5a25b0', '#8a45f0'], ['#8a45f0', '#c99bff'], ['#b985ff', '#f1e3ff']];
+                for (let arm = 0; arm < 3; arm++)
+                    for (let j = 0; j < 6; j++) {
+                        const an = arm * Math.PI * 2 / 3 + j * 0.62 + age * 0.17, rd = R * (0.14 + 0.13 * j), C = COL[(arm + j) % 3];
+                        gem(px + Math.cos(an) * rd, cy + Math.sin(an) * rd * 0.5 - 2 - j * 0.7, 2.2 + 0.35 * j, 3 + 0.45 * j, an + 1.2, C[0], C[1], 0.95 * fade);
+                    }
+                const N = 12, P = 34;
+                for (let i = 0; i < N; i++) {
+                    const ph = age + i * P / N, n = Math.floor(ph / P), u = (ph % P) / P, an = i * 2.4 + n * 1.3 + Math.sin(i * 3.1 + n) * 0.6, dist = R * (0.12 + 1.45 * u), h = Math.sin(Math.PI * u) * 30, C = COL[(i + n) % 3];
+                    gem(px + Math.cos(an) * dist, cy + Math.sin(an) * dist * 0.5 - h - 3, 3.3 - 0.8 * u, 6.5 - 1.5 * u, an + u * 6, C[0], C[1], Math.max(0, 1 - u * u) * fade);
+                }
+                gem(px, cy - 4, 4, 8 + Math.sin(age * 0.3), age * 0.2, '#2a0f55', '#8a45f0', fade);
                 ctx.restore();
                 break;
             }
@@ -11087,7 +11145,7 @@ const EVOLUTIONS = {
         storm: { id: "staticvortex", sheet: "img/evo/staticvortex.png", cell: 256, anchor: [128, 219.7], glow: [0, 0, 165] } },
     serpent: { id: "serpent", legacy: true, name: "SERPENT", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/serpent.png",
         cell: 144, anchor: [72, 114.2], core: [72, 61], noGlow: true, color: "#bb66ff" },
-    voidstar: { id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
+    voidstar: { id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "MAELSTROM", sheet: "img/evo/voidstar.png",
         cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core", role: "brawler", sheet: "img/evo/warden.png",
         cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -11994,6 +12052,44 @@ function echoPulse(f) {
     _evoFx({ type: "waterring", x: f.x, y: f.y, radius: ECHO_RADIUS, life: 34, maxLife: 34 });
     _evoSay(f, "ECHO PULSE", "#7fffe0");
     return true;
+}
+const MAEL_RANGE = 6.5, MAEL_RADIUS = 1.8, MAEL_LIFE = 180, MAEL_TICK = 30, MAEL_BITE = 0.3, MAEL_BLIND = 45;
+function maelstrom(f) {
+    const foes = _evoFoesSeen(f.x, f.y, MAEL_RANGE);
+    if (!foes.length || typeof elementEffects === "undefined")
+        return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    for (let i = elementEffects.length - 1; i >= 0; i--)
+        if (elementEffects[i].type === "maelstrom" && elementEffects[i].by === f)
+            elementEffects.splice(i, 1);
+    const e = { type: "maelstrom", x: t.x, y: t.y, radius: MAEL_RADIUS, life: MAEL_LIFE, maxLife: MAEL_LIFE, by: f, bite: (f.power || 10) * MAEL_BITE, element: "flux" };
+    elementEffects.push(e);
+    maelstromBeat(e);
+    f._sigAt = f0;
+    f._sigCd = moveWindupFrames("maelstrom");
+    {
+        const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1;
+        f.dirX = dx / L;
+        f.dirY = dy / L;
+    }
+    _evoSay(f, "MAELSTROM", "#cc88ff");
+    return true;
+}
+function maelstromBeat(e) {
+    if (typeof actors === "undefined" || typeof isHostileTarget !== "function")
+        return;
+    const r2 = e.radius * e.radius;
+    for (const a of actors) {
+        if (!a || !isHostileTarget(a))
+            continue;
+        const dx = a.x - e.x, dy = a.y - e.y;
+        if (dx * dx + dy * dy > r2 || !_evoSees(e.x, e.y, a))
+            continue;
+        applyDamage(a, e.bite, e.by || null, "flux", false, false, DMG_HIT_ALT);
+        if (!a.dead && !_evoBoss(a))
+            a.blinded = Math.max(a.blinded || 0, MAEL_BLIND);
+    }
 }
 const GUARD_FRAMES = 240, GUARD_CUT = 0.5, GUARD_LURE = 3;
 function shellGuard(f) {
@@ -16387,6 +16483,7 @@ const MOVES = {
     quill_burst: { id: "quill_burst", name: "QUILL BURST", windup: 2, fn: f => quillBurst(f) },
     arc_volley: { id: "arc_volley", name: "ARC VOLLEY", windup: 2.5, fn: f => arcVolley(f) },
     singularity_shot: { id: "singularity_shot", name: "SINGULARITY SHOT", windup: 2.75, fn: f => singularityShot(f) },
+    maelstrom: { id: "maelstrom", name: "MAELSTROM", windup: 2.75, fn: f => maelstrom(f) },
     static_rush: { id: "static_rush", name: "SONIC ROLL", windup: 2.5, fn: f => staticRush(f) },
     hexfire: { id: "hexfire", name: "HEXFIRE", windup: 2.75, fn: f => hexfire(f) },
     corrode_shot: { id: "corrode_shot", name: "CORRODE SHOT", windup: 2.67, fn: f => corrodeShot(f) },
@@ -16449,7 +16546,12 @@ function evoMoveOf(f, d) {
         return null;
     return evoMoveAllowed(f, d, f.alt) ? MOVES[f.alt] : null;
 }
-function moveAltCarried(f, alt) { const d = followerMoveDef(f); return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt; }
+function moveAltCarried(f, alt) {
+    const d = followerMoveDef(f);
+    if (alt === "singularity_shot" && d && evoMoveIds(d).indexOf(alt) < 0 && evoMoveIds(d).indexOf("maelstrom") >= 0)
+        return "maelstrom";
+    return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt;
+}
 const BOTH_REST_SECONDS = 5;
 function followerAltBoth(f) { return !!(f && f.altBoth && f.alt && evoMoveOf(f)); }
 function followerAltNow(f, d) { const m = evoMoveOf(f, d); return m && f.altBoth && !f._altTurn ? null : m; }
@@ -16487,7 +16589,7 @@ function followerAltSet(f, id, both) {
     f._altBackAt = (typeof frame !== "undefined" ? frame : 0) + Math.round(BOTH_REST_SECONDS * 60);
     return true;
 }
-const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
+const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, maelstrom: () => MAEL_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
     static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, zigzag_dash: () => ZIG_RANGE, wobble_slam: () => WOBBLE_RADIUS, icicle_volley: () => ICICLE_RANGE, echo_pulse: () => ECHO_RADIUS,
     shell_guard: () => GUARD_LURE, phase_swap: () => SWAP_RANGE, venom_bite: () => VENOM_RANGE, shock_zap: () => ZAP_RANGE, skate_charge: () => SKATE_RANGE, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH };
@@ -19609,6 +19711,7 @@ const MOVE_INFO = {
     "PETAL BLAZE": () => [["REACH", BLOOM_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("petal_blaze"))], ["DAMAGE", _uiX(BLOOM_MULT) + " power"], ["EFFECT", "A ring of fire hits everything around it and sets it burning for " + _uiSec(BLOOM_BURN)]],
     "QUILL BURST": () => [["REACH", QUILL_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("quill_burst"))], ["QUILLS", QUILL_COUNT + ", all at once, fanned " + QUILL_FAN + "°"], ["DAMAGE", _uiX(QUILL_MULT) + " power a quill"], ["EFFECT", "Crystal quills fly out together; each stops at the first enemy it touches. No piercing, no splash: up close one enemy can take them all, far off they spread"]],
     "ARC VOLLEY": () => [["REACH", REAVER_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("arc_volley"))], ["DAMAGE", _uiX(REAVER_MULT) + " power"], ["EFFECT", "A charged arc that jumps to " + REAVER_CHAIN + " more enemies"]],
+    "MAELSTROM": () => [["REACH", MAEL_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("maelstrom"))], ["DAMAGE", _uiX(MAEL_BITE) + " power every " + _uiSec(MAEL_TICK) + ", for " + _uiSec(MAEL_LIFE)], ["EFFECT", "A small swirl of purple crystals, " + MAEL_RADIUS + " tiles across, on the nearest enemy: everything in it is hurt and blinded (it loses its target, cannot attack or shoot and staggers about at half pace) while it is in and for " + _uiSec(MAEL_BLIND) + " after; a boss takes the damage but is not blinded"]],
     "SINGULARITY SHOT": () => [["REACH", SERPENT_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("singularity_shot"))], ["DAMAGE", _uiX(SERPENT_MULT) + " power"], ["EFFECT", "Drags every enemy within " + SERPENT_PULL_R + " tiles of the target in and slows them (a beetle, a boss or a machine is too heavy to drag)"]],
     "SONIC ROLL": () => [["REACH", MANTA_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("static_rush"))], ["DAMAGE", _uiX(MANTA_MULT) + " power"], ["EFFECT", "Dashes to the enemy, hits it and shocks " + MANTA_CHAIN + " more; all are stunned for " + _uiSec(MANTA_STUN)]],
     "MAGMA VENT": () => [["REACH", MAGMA_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("magma_vent"))], ["VENT", MAGMA_RADIUS + " tiles round, " + _uiSec(MAGMA_LIFE)], ["DAMAGE", _uiX(MAGMA_BITE) + " power a burst, every " + _uiSec(MAGMA_TICK)], ["EFFECT", "A volcanic vent opens under the enemy it can see and bursts magma up at everything near it until it closes"]],
