@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12c` (made as 11z on its branch) · branch `claude/seeper-attacks` · the Seeper's leg stomp
+- **Everyday hit** (the owner: "Seeper!"; of three looks the agent offered, the owner chose **"Leg stomp"**): the Seeper plants its other legs, rears one front leg up and slams it down in front of it, toward the enemy, flinging goo off the foot, then settles. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
+- **ERUPTION** (its second attack) keeps its own frames (the action block), unchanged: the stomp is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4081 × 448 packed; its pool of goo sheet is re-baked with it).
+- Agent's, provisional: which leg stomps (the front right), how high and far, the goo's size, the 8-frame timing, the lean.
+- `js/evolution.js` (the Seeper's definition, `_evoFrame`), `design/evolutions/forms22.js` (No. 936), `bake.js`. `tests/evolution.js` expects the Seeper's 24 columns.
+- Not playtested; seen in the real page frame by frame (headless): it faces the enemy, a front leg rears and slams toward it, goo flies.
+
 ### Build `2026-11-12b` · branch `claude/start-game-project-HSh7Z` · main's Frost Maw and Jelly Ram merged in
 - While this branch made build 12a, main took one pull request, #27 (`claude/jellyram-attacks`, stacked on `claude/frostmaw-attacks`), stamped `2026-11-11y` (entries below): the Frost Maw's lunge-bite and CHOMP, and the Jelly Ram's tentacle lash.
 - The two merged (main into this branch) are build 12b. Nothing in either changed in the merge. The only conflicts were the build's stamps and the generated page and script bundle (made again); this log kept both, this branch's first.
@@ -19,13 +26,6 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - The numbers are the agent's, provisional: the rooms' sizes and names, the rim heights, the chest's contents and odds. Verified: the suites and the full run; looked at in the real page. Not playtested.
 
 ## 2026-11-11
-
-### Build `2026-11-12c` (made as 11z on its branch) · branch `claude/seeper-attacks` · the Seeper's leg stomp
-- **Everyday hit** (the owner: "Seeper!"; of three looks the agent offered, the owner chose **"Leg stomp"**): the Seeper plants its other legs, rears one front leg up and slams it down in front of it, toward the enemy, flinging goo off the foot, then settles. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`).
-- **ERUPTION** (its second attack) keeps its own frames (the action block), unchanged: the stomp is its own block, columns 16 to 23 of the sheet, which grows from 16 to 24 columns (4081 × 448 packed; its pool of goo sheet is re-baked with it).
-- Agent's, provisional: which leg stomps (the front right), how high and far, the goo's size, the 8-frame timing, the lean.
-- `js/evolution.js` (the Seeper's definition, `_evoFrame`), `design/evolutions/forms22.js` (No. 936), `bake.js`. `tests/evolution.js` expects the Seeper's 24 columns.
-- Not playtested; seen in the real page frame by frame (headless): it faces the enemy, a front leg rears and slams toward it, goo flies.
 
 ### Build `2026-11-11y` (made as 11w on its branch) · branch `claude/jellyram-attacks` · the Jelly Ram's tentacle lash
 - **Everyday hit** (the agent picked the Jelly Ram as the next Brawler; of three looks, the owner chose **"Tentacle lash"**): three of its seven tentacles (the odd ones; the curled one and the others trail back) are thrown up over the head and out in front of it, the tips lagging and cracking down, and curl back, while the head leans in a little. Looks only: the hit lands as it always did, and a Brawler already stands and strikes when it is up to its enemy (build `2026-11-11k`). No head ram and no burst flash in this one.
