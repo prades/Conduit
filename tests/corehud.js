@@ -52,12 +52,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // build 2026-11-11u: every point of its box is its own (a tap there never reaches the game's canvas); the pill row in it, a tap on a pill the pill's; the ring passes taps; the bigger buttons
     var cr = $('#coreHud').getBoundingClientRect(), miss = 0, tot = 0, strip = 0, stripMap = 0; for (var yy = cr.top + 3; yy < cr.bottom; yy += 17) for (var xx = cr.left + 3; xx < cr.right; xx += 17) { var el = document.elementFromPoint(xx, yy), mine = !!(el && el.closest('#coreHud'));
       if (xx - cr.left < CORE_HUD.strip - 4 && yy - cr.top < CORE_HUD.padTop - 4) { strip++; if (!mine) stripMap++; } else if (xx - cr.left > CORE_HUD.strip + 2 || yy - cr.top > CORE_HUD.padTop + 2) { tot++; if (!mine) miss++; } }
-    out.box = [tot, miss, strip, stripMap]; var dp = dialoguePlace(true); out.dlg = [Math.round(dp.x + dp.w), Math.round(cr.left + CORE_HUD.strip - DIALOGUE.gap), dp.w];
+    out.box = [tot, miss, strip, stripMap]; var dp = dialoguePlace(true); out.dlg = [Math.round(dp.x), Math.round(dp.top), Math.round(dp.x + dp.w), Math.round(dp.top + DIALOGUE.h + 2 * (DIALOGUE.choiceH + 10)), Math.round(cr.left), Math.round(cr.top)];   // (the dialogue's box at the top left since build 2026-11-12g, as tall as it gets)
     setPlayerAttackMode(true, true); drawTargetUI(); out.pills = { atk: [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w, _ATKCHIP.h], kit: [_KITCHIP.x, _KITCHIP.y, _KITCHIP.w, _KITCHIP.h], core: [cr.left, cr.top, cr.right, cr.bottom] };
     var ax = _ATKCHIP.x + _ATKCHIP.w / 2, ay = _ATKCHIP.y + _ATKCHIP.h / 2, under = document.elementFromPoint(ax, ay); out.pills.under = under ? !!under.closest('#coreHud') : null;
     if (under) under.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: ax, clientY: ay })); out.pills.stowed = !playerAttackMode; setPlayerAttackMode(false, true);
     commandMode = true; steps(2); var ue = document.elementFromPoint(cr.left + 255, cr.top + 120); out.ring = [$('#coreHud').className, ue ? !ue.closest('#coreHud') : null]; commandMode = false; commandPendingTap = false; steps(2);
-    out.sizes = [Math.round($('#coreHud .core-hg').getBoundingClientRect().width), Math.round($('#coreHud .core-siphon').getBoundingClientRect().width), Math.round($('#coreHud .core-pack').getBoundingClientRect().height)];
+    out.sizes = [Math.round($('#coreHud .core-hg').getBoundingClientRect().width), Math.round($('#coreHud .core-siphon').getBoundingClientRect().width), Math.round($('#btnPack').getBoundingClientRect().height)];   // (the PACK: its own button beside THE CORE since build 2026-11-12g, in place of the tag)
     // build 2026-11-11v: a creature locked: its slab under the cube (no dial), the box where it was; a press on the slab shoots; INFO; gone with the creature
     var top0 = $('#coreHud').getBoundingClientRect().top; actors = actors.filter(function(a){ return !(a instanceof Predator); });
     var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y - 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; e.update = function(){}; e.health = e.maxHealth * 0.6;
@@ -164,7 +164,7 @@ function measure(w, h) {
         const H = rd('game.html');
         ok(/body\.core-on #coreHud \{[^}]*height: 356px; pointer-events: none;/.test(H) && /#coreHud \.core-pad \{ position: absolute; z-index: 1; pointer-events: auto;/.test(H), 'the pads do not take a tap');
         same(J('[CORE_HUD.strip, CORE_HUD.padTop]').join(), '56,210', 'the strip'); ok(/padA\.style\.left = CORE_HUD\.strip \+ "px"; padB\.style\.top = CORE_HUD\.padTop \+ "px";/.test(rd('js/corehud.js')), 'the pads are not placed');
-        ok(/right = Math\.min\(right, Math\.round\(core\.left\) \+ CORE_HUD\.strip - DIALOGUE\.gap\)/.test(rd('js/dialogue.js')), 'the dialogue\'s box does not stop at its strip');
+        ok(!/CORE_HUD\.strip/.test(rd('js/dialogue.js')) && /AT THE TOP LEFT \(build 2026-11-12g/.test(rd('js/dialogue.js')), 'the dialogue\'s box still reaches into its strip (it stands at the top left since build 2026-11-12g)');
         ok(/#coreHud\.ring \.core-pad, #coreHud\.ring \.core-hit \{ pointer-events: none; \}/.test(H) && /#coreHud\.ring \{ opacity: 0\.35; \}/.test(H), 'the ring\'s rule');
         run('commandMode = true; __tick(1);'); const a = J('_core.root.className'); run('commandMode = false; __tick(1);'); const b = J('_core.root.className');
         ok(/\bring\b/.test(a) && !/\bring\b/.test(b), 'the ring\'s class: ' + a + ' / ' + b);
@@ -220,7 +220,8 @@ function measure(w, h) {
         await check(`${w}x${h}: THE CORE in the bottom-right corner, the old parts hidden, the dock and the squad's corner clear of it, the cube drawn, its words`, () => {
             ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.on, true, 'not on'); same(t.body, true, 'body.core-on'); ok(t.core && t.core.shown, 'not shown');
             ok(Math.abs(t.vw - t.core.r - 14) <= 1 && Math.abs(t.vh - t.core.b - 14) <= 1, 'not in the corner, 14 px in from the right and the bottom (build 2026-11-11x): ' + JSON.stringify(t.core));
-            for (const k of ['shards', 'ui', 'ult', 'pack']) same(t.old[k] && t.old[k].shown, false, 'the old ' + k + ' is shown');
+            for (const k of ['shards', 'ui', 'ult']) same(t.old[k] && t.old[k].shown, false, 'the old ' + k + ' is shown');
+            ok(t.old.pack && t.old.pack.shown && t.old.pack.r <= t.core.l, 'the PACK is not its own button beside it (build 2026-11-12g, the owner: "cards and a backpack icon. Two different buttons there next to the health bar and shards count"): ' + JSON.stringify([t.old.pack, t.core]));
             ok(t.dock.r <= t.core.l, 'the dock runs under it: ' + JSON.stringify([t.dock, t.core])); ok(t.dock.b <= t.mix.t + 1, 'the dock is not over the squad\'s corner: ' + JSON.stringify([t.dock, t.mix]));
             ok(t.drawn > 400, 'the cube is not drawn (' + t.drawn + ' pixels)');
             same(t.words.count, '1,234', 'the shards'); same(t.words.pack, '2', 'PACK n'); ok(/^ULTIMATE \d+%$/.test(t.words.surge), 'the surge: ' + t.words.surge); same(t.words.cells, 'g,g,g', 'the bars');
@@ -243,7 +244,7 @@ function measure(w, h) {
         await check(`${w}x${h}: build 2026-11-11u: every point of its box is its own (a tap there never reaches the map); the ammunition and the kits in its box, over the slab, a tap on the ammunition puts the gun away; the ring passes taps; its buttons bigger`, () => {
             ok(t && !t.err, 'the probe');
             ok(t.box[0] > 300 && t.box[1] === 0, 'points of its pads that reach the map: ' + t.box); ok(t.box[2] > 20 && t.box[3] === t.box[2], 'the empty strip at its left does not let a tap through to the map: ' + t.box);
-            ok(t.dlg[0] <= t.dlg[1] && t.dlg[2] >= 240, 'the dialogue\'s box runs under its buttons: ' + t.dlg);
+            ok(t.dlg[2] <= t.dlg[4] || t.dlg[3] <= t.dlg[5], 'the dialogue\'s box runs under it (it stands at the top left since build 2026-11-12g): ' + t.dlg);
             const P = t.pills, c = P.core, inBand = q => q[2] > 0 && q[0] >= c[0] && q[0] + q[2] <= c[2] && q[1] >= c[1] + 200 && q[1] + q[3] <= c[3] - 50;
             ok(inBand(P.atk), 'the ammunition is not in its box over the slab: ' + JSON.stringify(P)); ok(inBand(P.kit) && P.kit[0] > P.atk[0], 'the kits: ' + JSON.stringify(P));
             same(P.under, true, 'the pill is not under its box'); same(P.stowed, true, 'a tap on the ammunition did not put the gun away');

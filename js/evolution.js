@@ -1469,7 +1469,7 @@ function mimicShotDraw(e, px, py, g) {
     g.restore();
 }
 
-// ── THE EMBER HOOD'S FLARE (build 2026-11-12g) ──────────────────────────────────────────────────────────────────────────────
+// ── THE EMBER HOOD'S FLARE (build 2026-11-12h) ──────────────────────────────────────────────────────────────────────────────
 // ASKED (the owner, 2026-11-12: "Work on the mages"; the agent took the Ember Hood first and offered three looks for its everyday FIREBALL: "Hood flare"): its hood swells and its diamond and gems blaze as a fireball forms
 // in front of it over the shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted: the picture rides on it, six cells), then the shot leaves (the game's own fireball: it is drawn flying as it always was) and the hood
 // settles (cells 6 and 7, 4 and 6 frames). Looks only: the shot, its wind-up and its rest are as they were. A wind-up that is cancelled (a retreat, a target that died) shows no settle. The frame counts are the agent's.

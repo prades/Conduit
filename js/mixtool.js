@@ -155,6 +155,7 @@ function mixToolFoeRender(root, slot, force) {
     const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool() : [], f0 = typeof frame !== "undefined" ? frame : 0, corners = mixToolCorners();
     const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";   // (at the left: RUN while they run, ALL while it is lit)
     if (root.classList) root.classList.toggle("foe", !!foe);   // (at the left the card stands over the orders: game.html)
+    if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("foe-up") !== !!foe) document.body.classList.toggle("foe-up", !!foe);   // (the squad strip makes room for it: game.html "THE BOTTOM ROW", build 2026-11-12g)
     if (!force && sig === _mtFoeSig) { mixToolFoeLive(slot, foe); return; }
     const fresh = id !== _mtFoeId; _mtFoeSig = sig; _mtFoeId = id; _mtFoeShown = foe;
     slot.innerHTML = foe ? mixToolFoeHTML(foe, pool, fresh) : "";

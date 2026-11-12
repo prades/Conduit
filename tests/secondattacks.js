@@ -220,7 +220,7 @@ function measure(w, h) {
             await check('THE SQUAD CARD\'S ULTIMATE METER: ULT and the charge in it, in its element\'s colour; full, gold, taller, ULTIMATE ▲ and TAP; none for a follower before it evolves (it has no Ultimate since build 2026-11-09b)', () => {
                 same([T.egg.hidden, T.egg.h].join(), 'true,0', 'a meter for a follower before it evolves');   // (this probe expected one until 2026-11-10: in this container it had been skipped, finding no browser, so it never met the rule)
                 same(JSON.stringify(T.half), JSON.stringify({ hidden: false, full: false, l: 'ULT', n: '40%', w: '40%', h: 8 }), 'not full');
-                same(JSON.stringify(T.full), JSON.stringify({ hidden: false, full: true, l: 'ULTIMATE ▲', n: 'TAP', w: '100%', h: 11 }), 'full'); same(T.cardH, 64, 'the card\'s height');
+                same(JSON.stringify(T.full), JSON.stringify({ hidden: false, full: true, l: 'ULTIMATE ▲', n: 'TAP', w: '100%', h: 11 }), 'full'); same(T.cardH, 58, 'the card\'s height (a card of the strip along the bottom since build 2026-11-12g: --sb-th)');
             });
             await check('a tap on the full meter fires the Ultimate and the meter empties; a tap on one not full is a tap on the card (it picks the follower)', () => {
                 same(T.fired.ran, 1, 'its Ultimate ran'); same(T.fired.charge, 0, 'its charge'); same(T.fired.after.full, false, 'the meter after'); same(T.notFull.sel, true, 'the card was not picked'); same(T.notFull.charge, 40, 'the charge');

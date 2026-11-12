@@ -725,8 +725,8 @@ function uiTopSafe() {
 }
 function uiBottomSafe() {
     try {
-        const d = document.getElementById("topToggles");
-        if (d && canvas.width > 700) {
+        const d = document.getElementById("topToggles"), corners = typeof document.body !== "undefined" && document.body && document.body.classList && document.body.classList.contains("corners");
+        if (d && canvas.width > 700 && !corners) {
             const r = d.getBoundingClientRect();
             if (r.height > 0 && r.width > r.height && isFinite(r.top) && r.top > canvas.height * 0.4)
                 return Math.round(r.top - 10);
@@ -26356,25 +26356,17 @@ function dialoguePlace(force) {
     if (!force && K && f - _dlgPlaceAt >= 0 && f - _dlgPlaceAt < DIALOGUE.place && K.W === canvas.width && K.H === canvas.height)
         return K;
     const W = canvas.width, H = canvas.height, corner = typeof hudCorners === "function" && hudCorners();
-    let bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8, left = DIALOGUE.margin, right = W - DIALOGUE.margin;
+    let bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8, left = DIALOGUE.margin, right = W - DIALOGUE.margin, top = null;
     if (corner) {
-        const sb = _dlgRect("squadBar"), mt = _dlgRect("mixTool"), l = Math.max(sb ? sb.right : 0, mt ? mt.right : 0);
-        if (l > 0 && l < W * 0.45)
-            left = Math.max(left, Math.round(l) + DIALOGUE.gap);
-        const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214;
-        right = Math.min(right, W - 14 - foeW - DIALOGUE.gap);
-        const core = typeof coreOn === "function" && coreOn() && typeof CORE_HUD !== "undefined" ? _dlgRect("coreHud") : null;
-        if (core && core.left > W / 2) {
-            const fa = _dlgSel("#mixTool .mt-fa.atk"), lb = fa && fa.right < W * 0.45 ? Math.max(left, Math.round(fa.right) + DIALOGUE.gap) : left;
-            if (Math.round(core.left) - DIALOGUE.gap - lb >= 240) {
-                left = lb;
-                right = Math.min(right, Math.round(core.left) - DIALOGUE.gap);
-            }
-            else {
-                right = Math.min(right, Math.round(core.left) + CORE_HUD.strip - DIALOGUE.gap);
-                bottom = Math.min(bottom, Math.round(core.top) + CORE_HUD.padTop);
-            }
-        }
+        const q = _dlgSel("#btnQuests"), at = q && q.top < H / 2 && q.left < W / 2 ? q : null;
+        const qb = at ? (isFinite(at.bottom) ? at.bottom : at.top + (at.height || 0)) : 0;
+        left = at ? Math.round(at.left) : DIALOGUE.margin;
+        top = at ? Math.round(qb) + DIALOGUE.above : DIALOGUE.margin;
+        const net = typeof _fnRect !== "undefined" && _fnRect && _fnRect.w > 0 ? { left: _fnRect.x, top: _fnRect.y, width: _fnRect.w } : null, low = top + DIALOGUE.h + 2 * (DIALOGUE.choiceH + 10);
+        for (const r of [_dlgRect("hudRight"), net])
+            if (r && r.width > 0 && r.left > W / 2 && r.top < low)
+                right = Math.min(right, Math.round(r.left) - DIALOGUE.gap);
+        bottom = top + DIALOGUE.h + DIALOGUE.above;
     }
     else {
         for (const id of ["squadBar", "mixTool"]) {
@@ -26389,9 +26381,9 @@ function dialoguePlace(force) {
         left = DIALOGUE.margin;
         right = W - DIALOGUE.margin;
     }
-    const w = Math.min(DIALOGUE.w, right - left), x = Math.round((left + right) / 2 - w / 2);
+    const w = Math.min(DIALOGUE.w, right - left), x = top !== null ? left : Math.round((left + right) / 2 - w / 2);
     _dlgPlaceAt = f;
-    return (_dlgPlaceK = { x, w, bottom: bottom - DIALOGUE.above, W, H });
+    return (_dlgPlaceK = { x, w, top, bottom: bottom - DIALOGUE.above, W, H });
 }
 function _dlgChars(w) { return Math.max(14, Math.floor((w - DIALOGUE.pad * 2 - 6 - DIALOGUE.port - DIALOGUE.gap - 14) / DIALOGUE.charW)); }
 function _dlgFlow(L, chars) {
@@ -26541,7 +26533,7 @@ function dialogueDraw() {
         return;
     const P = dialoguePlace(), f = _dlgFrame(), pad = DIALOGUE.pad, ps = DIALOGUE.port, w = P.w, flow = _dlgFlow(L, _dlgChars(w)), pg = flow.pages[L.page], len = _dlgPageLen(L), typed = L.shown >= len, last = L.page + 1 >= flow.pages.length;
     const choices = L.choices && last && typed ? L.choices : null, rows = choices ? Math.ceil(choices.length / DIALOGUE.perRow) : 0;
-    const h = DIALOGUE.h + (choices ? rows * (DIALOGUE.choiceH + 10) : 0), x = P.x, y = P.bottom - h;
+    const h = DIALOGUE.h + (choices ? rows * (DIALOGUE.choiceH + 10) : 0), x = P.x, y = P.top !== null && P.top !== undefined ? P.top : P.bottom - h;
     _dlgBox.x = x;
     _dlgBox.y = y;
     _dlgBox.w = w;
@@ -40437,8 +40429,45 @@ function partySlotsBuild(root, onClick) {
     root.addEventListener("click", onClick);
     return { root, slots };
 }
-function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root)
-    _sbEls = partySlotsBuild(root, partyBarClick); return _sbEls; }
+function partyBarBuild(root) {
+    if (!_sbEls || _sbEls.root !== root) {
+        _sbEls = partySlotsBuild(root, partyBarClick);
+        const tab = document.createElement("button");
+        tab.className = "sb-tuck";
+        tab.type = "button";
+        tab.innerHTML = "<i>◂</i><b></b>";
+        root.appendChild(tab);
+        _sbEls.tuck = tab;
+    }
+    return _sbEls;
+}
+let _sbTuck = null;
+function partyStripTucked() { if (_sbTuck === null) {
+    try {
+        _sbTuck = typeof localStorage !== "undefined" && localStorage.getItem("conduit_fp_squadtuck") === "1";
+    }
+    catch (e) {
+        _sbTuck = false;
+    }
+} return !!_sbTuck; }
+function partyStripTuck(on) {
+    const was = partyStripTucked();
+    _sbTuck = on === undefined ? !was : !!on;
+    if (was && !_sbTuck && typeof document !== "undefined" && document.body && document.body.classList) {
+        document.body.classList.add("sb-untuck");
+        setTimeout(() => { try {
+            document.body.classList.remove("sb-untuck");
+        }
+        catch (e) { } }, 400);
+    }
+    try {
+        if (typeof localStorage !== "undefined")
+            localStorage.setItem("conduit_fp_squadtuck", _sbTuck ? "1" : "0");
+    }
+    catch (e) { }
+    partyBarRender(true);
+    return _sbTuck;
+}
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null;
     if (!t)
@@ -40449,6 +40478,10 @@ function _partyTapped(ev) {
     return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult"), call: slot._call || null };
 }
 function partyBarClick(ev) {
+    if (ev.target && ev.target.closest && ev.target.closest(".sb-tuck")) {
+        partyStripTuck();
+        return;
+    }
     const hit = _partyTapped(ev);
     if (!hit)
         return;
@@ -40555,9 +40588,17 @@ function partySlotsUpdate(E, lit) {
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) {
+            if (f && !el._unit && E.joinable) {
+                el.classList.add("sb-join");
+                el._joinAt = Date.now();
+            }
             el._unit = f;
             el.classList.toggle("empty", !f);
             el._thumbKey = null;
+        }
+        if (el._joinAt && Date.now() - el._joinAt > 700) {
+            el._joinAt = 0;
+            el.classList.remove("sb-join");
         }
         if (typeof cardArtUnitClass === "function")
             cardArtMark(el, f ? cardArtUnitClass(f) : "");
@@ -40649,8 +40690,26 @@ function partyBarRender(force) {
     const E = partyBarBuild(root);
     partySlotsUpdate(E);
     _partyCloneCard(E);
+    E.joinable = true;
+    _partyStripTab(E);
     if (typeof partyFlyRender === "function")
         partyFlyRender();
+}
+function _partyStripTab(E) {
+    const tucked = partyStripTucked(), b = typeof document !== "undefined" && document.body && document.body.classList ? document.body.classList : null;
+    if (b && b.contains("squad-tucked") !== tucked)
+        b.toggle("squad-tucked", tucked);
+    const tab = E.tuck;
+    if (!tab)
+        return;
+    const n = E.slots.filter(el => el._unit || (el.classList && el.classList.contains && el.classList.contains("call"))).length + (E.clone ? 1 : 0), i = tab.querySelector("i"), c = tab.querySelector("b");
+    if (i)
+        _sbSet(i, "textContent", tucked ? "▸" : "◂");
+    if (c)
+        _sbSet(c, "textContent", String(n));
+    _sbSet(tab, "title", tucked ? "Slide the squad out" : "Slide the squad in");
+    if (tab.setAttribute)
+        tab.setAttribute("aria-label", tucked ? "Slide the squad out (" + n + ")" : "Slide the squad in");
 }
 function _partyCloneCard(E) {
     const c = partyClone(), body = typeof document !== "undefined" && document.body ? document.body : null;
@@ -40671,6 +40730,8 @@ function _partyCloneCard(E) {
         el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-ctag">CLONE</span>';
         if (el.style && typeof el.style.setProperty === "function")
             el.style.setProperty("--c", PARTY_CLONE_COL);
+        if (E.joinable && el.classList)
+            el.classList.add("sb-join");
         E.root.appendChild(el);
         E.clone = el;
     }
@@ -40950,19 +41011,22 @@ function partyFlySubject() {
 function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root)
         return _sfEls;
-    root.innerHTML = '<div class="sf-card"><button class="sf-back" type="button" data-act="back" aria-label="Back to the squad and its orders">◂ SQUAD &amp; ORDERS</button><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
-        + '<div class="sf-energy"></div>'
-        + '<div class="sf-body"><div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
-        + '<div class="sf-cards"></div></div>'
+    root.innerHTML = '<div class="sf-card"><button class="sf-back" type="button" data-act="back" aria-label="Back to the squad and its orders">◂ SQUAD &amp; ORDERS</button>'
+        + '<div class="sf-left"><div class="sf-energy"></div><div class="sf-pic"><canvas class="sf-thumb" width="280" height="280"></canvas><i class="sf-burst"></i></div></div>'
+        + '<div class="sf-head"><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span><button class="sf-btn sf-index" data-act="index">INDEX ▸</button></div>'
+        + '<div class="sf-mid"><div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div><div class="sf-en-unl"></div>'
         + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'
-        + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
+        + '<div class="sf-btns"><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>'
+        + '<div class="sf-body"><div class="sf-moves"></div><div class="sf-cards"></div></div>'
+        + '<div class="sf-trayw"></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener)
         document.addEventListener("pointerdown", partyFlyPressAway, true);
     if (typeof document !== "undefined" && document.fonts && typeof document.fonts.addEventListener === "function")
         document.fonts.addEventListener("loadingdone", () => partyFlyRender(true));
     const q = s => root.querySelector(s);
-    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), cards: q(".sf-cards"), cardSig: "", energy: q(".sf-energy"), enSig: "", body: q(".sf-body"), subject: null, thumbKey: null };
+    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), cards: q(".sf-cards"), cardSig: "", energy: q(".sf-energy"), enSig: "", body: q(".sf-body"), subject: null, thumbKey: null,
+        moves: q(".sf-moves"), moveSig: "", pic: q(".sf-pic"), unl: q(".sf-en-unl"), trayw: q(".sf-trayw"), enPrev: null };
     return _sfEls;
 }
 function partyFlyClick(ev) {
@@ -41019,7 +41083,7 @@ function partyFlyClick(ev) {
     if (s) {
         if (s.disabled)
             return;
-        const raw = s.getAttribute("data-slot"), slot = raw === "sp" || raw === "alt" ? raw : +raw;
+        const raw = s.getAttribute("data-slot"), slot = raw === "sp" ? raw : +raw;
         _sfDD = _sfDD === slot ? null : slot;
         partyFlyRender(true);
         return;
@@ -41093,38 +41157,18 @@ function _sfCardsDraw(E, f) {
     if (!box)
         return;
     const can = !!f && f.isFollower === true && !f.isClone && typeof equipSlots === "function" && typeof EQUIP !== "undefined";
-    const ev = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => evoMoveAllowed(f, ev, id)) : [];
-    const sig = can || altIds.length ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", f.altBoth ? "both" : "", altIds.join()].join("|") : "";
+    const sig = can ? [typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || ""].join("|") : "";
     if (sig === E.cardSig)
         return;
     E.cardSig = sig;
     box.textContent = "";
     if (box.style)
-        box.style.display = can || altIds.length ? "" : "none";
-    if (!can && !altIds.length)
+        box.style.display = can ? "" : "none";
+    if (!can)
         return;
     const all = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null)
         e.textContent = txt; return e; };
-    if (altIds.length) {
-        const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt", both = !!cur && !!f.altBoth;
-        const b = mk("button", "sf-slot sp" + (open ? " open" : ""));
-        b.type = "button";
-        b.setAttribute("data-slot", "alt");
-        b.appendChild(mk("span", "sf-sk", "ATTACK"));
-        b.appendChild(mk("span", "sf-sv", both ? "BOTH \u00b7 " + cur.name : cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : typeof altCools === "function" && altCools(f) && (f._altReadyAt || 0) > (typeof frame !== "undefined" ? frame : 0) ? " · COOLING DOWN" : " · LOCKED ON") : "NORMAL ATTACK"));
-        b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
-        box.appendChild(b);
-        if (open) {
-            const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };
-            opt("NORMAL ATTACK", "ITS EVERYDAY HITS", !cur, null);
-            for (const id of altIds)
-                opt(MOVES[id].name, typeof altCools === "function" && altCools(f) ? "LOCKED ON · STRIKES, THEN COOLS DOWN" : "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id && !both, id);
-            for (const id of altIds)
-                opt("BOTH \u00b7 " + MOVES[id].name, "SWITCHES ON ITS OWN · " + (typeof moveBothText === "function" ? moveBothText(id) : ""), both && cur.id === id, "both:" + id);
-            box.appendChild(list);
-        }
-    }
     if (!can)
         return;
     for (const slot of [0, 1].concat(typeof equipSpecialFor === "function" && equipSpecialFor(f) ? ["sp"] : [])) {
@@ -41163,6 +41207,45 @@ function _sfCardsDraw(E, f) {
         box.appendChild(list);
     }
 }
+function _sfMoveLine(f, cur, both) {
+    if (!cur)
+        return "ITS EVERYDAY HITS";
+    if (both)
+        return "SWITCHES ON ITS OWN · " + (typeof moveBothText === "function" ? moveBothText(cur.id) : "");
+    const cools = typeof altCools === "function" && altCools(f), fr = typeof frame !== "undefined" ? frame : 0;
+    return f._altWind > 0 ? "LOCKED ON · WINDING UP" : cools && (f._altReadyAt || 0) > fr ? "LOCKED ON · COOLING DOWN" : cools ? "LOCKED ON · STRIKES, THEN COOLS DOWN" : "LOCKED ON · WINDS UP IN PLACE";
+}
+function _sfMovesDraw(E, f) {
+    const box = E.moves;
+    if (!box)
+        return;
+    const ev = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => evoMoveAllowed(f, ev, id)) : [];
+    const cur = altIds.length && typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, both = !!cur && !!f.altBoth;
+    const sig = altIds.length ? [f.uid || f.id || "", cur ? cur.id : "", both ? "both" : "", altIds.join()].join("|") : "";
+    if (sig !== E.moveSig) {
+        E.moveSig = sig;
+        box.textContent = "";
+        if (box.style)
+            box.style.display = altIds.length ? "" : "none";
+        if (!altIds.length)
+            return;
+        const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null)
+            e.textContent = txt; return e; };
+        box.appendChild(mk("div", "sf-mv-hd", "ATTACK"));
+        const opt = (label, on, id) => { const el = mk("button", "sf-opt sf-mv" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.setAttribute("aria-pressed", on ? "true" : "false"); el.appendChild(mk("span", "sf-ol", label)); box.appendChild(el); };
+        opt("NORMAL ATTACK", !cur, null);
+        for (const id of altIds)
+            opt(MOVES[id].name, !!cur && cur.id === id && !both, id);
+        for (const id of altIds)
+            opt("BOTH \u00b7 " + MOVES[id].name, both && cur.id === id, "both:" + id);
+        box.appendChild(mk("div", "sf-mv-tx", ""));
+    }
+    if (!altIds.length)
+        return;
+    const tx = box.querySelector ? box.querySelector(".sf-mv-tx") : null;
+    if (tx)
+        _sfSet(tx, "textContent", _sfMoveLine(f, cur, both));
+}
 function _sfEnergyDraw(E, f) {
     const box = E.energy;
     if (!box)
@@ -41173,8 +41256,15 @@ function _sfEnergyDraw(E, f) {
         return;
     E.enSig = sig;
     box.textContent = "";
-    if (box.style)
-        box.style.display = on ? "" : "none";
+    const under = E.unl || box, tw = E.trayw || box;
+    if (E.unl)
+        E.unl.textContent = "";
+    if (E.trayw)
+        E.trayw.textContent = "";
+    for (const el of [box, E.unl])
+        if (el && el.style)
+            el.style.display = on ? "" : "none";
+    _sfPicEnergy(E, on ? energySlots(f) : null);
     if (!on)
         return;
     const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
@@ -41201,8 +41291,8 @@ function _sfEnergyDraw(E, f) {
     }
     box.appendChild(toks);
     if (open >= 0 && open < s.length)
-        box.appendChild(_sfEnergyTray(f, open, s[open], held, mk));
-    const unl = mk("div", "sf-en-unl"), pill = (lit, k, txt) => unl.appendChild(mk("span", lit ? "on" : "", gl(k, "sf-en-pg") + txt));
+        tw.appendChild(_sfEnergyTray(f, open, s[open], held, mk));
+    const pill = (lit, k, txt) => under.appendChild(mk("span", lit ? "on" : "", gl(k, "sf-en-pg") + txt));
     if (!f.evolved)
         pill(!!s[0], s[0] || "energy", s[0] ? energyLabel(s[0]) + " · USED UP AS IT EVOLVES" : held.length ? "NO ELEMENT · PUT ONE IN" : "NO ELEMENT · ENERGY COMES IN PACKS");
     else {
@@ -41212,7 +41302,37 @@ function _sfEnergyDraw(E, f) {
         if (hy)
             pill(false, "energy", hy + " HYBRID" + (hy > 1 ? "S" : "") + " · NOT DESIGNED YET");
     }
-    box.appendChild(unl);
+}
+function _sfPicEnergy(E, s) {
+    const pic = E.pic;
+    if (!pic || !pic.style || typeof pic.style.setProperty !== "function")
+        return;
+    const now = s ? s.map(x => x || "").join(",") : "", was = E.enPrev;
+    E.enPrev = s ? now : null;
+    for (let i = 0; i < 3; i++) {
+        const el = s && s[i];
+        pic.style.setProperty("--e" + i, el ? energyColor(el) : "transparent");
+        pic.style.setProperty("--l" + i, el ? energyColor(el) : !s ? "transparent" : i < s.length ? "rgba(143,227,255,0.35)" : "rgba(42,51,80,0.9)");
+    }
+    const n = s ? s.filter(Boolean).length : 0;
+    if (pic.classList)
+        for (let i = 0; i <= 3; i++)
+            pic.classList.toggle("n" + i, !!s && i === n);
+    if (!s || typeof was !== "string" || was === now || !pic.classList)
+        return;
+    const prev = was.split(",");
+    let hit = -1;
+    for (let i = 0; i < s.length; i++)
+        if (s[i] && s[i] !== prev[i]) {
+            hit = i;
+            break;
+        }
+    if (hit < 0)
+        return;
+    pic.style.setProperty("--pc", energyColor(s[hit]));
+    pic.classList.remove("pulse");
+    void pic.offsetWidth;
+    pic.classList.add("pulse");
 }
 function _sfEnergyTray(f, slot, cur, held, mk) {
     const tray = mk("div", "sf-en-tray"), gl = energyGlyph, n = typeof energyTotal === "function" ? energyTotal() : 0;
@@ -41268,6 +41388,9 @@ function partyFlyRender(force) {
     if (E.subject !== f) {
         _sfDD = null;
         E.cardSig = "";
+        E.moveSig = "";
+        E.enSig = "";
+        E.enPrev = null;
         E.thumbKey = null;
     }
     E.subject = f;
@@ -41327,9 +41450,11 @@ function partyFlyRender(force) {
     _sfSet(E.pw, "textContent", String(Math.round(f.power || 0)));
     _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
     _sfEnergyDraw(E, f);
+    _sfMovesDraw(E, f);
     _sfCardsDraw(E, f);
     _sfSwapDraw(E, f);
-    const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "");
+    const ed = !clone && f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, ready = !ed || (typeof _evoImg === "function" && !!_evoImg(ed));
+    const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "") + "|" + ready;
     if (E.thumbKey !== key && E.thumb) {
         if (clone && typeof partyCloneThumb === "function") {
             E.thumbKey = key;
@@ -41346,19 +41471,22 @@ function partyFlyRender(force) {
     if (typeof slot.getBoundingClientRect === "function" && root.style) {
         const q = s => { const el = typeof document !== "undefined" && document.querySelector ? document.querySelector(s) : null; return el && typeof el.getBoundingClientRect === "function" ? el.getBoundingClientRect() : null; };
         const br = bar && bar.root && bar.root.getBoundingClientRect ? bar.root.getBoundingClientRect() : slot.getBoundingClientRect(), H = typeof innerHeight === "number" ? innerHeight : 700;
-        const left = Math.round(br.width > 0 ? br.left : 14), own = typeof root.getBoundingClientRect === "function" ? root.getBoundingClientRect() : null, cw = own && own.width || 340, ch = own && own.height || 322;
         const tool = q("#mixTool .mt-panel"), tab = q("#squadFly .sf-back");
+        const left = Math.round(tool && tool.width > 0 ? tool.left : br.width > 0 ? br.left : 14), own = typeof root.getBoundingClientRect === "function" ? root.getBoundingClientRect() : null, cw = own && own.width || 340, ch = own && own.height || 322;
         let floor = tool && tool.height > 0 ? tool.bottom : H - 8, ceil = 8;
-        for (const sel of ["#topToggles", "#mixTool .mt-foe"]) {
-            const b = q(sel);
-            if (b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left && !(sel === "#topToggles" && b.bottom <= br.top + 1))
+        const under = b => b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left;
+        {
+            const b = q("#coreHud");
+            if (under(b) && b.top > H * 0.3)
                 floor = Math.min(floor, b.top - 8);
         }
-        for (const sel of ["#hudLeft", "#hudCentre", "#facilityNewChip"]) {
+        for (const sel of ["#hudLeft", "#hudCentre", "#facilityNewChip", "#btnQuests"]) {
             const b = q(sel);
-            if (b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left && b.bottom < H / 2)
+            if (under(b) && b.bottom < H / 2)
                 ceil = Math.max(ceil, b.bottom + 8);
         }
+        if (typeof _dlgBox !== "undefined" && _dlgBox.w > 0 && _dlgBox.x < left + cw && _dlgBox.x + _dlgBox.w > left && _dlgBox.y + _dlgBox.h < H / 2)
+            ceil = Math.max(ceil, Math.round(_dlgBox.y + _dlgBox.h) + 8);
         const lift = own && tab && tab.height > 0 ? Math.max(0, own.top - tab.top) : 0;
         const sc = E.body, hid = sc && sc.scrollHeight > sc.offsetHeight ? sc.scrollHeight - sc.offsetHeight : 0, natural = ch + hid, room = floor - ceil - lift;
         if (sc && sc.style) {
@@ -48957,6 +49085,8 @@ function mixToolFoeRender(root, slot, force) {
     const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";
     if (root.classList)
         root.classList.toggle("foe", !!foe);
+    if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("foe-up") !== !!foe)
+        document.body.classList.toggle("foe-up", !!foe);
     if (!force && sig === _mtFoeSig) {
         mixToolFoeLive(slot, foe);
         return;
