@@ -32,8 +32,8 @@ function _iceMaw(o) {
   const R = o.R, sy = o.sy, mAng = o.mouth, md = o.md || [0, 0.22, 1];
   const dome = _facetDome(R, sy, md, mAng, o.shade, o.seed || 3, o.detail, o.grain); bodyG.add(dome);
   // the cave: the inside of a slightly smaller dome, a dark glow
-  const cave = new T.Mesh(new T.IcosahedronGeometry(R * 0.93, 2), new T.MeshBasicMaterial({ color: new T.Color(EL.color).multiplyScalar(0.07), side: T.BackSide })); cave.scale.y = sy; bodyG.add(cave);
-  const floorGlow = new T.Mesh(new T.CircleGeometry(R * 0.7, 10), new T.MeshBasicMaterial({ color: new T.Color(EL.color).multiplyScalar(0.07) })); floorGlow.rotation.x = -PI / 2; floorGlow.position.set(0, 0.02, R * 0.25); bodyG.add(floorGlow);
+  const cave = new T.Mesh(new T.IcosahedronGeometry(R * 0.93, 2), new T.MeshBasicMaterial({ color: o.cave != null ? new T.Color(o.cave) : new T.Color(EL.color).multiplyScalar(0.07), side: T.BackSide })); cave.scale.y = sy; bodyG.add(cave);
+  const floorGlow = new T.Mesh(new T.CircleGeometry(R * 0.7, 10), new T.MeshBasicMaterial({ color: o.caveFloor != null ? new T.Color(o.caveFloor) : new T.Color(EL.color).multiplyScalar(0.07) })); floorGlow.rotation.x = -PI / 2; floorGlow.position.set(0, 0.02, R * 0.25); bodyG.add(floorGlow);
   // the fangs hang INSIDE the mouth, from its ceiling; casting, they swing forward and down
   const a = R * Math.sin(mAng), lipY = R * sy * 0.28 + a * 0.92, lipZ = R * 0.9;
   const jaw = G(); jaw.position.set(0, lipY - 0.08, R * 0.34); bodyG.add(jaw);   // inside the cave, hanging from the ceiling of the mouth
@@ -85,4 +85,4 @@ fx(157, "Pale dome, narrow mouth, long thin fangs.", () => _iceMaw({ R: 0.95, sy
 //   Bake it in place of the Maw, in a 192 px cell (the swollen body needs room; the same pixels a unit): node design/evolutions/bake.js <three> img/evo maw 192 2.2667, then node design/evolutions/crop_sheets.js
 // the powder snow of No. 934 (the owner, 2026-11-11: "a powdered snow Pac-Man with teeth that's sunken into the floor": keep the design, the shape; redo the texture): pale blue-white, the lip round the mouth the brightest
 const _snowTop = _hexc(0x7a8fb0), _snowMid = _hexc(0x566b8e), _snowLip = _hexc(0xa8bbd8);
-fx(934, "The FROST MAW's lunge-bite: No. 156 throws its body forward, fangs swinging down, and back.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.14, fangH: 0.4, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 1.0, detail: 3, grain: 0.34, snow: 0x9db0cc, shade: (cy, e) => e < 0.3 ? _snowLip : cy > 0.55 ? _snowTop : _snowMid }));
+fx(934, "The FROST MAW's lunge-bite: No. 156 throws its body forward, fangs swinging down, and back.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.14, fangH: 0.4, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 1.0, detail: 3, grain: 0.34, snow: 0x9db0cc, cave: 0x081c30, caveFloor: 0x143a56, shade: (cy, e) => e < 0.3 ? _snowLip : cy > 0.55 ? _snowTop : _snowMid }));
