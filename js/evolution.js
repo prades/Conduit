@@ -264,7 +264,7 @@ const EVOLUTIONS = {
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
     rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "ICICLE VOLLEY", moves: ["icicle_volley"], sheet: "img/evo/rimestar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff", flare: true },   // (24 columns since build 2026-11-12i, design No. 939: columns 16-23 are its everyday shot's FLARE, flareCol; its sheet's other frames are as they were)
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "ECHO PULSE", moves: ["echo_pulse"], sheet: "img/evo/hornshell.png",

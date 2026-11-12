@@ -3,7 +3,9 @@
 // ─────────────────────────────────────────────────────────
 // A FUN GLOWY BLOB (the Ember Hood's FIREBALL): flat colours, no gradient: a faint wide halo, a wobbling orange body that stretches along its flight, a lighter rim, a bright spot, and three little blobs shed behind it.
 // No shadowBlur and no radial gradient (the effects plan, docs/EFFECTS.md); a few small fills.
-function _drawFireBlob(ctx, p, sx, sy) {
+const _FIRE_BLOB = { trail: '#ff7a1a', halo: '#ff9a2a', body: '#ff7a14', rim: '#ffb33a', spot: '#fff1a8' }, _ICE_BLOB = { trail: '#7fcfff', halo: '#b8e8ff', body: '#7fd0ff', rim: '#c4eeff', spot: '#ffffff' };   // (the blob's flat colours: fire, frost)
+function _drawFireBlob(ctx, p, sx, sy, pal) {
+    pal = pal || _FIRE_BLOB;
     const f = p.frame || 0, R = (p.radius || 5) * 2.1, vx = p.vx || 0, vy = p.vy || 0;
     let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
     const ang = Math.atan2(uy, ux), blob = (x, y, r, wob, fill, a) => {
@@ -13,11 +15,11 @@ function _drawFireBlob(ctx, p, sx, sy) {
             const ex = qx * 1.18, ey = qy * 0.86, X = x + ex * cx - ey * sn, Y = y + ex * sn + ey * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
         ctx.closePath(); ctx.fill(); };
     ctx.globalAlpha = 1;
-    for (let i = 3; i >= 1; i--) { const d = R * (0.95 + i * 0.85), w = 0.35 + 0.2 * Math.sin(f * 0.4 + i * 2.1); blob(sx - ux * d + uy * R * 0.25 * Math.sin(f * 0.3 + i), sy - uy * d - ux * R * 0.25 * Math.sin(f * 0.3 + i), R * (0.62 - i * 0.13), w, '#ff7a1a', 0.55 - i * 0.12); }   // (the little blobs it sheds, smaller and fainter the farther back)
-    blob(sx, sy, R * 1.75, 0.1, '#ff9a2a', 0.22);   // the halo
-    blob(sx, sy, R * 1.12, 0.16, '#ff7a14', 0.95);   // the body
-    blob(sx, sy, R * 0.84, 0.18, '#ffb33a', 1);       // the lighter rim of its middle
-    blob(sx - R * 0.26, sy - R * 0.3, R * 0.34, 0.2, '#fff1a8', 1);   // the bright spot
+    for (let i = 3; i >= 1; i--) { const d = R * (0.95 + i * 0.85), w = 0.35 + 0.2 * Math.sin(f * 0.4 + i * 2.1); blob(sx - ux * d + uy * R * 0.25 * Math.sin(f * 0.3 + i), sy - uy * d - ux * R * 0.25 * Math.sin(f * 0.3 + i), R * (0.62 - i * 0.13), w, pal.trail, 0.55 - i * 0.12); }   // (the little blobs it sheds, smaller and fainter the farther back)
+    blob(sx, sy, R * 1.75, 0.1, pal.halo, 0.22);   // the halo
+    blob(sx, sy, R * 1.12, 0.16, pal.body, 0.95);   // the body
+    blob(sx, sy, R * 0.84, 0.18, pal.rim, 1);       // the lighter rim of its middle
+    blob(sx - R * 0.26, sy - R * 0.3, R * 0.34, 0.2, pal.spot, 1);   // the bright spot
     ctx.globalAlpha = 1;
 }
 function _drawFollowerProjectile(ctx, p, sx, sy) {
@@ -37,6 +39,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "quill" || p.kind === "hex") { _drawRedesignShot(ctx, p, sx, sy); ctx.restore(); return; }
     // the EMBER HOOD's FIREBALL (the owner, 2026-11-12: the flare's first phase was liked, the gradient orb it became was not: "Make it look like a fun glowy blob"): a wobbling blob of flat orange
     if (p.kind === "fireball") { _drawFireBlob(ctx, p, sx, sy); ctx.restore(); return; }
+    // the RIMESTAR's everyday shot (build 2026-11-12i): the same glowy blob, frosty (the ball of frost its flare forms, so what is formed and what flies are one thing)
+    if (p.kind === "iceball") { _drawFireBlob(ctx, p, sx, sy, _ICE_BLOB); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below

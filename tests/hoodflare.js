@@ -46,7 +46,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     });
     check('a wind-up that is cancelled (a retreat) shows no settle; another mage\'s frames are its own', () => {
         const r = JSON.parse(run(`JSON.stringify((function(){ const f = __hood(), t = __foe(f.x + 3, f.y); f._shotFiredAt = undefined; f._shotTarget = t; f._shotWind = f._shotWind0 = 12; f.retreatUntil = frame + 100; frame++; updateRTSNPC(f); const a = flareCol(f, frame);
-            const g = __fol('ice', 'sniper', 'rimestar'); const d = evolvedDef(g); return { a, flag: !!d.flare, hood: !!evolvedDef(f).flare }; })())`));
+            const g = __fol('toxic', 'sniper', 'rotshard'); const d = evolvedDef(g); return { a, flag: !!d.flare, hood: !!evolvedDef(f).flare }; })())`));
         same(r.a, -1, 'a settle after a cancelled wind-up'); ok(!r.flag, 'another mage has the flare'); ok(r.hood, 'the hood does not');
     });
 
@@ -57,6 +57,18 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         same(r.a, 'fireball', 'the Hood\'s shot'); ok(r.b !== 'fireball', 'another fire shot: ' + r.b);
         const src = rd('js/game.js'), blob = src.slice(src.indexOf('function _drawFireBlob('), src.indexOf('function _drawFollowerProjectile('));
         ok(blob.length > 200 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(blob), 'the blob uses a gradient or a shadow'); ok(/p\.kind === "fireball"/.test(src), 'the projectile is not drawn as a blob');
+    });
+
+    group('THE RIMESTAR\'S FLARE (build 2026-11-12i; the owner: "Fins flare", "the wings separate into two parts each, so there\'s six"; design No. 939)');
+    check('the Rimestar has the flare too: its shot is an "iceball" (the same flat-colour blob, frosty), its sheet 24 columns with the flare\'s eight cells in every facing, its other frames as they were', () => {
+        const d = JSON.parse(run('JSON.stringify(EVOLUTIONS.rimestar)')); ok(d.flare, 'flare'); same(d.sheet, 'img/evo/rimestar.png', 'its sheet'); same(d.move, 'ICICLE VOLLEY', 'its move');
+        const png = fs.readFileSync(path.join(ROOT, 'img/evo/rimestar.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/rimestar.png'] || null)`));
+        ok(pk, 'js/evopack.js has no entry'); same(pk.w, w, 'width'); same(pk.h, h, 'height'); same(pk.cell, 144, 'cell'); same(pk.cols, 24, 'columns');
+        for (let c = 0; c < 24; c++) { let n = 0; for (let row = 0; row < 8; row++) if (pk.cells[(row * pk.cols + c) * 6 + 2] > 0) n++; same(n, 8, 'column ' + c + ' has its eight facings'); }
+        const r = run(`(function(){ __clear(); const f = __fol('ice', 'sniper', 'rimestar'), t = __foe(f.x + 3, f.y); f.currentWill = 100; f._shotTarget = t; f._shotWind = 1; const n = followerProjectiles.length; frame++; updateRTSNPC(f); const k = followerProjectiles[n] && followerProjectiles[n].kind;
+            f._shotWind0 = 12; f._shotWind = 6; return { k, col: flareCol(f, frame) }; })()`);
+        same(r.k, 'iceball', 'the shot\'s look'); same(r.col, 19, 'the cell halfway through the wind-up');
+        const src = rd('js/game.js'); ok(/p\.kind === "iceball"/.test(src), 'the projectile is not drawn as a blob');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');

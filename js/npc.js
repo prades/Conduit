@@ -12,7 +12,7 @@ function _mageShotFire(actor) {
     if (!t || t.dead) return;
     actor._shotFiredAt = typeof frame !== "undefined" ? frame : 0;   // (when it went off: the Ember Hood's flare settles from here, js/evolution.js flareCol)   // (it died in the wind-up: the next step picks another)
     const elDef = ELEMENTS.find(e => e.id === actor.element), col = elDef ? elDef.color : "#fff", dmg = (actor.stats?.specialAttack || 10) * MAGE_SHOT_MULT;
-    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT, actor.evolved === "embercowl" ? { kind: "fireball" } : undefined);   // (the Ember Hood's FIREBALL is drawn as a glowy blob: js/game.js _drawFireBlob)   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING)
+    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT, actor.evolved === "embercowl" ? { kind: "fireball" } : actor.evolved === "rimestar" ? { kind: "iceball" } : undefined);   // (the Ember Hood's FIREBALL and the Rimestar's frost shot are drawn as glowy blobs: js/game.js _drawFireBlob)   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING)
     actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
     if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
 }

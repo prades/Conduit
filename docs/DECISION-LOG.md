@@ -3088,3 +3088,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's, provisional: the strip's sizes and its tab (◂, ▸ with the count), the PACK over CARDS, the strip over THE CORE upright and under 1020 px, its shift past the enemy card in a fight, the card's three columns (two upright), the energy lines, glow, flash and hop, the card at most 680 px wide, QUESTS' size.
 - Supersedes: the squad's cards stacked over the orders (`2026-11-10c`); the dock's CARDS and QUESTS (`2026-11-11w`); the dialogue box at the foot on a tablet or a desktop (a phone keeps it at the bottom, as the owner asked on 2026-11-01); the member card's single column (`2026-11-10c`, `2026-11-10e`: the ENERGY band of draft B is kept, over the picture now); the enemy card staying while a member's card is open; THE CORE's PACK tag (`2026-11-11t`: the PACK is its own button again).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Rimestar's everyday shot is a fins flare (2026-11-12, build `2026-11-12i`, branch `claude/rimestar-attacks`)
+- The owner: "We'll talk about the rhyme star" (the Rimestar). The agent described what each of its two attacks does and offered three looks for the everyday shot (fins flare, shard spin, cold pulse). Chosen: the **everyday shot**, **"Fins flare"**; then: **"like the wings separate into two parts each, so there's six."**
+- Built: over the shot's wind-up each fin splits lengthwise into two halves that open like a V (six), the diamond blazes and a ball of frost forms in front; it is gone as the shot leaves and the fins close. The shot in flight is the Ember Hood's glowy blob, frosty (the agent's reading of the owner's earlier note; the old shard is no longer its shot). ICICLE VOLLEY unchanged.
+- Open: the Rimestar's second attack, ICICLE VOLLEY, has no animation of its own yet; the other five mages, one at a time.
+- Agent's, provisional: the opening, the ball's size, the settle.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
