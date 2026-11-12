@@ -51288,9 +51288,9 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     for (let i = 0; i < 4; i++) {
-        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = i * 1.57 + 0.5 + (h - Math.floor(h)) * 0.9, len = R * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];
+        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = ang + Math.PI + (i - 1.5) * 0.95 + ((h - Math.floor(h)) - 0.5) * 0.3, len = R * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];
         for (let k = 0; k <= N; k++) {
-            const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 0.5;
+            const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 1.1;
             pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * wv - ux * dr, sy + Math.sin(a0) * d + Math.cos(a0) * wv - uy * dr]);
         }
         for (let k = 1; k <= N; k++) {

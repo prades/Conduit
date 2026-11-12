@@ -91,8 +91,8 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     // is a TAPER: its smoky border and its core are thickest where it leaves the blob and thin to nothing at its tip ("make the streaks / bolts have borders that get bigger towards the shard"), with a puff of smoke near its end
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     for (let i = 0; i < 4; i++) {
-        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = i * 1.57 + 0.5 + (h - Math.floor(h)) * 0.9, len = R * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];   // (the four keep to their own quarters, so they spread round it)
-        for (let k = 0; k <= N; k++) { const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 0.5; pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * wv - ux * dr, sy + Math.sin(a0) * d + Math.cos(a0) * wv - uy * dr]); }
+        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = ang + Math.PI + (i - 1.5) * 0.95 + ((h - Math.floor(h)) - 0.5) * 0.3, len = R * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];   // (they come off its sides and back, never towards where it is going: the owner, 2026-11-12, "more like flex coming off, not angled towards the spot aimed")
+        for (let k = 0; k <= N; k++) { const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 1.1; pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * wv - ux * dr, sy + Math.sin(a0) * d + Math.cos(a0) * wv - uy * dr]); }
         for (let k = 1; k <= N; k++) { const t = 1 - (k - 1) / N;   // (1 at the blob, 0 at the tip)
             ctx.strokeStyle = _SOUL.smoke; ctx.lineWidth = 0.8 + 6.5 * t; ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke();
             ctx.strokeStyle = _SOUL.arc; ctx.lineWidth = 0.6 + 1.9 * t; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke(); }
