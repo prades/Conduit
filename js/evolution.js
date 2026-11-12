@@ -260,7 +260,7 @@ const EVOLUTIONS = {
     // its action frames are the ram, head first, the bubble flaring. It was No. 867 (a clear dome with a big diamond under a black helmet band, a horn out of either side).
     // No signature move (AEGIS BURST went with the followers' shield). It is in core's teal, its bubble blue white. It swims, so the sheet carries its own light.
     jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "WOBBLE SLAM", moves: ["wobble_slam"], sheet: "img/evo/jellyram.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 64.7], noGlow: true, color: "#33e6c4" },
+              cell: 144, anchor: [72, 114.2], core: [72, 64.7], noGlow: true, color: "#33e6c4", lash: true },   // (24 columns since build 2026-11-11w, design No. 935: columns 16-23 are its everyday hit's TENTACLE LASH; 8-15, its move's, are as they were)
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
     rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "ICICLE VOLLEY", moves: ["icicle_volley"], sheet: "img/evo/rimestar.png",
@@ -1269,7 +1269,7 @@ function _evoFrame(f, d, f0) {
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
-    else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
+    else if (f.state === "attack") col = (d.lash ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash: the everyday hit's own block)
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
 }
 function _evoFacing(f) {

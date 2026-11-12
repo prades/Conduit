@@ -72,7 +72,7 @@ const JOBS = [
   { id: 'hovershell_tilt', form: 877, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 860-861 (forms32.js), from the user's sheets: the JELLY RAM, the core brawler (it hovers, its tentacles sway; its action is the charge: back, then a ram with a burst), in the
   // core element's teal (jellyram_blue: in the sheet's own blue, to compare); the RIMESTAR, the ice mage (it hovers, its fins sway; its action spins them a third of a turn and throws frost).
-  { id: 'jellyram', form: 881, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 881, the user's sketch of 2026-11-01: the glass head; it was No. 867, approved on the user's review: it swims like a jellyfish, seven fat wavy tentacles)
+  { id: 'jellyram', form: 935, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true, blocks: [[0.05, 0.25, 0.55, 0.85, 1, 0.8, 0.45, 0.1].map(l => ({ lash: l, act: 0 }))] },   // (No. 935 since 2026-11-11: No. 881 with its everyday hit a tentacle lash: the sheet's extra block, columns 16-23; the owner: "Tentacle lash". Bake it in the 144 px cell as ever)   // (No. 881, the user's sketch of 2026-11-01: the glass head; it was No. 867, approved on the user's review: it swims like a jellyfish, seven fat wavy tentacles)
   { id: 'jellyram_old', form: 860, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Jelly Ram, before the review)
   { id: 'jellyram_blue', form: 860, color: '#2f6bff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 862, the Jelly Ram swimming, a little bigger (the user's ask on 860): a candidate until approved.

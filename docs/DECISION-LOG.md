@@ -2999,3 +2999,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: the separate jaws are removed. CHOMP walks the Maw up to the enemy, then its own body rears up, swells and slams down over it (new frames of its sheet). The bite lands as it slams, 16 frames after it arrived (it landed at the cast before): a consequence of drawing the move before the bite, so the damage and the picture agree. Its damage, stun, slow, reach, sight and wait are unchanged. The everyday hit is a lunge in the sprite (looks only).
 - Agent's, provisional: the swell, the poses and timing (16 frames rearing, 16 slamming), the lunge's distance, the walk's speed (0.12 tiles a frame) and stopping distance (0.8).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Jelly Ram's everyday hit is a tentacle lash (2026-11-11, build `2026-11-11w`, branch `claude/jellyram-attacks`)
+- The owner: "Pick the next one to animate the primary attack." The agent picked the Jelly Ram (the next Brawler) and offered three looks: a tentacle lash, a head-ram, a bubble burst. Chosen: **"Tentacle lash"**.
+- Built: three of its tentacles whip up over the head and out in front toward the enemy and back (its own 8 frames of the sheet). Looks only. Its second attack, WOBBLE SLAM, keeps its own frames. The Ram already walks up to its enemy as every Brawler (`2026-11-11k`).
+- Agent's, provisional: which tentacles (the three odd ones), how far and how high they reach, the timing, the lean.
+- Status: Implemented; not playtested. `CHANGELOG.md`.
+
