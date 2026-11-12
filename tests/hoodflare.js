@@ -60,15 +60,28 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     });
 
     group('THE RIMESTAR\'S FLARE (build 2026-11-12i; the owner: "Fins flare", "the wings separate into two parts each, so there\'s six"; design No. 939)');
-    check('the Rimestar has the flare too: its shot is an "iceball" (the same flat-colour blob, frosty), its sheet 24 columns with the flare\'s eight cells in every facing, its other frames as they were', () => {
+    check('the Rimestar has the flare too: its shot is an "iceball" (the same flat-colour blob, frosty), its sheet 32 columns (the flare, then ICICLE VOLLEY\'s fan) with every cell in every facing, its other frames as they were', () => {
         const d = JSON.parse(run('JSON.stringify(EVOLUTIONS.rimestar)')); ok(d.flare, 'flare'); same(d.sheet, 'img/evo/rimestar.png', 'its sheet'); same(d.move, 'ICICLE VOLLEY', 'its move');
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/rimestar.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/rimestar.png'] || null)`));
-        ok(pk, 'js/evopack.js has no entry'); same(pk.w, w, 'width'); same(pk.h, h, 'height'); same(pk.cell, 144, 'cell'); same(pk.cols, 24, 'columns');
-        for (let c = 0; c < 24; c++) { let n = 0; for (let row = 0; row < 8; row++) if (pk.cells[(row * pk.cols + c) * 6 + 2] > 0) n++; same(n, 8, 'column ' + c + ' has its eight facings'); }
+        ok(pk, 'js/evopack.js has no entry'); same(pk.w, w, 'width'); same(pk.h, h, 'height'); same(pk.cell, 144, 'cell'); same(pk.cols, 32, 'columns');
+        for (let c = 0; c < 32; c++) { let n = 0; for (let row = 0; row < 8; row++) if (pk.cells[(row * pk.cols + c) * 6 + 2] > 0) n++; same(n, 8, 'column ' + c + ' has its eight facings'); }
         const r = run(`(function(){ __clear(); const f = __fol('ice', 'sniper', 'rimestar'), t = __foe(f.x + 3, f.y); f.currentWill = 100; f._shotTarget = t; f._shotWind = 1; const n = followerProjectiles.length; frame++; updateRTSNPC(f); const k = followerProjectiles[n] && followerProjectiles[n].kind;
             f._shotWind0 = 12; f._shotWind = 6; return { k, col: flareCol(f, frame) }; })()`);
         same(r.k, 'iceball', 'the shot\'s look'); same(r.col, 19, 'the cell halfway through the wind-up');
         const src = rd('js/game.js'); ok(/p\.kind === "iceball"/.test(src), 'the projectile is not drawn as a blob');
+    });
+
+    group('THE RIMESTAR\'S SPINNING FAN FOR ICICLE VOLLEY (build 2026-11-12j; the owner: "it turns into a fan and it shoots crystals at the enemy", a fan like an office fan; design No. 940)');
+    check('over the move\'s wind-up the cells run 24 to 29, then 30 and 31 after the icicles leave, then its own frames; the move itself (its three icicles) is as it was, and the old cast is not shown after it', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ const f = __fol('ice', 'sniper', 'rimestar'), d = evolvedDef(f), t = __foe(f.x + 3, f.y); followerAltSet(f, 'icicle_volley'); const out = [], c = () => fanCol(f, frame, d); f._altWindMax = 150;
+            for (const w of [150, 125, 100, 75, 50, 25, 1]) { f._altWind = w; out.push(c()); }
+            f._altWind = 0; const n0 = followerProjectiles.filter(p => p.kind === 'icicle').length; f.currentWill = 100; frame++; const fired = icicleVolley(f), n1 = followerProjectiles.filter(p => p.kind === 'icicle').length;
+            const at = f._icAt === frame; for (const a of [0, 3, 4, 11, 12]) out.push(fanCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col; return { out, fired, icicles: n1 - n0, at, hold }; })())`));
+        same(r.out.join(), '24,25,26,27,28,29,29,30,30,31,31,-1', 'cells'); ok(r.fired, 'ICICLE VOLLEY did not fire'); same(r.icicles, 3, 'its icicles'); ok(r.at, 'when it went off'); ok(r.hold >= 24, 'the old cast is shown after it: ' + r.hold);
+    });
+    check('another mage has no fan; the Rimestar\'s flare (its everyday shot) and its fan do not use the same cells', () => {
+        const r = JSON.parse(run(`JSON.stringify({ rime: !!EVOLUTIONS.rimestar.fan, hood: !!EVOLUTIONS.embercowl.fan, rot: !!EVOLUTIONS.rotshard.fan })`));
+        ok(r.rime && !r.hood && !r.rot, JSON.stringify(r)); ok(fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8').includes('return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind)'), 'the fan\'s cells start at 24');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
