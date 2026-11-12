@@ -51288,29 +51288,29 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     for (let i = 0; i < 4; i++) {
-        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = (h - Math.floor(h)) * Math.PI * 2, len = R * (1.1 + 0.9 * (((seed + i * 3) * 0.37) % 1)), pts = [];
-        for (let k = 0; k <= 4; k++) {
-            const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.9, d = R * 0.9 + len * k / 4;
-            pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * jj - ux * k * R * 0.12, sy + Math.sin(a0) * d + Math.cos(a0) * jj - uy * k * R * 0.12]);
+        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = i * 1.57 + 0.5 + (h - Math.floor(h)) * 0.9, len = R * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];
+        for (let k = 0; k <= N; k++) {
+            const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 0.5;
+            pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * wv - ux * dr, sy + Math.sin(a0) * d + Math.cos(a0) * wv - uy * dr]);
         }
-        for (let k = 1; k < pts.length; k++) {
-            const t = 1 - (k - 1) / (pts.length - 1);
+        for (let k = 1; k <= N; k++) {
+            const t = 1 - (k - 1) / N;
             ctx.strokeStyle = _SOUL.smoke;
-            ctx.lineWidth = 1 + 6.5 * t;
-            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = 0.8 + 6.5 * t;
+            ctx.globalAlpha = 0.45;
             ctx.beginPath();
             ctx.moveTo(pts[k - 1][0], pts[k - 1][1]);
             ctx.lineTo(pts[k][0], pts[k][1]);
             ctx.stroke();
             ctx.strokeStyle = _SOUL.arc;
-            ctx.lineWidth = 0.7 + 1.9 * t;
+            ctx.lineWidth = 0.6 + 1.9 * t;
             ctx.globalAlpha = 0.85;
             ctx.beginPath();
             ctx.moveTo(pts[k - 1][0], pts[k - 1][1]);
             ctx.lineTo(pts[k][0], pts[k][1]);
             ctx.stroke();
         }
-        blob(pts[3][0], pts[3][1], R * 0.26, 0.3, _SOUL.smoke, 0.4, 1);
+        blob(pts[9][0], pts[9][1], R * 0.24, 0.3, _SOUL.smoke, 0.38, 1);
     }
     ctx.globalAlpha = 1;
 }
