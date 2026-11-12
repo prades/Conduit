@@ -3183,4 +3183,5 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the crystal's size, the flight (14 frames) and that the decoy is drawn only once it lands.
 - Open: the Rotshard's everyday shot (CORRODE SHOT), the last one of the mages' everyday shots with no look of its own besides the Voidstar's.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **The placement, the owner's, the same day:** of the decoy: **"the rotten decoy shouldn't go directly towards the enemy. It should go kind of out to the side where there's less clutter."** Built as a rule: out to one side of the line to the enemy (1.5 or 3 tiles), on the least cluttered spot (walls, objects, creatures); the agent's guesses at how far and what counts as clutter are provisional and open.
 

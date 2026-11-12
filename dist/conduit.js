@@ -11353,6 +11353,24 @@ function evoCheck(f) {
         shake = Math.max(shake || 0, 4);
     return true;
 }
+const DECOY_SIDE = [1.5, 3];
+function _decoyClutter(f, x, y) {
+    let n = 0;
+    if (typeof facilityStandOk === "function")
+        for (let i = -1; i <= 1; i++)
+            for (let j = -1; j <= 1; j++)
+                if ((i || j) && !facilityStandOk(x + i, y + j))
+                    n++;
+    if (typeof actors !== "undefined")
+        for (const a of actors)
+            if (a && a !== f && !a.dead && !a.isDecoy && Math.hypot(a.x - x, a.y - y) < 1.5)
+                n++;
+    if (typeof followers !== "undefined")
+        for (const a of followers)
+            if (a && a !== f && !a.dead && !(typeof actors !== "undefined" && actors.indexOf(a) >= 0) && Math.hypot(a.x - x, a.y - y) < 1.5)
+                n++;
+    return n;
+}
 const DECOY_LOB = 14;
 const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
 let rotDecoys = [];
@@ -11363,6 +11381,24 @@ function rottenDecoy(f) {
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], dx = f.x - t.x, dy = f.y - t.y, L = Math.hypot(dx, dy) || 1, k = Math.min(DECOY_SET, L * 0.5);
     let x = t.x + dx / L * k, y = t.y + dy / L * k;
+    {
+        let best = null;
+        const px = -dy / L, py = dx / L;
+        if (typeof facilityStandOk === "function")
+            for (const s of [-1, 1])
+                for (const o of DECOY_SIDE) {
+                    const cx = x + px * s * o, cy = y + py * s * o;
+                    if (!facilityStandOk(cx, cy))
+                        continue;
+                    const sc = _decoyClutter(f, cx, cy) + 0.1 * o;
+                    if (!best || sc < best.sc)
+                        best = { x: cx, y: cy, sc };
+                }
+        if (best) {
+            x = best.x;
+            y = best.y;
+        }
+    }
     if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) {
         const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : null;
         if (c) {
@@ -19744,7 +19780,7 @@ const MOVE_INFO = {
     "SEEDFALL": () => [["REACH", SEEDFALL_RANGE + " tiles: it winds up with an enemy this close"], ["WIND-UP", _uiSec(moveWindupFrames("seedfall"))], ["AREA", BUD_RADIUS + " tiles round the Thornwhip itself, " + _uiSec(BUD_LIFE)], ["HEALS", Math.round(BUD_MEND * 100) + "% of maximum health every " + _uiSec(BUD_TICK) + ", the Thornwhip and every follower of yours standing among the buds"], ["EFFECT", "Seeds are flung round its feet and grow into healing buds that last a few seconds; it hurts no enemy"]],
     "PINBALL": () => [["REACH", PIN_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("pinball")) + " after a roll"], ["DAMAGE", _uiX(PIN_MULT) + " power a collision"], ["EFFECT", "Rolls into the nearest enemy, then on into the nearest one it has not hit within " + PIN_HOP + " tiles, and on while one is that near: each enemy once. A wall stops it"]],
     "STATIC VORTEX": () => [["REACH", VORTEX_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("static_vortex"))], ["STORM", VORTEX_RADIUS + " tiles round, " + _uiSec(VORTEX_LIFE)], ["DAMAGE", _uiX(VORTEX_MULT) + " power every " + _uiSec(VORTEX_TICK)], ["EFFECT", "A storm that stays where it is cast: it pulls the enemies in it to a spot in front of it, about " + VORTEX_HOLD + " tile from its middle, so the storm does not hide them (not a beetle or a boss) and shocks them until it runs out"]],
-    "ROTTEN DECOY": () => [["REACH", ROT_RANGE + " tiles (set " + DECOY_SET + " tiles from the nearest enemy)"], ["WIND-UP", _uiSec(moveWindupFrames("rotten_decoy"))], ["LASTS", _uiSec(DECOY_LIFE) + " or until broken (half its max HP)"], ["EFFECT", "A black crystal copy in green mist: every enemy within " + DECOY_DRAW + " tiles goes for it (not a boss); its mist poisons enemies within " + DECOY_MIST + " tiles"]],
+    "ROTTEN DECOY": () => [["REACH", ROT_RANGE + " tiles (set " + DECOY_SET + " tiles from the nearest enemy, out to the side of it where there is less clutter)"], ["WIND-UP", _uiSec(moveWindupFrames("rotten_decoy"))], ["LASTS", _uiSec(DECOY_LIFE) + " or until broken (half its max HP)"], ["EFFECT", "A black crystal copy in green mist: every enemy within " + DECOY_DRAW + " tiles goes for it (not a boss); its mist poisons enemies within " + DECOY_MIST + " tiles"]],
     "CORRODE SHOT": () => [["REACH", ROT_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("corrode_shot"))], ["DAMAGE", _uiX(ROT_MULT) + " power"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " and splashes the corrosion over " + ROT_SPLASH_R + " tiles"]],
     "GRAVITY SLAM": () => [["REACH", MIMIC_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("gravity_slam"))], ["DAMAGE", _uiX(MIMIC_MULT) + " power"], ["EFFECT", "Flattens and slams: shoves enemies back and slows them for " + _uiSec(MIMIC_SLOW_FRAMES) + " (heavy ones are not moved)"]],
     "ERUPTION": () => [["REACH", CALDERA_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("eruption"))], ["DAMAGE", _uiX(CALDERA_MULT) + " power"], ["EFFECT", "The crater bursts in toxic goo and eats the armour of everything it hits for " + _uiSec(CALDERA_SHRED_FRAMES)]],

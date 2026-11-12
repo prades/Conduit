@@ -658,17 +658,27 @@ function measure(w, h) {
         same(r.wf.join(), 'true,25,true,1140', 'WRAITHFIRE: 25% of its HP given, a ghost no one can hit; 4 s and then 15 s to wait');
         same(r.mid.join(), 'true,true', 'a touch hurt the enemy, spending part of its power'); same(r.end.join(), 'true,true,true,true', 'at the end: no ghost, targetable, back where it began; the rest exploded');
     });
-    check('ROTTEN DECOY (the owner, 2026-11-07: "Short lure", "A second move to pick"): the Rotshard\'s second move sets a black crystal decoy 2 tiles from the nearest enemy, toward it; enemies within 6 tiles go for it (a boss does not); its mist poisons within 1.5 tiles; it lasts 6 s (half the Rotshard\'s max HP) and is ready again every 7 s (14 s until build 2026-11-10a halved it)', () => {
+    check('ROTTEN DECOY (the owner, 2026-11-07: "Short lure", "A second move to pick"): the Rotshard\'s second move sets a black crystal decoy 2 tiles from the nearest enemy toward the Rotshard and (build 2026-11-12u, the owner: "it should go kind of out to the side where there\'s less clutter") out to the side of that line; enemies within 6 tiles go for it (a boss does not); its mist poisons within 1.5 tiles; it lasts 6 s (half the Rotshard\'s max HP) and is ready again every 7 s (14 s until build 2026-11-10a halved it)', () => {
         const r = J(`(function(){ const o = {}; __clear(); rotDecoys = [];
             const rs = __fol('toxic', 'sniper', 'rotshard'); rs.move = 'rotten_decoy'; const t = __foe(rs.x + 5, rs.y), far = __foe(rs.x + 14, rs.y);
             o.moves = EVOLUTIONS.rotshard.moves.join(); __fire(rs); const d = rotDecoys[0];
-            o.set = [rotDecoys.length, !!d && Math.round(Math.hypot(d.x - t.x, d.y - t.y)), !!d && d.x < t.x, !!d && Math.round(d.maxHealth / rs.maxHealth * 10) / 10, rs._sigCd];
+            o.set = [rotDecoys.length, !!d && Math.round(Math.hypot(d.x - t.x, d.y - t.y) * 10) / 10, !!d && d.x < t.x, !!d && Math.round(d.maxHealth / rs.maxHealth * 10) / 10, rs._sigCd, !!d && Math.round(Math.abs(d.y - t.y) * 10) / 10];
             o.lure = [predatorPickPrey(t) === d, predatorPickPrey(far) === d]; t.bossName = 'TEST'; o.boss = predatorPickPrey(t) === d; t.bossName = undefined;
             const m = __foe(d.x + 0.5, d.y); for (let i = 0; i < 31; i++) { frame++; evolutionTick(); } o.mist = m.toxicWeakened > 0;
             for (let i = 0; i < 340; i++) { frame++; evolutionTick(); } o.gone = rotDecoys.length; o.info = !!MOVE_INFO['ROTTEN DECOY'];
             return o; })()`);
-        same(r.moves, 'rotten_decoy', 'its moves (CORRODE SHOT its everyday shot since build 2026-11-07ss)'); same(r.set.join(), '1,2,true,0.5,420', 'set 2 tiles from the enemy toward the Rotshard (its time halved in build 2026-11-10a: 840 frames before); half its max HP; 7 s to the next');
+        same(r.moves, 'rotten_decoy', 'its moves (CORRODE SHOT its everyday shot since build 2026-11-07ss)'); same(r.set.join(), '1,2.5,true,0.5,420,1.5', 'set 2 tiles from the enemy toward the Rotshard and 1.5 out to the side of that line (open floor: the nearer side) (its time halved in build 2026-11-10a: 840 frames before); half its max HP; 7 s to the next');
         same(r.lure.join(), 'true,false', 'the near enemy goes for it, the far one not'); same(r.boss, false, 'a boss goes for it'); same(r.mist, true, 'the mist poisons'); same(r.gone, 0, 'gone after 6 s'); same(r.info, true, 'INFO has its rows');
+    });
+    check('ROTTEN DECOY goes out to the SIDE where there is less clutter (build 2026-11-12u; the owner: "the rotten decoy shouldn\'t go directly towards the enemy. It should go kind of out to the side where there\'s less clutter"): not on the line to the enemy; on the side with no creatures crowding it; with one side crowded it takes the other (and the nearer spot of that side)', () => {
+        const r = J(`(function(){ const out = {}; for (const crowd of [0, 1, -1]) { __clear(); rotDecoys = [];
+                const rs = __fol('toxic', 'sniper', 'rotshard'); rs.move = 'rotten_decoy'; const t = __foe(rs.x + 5, rs.y); const px = t.x - 2, py = t.y;
+                if (crowd) for (const [cx, cy] of [[px, py + crowd * 1.5], [px + 0.4, py + crowd * 3]]) { const m = __fol('fire', 'brawler', null); m.x = cx; m.y = cy; }   // (friendly units crowd that side: enemies there would become the nearest target)
+                __fire(rs); const d = rotDecoys[0]; out['c' + crowd] = d ? [Math.round(Math.abs(d.y - py) * 10) / 10, Math.round(Math.sign(d.y - py)), Math.round((d.x - px) * 10) / 10] : null; }
+            rotDecoys = []; return out; })()`);
+        ok(r.c0 && r.c0[0] >= 1.4, 'on the line to the enemy: ' + JSON.stringify(r.c0)); same(r.c0[2], 0, 'it moved along the line');
+        ok(r.c1 && r.c1[1] === -1 && r.c1[0] >= 1.4, 'the crowded +y side was taken: ' + JSON.stringify(r.c1)); 
+        ok(r['c-1'] && r['c-1'][1] === 1 && r['c-1'][0] >= 1.4, 'the crowded -y side was taken: ' + JSON.stringify(r['c-1']));
     });
     check('QUILLSTORM, THUNDERSTORM, EVENT HORIZON (the owner, 2026-11-07): the Quillstone throws 16 burning quills all round; the Thunderhead\'s storm moves with it and its bolts strike enemies under it; the Void Star\'s black hole opens on the group, drags them in and crushes them', () => {
         const r = J(`(function(){ const o = {};

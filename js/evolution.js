@@ -341,6 +341,17 @@ function evoCheck(f) {
 // mist, set on the floor DECOY_SET tiles from the nearest enemy the Rotshard can see (toward the Rotshard). For DECOY_LIFE frames, or until broken (its HP is DECOY_HP of the Rotshard's maximum), every enemy
 // within DECOY_DRAW tiles goes for it (js/predator.js predatorPickPrey asks decoyLure); a boss does not. Its mist poisons the enemies within DECOY_MIST tiles. Ready again its wind-up (MOVES.rotten_decoy.windup) after it is set.
 // The decoy is not an actor: it lives in rotDecoys, takes hits through applyDamage, and is drawn as an element effect; broken, its black shards keep the green haze a moment.
+// WHERE IT GOES (build 2026-11-12u; the owner, 2026-11-12, of the decoy the Rotshard's crystal makes: "the rotten decoy shouldn't go directly towards the enemy. It should go kind of out to the side where there's less clutter"):
+// not on the line from the enemy to the Rotshard but out to one side of it, on whichever of the spots DECOY_SIDE tiles to either side of the old spot is the least cluttered (walls and objects round it, and creatures
+// crowding it); only a spot that can be stood on; with none, the old spot as it was. The numbers (how far to the side, what counts as clutter) are the agent's, PROVISIONAL (the owner gave none).
+const DECOY_SIDE = [1.5, 3];
+function _decoyClutter(f, x, y) {   // how cluttered a spot is: the tiles round it that cannot be stood on (walls, objects), and the creatures within 1.5 tiles
+    let n = 0;
+    if (typeof facilityStandOk === "function") for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) if ((i || j) && !facilityStandOk(x + i, y + j)) n++;
+    if (typeof actors !== "undefined") for (const a of actors) if (a && a !== f && !a.dead && !a.isDecoy && Math.hypot(a.x - x, a.y - y) < 1.5) n++;
+    if (typeof followers !== "undefined") for (const a of followers) if (a && a !== f && !a.dead && !(typeof actors !== "undefined" && actors.indexOf(a) >= 0) && Math.hypot(a.x - x, a.y - y) < 1.5) n++;
+    return n;
+}
 const DECOY_LOB = 14;   // (frames the black crystal that broke free takes to fly to the decoy; the decoy is drawn from then: the lure itself is at once)
 const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
 let rotDecoys = [];
@@ -350,6 +361,9 @@ function rottenDecoy(f) {
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], dx = f.x - t.x, dy = f.y - t.y, L = Math.hypot(dx, dy) || 1, k = Math.min(DECOY_SET, L * 0.5);
     let x = t.x + dx / L * k, y = t.y + dy / L * k;
+    { let best = null; const px = -dy / L, py = dx / L;   // (out to the side of the line: the spots to either side of the old spot, the least cluttered one, the nearer on a tie)
+      if (typeof facilityStandOk === "function") for (const s of [-1, 1]) for (const o of DECOY_SIDE) { const cx = x + px * s * o, cy = y + py * s * o; if (!facilityStandOk(cx, cy)) continue; const sc = _decoyClutter(f, cx, cy) + 0.1 * o; if (!best || sc < best.sc) best = { x: cx, y: cy, sc }; }
+      if (best) { x = best.x; y = best.y; } }
     if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) { const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : null; if (c) { x = c[0]; y = c[1]; } }
     const f0 = typeof frame !== "undefined" ? frame : 0, hp = Math.max(1, (f.maxHealth || 20) * DECOY_HP);
     const d = { isDecoy: true, team: "green", x, y, health: hp, maxHealth: hp, by: f, until: f0 + DECOY_LIFE, dead: false, name: "ROTTEN DECOY" };
