@@ -1458,7 +1458,8 @@ function mimicShotDraw(e, px, py, g) {
     const lift = 26 * Math.sin(Math.PI * u) + 16 * (1 - u) * 0 + 14, X = px, Y = py - lift;   // (it leaves from its back and comes down onto the enemy)
     g.save(); g.translate(X, Y); g.rotate(Math.atan2(uy - 0.5 * Math.cos(Math.PI * u), ux));
     g.globalAlpha = 0.5; g.fillStyle = "#b57cff"; g.beginPath(); g.moveTo(-34, 0); g.lineTo(-6, -4); g.lineTo(-6, 4); g.closePath(); g.fill();   // (a short trail)
-    g.globalAlpha = 1; g.shadowColor = "#bb66ff"; g.shadowBlur = 10; g.fillStyle = "#0b0b10"; g.strokeStyle = "#b57cff"; g.lineWidth = 1.2;
+    g.globalAlpha = 0.35; g.fillStyle = "#bb66ff"; g.beginPath(); g.moveTo(22, 0); g.lineTo(-13, -10); g.lineTo(-13, 10); g.closePath(); g.fill();   // (its light: a wider, fainter shard under it: no shadowBlur, the effects plan)
+    g.globalAlpha = 1; g.fillStyle = "#0b0b10"; g.strokeStyle = "#b57cff"; g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(16, 0); g.lineTo(-9, -6); g.lineTo(-9, 6); g.closePath(); g.fill(); g.stroke();
     g.restore();
 }

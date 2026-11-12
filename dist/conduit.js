@@ -12718,9 +12718,15 @@ function mimicShotDraw(e, px, py, g) {
     g.lineTo(-6, 4);
     g.closePath();
     g.fill();
+    g.globalAlpha = 0.35;
+    g.fillStyle = "#bb66ff";
+    g.beginPath();
+    g.moveTo(22, 0);
+    g.lineTo(-13, -10);
+    g.lineTo(-13, 10);
+    g.closePath();
+    g.fill();
     g.globalAlpha = 1;
-    g.shadowColor = "#bb66ff";
-    g.shadowBlur = 10;
     g.fillStyle = "#0b0b10";
     g.strokeStyle = "#b57cff";
     g.lineWidth = 1.2;
