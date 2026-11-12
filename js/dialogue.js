@@ -9,8 +9,8 @@
 // and the line waits. Nothing here is saved: whoever says a thing once keeps the record (js/tutorial.js S.said, which the save keeps).
 // WHO SPEAKS: the Crystal gives the tutorial and the class's stage (js/tutorial.js), the player notes the quest line's turns (js/quests.js), Side Quest talks at his station (js/sidequest.js). Fight feedback (hits, numbers,
 // the queen's calls) stays as floating text in the world: it is not talk.
-// WHERE: above the dock on a tablet or a desktop (js/uikit.js uiBottomSafe), between the squad's corner and the target's corner (THE CORNERS, js/party.js hudCorners: the squad stack and the tool at the left, the enemy
-// card at the right: js/targeting.js _tgAnchor's foeW); on a phone above the squad bar's row and the battle tool's chip. Centred in the room it has, at most DIALOGUE.w wide.
+// WHERE: on a tablet or a desktop (THE CORNERS, js/party.js hudCorners) at the top left, under QUESTS, since build 2026-11-12g (the owner: "put the quest information stuff at the top left"; it stood at the foot,
+// between the squad's corner and the target's, before); on a phone above the squad bar's row and the battle tool's chip, centred in the room it has. At most DIALOGUE.w wide.
 const DIALOGUE = {
     w: 640, h: 108, port: 76, pad: 12, gap: 12,   // the box at its widest; its height; the portrait square; the padding; the gap between the portrait and the words
     cps: 2,                                       // letters typed a frame
@@ -82,26 +82,23 @@ function dialoguePlace(force) {
     const f = _dlgFrame(), K = _dlgPlaceK;
     if (!force && K && f - _dlgPlaceAt >= 0 && f - _dlgPlaceAt < DIALOGUE.place && K.W === canvas.width && K.H === canvas.height) return K;
     const W = canvas.width, H = canvas.height, corner = typeof hudCorners === "function" && hudCorners();
-    let bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8, left = DIALOGUE.margin, right = W - DIALOGUE.margin;
-    if (corner) {   // the squad's corner at the left (the stack and the tool), the target's at the right (the enemy card: js/targeting.js _tgAnchor's foeW, 14 px from the edge)
-        const sb = _dlgRect("squadBar"), mt = _dlgRect("mixTool"), l = Math.max(sb ? sb.right : 0, mt ? mt.right : 0);
-        if (l > 0 && l < W * 0.45) left = Math.max(left, Math.round(l) + DIALOGUE.gap);
-        const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214; right = Math.min(right, W - 14 - foeW - DIALOGUE.gap);
-        // THE CORE (js/corehud.js) at the bottom right: at the foot the box stops short of it (its pills and slabs reach its left edge); where that leaves too little room (a tall screen), the box stands
-        // higher, over THE CORE's lower part (its pads' top, CORE_HUD.padTop), reaching into the empty strip at its left but never under its buttons
-        const core = typeof coreOn === "function" && coreOn() && typeof CORE_HUD !== "undefined" ? _dlgRect("coreHud") : null;
-        if (core && core.left > W / 2) {
-            const fa = _dlgSel("#mixTool .mt-fa.atk"), lb = fa && fa.right < W * 0.45 ? Math.max(left, Math.round(fa.right) + DIALOGUE.gap) : left;   // (at the foot it clears the enemy card's ATTACK too, drawn out past the card)
-            if (Math.round(core.left) - DIALOGUE.gap - lb >= 240) { left = lb; right = Math.min(right, Math.round(core.left) - DIALOGUE.gap); }
-            else { right = Math.min(right, Math.round(core.left) + CORE_HUD.strip - DIALOGUE.gap); bottom = Math.min(bottom, Math.round(core.top) + CORE_HUD.padTop); }
-        }
+    let bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8, left = DIALOGUE.margin, right = W - DIALOGUE.margin, top = null;
+    if (corner) {
+        // AT THE TOP LEFT (build 2026-11-12g; the owner, 2026-11-12: "And you can put the quest information stuff at the top left. Plenty of freedom for that."): the box hangs under QUESTS (game.html), its left
+        // on the button's, as wide as it may be short of the room's name and the network's panel at the top right (js/facilitynet.js _fnRect). Until then it stood at the foot, between the squad's corner and THE CORE.
+        const q = _dlgSel("#btnQuests"), at = q && q.top < H / 2 && q.left < W / 2 ? q : null;
+        const qb = at ? (isFinite(at.bottom) ? at.bottom : at.top + (at.height || 0)) : 0;   // (a rectangle without its bottom: the test sandbox's)
+        left = at ? Math.round(at.left) : DIALOGUE.margin; top = at ? Math.round(qb) + DIALOGUE.above : DIALOGUE.margin;
+        const net = typeof _fnRect !== "undefined" && _fnRect && _fnRect.w > 0 ? { left: _fnRect.x, top: _fnRect.y, width: _fnRect.w } : null, low = top + DIALOGUE.h + 2 * (DIALOGUE.choiceH + 10);   // (as tall as it is with two rows of choices)
+        for (const r of [_dlgRect("hudRight"), net]) if (r && r.width > 0 && r.left > W / 2 && r.top < low) right = Math.min(right, Math.round(r.left) - DIALOGUE.gap);
+        bottom = top + DIALOGUE.h + DIALOGUE.above;
     } else {   // a phone: over the squad's row and the tool's chip, and clear of the round buttons at the right edge (SETTINGS, QUESTS: js/settings.js, js/questbox.js)
         for (const id of ["squadBar", "mixTool"]) { const r = _dlgRect(id); if (r && r.top > H * 0.45) bottom = Math.min(bottom, Math.round(r.top)); }
         if (typeof dockHasMenus === "function" && !dockHasMenus()) right = Math.min(right, W - 50);
     }
-    if (right - left < 240) { left = DIALOGUE.margin; right = W - DIALOGUE.margin; }   // (no room between the corners: the box takes the width, over them)
-    const w = Math.min(DIALOGUE.w, right - left), x = Math.round((left + right) / 2 - w / 2);
-    _dlgPlaceAt = f; return (_dlgPlaceK = { x, w, bottom: bottom - DIALOGUE.above, W, H });
+    if (right - left < 240) { left = DIALOGUE.margin; right = W - DIALOGUE.margin; }   // (no room: the box takes the width, over them)
+    const w = Math.min(DIALOGUE.w, right - left), x = top !== null ? left : Math.round((left + right) / 2 - w / 2);   // (at the top left it keeps its left on QUESTS'; a phone's is centred in its room)
+    _dlgPlaceAt = f; return (_dlgPlaceK = { x, w, top, bottom: bottom - DIALOGUE.above, W, H });   // (top: the box hangs from there and grows down with its choices; else it stands on bottom and grows up)
 }
 
 // ── the words, typed ──
@@ -169,7 +166,7 @@ function dialogueDraw() {
     const L = _dlgCur; if (!L || dialoguePaused() || typeof ctx === "undefined" || typeof uiSlab !== "function") return;
     const P = dialoguePlace(), f = _dlgFrame(), pad = DIALOGUE.pad, ps = DIALOGUE.port, w = P.w, flow = _dlgFlow(L, _dlgChars(w)), pg = flow.pages[L.page], len = _dlgPageLen(L), typed = L.shown >= len, last = L.page + 1 >= flow.pages.length;
     const choices = L.choices && last && typed ? L.choices : null, rows = choices ? Math.ceil(choices.length / DIALOGUE.perRow) : 0;   // (more than DIALOGUE.perRow choices wrap onto more rows: Side Quest's six roles, build 2026-11-09a)
-    const h = DIALOGUE.h + (choices ? rows * (DIALOGUE.choiceH + 10) : 0), x = P.x, y = P.bottom - h;
+    const h = DIALOGUE.h + (choices ? rows * (DIALOGUE.choiceH + 10) : 0), x = P.x, y = P.top !== null && P.top !== undefined ? P.top : P.bottom - h;
     _dlgBox.x = x; _dlgBox.y = y; _dlgBox.w = w; _dlgBox.h = h;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     uiSlab(x, y, w, h, L.col, false, "#0b1226");

@@ -242,13 +242,31 @@ function partySlotsBuild(root, onClick) {
     root.addEventListener("click", onClick);
     return { root, slots };
 }
-function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = partySlotsBuild(root, partyBarClick); return _sbEls; }
+function partyBarBuild(root) {
+    if (!_sbEls || _sbEls.root !== root) {
+        _sbEls = partySlotsBuild(root, partyBarClick);
+        // THE STRIP'S TAB (build 2026-11-12g; the owner: "have it to where the player can slide them all back in to the side and lock it into a smaller tab"): at the end of the cards, ◂ slides them in; tucked, the
+        // small tab says how many are in it, ▸ slides them out. It stays as left (partyStripTucked, kept in the browser). Shown only in the corners layout (game.html).
+        const tab = document.createElement("button"); tab.className = "sb-tuck"; tab.type = "button"; tab.innerHTML = "<i>◂</i><b></b>"; root.appendChild(tab); _sbEls.tuck = tab;
+    }
+    return _sbEls;
+}
+let _sbTuck = null;
+function partyStripTucked() { if (_sbTuck === null) { try { _sbTuck = typeof localStorage !== "undefined" && localStorage.getItem("conduit_fp_squadtuck") === "1"; } catch (e) { _sbTuck = false; } } return !!_sbTuck; }
+function partyStripTuck(on) {
+    const was = partyStripTucked();
+    _sbTuck = on === undefined ? !was : !!on;
+    if (was && !_sbTuck && typeof document !== "undefined" && document.body && document.body.classList) { document.body.classList.add("sb-untuck"); setTimeout(() => { try { document.body.classList.remove("sb-untuck"); } catch (e) {} }, 400); }   // (sliding out: the cards clip while they grow)
+    try { if (typeof localStorage !== "undefined") localStorage.setItem("conduit_fp_squadtuck", _sbTuck ? "1" : "0"); } catch (e) {}
+    partyBarRender(true); return _sbTuck;
+}
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
     return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult"), call: slot._call || null };
 }
 function partyBarClick(ev) {
+    if (ev.target && ev.target.closest && ev.target.closest(".sb-tuck")) { partyStripTuck(); return; }   // the strip's tab: in, or out again
     const hit = _partyTapped(ev); if (!hit) return;
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
@@ -301,7 +319,8 @@ function partySlotsUpdate(E, lit) {
     const mem = partyOrdered(), held = partyPosted(), one = held.length === 1 ? held[0] : null;
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
-        if (el._unit !== f) { el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }
+        if (el._unit !== f) { if (f && !el._unit && E.joinable) { el.classList.add("sb-join"); el._joinAt = Date.now(); } el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }   // (a member who joins: the strip grows to take its card, build 2026-11-12g)
+        if (el._joinAt && Date.now() - el._joinAt > 700) { el._joinAt = 0; el.classList.remove("sb-join"); }
         if (typeof cardArtUnitClass === "function") cardArtMark(el, f ? cardArtUnitClass(f) : "");   // a member's backdrop: its element's texture under its class's (js/cardart.js); an open slot has none
         if (!f) { el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
         el._call = null; el.classList.remove("call");
@@ -333,8 +352,18 @@ function partyBarRender(force) {
     const on = partyOn(); if (root.classList) root.classList.toggle("on", on);
     if (typeof document !== "undefined" && document.body && document.body.classList) { document.body.classList.toggle("squad-bar", on); document.body.classList.toggle("corners", hudCorners()); }   // (a phone moves the battle tool up for the bar; a tablet or a desktop puts every group of the HUD in its corner: game.html)
     if (!on) { if (typeof partyFlyRender === "function") partyFlyRender(); return; }
-    const E = partyBarBuild(root); partySlotsUpdate(E); _partyCloneCard(E);
+    const E = partyBarBuild(root); partySlotsUpdate(E); _partyCloneCard(E); E.joinable = true;
+    _partyStripTab(E);
     if (typeof partyFlyRender === "function") partyFlyRender();
+}
+// the strip's tab (the corners layout): slid in, the cards go and the tab says how many are in it (game.html body.squad-tucked)
+function _partyStripTab(E) {
+    const tucked = partyStripTucked(), b = typeof document !== "undefined" && document.body && document.body.classList ? document.body.classList : null;
+    if (b && b.contains("squad-tucked") !== tucked) b.toggle("squad-tucked", tucked);
+    const tab = E.tuck; if (!tab) return;
+    const n = E.slots.filter(el => el._unit || (el.classList && el.classList.contains && el.classList.contains("call"))).length + (E.clone ? 1 : 0), i = tab.querySelector("i"), c = tab.querySelector("b");
+    if (i) _sbSet(i, "textContent", tucked ? "▸" : "◂"); if (c) _sbSet(c, "textContent", String(n));
+    _sbSet(tab, "title", tucked ? "Slide the squad out" : "Slide the squad in"); if (tab.setAttribute) tab.setAttribute("aria-label", tucked ? "Slide the squad out (" + n + ")" : "Slide the squad in");
 }
 // THE CLONE'S CARD on the bar, after the squad's three: made while the Mutator's clone is alive and taken away when it is not (the bar's own three are always three). The same card as a member's (the picture, the
 // name, LV and how it is, its health with the numbers, its XP), in the Mutator's purple, its picture the creature itself; no ability chip and no REMOVE (it is not a follower: it is released at the Clone Bay).
@@ -347,6 +376,7 @@ function _partyCloneCard(E) {
         const el = document.createElement("div"); el.className = "sb-slot sb-clone"; el.setAttribute("data-slot", "clone");
         el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-ctag">CLONE</span>';
         if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", PARTY_CLONE_COL);
+        if (E.joinable && el.classList) el.classList.add("sb-join");   // (it joins the strip as a member does)
         E.root.appendChild(el); E.clone = el;
     }
     const el = E.clone, st = typeof unitStatus === "function" ? unitStatus(c) : null;

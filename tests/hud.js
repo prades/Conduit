@@ -123,7 +123,7 @@ setTimeout(function () {
   }
   function atSel(sel, fx, fy) { var el = document.querySelector(sel); if (!el) return 'missing'; var r = el.getBoundingClientRect(); if (!r.width) return 'hidden'; var hit = document.elementFromPoint(r.x + r.width * fx, r.y + r.height * fy); return hit ? (el.contains(hit) ? sel : (hit.id || hit.className || hit.tagName)) : 'nothing'; }
   report.core = document.body.classList.contains('core-on');
-  report.hits.coreFace = atSel('#coreHud .core-hf', 0.5, 0.5); report.hits.coreSiphon = atSel('#coreHud .core-siphon', 0.5, 0.5); report.hits.coreGuard = atSel('#coreHud .core-hg', 0.5, 0.5); report.hits.corePack = atSel('#coreHud .core-pack', 0.5, 0.5);
+  report.hits.coreFace = atSel('#coreHud .core-hf', 0.5, 0.5); report.hits.coreSiphon = atSel('#coreHud .core-siphon', 0.5, 0.5); report.hits.coreGuard = atSel('#coreHud .core-hg', 0.5, 0.5); report.hits.corePack = atSel('#btnPack', 0.5, 0.5); report.hits.coreCards = atSel('#kitCards', 0.5, 0.5);   /* (the PACK and CARDS: their own buttons beside THE CORE since build 2026-11-12g) */
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);
   report.hits.btnRoster = at('btnRoster', 0.5, 0.5);
@@ -339,7 +339,7 @@ check('the ultimate bar, its switch, the dock\'s buttons and the phone\'s hub ar
     for (const run of runs) {
         if (run.w > 700) {   // THE CORE (build 2026-11-11t): its cube (ARMY SURGE when full), its siphon, its GUARD and its PACK take their taps
             same(run.r.core, true, `THE CORE is not on at ${run.w}`);
-            for (const [k, sel] of [['coreFace', '#coreHud .core-hf'], ['coreSiphon', '#coreHud .core-siphon'], ['coreGuard', '#coreHud .core-hg'], ['corePack', '#coreHud .core-pack']]) same(run.r.hits[k], sel, `THE CORE's ${k} is unclickable at ${run.w}`);
+            for (const [k, sel] of [['coreFace', '#coreHud .core-hf'], ['coreSiphon', '#coreHud .core-siphon'], ['coreGuard', '#coreHud .core-hg'], ['corePack', '#btnPack'], ['coreCards', '#kitCards']]) same(run.r.hits[k], sel, `THE CORE's ${k} is unclickable at ${run.w}`);
         } else {
         same(run.r.hits.ultWrap, 'ultWrap', `the ultimate bar is unclickable at ${run.w}`);
         same(run.r.hits.siphonBtn, 'siphonBtn', `the siphon switch is unclickable at ${run.w}`);

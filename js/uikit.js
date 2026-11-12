@@ -88,9 +88,10 @@ function uiTopSafe() {
     return 8;
 }
 // Where a panel must end: just above the bottom dock (tablet/desktop) or the bottom edge (phone).
-// (the dock's top while it is a bar along the bottom; the corners layout's dock is a vertical bar at the left since build 2026-11-11w, not under anything: the bottom edge then)
+// (the dock's top while it is a bar along the bottom; the corners layout's dock is a vertical bar at the left since build 2026-11-11w, not under anything: the bottom edge then. Since build 2026-11-12g
+// that bar can be wider than it is tall (CARDS and QUESTS have left it), so the corners layout is asked by name, not by the bar's shape)
 function uiBottomSafe() {
-    try { const d = document.getElementById("topToggles"); if (d && canvas.width > 700) { const r = d.getBoundingClientRect(); if (r.height > 0 && r.width > r.height && isFinite(r.top) && r.top > canvas.height * 0.4) return Math.round(r.top - 10); } } catch (e) {}
+    try { const d = document.getElementById("topToggles"), corners = typeof document.body !== "undefined" && document.body && document.body.classList && document.body.classList.contains("corners"); if (d && canvas.width > 700 && !corners) { const r = d.getBoundingClientRect(); if (r.height > 0 && r.width > r.height && isFinite(r.top) && r.top > canvas.height * 0.4) return Math.round(r.top - 10); } } catch (e) {}
     return canvas.height - 8;
 }
 

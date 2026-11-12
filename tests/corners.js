@@ -58,9 +58,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE REST OF THE CORNERS (game.html)');
-    check('me at the top left (the crystals and the two bars side by side), the place at the top right, the stack and the tool at the bottom left, the enemy card at the bottom left too, over the tool\'s orders (build 2026-11-11m: it stood at the bottom right): the css is scoped to body.corners, which js/party.js sets only on a tablet or a desktop in the facility', () => {
+    check('me at the top left (the crystals and the two bars side by side), the place at the top right, the orders at the bottom left with the squad a strip beside them (build 2026-11-12g: a stack over them before), the enemy card at the bottom left too, over the tool\'s orders (build 2026-11-11m: it stood at the bottom right): the css is scoped to body.corners, which js/party.js sets only on a tablet or a desktop in the facility', () => {
         const h = rd('game.html'); ok(/body\.corners #hudRow1 \{ justify-content: flex-start; \}/.test(h) && /body\.corners #hudRight \{ margin-left: auto; \}/.test(h), 'the top row'); ok(/body\.corners #mixTool \.mt-foe-slot \{ position: fixed; left: 14px; right: auto;/.test(h) && /body\.corners #mixTool\.foe \.mt-main \{ visibility: hidden; \}/.test(h), 'the enemy card');
-        ok(/body\.corners #squadBar \{ left: 14px;/.test(h) && /flex-direction: column;/.test(h.slice(h.indexOf('body.corners #squadBar {'), h.indexOf('body.corners #squadBar {') + 400)), 'the stack'); ok(/--cn-tool: 178px/.test(h), 'the tool\'s height');
+        ok(/body\.corners #squadBar \{ left: var\(--sb-left\);[^}]*flex-direction: row;/.test(h), 'the strip (the squad\'s cards side by side along the bottom, build 2026-11-12g)'); ok(/--cn-tool: 178px/.test(h), 'the tool\'s height');
         const rules = h.slice(h.indexOf('THE CORNERS (docs/UI-STYLE.md'), h.indexOf('THE GAME INDEX, NEO-FUTURISTIC BLUE')); const bare = rules.split('\n').filter(l => /^\s+(body\.corners|#squadFly|:root|@media)/.test(l) || /^\s+\/\*/.test(l) || /^\s{7}/.test(l) || !l.trim());
         ok(!/^\s+#(mixTool|squadBar|hudRow1|hudRight|hudCentre)\b/m.test(rules), 'a corners rule that is not scoped to body.corners would change a phone');
     });

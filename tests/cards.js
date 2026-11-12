@@ -102,7 +102,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     }
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     shardCount = 2500; for (var i = followers.length; i < 4; i++) recruitFollower(); for (var k = 0; k < followers.length; k++) followers[k].returningToCrystal = false; partyTick(); await wait(50);
-    var btn = $('#btnCards'); out.btn = { there: !!btn, shown: shown(btn), inDock: !!btn && !!btn.closest('#dockScroll'), label: btn ? btn.textContent : null, topHud: shown($('#topToggles')) };
+    var btn = document.body.classList.contains('core-on') ? $('#kitCards') : $('#btnCards'); out.btn = { there: !!btn, shown: shown(btn), inDock: !!btn && (!!btn.closest('#dockScroll') || btn.id === 'kitCards'), label: btn ? btn.textContent : null, topHud: shown($('#topToggles')), id: btn ? btn.id : null };   // (CARDS by THE CORE in the corners layout since build 2026-11-12g: #kitCards; the dock's otherwise)
     if (out.any && out.wide && out.dev) {
       // THE SCREEN, from the dock
       click(btn); await wait(200);
@@ -443,7 +443,7 @@ function measure(w, h, query, seed) {
     });
     await check('the files are on the page, in the boot check, and the dock has its button (always shown)', () => {
         const html = rd('game.html'), order = scriptOrder(); ok(order.includes('js/cards.js') && order.includes('js/cardsui.js'), 'the scripts are not on the page'); ok(order.indexOf('js/cards.js') < order.indexOf('js/game.js') && order.indexOf('js/cardsui.js') > order.indexOf('js/commandcenter.js'), 'their order');
-        ok(/"js\/cards\.js": "EQUIP"/.test(html) && /"js\/cardsui\.js": "cardsOpen"/.test(html), 'the boot check does not probe them'); ok(/id="btnCards" class="top-btn" onclick="cardsToggle\(\)"/.test(html) && !/id="btnCards"[^>]*style="display:none"/.test(html), 'the dock button is not there, or is hidden'); ok(/body\.cardsOpen #topToggles/.test(html), 'the HUD stays over the sheet');
+        ok(/"js\/cards\.js": "EQUIP"/.test(html) && /"js\/cardsui\.js": "cardsOpen"/.test(html), 'the boot check does not probe them'); ok(/id="btnCards" class="top-btn" onclick="cardsToggle\(\)"/.test(html) && !/id="btnCards"[^>]*style="display:none"/.test(html) && /<button id="kitCards" onclick="cardsToggle\(\)"/.test(html), 'the dock button (or, in the corners layout, CARDS by THE CORE: build 2026-11-12g) is not there, or is hidden'); ok(/body\.cardsOpen #topToggles/.test(html), 'the HUD stays over the sheet');
     });
 
     group('8. THE SCREENS (real browser)');
