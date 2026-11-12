@@ -194,8 +194,7 @@ const EVOLUTIONS = {
               cell: 192, anchor: [96, 138.2], core: [96, 109], noGlow: true, color: "#ff5a1f", burst: true },   // (a 192 px cell since build 2026-11-11n, 40 columns: its everyday hit's dive, and QUILL BURST's own frames: staticQuillCol, below)
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png",
-              jaws: { id: "mawjaws", sheet: "img/evo/mawjaws.png", cell: 256, anchor: [128, 201.36] } },   // (its everyday hit is a lunge (the sheet's action block, design No. 934); jaws: CHOMP's giant jaws, drawn over the enemy: MAW_JAWS, mawJawsDraw)
+              cell: 192, anchor: [96, 138.18], core: [96, 117.09], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png", chomp: true },   // (a 192 px cell since build 2026-11-11v, 32 columns, design No. 934: its everyday hit is a lunge (the action block); CHOMP is its own body rearing up and slamming (the two extra blocks): mawChompCol)
     // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
     // LEGACY: the first design of the electric brawler, which went to the fire mage (the Ember Hood). A follower already evolved into this keeps it.
     prism:  { id: "prism",  legacy: true, name: "PRISM HOOD", element: "electric", role: "brawler", move: "SONIC ROLL", sheet: "img/evo/prism.png",
@@ -673,9 +672,10 @@ function corrodeShot(f) {
 }
 
 // CHOMP: the fangs slam down on the nearest enemy: ice damage and frozen stiff; those beside it are slowed. True when it fired.
-// GIANT JAWS (build 2026-11-11v; the owner, 2026-11-11: "giant jaws for CHOMP"): a pair of ice jaws, as wide as two tiles, drops over the enemy and snaps shut (an element effect, "mawjaws", drawn at the enemy:
-// mawJawsDraw, below). The bite is what it always was (the same damage, stun and slow, the same reach and sight, the same wind-up and wait) but it lands as the jaws shut, MAW_JAWS.snap frames after the cast, on
-// the enemy as it is then (it follows the nearest enemy down); a Maw that dies in the drop, or an enemy that does, takes or gives no bite.
+// THE MAW'S OWN MOUTH, BIGGER (build 2026-11-11v; the owner, 2026-11-11: "giant jaws for CHOMP", and of the first, separate jaws that dropped on the enemy: "The jaws should not pop out of the character"; asked where they
+// should come from: "Its own mouth, bigger"; and "He's a brawler, so whenever he attacks, he should move up to the enemy"): the Maw walks up to the enemy, rears up and swells, its mouth wide, and slams its own body down
+// over it (its sheet's two extra blocks, design No. 934: mawChompCol). The bite is what it always was (the same damage, stun and slow, the same reach and sight, the same wind-up and wait) but it lands as the mouth
+// shuts, MAW_CHOMP.snap frames after the Maw arrived, on the enemy as it is then (it follows the nearest enemy); a Maw that dies on the way or in the rear, or an enemy that does, takes or gives no bite.
 function chomp(f) {
     const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE).filter(a => _evoDashOk(f, a));   // (a brawler closes in: only on an enemy it could walk up to, BASH's rule)
     if (!foes.length) return false;
@@ -683,12 +683,12 @@ function chomp(f) {
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, go = Math.ceil(Math.max(0, L - MAW_STAND) / MAW_STEP);
     f.dirX = dx / L; f.dirY = dy / L;
-    f._sigCd = moveWindupFrames("chomp"); if (!go) { f._sigAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (its lunge-bite starts as it arrives: mawJawsTick)
-    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "mawjaws", by: f, target: tgt, x: tgt.x, y: tgt.y, go, life: go + MAW_JAWS.total, maxLife: go + MAW_JAWS.total, element: "ice" });
+    f._sigCd = moveWindupFrames("chomp"); if (!go) { f._sigAt = f0; f._chompAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (its lunge-bite starts as it arrives: mawChompTick)
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "mawchomp", by: f, target: tgt, x: tgt.x, y: tgt.y, go, life: go + MAW_CHOMP.total, maxLife: go + MAW_CHOMP.total, element: "ice" });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
-// the bite, as the jaws shut (js/elements.js updateElementEffects -> mawJawsTick)
+// the bite, as the mouth shuts (js/elements.js updateElementEffects -> mawChompTick)
 function mawBite(f, tgt) {
     applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice", false, false, DMG_HIT_ALT);
     tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
@@ -700,38 +700,23 @@ function mawBite(f, tgt) {
     }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
 }
-// the jaws: 16 cells of the sheet (design No. 935, design/evolutions/forms10.js; the extra blocks, columns 16 to 31): cells 0 to 7 come down open, 8 to 15 are shut, flash and break up. Two frames a cell.
-// A BRAWLER CLOSES IN (the owner, 2026-11-11, of the first jaws, which dropped from nowhere with the Maw 2 tiles off: "The jaws should not pop out of the character. He's a brawler, so whenever he attacks, he should
-// move up to the enemy."): CHOMP first walks the Maw up to MAW_STAND tiles from the enemy, MAW_STEP tiles a frame (the effect's first `go` frames: none if it is already there), then its lunge-bite begins and the jaws
-// drop on the enemy; the bite lands MAW_JAWS.snap frames after it arrived. The step goes the straight way to the enemy, which the cast saw clear (_evoDashOk).
-const MAW_JAWS = { snap: 16, total: 32 }, MAW_STAND = 0.8, MAW_STEP = 0.12;
-function mawJawsTick(e) {
+// CLOSING IN: CHOMP first walks the Maw straight up to MAW_STAND tiles from the enemy, MAW_STEP tiles a frame (the effect's first `go` frames: none if it is already there; the cast saw the way clear, _evoDashOk), then it
+// rears up (frames 0 to 15 of MAW_CHOMP.total) and slams down (16 to 31): the bite lands at 16.
+const MAW_CHOMP = { snap: 16, total: 32 }, MAW_STAND = 0.8, MAW_STEP = 0.12;
+function mawChompTick(e) {
     const f = e.by, t = e.target, age = e.maxLife - e.life, go = e.go || 0, f0 = typeof frame !== "undefined" ? frame : 0;
     if (!f || f.dead) { e.life = 0; return; }
     if (age <= go && t && !t.dead) {   // closing in
         const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.min(MAW_STEP, Math.max(0, L - MAW_STAND));
         if (s > 0) { f.x += dx / L * s; f.y += dy / L * s; f._fpPath = null; }
         f.dirX = dx / L; f.dirY = dy / L;
-        if (age === go) { f._sigAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (arrived: the lunge-bite)
+        if (age === go) { f._sigAt = f0; f._chompAt = f0; f.state = "attack"; f.attackAnim = 0; }   // (arrived: it rears up)
     }
-    if (age < go + MAW_JAWS.snap && t && !t.dead) { e.x = t.x; e.y = t.y; }
-    if (age === go + MAW_JAWS.snap && t && !t.dead) mawBite(f, t);
+    if (age < go + MAW_CHOMP.snap && t && !t.dead) { e.x = t.x; e.y = t.y; }
+    if (age === go + MAW_CHOMP.snap && t && !t.dead) mawBite(f, t);
 }
-function mawJawsDraw(e, px, py, g) {
-    const d = EVOLUTIONS.maw && EVOLUTIONS.maw.jaws; if (!d) return;
-    const img = _evoImg(d); if (!img) return;
-    const age = e.maxLife - e.life - (e.go || 0); if (age < 0) return;   // (the Maw is still closing in: no jaws yet)
-    const cell = Math.min(15, Math.floor(age / 2));
-    g.save();
-    if (age >= MAW_JAWS.snap - 2 && age < MAW_JAWS.total - 6) {   // (a cold light under it as it bites: light is drawn here, not baked)
-        g.globalAlpha = 0.3 * Math.min(1, (age - MAW_JAWS.snap + 3) / 3) * Math.min(1, (MAW_JAWS.total - 6 - age) / 8); g.globalCompositeOperation = "lighter";
-        const rg = g.createRadialGradient(px, py, 0, px, py, 56); rg.addColorStop(0, "#9fe8ff"); rg.addColorStop(1, "rgba(159,232,255,0)");
-        g.fillStyle = rg; g.beginPath(); g.ellipse(px, py, 56, 28, 0, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "source-over";
-    }
-    g.globalAlpha = Math.min(1, e.life / 3);
-    evoCellDraw(g, img, d.sheet, d.cell, 16 + cell, 0, px - d.anchor[0] * EVO_SCALE, py - d.anchor[1] * EVO_SCALE, EVO_SCALE);
-    g.restore();
-}
+// which column of the Maw's sheet (the two extra blocks, 16 to 31: it rears up, 0 to 7, and slams down, 8 to 15) is shown `age` frames after it arrived at the enemy, two frames a cell; -1: not chomping
+function mawChompCol(age) { return age >= 0 && age < MAW_CHOMP.total ? 16 + Math.min(15, Math.floor(age / 2)) : -1; }
 
 // BASH (build 2026-11-07ss; the owner, 2026-11-07: "Ram and knock back", then "BASH for now": the second attack of the eight forms the design notes give none, docs/NEXT-PHASE-ROADMAP.md §12.3, and of every follower
 // before it evolves, js/moves.js UNEVOLVED_MOVES): it rams the nearest enemy it can see within BASH_RANGE, a short step along floor it could walk (SONIC ROLL's rule, _evoDashOk): BASH_MULT × its attack, Crushing
@@ -1278,8 +1263,10 @@ function _evoFrame(f, d, f0) {
         const wc = f.walkCycle || 0; if (f._evoWc !== undefined && Math.abs(wc - f._evoWc) > 1e-4) f._evoMoveAt = f0; f._evoWc = wc;
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
+    const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
-    if (qb >= 0) col = qb;
+    if (mc >= 0) col = mc;
+    else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
     else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));

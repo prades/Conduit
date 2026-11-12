@@ -902,7 +902,7 @@ function updateElementEffects() {
         // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
-        if (e.type === "mawjaws" && typeof mawJawsTick === "function") mawJawsTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
+        if (e.type === "mawchomp" && typeof mawChompTick === "function") mawChompTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
         if (e.type === "skinkswirl" && typeof skinkSwirlTick === "function") skinkSwirlTick(e);   // (the Electro Skink's everyday hit: js/evolution.js)
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
@@ -1309,7 +1309,6 @@ function drawElementEffects() {
                 ctx.stroke();
                 break;
             }
-            case "mawjaws": { if (typeof mawJawsDraw === "function") mawJawsDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             case "skinkswirl": { if (typeof skinkSwirlDraw === "function") skinkSwirlDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.
             case "impact": {

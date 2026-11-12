@@ -16,7 +16,7 @@ process.on('unhandledRejection', () => {});
   for (const rel of scriptOrder()) { try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); } catch (e) {} }
   for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
   // every sheet a form draws from: its body and its ground pool's, with its cell size (from the game's own table)
-  const sheets = JSON.parse(vm.runInContext(`JSON.stringify((function(){ const out = {}; for (const id in EVOLUTIONS) { const d = EVOLUTIONS[id]; if (d.sheet) out[d.sheet] = { cell: d.cell, of: id }; if (d.ground) out[d.ground] = { cell: d.cell, of: id + ' (its ground)' }; if (d.storm && d.storm.sheet) out[d.storm.sheet] = { cell: d.storm.cell, of: id + ' (its storm)' }; if (d.swirl && d.swirl.sheet) out[d.swirl.sheet] = { cell: d.swirl.cell, of: id + ' (its swirl)' }; if (d.jaws && d.jaws.sheet) out[d.jaws.sheet] = { cell: d.jaws.cell, of: id + ' (its jaws)' }; } return out; })())`, ctx));
+  const sheets = JSON.parse(vm.runInContext(`JSON.stringify((function(){ const out = {}; for (const id in EVOLUTIONS) { const d = EVOLUTIONS[id]; if (d.sheet) out[d.sheet] = { cell: d.cell, of: id }; if (d.ground) out[d.ground] = { cell: d.cell, of: id + ' (its ground)' }; if (d.storm && d.storm.sheet) out[d.storm.sheet] = { cell: d.storm.cell, of: id + ' (its storm)' }; if (d.swirl && d.swirl.sheet) out[d.swirl.sheet] = { cell: d.swirl.cell, of: id + ' (its swirl)' }; } return out; })())`, ctx));
   const old = JSON.parse(vm.runInContext('JSON.stringify(typeof EVO_PACK !== "undefined" ? EVO_PACK : {})', ctx));
   const page = `<!doctype html><html><body><script>
 window.__pack = async function (src, C, M, MAXW, ROWS, A) {

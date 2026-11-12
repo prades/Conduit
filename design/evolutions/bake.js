@@ -186,12 +186,11 @@ const JOBS = [
   // No. 220, the core mage: a black shell-jar dragged on its side by fat irregular tentacles, a shard horn at its mouth; the horn drops to aim in its action frames.
   { id: 'hornshell', form: 220, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 156, the ice brawler: a dome with a cave mouth; the rubble is its ground layer; its action frames are the bite (the fangs swing down), up and back.
-  { id: 'maw', form: 934, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true },   // (No. 934, forms10.js, since 2026-11-11: No. 156 with its everyday hit a lunge-bite: the body thrown forward; the owner)
-  // No. 935 (forms10.js; the owner, 2026-11-11: "giant jaws for CHOMP"): the giant ice jaws dropped over the enemy. One row (they have no facing), no idle or action block: 16 frames in the two extra blocks (columns 16 to 31):
-  //   frames 0-7 the jaws come down open (y, open), 8-15 they are shut with a flash and break up (q, fl).   node design/evolutions/bake.js <three> img/evo mawjaws 256 3.0222   then node design/evolutions/crop_sheets.js
-  { id: 'mawjaws', form: 935, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: false, lookY: 2.0, oneRow: true, blocksOnly: true, blocks: [
-    [{ y: 3.2, open: 1 }, { y: 2.6, open: 1 }, { y: 2.0, open: 1 }, { y: 1.4, open: 1 }, { y: 0.9, open: 1 }, { y: 0.5, open: 0.95 }, { y: 0.25, open: 0.8 }, { y: 0.1, open: 0.4 }],
-    [{ y: 0, open: 0, fl: 1 }, { y: 0, open: 0, fl: 0.6 }, { y: 0, open: 0, fl: 0.25 }, { y: 0, open: 0, q: 0.8 }, { y: 0, open: 0, q: 0.6 }, { y: 0, open: 0, q: 0.4 }, { y: 0, open: 0, q: 0.2 }, { y: 0, open: 0, q: 0.04 }]] },
+  { id: 'maw', form: 934, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, blocks: [
+    [{ sw: 0.05, rot: -0.1, z: 0, y: 0.05, fang: 0.3 }, { sw: 0.18, rot: -0.25, z: 0.05, y: 0.15, fang: 0.4 }, { sw: 0.32, rot: -0.4, z: 0.08, y: 0.28, fang: 0.5 }, { sw: 0.45, rot: -0.5, z: 0.1, y: 0.4, fang: 0.55 },
+     { sw: 0.55, rot: -0.58, z: 0.1, y: 0.5, fang: 0.6 }, { sw: 0.62, rot: -0.62, z: 0.1, y: 0.58, fang: 0.6 }, { sw: 0.65, rot: -0.64, z: 0.1, y: 0.62, fang: 0.6 }, { sw: 0.65, rot: -0.64, z: 0.1, y: 0.62, fang: 0.6 }],
+    [{ sw: 0.55, rot: 0.32, z: 0.5, y: 0.05, fang: 1.2 }, { sw: 0.52, rot: 0.34, z: 0.55, y: 0.02, fang: 1.25 }, { sw: 0.44, rot: 0.3, z: 0.5, y: 0, fang: 1.15 }, { sw: 0.34, rot: 0.24, z: 0.4, y: 0, fang: 0.9 },
+     { sw: 0.24, rot: 0.16, z: 0.3, y: 0, fang: 0.6 }, { sw: 0.14, rot: 0.1, z: 0.18, y: 0, fang: 0.3 }, { sw: 0.06, rot: 0.04, z: 0.07, y: 0, fang: 0.1 }, { sw: 0, rot: 0, z: 0, y: 0, fang: 0 }]] },   // (the extra blocks: CHOMP, rearing up and slamming down: forms10.js)   // (No. 934, forms10.js, since 2026-11-11: No. 156 with its everyday hit a lunge-bite: the body thrown forward; the owner)
   // No. 144, the core worker: a black jar with a thick glowing worm; its action frames push the worm out further (held while it works).
   { id: 'vessel', form: 144, color: '#00ccaa', idleAct: 0, action: [0.7, 1.0] },
   // No. 140, the toxic brawler: a matte black turtle-volcano; its action frames are the eruption (it hunkers, the goo bursts up), up and back down.
@@ -297,7 +296,6 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
       for (let f = 0; f < NCOL; f++) {
-        if (job.oneRow && k > 0) continue; if (job.blocksOnly && f < 16) continue;   // (job.oneRow: a form with no facing, one row; job.blocksOnly: only the extra blocks are baked: the Maw's jaws)
         if (job.single && (k > 0 || f > 7)) continue;   // (job.single: a round form that is drawn from one row and one block: only those cells are baked, the rest of the grid left empty, so the sheet is small: the tornado)
         const idle = f < 8, i = f % 8, blk = f >= 16 && job.blocks ? job.blocks[Math.floor(f / 8) - 2][i] : null, cons = f >= 16 && job.consume ? job.consume[i] : null;
         const t = blk ? (blk.t != null ? blk.t : i * P / 8) : cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
