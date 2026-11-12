@@ -3311,6 +3311,52 @@ function drawThicketOnTile(tx, ty, px, py) {
 }
 let _hxFrame = -1, _hxList = [];
 function _hxH(a, b) { const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); }
+function _hxShape(e) {
+    const sd = Math.round(e.x * 10) * 7 + Math.round(e.y * 10), H = (a, b) => _hxH(sd + a, b), CR = 0.64, ang = H(1, 1) * 3.1416, ax = Math.cos(ang), ay = Math.sin(ang), px = -ay, py = ax, N = 9, L = 0.5, W = 0.2;
+    const rim = [];
+    for (let k = 0; k < 30; k++) {
+        const a = k / 30 * 6.2832, j = 0.9 + 0.2 * H(k, 2) + (k % 5 === 0 ? 0.07 : 0) - (k % 7 === 3 ? 0.08 : 0);
+        rim.push([Math.cos(a) * CR * j, Math.sin(a) * CR * j]);
+    }
+    const main = [], left = [], right = [];
+    for (let i = 0; i < N; i++) {
+        const t = (i / (N - 1)) * 2 - 1, w = W * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(t), 1.7)), 0.8) * (0.75 + 0.5 * H(i, 3)) + 0.012, j = 0.05 * (H(i, 4) - 0.5) * 2, bx = ax * t * L + px * j, by = ay * t * L + py * j;
+        main.push([bx, by, w]);
+        left.push([bx + px * (w / 2 + 0.025 * (H(i, 5) - 0.3)), by + py * (w / 2 + 0.025 * (H(i, 5) - 0.3))]);
+        right.push([bx - px * (w / 2 + 0.025 * (H(i, 6) - 0.3)), by - py * (w / 2 + 0.025 * (H(i, 6) - 0.3))]);
+    }
+    const branches = [];
+    for (let k = 0; k < 4; k++) {
+        const at = main[2 + Math.floor(H(k, 7) * 5)], side = k % 2 ? 1 : -1, a2 = ang + side * (0.7 + 0.6 * H(k, 8)), len = 0.16 + 0.16 * H(k, 9), pts = [[at[0], at[1]]];
+        for (let s = 1; s <= 3; s++) {
+            const f = s / 3;
+            pts.push([at[0] + Math.cos(a2) * len * f + (H(k * 5 + s, 10) - 0.5) * 0.05, at[1] + Math.sin(a2) * len * f + (H(k * 5 + s, 11) - 0.5) * 0.05]);
+        }
+        branches.push(pts);
+    }
+    const hair = [];
+    for (let k = 0; k < 11; k++) {
+        const a2 = (k + 0.5 * H(k, 12)) / 11 * 6.2832, r0 = CR * (0.93 + 0.1 * H(k, 13)), len = 0.2 + 0.2 * H(k, 14) + (k % 3 === 0 ? 0.12 : 0), pts = [[Math.cos(a2) * r0, Math.sin(a2) * r0]];
+        for (let s = 1; s <= 4; s++) {
+            const f = s / 4, aa = a2 + 0.28 * (H(k * 7 + s, 15) - 0.5);
+            pts.push([Math.cos(aa) * (r0 + len * f), Math.sin(aa) * (r0 + len * f)]);
+        }
+        hair.push(pts);
+    }
+    const vents = [0, 1, 2].map(k => { const m = main[2 + Math.floor((k + 0.3 + 0.4 * H(k, 16)) * 5 / 3)]; return { u: m[0], v: m[1], per: 44 + 16 * H(k, 17), ph: H(k, 18) * 40, big: 0.7 + 0.5 * H(k, 19) }; });
+    const rocks = [];
+    for (let k = 0; k < 14; k++) {
+        const a = (k + H(k, 20)) / 14 * 6.2832, d = CR * (1.08 + 0.2 * H(k, 21));
+        rocks.push({ u: Math.cos(a) * d, v: Math.sin(a) * d, sz: 0.032 + 0.04 * H(k, 22), a: H(k, 23) * 6.28 });
+    }
+    const scorch = [];
+    for (let k = 0; k < 28; k++)
+        scorch.push(0.9 + 0.12 * H(k, 24));
+    const crustPatch = [];
+    for (let k = 0; k < 7; k++)
+        crustPatch.push({ a: H(k, 25) * 6.28, r: 0.15 + 0.4 * H(k, 26), s: 0.08 + 0.07 * H(k, 27) });
+    return { rim, main, left, right, branches, hair, vents, rocks, scorch, crustPatch, CR };
+}
 function drawHexfireOnTile(tx, ty, px, py) {
     if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined")
         return;
@@ -3332,12 +3378,18 @@ function drawHexfireOnTile(tx, ty, px, py) {
         }
         if (room !== it.room)
             continue;
-        const age = e.maxLife - e.life, open = Math.min(1, age / 14), fade = Math.min(1, e.life / 24), grow = 0.3 + 0.7 * (1 - Math.pow(1 - open, 2));
-        const rx = R * Math.SQRT2 * TILE_W * grow, ry = R * Math.SQRT2 * TILE_H * grow, at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];
-        const [cx, cy] = at(e.x, e.y), pulse = 1 + 0.04 * Math.sin(f0 * 0.18 + e.x), crust = 1 - fade, drop = ry * 0.16 * grow;
+        const S = e._hx || (e._hx = _hxShape(e)), age = e.maxLife - e.life, open = Math.min(1, age / 14), eo = 1 - Math.pow(1 - open, 2), fade = Math.min(1, e.life / 24), cool = 1 - fade, heat = 1 - cool * 0.85;
+        const rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H, at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];
+        const [cx, cy] = at(e.x, e.y), P = (u, v, k) => [cx + u * (k == null ? eo : k) * rx, cy + v * (k == null ? eo : k) * ry], drop = ry * 0.1 * eo;
+        const poly = (pts, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); };
+        const line = (pts, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); };
         const blob = (x, y, w, h, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, Math.max(0.01, w), Math.max(0.01, h), 0, 0, Math.PI * 2); ctx.fill(); };
-        const arc = (x, y, w, h, a0, a1, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, a0, a1); ctx.stroke(); };
-        const ly = cy + drop;
+        const rimP = S.rim.map(q => P(q[0], q[1])), floorP = (k) => S.rim.map(q => [cx + q[0] * k * eo * rx, cy + q[1] * k * eo * ry + drop]);
+        const widen = (k) => { const L2 = [], R2 = []; for (let i = 0; i < S.main.length; i++) {
+            const m = S.main[i], l = S.left[i], r = S.right[i];
+            L2.push([P(m[0] + (l[0] - m[0]) * k, m[1] + (l[1] - m[1]) * k)][0]);
+            R2.push(P(m[0] + (r[0] - m[0]) * k, m[1] + (r[1] - m[1]) * k));
+        } return L2.concat(R2.reverse()).map(q => [q[0], q[1] + drop]); };
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(px, py);
@@ -3346,108 +3398,84 @@ function drawHexfireOnTile(tx, ty, px, py) {
         ctx.lineTo(px - TILE_W, py + TILE_H);
         ctx.closePath();
         ctx.clip();
-        blob(cx, cy + 2, rx * 1.62, ry * 1.62, "#ff6a14", 0.1 * fade);
-        blob(cx, cy + 2, rx * 1.34, ry * 1.34, "#ff7a1c", 0.12 * fade);
-        blob(cx, cy + 2, rx * 1.22, ry * 1.22, "#140a06", 0.45 * fade);
-        blob(cx, cy + 7 * grow, rx * 1.16, ry * 1.16, "#1c0e09", 0.95 * fade);
-        blob(cx, cy, rx * 1.16, ry * 1.16, "#5b3321", 0.97 * fade);
-        arc(cx, cy - 1, rx * 1.12, ry * 1.12, Math.PI * 1.04, Math.PI * 1.96, "#a8734b", 3, 0.85 * fade);
-        arc(cx, cy, rx * 1.13, ry * 1.13, Math.PI * 0.05, Math.PI * 0.95, "#3a1d12", 2.5, 0.9 * fade);
-        blob(cx, cy, rx * 1.0, ry * 1.0, "#1a0a06", 0.97 * fade);
-        blob(cx, cy + ry * 0.04, rx * 0.97, ry * 0.9, "#34130a", 0.9 * fade);
-        blob(cx, ly, rx * 0.94, ry * 0.84, "#c8340a", 0.97 * fade);
-        blob(cx, ly, rx * 0.9, ry * 0.8, "#e2400b", 0.97 * fade);
-        blob(cx, ly, rx * 0.68 * pulse, ry * 0.6 * pulse, "#ff7a14", 0.95 * fade);
-        blob(cx, ly, rx * 0.38 * pulse, ry * 0.33 * pulse, "#ffc447", 0.92 * fade);
-        blob(cx, ly - 1, rx * 0.17 * pulse, ry * 0.15 * pulse, "#fff0b0", 0.85 * fade);
-        arc(cx, ly, rx * 0.93, ry * 0.83, 0, Math.PI * 2, "#ff9a3a", 2, 0.6 * fade);
-        const RINGS = [[0, 1, 0.3], [0.4, 5, 0.27], [0.76, 9, 0.2]];
-        let pn = 0;
-        for (const [rr0, cnt, sz0] of RINGS)
-            for (let k = 0; k < cnt; k++, pn++) {
-                const an0 = (k + 0.5 * _hxH(pn, 41)) * (6.2832 / cnt) + (rr0 ? 0.6 * rr0 : 0) + Math.sin(age * 0.012 + pn) * 0.05, rr = rr0 * (0.96 + 0.08 * _hxH(pn, 42)), sz = sz0 * (0.78 + 0.28 * _hxH(pn, 43)) * (1 + crust * 0.55) * (age < 14 ? open : 1);
-                const heave = Math.sin(age * 0.045 + pn * 1.7) * 1.1, pxc = cx + Math.cos(an0) * rx * rr * 0.9, pyc = ly + Math.sin(an0) * ry * rr * 0.86 + heave, nv = 5 + Math.floor(_hxH(pn, 44) * 3), pts = [];
-                for (let v = 0; v < nv; v++) {
-                    const av = (v + 0.4 * (_hxH(pn * 7 + v, 45) - 0.5)) * 6.2832 / nv + 0.5 * _hxH(pn, 46), rv = sz * (0.72 + 0.5 * _hxH(pn * 7 + v, 47));
-                    pts.push([pxc + Math.cos(av) * rx * rv, pyc + Math.sin(av) * ry * rv * 0.9]);
-                }
-                ctx.globalAlpha = 0.97 * fade;
-                ctx.fillStyle = "#3a190e";
-                ctx.beginPath();
-                ctx.moveTo(pts[0][0], pts[0][1]);
-                for (let v = 1; v < nv; v++)
-                    ctx.lineTo(pts[v][0], pts[v][1]);
-                ctx.closePath();
-                ctx.fill();
-                ctx.fillStyle = "#4e2414";
-                ctx.globalAlpha = 0.8 * fade;
-                ctx.beginPath();
-                ctx.moveTo(pts[0][0] - 0.5, pts[0][1] - 1.2);
-                for (let v = 1; v < nv; v++)
-                    ctx.lineTo(pts[v][0] - 0.5, pts[v][1] - 1.2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.lineWidth = 1.4;
-                ctx.lineCap = "round";
-                for (let v = 0; v < nv; v++) {
-                    const p0 = pts[v], p1 = pts[(v + 1) % nv], nxx = p1[1] - p0[1], nyy = -(p1[0] - p0[0]), lit = nxx * -0.5 + nyy * -0.85;
-                    ctx.strokeStyle = lit > 0 ? "#b3794f" : "#160804";
-                    ctx.globalAlpha = (lit > 0 ? 0.75 : 0.85) * fade;
-                    ctx.beginPath();
-                    ctx.moveTo(p0[0], p0[1] - 1);
-                    ctx.lineTo(p1[0], p1[1] - 1);
-                    ctx.stroke();
-                    ctx.strokeStyle = "#ffa83c";
-                    ctx.globalAlpha = (0.35 + 0.25 * Math.sin(age * 0.08 + pn + v)) * fade * (1 - crust * 0.5);
-                    ctx.beginPath();
-                    ctx.moveTo(p0[0], p0[1] + 1.2);
-                    ctx.lineTo(p1[0], p1[1] + 1.2);
-                    ctx.stroke();
-                }
-                ctx.strokeStyle = "#2a1008";
-                ctx.globalAlpha = 0.7 * fade;
-                ctx.lineWidth = 0.9;
-                const c0 = pts[0], c1 = pts[Math.floor(nv / 2)];
-                ctx.beginPath();
-                ctx.moveTo((c0[0] + pxc) / 2, (c0[1] + pyc) / 2);
-                ctx.lineTo((c1[0] + pxc) / 2 + 1, (c1[1] + pyc) / 2 + 1);
-                ctx.stroke();
-            }
-        for (let i = 0; i < 8; i++) {
-            const per = 52 + 18 * _hxH(i, 21), ph = ((f0 + i * 17 + _hxH(i, 22) * 40) % per) / per, an = i * 2.4 + _hxH(i, 9) * 3 + Math.floor((f0 + i * 17) / per) * 1.7, rr = [0.2, 0.58, 0.9, 0.2, 0.58, 0.9, 0.58, 0.2][i] + 0.04 * (_hxH(i + Math.floor((f0 + i * 17) / per), 4) - 0.5);
-            const bx = cx + Math.cos(an) * rx * rr * 0.9, by = ly + Math.sin(an) * ry * rr * 0.85, sz = 3.5 + 6 * _hxH(i, 31);
-            if (ph < 0.8) {
-                const b = sz * (0.25 + 0.75 * ph / 0.8), lift = b * 0.5;
-                blob(bx, by + 1, b * 1.05, b * 0.58, "#b02e08", 0.9 * fade);
-                blob(bx, by - lift * 0.4, b, b * 0.8, "#ff7a14", 0.95 * fade);
-                blob(bx + b * 0.12, by - lift * 0.1, b * 0.78, b * 0.6, "#ff9a30", 0.9 * fade);
-                blob(bx - b * 0.34, by - lift * 0.8, b * 0.3, b * 0.2, "#fff2b8", 0.95 * fade);
-            }
-            else {
-                const u = (ph - 0.8) / 0.2;
-                arc(bx, by, sz * (1 + 1.8 * u), sz * 0.55 * (1 + 1.8 * u), 0, Math.PI * 2, "#ffd98a", 1.6, 0.8 * fade * (1 - u));
-                for (let k = 0; k < 3; k++) {
-                    const ak = k * 2.1 + i;
-                    blob(bx + Math.cos(ak) * sz * 1.6 * u, by - Math.sin(Math.PI * u) * sz * 2.2 + Math.sin(ak) * 1.5, 1.7 * (1 - u * 0.5), 2 * (1 - u * 0.5), "#ffb347", 0.9 * fade * (1 - u * 0.5));
-                }
-            }
+        {
+            const sc = S.scorch.map((k, i) => { const a = i / S.scorch.length * 6.2832; return [cx + Math.cos(a) * rx * k * (0.5 + 0.5 * eo), cy + Math.sin(a) * ry * k * (0.5 + 0.5 * eo)]; });
+            poly(sc, "#0f0806", 0.5 * fade);
+            poly(sc.map(q => [cx + (q[0] - cx) * 0.8, cy + (q[1] - cy) * 0.8]), "#1b0e09", 0.32 * fade);
         }
-        if (age < 8)
-            blob(cx, ly, rx * 1.1, ry * 1.1, "#fff0b0", 0.45 * (1 - age / 8));
+        for (const h of S.hair) {
+            const pts = h.map(q => P(q[0], q[1]));
+            line(pts, "#0b0504", 4, 0.75 * fade);
+            line(pts, "#ff7a1c", 1.8, 0.62 * fade * heat);
+            line(pts, "#ffc04a", 0.8, 0.5 * fade * heat);
+        }
+        poly(rimP.map(q => [q[0], q[1] + 7 * eo]), "#150804", 0.95 * fade);
+        poly(rimP, "#52291a", 0.97 * fade);
+        for (let i = 0; i < rimP.length; i++) {
+            const p0 = rimP[i], p1 = rimP[(i + 1) % rimP.length], far = (p0[1] + p1[1]) / 2 < cy;
+            line([[p0[0], p0[1] + (far ? -1.2 : 0.6)], [p1[0], p1[1] + (far ? -1.2 : 0.6)]], far ? "#a8734b" : "#2a130b", far ? 2.2 : 2.6, (far ? 0.85 : 0.9) * fade);
+        }
+        poly(floorP(0.92), "#1b0a06", 0.97 * fade);
+        poly(floorP(0.84), "#2a110a", 0.95 * fade);
+        poly(floorP(0.78), "#3b180d", 0.97 * fade);
+        for (const c of S.crustPatch) {
+            const q = [cx + Math.cos(c.a) * c.r * rx * eo, cy + Math.sin(c.a) * c.r * ry * eo + drop], s = c.s * rx * eo;
+            poly([[q[0] - s, q[1]], [q[0] - s * 0.3, q[1] - s * 0.5], [q[0] + s, q[1] - s * 0.1], [q[0] + s * 0.6, q[1] + s * 0.45], [q[0] - s * 0.5, q[1] + s * 0.5]], "#4d2313", 0.8 * fade);
+        }
+        poly(widen(3.4), "#7a2a0c", 0.4 * fade * heat);
+        poly(widen(2.3), "#b43a0d", 0.45 * fade * heat);
+        poly(widen(1.7), "#e0500f", 0.55 * fade * heat);
+        for (const b of S.branches) {
+            const pts = b.map(q => P(q[0], q[1])).map(q => [q[0], q[1] + drop]);
+            line(pts, "#150805", 6, 0.9 * fade);
+            line(pts, "#e2400b", 3.4, 0.95 * fade * (0.5 + 0.5 * heat));
+            line(pts, "#ffb43a", 1.6, 0.9 * fade * heat);
+        }
+        poly(widen(1.4), "#2e160d", 0.95 * fade);
+        const outline = S.left.map(q => P(q[0], q[1])).concat(S.right.map(q => P(q[0], q[1])).reverse()).map(q => [q[0], q[1] + drop]);
+        poly(outline, "#b02f09", 0.97 * fade);
+        poly(widen(0.78), "#ff5a10", 0.97 * fade * (0.55 + 0.45 * heat));
+        poly(widen(0.5), "#ff9a22", 0.95 * fade * heat);
+        {
+            const mid = S.main.map(m => P(m[0], m[1])).map(q => [q[0], q[1] + drop]);
+            line(mid, "#ffd96a", 2.2, 0.9 * fade * heat * (0.8 + 0.2 * Math.sin(f0 * 0.3 + e.x)));
+            line(mid, "#fff3bd", 1, 0.9 * fade * heat);
+        }
+        if (cool > 0)
+            poly(outline, "#2a0f08", 0.55 * cool);
+        for (const r of S.rocks) {
+            const q = P(r.u, r.v), s = r.sz * rx * (0.8 + 0.2 * eo);
+            poly([[q[0] + Math.cos(r.a) * s, q[1] + Math.sin(r.a) * s * 0.55], [q[0] + Math.cos(r.a + 2.2) * s * 0.8, q[1] + Math.sin(r.a + 2.2) * s * 0.5], [q[0] + Math.cos(r.a + 4.1) * s, q[1] + Math.sin(r.a + 4.1) * s * 0.55]], "#2b150d", 0.95 * fade);
+            line([[q[0] + Math.cos(r.a) * s, q[1] + Math.sin(r.a) * s * 0.55 - 0.8], [q[0] + Math.cos(r.a + 4.1) * s, q[1] + Math.sin(r.a + 4.1) * s * 0.55 - 0.8]], "#8e5c3c", 1, 0.7 * fade);
+        }
+        for (const v of S.vents) {
+            const q = P(v.u, v.v), on = open >= 1 ? ((f0 + v.ph) % v.per) / v.per : 0, glow = on < 0.45 ? 1 : 0.35;
+            blob(q[0], q[1] + drop, rx * 0.1, ry * 0.1, "#ff7a14", 0.95 * fade * heat);
+            blob(q[0], q[1] + drop, rx * 0.06 * (0.8 + 0.4 * glow), ry * 0.06 * (0.8 + 0.4 * glow), "#fff0b0", 0.95 * fade * heat);
+        }
         ctx.restore();
-        if (age < 34 && Math.round(e.x) === tx && Math.round(e.y) === ty) {
+        if (Math.round(e.x) === tx && Math.round(e.y) === ty) {
             ctx.save();
-            const t = age / 34;
-            for (let i = 0; i < 11; i++) {
-                const an = i * 0.571 + _hxH(i, 1), sp = 0.4 + 0.6 * _hxH(i, 6), u = Math.max(0, Math.min(1, (age - i * 0.8) / 30));
-                if (u <= 0 || u >= 1)
-                    continue;
-                const hgt = Math.sin(Math.PI * u) * (40 + 46 * sp), out = u * sp * rx * 0.6, qx = cx + Math.cos(an) * out, gy = ly + Math.sin(an) * out * ry / rx, qy = gy - hgt, r = 5.6 * (1 - u * 0.35), a = 0.95 * (1 - t * 0.25);
-                blob(qx, gy + 1, r * 0.9, r * 0.4, "#5a1b0a", 0.45 * a);
-                blob(qx, qy, r, r * 1.2, "#e2400b", a);
-                blob(qx + r * 0.1, qy - r * 0.1, r * 0.78, r * 0.95, "#ff8a1a", a);
-                blob(qx - r * 0.28, qy - r * 0.4, r * 0.3, r * 0.34, "#fff0b0", a);
-            }
+            S.vents.forEach((v, i) => {
+                const q = P(v.u, v.v), qy = q[1] + drop, t0 = age + v.ph, per = v.per, ph = (t0 % per) / per, burst = age < 22 ? 1 - age / 22 : 0, act = ph < 0.42 ? ph / 0.42 : -1;
+                if (act >= 0 || burst > 0) {
+                    const u2 = act >= 0 ? act : 0.5, sz = v.big * (1 + burst * 0.8);
+                    for (let k = 0; k < 6; k++) {
+                        const kk = (u2 + k * 0.16) % 1, hgt = Math.sin(Math.PI * kk) * (38 + 36 * sz) * (0.7 + 0.3 * _hxH(i * 9 + k, 31)), out = (kk - 0.5) * (8 + 18 * _hxH(i * 9 + k, 32)) * (k % 2 ? 1 : -1), r = (4 + 2.6 * _hxH(i * 9 + k, 33)) * (1 - kk * 0.3), a = 0.95 * fade * heat;
+                        blob(q[0] + out, qy - hgt, r, r * 1.25, "#e2400b", a);
+                        blob(q[0] + out + r * 0.1, qy - hgt - r * 0.1, r * 0.7, r * 0.9, "#ff8a1a", a);
+                        blob(q[0] + out - r * 0.28, qy - hgt - r * 0.4, r * 0.28, r * 0.32, "#fff0b0", a);
+                    }
+                    for (let k = 0; k < 5; k++) {
+                        const kk = (u2 * 1.3 + k * 0.2) % 1, hgt = Math.sin(Math.PI * kk) * (46 + 30 * sz), out = (_hxH(i * 11 + k, 34) - 0.5) * 30 * kk;
+                        blob(q[0] + out, qy - hgt, 1.2, 1.2, "#ffd96a", 0.9 * fade * (1 - kk));
+                    }
+                }
+                for (let k = 0; k < 3; k++) {
+                    const s = (((age * 0.55) + i * 17 + k * 17) % 52) / 52, sy = qy - 10 - s * 52, sx = q[0] + Math.sin(s * 5 + i + k) * 6 + (k - 1) * s * 7, r = 3.5 + 9 * s;
+                    blob(sx, sy, r, r * 0.8, k === 1 ? "#6a625a" : "#585048", 0.4 * (1 - s) * fade * (open < 1 ? open : 1));
+                }
+            });
             ctx.restore();
         }
     }
