@@ -433,6 +433,76 @@ function _fpDrawRock(it, H) {
     _fpRockIce(it, ha, hm, hb);   // (in an ice room: frost over it, icicles off its lip)
 }
 
+// ── THE ROCK PAINTED ONCE (build 2026-11-12c) ──
+// The owner, 2026-11-12, of a fight with THE ANT QUEEN that ran at a very low frame rate, chose "Paint walls once" (of: paint the walls once, a package of every picture loaded at the start, measure on
+// the iPad first). Measured in headless Chromium, the Nest's queen fight: no picture was loading mid-fight; the rock walls were drawn afresh every frame, some 25 shapes and 2 or 3 gradients a piece and a
+// bend's curve of many points, about 1,800 fills, 700 strokes and 220 gradients a frame on the screen's canvas. So each rock piece and each bend is PAINTED ONCE, by its own drawing (_fpDrawRock,
+// _fpDrawRockBend), into a picture of its own, in its light (the dimmed pen's factor: js/facilitystyle.js _fpDimCtx), and that picture is stamped every frame, as a floor tile's marks are (_fpDrawOps).
+// The same drawing makes it, so it looks the same (compared pixel by pixel: within a few levels of 255, a picture stamped between pixels). It is drawn as before, live, while: its light is still changing
+// (painted again once its light has held FP_ROCK_SPR.settle frames), the battle view draws it faint (its ghost, js/battleview.js battleFadeWall), there is no real canvas (the tests' sandbox, a step with
+// no picture). The pictures are kept within FP_ROCK_SPR.budget pixels, the least recently drawn let go first (a soft limit: those drawn this frame are never let go).
+const FP_ROCK_SPR = { budget: 8e6, pad: 6, settle: 12 };
+function _fpRockStamp(it, H) { return _fpRockPic(it, H, _fpRockBox, _fpDrawRock); }   // a straight piece (js/facilityplay.js _fpDrawWall)
+function _fpRockBendStamp(it) { return !(typeof caveWallsOn === "function" && caveWallsOn()) && _fpRockPic(it, 0, _fpRockBendBox, _fpDrawRockBend); }   // a bend (js/facilityplay.js drawFacilityItem)
+// the box on the screen that a piece's drawing covers: from under its cliff to over its top (a boulder's light reaches a little over a low rim), a little past its ends, and its cap's back
+function _fpRockBox(it, H) {
+    const hs = _fpRockHeights(it, H), zMax = Math.max(hs[0], hs[1], hs[2]), zLow = Math.min(hs[0], hs[1], hs[2]), z1 = Math.max(zMax + 4, 8 + Math.min(Math.max(20, zLow - 20), 120) + 32), z0 = it.back ? -6 : -(FP_ROCK_DOWN + 4);   // (only a front piece has the cliff under it)
+    const ax = it.a[0], ay = it.a[1], dx = it.b[0] - ax, dy = it.b[1] - ay, c = it.cap; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    const add = (p) => { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; };
+    for (const u of [-0.08, 1.08]) for (const z of [z0, z1]) add(_fpP(ax + dx * u, ay + dy * u, z));   // (a boulder's light reaches 0.07 of the piece past its ends)
+    if (c) for (const u of [0, 1]) for (const z of [0, zMax]) add(c.da === undefined ? _fpP(ax + dx * u - c.nx * c.d, ay + dy * u - c.ny * c.d, z) : _fpP(ax + dx * u, ay + dy * u - (c.da + (c.db - c.da) * u), z));
+    return [x0, y0, x1, y1];
+}
+// a bend's box: its curve lies within the corner's three points (s0, K, s1), as high as the higher of its two pieces, its cliff under a front one, its roof's far edge (as _fpDrawRockBend works it out)
+function _fpRockBendBox(it) {
+    const P = it.P, Q = it.Q, hP = _fpRockHeights(P, _fpRockWallH(P)), hQ = _fpRockHeights(Q, _fpRockWallH(Q)), zMax = Math.max(...hP, ...hQ) + 4, z0 = P.back ? -6 : -(FP_ROCK_DOWN + 4);
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const add = (p) => { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; };
+    for (const q of [it.s0, it.K, it.s1]) for (const z of [z0, zMax]) add(_fpP(q[0], q[1], z));
+    const uP = _fpRockU(P, it.s0), uQ = _fpRockU(Q, it.s1), fP = P.cap ? _fpRockFar(P, uP, it.s0) : null, fQ = Q.cap ? _fpRockFar(Q, uQ, it.s1) : null, [oa, ob] = _fpBendRoof(fP ? [fP[0] - it.s0[0], fP[1] - it.s0[1]] : null, fQ ? [fQ[0] - it.s1[0], fQ[1] - it.s1[1]] : null);
+    if (oa) for (const q of [it.s0, it.K, it.s1]) for (const o of [oa, ob]) add(_fpP(q[0] + o[0], q[1] + o[1], zMax));
+    return [x0, y0, x1, y1];
+}
+// a picture painted (again), on the one painting canvas, then kept in a canvas of its own; false when it cannot be (live, then)
+function _fpRockPaint(it, H, e, k, S, real, boxFn, drawFn) {
+    const pad = FP_ROCK_SPR.pad, bx = boxFn(it, H), x0 = Math.floor(bx[0]) - pad, y0 = Math.floor(bx[1]) - pad, w = Math.ceil(bx[2]) + pad - x0, h = Math.ceil(bx[3]) + pad - y0;
+    if (!(w > 0 && h > 0) || w * h > 4e6) return false;
+    let P = S.paint;
+    if (!P || P.c.width < w || P.c.height < h) { const c = P ? P.c : document.createElement("canvas"); c.width = Math.max(w, P ? P.c.width : 0); c.height = Math.max(h, P ? P.c.height : 0); const g = c.getContext("2d"); if (!g) return false; P = S.paint = { c, g }; }
+    if (!e.c || e.w !== w || e.h !== h) { if (!e.c) e.c = document.createElement("canvas"); S.px += w * h - e.w * e.h; e.c.width = w; e.c.height = h; e.w = w; e.h = h; e.g = e.c.getContext("2d"); if (!e.g) return false; }
+    const g = P.g; g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, w, h); g.setTransform(1, 0, 0, 1, -x0, -y0);
+    g.lineJoin = real.lineJoin; g.lineCap = real.lineCap; g.miterLimit = real.miterLimit;
+    const keep = ctx, keepW = _fpDimW, keepFor = _fpDimFor, keepK = keep._k;
+    ctx = k < 1 ? _fpDimCtx(g, k) : g;
+    try { if (H) drawFn(it, H); else drawFn(it); }
+    finally { ctx = keep; _fpDimW = keepW; _fpDimFor = keepFor; if (keepK !== undefined) keep._k = keepK; }
+    e.g.setTransform(1, 0, 0, 1, 0, 0); e.g.clearRect(0, 0, w, h); e.g.drawImage(P.c, 0, 0, w, h, 0, 0, w, h);
+    const A = _fpRockAnchor(it); e.ox = x0 - A[0]; e.oy = y0 - A[1]; e.H = H; e.dirty = false;
+    return true;
+}
+function _fpRockAnchor(it) { return it.a ? _fpP(it.a[0], it.a[1], 0) : _fpP(it.x, it.y, 0); }   // (where a picture is pinned: a piece's end a, a bend's corner)
+// a rock piece or bend stamped from its picture (painted first if it has none, or its light or height changed): true when stamped; false to draw it live
+function _fpRockPic(it, H, boxFn, drawFn) {
+    if (typeof document === "undefined" || !document.createElement || typeof CanvasRenderingContext2D === "undefined" || !_fp) return false;
+    const pen = ctx._k !== undefined, real = pen ? _fpDimFor : ctx; if (!(real instanceof CanvasRenderingContext2D)) return false;
+    if (typeof _bvDraw !== "undefined" && _bvDraw && _bvDraw.ghosting) return false;   // (its ghost in a fight: live, as before)
+    const S = _fp.rockSpr || (_fp.rockSpr = { m: new Map(), px: 0, paint: null }), k = pen ? ctx._k : 1, f = _fpFrame();
+    let e = S.m.get(it);
+    if (!e) { e = { c: null, g: null, w: 0, h: 0, ox: 0, oy: 0, k, kAt: -1e9, H, dirty: true, used: f }; S.m.set(it, e); }
+    else if (Math.abs(e.k - k) > 1e-4) { e.k = k; e.kAt = f; e.dirty = true; }
+    if (f - e.kAt < FP_ROCK_SPR.settle) return false;   // (its light is changing: live until it holds)
+    if (e.H !== H) e.dirty = true;
+    if (e.dirty && !_fpRockPaint(it, H, e, k, S, real, boxFn, drawFn)) { if (e.c) { S.px -= e.w * e.h; e.c.width = e.c.height = 0; } S.m.delete(it); return false; }
+    e.used = f;
+    const A = _fpRockAnchor(it); ctx.drawImage(e.c, A[0] + e.ox, A[1] + e.oy);   // (through the pen too: it darkens colours, never pictures, and the picture has its light in it)
+    if (S.px > FP_ROCK_SPR.budget) _fpRockTrim(S, f);
+    return true;
+}
+// over the budget: the least recently drawn pictures let go, down to three quarters of it (never one drawn this frame)
+function _fpRockTrim(S, f) {
+    const old = Array.from(S.m.entries()).filter(([, e]) => e.c && e.used < f).sort((p, q) => p[1].used - q[1].used);
+    for (const [it, e] of old) { if (S.px <= FP_ROCK_SPR.budget * 0.75) break; S.px -= e.w * e.h; e.c.width = e.c.height = 0; S.m.delete(it); }
+}
+
 // ICE on a rock wall (a room whose style has `ice`: the Cold Storage's cave): a pale frost glazing the rock, and icicles hanging from its lip
 function _fpRockIce(it, ha, hm, hb) {
     if (typeof _fpRoomStyle !== "function" || !_fpRoomStyle(it.room).ice) return;

@@ -65,7 +65,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('_caveWallsPrev = null; for (const r in _caveImgs) delete _caveImgs[r];');
         run('globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsOn()'), true, 'off on the preview');
         run('globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsPreview()'), true, 'the preview flag'); run('globalThis.location = { search: "?walls=3dx" };'); same(J('caveWallsPreview()'), false, 'another flag');
-        same(J('/if \\(it\\.kind === "rock"\\) \\{ if \\(typeof caveWallDraw === "function" && caveWallDraw\\(it\\)\\) return; return _fpDrawRock\\(it, H\\); \\}/.test(' + JSON.stringify(rd('js/facilityplay.js')) + ')'), true, 'the wall draw does not fall back to the drawn rock');
+        same(J('/if \\(it\\.kind === "rock"\\) \\{ if \\(typeof caveWallDraw === "function" && caveWallDraw\\(it\\)\\) return; if \\(typeof _fpRockStamp === "function" && _fpRockStamp\\(it, H\\)\\) return; return _fpDrawRock\\(it, H\\); \\}/.test(' + JSON.stringify(rd('js/facilityplay.js')) + ')'), true, 'the wall draw does not fall back to the drawn rock (stamped from its picture painted once, since build 2026-11-12c, else drawn)');
     });
     check('until its cave\'s sheet has arrived, the drawn rock (so a wall is never missing)', () => {
         run('_caveWallsPrev = true; for (const r in _caveImgs) delete _caveImgs[r];'); const r = J('(function(){ const it = __rocks()[10], P = __pen(), keep = ctx; ctx = P.g; try { return caveWallDraw(it); } finally { ctx = keep; } })()');

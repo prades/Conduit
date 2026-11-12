@@ -115,6 +115,13 @@ The owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really ja
 - **Ends of runs** stay flush with what they meet: rounded, they opened a gap against the wall or door beside them.
 - **Approved in the game 2026-11-09** ("Approve it for everyone"); for everyone since build `2026-11-09qq`. The modelled 3-D walls (the `?walls=3d` preview) were baked again for the alcove's new rock.
 
+### The rock painted once (build `2026-11-12c`)
+The owner, 2026-11-12, of a fight with THE ANT QUEEN in the Nest that ran at a very low frame rate ("it wasn't a crash. It was a really bad lag"), chose **"Paint walls once"** (of three: paint the walls once, a package of every picture loaded at the start, measure on the iPad first). Measured first (headless Chromium, the queen fight): no picture was loading mid-fight; the rock walls were drawn afresh every frame.
+- **Each rock piece and each bend is painted once** into a picture of its own, by its own drawing (`_fpDrawRock`, `_fpDrawRockBend`) and in its light (the dimmed pen's factor), and the picture is stamped every frame (js/facilitydecor.js `_fpRockPic`), as a floor tile's marks already were. The look is unchanged: the same frame drawn both ways matched pixel for pixel in a still scene (`tests/rockpics.js`), and within a few levels of 255 elsewhere (a picture stamped between pixels).
+- **Drawn live, as before,** while a piece's light is changing (painted again once it has held for 12 frames), while the battle view draws it faint (its ghost), and where there is no real canvas.
+- **Memory:** the pictures are kept within 8 million pixels (`FP_ROCK_SPR.budget`, about 32 MB), the least recently drawn let go first; the Nest's caves hold 4 to 8 million.
+- **What it saves** (the Nest's queen fight, the screen's canvas, a frame): fills 1,781 → 336, strokes 699 → 148, gradients made 218 → 2, paths 2,271 → 422, lines 6,748 → 993; about 95 pictures stamped instead. In headless Chromium, which paints in software, a frame was about 14% quicker (34 ms against 40); an iPad paints differently and was not measured.
+
 ### The spots that did not look right (build `2026-11-09rr`)
 The owner's screenshots of 2026-11-09: "a few spots where the geometry just doesn't look right ... It's mostly in the walls"; of the Armory, "a floor that is kind of strangely positioned behind the door". All in js/facilitydecor.js unless named.
 - **A lone stub of rock** (a run of rock a tile long or less with walls at both ends: the arena's north-west corner, between the deck's glass and the steps) keeps the rock's own height, at least as tall as the walls of the room behind it (`_fpRockStubs`, `it.stub`, `it.lo`). Beside the deck's glass it rose to the deck's top: a chimney.

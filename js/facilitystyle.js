@@ -544,11 +544,13 @@ function _fpDimColour(c, k) {
     else return c;
     const out = "rgba(" + Math.round(r * k + 6 * (1 - k)) + "," + Math.round(g * k + 11 * (1 - k)) + "," + Math.round(b * k + 22 * (1 - k)) + "," + a + ")"; if (_fpDimCache.size > 4000) _fpDimCache.clear(); _fpDimCache.set(key, out); return out;
 }
-// (built once per real context: every method bound once, every property forwarded, the colour setters darkening by the current factor `_k`)
-let _fpDimW = null, _fpDimFor = null;
+// (built once per real context: every method bound once, every property forwarded, the colour setters darkening by the current factor `_k`; one pen kept for each context it has darkened: the
+// screen's, and the one a rock piece is painted on, js/facilitydecor.js _fpRockPaint, since build 2026-11-12c. _fpDimW and _fpDimFor are the pen in use and its context.)
+let _fpDimW = null, _fpDimFor = null; const _fpDimPens = new Map();
 function _fpDimCtx(real, k) {
-    if (_fpDimFor !== real) {
-        const w = { _k: 1 }; _fpDimFor = real;
+    const had = _fpDimPens.get(real); if (had) { _fpDimW = had; _fpDimFor = real; had._k = k; return had; }
+    {
+        const w = { _k: 1 }; _fpDimFor = real; _fpDimPens.set(real, w);
         const wrapGrad = (g) => { const add = g.addColorStop; g.addColorStop = function (o, c) { return add.call(g, o, _fpDimColour(c, w._k)); }; return g; };
         for (let o = Object.getPrototypeOf(real); o && o !== Object.prototype; o = Object.getPrototypeOf(o)) for (const n of Object.getOwnPropertyNames(o)) {
             if (n === "constructor" || n in w) continue; const d = Object.getOwnPropertyDescriptor(o, n);

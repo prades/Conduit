@@ -133,7 +133,7 @@ How the design was chosen (each was a run of the same probe, 3 to 5 runs a side,
 
 - No change to the simulation, its speed, combat, AI or balance; the frame rate is not capped.
 - No Web Workers, WebAssembly or WebGL; no change to the renderer.
-- The draw path was profiled and has no single hot function; nothing in it was changed. (The dimmed pen's colour cache key, `_fpDimColour` in `js/facilitystyle.js`, is about 2% of a frame and the setter that calls it 3%: a candidate if an iPad profile points at the dark rooms.)
+- The draw path was profiled and has no single hot function; nothing in it was changed. (Later, build `2026-11-12c`: the rock walls are painted once and stamped, `FACILITY.md`, "The rock painted once".) (The dimmed pen's colour cache key, `_fpDimColour` in `js/facilitystyle.js`, is about 2% of a frame and the setter that calls it 3%: a candidate if an iPad profile points at the dark rooms.)
 - A saved game that fails to apply (`facilitySaveApply` throws) is logged and the game goes on; the next autosave then writes the half-restored state over it. That is how it was, and it is not changed here.
 
 ## The players' page (build `2026-11-11b`)

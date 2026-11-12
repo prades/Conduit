@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12c` · branch `claude/start-game-project-HSh7Z` · the rock painted once
+- **The owner**, of a fight with THE ANT QUEEN in the Nest: "it wasn't a crash. It was a really bad lag, and I was down to a really low FPS"; asked whether a package of every picture loaded at the start would end it. Measured first (headless Chromium): nothing was loading mid-fight; the rock walls were drawn afresh every frame. Of three ways, the owner chose **"Paint walls once"** (`DECISION-LOG.md`).
+- **Each rock piece and each bend is painted once** into a picture of its own, in its light, by its own drawing, and stamped every frame (js/facilitydecor.js `_fpRockPic`), as a floor tile's marks already were. It looks the same: a still frame drawn both ways matched pixel for pixel. A piece is drawn live, as before, while its light is changing, while the battle view draws it faint, and without a real canvas. The pictures keep within 8 million pixels, the least recently drawn let go first.
+- **What it saves**, the Nest's queen fight, a frame: fills 1,781 → 336, strokes 699 → 148, gradients made 218 → 2, paths 2,271 → 422. In headless Chromium (software painting) a frame was about 14% quicker; an iPad was not measured.
+- The dimmed pen keeps one pen for each canvas it darkens (js/facilitystyle.js `_fpDimCtx`), so the painting canvas has its own.
+- Files: js/facilitydecor.js, js/facilityplay.js, js/facilitystyle.js; tests: `tests/rockpics.js` (new: the wiring and the real page), `tests/cavewalls.js` (the wall draw's line); docs: FACILITY.md ("The rock painted once"), STARTUP.md, DECISION-LOG.md.
+- Not playtested.
+
 ### Build `2026-11-12b` · branch `claude/start-game-project-HSh7Z` · main's Frost Maw and Jelly Ram merged in
 - While this branch made build 12a, main took one pull request, #27 (`claude/jellyram-attacks`, stacked on `claude/frostmaw-attacks`), stamped `2026-11-11y` (entries below): the Frost Maw's lunge-bite and CHOMP, and the Jelly Ram's tentacle lash.
 - The two merged (main into this branch) are build 12b. Nothing in either changed in the merge. The only conflicts were the build's stamps and the generated page and script bundle (made again); this log kept both, this branch's first.
