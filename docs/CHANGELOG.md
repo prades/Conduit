@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12p` · branch `claude/start-game-project-HSh7Z` · main's two fixes and this branch's two builds together
+- While this branch took build 12n (the energy cards' 3D gems, from another session) and made 12o (the fallen wait at the Crystal; the Nest and each domain one place to hold), main took the Thunderhead's string of lightning and the Hornshell's jar fix, lettered 12m to 12o on their own branches (entries below).
+- Those letters were used on both lines, so the two merged (main into this branch) are build 12p, a letter new to both.
+- Nothing in either changed in the merge. The conflicts were the energy gems' script tag (kept), this log and the decision log (both kept, this branch's first). The stamps, the page and script bundle and the picture map were made again.
+
 ### Build `2026-11-12o` · branch `claude/start-game-project-HSh7Z` · more risk: the fallen wait at the Crystal; the Nest and each domain one place to hold
 - **A fallen follower costs the Crystal more** (the owner: "I want to make the game have a little bit more risk ... The crystal loses 5 to 10 HP or percent HP, depending on how much energy the follower had"). Its return now costs 5% of the Crystal's power with no energy card in its slots, up to 10% with three (it was 3%). A clone's return is still 3%.
 - **The 10% floor is kept** (the owner's choice): at or below it, a fallen follower waits at the Crystal until it refills, so follower deaths alone never end a run. A draw above the floor is paid even when it ends under it.
@@ -29,6 +34,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **The 3D animations** (fire/ice/electric/core/BLOOM) are CSS keyframes defined in game.html under *AN ENERGY CARD'S 3D GEM*. **Flux and toxic** compute their faces each frame through a single rAF loop in `js/energygem.js` (`_ENERGY_GEM_FX`, `_energyGemFxLoop`), which registers each gem as its SVG lands in the DOM and lets it go when it is removed. Reduced motion holds every gem still; a pack's reveal pauses cards outside the overlay (the same `#cardsRoot:has(.cr-overlay)` rule the plasma used, now targeted at the gem SVG), and the rAF loop checks the same overlay for the per-frame ones.
 - Files: `js/energygem.js` (new), `js/cardsui.js` (`_cdSlab`'s ENERGY branch), `game.html` (the CSS block, the script tag after `js/energy.js`, the boot probe for `ENERGY_GEM_SVG`); build stamp bumped on `game.html`, `js/config.js` and `bible.html`. Tests: `tests/cardart.js` (the ENERGY GEM check replaces the plasma one). Docs: `ENERGY-CARDS.md` §9 (the new gem described, the plasma kept as history), `CHANGELOG.md` (this entry).
 - Not playtested. The rAF loop is budget-cheap (two faces of six for flux, eight circles for toxic), but was not measured on an iPad.
+
+### Build `2026-11-12o` · branch `claude/thunder-string` · the Thunderhead's everyday shot: a string of lightning that connects and breaks off
+- **The ask** (the owner: "We can work on Thunderhead's everyday shot. He doesn't change his form at all"; of the look: "It should have like a string of lightning that connects and breaks off at some point").
+- **What it does:** CHAIN LIGHTNING's shot flies at the enemy trailing a **jagged string of lightning that is still joined to the Thunderhead**, tighter and brighter the farther it stretches; at 1.5 tiles it **snaps off at the Thunderhead's end** (a few sparks there) and the string is **pulled on after the shot, shrinking away** (over 1.3 tiles). The shot is a bright ball with a few arcs off it. The new projectile kind `bolt` (js/npc.js, js/game.js `_drawThunderBolt`), flat strokes and fills.
+- **Not changed:** the Thunderhead's body and its sheet (nothing baked), the shot's damage, speed and rest, and CHAIN LIGHTNING's jumps on from the enemy it strikes (still the jagged bolts of js/elements.js).
+- Agent's, provisional (my reading of "connects and breaks off": the string joined to the Thunderhead, snapping at a distance): the snap distance (1.5 tiles), how long the string takes to go (1.3 tiles), the jitter, the colours, the sparks.
+- Not playtested; seen in the real page frame by frame (headless): the string joined and stretching, the snap with sparks, the string pulled on, the hit.
+- Tests: `tests/hoodflare.js` (14 checks now). Voidstar, Rotshard and Thornwhip still have no new animations.
+### Build `2026-11-12n` · branch `claude/hornshell-fix` · FIX: the Hornshell's sheet of build `2026-11-12l` had lost its jar in most facings
+- **The report** (the owner: "the horn shell looks really messed up whenever it's walking around now. I don't know what happened").
+- **What was wrong (the agent's bug, build `2026-11-12l`, PR #34):** the pull's "settle" lowered the jar with a step (`jar.position.y -= ...`) on a model that the baker keeps alive for the whole sheet, so every frame drawn with the pull moved the jar down a little more than the last, and it carried on into the next facing: from about the third facing on, the jar had sunk out of its cell and only the tentacles showed. (I had looked at the first three facings of the bake only.)
+- **The fix:** the jar's height is set from where it rests every frame. The sheet is rebaked: its walking frames and the old bow (columns 0-15), in all eight facings, are **pixel for pixel the sheet of before `2026-11-12l`**; the new frames are as seen.
+- **Test:** `tests/hoodflare.js`: every cell of the Hornshell's sheet, in every facing, is at least 60 px tall (the broken ones were 33 to 39), and the builder never moves the jar by a step.
+- The Hornshell's ECHO PULSE and everyday shot (the owner's looks) are as they were.
 
 ### Build `2026-11-12m` · branch `claude/start-game-project-HSh7Z` · main's Hornshell build and this branch's command card together
 - While this branch made build 12l (the command card), main took the Hornshell's ECHO PULSE pull and its goo-ring shot, lettered 12k and 12l on their own branch (its entry below).

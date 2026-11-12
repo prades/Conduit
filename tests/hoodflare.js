@@ -112,6 +112,27 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(blob.length > 300 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(blob), 'the ring uses a gradient or a shadow'); ok(/p\.kind === "gooring"/.test(src), 'the projectile is not drawn as the goo ring');
     });
 
+    group('THE THUNDERHEAD\'S EVERYDAY SHOT: A STRING OF LIGHTNING THAT CONNECTS AND BREAKS OFF (build 2026-11-12o; the owner: "It should have like a string of lightning that connects and breaks off at some point"; its body does not change)');
+    check('its shot flies as a "bolt" (no other follower\'s does); the shot itself (damage, speed, CHAIN LIGHTNING\'s jump on) is as it was; its sheet is as it was (16 columns)', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 3, f.y); f._shotTarget = t; _mageShotFire(f); const p = followerProjectiles[followerProjectiles.length - 1];
+            const o = __fol('electric', 'sniper', 'rotshard'), t2 = __foe(o.x + 3, o.y); o._shotTarget = t2; _mageShotFire(o); const q = followerProjectiles[followerProjectiles.length - 1];
+            return { kind: p.kind, dmg: p.damage, speed: Math.hypot(p.vx, p.vy), hit: typeof p.onHit, src: p.source === f, other: q.kind || null, cols: (EVO_PACK['img/evo/thunderhead.png'] || {}).cols, flags: ['flare', 'fan', 'pull', 'goo', 'blaze'].filter(k => EVOLUTIONS.thunderhead[k]).join() }; })())`));
+        same(r.kind, 'bolt', 'its kind'); ok(r.dmg > 0 && Math.abs(r.speed - 0.18) < 1e-9, 'the shot changed: ' + r.dmg + ' ' + r.speed); same(r.hit, 'function', 'CHAIN LIGHTNING still conducts on'); ok(r.src, 'the shot knows who fired it (the string is joined to it)'); same(r.other, null, 'another mage\'s kind'); same(r.flags, '', 'its sheet is untouched');
+    });
+    check('the string is drawn flat (strokes and fills, no gradient, no shadowBlur), joined to the shooter, and snaps at THUNDER_SNAP tiles', () => {
+        const src = rd('js/game.js'), a = src.indexOf('function _drawThunderBolt'), fn = src.slice(a, src.indexOf('function _drawFollowerProjectile'));
+        ok(fn.length > 500 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the string uses a gradient or a shadow'); ok(/p\.kind === "bolt"/.test(src), 'the projectile is not drawn as the string'); ok(/dist > THUNDER_SNAP/.test(fn), 'it never snaps'); ok(/p\.source/.test(fn), 'it is not joined to the shooter');
+    });
+
+    group('THE HORNSHELL KEEPS ITS JAR IN EVERY FACING (build 2026-11-12n: a bug of 2026-11-12l: the pull lowered the jar a little more every frame it was drawn, so the sideways and rear facings had lost it)');
+    check('every cell of its sheet, in every facing, is as tall as the jar and tentacles together (the broken ones were a third as tall), and the builder never moves the jar by a step', () => {
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/hornshell.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); const bad = [];
+        for (let r = 0; r < pk.rows; r++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(r * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(r + ':' + c + '=' + h); }
+        same(bad.join(), '', 'cells too short (row:column=height)');
+        const src = rd('design/evolutions/forms13.js'), fd = src.slice(src.indexOf('function _fatDragger'), src.indexOf('const _fd = '));
+        ok(!/jar\.position\.y\s*[-+]=/.test(fd) && /jar\.position\.y = jy0/.test(fd), 'the jar is moved by a step: one model draws every cell of a sheet in turn, so a step adds up');
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and the lighting up for HEXFIRE), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));

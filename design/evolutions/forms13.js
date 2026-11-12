@@ -132,7 +132,7 @@ function _fatDragger(o) {
       : { len: 1, rad: 1, out: o.out, drop: o.drop, spread: o.spread, curl: o.curl, curlFrom: o.curlFrom, wob: 0.03, lift: 1 };
     tents.push({ tt, a, P, ph: i * (TAU / o.tents) * 1.3 + (sd ? rnd(i, 12) * 2 : 0), pts: Array.from({ length: N }, () => new T.Vector3()), rad: new Array(N) }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.3); b.add(L); LIGHTS.push(L);
-  const dir = new T.Vector3();
+  const dir = new T.Vector3(), jy0 = jar.position.y;   // (jy0: where the jar rests; its height is set from it every frame, never moved by a step: one model draws every cell of a sheet in turn)
   // (o.pull, No. 941: the Hornshell's ECHO PULSE: its tentacles drawn in through the jar's mouth, then a ring of water spreading round the jar and a few drops thrown up)
   const wM = o.pull ? new T.MeshBasicMaterial({ color: new T.Color(0x5fd0ff), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }) : null, wM2 = o.pull ? new T.MeshBasicMaterial({ color: new T.Color(0xeaffff), transparent: true, opacity: 0, depthWrite: false, toneMapped: false }) : null;
   const wRing = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.05, 6, 40), wM) : null, wFoam = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.022, 4, 40), wM2) : null, drops = [];
@@ -146,7 +146,7 @@ function _fatDragger(o) {
   return { g, core: jr * (o.S || 1), update(tm, act, v) { const ph = 1.6 * tm, ac = act || 0, st = Math.sin(ph);
     const PU = o.pull && v && v.pull != null ? v : null, pl = PU ? PU.pull : 0, wr = PU && PU.ring ? PU.ring : 0, go = PU && PU.goo ? PU.goo : 0;
     jar.position.z = -o.gap + 0.04 * st - 0.05 * ac; jar.rotation.z = 0.04 * Math.sin(ph + 1); jar.rotation.x = t + 0.03 * Math.cos(ph);
-    if (PU) { jar.position.y -= 0.05 * pl; jar.rotation.x -= 0.1 * pl; }   // (it settles and rears back a little as it draws its arms in)
+    jar.position.y = jy0 - 0.05 * pl; if (PU) jar.rotation.x -= 0.1 * pl;   // (it settles and rears back a little as it draws its arms in)
     const mx = 0, my = jar.position.y + mouthLocal * Math.cos(jar.rotation.x), mz = jar.position.z + mouthLocal * Math.sin(jar.rotation.x);
     horn.position.set(o.hornX || 0, my - 0.02, mz - 0.05); horn.rotation.x = o.hornTilt + 0.05 * Math.sin(ph) + 0.3 * ac; horn.rotation.z = -(o.hornX || 0) * 1.6; horn.scale.y = 1 + 0.12 * ac;
     for (const T0 of tents) { const P = T0.P, sa = Math.sin(T0.a), ca = Math.cos(T0.a), rr = 0.17 * sz, lift = Math.max(0, Math.sin(ph + T0.ph)) * o.lift * P.lift * (1 - pl);

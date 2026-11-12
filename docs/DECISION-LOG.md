@@ -3142,3 +3142,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Open: more checkpoints in the Nest later; whether the volcanic layer (inside the Nest) is the Nest's place or its own (`DOMAINS.md` §11).
 - Supersedes: the 3% revival (2026-11-01) for followers; a fallen follower going back to its room or the squad; the Crystal Chamber's cap of 2; each Nest cave and domain room held on its own.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The Thunderhead's everyday shot flies on a string of lightning that connects and breaks off (2026-11-12, build `2026-11-12o`, branch `claude/thunder-string`)
+- The owner: "We can work on Thunderhead's everyday shot. He doesn't change his form at all." The agent offered three looks (a flying bolt, a storm puff, a crackling spark ball); the owner chose none and said: **"It should have like a string of lightning that connects and breaks off at some point."**
+- Built (the agent's reading, to be corrected): the shot trails a string of lightning joined to the Thunderhead; it snaps off at the Thunderhead's end at 1.5 tiles and is pulled on after the shot, shrinking away. Looks only; the body is untouched.
+- Open: whether that is the owner's picture (the string joined to the Thunderhead, or something else that "breaks off"); Voidstar, Rotshard and Thornwhip.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12n`, branch `claude/hornshell-fix`)
+- The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
+
