@@ -292,7 +292,7 @@ const EVOLUTIONS = {
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
     shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
-              cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8" },   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
+              cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8", fling: true },   // (fling: its action block's vines rearing and whipping now play for its SEED SHOT and SEEDFALL, flingCol; build 2026-11-12s)   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
     // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 925 since build 2026-11-08n (No. 922 before it), design/evolutions/forms37.js; the owner sent
     // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
     // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is NECTAR STING,
@@ -619,18 +619,31 @@ function hexfireCircle(f, x, y) {
 // ("allies" read as your followers, as MEND's are). Its last circle goes when it casts a new one. The numbers are the agent's, PROVISIONAL: HEXFIRE's reach, life and beat, its circle a little wider,
 // its bite a little under HEXFIRE's as it also mends.
 const SEEDFALL_RANGE = 7, SEEDFALL_RADIUS = 1.5, SEEDFALL_LIFE = 240, SEEDFALL_TICK = 30, SEEDFALL_BITE = 0.2, SEEDFALL_MEND = 0.01;
+// THE THORNWHIP'S SEEDFALL IS A HEAL NOW (build 2026-11-12s; the owner, 2026-11-12, "whenever you switch to the secondary attack, the Thorn[whip] heals from its body and from the seeds that turned into healing
+// buds that last for a few seconds"; asked, the owner chose: buds round the Thornwhip ITSELF, and healing only: no damage to enemies): when it casts (with an enemy within SEEDFALL_RANGE, as before) seeds are flung round
+// its own feet and grow into buds that, for BUD_LIFE frames, heal it and every follower standing among them, BUD_MEND of their maximum health every BUD_TICK frames. The circle stays where it was cast. The numbers
+// other than the reach (SEEDFALL_RANGE, kept) and the radius (SEEDFALL_RADIUS's, kept) are the agent's, PROVISIONAL (the owner gave none): the life is SEEDFALL's, the beat too, 3% of maximum health a beat, 24% in
+// all. The effect "seedfall" and seedfallBeat (SEEDFALL's old circle: it hurt enemies and mended a little) are kept for the Player card SEED GUNNER, which plants the same small circle (tests/bloomcards.js).
+const BUD_RADIUS = SEEDFALL_RADIUS, BUD_LIFE = 240, BUD_TICK = 30, BUD_MEND = 0.03;
 function seedfall(f) {
     const foes = _evoFoesSeen(f.x, f.y, SEEDFALL_RANGE);
-    if (!foes.length || typeof elementEffects === "undefined") return false;
-    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
-    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "seedfall" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (its last one ends)
-    const e = { type: "seedfall", x: t.x, y: t.y, radius: SEEDFALL_RADIUS, life: SEEDFALL_LIFE, maxLife: SEEDFALL_LIFE, by: f, bite: (f.power || 10) * SEEDFALL_BITE, element: "blossom" };
-    elementEffects.push(e); seedfallBeat(e);   // (the first seeds land as it opens)
-    f._sigAt = f0; f._sigCd = moveWindupFrames("seedfall");
-    const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
+    if (!foes.length || typeof elementEffects === "undefined") return false;   // (it winds up with an enemy in reach, as it did: the owner has not said it should wait for a hurt friend: open)
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "buds" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (its last ones wither)
+    elementEffects.push({ type: "buds", x: f.x, y: f.y, radius: BUD_RADIUS, life: BUD_LIFE, maxLife: BUD_LIFE, by: f, element: "blossom" });   // (seeds flung round its own feet: they grow into buds)
+    f._sigAt = f0; f._budAt = f0; f._sigCd = moveWindupFrames("seedfall");
+    const t = foes[0], dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SEEDFALL", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// A beat of the Thornwhip's SEEDFALL buds (every BUD_TICK frames: js/elements.js): each of your followers in the circle that is hurt, the Thornwhip itself among them (it is a follower), is healed BUD_MEND of its
+// maximum health. Nothing hurts an enemy.
+function budsBeat(e) {
+    if (typeof followers === "undefined" || typeof healUnit !== "function") return;
+    for (const a of followers) {
+        if (!a || a.dead || a.team !== "green" || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
+        if (Math.hypot(a.x - e.x, a.y - e.y) <= e.radius) healUnit(a, a.maxHealth * BUD_MEND, e.by || null);
+    }
 }
 // one beat of a SEEDFALL (as it opens, then every SEEDFALL_TICK frames: js/elements.js): its bite on every enemy in it it can see from its middle (fieldBite), its mend on each of your followers in it
 function seedfallBeat(e) {
@@ -1297,15 +1310,17 @@ function _evoFrame(f, d, f0) {
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const go = d.goo ? gooCol(f, f0) : -1;   // (the Hornshell's everyday shot: its arms are drawn in and a ring of glowing goo forms in front of its horn)
+    const fg = d.fling ? flingCol(f, f0, d) : -1;   // (the Thornwhip's vines: rearing round a seed over a shot's or SEEDFALL's wind-up, whipping out as it goes)
     const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
     const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
     const bz = d.blaze ? blazeCol(f, f0, d) : -1;   // (the Ember Hood's HEXFIRE: it lights up over the wind-up, then the crater erupts)
-    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES) || (d.reach && f._maelAt !== undefined && f0 - f._maelAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
+    const hexHold = (d.blaze && f._hexAt !== undefined && f0 - f._hexAt < EVO_ACT_FRAMES) || (d.fan && f._icAt !== undefined && f0 - f._icAt < EVO_ACT_FRAMES) || (d.pull && f._echoAt !== undefined && f0 - f._echoAt < EVO_ACT_FRAMES) || (d.reach && f._maelAt !== undefined && f0 - f._maelAt < EVO_ACT_FRAMES) || (d.fling && f._budAt !== undefined && f0 - f._budAt < EVO_ACT_FRAMES);   // (after it: not the move's old bow)
     const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (fg >= 0) col = fg;
     else if (rc >= 0) col = rc;
     else if (pu >= 0) col = pu;
     else if (go >= 0 && !(sigK >= 0 && sigK < 1)) col = go;
@@ -1522,6 +1537,18 @@ function flareCol(f, f0) {
 
 // which column of the Voidstar's sheet (the extra block, 16 to 23: design No. 943) while MAELSTROM goes (the owner, 2026-11-12: "Lifts his front arms up towards the enemy"): over its wind-up (f._altWind of
 // f._altWindMax) cells 0 to 5 (the arms that face the enemy lifting and reaching), then, as the swirl opens, 4 frames at cell 6 (the thrust) and 8 at cell 7 (lowering); -1 otherwise. Looks only; the frame counts are the agent's.
+// which column of the Thornwhip's sheet (its action block, 8 to 15, which has the vines rearing round a glowing seed, 8 to 11, and whipping out as it goes, 12 to 15, and had never been played for
+// its shots) while it flings: the owner, 2026-11-12: "Let's make the normal [attack] be a low damage seed fling". Over its everyday shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames: f._shotWind
+// of f._shotWind0) cells 8 to 11, and over SEEDFALL's wind-up (f._altWind of f._altWindMax) cells 8 to 11 too; then, as the seed goes (f._shotFiredAt) or the seeds are flung (f._budAt), 12 to 15, 3 frames each
+// after a shot, 4 after SEEDFALL; -1 otherwise. Looks only; the frame counts are the agent's. No new picture: the cells were baked.
+function flingCol(f, f0, d) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 8 + Math.min(3, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 4 + 1e-9));
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (mv && mv.id === "seedfall" && f._altWind > 0 && f._altWindMax > 0) return 8 + Math.min(3, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 4 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 12) return 12 + Math.floor(a / 3); }
+    if (f._budAt !== undefined) { const a = f0 - f._budAt; if (a >= 0 && a < 16) return 12 + Math.floor(a / 4); }
+    return -1;
+}
 function reachCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "maelstrom" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));

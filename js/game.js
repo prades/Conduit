@@ -1146,6 +1146,7 @@ function render() {
             if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it
             if (typeof drawThicketOnTile === "function") drawThicketOnTile(obj.x, obj.y, px, py);   // THORNWHIP's PINK THICKET, its bushes and aura on the floor of its room (js/elements.js)
             if (typeof drawHexfireOnTile === "function") drawHexfireOnTile(obj.x, obj.y, px, py);   // the Ember Hood's HEXFIRE, a pool of lava on the floor of its room (js/elements.js): the walls and units in front cover it
+            if (typeof drawBudsOnTile === "function") drawBudsOnTile(obj.x, obj.y, px, py);   // the Thornwhip's SEEDFALL buds, on the floor of its room (js/elements.js)
             if (typeof drawSeedfallOnTile === "function") drawSeedfallOnTile(obj.x, obj.y, px, py);   // a THORNWHIP's SEEDFALL, on the floor of its room (js/elements.js): the walls and units in front cover it
 
             // The tile a long-press ring was opened on (js/input.js handleLongHold): lit while the ring is up
