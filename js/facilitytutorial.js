@@ -104,8 +104,7 @@ function facilityTutorialTick() {
     if (typeof puzzleTick === "function") puzzleTick();   // the puzzles' records: a solve, and how (js/puzzles.js)
     if (typeof questTick === "function") questTick();   // the Sewer purification: the reading, the samples, the module's cycle (js/quests.js)
     if (typeof bossTick === "function") bossTick();
-    if (typeof nestConsoleTick === "function") nestConsoleTick();
-    if (typeof convertTick === "function") convertTick();   // the conversion panel closes when you leave the Sewers (js/conversion.js)   // the Ant Nest's test squad ends when you leave the Nest (js/nestconsole.js)     // the boss encounters: a death, a hit on a sleeper, the queen's attacks, waves and frantic turn, the leash (js/bosses.js)
+    if (typeof convertTick === "function") convertTick();   // the conversion panel closes when you leave the Sewers (js/conversion.js)     // the boss encounters: a death, a hit on a sleeper, the queen's attacks, waves and frantic turn, the leash (js/bosses.js)
     if (typeof raidTick === "function") raidTick();     // the ant raids out of the arena, once the Sewers are found (js/antraids.js)
     if (typeof potionTick === "function") potionTick(); // the Sleeping Potions in the air land (js/potion.js)
     if (typeof sqTick === "function") sqTick();         // Side Quest appears when he may, and calls you over (js/sidequest.js)

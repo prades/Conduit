@@ -148,8 +148,7 @@ function facilitySaveApply(d) {
 // ── THE FOLLOWERS' RECORD: what the save keeps of each (and a dead one waiting to come back), and a follower made from it again ──
 function followerRosterSnapshot() {
     const armyNow = [
-        ...followers.filter(a => !a.dead && !a.sacrificed && a.isFollower && a.personality && !a.nestTest),   // (a test follower of the Ant Nest's console is never saved: js/nestconsole.js)
-        ...(typeof nestStashed === "function" ? nestStashed().filter(a => !a.dead && !a.sacrificed && a.personality) : []),   // (your squad, set aside while a test squad is in: saved as it is)
+        ...followers.filter(a => !a.dead && !a.sacrificed && a.isFollower && a.personality),
         ...actors.filter(a => a.team === "green" && a.returningToCrystal && !a.dead && !a.sacrificed && a.personality && !followers.includes(a)),
         ...respawnQueue.filter(e => !e.isClone && !e.sacrificed && e.personality)
     ];

@@ -453,7 +453,6 @@ const FACILITY_MAP = {
         { id: "sewer_choke", room: "sewers", shape: "poly", poly: [[820, 852], [940, 852], [940, 858], [820, 858]], status: "placed", kind: "rubble", note: "The collapsed tunnel's mouth, choked along its whole width with broken concrete and rock: the way in on foot, once a fire technician has drilled it through from the ledge." },
         // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
         // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
-        { id: "nest_console", room: "nest_area", shape: "rect", rect: [630, 1192, 670, 1206], status: "placed", kind: "console", note: "THE ANT NEST'S TEST CONSOLE (docs/NEST.md, step C): by the tunnel mouth, east of it: the boss reset, the test squad and the damage meter (js/nestconsole.js)." },
         // THE ANT NEST GROWN OUT (docs/DOMAINS.md §2, 10; build 2026-11-12a): its ways through and its chests. Polys are slivers across a tunnel (they block a step across them, like the Sewers' choke);
         //   rects are whole tiles (a tile is [20k - 10, 20k + 10] sketch px).
         { id: "nest_choke", room: "nest_t1", shape: "poly", poly: [[337, 1260], [343, 1260], [343, 1320], [337, 1320]], status: "placed", kind: "rubble", note: "① THE COLLAPSED TUNNEL in the tunnel west of the queen's cavern: a fire technician's THERMITE DRILL opens it (rubble_nest_choke), from the cavern's side." },
@@ -611,7 +610,6 @@ const FACILITY_MAP = {
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
         { id: "st_junction", room: "front_lobby", prop: "junction", kind: "junction" },   // the main power junction: the tutorial's one repair (js/stations.js, js/tutorial.js)
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
-        { id: "st_nest_console", room: "nest_area", prop: "nest_console", kind: "nest_console" },   // the Ant Nest's test console (js/nestconsole.js)
         { id: "st_chest_nest_a", room: "nest_shelf", prop: "chest_nest_a", kind: "chest" },   // THE DEFAULT CHEST (docs/CHESTS.md; js/chests.js): open once, a booster pack and two items
         { id: "st_chest_nest_b", room: "nest_stream", prop: "chest_nest_b", kind: "chest" },
         { id: "st_chest_nest_c", room: "nest_burrow", prop: "chest_nest_c", kind: "chest" },

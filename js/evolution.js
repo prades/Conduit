@@ -321,7 +321,7 @@ function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null :
 // ── THE RULE ───────────────────────────────────────────────
 // Evolve it now if it is due. True when it did.
 function evoCheck(f) {
-    if (!f || f.dead || !f.isFollower || f.evolved || f.noEvolve || f.team !== "green" || !((f.level || 0) >= EVOLVE_LEVEL)) return false;   // (noEvolve: a test follower of the Ant Nest's console picked unevolved stays so, js/nestconsole.js)
+    if (!f || f.dead || !f.isFollower || f.evolved || f.noEvolve || f.team !== "green" || !((f.level || 0) >= EVOLVE_LEVEL)) return false;   // (noEvolve: one that must stay unevolved; the Ant Nest's test console set it, removed in build 2026-11-12d)
     if (typeof energySlots === "function" && energyFor(f) && !energySlots(f)[0]) return false;   // ENERGY CARDS (js/energy.js): it evolves only with an energy card in its slot; its element is the card's
     const d = evolutionFor(f);
     if (!d) return false;

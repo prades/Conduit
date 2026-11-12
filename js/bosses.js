@@ -29,17 +29,19 @@
 //            she only roams again, and she never sleeps again. The way in: lure her off the console, sleep her (about 5 s), install (about 10 s: js/quests.js QUEST_PURIFY.install) while your followers hold her.
 //            A hit on you does not cancel the install (js/stations.js facilityRelayTick); walking away does.
 //   RESOLVED as before: the water clean calms her, alive, at her post (bossCalm); killed, defeated. Either way Booster Pack 2 unlocks (bossAnyResolved, js/cards.js).
-// THE ANT NEST'S QUEEN (docs/NEST.md, step B, build 2026-11-07mm; the owner, 2026-11-07: "a boss ant that's huge", "Mandible crush, Tremor stomp, Brood call", "Huge, medium fight"): THE ANT QUEEN, the row `nest`, a
-// TEST boss (`test`): the Nest is where the player tries squads and moves on her. Every number of hers is PROVISIONAL (the agent's), the owner's to change.
+// THE ANT NEST'S QUEEN (docs/NEST.md, step B, build 2026-11-07mm; the owner, 2026-11-07: "a boss ant that's huge", "Mandible crush, Tremor stomp, Brood call", "Huge, medium fight"): THE ANT QUEEN, the row `nest`.
+// She lives in THE DEEP BROOD (build 2026-11-12d; the owner, 2026-11-12: "we need to remove the test queen area anyways and move her deeper into the nest", then "Deep Brood, console gone"): at the end of the
+// Nest's main way, past the drilled tunnel and the cracked wall; the first cavern keeps its eggs and the test console is gone. `test` still: she pays nothing and unlocks nothing until her rewards are decided.
+// Every number of hers is PROVISIONAL (the agent's), the owner's to change.
 //   HER       three times the Toxic Queen's size (`size`: her drawing; `bodyR`: her body's reach in tiles, so a follower strikes her edge, a shot hits her body and her own bite reaches from it); health for a fight of
 //             one to two minutes with a good squad (`hpMul` on the ant species' boss block at her level). She walks after whoever she fights, slowly, in her own room.
 //   SHE IS    THERE whenever you come down: a fresh queen, asleep at her post, each time you come into the Nest and she is not alive (killed, or never armed); she wakes when she is hit or one of yours comes near
-//             her (`wakeNear` tiles from her body); held to the Nest: when you leave it she lets go, walks back to her post and sleeps again there, her wounds kept.
+//             her (`wakeNear` tiles from her body); held to her room: when you leave it she lets go, walks back to her post and sleeps again there, her wounds kept.
 //   MOVES     three, with independent timers (`moves`): the MANDIBLE CRUSH, at whoever of yours is in reach of her jaws: a wedge on the floor in front of her for `crush.windup` frames while she stands rooted, then
 //             her jaws close on everyone of yours in it (crushing damage; you: one of your hits); the TREMOR STOMP, when one of yours is within `stomp.trigger` tiles of her body: she rears up for `stomp.windup`
 //             frames, a ring on the floor showing how far it reaches, then the ground shakes: everyone of yours within the ring is hurt (earthquake damage) and thrown back (you: one of your hits); the BROOD
 //             CALL, every `brood.every` frames once she is awake: ants climb out of the Nest's brood holes (`brood.n`, never more than `brood.cap` of hers alive) and go for you.
-//   NOTHING   she or her brood leave pays (no shards, DNA or XP: `noReward`, js/drops.js and js/levels.js), and beating her unlocks nothing (bossAnyResolved leaves a test boss out): a test ground.
+//   NOTHING   she or her brood leave pays (no shards, DNA or XP: `noReward`, js/drops.js and js/levels.js), and beating her unlocks nothing (bossAnyResolved leaves a test boss out): her rewards are undecided.
 const HP_MUL_NEST = 1.6;   // THE ANT QUEEN's health: 1.6 times the ant boss block at her level (1067 at level 10). PROVISIONAL, measured (docs/NEST.md): three evolved followers at level 15 dealt her 15 to 18 a second, her moves off
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
@@ -56,8 +58,8 @@ const BOSS_ENCOUNTERS = {
         frantic: { at: 0.5, speed: 3, roam: 15 },   // the archive's 50%; PROVISIONAL: three times her pace (her own would never get her anywhere), roaming within 15 tiles of her post (the Nest's trash dam and causeway; Side Quest's platform is twice as far)
         quest: "purify", wakes: ["install", "hit"], calms: ["purified"],
         note: "The Sewers' boss, behind the boss gate: the user's toxic ant boss (2026-10-31), named after the archive's proposed progression (the Toxic Ant Queen of the Sewers, Stage 3); provisional. The purification module's install wakes her; clean water calms her." },
-    nest: { id: "nest", domain: "nest_area", room: "nest_area", name: "THE ANT QUEEN", species: "ant", cls: "boss", element: null, level: 10, test: true,
-        lair: F => { const N = F.byId.get("nest_area"); return N ? [(N.bb[0] + N.bb[2]) / 2, N.bb[1] + (N.bb[3] - N.bb[1]) * 0.62] : null; },   // her POST: the middle of the cavern, a little south (the tunnel mouth is in its north wall)
+    nest: { id: "nest", domain: "nest_deep", room: "nest_deep", name: "THE ANT QUEEN", species: "ant", cls: "boss", element: null, level: 10, test: true,
+        lair: F => { const N = F.byId.get("nest_deep"); return N ? [(N.bb[0] + N.bb[2]) / 2, (N.bb[1] + N.bb[3]) / 2] : null; },   // her POST: the middle of the Deep Brood (build 2026-11-12d; the first cavern's middle, a little south, before)
         size: 3, bodyR: 1.2, hpMul: HP_MUL_NEST, wakeNear: 2.5,
         mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null,
         moves: {
@@ -66,7 +68,7 @@ const BOSS_ENCOUNTERS = {
             brood: { first: 900, every: 1500, n: 3, cap: 6, classes: { scout: 3, striker: 1 }, below: [5, 3] },   // 15 s after she wakes, then every 25 s: 3 ants, scouts and the odd striker (never more than 6 of hers alive), 5 to 3 levels under hers
         },
         quest: null, wakes: ["hit", "near"], calms: [],
-        note: "THE ANT QUEEN of the Ant Nest (docs/NEST.md): the archive's proposed first nest boss (Stage 1 of the faction progression), built as the Nest's test boss (the owner, 2026-11-07). Every number is provisional." },
+        note: "THE ANT QUEEN of the Ant Nest (docs/NEST.md): the archive's proposed first nest boss (Stage 1 of the faction progression), built as the Nest's test boss (the owner, 2026-11-07); in the Deep Brood since build 2026-11-12d, her test console gone. Every number is provisional." },
 };
 const BOSS_HOME = 1.2;   // tiles from its post: home (a rooted boss sleeps again there)
 const BOSS_COL = "#8cff5a";   // the toxic green of her bombs and her brood's call
@@ -307,7 +309,7 @@ function bossTick() {
 function _bossTestEntry() {
     for (const id of Object.keys(BOSS_ENCOUNTERS)) {
         const E = BOSS_ENCOUNTERS[id]; if (!E.test) continue;
-        const at = typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, inside = at === E.room || (E.room === "nest_area" && typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(at));   // (the Nest grown out, build 2026-11-12a: coming DOWN into any of its rooms arms her, walking between them does not; she keeps to her cavern)
+        const at = typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, nest = typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(E.room), inside = at === E.room || (nest && FP_NEST_ROOMS.has(at));   // (the Nest grown out, build 2026-11-12a: coming DOWN into any of its rooms arms her, walking between them does not; she keeps to her own room, the Deep Brood since 2026-11-12d)
         const S = inside || (_fp.bosses && _fp.bosses[id]) ? bossState(id) : null; if (!S) continue;
         if (inside && !S.inRoom && !bossUnit(id)) { S.state = "idle"; S.outcome = null; S.unit = null; S.cast = null; bossArm(id); }
         S.inRoom = inside;

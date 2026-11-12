@@ -80,7 +80,7 @@ What it is today:
         - Several at once stack upward.
         - The agent's, provisional: the words as the game says them (WEAK!, not "SUPER EFFECTIVE"); WEAK! following the number; about three quarters of a second.
     - Drafted (§10).
-12. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay.
+12. **No DEFEATED** (the owner: "We're removing the defeated text"). The word over a unit that falls is taken out, in every fight, at once: build `2026-11-11g` (`COMBAT.defeatText` 0; `COMBAT.md` §1). The boss's "IS DEFEATED" banner and the Nest console's state are other words, and stay (the console itself went in build `2026-11-12d`).
 13. **Earlier, superseded: the element's word on a background.**
     - The owner first asked: "Instead of electric resist, use color coated, element symbol behind it or animated texture background gradient". Drafted as A (the number over its element's symbol) and B (the number on a plasma badge).
     - The owner's answer to those: "It should say resist / weak. Just have a rectangular texture behind it that has the element of the opposition attack." So the word stays, as WEAK or RESIST without the element's name, and the element of the attack that hit is the texture of a rectangle behind it. That texture is the energy cards' moving plasma in the element's colour.

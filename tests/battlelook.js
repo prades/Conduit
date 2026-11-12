@@ -5,7 +5,7 @@
 // are not visible", a level and the element's tag by the bar instead; the followers' health on the roster, not the floor.
 //   WHEN        a creature near you, in sight, going for you or yours, hit by you or yours in the last 2 s, or the one your squad is ordered at; not a sleeper, a clone, one of yours, one too far or
 //               out of sight. The view eases in (0.4 s), holds 3 s after the last, eases out (0.6 s); the dialogue box and ?attract keep it out; a new game puts it out
-//   THE ZOOM    a copy of the world picture scaled about the middle (its source rectangle); HIGH blurs and darkens the edges, LOW darkens only; the network panel and the Nest's meter wait for after it
+//   THE ZOOM    a copy of the world picture scaled about the middle (its source rectangle); HIGH blurs and darkens the edges, LOW darkens only; the network panel waits for after it
 //   TAPS        what is drawn after the copy and every tap on the world go through the zoom: a creature where it shows, a follower's pick point, the lock-on, a floating word, a tile, the Crystal, each picker
 //   THE FLOOR   drawn first on your level only; written on it: each fighter's tile lit, a creature's bar with its level and its element's tag (none for your followers), STUNNED while it lasts, WEAK! shaking
 //   THE WORDS   no names or small bars over the units; WEAK and STUNNED not in the air; RESIST small, pale, drifting off
@@ -42,12 +42,12 @@ window.addEventListener('load', function(){ setTimeout(function(){
   try {
     facilityPlayStart(); facilityBlackoutSet(false); gameState.running = true; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; if (typeof dialogueClear === 'function') dialogueClear(); step(2);
     var W = canvas.width, H = canvas.height, lum = function(x, y){ var d = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data; return Math.round((d[0] + d[1] + d[2]) / 3); };
-    var keepHud = drawFacilityNetworkHUD, keepNest = nestMeterDraw; drawFacilityNetworkHUD = function(){}; nestMeterDraw = function(){};
+    var keepHud = drawFacilityNetworkHUD; drawFacilityNetworkHUD = function(){};
     var plain = function(){ ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, W, H); ctx.fillStyle = '#ffffff'; ctx.fillRect(W / 2 + 200 - 4, H / 2 - 120 - 4, 8, 8); };
     _bv.k = 1; _bv.z = BATTLE_VIEW.zoom; var q = bvZoomPt(W / 2 + 200, H / 2 - 120);
     gfxLow = true; plain(); battleViewPost(); out.low = { dot: lum(q[0], q[1]), was: lum(W / 2 + 200 + 7, H / 2 - 120 - 7), mid: lum(W / 2 + 40, H / 2 + 40), corner: lum(6, H - 6), blur: !!_bvDraw.cvs.edge };
     gfxLow = false; plain(); battleViewPost(); out.high = { dot: lum(q[0], q[1]), mid: lum(W / 2 + 40, H / 2 + 40), corner: lum(6, H - 6), blur: !!_bvDraw.cvs.edge };
-    drawFacilityNetworkHUD = keepHud; nestMeterDraw = keepNest; battleViewReset(); out.size = [W, H];
+    drawFacilityNetworkHUD = keepHud; battleViewReset(); out.size = [W, H];
     var A = _fp.F.byId.get('arena').bb, cx = (A[0] + A[2]) / 2, cy = (A[1] + A[3]) / 2; player.x = player.targetX = player.visualX = cx; player.y = player.targetY = player.visualY = cy; player.fpPath = null;
     actors = actors.filter(function(a){ return !(a instanceof Predator); });
     var ant = spawnCreature({ species: 'ant', className: 'worker', x: cx + 3, y: cy, level: 4 }); ant.x = cx + 3; ant.y = cy; ant.update = function(){}; ant.health = ant.maxHealth = 5000; ant.spawnProtection = 0; ant.currentTarget = player;
@@ -145,21 +145,20 @@ function realPage() {
         const r = J(`(function(){ __on(); const a = bvZoomPt(640, 430), b = bvZoomPt(740, 330), c = bvUnzoom(b[0], b[1]), d = bvUnzoom(765, 305); __off(); return [a, b, c, d, bvZoomPt(740, 330), bvUnzoom(740, 330)]; })()`);
         same(JSON.stringify(r), JSON.stringify([[640, 430], [765, 305], [740, 330], [740, 330], [740, 330], [740, 330]]), 'the points (the middle; out; back; back from the screen; no zoom both ways)');
     });
-    check('the copy: the picture\'s middle 1/1.25 drawn over the whole screen; on HIGH a blurred copy kept towards the edges, then the darkening; on LOW the darkening alone; then the network panel and the Nest\'s meter; out of the view nothing', () => {
-        const r = J(`(function(){ const o = {}, log = [], keepH = drawFacilityNetworkHUD, keepN = nestMeterDraw, keepD = ctx.drawImage, keepLow = gfxLow;
-            drawFacilityNetworkHUD = () => log.push('net'); nestMeterDraw = () => log.push('nest');
+    check('the copy: the picture\'s middle 1/1.25 drawn over the whole screen; on HIGH a blurred copy kept towards the edges, then the darkening; on LOW the darkening alone; then the network panel; out of the view nothing', () => {
+        const r = J(`(function(){ const o = {}, log = [], keepH = drawFacilityNetworkHUD, keepD = ctx.drawImage, keepLow = gfxLow;
+            drawFacilityNetworkHUD = () => log.push('net');
             ctx.drawImage = function (...a) { const im = a[0], name = im === canvas ? 'canvas' : (Object.keys(_bvDraw.cvs).find(k => _bvDraw.cvs[k].c === im) || '?'); log.push(name + (a.length === 9 ? ':' + a.slice(1).map(v => Math.round(v)).join(',') : '')); };
             try { __on(); gfxLow = false; battleViewPost(); o.high = log.splice(0); gfxLow = true; battleViewPost(); o.low = log.splice(0); __off(); battleViewPost(); o.off = log.splice(0); }
-            finally { drawFacilityNetworkHUD = keepH; nestMeterDraw = keepN; ctx.drawImage = keepD; gfxLow = keepLow; }
+            finally { drawFacilityNetworkHUD = keepH; ctx.drawImage = keepD; gfxLow = keepLow; }
             return o; })()`);
-        same(r.high.join(' '), 'copy:128,86,1024,688,0,0,1280,860 edge dark net nest', 'HIGH');
-        same(r.low.join(' '), 'copy:128,86,1024,688,0,0,1280,860 darkLow net nest', 'LOW');
+        same(r.high.join(' '), 'copy:128,86,1024,688,0,0,1280,860 edge dark net', 'HIGH');   // (the Ant Nest\'s meter went with its test console in build 2026-11-12d)
+        same(r.low.join(' '), 'copy:128,86,1024,688,0,0,1280,860 darkLow net', 'LOW');
         same(r.off.join(' '), '', 'out of the view');
     });
-    check('the world pass holds back the network panel and the Nest\'s meter while the view is on, so a frame in a fight draws the panel once, after the copy; the copy is made just before the floating words', () => {
+    check('the world pass holds back the network panel while the view is on, so a frame in a fight draws the panel once, after the copy; the copy is made just before the floating words', () => {
         const G = rd('js/game.js');
         ok(/if \(!\(typeof battleViewDefers === "function" && battleViewDefers\(\)\)\) drawFacilityNetworkHUD\(\);/.test(G), 'the network panel is not held back');
-        ok(/if \(typeof nestMeterDraw === "function" && !\(typeof battleViewDefers === "function" && battleViewDefers\(\)\)\) nestMeterDraw\(\);/.test(G), 'the Nest\'s meter is not held back');
         ok(/if \(typeof battleViewPost === "function"\) battleViewPost\(\);[^\n]*\n\s*drawFloatingTexts\(\);/.test(G), 'the copy is not made just before the floating words');
         ok(/facilityPlayerStep\(\);\n\s*if \(typeof battleViewTick === "function"\) battleViewTick\(\);/.test(G), 'the view is not stepped each frame');
         const r = J(`(function(){ __calm(); __mid(); __off(); const foe = __foe(3, 0); foe.currentTarget = player; for (let i = 0; i < BATTLE_VIEW.easeIn + 2; i++) render();

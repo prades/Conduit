@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12d` · branch `claude/start-game-project-HSh7Z` · THE ANT QUEEN in the Deep Brood; the test console gone
+- **The owner**: "we need to remove the test queen area anyways and move her deeper into the nest"; of the agent's options, **"Deep Brood, console gone"** (`DECISION-LOG.md`).
+- **THE ANT QUEEN lives in the Deep Brood**, at the end of the Nest's main way (past the drilled tunnel and the cracked wall, where the way down starts): her post its middle, held to it, her brood out of its three brood holes (js/bosses.js, the `nest` row). Coming down into the Nest arms her there, as before; walking between its rooms does not. Her moves, numbers and rewards (none yet) are as they were.
+- **The test console is removed**: its prop and station in the first cavern, js/nestconsole.js, its panel and styles, the queen's reset, the test squad and the damage meter, and their hooks (a hit, the frame, the save, the revive, the battle view). The first cavern keeps its eggs, brood holes and resin.
+- Files: js/bosses.js, js/facilitymap.js, js/helpers.js, js/game.js, js/battleview.js, js/facilitytutorial.js, js/facilitysave.js, js/stations.js, js/evolution.js and js/energy.js (comments), game.html; js/nestconsole.js deleted. Tests: nest (the queen in the Deep Brood; the console's five checks replaced by one that it is gone), battlelook, cover, facilityplay, rooms, sewerquest. Docs: NEST.md, DOMAINS.md, CONVERSION.md, BATTLE-LOOK.md, COMBAT.md, the Bible.
+- Open: does a beaten queen stay beaten, or come back each time you come down (as built)? Her rewards. Not playtested.
+
 ### Build `2026-11-12c` · branch `claude/start-game-project-HSh7Z` · the rock painted once
 - **The owner**, of a fight with THE ANT QUEEN in the Nest: "it wasn't a crash. It was a really bad lag, and I was down to a really low FPS"; asked whether a package of every picture loaded at the start would end it. Measured first (headless Chromium): nothing was loading mid-fight; the rock walls were drawn afresh every frame. Of three ways, the owner chose **"Paint walls once"** (`DECISION-LOG.md`).
 - **Each rock piece and each bend is painted once** into a picture of its own, in its light, by its own drawing, and stamped every frame (js/facilitydecor.js `_fpRockPic`), as a floor tile's marks already were. It looks the same: a still frame drawn both ways matched pixel for pixel. A piece is drawn live, as before, while its light is changing, while the battle view draws it faint, and without a real canvas. The pictures keep within 8 million pixels, the least recently drawn let go first.

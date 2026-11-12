@@ -43,7 +43,7 @@ What is true of the code (js/predator.js, js/npc.js, js/combat.js, js/abilities.
 | `COMBAT.hitCap` | 0.34 | the most of a follower's or clone's max health one hit may take (was 0.45): at least three hits, usually four |
 | `COMBAT.numbers.ally` | `true` | damage numbers over your own units too (red, "−n"), and green "+n" for healing |
 | `COMBAT.lagBar` | 36 frames | the health bar keeps a pale segment of the health just lost that drains over this long (RuneScape's way of showing a hit's size) |
-| `COMBAT.defeatText` | 0 (was 90 frames) | "DEFEATED" over a unit that dies: **taken out** (the owner, 2026-11-11: "We're removing the defeated text"; build `2026-11-11g`). The boss's "IS DEFEATED" banner and the Nest console's DEFEATED state stay. |
+| `COMBAT.defeatText` | 0 (was 90 frames) | "DEFEATED" over a unit that dies: **taken out** (the owner, 2026-11-11: "We're removing the defeated text"; build `2026-11-11g`). The boss's "IS DEFEATED" banner stays; the Nest console's DEFEATED state stayed until the console went in build `2026-11-12d`. |
 
 In a fight the battle view draws the numbers its own way (builds `2026-11-11h` and `2026-11-11i`, `BATTLE-LOOK.md`): bigger, in the face of the hit's damage type, knocked off the way the blow went, a creature's back into its floor bar, a follower's answered on its roster card. Out of a fight they are as this table says.
 

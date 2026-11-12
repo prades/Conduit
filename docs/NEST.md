@@ -6,6 +6,8 @@ Status: **Implemented and tested** (not playtested): step A in build `2026-11-07
 
 **Built in `2026-11-12a`:** the Nest grows out into tunnels and nests around this cavern (which stays as it is, its west wall a low rim), and the volcanic layer is part of it, down a sloping tunnel (its spot kept): `DOMAINS.md` §2, 10 to 12, and §9. The Nest now lies 112 tiles south of the arena (96 before).
 
+**Built in `2026-11-12d`: THE ANT QUEEN lives in the Deep Brood, and the test console is gone** (the owner, 2026-11-12: "we need to remove the test queen area anyways and move her deeper into the nest", then, of the agent's options, "Deep Brood, console gone"; `DECISION-LOG.md`). The Deep Brood is at the end of the main way, past the drilled tunnel and the cracked wall, where the way down starts. The first cavern keeps its eggs, brood holes and resin; the console (step C) is removed, with its queen's reset, test squad and damage meter. She still pays nothing and unlocks nothing until her rewards are decided. Below, step B is as built, her room now the Deep Brood; step C is kept as history.
+
 ## The owner's words (2026-11-07)
 
 - "Can we finally create the nest layer? [...] I want to use it to test the player and squad combinations and different moves against a boss ant that's huge."
@@ -22,15 +24,16 @@ Status: **Implemented and tested** (not playtested): step A in build `2026-11-07
 | Step | What | Status |
 |---|---|---|
 | A | The room and the way in: the hole a fire technician drills through the arena's south rubble is the doorway down into the Nest; a tunnel mouth in the Nest's north wall leads back up | Implemented and tested, `2026-11-07ll` |
-| B | THE ANT QUEEN: huge, her three attacks, her health for a medium fight, held to the room | Implemented and tested, `2026-11-07mm` |
-| C | The console in the Nest: boss reset (full health, a level you pick), the test squad builder, the damage meter | Implemented and tested, `2026-11-07nn` |
+| B | THE ANT QUEEN: huge, her three attacks, her health for a medium fight, held to the room | Implemented and tested, `2026-11-07mm`; in the Deep Brood since `2026-11-12d` |
+| C | The console in the Nest: boss reset (full health, a level you pick), the test squad builder, the damage meter | **Removed** in `2026-11-12d` (built in `2026-11-07nn`) |
 
 ## Rules (decided)
 
 1. **The way in** is the arena's south rubble (`rubble_arena_south`, already there, drilled by a fire technician's THERMITE DRILL). Until it is drilled the Nest cannot be reached; once drilled it stays open (saved, as every drilled rubble is).
 2. **THE ANT QUEEN** fights with a mandible crush, a tremor stomp and a brood call. She is about three times the Toxic Queen's size.
-3. **The console's tools**: a boss reset, the test squad builder and a damage meter.
-4. **The test squad** is temporary: it exists only in the Nest, is never saved, and leaves when you leave; your own squad is kept as it was.
+3. ~~**The console's tools**: a boss reset, the test squad builder and a damage meter.~~ **Removed** 2026-11-12 (build `2026-11-12d`): "Deep Brood, console gone".
+4. ~~**The test squad** is temporary: it exists only in the Nest, is never saved, and leaves when you leave; your own squad is kept as it was.~~ **Removed** with the console.
+5. **THE ANT QUEEN lives in the Deep Brood** (2026-11-12, build `2026-11-12d`), deeper in the Nest than the first cavern.
 
 ## Chosen by the agent (provisional, the owner's to change)
 
@@ -54,18 +57,20 @@ THE ANT QUEEN is the `nest` row of `BOSS_ENCOUNTERS` (js/bosses.js), the same bo
 
 - **Her:** the ant species' boss class at **level 10**; drawn **3 times** the Toxic Queen's size; a **body 1.2 tiles** round (`bodyR`): a brawler strikes her at her edge, a technician stops at her edge instead of walking into her, a shot hits anywhere on her body. **Health 1.6 times** the boss block at her level (1,067 at level 10).
 - **How long she lasts (measured in the browser):** three evolved followers at level 15, her moves off, deal her 15 to 18 a second (a fire Quillstone, an electric Thunderhead and a Thermite Burrower: 15; a Static Orb, an Ember Hood and a Hammer Slug: 18). With her moves on, the second squad, at twice the health she has now (1,334), killed her in 141 seconds without the player's own attacks, losing a follower twice (revived at the Crystal and walked back). At 1.6 times, with the player shooting too, the fight is about one and a half minutes.
-- **There whenever you come down:** coming into the Nest when she is not alive (killed, or never armed) arms a fresh queen, asleep at her post in the middle of the cavern, a little south. She wakes when hit, or when one of yours comes within **2.5 tiles** of her body.
-- **Held to the Nest:** when you leave it, she lets go, walks back to her post and sleeps again there, her wounds kept.
+- **There whenever you come down:** coming into the Nest when she is not alive (killed, or never armed) arms a fresh queen, asleep at her post in the middle of the Deep Brood (the middle of the cavern, a little south, until build `2026-11-12d`). Walking between the Nest's rooms does not arm her again. She wakes when hit, or when one of yours comes within **2.5 tiles** of her body.
+- **Held to her room:** when you leave it, she lets go, walks back to her post and sleeps again there, her wounds kept.
 - **Her moves** (independent timers; no plain bite, no species special):
   - **MANDIBLE CRUSH**: when one of yours is within **2 tiles** of her body, at most every **6 s**: she stands rooted for **0.9 s** with a red wedge on the floor in front of her (**115 degrees**, out to 2 tiles past her body), then her jaws close on everyone of yours in it: **0.4 times her power**, crushing (32 at level 10); you lose one of your hits.
   - **TREMOR STOMP**: when one of yours is within **3 tiles** of her body, at most every **12 s**: she rears up for **1.2 s**, an amber ring on the floor out to **3.6 tiles** past her body, then the ground shakes: everyone of yours inside is hurt (**0.25 times her power**, earthquake: 20 at level 10) and thrown back; you lose one of your hits.
-  - **BROOD CALL**: **15 s** after she wakes, then every **25 s**: **3 ants** (scouts and the odd striker, 5 to 3 levels under her) climb out of the Nest's brood holes and go for you; never more than **6** of hers alive.
+  - **BROOD CALL**: **15 s** after she wakes, then every **25 s**: **3 ants** (scouts and the odd striker, 5 to 3 levels under her) climb out of her room's brood holes (the Deep Brood's three) and go for you; never more than **6** of hers alive.
 - **Nothing paid, nothing unlocked:** she and her brood pay no shards, DNA or XP (`noReward`), and beating her does not count as a first boss for Booster Pack 2 (`bossAnyResolved` leaves a test boss out).
 - **Her enemy card** reads CRUSH and her crush's strength where a creature's says BITE.
-- **A knock never carries you through a doorway** (js/helpers.js `hurtPlayer`): the tunnel mouth is beside where she fights, and her hits used to shove you up it, out of the fight.
+- **A knock never carries you through a doorway** (js/helpers.js `hurtPlayer`): the tunnel mouth was beside where she fought, and her hits used to shove you up it, out of the fight. (The rule stands for every doorway.)
 - **Tests:** `tests/nest.js` (her arming, size, body and health; waking; the crush, the stomp and the brood; held to the Nest; killed, nothing paid, a fresh queen; the knock rule; her enemy card); `tests/sewerquest.js` (the nest row now arms).
 
-## Step C as built (`2026-11-07nn`)
+## Step C as built (`2026-11-07nn`) — removed in `2026-11-12d`
+
+*Removed with the queen's move to the Deep Brood (the owner: "Deep Brood, console gone"): js/nestconsole.js, its prop and station, its panel, the damage meter's hooks, the test squad's (not saved, not revived) and their tests. As it was:*
 
 The **NEST CONSOLE** (js/nestconsole.js): a console prop by the tunnel mouth, east of it (`nest_console`), a station for any class, free (`STATION_KINDS.nest_console`, js/stations.js). Walk up to it and tap it (or press E) to open its panel. Every number is the agent's, provisional.
 
@@ -76,8 +81,9 @@ The **NEST CONSOLE** (js/nestconsole.js): a console prop by the tunnel mouth, ea
 
 ## Open questions
 
-- Rewards for beating THE ANT QUEEN, if any (none while the Nest is a test ground: built so in step B).
+- Rewards for beating THE ANT QUEEN, if any (none yet: she pays nothing and unlocks nothing).
+- Does a beaten queen stay beaten, or come back each time you come down into the Nest (as built, from her test-ground days)?
 - Her numbers (all provisional): her level, health, the moves' strength, timing and reach, the brood's size.
-- A follower that falls in the Nest is revived at the Crystal, as anywhere, and walks all the way back: should the Nest revive it closer (a test ground)? (A test follower is not revived at all.)
-- Should the console also let you pick the Ant Queen's moves to test one at a time, or the player's own class and level? (Not asked for; not built.)
+- A follower that falls in the Nest is revived at the Crystal, as anywhere, and walks all the way back: should the Nest revive it closer?
+- ~~Should the console also let you pick the Ant Queen's moves to test one at a time, or the player's own class and level?~~ The console is removed (`2026-11-12d`).
 - Whether the Nest's brood joins the arena's spawn tables.

@@ -214,10 +214,7 @@ function measure(w, h) {
             return { rec: [rec.element, rec.conv && rec.conv.from], g: [g.element, g.convertedFrom], h: [h.element, h.convertedFrom || null] }; })()`);
         same(r.rec.join(), 'blossom,toxic', 'the record'); same(r.g.join(), 'blossom,toxic', 'loaded'); same(r.h.join(), 'toxic,', 'an old save\'s follower');
     });
-    check('the Ant Nest\'s test console offers BLOOM\'s evolved Mage (the THORNWHIP, build 2026-11-08j) and its unevolved Brawler and Mage, not its Technician (no ability yet)', () => {
-        const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role + (String(f.id).indexOf(':') < 0 ? ':' + f.id : ''))`);
-        same(r.join(), 'sniper:shrub,brawler:sundew,camper:coralcrab,brawler,sniper,camper', 'BLOOM\'s forms there');   // (SUNDEW since build 2026-11-08k; the coral crab and the unevolved Technician since 2026-11-08m)
-    });
+    // (the check that the Ant Nest's test console offered BLOOM's forms went with the console, build 2026-11-12d: docs/NEST.md)
     check('the card art: a BLOOM follower\'s backdrop has its texture, and BLOOM has an emblem (approved 2026-11-08)', () => {
         const r = J(`(function(){ return { cls: cardArtUnitClass({ isFollower: true, element: 'blossom', role: 'brawler' }), tex: cardArtTexture('blossom').length, emb: !!CARD_ART_EMBLEMS.blossom }; })()`);
         ok(/blossom/.test(r.cls), 'its class: ' + r.cls); ok(r.tex > 300, 'its texture: ' + r.tex); same(r.emb, true, 'its emblem');

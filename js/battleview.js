@@ -7,7 +7,7 @@
 //                  So nothing that draws the world changes. What is drawn after it and sits on the world goes through bvZoomPt (the floating words: js/drops.js floatingTextScreen; the
 //                  lock-on and the dial's brackets: js/gunfire.js _gunScreen; a follower's pick point: js/input.js followerPickPoint); a tap on the world comes back through bvUnzoom
 //                  (the pickers that work out the world from the screen: js/input.js, js/techabilities.js, js/fluxmove.js, js/mutator.js, js/stations.js, js/specimen.js).
-//                  The HUD the world pass draws (the network panel, the Ant Nest's meter) is held back and drawn after the copy, so it stays where it is.
+//                  The HUD the world pass draws (the network panel) is held back and drawn after the copy, so it stays where it is.
 //   THE FLOOR      drawn first (the tiles on your floor's level), then what is written on it, then all that stands on it (js/game.js drawDepthOf: battleFloorFirst). Written on it:
 //                  each fighter's tile lit (green yours, red theirs); a creature's health on the floor before it, its level and its element's tag by the bar (your followers' health is
 //                  on the roster: no bar on the floor for them); WEAK! along the tile, shaking, where a weakness was hit; STUNNED along the tile by one stunned, while it lasts.
@@ -83,7 +83,7 @@ function battleViewTick() {
     if (want > _bv.k) _bv.k = Math.min(1, _bv.k + 1 / BATTLE_VIEW.easeIn + 1e-9); else if (want < _bv.k) _bv.k = Math.max(0, _bv.k - 1 / BATTLE_VIEW.easeOut - 1e-9);   // (the hair: exactly 1 and 0 at the ends)
     _bv.z = _bv.k > 0 ? 1 + (BATTLE_VIEW.zoom - 1) * _bvSmooth(_bv.k) : 1;
 }
-// is the HUD the world pass draws (the network panel, the Nest's meter) held back for after the copy?
+// is the HUD the world pass draws (the network panel) held back for after the copy?
 function battleViewDefers() { return _bv.z > 1.0001; }
 
 // ── THE COPY: the world zoomed; the edges; the held-back HUD ──
@@ -120,7 +120,6 @@ function battleViewPost() {
     if (dark) { ctx.globalAlpha = e; ctx.drawImage(dark.c, 0, 0); ctx.globalAlpha = 1; }
     ctx.restore();
     if (typeof drawFacilityNetworkHUD === "function") drawFacilityNetworkHUD();   // held back from the world pass: unzoomed, where it always is
-    if (typeof nestMeterDraw === "function") nestMeterDraw();
 }
 
 // ── THE FIGHTERS: you, your squad near you, the creatures near you ──

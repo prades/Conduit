@@ -772,7 +772,6 @@ function render() {
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
-            if (a.nestTest) return;   // a TEST follower of the Ant Nest's console (js/nestconsole.js): one that falls is gone, never revived
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
             respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, partnerUid:a.partnerUid||null, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 energy: typeof energyRecord === "function" ? energyRecord(a) : undefined,   // (and its energy cards: js/energy.js)
@@ -1243,7 +1242,6 @@ function render() {
     if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)
     if (typeof drawFollowerPoisonMarks === "function") drawFollowerPoisonMarks();   // green bubbles over a poisoned follower (js/combat.js)
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
-    if (typeof nestMeterDraw === "function" && !(typeof battleViewDefers === "function" && battleViewDefers())) nestMeterDraw();           // the Ant Nest's damage meter (js/nestconsole.js; in the battle view, after the zoom)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     if (typeof battleViewPost === "function") battleViewPost();   // THE BATTLE VIEW: the world picture zoomed, its edges, the HUD the world pass held back (js/battleview.js)
     drawFloatingTexts();

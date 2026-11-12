@@ -47,8 +47,6 @@ const STATION_KINDS = {
     // SIDE QUEST IN THE TUTORIAL (js/sidequest.js, build 2026-11-07qq): under the catwalks in the arena, a talk of two lines, and then he flies up for the power module; a station made at runtime, as his Sewers' one
     sidequest_tut: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqTutVerb === "function" ? sqTutVerb() : "TALK", canFn: () => typeof sqTutCan === "function" ? sqTutCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqTutUse === "function" ? sqTutUse() : { ok: false, why: "NOBODY HERE" } },
-    // THE ANT NEST'S TEST CONSOLE (js/nestconsole.js; docs/NEST.md, step C): for any class, no cost: it opens its panel (the boss reset, the test squad, the damage meter)
-    nest_console: { name: "NEST CONSOLE", classes: null, verbFn: () => "OPEN THE TEST CONSOLE", use: () => { if (typeof nestConsoleOpen === "function") nestConsoleOpen(); return { ok: true, msg: "", quiet: true }; } },
     // THE MAIN POWER JUNCTION (the server room; build 2026-11-07qq, the owner: "there's no relay stations that need to be repaired. It's just one spot on the map that needs to be repaired, and you need to obtain a
     // module to repair it"): a BUILD (stand at it, the progress bar; walk away and it stops, nothing spent) that takes the POWER MODULE when it is done (Side Quest brings it down from the catwalks: js/sidequest.js);
     // then every relay in the facility comes on (facilityJunctionRepair). Anyone can, before any class.
