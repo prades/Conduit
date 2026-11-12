@@ -474,6 +474,7 @@ function facilityResetState() {
     world = []; worldTileMap = new Map(); actors = []; followers = []; ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
     projectiles = []; fragments = []; smoke = []; shards = []; elementEffects = []; floatingTexts = []; followerProjectiles = []; respawnQueue = [];
     if (typeof clearDNA === "function") clearDNA();
+    if (typeof redeemReset === "function") redeemReset();   // the codes' gifts: a new game has had none (js/redeem.js)
     if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
     if (typeof specimenReset === "function") specimenReset();   // the capsules carried, a preservation under way (js/specimen.js)
     if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)

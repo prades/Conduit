@@ -3051,3 +3051,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: the big shard rises out of its back, tips at the enemy, is shot (the game draws it flying), the Mimic stands without it and it grows back. The hit is the flux hit it always was and lands as the shard does, 18 frames after the cast (it landed at the cast before): a consequence of drawing a shot before its hit, so the damage and the picture agree. Looks otherwise. GRAVITY SLAM keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
 - Agent's, provisional: the timing (8 rising, 10 flying, 32 in all), the flying shard's look and arc.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: Code cards, and a naming system (2026-11-12, build `2026-11-12e`, branch `claude/code-card`)
+- The owner: "Go ahead and make a code card feature for my game." Nothing about a "code card" was in the repository or the Notion archive; the agent asked. Chosen: a code **redeemed** (typed in), **on the pack/card screen**, **once per save**. Its gift, for now: **"a lvl 20 mantis clone that's integrated with the mutator clones"**, the **Tank**; to "who may redeem it and with a clone out" the owner wrote **"Emotional Support 💚 is the message adds to squad"**; the codes **"Kylie" or "frommatt"**, the creature's name **Emotional Support**, **"add a naming system"**.
+- Built: the box on the shop tab; the gift (a level 20 mantis tank clone, the Mutator's primary clone for a Mutator); names on units (`nick`). Spec: `CODES.md`.
+- The agent's readings, provisional: any class may redeem it; either code gives the one gift; a clone already out refuses the code (not used up) rather than being replaced; no rename screen yet.
+- Status: Implemented and tested; not playtested. `CODES.md`, `CHANGELOG.md`.
+

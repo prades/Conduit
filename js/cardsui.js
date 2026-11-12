@@ -26,7 +26,7 @@
 let cardsPanelOpen = false, _cdOpts = {}, _cdSig = "", _cdTimer = 0, _cdArm = null;   // _cdArm: { id, until }, a card whose UNLOCK (or a pack, or a market buy) is armed
 const CARDS_ARM_MS = 3000;
 // the menu shown ("cards" or "shop") and the collection's view ("owned" or "all"), kept between openings; _cdReveal: the pack whose cards are being revealed, or null
-let _cdTab = "cards", _cdView = "owned", _cdReveal = null;
+let _cdTab = "cards", _cdView = "owned", _cdReveal = null, _cdCode = "", _cdCodeSay = null;   // (_cdCode: what is typed in the REDEEM CODE box, kept while the sheet redraws; _cdCodeSay: what the last try said, { ok, text })
 
 function _cdEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function _cdClick(el, fn) { el.addEventListener("click", ev => { ev.stopPropagation(); fn(ev); }); }
@@ -160,6 +160,18 @@ function _cdPackBox(pack) {
 // ── the market: the shelf, its clock, and two ways to pay for each card ──
 function _cdClock(frames) { const t = Math.max(0, Math.ceil(frames / 60)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); }
 function _cdShelfNote() { return "NEXT SHELF IN " + _cdClock(equipShelf.until - _equipNow()) + " · THE CLOCK WAITS WHILE THIS SHEET IS OPEN · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS"; }
+// REDEEM A CODE (js/redeem.js; the owner, 2026-11-12: a code card feature, on the pack/card screen): a box to type a code in and a button; what it said stays under it
+function _cdRedeemBox() {
+    const box = _cdEl("div", "cd-redeem"), row = _cdEl("div", "cd-redeem-row"), inp = _cdEl("input", "cd-redeem-in");
+    inp.type = "text"; inp.placeholder = "TYPE A CODE"; inp.maxLength = 32; inp.value = _cdCode; inp.setAttribute("autocomplete", "off"); inp.setAttribute("autocapitalize", "none"); inp.setAttribute("autocorrect", "off"); inp.spellcheck = false; inp.setAttribute("aria-label", "Code");
+    const go = () => { const r = typeof redeemTry === "function" ? redeemTry(_cdCode) : { ok: false, why: "CODES ARE NOT HERE" }; _cdCodeSay = { ok: r.ok, text: r.ok ? r.say : r.why }; if (r.ok) _cdCode = ""; };
+    inp.addEventListener("input", () => { _cdCode = inp.value; });
+    for (const t of ["keydown", "keyup", "keypress"]) inp.addEventListener(t, ev => { if (ev.key === "Escape") return; ev.stopPropagation(); if (t === "keydown" && ev.key === "Enter") { ev.preventDefault(); go(); cardsRender(true); } });   // (the game's keys stay out of the box; Escape still closes the sheet)
+    inp.addEventListener("pointerdown", ev => ev.stopPropagation()); inp.addEventListener("click", ev => ev.stopPropagation());
+    row.appendChild(inp); row.appendChild(_cdBtn("REDEEM", "A CODE'S GIFT COMES ONCE PER SAVE", "#7be3ff", go)); box.appendChild(row);
+    if (_cdCodeSay) box.appendChild(_cdEl("div", "cd-note cd-redeem-say " + (_cdCodeSay.ok ? "ok" : "no"), _cdCodeSay.text));
+    return box;
+}
 function _cdMarketBox() {
     const box = _cdEl("div", "cd-market"), ids = equipShelfIds();
     box.appendChild(_cdEl("div", "cd-note cd-shelf-t", _cdShelfNote()));
@@ -371,7 +383,7 @@ function cardsRevealOpen() { return !!_cdReveal; }   // (is a pack's reveal up: 
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, _cdTab, _cdView, !!_cdReveal, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(),
-        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
+        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), (_cdCodeSay ? _cdCodeSay.text : "") + "|" + (typeof redeemSave === "function" ? redeemSave().join() : ""), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot"); if (!root || !cardsPanelOpen) return;
@@ -392,6 +404,7 @@ function cardsRender(force) {
     if (_cdTab === "shop") {
         // THE SHOP: the booster packs (a pack not on sale, one without its price or odds, is not shown; a locked one is, its button saying when it opens) and the market
         for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }
+        sec("REDEEM A CODE", "TYPE A CODE AND TAP REDEEM · EACH GIFT COMES ONCE PER SAVE"); body.appendChild(_cdRedeemBox());
         sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
     } else {
         // THE CARDS: the collection (OWNED or ALL) on its stage and rail; a card taken into the run is lit gold

@@ -237,6 +237,7 @@ function xpEvoText(p) {
 // "the level and type of npc visible next to their health bars".
 function unitTypeLabel(a) {
     if (!a) return "";
+    if (a.nick) return String(a.nick).toUpperCase();   // a unit with a NAME carries it (js/redeem.js unitSetNick; the owner, 2026-11-12: "add a naming system")
     if (a.isClone) return String(a.speciesName || "").toUpperCase() + " CLONE";
     if (a.isFollower && a.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[a.evolved]) return EVOLUTIONS[a.evolved].name;
     if (a.isFollower) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === a.element) : null; return e && e.none ? roleLabel(a.role) : (e ? e.label : String(a.element || "").toUpperCase()) + " " + roleLabel(a.role); }   // (its element's name: BLOOM's id is "blossom"; NO ELEMENT, its role alone)

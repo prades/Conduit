@@ -37,6 +37,7 @@ function facilitySaveCollect() {
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
         energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,   // the run's ENERGY CARDS not in a slot (js/energy.js): NEW GAME clears them
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
+        redeemed: typeof redeemSave === "function" ? redeemSave() : undefined,   // the codes' gifts this save has had (js/redeem.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
         bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, a follower fallen for good, a capsule on the floor (js/mutator.js, js/specimen.js)
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
@@ -125,6 +126,7 @@ function facilitySaveApply(d) {
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (typeof energySaveApply === "function") energySaveApply(d.energy);   // the run's ENERGY CARDS (js/energy.js; a game saved before them has none)
     if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
+    if (typeof redeemApply === "function") redeemApply(d.redeemed);   // (a game saved before the codes has none)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
     if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)
@@ -212,8 +214,8 @@ function followerBuild(entry) {
 // ── THE CLONES' RECORD: each live clone (its kind and level), and each one waiting to come back (with the wait still to run); made again from it (js/clone.js makeClone) ──
 function cloneRosterSnapshot() {
     const out = [];
-    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp, pr: a.primary ? 1 : undefined, up: a.primary ? a.upgrades || {} : undefined, inv: a.primary ? a.invested || 0 : undefined });   // pr: the Mutator's own, with its upgrades and what it cost (js/mutator.js)
-    for (const e of respawnQueue) if (e && e.isClone && e.speciesName) out.push({ sp: e.speciesName, cls: e.className || "scout", level: e.level, xp: e.xp, wait: Math.max(1, e.timer | 0) });
+    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp, nm: a.nick || undefined, pr: a.primary ? 1 : undefined, up: a.primary ? a.upgrades || {} : undefined, inv: a.primary ? a.invested || 0 : undefined });   // pr: the Mutator's own, with its upgrades and what it cost (js/mutator.js)
+    for (const e of respawnQueue) if (e && e.isClone && e.speciesName) out.push({ sp: e.speciesName, cls: e.className || "scout", nm: e.nick || undefined, level: e.level, xp: e.xp, wait: Math.max(1, e.timer | 0) });
     return out;
 }
 function cloneRosterApply(list) {
@@ -221,8 +223,8 @@ function cloneRosterApply(list) {
     let n = 0;
     for (const c of list) {
         if (!c || !c.sp) continue;
-        if (c.wait > 0) { respawnQueue.push({ isClone: true, speciesName: c.sp, className: c.cls, level: c.level, xp: c.xp, timer: c.wait, totalTimer: typeof CLONE_RESPAWN_FRAMES === "number" ? CLONE_RESPAWN_FRAMES : c.wait }); n++; continue; }
-        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) { if (c.pr && typeof mutatorCloneRestore === "function") mutatorCloneRestore(k, c); else if (c.pr) k.primary = true; n++; }
+        if (c.wait > 0) { respawnQueue.push({ isClone: true, speciesName: c.sp, className: c.cls, nick: typeof c.nm === "string" ? c.nm : undefined, level: c.level, xp: c.xp, timer: c.wait, totalTimer: typeof CLONE_RESPAWN_FRAMES === "number" ? CLONE_RESPAWN_FRAMES : c.wait }); n++; continue; }
+        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) { if (typeof c.nm === "string" && typeof unitSetNick === "function") unitSetNick(k, c.nm); if (c.pr && typeof mutatorCloneRestore === "function") mutatorCloneRestore(k, c); else if (c.pr) k.primary = true; n++; }
     }
     return n;
 }
