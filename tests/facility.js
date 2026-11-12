@@ -92,7 +92,7 @@ function measure(w, h, query) {
     group('VALIDATION');
     check('the authored map passes every rule: no overlaps, an outer path in no link, a sealed arena, no unconfirmed route', () => {
         const v = J('facilityValidateCached()'); same(v.errors.length, 0, 'errors: ' + v.errors.join(' | '));
-        same(v.info.rooms, 32, 'rooms (and the Ant Nest\'s thirteen since build 2026-11-12a)'); same(v.info.navComponents, 3, 'the rooms form one area through the doors and the doorways (the Ant Nest\'s too, since build 2026-11-07ll; and the Nest\'s shelf on its own since build 2026-11-12a, reached by a REEF climb); the blocked-off catwalks stand alone');
+        same(v.info.rooms, 33, 'rooms (and the Ant Nest\'s thirteen since build 2026-11-12a, the Catwalk Spur since build 2026-11-12v)'); same(v.info.navComponents, 4, 'the rooms form one area through the doors and the doorways (the Ant Nest\'s too, since build 2026-11-07ll; and the Nest\'s shelf on its own since build 2026-11-12a, reached by a REEF climb; the Catwalk Spur on its own since build 2026-11-12v, the same); the blocked-off catwalks stand alone');
         ok(v.warnings.some(w => /unconfirmed/.test(w)), 'the candidates are not reported'); ok(v.warnings.some(w => /^unresolved/.test(w)), 'unresolved items are not reported');
     });
 
@@ -163,7 +163,7 @@ function measure(w, h, query) {
 
     group('NAVIGATION: only confirmed openings join rooms');
     check('only the confirmed links join rooms: the unconfirmed candidates are listed but never walked', () => {
-        same(J('facilityComponents(null, false).length'), 3, 'areas (the Nest\'s shelf on its own since build 2026-11-12a)'); same(J('facilityComponents(null, true).length'), 2, 'areas if every candidate were real (and the Nest\'s shelf)');
+        same(J('facilityComponents(null, false).length'), 4, 'areas (the Nest\'s shelf on its own since build 2026-11-12a, the Catwalk Spur since build 2026-11-12v)'); same(J('facilityComponents(null, true).length'), 3, 'areas if every candidate were real (and the Nest\'s shelf, the Catwalk Spur)');
         const f = J(`(function(){ const F = facilityGet(), c = facilityFlood(F.byId.get('catwalks').poly[0][0] + 2, F.byId.get('catwalks').poly[0][1] + 2, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))); })()`);
         same(f.length, 1, 'a flood left the catwalks: ' + f.join());
     });
@@ -480,7 +480,7 @@ function measure(w, h, query) {
     check('the furniture never walls anything off: from the crystal you can walk to nearly every floor tile of every room (an interior from its own doorway), so a prop never seals a pocket or a door (a gate seals its area on purpose: the walk goes through the gates)', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }); F.solids = F.solids.filter(s => s.kind !== 'gate' && s.kind !== 'boss_gate' && s.kind !== 'rubble'); F._ix = null; const cr = F.byId.get('crystal_chamber').objects[0].at, fl = facilityFlood(Math.round(cr[0]) + 2, Math.round(cr[1]) + 1, F), reach = new Set(fl.map(c => Math.round(c[0]) + ',' + Math.round(c[1]))), tot = {}, got = {};   // (a gate, and the choke of rubble across the Sewers' collapsed tunnel, seal their floor on purpose and open in play: the walk goes through them)
             for (const p of F.portals) { if (!F.interiors.some(i => i.id === p.room)) continue; const m = [(p.rect[0] + p.rect[2]) / 2, (p.rect[1] + p.rect[3]) / 2]; for (const c of facilityFlood(Math.round(m[0]), Math.round(m[1]), F)) reach.add(Math.round(c[0]) + ',' + Math.round(c[1])); }   // (an interior is reached from its own doorway)
-            for (let x = Math.floor(F.bounds.minX); x <= Math.ceil(F.bounds.maxX); x++) for (let y = Math.floor(F.bounds.minY); y <= Math.ceil(F.bounds.maxY); y++) { if (!facilityWalkable(x, y, F)) continue; const room = facilityRoomAt(x, y, F); if (!room || room.id === 'nest_area' || FP_NEST_ROOMS.has(room.id) || room.id === 'catwalks') continue; tot[room.id] = (tot[room.id] || 0) + 1; if (reach.has(x + ',' + y)) got[room.id] = (got[room.id] || 0) + 1; }
+            for (let x = Math.floor(F.bounds.minX); x <= Math.ceil(F.bounds.maxX); x++) for (let y = Math.floor(F.bounds.minY); y <= Math.ceil(F.bounds.maxY); y++) { if (!facilityWalkable(x, y, F)) continue; const room = facilityRoomAt(x, y, F); if (!room || room.id === 'nest_area' || FP_NEST_ROOMS.has(room.id) || room.id === 'catwalks' || room.id === 'catwalk_spur') continue;   /* (the Catwalk Spur is reached by a REEF climb, as the Nest's shelf is) */ tot[room.id] = (tot[room.id] || 0) + 1; if (reach.has(x + ',' + y)) got[room.id] = (got[room.id] || 0) + 1; }
             const out = {}; for (const id in tot) out[id] = (got[id] || 0) / tot[id]; return out; })()`);
         for (const id in r) ok(r[id] >= 0.9, id + ': only ' + Math.round(r[id] * 100) + '% of its floor is reachable from the crystal');
         ok(Object.keys(r).length >= 11, 'rooms checked: ' + Object.keys(r).length);

@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", catwalk_spur: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
 for (const id of FP_NEST_ROOMS) if (!FP_ROOM_COL[id]) FP_ROOM_COL[id] = FP_ROOM_COL.nest_area;   // (the Nest grown out: its rooms the cavern's colour on the map)
 
 // ── the world ──
@@ -745,7 +745,7 @@ function _fpDrawWall(it) {
     if (it.kind === "open") return;                            // an edge with no wall drawn (solid still): the warehouse's floor's edge onto Teleport Room 2's deck (js/facilitygrow.js; build 2026-11-09uu)
     if (it.kind === "deck_rail") return _fpDrawRail(it);       // a raised floor's open edge with a rail: Teleport Room 2's deck over the warehouse (as the catwalks' edge: js/facilitydecor.js)
     if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
-    if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
+    if (it.support) return _fpDrawSupport(it, _fpSupportExt(it));  // the arena's frame under the deck: open steel, you see through it
     const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
     if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") return _fpDrawDeckCliff(it);   // the deck stands on a thick rock cliff (js/facilitydecor.js)

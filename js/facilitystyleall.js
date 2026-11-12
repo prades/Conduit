@@ -22,6 +22,7 @@ const FP_ROOM_STYLE = {
     observation_deck:    { acc: FP_ACC.blue,   wain: "#4a7fb0", fa: "#dae5ef", fb: "#b8c9da" },
     arena:               { acc: FP_ACC.amber,  wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
+    catwalk_spur:        { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },   // (the Catwalk Spur: the catwalks' steel)
     nest_area:           { acc: FP_ACC.mint, wain: "#33281d", fa: "#4a3a2b", fb: "#403224", dark: true },   // (the Ant Nest: packed dirt, build 2026-11-07ll)
     cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
     elec_servers:        { acc: FP_ACC.blue,   wain: "#22303f", fa: "#2a323c", fb: "#242b34", dark: true, wallLit: "#2c3643", wallDark: "#1f2630", cap: "#1b222b" },   // THE ELECTRICAL DOMAIN: dark steel, blue light (look A, docs/DOMAINS.md)
