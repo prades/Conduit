@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12l` · branch `claude/start-game-project-HSh7Z` · the command card
+- **The orders at the bottom left are a command card** (the owner: "make a little updated command card that includes the roster as a part of the mix ... make the roster pop up above it as a long card that's kind of tilted"; of ten drafts, design 5: "This one with no little followers"). ROSTER is a long tilted card with the roster's count and who the orders go to; a tap opens the roster. ALL, HOLD and COME stand up behind its top edge as the enemy card's little cards, each its emblem over its word, rising in turn. ALL is lit while nobody's card is picked.
+- **No RETREAT in calm** (the owner: "Retreat can go away in calm mode"). In a fight it is RUN on the enemy card, as before.
+- **In a fight** the enemy card takes the box and the same ROSTER card rises above it, shorter. A member's card hides it, as it hides the rest.
+- The dock's ROSTER button is not shown in the corners layout. The squad strip is back where build 12k had it.
+- The guide and the index say RUN for a tablet and point to the ROSTER card.
+- The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems (js/cardart.js).
+- Tests: `tests/enemycard.js` (ROSTER above the card, a tap reaches it, the orders' cards hidden, the dock's button not shown), `tests/mixtool.js` (the controls, the count), `tests/squadfly.js` (hidden under a member's card), `tests/hud.js`, `tests/toolbox.js`.
+
 ### Build `2026-11-12k` · branch `claude/start-game-project-HSh7Z` · main's four builds and this branch's two together
 - While this branch made builds 12h and 12i (THE CORE's bars upright with PACK and CARDS in its slab; the top corners' icons and the Clone Bay in the Experiment Lab), main took four builds lettered 12g to 12j on their own branches (entries below): the Ember Hood's flare and fireball, HEXFIRE as a lava crater, the Rimestar's fins and its ICICLE VOLLEY fan.
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12k, a letter new to both.

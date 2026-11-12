@@ -3117,3 +3117,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch, the turn and blur per cell. Open: whether the owner wants a smoother spin (more cells).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
+## DECISION: The command card: ROSTER a long tilted card, ALL, HOLD and COME standing up behind it (2026-11-12, build `2026-11-12l`)
+- The owner: **"we need to have the little command menu card on the HUD that has all the buttons ... match the style of the little ... cards coming out of the battle phase little locked on card ... includes the roster as a part of the mix. And then whenever a creature appears ..., that little command card goes away or goes to the side cards, make the roster pop up above it as a long card that's kind of tilted"**; then **"Retreat can go away in calm mode."**
+- A first try (ROSTER the whole face of a tilted slab, the orders tucked behind it) drew **"I don't like how it's just roster and that's it. So let's give me 10 different designs of this menu."** Of ten drafts drawn in the real page, the owner circled design 5 (LONG CARD): **"This one with no little followers."**
+- Built: ROSTER a long card tilted as the enemy card's cards are, with the roster's count and who the orders go to (a tap opens the roster). ALL, HOLD and COME stand up behind its top edge, each its emblem over its word. With a creature locked the enemy card takes the box and the same ROSTER card rises above it. The dock's ROSTER is not shown in the corners layout.
+- Read as: "no little followers" means the three small faces of the squad that design 5 had on the ROSTER card (taken off). The squad strip stays.
+- The agent's, provisional: the sizes, the count, the motion, HOLD's and ROSTER's emblems.
+- Supersedes: the orders box of build `2026-11-12g` (ALL, RETREAT, HOLD and COME, the dock's ROSTER on it) and the first try.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
