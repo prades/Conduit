@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12m` · branch `claude/thunder-string` · the Thunderhead's everyday shot: a string of lightning that connects and breaks off
+- **The ask** (the owner: "We can work on Thunderhead's everyday shot. He doesn't change his form at all"; of the look: "It should have like a string of lightning that connects and breaks off at some point").
+- **What it does:** CHAIN LIGHTNING's shot flies at the enemy trailing a **jagged string of lightning that is still joined to the Thunderhead**, tighter and brighter the farther it stretches; at 1.5 tiles it **snaps off at the Thunderhead's end** (a few sparks there) and the string is **pulled on after the shot, shrinking away** (over 1.3 tiles). The shot is a bright ball with a few arcs off it. The new projectile kind `bolt` (js/npc.js, js/game.js `_drawThunderBolt`), flat strokes and fills.
+- **Not changed:** the Thunderhead's body and its sheet (nothing baked), the shot's damage, speed and rest, and CHAIN LIGHTNING's jumps on from the enemy it strikes (still the jagged bolts of js/elements.js).
+- Agent's, provisional (my reading of "connects and breaks off": the string joined to the Thunderhead, snapping at a distance): the snap distance (1.5 tiles), how long the string takes to go (1.3 tiles), the jitter, the colours, the sparks.
+- Not playtested; seen in the real page frame by frame (headless): the string joined and stretching, the snap with sparks, the string pulled on, the hit.
+- Tests: `tests/hoodflare.js` (14 checks now). Voidstar, Rotshard and Thornwhip still have no new animations.
+
 ### Build `2026-11-12l` · branch `claude/hornshell-pull` · the Hornshell: ECHO PULSE pulls its arms in and a ring of water goes out; its everyday shot is a ring of glowing blue goo
 - **The ask** (the owner, of the Hornshell, the black shell-jar: "he dips into his ring and then creates a water ring that hits enemies for crushing damage"; asked whether that meant new rules, the owner chose **looks only**, and said: "The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring").
 - **What it does:** over ECHO PULSE's 2.5 s wind-up the Hornshell **draws its tentacles into the jar** (and settles back a little) (cells 0 to 5); as the pulse goes off **a ring of water spreads round the jar with a few drops thrown up** (cells 6, 7), and on the floor **a wave of water rolls out to the pulse's reach** (a low wave with a pale crest, foam and a ripple behind it; the new effect `waterring`, js/elements.js) in place of the flat teal circles.

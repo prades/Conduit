@@ -3124,3 +3124,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: how far the arms go in, the wave's look, the colours.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 - **Clarified later the same day:** the owner: **"I'm talking about a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire."** So the glowing blue goo ring is the Hornshell's **everyday shot** (built: the arms are drawn in as the ring forms in front of the horn; it flies at the enemy as a ring of glowing blue goo; looks only). Asked what ECHO PULSE should be, the owner chose to **keep what was built** (the arms pulled in, the wave of water on the floor). "Crushing damage" is still open as a rules question.
+
+## DECISION: The Thunderhead's everyday shot flies on a string of lightning that connects and breaks off (2026-11-12, build `2026-11-12m`, branch `claude/thunder-string`)
+- The owner: "We can work on Thunderhead's everyday shot. He doesn't change his form at all." The agent offered three looks (a flying bolt, a storm puff, a crackling spark ball); the owner chose none and said: **"It should have like a string of lightning that connects and breaks off at some point."**
+- Built (the agent's reading, to be corrected): the shot trails a string of lightning joined to the Thunderhead; it snaps off at the Thunderhead's end at 1.5 tiles and is pulled on after the shot, shrinking away. Looks only; the body is untouched.
+- Open: whether that is the owner's picture (the string joined to the Thunderhead, or something else that "breaks off"); Voidstar, Rotshard and Thornwhip.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
