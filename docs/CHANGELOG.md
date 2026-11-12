@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12m` · branch `claude/hornshell-fix` · FIX: the Hornshell's sheet of build `2026-11-12l` had lost its jar in most facings
+- **The report** (the owner: "the horn shell looks really messed up whenever it's walking around now. I don't know what happened").
+- **What was wrong (the agent's bug, build `2026-11-12l`, PR #34):** the pull's "settle" lowered the jar with a step (`jar.position.y -= ...`) on a model that the baker keeps alive for the whole sheet, so every frame drawn with the pull moved the jar down a little more than the last, and it carried on into the next facing: from about the third facing on, the jar had sunk out of its cell and only the tentacles showed. (I had looked at the first three facings of the bake only.)
+- **The fix:** the jar's height is set from where it rests every frame. The sheet is rebaked: its walking frames and the old bow (columns 0-15), in all eight facings, are **pixel for pixel the sheet of before `2026-11-12l`**; the new frames are as seen.
+- **Test:** `tests/hoodflare.js`: every cell of the Hornshell's sheet, in every facing, is at least 60 px tall (the broken ones were 33 to 39), and the builder never moves the jar by a step.
+- The Hornshell's ECHO PULSE and everyday shot (the owner's looks) are as they were.
+
 ### Build `2026-11-12l` · branch `claude/hornshell-pull` · the Hornshell: ECHO PULSE pulls its arms in and a ring of water goes out; its everyday shot is a ring of glowing blue goo
 - **The ask** (the owner, of the Hornshell, the black shell-jar: "he dips into his ring and then creates a water ring that hits enemies for crushing damage"; asked whether that meant new rules, the owner chose **looks only**, and said: "The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring").
 - **What it does:** over ECHO PULSE's 2.5 s wind-up the Hornshell **draws its tentacles into the jar** (and settles back a little) (cells 0 to 5); as the pulse goes off **a ring of water spreads round the jar with a few drops thrown up** (cells 6, 7), and on the floor **a wave of water rolls out to the pulse's reach** (a low wave with a pale crest, foam and a ripple behind it; the new effect `waterring`, js/elements.js) in place of the flat teal circles.

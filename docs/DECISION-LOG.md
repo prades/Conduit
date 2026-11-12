@@ -3124,3 +3124,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: how far the arms go in, the wave's look, the colours.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 - **Clarified later the same day:** the owner: **"I'm talking about a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire."** So the glowing blue goo ring is the Hornshell's **everyday shot** (built: the arms are drawn in as the ring forms in front of the horn; it flies at the enemy as a ring of glowing blue goo; looks only). Asked what ECHO PULSE should be, the owner chose to **keep what was built** (the arms pulled in, the wave of water on the floor). "Crushing damage" is still open as a rules question.
+
+## FIX: the Hornshell's jar sank out of its sheet in most facings (2026-11-12, build `2026-11-12m`, branch `claude/hornshell-fix`)
+- The owner: "the horn shell looks really messed up whenever it's walking around now." Cause and fix: `CHANGELOG.md` (the pull lowered the jar by a step on a model the baker reuses; now set from its resting height). No design decision changed; the owner's looks for ECHO PULSE and the everyday shot are as they were. Lesson kept for the baker: look at every facing of every block of a rebaked sheet, and compare the cells that should not have changed with the sheet before.
+
