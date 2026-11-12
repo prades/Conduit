@@ -48,7 +48,7 @@ function _iceMaw(o) {
     dome.scale.y = 1 + 0.015 * Math.sin(1.6 * t) - 0.04 * ac; jaw.rotation.x = -(o.swing || 0.6) * ac; L.intensity = 0.5 + 0.2 * Math.sin(1.6 * t) + 0.5 * ac;
     if (o.lunge) { bodyG.position.z = o.lunge * ac; bodyG.rotation.x = 0.2 * ac; bodyG.position.y = -0.04 * ac; }
     if (v && o.lunge) {   // CHOMP (the extra blocks): v = { sw, rot, z, y, fang } the body swelling over the enemy (sw), rearing back (rot < 0) and slamming forward (rot > 0), the fangs swinging (fang)
-      bodyG.scale.setScalar(1 + v.sw); bodyG.rotation.x = v.rot; bodyG.position.z = v.z; bodyG.position.y = v.y; jaw.rotation.x = -v.fang; jaw.scale.y = 1 + 0.5 * Math.max(0, v.sw / 0.65); L.intensity = 0.5 + 1.2 * Math.max(0, v.sw); } } };
+      bodyG.scale.setScalar(1 + v.sw); bodyG.rotation.x = v.rot; bodyG.position.z = v.z; bodyG.position.y = v.y; jaw.rotation.x = -v.fang; L.intensity = 0.5 + 1.2 * Math.max(0, v.sw); } } };
 }
 // shade(cy, edge): cy = height up the dome (0..1), edge = how far past the mouth's rim this face is (radians).
 const _hexc = h => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255];
@@ -85,4 +85,4 @@ fx(157, "Pale dome, narrow mouth, long thin fangs.", () => _iceMaw({ R: 0.95, sy
 //   Bake it in place of the Maw, in a 192 px cell (the swollen body needs room; the same pixels a unit): node design/evolutions/bake.js <three> img/evo maw 192 2.2667, then node design/evolutions/crop_sheets.js
 // the powder snow of No. 934 (the owner, 2026-11-11: "a powdered snow Pac-Man with teeth that's sunken into the floor": keep the design, the shape; redo the texture): pale blue-white, the lip round the mouth the brightest
 const _snowTop = _hexc(0x7a8fb0), _snowMid = _hexc(0x566b8e), _snowLip = _hexc(0xa8bbd8);
-fx(934, "The FROST MAW's lunge-bite: No. 156 throws its body forward, fangs swinging down, and back.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.14, fangH: 0.4, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 1.0, detail: 3, grain: 0.34, snow: 0x9db0cc, cave: 0x081c30, caveFloor: 0x143a56, shade: (cy, e) => e < 0.3 ? _snowLip : cy > 0.55 ? _snowTop : _snowMid }));
+fx(934, "The FROST MAW's lunge-bite and CHOMP: No. 156 as powder snow, its body thrown forward and rearing up, its short fangs staying in its mouth.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.1, fangH: 0.2, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 0.2, detail: 3, grain: 0.34, snow: 0x9db0cc, cave: 0x081c30, caveFloor: 0x143a56, shade: (cy, e) => e < 0.3 ? _snowLip : cy > 0.55 ? _snowTop : _snowMid }));
