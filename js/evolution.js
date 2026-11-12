@@ -220,7 +220,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f", flare: true },   // (24 columns since build 2026-11-12g, design No. 938: columns 16-23 are its everyday FIREBALL's FLARE, flareCol; 8-15, HEXFIRE's, are as they were)
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "SHELL GUARD", moves: ["shell_guard"], sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
@@ -1264,9 +1264,11 @@ function _evoFrame(f, d, f0) {
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
+    const fl = d.flare ? flareCol(f, f0) : -1;   // (the Ember Hood's FIREBALL: its hood swells and a fireball forms over the shot's wind-up)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
+    else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
     else if (mc >= 0) col = mc;
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
@@ -1462,6 +1464,17 @@ function mimicShotDraw(e, px, py, g) {
     g.globalAlpha = 1; g.fillStyle = "#0b0b10"; g.strokeStyle = "#b57cff"; g.lineWidth = 1.2;
     g.beginPath(); g.moveTo(16, 0); g.lineTo(-9, -6); g.lineTo(-9, 6); g.closePath(); g.fill(); g.stroke();
     g.restore();
+}
+
+// ── THE EMBER HOOD'S FLARE (build 2026-11-12g) ──────────────────────────────────────────────────────────────────────────────
+// ASKED (the owner, 2026-11-12: "Work on the mages"; the agent took the Ember Hood first and offered three looks for its everyday FIREBALL: "Hood flare"): its hood swells and its diamond and gems blaze as a fireball forms
+// in front of it over the shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted: the picture rides on it, six cells), then the shot leaves (the game's own fireball: it is drawn flying as it always was) and the hood
+// settles (cells 6 and 7, 4 and 6 frames). Looks only: the shot, its wind-up and its rest are as they were. A wind-up that is cancelled (a retreat, a target that died) shows no settle. The frame counts are the agent's.
+// which column of the Ember Hood's sheet (the extra block, 16 to 23: design No. 938), or -1 for its ordinary frames
+function flareCol(f, f0) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 16 + Math.min(5, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 6 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 10) return 23; }
+    return -1;
 }
 
 // ── THE ELECTRO SKINK'S SWIRL (build 2026-11-11k) ───────────────────────────────────────────────────────────────────────────

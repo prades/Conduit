@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12g` · branch `claude/mage-attacks` · the Ember Hood's flare
+- **The ask** (the owner: "Work on the mages"): the Mages' everyday shots get animations, one mage at a time. The agent took the **Ember Hood** (the fire mage) first and offered three looks for its everyday **FIREBALL**; the owner chose **"Hood flare"**.
+- **What it does:** over the shot's existing wind-up (12 frames, rooted) its hood **swells**, its diamond and gems **blaze** and lean forward, and a **fireball forms in front of it**; as the shot leaves (the game's own fireball, drawn flying as it always was) the fireball is gone and the hood **settles** (4 and 6 frames). Looks only: the shot's damage, its wind-up and its rest are as they were. A wind-up cancelled (a retreat, a target that died) shows no settle. **HEXFIRE** (its second attack) keeps its own frames.
+- The flare is its own block of the sheet, columns 16 to 23, which grows from 16 to 24 columns (4089 × 527 packed). It rides on the wind-up through two new fields on the mage (`_shotWind0`, `_shotFiredAt`, `js/npc.js`) and `flareCol` (`js/evolution.js`).
+- Agent's, provisional: the swell (about a fifth), the fireball's size and place (about a metre in front of the hood), the settle's length.
+- `js/evolution.js` (`flareCol`, the Ember Hood's definition, `_evoFrame`), `js/npc.js`, `design/evolutions/forms14.js` and `forms17.js` (No. 938), `bake.js`. Tests: `tests/hoodflare.js` (5 checks); `tests/evolution.js` expects the Hood's 24 columns.
+- Not playtested; seen in the real page frame by frame (headless): the hood swells, the orange fireball grows in front of it, the shot flies and hits as before.
+- The other six mages (Thunderhead, Voidstar, Rimestar, Hornshell, Rotshard, Thornwhip) have no everyday-shot animation yet.
+
 ### Build `2026-11-12f` · branch `claude/start-game-project-HSh7Z` · main's three merges and this branch's two builds together
 - While this branch made builds 12c and 12d (the rock painted once; THE ANT QUEEN in the Deep Brood, the test console gone), main took three pull requests, numbered 12c to 12e on their own branches (entries below): the Seeper's leg stomp (#28, `claude/seeper-attacks`), the Rift Mimic's shard attacks (#29, `claude/mimic-attacks`) and code cards (#30, `claude/code-card`).
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12f, a letter new to both.

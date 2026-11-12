@@ -3065,3 +3065,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's readings, provisional: any class may redeem it; a clone already out refuses the code rather than being replaced (the Mutator's one-clone rule stays, so the gift can be had again once the clone is dismissed or has fallen); no rename screen yet.
 - Status: Implemented and tested; not playtested. `CODES.md`, `CHANGELOG.md`.
 
+## DECISION: The Ember Hood's everyday FIREBALL is a hood flare (2026-11-12, build `2026-11-12g`, branch `claude/mage-attacks`)
+- The owner: "Work on the mages." The agent read it as the Mages' everyday-shot animations, one at a time as the Brawlers' were, took the Ember Hood first and offered three looks: a hood flare, a crystal spit, an overhand throw. Chosen: **"Hood flare"** (and "Ember Hood is fine" as the first mage).
+- Built: over the shot's wind-up the hood swells, its diamond and gems blaze and a fireball forms in front of it; it is gone as the shot leaves, and the hood settles. Looks only: the shot, its 12-frame wind-up and its rest are unchanged. HEXFIRE keeps its own frames.
+- Open: the other six mages, one at a time (the owner picks a look for each).
+- Agent's, provisional: the size of the swell and the fireball, the settle's length.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
