@@ -85,7 +85,7 @@ const JOBS = [
   { id: 'jellyram_strings7', form: 866, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 867, the seven strings fatter (the user's ask on 866): a candidate until approved.
   { id: 'jellyram_fat', form: 867, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  { id: 'rimestar', form: 861, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'rimestar', form: 939, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true, blocks: [[{ spread: 0.1, ball: 0 }, { spread: 0.3, ball: 0.15 }, { spread: 0.55, ball: 0.4 }, { spread: 0.8, ball: 0.65 }, { spread: 1, ball: 0.9 }, { spread: 1, ball: 1 }, { spread: 0.6, ball: 0 }, { spread: 0.2, ball: 0 }].map(f => Object.assign(f, { act: 0 }))] },   // (No. 939, forms32.js, since 2026-11-12: No. 861 with its everyday shot's flare: the sheet's extra block, columns 16-23: fins spreading and a ball of frost forming over the wind-up (0-5), gone as it is shot (6), settling (7); the owner: "Fins flare")
   // Nos. 851-853 (forms31.js), the technicians' forms from the user's sheets: the flux GOO PROXY as a frog (No. 853, which replaced No. 850 on the user's review: it breathes and
   // looks about; its action puffs the head and pops the eyes), the fire THERMITE BURROWER (it walks on the spot, the drill turning; its action spins the drill white-hot) and the
   // ice IGLOO SKATER (it glides; its action is a spin with a ring of frost).

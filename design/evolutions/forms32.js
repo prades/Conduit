@@ -152,6 +152,11 @@ function _fin32(L, w, d) {
   s.quadraticCurveTo(w * 0.1, L * 0.9, w * 0.26, L * 0.72); s.quadraticCurveTo(w * 0.58, L * 0.3, w * 0.36, 0); s.closePath();
   const geo = new T.ExtrudeGeometry(s, { depth: d * 0.4, bevelEnabled: true, bevelThickness: d * 0.3, bevelSize: w * 0.1, bevelSegments: 2, curveSegments: 12 }); geo.translate(0, 0, -d * 0.2); return geo;
 }
+// a fin cut in half down its length (sd -1: the left half, +1: the right), for the flare: the two halves are the fin when they lie together, and open apart like a V (No. 939)
+function _fin32Half(L, w, d, sd) {
+  const s = new T.Shape(); s.moveTo(0, 0); s.lineTo(sd * w * 0.36, 0); s.quadraticCurveTo(sd * w * 0.62, L * 0.32, sd * w * 0.2, L * 0.78); s.quadraticCurveTo(sd * w * 0.06, L * 0.95, 0, L); s.closePath();
+  const geo = new T.ExtrudeGeometry(s, { depth: d * 0.4, bevelEnabled: true, bevelThickness: d * 0.3, bevelSize: w * 0.1, bevelSegments: 2, curveSegments: 12 }); geo.translate(0, 0, -d * 0.2); return geo;
+}
 function _rimestar(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   const lc = _c31(EL.color), lit = lc.clone().lerp(_c31(0xffffff), 0.15).convertSRGBToLinear(), glowM = _hot31(lit), ringM = _hot31(lit);
@@ -173,15 +178,19 @@ function _rimestar(o) {
     const fin = new T.Mesh(_fin32(o.finL, o.finW, o.finD), _rsWhite); fin.position.y = o.joint - 0.02; tilt.add(fin);
     const ch = new T.Mesh(new T.BoxGeometry(o.finW * 0.2, o.finL * 0.62, 0.01), _rsDark); ch.position.set(0, o.joint + o.finL * 0.44, o.finD * 0.52); tilt.add(ch);
     _limb(tilt, 0.011, glowM, 5).set(V(0, o.joint + o.finL * 0.16, o.finD * 0.56), V(0, o.joint + o.finL * 0.72, o.finD * 0.56));
-    fins.push({ tilt, k }); }
+    const hg = []; if (o.flare) for (const sd of [-1, 1]) { const gr = G(); gr.position.y = o.joint - 0.02; gr.visible = false; tilt.add(gr); gr.add(new T.Mesh(_fin32Half(o.finL, o.finW, o.finD, sd), _rsWhite)); hg.push({ gr, sd }); }   // (the flare's halves of this fin)
+    fins.push({ tilt, k, fin, hg }); }
   // the cast: a ring of frost and shards thrown ahead
   const frostM = new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.5), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
   const frost = new T.Mesh(new T.TorusGeometry(0.3, 0.022, 6, 36), frostM); body.add(frost);
   const shardM = _hot31(_c31(0xeefaff));
   const shards = []; for (let i = 0; i < 6; i++) { const s = new T.Mesh(new T.OctahedronGeometry(0.03, 0), shardM); s.scale.set(0.6, 0.6, 1.8); s.visible = false; body.add(s); shards.push({ s, a: i * TAU / 6 + 0.5 }); }
+  // THE FLARE (o.flare, No. 939: the RIMESTAR's everyday shot): a ball of frost forming in front of it, a ball and a fainter bigger one round it (meshes: the sheet carries no sprites)
+  const flBall = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.45), toneMapped: false })) : null, flHalo = o.flare ? new T.Mesh(new T.SphereGeometry(1, 16, 12), new T.MeshBasicMaterial({ color: lit.clone().lerp(_c31(0xffffff), 0.1), transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false })) : null;
+  if (o.flare) { flBall.visible = flHalo.visible = false; body.add(flBall); body.add(flHalo); }
   const fl = _glowPool(0.65, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.28; b.add(fl.g);
   const Lt = new T.PointLight(0xffffff, 0.7, 4, 2); Lt.color.copy(lc); Lt.position.set(0, 0, 0.6); body.add(Lt); LIGHTS.push(Lt);
-  return { g, core: o.y * (o.S || 1), update(t, act) {
+  return { g, core: o.y * (o.S || 1), update(t, act, v) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
     body.position.y = o.y + 0.04 * Math.sin(ph * 2) * (1 - a) + 0.03 * a; body.rotation.set(0.04 * Math.sin(ph) * (1 - a) - 0.08 * a, 0, 0);
     spin.rotation.z = 0.12 * Math.sin(ph) * (1 - a) + (TAU / 3) * pr;   // sways; in the cast, a third of a turn (three alike: it closes)
@@ -189,8 +198,16 @@ function _rimestar(o) {
     dia.scale.set(0.9 * (1 + 0.04 * Math.sin(ph * 2) + 0.15 * a), 1.3 * (1 + 0.04 * Math.sin(ph * 2) + 0.15 * a), 0.75); dia.userData.relight(0.15 + 0.15 * Math.sin(ph * 2) + 0.8 * a);
     glowM.color.copy(lit).multiplyScalar(0.8 + 0.2 * Math.sin(ph * 2) + 0.5 * a); ringM.color.copy(lit).multiplyScalar(0.75 + 0.25 * Math.sin(ph * 2 + 1.5) + 0.5 * a);
     frost.position.z = o.core + 0.12 + 0.35 * pr; frost.scale.setScalar(0.5 + 1.4 * pr); frostM.opacity = 0.8 * Math.sin(PI * pr);
+    if (o.flare) { const FS = v && v.spread != null ? v : null, sp = FS ? FS.spread : 0, bl = FS ? FS.ball : 0;   // the flare: the fins spread, the diamond and the lights blaze, the ball of frost grows in front (v: { spread, ball })
+      fins.forEach(F => { F.fin.visible = !FS; F.hg.forEach(H => { H.gr.visible = !!FS; if (FS) { H.gr.rotation.z = -H.sd * 0.5 * sp; H.gr.position.x = H.sd * 0.035 * sp; } }); });   // (each fin comes apart into two halves that open like a V: six in all)
+      if (FS) { fins.forEach(F => { F.tilt.rotation.x += -0.3 * sp; }); spin.rotation.z += 0.12 * sp; dia.scale.multiplyScalar(1 + 0.25 * sp); dia.userData.relight(0.15 + 0.95 * sp); glowM.color.copy(lit).multiplyScalar(1 + 0.9 * sp); ringM.color.copy(lit).multiplyScalar(1 + 0.9 * sp); Lt.intensity = 0.7 + 1.6 * sp; }
+      flBall.visible = flHalo.visible = bl > 0.02; if (bl > 0.02) { const z = o.core + 0.5 + 0.12 * bl; flBall.position.set(0, 0.02, z); flHalo.position.set(0, 0.02, z); flBall.scale.setScalar(0.03 + 0.25 * bl); flHalo.scale.setScalar(0.06 + 0.4 * bl); } }
     shards.forEach((S, i) => { S.s.visible = a > 0.1; const r = 0.08 + 0.18 * pr; S.s.position.set(Math.cos(S.a) * r, Math.sin(S.a) * r, o.core + 0.15 + 0.6 * pr * (0.8 + 0.2 * (i % 2))); });
   } };
 }
 const _rs0 = { S: 1.35, y: 0.85, core: 0.21, dia: 0.17, gem: 0x2f6dff, joint: 0.12, finL: 0.62, finW: 0.22, finD: 0.08 };
 fx(861, "The ice mage, the RIMESTAR: a white drone of three long fins round a faceted blue diamond, black joints ringed with light, a line of light along each fin, a dark disc with a glowing eye at its back.", () => _rimestar(_rs0));
+// 939 · THE RIMESTAR's FLARE (the owner, 2026-11-12, of the ice mage's everyday shot; of the agent's three looks: "Fins flare"): No. 861 whose fins spread and whose diamond brightens as a ball of frost forms in front of
+// it, which then leaves (the game draws the shot flying); the sheet's extra block, columns 16-23, plays over the shot's wind-up and settles after it.
+fx(939, "The RIMESTAR's flare: No. 861 spreading its fins, its diamond blazing, a ball of frost forming in front of it (its everyday shot; the sheet's extra block).", () => _rimestar(Object.assign({}, _rs0, { flare: true })));
+
