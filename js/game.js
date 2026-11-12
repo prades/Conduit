@@ -22,6 +22,23 @@ function _drawFireBlob(ctx, p, sx, sy, pal) {
     blob(sx - R * 0.26, sy - R * 0.3, R * 0.34, 0.2, pal.spot, 1);   // the bright spot
     ctx.globalAlpha = 1;
 }
+// THE HORNSHELL's EVERYDAY SHOT (the owner, 2026-11-12: "a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy"): a ring of glowing blue goo flying at the enemy, seen at a slant and turning as it goes: a tube of
+// goo (three flat strokes, dark to light, and a shine along its upper edge), a faint glow round it, and drops of goo shed behind. Flat colours only, as the effects plan asks (docs/EFFECTS.md): a few strokes and fills.
+function _drawGooRing(ctx, p, sx, sy) {
+    const f = p.frame || 0, R = (p.radius || 5) * 2.7 * (1 + 0.05 * Math.sin(f * 0.5)), vx = p.vx || 0, vy = p.vy || 0;
+    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    const ang = Math.atan2(uy, ux), tilt = 0.38 + 0.4 * Math.abs(Math.sin(f * 0.13)), rot = ang + Math.PI / 2;   // (a ring flying head on is seen edge-on; it turns, so it shows its hole and its face in turn)
+    ctx.globalAlpha = 1; ctx.fillStyle = '#2f9bff';
+    for (let i = 1; i <= 3; i++) { const d = R * (0.9 + i * 0.75), r = R * (0.34 - i * 0.07), w = Math.sin(f * 0.35 + i * 2) * R * 0.18; ctx.globalAlpha = 0.6 - i * 0.14; ctx.beginPath(); ctx.arc(sx - ux * d - uy * w, sy - uy * d + ux * w, Math.max(1, r), 0, Math.PI * 2); ctx.fill(); }   // (drops of goo behind it)
+    ctx.lineCap = 'round';
+    const ring = (rx, ry, w, col, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(sx, sy, rx, ry, rot, 0, Math.PI * 2); ctx.stroke(); };
+    ring(R * 1.12, R * 1.12 * tilt, R * 0.95, '#6fd8ff', 0.2);   // the glow
+    ring(R, R * tilt, R * 0.62, '#1d73d6', 1);                    // the tube, in shade
+    ring(R, R * tilt, R * 0.44, '#38a8ff', 1);                    // its body
+    ring(R, R * tilt, R * 0.2, '#8fe3ff', 1);                     // its bright core
+    ctx.globalAlpha = 1; ctx.strokeStyle = '#eaffff'; ctx.lineWidth = Math.max(1.2, R * 0.1); ctx.beginPath(); ctx.ellipse(sx, sy - R * 0.06, R * 0.97, R * tilt * 0.97, rot, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();   // (the shine along its upper edge)
+    ctx.globalAlpha = 1;
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -41,6 +58,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "fireball") { _drawFireBlob(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's everyday shot (build 2026-11-12i): the same glowy blob, frosty (the ball of frost its flare forms, so what is formed and what flies are one thing)
     if (p.kind === "iceball") { _drawFireBlob(ctx, p, sx, sy, _ICE_BLOB); ctx.restore(); return; }
+    // the HORNSHELL's everyday shot (build 2026-11-12k): a ring of glowing blue goo (the ring its sheet forms in front of its horn, so what is formed and what flies are one thing)
+    if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below

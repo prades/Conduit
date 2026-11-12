@@ -138,8 +138,13 @@ function _fatDragger(o) {
   const wRing = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.05, 6, 40), wM) : null, wFoam = o.pull ? new T.Mesh(new T.TorusGeometry(1, 0.022, 4, 40), wM2) : null, drops = [];
   if (o.pull) { for (const m of [wRing, wFoam]) { m.rotation.x = PI / 2; m.position.set(0, 0.05, -o.gap); m.visible = false; b.add(m); }
     for (let i = 0; i < 8; i++) { const dm = new T.Mesh(new T.SphereGeometry(0.035, 6, 5), wM2); dm.visible = false; b.add(dm); drops.push({ dm, a: i * TAU / 8 + 0.3, h: 0.7 + 0.5 * ((i * 5) % 3) / 2 }); } }
+  // (o.goo, No. 942: the Hornshell's everyday shot: a ring of glowing blue goo forming in front of the horn as the arms are drawn in (v: { pull, goo }); the game draws the ring flying)
+  const gM = o.goo ? new T.MeshBasicMaterial({ color: new T.Color(0x0d5fe8), toneMapped: false }) : null, gHi = o.goo ? new T.MeshBasicMaterial({ color: new T.Color(0xc8f3ff), toneMapped: false }) : null, gHalo = o.goo ? new T.MeshBasicMaterial({ color: new T.Color(0x3fb4ff), transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false }) : null;
+  const gG = o.goo ? G() : null, gRing = o.goo ? new T.Mesh(new T.TorusGeometry(1, 0.3, 12, 32), gM) : null, gShine = o.goo ? new T.Mesh(new T.TorusGeometry(1, 0.09, 6, 20, PI * 0.8), gHi) : null, gGlow = o.goo ? new T.Mesh(new T.TorusGeometry(1, 0.5, 8, 32), gHalo) : null, gDrips = [];
+  if (o.goo) { gShine.position.z = 0.22; gShine.rotation.z = PI * 0.35; gG.add(gGlow); gG.add(gRing); gG.add(gShine); gG.visible = false; b.add(gG);
+    for (let i = 0; i < 3; i++) { const dm = new T.Mesh(new T.SphereGeometry(1, 8, 6), gM); gG.add(dm); gDrips.push({ dm, a: PI * (1.15 + 0.35 * i) }); } }
   return { g, core: jr * (o.S || 1), update(tm, act, v) { const ph = 1.6 * tm, ac = act || 0, st = Math.sin(ph);
-    const PU = o.pull && v && v.pull != null ? v : null, pl = PU ? PU.pull : 0, wr = PU && PU.ring ? PU.ring : 0;
+    const PU = o.pull && v && v.pull != null ? v : null, pl = PU ? PU.pull : 0, wr = PU && PU.ring ? PU.ring : 0, go = PU && PU.goo ? PU.goo : 0;
     jar.position.z = -o.gap + 0.04 * st - 0.05 * ac; jar.rotation.z = 0.04 * Math.sin(ph + 1); jar.rotation.x = t + 0.03 * Math.cos(ph);
     if (PU) { jar.position.y -= 0.05 * pl; jar.rotation.x -= 0.1 * pl; }   // (it settles and rears back a little as it draws its arms in)
     const mx = 0, my = jar.position.y + mouthLocal * Math.cos(jar.rotation.x), mz = jar.position.z + mouthLocal * Math.sin(jar.rotation.x);
@@ -152,6 +157,8 @@ function _fatDragger(o) {
         if (py <= r + 0.01) { py = r + 0.01; dir.y = Math.max(0, dir.y) * 0.2; } else dir.y -= o.grav * stp;
         dir.x += sa * P.spread * stp; if (u > P.curlFrom) dir.y += P.curl * stp; dir.normalize(); }
       T0.tt.set(T0.pts, T0.rad); }
+    if (o.goo) { const on = go > 0.02; gG.visible = on; if (on) { const R = 0.04 + 0.21 * go; gG.position.set(o.hornX || 0, my + 0.2 + 0.12 * go, mz + 0.45 + 0.2 * go); gG.scale.setScalar(R); gG.rotation.z = 0.5 * go;
+        gDrips.forEach((D, i) => { D.dm.position.set(Math.cos(D.a) * 1.0, Math.sin(D.a) * 1.0 - (0.15 + 0.5 * go) * (1 + i * 0.4), 0); D.dm.scale.setScalar(0.12 + 0.1 * go * (1 - 0.3 * i)); }); } }
     if (o.pull) { const on = wr > 0.01; wRing.visible = wFoam.visible = on; if (on) { const rs = 0.35 + 1.5 * wr, op = Math.max(0, 1 - wr * wr); wRing.scale.set(rs, rs, rs * 0.6); wFoam.scale.set(rs * 1.02, rs * 1.02, rs * 0.6); wFoam.position.y = 0.1; wM.opacity = 0.75 * op; wM2.opacity = 0.9 * op; }
       drops.forEach(D => { D.dm.visible = on; if (on) { const rr2 = (0.3 + 1.1 * wr) * (0.5 + 0.5 * Math.sin(D.a * 3 + 1) ** 2 + 0.3), hh = D.h * Math.sin(PI * Math.min(1, wr * 1.1)) * 0.55; D.dm.position.set(Math.cos(D.a) * rr2, 0.12 + hh, -o.gap + Math.sin(D.a) * rr2 * 0.8); D.dm.scale.setScalar(1 - 0.5 * wr); } }); } } };
 }
@@ -181,4 +188,7 @@ fx(221, "Irregular tentacles, long horn.", () => _fatDragger(Object.assign({}, _
 // 941 · THE HORNSHELL's ECHO PULSE (the owner, 2026-11-12: "he pulls his arms inside and by doing that it creates a water ring"; the Hornshell is a hermit crab in a jar): No. 220 whose tentacles are drawn into the jar over
 // the wind-up and a ring of water spreads round it as the pulse goes off: the sheet's extra block, columns 16-23 (v: { pull, ring }). The big ring on the floor is the game's own.
 fx(941, "The HORNSHELL's pull: No. 220 drawing its tentacles into the jar, a ring of water spreading round it (its ECHO PULSE; the sheet's extra block).", () => _fatDragger(Object.assign({}, _fd, { S: 1.3, irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06, pull: true })));
+// 942 · THE HORNSHELL's EVERYDAY SHOT (the owner, 2026-11-12: "a 3D ring of water looking substance. It's glowing blue goo that shoots at the enemy. That would be his normal fire"): No. 941 with a third extra block, columns 24-31: over
+// the shot's quick wind-up (12 frames) the arms are drawn in as a ring of glowing blue goo grows in front of the horn (cells 0-5); it leaves (the game draws it flying: a goo ring) and the arms come out (6, 7).
+fx(942, "The HORNSHELL's goo ring: No. 941 with a ring of glowing blue goo forming in front of its horn as its arms are drawn in (its everyday shot; the sheet's third block).", () => _fatDragger(Object.assign({}, _fd, { S: 1.3, irr: 8, tilt: 1.15, gap: 0.55, tents: 6, tentArc: 5.4, hornX: -0.06, pull: true, goo: true })));
 fx(222, "Irregular tentacles, eight, mixed thin and thick.", () => _fatDragger(Object.assign({}, _fd, { irr: 10, tents: 8, tentArc: 6.0, tn: 16, tr: 0.1, hornX: 0.06, horn: 0.55 })));
