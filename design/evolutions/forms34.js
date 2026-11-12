@@ -214,9 +214,10 @@ function _jellyGlass(o) {
   const flashM = new T.MeshBasicMaterial({ color: blue, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }), flash = new T.Mesh(new T.TorusGeometry(Rh * 0.9, 0.035, 6, 32), flashM); flash.position.z = Rh + 0.1; body.add(flash);
   const fl = _glowPool(0.75, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(blue); fl.m.material.opacity = 0.3; b.add(fl.g);
   const side = V(0, 0, 0), upv = V(0, 1, 0);
-  return { g, core: Y * (o.S || 1), update(t, act) {
-    const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
-    const ram = (pr < 0.32 ? -0.12 * Math.sin(PI * pr / 0.32) : 0.42 * Math.sin(PI * (pr - 0.32) / 0.68)) * (o.ramK || 1), hit = pr > 0.5 && pr < 0.95 ? Math.sin(PI * (pr - 0.5) / 0.45) : 0;
+  return { g, core: Y * (o.S || 1), update(t, act, v) {
+    const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act), LASH = v && v.lash ? v.lash : 0;   // (LASH, No. 935: 0 to 1, how far the lashing tentacles are thrown forward: v.lash, the sheet's extra block)
+    let ram = (pr < 0.32 ? -0.12 * Math.sin(PI * pr / 0.32) : 0.42 * Math.sin(PI * (pr - 0.32) / 0.68)) * (o.ramK || 1), hit = pr > 0.5 && pr < 0.95 ? Math.sin(PI * (pr - 0.5) / 0.45) : 0;
+    if (o.lash) { ram = 0.34 * LASH; hit = 0; }   // (the lash: it leans in a little; no ram, no burst)
     // the swim (the approved Jelly Ram's): once a loop every tentacle flicks back at once and it bobs up; then it glides, sinking a little, while they fan out again
     const U = ((ph / TAU) % 1 + 1) % 1, pulseAt = v => { v = ((v % 1) + 1) % 1; return v < 0.18 ? Math.sin(PI / 2 * v / 0.18) : v < 0.8 ? Math.cos(PI / 2 * (v - 0.18) / 0.62) : 0; };
     const lift = U < 0.35 ? Math.sin(PI / 2 * U / 0.35) : Math.cos(PI / 2 * (U - 0.35) / 0.65), pulse = pulseAt(U);
@@ -237,7 +238,11 @@ function _jellyGlass(o) {
         } else {
           pts[i].set(root.x + dir.x * L * s * (1 - 0.4 * ps) + side.x * rip,
                      root.y + dir.y * L * s * (1 - 0.65 * ps) * (1 - 0.6 * stream) - 0.15 * s * s * (1 - 0.8 * ps) + rip * 0.6,
-                     root.z + dir.z * L * s * (1 + 0.35 * ps) - L * 0.35 * s * stream + side.z * rip); }
+                     root.z + dir.z * L * s * (1 + 0.35 * ps) - L * 0.35 * s * stream + side.z * rip);
+          if (o.lash && k % 2 === 1) {   // THE LASH (the three odd tentacles): thrown up and over the head and out in front, the tip lagging and cracking down; the other tentacles trail back as they do in the old action
+            const lk = Math.max(0, Math.min(1, LASH * 1.15 - 0.1 * ((k - 1) / 2))), sw = s * s * (3 - 2 * s), lag = Math.pow(s, 1.4);
+            const lx = root.x + (k - 3) * 0.1 * s, ly = root.y + L * (0.95 * Math.sin(PI * 0.9 * lag) - 0.25 * lag * lag) + 0.55 * L * (1 - lk) * 0, lz = root.z + L * 1.45 * lag + 0.1;
+            pts[i].x += (lx - pts[i].x) * lk; pts[i].y += (ly - pts[i].y) * lk; pts[i].z += (lz - pts[i].z) * lk; } }
       }
       const rOf = s => o.tentR * (1 - o.tentTaper * s) * (1 + 0.08 * Math.sin(PI * 3 * s + k)); T0.tb.set(pts, 0, 0, rOf); T0.end.position.copy(pts[NP - 1]); T0.end.scale.setScalar(rOf(1)); });
     shards.forEach(S => { S.s.visible = hit > 0.05; const r = 0.12 + 0.45 * hit; S.s.position.set(Math.cos(S.a) * r, Math.sin(S.a) * r * 0.8, Rh + 0.12 + 0.1 * hit); S.s.scale.setScalar(0.6 + 0.8 * hit); });
@@ -245,4 +250,6 @@ function _jellyGlass(o) {
   } };
 }
 const _jg0 = { S: 1.5, Rh: 0.38, y: 0.9, headRX: -0.32, headRY: 0.32, edge: 0.006, bub: 0.13, neckR: 0.2, collarR: 0.26, collarH: 0.06, collarTilt: 0.32, tentacles: 7, curl: 0, curlTurn: 3.4, tentL: 0.66, tentR: 0.088, tentTaper: 0.38, ramK: 0.55 };
+const _jgL = Object.assign({}, _jg0, { lash: true });
+fx(935, "The JELLY RAM's tentacle lash: No. 881 with its three odd tentacles thrown up over the head and out in front of it (its everyday hit; the sheet's extra block), the head leaning in. Bake it as the Jelly Ram's sheet.", () => _jellyGlass(_jgL));
 fx(881, "The core brawler, the JELLY RAM redone (the user's sketch): a faceted glass head with a bubble inside lit blue white, small bubbles rising off it, a swirly collar of three bands orbiting its neck of jelly, seven fat wavy tentacles, one curled up behind. It swims, and rams head first.", () => _jellyGlass(_jg0));

@@ -312,15 +312,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     check('THE ASK: CHOMP — the fangs slam down on the nearest enemy: ice damage, frozen stiff; the ones beside it slowed', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
+        const r = run(`(function(){ let out0; actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('ice'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'maw'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(21.9, 2.8), far = mkP(24, 2), apart = mkP(21.2, 5);
             frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
+            out0 = { early: 1e6 - a.health, jaws: elementEffects.some(e => e.type === 'mawchomp') }; for (let i = 0; i < MAW_CHOMP.snap + 12; i++) updateElementEffects();   // (the bite lands as the jaws shut)
+            const d = p => 1e6 - p.health, out = { early: out0.early, jaws: out0.jaws, a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
             [a, b, far, apart].forEach(p => p.dead = true);
             const lone = mkP(23.5, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
-        ok(r.a > 0 && r.b === 0, 'one bite, into the nearest: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
+        ok(r.jaws && r.early === 0, 'the Maw rears up first, no bite yet: ' + JSON.stringify(r)); ok(r.a > 0 && r.b === 0, 'one bite, into the nearest, as the jaws shut: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 125, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
@@ -462,12 +463,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
-            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n)
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : run('EVOLUTIONS.' + id + '.chomp') ? 32 : run('EVOLUTIONS.' + id + '.lash') ? 24 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n; the Frost Maw's has 32 and a 192 px cell, CHOMP's two blocks: build 2026-11-11v)
             const P = run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'), pk = P && JSON.parse(P);   // (cropped since build 2026-11-09r, js/evopack.js: its grid as baked, its size as cropped; or a full grid, left whole)
             if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
             else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
         }
-        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'quillstone,electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k; the QUILLSTONE's: room for its dive and its turn, build 2026-11-11n)
+        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'quillstone,maw,electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k; the QUILLSTONE's: room for its dive and its turn, build 2026-11-11n)
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {
