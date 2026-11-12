@@ -17,7 +17,8 @@ const MOVES = {
     petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       windup: 3, fn: f => petalBlaze(f) },
     quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       windup: 2, fn: f => quillBurst(f) },
     arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        windup: 2.5, fn: f => arcVolley(f) },
-    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  windup: 2.75, fn: f => singularityShot(f) },
+    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  windup: 2.75, fn: f => singularityShot(f) },   // (the legacy Serpent's now: the Voidstar's second attack is MAELSTROM)
+    maelstrom:         { id: "maelstrom",         name: "MAELSTROM",         windup: 2.75, fn: f => maelstrom(f) },   // (the Voidstar's, build 2026-11-12r: the owner's own brief, replacing SINGULARITY SHOT)
     static_rush:       { id: "static_rush",       name: "SONIC ROLL",        windup: 2.5, fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
     hexfire:           { id: "hexfire",           name: "HEXFIRE",           windup: 2.75, fn: f => hexfire(f) },
     corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      windup: 2.67, fn: f => corrodeShot(f) },
@@ -102,7 +103,8 @@ function evoMoveOf(f, d) {
 }
 // A saved choice of BASH on a form whose own second attack has replaced it since (build 2026-11-09c: the nine forms of "THE NINE SECOND ATTACKS"): the form's own, so a follower the player had locked on its
 // second attack stays on its second attack (js/facilitysave.js asks on load). Anything else is kept as it was.
-function moveAltCarried(f, alt) { const d = followerMoveDef(f); return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt; }
+function moveAltCarried(f, alt) { const d = followerMoveDef(f); if (alt === "singularity_shot" && d && evoMoveIds(d).indexOf(alt) < 0 && evoMoveIds(d).indexOf("maelstrom") >= 0) return "maelstrom";   // (a Voidstar locked on SINGULARITY SHOT before build 2026-11-12r: on its MAELSTROM, which replaced it)
+    return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt; }
 // BOTH (build 2026-11-11s; the owner: "We'll just make it to where you can select both of the moves and it will switch automatically"; asked first for a "switching" play style that "will
 // switch back on a repeated timer"; then "if a follower has an attack or a meter that fills up for a different charged attack or different special attack move, then it will have it permanently
 // selected until that condition is no longer met"). f.altBoth with f.alt: it fights with BOTH its normal attack and that move, switching on its own (js/evolution.js altTick, _altBothTurn):
@@ -143,7 +145,7 @@ function followerAltSet(f, id, both) {
     return true;
 }
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
-const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
+const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, maelstrom: () => MAEL_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
     static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, zigzag_dash: () => ZIG_RANGE, wobble_slam: () => WOBBLE_RADIUS, icicle_volley: () => ICICLE_RANGE, echo_pulse: () => ECHO_RADIUS,
     shell_guard: () => GUARD_LURE, phase_swap: () => SWAP_RANGE, venom_bite: () => VENOM_RANGE, shock_zap: () => ZAP_RANGE, skate_charge: () => SKATE_RANGE, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH };

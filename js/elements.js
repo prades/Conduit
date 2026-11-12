@@ -810,7 +810,7 @@ function fxLater(effect) { _fxLater.push({ ...effect, currentRadius: 0 }); }
 // long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [];
@@ -908,6 +908,7 @@ function updateElementEffects() {
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
+        if (e.type === "maelstrom") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
         // in front of it when its time is up, or at once if SUNDEW falls; a catch that dies inside is gone
@@ -1320,6 +1321,25 @@ function drawElementEffects() {
                 ctx.globalAlpha = fa * 0.45; ctx.strokeStyle = "#8fe0ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2); ctx.stroke();   // (a ripple behind it)
                 ctx.globalAlpha = fa; ctx.fillStyle = "#ffffff";
                 for (let i = 0; i < 16; i++) { const an = i * Math.PI / 8 + ep * 0.7, fx = px + Math.cos(an) * rx, fy = cy - hh - (2 + 5 * Math.abs(Math.sin(i * 2.3 + ep * 6))) * (1 - ep) + Math.sin(an) * ry; ctx.beginPath(); ctx.arc(fx, fy, 1.6 + 0.8 * ((i * 7) % 3), 0, Math.PI * 2); ctx.fill(); }   // (foam and spray along the crest)
+                ctx.restore(); break;
+            }
+            // The Voidstar's MAELSTROM (js/evolution.js maelstrom): a small swirl of purple crystals where it opened (no ring or disc on the floor: the owner, 2026-11-12, "I don't like the purple ring on the ground"): three spiral arms of crystals turning, and crystals
+            // thrown out all round on arcs, a new one in a new direction every throw; it grows as it opens and fades as it ends. Flat shapes only (the effects plan, docs/EFFECTS.md).
+            case "maelstrom": {
+                const age = e.maxLife - e.life, grow = Math.min(1, age / 12), fade = Math.min(1, e.life / 24), R = e.radius * TILE_W * 0.5 * (0.4 + 0.6 * grow), cy = py + TILE_H * 0.6;
+                ctx.save();
+                const gem = (x, y, w, h, rot, fill, hi, a) => { const c = Math.cos(rot), sn = Math.sin(rot), P = [[0, -h], [w, 0], [0, h], [-w, 0]].map(q => [x + q[0] * c - q[1] * sn, y + q[0] * sn + q[1] * c]);
+                    ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = hi; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); ctx.lineTo(P[1][0], P[1][1]); ctx.lineTo(x, y); ctx.closePath(); ctx.fill(); };   // (a crystal: a diamond and a lit facet)
+                const COL = [['#5a25b0', '#8a45f0'], ['#8a45f0', '#c99bff'], ['#b985ff', '#f1e3ff']];
+                for (let arm = 0; arm < 3; arm++) for (let j = 0; j < 6; j++) {   // (the arms turning in it)
+                    const an = arm * Math.PI * 2 / 3 + j * 0.62 + age * 0.17, rd = R * (0.14 + 0.13 * j), C = COL[(arm + j) % 3];
+                    gem(px + Math.cos(an) * rd, cy + Math.sin(an) * rd * 0.5 - 2 - j * 0.7, 2.2 + 0.35 * j, 3 + 0.45 * j, an + 1.2, C[0], C[1], 0.95 * fade); }
+                const N = 12, P = 34;
+                for (let i = 0; i < N; i++) {   // (crystals thrown out all round, each on an arc)
+                    const ph = age + i * P / N, n = Math.floor(ph / P), u = (ph % P) / P, an = i * 2.4 + n * 1.3 + Math.sin(i * 3.1 + n) * 0.6, dist = R * (0.12 + 1.45 * u), h = Math.sin(Math.PI * u) * 30, C = COL[(i + n) % 3];
+                    gem(px + Math.cos(an) * dist, cy + Math.sin(an) * dist * 0.5 - h - 3, 3.3 - 0.8 * u, 6.5 - 1.5 * u, an + u * 6, C[0], C[1], Math.max(0, 1 - u * u) * fade); }
+                gem(px, cy - 4, 4, 8 + Math.sin(age * 0.3), age * 0.2, '#2a0f55', '#8a45f0', fade);   // (its middle)
                 ctx.restore(); break;
             }
             case "mimicshot": { if (typeof mimicShotDraw === "function") mimicShotDraw(e, px, py, ctx); break; }   // (js/evolution.js)
