@@ -3169,7 +3169,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Supersedes: build `2026-11-12n`'s SVG gems (and, through them, the plasma of `2026-11-09nn`); the electric geode.
 - Status: Implemented and tested; not playtested. `ENERGY-CARDS.md` §9, `CHANGELOG.md`.
 
-## DECISION: The Thornwhip: a seed fling for its everyday shot, and SEEDFALL is a heal (2026-11-12, build `2026-11-12s`, branch `claude/thornwhip-seeds`)
+## DECISION: The Thornwhip: a seed fling for its everyday shot, and SEEDFALL is a heal (2026-11-12, build `2026-11-12t`, branch `claude/thornwhip-seeds`)
 - The owner asked to animate the Thornwhip (the agent had found its Ultimate PINK THICKET was done earlier, and that its everyday shot and SEEDFALL had no body animation). Of what to build: **"Let's make the normal [attack] be a low damage seed fling, and then whenever you switch to the secondary attack, the Thor[nwhip] heals from its body and from the seeds that turned into healing buds that last for a few seconds."** (Dictated; the agent's reading was stated and the two open points asked.) The owner chose: buds **"Round the Thornwhip itself"** (alternatives: on the weakest follower; on the enemy's patch as before) and **"No, healing only"** (alternative: a small bite too).
 - Built: see `CHANGELOG.md`. The everyday shot is as it was (a low, half-power seed); its vines now play their fling. SEEDFALL no longer hurts: seeds flung round its feet grow into buds that heal it and the followers among them. The Player card SEED GUNNER's circle (the old SEEDFALL effect) is kept.
 - Agent's, provisional (no numbers given): 3% of maximum health a beat, every 0.5 s, for 4 s, 1.5 tiles round; it casts with an enemy in reach.

@@ -292,7 +292,7 @@ const EVOLUTIONS = {
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
     shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
-              cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8", fling: true },   // (fling: its action block's vines rearing and whipping now play for its SEED SHOT and SEEDFALL, flingCol; build 2026-11-12s)   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
+              cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8", fling: true },   // (fling: its action block's vines rearing and whipping now play for its SEED SHOT and SEEDFALL, flingCol; build 2026-11-12t)   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
     // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 925 since build 2026-11-08n (No. 922 before it), design/evolutions/forms37.js; the owner sent
     // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
     // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is NECTAR STING,
@@ -619,7 +619,7 @@ function hexfireCircle(f, x, y) {
 // ("allies" read as your followers, as MEND's are). Its last circle goes when it casts a new one. The numbers are the agent's, PROVISIONAL: HEXFIRE's reach, life and beat, its circle a little wider,
 // its bite a little under HEXFIRE's as it also mends.
 const SEEDFALL_RANGE = 7, SEEDFALL_RADIUS = 1.5, SEEDFALL_LIFE = 240, SEEDFALL_TICK = 30, SEEDFALL_BITE = 0.2, SEEDFALL_MEND = 0.01;
-// THE THORNWHIP'S SEEDFALL IS A HEAL NOW (build 2026-11-12s; the owner, 2026-11-12, "whenever you switch to the secondary attack, the Thorn[whip] heals from its body and from the seeds that turned into healing
+// THE THORNWHIP'S SEEDFALL IS A HEAL NOW (build 2026-11-12t; the owner, 2026-11-12, "whenever you switch to the secondary attack, the Thorn[whip] heals from its body and from the seeds that turned into healing
 // buds that last for a few seconds"; asked, the owner chose: buds round the Thornwhip ITSELF, and healing only: no damage to enemies): when it casts (with an enemy within SEEDFALL_RANGE, as before) seeds are flung round
 // its own feet and grow into buds that, for BUD_LIFE frames, heal it and every follower standing among them, BUD_MEND of their maximum health every BUD_TICK frames. The circle stays where it was cast. The numbers
 // other than the reach (SEEDFALL_RANGE, kept) and the radius (SEEDFALL_RADIUS's, kept) are the agent's, PROVISIONAL (the owner gave none): the life is SEEDFALL's, the beat too, 3% of maximum health a beat, 24% in

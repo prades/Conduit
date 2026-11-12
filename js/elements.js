@@ -1723,7 +1723,7 @@ function drawSeedfallOnTile(tx, ty, px, py) {
     }
 }
 
-// ── THE THORNWHIP'S SEEDFALL BUDS ON THE FLOOR (build 2026-11-12s; js/evolution.js seedfall) ──
+// ── THE THORNWHIP'S SEEDFALL BUDS ON THE FLOOR (build 2026-11-12t; js/evolution.js seedfall) ──
 // Seeds flung from round the Thornwhip's feet arc out and land, each at its own spot in the circle, and grow into pink buds on thin stalks that sway; each time they heal (every BUD_TICK frames) little crosses
 // rise off them; in the last 40 frames they wither. No ring and no disc on the floor (the owner took those from the Voidstar's swirl: "I don't like the purple ring on the ground"). Painted tile by tile in the floor's pass,
 // as SEEDFALL's circle is, so a wall or a unit in front of a bud covers it. Flat colours only (the effects plan).
