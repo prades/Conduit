@@ -276,7 +276,7 @@ const EVOLUTIONS = {
     // The TOXIC BRAWLER, design No. 578: a black faceted shell with a cone on its back, walking on four splayed pins, one oozing eye, small leaks high
     // on its flanks. The puddle it walks through lies on the floor (the ground sheet); the goo moves, so the sheet carries its own light.
     seeper: { id: "seeper", name: "SEEPER",      element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/seeper.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 67.9], noGlow: true, color: "#66ff66", ground: "img/evo/seeper_g.png" },
+              cell: 144, anchor: [72, 114.2], core: [72, 67.9], noGlow: true, color: "#66ff66", ground: "img/evo/seeper_g.png", stomp: true },   // (24 columns since build 2026-11-11z, design No. 936: columns 16-23 are its everyday hit's LEG STOMP; 8-15, ERUPTION's, are as they were)
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
     // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
     petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  sheet: "img/evo/petal.png",
@@ -1269,7 +1269,7 @@ function _evoFrame(f, d, f0) {
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
-    else if (f.state === "attack") col = (d.lash ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash: the everyday hit's own block)
+    else if (f.state === "attack") col = (d.lash || d.stomp ? 16 : 8) + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));   // (d.lash, d.stomp: the everyday hit's own block)
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
 }
 function _evoFacing(f) {

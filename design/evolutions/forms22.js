@@ -45,20 +45,23 @@ function _walker(o) {
   // the legs: hip on the shell's flank, thigh, knee, shin, foot; the foot walks an oval (back on the ground, forward in the air) and the leg follows
   const legs = []; for (let i = 0; i < 4; i++) { const sx = i % 2 ? -1 : 1, sz = i < 2 ? 1 : -1, th = _bone(null, null, o.legR, o.legR * 0.8, _leg), sh = _bone(null, null, o.legR * 0.8, o.pin ? o.legR * 0.07 : o.legR * 0.5, _leg), ft = new T.Mesh(_footGeo(o), _leg);
     if (o.pin) ft.visible = false; if (!o.foot) ft.scale.set(o.plainLegs ? 1 : 1.2, o.plainLegs ? 1 : 0.55, o.plainLegs ? 1 : 1.5); b.add(th); b.add(sh); b.add(ft); const kn = new T.Mesh(new T.IcosahedronGeometry(o.legR * 0.95, 0), gm); if (!o.plainLegs) b.add(kn);
-    legs.push({ sx, sz, th, sh, ft, kn, ph: (i === 0 || i === 3) ? 0 : PI }); }
+    legs.push({ i, sx, sz, th, sh, ft, kn, ph: (i === 0 || i === 3) ? 0 : PI }); }
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, o.ry + o.vh + 0.3, 0.5); b.add(L); LIGHTS.push(L);
   // the puddle it walks through: flat on the floor, drifting behind its feet
   const pool = G(); pool.userData.ground = true; const pm = new T.Mesh(new T.ShapeGeometry(blobShape(o.poolR, o.seed || 3, 1, 0, 0, 0.9)), gm); pm.rotation.x = -PI / 2; pm.position.y = 0.01; pool.add(pm); b.add(pool);
   const puds = []; if (o.puddles) leaks.forEach(Lk => { const m = new T.Mesh(new T.ShapeGeometry(blobShape(0.2 * Lk.big, 5 + Lk.li, 1, 0, 0, 0)), gm); m.rotation.x = -PI / 2; m.position.set(Math.sin(Lk.az) * (o.rx + 0.05), 0.013, Math.cos(Lk.az) * (o.rz + 0.05)); pool.add(m); puds.push({ m, Lk }); });
   // when it casts, goo bursts from the crater in a fan of blobs
   const erupt = []; if (o.erupt) for (let i = 0; i < 7; i++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); body.add(q); erupt.push({ q, a: i * TAU / 7 + 0.4, k: 0.7 + 0.5 * _hz(i, 4, 1) }); }
+  // THE STOMP (No. 936): goo flung off where its front foot comes down
+  const splat = []; if (o.stomp) for (let i = 0; i < 9; i++) { const q = new T.Mesh(new T.IcosahedronGeometry(1, 1), gm); q.visible = false; b.add(q); splat.push({ q, a: i * TAU / 9 + 0.3, k: 0.7 + 0.6 * _hz(i, 6, 2) }); }
   const U1 = new T.Vector3(), U2 = new T.Vector3(), U3 = new T.Vector3();
-  return { g, core: (o.legH + o.ry + o.vh * 0.5) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0, step = o.step * (1 + 0.3 * ac);
+  return { g, core: (o.legH + o.ry + o.vh * 0.5) * (o.S || 1), update(t, act, v) { const ST = o.stomp && v && v.fwd != null ? v : null, ph = ST ? 0 : 1.6 * t, ac = act || 0, step = o.step * (1 + 0.3 * ac);
     body.position.y = hipY + 0.035 * Math.abs(Math.sin(ph)) * -1 + 0.02 * Math.sin(2 * ph) - 0.07 * ac; body.rotation.z = 0.04 * Math.sin(ph); body.rotation.x = 0.03 * Math.sin(2 * ph);
+    if (ST) { body.rotation.x = ST.lean; body.position.y += -0.05 * Math.max(0, ST.lean); body.position.z = 0.2 * ST.lean; }
     shell.scale.y = o.ry * (1 - 0.1 * ac); bub(t, ac);
     legs.forEach(l => { const cyc = ph + l.ph, fz = l.sz * o.rz * 0.55 + step * Math.cos(cyc), lift = Math.max(0, Math.sin(cyc)) * o.lift, fx = l.sx * (o.rx * 0.95 + o.out), fy = (o.pin ? 0.0 : 0.04) + lift;
-      const hip = U1.set(l.sx * o.rx * 0.74, hipY + 0.05 + body.position.y * 0 + 0.0, l.sz * o.rz * 0.5);   // hip (in the body's frame, roughly: the body bob is small)
-      hip.y = body.position.y + 0.06; const foot = U2.set(fx, fy, fz);
+      const hip = U1.set(l.sx * o.rx * 0.74, hipY + 0.05 + body.position.y * 0 + 0.0, l.sz * o.rz * 0.5 + (ST ? body.position.z : 0));   // hip (in the body's frame, roughly: the body bob is small)
+      hip.y = body.position.y + 0.06; const stl = ST && l.i === 0, foot = U2.set(fx, fy + (stl ? ST.up : 0), fz + (stl ? ST.fwd : 0));
       const d = hip.distanceTo(foot), A = o.legH * 0.62, Bn = o.legH * 0.62, c = Math.max(0.05, Math.min(A + Bn - 0.001, d)), k = Math.acos(Math.max(-1, Math.min(1, (A * A + c * c - Bn * Bn) / (2 * A * c))));
       const mid = U3.copy(hip).add(foot).multiplyScalar(0.5), dir = new T.Vector3().subVectors(foot, hip).normalize(), out = new T.Vector3(l.sx, 0.35, 0).normalize(); out.addScaledVector(dir, -out.dot(dir)).normalize();
       const knee = mid.clone().addScaledVector(out, Math.sin(k) * A * 0.95 - (c * 0.0));
@@ -81,6 +84,8 @@ function _walker(o) {
       eye.tear.forEach((q, k) => { const w = k / (eye.tear.length - 1), y = top - (top - rimY) * w * run; q.position.set(0, y, surf(y)); q.scale.setScalar((E.tearW || 0.034) * (0.5 + 0.8 * Math.sin(PI * Math.min(1, w * 0.9 + 0.1))) * (w <= 1 ? 1 : 0) * (run > w * 0.2 ? 1 : 0.2) + 0.001); q.scale.z *= 0.6; });
       const fall = u > 0.6 ? (u - 0.6) / 0.4 : 0; eye.tb.position.set(0, fall ? rimY - fall * (rimY - bot) : top - (top - rimY) * run, fall ? o.rz + 0.05 : surf(top - (top - rimY) * run)); eye.tb.scale.setScalar(E.tearW ? E.tearW * 1.5 : 0.05); }
     erupt.forEach(E3 => { const topY = o.ry * 0.78 + o.vh, rise = ac * E3.k; E3.q.position.set(Math.sin(E3.a) * (o.rimR * 0.6 + 0.35 * rise), topY + 0.05 + 0.5 * rise * (1.2 - 0.6 * rise), Math.cos(E3.a) * (o.rimR * 0.6 + 0.35 * rise)); E3.q.scale.setScalar(0.001 + 0.07 * Math.sin(PI * Math.min(1, ac * 1.0)) * E3.k); });
+    splat.forEach(Sp => { const k = ST ? ST.splat : 0; Sp.q.visible = k > 0.02; if (k > 0.02) { const fx0 = o.rx * 0.95 + o.out, fz0 = o.rz * 0.55 + o.step + (ST ? ST.fwd : 0), r = 0.1 + 0.55 * (1 - k) * Sp.k;
+      Sp.q.position.set(fx0 + Math.sin(Sp.a) * r, 0.05 + 0.22 * Math.sin(PI * (1 - k) * 0.9) * Sp.k, fz0 + Math.cos(Sp.a) * r); Sp.q.scale.setScalar(0.001 + 0.11 * k * Sp.k); } });
     puds.forEach(P => { P.m.geometry.dispose(); P.m.geometry = new T.ShapeGeometry(blobShape(0.22 * P.Lk.big, 5 + P.Lk.li, 1, 0, 0, t)); });
     pm.geometry.dispose(); pm.geometry = new T.ShapeGeometry(blobShape(o.poolR, o.seed || 3, 1, 0, 0, t)); } };
 }
@@ -142,3 +147,4 @@ fx(578, "Splayed pins: the legs set well out to the sides, like a crab on tiptoe
 
 // The game sprite of No. 578 (the toxic brawler): the splayed pins; its action frames burst goo from the crater.
 fx(579, "578, the game sprite.", () => _walker(Object.assign({}, _p569, { out: 0.28, step: 0.18, erupt: true })));
+fx(936, "The SEEPER's leg stomp: No. 579 (its game sprite) rears a front leg and slams it down in front of it, goo flung from the foot (its everyday hit; the sheet's extra block).", () => _walker(Object.assign({}, _p569, { out: 0.28, step: 0.18, erupt: true, stomp: true })));
