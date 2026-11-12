@@ -283,7 +283,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground. Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
+              cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", shard: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD SHOT, mimicShotCol; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
@@ -1263,9 +1263,11 @@ function _evoFrame(f, d, f0) {
         const wc = f.walkCycle || 0; if (f._evoWc !== undefined && Math.abs(wc - f._evoWc) > 1e-4) f._evoMoveAt = f0; f._evoWc = wc;
         if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
+    const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const mc = d.chomp && f._chompAt !== undefined ? mawChompCol(f0 - f._chompAt) : -1;   // (the Frost Maw's CHOMP: it rears up and slams down)
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
-    if (mc >= 0) col = mc;
+    if (ms >= 0) col = ms;
+    else if (mc >= 0) col = mc;
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
@@ -1414,6 +1416,51 @@ function drawEvolvedOverlay(f, px, py, g) {
             g.strokeStyle = full ? "rgba(255,211,232," + (0.5 + 0.5 * pul).toFixed(3) + ")" : "rgba(255,170,210,0.7)"; g.lineWidth = 1; g.stroke();
         }
     }
+    g.restore();
+}
+
+// ── THE RIFT MIMIC'S SHARD SHOT (build 2026-11-12d) ─────────────────────────────────────────────────────────────────────────
+// ASKED (the owner, 2026-11-11, of the Rift Mimic's everyday hit): of the agent's three looks, "Shard stab"; the first drafts (a fist of spikes thrust forward; one shard hammering another into the enemy) were not liked:
+// "Let's just redo it entirely... make it to where the shard comes up and shoots at the enemy and regrows like the quill stone."
+// What it does: its everyday hit (the flux element's physical hit, js/elements.js ELEMENT_ATTACKS.flux, js/combat.js followerAttack) is, for the Mimic, its big shard rising out of its back and tipping at the enemy
+// (the first MIMIC_SHOT.fire frames), SHOT off: the shard flies at the enemy for MIMIC_SHOT.fly frames; where it lands the hit is the one it always was (flux.physical: the same damage, the same chance of disorienting, its
+// impact), MIMIC_SHOT.fire + MIMIC_SHOT.fly frames after the cast; the Mimic stands with the shard gone and it grows back (MIMIC_SHOT.total frames in all). The hit's cost (the WILL) and its rest are as they were, from
+// the cast. A Mimic that dies in it, or an enemy that does, lands no hit. The frame counts are the agent's, PROVISIONAL.
+const MIMIC_SHOT = { fire: 8, fly: 10, total: 32 };
+function mimicShotStrike(f, t) {
+    if (!f || !t || t.dead) return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (f._shotAt !== undefined && f0 - f._shotAt < MIMIC_SHOT.total) { if (typeof ELEMENT_ATTACKS !== "undefined") ELEMENT_ATTACKS.flux.physical(f, t); return; }   // (still growing its shard back: the plain hit, as it was)
+    f._shotAt = f0; f.state = "attack"; f.attackAnim = 0;
+    { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    spawnElementEffect({ type: "mimicshot", by: f, target: t, x: f.x, y: f.y, sx: f.x, sy: f.y, life: MIMIC_SHOT.total, maxLife: MIMIC_SHOT.total, element: "flux" });
+}
+function mimicShotTick(e) {
+    const f = e.by, t = e.target, age = e.maxLife - e.life, S = MIMIC_SHOT;
+    if (!f || f.dead) { e.life = 0; return; }
+    if (age <= S.fire) { e.x = f.x; e.y = f.y; e.sx = f.x; e.sy = f.y; }
+    else if (age <= S.fire + S.fly && t) { const u = (age - S.fire) / S.fly; e.x = e.sx + (t.x - e.sx) * u; e.y = e.sy + (t.y - e.sy) * u; e.u = u; }
+    if (age === S.fire + S.fly && t && !t.dead && typeof ELEMENT_ATTACKS !== "undefined") ELEMENT_ATTACKS.flux.physical(f, t);
+}
+// which cell of the Mimic's sheet (the extra block, columns 16 to 23: design No. 937) `age` frames after the cast: it rises and tips (0, 1), the shard leaves (2), bare (3, 4), grows back (5 to 7); -1: past it
+function mimicShotCol(age) {
+    const S = MIMIC_SHOT; if (age < 0 || age >= S.total) return -1;
+    if (age < S.fire) return 16 + Math.floor(age / (S.fire / 2));
+    if (age < S.fire + 4) return 18;
+    if (age < S.fire + S.fly + 2) return 19 + (age >= S.fire + 8 ? 1 : 0);
+    return 21 + Math.min(2, Math.floor((age - S.fire - S.fly - 2) / 4));
+}
+// the shard in the air (js/elements.js drawElementEffects, case "mimicshot"), at (px, py), the effect's floor spot: a black shard, point first, a purple light on it, on a short arc
+function mimicShotDraw(e, px, py, g) {
+    const age = e.maxLife - e.life, S = MIMIC_SHOT; if (age < S.fire || age > S.fire + S.fly) return;
+    const u = Math.min(1, (age - S.fire) / S.fly), t = e.target, T = typeof TILE_W !== "undefined" ? TILE_W : 32, H = typeof TILE_H !== "undefined" ? TILE_H : 16;
+    const dx = t ? (t.x - e.sx) : 1, dy = t ? (t.y - e.sy) : 0, sxd = (dx - dy) * T, syd = (dx + dy) * H, L = Math.hypot(sxd, syd) || 1, ux = sxd / L, uy = syd / L;
+    const lift = 26 * Math.sin(Math.PI * u) + 16 * (1 - u) * 0 + 14, X = px, Y = py - lift;   // (it leaves from its back and comes down onto the enemy)
+    g.save(); g.translate(X, Y); g.rotate(Math.atan2(uy - 0.5 * Math.cos(Math.PI * u), ux));
+    g.globalAlpha = 0.5; g.fillStyle = "#b57cff"; g.beginPath(); g.moveTo(-34, 0); g.lineTo(-6, -4); g.lineTo(-6, 4); g.closePath(); g.fill();   // (a short trail)
+    g.globalAlpha = 0.35; g.fillStyle = "#bb66ff"; g.beginPath(); g.moveTo(22, 0); g.lineTo(-13, -10); g.lineTo(-13, 10); g.closePath(); g.fill();   // (its light: a wider, fainter shard under it: no shadowBlur, the effects plan)
+    g.globalAlpha = 1; g.fillStyle = "#0b0b10"; g.strokeStyle = "#b57cff"; g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(16, 0); g.lineTo(-9, -6); g.lineTo(-9, 6); g.closePath(); g.fill(); g.stroke();
     g.restore();
 }
 
