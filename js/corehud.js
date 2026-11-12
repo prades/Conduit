@@ -11,7 +11,8 @@
 //   THE LID     the PACK: a tap opens it (js/inventory.js invToggle), as does the tag PACK n (the kinds carried); open while the pack is.
 //   THE ARC     gold, behind it: ARMY SURGE (js/helpers.js playerUltimate), filled from the left over the top, its words over it (ULTIMATE n%, NO SQUAD IN RANGE, SIPHON OFF, TAP — ARMY SURGE,
 //               SURGE n S). Full, a tap on the cube fires it (fireArmySurge). The siphon ⌁ at its end (toggleSiphon).
-//   THE SLAB    under it: your three bars (all green; yellow at two; red at one, as the old bar) and your shards (the count with the gold crystals, js/hudgems.js; a gain pops +n).
+//   THE SLAB    under it: your shards (the count with the gold crystals, js/hudgems.js; a gain pops +n), and since build 2026-11-12h the PACK and CARDS; YOUR THREE BARS (all green; yellow at two; red at
+//               one, as the old bar) in a bar of their own right of the cube (in the slab until then).
 // THE FACES (the agent's, provisional): calm (it looks toward the fight, blinks), HIT (a bar lost: > <, a red flash, a jolt), LAST BAR (red angry eyes, a cracked screen, sparks, smoke),
 // A BAR BACK (^ ^, a green ring), SHARDS IN (^ ^, they fly into the lid, a hop), SURGE READY (gold diamonds), SURGING (gold stars), GUARD (a set look), STUN ARMED (lightning eyes, leaning in),
 // PACK OPEN (it looks up at its lid), KNOCKED OUT (X eyes, it topples, REBOOT), a tap on its face (it smiles). Nothing here changes a rule of play: every tap is what the old buttons did.
@@ -25,6 +26,10 @@
 // under the cube, then: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up." So its box is 356 tall for good, the cube in the raised place, and
 // while a creature is locked its slab stands under the cube, over the pills and your slab: its picture in a round socket, its name and level, its health, INFO, the trigger. A tap on it shoots (holding
 // keeps firing, as the dial did: js/targeting.js targetFireHold), the cube looks down at it, and each shot runs from the cube into it.
+// Build 2026-11-12h, the owner: "let's make [the player's health] a vertical bar and put it to the right of the character model ... And then we can tuck the pack and cards in where that health bar used
+// to be", then "flip pack and cards to where they're on the right side and the shard count is on the left side". YOUR THREE BARS stand one over another in a bar of their own right of the cube (and its
+// siphon); THE SLAB under it holds your shards at its left and the PACK and CARDS at its right: the page's own two buttons (game.html #btnPack, which js/inventory.js shows and counts; #kitCards), moved into
+// it while THE CORE is on and back to the top HUD when it goes (_coreKit).
 const CORE_HUD = { hit: 40, heal: 70, shards: 70, ko: 150, boop: 36, lid: 16, lidOpen: 10, blinkEvery: 250, blinkFor: 8, bob: 2.5,   // (frames and pixels: the agent's, provisional)
     emblem: 1.3, stunDown: 12, pills: [10, 285],   // GUARD and STUN 1.3 times the baked size, STUN 12 px lower (clear of GUARD's word); the pill row's left end and middle in its 340 x 356 box (game.html)
     foe: { x0: 34, y: 236, r: 22 }, shot: 9,       // the creature's slab: its left edge and middle in the box, half its height (game.html .core-foe); a shot's beam lasts this many frames
@@ -52,12 +57,12 @@ function _coreEl(tag, cls, text, parent) { const e = document.createElement(tag)
 function _coreBuild() {
     if (typeof document === "undefined" || !document.body || !document.createElement) return;
     const root = _coreEl("div", "", null, document.body); root.id = "coreHud";
-    const cv = _coreEl("canvas", "core-cv", null, root), slab = _coreEl("div", "core-slab", null, root), cells = _coreEl("div", "core-cells", null, slab);
-    const cellEls = [0, 1, 2].map(() => _coreEl("i", "", null, cells)), count = _coreEl("div", "core-count", null, slab), gem = _coreEl("span", "core-gem", null, count);
+    const cv = _coreEl("canvas", "core-cv", null, root), slab = _coreEl("div", "core-slab", null, root), hpBar = _coreEl("div", "core-hp", null, root), cells = _coreEl("div", "core-cells", null, hpBar);   // (the bars right of the cube since build 2026-11-12h: in the slab before)
+    const cellEls = [0, 1, 2].map(() => _coreEl("i", "", null, cells)), count = _coreEl("div", "core-count", null, slab), gem = _coreEl("span", "core-gem", null, count), kit = _coreEl("div", "core-kit", null, slab);   // (cells[0] the lowest: game.html stands them bottom up)
     if (typeof SHARD_ICON_SVG === "string") gem.innerHTML = SHARD_ICON_SVG.replace('id="shardGemsSvg"', "");
     const num = _coreEl("b", "", "0", count), plus = _coreEl("em", "", "", count);
     const hit = (cls, label, fn) => { const b = _coreEl("button", "core-hit " + cls, null, root); b.type = "button"; b.setAttribute("aria-label", label); b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
-    const els = { cells: cellEls, num, plus,
+    const els = { cells: cellEls, num, plus, kit, hp: hpBar,
         hitGuard: hit("core-hg", "GUARD", () => { if (typeof playerGuardToggle === "function") playerGuardToggle(); }),
         hitStun: hit("core-hs", "STUN", () => { if (typeof playerDiveArm === "function") playerDiveArm(); }),
         hitLid: hit("core-hl", "PACK", _corePackTap),
@@ -83,6 +88,13 @@ function _coreBuild() {
     _coreDrawn.cv = cv; _coreDrawn.g = cv.getContext ? cv.getContext("2d") : null;
     _core = { root, els, look: null, art: null, img: null, imgs: {}, stunP: null, pills: { x: 0, y: 0, maxX: 0 }, foeAt: { x0: 0, y: 0, r: CORE_HUD.foe.r }, bodyCls: null, foeId: null, foeHp: -1, dmg: 0, dmgAt: -1e9, foeTxt: {},
         hp: -1, shards: -1, topY: 0, packAt: 0, quiet: 0, lostAt: -1e9, gainAt: -1e9, react: null, reactAt: 0, plusN: 0, plusAt: -1e9, lost: 0, gain: 0, blinkAt: 0, txt: {}, place: "" };
+}
+// PACK and CARDS into the slab while THE CORE is on (on: true), back to the top HUD when it goes: the page's own buttons, so js/inventory.js keeps showing and counting the PACK, and a narrow window's layout
+// (a phone's, unsupported) finds them where they always were
+function _coreKit(on) {
+    if (!_core || typeof document === "undefined" || !document.getElementById) return;
+    const home = document.getElementById("topHud"), to = on ? _core.els.kit : home; if (!to) return;
+    for (const id of ["btnPack", "kitCards"]) { const b = document.getElementById(id); if (b && b.parentNode !== to) to.appendChild(b); }
 }
 // a tap on its face or on the surge's words: ARMY SURGE when it is full (js/helpers.js fireArmySurge), else it smiles
 function _coreSurgeTap() { if (typeof playerUltimateReady === "function" && playerUltimateReady() && typeof fireArmySurge === "function") fireArmySurge(); else _coreReact("boop"); }
@@ -133,9 +145,10 @@ function _coreRead(S) {
 function coreTick() {
     const on = coreOn();
     const turned = on !== _coreWas;
-    if (turned) { _coreWas = on; if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("core-on", on); }
+    if (turned) { _coreWas = on; if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("core-on", on); if (!on) _coreKit(false); }
     if (!on) return;
     if (!_core) _coreBuild(); if (!_core) return;
+    if (turned) _coreKit(true);
     const S = _coreRead(_coreS), f = typeof frame !== "undefined" ? frame : 0, E = _core.els;
     if (turned) _core.quiet = f + 45;   // (it has just come on: a save's shards arriving, a new game; no reaction to them)
     if (f < _core.quiet) { _core.hp = S.hp; _core.shards = S.shards; }

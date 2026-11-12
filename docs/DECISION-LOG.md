@@ -3072,3 +3072,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's, provisional: the strip's sizes and its tab (◂, ▸ with the count), the PACK over CARDS, the strip over THE CORE upright and under 1020 px, its shift past the enemy card in a fight, the card's three columns (two upright), the energy lines, glow, flash and hop, the card at most 680 px wide, QUESTS' size.
 - Supersedes: the squad's cards stacked over the orders (`2026-11-10c`); the dock's CARDS and QUESTS (`2026-11-11w`); the dialogue box at the foot on a tablet or a desktop (a phone keeps it at the bottom, as the owner asked on 2026-11-01); the member card's single column (`2026-11-10c`, `2026-11-10e`: the ENERGY band of draft B is kept, over the picture now); the enemy card staying while a member's card is open; THE CORE's PACK tag (`2026-11-11t`: the PACK is its own button again).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: THE CORE's bars upright beside the cube; PACK and CARDS in its slab (2026-11-12, build `2026-11-12h`)
+- The owner: **"let's make [the player's health] a vertical bar and put it to the right of the character model ... And then we can tuck the pack and cards in where that health bar used to be"**; then **"flip pack and cards to where they're on the right side and the shard count is on the left side."**
+- Built: the three bars one over another right of the cube (and its siphon); the slab with the shards at its left and the PACK and CARDS at its right (`UI-STYLE.md`, "The bottom row").
+- The agent's, provisional: the bar's size and place, the buttons' size, PACK before CARDS; the two buttons still give way while a member's card is open (the owner's rule of build `2026-11-12g`).
+- Supersedes: build `2026-11-12g`'s PACK and CARDS left of THE CORE, and THE CORE's bars in its slab (`2026-11-11t`).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
