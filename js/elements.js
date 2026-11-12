@@ -810,7 +810,7 @@ function fxLater(effect) { _fxLater.push({ ...effect, currentRadius: 0 }); }
 // long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, buds: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [];
@@ -908,6 +908,7 @@ function updateElementEffects() {
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
+        if (e.type === "buds") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
         if (e.type === "maelstrom") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
@@ -1342,6 +1343,7 @@ function drawElementEffects() {
                 gem(px, cy - 4, 4, 8 + Math.sin(age * 0.3), age * 0.2, '#2a0f55', '#8a45f0', fade);   // (its middle)
                 ctx.restore(); break;
             }
+            case "buds": break;   // (the Thornwhip's SEEDFALL buds lie on the floor: drawBudsOnTile)
             case "mimicshot": { if (typeof mimicShotDraw === "function") mimicShotDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             case "skinkswirl": { if (typeof skinkSwirlDraw === "function") skinkSwirlDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.
@@ -1716,6 +1718,48 @@ function drawSeedfallOnTile(tx, ty, px, py) {
         for (let i = 0; i < 9; i++) {   // (a seed falling onto this tile: in the air, so not clipped to it; drawn with it, so what stands in front covers it)
             const s = _sfSeed(e, i, age, sd); if (s.ph >= 0.85 || Math.round(s.x) !== tx || Math.round(s.y) !== ty) continue;
             const [qx, qy] = at(s.x, s.y); ctx.globalAlpha = 0.9 * k; ctx.beginPath(); ctx.ellipse(qx, qy - (1 - s.ph / 0.85) * 46, 2.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+// ── THE THORNWHIP'S SEEDFALL BUDS ON THE FLOOR (build 2026-11-12t; js/evolution.js seedfall) ──
+// Seeds flung from round the Thornwhip's feet arc out and land, each at its own spot in the circle, and grow into pink buds on thin stalks that sway; each time they heal (every BUD_TICK frames) little crosses
+// rise off them; in the last 40 frames they wither. No ring and no disc on the floor (the owner took those from the Voidstar's swirl: "I don't like the purple ring on the ground"). Painted tile by tile in the floor's pass,
+// as SEEDFALL's circle is, so a wall or a unit in front of a bud covers it. Flat colours only (the effects plan).
+let _bdFrame = -1, _bdList = [];   // (drawing only: the buds to paint this frame and their rooms, found once a frame: tests/ghost.js allow-lists them)
+function _bdSeed(e, i, out) { const an = i * 2.39996 + 0.7, d = (0.3 + 0.62 * ((i * 0.618) % 1)) * e.radius; out.x = e.x + Math.cos(an) * d; out.y = e.y + Math.sin(an) * d; return out; }
+function drawBudsOnTile(tx, ty, px, py) {
+    if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (_bdFrame !== f0) { _bdFrame = f0; _bdList = elementEffects.filter(e => e.type === "buds" && e.life > 0).map(e => ({ e, room: _sfRoomAt(e.x, e.y) })); }   // (once a frame)
+    if (!_bdList.length) return;
+    let room, roomKnown = false;
+    for (const it of _bdList) {
+        const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
+        if (room !== it.room) continue;   // (a tile of another room shows none of it)
+        const age = e.maxLife - e.life, wilt = Math.min(1, e.life / 40), sd = { x: 0, y: 0 };
+        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];   // (a ground point, from this tile)
+        const [cx, cy] = at(e.x, e.y);
+        ctx.save(); ctx.lineCap = "round";
+        for (let i = 0; i < 9; i++) {
+            const s = _bdSeed(e, i, sd); if (Math.round(s.x) !== tx || Math.round(s.y) !== ty) continue;
+            const ta = age - i * 2; if (ta < 0) continue;
+            const [qx, qy] = at(s.x, s.y);
+            if (ta < 14) {   // the seed, flung from the middle in an arc
+                const u = ta / 14; ctx.globalAlpha = 0.95; ctx.fillStyle = "#ffd6ea"; ctx.beginPath(); ctx.ellipse(cx + (qx - cx) * u, cy + (qy - cy) * u - Math.sin(Math.PI * u) * 30 - 10 * (1 - u), 2.4, 3.4, u * 6, 0, Math.PI * 2); ctx.fill(); continue;
+            }
+            const g = Math.min(1, (ta - 14) / 18), k = g * (0.35 + 0.65 * wilt), H = 15 * k, sw = Math.sin(f0 * 0.09 + i * 1.9) * 1.6 * k, bx = qx + sw, by = qy - H;
+            ctx.globalAlpha = 0.9 * Math.min(1, wilt * 1.5); ctx.strokeStyle = "#3a1630"; ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(qx, qy); ctx.quadraticCurveTo(qx + sw * 0.2, qy - H * 0.5, bx, by + 2); ctx.stroke();   // (the stalk)
+            ctx.fillStyle = "#c24b8e"; ctx.beginPath(); ctx.ellipse(qx - 3.2 * k, qy - H * 0.42, 3.4 * k, 1.5 * k, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(qx + 3.2 * k, qy - H * 0.58, 3.4 * k, 1.5 * k, 0.5, 0, Math.PI * 2); ctx.fill();   // (two leaves)
+            const bt = age % BUD_TICK, pop = g >= 1 && bt < 8 ? 1 + 0.18 * Math.sin(Math.PI * bt / 8) : 1;   // (it swells as it heals)
+            ctx.globalAlpha = Math.min(1, wilt * 1.5); ctx.fillStyle = "#ff8fc4"; ctx.beginPath(); ctx.ellipse(bx, by, 4.3 * k * pop, 5.8 * k * pop, 0, 0, Math.PI * 2); ctx.fill();   // (the bud)
+            ctx.fillStyle = "#ffd9ec"; ctx.beginPath(); ctx.ellipse(bx - 0.4 * k, by + 0.8 * k, 2.4 * k * pop, 3.4 * k * pop, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(bx - 1.2 * k, by - 1.8 * k, 1 * k, 0, Math.PI * 2); ctx.fill();
+            if (g >= 1 && e.life > 20 && bt < 18) {   // (a little cross rises off it each time it heals)
+                const m = bt / 18, mx = bx + ((i % 3) - 1) * 4, my = by - 7 - m * 16; ctx.globalAlpha = (1 - m) * 0.95; ctx.strokeStyle = "#fff0f8"; ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.moveTo(mx - 2.6, my); ctx.lineTo(mx + 2.6, my); ctx.moveTo(mx, my - 2.6); ctx.lineTo(mx, my + 2.6); ctx.stroke(); }
         }
         ctx.restore();
     }

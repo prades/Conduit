@@ -452,24 +452,28 @@ function measure(w, h) {
         ok(Math.abs(r.dmg - r.want) < 1e-9, 'damage ' + r.dmg + ' not ' + r.want); same(r.shot, 'SEED SHOT', 'its name'); same(r.info, 'MAIN ATTACK · SEED SHOT', 'INFO');
         ok(r.hurt > 0, 'the enemy was not hit'); ok(r.mended >= r.share * 0.999, 'the hurt follower was mended ' + r.mended + ', not ' + r.share);
     });
-    check('SEEDFALL: cast on the nearest enemy it can see in reach (no shot): a circle SEEDFALL_RADIUS tiles round on it that bites every enemy in it at once and every SEEDFALL_TICK frames, and mends each of your hurt followers in it by SEEDFALL_MEND of its maximum health each time; gone after SEEDFALL_LIFE frames; a follower outside it is not mended by it', () => {
-        const r = J(`(function(){ __clear(); frame += 7; /* (off the frame the followers' periodic mending lands on: this test's frame depended on how many frames the tests before it had run, which changed when HEXFIRE stopped waiting on a shot, build 2026-11-12h) */ const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 5, f.y + 0.5), inn = __fol('fire', 'brawler', null), outt = __fol('fire', 'brawler', null);
-            inn.x = t.x + 0.6; inn.y = t.y; outt.x = t.x + 4; outt.y = t.y + 3; for (const m of [inn, outt]) m.health = m.maxHealth * 0.3;
-            const at0 = [t.x, t.y], oPre = outt.health; __fire(f); __off(f); __off(inn); __off(outt); followers.push(inn, outt);
-            const c = elementEffects.find(e => e.type === 'seedfall' && e.by === f), at = c && { x: c.x, y: c.y, r: c.radius, life: c.life }, first = __dmg(t), m0 = inn.maxHealth, h0 = inn.health, firstMend = inn.health - inn.maxHealth * 0.3, o0 = outt.health, outFirst = outt.health - oPre;
-            const hi = inn.health, ho = outt.health; seedfallBeat(c); const beatIn = inn.health - hi, beatOut = outt.health - ho, beatShare = inn.maxHealth * SEEDFALL_MEND; inn.health = hi;   // (one beat alone, nothing else running: followers also mend on their own over time)
-            const twin = __foe(f.x + 40, f.y + 40); applyDamage(twin, f.power * SEEDFALL_BITE, f, 'blossom', false, false, DMG_HIT_ALT);
-            const bites = []; let last = __dmg(t), k = 0;   // (from here: the direct beat above bit it too)
-            while (elementEffects.some(e => e.type === 'seedfall') && k < 400) { render(); k++; const d = __dmg(t); if (d !== last) { bites.push(k); last = d; } }
-            return { shots: followerProjectiles.length, at, t: at0, first, one: __dmg(twin), bites, after: k, tick: SEEDFALL_TICK, life: SEEDFALL_LIFE, r: SEEDFALL_RADIUS, firstMend, share: m0 * SEEDFALL_MEND, gained: inn.health - h0, mend: SEEDFALL_MEND, m0, outFirst, beatIn, beatOut, beatShare,
+    check('SEEDFALL is a HEAL now (build 2026-11-12t; the owner: "the Thorn[whip] heals from its body and from the seeds that turned into healing buds that last for a few seconds"; asked, "Round the Thornwhip itself", "No, healing only"): cast with an enemy in reach it plants buds round ITSELF, BUD_RADIUS tiles, that heal the Thornwhip and each hurt follower of yours among them BUD_MEND of its maximum health every BUD_TICK frames for BUD_LIFE frames, hurt no enemy, fire no shot, and leave the Player card SEED GUNNER\'s circle alone', () => {
+        const r = J(`(function(){ __clear(); frame += 7; const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 5, f.y + 0.5), inn = __fol('fire', 'brawler', null), outt = __fol('fire', 'brawler', null);
+            inn.x = f.x + 0.6; inn.y = f.y; outt.x = f.x + 4; outt.y = f.y + 3; for (const m of [f, inn, outt]) m.health = m.maxHealth * 0.3; f.attackCooldown = 1e9; f._sigCd = 1e9;
+            const fired = seedfall(f), c = elementEffects.find(e => e.type === 'buds' && e.by === f), at = c && { x: c.x, y: c.y, r: c.radius, life: c.life }, home = [f.x, f.y], dmg0 = __dmg(t);
+            __off(inn); __off(outt); followers.push(inn, outt);
+            const hf = f.health, hi = inn.health, ho = outt.health; budsBeat(c); const beatF = f.health - hf, beatIn = inn.health - hi, beatOut = outt.health - ho, share = inn.maxHealth * BUD_MEND; f.health = hf; inn.health = hi;   // (one beat alone: followers also mend on their own over time)
+            const orig = budsBeat; let beats = 0; budsBeat = e => { beats++; return orig(e); }; let k = 0; while (elementEffects.some(e => e.type === 'buds') && k < 400) { frame++; updateElementEffects(); k++; } budsBeat = orig;
+            return { fired, at, home, hurt: __dmg(t) - dmg0, beatF, beatIn, beatOut, share, beats, k, shots: followerProjectiles.length, old: elementEffects.filter(e => e.type === 'seedfall').length, K: [BUD_RADIUS, BUD_LIFE, BUD_TICK, BUD_MEND, SEEDFALL_RANGE].join(),
                      info: (followerInfo(f).attacks.find(s => /^ALTERNATE · SEEDFALL/.test(s.h)) || {}).h || null }; })()`);
-        same(r.shots, 0, 'shots'); ok(r.at, 'no circle'); ok(Math.hypot(r.at.x - r.t[0], r.at.y - r.t[1]) < 1e-9, 'not on the enemy: ' + JSON.stringify(r)); same(r.at.r, r.r, 'its radius');
-        ok(Math.abs(r.first - r.one) < 1e-6 * r.one + 1e-6, 'it bit at once as it opened: ' + JSON.stringify(r));
-        ok(r.bites.length >= 6 && r.bites.every((b, i) => i === 0 || b - r.bites[i - 1] === r.tick), 'a bite every ' + r.tick + ' frames: ' + JSON.stringify(r.bites));
-        ok(r.after <= r.life + 2 && r.after >= r.life - 2, 'it lasted ' + r.after + ' frames, not ' + r.life);
-        ok(Math.abs(r.firstMend - r.share) < 1e-6, 'the follower in it was mended ' + r.firstMend + ' as it opened, not ' + r.share + ' ' + JSON.stringify({ m0: r.m0, gained: r.gained, outFirst: r.outFirst, beatIn: r.beatIn, share: r.share }));
-        ok(r.gained >= r.bites.length * r.mend * r.m0 * 0.999, 'the follower in it was mended each beat: ' + r.gained + ' after the first (' + r.bites.length + ' beats)'); same(r.outFirst, 0, 'the follower outside it was mended as it opened'); ok(Math.abs(r.beatIn - r.beatShare) < 1e-9, 'a beat mended the follower in it ' + r.beatIn + ', not ' + r.beatShare); same(r.beatOut, 0, 'a beat mended the follower outside it');
-        ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
+        ok(r.fired && r.at, 'no buds: ' + JSON.stringify(r)); ok(Math.hypot(r.at.x - r.home[0], r.at.y - r.home[1]) < 1e-9, 'not round the Thornwhip itself: ' + JSON.stringify(r)); same(r.at.r, 1.5, 'its radius'); same(r.K, '1.5,240,30,0.03,7', 'its radius, life, beat, heal and reach');
+        same(r.hurt, 0, 'it hurt the enemy'); same(r.shots, 0, 'shots'); same(r.old, 0, 'the old damaging circle was made');
+        ok(Math.abs(r.beatIn - r.share) < 1e-6, 'a follower among the buds was healed ' + r.beatIn + ' a beat, not ' + r.share); ok(Math.abs(r.beatF - r.share) < 1e-6 * r.share + 1e-6 || r.beatF > 0, 'the Thornwhip itself was not healed: ' + r.beatF); same(r.beatOut, 0, 'a follower outside was healed');
+        ok(r.beats >= 6 && r.beats <= 8, 'beats: ' + r.beats); ok(r.k <= 242 && r.k >= 238, 'it lasted ' + r.k + ' frames, not 240'); ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
+    });
+    check('THE THORNWHIP FLINGS (build 2026-11-12t; the owner: "Let\'s make the normal [attack] be a low damage seed fling"): its action block\'s vines (cells 8 to 15, baked and never played for its shots) rear round a seed over a shot\'s wind-up (8 to 11) and whip out as it goes (12 to 15), and the same over SEEDFALL\'s wind-up and its casting; only the Thornwhip; the shot itself (damage, kind) is as it was', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'), d = evolvedDef(f), t = __foe(f.x + 3, f.y), out = []; f._shotWind0 = 12;
+            for (const w of [12, 9, 6, 3, 1]) { f._shotWind = w; out.push(flingCol(f, frame, d)); }
+            f._shotWind = 0; f._shotTarget = t; _mageShotFire(f); const p = followerProjectiles[followerProjectiles.length - 1], sf = f._shotFiredAt; for (const a of [0, 2, 3, 5, 6, 8, 9, 11, 12]) out.push(flingCol(f, sf + a, d));
+            f._shotFiredAt = undefined; followerAltSet(f, 'seedfall'); f._altWindMax = 165; for (const w of [165, 120, 80, 40, 1]) { f._altWind = w; out.push(flingCol(f, frame, d)); }
+            f._altWind = 0; f.currentWill = 100; frame++; const fired = seedfall(f); for (const a of [0, 3, 4, 8, 12, 15, 16]) out.push(flingCol(f, frame + a, d));
+            return { out, kind: p.kind || null, dmg: p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, fired, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].fling).join() }; })()`);
+        same(r.out.join(), '8,9,10,11,11,12,12,13,13,14,14,15,15,-1,8,9,10,11,11,12,12,13,14,15,15,-1', 'cells'); same(r.who, 'shrub', 'who flings'); same(r.kind, null, 'the shot\'s kind'); ok(Math.abs(r.dmg - r.want) < 1e-9, 'the shot\'s damage changed: ' + r.dmg); ok(r.fired, 'SEEDFALL did not fire');
     });
 
     // ── THORNWHIP's PINK THICKET (build 2026-11-08l) ──
