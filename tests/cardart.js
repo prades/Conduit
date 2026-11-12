@@ -73,8 +73,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var measureCards = function(sel){ return $$(sel || '#cardsRoot .cd-card:not(.cd-empty)').map(measureCard); }, pickMini = async function(n){ var m = $$('#cardsRoot .cd-rail .cd-mini').filter(function(x){ return x.querySelector('.cd-mn').textContent === n; })[0]; if (m) { click(m); await wait(60); } return !!m; };
     var measureCard = function(el){
       var nm = el.querySelector('.cd-name'), c = Object.values(equipCards()).filter(function(x){ return nm && x.name === nm.textContent; })[0], face = el.querySelector('.cd-art > .cd-slab > .cd-face'), t = el.querySelector('.cd-tex'), g = el.querySelector('.cd-gem'), chip = el.querySelector('.cd-face > .cd-chip'), ar = el.querySelector('.cd-art').getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
-      var enB = el.querySelector('.cd-face > .cd-en > b');
-      return { energy: /^ENERGY/.test((el.querySelector('.cd-kind') || {}).textContent || ''), enLayer: !!el.querySelector('.cd-face > .cd-en'), enBlobs: el.querySelectorAll('.cd-face > .cd-en > b').length, enAnim: enB ? getComputedStyle(enB).animationName : '', enState: enB ? getComputedStyle(enB).animationPlayState : '', enCls: el.classList.contains('en'),
+      var enSvg = el.querySelector('.cd-face > .cd-en > svg'), elMatch = (el.className.match(/\bel-([a-z]+)\b/) || [, null])[1];
+      var enName = (el.querySelector('.cd-name') || {}).textContent || '', elFromName = (enName.match(/^(FIRE|ELECTRIC|ICE|FLUX|CORE|TOXIC|BLOOM)\s+ENERGY$/) || [,''])[1].toLowerCase().replace('bloom', 'blossom');
+      return { energy: /^ENERGY/.test((el.querySelector('.cd-kind') || {}).textContent || ''), enLayer: !!el.querySelector('.cd-face > .cd-en'), enSvg: !!enSvg, enAnim: enSvg ? getComputedStyle(enSvg).animationName : '', enState: enSvg ? getComputedStyle(enSvg).animationPlayState : '', enCls: el.classList.contains('en'), enEl: elMatch, cardEl: (c && c.el) ? c.el : (elFromName || null),
         name: nm && nm.textContent, kind: c ? c.kind : null, match: c ? c.match : null, aura: c && c.aura ? c.aura.el : null, face: !!face, parts: ['.cd-tex', '.cd-frame', '.cd-top .cd-rar', '.cd-glow', '.cd-shadow', '.cd-gem', '.cd-holo.ghost', '.cd-holo:not(.ghost)', '.cd-emit.l', '.cd-emit.r', '.cd-back'].filter(function(s){ return !el.querySelector(s); }),
         names: el.querySelectorAll('.cd-name').length, kinds: el.querySelectorAll('.cd-kind').length, texts: el.querySelectorAll('.cd-text').length, chips: el.querySelectorAll('.cd-chip').length, ghost: (el.querySelector('.cd-holo.ghost .cd-gn') || {}).textContent, ghostHidden: (el.querySelector('.cd-holo.ghost') || { getAttribute: function(){ return null; } }).getAttribute('aria-hidden'),
         tex: art(t), gem: art(g), state: (el.querySelector('.cd-state') || {}).textContent || '', cls: el.className, chipAt: cr ? [Math.round((cr.left + cr.width / 2 - ar.left) / ar.width * 100), Math.round((cr.top + cr.height / 2 - ar.top) / ar.height * 100)] : null,
@@ -90,7 +91,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.shopCards = measureCards().length; out.cards = out.cards.concat(measureCards()); body = $('#cardsRoot .cd-body'); out.overflowShop = { sw: body.scrollWidth, cw: body.clientWidth };
     _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice(), energy: (equipPackLast.energy || []).slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too (its two and, since build 2026-11-09s, its two energy cards)
     var rc = measureCards('#cardsRoot .cr-overlay .cd-card'); out.revealCards = rc.length; out.cards = out.cards.concat(rc);
-    out.under = $$('#cardsRoot .cd-card.en').filter(function(x){ return !x.closest('.cr-overlay'); }).map(function(x){ return getComputedStyle(x.querySelector('.cd-en > b')).animationPlayState; });   // (the SHOP's energy cards, under the reveal) _cdReveal = null; cardsRender(true); await wait(60);
+    out.under = $$('#cardsRoot .cd-card.en').filter(function(x){ return !x.closest('.cr-overlay'); }).map(function(x){ var s = x.querySelector('.cd-en > svg'); return s ? getComputedStyle(s).animationPlayState : ''; });   // (the SHOP's energy cards, under the reveal) _cdReveal = null; cardsRender(true); await wait(60);
     // every picture is one the browser can draw (the nine card faces, the eighteen backdrops, the crystal in each colour and the cube)
     var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician', 'spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
     ['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].forEach(function(e){ ['brawler', 'mage', 'technician'].forEach(function(c){ urls.push(['f:' + e + ':' + c, cardArtUrl('f:' + e + ':' + c, function(){ return cardArtMixSvg(e, c); })]); }); urls.push(['gem:' + e, 'data:image/svg+xml,' + encodeURIComponent(cardArtGemSvg(cardArtElementColour(e)))]); });
@@ -258,12 +259,17 @@ function measure(w, h) {
             same(T.tilt.transform, 'matrix3d(', 'the tilt'); same(T.tilt.style, 'flat', 'one layer'); ok(T.tilt.perspective !== 'none', 'no perspective'); same(T.tilt.sides, 0, '3D edges');
             for (const c of T.cards) { ok(c.face, c.name + ' has no face'); same(c.parts.join(), '', c.name + ' lacks'); same([c.names, c.kinds, c.texts, c.chips].join(), '1,1,1,1', c.name + '\'s name, kind, text and chip'); same(c.ghost, c.name, c.name + '\'s shadow'); same(c.ghostHidden, 'true', c.name + '\'s shadow is read out'); }
         });
-        await check('AN ENERGY CARD\'S MOVING BACKGROUND (the owner, 2026-11-09: "electric and vibrant, that move"; of three drafts, "A · plasma"): every energy card (a pack\'s reveal deals two) has its layer of three soft blobs moving (cdEnA), no other card has it; the SHOP\'s energy cards under a reveal hold still, the reveal\'s move', async () => {
+        await check('AN ENERGY CARD\'S 3D GEM (build 2026-11-12n, replacing 2026-11-09nn\'s "A · plasma" of soft blobs; js/energygem.js): every energy card has a gem SVG of its element, carries an el-<element> class to match it, and no other card does; the SHOP\'s energy cards under a reveal hold still, the reveal\'s run', async () => {
             const en = T.cards.filter(c => c.energy), other = T.cards.filter(c => !c.energy);
             ok(en.length >= 2, 'no energy cards measured: ' + en.length);
-            for (const c of en) { ok(c.enLayer && c.enCls && c.enBlobs === 3, c.name + ' has no moving background: ' + JSON.stringify([c.enLayer, c.enCls, c.enBlobs])); same(c.enAnim, 'cdEnA', c.name + '\'s blobs do not move'); same(c.enState, 'running', c.name + ' (in the reveal) holds still'); }
-            for (const c of other) ok(!c.enLayer && !c.enCls, c.name + ' (not an energy card) has a moving background');
-            ok(T.under.length >= 1 && T.under.every(st => st === 'paused'), 'the SHOP\'s energy cards under the reveal do not hold still: ' + JSON.stringify(T.under));
+            for (const c of en) {
+                ok(c.enLayer && c.enCls && c.enSvg, c.name + ' has no gem: ' + JSON.stringify([c.enLayer, c.enCls, c.enSvg]));
+                same(c.enEl, c.cardEl, c.name + ' has no el-' + c.cardEl + ' class (reads "' + c.enEl + '")');
+                same(c.enState, 'running', c.name + ' (in the reveal) holds still');
+            }
+            for (const c of other) ok(!c.enLayer && !c.enCls, c.name + ' (not an energy card) has an energy gem');
+            // Fire/ice/electric/blossom's SVGs animate via CSS and pause under the reveal; flux/toxic are rAF-driven (js/energygem.js watches #cardsRoot .cr-overlay) and also hold their last frame, but have no CSS animation to read, so a blank state is accepted.
+            ok(T.under.length >= 1 && T.under.every(st => st === 'paused' || st === ''), 'the SHOP\'s energy cards under the reveal do not hold still: ' + JSON.stringify(T.under));
         });
         await check('an element card wears its element\'s texture and the crystal, a class card its class\'s and the cube (an aura\'s in its element\'s colour), a species card its species\' texture and the crystal in its colour (Part 2), a Player card no texture and the crystal', () => {
             const role = { brawler: 'brawler', sniper: 'mage', camper: 'technician' }, spCol = J('CARD_ART.species');

@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12n` · branch `claude/start-game-project-HSh7Z` · per-element 3D gems on energy cards
+- **The owner**, after a walk through per-element mock-ups one at a time: locked each gem and said "push" (`docs/ENERGY-CARDS.md` §9; the mock-ups were in the session's scratchpad, not in the repository).
+- **The card's old plasma background is replaced by a per-element 3D gem.** Each energy card picks up an `el-<element>` class on `.cd-card.en`, and its `.cd-en` layer is filled with the right gem by `energyGemInit` (js/energygem.js), replacing the three `<b>` blobs that moved on `cdEnA` (build `2026-11-09nn`).
+  - **fire** · a crooked crystal cluster of three with two shards behind.
+  - **ice** · a hexagonal prism tower with a smaller companion prism.
+  - **electric** · a magnetic geode cracked open — yellow crystals inward, four big ones out through the shell, dashed field lines around it, three flickering arcs.
+  - **flux** · two triangular pyramids base-to-base, spinning together and gyrating. A per-frame 3D projection with painter's-sort faces and Lambert shading (`_egFluxTransform`, `_egFluxShade`).
+  - **core** · a translucent "flubber" blob with a squash-and-stretch jiggle and a slow wobble; three droplets bounce round it on their own cycles.
+  - **toxic** · the core bubble's mechanism in a toxic palette: a green main bubble with eight half-bubbles welling up on its surface, spinning + gyrating.
+  - **BLOOM** · a lotus with three tiers of petals (8/7/5), a gold stamen centre with ten pistils.
+- **The 3D animations** (fire/ice/electric/core/BLOOM) are CSS keyframes defined in game.html under *AN ENERGY CARD'S 3D GEM*. **Flux and toxic** compute their faces each frame through a single rAF loop in `js/energygem.js` (`_ENERGY_GEM_FX`, `_energyGemFxLoop`), which registers each gem as its SVG lands in the DOM and lets it go when it is removed. Reduced motion holds every gem still; a pack's reveal pauses cards outside the overlay (the same `#cardsRoot:has(.cr-overlay)` rule the plasma used, now targeted at the gem SVG), and the rAF loop checks the same overlay for the per-frame ones.
+- Files: `js/energygem.js` (new), `js/cardsui.js` (`_cdSlab`'s ENERGY branch), `game.html` (the CSS block, the script tag after `js/energy.js`, the boot probe for `ENERGY_GEM_SVG`); build stamp bumped on `game.html`, `js/config.js` and `bible.html`. Tests: `tests/cardart.js` (the ENERGY GEM check replaces the plasma one). Docs: `ENERGY-CARDS.md` §9 (the new gem described, the plasma kept as history), `CHANGELOG.md` (this entry).
+- Not playtested. The rAF loop is budget-cheap (two faces of six for flux, eight circles for toxic), but was not measured on an iPad.
 ### Build `2026-11-12m` · branch `claude/start-game-project-HSh7Z` · main's Hornshell build and this branch's command card together
 - While this branch made build 12l (the command card), main took the Hornshell's ECHO PULSE pull and its goo-ring shot, lettered 12k and 12l on their own branch (its entry below).
 - Those letters were used on both lines, so the two merged (main into this branch) are build 12m, a letter new to both.
