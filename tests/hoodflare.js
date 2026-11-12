@@ -145,6 +145,20 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
     });
 
+    group('THE ROTSHARD\'S CRYSTAL SPLITS FOR ROTTEN DECOY (build 2026-11-12u; the owner: "the crystal splits"; design No. 944)');
+    check('over the wind-up the cells run 16 to 21, then 22 and 23 as the decoy is set, then its own frames; the black crystal that broke free flies to the decoy (decoylob, DECOY_LOB frames) and the decoy, set at once as it was, is drawn from then; only the Rotshard splits', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('toxic', 'sniper', 'rotshard'), d = evolvedDef(f), t = __foe(f.x + 3, f.y); followerAltSet(f, 'rotten_decoy'); const out = [], c = () => splitCol(f, frame, d); f._altWindMax = 150;
+            for (const w of [150, 125, 100, 75, 50, 25, 1]) { f._altWind = w; out.push(c()); }
+            f._altWind = 0; f.currentWill = 100; frame++; const n0 = rotDecoys.length, fired = rottenDecoy(f), at = f._decoyAt === frame, lob = elementEffects.filter(e => e.type === 'decoylob'), dec = rotDecoys.slice(n0), eff = elementEffects.filter(e => e.type === 'rotdecoy');
+            for (const a of [0, 3, 4, 11, 12]) out.push(splitCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col;
+            return { out, fired, at, hold, lobs: lob.length, life: lob[0] && lob[0].life, to: lob[0] && dec[0] ? [lob[0].x === dec[0].x, lob[0].y === dec[0].y] : null, live: dec.length === 1 && !dec[0].dead && dec[0].until > frame, eff: eff.length, K: DECOY_LOB, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].split).join() }; })())`));
+        same(r.out.join(), '16,17,18,19,20,21,21,22,22,23,23,-1', 'cells'); ok(r.fired && r.at, 'ROTTEN DECOY did not fire'); same(r.lobs, 1, 'the crystal that flew'); same(r.life, r.K, 'its flight'); same(r.K, 14, 'DECOY_LOB'); ok(r.to && r.to[0] && r.to[1], 'it did not fly to the decoy: ' + JSON.stringify(r.to)); ok(r.live, 'the decoy is not set at once'); same(r.eff, 1, 'the decoy\'s picture'); ok(r.hold >= 16, 'the old bow is shown after it: ' + r.hold); same(r.who, 'rotshard', 'who splits');
+    });
+    check('its sheets, the body\'s and its pool\'s, are 24 columns of 8 facings, every body cell a sensible size', () => {
+        for (const key of ['img/evo/rotshard.png', 'img/evo/rotshard_g.png']) { const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['${key}'] || null)`)); ok(pk, key + ': js/evopack.js has no entry'); same(pk.cols, 24, key + ' columns'); same(pk.rows, 8, key + ' rows');
+            if (key === 'img/evo/rotshard.png') { const bad = []; for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short'); } }
+    });
+
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
     check('img/evo/embercowl.png is the cropped sheet js/evopack.js describes (144 px cells, 32 columns: the idle, the old action, the flare and the lighting up for HEXFIRE), and the definition says so', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/embercowl.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/embercowl.png'] || null)`));

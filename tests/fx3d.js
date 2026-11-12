@@ -171,11 +171,12 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 360 - ${age}, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
             try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; frame = f0; }
             return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), glow: P.calls.filter(c => c[0] === 'ellipse' && c[3] === 30 && c[4] === 22).length, reach: P.calls.filter(c => c[0] === 'ellipse' && c[3] > 60).length, rects: P.calls.filter(c => c[0] === 'fillRect').map(c => c.slice(1)), cells: __cells4.slice(), W: canvas.width, H: canvas.height }; })()`);
-        const a = at(0, 30), b = at(59, 30), c = at(118, 30), half = at(0, 4), P = J('FX3D.pieces.rotdecoy'), S = J('EVO_SCALE'), TH = J('TILE_H');
+        const a = at(0, 30), b = at(59, 30), c = at(118, 30), half = at(0, 4 + 14), flying = at(0, 5), P = J('FX3D.pieces.rotdecoy'), S = J('EVO_SCALE'), TH = J('TILE_H');
         same(a.im.length, 1, 'its pictures'); ok(Math.abs(a.im[0][7] - P.cell * S) < 1e-6, 'not at the forms\' scale: ' + a.im[0][7]);
         const cy = a.H / 2 + TH * 0.5; ok(Math.abs(a.im[0][6] + P.ay * S - cy) < 1e-6 && Math.abs(a.im[0][5] + P.ax * S - a.W / 2) < 1e-6, 'its foot is not where the decoy is set');
         same(JSON.stringify([a.cells[0], b.cells[0], c.cells[0]]), '[0,3,6]', 'its frames by the game\'s clock (12 over its ' + P.loop + '-frame loop)');
-        ok(half.im[0][4] < P.ay && Math.abs(half.im[0][6] + half.im[0][8] - cy) < 1e-6, 'it does not rise out of the floor as it is set: ' + JSON.stringify(half.im[0].slice(1)));
+        ok(half.im[0][4] < P.ay && Math.abs(half.im[0][6] + half.im[0][8] - cy) < 1e-6, 'it does not rise out of the floor as it lands: ' + JSON.stringify(half.im[0].slice(1)));
+        same(flying.im.length, 0, 'the decoy is drawn while the black crystal that broke free of the Rotshard is still flying to it (DECOY_LOB, build 2026-11-12u)');   // (it rises out of the floor from where the crystal lands: 14 frames after it is set)
         same(a.glow, 0, 'the glow round it'); same(a.reach, 0, 'the green circle of its reach (the owner, 2026-11-09: "Remove [the] green space")');
         const bar = a.rects.find(r => Math.abs(r[2] - 28) < 1e-6); ok(bar && Math.abs(bar[1] - (cy - (P.ay - P.tipY) * S - 8)) < 1e-6, 'its health bar is not over its top: ' + JSON.stringify(bar));
         run('spriteCell = __sc4; delete FX3D.pieces.rotdecoy._img; __preview(false);');

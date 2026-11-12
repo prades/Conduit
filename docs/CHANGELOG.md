@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-12u` · branch `claude/rotshard-split` · the Rotshard: its crystal splits for ROTTEN DECOY
+- **The ask** (the owner: "Let's do the Rotshard next"; of the agent's three ideas for it, "ROTTEN DECOY: the crystal splits").
+- **What it does:** over ROTTEN DECOY's long wind-up (7 s, standing still: the move's own time) **a second black crystal grows out of the Rotshard's pool beside its green one** (cells 0 to 5), and the pool swells and the crystal leans a little as it comes; as the decoy is set **the black crystal breaks free** (cell 6) and **flies in an arc to the spot where the decoy is set** (14 frames, drawn: `decoylob`), where the decoy, the game's own black Rotshard with its health bar, **rises out of the floor from then** (it used to appear at once at the spot). Then the Rotshard is as it was (cell 7, and its walking frames).
+- **Looks only:** ROTTEN DECOY's rules are as they were: **the decoy lures at once** when it is set (the 14 frames are only how it is drawn), its 6 tiles' draw, 6 s life, half the Rotshard's health, mist and poison. The Rotshard's everyday shot (CORRODE SHOT) is as it was.
+- The Rotshard's sheets, the body's and its pool's, are 24 columns now (design No. 944, `forms5.js`; the extra block, columns 16-23). Their walking frames and old bow (columns 0-15), in all eight facings, are **pixel for pixel the sheets from before** (checked, both layers). `js/evolution.js` (`splitCol`, `rottenDecoy`, `DECOY_LOB`, `_evoFrame`, the definition), `js/elements.js` (`decoylob`; the decoy's rise waits for it).
+- Agent's, provisional: how big the black crystal grows, how it leans the Rotshard, its flight (14 frames, an arc, turning), when the decoy rises, the frame counts.
+- Tests: `tests/hoodflare.js` (the cells, the flight, the decoy set at once, both sheets); `tests/evolution.js` expects 24 columns. Not playtested; looked at in the real page frame by frame (headless).
+- Still without a new animation: the Rotshard's everyday shot (CORRODE SHOT), the Voidstar's everyday shot.
+
 ### Build `2026-11-12t` · branch `claude/thornwhip-seeds` · the Thornwhip: a seed fling for its everyday shot, and SEEDFALL is a heal
 - **The ask** (the owner, of the Thornwhip: "Let's make the normal [attack] be a low damage seed fling, and then whenever you switch to the secondary attack, the Thor[nwhip] heals from its body and from the seeds that turned into healing buds that last for a few seconds"; the message was dictated and garbled in places, so the agent stated its reading and asked: **buds round the Thornwhip itself**, and **healing only, no damage to enemies**).
 - **What was found:** the Thornwhip's action block (cells 8 to 15) already had the whole fling, the vines rearing round a glowing pink seed and whipping out, and the game **never played it for its shots**: its body showed its walking frames while the shot went off. PINK THICKET (its Ultimate, the big 3D seed and the bushes) was the work of earlier builds.

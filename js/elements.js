@@ -1556,7 +1556,8 @@ function drawElementEffects() {
             }
             // ROTTEN DECOY (the Rotshard's move): a black crystal formation, the Rotshard's height, in a constant hazy green mist; its health as a thin bar
             case "rotdecoy": {
-                const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, sway = Math.sin(frame * 0.05) * 2;
+                if (e.maxLife - e.life < DECOY_LOB) break;   // (the crystal that broke free from the Rotshard is still flying: decoylob; the decoy rises out of the floor where it lands. The lure is at once, js/evolution.js)
+                const d = e.on, k = Math.min(1, (e.maxLife - e.life - DECOY_LOB) / 8), cy = py + TILE_H * 0.5, sway = Math.sin(frame * 0.05) * 2;
                 // AS A BLACK ROTSHARD (js/fx3d.js rotdecoy; the owner, 2026-11-09: "Make the decoy a black Rotshard"): the Rotshard's own model in black, at the forms' scale, rising out of the floor as it is set
                 // and breathing with the Rotshard's idle; no glow round it (the owner: "I don't like the green aura"). Else the drawn spikes in their glow.
                 const R3 = typeof fx3dOn === "function" && fx3dOn("rotdecoy") && fx3dReady("rotdecoy") ? FX3D.pieces.rotdecoy : null, H3 = R3 ? (R3.ay - R3.tipY) * (typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144) : 0;
@@ -1568,6 +1569,15 @@ function drawElementEffects() {
                 break;
             }
             // ...broken: its black shards scattered on the floor, still in the green haze, fading
+            // The Rotshard's ROTTEN DECOY (js/evolution.js rottenDecoy): the black crystal that broke free of it, flying in an arc to where the decoy is set, turning as it goes; flat shapes
+            case "decoylob": {
+                const u = Math.min(1, (e.maxLife - e.life) / e.maxLife), tx = px, ty = py + TILE_H * 0.5, sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H - 20;
+                const x = sx0 + (tx - sx0) * u, y = sy0 + (ty - sy0) * u - Math.sin(Math.PI * u) * 34, an = u * 9, c = Math.cos(an), sn = Math.sin(an), P = [[0, -12], [4, -2], [3, 9], [-3, 9], [-4, -2]].map(q => [x + q[0] * c - q[1] * sn * 0.5, y + q[0] * sn + q[1] * c * 0.8]);
+                ctx.save(); ctx.globalAlpha = 0.3 * (1 - u); ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.arc(x - (tx - sx0) * 0.05, y + 6, 5, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1; ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = "#7dff4a"; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.arc(P[0][0], P[0][1], 1.2, 0, Math.PI * 2); ctx.fill();   // (a point of the crystal's green light at its tip)
+                ctx.restore(); break;
+            }
             case "rotshards": {
                 const k = e.life / e.maxLife, cy = py + TILE_H * 0.5;
                 ctx.globalAlpha = 0.2 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px, cy - 4, 26, 12, 0, 0, Math.PI * 2); ctx.fill();
