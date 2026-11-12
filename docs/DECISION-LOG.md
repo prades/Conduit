@@ -3039,3 +3039,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: which tentacles (the three odd ones), how far and how high they reach, the timing, the lean.
 - Status: Implemented; not playtested. `CHANGELOG.md`.
 
+## DECISION: The Seeper's everyday hit is a leg stomp (2026-11-11, build `2026-11-11z`, branch `claude/seeper-attacks`)
+- The owner, naming the next creature: "Seeper!" The agent offered three looks for its everyday hit: a leg stomp, a shell bash, a goo lob. Chosen: **"Leg stomp"**.
+- Built: it rears one front leg and slams it down toward the enemy, goo flung from the foot (its own 8 frames of the sheet). Looks only. ERUPTION keeps its own frames. As every Brawler, it already walks up to its enemy (`2026-11-11k`).
+- Agent's, provisional: which leg, how far and high, the goo, the timing, the lean.
+- Status: Implemented; not playtested. `CHANGELOG.md`.
+
