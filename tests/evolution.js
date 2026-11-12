@@ -208,17 +208,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     // HEXFIRE: the six instant rounds that set their targets burning are SUPERSEDED by the owner's follower combat brief (2026-11-02): a fire shot that lands as a stationary burning circle,
     // enemies only (tests/followercombat.js). Here, that the Ember Hood and the retired Cinder Halo (which shares its replacement's move) both fire it.
-    check('HEXFIRE (the redesign): the Ember Hood and the retired Cinder Halo fire one HEXFIRE shot (no damage of its own) at the nearest enemy in reach, then wait', () => {
+    check('HEXFIRE (the redesign; since build 2026-11-12h no shot: the owner, "it barely hits the enemy when they\'re rushing towards you", "no projectile"): the Ember Hood and the retired Cinder Halo open one burning circle at once under the nearest enemy in reach, then wait', () => {
         const r = run(`(function(){ const out = {};
             for (const evo of ['embercowl', 'halo']) { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
                 const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: Milestone Two)
                 spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = evo; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1];
                 const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 5, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
                 frame++; __arm(f); evolutionTick();
-                const h = followerProjectiles.filter(x => x.kind === 'hex'); out[evo] = { n: h.length, dmg: h.length ? h[0].damage : null, cd: f._sigCd };
-                followerProjectiles.length = 0; p.dead = true; }
+                const h = elementEffects.filter(x => x.type === 'hexfire' && x.by === f); out[evo] = { n: h.length, shots: followerProjectiles.filter(x => x.kind === 'hex').length, under: h.length && Math.hypot(h[0].x - p.x, h[0].y - p.y) < 1e-9, cd: f._sigCd };
+                followerProjectiles.length = 0; elementEffects.length = 0; p.dead = true; }
             return out; })()`);
-        for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its shots'); same(r[evo].dmg, 0, evo + ': the shot\'s own damage'); same(r[evo].cd, 165, evo + ': its wait (half the old 330 since build 2026-11-10a)'); }
+        for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its circles'); same(r[evo].shots, 0, evo + ': its shots (none)'); ok(r[evo].under, evo + ': the circle is not under the enemy'); same(r[evo].cd, 165, evo + ': its wait (half the old 330 since build 2026-11-10a)'); }
     });
 
     check('THE ASK: CORRODE SHOT eats the armour of the enemy it hits, with a weaker corrosion splashed over its neighbours; since build 2026-11-07ss it is the Rotshard\'s EVERYDAY SHOT (the design notes\' primary), ROTTEN DECOY its second attack', () => {
@@ -463,7 +463,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
-            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : run('EVOLUTIONS.' + id + '.chomp') ? 32 : (run('EVOLUTIONS.' + id + '.lash') || run('EVOLUTIONS.' + id + '.stomp') || run('EVOLUTIONS.' + id + '.shard')) ? 24 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n; the Frost Maw's has 32 and a 192 px cell, CHOMP's two blocks: build 2026-11-11v)
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : run('EVOLUTIONS.' + id + '.burst') ? 40 : run('EVOLUTIONS.' + id + '.chomp') ? 32 : (run('EVOLUTIONS.' + id + '.lash') || run('EVOLUTIONS.' + id + '.stomp') || run('EVOLUTIONS.' + id + '.shard') || run('EVOLUTIONS.' + id + '.flare')) ? (run('EVOLUTIONS.' + id + '.blaze') ? 32 : 24) : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k; the Quillstone's has 40 columns, its dive and QUILL BURST's three blocks: build 2026-11-11n; the Frost Maw's has 32 and a 192 px cell, CHOMP's two blocks: build 2026-11-11v)
             const P = run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'), pk = P && JSON.parse(P);   // (cropped since build 2026-11-09r, js/evopack.js: its grid as baked, its size as cropped; or a full grid, left whole)
             if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
             else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');

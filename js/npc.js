@@ -9,9 +9,10 @@ const MAGE_SHOT_MULT = 0.5, MAGE_SHOT_REST = 55;
 const MAGE_SHOT_WINDUP = 12;
 function _mageShotFire(actor) {
     const t = actor._shotTarget; actor._shotTarget = null;
-    if (!t || t.dead) return;   // (it died in the wind-up: the next step picks another)
+    if (!t || t.dead) return;
+    actor._shotFiredAt = typeof frame !== "undefined" ? frame : 0;   // (when it went off: the Ember Hood's flare settles from here, js/evolution.js flareCol)   // (it died in the wind-up: the next step picks another)
     const elDef = ELEMENTS.find(e => e.id === actor.element), col = elDef ? elDef.color : "#fff", dmg = (actor.stats?.specialAttack || 10) * MAGE_SHOT_MULT;
-    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING)
+    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT, actor.evolved === "embercowl" ? { kind: "fireball" } : undefined);   // (the Ember Hood's FIREBALL is drawn as a glowy blob: js/game.js _drawFireBlob)   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING)
     actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
     if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
 }
@@ -293,7 +294,7 @@ function updateRTSNPC(actor) {
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
                     if ((typeof cardAttackHolds === "function" && cardAttackHolds(actor)) || (typeof followerAltLocked === "function" && followerAltLocked(actor))) { /* a card attack set, or locked on its chosen alternate (js/moves.js): no shot */ }
                     else if (actor.attackCooldown <= 0) {
-                        actor._shotTarget = nearestEnemy; actor._shotWind = Math.max(1, followerRest(actor, MAGE_SHOT_WINDUP));   // (the shot winds up first, rooted, then _mageShotFire sends it and sets the rest; attack speed shortens the wind-up as it does the rest)
+                        actor._shotTarget = nearestEnemy; actor._shotWind = actor._shotWind0 = Math.max(1, followerRest(actor, MAGE_SHOT_WINDUP));   // (the shot winds up first, rooted, then _mageShotFire sends it and sets the rest; attack speed shortens the wind-up as it does the rest)
                     } else {
                         actor.attackCooldown--;
                         if (_fmSpot) followPlayer(actor);   // (between shots, back to its place behind you)
