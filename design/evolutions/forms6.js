@@ -191,13 +191,16 @@ function _groundDesign(o) {
   const mouth = o.face ? cbox(0.2, 0.018, 0.02, 0.004, M.black) : null; if (mouth) b.add(mouth);
   const L = new T.PointLight(0xffffff, 0.2, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.9, 0.9); b.add(L); LIGHTS.push(L);
   return { g, core: R * 0.4 * (o.S || 1), update(t, act, v) {
-    const SB = o.stab && v && v.stab != null ? v.stab : 0;   // (No. 937, the SHARD STAB: v.stab, 0 at rest to 1 thrust out; below 0, drawn back)
+    const SB = o.stab && v && v.bm != null;   // (No. 937, the HAMMER AND THE STAKE: v = { ar: the big shard pulled up, ax: over the other, bm: the other aimed at the enemy, sl: coming down on it, ps: driven out })
     mass.wobble(t, act); if (skirt) skirt.shift(t); const sq = Math.sin(1.6 * t), up = 1 + 0.06 * sq - 0.3 * (act || 0);
     parts.forEach((q, i) => { if (q.inBlob) { q.sh.position.y = q.y0 * up; q.sh.rotation.z = q.rz + 0.04 * Math.sin(1.6 * t + i); } });
-    if (SB !== 0) parts.forEach((q, i) => { const sp = (i - (parts.length - 1) / 2) * 0.16;   // the shards become a fist of spikes: they swing forward, close together, and reach
-      q.sh.position.set(q.p0[0] + (q.p0[0] * 0.4 - q.p0[0]) * SB, q.p0[1] + (0.22 - q.p0[1]) * SB, q.p0[2] + (0.55 + 0.1 * i - q.p0[2]) * SB);
-      q.sh.rotation.set(q.r0[0] + (1.2 - q.r0[0]) * SB, q.r0[1] * (1 - SB), q.r0[2] + (sp - q.r0[2]) * SB); q.sh.scale.y = 1 + 0.25 * Math.max(0, SB); });
-    b.position.z = 0.25 * SB; mass.scale.z = 1 + 0.2 * Math.max(0, SB);
+    if (SB) {   // THE HAMMER AND THE STAKE: one shard (the big one) is pulled straight up and over the other, which is angled at the enemy; the first comes down on the other's back end and drives it out into the enemy
+      const A = parts[0], B = parts[1], th = 1.05, bm = v.bm, ps = v.ps, sl = v.sl;
+      const rxB = B.r0[0] + (th - B.r0[0]) * bm, dy = Math.cos(rxB) * ps * 0.6, dz = Math.sin(rxB) * ps * 0.6;   // (B is driven along its own length)
+      B.sh.rotation.set(rxB, 0, B.r0[2] * (1 - bm)); B.sh.position.set(B.p0[0], B.p0[1] + dy, B.p0[2] + dz); B.sh.scale.y = 1 + 0.25 * ps;
+      A.sh.rotation.set(A.r0[0] * (1 - v.ax), 0, A.r0[2] * (1 - v.ax));
+      A.sh.position.set(A.p0[0] + (B.p0[0] - A.p0[0]) * v.ax, A.p0[1] + 0.95 * v.ar + dy * sl, A.p0[2] + (B.p0[2] - A.p0[2]) * v.ax + dz * sl); }
+    b.position.z = SB ? 0.12 * v.ps : 0;
     const [dx, dy, dz] = mass.dims;   // the face sits on the front of the lump
     eyes.forEach(([e, sx]) => { e.position.set(sx * dx * 0.28, dy * 0.72 * up, dz * 0.82); });
     if (mouth) mouth.position.set(0, dy * 0.52 * up, dz * 0.9); } };
@@ -213,7 +216,7 @@ fx(114, "Ground blob, bigger shards.", () => _groundDesign({ R: 0.78, S: 1.3, sk
 fx(115, "Ground blob, see-through, shards inside.", () => _groundDesign({ R: 0.8, flat: 0.7, clear: true, face: true, shards: [
   { x: 0, y: 0.04, z: 0, w: 0.3, h: 0.7, rz: 0.2, inBlob: true }, { x: -0.4, y: 0.04, z: 0.1, w: 0.24, h: 0.5, rz: -0.5, inBlob: true }, { x: 0.4, y: 0.04, z: -0.15, w: 0.24, h: 0.5, rz: 0.6, inBlob: true },
   { x: 1.1, y: 0, z: 0.3, w: 0.22, h: 0.6, rz: 0.1, ry: 0.5 }, { x: -1.05, y: 0, z: -0.4, w: 0.24, h: 0.65, rz: -0.2, ry: -0.4 }, { x: 0.3, y: 0, z: 1.1, w: 0.2, h: 0.4, rz: 0.25, ry: 2.2 }] }));
-// 937 · THE RIFT MIMIC's SHARD STAB (the owner, 2026-11-11, of its everyday hit: "Shard stab"): No. 114 whose big black shards swing forward into a fist of spikes and thrust at the enemy, then sink back (its everyday hit; the sheet's extra block).
-fx(937, "The RIFT MIMIC's shard stab: No. 114 with its shards thrusting out toward the enemy as a fist of spikes and back.", () => _groundDesign({ R: 0.78, S: 1.3, skirt: 0.8, flat: 0.55, bump: [-0.8, 0.05, 0.5], stab: true, shards: [
+// 937 · THE RIFT MIMIC's SHARD STAB (the owner, 2026-11-11, of its everyday hit: "Shard stab"; then, of the first, a fist of spikes: "How about something where it like pulls one shard straight up and then another shard angled at the opponent and then uses one to ram the other one into the opponent?"): No. 114 whose big shard is pulled straight up over another, angled at the enemy, and brought down on its back end to drive it into the enemy (its everyday hit; the sheet's extra block).
+fx(937, "The RIFT MIMIC's shard stab: No. 114: one shard pulled up over another angled at the enemy, brought down on it to drive it out.", () => _groundDesign({ R: 0.78, S: 1.3, skirt: 0.8, flat: 0.55, bump: [-0.8, 0.05, 0.5], stab: true, shards: [
   { x: -0.1, y: 0.1, z: 0, w: 0.34, h: 1.1, rx: 0.08, rz: 0.15, inBlob: true }, { x: 0.45, y: 0.12, z: -0.2, w: 0.28, h: 0.78, rx: -0.2, rz: 0.55, inBlob: true },
   { x: -1.1, y: 0, z: 0.3, w: 0.28, h: 0.8, rz: -0.15, ry: 0.4 }, { x: 0.9, y: 0, z: 0.75, w: 0.26, h: 0.65, rz: 0.2, ry: -0.6 }] }));
