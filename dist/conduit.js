@@ -51268,16 +51268,16 @@ function _drawSoulBlob(ctx, p, sx, sy) {
         ctx.fill();
     };
     const seed = Math.floor(f / 2);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = _SOUL.tail;
     for (let i = 0; i < 4; i++) {
-        const off = (i - 1.5) * R * 0.42, len = R * (3.2 + 0.9 * ((seed + i * 2) % 3)), ox = -uy * off, oy = ux * off;
+        const off = (i - 1.5) * R * 0.42, len = R * (3.2 + 0.9 * ((seed + i * 2) % 3)), ox = -uy * off, oy = ux * off, w0 = R * (0.3 - 0.06 * (i % 2)), x0 = sx + ox - ux * R * 0.7, y0 = sy + oy - uy * R * 0.7;
         ctx.globalAlpha = 0.5 - i % 2 * 0.15;
-        ctx.lineWidth = 2.6 - 0.4 * (i % 2);
+        ctx.fillStyle = _SOUL.tail;
         ctx.beginPath();
-        ctx.moveTo(sx + ox - ux * R * 0.7, sy + oy - uy * R * 0.7);
-        ctx.lineTo(sx + ox - ux * (R * 0.7 + len), sy + oy - uy * (R * 0.7 + len));
-        ctx.stroke();
+        ctx.moveTo(x0 - uy * w0, y0 + ux * w0);
+        ctx.lineTo(x0 + uy * w0, y0 - ux * w0);
+        ctx.lineTo(x0 - ux * len, y0 - uy * len);
+        ctx.closePath();
+        ctx.fill();
     }
     for (let i = 5; i >= 1; i--) {
         const d = R * (0.9 + i * 0.95), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.16;
@@ -51286,30 +51286,31 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     blob(sx, sy, R, 0.14, _SOUL.body, 1, 1.45);
     blob(sx - R * 0.15, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1, 1.35);
     ctx.lineJoin = 'round';
-    for (let i = 0; i < 5; i++) {
-        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = ang + Math.PI + ((h - Math.floor(h)) - 0.5) * 2.2, len = R * (1.3 + 1.0 * (((seed + i * 3) * 0.37) % 1)), pts = [];
-        for (let k = 0; k <= 5; k++) {
-            const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.5 * Math.min(1, k / 2), d = R * 0.8 + len * k / 5;
-            pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * jj, sy + Math.sin(a0) * d + Math.cos(a0) * jj]);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+        const h = Math.sin((seed * 5 + i) * 12.9898) * 43758.5453, a0 = (h - Math.floor(h)) * Math.PI * 2, len = R * (1.1 + 0.9 * (((seed + i * 3) * 0.37) % 1)), pts = [];
+        for (let k = 0; k <= 4; k++) {
+            const jj = (((seed * 7 + i * 5 + k * 3) * 0.61) % 1 - 0.5) * R * 0.9, d = R * 0.9 + len * k / 4;
+            pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * jj - ux * k * R * 0.12, sy + Math.sin(a0) * d + Math.cos(a0) * jj - uy * k * R * 0.12]);
         }
-        ctx.strokeStyle = _SOUL.smoke;
-        ctx.lineWidth = 5.5;
-        ctx.globalAlpha = 0.28;
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let k = 1; k < pts.length; k++)
+        for (let k = 1; k < pts.length; k++) {
+            const t = 1 - (k - 1) / (pts.length - 1);
+            ctx.strokeStyle = _SOUL.smoke;
+            ctx.lineWidth = 1 + 6.5 * t;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(pts[k - 1][0], pts[k - 1][1]);
             ctx.lineTo(pts[k][0], pts[k][1]);
-        ctx.stroke();
-        ctx.strokeStyle = _SOUL.arc;
-        ctx.lineWidth = 1.2;
-        ctx.globalAlpha = 0.65;
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let k = 1; k < pts.length; k++)
+            ctx.stroke();
+            ctx.strokeStyle = _SOUL.arc;
+            ctx.lineWidth = 0.7 + 1.9 * t;
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            ctx.moveTo(pts[k - 1][0], pts[k - 1][1]);
             ctx.lineTo(pts[k][0], pts[k][1]);
-        ctx.stroke();
-        blob(pts[3][0], pts[3][1], R * 0.3, 0.3, _SOUL.smoke, 0.32, 1.2);
-        blob(pts[5][0], pts[5][1], R * 0.22, 0.3, _SOUL.smoke, 0.25, 1.2);
+            ctx.stroke();
+        }
+        blob(pts[3][0], pts[3][1], R * 0.26, 0.3, _SOUL.smoke, 0.4, 1);
     }
     ctx.globalAlpha = 1;
 }

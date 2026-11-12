@@ -3191,4 +3191,6 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the face, the tail, the crackle, the tipping of the crystal, the frame counts.
 - Open: the Voidstar's everyday shot is the last mage's everyday shot without a look of its own.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **The look, revised the same day:** the owner, of the first look: **"it shouldn't have a fucking skull in it. And the lightning looks bad. It should just really be kind of like should look like it's zooming, even though it's a slow-moving projectile. But it's like smoke, lightning [...] kind of dullish, I guess. And the"** (the message was cut off). The face and the bright sparks were taken out; the blob is stretched with speed streaks and a smoky tail, and the lightning is dull smoke-lightning streaming back from it. The rest of the owner's sentence is not known: **open**.
+- **Then the owner, circling the second draft's picture (radial bolts, speed streaks):** **"This looks correct just make the streaks / bolts have borders that get bigger towards the shard... if that makes sense."** So the bolts and the speed streaks **taper**: thickest where they leave the blob, thinning to their tips. (A third draft whose bolts streamed back in a cone was tried and not wanted; it is not kept.)
 
