@@ -268,7 +268,7 @@ const EVOLUTIONS = {
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "ECHO PULSE", moves: ["echo_pulse"], sheet: "img/evo/hornshell.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4", pull: true, goo: true },   // (32 columns since build 2026-11-12k, design Nos. 941 and 942: columns 16-23 are ECHO PULSE's PULL, pullCol; 24-31 are the everyday shot's GOO RING, gooCol; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4", pull: true, goo: true },   // (32 columns since build 2026-11-12l, design Nos. 941 and 942: columns 16-23 are ECHO PULSE's PULL, pullCol; 24-31 are the everyday shot's GOO RING, gooCol; 8-15, its old bow, are not used by the move now)
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
     caldera:{ id: "caldera", legacy: true, name: "CALDERA", element: "toxic", role: "brawler", move: "ERUPTION", sheet: "img/evo/caldera.png",

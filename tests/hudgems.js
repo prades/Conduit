@@ -62,7 +62,7 @@ function measure() {
     console.log('\nTHE SOURCE');
     check('the shards plate is crystals and a number, and the alarm is a triangle beside the room tag (no banner anywhere in the page)', () => {
         ok(/<div id="shards"[^>]*><span id="shardGems"><\/span><span id="shardCount">0<\/span><\/div>/.test(HTML), 'the shard counter is not gems + a number');
-        ok(/<div id="zoneLine"><span id="alarmIcon"[\s\S]{0,700}<div id="zoneInfo"/.test(HTML), 'the alarm triangle is not beside the room tag');
+        ok(/<div id="zoneLine">(<button id="zoneMap"[\s\S]{0,400}?<\/button>)?<span id="alarmIcon"[\s\S]{0,700}<div id="zoneInfo"/.test(HTML), 'the alarm triangle is not beside the room tag (MAP may stand before it: build 2026-11-12i)');
         ok(/body\.alarm-on #alarmIcon \{ display: block; \}/.test(HTML), 'the alarm does not show the triangle');
         ok(!/id="waveInfo"/.test(HTML) && !/#waveInfo/.test(HTML), 'the objective banner is still in the page');
         ok(/#shards::before \{ display: none !important; \}/.test(HTML), 'the shards still sit in a box');

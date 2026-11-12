@@ -3089,6 +3089,20 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Supersedes: the squad's cards stacked over the orders (`2026-11-10c`); the dock's CARDS and QUESTS (`2026-11-11w`); the dialogue box at the foot on a tablet or a desktop (a phone keeps it at the bottom, as the owner asked on 2026-11-01); the member card's single column (`2026-11-10c`, `2026-11-10e`: the ENERGY band of draft B is kept, over the picture now); the enemy card staying while a member's card is open; THE CORE's PACK tag (`2026-11-11t`: the PACK is its own button again).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
+## DECISION: THE CORE's bars upright beside the cube; PACK and CARDS in its slab (2026-11-12, build `2026-11-12h`)
+- The owner: **"let's make [the player's health] a vertical bar and put it to the right of the character model ... And then we can tuck the pack and cards in where that health bar used to be"**; then **"flip pack and cards to where they're on the right side and the shard count is on the left side."**
+- Built: the three bars one over another right of the cube (and its siphon); the slab with the shards at its left and the PACK and CARDS at its right (`UI-STYLE.md`, "The bottom row").
+- The agent's, provisional: the bar's size and place, the buttons' size, PACK before CARDS; the two buttons still give way while a member's card is open (the owner's rule of build `2026-11-12g`).
+- Supersedes: build `2026-11-12g`'s PACK and CARDS left of THE CORE, and THE CORE's bars in its slab (`2026-11-11t`).
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
+## DECISION: The top corners' icons; ? in SETTINGS; the Clone Bay in the Experiment Lab (2026-11-12, build `2026-11-12i`)
+- The owner: **"Put the map button at the top right and make it transparent with a map icon, and put the settings up top next to the quest as just an icon, and make it look more like a 3D cog, and put the question mark next to the settings, or put the question mark inside the settings ... pop-up. And then the clones, that's actually going to be found in the experiment lab. You have to go to the experiment lab to activate the clones and buy clones and stuff. So that gets removed from the permanent HUD. Hopefully there's enough space at the bottom for a roster card squad thing for clones."** Of the first, flat icons: **"Those icons look awful, and the map should be on the opposite side of the location tag because the features should be pushed to the right side and not have a little icon pushing them out towards the middle."**
+- Built: the cog and the map rendered in 3-D (three.js, as THE CORE's cube), MAP left of the room's name; ? as a row of SETTINGS (of the owner's two choices, the one that leaves the HUD clearer); the Clone Bay as a station on the Experiment Lab's second glass test chamber; the Mutator's clone keeps its card on the squad strip (it had one since 2026-11-01).
+- The agent's, provisional: the icons' looks; the chamber the bay stands on.
+- Supersedes: the dock's SETTINGS, MAP, CLONES and ? (`2026-11-11w`), and the flat icons of the first try.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+
 ## DECISION: The Rimestar's everyday shot is a fins flare (2026-11-12, build `2026-11-12i`, branch `claude/rimestar-attacks`)
 - The owner: "We'll talk about the rhyme star" (the Rimestar). The agent described what each of its two attacks does and offered three looks for the everyday shot (fins flare, shard spin, cold pulse). Chosen: the **everyday shot**, **"Fins flare"**; then: **"like the wings separate into two parts each, so there's six."**
 - Built: over the shot's wind-up each fin splits lengthwise into two halves that open like a V (six), the diamond blazes and a ball of frost forms in front; it is gone as the shot leaves and the fins close. The shot in flight is the Ember Hood's glowy blob, frosty (the agent's reading of the owner's earlier note; the old shard is no longer its shot). ICICLE VOLLEY unchanged.
@@ -3103,7 +3117,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's, provisional: the blades' pitch, the crystals' size and colour, which three launch, the turn and blur per cell. Open: whether the owner wants a smoother spin (more cells).
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
 
-## DECISION: The Hornshell's ECHO PULSE pulls its arms in and sends out a ring of water (2026-11-12, build `2026-11-12k`, branch `claude/hornshell-pull`)
+## DECISION: The Hornshell's ECHO PULSE pulls its arms in and sends out a ring of water (2026-11-12, build `2026-11-12l`, branch `claude/hornshell-pull`)
 - The owner chose the Hornshell ("Static words not really in the game right now pick something") and, of its ECHO PULSE: **"he dips into his ring and then creates a water ring that hits enemies for crushing damage."** Asked whether that changes the move, the owner chose **looks only** and explained: **"The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring."**
 - Built: over the wind-up the tentacles are drawn into the jar; a ring of water spreads at its foot and a wave of water rolls out to the pulse's reach. The move's numbers and effect (a sound ring that breaks wind-ups, core damage) are unchanged.
 - Open: whether "crushing damage" should become a real damage type for this move (a rules change: it would need the number and whether the wind-up break stays). Also the Hornshell's everyday shot.

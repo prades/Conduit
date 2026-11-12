@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
-### Build `2026-11-12k` · branch `claude/hornshell-pull` · the Hornshell: ECHO PULSE pulls its arms in and a ring of water goes out; its everyday shot is a ring of glowing blue goo
+### Build `2026-11-12l` · branch `claude/hornshell-pull` · the Hornshell: ECHO PULSE pulls its arms in and a ring of water goes out; its everyday shot is a ring of glowing blue goo
 - **The ask** (the owner, of the Hornshell, the black shell-jar: "he dips into his ring and then creates a water ring that hits enemies for crushing damage"; asked whether that meant new rules, the owner chose **looks only**, and said: "The design is kind of like a hermit crab and it's inside of a pot or a vase so make it to where he pulls his arms inside and by doing that it creates a water ring").
 - **What it does:** over ECHO PULSE's 2.5 s wind-up the Hornshell **draws its tentacles into the jar** (and settles back a little) (cells 0 to 5); as the pulse goes off **a ring of water spreads round the jar with a few drops thrown up** (cells 6, 7), and on the floor **a wave of water rolls out to the pulse's reach** (a low wave with a pale crest, foam and a ripple behind it; the new effect `waterring`, js/elements.js) in place of the flat teal circles.
 - **Not changed (looks only):** ECHO PULSE's reach (4 tiles), wind-up (2.5 s), damage (0.4 x power, core), its break of the wind-ups (GLITCH 30 frames) and which enemies it reaches. The owner's "crushing damage" is the look of it, **not** a new damage type; if the owner wants a real crushing type, that is a rules change to be decided.
@@ -15,6 +15,28 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - Not playtested; the baked cells and the real page were looked at (headless).
 - Agent's, provisional (the shot): the ring's size and tilt, its blues, the drops, its turn, the frame counts.
 - The Thunderhead (everyday shot), Voidstar, Rotshard and Thornwhip still have no new animations.
+### Build `2026-11-12k` · branch `claude/start-game-project-HSh7Z` · main's four builds and this branch's two together
+- While this branch made builds 12h and 12i (THE CORE's bars upright with PACK and CARDS in its slab; the top corners' icons and the Clone Bay in the Experiment Lab), main took four builds lettered 12g to 12j on their own branches (entries below): the Ember Hood's flare and fireball, HEXFIRE as a lava crater, the Rimestar's fins and its ICICLE VOLLEY fan.
+- Those letters were used on both lines, so the two merged (main into this branch) are build 12k, a letter new to both.
+- Nothing in either changed in the merge. The conflicts were the build's stamps, the generated page and script bundle (made again), and this log and the decision log (both kept, this branch's first). The picture map holds both lines' pictures (the two icons; the re-baked Ember Hood and Rimestar sheets).
+
+### Build `2026-11-12i` · branch `claude/start-game-project-HSh7Z` · the top corners' icons; the Clone Bay in the Experiment Lab
+- **The owner**: "Put the map button at the top right and make it transparent with a map icon, and put the settings up top next to the quest as just an icon, and make it look more like a 3D cog, and put the question mark next to the settings, or put the question mark inside the settings ... pop-up. And then the clones, that's actually going to be found in the experiment lab. You have to go to the experiment lab to activate the clones and buy clones and stuff. So that gets removed from the permanent HUD." Of the first, flat icons: "Those icons look awful, and the map should be on the opposite side of the location tag because the features should be pushed to the right side".
+- **SETTINGS** is a 3-D cog right of QUESTS; **MAP** a 3-D folded map with a red pin, left of the room's name (which keeps the right edge, the network panel under it). Both are rendered once with three.js (design/hud/bake-icons.js: img/hud/icon_cog.png, icon_map.png), as THE CORE's cube is, and stand with no slab.
+- **? GAME INDEX** is a row of SETTINGS (js/settings.js); the ? button is off the HUD.
+- **The Clone Bay** is a station on the Experiment Lab's second glass test chamber (CLONE BAY · OPEN THE CLONE BAY: js/stations.js `clone_bay`); CLONES is off the HUD. The Mutator's stage step, the INFO page and the GAME INDEX say where it is. The Mutator's clone keeps its card at the end of the squad strip, which has room for it.
+- The dock is ROSTER alone, standing on the orders.
+- The agent's, provisional: the icons' looks (the cog's gunmetal and teal hub, the map's colours and pin), the Clone Bay on that chamber.
+- Files: game.html, js/settings.js, js/stations.js, js/facilitymap.js, js/toolbox.js, js/tutorial.js, js/infodex.js, design/hud/bake-icons.js (new), img/hud/icon_cog.png, img/hud/icon_map.png. Tests: toolbox, facilityplay (16 stations). Docs: UI-STYLE.md, MUTATOR.md, DECISION-LOG.md.
+- Seen in the real page (Chromium) at 1180 × 820: the icons, SETTINGS with its new row, the Clone Bay opened at the lab. Not playtested; not tried on an iPad.
+
+### Build `2026-11-12h` · branch `claude/start-game-project-HSh7Z` · THE CORE: the bars upright, PACK and CARDS in its slab
+- **The owner**: "let's make [the player's health] a vertical bar and put it to the right of the character model ... And then we can tuck the pack and cards in where that health bar used to be"; then "flip pack and cards to where they're on the right side and the shard count is on the left side."
+- **Your three bars** stand one over another in a bar of their own right of the cube and its siphon, the first at the foot. Their colours, the cracks of a bar lost and the glow of one back are as they were; the frame turns red at one bar.
+- **THE CORE's slab**: your shards at its left; the PACK (with the kinds carried) and CARDS at its right. They are the page's own buttons, moved into the slab while THE CORE is on and back when it goes (js/corehud.js `_coreKit`); they no longer stand left of THE CORE, so the squad's strip runs to THE CORE's edge (its cards a little wider). They still give way while a member's card is open.
+- The agent's, provisional: the bar's size and place (30 × 150, right of the siphon), the buttons' size (62 × 42), PACK before CARDS.
+- Files: js/corehud.js, game.html. Tests: corehud (the bars upright, the slab's order), toolbox, bottomui. Docs: UI-STYLE.md, DECISION-LOG.md.
+- Seen in the real page (Chromium) at 1180 × 820, 1024 × 768 (one bar left, a creature locked) and 820 × 1180 (two bars). Not playtested; not tried on an iPad.
 
 ### Build `2026-11-12j` · branch `claude/icicle-fan` · the Rimestar's ICICLE VOLLEY fan
 - **The ask** (the owner, of the Rimestar's second attack: "let's take on Icicle Volley", it already had its generic cast: "We can have it to where it turns into a fan and it shoots crystals at the enemy"). **Corrected by the owner:** "when an American says a fan, they're talking about a spinning fan you'd have in the office." The first draft (a folding fan: the fins laid out in an arc) is **superseded, not merged**.

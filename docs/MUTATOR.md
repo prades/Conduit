@@ -47,6 +47,7 @@ A fresh clone beats its own kind and level in a fight you can read (several bite
 `CLASS_RULES.clone` (js/classes.js) is the rule, as data: `{ skill: "bio", max: 1, primary: true }`.
 
 - The class with the skill (the Mutator) grows clones, **one at a time**, and its clone is its **primary** clone.
+- **Where the Clone Bay is** (build `2026-11-12i`; the owner: "the clones, that's actually going to be found in the experiment lab. You have to go to the experiment lab to activate the clones and buy clones and stuff. So that gets removed from the permanent HUD"): a station on the Experiment Lab's second glass test chamber, CLONE BAY · OPEN THE CLONE BAY (js/stations.js `clone_bay`, js/facilitymap.js `st_clone_bay`). Until then CLONES on the dock opened it anywhere. A phone keeps its round button.
 - Anyone else opens the Clone Bay and is told who can: *ONLY A MUTATOR GROWS CLONES* (with no class yet, *CLASSES COME AFTER THE TUTORIAL*). A card's button says *MUTATOR ONLY*.
 - With its clone out, a second is refused: *ONE CLONE AT A TIME, DISMISS YOURS FIRST*.
 - **The old rule is one edit away:** with no `skill` in the rule every class clones again, up to `MAX_CLONES`, and those clones come back at the Crystal as before (tests/mutator.js checks that this still works).

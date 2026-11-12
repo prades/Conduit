@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────
 //  SETTINGS (a canvas panel), and where a tap on a canvas panel goes
 // ─────────────────────────────────────────────────────────
-// SETTINGS is the dock's (js/toolbox.js dockSettings) and the phone menu's (js/radialmenu.js): GRAPHICS (high / low: js/config.js toggleGfxLow), PERFORMANCE (the readout: js/game.js), NEW GAME (the saved facility is
+// SETTINGS is the dock's (js/toolbox.js dockSettings: a cog at the top left on a tablet since build 2026-11-12i) and the phone menu's (js/radialmenu.js): GRAPHICS (high / low: js/config.js toggleGfxLow), PERFORMANCE (the readout: js/game.js), ? GAME INDEX (the ? button's guide), NEW GAME (the saved facility is
 // thrown away, after asking: js/facilitysave.js facilityNewGame) and CLOSE. One layout for the drawing and the tap handler, so they cannot drift apart; the rows are slab buttons (js/uikit.js).
 // handleOverlayPanelTap is where a tap goes first while a canvas panel is open (js/input.js): the class picker (js/classes.js), the Armory's terminal (js/weapons.js), the pack (js/inventory.js), the INFO panel (js/infodex.js), the quest box (js/questbox.js), then this one.
 function handleOverlayPanelTap(tx, ty) {
@@ -21,6 +21,7 @@ function _spLayout() {
         : [{ id: "gfx", label: "GRAPHICS: " + (gfxLow ? "LOW" : "HIGH"), col: UI_GOLD, on: gfxLow },
            { id: "perf", label: "PERFORMANCE: " + (perfReadout ? "ON" : "OFF"), col: UI_ICE, on: perfReadout },
            ...(typeof FP_MOVE !== "undefined" ? [{ id: "step", label: "COMBAT STEP: " + (FP_MOVE.cap ? FP_MOVE.capTiles + " TILES" : "OFF"), sub: "an enemy near stops a run; then a tap goes this far", col: UI_TEAL, on: FP_MOVE.cap }] : []),   // (a prototype: js/facilityplay.js FP_MOVE)
+           { id: "guide", label: "? GAME INDEX", sub: "the controls, the squad, the facility", col: UI_ICE },   // (the ? button's, in here since build 2026-11-12i: the owner, "put the question mark inside the settings ... pop-up")
            { id: "reset", label: "NEW GAME", sub: "starts the facility again", col: UI_RED },
            { id: "close", label: "CLOSE", col: "#6a7aa0" }];
     const w = Math.min(canvas.width - 24, 460), h = _SP_HEAD + rows.length * (_SP_ROW_H + _SP_ROW_GAP) + _SP_PAD - _SP_ROW_GAP + 8;
@@ -47,6 +48,7 @@ function _handleSettingsPanelTap(tx, ty) {
         case "gfx":    toggleGfxLow(); break;
         case "perf":   togglePerfReadout(); break;
         case "step":   if (typeof facilityCombatStepToggle === "function") facilityCombatStepToggle(); break;
+        case "guide":  settingsPanelOpen = false; settingsResetConfirm = false; if (typeof toggleControlsMenu === "function") toggleControlsMenu(); break;
         case "reset":  settingsResetConfirm = true; break;
         case "close":  settingsPanelOpen = false; settingsResetConfirm = false; break;
         case "yes":    settingsPanelOpen = false; settingsResetConfirm = false; if (typeof facilityNewGame === "function") facilityNewGame(); break;

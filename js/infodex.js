@@ -81,9 +81,9 @@ function infoEntries() {
          "When the two come within " + (typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.near : 1) + " tile of each other a few hearts float up over each, and not again until they have been apart. A bond lasts through a fall: the fallen one comes back still bonded."],
         [["BREEDING", "a bonded pair can breed", "#ff9ccc"], ["HEARTS", "within " + (typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.near : 1) + " tile, " + sec(typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.frames : 90)], ["ON A FALL", "still bonded", "#9fe8c0"]]);
     add("clones", "allies", "CLONES", "#19e6c1", "Grown in the Clone Bay from DNA",
-        ["Clones are the MUTATOR's: open the CLONE BAY (CLONES on the dock) and grow a creature's species as your ally, for shards and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
+        ["Clones are the MUTATOR's: open the CLONE BAY (in the Experiment Lab: its glass test chamber) and grow a creature's species as your ally, for shards and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
          "The Mutator's clone does NOT come back by itself: when it falls its body stays where it fell, and a new one has to be grown. Keep it alive: pull it back (RETREAT, COME) when a fight turns.",
-         "The clone prices by species and class are in the GAME INDEX (the ? button, SQUAD tab)."],
+         "The clone prices by species and class are in the GAME INDEX (? GAME INDEX in SETTINGS, SQUAD tab)."],
         [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["AT ONCE", typeof cloneCap === "function" ? cloneCap() : MAX_CLONES], ["WHO", typeof cloneWho === "function" && cloneWho() ? cloneWho() : "ANY CLASS"], ["COMES BACK", typeof cloneRule === "function" && cloneRule() && cloneRule().primary ? "NO: GROW A NEW ONE" : "after " + sec(CLONE_RESPAWN_FRAMES)]]);
 
     // ── ENEMIES ──

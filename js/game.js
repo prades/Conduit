@@ -58,7 +58,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "fireball") { _drawFireBlob(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's everyday shot (build 2026-11-12i): the same glowy blob, frosty (the ball of frost its flare forms, so what is formed and what flies are one thing)
     if (p.kind === "iceball") { _drawFireBlob(ctx, p, sx, sy, _ICE_BLOB); ctx.restore(); return; }
-    // the HORNSHELL's everyday shot (build 2026-11-12k): a ring of glowing blue goo (the ring its sheet forms in front of its horn, so what is formed and what flies are one thing)
+    // the HORNSHELL's everyday shot (build 2026-11-12l): a ring of glowing blue goo (the ring its sheet forms in front of its horn, so what is formed and what flies are one thing)
     if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
