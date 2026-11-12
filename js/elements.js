@@ -1806,8 +1806,8 @@ function _hxShape(e) {
         for (let s = 1; s <= 3; s++) { const f = s / 3; pts.push([at[0] + Math.cos(a2) * len * f + (H(k * 5 + s, 10) - 0.5) * 0.05, at[1] + Math.sin(a2) * len * f + (H(k * 5 + s, 11) - 0.5) * 0.05]); }
         branches.push(pts); }
     const hair = [];   // (cracks out of the rim, to the edge of the circle)
-    for (let k = 0; k < 11; k++) { const a2 = (k + 0.5 * H(k, 12)) / 11 * 6.2832, r0 = CR * (0.93 + 0.1 * H(k, 13)), len = 0.2 + 0.2 * H(k, 14) + (k % 3 === 0 ? 0.12 : 0), pts = [[Math.cos(a2) * r0, Math.sin(a2) * r0]];
-        for (let s = 1; s <= 4; s++) { const f = s / 4, aa = a2 + 0.28 * (H(k * 7 + s, 15) - 0.5); pts.push([Math.cos(aa) * (r0 + len * f), Math.sin(aa) * (r0 + len * f)]); }
+    for (let k = 0; k < 8; k++) { const a2 = (k + 0.6 * H(k, 12)) / 8 * 6.2832, r0 = CR * (0.9 + 0.08 * H(k, 13)), len = 0.22 + 0.16 * H(k, 14) + (k % 3 === 0 ? 0.1 : 0), bend = 0.5 * (H(k, 15) - 0.5), pts = [];
+        for (let s = 0; s <= 6; s++) { const f = s / 6, aa = a2 + bend * f * f, rr = r0 + len * f; pts.push([Math.cos(aa) * rr, Math.sin(aa) * rr]); }   // (a gentle curve, not a zigzag)
         hair.push(pts); }
     const vents = [0, 1, 2].map(k => { const m = main[2 + Math.floor((k + 0.3 + 0.4 * H(k, 16)) * 5 / 3)]; return { u: m[0], v: m[1], per: 44 + 16 * H(k, 17), ph: H(k, 18) * 40, big: 0.7 + 0.5 * H(k, 19) }; });
     const rocks = []; for (let k = 0; k < 14; k++) { const a = (k + H(k, 20)) / 14 * 6.2832, d = CR * (1.08 + 0.2 * H(k, 21)); rocks.push({ u: Math.cos(a) * d, v: Math.sin(a) * d, sz: 0.032 + 0.04 * H(k, 22), a: H(k, 23) * 6.28 }); }
@@ -1831,13 +1831,14 @@ function drawHexfireOnTile(tx, ty, px, py) {
         const poly = (pts, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); };
         const line = (pts, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); };
         const blob = (x, y, w, h, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, Math.max(0.01, w), Math.max(0.01, h), 0, 0, Math.PI * 2); ctx.fill(); };
+        const taper = (pts, w0, fill, a) => { const n = pts.length, L = [], Rr = []; for (let i = 0; i < n; i++) { const p0 = pts[Math.max(0, i - 1)], p1 = pts[Math.min(n - 1, i + 1)], dx = p1[0] - p0[0], dy = p1[1] - p0[1], d = Math.hypot(dx, dy) || 1, w = w0 * Math.pow(1 - i / (n - 1), 0.85) + 0.15; L.push([pts[i][0] - dy / d * w, pts[i][1] + dx / d * w]); Rr.push([pts[i][0] + dy / d * w, pts[i][1] - dx / d * w]); } poly(L.concat(Rr.reverse()), fill, a); };   // (a crack that narrows to a point along its length)
         const rimP = S.rim.map(q => P(q[0], q[1])), floorP = (k) => S.rim.map(q => [cx + q[0] * k * eo * rx, cy + q[1] * k * eo * ry + drop]);
         const widen = (k) => { const L2 = [], R2 = []; for (let i = 0; i < S.main.length; i++) { const m = S.main[i], l = S.left[i], r = S.right[i]; L2.push([P(m[0] + (l[0] - m[0]) * k, m[1] + (l[1] - m[1]) * k)][0]); R2.push(P(m[0] + (r[0] - m[0]) * k, m[1] + (r[1] - m[1]) * k)); } return L2.concat(R2.reverse()).map(q => [q[0], q[1] + drop]); };
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         // the scorched, heat-cracked ground over the circle's reach, and the cracks out of the rim to its edge
         { const sc = S.scorch.map((k, i) => { const a = i / S.scorch.length * 6.2832; return [cx + Math.cos(a) * rx * k * (0.5 + 0.5 * eo), cy + Math.sin(a) * ry * k * (0.5 + 0.5 * eo)]; }); poly(sc, "#0f0806", 0.5 * fade); poly(sc.map(q => [cx + (q[0] - cx) * 0.8, cy + (q[1] - cy) * 0.8]), "#1b0e09", 0.32 * fade); }
-        for (const h of S.hair) { const pts = h.map(q => P(q[0], q[1])); line(pts, "#0b0504", 4, 0.75 * fade); line(pts, "#ff7a1c", 1.8, 0.62 * fade * heat); line(pts, "#ffc04a", 0.8, 0.5 * fade * heat); }
+        for (const h of S.hair) { const pts = h.map(q => P(q[0], q[1])); taper(pts, 3.4, "#120806", 0.85 * fade); taper(pts.slice(0, 5), 1.6, "#c8420e", 0.55 * fade * heat); taper(pts.slice(0, 3), 0.8, "#ff9a30", 0.55 * fade * heat); }   // (cracks out of the rim, tapered: wide and dark at the rim, narrowing to a point, glowing only near it)
         // THE CRATER: the wall of rock under its near edge, the broken rim, a bright edge along the far side, a dark edge along the near, the inner wall
         poly(rimP.map(q => [q[0], q[1] + 7 * eo]), "#150804", 0.95 * fade);
         poly(rimP, "#52291a", 0.97 * fade);
@@ -1848,7 +1849,7 @@ function drawHexfireOnTile(tx, ty, px, py) {
         poly(floorP(0.78), "#3b180d", 0.97 * fade);
         for (const c of S.crustPatch) { const q = [cx + Math.cos(c.a) * c.r * rx * eo, cy + Math.sin(c.a) * c.r * ry * eo + drop], s = c.s * rx * eo; poly([[q[0] - s, q[1]], [q[0] - s * 0.3, q[1] - s * 0.5], [q[0] + s, q[1] - s * 0.1], [q[0] + s * 0.6, q[1] + s * 0.45], [q[0] - s * 0.5, q[1] + s * 0.5]], "#4d2313", 0.8 * fade); }
         poly(widen(3.4), "#7a2a0c", 0.4 * fade * heat); poly(widen(2.3), "#b43a0d", 0.45 * fade * heat); poly(widen(1.7), "#e0500f", 0.55 * fade * heat);   // (the heat round the fissure)
-        for (const b of S.branches) { const pts = b.map(q => P(q[0], q[1])).map(q => [q[0], q[1] + drop]); line(pts, "#150805", 6, 0.9 * fade); line(pts, "#e2400b", 3.4, 0.95 * fade * (0.5 + 0.5 * heat)); line(pts, "#ffb43a", 1.6, 0.9 * fade * heat); }
+        for (const b of S.branches) { const pts = b.map(q => P(q[0], q[1])).map(q => [q[0], q[1] + drop]); taper(pts, 4.2, "#150805", 0.92 * fade); taper(pts, 2.4, "#e2400b", 0.95 * fade * (0.5 + 0.5 * heat)); taper(pts, 1.1, "#ffc04a", 0.9 * fade * heat); }
         poly(widen(1.4), "#2e160d", 0.95 * fade);   // (the lip of the fissure itself: dark)
         const outline = S.left.map(q => P(q[0], q[1])).concat(S.right.map(q => P(q[0], q[1])).reverse()).map(q => [q[0], q[1] + drop]);
         poly(outline, "#b02f09", 0.97 * fade); poly(widen(0.78), "#ff5a10", 0.97 * fade * (0.55 + 0.45 * heat)); poly(widen(0.5), "#ff9a22", 0.95 * fade * heat);

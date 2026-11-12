@@ -3335,11 +3335,11 @@ function _hxShape(e) {
         branches.push(pts);
     }
     const hair = [];
-    for (let k = 0; k < 11; k++) {
-        const a2 = (k + 0.5 * H(k, 12)) / 11 * 6.2832, r0 = CR * (0.93 + 0.1 * H(k, 13)), len = 0.2 + 0.2 * H(k, 14) + (k % 3 === 0 ? 0.12 : 0), pts = [[Math.cos(a2) * r0, Math.sin(a2) * r0]];
-        for (let s = 1; s <= 4; s++) {
-            const f = s / 4, aa = a2 + 0.28 * (H(k * 7 + s, 15) - 0.5);
-            pts.push([Math.cos(aa) * (r0 + len * f), Math.sin(aa) * (r0 + len * f)]);
+    for (let k = 0; k < 8; k++) {
+        const a2 = (k + 0.6 * H(k, 12)) / 8 * 6.2832, r0 = CR * (0.9 + 0.08 * H(k, 13)), len = 0.22 + 0.16 * H(k, 14) + (k % 3 === 0 ? 0.1 : 0), bend = 0.5 * (H(k, 15) - 0.5), pts = [];
+        for (let s = 0; s <= 6; s++) {
+            const f = s / 6, aa = a2 + bend * f * f, rr = r0 + len * f;
+            pts.push([Math.cos(aa) * rr, Math.sin(aa) * rr]);
         }
         hair.push(pts);
     }
@@ -3384,6 +3384,11 @@ function drawHexfireOnTile(tx, ty, px, py) {
         const poly = (pts, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); };
         const line = (pts, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); };
         const blob = (x, y, w, h, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(x, y, Math.max(0.01, w), Math.max(0.01, h), 0, 0, Math.PI * 2); ctx.fill(); };
+        const taper = (pts, w0, fill, a) => { const n = pts.length, L = [], Rr = []; for (let i = 0; i < n; i++) {
+            const p0 = pts[Math.max(0, i - 1)], p1 = pts[Math.min(n - 1, i + 1)], dx = p1[0] - p0[0], dy = p1[1] - p0[1], d = Math.hypot(dx, dy) || 1, w = w0 * Math.pow(1 - i / (n - 1), 0.85) + 0.15;
+            L.push([pts[i][0] - dy / d * w, pts[i][1] + dx / d * w]);
+            Rr.push([pts[i][0] + dy / d * w, pts[i][1] - dx / d * w]);
+        } poly(L.concat(Rr.reverse()), fill, a); };
         const rimP = S.rim.map(q => P(q[0], q[1])), floorP = (k) => S.rim.map(q => [cx + q[0] * k * eo * rx, cy + q[1] * k * eo * ry + drop]);
         const widen = (k) => { const L2 = [], R2 = []; for (let i = 0; i < S.main.length; i++) {
             const m = S.main[i], l = S.left[i], r = S.right[i];
@@ -3405,9 +3410,9 @@ function drawHexfireOnTile(tx, ty, px, py) {
         }
         for (const h of S.hair) {
             const pts = h.map(q => P(q[0], q[1]));
-            line(pts, "#0b0504", 4, 0.75 * fade);
-            line(pts, "#ff7a1c", 1.8, 0.62 * fade * heat);
-            line(pts, "#ffc04a", 0.8, 0.5 * fade * heat);
+            taper(pts, 3.4, "#120806", 0.85 * fade);
+            taper(pts.slice(0, 5), 1.6, "#c8420e", 0.55 * fade * heat);
+            taper(pts.slice(0, 3), 0.8, "#ff9a30", 0.55 * fade * heat);
         }
         poly(rimP.map(q => [q[0], q[1] + 7 * eo]), "#150804", 0.95 * fade);
         poly(rimP, "#52291a", 0.97 * fade);
@@ -3427,9 +3432,9 @@ function drawHexfireOnTile(tx, ty, px, py) {
         poly(widen(1.7), "#e0500f", 0.55 * fade * heat);
         for (const b of S.branches) {
             const pts = b.map(q => P(q[0], q[1])).map(q => [q[0], q[1] + drop]);
-            line(pts, "#150805", 6, 0.9 * fade);
-            line(pts, "#e2400b", 3.4, 0.95 * fade * (0.5 + 0.5 * heat));
-            line(pts, "#ffb43a", 1.6, 0.9 * fade * heat);
+            taper(pts, 4.2, "#150805", 0.92 * fade);
+            taper(pts, 2.4, "#e2400b", 0.95 * fade * (0.5 + 0.5 * heat));
+            taper(pts, 1.1, "#ffc04a", 0.9 * fade * heat);
         }
         poly(widen(1.4), "#2e160d", 0.95 * fade);
         const outline = S.left.map(q => P(q[0], q[1])).concat(S.right.map(q => P(q[0], q[1])).reverse()).map(q => [q[0], q[1] + drop]);
