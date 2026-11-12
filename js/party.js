@@ -539,12 +539,17 @@ function partyRemove(units) {
     if (none) _partySay("EVERY ROOM IS FULL · " + (none === 1 ? "IT STAYS" : none + " STAY") + " IN THE SQUAD", "#ff8a6a", true);
     partyBarRender(true); return n;
 }
-// `out` is in the squad and goes to hold the room it is in; `inn` holds a room and takes its card
+// `out` is in the squad and goes to hold a room; `inn` holds a room and takes its card. A SWAP IS ONE FOR ONE (REPORTED, 2026-11-12: "It's not allowing me to switch my squad inside the Ant arena ... because for a split
+// second the Ant arena would be 3 squad members or followers full, even though I'm adopting one to my squad. So make sure that doesn't happen"): no room's cap is counted with both of them in it. `out` holds the room it is
+// in when that is the place `inn` leaves or has a place of its own; else the place `inn` leaves, wherever it is (its count does not change, even in a place already over its cap: an older save's); else the nearest room
+// with a place. A swap that cannot be made says why.
 function partySwap(out, inn) {
     if (!partyIsMember(out) || !_partyFollower(inn) || partyIsMember(inn)) return false;
     if (inn.fell && !partyAtCrystal()) { _partySay(_partyName(inn) + " WAITS AT THE CRYSTAL · GO BACK FOR IT", "#ff8a6a", true); return false; }   // (fallen: build 2026-11-12o)
-    const mine = partyRoomOf(out), theirs = inn.post, to = partyRoomFree(mine, out) || mine === "arena" ? mine : theirs && partyRoomCount(theirs, inn) < partyRoomCap(theirs) ? theirs : partyVacancy(out.x, out.y, out, null);   // (its own room, else the one the follower coming in leaves, else the nearest with a place)
-    if (!to || !partyPost(out, to, true)) return false;
+    const mine = partyRoomOf(out), theirs = inn.post ? partyPlaceOf(inn.post) : null;
+    const to = mine && (partyPlaceOf(mine) === theirs || mine === "arena" || partyRoomFree(mine, out)) ? mine : theirs || partyVacancy(out.x, out.y, out, null);
+    if (!to) { _partySay("EVERY ROOM IS FULL · " + _partyName(out) + " STAYS IN THE SQUAD", "#ff8a6a", true); return false; }   // (only when the one coming in holds no room: it is on its way)
+    if (!partyPost(out, to, true)) return false;
     if (!partyCall(inn, true)) { out.post = null; out.stance = "follow"; out._patrol = null; partySync(false); return false; }   // (cannot happen: a slot has just been freed)
     _partyDone([out, inn]); _partySay("SWAPPED IN · " + (typeof unitTypeLabel === "function" ? unitTypeLabel(inn) : "FOLLOWER"), "#19e6c1"); partyBarRender(true); return true;
 }

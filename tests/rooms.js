@@ -113,6 +113,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.roams >= 3, 'its round stayed in ' + r.roams + ' room(s) of the Nest'); ok(r.pair !== null && r.pair < 6, 'no two caves close together: ' + r.pair); same(r.fights.join(), 'true,true', 'it did not see the creature in the next cave');
         same(r.elec, 'electrical,electrical,Electrical Domain,2,arena,sewers,crystal_chamber', 'the electrical domain one place; the facility\'s rooms their own');
     });
+    check('A SWAP IS ONE FOR ONE (REPORTED, 2026-11-12: "It\'s not allowing me to switch my squad inside the Ant arena ... because for a split second the Ant arena would be 3 ... even though I\'m adopting one to my squad"): in the Ant Nest with it full (2 of 2) and every other room full, a squad member swaps with one holding it: the member holds the Nest, the other takes its card, the Nest still two; with the Nest over its two (an older save\'s three) the same; from the Nest with one holding a full room elsewhere, the member takes that room; one that cannot be made says why', () => {
+        const r = J(`(function(){ const o = {}, at = (fs, room) => { const p = __cell(room); fs.forEach((f, i) => { f.x = p[0] + 0.2 * i; f.y = p[1]; }); }, here = room => { const p = __cell(room); player.x = p[0]; player.y = p[1]; }, posts = fs => fs.map(f => f.post || 'squad').join();
+            let fs = __fresh(5); at(fs, 'nest_brood'); here('nest_brood'); fs.slice(3).forEach(f => partyPost(f, 'nest', true)); partyVacancy = () => null; const slot = fs[0].partySlot; floatingTexts.length = 0;
+            o.full = [partySwap(fs[0], fs[3]), posts(fs), partyRoomCount('nest'), fs[3].partySlot === slot, partyMembers().length, floatingTexts.map(t => t.text).join('|')];
+            fs = __fresh(6); at(fs, 'nest_stream'); here('nest_stream'); fs.slice(3).forEach(f => partyPost(f, 'nest', true)); partyVacancy = () => null; floatingTexts.length = 0;
+            o.over = [partySwap(fs[1], fs[4]), posts(fs), partyRoomCount('nest'), partyMembers().length, floatingTexts.map(t => t.text).join('|')];
+            fs = __fresh(7); at(fs.slice(0, 5), 'nest_larder'); here('nest_larder'); partyPost(fs[3], 'nest', true); partyPost(fs[4], 'nest', true); at(fs.slice(5), 'teleport_room_1'); partyPost(fs[5], 'teleport_room_1', true); partyPost(fs[6], 'teleport_room_1', true);
+            partyVacancy = () => null; floatingTexts.length = 0;
+            o.far = [partySwap(fs[2], fs[5]), posts(fs), partyRoomCount('teleport_room_1'), partyRoomCount('nest'), partyMembers().length];
+            fs = __fresh(6); at(fs, 'nest_deep'); here('nest_deep'); fs.slice(3, 5).forEach(f => partyPost(f, 'nest', true)); const away = fs[5]; away.post = null; away.returningToCrystal = true; partyVacancy = () => null; floatingTexts.length = 0;
+            o.none = [partySwap(fs[0], away), posts(fs.slice(0, 3)), floatingTexts.map(t => t.text).join('|')];
+            return o; })()`);
+        same(r.full.slice(0, 5).join(), 'true,nest,squad,squad,squad,nest,2,true,3', 'the Nest full: the swap'); ok(/SWAPPED IN/.test(r.full[5]), 'said ' + r.full[5]);
+        same(r.over.slice(0, 4).join(), 'true,squad,nest,squad,nest,squad,nest,3,3', 'the Nest over its two: the swap, its count as it was');
+        same(r.far.join(), 'true,squad,squad,teleport_room_1,nest,nest,squad,teleport_room_1,2,2,3', 'from the full Nest with one from a full room elsewhere: the member takes that room');
+        same(r.none.slice(0, 2).join(), 'false,squad,squad,squad', 'one on its way (no room held), every room full: nothing changes'); ok(/EVERY ROOM IS FULL · .* STAYS IN THE SQUAD/.test(r.none[2]), 'said ' + r.none[2]);
+    });
     check('the catwalks hold two too: the launcher will not send a third up', () => {
         const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.why = techSiteLaunch(s, fs[2]).why; techLaunchersApply([]); return o; })()`);
         same(r.why, 'THE ARENA CATWALK IS FULL · 2 OF 2', 'a third up');
