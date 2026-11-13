@@ -494,7 +494,7 @@ function _fpLit() {
     if (_fpLitPrev === undefined) { _fpLitPrev = null; try { const m = typeof location !== "undefined" && /[?&]lit=([\d.]+)/.exec(location.search || ""); const v = m ? parseFloat(m[1]) : NaN; if (v >= 0.4 && v <= 1) _fpLitPrev = v; } catch (e) {} }
     return _fpLitPrev !== null ? _fpLitPrev : FP_LIT;
 }
-function _fpLightKey(id) { return id === "teleport_stair_room" || id === "lounge" ? "lab_hallway" : id === "catwalk_spur" ? "arena" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }   // (the Nest grown out, build 2026-11-12a: one light for all its rooms, so the next cave is not dark from the tunnel; the Catwalk Spur, build 2026-11-12v, in the arena's light: it is the arena's high ground; the Lounge, build 2026-11-13e, in the hallway's: it is open onto it, as the Stair Room is)
+function _fpLightKey(id) { return id === "teleport_stair_room" || id === "lounge" ? "lab_hallway" : id === "catwalk_spur" ? "arena" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }   // (the Nest grown out, build 2026-11-12a: one light for all its rooms, so the next cave is not dark from the tunnel; the Catwalk Spur, build 2026-11-12v, in the arena's light: it is the arena's high ground; the Lounge, build 2026-11-13g, in the hallway's: it is open onto it, as the Stair Room is)
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
     const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; _fp.here = here;

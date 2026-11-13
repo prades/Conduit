@@ -56,7 +56,7 @@ const FACILITY_MAP = {
           note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
           polygon: [[370, 410], [930, 410], [930, 600], [870, 600], [870, 760], [310, 760], [310, 605], [430, 605], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]] },
         { id: "lounge", label: "The Lounge", level: 0, status: "placed", wall_material: "glass",
-          note: "THE LOUNGE (build 2026-11-13a; the owner, 2026-11-12: \"I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand ... tilted towards the beanbag chairs ... there's a rug\"; the name \"The Lounge\"; mirrored 2026-11-13: \"the whiteboard is on the other side, pointing towards the player, looking at the slant\"): the old Experiment Lab's room in the middle of the gridded floor, OPEN onto the hallway on its north and east (no glass, no frame: `openings`, open; the owner, build 2026-11-13e: \"there shouldn't be any obstructions on the north side ... or the right side of it either, the east side\"), its south a full DIVIDER wall (thin, solid: `windows`, divider), its west the wall with the door to the narrow passage. The whiteboard on its stand at the west end, north of the door, turned to face the camera; four beanbags on a rug before it, two each side of the aisle from the door; two couches round a low table at the east end; two plants.",
+          note: "THE LOUNGE (build 2026-11-13a; the owner, 2026-11-12: \"I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand ... tilted towards the beanbag chairs ... there's a rug\"; the name \"The Lounge\"; mirrored 2026-11-13: \"the whiteboard is on the other side, pointing towards the player, looking at the slant\"): the old Experiment Lab's room in the middle of the gridded floor, OPEN onto the hallway on its north and east (no glass, no frame: `openings`, open; the owner, build 2026-11-13g: \"there shouldn't be any obstructions on the north side ... or the right side of it either, the east side\"), its south a full DIVIDER wall (thin, solid: `windows`, divider), its west the wall with the door to the narrow passage. The whiteboard on its stand at the west end, north of the door, turned to face the camera; four beanbags on a rug before it, two each side of the aisle from the door; two couches round a low table at the east end; two plants.",
           polygon: [[430, 530], [750, 530], [750, 640], [430, 640]] },
         { id: "lab_passage", label: "Narrow passage (lab to Teleport Room 1)", level: 0, status: "approximate",
           note: "The old lab's little narrow hallway (The Lounge's since build 2026-11-13a): it crosses the west side of the gridded floor from the lounge's west wall to Teleport Room 1 (the arm of the lab drawn reaching the left wall in the sketch).",
@@ -352,7 +352,7 @@ const FACILITY_MAP = {
         { id: "lounge_beanbag_2", room: "lounge", shape: "rect", rect: [550, 550, 570, 570], status: "placed", kind: "beanbag" },
         { id: "lounge_beanbag_3", room: "lounge", shape: "rect", rect: [510, 590, 530, 610], status: "placed", kind: "beanbag" },
         { id: "lounge_beanbag_4", room: "lounge", shape: "rect", rect: [550, 590, 570, 610], status: "placed", kind: "beanbag" },
-        { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [610, 550, 670, 570], status: "placed", kind: "couch", note: "A row in from the open north side, facing the room (build 2026-11-13e: nothing stands at the open sides)." },
+        { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [610, 550, 670, 570], status: "placed", kind: "couch", note: "A row in from the open north side, facing the room (build 2026-11-13g: nothing stands at the open sides)." },
         { id: "lounge_couch_2", room: "lounge", shape: "rect", rect: [690, 550, 710, 610], status: "placed", kind: "couch", note: "Two rows in from the open east side, facing west across the table." },
         { id: "lounge_table", room: "lounge", shape: "rect", rect: [630, 590, 670, 610], status: "placed", kind: "table", note: "A low glass-topped table between the two couches." },
         { id: "lounge_plant_1", room: "lounge", shape: "rect", rect: [590, 550, 610, 570], status: "placed", kind: "plant" },
@@ -652,7 +652,7 @@ const FACILITY_MAP = {
     // `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
     relays: [
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
-        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room", "lounge"], feeds: ["charger_hall"] },   // (the Lounge since build 2026-11-13e: open onto the hallway, lit with it, as the Stair Room is)   // (its sentry runs on the Crystal's power since 2026-11-01)
+        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room", "lounge"], feeds: ["charger_hall"] },   // (the Lounge since build 2026-11-13g: open onto the hallway, lit with it, as the Stair Room is)   // (its sentry runs on the Crystal's power since 2026-11-01)
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
         { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
@@ -1214,7 +1214,7 @@ const FACILITY_MAP = {
     outer_path: null,
 
     // WINDOWS: a stretch of wall that is glass. See-through (a debug/render feature), SOLID to movement exactly like a wall. (The old lab was windowed off from the hallway round it; The Lounge, its room, is open onto the
-    // hallway on its north and east since build 2026-11-13e: `openings`, open_lounge_north and open_lounge_east.)
+    // hallway on its north and east since build 2026-11-13g: `openings`, open_lounge_north and open_lounge_east.)
     // A window marked `divider` is a thin wall that is NOT glass: drawn solid, full height, with no thick top (THE LOUNGE's south side, build 2026-11-13a; the owner: "It's a full wall, but it's only on the south side").
     windows: [
         { id: "lounge_divider_south", a: [750, 640], b: [430, 640], rooms: ["lounge", "lab_hallway"], divider: true },   // (the old lab's south glass, lab_window_south, until build 2026-11-13a)
@@ -1257,9 +1257,9 @@ const FACILITY_MAP = {
         { id: "door_lab_passage", a: [430, 565], b: [430, 605], rooms: ["lounge", "lab_passage"], position_status: "approximate",
           note: "A sliding access door between the Lounge (the old lab) and the narrow passage." },
         { id: "open_lounge_north", a: [430, 530], b: [750, 530], rooms: ["lounge", "lab_hallway"], door: null, open: true, position_status: "approximate",
-          note: "THE LOUNGE's north side, open onto the hallway along its whole length (build 2026-11-13e; it was glass: lab_window_north): no door, no frame (`open`)." },
+          note: "THE LOUNGE's north side, open onto the hallway along its whole length (build 2026-11-13g; it was glass: lab_window_north): no door, no frame (`open`)." },
         { id: "open_lounge_east", a: [750, 530], b: [750, 640], rooms: ["lounge", "lab_hallway"], door: null, open: true, position_status: "approximate",
-          note: "THE LOUNGE's east side, open onto the hallway along its whole length (build 2026-11-13e; it was glass: lab_window_east)." },
+          note: "THE LOUNGE's east side, open onto the hallway along its whole length (build 2026-11-13g; it was glass: lab_window_east)." },
         { id: "open_lab_stair", a: [185, 630], b: [185, 690], rooms: ["teleport_room_1", "experiment_lab"], door: null, position_status: "approximate",
           note: "THE EXPERIMENT LAB'S STAIRCASE (build 2026-11-13a): an open mouth three tiles wide in Teleport Room 1's west wall, between its west teleporters, and the staircase down from it into the lab (`ramps`, r_lab_stair). No door." },
         { id: "door_crystal_hallway", a: [370, 422], b: [370, 486], rooms: ["crystal_chamber", "lab_hallway"], position_status: "approximate",
