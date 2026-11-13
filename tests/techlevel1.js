@@ -174,7 +174,7 @@ function measure(w, h) {
     check('the rubble is map data on the arena\'s south rock, on its straight stretch: its ends and middle on a wall, its work spot on the arena floor in sight of it; the built map validates', () => {
         const r = J(`(function(){ const R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); return { n: _fp.F.rubble.length, id: R.id, room: R.room, a: R.a, b: R.b, flat: Math.abs(R.a[1] - R.b[1]) < 1e-6, south: _fp.F.walls.some(w => Math.abs(w.a[1] - w.b[1]) < 1e-6 && Math.abs(w.a[1] - R.a[1]) < 1e-6 && Math.min(w.a[0], w.b[0]) <= R.a[0] && Math.max(w.a[0], w.b[0]) >= R.b[0]),
             work: partyRoomAt(R.work[0], R.work[1]), stand: facilityStandOk(R.work[0], R.work[1]), errs: facilityValidate(_fp.F).errors.filter(e => /rubble/.test(e)), deco: _fp.items.some(i => i.fp === 'wdecor' && i.kind === 'rubble') }; })()`);
-        same(r.n, 6, 'rubble (the Nest\'s cracked rock since build 2026-11-13o; the Nest\'s collapsed tunnel since build 2026-11-12a; the arena\'s, the Sewers\' choke, the rubble in the boss gate\'s place, and the sample bank\'s rock fall: tests/sewerquest.js)'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
+        same(r.n, 6, 'rubble (the Nest\'s cracked rock since build 2026-11-13r; the Nest\'s collapsed tunnel since build 2026-11-12a; the arena\'s, the Sewers\' choke, the rubble in the boss gate\'s place, and the sample bank\'s rock fall: tests/sewerquest.js)'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
         same(r.work, 'arena', 'the work spot'); same(r.stand, true, 'the work spot is not floor'); same(r.errs.length, 0, 'the validator: ' + r.errs); same(r.deco, true, 'it is not drawn on the rock');
     });
     check('a long press on it opens its ring (THERMITE DRILL); with no fire technician in the squad, or one still cooling down, it is refused and says why; with one ready it walks to the rubble and drills it, a hit a second; the cooldown starts at the first hit', () => {
@@ -206,7 +206,7 @@ function measure(w, h) {
             o.drill = !!t._drill; o.hit = h0 - e.health; o.cool = techReadyIn(t); return o; })()`);
         ok(/FOR RUBBLE, NOT ENEMIES/.test(r.prompt), r.prompt); same(r.ok, false, 'it was used on an enemy'); same(r.why, 'THE DRILL IS FOR RUBBLE, NOT ENEMIES', 'the reason'); same(r.drill, false, 'a drill started'); same(r.cool, 0, 'a cooldown for nothing');
     });
-    check('THE CHIP AT RUBBLE (the owner, build 2026-11-13o: "it wouldn\'t let me burrow through"): with the drill\'s aim up, a tap on the rubble sends that technician to drill it, as the long press does; a tap on nothing says so and keeps the aim', () => {
+    check('THE CHIP AT RUBBLE (the owner, build 2026-11-13r: "it wouldn\'t let me burrow through"): with the drill\'s aim up, a tap on the rubble sends that technician to drill it, as the long press does; a tap on nothing says so and keeps the aim', () => {
         const r = J(`(function(){ const o = {}, R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); _fp.rubbleHits = {}; _fp.items = _fp.items.filter(i => !i.rock);
             let fs = __fresh(['fire']); const t = fs[0]; player.x = player.visualX = R.work[0] + 1; player.y = player.visualY = R.work[1] - 2; t.x = R.work[0] + 2; t.y = R.work[1] - 2;
             techChipTap(t); o.prompt = techAimPrompt(); const p = _fpP(R.at[0], R.at[1], 25); floatingTexts.length = 0; o.took = techAimTap(p[0], p[1]); o.aiming = techAimActive();
@@ -218,7 +218,7 @@ function measure(w, h) {
         same(r.took, true, 'the tap'); same(r.aiming, false, 'still aiming'); same(r.drill, 'rubble_arena_south', 'the technician is not drilling the rubble'); ok(/GOES TO DRILL THE RUBBLE/.test(r.said), 'said: ' + r.said);
         same(r.nothing.join(), 'true,TAP THE RUBBLE,false', 'a tap on nothing');
     });
-    check('A SAVED GAME PUT BACK (build 2026-11-13o): a technician in the squad does not wait the first minute again (it was in the squad when the game was saved); one that joins after does', () => {
+    check('A SAVED GAME PUT BACK (build 2026-11-13r): a technician in the squad does not wait the first minute again (it was in the squad when the game was saved); one that joins after does', () => {
         const r = J(`(function(){ const o = {}; const fs = __fresh(['fire']), t = fs[0]; __step(1); o.before = techReadyIn(t);
             const save = facilitySaveCollect(); t._abMember = undefined; facilitySaveApply(save); __step(1); o.loaded = techReadyIn(t);
             t.post = 'arena'; __step(1); t.post = undefined; __step(1); o.rejoined = Math.round(techReadyIn(t) / 60); return o; })()`);

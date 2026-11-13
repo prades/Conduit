@@ -218,7 +218,7 @@ function partyPickStop(a) {
     let cells = partyRoomCells(a.post); if (!cells.length) return null;
     if (partyPlaceDef(a.post) && typeof _pComp === "function") { const k = _pComp(a.x, a.y), mine = cells.filter(c => _pComp(c[0], c[1]) === k); if (mine.length) cells = mine; }   // (a place of several rooms: the floor it can walk to, not a shelf it cannot climb to)
     const near = cells.filter(c => { const d = Math.hypot(c[0] - a.x, c[1] - a.y); return d >= PARTY.hop[0] && d <= PARTY.hop[1]; });
-    // (a stop whose straight walk stays in the room: since build 2026-11-13e The Lounge is open onto the hallway, and a walk across the hallway's corner went through it; build 2026-11-13o)
+    // (a stop whose straight walk stays in the room: since build 2026-11-13e The Lounge is open onto the hallway, and a walk across the hallway's corner went through it; build 2026-11-13r)
     const within = near.filter(c => _partyLineIn(a, c)), pool = within.length ? within : near.length ? near : cells, c = pool[Math.floor(Math.random() * pool.length)];
     return { x: c[0], y: c[1], wait: 0, age: 0 };
 }
