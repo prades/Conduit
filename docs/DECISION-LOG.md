@@ -3228,3 +3228,6 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner, asked whether the Voidstar's body should move for its everyday shot (the telepathic tentacles): **"Yes, he should. He should move his tentacles. Wave them."** Its arms are its tentacles: they start to sway as it winds up, wave at full swing while the shot flies and slaps, and settle. Looks only. See `CHANGELOG.md`.
 - Agent's, provisional: how far they sweep, how long. Status: Implemented and tested; not playtested.
 
+## DECISION: The Voidstar's 3-D tentacle is approved for everyone (2026-11-13, build `2026-11-13d`, branch `claude/approve-slap`)
+- The owner, of the sharp violet gel tentacle piece (`slap`) that had shown only on the `?fx=3d` preview since build `2026-11-13b`: **"Approve it."** It is added to `FX3D.approved` and shows for everyone. Status: Implemented and tested; not playtested on an iPad. `CHANGELOG.md`.
+

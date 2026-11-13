@@ -1595,7 +1595,7 @@ function drawElementEffects() {
             case "tendrilslap": {
                 const age = e.maxLife - e.life, cy = py - 14;
                 ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-                const T3 = typeof fx3dOn === "function" && fx3dOn("slap") && fx3dReady("slap");   // (the 3-D rendered tentacle, on the preview ?fx=3d until it is approved in the game: js/fx3d.js; else the flat ones below)
+                const T3 = typeof fx3dOn === "function" && fx3dOn("slap") && fx3dReady("slap");   // (the 3-D rendered tentacle, approved in the game 2026-11-13: js/fx3d.js; until its sheet arrives, the flat ones below)
                 for (let k = 0; k < 2; k++) { const a = age - k * 6; if (a < 0 || a > 8) continue; const u = a / 8, eu = 1 - (1 - u) * (1 - u), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (8 - a) / 2);
                     if (T3) { ctx.globalAlpha = fa; fx3dDrawAnim(ctx, "slap", px + side * 15, cy - 12, u * 11, side > 0); ctx.globalAlpha = 1; }
                     const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];   // (it swings from overhead across the creature)

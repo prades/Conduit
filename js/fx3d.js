@@ -29,7 +29,7 @@ const FX3D = {
         // the axes it tumbles about, its columns the steps of a turn; drawn centred (fx3dDrawCell)
         // THE VOIDSTAR's SLAP (its everyday shot; the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"; "Make it look 3d
         // rendered"): ONE short, stubby tentacle of ghostly violet gel (design/effects/bake_fx.js slap), swinging from overhead across and slapping down, 12 frames; ANIMATED: its columns are the frames of the swing, its root at (ax, ay) in the cell;
-        // drawn mirrored for the second slap. On the preview (?fx=3d) until the owner approves it in the game: for everyone the flat tentacles drawn in code stay (js/elements.js tendrilslap)
+        // drawn mirrored for the second slap. Approved in the game 2026-11-13 ("Approve it"); until its sheet arrives the flat tentacles drawn in code are shown (js/elements.js tendrilslap)
         slap: { sheet: "img/fx/slap.png", cell: 96, yaws: 12, pitches: [0], anim: true, ax: 48, ay: 48 },
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
     },
@@ -37,7 +37,8 @@ const FX3D = {
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
-               "goocopy"],   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "slap"],   // the VOIDSTAR's SLAP, its everyday shot's tentacles as a sharp violet gel tentacle: approved in the game 2026-11-13 ("Approve it"), live for everyone since build 2026-11-13d
     // (SHARD VORTEX's black blades were approved in the game on 2026-11-09 and taken back the same day: "Yeah, sorry, I was falling asleep. I accidentally approved that": on the preview again, tumbling, build 2026-11-09ii)
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };

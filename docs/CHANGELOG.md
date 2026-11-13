@@ -19,6 +19,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-12
 
+### Build `2026-11-13d` · branch `claude/approve-slap` · the Voidstar's 3-D tentacle is approved: on for everyone
+- **The owner's word, in the game:** **"Approve it"**, of the Voidstar's everyday shot's tentacles as the sharp violet gel 3-D piece (`slap`, build `2026-11-13b`, which showed only on the `?fx=3d` preview until now: the project's art process, `docs/ART-PROCESS.md`).
+- **What changed:** `slap` is added to `FX3D.approved` (js/fx3d.js), so **every player sees the 3-D rendered tentacles** that appear on the target and slap it, with or without the preview. The flat violet tentacles are drawn only until its sheet has arrived. Nothing else changed: the shot, its damage, its timing and the Voidstar's body are as they were.
+- Tests: `tests/fx3d.js` (the approved pieces now include `slap`; it is on without the preview). Not playtested on an iPad.
+
 ### Build `2026-11-13c` · branch `claude/voidstar-wave` · the Voidstar waves its tentacles for its everyday shot
 - **The ask** (the owner, of the Voidstar's everyday shot, the telepathic tentacles that slap the enemy; asked whether its body should move: **"Yes, he should. He should move his tentacles. Wave them."**). Its arms are its tentacles.
 - **What it does:** over the shot's quick wind-up (12 frames, rooted) **its arms start to sway** (cells 0 to 2), then, once the shot has gone, **they wave at full swing for 36 frames while the shot flies and its tentacles slap** (a loop of four phases: each arm swept side to side in turn, cells 3 to 6, 6 frames each), then **settle** (cell 7, 8 frames). The orb brightens a little as they wave. The sheet is **32 columns** now (design No. 946, `forms24.js`; the second extra block, columns 24-31). Its first 24 columns (the walking frames, the old bow, MAELSTROM's reach), in all eight facings, are **pixel for pixel the sheet from before** (checked).
