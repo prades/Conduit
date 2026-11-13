@@ -48,7 +48,7 @@ function hazardShotNear(x, y) {
     return false;
 }
 // ── A CONTAINER AS A TARGET (the owner, 2026-11-13, at the Nest's cracked rock: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a
-// card"; build 2026-11-13m) ──
+// card"; build 2026-11-13n) ──
 // A tap on one locks it as a tap on a creature does (js/targeting.js targetPress): THE CORE's slab at the bottom right shows it and its FIRE fires at it (a tap on it again fires too), and the enemy card
 // at the left shows it, its ATTACK sending the squad's MAGES, who shoot from out of its blast (js/mixtool.js mixToolAttack; a brawler or a technician would walk up to it and be caught: they stay back; the
 // agent's choice, provisional). It is no creature: a stand-in where the container is (it follows FLUX MOVE), dead while the container is away, and whatever hits it sets it off (js/helpers.js applyDamage).

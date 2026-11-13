@@ -1261,7 +1261,7 @@ function techStepOverride(a) {
 }
 
 // a saved game put back (js/facilitysave.js facilitySaveApply, last): the technicians in its squad were in it when it was saved, so they have not just joined it and do not wait the first wait again
-// (each use's own cooldown is not saved: they are ready). Before build 2026-11-13m every load was a join: a minute's wait before any technician's first use, each time a game was loaded.
+// (each use's own cooldown is not saved: they are ready). Before build 2026-11-13n every load was a join: a minute's wait before any technician's first use, each time a game was loaded.
 function techAbilityLoaded() { if (typeof followers === "undefined") return; for (const f of followers) if (f && !f.dead) f._abMember = !!techAbilityOf(f) && _techMember(f); }
 // ── each frame (js/game.js): first waits, throws, set-ups, the ledges, the sites' notices ──
 function techAbilityTick() {

@@ -102,7 +102,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const h = rd('game.html'); ok(/<script src="js\/hazards\.js\?v=[^"]+"><\/script>/.test(h) && h.indexOf('js/hazards.js') > h.indexOf('js/firebombs.js'), 'the script'); ok(/<link rel="preload" as="image" href="img\/props\/hazard\.(webp|png)\?v=/.test(h), 'the preload');
     });
 
-    group('A FLASK AS A TARGET (the owner, build 2026-11-13m: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card")');
+    group('A FLASK AS A TARGET (the owner, build 2026-11-13n: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card")');
     run(`globalThis.__scr = s => { const [x, y] = hazardCentre(s); return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(x, y) - 30]; };`);
     check('a press on a container locks it as a press on a creature does: the gun\'s target and the enemy card\'s are its stand-in, named for it, its blast (or its acid) as its bite, its words on INFO; a press on it again fires', () => {
         const r = J(`(function(){ __fresh(); targetDrop(); const s = __S('hazard_x3'), [cx, cy] = hazardCentre(s); __put(cx - 3, cy - 1); const o = {}, p = __scr(s);

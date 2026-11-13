@@ -371,7 +371,7 @@ function facilityValidateDressing(F) {
         if (!F.byId.get(r.room)) { errors.push("rubble " + r.id + " names a room that does not exist"); continue; }
         if (r.solid) {   // a CHOKE: its line is the long middle line of the thin solid that fills the mouth (which must be a solid of kind rubble, of its room)
             const s = F.solids.find(q => q.id === r.solid);
-            if (!s || (s.kind !== "rubble" && s.kind !== "cracked_wall") || s.room !== r.room || !s.poly) errors.push("rubble " + r.id + " names " + r.solid + ", which is not a rubble solid of " + r.room);   // (or the Nest's cracked rock, which a blast breaks too: build 2026-11-13m)
+            if (!s || (s.kind !== "rubble" && s.kind !== "cracked_wall") || s.room !== r.room || !s.poly) errors.push("rubble " + r.id + " names " + r.solid + ", which is not a rubble solid of " + r.room);   // (or the Nest's cracked rock, which a blast breaks too: build 2026-11-13n)
             else { const xs = s.poly.map(q => q[0]), ys = s.poly.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), alongX = x1 - x0 >= y1 - y0, la = alongX ? [x0, (y0 + y1) / 2] : [(x0 + x1) / 2, y0], lb = alongX ? [x1, (y0 + y1) / 2] : [(x0 + x1) / 2, y1];
                    const sn = p => F.snapped ? [Math.round(p[0] - 0.5) + 0.5, Math.round(p[1] - 0.5) + 0.5] : p;   // (the rubble's ends are raw tile coordinates; the solid is snapped to the grid, as a wall is)
                    if (![r.at, r.a, r.b].map(sn).every(p => _facSegPointDist(la, lb, p[0], p[1]) < 0.3)) errors.push("rubble " + r.id + " is not on its choke's line"); }

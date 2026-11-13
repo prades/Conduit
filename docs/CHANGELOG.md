@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
-### Build `2026-11-13m` · branch `claude/start-game-project-HSh7Z` · The Nest navigable: the DRILL chip takes rubble; flasks are targets; the cracked wall is 3D rock a blast or the drill opens
+### Build `2026-11-13n` · branch `claude/start-game-project-HSh7Z` · The Nest navigable: the DRILL chip takes rubble; flasks are targets; the cracked wall is 3D rock a blast or the drill opens
 - **The asks** (the owner: "We need to make the nests navigable. I went to the Thermite Burrowers check [...] and it wouldn't let me burrow through. What's wrong with the other rocks that we had designed earlier? I like those more. They're 3D"; shown the cracked wall and the 3D rubble: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card", and of the cracked wall **"3D rock, blast or drill"**).
 - **The cracked wall is the cave's 3D rock**: the flat board across the Nest's south tunnel is drawn as the rubble is (baked into `img/cave/rubble.png`), and **a blast or a fire technician's THERMITE DRILL** opens it (six hits, from the north). Its sign: CRACKED ROCK · SHOOT THE FLASK · PRESS AND HOLD IT: THERMITE DRILL.
 - **A flask is a target**: a tap on a flask locks it as a tap on a creature does. THE CORE's slab at the bottom right shows it and fires at it (a tap on it again fires too); the enemy card shows it (BLAST 30, or ACID 3), and its ATTACK sends the squad's **Mages** only, who shoot from four tiles, out of the blast (brawlers and technicians stay back: the agent's choice, provisional). Whatever hits it sets it off.
@@ -12,7 +12,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Tried and taken back the same hour**: the modelled 3D rock walls (switched off 2026-11-09) turned back on, the Nest's low rims baked too; the owner: "Those look so smooth and bad and weird". The walls are the drawn rock, as before.
 - Tests: `tests/hazards.js` (the flask as a target: the lock, the card, any hit, ATTACK's Mages), `tests/nest.js` (the cracked rock: rubble, drill or blast, saved), `tests/techlevel1.js` (the chip at rubble; a load and the first wait; six rubble patches), `tests/cavewalls.js` (the new pictures; the check that no picture is outside the sheet, inside a comment since build `2026-11-12a`, runs again). Docs: `TECHNICIANS.md`, `FACILITY.md`, `DOMAINS.md`, `DECISION-LOG.md`, the Bible.
 - Not playtested; looked at in the real page (headless): the cracked rock, a real click on its flask (the slab and the card), firing at it (the rock gives way, the path to the Deep Brood opens); the drill at both chokes.
-- Lettered 13m: main took 13k (COME greys) while this was made, so this branch's ants build is renumbered 13l and this one is 13m; main was merged into this branch with this stamp.
+- Lettered 13n: main took 13k (COME greys) while this was made, so this branch's ants build is renumbered 13l; this one was stamped 13m on the branch (`68c91db`, never on main) and main then took 13m too (the type fixes), so it is 13n; main was merged into this branch with this stamp.
 
 ### Build `2026-11-13l` · branch `claude/start-game-project-HSh7Z` · The ants a little edgier: sickle jaws, slanted eyes
 - **The ask** (the owner: "what can be done to make the ants look better? I kind of want to make them look a little bit more edgy, but not too much", the forceps in mind; of the draft, `design/ants/edgy-draft.js`: **"Very right direction"**).

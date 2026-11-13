@@ -89,7 +89,7 @@ function targetPress(ex, ey) {
     // a creature other than the locked one: lock it instead (the locked one is the gun's: a click fires, holding keeps firing)
     const foe = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(ex, ey) : null;
     if (foe && foe !== targetCurrent()) { targetSet(foe, true); _tgBtnDown = { kind: "switch", x: ex, y: ey }; _targetPressed = true; return true; }
-    // A FLASK (the owner, build 2026-11-13m: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card"): locked as a creature is, its
+    // A FLASK (the owner, build 2026-11-13n: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card"): locked as a creature is, its
     // stand-in (js/hazards.js hazardTarget) on THE CORE's slab and the enemy card; a tap on the locked one fires at it, as on a locked creature
     const hz = !foe && typeof hazardTargetAtScreen === "function" ? hazardTargetAtScreen(ex, ey) : null;
     if (hz) {
@@ -132,7 +132,7 @@ function targetPortrait(a) {
     return (_tgPortraits[key] = c);
 }
 
-// A FLASK'S PICTURE (build 2026-11-13m): the container's own sprite (js/hazards.js hazardTargetPicture), fitted to a square of `size`, on the portrait's ground (`bare`: on a clear ground, the card's full
+// A FLASK'S PICTURE (build 2026-11-13n): the container's own sprite (js/hazards.js hazardTargetPicture), fitted to a square of `size`, on the portrait's ground (`bare`: on a clear ground, the card's full
 // art); kept once the sheet has arrived, null until then (so the card and the slab ask again)
 const _tgHazardPics = {};
 function _tgHazardPic(a, size, bare) {
