@@ -66,6 +66,8 @@ The facility is the game (`js/facilityplay.js`; the map is docs/FACILITY.md). Th
 | Mutagen sample | Mutator | raises the nearest follower within 8 tiles a level (and so toward evolution) |
 | Relay kit | anyone | a reusable tool: lets any class repair a relay (phase 5) |
 
+**The items in 3D (proposed 2026-11-13; one piece, awaiting the owner's yes):** the owner: "I want to redo the items in the game make them have 3-D looking assets". Every item is drawn flat today (`INV_ICONS`, js/inventory.js) in the PACK's tiles and stage, THE CORE's item box, the chests' reveals, the class picker's kit and the Armory terminal; on the floor 12 of the 18 have small 3D models (`design/props/models/pickups.js`). The draft, one piece first (`docs/ART-PROCESS.md`): the AMMO PACK as a 3D model at icon detail (its floor model's design: the paper sleeve, the orange band, a row of brass rounds; with the label AMMO · 10 RDS, the torn flap, the stamped rota), lit and seen as the props are, put in the PACK beside the flat icons (`design/items/icon_draft.js`). Nothing in the game uses it yet. If approved: a model for each of the 18 (the six with none: healing serum, specimen capsule, rock, purification module, the two potions), baked once into an icon sheet that every place an item is drawn uses, the floor models the same.
+
 **Supplies.** Supply cases stand in the rooms each class works in (`pickups` in js/facilitymap.js; the Armory and Security Room for the Gunslinger, the labs and Teleport Room 1 for the Technomancer, the lab and the Crystal Chamber for the Mutator, the kit in the Chamber). Each shows its item's icon over a beacon, so it can be found in the dark; walking over one takes it (a case that will not fit stays).
 
 ## Phase 4: class stations and perks (done)
