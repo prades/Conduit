@@ -1600,7 +1600,7 @@ function drawElementEffects() {
                     if (T3) { ctx.globalAlpha = fa; fx3dDrawAnim(ctx, "slap", px + side * 15, cy - 12, u * 11, side > 0); ctx.globalAlpha = 1; }
                     const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];   // (it swings from overhead across the creature)
                     for (let i = 0; i <= 6; i++) { const t = i / 6, cv = Math.sin(t * Math.PI) * Ln * 0.3 * side * (1 - u); pts.push([bx + Math.cos(phi) * Ln * t - Math.sin(phi) * cv, by + Math.sin(phi) * Ln * t * 0.9 + Math.cos(phi) * cv]); }
-                    if (!T3) for (let i = 1; i <= 6; i++) { const w = 1 - (i - 1) / 6 * 0.55;   // (stubby: it stays thick to its blunt round tip)
+                    if (!T3) for (let i = 1; i <= 6; i++) { const w = 1 - (i - 1) / 6 * 0.92;   // (sharp: it tapers to a point)
                         ctx.strokeStyle = '#9933ff'; ctx.lineWidth = 12 * w; ctx.globalAlpha = 0.25 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
                         ctx.strokeStyle = '#bb66ff'; ctx.lineWidth = 8 * w; ctx.globalAlpha = 0.8 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
                         ctx.strokeStyle = '#ead6ff'; ctx.lineWidth = 2.6 * w; ctx.globalAlpha = 0.95 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }

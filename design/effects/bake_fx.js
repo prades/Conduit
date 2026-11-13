@@ -123,20 +123,20 @@ window.__fx = async function (mode, piece, P) {
     if (piece === 'vortexshard') {   // the Mimic's own blade, its middle (its triangle's centroid) at the origin, laid on its side; userData.tumbler turns it about an axis through its middle
       const sh = blade(P.bw, P.bh, P.bd); sh.scale.setScalar(P.S); sh.position.set(-0.04 * P.bw * P.S, -P.bh * P.S / 3, 0);
       const side = new T.Group(); side.add(sh); side.rotation.z = PI / 2; const tum = new T.Group(); tum.add(side); g.add(tum); g.userData.tumbler = tum; }
-    if (piece === 'slap') {   // a tapered tube of violet gel along a chain of four joints that swings; a brighter core tube inside it; suckers; a round base. userData.pose(u): u 0..1 through the swing
+    if (piece === 'slap') {   // a tapered tube of violet gel along a chain of five joints that swings, SHARP: thin and pointed at its tip, which curls like a hook (the owner: "Sharper tentacle"), ridged along its length; a brighter core inside it; small suckers
       const gel = new T.MeshStandardMaterial({ color: new T.Color(0x8a3df0).convertSRGBToLinear(), emissive: new T.Color(0x5a1fc8).multiplyScalar(0.5), transparent: true, opacity: 0.93, roughness: 0.2, metalness: 0 }); gel.envMapIntensity = 0.75;
       const core = new T.MeshBasicMaterial({ color: new T.Color(0xcfa8ff).convertSRGBToLinear(), transparent: true, opacity: 0.75, toneMapped: false });
       const suck = new T.MeshStandardMaterial({ color: new T.Color(0xe6d0ff).convertSRGBToLinear(), emissive: new T.Color(0x9a55f0).multiplyScalar(0.35), roughness: 0.3, metalness: 0 });
-      const N = 18, tt = _taperTube(gel, N, 14), tc = _taperTube(core, N, 7), grp = new T.Group(); grp.rotation.y = PI / 4;   // (turned to face the camera, as the forms)
-      grp.add(tt.mesh); grp.add(tc.mesh); const base = new T.Mesh(new T.SphereGeometry(1, 16, 12), gel); grp.add(base); const sk = []; for (let i = 0; i < 4; i++) { const s = new T.Mesh(new T.SphereGeometry(1, 8, 6), suck); grp.add(s); sk.push(s); } g.add(grp);
-      const pts = Array.from({ length: N }, () => new T.Vector3()), rad = new Array(N), rc = new Array(N), Ln = 0.78, SEG = 4, jp = [new T.Vector3()];
+      const N = 24, tt = _taperTube(gel, N, 12), tc = _taperTube(core, N, 6), grp = new T.Group(); grp.rotation.y = PI / 4;   // (turned to face the camera, as the forms)
+      grp.add(tt.mesh); grp.add(tc.mesh); const sk = []; for (let i = 0; i < 3; i++) { const s = new T.Mesh(new T.SphereGeometry(1, 8, 6), suck); grp.add(s); sk.push(s); } g.add(grp);
+      const pts = Array.from({ length: N }, () => new T.Vector3()), rad = new Array(N), rc = new Array(N), Ln = 0.95, SEG = 5, jp = [new T.Vector3()];
       g.userData.pose = u => {
-        const e = 1 - Math.pow(1 - u, 2), a0 = 2.35 - 3.0 * e, speed = Math.min(1.6, Math.abs(2 * (1 - u)) * 1.0), len = Ln * (0.6 + 0.4 * Math.min(1, u * 5));   // (clockwise from up and back to down and forward; it grows as it appears)
-        jp.length = 1; let ang = 0; for (let i = 1; i <= SEG; i++) { ang = a0 + 0.32 * speed * Math.pow(i / SEG, 1.3) * (1 + i * 0.2) - 0.1 * (i / SEG) * (1 - u); jp.push(jp[i - 1].clone().add(new T.Vector3(Math.cos(ang), Math.sin(ang), 0).multiplyScalar(len / SEG))); }
+        const e = 1 - Math.pow(1 - u, 2), a0 = 2.35 - 3.0 * e, speed = Math.min(1.6, Math.abs(2 * (1 - u))), len = Ln * (0.6 + 0.4 * Math.min(1, u * 5));   // (clockwise from up and back to down and forward; it grows as it appears)
+        jp.length = 1; let ang = 0; for (let i = 1; i <= SEG; i++) { const f = i / SEG; ang = a0 + 0.3 * speed * Math.pow(f, 1.3) * (1 + i * 0.2) - 0.1 * f * (1 - u) + 0.8 * Math.pow(f, 3.2) + 0.32 * Math.sin(f * 6.2 - u * 7) * f; jp.push(jp[i - 1].clone().add(new T.Vector3(Math.cos(ang), Math.sin(ang), 0).multiplyScalar(len / SEG))); }   // (the last joints hook round: the sharp curl at its tip)
         const curve = new T.CatmullRomCurve3(jp);
-        for (let i = 0; i < N; i++) { const t = i / (N - 1), p = curve.getPoint(t); pts[i].copy(p); const cap = t > 0.86 ? Math.sqrt(Math.max(0, 1 - Math.pow((t - 0.86) / 0.14, 2))) : 1; rad[i] = Math.max(0.004, (0.19 - 0.075 * t) * cap); rc[i] = rad[i] * 0.42; }
-        tt.set(pts, rad); tc.set(pts, rc); base.position.copy(pts[0]); base.scale.setScalar(0.205);
-        sk.forEach((s, i) => { const t = 0.28 + i * 0.16, p = curve.getPoint(t), tg = curve.getTangent(t), nx = -tg.y, ny = tg.x, r = (0.19 - 0.075 * t); s.position.set(p.x + nx * r * 0.95, p.y + ny * r * 0.95, 0.04); s.scale.setScalar(0.034); }); };
+        for (let i = 0; i < N; i++) { const t = i / (N - 1), p = curve.getPoint(t); pts[i].copy(p); rad[i] = Math.max(0.003, 0.15 * Math.pow(1 - t, 0.95) * (1 + 0.09 * Math.sin(t * 30)) * Math.min(1, 0.4 + t / 0.07 * 0.6) + 0.004); rc[i] = rad[i] * 0.4; }   // (a point, not a round end; faint ridges along it)
+        tt.set(pts, rad); tc.set(pts, rc);
+        sk.forEach((s, i) => { const t = 0.22 + i * 0.17, p = curve.getPoint(t), tg = curve.getTangent(t), nx = -tg.y, ny = tg.x, r = 0.15 * Math.pow(1 - t, 0.95); s.position.set(p.x + nx * r * 0.95, p.y + ny * r * 0.95, 0.04); s.scale.setScalar(0.024); }); };
       g.userData.pose(0);
     }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
