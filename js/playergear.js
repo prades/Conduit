@@ -8,8 +8,9 @@
 //   GUNSLINGER   the armory's machine gun. The cube still floats; two of its tentacles carry the gun low at its left side, and when the weapon is ARMED (js/input.js setPlayerAttackMode) they pull it up level beside
 //                the screen, looking down the sights; the action frames are firing (recoil, muzzle flash), shown for a few frames after each shot. It turns to the enemy that is locked (js/gunfire.js).
 //   TECHNOMANCER the four-legged spider mech built in the show room: an armoured walker with the cube seated in it, walking when the player moves.
-//   MUTATOR      a lab coat and safety goggles, put on in the experiment lab on the way through the teleport room and the passage (a trail of rooms), and kept for good.
-const GEAR = { trail: ["teleport_room_1", "lab_passage", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", laser: "player_laser", mech: "player_mech", labcoat: "player_coat" }, aimed: { machinegun: "player_gun_aim", laser: "player_laser_aim" } };
+//   MUTATOR      a lab coat and safety goggles, put on in the experiment lab on the way down from the teleport room (a trail of rooms: Teleport Room 1, then its staircase down into the lab, since build 2026-11-13a;
+//                it was Teleport Room 1, the passage, then the lab, when the lab was at the passage's end), and kept for good.
+const GEAR = { trail: ["teleport_room_1", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", laser: "player_laser", mech: "player_mech", labcoat: "player_coat" }, aimed: { machinegun: "player_gun_aim", laser: "player_laser_aim" } };
 
 // what the player is seen with: the class's body gear (the mech, the coat) if it owns it, else the gun in hand if it has a sheet (the machine gun or the laser rifle: js/weapons.js), else nothing
 function playerGear() {
@@ -35,7 +36,7 @@ function playerGearFacing(row) {
 }
 
 // ── the Mutator puts the coat on ──
-// Walking the trail (teleport room, the passage, the experiment lab) in that order, the Mutator is given the coat and goggles: the first two rooms start it, the lab finishes it. Kept for good.
+// Walking the trail (Teleport Room 1, then down its staircase into the experiment lab) in that order, the Mutator is given the coat and goggles: the teleport room starts it, the lab finishes it. Kept for good.
 function facilityGearTick() {
     if (typeof playerClassKey === "undefined" || playerClassKey !== "mutator" || classHas("labcoat")) return;
     const T = _fp.gearTrail = _fp.gearTrail || { i: 0 };

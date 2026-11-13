@@ -136,7 +136,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
     // the ROTSHARD's everyday shot (build 2026-11-12w): a soul blob of its own crystal green, crackling
     if (p.kind === "soulblob") { _drawSoulBlob(ctx, p, sx, sy); ctx.restore(); return; }
-    // the VOIDSTAR's everyday shot (build 2026-11-12x): two tentacles of ghostly violet energy from its orb to the shot's tip
+    // the VOIDSTAR's everyday shot (build 2026-11-13b): two tentacles of ghostly violet energy from its orb to the shot's tip
     if (p.kind === "tendril") { _drawTendrils(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }

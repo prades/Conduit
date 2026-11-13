@@ -85,7 +85,7 @@ function _facilityBuild(ex) {
         }
     }
     // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so that it is drawn as glass.
-    const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [] }));
+    const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [], divider: !!w.divider }));   // (divider: a thin wall that is not glass, THE LOUNGE's south side: drawn solid, js/facilityplay.js)
     // Split any wall piece a window only partly covers, so the glass part is its own piece (a long wall can be glass along one stretch only).
     for (let i = walls.length - 1; i >= 0; i--) {
         const wl = walls[i], dx = wl.b[0] - wl.a[0], dy = wl.b[1] - wl.a[1], len = Math.hypot(dx, dy) || 1;
@@ -96,7 +96,7 @@ function _facilityBuild(ex) {
             if (t0 > t1) [t0, t1] = [t1, t0]; t0 = Math.max(0, t0); t1 = Math.min(1, t1); if ((t1 - t0) * len < 0.02) continue;
             const at = t => [wl.a[0] + dx * t, wl.a[1] + dy * t], parts = [];
             if (t0 > 1e-6) parts.push(Object.assign({}, wl, { a: at(0), b: at(t0), window: undefined }));
-            parts.push(Object.assign({}, wl, { a: at(t0), b: at(t1), window: w.id }));
+            parts.push(Object.assign({}, wl, { a: at(t0), b: at(t1), window: w.id }, w.divider ? { divider: true } : {}));
             if (t1 < 1 - 1e-6) parts.push(Object.assign({}, wl, { a: at(t1), b: at(1), window: undefined }));
             walls.splice(i, 1, ...parts); break;
         }

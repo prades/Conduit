@@ -117,7 +117,7 @@ function _psCentre(id) {
 // ── which sheet a kind of prop is on, and which variant of it a given prop is ──
 // The sheets (design/props/models/<family>.js): office (the desks, consoles, server racks), lounge (the sofas, tables, vending machines...), lab (benches, the fume hood, test chambers, the generator...), tech (teleporters,
 // relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope, the main power junction), cargo (crates, barrels, floodlights, barriers, the warehouse's pallet racks, the supply case), cold (the Cold
-// Storage's freezers and toppled racks), plant, sentry, truck, tank, bridge.
+// Storage's freezers and toppled racks), plant, sentry, truck, tank, bridge, holdtank (the Experiment Lab's giant holding tanks), whiteboard (the Lounge's, on its stand).
 // A variant is named  kind[.WxH|.rNN][.on|.off][.sN]  : the size of the prop in tiles (WxH along x and y; rNN a round prop's radius in hundredths), its state (a relay or the charger: online or not), and a look (s0, s1...:
 // a prop picks one by its id, so a row of crates is not a row of the same crate). The most specific variant that exists is used: a kind with one model for every size is just `kind`.
 const PS_FAMILY = {
@@ -128,6 +128,7 @@ const PS_FAMILY = {
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo", pallet_rack: "cargo",
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
     hazard_explosive: "hazard", hazard_corrosive: "hazard", chest: "chest",
+    holding_tank: "holdtank", whiteboard_stand: "whiteboard",   // THE NEW EXPERIMENT LAB's giant holding tanks and THE LOUNGE's whiteboard on its stand (build 2026-11-13a)
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }

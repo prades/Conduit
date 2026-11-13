@@ -39,7 +39,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, k + ': not at the forms\' pixels a unit (so EVO_SCALE would not fit it)');
         }
     });
-    check('the VOIDSTAR\'s SLAP (build 2026-11-12x; the owner: "Make it look 3d rendered"): one stubby tentacle of violet gel baked in 12 frames of its swing, its root in the middle of its cell, at the forms\' pixels a unit; on the preview (?fx=3d) only until it is approved in the game; drawn from its frame, mirrored for the second slap, held to its sheet, and not before its sheet has arrived', () => {
+    check('the VOIDSTAR\'s SLAP (build 2026-11-13b; the owner: "Make it look 3d rendered"): one stubby tentacle of violet gel baked in 12 frames of its swing, its root in the middle of its cell, at the forms\' pixels a unit; on the preview (?fx=3d) only until it is approved in the game; drawn from its frame, mirrored for the second slap, held to its sheet, and not before its sheet has arrived', () => {
         const P = J('FX3D.pieces.slap'), meta = JSON.parse(rd('design/effects/out/slap.json'));
         same(P.sheet, 'img/fx/slap.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), 'the sheet\'s size'); same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), 'the baker\'s record and the game\'s table');
         same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), P.ax + ',' + P.ay, 'its root where the table says'); ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, 'not at the forms\' pixels a unit'); ok(P.anim === true, 'not an animated piece');

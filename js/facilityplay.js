@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lounge: "#8a4a6a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", catwalk_spur: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
 for (const id of FP_NEST_ROOMS) if (!FP_ROOM_COL[id]) FP_ROOM_COL[id] = FP_ROOM_COL.nest_area;   // (the Nest grown out: its rooms the cavern's colour on the map)
 
 // ── the world ──
@@ -635,7 +635,7 @@ function _fpPlaceStatics(F) {
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy), n = Math.max(1, Math.ceil(len / seg));
         for (let i = 0; i < n; i++) {
             const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n];
-            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? "glass" : w.kind, win: w.window || null, low: !!w.low, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), inkBack: _fpWallInk(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
+            items.push({ type: "fp", fp: "wall", x: (a[0] + b[0]) / 2, y: (a[1] + b[1] + 0) / 2, a, b, kind: w.window ? (w.divider ? "divider" : "glass") : w.kind, win: w.window || null, low: !!w.low, room: w.room, lroom: _fpWallLightRoom(w, a, b, F), out: _fpWallOut(w, a, b, F), nbBand: _fpWallBand(w, a, b, F), inkBack: _fpWallInk(w, a, b, F), i, n, along: Math.round((Math.hypot(a[0], a[1])) * 2), base: facilityRoomHeight(w.room, F) * FP_ELEV_PX });
         }
     }
     // a wall between two floors of different heights stands from its own floor up past the HIGHER floor, so a step down is a retaining wall and not a gap
@@ -647,10 +647,10 @@ function _fpPlaceStatics(F) {
     for (const s of F.solids) for (const it of _fpPropItems(s)) items.push(it);
     if (typeof _psRimItems === "function") { for (const it of _psRimItems(F, items)) items.push(it); for (const it of _psBridgeItems(F)) items.push(it); }   // the 3D tanks' rim cells and the catwalk bridges (js/propsprites.js)
     for (const r of F.ramps) {   // a staircase: one prism per tread tile, from the lower floor up to the tread (the risers the camera sees)
-        const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB);
+        const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB), ax = z.axis === "x" ? -Math.sign((z.hB - z.hA) / ((z.c1 - z.c0) || 1)) : 0;   // (ax: the way down along x, -1 west: the Experiment Lab's staircase, build 2026-11-13a; 0 for one down along y)
         for (let x = Math.ceil(z.x0 - 0.5); x <= z.x1 - 0.5; x++) for (let y = Math.ceil(z.y0 - 0.5); y <= z.y1 - 0.5; y++) {
             const h = facilityHeightAt(x, y, F); if (h - lo < 0.02) continue;
-            items.push({ type: "fp", fp: "stair", room: (facilityRoomAt(x, y, F) || {}).id, x, y, base: lo * FP_ELEV_PX, h: (h - lo) * FP_ELEV_PX, sx: true, sy: true });
+            items.push({ type: "fp", fp: "stair", room: (facilityRoomAt(x, y, F) || {}).id, x, y, base: lo * FP_ELEV_PX, h: (h - lo) * FP_ELEV_PX, sx: true, sy: true, ax });
         }
     }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", room: f.room, base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
@@ -743,13 +743,15 @@ function _fpDrawWall(it) {
     if (it.kind === "rock") { if (typeof caveWallDraw === "function" && caveWallDraw(it)) return; if (typeof _fpRockStamp === "function" && _fpRockStamp(it, H)) return; return _fpDrawRock(it, H); }   // rock formations: the modelled rock (js/cavewalls.js; on the preview, ?walls=3d, until approved), else drawn (js/facilitydecor.js), from its picture painted once (_fpRockStamp, build 2026-11-12c)
     if (it.kind === "spill" && typeof _fpDrawSpillLip === "function") return _fpDrawSpillLip(it);   // a low lip the water spills over (the Sewers' Nest: js/facilitysewers.js)
     if (it.kind === "open") return;                            // an edge with no wall drawn (solid still): the warehouse's floor's edge onto Teleport Room 2's deck (js/facilitygrow.js; build 2026-11-09uu)
+    if (it.kind === "divider" && it.out === 1) return;         // a DIVIDER is thin: the two rooms' pieces lie on one line, and the face the camera sees is the room's in front (THE LOUNGE's south side: the hallway's)
     if (it.kind === "deck_rail") return _fpDrawRail(it);       // a raised floor's open edge with a rail: Teleport Room 2's deck over the warehouse (as the catwalks' edge: js/facilitydecor.js)
     if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
-    if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
+    if (it.support) return _fpDrawSupport(it, _fpSupportExt(it));  // the arena's frame under the deck: open steel, you see through it
     const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
     if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") return _fpDrawDeckCliff(it);   // the deck stands on a thick rock cliff (js/facilitydecor.js)
     if (glass && facilityStyleRoom(it.room)) return _fpStyleGlass(it, H);
+    if (it.kind === "divider") { const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd); _fpQuad([a0, b0, b1, a1], c[0], "rgba(5,7,15,0.6)", 1); return; }   // a thin solid wall outside the style (THE LOUNGE's divider is styled: _fpStyleWall draws it with no thick top)
     const a0 = _fpP(it.a[0], it.a[1], 0), b0 = _fpP(it.b[0], it.b[1], 0), a1 = _fpP(it.a[0], it.a[1], Hd), b1 = _fpP(it.b[0], it.b[1], Hd);
     if (glass) {
         // a window: a solid sill below, glass above with a faint reflection, a top rail, and a mullion post every two tiles

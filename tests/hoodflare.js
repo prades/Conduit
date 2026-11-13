@@ -175,7 +175,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the blob uses a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the splat uses a gradient or a shadow'); ok(/p\.kind === "soulblob"/.test(src), 'the projectile is not drawn as the blob'); ok(/_SOUL = \{ body: '#9adeae'/.test(src) && /#9adeae/.test(sp), 'not the crystal\'s green');
     });
 
-    group('THE VOIDSTAR SLAPS WITH TELEPATHIC TENTACLES (build 2026-11-12x; the owner: "How about the void star slaps the enemy with telepathic tentacles?"; asked, "Ghostly violet energy" and "Two alternate")');
+    group('THE VOIDSTAR SLAPS WITH TELEPATHIC TENTACLES (build 2026-11-13b; the owner: "How about the void star slaps the enemy with telepathic tentacles?"; asked, "Ghostly violet energy" and "Two alternate")');
     check('its everyday shot flies as a "tendril" (no other mage\'s does) and, where it lands, a one-two slap (a "tendrilslap") is drawn on the target; the shot itself (its damage, its speed, its element) is as it was', () => {
         const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), t = __foe(f.x + 3, f.y); f._shotTarget = t; _mageShotFire(f); const p = followerProjectiles[followerProjectiles.length - 1];
             const before = elementEffects.filter(e => e.type === 'tendrilslap').length; p.onHit(t); const slap = elementEffects.filter(e => e.type === 'tendrilslap');

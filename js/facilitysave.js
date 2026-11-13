@@ -48,6 +48,7 @@ function facilitySaveCollect() {
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],     // the ice bridges standing, each with its technician (js/techabilities.js)
         climbs: typeof techClimbsSnapshot === "function" ? techClimbsSnapshot() : [],       // REEF's climbs standing, each with its coral crab (js/techabilities.js; a game saved before has none)
+        reefTip: typeof techReefTipSeen !== "undefined" && techReefTipSeen ? 1 : 0,          // REEF's tip has been shown (js/techabilities.js: once a game; a game saved before shows it once)
         rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},
         nestWays: typeof nestWaysSnapshot === "function" ? nestWaysSnapshot() : [],   // the Nest's cracked walls broken and resin seals eaten through (js/nestways.js)
         chests: typeof chestsSnapshot === "function" ? chestsSnapshot() : [],          // the chests opened (js/chests.js)           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
@@ -136,7 +137,8 @@ function facilitySaveApply(d) {
     if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
     if (typeof facilityPortalsApply === "function") facilityPortalsApply(d.pipes);   // (a game saved before has none open)
     if (typeof techBridgesApply === "function") techBridgesApply(d.bridges);   // the ice bridges (before the player's spot: one saved on the ice loads on it)
-    if (typeof techClimbsApply === "function") techClimbsApply(d.climbs);   // REEF's climbs (after the bridges: one whose end is no longer floor is let go)
+    if (typeof techClimbsApply === "function") techClimbsApply(d.climbs);
+    if (typeof techReefTipSeen !== "undefined") techReefTipSeen = d.reefTip === 1;   // (REEF's tip: shown once a game)   // REEF's climbs (after the bridges: one whose end is no longer floor is let go)
     if (typeof fluxApply === "function") fluxApply(d.moved);   // the moved objects where they were put (before the player's spot: one cannot be put back on top of it; js/fluxmove.js)
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }

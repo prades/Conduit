@@ -99,7 +99,7 @@ async function boot(search, store) {
     return { run, J, store: sb.localStorage };
 }
 let ARENA9 = null;   // what moves in the game without the flag: the map's own movable objects (the arena's nine, the Sewers' machinery, the hazard containers), read from the map by the first check below (FLUX MOVE's own list of them is tests/fluxmove.js's)
-const ROOMS = 'arena,armory,catwalks,cold_storage,crystal_chamber,elec_circuitry,elec_servers,experiment_lab,front_lobby,lab_hallway,lab_passage,nest_area,nest_brood,nest_burrow,nest_deep,nest_down,nest_down_low,nest_larder,nest_shelf,nest_stream,nest_t1,nest_t3,nest_t4,nest_t6,nest_t7,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';   // (19 since build 2026-11-11d: the electrical domain's two rooms)
+const ROOMS = 'arena,armory,catwalk_spur,catwalks,cold_storage,crystal_chamber,elec_circuitry,elec_servers,experiment_lab,front_lobby,lab_hallway,lab_passage,lounge,nest_area,nest_brood,nest_burrow,nest_deep,nest_down,nest_down_low,nest_larder,nest_shelf,nest_stream,nest_t1,nest_t3,nest_t4,nest_t6,nest_t7,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';   // (19 since build 2026-11-11d: the electrical domain's two rooms; the Catwalk Spur since build 2026-11-12v)
 
 (async () => {
     group('WITHOUT THE FLAG: THE GAME AS IT WAS');
@@ -110,7 +110,7 @@ const ROOMS = 'arena,armory,catwalks,cold_storage,crystal_chamber,elec_circuitry
                 moves: fluxObjects().map(s => s.id).sort().join(), mapMoves: M.props.filter(s => s.flux && s.shape === 'rect').map(s => s.id).sort().join(), styled: FP_STYLE_ROOMS.size, tag: 'flux_lab' in FP_ROOM_TAG, look: 'flux_lab' in FP_ROOM_STYLE, squad: followers.map(f => f.element).sort().join(),
                 room: __room(player.x, player.y), step: _fp.tut.script.step, save: !!_fp.saveReady, mode: !!_fp.fluxLab, spy: (render(), facilitySaveWrite(), __opened.concat(__writes).join()) }; })()`);
             same(r.rooms, ROOMS, 'the rooms'); same(r.portals, 16, 'the doorways');   /* 165 props since 2026-11-07nn: the Ant Nest's console */   // (12 since build 2026-11-07bb: the drain pipe's two ends; 14 since 2026-11-07ll: the Ant Nest's two) same(r.props, 165, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
-            ARENA9 = r.mapMoves; same(r.moves, r.mapMoves, 'what moves: the map\'s own movable objects'); ok(r.moves && !/lab_/.test(r.moves), 'nothing moves, or something of the test room does'); same(r.styled, 32, 'the styled rooms (and the Ant Nest\'s thirteen since build 2026-11-12a)'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
+            ARENA9 = r.mapMoves; same(r.moves, r.mapMoves, 'what moves: the map\'s own movable objects'); ok(r.moves && !/lab_/.test(r.moves), 'nothing moves, or something of the test room does'); same(r.styled, 34, 'the styled rooms (33 since build 2026-11-12v: the Catwalk Spur; 34 since build 2026-11-13a: the new Experiment Lab) (and the Ant Nest\'s thirteen since build 2026-11-12a)'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
             same(r.squad, 'core,electric,fire', 'the squad'); same(r.room, 'crystal_chamber', 'the start'); same(r.step, 0, 'the tutorial'); same(r.save, true, 'the save');
             ok(/^run start(,set conduit_fp_save)+$/.test(r.spy), 'the spies on the start\'s cards screen and on storage (used below) do not see a new game\'s: ' + r.spy);
         });

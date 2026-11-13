@@ -255,7 +255,7 @@ async function boot(store) {
         check('each moved object\'s place and turn is saved (the save\'s `moved`) and put back when the game loads, before the player\'s spot (one saved standing where an object now is goes to the start); an entry that cannot go where it was saved, or is not an object that moves, changes nothing; a game saved before FLUX MOVE moves nothing', () => {
             same(keep, JSON.stringify([{ id: 'barrier_1', x: 31, y: 48, t: 1 }, { id: 'crate_4', x: 47, y: 56, t: 0 }, { id: 'crate_5', x: 48, y: 57, t: 0 }]), 'what was saved');
             same([r.b1.x0, r.b1.y0, r.b1.w, r.b1.h, r.t].join(), '31,48,1,2,true', 'the barrier, turned'); same([r.c4.x0, r.c4.y0, r.c5.x0, r.c5.y0].join(), '47,56,48,57', 'the crates (one into the other\'s old place)');
-            same([r.b5.x0, r.b5.y0, r.c6.x0, r.c6.y0].join(), '49,43,49,58', 'the bad entries moved something'); same(r.moved, keep, 'the moves kept');
+            same([r.b5.x0, r.b5.y0, r.c6.x0, r.c6.y0].join(), '25,56,49,58', 'the bad entries moved something');   // (barrel_5's home since build 2026-11-12v, when the drums left the Catwalk Spur's corner) same(r.moved, keep, 'the moves kept');
             same(r.walk.join(), 'false,true', 'the floor after the load'); same(r.playerOut, true, 'the player put inside the barrier'); same(JSON.stringify(r.audit), JSON.stringify({ paint: 0, cells: 0, world: true, items: true, stretches: true, ix: true }), 'the map after the load');
             same(r2.moved, 0, 'an old save moved something'); same([r2.b1.x0, r2.b1.y0, r2.b1.w].join(), '30,47,2', 'an old save\'s barrier');
         });

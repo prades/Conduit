@@ -31,7 +31,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('every rock wall piece has its strip, and the bake was made from the walls the game has now (the signature: bake again when the walls change)', () => {
         const r = J('(function(){ const its = __rocks(); return { n: its.length, missing: its.filter(it => !CAVE_ATLAS.pieces[caveWallKey(it)]).map(caveWallKey).slice(0, 5), extra: Object.keys(CAVE_ATLAS.pieces).length - its.length, sig: caveWallsSig(), baked: CAVE_ATLAS.sig, rooms: [...new Set(its.map(i => i.room))].sort() }; })()');
         ok(r.n > 300, 'only ' + r.n + ' rock pieces'); same(r.missing.length, 0, 'pieces with no strip (' + r.missing.join(' ') + ')'); same(r.extra, 0, 'strips for pieces the game does not have');
-        same(r.sig, r.baked, 'the walls changed since the bake: node design/cave/bake_walls.js <three>'); same(r.rooms.join(), 'arena,cold_storage,nest_area', 'the caves');
+        same(r.sig, r.baked, 'the walls changed since the bake: node design/cave/bake_walls.js <three>'); same(r.rooms.join(), 'arena,catwalk_spur,cold_storage,nest_area', 'the caves (the Catwalk Spur\'s back is the cave\'s rock since build 2026-11-12v)');
     });
     check('each cave has its sheet, its size as the atlas says, every strip inside it', () => {
         const A = J('CAVE_ATLAS');

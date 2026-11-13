@@ -276,7 +276,7 @@ canvas.addEventListener('pointerdown', e=>{
 canvas.addEventListener('pointermove', e=>{
     if (_aimIgnored.has(e.pointerId)) return;   // a finger ignored while an aim's press was held (above)
     if (_techAimPressed) { if (typeof techAimPathMove === "function") { const [_mx, _my] = toCanvas(e.clientX, e.clientY); techAimPathMove(_mx, _my); } return; }   // FAULTLINE's path, drawn while the press is down (js/techabilities.js); any other aim ignores a move
-    if (!isPressing) return;
+    if (!isPressing) { if (typeof techAimHover === "function" && typeof techAimActive === "function" && techAimActive()) { const [_hx, _hy] = toCanvas(e.clientX, e.clientY); techAimHover(_hx, _hy); } return; }   // (a mouse over the floor while REEF is aimed: its ghost follows, js/techabilities.js)
     [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
     if (_cloneDrag) { const dx = pointerX - _cloneDrag.x0; if (Math.abs(dx) > 8) _cloneDrag.moved = true; if (_cloneDrag.moved) _crystalScrollX = Math.max(0, _cloneDrag.s0 - dx); return; }
 

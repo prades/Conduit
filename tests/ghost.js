@@ -157,7 +157,7 @@ function discoverRoots(context) {
 
 // ── one run: a fresh browser, a seeded facility, the same script of inputs ──
 const PT_JS = `globalThis.__PT = (function () { const F = _fp.F, R = id => F.byId.get(id), mid = b => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2], near = (x, y) => { const rx = Math.round(x), ry = Math.round(y); for (let r = 0; r < 6; r++) for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) if (facilityWalkable(rx + dx, ry + dy, F)) return [rx + dx, ry + dy]; return [rx, ry]; };
-    const L = R('experiment_lab'), H = R('lab_hallway'), A = R('arena'), C = R('crystal_chamber'), ad = F.openings.find(o => o.id === 'door_arena_hallway');
+    const L = R('lounge'), H = R('lab_hallway'), A = R('arena'), C = R('crystal_chamber'), ad = F.openings.find(o => o.id === 'door_arena_hallway');   /* (the windowed room in the hallway's middle: the old lab's, THE LOUNGE since build 2026-11-13a) */
     return { chamber: near(mid(C.bb)[0], mid(C.bb)[1] + 3), hallN: near(mid(L.bb)[0], (H.bb[1] + L.bb[1]) / 2), arena: near((ad.a[0] + ad.b[0]) / 2 + 8, ad.a[1] + 14), arenaDeep: near(mid(A.bb)[0], mid(A.bb)[1]), lab: near(mid(L.bb)[0] - 4, mid(L.bb)[1]) }; })();`;
 // the scenarios: how the facility is opened, and what the "player" does, by step number (the same in both runs; every number is a multiple of 4 so a 15 fps refresh lands on it)
 const WALK = k => `facilityWalkTo(__PT.${k}[0], __PT.${k}[1]);`;

@@ -555,10 +555,17 @@ function _fpDrawStairwell(it) {
 function _fpScaffoldMarks(items) {
     for (const it of items) {
         if (it.fp !== "wall") continue; const rm = _fp.F.byId.get(it.room);
-        it.scaffold = !!rm && rm.raw.structure === "scaffold"; it.support = it.kind === "railing_wall";
+        it.scaffold = !!rm && rm.raw.structure === "scaffold" && it.kind !== "rock"; it.support = it.kind === "railing_wall";   // (a scaffold's back against the cave, the Catwalk Spur's, is the cave's rock: drawn as rock)
+        if (it.support) {   // THE SKIRT (build 2026-11-12v): a frame the camera looks at from its own floor (the Catwalk Spur's south face; the catwalks' frame is seen from behind) has a dark panel behind it, so the low deck never shows a hole under its edge
+            const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
+            const front = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F); it.skirt = !!front && front.id === it.room;
+        }
         if (it.scaffold) {   // legs under every edge but the one that is held up by the arena's frame (the arena is behind it)
             const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
             const behind = facilityRoomAt(it.x - nx * 0.4, it.y - ny * 0.4, _fp.F); it.legs = !(behind && behind.id === "arena"); it.legH = (it.base || 0) - facilityRoomHeight("arena", _fp.F) * FP_ELEV_PX;
+            // (and none where another deck meets this one, the Catwalk Spur against the catwalks, or where the arena's frame stands under the edge already, as under the spur's two open faces)
+            const front = facilityRoomAt(it.x + nx * 0.4, it.y + ny * 0.4, _fp.F), deck = r => !!r && r.id !== it.room && r.raw.structure === "scaffold";
+            if (it.legs && (deck(behind) || deck(front) || _fp.F.walls.some(w => w.kind === "railing_wall" && _facSegPointDist(w.a, w.b, it.x, it.y) < 0.1))) it.legs = false;
             it.gap = null;   // THE LEDGE (build 2026-11-07qq: js/facilitymap.js `ledges`): the rail stops where the deck's edge is the way down; `gap` is that stretch, along the piece
             for (const L of (_fp.F.ledges || [])) {
                 if (L.room !== it.room) continue; const ldx = L.to[0] - L.at[0], ldy = L.to[1] - L.at[1], ax = Math.abs(ldx) >= Math.abs(ldy), E = ax ? [L.at[0] + Math.sign(ldx) * 0.5, L.at[1]] : [L.at[0], L.at[1] + Math.sign(ldy) * 0.5], half = (L.w || 2) / 2;
@@ -618,7 +625,12 @@ function _fpDrawRail(it) {
     ctx.lineCap = "butt";
     if (it.legs && it.legH > 20) _fpDrawFrame(it, -it.legH, -10);
 }
-function _fpDrawSupport(it, ext) { _fpDrawFrame(it, 0, ext); }
+// how tall a frame stands: from its floor up to the deck it holds (base2 is that deck's floor; one at height 0, the Catwalk Spur's, is a real height, not a missing one)
+function _fpSupportExt(it) { const b = it.base || 0, b2 = typeof it.base2 === "number" ? it.base2 : b; return Math.max(0, b2 - b); }
+function _fpDrawSupport(it, ext) {
+    if (it.skirt && ext > 0) _fpQuad([_fpP(it.a[0], it.a[1], 0), _fpP(it.b[0], it.b[1], 0), _fpP(it.b[0], it.b[1], ext), _fpP(it.a[0], it.a[1], ext)], "#1c2730", null);   // (the skirt: _fpScaffoldMarks)
+    _fpDrawFrame(it, 0, ext);
+}
 
 // THE DECK'S CLIFF: the observation deck is raised above the arena and looks down into it through glass. Below that glass the arena's own pane of the window is drawn as a THICK ROCK FACE instead (the deck is
 // cut into the rock): from the arena floor up to the underside of the deck, with strata, boulders, cracks, a dark foot and a lit lip under the deck. It is drawn per wall piece, so it runs the whole length.
@@ -990,7 +1002,7 @@ function _fpWallBounds(it) {
     const pts = [[it.a[0], it.a[1]], [it.b[0], it.b[1]]];
     if (it.kind === "rock") { const hs = _fpRockHeights(it, H); zhi = Math.max(hs[0], hs[1], hs[2]) + 12; if (!it.back) zlo = -FP_ROCK_DOWN - 6; if (it.cap) { const d = Math.max(it.cap.da === undefined ? it.cap.d : it.cap.da, it.cap.db === undefined ? 0 : it.cap.db); pts.push([it.a[0], it.a[1] - d], [it.b[0], it.b[1] - d]); if (it.cap.zb) zhi = Math.max(zhi, it.cap.zb + 8); } }
     else if (it.scaffold) { zlo = -(it.legs ? (it.legH || 0) : 10) - 14; zhi = 50; }
-    else if (it.support) { zlo = -8; zhi = H - FP_WALL_H + 10; }
+    else if (it.support) { zlo = -8; zhi = _fpSupportExt(it) + 10; }
     else if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") { const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4; zlo = -8; zhi = rise + 12; mx = 46; my = 30; pts.push([it.a[0] + 0.5, it.a[1]], [it.b[0] + 0.5, it.b[1]]); }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (const q of pts) for (const z of [zlo, zhi]) { const sx = (q[0] - it.x - (q[1] - it.y)) * TILE_W, sy = (q[0] - it.x + q[1] - it.y) * TILE_H - z; if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; }

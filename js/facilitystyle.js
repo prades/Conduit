@@ -20,7 +20,7 @@ const FP_PAL = {
     teal: "#4f9aa0", tealLit: "#6cb3bb", tealDark: "#2f6a73", case: "#a9c4cc", caseLit: "#dbeaee",
     cyan: "#31e8ff", blue: "#3a7bff", violet: "#9a5cff", amber: "#f2b13a", white: "#eaffff", leaf: "#4fa58a",
 };
-const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lab_passage", "observation_deck", "catwalks", "arena", "nest_area", "cold_storage", "sewers", "elec_servers", "elec_circuitry", ...FP_NEST_ROOMS]);   // every room (the Nest's rooms: FP_NEST_ROOMS, js/facilitymap.js)
+const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lounge", "lab_passage", "observation_deck", "catwalks", "catwalk_spur", "arena", "nest_area", "cold_storage", "sewers", "elec_servers", "elec_circuitry", ...FP_NEST_ROOMS]);   // every room (the Nest's rooms: FP_NEST_ROOMS, js/facilitymap.js)
 function facilityStyleRoom(id) { return !!id && FP_STYLE_ROOMS.has(id); }
 
 // floor decals keep their kind and place; their colours are brought into the palette
@@ -141,7 +141,7 @@ function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink, cap) {   // the thick 
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const lit = nx > ny, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), zb = Hd - capH;
-    if (!it.underRock) {   // the wall's thickness: a slab over the band (the building is spaced out for it); none under the rock's roof (js/facilitydecor.js _fpUnderRock)
+    if (!it.underRock && it.kind !== "divider") {   // the wall's thickness: a slab over the band (the building is spaced out for it); none under the rock's roof (js/facilitydecor.js _fpUnderRock), nor on a DIVIDER (THE LOUNGE's south side: a thin wall, no band behind it)
         const cap = it.inRock ? "rock" : RC.cap, o = it.slabFrom;   // (built into the rock: the rock's roof for a top)
         // (over a band another room's wall roofs: in that roof's light, js/facilityplay.js _fpSlabShare)
         const sl = o && _fp.light && typeof _fpWallLightAt === "function" ? _fpWallLightAt(o.room, o.x, o.y) : undefined;
@@ -494,7 +494,7 @@ function _fpLit() {
     if (_fpLitPrev === undefined) { _fpLitPrev = null; try { const m = typeof location !== "undefined" && /[?&]lit=([\d.]+)/.exec(location.search || ""); const v = m ? parseFloat(m[1]) : NaN; if (v >= 0.4 && v <= 1) _fpLitPrev = v; } catch (e) {} }
     return _fpLitPrev !== null ? _fpLitPrev : FP_LIT;
 }
-function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }   // (the Nest grown out, build 2026-11-12a: one light for all its rooms, so the next cave is not dark from the tunnel)
+function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id === "catwalk_spur" ? "arena" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }   // (the Nest grown out, build 2026-11-12a: one light for all its rooms, so the next cave is not dark from the tunnel; the Catwalk Spur, build 2026-11-12v, in the arena's light: it is the arena's high ground)
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
     const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; _fp.here = here;
