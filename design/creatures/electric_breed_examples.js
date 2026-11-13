@@ -1,12 +1,12 @@
 // THE ELECTRIC BREED AS MECHS: EXAMPLES, NOT A DESIGN. Round 1 (commit e73521a) drew a pill bug and a water tiger as animals. Round 2 (the owner, 2026-11-13: "Okay, so I want them
 // to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics from your sketches.") drew them as machines in the mechanical-animal genre: armour
 // plates over a dark frame, joints and pistons, lenses, energy in the seams, nothing thin (no wire legs, hairs, filaments or bolts of lightning); the genre's cues, no existing design
-// copied. Round 3 (the owner: "A for the larva, redesign the roll poly with a longer body less plates, but more character") keeps the larva and redraws the roly-poly.
+// copied. Round 3 (the owner: "A for the larva, redesign the roll poly with a longer body less plates, but more character") keeps the larva and redraws the roly-poly; round 4 its head.
 // In the game's style kit, light and camera (design/props/models/_style.js, design/props/bake_props.js), in three electric looks: A "live seams" (pale gunmetal, yellow energy in the
 // seams), B "insulator" (glossy black, hazard-striped panels, copper joints, amber lights), C "capacitor shell" (blue steel traced with glowing circuits, capacitor cells, cyan lights):
 //   the roly-poly (the owner's: electric; immune to Crushing and Slashing, resists Piercing), round 3: longer (1.3 long, 0.56 wide), seven plates (five big, a tail section, the telson),
-//     a face (two camera eyes under a frowning brow, mandibles, antennae posed one raised and one forward), a core housing on its back (lit vents; C's capacitor cells), tail
-//     thrusters; walking, and rolled up into a wheel with its eyes looking out of the seam. Its look is open;
+//     antennae posed one raised and one forward, a core housing on its back (lit vents; C's capacitor cells), tail thrusters; round 4 (the owner: "The roly-poly should not have
+//     eyes and a face") took round 3's face off: a rounded armoured head capsule. Walking, and rolled up into a closed wheel. Its look is open;
 //   the boss, a predaceous diving beetle larva (a water tiger), round 2 (the owner chose look A): armoured segments on a frame with lit joints and side pistons, a flat wedge head
 //     with six lenses a side, heavy sickle jaws on hinges (open, a tooth on each), paddle legs, twin tail prongs.
 //   node design/creatures/electric_breed_examples.js <three-dir> <out-dir>   ->  <out-dir>/rolypoly_mech.png, <out-dir>/larva_mech.png
@@ -110,27 +110,22 @@ window.__draw = async function (PX, UH) {
       if (big && i !== CORE) for (let sgm = 0; sgm < 3; sgm++) { const ua = uF + 0.06 + (0.86 - uF) * sgm / 3, ub = uF + 0.06 + (0.86 - uF) * (sgm + 1) / 3, n = nrm(i, (ua + ub) / 2, 0.5);
         g.add(pbarN(on(i, ua, 0.5, 0.013), on(i, ub, 0.5, 0.013), 0.058, 0.026, S.dark, n)); g.add(pbarN(on(i, ua + 0.01, 0.5, 0.03), on(i, ub - 0.01, 0.5, 0.03), 0.022, 0.008, S.keelTop || S.glow, n)); }
       if (i === CORE) { const um = (uF + 0.95) / 2; coreHousing(g, S, V3(pt(i, um, 0.5)), nrm(i, um, 0.5), V3(pt(i, Math.min(1, um + 0.05), 0.5)).sub(V3(pt(i, um - 0.05, 0.5))).normalize()); } } }
-  // the face: a rounded armoured skull under the first plate's brim, a dark faceplate, two big camera eyes (an aperture ring in each), armoured brows set in a frown,
-  // small mandibles and a grille, cheek plates; the antennae as jointed sensor booms in a pose (far, near: four joints each), or none (rolled up)
-  const rolyHead = (S, pose) => { const h = G(); h.add(cbox(0.16, 0.12, 0.3, 0.04, S.solid)); h.add(at(cbox(0.03, 0.1, 0.25, 0.012, S.dark), 0.074, -0.004, 0)); h.add(at(cbox(0.02, 0.026, 0.1, 0.005, S.frame2), 0.078, -0.04, 0));
-    for (const sg of [-1, 1]) { const ez = sg * 0.07;
-      const sock = cyl(0.05, 0.05, 0.03, S.frame, 24); sock.rotation.set(0, -sg * 0.3, Math.PI / 2); h.add(at(sock, 0.086, 0.012, ez));
-      const lens = new T.Mesh(new T.SphereGeometry(0.038, 20, 14), S.lens); lens.scale.set(0.55, 1, 1); lens.rotation.y = -sg * 0.3; h.add(at(lens, 0.097, 0.012, ez));
-      const iris = new T.Mesh(new T.TorusGeometry(0.021, 0.0055, 8, 24), S.frame); iris.rotation.set(0, Math.PI / 2 - sg * 0.3, 0); h.add(at(iris, 0.117, 0.012, ez * 1.03));
-      const brow = cbox(0.05, 0.024, 0.115, 0.008, S.solid); brow.rotation.set(sg * 0.32, -sg * 0.3, 0); h.add(at(brow, 0.098, 0.043, ez));
-      const jaw = cbox(0.05, 0.02, 0.04, 0.006, S.joint); jaw.rotation.y = sg * 0.45; h.add(at(jaw, 0.085, -0.05, sg * 0.032));
-      h.add(at(cbox(0.1, 0.075, 0.03, 0.01, S.dark), 0.015, -0.012, sg * 0.152));
-      if (pose) { const P = pose[sg > 0 ? 1 : 0]; h.add(pseg(P[0], P[1], 0.03, 0.027, S.solid)); h.add(pseg(P[1], P[2], 0.026, 0.023, S.dark)); h.add(pseg(P[2], P[3], 0.022, 0.018, S.solid));
-        h.add(ball(0.035, S.joint, P[0])); h.add(ball(0.031, S.joint, P[1])); h.add(ball(0.027, S.joint, P[2])); h.add(ball(0.027, S.glow, P[3])); } }
+  // the head (the owner, of round 3: "The roly-poly should not have eyes and a face"): a rounded armoured capsule under the first plate's brim, carrying the shell's lines, a ridge
+  // with a lit stripe along its crown (B's painted yellow), cheek guards; the antennae as jointed sensor booms in a pose (far, near: four joints each)
+  const rolyHead = (S, pose) => { const h = G(); const skull = new T.Mesh(new T.SphereGeometry(1, 28, 18), S.solid); skull.scale.set(0.125, 0.095, 0.17); h.add(skull);
+    h.add(at(cbox(0.15, 0.02, 0.042, 0.007, S.dark), -0.012, 0.088, 0)); h.add(at(cbox(0.12, 0.007, 0.018, 0.003, S.keelTop || S.glow), -0.012, 0.1, 0));
+    for (const sg of [-1, 1]) { const ch = cbox(0.1, 0.06, 0.026, 0.01, S.dark); ch.rotation.y = sg * 0.25; h.add(at(ch, 0.0, -0.02, sg * 0.152));
+      const P = pose[sg > 0 ? 1 : 0]; h.add(pseg(P[0], P[1], 0.03, 0.027, S.solid)); h.add(pseg(P[1], P[2], 0.026, 0.023, S.dark)); h.add(pseg(P[2], P[3], 0.022, 0.018, S.solid));
+      h.add(ball(0.035, S.joint, P[0])); h.add(ball(0.031, S.joint, P[1])); h.add(ball(0.027, S.joint, P[2])); h.add(ball(0.027, S.glow, P[3])); }
     return h; };
   function rolyWalk(key) { const S = STYLES[key], g = G();
     // the frame under the shell, its ribs between the legs
     g.add(at(cbox(L * 0.84, 0.06, 0.28, 0.02, S.frame), -0.03, LIFT - 0.05, 0));
     for (let k = 0; k < 7; k++) g.add(at(cbox(0.03, 0.04, 0.34, 0.008, S.frame2), 0.47 - k * 0.15, LIFT - 0.07, 0));
     shell(g, S, plPt, P => [P.x, LIFT - 0.15, 0], { uAfter: i => (plB(i + 1) - plA(i)) / (plB(i + 1) - plA(i + 1)), span: i => plB(i) - plA(i) });
-    // the head, nose a little up and turned toward you; the far antenna raised, the near one reaching forward
+    // the head, a little raised and turned toward you; the far antenna raised, the near one reaching forward
     const hd = rolyHead(S, [[[0.03, 0.06, -0.1], [0.07, 0.17, -0.15], [0.12, 0.31, -0.2], [0.21, 0.39, -0.24]], [[0.03, 0.06, 0.1], [0.12, 0.13, 0.17], [0.26, 0.15, 0.25], [0.37, 0.09, 0.3]]]);
-    hd.scale.setScalar(1.25); hd.position.set(0.7, LIFT + 0.06, 0); hd.rotation.set(0, -0.22, 0.1); g.add(hd);
+    hd.scale.setScalar(1.12); hd.position.set(0.655, LIFT + 0.045, 0); hd.rotation.set(0, -0.12, 0.12); g.add(hd);
     // seven legs a side: out from under the flared skirt, the knee up and out, an armoured shin down to a claw
     for (const sg of [-1, 1]) for (let k = 0; k < 7; k++) { const x = 0.47 - k * 0.15, p = prof(x), zs = (W / 2) * p, lean = (3 - k) * 0.014;
       const hip = [x, LIFT - 0.04, sg * zs * 0.6], knee = [x + lean, 0.155, sg * (zs * 1.3 + 0.05)], foot = [x + lean * 2.4, 0.004, sg * (zs * 1.3 + 0.1)];
@@ -142,15 +137,17 @@ window.__draw = async function (PX, UH) {
       const gl = cyl(0.017, 0.017, 0.036, S.glow, 16); gl.quaternion.copy(nz.quaternion); gl.position.copy(V3(b)).addScaledVector(d, 0.003); g.add(gl); }
     return g; }
   function rolyWheel(key) { const S = STYLES[key], g = G(), R0 = 0.1, HW = 0.24, WW = 0.5, gap = 0.6, phG = 0.2, OV = 0.08, y0 = R0 + HW * 1.1 * 1.04 + 0.006;
-    // rolled up: the plates wrap round the roll's axis (side to side) into a wheel; head and tail meet at a seam, and the eyes look out of it
+    // rolled up: the plates wrap round the roll's axis (side to side) into a wheel; head and tail meet at a seam, closed by the head's armour
     const ws = [1, 1, 1, 1, 1, 0.5, 0.32], unit = (2 * Math.PI - gap) / ws.reduce((a, b) => a + b, 0), a0 = []; ws.reduce((a, w, i) => { a0[i] = a; return a + w * unit; }, phG + gap / 2);
     const wk = i => 1 + 0.012 * (NPL - i);
     const wPt = (i, u, v, km) => { const ph = a0[i] + u * (ws[i] * unit + OV), th = TH0 + v * (TH1 - TH0), k = wk(i) * (km || 1), rr = R0 + HW * Math.sin(th) * k * (1 + 0.04 * u);
       return [Math.cos(ph) * rr, y0 + Math.sin(ph) * rr, (WW / 2) * Math.cos(th) * k * flare(th)]; };
     const core = cyl(R0 + 0.13, R0 + 0.13, WW * 0.84, S.frame, 32); core.rotation.x = Math.PI / 2; g.add(at(core, 0, y0, 0));
     shell(g, S, wPt, P => [0, y0, P.z], { uAfter: i => (a0[i] + ws[i] * unit + OV - a0[i + 1]) / (ws[i + 1] * unit + OV), span: i => (ws[i] * unit + OV) * (R0 + HW) });
-    const hd = rolyHead(S, null), rh = R0 + 0.1; hd.scale.setScalar(0.9); hd.position.set(Math.cos(phG) * rh, y0 + Math.sin(phG) * rh, 0); hd.rotation.set(0, 0, phG); g.add(hd);
-    for (const sg of [-1, 1]) { const tp = R0 + HW * 0.9; g.add(ball(0.024, S.glow, [Math.cos(phG + 0.21) * tp, y0 + Math.sin(phG + 0.21) * tp, sg * 0.16])); }
+    const hs0 = phG - gap / 2 + OV - 0.06, hs1 = phG + gap / 2 + 0.06, hPt = (u, v, km) => { const ph = hs0 + u * (hs1 - hs0), th = TH0 + v * (TH1 - TH0), k = 0.995 * (km || 1), rr = R0 + HW * Math.sin(th) * k;
+      return [Math.cos(ph) * rr, y0 + Math.sin(ph) * rr, (WW / 2) * Math.cos(th) * k * flare(th)]; };
+    g.add(psurf(8, 32, hPt, dbl(S.solid)));
+    for (let j = 0; j < 4; j++) { const a = V3(hPt(0.15 + 0.7 * j / 4, 0.5, 1.06)), b = V3(hPt(0.15 + 0.7 * (j + 1) / 4, 0.5, 1.06)), m = a.clone().add(b).multiplyScalar(0.5); g.add(pbarN(arrOf(a), arrOf(b), 0.024, 0.009, S.keelTop || S.glow, new T.Vector3(m.x, m.y - y0, 0).normalize())); }
     // the hubs on its two sides: armoured discs, a lit cap (B a copper one), a ring of bolts
     for (const sg of [-1, 1]) { const hz = sg * 0.3; const hub = cyl(R0 + 0.06, R0 + 0.06, 0.05, S.dark, 32); hub.rotation.x = Math.PI / 2; g.add(at(hub, 0, y0, hz));
       const cap = cyl(R0 * 0.62, R0 * 0.62, 0.062, S.channel ? S.glow : S.joint, 24); cap.rotation.x = Math.PI / 2; g.add(at(cap, 0, y0, hz));
@@ -245,8 +242,8 @@ window.__draw = async function (PX, UH) {
     return cv.toDataURL('image/png'); };
   const TW = 470, TH = 380, tiles = [];
   for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · WALKING', cv: pshoot(rolyWalk(k), TW, TH, 0.1, -0.22) });
-  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · ROLLED UP', cv: pshoot(rolyWheel(k), TW, TH, 0.4, -0.35) });
-  const roly = psheet('THE ROLY-POLY, ROUND 3 · longer, seven plates, a face', 'Camera eyes under a frown, antennae with a pose, a core on its back; rolled up it is a wheel, its eyes looking out of the seam. Examples, not a design.', 3, 2, tiles, TW, TH);
+  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · ROLLED UP', cv: pshoot(rolyWheel(k), TW, TH, 0.4, 0.1) });
+  const roly = psheet('THE ROLY-POLY, ROUND 4 · longer, seven plates, no face', 'A rounded armoured head with no face, antennae with a pose, a core on its back, tail thrusters; rolled up, a closed armoured wheel. Examples, not a design.', 3, 2, tiles, TW, TH);
   const LW = 600, LH = 420, lt = ['A', 'B', 'C'].map(k => ({ label: STYLES[k].name, cv: pshoot(larvaMech(k), LW, LH, 0.06, 0.15) }));
   const lar = psheet('THE BOSS AS A MECH · a predaceous diving beetle larva', 'Armoured segments on a frame, lit joints, side pistons; a flat wedge head, six lenses a side; sickle jaws on hinges; paddle legs; twin tail spikes.', 3, 1, lt, LW, LH);
   return { roly, lar };

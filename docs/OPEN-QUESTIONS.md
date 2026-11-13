@@ -849,7 +849,7 @@ The tab rises from behind a follower's card on the squad strip when its Ultimate
 
 ## The electrical domain's breed: the roly-poly and its boss (the owner's direction, 2026-11-13; `DOMAINS.md` §2, 14)
 Examples shown (3D studies from `design/creatures/electric_breed_examples.js`, three rounds); both are mechs (the owner, 2026-11-13); nothing designed. Open:
-1. **The roly-poly's look:** A live seams, B insulator or C capacitor shell, on round 3's body (longer, seven plates, a face, a core on its back), or a change to the body. (The larva's look: **answered 2026-11-13, A**, live seams.)
+1. **The roly-poly's look:** A live seams, B insulator or C capacitor shell, on round 4's body (longer, seven plates, no eyes and no face, a core on its back), or a change to the body. (The larva's look: **answered 2026-11-13, A**, live seams.)
 2. **What it is:** an enemy race (as the ants are), or a follower you can recruit or breed as well?
 3. **Immune, read how:** a hit is part physical, part elemental (js/damage.js). Does immunity to Crushing and Slashing stop the whole hit, or only its physical part, so the elemental part still lands? And what is it weak to (every race has two or three weaknesses)?
 4. **Rolling up:** to shut itself against hits, to roll at you like a wheel, or only a look?
