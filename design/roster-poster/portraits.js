@@ -1,4 +1,4 @@
-// node design/roster-poster/portraits.js <out-dir> : renders every creature the game draws itself (the player, the follower egg in each element, the six predator species in
+// node design/roster-poster/portraits.js <out-dir> : renders every creature the game draws itself (the player, the follower egg in each element, the predator species in
 // every class) with the GAME'S OWN drawing code into <out-dir>/<id>.png (transparent, 360x360), for the roster sheet (roster-all.js). Needs playwright + chromium.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || '/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
@@ -12,6 +12,8 @@ const SIZE = 360;
   await p.goto('file://' + ROOT + '/game.html'); await p.waitForTimeout(2500);
   // the player's and the egg's 3D sheets load on first use: ask for them and wait, or the first picture would be the flat fallback
   await p.evaluate(() => { ['player', 'player_angry'].concat(['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].map(e => 'egg_' + e)).forEach(k => _hdImg(k)); }); await p.waitForTimeout(1500);
+  // the props sheets a creature is drawn from (the roly-poly's, js/rolypoly.js), the same way
+  await p.evaluate(() => { if (typeof _psImg === 'function') _psImg('rolypoly'); }); await p.waitForTimeout(800);
   const ids = await p.evaluate(() => {
     window.__portraits = {};
     tutorialMode = false; gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
@@ -32,16 +34,17 @@ const SIZE = 360;
       spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'brawler'; f.level = 5; f.health = f.maxHealth; f.dirX = 0.7; f.dirY = 0.7; f.walkCycle = 3; f.element = el; f.evolved = null; f.isFollower = true;
       shot('egg_' + el, 3.4, () => drawNPC(f, 0, 0, ctx)); ids.push('egg_' + el);
     }
-    // predators: every species, every class
+    // predators: every species, every class it has (the roly-poly has a scout, a striker and a tank only)
     for (const sp of Object.keys(SPECIES)) for (const cls of ['nymph', 'worker', 'scout', 'striker', 'tank', 'boss']) {
+      if (!SPECIES[sp][cls]) continue;
       const S = SPECIES[sp], def = (typeof getClassDef === 'function' ? getClassDef(S, cls) : S[cls]) || S.scout;
-      const a = new Predator(cls, Object.assign({}, def, { color: S.color }), 0, 0); a.team = 'red'; a.speciesName = sp; a.className = cls; a.dirX = 0.8; a.dirY = 0.6; a.walkCycle = 2; a.state = 'wander';
+      const a = new Predator(cls, Object.assign({}, def, { color: S.color }), 0, 0); a.team = 'red'; a.speciesName = sp; a.className = cls; a.dirX = 0.8; a.dirY = 0.6; if (sp === 'rolypoly') { a.dirX = 1; a.dirY = 0.2; }   /* (its sheet has eight facings: this one is its three-quarter view, js/rolypoly.js) */ a.walkCycle = 2; a.state = 'wander';
       const k = cls === 'boss' ? 1.9 : cls === 'tank' ? 2.6 : cls === 'nymph' ? 4.2 : 3.4;
       shot(sp + '_' + cls, k, () => drawNPC(a, 0, 0, ctx)); ids.push(sp + '_' + cls);
     }
     // what the sheet says about each (read from the game's own tables)
     const meta = { species: {}, forms: Object.values(EVOLUTIONS).map(e => ({ id: e.id, name: e.name, element: e.element, role: e.duty === 'worker' ? 'worker' : e.role === 'sniper' ? 'mage' : e.role, move: e.move, legacy: !!e.legacy })), machines: {} };
-    for (const sp of Object.keys(SPECIES)) { meta.species[sp] = { color: SPECIES[sp].color, rank: SPECIES[sp].rank, classes: {} }; for (const cls of ['nymph', 'worker', 'scout', 'striker', 'tank', 'boss']) { const d = SPECIES[sp][cls]; meta.species[sp].classes[cls] = { hp: d.health, power: d.power, special: !!d.abdomenAttack, range: d.rangeDamage || 0 }; } }
+    for (const sp of Object.keys(SPECIES)) { meta.species[sp] = { color: SPECIES[sp].color, rank: SPECIES[sp].rank, classes: {} }; for (const cls of ['nymph', 'worker', 'scout', 'striker', 'tank', 'boss']) { const d = SPECIES[sp][cls]; if (!d) continue; meta.species[sp].classes[cls] = { hp: d.health, power: d.power, special: !!d.abdomenAttack, range: d.rangeDamage || 0 }; } }
     window.__meta = meta;
     return ids;
   });

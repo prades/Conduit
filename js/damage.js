@@ -36,6 +36,9 @@ const DMG_RACE = {
     spider:   { weak: ["slashing", "piercing", "projectile"],   resist: ["elemental"] },
     mantis:   { weak: ["slashing", "piercing", "projectile"],   resist: ["crushing", "earthquake"] },
     moth:     { weak: ["elemental", "projectile"],              resist: ["crushing", "earthquake"] },
+    // the roly-poly (docs/ELECTRIC-BREED.md; the owner, 2026-11-13): IMMUNE to Crushing and Slashing (their physical part does 0; the elemental part lands) and resists
+    // Piercing; weak to Earthquake and Projectile (the agent's, approved with "Build it")
+    rolypoly: { weak: ["earthquake", "projectile"],             resist: ["piercing"], immune: ["crushing", "slashing"] },
 };
 // What each follower subclass is weak to and resists (docs/COMBAT.md §7.8)
 const DMG_SUBCLASS = {
@@ -79,7 +82,7 @@ const DMG_RETIRED_ALT = { bloom: "elemental" };
 // An egg hits with its scythe legs; an egg Mage's shot is a shot.
 const DMG_EGG = "slashing", DMG_EGG_SHOT = "projectile";
 // The enemies' attacks (docs/COMBAT.md §7.8): each race's bite and its special; a clone (the Mutator's) bites with Piercing
-const DMG_RACE_BITE = { ant: "slashing", beetle: "crushing", scorpion: "piercing", spider: "piercing", mantis: "slashing", moth: "crushing" };
+const DMG_RACE_BITE = { ant: "slashing", beetle: "crushing", scorpion: "piercing", spider: "piercing", mantis: "slashing", moth: "crushing", rolypoly: "crushing" };
 const DMG_ABILITY = { "MANDIBLE FRENZY": "slashing", "CARAPACE SLAM": "earthquake", "VENOM LANCE": "piercing", "BLADE FLURRY": "slashing" };
 
 // The hits, made once (an attack passes one of these; nothing is allocated per hit)
@@ -131,7 +134,7 @@ function dmgRow(t) {
     if (t.speciesName && DMG_RACE[t.speciesName]) return DMG_RACE[t.speciesName];
     return null;
 }
-function dmgRowMult(row, type) { return !row || !type ? 1 : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }
+function dmgRowMult(row, type) { return !row || !type ? 1 : row.immune && row.immune.indexOf(type) >= 0 ? 0 : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }   // (an immune type: ×0, the roly-poly's)
 // A form's lean (docs/COMBAT.md §7.7): Elemental species +1, spine-legged (the Crustacean's, renamed) and mollusk −1, a main attack typed Elemental +1 more; an egg none
 function dmgLean(f) {
     const id = dmgFormId(f); if (!id) return 0;
@@ -229,7 +232,7 @@ function _dmgWords(t, ptype, pm, el, em) {
     // (centred text: half its width, about 3.3 px a letter at 11 px, plus the gap), the physical part's word over the elemental part's; they drift up slowly (about 18 px
     // in their 40 frames), so they stay beside the body and never climb into the name plate
     const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dx: 28 + String(text).length * 3.3, dy: 10 + 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.015 }); if (typeof battleWordTag === "function") battleWordTag(floatingTexts[floatingTexts.length - 1], t); n++; };   // (over one of your followers, in a fight, it flies out of its card too: js/battleview.js)
-    if (ptype && pm !== 1) put(DMG_LABEL[ptype] + (pm > 1 ? " WEAK!" : " RESIST"), pm > 1);
+    if (ptype && pm !== 1) put(DMG_LABEL[ptype] + (pm > 1 ? " WEAK!" : pm === 0 ? " IMMUNE" : " RESIST"), pm > 1);
     const elName = (typeof ELEMENTS !== "undefined" && el && (ELEMENTS.find(e => e.id === el) || {}).label) || el;   // (its element's name: BLOOM's id is "blossom", build 2026-11-08j)
     if (el && em !== 1) put(String(elName).toUpperCase() + (em > 1 ? " WEAK!" : em === 0 ? " IMMUNE" : " RESIST"), em > 1);
 }

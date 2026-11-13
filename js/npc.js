@@ -53,6 +53,7 @@ function updateRTSNPC(actor) {
         if (actor.retreatUntil > (typeof frame !== "undefined" ? frame : 0)) { actor._shotWind = 0; actor._shotTarget = null; }   // (a retreat cancels it)
         else { if (--actor._shotWind <= 0) _mageShotFire(actor); return; }
     }
+    if (actor.curled > 0) return;   // CURLED UP (a roly-poly clone, js/rolypoly.js): in its wheel it does nothing until its timer is out
     if (actor.asleep > 0) return;   // ASLEEP (the Sleeping Potion's original takes your followers and clones too: js/combat.js applySleep): it does nothing until the sleep's timer, which updateStatusEffects runs down, is out
     if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {

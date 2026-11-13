@@ -28,10 +28,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__sewers = () => { const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); };`);
 
     group('THE TABLES (js/population.js)');
-    check('one race per kind of creature, each of a species the game has; the ants are the Nest\'s (the Toxic Ant Queen\'s colony in the Sewers), the other five on no table', () => {
+    check('one race per kind of creature, each of a species the game has; the ants are the Nest\'s (the Toxic Ant Queen\'s colony in the Sewers), the roly-polies the electrical domain\'s (build 2026-11-13aa), the other five on no table', () => {
         const r = J(`(function(){ const R = ENEMY_RACES; return { ids: Object.keys(R).join(), known: Object.values(R).every(x => x.species.every(s => !!SPECIES[s])), ant: R.ant.nest, nest: NESTS[R.ant.nest] && [NESTS[R.ant.nest].room, NESTS[R.ant.nest].queen, NESTS[R.ant.nest].label],
-            others: Object.keys(R).filter(k => k !== 'ant').filter(k => Object.values(SPAWN_TABLES).some(T => T.some(s => s.races.includes(k)))).length, species: Object.keys(SPECIES).filter(s => !speciesRace(s)).join() }; })()`);
-        same(r.ids, 'ant,beetle,spider,scorpion,mantis,moth', 'the races'); same(r.known, true, 'a race of a species the game does not have'); same(r.ant, 'sewer_nest', 'the ants\' Nest');
+            others: Object.keys(R).filter(k => k !== 'ant' && k !== 'rolypoly').filter(k => Object.values(SPAWN_TABLES).some(T => T.some(s => s.races.includes(k)))).length, rp: Object.keys(SPAWN_TABLES).filter(t => SPAWN_TABLES[t].some(s => s.races.includes('rolypoly'))).join(), species: Object.keys(SPECIES).filter(s => !speciesRace(s)).join() }; })()`);
+        same(r.ids, 'ant,beetle,spider,scorpion,mantis,moth,rolypoly', 'the races'); same(r.rp, 'electrical', 'the roly-polies\' table'); same(r.known, true, 'a race of a species the game does not have'); same(r.ant, 'sewer_nest', 'the ants\' Nest');
         same(r.nest.join(), 'sewers,sewer_cistern,THE NEST', 'the Nest: in the Sewers, the Toxic Ant Queen\'s'); same(r.others, 0, 'another race on a table'); same(r.species, '', 'a species of no race');
     });
     check('the arena\'s table: ants only, in the classes and the level band the arena had (scout 3, worker 3, striker 2, tank 1; level 2 to 4); the spawner reads them through (FP_SPAWN.species, .classes, .levels)', () => {

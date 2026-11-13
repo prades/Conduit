@@ -88,13 +88,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.steps, 4, 'steps'); same(r.levels, '-1,-2', 'between'); same(r.treads, '-1.8,-2.1,-2.4,-2.7,-3', 'the heights down the steps'); same(r.path, true, 'no way from the door into the circuitry');
         same(r.over, false, 'someone walks over the ledge'); same(r.kinds, 'deck_rail', 'the ledge\'s edge');
     });
-    check('the look: dark steel and blue light (look A), as dim as the Server Room, lit by the Server Room\'s relay; named on the zone tag; racks standing near the door; nothing lives there', () => {
+    check('the look: dark steel and blue light (look A), as dim as the Server Room, lit by the Server Room\'s relay; named on the zone tag; racks standing near the door; only the roly-polies live there (build 2026-11-13aa: js/facilityspawn.js FP_SPAWN_ELEC)', () => {
         const r = J(`(function(){ const st = ['elec_servers', 'elec_circuitry'].map(id => { const s = FP_ROOM_STYLE[id]; return id + ':' + !!s + ':' + !!(s && s.dark) + ':' + (FP_ROOM_DIM[id] || 1) + ':' + facilityStyleRoom(id) + ':' + facilityRoomName(id); });
             const relay = (FACILITY_MAP.relays || []).find(x => x.id === 'relay_lobby'), racks = FACILITY_MAP.props.filter(p => p.room === 'elec_servers' && p.kind === 'server_rack').length;
-            const spawns = JSON.stringify(typeof FP_SPAWN !== 'undefined' ? FP_SPAWN : {}) + JSON.stringify(typeof FP_SPAWN_SEWERS !== 'undefined' ? FP_SPAWN_SEWERS : {}) + JSON.stringify(typeof SPAWN_TABLES !== 'undefined' ? SPAWN_TABLES : {});
-            return { st, powers: relay.powers.join(), racks, lives: /elec_/.test(spawns) }; })()`);
+            const T = Object.assign({}, typeof SPAWN_TABLES !== 'undefined' ? SPAWN_TABLES : {}); delete T.electrical;   /* (the domain's own table: checked below) */
+            const spawns = JSON.stringify(typeof FP_SPAWN !== 'undefined' ? FP_SPAWN : {}) + JSON.stringify(typeof FP_SPAWN_SEWERS !== 'undefined' ? FP_SPAWN_SEWERS : {}) + JSON.stringify(T);
+            const E = typeof FP_SPAWN_ELEC !== 'undefined' ? FP_SPAWN_ELEC : null, W = E ? spawnWhat(E) : null;
+            return { st, powers: relay.powers.join(), racks, lives: /elec_|electrical/.test(spawns), rp: W ? [E.room, W.species.join(), W.element, Object.keys(W.classes).join()].join(' ') : null }; })()`);
         same(r.st.join(' | '), 'elec_servers:true:true:0.42:true:Deep Server Room | elec_circuitry:true:true:0.42:true:The Circuitry', 'the rooms\' look and names');
-        same(r.powers, 'front_lobby,security_room,elec_servers,elec_circuitry', 'the Server Room\'s relay'); same(r.racks, 6, 'racks standing'); same(r.lives, false, 'a spawner names the domain');
+        same(r.powers, 'front_lobby,security_room,elec_servers,elec_circuitry', 'the Server Room\'s relay'); same(r.racks, 6, 'racks standing'); same(r.lives, false, 'another spawner or table names the domain'); same(r.rp, 'electrical rolypoly electric scout,striker,tank', 'the domain\'s spawner: roly-polies, electric');
     });
 
     group('THE MAP');

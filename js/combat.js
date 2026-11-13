@@ -225,6 +225,7 @@ function updateStatusEffects() {
         if (actor.stunned > 0) actor.stunned--;
         if (actor.glitched > 0) actor.glitched--;
         if (actor.asleep > 0) actor.asleep--;
+        if ((actor.curled > 0 || actor.curlRest > 0) && typeof rolyTick === "function") rolyTick(actor);   // the roly-poly's CURL and the rest after it (js/rolypoly.js)
 
         // ── FREEZE (probabilistic defrost) ──
         if (actor.frozen) {

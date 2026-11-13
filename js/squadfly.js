@@ -222,7 +222,7 @@ function partyFlyRender(force) {
     const roleName = ({ brawler: "BRAWLER", sniper: "MAGE", camper: "TECHNICIAN" })[f.role === "hybrid" ? "brawler" : f.role] || "BRAWLER";
     const hp = Math.max(0, Math.round(f.health || 0)), mx = Math.max(1, Math.round(f.maxHealth || 1)), frac = Math.max(0, Math.min(1, hp / mx));
     _sfSet(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
-    _sfSet(E.sub, "textContent", clone ? String(f.speciesName || "").toUpperCase() + " " + String(f.className || "scout").toUpperCase() + " · LV " + (f.level || 1) + " · THE MUTATOR'S CLONE"
+    _sfSet(E.sub, "textContent", clone ? (typeof speciesLabel === "function" ? speciesLabel(f.speciesName) : String(f.speciesName || "").toUpperCase()) + " " + String(f.className || "scout").toUpperCase() + " · LV " + (f.level || 1) + " · THE MUTATOR'S CLONE"
                                         : (def ? def.label.toUpperCase() : "") + " · LV " + (f.level || 1) + " · " + roleName + (f.evolved ? " · EVOLVED" : ""));
     const tagList = clone ? [st ? st.text : "FOLLOWING", "CLONE", "SQUAD"] : [st ? st.text : "FOLLOWING", role, style, "SQUAD"], tags = tagList.join("|"), tcol = st ? st.col : "#19e6c1";
     if (_sfSig !== tags + "|" + tcol || force) {
@@ -243,7 +243,7 @@ function partyFlyRender(force) {
     _sfCardsDraw(E, f);   // its two equip card slots
     _sfSwapDraw(E, f);    // GRAVITY ENGINEER's SWAP, while that role is awake
     const ed = !clone && f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, ready = !ed || (typeof _evoImg === "function" && !!_evoImg(ed));   // (its form's sheet not here yet: drawn again when it is)
-    const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "") + "|" + ready;
+    const key = clone ? "clone|" + f.speciesName + "|" + f.className + "|" + (typeof rolyArtReady === "function" ? +rolyArtReady(f) : 1) : f.evolved + "|" + f.element + "|" + (f.id || "") + "|" + ready;
     if (E.thumbKey !== key && E.thumb) { if (clone && typeof partyCloneThumb === "function") { E.thumbKey = key; partyCloneThumb(E.thumb, f); } else if (typeof _ccThumb === "function") { E.thumbKey = key; _ccThumb(E.thumb, f); } }
     // IN THE SQUAD'S CORNER (since build 2026-11-10c; it stood beside the stack, over the world): the strip, the tool's orders and the dock give way to it (game.html body.flyOpen) and it stands where they stood,
     // its left on the orders' and its foot on theirs, as wide as game.html lets it (--sf-w: the landscape card, build 2026-11-12g). Since build 2026-11-12g CARDS, the PACK and the enemy card give way too (the

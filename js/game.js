@@ -471,7 +471,7 @@ function drawCloneRespawnTicker(cx, topY) {
         const secs  = Math.max(0, Math.ceil(e.timer / 60));   // (0, with e.waitPower: it waits for the Crystal's power, js/crystalpower.js)
         const total = e.totalTimer || CLONE_RESPAWN_FRAMES;
         const done  = Math.max(0, Math.min(1, 1 - e.timer / total));
-        const name  = e.isClone ? ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim() : ((typeof elementWord === "function" ? elementWord(e.element) : String(e.element || "")) + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
+        const name  = e.isClone ? ((typeof speciesLabel === "function" ? speciesLabel((e.speciesName || "clone")) : String((e.speciesName || "clone") || "").toUpperCase()) + " " + String(e.className || "").toUpperCase()).trim() : ((typeof elementWord === "function" ? elementWord(e.element) : String(e.element || "")) + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
 
         // A bar that fills as it comes back, so the wait is legible at a glance
         // and the number is the detail rather than the whole message.

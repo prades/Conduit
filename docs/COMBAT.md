@@ -159,18 +159,21 @@ Slashing, Piercing and Projectile (the owner's category 1); Crushing and Earthqu
 
 ### 7.3 What each race is weak to and resists
 
-Weak: ×1.3. Resists: ×0.7. Anything else: ×1. Every form of a race, nymph to boss, uses its race's row.
+Weak: ×1.3. Resists: ×0.7. Immune: ×0 (the roly-poly's only). Anything else: ×1. Every form of a race, nymph to boss, uses its race's row.
 
-| Race | Weak to | Resists |
-|---|---|---|
-| Ant | Crushing, Earthquake | Elemental |
-| Beetle | Crushing, Earthquake, Piercing ✦ | Slashing, Projectile |
-| Scorpion | Elemental | Slashing, Piercing, Projectile |
-| Spider | Slashing, Piercing, Projectile | Elemental |
-| Mantis | Slashing, Piercing, Projectile | Crushing, Earthquake |
-| Moth | Elemental, Projectile ✦ | Crushing, Earthquake |
+| Race | Weak to | Resists | Immune to |
+|---|---|---|---|
+| Ant | Crushing, Earthquake | Elemental | |
+| Beetle | Crushing, Earthquake, Piercing ✦ | Slashing, Projectile | |
+| Scorpion | Elemental | Slashing, Piercing, Projectile | |
+| Spider | Slashing, Piercing, Projectile | Elemental | |
+| Mantis | Slashing, Piercing, Projectile | Crushing, Earthquake | |
+| Moth | Elemental, Projectile ✦ | Crushing, Earthquake | |
+| Roly-poly ◆ | Earthquake, Projectile | Piercing | Crushing, Slashing |
 
 ✦ Added when the three categories became six: drills and spikes crack a beetle's shell; a moth is shot out of the air.
+
+◆ The electric breed (`ELECTRIC-BREED.md`; build `2026-11-13aa`). The owner, 2026-11-13: "immune to crushing, immune to slashing, and resistant to piercing"; asked how a hit's two parts meet it: "Physical half does 0": **the physical part of a Crushing or Slashing hit does nothing; its elemental part lands** (the word CRUSHING IMMUNE or SLASHING IMMUNE beside it). Its weaknesses are the agent's, approved with "Build it". The player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) do nothing to it.
 
 ### 7.4 The followers' attacks
 

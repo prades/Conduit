@@ -31,6 +31,15 @@ const FP_SPAWN_SEWERS = {
     wander: [3, 9],
     after: { cap: 1, every: 6000 },   // PROVISIONAL: after the purification (js/quests.js) "the major infestation clears; a few incidental insects may remain" (the archive): one straggler at a time, one every 100 s
 };
+// THE ELECTRICAL DOMAIN'S ROLY-POLIES (docs/ELECTRIC-BREED.md; build 2026-11-13aa): the electric breed (js/population.js SPAWN_TABLES.electrical), the same spawner with its own numbers. They come when the player is in
+// the domain (its rooms are one place, js/party.js "electrical": they roam both): a few the first time in (`start`), then one every `every` frames while the player is there, up to `cap` alive, on the floor the player
+// can walk. PROVISIONAL (the agent's): every number here.
+const FP_SPAWN_ELEC = {
+    room: "electrical", table: "electrical", every: 1500, first: 1500, start: 3, cap: 4, minFromPlayer: 9, spacing: 3,
+    get species() { return spawnWhat(this).species; }, get classes() { return spawnWhat(this).classes; }, get levels() { return spawnWhat(this).levels; },
+    get element() { return spawnWhat(this).element; },
+    wander: [3, 9],
+};
 
 function _fsArenaCells() {
     if (!_fp) return [];
@@ -122,6 +131,7 @@ function facilitySpawnTick() {
     // the scrap cases left on the floor go after a while
     if (f % 60 === 0 && _fp.items) _fp.items = _fp.items.filter(i => !(i.fp === "pickup" && i.temp && (i.taken || f > i.expires)));
     facilityBroodTick(f);
+    facilityElecTick(f);
     if (f < _fp.spawnAt) return;
     _fp.spawnAt = f + FP_SPAWN.every;
     if (facilityCreatures(FP_SPAWN.room).length < FP_SPAWN.cap) facilitySpawnCreature();
@@ -134,6 +144,14 @@ function facilityBroodTick(f) {
     if (f < _fp.broodAt) return;
     _fp.broodAt = f + every;
     if (facilityCreatures(P.room).length < cap) facilitySpawnCreature(null, null, P);
+}
+// the electrical domain's roly-polies: the first few the first time the player is down there, then one at a time while the player is there (none while away)
+function facilityElecTick(f) {
+    const P = FP_SPAWN_ELEC; if (typeof player === "undefined" || typeof partyRoomAt !== "function" || typeof partyPlaceOf !== "function" || partyPlaceOf(partyRoomAt(player.x, player.y)) !== P.room) return;
+    if (_fp.elecAt === undefined) { _fp.elecAt = f + P.first; for (let i = 0; i < P.start && facilityCreatures(P.room).length < P.cap; i++) facilitySpawnCreature(null, null, P); return; }
+    if (f < _fp.elecAt) return;
+    _fp.elecAt = f + P.every;
+    if (facilityCreatures(P.room).length < P.cap) facilitySpawnCreature(null, null, P);
 }
 // the purification is done (js/quests.js questTick): the major infestation clears: the brood beyond the stragglers' cap is gone (quietly: no kill, no drop, no XP), and the next comes slowly
 function facilityBroodThin() {

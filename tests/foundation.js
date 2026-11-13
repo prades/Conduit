@@ -146,8 +146,8 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
     });
 
     group('WHAT IS KEPT');
-    check('the Clone Bay still prices the six species from CLONE_COSTS (no synthetic entries), and the clone index cards are drawn from it', () => {
-        same(J('Object.keys(CLONE_COSTS).sort()').join(), 'ant,beetle,mantis,moth,scorpion,spider', 'the species'); ok(/function renderCloneCostIndex/.test(rd('js/clone.js')) && /cmCloneCosts/.test(rd('game.html')), 'the clone index');
+    check('the Clone Bay still prices the species from CLONE_COSTS (no synthetic entries; the roly-poly since build 2026-11-13aa), and the clone index cards are drawn from it', () => {
+        same(J('Object.keys(CLONE_COSTS).sort()').join(), 'ant,beetle,mantis,moth,rolypoly,scorpion,spider', 'the species'); ok(/function renderCloneCostIndex/.test(rd('js/clone.js')) && /cmCloneCosts/.test(rd('game.html')), 'the clone index');
         // a clone is a better version of its species: four times the health (an earlier ask), and more power (1.5 since a clone bites with it at all: docs/MUTATOR.md §2.1, a knob)
         const m = J('[CLONE_POWER_MULT, CLONE_HEALTH_MULT, MAX_CLONES > 0]'); ok(m[0] > 1, 'a clone\'s power is not over its species\': ' + m[0]); same(m[1], 4, 'a clone\'s health'); same(m[2], true, 'MAX_CLONES');
     });

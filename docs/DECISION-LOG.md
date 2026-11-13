@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The roly-poly built as proposed ("Build it")
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13aa`
+- **Status:** Approved (the owner's words); built
+- **Context:** the agent's five proposals (`ELECTRIC-BREED.md` §5 as it stood): its numbers (a beetle's health, speed and size, an ant's bite; a scout, a striker and a tank; a beetle's clone cost), a Crushing bite, the curl's rule (under half its health, 4 s, ×0.3, 12 s apart, not stunned or asleep), weak to Earthquake and Projectile, baked sprites; and one question: the player's own melee against it. The owner: **"Build it"**.
+- **Decision:** the five proposals as they stood, built in `2026-11-13aa`.
+- **Agent's readings, to confirm:** the melee question was not answered, so the rule is built as it reads (the lash and the gauntlet do nothing to it); its 12 s rest counts from uncurling; a glitch does not stop it curling; no race emblem on its card (an approved drawing would be needed); ROLY-POLY as its name on screen; the electrical domain's spawner's numbers.
+- **Affects:** see the changelog's entry; `ELECTRIC-BREED.md`.
+
 ## DECISION: The roly-poly: clone potential; Crushing and Slashing's physical half does 0; it curls up to defend
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)

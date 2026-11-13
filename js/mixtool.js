@@ -122,7 +122,7 @@ function mixToolFoeRow(foe) {
     const row = typeof dmgRow === "function" ? dmgRow(foe) : null; if (!row || !(row.weak.length || row.resist.length)) return "";
     const say = t => _mtEsc((typeof DMG_SHORT !== "undefined" && DMG_SHORT[t]) || String(t).toUpperCase());
     const part = (list, cls, label) => list.length ? '<b class="' + cls + '">' + label + '</b>' + list.map(t => '<i class="' + cls + '">' + say(t) + '</i>').join('') : '';
-    return '<span class="mt-foe-dmg">' + part(row.weak, 'wk', 'WEAK') + part(row.resist, 'rs', 'RESISTS') + '</span>';
+    return '<span class="mt-foe-dmg">' + part(row.weak, 'wk', 'WEAK') + part(row.resist, 'rs', 'RESISTS') + part(row.immune || [], 'im', 'IMMUNE') + '</span>';   // (IMMUNE: the roly-poly's, docs/ELECTRIC-BREED.md)
 }
 // The card: the picture, the race's emblem (Part 2: js/cardart.js cardArtRaceEmblemClass) and the kind (SPIDER STRIKER), level · element, the health bar with its numbers, the race's row and the button
 // strip (who goes); what it is in words is the dial's INFO. `fresh`: it has just popped up.

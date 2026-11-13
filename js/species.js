@@ -150,6 +150,19 @@ const SPECIES = {
         striker: { width:30, height:16, moveSpeed:0.018, health:340, power:80,  dnaDrops:4, shardDrop:22, reactionSpeed:9,  abdomenAttack:true, rangeDamage:32, abdomenCooldown:78 },
         tank:    { width:40, height:20, moveSpeed:0.011, health:560, power:102, dnaDrops:4, shardDrop:30, reactionSpeed:20, abdomenAttack:true, rangeDamage:55, abdomenCooldown:66 },
         boss:    { width:46, height:22, moveSpeed:0.007, health:2000, power:162, dnaDrops:9, shardDrop:65, reactionSpeed:7,  abdomenAttack:true, rangeDamage:92, abdomenCooldown:52 }
+    },
+    // ── The roly-poly — the electric breed's mech, of the electrical domain only (docs/ELECTRIC-BREED.md; the owner, 2026-11-13) ──
+    // Always electric. A scout, a striker and a tank (no nymph, worker or boss of its own: its boss is the diving beetle larva, not designed yet). PROVISIONAL (the agent's,
+    // approved with "Build it"): a beetle's health, speed and size, an ant's bite, a beetle's drops. Drawn from baked sprites (js/rolypoly.js), not js/bugs3d.js.
+    rolypoly: {
+        rank: 2,
+        color: "#f2b13a",
+        label: "ROLY-POLY",   // its name on screen (speciesLabel); the in-game name is open (docs/ELECTRIC-BREED.md §11)
+        element: "electric",
+        only: "electrical",
+        scout:   { width:26, height:12, moveSpeed:0.018, health:180, power:18, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
+        striker: { width:32, height:14, moveSpeed:0.015, health:300, power:27, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
+        tank:    { width:42, height:18, moveSpeed:0.010, health:540, power:38, dnaDrops:2, shardDrop:14, reactionSpeed:22 }
     }
 };
 
@@ -183,6 +196,9 @@ function getClassDef(speciesDef, className) {
     };
 }
 
+// A species' name on screen: its label (the roly-poly's ROLY-POLY) or its id in capitals (ANT, BEETLE...)
+function speciesLabel(sp) { const S = sp && typeof SPECIES !== "undefined" ? SPECIES[sp] : null; return (S && S.label) || String(sp || "").toUpperCase(); }
+
 // ── Clone cost table ─────────────────────────────────────
 // A clone costs SHARDS and DNA SPLICES. It used to cost splices and FOLLOWERS —
 // up to five of them, killed outright at the Crystal — which made the whole
@@ -208,6 +224,7 @@ const CLONE_COSTS = {
     scorpion: { shards:10, splicesNeeded:8  },
     spider:   { shards:12, splicesNeeded:10 },
     moth:     { shards:14, splicesNeeded:12 },
+    rolypoly: { shards:7,  splicesNeeded:5  },   // (a beetle's: PROVISIONAL, docs/ELECTRIC-BREED.md)
 };
 
 // The one place the price is decided. An unknown species costs the maximum

@@ -73,6 +73,7 @@ const SPECIES_ABILITY = {
 
 function resolveAbilityKey(speciesName, className) {
     if (className === 'worker' || className === 'nymph') return null;
+    if (speciesName === 'rolypoly') return null;   // its one special is the CURL, every class's (js/rolypoly.js; docs/ELECTRIC-BREED.md): no LEAP for its scout
     if (className === 'scout') return 'LEAP';
     return SPECIES_ABILITY[speciesName] || null;
 }
