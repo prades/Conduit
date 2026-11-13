@@ -290,7 +290,9 @@ The agent's reading, drawn in `design/maps/westlab-draft.js` (three plan sheets;
 - **The furniture is off the open edges:** the two couches, the low table and the plants stand a row in from the north edge and two columns in from the east (the east couch still turned). The whiteboard on its stand stays in the north-west corner at the open north edge; the beanbags and the rug are where they were.
 - **Light and power go with the hallway**, as the Stair Room's do: the lounge shares the hallway's light (`_fpLightKey`) and is on the **Hallway Relay** (it was on the Lab Relay), so the open floor lights up and goes dark as one.
 
-## The catwalks and the observation deck swap sides (decided 2026-11-11; not built)
+## The catwalks and the observation deck swap sides (decided 2026-11-11; not built; **superseded 2026-11-13: the catwalks stay**)
+
+**Superseded** (the owner, 2026-11-13: **"we can keep the catwalks where they're at"**): the catwalks stay on the arena's east side and the Observation Deck on its west; no swap, no layout draft. What was asked instead was REEF working on the catwalks' east side (`TECHNICIANS.md`, "REEF": a climb only, and a tap on the catwalks' deck by its lip is the deck's, build `2026-11-13t`). The decision of 2026-11-11, kept as history:
 
 The owner, 2026-11-11: "I also kind of want to move the catwalks where the observatory is, and the armory could stay where it's at, but this would make it a lot easier for the player to understand how to climb things"; asked what becomes of the deck, chose **"Swap them"**: the catwalks go to the arena's **west** side, where the Observation Deck is now, and the **Observation Deck** goes to the **east** side, where the catwalks are now. **The Armory stays where it is.** Why: the climbing (a REEF climb, a Kinetic Launcher throw) is easier to understand with the catwalks there.
 

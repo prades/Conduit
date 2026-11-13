@@ -1,6 +1,7 @@
-// REEF'S TIP's two pictures (js/techabilities.js techReefTipShow; the owner's pick "C", 2026-11-12), made from the real game: an outcrop on the arena floor, an ant held at it and a hurt follower beside it;
-// and a climb up the Catwalk Spur's west face (seen clear of the catwalks), the squad at its foot. Each is cut from a screenshot at twice the size (the tip shows them 300 x 136; the climb's wider cut is shrunk to fit).
-//   node design/hud/reef_tip.js   ->  img/hud/reef_tip_outcrop.png, img/hud/reef_tip_climb.png   (then node tools/images.js, or the stamp, for their WebP copies and addresses)
+// REEF'S TIP's picture (js/techabilities.js techReefTipShow; the owner's pick "C", 2026-11-12), made from the real game: a climb up the Catwalk Spur's west face (seen clear of the catwalks), the
+// squad at its foot, cut from a screenshot at twice the size (the tip shows it 300 x 136; the wider cut is shrunk to fit). (It made a second picture, an outcrop, until build 2026-11-13t: REEF is a
+// climb only now, the owner: "Reef can't be used anywhere else besides as a platform".)
+//   node design/hud/reef_tip.js   ->  img/hud/reef_tip_climb.png   (then node tools/images.js, or the stamp, for its WebP copy and address)
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
 const path = require('path'), ROOT = path.join(__dirname, '..', '..'), W = 300, H = 136;
 (async () => {
@@ -21,20 +22,7 @@ const path = require('path'), ROOT = path.join(__dirname, '..', '..'), W = 300, 
         window.__css = (x, y) => { const q = _techScr(x, y), k = canvas.clientWidth / canvas.width; return { x: q.x * k, y: q.y * k }; };   // (a world point on the page, css px)
     });
     const cut = async (name, at, dy, k) => { const c = await ev(([x, y]) => __css(x, y), at), w = Math.round(W * (k || 1)), h = Math.round(H * (k || 1)); await page.screenshot({ path: path.join(ROOT, 'img', 'hud', name + '.png'), clip: { x: Math.round(c.x - w / 2), y: Math.round(c.y - h / 2 + dy), width: w, height: h } }); };
-    // 1 · AN OUTCROP: a clear stretch of the arena's floor, the nearest such to its middle
-    const spot = await ev(async () => {
-        const wait = ms => new Promise(r => setTimeout(r, ms)), cs = partyRoomCells('arena'); let mx = 0, my = 0; cs.forEach(c => { mx += c[0]; my += c[1]; }); mx /= cs.length; my /= cs.length; let best = null;
-        for (const c of cs) { let ok = true; for (let dx = -3; dx <= 3 && ok; dx++) for (let dy = -3; dy <= 3 && ok; dy++) if (!facilityStandOk(c[0] + dx, c[1] + dy)) ok = false; if (!ok) continue; const d = Math.hypot(c[0] - mx, c[1] - my); if (!best || d < best.d) best = { x: c[0], y: c[1], d }; }
-        const t = followers.find(f => f.evolved === 'coralcrab'), mem = partyMembers().filter(q => q !== t), s = best;
-        __put(player, s.x + 3.4, s.y + 3.4); __put(t, s.x - 1.3, s.y + 1.5); mem.forEach((m, i) => __put(m, s.x + 0.7 + i * 2.3, s.y + 0.9 + i * 2.6));   // (you off to the side: the camera's middle, out of the picture)
-        t._abReadyAt = 0; await wait(300); techReefAt(t, { x: s.x, y: s.y });
-        const ant = spawnCreature({ species: 'ant', className: 'worker', x: s.x - 1.1, y: s.y - 1.1, level: 1 }); __keep.add(ant); ant.update = () => {}; __put(ant, s.x - 0.85, s.y - 0.85);
-        if (mem[0]) mem[0].health = Math.round(mem[0].maxHealth * 0.55);
-        await wait(1500); const O = techReefs[techReefs.length - 1]; if (O) O.pressedAt = _techFrame(); __quiet(true); await wait(80);
-        return { x: s.x, y: s.y };
-    });
-    await cut('reef_tip_outcrop', [spot.x, spot.y], -24);
-    // 2 · A CLIMB up the Catwalk Spur's west face, the player beside its foot, the squad near
+    // A CLIMB up the Catwalk Spur's west face, the player beside its foot, the squad near
     const climb = await ev(async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms)), t = followers.find(f => f.evolved === 'coralcrab'), mem = partyMembers().filter(q => q !== t);
         __quiet(false); for (const a of __keep) a.dead = true; __keep.clear(); techReset();
@@ -46,6 +34,6 @@ const path = require('path'), ROOT = path.join(__dirname, '..', '..'), W = 300, 
     });
     if (!climb.ok) { console.log('no climb:', climb.why); await browser.close(); process.exit(1); }
     await cut('reef_tip_climb', climb.at, -34, 1.45);
-    console.log('wrote img/hud/reef_tip_outcrop.png, img/hud/reef_tip_climb.png', errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
+    console.log('wrote img/hud/reef_tip_climb.png', errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
     await browser.close();
 })();

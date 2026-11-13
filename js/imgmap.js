@@ -146,7 +146,6 @@ const IMG_MAP = {
     "img/hud/icon_cog.png": "img/hud/icon_cog.webp?v=b0b37ead",
     "img/hud/icon_map.png": "img/hud/icon_map.webp?v=1a348b57",
     "img/hud/reef_tip_climb.png": "img/hud/reef_tip_climb.webp?v=cb3f6240",
-    "img/hud/reef_tip_outcrop.png": "img/hud/reef_tip_outcrop.webp?v=8239cfb7",
     "img/props/bridge.png": "img/props/bridge.webp?v=34076fb3",
     "img/props/cargo.png": "img/props/cargo.webp?v=961c18f8",
     "img/props/chest.png": "img/props/chest.webp?v=21df3a3c",

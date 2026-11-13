@@ -8,7 +8,8 @@
 //     Cooldowns are not saved (none are).
 //   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the TOXIC PODS (the Blight Spider's pools until build 2026-11-06k), FLUX FLUX MOVE (each below; FLUX MOVE's rules: js/fluxmove.js). docs/TECHNICIANS.md
 //     has their numbers, which were given and which are provisional, and what is still to be decided. (The flux technician's TELEGRAB is retired: the owner, 2026-11-06, "Retire it now"; docs/FLUX-MOVEMENT.md.)
-//   THE SEVENTH (build 2026-11-08m): BLOOM the coral crab's REEF: an outcrop of rock and crystal in a fight, a climb up onto high ground outside one (below; docs/CONVERSION.md §2).
+//   THE SEVENTH (build 2026-11-08m): BLOOM the coral crab's REEF: a climb up onto high ground (below; docs/CONVERSION.md §2). Since build 2026-11-13t only that (the owner: "Reef can't be used
+//   anywhere else besides as a platform"); its outcrop in a fight is gone, and REEF PILLAR, its Ultimate, keeps the outcrops' rock.
 //   AIMS: what a chip asks the player to pick, in order: a follower, an enemy (on the screen, or its card), a spot on the floor, an object and then its new place (FLUX MOVE), a path (FAULTLINE).
 //
 // THE KINETIC LAUNCHER. ASKED: "Combat Mode — Launch a Follower at an Enemy [...] Secret Access Mode — Launch Toward Hidden Areas [...] The first designated secret destination is the Arena Catwalk [...] the broken section permits travel
@@ -91,14 +92,9 @@ const TECH_AB = {
     },
     // REEF (BLOOM's, the coral crab's; build 2026-11-08m): the owner, 2026-11-08, on its fight numbers: "You pick, provisional"
     reef: {
-        cooldown: 3600,     // 60 s for an outcrop or a climb (designed: "the usual 60-second wait")
-        life: 1200,         // 20 s: an outcrop (designed)
-        radius: 0.8,        // PROVISIONAL: tiles: an outcrop's body (enemies are held outside it)
-        body: 0.3,          // tiles: how near its edge a creature's middle comes
-        mend: 0.01,         // PROVISIONAL: the share of its maximum health a follower beside it is mended each beat (SEEDFALL's)
-        every: 30,          // PROVISIONAL: frames between beats: every half second
-        mendReach: 1.5,     // PROVISIONAL: tiles past its edge a follower is "beside it"
-        shards: 16,         // frames its shards fly before the rock and crystal grow
+        cooldown: 3600,     // 60 s for a climb (designed: "the usual 60-second wait"). (Its outcrop's numbers, 20 s and the rest, went with the outcrop in build 2026-11-13t: REEF is a climb only.)
+        body: 0.3,          // tiles: how near the edge of REEF PILLAR's rock a creature's middle comes
+        shards: 16,         // frames its shards fly before the rock and crystal grow (a climb's; REEF PILLAR's)
         rise: 1,            // tiles of height, at least, between the two floors of a climb
         search: 6,          // tiles: how far from the tap the edge of the high ground may be
         foot: 3,            // tiles out from the low floor's edge the climb's foot is, where the camera sees it (the catwalks' ledge lands as far out); nearer where the floor stops
@@ -147,7 +143,7 @@ const TECH_ABILITIES = {
     flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
                 ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
     blossom:  { id: "reef", name: "REEF", short: "REEF", icon: "◆", col: "#ff7ab8", aim: ["spot"], use: (f, p) => techReefAt(f, p.spot),
-                ask: () => "TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB" },   // (BLOOM's: the coral crab's, as an egg and evolved alike; the words since build 2026-11-12v, the owner's pick "A": the ledges it can climb glow while it is aimed)
+                ask: () => "TAP A GLOWING LEDGE: A CLIMB" },   // (BLOOM's: the coral crab's, as an egg and evolved alike; the ledges it can climb glow while it is aimed, the owner's pick "A", build 2026-11-12v; a climb only since build 2026-11-13t)
 };
 // A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
 // wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
@@ -734,8 +730,9 @@ function techBlightApply(d) {
 // ── REEF (BLOOM; the coral crab's, build 2026-11-08m: docs/CONVERSION.md §2, docs/TECHNICIANS.md) ──
 // ASKED: "Coral crab into the game next" (its look No. 914, approved). Its rules are the owner's (2026-11-02, 2026-11-08): REEF fires little shards, and rock and crystal grow where they land
 // ("Make reef grow rock and crystal").
-//   IN A FIGHT: the ◆ chip, then a spot of floor it can see on its own stretch of floor: an OUTCROP of rock and crystal there for TECH_AB.reef.life (20 s). Enemies cannot pass it (techShieldKeep holds them
-//     outside it; one standing where it grows is put out beside it); your followers beside it are mended every `every` frames; you and your followers walk over it ("it can be stood on"). It hurts no one.
+//   IN A FIGHT (builds 2026-11-08m to 2026-11-13s; history): a tap on a spot of its own floor grew an OUTCROP of rock and crystal there for 20 s that enemies could not pass and that mended your
+//     followers beside it. Gone in build 2026-11-13t (the owner: "We have to make it to where Reef can't be used anywhere else besides as a platform"): REEF makes climbs only, and a tap on its own floor
+//     takes the ledge nearest the tap (techReefClimbPlan). The outcrops' rock below (techReefs: held at its edge, shots stopped, the mending) is REEF PILLAR's now.
 //   GETTING AROUND (the connected rule, "every Technician": no marked sites): the ◆ chip, then HIGH GROUND across an edge from its floor (or, from up there, the floor below): a CLIMB of rock and crystal up
 //     the edge's face. It goes wherever the map has high ground over floor: an edge between two stretches of floor, one at least `rise` tiles of height above the other, with nothing between them but an
 //     open face (REEF_FACES: what the map draws as the open face of a raised floor, the railing frame under the catwalks and the cliff under a deck; a plain wall is a room walled in) and no glass ("No, the
@@ -743,27 +740,18 @@ function techBlightApply(d) {
 //     followers go up it and back down ("Player and followers", "Both ways"): walk to an end (a walk that ends on it), or tap its tag, and you are taken over it to the other end; a follower on the other
 //     stretch from you goes over it to rejoin you. Creatures never do. It stands until the same coral crab makes its next climb ("Until the next one": one each) and is saved, as the ice bridges are.
 //     Not from an ice bridge ("No"): neither end may be on ice.
-//   ITS NUMBERS: TECH_AB.reef (the owner: "You pick, provisional"). REEF PILLAR (the coral crab's Ultimate, js/elements.js FORM_ULTIMATES.coralcrab) grows a row of these outcrops: techReefPillar.
-let techReefs = [];    // the outcrops standing: { id, by, parts: [{ x, y, r }] (one; REEF PILLAR's three), x, y (the middle), from (where the shards flew from), t0 (they land: it grows), until, mend, mendReach, every, pillar }
+//   ITS NUMBERS: TECH_AB.reef (the owner: "You pick, provisional"). REEF PILLAR (the coral crab's Ultimate, js/elements.js FORM_ULTIMATES.coralcrab) grows a row of outcrops of rock: techReefPillar.
+let techReefs = [];    // the outcrops standing (REEF PILLAR's): { id, by, parts: [{ x, y, r }] (its three spikes), x, y (the middle), from (where the shards flew from), t0 (they land: it grows), until, mend, mendReach, every, pillar }
 let techClimbs = [];   // the climbs standing: { id, by, foot: [x, y], top: [x, y], edge: [x, y] (on the high ground's edge), n: [nx, ny] (from the low floor to the high), from, t0 }
 let _techReefN = 0;
 let techSpikes = [];  // crystal spikes bursting up from the floor a moment (STONEPETAL's STAKE RING, js/evolution.js stakeRing): { x, y, t0, life, h, lean, seed }; drawn among everything else
 const REEF_FACES = new Set(["railing_wall", "deck_wall"]);   // the edges drawn as a raised floor's open face (js/facilitymap.js edge_kinds: the arena's under the catwalks and under the observation deck)
+// REEF's tap (a climb only, since build 2026-11-13t): the climb at the ledge nearest the tap (techReefClimbPlan); where there is none in reach, nothing grows, nothing waits and the aim stays up
 function techReefAt(tech, spot) {
-    if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
-    const tc = _techComp(tech.x, tech.y), sc = _techComp(spot.x, spot.y);
-    if (sc === undefined) return { ok: false, why: "TAP THE FLOOR", again: true };
-    if (tc !== undefined && sc !== tc) return techReefClimbAt(tech, spot);   // another stretch of floor (high ground, or the floor below it): a climb
-    const x = Math.round(spot.x), y = Math.round(spot.y);
-    if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) return { ok: false, why: "TAP THE FLOOR", again: true };
-    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, x, y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
-    const R = TECH_AB.reef, f0 = _techFrame();
-    _techReefGrow(tech, [{ x, y, r: R.radius }], { life: R.life, mend: R.mend, mendReach: R.mendReach, every: R.every });
-    tech._abReadyAt = f0 + techCooldown(tech, R.cooldown);
-    _techSay("◆ REEF · AN OUTCROP OF ROCK AND CRYSTAL · " + Math.round(R.life / 60) + " S", "#ff7ab8");
-    return { ok: true };
+    if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP A GLOWING LEDGE", again: true };
+    return techReefClimbAt(tech, spot);
 }
-// an outcrop (or a row of them): its shards fly from `by` and it grows when they land (_techReefTick)
+// an outcrop (a row of them: REEF PILLAR's): its shards fly from `by` and it grows when they land (_techReefTick)
 function _techReefGrow(by, parts, o) {
     const t0 = _techFrame() + TECH_AB.reef.shards, O = { id: ++_techReefN, by: by || null, parts, x: parts[0].x, y: parts[0].y, from: by ? [by.x, by.y] : null, t0, until: t0 + o.life, mend: o.mend, mendReach: o.mendReach, every: o.every, pillar: !!o.pillar, grown: false };
     techReefs.push(O);
@@ -864,12 +852,12 @@ function techReefPillar(by, foe) {
 
 // ── REEF's climbs: where they can go, making one, and going over one ──
 function _techSegDist(a, b, x, y) { const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)) : 0; return Math.hypot(a[0] + dx * t - x, a[1] + dy * t - y); }
-// the climb at a point (qx, qy) of a wall piece, between the stretches `ca` (the technician's) and `cb` (the one tapped): { foot, top, edge, n, lo, hi } or null
+// the climb at a point (qx, qy) of a wall piece, between the stretches `ca` (the technician's) and `cb` (the one tapped; null: any other): { foot, top, edge, n, lo, hi } or null
 function _techReefEdgeAt(w, qx, qy, ca, cb) {
     const R = TECH_AB.reef, F = _fp.F, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, side = [];
     for (const s of [-1, 1]) { let P = null; for (let k = 0.3; k <= 2.5 + 1e-9; k += 0.25) { const x = qx + nx * s * k, y = qy + ny * s * k; if (facilityStandOk(x, y)) { P = [Math.round(x), Math.round(y)]; break; } } if (!P) return null; side.push(P); }   // the floor's first tile either side
-    const c0 = _techComp(side[0][0], side[0][1]), c1 = _techComp(side[1][0], side[1][1]);
-    if (c0 === undefined || c1 === undefined || c0 === c1 || !((c0 === ca && c1 === cb) || (c0 === cb && c1 === ca))) return null;   // (two stretches, the technician's and the one tapped: one stretch has its own way)
+    const c0 = _techComp(side[0][0], side[0][1]), c1 = _techComp(side[1][0], side[1][1]), pair = cb === null ? (c0 === ca || c1 === ca) : ((c0 === ca && c1 === cb) || (c0 === cb && c1 === ca));
+    if (c0 === undefined || c1 === undefined || c0 === c1 || !pair) return null;   // (two stretches, the technician's and the one tapped: one stretch has its own way)
     const h0 = facilityHeightAt(side[0][0], side[0][1], F), h1 = facilityHeightAt(side[1][0], side[1][1], F); if (Math.abs(h1 - h0) < R.rise) return null;
     const lo = h0 < h1 ? 0 : 1, P0 = side[lo], P1 = side[1 - lo], s = lo === 0 ? 1 : -1, cLo = lo === 0 ? c0 : c1, cHi = lo === 0 ? c1 : c0;   // (s: the normal's way from the low floor to the high)
     if (facilityIced(F, P0[0], P0[1]) || facilityIced(F, P1[0], P1[1])) return null;   // ("No": an ice bridge is not floor to climb from)
@@ -881,11 +869,12 @@ function _techReefEdgeAt(w, qx, qy, ca, cb) {
     if (!foot) return null;
     return { foot, top: P1.slice(), edge: [qx, qy], n: [nx * s, ny * s], lo: cLo, hi: cHi };
 }
-// THE PLAN: of the edges within `search` tiles of the tap that join the technician's floor to the floor tapped, the climb nearest the tap whose end on the technician's floor it can see
+// THE PLAN: of the edges within `search` tiles of the tap that join the technician's floor to the floor tapped, the climb nearest the tap whose end on the technician's floor it can see. A tap on its
+// own floor, on no floor (a prop, a wall), or on a floor no edge in reach joins to its own, takes the nearest edge to any other floor (build 2026-11-13t: REEF is a climb only, so a tap by a ledge is the ledge's)
 function techReefClimbPlan(tech, spot) {
     const R = TECH_AB.reef, F = typeof _fp !== "undefined" && _fp ? _fp.F : null; if (!F || typeof facilityStandOk !== "function") return { ok: false, why: "NO HIGH GROUND TO CLIMB THERE", again: true };
-    const ca = _techComp(tech.x, tech.y), cb = _techComp(spot.x, spot.y); let best = null, unseen = false;
-    for (const w of F.walls) {
+    const ca = _techComp(tech.x, tech.y), sc = _techComp(spot.x, spot.y); let best = null, unseen = false;
+    const scan = cb => { for (const w of F.walls) {
         if (w.window || _techSegDist(w.a, w.b, spot.x, spot.y) > R.search) continue;
         const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy); if (L < 0.1) continue;
         const n = Math.max(1, Math.round(L / 0.5));
@@ -897,7 +886,9 @@ function techReefClimbPlan(tech, spot) {
             if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, own[0], own[1])) { unseen = true; continue; }
             best = Object.assign(e, { d });
         }
-    }
+    } };
+    if (sc !== undefined && sc !== ca) scan(sc);   // the floor tapped, when it is another (high ground, or the floor below it)
+    if (!best) scan(null);                         // else the nearest ledge to any other
     if (!best) return { ok: false, why: unseen ? "THE TECHNICIAN CANNOT SEE THE WAY UP THERE" : "NO HIGH GROUND TO CLIMB THERE", again: true };
     return Object.assign({ ok: true }, best);
 }
@@ -1417,6 +1408,22 @@ function techScreenToWorld(ex, ey) {
     const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPickLift === "function" ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
     return { x: (dy / TILE_H + dx / TILE_W) / 2 + player.visualX, y: (dy / TILE_H - dx / TILE_W) / 2 + player.visualY };
 }
+// REEF's tap and its ghost: the floor DRAWN at a point of the screen, the front one (build 2026-11-13t; the owner: "It works on the north side catwalk, but it does not work on the ... east side at
+// all"). A high floor is drawn over the low floor behind it, and the pick above settles from the low floor up, so a tap on the catwalks' deck within about 2.5 tiles of its lip, where its ledge glows, was
+// read as the arena floor hidden behind the deck (the Catwalk Spur, 1.8 tiles up, not 5, was read right). This tries each floor height the map has and takes the highest floor drawn there (a floor
+// is drawn over every lower one behind it); none (a ramp): the pick above.
+function techReefScreenToWorld(ex, ey) {
+    const base = techScreenToWorld(ex, ey), F = typeof _fp !== "undefined" && _fp ? _fp.F : null;
+    if (!F || !F.levelH || typeof facilityLiftRel !== "function" || typeof facilityRoomAt !== "function") return base;
+    if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
+    const dx = ex - canvas.width / 2, cam = typeof _fpCam === "number" ? _fpCam : 0, el = typeof FP_ELEV_PX === "number" ? FP_ELEV_PX : 34; let best = null, top = -Infinity;
+    for (const h of F.levelH.values()) {
+        const L = h * el - cam; if (L <= top) continue;
+        const dy = ey + L - canvas.height / 2 - TILE_H, x = (dy / TILE_H + dx / TILE_W) / 2 + player.visualX, y = (dy / TILE_H - dx / TILE_W) / 2 + player.visualY;
+        if (facilityRoomAt(x, y, F) && Math.abs(facilityLiftRel(x, y) - L) < 0.5) { best = { x, y }; top = L; }
+    }
+    return best || base;
+}
 // a tap on the world while aiming (js/input.js asks first): always the aim's
 function techAimTap(x, y) {
     if (!techAim) return false;
@@ -1431,7 +1438,7 @@ function techAimTap(x, y) {
         const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e);   // (the drill's says why it is refused)
         _techSay(drill ? "TAP THE RUBBLE" : "TAP AN ENEMY", "#8aa0c8"); return true;
     }
-    if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
+    if (need === "spot") return techAimPickSpot(techAim.ab && techAim.ab.id === "reef" ? techReefScreenToWorld(x, y) : techScreenToWorld(x, y));   // (REEF's: the floor drawn in front)
     if (need === "object") return techFluxPick(typeof fluxPropAtScreen === "function" ? fluxPropAtScreen(x, y) : null);   // FLUX MOVE: the object
     if (need === "place") {   // FLUX MOVE: its place (a tap on another movable object, off the reach, picks that one instead)
         const t = fluxTileAtScreen(x, y), A = techAim, R = A.flux.s ? fluxRegion(A.flux.s) : null;
@@ -1515,9 +1522,9 @@ function techAbilityInfo(f) {
     }
     if (ab.id === "reef") {
         const R = TECH_AB.reef, mine = techClimbs.find(c => c.by === f);
-        wait[0][1] = Math.round(R.cooldown / 60) + " s, an outcrop or a climb";
-        return { h: "ABILITY · " + ab.name, note: "From the ◆ chip on its squad card: it fires little shards, and rock and crystal grow where they land. On a spot of floor it can see: an outcrop that enemies cannot pass, mending your followers beside it. On high ground across an edge from it: a climb up the edge's face that you and your followers go up and back down, standing until its next one (not through glass, not from an ice bridge).",
-                 rows: [["OUTCROP", Math.round(R.life / 60) + " s, " + Math.round(R.radius * 2 * 10) / 10 + " tiles across"], ["MENDS", Math.round(R.mend * 100) + "% of a follower's health every " + (R.every / 60) + " s, within " + R.mendReach + " tiles of it"], ["CLIMB", mine ? "up to the " + _techClimbName(mine) : "none standing"]].concat(wait) };
+        wait[0][1] = Math.round(R.cooldown / 60) + " s, for a climb";
+        return { h: "ABILITY · " + ab.name, note: "From the ◆ chip on its squad card: the ledges it can climb glow. Tap one: it fires little shards, and rock and crystal grow up the ledge's face, a climb that you and your followers go up and back down, standing until its next one (not through glass, not from an ice bridge).",
+                 rows: [["CLIMB", mine ? "up to the " + _techClimbName(mine) : "none standing"]].concat(wait) };
     }
     if (ab.id === "flux_move") {
         wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
@@ -1984,11 +1991,12 @@ function techDrawOverlay() {
     g.restore();
 }
 // ── REEF'S AIM (build 2026-11-12v; the owner, of the two drafts, "A and C"; A is this): while REEF is aimed, every ledge its technician can climb from where it stands glows, its face lit from the lip down
-// with chevrons climbing it and a "◆ CLIMB UP HERE" tag (DOWN from up there), and the ghost of what a tap would do follows the finger: on its own floor an outcrop's ghost with its ring and what it does; at a
-// ledge the climb it would grow there, faint, with where it goes; or why not. (The press and the drag move it: js/input.js through techAimPathStart and techAimPathMove; a mouse's hover too.)
-let _techReefLedgeMemo = null, _techReefGhostMemo = null, _techGhostCv = null;
+// with chevrons climbing it and a "◆ CLIMB UP HERE" tag (DOWN from up there), and the ghost of what a tap would do follows the finger: the climb it would grow at the ledge nearest it, faint, with where
+// it goes; or why not. (The press and the drag move it: js/input.js through techAimPathStart and techAimPathMove; a mouse's hover too.) (Until build 2026-11-13t a finger on its own floor showed an
+// outcrop's ghost: REEF is a climb only now.)
+let _techReefLedgeMemo = null, _techReefGhostMemo = null;
 function _techScrZ(x, y, z) { return _techArcScr(x, y, x, y, z, z, 0, 0); }   // (a point at the floor height z, px, on the screen)
-function _techAimPoint(sx, sy) { const A = techAim; if (A && A.ab && A.ab.id === "reef" && typeof techScreenToWorld === "function") A.ptr = techScreenToWorld(sx, sy); }
+function _techAimPoint(sx, sy) { const A = techAim; if (A && A.ab && A.ab.id === "reef") A.ptr = techReefScreenToWorld(sx, sy); }
 function techAimHover(sx, sy) { _techAimPoint(sx, sy); }
 // the ledges the technician `t` can climb from where it stands (and sees the end on its own floor): runs of half-tile samples along every open face, each checked as a tap there is (_techReefEdgeAt)
 function techReefLedges(t) {
@@ -2031,16 +2039,11 @@ function _techDrawLedgeRun(g, run, f0) {
     g.globalAlpha = 1; const m = Math.floor(P.length / 2); _techPill(g, (lip[m].x + base[m].x) / 2, Math.min(lip[m].y, base[m].y) - 30, run.up ? "◆ CLIMB UP HERE" : "◆ CLIMB DOWN HERE", "#ff9ccc");
 }
 function _techDrawReefGhost(g, t, p, f0) {
-    const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, q = _techScrZ(p.x, p.y, lift(p.x, p.y)), R = TECH_AB.reef;
+    const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, q = _techScrZ(p.x, p.y, lift(p.x, p.y));
     const memo = _techReefGhostMemo; let plan = null;
     if (memo && memo.t === t && Math.hypot(memo.x - p.x, memo.y - p.y) < 0.25 && memo.tx === t.x && memo.ty === t.y) plan = memo.plan;
-    else { const same = _techComp(p.x, p.y) === _techComp(t.x, t.y); plan = same ? { same: true } : techReefClimbPlan(t, p); _techReefGhostMemo = { t, x: p.x, y: p.y, tx: t.x, ty: t.y, plan }; }
-    if (plan.same) {   // an outcrop would grow here: its ghost (drawn once a frame into a canvas kept for it), its ring, what it does
-        const cv = _techGhostCv || (_techGhostCv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null);
-        if (cv) { if (cv.width !== 360) { cv.width = 360; cv.height = 360; } const og = cv.getContext("2d"); og.clearRect(0, 0, 360, 360); _techDrawReef(og, { O: { id: 9001, t0: f0 - 40, until: f0 + 1200, pillar: false }, c: { x: p.x, y: p.y, r: R.radius }, i: 1 }, 180, 250, f0); g.globalAlpha = 0.5; g.drawImage(cv, q.x - 180, q.y - 250); g.globalAlpha = 1; }
-        g.strokeStyle = "#ffc2df"; g.lineWidth = 2; g.setLineDash([7, 6]); g.lineDashOffset = -f0 * 0.5; g.beginPath(); g.ellipse(q.x, q.y, R.radius * TILE_W * 1.5, R.radius * TILE_H * 1.5, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
-        _techPill(g, q.x, q.y + 34, "OUTCROP HERE · " + Math.round(R.life / 60) + " S · BLOCKS AND HEALS", "#ff9ccc");
-    } else if (plan.ok) {   // a climb would grow at the ledge nearest the finger: it, faint, and where it goes
+    else { plan = techReefClimbPlan(t, p); _techReefGhostMemo = { t, x: p.x, y: p.y, tx: t.x, ty: t.y, plan }; }
+    if (plan.ok) {   // a climb would grow at the ledge nearest the finger: it, faint, and where it goes
         const C = { id: 0, foot: plan.foot, top: plan.top, edge: plan.edge, n: plan.n }, E = plan.edge, zf = lift(plan.foot[0], plan.foot[1]), a = _techScrZ(E[0], E[1], zf), mid = _techClimbArt(C).mid, m = _techScrZ(mid[0], mid[1], zf), top = _techScrZ(plan.top[0], plan.top[1], lift(plan.top[0], plan.top[1]));
         _techDrawClimbRock(g, C, a.x, a.y, 0.5 + 0.1 * Math.sin(f0 * 0.1), 1, m.x, m.y);
         _techPill(g, top.x, top.y - 34, "A CLIMB UP TO THE " + _techClimbName(C), "#ff9ccc");
@@ -2050,7 +2053,8 @@ function _techDrawReefGhost(g, t, p, f0) {
 }
 // ── REEF'S TIP (build 2026-11-12v; the owner's pick "C" of the two drafts, and where: "The top left area next to the quest and the dialogue boxes should be where the information goes") ──
 // The first time a squad technician's REEF is ready, a card in the dialogue box's style hangs at the top left, under QUESTS and the Crystal's box (game.html #reefTip): the technician's face and its own name,
-// the two uses with a picture of each from the game (img/hud/reef_tip_outcrop.png, reef_tip_climb.png: design/hud/reef_tip.js) and the wait. GOT IT puts it away. Once a game (the save's `reefTip`).
+// what it does with a picture from the game (img/hud/reef_tip_climb.png: design/hud/reef_tip.js) and the wait. GOT IT puts it away. Once a game (the save's `reefTip`). (It showed two uses, the
+// outcrop and the climb, until build 2026-11-13t: REEF is a climb only now.)
 let techReefTipSeen = false, _techTipEl = null;
 function techReefTipTick() {
     if (_techTipEl) { if (_techTipEl.isConnected) _techReefTipPlace(_techTipEl); else _techTipEl = null; return; }
@@ -2068,9 +2072,8 @@ function techReefTipShow(t) {
     const name = String(typeof unitTypeLabel === "function" ? unitTypeLabel(t) : "STONEPETAL").toUpperCase(), src = p => typeof imgSrc === "function" ? imgSrc(p) : p, R = TECH_AB.reef;
     const el = document.createElement("div"); el.id = "reefTip";
     el.innerHTML = '<div class="rt-h"><canvas class="rt-p" width="66" height="66"></canvas><div><div class="rt-t">◆ REEF IS READY</div><div class="rt-s"></div></div></div>'
-        + '<div class="rt-row"><div class="rt-c"><img alt="" src="' + src("img/hud/reef_tip_outcrop.png") + '"><div class="rt-k">TAP THE FLOOR <b>→ AN OUTCROP</b></div><div class="rt-d">ROCK AND CRYSTAL FOR ' + Math.round(R.life / 60) + ' S. ENEMIES AND SHOTS CAN\'T GET THROUGH. YOUR FOLLOWERS BESIDE IT HEAL.</div></div>'
-        + '<div class="rt-c"><img alt="" src="' + src("img/hud/reef_tip_climb.png") + '"><div class="rt-k">TAP A GLOWING LEDGE <b>→ A CLIMB</b></div><div class="rt-d">UP ONTO HIGH GROUND. IT STAYS UNTIL YOUR NEXT ONE. WALK TO ITS FOOT (▲) TO GO OVER; YOUR SQUAD FOLLOWS.</div></div></div>'
-        + '<div class="rt-f"><span>EITHER ONE: REEF IS READY AGAIN IN ' + Math.round(R.cooldown / 60) + ' S</span><button class="rt-ok">GOT IT</button></div>';
+        + '<div class="rt-row"><div class="rt-c"><img alt="" src="' + src("img/hud/reef_tip_climb.png") + '"><div><div class="rt-k">TAP A GLOWING LEDGE <b>→ A CLIMB</b></div><div class="rt-d">UP ONTO HIGH GROUND. IT STAYS UNTIL YOUR NEXT ONE. WALK TO ITS FOOT (▲) TO GO OVER; YOUR SQUAD FOLLOWS.</div></div></div></div>'
+        + '<div class="rt-f"><span>REEF IS READY AGAIN IN ' + Math.round(R.cooldown / 60) + ' S</span><button class="rt-ok">GOT IT</button></div>';
     const q = c => el.querySelector ? el.querySelector(c) : null, sub = q(".rt-s"), cv = q(".rt-p"), ok = q(".rt-ok");
     if (sub) sub.textContent = name + "'S UTILITY · TAP ◆ REEF ON ITS CARD, THEN:";   // (its own name: a renamed one too)
     if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, t); } catch (e) {} }

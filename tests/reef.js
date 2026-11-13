@@ -3,6 +3,8 @@
 // and that mends allies beside it; outside one a climb onto any high ground over floor (no marked sites: "like how the ice bridges can freeze any part of water"), for "Player and followers", "Both ways",
 // standing "Until the next one", stopped by glass ("No, the glass stops it"), not from an ice bridge ("No"); its fight numbers "You pick, provisional". REEF PILLAR (the owner's design): "A giant spike
 // erupts from the ground between the target and the technician", "Blocks and heals only".
+// Since build 2026-11-13t REEF is a climb only (the owner: "We have to make it to where Reef can't be used anywhere else besides as a platform"): its outcrop is gone, and the outcrops' rock (held at
+// its edge, shots stopped, the mending) is REEF PILLAR's; and a tap on the catwalks' deck by its lip makes the climb (it grew an outcrop on the arena floor hidden behind the deck).
 // The logic runs in the sandbox, stepping the frames the game would (the player's step too: the climbs carry you).
 const fs = require('fs');
 const vm = require('vm');
@@ -38,6 +40,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         globalThis.__foe = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'tank' }); e.x = x; e.y = y; e.update = () => {}; e.health = e.maxHealth = 5000; e.provoked = true; e.spawnProtection = 0; return e; };
         globalThis.__walker = (e, tx, ty, sp) => { e.update = function () { const dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy); if (d > 0.05) { this.x += dx / d * (sp || 0.05); this.y += dy / d * (sp || 0.05); } }; return e; };
         globalThis.__room = (x, y) => (facilityRoomAt(x, y, _fp.F) || {}).id || null;
+        globalThis.__rock = (t, x, y) => { const P = TECH_AB.pillar; return _techReefGrow(t, [{ x, y, r: P.core }], { life: P.life, mend: P.mend, mendReach: P.mendReach, every: P.every, pillar: true }); };   // (one REEF PILLAR spike where the check wants it)
         globalThis.__heals = [];
         { const h0 = healUnit; healUnit = function (t, a, src) { if (src && src.evolved === 'coralcrab' || (src && src.element === 'blossom' && src.role === 'camper')) __heals.push({ t: t.uid, a }); return h0(t, a, src); }; }`);
 
@@ -46,54 +49,76 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; t.evolved = 'coralcrab'; energyFill(t); o.evolved = (techAbilityOf(t) || {}).id;
             o.chip = techChipState(t).text; techChipTap(t); o.need = techAimNeed(); o.prompt = techAimPrompt(); techAimCancel(true); o.keys = Object.keys(TECH_ABILITIES).length; o.ult = (followerUltimate(t) || {}).name; return o; })()`);
         same(r.id, 'reef', 'the egg\'s ability'); same(r.evolved, 'reef', 'the coral crab\'s'); same(r.chip, '◆ REEF', 'the chip'); same(r.need, 'spot', 'the pick');
-        same(r.prompt, 'REEF · TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB', 'the prompt (since build 2026-11-12v: both uses, the ledges glowing)'); same(r.keys, 7, 'the abilities'); same(r.ult, 'Reef Pillar', 'its Ultimate');
+        same(r.prompt, 'REEF · TAP A GLOWING LEDGE: A CLIMB', 'the prompt (the ledges glowing since build 2026-11-12v; a climb only since build 2026-11-13t)'); same(r.keys, 7, 'the abilities'); same(r.ult, 'Reef Pillar', 'its Ultimate');
     });
 
-    group('THE OUTCROP (in a fight)');
-    check('a tap on floor it can see: its shards fly, then an outcrop of rock and crystal grows there for 20 s; the wait is 60 s; floor it cannot see, or no floor, is refused and the aim stays up', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}, f0 = frame;
-            o.wall = techAbilityUse(t, { spot: { x: t.x - 40, y: t.y } }); o.nan = techAbilityUse(t, { spot: { x: NaN, y: 1 } });
-            const r = techAbilityUse(t, { spot: { x: t.x + 2.2, y: t.y - 1.8 } }); o.ok = r.ok; o.wait = techReadyIn(t); o.chip = techChipState(t).text;
-            const O = techReefs[0]; o.at = [O.x, O.y]; o.grows = O.t0 - f0; o.lasts = O.until - O.t0; o.on0 = !!techOnReef({ x: O.x, y: O.y }); __step(TECH_AB.reef.shards); o.on1 = !!techOnReef({ x: O.x, y: O.y });
-            __step(1199); o.at1199 = techReefs.length; __step(1); o.at1200 = techReefs.length; o.again = techAbilityUse(t, { spot: { x: t.x + 1, y: t.y } }).why; return o; })()`);
-        ok(!r.wall.ok && r.wall.again, 'a spot far through the wall: ' + JSON.stringify(r.wall)); same(r.nan.why, 'TAP THE FLOOR', 'no spot');
-        same(r.ok, true, 'refused'); same(r.wait, 3600, 'the wait'); same(r.chip, '◆ 60 S', 'the chip after');
-        same(r.grows, 16, 'the shards\' flight (frames)'); same(r.lasts, 1200, 'its life from when it grows'); same(r.on0, false, 'it stood before its shards landed'); same(r.on1, true, 'it did not grow');
-        same(r.at1199, 1, 'gone early'); same(r.at1200, 0, 'still there after 20 s'); ok(/READY IN/.test(r.again), 'used again inside its wait: ' + r.again);
+    group('A CLIMB ONLY (build 2026-11-13t; the owner: "We have to make it to where Reef can\'t be used anywhere else besides as a platform")');
+    check('a tap on its own floor grows no outcrop (until build 2026-11-13t it did): by a ledge it makes the climb at the ledge nearest the tap; out of reach of every ledge it is refused, nothing waits and the aim stays up', () => {
+        const r = J(`(function(){ const o = {}, R = TECH_AB.reef, faces = _fp.F.walls.filter(w => REEF_FACES.has(w.kind) || w.face);
+            const far = partyRoomCells('arena').filter(c => facilityStandOk(c[0], c[1]) && faces.every(w => _techSegDist(w.a, w.b, c[0], c[1]) > R.search + 1));
+            const at = far[Math.floor(far.length / 2)], fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1];
+            const r0 = techAbilityUse(t, { spot: { x: t.x + 1, y: t.y } }); o.far = r0.why; o.again = r0.again; o.waits = techReadyIn(t); o.made = techClimbs.length + techReefs.length;
+            o.nan = techAbilityUse(t, { spot: { x: NaN, y: 1 } }).why;
+            const near = [Math.floor(__edgeX) - 4, 51]; t.x = near[0]; t.y = near[1];
+            const r1 = techAbilityUse(t, { spot: { x: __edgeX - 2, y: 51 } }); o.ok = r1.ok || r1.why; const C = techClimbs[0] || {}; o.top = C.top && __room(C.top[0], C.top[1]); o.edgeY = C.edge && C.edge[1];
+            o.reefs = techReefs.length; o.wait = techReadyIn(t); o.chip = techChipState(t).text; return o; })()`);
+        same(r.far, 'NO HIGH GROUND TO CLIMB THERE', 'a tap out of reach of every ledge'); same(r.again, true, 'the aim put away'); same(r.waits, 0, 'a refused tap cost its wait'); same(r.made, 0, 'something grew');
+        same(r.nan, 'TAP A GLOWING LEDGE', 'no spot');
+        same(r.ok, true, 'a tap on its own floor by the catwalks\' edge'); same(r.top, 'catwalks', 'the climb\'s top'); near(r.edgeY, 51, 1, 'the climb at the ledge nearest the tap'); same(r.reefs, 0, 'an outcrop grew');
+        same(r.wait, 3600, 'the wait'); same(r.chip, '◆ 60 S', 'the chip after');
     });
-    check('an enemy walking at it is held at its edge (and slides round it); one standing where it grows is put out beside it; your followers and you walk over it; it hurts no one', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {};
-            const e0 = __foe(t.x + 2, t.y); techAbilityUse(t, { spot: { x: t.x + 2, y: t.y } }); __calm(); const O = techReefs[0], need = O.parts[0].r + TECH_AB.reef.body; __step(TECH_AB.reef.shards + 1, [e0]); o.out = Math.hypot(e0.x - O.x, e0.y - O.y) >= need - 1e-6;
+    check('THE EAST CATWALKS (the owner, 2026-11-13: "It works on the north side catwalk, but it does not work on the ... east side at all"): REEF aimed from the arena, a tap where the catwalks\' deck is drawn, by its lip where the ledge glows or further in, all along their edge, is read as the deck and makes the climb there (the usual pick read a tap by the lip as the arena floor hidden behind the deck: an outcrop grew there)', () => {
+        const r = J(`(function(){ const o = { bad: [], n: 0, rows: 0 }, rail = _fp.F.walls.filter(w => w.kind === 'railing_wall' && Math.abs(w.a[0] - __edgeX) < 0.01 && Math.abs(w.b[0] - __edgeX) < 0.01);
+            const y0 = Math.min(...rail.map(w => Math.min(w.a[1], w.b[1]))), y1 = Math.max(...rail.map(w => Math.max(w.a[1], w.b[1])));
+            for (let y = Math.ceil(y0 + 0.5); y <= Math.floor(y1 - 0.5); y++) {
+                let at = null; for (let x = Math.floor(__edgeX) - 4; x >= Math.floor(__edgeX) - 9 && !at; x--) if (facilityStandOk(x, y) && __room(x, y) === 'arena') at = [x, y];
+                if (!at) continue; o.rows++;
+                for (const dx of [0.6, 1.5, 2.5]) {
+                    const fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1]; techChipTap(t);
+                    const wx = __edgeX + dx, s = _techScrZ(wx, y, facilityLiftPx(wx, y)); techAimTap(s.x, s.y + TILE_H); const C = techClimbs[0]; o.n++;
+                    if (!C || __room(C.top[0], C.top[1]) !== 'catwalks' || Math.abs(C.edge[1] - y) > 1 || techReefs.length) o.bad.push(y + '+' + dx + ':' + (C ? __room(C.top[0], C.top[1]) + '@' + C.edge[1].toFixed(2) : 'none') + (techReefs.length ? ',an outcrop' : ''));
+                    if (techAim) techAimCancel(true);
+                }
+            }
+            o.span = [y0, y1]; return o; })()`);
+        same(r.bad.join(' '), '', 'taps that made no climb up to the catwalks where they were (' + r.n + ' taps along y ' + r.span.join(' to ') + ')'); ok(r.rows >= 12, 'rows along the edge with arena floor beside it: ' + r.rows);
+    });
+    group('REEF PILLAR\'S ROCK (the outcrops\' rock; REEF\'s own outcrop went in build 2026-11-13t, so these are its Ultimate\'s spikes\' rules: one spike, grown where the check wants it)');
+    check('a spike grows when its shards land; an enemy walking at it is held at its edge (and slides round it); one standing where it grows is put out beside it; your followers and you walk over it; it hurts no one', () => {
+        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}, f0 = frame;
+            const e0 = __foe(t.x + 2, t.y), O = __rock(t, t.x + 2, t.y); __calm(); const need = O.parts[0].r + TECH_AB.reef.body; o.grows = O.t0 - f0; o.on0 = !!techOnReef({ x: O.x, y: O.y });
+            __step(TECH_AB.reef.shards + 1, [e0]); o.on1 = !!techOnReef({ x: O.x, y: O.y }); o.out = Math.hypot(e0.x - O.x, e0.y - O.y) >= need - 1e-6;
             const e = __foe(O.x - 3, O.y); __walker(e, O.x + 3, O.y, 0.05); let minD = 9; for (let i = 0; i < 100; i++) { __step(1, [e]); minD = Math.min(minD, Math.hypot(e.x - O.x, e.y - O.y)); } o.minD = minD; o.need = need;
             const e2 = __foe(O.x - 3, O.y + 0.6); __walker(e2, O.x + 3, O.y + 0.6, 0.05); __step(240, [e2]); o.round = e2.x > O.x + 1;
             o.hp = [e0.health, e.health, e2.health]; o.pressed = !!O.pressedAt;
             const g = fs[1]; g.x = O.x - 2; g.y = O.y; const px = g.x, py = g.y; g.x = O.x; g.y = O.y; techShieldKeep(g, px, py); o.friend = Math.hypot(g.x - O.x, g.y - O.y) < 0.01;
             return o; })()`);
+        same(r.grows, 16, 'the shards\' flight (frames)'); same(r.on0, false, 'it stood before its shards landed'); same(r.on1, true, 'it did not grow');
         same(r.out, true, 'the enemy it grew on was left inside it'); near(r.minD, r.need, 0.02, 'how near its middle a walking enemy came'); same(r.round, true, 'an enemy off its middle did not get round it');
         same(r.hp.join(), '5000,5000,5000', 'it hurt an enemy'); same(r.pressed, true, 'it never showed an enemy pressing on it'); same(r.friend, true, 'a follower was held out of it');
     });
     check('a shot that crosses it stops there, whichever side fired it, as at a crate (the owner: "Stop shots too", then "Stops everyone\'s"); one fired from right behind it passes over it; one beside it flies on; the laser\'s reach and a turret\'s aim stop at it; lobs fly over (the cover check)', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom']), t = fs[0], o = {}; techAbilityUse(t, { spot: { x: t.x + 2, y: t.y } }); const O = techReefs[0]; __step(TECH_AB.reef.shards);
-            const R = O.parts[0].r, from = O.x - 4;
+        const r = J(`(function(){ const fs = __fresh(['blossom']), t = fs[0], o = {}; const O = __rock(t, t.x + 2, t.y); __step(TECH_AB.reef.shards);
+            const R = O.parts[0].r, from = O.x - 4; o.R = R;
             o.far = techReefShotStop(from, O.y, from + 6, O.y, from, O.y); o.farAt = o.far && +(o.far.x - O.x).toFixed(3);
             o.behind = techReefShotStop(O.x - R - 0.5, O.y, O.x + 2, O.y, O.x - R - 0.5, O.y);
             o.beside = techReefShotStop(from, O.y + 1.4, from + 6, O.y + 1.4, from, O.y + 1.4);
             o.reach = +techReefShotReach(from, O.y, from + 6, O.y).toFixed(3); o.clear = facilityShotClear(from, O.y, from + 6, O.y); o.clearBeside = facilityShotClear(from, O.y + 1.4, from + 6, O.y + 1.4);
             o.enemyShield = techShieldStopsShot({ x: O.x, y: O.y, vx: 0.3, vy: 0, targetsGreen: true });
             techReefs.length = 0; o.gone = techReefShotStop(from, O.y, from + 6, O.y, from, O.y); return o; })()`);
-        ok(r.far, 'a shot from 4 tiles off went through it'); same(r.farAt, -0.8, 'where it stopped (its edge, on the side it came from)');
+        ok(r.far, 'a shot from 4 tiles off went through it'); same(r.farAt, -r.R, 'where it stopped (its edge, on the side it came from)');
         same(r.behind, null, 'a shot fired from right behind it was stopped'); same(r.beside, null, 'a shot 1.4 tiles off its middle');
-        same(r.reach, 3.2, 'the laser\'s reach (to its edge)'); same(r.clear, false, 'a turret\'s aim through it'); same(r.clearBeside, true, 'a turret\'s aim beside it'); same(r.enemyShield, false, 'the Photonic Shield\'s check (shields only now)'); same(r.gone, null, 'with no outcrop');
+        same(r.reach, +(4 - r.R).toFixed(3), 'the laser\'s reach (to its edge)'); same(r.clear, false, 'a turret\'s aim through it'); same(r.clearBeside, true, 'a turret\'s aim beside it'); same(r.enemyShield, false, 'the Photonic Shield\'s check (shields only now)'); same(r.gone, null, 'with no outcrop');
         const G = rd('js/game.js'); ok(/facilityShotStopAt\(p\.x - p\.vx, p\.y - p\.vy, p\.x, p\.y, p\.ox, p\.oy\) \|\| \(typeof techReefShotStop === "function" \? techReefShotStop\(/.test(G), 'the shots\' step asks it with the cover check');
         ok(/!p\.arcData && !p\.noHitDetect && typeof facilityShotStopAt/.test(G), 'lobs skip the cover check'); ok(/techReefShotReach\(player\.x, player\.y/.test(rd('js/weapons.js')), 'the laser');
     });
-    check('your followers beside it are mended 1% of their health every half second (within 1.5 tiles of its edge, in sight); one further off is not', () => {
+    check('your followers near it are mended (REEF PILLAR\'s 2% of their health every half second, within 2 tiles of its edge, in sight); one further off is not', () => {
         const r = J(`(function(){ const fs = __fresh(['blossom', 'fire', 'ice']), t = fs[0], o = {};
-            techAbilityUse(t, { spot: { x: t.x + 2, y: t.y } }); const O = techReefs[0];
+            const O = __rock(t, t.x + 2, t.y); o.mend = TECH_AB.pillar.mend;
             const a = fs[1], b = fs[2]; for (const f of [a, b]) { f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; f.health = 100; }
             a.x = O.x; a.y = O.y + O.parts[0].r + 1.2; b.x = O.x - 4.5; b.y = O.y; a.job.target = { x: a.x, y: a.y }; b.job.target = { x: b.x, y: b.y };
             __step(TECH_AB.reef.shards); __heals.length = 0; const h0 = [a.health, b.health]; __step(90); o.a = a.health - h0[0]; o.b = b.health - h0[1]; o.heals = __heals.length; o.max = a.maxHealth; return o; })()`);
-        ok(r.heals >= 3 && r.heals <= 4, 'beats in 1.5 s: ' + r.heals); near(r.a, r.heals * 0.01 * r.max, 0.01, 'the mend beside it'); same(r.b, 0, 'a follower 4.5 tiles off was mended');
+        ok(r.heals >= 3 && r.heals <= 4, 'beats in 1.5 s: ' + r.heals); near(r.a, r.heals * r.mend * r.max, 0.01, 'the mend near it'); same(r.b, 0, 'a follower 4.5 tiles off was mended');
     });
 
     group('THE CLIMBS (getting around: any high ground over floor)');
@@ -120,16 +145,16 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
             const faces = F.walls.filter(w => w.kind === 'railing_wall'); faces.forEach(w => { w.window = 'test_glass'; }); o.glass = techReefClimbPlan(t, spot).why; faces.forEach(w => { w.window = undefined; });
             faces.forEach(w => { w._k = w.kind; w.kind = 'wall'; }); o.wall = techReefClimbPlan(t, spot).why; faces.forEach(w => { w.kind = w._k; delete w._k; });
             facilityIceSet([[at[0] - 1, 44, Math.round(__edgeX) + 0.5, 58]]); o.ice = techReefClimbPlan(t, spot).why; facilityIceSet([]);
-            o.back = techReefClimbPlan(t, spot).ok; t.x = at[0] - 30; t.y = at[1]; o.far = techAbilityUse(t, spot).why; return o; })()`);
+            o.back = techReefClimbPlan(t, spot).ok; t.x = at[0] - 30; t.y = at[1]; o.far = techAbilityUse(t, { spot }).why; return o; })()`);
         same(r.glass, 'NO HIGH GROUND TO CLIMB THERE', 'through glass'); same(r.wall, 'NO HIGH GROUND TO CLIMB THERE', 'up a plain wall'); same(r.ice, 'NO HIGH GROUND TO CLIMB THERE', 'from an ice bridge');
-        same(r.back, true, 'the climb after the test'); ok(/CANNOT SEE|NO HIGH GROUND|TAP THE FLOOR/.test(r.far), 'from out of sight: ' + r.far);
+        same(r.back, true, 'the climb after the test'); ok(/CANNOT SEE|NO HIGH GROUND/.test(r.far), 'from out of sight: ' + r.far);
     });
-    check('one each, "Until the next one": a coral crab\'s next climb takes the place of its last; another crab\'s stands beside it; an outcrop leaves the climb standing', () => {
+    check('one each, "Until the next one": a coral crab\'s next climb takes the place of its last; another crab\'s stands beside it; its REEF PILLAR leaves the climb standing', () => {
         const r = J(`(function(){ const at = [Math.floor(__edgeX) - 4, 51], fs = __fresh(['blossom', 'blossom'], at), t = fs[0], u = fs[1], o = {}; t.x = at[0]; t.y = at[1]; u.x = at[0]; u.y = at[1] + 2; u.role = 'camper'; partyTick(); techAbilityTick();
             techAbilityUse(t, { spot: { x: __edgeX + 2.5, y: 49 } }); const first = techClimbs[0].top.slice(); t._abReadyAt = frame; techAbilityUse(t, { spot: { x: __edgeX + 2.5, y: 54 } }); o.n1 = techClimbs.length; o.moved = techClimbs[0].top[1] !== first[1];
             u._abReadyAt = frame; const ru = techAbilityUse(u, { spot: { x: __edgeX + 2.5, y: 51 } }); o.u = ru.ok || ru.why; o.n2 = techClimbs.length;
-            t._abReadyAt = frame; techAbilityUse(t, { spot: { x: t.x - 2, y: t.y } }); o.n3 = techClimbs.length; o.reefs = techReefs.length; return o; })()`);
-        same(r.n1, 1, 'climbs after its second'); same(r.moved, true, 'its second did not take the first\'s place'); same(r.u, true, 'the other crab\'s'); same(r.n2, 2, 'climbs of two crabs'); same(r.n3, 2, 'climbs after an outcrop'); same(r.reefs, 1, 'the outcrop');
+            techReefPillar(t, __foe(t.x - 4, t.y)); o.n3 = techClimbs.length; o.reefs = techReefs.length; return o; })()`);
+        same(r.n1, 1, 'climbs after its second'); same(r.moved, true, 'its second did not take the first\'s place'); same(r.u, true, 'the other crab\'s'); same(r.n2, 2, 'climbs of two crabs'); same(r.n3, 2, 'climbs after a REEF PILLAR'); same(r.reefs, 1, 'the REEF PILLAR');
     });
     check('you: a walk that ends on its foot takes you up onto the catwalks; set down there you are not taken back until you step off; a walk back onto its top takes you down ("Both ways"); a walk past its foot does not', () => {
         const r = J(`(function(){ const at = [Math.floor(__edgeX) - 4, 51], fs = __fresh(['blossom'], at), t = fs[0], o = {}; t.x = at[0]; t.y = at[1]; t.stance = 'hold'; t.job = { type: 'move', target: { x: t.x, y: t.y } };
@@ -219,30 +244,31 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         same(r.before, '', 'drawn before its shards landed'); same(r.grown, 'up', 'its rock'); same(r.replaced, 'gone|1', 'the last one fading, the new one not yet grown'); same(r.later, 'up|0', 'the faded one gone, the new one standing');
         ok(r.mid !== r.edge, 'its rock is sorted at the middle of its run, out on the low floor'); same(r.reset, 0, 'a new game kept a fading one');
     });
-    check('while REEF is aimed, the ledges its technician can climb from where it stands glow (runs along the spur\'s two faces and the catwalks\' edge, all up); the prompt names both uses; a hover moves the ghost\'s point (REEF\'s aim only)', () => {
+    check('while REEF is aimed, the ledges its technician can climb from where it stands glow (runs along the spur\'s two faces and the catwalks\' edge, all up); the prompt says to tap a glowing ledge; a hover moves the ghost\'s point (REEF\'s aim only)', () => {
         const r = J(`(function(){ const o = {}, fs = __fresh(['blossom', 'ice'], [47, 48.5]), t = fs[0], ice = fs[1]; t.x = 47; t.y = 48.5; techChipTap(t);
             const runs = techReefLedges(t); o.n = runs.length; o.up = runs.every(q => q.up); o.long = runs.every(q => q.pts.length >= 4); o.rooms = Array.from(new Set(runs.map(q => __room(q.pts[0].top[0], q.pts[0].top[1])))).sort().join();
             o.prompt = techAimPrompt(); const s = _techScr(44, 48); s.y += TILE_H; techAimHover(s.x, s.y);   /* (a tile's middle on the screen, as the taps are: tests/techlevel1.js) */ o.ptr = techAim.ptr ? [techAim.ptr.x, techAim.ptr.y].map(v => Math.round(v)).join() : null;
             let threw = null; try { _techReefAimDraw(ctx, frame); } catch (e) { threw = e.message; } o.threw = threw; techAimCancel(true);
             ice.role = 'camper'; partyTick(); ice._abReadyAt = frame; techChipTap(ice);   /* (the ice follower a technician too: its FROST PATCH aimed) */ techAimHover(s.x, s.y); o.icePtr = techAim ? (techAim.ptr || null) : 'no aim'; techAimCancel(true); return o; })()`);
         ok(r.n >= 2, 'ledges: ' + r.n); same(r.up, true, 'all up from the arena'); same(r.long, true, 'a scrap of an edge glows'); same(r.rooms, 'catwalk_spur,catwalks', 'the ledges');
-        same(r.prompt, 'REEF · TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB', 'the prompt'); same(r.ptr, '44,48', 'the ghost\'s point'); same(r.threw, null, 'drawing the aim threw'); same(r.icePtr, null, 'another aim keeps a point');
+        same(r.prompt, 'REEF · TAP A GLOWING LEDGE: A CLIMB', 'the prompt'); same(r.ptr, '44,48', 'the ghost\'s point'); same(r.threw, null, 'drawing the aim threw'); same(r.icePtr, null, 'another aim keeps a point');
         ok(/techAimHover\(_hx, _hy\)/.test(rd('js/input.js')), 'a hover is not wired');
     });
-    check('REEF\'s tip: the first time a squad technician\'s REEF is ready, the card (the two uses, a picture of each, GOT IT); not while it waits; once a game, saved (reefTip) and put back; a game saved before shows it once', () => {
+    check('REEF\'s tip: the first time a squad technician\'s REEF is ready, the card (the climb and its picture, GOT IT; no outcrop since build 2026-11-13t); not while it waits; once a game, saved (reefTip) and put back; a game saved before shows it once', () => {
         const r = J(`(function(){ const o = {}, fs = __fresh(['blossom', 'fire'], __open), t = fs[0]; techReefTipSeen = false; if (_techTipEl && _techTipEl.remove) _techTipEl.remove(); _techTipEl = null;
             t._abReadyAt = frame + 999; techReefTipTick(); o.waiting = !!_techTipEl; t._abReadyAt = frame; techReefTipTick(); o.shown = !!_techTipEl; o.seen = techReefTipSeen;
-            const h = String(_techTipEl && _techTipEl.innerHTML || ''); o.html = ['◆ REEF IS READY', 'img/hud/reef_tip_outcrop', 'img/hud/reef_tip_climb', 'AN OUTCROP', 'A CLIMB', 'GOT IT'].filter(k => h.indexOf(k) < 0).join();
+            const h = String(_techTipEl && _techTipEl.innerHTML || ''); o.html = ['◆ REEF IS READY', 'img/hud/reef_tip_climb', 'A CLIMB', 'GOT IT'].filter(k => h.indexOf(k) < 0).join(); o.gone = ['reef_tip_outcrop', 'OUTCROP'].filter(k => h.indexOf(k) >= 0).join();
             o.save = facilitySaveCollect().reefTip; if (_techTipEl && _techTipEl.remove) _techTipEl.remove(); _techTipEl = null; techReefTipTick(); o.again = !!_techTipEl; return o; })()`);
-        same(r.waiting, false, 'shown while REEF waited'); same(r.shown, true, 'not shown'); same(r.seen, true, 'not marked shown'); same(r.html, '', 'missing from the card'); same(r.save, 1, 'the save'); same(r.again, false, 'shown twice');
+        same(r.waiting, false, 'shown while REEF waited'); same(r.shown, true, 'not shown'); same(r.seen, true, 'not marked shown'); same(r.html, '', 'missing from the card'); same(r.gone, '', 'the outcrop still on the card'); same(r.save, 1, 'the save'); same(r.again, false, 'shown twice');
         const S = rd('js/facilitysave.js'); ok(/reefTip: typeof techReefTipSeen !== "undefined" && techReefTipSeen \? 1 : 0/.test(S) && /techReefTipSeen = d\.reefTip === 1/.test(S), 'the save\'s wiring (a game saved before: no reefTip, so it shows once)');
-        ok(/#reefTip \{ position: fixed;/.test(rd('game.html')) && /\.reef_tip_|reef_tip_outcrop/.test(rd('design/hud/reef_tip.js')), 'its look and its pictures\' maker');
+        ok(/#reefTip \{ position: fixed;/.test(rd('game.html')) && /reef_tip_climb/.test(rd('design/hud/reef_tip.js')), 'its look and its picture\'s maker');
+        ok(!fs.existsSync(path.join(ROOT, 'img/hud/reef_tip_outcrop.png')) && !/reef_tip_outcrop/.test(rd('js/imgmap.js')), 'the outcrop\'s picture still there (it went with the outcrop in build 2026-11-13t)');
     });
 
     group('ITS INFO');
     check('the INFO card: REEF, what it does, its numbers, its climb', () => {
         const r = J(`(function(){ const at = [Math.floor(__edgeX) - 4, 51], fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1]; const a = techAbilityInfo(t); techAbilityUse(t, { spot: { x: __edgeX + 2.5, y: 51 } }); const b = techAbilityInfo(t); return { h: a.h, rows: a.rows.map(r => r[0]).join(), climb0: a.rows.find(r => r[0] === 'CLIMB')[1], climb1: b.rows.find(r => r[0] === 'CLIMB')[1] }; })()`);
-        same(r.h, 'ABILITY · REEF', 'its heading'); same(r.rows, 'OUTCROP,MENDS,CLIMB,COOLDOWN,FIRST WAIT,READY', 'its rows'); same(r.climb0, 'none standing', 'before'); same(r.climb1, 'up to the CATWALKS', 'after');
+        same(r.h, 'ABILITY · REEF', 'its heading'); same(r.rows, 'CLIMB,COOLDOWN,FIRST WAIT,READY', 'its rows (no OUTCROP nor MENDS since build 2026-11-13t)'); same(r.climb0, 'none standing', 'before'); same(r.climb1, 'up to the CATWALKS', 'after');
     });
 
     console.log(failures ? `\n${failures} FAILED` : '\nall passed');

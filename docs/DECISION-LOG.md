@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: REEF is a climb only; the catwalks stay where they are
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13t`
+- **Status:** Approved (the owner's words); built
+- **Context:** the owner: "Look, we can keep the catwalks where they're at, but the stone pedal just does not work with the reef on the right side. It works on the north side catwalk, but it does not work on the ... east side at all." Found: a tap on the catwalks' deck within about 2.5 tiles of its lip (where the ledge glows) was read as the arena floor hidden behind the deck, 5 tiles below, so REEF grew an outcrop there and spent its 60 s wait, or said TAP THE FLOOR; taps further in on the deck did climb, and the Catwalk Spur (1.8 tiles up) was read right. Then, before a fix was shown: **"We have to make it to where Reef can't be used anywhere else besides as a platform."**
+- **Decision:** REEF makes climbs only: its outcrop is removed (the prompt, the ghost, the INFO card and the tip lose it; the tip's outcrop picture is deleted). A tap on the technician's own floor, or on no floor, takes the ledge nearest the tap within 6 tiles; with none in reach nothing grows and nothing waits. REEF's aim reads the floor drawn in front under the finger, so a tap on a high deck by its lip is the deck's. The catwalks and the Observation Deck do not swap sides.
+- **Agent's reading, to confirm:** "a platform" read as REEF's climb (the boulder steps up a ledge). REEF PILLAR, the Ultimate, is unchanged: its spikes keep the rock's rules (held at the edge, shots stopped, the mending). The tip's one picture now sits beside its words in the same card.
+- **Alternatives:** keep the outcrop and fix only the pick (the owner asked for the platform alone); fix the pick for every tap, walking too (left alone: a wider change than asked).
+- **Supersedes:** REEF's outcrop in a fight (2026-11-02 and 2026-11-08; built `2026-11-08m`); the catwalks and the Observation Deck swapping sides (2026-11-11, below; never built).
+- **Affects:** js/techabilities.js (`techReefAt`, `techReefClimbPlan`, `techReefScreenToWorld`, the aim, the INFO card, the tip), game.html (the tip's CSS), design/hud/reef_tip.js, img/hud (the outcrop picture gone), tests/reef.js, `TECHNICIANS.md`, `CONVERSION.md`, `COMBAT.md`, `FACILITY.md`, `OPEN-QUESTIONS.md`, the Bible.
+
 ## DECISION: A follower's personality stays within ±25% of the base stats
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/personality-range`, `2026-11-13p`
@@ -2891,7 +2902,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: The electrical domain's look; the nests' tunnels; the catwalks swap sides (2026-11-11, nothing built yet)
 - **The look**: of three drafts rendered in the game's camera (A cold blue, the server graveyard; B live yellow current; C a giant circuit board), the owner chose **A** (I had suggested B). `DOMAINS.md` §2.
 - **The nests**: asked how they "descend without stairs", the owner chose **sloping tunnels**: dirt ramps you walk straight down, no stairs, no fade between layers (not holes you drop through). `DOMAINS.md` §2.
-- **The catwalks**: asked what becomes of the observation deck when the catwalks move to its place, the owner chose **swap them**: the catwalks to the arena's west side, the deck to the east; the Armory stays (not: the catwalks replacing the deck; not: catwalks under the deck). The details wait for a layout draft. `FACILITY.md`.
+- **The catwalks** *(superseded 2026-11-13: "we can keep the catwalks where they're at"; no swap: "REEF is a climb only; the catwalks stay where they are", above)*: asked what becomes of the observation deck when the catwalks move to its place, the owner chose **swap them**: the catwalks to the arena's west side, the deck to the east; the Armory stays (not: the catwalks replacing the deck; not: catwalks under the deck). The details wait for a layout draft. `FACILITY.md`.
 
 ## DECISION: The domains are passages, rooms, nests, caves and instances; ways through by the technicians' utilities; a default chest (2026-11-12, nothing built)
 - **The owner:** "Okay, so the way we did the electrical domain, I'm starting to realize that that is not the way that I want my game to be designed. I want it to be narrow passages and rooms and nests and caves and instances. Also would like to create a default chest that players can find booster packs and other miscellaneous items within. But the electrical domain and the nests, I would like to expand those out with narrow passages and ways for the player to use their utilities from their technicians to get around." Then: "including but not limited to blowing up barrels to bring down or break through different obstacles, or using flux move to move an object to get it out the way."
