@@ -100,6 +100,17 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     }
     ctx.globalAlpha = 1;
 }
+// THE VOIDSTAR'S EVERYDAY SHOT (the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; then: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"): in flight the
+// shot is only a small mote of ghostly violet with a few specks trailing it (it takes the time it always took to get there); the tentacles are not joined to the Voidstar: they appear on the creature it lands on
+// (`tendrilslap`, js/elements.js). Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+const _TEND = { glow: '#9933ff', body: '#bb66ff', core: '#ead6ff' };
+function _drawTendrils(ctx, p, sx, sy) {
+    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0; let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
+    for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.12; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx - ux * i * 6 + Math.sin(f * 0.5 + i) * 1.6, sy - uy * i * 6 + Math.cos(f * 0.5 + i) * 1.6, 3.2 - i * 0.6, 0, Math.PI * 2); ctx.fill(); }   // (specks trailing it)
+    ctx.globalAlpha = 0.3; ctx.fillStyle = _TEND.glow; ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx, sy, 4.6 + Math.sin(f * 0.6) * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = _TEND.core; ctx.beginPath(); ctx.arc(sx, sy, 2.2, 0, Math.PI * 2); ctx.fill();
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -125,6 +136,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
     // the ROTSHARD's everyday shot (build 2026-11-12w): a soul blob of its own crystal green, crackling
     if (p.kind === "soulblob") { _drawSoulBlob(ctx, p, sx, sy); ctx.restore(); return; }
+    // the VOIDSTAR's everyday shot (build 2026-11-13b): two tentacles of ghostly violet energy from its orb to the shot's tip
+    if (p.kind === "tendril") { _drawTendrils(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below

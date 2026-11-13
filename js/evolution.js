@@ -1217,10 +1217,18 @@ function evoShotOnHit(f, dmg) {
     const d = f && f.evolved ? evolvedDef(f) : null; if (!d) return null;
     if (d.shot === "CHAIN LIGHTNING") return a => chainLightning(f, a, dmg);
     if (d.shot === "CORRODE SHOT") return a => corrodeTouch(a);
+    if (d.id === "voidstar") return a => voidSlap(a);   // (the Voidstar's everyday shot: where it lands, a one-two slap of its telepathic tentacles is drawn; the shot, its damage and its timing are as they were)
     return null;
 }
 // CORRODE SHOT as the Rotshard's everyday shot (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: "Primary: CORRODE SHOT"; the owner: "Apply both"): the Mage's shot, its own damage, and where it
 // lands it eats the target's armour (ROT_SHRED for ROT_SHRED_FRAMES), weaker round it (ROT_SPLASH_SHRED within ROT_SPLASH_R, enemies seen from the target). It was a move with a wind-up (corrodeShot, kept).
+// THE VOIDSTAR'S EVERYDAY SHOT (build 2026-11-13b; the owner, 2026-11-12: "How about the void star slaps the enemy with telepathic tentacles?"; asked, "Ghostly violet energy" and "Two alternate"): the shot is drawn as two
+// tentacles of ghostly violet energy reaching out of its orb to where it lands, one after the other (js/game.js _drawTendrils), and where it lands a one-two slap (`tendrilslap`, js/elements.js). Looks only: the shot, its
+// damage (SP.ATK x 0.5), its speed and its timing are as they were.
+function voidSlap(tgt) {
+    if (!tgt || typeof elementEffects === "undefined") return;
+    elementEffects.push({ type: "tendrilslap", x: tgt.x, y: tgt.y, life: 16, maxLife: 16 });
+}
 function corrodeTouch(tgt) {
     if (!tgt || tgt.dead) return;
     tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);

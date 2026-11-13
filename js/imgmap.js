@@ -120,6 +120,7 @@ const IMG_MAP = {
     "img/fx/quill.png": "img/fx/quill.webp?v=8190e515",
     "img/fx/rotdecoy.png": "img/fx/rotdecoy.webp?v=607d4c7e",
     "img/fx/rotspike.png": "img/fx/rotspike.webp?v=169dd23c",
+    "img/fx/slap.png": "img/fx/slap.webp?v=024c1744",
     "img/fx/vortexshard.png": "img/fx/vortexshard.webp?v=a9e13e61",
     "img/hd/egg_blossom.png": "img/hd/egg_blossom.webp?v=d2383c32",
     "img/hd/egg_core.png": "img/hd/egg_core.webp?v=1ac9026c",
