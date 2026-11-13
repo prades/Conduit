@@ -389,6 +389,7 @@ const IMG_MAP = {
     "img/fx/quill.png": "img/fx/quill.webp?v=8190e515",
     "img/fx/rotdecoy.png": "img/fx/rotdecoy.webp?v=607d4c7e",
     "img/fx/rotspike.png": "img/fx/rotspike.webp?v=169dd23c",
+    "img/fx/slap.png": "img/fx/slap.webp?v=4d090bda",
     "img/fx/vortexshard.png": "img/fx/vortexshard.webp?v=a9e13e61",
     "img/hd/egg_blossom.png": "img/hd/egg_blossom.webp?v=d2383c32",
     "img/hd/egg_core.png": "img/hd/egg_core.webp?v=1ac9026c",
@@ -2999,40 +3000,47 @@ function drawElementEffects() {
                 ctx.save();
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
+                const T3 = typeof fx3dOn === "function" && fx3dOn("slap") && fx3dReady("slap");
                 for (let k = 0; k < 2; k++) {
                     const a = age - k * 6;
                     if (a < 0 || a > 8)
                         continue;
                     const u = a / 8, eu = 1 - (1 - u) * (1 - u), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (8 - a) / 2);
+                    if (T3) {
+                        ctx.globalAlpha = fa;
+                        fx3dDrawAnim(ctx, "slap", px + side * 15, cy - 12, u * 11, side > 0);
+                        ctx.globalAlpha = 1;
+                    }
                     const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];
                     for (let i = 0; i <= 6; i++) {
                         const t = i / 6, cv = Math.sin(t * Math.PI) * Ln * 0.3 * side * (1 - u);
                         pts.push([bx + Math.cos(phi) * Ln * t - Math.sin(phi) * cv, by + Math.sin(phi) * Ln * t * 0.9 + Math.cos(phi) * cv]);
                     }
-                    for (let i = 1; i <= 6; i++) {
-                        const w = 1 - (i - 1) / 6 * 0.55;
-                        ctx.strokeStyle = '#9933ff';
-                        ctx.lineWidth = 12 * w;
-                        ctx.globalAlpha = 0.25 * fa;
-                        ctx.beginPath();
-                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-                        ctx.lineTo(pts[i][0], pts[i][1]);
-                        ctx.stroke();
-                        ctx.strokeStyle = '#bb66ff';
-                        ctx.lineWidth = 8 * w;
-                        ctx.globalAlpha = 0.8 * fa;
-                        ctx.beginPath();
-                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-                        ctx.lineTo(pts[i][0], pts[i][1]);
-                        ctx.stroke();
-                        ctx.strokeStyle = '#ead6ff';
-                        ctx.lineWidth = 2.6 * w;
-                        ctx.globalAlpha = 0.95 * fa;
-                        ctx.beginPath();
-                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-                        ctx.lineTo(pts[i][0], pts[i][1]);
-                        ctx.stroke();
-                    }
+                    if (!T3)
+                        for (let i = 1; i <= 6; i++) {
+                            const w = 1 - (i - 1) / 6 * 0.55;
+                            ctx.strokeStyle = '#9933ff';
+                            ctx.lineWidth = 12 * w;
+                            ctx.globalAlpha = 0.25 * fa;
+                            ctx.beginPath();
+                            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                            ctx.lineTo(pts[i][0], pts[i][1]);
+                            ctx.stroke();
+                            ctx.strokeStyle = '#bb66ff';
+                            ctx.lineWidth = 8 * w;
+                            ctx.globalAlpha = 0.8 * fa;
+                            ctx.beginPath();
+                            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                            ctx.lineTo(pts[i][0], pts[i][1]);
+                            ctx.stroke();
+                            ctx.strokeStyle = '#ead6ff';
+                            ctx.lineWidth = 2.6 * w;
+                            ctx.globalAlpha = 0.95 * fa;
+                            ctx.beginPath();
+                            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                            ctx.lineTo(pts[i][0], pts[i][1]);
+                            ctx.stroke();
+                        }
                     if (a >= 5) {
                         const ia = (a - 5) / 3;
                         ctx.strokeStyle = '#ead6ff';
@@ -16195,6 +16203,7 @@ const FX3D = {
         rotdecoy: { sheet: "img/fx/rotdecoy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 102.81, tipY: 29.453 },
         bigseed: { sheet: "img/fx/bigseed.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
         goocopy: { sheet: "img/fx/goocopy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 90.486, tipY: 46.472 },
+        slap: { sheet: "img/fx/slap.png", cell: 96, yaws: 12, pitches: [0], anim: true, ax: 48, ay: 48 },
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
     },
     approved: ["quill",
@@ -16261,6 +16270,22 @@ function fx3dDrawUpright(g, piece, sx, sy, k, hpx, rise) {
         g.drawImage(cell, 0, 0, C, rows, dx, dy, C * sc, rows * sc);
     else
         g.drawImage(img, col * C, 0, C, rows, dx, dy, C * sc, rows * sc);
+    return true;
+}
+function fx3dDrawAnim(g, piece, sx, sy, frame, mirror) {
+    const P = FX3D.pieces[piece], img = P && P.anim && _fx3dImg(piece);
+    if (!img)
+        return false;
+    const C = P.cell, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, d = C * s, k = Math.max(0, Math.min(P.yaws - 1, Math.floor(frame) || 0)), cell = typeof spriteCell === "function" ? spriteCell(img, k * C, 0, C, C) : null;
+    g.save();
+    g.translate(sx, sy);
+    if (mirror)
+        g.scale(-1, 1);
+    if (cell)
+        g.drawImage(cell, -P.ax * s, -P.ay * s, d, d);
+    else
+        g.drawImage(img, k * C, 0, C, C, -P.ax * s, -P.ay * s, d, d);
+    g.restore();
     return true;
 }
 function fx3dDrawCell(g, piece, sx, sy, col, row) {

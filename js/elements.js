@@ -1595,10 +1595,12 @@ function drawElementEffects() {
             case "tendrilslap": {
                 const age = e.maxLife - e.life, cy = py - 14;
                 ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                const T3 = typeof fx3dOn === "function" && fx3dOn("slap") && fx3dReady("slap");   // (the 3-D rendered tentacle, on the preview ?fx=3d until it is approved in the game: js/fx3d.js; else the flat ones below)
                 for (let k = 0; k < 2; k++) { const a = age - k * 6; if (a < 0 || a > 8) continue; const u = a / 8, eu = 1 - (1 - u) * (1 - u), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (8 - a) / 2);
+                    if (T3) { ctx.globalAlpha = fa; fx3dDrawAnim(ctx, "slap", px + side * 15, cy - 12, u * 11, side > 0); ctx.globalAlpha = 1; }
                     const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];   // (it swings from overhead across the creature)
                     for (let i = 0; i <= 6; i++) { const t = i / 6, cv = Math.sin(t * Math.PI) * Ln * 0.3 * side * (1 - u); pts.push([bx + Math.cos(phi) * Ln * t - Math.sin(phi) * cv, by + Math.sin(phi) * Ln * t * 0.9 + Math.cos(phi) * cv]); }
-                    for (let i = 1; i <= 6; i++) { const w = 1 - (i - 1) / 6 * 0.55;   // (stubby: it stays thick to its blunt round tip)
+                    if (!T3) for (let i = 1; i <= 6; i++) { const w = 1 - (i - 1) / 6 * 0.55;   // (stubby: it stays thick to its blunt round tip)
                         ctx.strokeStyle = '#9933ff'; ctx.lineWidth = 12 * w; ctx.globalAlpha = 0.25 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
                         ctx.strokeStyle = '#bb66ff'; ctx.lineWidth = 8 * w; ctx.globalAlpha = 0.8 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
                         ctx.strokeStyle = '#ead6ff'; ctx.lineWidth = 2.6 * w; ctx.globalAlpha = 0.95 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }

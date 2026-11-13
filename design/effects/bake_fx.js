@@ -46,6 +46,10 @@ const PIECES = {
   // spinning around like a hurricane"): its middle at the origin, it tumbles end over end: its rows are the axes it tumbles about (three, so the four are never alike), its columns the steps of a turn.
   vortexshard: { form: 114, color: '#9933ff', bw: 0.336, bh: 0.8, bd: 0.1, S: 1.3, cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: { axes: [[0.35, 1, 0.4], [1, 0.25, -0.5], [-0.45, 0.55, 1]] },
     cap: ['SHARD VORTEX\'s shards tumbling (top), and four whirling beside the Rift Mimic (bottom), at one scale', '(its own black blades, each about its own axis; the swirl stays drawn in code)'] },
+  // THE VOIDSTAR's SLAP (its everyday shot; the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles", "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature",
+  // "Ghostly violet energy", "Two alternate", then "Make it look 3d rendered"): ONE short, stubby tentacle of ghostly violet gel, thick to a blunt round tip, a brighter core inside it and a few small suckers on its underside, swinging
+  // from overhead across (clockwise) and slapping down. ANIMATED: its columns are the frames of the swing (yaws = the frames), one row; its root is the origin, at the middle of its cell. The game draws it mirrored for the second slap.
+  slap: { form: 861, color: '#9933ff', anim: true, cell: 96, yaws: 12, pitches: [0], h: 0.8 },
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -119,6 +123,22 @@ window.__fx = async function (mode, piece, P) {
     if (piece === 'vortexshard') {   // the Mimic's own blade, its middle (its triangle's centroid) at the origin, laid on its side; userData.tumbler turns it about an axis through its middle
       const sh = blade(P.bw, P.bh, P.bd); sh.scale.setScalar(P.S); sh.position.set(-0.04 * P.bw * P.S, -P.bh * P.S / 3, 0);
       const side = new T.Group(); side.add(sh); side.rotation.z = PI / 2; const tum = new T.Group(); tum.add(side); g.add(tum); g.userData.tumbler = tum; }
+    if (piece === 'slap') {   // a tapered tube of violet gel along a chain of four joints that swings; a brighter core tube inside it; suckers; a round base. userData.pose(u): u 0..1 through the swing
+      const gel = new T.MeshStandardMaterial({ color: new T.Color(0x8a3df0).convertSRGBToLinear(), emissive: new T.Color(0x5a1fc8).multiplyScalar(0.5), transparent: true, opacity: 0.93, roughness: 0.2, metalness: 0 }); gel.envMapIntensity = 0.75;
+      const core = new T.MeshBasicMaterial({ color: new T.Color(0xcfa8ff).convertSRGBToLinear(), transparent: true, opacity: 0.75, toneMapped: false });
+      const suck = new T.MeshStandardMaterial({ color: new T.Color(0xe6d0ff).convertSRGBToLinear(), emissive: new T.Color(0x9a55f0).multiplyScalar(0.35), roughness: 0.3, metalness: 0 });
+      const N = 18, tt = _taperTube(gel, N, 14), tc = _taperTube(core, N, 7), grp = new T.Group(); grp.rotation.y = PI / 4;   // (turned to face the camera, as the forms)
+      grp.add(tt.mesh); grp.add(tc.mesh); const base = new T.Mesh(new T.SphereGeometry(1, 16, 12), gel); grp.add(base); const sk = []; for (let i = 0; i < 4; i++) { const s = new T.Mesh(new T.SphereGeometry(1, 8, 6), suck); grp.add(s); sk.push(s); } g.add(grp);
+      const pts = Array.from({ length: N }, () => new T.Vector3()), rad = new Array(N), rc = new Array(N), Ln = 0.78, SEG = 4, jp = [new T.Vector3()];
+      g.userData.pose = u => {
+        const e = 1 - Math.pow(1 - u, 2), a0 = 2.35 - 3.0 * e, speed = Math.min(1.6, Math.abs(2 * (1 - u)) * 1.0), len = Ln * (0.6 + 0.4 * Math.min(1, u * 5));   // (clockwise from up and back to down and forward; it grows as it appears)
+        jp.length = 1; let ang = 0; for (let i = 1; i <= SEG; i++) { ang = a0 + 0.32 * speed * Math.pow(i / SEG, 1.3) * (1 + i * 0.2) - 0.1 * (i / SEG) * (1 - u); jp.push(jp[i - 1].clone().add(new T.Vector3(Math.cos(ang), Math.sin(ang), 0).multiplyScalar(len / SEG))); }
+        const curve = new T.CatmullRomCurve3(jp);
+        for (let i = 0; i < N; i++) { const t = i / (N - 1), p = curve.getPoint(t); pts[i].copy(p); const cap = t > 0.86 ? Math.sqrt(Math.max(0, 1 - Math.pow((t - 0.86) / 0.14, 2))) : 1; rad[i] = Math.max(0.004, (0.19 - 0.075 * t) * cap); rc[i] = rad[i] * 0.42; }
+        tt.set(pts, rad); tc.set(pts, rc); base.position.copy(pts[0]); base.scale.setScalar(0.205);
+        sk.forEach((s, i) => { const t = 0.28 + i * 0.16, p = curve.getPoint(t), tg = curve.getTangent(t), nx = -tg.y, ny = tg.x, r = (0.19 - 0.075 * t); s.position.set(p.x + nx * r * 0.95, p.y + ny * r * 0.95, 0.04); s.scale.setScalar(0.034); }); };
+      g.userData.pose(0);
+    }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
       const N = P.sides, mk = (r, h, sd, segs, amt) => { const geo = new T.ConeGeometry(r, h, N, segs), q = geo.attributes.position;
@@ -192,6 +212,7 @@ window.__fx = async function (mode, piece, P) {
     for (let j = 0; j < P.pitches.length; j++) for (let k = 0; k < P.yaws; k++) {
       if (P.copy) { const B = q.userData.B; B.update(k / P.yaws * P.loop, 0); B.g.traverse(o => { if (o.isSprite || o.isLight) o.visible = false; if (o.isMesh && o.material && o.material.blending === T.AdditiveBlending) o.visible = false; }); }   // (a copy: frame k of its idle loop)
       else if (P.tumble) q.userData.tumbler.quaternion.setFromAxisAngle(new T.Vector3(...P.tumble.axes[j]).normalize(), k * 2 * PI / P.yaws);   // (a tumbling piece: row j its axis, column k the step of its turn)
+      else if (P.anim) q.userData.pose(k / (P.yaws - 1));   // (an animated piece: column k the frame of its swing)
       else aim(q, k * 2 * PI / P.yaws, P.pitches[j]);
       renderer.render(scene, cam); sg.drawImage(renderer.domElement, k * C, j * C, C, C);
       pg.clearRect(0, 0, C, C); pg.drawImage(renderer.domElement, 0, 0, C, C); const d = pg.getImageData(0, 0, C, C).data; let edge = false;
