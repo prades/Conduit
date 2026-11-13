@@ -27785,7 +27785,7 @@ const FACILITY_MAP = {
             note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
             polygon: [[370, 410], [930, 410], [930, 600], [870, 600], [870, 760], [310, 760], [310, 605], [430, 605], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]] },
         { id: "lounge", label: "The Lounge", level: 0, status: "placed", wall_material: "glass",
-            note: "THE LOUNGE (build 2026-11-13a; the owner, 2026-11-12: \"I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand ... tilted towards the beanbag chairs ... there's a rug\"; the name \"The Lounge\"; mirrored 2026-11-13: \"the whiteboard is on the other side, pointing towards the player, looking at the slant\"): the old Experiment Lab's room in the middle of the gridded floor, glass onto the hallway on its north and east as before, its south a full DIVIDER wall (thin, solid: `windows`, divider). Its only door is the narrow passage to Teleport Room 1. The whiteboard on its stand at the west end, north of the door, turned to face the camera; four beanbags on a rug before it, two each side of the aisle from the door; two couches round a low table at the east end; two plants.",
+            note: "THE LOUNGE (build 2026-11-13a; the owner, 2026-11-12: \"I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand ... tilted towards the beanbag chairs ... there's a rug\"; the name \"The Lounge\"; mirrored 2026-11-13: \"the whiteboard is on the other side, pointing towards the player, looking at the slant\"): the old Experiment Lab's room in the middle of the gridded floor, OPEN onto the hallway on its north and east (no glass, no frame: `openings`, open; the owner, build 2026-11-13g: \"there shouldn't be any obstructions on the north side ... or the right side of it either, the east side\"), its south a full DIVIDER wall (thin, solid: `windows`, divider), its west the wall with the door to the narrow passage. The whiteboard on its stand at the west end, north of the door, turned to face the camera; four beanbags on a rug before it, two each side of the aisle from the door; two couches round a low table at the east end; two plants.",
             polygon: [[430, 530], [750, 530], [750, 640], [430, 640]] },
         { id: "lab_passage", label: "Narrow passage (lab to Teleport Room 1)", level: 0, status: "approximate",
             note: "The old lab's little narrow hallway (The Lounge's since build 2026-11-13a): it crosses the west side of the gridded floor from the lounge's west wall to Teleport Room 1 (the arm of the lab drawn reaching the left wall in the sketch).",
@@ -28016,11 +28016,11 @@ const FACILITY_MAP = {
         { id: "lounge_beanbag_2", room: "lounge", shape: "rect", rect: [550, 550, 570, 570], status: "placed", kind: "beanbag" },
         { id: "lounge_beanbag_3", room: "lounge", shape: "rect", rect: [510, 590, 530, 610], status: "placed", kind: "beanbag" },
         { id: "lounge_beanbag_4", room: "lounge", shape: "rect", rect: [550, 590, 570, 610], status: "placed", kind: "beanbag" },
-        { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [650, 530, 710, 550], status: "placed", kind: "couch", note: "Along the north glass, facing the room." },
-        { id: "lounge_couch_2", room: "lounge", shape: "rect", rect: [730, 550, 750, 610], status: "placed", kind: "couch", note: "Along the east glass, facing west (its back to the camera)." },
-        { id: "lounge_table", room: "lounge", shape: "rect", rect: [670, 570, 710, 590], status: "placed", kind: "table", note: "A low glass-topped table between the two couches." },
-        { id: "lounge_plant_1", room: "lounge", shape: "rect", rect: [630, 530, 650, 550], status: "placed", kind: "plant" },
-        { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [730, 530, 750, 550], status: "placed", kind: "plant" },
+        { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [610, 550, 670, 570], status: "placed", kind: "couch", note: "A row in from the open north side, facing the room (build 2026-11-13g: nothing stands at the open sides)." },
+        { id: "lounge_couch_2", room: "lounge", shape: "rect", rect: [690, 550, 710, 610], status: "placed", kind: "couch", note: "Two rows in from the open east side, facing west across the table." },
+        { id: "lounge_table", room: "lounge", shape: "rect", rect: [630, 590, 670, 610], status: "placed", kind: "table", note: "A low glass-topped table between the two couches." },
+        { id: "lounge_plant_1", room: "lounge", shape: "rect", rect: [590, 550, 610, 570], status: "placed", kind: "plant" },
+        { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [590, 590, 610, 610], status: "placed", kind: "plant" },
         { id: "console_3", room: "teleport_room_2", shape: "rect", rect: [990, 610, 1070, 630], status: "placed", kind: "console" },
         { id: "teleporter_5", room: "teleport_room_2", shape: "rect", rect: [1070, 650, 1090, 670], status: "placed", kind: "teleporter" },
         { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 750, 1010, 770], status: "placed", kind: "teleporter" },
@@ -28235,9 +28235,9 @@ const FACILITY_MAP = {
     ],
     relays: [
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },
-        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },
+        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room", "lounge"], feeds: ["charger_hall"] },
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },
-        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lounge", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },
+        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
         { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "catwalk_spur", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers"], feeds: [] },
     ],
@@ -28430,7 +28430,7 @@ const FACILITY_MAP = {
         { id: "poster_lab", room: "experiment_lab", kind: "poster", a: [50, 530], b: [70, 530], z: 34 },
         { id: "lounge_rug", room: "lounge", kind: "rug", rect: [490, 550, 590, 610], colour: "#b85a72", border: "#ffd34d" },
         { id: "lounge_light_1", room: "lounge", kind: "light", at: [540, 580], radius: 100, colour: "#ffd9a0", a: 0.22 },
-        { id: "lounge_light_2", room: "lounge", kind: "light", at: [680, 560], radius: 70, colour: "#ffd9a0", a: 0.18 },
+        { id: "lounge_light_2", room: "lounge", kind: "light", at: [660, 580], radius: 70, colour: "#ffd9a0", a: 0.18 },
         { id: "lounge_light_3", room: "lounge", kind: "light", at: [480, 580], radius: 50, colour: "#fff4e0", a: 0.14 },
         { id: "lounge_papers", room: "lounge", kind: "papers", at: [580, 580], radius: 18, n: 3 },
         { id: "hazard_11", room: "lab_passage", kind: "hazard", rect: [310, 570, 330, 610] },
@@ -28760,8 +28760,6 @@ const FACILITY_MAP = {
     ],
     outer_path: null,
     windows: [
-        { id: "lab_window_north", a: [430, 530], b: [750, 530], rooms: ["lounge", "lab_hallway"] },
-        { id: "lab_window_east", a: [750, 530], b: [750, 640], rooms: ["lounge", "lab_hallway"] },
         { id: "lounge_divider_south", a: [750, 640], b: [430, 640], rooms: ["lounge", "lab_hallway"], divider: true },
         { id: "deck_window_arena", a: [340, 760], b: [340, 950], rooms: ["observation_deck", "arena"] },
         { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room", "lab_hallway"] },
@@ -28793,6 +28791,10 @@ const FACILITY_MAP = {
             note: "A sliding access door between the narrow passage and Teleport Room 1." },
         { id: "door_lab_passage", a: [430, 565], b: [430, 605], rooms: ["lounge", "lab_passage"], position_status: "approximate",
             note: "A sliding access door between the Lounge (the old lab) and the narrow passage." },
+        { id: "open_lounge_north", a: [430, 530], b: [750, 530], rooms: ["lounge", "lab_hallway"], door: null, open: true, position_status: "approximate",
+            note: "THE LOUNGE's north side, open onto the hallway along its whole length (build 2026-11-13g; it was glass: lab_window_north): no door, no frame (`open`)." },
+        { id: "open_lounge_east", a: [750, 530], b: [750, 640], rooms: ["lounge", "lab_hallway"], door: null, open: true, position_status: "approximate",
+            note: "THE LOUNGE's east side, open onto the hallway along its whole length (build 2026-11-13g; it was glass: lab_window_east)." },
         { id: "open_lab_stair", a: [185, 630], b: [185, 690], rooms: ["teleport_room_1", "experiment_lab"], door: null, position_status: "approximate",
             note: "THE EXPERIMENT LAB'S STAIRCASE (build 2026-11-13a): an open mouth three tiles wide in Teleport Room 1's west wall, between its west teleporters, and the staircase down from it into the lab (`ramps`, r_lab_stair). No door." },
         { id: "door_crystal_hallway", a: [370, 422], b: [370, 486], rooms: ["crystal_chamber", "lab_hallway"], position_status: "approximate",
@@ -28826,6 +28828,8 @@ const FACILITY_MAP = {
         { id: "conn_showroom_hallway", rooms: ["show_room", "lab_hallway"], opening: "door_showroom_hallway" },
         { id: "conn_arena_hallway", rooms: ["arena", "lab_hallway"], opening: "door_arena_hallway", ramp: "r_arena_steps" },
         { id: "conn_lab_passage", rooms: ["lounge", "lab_passage"], opening: "door_lab_passage" },
+        { id: "conn_lounge_north", rooms: ["lounge", "lab_hallway"], opening: "open_lounge_north" },
+        { id: "conn_lounge_east", rooms: ["lounge", "lab_hallway"], opening: "open_lounge_east" },
         { id: "conn_lab_stair", rooms: ["teleport_room_1", "experiment_lab"], opening: "open_lab_stair", ramp: "r_lab_stair" },
         { id: "conn_passage_teleport_1", rooms: ["lab_passage", "teleport_room_1"], opening: "door_passage_teleport_1" },
         { id: "conn_crystal_hallway", rooms: ["crystal_chamber", "lab_hallway"], opening: "door_crystal_hallway" },
@@ -29230,7 +29234,7 @@ function _facilityBuild(ex) {
         pb[0] = pa[0] + (pb[0] - pa[0]) / l * 2;
         pb[1] = pa[1] + (pb[1] - pa[1]) / l * 2;
     } return [pa, pb]; };
-    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door"), cave: !!o.cave }; });
+    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door"), cave: !!o.cave, open: !!o.open }; });
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
@@ -32378,7 +32382,7 @@ function _fpPlaceStatics(F) {
             it.base2 = top;
         }
     for (const o of F.openings) {
-        if (o.cave || F.connections.some(c => c.opening === o.id && c.ramp))
+        if (o.cave || o.open || F.connections.some(c => c.opening === o.id && c.ramp))
             continue;
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my), lroom = _fpWallLightRoom({ room: (o.rooms || [])[0] }, o.a, o.b, F), thin = _fpDoorThin(o, F);
         for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]])
@@ -37385,7 +37389,7 @@ function _fpLit() {
     }
     return _fpLitPrev !== null ? _fpLitPrev : FP_LIT;
 }
-function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id === "catwalk_spur" ? "arena" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }
+function _fpLightKey(id) { return id === "teleport_stair_room" || id === "lounge" ? "lab_hallway" : id === "catwalk_spur" ? "arena" : (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) ? "nest_area" : id; }
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map();
     _fp.pool = _fp.pool || new Map();
