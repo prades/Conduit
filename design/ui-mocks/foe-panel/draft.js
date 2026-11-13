@@ -20,7 +20,18 @@ const ROOT = path.resolve(__dirname, '../../..'), OUT = path.resolve((process.ar
 const [VW, VH] = (process.argv.find(x => /^\d+x\d+$/.test(x)) || '1180x820').split('x').map(Number);
 
 const P = n => 'body.corners.d' + n + ' #mixTool';
-const NAMES = ['NOW', 'HOLO GLASS', 'VERSUS', 'UPRIGHT CARD', 'SCOPE BRACKETS', 'RPG WINDOW', 'SCOPE DISC', 'WIDE BANNER', 'TABS ON TOP', 'LAB TERMINAL', 'CRYSTAL'];
+const NAMES = ['NOW', 'HOLO GLASS', 'VERSUS', 'UPRIGHT CARD', 'SCOPE BRACKETS', 'RPG WINDOW', 'SCOPE DISC', 'WIDE BANNER', 'TABS ON TOP', 'LAB TERMINAL', 'CRYSTAL', '3A TIDY', '3B SIDE RAIL', '3C GENTLE FAN'];
+// ROUND 2 (--round=3; the owner, of the ten: "Number 3 is cool, just less jumbled"): three tidier UPRIGHT CARDs. 3A TIDY: the card straight, the tabs one size, evenly spaced, level, their ends
+// showing behind it. 3B SIDE RAIL: the card straight, the tabs one column fixed to its right edge, its height in four, one piece with it. 3C GENTLE FAN: a light tilt, an even small fan, every tab whole.
+const ROUND = (process.argv.find(x => x.startsWith('--round=')) || '').slice(8);
+// the upright card itself, as in design 3, standing at `tilt`
+const upright = (n, tilt) => `${P(n)} .mt-foe-slot { width: 176px; } ${P(n)} .mt-foe.at-left { padding-left: 6px; }
+ ${P(n)} .mt-foe-slab { display: block; height: 238px; transform: ${tilt}; transform-origin: 50% 100%; border-radius: 12px; border-width: 3px; }
+ ${P(n)} .mt-foe.at-left .mt-foe-pic { inset: 0 0 auto 0; height: 118px; border-bottom: 2px solid var(--c); } ${P(n)} .mt-foe.at-left .mt-foe-pic.full img { left: -10px; top: -46px; width: 190px; height: 190px; }
+ ${P(n)} .mt-foe.at-left .mt-foe-sub { bottom: 4px; width: auto; }
+ ${P(n)} .mt-foe.at-left .mt-foe-txt { position: absolute; left: 0; right: 0; top: 120px; margin: 0; padding: 6px 9px; border-left: 0; background: rgba(5,7,15,0.75); gap: 2px; } ${P(n)} .mt-foe.at-left .mt-foe-name { -webkit-line-clamp: 1; font-size: 13px; }
+ ${P(n)} .mt-foe.at-left .mt-foe-dmg { display: none; } ${P(n)} .mt-foe-atk { border-radius: 0 0 10px 10px; }
+ ${P(n)}.foe .mt-cmd-roster { bottom: calc(var(--cn-tool) + 76px); width: 240px; }`;
 // a tab, shown whole beside the card (no tuck, no peek)
 const free = (n, w, h) => `${P(n)} :is(.mt-fa.all, .mt-fa.run, .mt-fa.come, .mt-fa.info) { animation: none; translate: none; transform: none; width: ${w}px; height: ${h}px; padding: 0; justify-content: center; z-index: 5; }
   ${P(n)} .mt-fa b { width: auto; }`;
@@ -138,6 +149,20 @@ const CSS = [
  ${P(10)} .mt-fa::before { border: 0; border-radius: 0; clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); background: linear-gradient(160deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 40%, color-mix(in srgb, var(--c) 45%, #05070f)); }
  ${P(10)} .mt-fa { color: #05070f; text-shadow: none; filter: drop-shadow(0 0 5px var(--c)); } ${P(10)} .mt-fa.run { color: #fff; } ${P(10)} .mt-fa b { font-size: 7.5px; gap: 0; } ${P(10)} .mt-fa b::before { width: 16px !important; height: 16px !important; } ${P(10)} .mt-fa.info b i { font-size: 15px; color: #05070f; text-shadow: none; }
  ${P(10)} .mt-fa.info { left: calc(100% + 6px); top: 6px; } ${P(10)} .mt-fa.run { left: calc(100% + 46px); top: 30px; } ${P(10)} .mt-fa.come { left: calc(100% + 6px); top: 54px; } ${P(10)} .mt-fa.all { left: calc(100% + 46px); top: 78px; }`,
+// 11 3A TIDY
+upright(11, 'none') + `
+ ${free(11, 108, 46)} ${P(11)} :is(.mt-fa.all, .mt-fa.run, .mt-fa.come, .mt-fa.info) { z-index: 1; justify-content: flex-end; } ${P(11)} .mt-fa::before { border-radius: 10px; } ${P(11)} .mt-fa b { width: 54px; }
+ ${P(11)} .mt-fa { left: 122px; } ${P(11)} .mt-fa.info { top: 10px; } ${P(11)} .mt-fa.run { top: 68px; } ${P(11)} .mt-fa.come { top: 126px; } ${P(11)} .mt-fa.all { top: 184px; }`,
+// 12 3B SIDE RAIL
+upright(12, 'none') + `
+ ${P(12)} .mt-foe-slab { border-radius: 12px 0 0 12px; } ${P(12)} .mt-foe-atk { border-radius: 0 0 0 10px; }
+ ${free(12, 64, 58)} ${P(12)} .mt-fa { left: 176px; } ${P(12)} .mt-fa::before { border-radius: 0; border-left-width: 0; box-shadow: 4px 4px 0 rgba(0,0,0,0.5); }
+ ${P(12)} .mt-fa.info { top: 0; } ${P(12)} .mt-fa.info::before { border-radius: 0 12px 0 0; } ${P(12)} .mt-fa.run { top: 60px; } ${P(12)} .mt-fa.come { top: 120px; } ${P(12)} .mt-fa.all { top: 180px; } ${P(12)} .mt-fa.all::before { border-radius: 0 0 12px 0; }
+ ${P(12)} .mt-fa b { font-size: 10px; gap: 3px; } ${P(12)} .mt-fa b::before { width: 22px !important; height: 22px !important; } ${P(12)} .mt-fa.info b i { font-size: 20px; }`,
+// 13 3C GENTLE FAN
+upright(13, 'rotate(-2deg)') + `
+ ${P(13)} :is(.mt-fa.all, .mt-fa.run, .mt-fa.come, .mt-fa.info) { animation: none; translate: none; width: 104px; height: 46px; padding: 0; transform-origin: 0 50%; z-index: 1; justify-content: flex-end; } ${P(13)} .mt-fa::before { border-radius: 10px; } ${P(13)} .mt-fa b { width: 56px; }
+ ${P(13)} .mt-fa { left: 118px; } ${P(13)} .mt-fa.info { top: 8px; transform: rotate(-6deg); } ${P(13)} .mt-fa.run { top: 66px; transform: rotate(-2deg); } ${P(13)} .mt-fa.come { top: 124px; transform: rotate(2deg); } ${P(13)} .mt-fa.all { top: 182px; transform: rotate(6deg); }`,
 ].join('\n');
 
 (async () => {
@@ -153,14 +178,15 @@ const CSS = [
     targetSet(e, true); mixToolRender(true); await wt(700); });
   await pg.addStyleTag({ content: CSS });
   const files = [];
-  for (let n = 0; n <= 10; n++) {
-    await pg.evaluate(n => { for (let i = 1; i <= 10; i++) document.body.classList.toggle('d' + i, i === n); }, n); await pg.waitForTimeout(500);
+  const IDS = ROUND === '3' ? [3, 11, 12, 13] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  for (const n of IDS) {
+    await pg.evaluate(n => { for (let i = 1; i <= 13; i++) document.body.classList.toggle('d' + i, i === n); }, n); await pg.waitForTimeout(500);
     const f = path.join(OUT, String(n).padStart(2, '0') + '.png');
     await pg.screenshot({ path: f, clip: { x: 0, y: VH - 400, width: 560, height: 400 } }); files.push(f);
   }
   await b.close(); srv.close();
   // the sheet: each with its number and name over it, two to a row
-  const lab = files.map((f, n) => { const o = f.replace(/\.png$/, '-l.png'); execFileSync('convert', ['-background', '#070b16', '-fill', '#ffcc44', '-font', 'DejaVu-Sans-Bold', '-pointsize', '40', 'label:' + (n ? n + '  ' : '') + NAMES[n], f, '-gravity', 'west', '-append', o]); return o; });
-  execFileSync('montage', ['-label', '', ...lab.slice(1), '-tile', '2x', '-geometry', '+12+12', '-background', '#070b16', path.join(OUT, 'sheet.png')]);
+  const lab = files.map((f, k) => { const n = IDS[k]; const o = f.replace(/\.png$/, '-l.png'); execFileSync('convert', ['-background', '#070b16', '-fill', '#ffcc44', '-font', 'DejaVu-Sans-Bold', '-pointsize', '40', 'label:' + (n && n <= 10 ? n + '  ' : '') + NAMES[n], f, '-gravity', 'west', '-append', o]); return o; });
+  execFileSync('montage', ['-label', '', ...(ROUND ? lab : lab.slice(1)), '-tile', '2x', '-geometry', '+12+12', '-background', '#070b16', path.join(OUT, 'sheet.png')]);
   console.log('wrote', files.length, 'drafts and the sheet to', OUT);
 })();
