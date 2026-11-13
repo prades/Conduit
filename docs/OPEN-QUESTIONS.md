@@ -846,3 +846,11 @@ The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; t
 
 ## The Ultimate's tab while the squad strip is tucked (build `2026-11-12v`, 2026-11-12) — **resolved 2026-11-13**
 The tab rises from behind a follower's card on the squad strip when its Ultimate is full (`UI-STYLE.md`, "The Ultimate's tab"). When the strip is slid away into its small tab (▸3), the cards are hidden and so are their tabs. **The owner's answer:** "Nothing, keep it hidden" — slid away means out of sight; the Ultimate tabs show only when the cards are slid back out. (Options not taken: the ▸3 tab glowing gold; the Ultimate's own tab rising from the ▸3 tab.) As built in `2026-11-12v`; no change needed.
+
+## The electrical domain's breed: the roly-poly and its boss (the owner's direction, 2026-11-13; `DOMAINS.md` §2, 14)
+Examples shown (reference photos; 3D studies from `design/creatures/electric_breed_examples.js`); nothing designed. Open:
+1. **The look:** A live seams (slate plates, yellow current glowing in the seams), B insulator morph (glossy black plates, yellow bands, copper antennae), C capacitor shell (plates traced with glowing circuits, copper contacts, cyan tips), or a mix.
+2. **What it is:** an enemy race (as the ants are), or a follower you can recruit or breed as well?
+3. **Immune, read how:** a hit is part physical, part elemental (js/damage.js). Does immunity to Crushing and Slashing stop the whole hit, or only its physical part, so the elemental part still lands? And what is it weak to (every race has two or three weaknesses)?
+4. **Rolling up:** to shut itself against hits, to roll at you, or only a look?
+5. **The larva boss:** where it waits (draft 5's Deep Chamber, or in the coolant: the real larva hunts underwater), its size, and how electric it looks (natural, electric as drawn, or between). The names of both.

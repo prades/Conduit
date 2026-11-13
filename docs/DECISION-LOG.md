@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The electrical domain's breed: a roly-poly; its boss a diving beetle larva
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
+- **Status:** Approved direction (the owner's words); examples shown; not designed or built
+- **Context:** the owner: "Begin work on a new breed of insect using 3D graphics. It's going to be a roly-poly type character that is immune to crushing, immune to slashing, and resistant to piercing. That will be electric type and will inhabit the electric domain, and a boss creature will be a predaceous diving beetle larva. Show me pictures and examples of that before you design it."
+- **Decision:** the electrical domain's creatures are a new breed, a roly-poly (electric, in 3D; immune to Crushing and Slashing, resistant to Piercing), and its boss is a predaceous diving beetle larva. Before any design: reference photos and 3D example studies (`design/creatures/electric_breed_examples.js`).
+- **Agent's, provisional:** the three electric looks drawn (A live seams, B insulator morph, C capacitor shell) and the larva's electric look; nothing chosen.
+- **Open:** `OPEN-QUESTIONS.md`, "The electrical domain's breed" (the look; enemy or follower too; how immunity reads, since immunity is a new rule; rolling up; the boss's place, size and look; names).
+- **Affects (when designed):** js/damage.js (`DMG_RACE`; immunity is new), the enemies and bosses, `COMBAT.md` §7.3, `DOMAINS.md` §2, 14.
+
 ## DECISION: The items in 3D; the PACK's tiles as translucent glossy buttons
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13x` (stamped 13u on its branch)
