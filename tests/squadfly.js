@@ -117,7 +117,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var p = $('#mixTool .mt-panel'); out.tool = { h: p ? Math.round(p.getBoundingClientRect().height) : 0, css: getComputedStyle(document.documentElement).getPropertyValue('--cn-tool').trim(), kids: p ? p.children.length : 0 };
     // a creature locked on: the picked member names who goes on the card's strip
     actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true);
-    var atkText = function(){ var e = $('#mixTool .mt-fa.atk'); return e ? e.textContent + (($('#mixTool .mt-fa.all.on')) ? '|ALL' : '') : null; };   // (the enemy card at the left, build 2026-11-11m: its ATTACK button counts who goes, ALL lit for everyone)
+    var atkText = function(){ var e = $('#mixTool .mt-foe-atk'); return e ? e.textContent + (($('#mixTool .mt-fa.all.on')) ? '|ALL' : '') : null; };   // (the enemy card at the left, build 2026-11-11m: its ATTACK button counts who goes, ALL lit for everyone)
     selectedUnits.clear(); partyTick(); mixToolRender(true); await wait(60); out.foe0 = atkText();
     selectedUnits.add(partyOrdered()[0]); mixToolRender(true); await wait(60); out.foe1 = atkText();
   } catch (e) { out.err = String(e && e.stack || e); }

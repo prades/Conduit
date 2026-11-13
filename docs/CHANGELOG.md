@@ -2,7 +2,13 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
-## 2026-11-12
+## 2026-11-13
+
+### Build `2026-11-13a` · branch `claude/friendly-thompson-w581x0` · the enemy card is the attack button
+- **The ask** (the owner: "the attack is on the card itself. At the bottom of the card, thick, bold button"; "It's mostly an attack card ... you should be able to press this card and it should attack"; an info tab "on the right side to replace attack"; "No need to make the attack card any bigger. Just make it transparent ... a glossy layer that makes it seem like the entire button is a part of the attack"; "Info goes at the top right of that tab, and then all goes at the bottom of it").
+- **What it does:** in a fight (a tablet or a desktop), **a press anywhere on the enemy card at the bottom left sends the squad at the creature**. **ATTACK is a thick, bold bar of glass across the card's foot** (with its count), and **a glossy layer covers the whole card**; the card is the size it was. ATTACK's separate card in front is gone. The tabs behind its right side are, top to bottom, **INFO, RUN, COME, ALL**: **INFO** opens the creature's INFO card (the same one THE CORE's creature slab opens), locking the gun on it if needed. A phone is unchanged.
+- `js/mixtool.js` (`mixToolFoeHTML`, `mixToolFoeInfo`, the tap), `game.html` (the attack card's css), `tests/enemycard.js` (a check for it; its probe presses the card), `tests/squadfly.js`, `docs/UI-STYLE.md` ("The attack card").
+- **Verified:** tests/enemycard.js, squadfly.js, bottomui.js, corners.js and the full suite; real taps in the page at iPad size (the picture and the bar attack; INFO opens and shuts the creature's card and sends nobody; ALL and RUN work). **Not playtested.** Provisional: the glass and gloss, the bar's height, INFO's colour.
 
 ### Build `2026-11-12v` · branch `claude/friendly-thompson-w581x0` · the followers' Ultimates rise as tabs from behind their cards, each with its own symbol
 - **The ask** (the owner: "the ultimates for the followers show up as little balls or tabs on the roster, little roster menu at the bottom ... their own icon ... pop up dynamically whenever they have the ultimate"; then: only when ready, on each follower's card, bold flat symbols; then, of a first look with a round ball in front of the card: "They should be behind the tile cards and be elongated shapes that house the icons").
