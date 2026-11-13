@@ -286,7 +286,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", shard: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD SHOT, mimicShotCol; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png", split: true },   // (24 columns since build 2026-11-12u, design No. 944: columns 16-23 are ROTTEN DECOY's SPLIT, splitCol, in the body's sheet and the pool's; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png", split: true, spit: true },   // (24 columns since build 2026-11-12u, design No. 944: columns 16-23 are ROTTEN DECOY's SPLIT, splitCol, in the body's sheet and the pool's; 32 since build 2026-11-12w, design No. 945: columns 24-31 are CORRODE SHOT's SPIT, spitCol; 8-15, its old bow, are not used by the move now)
     // THORNWHIP (the owner named it, 2026-11-08; it came in as the THORNWHIP, a working name), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
     // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
@@ -1225,7 +1225,7 @@ function corrodeTouch(tgt) {
     if (!tgt || tgt.dead) return;
     tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
     for (const a of _evoFoesSeen(tgt.x, tgt.y, ROT_SPLASH_R)) { if (a === tgt) continue; a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED); }
-    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: ROT_SPLASH_R, color: "#66ff66", life: 24 });
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "soulsplat", x: tgt.x, y: tgt.y, life: 22, maxLife: 22 });   // (a splat on the target, no ring on the floor: the owner, 2026-11-12, "a shocking soul blob that hits the target")
 }
 
 // STATIC VORTEX (the Thunderhead's move; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): a STATIONARY electrical storm on the nearest enemy in reach. It does not travel.
@@ -1326,6 +1326,7 @@ function _evoFrame(f, d, f0) {
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const go = d.goo ? gooCol(f, f0) : -1;   // (the Hornshell's everyday shot: its arms are drawn in and a ring of glowing goo forms in front of its horn)
+    const sp = d.spit ? spitCol(f, f0) : -1;   // (the Rotshard's CORRODE SHOT: the crystal tips towards the enemy and a blob gathers at its tip over the shot's wind-up)
     const sc = d.split ? splitCol(f, f0, d) : -1;   // (the Rotshard's ROTTEN DECOY: a second black crystal grows out of its pool over the wind-up and breaks free as the decoy is set)
     const fg = d.fling ? flingCol(f, f0, d) : -1;   // (the Thornwhip's vines: rearing round a seed over a shot's or SEEDFALL's wind-up, whipping out as it goes)
     const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
@@ -1338,6 +1339,7 @@ function _evoFrame(f, d, f0) {
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
     else if (sc >= 0) col = sc;
+    else if (sp >= 0 && !(sigK >= 0 && sigK < 1)) col = sp;
     else if (fg >= 0) col = fg;
     else if (rc >= 0) col = rc;
     else if (pu >= 0) col = pu;
@@ -1570,6 +1572,14 @@ function flingCol(f, f0, d) {
 // which column of the Rotshard's sheet (the extra block, 16 to 23: design No. 944) while ROTTEN DECOY goes (the owner, 2026-11-12, "the crystal splits"): over its wind-up (f._altWind of f._altWindMax) cells 0 to 5
 // (a second black crystal growing out of its pool beside it), then, as the decoy is set, 4 frames at cell 6 (it breaks free) and 8 at cell 7 (gone); -1 otherwise. The ground sheet (its pool) has the same
 // columns. Looks only; the frame counts are the agent's.
+// which column of the Rotshard's sheets (the third extra block, 24 to 31: design No. 945) over its everyday shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted: f._shotWind of f._shotWind0): cells 0 to 5 (the
+// crystal tipping towards the enemy, a blob of its own green gathering at its tip), then, as the shot goes (f._shotFiredAt), 4 frames at cell 6 (the crystal kicks back) and 6 at cell 7; -1 otherwise. Looks only (the
+// owner, 2026-11-12: "Yes, a little", of the body moving for its shot); the frame counts are the agent's.
+function spitCol(f, f0) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 24 + Math.min(5, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 6 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 4) return 30; if (a >= 4 && a < 10) return 31; }
+    return -1;
+}
 function splitCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "rotten_decoy" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
