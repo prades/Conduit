@@ -1,0 +1,597 @@
+{
+ "build": "2026-11-13p",
+ "forms": [
+  {
+   "id": "thunderhead",
+   "name": "THUNDERHEAD",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 19.056799999962095,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 7.283333333333313,
+     "taken": null
+    },
+    {
+     "mode": "static_vortex",
+     "dmg": 14.93999999987427,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "electroskink",
+   "name": "ELECTRO SKINK",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 18.632947976875585,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 3.7499999999999916,
+     "taken": null
+    },
+    {
+     "mode": "zigzag_dash",
+     "dmg": 47.913294797635174,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 13.050000000000228,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "gooproxy",
+   "name": "GOO PROXY",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "phase_swap",
+     "dmg": 11.169117647066013,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "igloo",
+   "name": "IGLOO SKATER",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "skate_charge",
+     "dmg": 39.97752808984369,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 42.749999999998856,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "seeper",
+   "name": "SEEPER",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 37.620809248503065,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 14.600000000000305,
+     "taken": null
+    },
+    {
+     "mode": "eruption",
+     "dmg": 125.49537572252447,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "sundew",
+   "name": "SUNDEW",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 23.9566473987652,
+     "heal": 2.2910000000000013,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 15.50000000000035,
+     "taken": null
+    },
+    {
+     "mode": "sweet_scent",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0.36,
+     "assist": 0,
+     "lured": 59.999999999997875,
+     "cc": 57.899999999997995,
+     "taken": 18.781361481741577
+    },
+    {
+     "mode": "sweet_scent_full",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 50.99999999999839,
+     "cc": 49.24999999999849,
+     "taken": 22.855741179205882
+    }
+   ]
+  },
+  {
+   "id": "voidstar",
+   "name": "VOIDSTAR",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 10.072075471677817,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 19.533333333333506,
+     "taken": null
+    },
+    {
+     "mode": "maelstrom",
+     "dmg": 19.898490566143302,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 51.749999999998344,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "staticorb",
+   "name": "STATIC ORB",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 51.882352941145655,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 14.416666666666963,
+     "taken": null
+    },
+    {
+     "mode": "static_rush",
+     "dmg": 73.92000000001863,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 16.60000000000034,
+     "taken": null
+    },
+    {
+     "mode": "capacitor_discharge",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "thermite",
+   "name": "THERMITE BURROWER",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "magma_vent",
+     "dmg": 28.000000000046565,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "jellyram",
+   "name": "JELLY RAM",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 1.8529411764699035,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0.733333333333334,
+     "taken": null
+    },
+    {
+     "mode": "wobble_slam",
+     "dmg": 44.470588235312604,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 8.700000000000012,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "mimic",
+   "name": "RIFT MIMIC",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 30.45,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 19.033333333333534,
+     "taken": null
+    },
+    {
+     "mode": "gravity_slam",
+     "dmg": 31.29411764703691,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 11.866666666666836,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "coralcrab",
+   "name": "STONEPETAL",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "stake_ring",
+     "dmg": 4.048351648356766,
+     "heal": 0.158,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "quillstone",
+   "name": "QUILLSTONE",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 42.589595375815406,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "quill_burst",
+     "dmg": 39.927745664695976,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "embercowl",
+   "name": "EMBER HOOD",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 9.722857142833528,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "hexfire",
+     "dmg": 21.34285714267753,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "blightspider",
+   "name": "BLIGHT SPIDER",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "venom_bite",
+     "dmg": 13.831868131883676,
+     "heal": 0,
+     "block": 0,
+     "assist": 2.339999999999999,
+     "lured": 0,
+     "cc": 17.500000000000288,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "rimestar",
+   "name": "RIMESTAR",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 11.40545454545645,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 3.9999999999999907,
+     "taken": null
+    },
+    {
+     "mode": "icicle_volley",
+     "dmg": 13.306363636365859,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 24.749999999999876,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "rotshard",
+   "name": "ROTSHARD",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 27.293303225783166,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 9.400000000000047,
+     "taken": null
+    },
+    {
+     "mode": "rotten_decoy",
+     "dmg": 0,
+     "heal": 0,
+     "block": 2.88,
+     "assist": 0,
+     "lured": 21.450000000000063,
+     "cc": 0,
+     "taken": 6.610806018448221
+    }
+   ]
+  },
+  {
+   "id": "maw",
+   "name": "FROST MAW",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 29.294910179567523,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 14.950000000000323,
+     "taken": null
+    },
+    {
+     "mode": "chomp",
+     "dmg": 336.625149700552,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 59.149999999997924,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "hammerslug",
+   "name": "HAMMER SLUG",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": 18.36340402463558
+    },
+    {
+     "mode": "shell_guard",
+     "dmg": 0,
+     "heal": 0,
+     "block": 16.64325,
+     "assist": 0,
+     "lured": 39.6666666666657,
+     "cc": 0,
+     "taken": 12.714599873310807
+    }
+   ]
+  },
+  {
+   "id": "hovershell",
+   "name": "HOVER SHELL",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    },
+    {
+     "mode": "shock_zap",
+     "dmg": 12.76470588236116,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 3.866666666666658,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "hornshell",
+   "name": "HORNSHELL",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 11.84658823533682,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 12.266666666666856,
+     "taken": null
+    },
+    {
+     "mode": "echo_pulse",
+     "dmg": 6.104910179623403,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 5.799999999999985,
+     "taken": null
+    }
+   ]
+  },
+  {
+   "id": "shrub",
+   "name": "THORNWHIP",
+   "modes": [
+    {
+     "mode": "main",
+     "dmg": 9.722857142833528,
+     "heal": 1.1340000000000015,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 10.133333333333416,
+     "taken": null
+    },
+    {
+     "mode": "seedfall",
+     "dmg": 0,
+     "heal": 1.9845000000000006,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "taken": null
+    }
+   ]
+  }
+ ]
+}

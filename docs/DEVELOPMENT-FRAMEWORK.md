@@ -85,6 +85,7 @@ Tools (2026-11-10):
 - `node tests/bible.js --fix` writes the code's value into every number the Bible shows wrong (the words stay a person's job), then checks the page.
 - `node tools/stamp.js <build>` stamps a build: the `?v=` on every script and `__PAGE_BUILD` in `game.html`, `BUILD_VERSION` in `js/config.js`, the Bible's build number and footer. It lists anything else in the page that still names the old build instead of changing it. Then it runs the picture tool and the bundler.
 - `node tools/bundle.js` (2026-11-11) makes the players' page: `play.html` (game.html with its scripts as one file) and `dist/conduit.js` (the 96 scripts before the boot check, in order, comments taken out by TypeScript's printer). Over the web `game.html` sends a visitor to `play.html`; `?dev` keeps the scripts one by one. `tests/bundle.js` fails when either is stale.
+- `node tools/balance.js` (2026-11-13) makes `balance.html`, the page for balancing: every evolved form's stats at level 20 (the same base for all), everyday type and status, alternate moves, ability and Ultimate as their INFO cards say them, and the measured table from `design/balance-trial.json`. It reads the code, so it cannot drift; `tests/balance.js` fails when it is stale, and the stamp makes it. `node tools/balance-trial.js` (minutes, not in the test run) fights each form against three enemies for 20 s and writes the measurements (damage, healing, blocked, assist, lured, control); run it after a balance change, then `node tools/balance.js`.
 - `node tools/images.js` (2026-11-11) brings the pictures up to date: a lossless WebP copy of each picture the game loads (kept only when smaller and exact), `js/imgmap.js` (each picture's address, with a fingerprint of the picture: `imgSrc` in `js/config.js`) and game.html's image preloads. Bake the PNG; this (or the stamp) does the rest. It needs ImageMagick's `convert`; without it a changed picture loads as its PNG. `tests/images.js` fails when any of it is stale.
 
 ### G — Document
@@ -149,6 +150,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The Flux Technician's object movement, FLUX MOVE (replacing Telegrab; built in the arena in `2026-11-06f` and its test room, `?fluxlab`, in `2026-11-06g`; the code audit; Milestone Two's study and answers, §13) | `FLUX-MOVEMENT.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
+| Balancing the followers (every evolved form side by side: stats, everyday type and status, moves, ability, Ultimate, and measured damage, healing, blocking and control; made from the code by `node tools/balance.js`, so it is never stale; the trial that measures it is `node tools/balance-trial.js`) | `../balance.html` |
 | Combat (and walls, cover and sight: §8, built in `2026-11-06h`) | `COMBAT.md` |
 | The player's part in a fight: the bars come back, the repair kit, GUARD and STUN DIVE (designed 2026-11-11) | `PLAYER-COMBAT.md` |
 | The battle look, the JRPG feel: the battle view (zoom, soft edges), bigger numbers in a face per damage type, attack frames per form (designed 2026-11-11; nothing built) | `BATTLE-LOOK.md` |

@@ -17,6 +17,7 @@ const SUITES = [
     ['the start: the start screen, the staged start, the sheets it waits for, failures and retries, the clock once, the readout', 'startup.js'],
     ['phones are told to play on an iPad (the rule, and the real page as an iPhone, an iPad today and an old one, ?anydevice, ?attract)', 'phonegate.js'],
     ['the players\' page: play.html and its one script (dist/conduit.js) fresh, the boot check kept, the way in from game.html, and the same names as file by file in a real browser', 'bundle.js'],
+    ['the balance page: balance.html fresh from the code, every form on it, no history, the measured table named by build', 'balance.js'],
     ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['the electrical domain (step 1): the little door beside the junction, shut until it is repaired; the deep server room and down four steps the circuitry; one interior of two rooms', 'elecdomain.js'],
     ['the player\'s part in a fight: the bars come back slowly out of danger; the repair kit (the pack, the KIT pill, H); kits dropped by creatures and at spots that fill again; GUARD (shots at the squad near you hit you, half speed) and STUN DIVE (a swoop, a stun, a rest)', 'playercombat.js'],
