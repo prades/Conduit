@@ -167,15 +167,27 @@ function _eatenDesign(opts) {
   const bits = []; for (let i = 0; i < (opts.bits || 0); i++) { const c = eatenCrystal(0.07 + 0.02 * i, 0.18, 0.1, 0.6); b.add(c); bits.push(c); }
   // (opts.split, No. 944: the Rotshard's ROTTEN DECOY: a second black crystal, two crossed plates of the old black shell, grows out of the pool beside it over the wind-up and breaks free at the release (v: { split, go }))
   const sp = opts.split ? G() : null; if (sp) { sp.visible = false; b.add(sp); const a1 = shellShard(1.3, 0.52, 0.09), a2 = shellShard(1.1, 0.44, 0.09); a2.rotation.y = PI / 2; sp.add(a1); sp.add(a2); }
+  // (opts.spit, No. 945: its CORRODE SHOT: the crystal tips towards the enemy and a blob of the crystal's own flat green gathers at its tip with sparks snapping off it, over the shot's wind-up (v: { tip, blob }))
+  const blob = opts.spit ? new T.Mesh(new T.SphereGeometry(1, 14, 10), new T.MeshBasicMaterial({ color: new T.Color(0x9adeae).convertSRGBToLinear(), toneMapped: false })) : null, blobSp = [];   // (the Rotshard's own crystal green, flat: the owner, 2026-11-12, "It should be the same color as [the Rotshard]")
+  if (blob) { blob.visible = false; blob.position.set(0, opts.h * 0.97 + opts.up + 0.2, 0.1); piv.add(blob); const sm = new T.MeshBasicMaterial({ color: new T.Color(0xa9c4b3).convertSRGBToLinear(), toneMapped: false });   // (dull smoke-lightning, not bright: the owner, 2026-11-12)
+    for (let i = 0; i < 6; i++) { const sk = new T.Mesh(new T.OctahedronGeometry(1, 0), sm); sk.visible = false; piv.add(sk); blobSp.push(sk); } }
   const L = new T.PointLight(0xffffff, 0.15, 3.5, 2); L.color.set(EL.color); L.position.set(0, 1.7, 0.7); b.add(L); LIGHTS.push(L);
   return { g, core: opts.h * 0.7 + 0.2, update(t, act, v) { pool.shift(t); const SV = sp && v && v.split != null ? v : null, gr = SV ? SV.split : 0, go = SV && SV.go ? SV.go : 0; piv.rotation.z = opts.tz + 0.02 * Math.sin(1.6 * t); piv.rotation.x = opts.tx - 0.22 * (act || 0); mound.scale.setScalar(1 + 0.04 * Math.sin(1.6 * t + 1) + 0.12 * (act || 0));   // when it fires it recoils and the pool surges
     bits.forEach((c, i) => { const a = i * 2.4 + 0.6 + 0.4 * Math.sin(1.6 * t + i), d = (0.7 + 0.15 * i) * R; c.position.set(Math.sin(a) * d, 0.1, Math.cos(a) * d); c.rotation.set(1.1 + i * 0.3, a, 0.5); });
     if (sp) { sp.visible = gr > 0.02; if (sp.visible) { sp.scale.set(0.45 + 0.55 * gr, gr, 0.45 + 0.55 * gr); sp.position.set(0.78 + 0.5 * go, 0.06 + 1.5 * go * (1 - 0.6 * go), 0.12 + 1.1 * go); sp.rotation.set(0.5 * go, 0.8 * go, 0.4 * go); }
-      if (SV) { piv.rotation.x -= 0.12 * gr; mound.scale.setScalar(mound.scale.x + 0.25 * gr); } } } };
+      if (SV) { piv.rotation.x -= 0.12 * gr; mound.scale.setScalar(mound.scale.x + 0.25 * gr); } }
+    if (blob) { const ST = v && v.blob != null ? v : null, tp = ST ? ST.tip : 0, bg = ST ? ST.blob : 0; blob.visible = bg > 0.02; if (!blob.visible) blobSp.forEach(sk => { sk.visible = false; });   // (the sparks go with the blob: one model draws every cell of a sheet in turn)
+      if (ST) { piv.rotation.x += 0.35 * tp; mound.scale.setScalar(mound.scale.x + 0.2 * Math.max(0, bg)); }
+      if (blob.visible) { const rr = 0.05 + 0.3 * bg; blob.scale.set(rr, rr * 0.92, rr);
+        blobSp.forEach((sk, i) => { sk.visible = bg > 0.35; if (sk.visible) { const an = i * 1.05 + bg * 3, d = rr * 1.5 + 0.05; sk.position.set(blob.position.x + Math.cos(an) * d, blob.position.y + Math.sin(an) * d * 0.9, blob.position.z + Math.sin(an * 1.7) * 0.08); sk.scale.set(0.012, 0.05 * bg, 0.012); sk.rotation.z = an + PI / 2; } }); } } } };
 }
 fx(101, "Eaten crystal, leaning.", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35, R: 0.8 }));
 // 944 · THE ROTSHARD's SPLIT (the owner, 2026-11-12, of ROTTEN DECOY, of the agent's three ideas: "the crystal splits"): No. 101 (the game sprite) with a second black crystal growing out of the pool beside it over the
 // wind-up (cells 0-5 of the sheet's extra block, columns 16-23), breaking free as the decoy is set (6: it leaves, 7: gone). The decoy on the floor is the game's own (the black Rotshard, js/fx3d.js rotdecoy).
 fx(944, "The ROTSHARD's split: No. 101 with a second black crystal growing out of the pool and breaking free (its ROTTEN DECOY; the sheet's extra block).", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35, R: 0.8, split: true }));
+// 945 · THE ROTSHARD's SOUL BLOB (the owner, 2026-11-12, of its CORRODE SHOT: "the corrode shot should look like a shocking soul blob that hits the target"; "Crackling with neon, bright neon green, but no gradient just
+// highlighter color"; "Yes, a little" for its body moving): No. 944 with a third extra block, columns 24-31: over the shot's quick wind-up (12 frames) the crystal tips towards the enemy and a blob of the crystal's own flat green gathers
+// at its tip with sparks snapping off it (cells 0-5), the shot goes (6: the crystal kicks back, the blob gone) and it settles (7). The blob that flies and splats is the game's own.
+fx(945, "The ROTSHARD's soul blob: No. 944 with its crystal tipping towards the enemy and a flat blob of the crystal's own green gathering at its tip with sparks (its CORRODE SHOT; the sheet's third block).", () => _eatenDesign({ seed: 2.0, h: 1.5, up: 0.25, reach: 0.5, tx: -0.12, tz: -0.35, R: 0.8, split: true, spit: true }));
 fx(102, "Eaten crystal, toppling.", () => _eatenDesign({ seed: 1.1, h: 1.6, up: 0.1, reach: 0.9, tx: -0.25, tz: -0.65 }));
 fx(103, "Eaten crystal, shedding bits.", () => _eatenDesign({ seed: 3.3, h: 1.4, up: 0.2, reach: 0.7, tx: 0.1, tz: -0.25, bits: 3, R: 0.8 }));

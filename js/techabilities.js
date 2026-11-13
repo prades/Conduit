@@ -147,7 +147,7 @@ const TECH_ABILITIES = {
     flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
                 ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
     blossom:  { id: "reef", name: "REEF", short: "REEF", icon: "◆", col: "#ff7ab8", aim: ["spot"], use: (f, p) => techReefAt(f, p.spot),
-                ask: () => "TAP THE FLOOR FOR AN OUTCROP, OR HIGH GROUND TO CLIMB, WHERE IT CAN SEE" },   // (BLOOM's: the coral crab's, as an egg and evolved alike)
+                ask: () => "TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB" },   // (BLOOM's: the coral crab's, as an egg and evolved alike; the words since build 2026-11-12v, the owner's pick "A": the ledges it can climb glow while it is aimed)
 };
 // A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
 // wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
@@ -899,7 +899,8 @@ function techReefClimbPlan(tech, spot) {
 function techReefClimbAt(tech, spot) {
     const plan = techReefClimbPlan(tech, spot); if (!plan.ok) return plan;
     const R = TECH_AB.reef, f0 = _techFrame();
-    techClimbs = techClimbs.filter(c => c.by !== tech);   // its last climb crumbles ("Until the next one": one each)
+    for (const c of techClimbs) if (c.by === tech) techClimbsGone.push({ C: c, at: f0 });   // its last climb crumbles ("Until the next one": one each), fading out where it stood (build 2026-11-12v)
+    techClimbs = techClimbs.filter(c => c.by !== tech);
     const C = { id: ++_techReefN, by: tech, foot: plan.foot, top: plan.top, edge: plan.edge, n: plan.n, from: [tech.x, tech.y], t0: f0 + R.shards };
     techClimbs.push(C);
     tech._abReadyAt = f0 + techCooldown(tech, R.cooldown);
@@ -933,7 +934,7 @@ function techClimbGo(C) {
 // THE CLIMBS IN THE SAVE (as the ice bridges are: "Until the next one"): each one's ends and its coral crab's uid. A load keeps one whose ends are still floor on two stretches; one whose crab is gone stands on.
 function techClimbsSnapshot() { return techClimbs.map(c => ({ foot: c.foot.slice(), top: c.top.slice(), edge: c.edge.slice(), n: c.n.slice(), by: (c.by && c.by.uid) || null })); }
 function techClimbsApply(list) {
-    techClimbs = [];
+    techClimbs = []; techClimbsGone = [];
     const pt = q => Array.isArray(q) && q.length === 2 && q.every(Number.isFinite);
     for (const c of (Array.isArray(list) ? list : [])) {
         if (!c || !pt(c.foot) || !pt(c.top)) continue;
@@ -1084,11 +1085,13 @@ function techFaultStep(f) {
 }
 // ── THE PATH AIM (FAULTLINE's): a press-drag-release on the floor, from js/input.js (the press, every move while it is down, the let-go; a cancelled touch) ──
 function techAimPathStart(sx, sy) {
+    _techAimPoint(sx, sy);   // (REEF's ghost follows the finger: below)
     const A = techAim; if (!A || techAimNeed() !== "path") return false;
     const p = techScreenToWorld(sx, sy); A.stroke = [{ x: p.x, y: p.y }]; A.drawing = true; A.full = false;
     return true;
 }
 function techAimPathMove(sx, sy) {
+    _techAimPoint(sx, sy);
     const A = techAim; if (!A || !A.drawing || !A.stroke) return false;
     if (A.full) return true;
     const T = TECH_AB.fault, p = techScreenToWorld(sx, sy), q = A.stroke[A.stroke.length - 1], d = Math.hypot(p.x - q.x, p.y - q.y);
@@ -1145,7 +1148,7 @@ function _techDrawFaultStroke(g, A, f0) {
 }
 
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
-function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techReefs = []; techClimbs = []; techSpikes = []; techClock = 0; techAim = null; _techLabels = {}; }
+function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techReefs = []; techClimbs = []; techClimbsGone = []; techSpikes = []; techClock = 0; techAim = null; _techLabels = {}; }
 
 // ── the throw and the flight ──
 function _techLoadPoint(a) {
@@ -1261,6 +1264,7 @@ function techStepOverride(a) {
 function techAbilityTick() {
     if (typeof _fp === "undefined" || !_fp || typeof followers === "undefined") return;
     const f0 = _techFrame(), T = TECH_AB.launch;
+    techReefTipTick();   // (REEF's tip, the first time it is ready: below)
     for (const f of followers) {
         if (!f || f.dead) continue;
         const m = !!techAbilityOf(f) && _techMember(f);
@@ -1665,7 +1669,9 @@ function techDrawItems(list) {
     for (const P of techPools) if (techPoolFade(P) > 0) list.push({ type: "tech", kind: "pod", x: P.x, y: P.y, P });   // a TOXIC POD, standing among everything else
     const f0 = _techFrame();
     for (const O of techReefs) if (_techReefOn(O, f0)) O.parts.forEach((c, i) => list.push({ type: "tech", kind: "reef", x: c.x, y: c.y, O, c, i }));   // REEF's outcrops (a REEF PILLAR's three spikes)
-    for (const C of techClimbs) if (f0 >= C.t0) { list.push({ type: "tech", kind: "climbFoot", x: C.foot[0], y: C.foot[1], C }); list.push({ type: "tech", kind: "climbTop", x: C.top[0], y: C.top[1], C }); }   // a REEF climb's two ends
+    for (const C of techClimbs) if (f0 >= C.t0) { const m = _techClimbArt(C).mid; list.push({ type: "tech", kind: "climbRock", x: m[0], y: m[1], C }); list.push({ type: "tech", kind: "climbFoot", x: C.foot[0], y: C.foot[1], C }); list.push({ type: "tech", kind: "climbTop", x: C.top[0], y: C.top[1], C }); }   // a REEF climb: its rock (at the middle of its run, for the depth), its two ends (their chevrons)
+    techClimbsGone = techClimbsGone.filter(g => f0 - g.at < REEF_CLIMB_ART.fade);
+    for (const g of techClimbsGone) { const m = _techClimbArt(g.C).mid; list.push({ type: "tech", kind: "climbRock", x: m[0], y: m[1], C: g.C, gone: g.at }); }   // one its technician has replaced, fading out
     for (const S of techSpikes) if (f0 >= S.t0 && f0 < S.t0 + S.life) list.push({ type: "tech", kind: "spike", x: S.x, y: S.y, S });   // STAKE RING's spikes
 }
 // ── REEF's rock and crystal (the coral crab's look, No. 914: smooth rounded plates of dark stone, big square pink crystals breaking out of them with a pink glow round them, crystal flowers among them) ──
@@ -1719,27 +1725,39 @@ function _techDrawReef(g, o, px, py, f0) {
     if (o.i === 0 && left < 600) { g.globalAlpha = Math.min(1, left / 30); g.font = (typeof uiFont === "function" ? uiFont(12) : "bold 12px sans-serif"); g.textAlign = "center"; g.fillStyle = "#ffd3e8"; g.fillText("◆ " + Math.ceil(left / 60), px, py - tall * s - 14); }   // its seconds, in its last ten
     g.globalAlpha = 1;
 }
-// A CLIMB: at its foot, out on the low floor, a mound of stone with crystals, and the rock and crystal running from it to the high ground's face and up it to the lip (seen through the open face: the
-// railing frame under the catwalks); at its top, crystals breaking over the lip. A chevron pulses at each end, the way over.
+// A CLIMB (build 2026-11-12v; the owner, of ten designs: "5 is cool, polish it more details and rocks", then "Build it"): BOULDER STEPS, a 3D model in STONEPETAL's make (design/props/models/reef.js)
+// baked into img/props/reef.png: STONEPETAL's dark plated stone heaped into steps up the face, a capstone on the lip, pink crystals and two crystal flowers. One sprite for each way a climb can face and each
+// height of ledge the map has (a ledge of another height takes the nearest, stretched to it). It grows up out of the floor when its shards land and fades out when its technician makes its next one.
+// A chevron pulses at the end you stand at, the way over.
+const REEF_CLIMB_ART = { heights: [18, 34, 50], uh: 60 / Math.sin(Math.PI / 4) * Math.cos(Math.asin(0.5)), grow: 18, fade: 30 };   // (heights in tenths of a tile; uh: px on screen to a unit of the model's height)
+let techClimbsGone = [];   // climbs their technician has replaced, fading out: { C, at }
+// which sprite a climb takes, its stretch, and the middle of its run on the low floor (where it is sorted among everything else)
+function _techClimbArt(C) {
+    if (C._art) return C._art;
+    const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, n = C.n || [0, -1], A = REEF_CLIMB_ART;
+    const side = Math.abs(n[0]) >= Math.abs(n[1]) ? (n[0] > 0 ? "w" : "e") : (n[1] < 0 ? "s" : "n");   // (n runs from the low floor to the high: the climb stands on the other side of the face)
+    const h10 = Math.max(1, (lift(C.top[0], C.top[1]) - lift(C.foot[0], C.foot[1])) / FP_ELEV_PX * 10), H = A.heights.reduce((b, v) => Math.abs(v - h10) < Math.abs(b - h10) ? v : b);
+    const run = Math.max(2, 1.2 + H / 10 * FP_ELEV_PX / A.uh * 1.1);   // (the model's run out from the face, in tiles: design/props/models/reef.js)
+    return (C._art = { name: side + H, k: h10 / H, run, mid: [C.edge[0] - n[0] * run / 2, C.edge[1] - n[1] * run / 2] });
+}
+// the climb's sprite with the foot of the face (its anchor) at (ax, ay) on the screen, at alpha `a`, scaled by `s` about (mx, my); false while its sheet has not arrived
+function _techDrawClimbRock(g, C, ax, ay, a, s, mx, my) {
+    const art = _techClimbArt(C), img = typeof _psImg === "function" ? _psImg("reef") : null, c = img && typeof _psCell === "function" ? _psCell("reef", art.name) : null; if (!c || !(a > 0)) return false;
+    g.save(); g.globalAlpha = Math.min(1, a);
+    if (s !== 1) { g.translate(mx, my); g.scale(s, s); g.translate(-mx, -my); }
+    g.drawImage(img, c.x, c.y, c.w, c.h, ax - c.ax, ay - c.ay * art.k, c.w, c.h * art.k);
+    g.restore(); return true;
+}
 function _techDrawClimb(g, o, px, py, f0) {
-    const C = o.C, lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, age = f0 - C.t0, s = Math.min(1, Math.max(0, age) / 14), seed = C.id * 13;
-    const rel = (x, y, z) => [px + ((x - o.x) - (y - o.y)) * TILE_W, py + ((x - o.x) + (y - o.y)) * TILE_H - z];
-    if (o.kind === "climbFoot") {
-        const zTop = (lift(C.top[0], C.top[1]) - lift(C.foot[0], C.foot[1])) * s, N = 9;
-        for (let i = N; i >= 1; i--) {   // the rock and crystal up to the lip, the far stones first
-            const t = i / N, x = C.foot[0] + (C.edge[0] - C.foot[0]) * t, y = C.foot[1] + (C.edge[1] - C.foot[1]) * t, z = zTop * Math.pow(t, 1.7), q = rel(x, y, z), r = 14 + 8 * (1 - t);
-            _techStone(g, q[0], q[1], r, r * 0.6, seed + i);
-            if (i % 2 === 0) _techCrystal(g, q[0] + (i % 4 ? -6 : 6), q[1] - 2, 24 + 10 * _techHash(seed + i), 8, (i % 4 ? -0.35 : 0.35), i % 4 ? 1 : 0);
-        }
-        g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py, 34, 15, 0, 0, Math.PI * 2); g.fill();
-        _techStone(g, px - 14, py - 4, 18 * s + 2, 10 * s + 2, seed); _techStone(g, px + 13, py - 2, 16 * s + 2, 9 * s + 2, seed + 1);
-        _techReefGlow(g, px, py - 16, 40, 0.8 + 0.2 * Math.sin(f0 * 0.08));
-        _techCrystal(g, px - 8, py - 6, 40 * s, 12, -0.25, 1); _techCrystal(g, px + 9, py - 4, 30 * s, 10, 0.3, 0); _techFlower(g, px + 2, py + 4, 12 * s, seed + 5);
-    } else {
-        const ex = C.edge[0] - C.top[0], ey = C.edge[1] - C.top[1], q = rel(C.top[0] + ex * 0.7, C.top[1] + ey * 0.7, 0);   // at the lip, on the high floor's edge
-        _techReefGlow(g, q[0], q[1] - 12, 34, 0.75 + 0.25 * Math.sin(f0 * 0.08 + 1));
-        _techStone(g, q[0] + 8, q[1] + 2, 15 * s + 2, 8 * s + 2, seed + 7);
-        _techCrystal(g, q[0] - 6, q[1], 34 * s, 11, -0.3, 1); _techCrystal(g, q[0] + 6, q[1] + 1, 26 * s, 9, 0.35, 0); _techCrystal(g, q[0] + 16, q[1] + 3, 18 * s, 7, 0.6, 0);
+    const C = o.C;
+    if (o.kind === "climbRock") {   // the rock, anchored at the foot of the face (the climb's edge point, on the low floor)
+        const rel = typeof facilityLiftRel === "function" ? facilityLiftRel(o.x, o.y) - facilityLiftRel(C.foot[0], C.foot[1]) : 0, E = C.edge, my = py + rel;
+        const ax = px + ((E[0] - o.x) - (E[1] - o.y)) * TILE_W, ay = my + ((E[0] - o.x) + (E[1] - o.y)) * TILE_H, A = REEF_CLIMB_ART;
+        let a = 1, s = 1;
+        if (o.gone !== undefined) { const q = Math.min(1, (f0 - o.gone) / A.fade); a = 1 - q; s = 1 - 0.12 * q; }   // fading out: it sinks a little as it goes
+        else { const p = Math.min(1, Math.max(0, (f0 - C.t0) / A.grow)), e = 1 - Math.pow(1 - p, 3); a = Math.min(1, p * 2.5); s = 0.35 + 0.65 * e + 0.08 * Math.sin(Math.PI * e); }   // growing: it heaves up out of the floor, a little past its size, and settles
+        _techDrawClimbRock(g, C, ax, ay, a, s, px, my);
+        return;
     }
     const near = typeof player !== "undefined" && _techClimbEnd(C, player.x, player.y), mine = near && near.at === (o.kind === "climbFoot" ? C.foot : C.top);
     if (mine) {   // the chevron over your end: up at its foot, down at its top
@@ -1753,7 +1771,7 @@ function techDrawItem(o, px, py) {
     const g = ctx, f0 = _techFrame();
     g.save();
     if (o.kind === "reef") _techDrawReef(g, o, px, py, f0);
-    else if (o.kind === "climbFoot" || o.kind === "climbTop") _techDrawClimb(g, o, px, py, f0);
+    else if (o.kind === "climbRock" || o.kind === "climbFoot" || o.kind === "climbTop") _techDrawClimb(g, o, px, py, f0);
     else if (o.kind === "spike") {   // one of STAKE RING's spikes: a square crystal bursting up out of a little heave of stone, leaning out from STONEPETAL, sinking back in its last frames
         const S = o.S, age = f0 - S.t0, left = S.t0 + S.life - f0, k = Math.min(1, age / 5) * Math.min(1, left / 12);
         g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(px, py, 11, 5, 0, 0, Math.PI * 2); g.fill();
@@ -1942,5 +1960,109 @@ function techDrawOverlay() {
         const left = P.until - f0; if (left <= 0) continue; const s = _techScr(P.x, P.y);
         g.globalAlpha = Math.min(1, left / 60); g.font = font(12); g.textAlign = "center"; g.fillStyle = "#e6f9ff"; g.fillText("❄ " + Math.ceil(left / 60), s.x, s.y + TILE_H - 14); g.globalAlpha = 1;
     }
+    _techReefAimDraw(g, f0);   // REEF aimed: the ledges it can climb glow, and the ghost of what a tap would do follows the finger
     g.restore();
+}
+// ── REEF'S AIM (build 2026-11-12v; the owner, of the two drafts, "A and C"; A is this): while REEF is aimed, every ledge its technician can climb from where it stands glows, its face lit from the lip down
+// with chevrons climbing it and a "◆ CLIMB UP HERE" tag (DOWN from up there), and the ghost of what a tap would do follows the finger: on its own floor an outcrop's ghost with its ring and what it does; at a
+// ledge the climb it would grow there, faint, with where it goes; or why not. (The press and the drag move it: js/input.js through techAimPathStart and techAimPathMove; a mouse's hover too.)
+let _techReefLedgeMemo = null, _techReefGhostMemo = null, _techGhostCv = null;
+function _techScrZ(x, y, z) { return _techArcScr(x, y, x, y, z, z, 0, 0); }   // (a point at the floor height z, px, on the screen)
+function _techAimPoint(sx, sy) { const A = techAim; if (A && A.ab && A.ab.id === "reef" && typeof techScreenToWorld === "function") A.ptr = techScreenToWorld(sx, sy); }
+function techAimHover(sx, sy) { _techAimPoint(sx, sy); }
+// the ledges the technician `t` can climb from where it stands (and sees the end on its own floor): runs of half-tile samples along every open face, each checked as a tap there is (_techReefEdgeAt)
+function techReefLedges(t) {
+    const F = typeof _fp !== "undefined" && _fp ? _fp.F : null; if (!t || !F || typeof facilityStandOk !== "function") return [];
+    const ca = _techComp(t.x, t.y), out = [];
+    for (const w of F.walls) {
+        if (w.window || !(REEF_FACES.has(w.kind) || w.face)) continue;
+        const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy); if (L < 0.1) continue;
+        const n = Math.max(1, Math.round(L / 0.5)), nx = -dy / L, ny = dx / L; let run = null;
+        for (let i = 0; i < n; i++) {
+            const q = (i + 0.5) / n, qx = w.a[0] + dx * q, qy = w.a[1] + dy * q; let e = null;
+            if (Math.hypot(qx - t.x, qy - t.y) <= 16) for (const s of [-1, 1]) {
+                let P = null; for (let k = 0.3; k <= 2.5 + 1e-9; k += 0.25) { const x = qx + nx * s * k, y = qy + ny * s * k; if (facilityStandOk(x, y)) { P = [Math.round(x), Math.round(y)]; break; } }
+                if (!P) continue; const c = _techComp(P[0], P[1]); if (c !== undefined && c !== ca) { e = _techReefEdgeAt(w, qx, qy, ca, c); if (e) break; }
+            }
+            let ok = !!e; if (ok) { const own = e.lo === ca ? e.foot : e.top; ok = typeof facilitySeesFrom !== "function" || facilitySeesFrom(t.x, t.y, own[0], own[1]); }
+            if (ok) { if (!run) { run = { pts: [], up: e.lo === ca }; out.push(run); } run.pts.push({ x: qx, y: qy, top: e.top, foot: e.foot }); } else run = null;
+        }
+    }
+    return out.filter(r => r.pts.length >= 4);   // (a scrap of an edge, under two tiles, is left out)
+}
+function _techPill(g, x, y, txt, col) {
+    g.font = typeof uiFont === "function" ? uiFont(12) : "bold 12px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; const w = g.measureText(txt).width + 18;
+    g.fillStyle = "rgba(18,5,12,0.82)"; g.fillRect(x - w / 2, y - 11, w, 22); g.strokeStyle = col; g.lineWidth = 1.5; g.strokeRect(x - w / 2 + 0.5, y - 10.5, w - 1, 21); g.fillStyle = col; g.fillText(txt, x, y + 1);
+}
+function _techDrawLedgeRun(g, run, f0) {
+    const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, P = run.pts, zt = lift(P[0].top[0], P[0].top[1]), zf = lift(P[0].foot[0], P[0].foot[1]);
+    const lip = P.map(p => _techScrZ(p.x, p.y, zt)), base = P.map(p => _techScrZ(p.x, p.y, zf)), path = pts => { g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)); };
+    // the face, lit at the lip and fading down it
+    const ly = lip.reduce((s, q) => s + q.y, 0) / lip.length, by = base.reduce((s, q) => s + q.y, 0) / base.length, gr = g.createLinearGradient(0, ly, 0, by), k = 0.85 + 0.15 * Math.sin(f0 * 0.08);
+    gr.addColorStop(0, "rgba(255,122,184," + (0.34 * k).toFixed(3) + ")"); gr.addColorStop(0.3, "rgba(255,122,184," + (0.10 * k).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,122,184,0)");
+    g.fillStyle = gr; path(lip); for (let i = base.length - 1; i >= 0; i--) g.lineTo(base[i].x, base[i].y); g.closePath(); g.fill();
+    // the lip: a glow (two wide soft strokes) and a dashed line that runs along it
+    g.globalAlpha = 1; g.globalCompositeOperation = "lighter"; g.lineCap = "round"; g.lineJoin = "round";
+    for (const [w, a] of [[16, 0.10], [9, 0.18]]) { g.strokeStyle = "rgba(255,122,184," + a + ")"; g.lineWidth = w; path(lip); g.stroke(); }
+    g.globalCompositeOperation = "source-over"; g.strokeStyle = "#ffc2df"; g.lineWidth = 3; g.setLineDash([12, 8]); g.lineDashOffset = -f0 * 0.6; path(lip); g.stroke(); g.setLineDash([]);
+    // chevrons climbing the face, every two tiles
+    g.font = typeof uiFont === "function" ? uiFont(16) : "bold 16px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    for (let i = 2; i < P.length - 1; i += 4) { const a = base[i], b = lip[i]; for (let j = 0; j < 2; j++) { const tt = ((f0 * 0.015) + j / 2) % 1, u = run.up ? tt : 1 - tt; g.globalAlpha = Math.sin(tt * Math.PI) * 0.95; g.fillStyle = "#3a0c24"; g.fillText(run.up ? "▲" : "▼", a.x + (b.x - a.x) * u + 1, a.y + (b.y - a.y) * u + 1); g.fillStyle = "#ff9ccc"; g.fillText(run.up ? "▲" : "▼", a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u); } }
+    g.globalAlpha = 1; const m = Math.floor(P.length / 2); _techPill(g, (lip[m].x + base[m].x) / 2, Math.min(lip[m].y, base[m].y) - 30, run.up ? "◆ CLIMB UP HERE" : "◆ CLIMB DOWN HERE", "#ff9ccc");
+}
+function _techDrawReefGhost(g, t, p, f0) {
+    const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, q = _techScrZ(p.x, p.y, lift(p.x, p.y)), R = TECH_AB.reef;
+    const memo = _techReefGhostMemo; let plan = null;
+    if (memo && memo.t === t && Math.hypot(memo.x - p.x, memo.y - p.y) < 0.25 && memo.tx === t.x && memo.ty === t.y) plan = memo.plan;
+    else { const same = _techComp(p.x, p.y) === _techComp(t.x, t.y); plan = same ? { same: true } : techReefClimbPlan(t, p); _techReefGhostMemo = { t, x: p.x, y: p.y, tx: t.x, ty: t.y, plan }; }
+    if (plan.same) {   // an outcrop would grow here: its ghost (drawn once a frame into a canvas kept for it), its ring, what it does
+        const cv = _techGhostCv || (_techGhostCv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null);
+        if (cv) { if (cv.width !== 360) { cv.width = 360; cv.height = 360; } const og = cv.getContext("2d"); og.clearRect(0, 0, 360, 360); _techDrawReef(og, { O: { id: 9001, t0: f0 - 40, until: f0 + 1200, pillar: false }, c: { x: p.x, y: p.y, r: R.radius }, i: 1 }, 180, 250, f0); g.globalAlpha = 0.5; g.drawImage(cv, q.x - 180, q.y - 250); g.globalAlpha = 1; }
+        g.strokeStyle = "#ffc2df"; g.lineWidth = 2; g.setLineDash([7, 6]); g.lineDashOffset = -f0 * 0.5; g.beginPath(); g.ellipse(q.x, q.y, R.radius * TILE_W * 1.5, R.radius * TILE_H * 1.5, 0, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+        _techPill(g, q.x, q.y + 34, "OUTCROP HERE · " + Math.round(R.life / 60) + " S · BLOCKS AND HEALS", "#ff9ccc");
+    } else if (plan.ok) {   // a climb would grow at the ledge nearest the finger: it, faint, and where it goes
+        const C = { id: 0, foot: plan.foot, top: plan.top, edge: plan.edge, n: plan.n }, E = plan.edge, zf = lift(plan.foot[0], plan.foot[1]), a = _techScrZ(E[0], E[1], zf), mid = _techClimbArt(C).mid, m = _techScrZ(mid[0], mid[1], zf), top = _techScrZ(plan.top[0], plan.top[1], lift(plan.top[0], plan.top[1]));
+        _techDrawClimbRock(g, C, a.x, a.y, 0.5 + 0.1 * Math.sin(f0 * 0.1), 1, m.x, m.y);
+        _techPill(g, top.x, top.y - 34, "A CLIMB UP TO THE " + _techClimbName(C), "#ff9ccc");
+    } else _techPill(g, q.x, q.y - 26, plan.why, "#ff8a6a");
+    // the finger
+    g.globalAlpha = 0.85; g.fillStyle = "rgba(255,255,255,0.28)"; g.beginPath(); g.arc(q.x, q.y, 20, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#ffffff"; g.lineWidth = 2.5; g.beginPath(); g.arc(q.x, q.y, 20, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1;
+}
+// ── REEF'S TIP (build 2026-11-12v; the owner's pick "C" of the two drafts, and where: "The top left area next to the quest and the dialogue boxes should be where the information goes") ──
+// The first time a squad technician's REEF is ready, a card in the dialogue box's style hangs at the top left, under QUESTS and the Crystal's box (game.html #reefTip): the technician's face and its own name,
+// the two uses with a picture of each from the game (img/hud/reef_tip_outcrop.png, reef_tip_climb.png: design/hud/reef_tip.js) and the wait. GOT IT puts it away. Once a game (the save's `reefTip`).
+let techReefTipSeen = false, _techTipEl = null;
+function techReefTipTick() {
+    if (_techTipEl) { if (_techTipEl.isConnected) _techReefTipPlace(_techTipEl); else _techTipEl = null; return; }
+    if (techReefTipSeen || typeof document === "undefined" || !document.body || !document.createElement || typeof facilityPlay === "undefined" || !facilityPlay) return;
+    if ((typeof attractOn === "function" && attractOn()) || typeof partyMembers !== "function" || (typeof gameState !== "undefined" && gameState && !gameState.running)) return;
+    const t = partyMembers().find(f => f && !f.dead && (techAbilityOf(f) || {}).id === "reef" && techReadyIn(f) <= 0); if (t) techReefTipShow(t);
+}
+function _techReefTipPlace(el) {   // under QUESTS, and under the Crystal's box while it is up
+    const q = document.getElementById("btnQuests"), qb = q && q.getBoundingClientRect ? q.getBoundingClientRect() : null, k = typeof canvas !== "undefined" && canvas.width ? (canvas.clientWidth || canvas.width) / canvas.width : 1;
+    let top = qb && qb.height ? qb.bottom + 10 : 76; if (typeof _dlgBox !== "undefined" && _dlgBox.w > 0) top = Math.max(top, (_dlgBox.y + _dlgBox.h) * k + 10);
+    top = Math.round(top); if (el._top !== top) { el._top = top; el.style.top = top + "px"; }
+}
+function techReefTipShow(t) {
+    techReefTipSeen = true;
+    const name = String(typeof unitTypeLabel === "function" ? unitTypeLabel(t) : "STONEPETAL").toUpperCase(), src = p => typeof imgSrc === "function" ? imgSrc(p) : p, R = TECH_AB.reef;
+    const el = document.createElement("div"); el.id = "reefTip";
+    el.innerHTML = '<div class="rt-h"><canvas class="rt-p" width="66" height="66"></canvas><div><div class="rt-t">◆ REEF IS READY</div><div class="rt-s"></div></div></div>'
+        + '<div class="rt-row"><div class="rt-c"><img alt="" src="' + src("img/hud/reef_tip_outcrop.png") + '"><div class="rt-k">TAP THE FLOOR <b>→ AN OUTCROP</b></div><div class="rt-d">ROCK AND CRYSTAL FOR ' + Math.round(R.life / 60) + ' S. ENEMIES AND SHOTS CAN\'T GET THROUGH. YOUR FOLLOWERS BESIDE IT HEAL.</div></div>'
+        + '<div class="rt-c"><img alt="" src="' + src("img/hud/reef_tip_climb.png") + '"><div class="rt-k">TAP A GLOWING LEDGE <b>→ A CLIMB</b></div><div class="rt-d">UP ONTO HIGH GROUND. IT STAYS UNTIL YOUR NEXT ONE. WALK TO ITS FOOT (▲) TO GO OVER; YOUR SQUAD FOLLOWS.</div></div></div>'
+        + '<div class="rt-f"><span>EITHER ONE: REEF IS READY AGAIN IN ' + Math.round(R.cooldown / 60) + ' S</span><button class="rt-ok">GOT IT</button></div>';
+    const q = c => el.querySelector ? el.querySelector(c) : null, sub = q(".rt-s"), cv = q(".rt-p"), ok = q(".rt-ok");
+    if (sub) sub.textContent = name + "'S UTILITY · TAP ◆ REEF ON ITS CARD, THEN:";   // (its own name: a renamed one too)
+    if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, t); } catch (e) {} }
+    if (ok && ok.addEventListener) ok.addEventListener("click", ev => { ev.stopPropagation(); if (el.remove) el.remove(); _techTipEl = null; });
+    if (el.addEventListener) for (const ty of ["pointerdown", "pointerup", "click"]) el.addEventListener(ty, ev => ev.stopPropagation());   // (a tap on the card is the card's, not the floor's)
+    document.body.appendChild(el); _techTipEl = el; if (el.getBoundingClientRect && el.style) _techReefTipPlace(el);
+    return el;
+}
+function _techReefAimDraw(g, f0) {
+    const A = techAim; if (!A || !A.ab || A.ab.id !== "reef" || !A.f) { _techReefLedgeMemo = null; return; }
+    const t = A.f, M = _techReefLedgeMemo;
+    if (!M || M.t !== t || Math.hypot(M.x - t.x, M.y - t.y) > 0.75 || M.n !== techClimbs.length) _techReefLedgeMemo = { t, x: t.x, y: t.y, n: techClimbs.length, runs: techReefLedges(t) };
+    for (const run of _techReefLedgeMemo.runs) _techDrawLedgeRun(g, run, f0);
+    if (A.ptr) _techDrawReefGhost(g, t, A.ptr, f0);
 }

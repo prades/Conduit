@@ -46,7 +46,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; t.evolved = 'coralcrab'; energyFill(t); o.evolved = (techAbilityOf(t) || {}).id;
             o.chip = techChipState(t).text; techChipTap(t); o.need = techAimNeed(); o.prompt = techAimPrompt(); techAimCancel(true); o.keys = Object.keys(TECH_ABILITIES).length; o.ult = (followerUltimate(t) || {}).name; return o; })()`);
         same(r.id, 'reef', 'the egg\'s ability'); same(r.evolved, 'reef', 'the coral crab\'s'); same(r.chip, '◆ REEF', 'the chip'); same(r.need, 'spot', 'the pick');
-        same(r.prompt, 'REEF · TAP THE FLOOR FOR AN OUTCROP, OR HIGH GROUND TO CLIMB, WHERE IT CAN SEE', 'the prompt'); same(r.keys, 7, 'the abilities'); same(r.ult, 'Reef Pillar', 'its Ultimate');
+        same(r.prompt, 'REEF · TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB', 'the prompt (since build 2026-11-12v: both uses, the ledges glowing)'); same(r.keys, 7, 'the abilities'); same(r.ult, 'Reef Pillar', 'its Ultimate');
     });
 
     group('THE OUTCROP (in a fight)');
@@ -105,7 +105,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         same(r.ok, true, 'refused: ' + r.why); same(r.footRoom, 'arena', 'its foot'); same(r.topRoom, 'catwalks', 'its top'); same(r.apart, true, 'the two floors one stretch');
         near(r.edge[0], r.edgeX, 0.01, 'on the catwalks\' edge'); same(r.foot[0], Math.round(r.edgeX - 0.5) - 3, 'its foot 3 tiles out from the arena\'s last floor'); same(r.top[0], Math.round(r.edgeX + 0.5), 'its top on the catwalks\' first tile'); same(r.wait, 3600, 'the wait');
     });
-    check('the map has high ground over floor in one place today, the catwalks\' west edge over the arena (about 18 tiles); the walled-in edges by Teleport Room 2 are not climbs (no open face)', () => {
+    check('the map has high ground over floor in three places today: the catwalks\' west edge over the arena (about 17 tiles), the Catwalk Spur\'s west and south faces (since build 2026-11-12v) and the Nest\'s shelf; the walled-in edges by Teleport Room 2 are not climbs (no open face)', () => {
         const r = J(`(function(){ const F = _fp.F, hits = {}; let n = 0;
             for (const w of F.walls) { const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy); if (L < 0.2 || w.window) continue; const nx = -dy / L, ny = dx / L;
                 for (let t = 0.25; t < L; t += 0.5) { const qx = w.a[0] + dx / L * t, qy = w.a[1] + dy / L * t, side = [];
@@ -113,7 +113,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
                     if (!side[0] || !side[1]) continue; const ca = _pComp(side[0][0], side[0][1]), cb = _pComp(side[1][0], side[1][1]); if (ca === cb) continue;
                     const e = _techReefEdgeAt(w, qx, qy, ca, cb); if (!e) continue; n++; const k = __room(e.foot[0], e.foot[1]) + '>' + __room(e.top[0], e.top[1]); hits[k] = (hits[k] || 0) + 1; } }
             return { hits, n }; })()`);
-        same(Object.keys(r.hits).sort().join(), 'arena>catwalks,nest_brood>nest_shelf', 'where it can climb (and the Nest\'s shelf since build 2026-11-12a): ' + JSON.stringify(r.hits)); ok(r.hits['arena>catwalks'] >= 60 && r.hits['arena>catwalks'] <= 80, 'samples along the catwalks\' edge (half a tile apart, both rooms\' pieces): ' + r.hits['arena>catwalks']); ok(r.hits['nest_brood>nest_shelf'] >= 20, 'samples along the Nest\'s shelf (since build 2026-11-12a): ' + r.hits['nest_brood>nest_shelf']);
+        same(Object.keys(r.hits).sort().join(), 'arena>catwalk_spur,arena>catwalks,nest_brood>nest_shelf', 'where it can climb (the Nest\'s shelf since build 2026-11-12a, the Catwalk Spur since build 2026-11-12v): ' + JSON.stringify(r.hits)); ok(r.hits['arena>catwalks'] >= 54 && r.hits['arena>catwalks'] <= 80, 'samples along the catwalks\' edge (half a tile apart, both rooms\' pieces): ' + r.hits['arena>catwalks']); ok(r.hits['arena>catwalk_spur'] >= 30, 'samples along the Catwalk Spur\'s two faces: ' + r.hits['arena>catwalk_spur']); ok(r.hits['nest_brood>nest_shelf'] >= 20, 'samples along the Nest\'s shelf (since build 2026-11-12a): ' + r.hits['nest_brood>nest_shelf']);
     });
     check('glass stops it ("No, the glass stops it"), a plain wall too, and an ice bridge is not floor to climb from ("No"); out of its sight it is refused', () => {
         const r = J(`(function(){ const at = [Math.floor(__edgeX) - 4, 51], fs = __fresh(['blossom'], at), t = fs[0], o = {}; t.x = at[0]; t.y = at[1]; const F = _fp.F, spot = { x: __edgeX + 2.5, y: 51 };
@@ -200,6 +200,43 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
             __walker(e, t.x - 2, t.y, 0.05); let minX = 99; for (let i = 0; i < 150; i++) { __step(1, [e]); minX = Math.min(minX, e.x - t.x); }
             o.blocked = minX > C.x - t.x; o.hp = e.health; o.heal = g.health - 100; o.beats = __heals.length; o.max = g.maxHealth; return o; })()`);
         same(r.blocked, true, 'the enemy walked through it'); same(r.hp, 5000, 'it hurt the enemy'); ok(r.beats >= 4, 'beats: ' + r.beats); near(r.heal, r.beats * 0.02 * r.max, 0.01, 'the mend');
+    });
+
+    group('THE CATWALK SPUR, THE CLIMB\'S LOOK, THE AIM AND THE TIP (build 2026-11-12v: the owner, "a high ground catwalk that\'s really small", "5 is cool", "Build it", "A and C")');
+    check('the Catwalk Spur: from the arena floor south of it a tap on it is a climb up its south face, from the west one up its west face; each climb takes the BOULDER STEPS sprite for its side and its ledge\'s height (the spur s18 / w18, the catwalks w50), all twelve in the props\' atlas', () => {
+        const r = J(`(function(){ const o = {}, go = (at, tap) => { const fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1]; const res = techReefClimbAt(t, tap); return res.ok ? __room(res.climb.top[0], res.climb.top[1]) + ',' + _techClimbArt(res.climb).name : res.why; };
+            o.south = go([48, 48], { x: 48, y: 43 }); o.west = go([42, 43], { x: 46.5, y: 43 }); o.cat = go([Math.floor(__edgeX) - 4, 51], { x: __edgeX + 2.5, y: 51 });
+            o.cells = Object.keys(PROP_ATLAS.reef.cells).sort().join(); o.mark = !!(PROP_ATLAS.reef.cells.s18.marks.lip && PROP_ATLAS.reef.cells.s18.marks.toe); return o; })()`);
+        same(r.south, 'catwalk_spur,s18', 'up the spur\'s south face'); same(r.west, 'catwalk_spur,w18', 'up the spur\'s west face'); same(r.cat, 'catwalks,w50', 'up the catwalks');
+        same(r.cells, 'e18,e34,e50,n18,n34,n50,s18,s34,s50,w18,w34,w50', 'the sprites'); same(r.mark, true, 'a sprite\'s marks');
+        ok(/PROPS\.reef = \{/.test(rd('design/props/models/reef.js')) && /"img\/props\/" \+ fam \+ "\.png"/.test(rd('js/propsprites.js')), 'the model and its sheet');
+    });
+    check('a climb grows up when its shards land (its rock is in the draw list from then), and when its technician makes its next one the last fades out where it stood for REEF_CLIMB_ART.fade frames, then is gone', () => {
+        const r = J(`(function(){ const o = {}, fs = __fresh(['blossom'], [48, 48]), t = fs[0]; t.x = 48; t.y = 48; const rocks = () => { const l = []; techDrawItems(l); return l.filter(i => i.kind === 'climbRock').map(i => (i.gone !== undefined ? 'gone' : 'up')).join(); };
+            techReefClimbAt(t, { x: 48, y: 43 }); o.before = rocks(); frame += TECH_AB.reef.shards + 1; o.grown = rocks();
+            t._abReadyAt = frame; techReefClimbAt(t, { x: 48.5, y: 43 }); o.replaced = rocks() + '|' + techClimbsGone.length; frame += REEF_CLIMB_ART.fade + 1; o.later = rocks() + '|' + techClimbsGone.length;
+            const C = techClimbs[0], m = _techClimbArt(C).mid; o.mid = [m[0], m[1]].map(v => Math.round(v * 100) / 100).join(); o.edge = C.edge.join(); techReset(); o.reset = techClimbsGone.length; return o; })()`);
+        same(r.before, '', 'drawn before its shards landed'); same(r.grown, 'up', 'its rock'); same(r.replaced, 'gone|1', 'the last one fading, the new one not yet grown'); same(r.later, 'up|0', 'the faded one gone, the new one standing');
+        ok(r.mid !== r.edge, 'its rock is sorted at the middle of its run, out on the low floor'); same(r.reset, 0, 'a new game kept a fading one');
+    });
+    check('while REEF is aimed, the ledges its technician can climb from where it stands glow (runs along the spur\'s two faces and the catwalks\' edge, all up); the prompt names both uses; a hover moves the ghost\'s point (REEF\'s aim only)', () => {
+        const r = J(`(function(){ const o = {}, fs = __fresh(['blossom', 'ice'], [47, 48.5]), t = fs[0], ice = fs[1]; t.x = 47; t.y = 48.5; techChipTap(t);
+            const runs = techReefLedges(t); o.n = runs.length; o.up = runs.every(q => q.up); o.long = runs.every(q => q.pts.length >= 4); o.rooms = Array.from(new Set(runs.map(q => __room(q.pts[0].top[0], q.pts[0].top[1])))).sort().join();
+            o.prompt = techAimPrompt(); const s = _techScr(44, 48); s.y += TILE_H; techAimHover(s.x, s.y);   /* (a tile's middle on the screen, as the taps are: tests/techlevel1.js) */ o.ptr = techAim.ptr ? [techAim.ptr.x, techAim.ptr.y].map(v => Math.round(v)).join() : null;
+            let threw = null; try { _techReefAimDraw(ctx, frame); } catch (e) { threw = e.message; } o.threw = threw; techAimCancel(true);
+            ice.role = 'camper'; partyTick(); ice._abReadyAt = frame; techChipTap(ice);   /* (the ice follower a technician too: its FROST PATCH aimed) */ techAimHover(s.x, s.y); o.icePtr = techAim ? (techAim.ptr || null) : 'no aim'; techAimCancel(true); return o; })()`);
+        ok(r.n >= 2, 'ledges: ' + r.n); same(r.up, true, 'all up from the arena'); same(r.long, true, 'a scrap of an edge glows'); same(r.rooms, 'catwalk_spur,catwalks', 'the ledges');
+        same(r.prompt, 'REEF · TAP THE FLOOR: AN OUTCROP · TAP A GLOWING LEDGE: A CLIMB', 'the prompt'); same(r.ptr, '44,48', 'the ghost\'s point'); same(r.threw, null, 'drawing the aim threw'); same(r.icePtr, null, 'another aim keeps a point');
+        ok(/techAimHover\(_hx, _hy\)/.test(rd('js/input.js')), 'a hover is not wired');
+    });
+    check('REEF\'s tip: the first time a squad technician\'s REEF is ready, the card (the two uses, a picture of each, GOT IT); not while it waits; once a game, saved (reefTip) and put back; a game saved before shows it once', () => {
+        const r = J(`(function(){ const o = {}, fs = __fresh(['blossom', 'fire'], __open), t = fs[0]; techReefTipSeen = false; if (_techTipEl && _techTipEl.remove) _techTipEl.remove(); _techTipEl = null;
+            t._abReadyAt = frame + 999; techReefTipTick(); o.waiting = !!_techTipEl; t._abReadyAt = frame; techReefTipTick(); o.shown = !!_techTipEl; o.seen = techReefTipSeen;
+            const h = String(_techTipEl && _techTipEl.innerHTML || ''); o.html = ['◆ REEF IS READY', 'img/hud/reef_tip_outcrop', 'img/hud/reef_tip_climb', 'AN OUTCROP', 'A CLIMB', 'GOT IT'].filter(k => h.indexOf(k) < 0).join();
+            o.save = facilitySaveCollect().reefTip; if (_techTipEl && _techTipEl.remove) _techTipEl.remove(); _techTipEl = null; techReefTipTick(); o.again = !!_techTipEl; return o; })()`);
+        same(r.waiting, false, 'shown while REEF waited'); same(r.shown, true, 'not shown'); same(r.seen, true, 'not marked shown'); same(r.html, '', 'missing from the card'); same(r.save, 1, 'the save'); same(r.again, false, 'shown twice');
+        const S = rd('js/facilitysave.js'); ok(/reefTip: typeof techReefTipSeen !== "undefined" && techReefTipSeen \? 1 : 0/.test(S) && /techReefTipSeen = d\.reefTip === 1/.test(S), 'the save\'s wiring (a game saved before: no reefTip, so it shows once)');
+        ok(/#reefTip \{ position: fixed;/.test(rd('game.html')) && /\.reef_tip_|reef_tip_outcrop/.test(rd('design/hud/reef_tip.js')), 'its look and its pictures\' maker');
     });
 
     group('ITS INFO');

@@ -177,7 +177,7 @@ const EVOLUTIONS = {
     // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "MAELSTROM", sheet: "img/evo/voidstar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true },   // (24 columns since build 2026-11-12r, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true, wave: true },   // (24 columns since build 2026-11-12r, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 32 since build 2026-11-13c, design No. 946: columns 24-31 are its everyday shot's WAVE, waveCol; 8-15, its old bow, are not used by the move now)
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -286,7 +286,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", shard: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD SHOT, mimicShotCol; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png", split: true },   // (24 columns since build 2026-11-12u, design No. 944: columns 16-23 are ROTTEN DECOY's SPLIT, splitCol, in the body's sheet and the pool's; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png", split: true, spit: true },   // (24 columns since build 2026-11-12u, design No. 944: columns 16-23 are ROTTEN DECOY's SPLIT, splitCol, in the body's sheet and the pool's; 32 since build 2026-11-12w, design No. 945: columns 24-31 are CORRODE SHOT's SPIT, spitCol; 8-15, its old bow, are not used by the move now)
     // THORNWHIP (the owner named it, 2026-11-08; it came in as the THORNWHIP, a working name), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
     // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
@@ -1217,15 +1217,23 @@ function evoShotOnHit(f, dmg) {
     const d = f && f.evolved ? evolvedDef(f) : null; if (!d) return null;
     if (d.shot === "CHAIN LIGHTNING") return a => chainLightning(f, a, dmg);
     if (d.shot === "CORRODE SHOT") return a => corrodeTouch(a);
+    if (d.id === "voidstar") return a => voidSlap(a);   // (the Voidstar's everyday shot: where it lands, a one-two slap of its telepathic tentacles is drawn; the shot, its damage and its timing are as they were)
     return null;
 }
 // CORRODE SHOT as the Rotshard's everyday shot (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: "Primary: CORRODE SHOT"; the owner: "Apply both"): the Mage's shot, its own damage, and where it
 // lands it eats the target's armour (ROT_SHRED for ROT_SHRED_FRAMES), weaker round it (ROT_SPLASH_SHRED within ROT_SPLASH_R, enemies seen from the target). It was a move with a wind-up (corrodeShot, kept).
+// THE VOIDSTAR'S EVERYDAY SHOT (build 2026-11-13b; the owner, 2026-11-12: "How about the void star slaps the enemy with telepathic tentacles?"; asked, "Ghostly violet energy" and "Two alternate"): the shot is drawn as two
+// tentacles of ghostly violet energy reaching out of its orb to where it lands, one after the other (js/game.js _drawTendrils), and where it lands a one-two slap (`tendrilslap`, js/elements.js). Looks only: the shot, its
+// damage (SP.ATK x 0.5), its speed and its timing are as they were.
+function voidSlap(tgt) {
+    if (!tgt || typeof elementEffects === "undefined") return;
+    elementEffects.push({ type: "tendrilslap", x: tgt.x, y: tgt.y, life: 16, maxLife: 16 });
+}
 function corrodeTouch(tgt) {
     if (!tgt || tgt.dead) return;
     tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
     for (const a of _evoFoesSeen(tgt.x, tgt.y, ROT_SPLASH_R)) { if (a === tgt) continue; a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED); }
-    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: ROT_SPLASH_R, color: "#66ff66", life: 24 });
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "soulsplat", x: tgt.x, y: tgt.y, life: 22, maxLife: 22 });   // (a splat on the target, no ring on the floor: the owner, 2026-11-12, "a shocking soul blob that hits the target")
 }
 
 // STATIC VORTEX (the Thunderhead's move; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): a STATIONARY electrical storm on the nearest enemy in reach. It does not travel.
@@ -1326,8 +1334,10 @@ function _evoFrame(f, d, f0) {
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     const ms = d.shard && f._shotAt !== undefined ? mimicShotCol(f0 - f._shotAt) : -1;   // (the Rift Mimic's everyday hit: its shard rises, is shot and grows back)
     const go = d.goo ? gooCol(f, f0) : -1;   // (the Hornshell's everyday shot: its arms are drawn in and a ring of glowing goo forms in front of its horn)
+    const sp = d.spit ? spitCol(f, f0) : -1;   // (the Rotshard's CORRODE SHOT: the crystal tips towards the enemy and a blob gathers at its tip over the shot's wind-up)
     const sc = d.split ? splitCol(f, f0, d) : -1;   // (the Rotshard's ROTTEN DECOY: a second black crystal grows out of its pool over the wind-up and breaks free as the decoy is set)
     const fg = d.fling ? flingCol(f, f0, d) : -1;   // (the Thornwhip's vines: rearing round a seed over a shot's or SEEDFALL's wind-up, whipping out as it goes)
+    const wv = d.wave ? waveCol(f, f0) : -1;   // (the Voidstar's everyday shot: its arms, its tentacles, wave)
     const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
     const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
@@ -1338,8 +1348,10 @@ function _evoFrame(f, d, f0) {
     const qb = d.burst && f._burstAt !== undefined ? quillBurstCol(f0 - f._burstAt) : -1;   // (the Quillstone's QUILL BURST: its turn, its bare time and its quills growing back)
     if (ms >= 0) col = ms;
     else if (sc >= 0) col = sc;
+    else if (sp >= 0 && !(sigK >= 0 && sigK < 1)) col = sp;
     else if (fg >= 0) col = fg;
     else if (rc >= 0) col = rc;
+    else if (wv >= 0 && !(sigK >= 0 && sigK < 1)) col = wv;
     else if (pu >= 0) col = pu;
     else if (go >= 0 && !(sigK >= 0 && sigK < 1)) col = go;
     else if (fn >= 0) col = fn;
@@ -1570,10 +1582,26 @@ function flingCol(f, f0, d) {
 // which column of the Rotshard's sheet (the extra block, 16 to 23: design No. 944) while ROTTEN DECOY goes (the owner, 2026-11-12, "the crystal splits"): over its wind-up (f._altWind of f._altWindMax) cells 0 to 5
 // (a second black crystal growing out of its pool beside it), then, as the decoy is set, 4 frames at cell 6 (it breaks free) and 8 at cell 7 (gone); -1 otherwise. The ground sheet (its pool) has the same
 // columns. Looks only; the frame counts are the agent's.
+// which column of the Rotshard's sheets (the third extra block, 24 to 31: design No. 945) over its everyday shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted: f._shotWind of f._shotWind0): cells 0 to 5 (the
+// crystal tipping towards the enemy, a blob of its own green gathering at its tip), then, as the shot goes (f._shotFiredAt), 4 frames at cell 6 (the crystal kicks back) and 6 at cell 7; -1 otherwise. Looks only (the
+// owner, 2026-11-12: "Yes, a little", of the body moving for its shot); the frame counts are the agent's.
+function spitCol(f, f0) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 24 + Math.min(5, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 6 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 4) return 30; if (a >= 4 && a < 10) return 31; }
+    return -1;
+}
 function splitCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "rotten_decoy" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
     if (f._decoyAt !== undefined) { const a = f0 - f._decoyAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 12) return 23; }
+    return -1;
+}
+// which column of the Voidstar's sheet (the second extra block, 24 to 31: design No. 946) while it shoots (the owner, 2026-11-13: "He should move his tentacles. Wave them."): its arms are its tentacles and they wave: over the
+// shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted) cells 0 to 2 (starting to sway), then, once the shot has gone (f._shotFiredAt), at full swing for 36 frames while the shot flies and its tentacles slap (a loop of the
+// four phases, cells 3 to 6, 6 frames each), then 8 frames of settling (cell 7); -1 otherwise. Looks only; the frame counts are the agent's.
+function waveCol(f, f0) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 24 + Math.min(2, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 3 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 36) return 27 + (Math.floor(a / 6) % 4); if (a >= 36 && a < 44) return 31; }
     return -1;
 }
 function reachCol(f, f0, d) {

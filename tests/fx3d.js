@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,vortexshard', 'the pieces (rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,vortexshard', 'the pieces (rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
         for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
@@ -38,6 +38,17 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), (P.cell / 2) + ',' + (P.cell / 2), k + ': in the middle of its cell');
             ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, k + ': not at the forms\' pixels a unit (so EVO_SCALE would not fit it)');
         }
+    });
+    check('the VOIDSTAR\'s SLAP (build 2026-11-13b; the owner: "Make it look 3d rendered"): one stubby tentacle of violet gel baked in 12 frames of its swing, its root in the middle of its cell, at the forms\' pixels a unit; approved in the game (2026-11-13: "Approve it"), so on for everyone, with or without the preview; drawn from its frame, mirrored for the second slap, held to its sheet, and not before its sheet has arrived', () => {
+        const P = J('FX3D.pieces.slap'), meta = JSON.parse(rd('design/effects/out/slap.json'));
+        same(P.sheet, 'img/fx/slap.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), 'the sheet\'s size'); same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), 'the baker\'s record and the game\'s table');
+        same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), P.ax + ',' + P.ay, 'its root where the table says'); ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, 'not at the forms\' pixels a unit'); ok(P.anim === true, 'not an animated piece');
+        ok(J('FX3D.approved').indexOf('slap') >= 0, 'not approved: the owner approved it in the game, 2026-11-13 ("Approve it")'); run('__preview(false)'); same(J('fx3dOn("slap")'), true, 'off without the preview'); same(J('fx3dDrawAnim(null, "slap", 0, 0, 0, false)'), false, 'drawn before its sheet arrived');
+        run('FX3D.pieces.slap._img = { complete: true, naturalWidth: 1152, naturalHeight: 96 }; globalThis.__scS = spriteCell; globalThis.__cellsS = []; spriteCell = function (img, sx, sy, sw, sh) { __cellsS.push(sx / sw); return { cell: sx / sw }; };');
+        const draw = (frame, mirror) => J(`(function(){ __cellsS.length = 0; const P = __pen(); const ok = fx3dDrawAnim(P.g, 'slap', 100, 50, ${frame}, ${mirror}); return { ok, calls: P.calls.map(c => c[0] + ':' + c.slice(1).join(',')), cell: __cellsS[0] }; })()`);
+        const a = draw(5.7, false), b = draw(5.7, true), hi = draw(99, false), lo = draw(-3, false);
+        ok(a.ok && b.ok, 'it did not draw'); same(a.cell, 5, 'its frame (5.7 is the sixth)'); same(hi.cell, 11, 'held to the last frame'); same(lo.cell, 0, 'held to the first'); ok(a.calls.join(' ').indexOf('scale:-1') < 0, 'mirrored when it was not asked'); ok(b.calls.join(' ').indexOf('scale:-1,1') >= 0, 'not mirrored when asked');
+        ok(a.calls.some(c => /^translate:100,50/.test(c)), 'not on the point it was given'); run('spriteCell = __scS; delete FX3D.pieces.slap._img;');
     });
     check('the model is the QUILLSTONE\'s own red shard (its shard code and its material), lit and seen as the forms are', () => {
         const b = rd('design/effects/bake_fx.js');
@@ -53,7 +64,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy', 'the approved pieces (SHARD VORTEX\'s blades were approved by accident and taken back)');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,slap', 'the approved pieces (SHARD VORTEX\'s blades were approved by accident and taken back)');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');

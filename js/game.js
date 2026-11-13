@@ -68,6 +68,49 @@ function _drawThunderBolt(ctx, p, sx, sy) {
     stroke(1.4, '#fff9b0', 0.9); for (let i = 0; i < 4; i++) { const an = f * 0.4 + i * Math.PI / 2, l = r * (1.9 + 0.7 * Math.sin(f * 0.6 + i * 2)); ctx.beginPath(); ctx.moveTo(sx + Math.cos(an) * r, sy + Math.sin(an) * r); ctx.lineTo(sx + Math.cos(an) * l, sy + Math.sin(an) * l); ctx.stroke(); }   // (a few arcs off it)
     ctx.globalAlpha = 1;
 }
+// THE ROTSHARD's EVERYDAY SHOT, CORRODE SHOT (the owner, 2026-11-12: "the corrode shot should look like a shocking soul blob that hits the target"; "It should be the same color as [the Rotshard]"; "no gradient just highlighter
+// color"; then, of the first draft: "it shouldn't have a fucking skull in it. And the lightning looks bad. It should [...] look like it's zooming, even though it's a slow-moving projectile. But it's like smoke, lightning
+// [...] it should be kind of dullish"): a blob of the Rotshard's own crystal green, no face, stretched along its flight, with speed streaks and a long smoky tail behind it, and dull SMOKE-LIGHTNING snapping off it: ragged
+// arcs in a muddy grey-green with puffs of smoke along them, drifting back. Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+const _SOUL = { body: '#9adeae', lit: '#c4eed0', smoke: '#6f8f7c', arc: '#a9c4b3', tail: '#68c58a' };
+function _drawSoulBlob(ctx, p, sx, sy) {
+    const f = p.frame || 0, R = (p.radius || 5) * 2.3, vx = p.vx || 0, vy = p.vy || 0;
+    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    const ang = Math.atan2(uy, ux), cx = Math.cos(ang), sn = Math.sin(ang);
+    const blob = (x, y, r, wob, fill, a, st) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();   // (st: how much it is stretched along its flight)
+        for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * st, qy = Math.sin(t) * r * k * 0.8, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
+        ctx.closePath(); ctx.fill(); };
+    const seed = Math.floor(f / 2);
+    // speed streaks: long strips behind it along its flight, wide where they leave the blob and tapering to a point (so it looks like it is zooming; it is slow)
+    for (let i = 0; i < 4; i++) { const off = (i - 1.5) * R * 0.42, len = R * (3.2 + 0.9 * ((seed + i * 2) % 3)), ox = -uy * off, oy = ux * off, w0 = R * (0.3 - 0.06 * (i % 2)), x0 = sx + ox - ux * R * 0.7, y0 = sy + oy - uy * R * 0.7;
+        ctx.globalAlpha = 0.5 - i % 2 * 0.15; ctx.fillStyle = _SOUL.tail; ctx.beginPath(); ctx.moveTo(x0 - uy * w0, y0 + ux * w0); ctx.lineTo(x0 + uy * w0, y0 - ux * w0); ctx.lineTo(x0 - ux * len, y0 - uy * len); ctx.closePath(); ctx.fill(); }
+    for (let i = 5; i >= 1; i--) { const d = R * (0.9 + i * 0.95), w = Math.sin(f * 0.45 + i * 1.9) * R * 0.16; blob(sx - ux * d - uy * w, sy - uy * d + ux * w, R * (0.72 - i * 0.1), 0.3, _SOUL.tail, 0.55 - i * 0.09, 1.5); }   // (the smoky tail, long and drawn out)
+    blob(sx, sy, R, 0.14, _SOUL.body, 1, 1.45);
+    blob(sx - R * 0.15, sy - R * 0.3, R * 0.5, 0.2, _SOUL.lit, 1, 1.35);   // (a lighter facet)
+    // dull smoke-lightning: wisps in muddy grey-green curling off the blob, waving as they go (smooth curves, not zigzags: the owner, 2026-11-12: "Smoother bolts"), drifting back a little with its flight and flickering in length; each
+    // is a TAPER: its smoky border and its core are thickest where it leaves the blob and thin to nothing at its tip ("make the streaks / bolts have borders that get bigger towards the shard"), with a puff of smoke near its end
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+        const h = Math.sin((seed * 3 + i * 7) * 12.9898) * 43758.5453, a0 = ang + Math.PI + (i - 1.5) * 0.95 + ((h - Math.floor(h)) - 0.5) * 0.3, kz = 0.35 + 0.65 * Math.abs(i - 1.5) / 1.5, len = R * kz * (1.5 + 0.6 * Math.sin(f * 0.37 + i * 2.1)), N = 12, pts = [];   // (kz: the nearer a wisp is to the very back, the smaller: the owner, 2026-11-12, "make them smaller towards the back of the projectile")   // (they come off its sides and back, never towards where it is going: the owner, 2026-11-12, "more like flex coming off, not angled towards the spot aimed")
+        for (let k = 0; k <= N; k++) { const t = k / N, d = R * 0.9 + len * t, wv = R * 0.55 * Math.sin(t * 7 + f * 0.33 + i * 2.4) * (0.25 + t), dr = t * t * R * 1.1; pts.push([sx + Math.cos(a0) * d - Math.sin(a0) * wv - ux * dr, sy + Math.sin(a0) * d + Math.cos(a0) * wv - uy * dr]); }
+        for (let k = 1; k <= N; k++) { const t = 1 - (k - 1) / N;   // (1 at the blob, 0 at the tip)
+            ctx.strokeStyle = _SOUL.smoke; ctx.lineWidth = 0.8 + 6.5 * t * kz; ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke();
+            ctx.strokeStyle = _SOUL.arc; ctx.lineWidth = 0.6 + 1.9 * t * kz; ctx.globalAlpha = 0.85; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke(); }
+        blob(pts[9][0], pts[9][1], R * 0.24, 0.3, _SOUL.smoke, 0.38, 1);
+    }
+    ctx.globalAlpha = 1;
+}
+// THE VOIDSTAR'S EVERYDAY SHOT (the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; then: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"): in flight the
+// shot is only a small mote of ghostly violet with a few specks trailing it (it takes the time it always took to get there); the tentacles are not joined to the Voidstar: they appear on the creature it lands on
+// (`tendrilslap`, js/elements.js). Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+const _TEND = { glow: '#9933ff', body: '#bb66ff', core: '#ead6ff' };
+function _drawTendrils(ctx, p, sx, sy) {
+    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0; let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
+    for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.12; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx - ux * i * 6 + Math.sin(f * 0.5 + i) * 1.6, sy - uy * i * 6 + Math.cos(f * 0.5 + i) * 1.6, 3.2 - i * 0.6, 0, Math.PI * 2); ctx.fill(); }   // (specks trailing it)
+    ctx.globalAlpha = 0.3; ctx.fillStyle = _TEND.glow; ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx, sy, 4.6 + Math.sin(f * 0.6) * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = _TEND.core; ctx.beginPath(); ctx.arc(sx, sy, 2.2, 0, Math.PI * 2); ctx.fill();
+}
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;
     const el = p.element;
@@ -91,6 +134,10 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
     // the THUNDERHEAD's everyday shot (build 2026-11-12o): the shot and its string of lightning that connects and breaks off
     if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
+    // the ROTSHARD's everyday shot (build 2026-11-12w): a soul blob of its own crystal green, crackling
+    if (p.kind === "soulblob") { _drawSoulBlob(ctx, p, sx, sy); ctx.restore(); return; }
+    // the VOIDSTAR's everyday shot (build 2026-11-13b): two tentacles of ghostly violet energy from its orb to the shot's tip
+    if (p.kind === "tendril") { _drawTendrils(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
     // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below
