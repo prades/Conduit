@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13i` · branch `claude/friendly-thompson-w581x0` · the command card leans as the squad's cards do
+- **The ask** (the owner: "Make it match the roster to the side and with that edge lean design, but keep all the buttons in the right places").
+- **What it does:** out of a fight, ROSTER and its ALL, HOLD and COME have **the squad cards' slanted edges** (leaning 9 degrees, level top and bottom, the words upright), and ROSTER a purple bar at its left as each squad card has its colour's. **Every button is where it was** (build `2026-11-13h`). A phone is unchanged.
+- `game.html` (the command card's css), `docs/UI-STYLE.md`.
+- **Verified:** the command card's suites and the full suite; seen in the real page at iPad sizes. **Not playtested.**
+
 ### Build `2026-11-13h` · branch `claude/friendly-thompson-w581x0` · the command card out of a fight, straight
 - **The ask** (the owner: "edit the little command menu there when the user is not in combat. I don't like how it's all crooked").
 - **What it does:** out of a fight, the bottom-left command card stands **straight**: ROSTER level with rounded corners (it leaned), and **ALL, HOLD and COME one size, level, evenly spaced on one line, and still** (they leaned at three angles and heights and bobbed out of step). They take a third of the card each, so they fit an iPad held upright. What each does is unchanged. A phone is unchanged.
