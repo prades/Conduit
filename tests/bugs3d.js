@@ -86,7 +86,7 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
                 if (k === 'fill') return () => { if (fill === ANT_JAW_TIP && cur.length) polys.push(cur.slice()); }; return () => {}; },
                 set(t, k, v) { if (k === 'fillStyle') fill = v; t[k] = v; return true; } });
             const S = SPECIES.ant, p = new Predator('striker', Object.assign({}, S.striker, { color: S.color }), 0, 0);
-            p.speciesName = 'ant'; p.className = 'striker'; applySpeciesBody(p, 'ant'); p.dirX = 1; p.dirY = 0; p.state = '${st}'; p.attackAnim = Math.PI / 2; p.walkCycle = 0;
+            p.speciesName = 'ant'; p.className = 'striker'; applySpeciesBody(p, 'ant'); p.dirX = 1; p.dirY = 0; p.state = '${st}'; p.attackAnim = Math.PI / 2; p.walkCycle = 0; p.animationPhase = 0;   /* (its jaws' slight breathing at rest is timed off its phase: held, so the check measures the same pose each run) */
             frame = 3; drawBug3D(p, 400, 300, rec);
             const c = polys.map(q => [q.reduce((a, v) => a + v[0], 0) / q.length, q.reduce((a, v) => a + v[1], 0) / q.length]);
             return { n: polys.length, apart: c.length === 2 ? Math.hypot(c[0][0] - c[1][0], c[0][1] - c[1][1]) : -1 }; })()`);

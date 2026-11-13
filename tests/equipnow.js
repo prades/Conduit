@@ -89,12 +89,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     energyStock = {}; energyAdd('ice', 1); f2.evolved = undefined; f2.energy = [null]; f2.element = 'none'; f1.energy = [null, null, null];
     _cdReveal = { pack: EQUIP_PACK.id, ids: [], fresh: [], energy: ['ice'] }; cardsRender(true); await wait(80);
     var eov = $('#cardsRoot .cr-overlay'); eov.__mark = 2; var esl = $('#cardsRoot .cr-slot[data-id="energy:ice"]');
-    out.en = { tag: esl.querySelector('.cr-tag').textContent, btn: [esl.querySelector('.cr-eq').textContent, esl.querySelector('.cr-eq').disabled] };
+    out.en = { tag: esl.querySelector('.cr-tag') ? esl.querySelector('.cr-tag').textContent : '', btn: [esl.querySelector('.cr-eq').textContent, esl.querySelector('.cr-eq').disabled] };
     click(esl.querySelector('.cr-eq')); await wait(80);
     var ice = energyCardOf('ice'), et = function(f){ return tiles()[_ceWho(ice).indexOf(f)]; };
     out.en.pop = { title: $('#cardEquip .cp-title').textContent, n: tiles().length, all: followers.filter(function(f){ return !f.dead && f.isFollower === true && !f.isClone && f.team === 'green'; }).length, s1: slotsOf(et(f1)), s2: slotsOf(et(f2)) };
     click(et(f2).querySelectorAll('.ce-slot')[0]); await wait(60);
-    out.en.put = { slots: energySlots(f2).join(), el: f2.element, stock: energyCount('ice'), s2: slotsOf(et(f2)), s1: slotsOf(et(f1)), note: $('#cardEquip .cp-note').textContent, tag: esl.querySelector('.cr-tag').textContent,
+    out.en.put = { slots: energySlots(f2).join(), el: f2.element, stock: energyCount('ice'), s2: slotsOf(et(f2)), s1: slotsOf(et(f1)), note: $('#cardEquip .cp-note').textContent, tag: esl.querySelector('.cr-tag') ? esl.querySelector('.cr-tag').textContent : '',
       btn: [esl.querySelector('.cr-eq').disabled, (esl.querySelector('.cr-eq .cd-bs') || {}).textContent || ''], same: $('#cardsRoot .cr-overlay') === eov && eov.__mark === 2 };
     esc(); await wait(60); esc(); await wait(60);
     cardsClose();
@@ -185,12 +185,12 @@ function measure(w, h, query, seed) {
                 same(T.rv.esc1.join(), 'false,true,true', 'the first Escape'); same(T.rv.esc2.join(), 'false,true', 'the second Escape');
             });
             await check('AN ENERGY CARD (build 2026-11-10d): EQUIP NOW under it in a pack\'s reveal; the pop-out lists every follower with its energy slots (an egg ENERGY, an evolved one ENERGY 1 to 3); EQUIP HERE puts it in from your stock, the slot reads IN IT ✓, the others say none is left, and the reveal\'s count and button follow where they are', () => {
-                same(T.en.tag, 'ENERGY CARD · YOU HOLD 1', 'the reveal\'s tag'); same(T.en.btn.join(), 'EQUIP NOW,false', 'its button');
+                same(T.en.tag, '', 'the reveal\'s tag (none under an energy card since build 2026-11-13o: EQUIP NOW alone)'); same(T.en.btn.join(), 'EQUIP NOW,false', 'its button');
                 same(T.en.pop.title, 'EQUIP NOW · ICE ENERGY', 'the pop-out'); same(T.en.pop.n, T.en.pop.all, 'every follower is listed');
                 same(JSON.stringify(T.en.pop.s2), JSON.stringify([['ENERGY', 'EQUIP HERE', false, 'open']]), 'the egg\'s one slot'); same(JSON.stringify(T.en.pop.s1), JSON.stringify([1, 2, 3].map(i => ['ENERGY ' + i, 'EQUIP HERE', false, 'open'])), 'the evolved one\'s three');
                 same([T.en.put.slots, T.en.put.el, T.en.put.stock].join(), 'ice,ice,0', 'it went in from the stock, and the egg is ICE'); same(JSON.stringify(T.en.put.s2), JSON.stringify([['ENERGY', 'IN IT ✓', true, 'worn']]), 'its slot after');
                 ok(T.en.put.s1.every(s => s[1] === 'NO ICE ENERGY CARD' && s[2] === true), 'the others after: ' + JSON.stringify(T.en.put.s1)); ok(/ICE ENERGY IN · .* · ENERGY · ITS ELEMENT/.test(T.en.put.note), 'it says what changed: ' + T.en.put.note);
-                same(T.en.put.tag, 'ENERGY CARD · YOU HOLD 0', 'the reveal\'s count'); same(T.en.put.btn.join(), 'true,NONE LEFT · ALL IN SLOTS', 'the reveal\'s button'); same(T.en.put.same, true, 'the reveal was drawn again');
+                same(T.en.put.tag, '', 'no count under it (build 2026-11-13o)'); same(T.en.put.btn.join(), 'true,NONE LEFT · ALL IN SLOTS', 'the reveal\'s button'); same(T.en.put.same, true, 'the reveal was drawn again');
             });
         }
     }
