@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
-### Build `2026-11-13k` · branch `claude/type-fixes` · the odd attacks: types put back, the drill off enemies, SWEET SCENT poisons
+### Build `2026-11-13m` (stamped 13k on its branch) · branch `claude/type-fixes` · the odd attacks: types put back, the drill off enemies, SWEET SCENT poisons
 - **The ask** (the owner, 2026-11-13, reading the agent's list of attacks that do not make sense: "you can change Jelly Ram's main ... Thermite Burrower's main ... Thermite Drill. Actually make it to where Thermite Drill, you can't use that on enemies ... Goo Proxy's main ... Seeper's Eruption. You can change Sundew's to Elemental. And have it do some damage. No, have it poison.").
 - **Put back to what they were** (the `13j` retypes the owner flagged): JELLY RAM's main **Crushing** (a ram), THERMITE's main **Piercing** (BURROW STRIKE's spikes), GOO PROXY's main **Crushing** (a goo slam), SEEPER's ERUPTION **Earthquake**.
 - **THERMITE DRILL is no longer used on enemies:** it drills rubble from its long-press ring only; from the chip or the enemy card an enemy is refused ("THE DRILL IS FOR RUBBLE, NOT ENEMIES"), the INFO says so. (Its three-hit enemy tick is left in `js/techabilities.js`, never started.) Thermite's alternate keeps Crushing: it is MAGMA VENT's burst now.
@@ -14,7 +14,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/damage.js`, `js/evolution.js`, `js/techabilities.js`, `js/unitinfo.js`, `tests/damage.js`, `tests/evolution.js` (SWEET SCENT's poison), `tests/techlevel1.js` (the drill refuses enemies), `tests/followercombat.js`, `docs/COMBAT.md`, `docs/TECHNICIANS.md`, the Bible.
 - Not playtested. Branched from `claude/status-types`.
 
-### Build `2026-11-13j` · branch `claude/status-types` · every element has the four damage types; primary attacks carry a status
+### Build `2026-11-13l` (stamped 13j on its branch) · branch `claude/status-types` · every element has the four damage types; primary attacks carry a status
 - **The asks** (the owner, 2026-11-13: "all types of damage should be represented. Each element should have a set for each attack type"; then "they're gonna have each damage type, represented like piercing, slashing, crushing and magic or elemental"; "the primary attacks should add stuff like stun, slow, poisoned, and blinded, and perhaps burning ... They're not exclusive to those types"). Asked, "Mix across all elements"; the agent's two tables **approved**, "25% chance per hit".
 - **Types:** among the main and alternate attacks of each element's three forms, **Slashing, Piercing, Crushing and Elemental** are all present. Retyped (`DMG_FORM`): STATIC ORB alt Piercing, GOO PROXY main Piercing, THERMITE main Slashing and alt Crushing, IGLOO main Crushing, JELLY RAM main Slashing, HAMMER SLUG main Piercing, SEEPER alt Crushing, SUNDEW alt Slashing, HORNSHELL alt Elemental (ECHO PULSE's own hit already was). Projectile and Earthquake stay where they were. A retyped attack meets different weaknesses and resistances.
 - **Statuses:** a follower's plain hit or a Mage's shot adds its form's status on **25% of its hits** (each hit its own roll; `primaryStatusOnHit`, js/combat.js, from `applyDamage`): **stun** 0.75 s (Thunderhead, Electro Skink, Static Orb, Jelly Ram), **slow** 2 s to 60% (Frost Maw, Rimestar, Hornshell, Sundew), **poison** 3 s, bites 40% weaker (Seeper, Rotshard, Thornwhip), **blind** 1 s, misses half its hits (Voidstar, Rift Mimic; the blind of `2026-11-13i`), **burn** 3 s, a tick of 0.05 × its power (Ember Hood, Quillstone). A word floats over the target when it lands. A boss is not stunned or blinded. A move's hit adds none; Technicians have no primary attack and carry none.
@@ -22,12 +22,30 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/damage.js`, `js/combat.js`, `js/helpers.js`, `tests/damage.js` (the types; the coverage), `tests/evolution.js` (the statuses), `tests/followercombat.js`, `docs/COMBAT.md` (§7.4), `docs/DECISION-LOG.md`, the Bible. Branched from `claude/blind-miss` (it needs blind's new rule).
 - Not playtested.
 
-### Build `2026-11-13i` · branch `claude/blind-miss` · blind is a lower chance of hitting
+### Build `2026-11-13k` (stamped 13i on its branch) · branch `claude/blind-miss` · blind is a lower chance of hitting
 - **The ask** (the owner, 2026-11-13: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting"; asked, chosen: **change blind everywhere**, **50%**).
 - **What it does:** a blinded creature **keeps its target and still attacks**; each hit it deals **misses half the time** (`BLIND_MISS`, js/helpers.js `applyDamage`: a bite, a shot, an ability's hit, each on its own roll; a reflected hit cannot miss). A MISS floats over the target. Before, a blinded creature lost its target, could not attack or shoot, and staggered about at half pace (js/predator.js).
 - **Who is blinded today:** MAELSTROM's swirl (a boss is still not blinded). Its INFO and the Bible say the new rule.
 - `js/helpers.js`, `js/predator.js`, `js/unitinfo.js`, `js/evolution.js` (comment), `tests/evolution.js` (a check: 1000 hits each unblinded, blinded and reflected; the target kept), the Bible.
 - Not yet built: the status effects on primary attacks and the damage-type coverage (proposed to the owner, awaiting approval). Lettered 13i; the branch `claude/personality-range` is stamped 13h.
+
+### Build `2026-11-13j` · branch `claude/friendly-thompson-w581x0` · a squad card: the first tap picks, the second opens
+- **The ask** (the owner: a follower picked on the strip "highlights ... and it says equipment/strategy and then that way it doesn't automatically pull up that rollout card"; then "the card tile should grey out and become the button with the text").
+- **What it does:** on a tablet or a desktop, **the first tap on a squad card picks the follower** (orders go to it) and **the card turns grey and becomes a button reading EQUIPMENT / STRATEGY ▲**; **a second tap opens the member's card** (the roll-out with its equipment, energy and attack). A press anywhere else turns the card back, the follower still picked. The clone's card too. A phone is unchanged.
+- `js/party.js` (`partyPeekTap`, `partyPeekAway`, the slot's and the clone's faces), `game.html` (the face's css), `tests/party.js` (its check), `tests/squadfly.js`, `bottomui.js`, `clonesquad.js` (their taps go through it), `docs/UI-STYLE.md`.
+- **Verified:** the squad suites and the full suite; real taps at iPad size. **Not playtested.** Seen once more: tests/party.js's check that a posted follower keeps to its room failed on some runs and passed on others, with and without this change (it rests on the follower's random wandering).
+
+### Build `2026-11-13i` · branch `claude/friendly-thompson-w581x0` · the command card leans as the squad's cards do
+- **The ask** (the owner: "Make it match the roster to the side and with that edge lean design, but keep all the buttons in the right places").
+- **What it does:** out of a fight, ROSTER and its ALL, HOLD and COME have **the squad cards' slanted edges** (leaning 9 degrees, level top and bottom, the words upright), and ROSTER a purple bar at its left as each squad card has its colour's. **Every button is where it was** (build `2026-11-13h`). A phone is unchanged.
+- `game.html` (the command card's css), `docs/UI-STYLE.md`.
+- **Verified:** the command card's suites and the full suite; seen in the real page at iPad sizes. **Not playtested.**
+
+### Build `2026-11-13h` · branch `claude/friendly-thompson-w581x0` · the command card out of a fight, straight
+- **The ask** (the owner: "edit the little command menu there when the user is not in combat. I don't like how it's all crooked").
+- **What it does:** out of a fight, the bottom-left command card stands **straight**: ROSTER level with rounded corners (it leaned), and **ALL, HOLD and COME one size, level, evenly spaced on one line, and still** (they leaned at three angles and heights and bobbed out of step). They take a third of the card each, so they fit an iPad held upright. What each does is unchanged. A phone is unchanged.
+- `game.html` (the command card's css), `docs/UI-STYLE.md` (the command card: "Straight").
+- **Verified:** tests/hud.js, mixtool.js, toolbox.js, enemycard.js, squadfly.js, bottomui.js and the full suite; seen in the real page at iPad sizes. **Not playtested.**
 
 ### Build `2026-11-13g` · branch `claude/start-game-project-HSh7Z` · The Lounge opens onto the hallway on its north and east
 - **The ask** (the owner, 2026-11-13: "there shouldn't be any obstructions on the north side of the lobby or the lounge room or the right side of it either, the east side"; asked how, **"Open them up"**).

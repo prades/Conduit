@@ -76,7 +76,7 @@ function findChromium() {
 }
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
-  var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+  var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (el && el.closest && el.closest('#squadBar') && document.querySelector('#squadBar .sb-slot.peek')) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };   // (a card on the strip: the first tap lights it, the second opens it since build 2026-11-13j; this taps through)
   try {
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     playerClassKey = null; classSet('gunslinger'); equipPlayer = [null, null]; out.put = equipPlayerPut(0, 'incendiary_gunner');

@@ -33,7 +33,7 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool *, #squadBar, #squadBar *, #squadFly, #squadFly * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
-  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (el.closest && el.closest('#squadBar') && document.querySelector('#squadBar .sb-slot.peek')) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };   // (a card on the strip: the first tap lights it, the second opens it since build 2026-11-13j; this taps through to the open card, as the checks below were written for: tests/party.js has the two taps' own check)
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; if (typeof classPickerOpen !== 'undefined') classPickerOpen = false;

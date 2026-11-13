@@ -30,7 +30,7 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool *, #squadBar, #squadBar *, #squadFly, #squadFly * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
-  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (el.closest && el.closest('#squadBar') && document.querySelector('#squadBar .sb-slot.peek')) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };   // (a card on the strip: the first tap lights it, the second opens it since build 2026-11-13j; this taps through to the open card, as the checks below were written for: tests/party.js has the two taps' own check)
   var rect = function(e){ if (!e) return null; var b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; };
   var flyOn = function(){ var f = $('#squadFly'); return !!f && f.classList.contains('on') && getComputedStyle(f).display !== 'none'; };
   var slots = function(){ return $$('#squadBar .sb-slot'); }, txt = function(sel){ var e = $(sel); return e ? e.textContent : null; };
@@ -173,7 +173,7 @@ function measure(w, h) {
         for (const k of ['none', 'one', 'last', 'fallback', 'held', 'phone']) same(r[k], true, k);
     });
     check('a press away puts the card away and the member stays picked; the next member tapped on the stack opens theirs, a tap on a picked one lets it go and leaves the card away, and with nobody picked the next pick opens it', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}, tap = f => partyBarClick({ target: { closest: s => s === '.sb-slot' ? { _unit: f, _call: null } : null } }); innerWidth = 1100;
+        const r = J(`(function(){ const fs = __fresh(3), o = {}, tap = f => { const ev = { target: { closest: s => s === '.sb-slot' ? { _unit: f, _call: null } : null } }; partyBarClick(ev); if (_sbPeek === f) partyBarClick(ev); };   /* (the first tap lights, the second opens: build 2026-11-13j) */ innerWidth = 1100;
             tap(fs[0]); o.open = [partyFlySubject() === fs[0], _sfAway]; _sfAway = true; o.away = [partyFlySubject() === null, selectedUnits.has(fs[0])]; partyTick(); o.kept = _sfAway;
             tap(fs[1]); o.next = [partyFlySubject() === fs[1], _sfAway, selectedUnits.size]; _sfAway = true; tap(fs[1]); o.letGo = [selectedUnits.has(fs[1]), _sfAway, partyFlySubject() === null];
             selectedUnits.clear(); partyTick(); o.reset = _sfAway; return o; })()`);
