@@ -169,7 +169,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); __foe(f.x + QUILL_RANGE + 0.6, f.y); __fire(f);
             return { n: followerProjectiles.length, cd: f._sigCd, ids: evoMoveIds(EVOLUTIONS.quillstone), def: evoMoveIds(EVOLUTIONS.quillstone)[0], info: followerInfo(f).attacks.filter(s => s.choices).map(s => s.choices.map(c => c.label)), main: DMG_FORM.quillstone.main, alt: DMG_FORM.quillstone.alt, shot: EVOLUTIONS.quillstone.shot || null }; })()`);
         same(r.n, 0, 'quills at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd);
-        same(r.ids.join(), 'quill_burst', 'its moves'); same(r.def, 'quill_burst', 'its first move'); same(JSON.stringify(r.info), JSON.stringify([['NORMAL ATTACK', 'QUILL BURST', 'BOTH · QUILL BURST']]), 'the INFO choice (2026-11-07: its normal attack, or an alternate; BOTH, build 2026-11-11s)');
+        same(r.ids.join(), 'quill_burst,ember_slash', 'its moves (EMBER SLASH its extra attack since build 2026-11-13v)'); same(r.def, 'quill_burst', 'its first move'); same(JSON.stringify(r.info), JSON.stringify([['NORMAL ATTACK', 'QUILL BURST', 'EMBER SLASH', 'BOTH · QUILL BURST', 'BOTH · EMBER SLASH']]), 'the INFO choice (2026-11-07: its normal attack, or an alternate; BOTH, build 2026-11-11s)');
         same(r.main, 'piercing', 'its main attack\'s type'); same(r.alt, 'projectile', 'QUILL BURST\'s type'); same(r.shot, null, 'a shot of its own (a Brawler has none)');
     });
 

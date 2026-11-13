@@ -46,7 +46,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('UNLOCKS: its own element\'s cards, its second attack then its Ultimate; another element\'s, a hybrid (not designed yet)');
     check('an evolved follower with no card: second attack and Ultimate locked; 1 of its element: its second attack; 2: its extra attack where its form has one (the Static Orb); 3: its Ultimate; another element\'s card: a hybrid, unlocking nothing yet', () => {
-        const r = J(`(function(){ __clear(); const f = __mk('brawler', 'fire'); f.evolved = 'quillstone'; energyEvolved(f); const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
+        const r = J(`(function(){ __clear(); const f = __mk('sniper', 'fire'); f.evolved = 'embercowl'; energyEvolved(f);   /* (the Ember Hood: a form with no extra attack; the Quillstone has EMBER SLASH since build 2026-11-13v) */ const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
             const st = () => [evoMoveAllowed(f, d, mv), !!followerUltimate(f), !!followerUltLocked(f), energyHybrids(f).join('+')].join('/');
             o.none = st(); energyAdd('fire', 3); energyAdd('ice', 1);
             energyPut(f, 0, 'ice'); o.hybrid = st(); energyPut(f, 1, 'fire'); o.one = st(); energyPut(f, 2, 'fire'); o.two = st(); energyPut(f, 0, 'fire'); o.three = st(); o.roles3 = [0, 1, 2].map(i => energySlotRole(f, i)).join('|'); energyPut(f, 0, 'ice');

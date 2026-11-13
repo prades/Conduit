@@ -32,7 +32,7 @@ async function collect() {
             rows.push({ h: 'EVERYDAY · ' + (nm || (d.role === 'sniper' ? 'SHOT' : d.role === 'camper' ? 'PLAIN HIT (a technician fights only what comes to it)' : 'PLAIN HIT')), note: '', rows: (si || []).concat(d.role === 'sniper' && !si ? [['DAMAGE', MAGE_SHOT_MULT + '× special attack, a wind-up of ' + (MAGE_SHOT_WINDUP / 60).toFixed(2) + ' s, then every ' + (MAGE_SHOT_REST / 60).toFixed(2) + ' s']] : []) });
             for (const a of info.attacks) { if (/^ATTACK STYLE/.test(a.h) || a.choices || (si && /^MAIN ATTACK/.test(a.h))) continue; rows.push({ h: a.h, note: a.note || '', rows: a.rows || [] }); }
             out.forms.push({ id, name: d.name, element: d.element, role: ROLE[d.role] || d.role, hp: Math.round(f.maxHealth), def: Math.round(f.stats.defense), atk: Math.round(f.stats.attack), sp: Math.round(f.stats.specialAttack), spd: Math.round(f.moveSpeed * 1000) / 1000,
-                mainType: t.main || null, altType: t.alt || null, status: (typeof PRIMARY_STATUS !== 'undefined' && PRIMARY_STATUS[id]) || null, attacks: rows });
+                mainType: t.main || null, altType: t.alt || null, extraType: t.extra || null, status: (typeof PRIMARY_STATUS !== 'undefined' && PRIMARY_STATUS[id]) || null, attacks: rows });
             followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f);
         }
         out.statusChance = PRIMARY_STATUS_CHANCE; out.blindMiss = BLIND_MISS;
@@ -57,8 +57,8 @@ function render(D, M) {
         'A primary attack carries its status on ' + Math.round(D.statusChance * 100) + '% of its hits; a blinded creature misses ' + Math.round(D.blindMiss * 100) + '% of its hits.</p>\n';
 
     // table 1: the forms and their stats and the everyday attack
-    h += '<h2>1. The forms: stats, everyday attack, status</h2>\n<div class="tw"><table class="sortable"><thead><tr><th>Form</th><th>Element</th><th>Role</th><th class="n">HP</th><th class="n">DEF</th><th class="n">ATK</th><th class="n">SP.ATK</th><th>Everyday type</th><th>Alternate type</th><th>Status on a hit</th></tr></thead><tbody>\n';
-    for (const f of D.forms) h += '<tr><td><b>' + esc(f.name) + '</b></td><td>' + el(f) + '</td><td>' + esc(f.role) + '</td><td class="n">' + f.hp + '</td><td class="n">' + f.def + '</td><td class="n">' + f.atk + '</td><td class="n">' + f.sp + '</td><td>' + esc(f.mainType || '–') + '</td><td>' + esc(f.altType || '–') + '</td><td>' + esc(f.status || (f.role === 'TECHNICIAN' ? 'none (no everyday attack)' : '–')) + '</td></tr>\n';
+    h += '<h2>1. The forms: stats, everyday attack, status</h2>\n<div class="tw"><table class="sortable"><thead><tr><th>Form</th><th>Element</th><th>Role</th><th class="n">HP</th><th class="n">DEF</th><th class="n">ATK</th><th class="n">SP.ATK</th><th>Everyday type</th><th>Alternate type</th><th>Extra type</th><th>Status on a hit</th></tr></thead><tbody>\n';
+    for (const f of D.forms) h += '<tr><td><b>' + esc(f.name) + '</b></td><td>' + el(f) + '</td><td>' + esc(f.role) + '</td><td class="n">' + f.hp + '</td><td class="n">' + f.def + '</td><td class="n">' + f.atk + '</td><td class="n">' + f.sp + '</td><td>' + esc(f.mainType || '–') + '</td><td>' + esc(f.altType || '–') + '</td><td>' + esc(f.extraType || '–') + '</td><td>' + esc(f.status || (f.role === 'TECHNICIAN' ? 'none (no everyday attack)' : '–')) + '</td></tr>\n';
     h += '</tbody></table></div>\n';
 
     // THE BALANCE SYSTEM (build 2026-11-13u; the owner, 2026-11-13: "I accept the points and the role bands as the system"): everything a form does, in one currency, POINTS a second:
@@ -95,7 +95,7 @@ function render(D, M) {
     // each of the four types, the forms whose everyday attack or alternate is declared that type (DMG_FORM, js/damage.js). An empty cell is a pairing the player cannot get yet.
     { const TYPES = ['slashing', 'piercing', 'crushing', 'elemental'], els = []; for (const f of D.forms) if (els.indexOf(f.element) < 0) els.push(f.element);
       let empty = 0, rows = '';
-      for (const e of els) { rows += '<tr><td>' + el({ element: e }) + '</td>'; for (const t of TYPES) { const who = []; for (const f of D.forms) if (f.element === e) { if (f.mainType === t) who.push(f.name + ' (everyday)'); if (f.altType === t) who.push(f.name + ' (alternate)'); } if (!who.length) empty++; rows += '<td>' + (who.length ? esc(who.join(', ')) : '<b class="flag">EMPTY</b>') + '</td>'; } rows += '</tr>\n'; }
+      for (const e of els) { rows += '<tr><td>' + el({ element: e }) + '</td>'; for (const t of TYPES) { const who = []; for (const f of D.forms) if (f.element === e) { if (f.mainType === t) who.push(f.name + ' (everyday)'); if (f.altType === t) who.push(f.name + ' (alternate)'); if (f.extraType === t) who.push(f.name + ' (extra)'); } if (!who.length) empty++; rows += '<td>' + (who.length ? esc(who.join(', ')) : '<b class="flag">EMPTY</b>') + '</td>'; } rows += '</tr>\n'; }
       h += '<h2>4. The coverage grid: every element with every damage type</h2>\n<p>The rule: for each element and each of the four types, some form of that element has an attack of that type, so the player can bring it if they try. <b>' + (els.length * TYPES.length - empty) + ' of ' + (els.length * TYPES.length) + '</b> are filled' + (empty ? '; the empty ones are waiting for an attack to be designed' : '') + '. (The type shown is the attack&#39;s declared type; a move that deals no damage does not really fill its cell.)</p>\n' +
           '<div class="tw"><table><thead><tr><th>Element</th>' + TYPES.map(t => '<th>' + t.charAt(0).toUpperCase() + t.slice(1) + '</th>').join('') + '</tr></thead><tbody>\n' + rows + '</tbody></table></div>\n'; }
 

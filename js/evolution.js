@@ -190,7 +190,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
     // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
-    quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst"],   /* (FIRE BOMBS taken off the fire brawler: the owner, 2026-11-07, build gg) */ sheet: "img/evo/quillstone.png",
+    quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst", "ember_slash"],   /* (FIRE BOMBS taken off the fire brawler: the owner, 2026-11-07, build gg) */ sheet: "img/evo/quillstone.png",
               cell: 192, anchor: [96, 138.2], core: [96, 109], noGlow: true, color: "#ff5a1f", burst: true },   // (a 192 px cell since build 2026-11-11n, 40 columns: its everyday hit's dive, and QUILL BURST's own frames: staticQuillCol, below)
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",
@@ -222,7 +222,7 @@ const EVOLUTIONS = {
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f", flare: true, blaze: true },   // (32 columns since build 2026-11-12h, design No. 938: columns 16-23 are its everyday FIREBALL's FLARE, flareCol; 24-31 are HEXFIRE's LIGHTING UP, blazeCol; 8-15, the move's old bow, are not used by HEXFIRE now)
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
-    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "SHELL GUARD", moves: ["shell_guard"], sheet: "img/evo/hammerslug.png",
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "SHELL GUARD", moves: ["shell_guard", "blade_roll"], sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
     // The FLUX TECHNICIAN, design No. 853 (the "GOO PROXY" sheet, then the user's review: "a frog face with diamond eye iris and one is way bigger than the other and
@@ -282,7 +282,7 @@ const EVOLUTIONS = {
     petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  sheet: "img/evo/petal.png",
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground. Its surface moves, so its sheet carries its own light.
-    mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
+    mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", moves: ["gravity_slam", "rift_impale"], sheet: "img/evo/mimic.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png", shard: true },   // (24 columns since build 2026-11-12d, design No. 937: columns 16-23 are its everyday hit's SHARD SHOT, mimicShotCol; 8-15, GRAVITY SLAM's, are as they were)
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
@@ -291,7 +291,7 @@ const EVOLUTIONS = {
     // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
-    shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
+    shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall", "briar_sweep"], sheet: "img/evo/shrub.png",
               cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8", fling: true },   // (fling: its action block's vines rearing and whipping now play for its SEED SHOT and SEEDFALL, flingCol; build 2026-11-12t)   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
     // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 925 since build 2026-11-08n (No. 922 before it), design/evolutions/forms37.js; the owner sent
     // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
@@ -994,6 +994,83 @@ function venomMark(t, src, amount) {
     if (!t || !(t._venomHits > 0) || !(amount > 0) || !src || !(src.team === "green" || src.isPlayer)) return amount;
     if ((typeof frame !== "undefined" ? frame : 0) >= (t._venomUntil || 0)) { t._venomHits = 0; return amount; }
     t._venomHits--; return amount * (1 + VENOM_BONUS);
+}
+// ── THE FOUR EXTRA ATTACKS (build 2026-11-13v) ──
+// The owner, 2026-11-13, filling the coverage grid's empty cells (balance.html: every element with Slashing, Piercing, Crushing and Elemental): "fill the empty spaces with another attack on certain
+// followers ... if they have 2 energy cards, they can use their alternate attack if there's an extra one". Each is its form's SECOND move (js/moves.js), open with two energy cards of its element
+// (js/energy.js alt2Needs), a chosen mode with a wind-up or a Brawler's cooldown as every second attack. The followers and the ideas are the owner's: the QUILLSTONE "EMBER SLASH" (picked of two drafts),
+// the RIFT MIMIC "Teleport under them, they glitch out at pop up under them and implale", the HAMMER SLUG "Rolls up into a ball and slices them", the THORNWHIP "BRIAR SWEEP" (picked of two drafts).
+// The names RIFT IMPALE and BLADE ROLL, every number, and the looks (plain for now: the game's rings and impacts, no frames of their own) are the agent's, PROVISIONAL. Toxic Crushing is not placed yet.
+const DMG_HIT_EMBER = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
+const DMG_HIT_RIFT = Object.freeze({ which: "alt", stat: "atk", type: "piercing" });
+const DMG_HIT_ROLL = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
+const DMG_HIT_BRIAR = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
+// EMBER SLASH (the Quillstone's): one heavy swipe of a long burning quill at the nearest enemy it can see within EMBER_RANGE (a close move: it steps in): EMBER_MULT x its attack, Slashing, fire, and the
+// enemy is left BURNING for EMBER_BURN frames (a tick of EMBER_TICK x its attack).
+const EMBER_RANGE = 1.8, EMBER_MULT = 2, EMBER_BURN = 180, EMBER_TICK = 0.05;
+function emberSlash(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, EMBER_RANGE).filter(a => _evoDashOk(f, a)));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
+    f.x += dx / L * s; f.y += dy / L * s; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
+    applyDamage(t, (f.power || 10) * EMBER_MULT, f, "fire", false, false, DMG_HIT_EMBER);
+    if (!t.dead && typeof applyBurn === "function") applyBurn(t, (f.power || 10) * EMBER_TICK, EMBER_BURN);
+    f._sigAt = f0; f._sigCd = moveWindupFrames("ember_slash"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#ff8844", radius: 0.8, life: 20 });
+    _evoSay(f, "EMBER SLASH", "#ffb066");
+    return true;
+}
+// RIFT IMPALE (the Rift Mimic's): it glitches out where it stands and pops up UNDER the nearest enemy it can see within RIFT_RANGE (a spot one can stand on), impaling it: RIFT_MULT x its attack, Piercing, flux.
+// It ends where the enemy stands. (The owner's "they glitch out" is read as the Mimic glitching out of sight as it goes, a look: no status is put on the enemy. Open, with the owner.)
+const RIFT_RANGE = 5, RIFT_MULT = 2;
+function riftImpale(f) {
+    const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, RIFT_RANGE).filter(a => stand(a.x, a.y)));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y, dx = t.x - ox, dy = t.y - oy, L = Math.hypot(dx, dy) || 1;
+    f.x = t.x; f.y = t.y; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
+    applyDamage(t, (f.power || 10) * RIFT_MULT, f, "flux", false, false, DMG_HIT_RIFT);
+    f._sigAt = f0; f._sigCd = moveWindupFrames("rift_impale"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "ring", x: ox, y: oy, radius: 0.7, color: "#9933ff", life: 18 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#cc66ff", radius: 0.6, life: 14 });   // (where it glitched out)
+    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#e0a8ff", radius: 1, life: 22 }); _evoFx({ type: "ring", x: t.x, y: t.y, radius: 0.9, color: "#cc66ff", life: 20 });   // (where it pops up)
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    _evoSay(f, "RIFT IMPALE", "#d9a3ff");
+    return true;
+}
+// BLADE ROLL (the Hammer Slug's): it rolls up into a ball and rolls in a straight line toward the nearest enemy it can see within ROLL_RANGE and on past it, ROLL_RANGE in all along floor it could walk
+// (else to it, as SKATE CHARGE stops): every enemy within ROLL_BAND of its line is sliced, ROLL_MULT x its attack, Slashing, core.
+const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1.2;
+function bladeRoll(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ROLL_RANGE).filter(a => _evoDashOk(f, a)));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    let len = Math.max(L, ROLL_RANGE);
+    if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - 0.8);
+    const seg = a => { const t2 = Math.max(0, Math.min(1, ((a.x - x0) * ux + (a.y - y0) * uy) / (len || 1))); return Math.hypot(a.x - (x0 + ux * len * t2), a.y - (y0 + uy * len * t2)); };
+    const hit = _evoFoes(x0, y0, len + ROLL_BAND).filter(a => seg(a) <= ROLL_BAND && _evoSees(x0, y0, a));
+    if (hit.indexOf(t) < 0) hit.push(t);
+    for (const a of hit) { applyDamage(a, (f.power || 10) * ROLL_MULT, f, "core", false, false, DMG_HIT_ROLL); _evoFx({ type: "impact", x: a.x, y: a.y, color: "#7fffe0", radius: 0.6, life: 16 }); }
+    f.x = x0 + ux * len; f.y = y0 + uy * len; f.dirX = ux; f.dirY = uy; f._fpPath = null;
+    for (let k = 0; k <= len; k += 0.7) _evoFx({ type: "impact", x: x0 + ux * k, y: y0 + uy * k, color: "#00ccaa", radius: 0.3, life: 14 });
+    f._sigAt = f0; f._sigCd = moveWindupFrames("blade_roll"); f.state = "attack"; f.attackAnim = 0;
+    _evoSay(f, "BLADE ROLL", "#7fffe0");
+    return true;
+}
+// BRIAR SWEEP (the Thornwhip's): it sweeps its whip in a circle round itself: every enemy within BRIAR_RADIUS that it can see takes BRIAR_MULT x its attack, Slashing, bloom, and is pushed BRIAR_PUSH tiles
+// straight out from it.
+const BRIAR_RADIUS = 2, BRIAR_MULT = 1, BRIAR_PUSH = 1;
+function briarSweep(f) {
+    const foes = _evoFoesSeen(f.x, f.y, BRIAR_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * BRIAR_MULT, f, "blossom", false, false, DMG_HIT_BRIAR);
+        if (!a.dead && typeof applyKnockback === "function") applyKnockback(a, f, BRIAR_PUSH * (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28));
+    }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("briar_sweep"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "ring", x: f.x, y: f.y, radius: BRIAR_RADIUS, color: "#ff9ccc", life: 24 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#ffd3e8", radius: 1, life: 18 });
+    _evoSay(f, "BRIAR SWEEP", "#ff9ccc");
+    return true;
 }
 // SHOCK ZAP (the Hover Shell's): a zap from its shell at the nearest enemy it can see within ZAP_RANGE: ZAP_MULT × its attack, electric, and its wind-up broken (GLITCH, ZAP_GLITCH frames). Its KINETIC
 // LAUNCHER is untouched.
