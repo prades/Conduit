@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13h` · branch `claude/friendly-thompson-w581x0` · the command card out of a fight, straight
+- **The ask** (the owner: "edit the little command menu there when the user is not in combat. I don't like how it's all crooked").
+- **What it does:** out of a fight, the bottom-left command card stands **straight**: ROSTER level with rounded corners (it leaned), and **ALL, HOLD and COME one size, level, evenly spaced on one line, and still** (they leaned at three angles and heights and bobbed out of step). They take a third of the card each, so they fit an iPad held upright. What each does is unchanged. A phone is unchanged.
+- `game.html` (the command card's css), `docs/UI-STYLE.md` (the command card: "Straight").
+- **Verified:** tests/hud.js, mixtool.js, toolbox.js, enemycard.js, squadfly.js, bottomui.js and the full suite; seen in the real page at iPad sizes. **Not playtested.**
+
 ### Build `2026-11-13f` · branch `claude/friendly-thompson-w581x0` · the fight's panel: the upright card (3A), ROSTER a tab
 - **The ask** (the owner: ten designs for "the little left side screen"; "Number 3 is cool, just less jumbled"; of three tidier ones, "3a for now, look the roster button should be apart of the menu and fix the attack number border").
 - **What it does:** in a fight (a tablet or a desktop) the enemy card is **a tall card standing straight**: the creature's art on top, its name, HP, bite and WEAK / RESISTS chips under it, the glass ATTACK bar at its foot (a press anywhere on it still attacks). **Five tabs, one size and evenly spaced**, behind its right side: **ROSTER** (with the roster's count; the long ROSTER card no longer rises over the enemy card), INFO, RUN, COME, ALL. **The count on ATTACK sits in a round gold ring**, clear of the card's edge. The squad's cards move in next to the panel. A phone is unchanged.
