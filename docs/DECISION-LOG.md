@@ -24,6 +24,15 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: A generated balance page, and the Bible's follower sections without history
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/balance-page`, `2026-11-13s`
+- **Status:** Approved ("Both")
+- **Context:** the owner could not compare followers, moves, abilities and Ultimates in the Bible for the build history and quotes in it, and wants to balance everything.
+- **Decision:** `balance.html` is made from the code by `tools/balance.js` (never edited by hand; a test fails when stale) with the trial's measurements from `design/balance-trial.json`; the Bible's follower forms, technicians and Ultimates sections lose their history and link to it. History stays in `docs/CHANGELOG.md`, `docs/DECISION-LOG.md` and the Bible's collapsed Decisions blocks.
+- **Open:** the trial's numbers are a guide, not a ruling; the owner has not set targets for what balanced means.
+- **Affects:** tools/balance.js, tools/balance-trial.js, tools/stamp.js, tests/balance.js, bible.html, docs.
+
 ## DECISION: Four retypes put back, the Thermite Drill off enemies, SWEET SCENT poisons
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/type-fixes`, `2026-11-13k`

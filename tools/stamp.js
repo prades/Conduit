@@ -4,7 +4,7 @@
 //   js/config.js  const BUILD_VERSION
 //   bible.html    the BUILD_VERSION number and the footer's "written against build <build> (<day> <Month> <year>)"
 // and then brings the pictures up to date (tools/images.js: a changed picture's WebP copy and fingerprint, js/imgmap.js, game.html's image preloads) and makes the players' page again
-// (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js).
+// (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js) and the balance page (tools/balance.js: balance.html, read from the code).
 // It refuses a name that is not a date and letters, and the build already stamped. Anything else that still names the old build (a comment, say) is listed, not changed:
 // a find-and-replace over the whole page used to rewrite such comments too, so they named the wrong build.
 const fs = require('fs'), path = require('path');
@@ -54,4 +54,6 @@ require('./images.js').write({ log: m => console.log('  ' + m) }).then(im => {
     const left = [];
     for (const f of ['game.html', 'js/config.js']) rd(f).split('\n').forEach((line, i) => { if (line.indexOf(old) >= 0) left.push('  ' + f + ':' + (i + 1) + '  ' + line.trim().slice(0, 140)); });
     if (left.length) console.log('still naming ' + old + ' (not changed):\n' + left.join('\n'));
+    // the balance page (tools/balance.js; build 2026-11-13q): it names the build and reads the code, so it is made again too
+    return require('./balance.js').make().then(html => { wr('balance.html', html); console.log('balance.html written'); });
 }).catch(e => fail(e.message));
