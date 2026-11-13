@@ -119,17 +119,17 @@ async function boot(search) {
             return [S([6, 1], [6, 3]), S([17, 3], [17, 5]), S([14, 3], [14, 5]), S([11, 5], [11, 7]), S([9, 1], [9, 3]), S([3, 5], [3, 7]), S([7, 5], [7, 7]), S([9, 2], [9, 5]), W([6, 1], [6, 3]), W([11, 5], [11, 7])].map(Number).join(''); })()`);
         same(r, '1111000100', 'crate, barrel, barrier, desk seen over; generator, consoles not; the generator from its own tile; the crate and desk walked through');
     });
-    check('WALLS HIDE, DOORWAYS DO NOT (the main map): across every pane of glass (the Lounge\'s, the old Experiment Lab\'s room; the Show Room\'s; the Observation Deck\'s over the arena) nothing is seen and a shot is stopped at the glass, as the walking test always had it; across every doorway between two rooms, sight and a shot pass', () => {
+    check('WALLS HIDE, DOORWAYS DO NOT (the main map): across every pane of glass (the Show Room\'s; the Lounge\'s last pane on its west and its divider, the old lab\'s glass gone from its north and east since build 2026-11-13e; the Observation Deck\'s over the arena) nothing is seen and a shot is stopped at the glass, as the walking test always had it; across every doorway between two rooms, sight and a shot pass', () => {
         const r = J(`(function(){ const F = _fp.F, o = { glass: [], doors: [] };
             for (const w of F.walls) { if (!w.window) continue; const a = __across(w, [0.6, 1, 1.5, 2, 2.5]); if (!a) { o.glass.push(w.window + ':no line'); continue; }
                 o.glass.push(w.window + ':' + (facilitySees(a.p[0], a.p[1], a.q[0], a.q[1], F) ? 'SEEN' : '-') + ':' + __line(a.p[0], a.p[1], a.q[0], a.q[1])); }
             for (const d of F.openings) { const a = __across(d, [1, 1.5, 2]); if (!a) { o.doors.push(d.id + ':no line'); continue; }
                 const r0 = facilityRoomAt(a.p[0], a.p[1], F), r1 = facilityRoomAt(a.q[0], a.q[1], F); o.doors.push(d.id + ':' + (r0 && r1 && r0 !== r1 ? '2' : '1') + ':' + (facilitySees(a.p[0], a.p[1], a.q[0], a.q[1], F) ? 'seen' : 'HIDDEN') + ':' + __line(a.p[0], a.p[1], a.q[0], a.q[1])); }
             return o; })()`);
-        const tried = r.glass.filter(g => !/no line$/.test(g)); ok(tried.length >= 14, 'only ' + tried.length + ' of ' + r.glass.length + ' panes of glass tested: ' + r.glass.join(' | '));
+        const tried = r.glass.filter(g => !/no line$/.test(g)); ok(tried.length >= 8, 'only ' + tried.length + ' of ' + r.glass.length + ' panes of glass tested: ' + r.glass.join(' | '));
         for (const g of tried) ok(/:-:wall$/.test(g), 'glass: ' + g);
-        ok(['lab_window_north', 'show_window_west', 'deck_window_arena'].every(id => r.glass.some(g => g.startsWith(id + ':'))), 'a window not tested: ' + r.glass.join(' | '));
-        ok(r.doors.length === 27, 'the doorways: ' + r.doors.join(' | '));   // (14 since build 2026-11-11d: the electrical domain's steps; 26 since 2026-11-12a: the Ant Nest's twelve mouths; 27 since 2026-11-13a: the Experiment Lab's staircase) for (const d of r.doors) ok(/:2:seen:through$/.test(d), 'a doorway: ' + d);
+        ok(['show_window_west', 'deck_window_arena', 'lounge_divider_south'].every(id => r.glass.some(g => g.startsWith(id + ':'))), 'a window not tested: ' + r.glass.join(' | '));
+        ok(r.doors.length === 29, 'the doorways: ' + r.doors.join(' | ')); for (const d of r.doors) ok(/:2:seen:through$/.test(d), 'a doorway: ' + d);   // (14 since build 2026-11-11d: the electrical domain's steps; 26 since 2026-11-12a: the Ant Nest's twelve mouths; 27 since 2026-11-13a: the Experiment Lab's staircase; 29 since 2026-11-13e: the Lounge's open north and east. The loop over each doorway sat inside this comment from 2026-11-11d until 2026-11-13e)
     });
     check('IN PLAY: the auto-lock (js/targeting.js) takes a creature seen over the desk and not one behind the generator; the combat step\'s "enemy near" (js/facilityplay.js) the same', () => {
         const r = J(`(function(){ __wild(); const o = {}, T = __T; __put(...T([11, 4])); const a = __ant(...T([11, 8])); a.provoked = true; o.desk = targetNearest() === a; o.nearDesk = facilityEnemyNear() === a;
@@ -151,14 +151,14 @@ async function boot(search) {
             fire([6, 5]); o.far = f.health === h0; o.spark = __sparks().length; f.health = h0; elementEffects.length = 0; fire([6, 3]); o.near = f.health < h0; __bench(); __wild(); f.health = f.maxHealth; return o; })()`);
         same(r.far, true, 'the follower was hurt through the crate'); same(r.spark, 1, 'no spark at the crate'); same(r.near, true, 'the shot from right behind the crate did not hit');
     });
-    check('A WALL STOPS A SHOT: the player\'s round at a creature on the far side of the Lounge\'s glass (the old Experiment Lab\'s room) stops at the glass (a spark on it, the creature unhurt); through a doorway it hits', () => {
-        const r = J(`(function(){ __wild(); const o = {}, F = _fp.F, ws = F.walls.filter(w => /^lab_window/.test(w.window || '') && w.room === 'lounge'); let a = null; for (const w of ws) { a = __across(w, [1.5, 2, 2.5, 3]); if (a) { o.pane = w.window; break; } }
+    check('A WALL STOPS A SHOT: the player\'s round at a creature on the far side of the Lounge\'s divider (a thin wall; the old lab\'s glass until build 2026-11-13e) stops at it (a spark on it, the creature unhurt); through a doorway it hits', () => {
+        const r = J(`(function(){ __wild(); const o = {}, F = _fp.F, ws = F.walls.filter(w => w.divider && w.room === 'lounge'); let a = null; for (const w of ws) { a = __across(w, [1.5, 2, 2.5, 3]); if (a) { o.pane = w.window; break; } }
             o.fixture = !!a; if (!a) return o; const ins = facilityRoomAt(a.p[0], a.p[1], F).id === 'lounge', lab = ins ? a.p : a.q, hall = ins ? a.q : a.p; o.rooms = facilityRoomAt(hall[0], hall[1], F).id + '>' + facilityRoomAt(lab[0], lab[1], F).id;
             const foe = __ant(lab[0], lab[1]); __put(hall[0], hall[1]); playerAmmo = 20; player.attackCooldown = 0; firePlayerShot(foe); __fly(); o.hp = foe.health;
             o.spark = __sparks().map(e => +Math.hypot(e.x - a.m[0], e.y - a.m[1]).toFixed(2));
             __wild(); let d = null; for (const op of F.openings) { d = __across(op, [2, 1.5]); if (d) break; } o.door = !!d;
             const foe2 = __ant(d.q[0], d.q[1]); __put(d.p[0], d.p[1]); player.attackCooldown = 0; firePlayerShot(foe2); __fly(); o.door = foe2.health < 5000; __wild(); return o; })()`);
-        same(r.fixture, true, 'fixture: no clear line across the lab\'s glass'); same(r.rooms, 'lab_hallway>lounge', 'fixture: the two rooms (' + r.pane + ')'); same(r.hp, 5000, 'the creature was hurt through the glass'); same(r.spark.length, 1, 'the sparks'); ok(r.spark[0] < 0.3, 'the spark is not on the glass: ' + r.spark[0]);
+        same(r.fixture, true, 'fixture: no clear line across the divider'); same(r.rooms, 'lab_hallway>lounge', 'fixture: the two rooms (' + r.pane + ')'); same(r.hp, 5000, 'the creature was hurt through the divider'); same(r.spark.length, 1, 'the sparks'); ok(r.spark[0] < 0.3, 'the spark is not on the divider: ' + r.spark[0]);
         same(r.door, true, 'the round through a doorway did not hit');
     });
     check('A TALL OBJECT stops a shot and is nobody\'s own cover (the generator, even from right beside it); COVER TOO HIGH TO SEE OVER is still its owner\'s (a console: from right behind it a shot passes over, from three tiles off it stops); A LOW OBJECT THAT GIVES NO COVER is passed over (the warehouse\'s cart, the deck\'s couch, the armory\'s cart, a turret, the Sewers\' river and barred gates)', () => {
@@ -226,32 +226,32 @@ async function boot(search) {
         same(r.has, true, 'fixture: a scorpion striker has no rear shot'); same(r.hidden, 0, 'it fired at a follower behind the generator'); same(r.timer, true, 'its timer was spent'); same(r.revenge, 0, 'it fired at its attacker behind the generator');
         same(r.seen, 1, 'it did not fire at the follower it sees'); same(r.green, true, 'the shot is not the creature\'s');
     });
-    check('A TURRET (js/stations.js): at a creature through the Lounge\'s glass (the old Experiment Lab\'s room), in the hallway turret\'s range, it does not fire and the Crystal pays nothing; at one with a clear shot it fires and the Crystal pays', () => {
+    check('A TURRET (js/stations.js): at a creature behind a wall in the hallway turret\'s range (beyond the hallway; it was one behind the old lab\'s glass, gone from the Lounge since build 2026-11-13e), it does not fire and the Crystal pays nothing; at one with a clear shot it fires and the Crystal pays', () => {
         const r = J(`(function(){ __wild(); const o = {}, F = _fp.F, it = sentryItems().find(i => i.id === 'sentry_hall'); sentriesStart(); crystal.maxHealth = 300; crystal.health = 300; _crystalDrawnAt = -1e9;
             let lab = null, hall = null; for (const [k, c] of _fp.cellsP) { const d = Math.hypot(c[0] - it.x, c[1] - it.y); if (d < 2.5 || d > SENTRY_RANGE - 1) continue; const room = facilityRoomAt(c[0], c[1], F); if (!room) continue;
-                if (!lab && room.id === 'lounge' && !facilityShotClear(it.x, it.y, c[0], c[1]) && _facWallCrossed(it.x, it.y, c[0], c[1], F)) lab = c;
+                if (!lab && room.id !== 'lab_hallway' && room.id !== 'lounge' && !facilityShotClear(it.x, it.y, c[0], c[1]) && _facWallCrossed(it.x, it.y, c[0], c[1], F)) lab = c;
                 if (!hall && room.id === 'lab_hallway' && facilityShotClear(it.x, it.y, c[0], c[1])) hall = c; }
             o.fixture = !!lab && !!hall; if (!o.fixture) return o; const a = __ant(lab[0], lab[1]); followerProjectiles = []; it.cd = 0; let h = crystal.health; facilitySentryTick(); o.lab = [followerProjectiles.length, crystal.health === h, it.cd];
             __wild(); __ant(hall[0], hall[1]); it.cd = 0; h = crystal.health; facilitySentryTick(); o.hall = [followerProjectiles.length, crystal.health < h]; __wild(); crystal.health = 300; return o; })()`);
-        same(r.fixture, true, 'fixture: no place in the lab behind the glass, or none in the hallway in the clear, in the turret\'s range'); same(r.lab.join(), '0,true,0', 'at the creature behind the glass (shots, the Crystal unpaid, the turret\'s wait)');
+        same(r.fixture, true, 'fixture: no place behind a wall, or none in the hallway in the clear, in the turret\'s range'); same(r.lab.join(), '0,true,0', 'at the creature behind the wall (shots, the Crystal unpaid, the turret\'s wait)');
         same(r.hall.join(), '1,true', 'at the creature in the clear (shots, the Crystal paid)');
     });
 
     group('THE MOVES THAT STRIKE AT ONCE NEED SIGHT (build 2026-11-06i; the owner, 2026-11-06: "Need sight": nothing strikes through a wall or a tall object)');
-    // points on one line straight through a pane of the Lounge's glass (the old Experiment Lab's room): the follower 2 tiles out in the hallway; enemy A 0.75 out and C 1.5 out (both in its sight); enemy B 0.75 in, behind the glass
-    run(`globalThis.__glassLine = () => { const F = _fp.F; for (const w of F.walls.filter(w => /^lab_window/.test(w.window || '') && w.room === 'lab_hallway')) { const a = __across(w, [2]); if (!a) continue;
+    // points on one line straight through the Lounge's divider (a thin wall; the old lab's glass until build 2026-11-13e): the follower 2 tiles out in the hallway; enemy A 0.75 out and C 1.5 out (both in its sight); enemy B 0.75 in, behind it
+    run(`globalThis.__glassLine = () => { const F = _fp.F; for (const w of F.walls.filter(w => w.divider && w.room === 'lab_hallway')) { const a = __across(w, [2]); if (!a) continue;
             const u = [(a.m[0] - a.p[0]) / 2, (a.m[1] - a.p[1]) / 2], hs = facilityRoomAt(a.p[0], a.p[1], F).id === 'lab_hallway' ? -1 : 1, at = d => [a.m[0] + u[0] * d * hs, a.m[1] + u[1] * d * hs];
             return { f: at(2), A: at(0.75), C: at(1.5), B: at(-0.75), pane: w.window }; } return null; };
         globalThis.__mover = () => { const f = followers[0]; f.power = 40; f.stance = 'hold'; return f; };
         globalThis.__at = (u, p) => { u.x = p[0]; u.y = p[1]; _ucolsFrame = -1; };`);
-    check('across the Lounge\'s glass (the old Experiment Lab\'s room), 1.5 tiles off, no move that strikes at once is used (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, CORRODE SHOT, CHOMP, SONIC ROLL, PETAL BLAZE, ERUPTION, GRAVITY SLAM): each holds, the creature unhurt; on the same side, at the same distance, each is used', () => {
+    check('across the Lounge\'s divider (a thin wall; the old lab\'s glass until build 2026-11-13e), 1.5 tiles off, no move that strikes at once is used (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, CORRODE SHOT, CHOMP, SONIC ROLL, PETAL BLAZE, ERUPTION, GRAVITY SLAM): each holds, the creature unhurt; on the same side, at the same distance, each is used', () => {
         const r = J(`(function(){ __wild(); const g = __glassLine(), F = _fp.F, f = __mover(), o = { pane: g && g.pane, through: {}, open: {} }; if (!g) return o;
             o.rooms = [g.f, g.A, g.C, g.B].map(p => (facilityRoomAt(p[0], p[1], F) || {}).id + (facilityWalkable(p[0], p[1], F) ? '' : '!')).join();
             const moves = { 'ARC VOLLEY': arcVolley, 'SINGULARITY SHOT': singularityShot, 'STATIC VORTEX': staticVortex, 'CORRODE SHOT': corrodeShot, 'CHOMP': chomp, 'SONIC ROLL': staticRush, 'PETAL BLAZE': petalBlaze, 'ERUPTION': eruption, 'GRAVITY SLAM': gravitySlam };
             for (const k in moves) { __wild(); const b = __ant(...g.B); __at(f, g.A); frame++; const fired = moves[k](f); o.through[k] = (fired ? 'USED' : 'held') + (b.health < 5000 ? ' HURT' : '') + (elementEffects.some(e => e.type === 'staticVortex') ? ' STORM' : ''); }
             for (const k in moves) { __wild(); const a = __ant(...g.A); __at(f, g.C); frame++; o.open[k] = moves[k](f) ? 'used' : 'HELD'; }
             __wild(); __bench(); return o; })()`);
-        ok(r.pane, 'fixture: no clear line through the lab\'s glass'); same(r.rooms, 'lab_hallway,lab_hallway,lab_hallway,lounge', 'fixture: where the points are (' + r.pane + ')');
+        ok(r.pane, 'fixture: no clear line through the divider'); same(r.rooms, 'lab_hallway,lab_hallway,lab_hallway,lounge', 'fixture: where the points are (' + r.pane + ')');
         same(Object.values(r.through).join(), Array(9).fill('held').join(), 'a move through the glass: ' + JSON.stringify(r.through));
         same(Object.values(r.open).join(), Array(9).fill('used').join(), 'a move on the same side: ' + JSON.stringify(r.open));
     });

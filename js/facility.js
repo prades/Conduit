@@ -74,7 +74,7 @@ function _facilityBuild(ex) {
     const M = FACILITY_MAP;
     const closed = ex.closed || [];   // rooms whose openings are CLOSED in this copy (the validator's sealed-room test)
     const widen = (o) => { const pa = _facP(o.a), pb = _facP(o.b), l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]); if (_facSnap && l > 0 && l < 2) { pb[0] = pa[0] + (pb[0] - pa[0]) / l * 2; pb[1] = pa[1] + (pb[1] - pa[1]) / l * 2; } return [pa, pb]; };   // a door is at least two tiles wide on the grid
-    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door"), cave: !!o.cave }; });   // (cave: a mouth in the rock, no frame)
+    const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door"), cave: !!o.cave, open: !!o.open }; });   // (cave: a mouth in the rock, no frame; open: a whole side open onto the next room, no frame: the Lounge's, build 2026-11-13e)
     const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
