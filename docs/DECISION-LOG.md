@@ -3224,3 +3224,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - **Then the owner: "Make it look 3d rendered."** The stubby tentacles are now a modelled 3-D piece (`slap`: glossy violet gel, tapered to a blunt tip, a brighter core, small suckers, 12 frames of a swing, the second slap mirrored), baked like the other effect pieces. **By the art process (docs/ART-PROCESS.md) it is on the `?fx=3d` preview only until the owner approves it in the game** ("Approve it for everyone"); for everyone the flat tentacles stay meanwhile. Open: the owner's approval.
 - **Then the owner, of the 3-D model (blunt and rounded): "Sharper tentacle. That one looks like a dildo."** The model was remade: slim, ridged, tapering to a point with a curl at its tip, no round end and no blob at its base; the flat fallback tentacles taper to a point too. The blunt model is **superseded, not merged**.
 
+## DECISION: The Voidstar waves its tentacles for its everyday shot (2026-11-13, build `2026-11-13c`, branch `claude/voidstar-wave`)
+- The owner, asked whether the Voidstar's body should move for its everyday shot (the telepathic tentacles): **"Yes, he should. He should move his tentacles. Wave them."** Its arms are its tentacles: they start to sway as it winds up, wave at full swing while the shot flies and slaps, and settle. Looks only. See `CHANGELOG.md`.
+- Agent's, provisional: how far they sweep, how long. Status: Implemented and tested; not playtested.
+

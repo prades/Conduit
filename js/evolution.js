@@ -177,7 +177,7 @@ const EVOLUTIONS = {
     // The FLUX ("void") MAGE, design No. 637: a dark spined starfish carrying a big orb of violet fluid with a diamond floating in it, held up by four thick claws. The diamond
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "MAELSTROM", sheet: "img/evo/voidstar.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true },   // (24 columns since build 2026-11-12r, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 8-15, its old bow, are not used by the move now)
+              cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff", reach: true, wave: true },   // (24 columns since build 2026-11-12r, design No. 943: columns 16-23 are MAELSTROM's REACH, reachCol; 32 since build 2026-11-13c, design No. 946: columns 24-31 are its everyday shot's WAVE, waveCol; 8-15, its old bow, are not used by the move now)
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
@@ -1337,6 +1337,7 @@ function _evoFrame(f, d, f0) {
     const sp = d.spit ? spitCol(f, f0) : -1;   // (the Rotshard's CORRODE SHOT: the crystal tips towards the enemy and a blob gathers at its tip over the shot's wind-up)
     const sc = d.split ? splitCol(f, f0, d) : -1;   // (the Rotshard's ROTTEN DECOY: a second black crystal grows out of its pool over the wind-up and breaks free as the decoy is set)
     const fg = d.fling ? flingCol(f, f0, d) : -1;   // (the Thornwhip's vines: rearing round a seed over a shot's or SEEDFALL's wind-up, whipping out as it goes)
+    const wv = d.wave ? waveCol(f, f0) : -1;   // (the Voidstar's everyday shot: its arms, its tentacles, wave)
     const rc = d.reach ? reachCol(f, f0, d) : -1;   // (the Voidstar's MAELSTROM: its front arms lift up towards the enemy over the wind-up)
     const pu = d.pull ? pullCol(f, f0, d) : -1;   // (the Hornshell's ECHO PULSE: it draws its arms into the jar over the wind-up and a ring of water goes out)
     const fn = d.fan ? fanCol(f, f0, d) : -1;   // (the Rimestar's ICICLE VOLLEY: its fins spread into a fan and grow crystals over the wind-up)
@@ -1350,6 +1351,7 @@ function _evoFrame(f, d, f0) {
     else if (sp >= 0 && !(sigK >= 0 && sigK < 1)) col = sp;
     else if (fg >= 0) col = fg;
     else if (rc >= 0) col = rc;
+    else if (wv >= 0 && !(sigK >= 0 && sigK < 1)) col = wv;
     else if (pu >= 0) col = pu;
     else if (go >= 0 && !(sigK >= 0 && sigK < 1)) col = go;
     else if (fn >= 0) col = fn;
@@ -1592,6 +1594,14 @@ function splitCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "rotten_decoy" && f._altWind > 0 && f._altWindMax > 0) return 16 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
     if (f._decoyAt !== undefined) { const a = f0 - f._decoyAt; if (a >= 0 && a < 4) return 22; if (a >= 4 && a < 12) return 23; }
+    return -1;
+}
+// which column of the Voidstar's sheet (the second extra block, 24 to 31: design No. 946) while it shoots (the owner, 2026-11-13: "He should move his tentacles. Wave them."): its arms are its tentacles and they wave: over the
+// shot's wind-up (js/npc.js MAGE_SHOT_WINDUP, 12 frames, rooted) cells 0 to 2 (starting to sway), then, once the shot has gone (f._shotFiredAt), at full swing for 36 frames while the shot flies and its tentacles slap (a loop of the
+// four phases, cells 3 to 6, 6 frames each), then 8 frames of settling (cell 7); -1 otherwise. Looks only; the frame counts are the agent's.
+function waveCol(f, f0) {
+    if (f._shotWind > 0 && f._shotWind0 > 0) return 24 + Math.min(2, Math.floor((f._shotWind0 - f._shotWind) / f._shotWind0 * 3 + 1e-9));
+    if (f._shotFiredAt !== undefined) { const a = f0 - f._shotFiredAt; if (a >= 0 && a < 36) return 27 + (Math.floor(a / 6) % 4); if (a >= 36 && a < 44) return 31; }
     return -1;
 }
 function reachCol(f, f0, d) {

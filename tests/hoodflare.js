@@ -141,7 +141,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
             for (const a of [0, 3, 4, 11, 12]) out.push(reachCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col;
             return { out, fired, at, hold, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].reach).join() }; })())`));
         same(r.out.join(), '16,17,18,19,20,21,21,22,22,23,23,-1', 'cells'); ok(r.fired, 'MAELSTROM did not fire'); ok(r.at, 'when it went off'); ok(r.hold >= 16, 'the old bow is shown after it: ' + r.hold); same(r.who, 'voidstar', 'who has it');
-        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 24, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 32, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
         for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
     });
 
@@ -187,6 +187,18 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     check('the mote in flight and the stubby tentacles that appear on the target are drawn flat: strokes and fills, no gradient and no shadowBlur (the effects plan), and the tentacles are not joined to the shooter (the owner: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature")', () => {
         const src = rd('js/game.js'), a = src.indexOf('function _drawTendrils'), fn = src.slice(a, src.indexOf('function _drawFollowerProjectile')), el = rd('js/elements.js'), b = el.indexOf('case "tendrilslap"'), sp = el.slice(b, b + 1800);
         ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the tentacles use a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the slap uses a gradient or a shadow'); ok(/p\.kind === "tendril"/.test(src), 'the projectile is not drawn as the mote'); ok(!/p\.source/.test(fn), 'the mote is joined to the shooter');
+    });
+
+    group('THE VOIDSTAR WAVES ITS TENTACLES FOR ITS EVERYDAY SHOT (build 2026-11-13c; the owner: "Yes, he should. He should move his tentacles. Wave them."; design No. 946)');
+    check('over the shot\'s wind-up the cells run 24 to 26, then once it has gone the four waving cells loop (27 to 30, 6 frames each) for 36 frames, then 31 for 8, then its own frames; MAELSTROM\'s own cells keep their priority; only the Voidstar; its sheet is 32 columns of 8 facings, every cell a sensible size', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), d = evolvedDef(f), t = __foe(f.x + 3, f.y), out = []; f._shotWind0 = 12;
+            for (const w of [12, 8, 4, 1]) { f._shotWind = w; out.push(waveCol(f, frame)); }
+            f._shotWind = 0; f._shotTarget = t; _mageShotFire(f); const sf = f._shotFiredAt; for (const a of [0, 5, 6, 17, 18, 23, 24, 35, 36, 43, 44]) out.push(waveCol(f, sf + a));
+            f._shotFiredAt = undefined; followerAltSet(f, 'maelstrom'); f._altWindMax = 150; f._altWind = 75; const mael = _evoFrame(f, d, frame).col;
+            return { out, mael, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].wave).join() }; })())`));
+        same(r.out.join(), '24,25,26,26,27,27,28,29,30,30,27,28,31,31,-1', 'cells'); ok(r.mael >= 16 && r.mael <= 21, 'MAELSTROM\'s cells lost their priority: ' + r.mael); same(r.who, 'voidstar', 'who waves');
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 32, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
+        for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
