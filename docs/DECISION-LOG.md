@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The items in 3D; the PACK's tiles as translucent glossy buttons
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13x` (stamped 13u on its branch)
+- **Status:** Approved (the owner's words); built
+- **Context:** the owner: "I want to redo the items in the game make them have 3-D looking assets". Every item was drawn flat in the PACK and wherever else an item shows; on the floor 12 of 18 had small 3D models. One piece first (`docs/ART-PROCESS.md`): the AMMO PACK as a 3D model, shown in the PACK beside the flat icons. The owner's answer: **"Also change that item menu to the borders on those on the grid aren't so big maybe make them translucent glossy buttons."**
+- **Decision:** the agent read "Also" as a yes to the 3D look. Every item is a 3D model, one set for the floor and the icons; the PACK's tiles are translucent glossy buttons with thin edges.
+- **Agent's, provisional:** the six new models' looks (from each item's lore), the details added to the twelve, the icons' framing (250 px, the game's camera, a soft shadow), the glass's tint, sheen and edges, the chosen tile's line and glow.
+- **Supersedes:** the flat item drawings as what the game shows (kept in the code, `INV_ICONS`, while the sheet loads); the tiles of build `2026-11-09zz` (a colour corner, a black name bar, a 2 px edge).
+- **Affects:** design/props/models/_items.js, itemicons.js, pickups.js, design/props/bake_props.js (`fit`), js/inventory.js (`invDrawIcon`, `_ivSilhouette`, `_ivTile`), js/facilitytutorial.js (the rock), game.html (the preload), tests/itemicons.js, `TUTORIAL.md`, the Bible.
+
 ## DECISION: REEF is a climb only; the catwalks stay where they are
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13t`
@@ -37,7 +47,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: Energy cards give elemental power; a card of any element unlocks attacks
 
-- **Date:** 2026-11-13 · **Branch/build:** `claude/energy-power`, `2026-11-13y`
+- **Date:** 2026-11-13 · **Branch/build:** `claude/energy-power`, `2026-11-13z`
 - **Status:** Approved
 - **Context:** the owner: energy cards did little beyond unlocking moves; a trade-off is wanted between forms whose attacks are mostly physical and forms that need energy "for real effectiveness".
 - **Decision:** the elemental part of an evolved follower's hits is x 0.25 / 1 / 1.25 / 1.5 with 0 / 1 / 2 / 3 cards of its own element; unlocks count cards of any element (1, 2, 3); hit damage only (not Ultimates, statuses, heals).
