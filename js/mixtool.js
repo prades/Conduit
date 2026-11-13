@@ -124,16 +124,16 @@ function mixToolFoeHTML(foe, pool, fresh) {
         const tex = typeof cardArtFaceClass === "function" ? cardArtFaceClass({ kind: "element", match: foe.element }) : "", ord = k => typeof cardArtOrderClass === "function" ? cardArtOrderClass(k) : "";
         const big = typeof targetBigPortraitURL === "function" ? targetBigPortraitURL(foe) : "";   // (the full art: the creature large and sharp; else the small portrait)
         const tags = [c.level !== null ? '<i class="lv">LV ' + c.level + '</i>' : '', c.element ? '<i class="el">' + _mtEsc(c.element) + '</i>' : ''].filter(Boolean).join('<s> \u00b7 </s>');   // (reads "LV 7 \u00b7 FIRE")
-        // THE ATTACK CARD (build 2026-11-13a; the owner: "the attack is on the card itself. At the bottom of the card, thick, bold button", "It's mostly an attack card. Like, you should be able to press this
+        // THE ATTACK CARD (build 2026-11-13e; the owner: "the attack is on the card itself. At the bottom of the card, thick, bold button", "It's mostly an attack card. Like, you should be able to press this
         // card and it should attack", "All run and come should be on the right side of this card", and an info tab "on the right side to replace attack"): a press anywhere on the creature's card sends them
         // (the stage is the button: data-act="attack"), ATTACK a thick bar across its foot; INFO, RUN, COME and ALL tucked behind its right side, top to bottom ("Info goes at the top right of that tab, and then all goes at the bottom of it").
-        // THE UPRIGHT CARD (build 2026-11-13b; the owner chose 3A TIDY of the drafts, design/ui-mocks/foe-panel/draft.js): a tall card, the art over the numbers, standing straight; the tabs one size, evenly
+        // THE UPRIGHT CARD (build 2026-11-13f; the owner chose 3A TIDY of the drafts, design/ui-mocks/foe-panel/draft.js): a tall card, the art over the numbers, standing straight; the tabs one size, evenly
         // spaced and level, their ends showing behind its right side: ROSTER (risen over the card until now), INFO, RUN, COME, ALL.
         return '<div class="mt-foe at-left' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" style="--c:' + c.col + '"><span class="mt-foe-stage" data-act="attack" role="button" tabindex="0" aria-label="Attack ' + _mtEsc(c.name) + '"><span class="mt-foe-slab' + (tex ? ' ' + tex : '') + '">'
             + '<span class="mt-foe-pic' + (big ? ' full' : '') + '">' + (big || img ? '<img alt="" src="' + (big || img) + '">' : '') + '<i class="mt-foe-sub">' + tags + '</i></span>'
             + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><em class="mt-foe-num"></em><span class="mt-foe-hp"><u></u></span><span class="mt-foe-bite"></span>' + mixToolFoeRow(foe) + '</span><span class="mt-foe-atk"><b class="' + ord("attack") + '">' + atk + '</b></span></span></span>'
-            + '<span class="mt-foe-acts"><button class="mt-fa roster" data-act="roster" aria-label="Roster and command center"><b class="' + ord("roster") + '">ROSTER</b><i class="mt-fa-c">' + mixToolRosterN() + '</i></button>'   // (ROSTER a tab of the card, its first: build 2026-11-13b, the owner: "the roster button should be a part of the menu")
-            + '<button class="mt-fa info" data-act="foeinfo" aria-label="Info on ' + _mtEsc(c.name) + '"><b><i>i</i>INFO</b></button>'   // (top right, then RUN, COME, and ALL at the foot: the owner, build 2026-11-13a)
+            + '<span class="mt-foe-acts"><button class="mt-fa roster" data-act="roster" aria-label="Roster and command center"><b class="' + ord("roster") + '">ROSTER</b><i class="mt-fa-c">' + mixToolRosterN() + '</i></button>'   // (ROSTER a tab of the card, its first: build 2026-11-13f, the owner: "the roster button should be a part of the menu")
+            + '<button class="mt-fa info" data-act="foeinfo" aria-label="Info on ' + _mtEsc(c.name) + '"><b><i>i</i>INFO</b></button>'   // (top right, then RUN, COME, and ALL at the foot: the owner, build 2026-11-13e)
             + '<button class="mt-fa run' + (run ? ' going' : '') + '" data-act="retreat" aria-label="Run: the squad falls back"><b class="' + ord("run") + '">' + (run ? 'RUNNING' : 'RUN') + '</b></button>'
             + '<button class="mt-fa come" data-order="follow" aria-label="Come: the squad, and anyone holding a room, comes back to you"><b class="' + ord("come") + '">COME</b></button>'   // (the orders' COME, hidden under the card: the way back from HOLD, build 2026-11-11r)
             + '<button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b class="' + ord("all") + '">ALL</b></button></span></div>';
@@ -143,7 +143,7 @@ function mixToolFoeHTML(foe, pool, fresh) {
         + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><i class="mt-foe-sub">' + _mtEsc(sub) + '</i><span class="mt-foe-hp"><u></u></span><em class="mt-foe-num"></em>' + mixToolFoeRow(foe) + '</span>'
         + '<span class="mt-foe-go">' + _mtEsc(go) + '</span></button>';
 }
-// THE ATTACK CARD'S INFO (build 2026-11-13a): the creature's own INFO card, the one THE CORE's creature slab and the dial open (js/targeting.js infoOpen, _tgInfo: what it is in words), not a
+// THE ATTACK CARD'S INFO (build 2026-11-13e): the creature's own INFO card, the one THE CORE's creature slab and the dial open (js/targeting.js infoOpen, _tgInfo: what it is in words), not a
 // follower's panel. The INFO card is about the creature the gun is locked on, so the card's creature is locked first if the gun is on another or on none (a manual lock, as a tap on a creature makes).
 function mixToolFoeInfo(foe) {
     if (!foe || foe.dead || typeof infoOpen === "undefined") return false;
@@ -258,7 +258,7 @@ function mixToolClick(ev) {
     if (q("[data-act=close]")) { mixToolSetOpen(false); return; }
     if (q("[data-act=roster]")) { if (typeof ccToggleOpen === "function") ccToggleOpen(); return; }   // (the command card's ROSTER: build 2026-11-12l)
     if (q("[data-act=retreat]")) { mixToolRetreat(); return; }
-    if (q("[data-act=foeinfo]")) { mixToolFoeInfo(_mtFoeShown); return; }   // (the attack card's INFO tab: build 2026-11-13a)
+    if (q("[data-act=foeinfo]")) { mixToolFoeInfo(_mtFoeShown); return; }   // (the attack card's INFO tab: build 2026-11-13e)
     const atk = q("[data-act=attack]");
     if (atk && typeof techAimNeed === "function" && techAimNeed() === "enemy") { if (atk.blur) atk.blur(); if (_mtFoeShown && !_mtFoeShown.dead) techAimPickEnemy(_mtFoeShown); return; }   // (a technician's ability waiting for an enemy: the card's creature is the pick, js/techabilities.js)
     if (atk) { if (atk.blur) atk.blur(); mixToolAttack(_mtFoeShown && !_mtFoeShown.dead ? _mtFoeShown : null); return; }   // (blurred: a key pressed afterwards does not tap it again)

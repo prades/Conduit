@@ -1,8 +1,8 @@
 // DRAFT HARNESS (for the owner; not built): ten designs for the fight's panel at the bottom left (the attack card: the creature's card, its ATTACK bar, the INFO, RUN, COME and ALL tabs, and ROSTER
-// risen over it), drawn over the real page at an iPad's size with the real creature, its art and numbers. Each design is a css layer over the page as it is in build 2026-11-13a (body.dN), so what
+// risen over it), drawn over the real page at an iPad's size with the real creature, its art and numbers. Each design is a css layer over the page as it is in build 2026-11-13e (body.dN), so what
 // works today (a press on the card attacks, the four tabs) works the same in every one. The owner, 2026-11-13: "I definitely love where they're at, but I don't love the overall design of the little
 // left side screen. So can we make 10 design options for it, and we'll choose one?"
-//   0  NOW         build 2026-11-13a as it is
+//   0  NOW         build 2026-11-13e as it is
 //   1  HOLO GLASS  a frosted see-through panel, flat; the tabs glass pills standing free at its right
 //   2  VERSUS      a fighting game's slab: speed lines, the creature bursting out of its top, a huge name; the tabs slanted chips
 //   3  UPRIGHT     a tall trading card, the art over the numbers; the tabs fanned behind its right like a hand of cards
