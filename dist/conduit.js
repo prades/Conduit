@@ -2995,32 +2995,56 @@ function drawElementEffects() {
                 break;
             }
             case "tendrilslap": {
-                const age = e.maxLife - e.life, cy = py - 12;
+                const age = e.maxLife - e.life, cy = py - 14;
                 ctx.save();
                 ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
                 for (let k = 0; k < 2; k++) {
                     const a = age - k * 6;
-                    if (a < 0 || a > 7)
+                    if (a < 0 || a > 8)
                         continue;
-                    const u = a / 7, fa = 1 - u * u, an0 = k ? 0.4 : 1.1;
-                    ctx.globalAlpha = 0.55 * fa;
-                    ctx.fillStyle = '#bb66ff';
-                    ctx.beginPath();
-                    ctx.ellipse(px, cy, 8 + 10 * u, 5 + 6 * u, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.globalAlpha = 0.9 * fa;
-                    ctx.fillStyle = '#ead6ff';
-                    ctx.beginPath();
-                    ctx.ellipse(px, cy, 4 + 3 * u, 2.6 + 2 * u, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = k ? '#ead6ff' : '#bb66ff';
-                    ctx.lineWidth = 2.4 * (1 - u) + 0.8;
-                    for (let i = 0; i < 6; i++) {
-                        const an = an0 + i * 1.047, d0 = 9 + 10 * u;
+                    const u = a / 8, eu = 1 - (1 - u) * (1 - u), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (8 - a) / 2);
+                    const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];
+                    for (let i = 0; i <= 6; i++) {
+                        const t = i / 6, cv = Math.sin(t * Math.PI) * Ln * 0.3 * side * (1 - u);
+                        pts.push([bx + Math.cos(phi) * Ln * t - Math.sin(phi) * cv, by + Math.sin(phi) * Ln * t * 0.9 + Math.cos(phi) * cv]);
+                    }
+                    for (let i = 1; i <= 6; i++) {
+                        const w = 1 - (i - 1) / 6 * 0.55;
+                        ctx.strokeStyle = '#9933ff';
+                        ctx.lineWidth = 12 * w;
+                        ctx.globalAlpha = 0.25 * fa;
                         ctx.beginPath();
-                        ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.7);
-                        ctx.lineTo(px + Math.cos(an) * (d0 + 8 * (1 - u) + 3), cy + Math.sin(an) * (d0 + 8 * (1 - u) + 3) * 0.7);
+                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                        ctx.lineTo(pts[i][0], pts[i][1]);
                         ctx.stroke();
+                        ctx.strokeStyle = '#bb66ff';
+                        ctx.lineWidth = 8 * w;
+                        ctx.globalAlpha = 0.8 * fa;
+                        ctx.beginPath();
+                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                        ctx.lineTo(pts[i][0], pts[i][1]);
+                        ctx.stroke();
+                        ctx.strokeStyle = '#ead6ff';
+                        ctx.lineWidth = 2.6 * w;
+                        ctx.globalAlpha = 0.95 * fa;
+                        ctx.beginPath();
+                        ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+                        ctx.lineTo(pts[i][0], pts[i][1]);
+                        ctx.stroke();
+                    }
+                    if (a >= 5) {
+                        const ia = (a - 5) / 3;
+                        ctx.strokeStyle = '#ead6ff';
+                        ctx.lineWidth = 1.6;
+                        ctx.globalAlpha = (1 - ia) * 0.9;
+                        for (let i = 0; i < 4; i++) {
+                            const an = i * 1.57 + 0.5 + k, d0 = 6 + 5 * ia;
+                            ctx.beginPath();
+                            ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.7);
+                            ctx.lineTo(px + Math.cos(an) * (d0 + 5), cy + Math.sin(an) * (d0 + 5) * 0.7);
+                            ctx.stroke();
+                        }
                     }
                 }
                 ctx.restore();
@@ -51397,54 +51421,33 @@ function _drawSoulBlob(ctx, p, sx, sy) {
 }
 const _TEND = { glow: '#9933ff', body: '#bb66ff', core: '#ead6ff' };
 function _drawTendrils(ctx, p, sx, sy) {
-    const f = p.frame || 0, src = p.source;
-    let ox = 0, oy = 12;
-    if (src && typeof src.x === "number") {
-        const wx = src.x - p.x, wy = src.y - p.y;
-        ox = (wx - wy) * TILE_W;
-        oy = (wx + wy) * TILE_H + 12;
-    }
-    const tx = sx, ty = sy, ax = sx + ox, ay = sy + oy, dx = tx - ax, dy = ty - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    for (let k = 0; k < 2; k++) {
-        const reach = k === 0 ? 1 : Math.max(0, 0.72 - 0.0 * f), side = k === 0 ? 1 : -1, ph = f * 0.34 + k * 2.6, N = 14, pts = [];
-        for (let i = 0; i <= N; i++) {
-            const t = i / N * reach, bend = Math.sin(t * 5.5 + ph) * L * 0.09 * (0.3 + t) * side + Math.sin(t * Math.PI) * L * 0.1 * side;
-            pts.push([ax + dx * t + nx * bend + (k ? 6 : -6) * (1 - t), ay + dy * t + ny * bend]);
-        }
-        for (let i = 1; i <= N; i++) {
-            const w = 1 - (i - 1) / N;
-            ctx.strokeStyle = _TEND.glow;
-            ctx.lineWidth = 1 + 9 * w;
-            ctx.globalAlpha = 0.22;
-            ctx.beginPath();
-            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-            ctx.lineTo(pts[i][0], pts[i][1]);
-            ctx.stroke();
-            ctx.strokeStyle = _TEND.body;
-            ctx.lineWidth = 0.8 + 5 * w;
-            ctx.globalAlpha = 0.55;
-            ctx.beginPath();
-            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-            ctx.lineTo(pts[i][0], pts[i][1]);
-            ctx.stroke();
-            ctx.strokeStyle = _TEND.core;
-            ctx.lineWidth = 0.5 + 1.8 * w;
-            ctx.globalAlpha = 0.9;
-            ctx.beginPath();
-            ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
-            ctx.lineTo(pts[i][0], pts[i][1]);
-            ctx.stroke();
-        }
-        const tip = pts[N];
-        ctx.globalAlpha = 0.8;
+    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0;
+    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H;
+    const L = Math.hypot(ux, uy) || 1;
+    ux /= L;
+    uy /= L;
+    for (let i = 3; i >= 1; i--) {
+        ctx.globalAlpha = 0.5 - i * 0.12;
         ctx.fillStyle = _TEND.body;
         ctx.beginPath();
-        ctx.ellipse(tip[0], tip[1], 3.4, 2.6, 0, 0, Math.PI * 2);
+        ctx.arc(sx - ux * i * 6 + Math.sin(f * 0.5 + i) * 1.6, sy - uy * i * 6 + Math.cos(f * 0.5 + i) * 1.6, 3.2 - i * 0.6, 0, Math.PI * 2);
         ctx.fill();
     }
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = _TEND.glow;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = _TEND.body;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4.6 + Math.sin(f * 0.6) * 0.6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
+    ctx.fillStyle = _TEND.core;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2.2, 0, Math.PI * 2);
+    ctx.fill();
 }
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;

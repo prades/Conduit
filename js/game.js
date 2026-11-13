@@ -100,25 +100,16 @@ function _drawSoulBlob(ctx, p, sx, sy) {
     }
     ctx.globalAlpha = 1;
 }
-// THE VOIDSTAR'S EVERYDAY SHOT (the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; "Ghostly violet energy", "Two alternate"): two tentacles of ghostly violet energy reaching out of its orb to the tip of
-// the shot (the shot is the tentacle's tip; its damage and timing are as they were), one after the other: the first goes to the tip, the second follows a beat behind it, each curling as it goes, thick at the orb and thin at its tip, in
-// three flat layers (a wide faint glow, a body, a pale core). Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
+// THE VOIDSTAR'S EVERYDAY SHOT (the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; then: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"): in flight the
+// shot is only a small mote of ghostly violet with a few specks trailing it (it takes the time it always took to get there); the tentacles are not joined to the Voidstar: they appear on the creature it lands on
+// (`tendrilslap`, js/elements.js). Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
 const _TEND = { glow: '#9933ff', body: '#bb66ff', core: '#ead6ff' };
 function _drawTendrils(ctx, p, sx, sy) {
-    const f = p.frame || 0, src = p.source; let ox = 0, oy = 12;   // (where the Voidstar's orb is, from the shot, on the screen: the shot is drawn 40 px above the ground, its orb 28 px above it)
-    if (src && typeof src.x === "number") { const wx = src.x - p.x, wy = src.y - p.y; ox = (wx - wy) * TILE_W; oy = (wx + wy) * TILE_H + 12; }
-    const tx = sx, ty = sy, ax = sx + ox, ay = sy + oy, dx = tx - ax, dy = ty - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (let k = 0; k < 2; k++) {   // (the first tentacle to the tip; the second a beat behind it, shorter, bending the other way)
-        const reach = k === 0 ? 1 : Math.max(0, 0.72 - 0.0 * f), side = k === 0 ? 1 : -1, ph = f * 0.34 + k * 2.6, N = 14, pts = [];
-        for (let i = 0; i <= N; i++) { const t = i / N * reach, bend = Math.sin(t * 5.5 + ph) * L * 0.09 * (0.3 + t) * side + Math.sin(t * Math.PI) * L * 0.1 * side; pts.push([ax + dx * t + nx * bend + (k ? 6 : -6) * (1 - t), ay + dy * t + ny * bend]); }
-        for (let i = 1; i <= N; i++) { const w = 1 - (i - 1) / N;   // (1 at the orb, 0 at the tip)
-            ctx.strokeStyle = _TEND.glow; ctx.lineWidth = 1 + 9 * w; ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-            ctx.strokeStyle = _TEND.body; ctx.lineWidth = 0.8 + 5 * w; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
-            ctx.strokeStyle = _TEND.core; ctx.lineWidth = 0.5 + 1.8 * w; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }
-        const tip = pts[N]; ctx.globalAlpha = 0.8; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.ellipse(tip[0], tip[1], 3.4, 2.6, 0, 0, Math.PI * 2); ctx.fill();   // (a little pad at its tip)
-    }
-    ctx.globalAlpha = 1;
+    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0; let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
+    for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.12; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx - ux * i * 6 + Math.sin(f * 0.5 + i) * 1.6, sy - uy * i * 6 + Math.cos(f * 0.5 + i) * 1.6, 3.2 - i * 0.6, 0, Math.PI * 2); ctx.fill(); }   // (specks trailing it)
+    ctx.globalAlpha = 0.3; ctx.fillStyle = _TEND.glow; ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx, sy, 4.6 + Math.sin(f * 0.6) * 0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = _TEND.core; ctx.beginPath(); ctx.arc(sx, sy, 2.2, 0, Math.PI * 2); ctx.fill();
 }
 function _drawFollowerProjectile(ctx, p, sx, sy) {
     const r = p.radius || 4;

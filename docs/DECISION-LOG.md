@@ -3202,4 +3202,5 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: see `CHANGELOG.md`. Looks only; the shot's damage, speed and timing are as they were; the tentacles reach to wherever the shot is.
 - Agent's, provisional: the look of the tentacles and the slap. Open: the Voidstar's body moving for the shot.
 - Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+- **Revised the same day:** the owner, of the first draft (two tentacles reaching out of the orb to the shot): **"I was thinking short, stubby tentacles that are detached from the follower, and they appear on the targeted creature."** So the tentacles are short and stubby, not joined to the Voidstar, and appear on the creature the shot lands on, one-two slapping it; in flight the shot is only a small violet mote. The first draft is **superseded, not merged**.
 

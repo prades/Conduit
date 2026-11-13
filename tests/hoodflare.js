@@ -181,12 +181,12 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
             const before = elementEffects.filter(e => e.type === 'tendrilslap').length; p.onHit(t); const slap = elementEffects.filter(e => e.type === 'tendrilslap');
             const o = __fol('toxic', 'sniper', 'rotshard'), t2 = __foe(o.x + 3, o.y); o._shotTarget = t2; _mageShotFire(o); const q = followerProjectiles[followerProjectiles.length - 1];
             return { kind: p.kind, dmg: p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, speed: Math.hypot(p.vx, p.vy), el: p.element, src: p.source === f, before, slap: slap.length, at: slap[0] && [slap[0].x === t.x, slap[0].y === t.y], other: q.kind || null }; })())`));
-        same(r.kind, 'tendril', 'its kind'); ok(Math.abs(r.dmg - r.want) < 1e-9, 'the shot\'s damage changed: ' + r.dmg); ok(Math.abs(r.speed - 0.18) < 1e-9, 'its speed changed: ' + r.speed); same(r.el, 'flux', 'its element'); ok(r.src, 'the shot knows who fired it (the tentacles are joined to it)');
+        same(r.kind, 'tendril', 'its kind'); ok(Math.abs(r.dmg - r.want) < 1e-9, 'the shot\'s damage changed: ' + r.dmg); ok(Math.abs(r.speed - 0.18) < 1e-9, 'its speed changed: ' + r.speed); same(r.el, 'flux', 'its element'); ok(r.src, 'the shot knows who fired it');
         same(r.before, 0, 'a slap before it landed'); same(r.slap, 1, 'the slap'); ok(r.at && r.at[0] && r.at[1], 'not on the target'); same(r.other, 'soulblob', 'another mage\'s kind');
     });
-    check('the tentacles and the slap are drawn flat: strokes and fills, no gradient and no shadowBlur (the effects plan), joined to the shooter', () => {
+    check('the mote in flight and the stubby tentacles that appear on the target are drawn flat: strokes and fills, no gradient and no shadowBlur (the effects plan), and the tentacles are not joined to the shooter (the owner: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature")', () => {
         const src = rd('js/game.js'), a = src.indexOf('function _drawTendrils'), fn = src.slice(a, src.indexOf('function _drawFollowerProjectile')), el = rd('js/elements.js'), b = el.indexOf('case "tendrilslap"'), sp = el.slice(b, b + 1800);
-        ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the tentacles use a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the slap uses a gradient or a shadow'); ok(/p\.kind === "tendril"/.test(src), 'the projectile is not drawn as tentacles'); ok(/p\.source/.test(fn), 'the tentacles are not joined to the shooter');
+        ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the tentacles use a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the slap uses a gradient or a shadow'); ok(/p\.kind === "tendril"/.test(src), 'the projectile is not drawn as the mote'); ok(!/p\.source/.test(fn), 'the mote is joined to the shooter');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
