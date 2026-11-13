@@ -77,6 +77,7 @@ function evoMoveIds(d) {
 function evoMoveAllowed(f, d, id) {
     const m = MOVES[id]; if (!m || evoMoveIds(d).indexOf(id) < 0) return false;
     if (f && f.evolved && typeof energyAltOpen === "function" && !energyAltOpen(f)) return false;   // ENERGY CARDS (js/energy.js): an evolved follower's second attack is locked until it holds an energy card of its element
+    if (f && f.evolved && evoMoveIds(d).indexOf(id) > 0 && typeof energyAlt2Open === "function" && !energyAlt2Open(f)) return false;   // (its form's EXTRA attack, a move after its first: two cards of its element, build 2026-11-13u)
     if (m.classes && typeof playerClassId === "function" && m.classes.indexOf(playerClassId()) < 0) return false;
     return true;
 }

@@ -98,6 +98,7 @@ function followerInfo(a) {
     }
     const altLocked = ev && !altIds.length && typeof energyAltOpen === "function" && !energyAltOpen(a) && mvd && typeof evoMoveIds === "function" && evoMoveIds(mvd).length;   // ENERGY CARDS (js/energy.js): its second attack locked
     if (altLocked) out.attacks.push({ h: "SECOND ATTACK · " + evoMoveIds(mvd).map(id => MOVES[id].name).join(", ") + " · LOCKED", note: "It needs " + ENERGY.altNeeds + " " + energyLabel(a.element) + " energy card in its ENERGY slots (the roster) to use it.", rows: [] });
+    else if (ev && mvd && typeof evoMoveIds === "function" && evoMoveIds(mvd).length > 1 && typeof energyAlt2Open === "function" && !energyAlt2Open(a)) out.attacks.push({ h: "EXTRA ATTACK · " + evoMoveIds(mvd).slice(1).map(id => MOVES[id].name).join(", ") + " · LOCKED", note: "It needs " + ENERGY.alt2Needs + " " + energyLabel(a.element) + " energy cards in its ENERGY slots (the roster) to use it.", rows: [] });   // (its form's extra attack: build 2026-11-13u)
     else if (ev && !altIds.length) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (none now: every form has a second attack since build 2026-11-07ss)
     else if (!ev) {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;

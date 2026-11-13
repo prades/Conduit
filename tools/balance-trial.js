@@ -16,11 +16,13 @@ if (process.argv[2] !== '--worker') {
         const pb = run([_path.join(tmp, 'b.json'), '0', '1', 'live', LIVE, '3'], _path.join(tmp, 'b.json'));
         for (const r of await Promise.all(pa)) A.push(...r); const B = await pb;
         const avg = (ts, k) => ts.reduce((a, t) => a + (t[k] || 0), 0) / ts.length;
-        const live = {}; for (const R of B) for (const [m, ts] of Object.entries(R.modes)) if (ts.length && !ts[0].err) live[R.id + ':' + m] = { block: (avg(ts, 'cut') + avg(ts, 'soak')) / 20, lured: avg(ts, 'lured'), taken: (avg(ts, 'allyTaken') + avg(ts, 'taken')) / 20 };
+        const live = {}; for (const R of B) for (const [m, ts] of Object.entries(R.modes)) if (ts.length && !ts[0].err) live[R.id + ':' + m] = { block: (avg(ts, 'cut') + avg(ts, 'soak')) / 20, lured: avg(ts, 'lured'), denied: avg(ts, 'denied'), taken: (avg(ts, 'allyTaken') + avg(ts, 'taken')) / 20 };
         const forms = A.map(R => ({ id: R.id, name: R.name, modes: Object.entries(R.modes).filter(([, ts]) => ts[0] && !ts[0].err).map(([m, ts]) => { const t = ts[0], L = live[R.id + ':' + m];
-            return { mode: m, dmg: t.dmg / 20, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, taken: L ? L.taken : null }; }) }));
+            return { mode: m, dmg: t.dmg / 20, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, denied: L ? Math.max(L.denied, t.denied) : t.denied, taken: L ? L.taken : null }; }) }));
+        // what one enemy deals in a second when nothing holds it off: the live run with a follower that does nothing (the Hammer Slug on its everyday attack), over the three enemies
+        const foeDps = live['hammerslug:main'] ? live['hammerslug:main'].taken / 3 : null;
         const build = /BUILD_VERSION = "([^"]+)"/.exec(_fs.readFileSync(_path.join(ROOT_, 'js/config.js'), 'utf8'))[1];
-        _fs.writeFileSync(_path.join(ROOT_, 'design/balance-trial.json'), JSON.stringify({ build, forms }, null, 1) + '\n'); console.log('design/balance-trial.json written for build ' + build + ' (' + forms.length + ' forms)');
+        _fs.writeFileSync(_path.join(ROOT_, 'design/balance-trial.json'), JSON.stringify({ build, foeDps, forms }, null, 1) + '\n'); console.log('design/balance-trial.json written for build ' + build + ' (' + forms.length + ' forms)');
     })();
     return;
 }
@@ -98,7 +100,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                     if ('${mode}' === 'sweet_scent_full') f._nectar = 100;
                     f.currentWill = 100; f.attackCooldown = 0;
                     ally.x = f.x - 1; ally.y = f.y + 1; 
-                    const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, assist: 0, err: 0 }; globalThis.__T = T;
+                    const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, denied: 0, assist: 0, err: 0 }; globalThis.__T = T;
                     const X0 = f.x, Y0 = f.y, AX = ally.x, AY = ally.y; let used = 0;
                     for (let k = 0; k < ${FR}; k++) {
                         try { render(); } catch (e) { T.err++; break; } used++;
@@ -108,7 +110,9 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                         ally.dead = false; ally.health = ally.maxHealth * 0.3; f.dead = false; if (f.health < f.maxHealth * 0.5) f.health = f.maxHealth * 0.5;
                         if (k % 30 === 0) for (const p of foes) if (!p.dead) { applyDamage(player, 0, null); const src = player; ad2(p, 10, src); }
                         for (const p of foes) { if (p.dead) continue;
-                            if ((typeof scentLure === 'function' && scentLure(p)) || (typeof decoyLure === 'function' && decoyLure(p))) T.lured += 1 / 60;
+                            const lu = !!((typeof scentLure === 'function' && scentLure(p)) || (typeof decoyLure === 'function' && decoyLure(p))); if (lu) T.lured += 1 / 60;
+                            // DENIED: how much of this enemy's damage is held off this frame (the balance system's rates, tools/balance.js DENY): stunned, glitched, asleep or lured away 1; blinded BLIND_MISS; weakened 1 - its factor; slowed 0.25; the greatest of them, never added up
+                            { let w = lu ? 1 : 0; if (p.stunned > 0 || p.glitched > 0 || p.asleep > 0) w = 1; if (p.blinded > 0) w = Math.max(w, BLIND_MISS); if (p.toxicWeakened > 0) w = Math.max(w, 1 - (p.toxicWeakenFactor || 0.6)); if (p.slowed > 0) w = Math.max(w, 0.25); T.denied += w / 60; }
                             let c = 0; if (p.toxicWeakened > 0) c = 1; if (p.slowed > 0) c = 1; if (p.stunned > 0) c = 1; if (p.glitched > 0) c = 1; if (p.blinded > 0) c = 1; if (p.asleep > 0) c = 1; T.cc += c / 60; }
                     }
                     globalThis.__T = null; delete T.f; delete T.ally; T.frames = used; return T; })()`.replace('ad2(p, 10, src)', 'applyDamage(p, 10, src, null)').replace('applyDamage(player, 0, null); ', '')));

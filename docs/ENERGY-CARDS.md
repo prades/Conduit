@@ -51,7 +51,7 @@ The owner, 2026-11-10: "You also need to be able to equip energy cards from the 
 - [x] One energy slot on an unevolved follower; three on an evolved one; the two equip slots unchanged.
 - [x] An unevolved follower without an energy card has no element and no element colour; with one, the card's element.
 - [x] At level 8 with an energy card, it evolves on its own into its element's form for its role; the card is used up; the element is its own for good.
-- [x] An evolved follower's three energy slots unlock its second attack (1 card of its element) and its Ultimate (2). A card of another element is shown as a hybrid, NOT DESIGNED YET (open question 1).
+- [x] An evolved follower's three energy slots unlock its second attack (1 card of its element), its **extra attack** where its form has one (2) and its Ultimate (**3**: since build `2026-11-13u`, the owner, 2026-11-13: "if they have 3 energy cards, they can use their ultimate, and if they have 2 energy cards, they can use their alternate attack if there's an extra one. If not, the alternate attack is unlocked at 1 energy"; it was second attack 1, Ultimate 2). A form with no extra attack gets nothing more from its second card. **Open:** with all three slots its own for the Ultimate, a hybrid's card and the Ultimate cannot be held together. A card of another element is shown as a hybrid, NOT DESIGNED YET (open question 1).
 - [x] Saves: unevolved followers lose their element; evolved ones keep theirs.
 - [x] BLOOM's energy cards in the packs once the purification module has run (rule 19).
 

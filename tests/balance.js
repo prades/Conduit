@@ -19,6 +19,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(!/NOT DESIGNED YET/i.test(html), 'a form has no Ultimate yet'); ok(!/LOCKED/.test(html), 'an Ultimate showed locked');
         ok(!/\bsince build\b|\bthe owner\b/i.test(html), 'history on the page');
     });
-    check('the measured table is there and says which build it was run on', () => { ok(/Measured: damage per second/.test(html), 'no measured table'); ok(/was run on build <b>20\d\d-\d\d-\d\d[a-z]+<\/b>/.test(html), 'no build named'); });
+    check('the measured table is there and says which build it was run on', () => { ok(/Measured: what each mode did/.test(html), 'no measured table'); ok(/was run on build <b>20\d\d-\d\d-\d\d[a-z]+<\/b>/.test(html), 'no build named'); });
+    check('the balance system is on it: the score and the role bands, the flagged list, and the coverage grid with its empty cells named', () => { ok(/points a second, and the role bands/.test(html), 'no score'); ok(/<th>Verdict<\/th>/.test(html), 'no verdict'); ok(/<h3>Flagged<\/h3>/.test(html), 'no flagged list'); ok(/The coverage grid/.test(html), 'no grid'); const n = (html.match(/<b class="flag">EMPTY<\/b>/g) || []).length; ok(/<b>\d+ of 28<\/b> are filled/.test(html), 'the count'); ok(html.indexOf('<b>' + (28 - n) + ' of 28</b>') >= 0, 'the count and the empty cells disagree: ' + n); });
     console.log(failures ? '\n' + failures + ' FAILING' : '\nall passing'); process.exit(failures ? 1 : 0);
 })();
