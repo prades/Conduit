@@ -1,13 +1,16 @@
-// EXAMPLES, NOT A DESIGN (the owner, 2026-11-13: "Begin work on a new breed of insect using 3D graphics. It's going to be a roly-poly type character that is immune to crushing, immune to slashing, and
-// resistant to piercing. That will be electric type and will inhabit the electric domain, and a boss creature will be a predaceous diving beetle larva. Show me pictures and examples of that before you
-// design it."). Quick 3D studies in the game's own style kit, light and camera (design/props/models/_style.js, design/props/bake_props.js), for the owner to react to before anything is designed:
-//   the roly-poly (a pill bug, Armadillidium: seven overlapping back plates, a small head with two jointed antennae, fourteen short legs, the plates rolling it into a ball), in three ways it could read
-//   as electric: A "live seams" (slate plates, current glowing in the gaps between them), B "insulator morph" (glossy black plates with electric-yellow bands, copper antennae: like the hobby's yellow
-//   isopod morphs), C "capacitor shell" (blue-steel plates engraved with glowing circuit traces, copper contacts on their edges); each walking and rolled up.
-//   the boss, a predaceous diving beetle larva (a water tiger, Dytiscus: a long tapering body of eleven segments, a flat head with huge hollow sickle jaws, six long fringed legs, two tail filaments),
-//   as a natural study and as an electric boss (dark plates with glowing seams, crackling jaws, glowing eyes).
-//   node design/creatures/electric_breed_examples.js <three-dir> <out-dir>   ->  <out-dir>/rolypoly_examples.png, <out-dir>/larva_examples.png
-// Nothing in the game reads this.
+// THE ELECTRIC BREED AS MECHS: EXAMPLES, NOT A DESIGN. Round 1 (commit e73521a) drew a pill bug and a water tiger as animals. Round 2 (the owner, 2026-11-13: "Okay, so I want them
+// to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics from your sketches.") drew them as machines in the mechanical-animal genre: armour
+// plates over a dark frame, joints and pistons, lenses, energy in the seams, nothing thin (no wire legs, hairs, filaments or bolts of lightning); the genre's cues, no existing design
+// copied. Round 3 (the owner: "A for the larva, redesign the roll poly with a longer body less plates, but more character") keeps the larva and redraws the roly-poly.
+// In the game's style kit, light and camera (design/props/models/_style.js, design/props/bake_props.js), in three electric looks: A "live seams" (pale gunmetal, yellow energy in the
+// seams), B "insulator" (glossy black, hazard-striped panels, copper joints, amber lights), C "capacitor shell" (blue steel traced with glowing circuits, capacitor cells, cyan lights):
+//   the roly-poly (the owner's: electric; immune to Crushing and Slashing, resists Piercing), round 3: longer (1.3 long, 0.56 wide), seven plates (five big, a tail section, the telson),
+//     a face (two camera eyes under a frowning brow, mandibles, antennae posed one raised and one forward), a core housing on its back (lit vents; C's capacitor cells), tail
+//     thrusters; walking, and rolled up into a wheel with its eyes looking out of the seam. Its look is open;
+//   the boss, a predaceous diving beetle larva (a water tiger), round 2 (the owner chose look A): armoured segments on a frame with lit joints and side pistons, a flat wedge head
+//     with six lenses a side, heavy sickle jaws on hinges (open, a tooth on each), paddle legs, twin tail prongs.
+//   node design/creatures/electric_breed_examples.js <three-dir> <out-dir>   ->  <out-dir>/rolypoly_mech.png, <out-dir>/larva_mech.png
+// Every part and proportion here is the agent's, provisional. Nothing in the game reads this.
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
 const fs = require('fs'), path = require('path');
 const [THREE_DIR, OUTDIR] = process.argv.slice(2);
@@ -23,107 +26,192 @@ window.__draw = async function (PX, UH) {
   const px = h => h / UH;
   ${rd('design/props/models/_style.js')}
   const at = (m, x, y, z) => { m.position.set(x, y, z); return m; };
-  const ELEC = '#ffe733', CYAN = '#5ff7ff';
-  // a surface from f(u, v) over a grid (u, v in 0..1)
-  const psurf = (nu, nv, f, mat) => { const pos = [], idx = [];
-    for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const p = f(i / nu, j / nv); pos.push(p[0], p[1], p[2]); }
+  const ELEC = '#ffe733', CYAN = '#5ff7ff', AMBER = '#ffae1a', UPV = new T.Vector3(0, 1, 0);
+  // a surface from f(u, v) over a grid (u, v in 0..1), with UVs
+  const psurf = (nu, nv, f, mat) => { const pos = [], idx = [], uv = [];
+    for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const p = f(i / nu, j / nv); pos.push(p[0], p[1], p[2]); uv.push(i / nu, j / nv); }
     for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) { const a = i * (nv + 1) + j, b = a + nv + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
-    const uv = []; for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) uv.push(i / nu, j / nv);
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return new T.Mesh(g, mat); };
-  // a tube along points, its radius from r0 to r1
+  // a thick rounded edge along points (a plate's lip)
   const ptube = (pts, r0, r1, mat, seg) => { const g = G(); for (let i = 0; i < pts.length - 1; i++) { const a = new T.Vector3(...pts[i]), b = new T.Vector3(...pts[i + 1]), d = b.clone().sub(a), L = d.length(), r = r0 + (r1 - r0) * (i + 0.5) / (pts.length - 1);
-      const m = new T.Mesh(new T.CylinderGeometry(r * 0.94, r, L, seg || 10), mat); m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), d.normalize()); g.add(m);
+      const m = new T.Mesh(new T.CylinderGeometry(r * 0.94, r, L, seg || 10), mat); m.position.copy(a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(UPV, d.normalize()); g.add(m);
       const j = new T.Mesh(new T.SphereGeometry(r, seg || 10, 6), mat); j.position.copy(a); g.add(j); } return g; };
-  const cpts = (ctrl, n) => new T.CatmullRomCurve3(ctrl.map(p => new T.Vector3(...p))).getPoints(n).map(v => [v.x, v.y, v.z]);
-  const pbolt = (a, b, k, mat, seed) => { const pts = [a]; for (let i = 1; i < k; i++) { const t = i / k, s = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453 % 1; pts.push([a[0] + (b[0] - a[0]) * t + s * 0.025, a[1] + (b[1] - a[1]) * t + (s - 0.5) * 0.03, a[2] + (b[2] - a[2]) * t - s * 0.02]); } pts.push(b); return ptube(pts, 0.005, 0.003, mat, 6); };
   const tex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; };
+  const V3 = a => new T.Vector3(a[0], a[1], a[2]);
+  // a bar from a to b (a chamfered box w across and d deep), its d side turned up as far as it can be
+  const pbar = (a, b, w, d, mat, bev) => { const A = V3(a), B = V3(b), dir = B.clone().sub(A), len = dir.length(); dir.normalize();
+    const m = cbox(w, len, d, bev == null ? Math.min(w, d) * 0.25 : bev, mat); const side = new T.Vector3().crossVectors(dir, UPV); if (side.lengthSq() < 1e-6) side.set(1, 0, 0); side.normalize();
+    const nz = new T.Vector3().crossVectors(side, dir).normalize(); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(side, dir, nz)); m.position.copy(A).add(B).multiplyScalar(0.5); return m; };
+  // a round part from a (radius r0) to b (radius r1)
+  const pseg = (a, b, r0, r1, mat, seg) => { const A = V3(a), B = V3(b), d = B.clone().sub(A), L = d.length(); const m = new T.Mesh(new T.CylinderGeometry(r1, r0, L, seg || 14), mat);
+    m.position.copy(A).add(B).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UPV, d.normalize()); return m; };
+  const ball = (r, mat, p) => at(new T.Mesh(new T.SphereGeometry(r, 14, 10), mat), p[0], p[1], p[2]);
+  // a piston from a to b: a sleeve, a bright rod, a cap at each end
+  const ppiston = (g, a, b, r, S) => { const A = V3(a), m = A.clone().lerp(V3(b), 0.58), mid = [m.x, m.y, m.z]; g.add(pseg(a, mid, r, r, S.frame2)); g.add(pseg(mid, b, r * 0.55, r * 0.55, S.joint)); g.add(ball(r * 1.3, S.joint, a)); g.add(ball(r * 1.15, S.joint, b)); };
+  const dbl = m => { const c = m.clone(); c.side = T.DoubleSide; return c; };
 
-  // ── THE ROLY-POLY ──
+  // ── THE THREE ELECTRIC LOOKS, AS ARMOUR ──
+  // armour panels: shade where a plate tucks under the one before, seams round the arc (canvas y), B's hazard-striped side panels
+  const panelTex = (base, seam, hazard) => tex(128, 512, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
+    const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(0,0,0,0.3)'); gr.addColorStop(0.45, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(255,255,255,0.07)'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    if (hazard) for (const [y0, y1] of [[0.08, 0.27], [0.73, 0.92]]) { c.save(); c.beginPath(); c.rect(w * 0.32, y0 * h, w * 0.6, (y1 - y0) * h); c.clip(); c.fillStyle = '#121317'; c.fillRect(0, 0, w, h); c.fillStyle = '#f2b13a';
+      for (let y = -w; y < h + w; y += 30) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y + w * 0.7); c.lineTo(w, y + w * 0.7 + 15); c.lineTo(0, y + 15); c.closePath(); c.fill(); } c.restore(); }
+    c.fillStyle = seam; for (const v of [0.08, 0.27, 0.5, 0.73, 0.92]) c.fillRect(0, v * h - 2.5, w, 5); });
+  const tm = (t, metal, rough) => { const m = new T.MeshStandardMaterial({ map: t, metalness: metal, roughness: rough, side: T.DoubleSide }); m.envMapIntensity = 0.6; return m; };
+  const traceTex = tex(512, 256, (c, w, h) => { c.fillStyle = '#2f3e55'; c.fillRect(0, 0, w, h); const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,0.10)'); gr.addColorStop(1, 'rgba(0,0,0,0.25)'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#7ff6ff'; c.lineWidth = 6; c.lineCap = 'round'; for (let i = 0; i < 9; i++) { const y = 20 + i * 27, x0 = (i * 53) % 90; c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + 120, y); c.lineTo(x0 + 150, y + 18); c.lineTo(x0 + 300, y + 18); c.stroke(); c.fillStyle = '#c8ffff'; c.beginPath(); c.arc(x0 + 300, y + 18, 9, 0, 7); c.fill(); } });
+  const traceMat = new T.MeshStandardMaterial({ map: traceTex, emissive: new T.Color(0xffffff), emissiveMap: traceTex, emissiveIntensity: 0.5, metalness: 0.75, roughness: 0.3, side: T.DoubleSide });
   const STYLES = {
-    A: { name: 'A · LIVE SEAMS', plate: STY.std('#4a5260', 0.35, 0.45), plate2: STY.std('#3c434f', 0.35, 0.48), leg: STY.std('#8a909a', 0.3, 0.5), ant: STY.std('#5a616c', 0.4, 0.45), seam: STY.glow(ELEC, 1.25), tip: STY.glow(ELEC, 1.4) },
-    B: { name: 'B · INSULATOR MORPH', plate: STY.std('#16171c', 0.25, 0.22), plate2: STY.std('#16171c', 0.25, 0.22), leg: STY.std('#3a3a40', 0.3, 0.45), ant: STY.std('#c87a3a', 0.85, 0.3), band: STY.std('#ffd21a', 0.15, 0.35, { side: T.DoubleSide }), tip: STY.std('#e09a52', 0.9, 0.25) },
-    C: { name: 'C · CAPACITOR SHELL', plate: null, plate2: null, leg: STY.std('#6a7480', 0.6, 0.4), ant: STY.std('#5a6470', 0.7, 0.35), contact: STY.std('#d08a4a', 0.9, 0.28), tip: STY.glow(CYAN, 1.3) },
+    A: { name: 'A · LIVE SEAMS', armor: tm(panelTex('#8c95a4', '#3c434f'), 0.7, 0.34), solid: STY.std('#7f8897', 0.72, 0.32), dark: STY.std('#3b424e', 0.75, 0.4), frame: STY.std('#1d2128', 0.8, 0.45), frame2: STY.std('#2c323c', 0.8, 0.4),
+      joint: STY.std('#b3bcc7', 0.92, 0.26), jaw: STY.std('#c3cad3', 0.92, 0.24), glow: STY.glow(ELEC, 1.25), lens: STY.glow(ELEC, 1.6), channel: true, dorsal: 'keel', keelTop: STY.glow(ELEC, 1.1), edge: true, face: 'twin' },
+    B: { name: 'B · INSULATOR', armor: tm(panelTex('#1e1f24', '#0a0b0e', true), 0.45, 0.3), solid: STY.std('#1e1f24', 0.45, 0.3), dark: STY.std('#121317', 0.5, 0.35), frame: STY.std('#4f5660', 0.85, 0.35), frame2: STY.std('#3a4049', 0.85, 0.38),
+      joint: STY.std('#c87a3a', 0.88, 0.28), jaw: STY.std('#9aa1aa', 0.9, 0.3), glow: STY.glow(AMBER, 1.2), lens: STY.glow('#ff8a1a', 1.5), channel: false, dorsal: 'keel', keelTop: STY.std('#f2b13a', 0.3, 0.4), edge: false, face: 'visor', haz: STY.hazard(22, 22) },
+    C: { name: 'C · CAPACITOR SHELL', armor: traceMat, solid: STY.std('#3c4c66', 0.75, 0.32), dark: STY.std('#26324a', 0.75, 0.35), frame: STY.std('#161c26', 0.8, 0.42), frame2: STY.std('#222a36', 0.8, 0.4),
+      joint: STY.std('#d08a4a', 0.9, 0.28), jaw: STY.std('#b9c6d6', 0.92, 0.24), glow: STY.glow(CYAN, 1.3), lens: STY.glow(CYAN, 1.6), channel: true, dorsal: 'cells', cell: STY.std('#2c6fd6', 0.55, 0.3), cellCap: STY.std('#d5dde6', 0.95, 0.2), edge: true, face: 'cluster' },
   };
-  const traceTex = tex(512, 256, (c, w, h) => { c.fillStyle = '#2c3a4e'; c.fillRect(0, 0, w, h); const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,0.10)'); gr.addColorStop(1, 'rgba(0,0,0,0.25)'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
-    c.strokeStyle = '#7ff6ff'; c.lineWidth = 5; c.lineCap = 'round'; for (let i = 0; i < 9; i++) { const y = 20 + i * 27, x0 = (i * 53) % 90; c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + 120, y); c.lineTo(x0 + 150, y + 18); c.lineTo(x0 + 300, y + 18); c.stroke(); c.fillStyle = '#c8ffff'; c.beginPath(); c.arc(x0 + 300, y + 18, 8, 0, 7); c.fill(); } });
-  const traceMat = new T.MeshStandardMaterial({ map: traceTex, emissive: new T.Color(0xffffff), emissiveMap: traceTex, emissiveIntensity: 0.55, metalness: 0.75, roughness: 0.3, side: T.DoubleSide });
-  const L = 1.0, W = 0.62, H = 0.33, LIFT = 0.075;
-  const prof = x => Math.sqrt(Math.max(0, 1 - Math.pow(x / (L / 2), 2)));
-  const plateMat = (S, i) => S === STYLES.C ? traceMat : (i % 2 ? S.plate2 : S.plate);
+  for (const S of Object.values(STYLES)) S.glowD = dbl(S.glow);
+  // a dorsal piece standing on the armour at p, along the normal n: A and B a keel (B's capped in yellow), C a capacitor cell
+  const dorsal = (g, S, p, n, size) => { const q = new T.Quaternion().setFromUnitVectors(UPV, n), put = (m, h) => { m.quaternion.copy(q); m.position.copy(V3(p)).addScaledVector(n, h); g.add(m); };
+    if (S.dorsal === 'keel') { put(cbox(0.055 * size, 0.032 * size, 0.03 * size, 0.008, S.dark), 0.014 * size); put(cbox(0.045 * size, 0.008 * size, 0.032 * size, 0.003, S.keelTop), 0.032 * size); }
+    else { put(cyl(0.027 * size, 0.027 * size, 0.05 * size, S.cell, 16), 0.022 * size); put(cyl(0.0275 * size, 0.0275 * size, 0.009 * size, S.glow, 16), 0.026 * size); put(cyl(0.028 * size, 0.028 * size, 0.01 * size, S.cellCap, 16), 0.05 * size); } };
+
+  // ── THE ROLY-POLY, round 3 (the owner, of round 2's: "redesign the roll poly with a longer body less plates, but more character") ──
+  // a bar like pbar, its d side turned toward the given up
+  const pbarN = (a, b, w, d, mat, up, bev) => { const A = V3(a), B = V3(b), dir = B.clone().sub(A), len = dir.length(); dir.normalize();
+    const m = cbox(w, len, d, bev == null ? Math.min(w, d) * 0.25 : bev, mat); const side = new T.Vector3().crossVectors(dir, up || UPV); if (side.lengthSq() < 1e-6) side.set(1, 0, 0); side.normalize();
+    const nz = new T.Vector3().crossVectors(side, dir).normalize(); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(side, dir, nz)); m.position.copy(A).add(B).multiplyScalar(0.5); return m; };
+  const arrOf = v => [v.x, v.y, v.z];
+  const L = 1.3, W = 0.56, H = 0.3, LIFT = 0.15, TH0 = -0.22, TH1 = Math.PI + 0.22;
+  const prof = x => Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, Math.abs(x) / (L / 2)), 2.5)), 0.4);
+  // seven plates, front to back: five big ones, the tail section, the telson; each overlaps the next by 0.04; the middle one carries the core
+  const CUTS = [0.58, 0.36, 0.14, -0.08, -0.29, -0.47, -0.58, -0.66], NPL = CUTS.length - 1, OVL = 0.04, CORE = 2;
+  const plA = i => CUTS[i + 1] - (i < NPL - 1 ? OVL : 0), plB = i => CUTS[i], plK = i => 1 + 0.016 * (NPL - i);
+  // the plates' skirts flare out at the bottom of each side
+  const flare = th => { const a = Math.min(th, Math.PI - th), f = Math.max(0, (0.4 - a) / (0.4 - TH0)); return 1 + 0.12 * f * f; };
+  const plPt = (i, u, v, km) => { const xb = plB(i), xa = plA(i), x = xb - (xb - xa) * u, th = TH0 + v * (TH1 - TH0), p = prof(x * 0.99), k = plK(i) * (km || 1);
+    return [x, LIFT + H * p * Math.sin(th) * k + 0.024 * u * Math.max(0, Math.sin(th)), (W / 2) * p * Math.cos(th) * k * flare(th)]; };
+  // the core on its back: an armoured housing with lit vents (A, B; B's base hazard-striped) or three capacitor cells (C), two exhaust stacks behind
+  const coreHousing = (g, S, P, n, t) => { t = t.clone().sub(n.clone().multiplyScalar(t.dot(n))).normalize(); const s = new T.Vector3().crossVectors(t, n).normalize();
+    const q = new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(t, n, s)), put = (m, a, h, c) => { m.quaternion.copy(q); m.position.copy(P).addScaledVector(t, a).addScaledVector(n, h).addScaledVector(s, c); g.add(m); };
+    put(cbox(0.17, 0.06, 0.19, 0.018, S.dark), 0, 0.022, 0); if (S.haz) put(cbox(0.176, 0.02, 0.196, 0.006, S.haz), 0, 0.002, 0);
+    if (S.dorsal === 'cells') for (const c of [-0.062, 0, 0.062]) { put(cyl(0.028, 0.028, 0.08, S.cell, 16), -0.01, 0.075, c); put(cyl(0.0285, 0.0285, 0.01, S.glow, 16), -0.01, 0.08, c); put(cyl(0.029, 0.029, 0.012, S.cellCap, 16), -0.01, 0.118, c); }
+    else for (const a of [-0.06, -0.024, 0.012]) put(cbox(0.022, 0.014, 0.15, 0.004, S.glow), a, 0.055, 0);
+    for (const c of [-0.066, 0.066]) { put(cyl(0.018, 0.021, 0.075, S.joint, 14), 0.06, 0.062, c); put(cyl(0.012, 0.012, 0.077, S.frame, 12), 0.06, 0.064, c); } };
+  // the seven plates by pt(i, u, v, km): each with its lip, its channel of light (A, C), rivets and a ridge on the big ones (lit in A and C, capped yellow in B), the core on the middle one
+  function shell(g, S, pt, center, o) {
+    const nrm = (i, u, v) => { const e = 0.01, P = V3(pt(i, u, v)), du = V3(pt(i, Math.min(1, u + e), v)).sub(V3(pt(i, Math.max(0, u - e), v))), dv = V3(pt(i, u, Math.min(1, v + e))).sub(V3(pt(i, u, Math.max(0, v - e))));
+      const n = new T.Vector3().crossVectors(du, dv).normalize(); if (n.dot(P.clone().sub(V3(center(P)))) < 0) n.negate(); return n; };
+    const on = (i, u, v, h) => arrOf(V3(pt(i, u, v)).addScaledVector(nrm(i, u, v), h));
+    for (let i = 0; i < NPL; i++) { const big = i < 5, uF = i ? o.uAfter(i - 1) : 0.06;
+      g.add(psurf(10, 32, (u, v) => pt(i, u, v), S.armor));
+      const lip = []; for (let j = 0; j <= 32; j++) lip.push(pt(i, 1, j / 32, 1.003)); g.add(ptube(lip, 0.014, 0.014, S.solid, 8));
+      if (S.channel && i < NPL - 1) { const u1 = o.uAfter(i), u2 = Math.min(1, u1 + 0.036 / o.span(i + 1)); g.add(psurf(3, 32, (u, v) => pt(i + 1, u1 + (u2 - u1) * u, v, 1.005), S.glowD)); }
+      if (big) for (let j = 4; j <= 28; j += 4) g.add(ball(0.009, S.joint, pt(i, 0.9, j / 32, 1.012)));
+      if (big && i !== CORE) for (let sgm = 0; sgm < 3; sgm++) { const ua = uF + 0.06 + (0.86 - uF) * sgm / 3, ub = uF + 0.06 + (0.86 - uF) * (sgm + 1) / 3, n = nrm(i, (ua + ub) / 2, 0.5);
+        g.add(pbarN(on(i, ua, 0.5, 0.013), on(i, ub, 0.5, 0.013), 0.058, 0.026, S.dark, n)); g.add(pbarN(on(i, ua + 0.01, 0.5, 0.03), on(i, ub - 0.01, 0.5, 0.03), 0.022, 0.008, S.keelTop || S.glow, n)); }
+      if (i === CORE) { const um = (uF + 0.95) / 2; coreHousing(g, S, V3(pt(i, um, 0.5)), nrm(i, um, 0.5), V3(pt(i, Math.min(1, um + 0.05), 0.5)).sub(V3(pt(i, um - 0.05, 0.5))).normalize()); } } }
+  // the face: a rounded armoured skull under the first plate's brim, a dark faceplate, two big camera eyes (an aperture ring in each), armoured brows set in a frown,
+  // small mandibles and a grille, cheek plates; the antennae as jointed sensor booms in a pose (far, near: four joints each), or none (rolled up)
+  const rolyHead = (S, pose) => { const h = G(); h.add(cbox(0.16, 0.12, 0.3, 0.04, S.solid)); h.add(at(cbox(0.03, 0.1, 0.25, 0.012, S.dark), 0.074, -0.004, 0)); h.add(at(cbox(0.02, 0.026, 0.1, 0.005, S.frame2), 0.078, -0.04, 0));
+    for (const sg of [-1, 1]) { const ez = sg * 0.07;
+      const sock = cyl(0.05, 0.05, 0.03, S.frame, 24); sock.rotation.set(0, -sg * 0.3, Math.PI / 2); h.add(at(sock, 0.086, 0.012, ez));
+      const lens = new T.Mesh(new T.SphereGeometry(0.038, 20, 14), S.lens); lens.scale.set(0.55, 1, 1); lens.rotation.y = -sg * 0.3; h.add(at(lens, 0.097, 0.012, ez));
+      const iris = new T.Mesh(new T.TorusGeometry(0.021, 0.0055, 8, 24), S.frame); iris.rotation.set(0, Math.PI / 2 - sg * 0.3, 0); h.add(at(iris, 0.117, 0.012, ez * 1.03));
+      const brow = cbox(0.05, 0.024, 0.115, 0.008, S.solid); brow.rotation.set(sg * 0.32, -sg * 0.3, 0); h.add(at(brow, 0.098, 0.043, ez));
+      const jaw = cbox(0.05, 0.02, 0.04, 0.006, S.joint); jaw.rotation.y = sg * 0.45; h.add(at(jaw, 0.085, -0.05, sg * 0.032));
+      h.add(at(cbox(0.1, 0.075, 0.03, 0.01, S.dark), 0.015, -0.012, sg * 0.152));
+      if (pose) { const P = pose[sg > 0 ? 1 : 0]; h.add(pseg(P[0], P[1], 0.03, 0.027, S.solid)); h.add(pseg(P[1], P[2], 0.026, 0.023, S.dark)); h.add(pseg(P[2], P[3], 0.022, 0.018, S.solid));
+        h.add(ball(0.035, S.joint, P[0])); h.add(ball(0.031, S.joint, P[1])); h.add(ball(0.027, S.joint, P[2])); h.add(ball(0.027, S.glow, P[3])); } }
+    return h; };
   function rolyWalk(key) { const S = STYLES[key], g = G();
-    // the back plates, front to back: seven big ones (the pereon), five small (the pleon), the telson
-    const cuts = [0.44, 0.335, 0.235, 0.14, 0.05, -0.04, -0.125, -0.205, -0.26, -0.31, -0.355, -0.395, -0.43, -0.47];
-    for (let i = 0; i < cuts.length - 1; i++) {
-      const xa = cuts[i + 1] - (i < cuts.length - 2 ? 0.035 : 0), xb = cuts[i], k = 1 + 0.014 * (cuts.length - i), lift = 0.02;
-      const m = psurf(10, 28, (u, v) => { const x = xb - (xb - xa) * u, p = prof(x * 0.985), th = -0.32 + v * (Math.PI + 0.64); return [x, LIFT + (H * p * Math.sin(th)) * k + lift * u * Math.max(0, Math.sin(th)), (W / 2) * p * Math.cos(th) * k]; }, plateMat(S, i));
-      m.material = m.material.clone(); m.material.side = T.DoubleSide; g.add(m);
-      const edge = []; for (let j = 0; j <= 28; j++) { const th = -0.32 + j / 28 * (Math.PI + 0.64), p = prof(xa * 0.985); edge.push([xa, LIFT + (H * p * Math.sin(th)) * k + lift * Math.max(0, Math.sin(th)), (W / 2) * p * Math.cos(th) * k]); }
-      if (S.seam) g.add(ptube(edge.map(q => [q[0] - 0.006, q[1] - 0.004, q[2]]), 0.0075, 0.0075, S.seam, 6));
-      else g.add(ptube(edge, 0.006, 0.006, S === STYLES.C ? S.contact : S.plate, 6));
-      if (S.band && i < 7) { const bm = psurf(4, 20, (u, v) => { const x = xb - (xb - xa) * (0.25 + u * 0.3), p = prof(x * 0.985), th = 0.9 + v * (Math.PI - 1.8); return [x, LIFT + (H * p * Math.sin(th)) * k + 0.003, (W / 2) * p * Math.cos(th) * k]; }, S.band); g.add(bm);
-        for (const sg of [-1, 1]) { const th = sg > 0 ? 0.25 : Math.PI - 0.25, x = (xa + xb) / 2, p = prof(x); g.add(at(new T.Mesh(new T.SphereGeometry(0.022, 10, 8), S.band), x, LIFT + H * p * Math.sin(th) * k, (W / 2) * p * Math.cos(th) * k)); } }
-      if (S === STYLES.C && i < 7) for (const sg of [-1, 1]) { const th = sg > 0 ? -0.2 : Math.PI + 0.2, p = prof(xa); g.add(at(cbox(0.03, 0.012, 0.018, 0.003, S.contact), xa + 0.01, LIFT + H * p * Math.sin(th) * k + 0.01, (W / 2) * p * Math.cos(th) * k)); }
-    }
-    // the head, its eyes, its two jointed antennae
-    const hm = new T.Mesh(new T.SphereGeometry(1, 20, 14), S === STYLES.C ? STY.std('#3a4658', 0.7, 0.35) : S.plate); hm.scale.set(0.07, 0.065, 0.15); g.add(at(hm, 0.455, LIFT + 0.06, 0));
-    for (const sg of [-1, 1]) { g.add(at(new T.Mesh(new T.SphereGeometry(0.018, 10, 8), STY.std('#050507', 0.2, 0.15)), 0.48, LIFT + 0.085, sg * 0.105));
-      const a = cpts([[0.5, LIFT + 0.07, sg * 0.07], [0.6, LIFT + 0.11, sg * 0.16], [0.7, LIFT + 0.09, sg * 0.25], [0.78, LIFT + 0.03, sg * 0.31]], 7); g.add(ptube(a, 0.017, 0.009, S.ant, 8));
-      g.add(at(new T.Mesh(new T.SphereGeometry(0.015, 10, 8), S.tip), a[a.length - 1][0], a[a.length - 1][1], a[a.length - 1][2]));
-      if (S.seam) g.add(pbolt(a[a.length - 1], [a[a.length - 1][0] + 0.06, a[a.length - 1][1] + 0.05, a[a.length - 1][2] + sg * 0.03], 5, S.tip, sg + 3));
-      // seven legs a side, tucked under the plates' side flaps
-      for (let k = 0; k < 7; k++) { const x = 0.34 - k * 0.09, p = prof(x), y0 = LIFT + 0.02, z0 = sg * (W / 2) * p * 0.82, z1 = sg * ((W / 2) * p + 0.06), x1 = x + 0.02 - k * 0.006;
-        g.add(ptube([[x, y0, z0], [x1, y0 + 0.02, z1 * 0.92], [x1 - 0.012, 0.004, z1]], 0.011, 0.006, S.leg, 6)); } }
-    // two little tail prongs (uropods)
-    for (const sg of [-1, 1]) { const u = at(new T.Mesh(new T.ConeGeometry(0.014, 0.05, 8), S.plate || STY.std('#3a4658', 0.7, 0.35)), -0.49, LIFT + 0.015, sg * 0.03); u.rotation.set(0, 0, Math.PI / 2 + 0.2); g.add(u); }
+    // the frame under the shell, its ribs between the legs
+    g.add(at(cbox(L * 0.84, 0.06, 0.28, 0.02, S.frame), -0.03, LIFT - 0.05, 0));
+    for (let k = 0; k < 7; k++) g.add(at(cbox(0.03, 0.04, 0.34, 0.008, S.frame2), 0.47 - k * 0.15, LIFT - 0.07, 0));
+    shell(g, S, plPt, P => [P.x, LIFT - 0.15, 0], { uAfter: i => (plB(i + 1) - plA(i)) / (plB(i + 1) - plA(i + 1)), span: i => plB(i) - plA(i) });
+    // the head, nose a little up and turned toward you; the far antenna raised, the near one reaching forward
+    const hd = rolyHead(S, [[[0.03, 0.06, -0.1], [0.07, 0.17, -0.15], [0.12, 0.31, -0.2], [0.21, 0.39, -0.24]], [[0.03, 0.06, 0.1], [0.12, 0.13, 0.17], [0.26, 0.15, 0.25], [0.37, 0.09, 0.3]]]);
+    hd.scale.setScalar(1.25); hd.position.set(0.7, LIFT + 0.06, 0); hd.rotation.set(0, -0.22, 0.1); g.add(hd);
+    // seven legs a side: out from under the flared skirt, the knee up and out, an armoured shin down to a claw
+    for (const sg of [-1, 1]) for (let k = 0; k < 7; k++) { const x = 0.47 - k * 0.15, p = prof(x), zs = (W / 2) * p, lean = (3 - k) * 0.014;
+      const hip = [x, LIFT - 0.04, sg * zs * 0.6], knee = [x + lean, 0.155, sg * (zs * 1.3 + 0.05)], foot = [x + lean * 2.4, 0.004, sg * (zs * 1.3 + 0.1)];
+      g.add(pbar(hip, knee, 0.04, 0.036, S.dark)); g.add(ball(0.03, S.joint, knee)); g.add(pbar(knee, [knee[0], knee[1] + 0.034, knee[2] + sg * 0.014], 0.046, 0.04, S.solid));
+      g.add(pbar(knee, [foot[0], foot[1] + 0.034, foot[2]], 0.034, 0.03, S.solid)); g.add(pseg([foot[0], foot[1] + 0.038, foot[2]], foot, 0.016, 0.005, S.dark)); }
+    // the tail prongs (uropods) as two little thrusters, lit inside
+    for (const sg of [-1, 1]) { const a = [-0.6, LIFT - 0.02, sg * 0.05], b = [-0.74, LIFT - 0.05, sg * 0.12], d = V3(b).sub(V3(a)).normalize(); g.add(pbar(a, b, 0.042, 0.036, S.dark));
+      const nz = cyl(0.026, 0.021, 0.034, S.joint, 16); nz.quaternion.setFromUnitVectors(UPV, d); nz.position.copy(V3(b)); g.add(nz);
+      const gl = cyl(0.017, 0.017, 0.036, S.glow, 16); gl.quaternion.copy(nz.quaternion); gl.position.copy(V3(b)).addScaledVector(d, 0.003); g.add(gl); }
     return g; }
-  function rolyBall(key) { const S = STYLES[key], g = G(), R = 0.27, y0 = R + 0.004;
-    // rolled up: the plates wrap round the roll's axis (side to side), the head and tail tucked in where they meet underneath
-    const n = 12, start = -0.55 * Math.PI, span = 1.86 * Math.PI;
-    for (let i = 0; i < n; i++) { const big = i < 7, d = span / (7 * 1.0 + 5 * 0.55), w = big ? d : d * 0.55, f0 = start + (i < 7 ? i * d : 7 * d + (i - 7) * d * 0.55), k = 1 + 0.01 * (n - i);
-      const m = psurf(6, 26, (u, v) => { const ph = f0 + u * (w + 0.06), th = 0.1 * Math.PI + v * 0.8 * Math.PI, r = R * k * (1 + 0.03 * u); return [Math.cos(ph) * Math.sin(th) * r, y0 + Math.sin(ph) * Math.sin(th) * r, Math.cos(th) * r * 1.02]; }, plateMat(S, i).clone()); m.material.side = T.DoubleSide; g.add(m);
-      const edge = []; for (let j = 0; j <= 24; j++) { const th = 0.1 * Math.PI + j / 24 * 0.8 * Math.PI, ph = f0 + w + 0.06, r = R * k * 1.03; edge.push([Math.cos(ph) * Math.sin(th) * r, y0 + Math.sin(ph) * Math.sin(th) * r, Math.cos(th) * r * 1.02]); }
-      if (S.seam) g.add(ptube(edge.map(q => [q[0] * 0.985, y0 + (q[1] - y0) * 0.985, q[2] * 0.985]), 0.008, 0.008, S.seam, 6)); else g.add(ptube(edge, 0.006, 0.006, S === STYLES.C ? S.contact : S.plate, 6));
-      if (S.band && big) { const bm = psurf(3, 18, (u, v) => { const ph = f0 + w * (0.3 + u * 0.35), th = 0.3 * Math.PI + v * 0.4 * Math.PI, r = R * k * 1.035; return [Math.cos(ph) * Math.sin(th) * r, y0 + Math.sin(ph) * Math.sin(th) * r, Math.cos(th) * r * 1.02]; }, S.band); g.add(bm); } }
-    // the side flaps' rims, and the antennae's tips poking out of the seam
-    for (const sg of [-1, 1]) { const rim = new T.Mesh(new T.TorusGeometry(R * 0.33, 0.012, 8, 28), S === STYLES.C ? S.contact : (S.plate || S.leg)); rim.position.set(0, y0, sg * R * 0.98); g.add(rim);
-      const tipA = [Math.cos(-0.56 * Math.PI) * R * 1.02, y0 + Math.sin(-0.56 * Math.PI) * R * 1.02 + 0.02, sg * 0.05]; g.add(at(new T.Mesh(new T.SphereGeometry(0.014, 10, 8), S.tip), tipA[0] + 0.04, tipA[1] + 0.03, tipA[2]));
-      if (S.seam) g.add(pbolt([tipA[0] + 0.04, tipA[1] + 0.03, tipA[2]], [tipA[0] + 0.12, tipA[1] + 0.02, tipA[2] + sg * 0.05], 5, S.tip, sg + 7)); }
-    if (S === STYLES.C) for (let i = 0; i < 6; i++) { const ph = start + i * 0.55, r = R * 1.05; g.add(at(new T.Mesh(new T.SphereGeometry(0.012, 8, 6), STY.glow(CYAN, 1.3)), Math.cos(ph) * r, y0 + Math.sin(ph) * r, 0)); }
+  function rolyWheel(key) { const S = STYLES[key], g = G(), R0 = 0.1, HW = 0.24, WW = 0.5, gap = 0.6, phG = 0.2, OV = 0.08, y0 = R0 + HW * 1.1 * 1.04 + 0.006;
+    // rolled up: the plates wrap round the roll's axis (side to side) into a wheel; head and tail meet at a seam, and the eyes look out of it
+    const ws = [1, 1, 1, 1, 1, 0.5, 0.32], unit = (2 * Math.PI - gap) / ws.reduce((a, b) => a + b, 0), a0 = []; ws.reduce((a, w, i) => { a0[i] = a; return a + w * unit; }, phG + gap / 2);
+    const wk = i => 1 + 0.012 * (NPL - i);
+    const wPt = (i, u, v, km) => { const ph = a0[i] + u * (ws[i] * unit + OV), th = TH0 + v * (TH1 - TH0), k = wk(i) * (km || 1), rr = R0 + HW * Math.sin(th) * k * (1 + 0.04 * u);
+      return [Math.cos(ph) * rr, y0 + Math.sin(ph) * rr, (WW / 2) * Math.cos(th) * k * flare(th)]; };
+    const core = cyl(R0 + 0.13, R0 + 0.13, WW * 0.84, S.frame, 32); core.rotation.x = Math.PI / 2; g.add(at(core, 0, y0, 0));
+    shell(g, S, wPt, P => [0, y0, P.z], { uAfter: i => (a0[i] + ws[i] * unit + OV - a0[i + 1]) / (ws[i + 1] * unit + OV), span: i => (ws[i] * unit + OV) * (R0 + HW) });
+    const hd = rolyHead(S, null), rh = R0 + 0.1; hd.scale.setScalar(0.9); hd.position.set(Math.cos(phG) * rh, y0 + Math.sin(phG) * rh, 0); hd.rotation.set(0, 0, phG); g.add(hd);
+    for (const sg of [-1, 1]) { const tp = R0 + HW * 0.9; g.add(ball(0.024, S.glow, [Math.cos(phG + 0.21) * tp, y0 + Math.sin(phG + 0.21) * tp, sg * 0.16])); }
+    // the hubs on its two sides: armoured discs, a lit cap (B a copper one), a ring of bolts
+    for (const sg of [-1, 1]) { const hz = sg * 0.3; const hub = cyl(R0 + 0.06, R0 + 0.06, 0.05, S.dark, 32); hub.rotation.x = Math.PI / 2; g.add(at(hub, 0, y0, hz));
+      const cap = cyl(R0 * 0.62, R0 * 0.62, 0.062, S.channel ? S.glow : S.joint, 24); cap.rotation.x = Math.PI / 2; g.add(at(cap, 0, y0, hz));
+      for (let j = 0; j < 8; j++) { const a = j * Math.PI / 4; g.add(ball(0.012, S.joint, [Math.cos(a) * (R0 + 0.028), y0 + Math.sin(a) * (R0 + 0.028), hz + sg * 0.026])); } }
     return g; }
 
   // ── THE BOSS: A PREDACEOUS DIVING BEETLE LARVA (a water tiger) ──
-  function larva(electric) { const g = G();
-    const bodyA = electric ? STY.std('#1a2030', 0.45, 0.35) : STY.std('#7a6c3a', 0.15, 0.5), bodyB = electric ? STY.std('#10141e', 0.45, 0.4) : STY.std('#463c20', 0.15, 0.6);
-    const headM = electric ? STY.std('#151b28', 0.5, 0.3) : STY.std('#6a5a2c', 0.2, 0.45), jawM = electric ? STY.std('#30384a', 0.75, 0.25) : STY.std('#4a2414', 0.4, 0.3), legM = electric ? STY.std('#2c3445', 0.5, 0.35) : STY.std('#9a8a52', 0.15, 0.5);
-    const seamM = STY.glow(ELEC, 1.2), eyeM = electric ? STY.glow(CYAN, 1.4) : STY.std('#070707', 0.2, 0.15), hairM = new T.MeshStandardMaterial({ color: STY.col(electric ? '#9fe6ff' : '#e0d6a8'), transparent: true, opacity: 0.7, roughness: 0.6 });
-    // its spine, head to tail: the head raised to strike, the body low along the floor in a gentle S, the tail lifting a little
-    const spine = new T.CatmullRomCurve3([[0.62, 0.17, 0.0], [0.4, 0.13, 0.03], [0.12, 0.1, 0.0], [-0.2, 0.09, -0.04], [-0.55, 0.085, -0.01], [-0.85, 0.09, 0.04], [-1.08, 0.12, 0.05]].map(p => new T.Vector3(...p)));
-    const N = 11, T0 = 0.0, T1 = 0.96, segT = i => T0 + (i + 0.5) * (T1 - T0) / N, len = spine.getLength() * (T1 - T0) / N;
-    const rad = i => i < 3 ? 0.085 + i * 0.008 : Math.max(0.028, 0.112 - Math.pow(Math.max(0, i - 4) / 6.5, 1.6) * 0.085);
-    for (let i = 0; i < N; i++) { const t = segT(i), p = spine.getPointAt(t), tg = spine.getTangentAt(t), r = rad(i);
-      const m = new T.Mesh(new T.SphereGeometry(1, 26, 16), i % 2 ? bodyB : bodyA); m.scale.set(len * 0.72, r * 0.8, r); m.position.copy(p); m.position.y = Math.max(p.y, r * 0.78); m.quaternion.setFromUnitVectors(new T.Vector3(1, 0, 0), tg); g.add(m);
-      const rp = m.position.clone().add(tg.clone().multiplyScalar(-len * 0.5)), ring = new T.Mesh(new T.TorusGeometry(r * 0.93, electric ? 0.007 : 0.01, 8, 30), electric ? seamM : bodyB);
-      ring.position.copy(rp); ring.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), tg); ring.scale.set(1, 0.84, 1); g.add(ring);
-      if (electric) g.add(at(new T.Mesh(new T.SphereGeometry(0.012, 8, 6), seamM), m.position.x, m.position.y + r * 0.8, m.position.z));
-      else g.add(at(new T.Mesh(new T.SphereGeometry(r * 0.2, 10, 8), STY.std('#b8a45a', 0.1, 0.5)), m.position.x, m.position.y + r * 0.7, m.position.z)); }
-    // the head: big, flat and wide, six small eyes a side, short antennae, and the huge hollow sickle jaws reaching forward to meet
-    const hp = spine.getPointAt(0), head = new T.Mesh(new T.SphereGeometry(1, 28, 18), headM); head.scale.set(0.2, 0.075, 0.16); head.position.set(hp.x + 0.12, hp.y + 0.01, hp.z); head.rotation.z = 0.12; g.add(head);
-    const hx = head.position.x, hy = head.position.y, hz = head.position.z;
-    for (const sg of [-1, 1]) { for (let e = 0; e < 6; e++) g.add(at(new T.Mesh(new T.SphereGeometry(electric ? 0.014 : 0.012, 8, 6), eyeM), hx + 0.04 + (e % 3) * 0.026, hy + 0.035 + Math.floor(e / 3) * 0.018, hz + sg * (0.128 - (e % 3) * 0.012)));
-      const jaw = cpts([[hx + 0.15, hy - 0.004, hz + sg * 0.085], [hx + 0.33, hy + 0.035, hz + sg * 0.15], [hx + 0.5, hy + 0.045, hz + sg * 0.12], [hx + 0.6, hy + 0.035, hz + sg * 0.04], [hx + 0.62, hy + 0.025, hz - sg * 0.01]], 16);
-      g.add(ptube(jaw, 0.03, 0.005, jawM, 12));
-      if (electric) { g.add(ptube(jaw.slice(4).map(q => [q[0] - 0.004, q[1] + 0.016, q[2] - sg * 0.012]), 0.006, 0.003, seamM, 6)); g.add(pbolt(jaw[jaw.length - 1], [jaw[jaw.length - 1][0] + 0.08, jaw[jaw.length - 1][1] + 0.07, jaw[jaw.length - 1][2] + sg * 0.05], 6, seamM, sg + 11)); }
-      g.add(ptube(cpts([[hx + 0.14, hy + 0.035, hz + sg * 0.06], [hx + 0.22, hy + 0.09, hz + sg * 0.1], [hx + 0.28, hy + 0.1, hz + sg * 0.14]], 5), 0.007, 0.003, legM, 6));
-      // six long legs from the three thoracic segments, splayed and reaching back, a fringe of fine swimming hairs on each shin
-      for (let k = 0; k < 3; k++) { const t = segT(k), p = spine.getPointAt(t), r = rad(k), x0 = p.x, y0 = Math.max(p.y, r * 0.7), z0 = p.z + sg * r * 0.85, reach = 0.3 + k * 0.1;
-        const knee = [x0 + 0.06 - k * 0.1, y0 + 0.12, z0 + sg * reach * 0.62], ankle = [x0 + 0.04 - k * 0.24, 0.035, z0 + sg * reach], foot = [x0 - 0.02 - k * 0.28, 0.004, z0 + sg * reach * 1.08];
-        g.add(ptube([[x0, y0, z0], knee, ankle, foot], 0.013, 0.004, legM, 6));
-        for (let h = 1; h <= 7; h++) { const u = h / 8, a = [knee[0] + (ankle[0] - knee[0]) * u, knee[1] + (ankle[1] - knee[1]) * u, knee[2] + (ankle[2] - knee[2]) * u]; g.add(ptube([a, [a[0] - 0.03, a[1] + 0.012, a[2] + sg * 0.006]], 0.0025, 0.0015, hairM, 4)); } } }
-    // the tail: the last segment tapers to a point, and two feathery tail filaments
-    const tp = spine.getPointAt(1), tt = spine.getTangentAt(1);
-    for (const sg of [-1, 1]) { const f = cpts([[tp.x, tp.y, tp.z], [tp.x - 0.1, tp.y + 0.04, tp.z + sg * 0.04], [tp.x - 0.22, tp.y + 0.05, tp.z + sg * 0.1]], 6); g.add(ptube(f, 0.009, 0.003, electric ? seamM : legM, 6));
-      for (let h = 1; h < 5; h++) { const a = f[h]; g.add(ptube([a, [a[0] - 0.01, a[1] + 0.02, a[2] + sg * 0.012]], 0.002, 0.0012, hairM, 4)); } }
+  function larvaMech(key) { const S = STYLES[key], g = G();
+    // its spine, head to tail: the head raised, the body low along the floor in a gentle S, the tail lifting a little
+    const spine = new T.CatmullRomCurve3([[0.62, 0.22, 0.0], [0.4, 0.18, 0.03], [0.12, 0.15, 0.0], [-0.2, 0.14, -0.04], [-0.55, 0.135, -0.01], [-0.85, 0.14, 0.04], [-1.08, 0.17, 0.05]].map(V3));
+    const N = 11, T1 = 0.96, segT = i => (i + 0.5) * T1 / N, len = spine.getLength() * T1 / N;
+    const rad = i => i < 3 ? 0.088 + i * 0.008 : Math.max(0.03, 0.115 - Math.pow(Math.max(0, i - 4) / 6.5, 1.6) * 0.085);
+    // a segment's own frame: x forward (toward the head), y up, z to the side
+    const frameAt = t => { const p = spine.getPointAt(t), fwd = spine.getTangentAt(t).negate(), side = new T.Vector3().crossVectors(fwd, UPV).normalize(), up = new T.Vector3().crossVectors(side, fwd).normalize(); return { p, fwd, side, up }; };
+    const lp = (f, x, y, z) => f.p.clone().addScaledVector(f.fwd, x).addScaledVector(f.up, y).addScaledVector(f.side, z), arr = v => [v.x, v.y, v.z];
+    const inFrame = f => { const grp = G(); grp.position.copy(f.p); grp.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f.fwd, f.up, f.side)); g.add(grp); return grp; };
+    for (let i = 0; i < N; i++) { const f = frameAt(segT(i)), r = rad(i), grp = inFrame(f);
+      // the frame: a dark barrel with bevelled ends, flattened
+      const lg = new T.LatheGeometry([[0.001, -0.5], [0.8, -0.5], [0.92, -0.38], [0.92, 0.38], [0.8, 0.5], [0.001, 0.5]].map(([a, b]) => new T.Vector2(a * r, b * len)), 28); lg.rotateZ(-Math.PI / 2);
+      const bar = new T.Mesh(lg, S.frame); bar.scale.set(1, 0.8, 1); grp.add(bar);
+      // the armour: a shell over its back and flanks with thick edges
+      const R = r * 1.1, sx0 = -len * 0.41, sx1 = len * 0.41, shPt = (u, v, km) => { const x = sx1 - (sx1 - sx0) * u, th = -0.3 + v * (Math.PI + 0.6), k = (km || 1) * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k]; };
+      grp.add(psurf(6, 30, shPt, S.armor));
+      for (const u of [0, 1]) { const e = []; for (let j = 0; j <= 30; j++) e.push(shPt(u, j / 30, 1.004)); grp.add(ptube(e, 0.011, 0.011, S.dark, 8)); }
+      // the joint behind it: a band of light (A, C) or bare frame (B)
+      if (i < N - 1) { const bg = new T.CylinderGeometry(r * 0.88, r * 0.88, len * 0.22, 28, 1, true); bg.rotateZ(Math.PI / 2); const band = new T.Mesh(bg, S.channel ? S.glowD : S.frame2); band.scale.set(1, 0.8, 1); band.position.x = -len * 0.5; grp.add(band); }
+      // the back: A and B a keel, C two capacitor cells
+      if (S.dorsal === 'keel') dorsal(grp, S, [0, R * 0.8, 0], UPV, 1.1);
+      else if (i >= 1 && i <= 9) for (const sz of [-1, 1]) { const cz = sz * r * 0.36; dorsal(grp, S, [0, R * 0.8 * Math.sqrt(1 - Math.pow(cz / R, 2)), cz], UPV, 0.85); } }
+    // pistons under the armour's edge, segment to segment
+    for (let i = 1; i < N - 2; i++) { const fa = frameAt(segT(i)), fb = frameAt(segT(i + 1)), ra = rad(i), rb = rad(i + 1);
+      for (const sg of [-1, 1]) ppiston(g, arr(lp(fa, len * 0.12, -ra * 0.36, sg * ra * 1.06)), arr(lp(fb, len * 0.12, -rb * 0.36, sg * rb * 1.06)), 0.013, S); }
+    // the head: a flat armoured wedge, a crest, six lenses a side in two rows, two stubby sensor horns, and the sickle jaws on hinges
+    const f0 = frameAt(0), hg = G(); hg.position.copy(lp(f0, 0.12, 0.03, 0)); hg.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f0.fwd, f0.up, f0.side)); g.add(hg);
+    const outline = [[-0.13, 0.085], [-0.06, 0.15], [0.05, 0.175], [0.15, 0.155], [0.21, 0.09], [0.225, 0], [0.21, -0.09], [0.15, -0.155], [0.05, -0.175], [-0.06, -0.15], [-0.13, -0.085]];
+    hg.scale.setScalar(1.15); const hm = plate(outline, 0.09, 0.024, S.solid); hm.rotation.x = Math.PI / 2; hg.add(hm);
+    hg.add(at(cbox(0.26, 0.03, 0.07, 0.01, S.dark), -0.01, 0.055, 0));
+    for (const sg of [-1, 1]) { hg.add(at(cbox(0.15, 0.024, 0.045, 0.008, S.dark), 0.06, 0.052, sg * 0.07));
+      for (let row = 0; row < 2; row++) for (let c = 0; c < 3; c++) { const ex = 0.03 + c * 0.045, ez = sg * (0.112 + row * 0.034 - c * 0.006); hg.add(at(cyl(0.02, 0.02, 0.016, S.frame, 16), ex, 0.047, ez)); hg.add(ball(0.0145, S.lens, [ex, 0.057, ez])); }
+      const h0 = [0.16, 0.04, sg * 0.055], h1 = [0.23, 0.09, sg * 0.085], h2 = [0.3, 0.11, sg * 0.095]; hg.add(pseg(h0, h1, 0.02, 0.017, S.dark)); hg.add(ball(0.021, S.joint, h1)); hg.add(pseg(h1, h2, 0.016, 0.013, S.solid)); hg.add(ball(0.015, S.glow, h2));
+      // a jaw: a heavy sickle blade on a hinge, open, broad at the root and sharp at the tip, a tooth on its inner edge; that edge lit (A, C) or a hazard band at its root (B)
+      hg.add(at(cyl(0.046, 0.046, 0.075, S.joint, 20), 0.18, 0, sg * 0.105)); hg.add(at(cyl(0.022, 0.022, 0.082, S.dark, 14), 0.18, 0, sg * 0.105));
+      const jaw = [[0.14, 0.12], [0.25, 0.205], [0.39, 0.245], [0.52, 0.225], [0.62, 0.16], [0.685, 0.07], [0.6, 0.11], [0.55, 0.125], [0.515, 0.098], [0.48, 0.14], [0.39, 0.165], [0.29, 0.155], [0.2, 0.1]].map(([x, z]) => [x, z * sg]);
+      const jm = plate(jaw, 0.055, 0.014, S.jaw); jm.rotation.x = Math.PI / 2; hg.add(jm);
+      if (S.edge) hg.add(ptube([[0.665, 0.029, 0.082 * sg], [0.6, 0.029, 0.118 * sg], [0.55, 0.029, 0.133 * sg], [0.48, 0.029, 0.148 * sg], [0.39, 0.029, 0.172 * sg], [0.3, 0.029, 0.163 * sg]], 0.0095, 0.0095, S.glow, 8));
+      else hg.add(at(cbox(0.06, 0.06, 0.1, 0.01, S.haz), 0.25, 0, sg * 0.16)); }
+    // six legs from the three front segments: a hip, an armoured thigh with a piston, a knee joint, a paddle shin (a swimming fin with a spine), a claw
+    for (let k = 0; k < 3; k++) { const f = frameAt(segT(k)), r = rad(k);
+      for (const sg of [-1, 1]) { const kF = [0.07, 0, -0.07][k], aF = [0.15, -0.04, -0.2][k], kS = [0.19, 0.22, 0.22][k], aS = [0.31, 0.37, 0.39][k];
+        const hip = lp(f, 0, -r * 0.35, sg * r * 0.85), knee = lp(f, kF, 0.09, sg * kS), ankle = lp(f, aF, 0, sg * aS), foot = lp(f, aF + (aF - kF) * 0.35, 0, sg * (aS + 0.05)); ankle.y = 0.07; foot.y = 0.004;
+        g.add(ball(0.036, S.joint, arr(hip))); g.add(pbar(arr(hip), arr(knee), 0.054, 0.054, S.solid)); ppiston(g, arr(hip.clone().add(new T.Vector3(0, 0.046, 0))), arr(knee.clone().add(new T.Vector3(0, 0.04, 0))), 0.012, S);
+        const kj = cyl(0.034, 0.034, 0.07, S.joint, 16); kj.quaternion.setFromUnitVectors(UPV, f.fwd); kj.position.copy(knee); g.add(kj); g.add(pbar(arr(knee), arr(knee.clone().add(new T.Vector3(0, 0.05, 0))), 0.056, 0.05, S.dark));
+        g.add(pbar(arr(knee), arr(ankle), 0.095, 0.026, S.solid)); g.add(pbar(arr(knee), arr(ankle), 0.032, 0.042, S.dark)); g.add(ball(0.028, S.joint, arr(ankle)));
+        g.add(pseg(arr(ankle), arr(foot.clone().lerp(ankle, 0.35)), 0.027, 0.007, S.dark)); } }
+    // the tail: twin armoured spikes, a light at each tip
+    const ft = frameAt(T1);
+    for (const sg of [-1, 1]) { const a = lp(ft, -0.02, 0.004, sg * 0.03), b = lp(ft, -0.19, 0.045, sg * 0.08); g.add(ball(0.032, S.joint, arr(lp(ft, 0, 0, sg * 0.022))));
+      const prong = key === 'B' ? S.frame : S.solid;   // (a dark prong seen edge-on against the dark showed only its bevel's highlight, a thin line)
+      g.add(pbar(arr(a), arr(b), 0.046, 0.042, prong)); g.add(pbar(arr(a), arr(b.clone().lerp(a, 0.25)), 0.054, 0.05, S.joint)); g.add(ball(0.02, S.glow, arr(b))); }
     return g; }
+
   // ── the light and the camera, as the props are baked ──
   const pshoot = (model, W, H, pad, az) => {
     const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
@@ -141,6 +229,7 @@ window.__draw = async function (PX, UH) {
     cam.position.set(D * Math.cos(elev) * Math.SQRT1_2, D * Math.sin(elev), D * Math.cos(elev) * Math.SQRT1_2); cam.lookAt(0, 0, 0); cam.updateMatrixWorld();
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; const v = new T.Vector3();
     model.traverse(o => { if (!o.isMesh) return; const p = o.geometry.attributes.position; for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld).applyMatrix4(cam.matrixWorldInverse); x0 = Math.min(x0, v.x); x1 = Math.max(x1, v.x); y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); } });
+    if (![x0, x1, y0, y1].every(Number.isFinite)) throw new Error('a model has a vertex that is not a number');
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, half = Math.max((x1 - x0) / W, (y1 - y0) / H) / 2 * (1 + pad);
     cam.left = cx - half * W; cam.right = cx + half * W; cam.top = cy + half * H; cam.bottom = cy - half * H; cam.updateProjectionMatrix();
     renderer.render(scene, cam); const out = document.createElement('canvas'); out.width = W; out.height = H; out.getContext('2d').drawImage(renderer.domElement, 0, 0); renderer.dispose(); return out; };
@@ -155,11 +244,11 @@ window.__draw = async function (PX, UH) {
       c.fillStyle = '#ffe9a0'; c.font = 'bold 19px DejaVu Sans, sans-serif'; c.fillText(t.label, x + 4, y + TH + 26); });
     return cv.toDataURL('image/png'); };
   const TW = 470, TH = 380, tiles = [];
-  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · WALKING', cv: pshoot(rolyWalk(k), TW, TH, 0.14, 0.25) });
-  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · ROLLED UP', cv: pshoot(rolyBall(k), TW, TH, 0.5, 0.2) });
-  const roly = psheet('THE ROLY-POLY · three examples of an electric look', 'A pill bug: seven overlapping back plates, a small head, two jointed antennae, fourteen short legs; it rolls into a plated ball. Examples to react to, not a design.', 3, 2, tiles, TW, TH);
-  const LW = 700, LH = 470, lt = [{ label: 'A NATURAL STUDY (a water tiger, Dytiscus larva)', cv: pshoot(larva(false), LW, LH, 0.08, Math.PI / 4 - 0.28) }, { label: 'AN ELECTRIC BOSS (dark plates, live seams, crackling jaws)', cv: pshoot(larva(true), LW, LH, 0.08, Math.PI / 4 - 0.28) }];
-  const lar = psheet('THE BOSS · a predaceous diving beetle larva', 'Eleven segments tapering to two tail filaments; a flat head with six small eyes a side and huge hollow sickle jaws; six long fringed legs. Examples, not a design.', 2, 1, lt, LW, LH);
+  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · WALKING', cv: pshoot(rolyWalk(k), TW, TH, 0.1, -0.22) });
+  for (const k of ['A', 'B', 'C']) tiles.push({ label: STYLES[k].name + ' · ROLLED UP', cv: pshoot(rolyWheel(k), TW, TH, 0.4, -0.35) });
+  const roly = psheet('THE ROLY-POLY, ROUND 3 · longer, seven plates, a face', 'Camera eyes under a frown, antennae with a pose, a core on its back; rolled up it is a wheel, its eyes looking out of the seam. Examples, not a design.', 3, 2, tiles, TW, TH);
+  const LW = 600, LH = 420, lt = ['A', 'B', 'C'].map(k => ({ label: STYLES[k].name, cv: pshoot(larvaMech(k), LW, LH, 0.06, 0.15) }));
+  const lar = psheet('THE BOSS AS A MECH · a predaceous diving beetle larva', 'Armoured segments on a frame, lit joints, side pistons; a flat wedge head, six lenses a side; sickle jaws on hinges; paddle legs; twin tail spikes.', 3, 1, lt, LW, LH);
   return { roly, lar };
 };
 </script></body></html>`;
@@ -173,8 +262,8 @@ window.__draw = async function (PX, UH) {
   await p.goto('http://draw.local/');
   let res; try { res = await p.evaluate(([a, b2]) => window.__draw(a, b2), [PX, UH]); } catch (e) { console.log('ERRORS', errs.slice(0, 5), e.message); await b.close(); process.exit(1); }
   fs.mkdirSync(OUTDIR, { recursive: true });
-  fs.writeFileSync(path.join(OUTDIR, 'rolypoly_examples.png'), Buffer.from(res.roly.split(',')[1], 'base64'));
-  fs.writeFileSync(path.join(OUTDIR, 'larva_examples.png'), Buffer.from(res.lar.split(',')[1], 'base64'));
-  console.log('wrote', path.join(OUTDIR, 'rolypoly_examples.png'), path.join(OUTDIR, 'larva_examples.png'), errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
+  fs.writeFileSync(path.join(OUTDIR, 'rolypoly_mech.png'), Buffer.from(res.roly.split(',')[1], 'base64'));
+  fs.writeFileSync(path.join(OUTDIR, 'larva_mech.png'), Buffer.from(res.lar.split(',')[1], 'base64'));
+  console.log('wrote', path.join(OUTDIR, 'rolypoly_mech.png'), path.join(OUTDIR, 'larva_mech.png'), errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
   await b.close();
 })();
