@@ -20,7 +20,14 @@ const ENERGY_NONE = "none";
 // use their ultimate, and if they have 2 energy cards, they can use their alternate attack if there's an extra one. If not, the alternate attack is unlocked at 1 energy"): 1 card of its own element opens its
 // second attack (altNeeds), 2 its EXTRA attack where its form has one (alt2Needs: a form's moves after its first, js/moves.js evoMoveAllowed), 3 its Ultimate (ultNeeds: it was 2). A form with no extra attack
 // gets nothing more from its second card. With all three slots its own for the Ultimate, a HYBRID's card (another element's) and the Ultimate cannot be held together: open, with the hybrids (none designed).
-const ENERGY = { unevolvedSlots: 1, evolvedSlots: 3, evolveLevel: 8, altNeeds: 1, alt2Needs: 2, ultNeeds: 3 };
+// ELEMENTAL POWER, AND ANY CARD UNLOCKS (build 2026-11-13y; the owner, 2026-11-13: "for each energy card they have that matches their type, they are able to increase the amount of elemental damage they put
+// out per attack ... a follower can have energy cards of another type and use those to unlock their other attacks, but those attacks would have very little elemental impact. So it could be a good trade-off";
+// asked, chosen: 25 / 100 / 125 / 150%; "Everything, by card count"; "Hit damage only"):
+//   UNLOCKS  count ANY card in its slots (energyFilled): 1 the second attack, 2 the extra attack, 3 the Ultimate. (They counted only cards of its own element.)
+//   POWER    the ELEMENTAL part of each hit an evolved follower lands with its everyday attack or a move (js/damage.js dmgApply; not its Ultimate, a status, a heal or a lure) is multiplied by
+//            ENERGY.power[its cards of its OWN element]: none 0.25, one 1 (as it was), two 1.25, three 1.5. An unevolved follower, a clone and everyone else: 1.
+// So a card of another element opens attacks and adds no power: right for a form whose attacks are mostly physical, a poor trade for one whose attacks are Elemental. Hybrids are for later.
+const ENERGY = { unevolvedSlots: 1, evolvedSlots: 3, evolveLevel: 8, altNeeds: 1, alt2Needs: 2, ultNeeds: 3, power: [0.25, 1, 1.25, 1.5] };
 let energyStock = {};   // the run's: element id -> the cards of it you hold (not in a slot)
 
 // what its energy row shows (the roster draws it again when this changes: js/commandcenter.js _ccSideSigNow)
@@ -40,18 +47,19 @@ function energyFor(f) { return !!f && f.isFollower === true && !f.isClone; }
 function energySlotCount(f) { return f && f.evolved ? ENERGY.evolvedSlots : ENERGY.unevolvedSlots; }
 function energySlots(f) { const n = energySlotCount(f), e = f && Array.isArray(f.energy) ? f.energy : [], out = []; for (let i = 0; i < n; i++) out.push(energyElementOk(e[i]) ? e[i] : null); return out; }   // (a copy)
 function energyOwn(f) { return f && f.evolved ? energySlots(f).filter(x => x === f.element).length : 0; }   // its cards of its own element (evolved)
-function energyAltOpen(f) { return !f || !f.evolved || f.isFollower !== true || energyOwn(f) >= ENERGY.altNeeds; }   // its second attack (an unevolved follower's BASH is not an element's: open)
-function energyAlt2Open(f) { return !f || !f.evolved || f.isFollower !== true || energyOwn(f) >= ENERGY.alt2Needs; }   // its extra attack, where its form has one (a form's moves after its first)
-function energyUltOpen(f) { return !!f && !!f.evolved && (f.isFollower !== true || energyOwn(f) >= ENERGY.ultNeeds); }   // its Ultimate (a follower's: with ENERGY.ultNeeds cards of its element)
+function energyFilled(f) { return f && f.evolved ? energySlots(f).filter(x => x).length : 0; }   // the cards in its slots, of any element (evolved): what unlocks its attacks
+function energyPower(f) { if (!f || !f.evolved || f.isFollower !== true || f.isClone) return 1; const p = ENERGY.power; return p[Math.min(energyOwn(f), p.length - 1)]; }   // the share of its hits' elemental part it deals (its cards of its own element)
+function energyAltOpen(f) { return !f || !f.evolved || f.isFollower !== true || energyFilled(f) >= ENERGY.altNeeds; }   // its second attack (an unevolved follower's BASH is not an element's: open)
+function energyAlt2Open(f) { return !f || !f.evolved || f.isFollower !== true || energyFilled(f) >= ENERGY.alt2Needs; }   // its extra attack, where its form has one (a form's moves after its first)
+function energyUltOpen(f) { return !!f && !!f.evolved && (f.isFollower !== true || energyFilled(f) >= ENERGY.ultNeeds); }   // its Ultimate (a follower's: with ENERGY.ultNeeds cards of its element)
 function energyHybrids(f) { return f && f.evolved ? energySlots(f).filter(x => x && x !== f.element) : []; }   // the other elements whose hybrid attack it would have (none is designed yet)
 // what an energy slot's card is for, in words: its element (unevolved), its next attack or a hybrid (evolved)
 function energySlotRole(f, slot) {
     const s = energySlots(f), el = s[slot]; if (!el) return null;
     if (!f.evolved) return "ITS ELEMENT";
-    if (el !== f.element) return "HYBRID · " + energyLabel(f.element) + " + " + energyLabel(el) + " · NOT DESIGNED YET";
-    const k = s.slice(0, slot + 1).filter(x => x === f.element).length;
+    const k = s.slice(0, slot + 1).filter(x => x).length, own = el === f.element, pw = own ? " · MORE " + energyLabel(f.element) + " POWER" : " · NO " + energyLabel(f.element) + " POWER (ANOTHER ELEMENT'S CARD)";
     const d = typeof evolvedDef === "function" ? evolvedDef(f) : null, extra = d && typeof evoMoveIds === "function" && evoMoveIds(d).length > 1;
-    return k === ENERGY.altNeeds ? "UNLOCKS ITS SECOND ATTACK" : k === ENERGY.alt2Needs ? (extra ? "UNLOCKS ITS EXTRA ATTACK" : "ONE MORE FOR ITS ULTIMATE") : k === ENERGY.ultNeeds ? "UNLOCKS ITS ULTIMATE" : "NOTHING MORE YET";
+    return (k === ENERGY.altNeeds ? "UNLOCKS ITS SECOND ATTACK" : k === ENERGY.alt2Needs ? (extra ? "UNLOCKS ITS EXTRA ATTACK" : "ONE MORE FOR ITS ULTIMATE") : k === ENERGY.ultNeeds ? "UNLOCKS ITS ULTIMATE" : "NOTHING MORE YET") + pw;
 }
 
 // an unevolved follower's element is its card's (none without one): set as the conversion sets one (js/conversion.js convertApply): the table of followers by element, the cards that stop fitting, the squad bar

@@ -359,6 +359,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.alt, 0, 'a move\'s hit added a status'); same(r.camper, 0, 'a technician added a status'); same(r.boss, 0, 'a boss was stunned or blinded'); ok(r.bossSlow > 20, 'a boss can be slowed: ' + r.bossSlow);
     });
 
+    check('CHOMP COOLS DOWN (build 2026-11-13x): a Frost Maw locked on CHOMP that has to walk in first bites once, then waits its 2.5 s after the bite is over before the next (until then its cooldown never started when it walked in, and it bit again every 15 frames: 79 bites in 20 seconds where 7 were meant)', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 21.5, 2); p.speciesName = 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.evolved = 'maw'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.energy = ['ice', 'ice', 'ice']; f.alt = 'chomp'; f.altBoth = false; f._altReadyAt = 0; f._altLive = null;
+            const keepB = mawBite, at = []; mawBite = function (who) { if (who === f) at.push(frame); return keepB.apply(this, arguments); };   /* (its own bites: an earlier check's Maw may still stand here) */
+            const f00 = frame; try { for (let i = 0; i < 600; i++) { frame++; evolutionTick(); updateElementEffects(); p.x = 21.5; p.y = 2; p.stunned = 0; } } finally { mawBite = keepB; }
+            const out = { bites: at.length, gaps: at.slice(1).map((t, i) => t - at[i]), walked: MAW_STAND < 1.5, cd: moveWindupFrames('chomp') }; p.dead = true; followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return out; })()`);
+        ok(r.walked, 'it did not have to walk in'); ok(r.bites >= 3 && r.bites <= 4, 'bites in 10 seconds: ' + r.bites + ' (gaps ' + r.gaps.join() + ')'); for (const g of r.gaps) ok(g >= r.cd, 'a bite ' + g + ' frames after the last, under its cooldown of ' + r.cd);
+    });
+
     check('THE FOUR EXTRA ATTACKS (build 2026-11-13v; the owner, 2026-11-13: an extra attack on certain followers fills the coverage grid, open with 2 energy cards): EMBER SLASH (Quillstone: one enemy, Slashing, left burning), RIFT IMPALE (Rift Mimic: it pops up under the enemy, Piercing), BLADE ROLL (Hammer Slug: every enemy on its line, Slashing), BRIAR SWEEP (Thornwhip: every enemy round it, Slashing, pushed out); each is its form\'s second move, locked with one card and open with two', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const out = {};
             const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
@@ -368,14 +378,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             try { for (const [id, mv] of [['quillstone', 'ember_slash'], ['mimic', 'rift_impale'], ['hammerslug', 'blade_roll'], ['shrub', 'briar_sweep'], ['seeper', 'toxic_stomp']]) {
                 const f = mk(id), def = evolvedDef(f), o = out[mv] = { second: evoMoveIds(def)[1], one: evoMoveAllowed(f, def, mv), first: evoMoveAllowed(f, def, evoMoveIds(def)[0]) };
                 f.energy = [f.element, f.element, null]; o.two = evoMoveAllowed(f, def, mv); o.type = DMG_FORM[id].extra; o.info = !!MOVE_INFO[MOVES[mv].name] && MOVE_INFO[MOVES[mv].name]().length >= 3; o.reach = moveReach(mv) > 0;
-                const a = mkP(21.2, 2), b = mkP(22.4, 2), far = mkP(40, 2); frame++; o.fired = MOVES[mv].fn(f); o.a = d(a); o.b = d(b); o.far = d(far); o.burn = a.burning || 0; o.at = [Math.round(f.x * 10) / 10, f.y]; o.pushed = Math.abs((a.kbVX || 0)) + Math.abs((a.kbVY || 0)) > 0; o.cd = f._sigCd;
+                const a = mkP(21.2, 2), b = mkP(22.4, 2), far = mkP(40, 2); frame++; o.fired = MOVES[mv].fn(f); o.a = d(a); o.b = d(b); o.far = d(far); o.burn = a.burning || 0; o.glitch = a.glitched || 0; o.close = !!MOVES[mv].close; o.at = [Math.round(f.x * 10) / 10, f.y]; o.pushed = Math.abs((a.kbVX || 0)) + Math.abs((a.kbVY || 0)) > 0; o.cd = f._sigCd;
                 clear(); frame++; o.none = MOVES[mv].fn(f); followers.splice(followers.indexOf(f), 1); actors = actors.filter(x => x !== f); } } finally { if (keepStand) facilityStandOk = keepStand; }
             return out; })()`);
         for (const mv in r) { const o = r[mv]; same(o.second, mv, mv + ' is its form\'s second move'); same(o.first, true, mv + ': its first move with one card'); same(o.one, false, mv + ' open with one card'); same(o.two, true, mv + ' locked with two cards'); same(o.fired, true, mv + ' did not fire'); ok(o.a > 0, mv + ' did not hurt the near enemy'); same(o.far, 0, mv + ' hit one out of reach'); same(o.none, false, mv + ' fired at nothing'); ok(o.cd > 0, mv + ' did not wait'); same(o.info, true, mv + ' INFO'); same(o.reach, true, mv + ' reach'); }
         same([r.ember_slash.type, r.rift_impale.type, r.blade_roll.type, r.briar_sweep.type, r.toxic_stomp.type].join(), 'slashing,piercing,slashing,slashing,crushing', 'their types');
         same(r.toxic_stomp.b, 0, 'TOXIC STOMP (the Seeper, build 2026-11-13w: "a stomp attack by the seeper") hit one outside its circle');
         same(r.ember_slash.b, 0, 'EMBER SLASH hit a second enemy'); ok(r.ember_slash.burn > 0, 'EMBER SLASH left no burn');
-        same(r.rift_impale.b, 0, 'RIFT IMPALE hit a second enemy'); same(r.rift_impale.at.join(), '21.2,2', 'RIFT IMPALE did not end under the enemy');
+        same(r.rift_impale.b, 0, 'RIFT IMPALE hit a second enemy'); same(r.rift_impale.glitch, 30, 'RIFT IMPALE glitches the enemy it impales (build 2026-11-13x)'); same(r.briar_sweep.close, true, 'BRIAR SWEEP is a close move: the Thornwhip walks in (build 2026-11-13x)'); same(r.rift_impale.at.join(), '21.2,2', 'RIFT IMPALE did not end under the enemy');
         ok(r.blade_roll.b > 0, 'BLADE ROLL did not slice the second enemy on its line'); same(r.blade_roll.at.join(), '24,2', 'BLADE ROLL did not roll its length');
         ok(r.briar_sweep.b === 0 && r.briar_sweep.pushed, 'BRIAR SWEEP: only what is within its circle, pushed: ' + JSON.stringify(r.briar_sweep));
     });

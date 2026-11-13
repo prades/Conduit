@@ -177,7 +177,7 @@ function _sfEnergyDraw(E, f) {
     if (open >= 0 && open < s.length) tw.appendChild(_sfEnergyTray(f, open, s[open], held, mk));   // (over the middle and the right of the card, its picture still in sight)
     const pill = (lit, k, txt) => under.appendChild(mk("span", lit ? "on" : "", gl(k, "sf-en-pg") + txt));   // what its cards open, in the middle under its numbers
     if (!f.evolved) pill(!!s[0], s[0] || "energy", s[0] ? energyLabel(s[0]) + " · USED UP AS IT EVOLVES" : held.length ? "NO ELEMENT · PUT ONE IN" : "NO ELEMENT · ENERGY COMES IN PACKS");
-    else { const a = energyAltOpen(f), u = energyUltOpen(f), hy = energyHybrids(f).length; pill(a, a ? "open" : "lock", "2ND ATTACK"); pill(u, u ? "open" : "lock", "ULTIMATE"); if (hy) pill(false, "energy", hy + " HYBRID" + (hy > 1 ? "S" : "") + " · NOT DESIGNED YET"); }
+    else { const a = energyAltOpen(f), u = energyUltOpen(f), hy = energyHybrids(f).length; pill(a, a ? "open" : "lock", "2ND ATTACK"); pill(u, u ? "open" : "lock", "ULTIMATE"); pill(energyPower(f) >= 1, "energy", energyLabel(f.element) + " POWER " + Math.round(energyPower(f) * 100) + "%"); if (hy) pill(false, "energy", hy + " OF ANOTHER ELEMENT · NO POWER"); }
 }
 // THE PICTURE REACTS (build 2026-11-12g; the owner: "the energy slots should be above the followers picture and they could react to the energy placements in the picture"): each slot's line runs down into the picture
 // (--l0 to --l2: the energy's colour, or dim while empty, darker while locked) and the picture glows under it in that colour (--e0 to --e2), brighter the more are in (n0 to n3); an energy that goes in makes the

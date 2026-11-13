@@ -447,8 +447,10 @@ function _altBothTurn(f, mv, f0) {
 function _altBothRest(f, f0) { f._altRest = true; f._altTurn = false; f._altWind = 0; f._altBackAt = Math.max(f0 + Math.round(BOTH_REST_SECONDS * 60), altCools(f) ? (f._altReadyAt || 0) : 0); }
 function _altFire(f, mv, f0) {
     const has = a => typeof a !== "undefined" && Array.isArray(a), seen = { fx: new Set(has(elementEffects) ? elementEffects : []), pr: new Set(typeof followerProjectiles !== "undefined" ? followerProjectiles : []), bm: new Set(typeof fireBombs !== "undefined" ? fireBombs : []), dc: new Set(typeof rotDecoys !== "undefined" ? rotDecoys : []) };
-    const at = f._sigAt; f._sigAt = -1; if (mv.fn) mv.fn(f);
-    if (f._sigAt !== f0) { f._sigAt = at; return; }   // (nothing to strike when its wind-up ended: ready again)
+    const at = f._sigAt; f._sigAt = -1; const fired = mv.fn ? mv.fn(f) : false;
+    // (nothing to strike when its wind-up ended: ready again. A move says it fired by returning true: CHOMP, which walks in first, sets _sigAt only as it arrives, so until build 2026-11-13x it was read as
+    // "did not fire", its cooldown never started, and it bit again every ALT_RETRY frames, ten times as often as its 2.5 s: the 337 damage a second of the balance trial)
+    if (f._sigAt !== f0) { f._sigAt = at; if (fired !== true) return; }
     const live = [];
     if (typeof elementEffects !== "undefined") for (const o of elementEffects) if (!seen.fx.has(o)) live.push(["fx", o]);
     if (typeof followerProjectiles !== "undefined") for (const o of followerProjectiles) if (!seen.pr.has(o)) live.push(["pr", o]);
@@ -1000,7 +1002,7 @@ function venomMark(t, src, amount) {
 // followers ... if they have 2 energy cards, they can use their alternate attack if there's an extra one". Each is its form's SECOND move (js/moves.js), open with two energy cards of its element
 // (js/energy.js alt2Needs), a chosen mode with a wind-up or a Brawler's cooldown as every second attack. The followers and the ideas are the owner's: the QUILLSTONE "EMBER SLASH" (picked of two drafts),
 // the RIFT MIMIC "Teleport under them, they glitch out at pop up under them and implale", the HAMMER SLUG "Rolls up into a ball and slices them", the THORNWHIP "BRIAR SWEEP" (picked of two drafts).
-// The names RIFT IMPALE and BLADE ROLL, every number, and the looks (plain for now: the game's rings and impacts, no frames of their own) are the agent's, PROVISIONAL. Toxic Crushing is not placed yet.
+// The names RIFT IMPALE, BLADE ROLL and TOXIC STOMP are the agent's, kept by the owner ("the names you give it are fine for now"); every number and the looks (plain for now: the game's rings and impacts, no frames of their own: "We're going to need to work on the animations soon") are the agent's, PROVISIONAL. Toxic Crushing is not placed yet.
 const DMG_HIT_EMBER = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
 const DMG_HIT_RIFT = Object.freeze({ which: "alt", stat: "atk", type: "piercing" });
 const DMG_HIT_ROLL = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
@@ -1021,8 +1023,9 @@ function emberSlash(f) {
     return true;
 }
 // RIFT IMPALE (the Rift Mimic's): it glitches out where it stands and pops up UNDER the nearest enemy it can see within RIFT_RANGE (a spot one can stand on), impaling it: RIFT_MULT x its attack, Piercing, flux.
-// It ends where the enemy stands. (The owner's "they glitch out" is read as the Mimic glitching out of sight as it goes, a look: no status is put on the enemy. Open, with the owner.)
-const RIFT_RANGE = 5, RIFT_MULT = 2;
+// It ends where the enemy stands. The Mimic glitching out as it goes is a look (the owner, 2026-11-13: "he, basically teleports with a glitch out effect and then reappears under the enemy"), and the enemy it
+// impales is GLITCHED as well, RIFT_GLITCH frames (the owner: "I like the idea of Rift Impale glitching the enemies as well"; build 2026-11-13x; the length is the agent's, SHOCK ZAP's).
+const RIFT_RANGE = 5, RIFT_MULT = 2, RIFT_GLITCH = 30;
 function riftImpale(f) {
     const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, RIFT_RANGE).filter(a => stand(a.x, a.y)));
@@ -1030,6 +1033,7 @@ function riftImpale(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y, dx = t.x - ox, dy = t.y - oy, L = Math.hypot(dx, dy) || 1;
     f.x = t.x; f.y = t.y; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
     applyDamage(t, (f.power || 10) * RIFT_MULT, f, "flux", false, false, DMG_HIT_RIFT);
+    if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, RIFT_GLITCH);
     f._sigAt = f0; f._sigCd = moveWindupFrames("rift_impale"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "ring", x: ox, y: oy, radius: 0.7, color: "#9933ff", life: 18 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#cc66ff", radius: 0.6, life: 14 });   // (where it glitched out)
     _evoFx({ type: "impact", x: t.x, y: t.y, color: "#e0a8ff", radius: 1, life: 22 }); _evoFx({ type: "ring", x: t.x, y: t.y, radius: 0.9, color: "#cc66ff", life: 20 });   // (where it pops up)
