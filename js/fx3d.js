@@ -27,13 +27,18 @@ const FX3D = {
         // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview, standing and turning; approved in the game the same day by accident and taken back (2026-11-09ii).
         // TUMBLING since 2026-11-09ii (the owner: "the shards are supposed to go sideways and sort of whirl about ... all in different orientations, but they're spinning around like a hurricane"): its rows are
         // the axes it tumbles about, its columns the steps of a turn; drawn centred (fx3dDrawCell)
+        // THE VOIDSTAR's SLAP (its everyday shot; the owner, 2026-11-12: "the void star slaps the enemy with telepathic tentacles"; "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"; "Make it look 3d
+        // rendered"): ONE short, stubby tentacle of ghostly violet gel (design/effects/bake_fx.js slap), swinging from overhead across and slapping down, 12 frames; ANIMATED: its columns are the frames of the swing, its root at (ax, ay) in the cell;
+        // drawn mirrored for the second slap. Approved in the game 2026-11-13 ("Approve it"); until its sheet arrives the flat tentacles drawn in code are shown (js/elements.js tendrilslap)
+        slap: { sheet: "img/fx/slap.png", cell: 96, yaws: 12, pitches: [0], anim: true, ax: 48, ay: 48 },
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
-               "goocopy"],   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "slap"],   // the VOIDSTAR's SLAP, its everyday shot's tentacles as a sharp violet gel tentacle: approved in the game 2026-11-13 ("Approve it"), live for everyone since build 2026-11-13d
     // (SHARD VORTEX's black blades were approved in the game on 2026-11-09 and taken back the same day: "Yeah, sorry, I was falling asleep. I accidentally approved that": on the preview again, tumbling, build 2026-11-09ii)
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
@@ -77,6 +82,15 @@ function fx3dDrawUpright(g, piece, sx, sy, k, hpx, rise) {
     const rows = r >= 1 ? C : Math.max(1, Math.min(C, P.ay - D)), dx = sx - P.ax * sc, dy = sy + D * sc - P.ay * sc;   // (risen whole, its foot and the chips round it are drawn too)
     if (cell) g.drawImage(cell, 0, 0, C, rows, dx, dy, C * sc, rows * sc); else g.drawImage(img, col * C, 0, C, rows, dx, dy, C * sc, rows * sc);
     return true;
+}
+// AN ANIMATED piece (FX3D.pieces[piece].anim): its frame `frame` (0 to yaws - 1, held to the sheet) with its root (ax, ay in the cell) on the screen point (sx, sy) at the forms' scale, mirrored left to right when `mirror`.
+// False before its sheet arrives (the caller draws the old look).
+function fx3dDrawAnim(g, piece, sx, sy, frame, mirror) {
+    const P = FX3D.pieces[piece], img = P && P.anim && _fx3dImg(piece); if (!img) return false;
+    const C = P.cell, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, d = C * s, k = Math.max(0, Math.min(P.yaws - 1, Math.floor(frame) || 0)), cell = typeof spriteCell === "function" ? spriteCell(img, k * C, 0, C, C) : null;
+    g.save(); g.translate(sx, sy); if (mirror) g.scale(-1, 1);
+    if (cell) g.drawImage(cell, -P.ax * s, -P.ay * s, d, d); else g.drawImage(img, k * C, 0, C, C, -P.ax * s, -P.ay * s, d, d);
+    g.restore(); return true;
 }
 // A TUMBLING piece (FX3D.pieces[piece].tumble): its cell (col, row) drawn centred on the screen point (sx, sy) at the forms' scale; the column wraps, the row is held to the sheet. False before its sheet arrives.
 function fx3dDrawCell(g, piece, sx, sy, col, row) {

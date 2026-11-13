@@ -1589,6 +1589,25 @@ function drawElementEffects() {
                 ctx.strokeStyle = '#a9c4b3'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.globalAlpha = fade * 0.8; for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.8 + age * 0.3, d0 = 10 + 8 * sp; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.8); ctx.lineTo(px + Math.cos(an) * (d0 + 7), cy + Math.sin(an) * (d0 + 7) * 0.8); ctx.stroke(); }   // (a few dull wisps of it as it lands)
                 ctx.restore(); break;
             }
+            // The Voidstar's everyday shot landing (js/evolution.js voidSlap; the owner: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature"; "Two alternate"): two short, stubby
+            // tentacles of ghostly violet energy pop out of the air beside the creature it landed on and slap it, one after the other (the second 6 frames after the first, from the other side), each swinging across it and fading;
+            // a few strokes of impact where each lands. Flat shapes only (the effects plan).
+            case "tendrilslap": {
+                const age = e.maxLife - e.life, cy = py - 14;
+                ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                const T3 = typeof fx3dOn === "function" && fx3dOn("slap") && fx3dReady("slap");   // (the 3-D rendered tentacle, approved in the game 2026-11-13: js/fx3d.js; until its sheet arrives, the flat ones below)
+                for (let k = 0; k < 2; k++) { const a = age - k * 6; if (a < 0 || a > 8) continue; const u = a / 8, eu = 1 - (1 - u) * (1 - u), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (8 - a) / 2);
+                    if (T3) { ctx.globalAlpha = fa; fx3dDrawAnim(ctx, "slap", px + side * 15, cy - 12, u * 11, side > 0); ctx.globalAlpha = 1; }
+                    const bx = px + side * 15, by = cy - 12, phi = side < 0 ? -2.3 + 2.9 * eu : Math.PI + 2.3 - 2.9 * eu, Ln = 17 * (0.55 + 0.45 * Math.min(1, a / 2)), pts = [];   // (it swings from overhead across the creature)
+                    for (let i = 0; i <= 6; i++) { const t = i / 6, cv = Math.sin(t * Math.PI) * Ln * 0.3 * side * (1 - u); pts.push([bx + Math.cos(phi) * Ln * t - Math.sin(phi) * cv, by + Math.sin(phi) * Ln * t * 0.9 + Math.cos(phi) * cv]); }
+                    if (!T3) for (let i = 1; i <= 6; i++) { const w = 1 - (i - 1) / 6 * 0.92;   // (sharp: it tapers to a point)
+                        ctx.strokeStyle = '#9933ff'; ctx.lineWidth = 12 * w; ctx.globalAlpha = 0.25 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                        ctx.strokeStyle = '#bb66ff'; ctx.lineWidth = 8 * w; ctx.globalAlpha = 0.8 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
+                        ctx.strokeStyle = '#ead6ff'; ctx.lineWidth = 2.6 * w; ctx.globalAlpha = 0.95 * fa; ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke(); }
+                    if (a >= 5) { const ia = (a - 5) / 3; ctx.strokeStyle = '#ead6ff'; ctx.lineWidth = 1.6; ctx.globalAlpha = (1 - ia) * 0.9; for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.5 + k, d0 = 6 + 5 * ia; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.7); ctx.lineTo(px + Math.cos(an) * (d0 + 5), cy + Math.sin(an) * (d0 + 5) * 0.7); ctx.stroke(); } }   // (where it lands)
+                }
+                ctx.restore(); break;
+            }
             case "rotshards": {
                 const k = e.life / e.maxLife, cy = py + TILE_H * 0.5;
                 ctx.globalAlpha = 0.2 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px, cy - 4, 26, 12, 0, 0, Math.PI * 2); ctx.fill();

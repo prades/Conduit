@@ -115,7 +115,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     group('THE THUNDERHEAD\'S EVERYDAY SHOT: A STRING OF LIGHTNING THAT CONNECTS AND BREAKS OFF (build 2026-11-12o; the owner: "It should have like a string of lightning that connects and breaks off at some point"; its body does not change)');
     check('its shot flies as a "bolt" (no other follower\'s does); the shot itself (damage, speed, CHAIN LIGHTNING\'s jump on) is as it was; its sheet is as it was (16 columns)', () => {
         const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 3, f.y); f._shotTarget = t; _mageShotFire(f); const p = followerProjectiles[followerProjectiles.length - 1];
-            const o = __fol('flux', 'sniper', 'voidstar'), t2 = __foe(o.x + 3, o.y); o._shotTarget = t2; _mageShotFire(o); const q = followerProjectiles[followerProjectiles.length - 1];
+            const o = __fol('blossom', 'sniper', 'shrub'), t2 = __foe(o.x + 3, o.y); o._shotTarget = t2; _mageShotFire(o); const q = followerProjectiles[followerProjectiles.length - 1];
             return { kind: p.kind, dmg: p.damage, speed: Math.hypot(p.vx, p.vy), hit: typeof p.onHit, src: p.source === f, other: q.kind || null, cols: (EVO_PACK['img/evo/thunderhead.png'] || {}).cols, flags: ['flare', 'fan', 'pull', 'goo', 'blaze'].filter(k => EVOLUTIONS.thunderhead[k]).join() }; })())`));
         same(r.kind, 'bolt', 'its kind'); ok(r.dmg > 0 && Math.abs(r.speed - 0.18) < 1e-9, 'the shot changed: ' + r.dmg + ' ' + r.speed); same(r.hit, 'function', 'CHAIN LIGHTNING still conducts on'); ok(r.src, 'the shot knows who fired it (the string is joined to it)'); same(r.other, null, 'another mage\'s kind'); same(r.flags, '', 'its sheet is untouched');
     });
@@ -141,7 +141,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
             for (const a of [0, 3, 4, 11, 12]) out.push(reachCol(f, frame + a, d)); const hold = _evoFrame(f, d, frame + 5).col;
             return { out, fired, at, hold, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].reach).join() }; })())`));
         same(r.out.join(), '16,17,18,19,20,21,21,22,22,23,23,-1', 'cells'); ok(r.fired, 'MAELSTROM did not fire'); ok(r.at, 'when it went off'); ok(r.hold >= 16, 'the old bow is shown after it: ' + r.hold); same(r.who, 'voidstar', 'who has it');
-        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 24, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 32, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
         for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
     });
 
@@ -173,6 +173,32 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     check('the soul blob is drawn flat, in the Rotshard\'s own crystal green: strokes and fills, no gradient and no shadowBlur (the effects plan)', () => {
         const src = rd('js/game.js'), a = src.indexOf('function _drawSoulBlob'), fn = src.slice(a, src.indexOf('function _drawFollowerProjectile')), el = rd('js/elements.js'), b = el.indexOf('case "soulsplat"'), sp = el.slice(b, b + 2400);
         ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the blob uses a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the splat uses a gradient or a shadow'); ok(/p\.kind === "soulblob"/.test(src), 'the projectile is not drawn as the blob'); ok(/_SOUL = \{ body: '#9adeae'/.test(src) && /#9adeae/.test(sp), 'not the crystal\'s green');
+    });
+
+    group('THE VOIDSTAR SLAPS WITH TELEPATHIC TENTACLES (build 2026-11-13b; the owner: "How about the void star slaps the enemy with telepathic tentacles?"; asked, "Ghostly violet energy" and "Two alternate")');
+    check('its everyday shot flies as a "tendril" (no other mage\'s does) and, where it lands, a one-two slap (a "tendrilslap") is drawn on the target; the shot itself (its damage, its speed, its element) is as it was', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), t = __foe(f.x + 3, f.y); f._shotTarget = t; _mageShotFire(f); const p = followerProjectiles[followerProjectiles.length - 1];
+            const before = elementEffects.filter(e => e.type === 'tendrilslap').length; p.onHit(t); const slap = elementEffects.filter(e => e.type === 'tendrilslap');
+            const o = __fol('toxic', 'sniper', 'rotshard'), t2 = __foe(o.x + 3, o.y); o._shotTarget = t2; _mageShotFire(o); const q = followerProjectiles[followerProjectiles.length - 1];
+            return { kind: p.kind, dmg: p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, speed: Math.hypot(p.vx, p.vy), el: p.element, src: p.source === f, before, slap: slap.length, at: slap[0] && [slap[0].x === t.x, slap[0].y === t.y], other: q.kind || null }; })())`));
+        same(r.kind, 'tendril', 'its kind'); ok(Math.abs(r.dmg - r.want) < 1e-9, 'the shot\'s damage changed: ' + r.dmg); ok(Math.abs(r.speed - 0.18) < 1e-9, 'its speed changed: ' + r.speed); same(r.el, 'flux', 'its element'); ok(r.src, 'the shot knows who fired it');
+        same(r.before, 0, 'a slap before it landed'); same(r.slap, 1, 'the slap'); ok(r.at && r.at[0] && r.at[1], 'not on the target'); same(r.other, 'soulblob', 'another mage\'s kind');
+    });
+    check('the mote in flight and the stubby tentacles that appear on the target are drawn flat: strokes and fills, no gradient and no shadowBlur (the effects plan), and the tentacles are not joined to the shooter (the owner: "short, stubby tentacles that are detached from the follower, and they appear on the targeted creature")', () => {
+        const src = rd('js/game.js'), a = src.indexOf('function _drawTendrils'), fn = src.slice(a, src.indexOf('function _drawFollowerProjectile')), el = rd('js/elements.js'), b = el.indexOf('case "tendrilslap"'), sp = el.slice(b, b + 1800);
+        ok(fn.length > 800 && !/createRadialGradient|createLinearGradient|shadowBlur/.test(fn), 'the tentacles use a gradient or a shadow'); ok(!/createRadialGradient|createLinearGradient|shadowBlur/.test(sp), 'the slap uses a gradient or a shadow'); ok(/p\.kind === "tendril"/.test(src), 'the projectile is not drawn as the mote'); ok(!/p\.source/.test(fn), 'the mote is joined to the shooter');
+    });
+
+    group('THE VOIDSTAR WAVES ITS TENTACLES FOR ITS EVERYDAY SHOT (build 2026-11-13c; the owner: "Yes, he should. He should move his tentacles. Wave them."; design No. 946)');
+    check('over the shot\'s wind-up the cells run 24 to 26, then once it has gone the four waving cells loop (27 to 30, 6 frames each) for 36 frames, then 31 for 8, then its own frames; MAELSTROM\'s own cells keep their priority; only the Voidstar; its sheet is 32 columns of 8 facings, every cell a sensible size', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ __clear(); const f = __fol('flux', 'sniper', 'voidstar'), d = evolvedDef(f), t = __foe(f.x + 3, f.y), out = []; f._shotWind0 = 12;
+            for (const w of [12, 8, 4, 1]) { f._shotWind = w; out.push(waveCol(f, frame)); }
+            f._shotWind = 0; f._shotTarget = t; _mageShotFire(f); const sf = f._shotFiredAt; for (const a of [0, 5, 6, 17, 18, 23, 24, 35, 36, 43, 44]) out.push(waveCol(f, sf + a));
+            f._shotFiredAt = undefined; followerAltSet(f, 'maelstrom'); f._altWindMax = 150; f._altWind = 75; const mael = _evoFrame(f, d, frame).col;
+            return { out, mael, who: Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].wave).join() }; })())`));
+        same(r.out.join(), '24,25,26,26,27,27,28,29,30,30,27,28,31,31,-1', 'cells'); ok(r.mael >= 16 && r.mael <= 21, 'MAELSTROM\'s cells lost their priority: ' + r.mael); same(r.who, 'voidstar', 'who waves');
+        const pk = JSON.parse(run(`JSON.stringify(EVO_PACK['img/evo/voidstar.png'] || null)`)); ok(pk, 'js/evopack.js has no entry for it'); same(pk.cols, 32, 'its columns'); same(pk.rows, 8, 'its rows'); const bad = [];
+        for (let rr = 0; rr < pk.rows; rr++) for (let c = 0; c < pk.cols; c++) { const h = pk.cells[(rr * pk.cols + c) * 6 + 3]; if (h < 60) bad.push(rr + ':' + c + '=' + h); } same(bad.join(), '', 'cells too short');
     });
 
     group('ITS SHEET IS BAKED, CROPPED AND TOLD TO THE GAME');
