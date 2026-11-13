@@ -199,6 +199,7 @@ async function boot(search, store) {
 
     group('THE BRAWLER\'S OPPORTUNITY');
     // the same hit with and without the card: the ratio is 1 + share × openings (a Quillstone: fire, its main attack PIERCING, its signature move PROJECTILE)
+    run(`primaryStatusOnHit = () => null;`);   // (a primary hit's 25% status, js/combat.js, would stun the target by chance and make an opening: these checks are about the cards)
     run(`globalThis.__ratio = (form, card, foe, prep, hit) => { __fresh(); const b = __wear(form, null, 0, 0), t = __foe(foe, 0.6, 0); if (prep) prep(t); const h = hit || DMG_HIT_MAIN;
         const without = __lost(t, () => applyDamage(t, 10, b, null, false, false, h)); b.cards = [card, null]; equipFound.push(card); equipRefresh(b); t._dmgWordAt = undefined; const withIt = __lost(t, () => applyDamage(t, 10, b, null, false, false, h)); return withIt / without; };`);
     check('a hit that exploits no weakness is unchanged (a Quillstone\'s piercing bite on an ant with no element: the ant is not weak to piercing and resists Elemental)', () => {

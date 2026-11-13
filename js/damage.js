@@ -50,26 +50,26 @@ const DMG_SUBCLASS = {
 const DMG_FORM = {
     quillstone: { main: "piercing",   alt: "projectile" },
     maw:        { main: "slashing",   alt: "piercing" },
-    staticorb:  { main: "crushing",   alt: "crushing" },
+    staticorb:  { main: "crushing",   alt: "piercing" },   // (alt Piercing since build 2026-11-13j: every element has Slashing, Piercing, Crushing and Elemental among its forms, the owner, 2026-11-13)
     electroskink: { main: "slashing", alt: "crushing" },   // (build 2026-11-08a; provisional: the owner has not given its attacks' types: slashing is what it hit with as an egg, BASH is Crushing)
-    jellyram:   { main: "crushing",   alt: "crushing" },
-    seeper:     { main: "slashing",   alt: "earthquake" },
+    jellyram:   { main: "crushing",   alt: "crushing" },   // (main Slashing in build 2026-11-13j, back to Crushing, a ram, 2026-11-13k: the owner, "you can change Jelly Ram's main")
+    seeper:     { main: "slashing",   alt: "earthquake" },   // (ERUPTION Crushing in build 2026-11-13j, back to Earthquake 2026-11-13k)
     mimic:      { main: "slashing",   alt: "earthquake" },
     thunderhead:{ main: "elemental",  alt: "elemental" },
     voidstar:   { main: "elemental",  alt: "elemental" },
     embercowl:  { main: "elemental",  alt: "elemental" },
     rimestar:   { main: "projectile", alt: "projectile" },
-    hornshell:  { main: "projectile", alt: "projectile" },
+    hornshell:  { main: "projectile", alt: "elemental" },   // (alt Elemental since 2026-11-13j: the Core's Elemental; ECHO PULSE's own hit, DMG_HIT_ECHO, has been Elemental since 2026-11-09)
     rotshard:   { main: "projectile", alt: "elemental" },
     coralcrab:  { main: "crushing",   alt: "piercing" },    // (BLOOM's Technician, STONEPETAL, build 2026-11-08m: its head driving down, "crushing clause is fine"; its STAKE RING Piercing, build 2026-11-08n)
-    sundew:     { main: "piercing",   alt: "crushing" },    // (BLOOM's Brawler, build 2026-11-08k; its NECTAR STING Piercing since build 2026-11-08n, the owner: "The stem's blade stabs"; SWEET SCENT deals no damage)
+    sundew:     { main: "piercing",   alt: "elemental" },   // (SWEET SCENT: Elemental since 2026-11-13k, the owner; it poisons)    // (BLOOM's Brawler, build 2026-11-08k; its NECTAR STING Piercing since build 2026-11-08n, the owner: "The stem's blade stabs"; SWEET SCENT deals no damage)
     shrub:      { main: "elemental",  alt: "elemental" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
-    hammerslug: { main: "crushing",   alt: "crushing" },
-    gooproxy:   { main: "crushing",   alt: "crushing" },
-    thermite:   { main: "piercing",   alt: "piercing" },
+    hammerslug: { main: "piercing",   alt: "crushing" },   // (main Piercing since 2026-11-13j: the Core's Piercing)
+    gooproxy:   { main: "crushing",   alt: "crushing" },   // (main Piercing in build 2026-11-13j, back to Crushing, a goo slam, 2026-11-13k)
+    thermite:   { main: "piercing",   alt: "crushing" },   // (BURROW STRIKE Piercing as before; alt Crushing: MAGMA VENT's burst since 2026-11-13k, the owner's THERMITE DRILL no longer hits enemies)
     blightspider:{ main: "piercing",  alt: "elemental" },
     hovershell: { main: "crushing",   alt: "earthquake" },
-    igloo:      { main: "slashing",   alt: "elemental" },
+    igloo:      { main: "crushing",   alt: "elemental" },   // (main Crushing since 2026-11-13j: the Ice's Crushing)
 };
 // The ten retired forms copy the form that replaced each (docs/COMBAT.md §7.8): attack types, lean and row. PETAL BLAZE, BUNKER BLOOM's own move, is Elemental.
 const DMG_RETIRED = { bloom: "quillstone", reaver: "thunderhead", serpent: "voidstar", warden: "jellyram", manta: "staticorb", prism: "staticorb", voltring: "staticorb", halo: "embercowl", caldera: "seeper", petal: "hornshell" };
