@@ -3237,3 +3237,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: The Voidstar's 3-D tentacle is approved for everyone (2026-11-13, build `2026-11-13d`, branch `claude/approve-slap`)
 - The owner, of the sharp violet gel tentacle piece (`slap`) that had shown only on the `?fx=3d` preview since build `2026-11-13b`: **"Approve it."** It is added to `FX3D.approved` and shows for everyone. Status: Implemented and tested; not playtested on an iPad. `CHANGELOG.md`.
 
+## DECISION: The ants a little edgier: sickle jaws, a heart-shaped head, slanted eyes (2026-11-13, build `2026-11-13k`, branch `claude/start-game-project-HSh7Z`)
+- The owner: **"what can be done to make the ants look better? I kind of want to make them look a little bit more edgy, but not too much. What do you think we should do? Like, I'm thinking like their forceps should have like..."** The agent proposed one piece, drawn with the game's own kit (`design/ants/edgy-draft.js`): **"Very right direction good jawb."**
+- Built as drafted: sickle jaws (about 40% longer, a tooth each, sharpened pale tips; almost meeting at rest, wide and snapping on a bite), a heart-shaped head (stronger on a tank or a boss) with a brow ridge over slanted eyes, a short point on the gaster. The colours, sizes, body, legs and walk are unchanged.
+- Tried and dropped (agent's): spines on the thorax and the waist; at the game's size they read as stray lines.
+- Agent's choices (provisional): each class's jaw length (`ANT_JAW`), the tips' colour (`ANT_JAW_TIP`), the head's outline.
+- Status: Implemented (build `2026-11-13k`); verified by `tests/bugs3d.js` and pictures from the real page; not playtested. `CHANGELOG.md`, the Bible (the ant).

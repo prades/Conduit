@@ -1,4 +1,6 @@
-// THE ANT, A LITTLE EDGIER: a draft for the owner (2026-11-13; NOT in the game). The owner: "what can be done to make the ants look better?
+// BUILT in build 2026-11-13k: js/bugs3d.js draws the ant this way now (the owner, of this draft: "Very right direction"); this file is kept as the
+// draft that was approved, and loads over the game only on a draft page.
+// THE ANT, A LITTLE EDGIER: a draft for the owner (2026-11-13; it was not in the game). The owner: "what can be done to make the ants look better?
 // I kind of want to make them look a little bit more edgy, but not too much", the forceps (mandibles) in mind.
 // Loaded over the game's own drawing (js/bugs3d.js) by a draft page, it replaces BUG_MODELS.ant; everything else is the game's kit.
 // The agent's proposal (one piece, for a yes or a correction):

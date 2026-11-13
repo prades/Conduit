@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13k` · branch `claude/start-game-project-HSh7Z` · The ants a little edgier: sickle jaws, slanted eyes
+- **The ask** (the owner: "what can be done to make the ants look better? I kind of want to make them look a little bit more edgy, but not too much", the forceps in mind; of the draft, `design/ants/edgy-draft.js`: **"Very right direction"**).
+- **The jaws** are curved sickle blades instead of two thin lines, about 40% longer (a tank's and a boss's longest), with a tooth on each inner edge and sharpened pale tips; they almost meet at rest and open wide and snap on a bite.
+- **The head** is heart-shaped (a notch at the back between two lobes; more so on a tank or a boss), with a brow ridge over **slanted eyes** in the ant's colour (a clone's in its team's). The gaster has a short point.
+- **Unchanged:** the colours, the sizes, the body, the legs and the walk, what an ant does. The enemy card's picture is drawn from the same drawing, so it shows the new ant; THE ANT QUEEN, drawn three times the size, has the biggest jaws. On the floor in a fight the change is small (the eyes and the jaw tips).
+- Code: `js/bugs3d.js` (`_drawAnt3D` and its helpers). Tests: `tests/bugs3d.js` (a new check: the two tips drawn, almost meeting at rest, wide apart on a bite; the eyes are still found where the head is, and a clone's are still its team's colour). Docs: the Bible (the ant), `DECISION-LOG.md`.
+- Not playtested; looked at in the real page (headless): the enemy card's picture, each class in four facings and biting, the arena floor in a fight.
+
 ### Build `2026-11-13j` · branch `claude/friendly-thompson-w581x0` · a squad card: the first tap picks, the second opens
 - **The ask** (the owner: a follower picked on the strip "highlights ... and it says equipment/strategy and then that way it doesn't automatically pull up that rollout card"; then "the card tile should grey out and become the button with the text").
 - **What it does:** on a tablet or a desktop, **the first tap on a squad card picks the follower** (orders go to it) and **the card turns grey and becomes a button reading EQUIPMENT / STRATEGY ▲**; **a second tap opens the member's card** (the roll-out with its equipment, energy and attack). A press anywhere else turns the card back, the follower still picked. The clone's card too. A phone is unchanged.

@@ -204,33 +204,94 @@ function _bugAuras(actor, g, F, ring) {
 }
 
 // ── THE ANT ──────────────────────────────────────────────
+// A LITTLE EDGIER (the owner, 2026-11-13: "a little bit more edgy, but not too much", the forceps in mind; of the draft, design/ants/edgy-draft.js:
+// "Very right direction"): sickle jaws with a tooth and sharpened tips that snap open on a bite, a heart-shaped head (a soldier's more so), a brow
+// ridge over slanted eyes, a point on the gaster. The body, the legs, the walk and the colours are as they were.
 const ANT_LEGS = [
     { f: 0.2,  hs: 0.13, hz: 6, kf: 0.2,   ks: 0.62, kz: 12, tf: 0.62,  ts: 0.92 },
     { f: 0.05, hs: 0.15, hz: 6, kf: 0,     ks: 0.7,  kz: 12, tf: 0.02,  ts: 1.02 },
     { f: -0.1, hs: 0.13, hz: 6, kf: -0.25, ks: 0.66, kz: 12, tf: -0.72, ts: 0.95 },
 ];
+const ANT_JAW     = { worker: 0.9, scout: 1.05, striker: 1.15, tank: 1.3, boss: 1.35 };   // each class's jaw length (another's, a scout's)
+const ANT_JAW_TIP = "#a59cb2";                                                           // the jaws' sharpened tips
+const ANT_RING_N  = 24, ANT_RING_T = Array.from({ length: ANT_RING_N }, (_, i) => i / ANT_RING_N * Math.PI * 2);
+// The head's outline: k scales its radius at each angle (0 straight ahead): narrower in front, two lobes behind with a notch between.
+function _antHeadK(lobe, notch) {
+    return ANT_RING_T.map(t => {
+        const c = Math.cos(t), a = Math.abs(Math.atan2(Math.sin(t), c));
+        const r = (c > 0 ? 1 - 0.14 * c : 1) + lobe * Math.exp(-(a - 2.3) * (a - 2.3) / 0.12);
+        return r - notch * Math.exp(-(a - Math.PI) * (a - Math.PI) / 0.05);
+    });
+}
+const ANT_HEAD_K = _antHeadK(0.1, 0.16), ANT_HEAD_K_SOLDIER = _antHeadK(0.18, 0.26);
+// The head: a dome of stacked outlines, as _bugBlob's, round that outline.
+function _antHead(g, F, f0, L, W, z0, rz, K) {
+    for (let d = 0; d < BUG_DOME.length; d++) {
+        const k = BUG_DOME[d][0], sc = BUG_DOME[d][1], pts = [];
+        for (let i = 0; i < ANT_RING_N; i++) pts.push(F.P(f0 + L * sc * Math.cos(ANT_RING_T[i]) * K[i], W * sc * Math.sin(ANT_RING_T[i]) * K[i], z0 + rz * k));
+        g.fillStyle = _bugShade(F.tint, k); _bugPoly(g, pts); g.fill();
+    }
+}
+// One jaw: a sickle from the head's front corner, forward, then hooked in at the tip (a curve in the ground frame at the jaws' height), widest
+// at its root, one tooth on its inner edge, its last 40% the sharpened tip; `open` spreads it (at rest the two almost meet).
+function _antJaw(g, F, side, hf, hL, hsz, ml, open) {
+    const P = F.P, z = 7.4;
+    const b0 = hf + hL * 0.7,        b1 = side * 0.12 * hsz,          c0 = hf + hL + 0.12 * ml, c1 = side * (0.23 * hsz + open);
+    const d0 = hf + hL + 0.38 * ml,  d1 = side * (0.21 * hsz + open), t0 = hf + hL + 0.47 * ml, t1 = side * (0.035 + open * 1.1);
+    const at = u => { const v = 1 - u, A = v * v * v, B = 3 * v * v * u, C = 3 * v * u * u, D = u * u * u; return [A * b0 + B * c0 + C * d0 + D * t0, A * b1 + B * c1 + C * d1 + D * t1]; };
+    const outer = [], inner = [], tipO = [], tipI = [];
+    for (let i = 0; i <= 10; i++) {
+        const u = i / 10, p = at(u), q = at(Math.min(1, u + 0.01)), r = at(Math.max(0, u - 0.01));
+        let nx = r[1] - q[1], ny = q[0] - r[0]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+        if (ny * side < 0) { nx = -nx; ny = -ny; }                                            // outward: away from the middle
+        const w = 0.08 * hsz * Math.pow(1 - u, 0.8) * (u < 0.15 ? 0.7 + 2 * u : 1);           // half its width there
+        const o = P(p[0] + nx * w, p[1] + ny * w, z), n = P(p[0] - nx * w, p[1] - ny * w, z);
+        outer.push(o); inner.push(n);
+        if (u >= 0.6) { tipO.push(o); tipI.push(n); }
+        if (i === 5) inner.push(P(p[0] - nx * (w + 0.08 * ml) + 0.03 * ml, p[1] - ny * (w + 0.08 * ml), z));   // the tooth, pointing in
+    }
+    const blade = outer.concat(inner.reverse());
+    g.fillStyle = _bugShade(F.tint, 0.35); _bugPoly(g, blade); g.fill();
+    g.fillStyle = ANT_JAW_TIP; _bugPoly(g, tipO.concat(tipI.reverse())); g.fill();
+    g.strokeStyle = "rgba(205,195,230,0.3)"; g.lineWidth = Math.max(0.5, 0.6 * F.s);
+    g.beginPath(); _bugLine(g, outer.slice(2, 8)); g.stroke();
+}
+// Its eyes: slanted slits in its colour, the front ends lower and further in (each two arcs and the band between them, filled: a clone's are its team's).
+function _antEyes(g, F, hf, hL, hW, hz, hr, hsz) {
+    const P = F.P, r = Math.max(0.5, 0.75 * F.s * hsz);
+    g.fillStyle = F.accent;
+    for (let side = -1; side <= 1; side += 2) {
+        const a = P(hf + hL * 0.05, side * hW * 0.86, hz + hr * 0.5), b = P(hf + hL * 0.45, side * hW * 0.6, hz + hr * 0.36);
+        const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        g.beginPath(); g.arc(a[0], a[1], r, ang + Math.PI / 2, ang - Math.PI / 2); g.arc(b[0], b[1], r, ang - Math.PI / 2, ang + Math.PI / 2); g.closePath(); g.fill();
+    }
+}
+// A short point (the gaster's tip): two base points to a tip, filled, its upper edge just caught by the light.
+function _bugSpike(g, F, b1, b2, tip, col) {
+    const a = F.P(b1[0], b1[1], b1[2]), b = F.P(b2[0], b2[1], b2[2]), c = F.P(tip[0], tip[1], tip[2]);
+    g.fillStyle = col; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.lineTo(b[0], b[1]); g.closePath(); g.fill();
+    g.strokeStyle = "rgba(190,180,215,0.18)"; g.lineWidth = Math.max(0.5, 0.5 * F.s); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(c[0], c[1]); g.stroke();
+}
 function _drawAnt3D(actor, g, F) {
     const P = F.P, s = F.s;
     const soldier = actor.className === "tank" || actor.className === "boss";
-    const hsz = soldier ? 1.3 : 1;
+    const hsz = soldier ? 1.3 : 1, ml = ANT_JAW[actor.className] || ANT_JAW.scout;
     const hf = 0.36 + 0.22 * hsz, hL = 0.22 * hsz, hW = 0.25 * hsz, hz = 9, hr = 3.5 * hsz;
     _bugShadow(g, F, -0.35, 1.3, 0.6);
     _bugLegs(g, F, -F.nearSide, ANT_LEGS, { w: 1.6, speed: 0.9, stride: 0.36, lift: 4 });
-    const chomp = (F.atk ? Math.sin(F.wc * 0.4 + (typeof frame !== "undefined" ? frame : 0) * 0.5) : Math.sin(F.wc * 0.1) * 0.3) * 0.08;
-    const jaws = () => {
-        g.strokeStyle = "#202024"; g.lineCap = "round"; g.lineWidth = Math.max(1, 1.6 * s * hsz);
-        g.beginPath();
-        for (const side of [-1, 1]) {
-            _bugLine(g, [P(hf + hL * 0.8, side * 0.1 * hsz, 8), P(hf + hL + 0.14 * hsz, side * (0.2 * hsz - chomp), 7),
-                         P(hf + hL + 0.3 * hsz, side * (0.05 + chomp * 0.5), 7)]);
-        }
-        g.stroke();
-    };
+    // how far the jaws are spread: on a bite they open wide and snap; at rest they almost meet, hardly moving
+    const open = F.atk ? (0.5 + 0.5 * Math.sin((typeof frame !== "undefined" ? frame : 0) * 0.5 + F.wc * 0.4)) * 0.16 : 0.006 * Math.sin(F.t * 0.05);
+    const jaws = () => { _antJaw(g, F, -1, hf, hL, hsz, ml, open); _antJaw(g, F, 1, hf, hL, hsz, ml, open); };
     const head = () => {
         if (F.headBehind) jaws();
-        _bugBlob(g, F, hf, hL, hW, hz, hr, { fr: 0.9 });
+        _antHead(g, F, hf, hL, hW, hz, hr, soldier ? ANT_HEAD_K_SOLDIER : ANT_HEAD_K);
         if (!F.headBehind) jaws();
-        _bugEyes(g, F, [P(hf + hL * 0.25, hW * 0.85, hz + hr * 0.4), P(hf + hL * 0.25, -hW * 0.85, hz + hr * 0.4)], 1.1 * hsz);
+        // The brow ridge, then the eyes under it.
+        g.strokeStyle = "rgba(0,0,0,0.6)"; g.lineCap = "round"; g.lineWidth = Math.max(0.8, 1.1 * s * hsz);
+        g.beginPath();
+        for (const side of [-1, 1]) _bugLine(g, [P(hf - hL * 0.05, side * hW * 0.9, hz + hr * 0.72), P(hf + hL * 0.55, side * hW * 0.3, hz + hr * 0.62)]);
+        g.stroke();
+        _antEyes(g, F, hf, hL, hW, hz, hr, hsz);
         // Elbowed antennae, feeling the air.
         g.strokeStyle = "#1c1c20"; g.lineWidth = Math.max(0.8, 1 * s);
         g.beginPath();
@@ -242,6 +303,7 @@ function _drawAnt3D(actor, g, F) {
         g.stroke();
     };
     _bugParts(F, [
+        [-1.6,  () => _bugSpike(g, F, [-1.38, 0.1, 8.4], [-1.38, -0.1, 8.4], [-1.64, 0, 7.6], _bugShade(F.tint, 0.4))],   // the gaster's point
         [-0.92, () => { _bugBlob(g, F, -0.92, 0.55, 0.42, 8, 5.5, { rim: true, gloss: true }); _bugBands(g, F, -0.92, 0.55, 0.42, 8, 5.5, [-0.72, -1.02]); }],
         [-0.36, () => _bugBlob(g, F, -0.36, 0.1, 0.09, 7, 3, { lite: true })],
         [0.02,  () => _bugBlob(g, F, 0.02, 0.34, 0.2, 8, 3.5, { lite: true })],

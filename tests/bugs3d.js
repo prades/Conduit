@@ -79,6 +79,22 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
             drawBug3D(p, 400, 300, rec); return Math.max(...xs) - 400; })()`);
         ok(reach('attack') > reach('idle') + 4, 'idle ' + reach('idle') + ', striking ' + reach('attack'));
     });
+    check('THE ANT, A LITTLE EDGIER (the owner, build 2026-11-13k): its two jaws\' sharpened tips are drawn, almost meeting at rest; on a bite they open wide', () => {
+        const tips = (st) => run(`(function(){ const polys = []; let fill = '', cur = []; const rec = new Proxy({}, { get(t, k) { if (k in t) return t[k];
+                if (k === 'beginPath') return () => { cur = []; };
+                if (k === 'moveTo' || k === 'lineTo') return (x, y) => { cur.push([x, y]); };
+                if (k === 'fill') return () => { if (fill === ANT_JAW_TIP && cur.length) polys.push(cur.slice()); }; return () => {}; },
+                set(t, k, v) { if (k === 'fillStyle') fill = v; t[k] = v; return true; } });
+            const S = SPECIES.ant, p = new Predator('striker', Object.assign({}, S.striker, { color: S.color }), 0, 0);
+            p.speciesName = 'ant'; p.className = 'striker'; applySpeciesBody(p, 'ant'); p.dirX = 1; p.dirY = 0; p.state = '${st}'; p.attackAnim = Math.PI / 2; p.walkCycle = 0;
+            frame = 3; drawBug3D(p, 400, 300, rec);
+            const c = polys.map(q => [q.reduce((a, v) => a + v[0], 0) / q.length, q.reduce((a, v) => a + v[1], 0) / q.length]);
+            return { n: polys.length, apart: c.length === 2 ? Math.hypot(c[0][0] - c[1][0], c[0][1] - c[1][1]) : -1 }; })()`);
+        const rest = tips('hunt'), bite = tips('attack');
+        same(rest.n, 2, 'tips drawn at rest'); same(bite.n, 2, 'tips drawn on a bite');
+        ok(rest.apart < 4, 'at rest the tips should almost meet: ' + rest.apart.toFixed(1) + ' px apart');
+        ok(bite.apart > rest.apart + 4, 'on a bite they should open wide: ' + rest.apart.toFixed(1) + ' px at rest, ' + bite.apart.toFixed(1) + ' on a bite');
+    });
 
     console.log('\nWHO WEARS THEM');
     check('THE ASK: every species is drawn by it, and nothing else is', () => {
