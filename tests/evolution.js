@@ -342,6 +342,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.second.tgt > F.tgt, 'no second beat: ' + JSON.stringify(r.second)); same(r.second.tb, 45, 'the beat starts the blind afresh'); ok(r.still, 'it moved'); ok(r.ended, 'it did not end'); ok(r.cd > 150, 'it did not wait: ' + r.cd); ok(r.at, 'when it went off'); same(r.move, 'MAELSTROM', 'its move'); same(r.ids, 'maelstrom', 'its moves'); same(r.k, '6.5,1.8,180,30,0.3,45', 'its reach, radius, life, beat, bite and blind');
     });
 
+    check('BLIND is a lower chance of hitting (build 2026-11-13h; the owner: "Blinded doesn\'t mean that they don\'t hit. It means that they have a lower chance of hitting"; chosen: change blind everywhere, 50%): a blinded creature keeps its target and still attacks, each hit it deals misses about half the time, a hit that is reflected never misses, an unblinded creature never misses', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };
+            const src = mkP(10, 10), tgt = mkP(11, 10); tgt.team = 'green'; tgt.isClone = true;
+            const hits = (blind, reflected) => { src.blinded = blind; let n = 0; for (let i = 0; i < 1000; i++) { const h0 = tgt.health; applyDamage(tgt, 5, src, null, !!reflected, true); if (tgt.health < h0) n++; tgt.health = tgt.maxHealth; } return n; };
+            const out = { clear: hits(0), blind: hits(100), refl: hits(100, true), k: BLIND_MISS };
+            src.blinded = 60; src.currentTarget = tgt; src.state = 'attack'; const before = src.currentTarget; Predator.prototype.update.call(src); out.keeps = src.currentTarget === before; out.left = src.blinded;
+            [src, tgt].forEach(p => p.dead = true); return out; })()`);
+        same(r.k, 0.5, 'BLIND_MISS'); same(r.clear, 1000, 'an unblinded creature missed'); same(r.refl, 1000, 'a reflected hit missed'); ok(r.blind > 420 && r.blind < 580, 'a blinded creature hit ' + r.blind + ' of 1000'); same(r.keeps, true, 'blind took its target'); same(r.left, 59, 'the blind did not run down');
+    });
+
     check('a Voidstar saved locked on SINGULARITY SHOT comes back locked on MAELSTROM, and the legacy Serpent keeps SINGULARITY SHOT', () => {
         const r = run(`(function(){ const v = { evolved: 'voidstar', isFollower: true }, sp = { evolved: 'serpent', isFollower: true };
             return { carried: moveAltCarried(v, 'singularity_shot'), serpent: moveAltCarried(sp, 'singularity_shot'), bash: moveAltCarried(v, 'maelstrom'), serpentIds: evoMoveIds(EVOLUTIONS.serpent).join() }; })()`);

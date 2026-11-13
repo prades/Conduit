@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13i` · branch `claude/blind-miss` · blind is a lower chance of hitting
+- **The ask** (the owner, 2026-11-13: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting"; asked, chosen: **change blind everywhere**, **50%**).
+- **What it does:** a blinded creature **keeps its target and still attacks**; each hit it deals **misses half the time** (`BLIND_MISS`, js/helpers.js `applyDamage`: a bite, a shot, an ability's hit, each on its own roll; a reflected hit cannot miss). A MISS floats over the target. Before, a blinded creature lost its target, could not attack or shoot, and staggered about at half pace (js/predator.js).
+- **Who is blinded today:** MAELSTROM's swirl (a boss is still not blinded). Its INFO and the Bible say the new rule.
+- `js/helpers.js`, `js/predator.js`, `js/unitinfo.js`, `js/evolution.js` (comment), `tests/evolution.js` (a check: 1000 hits each unblinded, blinded and reflected; the target kept), the Bible.
+- Not yet built: the status effects on primary attacks and the damage-type coverage (proposed to the owner, awaiting approval). Lettered 13i; the branch `claude/personality-range` is stamped 13h.
+
 ### Build `2026-11-13g` · branch `claude/start-game-project-HSh7Z` · The Lounge opens onto the hallway on its north and east
 - **The ask** (the owner, 2026-11-13: "there shouldn't be any obstructions on the north side of the lobby or the lounge room or the right side of it either, the east side"; asked how, **"Open them up"**).
 - **The Lounge's north and east glass is gone:** both sides open onto the hallway along their whole length, with no door and no frame (`openings` marked `open`, a new flag: no door piece is placed and nothing is drawn across). The south divider and the west wall with the passage door stay.

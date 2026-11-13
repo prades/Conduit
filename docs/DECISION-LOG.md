@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Blind is a lower chance of hitting
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/blind-miss`, `2026-11-13i`
+- **Status:** Approved
+- **Context:** the owner, while specifying the statuses the primary attacks add: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting."
+- **Decision:** blind, everywhere it is used (today MAELSTROM), makes each hit the creature deals miss 50% of the time; it keeps its target and keeps attacking. Replaces the old blind (no target, no attacks, staggering at half pace). A boss is still not blinded by MAELSTROM.
+- **Alternatives:** keep the old blind and add a separate status; a 30% or 75% miss chance.
+- **Affects:** js/helpers.js, js/predator.js, js/unitinfo.js, the Bible, tests/evolution.js.
+
 ## DECISION: The CARDS screen's two menus, the hand lit gold, the player's slots on the roster
 
 - **Date:** 2026-11-01
