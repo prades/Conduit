@@ -291,7 +291,8 @@ function measure(w, h) {
             const st = { hand: 'IN YOUR HAND', found: 'FOUND THIS RUN', locked: 'LOCKED' };
             for (const c of T.cards) {
                 const k = Object.keys(st).find(s => (' ' + c.cls + ' ').indexOf(' ' + s + ' ') >= 0); same(c.state, k ? st[k] : '', c.name + ' (' + c.cls + ')');
-                ok(c.chipAt && c.chipAt[0] >= 80 && c.chipAt[0] <= 106 && c.chipAt[1] > 5 && c.chipAt[1] < 50, c.name + '\'s chip is at ' + JSON.stringify(c.chipAt) + ' (% of the card)');
+                const enTab = (' ' + c.cls + ' ').indexOf(' en ') >= 0;   // (an energy card's chip is its ENERGY tab, wider, its middle further in: build 2026-11-13n)
+                ok(c.chipAt && c.chipAt[0] >= (enTab ? 65 : 80) && c.chipAt[0] <= 106 && c.chipAt[1] > 5 && c.chipAt[1] < 50, c.name + '\'s chip is at ' + JSON.stringify(c.chipAt) + ' (% of the card)');
                 for (const b of c.btns) ok(b, c.name + ': a button a tap does not reach');
             }
             ok(T.cards.some(c => c.btns.length), 'no buttons were checked'); ok(T.overflow.sw <= T.overflow.cw + 1, 'the sheet scrolls sideways: ' + JSON.stringify(T.overflow)); ok(T.overflowShop.sw <= T.overflowShop.cw + 1, 'the SHOP scrolls sideways: ' + JSON.stringify(T.overflowShop));

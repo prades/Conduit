@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
-### Build `2026-11-13n` (stamped 13h on its branch) · branch `claude/personality-range` · a follower's stats stay within ±25% of the base
+### Build `2026-11-13p` (stamped 13h on its branch) · branch `claude/personality-range` · a follower's stats stay within ±25% of the base
 - **The ask** (the owner, 2026-11-13: "make it to where the user's stats don't vary or stray too far from the original base stats"; asked how far, **"Within ±25%"**).
 - **What it does:** every personality's factor on the base stats (`PERSONALITIES`, js/species.js) is held to **0.75 to 1.25** (it was 0.5 to 2.0). Each personality leans the way it did (aggressive and wild still hit hardest, cautious and stoic still tough, cunning still quick and accurate); only the reach is shorter. For example an aggressive follower's ATK is 12.5 (was 20) and its DEF 7.5 (was 5); a stoic's HP is 25 (was 30). The damage retune normalises by each class's mean, so a class's average damage is where it was; health and defence differ less between classes.
 - **`assignRole`'s thresholds** follow, so each personality still gives exactly its role: a brawler's ATK ≥ 12 (was 14), a technician's DEF ≥ 12 (was 14).
@@ -12,6 +12,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/species.js`, `tests/followertypes.js` (the thresholds), `tests/followerprog.js` (no offspring meets the cap now), `docs/FOLLOWER-PROGRESSION.md`, the Bible.
 - `tests/battlelook.js`: the card-before-the-hit check expected the health as the rounded sum of the health after and the rounded number, which only held for whole hits; with the new stats it expects the health it began with (400).
 - Provisional: the ±25% is the owner's choice of three offered; the exact factors are the agent's clamp of the old ones. Not playtested.
+
+### Build `2026-11-13o` · branch `claude/friendly-thompson-w581x0` · an energy card: its name, its tab and EQUIP NOW
+- **The ask** (the owner: "the energy should just have an equip now and no need for the text below the icon. The toxic energy is enough. And equip now goes below the card").
+- **What it does:** an energy card shows **its name only** under its gem (TOXIC ENERGY), with its ENERGY tab; its kind line and its text are not on it. In a pack's reveal **only EQUIP NOW stands under it** (ENERGY CARD · YOU HOLD n is gone; the count is on EQUIP NOW's pop-out).
+- `js/cardsui.js` (the reveal), `game.html`, `tests/equipnow.js`, `docs/ENERGY-CARDS.md`.
+- **Verified:** the card suites and the full suite; seen in the real page. **Not playtested.**
+
+### Build `2026-11-13n` · branch `claude/friendly-thompson-w581x0` · energy cards wear an ENERGY tab
+- **The ask** (the owner: "Make the energy cards have a tab inside the card that says "energy" slanted border... goes off the card slightly").
+- **What it does:** an energy card (in a pack's reveal and the card picker) has **a slanted tab reading ENERGY**, bordered in its element's colour, inside the card where an equip card's rarity chip stands and **a little off its right edge**. The small ENERGY at its top left is gone (the tab says it).
+- `js/cardsui.js` (`_cdChip`), `game.html`, `tests/cardart.js` (the tab is wider: its middle may sit further in), `docs/ENERGY-CARDS.md`.
+- **Verified:** the card suites and the full suite; seen in the real page. **Not playtested.**
 
 ### Build `2026-11-13m` (stamped 13k on its branch) · branch `claude/type-fixes` · the odd attacks: types put back, the drill off enemies, SWEET SCENT poisons
 - **The ask** (the owner, 2026-11-13, reading the agent's list of attacks that do not make sense: "you can change Jelly Ram's main ... Thermite Burrower's main ... Thermite Drill. Actually make it to where Thermite Drill, you can't use that on enemies ... Goo Proxy's main ... Seeper's Eruption. You can change Sundew's to Elemental. And have it do some damage. No, have it poison.").
