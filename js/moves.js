@@ -61,6 +61,7 @@ const MOVES = {
     rift_impale:       { id: "rift_impale",       name: "RIFT IMPALE",       windup: 2.5, fn: f => riftImpale(f) },     // the Rift Mimic's (flux, Piercing)
     blade_roll:        { id: "blade_roll",        name: "BLADE ROLL",        windup: 2.5, fn: f => bladeRoll(f) },      // the Hammer Slug's (core, Slashing)
     briar_sweep:       { id: "briar_sweep",       name: "BRIAR SWEEP",       windup: 2.5, fn: f => briarSweep(f) },     // the Thornwhip's (bloom, Slashing)
+    toxic_stomp:       { id: "toxic_stomp",       name: "TOXIC STOMP",       windup: 2, close: true, fn: f => toxicStomp(f) },    // the Seeper's (toxic, Crushing; build 2026-11-13w)
     // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
     // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.
     capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 0.75, manual: true, fn: f => capacitorRelease(f) },
@@ -155,5 +156,5 @@ const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_R
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
     static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, zigzag_dash: () => ZIG_RANGE, wobble_slam: () => WOBBLE_RADIUS, icicle_volley: () => ICICLE_RANGE, echo_pulse: () => ECHO_RADIUS,
     shell_guard: () => GUARD_LURE, phase_swap: () => SWAP_RANGE, venom_bite: () => VENOM_RANGE, shock_zap: () => ZAP_RANGE, skate_charge: () => SKATE_RANGE, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH,
-    ember_slash: () => EMBER_RANGE, rift_impale: () => RIFT_RANGE, blade_roll: () => ROLL_RANGE, briar_sweep: () => BRIAR_RADIUS };
+    ember_slash: () => EMBER_RANGE, rift_impale: () => RIFT_RANGE, blade_roll: () => ROLL_RANGE, briar_sweep: () => BRIAR_RADIUS, toxic_stomp: () => STOMP_RADIUS };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

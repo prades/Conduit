@@ -275,7 +275,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 72], noGlow: true, color: "#66ff66" },
     // The TOXIC BRAWLER, design No. 578: a black faceted shell with a cone on its back, walking on four splayed pins, one oozing eye, small leaks high
     // on its flanks. The puddle it walks through lies on the floor (the ground sheet); the goo moves, so the sheet carries its own light.
-    seeper: { id: "seeper", name: "SEEPER",      element: "toxic",    role: "brawler", move: "ERUPTION",     sheet: "img/evo/seeper.png",
+    seeper: { id: "seeper", name: "SEEPER",      element: "toxic",    role: "brawler", move: "ERUPTION", moves: ["eruption", "toxic_stomp"], sheet: "img/evo/seeper.png",
               cell: 144, anchor: [72, 114.2], core: [72, 67.9], noGlow: true, color: "#66ff66", ground: "img/evo/seeper_g.png", stomp: true },   // (24 columns since build 2026-11-11z, design No. 936: columns 16-23 are its everyday hit's LEG STOMP; 8-15, ERUPTION's, are as they were)
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
     // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
@@ -1070,6 +1070,22 @@ function briarSweep(f) {
     f._sigAt = f0; f._sigCd = moveWindupFrames("briar_sweep"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "ring", x: f.x, y: f.y, radius: BRIAR_RADIUS, color: "#ff9ccc", life: 24 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#ffd3e8", radius: 1, life: 18 });
     _evoSay(f, "BRIAR SWEEP", "#ff9ccc");
+    return true;
+}
+// TOXIC STOMP (the Seeper's extra attack, build 2026-11-13w; the owner, 2026-11-13, of the grid's last empty cell: "Toxic crushing could be like a stomp attack by the seeper"): it stomps: every enemy within
+// STOMP_RADIUS that it can see takes STOMP_MULT x its attack, Crushing, toxic. A close move, its second (two toxic energy cards). Smaller and quicker than ERUPTION, and it eats no armour. The name, the
+// numbers and the look (a ring and an impact) are the agent's, PROVISIONAL.
+const DMG_HIT_STOMP = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });
+const STOMP_RADIUS = 1.5, STOMP_MULT = 1.5;
+function toxicStomp(f) {
+    const foes = _evoFoesSeen(f.x, f.y, STOMP_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) applyDamage(a, (f.power || 10) * STOMP_MULT, f, "toxic", false, false, DMG_HIT_STOMP);
+    f._sigAt = f0; f._sigCd = moveWindupFrames("toxic_stomp"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "ring", x: f.x, y: f.y, radius: STOMP_RADIUS, color: "#88ff44", life: 22 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#b6ff7a", radius: 1, life: 18 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    _evoSay(f, "TOXIC STOMP", "#88ff44");
     return true;
 }
 // SHOCK ZAP (the Hover Shell's): a zap from its shell at the nearest enemy it can see within ZAP_RANGE: ZAP_MULT × its attack, electric, and its wind-up broken (GLITCH, ZAP_GLITCH frames). Its KINETIC

@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-13v";
+const BUILD_VERSION = "2026-11-13w";
 // The address a picture is loaded from, by its .png path (build 2026-11-11c; tools/images.js): the one js/imgmap.js names (the picture's lossless WebP copy where that is smaller) with a
 // fingerprint of the picture, so a new build does not make a player download every picture again; a picture the map does not have yet: its path and the build.
 function imgSrc(p) { const m = typeof IMG_MAP !== "undefined" ? IMG_MAP[p] : undefined; return m || p + "?v=" + BUILD_VERSION; }

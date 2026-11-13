@@ -55,7 +55,7 @@ const DMG_FORM = {
     staticorb:  { main: "crushing",   alt: "piercing" },   // (alt Piercing since build 2026-11-13j: every element has Slashing, Piercing, Crushing and Elemental among its forms, the owner, 2026-11-13)
     electroskink: { main: "slashing", alt: "crushing" },   // (build 2026-11-08a; provisional: the owner has not given its attacks' types: slashing is what it hit with as an egg, BASH is Crushing)
     jellyram:   { main: "crushing",   alt: "crushing" },   // (main Slashing in build 2026-11-13j, back to Crushing, a ram, 2026-11-13k: the owner, "you can change Jelly Ram's main")
-    seeper:     { main: "slashing",   alt: "earthquake" },   // (ERUPTION Crushing in build 2026-11-13j, back to Earthquake 2026-11-13k)
+    seeper:     { main: "slashing",   alt: "earthquake", extra: "crushing" },   // (ERUPTION Crushing in build 2026-11-13j, back to Earthquake 2026-11-13k)
     mimic:      { main: "slashing",   alt: "earthquake", extra: "piercing" },
     thunderhead:{ main: "elemental",  alt: "elemental" },
     voidstar:   { main: "elemental",  alt: "elemental" },

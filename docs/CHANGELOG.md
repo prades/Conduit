@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13w` · branch `claude/balance-system` · TOXIC STOMP: the coverage grid is full (28 of 28)
+- **The ask** (the owner, 2026-11-13: "Toxic crushing could be like a stomp attack by the seeper").
+- **TOXIC STOMP**, the Seeper's extra attack (its second move, open with 2 toxic energy cards): it stomps, and every enemy within 1.5 tiles that it can see takes 1.5 × its attack, Crushing, toxic. A close move with a 2 s cooldown. Smaller and quicker than ERUPTION; it eats no armour.
+- **Provisional (the agent's):** its name, its numbers and its look (a ring and an impact).
+- **Every element now has Slashing, Piercing, Crushing and Elemental** among its forms' attacks; `tests/damage.js` fails if a cell empties.
+- `js/evolution.js`, `js/moves.js`, `js/unitinfo.js`, `js/damage.js`, `tests/evolution.js`, `tests/damage.js`, `tests/moves.js`, `docs/COMBAT.md`, `docs/OPEN-QUESTIONS.md`, the Bible, `balance.html`, `design/balance-trial.json`.
+- Not playtested.
+
 ### Build `2026-11-13v` · branch `claude/balance-system` · four extra attacks fill the coverage grid (27 of 28)
 - **The ask** (the owner, 2026-11-13: "The fire slashing should be the quill stone. The flux piercing should be the ripped mimic the core slashing should be the hammer slug, the toxic crushing. not sure, but the bloom slashing should be the Thornwood"; "Hybrid should be later for now"; then, of the agent's drafts: EMBER SLASH; "Teleport under them, they glitch out at pop up under them and implale"; "Rolls up into a ball and slices them"; BRIAR SWEEP).
 - **Four new attacks**, each its form's second move, open with **2 energy cards** of its element: **EMBER SLASH** (Quillstone: one enemy, 2 × attack, Slashing, burning 3 s), **RIFT IMPALE** (Rift Mimic: it pops up under an enemy within 5 tiles, 2 × attack, Piercing), **BLADE ROLL** (Hammer Slug: rolls 4 tiles in a line, 1.2 × attack to each enemy on it, Slashing), **BRIAR SWEEP** (Thornwhip: every enemy within 2 tiles, 1 × attack, Slashing, pushed 1 tile). They can be chosen wherever a second attack is (INFO, the squad card, the Command Center), alone or with BOTH.
