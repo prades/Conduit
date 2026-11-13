@@ -79,7 +79,7 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
             drawBug3D(p, 400, 300, rec); return Math.max(...xs) - 400; })()`);
         ok(reach('attack') > reach('idle') + 4, 'idle ' + reach('idle') + ', striking ' + reach('attack'));
     });
-    check('THE ANT, A LITTLE EDGIER (the owner, build 2026-11-13k): its two jaws\' sharpened tips are drawn, almost meeting at rest; on a bite they open wide', () => {
+    check('THE ANT, A LITTLE EDGIER (the owner, build 2026-11-13l): its two jaws\' sharpened tips are drawn, almost meeting at rest; on a bite they open wide', () => {
         const tips = (st) => run(`(function(){ const polys = []; let fill = '', cur = []; const rec = new Proxy({}, { get(t, k) { if (k in t) return t[k];
                 if (k === 'beginPath') return () => { cur = []; };
                 if (k === 'moveTo' || k === 'lineTo') return (x, y) => { cur.push([x, y]); };

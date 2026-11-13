@@ -139,7 +139,7 @@ const TECH_ABILITIES = {
     core:     { id: "photonic_shield", name: "PHOTONIC SHIELD", short: "SHIELD", icon: "◈", col: "#5ff7e0", aim: ["enemy"], use: (f, p) => techShieldAt(f, p.enemy),
                 ask: () => "TAP THE CREATURE (OR ITS CARD) TO SHIELD AGAINST" },
     fire:     { id: "thermite_drill", name: "THERMITE DRILL", short: "DRILL", icon: "✹", col: "#ff8a3a", aim: ["enemy"], use: (f, p) => p.rubble ? _techDrillRubble(f, p.rubble) : techDrillFoe(f, p.enemy),
-                ask: () => "TAP AN ENEMY IT CAN SEE (OR ITS CARD) TO DRILL" },
+                ask: () => "TAP AN ENEMY IT CAN SEE (OR ITS CARD), OR RUBBLE, TO DRILL" },
     ice:      { id: "frost_patch", name: "FROST PATCH", short: "FROST", icon: "❄", col: "#9be8ff", aim: ["spot"], use: (f, p) => techFrostAt(f, p.spot),
                 ask: () => "TAP FLOOR FOR A PATCH, OR WATER FOR A BRIDGE, WHERE IT CAN SEE" },
     toxic:    { id: "blight_spider", name: "TOXIC PODS", short: "POD", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
@@ -461,7 +461,7 @@ function _techRubbles() { return (typeof _fp !== "undefined" && _fp && _fp.F && 
 function _techRubble(id) { return _techRubbles().find(r => r.id === id) || null; }
 function _techRubbleHits() { if (!_fp.rubbleHits) _fp.rubbleHits = {}; return _fp.rubbleHits; }
 function techRubbleLeft(r) { return r ? Math.max(0, TECH_AB.drill.hits - (_techRubbleHits()[r.id] || 0)) : 0; }
-function techRubbleOpen(r) { return !!r && techRubbleLeft(r) <= 0; }   // drilled through: the hole
+function techRubbleOpen(r) { return !!r && (techRubbleLeft(r) <= 0 || (!!r.solid && typeof nestWayOpen === "function" && nestWayOpen(r.solid))); }   // drilled through: the hole (or, the Nest's cracked rock, broken by a blast: js/nestways.js)
 function techRubbleSnapshot() { if (typeof _fp === "undefined" || !_fp) return {}; const o = {}, H = _techRubbleHits(); for (const k in H) if (H[k] > 0 && _techRubble(k)) o[k] = Math.min(TECH_AB.drill.hits, H[k] | 0); return o; }
 // a saved game's rubble: the hits it had taken; one drilled through has its hole, and its rocks (the save's `taken` then puts away the ones that were picked up: js/facilitysave.js runs this first)
 function techRubbleApply(o) {
@@ -1260,6 +1260,9 @@ function techStepOverride(a) {
     return true;
 }
 
+// a saved game put back (js/facilitysave.js facilitySaveApply, last): the technicians in its squad were in it when it was saved, so they have not just joined it and do not wait the first wait again
+// (each use's own cooldown is not saved: they are ready). Before build 2026-11-13m every load was a join: a minute's wait before any technician's first use, each time a game was loaded.
+function techAbilityLoaded() { if (typeof followers === "undefined") return; for (const f of followers) if (f && !f.dead) f._abMember = !!techAbilityOf(f) && _techMember(f); }
 // ── each frame (js/game.js): first waits, throws, set-ups, the ledges, the sites' notices ──
 function techAbilityTick() {
     if (typeof _fp === "undefined" || !_fp || typeof followers === "undefined") return;
@@ -1394,6 +1397,14 @@ function _techAimLast(kind, v) {
     return true;
 }
 function techAimPickEnemy(e) { return _techAimLast("enemy", e); }
+// THERMITE DRILL's chip aimed at RUBBLE (the owner, 2026-11-13, at the Nest's check: "it wouldn't let me burrow through"; the chip took enemies only, the rubble only a long press on it): the technician
+// whose chip it is goes to drill it, as the rubble's own ring sends one (techRubbleDrill); what stops it is said, as there
+function _techAimRubble(r) {
+    const A = techAim; if (!A) return false;
+    const res = techAbilityUse(A.f, { rubble: r });
+    _techSay(res.ok ? "✹ " + _techName(A.f) + " GOES TO DRILL THE RUBBLE" : res.why, res.ok ? "#ff9a4a" : "#ff8a6a");
+    techAimCancel(true); return true;
+}
 function techAimPickSpot(p) { return _techAimLast("spot", p); }
 // the floor under a point on the screen (as a tap walks the player there: js/input.js handleInput), not rounded to a tile
 function techScreenToWorld(ex, ey) {
@@ -1410,7 +1421,11 @@ function techAimTap(x, y) {
         if (techAim.mode === "site") { const s = _techSite(techAim.site); techAimCancel(true); if (s && s.rider && _techOnLabel(s.id, x, y)) { const r = techSiteRide(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; } return false; }   // (the launcher's aim never holds you: a tap elsewhere puts it away and walks, js/input.js; its own tag again: you ride it)
         _techSay("TAP A FOLLOWER", "#8aa0c8"); return true;
     }
-    if (need === "enemy") { const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e); _techSay("TAP AN ENEMY", "#8aa0c8"); return true; }
+    if (need === "enemy") {
+        const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e);
+        const drill = techAim.ab.id === "thermite_drill", rp = drill ? techRubbleAtScreen(x, y) : null; if (rp) return _techAimRubble(rp.r);   // THERMITE DRILL's chip takes rubble too (below)
+        _techSay(drill ? "TAP AN ENEMY OR THE RUBBLE" : "TAP AN ENEMY", "#8aa0c8"); return true;
+    }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
     if (need === "object") return techFluxPick(typeof fluxPropAtScreen === "function" ? fluxPropAtScreen(x, y) : null);   // FLUX MOVE: the object
     if (need === "place") {   // FLUX MOVE: its place (a tap on another movable object, off the reach, picks that one instead)

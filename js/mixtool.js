@@ -92,12 +92,14 @@ function mixToolScope(id) {
 
 // ── THE ENEMY CARD: tap it and the picked units go for that creature ──
 // Who is sent: whoever the tool is set to (the pool the other orders use).
-function mixToolAttackPool() { return mixToolPool().filter(a => a && !a.dead); }
+function mixToolAttackPool(foe) { const p = mixToolPool().filter(a => a && !a.dead); return foe && foe.isHazardTarget ? p.filter(_mtFromAfar) : p; }
+// A FLASK (build 2026-11-13m, js/hazards.js hazardTarget): only the MAGES go, who shoot from four tiles off, out of its blast (a brawler or a technician would walk up to it: they stay back; the agent's choice, provisional)
+function _mtFromAfar(a) { return a.role === "sniper" && !a.isClone; }
 function mixToolFoe() { return typeof targetIndexSubject === "function" ? targetIndexSubject() : null; }   // (js/targeting.js loads after this file, and the first render is at its end)
-function mixToolOrdered(foe) { const f0 = typeof frame !== "undefined" ? frame : 0; return foe ? mixToolAttackPool().filter(a => a.attackOrder && a.attackOrder.target === foe && f0 <= a.attackOrder.until).length : 0; }
+function mixToolOrdered(foe) { const f0 = typeof frame !== "undefined" ? frame : 0; return foe ? mixToolAttackPool(foe).filter(a => a.attackOrder && a.attackOrder.target === foe && f0 <= a.attackOrder.until).length : 0; }
 function mixToolAttack(foe) {
     foe = foe || mixToolFoe(); if (!foe || foe.dead) { mixToolSay("NOTHING TO ATTACK", "#8aa0c8"); return 0; }
-    const pool = mixToolAttackPool(); if (!pool.length) { mixToolSay("NOBODY TO SEND", "#8aa0c8"); return 0; }
+    const pool = mixToolAttackPool(foe); if (!pool.length) { mixToolSay(foe.isHazardTarget ? "NO MAGE TO SHOOT IT FROM AFAR · FIRE AT IT YOURSELF" : "NOBODY TO SEND", "#8aa0c8"); return 0; }
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of pool) { a.attackOrder = { target: foe, until: f0 + BATTLE_ATTACK_FRAMES }; a.retreatUntil = 0; if (a.job && a.job.type === "move") a.job = null; if (!a.post) a.stance = "follow"; a._nearestEnemy = foe; a._enemyCacheFrame = f0; }   // (a follower holding a room goes, and goes back to its round afterwards)
     mixToolSay("ATTACK \u00b7 " + pool.length + " AT " + (typeof targetName === "function" ? targetName(foe) : "IT"), "#ff7755"); mixToolRender(true); return pool.length;
@@ -167,7 +169,7 @@ function mixToolFoeLive(slot, foe) {
 }
 let _mtFoeSig = "", _mtFoeId = 0, _mtFoeShown = null;   // (the creature on the card: a tap sends them at THAT one, whoever the card is about by the next frame)
 function mixToolFoeRender(root, slot, force) {
-    const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool() : [], f0 = typeof frame !== "undefined" ? frame : 0, corners = mixToolCorners();
+    const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool(foe) : [], f0 = typeof frame !== "undefined" ? frame : 0, corners = mixToolCorners();
     const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolRosterN() : "", corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";   // (at the left: RUN while they run, ALL while it is lit)
     if (root.classList) root.classList.toggle("foe", !!foe);   // (at the left the card stands over the orders: game.html)
     if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("foe-up") !== !!foe) document.body.classList.toggle("foe-up", !!foe);   // (the squad strip makes room for it: game.html "THE BOTTOM ROW", build 2026-11-12g)

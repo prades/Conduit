@@ -102,6 +102,34 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const h = rd('game.html'); ok(/<script src="js\/hazards\.js\?v=[^"]+"><\/script>/.test(h) && h.indexOf('js/hazards.js') > h.indexOf('js/firebombs.js'), 'the script'); ok(/<link rel="preload" as="image" href="img\/props\/hazard\.(webp|png)\?v=/.test(h), 'the preload');
     });
 
+    group('A FLASK AS A TARGET (the owner, build 2026-11-13m: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card")');
+    run(`globalThis.__scr = s => { const [x, y] = hazardCentre(s); return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(x, y) - 30]; };`);
+    check('a press on a container locks it as a press on a creature does: the gun\'s target and the enemy card\'s are its stand-in, named for it, its blast (or its acid) as its bite, its words on INFO; a press on it again fires', () => {
+        const r = J(`(function(){ __fresh(); targetDrop(); const s = __S('hazard_x3'), [cx, cy] = hazardCentre(s); __put(cx - 3, cy - 1); const o = {}, p = __scr(s);
+            o.found = !!hazardTargetAtScreen(p[0], p[1]); o.took = targetPress(p[0], p[1]); targetTick(); const t = targetCurrent();
+            o.locked = t ? targetName(t) : null; o.same = !!t && t === targetIndexSubject() && t === hazardTarget(s); const c = t ? targetCardInfo(t) : null; o.card = c ? [c.title, c.hp + '/' + c.max, c.biteLabel, c.bite, c.level].join() : null;
+            o.info = t ? targetInfoLines(t).join(' | ') : ''; o.at = t ? [t.x, t.y].join() : ''; gunHold = null; o.again = targetPress(p[0], p[1]); o.fires = !!gunHold && gunHold.button === true;
+            const c2 = hazardTarget(__S('hazard_c2')); o.acid = [targetName(c2), targetCardInfo(c2).biteLabel].join(); gunHold = null; targetDrop(); return o; })()`);
+        same(r.found, true, 'the press does not find it'); same(r.took, true, 'the press is not the targeting\'s'); same(r.locked, 'EXPLOSIVE FLASK', 'the lock'); same(r.same, true, 'the card is not the same stand-in');
+        same(r.card, 'EXPLOSIVE FLASK,1/1,BLAST,30,', 'the card'); ok(/A SHOT SETS IT OFF/.test(r.info) && /CRACKED ROCK/.test(r.info), 'INFO: ' + r.info); same(r.at, '9,192', 'where it is'); same(r.again, true, 'the second press');
+        same(r.fires, true, 'a press on the locked one does not fire'); same(r.acid, 'ACID FLASK,ACID', 'the acid flask');
+    });
+    check('whatever hits the stand-in sets the container off (a creature\'s hit, a round, an elemental hit); then it is dead, the lock lets it go, and it is not found under a press', () => {
+        const r = J(`(function(){ __fresh(); const s = __S('hazard_x1'), t = hazardTarget(s), o = {}; applyDamage(t, 5, null, null); o.lit = hazardState(s.id).fuse !== null; __steps(2); o.off = !!s.open; o.dead = t.dead;
+            __fresh(); const s2 = __S('hazard_x2'), t2 = hazardTarget(s2); applyElementalDamage(t2, 5, null, 'fire', null); __steps(2); o.elemental = !!s2.open;
+            __put(t2.x - 2, t2.y); targetSet(t2, true); o.lockedOff = targetCurrent(); const p = __scr(s2); o.pressed = hazardTargetAtScreen(p[0], p[1]); __fresh(); targetDrop(); return o; })()`);
+        same(r.lit, true, 'a hit did not light its fuse'); same(r.off, true, 'it did not go off'); same(r.dead, true, 'its stand-in is not dead'); same(r.elemental, true, 'an elemental hit did not set it off');
+        same(r.lockedOff, null, 'a container that went off is still locked'); same(r.pressed, null, 'one that went off is found under a press');
+    });
+    check('the card\'s ATTACK at a container sends only the MAGES (they shoot from four tiles, out of its blast); a brawler and a technician stay back; with no mage it says so and sends nobody', () => {
+        const r = J(`(function(){ __fresh(); const s = __S('hazard_x1'), t = hazardTarget(s), o = {}; __put(t.x - 4, t.y);
+            followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; const roles = ['sniper', 'brawler', 'camper'];
+            ['fire', 'core', 'electric'].forEach((el, i) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = roles[i]; f.x = player.x + 1; f.y = player.y + i * 0.6; f.post = null; f.attackOrder = null; });
+            selectedUnits.clear(); o.pool = mixToolAttackPool(t).map(f => f.role).join(); o.sent = mixToolAttack(t); o.ordered = followers.filter(f => f.attackOrder && f.attackOrder.target === t).map(f => f.role).join();
+            followers.forEach(f => { f.attackOrder = null; if (f.role === 'sniper') f.role = 'brawler'; }); floatingTexts.length = 0; o.none = mixToolAttack(t); o.said = floatingTexts.map(q => q.text).join(' | '); return o; })()`);
+        same(r.pool, 'sniper', 'who is sent'); same(r.sent, 1, 'sent'); same(r.ordered, 'sniper', 'who was ordered'); same(r.none, 0, 'sent with no mage'); ok(/NO MAGE TO SHOOT IT/.test(r.said), 'said: ' + r.said);
+    });
+
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
 })();

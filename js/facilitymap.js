@@ -605,6 +605,11 @@ const FACILITY_MAP = {
     rubble: [
         { id: "rubble_nest_choke", room: "nest_t1", label: "Collapsed tunnel", a: [345, 1260], b: [345, 1320], work: [380, 1300], solid: "nest_choke",
           note: "THE ANT NEST's collapsed tunnel (docs/DOMAINS.md §2, 10: the main way's first step, fire the Nest's key): drilled from the queen's cavern's side." },
+        { id: "rubble_nest_cracked", room: "nest_t3", label: "Cracked rock", a: [110, 1630], b: [170, 1630], work: [140, 1600], solid: "nest_cracked",
+          tag: "CRACKED ROCK · SHOOT THE FLASK",
+          say: "CRACKED ROCK ACROSS THE TUNNEL · A BLAST BREAKS IT: SHOOT THE FLASK BESIDE IT (TAP IT), AND STAND BACK · OR A FIRE TECHNICIAN CAN DRILL IT THROUGH: PRESS AND HOLD IT",
+          opened: "THE CRACKED ROCK IS DRILLED THROUGH · THE WAY TO THE DEEP BROOD IS OPEN",
+          note: "THE ANT NEST's cracked rock across the tunnel south to the deep brood (the owner, 2026-11-13, of the flat cracked wall: \"3D rock, blast or drill\"; build 2026-11-13m): the cave's rock modelled as the rubble is (design/cave/bake_rubble.js); an explosive flask's blast breaks it (js/nestways.js), or a fire technician drills it from the north, the brood chamber's side." },
         { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
           note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
