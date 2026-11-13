@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13h` · branch `claude/personality-range` · a follower's stats stay within ±25% of the base
+- **The ask** (the owner, 2026-11-13: "make it to where the user's stats don't vary or stray too far from the original base stats"; asked how far, **"Within ±25%"**).
+- **What it does:** every personality's factor on the base stats (`PERSONALITIES`, js/species.js) is held to **0.75 to 1.25** (it was 0.5 to 2.0). Each personality leans the way it did (aggressive and wild still hit hardest, cautious and stoic still tough, cunning still quick and accurate); only the reach is shorter. For example an aggressive follower's ATK is 12.5 (was 20) and its DEF 7.5 (was 5); a stoic's HP is 25 (was 30). The damage retune normalises by each class's mean, so a class's average damage is where it was; health and defence differ less between classes.
+- **`assignRole`'s thresholds** follow, so each personality still gives exactly its role: a brawler's ATK ≥ 12 (was 14), a technician's DEF ≥ 12 (was 14).
+- **Saves:** nothing is migrated. A follower already saved keeps the base it was made with; new recruits, eggs and offspring use the new factors. Breeding's cap (2× the personality's own number) can no longer be reached by the parents' mean.
+- `js/species.js`, `tests/followertypes.js` (the thresholds), `tests/followerprog.js` (no offspring meets the cap now), `docs/FOLLOWER-PROGRESSION.md`, the Bible.
+- Provisional: the ±25% is the owner's choice of three offered; the exact factors are the agent's clamp of the old ones. Not playtested.
+
 ### Build `2026-11-13g` · branch `claude/start-game-project-HSh7Z` · The Lounge opens onto the hallway on its north and east
 - **The ask** (the owner, 2026-11-13: "there shouldn't be any obstructions on the north side of the lobby or the lounge room or the right side of it either, the east side"; asked how, **"Open them up"**).
 - **The Lounge's north and east glass is gone:** both sides open onto the hallway along their whole length, with no door and no frame (`openings` marked `open`, a new flag: no door piece is placed and nothing is drawn across). The south divider and the west wall with the passage door stay.

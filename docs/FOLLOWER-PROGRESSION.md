@@ -8,7 +8,7 @@ The code: `js/followerspots.js` (the posts), `js/breeding.js` (breeding), `js/vi
 
 ## What a follower's numbers are (the audit, unchanged)
 
-- A follower is made from its personality (`applyPersonality`, js/species.js: hp 20 / defense 10 / attack 10 / speed 10 / special attack 10 / accuracy 10 / will 20, each times the personality's factor). Those creation stats are its **base**; its level scales the base into its **stats** (`levelledStats`), the evolved form and the equip cards multiply at apply time, and `maxHealth = round(stats.hp × 1.25 × the cards)` (`_applyFollowerLevel`, js/levels.js). Everything derives from the base, every time.
+- A follower is made from its personality (`applyPersonality`, js/species.js: hp 20 / defense 10 / attack 10 / speed 10 / special attack 10 / accuracy 10 / will 20, each times the personality's factor, which stays within 0.75 to 1.25: the owner, 2026-11-13, "don't stray too far from the original base stats", chosen ±25%; it was 0.5 to 2.0). Those creation stats are its **base**; its level scales the base into its **stats** (`levelledStats`), the evolved form and the equip cards multiply at apply time, and `maxHealth = round(stats.hp × 1.25 × the cards)` (`_applyFollowerLevel`, js/levels.js). Everything derives from the base, every time.
 - **Every death took 1 off the base hp** (until 2026-11-01: now it takes nothing, and the respawn queue carries the base as it was). At 0 the follower **fell for good**: its body lies where it fell, an Ice Mage preserves it in a capsule, and the capsule used at the Crystal (the Resurrection Zone) brings it back from its record (js/specimen.js, `spawnFollowerFromSave(rec)`).
 - Shards: `shardCount`; a new game starts with 100; kills pay on the spot.
 
