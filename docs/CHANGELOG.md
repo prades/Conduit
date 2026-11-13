@@ -4,6 +4,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13o` · branch `claude/friendly-thompson-w581x0` · an energy card: its name, its tab and EQUIP NOW
+- **The ask** (the owner: "the energy should just have an equip now and no need for the text below the icon. The toxic energy is enough. And equip now goes below the card").
+- **What it does:** an energy card shows **its name only** under its gem (TOXIC ENERGY), with its ENERGY tab; its kind line and its text are not on it. In a pack's reveal **only EQUIP NOW stands under it** (ENERGY CARD · YOU HOLD n is gone; the count is on EQUIP NOW's pop-out).
+- `js/cardsui.js` (the reveal), `game.html`, `tests/equipnow.js`, `docs/ENERGY-CARDS.md`.
+- **Verified:** the card suites and the full suite; seen in the real page. **Not playtested.**
+
+### Build `2026-11-13n` · branch `claude/friendly-thompson-w581x0` · energy cards wear an ENERGY tab
+- **The ask** (the owner: "Make the energy cards have a tab inside the card that says "energy" slanted border... goes off the card slightly").
+- **What it does:** an energy card (in a pack's reveal and the card picker) has **a slanted tab reading ENERGY**, bordered in its element's colour, inside the card where an equip card's rarity chip stands and **a little off its right edge**. The small ENERGY at its top left is gone (the tab says it).
+- `js/cardsui.js` (`_cdChip`), `game.html`, `tests/cardart.js` (the tab is wider: its middle may sit further in), `docs/ENERGY-CARDS.md`.
+- **Verified:** the card suites and the full suite; seen in the real page. **Not playtested.**
+
 ### Build `2026-11-13k` · branch `claude/friendly-thompson-w581x0` · COME greys when it has nobody to call
 - **The ask** (the owner: "Whenever all my followers or my squad is full, come should be grayed out in the bottom left").
 - **What it does:** COME (on the command card out of a fight, and the attack card's tab in one) **greys when nobody is holding a room, or when the squad is full** (nobody holding could join). A tap on it with everyone with you says EVERYONE IS WITH YOU and orders nothing; with the squad full it still says who keeps holding. A clone told to HOLD keeps it lit.

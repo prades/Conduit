@@ -769,6 +769,13 @@
        for the card worn, and under each card's name in the HUD pop-out's list, beside its chip */
     #ccRoot .cc-dd-fx { font: 600 11px/1.35 var(--neo-font); color: #c9d6f0; padding: 0 4px 8px 14px; margin-top: -2px; }
     .cd-chip.en { visibility: hidden; }   /* (an ENERGY CARD has no rarity: js/cardsui.js _cdChip) */
+    /* AN ENERGY CARD'S TAB (build 2026-11-13n; js/cardsui.js _cdChip): ENERGY on a slanted tab in the card's element colour, inside the card in the rarity chip's place and standing a little off its right
+       edge; the small ENERGY at the card's top left gives way to it */
+    :is(#cardsRoot, #cardPick) .cd-face > .cd-chip.en.tab { visibility: visible; right: -14px; top: 46px; display: block; padding: 5px 14px 5px 12px; clip-path: none; border: 2px solid var(--c); background: linear-gradient(180deg, color-mix(in srgb, var(--c) 30%, #0b1124), #05070f); transform: skewX(-12deg); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 60%, transparent), 3px 3px 0 rgba(0,0,0,0.55); animation: none; }
+    :is(#cardsRoot, #cardPick) .cd-face > .cd-chip.en.tab b { display: block; transform: skewX(12deg); font: italic 900 13px/1 var(--neo-font); letter-spacing: 0.08em; color: #fff; text-shadow: 0 0 8px var(--c), 0 1px 2px #05070f; }
+    :is(#cardsRoot, #cardPick) .cd-card.en .cd-top .cd-rar { visibility: hidden; }
+    /* AN ENERGY CARD SAYS ITS NAME ONLY (build 2026-11-13o; the owner: "no need for the text below the icon. The toxic energy is enough"): its kind and its text (and their shadows) are not shown on it */
+    :is(#cardsRoot, #cardPick) .cd-card.en :is(.cd-kind, .cd-text, .cd-gk, .cd-gt) { display: none; }
     /* AN ENERGY CARD'S WORLD AND ITS 3D GEM (js/energygem.js; docs/ENERGY-CARDS.md §9; build 2026-11-12q, the owner's "B world", replacing build 2026-11-12n's SVG gems, which replaced 2026-11-09nn's plasma):
        .ew-w is its element's world, under the mask that fades it under the text: .ew-bg its scene, .ew-bo the storm's lightning (it flickers), .ew-mo its motes (a layer twice the card's height,
        two equal tiles, drifting one tile and starting again: embers, bubbles and the reactor's sparks rise; snow, sparks, stars and petals fall). .ew-gem is its baked 3D gem
@@ -2566,7 +2573,7 @@ function _showError(msg) {
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree): `node tools/stamp.js <build>`.
-window.__PAGE_BUILD = "2026-11-13k";
+window.__PAGE_BUILD = "2026-11-13o";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2602,109 +2609,109 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-13k"></script>
-<script src="js/imgmap.js?v=2026-11-13k"></script>
-<script src="js/icons.js?v=2026-11-13k"></script>
-<script src="js/uikit.js?v=2026-11-13k"></script>
-<script src="js/traits.js?v=2026-11-13k"></script>
-<script src="js/elements.js?v=2026-11-13k"></script>
-<script src="js/damage.js?v=2026-11-13k"></script>
-<script src="js/combat.js?v=2026-11-13k"></script>
-<script src="js/species.js?v=2026-11-13k"></script>
-<script src="js/levels.js?v=2026-11-13k"></script>
-<script src="js/status.js?v=2026-11-13k"></script>
-<script src="js/helpers.js?v=2026-11-13k"></script>
-<script src="js/predator.js?v=2026-11-13k"></script>
-<script src="js/abilities.js?v=2026-11-13k"></script>
-<script src="js/commands.js?v=2026-11-13k"></script>
-<script src="js/npc.js?v=2026-11-13k"></script>
-<script src="js/formation.js?v=2026-11-13k"></script>
-<script src="js/draw.js?v=2026-11-13k"></script>
-<script src="js/beetle3d.js?v=2026-11-13k"></script>
-<script src="js/bugs3d.js?v=2026-11-13k"></script>
-<script src="js/settings.js?v=2026-11-13k"></script>
-<script src="js/alarm.js?v=2026-11-13k"></script>
-<script src="js/drops.js?v=2026-11-13k"></script>
-<script src="js/clone.js?v=2026-11-13k"></script>
-<script src="js/bonds.js?v=2026-11-13k"></script>
-<script src="js/evopack.js?v=2026-11-13k"></script>
-<script src="js/evolution.js?v=2026-11-13k"></script>
-<script src="js/cards.js?v=2026-11-13k"></script>
-<script src="js/energy.js?v=2026-11-13k"></script>
-<script src="js/cardart.js?v=2026-11-13k"></script>
-<script src="js/hdsprites.js?v=2026-11-13k"></script>
-<script src="js/fx3d.js?v=2026-11-13k"></script>
-<script src="js/firebombs.js?v=2026-11-13k"></script>
-<script src="js/hazards.js?v=2026-11-13k"></script>
-<script src="js/moves.js?v=2026-11-13k"></script>
-<script src="js/hudgems.js?v=2026-11-13k"></script>
-<script src="js/commandcenter.js?v=2026-11-13k"></script>
-<script src="js/energygem.js?v=2026-11-13k"></script>
-<script src="js/cardsui.js?v=2026-11-13k"></script>
-<script src="js/unitinfo.js?v=2026-11-13k"></script>
-<script src="js/infodex.js?v=2026-11-13k"></script>
-<script src="js/classes.js?v=2026-11-13k"></script>
-<script src="js/playergear.js?v=2026-11-13k"></script>
-<script src="js/inventory.js?v=2026-11-13k"></script>
-<script src="js/weapons.js?v=2026-11-13k"></script>
-<script src="js/mutator.js?v=2026-11-13k"></script>
-<script src="js/redeem.js?v=2026-11-13k"></script>
-<script src="js/specimen.js?v=2026-11-13k"></script>
-<script src="js/serum.js?v=2026-11-13k"></script>
-<script src="js/potion.js?v=2026-11-13k"></script>
-<script src="js/playercombat.js?v=2026-11-13k"></script>
-<script src="js/battleview.js?v=2026-11-13k"></script>
-<script src="js/coreframes.js?v=2026-11-13k"></script>
-<script src="js/corehud.js?v=2026-11-13k"></script>
-<script src="js/technomancer.js?v=2026-11-13k"></script>
-<script src="js/playercards.js?v=2026-11-13k"></script>
-<script src="js/stations.js?v=2026-11-13k"></script>
-<script src="js/facilityportals.js?v=2026-11-13k"></script>
-<script src="js/tutorial.js?v=2026-11-13k"></script>
-<script src="js/dialogue.js?v=2026-11-13k"></script>
-<script src="js/questbox.js?v=2026-11-13k"></script>
-<script src="js/facilitymap.js?v=2026-11-13k"></script>
-<script src="js/facilitygrow.js?v=2026-11-13k"></script>
-<script src="js/facility.js?v=2026-11-13k"></script>
-<script src="js/attract.js?v=2026-11-13k"></script>
-<script src="js/facilitysave.js?v=2026-11-13k"></script>
-<script src="js/facilityplay.js?v=2026-11-13k"></script>
-<script src="js/facilitydecor.js?v=2026-11-13k"></script>
-<script src="js/nestways.js?v=2026-11-13k"></script>
-<script src="js/chests.js?v=2026-11-13k"></script>
-<script src="js/propatlas.js?v=2026-11-13k"></script>
-<script src="js/propsprites.js?v=2026-11-13k"></script>
-<script src="js/caveatlas.js?v=2026-11-13k"></script>
-<script src="js/caverubble.js?v=2026-11-13k"></script>
-<script src="js/cavewalls.js?v=2026-11-13k"></script>
-<script src="js/facilitystyle.js?v=2026-11-13k"></script>
-<script src="js/facilitystyleall.js?v=2026-11-13k"></script>
-<script src="js/facilitysewers.js?v=2026-11-13k"></script>
-<script src="js/facilitynet.js?v=2026-11-13k"></script>
-<script src="js/population.js?v=2026-11-13k"></script>
-<script src="js/facilityspawn.js?v=2026-11-13k"></script>
-<script src="js/crystalpower.js?v=2026-11-13k"></script>
-<script src="js/antraids.js?v=2026-11-13k"></script>
-<script src="js/followerspots.js?v=2026-11-13k"></script>
-<script src="js/breeding.js?v=2026-11-13k"></script>
-<script src="js/party.js?v=2026-11-13k"></script>
-<script src="js/squadfly.js?v=2026-11-13k"></script>
-<script src="js/techabilities.js?v=2026-11-13k"></script>
-<script src="js/fluxmove.js?v=2026-11-13k"></script>
-<script src="js/fluxlab.js?v=2026-11-13k"></script>
-<script src="js/puzzles.js?v=2026-11-13k"></script>
-<script src="js/quests.js?v=2026-11-13k"></script>
-<script src="js/bosses.js?v=2026-11-13k"></script>
-<script src="js/conversion.js?v=2026-11-13k"></script>
-<script src="js/sidequest.js?v=2026-11-13k"></script>
-<script src="js/facilitytutorial.js?v=2026-11-13k"></script>
-<script src="js/gunfire.js?v=2026-11-13k"></script>
-<script src="js/targeting.js?v=2026-11-13k"></script>
-<script src="js/toolbox.js?v=2026-11-13k"></script>
-<script src="js/mixtool.js?v=2026-11-13k"></script>
-<script src="js/radialmenu.js?v=2026-11-13k"></script>
-<script src="js/input.js?v=2026-11-13k"></script>
-<script src="js/game.js?v=2026-11-13k"></script>
+<script src="js/config.js?v=2026-11-13o"></script>
+<script src="js/imgmap.js?v=2026-11-13o"></script>
+<script src="js/icons.js?v=2026-11-13o"></script>
+<script src="js/uikit.js?v=2026-11-13o"></script>
+<script src="js/traits.js?v=2026-11-13o"></script>
+<script src="js/elements.js?v=2026-11-13o"></script>
+<script src="js/damage.js?v=2026-11-13o"></script>
+<script src="js/combat.js?v=2026-11-13o"></script>
+<script src="js/species.js?v=2026-11-13o"></script>
+<script src="js/levels.js?v=2026-11-13o"></script>
+<script src="js/status.js?v=2026-11-13o"></script>
+<script src="js/helpers.js?v=2026-11-13o"></script>
+<script src="js/predator.js?v=2026-11-13o"></script>
+<script src="js/abilities.js?v=2026-11-13o"></script>
+<script src="js/commands.js?v=2026-11-13o"></script>
+<script src="js/npc.js?v=2026-11-13o"></script>
+<script src="js/formation.js?v=2026-11-13o"></script>
+<script src="js/draw.js?v=2026-11-13o"></script>
+<script src="js/beetle3d.js?v=2026-11-13o"></script>
+<script src="js/bugs3d.js?v=2026-11-13o"></script>
+<script src="js/settings.js?v=2026-11-13o"></script>
+<script src="js/alarm.js?v=2026-11-13o"></script>
+<script src="js/drops.js?v=2026-11-13o"></script>
+<script src="js/clone.js?v=2026-11-13o"></script>
+<script src="js/bonds.js?v=2026-11-13o"></script>
+<script src="js/evopack.js?v=2026-11-13o"></script>
+<script src="js/evolution.js?v=2026-11-13o"></script>
+<script src="js/cards.js?v=2026-11-13o"></script>
+<script src="js/energy.js?v=2026-11-13o"></script>
+<script src="js/cardart.js?v=2026-11-13o"></script>
+<script src="js/hdsprites.js?v=2026-11-13o"></script>
+<script src="js/fx3d.js?v=2026-11-13o"></script>
+<script src="js/firebombs.js?v=2026-11-13o"></script>
+<script src="js/hazards.js?v=2026-11-13o"></script>
+<script src="js/moves.js?v=2026-11-13o"></script>
+<script src="js/hudgems.js?v=2026-11-13o"></script>
+<script src="js/commandcenter.js?v=2026-11-13o"></script>
+<script src="js/energygem.js?v=2026-11-13o"></script>
+<script src="js/cardsui.js?v=2026-11-13o"></script>
+<script src="js/unitinfo.js?v=2026-11-13o"></script>
+<script src="js/infodex.js?v=2026-11-13o"></script>
+<script src="js/classes.js?v=2026-11-13o"></script>
+<script src="js/playergear.js?v=2026-11-13o"></script>
+<script src="js/inventory.js?v=2026-11-13o"></script>
+<script src="js/weapons.js?v=2026-11-13o"></script>
+<script src="js/mutator.js?v=2026-11-13o"></script>
+<script src="js/redeem.js?v=2026-11-13o"></script>
+<script src="js/specimen.js?v=2026-11-13o"></script>
+<script src="js/serum.js?v=2026-11-13o"></script>
+<script src="js/potion.js?v=2026-11-13o"></script>
+<script src="js/playercombat.js?v=2026-11-13o"></script>
+<script src="js/battleview.js?v=2026-11-13o"></script>
+<script src="js/coreframes.js?v=2026-11-13o"></script>
+<script src="js/corehud.js?v=2026-11-13o"></script>
+<script src="js/technomancer.js?v=2026-11-13o"></script>
+<script src="js/playercards.js?v=2026-11-13o"></script>
+<script src="js/stations.js?v=2026-11-13o"></script>
+<script src="js/facilityportals.js?v=2026-11-13o"></script>
+<script src="js/tutorial.js?v=2026-11-13o"></script>
+<script src="js/dialogue.js?v=2026-11-13o"></script>
+<script src="js/questbox.js?v=2026-11-13o"></script>
+<script src="js/facilitymap.js?v=2026-11-13o"></script>
+<script src="js/facilitygrow.js?v=2026-11-13o"></script>
+<script src="js/facility.js?v=2026-11-13o"></script>
+<script src="js/attract.js?v=2026-11-13o"></script>
+<script src="js/facilitysave.js?v=2026-11-13o"></script>
+<script src="js/facilityplay.js?v=2026-11-13o"></script>
+<script src="js/facilitydecor.js?v=2026-11-13o"></script>
+<script src="js/nestways.js?v=2026-11-13o"></script>
+<script src="js/chests.js?v=2026-11-13o"></script>
+<script src="js/propatlas.js?v=2026-11-13o"></script>
+<script src="js/propsprites.js?v=2026-11-13o"></script>
+<script src="js/caveatlas.js?v=2026-11-13o"></script>
+<script src="js/caverubble.js?v=2026-11-13o"></script>
+<script src="js/cavewalls.js?v=2026-11-13o"></script>
+<script src="js/facilitystyle.js?v=2026-11-13o"></script>
+<script src="js/facilitystyleall.js?v=2026-11-13o"></script>
+<script src="js/facilitysewers.js?v=2026-11-13o"></script>
+<script src="js/facilitynet.js?v=2026-11-13o"></script>
+<script src="js/population.js?v=2026-11-13o"></script>
+<script src="js/facilityspawn.js?v=2026-11-13o"></script>
+<script src="js/crystalpower.js?v=2026-11-13o"></script>
+<script src="js/antraids.js?v=2026-11-13o"></script>
+<script src="js/followerspots.js?v=2026-11-13o"></script>
+<script src="js/breeding.js?v=2026-11-13o"></script>
+<script src="js/party.js?v=2026-11-13o"></script>
+<script src="js/squadfly.js?v=2026-11-13o"></script>
+<script src="js/techabilities.js?v=2026-11-13o"></script>
+<script src="js/fluxmove.js?v=2026-11-13o"></script>
+<script src="js/fluxlab.js?v=2026-11-13o"></script>
+<script src="js/puzzles.js?v=2026-11-13o"></script>
+<script src="js/quests.js?v=2026-11-13o"></script>
+<script src="js/bosses.js?v=2026-11-13o"></script>
+<script src="js/conversion.js?v=2026-11-13o"></script>
+<script src="js/sidequest.js?v=2026-11-13o"></script>
+<script src="js/facilitytutorial.js?v=2026-11-13o"></script>
+<script src="js/gunfire.js?v=2026-11-13o"></script>
+<script src="js/targeting.js?v=2026-11-13o"></script>
+<script src="js/toolbox.js?v=2026-11-13o"></script>
+<script src="js/mixtool.js?v=2026-11-13o"></script>
+<script src="js/radialmenu.js?v=2026-11-13o"></script>
+<script src="js/input.js?v=2026-11-13o"></script>
+<script src="js/game.js?v=2026-11-13o"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2759,7 +2766,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-13k"></script>
+<script src="js/init.js?v=2026-11-13o"></script>
 
 </body>
 </html>

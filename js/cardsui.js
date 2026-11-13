@@ -57,6 +57,9 @@ function cardsClose() {
 function _cdChip(c, mini) {
     const en = !!c && c.kind === "energy", n = en ? 0 : equipRarityBars(c), chip = _cdEl("span", "cd-chip" + (mini ? " mini" : "") + (en ? " en" : "")), say = en ? "ENERGY CARD · NO RARITY" : "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length;   // (an ENERGY CARD has no rarity: its chip is kept for the card's shape, unseen: js/energy.js)
     chip.title = say; chip.setAttribute("role", "img"); chip.setAttribute("aria-label", say); chip.style.setProperty("--c", _cdKindCol(c));
+    // AN ENERGY CARD'S TAB (build 2026-11-13n; the owner: "Make the energy cards have a tab inside the card that says "energy" slanted border... goes off the card slightly"): on a card, in the rarity chip's
+    // place, the chip is a slanted tab with ENERGY on it, in the card's element colour, standing a little off the card's right edge (game.html). In a slot or a list (.mini) it is unseen, as before.
+    if (en && !mini) { chip.classList.add("tab"); chip.appendChild(_cdEl("b", "", "ENERGY")); return chip; }
     for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); chip.appendChild(seg); }   // (--i: its place, so a lit chip can light up one segment after another)
     return chip;
 }
@@ -349,8 +352,9 @@ function _cdRevealBox(rv) {
         if (rare) { const b = _cdEl("i", "cr-back"); b.style.setProperty("--x", at + "px"); b.style.setProperty("--c", _cdKindCol(c)); stage.appendChild(b); }   // (the light behind the rarest, under the row)
         const slot = _cdEl("div", "cr-slot" + (rare ? " rarest" : "")); slot.style.setProperty("--k", String(k)); slot.style.setProperty("--fx", (-at) + "px"); slot.setAttribute("data-id", c.id);
         slot.appendChild(_cdSlab(c, ""));
-        if (c.kind === "energy") slot.appendChild(_cdEl("div", "cd-worn cr-tag new", "ENERGY CARD · YOU HOLD " + energyCount(c.el)));   // (an ENERGY CARD: counted, and put in a follower's energy slot, not worn)
-        else slot.appendChild(_cdEl("div", "cd-worn cr-tag" + (fresh ? " new" : ""), fresh ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS"));
+        // (an ENERGY CARD: nothing under it but EQUIP NOW since build 2026-11-13o, the owner: "the energy should just have an equip now and no need for the text below the icon. The toxic energy is enough. And
+        // equip now goes below the card"; it was ENERGY CARD · YOU HOLD n. What it does is on EQUIP NOW's pop-out)
+        if (c.kind !== "energy") slot.appendChild(_cdEl("div", "cd-worn cr-tag" + (fresh ? " new" : ""), fresh ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS"));
         {   // EQUIP NOW (build 2026-11-07rr), under each card: it opens over the reveal, which stays as it is (no redraw: the reveal never starts over). Under an ENERGY CARD too since build 2026-11-10d (the owner: "You also
             // need to be able to equip energy cards from the packs after you pull them"): the pop-out lists the followers with their energy slots (_ceEnergySlots)
             const why = _cdEquipNowWhy(c), eq = _cdEl("button", "cd-btn cr-eq"); eq.type = "button"; eq.style.setProperty("--c", "#19e6c1"); eq.appendChild(_cdEl("span", "cd-bl", "EQUIP NOW"));
