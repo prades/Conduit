@@ -42,9 +42,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     gameState.running = true; crystalMenuOpen = !mixToolWide(); mixToolRender(true); partyTick(); await wait(80);
     var F = partyOrdered()[0], G = partyOrdered()[1], nm = function(f){ return unitTypeLabel(f); };
     out.start = { squad: partyMembers().length, bar: bar(), F: nm(F) };
+    var comeGrey = function(){ mixToolRender(true); var c = $('#mixTool .mt-fa.come') || $('#mixTool [data-order=follow]'); return !!c && c.classList.contains('idle'); };   // (COME greyed with nothing to do: build 2026-11-13k)
+    out.grey = { start: comeGrey() }; floatingTexts.length = 0; await order('follow'); out.grey.said = said();
     // THE REPORTED FLOW: a card on the bar, HOLD in the tool; it holds, it leaves the squad (and the selection); its slot says who it would call back; COME with nothing selected brings it back, into the same card
     click(slots()[0]); await wait(60); out.selected = { sel: selectedUnits.size, lit: slots()[0].classList.contains('sel') };
-    await order('hold'); floatingTexts.length = 0;
+    await order('hold'); floatingTexts.length = 0; out.grey.held = comeGrey();
     out.held = { post: F.post || null, stance: F.stance, member: partyIsMember(F), sel: selectedUnits.size, bar: bar(), call: slots()[0].classList.contains('call'), others: partyMembers().length, label: slots()[0].querySelector('.sb-open').textContent, callText: 'CALL ' + nm(F) };
     await order('follow');
     out.come = { post: F.post || null, stance: F.stance, member: partyIsMember(F), slot: F.partySlot, bar: bar(), said: said(), size: floatingTexts.length ? floatingTexts[floatingTexts.length - 1].size : 0, call: slots()[0].classList.contains('call') };
@@ -61,7 +63,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     selectedUnits.clear(); await order('hold'); out.all = { held: partyPosted().length, members: partyMembers().length, bar: bar() }; await order('follow'); out.allBack = { held: partyPosted().length, members: partyMembers().length };
     // THE SQUAD FULL: one holds, a recruit takes the free slot; COME says so (large), and the follower keeps holding; with it selected the same; a slot freed (another removed) and it comes
     click(slots()[0]); await wait(60); await order('hold'); shardCount = 900; recruitFollower(); partyTick(); await wait(60); floatingTexts.length = 0;
-    out.full0 = { members: partyMembers().length, held: partyPosted().length, F: !!F.post };
+    out.full0 = { members: partyMembers().length, held: partyPosted().length, F: !!F.post }; out.grey.full = comeGrey();
     await order('follow'); var big = floatingTexts[floatingTexts.length - 1];
     out.fullCome = { held: !!F.post, member: partyIsMember(F), said: said(), size: big ? big.size : 0, members: partyMembers().length };
     selectedUnits.clear(); selectedUnits.add(F); ccRender && 0; await order('follow'); out.fullSel = { held: !!F.post, said: said(), sel: selectedUnits.size };
@@ -144,6 +146,10 @@ function measure(w, h) {
             same(r.slotTap.before.split('|')[0], '[+ CALL ' + r.start.F + ']', 'the slot before the tap'); same(r.slotTap.member, true, 'the tap did not bring it back'); same(r.slotTap.slot, 0, 'its card'); same(r.slotTap.tab, null, 'the roster opened'); same(r.slotTap.bar[0], r.start.F, 'the bar');
             same(r.two.held, 2, 'two held'); same(r.two.bar.slice(0, 2).join(), '[+ OPEN SLOT],[+ OPEN SLOT]', 'the slots of two held'); same(r.two.calls, 0, 'a call with two held'); same(r.twoTap.tab, 'roster', 'the roster did not open'); same(r.twoTap.filter, 'out', 'the list'); same(r.twoTap.sel, 0, 'its selection');
             same(r.twoCome.held, 0, 'COME left one holding'); same(r.twoCome.members, 3, 'the squad'); same(r.twoCome.slots, '0,1,2', 'the cards'); ok(/BACK IN THE SQUAD/.test(r.twoCome.said), 'said ' + r.twoCome.said);
+        });
+        check(w + ': COME GREYED (build 2026-11-13k; the owner: "Whenever all my followers or my squad is full, come should be grayed out in the bottom left"): grey with everyone with you, and a tap then says EVERYONE IS WITH YOU; lit with one holding a room and a slot free; grey with one holding and the squad full (a tap still says who keeps holding)', () => {
+            const G = r.grey; ok(G, 'no probe'); if (w > 700) { same(G.start, true, 'grey with everyone with you'); same(G.held, false, 'lit with one holding a room'); same(G.full, true, 'grey with the squad full'); }
+            ok(/EVERYONE IS WITH YOU/.test(G.said), 'a tap on the grey COME: ' + G.said);
         });
         check(w + ': HOLD and COME with nobody selected take the whole squad out and back; with the squad full COME leaves the follower holding and says so in large type, selected or not; with a slot free it comes', () => {
             same(r.all.held, 3, 'the whole squad held'); same(r.all.members, 0, 'the squad'); same(r.all.bar.join(), '[+ OPEN SLOT],[+ OPEN SLOT],[+ OPEN SLOT]', 'the bar'); same(r.allBack.held, 0, 'COME brought them back'); same(r.allBack.members, 3, 'the squad');

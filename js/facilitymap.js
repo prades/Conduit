@@ -605,7 +605,7 @@ const FACILITY_MAP = {
     rubble: [
         { id: "rubble_nest_choke", room: "nest_t1", label: "Collapsed tunnel", a: [345, 1260], b: [345, 1320], work: [380, 1300], solid: "nest_choke",
           note: "THE ANT NEST's collapsed tunnel (docs/DOMAINS.md §2, 10: the main way's first step, fire the Nest's key): drilled from the queen's cavern's side." },
-        { id: "rubble_nest_cracked", room: "nest_t3", label: "Cracked rock", a: [110, 1630], b: [170, 1630], work: [140, 1600], solid: "nest_cracked",
+        { id: "rubble_nest_cracked", room: "nest_t3", label: "Cracked rock", a: [100, 1625], b: [160, 1625], work: [140, 1600], solid: "nest_cracked",   // (its ends a quarter tile off the solid's raw line, as the collapsed tunnel's are: on its choke's line raw and snapped)
           tag: "CRACKED ROCK · SHOOT THE FLASK",
           say: "CRACKED ROCK ACROSS THE TUNNEL · A BLAST BREAKS IT: SHOOT THE FLASK BESIDE IT (TAP IT), AND STAND BACK · OR A FIRE TECHNICIAN CAN DRILL IT THROUGH: PRESS AND HOLD IT",
           opened: "THE CRACKED ROCK IS DRILLED THROUGH · THE WAY TO THE DEEP BROOD IS OPEN",
