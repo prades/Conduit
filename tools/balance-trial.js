@@ -4,6 +4,7 @@
 // tools/balance.js puts on balance.html. Tallied for the form under test: its damage, the HP it healed in a wounded ally (kept at 30%), the damage its guard or decoy took or cut, the extra
 // damage its mark added to an ally's hits, the enemy-seconds enemies were lured or held (stunned, slowed, weakened, blinded, glitched), and the damage it took. A second pass
 // with enemies that fight back (3 runs each) measures what a SHELL GUARD, ROTTEN DECOY or SWEET SCENT blocks and lures. It takes several minutes (not part of tests/run.js).
+// (Since build 2026-11-13x a standing enemy that is pushed is put back where it stood, and a close move is fought from one tile.)
 // HONEST LIMITS: one dummy species (an ant: it resists elemental, is weak to crushing and earthquake), one level, one run for the damage; the live-enemy runs vary a lot (use the averages
 // as a guide); a heal is an upper bound (the ally is always wounded); CAPACITOR DISCHARGE reads 0 (it needs a held charge); a technician is held in place, so it only fights what is in reach.
 const _cp = require('child_process'), _fs = require('fs'), _path = require('path');
@@ -94,16 +95,17 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                 R.modes[mode].push(J(`(function(){ __clear(); globalThis.__T = null;
                     const f = __fol('${F.el}', '${F.role}', '${F.id}'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true);
                     const ally = __fol('${F.el === 'fire' ? 'ice' : 'fire'}', 'brawler', null); ally.power = 0; ally.stance = 'hold';
-                    const dist = ${F.role === 'brawler' ? 1.0 : F.role === 'camper' ? 1.6 : 3.5};
+                    const real0 = '${mode}'.replace('_full', ''), dist = (${F.role === 'brawler'} || (MOVES[real0] && MOVES[real0].close)) ? 1.0 : ${F.role === 'camper'} ? 1.6 : 3.5;   // (a close move is fought up close: its user walks in, and the trial holds it in place)
                     const foes = []; for (let i = 0; i < 3; i++) { const p = __foe(f.x + dist + (i % 2) * 0.5, f.y + (i >> 1) * 0.5 - 0.25); if (${LIVE}) delete p.update; foes.push(p); }
                     const real = '${mode}'.replace('_full', ''); if ('${mode}' !== 'main') followerAltSet(f, real); else followerAltSet(f, null);
                     if ('${mode}' === 'sweet_scent_full') f._nectar = 100;
                     f.currentWill = 100; f.attackCooldown = 0;
                     ally.x = f.x - 1; ally.y = f.y + 1; 
                     const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, denied: 0, assist: 0, err: 0 }; globalThis.__T = T;
-                    const X0 = f.x, Y0 = f.y, AX = ally.x, AY = ally.y; let used = 0;
+                    const X0 = f.x, Y0 = f.y, AX = ally.x, AY = ally.y; let used = 0; const FP = foes.map(p => [p.x, p.y]);
                     for (let k = 0; k < ${FR}; k++) {
                         try { render(); } catch (e) { T.err++; break; } used++;
+                        if (!${LIVE}) foes.forEach((p, i) => { p.x = FP[i][0]; p.y = FP[i][1]; p.kbVX = p.kbVY = 0; });   // (a standing enemy that is knocked back is put back: it cannot walk back by itself, and the Jelly Ram's knock would leave it out of reach for good, which read as 2 damage a second)
                         f.x = X0; f.y = Y0; f.stance = 'hold'; ally.x = AX; ally.y = AY; ally.stance = 'hold'; ally.power = 0;
                         if (f.currentWill < 60) f.currentWill = 100;
                         // the wounded ally stays at 30% so a heal always has something to restore; the follower itself is kept alive (its damage taken is tallied)

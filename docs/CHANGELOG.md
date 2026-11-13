@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13x` · branch `claude/maw-jelly-fixes` · CHOMP's cooldown fixed; RIFT IMPALE glitches; the Thornwhip walks in for BRIAR SWEEP; the trial's knockback flaw
+- **The asks** (the owner, 2026-11-13: "We need to sort out the Frostmaw's oddity behavior. And we need to increase Jellyram's attack if it's so weak"; "Thornwhip should walk towards the enemies when it has that new attack on"; "I like the idea of Rift Impale glitching the enemies as well"; the names "are fine for now").
+- **The Frost Maw's CHOMP was a bug:** when the Maw had to walk in before biting, the move was read as "did not fire", its 2.5 s cooldown never started, and it bit again every 15 frames, up to three bites in the air at once (79 bites in 20 s where 7 were meant). Fixed in `_altFire` (js/evolution.js): a move that returns `true` fired. CHOMP's numbers are unchanged: 2.4 × attack a bite, the stun and the slow. In the trial it reads about 30 damage a second now (it read 337).
+- **The Jelly Ram was not weak: the trial was wrong.** Its everyday hit knocks an enemy back (the core element's proc), the trial's standing enemies never walked back, and the Ram, held in place, stopped reaching them. A real enemy walks back. The trial now puts a pushed enemy back where it stood; **the Ram's attack is not changed** (the owner's "if it's so weak" does not hold: its measured number is in this build's `balance.html`).
+- **RIFT IMPALE** glitches the enemy it impales, 0.5 s (its wind-up broken, as SHOCK ZAP does; the length is the agent's). The Mimic's glitch-out as it teleports stays a look.
+- **BRIAR SWEEP is a close move:** locked on it, the Thornwhip walks in to use it. The trial fights a close move from one tile.
+- `js/evolution.js`, `js/moves.js`, `js/unitinfo.js`, `tools/balance-trial.js`, `tests/evolution.js` (CHOMP COOLS DOWN: 39 bites in 10 s on the old code, 3 or 4 now; the glitch; the close move), `docs/COMBAT.md`, `docs/OPEN-QUESTIONS.md`, the Bible, `balance.html`, `design/balance-trial.json`.
+- Not playtested.
+
 ### Build `2026-11-13w` · branch `claude/balance-system` · TOXIC STOMP: the coverage grid is full (28 of 28)
 - **The ask** (the owner, 2026-11-13: "Toxic crushing could be like a stomp attack by the seeper").
 - **TOXIC STOMP**, the Seeper's extra attack (its second move, open with 2 toxic energy cards): it stomps, and every enemy within 1.5 tiles that it can see takes 1.5 × its attack, Crushing, toxic. A close move with a 2 s cooldown. Smaller and quicker than ERUPTION; it eats no armour.
