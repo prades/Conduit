@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13j` · branch `claude/friendly-thompson-w581x0` · a squad card: the first tap picks, the second opens
+- **The ask** (the owner: a follower picked on the strip "highlights ... and it says equipment/strategy and then that way it doesn't automatically pull up that rollout card"; then "the card tile should grey out and become the button with the text").
+- **What it does:** on a tablet or a desktop, **the first tap on a squad card picks the follower** (orders go to it) and **the card turns grey and becomes a button reading EQUIPMENT / STRATEGY ▲**; **a second tap opens the member's card** (the roll-out with its equipment, energy and attack). A press anywhere else turns the card back, the follower still picked. The clone's card too. A phone is unchanged.
+- `js/party.js` (`partyPeekTap`, `partyPeekAway`, the slot's and the clone's faces), `game.html` (the face's css), `tests/party.js` (its check), `tests/squadfly.js`, `bottomui.js`, `clonesquad.js` (their taps go through it), `docs/UI-STYLE.md`.
+- **Verified:** the squad suites and the full suite; real taps at iPad size. **Not playtested.** Seen once more: tests/party.js's check that a posted follower keeps to its room failed on some runs and passed on others, with and without this change (it rests on the follower's random wandering).
+
 ### Build `2026-11-13i` · branch `claude/friendly-thompson-w581x0` · the command card leans as the squad's cards do
 - **The ask** (the owner: "Make it match the roster to the side and with that edge lean design, but keep all the buttons in the right places").
 - **What it does:** out of a fight, ROSTER and its ALL, HOLD and COME have **the squad cards' slanted edges** (leaning 9 degrees, level top and bottom, the words upright), and ROSTER a purple bar at its left as each squad card has its colour's. **Every button is where it was** (build `2026-11-13h`). A phone is unchanged.

@@ -252,7 +252,7 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span><button class="sb-ult" aria-label="Ultimate" hidden><u></u><i class="sb-ultl">ULT</i><em class="sb-ultn"></em></button></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span><button class="sb-ultball" type="button" aria-label="Ultimate" tabindex="-1"></button>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span><button class="sb-ult" aria-label="Ultimate" hidden><u></u><i class="sb-ultl">ULT</i><em class="sb-ultn"></em></button></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span><button class="sb-peek" type="button" aria-label="Equipment and strategy">EQUIPMENT / STRATEGY<i>\u25b2</i></button><button class="sb-ultball" type="button" aria-label="Ultimate" tabindex="-1"></button>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
         const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
@@ -280,7 +280,7 @@ function partyStripTuck(on) {
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult, .sb-ultball"), call: slot._call || null };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult, .sb-ultball"), peek: !!t.closest(".sb-peek"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     if (ev.target && ev.target.closest && ev.target.closest(".sb-tuck")) { partyStripTuck(); return; }   // the strip's tab: in, or out again
@@ -300,8 +300,26 @@ function partyBarClick(ev) {
     }
     if (f && typeof techAimActive === "function" && techAimActive() && typeof techAimPickFollower === "function" && techAimPickFollower(f)) { partyBarRender(true); return; }
     if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
+    if (typeof hudCorners === "function" && hudCorners() && typeof selectedUnits !== "undefined") { partyPeekTap(f, hit.peek); return; }   // (the strip: the first tap picks and lights the card, the second opens it: build 2026-11-13j)
     if (typeof ccToggle === "function" && ccToggle(f)) { _sfLast = f; _sfAway = false; }   // (the card that opens beside the stack is the last one tapped, even after it was put away: js/squadfly.js)
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
+}
+// PICK, THEN OPEN (build 2026-11-13j; the owner: "whenever I select a follower from my mini roster it highlights that the box and grays out the screen and it says equipment/strategy and then that way it
+// doesn't automatically pull up that rollout card ... you have to basically double click it ... shows that you can tap it again basically without saying double tap"). On the strip (the corners layout) the
+// first tap on a member's card picks it (the orders go to it, as before) and the card itself greys and becomes the button: EQUIPMENT / STRATEGY ▲, its ▲ beckoning (the owner, of a first try with the
+// screen greyed and a tab over the card: "No the card tile should grey out and become the button with the text"). The member's card (js/squadfly.js) stays shut until a second tap on it opens it. A press
+// anywhere else turns it back, the member still picked (as a press away puts the member's card away). A tap on a card that is open (or was put away) lets it go, as before. _sbPeek: the member waiting, or null.
+let _sbPeek = null, _sbPeekWired = false;
+function partyPeekTap(f, onTab) {
+    if (_sbPeek === f || (onTab && selectedUnits.has(f))) { _sbPeek = null; _sfLast = f; _sfAway = false; }   // the second tap: open its card
+    else if (!selectedUnits.has(f)) { selectedUnits.add(f); _sfLast = f; _sfAway = true; _sbPeek = f; }   // the first: pick it and light it, its card shut
+    else { selectedUnits.delete(f); if (_sbPeek === f) _sbPeek = null; }   // picked already, its card open or put away: let it go
+    partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true); if (typeof partyFlyRender === "function") partyFlyRender(true);
+}
+function partyPeekAway(ev) { if (!_sbPeek) return; const t = ev && ev.target && ev.target.closest ? ev.target : null; if (t && t.closest("#squadBar")) return; _sbPeek = null; partyBarRender(true); }   // (a press elsewhere: the card turns back, the member still picked)
+function _partyPeekSync() {
+    if (_sbPeek && (_sbPeek.dead || typeof selectedUnits === "undefined" || !selectedUnits.has(_sbPeek) || !_sfAway || !(typeof hudCorners === "function" && hudCorners()))) _sbPeek = null;   // (let go elsewhere, its card opened another way, or gone)
+    if (!_sbPeekWired && typeof document !== "undefined" && document.addEventListener) { _sbPeekWired = true; document.addEventListener("pointerdown", partyPeekAway, true); }
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }
 // a card's XP bar: its length is how far the unit is through its level, it breathes in the last level before an evolution, and it flashes a moment when XP came in. The card's title says it in words.
@@ -371,17 +389,19 @@ function _partyUltBall(el, f) {
 // tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
 // `lit`: which member's card is lit (the bar's is the selection; the carousel's squad row lights the creature in view)
 function partySlotsUpdate(E, lit) {
+    if (!lit) _partyPeekSync();
     const mem = partyOrdered(), held = partyPosted(), one = held.length === 1 ? held[0] : null;
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) { if (f && !el._unit && E.joinable) { el.classList.add("sb-join"); el._joinAt = Date.now(); } el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }   // (a member who joins: the strip grows to take its card, build 2026-11-12g)
         if (el._joinAt && Date.now() - el._joinAt > 700) { el._joinAt = 0; el.classList.remove("sb-join"); }
         if (typeof cardArtUnitClass === "function") cardArtMark(el, f ? cardArtUnitClass(f) : "");   // a member's backdrop: its element's texture under its class's (js/cardart.js); an open slot has none
-        if (!f) { _partyUltBall(el, null); el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
+        if (!f) { _partyUltBall(el, null); el.classList.remove("peek"); el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
         el._call = null; el.classList.remove("call");
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
         el.classList.toggle("sel", lit ? !!lit(f) : typeof selectedUnits !== "undefined" && selectedUnits.has(f));
+        el.classList.toggle("peek", !lit && _sbPeek === f);
         { const cs = lit ? null : (typeof techChipState === "function" && techChipState(f)) || (typeof altChipState === "function" && altChipState(f)) || null, ab = el.querySelector(".sb-ab");   // a technician's ability chip (or a CAPACITOR DISCHARGE's: js/evolution.js altChipState): on the bar only (not the Command Center's squad box)
           el.classList.toggle("has-ab", !!cs); if (ab) { _sbSet(ab, "textContent", cs ? cs.text : ""); _sbSet(ab, "className", "sb-ab" + (cs ? " " + cs.cls : "")); _sbSet(ab, "title", cs && cs.title ? cs.title : ""); }
           const cs2 = !lit && typeof techChip2State === "function" ? techChip2State(f) : null, ab2 = el.querySelector(".sb-ab2");   // the Thermite Burrower's second chip (FAULTLINE), above the first
@@ -429,7 +449,7 @@ function _partyCloneCard(E) {
     if (!c) { if (E.clone) { if (E.clone.parentNode) E.clone.parentNode.removeChild(E.clone); E.clone = null; } return; }
     if (!E.clone || E.clone.parentNode !== E.root) {
         const el = document.createElement("div"); el.className = "sb-slot sb-clone"; el.setAttribute("data-slot", "clone");
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-ctag">CLONE</span>';
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-ctag">CLONE</span><button class="sb-peek" type="button" aria-label="Equipment and strategy">EQUIPMENT / STRATEGY<i>\u25b2</i></button>';   // (its EQUIPMENT / STRATEGY face: partyPeekTap)
         if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", PARTY_CLONE_COL);
         if (E.joinable && el.classList) el.classList.add("sb-join");   // (it joins the strip as a member does)
         E.root.appendChild(el); E.clone = el;
@@ -437,6 +457,7 @@ function _partyCloneCard(E) {
     const el = E.clone, st = typeof unitStatus === "function" ? unitStatus(c) : null;
     if (el._unit !== c) { el._unit = c; el._thumbKey = null; }
     el.classList.toggle("sel", typeof selectedUnits !== "undefined" && selectedUnits.has(c));
+    el.classList.toggle("peek", _sbPeek === c);   // (picked and waiting: its card the button, as a member's)
     const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub"), hp = el.querySelector(".sb-hp u"), hpn = el.querySelector(".sb-hpn");
     _sbSet(nm, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(c) : "CLONE");
     _sbSet(sb, "textContent", "LV " + (c.level || 1) + " · " + (st ? st.text : "FOLLOWING")); if (st && sb.style) sb.style.color = st.col;

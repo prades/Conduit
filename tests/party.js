@@ -32,7 +32,7 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool *, #squadBar, #squadBar * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
-  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+  var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (el.closest && el.closest('#squadBar') && document.querySelector('#squadBar .sb-slot.peek')) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };   // (a card on the strip: the first tap lights it, the second opens it since build 2026-11-13j; this taps through to the open card, as the checks below were written for: tests/party.js has the two taps' own check)
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; partyTick(); await wait(30);
@@ -48,6 +48,17 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var br = bar.getBoundingClientRect(), dr = dock.getBoundingClientRect(), tr = tool ? tool.getBoundingClientRect() : null;
     var pod = $('#mixTool .mt-pod'), pr = pod ? pod.getBoundingClientRect() : null;
     out.place = { aboveDock: dr.width > 0 ? br.bottom <= dr.top + 1 : true, underDock: dr.width > 0 ? br.top >= dr.bottom - 1 : true, overPod: !!pr && pr.width > 0 && br.left < pr.right && br.right > pr.left && br.top < pr.bottom && br.bottom > pr.top, dockShown: dr.width > 0, onScreen: br.left >= 0 && br.right <= innerWidth && br.top >= 0, centred: Math.abs((br.left + br.right) / 2 - innerWidth / 2) < 3, stacked: wide && !!tr && br.left >= tr.right - 1 && br.width > br.height && (dr.width <= 0 || br.left >= dr.right - 1) /* (a strip right of the orders and the dock since build 2026-11-12g: it stood stacked over the orders) */, overTool: !!tr && wide && br.left < tr.right && br.right > tr.left && br.top < tr.bottom && br.bottom > tr.top, w: Math.round(br.width), h: Math.round(br.height), noChip: !document.querySelector('#squadBar canvas') ? 'none' : 'canvas' };
+    // PICK, THEN OPEN (build 2026-11-13j; the owner: "whenever I select a follower from my mini roster it highlights that the box and grays out the screen and it says equipment/strategy and then that way it
+    // doesn't automatically pull up that rollout card"; then "the card tile should grey out and become the button with the text"): one tap, raw (no tap through); a second; a press elsewhere
+    if (wide) {
+      var raw = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }, pk = function(){ var p = $('#squadBar .sb-slot.peek'), t = p && p.querySelector('.sb-peek'); var tr = p && t ? [p.getBoundingClientRect(), t.getBoundingClientRect()] : null; return [selectedUnits.size, !!$('#squadFly.on'), !!p, t ? getComputedStyle(t).display + ':' + t.textContent : '', tr ? Math.abs(tr[0].top - tr[1].top) <= 1 && Math.abs(tr[0].height - tr[1].height) <= 1 : ''].join('|'); };
+      var reset = function(){ selectedUnits.clear(); partyBarRender(true); mixToolRender(true); partyFlyRender(true); };
+      reset(); var p0 = $$('#squadBar .sb-slot')[0]; out.peek = {}; raw(p0); await wait(40); out.peek.first = pk();
+      raw(p0); await wait(40); out.peek.second = pk();
+      raw(p0); await wait(40); out.peek.third = pk();
+      reset(); raw(p0); await wait(30); document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await wait(40); out.peek.away = pk();
+      reset();
+    }
     // a tap on a card selects that follower
     selectedUnits.clear(); var s0 = $$('#squadBar .sb-slot')[0]; click(s0); await wait(30);
     out.tap = { sel: selectedUnits.size, cls: s0.classList.contains('sel'), who: $('#mixTool .mt-lab') ? $('#mixTool .mt-lab').textContent : null, to: $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, name: s0.querySelector('.sb-name').textContent, fly: !!$('#squadFly.on') }; click(s0); await wait(30); out.tap.after = [selectedUnits.size, s0.classList.contains('sel'), $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, !!$('#squadFly.on')];
@@ -226,6 +237,12 @@ function measure(w, h) {
             same(r.xp.shown.join(), 'true,true,true', 'the bars are on the cards'); same(r.xp.hpBelow.join(), 'true,true,true', 'under the health bar'); same(r.xp.inside.join(), 'true,true,true', 'inside the card');
             ok(/LV 6/.test(r.xp.titles[1]) && /85 \/ 127 XP/.test(r.xp.titles[1]) && /EVOLVES AT LV 8 · 2 LEVELS · 211 XP TO GO/.test(r.xp.titles[1]), 'the title: ' + r.xp.titles[1]); ok(/EVOLVES AT LV 8 · 1 LEVEL · 69 XP TO GO/.test(r.xp.titles[2]), 'level 7: ' + r.xp.titles[2]);
             same(r.xp.soon.join(), 'false,false,true', 'only the one in the last level before it evolves breathes'); same(r.xp.gain0.join(), 'false,false,false', 'no flash before XP came in'); same(r.xp.gain.join(), 'false,true,false', 'the card that got XP flashes'); same(r.xp.wAfter, Math.round(105 / 127 * 100) + '%', 'and its bar grew');
+        });
+        if (wide) check(w + ': PICK, THEN OPEN (build 2026-11-13j): the first tap on a squad card picks the follower and the card itself greys and becomes the button, EQUIPMENT / STRATEGY, the member\'s card shut; a second tap opens the member\'s card; a tap on the open one lets it go; a press elsewhere turns the card back, the member still picked', () => {
+            const P = r.peek; ok(P, 'no probe');
+            same(P.first, '1|false|true|flex:EQUIPMENT / STRATEGY\u25b2|true', 'the first tap (picked, its card shut, the card the button, covering it)');
+            same(P.second, '1|true|false||', 'the second tap: its card open'); same(P.third, '0|false|false||', 'a tap on the open one');
+            same(P.away, '1|false|false||', 'a press elsewhere');
         });
         check(w + ': a tap on a card selects that follower (a ring under it, the tool says who: ORDERS TO the member; a phone: SEL 1) and a second tap lets it go; HOLD posts the squad where the player is (the bar shows three open slots, a message says the room); a tap on an open slot opens the roster', () => {
             same(r.tap.sel, 1, 'selected'); same(r.tap.cls, true, 'the card is not marked'); if (wide) { ok(r.tap.to && r.tap.to !== '3 FOLLOWING' && r.tap.name.length > 4, 'the tool names the picked member: ' + r.tap.to); same(r.tap.fly, true, 'the member\'s card does not open beside the stack'); same(r.tap.after.join(), '0,false,3 FOLLOWING,false', 'a second tap: ALL, and the card goes'); } else same(r.tap.after.slice(0, 2).join(), '0,false', 'a second tap');
