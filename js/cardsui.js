@@ -474,7 +474,7 @@ function energyRowNote(f, held) {
     if (!s.some(Boolean) && !held) return f.evolved ? "NO ENERGY CARDS · THEY COME IN PACKS · " + energyLabel(f.element) + " ONES UNLOCK ITS ATTACKS" : "NO ELEMENT · NO ENERGY CARDS: THEY COME IN PACKS";
     if (!f.evolved) return s[0] ? "ITS ELEMENT · USED UP WHEN IT EVOLVES" : "NO ELEMENT · PUT AN ENERGY CARD IN";
     const hy = energyHybrids(f).length;
-    return "SECOND ATTACK " + (energyAltOpen(f) ? "OPEN" : "LOCKED") + " · ULTIMATE " + (energyUltOpen(f) ? "OPEN" : "LOCKED") + (hy ? " · " + hy + " HYBRID" + (hy > 1 ? "S" : "") + ": NOT DESIGNED YET" : "");
+    return "SECOND ATTACK " + (energyAltOpen(f) ? "OPEN" : "LOCKED") + " · ULTIMATE " + (energyUltOpen(f) ? "OPEN" : "LOCKED") + " · " + energyLabel(f.element) + " POWER " + Math.round(energyPower(f) * 100) + "%" + (hy ? " · " + hy + " OF ANOTHER ELEMENT: NO POWER" : "");
 }
 function energyFollowerPick(f, slot) {
     const cur = energySlots(f)[slot], els = energyHeld().filter(el => el !== cur).concat(cur ? [cur] : []);

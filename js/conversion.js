@@ -75,8 +75,8 @@ function convertApply(f) {
     if (typeof partyBarRender === "function") partyBarRender(true);
     if (typeof facilitySaveWrite === "function") facilitySaveWrite();   // (saved now, not in a few seconds: it cannot be undone)
     const now = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "BLOOM FOLLOWER";
-    const locked = f.evolved && typeof energyAltOpen === "function" && !energyAltOpen(f);   // (its toxic energy cards stay toxic: js/energy.js)
-    return { ok: true, msg: name + " IS NOW A " + now + (off.length ? " · " + off.join(", ") + " CAME OFF" : "") + (locked ? " · ITS ATTACKS WAIT FOR BLOOM ENERGY CARDS" : ""), off };
+    const locked = f.evolved && typeof energyOwn === "function" && energyOwn(f) === 0;   // (its toxic energy cards stay toxic: another element's on its BLOOM form, they keep its attacks open and give no elemental power, js/energy.js build 2026-11-13y)
+    return { ok: true, msg: name + " IS NOW A " + now + (off.length ? " · " + off.join(", ") + " CAME OFF" : "") + (locked ? " · ITS BLOOM POWER WAITS FOR BLOOM ENERGY CARDS" : ""), off };
 }
 
 // ── THE PANEL (the station's use: js/stations.js) ──
