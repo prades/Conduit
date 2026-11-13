@@ -16,7 +16,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: The items in 3D; the PACK's tiles as translucent glossy buttons
 
-- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13u`
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13x` (stamped 13u on its branch)
 - **Status:** Approved (the owner's words); built
 - **Context:** the owner: "I want to redo the items in the game make them have 3-D looking assets". Every item was drawn flat in the PACK and wherever else an item shows; on the floor 12 of 18 had small 3D models. One piece first (`docs/ART-PROCESS.md`): the AMMO PACK as a 3D model, shown in the PACK beside the flat icons. The owner's answer: **"Also change that item menu to the borders on those on the grid aren't so big maybe make them translucent glossy buttons."**
 - **Decision:** the agent read "Also" as a yes to the 3D look. Every item is a 3D model, one set for the floor and the icons; the PACK's tiles are translucent glossy buttons with thin edges.

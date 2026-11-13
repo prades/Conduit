@@ -235,7 +235,7 @@ const INV_ICONS = {
         c.fillStyle = col; c.beginPath(); c.arc(x, y, s * 0.13, 0, 6.2832); c.fill(); c.globalAlpha = 0.5; c.beginPath(); c.arc(x, y, s * 0.2, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
     },
 };
-// THE ITEMS IN 3D (build 2026-11-13u; the owner: "I want to redo the items in the game make them have 3-D looking assets"): each item is drawn as its 3D model, baked from the game's own camera
+// THE ITEMS IN 3D (build 2026-11-13x; the owner: "I want to redo the items in the game make them have 3-D looking assets"): each item is drawn as its 3D model, baked from the game's own camera
 // (img/props/itemicons.png: design/props/models/itemicons.js, the same models as the floor's pickups), its larger side INV_ICON_FIT of the box; the flat drawing above until the sheet has arrived
 const INV_ICON_FIT = 0.96;
 function invIconCell(id) { return typeof PROP_ATLAS !== "undefined" && PROP_ATLAS.itemicons ? PROP_ATLAS.itemicons.cells[id] || null : null; }
@@ -299,7 +299,7 @@ function _ivName(t, c, nb, col) {
     const w = t.split(" "), mid = Math.ceil(w.length / 2), s2 = Math.max(7, size - 2);
     uiTextFit(w.slice(0, mid).join(" "), c.x + c.w / 2, y - s2 * 0.55, s2, col, "center", max); uiTextFit(w.slice(mid).join(" "), c.x + c.w / 2, y + s2 * 0.55, s2, col, "center", max);
 }
-// A TILE: A TRANSLUCENT GLOSSY BUTTON (build 2026-11-13u; the owner: "change that item menu to the borders on those on the grid aren't so big maybe make them translucent glossy buttons"): glass tinted
+// A TILE: A TRANSLUCENT GLOSSY BUTTON (build 2026-11-13x; the owner: "change that item menu to the borders on those on the grid aren't so big maybe make them translucent glossy buttons"): glass tinted
 // with the item's colour, the panel showing through it, a sheen over its top half, a hairline edge and a bright rim where the light catches its top; the name on a soft fade at its foot. (Until this build:
 // a dark tile with a corner of its colour, a black name bar and a 2 px edge, the chosen one a 9 px glow and a 3 px white frame.)
 function _ivTile(c, f) {

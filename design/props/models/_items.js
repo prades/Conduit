@@ -1,4 +1,4 @@
-// THE ITEMS IN 3D (build 2026-11-13u; the owner, 2026-11-13: "I want to redo the items in the game make them have 3-D looking assets"; shown the AMMO PACK, one piece first, design/items/icon_draft.js,
+// THE ITEMS IN 3D (build 2026-11-13x; the owner, 2026-11-13: "I want to redo the items in the game make them have 3-D looking assets"; shown the AMMO PACK, one piece first, design/items/icon_draft.js,
 // then: "Also change that item menu ..."). One model for each of the PACK's items (js/inventory.js ITEMS, in ITEM_ORDER), shared by two families: `pickups` (each on the floor, at the game's size) and
 // `itemicons` (each framed to fill an icon: the PACK's tiles and stage and wherever an item is drawn, js/inventory.js invDrawIcon). Twelve keep the floor designs of build 2026-11-09zz (the owner's "A A
 // heap" for the scrap; the rest the agent's), made at icon detail; six are new, each from its own lore: the healing serum, the specimen capsule, the rock, the purification module and the two potions.

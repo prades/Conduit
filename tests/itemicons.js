@@ -1,4 +1,4 @@
-// THE ITEMS IN 3D AND THE PACK'S GLOSSY TILES (build 2026-11-13u; js/inventory.js invDrawIcon, _ivTile; design/props/models/_items.js, itemicons.js, pickups.js; docs/TUTORIAL.md, "The items in 3D").
+// THE ITEMS IN 3D AND THE PACK'S GLOSSY TILES (build 2026-11-13x; js/inventory.js invDrawIcon, _ivTile; design/props/models/_items.js, itemicons.js, pickups.js; docs/TUTORIAL.md, "The items in 3D").
 // ASKED (the owner, 2026-11-13): "I want to redo the items in the game make them have 3-D looking assets"; shown the AMMO PACK, one piece first: "Also change that item menu to the borders on those on
 // the grid aren't so big maybe make them translucent glossy buttons".
 const fs = require('fs');

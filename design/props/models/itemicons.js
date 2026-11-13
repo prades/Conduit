@@ -1,4 +1,4 @@
-// THE ITEMS' ICONS (build 2026-11-13u; the owner, 2026-11-13: "I want to redo the items in the game make them have 3-D looking assets"): every item of the PACK as its 3D model (design/props/models/_items.js,
+// THE ITEMS' ICONS (build 2026-11-13x; the owner, 2026-11-13: "I want to redo the items in the game make them have 3-D looking assets"): every item of the PACK as its 3D model (design/props/models/_items.js,
 // the same models the floor's pickups are baked from), seen from the game's own camera and framed to `fit` px (design/props/bake_props.js), a soft contact shadow under each. The game draws them wherever an
 // item is shown: the PACK's tiles and stage, the class picker's kit, the Armory terminal, the beacon over a pickup (js/inventory.js invDrawIcon; the flat drawings, INV_ICONS, until the sheet has arrived).
 {

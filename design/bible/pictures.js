@@ -81,7 +81,7 @@ async function openGame(b, w, h) {
     await p.evaluate(() => { facilityInspectToggle(); }); await shot(p, 'map');
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
-  if (want.includes('pack')) {   // the pack alone (build 2026-11-13u: the items in 3D, the glossy tiles), as the `ui` group makes it, the other screens left as they are
+  if (want.includes('pack')) {   // the pack alone (build 2026-11-13x: the items in 3D, the glossy tiles), as the `ui` group makes it, the other screens left as they are
     const { p, errs } = await openGame(b, 1180, 820);
     await p.evaluate(() => { classPickerOpen = false; for (const [id, k] of [['ammo_pack', 3], ['scrap_metal', 12], ['power_cell', 2], ['fuel_cell', 2], ['toxic_sample', 1]]) invAdd(id, k); invOpen(); _invSel = 'scrap_metal'; }); await shot(p, 'pack');
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
