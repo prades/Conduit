@@ -3197,3 +3197,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - **The wisps' angles** (the owner, of the smooth wisps: **"Close but the angles not right should be more like flex coming off, not angled towards the spot aimed"**; "flex" read as flicks/flares, the agent's reading): the wisps come off the **sides and back** of the blob with their tips swept back, none pointing towards where it is going.
 - **Smaller towards the back** (the owner: **"Then make them smaller towards the back of the projectile. Or"**; cut off at "Or"): the wisps near the very back of the blob are shorter and thinner (about 57% of the side ones). The rest of the owner's sentence is not known: **open**.
 
+## DECISION: The Voidstar's everyday shot is a one-two slap of telepathic tentacles (2026-11-12, build `2026-11-12x`, branch `claude/voidstar-tendrils`)
+- The owner: **"How about the void star slaps the enemy with telepathic tentacles?"** Asked what they are made of and how many: **"Ghostly violet energy"** (alternatives: its own stretched arms; both) and **"Two alternate"** (alternatives: one whips; three at once).
+- Built: see `CHANGELOG.md`. Looks only; the shot's damage, speed and timing are as they were; the tentacles reach to wherever the shot is.
+- Agent's, provisional: the look of the tentacles and the slap. Open: the Voidstar's body moving for the shot.
+- Status: Implemented and tested; not playtested. `CHANGELOG.md`.
+

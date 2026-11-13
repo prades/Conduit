@@ -1589,6 +1589,16 @@ function drawElementEffects() {
                 ctx.strokeStyle = '#a9c4b3'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.globalAlpha = fade * 0.8; for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.8 + age * 0.3, d0 = 10 + 8 * sp; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.8); ctx.lineTo(px + Math.cos(an) * (d0 + 7), cy + Math.sin(an) * (d0 + 7) * 0.8); ctx.stroke(); }   // (a few dull wisps of it as it lands)
                 ctx.restore(); break;
             }
+            // The Voidstar's everyday shot landing (js/evolution.js voidSlap): a one-two slap of its telepathic tentacles on the target: two flat bursts of ghostly violet, the second a few frames after the first; flat shapes
+            case "tendrilslap": {
+                const age = e.maxLife - e.life, cy = py - 12;
+                ctx.save(); ctx.lineCap = 'round';
+                for (let k = 0; k < 2; k++) { const a = age - k * 6; if (a < 0 || a > 7) continue; const u = a / 7, fa = 1 - u * u, an0 = k ? 0.4 : 1.1;
+                    ctx.globalAlpha = 0.55 * fa; ctx.fillStyle = '#bb66ff'; ctx.beginPath(); ctx.ellipse(px, cy, 8 + 10 * u, 5 + 6 * u, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 0.9 * fa; ctx.fillStyle = '#ead6ff'; ctx.beginPath(); ctx.ellipse(px, cy, 4 + 3 * u, 2.6 + 2 * u, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = k ? '#ead6ff' : '#bb66ff'; ctx.lineWidth = 2.4 * (1 - u) + 0.8; for (let i = 0; i < 6; i++) { const an = an0 + i * 1.047, d0 = 9 + 10 * u; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * d0, cy + Math.sin(an) * d0 * 0.7); ctx.lineTo(px + Math.cos(an) * (d0 + 8 * (1 - u) + 3), cy + Math.sin(an) * (d0 + 8 * (1 - u) + 3) * 0.7); ctx.stroke(); } }
+                ctx.restore(); break;
+            }
             case "rotshards": {
                 const k = e.life / e.maxLife, cy = py + TILE_H * 0.5;
                 ctx.globalAlpha = 0.2 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px, cy - 4, 26, 12, 0, 0, Math.PI * 2); ctx.fill();
