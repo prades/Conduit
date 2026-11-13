@@ -167,7 +167,7 @@ function measure(w, h) {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'brawler', 'seeper'); m.level = 12; _applyFollowerLevel(m, true); m.alt = 'eruption'; partyTick();
             const st = JSON.stringify(m.stats), hp = [m.health, m.maxHealth], g = convertPreview(m), mv = [_cvMoves(m), _cvMoves(g)], fm = [_cvFormName(m), _cvFormName(g)], res = convertApply(m);
             return { mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m) }; })()`);
-        same(r.fm.join('|'), 'SEEPER|SUNDEW', 'the FORM row'); same(r.mv[1], 'NECTAR STING · SWEET SCENT (LOCKED) · ULTIMATE CONSUME (LOCKED)', 'its moves after (NECTAR STING and SWEET SCENT since build 2026-11-08n; its Ultimate CONSUME)');
+        same(r.fm.join('|'), 'SEEPER|SUNDEW', 'the FORM row'); same(r.mv[1], 'NECTAR STING · SWEET SCENT · ULTIMATE CONSUME', 'its moves after (open: its three toxic cards count toward its attacks since build 2026-11-13y, with no BLOOM power; NECTAR STING and SWEET SCENT since build 2026-11-08n; its Ultimate CONSUME)');
         ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'sundew', 'its form'); same(r.alt, null, 'its alternate (ERUPTION is not SUNDEW\'s)');
         ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'SUNDEW', 'its name');
     });
@@ -177,7 +177,7 @@ function measure(w, h) {
             const rec = followerRecord(m); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
             return { preview: g.evolved, mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m), back: [back.element, back.evolved, back.convertedFrom] }; })()`);
         same(r.preview, 'shrub', 'the preview\'s form'); same(r.fm.join('|'), 'ROTSHARD|THORNWHIP', 'the FORM row');
-        same(r.mv.join('|'), 'CORRODE SHOT · ROTTEN DECOY · ULTIMATE TOXIC PUDDLE|SEED SHOT · SEEDFALL (LOCKED) · BRIAR SWEEP (LOCKED) · ULTIMATE PINK THICKET (LOCKED)', 'the MOVES row (its shot, its alternate, its Ultimate)');
+        same(r.mv.join('|'), 'CORRODE SHOT · ROTTEN DECOY · ULTIMATE TOXIC PUDDLE|SEED SHOT · SEEDFALL · BRIAR SWEEP · ULTIMATE PINK THICKET', 'the MOVES row (its shot, its alternate, its Ultimate)');
         ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'shrub', 'its form'); same(r.alt, null, 'its alternate (ROTTEN DECOY is not the shrub\'s)');
         ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'THORNWHIP', 'its name'); ok(/IS NOW A THORNWHIP/.test(r.msg), 'the words: ' + r.msg);
         same(r.back.join(), 'blossom,shrub,toxic', 'saved and loaded back');
@@ -188,8 +188,8 @@ function measure(w, h) {
             const rec = followerRecord(t); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
             return { preview: g.evolved, ab, mv, fm, ok: res.ok, msg: res.msg, el: t.element, evo: t.evolved, now: (techAbilityOf(t) || {}).id, ult: (FORM_ULTIMATES[t.evolved] || {}).name, ultLocked: followerUltLocked(t), same: JSON.stringify(t.stats) === st, label: unitTypeLabel(t), back: [back.element, back.evolved, back.convertedFrom], brawler: _cvAbility(__mk('toxic', 'brawler')) }; })()`);
         same(r.preview, 'coralcrab', 'the preview\'s form'); same(r.fm.join('|'), 'BLIGHT SPIDER|STONEPETAL', 'the FORM row (STONEPETAL: the coral crab\'s name since build 2026-11-08n)'); same((r.ab || []).join('|'), 'TOXIC PODS|REEF', 'the ABILITY row'); same(r.brawler, null, 'an ABILITY row for a Brawler');
-        ok(/ULTIMATE REEF PILLAR \(LOCKED\)$/.test(r.mv[1]), 'its moves after (locked: its toxic energy cards stay toxic, the owner, 2026-11-09: "Only an egg\'s card"): ' + r.mv[1]);
-        ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'coralcrab', 'its form'); same(r.now, 'reef', 'its ability'); same(r.ult, 'Reef Pillar', 'its Ultimate'); same(r.ultLocked, true, 'its Ultimate locked until it holds BLOOM energy cards (its toxic ones stay toxic: the owner, 2026-11-09, "Only an egg\'s card")');
+        ok(/ULTIMATE REEF PILLAR$/.test(r.mv[1]), 'its moves after (open since build 2026-11-13y: its toxic energy cards stay toxic and count toward its attacks, the owner, 2026-11-09: "Only an egg\'s card"): ' + r.mv[1]);
+        ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'coralcrab', 'its form'); same(r.now, 'reef', 'its ability'); same(r.ult, 'Reef Pillar', 'its Ultimate'); same(r.ultLocked, false, 'its Ultimate stays open on its three toxic cards (any card counts since build 2026-11-13y; they stay toxic: the owner, 2026-11-09, "Only an egg\'s card")');
         ok(r.same, 'its stats changed'); same(r.label, 'STONEPETAL', 'its name'); same(r.back.join(), 'blossom,coralcrab,toxic', 'saved and loaded back');
     });
     check('its element is BLOOM, and it remembers it was toxic; its level, XP, stats, health and bond are as they were; it is named BLOOM BRAWLER', () => {

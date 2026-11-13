@@ -60,7 +60,7 @@ const MOVES = {
     ember_slash:       { id: "ember_slash",       name: "EMBER SLASH",       windup: 2, close: true, fn: f => emberSlash(f) },    // the Quillstone's (fire, Slashing)
     rift_impale:       { id: "rift_impale",       name: "RIFT IMPALE",       windup: 2.5, fn: f => riftImpale(f) },     // the Rift Mimic's (flux, Piercing)
     blade_roll:        { id: "blade_roll",        name: "BLADE ROLL",        windup: 2.5, fn: f => bladeRoll(f) },      // the Hammer Slug's (core, Slashing)
-    briar_sweep:       { id: "briar_sweep",       name: "BRIAR SWEEP",       windup: 2.5, fn: f => briarSweep(f) },     // the Thornwhip's (bloom, Slashing)
+    briar_sweep:       { id: "briar_sweep",       name: "BRIAR SWEEP",       windup: 2.5, close: true, fn: f => briarSweep(f) },     // the Thornwhip's (bloom, Slashing); a close move since build 2026-11-13x (the owner: "Thornwhip should walk towards the enemies when it has that new attack on")
     toxic_stomp:       { id: "toxic_stomp",       name: "TOXIC STOMP",       windup: 2, close: true, fn: f => toxicStomp(f) },    // the Seeper's (toxic, Crushing; build 2026-11-13w)
     // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
     // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.

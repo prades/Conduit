@@ -30,6 +30,23 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
          globalThis.__tgt = (o) => Object.assign({ x: 0, y: 0 }, o || {});
          globalThis.__noWords = () => { floatingTexts.length = 0; };`);
 
+    // ENERGY POWER (js/energy.js, build 2026-11-13y) is checked on its own first; the rest of this suite is the damage system at the baseline, ONE card of its element (power 1), as it was before the rule
+    group('ENERGY POWER: an evolved follower\'s cards of its own element scale the ELEMENTAL part of its hits (the owner, 2026-11-13: 25 / 100 / 125 / 150%; "Hit damage only")');
+    check('with none, one, two and three cards of its element the elemental part of an everyday hit and of a move is 0.25, 1, 1.25 and 1.5 of the baseline and the physical part does not move; a card of another element adds nothing; an Ultimate\'s hit (a special) is not scaled; an unevolved follower is not scaled', () => {
+        const r = J(`(function(){ spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.evolved = 'quillstone'; f.level = 20; _applyFollowerLevel(f, true);
+            const S = SPECIES.ant, mk = () => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 5, 5); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; return p; };
+            const split = (cards, hit) => { f.energy = cards; return dmgApply(mk(), 20, f, 'fire', hit); };   /* (what lands on an ant: its physical part x its row, plus its elemental part x the power x the ant's Elemental row) */
+            const o = {};
+            o.main = [[null, null, null], ['fire', null, null], ['fire', 'fire', null], ['fire', 'fire', 'fire']].map(c => split(c, DMG_HIT_MAIN)); o.alt = [[null, null, null], ['fire', null, null], ['fire', 'fire', null], ['fire', 'fire', 'fire']].map(c => split(c, DMG_HIT_ALT));
+            o.other = split(['ice', 'ice', 'ice'], DMG_HIT_MAIN); o.mixed = split(['fire', 'ice', 'ice'], DMG_HIT_MAIN); o.special = [split([null, null, null], DMG_HIT_SPECIAL), split(['fire', 'fire', 'fire'], DMG_HIT_SPECIAL)];
+            delete f.evolved; f.energy = ['fire']; o.egg = energyPower(f); followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return o; })()`);
+        // the hit is P + k x E for a power k: so from none (0.25) to one (1), two (1.25) and three (1.5) cards it grows by 0.75 E, 1 E and 1.25 E
+        for (const [nm, T] of [['everyday', r.main], ['a move', r.alt]]) { const E = (T[1] - T[0]) / 0.75; ok(E > 0, nm + ': a card of its element added nothing: ' + T); near(T[2] - T[0], E, nm + ', two cards', 1e-6); near(T[3] - T[0], 1.25 * E, nm + ', three cards', 1e-6); ok(T[0] - 0.25 * E > 0, nm + ': no physical part left: ' + T); }
+        near(r.other, r.main[0], 'three ICE cards on a FIRE form gave power', 1e-9); near(r.mixed, r.main[1], 'one FIRE and two ICE cards: one card\'s power', 1e-9);
+        near(r.special[0], r.special[1], 'an Ultimate\'s hit was scaled', 1e-9); ok(r.egg === 1, 'an unevolved follower\'s power: ' + r.egg);
+    });
+    run('energyPower = () => 1;');   // (from here on: the baseline)
+
     group('THE TABLES (docs/COMBAT.md §7.2, §7.3, §7.4, §7.8)');
     check('six damage types', () => sameJSON(J('DMG_TYPES'), ['slashing', 'piercing', 'projectile', 'crushing', 'earthquake', 'elemental'], 'the types'));
     check('the race chart is the owner\'s, ✦ sharpenings included (beetle weak to Piercing, moth to Projectile)', () => {

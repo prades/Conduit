@@ -35,7 +35,7 @@ async function collect() {
                 mainType: t.main || null, altType: t.alt || null, extraType: t.extra || null, status: (typeof PRIMARY_STATUS !== 'undefined' && PRIMARY_STATUS[id]) || null, attacks: rows });
             followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f);
         }
-        out.statusChance = PRIMARY_STATUS_CHANCE; out.blindMiss = BLIND_MISS;
+        out.statusChance = PRIMARY_STATUS_CHANCE; out.blindMiss = BLIND_MISS; out.power = ENERGY.power.slice();
         return out; })()`);
 }
 
@@ -53,7 +53,7 @@ function render(D, M) {
         '.flag { color:#c2410c; } @media (prefers-color-scheme: dark) { .flag { color:#ffa366; } } h3 { font-size:15px; margin:18px 0 6px; }\n.el { display:inline-block; padding:1px 7px; border-radius:99px; font-size:12px; background:var(--head); border:1px solid var(--line); } .tag { font-size:12px; color:var(--mut); }\n' +
         'details { margin:2px 0; } summary { cursor:pointer; color:var(--acc); } .rows { margin:4px 0 6px 12px; } .rows div { margin:1px 0; } .k { color:var(--mut); font-size:12px; margin-right:6px; }\n</style></head><body>\n';
     h += '<h1>Conduit balance</h1>\n<p class="mut">Written against build <b>' + esc(D.build) + '</b>. Made by <code>node tools/balance.js</code> from the code, so it cannot drift; nothing here is history (that is <code>docs/CHANGELOG.md</code> and the Bible). Tap a column heading to sort.</p>\n';
-    h += '<p>Every form below is level 20 with the same base stats, so the numbers compare forms and not luck. Power is its ATK; the Mage&#39;s shot reads SP.ATK. ' +
+    h += '<p>Every form below is level 20 with the same base stats, so the numbers compare forms and not luck. Power is its ATK; the Mage&#39;s shot reads SP.ATK. Each holds <b>three energy cards of its own element</b>: every attack open, and the elemental part of its hits at its most (' + D.power.map(x => Math.round(x * 100) + '%').join(' / ') + ' with none, one, two and three). ' +
         'A primary attack carries its status on ' + Math.round(D.statusChance * 100) + '% of its hits; a blinded creature misses ' + Math.round(D.blindMiss * 100) + '% of its hits.</p>\n';
 
     // table 1: the forms and their stats and the everyday attack

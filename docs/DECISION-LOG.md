@@ -76,6 +76,16 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: Energy cards give elemental power; a card of any element unlocks attacks
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/energy-power`, `2026-11-13z`
+- **Status:** Approved
+- **Context:** the owner: energy cards did little beyond unlocking moves; a trade-off is wanted between forms whose attacks are mostly physical and forms that need energy "for real effectiveness".
+- **Decision:** the elemental part of an evolved follower's hits is x 0.25 / 1 / 1.25 / 1.5 with 0 / 1 / 2 / 3 cards of its own element; unlocks count cards of any element (1, 2, 3); hit damage only (not Ultimates, statuses, heals).
+- **Alternatives:** 50 / 100 / 115 / 130%; 25 / 50 / 75 / 100%; the Ultimate needing its own element's cards; scaling Ultimates and statuses too.
+- **Supersedes:** unlocks by cards of its own element only (`2026-11-09s`, `2026-11-13u`); a card of another element as a hybrid (hybrids: for later).
+- **Affects:** js/energy.js, js/damage.js, the INFO, INDEX, squad card and CARDS words, js/conversion.js, balance.html, docs.
+
 ## DECISION: The balance system (points and role bands); energy cards open attacks in three steps
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/balance-system`, `2026-11-13u`

@@ -176,6 +176,7 @@ function dmgApply(target, amount, source, element, hit) {
         const st = source.stats || {}, A = st.attack > 0 ? st.attack : 1, S = st.specialAttack > 0 ? st.specialAttack : 1;
         const k = amount / (hit.stat === "sp" ? S : A) * dmgNorm(source, hit.stat, w);
         phys = k * (1 - w) * A; elem = k * w * S;
+        if (hit.which !== "special" && typeof energyPower === "function") elem *= energyPower(source);   // ENERGY (js/energy.js, build 2026-11-13y): an evolved follower's cards of its own element scale the elemental part of its everyday hits and moves (not an Ultimate's or a special's)
         if (ptype === "elemental") ptype = null;   // an Elemental attack's physical quarter has no type
         el = element || source.element || null;
         if (el === "none") el = null;
