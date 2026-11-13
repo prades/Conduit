@@ -79,7 +79,7 @@ function measure(w, h) {
     group('1. BASH (the eight forms the design notes give none, and every follower before it evolves)');
     await check('BASH is the second attack of a follower that has not evolved; every form has its own (the eight forms and the Electro Skink had BASH as a stand-in until build 2026-11-09c: tests/ninemoves.js); a clone has none', () => {
         const r = J(`Object.values(EVOLUTIONS).filter(e => !e.legacy).map(e => e.id + ':' + evoMoveIds(e).join('/'))`);
-        for (const [id, mid] of [['jellyram', 'wobble_slam'], ['rimestar', 'icicle_volley'], ['hornshell', 'echo_pulse'], ['hammerslug', 'shell_guard'], ['gooproxy', 'phase_swap'], ['blightspider', 'venom_bite'], ['hovershell', 'shock_zap'], ['igloo', 'skate_charge'], ['electroskink', 'zigzag_dash']]) ok(r.indexOf(id + ':' + mid) >= 0, id + ': ' + r.join(' '));
+        for (const [id, mid] of [['jellyram', 'wobble_slam'], ['rimestar', 'icicle_volley'], ['hornshell', 'echo_pulse'], ['hammerslug', 'shell_guard'], ['gooproxy', 'phase_swap'], ['blightspider', 'venom_bite'], ['hovershell', 'shock_zap'], ['igloo', 'skate_charge'], ['electroskink', 'zigzag_dash']]) ok(r.some(x => x === id + ':' + mid || x.indexOf(id + ':' + mid + '/') === 0), id + ': ' + r.join(' '));
         same(r.filter(x => /bash/.test(x)).length, 0, 'forms with BASH'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true })).join()`), 'bash', 'before it evolves'); same(J(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });

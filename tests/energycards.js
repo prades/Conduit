@@ -22,8 +22,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__clear = () => { actors = actors.filter(a => !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; energyReset(); };`);
 
     group('THE RULES (js/energy.js)');
-    check('the owner\'s numbers: 1 slot unevolved, 3 evolved, level 8, 2 a pack; the second attack with 1 card of its element, the Ultimate with 2; "none" is no element a card can be', () => {
-        same(J('[ENERGY.unevolvedSlots, ENERGY.evolvedSlots, ENERGY.evolveLevel, ENERGY.altNeeds, ENERGY.ultNeeds].join()'), '1,3,8,1,2', 'the numbers');
+    check('the owner\'s numbers: 1 slot unevolved, 3 evolved, level 8, 2 a pack; the second attack with 1 card of its element, an extra attack with 2, the Ultimate with 3 (since build 2026-11-13u); "none" is no element a card can be', () => {
+        same(J('[ENERGY.unevolvedSlots, ENERGY.evolvedSlots, ENERGY.evolveLevel, ENERGY.altNeeds, ENERGY.alt2Needs, ENERGY.ultNeeds].join()'), '1,3,8,1,2,3', 'the numbers');
         same(J('EVOLVE_LEVEL'), 8, 'the evolution level'); same(J('energyElementOk(ENERGY_NONE)'), false, '"none" as a card'); same(J('energyElementOk("fire") && energyElementOk("blossom")'), true, 'fire and BLOOM as cards');
     });
 
@@ -45,14 +45,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('UNLOCKS: its own element\'s cards, its second attack then its Ultimate; another element\'s, a hybrid (not designed yet)');
-    check('an evolved follower with no card: second attack and Ultimate locked; 1 of its element: its second attack; 2: its Ultimate too; another element\'s card: a hybrid, unlocking nothing yet', () => {
-        const r = J(`(function(){ __clear(); const f = __mk('brawler', 'fire'); f.evolved = 'quillstone'; energyEvolved(f); const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
+    check('an evolved follower with no card: second attack and Ultimate locked; 1 of its element: its second attack; 2: its extra attack where its form has one (the Static Orb); 3: its Ultimate; another element\'s card: a hybrid, unlocking nothing yet', () => {
+        const r = J(`(function(){ __clear(); const f = __mk('sniper', 'fire'); f.evolved = 'embercowl'; energyEvolved(f);   /* (the Ember Hood: a form with no extra attack; the Quillstone has EMBER SLASH since build 2026-11-13v) */ const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
             const st = () => [evoMoveAllowed(f, d, mv), !!followerUltimate(f), !!followerUltLocked(f), energyHybrids(f).join('+')].join('/');
             o.none = st(); energyAdd('fire', 3); energyAdd('ice', 1);
-            energyPut(f, 0, 'ice'); o.hybrid = st(); energyPut(f, 1, 'fire'); o.one = st(); energyPut(f, 2, 'fire'); o.two = st();
+            energyPut(f, 0, 'ice'); o.hybrid = st(); energyPut(f, 1, 'fire'); o.one = st(); energyPut(f, 2, 'fire'); o.two = st(); energyPut(f, 0, 'fire'); o.three = st(); o.roles3 = [0, 1, 2].map(i => energySlotRole(f, i)).join('|'); energyPut(f, 0, 'ice');
+            const so = __mk('brawler', 'electric'); so.evolved = 'staticorb'; energyEvolved(so); const sd = evolvedDef(so), sm = evoMoveIds(sd); energyAdd('electric', 3); const sx = () => sm.map(id => evoMoveAllowed(so, sd, id)).join(); o.extra = [sx()]; energyPut(so, 0, 'electric'); o.extra.push(sx()); o.extraRole1 = energySlotRole(so, 0); energyPut(so, 1, 'electric'); o.extra.push(sx()); o.extraRole2 = energySlotRole(so, 1); o.extraMoves = sm.length;
             o.altSet = followerAltSet(f, mv); energyPut(f, 1, null); o.altOne = f.alt || null; energyPut(f, 2, null); o.altAfter = f.alt || null; o.roles = [0, 1, 2].map(i => energySlotRole(f, i)); return o; })()`);
         same(r.none, 'false/false/' + 'true/', 'no card (second attack / Ultimate / Ultimate locked / hybrids)');
-        same(r.hybrid, 'false/false/true/ice', 'an ICE card on a FIRE form'); same(r.one, 'true/false/true/ice', 'one FIRE card'); same(r.two, 'true/true/false/ice', 'two FIRE cards');
+        same(r.hybrid, 'false/false/true/ice', 'an ICE card on a FIRE form'); same(r.one, 'true/false/true/ice', 'one FIRE card'); same(r.two, 'true/false/true/ice', 'two FIRE cards: no Ultimate yet (three since build 2026-11-13u)'); same(r.three, 'true/true/false/', 'three FIRE cards: its Ultimate'); same(r.roles3, 'UNLOCKS ITS SECOND ATTACK|ONE MORE FOR ITS ULTIMATE|UNLOCKS ITS ULTIMATE', 'what each card is for (a form with no extra attack)');
+        same(r.extraMoves, 2, 'the Static Orb\'s moves'); same(r.extra.join(' / '), 'false,false / true,false / true,true', 'a form with an extra attack: none, its second attack with 1 card, its extra attack with 2'); same(r.extraRole1, 'UNLOCKS ITS SECOND ATTACK', 'its first card'); same(r.extraRole2, 'UNLOCKS ITS EXTRA ATTACK', 'its second card');
         same(r.altSet, true, 'its second attack could not be chosen'); same(r.altOne, r.altOne && String(r.altOne), 'one FIRE card left: its second attack kept'); ok(r.altOne, 'one FIRE card left, yet it left its second attack'); same(r.altAfter, null, 'its last FIRE card taken out left it on a locked second attack');
     });
 
@@ -155,7 +157,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const e = __mk('brawler', 'toxic'); e.evolved = 'seeper'; energyEvolved(e); energyAdd('toxic', 2); energyPut(e, 0, 'toxic'); energyPut(e, 1, 'toxic'); const before = [energyAltOpen(e), energyUltOpen(e)].join(), preview = _cvMoves(convertPreview(e)); const b = convertApply(e);
             return { a: a.ok, u: [u.element, energySlots(u).join()], g: [g.element, energySlots(g).join()], b: b.ok, msg: b.msg, preview, e: [e.element, e.evolved, energySlots(e).join(), before, [energyAltOpen(e), energyUltOpen(e)].join(), energyHybrids(e).join('+')] }; })()`);
         same(r.a, true, 'the unevolved one converted'); same(r.u.join('|'), 'blossom|blossom', 'unevolved, after'); same(r.g.join('|'), 'blossom|blossom', 'unevolved, saved and read back');
-        same(r.b, true, 'the evolved one converted'); same(r.e.join('|'), 'blossom|sundew|toxic,toxic,|true,true|false,false|toxic+toxic', 'evolved, after (its toxic cards are another element\'s on a BLOOM form)');
+        same(r.b, true, 'the evolved one converted'); same(r.e.join('|'), 'blossom|sundew|toxic,toxic,|true,false|false,false|toxic+toxic', 'evolved, after (its toxic cards are another element\'s on a BLOOM form)');
         ok(/\(LOCKED\)/.test(r.preview), 'the preview does not say its attacks lock: ' + r.preview); ok(/ITS ATTACKS WAIT FOR BLOOM ENERGY CARDS/.test(r.msg), 'what it says after: ' + r.msg);
     });
     check('EXILE: the energy cards in its slots come back to your stock (the owner, 2026-11-09: "They come back to you")', () => {

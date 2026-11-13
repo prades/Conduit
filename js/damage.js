@@ -47,14 +47,16 @@ const DMG_SUBCLASS = {
 };
 // Each form's attacks (docs/COMBAT.md §7.4): its main attack (the plain hit and its element's physical move, or a Mage's shot) and its alternate (its signature
 // move or a technician's ability). An element special is Elemental for everyone.
+// `extra` (build 2026-11-13v): the type of the form's EXTRA attack, its second move (js/evolution.js THE FOUR EXTRA ATTACKS: each hit says its own type; this is the record of it for the coverage
+// grid, balance.html and tests/damage.js). dmgFormType does not read it.
 const DMG_FORM = {
-    quillstone: { main: "piercing",   alt: "projectile" },
+    quillstone: { main: "piercing",   alt: "projectile", extra: "slashing" },
     maw:        { main: "slashing",   alt: "piercing" },
     staticorb:  { main: "crushing",   alt: "piercing" },   // (alt Piercing since build 2026-11-13j: every element has Slashing, Piercing, Crushing and Elemental among its forms, the owner, 2026-11-13)
     electroskink: { main: "slashing", alt: "crushing" },   // (build 2026-11-08a; provisional: the owner has not given its attacks' types: slashing is what it hit with as an egg, BASH is Crushing)
     jellyram:   { main: "crushing",   alt: "crushing" },   // (main Slashing in build 2026-11-13j, back to Crushing, a ram, 2026-11-13k: the owner, "you can change Jelly Ram's main")
-    seeper:     { main: "slashing",   alt: "earthquake" },   // (ERUPTION Crushing in build 2026-11-13j, back to Earthquake 2026-11-13k)
-    mimic:      { main: "slashing",   alt: "earthquake" },
+    seeper:     { main: "slashing",   alt: "earthquake", extra: "crushing" },   // (ERUPTION Crushing in build 2026-11-13j, back to Earthquake 2026-11-13k)
+    mimic:      { main: "slashing",   alt: "earthquake", extra: "piercing" },
     thunderhead:{ main: "elemental",  alt: "elemental" },
     voidstar:   { main: "elemental",  alt: "elemental" },
     embercowl:  { main: "elemental",  alt: "elemental" },
@@ -63,8 +65,8 @@ const DMG_FORM = {
     rotshard:   { main: "projectile", alt: "elemental" },
     coralcrab:  { main: "crushing",   alt: "piercing" },    // (BLOOM's Technician, STONEPETAL, build 2026-11-08m: its head driving down, "crushing clause is fine"; its STAKE RING Piercing, build 2026-11-08n)
     sundew:     { main: "piercing",   alt: "elemental" },   // (SWEET SCENT: Elemental since 2026-11-13k, the owner; it poisons)    // (BLOOM's Brawler, build 2026-11-08k; its NECTAR STING Piercing since build 2026-11-08n, the owner: "The stem's blade stabs"; SWEET SCENT deals no damage)
-    shrub:      { main: "elemental",  alt: "elemental" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
-    hammerslug: { main: "piercing",   alt: "crushing" },   // (main Piercing since 2026-11-13j: the Core's Piercing)
+    shrub:      { main: "elemental",  alt: "elemental", extra: "slashing" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
+    hammerslug: { main: "piercing",   alt: "crushing", extra: "slashing" },   // (main Piercing since 2026-11-13j: the Core's Piercing)
     gooproxy:   { main: "crushing",   alt: "crushing" },   // (main Piercing in build 2026-11-13j, back to Crushing, a goo slam, 2026-11-13k)
     thermite:   { main: "piercing",   alt: "crushing" },   // (BURROW STRIKE Piercing as before; alt Crushing: MAGMA VENT's burst since 2026-11-13k, the owner's THERMITE DRILL no longer hits enemies)
     blightspider:{ main: "piercing",  alt: "elemental" },

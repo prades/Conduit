@@ -105,7 +105,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const m = __mk('blossom', 'sniper'), b = __mk('blossom', 'brawler'), t = __mk('blossom', 'camper'); for (const f of [m, b, t]) { f.level = 12; f.xp = 0; }
             const did = [m, b, t].map(evoCheck); energyFill(m); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
         same(r.did.join(), 'true,true,true', 'who evolved'); same(r.forms.join(), 'shrub,sundew,coralcrab', 'their forms'); same(r.label, 'THORNWHIP', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
-        same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult && r.ult.name, 'Pink Thicket', 'its Ultimate (PINK THICKET since build 2026-11-08l; open with BLOOM energy cards in its slots since build 2026-11-09s)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
+        same(r.moves.join(), 'seedfall,briar_sweep', 'its alternate and its extra attack (BRIAR SWEEP, build 2026-11-13v)'); same(r.ult && r.ult.name, 'Pink Thicket', 'its Ultimate (PINK THICKET since build 2026-11-08l; open with BLOOM energy cards in its slots since build 2026-11-09s)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
     });
     check('MEND: a BLOOM follower\'s hit heals the most hurt of yours within 4 tiles (the lowest share of health) by 2% of its max; one 5 tiles off, or at full health, is passed over; it counts itself', () => {
         const r = J(`(function(){ __clear(); __put0 = 0; const b = __mk('blossom', 'brawler'), near = __mk('fire', 'brawler'), far = __mk('ice', 'brawler'), full = __mk('core', 'brawler'); partyTick();
@@ -177,7 +177,7 @@ function measure(w, h) {
             const rec = followerRecord(m); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
             return { preview: g.evolved, mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m), back: [back.element, back.evolved, back.convertedFrom] }; })()`);
         same(r.preview, 'shrub', 'the preview\'s form'); same(r.fm.join('|'), 'ROTSHARD|THORNWHIP', 'the FORM row');
-        same(r.mv.join('|'), 'CORRODE SHOT · ROTTEN DECOY · ULTIMATE TOXIC PUDDLE|SEED SHOT · SEEDFALL (LOCKED) · ULTIMATE PINK THICKET (LOCKED)', 'the MOVES row (its shot, its alternate, its Ultimate)');
+        same(r.mv.join('|'), 'CORRODE SHOT · ROTTEN DECOY · ULTIMATE TOXIC PUDDLE|SEED SHOT · SEEDFALL (LOCKED) · BRIAR SWEEP (LOCKED) · ULTIMATE PINK THICKET (LOCKED)', 'the MOVES row (its shot, its alternate, its Ultimate)');
         ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'shrub', 'its form'); same(r.alt, null, 'its alternate (ROTTEN DECOY is not the shrub\'s)');
         ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'THORNWHIP', 'its name'); ok(/IS NOW A THORNWHIP/.test(r.msg), 'the words: ' + r.msg);
         same(r.back.join(), 'blossom,shrub,toxic', 'saved and loaded back');

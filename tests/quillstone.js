@@ -42,7 +42,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(Math.abs(d.core[0] - m.core.x) < 0.5 && Math.abs(d.core[1] - m.core.y) < 0.5, 'the core is the bake\'s'); ok(d.burst === true, 'the form is not marked as having QUILL BURST\'s frames');
     });
     check('what the form is is as it was: fire, brawler, QUILL BURST its only second attack', () => {
-        const d = J('EVOLUTIONS.quillstone'); same(d.element, 'fire', 'element'); same(d.role, 'brawler', 'role'); same(d.move, 'QUILL BURST', 'move'); same(d.moves.join(), 'quill_burst', 'moves');
+        const d = J('EVOLUTIONS.quillstone'); same(d.element, 'fire', 'element'); same(d.role, 'brawler', 'role'); same(d.move, 'QUILL BURST', 'move'); same(d.moves.join(), 'quill_burst,ember_slash', 'moves (EMBER SLASH its extra attack since build 2026-11-13v)');
     });
 
     group('WHICH CELL OF A QUILL BURST (the turn, the bare time, the regrowth)');
