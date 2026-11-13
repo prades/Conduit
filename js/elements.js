@@ -903,6 +903,9 @@ function updateElementEffects() {
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
         if (e.type === "mawchomp" && typeof mawChompTick === "function") mawChompTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
+        if (e.type === "emberdash" && typeof emberDashTick === "function") emberDashTick(e);   // (the extra attacks, js/evolution.js: the Quillstone's dash, the Rift Mimic's reappearance, the Hammer Slug's ball)
+        if (e.type === "riftglitch" && typeof riftImpaleTick === "function") riftImpaleTick(e);
+        if (e.type === "bladeroll" && e.life < e.maxLife && typeof bladeRollTick === "function") bladeRollTick(e);
         if (e.type === "mimicshot" && typeof mimicShotTick === "function") mimicShotTick(e);   // (the Rift Mimic's everyday hit: js/evolution.js)
         if (e.type === "skinkswirl" && typeof skinkSwirlTick === "function") skinkSwirlTick(e);   // (the Electro Skink's everyday hit: js/evolution.js)
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
@@ -1576,6 +1579,64 @@ function drawElementEffects() {
                 ctx.save(); ctx.globalAlpha = 0.3 * (1 - u); ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.arc(x - (tx - sx0) * 0.05, y + 6, 5, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1; ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill();
                 ctx.fillStyle = "#7dff4a"; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.arc(P[0][0], P[0][1], 1.2, 0, Math.PI * 2); ctx.fill();   // (a point of the crystal's green light at its tip)
+                ctx.restore(); break;
+            }
+            // ── THE EXTRA ATTACKS' LOOKS (build 2026-11-14a; the owner's words for each, 2026-11-13; flat shapes only, the effects plan; drafts for the owner to see) ──
+            // EMBER SLASH (js/evolution.js emberSlash): the Quillstone's dash. A streak of fire from where it set off to where it is (e.x, e.y is the end of its line), tapering back to nothing, a paler core, embers
+            // falling off it; when the dash is over the streak thins and goes.
+            case "emberdash": {
+                const age = e.maxLife - e.life, u = Math.min(1, age / EMBER_DASH), fade = age <= EMBER_DASH ? 1 : Math.max(0, e.life / 14);
+                const sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H, hx = sx0 + (px - sx0) * u, hy = sy0 + (py - sy0) * u, cy = -34;
+                const L = Math.hypot(hx - sx0, hy - sy0) || 1, nx = -(hy - sy0) / L, ny = (hx - sx0) / L, w = 13 * fade;
+                ctx.save(); ctx.globalAlpha = 0.85 * fade;
+                ctx.fillStyle = "#ff7a2a"; ctx.beginPath(); ctx.moveTo(sx0, sy0 + cy); ctx.lineTo(hx + nx * w, hy + cy + ny * w); ctx.lineTo(hx - nx * w, hy + cy - ny * w); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = "#ffd36a"; ctx.beginPath(); ctx.moveTo(sx0 + (hx - sx0) * 0.35, sy0 + (hy - sy0) * 0.35 + cy); ctx.lineTo(hx + nx * w * 0.45, hy + cy + ny * w * 0.45); ctx.lineTo(hx - nx * w * 0.45, hy + cy - ny * w * 0.45); ctx.closePath(); ctx.fill();
+                for (let i = 0; i < 7; i++) { const k = (i + 0.5) / 7; if (k > u) break; const ex = sx0 + (px - sx0) * k + nx * ((i % 3) - 1) * 9, ey = sy0 + (py - sy0) * k + cy + ny * ((i % 3) - 1) * 9 + (age - k * EMBER_DASH) * 1.1; ctx.fillStyle = i % 2 ? "#ffb347" : "#ff5a1f"; ctx.fillRect(ex - 1.5, ey - 1.5, 3, 3); }
+                ctx.restore(); break;
+            }
+            // RIFT IMPALE (riftImpale): where it stood, its shape breaks into strips that slide apart and thin away (it glitches out); RIFT_OUT frames on, under the enemy (e.x, e.y), strips slide together and a
+            // crystal spike drives up through it, then sinks. Violet, flat.
+            case "riftglitch": {
+                const age = e.maxLife - e.life, sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H;
+                const strips = (cx, cy, k, a) => { ctx.globalAlpha = a; for (let i = 0; i < 9; i++) { const yy = cy - 62 + i * 7, off = ((i * 37 + age * 13) % 23 - 11) * k, wd = (20 - Math.abs(i - 4) * 2.5) * (1 - 0.6 * k); ctx.fillStyle = i % 3 === 0 ? "#e0a8ff" : i % 3 === 1 ? "#9933ff" : "#5a1fa8"; ctx.fillRect(cx - wd / 2 + off, yy, wd, 5 - 3 * k); } };
+                ctx.save();
+                if (age < RIFT_OUT) strips(sx0, sy0, age / RIFT_OUT, 1 - 0.5 * age / RIFT_OUT);
+                else { const a2 = age - RIFT_OUT, k = Math.max(0, 1 - a2 / 6), up = Math.min(1, a2 / 4), down = Math.max(0, (a2 - 10) / 8), h = 58 * up * (1 - down);
+                    if (k > 0) strips(px, py, k, 0.9);
+                    ctx.globalAlpha = 1 - down; ctx.fillStyle = "#7a2fd6"; ctx.beginPath(); ctx.moveTo(px - 9, py + 4); ctx.lineTo(px, py + 4 - h); ctx.lineTo(px + 9, py + 4); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = "#d9a3ff"; ctx.beginPath(); ctx.moveTo(px - 3, py + 4); ctx.lineTo(px, py + 4 - h); ctx.lineTo(px + 2, py + 4); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = "#5a1fa8"; for (let i = 0; i < 5; i++) { const an = i * 1.26 + 0.4, d = 8 + a2 * 1.6; ctx.fillRect(px + Math.cos(an) * d - 2, py + 2 + Math.sin(an) * d * 0.5 - 2, 4, 4); } }
+                ctx.restore(); break;
+            }
+            // BLADE ROLL (bladeRoll): the Hammer Slug rolled up, a ball of its shell's teal rolling along (e.x, e.y is the ball, bladeRollTick), its bright edge turning as it goes, a little dust behind it.
+            case "bladeroll": {
+                const age = e.maxLife - e.life, cy = py - 16, r = 15, an = age * 0.55, bx = ((e.ux || 0) - (e.uy || 0)), by = ((e.ux || 0) + (e.uy || 0)) * 0.5, bl = Math.hypot(bx, by) || 1;
+                ctx.save();
+                ctx.globalAlpha = 0.35; ctx.fillStyle = "#0b1a18"; ctx.beginPath(); ctx.ellipse(px, py + 2, r, r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.5; ctx.fillStyle = "#9fb8b2"; for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(px - bx / bl * (10 + i * 9), py - by / bl * (10 + i * 9) - 2 - i * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
+                ctx.globalAlpha = 1; ctx.fillStyle = "#0f6f61"; ctx.beginPath(); ctx.arc(px, cy, r, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#19b79f"; ctx.beginPath(); ctx.arc(px - 3, cy - 3, r * 0.66, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = "#d8fff6"; ctx.lineWidth = 3; ctx.lineCap = "round"; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(px, cy, r, an + i * 2.094, an + i * 2.094 + 0.9); ctx.stroke(); }   // (its edge, turning)
+                ctx.strokeStyle = "#0a4a41"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, cy, r * 0.45, an, an + 4.2); ctx.stroke();
+                ctx.restore(); break;
+            }
+            // BRIAR SWEEP (briarSweep): leaves and thorns shaken off the Thornwhip, flying out all round it to its reach and falling; pink petals, green leaves, dark thorns.
+            case "briarburst": {
+                const age = e.maxLife - e.life, u = Math.min(1, age / 14), eu = 1 - (1 - u) * (1 - u), fade = Math.min(1, e.life / 8), R = (e.radius || 2);
+                ctx.save(); ctx.globalAlpha = fade;
+                for (let i = 0; i < 22; i++) { const an = i * 0.2856 + (i % 2) * 0.13, d = R * (0.55 + 0.45 * ((i * 7) % 5) / 4) * eu, x = px + Math.cos(an) * d * TILE_W, y = py - 26 * (1 - eu) - Math.sin(Math.PI * u) * (10 + (i % 4) * 5) + Math.sin(an) * d * TILE_H, sp = an + age * (0.3 + (i % 3) * 0.12);
+                    if (i % 3 === 2) { ctx.fillStyle = "#5a3d2a"; ctx.beginPath(); ctx.moveTo(x + Math.cos(sp) * 7, y + Math.sin(sp) * 7); ctx.lineTo(x + Math.cos(sp + 2.5) * 2.5, y + Math.sin(sp + 2.5) * 2.5); ctx.lineTo(x + Math.cos(sp - 2.5) * 2.5, y + Math.sin(sp - 2.5) * 2.5); ctx.closePath(); ctx.fill(); }
+                    else { ctx.fillStyle = i % 3 === 0 ? "#ff9ccc" : "#6fbf5a"; ctx.beginPath(); ctx.ellipse(x, y, 5, 2.4, sp, 0, Math.PI * 2); ctx.fill(); } }
+                ctx.restore(); break;
+            }
+            // TOXIC STOMP (toxicStomp): the Seeper stomps and goo is thrown out of its caldera: blobs arc up and out all round and land in a ring of splats that spread and fade; a flat shock line on the floor.
+            case "toxicstomp": {
+                const age = e.maxLife - e.life, u = Math.min(1, age / 12), fade = Math.min(1, e.life / 9), R = (e.radius || 1.5);
+                ctx.save();
+                ctx.globalAlpha = 0.6 * (1 - u); ctx.strokeStyle = "#b6ff7a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(px, py, R * TILE_W * u, R * TILE_H * u, 0, 0, Math.PI * 2); ctx.stroke();
+                for (let i = 0; i < 12; i++) { const an = i * 0.5236 + 0.2, d = R * (0.5 + 0.5 * ((i * 5) % 4) / 3), gx = px + Math.cos(an) * d * TILE_W, gy = py + Math.sin(an) * d * TILE_H;
+                    if (u < 1) { const x = px + (gx - px) * u, y = (py - 44) + (gy - (py - 44)) * u - Math.sin(Math.PI * u) * (26 + (i % 3) * 8); ctx.globalAlpha = 1; ctx.fillStyle = i % 2 ? "#7dff4a" : "#4fc22a"; ctx.beginPath(); ctx.ellipse(x, y, 4.5, 5.5, 0, 0, Math.PI * 2); ctx.fill(); }
+                    else { const sp = Math.min(1, (age - 12) / 5); ctx.globalAlpha = 0.85 * fade; ctx.fillStyle = i % 2 ? "#7dff4a" : "#4fc22a"; ctx.beginPath(); ctx.ellipse(gx, gy, 5 + 6 * sp, 2.5 + 3 * sp, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#c8ff9a"; ctx.beginPath(); ctx.ellipse(gx - 2, gy - 1, 2 * (1 + sp), 1, 0, 0, Math.PI * 2); ctx.fill(); } }
                 ctx.restore(); break;
             }
             // The Rotshard's CORRODE SHOT landing (js/evolution.js corrodeTouch): the soul blob splatting on the target: a splat of its crystal green with blobs thrown out all round and drips falling, then gone; flat shapes

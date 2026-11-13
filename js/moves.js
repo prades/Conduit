@@ -57,7 +57,7 @@ const MOVES = {
     shock_zap:         { id: "shock_zap",         name: "SHOCK ZAP",         windup: 2, fn: f => shockZap(f) },       // the Hover Shell's
     skate_charge:      { id: "skate_charge",      name: "SKATE CHARGE",      windup: 2.25, fn: f => skateCharge(f) },  // the Igloo Skater's
     // THE FOUR EXTRA ATTACKS (build 2026-11-13v: js/evolution.js; each its form's SECOND move, open with two energy cards of its element, js/energy.js alt2Needs)
-    ember_slash:       { id: "ember_slash",       name: "EMBER SLASH",       windup: 2, close: true, fn: f => emberSlash(f) },    // the Quillstone's (fire, Slashing)
+    ember_slash:       { id: "ember_slash",       name: "EMBER SLASH",       windup: 2, fn: f => emberSlash(f) },    // the Quillstone's (fire, Slashing)
     rift_impale:       { id: "rift_impale",       name: "RIFT IMPALE",       windup: 2.5, fn: f => riftImpale(f) },     // the Rift Mimic's (flux, Piercing)
     blade_roll:        { id: "blade_roll",        name: "BLADE ROLL",        windup: 2.5, fn: f => bladeRoll(f) },      // the Hammer Slug's (core, Slashing)
     briar_sweep:       { id: "briar_sweep",       name: "BRIAR SWEEP",       windup: 2.5, close: true, fn: f => briarSweep(f) },     // the Thornwhip's (bloom, Slashing); a close move since build 2026-11-13x (the owner: "Thornwhip should walk towards the enemies when it has that new attack on")
