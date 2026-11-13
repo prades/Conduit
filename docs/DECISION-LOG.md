@@ -14,6 +14,34 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Four retypes put back, the Thermite Drill off enemies, SWEET SCENT poisons
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/type-fixes`, `2026-11-13k`
+- **Status:** Approved (the gaps it opens are an open question)
+- **Context:** the owner read the agent's list of attacks whose type or description did not fit, and answered each.
+- **Decision:** JELLY RAM's main, THERMITE's main, GOO PROXY's main and SEEPER's ERUPTION go back to their types before `13j`. THERMITE DRILL cannot be used on enemies (rubble only). SUNDEW's SWEET SCENT is Elemental and poisons what it lures instead of doing damage.
+- **Supersedes in part:** "Every element has the four damage types" (`2026-11-13j`): five gaps are open until the owner places them (core Slashing, fire Slashing, flux Piercing, toxic Crushing, blossom Slashing).
+- **Affects:** js/damage.js, js/evolution.js, js/techabilities.js, js/unitinfo.js, COMBAT.md, TECHNICIANS.md, the Bible, tests.
+
+## DECISION: Every element has the four damage types; primary attacks carry a status
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/status-types`, `2026-11-13j`
+- **Status:** Approved
+- **Context:** the owner: each element should have each damage type represented (slashing, piercing, crushing, elemental); the primary attacks should add stun, slow, poison, blind and perhaps burn, not tied to an element or type.
+- **Decision:** one attack retyped per gap (the table in `docs/COMBAT.md` §7.4) so each element's three forms cover the four types; the fifteen primary-attacking forms each carry one status on 25% of their hits (stun: Thunderhead, Electro Skink, Static Orb, Jelly Ram; slow: Frost Maw, Rimestar, Hornshell, Sundew; poison: Seeper, Rotshard, Thornwhip; blind: Voidstar, Rift Mimic; burn: Ember Hood, Quillstone). Bosses are not stunned or blinded.
+- **Alternatives:** new attacks for the gaps; one status per element; the owner listing each.
+- **Affects:** js/damage.js, js/combat.js, js/helpers.js, COMBAT.md, the Bible, tests.
+- **Open:** whether a form should carry more than one status; the lengths and the burn tick are provisional; the INFO cards do not show the status yet.
+
+## DECISION: Blind is a lower chance of hitting
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/blind-miss`, `2026-11-13i`
+- **Status:** Approved
+- **Context:** the owner, while specifying the statuses the primary attacks add: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting."
+- **Decision:** blind, everywhere it is used (today MAELSTROM), makes each hit the creature deals miss 50% of the time; it keeps its target and keeps attacking. Replaces the old blind (no target, no attacks, staggering at half pace). A boss is still not blinded by MAELSTROM.
+- **Alternatives:** keep the old blind and add a separate status; a 30% or 75% miss chance.
+- **Affects:** js/helpers.js, js/predator.js, js/unitinfo.js, the Bible, tests/evolution.js.
+
 ## DECISION: The CARDS screen's two menus, the hand lit gold, the player's slots on the roster
 
 - **Date:** 2026-11-01
