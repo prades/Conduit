@@ -359,6 +359,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.alt, 0, 'a move\'s hit added a status'); same(r.camper, 0, 'a technician added a status'); same(r.boss, 0, 'a boss was stunned or blinded'); ok(r.bossSlow > 20, 'a boss can be slowed: ' + r.bossSlow);
     });
 
+    check('SWEET SCENT POISONS (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "have it poison"): the puff that lures the enemies in reach also poisons them (a boss is lured by nothing and poisoned by nothing); its type is Elemental', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+            const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };
+            spawnFollowerAtCrystal('blossom'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.evolved = 'sundew'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 40; f.y = 40; f._nectar = 0;
+            const a = mkP(42, 40), b = mkP(43, 40), boss = mkP(41.5, 40.5); boss.isBoss = true; const far = mkP(60, 40);
+            frame++; const ok = sweetScent(f); const o = { ok, a: a.toxicWeakened || 0, f: a.toxicWeakenFactor, b: b.toxicWeakened || 0, boss: boss.toxicWeakened || 0, far: far.toxicWeakened || 0, lured: !!a._scentBy, type: DMG_FORM.sundew.alt, k: [SCENT_POISON_FRAMES, SCENT_POISON_FACTOR].join() };
+            [a, b, boss, far].forEach(p => p.dead = true); return o; })()`);
+        same(r.ok, true, 'it fired'); same(r.lured, true, 'lured'); same(r.a, 180, 'the one in reach poisoned'); same(r.b, 180, 'another'); same(r.f, 0.6, 'its factor'); same(r.boss, 0, 'a boss poisoned'); same(r.far, 0, 'one out of reach poisoned'); same(r.type, 'elemental', 'its type'); same(r.k, '180,0.6', 'its numbers');
+    });
+
     check('BLIND is a lower chance of hitting (build 2026-11-13h; the owner: "Blinded doesn\'t mean that they don\'t hit. It means that they have a lower chance of hitting"; chosen: change blind everywhere, 50%): a blinded creature keeps its target and still attacks, each hit it deals misses about half the time, a hit that is reflected never misses, an unblinded creature never misses', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };

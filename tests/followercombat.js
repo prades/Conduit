@@ -332,7 +332,7 @@ function measure(w, h) {
         same(r.under, r.dive + 1, 'under the floor after its dive'); ok(r.most <= r.speed + 1e-9, 'a frame\'s step ' + r.most); ok(r.at > 0 && r.near <= r.touch + 1e-9, 'not beneath it: ' + JSON.stringify(r));
         ok(Math.abs(r.dmg - r.want) < 1e-6 * r.want + 1e-6, 'the eruption is ' + r.dmg + ', not ' + r.want + ' (BURROW_MULT × a plain hit of its own, its main attack)'); ok(r.up && r.done, 'it did not surface'); ok(r.rest > 60, 'no rest after: ' + r.rest);
         ok(Math.abs(r.healed - r.siphon) < 1e-6, 'a Siphon perk heals on the eruption as on the plain hit it stands in for: ' + r.healed + ', not ' + r.siphon);
-        same(r.plain, 'slashing', 'its main attack\'s type (Slashing since build 2026-11-13j)'); same(r.hit, 'BURROW STRIKE', 'its form\'s hit');
+        same(r.plain, 'piercing', 'its main attack\'s type'); same(r.hit, 'BURROW STRIKE', 'its form\'s hit');
     });
     check('under the floor it cannot be targeted or hurt; a target lost on the way (dead) brings it up where it is, with no eruption; out of reach or behind a wall it does not dive', () => {
         const r = J(`(function(){ __clear(); const f = __burrower(), t = __foe(f.x + 3.5, f.y), o = {}; for (let i = 0; i < 30; i++) { frame++; updateNPC(f); }

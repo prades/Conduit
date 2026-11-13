@@ -798,6 +798,8 @@ function stakeRing(f) {
 //     SCENT_RADIUS that it can see (not a boss, as ROTTEN DECOY's lure) goes for SUNDEW for SCENT_FRAMES (js/predator.js predatorPickPrey asks scentLure). Nothing to lure and the stockpile not full: it
 //     does not fire (ready again). The stockpile is not saved (a fight's). The numbers are the agent's, PROVISIONAL.
 const SUNDEW_NECTAR_STEP = 25, SCENT_RADIUS = 5, SCENT_FRAMES = 240, SCENT_HEAL = 0.2, SCENT_HEAL_R = 3;
+// the puff POISONS what it lures (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "And have it do some damage. No, have it poison"): its bites weaken (applyWeaken) to SCENT_POISON_FACTOR for SCENT_POISON_FRAMES (the length and the strength are the agent's, provisional: a primary attack's poison, js/combat.js)
+const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6;
 function sundewNectar(f) { if (f && f.evolved === "sundew") f._nectar = Math.min(100, (f._nectar || 0) + SUNDEW_NECTAR_STEP); }
 function sweetScent(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0;
@@ -811,7 +813,7 @@ function sweetScent(f) {
     } else {   // THE PUFF: the enemies near it come for it
         const foes = _evoFoesSeen(f.x, f.y, SCENT_RADIUS).filter(a => !a.bossId && !a.bossName && !a.isBoss);
         if (!foes.length) return false;
-        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; }
+        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
         if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_RADIUS, color: "#ffb8dc", life: 36 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffb8dc", radius: 1.4, life: 30 }); }
         if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
     }
