@@ -1502,6 +1502,8 @@
     body.corners #mixTool .mt-cmd-roster::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 10px; border: 2px solid var(--c); box-shadow: 4px 4px 0 rgba(0,0,0,0.55), 0 0 14px -2px var(--c);
         background: radial-gradient(circle at 14% 40%, rgba(199,155,255,0.45), transparent 42%), repeating-linear-gradient(115deg, transparent 0 10px, rgba(199,155,255,0.06) 10px 12px), linear-gradient(180deg, #2c2662, #0c0a22); }
     body.corners #mixTool .mt-cmd-roster:hover { filter: brightness(1.12); }
+    /* COME WITH NOTHING TO DO (build 2026-11-13k; js/mixtool.js mixToolComeIdle): nobody holding a room, or the squad full: COME greys, still (a tap says why) */
+    body.corners #mixTool .mt-fa.come.idle { filter: grayscale(1) brightness(0.62); animation: none; cursor: default; } body.corners #mixTool .mt-fa.come.idle b::before { animation: none; }
     /* THE SQUAD STRIP'S SLANT (build 2026-11-13i; the owner: "Make it match the roster to the side and with that edge lean design, but keep all the buttons in the right places"): ROSTER and its ALL,
        HOLD and COME wear the squad cards' slab, the frame and fill leaning 9 degrees (skewX), level top and bottom, the words upright, and ROSTER the squad cards' coloured bar at its left; every
        button where it was (build 2026-11-13h). */
