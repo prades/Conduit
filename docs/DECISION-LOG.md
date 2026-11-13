@@ -14,14 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
-## DECISION: The electric breed as mechs; the larva boss in look A; the roly-poly longer, fewer plates, more character
+## DECISION: The electric breed as mechs; the larva boss in look A; the roly-poly longer, fewer plates, no face, in look B
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
 - **Status:** Approved direction (the owner's words); examples shown; not designed or built
 - **Context:** round 1's studies drew the roly-poly and the larva as animals (below). The owner: "Okay, so I want them to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics from your sketches." Round 2 drew both as mechs in the three looks (A live seams, B insulator, C capacitor shell). The owner: **"A for the larva, redesign the roll poly with a longer body less plates, but more character."**
 - **Decision:** both are mechs in the mechanical-animal genre: armour over a frame, joints, pistons, lenses, nothing thin; the genre's cues, no existing design copied. The larva boss's look is **A, live seams**, as drawn in round 2. The roly-poly is redrawn (round 3): longer, seven plates instead of thirteen, more character.
-- **Agent's, provisional:** round 3's character (antennae posed one raised and one forward, a core housing with lit vents on its back, tail thrusters; ~~two camera eyes under a frowning brow, mandibles; rolled up, its eyes looking out of the seam~~, taken off in round 4), every proportion, the larva's parts. The roly-poly's look is open.
-- **Later the same day:** the owner: "The roly-poly should not have eyes and a face, bro. But, I mean, we're looking good on the larva for now." Round 4: no eyes and no face on the roly-poly (a rounded armoured head capsule; rolled up, a closed wheel); the larva kept as it is.
+- **Agent's, provisional:** round 3's character (antennae posed one raised and one forward, a core housing with lit vents on its back, tail thrusters; ~~two camera eyes under a frowning brow, mandibles; rolled up, its eyes looking out of the seam~~, taken off in round 4), every proportion, the larva's parts.
+- **Later the same day:** the owner: "The roly-poly should not have eyes and a face, bro. But, I mean, we're looking good on the larva for now." Round 4: no eyes and no face on the roly-poly (a rounded armoured head capsule; rolled up, a closed wheel); the larva kept as it is. Then, asked which look for the roly-poly: **"B"** (insulator: glossy black plates, hazard-striped side panels, copper joints, amber lights).
 - **Supersedes:** round 1's animal studies as the direction (kept in commit `e73521a`); round 2's roly-poly (thirteen plates).
 - **Affects (when designed):** as the entry below; the studies: `design/creatures/electric_breed_examples.js`.
 

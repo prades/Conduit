@@ -9,7 +9,7 @@
 //     eyes and a face") took round 3's face off: a rounded armoured head capsule. Walking, and rolled up into a closed wheel. Its look is open;
 //   the boss, a predaceous diving beetle larva (a water tiger), round 2 (the owner chose look A): armoured segments on a frame with lit joints and side pistons, a flat wedge head
 //     with six lenses a side, heavy sickle jaws on hinges (open, a tooth on each), paddle legs, twin tail prongs.
-//   node design/creatures/electric_breed_examples.js <three-dir> <out-dir>   ->  <out-dir>/rolypoly_mech.png, <out-dir>/larva_mech.png
+//   node design/creatures/electric_breed_examples.js <three-dir> <out-dir>   ->  <out-dir>/rolypoly_mech.png, larva_mech.png, electric_breed_chosen.png (the owner's picks: the roly-poly B, the larva A)
 // Every part and proportion here is the agent's, provisional. Nothing in the game reads this.
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
 const fs = require('fs'), path = require('path');
@@ -246,7 +246,10 @@ window.__draw = async function (PX, UH) {
   const roly = psheet('THE ROLY-POLY, ROUND 4 · longer, seven plates, no face', 'A rounded armoured head with no face, antennae with a pose, a core on its back, tail thrusters; rolled up, a closed armoured wheel. Examples, not a design.', 3, 2, tiles, TW, TH);
   const LW = 600, LH = 420, lt = ['A', 'B', 'C'].map(k => ({ label: STYLES[k].name, cv: pshoot(larvaMech(k), LW, LH, 0.06, 0.15) }));
   const lar = psheet('THE BOSS AS A MECH · a predaceous diving beetle larva', 'Armoured segments on a frame, lit joints, side pistons; a flat wedge head, six lenses a side; sickle jaws on hinges; paddle legs; twin tail spikes.', 3, 1, lt, LW, LH);
-  return { roly, lar };
+  // the chosen looks, side by side (the owner, 2026-11-13: the roly-poly B; the larva A)
+  const CW = 560, CH = 420, chosen = psheet('THE ELECTRIC BREED · the chosen looks', 'The roly-poly in B, insulator (no face; rolled up, a closed wheel); its boss, the diving beetle larva, in A, live seams. Looks only: nothing designed or built yet.', 3, 1,
+    [{ label: 'ROLY-POLY · B · WALKING', cv: pshoot(rolyWalk('B'), CW, CH, 0.1, -0.22) }, { label: 'ROLY-POLY · B · ROLLED UP', cv: pshoot(rolyWheel('B'), CW, CH, 0.45, 0.1) }, { label: 'THE BOSS · A', cv: pshoot(larvaMech('A'), CW, CH, 0.06, 0.15) }], CW, CH);
+  return { roly, lar, chosen };
 };
 </script></body></html>`;
 
@@ -261,6 +264,7 @@ window.__draw = async function (PX, UH) {
   fs.mkdirSync(OUTDIR, { recursive: true });
   fs.writeFileSync(path.join(OUTDIR, 'rolypoly_mech.png'), Buffer.from(res.roly.split(',')[1], 'base64'));
   fs.writeFileSync(path.join(OUTDIR, 'larva_mech.png'), Buffer.from(res.lar.split(',')[1], 'base64'));
-  console.log('wrote', path.join(OUTDIR, 'rolypoly_mech.png'), path.join(OUTDIR, 'larva_mech.png'), errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
+  fs.writeFileSync(path.join(OUTDIR, 'electric_breed_chosen.png'), Buffer.from(res.chosen.split(',')[1], 'base64'));
+  console.log('wrote', path.join(OUTDIR, 'rolypoly_mech.png'), path.join(OUTDIR, 'larva_mech.png'), path.join(OUTDIR, 'electric_breed_chosen.png'), errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
   await b.close();
 })();
