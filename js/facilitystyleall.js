@@ -18,6 +18,7 @@ const FP_ROOM_STYLE = {
     show_room:           { acc: FP_ACC.violet, wain: "#7a62c0", fa: "#e4e2f2", fb: "#c6c3de" },
     lab_hallway:         { acc: FP_ACC.cyan,   wain: "#3d93a0", fa: "#d6e0e3", fb: "#b2c2c8" },
     experiment_lab:      { acc: FP_ACC.mint,   wain: "#2fa383", fa: "#dff0ea", fb: "#b9d9cd" },
+    lounge:              { acc: FP_ACC.amber,  wain: "#a0606e", fa: "#efe3da", fb: "#d9c6b8" },   // THE LOUNGE (build 2026-11-13a, the old lab's room): warm, a rosy wainscot, amber light
     lab_passage:         { acc: FP_ACC.cyan,   wain: "#3d93a0", fa: "#cfdadd", fb: "#a9bcc2" },
     observation_deck:    { acc: FP_ACC.blue,   wain: "#4a7fb0", fa: "#dae5ef", fb: "#b8c9da" },
     arena:               { acc: FP_ACC.amber,  wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
@@ -107,6 +108,11 @@ function _fpStylePropMore(it) {
     } else if (k === "tank" || k === "liquid_reserve") {   // a big glass vessel: a lit liquid, a glowing surface, a bold outline round the whole body
         const col = k === "tank" ? FP_ACC.mint : A.violet; _fpSPrism(it, 78, _fpRgba(col, 0.8), _fpShade(col, 0.7), _fpShade(col, 0.95), 4);
         const c = P(x, y, 78); ctx.fillStyle = "rgba(255,255,255," + (0.2 + 0.08 * Math.sin(f * 0.05 + x)) + ")"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 18, 8, 0, 0, 6.2832); ctx.fill(); if (seed % 3 === 0) _fpGlow(c[0], c[1], 24, col, 0.22);
+    } else if (k === "holding_tank") {   // THE EXPERIMENT LAB's giant holding tank (build 2026-11-13a), until its sprite has arrived: a tall glass vessel of glowing liquid on a steel plinth
+        _fpSPrism(it, 12, A.cap, A.teal, A.tealLit, 3); _fpSBox(x - 0.42, y - 0.42, x + 0.42, y + 0.42, 12, 170, _fpRgba(FP_ACC.mint, 0.78), _fpShade(FP_ACC.mint, 0.7), _fpShade(FP_ACC.mint, 0.95), 3.5);
+    } else if (k === "whiteboard_stand") {   // THE LOUNGE's whiteboard on its stand (build 2026-11-13a), until its sprite has arrived: a white board on two posts
+        for (const a of [-0.42, 0.42]) { const p = P(x + a, y, 0), q = P(x + a, y, 76); ctx.strokeStyle = A.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+        _fpSBox(x - 0.4, y - 0.05, x + 0.4, y + 0.05, 30, 74, "#f4f8fb", "#dfe7ee", "#c9d4de", 3);
     } else if (k === "semi_truck") {   // a pale truck: a blue-gray body with a cyan stripe; missiles on the cargo cells
         _fpSPrism(it, 52, "#d2dde2", "#8fa3ad", "#aebdc5", 3.5); if (it.sy) _fpFaceY(it, 0, 1, 20, 26, A.cyan, null); if (it.sx) _fpFaceX(it, 0, 1, 20, 26, _fpShade(A.cyan, 0.7), null);
         if (it.cargo && Math.round(x * 3 + y * 5) % 4 === 0) { const q = P(x, y, 58); _fpBlob(q[0], q[1], 14, 6, A.cap, 2.5); ctx.fillStyle = A.amber; ctx.beginPath(); ctx.moveTo(q[0] + 14, q[1]); ctx.lineTo(q[0] + 24, q[1] + 2); ctx.lineTo(q[0] + 14, q[1] + 4); ctx.closePath(); ctx.fill(); ctx.strokeStyle = A.ink; ctx.lineWidth = 2; ctx.stroke(); }
@@ -287,8 +293,9 @@ function _fpStyleStair(it) {
     _fpFlat([t[3], t[2], b2[1], b2[0]], A.teal); _fpFlat([t[2], t[1], b2[2], b2[1]], A.tealLit); _fpFlat(t, A.caseLit);
     if (h > 6) { const f = Math.min(0.5, 14 / h), q = (p0, p1, q0, q1) => [[p0[0] + (q0[0] - p0[0]) * (1 - f), p0[1] + (q0[1] - p0[1]) * (1 - f)], [p1[0] + (q1[0] - p1[0]) * (1 - f), p1[1] + (q1[1] - p1[1]) * (1 - f)], q1, q0]; _fpFlat(q(t[3], t[2], b2[0], b2[1]), "rgba(8,26,34,0.24)"); _fpFlat(q(t[2], t[1], b2[1], b2[2]), "rgba(8,26,34,0.24)"); }   // each riser darker towards the floor (the lower part of the face)
     ctx.lineCap = "round";
-    ctx.strokeStyle = _fpRgba(acc, 0.28); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(t[3][0], t[3][1] + 2.6); ctx.lineTo(t[2][0], t[2][1] + 2.6); ctx.stroke();   // the lit nosing along the front edge (soft glow under it)
-    ctx.strokeStyle = acc; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(t[3][0], t[3][1]); ctx.lineTo(t[2][0], t[2][1]); ctx.stroke();
+    const n0 = it.ax < 0 ? t[0] : it.ax > 0 ? t[1] : t[3], n1 = it.ax < 0 ? t[3] : it.ax > 0 ? t[2] : t[2];   // (the edge the tread drops from: its front for a staircase down toward the camera; its west edge for one down along x, the Experiment Lab's, build 2026-11-13a)
+    ctx.strokeStyle = _fpRgba(acc, 0.28); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(n0[0], n0[1] + 2.6); ctx.lineTo(n1[0], n1[1] + 2.6); ctx.stroke();   // the lit nosing along the front edge (soft glow under it)
+    ctx.strokeStyle = acc; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(n0[0], n0[1]); ctx.lineTo(n1[0], n1[1]); ctx.stroke();
     ctx.strokeStyle = FP_EDGE.light; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(t[2][0], t[2][1]); ctx.lineTo(t[1][0], t[1][1]); ctx.stroke();   // the tread's lit edges
     ctx.strokeStyle = FP_EDGE.lightSoft; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(t[0][0], t[0][1]); ctx.lineTo(t[3][0], t[3][1]); ctx.moveTo(t[0][0], t[0][1]); ctx.lineTo(t[1][0], t[1][1]); ctx.stroke();
     ctx.strokeStyle = "rgba(10,30,40,0.3)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(t[2][0], t[2][1]); ctx.lineTo(b2[1][0], b2[1][1]); ctx.stroke();   // the front corner crease

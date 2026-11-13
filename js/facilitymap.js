@@ -55,12 +55,15 @@ const FACILITY_MAP = {
         { id: "lab_hallway", label: "Hallway past the Experiment Lab", level: 0, status: "approximate",
           note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
           polygon: [[370, 410], [930, 410], [930, 600], [870, 600], [870, 760], [310, 760], [310, 605], [430, 605], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]] },
-        { id: "experiment_lab", label: "Experiment Lab", level: 0, status: "approximate", wall_material: "glass",
-          note: "The enclosed lab in the middle of the gridded floor: WINDOWED OFF from the hallway round it (glass, not walkable). Its only DOOR is the narrow passage to Teleport Room 1; the stairwell in its north-west corner goes down to the Cold Storage (an interior: a doorway you go through, so with the passage shut no walk reaches the lab). The interior furniture is not traced yet.",
+        { id: "lounge", label: "The Lounge", level: 0, status: "placed", wall_material: "glass",
+          note: "THE LOUNGE (build 2026-11-13a; the owner, 2026-11-12: \"I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand ... tilted towards the beanbag chairs ... there's a rug\"; the name \"The Lounge\"; mirrored 2026-11-13: \"the whiteboard is on the other side, pointing towards the player, looking at the slant\"): the old Experiment Lab's room in the middle of the gridded floor, glass onto the hallway on its north and east as before, its south a full DIVIDER wall (thin, solid: `windows`, divider). Its only door is the narrow passage to Teleport Room 1. The whiteboard on its stand at the west end, north of the door, turned to face the camera; four beanbags on a rug before it, two each side of the aisle from the door; two couches round a low table at the east end; two plants.",
           polygon: [[430, 530], [750, 530], [750, 640], [430, 640]] },
         { id: "lab_passage", label: "Narrow passage (lab to Teleport Room 1)", level: 0, status: "approximate",
-          note: "The lab's little narrow hallway: it crosses the west side of the gridded floor from the lab's west wall to Teleport Room 1 (the arm of the lab drawn reaching the left wall in the sketch).",
+          note: "The old lab's little narrow hallway (The Lounge's since build 2026-11-13a): it crosses the west side of the gridded floor from the lounge's west wall to Teleport Room 1 (the arm of the lab drawn reaching the left wall in the sketch).",
           polygon: [[310, 565], [430, 565], [430, 605], [310, 605]] },
+        { id: "experiment_lab", label: "Experiment Lab", level: -1, status: "placed", wall_material: "solid",
+          note: "THE EXPERIMENT LAB (build 2026-11-13a; the owner, 2026-11-12: \"the new experiment lab will be on ... the west side ... connected to the teleporter lab ... a little ... slope staircase droop into the experiment lab, which will be rather large, like kind of 3 times the size as the normal, the present one, and have giant holding tanks and stuff\"; of the drafts, layout B, the long gallery, and the Cold Storage's stairs moved to it): west of Teleport Room 1, 23 tiles by 12, at the arena's level (1.8 tiles down), reached by a staircase three tiles wide down from Teleport Room 1's west wall (`ramps`, r_lab_stair: no door). Giant holding tanks in two rows down its length (north and south), the old lab's stations along its back walls (the Sequencer's and the Clone Bay's glass chambers on the west wall, the Serum Hood and the Analysis Bench on the north), two long benches down the middle, and the stairwell down to the Cold Storage in its north-east corner. Drawn touching Teleport Room 1 (the sketch); the building pass slides it two tiles west (js/facilitygrow.js).",
+          polygon: [[-275, 520], [185, 520], [185, 760], [-275, 760]] },
         { id: "teleport_stair_room", label: "Teleport Stair Room", level: 1, status: "approximate", name_confirmed: false,
           note: "The room that leads to Teleport Room 2: a curved staircase in it leads DOWN to the hallway past the experiment lab. Footprint and name are first guesses.",
           polygon: [[870, 600], [945, 600], [945, 760], [870, 760]] },
@@ -203,8 +206,8 @@ const FACILITY_MAP = {
     // doorway and fades back (js/facilityportals.js). A room is a unit of the map; an interior is a room you have to go into.
     interiors: [
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
-        { id: "cold_storage", under: "experiment_lab", offset: [-1280, 0] },   // (64 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen;
-                                                                                //  out here, beside the crystal chamber's corner of the plan, nothing is within sight of it and the MAP stays as wide as it was)
+        { id: "cold_storage", under: "experiment_lab", offset: [-1920, 0] },   // (96 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen; out here
+                                                                                //  nothing is within sight of it. It was 64 tiles west until build 2026-11-13a, when the new Experiment Lab west of Teleport Room 1 came within sight of it)
         { id: "sewers", under: "arena", offset: [-1280, 1280] },               // (64 tiles west and 64 south: the west is the Cold Storage's and the south the nest area's; down here nothing is in sight of it)
         { id: "nest_area", under: "arena", offset: [0, 2240] },                 // THE ANT NEST (112 tiles south since build 2026-11-12a, 96 before: the nest area's part of the map, far enough below the Sewers that neither is in sight of the other, its new caves too)
         { id: "nest_t1", under: "arena", offset: [0, 2240] },   // (the Nest grown out: one interior with it)
@@ -238,8 +241,8 @@ const FACILITY_MAP = {
           note: "The Cold Storage's double freezer door, set in boulders in an alcove in the arena's north cave wall, where the generator stood." },
         { id: "portal_cold_arena", room: "cold_storage", rect: [420, 560, 440, 620], arrive: [470, 590], to: "portal_arena_cold", label: "ARENA", kind: "door",
           note: "The freezer door back out to the arena: the entrance, an alcove in the cold storage's west wall at the top." },
-        { id: "portal_lab_cold", room: "experiment_lab", rect: [450, 530, 510, 560], arrive: [470, 600], to: "portal_cold_lab", label: "COLD STORAGE", kind: "stairs_down", well: true,
-          note: "A STAIRWELL in the Experiment Lab's floor, in its north-west corner just inside the door from the passage (the north bench is three tiles shorter for it): steps going down to the north, to the Cold Storage under the lab, entered from the aisle. Not an alcove: an opening in the floor with a rail round three sides." },
+        { id: "portal_lab_cold", room: "experiment_lab", rect: [70, 530, 130, 570], arrive: [100, 600], to: "portal_cold_lab", label: "COLD STORAGE", kind: "stairs_down", well: true,
+          note: "A STAIRWELL in the Experiment Lab's floor, in its north-east corner north of the foot of the staircase from Teleport Room 1 (the lab moved west in build 2026-11-13a, the owner's pick: \"Move to new lab\"; it was in the old lab's north-west corner by its door): steps going down to the north, to the Cold Storage, entered from the south. Not an alcove: an opening in the floor with a rail round three sides." },
         { id: "portal_cold_lab", room: "cold_storage", rect: [490, 660, 530, 720], arrive: [510, 750], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
           note: "The stairs up to the Experiment Lab: a flight standing in the floor at the cold storage's west side (the plan's STAIRS)." },
         { id: "portal_arena_sewers", room: "arena", rect: [780, 788, 840, 808], arrive: [810, 840], to: "portal_sewers_arena", label: "SEWERS", kind: "door",
@@ -268,7 +271,7 @@ const FACILITY_MAP = {
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
     props: [
-        { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [715, 575], radius: 25, status: "approximate", kind: "tank" },
+        { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [70, 710], radius: 25, status: "placed", kind: "tank", note: "The old lab's own glass tank, at the east end of the new lab's south row of tanks (build 2026-11-13a)." },
 
         // ── THE SERVER ROOM (the owner, 2026-11-07: "make that a server room, a dark server room"; it was the Front Lobby's computer lab): four rows of racks across the floor, racks down the west wall and in the
         //    north-east corner, the monitoring console on the south wall between the two doors, and THE MAIN POWER JUNCTION in the north-east corner, the tutorial's one repair (js/tutorial.js, js/stations.js
@@ -285,11 +288,19 @@ const FACILITY_MAP = {
 
         // ── THE SCIENCE LAB (the Experiment Lab): benches along the north and south walls, a fume hood, glass test chambers beside the big tank. A two-and-a-half tile aisle runs between the benches
         //    from the passage door to the tank.
-        { id: "lab_bench_north", room: "experiment_lab", shape: "rect", rect: [510, 530, 610, 560], status: "placed", kind: "lab_bench", note: "A long bench: microscope, glassware, sample racks. Five tiles: its west end gave way to the Cold Storage's stairwell." },
-        { id: "lab_hood", room: "experiment_lab", shape: "rect", rect: [630, 530, 690, 560], status: "placed", kind: "fume_hood", note: "A fume hood on the north wall." },
-        { id: "lab_bench_south", room: "experiment_lab", shape: "rect", rect: [450, 612, 610, 640], status: "placed", kind: "lab_bench" },
-        { id: "chamber_1", room: "experiment_lab", shape: "circle", at: [668, 622], radius: 17, status: "placed", kind: "test_chamber", note: "A glass test chamber." },
-        { id: "chamber_2", room: "experiment_lab", shape: "circle", at: [708, 624], radius: 15, status: "placed", kind: "test_chamber" },
+        // THE EXPERIMENT LAB (build 2026-11-13a: moved west of Teleport Room 1, a long gallery; js/facilitygrow.js slides it two tiles west, so these are 40 px east of where they stand): the old lab's own pieces, and
+        //   six GIANT HOLDING TANKS in two rows down its length (the owner: "giant holding tanks and stuff"; of the one-piece draft, "Looks good": design/props/models/holdtank.js), two tiles by two each
+        { id: "lab_bench_north", room: "experiment_lab", shape: "rect", rect: [-210, 610, -110, 650], status: "placed", kind: "lab_bench", note: "A long bench down the middle of the lab: microscope, glassware, sample racks." },
+        { id: "lab_hood", room: "experiment_lab", shape: "rect", rect: [-270, 530, -210, 570], status: "placed", kind: "fume_hood", note: "A fume hood on the north wall, in the north-west corner (the Serum Hood)." },
+        { id: "lab_bench_south", room: "experiment_lab", shape: "rect", rect: [-70, 610, 90, 650], status: "placed", kind: "lab_bench", note: "The second long bench, east of the first, its east end two tiles short of the staircase's foot." },
+        { id: "chamber_1", room: "experiment_lab", shape: "circle", at: [-250, 610], radius: 17, status: "placed", kind: "test_chamber", note: "A glass test chamber on the west wall (the Sequencer)." },
+        { id: "chamber_2", room: "experiment_lab", shape: "circle", at: [-250, 670], radius: 15, status: "placed", kind: "test_chamber", note: "The second glass test chamber on the west wall (the Clone Bay)." },
+        { id: "holdtank_1", room: "experiment_lab", shape: "rect", rect: [-190, 530, -150, 570], status: "placed", kind: "holding_tank", note: "A giant holding tank, the north row." },
+        { id: "holdtank_2", room: "experiment_lab", shape: "rect", rect: [-110, 530, -70, 570], status: "placed", kind: "holding_tank" },
+        { id: "holdtank_3", room: "experiment_lab", shape: "rect", rect: [-30, 530, 10, 570], status: "placed", kind: "holding_tank" },
+        { id: "holdtank_4", room: "experiment_lab", shape: "rect", rect: [-190, 690, -150, 730], status: "placed", kind: "holding_tank", note: "A giant holding tank, the south row (a row off the south wall, so the wall hides no more than its plinth)." },
+        { id: "holdtank_5", room: "experiment_lab", shape: "rect", rect: [-110, 690, -70, 730], status: "placed", kind: "holding_tank" },
+        { id: "holdtank_6", room: "experiment_lab", shape: "rect", rect: [-30, 690, 10, 730], status: "placed", kind: "holding_tank" },
         { id: "arena_truck", room: "arena", shape: "rect", rect: [410, 850, 500, 1070], status: "traced", kind: "semi_truck", cargo: [{ type: "missile", count: 3 }],
           note: "A semi-truck carrying three missiles, parked along the arena's west side. Solid." },
         { id: "arena_structure_01", room: "arena", shape: "circle", at: [824, 905], radius: 45, status: "traced", kind: "liquid_reserve", contents: "ooze_or_liquid (type to be decided)",
@@ -332,8 +343,20 @@ const FACILITY_MAP = {
         { id: "barrel_3", room: "lab_hallway", shape: "rect", rect: [750, 750, 770, 770], status: "placed", kind: "barrel" },
         { id: "barrel_4", room: "lab_hallway", shape: "rect", rect: [770, 750, 790, 770], status: "placed", kind: "barrel" },
         { id: "plant_10", room: "lab_hallway", shape: "rect", rect: [310, 630, 330, 650], status: "placed", kind: "plant" },
-        { id: "cabinet_1", room: "experiment_lab", shape: "rect", rect: [430, 530, 450, 570], status: "placed", kind: "cabinet" },
-        { id: "cart_2", room: "experiment_lab", shape: "rect", rect: [710, 590, 730, 610], status: "placed", kind: "cart" },
+        { id: "cabinet_1", room: "experiment_lab", shape: "rect", rect: [30, 530, 50, 570], status: "placed", kind: "cabinet", note: "On the north wall, west of the Cold Storage's stairwell (the Analysis Bench)." },
+        { id: "cart_2", room: "experiment_lab", shape: "rect", rect: [-270, 710, -250, 730], status: "placed", kind: "cart" },
+        // THE LOUNGE (build 2026-11-13a, the old lab's room; mirrored: the whiteboard at the west end facing the camera, the couches at the east end). The south two rows are behind its divider wall from the camera, so
+        //   nothing stands in them; the couches are the game's own (the east one the same couch turned), the whiteboard on its stand a new 3D model (design/props/models/whiteboard.js)
+        { id: "lounge_whiteboard", room: "lounge", shape: "rect", rect: [450, 530, 490, 570], status: "placed", kind: "whiteboard_stand", note: "The whiteboard on its own rolling stand, equations on it, turned to face the camera at a slant, toward the beanbags." },
+        { id: "lounge_beanbag_1", room: "lounge", shape: "rect", rect: [510, 550, 530, 570], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_2", room: "lounge", shape: "rect", rect: [550, 550, 570, 570], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_3", room: "lounge", shape: "rect", rect: [510, 590, 530, 610], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_4", room: "lounge", shape: "rect", rect: [550, 590, 570, 610], status: "placed", kind: "beanbag" },
+        { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [650, 530, 710, 550], status: "placed", kind: "couch", note: "Along the north glass, facing the room." },
+        { id: "lounge_couch_2", room: "lounge", shape: "rect", rect: [730, 550, 750, 610], status: "placed", kind: "couch", note: "Along the east glass, facing west (its back to the camera)." },
+        { id: "lounge_table", room: "lounge", shape: "rect", rect: [670, 570, 710, 590], status: "placed", kind: "table", note: "A low glass-topped table between the two couches." },
+        { id: "lounge_plant_1", room: "lounge", shape: "rect", rect: [630, 530, 650, 550], status: "placed", kind: "plant" },
+        { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [730, 530, 750, 550], status: "placed", kind: "plant" },
         { id: "console_3", room: "teleport_room_2", shape: "rect", rect: [990, 610, 1070, 630], status: "placed", kind: "console" },
         { id: "teleporter_5", room: "teleport_room_2", shape: "rect", rect: [1070, 650, 1090, 670], status: "placed", kind: "teleporter" },
         { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 750, 1010, 770], status: "placed", kind: "teleporter" },
@@ -500,7 +523,7 @@ const FACILITY_MAP = {
     pickups: [
         { id: "pk_armory_ammo", room: "armory", at: [280, 1020], items: [["ammo_pack", 2]], note: "Ammunition in the Armory." },
         { id: "pk_security_cache", room: "security_room", at: [880, 360], items: [["ammo_pack", 1]], note: "A drawer's worth of ammunition in the Security Room." },
-        { id: "pk_lab_cells", room: "experiment_lab", at: [620, 580], items: [["power_cell", 2]], note: "Charged cells on the lab bench." },
+        { id: "pk_lab_cells", room: "experiment_lab", at: [20, 600], items: [["power_cell", 2]], note: "Charged cells by the lab's long bench (the new lab since build 2026-11-13a)." },
         { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the server racks." },
         // REPAIR KITS (docs/PLAYER-COMBAT.md, step 1, build 2026-11-11e): spots that fill again (`respawn`, frames) a while after the kit is taken; where the fights are. The places and the wait are the agent's, provisional.
         { id: "pk_kit_arena_n", room: "arena", at: [520, 840], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena, by its door from the hallway: back three minutes after it is taken." },
@@ -525,7 +548,7 @@ const FACILITY_MAP = {
         { id: "pk_tele_legs", room: "teleport_room_1", at: [260, 620], items: [["mech_leg", 2]], class: "technomancer", note: "Two spider-mech legs beside the teleporters (Technomancer)." },
         { id: "pk_tele_legs_2", room: "teleport_room_1", at: [260, 680], items: [["mech_leg", 2]], class: "technomancer", note: "Two more legs by the console (Technomancer)." },
         { id: "pk_show_core", room: "show_room", at: [1060, 520], items: [["mech_core", 1]], class: "technomancer", note: "A mech core, left in the warehouse (Technomancer)." },
-        { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], class: "mutator", note: "Samples in the lab (Mutator)." },
+        { id: "pk_lab_mutagen", room: "experiment_lab", at: [-220, 660], items: [["mutagen_sample", 2]], class: "mutator", note: "Samples in the lab by its glass chambers (Mutator)." },
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], class: "mutator", note: "A sample left by the crystal (Mutator)." },
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
         // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the far end of the collapsed tunnel's broken-off floor, in sight from the north ledge and out of reach behind the choke.
@@ -544,7 +567,7 @@ const FACILITY_MAP = {
         { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the server room's north-east corner." },
         { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the warehouse's north end." },
         { id: "spot_deck",    room: "observation_deck", at: [250, 850],  type: "camper",  element: "core",     note: "A core technician on the observation deck." },
-        { id: "spot_lab",     room: "experiment_lab",   at: [650, 590],  type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab." },
+        { id: "spot_lab",     room: "experiment_lab",   at: [-100, 660], type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab, between its two benches." },
         { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
         { id: "spot_arena_w", room: "arena",            at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
         { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
@@ -631,7 +654,7 @@ const FACILITY_MAP = {
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
         { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },   // (its sentry runs on the Crystal's power since 2026-11-01)
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
-        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
+        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lounge", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage; the Lounge, the old lab's room, since build 2026-11-13a)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
         { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "catwalk_spur", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers"], feeds: [] },   // (and the Sewers under the arena)
     ],
@@ -645,6 +668,7 @@ const FACILITY_MAP = {
         { room: "show_room", style: "concrete" },
         { room: "lab_hallway", style: "concrete" },
         { room: "experiment_lab", style: "labtile" },
+        { room: "lounge", style: "wood" },   // (THE LOUNGE, build 2026-11-13a: a warm floor; its room style colours it, js/facilitystyleall.js)
         { room: "lab_passage", style: "grate" },
         { room: "teleport_stair_room", style: "plate", colour: "#33405a" },
         { room: "teleport_room_2", style: "plate", colour: "#3a2f5a" },
@@ -713,11 +737,12 @@ const FACILITY_MAP = {
         { id: "scorch_2", room: "teleport_room_1", kind: "scorch", at: [280, 600], radius: 18, colour: "#0c0c10" },
         { id: "papers_2", room: "teleport_room_1", kind: "papers", at: [220, 680], radius: 20, n: 5 },
         { id: "debris_2", room: "teleport_room_1", kind: "debris", at: [340, 550], radius: 20, n: 4 },
-        { id: "pipe_3", room: "teleport_room_1", kind: "pipe", a: [190, 510], b: [190, 770], colour: "#a64dff", z: 64 },
+        { id: "pipe_3", room: "teleport_room_1", kind: "pipe", a: [190, 510], b: [190, 630], colour: "#a64dff", z: 64 },   // (in two since build 2026-11-13a: the staircase down to the Experiment Lab is between)
+        { id: "pipe_3b", room: "teleport_room_1", kind: "pipe", a: [190, 690], b: [190, 770], colour: "#a64dff", z: 64 },
         { id: "poster_1", room: "teleport_room_1", kind: "poster", a: [190, 550], b: [190, 590] },
-        { id: "panel_2", room: "teleport_room_1", kind: "panel", a: [190, 610], b: [190, 630] },
-        { id: "screen_2", room: "teleport_room_1", kind: "screen", a: [190, 650], b: [190, 690], colour: "#a64dff" },
-        { id: "vent_3", room: "teleport_room_1", kind: "vent", a: [190, 710], b: [190, 730] },
+        { id: "panel_2", room: "teleport_room_1", kind: "panel", a: [190, 590], b: [190, 610] },   // (the panel, the screen and the vent moved along for the staircase's opening, build 2026-11-13a)
+        { id: "screen_2", room: "teleport_room_1", kind: "screen", a: [190, 700], b: [190, 740], colour: "#a64dff" },
+        { id: "vent_3", room: "teleport_room_1", kind: "vent", a: [190, 740], b: [190, 760] },
         { id: "wall_light_3", room: "teleport_room_1", kind: "wall_light", a: [190, 570], b: [190, 630], h: 1, colour: "#c9a0ff" },
         { id: "screen_3", room: "teleport_room_1", kind: "screen", a: [270, 510], b: [310, 510], colour: "#a64dff" },
         { id: "poster_2", room: "teleport_room_1", kind: "poster", a: [310, 510], b: [330, 510] },
@@ -814,15 +839,28 @@ const FACILITY_MAP = {
         { id: "hazard_sign_4", room: "lab_hallway", kind: "hazard_sign", a: [370, 610], b: [390, 610] },
         { id: "pipe_8", room: "lab_hallway", kind: "pipe", a: [310, 610], b: [430, 610], colour: "#7d8aa6", z: 64 },
         { id: "exit_sign_4", room: "lab_hallway", kind: "exit_sign", a: [370, 430], b: [370, 490] },
-        { id: "ring_9", room: "experiment_lab", kind: "ring", at: [700, 560], radius: 42, colour: "#ffd21a", a: 0.6, w: 2, dashed: true },
-        { id: "light_20", room: "experiment_lab", kind: "light", at: [520, 590], radius: 90, colour: "#cfeaff", a: 0.22, flicker: true },
-        { id: "light_21", room: "experiment_lab", kind: "light", at: [660, 600], radius: 72, colour: "#6dff5a", a: 0.18 },
-        { id: "puddle_5", room: "experiment_lab", kind: "puddle", at: [640, 600], radius: 16, colour: "#6dff5a" },
-        { id: "puddle_6", room: "experiment_lab", kind: "puddle", at: [540, 590], radius: 14, colour: "#6adfff" },
-        { id: "papers_11", room: "experiment_lab", kind: "papers", at: [570, 590], radius: 24, n: 5 },
-        { id: "cables_11", room: "experiment_lab", kind: "cables", path: [[690, 596], [660, 606], [600, 606]], colour: "#6dff5a" },
-        { id: "cables_12", room: "experiment_lab", kind: "cables", path: [[720, 538], [720, 586]], colour: "#ffb347" },
-        { id: "shelf_1", room: "experiment_lab", kind: "shelf", a: [430, 530], b: [430, 570] },
+        // THE EXPERIMENT LAB (build 2026-11-13a: the new lab west of Teleport Room 1; drawn 40 px east of where it stands, as its room is: js/facilitygrow.js)
+        { id: "ring_9", room: "experiment_lab", kind: "ring", at: [70, 710], radius: 42, colour: "#ffd21a", a: 0.6, w: 2, dashed: true },
+        { id: "light_20", room: "experiment_lab", kind: "light", at: [-140, 600], radius: 90, colour: "#cfeaff", a: 0.22, flicker: true },
+        { id: "light_21", room: "experiment_lab", kind: "light", at: [-40, 660], radius: 72, colour: "#6dff5a", a: 0.18 },
+        { id: "light_lab_3", room: "experiment_lab", kind: "light", at: [60, 600], radius: 84, colour: "#cfeaff", a: 0.2 },
+        { id: "light_lab_4", room: "experiment_lab", kind: "light", at: [-220, 640], radius: 72, colour: "#6dff5a", a: 0.16 },
+        { id: "puddle_5", room: "experiment_lab", kind: "puddle", at: [-120, 680], radius: 16, colour: "#6dff5a" },
+        { id: "puddle_6", room: "experiment_lab", kind: "puddle", at: [-20, 660], radius: 14, colour: "#6adfff" },
+        { id: "papers_11", room: "experiment_lab", kind: "papers", at: [-160, 600], radius: 24, n: 5 },
+        { id: "cables_11", room: "experiment_lab", kind: "cables", path: [[-100, 580], [-100, 600], [-70, 600]], colour: "#6dff5a" },
+        { id: "cables_12", room: "experiment_lab", kind: "cables", path: [[40, 580], [40, 596]], colour: "#ffb347" },
+        { id: "shelf_1", room: "experiment_lab", kind: "shelf", a: [-275, 690], b: [-275, 730] },
+        { id: "wall_light_lab_1", room: "experiment_lab", kind: "wall_light", a: [-150, 530], b: [-110, 530], colour: "#bfffe8" },
+        { id: "screen_lab_1", room: "experiment_lab", kind: "screen", a: [-70, 530], b: [-30, 530], colour: "#43e0a8" },
+        { id: "hazard_sign_lab", room: "experiment_lab", kind: "hazard_sign", a: [10, 530], b: [30, 530] },
+        { id: "poster_lab", room: "experiment_lab", kind: "poster", a: [50, 530], b: [70, 530], z: 34 },
+        // THE LOUNGE (build 2026-11-13a, the old lab's room): the rug before the whiteboard, under the beanbags; warm light
+        { id: "lounge_rug", room: "lounge", kind: "rug", rect: [490, 550, 590, 610], colour: "#b85a72", border: "#ffd34d" },   // (rose, not the deck's dark red: a styled room washes a dark decal out to a pale one, js/facilitystyle.js _fpStyleCol)
+        { id: "lounge_light_1", room: "lounge", kind: "light", at: [540, 580], radius: 100, colour: "#ffd9a0", a: 0.22 },
+        { id: "lounge_light_2", room: "lounge", kind: "light", at: [680, 560], radius: 70, colour: "#ffd9a0", a: 0.18 },
+        { id: "lounge_light_3", room: "lounge", kind: "light", at: [480, 580], radius: 50, colour: "#fff4e0", a: 0.14 },   // (on the whiteboard)
+        { id: "lounge_papers", room: "lounge", kind: "papers", at: [580, 580], radius: 18, n: 3 },   // (magazines by the beanbags)
         { id: "hazard_11", room: "lab_passage", kind: "hazard", rect: [310, 570, 330, 610] },
         { id: "hazard_12", room: "lab_passage", kind: "hazard", rect: [410, 570, 430, 610] },
         { id: "light_22", room: "lab_passage", kind: "light", at: [370, 590], radius: 60, colour: "#ffe9a0", a: 0.18, flicker: true },
@@ -975,7 +1013,7 @@ const FACILITY_MAP = {
         { id: "deck_stairs_door", room: "observation_deck", kind: "portal_door", a: [160, 870], b: [160, 910], colour: "#8fe3ff" },
         // ── the Cold Storage: its freezer door at the entrance (the inside of the arena's), the stairwell down to it in the Experiment Lab's floor and the stairs up inside it, the ice cave's glassy floor, cold lights ──
         { id: "cold_arena_door", room: "cold_storage", kind: "portal_door", a: [420, 560], b: [420, 620], colour: "#9be8ff", flat: true, cold: true },
-        { id: "lab_cold_stairwell", room: "experiment_lab", kind: "stairwell", rect: [450, 530, 510, 560], dir: "n", colour: "#9be8ff", note: "A stairwell in the lab's floor by its door: steps going down to the north, into the Cold Storage under it; a rail round three sides, open at the south where you step in from the aisle." },
+        { id: "lab_cold_stairwell", room: "experiment_lab", kind: "stairwell", rect: [70, 530, 130, 570], dir: "n", colour: "#9be8ff", note: "A stairwell in the lab's floor, north of the foot of the staircase from Teleport Room 1: steps going down to the north, into the Cold Storage; a rail round three sides, open at the south where you step in." },
         { id: "cold_lab_stairs", room: "cold_storage", kind: "stairwell", rect: [490, 660, 530, 720], dir: "n", up: true, colour: "#9be8ff", note: "The flight up to the Experiment Lab, standing in the floor: steps rising to the north." },
         { id: "cold_cave_ice", room: "cold_storage", kind: "ice_sheet", path: [[456, 748], [500, 745], [560, 752], [610, 724], [650, 712], [675, 690], [712, 708], [730, 745], [749, 782], [749, 818], [718, 850], [675, 872], [620, 890], [585, 870], [545, 852], [530, 812], [490, 794], [466, 754]],
           note: "The ice cave's floor: glassy ice over the rock (the look only: it plays like any floor)." },
@@ -1175,14 +1213,15 @@ const FACILITY_MAP = {
     // (There is no separate outer path: the long lines round the nest area are that room's outside edges, drawn as its walls. Anything outside every room is not walkable.)
     outer_path: null,
 
-    // WINDOWS: a stretch of wall that is glass. See-through (a debug/render feature), SOLID to movement exactly like a wall. The lab is windowed off from the hallway round it.
+    // WINDOWS: a stretch of wall that is glass. See-through (a debug/render feature), SOLID to movement exactly like a wall. The Lounge (the old lab's room) is windowed off from the hallway round it.
+    // A window marked `divider` is a thin wall that is NOT glass: drawn solid, full height, with no thick top (THE LOUNGE's south side, build 2026-11-13a; the owner: "It's a full wall, but it's only on the south side").
     windows: [
-        { id: "lab_window_north", a: [430, 530], b: [750, 530], rooms: ["experiment_lab", "lab_hallway"] },
-        { id: "lab_window_east", a: [750, 530], b: [750, 640], rooms: ["experiment_lab", "lab_hallway"] },
-        { id: "lab_window_south", a: [750, 640], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
+        { id: "lab_window_north", a: [430, 530], b: [750, 530], rooms: ["lounge", "lab_hallway"] },
+        { id: "lab_window_east", a: [750, 530], b: [750, 640], rooms: ["lounge", "lab_hallway"] },
+        { id: "lounge_divider_south", a: [750, 640], b: [430, 640], rooms: ["lounge", "lab_hallway"], divider: true },   // (the old lab's south glass, lab_window_south, until build 2026-11-13a)
         { id: "deck_window_arena", a: [340, 760], b: [340, 950], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
         { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room", "lab_hallway"] },   // the hallway side only (its north part is the security room's wall). Glass for BOTH rooms' pieces, as the lab's windows are: the hallway's own piece of this edge was an opaque wall standing in front of the glass (and its thick top ran over the show room's floor)
-        { id: "lab_window_west_lower", a: [430, 605], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
+        { id: "lab_window_west_lower", a: [430, 605], b: [430, 640], rooms: ["lounge", "lab_hallway"] },
     ],
 
     // EVERY DOOR in the facility is a sliding access door. A confirmed opening below is one (its `door` defaults to this).
@@ -1216,8 +1255,10 @@ const FACILITY_MAP = {
           note: "A sliding access door from the arena's top-left corner onto the hallway that circles round the lab into the Crystal Chamber." },
         { id: "door_passage_teleport_1", a: [310, 565], b: [310, 605], rooms: ["lab_passage", "teleport_room_1"], position_status: "approximate",
           note: "A sliding access door between the narrow passage and Teleport Room 1." },
-        { id: "door_lab_passage", a: [430, 565], b: [430, 605], rooms: ["experiment_lab", "lab_passage"], position_status: "approximate",
-          note: "A sliding access door between the lab and the narrow passage." },
+        { id: "door_lab_passage", a: [430, 565], b: [430, 605], rooms: ["lounge", "lab_passage"], position_status: "approximate",
+          note: "A sliding access door between the Lounge (the old lab) and the narrow passage." },
+        { id: "open_lab_stair", a: [185, 630], b: [185, 690], rooms: ["teleport_room_1", "experiment_lab"], door: null, position_status: "approximate",
+          note: "THE EXPERIMENT LAB'S STAIRCASE (build 2026-11-13a): an open mouth three tiles wide in Teleport Room 1's west wall, between its west teleporters, and the staircase down from it into the lab (`ramps`, r_lab_stair). No door." },
         { id: "door_crystal_hallway", a: [370, 422], b: [370, 486], rooms: ["crystal_chamber", "lab_hallway"], position_status: "approximate",
           note: "A sliding access door from the Crystal Chamber onto the hallway that passes the experiment lab (on the shared wall, near its middle)." },
         { id: "open_stair_mouth", a: [870, 610], b: [870, 760], rooms: ["teleport_stair_room", "lab_hallway"], door: null, position_status: "approximate",
@@ -1249,7 +1290,8 @@ const FACILITY_MAP = {
         { id: "conn_security_hallway", rooms: ["security_room", "lab_hallway"], opening: "door_security_hallway" },
         { id: "conn_showroom_hallway", rooms: ["show_room", "lab_hallway"], opening: "door_showroom_hallway" },
         { id: "conn_arena_hallway", rooms: ["arena", "lab_hallway"], opening: "door_arena_hallway", ramp: "r_arena_steps" },
-        { id: "conn_lab_passage", rooms: ["experiment_lab", "lab_passage"], opening: "door_lab_passage" },
+        { id: "conn_lab_passage", rooms: ["lounge", "lab_passage"], opening: "door_lab_passage" },
+        { id: "conn_lab_stair", rooms: ["teleport_room_1", "experiment_lab"], opening: "open_lab_stair", ramp: "r_lab_stair" },
         { id: "conn_passage_teleport_1", rooms: ["lab_passage", "teleport_room_1"], opening: "door_passage_teleport_1" },
         { id: "conn_crystal_hallway", rooms: ["crystal_chamber", "lab_hallway"], opening: "door_crystal_hallway" },
         { id: "conn_stair_hallway", rooms: ["teleport_stair_room", "lab_hallway"], opening: "open_stair_mouth", ramp: "r_teleport_stairs" },
@@ -1293,6 +1335,9 @@ const FACILITY_MAP = {
         { id: "r_nest_down", rooms: ["nest_down", "nest_down_low"], shape: "slope", between_levels: [-1, -2], descends_toward: "nest_down_low", position_status: "placed",
           zone: { rect: [20, 1920, 80, 2120], axis: "y", c0: 1930, c1: 2110 },
           note: "THE ANT NEST: the way down, a sloping tunnel you walk straight down (the owner: 'I want the nests to descend without stairs'; 'Sloping tunnels'): no steps, a slope of dirt over nine tiles, to the volcanic layer's level (a zone without `steps` is a slope: js/facility.js)." },
+        { id: "r_lab_stair", rooms: ["teleport_room_1", "experiment_lab"], shape: "steps", between_levels: [0, -1], descends_toward: "experiment_lab", position_status: "placed",
+          zone: { rect: [65, 625, 175, 695], axis: "x", c0: 165, c1: 65, steps: 5 },
+          note: "THE EXPERIMENT LAB'S STAIRCASE (build 2026-11-13a; the owner: \"a little ... slope staircase droop into the experiment lab\"): five steps down from Teleport Room 1's west wall into the lab, three tiles wide, to the arena's level. Its zone is given where it stands in the built map (the building pass does not move it)." },
     ],
 
     // What the sketch SUGGESTS and the user has not confirmed. None of these is a gap, a link or a ramp until it is moved above.

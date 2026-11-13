@@ -284,9 +284,10 @@
     return { g };
   }
 
-  const VARIANTS = ['couch.3x1.s0', 'couch.3x1.s1', 'table', 'beanbag.s0', 'beanbag.s1', 'beanbag.s2', 'beanbag.s3', 'pingpong', 'vending.1x1.s0', 'vending.1x1.s1', 'vending.1x1.s2', 'vending.2x1', 'cooler', 'bin.s0', 'bin.s1', 'chair'];
+  const VARIANTS = ['couch.3x1.s0', 'couch.3x1.s1', 'couch.1x3.s0', 'couch.1x3.s1', 'table', 'beanbag.s0', 'beanbag.s1', 'beanbag.s2', 'beanbag.s3', 'pingpong', 'vending.1x1.s0', 'vending.1x1.s1', 'vending.1x1.s2', 'vending.2x1', 'cooler', 'bin.s0', 'bin.s1', 'chair'];
   PROPS.lounge = { variants: VARIANTS, canvas: [900, 600], exposure: 0.85, build(name) {
     const s = name.match(/\.s(\d)$/); const si = s ? +s[1] : 0;
+    if (name.startsWith('couch.1x3')) { const c = couch(si), h = G(); c.g.rotation.y = -PI / 2; h.add(c.g); return { g: h }; }   // THE LOUNGE (build 2026-11-13a): the same couch turned to face west, its back on the east (a couch along an east wall)
     if (name.startsWith('couch')) return couch(si);
     if (name === 'table') return table();
     if (name.startsWith('beanbag')) return beanbag(si);

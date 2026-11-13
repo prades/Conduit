@@ -22,10 +22,11 @@
         M._fluxLab = true;
     }
 
-    // how far each room slides, in tiles: [x, y]. The hallway, the lab and the passage hold their ground (the hub); the others move away from them.
+    // how far each room slides, in tiles: [x, y]. The hallway, the Lounge (the old lab's room) and the passage hold their ground (the hub); the others move away from them. The Experiment Lab (build 2026-11-13a),
+    // drawn touching Teleport Room 1's west wall, slides two tiles west: one with Teleport Room 1, one for the band of wall between them.
     const SHIFT = {
         crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0],
-        teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], catwalk_spur: [0, 1], arena: [0, 1],
+        teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], catwalk_spur: [0, 1], arena: [0, 1], experiment_lab: [-2, 0],
     };
     // an INTERIOR (js/facilitymap.js `interiors`) is not slid but carried: to a part of the map of its own, `offset` sketch pixels from where the data draws it
     const INTERIOR = {}; for (const i of (M.interiors || [])) INTERIOR[i.id] = [i.offset[0] / G, i.offset[1] / G];
@@ -103,6 +104,7 @@
         door_crystal_hallway: { a: [370, 430], b: [370, 470], via: "crystal_chamber", s: [-1, 0] },
         open_stair_mouth: { a: [870, 630], b: [870, 760] },
         door_stair_teleport_2: { a: [965, 680], b: [965, 720], via: "teleport_stair_room", s: [-1, 0] },
+        open_lab_stair: { a: [165, 630], b: [165, 690], via: "experiment_lab", s: [-1, 0] },   // THE EXPERIMENT LAB's staircase mouth in Teleport Room 1's west wall (build 2026-11-13a): the lab's floor runs through the band to it
     };
     const eq = (p, q) => Math.abs(p[0] - q[0]) < 0.5 && Math.abs(p[1] - q[1]) < 0.5;
     const on = (p, q, r) => Math.abs((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])) < 0.5 && r[0] >= Math.min(p[0], q[0]) - 0.5 && r[0] <= Math.max(p[0], q[0]) + 0.5 && r[1] >= Math.min(p[1], q[1]) - 0.5 && r[1] <= Math.max(p[1], q[1]) + 0.5;
