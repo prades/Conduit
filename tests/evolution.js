@@ -342,6 +342,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.second.tgt > F.tgt, 'no second beat: ' + JSON.stringify(r.second)); same(r.second.tb, 45, 'the beat starts the blind afresh'); ok(r.still, 'it moved'); ok(r.ended, 'it did not end'); ok(r.cd > 150, 'it did not wait: ' + r.cd); ok(r.at, 'when it went off'); same(r.move, 'MAELSTROM', 'its move'); same(r.ids, 'maelstrom', 'its moves'); same(r.k, '6.5,1.8,180,30,0.3,45', 'its reach, radius, life, beat, bite and blind');
     });
 
+    check('A PRIMARY ATTACK CARRIES A STATUS (build 2026-11-13j; the owner, 2026-11-13: "the primary attacks should add stuff like stun, slow, poisoned, and blinded, and perhaps burning"; approved the table, 25% a hit): the fifteen forms with a primary attack each add theirs on about a quarter of their plain hits; a move\'s hit, a technician and a hit that is not a follower\'s add none; a boss is not stunned or blinded', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const out = { forms: {}, alt: 0, camper: 0, boss: 0, bossSlow: 0, k: PRIMARY_STATUS_CHANCE };
+            const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };
+            const mk = (id, role, el) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.role = role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); return f; };
+            const flag = { stun: t => t.stunned > 0, slow: t => t.slowed > 0, poison: t => t.toxicWeakened > 0, blind: t => t.blinded > 0, burn: t => t.burning > 0 };
+            const clear = t => { t.stunned = t.slowed = t.toxicWeakened = t.blinded = t.burning = 0; t.health = t.maxHealth; };
+            const t = mkP(30, 30), boss = mkP(31, 30); boss.isBoss = true;
+            for (const id of Object.keys(PRIMARY_STATUS)) { const d = EVOLUTIONS[id], f = mk(id, d.role, d.element); let n = 0; for (let i = 0; i < 400; i++) { clear(t); applyDamage(t, 5, f, null, false, false, DMG_HIT_MAIN); if (flag[PRIMARY_STATUS[id]](t)) n++; } out.forms[id] = [PRIMARY_STATUS[id], n];
+                let a = 0; for (let i = 0; i < 200; i++) { clear(t); applyDamage(t, 5, f, null, false, false, DMG_HIT_ALT); if (flag[PRIMARY_STATUS[id]](t)) a++; } out.alt += a; }
+            const c = mk('hammerslug', 'camper', 'core'); for (let i = 0; i < 200; i++) { clear(t); applyDamage(t, 5, c, null, false, false, DMG_HIT_MAIN); if (Object.values(flag).some(g => g(t))) out.camper++; }
+            const th = mk('thunderhead', 'sniper', 'electric'), mf = mk('maw', 'brawler', 'ice'); for (let i = 0; i < 200; i++) { clear(boss); applyDamage(boss, 5, th, null, false, false, DMG_HIT_SHOT); if (boss.stunned > 0 || boss.blinded > 0) out.boss++; clear(boss); applyDamage(boss, 5, mf, null, false, false, DMG_HIT_MAIN); if (boss.slowed > 0) out.bossSlow++; }
+            actors.forEach(a => { if (a instanceof Predator) a.dead = true; }); return out; })()`);
+        same(Object.keys(r.forms).length, 15, 'fifteen forms'); same(r.k, 0.25, 'PRIMARY_STATUS_CHANCE');
+        for (const id in r.forms) ok(r.forms[id][1] > 65 && r.forms[id][1] < 135, id + ' (' + r.forms[id][0] + ') landed ' + r.forms[id][1] + ' of 400');
+        same(r.alt, 0, 'a move\'s hit added a status'); same(r.camper, 0, 'a technician added a status'); same(r.boss, 0, 'a boss was stunned or blinded'); ok(r.bossSlow > 20, 'a boss can be slowed: ' + r.bossSlow);
+    });
+
     check('BLIND is a lower chance of hitting (build 2026-11-13h; the owner: "Blinded doesn\'t mean that they don\'t hit. It means that they have a lower chance of hitting"; chosen: change blind everywhere, 50%): a blinded creature keeps its target and still attacks, each hit it deals misses about half the time, a hit that is reflected never misses, an unblinded creature never misses', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };

@@ -55,11 +55,15 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
     check('the followers\' attack table (§7.4): main and alternate types of all eighteen forms', () => {
         const T = J(`(function(){ const o = {}; for (const k in DMG_FORM) o[k] = [dmgFormType({ evolved: k, role: EVOLUTIONS[k].role }, 'main'), dmgFormType({ evolved: k, role: EVOLUTIONS[k].role }, 'alt')]; return o; })()`);
-        const want = { quillstone: ['piercing', 'projectile'], maw: ['slashing', 'piercing'], staticorb: ['crushing', 'crushing'], seeper: ['slashing', 'earthquake'], mimic: ['slashing', 'earthquake'],
-            thunderhead: ['elemental', 'elemental'], voidstar: ['elemental', 'elemental'], embercowl: ['elemental', 'elemental'], rimestar: ['projectile', 'projectile'], hornshell: ['projectile', 'projectile'],
-            rotshard: ['projectile', 'elemental'], thermite: ['piercing', 'piercing'], blightspider: ['piercing', 'elemental'], hovershell: ['crushing', 'earthquake'], igloo: ['slashing', 'elemental'] };
+        const want = { quillstone: ['piercing', 'projectile'], maw: ['slashing', 'piercing'], staticorb: ['crushing', 'piercing'], seeper: ['slashing', 'crushing'], mimic: ['slashing', 'earthquake'],
+            thunderhead: ['elemental', 'elemental'], voidstar: ['elemental', 'elemental'], embercowl: ['elemental', 'elemental'], rimestar: ['projectile', 'projectile'], hornshell: ['projectile', 'elemental'],
+            rotshard: ['projectile', 'elemental'], thermite: ['slashing', 'crushing'], blightspider: ['piercing', 'elemental'], hovershell: ['crushing', 'earthquake'], igloo: ['crushing', 'elemental'] };
         for (const k in want) sameJSON(T[k], want[k], k);
-        for (const k of ['jellyram', 'hammerslug', 'gooproxy']) ok(T[k][0] === 'crushing', k + ' main');
+        sameJSON([T.jellyram[0], T.hammerslug[0], T.gooproxy[0]], ['slashing', 'piercing', 'piercing'], 'the Core\'s and the Flux\'s mains');
+    });
+    check('EVERY ELEMENT HAS EACH OF THE FOUR: among the attacks of its forms, Slashing, Piercing, Crushing and Elemental (the owner, 2026-11-13: "each damage type, represented like piercing, slashing, crushing and magic or elemental"; build 2026-11-13j)', () => {
+        const r = J(`(function(){ const m = {}; for (const k of Object.keys(EVOLUTIONS)) { const d = EVOLUTIONS[k]; if (d.legacy || !d.role) continue; const t = DMG_FORM[k]; (m[d.element] = m[d.element] || new Set()).add(t.main).add(t.alt); } const o = {}; for (const e in m) o[e] = ['slashing', 'piercing', 'crushing', 'elemental'].filter(x => !m[e].has(x)); return o; })()`);
+        ok(Object.keys(r).length === 7, 'seven elements: ' + Object.keys(r).join()); for (const e in r) ok(r[e].length === 0, e + ' lacks ' + r[e].join());
     });
     check('an element special is Elemental for everyone; an egg hits with its scythe legs (Slashing), an egg Mage\'s shot is a shot', () => {
         ok(J(`dmgFormType({ evolved: 'maw', role: 'brawler' }, 'special')`) === 'elemental', 'special');

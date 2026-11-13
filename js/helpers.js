@@ -277,6 +277,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
+    if (source && !isReflected && !fixed && dmg > 0 && hit && hit.which === "main" && source.isFollower && typeof primaryStatusOnHit === "function") primaryStatusOnHit(source, target);   // (a primary attack's status, js/combat.js)
     // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──
     if (target.reflectDamage && source && !source.dead && !isReflected) {
         applyDamage(source, dmg, target, null, true);

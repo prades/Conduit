@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Every element has the four damage types; primary attacks carry a status
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/status-types`, `2026-11-13j`
+- **Status:** Approved
+- **Context:** the owner: each element should have each damage type represented (slashing, piercing, crushing, elemental); the primary attacks should add stun, slow, poison, blind and perhaps burn, not tied to an element or type.
+- **Decision:** one attack retyped per gap (the table in `docs/COMBAT.md` §7.4) so each element's three forms cover the four types; the fifteen primary-attacking forms each carry one status on 25% of their hits (stun: Thunderhead, Electro Skink, Static Orb, Jelly Ram; slow: Frost Maw, Rimestar, Hornshell, Sundew; poison: Seeper, Rotshard, Thornwhip; blind: Voidstar, Rift Mimic; burn: Ember Hood, Quillstone). Bosses are not stunned or blinded.
+- **Alternatives:** new attacks for the gaps; one status per element; the owner listing each.
+- **Affects:** js/damage.js, js/combat.js, js/helpers.js, COMBAT.md, the Bible, tests.
+- **Open:** whether a form should carry more than one status; the lengths and the burn tick are provisional; the INFO cards do not show the status yet.
+
 ## DECISION: Blind is a lower chance of hitting
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/blind-miss`, `2026-11-13i`
