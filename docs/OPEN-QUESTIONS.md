@@ -850,7 +850,7 @@ The tab rises from behind a follower's card on the squad strip when its Ultimate
 ## The electrical domain's breed: the roly-poly and its boss (the owner's direction, 2026-11-13; `DOMAINS.md` §2, 14)
 Examples shown (3D studies from `design/creatures/electric_breed_examples.js`, three rounds); both are mechs (the owner, 2026-11-13); nothing designed. Open:
 1. ~~**The looks.**~~ **Answered 2026-11-13:** the roly-poly **B**, insulator, on round 4's body (longer, seven plates, no eyes and no face, a core on its back); the larva **A**, live seams. (`design/creatures/electric_breed_examples.js` draws the pair: `electric_breed_chosen.png`.)
-2. **What it is:** an enemy race (as the ants are), or a follower you can recruit or breed as well?
-3. **Immune, read how:** a hit is part physical, part elemental (js/damage.js). Does immunity to Crushing and Slashing stop the whole hit, or only its physical part, so the elemental part still lands? And what is it weak to (every race has two or three weaknesses)?
-4. **Rolling up:** to shut itself against hits, to roll at you like a wheel, or only a look?
-5. **The larva boss:** where it waits (draft 5's Deep Chamber, or in the coolant: the real larva hunts underwater) and its size. The names of both.
+2. ~~**What it is.**~~ **Answered 2026-11-13:** "Clone potential": an enemy species the Mutator can clone (the agent's reading: not a follower you recruit or breed).
+3. ~~**Immune, read how.**~~ **Answered 2026-11-13:** the physical part of a Crushing or Slashing hit does 0; the elemental part lands. (Its weaknesses: proposed in `ELECTRIC-BREED.md` §5.)
+4. ~~**Rolling up.**~~ **Answered 2026-11-13:** it curls up to defend.
+5. **The rest** (its numbers, bite, the curl's rule, weaknesses and drawing; your own melee against it; the larva boss's rules; the names): `ELECTRIC-BREED.md` §11.

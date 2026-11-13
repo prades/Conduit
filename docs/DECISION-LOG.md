@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The roly-poly: clone potential; Crushing and Slashing's physical half does 0; it curls up to defend
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
+- **Status:** Approved (the owner's answers); the rest proposed in `ELECTRIC-BREED.md` §5; not built
+- **Context:** with the looks set (the roly-poly B, the larva A), three questions with options: enemy only or also a follower; what a Crushing or Slashing hit does, a hit being part physical and part elemental; what rolling up does.
+- **Decision:** **"Clone potential"** (the owner's own answer): an enemy species whose DNA lets the Mutator grow its clone at the Clone Bay, as for every species (the agent's reading: not a follower you recruit or breed). **"Physical half does 0"**: the physical part of a Crushing or Slashing hit does nothing to it; the elemental part lands. **"Curls up to defend"**: hurt, it curls into its wheel and takes much less damage for a while, then uncurls.
+- **Alternatives:** a recruitable or breedable follower; the whole hit doing 0; rolling to ram; both.
+- **Found, for the owner (open):** the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) would do nothing to it.
+- **Affects:** `ELECTRIC-BREED.md` (the spec); when built, js/species.js, js/damage.js (an immune list), js/abilities.js, js/population.js, the creatures' drawing.
+
 ## DECISION: The electric breed as mechs; the larva boss in look A; the roly-poly longer, fewer plates, no face, in look B
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
