@@ -51,6 +51,13 @@ window.__bake = async function (fams, PX, UH) {
       const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
       const B = def.build(name); scene.add(B.g); if (B.update) B.update(0);
       B.g.traverse(o => { if (o.isSprite) o.visible = false; });
+      if (def.fit) {   // A FAMILY OF ICONS (fit: px; the items' icons, build 2026-11-13u): the same camera's direction, zoomed so this variant's larger side on the screen is fit px (its anchor and marks follow)
+        B.g.updateMatrixWorld(true); let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9; const v = new T.Vector3();   // (framed by its own corners on the screen, not a box round it: a box's corners overstate it; a part marked userData.noFrame, a contact shadow, is left out)
+        B.g.traverse(o => { if (!o.isMesh || !o.visible || !o.geometry || !o.geometry.attributes.position || o.userData.noFrame) return; const p = o.geometry.attributes.position;
+          for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld).applyMatrix4(cam.matrixWorldInverse); a0 = Math.min(a0, v.x); a1 = Math.max(a1, v.x); b0 = Math.min(b0, v.y); b1 = Math.max(b1, v.y); } });
+        const k = Math.max(a1 - a0, b1 - b0) / def.fit, mx = (a0 + a1) / 2, my = (b0 + b1) / 2;
+        cam.left = mx - W / 2 * k; cam.right = mx + W / 2 * k; cam.top = my + H / 2 * k; cam.bottom = my - H / 2 * k; cam.updateProjectionMatrix();
+      }
       renderer.render(scene, cam);
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'); g.drawImage(renderer.domElement, 0, 0);
       const d = g.getImageData(0, 0, W, H).data; let x0 = W, y0 = H, x1 = -1, y1 = -1;

@@ -75,7 +75,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('a kit on the floor is drawn as itself, a small case with a green plus (its model on the pickups sheet), not the white supply case', () => {
         same(J('!!(PROP_ATLAS.pickups && PROP_ATLAS.pickups.cells.repair_kit)'), true, 'its model on the pickups sheet');
-        ok(/B\.repair_kit = \(\) =>/.test(rd('design/props/models/pickups.js')), 'its model in design/props/models/pickups.js');
+        ok(/repair_kit\(\) \{/.test(rd('design/props/models/_items.js')) && /ITEMS3D\(name\)/.test(rd('design/props/models/pickups.js')), 'its model in design/props/models/_items.js (since build 2026-11-13u, shared by the pickups and the items\' icons)');
     });
 
     group('GUARD: a stance; shots at your squad near you hit you instead (step 2, build 2026-11-11f)');

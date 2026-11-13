@@ -190,7 +190,7 @@ function facilityClassItemsEnter(classId) {
 function _fpDrawPickup(it) {
     if (it.taken || it.carried) return;   // (carried: the power module in Side Quest's grip, js/sidequest.js)
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
-    if (it.rock) {   // a rock from the drilled rubble (js/techabilities.js): a rough lump on the floor, not a case
+    if (it.rock && !_fpPickupOwn(first)) {   // a rock from the drilled rubble (js/techabilities.js): a rough lump on the floor, not a case (its model since build 2026-11-13u, below, once the sheet has arrived)
         const c = _fpP(it.x, it.y, 0), s = 9; ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], s * 1.3, s * 0.55, 0, 0, 6.2832); ctx.fill();
         ctx.fillStyle = "#7a6650"; ctx.strokeStyle = "#1e2a2f"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(c[0] - s, c[1] - 1); ctx.lineTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s, c[1] - s * 0.4); ctx.lineTo(c[0] + s * 0.7, c[1] + 2); ctx.lineTo(c[0] - s * 0.3, c[1] + 3); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.fillStyle = "#a99076"; ctx.beginPath(); ctx.moveTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s * 0.5, c[1] - s * 0.6); ctx.lineTo(c[0] - s * 0.3, c[1] - s * 0.5); ctx.closePath(); ctx.fill();
@@ -204,7 +204,7 @@ function _fpDrawPickup(it) {
     _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it
     }
     if (it.arrive !== undefined && f - it.arrive < 90) { const k = (f - it.arrive) / 90, top = _fpP(it.x, it.y, 260), bot = _fpP(it.x, it.y, 0); ctx.save(); ctx.globalCompositeOperation = "lighter"; const g = ctx.createLinearGradient(0, top[1], 0, bot[1]); g.addColorStop(0, _fpRgba(col, 0)); g.addColorStop(1, _fpRgba(col, 0.7 * (1 - k))); ctx.fillStyle = g; const w = 16 * (1 - k * 0.6); ctx.fillRect(bot[0] - w, top[1], w * 2, bot[1] - top[1]); ctx.restore(); }   // (the column of light it arrives in)
-    if (!it.rock && _fpPickupOwn(first)) { if (it.items.length > 1) { const c = _fpP(it.x, it.y, 30); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 12, c[1], 3, 0, 6.2832); ctx.fill(); } return; }   // (the item shows itself: no icon over it; a dot when there is more than one kind)
+    if (_fpPickupOwn(first)) { if (it.items.length > 1) { const c = _fpP(it.x, it.y, 30); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 12, c[1], 3, 0, 6.2832); ctx.fill(); } return; }   // (the item shows itself: no icon over it; a dot when there is more than one kind)
     const c = _fpP(it.x, it.y, 40 + bob); if (typeof invDrawIcon === "function") invDrawIcon(first, c[0], c[1], 30, f);
     const g = _fpP(it.x, it.y, 18); _fpGlow(g[0], g[1], 34 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.34);
     if (it.items.length > 1) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 14, c[1] - 11, 3, 0, 6.2832); ctx.fill(); }

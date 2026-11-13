@@ -3,7 +3,7 @@
 //   rooms      each room of the facility, powered and lit, the HUD hidden, the squad beside you (1400x900): img/bible/rooms/<id>.webp
 //   ui         the screens at an iPad's size (1180x820: the HUD, a member's card, the Command Center, the SQUADS window, the class picker, the pack, the inspection map, the ? guide)
 //              and a phone's (390x844: the HUD, the radial menu's ROSTER): img/bible/ui/<id>.webp
-//   map        the inspection map alone (img/bible/ui/map.webp), for when the other screens are to be left as they are (`ui` makes it too)
+//   map        the inspection map alone (img/bible/ui/map.webp), for when the other screens are to be left as they are (`ui` makes it too); pack, the pack alone, the same way
 //   cards      the CARDS screen at an iPad's size, its two menus and a pack's reveal (since build 2026-11-01l: cards_sheet, the CARDS menu; cards_shop, the SHOP, taller; cards_reveal), from seeded packs and a seeded shelf,
 //              and the roster's YOU (roster_you: the player's card in view, YOUR SLOT 1's list open): img/bible/ui/cards_sheet.webp and the rest
 //   creatures  every creature the game draws itself (the player, the egg in each element, six species in six classes), by design/roster-poster/portraits.js, trimmed
@@ -79,6 +79,11 @@ async function openGame(b, w, h) {
   if (want.includes('map')) {   // asked for by name only: with no argument the `ui` group has made it
     const { p, errs } = await openGame(b, 1180, 820);
     await p.evaluate(() => { facilityInspectToggle(); }); await shot(p, 'map');
+    if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
+  }
+  if (want.includes('pack')) {   // the pack alone (build 2026-11-13u: the items in 3D, the glossy tiles), as the `ui` group makes it, the other screens left as they are
+    const { p, errs } = await openGame(b, 1180, 820);
+    await p.evaluate(() => { classPickerOpen = false; for (const [id, k] of [['ammo_pack', 3], ['scrap_metal', 12], ['power_cell', 2], ['fuel_cell', 2], ['toxic_sample', 1]]) invAdd(id, k); invOpen(); _invSel = 'scrap_metal'; }); await shot(p, 'pack');
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   if (on('cards')) {

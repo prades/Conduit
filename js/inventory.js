@@ -235,7 +235,17 @@ const INV_ICONS = {
         c.fillStyle = col; c.beginPath(); c.arc(x, y, s * 0.13, 0, 6.2832); c.fill(); c.globalAlpha = 0.5; c.beginPath(); c.arc(x, y, s * 0.2, 0, 6.2832); c.stroke(); c.globalAlpha = 1;
     },
 };
-function invDrawIcon(id, x, y, s, t) { const d = itemDef(id); if (!d || typeof ctx === "undefined") return; ctx.save(); (INV_ICONS[d.icon] || INV_ICONS.ammo)(ctx, x, y, s, d.col, t || 0); ctx.restore(); }
+// THE ITEMS IN 3D (build 2026-11-13u; the owner: "I want to redo the items in the game make them have 3-D looking assets"): each item is drawn as its 3D model, baked from the game's own camera
+// (img/props/itemicons.png: design/props/models/itemicons.js, the same models as the floor's pickups), its larger side INV_ICON_FIT of the box; the flat drawing above until the sheet has arrived
+const INV_ICON_FIT = 0.96;
+function invIconCell(id) { return typeof PROP_ATLAS !== "undefined" && PROP_ATLAS.itemicons ? PROP_ATLAS.itemicons.cells[id] || null : null; }
+function _invIconImg(id) { const c = invIconCell(id), im = c && typeof _psImg === "function" ? _psImg("itemicons") : null; return im ? { im, c } : null; }
+function _invBlitIcon(g, I, x, y, s) { const c = I.c, k = s * INV_ICON_FIT / Math.max(c.w, c.h); g.imageSmoothingQuality = "high"; g.drawImage(I.im, c.x, c.y, c.w, c.h, x - c.w * k / 2, y - c.h * k / 2, c.w * k, c.h * k); }
+function invDrawIcon(id, x, y, s, t) {
+    const d = itemDef(id); if (!d || typeof ctx === "undefined") return; ctx.save();
+    const I = _invIconImg(id); if (I) _invBlitIcon(ctx, I, x, y, s); else (INV_ICONS[d.icon] || INV_ICONS.ammo)(ctx, x, y, s, d.col, t || 0);
+    ctx.restore();
+}
 
 // ── the window: THE WHOLE ROSTER (build 2026-11-09zz; the owner, 2026-11-10: "redo the item bag to match the Super Smash Bros. Roster style"; of two drafts, "B The whole roster") ──
 // A select screen of every item in the game (ITEM_ORDER), filtered by the tabs. An item you carry is a lit tile: its icon, its count, its name on a black bar, a corner of its colour. One you have held but have
@@ -274,11 +284,11 @@ function _ivLayout() {
 }
 function _ivWrap(lines, text, chars) { for (const l of uiWrap(text, chars)) lines.push(l); }
 function _ivPara(x, y, w, h, s) { ctx.beginPath(); ctx.moveTo(x + s, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w - s, y + h); ctx.lineTo(x, y + h); ctx.closePath(); }
-// an item never found: its icon as a dark silhouette (drawn once per size)
+// an item never found: its icon as a dark silhouette (drawn once per size; its 3D icon's once the sheet has arrived)
 const _ivSil = {};
 function _ivSilhouette(id, s) {
-    const k = id + "@" + s; if (_ivSil[k] !== undefined) return _ivSil[k];
-    let c = null; try { c = document.createElement("canvas"); c.width = c.height = Math.ceil(s * 1.4); const g = c.getContext("2d"), d = itemDef(id); if (!g) c = null; else { (INV_ICONS[d.icon] || INV_ICONS.ammo)(g, c.width / 2, c.height / 2, s, d.col, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#1c2440"; g.fillRect(0, 0, c.width, c.height); } } catch (e) { c = null; }
+    const I = _invIconImg(id), k = id + "@" + s + (I ? "/3d" : ""); if (_ivSil[k] !== undefined) return _ivSil[k];
+    let c = null; try { c = document.createElement("canvas"); c.width = c.height = Math.ceil(s * 1.4); const g = c.getContext("2d"), d = itemDef(id); if (!g) c = null; else { if (I) _invBlitIcon(g, I, c.width / 2, c.height / 2, s); else (INV_ICONS[d.icon] || INV_ICONS.ammo)(g, c.width / 2, c.height / 2, s, d.col, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#1c2440"; g.fillRect(0, 0, c.width, c.height); } } catch (e) { c = null; }
     return (_ivSil[k] = c);
 }
 // a tile's name on its bar: one line, or two when it does not fit
@@ -289,24 +299,31 @@ function _ivName(t, c, nb, col) {
     const w = t.split(" "), mid = Math.ceil(w.length / 2), s2 = Math.max(7, size - 2);
     uiTextFit(w.slice(0, mid).join(" "), c.x + c.w / 2, y - s2 * 0.55, s2, col, "center", max); uiTextFit(w.slice(mid).join(" "), c.x + c.w / 2, y + s2 * 0.55, s2, col, "center", max);
 }
+// A TILE: A TRANSLUCENT GLOSSY BUTTON (build 2026-11-13u; the owner: "change that item menu to the borders on those on the grid aren't so big maybe make them translucent glossy buttons"): glass tinted
+// with the item's colour, the panel showing through it, a sheen over its top half, a hairline edge and a bright rim where the light catches its top; the name on a soft fade at its foot. (Until this build:
+// a dark tile with a corner of its colour, a black name bar and a 2 px edge, the chosen one a 9 px glow and a 3 px white frame.)
 function _ivTile(c, f) {
     const id = c.id, d = itemDef(id), n = invCount(id), known = invKnown(id), on = id === _invSel, ok = classAllows(d.classes), col = known ? d.col : "#2a3350", s = Math.min(10, c.h * 0.16);
-    const nb = Math.max(14, Math.round(c.h * 0.24)), isz = Math.round(Math.min(c.w, c.h) * 0.56), ix = c.x + c.w / 2, iy = c.y + (c.h - nb) * 0.55;
+    const nb = Math.max(14, Math.round(c.h * 0.22)), isz = Math.round(Math.min(c.w, c.h) * 0.66), ix = c.x + c.w / 2, iy = c.y + (c.h - nb) * 0.53, lit = known ? (n > 0 ? 1 : 0.5) : 0.3;
     ctx.save();
-    _ivPara(c.x, c.y, c.w, c.h, s); const g = ctx.createLinearGradient(0, c.y, 0, c.y + c.h); g.addColorStop(0, known ? "#111a34" : "#0b1020"); g.addColorStop(1, known ? "#070b16" : "#05070f"); ctx.fillStyle = g; ctx.fill();
+    _ivPara(c.x, c.y, c.w, c.h, s);
+    ctx.fillStyle = "rgba(6,10,24,0.38)"; ctx.fill();   // the glass: dark and see-through, tinted with the item's colour from the top
+    const g = ctx.createLinearGradient(0, c.y, 0, c.y + c.h); g.addColorStop(0, _ivRgba(col, (on ? 0.34 : 0.2) * lit)); g.addColorStop(0.6, _ivRgba(col, (on ? 0.12 : 0.06) * lit)); g.addColorStop(1, _ivRgba(col, (on ? 0.08 : 0.03) * lit)); ctx.fillStyle = g; ctx.fill();
     ctx.save(); ctx.clip();
-    if (known) { ctx.globalAlpha = n > 0 ? 0.9 : 0.35; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(c.x + s, c.y); ctx.lineTo(c.x + s + c.w * 0.34, c.y); ctx.lineTo(c.x + s * 0.4, c.y + c.h * 0.34); ctx.lineTo(c.x, c.y + c.h * 0.34); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }   // a corner of its colour
+    const gl = ctx.createLinearGradient(0, c.y, 0, c.y + c.h * 0.5); gl.addColorStop(0, "rgba(255,255,255," + (on ? 0.24 : 0.15) * (known ? 1 : 0.5) + ")"); gl.addColorStop(1, "rgba(255,255,255,0.015)");   // the sheen
+    ctx.fillStyle = gl; ctx.beginPath(); ctx.moveTo(c.x - 4, c.y - 2); ctx.lineTo(c.x + c.w + 4, c.y - 2); ctx.lineTo(c.x + c.w + 4, c.y + c.h * 0.34); ctx.quadraticCurveTo(c.x + c.w * 0.5, c.y + c.h * 0.5, c.x - 4, c.y + c.h * 0.38); ctx.closePath(); ctx.fill();
     if (known) { ctx.save(); if (!n || !ok) ctx.globalAlpha = 0.38; invDrawIcon(id, ix, iy, isz, f); ctx.restore(); }
     else { const sil = _ivSilhouette(id, isz); if (sil) ctx.drawImage(sil, ix - sil.width / 2, iy - sil.height / 2); }
-    ctx.fillStyle = "#04070f"; ctx.fillRect(c.x - 2, c.y + c.h - nb, c.w + 4, nb); ctx.fillStyle = col; ctx.fillRect(c.x - 2, c.y + c.h - nb, c.w + 4, 2);   // the name bar
-    if (known && !ok) { ctx.fillStyle = "rgba(150,20,10,0.88)"; ctx.fillRect(c.x - 2, c.y + c.h - nb - 13, c.w + 4, 13); uiCaption("LOCKED", c.x + c.w / 2, c.y + c.h - nb - 6, "#ffd0c8", "center", 10); }
+    const ng = ctx.createLinearGradient(0, c.y + c.h - nb - 8, 0, c.y + c.h); ng.addColorStop(0, "rgba(2,4,10,0)"); ng.addColorStop(1, "rgba(2,4,10,0.6)"); ctx.fillStyle = ng; ctx.fillRect(c.x - 2, c.y + c.h - nb - 8, c.w + 4, nb + 8);   // the name's fade
+    if (known && !ok) { ctx.fillStyle = "rgba(150,20,10,0.62)"; ctx.fillRect(c.x - 2, c.y + c.h - nb - 12, c.w + 4, 11); uiCaption("LOCKED", c.x + c.w / 2, c.y + c.h - nb - 6, "#ffd0c8", "center", 9); }
     ctx.restore();
     _ivName(known ? d.name : "???", c, nb, known ? (n ? "#ffffff" : "#8a93ab") : "#4f5b7a");
     if (known) uiText("×" + n, c.x + c.w - 8, c.y + Math.max(12, c.h * 0.15), Math.max(12, Math.round(c.h * 0.17)), n ? d.col : "#6d7fa6", "right");
-    _ivPara(c.x, c.y, c.w, c.h, s);
-    if (on) { ctx.lineWidth = 9; ctx.globalAlpha = 0.35; ctx.strokeStyle = known ? d.col : UI_TEAL; ctx.stroke(); ctx.globalAlpha = 1; ctx.lineWidth = 3; ctx.strokeStyle = "#ffffff"; ctx.stroke(); }
-    else { ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.globalAlpha = known ? (n ? 1 : 0.5) : 0.75; ctx.stroke(); ctx.globalAlpha = 1; }
-    ctx.restore();
+    _ivPara(c.x, c.y, c.w, c.h, s);   // the edge: a hairline of its colour (the chosen one: a soft glow of its colour and a fine white line)
+    if (on) { ctx.lineWidth = 5; ctx.globalAlpha = 0.28; ctx.strokeStyle = known ? d.col : UI_TEAL; ctx.stroke(); ctx.globalAlpha = 0.95; ctx.lineWidth = 1.5; ctx.strokeStyle = "#ffffff"; ctx.stroke(); }
+    else { ctx.lineWidth = 1; ctx.strokeStyle = col; ctx.globalAlpha = known ? (n ? 0.6 : 0.32) : 0.4; ctx.stroke(); }
+    ctx.globalAlpha = known ? (on ? 0.7 : 0.4) : 0.15; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x + s + 2, c.y + 1.5); ctx.lineTo(c.x + c.w - 3, c.y + 1.5); ctx.stroke();   // the rim of light along its top
+    ctx.globalAlpha = 1; ctx.restore();
 }
 function _ivStage(L, f) {
     const S = L.stage, id = _invSel, d = id ? itemDef(id) : null, known = !!d && invKnown(id), col = known ? d.col : UI_TEAL, sk = 16, wide = L.wide;
