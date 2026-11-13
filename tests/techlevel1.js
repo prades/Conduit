@@ -174,7 +174,7 @@ function measure(w, h) {
     check('the rubble is map data on the arena\'s south rock, on its straight stretch: its ends and middle on a wall, its work spot on the arena floor in sight of it; the built map validates', () => {
         const r = J(`(function(){ const R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); return { n: _fp.F.rubble.length, id: R.id, room: R.room, a: R.a, b: R.b, flat: Math.abs(R.a[1] - R.b[1]) < 1e-6, south: _fp.F.walls.some(w => Math.abs(w.a[1] - w.b[1]) < 1e-6 && Math.abs(w.a[1] - R.a[1]) < 1e-6 && Math.min(w.a[0], w.b[0]) <= R.a[0] && Math.max(w.a[0], w.b[0]) >= R.b[0]),
             work: partyRoomAt(R.work[0], R.work[1]), stand: facilityStandOk(R.work[0], R.work[1]), errs: facilityValidate(_fp.F).errors.filter(e => /rubble/.test(e)), deco: _fp.items.some(i => i.fp === 'wdecor' && i.kind === 'rubble') }; })()`);
-        same(r.n, 6, 'rubble (the Nest\'s cracked rock since build 2026-11-13n; the Nest\'s collapsed tunnel since build 2026-11-12a; the arena\'s, the Sewers\' choke, the rubble in the boss gate\'s place, and the sample bank\'s rock fall: tests/sewerquest.js)'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
+        same(r.n, 6, 'rubble (the Nest\'s cracked rock since build 2026-11-13o; the Nest\'s collapsed tunnel since build 2026-11-12a; the arena\'s, the Sewers\' choke, the rubble in the boss gate\'s place, and the sample bank\'s rock fall: tests/sewerquest.js)'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
         same(r.work, 'arena', 'the work spot'); same(r.stand, true, 'the work spot is not floor'); same(r.errs.length, 0, 'the validator: ' + r.errs); same(r.deco, true, 'it is not drawn on the rock');
     });
     check('a long press on it opens its ring (THERMITE DRILL); with no fire technician in the squad, or one still cooling down, it is refused and says why; with one ready it walks to the rubble and drills it, a hit a second; the cooldown starts at the first hit', () => {
@@ -200,17 +200,13 @@ function measure(w, h) {
         same(r.took.join(), 'true,true,ROCK,false', 'a rock picked up (one in the pack for each taken)'); same(JSON.stringify(r.saved), '{"rubble_arena_south":6}', 'the save'); same(r.takenSaved, true, 'the rock taken is not in the save');
         same(r.back.join(), 'true,' + r.left, 'a saved game: the hole and the rocks left'); same(r.fresh.join(), 'false,6', 'a fresh game: the rubble');
     });
-    check('from the chip, at an enemy it can see (or the enemy card): it closes in and drills it 3 times a second apart, each twice its normal hit (followerAttack\'s plain hit: a quarter of its attack), as fire; the cooldown starts at the first hit; one it cannot see is refused', () => {
-        const r = J(`(function(){ const fs = __fresh(['fire']), t = fs[0], o = {}; const e = __foe(t.x + 3, t.y); const ref = __foe(t.x + 3, t.y + 2);
-            applyElementalDamage(ref, (t.stats.attack || 5) * 0.25 * 2, t, 'fire', DMG_HIT_ALT); o.want = Math.round((5000 - ref.health) * 100) / 100; ref.dead = true;   // (the drill is the technician's alternate attack, Piercing: js/damage.js)
-            techChipTap(t); o.prompt = techAimPrompt(); techAimPickEnemy(e); o.aiming = techAimActive(); const hp = []; let last = e.health;
-            for (let i = 0; i < 600 && t._drill; i++) { __step(1); if (e.health !== last) { hp.push([frame, Math.round((last - e.health) * 100) / 100]); if (hp.length === 1) o.cool = techReadyIn(t); last = e.health; } }
-            o.hits = hp.length; o.each = hp.map(h => h[1]); o.gaps = hp.slice(1).map((h, i) => h[0] - hp[i][0]);
-            const fs2 = __fresh(['fire']), t2 = fs2[0], hid = __foe(partyRoomCells('lab_hallway')[0][0], partyRoomCells('lab_hallway')[0][1]); o.hidden = techAbilityUse(t2, { enemy: hid }); o.hidCool = techReadyIn(t2); return o; })()`);
-        ok(/THERMITE DRILL · TAP AN ENEMY/.test(r.prompt), r.prompt); same(r.aiming, false, 'still aiming'); same(r.hits, 3, 'hits'); same(r.gaps.join(), '60,60', 'a hit a second');
-        for (const h of r.each) near(h, r.want, 0.01, 'a hit'); same(r.cool, 3600, 'the cooldown from the first hit'); same(r.hidden.why, 'THE TECHNICIAN CANNOT SEE IT', 'one behind a wall'); same(r.hidCool, 0, 'a cooldown for nothing');
+    check('the drill is not used on enemies (the owner, 2026-11-13, build 2026-11-13k): from the chip, an enemy it can see or one it cannot is refused with the reason, no drill starts, no cooldown starts (it still fights as it always does)', () => {
+        const r = J(`(function(){ const fs = __fresh(['fire']), t = fs[0], o = {}; const e = __foe(t.x + 3, t.y); const h0 = e.health;
+            techChipTap(t); o.prompt = techAimPrompt(); const u = techAbilityUse(t, { enemy: e }); o.ok = u.ok; o.why = u.why; for (let i = 0; i < 300; i++) __step(1);
+            o.drill = !!t._drill; o.hit = h0 - e.health; o.cool = techReadyIn(t); return o; })()`);
+        ok(/FOR RUBBLE, NOT ENEMIES/.test(r.prompt), r.prompt); same(r.ok, false, 'it was used on an enemy'); same(r.why, 'THE DRILL IS FOR RUBBLE, NOT ENEMIES', 'the reason'); same(r.drill, false, 'a drill started'); same(r.cool, 0, 'a cooldown for nothing');
     });
-    check('THE CHIP AT RUBBLE (the owner, build 2026-11-13n: "it wouldn\'t let me burrow through"): with the drill\'s aim up, a tap on the rubble sends that technician to drill it, as the long press does; a tap on nothing says so and keeps the aim', () => {
+    check('THE CHIP AT RUBBLE (the owner, build 2026-11-13o: "it wouldn\'t let me burrow through"): with the drill\'s aim up, a tap on the rubble sends that technician to drill it, as the long press does; a tap on nothing says so and keeps the aim', () => {
         const r = J(`(function(){ const o = {}, R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); _fp.rubbleHits = {}; _fp.items = _fp.items.filter(i => !i.rock);
             let fs = __fresh(['fire']); const t = fs[0]; player.x = player.visualX = R.work[0] + 1; player.y = player.visualY = R.work[1] - 2; t.x = R.work[0] + 2; t.y = R.work[1] - 2;
             techChipTap(t); o.prompt = techAimPrompt(); const p = _fpP(R.at[0], R.at[1], 25); floatingTexts.length = 0; o.took = techAimTap(p[0], p[1]); o.aiming = techAimActive();
@@ -218,11 +214,11 @@ function measure(w, h) {
             fs = __fresh(['fire']); const t2 = fs[0]; player.x = player.visualX = R.work[0] + 1; player.y = player.visualY = R.work[1] - 2; techChipTap(t2); floatingTexts.length = 0;
             techAimTap(canvas.width / 2 + 300, canvas.height / 2 - 200); o.nothing = [techAimActive(), floatingTexts.map(q => q.text).join(' | '), !!t2._drill]; techAimCancel(true);
             _fp.rubbleHits = {}; return o; })()`);
-        ok(/THERMITE DRILL · TAP AN ENEMY IT CAN SEE \(OR ITS CARD\), OR RUBBLE, TO DRILL/.test(r.prompt), 'the prompt: ' + r.prompt);
+        ok(/THERMITE DRILL · THE DRILL IS FOR RUBBLE, NOT ENEMIES: TAP THE RUBBLE/.test(r.prompt), 'the prompt: ' + r.prompt);
         same(r.took, true, 'the tap'); same(r.aiming, false, 'still aiming'); same(r.drill, 'rubble_arena_south', 'the technician is not drilling the rubble'); ok(/GOES TO DRILL THE RUBBLE/.test(r.said), 'said: ' + r.said);
-        same(r.nothing.join(), 'true,TAP AN ENEMY OR THE RUBBLE,false', 'a tap on nothing');
+        same(r.nothing.join(), 'true,TAP THE RUBBLE,false', 'a tap on nothing');
     });
-    check('A SAVED GAME PUT BACK (build 2026-11-13n): a technician in the squad does not wait the first minute again (it was in the squad when the game was saved); one that joins after does', () => {
+    check('A SAVED GAME PUT BACK (build 2026-11-13o): a technician in the squad does not wait the first minute again (it was in the squad when the game was saved); one that joins after does', () => {
         const r = J(`(function(){ const o = {}; const fs = __fresh(['fire']), t = fs[0]; __step(1); o.before = techReadyIn(t);
             const save = facilitySaveCollect(); t._abMember = undefined; facilitySaveApply(save); __step(1); o.loaded = techReadyIn(t);
             t.post = 'arena'; __step(1); t.post = undefined; __step(1); o.rejoined = Math.round(techReadyIn(t) / 60); return o; })()`);

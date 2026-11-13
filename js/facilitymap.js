@@ -609,7 +609,7 @@ const FACILITY_MAP = {
           tag: "CRACKED ROCK · SHOOT THE FLASK",
           say: "CRACKED ROCK ACROSS THE TUNNEL · A BLAST BREAKS IT: SHOOT THE FLASK BESIDE IT (TAP IT), AND STAND BACK · OR A FIRE TECHNICIAN CAN DRILL IT THROUGH: PRESS AND HOLD IT",
           opened: "THE CRACKED ROCK IS BROKEN THROUGH · THE WAY TO THE DEEP BROOD IS OPEN",
-          note: "THE ANT NEST's cracked rock across the tunnel south to the deep brood (the owner, 2026-11-13, of the flat cracked wall: \"3D rock, blast or drill\"; build 2026-11-13n): the cave's rock modelled as the rubble is (design/cave/bake_rubble.js); an explosive flask's blast breaks it (js/nestways.js), or a fire technician drills it from the north, the brood chamber's side." },
+          note: "THE ANT NEST's cracked rock across the tunnel south to the deep brood (the owner, 2026-11-13, of the flat cracked wall: \"3D rock, blast or drill\"; build 2026-11-13o): the cave's rock modelled as the rubble is (design/cave/bake_rubble.js); an explosive flask's blast breaks it (js/nestways.js), or a fire technician drills it from the north, the brood chamber's side." },
         { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
           note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot

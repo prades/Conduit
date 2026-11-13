@@ -47,7 +47,7 @@ function nestWaysItems(F) {
     const out = [];
     for (const s of F.solids) {
         if (s.kind !== "cracked_wall" && s.kind !== "resin_seal") continue;
-        if ((F.rubble || []).some(r => r.solid === s.id)) continue;   // (cracked rock that is a rubble's choke too, the Nest's since build 2026-11-13n: drawn as the rubble's modelled rock, js/techabilities.js techDrawRubbleOn)
+        if ((F.rubble || []).some(r => r.solid === s.id)) continue;   // (cracked rock that is a rubble's choke too, the Nest's since build 2026-11-13o: drawn as the rubble's modelled rock, js/techabilities.js techDrawRubbleOn)
         const b = _nwBox(s), wide = b[2] - b[0] >= b[3] - b[1], my = (b[1] + b[3]) / 2, mx = (b[0] + b[2]) / 2, a = wide ? [b[0], my] : [mx, b[1]], c = wide ? [b[2], my] : [mx, b[3]], end = a[0] + a[1] > c[0] + c[1] ? a : c;
         out.push({ type: "fp", fp: "wdecor", room: s.room, kind: s.kind, solid: s.id, x: mx, y: my, a, b: c, id: s.id, base: facilityRoomHeight(s.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.03, seed: _fpHash(Math.round(mx * 4), Math.round(my * 4)) });
     }

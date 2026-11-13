@@ -798,6 +798,8 @@ function stakeRing(f) {
 //     SCENT_RADIUS that it can see (not a boss, as ROTTEN DECOY's lure) goes for SUNDEW for SCENT_FRAMES (js/predator.js predatorPickPrey asks scentLure). Nothing to lure and the stockpile not full: it
 //     does not fire (ready again). The stockpile is not saved (a fight's). The numbers are the agent's, PROVISIONAL.
 const SUNDEW_NECTAR_STEP = 25, SCENT_RADIUS = 5, SCENT_FRAMES = 240, SCENT_HEAL = 0.2, SCENT_HEAL_R = 3;
+// the puff POISONS what it lures (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "And have it do some damage. No, have it poison"): its bites weaken (applyWeaken) to SCENT_POISON_FACTOR for SCENT_POISON_FRAMES (the length and the strength are the agent's, provisional: a primary attack's poison, js/combat.js)
+const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6;
 function sundewNectar(f) { if (f && f.evolved === "sundew") f._nectar = Math.min(100, (f._nectar || 0) + SUNDEW_NECTAR_STEP); }
 function sweetScent(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0;
@@ -811,7 +813,7 @@ function sweetScent(f) {
     } else {   // THE PUFF: the enemies near it come for it
         const foes = _evoFoesSeen(f.x, f.y, SCENT_RADIUS).filter(a => !a.bossId && !a.bossName && !a.isBoss);
         if (!foes.length) return false;
-        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; }
+        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
         if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_RADIUS, color: "#ffb8dc", life: 36 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffb8dc", radius: 1.4, life: 30 }); }
         if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
     }
@@ -914,7 +916,7 @@ function echoPulse(f) {
 // MAELSTROM (the Voidstar's second attack, build 2026-11-12r; the owner: "Make like a little maelstrom AoE effect that throws like purple crystals everywhere and does damage and disorients them", replacing
 // SINGULARITY SHOT; asked, the owner chose: a lasting swirl, the game's own blind as the disorient): a small swirl of purple crystals opens on the nearest enemy it can see within MAEL_RANGE and turns for MAEL_LIFE
 // frames, throwing crystals out all round. Every MAEL_TICK frames (and at once as it opens) each enemy in it that can be seen from its middle takes MAEL_BITE x its power (flux, elemental) and is BLINDED for
-// MAEL_BLIND frames (the blind the game already has, js/predator.js: it loses its target, cannot attack or shoot and staggers about at half pace; each beat starts it afresh, so it lasts while the enemy stays in
+// MAEL_BLIND frames (the game's blind, js/predator.js and js/helpers.js: a blinded creature still sees and attacks, but each hit it deals misses BLIND_MISS of the time (since build 2026-11-13h; it was a creature that lost its target and staggered about); each beat starts it afresh, so it lasts while the enemy stays in
 // and a moment after). A boss takes the damage and is not blinded (the rule the owner gave INK SPIT, whose look was dropped; the owner has not said for this: open). The reach and wind-up are SINGULARITY SHOT's, kept;
 // the radius, life, beat, bite and blind are the agent's, PROVISIONAL (the owner gave none). Stationary, an element effect (js/elements.js updateElementEffects, drawn there: "maelstrom").
 const MAEL_RANGE = 6.5, MAEL_RADIUS = 1.8, MAEL_LIFE = 180, MAEL_TICK = 30, MAEL_BITE = 0.3, MAEL_BLIND = 45;

@@ -139,7 +139,7 @@ const TECH_ABILITIES = {
     core:     { id: "photonic_shield", name: "PHOTONIC SHIELD", short: "SHIELD", icon: "◈", col: "#5ff7e0", aim: ["enemy"], use: (f, p) => techShieldAt(f, p.enemy),
                 ask: () => "TAP THE CREATURE (OR ITS CARD) TO SHIELD AGAINST" },
     fire:     { id: "thermite_drill", name: "THERMITE DRILL", short: "DRILL", icon: "✹", col: "#ff8a3a", aim: ["enemy"], use: (f, p) => p.rubble ? _techDrillRubble(f, p.rubble) : techDrillFoe(f, p.enemy),
-                ask: () => "TAP AN ENEMY IT CAN SEE (OR ITS CARD), OR RUBBLE, TO DRILL" },
+                ask: () => "THE DRILL IS FOR RUBBLE, NOT ENEMIES: TAP THE RUBBLE (OR PRESS AND HOLD IT)" },
     ice:      { id: "frost_patch", name: "FROST PATCH", short: "FROST", icon: "❄", col: "#9be8ff", aim: ["spot"], use: (f, p) => techFrostAt(f, p.spot),
                 ask: () => "TAP FLOOR FOR A PATCH, OR WATER FOR A BRIDGE, WHERE IT CAN SEE" },
     toxic:    { id: "blight_spider", name: "TOXIC PODS", short: "POD", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
@@ -508,7 +508,12 @@ function _techDrillRubble(tech, r) {
     if (!_techCanReach(tech, r)) return { ok: false, why: r.inside ? "IT IS DRILLED FROM INSIDE · SEND A FIRE TECHNICIAN IN WITH THE KINETIC LAUNCHER" : "IT CANNOT GET TO THE RUBBLE FROM HERE" };   // (the choke of a tunnel: the way in is the launcher)
     _techDrillStart(tech, { rubble: r.id }); return { ok: true };
 }
+// THE DRILL IS NOT USED ON ENEMIES (the owner, 2026-11-13: "make it to where Thermite Drill, you can't use that on enemies"; build 2026-11-13k). It did before: three hits a second apart on an enemy it could see. It drills RUBBLE only now (its
+// long-press ring); the chip and the enemy card are refused with the reason. The enemy drill's tick below is left in place, never started.
 function techDrillFoe(tech, foe) {
+    return { ok: false, why: "THE DRILL IS FOR RUBBLE, NOT ENEMIES", again: false };
+}
+function _techDrillFoeOld(tech, foe) {
     if (!_techFoeOk(foe)) return { ok: false, why: "PICK AN ENEMY", again: true };
     if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT", again: true };
     _techDrillStart(tech, { foe }); return { ok: true };
@@ -1261,7 +1266,7 @@ function techStepOverride(a) {
 }
 
 // a saved game put back (js/facilitysave.js facilitySaveApply, last): the technicians in its squad were in it when it was saved, so they have not just joined it and do not wait the first wait again
-// (each use's own cooldown is not saved: they are ready). Before build 2026-11-13n every load was a join: a minute's wait before any technician's first use, each time a game was loaded.
+// (each use's own cooldown is not saved: they are ready). Before build 2026-11-13o every load was a join: a minute's wait before any technician's first use, each time a game was loaded.
 function techAbilityLoaded() { if (typeof followers === "undefined") return; for (const f of followers) if (f && !f.dead) f._abMember = !!techAbilityOf(f) && _techMember(f); }
 // ── each frame (js/game.js): first waits, throws, set-ups, the ledges, the sites' notices ──
 function techAbilityTick() {
@@ -1422,9 +1427,9 @@ function techAimTap(x, y) {
         _techSay("TAP A FOLLOWER", "#8aa0c8"); return true;
     }
     if (need === "enemy") {
-        const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e);
-        const drill = techAim.ab.id === "thermite_drill", rp = drill ? techRubbleAtScreen(x, y) : null; if (rp) return _techAimRubble(rp.r);   // THERMITE DRILL's chip takes rubble too (below)
-        _techSay(drill ? "TAP AN ENEMY OR THE RUBBLE" : "TAP AN ENEMY", "#8aa0c8"); return true;
+        const drill = techAim.ab.id === "thermite_drill", rp = drill ? techRubbleAtScreen(x, y) : null; if (rp) return _techAimRubble(rp.r);   // THERMITE DRILL's chip takes rubble (below), before an enemy: the drill is not used on enemies (build 2026-11-13k)
+        const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e);   // (the drill's says why it is refused)
+        _techSay(drill ? "TAP THE RUBBLE" : "TAP AN ENEMY", "#8aa0c8"); return true;
     }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
     if (need === "object") return techFluxPick(typeof fluxPropAtScreen === "function" ? fluxPropAtScreen(x, y) : null);   // FLUX MOVE: the object
@@ -1495,8 +1500,8 @@ function techAbilityInfo(f) {
     if (ab.id === "thermite_drill") {
         const D = TECH_AB.drill, hit = Math.round(((f.stats && f.stats.attack) || 5) * 0.25 * D.foeMult * 10) / 10;
         wait[0][1] = Math.round(D.cooldown / 60) + " s, from its first hit";
-        return { h: "ABILITY · " + ab.name, note: "Press and hold rubble in the rock and pick THERMITE DRILL: it walks over and drills it through. From the ✹ chip on its squad card: it drills an enemy it can see.",
-                 rows: [["RUBBLE", D.hits + " hits, one a second"], ["AN ENEMY", D.foeHits + " hits, one a second, " + hit + " each (fire)"]].concat(wait) };
+        return { h: "ABILITY · " + ab.name, note: "Press and hold rubble in the rock and pick THERMITE DRILL: it walks over and drills it through. It cannot be used on enemies.",
+                 rows: [["RUBBLE", D.hits + " hits, one a second"]].concat(wait) };
     }
     if (ab.id === "frost_patch") {
         const R = TECH_AB.frost;

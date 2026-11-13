@@ -14,6 +14,34 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Four retypes put back, the Thermite Drill off enemies, SWEET SCENT poisons
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/type-fixes`, `2026-11-13k`
+- **Status:** Approved (the gaps it opens are an open question)
+- **Context:** the owner read the agent's list of attacks whose type or description did not fit, and answered each.
+- **Decision:** JELLY RAM's main, THERMITE's main, GOO PROXY's main and SEEPER's ERUPTION go back to their types before `13j`. THERMITE DRILL cannot be used on enemies (rubble only). SUNDEW's SWEET SCENT is Elemental and poisons what it lures instead of doing damage.
+- **Supersedes in part:** "Every element has the four damage types" (`2026-11-13j`): five gaps are open until the owner places them (core Slashing, fire Slashing, flux Piercing, toxic Crushing, blossom Slashing).
+- **Affects:** js/damage.js, js/evolution.js, js/techabilities.js, js/unitinfo.js, COMBAT.md, TECHNICIANS.md, the Bible, tests.
+
+## DECISION: Every element has the four damage types; primary attacks carry a status
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/status-types`, `2026-11-13j`
+- **Status:** Approved
+- **Context:** the owner: each element should have each damage type represented (slashing, piercing, crushing, elemental); the primary attacks should add stun, slow, poison, blind and perhaps burn, not tied to an element or type.
+- **Decision:** one attack retyped per gap (the table in `docs/COMBAT.md` §7.4) so each element's three forms cover the four types; the fifteen primary-attacking forms each carry one status on 25% of their hits (stun: Thunderhead, Electro Skink, Static Orb, Jelly Ram; slow: Frost Maw, Rimestar, Hornshell, Sundew; poison: Seeper, Rotshard, Thornwhip; blind: Voidstar, Rift Mimic; burn: Ember Hood, Quillstone). Bosses are not stunned or blinded.
+- **Alternatives:** new attacks for the gaps; one status per element; the owner listing each.
+- **Affects:** js/damage.js, js/combat.js, js/helpers.js, COMBAT.md, the Bible, tests.
+- **Open:** whether a form should carry more than one status; the lengths and the burn tick are provisional; the INFO cards do not show the status yet.
+
+## DECISION: Blind is a lower chance of hitting
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/blind-miss`, `2026-11-13i`
+- **Status:** Approved
+- **Context:** the owner, while specifying the statuses the primary attacks add: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting."
+- **Decision:** blind, everywhere it is used (today MAELSTROM), makes each hit the creature deals miss 50% of the time; it keeps its target and keeps attacking. Replaces the old blind (no target, no attacks, staggering at half pace). A boss is still not blinded by MAELSTROM.
+- **Alternatives:** keep the old blind and add a separate status; a 30% or 75% miss chance.
+- **Affects:** js/helpers.js, js/predator.js, js/unitinfo.js, the Bible, tests/evolution.js.
+
 ## DECISION: The CARDS screen's two menus, the hand lit gold, the player's slots on the roster
 
 - **Date:** 2026-11-01
@@ -3237,17 +3265,17 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: The Voidstar's 3-D tentacle is approved for everyone (2026-11-13, build `2026-11-13d`, branch `claude/approve-slap`)
 - The owner, of the sharp violet gel tentacle piece (`slap`) that had shown only on the `?fx=3d` preview since build `2026-11-13b`: **"Approve it."** It is added to `FX3D.approved` and shows for everyone. Status: Implemented and tested; not playtested on an iPad. `CHANGELOG.md`.
 
-## DECISION: The ants a little edgier: sickle jaws, a heart-shaped head, slanted eyes (2026-11-13, build `2026-11-13l`, branch `claude/start-game-project-HSh7Z`)
+## DECISION: The ants a little edgier: sickle jaws, a heart-shaped head, slanted eyes (2026-11-13, build `2026-11-13n`, branch `claude/start-game-project-HSh7Z`)
 - The owner: **"what can be done to make the ants look better? I kind of want to make them look a little bit more edgy, but not too much. What do you think we should do? Like, I'm thinking like their forceps should have like..."** The agent proposed one piece, drawn with the game's own kit (`design/ants/edgy-draft.js`): **"Very right direction good jawb."**
 - Built as drafted: sickle jaws (about 40% longer, a tooth each, sharpened pale tips; almost meeting at rest, wide and snapping on a bite), a heart-shaped head (stronger on a tank or a boss) with a brow ridge over slanted eyes, a short point on the gaster. The colours, sizes, body, legs and walk are unchanged.
 - Tried and dropped (agent's): spines on the thorax and the waist; at the game's size they read as stray lines.
 - Agent's choices (provisional): each class's jaw length (`ANT_JAW`), the tips' colour (`ANT_JAW_TIP`), the head's outline.
-- Status: Implemented (build `2026-11-13l`); verified by `tests/bugs3d.js` and pictures from the real page; not playtested. `CHANGELOG.md`, the Bible (the ant).
+- Status: Implemented (build `2026-11-13n`); verified by `tests/bugs3d.js` and pictures from the real page; not playtested. `CHANGELOG.md`, the Bible (the ant).
 
-## DECISION: The Nest navigable: flasks as targets, the cracked wall as 3D rock a blast or the drill opens; the modelled walls stay off (2026-11-13, build `2026-11-13n`, branch `claude/start-game-project-HSh7Z`)
+## DECISION: The Nest navigable: flasks as targets, the cracked wall as 3D rock a blast or the drill opens; the modelled walls stay off (2026-11-13, build `2026-11-13o`, branch `claude/start-game-project-HSh7Z`)
 - The owner: **"We need to make the nests navigable. I went to the Thermite Burrowers check, the bottom left or the southeast wall, I guess, and southwest wall, and it wouldn't let me burrow through. What's wrong with the other rocks that we had designed earlier? I like those more. They're 3D and everything."** Then "Keep going further".
 - The agent read "the other rocks" as the modelled cave walls (switched off 2026-11-09p) and turned them back on, the Nest's low rims baked too; the owner, of the pictures: **"Those look so smooth and bad and weird."** Taken back: the drawn rock stays (the 2026-11-09p decision stands).
 - Shown the Nest's south-west check (a flat cracked wall, which only a blast opened) beside the 3D rubble: **"Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card"**; of the cracked wall, **"3D rock, blast or drill"** (of: 3D rock and blast only; blast or drill; drill only; keep the board with a sign).
 - Built: the cracked wall drawn as the cave's modelled rubble and opened by a blast or six drill hits, with a sign; a tap on a flask locks it (THE CORE's slab, the enemy card, FIRE; any hit sets it off); the DRILL chip takes rubble; a load no longer restarts the technicians' first wait.
 - Agent's choices (provisional): ATTACK at a flask sends only Mages (brawlers and technicians would be caught in the blast); the flask's card reads HP 1/1 and BLAST 30 (ACID 3); the drill's work spot north of the rock.
-- Status: Implemented (build `2026-11-13n`); verified by `tests/hazards.js`, `tests/nest.js`, `tests/techlevel1.js`, `tests/cavewalls.js` and the real page; not playtested. `FACILITY.md`, `DOMAINS.md`, `TECHNICIANS.md`, `CHANGELOG.md`.
+- Status: Implemented (build `2026-11-13o`); verified by `tests/hazards.js`, `tests/nest.js`, `tests/techlevel1.js`, `tests/cavewalls.js` and the real page; not playtested. `FACILITY.md`, `DOMAINS.md`, `TECHNICIANS.md`, `CHANGELOG.md`.

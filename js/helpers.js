@@ -150,6 +150,9 @@ function hurtPlayer(amount, shakeAmt, source) {
 
 
 
+// BLIND (the owner, 2026-11-13: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting"; asked, chosen: change blind everywhere, and 50%): a blinded creature still
+// sees, chases and attacks, but each hit it deals MISSES with this chance (a bite, a shot, an ability's hit, each on its own roll; a reflected hit is not its own and cannot miss). A MISS floats over the target.
+const BLIND_MISS = 0.5;
 function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
@@ -167,6 +170,10 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // spends effects or floating text on a hit that lands nowhere; this is the
     // chokepoint that catches the path nobody has thought of yet.
     if (isNeutralBystander(target)) return;
+    if (source && source.blinded > 0 && !isReflected && source !== target && Math.random() < BLIND_MISS) {   // BLIND: this one misses
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: target.x, y: target.y, text: "MISS", color: "#cfd8e3", life: 40, vy: -0.05, size: 11 });
+        return;
+    }
     // Ghostphage ghost — immune to hazards; instantly killed by any direct attack
     if (target.ghostphageLife) {
         if (source && source.team) { target.health=0; target.dead=true; }
@@ -271,6 +278,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
+    if (source && !isReflected && !fixed && dmg > 0 && hit && hit.which === "main" && source.isFollower && typeof primaryStatusOnHit === "function") primaryStatusOnHit(source, target);   // (a primary attack's status, js/combat.js)
     // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──
     if (target.reflectDamage && source && !source.dead && !isReflected) {
         applyDamage(source, dmg, target, null, true);

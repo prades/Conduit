@@ -82,6 +82,29 @@ function applyBurn(t, perTick, frames) {   // `perTick`: the damage of one tick
     t.burning = Math.max(t.burning || 0, frames);
     return fresh;
 }
+// THE STATUS A PRIMARY ATTACK CARRIES (the owner, 2026-11-13: "the primary attacks should add stuff like stun, slow, poisoned, and blinded, and perhaps burning ... They're not exclusive to those types"; asked, "Mix across
+// all elements"; approved the table, and "25% chance per hit"): a hit that is a follower's PRIMARY attack (its plain hit or a Mage's shot: hit.which "main", js/damage.js) adds its form's status with the chance
+// PRIMARY_STATUS_CHANCE, each hit on its own roll. Stun and blind never take on a boss. The lengths and the burn's tick are the agent's, PROVISIONAL; a form can carry more than one later. Technicians have no
+// primary attack and carry none. Blind is the game's (a lower chance of hitting, js/helpers.js BLIND_MISS); poison is the weakness (it bites for 60% for the time).
+const PRIMARY_STATUS_CHANCE = 0.25;
+const PRIMARY_STATUS = { thunderhead: "stun", electroskink: "stun", staticorb: "stun", jellyram: "stun", maw: "slow", rimestar: "slow", hornshell: "slow", sundew: "slow",
+    seeper: "poison", rotshard: "poison", shrub: "poison", voidstar: "blind", mimic: "blind", embercowl: "burn", quillstone: "burn" };
+const PRIMARY_STATUS_FX = { stun: { frames: 45, text: "STUN", col: "#ffee55" }, slow: { frames: 120, factor: 0.6, text: "SLOW", col: "#aeeaff" }, poison: { frames: 180, factor: 0.6, text: "POISON", col: "#8cff5a" },
+    blind: { frames: 60, text: "BLIND", col: "#cfd8e3" }, burn: { frames: 180, tick: 0.05, text: "BURN", col: "#ff8844" } };
+function primaryStatusOf(f) { const id = typeof dmgFormId === "function" ? dmgFormId(f) : (f && f.evolved); return id ? (PRIMARY_STATUS[id] || null) : null; }
+function primaryStatusOnHit(src, t, rnd) {   // called by applyDamage for a hit of `which` "main" from a follower of yours that landed (rnd: a draw, for tests)
+    if (!src || !src.isFollower || src.team !== "green" || !t || t.dead || !(t.health > 0) || t.team === "green" || t.isClone) return null;
+    const kind = primaryStatusOf(src); if (!kind) return null;
+    if (((rnd || Math.random)()) >= PRIMARY_STATUS_CHANCE) return null;
+    const fx = PRIMARY_STATUS_FX[kind], boss = !!(t.bossId || t.bossName || t.isBoss); let fresh = false;
+    if (kind === "stun") { if (boss) return null; fresh = applyStun(t, fx.frames); }
+    else if (kind === "blind") { if (boss) return null; fresh = !(t.blinded > 0); t.blinded = Math.max(t.blinded || 0, fx.frames); }
+    else if (kind === "slow") { fresh = !(t.slowed > 0); applySlow(t, fx.frames, fx.factor); }
+    else if (kind === "poison") fresh = applyWeaken(t, fx.frames, fx.factor);
+    else if (kind === "burn") fresh = applyBurn(t, (src.power || 10) * fx.tick, fx.frames);
+    if (fresh && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: fx.text, color: fx.col, life: 40, vy: -0.05, size: 10 });
+    return kind;
+}
 // POISON ON A FOLLOWER (the owner, 2026-11-09: the three toxic ants of the purification's ambush, js/quests.js, "have poison effects": "Damage over time", on "Only followers"): a follower bitten by a creature that
 // `poisonsFollowers` loses `perTick` health every DOT_TICK frames for FOLLOWER_POISON.frames (ticked with the burn, below). A new bite refreshes it, never stacks it: the longer time and the stronger tick win.
 // The numbers are the agent's, provisional: three seconds, nine ticks of 0.06 × the biter's power (about half its power in all, on top of the bite).
