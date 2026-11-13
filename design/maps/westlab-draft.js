@@ -2,7 +2,7 @@
 // the south side, that's a divider wall, and it also has like a whiteboard that's on a stand, on its own stand, that's tilted towards the beanbag chairs ... there's a rug ... maybe some like equations drawn
 // on the whiteboard. And the new experiment lab will be on ... the west side. ... It'll be connected to the teleporter lab. It'll be a little ... slope staircase droop into the experiment lab, which will
 // be rather large, like kind of 3 times the size as the normal, the present one, and have giant holding tanks and stuff."
-// Top-down plans (north at the top; a tile = T px; the map's own sketch coordinates / 20): 1 the west side now and proposed, 2 the new lab's two layouts, 3 the lounge.
+// Top-down plans (north at the top; a tile = T px; the map's own sketch coordinates / 20): 1 the west side now and approved (2026-11-13: B, the lounge mirrored), 2 the new lab's two layouts, 3 the lounge.
 //   node design/maps/westlab-draft.js <out-dir>        writes 1_west.png, 2_lab.png, 3_lounge.png (and their .html) there
 const fs = require('fs'), path = require('path'), os = require('os');
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
@@ -36,8 +36,11 @@ function kit(T, x0, y0, PAD) {
     couch: (a, b, c, d) => k.rect(a, b, c, d, 'fill="#3a7bff" stroke="#1a2c5a" stroke-width="2" rx="4"'),
     beanbag: (x, y, col) => `<ellipse cx="${F(X(x))}" cy="${F(Y(y))}" rx="${F(T * 0.62)}" ry="${F(T * 0.55)}" fill="${col}" stroke="#0b0f16" stroke-width="2"/>`,
     plant: (x, y) => `${k.circle(x, y, 0.42, 'fill="#3e2a1c" stroke="#0b0f16" stroke-width="1.5"')}${k.circle(x, y, 0.32, 'fill="#3fae5a"')}`,
-    whiteboard: (x, y, w, ang) => `<g transform="rotate(${ang} ${F(X(x))} ${F(Y(y))})"><rect x="${F(X(x) - w * T / 2)}" y="${F(Y(y) - T * 0.16)}" width="${F(w * T)}" height="${F(T * 0.32)}" fill="#f4f8fb" stroke="#5a6b7c" stroke-width="2"/>` +
-      `<line x1="${F(X(x) - w * T / 2 + 4)}" y1="${F(Y(y) + T * 0.5)}" x2="${F(X(x) + w * T / 2 - 4)}" y2="${F(Y(y) + T * 0.5)}" stroke="#5a6b7c" stroke-width="2" stroke-dasharray="3 3"/></g>`,
+    // the whiteboard on its stand: the board, its feet across each end, its writing side a blue edge. Unturned its writing faces south (+y); `ang` turns it clockwise
+    // (the game model's yaw is -ang: -45 faces the camera square on, at the south-east)
+    whiteboard: (x, y, w, ang) => { const cx = X(x), cy = Y(y), h = w * T / 2;
+      return `<g transform="rotate(${ang} ${F(cx)} ${F(cy)})">` + [-1, 1].map(s => `<line x1="${F(cx + s * (h + 3))}" y1="${F(cy - T * 0.45)}" x2="${F(cx + s * (h + 3))}" y2="${F(cy + T * 0.45)}" stroke="#2a3038" stroke-width="5" stroke-linecap="round"/>`).join('') +
+        `<rect x="${F(cx - h)}" y="${F(cy - T * 0.12)}" width="${F(w * T)}" height="${F(T * 0.24)}" fill="#f4f8fb" stroke="#5a6b7c" stroke-width="2"/><line x1="${F(cx - h + 3)}" y1="${F(cy + T * 0.12)}" x2="${F(cx + h - 3)}" y2="${F(cy + T * 0.12)}" stroke="#1f4fd1" stroke-width="3.5"/></g>`; },
     stair: (a, b, c, d, dir, n) => { let o = k.rect(a, b, c, d, 'fill="#6c7a8a" stroke="#0b0f16" stroke-width="2"'); const W = c - a, H = d - b;
       for (let i = 1; i < n; i++) o += dir === 'w' || dir === 'e' ? k.line([[a + W * i / n, b], [a + W * i / n, d]], 'stroke="#0b0f16" stroke-width="1.5"') : k.line([[a, b + H * i / n], [c, b + H * i / n]], 'stroke="#0b0f16" stroke-width="1.5"');
       return o; },
@@ -81,22 +84,26 @@ function context(k, now) {
   s += door(k, [11.25, 25], [13.25, 25]) + door(k, [12.5, 38], [14.5, 38]);
   return s;
 }
-// THE LOUNGE in the old lab's place (or the lab as it is now)
+// THE LOUNGE in the old lab's place (or the lab as it is now). Mirrored (the owner, 2026-11-13: "the opposite setup, like a mirror opposite setup, to where the whiteboard is on the other side,
+// pointing towards the player, looking at the slant"): the whiteboard at the west end, north of the door, turned to face the camera (south-east) at a slant toward the beanbags (the game model's
+// yaw 55: 10 degrees off square to the camera); the beanbags before it, two each side of an aisle from the door; the couches and the low table at the east end
 function lounge(k, big) {
   let s = room(k, R.lab, { floor: '#2a2236' });
-  glass(k, [21.5, 26.5], [37.5, 26.5]); s += glass(k, [21.5, 26.5], [37.5, 26.5]) + glass(k, [37.5, 26.5], [37.5, 32]) + glass(k, [21.5, 26.5], [21.5, 28.3]) + glass(k, [21.5, 30.2], [21.5, 32]);
+  s += glass(k, [21.5, 26.5], [37.5, 26.5]) + glass(k, [37.5, 26.5], [37.5, 32]) + glass(k, [21.5, 26.5], [21.5, 28.3]) + glass(k, [21.5, 30.2], [21.5, 32]);
   s += divider(k, [21.5, 32], [37.5, 32]);   // the south divider wall
   s += door(k, [21.5, 28.4], [21.5, 30.1]);
-  s += k.rect(27, 27.4, 35.4, 31.2, 'fill="#5a2a3a" stroke="#ffd34d" stroke-width="2.5" rx="3"');   // the rug
-  s += k.couch(22.3, 28.6, 23.1, 31.2) + k.couch(23.4, 31.0, 26.4, 31.7) + k.rect(23.8, 29.0, 25.6, 30.2, 'fill="#6e5238" stroke="#0b0f16" stroke-width="1.5" rx="2"');   // two couches, a low table
-  s += k.beanbag(28.6, 29.9, '#ff7ab8') + k.beanbag(30.2, 28.4, '#ffd34d') + k.beanbag(32.2, 28.2, '#43e0a8') + k.beanbag(33.6, 29.7, '#9a5cff');
-  s += k.whiteboard(35.9, 30.4, 2.4, -38);   // on its stand, tilted towards the beanbags
-  s += k.plant(36.8, 27.3) + k.plant(22.2, 27.3);
+  s += k.rect(23.6, 27.4, 32, 31.2, 'fill="#5a2a3a" stroke="#ffd34d" stroke-width="2.5" rx="3"');   // the rug
+  s += k.couch(35.9, 28.6, 36.7, 31.2) + k.couch(32.6, 31.0, 35.6, 31.7) + k.rect(33.4, 29.0, 35.2, 30.2, 'fill="#6e5238" stroke="#0b0f16" stroke-width="1.5" rx="2"');   // two couches, a low table
+  s += k.beanbag(27.3, 27.75, '#43e0a8') + k.beanbag(29.3, 27.9, '#ffd34d') + k.beanbag(25.2, 30.9, '#9a5cff') + k.beanbag(27.2, 30.85, '#ff7ab8');
+  s += k.whiteboard(24.4, 27.7, 2.0, -55);   // on its stand, facing the camera at a slant, toward the beanbags
+  s += k.plant(36.8, 27.3) + k.plant(22.2, 31.3);
   if (big) {
-    s += k.text(36.6, 31.6, 'whiteboard on a stand,', { size: 11, col: '#f4f8fb', anchor: 'end' }) + k.text(36.6, 32.6, 'tilted at the beanbags', { size: 11, col: '#f4f8fb', anchor: 'end' });
-    s += k.text(31.2, 31.8, 'rug', { size: 11, col: '#ffd34d' }) + k.text(29.7, 33.3, 'the divider wall (south)', { size: 12, col: '#c9a46a' });
+    s += k.arrow([24.6, 27.84], [26.04, 28.85], '#8fb8ff');   // the way its writing faces
+    s += k.text(21.6, 25.35, 'whiteboard on its stand, at the west end:', { size: 11, col: '#f4f8fb', anchor: 'start' }) + k.text(21.6, 26.15, 'its writing (blue edge) faces you, on the slant', { size: 11, col: '#f4f8fb', anchor: 'start' });
+    s += k.text(30.4, 31.75, 'rug', { size: 11, col: '#ffd34d' }) + k.text(29.7, 33.3, 'the divider wall (south): a full wall', { size: 12, col: '#c9a46a' });
+    s += k.arrow([39.0, 33.75], [38.05, 32.8], '#9fb3c8') + k.text(38.7, 34.45, 'you (the camera) look in from the south-east', { size: 11, col: '#9fb3c8', anchor: 'end' });
   }
-  s += k.text(29.5, 26.0, 'THE LOUNGE', { size: big ? 16 : 14, col: '#ff9ccc', bold: true });
+  s += k.text(big ? 32.6 : 29.5, 26.0, 'THE LOUNGE', { size: big ? 16 : 14, col: '#ff9ccc', bold: true });
   return s;
 }
 function labNow(k) {
@@ -136,18 +143,18 @@ function svg(w, h, body) { return `<svg width="${w}" height="${h}" viewBox="0 0 
 
 // 1 · THE WEST SIDE, NOW AND PROPOSED (A)
 function sheet1() {
-  const T = 15, x0 = -9, y0 = 8.5, PAD = 10, W = Math.round((50 - x0) * T + 2 * PAD), H = Math.round((49 - y0) * T + 2 * PAD);
+  const T = 15, x0 = -15, y0 = 8.5, PAD = 10, W = Math.round((50 - x0) * T + 2 * PAD), H = Math.round((49 - y0) * T + 2 * PAD);
   const a = kit(T, x0, y0, PAD), b = kit(T, x0, y0, PAD);
-  const now = svg(W, H, context(a, true) + labNow(a) + a.scale(-7, 46.5, 5) + a.text(-1, 30.5, '(nothing here now)', { size: 13, col: '#5a6b7c', italic: true }));
-  const prop = svg(W, H, context(b, false) + lounge(b, false) + newLab(b, 'A', false) + b.scale(-7, 46.5, 5));
+  const now = svg(W, H, context(a, true) + labNow(a) + a.scale(-13, 46.5, 5) + a.text(-3, 32, '(nothing here now)', { size: 13, col: '#5a6b7c', italic: true }));
+  const prop = svg(W, H, context(b, false) + lounge(b, false) + newLab(b, 'B', false) + b.scale(-13, 46.5, 5));
   const notes = `<div class="notes"><h3>WHAT CHANGES</h3><ul>
-<li><b>The old lab becomes THE LOUNGE</b>, a hangout: couches, beanbags, a rug, a whiteboard on its own stand tilted at the beanbags (equations on it), a <b>divider wall</b> along its south side. Its door to Teleport Room 1 stays.</li>
-<li><b>The new EXPERIMENT LAB</b> is west of Teleport Room 1, about <b>3 times</b> the old one (17 by 16 tiles in A), down a <b>sloping stair</b> from Teleport Room 1's west wall.</li>
-<li><b>Giant holding tanks</b> (a new 3D model, drafted after this), and the old lab's stations move with it: the Sequencer, the Serum Hood, the Clone Bay, the Analysis Bench.</li>
+<li><b>The old lab becomes THE LOUNGE</b>, a hangout: couches, beanbags, a rug, a whiteboard on its own stand at the west end facing you (equations on it), a <b>full wall</b> along its south side. Its door to Teleport Room 1 stays.</li>
+<li><b>The new EXPERIMENT LAB</b> is west of Teleport Room 1, about <b>3 times</b> the old one (B, the long gallery: 23 by 12 tiles), down a <b>sloping stair</b> from Teleport Room 1's west wall.</li>
+<li><b>Giant holding tanks</b> (a new 3D model) in two rows, and the old lab's stations move with it: the Sequencer, the Serum Hood, the Clone Bay, the Analysis Bench; and the Cold Storage's stairs.</li>
 <li>The map grows west; nothing else moves.</li></ul>
-<h3 class="q">FOR YOU TO PICK</h3><ul><li class="q">The lab's layout: A or B (sheet 2).</li><li class="q">The Cold Storage's stairs (now in the old lab's floor): move them to the new lab, or keep them in the lounge?</li><li class="q">The divider: a full wall, or a low half wall?</li><li class="q">The lounge's name.</li></ul></div>`;
-  return page(W * 2 + 380, 320, `<h1>1 · The west side, now and proposed</h1><div class="sub">North is up. The lab is drawn in A, the square hall (sheet 2 has B). Draft: nothing here is in the game yet.</div>
-<div class="row"><div class="col"><div class="cap">NOW</div>${now}</div><div class="col"><div class="cap">PROPOSED (A)</div>${prop}</div>${notes}</div>`);
+<h3>YOUR PICKS (2026-11-13)</h3><ul><li>The lab: <b>B</b>, the long gallery.</li><li>The Cold Storage's stairs: <b>to the new lab</b>.</li><li>The divider: <b>a full wall, only on the south side</b>.</li><li>The name: <b>The Lounge</b>.</li><li>The lounge <b>mirrored</b>: the whiteboard at the west end, facing you.</li></ul></div>`;
+  return page(W * 2 + 380, 320, `<h1>1 · The west side, now and approved</h1><div class="sub">North is up. Draft: nothing here is in the game yet.</div>
+<div class="row"><div class="col"><div class="cap">NOW</div>${now}</div><div class="col"><div class="cap">APPROVED (B; the lounge mirrored)</div>${prop}</div>${notes}</div>`);
 }
 // 2 · THE NEW LAB, TWO LAYOUTS
 function sheet2() {
@@ -162,11 +169,12 @@ function sheet2() {
 }
 // 3 · THE LOUNGE
 function sheet3() {
-  const T = 34, PAD = 14, k = kit(T, 20.5, 25, PAD), W = Math.round((38.5 - 20.5) * T + 2 * PAD), H = Math.round((34 - 25) * T + 2 * PAD);
+  const T = 34, PAD = 14, k = kit(T, 20.3, 24.7, PAD), W = Math.round((39.6 - 20.3) * T + 2 * PAD), H = Math.round((34.8 - 24.7) * T + 2 * PAD);
   const sv = svg(W, H, lounge(k, true) + k.text(21.0, 29.3, 'to', { size: 11, col: '#9fb3c8', anchor: 'end' }) + k.text(21.0, 30.3, 'TR 1', { size: 11, col: '#9fb3c8', anchor: 'end' }));
-  const notes = `<div class="notes"><h3>THE LOUNGE</h3><ul><li>Glass on its north, east and west sides as now (you see in from the hallway); the <b>divider wall</b> along the south.</li>
-<li>Two <b>couches</b> and a low table at the west end; four <b>beanbags</b> in an arc on the <b>rug</b>.</li><li>The <b>whiteboard</b> stands on its own frame at the east end, turned toward the beanbags, equations on it (a new 3D model).</li><li>Two plants. The couches, beanbags and rug are the game's own (the observation deck has them).</li></ul></div>`;
-  return page(W + 420, 360, `<h1>3 · The lounge</h1><div class="sub">The old lab's room, 16 by 5.5 tiles, furnished as a hangout.</div><div class="row">${sv}${notes}</div>`);
+  const notes = `<div class="notes"><h3>THE LOUNGE, MIRRORED</h3><ul><li>Glass on its north, east and west sides as now (you see in from the hallway); a <b>full wall</b> along the south, the divider.</li>
+<li>The <b>whiteboard</b> on its own stand at the <b>west end</b>, north of the door from Teleport Room 1, turned to <b>face you</b> on the slant (the game looks in from the south-east), equations on it. Its writing is the blue edge.</li>
+<li>Four <b>beanbags</b> on the <b>rug</b> in front of it, two each side of an aisle from the door.</li><li>Two <b>couches</b> and a low table at the <b>east end</b>.</li><li>Two plants. The couches, beanbags and rug are the game's own (the observation deck has them).</li></ul></div>`;
+  return page(W + 420, 360, `<h1>3 · The lounge</h1><div class="sub">The old lab's room, 16 by 5.5 tiles, furnished as a hangout; mirrored as you asked, the whiteboard now at the west end facing you.</div><div class="row">${sv}${notes}</div>`);
 }
 
 (async () => {
