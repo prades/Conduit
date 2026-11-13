@@ -1,12 +1,16 @@
 // ─────────────────────────────────────────────────────────
 //  PERSONALITIES
 // ─────────────────────────────────────────────────────────
+// THE RANGE (the owner, 2026-11-13: "make it to where the user's stats don't vary or stray too far from the original base stats"; asked how far, chosen: within +-25%): every factor below
+// is kept within PERSONALITY_MIN to PERSONALITY_MAX of the base (it was 0.5 to 2.0). The lean of each personality is as it was; only its reach is shorter. assignRole's thresholds below follow
+// (a brawler's ATK 12.5 where it was 20). A follower already saved keeps the base it was made with (nothing is migrated).
+const PERSONALITY_MIN = 0.75, PERSONALITY_MAX = 1.25;
 const PERSONALITIES = {
-    aggressive: { attack:2.0, defense:0.5, speed:1.2, specialAttack:1.0, accuracy:0.8,  will:1.0, hp:1.0, resonance:1.0 },
-    cautious:   { attack:0.8, defense:2.0, speed:0.7, specialAttack:0.8, accuracy:1.2,  will:1.2, hp:1.5, resonance:0.8 },
-    cunning:    { attack:1.0, defense:0.8, speed:1.5, specialAttack:1.5, accuracy:1.5,  will:0.8, hp:0.8, resonance:1.2 },
-    stoic:      { attack:1.0, defense:1.5, speed:0.8, specialAttack:0.8, accuracy:1.0,  will:1.5, hp:1.5, resonance:0.5 },
-    wild:       { attack:1.8, defense:0.6, speed:1.8, specialAttack:0.6, accuracy:0.6,  will:0.6, hp:0.8, resonance:1.5 }
+    aggressive: { attack:1.25, defense:0.75, speed:1.2,  specialAttack:1.0,  accuracy:0.8,  will:1.0,  hp:1.0,  resonance:1.0 },
+    cautious:   { attack:0.8,  defense:1.25, speed:0.75, specialAttack:0.8,  accuracy:1.2,  will:1.2,  hp:1.25, resonance:0.8 },
+    cunning:    { attack:1.0,  defense:0.8,  speed:1.25, specialAttack:1.25, accuracy:1.25, will:0.8,  hp:0.8,  resonance:1.2 },
+    stoic:      { attack:1.0,  defense:1.25, speed:0.8,  specialAttack:0.8,  accuracy:1.0,  will:1.25, hp:1.25, resonance:0.75 },
+    wild:       { attack:1.25, defense:0.75, speed:1.25, specialAttack:0.75, accuracy:0.75, will:0.75, hp:0.8,  resonance:1.25 }
 };
 
 const PERSONALITY_KEYS = Object.keys(PERSONALITIES);
@@ -59,13 +63,13 @@ function personalityForType(type) {
 // Hybrid: high attack AND high will — uses both branches
 function assignRole(stats) {
     // Hybrid: high in both attack AND specialAttack
-    if (stats.attack >= 14 && stats.specialAttack >= 12) return "hybrid";
-    // Brawler: attack-dominant — lax threshold
-    if (stats.attack >= 14) return "brawler";
+    if (stats.attack >= 12 && stats.specialAttack >= 12) return "hybrid";
+    // Brawler: attack-dominant — lax threshold (12 since the range was cut to +-25%: an aggressive or wild follower's ATK is 12.5)
+    if (stats.attack >= 12) return "brawler";
     // Sniper: accuracy or specialAttack dominant
     if (stats.specialAttack >= 12 || stats.accuracy >= 12) return "sniper";
     // Camper: defensive/will dominant
-    if (stats.defense >= 14 || stats.will >= 24) return "camper";
+    if (stats.defense >= 12 || stats.will >= 24) return "camper";
     // Fallback — split between brawler and sniper randomly
     return Math.random() < 0.45 ? "brawler" : "sniper";
 }

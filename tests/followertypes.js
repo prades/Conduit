@@ -34,7 +34,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const r = J(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); const out = []; for (const t of FOLLOWER_TYPE_ORDER) { spawnFollowerAtCrystal('ice', t); const f = followers[followers.length - 1]; out.push([t, f.role, f.element, FOLLOWER_TYPES[t].personalities.indexOf(f.personality) >= 0, f.stats.attack, f.stats.specialAttack, f.stats.defense, followerByElement.ice.indexOf(f) >= 0]); }
             spawnFollowerAtCrystal('fire'); const g = followers[followers.length - 1]; out.push(['draw', g.role, g.element]); followers.length = 0; actors = actors.filter(a => !a.isFollower); return out; })()`);
         for (const x of r.slice(0, 3)) { same(x[1], x[0], 'the role'); same(x[2], 'ice', 'the element'); same(x[3], true, 'a personality of the type'); same(x[7], true, 'in the element list'); }
-        ok(r[0][4] >= 14, 'a brawler\'s attack ' + r[0][4]); ok(r[2][6] >= 14, 'a technician\'s defence ' + r[2][6]); ok(['brawler', 'sniper', 'camper'].includes(r[3][1]), 'a draw');
+        ok(r[0][4] >= 12, 'a brawler\'s attack ' + r[0][4]); ok(r[2][6] >= 12, 'a technician\'s defence ' + r[2][6]);   // (12: the personalities stay within +-25% of the base, js/species.js)
+        ok(['brawler', 'sniper', 'camper'].includes(r[3][1]), 'a draw');
     });
 
     group('THE ELEMENTS: every one online makes followers, evenly; there is nothing to narrow');

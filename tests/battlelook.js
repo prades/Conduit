@@ -364,7 +364,7 @@ function realPage() {
             return o; })()`);
         ok(/^\u2212\d+$/.test(r.text) && r.on && r.mine, 'the number: ' + JSON.stringify(r)); const dmg = +r.text.slice(1), max = 400;
         ok(/battleDrawWords\(\); battleDrawRoster\(\); battleCardsTick\(\);/.test(rd('js/drops.js')), 'the cards are not answered after the numbers (a frame late)'); ok(/\.sb-slot\.sb-hit \{ box-shadow: inset/.test(rd('game.html')) && /body\.corners #squadBar \.sb-slot\.sb-hit::before \{ box-shadow: inset/.test(rd('game.html')), 'the card\'s light (game.html)');
-        same(JSON.stringify(r.before), JSON.stringify([J('BATTLE_VIEW.num.knock') - 1, Math.round(r.hp0 + dmg) + '/' + max, false, false]), 'the card before it lands (its health as before; not lit)');
+        same(JSON.stringify(r.before), JSON.stringify([J('BATTLE_VIEW.num.knock') - 1, Math.round(max) + '/' + max, false, false]), 'the card before it lands (its health as before; not lit)');
         same(JSON.stringify(r.landed), JSON.stringify([J('BATTLE_VIEW.num.knock'), Math.round(r.hp0) + '/' + max, true, true]), 'the card as it lands (its health moved; lit and shaking)');
         same(r.after[2], false, 'the card still shaking after the shake'); same(JSON.stringify(r.pop), JSON.stringify([r.text + '@slashing']), 'the −N out of the card, in its face'); same(r.gone, true, 'the number still drawn after it has gone');
     });

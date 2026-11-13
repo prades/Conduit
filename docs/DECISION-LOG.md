@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: A follower's personality stays within ±25% of the base stats
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/personality-range`, `2026-11-13p`
+- **Status:** Approved
+- **Context:** the owner: "make it to where the user's stats don't vary or stray too far from the original base stats". Followers' stats came from the base block times a personality factor of 0.5 to 2.0 (for example an aggressive ATK of 20 and DEF of 5).
+- **Decision:** every personality factor is held to 0.75 to 1.25 (chosen from ±10%, ±25% and ±50%). The lean of each personality is unchanged. `assignRole`'s thresholds follow (12, was 14) so each personality still gives its role.
+- **Alternatives:** ±10% (nearly identical followers); ±50% (a looser version of the same).
+- **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
+- **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
+
 ## DECISION: Four retypes put back, the Thermite Drill off enemies, SWEET SCENT poisons
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/type-fixes`, `2026-11-13k`
