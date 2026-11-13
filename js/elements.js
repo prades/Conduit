@@ -905,6 +905,7 @@ function updateElementEffects() {
         if (e.type === "mawchomp" && typeof mawChompTick === "function") mawChompTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
         if (e.type === "emberdash" && typeof emberDashTick === "function") emberDashTick(e);   // (the extra attacks, js/evolution.js: the Quillstone's dash, the Rift Mimic's reappearance, the Hammer Slug's ball)
         if (e.type === "riftglitch" && typeof riftImpaleTick === "function") riftImpaleTick(e);
+        if (e.type === "toxicstomp" && e.by && typeof toxicStompTick === "function") toxicStompTick(e);
         if (e.type === "bladeroll" && e.life < e.maxLife && typeof bladeRollTick === "function") bladeRollTick(e);
         if (e.type === "mimicshot" && typeof mimicShotTick === "function") mimicShotTick(e);   // (the Rift Mimic's everyday hit: js/evolution.js)
         if (e.type === "skinkswirl" && typeof skinkSwirlTick === "function") skinkSwirlTick(e);   // (the Electro Skink's everyday hit: js/evolution.js)
@@ -1611,6 +1612,10 @@ function drawElementEffects() {
             // BLADE ROLL (bladeRoll): the Hammer Slug rolled up, a ball of its shell's teal rolling along (e.x, e.y is the ball, bladeRollTick), its bright edge turning as it goes, a little dust behind it.
             case "bladeroll": {
                 const age = e.maxLife - e.life, cy = py - 16, r = 15, an = age * 0.55, bx = ((e.ux || 0) - (e.uy || 0)), by = ((e.ux || 0) + (e.uy || 0)) * 0.5, bl = Math.hypot(bx, by) || 1;
+                if (typeof fx3dOn === "function" && fx3dOn("slugball") && fx3dReady("slugball")) {   // (the 3-D rendered ball, js/fx3d.js: one spike's worth of its turn, 12 columns, looped by how far it has rolled on the screen)
+                    const sdx = ((e.x - e.x0) - (e.y - e.y0)) * TILE_W, sdy = ((e.x - e.x0) + (e.y - e.y0)) * TILE_H, turn = Math.hypot(sdx, sdy) / 14.1, step = 2 * Math.PI / 9;
+                    ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = "#0b1a18"; ctx.beginPath(); ctx.ellipse(px, py + 2, 20, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+                    fx3dDrawAnim(ctx, "slugball", px, py, Math.floor((turn % step) / step * 12), bx < 0); ctx.restore(); break; }
                 ctx.save();
                 ctx.globalAlpha = 0.35; ctx.fillStyle = "#0b1a18"; ctx.beginPath(); ctx.ellipse(px, py + 2, r, r * 0.42, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.5; ctx.fillStyle = "#9fb8b2"; for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(px - bx / bl * (10 + i * 9), py - by / bl * (10 + i * 9) - 2 - i * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
@@ -1631,7 +1636,11 @@ function drawElementEffects() {
             }
             // TOXIC STOMP (toxicStomp): the Seeper stomps and goo is thrown out of its caldera: blobs arc up and out all round and land in a ring of splats that spread and fade; a flat shock line on the floor.
             case "toxicstomp": {
-                const age = e.maxLife - e.life, u = Math.min(1, age / 12), fade = Math.min(1, e.life / 9), R = (e.radius || 1.5);
+                const a0 = e.maxLife - e.life, age = e.by ? a0 - STOMP_SLAM : a0; if (age < 0) break;   // (nothing until the foot is down)
+                const u = Math.min(1, age / 12), fade = Math.min(1, e.life / 9), R = (e.radius || 1.5);
+                if (typeof fx3dOn === "function" && fx3dOn("goosplash") && fx3dReady("goosplash")) {   // (the 3-D rendered goo, js/fx3d.js: 12 columns, two frames each; a flat shock line on the floor under it)
+                    ctx.save(); ctx.globalAlpha = 0.6 * (1 - u); ctx.strokeStyle = "#b6ff7a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(px, py, R * TILE_W * u, R * TILE_H * u, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
+                    fx3dDrawAnim(ctx, "goosplash", px, py, Math.min(11, Math.floor(age / 2.2)), false); ctx.restore(); break; }
                 ctx.save();
                 ctx.globalAlpha = 0.6 * (1 - u); ctx.strokeStyle = "#b6ff7a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(px, py, R * TILE_W * u, R * TILE_H * u, 0, 0, Math.PI * 2); ctx.stroke();
                 for (let i = 0; i < 12; i++) { const an = i * 0.5236 + 0.2, d = R * (0.5 + 0.5 * ((i * 5) % 4) / 3), gx = px + Math.cos(an) * d * TILE_W, gy = py + Math.sin(an) * d * TILE_H;

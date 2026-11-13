@@ -1105,15 +1105,17 @@ function briarSweep(f) {
 // STOMP_RADIUS that it can see takes STOMP_MULT x its attack, Crushing, toxic. A close move, its second (two toxic energy cards). Smaller and quicker than ERUPTION, and it eats no armour. The name, the
 // numbers and the look (a ring and an impact) are the agent's, PROVISIONAL.
 const DMG_HIT_STOMP = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });
-const STOMP_RADIUS = 1.5, STOMP_MULT = 1.5;
+// (Build 2026-11-14a: it rears its leg and brings it down as its everyday stomp does, its sheet's own frames, and the hit lands as the foot does, STOMP_SLAM frames after the cast: toxicStompTick.)
+const STOMP_RADIUS = 1.5, STOMP_MULT = 1.5, STOMP_SLAM = 12;
+function toxicStompLand(f, x, y) { for (const a of _evoFoesSeen(x, y, STOMP_RADIUS)) applyDamage(a, (f.power || 10) * STOMP_MULT, f, "toxic", false, false, DMG_HIT_STOMP); if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3); }
+function toxicStompTick(e) { const f = e.by; if (!f || f.dead) { e.life = 0; return; } if (e.maxLife - e.life < STOMP_SLAM) { e.x = f.x; e.y = f.y; } if (e.maxLife - e.life === STOMP_SLAM) toxicStompLand(f, e.x, e.y); }   // (js/elements.js updateElementEffects)
 function toxicStomp(f) {
     const foes = _evoFoesSeen(f.x, f.y, STOMP_RADIUS);
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
-    for (const a of foes) applyDamage(a, (f.power || 10) * STOMP_MULT, f, "toxic", false, false, DMG_HIT_STOMP);
+    f._stompAt = f0;
     f._sigAt = f0; f._sigCd = moveWindupFrames("toxic_stomp"); f.state = "attack"; f.attackAnim = 0;
-    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "toxicstomp", x: f.x, y: f.y, radius: STOMP_RADIUS, life: 26, maxLife: 26, element: "toxic" });   // (the stomp: goo splashed out of its caldera all round it: the owner, 2026-11-13, "make sure he splashes some of this Caldera")
-    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "toxicstomp", by: f, x: f.x, y: f.y, radius: STOMP_RADIUS, life: STOMP_SLAM + 26, maxLife: STOMP_SLAM + 26, element: "toxic" }); else toxicStompLand(f, f.x, f.y);   // (the stomp: goo splashed out of its caldera all round it: the owner, 2026-11-13, "make sure he splashes some of this Caldera")
     _evoSay(f, "TOXIC STOMP", "#88ff44");
     return true;
 }
@@ -1482,6 +1484,7 @@ function _evoFrame(f, d, f0) {
     else if (bz >= 0) col = bz;
     else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
     else if (mc >= 0) col = mc;
+    else if (d.stomp && f._stompAt !== undefined && f0 - f._stompAt >= 0 && f0 - f._stompAt < STOMP_SLAM * 2) col = 16 + Math.min(7, Math.floor((f0 - f._stompAt) / (STOMP_SLAM / 4)));   // (TOXIC STOMP: the Seeper's own leg stomp, its sheet's block 16 to 23, the foot down at STOMP_SLAM)
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1 && !hexHold) col = 8 + Math.min(7, Math.floor(sigK * 8));

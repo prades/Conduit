@@ -31,6 +31,12 @@ const FX3D = {
         // rendered"): ONE short, stubby tentacle of ghostly violet gel (design/effects/bake_fx.js slap), swinging from overhead across and slapping down, 12 frames; ANIMATED: its columns are the frames of the swing, its root at (ax, ay) in the cell;
         // drawn mirrored for the second slap. Approved in the game 2026-11-13 ("Approve it"); until its sheet arrives the flat tentacles drawn in code are shown (js/elements.js tendrilslap)
         slap: { sheet: "img/fx/slap.png", cell: 96, yaws: 12, pitches: [0], anim: true, ax: 48, ay: 48 },
+        // BLADE ROLL's BALL and TOXIC STOMP's SPLASH (build 2026-11-14a; the owner, 2026-11-13, of their first, flat looks: "Toxic Stomp and Blade Roll need better designs"; design/effects/bake_fx.js slugball,
+        // goosplash): the Hammer Slug rolled up, a ball of its scales with its back's spikes round its rim (12 columns: one spike's worth of its turn, looped as it rolls; mirrored to roll left); and the goo
+        // thrown out of the Seeper's caldera as it stomps (12 columns, the throw to the last splat). ANIMATED, each with its foot at the middle of its cell. On the preview until the owner approves them in the
+        // game; until then, and until a sheet arrives, the flat looks drawn in code (js/elements.js bladeroll, toxicstomp).
+        slugball: { sheet: "img/fx/slugball.png", cell: 128, yaws: 12, pitches: [0], anim: true, ax: 64, ay: 64 },
+        goosplash: { sheet: "img/fx/goosplash.png", cell: 256, yaws: 12, pitches: [0], anim: true, ax: 128, ay: 128 },
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f

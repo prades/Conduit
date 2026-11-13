@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,vortexshard', 'the pieces (rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,slugball,goosplash,vortexshard', 'the pieces (slugball and goosplash: the ball of BLADE ROLL and the splash of TOXIC STOMP, animated, on the preview: build 2026-11-14a; rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
         for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
