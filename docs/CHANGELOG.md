@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+### Build `2026-11-13k` · branch `claude/friendly-thompson-w581x0` · COME greys when it has nobody to call
+- **The ask** (the owner: "Whenever all my followers or my squad is full, come should be grayed out in the bottom left").
+- **What it does:** COME (on the command card out of a fight, and the attack card's tab in one) **greys when nobody is holding a room, or when the squad is full** (nobody holding could join). A tap on it with everyone with you says EVERYONE IS WITH YOU and orders nothing; with the squad full it still says who keeps holding. A clone told to HOLD keeps it lit.
+- `js/mixtool.js` (`mixToolComeIdle`, the two COME buttons, the tap), `game.html` (the grey), `tests/holdcome.js` (its check), `docs/UI-STYLE.md`.
+- **Verified:** tests/holdcome.js and the full suite; real taps at iPad size. **Not playtested.**
+
 ### Build `2026-11-13j` · branch `claude/friendly-thompson-w581x0` · a squad card: the first tap picks, the second opens
 - **The ask** (the owner: a follower picked on the strip "highlights ... and it says equipment/strategy and then that way it doesn't automatically pull up that rollout card"; then "the card tile should grey out and become the button with the text").
 - **What it does:** on a tablet or a desktop, **the first tap on a squad card picks the follower** (orders go to it) and **the card turns grey and becomes a button reading EQUIPMENT / STRATEGY ▲**; **a second tap opens the member's card** (the roll-out with its equipment, energy and attack). A press anywhere else turns the card back, the follower still picked. The clone's card too. A phone is unchanged.
