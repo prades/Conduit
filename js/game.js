@@ -123,7 +123,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "gooring") { _drawGooRing(ctx, p, sx, sy); ctx.restore(); return; }
     // the THUNDERHEAD's everyday shot (build 2026-11-12o): the shot and its string of lightning that connects and breaks off
     if (p.kind === "bolt") { _drawThunderBolt(ctx, p, sx, sy); ctx.restore(); return; }
-    // the ROTSHARD's everyday shot (build 2026-11-12v): a soul blob of its own crystal green, crackling
+    // the ROTSHARD's everyday shot (build 2026-11-12w): a soul blob of its own crystal green, crackling
     if (p.kind === "soulblob") { _drawSoulBlob(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }

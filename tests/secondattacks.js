@@ -37,10 +37,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var card = function(f){ return $$('#squadBar .sb-slot').filter(function(s){ return s._unit === f; })[0]; };
     var meter = function(f){ var b = card(f).querySelector('.sb-ult'); return { hidden: b.hidden, full: b.classList.contains('full'), l: b.querySelector('.sb-ultl').textContent, n: b.querySelector('.sb-ultn').textContent, w: b.querySelector('u').style.width, h: Math.round(b.getBoundingClientRect().height) }; };
     eg.ultimateCharge = 40; so.ultimateCharge = 40; fh.ultimateCharge = 100; partyBarRender(true); await wait(40);
-    out.egg = meter(eg); out.half = meter(so); out.full = meter(fh); out.cardH = Math.round(card(fh).getBoundingClientRect().height);
+    var nost = document.createElement('style'); nost.textContent = '#squadBar .sb-ultball { transition: none !important; animation: none !important }'; document.head.appendChild(nost);   // (the virtual clock does not run a transition out: measured where it ends)
+    var ball = function(f){ var b = card(f).querySelector('.sb-ultball'), r = b.getBoundingClientRect(), c = card(f).getBoundingClientRect(); return { behind: getComputedStyle(b).zIndex, up: b.classList.contains('up'), icon: !!b.querySelector('svg'), title: b.title, w: Math.round(r.width), pokes: Math.round(c.top - r.top), op: getComputedStyle(b).opacity, pe: getComputedStyle(b).pointerEvents }; };   // (THE ULTIMATE'S BALL, build 2026-11-12v)
+    await wait(700); out.egg = meter(eg); out.half = meter(so); out.full = meter(fh); out.cardH = Math.round(card(fh).getBoundingClientRect().height); out.ballEgg = ball(eg); out.ballHalf = ball(so); out.ballFull = ball(fh); out.icon = card(fh).querySelector('.sb-ultball')._form === 'hammerslug' && card(fh).querySelector('.sb-ultball svg').childElementCount === 2;
     // a tap on the full meter fires its Ultimate (its execute stubbed: the fire path is what is checked); a tap on one not full is a tap on the card (it selects)
     var u = followerUltimate(fh), keep = u.execute, ran = 0; u.execute = function(a){ ran++; a.ultimateCharge = 0; };
-    click(card(fh).querySelector('.sb-ult')); await wait(40); out.fired = { ran: ran, charge: fh.ultimateCharge, after: meter(fh) }; u.execute = keep;
+    click(card(fh).querySelector('.sb-ultball')); await wait(40); out.fired = { ran: ran, charge: fh.ultimateCharge, after: meter(fh) }; u.execute = keep; await wait(400); out.fired.ball = ball(fh);
     selectedUnits.clear(); click(card(eg).querySelector('.sb-ult')); await wait(40); out.notFull = { sel: selectedUnits.has(eg), charge: eg.ultimateCharge };
     // THE STATIC ORB ON CAPACITOR DISCHARGE: its chip shows the charges; with an enemy close a tap releases them
     followerAltSet(so, 'capacitor_discharge'); so._cap = 3; partyBarRender(true); await wait(40);
@@ -217,13 +219,18 @@ function measure(w, h) {
     else {
         await check('the probe ran (a tablet)', () => { ok(T, 'the probe produced nothing'); same(T.err, undefined, 'the probe threw'); });
         if (T && !T.err) {
-            await check('THE SQUAD CARD\'S ULTIMATE METER: ULT and the charge in it, in its element\'s colour; full, gold, taller, ULTIMATE ▲ and TAP; none for a follower before it evolves (it has no Ultimate since build 2026-11-09b)', () => {
-                same([T.egg.hidden, T.egg.h].join(), 'true,0', 'a meter for a follower before it evolves');   // (this probe expected one until 2026-11-10: in this container it had been skipped, finding no browser, so it never met the rule)
-                same(JSON.stringify(T.half), JSON.stringify({ hidden: false, full: false, l: 'ULT', n: '40%', w: '40%', h: 8 }), 'not full');
-                same(JSON.stringify(T.full), JSON.stringify({ hidden: false, full: true, l: 'ULTIMATE ▲', n: 'TAP', w: '100%', h: 11 }), 'full'); same(T.cardH, 58, 'the card\'s height (a card of the strip along the bottom since build 2026-11-12g: --sb-th)');
+            await check('THE ULTIMATE\'S TAB (build 2026-11-12v; the owner: "little balls or tabs ... their own icon ... pop up dynamically whenever they have the ultimate", then "behind the tile cards and ... elongated shapes that house the icons"): on the strip the thin meter gives way to it; it is down while the charge fills, and full it is up, out of the card\'s top edge from behind it, with its Ultimate\'s own symbol; none for a follower before it evolves', () => {
+                same([T.egg.hidden, T.egg.h].join(), 'true,0', 'a meter for a follower before it evolves');
+                same([T.half.h, T.full.h].join(), '0,0', 'the thin meter on the strip (the ball is the Ultimate there)'); same(T.half.n + ',' + T.full.n, '40%,TAP', 'the meter\'s words (the Command Center\'s squad box keeps it)');
+                same([T.ballEgg.up, T.ballEgg.op, T.ballEgg.pe].join(), 'false,0,none', 'the ball before it evolves'); same([T.ballHalf.up, T.ballHalf.op, T.ballHalf.pe].join(), 'false,0,none', 'the ball at 40%');
+                same([T.ballFull.up, T.ballFull.op, T.ballFull.pe, T.ballFull.w, T.ballFull.icon].join(), 'true,1,auto,58,true', 'the tab, full'); ok(T.ballFull.pokes >= 30, 'it does not rise out of the card: ' + T.ballFull.pokes); same(T.ballFull.behind, '-2', 'behind the card (the owner: "behind the tile cards")');
+                same(T.icon, true, 'its symbol is its Ultimate\'s (SHOCKWAVE SLAM)'); same(T.ballFull.title, 'ULTIMATE · SHOCKWAVE SLAM · TAP TO FIRE', 'its title'); same(T.cardH, 58, 'the card\'s height (a card of the strip along the bottom since build 2026-11-12g: --sb-th)');
+                const P = rd('js/party.js'), E = rd('js/elements.js'), forms = [...E.slice(E.indexOf('const FORM_ULTIMATES')).split('\n};')[0].matchAll(/^    ([a-z0-9_]+):/gm)].map(m => m[1]);
+                const missing = forms.filter(k => !new RegExp('^    ' + k + ':\\s+\'', 'm').test(P.slice(P.indexOf('const ULT_ICONS'))));
+                ok(forms.length >= 22, 'the forms read: ' + forms.length); same(missing.join(), '', 'an Ultimate with no symbol of its own');
             });
-            await check('a tap on the full meter fires the Ultimate and the meter empties; a tap on one not full is a tap on the card (it picks the follower)', () => {
-                same(T.fired.ran, 1, 'its Ultimate ran'); same(T.fired.charge, 0, 'its charge'); same(T.fired.after.full, false, 'the meter after'); same(T.notFull.sel, true, 'the card was not picked'); same(T.notFull.charge, 40, 'the charge');
+            await check('a tap on the tab fires the Ultimate and the tab sinks back behind the card; a tap on a card not full is a tap on the card (it picks the follower)', () => {
+                same(T.fired.ran, 1, 'its Ultimate ran'); same(T.fired.charge, 0, 'its charge'); same(T.fired.after.full, false, 'the meter after'); same([T.fired.ball.up, T.fired.ball.op, T.fired.ball.pe].join(), 'false,0,none', 'the ball after'); same(T.notFull.sel, true, 'the card was not picked'); same(T.notFull.charge, 40, 'the charge');
             });
             await check('THE STATIC ORB\'S CHIP on its squad card: ⚡ and the charges; a tap with an enemy close releases them', () => {
                 same(T.chip.text, '⚡ 3/4', 'its chip'); same(T.chip.shown, true, 'the chip shown'); same(T.chip.title, 'CAPACITOR DISCHARGE · TAP TO RELEASE', 'its title');
