@@ -47,6 +47,50 @@ function hazardShotNear(x, y) {
     for (const s of hazardSolids()) if (!s.open && Math.max(s.bb[0] - x, 0, x - s.bb[2]) <= 0.35 && Math.max(s.bb[1] - y, 0, y - s.bb[3]) <= 0.35) return hazardTrigger(s, 0);
     return false;
 }
+// ── A CONTAINER AS A TARGET (the owner, 2026-11-13, at the Nest's cracked rock: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a
+// card"; build 2026-11-13r) ──
+// A tap on one locks it as a tap on a creature does (js/targeting.js targetPress): THE CORE's slab at the bottom right shows it and its FIRE fires at it (a tap on it again fires too), and the enemy card
+// at the left shows it, its ATTACK sending the squad's MAGES, who shoot from out of its blast (js/mixtool.js mixToolAttack; a brawler or a technician would walk up to it and be caught: they stay back; the
+// agent's choice, provisional). It is no creature: a stand-in where the container is (it follows FLUX MOVE), dead while the container is away, and whatever hits it sets it off (js/helpers.js applyDamage).
+// A shot at it stops on it anyway (it is cover) and sets it off, as before.
+const _hzTargets = new Map();
+function hazardTarget(s) {
+    if (!hazardKind(s)) return null;
+    const t0 = _hzTargets.get(s.id); if (t0 && t0.solid === s) return t0;
+    const ex = s.kind === "hazard_explosive", t = {
+        isHazardTarget: true, solid: s, team: "hazard", speciesName: null, className: s.kind, element: null, level: null, health: 1, maxHealth: 1, dirX: 0, dirY: 1,
+        power: ex ? HAZARD.blastDmg : HAZARD.poolDmg, color: ex ? "#ff8a3a" : "#8cff3a", dimensions: { width: 18, height: 18 },
+        get x() { const b = this.solid.bb; return (b[0] + b[2]) / 2; }, get y() { const b = this.solid.bb; return (b[1] + b[3]) / 2; },
+        get visualX() { return this.x; }, get visualY() { return this.y; }, get dead() { return !!this.solid.open; },
+    };
+    _hzTargets.set(s.id, t); return t;
+}
+function hazardTargetName(t) { return t && t.solid && t.solid.kind === "hazard_corrosive" ? "ACID FLASK" : "EXPLOSIVE FLASK"; }
+// the container under a press on the screen (found as js/input.js findEnemyAtScreen finds a creature: near its middle, a little over the floor), or null
+function hazardTargetAtScreen(ex, ey) {
+    if (typeof player === "undefined" || !player || typeof canvas === "undefined" || !canvas) return null;
+    let best = null, bd = typeof PICK_RADIUS !== "undefined" ? PICK_RADIUS : 44;
+    for (const s of hazardSolids()) {
+        if (s.open) continue; const [x, y] = hazardCentre(s);
+        const px = (x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, py = (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0);
+        const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - 30) : [px, py - 30], d = Math.hypot(ex - q[0], ey - q[1]);   // (the battle view's zoom: js/battleview.js)
+        if (d < bd) { bd = d; best = s; }
+    }
+    return best ? hazardTarget(best) : null;
+}
+// whatever hits the stand-in sets the container off (js/helpers.js applyDamage)
+function hazardTargetHit(t) { return !!(t && t.isHazardTarget && hazardTrigger(t.solid, 0)); }
+// its picture for the slab and the card: the container's own sprite (img/props/hazard.png), or null while that sheet is on its way
+function hazardTargetPicture(t) {
+    const img = typeof _psImg === "function" ? _psImg("hazard") : null, A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS.hazard : null, c = A && t && t.solid ? A.cells[t.solid.kind] : null;
+    return img && c ? { img, sx: c.x, sy: c.y, sw: c.w, sh: c.h } : null;
+}
+// what the INFO card says of it
+function hazardTargetLines(t) {
+    const ex = !t || !t.solid || t.solid.kind !== "hazard_corrosive";
+    return [ex ? "A SHOT SETS IT OFF · ITS BLAST HURTS EVERYONE WITHIN " + HAZARD.blastR + " TILES, YOURS TOO" : "A SHOT SETS IT OFF · IT BURSTS INTO ACID FOR " + Math.round(HAZARD.poolFrames / 60) + " S",
+            ex ? "IT BREAKS CRACKED ROCK NEAR IT, AND SETS OFF OTHER FLASKS" : "THE ACID EATS RESIN AWAY", "IT COMES BACK AFTER A MINUTE"];
+}
 // whether a body (a creature, a follower, a clone, the player) stands on its tile
 function _hzBodyOn(s) {
     const on = (x, y) => Math.max(s.bb[0] - x, 0, x - s.bb[2]) < 0.4 && Math.max(s.bb[1] - y, 0, y - s.bb[3]) < 0.4;

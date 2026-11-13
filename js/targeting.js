@@ -29,8 +29,8 @@ function targetOn() { return typeof facilityPlay !== "undefined" && facilityPlay
 function targetCurrent() { return typeof playerLockTarget !== "undefined" && targetLive(playerLockTarget) ? playerLockTarget : null; }
 function _tgDist(a) { return Math.hypot(a.x - player.x, a.y - player.y); }
 function _tgSees(a) { return typeof facilitySeesFrom === "function" ? facilitySeesFrom(player.visualX, player.visualY, a.x, a.y) : true; }   // (sight, which sees over low objects: js/facilityplay.js facilitySeesFrom)
-function targetName(a) { return typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || "ENEMY").toUpperCase(); }
-function _tgColour(a) { const el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null; return el ? el.color : "#ff8a6a"; }
+function targetName(a) { if (a && a.isHazardTarget && typeof hazardTargetName === "function") return hazardTargetName(a); return typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || "ENEMY").toUpperCase(); }   // (a flask locked as a target: js/hazards.js)
+function _tgColour(a) { if (a && a.isHazardTarget) return a.color; const el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null; return el ? el.color : "#ff8a6a"; }
 
 // the nearest creature in range that can be seen
 function targetNearest() {
@@ -89,6 +89,13 @@ function targetPress(ex, ey) {
     // a creature other than the locked one: lock it instead (the locked one is the gun's: a click fires, holding keeps firing)
     const foe = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(ex, ey) : null;
     if (foe && foe !== targetCurrent()) { targetSet(foe, true); _tgBtnDown = { kind: "switch", x: ex, y: ey }; _targetPressed = true; return true; }
+    // A FLASK (the owner, build 2026-11-13r: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card"): locked as a creature is, its
+    // stand-in (js/hazards.js hazardTarget) on THE CORE's slab and the enemy card; a tap on the locked one fires at it, as on a locked creature
+    const hz = !foe && typeof hazardTargetAtScreen === "function" ? hazardTargetAtScreen(ex, ey) : null;
+    if (hz) {
+        if (hz !== targetCurrent()) { targetSet(hz, true); _tgBtnDown = { kind: "switch", x: ex, y: ey }; _targetPressed = true; return true; }
+        if (targetFireHold()) { _gunPressed = true; _targetPressed = false; } return true;
+    }
     return false;
 }
 // the FIRE button pressed (the dial's, or THE CORE's slab: js/corehud.js): a click is a shot, holding keeps firing at the locked creature until js/gunfire.js gunRelease. False with none locked.
@@ -107,6 +114,7 @@ function targetRelease(ex, ey) {
 // ── the creature's picture ──
 // Drawn once per kind with the game's own creature drawing (js/bugs3d.js) into a small canvas, fitted to the box whatever its size.
 function targetPortrait(a) {
+    if (a && a.isHazardTarget) return _tgHazardPic(a, 96, false);   // (a flask: its own sprite, js/hazards.js)
     if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
     let c = null;
     try {
@@ -124,6 +132,22 @@ function targetPortrait(a) {
     return (_tgPortraits[key] = c);
 }
 
+// A FLASK'S PICTURE (build 2026-11-13r): the container's own sprite (js/hazards.js hazardTargetPicture), fitted to a square of `size`, on the portrait's ground (`bare`: on a clear ground, the card's full
+// art); kept once the sheet has arrived, null until then (so the card and the slab ask again)
+const _tgHazardPics = {};
+function _tgHazardPic(a, size, bare) {
+    const key = a.solid.kind + "|" + size + "|" + (bare ? 1 : 0); if (_tgHazardPics[key]) return _tgHazardPics[key];
+    const P = typeof hazardTargetPicture === "function" ? hazardTargetPicture(a) : null; if (!P) return null;
+    let c = null;
+    try {
+        c = document.createElement("canvas"); c.width = c.height = size; const g = c.getContext("2d"), m = size / 2;
+        if (!bare) { const bg = g.createRadialGradient(m, m, 4, m, m, size * 0.65); bg.addColorStop(0, "rgba(86,104,160,0.95)"); bg.addColorStop(1, "rgba(14,20,44,0.95)"); g.fillStyle = bg; g.fillRect(0, 0, size, size);
+            const halo = g.createRadialGradient(m, m * 1.1, 2, m, m * 1.1, size * 0.46); halo.addColorStop(0, a.color); halo.addColorStop(1, "rgba(0,0,0,0)"); g.globalAlpha = 0.32; g.fillStyle = halo; g.fillRect(0, 0, size, size); g.globalAlpha = 1; }
+        const sc = size * (bare ? 0.94 : 0.8) / Math.max(P.sw, P.sh), w = P.sw * sc, h = P.sh * sc; g.imageSmoothingEnabled = true; g.drawImage(P.img, P.sx, P.sy, P.sw, P.sh, m - w / 2, m - h / 2, w, h);
+    } catch (e) { c = null; }
+    if (c) _tgHazardPics[key] = c;
+    return c;
+}
 // the same picture as a data URL, for the enemy card in the page (js/mixtool.js)
 const _tgPortraitURLs = {};
 function targetPortraitURL(a) {
@@ -135,6 +159,7 @@ function targetPortraitURL(a) {
 // (it is drawn in shapes, so it stays sharp), centred in a square, 94% of it; "" where it cannot be drawn (the card then takes the small portrait). Made once per kind.
 const _tgBigURLs = {}, TG_BIG = 300;
 function targetBigPortraitURL(a) {
+    if (a && a.isHazardTarget) { const k = a.solid.kind; if (_tgBigURLs[k]) return _tgBigURLs[k]; const c = _tgHazardPic(a, TG_BIG, true); return c ? (_tgBigURLs[k] = c.toDataURL("image/png")) : ""; }   // (a flask: its own sprite, large: js/hazards.js)
     if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
     let url = ""; const dx = a.dirX, dy = a.dirY; a.dirX = 0.35; a.dirY = 1;   // (facing the camera's left, as the portrait; put back below)
     try {
@@ -302,6 +327,7 @@ const TARGET_NOTES = {
     cls: { scout: "Fast and fragile.", worker: "Middling at everything.", striker: "Hits hard, tougher than a scout.", tank: "Slow, with a great deal of health.", boss: "Very dangerous." },
 };
 function targetInfoLines(a) {
+    if (a && a.isHazardTarget && typeof hazardTargetLines === "function") return hazardTargetLines(a);   // (a flask: what it does, js/hazards.js)
     const mx = Math.ceil(a.maxHealth || a.health || 0), hp = Math.ceil(Math.max(0, a.health)), pw = Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : "?", sp = Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : "?";
     return [
         "LEVEL " + (Number.isFinite(a.level) ? a.level : "?") + "  ·  " + String(a.className || "").toUpperCase() + "  ·  " + (a.element ? String(a.element).toUpperCase() : "NO ELEMENT"),
@@ -312,7 +338,7 @@ function targetInfoLines(a) {
 // a creature with no plain bite (THE ANT QUEEN: her MANDIBLE CRUSH is her bite, js/bosses.js) shows her crush instead
 function _tgCrush(a) { const E = a && a.noBite && a.bossId && typeof bossEnc === "function" ? bossEnc(a.bossId) : null; return E && E.moves && E.moves.crush ? E.moves.crush : null; }
 function _tgBiteK(a) { const c = _tgCrush(a); return c ? c.power : 1; }
-function _tgBiteLabel(a) { return _tgCrush(a) ? "CRUSH" : "BITE"; }
+function _tgBiteLabel(a) { if (a && a.isHazardTarget) return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; return _tgCrush(a) ? "CRUSH" : "BITE"; }   // (a flask: its blast, or its acid's bite)
 // what the enemy card shows (js/mixtool.js): its name (and the shorter title for the card) and colour, level and class, health and the two numbers that matter
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;

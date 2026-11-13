@@ -155,6 +155,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 const BLIND_MISS = 0.5;
 function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
+    if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
     // A recruit walking to the Crystal takes NOTHING, from anyone or anything.
     //
     // isHostileTarget above stops everything that deliberately picks a target,
@@ -306,6 +307,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
 
 function applyElementalDamage(target, amount, source, element, hit) {
     if (!target || target.dead) return;
+    if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
     // A hit that says what it is (js/damage.js) gets a word for each of its parts there; one that does not keeps the old WEAK! / RESIST for the element.
     if (!hit) {
         const mult = getElementMultiplier(element, target.element);

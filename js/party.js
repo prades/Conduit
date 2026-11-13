@@ -217,9 +217,13 @@ function partyPlacePosted() {
 function partyPickStop(a) {
     let cells = partyRoomCells(a.post); if (!cells.length) return null;
     if (partyPlaceDef(a.post) && typeof _pComp === "function") { const k = _pComp(a.x, a.y), mine = cells.filter(c => _pComp(c[0], c[1]) === k); if (mine.length) cells = mine; }   // (a place of several rooms: the floor it can walk to, not a shelf it cannot climb to)
-    const near = cells.filter(c => { const d = Math.hypot(c[0] - a.x, c[1] - a.y); return d >= PARTY.hop[0] && d <= PARTY.hop[1]; }), pool = near.length ? near : cells, c = pool[Math.floor(Math.random() * pool.length)];
+    const near = cells.filter(c => { const d = Math.hypot(c[0] - a.x, c[1] - a.y); return d >= PARTY.hop[0] && d <= PARTY.hop[1]; });
+    // (a stop whose straight walk stays in the room: since build 2026-11-13e The Lounge is open onto the hallway, and a walk across the hallway's corner went through it; build 2026-11-13r)
+    const within = near.filter(c => _partyLineIn(a, c)), pool = within.length ? within : near.length ? near : cells, c = pool[Math.floor(Math.random() * pool.length)];
     return { x: c[0], y: c[1], wait: 0, age: 0 };
 }
+// is the straight walk from where a posted follower stands to `c` inside its room (or its place) all the way
+function _partyLineIn(a, c) { const n = Math.max(1, Math.ceil(Math.hypot(c[0] - a.x, c[1] - a.y) / 0.4)); for (let k = 1; k < n; k++) { const t = k / n; if (partyPlaceOf(partyRoomAt(a.x + (c[0] - a.x) * t, a.y + (c[1] - a.y) * t)) !== a.post) return false; } return true; }
 function partyPatrol(a) {
     if (!a.post) return;
     const here = partyPlaceOf(partyRoomAt(a.x, a.y));
@@ -236,7 +240,8 @@ function partyPatrol(a) {
     if (!p) return;
     const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy);
     if (d < 0.45 || ++p.age > 900) { p.wait = PARTY.rest[0] + Math.floor(Math.random() * (PARTY.rest[1] - PARTY.rest[0])); return; }
-    _walkStep(a, dx, dy, d, PARTY.patrol);
+    const x0 = a.x, y0 = a.y; _walkStep(a, dx, dy, d, PARTY.patrol);
+    if (partyPlaceOf(partyRoomAt(a.x, a.y)) !== a.post) { a.x = x0; a.y = y0; a._patrol = null; }   // a step that would take it out of its room (into The Lounge, open onto the hallway since build 2026-11-13e) is not taken: another stop
 }
 
 // ── THE SQUAD BAR: the three, as small roster cards over the dock, where the ammunition chip was ──

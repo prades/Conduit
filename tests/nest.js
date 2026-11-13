@@ -176,6 +176,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.boulder0, false, 'the boulder lets you by'); same(r.move, true, 'FLUX MOVE cannot put the boulder in its hollow'); same(r.boulder1, true, 'the way to the old burrow still shut'); same(r.back, false, 'the boulder may be moved back across the way');
         same(r.water, true, 'the stream is not water'); same(r.saved, 'nest_cracked,nest_resin_seal', 'the ways opened, saved');
     });
+    check('THE CRACKED ROCK (the owner, build 2026-11-13r: "3D rock, blast or drill"): the cracked wall is the cave\'s modelled rubble now (a rubble choke of it, its sign naming both ways; no flat board drawn); a fire technician drilling it through opens the way as a blast does; broken by a blast it counts as open (no ring), and no blast gives a drilled one way again', () => {
+        const r = J(`(function(){ const way = (a, b) => { const p = facilityPath(a[0], a[1], b[0], b[1]); return !!(p && p.length); }, o = {}, X = () => _fp.F.solids.find(q => q.id === 'hazard_x3');
+            const reset = () => { hazardsReset(); nestWaysReset(); techRubbleApply({}); for (const id of ['nest_cracked', 'hazard_x3']) facilitySolidSet(id, false); };   // (the check before broke the rock and set the flask off)
+            reset(); let R = _techRubble('rubble_nest_cracked');
+            o.rubble = !!R && R.solid === 'nest_cracked'; o.board = nestWaysItems(_fp.F).some(i => i.solid === 'nest_cracked'); o.drawn = _fp.items.some(i => i.fp === 'wdecor' && i.kind === 'rubble' && i.rubble === 'rubble_nest_cracked');
+            o.tag = R.tag; o.say = /BLAST/.test(R.say || '') && /PRESS AND HOLD/.test(R.say || ''); o.ring = !!techRingFor(R); o.shut = way([7, 184], [10, 202]);
+            techRubbleApply({ rubble_nest_cracked: TECH_AB.drill.hits }); o.drilled = way([7, 184], [10, 202]); o.openD = techRubbleOpen(R); const [fx, fy] = hazardCentre(X()); o.again = nestWaysBlast(fx, fy, HAZARD.blastR);
+            reset(); R = _techRubble('rubble_nest_cracked'); hazardTrigger(X(), 0); for (let i = 0; i < 3; i++) { frame++; hazardsTick(); }
+            o.blasted = way([7, 184], [10, 202]); o.openB = techRubbleOpen(R); o.ringB = techRingFor(R); o.saved = facilitySaveCollect().nestWays.join();
+            reset(); return o; })()`);
+        same(r.rubble, true, 'not a rubble choke of the cracked wall'); same(r.board, false, 'the flat board is still drawn'); same(r.drawn, true, 'the rubble is not drawn there');
+        same(r.tag, 'CRACKED ROCK · SHOOT THE FLASK', 'its sign'); same(r.say, true, 'what it says near it names the blast and the drill'); same(r.ring, true, 'no THERMITE DRILL ring'); same(r.shut, false, 'the way is open before it is broken');
+        same(r.drilled, true, 'drilled through, the way still shut'); same(r.openD, true, 'drilled, not open'); same(r.again, 0, 'a blast gave a drilled one way again');
+        same(r.blasted, true, 'the blast did not open the way'); same(r.openB, true, 'broken by a blast, the rubble is not open'); same(r.ringB, null, 'a ring on the broken rock'); same(r.saved, 'nest_cracked', 'the blast is not saved');
+    });
     check('THE ANT QUEEN keeps to the Deep Brood (since build 2026-11-12d); coming down into the Nest arms her there, and a killed one is not armed again by walking between the Nest\'s rooms (a tunnel, the Deep Brood) and back', () => {
         const r = J(`(function(){ const at = (x, y) => { __put(x, y); _bossTestEntry(); }; bossReset(); __out(); _bossTestEntry(); at(30, 178); const q0 = bossUnit('nest'), armedIn = q0 ? partyRoomAt(q0.x, q0.y) : null; if (q0) q0.dead = true; actors = actors.filter(a => !a.dead);
             at(18, 177); const tunnel = partyRoomAt(player.x, player.y); at(10, 202); const deep = partyRoomAt(player.x, player.y); at(30, 178); return { armedIn, tunnel, deep, rearmed: !!bossUnit('nest'), leash: BOSS_ENCOUNTERS.nest.room }; })()`);

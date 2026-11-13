@@ -145,6 +145,7 @@ function facilitySaveApply(d) {
     for (const f of followers) { f.x = player.x + (Math.random() - 0.5) * 1.2; f.y = player.y + (Math.random() - 0.5) * 1.2; f.returningToCrystal = false; }
     { const pc = typeof mutatorClone === "function" ? mutatorClone() : null; if (pc) { pc.x = player.x + (Math.random() - 0.5) * 1.2; pc.y = player.y + (Math.random() - 0.5) * 1.2; } }   // the Mutator's clone is one of the squad (js/party.js partyClone): it is with you too, not at the Crystal
     if (typeof partyPlacePosted === "function") partyPlacePosted();   // the followers that held rooms are in them again (js/party.js)
+    if (typeof techAbilityLoaded === "function") techAbilityLoaded();   // the technicians in the squad were in it: no first wait again (js/techabilities.js)
     return true;
 }
 // ── THE FOLLOWERS' RECORD: what the save keeps of each (and a dead one waiting to come back), and a follower made from it again ──
