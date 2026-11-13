@@ -234,17 +234,8 @@ class Predator {
         if (this.smokeDebuff  > 0) this.smokeDebuff--;
 
         // ── BLIND ──
-        // It cannot see: no target, no attack, no shot — it staggers about at
-        // half pace until it clears.
-        if (this.blinded > 0) {
-            this.blinded--;
-            if (this.state === "attack") this.moveSpeed = (PREDATOR_TYPES[this.predatorType] || this.def || { moveSpeed: 0.02 }).moveSpeed || 0.02;
-            this.currentTarget = null; this.state = "wander";
-            if (!this._blindDir || frame % 30 === 0) { const a = Math.random() * Math.PI * 2; this._blindDir = { x: Math.cos(a), y: Math.sin(a) }; }
-            this.x += this._blindDir.x * this.moveSpeed * 0.5;
-            this.y += this._blindDir.y * this.moveSpeed * 0.5;
-            return;
-        }
+        // It still sees, chases and attacks; each hit it deals misses with the chance BLIND_MISS (js/helpers.js applyDamage). The timer only runs down (the grey haze over its head is drawn while it lasts).
+        if (this.blinded > 0) this.blinded--;
 
         // ── THE PLAYER, UP CLOSE ──
         // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,

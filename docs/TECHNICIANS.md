@@ -8,7 +8,7 @@ A **technician** (role `camper`, shown as TECHNICIAN) of an element has that ele
 |---|---|---|---|
 | Electric | Kinetic Launcher | ⚡ LAUNCH | a follower, then an enemy |
 | Core | Photonic Shield | ◈ SHIELD | an enemy (or the enemy card) |
-| Fire | Thermite Drill | ✹ DRILL | an enemy (or the enemy card); rubble from its own long-press ring |
+| Fire | Thermite Drill | ✹ DRILL | rubble from its own long-press ring; **not enemies** (since build `2026-11-13k`, the owner) |
 | Ice | Frost Patch | ❄ FROST | a spot of floor |
 | Toxic | Blight Spider | ☣ POOL | a spot of floor |
 | Flux | FLUX MOVE (build `2026-11-06f`; Telegrab before it) | ✦ MOVE | an object of the arena, then where it goes (⟳ ROTATE, ✓ PLACE) |

@@ -52,7 +52,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // THE SQUAD'S SLOTS on the bar: each member's mix, an open slot none
     out.bar = $$('#squadBar .sb-slot').map(function(el){ return { art: art(el), want: el._unit ? want(el._unit) : '', open: el.classList.contains('empty'), tex: tex(el) }; });
     // THE CARD ON THE FLY (a tablet's corners)
-    if (hudCorners()) { $$('#squadBar .sb-slot')[0].dispatchEvent(new MouseEvent('click', { bubbles: true })); partyTick(); partyBarRender(true); await wait(60); var fc = $('#squadFly .sf-card'); out.fly = { art: art(fc), want: _sfEls && _sfEls.subject ? want(_sfEls.subject) : '', tex: tex(fc) }; }
+    if (hudCorners()) { $$('#squadBar .sb-slot')[0].dispatchEvent(new MouseEvent('click', { bubbles: true })); $$('#squadBar .sb-slot')[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));   /* (the first tap picks, the second opens: build 2026-11-13j) */ partyTick(); partyBarRender(true); await wait(60); var fc = $('#squadFly .sf-card'); out.fly = { art: art(fc), want: _sfEls && _sfEls.subject ? want(_sfEls.subject) : '', tex: tex(fc) }; }
     selectedUnits.clear(); partyTick();
     // THE ROSTER: the strip (or a phone's grid), the card in view, the squad box; a re-roll to another element swaps the backdrop
     ccOpen('roster'); await wait(250); var car = ccCarousel(); if (car) { _ccFocus = followers[2]; } ccRender(); await wait(60);

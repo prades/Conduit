@@ -50,6 +50,16 @@ function mixToolComePool() {
     const all = getCommandPool(true).filter(a => a && !a.dead);
     return all.filter(a => !a.post).concat(all.filter(a => a.post).sort((a, b) => (b.postAt || 0) - (a.postAt || 0)));
 }
+// COME WITH NOTHING TO DO (build 2026-11-13k; the owner: "Whenever all my followers or my squad is full, come should be grayed out in the bottom left"): COME calls the followers holding rooms back into the
+// squad. With nobody holding a room, or the squad full (none could join), it greys (the command card's and the attack card's). A tap on it with nobody holding a room says so and orders nothing; with the
+// squad full it is COME as before, which says who keeps holding (SQUAD FULL · 3 OF 3 · ... KEEPS HOLDING, js/party.js). "" while it has someone to call.
+function mixToolComeIdle() {
+    if (!(typeof partyOn === "function" && partyOn()) || typeof partyPosted !== "function") return "";
+    const clone = typeof partyClone === "function" ? partyClone() : null, cloneHeld = !!(clone && !clone.dead && clone.stance === "hold");   // (the Mutator's clone told to HOLD stays where it is, with no room: COME calls it)
+    if (!partyPosted().length) return cloneHeld ? "" : "EVERYONE IS WITH YOU";
+    if (typeof partyFull === "function" && partyFull() && !cloneHeld) return "SQUAD FULL \u00b7 " + PARTY.max + " OF " + PARTY.max;
+    return "";
+}
 // Who the orders go to, in words.
 function mixToolTarget(pool) {
     const n = (pool || mixToolPool()).length;
@@ -135,7 +145,7 @@ function mixToolFoeHTML(foe, pool, fresh) {
             + '<span class="mt-foe-acts"><button class="mt-fa roster" data-act="roster" aria-label="Roster and command center"><b class="' + ord("roster") + '">ROSTER</b><i class="mt-fa-c">' + mixToolRosterN() + '</i></button>'   // (ROSTER a tab of the card, its first: build 2026-11-13f, the owner: "the roster button should be a part of the menu")
             + '<button class="mt-fa info" data-act="foeinfo" aria-label="Info on ' + _mtEsc(c.name) + '"><b><i>i</i>INFO</b></button>'   // (top right, then RUN, COME, and ALL at the foot: the owner, build 2026-11-13e)
             + '<button class="mt-fa run' + (run ? ' going' : '') + '" data-act="retreat" aria-label="Run: the squad falls back"><b class="' + ord("run") + '">' + (run ? 'RUNNING' : 'RUN') + '</b></button>'
-            + '<button class="mt-fa come" data-order="follow" aria-label="Come: the squad, and anyone holding a room, comes back to you"><b class="' + ord("come") + '">COME</b></button>'   // (the orders' COME, hidden under the card: the way back from HOLD, build 2026-11-11r)
+            + '<button class="mt-fa come' + (mixToolComeIdle() ? ' idle" aria-disabled="true' : '') + '" data-order="follow" aria-label="Come: the squad, and anyone holding a room, comes back to you"><b class="' + ord("come") + '">COME</b></button>'   // (the orders' COME, hidden under the card: the way back from HOLD, build 2026-11-11r)
             + '<button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b class="' + ord("all") + '">ALL</b></button></span></div>';
     }
     return '<button class="mt-foe' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" data-act="attack" style="--c:' + c.col + '" aria-label="Attack ' + _mtEsc(c.name) + '">'
@@ -168,7 +178,7 @@ function mixToolFoeLive(slot, foe) {
 let _mtFoeSig = "", _mtFoeId = 0, _mtFoeShown = null;   // (the creature on the card: a tap sends them at THAT one, whoever the card is about by the next frame)
 function mixToolFoeRender(root, slot, force) {
     const foe = mixToolFoe(), id = foe ? targetIndexId(foe) : 0, pool = foe ? mixToolAttackPool() : [], f0 = typeof frame !== "undefined" ? frame : 0, corners = mixToolCorners();
-    const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolRosterN() : "", corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";   // (at the left: RUN while they run, ALL while it is lit)
+    const sig = id ? [id, pool.length, mixToolTarget(pool), mixToolOrdered(foe), corners, corners ? mixToolRosterN() + "|" + mixToolComeIdle() : "", corners ? mixToolPool().some(a => a.retreatUntil > f0) : "", corners && typeof selectedUnits !== "undefined" ? selectedUnits.size : ""].join("|") : "";   // (at the left: RUN while they run, ALL while it is lit)
     if (root.classList) root.classList.toggle("foe", !!foe);   // (at the left the card stands over the orders: game.html)
     if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("foe-up") !== !!foe) document.body.classList.toggle("foe-up", !!foe);   // (the squad strip makes room for it: game.html "THE BOTTOM ROW", build 2026-11-12g)
     if (!force && sig === _mtFoeSig) { mixToolFoeLive(slot, foe); return; }
@@ -183,7 +193,7 @@ const _MT_GEM = (c, s) => '<svg viewBox="0 0 20 20" width="' + (s || 18) + '" he
 function mixToolSignature() {
     const tot = typeof followers !== "undefined" ? followers.filter(f => f && !f.dead).length : 0;
     const f0 = typeof frame !== "undefined" ? frame : 0, pool = mixToolPool();
-    return [mixToolIsOpen(), squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolCorners() ? mixToolWho() + "|" + mixToolRosterN() : ""].join("|");
+    return [mixToolIsOpen(), squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolCorners() ? mixToolWho() + "|" + mixToolRosterN() + "|" + mixToolComeIdle() : ""].join("|");
 }
 // how many the roster shows (followers, then clones: js/commandcenter.js ccUnits), for the command card's ROSTER (build 2026-11-12l)
 function mixToolRosterN() { return typeof ccUnits === "function" ? ccUnits().length : 0; }
@@ -211,7 +221,7 @@ function mixToolHTML() {
             h = h.replace('<div class="mt-panel">', '<div class="mt-panel mt-cmd">');
             h += '<span class="mt-cmd-tabs"><button class="mt-fa all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b class="' + ord("all") + '">ALL</b></button>'
                 + '<button class="mt-fa hold" data-order="hold" aria-label="Hold: they stay and hold the room they are in"><b class="' + ord("hold") + '">HOLD</b></button>'
-                + '<button class="mt-fa come" data-order="follow" aria-label="Come: back to you, and anyone holding a room"><b class="' + ord("come") + '">COME</b></button></span>'
+                + '<button class="mt-fa come' + (mixToolComeIdle() ? ' idle" aria-disabled="true' : '') + '" data-order="follow" aria-label="Come: back to you, and anyone holding a room"><b class="' + ord("come") + '">COME</b></button></span>'
                 + '<button class="mt-cmd-roster" data-act="roster" aria-label="Roster and command center: pick your creatures by their cards and give them orders">'
                 + '<span class="mt-cmd-name"><i class="mt-cmd-emb ' + ord("roster") + '"></i><b>ROSTER</b><i class="mt-cmd-n">' + mixToolRosterN() + '</i></span>'
                 + '<span class="mt-to"><span>ORDERS TO</span><b>' + _mtEsc(mixToolWho()) + '</b></span></button>';
@@ -262,7 +272,7 @@ function mixToolClick(ev) {
     const atk = q("[data-act=attack]");
     if (atk && typeof techAimNeed === "function" && techAimNeed() === "enemy") { if (atk.blur) atk.blur(); if (_mtFoeShown && !_mtFoeShown.dead) techAimPickEnemy(_mtFoeShown); return; }   // (a technician's ability waiting for an enemy: the card's creature is the pick, js/techabilities.js)
     if (atk) { if (atk.blur) atk.blur(); mixToolAttack(_mtFoeShown && !_mtFoeShown.dead ? _mtFoeShown : null); return; }   // (blurred: a key pressed afterwards does not tap it again)
-    const ord = q("[data-order]"); if (ord) { mixToolOrder(ord.getAttribute("data-order")); return; }
+    const ord = q("[data-order]"); if (ord) { const why = ord.getAttribute("data-order") === "follow" ? mixToolComeIdle() : ""; if (why === "EVERYONE IS WITH YOU") { mixToolSay(why, "#8aa0c8"); return; } mixToolOrder(ord.getAttribute("data-order")); return; }   // (COME grey: it says why: build 2026-11-13k)
     const po = q("[data-posture]"); if (po) { mixToolPosture(po.getAttribute("data-posture")); return; }
     const fo = q("[data-focus]"); if (fo) { mixToolFocus(fo.getAttribute("data-focus")); return; }
     const sc = q("[data-scope]"); if (sc) { mixToolScope(sc.getAttribute("data-scope")); return; }

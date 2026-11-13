@@ -64,7 +64,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       selectedUnits.clear(); selectedUnits.add(followers[0]); partyTick(); }
     if (!mixToolWide()) { crystalMenuOpen = true; mixToolRender(true); frameNow(); await wait(60); out.open = snap(); crystalMenuOpen = false; mixToolRender(true); }
     // what lets a selection go without it: a tap on the lit card, the battle tool's WHO row (ALL)
-    selectedUnits.clear(); partyBarRender(true); var slot0 = $('#squadBar .sb-slot'); var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+    selectedUnits.clear(); partyBarRender(true); var slot0 = $('#squadBar .sb-slot'); var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); if (el.closest && el.closest('#squadBar') && document.querySelector('#squadBar .sb-slot.peek')) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };   // (a card on the strip: the first tap lights it, the second opens it since build 2026-11-13j; this taps through to the open card, as the checks below were written for: tests/party.js has the two taps' own check)
     click(slot0); await wait(30); out.lit = { size: selectedUnits.size, cls: slot0.classList.contains('sel') }; click(slot0); await wait(30); out.lit.after = [selectedUnits.size, slot0.classList.contains('sel')]; out.lit.flyAfter = !!document.querySelector('#squadFly.on');
     selectedUnits.add(followers[0]); selectedUnits.add(followers[2]); partyBarRender(true); out.lit.two = $$('#squadBar .sb-slot.sel').length; mixToolScope('all'); partyBarRender(true); out.lit.scope = [selectedUnits.size, $$('#squadBar .sb-slot.sel').length];
     // an empty slot or two (a follower holding a room): the bar keeps its height

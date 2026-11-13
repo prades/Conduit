@@ -200,15 +200,11 @@ function measure(w, h) {
         same(r.took.join(), 'true,true,ROCK,false', 'a rock picked up (one in the pack for each taken)'); same(JSON.stringify(r.saved), '{"rubble_arena_south":6}', 'the save'); same(r.takenSaved, true, 'the rock taken is not in the save');
         same(r.back.join(), 'true,' + r.left, 'a saved game: the hole and the rocks left'); same(r.fresh.join(), 'false,6', 'a fresh game: the rubble');
     });
-    check('from the chip, at an enemy it can see (or the enemy card): it closes in and drills it 3 times a second apart, each twice its normal hit (followerAttack\'s plain hit: a quarter of its attack), as fire; the cooldown starts at the first hit; one it cannot see is refused', () => {
-        const r = J(`(function(){ const fs = __fresh(['fire']), t = fs[0], o = {}; const e = __foe(t.x + 3, t.y); const ref = __foe(t.x + 3, t.y + 2);
-            applyElementalDamage(ref, (t.stats.attack || 5) * 0.25 * 2, t, 'fire', DMG_HIT_ALT); o.want = Math.round((5000 - ref.health) * 100) / 100; ref.dead = true;   // (the drill is the technician's alternate attack, Piercing: js/damage.js)
-            techChipTap(t); o.prompt = techAimPrompt(); techAimPickEnemy(e); o.aiming = techAimActive(); const hp = []; let last = e.health;
-            for (let i = 0; i < 600 && t._drill; i++) { __step(1); if (e.health !== last) { hp.push([frame, Math.round((last - e.health) * 100) / 100]); if (hp.length === 1) o.cool = techReadyIn(t); last = e.health; } }
-            o.hits = hp.length; o.each = hp.map(h => h[1]); o.gaps = hp.slice(1).map((h, i) => h[0] - hp[i][0]);
-            const fs2 = __fresh(['fire']), t2 = fs2[0], hid = __foe(partyRoomCells('lab_hallway')[0][0], partyRoomCells('lab_hallway')[0][1]); o.hidden = techAbilityUse(t2, { enemy: hid }); o.hidCool = techReadyIn(t2); return o; })()`);
-        ok(/THERMITE DRILL · TAP AN ENEMY/.test(r.prompt), r.prompt); same(r.aiming, false, 'still aiming'); same(r.hits, 3, 'hits'); same(r.gaps.join(), '60,60', 'a hit a second');
-        for (const h of r.each) near(h, r.want, 0.01, 'a hit'); same(r.cool, 3600, 'the cooldown from the first hit'); same(r.hidden.why, 'THE TECHNICIAN CANNOT SEE IT', 'one behind a wall'); same(r.hidCool, 0, 'a cooldown for nothing');
+    check('the drill is not used on enemies (the owner, 2026-11-13, build 2026-11-13k): from the chip, an enemy it can see or one it cannot is refused with the reason, no drill starts, no cooldown starts (it still fights as it always does)', () => {
+        const r = J(`(function(){ const fs = __fresh(['fire']), t = fs[0], o = {}; const e = __foe(t.x + 3, t.y); const h0 = e.health;
+            techChipTap(t); o.prompt = techAimPrompt(); const u = techAbilityUse(t, { enemy: e }); o.ok = u.ok; o.why = u.why; for (let i = 0; i < 300; i++) __step(1);
+            o.drill = !!t._drill; o.hit = h0 - e.health; o.cool = techReadyIn(t); return o; })()`);
+        ok(/FOR RUBBLE, NOT ENEMIES/.test(r.prompt), r.prompt); same(r.ok, false, 'it was used on an enemy'); same(r.why, 'THE DRILL IS FOR RUBBLE, NOT ENEMIES', 'the reason'); same(r.drill, false, 'a drill started'); same(r.cool, 0, 'a cooldown for nothing');
     });
 
     group('THE FROST PATCH (ice)');
