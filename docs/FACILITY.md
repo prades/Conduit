@@ -263,14 +263,15 @@ ASKED (the owner, 2026-11-10): "I want there to be containers on the map that co
 - The numbers (30 at the middle, 2 tiles, 3 every half second, 10 s, 60 s, 12 frames) are the agent's, provisional (`OPEN-QUESTIONS.md`). Tested: `tests/hazards.js`.
 - **Proposed 2026-11-12, not built:** a blast that breaks a cracked wall or brings down a leaning stack within its reach, opening a way for good; the owner: "blowing up barrels to bring down or break through different obstacles" (`DOMAINS.md` §5, draft 7).
 
-## The lounge and the new Experiment Lab (asked 2026-11-12; proposed, not built)
+## The lounge and the new Experiment Lab (asked 2026-11-12; the layout approved 2026-11-13, not built)
 
 The owner, 2026-11-12: "I want to make the part where the experiment lab is ... a little hangout area that has couches, beanbag chairs, a wall along ... the south side, that's a divider wall, and it also has like a whiteboard that's on a stand, on its own stand, that's tilted towards the beanbag chairs and other stuff. And you know, there's a rug, and ... maybe some like equations drawn on the whiteboard. And the new experiment lab will be on ... the west side. And it'll be ... connected to the teleporter lab. It'll be a little ... slope staircase droop into the experiment lab, which will be rather large, like kind of 3 times the size as the normal, the present one, and have giant holding tanks and stuff."
 
 The agent's reading, drawn in `design/maps/westlab-draft.js` (three plan sheets; nothing built):
 - **The lounge** in the old lab's room (16 by 5.5 tiles): glass on its north, east and west sides as now, a **divider wall** on the south; two couches and a low table, four beanbags on a rug, a **whiteboard on its own stand** turned toward the beanbags with equations on it (a new 3D model), two plants. Its door to Teleport Room 1 (the passage) stays.
 - **The new Experiment Lab** west of Teleport Room 1 (the map grows west), about three times the old one, down a **sloping stair** three tiles wide from Teleport Room 1's west wall to the arena's level (1.8 tiles); **giant holding tanks** (a new 3D model, to be drafted); the old lab's stations move with it (the Sequencer, the Serum Hood, the Clone Bay, the Analysis Bench). Two layouts: **A**, a square hall (17 by 16 tiles), the tanks round two walls; **B**, a long gallery (23 by 12), the tanks in two rows.
-- **Open (the owner's):** A or B; where the Cold Storage's stairs go (they are in the old lab's floor today: the new lab, or the lounge); a full divider wall or a low one; the lounge's name; the tanks' and the whiteboard's look (3D drafts first, `ART-PROCESS.md`).
+- **Approved (the owner, 2026-11-13, of the drafts):** layout **B**, the long gallery; the Cold Storage's stairs **move to the new lab**; the divider is **a full wall, only on the south side** ("It's a full wall, but it's only on the south side": the lounge's north, east and west stay glass); the name **The Lounge**.
+- **Still open:** the giant holding tanks' look and the whiteboard's (one piece each, drafted first: `ART-PROCESS.md`).
 
 ## The catwalks and the observation deck swap sides (decided 2026-11-11; not built)
 
