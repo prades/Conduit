@@ -359,6 +359,27 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.alt, 0, 'a move\'s hit added a status'); same(r.camper, 0, 'a technician added a status'); same(r.boss, 0, 'a boss was stunned or blinded'); ok(r.bossSlow > 20, 'a boss can be slowed: ' + r.bossSlow);
     });
 
+    check('THE FOUR EXTRA ATTACKS (build 2026-11-13v; the owner, 2026-11-13: an extra attack on certain followers fills the coverage grid, open with 2 energy cards): EMBER SLASH (Quillstone: one enemy, Slashing, left burning), RIFT IMPALE (Rift Mimic: it pops up under the enemy, Piercing), BLADE ROLL (Hammer Slug: every enemy on its line, Slashing), BRIAR SWEEP (Thornwhip: every enemy round it, Slashing, pushed out); each is its form\'s second move, locked with one card and open with two', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const out = {};
+            const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const mk = (id) => { const d = EVOLUTIONS[id]; spawnFollowerAtCrystal(d.element); const f = followers[followers.length - 1]; f.role = d.role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.energy = [d.element, null, null]; return f; };
+            const d = p => Math.round((1e6 - p.health) * 100) / 100, clear = () => actors.forEach(a => { if (a instanceof Predator) a.dead = true; });
+            const keepStand = typeof facilityStandOk === 'function' ? facilityStandOk : null; if (keepStand) facilityStandOk = () => true;   // (the check's open floor: RIFT IMPALE asks for a spot one can stand on)
+            try { for (const [id, mv] of [['quillstone', 'ember_slash'], ['mimic', 'rift_impale'], ['hammerslug', 'blade_roll'], ['shrub', 'briar_sweep'], ['seeper', 'toxic_stomp']]) {
+                const f = mk(id), def = evolvedDef(f), o = out[mv] = { second: evoMoveIds(def)[1], one: evoMoveAllowed(f, def, mv), first: evoMoveAllowed(f, def, evoMoveIds(def)[0]) };
+                f.energy = [f.element, f.element, null]; o.two = evoMoveAllowed(f, def, mv); o.type = DMG_FORM[id].extra; o.info = !!MOVE_INFO[MOVES[mv].name] && MOVE_INFO[MOVES[mv].name]().length >= 3; o.reach = moveReach(mv) > 0;
+                const a = mkP(21.2, 2), b = mkP(22.4, 2), far = mkP(40, 2); frame++; o.fired = MOVES[mv].fn(f); o.a = d(a); o.b = d(b); o.far = d(far); o.burn = a.burning || 0; o.at = [Math.round(f.x * 10) / 10, f.y]; o.pushed = Math.abs((a.kbVX || 0)) + Math.abs((a.kbVY || 0)) > 0; o.cd = f._sigCd;
+                clear(); frame++; o.none = MOVES[mv].fn(f); followers.splice(followers.indexOf(f), 1); actors = actors.filter(x => x !== f); } } finally { if (keepStand) facilityStandOk = keepStand; }
+            return out; })()`);
+        for (const mv in r) { const o = r[mv]; same(o.second, mv, mv + ' is its form\'s second move'); same(o.first, true, mv + ': its first move with one card'); same(o.one, false, mv + ' open with one card'); same(o.two, true, mv + ' locked with two cards'); same(o.fired, true, mv + ' did not fire'); ok(o.a > 0, mv + ' did not hurt the near enemy'); same(o.far, 0, mv + ' hit one out of reach'); same(o.none, false, mv + ' fired at nothing'); ok(o.cd > 0, mv + ' did not wait'); same(o.info, true, mv + ' INFO'); same(o.reach, true, mv + ' reach'); }
+        same([r.ember_slash.type, r.rift_impale.type, r.blade_roll.type, r.briar_sweep.type, r.toxic_stomp.type].join(), 'slashing,piercing,slashing,slashing,crushing', 'their types');
+        same(r.toxic_stomp.b, 0, 'TOXIC STOMP (the Seeper, build 2026-11-13w: "a stomp attack by the seeper") hit one outside its circle');
+        same(r.ember_slash.b, 0, 'EMBER SLASH hit a second enemy'); ok(r.ember_slash.burn > 0, 'EMBER SLASH left no burn');
+        same(r.rift_impale.b, 0, 'RIFT IMPALE hit a second enemy'); same(r.rift_impale.at.join(), '21.2,2', 'RIFT IMPALE did not end under the enemy');
+        ok(r.blade_roll.b > 0, 'BLADE ROLL did not slice the second enemy on its line'); same(r.blade_roll.at.join(), '24,2', 'BLADE ROLL did not roll its length');
+        ok(r.briar_sweep.b === 0 && r.briar_sweep.pushed, 'BRIAR SWEEP: only what is within its circle, pushed: ' + JSON.stringify(r.briar_sweep));
+    });
+
     check('SWEET SCENT POISONS (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "have it poison"): the puff that lures the enemies in reach also poisons them (a boss is lured by nothing and poisoned by nothing); its type is Elemental', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };

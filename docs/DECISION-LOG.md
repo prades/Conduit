@@ -45,6 +45,17 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The balance system (points and role bands); energy cards open attacks in three steps
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/balance-system`, `2026-11-13u`
+- **Status:** Approved
+- **Context:** the owner does not know yet what balanced means, expects factions with more varied weaknesses after the ants, and wants every element with every damage type within reach "if you try to get it".
+- **Decision:** (1) One currency, points a second: damage, healing, blocking and assists at 1 each; an enemy held off at what it would have dealt (stun, glitch, lure 100%, blind 50%, poison 40%, slow 25%). (2) A form's score is its best mode; a role's target is the middle score of its forms, its band ±25%; out-of-band forms and weak alternates are flagged on `balance.html`. (3) The coverage grid (7 elements x Slashing, Piercing, Crushing, Elemental) must be full; its empty cells are filled by an extra attack on certain followers. (4) Energy: 1 own card the second attack, 2 the extra attack where there is one, 3 the Ultimate.
+- **Alternatives:** filling cells by retyping attacks or by an equip card that changes a damage type.
+- **Supersedes:** the Ultimate at 2 energy cards (`2026-11-09s`).
+- **Open:** see `docs/OPEN-QUESTIONS.md` (2026-11-13, the balance system).
+- **Affects:** js/energy.js, js/moves.js, tools/balance.js, tools/balance-trial.js, balance.html, docs.
+
 ## DECISION: A generated balance page, and the Bible's follower sections without history
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/balance-page`, `2026-11-13s`

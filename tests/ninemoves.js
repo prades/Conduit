@@ -34,7 +34,7 @@ const NINE = [['electroskink', 'zigzag_dash', 'ZIGZAG DASH'], ['jellyram', 'wobb
 
     group('THE NINE: each form\'s own second attack in place of BASH (the owner, 2026-11-09, one form at a time)');
     check('the nine forms list their own (BASH only before a follower evolves now); each has a wind-up, a reach and its INFO rows', () => {
-        const r = J(`${JSON.stringify(NINE)}.map(([id, mid, nm]) => [EVOLUTIONS[id].moves.join(), EVOLUTIONS[id].move, MOVES[mid] && MOVES[mid].name, moveWindupFrames(mid) > 0, moveReach(mid) > 0, !!MOVE_INFO[nm] && MOVE_INFO[nm]().length >= 3].join())`);
+        const r = J(`${JSON.stringify(NINE)}.map(([id, mid, nm]) => [EVOLUTIONS[id].moves[0], EVOLUTIONS[id].move, MOVES[mid] && MOVES[mid].name, moveWindupFrames(mid) > 0, moveReach(mid) > 0, !!MOVE_INFO[nm] && MOVE_INFO[nm]().length >= 3].join())`);
         NINE.forEach(([id, mid, nm], i) => same(r[i], [mid, nm, nm, true, true, true].join(), id));
         same(J(`Object.values(EVOLUTIONS).filter(E => !E.legacy && !E.aside && (E.moves || []).indexOf('bash') >= 0).map(E => E.id).join()`), '', 'a current form still on BASH');
         same(J(`UNEVOLVED_MOVES.moves.join()`), 'bash', 'an unevolved follower\'s second attack');

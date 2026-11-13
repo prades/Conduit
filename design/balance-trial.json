@@ -1,5 +1,6 @@
 {
- "build": "2026-11-13p",
+ "build": "2026-11-13w",
+ "foeDps": 7.539251126126124,
  "forms": [
   {
    "id": "thunderhead",
@@ -12,7 +13,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 7.283333333333313,
+     "cc": 5.249999999999987,
+     "denied": 5.249999999999987,
      "taken": null
     },
     {
@@ -23,6 +25,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -38,7 +41,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 3.7499999999999916,
+     "cc": 4.3666666666666565,
+     "denied": 4.3666666666666565,
      "taken": null
     },
     {
@@ -49,6 +53,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 13.050000000000228,
+     "denied": 13.050000000000228,
      "taken": null
     }
    ]
@@ -65,6 +70,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -75,6 +81,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -91,6 +98,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -101,6 +109,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 42.749999999998856,
+     "denied": 10.687499999999714,
      "taken": null
     }
    ]
@@ -116,7 +125,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 14.600000000000305,
+     "cc": 12.983333333333558,
+     "denied": 5.193333333333399,
      "taken": null
     },
     {
@@ -127,6 +137,18 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
+     "taken": null
+    },
+    {
+     "mode": "toxic_stomp",
+     "dmg": 57.043352601130024,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -138,22 +160,24 @@
     {
      "mode": "main",
      "dmg": 23.9566473987652,
-     "heal": 2.2910000000000013,
+     "heal": 1.45,
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 15.50000000000035,
+     "cc": 6.133333333333317,
+     "denied": 1.5333333333333292,
      "taken": null
     },
     {
      "mode": "sweet_scent",
      "dmg": 0,
      "heal": 0,
-     "block": 0.36,
+     "block": 0,
      "assist": 0,
      "lured": 59.999999999997875,
      "cc": 57.899999999997995,
-     "taken": 18.781361481741577
+     "denied": 59.999999999997875,
+     "taken": 25.174968209079847
     },
     {
      "mode": "sweet_scent_full",
@@ -163,7 +187,8 @@
      "assist": 0,
      "lured": 50.99999999999839,
      "cc": 49.24999999999849,
-     "taken": 22.855741179205882
+     "denied": 50.99999999999839,
+     "taken": 21.876575168918915
     }
    ]
   },
@@ -178,7 +203,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 19.533333333333506,
+     "cc": 15.000000000000325,
+     "denied": 7.5000000000001625,
      "taken": null
     },
     {
@@ -189,6 +215,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 51.749999999998344,
+     "denied": 25.874999999999172,
      "taken": null
     }
    ]
@@ -205,6 +232,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 14.416666666666963,
+     "denied": 14.416666666666963,
      "taken": null
     },
     {
@@ -215,6 +243,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 16.60000000000034,
+     "denied": 16.60000000000034,
      "taken": null
     },
     {
@@ -225,6 +254,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -241,6 +271,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -251,6 +282,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -261,12 +293,13 @@
    "modes": [
     {
      "mode": "main",
-     "dmg": 1.8529411764699035,
+     "dmg": 6.485294117644662,
      "heal": 0,
      "block": 0,
      "assist": 0,
      "lured": 0,
      "cc": 0.733333333333334,
+     "denied": 0.733333333333334,
      "taken": null
     },
     {
@@ -277,6 +310,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 8.700000000000012,
+     "denied": 8.700000000000012,
      "taken": null
     }
    ]
@@ -292,7 +326,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 19.033333333333534,
+     "cc": 19.71666666666683,
+     "denied": 9.858333333333414,
      "taken": null
     },
     {
@@ -303,6 +338,18 @@
      "assist": 0,
      "lured": 0,
      "cc": 11.866666666666836,
+     "denied": 2.966666666666709,
+     "taken": null
+    },
+    {
+     "mode": "rift_impale",
+     "dmg": 24.5,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -319,6 +366,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -329,6 +377,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -345,6 +394,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -355,6 +405,18 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
+     "taken": null
+    },
+    {
+     "mode": "ember_slash",
+     "dmg": 31.942196531809167,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -371,6 +433,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -381,6 +444,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
@@ -397,6 +461,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -407,6 +472,7 @@
      "assist": 2.339999999999999,
      "lured": 0,
      "cc": 17.500000000000288,
+     "denied": 7.0000000000001075,
      "taken": null
     }
    ]
@@ -422,7 +488,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 3.9999999999999907,
+     "cc": 13.666666666666925,
+     "denied": 3.4166666666667314,
      "taken": null
     },
     {
@@ -433,6 +500,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 24.749999999999876,
+     "denied": 6.187499999999969,
      "taken": null
     }
    ]
@@ -448,18 +516,20 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 9.400000000000047,
+     "cc": 11.666666666666826,
+     "denied": 4.66666666666672,
      "taken": null
     },
     {
      "mode": "rotten_decoy",
      "dmg": 0,
      "heal": 0,
-     "block": 2.88,
+     "block": 1.8,
      "assist": 0,
-     "lured": 21.450000000000063,
+     "lured": 16.938888888889068,
      "cc": 0,
-     "taken": 6.610806018448221
+     "denied": 18.00000000000026,
+     "taken": 6.411989471037046
     }
    ]
   },
@@ -474,7 +544,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 14.950000000000323,
+     "cc": 7.9333333333333105,
+     "denied": 1.9833333333333276,
      "taken": null
     },
     {
@@ -485,6 +556,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 59.149999999997924,
+     "denied": 29.57499999999928,
      "taken": null
     }
    ]
@@ -501,17 +573,30 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
-     "taken": 18.36340402463558
+     "denied": 0,
+     "taken": 22.61775337837837
     },
     {
      "mode": "shell_guard",
      "dmg": 0,
      "heal": 0,
-     "block": 16.64325,
+     "block": 16.925999999999995,
      "assist": 0,
      "lured": 39.6666666666657,
      "cc": 0,
-     "taken": 12.714599873310807
+     "denied": 50.99999999999839,
+     "taken": 9.085220258882478
+    },
+    {
+     "mode": "blade_roll",
+     "dmg": 42.50769230774604,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "denied": 0,
+     "taken": null
     }
    ]
   },
@@ -527,6 +612,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
      "taken": null
     },
     {
@@ -537,6 +623,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 3.866666666666658,
+     "denied": 3.866666666666658,
      "taken": null
     }
    ]
@@ -552,7 +639,8 @@
      "block": 0,
      "assist": 0,
      "lured": 0,
-     "cc": 12.266666666666856,
+     "cc": 7.133333333333313,
+     "denied": 1.7833333333333283,
      "taken": null
     },
     {
@@ -563,6 +651,7 @@
      "assist": 0,
      "lured": 0,
      "cc": 5.799999999999985,
+     "denied": 5.799999999999985,
      "taken": null
     }
    ]
@@ -574,11 +663,12 @@
     {
      "mode": "main",
      "dmg": 9.722857142833528,
-     "heal": 1.1340000000000015,
+     "heal": 1.4220000000000017,
      "block": 0,
      "assist": 0,
      "lured": 0,
      "cc": 10.133333333333416,
+     "denied": 4.053333333333373,
      "taken": null
     },
     {
@@ -589,6 +679,18 @@
      "assist": 0,
      "lured": 0,
      "cc": 0,
+     "denied": 0,
+     "taken": null
+    },
+    {
+     "mode": "briar_sweep",
+     "dmg": 0,
+     "heal": 0,
+     "block": 0,
+     "assist": 0,
+     "lured": 0,
+     "cc": 0,
+     "denied": 0,
      "taken": null
     }
    ]
