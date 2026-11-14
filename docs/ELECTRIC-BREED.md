@@ -114,6 +114,7 @@ Nothing open here: the roly-poly's proposals (§2, 5 to 7) and the larva's (§2,
 5. **The curl's details** (the agent's readings): its 12 s rest counts from uncurling; a glitch does not stop it curling.
 6. **The larva's rewards**: none yet, as the queen's (it pays nothing and unlocks nothing).
 7. **The larva, the agent's readings**: SICKLE SNAP pierces (or slashes, or crushes as the queen's crush does); the boss's shield aura on the roly-polies near it (every boss has it); the ledge above its room (can it be shot from there? not checked).
+8. **VOLTWYRM's tail** (the owner, 2026-11-14: "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from Pokemon"): three drafts, each a thicker, wider tail with claws of our own at its end (A three stout talons splayed like a raptor's foot; B four claws round the wrist curling in like a gripping hand; C two great pincer claws crossing behind it), drawn with the game's own model and camera (`design/creatures/voltwyrm_tail_studies.js`; the options are `TAILS` in `design/props/models/larva.js`). **Waiting for the owner's pick**; the game keeps its twin prongs until then.
 
 ## 12. History
 
