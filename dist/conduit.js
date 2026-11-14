@@ -48248,7 +48248,7 @@ const BOSS_ENCOUNTERS = {
         size: 6, bodyR: 1.8, hpMul: HP_MUL_LARVA, wakeNear: 2.5,
         mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null,
         moves: {
-            crush: { name: "SICKLE SNAP", word: "SICKLE SNAP!", hitWord: "SNAPPED", type: "piercing", every: 360, windup: 54, reach: 2.5, arc: 1.0, power: 0.4 },
+            crush: { name: "SICKLE SNAP", word: "SICKLE SNAP!", hitWord: "SNAPPED", card: "SNAP", type: "piercing", every: 360, windup: 54, reach: 2.5, arc: 1.0, power: 0.4 },
             stomp: { name: "SHOCK RING", say: "CHARGES UP — SHOCK RING · GET CLEAR", hitWord: "SHOCKED", type: "elemental", col: "#ffe733", every: 600, windup: 72, trigger: 3.0, radius: 3.6, power: 0.25, push: 0.35 },
         },
         quest: null, wakes: ["hit", "near"], calms: [],
@@ -51227,7 +51227,7 @@ function targetInfoLines(a) {
 function _tgCrush(a) { const E = a && a.noBite && a.bossId && typeof bossEnc === "function" ? bossEnc(a.bossId) : null; return E && E.moves && E.moves.crush ? E.moves.crush : null; }
 function _tgBiteK(a) { const c = _tgCrush(a); return c ? c.power : 1; }
 function _tgBiteLabel(a) { if (a && a.isHazardTarget)
-    return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; return _tgCrush(a) ? "CRUSH" : "BITE"; }
+    return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; const c = _tgCrush(a); return c ? (c.card || "CRUSH") : "BITE"; }
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     return {

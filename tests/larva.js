@@ -156,6 +156,10 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             return { B, q: q.n, s: s.n, fits: c.ax <= B.ox && c.w - c.ax <= B.n - B.ox && c.ay <= B.oy && c.h - c.ay <= B.n - B.oy, key: /larvaArtReady/.test(targetPortrait.toString()) && /larvaArtReady/.test(targetBigPortraitURL.toString()) }; })()`);
         ok(r.fits, 'the portrait\'s facing does not fit its box: ' + JSON.stringify(r.B)); same(r.q, 260, 'the queen\'s box'); same(r.s, 260, 'a creature\'s box'); same(r.key, true, 'the picture waits for its sheet');
     });
+    check('its enemy card names its strength by its own move: SNAP and SICKLE SNAP\'s strength (0.4 × its power), not CRUSH or BITE (THE ANT QUEEN\'s card still says CRUSH)', () => {
+        const r = J(`(function(){ __fresh(); __dom(); __tick(1); const b = bossUnit('circuitry'); const o = { label: _tgBiteLabel(b), k: _tgBiteK(b) }; bossReset(); const q = _bossSpawn(BOSS_ENCOUNTERS.nest, 'asleep'); o.queen = _tgBiteLabel(q); q.dead = true; actors.splice(actors.indexOf(q), 1); bossReset(); return o; })()`);
+        same([r.label, r.k, r.queen].join(), 'SNAP,0.4,CRUSH', 'the card\'s word and strength');
+    });
     check('a tap anywhere on its body picks it (its body\'s reach added to the pick), not only at its middle', () => {
         const r = J(`(function(){ __fresh(); __dom(); __tick(1); const b = bossUnit('circuitry'); __put(b.x - 4, b.y - 4); __tick(1); _bv.z = 1;
             const px = (b.x - player.visualX - (b.y - player.visualY)) * TILE_W + canvas.width / 2, py = (b.x - player.visualX + (b.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(b.x, b.y) - 55;

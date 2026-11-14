@@ -340,7 +340,7 @@ function targetInfoLines(a) {
 // a creature with no plain bite (THE ANT QUEEN: her MANDIBLE CRUSH is her bite, js/bosses.js) shows her crush instead
 function _tgCrush(a) { const E = a && a.noBite && a.bossId && typeof bossEnc === "function" ? bossEnc(a.bossId) : null; return E && E.moves && E.moves.crush ? E.moves.crush : null; }
 function _tgBiteK(a) { const c = _tgCrush(a); return c ? c.power : 1; }
-function _tgBiteLabel(a) { if (a && a.isHazardTarget) return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; return _tgCrush(a) ? "CRUSH" : "BITE"; }   // (a flask: its blast, or its acid's bite)
+function _tgBiteLabel(a) { if (a && a.isHazardTarget) return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; const c = _tgCrush(a); return c ? (c.card || "CRUSH") : "BITE"; }   // (a flask: its blast, or its acid's bite; a boss's crush by its own word: the larva's SNAP)
 // what the enemy card shows (js/mixtool.js): its name (and the shorter title for the card) and colour, level and class, health and the two numbers that matter
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
