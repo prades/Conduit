@@ -2,11 +2,9 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
-## 2026-11-13
-
 ## 2026-11-14
 
-### Build `2026-11-14f` · branch `claude/remove-perks` · the followers' four traits are gone
+### Build `2026-11-14k` (stamped 14f on its branch) · branch `claude/remove-perks` · the followers' four traits are gone
 - **The ask** (the owner, 2026-11-14: "Can you give me a rundown on the traits and if they should stick around or not?"; after the rundown, **"Remove all four"**).
 - **What they were:** every follower drew one combat trait and one natural trait at random when it was made, shown only on its INFO card: **BERSERKER** (its hits × 1.5 under 30% health), **OPPORTUNISTIC** (it went for the lowest-health enemy within 6 tiles, not the nearest), **EMPATHETIC** (a quarter nearer you in the formation) and **LONE WOLF** (1.2 tiles farther out).
 - **Now:** `COMBAT_TRAITS` and `NATURAL_TRAITS` (js/traits.js) are empty. No follower draws one; a saved one is dropped on load and on respawn; what a trait had left set on a follower (its multiplier, its distance) is cleared. Every follower goes for the nearest enemy (an attack order and FOCUS as before), hits alike at any health, and stands in its formation place. The INFO card has no TRAITS section.
@@ -14,7 +12,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/traits.js`, `js/helpers.js`, `js/npc.js`, `js/facilitysave.js`, `js/game.js`, `js/infodex.js`, `tests/traits.js` (none exists or is drawn, a saved one comes back as none, each of the four does nothing), `tests/formation.js`, `tests/unitinfo.js`, `docs/COMBAT.md`, the Bible, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`.
 - Not playtested. The balance trial was not run again.
 
-### Build `2026-11-14e` · branch `claude/remove-perks` · the followers' perks are gone
+### Build `2026-11-14j` (stamped 14e on its branch) · branch `claude/remove-perks` · the followers' perks are gone
 - **The ask** (the owner, 2026-11-14: "How is my electro skink healing when I have a void star and a rot shard in combat"; told it was its SIPHON perk, **"can we get rid of those perks? And maybe we can redesign those at a later time, but I forgot about those"**).
 - **What they were:** every follower drew one of two at random when it was made, shown only on its INFO card: **IRON WILL** (damage taken × 0.75) and **SIPHON** (it healed 10% of each plain hit's damage).
 - **Now:** `PERKS` (js/traits.js) is empty. No follower draws one; a saved one is dropped on load and on respawn; the hooks that asked a perk find nothing. The INFO card's TRAITS has no PERK row. The combat and natural traits (Berserker, Opportunistic, Empathetic, Lone Wolf) are as they were. The player's class perks (`CLASS_PERKS`) are another thing and are untouched.
@@ -22,13 +20,39 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/traits.js`, `js/helpers.js`, `js/npc.js`, `js/facilitysave.js`, `js/game.js`, `js/infodex.js`, `tests/traits.js` (a check that none exists, none is drawn, a saved one comes back as none, and the two old effects do nothing), `tests/followercombat.js`, the Bible, `docs/OPEN-QUESTIONS.md`.
 - The balance trial was not run again (a perk was drawn at random for each trial follower before; it is none now). Not playtested.
 
-### Build `2026-11-14d` · branch `claude/balance-rerun` · the balance page counts the statuses a form distributes; a lure is no longer counted twice
+### Build `2026-11-14i` (stamped 14d on its branch) · branch `claude/balance-rerun` · the balance page counts the statuses a form distributes; a lure is no longer counted twice
 - **The ask** (the owner, 2026-11-14: "Rerun tests"; then "Are we accounting for support points? I feel like the Rotten Decoy would do a lot of support if it's holding down enemies, and I don't understand how the Hammer Slug's shell guard is at 1.9 above their band"; told how the score was made, **"I think you should count the statuses that are distributed"**).
 - **What was wrong:** SHELL GUARD scored 63.5 from a lure counted as the enemy's whole damage held off (though its hits still land on the Slug) plus the damage its guard cut, counted before defence; and the damage one enemy deals, taken from a live run, moved between 5 and 12 from one run to the next, so every support score moved with it.
 - **Support is now the statuses a form puts on enemies**, each tallied apart by the trial (enemy-seconds stunned, glitched, blinded, poisoned, slowed, lured to a decoy, lured onto the follower itself) and shown in its own column on `balance.html`; their worth: stun, glitch and a decoy's lure the enemy's whole damage, a lure onto a follower **half** (moved, not stopped: the agent's, provisional), blind 50%, poison 40%, slow 25%; an enemy under several counts once, at the strongest. The damage a guard or a decoy takes is shown and **not added** again.
 - **What one enemy deals** is reckoned (one bite on the trial's follower over the bite's cycle: 10.4 a second), not measured in a fight. The live runs are six of each (three before).
 - **The trial run again on build `2026-11-14c`'s game** (the dash, the slow roll, the decoy's 2.75 s): ROTTEN DECOY 18.8 (all support: 36 enemy-seconds lured), SHELL GUARD 13.3 (it read 63.5), SWEET SCENT 15.9, MAELSTROM 40.2 (13.5 of it its blind). The game itself is not changed by this build.
 - `tools/balance-trial.js`, `tools/balance.js`, `design/balance-trial.json`, `balance.html`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`.
+
+### Build `2026-11-14h` · branch `claude/start-game-project-HSh7Z` · the roly-poly's card emblem
+- **The ask** (the owner, 2026-11-14): "Make the roly-poly's card emblem"; of four drafts (A top-down, B curled, C profile, D top-down with the core): **"C"**.
+- The roly-poly's race emblem before its name on the enemy card: in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind; in the enemy coral as the other races' (on the card, in its name's colour). Every race has its emblem now.
+- `js/cardart.js` (`CARD_ART_EMBLEMS.rolypoly`, `CARD_ART_RACES`), `tests/speciesart.js` (checked against the drafts' C), `design/cards/rolypoly-emblem-drafts.js` (the four drafts); `docs/UI-STYLE.md`, `docs/ELECTRIC-BREED.md`.
+
+### Build `2026-11-14g` (stamped 14d on its branch) · branch `claude/start-game-project-HSh7Z` · the larva boss is VOLTWYRM (the owner's pick)
+- **The ask** (the owner, 2026-11-14, of the names offered with VOLTREAPER): "Voltworm looks sick".
+- **VOLTWYRM** (volt for its current, wyrm for its long serpent's body; spelled as offered): its tag and every word it says (VOLTWYRM WAKES, VOLTWYRM CHARGES UP — SHOCK RING · GET CLEAR, VOLTWYRM SLEEPS AGAIN, VOLTWYRM IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
+- `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
+
+### Build `2026-11-14f` (stamped 14c on its branch) · branch `claude/start-game-project-HSh7Z` · the larva boss is named VOLTREAPER
+- **The ask** (the owner, 2026-11-14): "Name it something cool an edgy".
+- **VOLTREAPER** (the agent's pick: volt for its current, reaper for its sickle jaws): its tag and every word it says (VOLTREAPER WAKES, VOLTREAPER CHARGES UP — SHOCK RING · GET CLEAR, VOLTREAPER SLEEPS AGAIN, VOLTREAPER IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
+- `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
+
+### Build `2026-11-14e` (stamped 14b on its branch) · branch `claude/start-game-project-HSh7Z` · the diving beetle larva: the electric breed's boss, in The Circuitry
+- **The asks** (the owner, 2026-11-13): "a boss creature will be a predaceous diving beetle larva"; its look "A"; 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal (docs/ELECTRIC-BREED.md §2, 9). Main took `14a` meanwhile (merged into the branch first).
+- **THE DIVING BEETLE LARVA** (js/bosses.js, the row `circuitry`, on THE ANT QUEEN's pattern): asleep in the middle of **The Circuitry**, there whenever you come into the electrical domain (the domain's rooms arm it, so it waits before you reach its room); it wakes when one of yours comes within 2.5 tiles of its body or it is hit; held to its room (leave and it walks back to its post and sleeps, its wounds kept); killed, a fresh one waits the next time you come down.
+- **Big**: twice the queen's size (about 4.5 tiles jaws to tail), a body 1.8 tiles round; twice her health (2133) at level 12; electric. Its own species (`larva`: a boss block only, the ant boss's numbers): no clone, no race, no damage row (every kind of hit ×1).
+- **SICKLE SNAP** (her crush): its jaws open wide, edges lit, for 0.9 s, then snap in a wedge 2.5 tiles past its body (0.4 × its power, piercing, half of it electric), every 6 s at most. **SHOCK RING** (her stomp): its seams flash for 1.2 s, then a ring of current bursts round its body (0.25 × its power, all electric) and throws back whoever is in it, every 10 s at most, when one of yours is within 3 tiles. **No brood**: the domain's roly-polies keep coming.
+- **Its look**: the mech of look A baked into `img/props/larva.png` (eight facings, a four-frame walk, its jaws wide and shut, its seams charged) from `design/props/models/larva.js`; js/larva.js draws it and picks the picture for each warning.
+- **Also**: a tap anywhere on a huge body picks it (its body's reach added; THE ANT QUEEN's tap area grew to her body); the enemy card draws a creature too big for its old box in a bigger one (the queen's as before) and names its strength SNAP (SICKLE SNAP's; the queen's still CRUSH); the Clone Bay skips a species with no clone cost.
+- **Provisional (the agent's)**: every number; the snap's Piercing; its name; that it pays nothing and unlocks nothing (as the queen). Kept from every boss: its shield aura on the roly-polies near it. Not checked: whether it can be shot from the Deep Server Room's ledge.
+- `js/bosses.js`, `js/larva.js` (new), `js/species.js`, `js/bugs3d.js`, `js/clone.js`, `js/targeting.js`, `js/input.js`, `game.html`, `design/props/models/larva.js` (new), `img/props/larva.png`, `bible.html`, `img/bible/creatures/larva_boss.webp`; tests: `tests/larva.js` (new, 18 checks), `tests/abtest.js`, `tests/facilityplay.js`, `tests/population.js`.
+- Not playtested; looked at in the real page (headless).
 
 ### Build `2026-11-14c` · branch `claude/approve-ball-splash` · ROTTEN DECOY's wind-up 7 s → 2.75 s
 - **The ask** (the owner, 2026-11-14: "The rotten decoy cast time is too long"; asked how long, chosen **2.75 seconds**, the other Mages' moves' time).
@@ -54,7 +78,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/evolution.js`, `js/elements.js`, `js/fx3d.js`, `js/moves.js`, `js/unitinfo.js`, `design/effects/bake_fx.js`, `img/fx/slugball.png`, `img/fx/goosplash.png`, `tests/evolution.js`, `tests/fx3d.js`, `docs/COMBAT.md`, `docs/EFFECTS.md`, the Bible.
 - Seen in the real page (headless, an iPad's width); not playtested. The balance trial was not run again for this build.
 
-## 2026-11-13 (continued)
+## 2026-11-13
+
+### Build `2026-11-13aa` · branch `claude/start-game-project-HSh7Z` · the roly-poly: the electric breed, in the electrical domain
+- **The asks** (the owner, 2026-11-13): a new breed, "a roly-poly type character that is immune to crushing, immune to slashing, and resistant to piercing. That will be electric type and will inhabit the electric domain"; as a mech ("take inspiration from Zoids and get rid of the wiry aesthetics"), longer, fewer plates, no eyes and no face, look **B**; "Clone potential"; "Physical half does 0"; "Curls up to defend"; then **"Build it"** on the agent's proposals.
+- **The species** (`rolypoly`, ROLY-POLY on screen): always electric; a scout, a striker and a tank with a beetle's health, speed and size and an ant's bite; it bites with Crushing.
+- **Immune** to Crushing and Slashing: their physical part does 0 (CRUSHING IMMUNE, SLASHING IMMUNE beside it); the elemental part lands. Resists Piercing; weak to Earthquake and Projectile. A new IMMUNE group (amber) on the enemy card. The player's lash and gauntlet do nothing to it.
+- **CURL**: a hit that leaves it under half its health curls it into its wheel for 4 s (×0.3 of every hit; it neither moves nor bites), then 12 s before it can again; never stunned or asleep. Its clone curls too.
+- **Its look**: the mech of look B, baked into `img/props/rolypoly.png` (eight facings, four walk frames, the wheel) from `design/props/models/rolypoly.js`; drawn at twice the resolution, a scout and a striker smaller.
+- **Where it lives**: the electrical domain only (`SPAWN_TABLES.electrical`, `FP_SPAWN_ELEC`): three the first time you are there, then one every 25 s while you are, up to four. **Clone potential**: its DNA, and its clone at the Clone Bay (5 splices, 7 to 12 shards).
+- **Provisional (the agent's)**: every number (its stats, the curl's, the spawner's), its weaknesses, ROLY-POLY as its name. No race emblem on its card (not drawn; open).
+- `js/species.js` (`speciesLabel`), `js/damage.js`, `js/rolypoly.js` (new), `js/helpers.js`, `js/combat.js`, `js/predator.js`, `js/npc.js`, `js/abilities.js`, `js/bugs3d.js`, `js/population.js`, `js/facilityspawn.js`, `js/mixtool.js`, `js/targeting.js`, `js/party.js`, `js/squadfly.js`, `js/clone.js`, `js/levels.js`, `js/infodex.js`, `js/unitinfo.js` and others (the name), `game.html` (the script, the preload, the chips), the sheet; `tests/rolypoly.js` (new), `tests/speciesart.js`, `tests/population.js`, `tests/elecdomain.js`, `tests/abtest.js`, `tests/foundation.js`; `docs/ELECTRIC-BREED.md`, `COMBAT.md` §7.3, `DOMAINS.md`, `FACILITY.md`, `OPEN-QUESTIONS.md`, `DECISION-LOG.md`, the Bible (its section, pictures and clone price).
+- Not playtested; looked at in the real page (headless).
 
 ### Build `2026-11-13z` (stamped 13y on its branch) · branch `claude/energy-power` · energy cards give elemental power; any card unlocks
 - **The ask** (the owner, 2026-11-13: "since the energy cards don't really have much of an effect other than unlocking moves, I'd like to make it to where the energy cards increase the elemental power of the creatures ... a follower can have energy cards of another type and use those to unlock their other attacks, but those attacks would have very little elemental impact"; asked, chosen: **25 / 100 / 125 / 150%**, **"Everything, by card count"**, **"Hit damage only"**).

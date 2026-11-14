@@ -90,7 +90,7 @@ function ccRow(a) {
     const ps = PLAY_STYLES.find(p => p.id === a.playStyle) || PLAY_STYLES[1];
     return {
         unit: a, clone: !!a.isClone, element: a.element, hp, level: a.level || 1, evolved: !!a.evolved,
-        name: typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || a.element || "UNIT").toUpperCase(),
+        name: typeof unitTypeLabel === "function" ? unitTypeLabel(a) : (a.speciesName ? (typeof speciesLabel === "function" ? speciesLabel(a.speciesName) : String(a.speciesName || "").toUpperCase()) : String(a.element || "UNIT").toUpperCase()),
         role: a.isClone ? null : a.role, holding: !!(a.job && a.job.type === "move") || a.stance === "hold",
         playStyle: ps.id, selected: selectedUnits.has(a), status: typeof unitStatus === "function" ? unitStatus(a) : null,
     };

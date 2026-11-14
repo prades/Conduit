@@ -88,11 +88,11 @@ function infoEntries() {
 
     // ── ENEMIES ──
     const SP = (k) => SPECIES[k] && SPECIES[k].scout;
-    add("species", "foes", "THE CREATURES", "#ff7766", "Six kinds, in four classes",
-        ["The facility's wild things come in six kinds, each in a class of its own: a WORKER, a SCOUT, a STRIKER or a TANK, bigger and tougher down that list. Each has a level, and its stats scale with it the way your units' do.",
-         "ANTS are the weakest and simply walk up and bite. BEETLES are armoured. SCORPIONS, SPIDERS, MANTISES and MOTHS from the striker class up also strike from range: a sting, a venom shot, a foreleg lunge, a cloud of wing-dust.",
+    add("species", "foes", "THE CREATURES", "#ff7766", "Seven kinds, in four classes",
+        ["The facility's wild things come in seven kinds, each in a class of its own: a WORKER, a SCOUT, a STRIKER or a TANK, bigger and tougher down that list. Each has a level, and its stats scale with it the way your units' do.",
+         "ANTS are the weakest and simply walk up and bite. BEETLES are armoured. SCORPIONS, SPIDERS, MANTISES and MOTHS from the striker class up also strike from range: a sting, a venom shot, a foreleg lunge, a cloud of wing-dust. ROLY-POLIES live in the electrical domain: Crushing and Slashing do nothing to their plates, and hurt, they curl up into a wheel.",
          "Tap one to lock your gun on it; tap the enemy card at the bottom of the screen (or long-press the creature and pick ATTACK) to send the squad at it."],
-        Object.keys(SPECIES).filter(k => SP(k)).map(k => [k.toUpperCase(), "scout " + SP(k).health + " HP · " + SP(k).power + " pwr", SPECIES[k].color]));
+        Object.keys(SPECIES).filter(k => SP(k)).map(k => [typeof speciesLabel === "function" ? speciesLabel(k) : k.toUpperCase(), "scout " + SP(k).health + " HP · " + SP(k).power + " pwr", SPECIES[k].color]));
     add("arena", "foes", "THE ARENA", "#ff9a6a", "Where the creatures live",
         ["The arena is where the facility's creatures are. A few are there when the game opens, and every so often another comes out of the dark at a spot you cannot see, always the kind there are fewest of, so they are all different.",
          "They potter about the arena from spot to spot, never out of it, and hunt only when provoked or when an alarm is up. One that dies drops a case of scrap metal where it fell, which the Armory's terminal turns into ammunition."],
@@ -203,7 +203,7 @@ function _ipReadout(chars) {
     const f = S.follower || (!S.enemy && tile ? [...followers, ...actors.filter(a => a.isClone)].filter(a => !a.dead && Math.hypot(a.x - tile.x, a.y - tile.y) < 3)[0] : null);
     if (f) {
         const el = ELEMENTS.find(e => e.id === f.element);
-        title = (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : (f.speciesName || "UNIT").toUpperCase()); col = el ? el.color : UI_TEAL;
+        title = (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : (f.speciesName ? (typeof speciesLabel === "function" ? speciesLabel(f.speciesName) : String(f.speciesName || "").toUpperCase()) : "UNIT")); col = el ? el.color : UI_TEAL;
         const lv = f.level, xpNext = Number.isFinite(lv) && lv < LEVEL_CAP ? Math.max(0, Math.ceil(xpForLevel(lv + 1) - (f.xp || 0))) : 0;
         if (Number.isFinite(lv)) P("LEVEL", lv + (lv < LEVEL_CAP ? "  ·  " + xpNext + " XP TO NEXT" : "  ·  MAX"), UI_GOLD);
         { const xpp = typeof xpProgress === "function" ? xpProgress(f) : null; if (xpp && xpp.evo) P("EVOLVES", xpEvoText(xpp).replace(/^EVOLVES /, ""), "#9ca8ff"); else if (f.evolved) P("EVOLVED", "YES", "#9ca8ff"); }   // (js/levels.js xpProgress)

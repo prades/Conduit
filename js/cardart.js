@@ -54,7 +54,7 @@ const CARD_ART = {
 const CARD_ART_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic", "blossom"];   // (blossom: BLOOM, js/config.js; its texture and emblem since build 2026-11-08i, approved 2026-11-08)
 const CARD_ART_CLASSES = ["brawler", "mage", "technician"];
 const CARD_ART_SPECIES = ["spinelegged", "mollusk", "elemental", "drone", "jelly"];   // js/cards.js EQUIP_SUBCLASSES
-const CARD_ART_RACES = ["ant", "beetle", "scorpion", "spider", "mantis", "moth"];      // the enemy races (js/damage.js DMG_RACE)
+const CARD_ART_RACES = ["ant", "beetle", "scorpion", "spider", "mantis", "moth", "rolypoly"];      // the enemy races (js/damage.js DMG_RACE; the roly-poly's emblem since build 2026-11-14h)
 
 // ── small helpers ──
 let _caSeed = 1;
@@ -545,6 +545,18 @@ const CARD_ART_EMBLEMS = {
         d += _caPoly([[14.4, 17], [8, 18.5], [4.5, 23.5], [7.5, 28], [12.5, 26.5], [14.8, 21]], true) + _caPoly([[17.6, 17], [24, 18.5], [27.5, 23.5], [24.5, 28], [19.5, 26.5], [17.2, 21]], true);
         d += _caBoth([[15.2, 6.2], [13, 2.4], [10.2, 1.4]], 1.2);
         return d + _caEll(7, 10.5, 1.8, 1.8, false) + _caEll(25, 10.5, 1.8, 1.8, false);                          // cuts: the eyespots
+    } },
+    rolypoly: { col: "#ff8a6a", d() {   // (build 2026-11-14h; the owner's pick of four drafts, 2026-11-14: "C"; design/cards/rolypoly-emblem-drafts.js) the roly-poly in profile: the arched shell in six plates
+        const cx = 16.6, cy = 23, rx = 13.2, ry = 13, n = 6, a0 = 196, a1 = 352, gap = 2.2, r0 = 5.2;   // over a row of legs, its head with no face, the antenna forward, the telson behind
+        let d = _caEll(cx, cy + 0.2, r0 + 0.6, r0 * 0.75, true);                                                  // the body under the shell
+        for (let k = 0; k < n; k++) { const s = a0 + (a1 - a0) * k / n + gap / 2, e = a0 + (a1 - a0) * (k + 1) / n - gap / 2, o = [], inn = [];   // the shell's plates
+            for (let i = 0; i <= 6; i++) { const a = (s + (e - s) * i / 6) * Math.PI / 180; o.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]); inn.push([cx + r0 * Math.cos(a), cy + r0 * 0.9 * Math.sin(a)]); }
+            d += _caPoly(o.concat(inn.reverse()), true); }
+        d += _caEll(4.6, 20.2, 2.9, 2.5, true);                                                                    // the head (no face)
+        d += _caBar([[3.6, 18.4], [2.4, 14.6], [3.8, 10.6]], 1.35);                                                // the antenna
+        d += _caPoly([[28.4, 22.2], [31.4, 23.4], [28.6, 24.2]], true);                                            // the telson
+        for (let i = 0; i < 7; i++) { const x = 7.4 + i * 2.7; d += _caBar([[x, 23.4], [x - 0.9, 27.6]], 1.25); }   // the legs
+        return d;
     } },
 };
 const _caEmbMemo = {};

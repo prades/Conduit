@@ -14,6 +14,89 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The roly-poly's card emblem is C, the profile (the owner's pick)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14h`
+- **Status:** Approved (the owner's words); built
+- **Context:** the roly-poly had no race emblem on its enemy card (the race emblems are approved drawings). The owner: "Make the roly-poly's card emblem". Four drafts in the approved emblems' manner, each shown large and on its real enemy card (`design/cards/rolypoly-emblem-drafts.js`): A top-down, B curled, C profile, D top-down with the core; the agent recommended A.
+- **Decision:** the owner: **"C"**: in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind; in the enemy coral as the other races'. The roly-poly joins the races with an emblem (`CARD_ART_RACES`).
+- **Affects:** js/cardart.js (`CARD_ART_EMBLEMS.rolypoly`, `CARD_ART_RACES`); `tests/speciesart.js`; `ELECTRIC-BREED.md` §9, §11; `UI-STYLE.md` (the approved emblems).
+
+## DECISION: The larva boss is VOLTWYRM (the owner's pick)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14g`
+- **Status:** Approved (the owner's words)
+- **Context:** the agent named the boss VOLTREAPER (build `2026-11-14f`, below) and offered three others: GRIDREAPER, VOLTWYRM, SURGEMAW. The owner: **"Voltworm looks sick"**.
+- **Decision:** the boss is **VOLTWYRM** (volt for its current, wyrm for its long serpent's body): its tag and every word it says; its kind stays DIVING BEETLE LARVA. Supersedes "The larva boss is named VOLTREAPER".
+- **Agent's reading, to confirm:** spelled VOLTWYRM, as it was offered and seen (the owner's message read "Voltworm", taken as a dictation of the same word).
+- **Affects:** js/bosses.js (the row `circuitry`'s `name`); `ELECTRIC-BREED.md` §2, 10 and §11; the Bible; `tests/larva.js`.
+
+## DECISION: The larva boss is named VOLTREAPER
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14f`
+- **Status:** Superseded by "The larva boss is VOLTWYRM (the owner's pick)" (`2026-11-14g`)
+- **Context:** the boss's tag read THE DIVING BEETLE LARVA (the agent's placeholder, build `2026-11-14e`). The owner: **"Name it something cool an edgy"**.
+- **Decision:** **VOLTREAPER**: volt for its current, reaper for its sickle jaws (its SICKLE SNAP). It is the boss's tag and every word it says; its kind stays DIVING BEETLE LARVA (the species' label). Supersedes the placeholder name in "The diving beetle larva built as proposed" below.
+- **Alternatives offered:** GRIDREAPER, VOLTWYRM, SURGEMAW.
+- **Affects:** js/bosses.js (the row `circuitry`'s `name`); `ELECTRIC-BREED.md` §2, 10 and §11; the Bible; `tests/larva.js`.
+
+## DECISION: The diving beetle larva built as proposed ("Build it")
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14e`
+- **Status:** Approved (the owner's words); built
+- **Context:** the agent's proposal for the larva boss on THE ANT QUEEN's pattern (`ELECTRIC-BREED.md` §2, 9; §5 as it stood): the middle of The Circuitry; about twice her length, a body 1.8 tiles round; woken by yours near or a hit; twice her health at level 12, electric; SICKLE SNAP (her crush: every 6 s, 0.9 s of warning, 2.5 tiles past its body); SHOCK RING (her stomp, throwing back: every 10 s, within 3 tiles); no brood; no damage row. The owner: **"Build it"**.
+- **Decision:** the proposal as it stood, built in `2026-11-14e`.
+- **Agent's readings, to confirm:** SICKLE SNAP is a Piercing hit (half of it electric, as every electric creature's); SHOCK RING all electric; her wedge (115 degrees), her strengths (0.4 and 0.25 × its power), her ring (3.6 tiles past its body) and her 1.2 s for SHOCK RING's warning; it pays nothing and unlocks nothing (the queen's `test` rule) until its rewards are decided; the electrical domain's rooms arm it (so it is asleep before you reach its room); a fresh one each time you come back after it died (her rule); its own boss-only species; the name THE DIVING BEETLE LARVA; it keeps every boss's shield aura (the roly-polies near it gain shields); a tap anywhere on a huge body picks it (the queen's too).
+- **Affects:** see the changelog's entry; `ELECTRIC-BREED.md`.
+
+## DECISION: Your melee does nothing to the roly-polies; the larva boss is big
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13aa` (no change to the game)
+- **Status:** Approved (the owner's words)
+- **Context:** two of the questions left after build `2026-11-13aa`: the player's own melee against the roly-poly (built as the rule read: the lash and the gauntlet, all physical, do nothing), and the larva boss's rules.
+- **Decision:** the owner: "The larva boss should be big, and your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away." The melee rule stays as built; the larva boss is big. Its other rules: proposed (`ELECTRIC-BREED.md` §5), not approved.
+- **Affects:** `ELECTRIC-BREED.md` §5, §7, §11; `OPEN-QUESTIONS.md`.
+
+## DECISION: The roly-poly built as proposed ("Build it")
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13aa`
+- **Status:** Approved (the owner's words); built
+- **Context:** the agent's five proposals (`ELECTRIC-BREED.md` §5 as it stood): its numbers (a beetle's health, speed and size, an ant's bite; a scout, a striker and a tank; a beetle's clone cost), a Crushing bite, the curl's rule (under half its health, 4 s, ×0.3, 12 s apart, not stunned or asleep), weak to Earthquake and Projectile, baked sprites; and one question: the player's own melee against it. The owner: **"Build it"**.
+- **Decision:** the five proposals as they stood, built in `2026-11-13aa`.
+- **Agent's readings, to confirm:** the melee question was not answered, so the rule is built as it reads (the lash and the gauntlet do nothing to it); its 12 s rest counts from uncurling; a glitch does not stop it curling; no race emblem on its card (an approved drawing would be needed); ROLY-POLY as its name on screen; the electrical domain's spawner's numbers.
+- **Affects:** see the changelog's entry; `ELECTRIC-BREED.md`.
+
+## DECISION: The roly-poly: clone potential; Crushing and Slashing's physical half does 0; it curls up to defend
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
+- **Status:** Approved (the owner's answers); the rest proposed in `ELECTRIC-BREED.md` §5; not built
+- **Context:** with the looks set (the roly-poly B, the larva A), three questions with options: enemy only or also a follower; what a Crushing or Slashing hit does, a hit being part physical and part elemental; what rolling up does.
+- **Decision:** **"Clone potential"** (the owner's own answer): an enemy species whose DNA lets the Mutator grow its clone at the Clone Bay, as for every species (the agent's reading: not a follower you recruit or breed). **"Physical half does 0"**: the physical part of a Crushing or Slashing hit does nothing to it; the elemental part lands. **"Curls up to defend"**: hurt, it curls into its wheel and takes much less damage for a while, then uncurls.
+- **Alternatives:** a recruitable or breedable follower; the whole hit doing 0; rolling to ram; both.
+- **Found, for the owner (open):** the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) would do nothing to it.
+- **Affects:** `ELECTRIC-BREED.md` (the spec); when built, js/species.js, js/damage.js (an immune list), js/abilities.js, js/population.js, the creatures' drawing.
+
+## DECISION: The electric breed as mechs; the larva boss in look A; the roly-poly longer, fewer plates, no face, in look B
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
+- **Status:** Approved direction (the owner's words); examples shown; not designed or built
+- **Context:** round 1's studies drew the roly-poly and the larva as animals (below). The owner: "Okay, so I want them to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics from your sketches." Round 2 drew both as mechs in the three looks (A live seams, B insulator, C capacitor shell). The owner: **"A for the larva, redesign the roll poly with a longer body less plates, but more character."**
+- **Decision:** both are mechs in the mechanical-animal genre: armour over a frame, joints, pistons, lenses, nothing thin; the genre's cues, no existing design copied. The larva boss's look is **A, live seams**, as drawn in round 2. The roly-poly is redrawn (round 3): longer, seven plates instead of thirteen, more character.
+- **Agent's, provisional:** round 3's character (antennae posed one raised and one forward, a core housing with lit vents on its back, tail thrusters; ~~two camera eyes under a frowning brow, mandibles; rolled up, its eyes looking out of the seam~~, taken off in round 4), every proportion, the larva's parts.
+- **Later the same day:** the owner: "The roly-poly should not have eyes and a face, bro. But, I mean, we're looking good on the larva for now." Round 4: no eyes and no face on the roly-poly (a rounded armoured head capsule; rolled up, a closed wheel); the larva kept as it is. Then, asked which look for the roly-poly: **"B"** (insulator: glossy black plates, hazard-striped side panels, copper joints, amber lights).
+- **Supersedes:** round 1's animal studies as the direction (kept in commit `e73521a`); round 2's roly-poly (thirteen plates).
+- **Affects (when designed):** as the entry below; the studies: `design/creatures/electric_breed_examples.js`.
+
+## DECISION: The electrical domain's breed: a roly-poly; its boss a diving beetle larva
+
+- **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13x` (nothing built)
+- **Status:** Approved direction (the owner's words); examples shown; not designed or built
+- **Context:** the owner: "Begin work on a new breed of insect using 3D graphics. It's going to be a roly-poly type character that is immune to crushing, immune to slashing, and resistant to piercing. That will be electric type and will inhabit the electric domain, and a boss creature will be a predaceous diving beetle larva. Show me pictures and examples of that before you design it."
+- **Decision:** the electrical domain's creatures are a new breed, a roly-poly (electric, in 3D; immune to Crushing and Slashing, resistant to Piercing), and its boss is a predaceous diving beetle larva. Before any design: reference photos and 3D example studies (`design/creatures/electric_breed_examples.js`).
+- **Agent's, provisional:** the three electric looks drawn (A live seams, B insulator morph, C capacitor shell) and the larva's electric look; nothing chosen.
+- **Open:** `OPEN-QUESTIONS.md`, "The electrical domain's breed" (the look; enemy or follower too; how immunity reads, since immunity is a new rule; rolling up; the boss's place, size and look; names).
+- **Affects (when designed):** js/damage.js (`DMG_RACE`; immunity is new), the enemies and bosses, `COMBAT.md` §7.3, `DOMAINS.md` §2, 14.
+
 ## DECISION: The items in 3D; the PACK's tiles as translucent glossy buttons
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13x` (stamped 13u on its branch)

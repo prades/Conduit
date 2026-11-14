@@ -42,6 +42,7 @@ function getCloneOptions() {
     const options = [];
     const liveClones = cloneLiveCount(), cap = cloneCap(), allowed = cloneAllowed().ok;
     Object.keys(SPECIES).forEach(speciesName => {
+        if (!CLONE_COSTS[speciesName]) return;   // (a species the Bay does not grow: the diving beetle larva, a boss only: js/species.js)
         ["scout","striker","tank"].forEach(className => {
             const key = speciesName + "_" + className;
             const inv = getDNA(); const have = inv[key] || 0;
@@ -73,7 +74,7 @@ function cloneBlockedReason(option) {
         return cap === 1 ? "ONE CLONE AT A TIME — DISMISS YOURS FIRST" : "CLONE CAP " + live + "/" + cap + " — DISMISS ONE FIRST";
     if (option.have < option.needed)
         return "NEED " + (option.needed - option.have) + " MORE " +
-               option.speciesName.toUpperCase() + " DNA";
+               (typeof speciesLabel === "function" ? speciesLabel(option.speciesName) : String(option.speciesName || "").toUpperCase()) + " DNA";
     if (shardCount < option.shardCost)
         return "NEED " + (option.shardCost - shardCount) + " MORE SHARDS";
     return null;
@@ -97,7 +98,7 @@ function dismissOldestClone() {
     c.dismissed = true;   // (it does not come back: js/game.js queues no return for a dismissed clone, and a primary one leaves no body)
     if (c.primary && typeof mutatorReleased === "function") mutatorReleased(c);   // the Mutator's: a share of what it cost comes back (js/mutator.js)
     floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-        text: (c.speciesName || "CLONE").toUpperCase() + (c.primary ? " CLONE RELEASED" : " DISMISSED"),
+        text: (c.speciesName ? (typeof speciesLabel === "function" ? speciesLabel(c.speciesName) : String(c.speciesName || "").toUpperCase()) : "CLONE") + (c.primary ? " CLONE RELEASED" : " DISMISSED"),
         color: "#88aacc", life: 100, vy: -0.2 });
     return true;
 }
@@ -233,7 +234,7 @@ function executeClone(option) {
     // Floating text (the Mutator's: its one clone, which follows it)
     floatingTexts.push({
         x: canvas.width/2, y: canvas.height/2,
-        text: clone.primary ? "YOUR CLONE: " + option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " · IT FOLLOWS YOU" : option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " CLONED",
+        text: clone.primary ? "YOUR CLONE: " + (typeof speciesLabel === "function" ? speciesLabel(option.speciesName) : String(option.speciesName || "").toUpperCase()) + " " + option.className.toUpperCase() + " · IT FOLLOWS YOU" : (typeof speciesLabel === "function" ? speciesLabel(option.speciesName) : String(option.speciesName || "").toUpperCase()) + " " + option.className.toUpperCase() + " CLONED",
         color: speciesDef.color,
         life: 120, vy: -0.5
     });
@@ -242,7 +243,7 @@ function executeClone(option) {
     // clicking the options before closing out of the menu" — it used to shut
     // after one. The floating text above is drawn under the bay's backdrop, so
     // the bay says it itself, in its title bar (drawCloneMenu).
-    _cloneBayFlash = { text: "\u2713 " + option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " CLONED", color: speciesDef.color, until: (frame || 0) + 90 };
+    _cloneBayFlash = { text: "\u2713 " + (typeof speciesLabel === "function" ? speciesLabel(option.speciesName) : String(option.speciesName || "").toUpperCase()) + " " + option.className.toUpperCase() + " CLONED", color: speciesDef.color, until: (frame || 0) + 90 };
 }
 let _cloneBayFlash = null;
 
@@ -814,7 +815,7 @@ function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
     uiButton({ x: ix, y: iy, w: iw, h: ih }, "INFO", UI_ICE, false, 14);
     if (ix >= listX && ix + iw <= listX + listW && iy >= listY && iy + ih <= listY + listH) { opt._ix = ix; opt._iy = iy; opt._iw = iw; opt._ih = ih; }
     // name and numbers
-    uiTextFit(opt.speciesName.toUpperCase(), x + 14, y + artH + 30, 24, opt.ready ? "#fff" : "#8a93a8", "left", w - 28);
+    uiTextFit((typeof speciesLabel === "function" ? speciesLabel(opt.speciesName) : String(opt.speciesName || "").toUpperCase()), x + 14, y + artH + 30, 24, opt.ready ? "#fff" : "#8a93a8", "left", w - 28);
     if (cl) {
         const parts = [`PWR ${cl.power || "?"}`, `HP ${cl.health || "?"}`];
         if (cl.abdomenAttack || (cl.rangeDamage && cl.rangeDamage > 0)) parts.push(opt.speciesName === "spider" ? "WEB" : opt.speciesName === "mantis" ? "AMBUSH" : opt.speciesName === "moth" ? "DUST" : "SPECIAL");
@@ -844,7 +845,7 @@ function renderCloneCostIndex() {
     if (!host) return;
     if (typeof CLONE_COSTS === 'undefined' || typeof cloneShardCost !== 'function') return;
     const cap = typeof cloneCap === 'function' ? cloneCap() : 4, who = typeof cloneWho === 'function' ? cloneWho() : null;
-    const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth'].filter(s => CLONE_COSTS[s]);
+    const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth', 'rolypoly'].filter(s => CLONE_COSTS[s]);   // (the roly-poly: build 2026-11-13aa)
     const classes = ['scout', 'striker', 'tank'];   // the classes the bay offers (getCloneOptions)
     let lo = Infinity, hi = 0; for (const s of natural) for (const c of classes) { const p = cloneShardCost(s, c); lo = Math.min(lo, p); hi = Math.max(hi, p); }   // the real range of the table (cloneShardCost clamps it between CLONE_SHARD_MIN and CLONE_SHARD_MAX)
     if (!isFinite(lo)) lo = typeof CLONE_SHARD_MIN === 'number' ? CLONE_SHARD_MIN : 5;

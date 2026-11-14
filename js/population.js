@@ -18,12 +18,15 @@ const ENEMY_RACES = {
     scorpion: { label: "THE SCORPIONS", species: ["scorpion"], nest: null },
     mantis:   { label: "THE MANTISES", species: ["mantis"], nest: null },
     moth:     { label: "THE MOTHS", species: ["moth"], nest: null },
+    // THE ELECTRIC BREED (docs/ELECTRIC-BREED.md; the owner, 2026-11-13: "will inhabit the electric domain"): the electrical domain's, on its table only (js/facilityspawn.js FP_SPAWN_ELEC)
+    rolypoly: { label: "THE ROLY-POLIES", species: ["rolypoly"], nest: null },
 };
 const SPAWN_TABLES = {
     arena:  [{ id: "ants", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4] }],   // THE ARENA: ants, in the classes and the level band the arena always had
     sewers: [{ id: "brood", until: "purified", races: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: "toxic", brood: true },   // THE SEWERS' BROOD: the Nest's toxic workers and scouts, until the water is clean
              { id: "brood_clean", races: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: null, brood: true }],   // then the same ants with no element: TOXIC ANTS BACK TO NORMAL (the owner, 2026-11-01: "lose the element")
     queen:  [{ id: "infantry", races: ["ant"], classes: { nymph: 1 }, levels: [2, 3], element: "toxic", brood: true }],   // THE QUEEN'S CALL: her toxic nymphs, the infantry of her waves (PROVISIONAL levels, js/bosses.js)
+    electrical: [{ id: "rolypolies", races: ["rolypoly"], classes: { scout: 3, striker: 2, tank: 1 }, levels: [4, 6], element: "electric" }],   // THE ELECTRICAL DOMAIN: its roly-polies, always electric (PROVISIONAL classes and levels, the agent's: build 2026-11-13aa)
 };
 // the world's events a stage may wait for (`until`): the Sewers purified, the Toxic Ant Queen's fate decided
 const SPAWN_WHEN = {

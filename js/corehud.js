@@ -196,7 +196,7 @@ function _coreFoeTick(S, f) {
     if (_core.foeId !== a) {
         _core.foeId = a; _core.foeHp = a.health; _core.dmgAt = -1e9;
         const info = typeof targetCardInfo === "function" ? targetCardInfo(a) : null, url = typeof targetPortraitURL === "function" ? targetPortraitURL(a) : "";
-        _coreSet(E.fname, "textContent", info ? info.title : String(a.speciesName || "").toUpperCase()); _coreSet(E.flv, "textContent", info && info.level !== null ? "LV " + info.level : "");
+        _coreSet(E.fname, "textContent", info ? info.title : (typeof speciesLabel === "function" ? speciesLabel(a.speciesName) : String(a.speciesName || "").toUpperCase())); _coreSet(E.flv, "textContent", info && info.level !== null ? "LV " + info.level : "");
         if (E.foe.style.setProperty) E.foe.style.setProperty("--fc", info ? info.col : "#ff8a6a"); if (url && E.pic.src !== url) E.pic.src = url;
     }
     if (a.health < _core.foeHp) { _core.dmg = (f - _core.dmgAt < 40 ? _core.dmg : 0) + Math.round(_core.foeHp - a.health); _core.dmgAt = f; }

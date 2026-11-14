@@ -23,7 +23,7 @@ function onPredatorDeath(predator) {
     const className = isNymph(predator) ? "scout" : (predator.className || "scout");
     const drops = predator.dnaDrops || 1;
     if (typeof addDNA === "function") addDNA(speciesName + "_" + className, drops);
-    floatingTexts.push({ x: px + 20, y: py - 40, text: "DNA: " + speciesName.toUpperCase() + " x" + drops, color: "#0f8", life: 90, vy: -0.6 });
+    floatingTexts.push({ x: px + 20, y: py - 40, text: "DNA: " + (typeof speciesLabel === "function" ? speciesLabel(speciesName) : String(speciesName || "").toUpperCase()) + " x" + drops, color: "#0f8", life: 90, vy: -0.6 });
 }
 
 // ─────────────────────────────────────────────────────────

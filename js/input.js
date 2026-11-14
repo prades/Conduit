@@ -44,7 +44,7 @@ function findEnemyAtScreen(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
         const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.hypot(ex - _q[0], ey - _q[1]);   // (the battle view's zoom: js/battleview.js)
+        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) { bestD = d; best = a; }
     }
     return best;
@@ -55,7 +55,7 @@ function enemyPickDistance(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
         const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.hypot(ex - _q[0], ey - _q[1]);   // (the battle view's zoom: js/battleview.js)
+        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) bestD = d;
     }
     return bestD;

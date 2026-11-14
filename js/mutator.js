@@ -99,7 +99,7 @@ function drawCloneUpgradePanel(PX, PY, PW, PH, c) {
     uiSlab(x0, PY + 6, w, topH, col, false, "#130a22");
     if (typeof drawCloneArt === "function") { ctx.save(); ctx.beginPath(); ctx.rect(x0 + 6, PY + 10, artW, topH - 8); ctx.clip(); try { drawCloneArt(ctx, { key: c.speciesName + "_" + c.className, speciesName: c.speciesName, className: c.className, ready: true }, x0 + 6 + artW / 2, PY + 6 + topH * 0.8, 1.7); } catch (e) {} ctx.restore(); }
     const tx = x0 + artW + 16, tw = w - artW - 16 - 150;
-    uiTextFit(String(c.speciesName).toUpperCase() + " " + String(c.className).toUpperCase() + " CLONE · LV " + (c.level || "?"), tx, PY + 30, 20, "#f1e2ff", "left", tw);
+    uiTextFit((typeof speciesLabel === "function" ? speciesLabel(c.speciesName) : String(c.speciesName || "").toUpperCase()) + " " + String(c.className).toUpperCase() + " CLONE · LV " + (c.level || "?"), tx, PY + 30, 20, "#f1e2ff", "left", tw);
     const hp = Math.max(0, c.health), mx = Math.max(1, c.maxHealth), fr = hp / mx; ctx.fillStyle = "#05070f"; ctx.fillRect(tx, PY + 44, tw, 10); ctx.fillStyle = fr > 0.5 ? "#19e6c1" : fr > 0.25 ? "#ffd34d" : "#ff5a3a"; ctx.fillRect(tx, PY + 44, tw * fr, 10); ctx.strokeStyle = "#2c3656"; ctx.lineWidth = 1.2; ctx.strokeRect(tx, PY + 44, tw, 10);
     uiCaptionFit("HP " + Math.ceil(hp) + "/" + Math.round(mx) + "   BITE " + Math.round(c.power) + "   REACH " + cloneReach(c).toFixed(2) + "   POUNCE " + (c.pounceRange > 0 ? c.pounceRange.toFixed(1) + " TILES" : "—"), tx, PY + 70, "#c8b6e6", "left", 12, tw);
     uiCaptionFit("DNA " + dnaTotal() + "  (ANY SPLICES)   ·   MUTATOR LV " + mutatorLevel() + (mutatorNextAt() !== null ? " (" + mutatorXp + "/" + mutatorNextAt() + ")" : ""), tx, PY + 90, "#9dffb6", "left", 12, tw);

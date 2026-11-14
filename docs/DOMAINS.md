@@ -2,7 +2,7 @@
 
 - **Status:** The electrical domain's step 1 is **implemented and verified by tests** in build `2026-11-11d` (the door and the place, empty; not playtested). **2026-11-12, the owner's new direction (§2, 7 to 9):** the domains are narrow passages, rooms, nests, caves and instances, not big open halls; the electrical domain is to be rebuilt that way and the Nest grown out into tunnels, both with ways through that use the technicians' utilities; and a default chest. The layouts, the ways through and the chest were proposed (drafts 5 to 9, §5 and `CHESTS.md`); **approved the same day: draft 6, the Ant Nest grown out, with a spot for the volcanic layer in it (§2, 10 and 11), and the chest's look C (`CHESTS.md`)**. **Built in `2026-11-12a`: the Nest grown out (§2, 10 and 11), its ways through, low walls in its tunnels (draft 8, A) and the default chest (`CHESTS.md`)**, after the owner's "Build it" on the agent's picks for what was open (§2, 12). The electrical domain's layout (draft 5) is still open. The volcanic layer and the crystalline area are designed in part, not built.
 - **Owner:** the user (creative direction); the agent (implementation support)
-- **Last updated:** 2026-11-12
+- **Last updated:** 2026-11-13
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-11d` (step 1); drafts 5 to 9 after build `2026-11-11x` (nothing built for them)
 - **Related docs:** `FACILITY.md` (the map, interiors and portals; the hazard containers), `NEST.md`, `TECHNICIANS.md` (the ice bridge, the launcher, REEF, the drill), `FLUX-MOVEMENT.md`, `CHESTS.md` (the default chest), `SEWER-QUEST.md` (the Sewers, built empty first), `TUTORIAL.md` (the junction)
 
@@ -36,6 +36,7 @@ Three new places:
 12. **Walls on the camera's side are low in tunnels and small caves** (draft 8, A, the agent's pick, taken with the owner's "Build it", 2026-11-12): in the Nest's new rooms every rock wall is a low rim, the far walls too (a tall far wall of one cave hid the tunnel behind it), and the queen's cavern's west wall, where the tunnels leave; nothing reacts. The heights are the agent's, provisional.
 
 13. **One place to hold per domain** (2026-11-12, build `2026-11-12o`; the owner's "one checkpoint per domain and the nest": "just another place where you can have followers hold it that aren't a part of your squad"): each domain is one place to hold, as the Ant Nest is, two followers at most across its rooms (`TECHNICIANS.md`, "Rooms and recruitment"). The electrical domain's two rooms are one place now.
+14. **The electrical domain's creatures** (the owner, 2026-11-13: "Begin work on a new breed of insect using 3D graphics. It's going to be a roly-poly type character that is immune to crushing, immune to slashing, and resistant to piercing. That will be electric type and will inhabit the electric domain, and a boss creature will be a predaceous diving beetle larva. Show me pictures and examples of that before you design it."): a new breed, a **roly-poly** (a pill bug), electric, in 3D; immune to Crushing and Slashing, resistant to Piercing; its domain's **boss** a **predaceous diving beetle larva** (a water tiger). **Mechs** (the owner, the same day, of the first studies: "Okay, so I want them to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics from your sketches."): armour over a mechanical frame, joints, pistons, lenses, nothing thin. **The larva boss's look is A, live seams** (the owner: "A for the larva": pale gunmetal armour, yellow energy in its joints, yellow lenses, lit jaw edges). **The roly-poly is redrawn longer, with fewer plates and more character** ("redesign the roll poly with a longer body less plates, but more character"; round 3: seven plates, a core on its back; then **no eyes and no face** (the owner: "The roly-poly should not have eyes and a face, bro. But, I mean, we're looking good on the larva for now."; round 4: a rounded armoured head); **its look B, insulator** (the owner: "B": glossy black plates, hazard-striped side panels, copper joints, amber lights)). The studies: `design/creatures/electric_breed_examples.js` (round 1, the animals, in commit `e73521a`). Nothing designed or built. Immunity is a new rule: the damage table has weak ×1.3 and resist ×0.7 only (`COMBAT.md` §7.3, js/damage.js). **Its rules: `ELECTRIC-BREED.md`** (the owner's answers: clone potential, the physical half does 0, it curls up to defend). **Built in `2026-11-13aa`** ("Build it"): the roly-polies live in the domain's two rooms (its own spawner). **Its boss built in `2026-11-14e`** ("Build it" on the agent's proposal): the diving beetle larva, big, asleep in the middle of The Circuitry (`ELECTRIC-BREED.md` §2, 9).
 
 ## 3. Must-have requirements, by phase
 
@@ -55,7 +56,7 @@ Three new places:
 
 ## 4. Non-goals
 
-- Creatures, bosses, quests, rewards and recruit posts in the domains (later, with the owner).
+- Creatures, bosses, quests, rewards and recruit posts in the domains (later, with the owner; the electrical domain's roly-polies built in `2026-11-13aa`, §2, 14; its boss, the diving beetle larva, in the middle of The Circuitry, built in `2026-11-14e`).
 - Moving the Server Room's racks, console, junction or doors (the relay node on the wall beside the junction moves aside for the door); changing the Ant Nest's queen or console.
 - Phones (not supported).
 
@@ -141,7 +142,7 @@ Three new places:
 2. ~~What "a lot more development in the nest" holds, and where its sloping tunnel down to the volcanic layer starts.~~ **Answered 2026-11-12:** draft 6 (§2, 10); the way down at the south-west, from the deep brood into the volcanic layer, part of the Nest (§2, 11).
 4. The volcanic layer's and the crystalline area's look and size (the volcanic layer now has its spot in the Nest: §2, 11; its passages and caves are still to design).
 5. Which relay powers the electrical domain, and how dark it is.
-6. Later: each domain's creatures, boss and quest.
+6. Later: each domain's creatures, boss and quest. (The electrical domain's: the roly-polies, built in `2026-11-13aa`; its boss, the diving beetle larva, built in `2026-11-14e`, asleep in the middle of The Circuitry until the Deep Chamber is built: `ELECTRIC-BREED.md` §2, 9. Its quest and rewards: not designed.)
 7. **Draft 5**, the electrical domain as passages and rooms: build it as drawn, or change it (the rooms, the order, the ways through, the chests' places)?
 8. ~~**Draft 6**, the Ant Nest grown out: as drawn, or changed?~~ **Answered 2026-11-12:** as drawn, with a spot for the volcanic layer (§2, 10 and 11).
 9. **The ways through** (draft 7): which obstacles a blast breaks (a cracked wall and a leaning stack; in the Nest a hanging rock?); a key technician for each domain's main way (FLUX in the electrical domain), or none. (The Nest's are in its approved draft: the cracked wall, the drill as its key, the acid flask eating resin.)
@@ -158,3 +159,5 @@ Three new places:
 - 2026-11-11, later: look A chosen (§2, 6); the nests' sloping tunnels (§2, 5). Decision record: `DECISION-LOG.md`, "The electrical domain's look; the nests' tunnels; the catwalks swap sides".
 - 2026-11-12: the owner's new direction (§1; §2, 7 to 9): narrow passages, rooms, nests, caves and instances; ways through by the technicians' utilities; a default chest. The big open area superseded. Drafts 5 to 9 (§5, `CHESTS.md`). Decision record: `DECISION-LOG.md`, "The domains are passages, rooms, nests, caves and instances".
 - 2026-11-12, later: draft 6 approved, with a spot for the volcanic layer in the Nest (§2, 10 and 11); the chest's look C. Decision record: `DECISION-LOG.md`, "The Ant Nest grows out as drawn, the volcanic layer in it; the chest is the hex cache".
+- 2026-11-13: the electrical domain's breed and boss named by the owner (§2, 14); reference photos and 3D example studies shown; nothing designed. Decision record: `DECISION-LOG.md`, "The electrical domain's breed: a roly-poly; its boss a diving beetle larva".
+- 2026-11-14: the electrical domain's boss, the diving beetle larva, built in The Circuitry (`2026-11-14e`; §2, 14; `ELECTRIC-BREED.md`).

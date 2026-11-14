@@ -238,12 +238,12 @@ function xpEvoText(p) {
 function unitTypeLabel(a) {
     if (!a) return "";
     if (a.nick) return String(a.nick).toUpperCase();   // a unit with a NAME carries it (js/redeem.js unitSetNick; the owner, 2026-11-12: "add a naming system")
-    if (a.isClone) return String(a.speciesName || "").toUpperCase() + " CLONE";
+    if (a.isClone) return (typeof speciesLabel === "function" ? speciesLabel(a.speciesName) : String(a.speciesName || "").toUpperCase()) + " CLONE";
     if (a.isFollower && a.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[a.evolved]) return EVOLUTIONS[a.evolved].name;
     if (a.isFollower) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === a.element) : null; return e && e.none ? roleLabel(a.role) : (e ? e.label : String(a.element || "").toUpperCase()) + " " + roleLabel(a.role); }   // (its element's name: BLOOM's id is "blossom"; NO ELEMENT, its role alone)
     if (a.bossName) return a.bossName;   // a boss is named (js/bosses.js BOSS_ENCOUNTERS)
     // An enemy names its element (the type chart is in every fight now).
-    if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + String(a.speciesName).toUpperCase() + " " + String(a.className || "").toUpperCase();
+    if (a.speciesName) return (a.element ? String(a.element).toUpperCase() + " " : "") + (typeof speciesLabel === "function" ? speciesLabel(a.speciesName) : String(a.speciesName || "").toUpperCase()) + " " + String(a.className || "").toUpperCase();
     return "";
 }
 // Drawn centred above a health bar whose top edge is at y: the name plate (level and kind; js/draw.js drawPlate), and over it, for your own units, a chip saying what they

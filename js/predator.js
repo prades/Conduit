@@ -229,6 +229,8 @@ class Predator {
         if (this.dead) return;
         // ── STUN (the Frost Maw's and the Manta's moves, js/evolution.js): it cannot move, bite or use an ability until the timer, which updateStatusEffects runs down, is out ──
         if (this.stunned > 0) return;
+        // ── CURLED UP (the roly-poly, js/rolypoly.js): in its wheel it neither moves nor bites until its timer, which updateStatusEffects runs down, is out ──
+        if (this.curled > 0) return;
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;

@@ -112,22 +112,24 @@ function targetRelease(ex, ey) {
 }
 
 // ── the creature's picture ──
+// the square it is first drawn into at its own size, and where its ground point is: 260 px (THE ANT QUEEN's fits), more for a bigger one (the diving beetle larva, build 2026-11-14e)
+function _tgBox(a) { const n = Math.max(260, 2 * Math.ceil(1.3 * ((a && a.dimensions && a.dimensions.width) || 26))); return { n, ox: n / 2, oy: Math.round(n * 150 / 260) }; }
 // Drawn once per kind with the game's own creature drawing (js/bugs3d.js) into a small canvas, fitted to the box whatever its size.
 function targetPortrait(a) {
     if (a && a.isHazardTarget) return _tgHazardPic(a, 96, false);   // (a flask: its own sprite, js/hazards.js)
-    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
+    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1), (typeof larvaArtReady === "function" ? +larvaArtReady(a) : 1)].join("|");   // (the last: a roly-poly's sheet has arrived, js/rolypoly.js: a beetle stood in before) if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
     let c = null;
     try {
         c = document.createElement("canvas"); c.width = c.height = 96; const g = c.getContext("2d"), col = _tgColour(a);
         const bg = g.createRadialGradient(48, 50, 4, 48, 50, 62); bg.addColorStop(0, "rgba(86,104,160,0.95)"); bg.addColorStop(1, "rgba(14,20,44,0.95)"); g.fillStyle = bg; g.fillRect(0, 0, 96, 96);
         const halo = g.createRadialGradient(48, 56, 2, 48, 56, 44); halo.addColorStop(0, col); halo.addColorStop(1, "rgba(0,0,0,0)"); g.globalAlpha = 0.28; g.fillStyle = halo; g.fillRect(0, 0, 96, 96); g.globalAlpha = 1;
-        const dx = a.dirX, dy = a.dirY; a.dirX = 0.35; a.dirY = 1;   // (facing the camera's left, as drawn in play; put back below)
+        const dx = a.dirX, dy = a.dirY, cu = a.curled; a.dirX = 0.35; a.dirY = 1; a.curled = 0;   // (facing the camera's left, as drawn in play, a roly-poly uncurled: put back below)
         try {
-            const t = document.createElement("canvas"); t.width = t.height = 260; const tg = t.getContext("2d"); tg.translate(130, 150); if (typeof drawBug3D === "function") drawBug3D(a, 0, 0, tg);
-            const d = tg.getImageData(0, 0, 260, 260).data; let x0 = 260, y0 = 260, x1 = -1, y1 = -1;
-            for (let y = 0; y < 260; y++) for (let x = 0; x < 260; x++) if (d[(y * 260 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+            const B = _tgBox(a), t = document.createElement("canvas"); t.width = t.height = B.n; const tg = t.getContext("2d"); tg.translate(B.ox, B.oy); if (typeof drawBug3D === "function") drawBug3D(a, 0, 0, tg);
+            const d = tg.getImageData(0, 0, B.n, B.n).data; let x0 = B.n, y0 = B.n, x1 = -1, y1 = -1;
+            for (let y = 0; y < B.n; y++) for (let x = 0; x < B.n; x++) if (d[(y * B.n + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
             if (x1 >= 0) { const w = x1 - x0 + 1, h = y1 - y0 + 1, sc = Math.min(5, 76 / Math.max(w, h)); g.imageSmoothingEnabled = true; g.drawImage(t, x0, y0, w, h, 48 - w * sc / 2, 50 - h * sc / 2, w * sc, h * sc); }
-        } finally { a.dirX = dx; a.dirY = dy; }
+        } finally { a.dirX = dx; a.dirY = dy; a.curled = cu; }
     } catch (e) { c = null; }
     return (_tgPortraits[key] = c);
 }
@@ -160,17 +162,17 @@ function targetPortraitURL(a) {
 const _tgBigURLs = {}, TG_BIG = 300;
 function targetBigPortraitURL(a) {
     if (a && a.isHazardTarget) { const k = a.solid.kind; if (_tgBigURLs[k]) return _tgBigURLs[k]; const c = _tgHazardPic(a, TG_BIG, true); return c ? (_tgBigURLs[k] = c.toDataURL("image/png")) : ""; }   // (a flask: its own sprite, large: js/hazards.js)
-    if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
-    let url = ""; const dx = a.dirX, dy = a.dirY; a.dirX = 0.35; a.dirY = 1;   // (facing the camera's left, as the portrait; put back below)
+    if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1), (typeof larvaArtReady === "function" ? +larvaArtReady(a) : 1)].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
+    let url = ""; const dx = a.dirX, dy = a.dirY, cu = a.curled; a.dirX = 0.35; a.dirY = 1; a.curled = 0;   // (facing the camera's left, as the portrait, a roly-poly uncurled: put back below)
     try {
-        const t = document.createElement("canvas"); t.width = t.height = 260; const tg = t.getContext("2d"); tg.translate(130, 150); drawBug3D(a, 0, 0, tg);   // where it is: drawn once at its own size
-        const d = tg.getImageData(0, 0, 260, 260).data; let x0 = 260, y0 = 260, x1 = -1, y1 = -1;
-        for (let y = 0; y < 260; y++) for (let x = 0; x < 260; x++) if (d[(y * 260 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        const B = _tgBox(a), t = document.createElement("canvas"); t.width = t.height = B.n; const tg = t.getContext("2d"); tg.translate(B.ox, B.oy); drawBug3D(a, 0, 0, tg);   // where it is: drawn once at its own size
+        const d = tg.getImageData(0, 0, B.n, B.n).data; let x0 = B.n, y0 = B.n, x1 = -1, y1 = -1;
+        for (let y = 0; y < B.n; y++) for (let x = 0; x < B.n; x++) if (d[(y * B.n + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         if (x1 >= 0) {
             const w = x1 - x0 + 1, h = y1 - y0 + 1, sc = TG_BIG * 0.94 / Math.max(w, h), c = document.createElement("canvas"); c.width = c.height = TG_BIG; const g = c.getContext("2d");
-            g.translate(TG_BIG / 2, TG_BIG / 2); g.scale(sc, sc); g.translate(-(x0 + w / 2 - 130), -(y0 + h / 2 - 150)); drawBug3D(a, 0, 0, g); url = c.toDataURL("image/png");
+            g.translate(TG_BIG / 2, TG_BIG / 2); g.scale(sc, sc); g.translate(-(x0 + w / 2 - B.ox), -(y0 + h / 2 - B.oy)); drawBug3D(a, 0, 0, g); url = c.toDataURL("image/png");
         }
-    } catch (e) { url = ""; } finally { a.dirX = dx; a.dirY = dy; }
+    } catch (e) { url = ""; } finally { a.dirX = dx; a.dirY = dy; a.curled = cu; }
     return (_tgBigURLs[key] = url);
 }
 
@@ -323,7 +325,7 @@ function _tgDialDraw(a, f) {
 }
 // the INFO card beside the dial: what it is and its numbers
 const TARGET_NOTES = {
-    species: { ant: "A colony animal: it swarms; workers carry.", beetle: "Armoured and slow: hits hard up close.", spider: "Spits webs and venom from a distance.", scorpion: "Strikes with a stinger tail from behind.", mantis: "Ambushes with its raptorial forelegs.", moth: "Blows dust clouds that dull the senses." },
+    species: { ant: "A colony animal: it swarms; workers carry.", beetle: "Armoured and slow: hits hard up close.", spider: "Spits webs and venom from a distance.", scorpion: "Strikes with a stinger tail from behind.", rolypoly: "A mech of the electrical domain: Crushing and Slashing do nothing to its plates, and hurt, it curls up.", mantis: "Ambushes with its raptorial forelegs.", moth: "Blows dust clouds that dull the senses." },
     cls: { scout: "Fast and fragile.", worker: "Middling at everything.", striker: "Hits hard, tougher than a scout.", tank: "Slow, with a great deal of health.", boss: "Very dangerous." },
 };
 function targetInfoLines(a) {
@@ -338,12 +340,12 @@ function targetInfoLines(a) {
 // a creature with no plain bite (THE ANT QUEEN: her MANDIBLE CRUSH is her bite, js/bosses.js) shows her crush instead
 function _tgCrush(a) { const E = a && a.noBite && a.bossId && typeof bossEnc === "function" ? bossEnc(a.bossId) : null; return E && E.moves && E.moves.crush ? E.moves.crush : null; }
 function _tgBiteK(a) { const c = _tgCrush(a); return c ? c.power : 1; }
-function _tgBiteLabel(a) { if (a && a.isHazardTarget) return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; return _tgCrush(a) ? "CRUSH" : "BITE"; }   // (a flask: its blast, or its acid's bite)
+function _tgBiteLabel(a) { if (a && a.isHazardTarget) return a.solid && a.solid.kind === "hazard_corrosive" ? "ACID" : "BLAST"; const c = _tgCrush(a); return c ? (c.card || "CRUSH") : "BITE"; }   // (a flask: its blast, or its acid's bite; a boss's crush by its own word: the larva's SNAP)
 // what the enemy card shows (js/mixtool.js): its name (and the shorter title for the card) and colour, level and class, health and the two numbers that matter
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     return {
-        name: targetName(a), title: a.bossName ? a.bossName : a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() : targetName(a),   // (a boss is named: js/bosses.js)   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
+        name: targetName(a), title: a.bossName ? a.bossName : a.speciesName ? ((typeof speciesLabel === "function" ? speciesLabel(a.speciesName) : String(a.speciesName || "").toUpperCase()) + " " + String(a.className || "").toUpperCase()).trim() : targetName(a),   // (a boss is named: js/bosses.js)   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
         col: _tgColour(a), level: Number.isFinite(a.level) ? a.level : null, cls: String(a.className || "").toUpperCase(), element: el ? el.label.toUpperCase() : "", hp, max: mx, frac: Math.max(0, Math.min(1, hp / mx)),
         bite: Number.isFinite(a.power) ? Math.round(a.power * _tgBiteK(a) * 10) / 10 : null, biteLabel: _tgBiteLabel(a), speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
     };

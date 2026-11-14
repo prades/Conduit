@@ -40,12 +40,17 @@ const BUG_DOME_LITE = [[-0.5, 0.85], [0, 1], [0.6, 0.8], [0.92, 0.4]];
 function bugBodyStyle(a) {
     if (!a) return null;
     const sp = a.speciesName;
+    if (sp === "rolypoly") return "rolypoly";   // (its baked sheet: drawBug3D hands it to js/rolypoly.js)
+    if (sp === "larva") return "larva";         // (its baked sheet: drawBug3D hands it to js/larva.js)
     return BUG_REF_WIDTH[sp] ? sp : null;
 }
 
 // Draw it; returns its height on screen in pixels (for the bars over it).
 function drawBug3D(actor, px, py, g, style) {
     g = g || ctx;
+    // the roly-poly is drawn from its baked sheet (js/rolypoly.js); until the sheet arrives, a beetle's body stands in for it
+    if (actor && actor.speciesName === "rolypoly") { const h = typeof drawRolyPoly === "function" ? drawRolyPoly(actor, px, py, g) : null; if (h !== null) return h; style = "beetle"; }
+    if (actor && actor.speciesName === "larva") { const h = typeof drawLarva === "function" ? drawLarva(actor, px, py, g) : null; if (h !== null) return h; style = "beetle"; }   // (the diving beetle larva, the electric breed's boss: js/larva.js)
     style = style || bugBodyStyle(actor);
     const ref = BUG_REF_WIDTH[style] || 22;
     const s = (actor.dimensions ? actor.dimensions.width : ref) / ref;

@@ -214,6 +214,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     else { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
     if (target.untargetable) return;   // underground: nothing reaches it
     if (target._consume && typeof consumeGuard === "function") amount = consumeGuard(target, amount);   // (SUNDEW holding a catch: 75% less, js/elements.js)
+    if (target.curled > 0 && typeof rolyTaken === "function") amount = rolyTaken(target, amount);   // (a roly-poly curled into its wheel: x0.3, js/rolypoly.js; build 2026-11-13aa)
     if (target._guardUntil > 0 && typeof shellGuardCut === "function") amount = shellGuardCut(target, amount);   // (the Hammer Slug's SHELL GUARD: less while it braces, js/evolution.js; build 2026-11-09c)
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
@@ -259,6 +260,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     const _before = target.health;
     target.health -= dmg;
     if (typeof noteHit === "function") noteHit(target, _before);   // the bar's pale segment shows the hit's size (js/combat.js)
+    if (dmg > 0 && target.speciesName === "rolypoly" && typeof rolyAfterHit === "function") rolyAfterHit(target);   // a hit that leaves a roly-poly under half its health curls it up (js/rolypoly.js)
     if (source && !isReflected && dmg > 0 && source.element === "blossom" && typeof elementMend === "function") elementMend(source);   // BLOOM's MEND: the most hurt of yours nearby is healed a little (js/elements.js)
     if (source) target.lastAttacker = typeof predatorSource === "function" ? predatorSource(source) : source;   // (the player's hit: the player itself, js/predator.js, so a creature turns on the player)
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;

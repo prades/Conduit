@@ -239,6 +239,7 @@ The owner: "We also need to make themes for the different species and give textu
     - SPIDER: a round abdomen with a mark cut in it, the head, eight long bent legs;
     - MANTIS: a triangular head with its eyes, the long neck, raised raptor arms with hooks, a banded abdomen, four legs;
     - MOTH: four spread wings with an eyespot cut in each upper one, the body, two feelers.
+  - The ROLY-POLY's (the electric breed, the seventh race; the owner's pick of four drafts, 2026-11-14: "C"; built in `2026-11-14h`): in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind (`design/cards/rolypoly-emblem-drafts.js` draws the four).
   - BLOOM's: three square pink crystals, the middle one the tallest (build `2026-11-08i`, approved 2026-11-08); it was to be a blossom.
 - **The enemy card:**
   - the race's icon before its name;

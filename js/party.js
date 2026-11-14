@@ -470,7 +470,7 @@ function _partyCloneCard(E) {
     if (hp && hp.style.width !== w) hp.style.width = w; if (hp && hp.className !== cls) hp.className = cls;
     if (hpn) _sbSet(hpn, "textContent", Math.max(0, Math.round(c.health || 0)) + "/" + Math.max(1, Math.round(c.maxHealth || 1)));
     _partyXpBar(el, c);
-    const key = c.speciesName + "|" + c.className;
+    const key = c.speciesName + "|" + c.className + "|" + (typeof rolyArtReady === "function" ? +rolyArtReady(c) : 1);   // (a roly-poly drawn again once its sheet arrives: js/rolypoly.js)
     if (el._thumbKey !== key) { el._thumbKey = key; partyCloneThumb(el.querySelector(".sb-thumb"), c); }
 }
 // the clone's picture on a small canvas: the creature itself (js/clone.js drawCloneArt), not a coloured blob
