@@ -45,6 +45,14 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The followers' perks are removed
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14e`
+- **Status:** Approved
+- **Context:** the owner saw an Electro Skink healing with no healer in the squad; it was its SIPHON perk, drawn at random and shown only on its INFO card. The owner had forgotten the perks existed.
+- **Decision:** IRON WILL and SIPHON are removed; no follower has a perk; saved ones are dropped. A redesign is for later.
+- **Affects:** js/traits.js and the places that drew, saved or asked a perk; the Bible.
+
 ## DECISION: The balance page's support score is the statuses a form distributes
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun`, `2026-11-14d`

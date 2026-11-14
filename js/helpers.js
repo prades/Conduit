@@ -539,7 +539,7 @@ function spawnFollowerAtCrystal(element, type) {
         hitFlash:0, dead:false,
         combatTrait:  Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)],
         naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)],
-        perk:         Object.keys(PERKS)[Math.floor(Math.random()*2)]
+        perk:         null   // (the perks are gone: js/traits.js, build 2026-11-14e)
     };
     if (typeof followerUid === "function") followerUid(npc);
     // Its level: a little behind the arena's creatures (js/levels.js recruitLevel).

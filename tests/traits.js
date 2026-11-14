@@ -46,6 +46,17 @@ function ok(c, m) { if (!c) throw new Error(m); }
         return Object.assign(out, { fx: f.x, fy: f.y, target: f._nearestEnemy ? f._nearestEnemy.id : null });
     })()`);
 
+    group('THE PERKS ARE GONE (build 2026-11-14e; the owner, 2026-11-14: "can we get rid of those perks? And maybe we can redesign those at a later time")');
+    await check('no perk exists and none is drawn: a new follower has none; one saved with SIPHON or IRON WILL comes back with none; a follower still carrying the word neither heals on a hit nor takes less', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ const o = { n: Object.keys(PERKS).length };
+            spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; o.fresh = f.perk === null || f.perk === undefined;
+            o.load = typeof followerBuild === 'function' ? (function(){ const e = { element: 'fire', personality: 'aggressive', role: 'brawler', perk: 'siphon', stats: Object.assign({}, f.stats) }; const g = followerBuild(e); return g ? (g.perk === null || g.perk === undefined) : 'none'; })() : 'no followerBuild';
+            f.perk = 'iron_will'; f.spawnProtection = 0; f.health = f.maxHealth = 1000; applyDamage(f, 10, null, null, false, true); o.took = 1000 - f.health;
+            f.perk = 'siphon'; f.health = 500; const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), f.x + 0.5, f.y); p.team = 'red'; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            for (let i = 0; i < 5; i++) { f.attackCooldown = 0; followerAttack(f, p); } o.healed = f.health - 500; p.dead = true; followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f && a !== p); return o; })())`));
+        ok(r.n === 0, 'perks left: ' + r.n); ok(r.fresh === true, 'a new follower drew a perk'); ok(r.load === true, 'a saved perk came back: ' + r.load); ok(r.took === 10, 'IRON WILL still cut a hit: took ' + r.took); ok(r.healed <= 0, 'SIPHON still healed: ' + r.healed);
+    });
+
     group('HYBRID: no longer passive');
 
     await check('a hybrid chases and fights an enemy like a brawler', () => {

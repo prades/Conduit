@@ -17,13 +17,7 @@ const NATURAL_TRAITS = {
     lone_wolf:  { name:"Lone Wolf",  description:"Moves further from player when idle",
         onIdle(a)   { a.wanderRadius = 4; } }
 };
-const PERKS = {
-    iron_will: {
-        name:"Iron Will", description:"Takes reduced damage",
-        modifyIncomingDamage(a, dmg) { return dmg * 0.75; }
-    },
-    siphon: {
-        name:"Siphon", description:"Heals when dealing damage",
-        onDealDamage(a, amount) { a.health = Math.min(a.maxHealth, a.health + amount*0.1); }
-    }
-};
+// THE PERKS ARE GONE (build 2026-11-14e; the owner, 2026-11-14, asking how an Electro Skink was healing: "can we get rid of those perks? And maybe we can redesign those at a later time, but I forgot about
+// those"). Every follower drew one of two at random when it was made, shown only on its INFO: IRON WILL (damage taken x 0.75) and SIPHON (healed 10% of each plain hit's damage). No follower has one now:
+// none is drawn, a saved one is dropped on load, and the hooks that asked a perk (js/helpers.js applyDamage, js/combat.js, js/npc.js) find nothing. The table stays, empty, for the redesign.
+const PERKS = {};

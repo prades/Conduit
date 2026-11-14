@@ -100,7 +100,7 @@ function updateRTSNPC(actor) {
             else { const pool = [...unlockedElements].filter(e => e !== "none"); actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];
-            if (!actor.perk)         actor.perk         = Object.keys(PERKS)[Math.floor(Math.random()*2)];
+            actor.perk = null;   // (the perks are gone: js/traits.js, build 2026-11-14e)
             // Flash element color on arrival
             actor.convertFlash = 30;
             actor.isNeutralRecruit = false;

@@ -6,6 +6,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14e` · branch `claude/remove-perks` · the followers' perks are gone
+- **The ask** (the owner, 2026-11-14: "How is my electro skink healing when I have a void star and a rot shard in combat"; told it was its SIPHON perk, **"can we get rid of those perks? And maybe we can redesign those at a later time, but I forgot about those"**).
+- **What they were:** every follower drew one of two at random when it was made, shown only on its INFO card: **IRON WILL** (damage taken × 0.75) and **SIPHON** (it healed 10% of each plain hit's damage).
+- **Now:** `PERKS` (js/traits.js) is empty. No follower draws one; a saved one is dropped on load and on respawn; the hooks that asked a perk find nothing. The INFO card's TRAITS has no PERK row. The combat and natural traits (Berserker, Opportunistic, Empathetic, Lone Wolf) are as they were. The player's class perks (`CLASS_PERKS`) are another thing and are untouched.
+- **What changes in play:** about half the followers take a third more damage than they did (IRON WILL's × 0.75 is gone), and the other half no longer heal on their plain hits.
+- `js/traits.js`, `js/helpers.js`, `js/npc.js`, `js/facilitysave.js`, `js/game.js`, `js/infodex.js`, `tests/traits.js` (a check that none exists, none is drawn, a saved one comes back as none, and the two old effects do nothing), `tests/followercombat.js`, the Bible, `docs/OPEN-QUESTIONS.md`.
+- The balance trial was not run again (a perk was drawn at random for each trial follower before; it is none now). Not playtested.
+
 ### Build `2026-11-14d` · branch `claude/balance-rerun` · the balance page counts the statuses a form distributes; a lure is no longer counted twice
 - **The ask** (the owner, 2026-11-14: "Rerun tests"; then "Are we accounting for support points? I feel like the Rotten Decoy would do a lot of support if it's holding down enemies, and I don't understand how the Hammer Slug's shell guard is at 1.9 above their band"; told how the score was made, **"I think you should count the statuses that are distributed"**).
 - **What was wrong:** SHELL GUARD scored 63.5 from a lure counted as the enemy's whole damage held off (though its hits still land on the Slug) plus the damage its guard cut, counted before defence; and the damage one enemy deals, taken from a live run, moved between 5 and 12 from one run to the next, so every support score moved with it.
