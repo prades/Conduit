@@ -165,7 +165,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The default chest (booster packs and other items to find; proposed 2026-11-12, its look approved: the hex cache; nothing built) | `CHESTS.md` |
 | Code cards: typing a code on the Cards sheet for a gift (a level 20 mantis clone named Emotional Support for "Kylie" or "frommatt"), and the naming system (built 2026-11-12) | `CODES.md` |
 | The Ant Nest (beyond the arena's south rubble: THE ANT QUEEN and the testing console; designed 2026-11-07) | `NEST.md` |
-| The electric breed: the roly-poly (an electric mech species of the electrical domain: immune to Crushing and Slashing's physical half, resists Piercing, curls up to defend, clone potential) and its boss, a diving beetle larva (looks chosen and rules designed in part 2026-11-13; nothing built) | `ELECTRIC-BREED.md` |
+| The electric breed: the roly-poly (an electric mech species of the electrical domain: immune to Crushing and Slashing's physical half, resists Piercing, curls up to defend, clone potential) and its boss, a diving beetle larva in The Circuitry (big; SICKLE SNAP and SHOCK RING on THE ANT QUEEN's pattern) (the roly-poly built in `2026-11-13aa`, the larva in `2026-11-14b`) | `ELECTRIC-BREED.md` |
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |
 | Series 2 cards | `SERIES-2.md` |

@@ -42,6 +42,7 @@ function getCloneOptions() {
     const options = [];
     const liveClones = cloneLiveCount(), cap = cloneCap(), allowed = cloneAllowed().ok;
     Object.keys(SPECIES).forEach(speciesName => {
+        if (!CLONE_COSTS[speciesName]) return;   // (a species the Bay does not grow: the diving beetle larva, a boss only: js/species.js)
         ["scout","striker","tank"].forEach(className => {
             const key = speciesName + "_" + className;
             const inv = getDNA(); const have = inv[key] || 0;

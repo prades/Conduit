@@ -158,6 +158,7 @@ const IMG_MAP = {
     "img/props/holdtank.png": "img/props/holdtank.webp?v=a6c8c68f",
     "img/props/itemicons.png": "img/props/itemicons.webp?v=9ed6c2a2",
     "img/props/lab.png": "img/props/lab.webp?v=bac30920",
+    "img/props/larva.png": "img/props/larva.webp?v=dadf693b",
     "img/props/lounge.png": "img/props/lounge.webp?v=483efecc",
     "img/props/office.png": "img/props/office.webp?v=7c13ce7d",
     "img/props/pickups.png": "img/props/pickups.webp?v=f9db8c87",

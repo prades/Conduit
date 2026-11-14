@@ -133,9 +133,9 @@ check('every ability def has the fields the machine reads', () => {
 });
 
 group('class stat lookup');
-check('every species defines a worker block (but the roly-poly: a scout, a striker and a tank only, docs/ELECTRIC-BREED.md)', () => {
+check('every species defines a worker block (but the roly-poly: a scout, a striker and a tank only; and the diving beetle larva, a boss only: docs/ELECTRIC-BREED.md)', () => {
     const S = run('SPECIES');
-    for (const sp of Object.keys(S)) { if (sp === 'rolypoly') { ok(!S[sp].worker, 'rolypoly has no worker'); continue; } ok(S[sp].worker, sp + ' worker'); }
+    for (const sp of Object.keys(S)) { if (sp === 'rolypoly' || sp === 'larva') { ok(!S[sp].worker, sp + ' has no worker'); continue; } ok(S[sp].worker, sp + ' worker'); }
 });
 check('worker is weaker and faster than the same species scout', () => {
     const S = run('SPECIES');

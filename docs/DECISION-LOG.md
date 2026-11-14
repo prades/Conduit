@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The diving beetle larva built as proposed ("Build it")
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14b`
+- **Status:** Approved (the owner's words); built
+- **Context:** the agent's proposal for the larva boss on THE ANT QUEEN's pattern (`ELECTRIC-BREED.md` §2, 9; §5 as it stood): the middle of The Circuitry; about twice her length, a body 1.8 tiles round; woken by yours near or a hit; twice her health at level 12, electric; SICKLE SNAP (her crush: every 6 s, 0.9 s of warning, 2.5 tiles past its body); SHOCK RING (her stomp, throwing back: every 10 s, within 3 tiles); no brood; no damage row. The owner: **"Build it"**.
+- **Decision:** the proposal as it stood, built in `2026-11-14b`.
+- **Agent's readings, to confirm:** SICKLE SNAP is a Piercing hit (half of it electric, as every electric creature's); SHOCK RING all electric; her wedge (115 degrees), her strengths (0.4 and 0.25 × its power), her ring (3.6 tiles past its body) and her 1.2 s for SHOCK RING's warning; it pays nothing and unlocks nothing (the queen's `test` rule) until its rewards are decided; the electrical domain's rooms arm it (so it is asleep before you reach its room); a fresh one each time you come back after it died (her rule); its own boss-only species; the name THE DIVING BEETLE LARVA; it keeps every boss's shield aura (the roly-polies near it gain shields); a tap anywhere on a huge body picks it (the queen's too).
+- **Affects:** see the changelog's entry; `ELECTRIC-BREED.md`.
+
 ## DECISION: Your melee does nothing to the roly-polies; the larva boss is big
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13aa` (no change to the game)

@@ -42,6 +42,11 @@
 //             frames, a ring on the floor showing how far it reaches, then the ground shakes: everyone of yours within the ring is hurt (earthquake damage) and thrown back (you: one of your hits); the BROOD
 //             CALL, every `brood.every` frames once she is awake: ants climb out of the Nest's brood holes (`brood.n`, never more than `brood.cap` of hers alive) and go for you.
 //   NOTHING   she or her brood leave pays (no shards, DNA or XP: `noReward`, js/drops.js and js/levels.js), and beating her unlocks nothing (bossAnyResolved leaves a test boss out): her rewards are undecided.
+// THE CIRCUITRY'S DIVING BEETLE LARVA (docs/ELECTRIC-BREED.md §5, build 2026-11-14b; the owner, 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal): the row `circuitry`, on her
+// pattern (a `test` row with `moves`): asleep in the middle of The Circuitry, there whenever you come down into the electrical domain (its `place`: the domain's rooms arm it, so it is waiting before you
+// reach its room), woken by a hit or one of yours near it, held to its room. Twice her size and her health, at level 12, electric. Her crush and her stomp are its own, by their rows' names, words and
+// kinds of hit (SICKLE SNAP: piercing and electric; SHOCK RING: electric); it has no brood. It pays nothing and unlocks nothing (`test`), as she does. Its baked sheet (`sheet`, preloaded with the page as every sheet is) is made ready when it is armed.
+const HP_MUL_LARVA = 2.91;   // THE DIVING BEETLE LARVA's health: twice THE ANT QUEEN's (the owner approved "twice the Ant Queen's health, at level 12", 2026-11-14): 2.91 times its block (hers, the ant's boss) at level 12 is 2133 (hers is 1067 at level 10). PROVISIONAL, as hers
 const HP_MUL_NEST = 1.6;   // THE ANT QUEEN's health: 1.6 times the ant boss block at her level (1067 at level 10). PROVISIONAL, measured (docs/NEST.md): three evolved followers at level 15 dealt her 15 to 18 a second, her moves off
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
@@ -69,6 +74,16 @@ const BOSS_ENCOUNTERS = {
         },
         quest: null, wakes: ["hit", "near"], calms: [],
         note: "THE ANT QUEEN of the Ant Nest (docs/NEST.md): the archive's proposed first nest boss (Stage 1 of the faction progression), built as the Nest's test boss (the owner, 2026-11-07); in the Deep Brood since build 2026-11-12d, her test console gone. Every number is provisional." },
+    circuitry: { id: "circuitry", domain: "elec_circuitry", room: "elec_circuitry", place: "electrical", name: "THE DIVING BEETLE LARVA", species: "larva", cls: "boss", element: "electric", level: 12, test: true, sheet: "larva",
+        lair: F => { const R = F.byId.get("elec_circuitry"); return R ? [(R.bb[0] + R.bb[2]) / 2, (R.bb[1] + R.bb[3]) / 2] : null; },   // its POST: the middle of The Circuitry (the Deep Chamber once the domain's draft 5 is built: docs/DOMAINS.md)
+        size: 6, bodyR: 1.8, hpMul: HP_MUL_LARVA, wakeNear: 2.5,   // twice the queen's size (her 3): about twice her length on the floor; its body's reach 1.8 tiles (hers 1.2)
+        mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null,
+        moves: {   // the queen's crush and stomp, as its own (no brood: the domain's roly-polies keep coming, js/facilityspawn.js FP_SPAWN_ELEC)
+            crush: { name: "SICKLE SNAP", word: "SICKLE SNAP!", hitWord: "SNAPPED", type: "piercing", every: 360, windup: 54, reach: 2.5, arc: 1.0, power: 0.4 },   // its jaws open, their edges lighting, then snap in a wedge in front of it: every 6 s at most, 0.9 s of warning, 2.5 tiles past its body, her wedge (115 degrees) and her 0.4 × its power (35 at level 12); its sickle jaws pierce (a real one's hollow jaws stab), half of it electric as every electric creature's hit is
+            stomp: { name: "SHOCK RING", say: "CHARGES UP — SHOCK RING · GET CLEAR", hitWord: "SHOCKED", type: "elemental", col: "#ffe733", every: 600, windup: 72, trigger: 3.0, radius: 3.6, power: 0.25, push: 0.35 },   // its seams flash and a ring of current bursts round its body, throwing back whoever is close: every 10 s at most, when one of yours is within 3 tiles of its body; her 1.2 s of warning, 3.6 tiles past its body, 0.25 × its power (22) all of it electric, thrown back as by hers
+        },
+        quest: null, wakes: ["hit", "near"], calms: [],
+        note: "THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5): a predaceous diving beetle larva as a mech in look A (the owner, 2026-11-13), big (2026-11-14), its rules the agent's proposal on THE ANT QUEEN's pattern (approved with \"Build it\", 2026-11-14). Like her, it pays nothing and unlocks nothing until its rewards are decided. Every number is provisional." },
 };
 const BOSS_HOME = 1.2;   // tiles from its post: home (a rooted boss sleeps again there)
 const BOSS_COL = "#8cff5a";   // the toxic green of her bombs and her brood's call
@@ -105,6 +120,7 @@ function _bossSpawn(E, how) {
     const S0 = bossState(E.id), lvl = (S0 && S0.level) || E.level || 1;   // (a level set for this encounter: the Nest's console, step C)
     let b = null; try { b = spawnCreature({ species: E.species, className: E.cls || "boss", x: at[0], y: at[1], level: lvl, state: "wander" }); } catch (e) { b = null; }
     if (!b) return null;
+    if (E.sheet && typeof _psImg === "function") _psImg(E.sheet);   // (its baked sheet on its way before it is seen: the diving beetle larva's, js/larva.js)
     if (E.size && b.dimensions) { b.dimensions.width *= E.size; b.dimensions.height *= E.size; }   // HUGE: drawn at `size` times (js/bugs3d.js scales by her width)
     if (E.bodyR) { b.bodyR = E.bodyR; b.biteReach = ((typeof COMBAT !== "undefined" && COMBAT.bite && COMBAT.bite.reach) || 1) + E.bodyR; }   // her body's reach: a follower strikes her edge, a shot her body, her bite reaches from it (js/npc.js, js/game.js)
     if (E.hpMul && E.hpMul !== 1) { b.maxHealth = Math.round(b.maxHealth * E.hpMul); b.health = b.maxHealth; }
@@ -309,7 +325,7 @@ function bossTick() {
 function _bossTestEntry() {
     for (const id of Object.keys(BOSS_ENCOUNTERS)) {
         const E = BOSS_ENCOUNTERS[id]; if (!E.test) continue;
-        const at = typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, nest = typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(E.room), inside = at === E.room || (nest && FP_NEST_ROOMS.has(at));   // (the Nest grown out, build 2026-11-12a: coming DOWN into any of its rooms arms her, walking between them does not; she keeps to her own room, the Deep Brood since 2026-11-12d)
+        const at = typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, nest = typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(E.room), inside = at === E.room || (nest && FP_NEST_ROOMS.has(at)) || (!!E.place && !!at && typeof partyPlaceOf === "function" && partyPlaceOf(at) === E.place);   // (a row's `place`: coming into any of its rooms arms it, the larva's electrical domain)   // (the Nest grown out, build 2026-11-12a: coming DOWN into any of its rooms arms her, walking between them does not; she keeps to her own room, the Deep Brood since 2026-11-12d)
         const S = inside || (_fp.bosses && _fp.bosses[id]) ? bossState(id) : null; if (!S) continue;
         if (inside && !S.inRoom && !bossUnit(id)) { S.state = "idle"; S.outcome = null; S.unit = null; S.cast = null; bossArm(id); }
         S.inRoom = inside;
@@ -354,22 +370,24 @@ function _bossMovesTick(E, S, b) {
     if (bossControlled(b)) { if (S.cast) { S.cast = null; _bossRun(E, S, b); } return; }   // (held by a stun, a freeze, a glitch or a sleep: the wind-up is lost)
     if (S.cast) {
         _bossHold(b);
-        if (f >= S.cast.until) { const c = S.cast; S.cast = null; _bossRun(E, S, b); if (c.kind === "crush") _bossCrush(E, b, c); else _bossStomp(E, b); }
+        if (f >= S.cast.until) { const c = S.cast; S.cast = null; _bossRun(E, S, b); if (c.kind === "crush") { S.snapAt = f; _bossCrush(E, b, c); } else _bossStomp(E, b); }   // (snapAt: when the jaws closed, the larva's picture: js/larva.js)
         return;
     }
     if (S.crushAt === null || S.crushAt === undefined) S.crushAt = f + 60;
     if (S.stompAt === null || S.stompAt === undefined) S.stompAt = f + Math.round(M.stomp.every / 2);
-    if (S.broodAt === null || S.broodAt === undefined) S.broodAt = f + M.brood.first;
-    if (f >= S.broodAt) { S.broodAt = f + M.brood.every; _bossBrood(E, b); }
+    if (M.brood) {   // (a row with no brood calls none: the larva's)
+        if (S.broodAt === null || S.broodAt === undefined) S.broodAt = f + M.brood.first;
+        if (f >= S.broodAt) { S.broodAt = f + M.brood.every; _bossBrood(E, b); }
+    }
     if (f >= S.stompAt && _bossYoursNear(b, M.stomp.trigger + R)) {
         S.cast = { kind: "stomp", t0: f, until: f + M.stomp.windup }; S.stompAt = f + M.stomp.every; _bossHold(b);
-        bossSay("⚠ " + _bossName(E) + " REARS UP — TREMOR STOMP · GET CLEAR", "#ffb347"); return;
+        bossSay("⚠ " + _bossName(E) + " " + (M.stomp.say || "REARS UP — TREMOR STOMP · GET CLEAR"), M.stomp.col || "#ffb347"); return;
     }
     const t = f >= S.crushAt ? _bossYoursNear(b, M.crush.reach + R) : null;
     if (t) {
         S.cast = { kind: "crush", t0: f, until: f + M.crush.windup, dir: Math.atan2(t.y - b.y, t.x - b.x), x: b.x, y: b.y }; S.crushAt = f + M.crush.every; _bossHold(b);
         if (typeof faceToward === "function") faceToward(b, t.x, t.y, 1);
-        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: b.x, y: b.y, text: "MANDIBLE CRUSH!", color: "#ff6a4a", life: 50, vy: -0.05, size: 13 });
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: b.x, y: b.y, text: M.crush.word || "MANDIBLE CRUSH!", color: "#ff6a4a", life: 50, vy: -0.05, size: 13 });
     }
 }
 // is (x, y) in the wedge in front of her (from her middle at `c`, along `dir`, `arc` radians either side, out to `r` tiles)?
@@ -378,20 +396,21 @@ function _bossCrush(E, b, c) {
     const M = E.moves.crush, r = M.reach + (E.bodyR || 0), dmg = (b.power || 60) * M.power;
     for (const t of _bossYoursNear(b, r + 0.5, true)) {
         if (!_bossInWedge(c, t.x, t.y, r, M.arc)) continue;
-        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 8, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "CRUSHED", color: "#ff6a4a", life: 40, vy: -0.05, size: 12 }); }
-        else if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY.crushing : null);
+        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 8, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: M.hitWord || "CRUSHED", color: "#ff6a4a", life: 40, vy: -0.05, size: 12 }); }
+        else if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY[M.type || "crushing"] : null);   // (the larva's SICKLE SNAP: piercing, half of it electric as its element: js/damage.js dmgApply)
     }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x + Math.cos(c.dir) * r * 0.6, y: c.y + Math.sin(c.dir) * r * 0.6, color: "#ff8a5a", radius: 1.1, life: 18 });
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
 }
 function _bossStomp(E, b) {
     const M = E.moves.stomp, r = M.radius + (E.bodyR || 0), dmg = (b.power || 60) * M.power;
+    const col = M.col || "#ffb347";
     for (const t of _bossYoursNear(b, r, true)) {
-        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 10, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "TREMOR", color: "#ffb347", life: 40, vy: -0.05, size: 12 }); continue; }
-        if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY.earthquake : null);
+        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 10, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: M.hitWord || "TREMOR", color: col, life: 40, vy: -0.05, size: 12 }); continue; }
+        if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY[M.type || "earthquake"] : null);   // (the larva's SHOCK RING: all of it electric)
         if (typeof applyKnockback === "function") applyKnockback(t, b, M.push);
     }
-    if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: b.x, y: b.y, radius: r, color: "#ffb347", life: 26 }); elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#c9a060", radius: 1.6, life: 22 }); }
+    if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: b.x, y: b.y, radius: r, color: col, life: 26 }); elementEffects.push({ type: "impact", x: b.x, y: b.y, color: M.col ? col : "#c9a060", radius: 1.6, life: 22 }); }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 9);
 }
 // THE BROOD CALL: ants climb out of the Nest's brood holes (a floor cell in front of each hole), as many as she may have alive, and go for you
@@ -453,8 +472,8 @@ function _bossDrawMove(E, b, c, f) {
         for (let i = 0; i <= 12; i++) { const a = c.dir - M.arc + 2 * M.arc * i / 12; pts.push(_bossScr(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 0)); }
         ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
         ctx.globalAlpha = 0.12 + 0.3 * k; ctx.fillStyle = "#ff5a3a"; ctx.fill(); ctx.globalAlpha = 0.45 + 0.45 * k; ctx.strokeStyle = "#ff8a5a"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.globalAlpha = 1;
-    } else { const M = E.moves.stomp; _bossRing(b.x, b.y, M.radius + R, k, "#ffb347"); }
-    const [sx, sy] = _bossScr(b.x, b.y, 0); if (typeof cachedText === "function") cachedText(c.kind === "crush" ? "MANDIBLE CRUSH" : "TREMOR STOMP", "bold 13px monospace", c.kind === "crush" ? "#ff8a5a" : "#ffb347", sx, sy - 210);
+    } else { const M = E.moves.stomp; _bossRing(b.x, b.y, M.radius + R, k, M.col || "#ffb347"); }
+    const M = E.moves[c.kind] || {}, [sx, sy] = _bossScr(b.x, b.y, 0); if (typeof cachedText === "function") cachedText(M.name || (c.kind === "crush" ? "MANDIBLE CRUSH" : "TREMOR STOMP"), "bold 13px monospace", c.kind === "crush" ? "#ff8a5a" : (M.col || "#ffb347"), sx, sy - 210);
 }
 function bossDrawOverlay() {
     if (typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas || typeof player === "undefined" || typeof _fp === "undefined" || !_fp) return;

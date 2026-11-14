@@ -112,10 +112,12 @@ function targetRelease(ex, ey) {
 }
 
 // ── the creature's picture ──
+// the square it is first drawn into at its own size, and where its ground point is: 260 px (THE ANT QUEEN's fits), more for a bigger one (the diving beetle larva, build 2026-11-14b)
+function _tgBox(a) { const n = Math.max(260, 2 * Math.ceil(1.3 * ((a && a.dimensions && a.dimensions.width) || 26))); return { n, ox: n / 2, oy: Math.round(n * 150 / 260) }; }
 // Drawn once per kind with the game's own creature drawing (js/bugs3d.js) into a small canvas, fitted to the box whatever its size.
 function targetPortrait(a) {
     if (a && a.isHazardTarget) return _tgHazardPic(a, 96, false);   // (a flask: its own sprite, js/hazards.js)
-    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1)].join("|");   // (the last: a roly-poly's sheet has arrived, js/rolypoly.js: a beetle stood in before) if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
+    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1), (typeof larvaArtReady === "function" ? +larvaArtReady(a) : 1)].join("|");   // (the last: a roly-poly's sheet has arrived, js/rolypoly.js: a beetle stood in before) if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
     let c = null;
     try {
         c = document.createElement("canvas"); c.width = c.height = 96; const g = c.getContext("2d"), col = _tgColour(a);
@@ -123,9 +125,9 @@ function targetPortrait(a) {
         const halo = g.createRadialGradient(48, 56, 2, 48, 56, 44); halo.addColorStop(0, col); halo.addColorStop(1, "rgba(0,0,0,0)"); g.globalAlpha = 0.28; g.fillStyle = halo; g.fillRect(0, 0, 96, 96); g.globalAlpha = 1;
         const dx = a.dirX, dy = a.dirY, cu = a.curled; a.dirX = 0.35; a.dirY = 1; a.curled = 0;   // (facing the camera's left, as drawn in play, a roly-poly uncurled: put back below)
         try {
-            const t = document.createElement("canvas"); t.width = t.height = 260; const tg = t.getContext("2d"); tg.translate(130, 150); if (typeof drawBug3D === "function") drawBug3D(a, 0, 0, tg);
-            const d = tg.getImageData(0, 0, 260, 260).data; let x0 = 260, y0 = 260, x1 = -1, y1 = -1;
-            for (let y = 0; y < 260; y++) for (let x = 0; x < 260; x++) if (d[(y * 260 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+            const B = _tgBox(a), t = document.createElement("canvas"); t.width = t.height = B.n; const tg = t.getContext("2d"); tg.translate(B.ox, B.oy); if (typeof drawBug3D === "function") drawBug3D(a, 0, 0, tg);
+            const d = tg.getImageData(0, 0, B.n, B.n).data; let x0 = B.n, y0 = B.n, x1 = -1, y1 = -1;
+            for (let y = 0; y < B.n; y++) for (let x = 0; x < B.n; x++) if (d[(y * B.n + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
             if (x1 >= 0) { const w = x1 - x0 + 1, h = y1 - y0 + 1, sc = Math.min(5, 76 / Math.max(w, h)); g.imageSmoothingEnabled = true; g.drawImage(t, x0, y0, w, h, 48 - w * sc / 2, 50 - h * sc / 2, w * sc, h * sc); }
         } finally { a.dirX = dx; a.dirY = dy; a.curled = cu; }
     } catch (e) { c = null; }
@@ -160,15 +162,15 @@ function targetPortraitURL(a) {
 const _tgBigURLs = {}, TG_BIG = 300;
 function targetBigPortraitURL(a) {
     if (a && a.isHazardTarget) { const k = a.solid.kind; if (_tgBigURLs[k]) return _tgBigURLs[k]; const c = _tgHazardPic(a, TG_BIG, true); return c ? (_tgBigURLs[k] = c.toDataURL("image/png")) : ""; }   // (a flask: its own sprite, large: js/hazards.js)
-    if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1)].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
+    if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element, (typeof rolyArtReady === "function" ? +rolyArtReady(a) : 1), (typeof larvaArtReady === "function" ? +larvaArtReady(a) : 1)].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
     let url = ""; const dx = a.dirX, dy = a.dirY, cu = a.curled; a.dirX = 0.35; a.dirY = 1; a.curled = 0;   // (facing the camera's left, as the portrait, a roly-poly uncurled: put back below)
     try {
-        const t = document.createElement("canvas"); t.width = t.height = 260; const tg = t.getContext("2d"); tg.translate(130, 150); drawBug3D(a, 0, 0, tg);   // where it is: drawn once at its own size
-        const d = tg.getImageData(0, 0, 260, 260).data; let x0 = 260, y0 = 260, x1 = -1, y1 = -1;
-        for (let y = 0; y < 260; y++) for (let x = 0; x < 260; x++) if (d[(y * 260 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        const B = _tgBox(a), t = document.createElement("canvas"); t.width = t.height = B.n; const tg = t.getContext("2d"); tg.translate(B.ox, B.oy); drawBug3D(a, 0, 0, tg);   // where it is: drawn once at its own size
+        const d = tg.getImageData(0, 0, B.n, B.n).data; let x0 = B.n, y0 = B.n, x1 = -1, y1 = -1;
+        for (let y = 0; y < B.n; y++) for (let x = 0; x < B.n; x++) if (d[(y * B.n + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
         if (x1 >= 0) {
             const w = x1 - x0 + 1, h = y1 - y0 + 1, sc = TG_BIG * 0.94 / Math.max(w, h), c = document.createElement("canvas"); c.width = c.height = TG_BIG; const g = c.getContext("2d");
-            g.translate(TG_BIG / 2, TG_BIG / 2); g.scale(sc, sc); g.translate(-(x0 + w / 2 - 130), -(y0 + h / 2 - 150)); drawBug3D(a, 0, 0, g); url = c.toDataURL("image/png");
+            g.translate(TG_BIG / 2, TG_BIG / 2); g.scale(sc, sc); g.translate(-(x0 + w / 2 - B.ox), -(y0 + h / 2 - B.oy)); drawBug3D(a, 0, 0, g); url = c.toDataURL("image/png");
         }
     } catch (e) { url = ""; } finally { a.dirX = dx; a.dirY = dy; a.curled = cu; }
     return (_tgBigURLs[key] = url);

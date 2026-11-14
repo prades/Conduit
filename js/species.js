@@ -152,7 +152,7 @@ const SPECIES = {
         boss:    { width:46, height:22, moveSpeed:0.007, health:2000, power:162, dnaDrops:9, shardDrop:65, reactionSpeed:7,  abdomenAttack:true, rangeDamage:92, abdomenCooldown:52 }
     },
     // ── The roly-poly — the electric breed's mech, of the electrical domain only (docs/ELECTRIC-BREED.md; the owner, 2026-11-13) ──
-    // Always electric. A scout, a striker and a tank (no nymph, worker or boss of its own: its boss is the diving beetle larva, not designed yet). PROVISIONAL (the agent's,
+    // Always electric. A scout, a striker and a tank (no nymph, worker or boss of its own: its boss is the diving beetle larva, below). PROVISIONAL (the agent's,
     // approved with "Build it"): a beetle's health, speed and size, an ant's bite, a beetle's drops. Drawn from baked sprites (js/rolypoly.js), not js/bugs3d.js.
     rolypoly: {
         rank: 2,
@@ -163,6 +163,17 @@ const SPECIES = {
         scout:   { width:26, height:12, moveSpeed:0.018, health:180, power:18, dnaDrops:1, shardDrop:6,  reactionSpeed:5  },
         striker: { width:32, height:14, moveSpeed:0.015, health:300, power:27, dnaDrops:2, shardDrop:9,  reactionSpeed:10 },
         tank:    { width:42, height:18, moveSpeed:0.010, health:540, power:38, dnaDrops:2, shardDrop:14, reactionSpeed:22 }
+    },
+    // ── The diving beetle larva — the electric breed's boss (docs/ELECTRIC-BREED.md §5; the owner, 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal) ──
+    // A boss and nothing else: The Circuitry's encounter makes it (js/bosses.js, the row `circuitry`); no table spawns it and the Clone Bay does not grow it (no CLONE_COSTS). Its block is THE ANT
+    // QUEEN's (the ant's boss), so that its level and its encounter's numbers make it what was approved: twice her health, at level 12. Drawn from baked sprites (js/larva.js), not js/bugs3d.js.
+    larva: {
+        rank: 2,
+        color: "#ffe733",
+        label: "DIVING BEETLE LARVA",   // its name on screen (speciesLabel); the boss's own name is open (docs/ELECTRIC-BREED.md §11)
+        element: "electric",
+        only: "electrical",
+        boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:0, shardDrop:0, reactionSpeed:8 }
     }
 };
 
