@@ -14,10 +14,19 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The larva boss is VOLTWYRM (the owner's pick)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14d`
+- **Status:** Approved (the owner's words)
+- **Context:** the agent named the boss VOLTREAPER (build `2026-11-14c`, below) and offered three others: GRIDREAPER, VOLTWYRM, SURGEMAW. The owner: **"Voltworm looks sick"**.
+- **Decision:** the boss is **VOLTWYRM** (volt for its current, wyrm for its long serpent's body): its tag and every word it says; its kind stays DIVING BEETLE LARVA. Supersedes "The larva boss is named VOLTREAPER".
+- **Agent's reading, to confirm:** spelled VOLTWYRM, as it was offered and seen (the owner's message read "Voltworm", taken as a dictation of the same word).
+- **Affects:** js/bosses.js (the row `circuitry`'s `name`); `ELECTRIC-BREED.md` §2, 10 and §11; the Bible; `tests/larva.js`.
+
 ## DECISION: The larva boss is named VOLTREAPER
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14c`
-- **Status:** Asked for by the owner; the name is the agent's pick (the owner may change it)
+- **Status:** Superseded by "The larva boss is VOLTWYRM (the owner's pick)" (`2026-11-14d`)
 - **Context:** the boss's tag read THE DIVING BEETLE LARVA (the agent's placeholder, build `2026-11-14b`). The owner: **"Name it something cool an edgy"**.
 - **Decision:** **VOLTREAPER**: volt for its current, reaper for its sickle jaws (its SICKLE SNAP). It is the boss's tag and every word it says; its kind stays DIVING BEETLE LARVA (the species' label). Supersedes the placeholder name in "The diving beetle larva built as proposed" below.
 - **Alternatives offered:** GRIDREAPER, VOLTWYRM, SURGEMAW.

@@ -2,8 +2,8 @@
 
 - **Status:** The roly-poly is **implemented and verified by tests** in build `2026-11-13aa` (`tests/rolypoly.js` and the suites below; looked at in the real page; not playtested). Its boss, **the diving beetle larva**, is **implemented and verified by tests** in build `2026-11-14b` (`tests/larva.js`; looked at in the real page; not playtested).
 - **Owner:** the user (creative direction); the agent (implementation support)
-- **Last updated:** 2026-11-14 (build `2026-11-14c`: the boss named VOLTREAPER)
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, builds `2026-11-13aa` (the roly-poly), `2026-11-14b` (the larva) and `2026-11-14c` (its name, VOLTREAPER)
+- **Last updated:** 2026-11-14 (build `2026-11-14d`: the boss named VOLTWYRM, the owner's pick)
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, builds `2026-11-13aa` (the roly-poly), `2026-11-14b` (the larva), `2026-11-14c` (named VOLTREAPER) and `2026-11-14d` (renamed VOLTWYRM, the owner's pick)
 - **Related docs:** `DOMAINS.md` §2, 14 (where it lives); `COMBAT.md` §7.3 (the races' rows, with its immunity); `MUTATOR.md` (the Clone Bay, DNA); `FACILITY.md` (who lives where); `NEST.md` (THE ANT QUEEN, the boss pattern the larva follows). The studies: `design/creatures/electric_breed_examples.js` (it draws `electric_breed_chosen.png`, the chosen pair).
 
 ## 1. Intent
@@ -12,7 +12,7 @@ The owner, 2026-11-13: "Begin work on a new breed of insect using 3D graphics. I
 
 Then, of the studies: "I want them to look more like mechs now. Like take inspiration from Zoids and get rid of the wiry aesthetics"; "A for the larva, redesign the roll poly with a longer body less plates, but more character"; "The roly-poly should not have eyes and a face"; the roly-poly's look: "B". Asked how it works: "Clone potential"; "Physical half does 0"; "Curls up to defend". Of the agent's proposals: **"Build it"**.
 
-2026-11-14: "The larva boss should be big, and your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away." Of the agent's proposal for the larva (§2, 9): **"Build it"**. Then: **"Name it something cool an edgy"** (§2, 10).
+2026-11-14: "The larva boss should be big, and your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away." Of the agent's proposal for the larva (§2, 9): **"Build it"**. Then: **"Name it something cool an edgy"**; of the names the agent offered: **"Voltworm looks sick"** (§2, 10).
 
 ## 2. Approved design
 
@@ -32,7 +32,7 @@ Then, of the studies: "I want them to look more like mechs now. Like take inspir
    5. **SICKLE SNAP**: its jaws open, their edges lighting, then snap in a wedge in front of it (the queen's crush): every 6 s at most, 0.9 s of warning, 2.5 tiles past its body.
    6. **SHOCK RING**: its seams flash and a ring of current bursts round its body, throwing back whoever is close (the queen's stomp): every 10 s at most, when one of yours is within 3 tiles.
    7. **No brood**; the domain's roly-polies keep coming while it fights. No damage row of its own (every type ×1).
-10. **The larva's name: VOLTREAPER** (the owner asked the agent to name it, 2026-11-14: "Name it something cool an edgy"; the agent's pick, build `2026-11-14c`): volt for its current, reaper for its sickle jaws (SICKLE SNAP). It is the boss's tag and every word it says (VOLTREAPER WAKES, VOLTREAPER CHARGES UP — SHOCK RING); its kind stays DIVING BEETLE LARVA (the species' label).
+10. **The larva's name: VOLTWYRM** (the owner, 2026-11-14: "Name it something cool an edgy"; the agent named it VOLTREAPER in build `2026-11-14c` and offered GRIDREAPER, VOLTWYRM and SURGEMAW; the owner: "Voltworm looks sick", build `2026-11-14d`): volt for its current, wyrm for its long serpent's body. Spelled VOLTWYRM as offered (the owner's message read "Voltworm": the agent's reading, a dictation of the same word). It is the boss's tag and every word it says (VOLTWYRM WAKES, VOLTWYRM CHARGES UP — SHOCK RING); its kind stays DIVING BEETLE LARVA (the species' label).
 
 ## 3. Must-have requirements
 
@@ -90,7 +90,7 @@ Nothing open here: the roly-poly's proposals (§2, 5 to 7) and the larva's (§2,
 - **The drawing** (js/rolypoly.js `drawRolyPoly`): `drawBug3D` hands a roly-poly to it; the cell by its heading in eighths, its walk cycle, or the wheel; baked at twice a tank's size and drawn at half, a scout and a striker smaller by their width. Until the sheet arrives a beetle stands in, and the caches of a creature's picture key on the sheet being ready (`rolyArtReady`).
 - **Where it lives**: `ENEMY_RACES.rolypoly`, `SPAWN_TABLES.electrical` (scouts, strikers and tanks 3 : 2 : 1, levels 4 to 6, electric: provisional), `FP_SPAWN_ELEC` (three the first time you are in the domain, then one every 25 s while you are there, up to four: provisional).
 - **Not given an emblem**: the enemy card shows no race emblem for it (the race emblems are approved drawings; its is not drawn: §11).
-- **The larva** (build `2026-11-14b`): its species `larva` is a boss block only (the ant boss's numbers: what its level and its encounter make it); no clone cost (the Clone Bay skips it), no race (no table spawns it), no damage row (every kind of hit ×1). Its encounter is the row `circuitry` in js/bosses.js, THE ANT QUEEN's kind (`test`, `moves`): armed when you come into any of the domain's rooms (its `place`, so it is asleep at its post before you reach its room; its sheet, preloaded with the page as every props sheet is, is made ready then), re-armed whole each time you come back after it died, held to The Circuitry (leave the room and it walks back to its post and sleeps, its wounds kept), never moving its post. Its health is `HP_MUL_LARVA` (2.91) times its block's at level 12: 2133, twice the queen's 1067. Its moves are her crush and stomp with the row's own name, words, kind of hit and colour (its enemy card names its strength SNAP, by the crush row's `card`): SICKLE SNAP a Piercing hit (half of it electric, as every electric creature's hit is: js/damage.js), SHOCK RING all electric (Elemental). The agent's readings, the owner's to change: the snap pierces (a real larva's hollow jaws stab); it pays nothing and unlocks nothing until its rewards are decided (the queen's `test`); its name, VOLTREAPER (asked for, the agent's pick: §2, 10); the walk's pace on the sheet.
+- **The larva** (build `2026-11-14b`): its species `larva` is a boss block only (the ant boss's numbers: what its level and its encounter make it); no clone cost (the Clone Bay skips it), no race (no table spawns it), no damage row (every kind of hit ×1). Its encounter is the row `circuitry` in js/bosses.js, THE ANT QUEEN's kind (`test`, `moves`): armed when you come into any of the domain's rooms (its `place`, so it is asleep at its post before you reach its room; its sheet, preloaded with the page as every props sheet is, is made ready then), re-armed whole each time you come back after it died, held to The Circuitry (leave the room and it walks back to its post and sleeps, its wounds kept), never moving its post. Its health is `HP_MUL_LARVA` (2.91) times its block's at level 12: 2133, twice the queen's 1067. Its moves are her crush and stomp with the row's own name, words, kind of hit and colour (its enemy card names its strength SNAP, by the crush row's `card`): SICKLE SNAP a Piercing hit (half of it electric, as every electric creature's hit is: js/damage.js), SHOCK RING all electric (Elemental). The agent's readings, the owner's to change: the snap pierces (a real larva's hollow jaws stab); it pays nothing and unlocks nothing until its rewards are decided (the queen's `test`); its name, VOLTWYRM (the owner's pick: §2, 10); the walk's pace on the sheet.
 - **Its drawing** (js/larva.js): the cell by its heading in eighths; its walk; its jaws wide while SICKLE SNAP warns, shut for 14 frames after the snap; its seams flashing (charged and plain, faster as it comes) while SHOCK RING warns. Baked at the size it is drawn (a 156-wide boss), so it is drawn at 1. Its enemy card's picture is drawn into a box sized to it (js/targeting.js `_tgBox`; 260 px for every creature up to the queen, as before).
 
 ## 10. Verification record
@@ -110,12 +110,12 @@ Nothing open here: the roly-poly's proposals (§2, 5 to 7) and the larva's (§2,
 1. ~~**Your own melee**~~ **answered 2026-11-14:** nothing against it, as built (§7).
 2. **Its emblem** on the enemy card: a race emblem to draw (one piece first, for approval), or none.
 3. ~~**The larva boss's rules**~~ **answered 2026-11-14:** the proposal, "Build it" (§2, 9).
-4. **Names** in the game: ROLY-POLY is provisional. ~~The boss's~~ **named 2026-11-14:** VOLTREAPER (the owner asked for a cool, edgy name; the agent's pick, §2, 10); its kind stays DIVING BEETLE LARVA.
+4. **Names** in the game: ROLY-POLY is provisional. ~~The boss's~~ **named 2026-11-14:** VOLTWYRM (the owner's pick of the names offered, §2, 10); its kind stays DIVING BEETLE LARVA. Its spelling (VOLTWYRM, as offered; the owner wrote "Voltworm") is the agent's reading.
 5. **The curl's details** (the agent's readings): its 12 s rest counts from uncurling; a glitch does not stop it curling.
 6. **The larva's rewards**: none yet, as the queen's (it pays nothing and unlocks nothing).
 7. **The larva, the agent's readings**: SICKLE SNAP pierces (or slashes, or crushes as the queen's crush does); the boss's shield aura on the roly-polies near it (every boss has it); the ledge above its room (can it be shot from there? not checked).
 
 ## 12. History
 
-- 2026-11-14: the owner: melee does nothing to the roly-polies (as built); the larva boss is big; its rules proposed (§5), then "Build it": build `2026-11-14b` (main took `14a` meanwhile). Then "Name it something cool an edgy": VOLTREAPER, build `2026-11-14c`.
+- 2026-11-14: the owner: melee does nothing to the roly-polies (as built); the larva boss is big; its rules proposed (§5), then "Build it": build `2026-11-14b` (main took `14a` meanwhile). Then "Name it something cool an edgy": VOLTREAPER, build `2026-11-14c`; then "Voltworm looks sick": VOLTWYRM, build `2026-11-14d`.
 - 2026-11-13: the owner's request; studies in four rounds (animals; mechs; the roly-poly longer with seven plates; no face); the looks B and A; the answers (clone potential; the physical half does 0; curls up to defend); "Build it" on the agent's proposals: build `2026-11-13aa`. Decision records: `DECISION-LOG.md`.

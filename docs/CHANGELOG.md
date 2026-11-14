@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14d` · branch `claude/start-game-project-HSh7Z` · the larva boss is VOLTWYRM (the owner's pick)
+- **The ask** (the owner, 2026-11-14, of the names offered with VOLTREAPER): "Voltworm looks sick".
+- **VOLTWYRM** (volt for its current, wyrm for its long serpent's body; spelled as offered): its tag and every word it says (VOLTWYRM WAKES, VOLTWYRM CHARGES UP — SHOCK RING · GET CLEAR, VOLTWYRM SLEEPS AGAIN, VOLTWYRM IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
+- `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
+
 ### Build `2026-11-14c` · branch `claude/start-game-project-HSh7Z` · the larva boss is named VOLTREAPER
 - **The ask** (the owner, 2026-11-14): "Name it something cool an edgy".
 - **VOLTREAPER** (the agent's pick: volt for its current, reaper for its sickle jaws): its tag and every word it says (VOLTREAPER WAKES, VOLTREAPER CHARGES UP — SHOCK RING · GET CLEAR, VOLTREAPER SLEEPS AGAIN, VOLTREAPER IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.

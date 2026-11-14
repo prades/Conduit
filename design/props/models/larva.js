@@ -1,4 +1,4 @@
-// VOLTREAPER, THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; the owner, 2026-11-13: "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it"):
+// VOLTWYRM, THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; the owner, 2026-11-13: "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it"):
 // round 2's mech in look A, live seams (pale gunmetal armour, yellow energy in its joints, yellow lenses, lit jaw edges), from design/creatures/electric_breed_examples.js (larvaMech), baked for the game.
 // Variants, facing d (the game's heading d * 45 degrees; 0 is the game's +x, down-right on the screen):
 //   'w<d>_<f>' walking, frame f of LV_FRAMES: its six legs paddle in two tripods (a quarter of a stroke a frame) and its body sways a little;
