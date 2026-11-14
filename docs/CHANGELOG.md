@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14t` · branch `claude/start-game-project-HSh7Z` · a refresh keeps the Ultimates
+- **The report** (the owner, 2026-11-14): "Refreshing the game resets my followers' ultimates."
+- **The cause:** the save kept each follower's level, XP, evolution, moves and cards but not its Ultimate's charge, and a follower made from the save had none at all (its meter hidden until it charged again). Your own ULTIMATE bar on THE CORE was not kept either: a refresh emptied it too.
+- **Now:** each follower's record keeps its charge (`ult`, to a tenth, never rounded up to full) and the follower made from it has it; your bar is kept (`pult`). A game saved before has none: empty, as before. A fallen follower's is not kept (its return starts it empty, as a fall always did); a bad value loads within 0 to 100.
+- `js/facilitysave.js`; `tests/ultimate.js` (2 checks: both meters kept, restored and guarded), `tests/crystalline.js` (the save's fields, 44); `TUTORIAL.md` ("Saving").
+- Checked: the real page, charged (80, full, 35 and your bar 55), saved, refreshed: back as they were, the squad's ULT gauges with them (and charging on). Not playtested.
+
 ### Build `2026-11-14s` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM's fight, diagnosed: a lighter battle view, steady facings
 - **Asked** (the owner, 2026-11-14): "The game runs pretty slow, or feels like it when I'm in the electrical domain fighting the voltwyrm. Also its movement and the movement of the followers looks glitched when they flip back and forth with their direction. Diagnostics are required".
 - **The diagnostics** (the real page in desktop Chrome at 1180×820, the size an iPad Air draws; each part of the frame timed, a CPU profile, every unit's facing each frame): (1) in any fight the battle view's copies of the screen were most of the frame on HIGH (about 21 ms a picture in VOLTWYRM's fight: 31 pictures a second), and a step with no picture (a device catching up) made them all again, so a fight that fell behind copied twice; (2) VOLTWYRM picks whom to bite five times a second, and whoever hit it last counts for more than keeping its target, so with two brawlers hitting it in turn it turned between them every 10 to 20 frames: its heading wavered from 16 to 32 degrees, across the line at 22.5 between two of its eight pictures, and the whole picture flipped 45 degrees back and forth; (3) its brawlers stood 1.4 tiles from its middle, inside its body (1.8 round), packed and jostling, and a follower thrown by SHOCK RING turned to face the throw, then back.
