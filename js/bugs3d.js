@@ -65,6 +65,19 @@ function drawBug3D(actor, px, py, g, style) {
     return m.top * s;
 }
 
+// ── IS IT WALKING (what its legs show) ─────────────────────
+// Hunting or wandering, it walks. Locked on ("attack") or idle, it walks while it STEPS: while its walk cycle moves (js/predator.js advances it with each step of a chase,
+// js/npc.js a clone's), and for CREATURE_STEP_HOLD frames after; standing to bite, it stands. (Build 2026-11-14i; the owner: "The enemies don't move their feet when they're
+// in battle and they're nearing an enemy or a follower or target": the drawings read "attack" as standing still, and a creature is "attack" from the moment it locks on.)
+const CREATURE_STEP_HOLD = 6;
+function creatureWalking(a) {
+    if (!a || a.dead) return false;
+    const f = typeof frame !== "undefined" ? frame : 0, wc = a.walkCycle || 0;
+    if (a._stepWc !== wc) { if (a._stepWc !== undefined) a._stepAt = f; a._stepWc = wc; }   // (the drawing's own memory, kept in every state: the walk cycle it last saw, and when it last saw it move)
+    if (a.state !== "attack" && a.state !== "idle") return true;
+    return a._stepAt !== undefined && f - a._stepAt <= CREATURE_STEP_HOLD;
+}
+
 // ── The frame: heading, scale, and ground → screen ─────────
 function _bugFrame(actor, px, py, s, lungeK) {
     const U = 12 * s;
@@ -83,7 +96,7 @@ function _bugFrame(actor, px, py, s, lungeK) {
     return {
         P, s, U, fx, fy, lift, atk, gx, gy,
         wc: actor.walkCycle || 0,
-        moving: actor.state !== "attack" && actor.state !== "idle",
+        moving: creatureWalking(actor),   // (walking while it steps, a chase too: creatureWalking)
         t: (typeof frame !== "undefined" ? frame : 0) + (actor.animationPhase || 0) * 20,
         accent: isAlly ? "#33ff99" : (actor.color || "#cc44ff"),
         tint: actor.color || "#888888",

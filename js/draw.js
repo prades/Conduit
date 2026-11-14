@@ -1021,7 +1021,7 @@ function _drawInsectLeg(drawCtx, hx, hy, side, phaseOffset, pos, actor, legData,
     const crouchRise = legData.crouchRise || 0;
 
     // Gyrations: walk cycle drives lift (crest rises) and stride (foot steps fore/aft)
-    const gait   = actor.state !== "attack" ? Math.sin(actor.walkCycle + phaseOffset) : 0;
+    const gait   = (typeof creatureWalking === "function" ? creatureWalking(actor) : actor.state !== "attack") ? Math.sin(actor.walkCycle + phaseOffset) : 0;   // (walking while it steps, a chase too: js/bugs3d.js)
     const swing  = gait > 0;
     const lift   = swing ? gait * 7 : 0;
     const stride = Math.sin(actor.walkCycle * legData.swingSpeed + phaseOffset) * 5;

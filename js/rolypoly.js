@@ -49,7 +49,7 @@ function rolyCell(a) {
     if (Math.abs(fx) + Math.abs(fy) < 1e-6) { fx = 1; fy = 0; }
     const d = ((Math.round(Math.atan2(fy, fx) / (Math.PI / 4)) % 8) + 8) % 8;
     if (rolyCurled(a)) return "c" + d;
-    const moving = a.state !== "attack" && a.state !== "idle" && !a.dead;
+    const moving = !a.dead && (typeof creatureWalking === "function" ? creatureWalking(a) : a.state !== "attack" && a.state !== "idle");   // (walking while it steps, a chase too: js/bugs3d.js)
     const f = moving ? ((Math.floor((a.walkCycle || 0) * ROLYPOLY.gait / (Math.PI * 2) * ROLYPOLY.frames) % ROLYPOLY.frames) + ROLYPOLY.frames) % ROLYPOLY.frames : 0;
     return "w" + d + "_" + f;
 }

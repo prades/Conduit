@@ -44,7 +44,7 @@ function drawBeetle3D(actor, px, py, g) {
         return [gx + (wx - wy) * U, gy + (wx + wy) * U * 0.5 - z * s];
     };
     const wc = actor.walkCycle || 0;
-    const moving = actor.state !== "attack" && actor.state !== "idle";
+    const moving = typeof creatureWalking === "function" ? creatureWalking(actor) : actor.state !== "attack" && actor.state !== "idle";   // (walking while it steps, a chase too: js/bugs3d.js)
     const isAlly = actor.team === "green" || actor.isClone;
     const accent = isAlly ? "#33ff99" : (actor.color || "#cc44ff");
     // Light from the upper left of the screen: which side of the body faces it.
