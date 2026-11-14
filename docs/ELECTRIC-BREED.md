@@ -2,7 +2,7 @@
 
 - **Status:** The roly-poly is **implemented and verified by tests** in build `2026-11-13aa` (`tests/rolypoly.js` and the suites below; looked at in the real page; not playtested). Its boss, the diving beetle larva, has its look (A) and no rules yet (§11).
 - **Owner:** the user (creative direction); the agent (implementation support)
-- **Last updated:** 2026-11-13
+- **Last updated:** 2026-11-14
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-13aa`
 - **Related docs:** `DOMAINS.md` §2, 14 (where it lives); `COMBAT.md` §7.3 (the races' rows, with its immunity); `MUTATOR.md` (the Clone Bay, DNA); `FACILITY.md` (who lives where); `NEST.md` (THE ANT QUEEN, the boss pattern). The studies: `design/creatures/electric_breed_examples.js` (it draws `electric_breed_chosen.png`, the chosen pair).
 
@@ -39,7 +39,14 @@ Then, of the studies: "I want them to look more like mechs now. Like take inspir
 
 ## 5. Proposed, not approved
 
-Nothing now: the agent's five proposals were approved with "Build it" (§2, 5 to 7).
+The roly-poly's five proposals were approved with "Build it" (§2, 5 to 7). **The larva boss** (the owner, 2026-11-14: "The larva boss should be big"); the agent's proposal for its rules, built from THE ANT QUEEN's kinds of move (js/bosses.js), every number provisional:
+1. **Where**: the middle of The Circuitry, the electrical domain's big room (built in `11d`); the Deep Chamber once draft 5 is built.
+2. **Big**: about twice the Ant Queen's length on the floor, its body's reach 1.8 tiles for hits (hers is 1.2). Drawn from baked sprites of look A, as the roly-poly is.
+3. **It wakes** when you or yours come near it or hit it (the queen's rule).
+4. **Health and power**: twice the Ant Queen's health, at level 12 (she is level 10); electric.
+5. **SICKLE SNAP**: its jaws open, their edges lighting, then snap in a wedge in front of it (the queen's crush): every 6 s at most, 0.9 s of warning, 2.5 tiles past its body.
+6. **SHOCK RING**: its seams flash and a ring of current bursts round its body, throwing back whoever is close (the queen's stomp): every 10 s at most, when one of yours is within 3 tiles. It keeps you away, as the roly-polies do.
+7. **No brood**; the domain's roly-polies keep coming while it fights. No damage row of its own (every type ×1).
 
 ## 6. Dependencies and affected systems
 
@@ -48,7 +55,7 @@ Nothing now: the agent's five proposals were approved with "Build it" (§2, 5 to
 
 ## 7. Edge cases
 
-- **Your own melee**: the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) do nothing to it; the gun (Projectile) and the arc (Elemental) work. Built as the rule reads (the agent's reading of "Build it": the owner did not answer this question; §11, 2).
+- **Your own melee**: the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) do nothing to it; the gun (Projectile) and the arc (Elemental) work. **Confirmed by the owner, 2026-11-14**: "your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away".
 - A follower with no element (no energy card): its hit's elemental part still lands, plain (×1).
 - The Mutator's clone bites with Piercing: resisted (×0.7).
 - A Brawler's OPPORTUNITY card counts no weakness on an immune part.
@@ -82,12 +89,13 @@ Nothing now: the agent's five proposals were approved with "Build it" (§2, 5 to
 
 ## 11. Open questions
 
-1. **Your own melee** (the lash, the gauntlet): nothing against it, as built, or a share that always lands?
+1. ~~**Your own melee**~~ **answered 2026-11-14:** nothing against it, as built (§7).
 2. **Its emblem** on the enemy card: a race emblem to draw (one piece first, for approval), or none.
-3. **The larva boss's rules**: where it waits (draft 5's Deep Chamber, or the coolant: the real larva hunts underwater), its size, when it wakes, its moves.
+3. **The larva boss's rules**: big (the owner, 2026-11-14); the rest proposed in §5 (where it waits, how big exactly, when it wakes, its health and moves).
 4. **Names** in the game: ROLY-POLY is provisional; the boss's name.
 5. **The curl's details** (the agent's readings): its 12 s rest counts from uncurling; a glitch does not stop it curling.
 
 ## 12. History
 
+- 2026-11-14: the owner: melee does nothing to the roly-polies (as built); the larva boss is big; its rules proposed (§5).
 - 2026-11-13: the owner's request; studies in four rounds (animals; mechs; the roly-poly longer with seven plates; no face); the looks B and A; the answers (clone potential; the physical half does 0; curls up to defend); "Build it" on the agent's proposals: build `2026-11-13aa`. Decision records: `DECISION-LOG.md`.

@@ -14,6 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Your melee does nothing to the roly-polies; the larva boss is big
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-13aa` (no change to the game)
+- **Status:** Approved (the owner's words)
+- **Context:** two of the questions left after build `2026-11-13aa`: the player's own melee against the roly-poly (built as the rule read: the lash and the gauntlet, all physical, do nothing), and the larva boss's rules.
+- **Decision:** the owner: "The larva boss should be big, and your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away." The melee rule stays as built; the larva boss is big. Its other rules: proposed (`ELECTRIC-BREED.md` §5), not approved.
+- **Affects:** `ELECTRIC-BREED.md` §5, §7, §11; `OPEN-QUESTIONS.md`.
+
 ## DECISION: The roly-poly built as proposed ("Build it")
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-13aa`
