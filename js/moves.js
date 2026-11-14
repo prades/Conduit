@@ -33,7 +33,7 @@ const MOVES = {
     // the Thermite Burrower's alternate (the owner, 2026-11-06: "Short and hot"; js/evolution.js magmaVent)
     magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 10, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
-    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 7, fn: f => rottenDecoy(f) },
+    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 2.75, fn: f => rottenDecoy(f) },   // (2.75 s since build 2026-11-14c, the other Mages' time: the owner, 2026-11-14, "The rotten decoy cast time is too long"; it was 7 s)
     // the THORNWHIP's alternate (BLOOM's Mage, build 2026-11-08j; js/evolution.js seedfall): its wind-up is the agent's, provisional (HEXFIRE's and STATIC VORTEX's)
     seedfall:          { id: "seedfall",          name: "SEEDFALL",          windup: 2.75, fn: f => seedfall(f) },
     // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
