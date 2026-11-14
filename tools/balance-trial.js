@@ -5,7 +5,7 @@
 // damage its mark added to an ally's hits, the enemy-seconds enemies were lured or held (stunned, slowed, weakened, blinded, glitched), and the damage it took. A second pass
 // with enemies that fight back (3 runs each) measures what a SHELL GUARD, ROTTEN DECOY or SWEET SCENT blocks and lures. It takes several minutes (not part of tests/run.js).
 // (Since build 2026-11-13x a standing enemy that is pushed is put back where it stood, and a close move is fought from one tile.)
-// HONEST LIMITS: one dummy species (an ant: it resists elemental, is weak to crushing and earthquake), one level, one run for the damage; the live-enemy runs vary a lot (use the averages
+// HONEST LIMITS: the scored pass fights a dummy with no weakness and no resistance (since build 2026-11-14m; an ant before), the second pass ants; one level, one run for the damage; the live-enemy runs vary a lot (use the averages
 // as a guide); a heal is an upper bound (the ally is always wounded); CAPACITOR DISCHARGE reads 0 (it needs a held charge); a technician is held in place, so it only fights what is in reach.
 const _cp = require('child_process'), _fs = require('fs'), _path = require('path');
 if (process.argv[2] !== '--worker') {
@@ -13,13 +13,16 @@ if (process.argv[2] !== '--worker') {
     const run = (args, out) => new Promise(res => { const p = _cp.spawn(process.execPath, [self, '--worker', ...args], { stdio: ['ignore', 'ignore', 'inherit'] }); p.on('exit', () => res(JSON.parse(_fs.readFileSync(out, 'utf8')))); });
     (async () => {
         const N = 4, A = [], LIVE = 'hammerslug:main,hammerslug:shell_guard,rotshard:rotten_decoy,sundew:sweet_scent,sundew:sweet_scent_full', RUNS = '6';   // (the live runs vary a lot: six of each, three until build 2026-11-14d)
+        // THE NEUTRAL DUMMY (build 2026-11-14m; the owner, 2026-11-14: "Yes, do the neutral dummy"): the pass the scores and bands are made from fights enemies with NO weakness and NO resistance (no race's
+        // row: an ant is weak to Crushing and Earthquake and resists Elemental, which lifted some forms and sank the Mages). A second pass against ants gives each mode's damage against the first faction.
         const pa = []; for (let i = 0; i < N; i++) { const out = _path.join(tmp, 'a' + i + '.json'); pa.push(run([out, String(i), String(N), 'inert'], out)); }
         const pb = run([_path.join(tmp, 'b.json'), '0', '1', 'live', LIVE, RUNS], _path.join(tmp, 'b.json'));
         for (const r of await Promise.all(pa)) A.push(...r); const B = await pb;
+        const ANT = {}; { const pc = []; for (let i = 0; i < N; i++) { const out = _path.join(tmp, 'c' + i + '.json'); pc.push(run([out, String(i), String(N), 'ants'], out)); } for (const r of await Promise.all(pc)) for (const R of r) for (const [m, ts] of Object.entries(R.modes)) if (ts[0] && !ts[0].err) ANT[R.id + ':' + m] = ts[0].dmg / 20; }
         const avg = (ts, k) => ts.reduce((a, t) => a + (t[k] || 0), 0) / ts.length;
         const live = {}; for (const R of B) for (const [m, ts] of Object.entries(R.modes)) if (ts.length && !ts[0].err) live[R.id + ':' + m] = { block: (avg(ts, 'cut') + avg(ts, 'soak')) / 20, lured: avg(ts, 'lured'), denied: avg(ts, 'denied'), st: Object.fromEntries(Object.keys(ts[0].st || {}).map(k => [k, ts.reduce((a, t) => a + ((t.st || {})[k] || 0), 0) / ts.length])), taken: (avg(ts, 'allyTaken') + avg(ts, 'taken')) / 20 };
         const forms = A.map(R => ({ id: R.id, name: R.name, modes: Object.entries(R.modes).filter(([, ts]) => ts[0] && !ts[0].err).map(([m, ts]) => { const t = ts[0], L = live[R.id + ':' + m];
-            return { mode: m, dmg: t.dmg / 20, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, denied: L ? Math.max(L.denied, t.denied) : t.denied, st: (L && L.denied >= t.denied ? L.st : t.st) || {}, taken: L ? L.taken : null }; }) }));
+            return { mode: m, dmg: t.dmg / 20, dmgAnts: ANT[R.id + ':' + m] != null ? ANT[R.id + ':' + m] : null, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, denied: L ? Math.max(L.denied, t.denied) : t.denied, st: (L && L.denied >= t.denied ? L.st : t.st) || {}, taken: L ? L.taken : null }; }) }));
         // what one enemy deals in a second when nothing holds it off: the live run with a follower that does nothing (the Hammer Slug on its everyday attack), over the three enemies
         const foeDps = (A.find(r => r._foeDps > 0) || {})._foeDps || null;   // (reckoned from one bite and the bite's cycle, in the first worker: see below)
         const build = /BUILD_VERSION = "([^"]+)"/.exec(_fs.readFileSync(_path.join(ROOT_, 'js/config.js'), 'utf8'))[1];
@@ -86,7 +89,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     const forms = J(`Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy && EVOLUTIONS[k].role).map(k => ({ id: k, name: EVOLUTIONS[k].name, el: EVOLUTIONS[k].element, role: EVOLUTIONS[k].role, moves: (typeof evoMoveIds === 'function' ? evoMoveIds(EVOLUTIONS[k]) : []) }))`);
     const results = [];
     const SH = parseInt(process.argv[3] || '0'), NS = parseInt(process.argv[4] || '1');
-    const FR = 1200, LIVE = process.argv[5] === 'live', ONLY = process.argv[6] ? process.argv[6].split(',') : null, REPS = parseInt(process.argv[7] || '1');   // 20 seconds
+    const FR = 1200, LIVE = process.argv[5] === 'live', NEUTRAL = process.argv[5] === 'inert', ONLY = process.argv[6] ? process.argv[6].split(',') : null, REPS = parseInt(process.argv[7] || '1');   // 20 seconds
     for (const F of forms.filter((_, i) => i % NS === SH)) {
         const R = { id: F.id, name: F.name, el: F.el, role: F.role, modes: {} };
         const modes = ['main'].concat(F.moves); if (F.moves.indexOf('sweet_scent') >= 0) modes.push('sweet_scent_full');
@@ -96,7 +99,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                     const f = __fol('${F.el}', '${F.role}', '${F.id}'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true);
                     const ally = __fol('${F.el === 'fire' ? 'ice' : 'fire'}', 'brawler', null); ally.power = 0; ally.stance = 'hold';
                     const real0 = '${mode}'.replace('_full', ''), dist = (${F.role === 'brawler'} || (MOVES[real0] && MOVES[real0].close)) ? 1.0 : ${F.role === 'camper'} ? 1.6 : 3.5;   // (a close move is fought up close: its user walks in, and the trial holds it in place)
-                    const foes = []; for (let i = 0; i < 3; i++) { const p = __foe(f.x + dist + (i % 2) * 0.5, f.y + (i >> 1) * 0.5 - 0.25); if (${LIVE}) delete p.update; foes.push(p); }
+                    const foes = []; for (let i = 0; i < 3; i++) { const p = __foe(f.x + dist + (i % 2) * 0.5, f.y + (i >> 1) * 0.5 - 0.25); if (${LIVE}) delete p.update; if (${NEUTRAL}) p.speciesName = 'dummy'; foes.push(p); }
                     const real = '${mode}'.replace('_full', ''); if ('${mode}' !== 'main') followerAltSet(f, real); else followerAltSet(f, null);
                     if ('${mode}' === 'sweet_scent_full') f._nectar = 100;
                     f.currentWill = 100; f.attackCooldown = 0;
@@ -131,7 +134,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     // WHAT ONE ENEMY DEALS (build 2026-11-14d): one bite of the trial's enemy on the trial's own follower (level 20, the same base stats, no guard), over the bite's cycle (its rear-back and its rest, js/combat.js
     // COMBAT.bite): the damage a second an enemy deals while nothing holds it off. Reckoned, not measured in a fight: the live run's figure moved between 5 and 12 from one run to the next, and every support
     // score with it.
-    if (SH === 0 && !LIVE && results.length) results[0]._foeDps = J(`(function(){ __clear(); const f = __fol('core', 'brawler', 'jellyram'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true); f.jellyShield = 0; f.spawnProtection = 0;
+    if (SH === 0 && NEUTRAL && results.length) results[0]._foeDps = J(`(function(){ __clear(); const f = __fol('core', 'brawler', 'jellyram'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true); f.jellyShield = 0; f.spawnProtection = 0;
         const p = __foe(f.x + 1, f.y); let sum = 0; for (let i = 0; i < 20; i++) { f.health = f.maxHealth; const h0 = f.health; applyDamage(f, p.power, p, null, false, false, typeof dmgBiteHit === 'function' ? dmgBiteHit(p) : null); sum += h0 - f.health; }
         __clear(); return (sum / 20) / ((COMBAT.bite.windup + COMBAT.bite.cooldown) / 60); })()`);
     fs.writeFileSync(process.argv[2], JSON.stringify(results, null, 1)); console.log('done', results.length);

@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14m` · branch `claude/balance-rerun-2` · the balance trial fights a neutral dummy; a column for the ants
+- **The ask** (the owner, 2026-11-14: "Rerun the trials"; "What should we do to balance"; of the agent's first step, **"Yes, do the neutral dummy"**).
+- **Why:** the trial fought ants only, and an ant is weak to Crushing and Earthquake and resists Elemental, so the scores mixed the attacks' own worth with the ant match-up.
+- **The scored pass fights dummies with no weakness and no resistance** (`tools/balance-trial.js`: the enemy has no race's row); the bands on `balance.html` are made from it. **A second pass fights ants**: each mode's "Damage vs ants" and "Ants ×" (how much the ants add or take), and each form's "vs ants" score.
+- **What it shows:** against ants every form deals less (× 0.74 to 0.97): the Elemental half of every hit is resisted, and the attacks typed Crushing or Earthquake lose least (ERUPTION × 0.97, GRAVITY SLAM × 0.94), those typed Elemental most (the Thunderhead, the Voidstar, the Ember Hood × 0.74 to 0.75). The flags hold on the neutral dummy: the Igloo Skater's SKATE CHARGE 2 × its target, ERUPTION 1.9 ×, SONIC ROLL 1.5 ×; the Hornshell and SUNDEW at 46%.
+- Run on the game of build `2026-11-14l` (no perks, no traits). The game itself is not changed by this build.
+- `tools/balance-trial.js`, `tools/balance.js`, `design/balance-trial.json`, `balance.html`.
+
 ### Build `2026-11-14l` (stamped 14f on its branch) · branch `claude/remove-perks` · the followers' four traits are gone
 - **The ask** (the owner, 2026-11-14: "Can you give me a rundown on the traits and if they should stick around or not?"; after the rundown, **"Remove all four"**).
 - **What they were:** every follower drew one combat trait and one natural trait at random when it was made, shown only on its INFO card: **BERSERKER** (its hits × 1.5 under 30% health), **OPPORTUNISTIC** (it went for the lowest-health enemy within 6 tiles, not the nearest), **EMPATHETIC** (a quarter nearer you in the formation) and **LONE WOLF** (1.2 tiles farther out).
