@@ -65,7 +65,7 @@ const NINE = [['electroskink', 'zigzag_dash', 'ZIGZAG DASH'], ['jellyram', 'wobb
                 spread: Math.round(Math.abs(Math.atan2(shots[0].vy, shots[0].vx) - Math.atan2(shots[2].vy, shots[2].vx)) * 100) / 100 };
             for (let i = 0; i < 60 && followerProjectiles.length; i++) render(); o.took = __dmg(t) > 0; o.slow = [t.slowed || 0, t.slowFactor]; o.frozen = t.stunned || 0; o.k = ICICLE_FREEZE; return o; })()`);
         same(r.fired, true, 'it fired'); same(r.n, 3, 'icicles'); same(r.hit, true, 'their hit'); same(r.dmg.join(), [r.want, r.want, r.want].join(), 'each its shot');
-        same(r.spread, 0.52, 'the fan (two 0.26 apart)'); same(r.took, true, 'the enemy hit'); ok(r.frozen > 0 && r.k === 45, 'not frozen (an icicle that hits freezes its target 0.75 s since build 2026-11-14o, the status buffs; it slowed it): ' + r.frozen);
+        same(r.spread, 0.52, 'the fan (two 0.26 apart)'); same(r.took, true, 'the enemy hit'); ok(r.frozen > 0 && r.k === 90, 'not frozen (an icicle that hits freezes its target, 1.5 s since build 2026-11-14p, 0.75 s in 2026-11-14o; it slowed it before): ' + r.frozen);
     });
     check('ECHO PULSE: every enemy within 4 tiles it can see hurt (0.4 × power) and its wind-up broken; one 5 tiles off untouched', () => {
         const r = J(`(function(){ __clear(); const f = __fol('hornshell'), a = __foe(1, 0), b = __foe(-3, 2), c = __foe(5, 0); const fired = echoPulse(f); return { fired, hit: [a, b, c].map(q => __dmg(q) > 0), gl: [a.glitched > 0, b.glitched > 0, !!(c.glitched > 0)] }; })()`);

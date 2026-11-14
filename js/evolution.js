@@ -146,7 +146,8 @@ const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.
 const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.2, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;   // (1.2: 1.8 until build 2026-11-14n, the first balance pass)
-const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
+// (Build 2026-11-14p, the second round of status buffs, the owner: "Apply": CHOMP's stun 75 -> 105 frames, ECHO PULSE's glitch 30 -> 90, an icicle's freeze 45 -> 90, and SWEET SCENT's puff stuns what it lures SCENT_STUN frames.)
+const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 105, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 // THE FORMS THAT HOLD STILL STANDING (the owner, 2026-11-09: "the creatures need an idle phase where they don't squirm ... the salamander needs to stop moving, but the thunderhead looks fine whenever he's
 // idle right now"; then "The 10 that walk in place"): their idle loop is a walk, so standing they hold one idle column (the number: which; 0, where the loop's steps start); walking they play the loop as
@@ -803,7 +804,7 @@ function stakeRing(f) {
 //     does not fire (ready again). The stockpile is not saved (a fight's). The numbers are the agent's, PROVISIONAL.
 const SUNDEW_NECTAR_STEP = 25, SCENT_RADIUS = 5, SCENT_FRAMES = 240, SCENT_HEAL = 0.2, SCENT_HEAL_R = 3;
 // the puff POISONS what it lures (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "And have it do some damage. No, have it poison"): its bites weaken (applyWeaken) to SCENT_POISON_FACTOR for SCENT_POISON_FRAMES (the length and the strength are the agent's, provisional: a primary attack's poison, js/combat.js)
-const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6;
+const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6, SCENT_STUN = 60;   // (SCENT_STUN: the puff stuns what it lures a second, build 2026-11-14p)
 function sundewNectar(f) { if (f && f.evolved === "sundew") f._nectar = Math.min(100, (f._nectar || 0) + SUNDEW_NECTAR_STEP); }
 function sweetScent(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0;
@@ -817,7 +818,7 @@ function sweetScent(f) {
     } else {   // THE PUFF: the enemies near it come for it
         const foes = _evoFoesSeen(f.x, f.y, SCENT_RADIUS).filter(a => !a.bossId && !a.bossName && !a.isBoss);
         if (!foes.length) return false;
-        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
+        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); if (typeof applyStun === "function") applyStun(a, SCENT_STUN); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
         if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_RADIUS, color: "#ffb8dc", life: 36 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffb8dc", radius: 1.4, life: 30 }); }
         if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
     }
@@ -891,7 +892,7 @@ function wobbleSlam(f) {
 // ICICLE VOLLEY (the Rimestar's): a fan of ICICLE_COUNT icicles at the nearest enemy it can see within ICICLE_RANGE, ICICLE_FAN radians apart; each is its shot (SP.ATK × the Mages' share), ice, and
 // one that hits slows its target to ICICLE_SLOW_F of its speed for ICICLE_SLOW frames.
 // (Build 2026-11-14o, the status buffs: an icicle that hits FREEZES its target, a stun of ICICLE_FREEZE frames, not a boss; a boss is slowed as before. It slowed everything it hit.)
-const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6, ICICLE_FREEZE = 45;
+const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6, ICICLE_FREEZE = 90;
 function icicleVolley(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ICICLE_RANGE));
     if (!t || typeof spawnFollowerProjectile !== "function") return false;
@@ -906,7 +907,7 @@ function icicleVolley(f) {
     return true;
 }
 // ECHO PULSE (the Hornshell's): a ring of sound out to ECHO_RADIUS: every enemy it can see in it takes ECHO_MULT × its attack (core) and its wind-up is broken (GLITCH, ECHO_GLITCH frames).
-const ECHO_RADIUS = 4, ECHO_MULT = 0.4, ECHO_GLITCH = 30;
+const ECHO_RADIUS = 4, ECHO_MULT = 0.4, ECHO_GLITCH = 90;   // (ECHO_GLITCH 90: 30 until build 2026-11-14p)
 function echoPulse(f) {
     const foes = _evoFoesSeen(f.x, f.y, ECHO_RADIUS);
     if (!foes.length) return false;

@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14p` · branch `claude/balance-rerun-2` · the second round of status buffs
+- **The ask** (the owner, 2026-11-14, of the four stronger options the agent named after the first round: **"Apply"**).
+- **HORNSHELL:** ECHO PULSE's glitch 0.5 → **1.5 s** (every enemy within 4 tiles). **RIMESTAR:** an icicle's freeze 0.75 → **1.5 s**. **FROST MAW:** CHOMP's stun 1.25 → **1.75 s**. **SUNDEW:** SWEET SCENT's puff **stuns** what it lures **1 s** (with its lure and its poison).
+- **What the trial says** (run again): Rimestar 26.4 → 32.6, **in its band**; Hornshell 17.5 → 22.9 (ECHO PULSE now its best mode; still 54% of the Mage target); Frost Maw 57.0 → 58.6 (just under its band's 59.4); SUNDEW's SWEET SCENT 21.1 → 28.1, its best still its sting, 41.8 (53%).
+- The Gunslinger's CRYO MARKSMAN card's freeze, written "as the Frost Maw's bite", **keeps its 1.25 s** (its own number; `tests/playercards.js` no longer ties the two).
+- The lengths are the agent's, provisional.
+- `js/evolution.js`, `js/unitinfo.js`, `tests/ninemoves.js`, `tests/evolution.js`, `tests/playercards.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
 ### Build `2026-11-14o` · branch `claude/balance-rerun-2` · the status buffs: six forms under their band
 - **The ask** (the owner, 2026-11-14: "List, make status the buff"; then a pick for each form from the agent's lists).
 - **HORNSHELL:** its shot's status is **GLITCH** (0.5 s; it slowed), a quarter of its hits as before.
