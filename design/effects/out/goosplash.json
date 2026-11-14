@@ -1,0 +1,14 @@
+{
+ "piece": "goosplash",
+ "cell": 256,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 128.00000000000003,
+  "y": 128.00000000000006
+ },
+ "unitsPerCell": 6.044444444444444,
+ "upright": false
+}

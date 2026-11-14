@@ -1007,58 +1007,83 @@ const DMG_HIT_EMBER = Object.freeze({ which: "alt", stat: "atk", type: "slashing
 const DMG_HIT_RIFT = Object.freeze({ which: "alt", stat: "atk", type: "piercing" });
 const DMG_HIT_ROLL = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
 const DMG_HIT_BRIAR = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
-// EMBER SLASH (the Quillstone's): one heavy swipe of a long burning quill at the nearest enemy it can see within EMBER_RANGE (a close move: it steps in): EMBER_MULT x its attack, Slashing, fire, and the
-// enemy is left BURNING for EMBER_BURN frames (a tick of EMBER_TICK x its attack).
-const EMBER_RANGE = 1.8, EMBER_MULT = 2, EMBER_BURN = 180, EMBER_TICK = 0.05;
+// EMBER SLASH (the Quillstone's): it DASHES toward the nearest enemy it can see within EMBER_RANGE and THROUGH it, EMBER_RANGE in all along floor it could walk (else to it, as SKATE CHARGE stops), its
+// burning quills slashing every enemy within EMBER_BAND of its line: EMBER_MULT x its attack, Slashing, fire, each left BURNING for EMBER_BURN frames (a tick of EMBER_TICK x its attack). (Build 2026-11-14a;
+// the owner, 2026-11-13: "he should just dash towards them and through them. It should hit multiple enemies". It was one heavy swipe at one enemy, 2 x its attack, a close move.) The dash is shown over
+// EMBER_DASH frames (emberDashTick moves it; a streak of fire behind it: js/elements.js "emberdash"); the hits land as it sets off.
+const EMBER_RANGE = 4, EMBER_BAND = 0.8, EMBER_MULT = 1.2, EMBER_BURN = 180, EMBER_TICK = 0.05, EMBER_DASH = 10;
 function emberSlash(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, EMBER_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;
-    const f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
-    f.x += dx / L * s; f.y += dy / L * s; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
-    applyDamage(t, (f.power || 10) * EMBER_MULT, f, "fire", false, false, DMG_HIT_EMBER);
-    if (!t.dead && typeof applyBurn === "function") applyBurn(t, (f.power || 10) * EMBER_TICK, EMBER_BURN);
+    const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    let len = Math.max(L, EMBER_RANGE);
+    if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - 0.8);
+    const seg = a => { const t2 = Math.max(0, Math.min(1, ((a.x - x0) * ux + (a.y - y0) * uy) / (len || 1))); return Math.hypot(a.x - (x0 + ux * len * t2), a.y - (y0 + uy * len * t2)); };
+    const hit = _evoFoes(x0, y0, len + EMBER_BAND).filter(a => seg(a) <= EMBER_BAND && _evoSees(x0, y0, a));
+    if (hit.indexOf(t) < 0) hit.push(t);
+    for (const a of hit) { applyDamage(a, (f.power || 10) * EMBER_MULT, f, "fire", false, false, DMG_HIT_EMBER); if (!a.dead && typeof applyBurn === "function") applyBurn(a, (f.power || 10) * EMBER_TICK, EMBER_BURN); }
+    f.dirX = ux; f.dirY = uy; f._fpPath = null;
     f._sigAt = f0; f._sigCd = moveWindupFrames("ember_slash"); f.state = "attack"; f.attackAnim = 0;
-    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#ff8844", radius: 0.8, life: 20 });
+    const x1 = x0 + ux * len, y1 = y0 + uy * len;
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "emberdash", by: f, x0, y0, x: x1, y: y1, life: EMBER_DASH + 14, maxLife: EMBER_DASH + 14, element: "fire" }); else { f.x = x1; f.y = y1; }
     _evoSay(f, "EMBER SLASH", "#ffb066");
     return true;
 }
-// RIFT IMPALE (the Rift Mimic's): it glitches out where it stands and pops up UNDER the nearest enemy it can see within RIFT_RANGE (a spot one can stand on), impaling it: RIFT_MULT x its attack, Piercing, flux.
-// It ends where the enemy stands. The Mimic glitching out as it goes is a look (the owner, 2026-11-13: "he, basically teleports with a glitch out effect and then reappears under the enemy"), and the enemy it
-// impales is GLITCHED as well, RIFT_GLITCH frames (the owner: "I like the idea of Rift Impale glitching the enemies as well"; build 2026-11-13x; the length is the agent's, SHOCK ZAP's).
-const RIFT_RANGE = 5, RIFT_MULT = 2, RIFT_GLITCH = 30;
+function emberDashTick(e) {   // (js/elements.js updateElementEffects: the dash itself, EMBER_DASH frames from where it stood to the end of its line)
+    const f = e.by, age = e.maxLife - e.life; if (!f || f.dead || age > EMBER_DASH) return;
+    const u = Math.min(1, age / EMBER_DASH); f.x = e.x0 + (e.x - e.x0) * u; f.y = e.y0 + (e.y - e.y0) * u; f._fpPath = null;
+}
+// RIFT IMPALE (the Rift Mimic's): it GLITCHES OUT where it stands (gone for RIFT_OUT frames: the owner, 2026-11-13, "The way he does the animation is he glitches"), then pops up UNDER the nearest enemy it
+// could see within RIFT_RANGE (a spot one can stand on) and impales it: RIFT_MULT x its attack, Piercing, flux, on that ONE enemy, which is GLITCHED RIFT_GLITCH frames ("hits one enemy but makes them glitch
+// out"). It ends where the enemy stands. The hit lands as it reappears (riftImpaleTick, build 2026-11-14a; it landed at the cast); an enemy that died meanwhile is not hit, and it reappears there all the same.
+const RIFT_RANGE = 5, RIFT_MULT = 2, RIFT_GLITCH = 30, RIFT_OUT = 10;
 function riftImpale(f) {
     const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, RIFT_RANGE).filter(a => stand(a.x, a.y)));
     if (!t) return false;
-    const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y, dx = t.x - ox, dy = t.y - oy, L = Math.hypot(dx, dy) || 1;
-    f.x = t.x; f.y = t.y; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
-    applyDamage(t, (f.power || 10) * RIFT_MULT, f, "flux", false, false, DMG_HIT_RIFT);
-    if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, RIFT_GLITCH);
+    const f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1;
+    f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
     f._sigAt = f0; f._sigCd = moveWindupFrames("rift_impale"); f.state = "attack"; f.attackAnim = 0;
-    _evoFx({ type: "ring", x: ox, y: oy, radius: 0.7, color: "#9933ff", life: 18 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#cc66ff", radius: 0.6, life: 14 });   // (where it glitched out)
-    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#e0a8ff", radius: 1, life: 22 }); _evoFx({ type: "ring", x: t.x, y: t.y, radius: 0.9, color: "#cc66ff", life: 20 });   // (where it pops up)
-    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    f._fxHideUntil = f0 + RIFT_OUT;   // (out of sight while it is between the two places: js/evolution.js drawEvolvedFollower)
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "riftglitch", by: f, target: t, x0: f.x, y0: f.y, x: t.x, y: t.y, life: RIFT_OUT + 18, maxLife: RIFT_OUT + 18, element: "flux" });
+    else { f.x = t.x; f.y = t.y; _riftLand(f, t); }
     _evoSay(f, "RIFT IMPALE", "#d9a3ff");
     return true;
 }
-// BLADE ROLL (the Hammer Slug's): it rolls up into a ball and rolls in a straight line toward the nearest enemy it can see within ROLL_RANGE and on past it, ROLL_RANGE in all along floor it could walk
-// (else to it, as SKATE CHARGE stops): every enemy within ROLL_BAND of its line is sliced, ROLL_MULT x its attack, Slashing, core.
-const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1.2;
+function _riftLand(f, t) {
+    if (t && !t.dead) { applyDamage(t, (f.power || 10) * RIFT_MULT, f, "flux", false, false, DMG_HIT_RIFT); if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, RIFT_GLITCH); }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+}
+function riftImpaleTick(e) {   // (js/elements.js updateElementEffects)
+    const f = e.by, t = e.target, age = e.maxLife - e.life; if (!f || f.dead) { e.life = 0; return; }
+    if (age < RIFT_OUT && t && !t.dead) { e.x = t.x; e.y = t.y; }   // (it comes up where the enemy is now)
+    if (age === RIFT_OUT) { f.x = e.x; f.y = e.y; f._fpPath = null; _riftLand(f, t); }
+}
+// BLADE ROLL (the Hammer Slug's): it rolls up into a ball and ROLLS in a straight line toward the nearest enemy it can see within ROLL_RANGE and on past it, ROLL_RANGE in all along floor it could walk
+// (else to it, as SKATE CHARGE stops), at a SLOW pace, ROLL_STEP tiles a frame (the owner, 2026-11-13: "he rolls up into a ball and rolls through at like a slower pace"; build 2026-11-14a: it crossed
+// its line at once). Each enemy is sliced as the ball reaches it, once: ROLL_MULT x its attack, Slashing, core, within ROLL_BAND of the ball (bladeRollTick). While it rolls its body is not drawn: the ball is
+// (js/elements.js "bladeroll").
+const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1.2, ROLL_STEP = 0.08;
 function bladeRoll(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ROLL_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
     let len = Math.max(L, ROLL_RANGE);
     if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - 0.8);
-    const seg = a => { const t2 = Math.max(0, Math.min(1, ((a.x - x0) * ux + (a.y - y0) * uy) / (len || 1))); return Math.hypot(a.x - (x0 + ux * len * t2), a.y - (y0 + uy * len * t2)); };
-    const hit = _evoFoes(x0, y0, len + ROLL_BAND).filter(a => seg(a) <= ROLL_BAND && _evoSees(x0, y0, a));
-    if (hit.indexOf(t) < 0) hit.push(t);
-    for (const a of hit) { applyDamage(a, (f.power || 10) * ROLL_MULT, f, "core", false, false, DMG_HIT_ROLL); _evoFx({ type: "impact", x: a.x, y: a.y, color: "#7fffe0", radius: 0.6, life: 16 }); }
-    f.x = x0 + ux * len; f.y = y0 + uy * len; f.dirX = ux; f.dirY = uy; f._fpPath = null;
-    for (let k = 0; k <= len; k += 0.7) _evoFx({ type: "impact", x: x0 + ux * k, y: y0 + uy * k, color: "#00ccaa", radius: 0.3, life: 14 });
+    const life = Math.ceil(len / ROLL_STEP) + 1;
+    f.dirX = ux; f.dirY = uy; f._fpPath = null;
     f._sigAt = f0; f._sigCd = moveWindupFrames("blade_roll"); f.state = "attack"; f.attackAnim = 0;
+    const e = { type: "bladeroll", by: f, x0, y0, ux, uy, len, hit: [], x: x0, y: y0, life, maxLife: life, element: "core" };
+    if (typeof spawnElementEffect === "function") { f._fxHideUntil = f0 + life; spawnElementEffect(e); bladeRollTick(e); }
+    else { for (let k = 0; k <= life; k++) { e.life = life - k; bladeRollTick(e); } }
     _evoSay(f, "BLADE ROLL", "#7fffe0");
     return true;
+}
+function bladeRollTick(e) {   // (js/elements.js updateElementEffects: the ball's place this frame, and whom it slices)
+    const f = e.by; if (!f || f.dead) { e.life = 0; return; }
+    const d = Math.min(e.len, (e.maxLife - e.life) * ROLL_STEP), x = e.x0 + e.ux * d, y = e.y0 + e.uy * d;
+    f.x = x; f.y = y; f._fpPath = null; e.x = x; e.y = y;
+    for (const a of _evoFoes(x, y, ROLL_BAND)) { if (e.hit.indexOf(a) >= 0 || !_evoSees(x, y, a)) continue; e.hit.push(a); applyDamage(a, (f.power || 10) * ROLL_MULT, f, "core", false, false, DMG_HIT_ROLL); _evoFx({ type: "impact", x: a.x, y: a.y, color: "#7fffe0", radius: 0.6, life: 16 }); }
 }
 // BRIAR SWEEP (the Thornwhip's): it sweeps its whip in a circle round itself: every enemy within BRIAR_RADIUS that it can see takes BRIAR_MULT x its attack, Slashing, bloom, and is pushed BRIAR_PUSH tiles
 // straight out from it.
@@ -1072,7 +1097,7 @@ function briarSweep(f) {
         if (!a.dead && typeof applyKnockback === "function") applyKnockback(a, f, BRIAR_PUSH * (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28));
     }
     f._sigAt = f0; f._sigCd = moveWindupFrames("briar_sweep"); f.state = "attack"; f.attackAnim = 0;
-    _evoFx({ type: "ring", x: f.x, y: f.y, radius: BRIAR_RADIUS, color: "#ff9ccc", life: 24 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#ffd3e8", radius: 1, life: 18 });
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "briarburst", x: f.x, y: f.y, radius: BRIAR_RADIUS, life: 22, maxLife: 22, element: "blossom" });   // (leaves and thorns shaken off it, flying out all round: the owner, 2026-11-13, "a bunch of leaves pop off of them, and leaves and thorns shake off and hit enemies in a AOE type situation")
     _evoSay(f, "BRIAR SWEEP", "#ff9ccc");
     return true;
 }
@@ -1080,15 +1105,17 @@ function briarSweep(f) {
 // STOMP_RADIUS that it can see takes STOMP_MULT x its attack, Crushing, toxic. A close move, its second (two toxic energy cards). Smaller and quicker than ERUPTION, and it eats no armour. The name, the
 // numbers and the look (a ring and an impact) are the agent's, PROVISIONAL.
 const DMG_HIT_STOMP = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });
-const STOMP_RADIUS = 1.5, STOMP_MULT = 1.5;
+// (Build 2026-11-14a: it rears its leg and brings it down as its everyday stomp does, its sheet's own frames, and the hit lands as the foot does, STOMP_SLAM frames after the cast: toxicStompTick.)
+const STOMP_RADIUS = 1.5, STOMP_MULT = 1.5, STOMP_SLAM = 12;
+function toxicStompLand(f, x, y) { for (const a of _evoFoesSeen(x, y, STOMP_RADIUS)) applyDamage(a, (f.power || 10) * STOMP_MULT, f, "toxic", false, false, DMG_HIT_STOMP); if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3); }
+function toxicStompTick(e) { const f = e.by; if (!f || f.dead) { e.life = 0; return; } if (e.maxLife - e.life < STOMP_SLAM) { e.x = f.x; e.y = f.y; } if (e.maxLife - e.life === STOMP_SLAM) toxicStompLand(f, e.x, e.y); }   // (js/elements.js updateElementEffects)
 function toxicStomp(f) {
     const foes = _evoFoesSeen(f.x, f.y, STOMP_RADIUS);
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
-    for (const a of foes) applyDamage(a, (f.power || 10) * STOMP_MULT, f, "toxic", false, false, DMG_HIT_STOMP);
+    f._stompAt = f0;
     f._sigAt = f0; f._sigCd = moveWindupFrames("toxic_stomp"); f.state = "attack"; f.attackAnim = 0;
-    _evoFx({ type: "ring", x: f.x, y: f.y, radius: STOMP_RADIUS, color: "#88ff44", life: 22 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#b6ff7a", radius: 1, life: 18 });
-    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "toxicstomp", by: f, x: f.x, y: f.y, radius: STOMP_RADIUS, life: STOMP_SLAM + 26, maxLife: STOMP_SLAM + 26, element: "toxic" }); else toxicStompLand(f, f.x, f.y);   // (the stomp: goo splashed out of its caldera all round it: the owner, 2026-11-13, "make sure he splashes some of this Caldera")
     _evoSay(f, "TOXIC STOMP", "#88ff44");
     return true;
 }
@@ -1457,6 +1484,7 @@ function _evoFrame(f, d, f0) {
     else if (bz >= 0) col = bz;
     else if (fl >= 0 && !(sigK >= 0 && sigK < 1)) col = fl;
     else if (mc >= 0) col = mc;
+    else if (d.stomp && f._stompAt !== undefined && f0 - f._stompAt >= 0 && f0 - f._stompAt < STOMP_SLAM * 2) col = 16 + Math.min(7, Math.floor((f0 - f._stompAt) / (STOMP_SLAM / 4)));   // (TOXIC STOMP: the Seeper's own leg stomp, its sheet's block 16 to 23, the foot down at STOMP_SLAM)
     else if (qb >= 0) col = qb;
     else if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1 && !hexHold) col = 8 + Math.min(7, Math.floor(sigK * 8));
@@ -1472,6 +1500,7 @@ function _evoFacing(f) {
 // has not loaded).
 // UNDER THE FLOOR (BURROW STRIKE, FAULTLINE: burrowerDepth): while it dives it sinks into the floor (what goes below the floor is not drawn) as a mound rises; under it only the mound shows
 function drawEvolvedFollower(f, px, py, g) {
+    if ((f._fxHideUntil || 0) > (typeof frame !== "undefined" ? frame : 0)) return true;   // (out of sight for a move's moment: RIFT IMPALE between its two places, BLADE ROLL while its ball is drawn; build 2026-11-14a)
     const dep = typeof burrowerDepth === "function" ? burrowerDepth(f) : null;
     if (dep === null) return _drawEvolvedBody(f, px, py, g);
     if (dep >= 1) { _drawBurrowMound(f, px, py, g, 1); return true; }

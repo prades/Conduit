@@ -50,6 +50,14 @@ const PIECES = {
   // "Ghostly violet energy", "Two alternate", then "Make it look 3d rendered"): ONE short, stubby tentacle of ghostly violet gel, thick to a blunt round tip, a brighter core inside it and a few small suckers on its underside, swinging
   // from overhead across (clockwise) and slapping down. ANIMATED: its columns are the frames of the swing (yaws = the frames), one row; its root is the origin, at the middle of its cell. The game draws it mirrored for the second slap.
   slap: { form: 861, color: '#9933ff', anim: true, cell: 96, yaws: 12, pitches: [0], h: 0.8 },
+  // BLADE ROLL's BALL (the Hammer Slug's extra attack; the owner, 2026-11-13: "he rolls up into a ball and rolls through at like a slower pace"; its first look, a flat teal disc, "need[s] better designs"):
+  // the Hammer Slug ROLLED UP: a ball of its own blue-to-teal scales with the dark spikes of its back standing out all round its rim, a pale cutting edge between them, rolling to the screen's right.
+  // ANIMATED: its 12 columns are one spike's worth of its turn (40 degrees: nine spikes), so the game loops them as it rolls; its foot is the origin, at the middle of its cell. Drawn mirrored to roll left.
+  slugball: { form: 469, color: '#00ccaa', anim: true, cell: 128, yaws: 12, pitches: [0], h: 1.1 },
+  // TOXIC STOMP's SPLASH (the Seeper's extra attack; the owner: "a stomp ... make sure he splashes some of this Caldera"; its first look, flat green blobs, "need[s] better designs"): goo thrown up out of the
+  // Seeper's caldera as its foot comes down: a fat gout straight up and fourteen glossy blobs arcing out all round, landing 0.8 to 1.5 tiles off and spreading into splats that sink away. ANIMATED: 12
+  // columns, the throw to the last of the splats; the Seeper's foot (the floor under its middle) is the origin, at the middle of its cell.
+  goosplash: { form: 936, color: '#33dd55', anim: true, cell: 256, yaws: 12, pitches: [0], h: 1.2 },
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -137,6 +145,42 @@ window.__fx = async function (mode, piece, P) {
         for (let i = 0; i < N; i++) { const t = i / (N - 1), p = curve.getPoint(t); pts[i].copy(p); rad[i] = Math.max(0.003, 0.15 * Math.pow(1 - t, 0.95) * (1 + 0.09 * Math.sin(t * 30)) * Math.min(1, 0.4 + t / 0.07 * 0.6) + 0.004); rc[i] = rad[i] * 0.4; }   // (a point, not a round end; faint ridges along it)
         tt.set(pts, rad); tc.set(pts, rc);
         sk.forEach((s, i) => { const t = 0.22 + i * 0.17, p = curve.getPoint(t), tg = curve.getTangent(t), nx = -tg.y, ny = tg.x, r = 0.15 * Math.pow(1 - t, 0.95); s.position.set(p.x + nx * r * 0.95, p.y + ny * r * 0.95, 0.04); s.scale.setScalar(0.024); }); };
+      g.userData.pose(0);
+    }
+    if (piece === 'slugball') {
+      const R = 0.5, geo = new T.SphereGeometry(R, 18, 12); geo.rotateX(PI / 2);   // (its poles along z, the axle it rolls about: its 18 slices repeat every 20 degrees, so a 40 degree turn loops)
+      const ng = geo.toNonIndexed(), q = ng.attributes.position, cols = new Float32Array(q.count * 3), c0 = new T.Color(0x1a2f9c).convertSRGBToLinear(), c1 = new T.Color(0x1fc7c9).convertSRGBToLinear(), c2 = new T.Color(0x0e1a5e).convertSRGBToLinear(), cc = new T.Color();
+      for (let i = 0; i < q.count; i += 3) { const zx = (q.getZ(i) + q.getZ(i + 1) + q.getZ(i + 2)) / 3 / R, th = Math.atan2(q.getY(i) + q.getY(i + 1) + q.getY(i + 2), q.getX(i) + q.getX(i + 1) + q.getX(i + 2)), row = Math.round((Math.acos(Math.max(-1, Math.min(1, zx))) / PI) * 12), sl = Math.round((th + PI) / (2 * PI) * 18);
+        const k = 1 - Math.abs(zx); cc.copy(c0).lerp(c1, k * k); if ((row + sl) % 2 === 0) cc.lerp(c2, 0.35);   // (teal along its rim, navy toward its sides; every other scale darker)
+        for (let j = 0; j < 3; j++) { cols[(i + j) * 3] = cc.r; cols[(i + j) * 3 + 1] = cc.g; cols[(i + j) * 3 + 2] = cc.b; } }
+      ng.setAttribute('color', new T.BufferAttribute(cols, 3)); ng.computeVertexNormals();
+      const scale = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.32, metalness: 0.25, flatShading: true }); scale.envMapIntensity = 0.9;
+      const spikeM = new T.MeshStandardMaterial({ color: new T.Color(0x2a2f3d).convertSRGBToLinear(), roughness: 0.4, metalness: 0.45, flatShading: true }); spikeM.envMapIntensity = 1.1;
+      const edgeM = new T.MeshStandardMaterial({ color: new T.Color(0xbdf6ff).convertSRGBToLinear(), emissive: new T.Color(0x39d6e6).multiplyScalar(0.55), roughness: 0.2, metalness: 0.3 });
+      const ball = new T.Group(); ball.add(new T.Mesh(ng, scale));
+      const rim = new T.Mesh(new T.TorusGeometry(R * 1.01, 0.03, 6, 36), edgeM); ball.add(rim);   // (its cutting edge, round its rim)
+      for (let i = 0; i < 9; i++) { const a2 = i * 2 * PI / 9, sp = new T.Mesh(new T.ConeGeometry(0.1, 0.4, 4, 1), spikeM); sp.position.set(Math.cos(a2) * (R + 0.15), Math.sin(a2) * (R + 0.15), 0); sp.rotation.z = a2 - PI / 2; sp.scale.z = 0.5; ball.add(sp); }   // (its back's spikes: flat blades, standing out of its rim)
+      for (const sd of [-1, 1]) for (let i = 0; i < 9; i++) { const a2 = (i + 0.5) * 2 * PI / 9, sp = new T.Mesh(new T.ConeGeometry(0.055, 0.2, 4, 1), spikeM); sp.position.set(Math.cos(a2) * R * 0.9, Math.sin(a2) * R * 0.9, sd * R * 0.5); sp.rotation.z = a2 - PI / 2; sp.rotation.x = sd * 0.5; ball.add(sp); }   // (smaller ones either side)
+      const up = new T.Group(); up.position.y = R + 0.15; up.add(ball); const face = new T.Group(); face.rotation.y = PI / 4; face.add(up); g.add(face);   // (its axle toward the camera: it rolls across the screen)
+      g.userData.pose = u => { ball.rotation.z = -u * (P.yaws - 1) / P.yaws * (2 * PI / 9); };
+      g.userData.pose(0);
+    }
+    if (piece === 'goosplash') {
+      const goo = new T.MeshStandardMaterial({ color: new T.Color(0x16a82e).convertSRGBToLinear(), emissive: new T.Color(0x0c5f18).multiplyScalar(0.18), roughness: 0.18, metalness: 0, transparent: true, opacity: 1 }); goo.envMapIntensity = 0.45;
+      const pale = new T.MeshStandardMaterial({ color: new T.Color(0x4fd23f).convertSRGBToLinear(), emissive: new T.Color(0x1f8f22).multiplyScalar(0.2), roughness: 0.15, metalness: 0, transparent: true, opacity: 1 }); pale.envMapIntensity = 0.5;
+      const TOP = 0.78, drops = [];   // (the caldera's mouth, above the Seeper's foot)
+      for (let i = 0; i < 14; i++) { const a2 = i * 2 * PI / 14 + (i % 2) * 0.17, Rr = 0.8 + 0.7 * ((i * 5) % 7) / 6, hh = 0.55 + 0.5 * ((i * 3) % 5) / 4, sz = 0.12 + 0.07 * ((i * 4) % 3) / 2;
+        const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), i % 4 === 0 ? pale : goo); g.add(m); drops.push({ m, a: a2, R: Rr, h: hh, sz, lag: ((i * 7) % 4) * 0.03 }); }
+      const gout = new T.Mesh(new T.SphereGeometry(1, 14, 10), goo); g.add(gout);
+      const crown = []; for (let i = 0; i < 8; i++) { const m = new T.Mesh(new T.SphereGeometry(1, 8, 6), pale); g.add(m); crown.push({ m, a: i * 2 * PI / 8 + 0.3 }); }
+      g.userData.pose = u => {
+        const fade = u > 0.82 ? Math.max(0, 1 - (u - 0.82) / 0.18) : 1; goo.opacity = fade; pale.opacity = fade;
+        { const k = Math.min(1, u / 0.34), up2 = Math.sin(PI * k); gout.visible = u < 0.36; gout.position.set(0, TOP + 0.42 * up2, 0); gout.scale.set(0.24 * (1 - 0.5 * k) + 0.03, 0.2 + 0.42 * up2, 0.24 * (1 - 0.5 * k) + 0.03); }   // (the gout straight up out of its mouth, and back)
+        crown.forEach(Cn => { const k = Math.min(1, u / 0.3), r = 0.18 + 0.3 * k; Cn.m.visible = u < 0.32; Cn.m.position.set(Math.cos(Cn.a) * r, TOP + 0.3 * Math.sin(PI * k), Math.sin(Cn.a) * r); Cn.m.scale.setScalar(0.07 * (1 - 0.6 * k)); });
+        drops.forEach(D => { const t = Math.max(0, Math.min(1, (u - D.lag) / 0.52)), x = Math.cos(D.a) * D.R * t, z = Math.sin(D.a) * D.R * t;
+          if (t < 1) { const y = TOP * (1 - t) + 4 * D.h * t * (1 - t) + 0.03; D.m.position.set(x, y, z); const st = 1 + 0.5 * Math.abs(1 - 2 * t); D.m.scale.set(D.sz / Math.sqrt(st), D.sz * st, D.sz / Math.sqrt(st)); }   // (stretched as it flies fast, round at the top of its arc)
+          else { const sp = Math.min(1, (u - D.lag - 0.52) / 0.2), w = D.sz * (1.3 + 1.7 * sp); D.m.position.set(Math.cos(D.a) * D.R, 0.02, Math.sin(D.a) * D.R); D.m.scale.set(w, D.sz * (0.45 - 0.3 * sp), w); } });   // (landed: a splat, spreading)
+      };
       g.userData.pose(0);
     }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
