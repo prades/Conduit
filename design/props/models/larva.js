@@ -53,6 +53,9 @@ PROPS.larva = (() => {
   // Pokemon"): drafts, each a thicker and wider tail (its last segments taper less and spread wider) with claws of our own at its end, heavy, pale and hooked (the reference's spirit, not its
   // shapes); 'prongs' is the tail as approved in look A (twin spikes), the game's until a draft is picked. design/creatures/voltwyrm_tail_studies.js renders them.
   const TAILS = { prongs: { thick: false, end: 'prongs' }, A: { thick: true, end: 'talons3' }, B: { thick: true, end: 'grasp4' }, C: { thick: true, end: 'pincers' } };
+  // THE PLATING (the owner, of the tail drafts, 2026-11-14: "A and make the tail and body need more plating on each segment"): drafts of more armour on every segment, body and tail, over its
+  // shell: 'panels' three raised panels a segment (one over its back, one on each flank; gaps between them, two rivets each, its keel on the back panel); 'scales' two overlapping rows a
+  // segment, the front row standing proud of the back, each with its lip. A tail's entry carries none: the shell as approved.
   // THE LARVA: S its materials, ph its walk (0..1), jawA its jaws' turn on their hinges (0 at rest, + wider, - shut), edge its jaws' lit edges' material, sparks over its back, tail its TAILS entry
   function larva(S, ph, jawA, edge, sparks, tail) { const g = G(), TAU = Math.PI * 2, TL = tail || TAILS.prongs;
     // its spine, head to tail: the head raised, the body low along the floor in a gentle S, the tail lifting a little; the S sways as it walks
@@ -73,10 +76,19 @@ PROPS.larva = (() => {
       const R = r * 1.1, sx0 = -len * 0.41, sx1 = len * 0.41, shPt = (u, v, km) => { const x = sx1 - (sx1 - sx0) * u, th = -0.3 + v * (Math.PI + 0.6), k = (km || 1) * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k * W]; };
       grp.add(psurf(6, 30, shPt, S.armor));
       for (const u of [0, 1]) { const e = []; for (let j = 0; j <= 30; j++) e.push(shPt(u, j / 30, 1.004)); grp.add(ptube(e, 0.011, 0.011, S.dark, 8)); }
+      // MORE PLATING (TL.plates): plates over the shell by their angle round it (th: 0 its right flank, PI/2 its back, PI its left), u along it (0 its front), km how far proud
+      let keelK = 1;
+      if (TL.plates) { const shTh = (u, th, km) => { const x = sx1 - (sx1 - sx0) * u, k = km * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k * W]; };
+        const plate2 = (th0, th1, u0, u1, km, rivets) => { const P = (u, v) => shTh(u0 + (u1 - u0) * u, th0 + (th1 - th0) * v, km); grp.add(psurf(4, 14, P, S.armor));
+          const rim = []; for (let j = 0; j <= 14; j++) rim.push(P(0, j / 14)); for (let j = 1; j <= 4; j++) rim.push(P(j / 4, 1)); for (let j = 13; j >= 0; j--) rim.push(P(1, j / 14)); for (let j = 3; j >= 0; j--) rim.push(P(j / 4, 0));
+          grp.add(ptube(rim.map(p => [p[0], p[1] * 1.004, p[2] * 1.004]), 0.0085, 0.0085, S.dark, 6));
+          if (rivets) for (const u of [0.22, 0.78]) { const q = shTh(u0 + (u1 - u0) * u, (th0 + th1) / 2, km * 1.02); grp.add(ball(0.0105, S.joint, q)); } };
+        if (TL.plates === 'panels') { plate2(Math.PI / 2 - 0.52, Math.PI / 2 + 0.52, 0.05, 0.95, 1.1, true); plate2(-0.12, Math.PI / 2 - 0.64, 0.1, 0.9, 1.07, true); plate2(Math.PI / 2 + 0.64, Math.PI + 0.12, 0.1, 0.9, 1.07, true); keelK = 1.1; }
+        else { plate2(-0.22, Math.PI + 0.22, 0.0, 0.56, 1.1, false); plate2(-0.18, Math.PI + 0.18, 0.46, 1.0, 1.05, false); keelK = 1.1; } }
       // the joint behind it: a band of light
       if (i < N - 1) { const bg = new T.CylinderGeometry(r * 0.88, r * 0.88, len * 0.22, 28, 1, true); bg.rotateZ(Math.PI / 2); const band = new T.Mesh(bg, S.glowD); band.scale.set(1, 0.8, W); band.position.x = -len * 0.5; grp.add(band); }
       // the keel along its back
-      keel(grp, S, [0, R * 0.8, 0], UPV, 1.1); }
+      keel(grp, S, [0, R * 0.8 * keelK, 0], UPV, 1.1); }
     // pistons under the armour's edge, segment to segment
     for (let i = 1; i < N - 2; i++) { const fa = frameAt(segT(i)), fb = frameAt(segT(i + 1)), ra = rad(i), rb = rad(i + 1);
       for (const sg of [-1, 1]) ppiston(g, arr(lp(fa, len * 0.12, -ra * 0.36, sg * ra * 1.06 * wide(i))), arr(lp(fb, len * 0.12, -rb * 0.36, sg * rb * 1.06 * wide(i + 1))), 0.013, S); }
@@ -146,6 +158,6 @@ PROPS.larva = (() => {
     const g = G(); g.add(body); return { g, marks: {} }; };
   return { variants, canvas: [560, 400],
     build(name) { return make(name, null); },
-    study(key, name) { return make(name, TAILS[key]); },   // (a tail draft, for design/creatures/voltwyrm_tail_studies.js; the bake draws the game's tail)
+    study(key, name, plates) { return make(name, plates ? Object.assign({}, TAILS[key], { plates }) : TAILS[key]); },   // (a tail draft, and a plating, for design/creatures/voltwyrm_tail_studies.js; the bake draws the game's)
     tails: Object.keys(TAILS) };
 })();

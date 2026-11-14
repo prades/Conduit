@@ -4,7 +4,9 @@
 //   NOW  the tail as built (look A's twin prongs);   A  three talons splayed like a raptor's foot, hooking down to the floor;
 //   B    four claws round the wrist, curling in like a gripping hand;   C  two great pincer claws, sweeping out and hooking back in until their points cross.
 // Row 1: the whole boss lying across the screen at the game's size; row 2: its tail's end, close (it faces away up the screen, its tail toward you).
-//   node design/creatures/voltwyrm_tail_studies.js <three-dir> <out-dir>   ->  <out-dir>/voltwyrm_tails.png
+// ROUND 2 (the owner: "A and make the tail and body need more plating on each segment"): tail A with more armour on every segment, body and tail, in two ways (the model's plates):
+//   NOW, A as drafted, A + PANELS (three raised panels a segment, rivets), A + SCALES (two overlapping rows a segment); row 2 its plating close, turned three-quarters.
+//   node design/creatures/voltwyrm_tail_studies.js <three-dir> <out-dir>   ->  <out-dir>/voltwyrm_tails.png (round 1) and voltwyrm_plating.png (round 2)
 // Every part and proportion here is the agent's, provisional. Nothing in the game reads this; the bake draws the game's tail until a draft is picked.
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
 const fs = require('fs'), path = require('path');
@@ -30,15 +32,15 @@ window.__draw = async function (PX, UH) {
   soft(3, 4, 9, 2, 2, 0x8a9bb0, -PI / 2); soft(2, 4, -9, 2, -3, 0x3c5478, PI / 2); soft(6, 1.2, 0, 2.5, 9, 0x5a6678, PI);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
   // one picture: the model by its name and tail, the bake's camera looking at a point of it (its middle, or its tail's end), zoom times the game's size
-  const shot = (key, name, W, H, zoom, onTail) => {
+  const shot = (key, name, W, H, zoom, onTail, plates, at) => {
     renderer.setSize(W, H, false);
     const scene = new T.Scene(); scene.environment = env;
     scene.add(new T.HemisphereLight(0x7f8ea3, 0x050505, 0.5));
     const k1 = new T.DirectionalLight(0xfff1e2, 2.4); k1.position.set(3, 6, 4); scene.add(k1);
     const k2 = new T.DirectionalLight(0x6c8cff, 1.3); k2.position.set(-5, 1.2, 1.5); scene.add(k2);
     const k3 = new T.DirectionalLight(0x6c8cff, 0.6); k3.position.set(2, 1, -5); scene.add(k3);
-    const B = PROPS.larva.study(key, name); scene.add(B.g); B.g.updateMatrixWorld(true);
-    const inner = B.g.children[0].children[0], focus = onTail ? inner.localToWorld(new T.Vector3(-0.96, 0.22, 0.05)) : new T.Vector3(0, 0.25, 0);
+    const B = PROPS.larva.study(key, name, plates); scene.add(B.g); B.g.updateMatrixWorld(true);
+    const inner = B.g.children[0].children[0], focus = at ? inner.localToWorld(new T.Vector3(at[0], at[1], at[2])) : onTail ? inner.localToWorld(new T.Vector3(-0.96, 0.22, 0.05)) : new T.Vector3(0, 0.25, 0);
     const cam = new T.OrthographicCamera(-W / 2 / PX / zoom, W / 2 / PX / zoom, H / 2 / PX / zoom, -H / 2 / PX / zoom, 0.1, 200);
     cam.position.set(focus.x + D * Math.cos(elev) * Math.SQRT1_2, focus.y + D * Math.sin(elev), focus.z + D * Math.cos(elev) * Math.SQRT1_2); cam.lookAt(focus); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
     renderer.render(scene, cam);
@@ -55,7 +57,18 @@ window.__draw = async function (PX, UH) {
     s.drawImage(shot(key, 'w7_0', CW, R1, 1, false), x, head + lab);
     s.drawImage(shot(key, 'w5_0', CW, R2, 2.6, true), x, head + lab + R1 + pad);
     s.strokeStyle = '#2a3344'; s.lineWidth = 2; s.strokeRect(x, head + lab, CW, R1); s.strokeRect(x, head + lab + R1 + pad, CW, R2); });
-  return cv.toDataURL('image/png');
+  // round 2: the plating
+  const cols2 = [['prongs', null, 'NOW'], ['A', null, 'A · as drafted'], ['A', 'panels', 'A + PANELS'], ['A', 'scales', 'A + SCALES']];
+  const cv2 = document.createElement('canvas'); cv2.width = cv.width; cv2.height = head + 2 * (lab + pad) + R1 + R2 + pad; const t = cv2.getContext('2d');
+  t.fillStyle = '#151a24'; t.fillRect(0, 0, cv2.width, cv2.height);
+  t.fillStyle = '#ffffff'; t.font = '800 30px system-ui, sans-serif'; t.fillText("VOLTWYRM · tail A, more plating on every segment · drafts", pad, 44);
+  t.fillStyle = '#93a1b8'; t.font = '500 17px system-ui, sans-serif'; t.fillText('Row 1: the whole boss at the game\\'s size. Row 2: its body and tail close, turned three-quarters. PANELS: three raised panels a segment with rivets; SCALES: two overlapping rows a segment.', pad, 74);
+  cols2.forEach(([key, plates, title], i) => { const x = pad + i * (CW + pad);
+    t.fillStyle = '#ffffff'; t.font = '800 19px system-ui, sans-serif'; t.fillText(title, x, head + 20);
+    t.drawImage(shot(key, 'w7_0', CW, R1, 1, false, plates), x, head + lab);
+    t.drawImage(shot(key, 'w0_0', CW, R2, 2.3, false, plates, [-0.55, 0.16, 0]), x, head + lab + R1 + pad);
+    t.strokeStyle = '#2a3344'; t.lineWidth = 2; t.strokeRect(x, head + lab, CW, R1); t.strokeRect(x, head + lab + R1 + pad, CW, R2); });
+  return { tails: cv.toDataURL('image/png'), plating: cv2.toDataURL('image/png') };
 };
 </script></body></html>`;
 
@@ -65,9 +78,10 @@ window.__draw = async function (PX, UH) {
   await p.route('**/three.min.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(THREE_DIR, 'package/build/three.min.js'), 'utf8') }));
   await p.route('http://draw.local/', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: page }));
   await p.goto('http://draw.local/');
-  let url; try { url = await p.evaluate(([a, b2]) => window.__draw(a, b2), [PX, UH]); } catch (e) { console.log('ERRORS', errs.slice(0, 5), e.message); await b.close(); process.exit(1); }
+  let res; try { res = await p.evaluate(([a, b2]) => window.__draw(a, b2), [PX, UH]); } catch (e) { console.log('ERRORS', errs.slice(0, 5), e.message); await b.close(); process.exit(1); }
   fs.mkdirSync(OUTDIR, { recursive: true });
-  const out = path.join(OUTDIR, 'voltwyrm_tails.png'); fs.writeFileSync(out, Buffer.from(url.split(',')[1], 'base64'));
-  console.log('wrote', out, errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
+  const o1 = path.join(OUTDIR, 'voltwyrm_tails.png'), o2 = path.join(OUTDIR, 'voltwyrm_plating.png');
+  fs.writeFileSync(o1, Buffer.from(res.tails.split(',')[1], 'base64')); fs.writeFileSync(o2, Buffer.from(res.plating.split(',')[1], 'base64'));
+  console.log('wrote', o1, o2, errs.length ? 'PAGE ERRORS ' + JSON.stringify(errs.slice(0, 3)) : '');
   await b.close();
 })();
