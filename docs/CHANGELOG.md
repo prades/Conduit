@@ -4,13 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
-### Build `2026-11-14t` · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger
+### Build `2026-11-14u` (stamped 14t on its branch) · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger
 - **The ask** (the owner, 2026-11-14: **"Freeze the targets and buff the sting"**).
 - **The targets are fixed** on `balance.html`: **Brawler 79, Mage 44, Technician 35** (the roles' middle scores as they stood). They were the middle score of each role's forms at every trial, so lifting some forms raised the bar for the rest. The middles are still shown beside them.
 - **SUNDEW's NECTAR STING is 0.63 × its attack** (0.45 × before: 40% harder; `ELEMENT_ATTACKS.blossom.sting`). STONEPETAL's crushing head keeps 0.45 ×.
 - **What the trial says** (run again): SUNDEW 41.8 → **54.5** (its sting; with its heal in BOTH, 54.4), 69% of the Brawler target, its band starting at 59.3: closer, still under.
 - `js/elements.js`, `js/unitinfo.js`, `js/infodex.js`, `tools/balance.js`, `tests/followercombat.js`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`, the Bible, `design/balance-trial.json`, `balance.html`.
 - Not playtested.
+
+### Build `2026-11-14t` · branch `claude/start-game-project-HSh7Z` · a refresh keeps the Ultimates
+- **The report** (the owner, 2026-11-14): "Refreshing the game resets my followers' ultimates."
+- **The cause:** the save kept each follower's level, XP, evolution, moves and cards but not its Ultimate's charge, and a follower made from the save had none at all (its meter hidden until it charged again). Your own ULTIMATE bar on THE CORE was not kept either: a refresh emptied it too.
+- **Now:** each follower's record keeps its charge (`ult`, to a tenth, never rounded up to full) and the follower made from it has it; your bar is kept (`pult`). A game saved before has none: empty, as before. A fallen follower's is not kept (its return starts it empty, as a fall always did); a bad value loads within 0 to 100.
+- `js/facilitysave.js`; `tests/ultimate.js` (2 checks: both meters kept, restored and guarded), `tests/crystalline.js` (the save's fields, 44); `TUTORIAL.md` ("Saving").
+- Checked: the real page, charged (80, full, 35 and your bar 55), saved, refreshed: back as they were, the squad's ULT gauges with them (and charging on). Not playtested.
 
 ### Build `2026-11-14s` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM's fight, diagnosed: a lighter battle view, steady facings
 - **Asked** (the owner, 2026-11-14): "The game runs pretty slow, or feels like it when I'm in the electrical domain fighting the voltwyrm. Also its movement and the movement of the followers looks glitched when they flip back and forth with their direction. Diagnostics are required".

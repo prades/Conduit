@@ -4,7 +4,7 @@
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits, equip cards), the run's hand of equip cards and the player's two slots (js/cards.js; the COLLECTION of unlocked cards is its own key, "conduit_fp_cards", which NEW GAME keeps), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
+// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits, equip cards, the Ultimate's charge), your ULTIMATE bar, the run's hand of equip cards and the player's two slots (js/cards.js; the COLLECTION of unlocked cards is its own key, "conduit_fp_cards", which NEW GAME keeps), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
 // the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it; the objects FLUX MOVE has moved (js/fluxmove.js).
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
@@ -59,6 +59,7 @@ function facilitySaveCollect() {
         potion: typeof potionSnapshot === "function" ? potionSnapshot() : null,                   // the Sleeping Potion in hand and its economy (js/potion.js)
         sidequest: typeof sqSnapshot === "function" ? sqSnapshot() : null,                        // Side Quest: that he appeared, the talk, the promise (js/sidequest.js)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
+        pult: typeof playerUltimate === "number" && playerUltimate > 0 ? Math.floor(playerUltimate * 10) / 10 : undefined,   // your ULTIMATE bar (js/helpers.js; the owner, 2026-11-14: "Refreshing the game resets my followers' ultimates": it emptied too, build 2026-11-14t)
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
         sentries: typeof sentrySnapshot === "function" ? sentrySnapshot() : undefined,   // the turrets' wear (js/antraids.js)
@@ -132,6 +133,7 @@ function facilitySaveApply(d) {
     if (typeof serumApply === "function") serumApply(d.serum);
     if (Number.isFinite(d.mxp) && typeof mutatorXp !== "undefined") mutatorXp = Math.max(0, d.mxp);
     if (typeof technoApply === "function") technoApply(d.tc);
+    if (Number.isFinite(d.pult) && typeof playerUltimate !== "undefined") { playerUltimate = Math.max(0, Math.min(typeof PLAYER_ULT_MAX === "number" ? PLAYER_ULT_MAX : 100, d.pult)); if (typeof _lastUltInt !== "undefined") _lastUltInt = -1; }   // your ULTIMATE bar as it was (a game saved before has none: empty, as before)
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
@@ -166,6 +168,7 @@ function followerRecord(a) {
         base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
         hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // born of a bonded pair: the hp it was born with and its line (js/breeding.js)
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
+        ult: !a.dead && Number.isFinite(a.ultimateCharge) && a.ultimateCharge > 0 ? Math.floor(Math.min(100, a.ultimateCharge) * 10) / 10 : undefined,   // its Ultimate's charge (the owner, 2026-11-14: "Refreshing the game resets my followers' ultimates": build 2026-11-14t); a fallen one's is not kept, as its return starts it empty
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
         fell: a.fell || undefined,             // fallen, waiting at the Crystal: "squad" or "held" (js/party.js, build 2026-11-12o)
@@ -194,6 +197,7 @@ function followerBuild(entry) {
         type: "virus", element: entry.element || "fire", x: crystal.x + (Math.random() - 0.5) * 2, y: crystal.y + (Math.random() - 0.5) * 2, team: "green",
         health: (stats.hp || 10), maxHealth: (stats.hp || 10), moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed || 10) - 10) * 0.001, power: (stats.attack || 5),
         stats, personality, role, currentResonance: 0, currentWill: stats.will || 20, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: true, isHealing: false, hitFlash: 0, dead: false,
+        ultimateCharge: Number.isFinite(entry.ult) ? Math.max(0, Math.min(100, entry.ult)) : 0,   // its Ultimate's charge as it was saved (a record from before build 2026-11-14t, or a fallen one's: empty, as a new follower's)
         combatTrait: typeof COMBAT_TRAITS !== "undefined" && COMBAT_TRAITS[entry.combatTrait] ? entry.combatTrait : null, naturalTrait: typeof NATURAL_TRAITS !== "undefined" && NATURAL_TRAITS[entry.naturalTrait] ? entry.naturalTrait : null, perk: typeof PERKS !== "undefined" && PERKS[entry.perk] ? entry.perk : null   // (a saved perk that is no longer one is dropped: js/traits.js)
        
     };

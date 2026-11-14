@@ -114,6 +114,7 @@ async function boot(store) {
     const P2 = await boot();   // rate with one follower
     const P3 = await boot();   // rate with six
     const P4 = await boot();   // no squad at all
+    const R  = await boot();   // a refresh: the save keeps the bars (build 2026-11-14t)
     const P5 = await boot();   // a full bar
     const P6 = await boot();   // mid-surge
     const P7 = await boot();   // the switch
@@ -656,6 +657,28 @@ async function boot(store) {
            'facilityResetState leaves the ultimate where it was');
         ok(/_lastUltInt = -1/.test(SRC.facility),
            'the HUD cache would keep the old reading after a reset');
+    });
+
+    group('a refresh keeps the bars (the owner, 2026-11-14: "Refreshing the game resets my followers\' ultimates"; build 2026-11-14t, js/facilitysave.js)');
+
+    check('your ULTIMATE bar: the save keeps it and a load puts it back (to a tenth, never rounding up to full); a bad value loads within the bar; a game saved before keeps the bar as the load found it', () => {
+        const r = R.run(`(function(){ const o = {}; playerUltimate = 63.47; const d = JSON.parse(JSON.stringify(facilitySaveCollect())); o.kept = d.pult; playerUltimate = 0; facilitySaveApply(d); o.back = playerUltimate;
+            playerUltimate = 99.97; o.near = JSON.parse(JSON.stringify(facilitySaveCollect())).pult; playerUltimate = 0; o.empty = JSON.parse(JSON.stringify(facilitySaveCollect())).pult === undefined;
+            o.bad = [500, -3, 'x'].map(v => { playerUltimate = 7; facilitySaveApply(Object.assign({}, d, { pult: v })); return playerUltimate; });
+            playerUltimate = 0; const old = Object.assign({}, d); delete old.pult; facilitySaveApply(old); o.old = playerUltimate; return o; })()`);
+        same(r.kept, 63.4, 'the save'); same(r.back, 63.4, 'the load'); same(r.near, 99.9, 'just short of full is not saved as full'); same(r.empty, true, 'an empty bar writes nothing');
+        same(JSON.stringify(r.bad), '[100,0,7]', 'past full, below empty, not a number'); same(r.old, 0, 'a game saved before');
+    });
+
+    check('each follower\'s Ultimate meter: its record keeps it (to a tenth, never rounding up to full) and the follower made from it has it; a fallen one\'s is not kept (its return starts it empty, as before); a record from before, or a bad value, loads empty or within 0 to 100', () => {
+        const r = R.run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1], o = {};
+            const back = u => { f.ultimateCharge = u; const rec = JSON.parse(JSON.stringify(followerRecord(f))); return [rec.ult === undefined ? null : rec.ult, followerBuild(rec).ultimateCharge]; };
+            o.part = back(72.36); o.full = back(100); o.near = back(99.97); o.none = back(0);
+            f.dead = true; o.fallen = back(55); f.dead = false;
+            const rec = JSON.parse(JSON.stringify(followerRecord(f))); delete rec.ult; o.old = followerBuild(rec).ultimateCharge;
+            o.bad = ['80', NaN, -5, 250, null].map(v => { rec.ult = v; return followerBuild(rec).ultimateCharge; });
+            o.spawned = (spawnFollowerFromSave(Object.assign({}, rec, { ult: 41.5 }))).ultimateCharge; return JSON.stringify(o); })()`);
+        same(r, JSON.stringify({ part: [72.3, 72.3], full: [100, 100], near: [99.9, 99.9], none: [null, 0], fallen: [null, 0], old: 0, bad: [0, 0, 0, 100, 0], spawned: 41.5 }), 'kept, restored and guarded');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
