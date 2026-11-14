@@ -6,6 +6,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14b` · branch `claude/approve-ball-splash` · BLADE ROLL's ball and TOXIC STOMP's splash approved
+- **The ask** (the owner, 2026-11-14, of the two 3-D rendered pieces shown in pictures of the real page: **"Approve them"**).
+- `slugball` (the Hammer Slug rolled up) and `goosplash` (the goo out of the Seeper's caldera) are on `FX3D.approved` (js/fx3d.js): **every player sees them**, not only the `?fx=3d` preview. The flat looks stay as the fallback until a sheet has loaded.
+- `js/fx3d.js`, `tests/fx3d.js` (a check of the two pieces: sizes, anchors, on without the preview), `docs/EFFECTS.md`, `docs/COMBAT.md`.
+- Not playtested on an iPad.
+
 ### Build `2026-11-14a` · branch `claude/extra-attack-looks` · the five extra attacks' looks, and how three of them play
 - **The asks** (the owner, 2026-11-13: "he should just dash towards them and through them. It should hit multiple enemies. The Rift Impale hits one enemy but makes them glitch out. The way he does the animation is he glitches. The blade roll, he rolls up into a ball and rolls through at like a slower pace ... The Briar Sweep ... a bunch of leaves pop off of them, and leaves and thorns shake off and hit enemies in a AOE type situation ... Toxic Stomp, is a stomp ... make sure he splashes some of this Caldera"; of the first drafts, "Toxic Stomp and Blade Roll need better designs"; of the second, "Push").
 - **EMBER SLASH** (read as the first sentence's subject; the message began mid-sentence): a **dash** 4 tiles through the enemies on its line, 1.2 × its attack each, burning each; it was one 2 × swipe at one enemy and a close move. A streak of fire behind it.
