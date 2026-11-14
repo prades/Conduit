@@ -15,6 +15,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/battleview.js`, `js/draw.js`, `js/larva.js`, `js/rolypoly.js`, `js/evolution.js`, `js/npc.js` (`NPC_FACE`, the Brawler's reach); `tests/larva.js` (4 checks), `tests/battlelook.js`, `tests/rolypoly.js`, `tests/ghost.js`; `COMBAT.md`, `BATTLE-LOOK.md`, `ELECTRIC-BREED.md` §10.
 - Not measured on an iPad (GRAPHICS: LOW skips the blur; Settings' PERFORMANCE readout shows a frame's logic, drawing and catch-up there). Not playtested.
 
+### Build `2026-11-14s` · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger
+- **The ask** (the owner, 2026-11-14: **"Freeze the targets and buff the sting"**).
+- **The targets are fixed** on `balance.html`: **Brawler 79, Mage 44, Technician 35** (the roles' middle scores as they stood). They were the middle score of each role's forms at every trial, so lifting some forms raised the bar for the rest. The middles are still shown beside them.
+- **SUNDEW's NECTAR STING is 0.63 × its attack** (0.45 × before: 40% harder; `ELEMENT_ATTACKS.blossom.sting`). STONEPETAL's crushing head keeps 0.45 ×.
+- **What the trial says** (run again): SUNDEW 41.8 → **54.5** (its sting; with its heal in BOTH, 54.4), 69% of the Brawler target, its band starting at 59.3: closer, still under.
+- `js/elements.js`, `js/unitinfo.js`, `js/infodex.js`, `tools/balance.js`, `tests/followercombat.js`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
 ### Build `2026-11-14r` (stamped 14q on its branch) · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
 - **The ask** (the owner, 2026-11-14: "Work on buffs"; asked, chosen: the Hornshell **"Faster ECHO PULSE"**, SUNDEW **"Measure the heal first"**, the Frost Maw and the Goo Proxy, under their bands by less than a point, **"Leave both"**).
 - **ECHO PULSE's wind-up is 1.75 s** (`MOVES.echo_pulse.windup`; 2.5 s before): the Hornshell pulses more often. Its score 22.9 → 30.6.
