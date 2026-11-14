@@ -128,6 +128,33 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The followers' four traits are removed
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14f`
+- **Status:** Approved ("Remove all four")
+- **Context:** after the perks went, the owner asked whether the traits should stay. The agent's rundown: BERSERKER a hidden 50% damage boost on half the followers, off the balance page; OPPORTUNISTIC the one with real play in it but a coin flip; EMPATHETIC and LONE WOLF a tile's nudge in the formation.
+- **Decision:** all four are removed as random hidden rolls; saved ones are dropped. BERSERKER's and OPPORTUNISTIC's ideas may come back, chosen or earned, with the perks' redesign.
+- **Alternatives:** keep OPPORTUNISTIC as a targeting choice now; leave them.
+- **Affects:** js/traits.js and the places that drew, saved or asked a trait; the formation; the INFO card; the Bible.
+
+## DECISION: The followers' perks are removed
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14e`
+- **Status:** Approved
+- **Context:** the owner saw an Electro Skink healing with no healer in the squad; it was its SIPHON perk, drawn at random and shown only on its INFO card. The owner had forgotten the perks existed.
+- **Decision:** IRON WILL and SIPHON are removed; no follower has a perk; saved ones are dropped. A redesign is for later.
+- **Affects:** js/traits.js and the places that drew, saved or asked a perk; the Bible.
+
+## DECISION: The balance page's support score is the statuses a form distributes
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun`, `2026-11-14d`
+- **Status:** Approved ("I think you should count the statuses that are distributed")
+- **Context:** the owner doubted SHELL GUARD at 1.9 x its band and asked whether ROTTEN DECOY's support was counted. The lure was counted as damage held off and the guard's cut added on top; the enemy's damage figure was noisy.
+- **Decision:** support = the enemy-seconds of each status a form puts on enemies, shown per status, worth the enemy's damage x 1 (stun, glitch, a decoy's lure), 0.5 (a lure onto a follower; blind), 0.4 (poison), 0.25 (slow), counted once per enemy at the strongest. A guard's or decoy's damage taken is shown, not added. The enemy's damage is reckoned from one bite and the bite's cycle.
+- **Amends:** "The balance system (points and role bands)" (`2026-11-13u`): its "1 HP blocked = 1 point" is no longer in the score.
+- **Alternatives:** scoring a lure by the damage the squad actually avoided (the agent's first proposal).
+- **Affects:** tools/balance-trial.js, tools/balance.js, balance.html.
+
 ## DECISION: Energy cards give elemental power; a card of any element unlocks attacks
 
 - **Date:** 2026-11-13 · **Branch/build:** `claude/energy-power`, `2026-11-13z`

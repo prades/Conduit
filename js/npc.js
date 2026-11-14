@@ -63,6 +63,8 @@ function updateRTSNPC(actor) {
 
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
+    if (!COMBAT_TRAITS[actor.combatTrait] && actor.damageMultiplier) actor.damageMultiplier = 1;   // (what a trait that is gone had set: js/traits.js, build 2026-11-14f)
+    if (!NATURAL_TRAITS[actor.naturalTrait] && (actor.preferGroup || actor.wanderRadius)) { actor.preferGroup = false; actor.wanderRadius = 0; }
 
 
     // A HOLD is a standing move order (stance "hold" + job "move"). When the job is dropped (it was hurt below half and went to heal, its target tile went, a new order
@@ -99,9 +101,8 @@ function updateRTSNPC(actor) {
             // A follower that is made again keeps its element (js/helpers.js startFollowerReroll); one that is found or recruited takes an even draw of the six (its element in the world is stale and irrelevant).
             if (actor.keepElement) { actor.element = actor.keepElement; actor.keepElement = null; }
             else { const pool = [...unlockedElements].filter(e => e !== "none"); actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
-            if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
-            if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];
-            if (!actor.perk)         actor.perk         = Object.keys(PERKS)[Math.floor(Math.random()*2)];
+            actor.combatTrait = null; actor.naturalTrait = null;   // (the traits are gone: js/traits.js, build 2026-11-14f)
+            actor.perk = null;   // (the perks are gone: js/traits.js, build 2026-11-14e)
             // Flash element color on arrival
             actor.convertFlash = 30;
             actor.isNeutralRecruit = false;
