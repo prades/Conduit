@@ -38,7 +38,7 @@ function findChromium() {
 const SPECIES = ['spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'];   // (spinelegged: the Crustacean, renamed in build 2026-11-08h)
 const COLOURS = { spinelegged: '#e7ad78', mollusk: '#e3d6ff', elemental: '#f2f7ff', drone: '#b6c4d6', jelly: '#e39cff' };   // CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID (docs/UI-STYLE.md)
 const RACES = ['ant', 'beetle', 'scorpion', 'spider', 'mantis', 'moth', 'rolypoly'];   // (the roly-poly: build 2026-11-13aa, docs/ELECTRIC-BREED.md)
-const EMBLEM_RACES = RACES.filter(r => r !== 'rolypoly');   // the races with an emblem (the roly-poly's is not drawn yet: docs/ELECTRIC-BREED.md §11)
+const EMBLEM_RACES = RACES.slice();   // the races with an emblem: every one (the roly-poly's since build 2026-11-14h, the owner's pick of the drafts: "C")
 const SHORT = { slashing: 'SLASH', piercing: 'PIERCE', projectile: 'SHOT', crushing: 'CRUSH', earthquake: 'QUAKE', elemental: 'ELEM' };   // approved: "Short words"
 const CARDS = { spinelegged: 'tide_shell', mollusk: 'nacre_pearl', elemental: 'focusing_prism', drone: 'overclock_chip', jelly: 'gel_membrane' };   // the cards the mockups showed
 const FORMS = [['quillstone', 'fire', 'brawler'], ['voidstar', 'flux', 'sniper'], ['maw', 'ice', 'brawler'], ['rimestar', 'ice', 'sniper'], ['jellyram', 'core', 'brawler']];   // a form of each species
@@ -214,10 +214,12 @@ function measure(w, h) {
     });
 
     group('THE EMBLEMS (js/cardart.js CARD_ART_EMBLEMS)');
-    await check('eighteen: the five species\', the seven elements\' and the six enemy races\' (js/damage.js DMG_RACE), each the approved drawing in its approved colour; BLOOM\'s (build 2026-11-08i, approved 2026-11-08) in its pink', () => {
-        same(J('Object.keys(CARD_ART_EMBLEMS).sort().join()'), J('CARD_ART_SPECIES.concat(CARD_ART_ELEMENTS, CARD_ART_RACES).sort().join()'), 'the emblems'); same(J('Object.keys(CARD_ART_EMBLEMS)').length, 18, 'how many'); same(J('CARD_ART_EMBLEMS.blossom.col'), '#ff7ab8', 'BLOOM\'s colour');
-        same(J('CARD_ART_RACES.slice().sort().join()'), EMBLEM_RACES.slice().sort().join(), 'the races'); same(J('Object.keys(DMG_RACE).sort().join()'), RACES.slice().sort().join(), 'the races of the damage table (the roly-poly\'s emblem is not drawn yet)'); same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.filter(e => !e.none).map(e => e.id).sort().join()'), 'the elements (NO ELEMENT has none: build 2026-11-09s)');
-        for (const k of J('Object.keys(CARD_ART_EMBLEMS)').filter(k => k !== 'blossom')) { same(J(`cardArtEmblemPath(${JSON.stringify(k)}) === __P2.ICONS[${JSON.stringify(k)}].d`), true, k + ' is not the approved drawing'); same(J(`CARD_ART_EMBLEMS[${JSON.stringify(k)}].col`), J(`__P2.ICONS[${JSON.stringify(k)}].col`), k + '\'s colour'); }
+    await check('nineteen: the five species\', the seven elements\' and the seven enemy races\' (js/damage.js DMG_RACE), each the approved drawing in its approved colour; BLOOM\'s (build 2026-11-08i, approved 2026-11-08) in its pink; the roly-poly\'s (build 2026-11-14h) the drafts\' C, the owner\'s pick', () => {
+        same(J('Object.keys(CARD_ART_EMBLEMS).sort().join()'), J('CARD_ART_SPECIES.concat(CARD_ART_ELEMENTS, CARD_ART_RACES).sort().join()'), 'the emblems'); same(J('Object.keys(CARD_ART_EMBLEMS)').length, 19, 'how many'); same(J('CARD_ART_EMBLEMS.blossom.col'), '#ff7ab8', 'BLOOM\'s colour');
+        same(J('CARD_ART_RACES.slice().sort().join()'), EMBLEM_RACES.slice().sort().join(), 'the races'); same(J('Object.keys(DMG_RACE).sort().join()'), RACES.slice().sort().join(), 'the races of the damage table'); same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.filter(e => !e.none).map(e => e.id).sort().join()'), 'the elements (NO ELEMENT has none: build 2026-11-09s)');
+        for (const k of J('Object.keys(CARD_ART_EMBLEMS)').filter(k => k !== 'blossom' && k !== 'rolypoly')) { same(J(`cardArtEmblemPath(${JSON.stringify(k)}) === __P2.ICONS[${JSON.stringify(k)}].d`), true, k + ' is not the approved drawing'); same(J(`CARD_ART_EMBLEMS[${JSON.stringify(k)}].col`), J(`__P2.ICONS[${JSON.stringify(k)}].col`), k + '\'s colour'); }
+        const drafts = (rd('design/cards/rolypoly-emblem-drafts.js').match(/const DRAFT_SRC = String\.raw`([\s\S]*?)`;/) || [])[1]; ok(drafts, 'the roly-poly\'s drafts are not found'); run(drafts);
+        same(J('cardArtEmblemPath("rolypoly") === window.__rpEmblems().C'), true, 'the roly-poly\'s is not the drafts\' C (the owner\'s pick, 2026-11-14)');
         for (const sp of SPECIES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(sp)}].col`), COLOURS[sp], sp + ' is not in its species\' colour'); for (const r of EMBLEM_RACES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(r)}].col`), '#ff8a6a', r + ' is not in the enemy colour');
     });
     await check('each is one flat shape on a 32-unit square: one path, every number of it inside the square, in one colour (its cut-outs are wound against it, so the ordinary fill leaves them open)', () => {
@@ -244,7 +246,7 @@ function measure(w, h) {
         }
         same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("all"))'), 3, 'ALL: three cards'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("run"))'), 2, 'RUN: two chevrons'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("attack"))'), 3, 'ATTACK: three slashes'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("come"))'), 13, 'COME: four chevrons (two bars and a knee each) round a dot'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("hold"))'), 3, 'HOLD: a flag, its pole and its base'); same(J('(s => (s.match(/M/g) || []).length)(cardArtOrderSvg("roster"))'), 4, 'ROSTER: four cards');
         same(J('[cardArtOrderClass("all"), cardArtOrderClass("run"), cardArtOrderClass("attack"), cardArtOrderClass("come"), cardArtOrderClass("hold"), cardArtOrderClass("roster"), cardArtOrderClass("nothing"), cardArtOrderSvg("nothing")].join()'), 'cao-all,cao-run,cao-attack,cao-come,cao-hold,cao-roster,,', 'the classes');
-        same(J('Object.keys(CARD_ART_EMBLEMS).length'), 18, 'the eighteen are as they were');
+        same(J('Object.keys(CARD_ART_EMBLEMS).length'), 19, 'the nineteen are as they were (the roly-poly\'s since build 2026-11-14h)');
         const mt = rd('js/mixtool.js'); ok(/ord\("all"\)/.test(mt) && /ord\("run"\)/.test(mt) && /ord\("attack"\)/.test(mt) && /ord\("come"\)/.test(mt) && /ord\("hold"\)/.test(mt) && /ord\("roster"\)/.test(mt), 'js/mixtool.js: the card at the left and the command card');
     });
 
@@ -278,7 +280,7 @@ function measure(w, h) {
         await check('it ran', () => { ok(T, 'no result'); ok(!T.err, T.err); same((T.errs || []).length, 0, 'page errors: ' + JSON.stringify(T.errs)); });
         if (!T || T.err) continue;
         await check('every new picture is one the browser can draw: the five species card faces (300 x 420), a backdrop of each species (300 x 175), the seventeen emblems (32 x 32); the emblems\' rules set their picture and their colour', () => {
-            same(T.images.length, 5 + 5 + 18, 'pictures');
+            same(T.images.length, 5 + 5 + 19, 'pictures');
             for (const [k, s] of T.images) { ok(s && s[0] > 0, k + ' did not load'); same(s.join('x'), /^c:/.test(k) ? '300x420' : /^f:/.test(k) ? '300x175' : '32x32', k); }
             for (const sp of SPECIES) ok(new RegExp('\\.cae-' + sp + '\\{--emb:url\\("data:image/svg\\+xml,[^"]+"\\);--emc:' + COLOURS[sp] + '\\}').test(T.css), 'the rule for ' + sp + '\'s emblem');
         });
@@ -308,11 +310,11 @@ function measure(w, h) {
             } else if (T.radial) { ok(T.radial.length >= 5, 'a phone\'s roster cards: ' + T.radial.length); for (const sp of SPECIES) ok(T.radial.some(a => new RegExp('-' + sp + '$').test(a)), 'no phone roster card wears ' + sp + '\'s layer: ' + T.radial.join(' ')); }
         });
         await check('the enemy card for each race carries the race\'s emblem before its name, in the name\'s colour, and under its numbers WEAK and RESISTS with the race\'s types from §7.3 (green and grey), inside the card and on the screen; a boss carries the ant\'s', () => {
-            same(T.foes.length, 7, 'the cards shown');
+            same(T.foes.length, 8, 'the cards shown');
             for (const f of T.foes) {
                 ok(!f.err, f.race + ': ' + f.err); same(f.cls, 'mt-foe-name cae-' + f.race, f.race + '\'s name'); ok(f.emb && f.emb.mask && Math.round(f.emb.w) === 16, f.race + '\'s emblem: ' + JSON.stringify(f.emb)); same(f.emb.bg, f.emb.col, f.race + '\'s emblem is not in its name\'s colour');
                 if (f.boss) same(f.name, 'THE TOXIC QUEEN', 'the boss\'s name');
-                same(f.labels.join(), 'WEAK,RESISTS', f.race + '\'s labels'); same(f.wk.join(), table[f.race].weak.map(t => SHORT[t]).join(), f.race + ' is weak to'); same(f.rs.join(), table[f.race].resist.map(t => SHORT[t]).join(), f.race + ' resists');
+                same(f.labels.join(), 'WEAK,RESISTS' + (table[f.race].immune && table[f.race].immune.length ? ',IMMUNE' : ''), f.race + '\'s labels');   // (the roly-poly's IMMUNE after them: build 2026-11-13aa) same(f.wk.join(), table[f.race].weak.map(t => SHORT[t]).join(), f.race + ' is weak to'); same(f.rs.join(), table[f.race].resist.map(t => SHORT[t]).join(), f.race + ' resists');
                 same(f.wkCol, 'rgb(157, 255, 196)', f.race + '\'s WEAK chips are not green'); same(f.rsCol, 'rgb(169, 180, 204)', f.race + '\'s RESISTS chips are not grey');
                 same(f.rowIn, true, f.race + '\'s row runs out of its card'); same(f.under, true, f.race + '\'s row is not under its numbers'); same(f.onScreen, true, f.race + '\'s card is off the screen');
             }

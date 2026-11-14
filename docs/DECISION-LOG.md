@@ -14,6 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The roly-poly's card emblem is C, the profile (the owner's pick)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14h`
+- **Status:** Approved (the owner's words); built
+- **Context:** the roly-poly had no race emblem on its enemy card (the race emblems are approved drawings). The owner: "Make the roly-poly's card emblem". Four drafts in the approved emblems' manner, each shown large and on its real enemy card (`design/cards/rolypoly-emblem-drafts.js`): A top-down, B curled, C profile, D top-down with the core; the agent recommended A.
+- **Decision:** the owner: **"C"**: in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind; in the enemy coral as the other races'. The roly-poly joins the races with an emblem (`CARD_ART_RACES`).
+- **Affects:** js/cardart.js (`CARD_ART_EMBLEMS.rolypoly`, `CARD_ART_RACES`); `tests/speciesart.js`; `ELECTRIC-BREED.md` §9, §11; `UI-STYLE.md` (the approved emblems).
+
 ## DECISION: The larva boss is VOLTWYRM (the owner's pick)
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14g`

@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14h` · branch `claude/start-game-project-HSh7Z` · the roly-poly's card emblem
+- **The ask** (the owner, 2026-11-14): "Make the roly-poly's card emblem"; of four drafts (A top-down, B curled, C profile, D top-down with the core): **"C"**.
+- The roly-poly's race emblem before its name on the enemy card: in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind; in the enemy coral as the other races' (on the card, in its name's colour). Every race has its emblem now.
+- `js/cardart.js` (`CARD_ART_EMBLEMS.rolypoly`, `CARD_ART_RACES`), `tests/speciesart.js` (checked against the drafts' C), `design/cards/rolypoly-emblem-drafts.js` (the four drafts); `docs/UI-STYLE.md`, `docs/ELECTRIC-BREED.md`.
+
 ### Build `2026-11-14g` (stamped 14d on its branch) · branch `claude/start-game-project-HSh7Z` · the larva boss is VOLTWYRM (the owner's pick)
 - **The ask** (the owner, 2026-11-14, of the names offered with VOLTREAPER): "Voltworm looks sick".
 - **VOLTWYRM** (volt for its current, wyrm for its long serpent's body; spelled as offered): its tag and every word it says (VOLTWYRM WAKES, VOLTWYRM CHARGES UP — SHOCK RING · GET CLEAR, VOLTWYRM SLEEPS AGAIN, VOLTWYRM IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
