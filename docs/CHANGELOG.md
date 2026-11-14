@@ -4,6 +4,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-13
 
+## 2026-11-14
+
+### Build `2026-11-14a` · branch `claude/extra-attack-looks` · the five extra attacks' looks, and how three of them play
+- **The asks** (the owner, 2026-11-13: "he should just dash towards them and through them. It should hit multiple enemies. The Rift Impale hits one enemy but makes them glitch out. The way he does the animation is he glitches. The blade roll, he rolls up into a ball and rolls through at like a slower pace ... The Briar Sweep ... a bunch of leaves pop off of them, and leaves and thorns shake off and hit enemies in a AOE type situation ... Toxic Stomp, is a stomp ... make sure he splashes some of this Caldera"; of the first drafts, "Toxic Stomp and Blade Roll need better designs"; of the second, "Push").
+- **EMBER SLASH** (read as the first sentence's subject; the message began mid-sentence): a **dash** 4 tiles through the enemies on its line, 1.2 × its attack each, burning each; it was one 2 × swipe at one enemy and a close move. A streak of fire behind it.
+- **RIFT IMPALE:** the Mimic breaks into strips and vanishes for 10 frames, then a spike drives up under the enemy and it is there; the hit and the glitch land then.
+- **BLADE ROLL:** it rolls its 4 tiles at 0.08 tiles a frame and slices each enemy as it reaches it (it crossed at once). Its look is a **3-D rendered ball** of its scales and spikes (`slugball`).
+- **BRIAR SWEEP:** leaves, petals and thorns fly off it all round. Its play is unchanged.
+- **TOXIC STOMP:** the Seeper's own leg-stomp frames; the hit lands with the foot, 12 frames after the cast; a **3-D rendered splash** of goo out of its caldera (`goosplash`).
+- **On the preview:** the two 3-D pieces show with `?fx=3d` until the owner approves them in the game; everyone else sees the flat versions (the ones turned down). `_fxHideUntil` hides a follower's body for a move's moment.
+- **Provisional (the agent's):** the dash's 1.2 ×, the roll's pace, the stomp's 12 frames. No body frames of their own yet (the Seeper's apart).
+- `js/evolution.js`, `js/elements.js`, `js/fx3d.js`, `js/moves.js`, `js/unitinfo.js`, `design/effects/bake_fx.js`, `img/fx/slugball.png`, `img/fx/goosplash.png`, `tests/evolution.js`, `tests/fx3d.js`, `docs/COMBAT.md`, `docs/EFFECTS.md`, the Bible.
+- Seen in the real page (headless, an iPad's width); not playtested. The balance trial was not run again for this build.
+
+## 2026-11-13 (continued)
+
 ### Build `2026-11-13z` (stamped 13y on its branch) · branch `claude/energy-power` · energy cards give elemental power; any card unlocks
 - **The ask** (the owner, 2026-11-13: "since the energy cards don't really have much of an effect other than unlocking moves, I'd like to make it to where the energy cards increase the elemental power of the creatures ... a follower can have energy cards of another type and use those to unlock their other attacks, but those attacks would have very little elemental impact"; asked, chosen: **25 / 100 / 125 / 150%**, **"Everything, by card count"**, **"Hit damage only"**).
 - **Power:** the elemental part of each hit an evolved follower lands with its everyday attack or a move is × **0.25 with no card of its own element, 1 with one (as it was), 1.25 with two, 1.5 with three** (`ENERGY.power`, `energyPower`, js/energy.js; applied in `dmgApply`, js/damage.js). The physical part is untouched. Not an Ultimate's hit, a status, a heal or a lure. An unevolved follower and a clone are not scaled.

@@ -1,0 +1,14 @@
+{
+ "piece": "slugball",
+ "cell": 128,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 64.00000000000004,
+  "y": 64.00000000000003
+ },
+ "unitsPerCell": 3.022222222222222,
+ "upright": false
+}
