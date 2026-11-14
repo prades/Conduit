@@ -42,11 +42,11 @@
 //             frames, a ring on the floor showing how far it reaches, then the ground shakes: everyone of yours within the ring is hurt (earthquake damage) and thrown back (you: one of your hits); the BROOD
 //             CALL, every `brood.every` frames once she is awake: ants climb out of the Nest's brood holes (`brood.n`, never more than `brood.cap` of hers alive) and go for you.
 //   NOTHING   she or her brood leave pays (no shards, DNA or XP: `noReward`, js/drops.js and js/levels.js), and beating her unlocks nothing (bossAnyResolved leaves a test boss out): her rewards are undecided.
-// THE CIRCUITRY'S DIVING BEETLE LARVA (docs/ELECTRIC-BREED.md §5, build 2026-11-14b; the owner, 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal): the row `circuitry`, on her
+// THE CIRCUITRY'S DIVING BEETLE LARVA, VOLTREAPER (docs/ELECTRIC-BREED.md §5, build 2026-11-14b, named in 2026-11-14c: its sickle jaws a reaper's; the owner, 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal): the row `circuitry`, on her
 // pattern (a `test` row with `moves`): asleep in the middle of The Circuitry, there whenever you come down into the electrical domain (its `place`: the domain's rooms arm it, so it is waiting before you
 // reach its room), woken by a hit or one of yours near it, held to its room. Twice her size and her health, at level 12, electric. Her crush and her stomp are its own, by their rows' names, words and
 // kinds of hit (SICKLE SNAP: piercing and electric; SHOCK RING: electric); it has no brood. It pays nothing and unlocks nothing (`test`), as she does. Its baked sheet (`sheet`, preloaded with the page as every sheet is) is made ready when it is armed.
-const HP_MUL_LARVA = 2.91;   // THE DIVING BEETLE LARVA's health: twice THE ANT QUEEN's (the owner approved "twice the Ant Queen's health, at level 12", 2026-11-14): 2.91 times its block (hers, the ant's boss) at level 12 is 2133 (hers is 1067 at level 10). PROVISIONAL, as hers
+const HP_MUL_LARVA = 2.91;   // VOLTREAPER's health (the diving beetle larva): twice THE ANT QUEEN's (the owner approved "twice the Ant Queen's health, at level 12", 2026-11-14): 2.91 times its block (hers, the ant's boss) at level 12 is 2133 (hers is 1067 at level 10). PROVISIONAL, as hers
 const HP_MUL_NEST = 1.6;   // THE ANT QUEEN's health: 1.6 times the ant boss block at her level (1067 at level 10). PROVISIONAL, measured (docs/NEST.md): three evolved followers at level 15 dealt her 15 to 18 a second, her moves off
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
@@ -74,7 +74,7 @@ const BOSS_ENCOUNTERS = {
         },
         quest: null, wakes: ["hit", "near"], calms: [],
         note: "THE ANT QUEEN of the Ant Nest (docs/NEST.md): the archive's proposed first nest boss (Stage 1 of the faction progression), built as the Nest's test boss (the owner, 2026-11-07); in the Deep Brood since build 2026-11-12d, her test console gone. Every number is provisional." },
-    circuitry: { id: "circuitry", domain: "elec_circuitry", room: "elec_circuitry", place: "electrical", name: "THE DIVING BEETLE LARVA", species: "larva", cls: "boss", element: "electric", level: 12, test: true, sheet: "larva",
+    circuitry: { id: "circuitry", domain: "elec_circuitry", room: "elec_circuitry", place: "electrical", name: "VOLTREAPER", species: "larva", cls: "boss", element: "electric", level: 12, test: true, sheet: "larva",
         lair: F => { const R = F.byId.get("elec_circuitry"); return R ? [(R.bb[0] + R.bb[2]) / 2, (R.bb[1] + R.bb[3]) / 2] : null; },   // its POST: the middle of The Circuitry (the Deep Chamber once the domain's draft 5 is built: docs/DOMAINS.md)
         size: 6, bodyR: 1.8, hpMul: HP_MUL_LARVA, wakeNear: 2.5,   // twice the queen's size (her 3): about twice her length on the floor; its body's reach 1.8 tiles (hers 1.2)
         mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null,
@@ -83,7 +83,7 @@ const BOSS_ENCOUNTERS = {
             stomp: { name: "SHOCK RING", say: "CHARGES UP — SHOCK RING · GET CLEAR", hitWord: "SHOCKED", type: "elemental", col: "#ffe733", every: 600, windup: 72, trigger: 3.0, radius: 3.6, power: 0.25, push: 0.35 },   // its seams flash and a ring of current bursts round its body, throwing back whoever is close: every 10 s at most, when one of yours is within 3 tiles of its body; her 1.2 s of warning, 3.6 tiles past its body, 0.25 × its power (22) all of it electric, thrown back as by hers
         },
         quest: null, wakes: ["hit", "near"], calms: [],
-        note: "THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5): a predaceous diving beetle larva as a mech in look A (the owner, 2026-11-13), big (2026-11-14), its rules the agent's proposal on THE ANT QUEEN's pattern (approved with \"Build it\", 2026-11-14). Like her, it pays nothing and unlocks nothing until its rewards are decided. Every number is provisional." },
+        note: "VOLTREAPER, the diving beetle larva, the electric breed's boss (docs/ELECTRIC-BREED.md §5; named by the owner's ask, 2026-11-14: \"Name it something cool an edgy\"): a predaceous diving beetle larva as a mech in look A (the owner, 2026-11-13), big (2026-11-14), its rules the agent's proposal on THE ANT QUEEN's pattern (approved with \"Build it\", 2026-11-14). Like her, it pays nothing and unlocks nothing until its rewards are decided. Every number is provisional." },
 };
 const BOSS_HOME = 1.2;   // tiles from its post: home (a rooted boss sleeps again there)
 const BOSS_COL = "#8cff5a";   // the toxic green of her bombs and her brood's call

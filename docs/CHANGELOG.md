@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14c` · branch `claude/start-game-project-HSh7Z` · the larva boss is named VOLTREAPER
+- **The ask** (the owner, 2026-11-14): "Name it something cool an edgy".
+- **VOLTREAPER** (the agent's pick: volt for its current, reaper for its sickle jaws): its tag and every word it says (VOLTREAPER WAKES, VOLTREAPER CHARGES UP — SHOCK RING · GET CLEAR, VOLTREAPER SLEEPS AGAIN, VOLTREAPER IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
+- `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
+
 ### Build `2026-11-14b` · branch `claude/start-game-project-HSh7Z` · the diving beetle larva: the electric breed's boss, in The Circuitry
 - **The asks** (the owner, 2026-11-13): "a boss creature will be a predaceous diving beetle larva"; its look "A"; 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal (docs/ELECTRIC-BREED.md §2, 9). Main took `14a` meanwhile (merged into the branch first).
 - **THE DIVING BEETLE LARVA** (js/bosses.js, the row `circuitry`, on THE ANT QUEEN's pattern): asleep in the middle of **The Circuitry**, there whenever you come into the electrical domain (the domain's rooms arm it, so it waits before you reach its room); it wakes when one of yours comes within 2.5 tiles of its body or it is hit; held to its room (leave and it walks back to its post and sleeps, its wounds kept); killed, a fresh one waits the next time you come down.

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  THE DIVING BEETLE LARVA — the electric breed's boss, its drawing (docs/ELECTRIC-BREED.md §5; build 2026-11-14b)
+//  VOLTREAPER, THE DIVING BEETLE LARVA — the electric breed's boss, its drawing (docs/ELECTRIC-BREED.md §5; build 2026-11-14b)
 // ─────────────────────────────────────────────────────────
 // The owner, 2026-11-13: look "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it". Its rules are js/bosses.js's (the row `circuitry`, THE ANT QUEEN's kinds of move);
 // here it is drawn from its baked sheet (img/props/larva.png, from design/props/models/larva.js: eight facings, four walk frames, its jaws wide, its jaws snapped shut, its seams charged), in the

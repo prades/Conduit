@@ -1,4 +1,4 @@
-// THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; js/bosses.js the row `circuitry`, js/larva.js, js/species.js; build 2026-11-14b).
+// VOLTREAPER, THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; js/bosses.js the row `circuitry`, js/larva.js, js/species.js; build 2026-11-14b).
 // ASKED (the owner, 2026-11-13): "a boss creature will be a predaceous diving beetle larva"; its look: "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it" on the agent's
 // proposal: the middle of The Circuitry; about twice THE ANT QUEEN's length, its body's reach 1.8 tiles; it wakes when you or yours come near it or hit it; twice her health at level 12, electric; SICKLE SNAP
 // (her crush: every 6 s at most, 0.9 s of warning, 2.5 tiles past its body); SHOCK RING (her stomp, throwing back: every 10 s at most, when one of yours is within 3 tiles); no brood (the domain's roly-polies
@@ -53,7 +53,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
         const r = J(`(function(){ const E = BOSS_ENCOUNTERS.circuitry, N = BOSS_ENCOUNTERS.nest, M = E.moves; return { room: E.room, place: E.place, sp: E.species + '/' + E.cls, size: E.size / N.size, bodyR: E.bodyR, level: E.level, el: E.element, test: E.test, wakes: E.wakes.join(), wakeNear: E.wakeNear, name: E.name,
             crush: [M.crush.name, M.crush.every, M.crush.windup, M.crush.reach, M.crush.arc, M.crush.power, M.crush.type], stomp: [M.stomp.name, M.stomp.every, M.stomp.windup, M.stomp.trigger, M.stomp.radius, M.stomp.power, M.stomp.push, M.stomp.type], brood: M.brood || null, kinds: Object.keys(M).join() }; })()`);
         same([r.room, r.place, r.sp].join(), 'elec_circuitry,electrical,larva/boss', 'where and what'); same(r.size, 2, 'twice her size'); same(r.bodyR, 1.8, 'its body'); same([r.level, r.el, r.test].join(), '12,electric,true', 'level 12, electric, a test boss (pays nothing)');
-        same([r.wakes, r.wakeNear].join(), 'hit,near,2.5', 'what wakes it (hers)'); same(r.name, 'THE DIVING BEETLE LARVA', 'its tag');
+        same([r.wakes, r.wakeNear].join(), 'hit,near,2.5', 'what wakes it (hers)'); same(r.name, 'VOLTREAPER', 'its tag (its name: the owner asked for one, 2026-11-14c)');
         sameJSON(r.crush, ['SICKLE SNAP', 360, 54, 2.5, 1, 0.4, 'piercing'], 'SICKLE SNAP: every 6 s, 0.9 s of warning, 2.5 tiles past its body, her wedge and strength'); sameJSON(r.stomp, ['SHOCK RING', 600, 72, 3, 3.6, 0.25, 0.35, 'elemental'], 'SHOCK RING: every 10 s, within 3 tiles, her ring');
         same(r.brood, null, 'a brood'); same(r.kinds, 'crush,stomp', 'its moves');
     });
@@ -64,7 +64,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             const ref = spawnCreature({ species: 'ant', className: 'boss', x: b.x, y: b.y, level: 12, state: 'wander' }), refPow = ref.power; ref.dead = true; actors.splice(actors.indexOf(ref), 1);
             return { before, where: partyRoomAt(player.x, player.y), state: S.state, asleep: b.bossAsleep, name: b.bossName, level: b.level, hp: b.maxHealth, qhp: q.hp, w: b.dimensions.width, qw: q.w, bodyR: b.bodyR, pow: b.power, refPow,
                 el: b.element, noBite: b.noBite, ability: b.abilityDef, noReward: b.noReward, room: partyRoomAt(b.x, b.y), mid: Math.hypot(b.x - m[0], b.y - m[1]) < 1.5, reach: b.biteReach }; })()`);
-        same(r.before, false, 'a larva before you came'); same(r.where, 'elec_servers', 'you are in the room above'); same([r.state, r.asleep, r.name, r.level].join(), 'armed,true,THE DIVING BEETLE LARVA,12', 'armed asleep');
+        same(r.before, false, 'a larva before you came'); same(r.where, 'elec_servers', 'you are in the room above'); same([r.state, r.asleep, r.name, r.level].join(), 'armed,true,VOLTREAPER,12', 'armed asleep');
         same([r.room, r.mid].join(), 'elec_circuitry,true', 'its post'); same(r.w, r.qw * 2, 'twice her size'); same(r.bodyR, 1.8, 'its body');
         ok(Math.abs(r.hp / r.qhp - 2) < 0.01, 'twice her health: ' + r.hp + ' (hers ' + r.qhp + ')'); same(r.pow, r.refPow, 'the ant boss block\'s power at level 12'); same(r.el, 'electric', 'electric');
         same([r.noBite, r.ability, r.noReward].join(), 'true,,true', 'no bite, no special, no reward');
