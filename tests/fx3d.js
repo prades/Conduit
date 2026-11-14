@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,slugball,goosplash,vortexshard', 'the pieces (slugball and goosplash: the ball of BLADE ROLL and the splash of TOXIC STOMP, animated, on the preview: build 2026-11-14a; rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,slugball,goosplash,vortexshard', 'the pieces (slugball and goosplash: the ball of BLADE ROLL and the splash of TOXIC STOMP, animated, approved 2026-11-14: build 2026-11-14b; rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
         for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
@@ -63,8 +63,15 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
+    check('BLADE ROLL\'s ball and TOXIC STOMP\'s splash (builds 2026-11-14a and b; the owner: "Toxic Stomp and Blade Roll need better designs", then "Approve them"): each an animated piece of 12 columns, its foot at the middle of its cell, its sheet the size its record says; approved, so on for everyone without the preview; the flat looks stay as the fallback until a sheet arrives', () => {
+        for (const [id, cell] of [['slugball', 128], ['goosplash', 256]]) { const P = J('FX3D.pieces.' + id), meta = JSON.parse(rd('design/effects/out/' + id + '.json'));
+            same(JSON.stringify([P.cell, P.yaws, P.anim, P.ax, P.ay]), JSON.stringify([cell, 12, true, cell / 2, cell / 2]), id + ' in the game'); same(pngSize(P.sheet).join('x'), (cell * 12) + 'x' + cell, id + ': the sheet\'s size'); same(JSON.stringify([meta.cell, meta.yaws]), JSON.stringify([cell, 12]), id + ': its record');
+            ok(Math.abs(meta.anchor.x - cell / 2) < 0.6 && Math.abs(meta.anchor.y - cell / 2) < 0.6, id + ': its foot is not at the middle of its cell: ' + JSON.stringify(meta.anchor));
+            run('__preview(false)'); same(J('fx3dOn("' + id + '")'), true, id + ' off without the preview'); }
+        const E = rd('js/elements.js'); ok(/fx3dOn\("slugball"\) && fx3dReady\("slugball"\)/.test(E) && /fx3dOn\("goosplash"\) && fx3dReady\("goosplash"\)/.test(E), 'the game does not wait for their sheets (the flat fallback)');
+    });
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,slap', 'the approved pieces (SHARD VORTEX\'s blades were approved by accident and taken back)');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,slugball,goosplash,slap', 'the approved pieces (slugball and goosplash: the owner, 2026-11-14, "Approve them"; SHARD VORTEX\'s blades were approved by accident and taken back)');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');

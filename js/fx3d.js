@@ -33,8 +33,8 @@ const FX3D = {
         slap: { sheet: "img/fx/slap.png", cell: 96, yaws: 12, pitches: [0], anim: true, ax: 48, ay: 48 },
         // BLADE ROLL's BALL and TOXIC STOMP's SPLASH (build 2026-11-14a; the owner, 2026-11-13, of their first, flat looks: "Toxic Stomp and Blade Roll need better designs"; design/effects/bake_fx.js slugball,
         // goosplash): the Hammer Slug rolled up, a ball of its scales with its back's spikes round its rim (12 columns: one spike's worth of its turn, looped as it rolls; mirrored to roll left); and the goo
-        // thrown out of the Seeper's caldera as it stomps (12 columns, the throw to the last splat). ANIMATED, each with its foot at the middle of its cell. On the preview until the owner approves them in the
-        // game; until then, and until a sheet arrives, the flat looks drawn in code (js/elements.js bladeroll, toxicstomp).
+        // thrown out of the Seeper's caldera as it stomps (12 columns, the throw to the last splat). ANIMATED, each with its foot at the middle of its cell. Approved 2026-11-14 ("Approve them"), live for everyone
+        // since build 2026-11-14b; until a sheet arrives, the flat looks drawn in code (js/elements.js bladeroll, toxicstomp).
         slugball: { sheet: "img/fx/slugball.png", cell: 128, yaws: 12, pitches: [0], anim: true, ax: 64, ay: 64 },
         goosplash: { sheet: "img/fx/goosplash.png", cell: 256, yaws: 12, pitches: [0], anim: true, ax: 128, ay: 128 },
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
@@ -44,6 +44,7 @@ const FX3D = {
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
                "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "slugball", "goosplash",   // BLADE ROLL's ball and TOXIC STOMP's goo splash: approved 2026-11-14 ("Approve them", of their pictures in the real page), live for everyone since build 2026-11-14b
                "slap"],   // the VOIDSTAR's SLAP, its everyday shot's tentacles as a sharp violet gel tentacle: approved in the game 2026-11-13 ("Approve it"), live for everyone since build 2026-11-13d
     // (SHARD VORTEX's black blades were approved in the game on 2026-11-09 and taken back the same day: "Yeah, sorry, I was falling asleep. I accidentally approved that": on the preview again, tumbling, build 2026-11-09ii)
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)

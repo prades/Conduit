@@ -112,7 +112,7 @@ function targetRelease(ex, ey) {
 }
 
 // ── the creature's picture ──
-// the square it is first drawn into at its own size, and where its ground point is: 260 px (THE ANT QUEEN's fits), more for a bigger one (the diving beetle larva, build 2026-11-14b)
+// the square it is first drawn into at its own size, and where its ground point is: 260 px (THE ANT QUEEN's fits), more for a bigger one (the diving beetle larva, build 2026-11-14e)
 function _tgBox(a) { const n = Math.max(260, 2 * Math.ceil(1.3 * ((a && a.dimensions && a.dimensions.width) || 26))); return { n, ox: n / 2, oy: Math.round(n * 150 / 260) }; }
 // Drawn once per kind with the game's own creature drawing (js/bugs3d.js) into a small canvas, fitted to the box whatever its size.
 function targetPortrait(a) {

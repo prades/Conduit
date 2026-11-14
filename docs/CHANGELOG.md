@@ -4,17 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
-### Build `2026-11-14d` · branch `claude/start-game-project-HSh7Z` · the larva boss is VOLTWYRM (the owner's pick)
+### Build `2026-11-14g` (stamped 14d on its branch) · branch `claude/start-game-project-HSh7Z` · the larva boss is VOLTWYRM (the owner's pick)
 - **The ask** (the owner, 2026-11-14, of the names offered with VOLTREAPER): "Voltworm looks sick".
 - **VOLTWYRM** (volt for its current, wyrm for its long serpent's body; spelled as offered): its tag and every word it says (VOLTWYRM WAKES, VOLTWYRM CHARGES UP — SHOCK RING · GET CLEAR, VOLTWYRM SLEEPS AGAIN, VOLTWYRM IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
 - `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
 
-### Build `2026-11-14c` · branch `claude/start-game-project-HSh7Z` · the larva boss is named VOLTREAPER
+### Build `2026-11-14f` (stamped 14c on its branch) · branch `claude/start-game-project-HSh7Z` · the larva boss is named VOLTREAPER
 - **The ask** (the owner, 2026-11-14): "Name it something cool an edgy".
 - **VOLTREAPER** (the agent's pick: volt for its current, reaper for its sickle jaws): its tag and every word it says (VOLTREAPER WAKES, VOLTREAPER CHARGES UP — SHOCK RING · GET CLEAR, VOLTREAPER SLEEPS AGAIN, VOLTREAPER IS DEFEATED); its enemy card and slab. Its kind stays DIVING BEETLE LARVA.
 - `js/bosses.js`, `bible.html`, `tests/larva.js`; `docs/ELECTRIC-BREED.md` §2, 10.
 
-### Build `2026-11-14b` · branch `claude/start-game-project-HSh7Z` · the diving beetle larva: the electric breed's boss, in The Circuitry
+### Build `2026-11-14e` (stamped 14b on its branch) · branch `claude/start-game-project-HSh7Z` · the diving beetle larva: the electric breed's boss, in The Circuitry
 - **The asks** (the owner, 2026-11-13): "a boss creature will be a predaceous diving beetle larva"; its look "A"; 2026-11-14: "The larva boss should be big", then "Build it" on the agent's proposal (docs/ELECTRIC-BREED.md §2, 9). Main took `14a` meanwhile (merged into the branch first).
 - **THE DIVING BEETLE LARVA** (js/bosses.js, the row `circuitry`, on THE ANT QUEEN's pattern): asleep in the middle of **The Circuitry**, there whenever you come into the electrical domain (the domain's rooms arm it, so it waits before you reach its room); it wakes when one of yours comes within 2.5 tiles of its body or it is hit; held to its room (leave and it walks back to its post and sleeps, its wounds kept); killed, a fresh one waits the next time you come down.
 - **Big**: twice the queen's size (about 4.5 tiles jaws to tail), a body 1.8 tiles round; twice her health (2133) at level 12; electric. Its own species (`larva`: a boss block only, the ant boss's numbers): no clone, no race, no damage row (every kind of hit ×1).
@@ -24,6 +24,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Provisional (the agent's)**: every number; the snap's Piercing; its name; that it pays nothing and unlocks nothing (as the queen). Kept from every boss: its shield aura on the roly-polies near it. Not checked: whether it can be shot from the Deep Server Room's ledge.
 - `js/bosses.js`, `js/larva.js` (new), `js/species.js`, `js/bugs3d.js`, `js/clone.js`, `js/targeting.js`, `js/input.js`, `game.html`, `design/props/models/larva.js` (new), `img/props/larva.png`, `bible.html`, `img/bible/creatures/larva_boss.webp`; tests: `tests/larva.js` (new, 18 checks), `tests/abtest.js`, `tests/facilityplay.js`, `tests/population.js`.
 - Not playtested; looked at in the real page (headless).
+
+### Build `2026-11-14c` · branch `claude/approve-ball-splash` · ROTTEN DECOY's wind-up 7 s → 2.75 s
+- **The ask** (the owner, 2026-11-14: "The rotten decoy cast time is too long"; asked how long, chosen **2.75 seconds**, the other Mages' moves' time).
+- The Rotshard's wind-up before a ROTTEN DECOY is **2.75 s** (`MOVES.rotten_decoy.windup`, js/moves.js; it was 7 s). The decoy still lasts 6 s and the next wind-up still starts when it is gone, so a decoy stands about two thirds of the time (it was under half). Its crystal's split plays over the wind-up whatever its length (`splitCol`).
+- `js/moves.js`, `tests/moves.js`, `tests/followercombat.js`, the Bible, `balance.html` (the trial not run again: the decoy's measured numbers there are the 7 s ones).
+- Not playtested.
+
+### Build `2026-11-14b` · branch `claude/approve-ball-splash` · BLADE ROLL's ball and TOXIC STOMP's splash approved
+- **The ask** (the owner, 2026-11-14, of the two 3-D rendered pieces shown in pictures of the real page: **"Approve them"**).
+- `slugball` (the Hammer Slug rolled up) and `goosplash` (the goo out of the Seeper's caldera) are on `FX3D.approved` (js/fx3d.js): **every player sees them**, not only the `?fx=3d` preview. The flat looks stay as the fallback until a sheet has loaded.
+- `js/fx3d.js`, `tests/fx3d.js` (a check of the two pieces: sizes, anchors, on without the preview), `docs/EFFECTS.md`, `docs/COMBAT.md`.
+- Not playtested on an iPad.
 
 ### Build `2026-11-14a` · branch `claude/extra-attack-looks` · the five extra attacks' looks, and how three of them play
 - **The asks** (the owner, 2026-11-13: "he should just dash towards them and through them. It should hit multiple enemies. The Rift Impale hits one enemy but makes them glitch out. The way he does the animation is he glitches. The blade roll, he rolls up into a ball and rolls through at like a slower pace ... The Briar Sweep ... a bunch of leaves pop off of them, and leaves and thorns shake off and hit enemies in a AOE type situation ... Toxic Stomp, is a stomp ... make sure he splashes some of this Caldera"; of the first drafts, "Toxic Stomp and Blade Roll need better designs"; of the second, "Push").

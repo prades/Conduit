@@ -16,28 +16,28 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: The larva boss is VOLTWYRM (the owner's pick)
 
-- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14d`
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14g`
 - **Status:** Approved (the owner's words)
-- **Context:** the agent named the boss VOLTREAPER (build `2026-11-14c`, below) and offered three others: GRIDREAPER, VOLTWYRM, SURGEMAW. The owner: **"Voltworm looks sick"**.
+- **Context:** the agent named the boss VOLTREAPER (build `2026-11-14f`, below) and offered three others: GRIDREAPER, VOLTWYRM, SURGEMAW. The owner: **"Voltworm looks sick"**.
 - **Decision:** the boss is **VOLTWYRM** (volt for its current, wyrm for its long serpent's body): its tag and every word it says; its kind stays DIVING BEETLE LARVA. Supersedes "The larva boss is named VOLTREAPER".
 - **Agent's reading, to confirm:** spelled VOLTWYRM, as it was offered and seen (the owner's message read "Voltworm", taken as a dictation of the same word).
 - **Affects:** js/bosses.js (the row `circuitry`'s `name`); `ELECTRIC-BREED.md` §2, 10 and §11; the Bible; `tests/larva.js`.
 
 ## DECISION: The larva boss is named VOLTREAPER
 
-- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14c`
-- **Status:** Superseded by "The larva boss is VOLTWYRM (the owner's pick)" (`2026-11-14d`)
-- **Context:** the boss's tag read THE DIVING BEETLE LARVA (the agent's placeholder, build `2026-11-14b`). The owner: **"Name it something cool an edgy"**.
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14f`
+- **Status:** Superseded by "The larva boss is VOLTWYRM (the owner's pick)" (`2026-11-14g`)
+- **Context:** the boss's tag read THE DIVING BEETLE LARVA (the agent's placeholder, build `2026-11-14e`). The owner: **"Name it something cool an edgy"**.
 - **Decision:** **VOLTREAPER**: volt for its current, reaper for its sickle jaws (its SICKLE SNAP). It is the boss's tag and every word it says; its kind stays DIVING BEETLE LARVA (the species' label). Supersedes the placeholder name in "The diving beetle larva built as proposed" below.
 - **Alternatives offered:** GRIDREAPER, VOLTWYRM, SURGEMAW.
 - **Affects:** js/bosses.js (the row `circuitry`'s `name`); `ELECTRIC-BREED.md` §2, 10 and §11; the Bible; `tests/larva.js`.
 
 ## DECISION: The diving beetle larva built as proposed ("Build it")
 
-- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14b`
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14e`
 - **Status:** Approved (the owner's words); built
 - **Context:** the agent's proposal for the larva boss on THE ANT QUEEN's pattern (`ELECTRIC-BREED.md` §2, 9; §5 as it stood): the middle of The Circuitry; about twice her length, a body 1.8 tiles round; woken by yours near or a hit; twice her health at level 12, electric; SICKLE SNAP (her crush: every 6 s, 0.9 s of warning, 2.5 tiles past its body); SHOCK RING (her stomp, throwing back: every 10 s, within 3 tiles); no brood; no damage row. The owner: **"Build it"**.
-- **Decision:** the proposal as it stood, built in `2026-11-14b`.
+- **Decision:** the proposal as it stood, built in `2026-11-14e`.
 - **Agent's readings, to confirm:** SICKLE SNAP is a Piercing hit (half of it electric, as every electric creature's); SHOCK RING all electric; her wedge (115 degrees), her strengths (0.4 and 0.25 × its power), her ring (3.6 tiles past its body) and her 1.2 s for SHOCK RING's warning; it pays nothing and unlocks nothing (the queen's `test` rule) until its rewards are decided; the electrical domain's rooms arm it (so it is asleep before you reach its room); a fresh one each time you come back after it died (her rule); its own boss-only species; the name THE DIVING BEETLE LARVA; it keeps every boss's shield aura (the roly-polies near it gain shields); a tap anywhere on a huge body picks it (the queen's too).
 - **Affects:** see the changelog's entry; `ELECTRIC-BREED.md`.
 
