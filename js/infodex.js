@@ -215,7 +215,7 @@ function _ipReadout(chars) {
         if (f.stats) { P("ATK / DEF", (f.stats.attack || 0).toFixed(0) + " / " + (f.stats.defense || 0).toFixed(0), "#ff8a7a"); P("SP.ATK / ACC", (f.stats.specialAttack || 0).toFixed(0) + " / " + (f.stats.accuracy || 0).toFixed(0), "#d8a0ff"); P("WILL", (f.stats.will || 0).toFixed(0)); }
         else P("ATK / DEF", (f.power || 0).toFixed(0) + " / " + (f.def || 0).toFixed(0), "#ff8a7a");
         out.push({ k: "line" });
-        const ct = f.combatTrait ? (COMBAT_TRAITS[f.combatTrait]?.name || f.combatTrait) : "—", nt = f.naturalTrait ? (NATURAL_TRAITS[f.naturalTrait]?.name || f.naturalTrait) : "—", pk = f.perk ? (PERKS[f.perk]?.name || f.perk) : "—";
+        const ct = f.combatTrait && COMBAT_TRAITS[f.combatTrait] ? COMBAT_TRAITS[f.combatTrait].name : "—", nt = f.naturalTrait && NATURAL_TRAITS[f.naturalTrait] ? NATURAL_TRAITS[f.naturalTrait].name : "—", pk = f.perk && PERKS[f.perk] ? PERKS[f.perk].name : "—";
         P("COMBAT", ct, "#ff8a7a"); P("NATURAL", nt, "#9cff9c"); P("PERK", pk, "#9ca8ff");
     } else if (S.enemy && !S.enemy.dead) {
         const e = S.enemy, el = ELEMENTS.find(x => x.id === e.element);

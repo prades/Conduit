@@ -46,6 +46,17 @@ function ok(c, m) { if (!c) throw new Error(m); }
         return Object.assign(out, { fx: f.x, fy: f.y, target: f._nearestEnemy ? f._nearestEnemy.id : null });
     })()`);
 
+    group('THE PERKS ARE GONE (build 2026-11-14e; the owner, 2026-11-14: "can we get rid of those perks? And maybe we can redesign those at a later time")');
+    await check('no perk exists and none is drawn: a new follower has none; one saved with SIPHON or IRON WILL comes back with none; a follower still carrying the word neither heals on a hit nor takes less', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ const o = { n: Object.keys(PERKS).length };
+            spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; o.fresh = f.perk === null || f.perk === undefined;
+            o.load = typeof followerBuild === 'function' ? (function(){ const e = { element: 'fire', personality: 'aggressive', role: 'brawler', perk: 'siphon', stats: Object.assign({}, f.stats) }; const g = followerBuild(e); return g ? (g.perk === null || g.perk === undefined) : 'none'; })() : 'no followerBuild';
+            f.perk = 'iron_will'; f.spawnProtection = 0; f.health = f.maxHealth = 1000; applyDamage(f, 10, null, null, false, true); o.took = 1000 - f.health;
+            f.perk = 'siphon'; f.health = 500; const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), f.x + 0.5, f.y); p.team = 'red'; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            for (let i = 0; i < 5; i++) { f.attackCooldown = 0; followerAttack(f, p); } o.healed = f.health - 500; p.dead = true; followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f && a !== p); return o; })())`));
+        ok(r.n === 0, 'perks left: ' + r.n); ok(r.fresh === true, 'a new follower drew a perk'); ok(r.load === true, 'a saved perk came back: ' + r.load); ok(r.took === 10, 'IRON WILL still cut a hit: took ' + r.took); ok(r.healed <= 0, 'SIPHON still healed: ' + r.healed);
+    });
+
     group('HYBRID: no longer passive');
 
     await check('a hybrid chases and fights an enemy like a brawler', () => {
@@ -60,60 +71,38 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/role === "hybrid" \? "brawler"/.test(rd('js/npc.js')), 'hybrid is not routed to a movement branch');
     });
 
-    group('BERSERKER: the multiplier is applied to real damage');
+    group('THE TRAITS ARE GONE (build 2026-11-14f; the owner, 2026-11-14: "Remove all four"): Berserker, Opportunistic, Empathetic, Lone Wolf');
 
-    await check('a berserking follower deals 1.5x through the damage chokepoint', () => {
-        const r = run(`(function(){
-            actors.length = 0; followers.length = 0;
-            spawnFollowerAtCrystal('fire'); const f = followers[0];
-            const mkT = () => ({ x: __O.x, y: __O.y, health: 1000, maxHealth: 1000, team: 'red', element: null, dead: false, defense: 0 });
-            const a = mkT(), b = mkT();
-            f.damageMultiplier = 1; applyDamage(a, 100, f, null);
-            f.damageMultiplier = 1.5; applyDamage(b, 100, f, null);
-            return { a: 1000 - a.health, b: 1000 - b.health };
-        })()`);
-        ok(r.a > 0 && Math.abs(r.b / r.a - 1.5) < 0.02, 'expected 1.5x, got ' + (r.b / r.a).toFixed(2) + ' (' + r.a + ' vs ' + r.b + ')');
+    await check('no trait exists and none is drawn: a new follower has none, and one saved with any of the four comes back with none', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){ actors.length = 0; followers.length = 0; const o = { n: Object.keys(COMBAT_TRAITS).length + Object.keys(NATURAL_TRAITS).length, fresh: [], load: [] };
+            for (let i = 0; i < 12; i++) { spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; o.fresh.push(f.combatTrait || f.naturalTrait || null); }
+            for (const [c, n] of [['berserker', 'lone_wolf'], ['opportunistic', 'empathetic']]) { const g = followerBuild({ element: 'fire', personality: 'aggressive', role: 'brawler', combatTrait: c, naturalTrait: n, stats: Object.assign({}, followers[0].stats) }); o.load.push(g.combatTrait || g.naturalTrait || null); }
+            return o; })())`));
+        ok(r.n === 0, 'traits left: ' + r.n); ok(r.fresh.every(x => x === null), 'a new follower drew a trait: ' + r.fresh); ok(r.load.every(x => x === null), 'a saved trait came back: ' + r.load);
     });
 
-    await check('the trait itself switches the multiplier on under 30% health', () => {
-        const r = run(`(function(){
-            const f = { health: 20, maxHealth: 100 }; COMBAT_TRAITS.berserker.onUpdate(f);
-            const g = { health: 90, maxHealth: 100 }; COMBAT_TRAITS.berserker.onUpdate(g);
-            return [f.damageMultiplier, g.damageMultiplier]; })()`);
-        ok(r[0] === 1.5 && r[1] === 1, JSON.stringify(r));
+    await check('BERSERKER does nothing: a follower still carrying the word, at 10% health, hits as hard as at full health; a multiplier it had been left with is cleared', () => {
+        const r = scene(`f.combatTrait = 'berserker'; f.damageMultiplier = 1.5; f.health = f.maxHealth * 0.1; mk(__O.x + 30, __O.y, 900);`, 3);
+        const m = run(`(function(){ const f = followers[0]; const mkT = () => ({ x: __O.x, y: __O.y, health: 1000, maxHealth: 1000, team: 'red', element: null, dead: false, defense: 0 });
+            const a = mkT(), b = mkT(); f.health = f.maxHealth; applyDamage(a, 100, f, null); f.health = f.maxHealth * 0.1; updateNPC(f); applyDamage(b, 100, f, null); return { a: 1000 - a.health, b: 1000 - b.health, mult: f.damageMultiplier }; })()`);
+        ok(m.a > 0 && Math.abs(m.b - m.a) < 1e-6, 'it hit harder near death: ' + m.b + ' vs ' + m.a); ok(!(m.mult > 1), 'its multiplier was left on: ' + m.mult);
     });
 
-    group('OPPORTUNISTIC: weakest in reach');
-
-    await check('it picks the weakest enemy in reach, not the nearest', () => {
+    await check('OPPORTUNISTIC does nothing: a follower still carrying the word goes for the nearest enemy, as a plain one does, not the weakest', () => {
         const pick = trait => scene(`f.combatTrait = ${JSON.stringify(trait)};
             const near = mk(__O.x + 2, __O.y, 900), weak = mk(__O.x + 4.5, __O.y, 50);
             out.near = near.id; out.weak = weak.id; actors.forEach((a, i) => { a.id = a.id || ('p' + i); }); out.nearId = near.id; out.weakId = weak.id;`, 10);
         const plain = pick(null), opp = pick('opportunistic');
         ok(plain.target === plain.nearId, 'fixture: a default follower should pick the nearest');
-        ok(opp.target === opp.weakId, 'opportunistic did not pick the weak one');
+        ok(opp.target === opp.nearId, 'one saved as opportunistic still picked the weak one');
     });
 
-    group('NATURAL TRAITS: distance and company');
-
-    await check('LONE WOLF keeps its distance, a default follower comes close (in the formation, js/formation.js: its place, FORMATION.loneWolf tiles farther out)', () => {
-        // The follower starts five tiles west of the player along the open row.
-        const d = trait => { const r = scene(`f.naturalTrait = ${JSON.stringify(trait)}; f.x = __O.x - 5; f.y = __O.y;`, 900);
+    await check('LONE WOLF and EMPATHETIC do nothing: a follower still carrying either word ends where a plain one does', () => {
+        const d = trait => { const r = scene(`f.naturalTrait = ${JSON.stringify(trait)}; f.preferGroup = true; f.wanderRadius = 4; f.x = __O.x - 5; f.y = __O.y;`, 900);
             return Math.hypot(r.fx - run('__O.x'), r.fy - run('__O.y')); };
-        const normal = d(null), lone = d('lone_wolf');
+        const normal = (function(){ const r = scene(`f.naturalTrait = null; f.x = __O.x - 5; f.y = __O.y;`, 900); return Math.hypot(r.fx - run('__O.x'), r.fy - run('__O.y')); })(), lone = d('lone_wolf'), emp = d('empathetic');
         ok(normal <= 2.3, 'fixture: a default follower stops near the player, got ' + normal.toFixed(2));
-        ok(lone >= normal + 0.8, 'a lone wolf came within ' + lone.toFixed(2) + ' tiles (a default follower: ' + normal.toFixed(2) + ')');   // (it kept 4 tiles until build 2026-11-10b: the formation's places are nudged by a trait, not undone)
-    });
-
-    await check('EMPATHETIC keeps near the squad: in the formation (js/formation.js) it holds its place nearer you, the squad\'s middle, than a default follower', () => {
-        // The player four tiles north of the follower, two allies four tiles west of it. Until build 2026-11-10b an empathetic follower leaned 60% of the way to its allies (it ended west of a
-        // plain one); in the formation, where the allies stand round you, it holds its place a quarter nearer you instead, so the formation keeps its shape.
-        const x = trait => scene(`f.naturalTrait = ${JSON.stringify(trait)}; f.x = __O.x; f.y = __O.y + 1;
-            player.x = __O.x; player.y = __O.y - 4; player.visualX = player.x; player.visualY = player.y; player.targetX = player.x; player.targetY = player.y;
-            spawnFollowerAtCrystal('fire'); spawnFollowerAtCrystal('fire');
-            for (const o of followers.slice(1)) { o.x = __O.x - 4; o.y = __O.y + 1; o.isFollower = true; o.returningToCrystal = false; o.post = null; o.stance = 'hold'; o.moveSpeed = 0; }`, 600);
-        const plain = x(null), emp = x('empathetic'), py = run('__O.y - 4'), dist = r => Math.hypot(r.fx - run('__O.x'), r.fy - py);
-        ok(dist(emp) < dist(plain) - 0.2, 'empathetic ended ' + dist(emp).toFixed(2) + ' tiles from you vs ' + dist(plain).toFixed(2) + ' for a default follower');
+        ok(Math.abs(lone - normal) < 0.15, 'a lone wolf still stands apart: ' + lone.toFixed(2) + ' vs ' + normal.toFixed(2)); ok(Math.abs(emp - normal) < 0.15, 'an empathetic one still stands nearer: ' + emp.toFixed(2) + ' vs ' + normal.toFixed(2));
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

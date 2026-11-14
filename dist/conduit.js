@@ -777,32 +777,9 @@ function uiWrap(text, maxChars) {
 }
 ;
 /* js/traits.js */
-const COMBAT_TRAITS = {
-    berserker: {
-        name: "Berserker", description: "Gains damage when low health",
-        onUpdate(a) { a.damageMultiplier = a.health < a.maxHealth * 0.3 ? 1.5 : 1; }
-    },
-    opportunistic: {
-        name: "Opportunistic", description: "Targets lowest health enemy",
-        onTargetSelect(a, enemies) { return enemies.sort((x, y) => x.health - y.health)[0]; }
-    }
-};
-const NATURAL_TRAITS = {
-    empathetic: { name: "Empathetic", description: "Prefers staying near allies",
-        onUpdate(a) { a.preferGroup = true; } },
-    lone_wolf: { name: "Lone Wolf", description: "Moves further from player when idle",
-        onIdle(a) { a.wanderRadius = 4; } }
-};
-const PERKS = {
-    iron_will: {
-        name: "Iron Will", description: "Takes reduced damage",
-        modifyIncomingDamage(a, dmg) { return dmg * 0.75; }
-    },
-    siphon: {
-        name: "Siphon", description: "Heals when dealing damage",
-        onDealDamage(a, amount) { a.health = Math.min(a.maxHealth, a.health + amount * 0.1); }
-    }
-};
+const COMBAT_TRAITS = {};
+const NATURAL_TRAITS = {};
+const PERKS = {};
 ;
 /* js/elements.js */
 const ELEMENT_STRONG_AGAINST = {
@@ -5713,9 +5690,8 @@ function spawnFollowerAtCrystal(element, type) {
         walkCycle: 0, moveCooldown: 0,
         stance: "follow", isFollower: true, isHealing: false,
         hitFlash: 0, dead: false,
-        combatTrait: Object.keys(COMBAT_TRAITS)[Math.floor(Math.random() * 2)],
-        naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random() * 2)],
-        perk: Object.keys(PERKS)[Math.floor(Math.random() * 2)]
+        combatTrait: null, naturalTrait: null,
+        perk: null
     };
     if (typeof followerUid === "function")
         followerUid(npc);
@@ -7130,6 +7106,12 @@ function updateRTSNPC(actor) {
         if (t && t.onUpdate)
             t.onUpdate(actor);
     }
+    if (!COMBAT_TRAITS[actor.combatTrait] && actor.damageMultiplier)
+        actor.damageMultiplier = 1;
+    if (!NATURAL_TRAITS[actor.naturalTrait] && (actor.preferGroup || actor.wanderRadius)) {
+        actor.preferGroup = false;
+        actor.wanderRadius = 0;
+    }
     if (actor.team === "green" && actor.stance === "hold" && !actor.job && !actor.post)
         actor.stance = "follow";
     if (!actor.dead && actor.team === "green" && actor.returningToCrystal) {
@@ -7163,12 +7145,9 @@ function updateRTSNPC(actor) {
                 const pool = [...unlockedElements].filter(e => e !== "none");
                 actor.element = pool[Math.floor(Math.random() * pool.length)] || "fire";
             }
-            if (!actor.combatTrait)
-                actor.combatTrait = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random() * 2)];
-            if (!actor.naturalTrait)
-                actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random() * 2)];
-            if (!actor.perk)
-                actor.perk = Object.keys(PERKS)[Math.floor(Math.random() * 2)];
+            actor.combatTrait = null;
+            actor.naturalTrait = null;
+            actor.perk = null;
             actor.convertFlash = 30;
             actor.isNeutralRecruit = false;
             followers.push(actor);
@@ -21147,7 +21126,7 @@ function _ipReadout(chars) {
         else
             P("ATK / DEF", (f.power || 0).toFixed(0) + " / " + (f.def || 0).toFixed(0), "#ff8a7a");
         out.push({ k: "line" });
-        const ct = f.combatTrait ? (COMBAT_TRAITS[f.combatTrait]?.name || f.combatTrait) : "—", nt = f.naturalTrait ? (NATURAL_TRAITS[f.naturalTrait]?.name || f.naturalTrait) : "—", pk = f.perk ? (PERKS[f.perk]?.name || f.perk) : "—";
+        const ct = f.combatTrait && COMBAT_TRAITS[f.combatTrait] ? COMBAT_TRAITS[f.combatTrait].name : "—", nt = f.naturalTrait && NATURAL_TRAITS[f.naturalTrait] ? NATURAL_TRAITS[f.naturalTrait].name : "—", pk = f.perk && PERKS[f.perk] ? PERKS[f.perk].name : "—";
         P("COMBAT", ct, "#ff8a7a");
         P("NATURAL", nt, "#9cff9c");
         P("PERK", pk, "#9ca8ff");
@@ -31843,7 +31822,7 @@ function followerBuild(entry) {
         type: "virus", element: entry.element || "fire", x: crystal.x + (Math.random() - 0.5) * 2, y: crystal.y + (Math.random() - 0.5) * 2, team: "green",
         health: (stats.hp || 10), maxHealth: (stats.hp || 10), moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed || 10) - 10) * 0.001, power: (stats.attack || 5),
         stats, personality, role, currentResonance: 0, currentWill: stats.will || 20, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: true, isHealing: false, hitFlash: 0, dead: false,
-        combatTrait: entry.combatTrait, naturalTrait: entry.naturalTrait, perk: entry.perk
+        combatTrait: typeof COMBAT_TRAITS !== "undefined" && COMBAT_TRAITS[entry.combatTrait] ? entry.combatTrait : null, naturalTrait: typeof NATURAL_TRAITS !== "undefined" && NATURAL_TRAITS[entry.naturalTrait] ? entry.naturalTrait : null, perk: typeof PERKS !== "undefined" && PERKS[entry.perk] ? entry.perk : null
     };
     if (typeof bondRestoreFields === "function")
         bondRestoreFields(npc, entry);
@@ -54146,7 +54125,7 @@ function render() {
                     currentWill: stats.will,
                     walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: true, isHealing: false,
                     hitFlash: 0, dead: false, attackAnim: 0, state: "idle",
-                    combatTrait: entry.combatTrait, naturalTrait: entry.naturalTrait, perk: entry.perk
+                    combatTrait: (typeof COMBAT_TRAITS !== "undefined" && COMBAT_TRAITS[entry.combatTrait]) ? entry.combatTrait : null, naturalTrait: (typeof NATURAL_TRAITS !== "undefined" && NATURAL_TRAITS[entry.naturalTrait]) ? entry.naturalTrait : null, perk: (typeof PERKS !== "undefined" && PERKS[entry.perk]) ? entry.perk : null
                 };
                 if (typeof bondRestoreFields === "function")
                     bondRestoreFields(npc, { uid: entry.uid, partnerUid: entry.partnerUid });

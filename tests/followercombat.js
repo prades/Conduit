@@ -331,7 +331,7 @@ function measure(w, h) {
             return { under, dive: BURROW_DIVE, most, speed: BURROW_SPEED, at, near, touch: BURROW_TOUCH, dmg: __dmg(t), want: BURROW_MULT * __dmg(twin), healed, siphon: 0.1 * f.stats.attack * 0.25 * BURROW_MULT, up: !f.untargetable, done: !f._burrow, rest, plain: DMG_FORM.thermite.main, hit: EVOLUTIONS.thermite.hit }; })()`);
         same(r.under, r.dive + 1, 'under the floor after its dive'); ok(r.most <= r.speed + 1e-9, 'a frame\'s step ' + r.most); ok(r.at > 0 && r.near <= r.touch + 1e-9, 'not beneath it: ' + JSON.stringify(r));
         ok(Math.abs(r.dmg - r.want) < 1e-6 * r.want + 1e-6, 'the eruption is ' + r.dmg + ', not ' + r.want + ' (BURROW_MULT × a plain hit of its own, its main attack)'); ok(r.up && r.done, 'it did not surface'); ok(r.rest > 60, 'no rest after: ' + r.rest);
-        ok(Math.abs(r.healed - r.siphon) < 1e-6, 'a Siphon perk heals on the eruption as on the plain hit it stands in for: ' + r.healed + ', not ' + r.siphon);
+        ok(Math.abs(r.healed) < 1e-6, 'the eruption healed it: the perks are gone (build 2026-11-14e: js/traits.js), so a follower saved with SIPHON heals nothing: ' + r.healed);
         same(r.plain, 'piercing', 'its main attack\'s type'); same(r.hit, 'BURROW STRIKE', 'its form\'s hit');
     });
     check('under the floor it cannot be targeted or hurt; a target lost on the way (dead) brings it up where it is, with no eruption; out of reach or behind a wall it does not dive', () => {

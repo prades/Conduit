@@ -12,16 +12,16 @@ if (process.argv[2] !== '--worker') {
     const ROOT_ = _path.join(__dirname, '..'), self = __filename, tmp = _path.join(require('os').tmpdir(), 'conduit-balance-' + process.pid); _fs.mkdirSync(tmp, { recursive: true });
     const run = (args, out) => new Promise(res => { const p = _cp.spawn(process.execPath, [self, '--worker', ...args], { stdio: ['ignore', 'ignore', 'inherit'] }); p.on('exit', () => res(JSON.parse(_fs.readFileSync(out, 'utf8')))); });
     (async () => {
-        const N = 4, A = [], LIVE = 'hammerslug:main,hammerslug:shell_guard,rotshard:rotten_decoy,sundew:sweet_scent,sundew:sweet_scent_full';
+        const N = 4, A = [], LIVE = 'hammerslug:main,hammerslug:shell_guard,rotshard:rotten_decoy,sundew:sweet_scent,sundew:sweet_scent_full', RUNS = '6';   // (the live runs vary a lot: six of each, three until build 2026-11-14d)
         const pa = []; for (let i = 0; i < N; i++) { const out = _path.join(tmp, 'a' + i + '.json'); pa.push(run([out, String(i), String(N), 'inert'], out)); }
-        const pb = run([_path.join(tmp, 'b.json'), '0', '1', 'live', LIVE, '3'], _path.join(tmp, 'b.json'));
+        const pb = run([_path.join(tmp, 'b.json'), '0', '1', 'live', LIVE, RUNS], _path.join(tmp, 'b.json'));
         for (const r of await Promise.all(pa)) A.push(...r); const B = await pb;
         const avg = (ts, k) => ts.reduce((a, t) => a + (t[k] || 0), 0) / ts.length;
-        const live = {}; for (const R of B) for (const [m, ts] of Object.entries(R.modes)) if (ts.length && !ts[0].err) live[R.id + ':' + m] = { block: (avg(ts, 'cut') + avg(ts, 'soak')) / 20, lured: avg(ts, 'lured'), denied: avg(ts, 'denied'), taken: (avg(ts, 'allyTaken') + avg(ts, 'taken')) / 20 };
+        const live = {}; for (const R of B) for (const [m, ts] of Object.entries(R.modes)) if (ts.length && !ts[0].err) live[R.id + ':' + m] = { block: (avg(ts, 'cut') + avg(ts, 'soak')) / 20, lured: avg(ts, 'lured'), denied: avg(ts, 'denied'), st: Object.fromEntries(Object.keys(ts[0].st || {}).map(k => [k, ts.reduce((a, t) => a + ((t.st || {})[k] || 0), 0) / ts.length])), taken: (avg(ts, 'allyTaken') + avg(ts, 'taken')) / 20 };
         const forms = A.map(R => ({ id: R.id, name: R.name, modes: Object.entries(R.modes).filter(([, ts]) => ts[0] && !ts[0].err).map(([m, ts]) => { const t = ts[0], L = live[R.id + ':' + m];
-            return { mode: m, dmg: t.dmg / 20, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, denied: L ? Math.max(L.denied, t.denied) : t.denied, taken: L ? L.taken : null }; }) }));
+            return { mode: m, dmg: t.dmg / 20, heal: t.heal / 20, block: L ? L.block : (t.cut + t.soak) / 20, assist: t.assist / 20, lured: L ? L.lured : t.lured, cc: t.cc, denied: L ? Math.max(L.denied, t.denied) : t.denied, st: (L && L.denied >= t.denied ? L.st : t.st) || {}, taken: L ? L.taken : null }; }) }));
         // what one enemy deals in a second when nothing holds it off: the live run with a follower that does nothing (the Hammer Slug on its everyday attack), over the three enemies
-        const foeDps = live['hammerslug:main'] ? live['hammerslug:main'].taken / 3 : null;
+        const foeDps = (A.find(r => r._foeDps > 0) || {})._foeDps || null;   // (reckoned from one bite and the bite's cycle, in the first worker: see below)
         const build = /BUILD_VERSION = "([^"]+)"/.exec(_fs.readFileSync(_path.join(ROOT_, 'js/config.js'), 'utf8'))[1];
         _fs.writeFileSync(_path.join(ROOT_, 'design/balance-trial.json'), JSON.stringify({ build, foeDps, forms }, null, 1) + '\n'); console.log('design/balance-trial.json written for build ' + build + ' (' + forms.length + ' forms)');
     })();
@@ -101,7 +101,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                     if ('${mode}' === 'sweet_scent_full') f._nectar = 100;
                     f.currentWill = 100; f.attackCooldown = 0;
                     ally.x = f.x - 1; ally.y = f.y + 1; 
-                    const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, denied: 0, assist: 0, err: 0 }; globalThis.__T = T;
+                    const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, denied: 0, assist: 0, err: 0, st: { stun: 0, glitch: 0, blind: 0, poison: 0, slow: 0, lure: 0, lureSelf: 0 } }; globalThis.__T = T;
                     const X0 = f.x, Y0 = f.y, AX = ally.x, AY = ally.y; let used = 0; const FP = foes.map(p => [p.x, p.y]);
                     for (let k = 0; k < ${FR}; k++) {
                         try { render(); } catch (e) { T.err++; break; } used++;
@@ -112,9 +112,15 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                         ally.dead = false; ally.health = ally.maxHealth * 0.3; f.dead = false; if (f.health < f.maxHealth * 0.5) f.health = f.maxHealth * 0.5;
                         if (k % 30 === 0) for (const p of foes) if (!p.dead) { applyDamage(player, 0, null); const src = player; ad2(p, 10, src); }
                         for (const p of foes) { if (p.dead) continue;
-                            const lu = !!((typeof scentLure === 'function' && scentLure(p)) || (typeof decoyLure === 'function' && decoyLure(p))); if (lu) T.lured += 1 / 60;
-                            // DENIED: how much of this enemy's damage is held off this frame (the balance system's rates, tools/balance.js DENY): stunned, glitched, asleep or lured away 1; blinded BLIND_MISS; weakened 1 - its factor; slowed 0.25; the greatest of them, never added up
-                            { let w = lu ? 1 : 0; if (p.stunned > 0 || p.glitched > 0 || p.asleep > 0) w = 1; if (p.blinded > 0) w = Math.max(w, BLIND_MISS); if (p.toxicWeakened > 0) w = Math.max(w, 1 - (p.toxicWeakenFactor || 0.6)); if (p.slowed > 0) w = Math.max(w, 0.25); T.denied += w / 60; }
+                            // THE STATUSES IT DISTRIBUTES (the owner, 2026-11-14: "I think you should count the statuses that are distributed"): the enemy-seconds of each, tallied apart (T.st): stunned (asleep with it),
+                            // glitched, blinded, poisoned (weakened), slowed, lured to a decoy, lured onto a follower. DENIED is their worth in enemy-seconds of damage held off, the greatest of them on an enemy in a
+                            // frame, never added up: stun, glitch and a decoy's lure 1 (its hits land on nothing of yours); a lure onto a follower 0.5 (its hits are moved, not stopped: the agent's, provisional);
+                            // blind BLIND_MISS; poison 1 - its factor; slow 0.25.
+                            { const sl = typeof scentLure === 'function' && scentLure(p), dl = typeof decoyLure === 'function' && decoyLure(p), S = T.st; let w = 0;
+                              if (dl) { S.lure += 1 / 60; w = 1; } else if (sl) { S.lureSelf += 1 / 60; w = 0.5; } if (dl || sl) T.lured += 1 / 60;
+                              if (p.stunned > 0 || p.asleep > 0) { S.stun += 1 / 60; w = 1; } if (p.glitched > 0) { S.glitch += 1 / 60; w = 1; }
+                              if (p.blinded > 0) { S.blind += 1 / 60; w = Math.max(w, BLIND_MISS); } if (p.toxicWeakened > 0) { S.poison += 1 / 60; w = Math.max(w, 1 - (p.toxicWeakenFactor || 0.6)); } if (p.slowed > 0) { S.slow += 1 / 60; w = Math.max(w, 0.25); }
+                              T.denied += w / 60; }
                             let c = 0; if (p.toxicWeakened > 0) c = 1; if (p.slowed > 0) c = 1; if (p.stunned > 0) c = 1; if (p.glitched > 0) c = 1; if (p.blinded > 0) c = 1; if (p.asleep > 0) c = 1; T.cc += c / 60; }
                     }
                     globalThis.__T = null; delete T.f; delete T.ally; T.frames = used; return T; })()`.replace('ad2(p, 10, src)', 'applyDamage(p, 10, src, null)').replace('applyDamage(player, 0, null); ', '')));
@@ -122,5 +128,11 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         }
         results.push(R); process.stderr.write(F.id + ' ');
     }
+    // WHAT ONE ENEMY DEALS (build 2026-11-14d): one bite of the trial's enemy on the trial's own follower (level 20, the same base stats, no guard), over the bite's cycle (its rear-back and its rest, js/combat.js
+    // COMBAT.bite): the damage a second an enemy deals while nothing holds it off. Reckoned, not measured in a fight: the live run's figure moved between 5 and 12 from one run to the next, and every support
+    // score with it.
+    if (SH === 0 && !LIVE && results.length) results[0]._foeDps = J(`(function(){ __clear(); const f = __fol('core', 'brawler', 'jellyram'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true); f.jellyShield = 0; f.spawnProtection = 0;
+        const p = __foe(f.x + 1, f.y); let sum = 0; for (let i = 0; i < 20; i++) { f.health = f.maxHealth; const h0 = f.health; applyDamage(f, p.power, p, null, false, false, typeof dmgBiteHit === 'function' ? dmgBiteHit(p) : null); sum += h0 - f.health; }
+        __clear(); return (sum / 20) / ((COMBAT.bite.windup + COMBAT.bite.cooldown) / 60); })()`);
     fs.writeFileSync(process.argv[2], JSON.stringify(results, null, 1)); console.log('done', results.length);
 })();

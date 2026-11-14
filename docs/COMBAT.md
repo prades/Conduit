@@ -200,7 +200,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **Mages** stand behind you (3 tiles), side by side. A Mage shoots from its place at an enemy it can see within 8 tiles (it used to walk to 4 tiles from it), moves only to see one, keeps its place when one is farther (the Brawlers meet it) and goes back to it between shots. One sent at a creature fights as before.
 - **Technicians** go round you 2.5 tiles out, at their own pace (a second one goes the other way round), and hit what comes within their reach.
 - **Ahead** is toward the enemy you have locked, else the way you last walked. A place in a wall or out of your sight comes in toward you, then turns to a diagonal or a side, else is where you stand.
-- **The natural traits** nudge a place: a LONE WOLF stands 1.2 tiles farther out, an EMPATHETIC one a quarter nearer you (they kept 4 tiles out, and leaned 60% toward allies, which would have undone the formation: every follower has one of the two).
+- **No trait moves a place** since build `2026-11-14f` (the traits are gone, the owner: "Remove all four"). Until then the natural traits nudged it: a LONE WOLF stood 1.2 tiles farther out, an EMPATHETIC one a quarter nearer you (they kept 4 tiles out, and leaned 60% toward allies, which would have undone the formation: every follower has one of the two).
 - HOLD, a posted room, an order, a clone and the way home to the Crystal are as they were. Every number is the agent's, provisional (`OPEN-QUESTIONS.md`).
 
 | Form | Class · element | Main attack | Alternates |
