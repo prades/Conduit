@@ -6,6 +6,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14d` · branch `claude/balance-rerun` · the balance page counts the statuses a form distributes; a lure is no longer counted twice
+- **The ask** (the owner, 2026-11-14: "Rerun tests"; then "Are we accounting for support points? I feel like the Rotten Decoy would do a lot of support if it's holding down enemies, and I don't understand how the Hammer Slug's shell guard is at 1.9 above their band"; told how the score was made, **"I think you should count the statuses that are distributed"**).
+- **What was wrong:** SHELL GUARD scored 63.5 from a lure counted as the enemy's whole damage held off (though its hits still land on the Slug) plus the damage its guard cut, counted before defence; and the damage one enemy deals, taken from a live run, moved between 5 and 12 from one run to the next, so every support score moved with it.
+- **Support is now the statuses a form puts on enemies**, each tallied apart by the trial (enemy-seconds stunned, glitched, blinded, poisoned, slowed, lured to a decoy, lured onto the follower itself) and shown in its own column on `balance.html`; their worth: stun, glitch and a decoy's lure the enemy's whole damage, a lure onto a follower **half** (moved, not stopped: the agent's, provisional), blind 50%, poison 40%, slow 25%; an enemy under several counts once, at the strongest. The damage a guard or a decoy takes is shown and **not added** again.
+- **What one enemy deals** is reckoned (one bite on the trial's follower over the bite's cycle: 10.4 a second), not measured in a fight. The live runs are six of each (three before).
+- **The trial run again on build `2026-11-14c`'s game** (the dash, the slow roll, the decoy's 2.75 s): ROTTEN DECOY 18.8 (all support: 36 enemy-seconds lured), SHELL GUARD 13.3 (it read 63.5), SWEET SCENT 15.9, MAELSTROM 40.2 (13.5 of it its blind). The game itself is not changed by this build.
+- `tools/balance-trial.js`, `tools/balance.js`, `design/balance-trial.json`, `balance.html`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`.
+
 ### Build `2026-11-14c` · branch `claude/approve-ball-splash` · ROTTEN DECOY's wind-up 7 s → 2.75 s
 - **The ask** (the owner, 2026-11-14: "The rotten decoy cast time is too long"; asked how long, chosen **2.75 seconds**, the other Mages' moves' time).
 - The Rotshard's wind-up before a ROTTEN DECOY is **2.75 s** (`MOVES.rotten_decoy.windup`, js/moves.js; it was 7 s). The decoy still lasts 6 s and the next wind-up still starts when it is gone, so a decoy stands about two thirds of the time (it was under half). Its crystal's split plays over the wind-up whatever its length (`splitCol`).
