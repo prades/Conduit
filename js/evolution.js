@@ -890,12 +890,13 @@ function wobbleSlam(f) {
 }
 // ICICLE VOLLEY (the Rimestar's): a fan of ICICLE_COUNT icicles at the nearest enemy it can see within ICICLE_RANGE, ICICLE_FAN radians apart; each is its shot (SP.ATK × the Mages' share), ice, and
 // one that hits slows its target to ICICLE_SLOW_F of its speed for ICICLE_SLOW frames.
-const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6;
+// (Build 2026-11-14o, the status buffs: an icicle that hits FREEZES its target, a stun of ICICLE_FREEZE frames, not a boss; a boss is slowed as before. It slowed everything it hit.)
+const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6, ICICLE_FREEZE = 45;
 function icicleVolley(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ICICLE_RANGE));
     if (!t || typeof spawnFollowerProjectile !== "function") return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, dmg = (f.stats && f.stats.specialAttack || 10) * (typeof MAGE_SHOT_MULT !== "undefined" ? MAGE_SHOT_MULT : 0.5);
-    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (a && !a.dead && typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
+    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (!a || a.dead) return; if (!_evoBoss(a) && typeof applyStun === "function") applyStun(a, ICICLE_FREEZE); else if (typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
     for (let k = 0; k < ICICLE_COUNT; k++) {
         const ang = a0 + (k - (ICICLE_COUNT - 1) / 2) * ICICLE_FAN, aim = k === (ICICLE_COUNT - 1) / 2 ? t : { x: f.x + Math.cos(ang) * d, y: f.y + Math.sin(ang) * d };
         spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1, kind: "icicle" });   // (kind: its modelled icicle, js/fx3d.js; without it, the ice shot)
@@ -965,7 +966,8 @@ function shellGuard(f) {
 function shellGuardCut(t, amount) { return t && t._guardUntil > (typeof frame !== "undefined" ? frame : 0) ? amount * (1 - GUARD_CUT) : amount; }
 // PHASE SWAP (the Goo Proxy's): it swaps places with the nearest enemy it can see within SWAP_RANGE (not a boss; both spots floor one can stand on), flux; a goo burst at the spot it left hurts every
 // enemy within SWAP_BURST of it, the one it swapped with included, SWAP_MULT × its attack.
-const SWAP_RANGE = 6, SWAP_BURST = 1, SWAP_MULT = 1;
+// (Build 2026-11-14o, the status buffs: the enemy it swaps with is GLITCHED SWAP_GLITCH frames.)
+const SWAP_RANGE = 6, SWAP_BURST = 1, SWAP_MULT = 1, SWAP_GLITCH = 90;
 function phaseSwap(f) {
     const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SWAP_RANGE).filter(a => !_evoBoss(a) && stand(a.x, a.y)));
@@ -973,6 +975,7 @@ function phaseSwap(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y;
     f.x = t.x; f.y = t.y; f._fpPath = null; t.x = ox; t.y = oy; t._fpPath = null; t.kbVX = t.kbVY = 0;
     for (const a of _evoFoesSeen(ox, oy, SWAP_BURST)) applyDamage(a, (f.power || 10) * SWAP_MULT, f, null, false, false, DMG_HIT_SWAP);
+    if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, SWAP_GLITCH);
     f._sigAt = f0; f._sigCd = moveWindupFrames("phase_swap"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "impact", x: f.x, y: f.y, color: "#cc66ff", radius: 0.7, life: 18 }); _evoFx({ type: "ring", x: ox, y: oy, radius: SWAP_BURST, color: "#9933ff", life: 24 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#e0a8ff", radius: 0.9, life: 20 });
     _evoSay(f, "PHASE SWAP", "#d9a3ff");
@@ -1123,14 +1126,16 @@ function toxicStomp(f) {
 }
 // SHOCK ZAP (the Hover Shell's): a zap from its shell at the nearest enemy it can see within ZAP_RANGE: ZAP_MULT × its attack, electric, and its wind-up broken (GLITCH, ZAP_GLITCH frames). Its KINETIC
 // LAUNCHER is untouched.
-const ZAP_RANGE = 4, ZAP_MULT = 1, ZAP_GLITCH = 30;
+// (Build 2026-11-14o, the status buffs: the zap ARCS to the nearest other enemy within ZAP_ARC of its target, which is glitched too and not hurt.)
+const ZAP_RANGE = 4, ZAP_MULT = 1, ZAP_GLITCH = 30, ZAP_ARC = 2.5;
 function shockZap(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ZAP_RANGE));
     if (!t) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(t, (f.power || 10) * ZAP_MULT, f, "electric", false, false, DMG_HIT_ZAP);
     if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, ZAP_GLITCH);
-    f._arcPts = [{ x: t.x, y: t.y }]; f._arcUntil = f0 + 16; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
+    const t2 = _evoNearest(t.x, t.y, _evoFoesSeen(t.x, t.y, ZAP_ARC).filter(a => a !== t)); if (t2 && typeof applyGlitch === "function") { applyGlitch(t2, ZAP_GLITCH); _evoFx({ type: "impact", x: t2.x, y: t2.y, color: "#ffee33", radius: 0.4, life: 14 }); }
+    f._arcPts = [{ x: t.x, y: t.y }].concat(t2 ? [{ x: t2.x, y: t2.y }] : []); f._arcUntil = f0 + 16; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
     f.dirX = t.x - f.x; f.dirY = t.y - f.y; f._sigAt = f0; f._sigCd = moveWindupFrames("shock_zap"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "impact", x: t.x, y: t.y, color: "#ffee33", radius: 0.5, life: 16 });
     _evoSay(f, "SHOCK ZAP", "#fff27a");

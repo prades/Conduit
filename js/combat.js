@@ -87,20 +87,24 @@ function applyBurn(t, perTick, frames) {   // `perTick`: the damage of one tick
 // PRIMARY_STATUS_CHANCE, each hit on its own roll. Stun and blind never take on a boss. The lengths and the burn's tick are the agent's, PROVISIONAL; a form can carry more than one later. Technicians have no
 // primary attack and carry none. Blind is the game's (a lower chance of hitting, js/helpers.js BLIND_MISS); poison is the weakness (it bites for 60% for the time).
 const PRIMARY_STATUS_CHANCE = 0.25;
-const PRIMARY_STATUS = { thunderhead: "stun", electroskink: "stun", staticorb: "stun", jellyram: "stun", maw: "slow", rimestar: "slow", hornshell: "slow", sundew: "slow",
+// THE STATUS BUFFS (build 2026-11-14o; the owner, 2026-11-14, asked for ways to lift the forms under their band on balance.html, "make status the buff", and picked one for each): the HORNSHELL's shot GLITCHES
+// (it slowed); SUNDEW's sting POISONS on EVERY hit (it slowed, a quarter of the time); the FROST MAW's bite slows HALF the time (a quarter). PRIMARY_STATUS_ODDS: a form's own chance, where it is not the usual one.
+const PRIMARY_STATUS_ODDS = { sundew: 1, maw: 0.5 };
+const PRIMARY_STATUS = { thunderhead: "stun", electroskink: "stun", staticorb: "stun", jellyram: "stun", maw: "slow", rimestar: "slow", hornshell: "glitch", sundew: "poison",
     seeper: "poison", rotshard: "poison", shrub: "poison", voidstar: "blind", mimic: "blind", embercowl: "burn", quillstone: "burn" };
 const PRIMARY_STATUS_FX = { stun: { frames: 45, text: "STUN", col: "#ffee55" }, slow: { frames: 120, factor: 0.6, text: "SLOW", col: "#aeeaff" }, poison: { frames: 180, factor: 0.6, text: "POISON", col: "#8cff5a" },
-    blind: { frames: 60, text: "BLIND", col: "#cfd8e3" }, burn: { frames: 180, tick: 0.05, text: "BURN", col: "#ff8844" } };
+    blind: { frames: 60, text: "BLIND", col: "#cfd8e3" }, glitch: { frames: 30, text: "GLITCH", col: "#fff27a" }, burn: { frames: 180, tick: 0.05, text: "BURN", col: "#ff8844" } };
 function primaryStatusOf(f) { const id = typeof dmgFormId === "function" ? dmgFormId(f) : (f && f.evolved); return id ? (PRIMARY_STATUS[id] || null) : null; }
 function primaryStatusOnHit(src, t, rnd) {   // called by applyDamage for a hit of `which` "main" from a follower of yours that landed (rnd: a draw, for tests)
     if (!src || !src.isFollower || src.team !== "green" || !t || t.dead || !(t.health > 0) || t.team === "green" || t.isClone) return null;
     const kind = primaryStatusOf(src); if (!kind) return null;
-    if (((rnd || Math.random)()) >= PRIMARY_STATUS_CHANCE) return null;
+    { const id = typeof dmgFormId === "function" ? dmgFormId(src) : src.evolved, odds = PRIMARY_STATUS_ODDS[id] !== undefined ? PRIMARY_STATUS_ODDS[id] : PRIMARY_STATUS_CHANCE; if (((rnd || Math.random)()) >= odds) return null; }
     const fx = PRIMARY_STATUS_FX[kind], boss = !!(t.bossId || t.bossName || t.isBoss); let fresh = false;
     if (kind === "stun") { if (boss) return null; fresh = applyStun(t, fx.frames); }
     else if (kind === "blind") { if (boss) return null; fresh = !(t.blinded > 0); t.blinded = Math.max(t.blinded || 0, fx.frames); }
     else if (kind === "slow") { fresh = !(t.slowed > 0); applySlow(t, fx.frames, fx.factor); }
     else if (kind === "poison") fresh = applyWeaken(t, fx.frames, fx.factor);
+    else if (kind === "glitch") fresh = applyGlitch(t, fx.frames);
     else if (kind === "burn") fresh = applyBurn(t, (src.power || 10) * fx.tick, fx.frames);
     if (fresh && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: fx.text, color: fx.col, life: 40, vy: -0.05, size: 10 });
     return kind;

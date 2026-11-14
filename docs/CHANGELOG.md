@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14o` · branch `claude/balance-rerun-2` · the status buffs: six forms under their band
+- **The ask** (the owner, 2026-11-14: "List, make status the buff"; then a pick for each form from the agent's lists).
+- **HORNSHELL:** its shot's status is **GLITCH** (0.5 s; it slowed), a quarter of its hits as before.
+- **RIMESTAR:** an icicle of ICICLE VOLLEY that hits **freezes** its target, a stun of 0.75 s (it slowed it to 60% for 2 s); a boss is not frozen.
+- **GOO PROXY:** the enemy it swaps with in PHASE SWAP is **glitched 1.5 s**.
+- **SUNDEW:** its sting **poisons on every hit** (it slowed, a quarter of the time).
+- **FROST MAW:** its bite slows **half the time** (a quarter).
+- **HOVER SHELL:** SHOCK ZAP **arcs** to the nearest other enemy within 2.5 tiles of its target: glitched 0.5 s too, not hurt.
+- **What the trial says** (run again): Goo Proxy 19.8 → 26.1 (at its band's edge), Hover Shell 25.3 → 28.0 (in its band), SUNDEW 38 → 41.3, Rimestar 23.9 → 26.4, Hornshell 18.9 → 17.5, Frost Maw 57 → 57. **The agent's estimates were too high for the Rimestar and the Hornshell** (a short freeze or glitch in place of a long slow is worth about the same on the page), and the Maw's best mode is CHOMP, which its bite's chance does not touch. Still under their bands: Hornshell 42%, SUNDEW 52%, Rimestar 63%, Frost Maw 72%.
+- The lengths (0.5 s, 0.75 s, 1.5 s, 2.5 tiles) are the agent's, provisional.
+- `js/combat.js` (`PRIMARY_STATUS`, `PRIMARY_STATUS_ODDS`, the glitch), `js/evolution.js`, `js/unitinfo.js`, `tests/evolution.js`, `tests/ninemoves.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
 ### Build `2026-11-14n` · branch `claude/balance-rerun-2` · the first balance pass: four moves brought down
 - **The ask** (the owner, 2026-11-14: "List ways to nerf each one"; of the agent's pick for each, **"Go with your picks"**).
 - **ERUPTION** (Seeper): 1.8 → **1.2 ×** its attack (its area and its armour break as they were). Score 149.4 → 99.6.

@@ -346,8 +346,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const out = { forms: {}, alt: 0, camper: 0, boss: 0, bossSlow: 0, k: PRIMARY_STATUS_CHANCE };
             const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.health = p.maxHealth = 1e9; p.update = () => {}; actors.push(p); return p; };
             const mk = (id, role, el) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.role = role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); return f; };
-            const flag = { stun: t => t.stunned > 0, slow: t => t.slowed > 0, poison: t => t.toxicWeakened > 0, blind: t => t.blinded > 0, burn: t => t.burning > 0 };
-            const clear = t => { t.stunned = t.slowed = t.toxicWeakened = t.blinded = t.burning = 0; t.health = t.maxHealth; };
+            const flag = { stun: t => t.stunned > 0, slow: t => t.slowed > 0, poison: t => t.toxicWeakened > 0, blind: t => t.blinded > 0, burn: t => t.burning > 0, glitch: t => t.glitched > 0 }; out.odds = PRIMARY_STATUS_ODDS;
+            const clear = t => { t.stunned = t.slowed = t.toxicWeakened = t.blinded = t.burning = t.glitched = 0; t.health = t.maxHealth; };
             const t = mkP(30, 30), boss = mkP(31, 30); boss.isBoss = true;
             for (const id of Object.keys(PRIMARY_STATUS)) { const d = EVOLUTIONS[id], f = mk(id, d.role, d.element); let n = 0; for (let i = 0; i < 400; i++) { clear(t); applyDamage(t, 5, f, null, false, false, DMG_HIT_MAIN); if (flag[PRIMARY_STATUS[id]](t)) n++; } out.forms[id] = [PRIMARY_STATUS[id], n];
                 let a = 0; for (let i = 0; i < 200; i++) { clear(t); applyDamage(t, 5, f, null, false, false, DMG_HIT_ALT); if (flag[PRIMARY_STATUS[id]](t)) a++; } out.alt += a; }
@@ -355,7 +355,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const th = mk('thunderhead', 'sniper', 'electric'), mf = mk('maw', 'brawler', 'ice'); for (let i = 0; i < 200; i++) { clear(boss); applyDamage(boss, 5, th, null, false, false, DMG_HIT_SHOT); if (boss.stunned > 0 || boss.blinded > 0) out.boss++; clear(boss); applyDamage(boss, 5, mf, null, false, false, DMG_HIT_MAIN); if (boss.slowed > 0) out.bossSlow++; }
             actors.forEach(a => { if (a instanceof Predator) a.dead = true; }); return out; })()`);
         same(Object.keys(r.forms).length, 15, 'fifteen forms'); same(r.k, 0.25, 'PRIMARY_STATUS_CHANCE');
-        for (const id in r.forms) ok(r.forms[id][1] > 65 && r.forms[id][1] < 135, id + ' (' + r.forms[id][0] + ') landed ' + r.forms[id][1] + ' of 400');
+        for (const id in r.forms) { const odds = r.odds[id] !== undefined ? r.odds[id] : 0.25, want = 400 * odds; ok(odds === 1 ? r.forms[id][1] === 400 : Math.abs(r.forms[id][1] - want) < 35 + want * 0.05, id + ' (' + r.forms[id][0] + ', ' + odds * 100 + '%) landed ' + r.forms[id][1] + ' of 400'); }
+        same(JSON.stringify(r.odds), JSON.stringify({ sundew: 1, maw: 0.5 }), 'the forms with a chance of their own (build 2026-11-14o, the status buffs: SUNDEW\'s sting poisons every hit, the Frost Maw\'s bite slows half the time)'); same([r.forms.hornshell[0], r.forms.sundew[0], r.forms.maw[0]].join(), 'glitch,poison,slow', 'the Hornshell\'s shot glitches, SUNDEW\'s sting poisons, the Maw\'s bite slows');
         same(r.alt, 0, 'a move\'s hit added a status'); same(r.camper, 0, 'a technician added a status'); same(r.boss, 0, 'a boss was stunned or blinded'); ok(r.bossSlow > 20, 'a boss can be slowed: ' + r.bossSlow);
     });
 
@@ -398,6 +399,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             frame++; const ok = sweetScent(f); const o = { ok, a: a.toxicWeakened || 0, f: a.toxicWeakenFactor, b: b.toxicWeakened || 0, boss: boss.toxicWeakened || 0, far: far.toxicWeakened || 0, lured: !!a._scentBy, type: DMG_FORM.sundew.alt, k: [SCENT_POISON_FRAMES, SCENT_POISON_FACTOR].join() };
             [a, b, boss, far].forEach(p => p.dead = true); return o; })()`);
         same(r.ok, true, 'it fired'); same(r.lured, true, 'lured'); same(r.a, 180, 'the one in reach poisoned'); same(r.b, 180, 'another'); same(r.f, 0.6, 'its factor'); same(r.boss, 0, 'a boss poisoned'); same(r.far, 0, 'one out of reach poisoned'); same(r.type, 'elemental', 'its type'); same(r.k, '180,0.6', 'its numbers');
+    });
+
+    check('THE STATUS BUFFS ON THREE MOVES (build 2026-11-14o; the owner, 2026-11-14: "make status the buff", and a pick for each): PHASE SWAP glitches the enemy it swaps with (1.5 s); SHOCK ZAP arcs to the nearest other enemy within 2.5 tiles of its target, glitched too and not hurt, and not to one farther; an icicle freezes what it hits, never a boss', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const out = {};
+            const mkP = (x, y) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            const mk = (id) => { const d = EVOLUTIONS[id]; spawnFollowerAtCrystal(d.element); const f = followers[followers.length - 1]; f.role = d.role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.energy = [d.element, d.element, d.element]; return f; };
+            const d = p => 1e6 - p.health, clear = () => actors.forEach(a => { if (a instanceof Predator) a.dead = true; }), gone = f => { followers.splice(followers.indexOf(f), 1); actors = actors.filter(x => x !== f); };
+            const keepStand = typeof facilityStandOk === 'function' ? facilityStandOk : null; if (keepStand) facilityStandOk = () => true;
+            try {
+                { const f = mk('gooproxy'), a = mkP(22, 2), b = mkP(26, 2); frame++; out.swap = { fired: phaseSwap(f), a: a.glitched || 0, b: b.glitched || 0, k: SWAP_GLITCH }; clear(); gone(f); }
+                { const f = mk('hovershell'), a = mkP(22, 2), b = mkP(23.5, 2), far = mkP(28, 2); frame++; out.zap = { fired: shockZap(f), a: a.glitched || 0, b: b.glitched || 0, far: far.glitched || 0, hurtA: d(a) > 0, hurtB: d(b), arc: ZAP_ARC }; clear(); gone(f); }
+                { const boss = mkP(22, 2); boss.isBoss = true; const f = mk('rimestar'); frame++; icicleVolley(f); for (let i = 0; i < 80 && followerProjectiles.length; i++) { frame++; if (typeof updateFollowerProjectiles === 'function') updateFollowerProjectiles(); else render(); } out.boss = { stun: boss.stunned || 0, slow: boss.slowed || 0, hit: d(boss) > 0 }; clear(); gone(f); }
+            } finally { if (keepStand) facilityStandOk = keepStand; }
+            return out; })()`);
+        same(r.swap.fired, true, 'PHASE SWAP did not fire'); same(r.swap.a, 90, 'the swapped enemy\'s glitch'); same(r.swap.b, 0, 'PHASE SWAP glitched another enemy');
+        same(r.zap.fired, true, 'SHOCK ZAP did not fire'); same(r.zap.a, 30, 'its target\'s glitch'); same(r.zap.b, 30, 'the arc\'s glitch'); same(r.zap.far, 0, 'it arced to one farther than ' + r.zap.arc + ' tiles'); same(r.zap.hurtA, true, 'its target was not hurt'); same(r.zap.hurtB, 0, 'the arc hurt the second enemy');
+        ok(r.boss.hit, 'the icicles did not reach the boss'); same(r.boss.stun, 0, 'an icicle froze a boss');
     });
 
     check('BLIND is a lower chance of hitting (build 2026-11-13h; the owner: "Blinded doesn\'t mean that they don\'t hit. It means that they have a lower chance of hitting"; chosen: change blind everywhere, 50%): a blinded creature keeps its target and still attacks, each hit it deals misses about half the time, a hit that is reflected never misses, an unblinded creature never misses', () => {

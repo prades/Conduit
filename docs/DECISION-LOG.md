@@ -128,6 +128,16 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The status buffs (six forms under their band)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun-2`, `2026-11-14o`
+- **Status:** Approved (the owner's pick for each)
+- **Context:** the owner asked that the forms under their band be lifted by statuses, not by damage ("make status the buff").
+- **Decision:** Hornshell's shot glitches; Rimestar's icicles freeze 0.75 s; Goo Proxy's PHASE SWAP glitches the swapped enemy 1.5 s; SUNDEW's sting poisons every hit; the Frost Maw's bite slows half the time; the Hover Shell's SHOCK ZAP arcs to a second enemy.
+- **Result:** Goo Proxy and Hover Shell reach their band; Hornshell, SUNDEW, Rimestar and the Frost Maw are still under theirs.
+- **Open:** what lifts those four; SUNDEW's heal is not measured by the trial.
+- **Affects:** js/combat.js, js/evolution.js, js/unitinfo.js, balance.html.
+
 ## DECISION: The first balance pass (four moves brought down)
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun-2`, `2026-11-14n`
