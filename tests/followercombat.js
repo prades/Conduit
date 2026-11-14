@@ -232,7 +232,7 @@ function measure(w, h) {
             __fire(f); const d = __dmg;
             return { name: MOVES.static_rush.name, fn: MOVES.static_rush.fn.toString(), nums: [MANTA_RANGE, moveWindupFrames("static_rush"), MANTA_MULT, MANTA_CHAIN, MANTA_HOP, MANTA_CHAIN_SHARE, MANTA_STUN], def: evoMoveOf(f).id, ids: evoMoveIds(EVOLUTIONS.staticorb),
                      dist: Math.hypot(a.x - f.x, a.y - f.y), hit: [d(a), d(b), d(c), d(far)], stun: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd, legacy: ['manta', 'prism', 'voltring'].map(k => EVOLUTIONS[k].move) }; })()`);
-        same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,150,2.4,2,2.2,0.6,45', 'its numbers (unchanged but its time, halved in build 2026-11-10a: 300 frames before)');
+        same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,150,2.4,2,2.2,0.4,45', 'its numbers (its time halved in build 2026-11-10a: 300 frames before; its chain 40% a jump since build 2026-11-14n, the first balance pass: 60% before)');
         same(r.def, 'static_rush', 'the default'); same(r.ids.join(), 'static_rush,capacitor_discharge', 'its moves (PINBALL superseded by CAPACITOR DISCHARGE, build 2026-11-07ss)');
         ok(Math.abs(r.dist - 0.8) < 1e-6, 'the dash stops 0.8 short: ' + r.dist); ok(r.hit[0] > r.hit[1] && r.hit[1] > 0 && r.hit[2] > 0 && r.hit[3] === 0, 'hit and shocks: ' + r.hit); ok(r.stun, 'not stunned'); same(r.cd, 150, 'its wait (half the old 300 since build 2026-11-10a)');
         same(r.legacy.join(), 'SONIC ROLL,SONIC ROLL,SONIC ROLL', 'the retired electric brawlers');
