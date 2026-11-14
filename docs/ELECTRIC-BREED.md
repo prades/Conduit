@@ -108,7 +108,7 @@ Nothing open here: the roly-poly's proposals (§2, 5 to 7) and the larva's (§2,
 ## 11. Open questions
 
 1. ~~**Your own melee**~~ **answered 2026-11-14:** nothing against it, as built (§7).
-2. **Its emblem** on the enemy card: a race emblem to draw (one piece first, for approval), or none.
+2. **Its emblem** on the enemy card: the owner, 2026-11-14: "Make the roly-poly's card emblem". Four drafts in the approved emblems' manner (`design/cards/rolypoly-emblem-drafts.js`: A top-down, B curled, C profile, D top-down with the core), shown large and on its real enemy card; **waiting for the owner's pick**. Not in the game until then.
 3. ~~**The larva boss's rules**~~ **answered 2026-11-14:** the proposal, "Build it" (§2, 9).
 4. **Names** in the game: ROLY-POLY is provisional. ~~The boss's~~ **named 2026-11-14:** VOLTWYRM (the owner's pick of the names offered, §2, 10); its kind stays DIVING BEETLE LARVA. Its spelling (VOLTWYRM, as offered; the owner wrote "Voltworm") is the agent's reading.
 5. **The curl's details** (the agent's readings): its 12 s rest counts from uncurling; a glitch does not stop it curling.
