@@ -72,7 +72,7 @@ function render(D, M) {
         const fd = M.foeDps || 0, byId = {}; for (const f of D.forms) byId[f.id] = f;
         const sup = m => fd * (m.denied || 0) / 20, pts = m => m.dmg + m.heal + m.assist + sup(m);   // (SUPPORT: the statuses it distributes, the owner, 2026-11-14; the damage a guard or a decoy takes is shown and not added: the lure already counts those enemies)
         const forms = M.forms.filter(r => byId[r.id]).map(r => { const modes = r.modes.map(m => Object.assign({ pts: pts(m) }, m)), best = modes.reduce((a, b) => b.pts > a.pts ? b : a, modes[0]), main = modes.find(m => m.mode === 'main'); return { id: r.id, name: r.name, role: byId[r.id].role, modes, best, main }; });
-        // THE TARGETS ARE FIXED (build 2026-11-14s; the owner, 2026-11-14: "Freeze the targets", at the agent's numbers, the roles' middle scores as they stood): they were the middle score of each role's forms, read
+        // THE TARGETS ARE FIXED (build 2026-11-14t; the owner, 2026-11-14: "Freeze the targets", at the agent's numbers, the roles' middle scores as they stood): they were the middle score of each role's forms, read
         // again at every trial, so lifting some forms raised the bar for the rest. The middles are still worked out and shown beside them.
         const TARGETS = { BRAWLER: 79, MAGE: 44, TECHNICIAN: 35 };
         const middle = {}; for (const role of ['BRAWLER', 'MAGE', 'TECHNICIAN']) { const v = forms.filter(f => f.role === role).map(f => f.best.pts).sort((a, b) => a - b); middle[role] = v.length ? (v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2) : 0; }

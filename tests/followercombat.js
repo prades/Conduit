@@ -776,7 +776,7 @@ function measure(w, h) {
         ok(r.egg.a > 0 && r.egg.b === 0 && r.egg.will === 20, 'the unevolved Brawler: ' + JSON.stringify(r.egg)); same(r.eggEl, 'fire', 'its element');
         ok(r.qs.a > 0 && r.qs.b > 0 && r.qs.will === 19, 'the Quillstone\'s ring of fire: ' + JSON.stringify(r.qs));
         same(r.mult, 0.45, 'BLOOM\'s hit'); same(r.sting, 0.63, 'SUNDEW\'s sting');
-        for (const id of ['sundew', 'coralcrab']) { const x = r[id]; ok(x.full.a > 0 && x.full.b === 0 && x.full.will === 19, id + ' with WILL: ' + JSON.stringify(x.full)); same(x.ratio, id === 'sundew' ? 2.52 : 1.8, id + '\'s hit against its plain hit (SUNDEW\'s sting 0.63 x its attack since build 2026-11-14s, "buff the sting"; STONEPETAL\'s 0.45)'); same(x.mended, true, id + '\'s hit MENDed'); }
+        for (const id of ['sundew', 'coralcrab']) { const x = r[id]; ok(x.full.a > 0 && x.full.b === 0 && x.full.will === 19, id + ' with WILL: ' + JSON.stringify(x.full)); same(x.ratio, id === 'sundew' ? 2.52 : 1.8, id + '\'s hit against its plain hit (SUNDEW\'s sting 0.63 x its attack since build 2026-11-14t, "buff the sting"; STONEPETAL\'s 0.45)'); same(x.mended, true, id + '\'s hit MENDed'); }
     });
 
     console.log(failures ? `\n${failures} FAILED` : '\nall passed');

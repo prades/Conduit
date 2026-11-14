@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14t` · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger
+- **The ask** (the owner, 2026-11-14: **"Freeze the targets and buff the sting"**).
+- **The targets are fixed** on `balance.html`: **Brawler 79, Mage 44, Technician 35** (the roles' middle scores as they stood). They were the middle score of each role's forms at every trial, so lifting some forms raised the bar for the rest. The middles are still shown beside them.
+- **SUNDEW's NECTAR STING is 0.63 × its attack** (0.45 × before: 40% harder; `ELEMENT_ATTACKS.blossom.sting`). STONEPETAL's crushing head keeps 0.45 ×.
+- **What the trial says** (run again): SUNDEW 41.8 → **54.5** (its sting; with its heal in BOTH, 54.4), 69% of the Brawler target, its band starting at 59.3: closer, still under.
+- `js/elements.js`, `js/unitinfo.js`, `js/infodex.js`, `tools/balance.js`, `tests/followercombat.js`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
 ### Build `2026-11-14s` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM's fight, diagnosed: a lighter battle view, steady facings
 - **Asked** (the owner, 2026-11-14): "The game runs pretty slow, or feels like it when I'm in the electrical domain fighting the voltwyrm. Also its movement and the movement of the followers looks glitched when they flip back and forth with their direction. Diagnostics are required".
 - **The diagnostics** (the real page in desktop Chrome at 1180×820, the size an iPad Air draws; each part of the frame timed, a CPU profile, every unit's facing each frame): (1) in any fight the battle view's copies of the screen were most of the frame on HIGH (about 21 ms a picture in VOLTWYRM's fight: 31 pictures a second), and a step with no picture (a device catching up) made them all again, so a fight that fell behind copied twice; (2) VOLTWYRM picks whom to bite five times a second, and whoever hit it last counts for more than keeping its target, so with two brawlers hitting it in turn it turned between them every 10 to 20 frames: its heading wavered from 16 to 32 degrees, across the line at 22.5 between two of its eight pictures, and the whole picture flipped 45 degrees back and forth; (3) its brawlers stood 1.4 tiles from its middle, inside its body (1.8 round), packed and jostling, and a follower thrown by SHOCK RING turned to face the throw, then back.
@@ -14,14 +22,6 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Also:** the ghost test's list of drawing-only state lacked SEEDFALL's and HEXFIRE's caches (`_bdFrame`, `_hxFrame`, since 2026-11-12), so it failed on and off, when they were drawn: added. And the frame budget's 22,000 canvas operations sat inside its scene's own noise (21,744 to 22,194 across runs; the code before measured 21,811 to 21,939): 22,500 (`tests/perf.js`). And, merging main: build `2026-11-14o`'s check that an icicle never freezes a boss (`tests/evolution.js`) passed by luck: off the map, where its scene stands, nothing has a floor, so every icicle stopped on its first step, and the boss was hurt only when a Brawler left by the checks before struck it that frame (on and off, 2 runs in 12). In its open field shots now fly as sight already did, only the Rimestar and the boss are in the frame, and the check asks that the icicles slowed the boss (a boss is slowed, not frozen).
 - `js/battleview.js`, `js/draw.js`, `js/larva.js`, `js/rolypoly.js`, `js/evolution.js`, `js/npc.js` (`NPC_FACE`, the Brawler's reach); `tests/larva.js` (4 checks), `tests/battlelook.js`, `tests/rolypoly.js`, `tests/ghost.js`; `COMBAT.md`, `BATTLE-LOOK.md`, `ELECTRIC-BREED.md` §10.
 - Not measured on an iPad (GRAPHICS: LOW skips the blur; Settings' PERFORMANCE readout shows a frame's logic, drawing and catch-up there). Not playtested.
-
-### Build `2026-11-14s` · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger
-- **The ask** (the owner, 2026-11-14: **"Freeze the targets and buff the sting"**).
-- **The targets are fixed** on `balance.html`: **Brawler 79, Mage 44, Technician 35** (the roles' middle scores as they stood). They were the middle score of each role's forms at every trial, so lifting some forms raised the bar for the rest. The middles are still shown beside them.
-- **SUNDEW's NECTAR STING is 0.63 × its attack** (0.45 × before: 40% harder; `ELEMENT_ATTACKS.blossom.sting`). STONEPETAL's crushing head keeps 0.45 ×.
-- **What the trial says** (run again): SUNDEW 41.8 → **54.5** (its sting; with its heal in BOTH, 54.4), 69% of the Brawler target, its band starting at 59.3: closer, still under.
-- `js/elements.js`, `js/unitinfo.js`, `js/infodex.js`, `tools/balance.js`, `tests/followercombat.js`, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`, the Bible, `design/balance-trial.json`, `balance.html`.
-- Not playtested.
 
 ### Build `2026-11-14r` (stamped 14q on its branch) · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
 - **The ask** (the owner, 2026-11-14: "Work on buffs"; asked, chosen: the Hornshell **"Faster ECHO PULSE"**, SUNDEW **"Measure the heal first"**, the Frost Maw and the Goo Proxy, under their bands by less than a point, **"Leave both"**).

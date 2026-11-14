@@ -314,7 +314,7 @@ const ELEMENT_ATTACKS = {
     // ── BLOOM (build 2026-11-09b; the owner, 2026-11-09: "Full-strength hit") ─────
     // Its evolved Brawler's and Technician's everyday hit (SUNDEW's NECTAR STING, STONEPETAL's crushing head): `mult` × its attack on the one it hits, core's single-target number, no effect of
     // its own (a BLOOM hit MENDs: elementMend, called by applyDamage). It was the plain hit (a quarter of its attack) while BLOOM had no move. The number the agent's, provisional.
-    // SUNDEW's NECTAR STING is `sting` x its attack (build 2026-11-14s; the owner, 2026-11-14: "buff the sting", of the agent's "about 40% harder": 0.45 x 1.4): SUNDEW was at 55% of the Brawlers' target on
+    // SUNDEW's NECTAR STING is `sting` x its attack (build 2026-11-14t; the owner, 2026-11-14: "buff the sting", of the agent's "about 40% harder": 0.45 x 1.4): SUNDEW was at 55% of the Brawlers' target on
     // balance.html with its heal measured. STONEPETAL's crushing head keeps `mult`.
     blossom: {
         mult: 0.45, sting: 0.63,
