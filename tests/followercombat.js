@@ -772,11 +772,11 @@ function measure(w, h) {
             __clear(); const qs = __fol('fire', 'brawler', 'quillstone'); o.qs = swing(qs, 20);
             for (const id of ['sundew', 'coralcrab']) { __clear(); const E = EVOLUTIONS[id], f = __fol(E.element, E.role, id), hurt = __fol('fire', 'brawler', 'maw'); hurt.x = f.x + 1; hurt.y = f.y + 1; hurt.health = hurt.maxHealth * 0.5; const h0 = hurt.health;
                 const full = swing(f, 20), plain = swing(f, 0); o[id] = { full, plain, ratio: Math.round(full.a / plain.a * 1000) / 1000, mended: hurt.health > h0 }; }
-            o.mult = ELEMENT_ATTACKS.blossom.mult; return o; } finally { Math.random = keep; } })()`);
+            o.mult = ELEMENT_ATTACKS.blossom.mult; o.sting = ELEMENT_ATTACKS.blossom.sting; return o; } finally { Math.random = keep; } })()`);
         ok(r.egg.a > 0 && r.egg.b === 0 && r.egg.will === 20, 'the unevolved Brawler: ' + JSON.stringify(r.egg)); same(r.eggEl, 'fire', 'its element');
         ok(r.qs.a > 0 && r.qs.b > 0 && r.qs.will === 19, 'the Quillstone\'s ring of fire: ' + JSON.stringify(r.qs));
-        same(r.mult, 0.45, 'BLOOM\'s hit');
-        for (const id of ['sundew', 'coralcrab']) { const x = r[id]; ok(x.full.a > 0 && x.full.b === 0 && x.full.will === 19, id + ' with WILL: ' + JSON.stringify(x.full)); same(x.ratio, 1.8, id + '\'s hit against its plain hit'); same(x.mended, true, id + '\'s hit MENDed'); }
+        same(r.mult, 0.45, 'BLOOM\'s hit'); same(r.sting, 0.63, 'SUNDEW\'s sting');
+        for (const id of ['sundew', 'coralcrab']) { const x = r[id]; ok(x.full.a > 0 && x.full.b === 0 && x.full.will === 19, id + ' with WILL: ' + JSON.stringify(x.full)); same(x.ratio, id === 'sundew' ? 2.52 : 1.8, id + '\'s hit against its plain hit (SUNDEW\'s sting 0.63 x its attack since build 2026-11-14t, "buff the sting"; STONEPETAL\'s 0.45)'); same(x.mended, true, id + '\'s hit MENDed'); }
     });
 
     console.log(failures ? `\n${failures} FAILED` : '\nall passed');

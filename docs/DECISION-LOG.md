@@ -137,6 +137,15 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The balance targets are fixed; SUNDEW's sting is stronger
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/targets-sting`, `2026-11-14u`
+- **Status:** Approved ("Freeze the targets and buff the sting")
+- **Context:** the targets were each role's middle score, so they rose as forms were lifted; SUNDEW stood at 55% of the Brawler target with its heal measured.
+- **Decision:** the targets are Brawler 79, Mage 44, Technician 35, with a band of 25% either way, until the owner changes them. SUNDEW's NECTAR STING is 0.63 x its attack (0.45 x).
+- **Amends:** "The balance system (points and role bands)" (`2026-11-13u`): the target is no longer the middle score of the role.
+- **Affects:** tools/balance.js, js/elements.js, balance.html.
+
 ## DECISION: The status buffs (six forms under their band)
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun-2`, `2026-11-14o`
