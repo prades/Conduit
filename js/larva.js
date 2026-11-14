@@ -26,7 +26,7 @@ function larvaCell(a) {
         if (c.kind === "stomp") { const k = (f - c.t0) / Math.max(1, c.until - c.t0), every = k > 0.66 ? 3 : k > 0.33 ? 6 : 10; return Math.floor(Math.max(0, f - c.t0) / every) % 2 ? "w" + d + "_0" : "z" + d; }   // SHOCK RING's: its seams flash
     }
     if (S && S.unit === a && S.snapAt && f >= S.snapAt && f - S.snapAt < LARVA.shut) return "s" + d;   // the snap: its jaws shut
-    const moving = a.state !== "attack" && a.state !== "idle" && !a.dead && !a.bossAsleep;
+    const moving = !a.dead && !a.bossAsleep && (typeof creatureWalking === "function" ? creatureWalking(a) : a.state !== "attack" && a.state !== "idle");   // (walking while it steps, a chase too: js/bugs3d.js)
     const w = moving ? ((Math.floor((a.walkCycle || 0) * LARVA.gait / (Math.PI * 2) * LARVA.frames) % LARVA.frames) + LARVA.frames) % LARVA.frames : 0;
     return "w" + d + "_" + w;
 }

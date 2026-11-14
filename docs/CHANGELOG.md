@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14i` · branch `claude/start-game-project-HSh7Z` · in a fight, the enemies' feet move as they close in
+- **The report** (the owner, 2026-11-14): "The enemies don't move their feet when they're in battle and they're nearing an enemy or a follower or target."
+- **The cause:** a creature is "attack" from the moment it locks onto what it is after, and it chases it in that state, step by step (js/predator.js); every drawing of its legs read "attack" as standing to bite, so its legs stood still for the whole approach.
+- **The fix:** `creatureWalking` (js/bugs3d.js): locked on or idle, a creature walks while its walk cycle moves (each step of a chase moves it), and for 6 frames after; standing to bite, it stands. Hunting or wandering, as before. Every drawing of a creature's legs asks it: the 3-D bodies (ant, scorpion, spider, mantis, moth), the beetle, the older legs, the roly-poly's sheet and VOLTWYRM's.
+- `js/bugs3d.js`, `js/beetle3d.js`, `js/draw.js`, `js/rolypoly.js`, `js/larva.js`; `tests/bugs3d.js` (an ant locked onto a follower walks every frame of its approach and stands to bite; every drawing asks the same).
+- Seen in the real page (an ant's approach, four moments); not playtested.
+
 ### Build `2026-11-14h` · branch `claude/start-game-project-HSh7Z` · the roly-poly's card emblem
 - **The ask** (the owner, 2026-11-14): "Make the roly-poly's card emblem"; of four drafts (A top-down, B curled, C profile, D top-down with the core): **"C"**.
 - The roly-poly's race emblem before its name on the enemy card: in profile, the arched shell in six plates over a row of legs, its head with no face, the antenna forward, the telson behind; in the enemy coral as the other races' (on the card, in its name's colour). Every race has its emblem now.

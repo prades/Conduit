@@ -118,6 +118,32 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
             const c = makeClone('ant', 'scout', 1, 1); c.dead = true; drawBug3D(c, 400, 300, rec); return fills; })()`);
         ok(r.includes('#33ff99') && !r.includes(run('SPECIES.ant.color')), 'fills ' + [...new Set(r)].slice(0, 12));
     });
+    // IN A FIGHT ITS FEET MOVE (build 2026-11-14i; the owner: "The enemies don't move their feet when they're in battle and they're nearing an enemy or a follower or target"): a creature locked on
+    // ("attack") chases what it is after step by step (js/predator.js); its legs were drawn still for the whole of it, the drawing reading "attack" as standing to bite
+    check('IN A FIGHT ITS FEET MOVE: an ant locked onto a follower walks its legs every frame it closes in, and stands them still once it stands to bite', () => {
+        const r = JSON.parse(run(`JSON.stringify((function(){
+            const A = _fp.F.byId.get('arena').bb, x = (A[0] + A[2]) / 2, y = (A[1] + A[3]) / 2;
+            const p = spawnCreature({ species: 'ant', className: 'scout', x: x, y: y, level: 5, state: 'wander' }); p.x = x; p.y = y; p.spawnProtection = 0;
+            spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.health = f.maxHealth = 1e6; f.stance = 'hold'; f.job = null; f.spawnProtection = 0;   // (prey: js/predator.js predatorPreyOk)
+            const put = () => { f.x = x + 4; f.y = y; }; put(); for (let i = 0; i < 3; i++) { frame++; p.update(); p.x = x; p.y = y; _bugFrame(p, 0, 0, 1, 0.16); }   // (drawn wandering first, as in play)
+            p.state = 'attack'; p.currentTarget = f; p.provoked = true;
+            const reach = p.biteReach || COMBAT.bite.reach, o = { chase: [], bite: [], wc0: p.walkCycle || 0 };
+            o.chaseStates = []; for (let i = 0; i < 600 && Math.hypot(f.x - p.x, f.y - p.y) > reach; i++) { frame++; p.update(); put(); o.chaseStates.push(p.state); o.chase.push(_bugFrame(p, 0, 0, 1, 0.16).moving); }
+            o.wc1 = p.walkCycle || 0; o.state = p.state; o.states = [...new Set(o.chaseStates || [])];
+            for (let i = 0; i < 40; i++) { frame++; p.update(); put(); o.bite.push(_bugFrame(p, 0, 0, 1, 0.16).moving); }
+            o.biteState = p.state; p.dead = true; f.dead = true; return o; })())`));
+        ok(r.chase.length > 20, 'it closed in in ' + r.chase.length + ' frames'); same(r.states.join(), 'attack', 'it chased locked on (its states while it closed in)');
+        ok(r.wc1 > r.wc0, 'its walk cycle did not move while it closed in');
+        same(r.chase.filter(m => !m).length, 0, 'frames its legs stood still while it closed in (of ' + r.chase.length + ')');
+        same(r.bite.slice(12).filter(Boolean).length, 0, 'frames its legs walked while it stood to bite (state ' + r.biteState + ')');
+    });
+    check('IN A FIGHT ITS FEET MOVE, every drawing: the beetle\'s, the older legs, the roly-poly\'s and VOLTWYRM\'s sheets ask creatureWalking; a roly-poly locked on and stepping cycles its walk, standing it stops', () => {
+        for (const f of ['js/beetle3d.js', 'js/draw.js', 'js/rolypoly.js', 'js/larva.js']) ok(/creatureWalking\((actor|a)\)/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')), f + ' does not ask creatureWalking');
+        const r = JSON.parse(run(`JSON.stringify((function(){ const S = SPECIES.rolypoly, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 5, 5); p.speciesName = 'rolypoly'; p.state = 'attack'; p.dirX = 1; p.dirY = 0;
+            const seen = {}; for (let i = 0; i < 40; i++) { frame++; p.walkCycle = (p.walkCycle || 0) + 0.4; seen[rolyCell(p)] = 1; }
+            for (let i = 0; i < 10; i++) { frame++; rolyCell(p); } return { stepping: Object.keys(seen).sort(), standing: rolyCell(p) }; })())`));
+        same(r.stepping.join(), 'w0_0,w0_1,w0_2,w0_3', 'a roly-poly stepping in a fight'); same(r.standing, 'w0_0', 'a roly-poly standing in a fight');
+    });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);
