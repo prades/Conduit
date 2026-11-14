@@ -1,7 +1,9 @@
 // VOLTWYRM, THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; the owner, 2026-11-13: "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it"):
 // round 2's mech in look A, live seams (pale gunmetal armour, yellow energy in its joints, yellow lenses, lit jaw edges), from design/creatures/electric_breed_examples.js (larvaMech), baked for the game.
+// Redesigned with the owner, 2026-11-14 (build 2026-11-14m; docs/ELECTRIC-BREED.md §11): tail A (thicker and wider, three talons at its end), leg draft 3 (strut legs, one hooked claw on each
+// foot) and a slightly more angular head: LOOK below. The drafts that led there stay as options (TAILS, the plates, LEGS; design/creatures/voltwyrm_tail_studies.js draws them).
 // Variants, facing d (the game's heading d * 45 degrees; 0 is the game's +x, down-right on the screen):
-//   'w<d>_<f>' walking, frame f of LV_FRAMES: its six legs paddle in two tripods (a quarter of a stroke a frame) and its body sways a little;
+//   'w<d>_<f>' walking, frame f of LV_FRAMES: its six legs step in two tripods (a quarter of a stroke a frame) and its body sways a little;
 //   'o<d>' its jaws wide and their edges bright (SICKLE SNAP's warning); 's<d>' its jaws snapped shut (the snap); 'z<d>' its seams flashing, sparks over its back (SHOCK RING's warning).
 // THE SIZE (the agent's, provisional): LV_SCALE makes it about twice THE ANT QUEEN's length on the floor (about 4.5 tiles, jaws to tail); its armoured body, head to tail, is 3.6 tiles, so the
 // boss's body reach (bodyR 1.8 tiles, js/bosses.js) is half of it. The model is shifted so the ground point (the creature's place) is under the middle of that body (LV_MID).
@@ -51,7 +53,7 @@ PROPS.larva = (() => {
 
   // THE TAIL (the owner, 2026-11-14: "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from
   // Pokemon"): drafts, each a thicker and wider tail (its last segments taper less and spread wider) with claws of our own at its end, heavy, pale and hooked (the reference's spirit, not its
-  // shapes); 'prongs' is the tail as approved in look A (twin spikes), the game's until a draft is picked. design/creatures/voltwyrm_tail_studies.js renders them.
+  // shapes); 'prongs' is the tail as approved in look A (twin spikes), the game's until build 2026-11-14m. The owner picked A. design/creatures/voltwyrm_tail_studies.js renders them.
   const TAILS = { prongs: { thick: false, end: 'prongs' }, A: { thick: true, end: 'talons3' }, B: { thick: true, end: 'grasp4' }, C: { thick: true, end: 'pincers' } };
   // THE PLATING (the owner, of the tail drafts, 2026-11-14: "A and make the tail and body need more plating on each segment"): drafts of more armour on every segment, body and tail, over its
   // shell: 'panels' three raised panels a segment (one over its back, one on each flank; gaps between them, two rivets each, its keel on the back panel); 'scales' two overlapping rows a
@@ -62,10 +64,11 @@ PROPS.larva = (() => {
   //   1 'blade'  the stance kept, the thigh and shin angular blades, the thigh running on past the knee to a point;
   //   2 'high'   the knees raised high and sharp over its back, the thigh's point longer, barbs down each shin's inner edge, a long thin claw;
   //   3 'strut'  up, out and down in hard bends (a squared-off arch), straight struts, pistons across the knee, a heavy claw.
-  // Every proportion here is the agent's, provisional.
+  // Every proportion here is the agent's, provisional. The owner picked 3 (circled, 2026-11-14: "I like this one").
   const LEGS = { 1: { look: 'blade', splay: [0.42, -0.05, -0.42] }, 2: { look: 'high', splay: [0.42, -0.05, -0.42] }, 3: { look: 'strut', splay: [0.42, -0.05, -0.42] } };
-  // one leg of a draft into g: hip its hip's point, out its plane's outward way (level), lift how high its foot is raised, LGd its LEGS entry, S its materials, edge its claw's lit edge
-  const legDraft = (g, S, edge, hip, out, lift, LGd) => {
+  // one leg of a draft into g: hip its hip's point, out its plane's outward way (level), lift how high its foot is raised, LGd its LEGS entry, S its materials (its claw's lit edge S.edge:
+  // only the jaws flare in SICKLE SNAP's warning)
+  const legDraft = (g, S, hip, out, lift, LGd) => {
     const O = new T.Vector3(hip.x, 0, hip.z), nz = new T.Vector3().crossVectors(out, UPV).normalize(), basis = new T.Matrix4().makeBasis(out, UPV, nz);
     const P3 = (p2, across) => O.clone().addScaledVector(out, p2[0]).setY(p2[1]).addScaledVector(nz, across || 0);   // a point of its plane (out from the hip, up from the floor)
     const flat = (pts, depth, mat, bev) => { const m = plate(pts, depth, bev == null ? 0.005 : bev, mat); m.quaternion.setFromRotationMatrix(basis); m.position.copy(O); g.add(m); };
@@ -79,7 +82,7 @@ PROPS.larva = (() => {
       for (let i = 0; i <= n; i++) { const t = i / n, ph2 = th0 + (th1 - th0) * t, w = w0 * Math.max(0.06, 1 - Math.pow(t, 1.35)) / 2, px = cx - R * Math.sin(ph2), py = cy + R * Math.cos(ph2), nx = -Math.sin(ph2), ny = Math.cos(ph2);
         outer.push([px + nx * w, py + ny * w]); inner.push([px - nx * w, py - ny * w]); }
       flat(outer.concat(inner.reverse()), depth, S.jaw, 0.004);
-      g.add(ptube(inner.slice(2, n - 1).reverse().map(p => arr(P3(p))), 0.0055, 0.0035, edge, 6)); };
+      g.add(ptube(inner.slice(2, n - 1).reverse().map(p => arr(P3(p))), 0.0055, 0.0035, S.edge, 6)); };
     const hip2 = [0, hip.y];
     if (LGd.look === 'blade' || LGd.look === 'high') { const hi = LGd.look === 'high';
       const knee2 = hi ? [0.1, hip.y + 0.25 + lift * 0.6] : [0.125, hip.y + 0.14 + lift * 0.6], ankle2 = hi ? [0.3, 0.12 + lift] : [0.25, 0.12 + lift];
@@ -143,12 +146,19 @@ PROPS.larva = (() => {
       for (const sg of [-1, 1]) ppiston(g, arr(lp(fa, len * 0.12, -ra * 0.36, sg * ra * 1.06 * wide(i))), arr(lp(fb, len * 0.12, -rb * 0.36, sg * rb * 1.06 * wide(i + 1))), 0.013, S); }
     // the head: a flat armoured wedge, a crest, six lenses a side in two rows, two stubby sensor horns, and the sickle jaws on hinges
     const f0 = frameAt(0), hg = G(); hg.position.copy(lp(f0, 0.12, 0.03, 0)); hg.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f0.fwd, f0.up, f0.side)); g.add(hg);
-    const outline = [[-0.13, 0.085], [-0.06, 0.15], [0.05, 0.175], [0.15, 0.155], [0.21, 0.09], [0.225, 0], [0.21, -0.09], [0.15, -0.155], [0.05, -0.175], [-0.06, -0.15], [-0.13, -0.085]];
-    hg.scale.setScalar(1.15); const hm = plate(outline, 0.09, 0.024, S.solid); hm.rotation.x = Math.PI / 2; hg.add(hm);
-    hg.add(at(cbox(0.26, 0.03, 0.07, 0.01, S.dark), -0.01, 0.055, 0));
-    for (const sg of [-1, 1]) { hg.add(at(cbox(0.15, 0.024, 0.045, 0.008, S.dark), 0.06, 0.052, sg * 0.07));
-      for (let row = 0; row < 2; row++) for (let c = 0; c < 3; c++) { const ex = 0.03 + c * 0.045, ez = sg * (0.112 + row * 0.034 - c * 0.006); hg.add(at(cyl(0.02, 0.02, 0.016, S.frame, 16), ex, 0.047, ez)); hg.add(ball(0.0145, S.lens, [ex, 0.057, ez])); }
-      const h0 = [0.16, 0.04, sg * 0.055], h1 = [0.23, 0.09, sg * 0.085], h2 = [0.3, 0.11, sg * 0.095]; hg.add(pseg(h0, h1, 0.02, 0.017, S.dark)); hg.add(ball(0.021, S.joint, h1)); hg.add(pseg(h1, h2, 0.016, 0.013, S.solid)); hg.add(ball(0.015, S.glow, h2));
+    // ANGULAR (TL.head 'angular'; the owner, of the legs drafts, 2026-11-14: "can you make the head slightly more angular"): the same head cut harder: its outline in straight facets
+    // to a prow (its edges chamfered flat), the crest and the plates beside it wedges pointing forward, the lenses in hexagonal cups, the horns faceted with diamond tips (the agent's reading, provisional)
+    const ang = TL.head === 'angular', facet = m => { m.geometry = m.geometry.toNonIndexed(); m.geometry.computeVertexNormals(); return m; };
+    const outline = ang ? [[-0.13, 0.09], [-0.05, 0.17], [0.1, 0.178], [0.198, 0.112], [0.26, 0], [0.198, -0.112], [0.1, -0.178], [-0.05, -0.17], [-0.13, -0.09]]
+      : [[-0.13, 0.085], [-0.06, 0.15], [0.05, 0.175], [0.15, 0.155], [0.21, 0.09], [0.225, 0], [0.21, -0.09], [0.15, -0.155], [0.05, -0.175], [-0.06, -0.15], [-0.13, -0.085]];
+    hg.scale.setScalar(1.15); const hm = plate(outline, 0.09, ang ? 0.02 : 0.024, S.solid); hm.rotation.x = Math.PI / 2; hg.add(hm);
+    if (ang) hg.add(plate([[-0.14, 0.04], [0.125, 0.04], [0.07, 0.072], [-0.1, 0.076], [-0.14, 0.064]], 0.07, 0.006, S.dark)); else hg.add(at(cbox(0.26, 0.03, 0.07, 0.01, S.dark), -0.01, 0.055, 0));
+    for (const sg of [-1, 1]) { if (ang) hg.add(at(plate([[-0.015, 0.04], [0.14, 0.04], [0.1, 0.063], [-0.015, 0.066]], 0.045, 0.005, S.dark), 0, 0, sg * 0.07)); else hg.add(at(cbox(0.15, 0.024, 0.045, 0.008, S.dark), 0.06, 0.052, sg * 0.07));
+      for (let row = 0; row < 2; row++) for (let c = 0; c < 3; c++) { const ex = 0.03 + c * 0.045, ez = sg * (0.112 + row * 0.034 - c * 0.006), cup = cyl(0.02, 0.02, 0.016, S.frame, ang ? 6 : 16); hg.add(at(ang ? facet(cup) : cup, ex, 0.047, ez)); hg.add(ball(0.0145, S.lens, [ex, 0.057, ez])); }
+      const h0 = [0.16, 0.04, sg * 0.055], h1 = [0.23, 0.09, sg * 0.085], h2 = [0.3, 0.11, sg * 0.095];
+      if (ang) { hg.add(facet(pseg(h0, h1, 0.021, 0.017, S.dark, 4))); hg.add(facet(at(new T.Mesh(new T.OctahedronGeometry(0.022), S.joint), h1[0], h1[1], h1[2]))); hg.add(facet(pseg(h1, h2, 0.016, 0.009, S.solid, 4)));
+        hg.add(at(new T.Mesh(new T.OctahedronGeometry(0.017), S.glow), h2[0], h2[1], h2[2])); }
+      else { hg.add(pseg(h0, h1, 0.02, 0.017, S.dark)); hg.add(ball(0.021, S.joint, h1)); hg.add(pseg(h1, h2, 0.016, 0.013, S.solid)); hg.add(ball(0.015, S.glow, h2)); }
       // a jaw: a heavy sickle blade on a hinge, broad at the root and sharp at the tip, a tooth on its inner edge, that edge lit; it turns on its hinge (jawA: wider, or snapped shut)
       hg.add(at(cyl(0.046, 0.046, 0.075, S.joint, 20), 0.18, 0, sg * 0.105)); hg.add(at(cyl(0.022, 0.022, 0.082, S.dark, 14), 0.18, 0, sg * 0.105));
       const hinge = G(); hinge.position.set(0.18, 0, sg * 0.105); hinge.rotation.y = -sg * jawA; hg.add(hinge);
@@ -162,7 +172,7 @@ PROPS.larva = (() => {
       for (const sg of [-1, 1]) { const kF = [0.07, 0, -0.07][k], aF = [0.15, -0.04, -0.2][k], kS = [0.19, 0.22, 0.22][k], aS = [0.31, 0.37, 0.39][k];
         const lph = TAU * ((ph + ((k + (sg > 0 ? 1 : 0)) % 2) * 0.5) % 1), sw = 0.26 * Math.sin(lph), lift = Math.max(0, Math.cos(lph)) * 0.035, hz = sg * r * 0.85;
         if (TL.legs) { const LGd = LEGS[TL.legs], al = LGd.splay[k] + sw, fh = new T.Vector3(f.fwd.x, 0, f.fwd.z).normalize();
-          legDraft(g, S, edge, lp(f, 0, -r * 0.35, hz), fh.multiplyScalar(Math.sin(al)).addScaledVector(f.side, sg * Math.cos(al)).normalize(), lift, LGd); continue; }
+          legDraft(g, S, lp(f, 0, -r * 0.35, hz), fh.multiplyScalar(Math.sin(al)).addScaledVector(f.side, sg * Math.cos(al)).normalize(), lift, LGd); continue; }
         const turn = (x, z) => { const dx = x, dz = z - hz, b = -sw * sg; return [dx * Math.cos(b) - dz * Math.sin(b), hz + dx * Math.sin(b) + dz * Math.cos(b)]; };
         const kn = turn(kF, sg * kS), an = turn(aF, sg * aS), fo = turn(aF + (aF - kF) * 0.35, sg * (aS + 0.05));
         const hip = lp(f, 0, -r * 0.35, hz), knee = lp(f, kn[0], 0.09 + lift * 0.6, kn[1]), ankle = lp(f, an[0], 0, an[1]), foot = lp(f, fo[0], 0, fo[1]); ankle.y = 0.07 + lift; foot.y = 0.004 + lift;
@@ -183,7 +193,7 @@ PROPS.larva = (() => {
         for (let i = 0; i <= n; i++) { const t = i / n; pts.push(a.clone().addScaledVector(out, L * t).addScaledVector(curl, L * hook * t * t)); rs.push(r0 * Math.max(0.08, 1 - Math.pow(t, 1.7))); }
         for (let i = 0; i < n; i++) { g.add(pseg(arr(pts[i]), arr(pts[i + 1]), rs[i], rs[i + 1], S.jaw, 14)); if (i) g.add(ball(rs[i], S.jaw, arr(pts[i]))); }
         const lit = []; for (let i = 1; i < n; i++) lit.push(arr(pts[i].clone().addScaledVector(ls, rs[i] * 0.86)));
-        g.add(ptube(lit, 0.0075, 0.0045, edge, 6)); g.add(ball(r0 * 1.18, S.joint, arr(pts[0]))); g.add(ball(r0 * 0.42, S.glow, arr(pts[0].clone().addScaledVector(UPV, r0 * 0.98)))); };
+        g.add(ptube(lit, 0.0075, 0.0045, S.edge, 6)); g.add(ball(r0 * 1.18, S.joint, arr(pts[0]))); g.add(ball(r0 * 0.42, S.glow, arr(pts[0].clone().addScaledVector(UPV, r0 * 0.98)))); };
       const end = lp(ft, -0.075, 0, 0), dir = (b, s, u) => back.clone().multiplyScalar(b).addScaledVector(ft.side, s).addScaledVector(UPV, u).normalize(), down = UPV.clone().negate();
       if (TL.end === 'talons3')   // A: three talons splayed like a raptor's foot, hooking down to the floor
         for (const [s, L] of [[-1, 0.25], [0, 0.28], [1, 0.25]]) claw(end.clone().addScaledVector(ft.side, s * rt * 0.66 * wt).addScaledVector(UPV, s ? -0.01 : 0.014), dir(1, s * 0.78, 0.22), down, L, 0.052, 0.72, UPV);
@@ -200,6 +210,8 @@ PROPS.larva = (() => {
       g.add(ptube([arr(p0), arr(m1), arr(m2), arr(p3)], 0.011, 0.007, S.spark, 6)); }
     return g; }
 
+  // THE GAME'S LOOK (2026-11-14, build 2026-11-14m): tail A, as drafted (no extra plating), leg draft 3, the angular head
+  const LOOK = Object.assign({}, TAILS.A, { legs: 3, head: 'angular' });
   const variants = [];
   for (let d = 0; d < 8; d++) { for (let f = 0; f < LV_FRAMES; f++) variants.push('w' + d + '_' + f); variants.push('o' + d, 's' + d, 'z' + d); }
   const make = (name, tail) => { const m = /^([wosz])(\d)(?:_(\d))?$/.exec(name), kind = m[1], d = +m[2], f = m[3] ? +m[3] : 0;
@@ -208,7 +220,7 @@ PROPS.larva = (() => {
     const body = G(); body.add(inner); body.scale.setScalar(LV_SCALE * LV_RES); body.rotation.y = -d * Math.PI / 4;
     const g = G(); g.add(body); return { g, marks: {} }; };
   return { variants, canvas: [560, 400],
-    build(name) { return make(name, null); },
-    study(key, name, plates, legs) { return make(name, plates || legs ? Object.assign({}, TAILS[key], { plates, legs }) : TAILS[key]); },   // (a tail draft, a plating and legs, for design/creatures/voltwyrm_tail_studies.js; the bake draws the game's)
+    build(name) { return make(name, LOOK); },
+    study(key, name, plates, legs, head) { return make(name, plates || legs || head ? Object.assign({}, TAILS[key], { plates, legs, head }) : TAILS[key]); },   // (a tail draft, a plating, legs and a head, for design/creatures/voltwyrm_tail_studies.js; the bake draws LOOK)
     tails: Object.keys(TAILS), legs: Object.keys(LEGS) };
 })();

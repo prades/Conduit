@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14m` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM redesigned: a clawed tail, strut legs, a more angular head
+- **Asked** (the owner, 2026-11-14): "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from Pokemon"; of the drafts: "A and make the tail and body need more plating on each segment", then "I like a, now legs should be more angular at least have single claw feet", then, circling leg draft 3, "I like this one and can you make the head slightly more angular and that's perfect".
+- **The tail** (draft A, in place of the twin prongs): thicker and wider toward its end, an armoured wrist lit round its rim, and three heavy pale talons splayed like a raptor's foot, hooking down to the floor, their inner edges lit.
+- **The legs** (draft 3, in place of the paddle legs): up from the hip, out level and down in hard bends; flat-sided struts with an armour plate on top, pistons across the knee, light in every joint, and one hooked claw on each foot, pale like its jaws, its inner edge lit. They step in the same two tripods.
+- **The head**, a little more angular: its outline cut in straight facets to a prow, its edges chamfered flat, the crest and the plates beside it wedges pointing forward, hexagonal lens cups, faceted horns with diamond tips. Its jaws and lenses as before. No extra plating ("I like a" read as tail A as drafted).
+- The claws keep their own light while SICKLE SNAP's warning lights the jaws. Lying across the screen it is 396 px long (377 before), about 4.7 tiles from jaws to talons; its rules, its size number and its body's reach are unchanged.
+- `design/props/models/larva.js` (its `LOOK`; the drafts stay as options for `design/creatures/voltwyrm_tail_studies.js`, which draws all four rounds), `img/props/larva.png` and `js/propatlas.js` re-baked, the Bible's picture.
+- Checked: the new sheet's cells, `tests/larva.js` (twice the queen's length still holds) and the full run; the real page, awake in The Circuitry; not playtested.
+
 ### Build `2026-11-14i` · branch `claude/start-game-project-HSh7Z` · in a fight, the enemies' feet move as they close in
 - **The report** (the owner, 2026-11-14): "The enemies don't move their feet when they're in battle and they're nearing an enemy or a follower or target."
 - **The cause:** a creature is "attack" from the moment it locks onto what it is after, and it chases it in that state, step by step (js/predator.js); every drawing of its legs read "attack" as standing to bite, so its legs stood still for the whole approach.
