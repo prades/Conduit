@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: VOLTWYRM redesigned: tail A, strut legs, a more angular head (the owner's picks)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14m`
+- **Status:** Approved (the owner's words); built
+- **Context:** the owner: "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from Pokemon". Three rounds of drafts on the game's own model (`design/creatures/voltwyrm_tail_studies.js`): tails A, B and C; platings PANELS and SCALES; legs 1 BLADE, 2 HIGH KNEES and 3 STRUT.
+- **Decision:** tail **A** ("A and make the tail and body need more plating on each segment"): thicker and wider, three talons at its end. **No extra plating** ("I like a", read by the agent as A as drafted; not corrected when asked). Legs **3**, the strut legs, one hooked claw on each foot (circled: "I like this one"). The head **slightly more angular** ("can you make the head slightly more angular and that's perfect").
+- **Agent's choices, provisional:** every proportion of the tail, legs, claws and head; what "more angular" means for the head (straight facets to a prow, flat chamfered edges, wedges, hexagonal lens cups, faceted horns).
+- **Affects:** `design/props/models/larva.js` (its `LOOK`; the drafts stay as options), `img/props/larva.png`, `js/propatlas.js`, the Bible's picture; `ELECTRIC-BREED.md` §8, 9 and §11.
+
 ## DECISION: The roly-poly's card emblem is C, the profile (the owner's pick)
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14h`

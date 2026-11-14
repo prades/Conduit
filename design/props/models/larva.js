@@ -1,7 +1,9 @@
 // VOLTWYRM, THE DIVING BEETLE LARVA, the electric breed's boss (docs/ELECTRIC-BREED.md §5; the owner, 2026-11-13: "A for the larva"; 2026-11-14: "The larva boss should be big", then "Build it"):
 // round 2's mech in look A, live seams (pale gunmetal armour, yellow energy in its joints, yellow lenses, lit jaw edges), from design/creatures/electric_breed_examples.js (larvaMech), baked for the game.
+// Redesigned with the owner, 2026-11-14 (build 2026-11-14m; docs/ELECTRIC-BREED.md §11): tail A (thicker and wider, three talons at its end), leg draft 3 (strut legs, one hooked claw on each
+// foot) and a slightly more angular head: LOOK below. The drafts that led there stay as options (TAILS, the plates, LEGS; design/creatures/voltwyrm_tail_studies.js draws them).
 // Variants, facing d (the game's heading d * 45 degrees; 0 is the game's +x, down-right on the screen):
-//   'w<d>_<f>' walking, frame f of LV_FRAMES: its six legs paddle in two tripods (a quarter of a stroke a frame) and its body sways a little;
+//   'w<d>_<f>' walking, frame f of LV_FRAMES: its six legs step in two tripods (a quarter of a stroke a frame) and its body sways a little;
 //   'o<d>' its jaws wide and their edges bright (SICKLE SNAP's warning); 's<d>' its jaws snapped shut (the snap); 'z<d>' its seams flashing, sparks over its back (SHOCK RING's warning).
 // THE SIZE (the agent's, provisional): LV_SCALE makes it about twice THE ANT QUEEN's length on the floor (about 4.5 tiles, jaws to tail); its armoured body, head to tail, is 3.6 tiles, so the
 // boss's body reach (bodyR 1.8 tiles, js/bosses.js) is half of it. The model is shifted so the ground point (the creature's place) is under the middle of that body (LV_MID).
@@ -49,40 +51,114 @@ PROPS.larva = (() => {
   const keel = (g, S, p, n, size) => { const q = new T.Quaternion().setFromUnitVectors(UPV, n), put = (m, h) => { m.quaternion.copy(q); m.position.copy(V3(p)).addScaledVector(n, h); g.add(m); };
     put(cbox(0.055 * size, 0.032 * size, 0.03 * size, 0.008, S.dark), 0.014 * size); put(cbox(0.045 * size, 0.008 * size, 0.032 * size, 0.003, S.keelTop), 0.032 * size); };
 
-  // THE LARVA: S its materials, ph its walk (0..1), jawA its jaws' turn on their hinges (0 at rest, + wider, - shut), edge its jaws' lit edges' material, sparks over its back
-  function larva(S, ph, jawA, edge, sparks) { const g = G(), TAU = Math.PI * 2;
+  // THE TAIL (the owner, 2026-11-14: "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from
+  // Pokemon"): drafts, each a thicker and wider tail (its last segments taper less and spread wider) with claws of our own at its end, heavy, pale and hooked (the reference's spirit, not its
+  // shapes); 'prongs' is the tail as approved in look A (twin spikes), the game's until build 2026-11-14m. The owner picked A. design/creatures/voltwyrm_tail_studies.js renders them.
+  const TAILS = { prongs: { thick: false, end: 'prongs' }, A: { thick: true, end: 'talons3' }, B: { thick: true, end: 'grasp4' }, C: { thick: true, end: 'pincers' } };
+  // THE PLATING (the owner, of the tail drafts, 2026-11-14: "A and make the tail and body need more plating on each segment"): drafts of more armour on every segment, body and tail, over its
+  // shell: 'panels' three raised panels a segment (one over its back, one on each flank; gaps between them, two rivets each, its keel on the back panel); 'scales' two overlapping rows a
+  // segment, the front row standing proud of the back, each with its lip. A tail's entry carries none: the shell as approved.
+  // THE LEGS (the owner, of the plating drafts, 2026-11-14: "I like a, now legs should be more angular at least have single claw feet"): drafts. Each leg lies in an upright plane through its
+  // hip (turned forward by its splay and its swing); its parts are flat-sided plates cut to an outline in that plane, its joints six- or eight-sided axles with light in them, and every foot
+  // is one hooked claw, pale and flat like its jaws' sickles, its inner edge lit, its point on the floor. A tail's entry names one (legs); none is the legs as approved in look A:
+  //   1 'blade'  the stance kept, the thigh and shin angular blades, the thigh running on past the knee to a point;
+  //   2 'high'   the knees raised high and sharp over its back, the thigh's point longer, barbs down each shin's inner edge, a long thin claw;
+  //   3 'strut'  up, out and down in hard bends (a squared-off arch), straight struts, pistons across the knee, a heavy claw.
+  // Every proportion here is the agent's, provisional. The owner picked 3 (circled, 2026-11-14: "I like this one").
+  const LEGS = { 1: { look: 'blade', splay: [0.42, -0.05, -0.42] }, 2: { look: 'high', splay: [0.42, -0.05, -0.42] }, 3: { look: 'strut', splay: [0.42, -0.05, -0.42] } };
+  // one leg of a draft into g: hip its hip's point, out its plane's outward way (level), lift how high its foot is raised, LGd its LEGS entry, S its materials (its claw's lit edge S.edge:
+  // only the jaws flare in SICKLE SNAP's warning)
+  const legDraft = (g, S, hip, out, lift, LGd) => {
+    const O = new T.Vector3(hip.x, 0, hip.z), nz = new T.Vector3().crossVectors(out, UPV).normalize(), basis = new T.Matrix4().makeBasis(out, UPV, nz);
+    const P3 = (p2, across) => O.clone().addScaledVector(out, p2[0]).setY(p2[1]).addScaledVector(nz, across || 0);   // a point of its plane (out from the hip, up from the floor)
+    const flat = (pts, depth, mat, bev) => { const m = plate(pts, depth, bev == null ? 0.005 : bev, mat); m.quaternion.setFromRotationMatrix(basis); m.position.copy(O); g.add(m); };
+    // a part's outline from a2 to b2: prof's [u, v] are u along it (0 at a2, 1 at b2) and v out to its outer side (the outside of the leg's bends)
+    const part = (a2, b2, prof) => { const dx = b2[0] - a2[0], dy = b2[1] - a2[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; return prof.map(([u, v]) => [a2[0] + ux * u * L - uy * v, a2[1] + uy * u * L + ux * v]); };
+    const along = (a2, b2, u, v) => part(a2, b2, [[u, v]])[0];
+    const axle = (p2, r, len, mat, seg) => { const m = cyl(r, r, len, mat, seg || 8); m.quaternion.setFromUnitVectors(UPV, nz); m.position.copy(P3(p2)); g.add(m); };
+    const joint = (p2, r, len, seg) => { axle(p2, r, len, S.joint, seg); axle(p2, r * 0.5, len + 0.008, S.glow, seg); };   // (its light showing at both ends)
+    // the claw: a flat sickle from a2, setting off at th0 (radians, 0 straight out, - down) and curling down to th1, its point on the floor; w0 wide at its root, depth thick
+    const claw = (a2, th0, th1, w0, depth) => { const R = (a2[1] - (0.004 + lift)) / (Math.cos(th0) - Math.cos(th1)), cx = a2[0] + R * Math.sin(th0), cy = a2[1] - R * Math.cos(th0), n = 12, outer = [], inner = [];
+      for (let i = 0; i <= n; i++) { const t = i / n, ph2 = th0 + (th1 - th0) * t, w = w0 * Math.max(0.06, 1 - Math.pow(t, 1.35)) / 2, px = cx - R * Math.sin(ph2), py = cy + R * Math.cos(ph2), nx = -Math.sin(ph2), ny = Math.cos(ph2);
+        outer.push([px + nx * w, py + ny * w]); inner.push([px - nx * w, py - ny * w]); }
+      flat(outer.concat(inner.reverse()), depth, S.jaw, 0.004);
+      g.add(ptube(inner.slice(2, n - 1).reverse().map(p => arr(P3(p))), 0.0055, 0.0035, S.edge, 6)); };
+    const hip2 = [0, hip.y];
+    if (LGd.look === 'blade' || LGd.look === 'high') { const hi = LGd.look === 'high';
+      const knee2 = hi ? [0.1, hip.y + 0.25 + lift * 0.6] : [0.125, hip.y + 0.14 + lift * 0.6], ankle2 = hi ? [0.3, 0.12 + lift] : [0.25, 0.12 + lift];
+      g.add(ball(0.034, S.joint, arr(hip)));
+      // the thigh: a blade running on past the knee to a point, a dark core along it
+      flat(part(hip2, knee2, hi ? [[-0.1, -0.022], [-0.1, 0.02], [0.5, 0.03], [0.95, 0.024], [1.3, 0.002], [1.0, -0.018], [0.5, -0.024]] : [[-0.12, -0.03], [-0.12, 0.026], [0.45, 0.042], [0.96, 0.03], [1.3, 0.004], [1.0, -0.022], [0.5, -0.032]]), hi ? 0.042 : 0.046, S.solid);
+      flat(part(hip2, knee2, [[-0.06, -0.011], [-0.06, 0.011], [0.92, 0.009], [0.92, -0.009]]), hi ? 0.052 : 0.056, S.dark, 0.003);
+      joint(knee2, 0.026, 0.066);
+      // the shin: a blade tapering to the ankle (barbs down its inner edge, high)
+      flat(part(knee2, ankle2, hi ? [[-0.08, -0.02], [-0.08, 0.028], [0.4, 0.03], [1.0, 0.014], [1.05, 0], [1.0, -0.012], [0.8, -0.016], [0.88, -0.054], [0.72, -0.019], [0.54, -0.021], [0.62, -0.058], [0.46, -0.023], [0.15, -0.025]]
+        : [[-0.1, -0.026], [-0.1, 0.034], [0.35, 0.038], [1.0, 0.02], [1.06, 0], [1.0, -0.018], [0.55, -0.028]]), 0.04, S.solid);
+      flat(part(knee2, ankle2, [[0, -0.01], [0, 0.012], [0.94, 0.007], [0.94, -0.006]]), 0.05, S.dark, 0.003);
+      joint(ankle2, 0.017, 0.05, 6);
+      if (hi) claw(ankle2, 0.1, -2.3, 0.04, 0.024); else claw(ankle2, 0, -2.2, 0.048, 0.026);
+    } else {   // strut: up from the hip, out level, down to the claw
+      const knee2 = [0.07, hip.y + 0.15 + lift * 0.6], hock2 = [0.25, hip.y + 0.115 + lift * 0.4], ankle2 = [0.285, 0.11 + lift];
+      joint(hip2, 0.036, 0.072, 6);
+      flat(part(hip2, knee2, [[-0.1, -0.024], [-0.1, 0.024], [1.1, 0.024], [1.1, -0.024]]), 0.05, S.solid);
+      flat(part(knee2, hock2, [[-0.12, -0.02], [-0.12, 0.024], [1.08, 0.022], [1.08, -0.02]]), 0.046, S.solid);
+      flat(part(knee2, hock2, [[0.08, 0.018], [0.14, 0.038], [0.84, 0.034], [0.94, 0.016]]), 0.056, S.dark, 0.003);   // (an armour plate on top)
+      flat(part(hock2, ankle2, [[-0.14, -0.018], [-0.14, 0.02], [1.0, 0.016], [1.0, -0.016]]), 0.042, S.solid);
+      joint(knee2, 0.034, 0.07, 6); joint(hock2, 0.028, 0.062, 6); joint(ankle2, 0.018, 0.05, 6);
+      for (const sd of [-1, 1]) ppiston(g, arr(P3(along(hip2, knee2, 0.35, 0.03), sd * 0.03)), arr(P3(along(knee2, hock2, 0.45, 0.03), sd * 0.03)), 0.009, S);   // (pistons across the knee, on its faces)
+      claw(ankle2, 0.1, -2.1, 0.05, 0.03);
+    } };
+  // THE LARVA: S its materials, ph its walk (0..1), jawA its jaws' turn on their hinges (0 at rest, + wider, - shut), edge its jaws' lit edges' material, sparks over its back, tail its TAILS entry
+  function larva(S, ph, jawA, edge, sparks, tail) { const g = G(), TAU = Math.PI * 2, TL = tail || TAILS.prongs;
     // its spine, head to tail: the head raised, the body low along the floor in a gentle S, the tail lifting a little; the S sways as it walks
     const base = [[0.62, 0.22, 0.0], [0.4, 0.18, 0.03], [0.12, 0.15, 0.0], [-0.2, 0.14, -0.04], [-0.55, 0.135, -0.01], [-0.85, 0.14, 0.04], [-1.08, 0.17, 0.05]];
     const spine = new T.CatmullRomCurve3(base.map((p, j) => V3([p[0], p[1], p[2] + (j ? 0.016 : 0.006) * Math.sin(TAU * ph - j * 0.9)])));
     const N = 11, T1 = 0.96, segT = i => (i + 0.5) * T1 / N, len = spine.getLength() * T1 / N;
-    const rad = i => i < 3 ? 0.088 + i * 0.008 : Math.max(0.03, 0.115 - Math.pow(Math.max(0, i - 4) / 6.5, 1.6) * 0.085);
+    const rad = i => i < 3 ? 0.088 + i * 0.008 : TL.thick ? Math.max(0.07, 0.115 - Math.pow(Math.max(0, i - 4) / 6.5, 1.6) * 0.035) : Math.max(0.03, 0.115 - Math.pow(Math.max(0, i - 4) / 6.5, 1.6) * 0.085);
+    const wide = i => TL.thick ? 1 + 0.42 * Math.min(1, Math.max(0, (i - 4) / 6)) : 1;   // (a thick tail spreads wider toward its end)
     // a segment's own frame: x forward (toward the head), y up, z to the side
     const frameAt = t => { const p = spine.getPointAt(t), fwd = spine.getTangentAt(t).negate(), side = new T.Vector3().crossVectors(fwd, UPV).normalize(), up = new T.Vector3().crossVectors(side, fwd).normalize(); return { p, fwd, side, up }; };
     const lp = (f, x, y, z) => f.p.clone().addScaledVector(f.fwd, x).addScaledVector(f.up, y).addScaledVector(f.side, z);
     const inFrame = f => { const grp = G(); grp.position.copy(f.p); grp.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f.fwd, f.up, f.side)); g.add(grp); return grp; };
-    for (let i = 0; i < N; i++) { const f = frameAt(segT(i)), r = rad(i), grp = inFrame(f);
+    for (let i = 0; i < N; i++) { const f = frameAt(segT(i)), r = rad(i), W = wide(i), grp = inFrame(f);
       // the frame: a dark barrel with bevelled ends, flattened
       const lg = new T.LatheGeometry([[0.001, -0.5], [0.8, -0.5], [0.92, -0.38], [0.92, 0.38], [0.8, 0.5], [0.001, 0.5]].map(([a, b]) => new T.Vector2(a * r, b * len)), 28); lg.rotateZ(-Math.PI / 2);
-      const bar = new T.Mesh(lg, S.frame); bar.scale.set(1, 0.8, 1); grp.add(bar);
+      const bar = new T.Mesh(lg, S.frame); bar.scale.set(1, 0.8, W); grp.add(bar);
       // the armour: a shell over its back and flanks with thick edges
-      const R = r * 1.1, sx0 = -len * 0.41, sx1 = len * 0.41, shPt = (u, v, km) => { const x = sx1 - (sx1 - sx0) * u, th = -0.3 + v * (Math.PI + 0.6), k = (km || 1) * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k]; };
+      const R = r * 1.1, sx0 = -len * 0.41, sx1 = len * 0.41, shPt = (u, v, km) => { const x = sx1 - (sx1 - sx0) * u, th = -0.3 + v * (Math.PI + 0.6), k = (km || 1) * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k * W]; };
       grp.add(psurf(6, 30, shPt, S.armor));
       for (const u of [0, 1]) { const e = []; for (let j = 0; j <= 30; j++) e.push(shPt(u, j / 30, 1.004)); grp.add(ptube(e, 0.011, 0.011, S.dark, 8)); }
+      // MORE PLATING (TL.plates): plates over the shell by their angle round it (th: 0 its right flank, PI/2 its back, PI its left), u along it (0 its front), km how far proud
+      let keelK = 1;
+      if (TL.plates) { const shTh = (u, th, km) => { const x = sx1 - (sx1 - sx0) * u, k = km * (1 - 0.05 * u); return [x, R * 0.8 * Math.sin(th) * k, R * Math.cos(th) * k * W]; };
+        const plate2 = (th0, th1, u0, u1, km, rivets) => { const P = (u, v) => shTh(u0 + (u1 - u0) * u, th0 + (th1 - th0) * v, km); grp.add(psurf(4, 14, P, S.armor));
+          const rim = []; for (let j = 0; j <= 14; j++) rim.push(P(0, j / 14)); for (let j = 1; j <= 4; j++) rim.push(P(j / 4, 1)); for (let j = 13; j >= 0; j--) rim.push(P(1, j / 14)); for (let j = 3; j >= 0; j--) rim.push(P(j / 4, 0));
+          grp.add(ptube(rim.map(p => [p[0], p[1] * 1.004, p[2] * 1.004]), 0.0085, 0.0085, S.dark, 6));
+          if (rivets) for (const u of [0.22, 0.78]) { const q = shTh(u0 + (u1 - u0) * u, (th0 + th1) / 2, km * 1.02); grp.add(ball(0.0105, S.joint, q)); } };
+        if (TL.plates === 'panels') { plate2(Math.PI / 2 - 0.52, Math.PI / 2 + 0.52, 0.05, 0.95, 1.1, true); plate2(-0.12, Math.PI / 2 - 0.64, 0.1, 0.9, 1.07, true); plate2(Math.PI / 2 + 0.64, Math.PI + 0.12, 0.1, 0.9, 1.07, true); keelK = 1.1; }
+        else { plate2(-0.22, Math.PI + 0.22, 0.0, 0.56, 1.1, false); plate2(-0.18, Math.PI + 0.18, 0.46, 1.0, 1.05, false); keelK = 1.1; } }
       // the joint behind it: a band of light
-      if (i < N - 1) { const bg = new T.CylinderGeometry(r * 0.88, r * 0.88, len * 0.22, 28, 1, true); bg.rotateZ(Math.PI / 2); const band = new T.Mesh(bg, S.glowD); band.scale.set(1, 0.8, 1); band.position.x = -len * 0.5; grp.add(band); }
+      if (i < N - 1) { const bg = new T.CylinderGeometry(r * 0.88, r * 0.88, len * 0.22, 28, 1, true); bg.rotateZ(Math.PI / 2); const band = new T.Mesh(bg, S.glowD); band.scale.set(1, 0.8, W); band.position.x = -len * 0.5; grp.add(band); }
       // the keel along its back
-      keel(grp, S, [0, R * 0.8, 0], UPV, 1.1); }
+      keel(grp, S, [0, R * 0.8 * keelK, 0], UPV, 1.1); }
     // pistons under the armour's edge, segment to segment
     for (let i = 1; i < N - 2; i++) { const fa = frameAt(segT(i)), fb = frameAt(segT(i + 1)), ra = rad(i), rb = rad(i + 1);
-      for (const sg of [-1, 1]) ppiston(g, arr(lp(fa, len * 0.12, -ra * 0.36, sg * ra * 1.06)), arr(lp(fb, len * 0.12, -rb * 0.36, sg * rb * 1.06)), 0.013, S); }
+      for (const sg of [-1, 1]) ppiston(g, arr(lp(fa, len * 0.12, -ra * 0.36, sg * ra * 1.06 * wide(i))), arr(lp(fb, len * 0.12, -rb * 0.36, sg * rb * 1.06 * wide(i + 1))), 0.013, S); }
     // the head: a flat armoured wedge, a crest, six lenses a side in two rows, two stubby sensor horns, and the sickle jaws on hinges
     const f0 = frameAt(0), hg = G(); hg.position.copy(lp(f0, 0.12, 0.03, 0)); hg.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f0.fwd, f0.up, f0.side)); g.add(hg);
-    const outline = [[-0.13, 0.085], [-0.06, 0.15], [0.05, 0.175], [0.15, 0.155], [0.21, 0.09], [0.225, 0], [0.21, -0.09], [0.15, -0.155], [0.05, -0.175], [-0.06, -0.15], [-0.13, -0.085]];
-    hg.scale.setScalar(1.15); const hm = plate(outline, 0.09, 0.024, S.solid); hm.rotation.x = Math.PI / 2; hg.add(hm);
-    hg.add(at(cbox(0.26, 0.03, 0.07, 0.01, S.dark), -0.01, 0.055, 0));
-    for (const sg of [-1, 1]) { hg.add(at(cbox(0.15, 0.024, 0.045, 0.008, S.dark), 0.06, 0.052, sg * 0.07));
-      for (let row = 0; row < 2; row++) for (let c = 0; c < 3; c++) { const ex = 0.03 + c * 0.045, ez = sg * (0.112 + row * 0.034 - c * 0.006); hg.add(at(cyl(0.02, 0.02, 0.016, S.frame, 16), ex, 0.047, ez)); hg.add(ball(0.0145, S.lens, [ex, 0.057, ez])); }
-      const h0 = [0.16, 0.04, sg * 0.055], h1 = [0.23, 0.09, sg * 0.085], h2 = [0.3, 0.11, sg * 0.095]; hg.add(pseg(h0, h1, 0.02, 0.017, S.dark)); hg.add(ball(0.021, S.joint, h1)); hg.add(pseg(h1, h2, 0.016, 0.013, S.solid)); hg.add(ball(0.015, S.glow, h2));
+    // ANGULAR (TL.head 'angular'; the owner, of the legs drafts, 2026-11-14: "can you make the head slightly more angular"): the same head cut harder: its outline in straight facets
+    // to a prow (its edges chamfered flat), the crest and the plates beside it wedges pointing forward, the lenses in hexagonal cups, the horns faceted with diamond tips (the agent's reading, provisional)
+    const ang = TL.head === 'angular', facet = m => { m.geometry = m.geometry.toNonIndexed(); m.geometry.computeVertexNormals(); return m; };
+    const outline = ang ? [[-0.13, 0.09], [-0.05, 0.17], [0.1, 0.178], [0.198, 0.112], [0.26, 0], [0.198, -0.112], [0.1, -0.178], [-0.05, -0.17], [-0.13, -0.09]]
+      : [[-0.13, 0.085], [-0.06, 0.15], [0.05, 0.175], [0.15, 0.155], [0.21, 0.09], [0.225, 0], [0.21, -0.09], [0.15, -0.155], [0.05, -0.175], [-0.06, -0.15], [-0.13, -0.085]];
+    hg.scale.setScalar(1.15); const hm = plate(outline, 0.09, ang ? 0.02 : 0.024, S.solid); hm.rotation.x = Math.PI / 2; hg.add(hm);
+    if (ang) hg.add(plate([[-0.14, 0.04], [0.125, 0.04], [0.07, 0.072], [-0.1, 0.076], [-0.14, 0.064]], 0.07, 0.006, S.dark)); else hg.add(at(cbox(0.26, 0.03, 0.07, 0.01, S.dark), -0.01, 0.055, 0));
+    for (const sg of [-1, 1]) { if (ang) hg.add(at(plate([[-0.015, 0.04], [0.14, 0.04], [0.1, 0.063], [-0.015, 0.066]], 0.045, 0.005, S.dark), 0, 0, sg * 0.07)); else hg.add(at(cbox(0.15, 0.024, 0.045, 0.008, S.dark), 0.06, 0.052, sg * 0.07));
+      for (let row = 0; row < 2; row++) for (let c = 0; c < 3; c++) { const ex = 0.03 + c * 0.045, ez = sg * (0.112 + row * 0.034 - c * 0.006), cup = cyl(0.02, 0.02, 0.016, S.frame, ang ? 6 : 16); hg.add(at(ang ? facet(cup) : cup, ex, 0.047, ez)); hg.add(ball(0.0145, S.lens, [ex, 0.057, ez])); }
+      const h0 = [0.16, 0.04, sg * 0.055], h1 = [0.23, 0.09, sg * 0.085], h2 = [0.3, 0.11, sg * 0.095];
+      if (ang) { hg.add(facet(pseg(h0, h1, 0.021, 0.017, S.dark, 4))); hg.add(facet(at(new T.Mesh(new T.OctahedronGeometry(0.022), S.joint), h1[0], h1[1], h1[2]))); hg.add(facet(pseg(h1, h2, 0.016, 0.009, S.solid, 4)));
+        hg.add(at(new T.Mesh(new T.OctahedronGeometry(0.017), S.glow), h2[0], h2[1], h2[2])); }
+      else { hg.add(pseg(h0, h1, 0.02, 0.017, S.dark)); hg.add(ball(0.021, S.joint, h1)); hg.add(pseg(h1, h2, 0.016, 0.013, S.solid)); hg.add(ball(0.015, S.glow, h2)); }
       // a jaw: a heavy sickle blade on a hinge, broad at the root and sharp at the tip, a tooth on its inner edge, that edge lit; it turns on its hinge (jawA: wider, or snapped shut)
       hg.add(at(cyl(0.046, 0.046, 0.075, S.joint, 20), 0.18, 0, sg * 0.105)); hg.add(at(cyl(0.022, 0.022, 0.082, S.dark, 14), 0.18, 0, sg * 0.105));
       const hinge = G(); hinge.position.set(0.18, 0, sg * 0.105); hinge.rotation.y = -sg * jawA; hg.add(hinge);
@@ -95,6 +171,8 @@ PROPS.larva = (() => {
     for (let k = 0; k < 3; k++) { const f = frameAt(segT(k)), r = rad(k);
       for (const sg of [-1, 1]) { const kF = [0.07, 0, -0.07][k], aF = [0.15, -0.04, -0.2][k], kS = [0.19, 0.22, 0.22][k], aS = [0.31, 0.37, 0.39][k];
         const lph = TAU * ((ph + ((k + (sg > 0 ? 1 : 0)) % 2) * 0.5) % 1), sw = 0.26 * Math.sin(lph), lift = Math.max(0, Math.cos(lph)) * 0.035, hz = sg * r * 0.85;
+        if (TL.legs) { const LGd = LEGS[TL.legs], al = LGd.splay[k] + sw, fh = new T.Vector3(f.fwd.x, 0, f.fwd.z).normalize();
+          legDraft(g, S, lp(f, 0, -r * 0.35, hz), fh.multiplyScalar(Math.sin(al)).addScaledVector(f.side, sg * Math.cos(al)).normalize(), lift, LGd); continue; }
         const turn = (x, z) => { const dx = x, dz = z - hz, b = -sw * sg; return [dx * Math.cos(b) - dz * Math.sin(b), hz + dx * Math.sin(b) + dz * Math.cos(b)]; };
         const kn = turn(kF, sg * kS), an = turn(aF, sg * aS), fo = turn(aF + (aF - kF) * 0.35, sg * (aS + 0.05));
         const hip = lp(f, 0, -r * 0.35, hz), knee = lp(f, kn[0], 0.09 + lift * 0.6, kn[1]), ankle = lp(f, an[0], 0, an[1]), foot = lp(f, fo[0], 0, fo[1]); ankle.y = 0.07 + lift; foot.y = 0.004 + lift;
@@ -102,23 +180,47 @@ PROPS.larva = (() => {
         const kj = cyl(0.034, 0.034, 0.07, S.joint, 16); kj.quaternion.setFromUnitVectors(UPV, f.fwd); kj.position.copy(knee); g.add(kj); g.add(pbar(arr(knee), arr(knee.clone().add(new T.Vector3(0, 0.05, 0))), 0.056, 0.05, S.dark));
         g.add(pbar(arr(knee), arr(ankle), 0.095, 0.026, S.solid)); g.add(pbar(arr(knee), arr(ankle), 0.032, 0.042, S.dark)); g.add(ball(0.028, S.joint, arr(ankle)));
         g.add(pseg(arr(ankle), arr(foot.clone().lerp(ankle, 0.35)), 0.027, 0.007, S.dark)); } }
-    // the tail: twin armoured spikes, a light at each tip
     const ft = frameAt(T1);
-    for (const sg of [-1, 1]) { const a = lp(ft, -0.02, 0.004, sg * 0.03), b = lp(ft, -0.19, 0.045, sg * 0.08); g.add(ball(0.032, S.joint, arr(lp(ft, 0, 0, sg * 0.022))));
-      g.add(pbar(arr(a), arr(b), 0.046, 0.042, S.solid)); g.add(pbar(arr(a), arr(b.clone().lerp(a, 0.25)), 0.054, 0.05, S.joint)); g.add(ball(0.02, S.glow, arr(b))); }
+    if (TL.end === 'prongs') {   // the tail: twin armoured spikes, a light at each tip
+      for (const sg of [-1, 1]) { const a = lp(ft, -0.02, 0.004, sg * 0.03), b = lp(ft, -0.19, 0.045, sg * 0.08); g.add(ball(0.032, S.joint, arr(lp(ft, 0, 0, sg * 0.022))));
+        g.add(pbar(arr(a), arr(b), 0.046, 0.042, S.solid)); g.add(pbar(arr(a), arr(b.clone().lerp(a, 0.25)), 0.054, 0.05, S.joint)); g.add(ball(0.02, S.glow, arr(b))); }
+    } else {   // the tail's claws: an armoured wrist at its end, lit round its rim, and heavy pale claws from it, broad at the root, hooked and sharp, their inner edges lit
+      const rt = rad(N - 1), wt = wide(N - 1), wg = inFrame(ft), back = ft.fwd.clone().negate();
+      const cl = new T.CylinderGeometry(rt * 1.02, rt * 1.12, 0.08, 28); cl.rotateZ(Math.PI / 2); const cuff = new T.Mesh(cl, S.solid); cuff.scale.set(1, 0.8, wt); cuff.position.x = -0.035; wg.add(cuff);
+      const rimG = new T.CylinderGeometry(rt * 1.14, rt * 1.14, 0.016, 28, 1, true); rimG.rotateZ(Math.PI / 2); const rim = new T.Mesh(rimG, S.glowD); rim.scale.set(1, 0.8, wt); rim.position.x = -0.07; wg.add(rim);
+      // a claw from a: out along out, curling toward curl (unit vectors), L long, r0 thick at its root and stout until near its point; a lit line along its ls side
+      const claw = (a, out, curl, L, r0, hook, ls) => { const n = 10, pts = [], rs = [];
+        for (let i = 0; i <= n; i++) { const t = i / n; pts.push(a.clone().addScaledVector(out, L * t).addScaledVector(curl, L * hook * t * t)); rs.push(r0 * Math.max(0.08, 1 - Math.pow(t, 1.7))); }
+        for (let i = 0; i < n; i++) { g.add(pseg(arr(pts[i]), arr(pts[i + 1]), rs[i], rs[i + 1], S.jaw, 14)); if (i) g.add(ball(rs[i], S.jaw, arr(pts[i]))); }
+        const lit = []; for (let i = 1; i < n; i++) lit.push(arr(pts[i].clone().addScaledVector(ls, rs[i] * 0.86)));
+        g.add(ptube(lit, 0.0075, 0.0045, S.edge, 6)); g.add(ball(r0 * 1.18, S.joint, arr(pts[0]))); g.add(ball(r0 * 0.42, S.glow, arr(pts[0].clone().addScaledVector(UPV, r0 * 0.98)))); };
+      const end = lp(ft, -0.075, 0, 0), dir = (b, s, u) => back.clone().multiplyScalar(b).addScaledVector(ft.side, s).addScaledVector(UPV, u).normalize(), down = UPV.clone().negate();
+      if (TL.end === 'talons3')   // A: three talons splayed like a raptor's foot, hooking down to the floor
+        for (const [s, L] of [[-1, 0.25], [0, 0.28], [1, 0.25]]) claw(end.clone().addScaledVector(ft.side, s * rt * 0.66 * wt).addScaledVector(UPV, s ? -0.01 : 0.014), dir(1, s * 0.78, 0.22), down, L, 0.052, 0.72, UPV);
+      else if (TL.end === 'grasp4')   // B: four claws round the wrist, curling in toward each other like a gripping hand
+        for (const [s, u] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) { const rad2 = ft.side.clone().multiplyScalar(s * 0.7).addScaledVector(UPV, u * 0.55).normalize(), a = end.clone().addScaledVector(rad2, rt * 0.75 * wt);
+          claw(a, dir(1, s * 0.55, u * 0.42), rad2.clone().negate(), u > 0 ? 0.25 : 0.22, 0.044, 0.72, rad2); }
+      else   // C: two great pincer claws, sweeping out and hooking back in until their points cross behind it
+        for (const s of [-1, 1]) claw(end.clone().addScaledVector(ft.side, s * rt * 0.72 * wt), dir(1, s * 0.8, 0.06), ft.side.clone().multiplyScalar(-s), 0.34, 0.056, 1.0, ft.side.clone().multiplyScalar(-s));
+    }
     // SPARKS (charged): crooked arcs of current jumping from the armour's edge, segment to segment, down both sides
     if (sparks) for (let i = 1; i < N - 2; i += 2) for (const sg of [-1, 1]) { const fa = frameAt(segT(i)), fb = frameAt(segT(i + 1)), ra = rad(i) * 1.1, rb = rad(i + 1) * 1.1, s = (i * 7 + (sg > 0 ? 3 : 0)) % 5;
-      const p0 = lp(fa, 0, ra * 0.5, sg * ra * 0.95), p3 = lp(fb, 0, rb * 0.5, sg * rb * 0.95), m1 = p0.clone().lerp(p3, 0.33), m2 = p0.clone().lerp(p3, 0.66);
+      const p0 = lp(fa, 0, ra * 0.5, sg * ra * 0.95 * wide(i)), p3 = lp(fb, 0, rb * 0.5, sg * rb * 0.95 * wide(i + 1)), m1 = p0.clone().lerp(p3, 0.33), m2 = p0.clone().lerp(p3, 0.66);
       m1.addScaledVector(fa.side, sg * (0.07 + 0.012 * s)).addScaledVector(UPV, 0.05 + 0.01 * s); m2.addScaledVector(fb.side, sg * (0.04 + 0.01 * (4 - s))).addScaledVector(UPV, 0.08 - 0.008 * s);
       g.add(ptube([arr(p0), arr(m1), arr(m2), arr(p3)], 0.011, 0.007, S.spark, 6)); }
     return g; }
 
+  // THE GAME'S LOOK (2026-11-14, build 2026-11-14m): tail A, as drafted (no extra plating), leg draft 3, the angular head
+  const LOOK = Object.assign({}, TAILS.A, { legs: 3, head: 'angular' });
   const variants = [];
   for (let d = 0; d < 8; d++) { for (let f = 0; f < LV_FRAMES; f++) variants.push('w' + d + '_' + f); variants.push('o' + d, 's' + d, 'z' + d); }
+  const make = (name, tail) => { const m = /^([wosz])(\d)(?:_(\d))?$/.exec(name), kind = m[1], d = +m[2], f = m[3] ? +m[3] : 0;
+    const inner = kind === 'z' ? larva(HOT, 0, 0, HOT.edge, true, tail) : larva(A, f / LV_FRAMES, kind === 'o' ? 0.35 : kind === 's' ? -0.2 : 0, kind === 'o' ? EDGE_HOT : A.edge, false, tail);
+    inner.position.x = LV_MID;   // (the middle of its armoured body over the ground point)
+    const body = G(); body.add(inner); body.scale.setScalar(LV_SCALE * LV_RES); body.rotation.y = -d * Math.PI / 4;
+    const g = G(); g.add(body); return { g, marks: {} }; };
   return { variants, canvas: [560, 400],
-    build(name) { const m = /^([wosz])(\d)(?:_(\d))?$/.exec(name), kind = m[1], d = +m[2], f = m[3] ? +m[3] : 0;
-      const inner = kind === 'z' ? larva(HOT, 0, 0, HOT.edge, true) : larva(A, f / LV_FRAMES, kind === 'o' ? 0.35 : kind === 's' ? -0.2 : 0, kind === 'o' ? EDGE_HOT : A.edge, false);
-      inner.position.x = LV_MID;   // (the middle of its armoured body over the ground point)
-      const body = G(); body.add(inner); body.scale.setScalar(LV_SCALE * LV_RES); body.rotation.y = -d * Math.PI / 4;
-      const g = G(); g.add(body); return { g, marks: {} }; } };
+    build(name) { return make(name, LOOK); },
+    study(key, name, plates, legs, head) { return make(name, plates || legs || head ? Object.assign({}, TAILS[key], { plates, legs, head }) : TAILS[key]); },   // (a tail draft, a plating, legs and a head, for design/creatures/voltwyrm_tail_studies.js; the bake draws LOOK)
+    tails: Object.keys(TAILS), legs: Object.keys(LEGS) };
 })();

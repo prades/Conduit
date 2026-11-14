@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
-### Build `2026-11-14q` · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
+### Build `2026-11-14r` (stamped 14q on its branch) · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
 - **The ask** (the owner, 2026-11-14: "Work on buffs"; asked, chosen: the Hornshell **"Faster ECHO PULSE"**, SUNDEW **"Measure the heal first"**, the Frost Maw and the Goo Proxy, under their bands by less than a point, **"Leave both"**).
 - **ECHO PULSE's wind-up is 1.75 s** (`MOVES.echo_pulse.windup`; 2.5 s before): the Hornshell pulses more often. Its score 22.9 → 30.6.
 - **The trial runs SUNDEW in BOTH** (`sweet_scent_both`: its stings fill its stockpile, then SWEET SCENT heals with it), as it is meant to be played. Locked on SWEET SCENT alone it makes no sting, so its heal had never fired in a trial. **And every form is kept hurt** (70% of its health at most) in the trial, so a heal of itself counts as its heal of the wounded ally does.
@@ -13,7 +13,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/moves.js`, `tests/moves.js`, `tools/balance-trial.js`, `design/balance-trial.json`, `balance.html`, the Bible.
 - Not playtested.
 
-### Build `2026-11-14p` · branch `claude/balance-rerun-2` · the second round of status buffs
+### Build `2026-11-14q` (stamped 14p on its branch) · branch `claude/balance-rerun-2` · the second round of status buffs
 - **The ask** (the owner, 2026-11-14, of the four stronger options the agent named after the first round: **"Apply"**).
 - **HORNSHELL:** ECHO PULSE's glitch 0.5 → **1.5 s** (every enemy within 4 tiles). **RIMESTAR:** an icicle's freeze 0.75 → **1.5 s**. **FROST MAW:** CHOMP's stun 1.25 → **1.75 s**. **SUNDEW:** SWEET SCENT's puff **stuns** what it lures **1 s** (with its lure and its poison).
 - **What the trial says** (run again): Rimestar 26.4 → 32.6, **in its band**; Hornshell 17.5 → 22.9 (ECHO PULSE now its best mode; still 54% of the Mage target); Frost Maw 57.0 → 58.6 (just under its band's 59.4); SUNDEW's SWEET SCENT 21.1 → 28.1, its best still its sting, 41.8 (53%).
@@ -22,7 +22,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/evolution.js`, `js/unitinfo.js`, `tests/ninemoves.js`, `tests/evolution.js`, `tests/playercards.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
 - Not playtested.
 
-### Build `2026-11-14o` · branch `claude/balance-rerun-2` · the status buffs: six forms under their band
+### Build `2026-11-14p` (stamped 14o on its branch) · branch `claude/balance-rerun-2` · the status buffs: six forms under their band
 - **The ask** (the owner, 2026-11-14: "List, make status the buff"; then a pick for each form from the agent's lists).
 - **HORNSHELL:** its shot's status is **GLITCH** (0.5 s; it slowed), a quarter of its hits as before.
 - **RIMESTAR:** an icicle of ICICLE VOLLEY that hits **freezes** its target, a stun of 0.75 s (it slowed it to 60% for 2 s); a boss is not frozen.
@@ -35,7 +35,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/combat.js` (`PRIMARY_STATUS`, `PRIMARY_STATUS_ODDS`, the glitch), `js/evolution.js`, `js/unitinfo.js`, `tests/evolution.js`, `tests/ninemoves.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
 - Not playtested.
 
-### Build `2026-11-14n` · branch `claude/balance-rerun-2` · the first balance pass: four moves brought down
+### Build `2026-11-14o` (stamped 14n on its branch) · branch `claude/balance-rerun-2` · the first balance pass: four moves brought down
 - **The ask** (the owner, 2026-11-14: "List ways to nerf each one"; of the agent's pick for each, **"Go with your picks"**).
 - **ERUPTION** (Seeper): 1.8 → **1.2 ×** its attack (its area and its armour break as they were). Score 149.4 → 99.6.
 - **SKATE CHARGE** (Igloo Skater): 1 → **0.65 ×** (its slow as it was). 68.5 → 47.1.
@@ -46,13 +46,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/evolution.js` (four numbers), `tests/followercombat.js`, the Bible (its numbers), `docs/COMBAT.md`, `design/balance-trial.json`, `balance.html`.
 - Not playtested.
 
-### Build `2026-11-14m` · branch `claude/balance-rerun-2` · the balance trial fights a neutral dummy; a column for the ants
+### Build `2026-11-14n` (stamped 14m on its branch) · branch `claude/balance-rerun-2` · the balance trial fights a neutral dummy; a column for the ants
 - **The ask** (the owner, 2026-11-14: "Rerun the trials"; "What should we do to balance"; of the agent's first step, **"Yes, do the neutral dummy"**).
 - **Why:** the trial fought ants only, and an ant is weak to Crushing and Earthquake and resists Elemental, so the scores mixed the attacks' own worth with the ant match-up.
 - **The scored pass fights dummies with no weakness and no resistance** (`tools/balance-trial.js`: the enemy has no race's row); the bands on `balance.html` are made from it. **A second pass fights ants**: each mode's "Damage vs ants" and "Ants ×" (how much the ants add or take), and each form's "vs ants" score.
 - **What it shows:** against ants every form deals less (× 0.74 to 0.97): the Elemental half of every hit is resisted, and the attacks typed Crushing or Earthquake lose least (ERUPTION × 0.97, GRAVITY SLAM × 0.94), those typed Elemental most (the Thunderhead, the Voidstar, the Ember Hood × 0.74 to 0.75). The flags hold on the neutral dummy: the Igloo Skater's SKATE CHARGE 2 × its target, ERUPTION 1.9 ×, SONIC ROLL 1.5 ×; the Hornshell and SUNDEW at 46%.
 - Run on the game of build `2026-11-14l` (no perks, no traits). The game itself is not changed by this build.
 - `tools/balance-trial.js`, `tools/balance.js`, `design/balance-trial.json`, `balance.html`.
+
+### Build `2026-11-14m` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM redesigned: a clawed tail, strut legs, a more angular head
+- **Asked** (the owner, 2026-11-14): "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from Pokemon"; of the drafts: "A and make the tail and body need more plating on each segment", then "I like a, now legs should be more angular at least have single claw feet", then, circling leg draft 3, "I like this one and can you make the head slightly more angular and that's perfect".
+- **The tail** (draft A, in place of the twin prongs): thicker and wider toward its end, an armoured wrist lit round its rim, and three heavy pale talons splayed like a raptor's foot, hooking down to the floor, their inner edges lit.
+- **The legs** (draft 3, in place of the paddle legs): up from the hip, out level and down in hard bends; flat-sided struts with an armour plate on top, pistons across the knee, light in every joint, and one hooked claw on each foot, pale like its jaws, its inner edge lit. They step in the same two tripods.
+- **The head**, a little more angular: its outline cut in straight facets to a prow, its edges chamfered flat, the crest and the plates beside it wedges pointing forward, hexagonal lens cups, faceted horns with diamond tips. Its jaws and lenses as before. No extra plating ("I like a" read as tail A as drafted).
+- The claws keep their own light while SICKLE SNAP's warning lights the jaws. Lying across the screen it is 396 px long (377 before), about 4.7 tiles from jaws to talons; its rules, its size number and its body's reach are unchanged.
+- `design/props/models/larva.js` (its `LOOK`; the drafts stay as options for `design/creatures/voltwyrm_tail_studies.js`, which draws all four rounds), `img/props/larva.png` and `js/propatlas.js` re-baked, the Bible's picture.
+- Checked: the new sheet's cells, `tests/larva.js` (twice the queen's length still holds) and the full run; the real page, awake in The Circuitry; not playtested.
 
 ### Build `2026-11-14l` (stamped 14f on its branch) · branch `claude/remove-perks` · the followers' four traits are gone
 - **The ask** (the owner, 2026-11-14: "Can you give me a rundown on the traits and if they should stick around or not?"; after the rundown, **"Remove all four"**).
