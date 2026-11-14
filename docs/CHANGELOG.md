@@ -6,6 +6,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14f` · branch `claude/remove-perks` · the followers' four traits are gone
+- **The ask** (the owner, 2026-11-14: "Can you give me a rundown on the traits and if they should stick around or not?"; after the rundown, **"Remove all four"**).
+- **What they were:** every follower drew one combat trait and one natural trait at random when it was made, shown only on its INFO card: **BERSERKER** (its hits × 1.5 under 30% health), **OPPORTUNISTIC** (it went for the lowest-health enemy within 6 tiles, not the nearest), **EMPATHETIC** (a quarter nearer you in the formation) and **LONE WOLF** (1.2 tiles farther out).
+- **Now:** `COMBAT_TRAITS` and `NATURAL_TRAITS` (js/traits.js) are empty. No follower draws one; a saved one is dropped on load and on respawn; what a trait had left set on a follower (its multiplier, its distance) is cleared. Every follower goes for the nearest enemy (an attack order and FOCUS as before), hits alike at any health, and stands in its formation place. The INFO card has no TRAITS section.
+- **What changes in play:** about half the followers lose a 50% damage boost when near death; about half no longer chase the weakest enemy past nearer ones; places in the formation shift by up to about a tile.
+- `js/traits.js`, `js/helpers.js`, `js/npc.js`, `js/facilitysave.js`, `js/game.js`, `js/infodex.js`, `tests/traits.js` (none exists or is drawn, a saved one comes back as none, each of the four does nothing), `tests/formation.js`, `tests/unitinfo.js`, `docs/COMBAT.md`, the Bible, `docs/OPEN-QUESTIONS.md`, `docs/DECISION-LOG.md`.
+- Not playtested. The balance trial was not run again.
+
 ### Build `2026-11-14e` · branch `claude/remove-perks` · the followers' perks are gone
 - **The ask** (the owner, 2026-11-14: "How is my electro skink healing when I have a void star and a rot shard in combat"; told it was its SIPHON perk, **"can we get rid of those perks? And maybe we can redesign those at a later time, but I forgot about those"**).
 - **What they were:** every follower drew one of two at random when it was made, shown only on its INFO card: **IRON WILL** (damage taken × 0.75) and **SIPHON** (it healed 10% of each plain hit's damage).

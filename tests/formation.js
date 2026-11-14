@@ -66,11 +66,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.b1.ahead > 1.2 && r.b2.ahead > 1.2, 'a Brawler is not ahead: ' + JSON.stringify(r)); ok(Math.abs(r.b1.across - r.b2.across) > 0.8, 'the Brawlers stand on top of each other: ' + JSON.stringify(r));
         ok(r.w[0] * r.w[1] < 0, 'the Technicians go round the same way: ' + r.w.map(v => v.toFixed(2))); ok(r.d.every(d => Math.abs(d - J('FORMATION.ring')) < 0.6), 'a Technician left the round: ' + r.d.map(v => v.toFixed(2)));
     });
-    check('a natural trait nudges a place, it does not undo it: a LONE WOLF stands farther out than a plain follower, an EMPATHETIC one nearer you', () => {
+    check('no trait moves a place (the traits are gone: build 2026-11-14f, the owner: "Remove all four"): a follower still carrying LONE WOLF or EMPATHETIC stands where a plain one does', () => {
         const at = (trait) => J(`(function(){ const [b] = __squad(['brawler']); b.naturalTrait = ${JSON.stringify(trait)}; __walk(1, 0, 40); __tick(400); return __rel(b); })()`);
         const plain = at(null), lone = at('lone_wolf'), emp = at('empathetic');
-        ok(lone.ahead > plain.ahead + 0.8 && Math.abs(lone.across) < 0.6, 'a lone wolf is not farther out: ' + lone.ahead.toFixed(2) + ' vs ' + plain.ahead.toFixed(2));
-        ok(emp.ahead < plain.ahead - 0.2 && emp.ahead > 0.8, 'an empathetic one is not nearer, or left the front: ' + emp.ahead.toFixed(2) + ' vs ' + plain.ahead.toFixed(2));
+        ok(Math.abs(lone.ahead - plain.ahead) < 0.15 && Math.abs(lone.across - plain.across) < 0.15, 'a lone wolf is still farther out: ' + lone.ahead.toFixed(2) + ' vs ' + plain.ahead.toFixed(2));
+        ok(Math.abs(emp.ahead - plain.ahead) < 0.15, 'an empathetic one is still nearer: ' + emp.ahead.toFixed(2) + ' vs ' + plain.ahead.toFixed(2));
     });
 
     group('AHEAD');

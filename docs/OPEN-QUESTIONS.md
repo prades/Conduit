@@ -6,6 +6,8 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-11, phones are not supported** (the owner: "we're going to quit developing for the phone"; build `2026-11-11a`, a phone is told to play on an iPad): every phone item below is closed as won't-do, and stays only as history. That is N7 (a phone cannot buy a pack or use the market), Side Quest's cards on a phone, SWAP on a phone, a phone's CARDS screen and slots, and a phone's PACK button sizes.
 
+**Open 2026-11-14, the followers' traits** (the four removed in build `2026-11-14f`; the owner: "Remove all four"): whether a low-health damage boost (BERSERKER's) and a target-the-weakest choice (OPPORTUNISTIC's) come back as something the player chooses or earns, with the perks' redesign. The tables stay, empty.
+
 **Open 2026-11-14, the followers' perks** (removed in build `2026-11-14e`; the owner: "maybe we can redesign those at a later time"): what a follower's perk should be, if anything, is to be designed. The table `PERKS` (js/traits.js) is kept, empty, with its hooks (a hit taken, a hit dealt).
 
 **Open 2026-11-14, the balance page's support** (build `2026-11-14d`; the owner: "count the statuses that are distributed"): (1) a lure onto the follower itself (SHELL GUARD, SWEET SCENT) counts half an enemy's damage, the agent's number: moving hits off the squad onto a tank is worth something the trial does not measure; (2) the damage SHELL GUARD's halving saves is shown, not scored; (3) whether a status should also score by how many enemies it reaches at once is not asked.

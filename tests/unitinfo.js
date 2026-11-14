@@ -86,7 +86,7 @@ function findChromium() {
         same(run('typeof ELEMENT_ULTIMATES'), 'undefined', 'the element Ultimates\' descriptions are gone');
     });
     check('stats: vitals, base stats with the personality, traits with their descriptions', () => {
-        const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('ice', 'brawler', 5)))`)); ok(sec(i, 'stats', 'VITALS') && sec(i, 'stats', 'BASE STATS') && sec(i, 'stats', 'TRAITS'), 'sections ' + i.stats.map(s => s.h));
+        const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('ice', 'brawler', 5)))`)); ok(sec(i, 'stats', 'VITALS') && sec(i, 'stats', 'BASE STATS') && !sec(i, 'stats', 'TRAITS'), 'sections (no TRAITS: the traits and the perks are gone, builds 2026-11-14e and f) ' + i.stats.map(s => s.h));
     });
     check('the vitals say its XP in this level and how far it is from evolving (js/levels.js xpProgress); an evolved follower has no EVOLVES row', () => {
         const rows = ev => { const i = JSON.parse(run(`(function(){ const f = __mk('ice', 'brawler', 5); f.level = 7; f.xp = xpForLevel(7) + 85; ${ev || ''} return JSON.stringify(followerInfo(f)); })()`)); return sec(i, 'stats', 'VITALS').rows; };

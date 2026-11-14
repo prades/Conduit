@@ -194,7 +194,7 @@ function followerBuild(entry) {
         type: "virus", element: entry.element || "fire", x: crystal.x + (Math.random() - 0.5) * 2, y: crystal.y + (Math.random() - 0.5) * 2, team: "green",
         health: (stats.hp || 10), maxHealth: (stats.hp || 10), moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed || 10) - 10) * 0.001, power: (stats.attack || 5),
         stats, personality, role, currentResonance: 0, currentWill: stats.will || 20, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: true, isHealing: false, hitFlash: 0, dead: false,
-        combatTrait: entry.combatTrait, naturalTrait: entry.naturalTrait, perk: typeof PERKS !== "undefined" && PERKS[entry.perk] ? entry.perk : null   // (a saved perk that is no longer one is dropped: js/traits.js)
+        combatTrait: typeof COMBAT_TRAITS !== "undefined" && COMBAT_TRAITS[entry.combatTrait] ? entry.combatTrait : null, naturalTrait: typeof NATURAL_TRAITS !== "undefined" && NATURAL_TRAITS[entry.naturalTrait] ? entry.naturalTrait : null, perk: typeof PERKS !== "undefined" && PERKS[entry.perk] ? entry.perk : null   // (a saved perk that is no longer one is dropped: js/traits.js)
        
     };
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);

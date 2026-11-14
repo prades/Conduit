@@ -537,8 +537,7 @@ function spawnFollowerAtCrystal(element, type) {
         walkCycle:0, moveCooldown:0,
         stance:"follow", isFollower:true, isHealing:false,
         hitFlash:0, dead:false,
-        combatTrait:  Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)],
-        naturalTrait: Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)],
+        combatTrait:  null, naturalTrait: null,   // (the traits are gone: js/traits.js, build 2026-11-14f)
         perk:         null   // (the perks are gone: js/traits.js, build 2026-11-14e)
     };
     if (typeof followerUid === "function") followerUid(npc);

@@ -45,6 +45,15 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The followers' four traits are removed
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14f`
+- **Status:** Approved ("Remove all four")
+- **Context:** after the perks went, the owner asked whether the traits should stay. The agent's rundown: BERSERKER a hidden 50% damage boost on half the followers, off the balance page; OPPORTUNISTIC the one with real play in it but a coin flip; EMPATHETIC and LONE WOLF a tile's nudge in the formation.
+- **Decision:** all four are removed as random hidden rolls; saved ones are dropped. BERSERKER's and OPPORTUNISTIC's ideas may come back, chosen or earned, with the perks' redesign.
+- **Alternatives:** keep OPPORTUNISTIC as a targeting choice now; leave them.
+- **Affects:** js/traits.js and the places that drew, saved or asked a trait; the formation; the INFO card; the Bible.
+
 ## DECISION: The followers' perks are removed
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14e`

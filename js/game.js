@@ -1275,7 +1275,7 @@ function render() {
                     currentWill: stats.will,
                     walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
                     hitFlash:0, dead:false, attackAnim:0, state:"idle",
-                    combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:(typeof PERKS !== "undefined" && PERKS[entry.perk]) ? entry.perk : null
+                    combatTrait:(typeof COMBAT_TRAITS !== "undefined" && COMBAT_TRAITS[entry.combatTrait]) ? entry.combatTrait : null, naturalTrait:(typeof NATURAL_TRAITS !== "undefined" && NATURAL_TRAITS[entry.naturalTrait]) ? entry.naturalTrait : null, perk:(typeof PERKS !== "undefined" && PERKS[entry.perk]) ? entry.perk : null
                 };
                 // The same person back — same uid — and still bonded (a bond lasts through a fall since build 2026-11-09b).
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid, partnerUid: entry.partnerUid });
