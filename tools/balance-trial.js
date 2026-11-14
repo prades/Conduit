@@ -12,7 +12,7 @@ if (process.argv[2] !== '--worker') {
     const ROOT_ = _path.join(__dirname, '..'), self = __filename, tmp = _path.join(require('os').tmpdir(), 'conduit-balance-' + process.pid); _fs.mkdirSync(tmp, { recursive: true });
     const run = (args, out) => new Promise(res => { const p = _cp.spawn(process.execPath, [self, '--worker', ...args], { stdio: ['ignore', 'ignore', 'inherit'] }); p.on('exit', () => res(JSON.parse(_fs.readFileSync(out, 'utf8')))); });
     (async () => {
-        const N = 4, A = [], LIVE = 'hammerslug:main,hammerslug:shell_guard,rotshard:rotten_decoy,sundew:sweet_scent,sundew:sweet_scent_full', RUNS = '6';   // (the live runs vary a lot: six of each, three until build 2026-11-14d)
+        const N = 4, A = [], LIVE = 'hammerslug:main,hammerslug:shell_guard,rotshard:rotten_decoy,sundew:sweet_scent,sundew:sweet_scent_both', RUNS = '6';   // (the live runs vary a lot: six of each, three until build 2026-11-14d)
         // THE NEUTRAL DUMMY (build 2026-11-14m; the owner, 2026-11-14: "Yes, do the neutral dummy"): the pass the scores and bands are made from fights enemies with NO weakness and NO resistance (no race's
         // row: an ant is weak to Crushing and Earthquake and resists Elemental, which lifted some forms and sank the Mages). A second pass against ants gives each mode's damage against the first faction.
         const pa = []; for (let i = 0; i < N; i++) { const out = _path.join(tmp, 'a' + i + '.json'); pa.push(run([out, String(i), String(N), 'inert'], out)); }
@@ -92,16 +92,15 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
     const FR = 1200, LIVE = process.argv[5] === 'live', NEUTRAL = process.argv[5] === 'inert', ONLY = process.argv[6] ? process.argv[6].split(',') : null, REPS = parseInt(process.argv[7] || '1');   // 20 seconds
     for (const F of forms.filter((_, i) => i % NS === SH)) {
         const R = { id: F.id, name: F.name, el: F.el, role: F.role, modes: {} };
-        const modes = ['main'].concat(F.moves); if (F.moves.indexOf('sweet_scent') >= 0) modes.push('sweet_scent_full');
+        const modes = ['main'].concat(F.moves); if (F.moves.indexOf('sweet_scent') >= 0) modes.push('sweet_scent_both');   // (SUNDEW as it is meant to be played, BOTH: its stings fill its stockpile, then SWEET SCENT heals with it; build 2026-11-14q, the owner: "Measure the heal first". Its heal never fired in a trial before: locked on SWEET SCENT alone it makes no sting, so its stockpile never fills)
         for (const mode of modes) { if (ONLY && ONLY.indexOf(F.id + ':' + mode) < 0) continue; R.modes[mode] = []; for (let rep = 0; rep < REPS; rep++) {
             try {
                 R.modes[mode].push(J(`(function(){ __clear(); globalThis.__T = null;
                     const f = __fol('${F.el}', '${F.role}', '${F.id}'); f.base = { hp: 20, defense: 10, attack: 14, speed: 12, specialAttack: 14, accuracy: 10, will: 24, resonance: 0 }; _applyFollowerLevel(f, true);
                     const ally = __fol('${F.el === 'fire' ? 'ice' : 'fire'}', 'brawler', null); ally.power = 0; ally.stance = 'hold';
-                    const real0 = '${mode}'.replace('_full', ''), dist = (${F.role === 'brawler'} || (MOVES[real0] && MOVES[real0].close)) ? 1.0 : ${F.role === 'camper'} ? 1.6 : 3.5;   // (a close move is fought up close: its user walks in, and the trial holds it in place)
+                    const real0 = '${mode}'.replace('_both', ''), dist = (${F.role === 'brawler'} || (MOVES[real0] && MOVES[real0].close)) ? 1.0 : ${F.role === 'camper'} ? 1.6 : 3.5;   // (a close move is fought up close: its user walks in, and the trial holds it in place)
                     const foes = []; for (let i = 0; i < 3; i++) { const p = __foe(f.x + dist + (i % 2) * 0.5, f.y + (i >> 1) * 0.5 - 0.25); if (${LIVE}) delete p.update; if (${NEUTRAL}) p.speciesName = 'dummy'; foes.push(p); }
-                    const real = '${mode}'.replace('_full', ''); if ('${mode}' !== 'main') followerAltSet(f, real); else followerAltSet(f, null);
-                    if ('${mode}' === 'sweet_scent_full') f._nectar = 100;
+                    const real = '${mode}'.replace('_both', ''); if ('${mode}' !== 'main') followerAltSet(f, real, /_both$/.test('${mode}')); else followerAltSet(f, null);
                     f.currentWill = 100; f.attackCooldown = 0;
                     ally.x = f.x - 1; ally.y = f.y + 1; 
                     const T = { f, ally, allyTaken: 0, dmg: 0, heal: 0, cut: 0, soak: 0, taken: 0, lured: 0, cc: 0, denied: 0, assist: 0, err: 0, st: { stun: 0, glitch: 0, blind: 0, poison: 0, slow: 0, lure: 0, lureSelf: 0 } }; globalThis.__T = T;
@@ -112,7 +111,7 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
                         f.x = X0; f.y = Y0; f.stance = 'hold'; ally.x = AX; ally.y = AY; ally.stance = 'hold'; ally.power = 0;
                         if (f.currentWill < 60) f.currentWill = 100;
                         // the wounded ally stays at 30% so a heal always has something to restore; the follower itself is kept alive (its damage taken is tallied)
-                        ally.dead = false; ally.health = ally.maxHealth * 0.3; f.dead = false; if (f.health < f.maxHealth * 0.5) f.health = f.maxHealth * 0.5;
+                        ally.dead = false; ally.health = ally.maxHealth * 0.3; f.dead = false; if (f.health < f.maxHealth * 0.5) f.health = f.maxHealth * 0.5; if (!${LIVE} && f.health > f.maxHealth * 0.7) f.health = f.maxHealth * 0.7;   // (and kept hurt, at 70% at most, so a heal of ITSELF counts as its heal of the ally does: build 2026-11-14q)
                         if (k % 30 === 0) for (const p of foes) if (!p.dead) { applyDamage(player, 0, null); const src = player; ad2(p, 10, src); }
                         for (const p of foes) { if (p.dead) continue;
                             // THE STATUSES IT DISTRIBUTES (the owner, 2026-11-14: "I think you should count the statuses that are distributed"): the enemy-seconds of each, tallied apart (T.st): stunned (asleep with it),

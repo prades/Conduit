@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14q` · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
+- **The ask** (the owner, 2026-11-14: "Work on buffs"; asked, chosen: the Hornshell **"Faster ECHO PULSE"**, SUNDEW **"Measure the heal first"**, the Frost Maw and the Goo Proxy, under their bands by less than a point, **"Leave both"**).
+- **ECHO PULSE's wind-up is 1.75 s** (`MOVES.echo_pulse.windup`; 2.5 s before): the Hornshell pulses more often. Its score 22.9 → 30.6.
+- **The trial runs SUNDEW in BOTH** (`sweet_scent_both`: its stings fill its stockpile, then SWEET SCENT heals with it), as it is meant to be played. Locked on SWEET SCENT alone it makes no sting, so its heal had never fired in a trial. **And every form is kept hurt** (70% of its health at most) in the trial, so a heal of itself counts as its heal of the wounded ally does.
+- **SUNDEW, measured:** BOTH scores 43.2 (28.3 damage, 8.0 healing, 6.9 from its statuses) against 41.8 for its sting alone: its heal is worth about 8 a second, and it is still 55% of the Brawler target.
+- **A moving target:** the Mage target rose from 42.4 to 43.8 as the Mages were lifted (it is the middle Mage's score), so the Rimestar (32.6, unchanged) reads just under its band again. The targets are not set by the owner yet.
+- `js/moves.js`, `tests/moves.js`, `tools/balance-trial.js`, `design/balance-trial.json`, `balance.html`, the Bible.
+- Not playtested.
+
 ### Build `2026-11-14p` · branch `claude/balance-rerun-2` · the second round of status buffs
 - **The ask** (the owner, 2026-11-14, of the four stronger options the agent named after the first round: **"Apply"**).
 - **HORNSHELL:** ECHO PULSE's glitch 0.5 → **1.5 s** (every enemy within 4 tiles). **RIMESTAR:** an icicle's freeze 0.75 → **1.5 s**. **FROST MAW:** CHOMP's stun 1.25 → **1.75 s**. **SUNDEW:** SWEET SCENT's puff **stuns** what it lures **1 s** (with its lure and its poison).
