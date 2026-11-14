@@ -56,6 +56,55 @@ PROPS.larva = (() => {
   // THE PLATING (the owner, of the tail drafts, 2026-11-14: "A and make the tail and body need more plating on each segment"): drafts of more armour on every segment, body and tail, over its
   // shell: 'panels' three raised panels a segment (one over its back, one on each flank; gaps between them, two rivets each, its keel on the back panel); 'scales' two overlapping rows a
   // segment, the front row standing proud of the back, each with its lip. A tail's entry carries none: the shell as approved.
+  // THE LEGS (the owner, of the plating drafts, 2026-11-14: "I like a, now legs should be more angular at least have single claw feet"): drafts. Each leg lies in an upright plane through its
+  // hip (turned forward by its splay and its swing); its parts are flat-sided plates cut to an outline in that plane, its joints six- or eight-sided axles with light in them, and every foot
+  // is one hooked claw, pale and flat like its jaws' sickles, its inner edge lit, its point on the floor. A tail's entry names one (legs); none is the legs as approved in look A:
+  //   1 'blade'  the stance kept, the thigh and shin angular blades, the thigh running on past the knee to a point;
+  //   2 'high'   the knees raised high and sharp over its back, the thigh's point longer, barbs down each shin's inner edge, a long thin claw;
+  //   3 'strut'  up, out and down in hard bends (a squared-off arch), straight struts, pistons across the knee, a heavy claw.
+  // Every proportion here is the agent's, provisional.
+  const LEGS = { 1: { look: 'blade', splay: [0.42, -0.05, -0.42] }, 2: { look: 'high', splay: [0.42, -0.05, -0.42] }, 3: { look: 'strut', splay: [0.42, -0.05, -0.42] } };
+  // one leg of a draft into g: hip its hip's point, out its plane's outward way (level), lift how high its foot is raised, LGd its LEGS entry, S its materials, edge its claw's lit edge
+  const legDraft = (g, S, edge, hip, out, lift, LGd) => {
+    const O = new T.Vector3(hip.x, 0, hip.z), nz = new T.Vector3().crossVectors(out, UPV).normalize(), basis = new T.Matrix4().makeBasis(out, UPV, nz);
+    const P3 = (p2, across) => O.clone().addScaledVector(out, p2[0]).setY(p2[1]).addScaledVector(nz, across || 0);   // a point of its plane (out from the hip, up from the floor)
+    const flat = (pts, depth, mat, bev) => { const m = plate(pts, depth, bev == null ? 0.005 : bev, mat); m.quaternion.setFromRotationMatrix(basis); m.position.copy(O); g.add(m); };
+    // a part's outline from a2 to b2: prof's [u, v] are u along it (0 at a2, 1 at b2) and v out to its outer side (the outside of the leg's bends)
+    const part = (a2, b2, prof) => { const dx = b2[0] - a2[0], dy = b2[1] - a2[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; return prof.map(([u, v]) => [a2[0] + ux * u * L - uy * v, a2[1] + uy * u * L + ux * v]); };
+    const along = (a2, b2, u, v) => part(a2, b2, [[u, v]])[0];
+    const axle = (p2, r, len, mat, seg) => { const m = cyl(r, r, len, mat, seg || 8); m.quaternion.setFromUnitVectors(UPV, nz); m.position.copy(P3(p2)); g.add(m); };
+    const joint = (p2, r, len, seg) => { axle(p2, r, len, S.joint, seg); axle(p2, r * 0.5, len + 0.008, S.glow, seg); };   // (its light showing at both ends)
+    // the claw: a flat sickle from a2, setting off at th0 (radians, 0 straight out, - down) and curling down to th1, its point on the floor; w0 wide at its root, depth thick
+    const claw = (a2, th0, th1, w0, depth) => { const R = (a2[1] - (0.004 + lift)) / (Math.cos(th0) - Math.cos(th1)), cx = a2[0] + R * Math.sin(th0), cy = a2[1] - R * Math.cos(th0), n = 12, outer = [], inner = [];
+      for (let i = 0; i <= n; i++) { const t = i / n, ph2 = th0 + (th1 - th0) * t, w = w0 * Math.max(0.06, 1 - Math.pow(t, 1.35)) / 2, px = cx - R * Math.sin(ph2), py = cy + R * Math.cos(ph2), nx = -Math.sin(ph2), ny = Math.cos(ph2);
+        outer.push([px + nx * w, py + ny * w]); inner.push([px - nx * w, py - ny * w]); }
+      flat(outer.concat(inner.reverse()), depth, S.jaw, 0.004);
+      g.add(ptube(inner.slice(2, n - 1).reverse().map(p => arr(P3(p))), 0.0055, 0.0035, edge, 6)); };
+    const hip2 = [0, hip.y];
+    if (LGd.look === 'blade' || LGd.look === 'high') { const hi = LGd.look === 'high';
+      const knee2 = hi ? [0.1, hip.y + 0.25 + lift * 0.6] : [0.125, hip.y + 0.14 + lift * 0.6], ankle2 = hi ? [0.3, 0.12 + lift] : [0.25, 0.12 + lift];
+      g.add(ball(0.034, S.joint, arr(hip)));
+      // the thigh: a blade running on past the knee to a point, a dark core along it
+      flat(part(hip2, knee2, hi ? [[-0.1, -0.022], [-0.1, 0.02], [0.5, 0.03], [0.95, 0.024], [1.3, 0.002], [1.0, -0.018], [0.5, -0.024]] : [[-0.12, -0.03], [-0.12, 0.026], [0.45, 0.042], [0.96, 0.03], [1.3, 0.004], [1.0, -0.022], [0.5, -0.032]]), hi ? 0.042 : 0.046, S.solid);
+      flat(part(hip2, knee2, [[-0.06, -0.011], [-0.06, 0.011], [0.92, 0.009], [0.92, -0.009]]), hi ? 0.052 : 0.056, S.dark, 0.003);
+      joint(knee2, 0.026, 0.066);
+      // the shin: a blade tapering to the ankle (barbs down its inner edge, high)
+      flat(part(knee2, ankle2, hi ? [[-0.08, -0.02], [-0.08, 0.028], [0.4, 0.03], [1.0, 0.014], [1.05, 0], [1.0, -0.012], [0.8, -0.016], [0.88, -0.054], [0.72, -0.019], [0.54, -0.021], [0.62, -0.058], [0.46, -0.023], [0.15, -0.025]]
+        : [[-0.1, -0.026], [-0.1, 0.034], [0.35, 0.038], [1.0, 0.02], [1.06, 0], [1.0, -0.018], [0.55, -0.028]]), 0.04, S.solid);
+      flat(part(knee2, ankle2, [[0, -0.01], [0, 0.012], [0.94, 0.007], [0.94, -0.006]]), 0.05, S.dark, 0.003);
+      joint(ankle2, 0.017, 0.05, 6);
+      if (hi) claw(ankle2, 0.1, -2.3, 0.04, 0.024); else claw(ankle2, 0, -2.2, 0.048, 0.026);
+    } else {   // strut: up from the hip, out level, down to the claw
+      const knee2 = [0.07, hip.y + 0.15 + lift * 0.6], hock2 = [0.25, hip.y + 0.115 + lift * 0.4], ankle2 = [0.285, 0.11 + lift];
+      joint(hip2, 0.036, 0.072, 6);
+      flat(part(hip2, knee2, [[-0.1, -0.024], [-0.1, 0.024], [1.1, 0.024], [1.1, -0.024]]), 0.05, S.solid);
+      flat(part(knee2, hock2, [[-0.12, -0.02], [-0.12, 0.024], [1.08, 0.022], [1.08, -0.02]]), 0.046, S.solid);
+      flat(part(knee2, hock2, [[0.08, 0.018], [0.14, 0.038], [0.84, 0.034], [0.94, 0.016]]), 0.056, S.dark, 0.003);   // (an armour plate on top)
+      flat(part(hock2, ankle2, [[-0.14, -0.018], [-0.14, 0.02], [1.0, 0.016], [1.0, -0.016]]), 0.042, S.solid);
+      joint(knee2, 0.034, 0.07, 6); joint(hock2, 0.028, 0.062, 6); joint(ankle2, 0.018, 0.05, 6);
+      for (const sd of [-1, 1]) ppiston(g, arr(P3(along(hip2, knee2, 0.35, 0.03), sd * 0.03)), arr(P3(along(knee2, hock2, 0.45, 0.03), sd * 0.03)), 0.009, S);   // (pistons across the knee, on its faces)
+      claw(ankle2, 0.1, -2.1, 0.05, 0.03);
+    } };
   // THE LARVA: S its materials, ph its walk (0..1), jawA its jaws' turn on their hinges (0 at rest, + wider, - shut), edge its jaws' lit edges' material, sparks over its back, tail its TAILS entry
   function larva(S, ph, jawA, edge, sparks, tail) { const g = G(), TAU = Math.PI * 2, TL = tail || TAILS.prongs;
     // its spine, head to tail: the head raised, the body low along the floor in a gentle S, the tail lifting a little; the S sways as it walks
@@ -112,6 +161,8 @@ PROPS.larva = (() => {
     for (let k = 0; k < 3; k++) { const f = frameAt(segT(k)), r = rad(k);
       for (const sg of [-1, 1]) { const kF = [0.07, 0, -0.07][k], aF = [0.15, -0.04, -0.2][k], kS = [0.19, 0.22, 0.22][k], aS = [0.31, 0.37, 0.39][k];
         const lph = TAU * ((ph + ((k + (sg > 0 ? 1 : 0)) % 2) * 0.5) % 1), sw = 0.26 * Math.sin(lph), lift = Math.max(0, Math.cos(lph)) * 0.035, hz = sg * r * 0.85;
+        if (TL.legs) { const LGd = LEGS[TL.legs], al = LGd.splay[k] + sw, fh = new T.Vector3(f.fwd.x, 0, f.fwd.z).normalize();
+          legDraft(g, S, edge, lp(f, 0, -r * 0.35, hz), fh.multiplyScalar(Math.sin(al)).addScaledVector(f.side, sg * Math.cos(al)).normalize(), lift, LGd); continue; }
         const turn = (x, z) => { const dx = x, dz = z - hz, b = -sw * sg; return [dx * Math.cos(b) - dz * Math.sin(b), hz + dx * Math.sin(b) + dz * Math.cos(b)]; };
         const kn = turn(kF, sg * kS), an = turn(aF, sg * aS), fo = turn(aF + (aF - kF) * 0.35, sg * (aS + 0.05));
         const hip = lp(f, 0, -r * 0.35, hz), knee = lp(f, kn[0], 0.09 + lift * 0.6, kn[1]), ankle = lp(f, an[0], 0, an[1]), foot = lp(f, fo[0], 0, fo[1]); ankle.y = 0.07 + lift; foot.y = 0.004 + lift;
@@ -158,6 +209,6 @@ PROPS.larva = (() => {
     const g = G(); g.add(body); return { g, marks: {} }; };
   return { variants, canvas: [560, 400],
     build(name) { return make(name, null); },
-    study(key, name, plates) { return make(name, plates ? Object.assign({}, TAILS[key], { plates }) : TAILS[key]); },   // (a tail draft, and a plating, for design/creatures/voltwyrm_tail_studies.js; the bake draws the game's)
-    tails: Object.keys(TAILS) };
+    study(key, name, plates, legs) { return make(name, plates || legs ? Object.assign({}, TAILS[key], { plates, legs }) : TAILS[key]); },   // (a tail draft, a plating and legs, for design/creatures/voltwyrm_tail_studies.js; the bake draws the game's)
+    tails: Object.keys(TAILS), legs: Object.keys(LEGS) };
 })();
