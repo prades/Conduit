@@ -145,14 +145,15 @@ function realPage() {
         const r = J(`(function(){ __on(); const a = bvZoomPt(640, 430), b = bvZoomPt(740, 330), c = bvUnzoom(b[0], b[1]), d = bvUnzoom(765, 305); __off(); return [a, b, c, d, bvZoomPt(740, 330), bvUnzoom(740, 330)]; })()`);
         same(JSON.stringify(r), JSON.stringify([[640, 430], [765, 305], [740, 330], [740, 330], [740, 330], [740, 330]]), 'the points (the middle; out; back; back from the screen; no zoom both ways)');
     });
-    check('the copy: the picture\'s middle 1/1.25 drawn over the whole screen; on HIGH a blurred copy kept towards the edges, then the darkening; on LOW the darkening alone; then the network panel; out of the view nothing', () => {
+    check('the copy: the picture\'s middle 1/1.25 drawn over the whole screen; on HIGH a blurred copy kept towards the edges with the darkening laid on it, one layer built at half the size and drawn over the whole screen (build 2026-11-14s); on LOW the darkening alone; then the network panel; out of the view nothing; a step with no picture copies nothing (the panel only)', () => {
         const r = J(`(function(){ const o = {}, log = [], keepH = drawFacilityNetworkHUD, keepD = ctx.drawImage, keepLow = gfxLow;
             drawFacilityNetworkHUD = () => log.push('net');
             ctx.drawImage = function (...a) { const im = a[0], name = im === canvas ? 'canvas' : (Object.keys(_bvDraw.cvs).find(k => _bvDraw.cvs[k].c === im) || '?'); log.push(name + (a.length === 9 ? ':' + a.slice(1).map(v => Math.round(v)).join(',') : '')); };
-            try { __on(); gfxLow = false; battleViewPost(); o.high = log.splice(0); gfxLow = true; battleViewPost(); o.low = log.splice(0); __off(); battleViewPost(); o.off = log.splice(0); }
+            try { __on(); gfxLow = false; battleViewPost(); o.high = log.splice(0); gfxLow = true; battleViewPost(); o.low = log.splice(0); gfxLow = false; _simGhost = true; try { battleViewPost(); } finally { _simGhost = false; } o.ghost = log.splice(0); __off(); battleViewPost(); o.off = log.splice(0); }
             finally { drawFacilityNetworkHUD = keepH; ctx.drawImage = keepD; gfxLow = keepLow; }
             return o; })()`);
-        same(r.high.join(' '), 'copy:128,86,1024,688,0,0,1280,860 edge dark net', 'HIGH');   // (the Ant Nest\'s meter went with its test console in build 2026-11-12d)
+        same(r.high.join(' '), 'copy:128,86,1024,688,0,0,1280,860 edge:0,0,640,430,0,0,1280,860 net', 'HIGH');   // (the Ant Nest\'s meter went with its test console in build 2026-11-12d; the edge layer holds the darkening since build 2026-11-14s)
+        same(r.ghost.join(' '), 'net', 'a step with no picture: no copy, the panel only');
         same(r.low.join(' '), 'copy:128,86,1024,688,0,0,1280,860 darkLow net', 'LOW');
         same(r.off.join(' '), '', 'out of the view');
     });

@@ -101,23 +101,37 @@ function _bvRing(key, W, H, r0, r1, col0, col1) {
 }
 function battleViewPost() {
     if (!battleViewDefers() || typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas.width) return;
+    // A STEP WITH NO PICTURE (a slow device catching up, js/game.js _simStep) makes no copy: nothing it makes is ever seen. It made them all (the copy, the blur), as many as a drawn step, so in a fight
+    // that fell behind the work doubled just when the device could least afford it (the diagnostics, 2026-11-14: about two runs a picture on HIGH). The held-back HUD is still called, as before.
+    if (typeof _simGhost !== "undefined" && _simGhost) { if (typeof drawFacilityNetworkHUD === "function") drawFacilityNetworkHUD(); return; }
     const W = canvas.width, H = canvas.height, z = _bv.z, e = _bvSmooth(_bv.k), cx = W / 2, cy = H / 2;
     const cp = _bvCv("copy", W, H); if (!cp) return;
     cp.g.clearRect(0, 0, W, H); cp.g.drawImage(canvas, 0, 0);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
     ctx.drawImage(cp.c, cx - W / (2 * z), cy - H / (2 * z), W / z, H / z, 0, 0, W, H);   // the world picture, zoomed about the centre
     const low = typeof gfxLow !== "undefined" && gfxLow;
+    let darkLaid = false;
     if (!low) {   // HIGH: a small copy scaled back up (a blur: the game has no canvas filter on older iPads), kept only towards the edges
-        const s1 = _bvCv("s1", Math.max(1, Math.ceil(W / 4)), Math.max(1, Math.ceil(H / 4))), s2 = _bvCv("s2", Math.max(1, Math.ceil(W / 14)), Math.max(1, Math.ceil(H / 14))), ed = _bvCv("edge", W, H), mask = _bvRing("blurMask", W, H, BATTLE_VIEW.blur.inner, BATTLE_VIEW.blur.outer, "rgba(0,0,0,0)", "rgba(0,0,0,1)");
-        if (s1 && s2 && ed && mask) {
+        // Built at half the screen's size, both soft (the blur is from a copy a fourteenth the size, the mask and the darkening are gradients: the same picture), and the darkening laid on it
+        // there, each at the view's strength: so one layer the size of the screen goes over the picture, not two, and the layer is built on a quarter of the pixels. The sum is the one it was (the
+        // edge at e over the picture, the darkening at e over that): the edge layer holds the blur at e masked, then the darkening at e over it (build 2026-11-14s; the diagnostics: the full-size
+        // layers were most of a fight's frame).
+        const W2 = Math.max(1, Math.ceil(W / 2)), H2 = Math.max(1, Math.ceil(H / 2));
+        const s1 = _bvCv("s1", Math.max(1, Math.ceil(W / 4)), Math.max(1, Math.ceil(H / 4))), s2 = _bvCv("s2", Math.max(1, Math.ceil(W / 14)), Math.max(1, Math.ceil(H / 14))), ed = _bvCv("edge", W2, H2), mask = _bvRing("blurMask", W2, H2, BATTLE_VIEW.blur.inner, BATTLE_VIEW.blur.outer, "rgba(0,0,0,0)", "rgba(0,0,0,1)");
+        const dk = _bvRing("dark", W2, H2, BATTLE_VIEW.dark.inner, BATTLE_VIEW.dark.outer, "rgba(4,6,12,0)", "rgba(4,6,12," + BATTLE_VIEW.dark.high + ")");
+        if (s1 && s2 && ed && mask && dk) {
             s1.g.clearRect(0, 0, s1.w, s1.h); s1.g.drawImage(canvas, 0, 0, s1.w, s1.h); s2.g.clearRect(0, 0, s2.w, s2.h); s2.g.drawImage(s1.c, 0, 0, s2.w, s2.h);
-            ed.g.globalCompositeOperation = "source-over"; ed.g.clearRect(0, 0, W, H); ed.g.imageSmoothingEnabled = true; ed.g.drawImage(s2.c, 0, 0, W, H);
-            ed.g.globalCompositeOperation = "destination-in"; ed.g.drawImage(mask.c, 0, 0); ed.g.globalCompositeOperation = "source-over";
-            ctx.globalAlpha = e; ctx.drawImage(ed.c, 0, 0); ctx.globalAlpha = 1;
+            const g = ed.g; g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, W2, H2); g.imageSmoothingEnabled = true;
+            g.globalAlpha = e; g.drawImage(s2.c, 0, 0, W2, H2); g.globalAlpha = 1;
+            g.globalCompositeOperation = "destination-in"; g.drawImage(mask.c, 0, 0); g.globalCompositeOperation = "source-over";
+            g.globalAlpha = e; g.drawImage(dk.c, 0, 0); g.globalAlpha = 1;
+            ctx.drawImage(ed.c, 0, 0, W2, H2, 0, 0, W, H); darkLaid = true;
         }
     }
-    const dark = _bvRing(low ? "darkLow" : "dark", W, H, BATTLE_VIEW.dark.inner, BATTLE_VIEW.dark.outer, "rgba(4,6,12,0)", "rgba(4,6,12," + (low ? BATTLE_VIEW.dark.low : BATTLE_VIEW.dark.high) + ")");
-    if (dark) { ctx.globalAlpha = e; ctx.drawImage(dark.c, 0, 0); ctx.globalAlpha = 1; }
+    if (!darkLaid) {   // LOW (the darkening alone), or HIGH when its layers could not be made
+        const dark = _bvRing(low ? "darkLow" : "darkHigh", W, H, BATTLE_VIEW.dark.inner, BATTLE_VIEW.dark.outer, "rgba(4,6,12,0)", "rgba(4,6,12," + (low ? BATTLE_VIEW.dark.low : BATTLE_VIEW.dark.high) + ")");
+        if (dark) { ctx.globalAlpha = e; ctx.drawImage(dark.c, 0, 0); ctx.globalAlpha = 1; }
+    }
     ctx.restore();
     if (typeof drawFacilityNetworkHUD === "function") drawFacilityNetworkHUD();   // held back from the world pass: unzoomed, where it always is
 }

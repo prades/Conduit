@@ -1493,7 +1493,7 @@ function _evoFrame(f, d, f0) {
 }
 function _evoFacing(f) {
     const a = Math.atan2(f.dirY || 0, f.dirX === undefined ? 1 : f.dirX);
-    return ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;
+    return typeof faceEighth === "function" ? faceEighth(f, a) : ((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8;   // (held near a line between two eighths: js/draw.js faceEighth)
 }
 // Draw it, if it is an evolved follower out of (or coming out of) the egg.
 // False: draw the egg as usual (before it has cracked open, or if the sheet

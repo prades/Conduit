@@ -7,6 +7,8 @@ const MAGE_SHOT_MULT = 0.5, MAGE_SHOT_REST = 55;
 // winds up MAGE_SHOT_WINDUP frames, rooted, at the enemy it picked, then goes off (the rest after it is as before). A retreat cancels it; a target that died in the
 // wind-up is let go. The number is the agent's (provisional).
 const MAGE_SHOT_WINDUP = 12;
+// THE WAY A FOLLOWER FACES (updateNPC, build 2026-11-14s): a step under `step` of its own pace does not turn it (a jostle); within `foe` tiles of the edge of what it fights it faces that (the agent's, provisional)
+const NPC_FACE = { step: 0.35, foe: 2.5 };
 function _mageShotFire(actor) {
     const t = actor._shotTarget; actor._shotTarget = null;
     if (!t || t.dead) return;
@@ -176,11 +178,16 @@ function updateRTSNPC(actor) {
     if ( actor.isHealing&&actor.health>=actor.maxHealth*0.95) actor.isHealing=false;
 
     // ── WALK CYCLE + DIRECTION (before role returns) ──
+    // THE WAY IT FACES (the owner, 2026-11-14: "the movement of the followers looks glitched when they flip back and forth with their direction"): the way it went since its last step, as before,
+    // but not while it is thrown (a knock-back: it flies back still facing what threw it, where it turned to face the throw and back), nor for a jostle smaller than NPC_FACE.step of its own step
+    // (the squad's spacing pushing two apart); and a follower within NPC_FACE.foe tiles of the edge of what it fights faces it, standing or stepping, so it does not swing away and back as it
+    // is nudged, steps round it or backs off. (The diagnostics: a brawler thrown by SHOCK RING turned to the throw, then back as it walked in.)
     const dxM=actor.x-(actor.lastX??actor.x), dyM=actor.y-(actor.lastY??actor.y);
-    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) {
-        actor.walkCycle+=0.25;
-        const dlen=Math.hypot(dxM,dyM);
-        actor.dirX=dxM/dlen; actor.dirY=dyM/dlen;
+    if (Math.abs(dxM)>0.001||Math.abs(dyM)>0.001) actor.walkCycle+=0.25;
+    if (!(Math.abs(actor.kbVX || 0) + Math.abs(actor.kbVY || 0) > 0.002)) {
+        const T = actor.isFollower && !actor.isClone ? actor._nearestEnemy : null, tD = T && !T.dead && Number.isFinite(T.x) ? Math.hypot(T.x - actor.x, T.y - actor.y) : Infinity, dlen = Math.hypot(dxM, dyM);
+        if (T && tD > 1e-6 && tD - (T.bodyR || 0) < NPC_FACE.foe) { actor.dirX = (T.x - actor.x) / tD; actor.dirY = (T.y - actor.y) / tD; }
+        else if (dlen > 0.001 && dlen >= (actor.moveSpeed || 0.02) * NPC_FACE.step) { actor.dirX = dxM / dlen; actor.dirY = dyM / dlen; }
     }
     actor.lastX=actor.x; actor.lastY=actor.y;
 
@@ -245,7 +252,7 @@ function updateRTSNPC(actor) {
                 // recovers — see the net in updateNPC.
                 const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
                 if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry; SEARED CHARGE reaches 3 tiles)
-                if (dist > 1.4) {
+                if (dist > Math.max(1.4, (nearestEnemy.bodyR || 0) + 0.2)) {   // (a huge body, bodyR: it strikes at its edge, as js/bosses.js means and the technician already does: THE ANT QUEEN's 1.2 makes 1.4 as before; VOLTWYRM's 1.8 makes 2.0, where 1.4 stood it in the middle of its body, the squad packed at its centre and jostling: build 2026-11-14s)
                     // Approach
                     actor.x+=(dx/dist)*actor.moveSpeed;
                     actor.y+=(dy/dist)*actor.moveSpeed;

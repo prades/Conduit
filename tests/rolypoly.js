@@ -99,12 +99,12 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
         ok(r.e === 'w0_0', 'facing +x: ' + r.e); ok(r.s === 'w2_0', 'facing +y: ' + r.s); ok(r.w === 'w4_0', 'facing -x: ' + r.w); ok(r.ne === 'w7_0', 'facing +x -y: ' + r.ne);
         sameJSON(r.frames, ['w0_0', 'w0_1', 'w0_2', 'w0_3'], 'the four walk frames'); ok(r.curled === 'c0', 'curled: ' + r.curled);
     });
-    check('drawBug3D hands a roly-poly to its sheet (baked at twice its size: drawn at half, scaled by its width), and stands a beetle in while the sheet is not there', () => {
+    check('drawBug3D hands a roly-poly to its sheet (baked at twice its size: drawn at half, scaled by its width), its cell cut once into a small canvas of its own (js/draw.js spriteCell, build 2026-11-14s), and stands a beetle in while the sheet is not there', () => {
         const r = J(`(function(){ const o = {}, p = __rp('scout'), calls = []; const g = { save(){}, restore(){}, drawImage(...a){ calls.push(a); }, globalAlpha: 1 };
-            const real = _psImg; _psImg = () => ({ complete: true, naturalWidth: 10 }); o.h = drawBug3D(p, 100, 100, g); o.calls = calls.length; o.args = calls[0] ? calls[0].slice(1) : null;
-            const c = PROP_ATLAS.rolypoly.cells[rolyCell(p)], k = 26 / 42 / ROLYPOLY.res; o.want = [c.x, c.y, c.w, c.h, 100 - c.ax * k, 100 - c.ay * k, c.w * k, c.h * k]; o.top = c.ay * k;
+            const real = _psImg; _psImg = () => ({ complete: true, naturalWidth: 10 }); o.h = drawBug3D(p, 100, 100, g); o.calls = calls.length; o.sheet = calls[0] ? calls[0].length > 5 : null; o.cell = calls[0] ? [calls[0][0].width, calls[0][0].height] : null; o.args = calls[0] ? calls[0].slice(calls[0].length > 5 ? 5 : 1) : null;
+            const c = PROP_ATLAS.rolypoly.cells[rolyCell(p)], k = 26 / 42 / ROLYPOLY.res; o.want = [100 - c.ax * k, 100 - c.ay * k, c.w * k, c.h * k]; o.cw = [c.w, c.h]; o.top = c.ay * k;
             _psImg = () => null; let beetle = 0; const rb = drawBeetle3D; drawBeetle3D = () => { beetle++; }; drawBug3D(p, 100, 100, g); drawBeetle3D = rb; _psImg = real; o.beetle = beetle; return o; })()`);
-        ok(r.calls === 1, 'one blit: ' + r.calls); sameJSON(r.args.map(v => Math.round(v * 100) / 100), r.want.map(v => Math.round(v * 100) / 100), 'the cell, at its ground point, at a scout\'s size');
+        ok(r.calls === 1, 'one blit: ' + r.calls); ok(r.sheet === false, 'from its own small canvas, not the sheet'); sameJSON(r.cell, r.cw, 'the cell\'s size'); sameJSON(r.args.map(v => Math.round(v * 100) / 100), r.want.map(v => Math.round(v * 100) / 100), 'the cell, at its ground point, at a scout\'s size');
         near(r.h, r.top, 'its height for the bars'); ok(r.beetle === 1, 'a beetle stands in');
     });
 

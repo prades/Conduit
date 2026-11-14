@@ -330,7 +330,7 @@ const SCENE = `(function(){
 
     // Deterministic, unlike timing: this is how much we ask the rasteriser to
     // do. Measured at 14,327 for the old scene after the cull, down from 25,398.
-    const OP_BUDGET = 22000;   // 21,500 until 2026-11-07, when the same code measured 21,460 to 21,645 across runs (the scene's noise straddled it); 19,000 until the combat readability layer (docs/COMBAT.md): a hit's number over every unit, the bar's pale segment, a bite's telegraph; measured 18,821 to 20,113 across runs since
+    const OP_BUDGET = 22500;   // 22,000 until 2026-11-14 (build 2026-11-14s), when the same scene measured 21,744 to 22,194 across runs (alone and in the full run), the code before that build 21,811 to 21,939 (its noise straddled the budget again: one full run failed at 22,024 on a frame no change of the build made heavier); 21,500 until 2026-11-07, when the same code measured 21,460 to 21,645 across runs (the scene's noise straddled it); 19,000 until the combat readability layer (docs/COMBAT.md): a hit's number over every unit, the bar's pale segment, a bite's telegraph; measured 18,821 to 20,113 across runs since
 
     check(`one frame issues fewer than ${OP_BUDGET} canvas operations`, () => {
         E.run('player.visualX = player.x; player.visualY = player.y;');

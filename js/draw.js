@@ -1759,6 +1759,21 @@ function cachedText(text, font, color, x, y) {
     }
     ctx.drawImage(e.cv, x - e.w / 2, y - (e.h - 4), e.w, e.h);
 }
+// THE WAY A PICTURE OF EIGHT FACINGS FACES (the owner, 2026-11-14: "its movement and the movement of the followers looks glitched when they flip back and forth with their direction"): the eighth
+// nearest the unit's heading, kept until the heading is FACE_HOLD past the line between two eighths. A heading that wavers across that line (VOLTWYRM turning between two attackers 30 degrees
+// apart, 16 to 32 degrees across the line at 22.5, in the diagnostics) flipped the whole picture 45 degrees back and forth every few frames. Kept by the drawing, by the unit (a WeakMap: nothing
+// written on the unit, so a step with no picture leaves the game as a drawn one does). The first picture of a unit is its nearest eighth, as before.
+const FACE_HOLD = 0.21;   // radians past the line (about 12 degrees; the agent's, provisional)
+const _faceEighths = new WeakMap();
+function faceEighth(u, ang) {
+    const near = ((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8;
+    if (!u || typeof u !== "object") return near;
+    const was = _faceEighths.get(u);
+    if (was === undefined || was === near) { _faceEighths.set(u, near); return near; }
+    let off = ang - was * (Math.PI / 4); off = Math.atan2(Math.sin(off), Math.cos(off));   // how far the heading is from the eighth it shows
+    if (Math.abs(off) <= Math.PI / 8 + FACE_HOLD) return was;
+    _faceEighths.set(u, near); return near;
+}
 // A SPRITE CELL, cut once out of its big sheet and kept (the optimization check, build 2026-11-09d). In the browser's frame a cell drawn straight out of a sheet thousands of pixels across (the evolved
 // forms' sheets are 2304 x 1152 to 4608 x 1536) cost a few ms a draw, the same cell drawn from a small canvas of its own a few hundredths: the picture is the same. Bounded: past SPRITE_CELL_BUDGET pixels
 // the cells drawn least recently are let go (cut again when next needed). Returns null when no canvas can be made, or the cell is not whole pixels (the caller then draws from the sheet, as before).

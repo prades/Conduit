@@ -139,12 +139,12 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             b.bossAsleep = true; b.walkCycle = 5; o.asleep = larvaCell(b); return o; })()`);
         same([r.e, r.s, r.w, r.ne].join(), 'w0_0,w2_0,w4_0,w7_0', 'its facings'); sameJSON(r.frames, ['w0_0', 'w0_1', 'w0_2', 'w0_3'], 'the four walk frames'); same(r.asleep, 'w0_0', 'asleep');
     });
-    check('drawBug3D hands it to its sheet (baked at its own size: drawn at 1 by its width), and stands a beetle in while the sheet is not there', () => {
+    check('drawBug3D hands it to its sheet (baked at its own size: drawn at 1 by its width), its cell cut once into a small canvas of its own (js/draw.js spriteCell, build 2026-11-14s), and stands a beetle in while the sheet is not there', () => {
         const r = J(`(function(){ __fresh(); __dom(); __tick(1); const p = bossUnit('circuitry'), o = {}, calls = []; const g = { save(){}, restore(){}, drawImage(...a){ calls.push(a); }, globalAlpha: 1 };
-            const real = _psImg; _psImg = () => ({ complete: true, naturalWidth: 10 }); o.h = drawBug3D(p, 100, 100, g); o.calls = calls.length; o.args = calls[0] ? calls[0].slice(1) : null;
-            const c = PROP_ATLAS.larva.cells[larvaCell(p)], k = p.dimensions.width / LARVA.width / LARVA.res; o.k = k; o.want = [c.x, c.y, c.w, c.h, 100 - c.ax * k, 100 - c.ay * k, c.w * k, c.h * k]; o.top = c.ay * k;
+            const real = _psImg; _psImg = () => ({ complete: true, naturalWidth: 10 }); o.h = drawBug3D(p, 100, 100, g); o.calls = calls.length; o.sheet = calls[0] ? calls[0].length > 5 : null; o.cell = calls[0] ? [calls[0][0].width, calls[0][0].height] : null; o.args = calls[0] ? calls[0].slice(calls[0].length > 5 ? 5 : 1) : null;
+            const c = PROP_ATLAS.larva.cells[larvaCell(p)], k = p.dimensions.width / LARVA.width / LARVA.res; o.k = k; o.want = [100 - c.ax * k, 100 - c.ay * k, c.w * k, c.h * k]; o.cw = [c.w, c.h]; o.top = c.ay * k;
             _psImg = () => null; let beetle = 0; const rb = drawBeetle3D; drawBeetle3D = () => { beetle++; }; drawBug3D(p, 100, 100, g); drawBeetle3D = rb; _psImg = real; o.beetle = beetle; o.style = bugBodyStyle(p); return o; })()`);
-        same(r.calls, 1, 'one blit'); same(r.k, 1, 'drawn at its baked size'); sameJSON(r.args.map(v => Math.round(v * 100) / 100), r.want.map(v => Math.round(v * 100) / 100), 'the cell, at its ground point');
+        same(r.calls, 1, 'one blit'); same(r.sheet, false, 'from its own small canvas, not the sheet'); sameJSON(r.cell, r.cw, 'the cell\'s size'); same(r.k, 1, 'drawn at its baked size'); sameJSON(r.args.map(v => Math.round(v * 100) / 100), r.want.map(v => Math.round(v * 100) / 100), 'the cell, at its ground point');
         same(r.h, r.top, 'its height for the bars'); same(r.beetle, 1, 'a beetle stands in'); same(r.style, 'larva', 'its body style');
     });
     check('about twice THE ANT QUEEN\'s length on the floor: lying across the screen its cell is about twice as wide as she is drawn (191 px at her size, measured 2026-11-14)', () => {
@@ -165,6 +165,35 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             const px = (b.x - player.visualX - (b.y - player.visualY)) * TILE_W + canvas.width / 2, py = (b.x - player.visualX + (b.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(b.x, b.y) - 55;
             return { mid: findEnemyAtScreen(px, py) === b, side: findEnemyAtScreen(px + 140, py) === b, far: findEnemyAtScreen(px + 260, py) === b }; })()`);
         same(r.mid, true, 'its middle'); same(r.side, true, '140 px along its body'); same(r.far, false, 'beyond its body');
+    });
+
+    group('STEADY IN THE FIGHT (build 2026-11-14s; the owner: "its movement and the movement of the followers looks glitched when they flip back and forth with their direction")');
+    check('its picture holds its facing while its heading wavers across the line between two eighths (16 to 32 degrees across the line at 22.5, as the diagnostics found it turning between two attackers), and turns on a real turn; its first picture is its nearest eighth (js/draw.js faceEighth)', () => {
+        const r = J(`(function(){ __fresh(); __dom(); __tick(1); const b = bossUnit('circuitry'), at = deg => { b.dirX = Math.cos(deg * Math.PI / 180); b.dirY = Math.sin(deg * Math.PI / 180); return +larvaCell(b).match(/\\d/)[0]; };
+            const o = { first: at(32), waver: [] }; for (let i = 0; i < 8; i++) o.waver.push(at(i % 2 ? 32 : 16)); o.turn = at(95); o.back = at(10); return o; })()`);
+        same(r.first, 1, 'its first picture: the nearest eighth'); sameJSON(r.waver, [1, 1, 1, 1, 1, 1, 1, 1], 'the waver keeps one facing'); same(r.turn, 2, 'a real turn'); same(r.back, 0, 'and back');
+    });
+    check('a brawler strikes it at its edge (its body 1.8 tiles round: 2.0 from its middle), where 1.4 stood the squad in the middle of its body; THE ANT QUEEN\'s brawlers strike at 1.4 as before', () => {
+        const r = J(`(function(){ const o = {};
+            const step = (b, d) => { const f = __mate('core'); f.stance = 'follow'; f.role = 'brawler'; f.x = b.x - d; f.y = b.y; f.lastX = f.x; f.lastY = f.y; f._nearestEnemy = b; f._enemyCacheFrame = frame; f.attackCooldown = 99;
+                const d0 = Math.hypot(b.x - f.x, b.y - f.y); updateNPC(f); const d1 = Math.hypot(b.x - f.x, b.y - f.y); f.dead = true; followers.splice(followers.indexOf(f), 1); return d0 - d1 > 1e-4 ? 'steps in' : 'strikes'; };
+            __fresh(); __dom(); __tick(1); const b = bossUnit('circuitry'); b.provoked = true; o.larva = [step(b, 1.9), step(b, 2.3)];
+            bossReset(); const q = _bossSpawn(BOSS_ENCOUNTERS.nest, 'asleep'); q.provoked = true; o.queen = [step(q, 1.3), step(q, 1.6)]; q.dead = true; actors.splice(actors.indexOf(q), 1); bossReset(); return o; })()`);
+        sameJSON(r.larva, ['strikes', 'steps in'], 'VOLTWYRM: at 1.9 it strikes, at 2.3 it steps in'); sameJSON(r.queen, ['strikes', 'steps in'], 'the queen: at 1.3 it strikes, at 1.6 it steps in');
+    });
+    check('a follower faces what it fights when within 2.5 tiles of its edge, standing or stepping; one thrown back keeps the way it faced; a jostle under a third of its step does not turn one with nothing near, a real step does (js/npc.js updateNPC, NPC_FACE)', () => {
+        const r = J(`(function(){ __fresh(); __dom(); __tick(1); const b = bossUnit('circuitry'); b.provoked = true; const o = {};
+            const f = __mate('core'); f.x = b.x + 3.5; f.y = b.y; f.lastX = f.x; f.lastY = f.y; f.dirX = 1; f.dirY = 0; f._nearestEnemy = b; updateNPC(f); o.foe = [Math.round(f.dirX), Math.round(f.dirY)];
+            const g = __mate('core'); g.x = b.x + 9; g.y = b.y + 6; g._nearestEnemy = null; g.dirX = 0; g.dirY = 1; g.moveCooldown = 99;
+            g.lastX = g.x - 0.1; g.lastY = g.y; g.kbVX = 0.1; g.kbVY = 0; updateNPC(g); o.thrown = [Math.round(g.dirX), Math.round(g.dirY)]; g.kbVX = 0; g.kbVY = 0;
+            g.dirX = 0; g.dirY = 1; g.lastX = g.x - g.moveSpeed * 0.2; g.lastY = g.y; updateNPC(g); o.jostle = [Math.round(g.dirX), Math.round(g.dirY)];
+            g.lastX = g.x - g.moveSpeed; g.lastY = g.y; updateNPC(g); o.step = [Math.round(g.dirX), Math.round(g.dirY)]; return o; })()`);
+        sameJSON(r.foe, [-1, 0], 'faces what it fights'); sameJSON(r.thrown, [0, 1], 'thrown: as it faced'); sameJSON(r.jostle, [0, 1], 'a jostle: as it faced'); sameJSON(r.step, [1, 0], 'a real step: the way it went');
+    });
+    check('a step with no picture makes none of the battle view\'s copies (js/battleview.js battleViewPost: the copies doubled a fight\'s work when the device fell behind)', () => {
+        const r = J(`(function(){ let n = 0; const keep = _bvCv; _bvCv = function () { n++; return keep.apply(this, arguments); }; const z = _bv.z; _bv.z = 1.25; _simGhost = true;
+            try { battleViewPost(); } finally { _simGhost = false; } const ghost = n; n = 0; try { battleViewPost(); } finally { _bvCv = keep; _bv.z = z; } return { ghost, drawn: n }; })()`);
+        same(r.ghost, 0, 'no copy made in a step with no picture'); ok(r.drawn > 0, 'a drawn step makes its copies');
     });
 
     console.log('\n' + (failures ? failures + ' FAILED' : 'all passed'));

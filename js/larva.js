@@ -19,7 +19,7 @@ function larvaArtReady(a) { return !isLarva(a) || (typeof _psImg === "function" 
 function larvaCell(a) {
     let fx = Number.isFinite(a.dirX) ? a.dirX : 1, fy = Number.isFinite(a.dirY) ? a.dirY : 0;
     if (Math.abs(fx) + Math.abs(fy) < 1e-6) { fx = 1; fy = 0; }
-    const d = ((Math.round(Math.atan2(fy, fx) / (Math.PI / 4)) % 8) + 8) % 8, f = typeof frame !== "undefined" ? frame : 0;
+    const d = typeof faceEighth === "function" ? faceEighth(a, Math.atan2(fy, fx)) : ((Math.round(Math.atan2(fy, fx) / (Math.PI / 4)) % 8) + 8) % 8, f = typeof frame !== "undefined" ? frame : 0;   // (held near a line between two eighths: js/draw.js faceEighth)
     const S = a.bossId && typeof _fp !== "undefined" && _fp && _fp.bosses ? _fp.bosses[a.bossId] : null, c = S && S.unit === a ? S.cast : null;
     if (c && !a.dead) {
         if (c.kind === "crush") return "o" + d;   // SICKLE SNAP's warning: its jaws wide, their edges bright
@@ -39,7 +39,10 @@ function drawLarva(a, px, py, g) {
     const w = a.dimensions ? a.dimensions.width : LARVA.width, k = w / LARVA.width / LARVA.res;
     g.save();
     if (a.hitFlash > 0) g.globalAlpha *= 0.85;
-    g.drawImage(img, c.x, c.y, c.w, c.h, px - c.ax * k, py - c.ay * k, c.w * k, c.h * k);
+    // from its own small canvas, cut once (js/draw.js spriteCell, as every form's since build 2026-11-09d: a cell drawn straight out of a sheet this big cost the browser a few ms a draw)
+    const cell = typeof spriteCell === "function" ? spriteCell(img, c.x, c.y, c.w, c.h) : null;
+    if (cell) g.drawImage(cell, px - c.ax * k, py - c.ay * k, c.w * k, c.h * k);
+    else g.drawImage(img, c.x, c.y, c.w, c.h, px - c.ax * k, py - c.ay * k, c.w * k, c.h * k);
     g.restore();
     return c.ay * k;
 }

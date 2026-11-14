@@ -47,7 +47,7 @@ function rolyTick(a) {
 function rolyCell(a) {
     let fx = Number.isFinite(a.dirX) ? a.dirX : 1, fy = Number.isFinite(a.dirY) ? a.dirY : 0;
     if (Math.abs(fx) + Math.abs(fy) < 1e-6) { fx = 1; fy = 0; }
-    const d = ((Math.round(Math.atan2(fy, fx) / (Math.PI / 4)) % 8) + 8) % 8;
+    const d = typeof faceEighth === "function" ? faceEighth(a, Math.atan2(fy, fx)) : ((Math.round(Math.atan2(fy, fx) / (Math.PI / 4)) % 8) + 8) % 8;   // (held near a line between two eighths: js/draw.js faceEighth)
     if (rolyCurled(a)) return "c" + d;
     const moving = !a.dead && (typeof creatureWalking === "function" ? creatureWalking(a) : a.state !== "attack" && a.state !== "idle");   // (walking while it steps, a chase too: js/bugs3d.js)
     const f = moving ? ((Math.floor((a.walkCycle || 0) * ROLYPOLY.gait / (Math.PI * 2) * ROLYPOLY.frames) % ROLYPOLY.frames) + ROLYPOLY.frames) % ROLYPOLY.frames : 0;
@@ -63,7 +63,9 @@ function drawRolyPoly(a, px, py, g) {
     g.save();
     if (a.isNymph) g.globalAlpha = 0.38;
     if (a.hitFlash > 0) g.globalAlpha *= 0.85;
-    g.drawImage(img, c.x, c.y, c.w, c.h, px - c.ax * k, py - lift - c.ay * k, c.w * k, c.h * k);
+    const cell = typeof spriteCell === "function" ? spriteCell(img, c.x, c.y, c.w, c.h) : null;   // (its own small canvas, cut once: js/draw.js spriteCell)
+    if (cell) g.drawImage(cell, px - c.ax * k, py - lift - c.ay * k, c.w * k, c.h * k);
+    else g.drawImage(img, c.x, c.y, c.w, c.h, px - c.ax * k, py - lift - c.ay * k, c.w * k, c.h * k);
     g.restore();
     return c.ay * k;
 }
