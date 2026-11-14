@@ -128,6 +128,16 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Affects:** js/species.js, docs/FOLLOWER-PROGRESSION.md, the Bible, tests/followertypes.js and tests/followerprog.js. Existing saved followers keep their bases.
 - **Open:** breeding's 2× cap is now unreachable; whether it should be lowered is not decided.
 
+## DECISION: The first balance pass (four moves brought down)
+
+- **Date:** 2026-11-14 · **Branch/build:** `claude/balance-rerun-2`, `2026-11-14n`
+- **Status:** Approved ("Go with your picks")
+- **Context:** on the neutral dummy six moves stood over their role's band. The agent listed ways to bring each down and a pick for each.
+- **Decision:** ERUPTION 1.8 → 1.2 x; SKATE CHARGE 1 → 0.65 x; SONIC ROLL's chain 60% → 40% a jump; BLADE ROLL 1.2 → 1 x. STAKE RING and MAELSTROM left (within noise). Each keeps what makes it its own (the area and armour break, the slow, the big first hit).
+- **Alternatives (per move):** a smaller area, a longer cooldown or wind-up, a narrower line, a cap on targets, a shorter or weaker status.
+- **Open:** the forms under their bands (Hornshell, SUNDEW, Rimestar, Goo Proxy, Frost Maw, Hover Shell); the role targets are still today's middles.
+- **Affects:** js/evolution.js, balance.html.
+
 ## DECISION: The followers' four traits are removed
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/remove-perks`, `2026-11-14f`

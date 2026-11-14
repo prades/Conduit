@@ -128,7 +128,9 @@ const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) dra
 const BLOOM_RADIUS = 1.8, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
 const SERPENT_RANGE = 6.5, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
-const MANTA_RANGE = 4, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
+// THE FIRST BALANCE PASS (build 2026-11-14n; the owner, 2026-11-14, of the agent's picks for the moves over their band on balance.html: "Go with your picks"): ERUPTION 1.8 -> 1.2 x, SKATE CHARGE 1 -> 0.65 x,
+// SONIC ROLL's chain 60% -> 40% a jump, BLADE ROLL 1.2 -> 1 x. STAKE RING and MAELSTROM, barely over, are left.
+const MANTA_RANGE = 4, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.4, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
 // THE FOLLOWER COMBAT REDESIGN (the owner's brief, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md). Every number below is PROVISIONAL (that doc's §11.2), to tune in play.
 // HEXFIRE: a fire projectile at the nearest enemy in reach; where it lands, a stationary burning circle that hurts enemies only, never grows and never moves. One circle an Ember Hood: a new one takes its last one's place.
 // MAGMA VENT (the Thermite Burrower's alternate; the owner, 2026-11-06: "Short and hot"; docs/NEXT-PHASE-ROADMAP.md §12.3): a small volcanic vent opened at the enemy it can see, bursting magma upward
@@ -143,7 +145,7 @@ const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
 const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2, VORTEX_HOLD = 1;   // reach, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power, and how far in front of its middle the pull gathers the enemies (tiles; the agent's, provisional)
 const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
-const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
+const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.2, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;   // (1.2: 1.8 until build 2026-11-14n, the first balance pass)
 const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 // THE FORMS THAT HOLD STILL STANDING (the owner, 2026-11-09: "the creatures need an idle phase where they don't squirm ... the salamander needs to stop moving, but the thunderhead looks fine whenever he's
@@ -1063,7 +1065,7 @@ function riftImpaleTick(e) {   // (js/elements.js updateElementEffects)
 // (else to it, as SKATE CHARGE stops), at a SLOW pace, ROLL_STEP tiles a frame (the owner, 2026-11-13: "he rolls up into a ball and rolls through at like a slower pace"; build 2026-11-14a: it crossed
 // its line at once). Each enemy is sliced as the ball reaches it, once: ROLL_MULT x its attack, Slashing, core, within ROLL_BAND of the ball (bladeRollTick). While it rolls its body is not drawn: the ball is
 // (js/elements.js "bladeroll").
-const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1.2, ROLL_STEP = 0.08;
+const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1, ROLL_STEP = 0.08;   // (ROLL_MULT 1: 1.2 until build 2026-11-14n, the first balance pass)
 function bladeRoll(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ROLL_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;
@@ -1136,7 +1138,7 @@ function shockZap(f) {
 }
 // SKATE CHARGE (the Igloo Skater's): toward the nearest enemy it can see within SKATE_RANGE it skates in a straight line, on past it up to SKATE_RANGE in all along floor it could walk (else to it, as
 // SONIC ROLL stops): every enemy within SKATE_BAND of its line takes SKATE_MULT × its attack (Slashing, ice) and is slowed to SKATE_SLOW_F of its speed for SKATE_SLOW frames.
-const SKATE_RANGE = 4, SKATE_BAND = 0.8, SKATE_MULT = 1, SKATE_SLOW = 120, SKATE_SLOW_F = 0.6;
+const SKATE_RANGE = 4, SKATE_BAND = 0.8, SKATE_MULT = 0.65, SKATE_SLOW = 120, SKATE_SLOW_F = 0.6;   // (SKATE_MULT 0.65: 1 until build 2026-11-14n, the first balance pass)
 function skateCharge(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SKATE_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;

@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14n` · branch `claude/balance-rerun-2` · the first balance pass: four moves brought down
+- **The ask** (the owner, 2026-11-14: "List ways to nerf each one"; of the agent's pick for each, **"Go with your picks"**).
+- **ERUPTION** (Seeper): 1.8 → **1.2 ×** its attack (its area and its armour break as they were). Score 149.4 → 99.6.
+- **SKATE CHARGE** (Igloo Skater): 1 → **0.65 ×** (its slow as it was). 68.5 → 47.1.
+- **SONIC ROLL** (Static Orb): its chain 60% → **40%** of the hit a jump (the first hit, 2.4 ×, as it was). 120.3 → 100.5.
+- **BLADE ROLL** (Hammer Slug): 1.2 → **1 ×**. 51.6 → 43.0, in its band.
+- **Left as they were:** STAKE RING (46.7) and MAELSTROM (53.3), barely over their bands.
+- **After the pass** (the trial run again, the neutral dummy): the bands are Brawler 59.4 to 99, Mage 32.5 to 54.2, Technician 26.2 to 43.7. ERUPTION and SONIC ROLL sit at the top edge of the Brawler band (1.3 × the target), SKATE CHARGE and STAKE RING a little over the Technician band. Still below: Hornshell 44%, SUNDEW 48%, Rimestar 55%, Goo Proxy 57%, Frost Maw and Hover Shell 72%.
+- `js/evolution.js` (four numbers), `tests/followercombat.js`, the Bible (its numbers), `docs/COMBAT.md`, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
 ### Build `2026-11-14m` · branch `claude/balance-rerun-2` · the balance trial fights a neutral dummy; a column for the ants
 - **The ask** (the owner, 2026-11-14: "Rerun the trials"; "What should we do to balance"; of the agent's first step, **"Yes, do the neutral dummy"**).
 - **Why:** the trial fought ants only, and an ant is weak to Crushing and Earthquake and resists Elemental, so the scores mixed the attacks' own worth with the ant match-up.
