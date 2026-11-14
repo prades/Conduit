@@ -4,6 +4,56 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-14
 
+### Build `2026-11-14r` (stamped 14q on its branch) · branch `claude/balance-rerun-2` · ECHO PULSE faster; the trial measures SUNDEW's heal
+- **The ask** (the owner, 2026-11-14: "Work on buffs"; asked, chosen: the Hornshell **"Faster ECHO PULSE"**, SUNDEW **"Measure the heal first"**, the Frost Maw and the Goo Proxy, under their bands by less than a point, **"Leave both"**).
+- **ECHO PULSE's wind-up is 1.75 s** (`MOVES.echo_pulse.windup`; 2.5 s before): the Hornshell pulses more often. Its score 22.9 → 30.6.
+- **The trial runs SUNDEW in BOTH** (`sweet_scent_both`: its stings fill its stockpile, then SWEET SCENT heals with it), as it is meant to be played. Locked on SWEET SCENT alone it makes no sting, so its heal had never fired in a trial. **And every form is kept hurt** (70% of its health at most) in the trial, so a heal of itself counts as its heal of the wounded ally does.
+- **SUNDEW, measured:** BOTH scores 43.2 (28.3 damage, 8.0 healing, 6.9 from its statuses) against 41.8 for its sting alone: its heal is worth about 8 a second, and it is still 55% of the Brawler target.
+- **A moving target:** the Mage target rose from 42.4 to 43.8 as the Mages were lifted (it is the middle Mage's score), so the Rimestar (32.6, unchanged) reads just under its band again. The targets are not set by the owner yet.
+- `js/moves.js`, `tests/moves.js`, `tools/balance-trial.js`, `design/balance-trial.json`, `balance.html`, the Bible.
+- Not playtested.
+
+### Build `2026-11-14q` (stamped 14p on its branch) · branch `claude/balance-rerun-2` · the second round of status buffs
+- **The ask** (the owner, 2026-11-14, of the four stronger options the agent named after the first round: **"Apply"**).
+- **HORNSHELL:** ECHO PULSE's glitch 0.5 → **1.5 s** (every enemy within 4 tiles). **RIMESTAR:** an icicle's freeze 0.75 → **1.5 s**. **FROST MAW:** CHOMP's stun 1.25 → **1.75 s**. **SUNDEW:** SWEET SCENT's puff **stuns** what it lures **1 s** (with its lure and its poison).
+- **What the trial says** (run again): Rimestar 26.4 → 32.6, **in its band**; Hornshell 17.5 → 22.9 (ECHO PULSE now its best mode; still 54% of the Mage target); Frost Maw 57.0 → 58.6 (just under its band's 59.4); SUNDEW's SWEET SCENT 21.1 → 28.1, its best still its sting, 41.8 (53%).
+- The Gunslinger's CRYO MARKSMAN card's freeze, written "as the Frost Maw's bite", **keeps its 1.25 s** (its own number; `tests/playercards.js` no longer ties the two).
+- The lengths are the agent's, provisional.
+- `js/evolution.js`, `js/unitinfo.js`, `tests/ninemoves.js`, `tests/evolution.js`, `tests/playercards.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
+### Build `2026-11-14p` (stamped 14o on its branch) · branch `claude/balance-rerun-2` · the status buffs: six forms under their band
+- **The ask** (the owner, 2026-11-14: "List, make status the buff"; then a pick for each form from the agent's lists).
+- **HORNSHELL:** its shot's status is **GLITCH** (0.5 s; it slowed), a quarter of its hits as before.
+- **RIMESTAR:** an icicle of ICICLE VOLLEY that hits **freezes** its target, a stun of 0.75 s (it slowed it to 60% for 2 s); a boss is not frozen.
+- **GOO PROXY:** the enemy it swaps with in PHASE SWAP is **glitched 1.5 s**.
+- **SUNDEW:** its sting **poisons on every hit** (it slowed, a quarter of the time).
+- **FROST MAW:** its bite slows **half the time** (a quarter).
+- **HOVER SHELL:** SHOCK ZAP **arcs** to the nearest other enemy within 2.5 tiles of its target: glitched 0.5 s too, not hurt.
+- **What the trial says** (run again): Goo Proxy 19.8 → 26.1 (at its band's edge), Hover Shell 25.3 → 28.0 (in its band), SUNDEW 38 → 41.3, Rimestar 23.9 → 26.4, Hornshell 18.9 → 17.5, Frost Maw 57 → 57. **The agent's estimates were too high for the Rimestar and the Hornshell** (a short freeze or glitch in place of a long slow is worth about the same on the page), and the Maw's best mode is CHOMP, which its bite's chance does not touch. Still under their bands: Hornshell 42%, SUNDEW 52%, Rimestar 63%, Frost Maw 72%.
+- The lengths (0.5 s, 0.75 s, 1.5 s, 2.5 tiles) are the agent's, provisional.
+- `js/combat.js` (`PRIMARY_STATUS`, `PRIMARY_STATUS_ODDS`, the glitch), `js/evolution.js`, `js/unitinfo.js`, `tests/evolution.js`, `tests/ninemoves.js`, `docs/COMBAT.md`, the Bible, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
+### Build `2026-11-14o` (stamped 14n on its branch) · branch `claude/balance-rerun-2` · the first balance pass: four moves brought down
+- **The ask** (the owner, 2026-11-14: "List ways to nerf each one"; of the agent's pick for each, **"Go with your picks"**).
+- **ERUPTION** (Seeper): 1.8 → **1.2 ×** its attack (its area and its armour break as they were). Score 149.4 → 99.6.
+- **SKATE CHARGE** (Igloo Skater): 1 → **0.65 ×** (its slow as it was). 68.5 → 47.1.
+- **SONIC ROLL** (Static Orb): its chain 60% → **40%** of the hit a jump (the first hit, 2.4 ×, as it was). 120.3 → 100.5.
+- **BLADE ROLL** (Hammer Slug): 1.2 → **1 ×**. 51.6 → 43.0, in its band.
+- **Left as they were:** STAKE RING (46.7) and MAELSTROM (53.3), barely over their bands.
+- **After the pass** (the trial run again, the neutral dummy): the bands are Brawler 59.4 to 99, Mage 32.5 to 54.2, Technician 26.2 to 43.7. ERUPTION and SONIC ROLL sit at the top edge of the Brawler band (1.3 × the target), SKATE CHARGE and STAKE RING a little over the Technician band. Still below: Hornshell 44%, SUNDEW 48%, Rimestar 55%, Goo Proxy 57%, Frost Maw and Hover Shell 72%.
+- `js/evolution.js` (four numbers), `tests/followercombat.js`, the Bible (its numbers), `docs/COMBAT.md`, `design/balance-trial.json`, `balance.html`.
+- Not playtested.
+
+### Build `2026-11-14n` (stamped 14m on its branch) · branch `claude/balance-rerun-2` · the balance trial fights a neutral dummy; a column for the ants
+- **The ask** (the owner, 2026-11-14: "Rerun the trials"; "What should we do to balance"; of the agent's first step, **"Yes, do the neutral dummy"**).
+- **Why:** the trial fought ants only, and an ant is weak to Crushing and Earthquake and resists Elemental, so the scores mixed the attacks' own worth with the ant match-up.
+- **The scored pass fights dummies with no weakness and no resistance** (`tools/balance-trial.js`: the enemy has no race's row); the bands on `balance.html` are made from it. **A second pass fights ants**: each mode's "Damage vs ants" and "Ants ×" (how much the ants add or take), and each form's "vs ants" score.
+- **What it shows:** against ants every form deals less (× 0.74 to 0.97): the Elemental half of every hit is resisted, and the attacks typed Crushing or Earthquake lose least (ERUPTION × 0.97, GRAVITY SLAM × 0.94), those typed Elemental most (the Thunderhead, the Voidstar, the Ember Hood × 0.74 to 0.75). The flags hold on the neutral dummy: the Igloo Skater's SKATE CHARGE 2 × its target, ERUPTION 1.9 ×, SONIC ROLL 1.5 ×; the Hornshell and SUNDEW at 46%.
+- Run on the game of build `2026-11-14l` (no perks, no traits). The game itself is not changed by this build.
+- `tools/balance-trial.js`, `tools/balance.js`, `design/balance-trial.json`, `balance.html`.
+
 ### Build `2026-11-14m` · branch `claude/start-game-project-HSh7Z` · VOLTWYRM redesigned: a clawed tail, strut legs, a more angular head
 - **Asked** (the owner, 2026-11-14): "I want to redesign the volt worm, and I want to make the tail a little bit thicker and wider, and make it have like claws on the end, like Groudon from Pokemon"; of the drafts: "A and make the tail and body need more plating on each segment", then "I like a, now legs should be more angular at least have single claw feet", then, circling leg draft 3, "I like this one and can you make the head slightly more angular and that's perfect".
 - **The tail** (draft A, in place of the twin prongs): thicker and wider toward its end, an armoured wrist lit round its rim, and three heavy pale talons splayed like a raptor's foot, hooking down to the floor, their inner edges lit.

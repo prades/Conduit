@@ -128,7 +128,9 @@ const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) dra
 const BLOOM_RADIUS = 1.8, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
 const SERPENT_RANGE = 6.5, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
-const MANTA_RANGE = 4, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
+// THE FIRST BALANCE PASS (build 2026-11-14n; the owner, 2026-11-14, of the agent's picks for the moves over their band on balance.html: "Go with your picks"): ERUPTION 1.8 -> 1.2 x, SKATE CHARGE 1 -> 0.65 x,
+// SONIC ROLL's chain 60% -> 40% a jump, BLADE ROLL 1.2 -> 1 x. STAKE RING and MAELSTROM, barely over, are left.
+const MANTA_RANGE = 4, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.4, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
 // THE FOLLOWER COMBAT REDESIGN (the owner's brief, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md). Every number below is PROVISIONAL (that doc's §11.2), to tune in play.
 // HEXFIRE: a fire projectile at the nearest enemy in reach; where it lands, a stationary burning circle that hurts enemies only, never grows and never moves. One circle an Ember Hood: a new one takes its last one's place.
 // MAGMA VENT (the Thermite Burrower's alternate; the owner, 2026-11-06: "Short and hot"; docs/NEXT-PHASE-ROADMAP.md §12.3): a small volcanic vent opened at the enemy it can see, bursting magma upward
@@ -143,8 +145,9 @@ const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
 const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2, VORTEX_HOLD = 1;   // reach, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power, and how far in front of its middle the pull gathers the enemies (tiles; the agent's, provisional)
 const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
-const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
-const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
+const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.2, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;   // (1.2: 1.8 until build 2026-11-14n, the first balance pass)
+// (Build 2026-11-14p, the second round of status buffs, the owner: "Apply": CHOMP's stun 75 -> 105 frames, ECHO PULSE's glitch 30 -> 90, an icicle's freeze 45 -> 90, and SWEET SCENT's puff stuns what it lures SCENT_STUN frames.)
+const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 105, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 // THE FORMS THAT HOLD STILL STANDING (the owner, 2026-11-09: "the creatures need an idle phase where they don't squirm ... the salamander needs to stop moving, but the thunderhead looks fine whenever he's
 // idle right now"; then "The 10 that walk in place"): their idle loop is a walk, so standing they hold one idle column (the number: which; 0, where the loop's steps start); walking they play the loop as
@@ -801,7 +804,7 @@ function stakeRing(f) {
 //     does not fire (ready again). The stockpile is not saved (a fight's). The numbers are the agent's, PROVISIONAL.
 const SUNDEW_NECTAR_STEP = 25, SCENT_RADIUS = 5, SCENT_FRAMES = 240, SCENT_HEAL = 0.2, SCENT_HEAL_R = 3;
 // the puff POISONS what it lures (build 2026-11-13k; the owner, 2026-11-13: SWEET SCENT Elemental, "And have it do some damage. No, have it poison"): its bites weaken (applyWeaken) to SCENT_POISON_FACTOR for SCENT_POISON_FRAMES (the length and the strength are the agent's, provisional: a primary attack's poison, js/combat.js)
-const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6;
+const SCENT_POISON_FRAMES = 180, SCENT_POISON_FACTOR = 0.6, SCENT_STUN = 60;   // (SCENT_STUN: the puff stuns what it lures a second, build 2026-11-14p)
 function sundewNectar(f) { if (f && f.evolved === "sundew") f._nectar = Math.min(100, (f._nectar || 0) + SUNDEW_NECTAR_STEP); }
 function sweetScent(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0;
@@ -815,7 +818,7 @@ function sweetScent(f) {
     } else {   // THE PUFF: the enemies near it come for it
         const foes = _evoFoesSeen(f.x, f.y, SCENT_RADIUS).filter(a => !a.bossId && !a.bossName && !a.isBoss);
         if (!foes.length) return false;
-        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
+        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; if (typeof applyWeaken === "function") applyWeaken(a, SCENT_POISON_FRAMES, SCENT_POISON_FACTOR); if (typeof applyStun === "function") applyStun(a, SCENT_STUN); }   // (POISONED too, since 2026-11-13k: the owner, "have it poison")
         if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_RADIUS, color: "#ffb8dc", life: 36 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffb8dc", radius: 1.4, life: 30 }); }
         if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
     }
@@ -888,12 +891,13 @@ function wobbleSlam(f) {
 }
 // ICICLE VOLLEY (the Rimestar's): a fan of ICICLE_COUNT icicles at the nearest enemy it can see within ICICLE_RANGE, ICICLE_FAN radians apart; each is its shot (SP.ATK × the Mages' share), ice, and
 // one that hits slows its target to ICICLE_SLOW_F of its speed for ICICLE_SLOW frames.
-const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6;
+// (Build 2026-11-14o, the status buffs: an icicle that hits FREEZES its target, a stun of ICICLE_FREEZE frames, not a boss; a boss is slowed as before. It slowed everything it hit.)
+const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6, ICICLE_FREEZE = 90;
 function icicleVolley(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ICICLE_RANGE));
     if (!t || typeof spawnFollowerProjectile !== "function") return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, dmg = (f.stats && f.stats.specialAttack || 10) * (typeof MAGE_SHOT_MULT !== "undefined" ? MAGE_SHOT_MULT : 0.5);
-    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (a && !a.dead && typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
+    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (!a || a.dead) return; if (!_evoBoss(a) && typeof applyStun === "function") applyStun(a, ICICLE_FREEZE); else if (typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
     for (let k = 0; k < ICICLE_COUNT; k++) {
         const ang = a0 + (k - (ICICLE_COUNT - 1) / 2) * ICICLE_FAN, aim = k === (ICICLE_COUNT - 1) / 2 ? t : { x: f.x + Math.cos(ang) * d, y: f.y + Math.sin(ang) * d };
         spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1, kind: "icicle" });   // (kind: its modelled icicle, js/fx3d.js; without it, the ice shot)
@@ -903,7 +907,7 @@ function icicleVolley(f) {
     return true;
 }
 // ECHO PULSE (the Hornshell's): a ring of sound out to ECHO_RADIUS: every enemy it can see in it takes ECHO_MULT × its attack (core) and its wind-up is broken (GLITCH, ECHO_GLITCH frames).
-const ECHO_RADIUS = 4, ECHO_MULT = 0.4, ECHO_GLITCH = 30;
+const ECHO_RADIUS = 4, ECHO_MULT = 0.4, ECHO_GLITCH = 90;   // (ECHO_GLITCH 90: 30 until build 2026-11-14p)
 function echoPulse(f) {
     const foes = _evoFoesSeen(f.x, f.y, ECHO_RADIUS);
     if (!foes.length) return false;
@@ -963,7 +967,8 @@ function shellGuard(f) {
 function shellGuardCut(t, amount) { return t && t._guardUntil > (typeof frame !== "undefined" ? frame : 0) ? amount * (1 - GUARD_CUT) : amount; }
 // PHASE SWAP (the Goo Proxy's): it swaps places with the nearest enemy it can see within SWAP_RANGE (not a boss; both spots floor one can stand on), flux; a goo burst at the spot it left hurts every
 // enemy within SWAP_BURST of it, the one it swapped with included, SWAP_MULT × its attack.
-const SWAP_RANGE = 6, SWAP_BURST = 1, SWAP_MULT = 1;
+// (Build 2026-11-14o, the status buffs: the enemy it swaps with is GLITCHED SWAP_GLITCH frames.)
+const SWAP_RANGE = 6, SWAP_BURST = 1, SWAP_MULT = 1, SWAP_GLITCH = 90;
 function phaseSwap(f) {
     const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SWAP_RANGE).filter(a => !_evoBoss(a) && stand(a.x, a.y)));
@@ -971,6 +976,7 @@ function phaseSwap(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y;
     f.x = t.x; f.y = t.y; f._fpPath = null; t.x = ox; t.y = oy; t._fpPath = null; t.kbVX = t.kbVY = 0;
     for (const a of _evoFoesSeen(ox, oy, SWAP_BURST)) applyDamage(a, (f.power || 10) * SWAP_MULT, f, null, false, false, DMG_HIT_SWAP);
+    if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, SWAP_GLITCH);
     f._sigAt = f0; f._sigCd = moveWindupFrames("phase_swap"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "impact", x: f.x, y: f.y, color: "#cc66ff", radius: 0.7, life: 18 }); _evoFx({ type: "ring", x: ox, y: oy, radius: SWAP_BURST, color: "#9933ff", life: 24 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#e0a8ff", radius: 0.9, life: 20 });
     _evoSay(f, "PHASE SWAP", "#d9a3ff");
@@ -1063,7 +1069,7 @@ function riftImpaleTick(e) {   // (js/elements.js updateElementEffects)
 // (else to it, as SKATE CHARGE stops), at a SLOW pace, ROLL_STEP tiles a frame (the owner, 2026-11-13: "he rolls up into a ball and rolls through at like a slower pace"; build 2026-11-14a: it crossed
 // its line at once). Each enemy is sliced as the ball reaches it, once: ROLL_MULT x its attack, Slashing, core, within ROLL_BAND of the ball (bladeRollTick). While it rolls its body is not drawn: the ball is
 // (js/elements.js "bladeroll").
-const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1.2, ROLL_STEP = 0.08;
+const ROLL_RANGE = 4, ROLL_BAND = 0.8, ROLL_MULT = 1, ROLL_STEP = 0.08;   // (ROLL_MULT 1: 1.2 until build 2026-11-14n, the first balance pass)
 function bladeRoll(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ROLL_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;
@@ -1121,14 +1127,16 @@ function toxicStomp(f) {
 }
 // SHOCK ZAP (the Hover Shell's): a zap from its shell at the nearest enemy it can see within ZAP_RANGE: ZAP_MULT × its attack, electric, and its wind-up broken (GLITCH, ZAP_GLITCH frames). Its KINETIC
 // LAUNCHER is untouched.
-const ZAP_RANGE = 4, ZAP_MULT = 1, ZAP_GLITCH = 30;
+// (Build 2026-11-14o, the status buffs: the zap ARCS to the nearest other enemy within ZAP_ARC of its target, which is glitched too and not hurt.)
+const ZAP_RANGE = 4, ZAP_MULT = 1, ZAP_GLITCH = 30, ZAP_ARC = 2.5;
 function shockZap(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ZAP_RANGE));
     if (!t) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(t, (f.power || 10) * ZAP_MULT, f, "electric", false, false, DMG_HIT_ZAP);
     if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, ZAP_GLITCH);
-    f._arcPts = [{ x: t.x, y: t.y }]; f._arcUntil = f0 + 16; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
+    const t2 = _evoNearest(t.x, t.y, _evoFoesSeen(t.x, t.y, ZAP_ARC).filter(a => a !== t)); if (t2 && typeof applyGlitch === "function") { applyGlitch(t2, ZAP_GLITCH); _evoFx({ type: "impact", x: t2.x, y: t2.y, color: "#ffee33", radius: 0.4, life: 14 }); }
+    f._arcPts = [{ x: t.x, y: t.y }].concat(t2 ? [{ x: t2.x, y: t2.y }] : []); f._arcUntil = f0 + 16; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
     f.dirX = t.x - f.x; f.dirY = t.y - f.y; f._sigAt = f0; f._sigCd = moveWindupFrames("shock_zap"); f.state = "attack"; f.attackAnim = 0;
     _evoFx({ type: "impact", x: t.x, y: t.y, color: "#ffee33", radius: 0.5, life: 16 });
     _evoSay(f, "SHOCK ZAP", "#fff27a");
@@ -1136,7 +1144,7 @@ function shockZap(f) {
 }
 // SKATE CHARGE (the Igloo Skater's): toward the nearest enemy it can see within SKATE_RANGE it skates in a straight line, on past it up to SKATE_RANGE in all along floor it could walk (else to it, as
 // SONIC ROLL stops): every enemy within SKATE_BAND of its line takes SKATE_MULT × its attack (Slashing, ice) and is slowed to SKATE_SLOW_F of its speed for SKATE_SLOW frames.
-const SKATE_RANGE = 4, SKATE_BAND = 0.8, SKATE_MULT = 1, SKATE_SLOW = 120, SKATE_SLOW_F = 0.6;
+const SKATE_RANGE = 4, SKATE_BAND = 0.8, SKATE_MULT = 0.65, SKATE_SLOW = 120, SKATE_SLOW_F = 0.6;   // (SKATE_MULT 0.65: 1 until build 2026-11-14n, the first balance pass)
 function skateCharge(f) {
     const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SKATE_RANGE).filter(a => _evoDashOk(f, a)));
     if (!t) return false;
