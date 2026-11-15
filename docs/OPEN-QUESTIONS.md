@@ -8,11 +8,12 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-14, the balance targets** (build `2026-11-14t`; the owner: "Freeze the targets"): fixed at Brawler 79, Mage 44, Technician 35. Still open: SUNDEW at 69% of its target after its sting's buff, the Hornshell at 69%, the Rimestar and the Frost Maw at 74%, the Goo Proxy at 75% (the last three within a point or two of their bands). As it stood: **the balance targets move** (build `2026-11-14q`): a role's target is the middle score of its forms, so lifting some forms raises the target and others fall out of the band without changing (the Rimestar). The owner has not set fixed targets; until then a pass can chase its own tail. SUNDEW is at 55% of the Brawler target with its heal measured (about 8 a second): what lifts it is not decided.
 
-**Open 2026-11-15, the game's look and combat** (`docs/STYLE-EVOLUTION.md`; the owner: "I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable"). Ten directions, each with a picture; nothing chosen, nothing built.
-- Which look, or which mix?
-- Which fight idea or ideas? Does "real time stays" (`BATTLE-LOOK.md`, 2026-11-11) still hold?
-- Real 3D or 2.5D? If real 3D, a prototype behind a flag (`?engine=3d`) first? This reopens "Stay 2D for now" (2026-11-09).
+**Open 2026-11-15, the game's look and combat** (`docs/STYLE-EVOLUTION.md`; the owner: "I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable"; then, of the first ten, "Reimagine it now"). Two rounds of ten directions, each with a picture; nothing chosen, nothing built.
+- Which look, or which mix? Round 2's: Crystal Lab 3D, the Living Diorama, Crystal Noir, Ink and Spot Colour, Pixel Squad, Third Person, Cartridge 3D, Facet Tactics, Papercraft, the War Table. Round 1's can still be chosen.
+- Which fight? Does "real time stays" (`BATTLE-LOOK.md`, 2026-11-11) still hold?
+- Real 3D or 2.5D? If real 3D, the Crystal Chamber behind a flag (`?engine=3d`) first? This reopens "Stay 2D for now" (2026-11-09).
 - The oldest iPads (iPadOS 13.4 to 14) and WebGL 1. This joins the old-iPads question below.
+- A reference from the owner (a game, a screenshot, a picture) for the next step (`ART-PROCESS.md`).
 
 **Open 2026-11-15, METEOR RAIN's numbers** (build `2026-11-15i`; `docs/COMBAT.md`, "METEOR RAIN"). Built to the owner's four choices; every number is the agent's.
 - It swings: with every rock at random a rain lands two to nine hits on three enemies, and now and then misses one altogether. Keep it, or aim some of the rocks (the option passed over)?

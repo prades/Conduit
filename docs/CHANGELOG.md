@@ -4,7 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
-### Drafts, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · ten directions for the game's look and combat
+### Drafts, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the look and combat, round 2: ten directions reimagined
+- **The ask** (the owner, of the first ten): "Reimagine it now".
+- **What there is:** `docs/STYLE-EVOLUTION.md` §3 (**Proposed**), ten new directions, each with a picture of the same moment: ants raiding the Crystal in the Crystal Chamber.
+  - The room is built in real 3D from the game's map, with the game's own prop models, the forms' models and the Crystal's pad and tank (`design/style-evolution/round2/`). The ant, the crystal, the doors and the wall fittings are modelled for the pictures.
+  - The same game, clearer: CRYSTAL LAB 3D (slowed and signalled); THE LIVING DIORAMA (time moves when you move).
+  - One action at a time: CRYSTAL NOIR (the Crystal's beam); INK AND SPOT COLOUR (panel by panel); PIXEL SQUAD (active time).
+  - A new point of view: THIRD PERSON (lock on).
+  - A new kind of fight: CARTRIDGE 3D (a command menu); FACET TACTICS (turns on the tiles); PAPERCRAFT (cards); THE WAR TABLE (plan, then watch).
+  - Also there: what each would take, and the agent's suggestion (look 1, the game's own style in 3D).
+- **Round 1 is kept** (§7 there); any of it can still be chosen.
+- **Not tested:** the pictures are stills from a software renderer and say nothing about speed on an iPad. No game code changed, so no suite was run beyond the three that check for stale builds.
+
+### Drafts, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · ten directions for the game's look and combat (round 1)
 - **The ask** (the owner): "I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable. Can you give me 10 suggestions including example pictures."
 - **What there is:** `docs/STYLE-EVOLUTION.md` (**Proposed**) holds ten directions. Each pairs a look with a fight idea that slows the fight or makes it readable, and comes with a picture of the same moment in the Sewers, built in real 3D from the game's own map and models (`design/style-evolution/`).
   - The directions: DIORAMA with SLOW TIME; PIXEL SQUAD with a TURN QUEUE; INK TOON with TELEGRAPHS; LOW-POLY TACTICS on the grid; VOXEL LAB with PAUSE AND PLAN; HOLO-TACTICAL with INTENT AND THREAT; BATTLE STAGE with a COMMAND MENU; NOIR LIGHT with SPOTLIGHT AND HIT-STOP; TABLETOP with CARDS; PAINTED, HEAVY AND DELIBERATE.
