@@ -380,7 +380,7 @@ const ULT_VOLCANIC_ERUPTION = {
     }
 };
 
-// ── THE EMBER HOOD'S METEOR RAIN (FORM_ULTIMATES.embercowl since build 2026-11-15g; it replaced VOLCANIC ERUPTION, above, which nothing fires now) ──
+// ── THE EMBER HOOD'S METEOR RAIN (FORM_ULTIMATES.embercowl since build 2026-11-15i; it replaced VOLCANIC ERUPTION, above, which nothing fires now) ──
 // The owner, 2026-11-15, of the eruption: "I don't like it. It was created by and designed by AI. Let's brainstorm some new directions."; of six directions: "3" (meteor rain); of the draft in the real page,
 // its rocks and craters modelled in 3-D: "I like it"; of the rules: the rocks land "All random", the craters are for show only, the strength is the "Same total" as the eruption's, the name METEOR RAIN.
 // It goes for the biggest enemy in reach (ULT_REACH, as the eruption did) and the rain falls round where that enemy stood: `count` burning rocks, one after another over `rain` frames after a `cast`
@@ -524,7 +524,7 @@ function _ultDriftSlash(o, a) {
 }
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
 const FORM_ULTIMATES = {
-    embercowl: ULT_METEOR_RAIN,   // METEOR RAIN: the Ember Hood's own since build 2026-11-15g (VOLCANIC ERUPTION until then: roadmap §12.3; superseded, the owner 2026-11-15)
+    embercowl: ULT_METEOR_RAIN,   // METEOR RAIN: the Ember Hood's own since build 2026-11-15i (VOLCANIC ERUPTION until then: roadmap §12.3; superseded, the owner 2026-11-15)
     // OVERDRIVE: an overload, then a rush to the biggest group of enemies it can see and walk straight to (up to ULT_OVERDRIVE.reach tiles); everything within ULT_OVERDRIVE.radius of where it
     // lands takes ULT_OVERDRIVE.mult × its power, half crushing and half electric, and is knocked back.
     staticorb: { name: "Overdrive", desc: "An overload, then a rush to the biggest group of enemies it can see: crushing and electric damage, and a knockback", execute(actor) {

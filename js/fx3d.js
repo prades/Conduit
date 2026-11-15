@@ -37,7 +37,7 @@ const FX3D = {
         // since build 2026-11-14b; until a sheet arrives, the flat looks drawn in code (js/elements.js bladeroll, toxicstomp).
         slugball: { sheet: "img/fx/slugball.png", cell: 128, yaws: 12, pitches: [0], anim: true, ax: 64, ay: 64 },
         goosplash: { sheet: "img/fx/goosplash.png", cell: 256, yaws: 12, pitches: [0], anim: true, ax: 128, ay: 128 },
-        // METEOR RAIN's ROCK and CRATER (the Ember Hood's Ultimate, build 2026-11-15g; design/effects/bake_fx.js meteorrock, meteorcrater; the owner, 2026-11-15: "Change the craters to 3d art", then "Trust your
+        // METEOR RAIN's ROCK and CRATER (the Ember Hood's Ultimate, build 2026-11-15i; design/effects/bake_fx.js meteorrock, meteorcrater; the owner, 2026-11-15: "Change the craters to 3d art", then "Trust your
         // instincts and fix the 3D result the way you'd want it", and of the result in the real page: "I like it"): a burning boulder, black broken rock with its molten heart showing, TUMBLING as it falls (12
         // steps of its turn); and the pit it leaves, ANIMATED (12 columns: white hot as it strikes, a crust forming over its molten bottom, then dark), the floor under its middle at the middle of its cell.
         // Until a sheet arrives, the flat looks drawn in code (js/elements.js meteorrain, drawMeteorOnTile).
@@ -50,7 +50,7 @@ const FX3D = {
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
                "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
-               "meteorrock", "meteorcrater",   // METEOR RAIN's rock and crater: approved 2026-11-15 ("I like it", of the draft in the real page), live for everyone since build 2026-11-15g
+               "meteorrock", "meteorcrater",   // METEOR RAIN's rock and crater: approved 2026-11-15 ("I like it", of the draft in the real page), live for everyone since build 2026-11-15i
                "slugball", "goosplash",   // BLADE ROLL's ball and TOXIC STOMP's goo splash: approved 2026-11-14 ("Approve them", of their pictures in the real page), live for everyone since build 2026-11-14b
                "slap"],   // the VOIDSTAR's SLAP, its everyday shot's tentacles as a sharp violet gel tentacle: approved in the game 2026-11-13 ("Approve it"), live for everyone since build 2026-11-13d
     // (SHARD VORTEX's black blades were approved in the game on 2026-11-09 and taken back the same day: "Yeah, sorry, I was falling asleep. I accidentally approved that": on the preview again, tumbling, build 2026-11-09ii)

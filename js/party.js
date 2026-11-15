@@ -357,7 +357,7 @@ function _partyUltBar(el, f) {
 // The symbols are 24 × 24 line drawings in the ink's colour (currentColor), one per form with an Ultimate (FORM_ULTIMATES, js/elements.js); ULT_ICON_ANY for one not listed.
 const ULT_ICON_ANY = '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" fill="currentColor"/>';
 const ULT_ICONS = {
-    embercowl:    '<circle cx="8.5" cy="15.5" r="4.5" fill="currentColor"/><path d="M12.5 11.5 20 4M15 15 21.5 8.5M9 9.5 15 3.5"/>',   // METEOR RAIN: a burning rock falling, its tail behind it (VOLCANIC ERUPTION's volcano until build 2026-11-15g)
+    embercowl:    '<circle cx="8.5" cy="15.5" r="4.5" fill="currentColor"/><path d="M12.5 11.5 20 4M15 15 21.5 8.5M9 9.5 15 3.5"/>',   // METEOR RAIN: a burning rock falling, its tail behind it (VOLCANIC ERUPTION's volcano until build 2026-11-15i)
     staticorb:    '<path d="M13.5 2 5 13.5h6L9.5 22 19 9.5h-6.5z" fill="currentColor"/><path d="M2 8h3M1.5 12H4M2 16h3"/>',   // OVERDRIVE: a bolt at a rush
     maw:          '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>',   // ABSOLUTE ZERO: a snowflake
     shrub:        '<path d="M12 22v-9M12 16 7 11M12 14l5-5"/><circle cx="7" cy="8" r="3.4" fill="currentColor"/><circle cx="17" cy="6.5" r="3.4" fill="currentColor"/><circle cx="12" cy="5" r="3" fill="currentColor"/><path d="M9.5 18.5 7.5 19M14.5 17l2 .5"/>',   // PINK THICKET: a thorny bush

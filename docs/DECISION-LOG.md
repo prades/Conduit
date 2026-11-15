@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The Sewers' new look: look 1's walls with look 4's floor (the owner's pick of six drafts)
+
+- **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15g`
+- **Status:** Approved (the owner's pick); the colours and sizes are the agent's, provisional; built
+- **Context:** the owner asked for six looks for the Sewers with walls that do not jut, the floor tiles fixed, and the place turned from a concept into a complex. Six drafts were drawn on the game (`design/sewer-looks/`), all sharing one wall fix (near walls cut clean, dark wall tops, a lintel over each passage, one floor pattern).
+- **Decision:** "I like 1 but the floor tiles of 4": look 1's walls (the facility's panels, a green light strip, a conduit, bulkhead lamps) and look 4's floor (steel checker plate in bolted plates). Earlier answers kept: not look 6, and "Change the bank's edge" (a hazard kerb along the river). The Nest keeps its own look.
+- **Agent's choices, provisional:** every colour, size and spacing in `FP_SEWER_REFIT` (a lamp every 4 tiles, the lintel at 104 px, the section's depth, the kerb's width and stripes, the plate's two tones); the fix in the Sewers' tunnel only.
+- **Alternatives offered:** looks 2 to 6, or a mix (the agent suggested 2 with 4's pipe runs).
+- **Still open:** whether the wall fix (near walls cut clean) should go to every room (`OPEN-QUESTIONS.md`).
+- **Affects:** `js/facilitysewers.js`, `js/facilitystyle.js`, `js/facilitystyleall.js`, `js/facilitydecor.js`; `docs/FACILITY.md`; `tests/sewerlook.js`.
+
 ## DECISION: Side Quest in the Lounge after the Sewers: a pack when you meet him, his face beside SHOP (the owner's idea and picks)
 
 - **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15f`
@@ -3516,10 +3527,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's choices (provisional): the flask's card reads HP 1/1 and BLAST 30 (ACID 3); the drill's work spot north of the rock.
 - Status: Implemented (build `2026-11-13r`); verified by `tests/hazards.js`, `tests/nest.js`, `tests/techlevel1.js`, `tests/cavewalls.js` and the real page; not playtested. `FACILITY.md`, `DOMAINS.md`, `TECHNICIANS.md`, `CHANGELOG.md`.
 
-## DECISION: The Ember Hood's Ultimate is METEOR RAIN; VOLCANIC ERUPTION is superseded (2026-11-15, build `2026-11-15g`, branch `claude/meteor-look`)
+## DECISION: The Ember Hood's Ultimate is METEOR RAIN; VOLCANIC ERUPTION is superseded (2026-11-15, build `2026-11-15i`, branch `claude/meteor-look`)
 - The owner, shown a video of all 22 Ultimates, first asked after a magma pit (that is HEXFIRE, the Hood's second attack, unchanged), then of VOLCANIC ERUPTION: **"I don't like it. It was created by and designed by AI. Let's brainstorm some new directions."**
 - Six directions were offered (a caldera collapse, a lava flow, a meteor rain, a living flame, a firestorm hood, igniting every enemy). The owner: **"3"**, the meteor rain.
 - The look, by drafts over the real page: flat scars first; **"Change the craters to 3d art"**; then **"Trust your instincts and fix the 3D result the way you'd want it"** (the agent darkened the rock, opened the pit, added a crust forming over the molten bottom and a ragged rim, and modelled the falling rock too); of that: **"I like it"**.
 - The rules, each chosen from options: the rocks land **"All random"** (passed over: a third aimed at enemies, the agent's suggestion; every rock aimed); the craters **show only** (passed over: burning while hot); the strength the **"Same total"** as the eruption's (passed over: weaker, stronger); the name **METEOR RAIN** (passed over: VOLCANIC ERUPTION, CINDER STORM).
 - Agent's choices (provisional): every number (`ULT_METEOR`), the measure the total was matched on (three still ants, which take the eruption's crater burn in full), leaving the eruption's code in place unused, no room tint (the effects plan's rule), the icon.
-- Status: Implemented (build `2026-11-15g`); verified by `tests/followercombat.js`, `tests/foundation.js`, `tests/fx3d.js` and a video from the real page; not playtested. `COMBAT.md`, `EFFECTS.md`, `CHANGELOG.md`, the Bible. Supersedes VOLCANIC ERUPTION as the Hood's Ultimate (`NEXT-PHASE-ROADMAP.md` §12.3, roadmap 7).
+- Status: Implemented (build `2026-11-15i`); verified by `tests/followercombat.js`, `tests/foundation.js`, `tests/fx3d.js` and a video from the real page; not playtested. `COMBAT.md`, `EFFECTS.md`, `CHANGELOG.md`, the Bible. Supersedes VOLCANIC ERUPTION as the Hood's Ultimate (`NEXT-PHASE-ROADMAP.md` §12.3, roadmap 7).
