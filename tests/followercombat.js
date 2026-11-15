@@ -563,10 +563,31 @@ function measure(w, h) {
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
     });
-    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it (the Electro Skink its LIGHTNING CIRCUIT since build 2026-11-09c), a retired form and an unevolved follower none (build 2026-11-09b: the element Ultimates are gone; the Ember Hood keeps its VOLCANIC ERUPTION); OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
+    check('METEOR RAIN, the Ember Hood\'s Ultimate (build 2026-11-15g; the owner, 2026-11-15: meteor rain, the rocks "All random", the craters for show only, the name METEOR RAIN): it goes for the biggest enemy in reach and rains ULT_METEOR.count rocks round where it stood, each within the radius, no two closer than ULT_METEOR.apart; nothing is hurt before a rock lands; a rock hurts and burns the enemies within its blast and no others; the craters hurt nothing; with no enemy in reach it keeps its charge; it does not start a second rain over its first', () => {
+        const r = J(`(function(){ const o = {}, M = ULT_METEOR;
+            __clear(); const f = __fol('fire', 'sniper', 'embercowl'); f.ultimateCharge = 100; followerUltimate(f).execute(f); o.none = [f.ultimateCharge, elementEffects.some(e => e.type === 'meteorrain')];
+            const a = __foe(f.x + 4, f.y), far = __foe(f.x + 4, f.y + 9); followerUltimate(f).execute(f);
+            const e = elementEffects.find(q => q.type === 'meteorrain'); o.own = FORM_ULTIMATES.embercowl === ULT_METEOR_RAIN; o.fired = [!!e, f.ultimateCharge, e && e.rocks.length, e && e.by === f];
+            o.inside = e.rocks.every(q => Math.hypot(q.x - a.x, q.y - a.y) <= M.radius + 1e-9); o.apart = e.rocks.every((q, i) => e.rocks.every((p, j) => i === j || Math.hypot(q.x - p.x, q.y - p.y) >= M.apart - 1e-9));
+            o.times = [Math.min.apply(null, e.rocks.map(q => q.at)) >= M.cast + M.fall, Math.max.apply(null, e.rocks.map(q => q.at)) <= M.cast + M.rain + 8];
+            f.ultimateCharge = 100; followerUltimate(f).execute(f); o.second = [f.ultimateCharge, elementEffects.filter(q => q.type === 'meteorrain').length];
+            // one rock put on the enemy, the others well away from both, so what it does can be told apart
+            e.rocks.forEach((q, i) => { if (i === 0) { q.x = a.x + 0.4; q.y = a.y; } else { q.x = a.x - 6 - i; q.y = a.y - 6; } });
+            const first = e.rocks[0].at; for (let i = 0; i < first - 1; i++) updateElementEffects(); o.before = [__dmg(a), e.rocks[0].hit];
+            updateElementEffects(); updateElementEffects(); o.struck = [e.rocks[0].hit, __dmg(a) > 0, a.burning > 0, Math.round(a.burnDamage / ((f.stats.specialAttack || 10) * M.burnTick) * 100) / 100, __dmg(far)];
+            const d1 = __dmg(a); for (let i = 0; i < 300; i++) updateElementEffects(); o.after = [e.rocks.every(q => q.hit), __dmg(a) === d1, __dmg(far)];
+            for (let i = 0; i < 300; i++) updateElementEffects(); o.gone = elementEffects.some(q => q.type === 'meteorrain');
+            return o; })()`);
+        same(r.none.join(), '100,false', 'no enemy in reach: its charge kept, no rain'); ok(r.own, 'FORM_ULTIMATES.embercowl is not METEOR RAIN');
+        same(r.fired.join(), 'true,0,' + J('ULT_METEOR.count') + ',true', 'it fired: a rain, its charge spent, every rock, its own'); ok(r.inside, 'a rock outside the radius'); ok(r.apart, 'two rocks closer than ULT_METEOR.apart'); same(r.times.join(), 'true,true', 'the rocks land after the cast and within the rain');
+        same(r.second.join(), '100,1', 'a second while the first falls: nothing, its charge kept');
+        same(r.before.join(), '0,false', 'before the first rock lands'); same(r.struck.join(), 'true,true,true,1,0', 'the rock: struck, the enemy in its blast hurt and burning (ULT_METEOR.burnTick x its special attack a tick), the one out of it not');
+        same(r.after.join(), 'true,true,0', 'the rest land on nothing; the crater hurts nothing'); same(r.gone, false, 'the rain is over and gone');
+    });
+    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it (the Electro Skink its LIGHTNING CIRCUIT since build 2026-11-09c), a retired form and an unevolved follower none (build 2026-11-09b: the element Ultimates are gone; the Ember Hood kept its VOLCANIC ERUPTION, METEOR RAIN since build 2026-11-15g); OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
             __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null), sk = __fol('electric', 'brawler', 'electroskink'), rt = __fol('electric', 'brawler', 'manta');
-            o.look = [followerUltimate(so).name, followerUltimate(eh) === ULT_VOLCANIC_ERUPTION && followerUltimate(eh).name, followerUltimate(qs), followerUltimate(sk).name, followerUltimate(rt), followerUltPending(rt), followerUltPending(qs), typeof FOLLOWER_ULTIMATES];
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === ULT_METEOR_RAIN && followerUltimate(eh).name, followerUltimate(qs), followerUltimate(sk).name, followerUltimate(rt), followerUltPending(rt), followerUltPending(qs), typeof FOLLOWER_ULTIMATES];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
             __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
@@ -579,7 +600,7 @@ function measure(w, h) {
             followerUltimate(bs).execute(bs); for (let i = 0; i < 61; i++) updateElementEffects();
             o.net = [bs.ultimateCharge < 50, elementEffects.some(e => e.type === 'toxicnet'), __dmg(on) > 0, __dmg(off), on.toxicWeakened > 0];
             techPools = []; return o; })()`);
-        same(r.look.join(), 'Overdrive,Volcanic Eruption,,Lightning Circuit,,false,false,undefined', 'its own, the Ember Hood\'s (VOLCANIC ERUPTION, the fire one once), an unevolved follower none, the Electro Skink\'s LIGHTNING CIRCUIT, a retired form none and not flagged, the element Ultimates gone');
+        same(r.look.join(), 'Overdrive,Meteor Rain,,Lightning Circuit,,false,false,undefined', 'its own, the Ember Hood\'s (METEOR RAIN since build 2026-11-15g; VOLCANIC ERUPTION, the fire one once, until then), an unevolved follower none, the Electro Skink\'s LIGHTNING CIRCUIT, a retired form none and not flagged, the element Ultimates gone');
         same(r.over.join(), 'true,true,true,true,0,true', 'OVERDRIVE: spent (its own hits charge it a little again), rushed to the group, both hit, the lone one not, knocked back');
         same(r.zero.join(), '0,3,true', 'ABSOLUTE ZERO: spent, three swallowed (not four), no damage'); same(r.zeroAfter.join(), '0,true,true', 'let go after 6 s, targetable again, still no damage');
         same(r.under.join(), 'true,true,240,0.7,true', 'TOXIC UNDERTOW: both hurt, poisoned 4 s at 70% of their hits, thrown');

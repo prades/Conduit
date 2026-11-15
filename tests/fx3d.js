@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,slugball,goosplash,vortexshard', 'the pieces (slugball and goosplash: the ball of BLADE ROLL and the splash of TOXIC STOMP, animated, approved 2026-11-14: build 2026-11-14b; rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy,slap,slugball,goosplash,meteorrock,meteorcrater,vortexshard', 'the pieces (slugball and goosplash: the ball of BLADE ROLL and the splash of TOXIC STOMP, animated, approved 2026-11-14: build 2026-11-14b; rotspike, rotdecoy, goocopy and vortexshard: standing pieces, below; slap: an animated piece, below)');
         for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
@@ -70,8 +70,17 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             run('__preview(false)'); same(J('fx3dOn("' + id + '")'), true, id + ' off without the preview'); }
         const E = rd('js/elements.js'); ok(/fx3dOn\("slugball"\) && fx3dReady\("slugball"\)/.test(E) && /fx3dOn\("goosplash"\) && fx3dReady\("goosplash"\)/.test(E), 'the game does not wait for their sheets (the flat fallback)');
     });
+    check('METEOR RAIN\'s rock and crater (build 2026-11-15g; the owner, 2026-11-15: "Change the craters to 3d art", then of the result in the real page "I like it"): the rock a tumbling piece of 12 steps, the crater an animated piece of 12 columns with the floor under its middle at the middle of its cell; each sheet the size its record says; approved, so on for everyone without the preview; the flat looks stay as the fallback until a sheet arrives', () => {
+        const R = J('FX3D.pieces.meteorrock'), C = J('FX3D.pieces.meteorcrater'), mr = JSON.parse(rd('design/effects/out/meteorrock.json')), mc = JSON.parse(rd('design/effects/out/meteorcrater.json'));
+        same(JSON.stringify([R.cell, R.yaws, R.tumble, R.pitches.length]), JSON.stringify([96, 12, true, 1]), 'the rock in the game'); same(pngSize(R.sheet).join('x'), '1152x96', 'the rock: its sheet\'s size'); same(JSON.stringify([mr.cell, mr.yaws]), JSON.stringify([96, 12]), 'the rock: its record');
+        same(JSON.stringify([C.cell, C.yaws, C.anim, C.ax, C.ay]), JSON.stringify([192, 12, true, 96, 96]), 'the crater in the game'); same(pngSize(C.sheet).join('x'), '2304x192', 'the crater: its sheet\'s size'); same(JSON.stringify([mc.cell, mc.yaws]), JSON.stringify([192, 12]), 'the crater: its record');
+        ok(Math.abs(mc.anchor.x - 96) < 0.6 && Math.abs(mc.anchor.y - 96) < 0.6, 'the crater: the floor under its middle is not at the middle of its cell: ' + JSON.stringify(mc.anchor));
+        run('__preview(false)'); same(J('[fx3dOn("meteorrock"), fx3dOn("meteorcrater")]').join(), 'true,true', 'off without the preview');
+        const E = rd('js/elements.js'); ok(/fx3dOn\("meteorrock"\) && fx3dReady\("meteorrock"\)/.test(E) && /fx3dOn\("meteorcrater"\) && fx3dReady\("meteorcrater"\)/.test(E), 'the game does not wait for their sheets (the flat fallback)');
+        ok(/drawMeteorOnTile\(obj\.x, obj\.y, px, py\)/.test(rd('js/game.js')), 'the craters are not drawn in the floor\'s pass (under the units)');
+    });
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,slugball,goosplash,slap', 'the approved pieces (slugball and goosplash: the owner, 2026-11-14, "Approve them"; SHARD VORTEX\'s blades were approved by accident and taken back)');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,meteorrock,meteorcrater,slugball,goosplash,slap', 'the approved pieces (slugball and goosplash: the owner, 2026-11-14, "Approve them"; SHARD VORTEX\'s blades were approved by accident and taken back)');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');

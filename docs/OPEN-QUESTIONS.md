@@ -8,6 +8,13 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-14, the balance targets** (build `2026-11-14t`; the owner: "Freeze the targets"): fixed at Brawler 79, Mage 44, Technician 35. Still open: SUNDEW at 69% of its target after its sting's buff, the Hornshell at 69%, the Rimestar and the Frost Maw at 74%, the Goo Proxy at 75% (the last three within a point or two of their bands). As it stood: **the balance targets move** (build `2026-11-14q`): a role's target is the middle score of its forms, so lifting some forms raises the target and others fall out of the band without changing (the Rimestar). The owner has not set fixed targets; until then a pass can chase its own tail. SUNDEW is at 55% of the Brawler target with its heal measured (about 8 a second): what lifts it is not decided.
 
+**Open 2026-11-15, METEOR RAIN's numbers** (build `2026-11-15g`; `docs/COMBAT.md`, "METEOR RAIN"). Built to the owner's four choices; every number is the agent's.
+- It swings: with every rock at random a rain lands two to nine hits on three enemies, and now and then misses one altogether. Keep it, or aim some of the rocks (the option passed over)?
+- Its total was matched on still enemies, which take the old crater's burn in full; against enemies that walk out of a crater the rain is likely the stronger. Is 6.5 × right?
+- The Hood is free to move and attack while its rain falls (as it was during the eruption). Should it stand and blaze?
+- VOLCANIC ERUPTION's code is still in js/elements.js, unused. Take it out?
+- The other 21 Ultimates: the owner is going through them one by one for placeholders.
+
 **Open 2026-11-15, the Sewers' look** (six drafts drawn on the game, nothing built: design/sewer-looks/; docs/FACILITY.md, "The Sewers"). The owner asked for six looks with walls that do not jut, the floor tiles fixed, and the Sewers turned from a concept into a complex:
 - Which look: 1 facility refined, 2 storm drain (concrete), 3 Victorian brick, 4 pipeworks, 5 tiled service tunnel, 6 overgrown, or a mix (the agent's suggestion: 2, with 4's pipe runs, and 6's growth in the stretch before the Nest).
 - The wall fix all six share (the near walls cut clean, dark wall tops, a lintel or arch over each side passage, one floor pattern): for the Sewers only, or for every room? The near walls' saw-teeth come from how every near wall is drawn; only the Sewers were checked.

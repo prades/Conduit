@@ -380,6 +380,49 @@ const ULT_VOLCANIC_ERUPTION = {
     }
 };
 
+// ── THE EMBER HOOD'S METEOR RAIN (FORM_ULTIMATES.embercowl since build 2026-11-15g; it replaced VOLCANIC ERUPTION, above, which nothing fires now) ──
+// The owner, 2026-11-15, of the eruption: "I don't like it. It was created by and designed by AI. Let's brainstorm some new directions."; of six directions: "3" (meteor rain); of the draft in the real page,
+// its rocks and craters modelled in 3-D: "I like it"; of the rules: the rocks land "All random", the craters are for show only, the strength is the "Same total" as the eruption's, the name METEOR RAIN.
+// It goes for the biggest enemy in reach (ULT_REACH, as the eruption did) and the rain falls round where that enemy stood: `count` burning rocks, one after another over `rain` frames after a `cast`
+// of the Hood blazing, each landing at a random spot within `radius` tiles that can be seen from the middle, no two within `apart` tiles; a red mark closes in on the floor for `warn` frames before a
+// rock lands, the rock falls for `fall`. Where it lands every enemy within `hit` tiles that can be seen from there takes `mult` x its special attack (fire, a special hit, as the eruption's was) and burns (`burn` frames, `burnTick`
+// x its special attack a tick). The crater it leaves hurts nothing; it cools and is gone after `mark` frames. The numbers: the count, area, spacing and timings are the draft's as the owner saw it; `mult` is the
+// agent's, PROVISIONAL, set so a rain on three still enemies does on average what the eruption did (docs/COMBAT.md, the measure).
+const ULT_METEOR = { count: 14, radius: 3.2, hit: 1.5, apart: 0.9, cast: 40, rain: 164, warn: 34, fall: 26, mult: 6.5, burn: 180, burnTick: 0.05, mark: 230 };
+const ULT_METEOR_RAIN = {
+    desc: "Burning rocks rain down round the biggest enemy in reach, each one a blast that sets what it hits alight",
+    name: "Meteor Rain",
+    execute(actor) {
+        if (actor.dead || elementEffects.some(e => e.type === "meteorrain" && e.by === actor && e.life > 0)) return;
+        const target = ultBiggestFoe(actor);
+        if (!target) return;
+        const M = ULT_METEOR, cx = target.x, cy = target.y, rocks = [], sees = (x, y) => typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y);
+        for (let i = 0; i < M.count; i++) {
+            let x = 0, y = 0, ok = false;
+            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r;
+                ok = sees(x, y) && !rocks.some(q => Math.hypot(q.x - x, q.y - y) < M.apart); }
+            if (!ok) continue;   // (no room left for it: a rain in a small room has fewer rocks)
+            rocks.push({ x, y, at: M.cast + M.fall + Math.round(i * (M.rain - M.fall) / M.count + Math.random() * 6), s: 0.75 + Math.random() * 0.6, spin: Math.floor(Math.random() * 12), hit: false });
+        }
+        if (!rocks.length) return;
+        actor.ultimateCharge = 0; actor._meteorAt = typeof frame !== "undefined" ? frame : 0;
+        const life = M.cast + M.rain + 8 + M.mark;
+        spawnElementEffect({ type: "meteorrain", by: actor, x: cx, y: cy, radius: M.radius, life, maxLife: life, rocks, power: (actor.stats && actor.stats.specialAttack) || 10, element: "fire" });   // (its special attack, as the eruption's was)
+        _ultSay(actor, "METEOR RAIN", "#ff7a2a");
+    }
+};
+// METEOR RAIN's beat (js/elements.js updateElementEffects): each rock strikes on its own frame
+function meteorRainTick(e) {
+    const M = ULT_METEOR, age = e.maxLife - e.life;
+    for (const r of e.rocks) {
+        if (r.hit || age < r.at) continue;
+        r.hit = true;
+        if (typeof shake !== "undefined") shake = Math.max(shake, 4 + 3 * r.s);
+        const foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(r.x, r.y, M.hit) : [];
+        for (const a of foes) { applyElementalDamage(a, e.power * M.mult, e.by, "fire", DMG_HIT_SPECIAL); if (typeof applyBurn === "function") applyBurn(a, e.power * M.burnTick, M.burn); }
+    }
+}
+
 // ── EACH FOLLOWER'S OWN ULTIMATE (Milestone Three; the owner, 2026-11-06: "Own Ultimates"; docs/NEXT-PHASE-ROADMAP.md §12.3) ──
 // Each evolved form fires its own; a form with none is flagged and fires nothing (build 2026-11-09b: the element Ultimates it once borrowed are gone). The meter, its charge and the double-tap are
 // unchanged. An Ultimate that finds nothing to do keeps its charge.
@@ -481,7 +524,7 @@ function _ultDriftSlash(o, a) {
 }
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
 const FORM_ULTIMATES = {
-    embercowl: ULT_VOLCANIC_ERUPTION,   // VOLCANIC ERUPTION: the Ember Hood's own (roadmap §12.3)
+    embercowl: ULT_METEOR_RAIN,   // METEOR RAIN: the Ember Hood's own since build 2026-11-15g (VOLCANIC ERUPTION until then: roadmap §12.3; superseded, the owner 2026-11-15)
     // OVERDRIVE: an overload, then a rush to the biggest group of enemies it can see and walk straight to (up to ULT_OVERDRIVE.reach tiles); everything within ULT_OVERDRIVE.radius of where it
     // lands takes ULT_OVERDRIVE.mult × its power, half crushing and half electric, and is knocked back.
     staticorb: { name: "Overdrive", desc: "An overload, then a rush to the biggest group of enemies it can see: crushing and electric damage, and a knockback", execute(actor) {
@@ -812,7 +855,7 @@ function fxLater(effect) { _fxLater.push({ ...effect, currentRadius: 0 }); }
 // long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, buds: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { circuit: 1, meteorrain: 1, flameCrater: 1, hexfire: 1, maelstrom: 1, buds: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [];
@@ -904,6 +947,7 @@ function updateElementEffects() {
         // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
+        if (e.type === "meteorrain") meteorRainTick(e);   // (the Ember Hood's METEOR RAIN: each rock's strike)
         if (e.type === "mawchomp" && typeof mawChompTick === "function") mawChompTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
         if (e.type === "emberdash" && typeof emberDashTick === "function") emberDashTick(e);   // (the extra attacks, js/evolution.js: the Quillstone's dash, the Rift Mimic's reappearance, the Hammer Slug's ball)
         if (e.type === "riftglitch" && typeof riftImpaleTick === "function") riftImpaleTick(e);
@@ -1350,6 +1394,37 @@ function drawElementEffects() {
                 ctx.restore(); break;
             }
             case "buds": break;   // (the Thornwhip's SEEDFALL buds lie on the floor: drawBudsOnTile)
+            // METEOR RAIN (the Ember Hood's Ultimate): what is in the air and over the floor: each rock's red mark closing in where it will land, the rock falling at a slant with a tail of fire (the
+            // 3-D boulder, js/fx3d.js meteorrock; a flat one until its sheet arrives), its strike (a flash, a ring thrown out, a spray of fire, rubble) and the small flames on its crater while it is hot.
+            // Flat colours only (the effects plan). The craters themselves lie on the floor under the units: drawMeteorOnTile, below.
+            case "meteorrain": {
+                const M = ULT_METEOR, age = e.maxLife - e.life, rock3 = typeof fx3dOn === "function" && fx3dOn("meteorrock") && fx3dReady("meteorrock");
+                ctx.globalAlpha = 1;
+                for (const r of e.rocks) {
+                    const t = age - (r.at - M.fall), rx = (r.x - player.visualX - (r.y - player.visualY)) * TILE_W + canvas.width / 2, ry = (r.x - player.visualX + (r.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+                    if (t < -M.warn || t > M.fall + 110) continue;
+                    if (t < M.fall) { const w = Math.min(1, (t + M.warn) / (M.warn + M.fall)), rr = 30 * r.s;   // (the mark)
+                        ctx.globalAlpha = 0.25 + 0.3 * w; ctx.fillStyle = "#ff3a12"; ctx.beginPath(); ctx.ellipse(rx, ry, rr * w, rr * 0.5 * w, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.globalAlpha = 0.9; ctx.strokeStyle = "#ffb13a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(rx, ry, rr * (1.5 - 0.5 * w), rr * 0.5 * (1.5 - 0.5 * w), 0, 0, Math.PI * 2); ctx.stroke(); }
+                    if (t >= 0 && t < M.fall) { const u = t / M.fall, k = 1 - u * u, x = rx + 230 * k, y = ry - 560 * k, L = 150 * r.s, ux = 0.38, uy = -0.925;   // (the rock, and its tail back up the way it came)
+                        ctx.globalAlpha = 0.85;
+                        for (let i = 0; i < 3; i++) { const w = [13, 8, 4][i] * r.s, len = [1, 0.8, 0.55][i]; ctx.fillStyle = ["#c2260c", "#ff7a2a", "#ffe08a"][i]; ctx.beginPath(); ctx.moveTo(x - uy * w, y + ux * w); ctx.lineTo(x + ux * L * len, y + uy * L * len); ctx.lineTo(x + uy * w, y - ux * w); ctx.closePath(); ctx.fill(); }
+                        ctx.globalAlpha = 1;
+                        if (rock3) { ctx.save(); ctx.translate(x, y); ctx.scale(1.5 * r.s, 1.5 * r.s); fx3dDrawCell(ctx, "meteorrock", 0, 0, r.spin + Math.floor(t * 0.8), 0); ctx.restore(); }
+                        else { const z = 12 * r.s; ctx.fillStyle = "#ffb13a"; ctx.beginPath(); ctx.moveTo(x - z, y); ctx.lineTo(x - z * 0.3, y - z); ctx.lineTo(x + z, y - z * 0.4); ctx.lineTo(x + z * 0.6, y + z * 0.9); ctx.lineTo(x - z * 0.5, y + z * 0.8); ctx.closePath(); ctx.fill();
+                            ctx.fillStyle = "#2a1410"; ctx.beginPath(); ctx.moveTo(x - z * 0.7, y); ctx.lineTo(x - z * 0.2, y - z * 0.7); ctx.lineTo(x + z * 0.7, y - z * 0.3); ctx.lineTo(x + z * 0.4, y + z * 0.6); ctx.lineTo(x - z * 0.4, y + z * 0.55); ctx.closePath(); ctx.fill(); } }
+                    const s = t - M.fall;   // (frames since it struck)
+                    if (s >= 0 && s < 16) { const u = s / 16, rr = 34 * r.s;
+                        ctx.globalAlpha = 1 - u; ctx.fillStyle = u < 0.3 ? "#fff3c4" : "#ffb13a"; ctx.beginPath(); ctx.ellipse(rx, ry, rr * (0.5 + u), rr * 0.5 * (0.5 + u), 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.strokeStyle = "#ff5a1a"; ctx.lineWidth = 4 * (1 - u) + 1; ctx.beginPath(); ctx.ellipse(rx, ry, rr * (0.8 + u * 1.6), rr * 0.5 * (0.8 + u * 1.6), 0, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = "#ff7a2a"; for (let i = -2; i <= 2; i++) { const h = (46 - Math.abs(i) * 12) * r.s * (1 - u * 0.6); ctx.beginPath(); ctx.moveTo(rx + i * 9 - 5, ry); ctx.lineTo(rx + i * 14, ry - h); ctx.lineTo(rx + i * 9 + 5, ry); ctx.closePath(); ctx.fill(); } }
+                    if (s >= 0 && s < 30) for (let i = 0; i < 8; i++) { const an = r.spin + i * 0.785, v = 2.2 + ((i * 5 + r.spin) % 4), bx = rx + Math.cos(an) * v * s, by = ry + Math.sin(an) * v * s * 0.5 - (4 + (i * 3) % 4) * s + 0.225 * s * s;   // (rubble thrown up and out, falling back)
+                        if (by > ry + 6) continue; ctx.globalAlpha = Math.min(1, (30 - s) / 10); ctx.fillStyle = i % 3 ? "#2a1410" : "#ffb13a"; ctx.fillRect(bx - 2, by - 2, 4, 4); }
+                    if (s >= 0 && s < 110) for (let i = 0; i < 3; i++) { const fx = rx + (i - 1) * 9 * r.s, h = (8 + 4 * Math.sin((age + i * 9) * 0.5)) * r.s * (1 - s / 110);   // (flames on the crater while it is hot)
+                        ctx.globalAlpha = 0.9; ctx.fillStyle = i === 1 ? "#ffd24a" : "#ff7a2a"; ctx.beginPath(); ctx.moveTo(fx - 3, ry + 2); ctx.lineTo(fx + Math.sin((age + i * 5) * 0.4) * 2, ry + 2 - h * 2); ctx.lineTo(fx + 3, ry + 2); ctx.closePath(); ctx.fill(); }
+                }
+                break;
+            }
             case "mimicshot": { if (typeof mimicShotDraw === "function") mimicShotDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             case "skinkswirl": { if (typeof skinkSwirlDraw === "function") skinkSwirlDraw(e, px, py, ctx); break; }   // (js/evolution.js)
             // A hit: a thin ring growing 4 → ~16 px and three sparks, 0.2 s.
@@ -1981,6 +2056,35 @@ function drawThicketOnTile(tx, ty, px, py) {
 // its radius, life, bite and sight). It opens over 14 frames (every vent going off) and dims to a dark red crust over its last 24. Flat colours only (no gradient, no shadowBlur: the effects plan); drawn on the
 // floor tile by tile like SEEDFALL's circle, so walls and units in front cover it (the jets and smoke, in the air, with the tile that holds its middle).
 let _hxFrame = -1, _hxList = [];
+// METEOR RAIN's CRATERS, on the floor of their room (the floor's pass, js/game.js: the walls and the units in front cover them): where a rock has struck, the 3-D crater (js/fx3d.js meteorcrater, 12
+// columns: white hot, cooling to a dark crust over METEOR_COOL frames), fading out at the end of ULT_METEOR.mark; a flat scorched dent with glowing cracks until its sheet arrives. A crater is wider
+// than a tile, so each tile near it draws the part of it that lies on that tile.
+const METEOR_COOL = 156;
+let _mrFrame = -1, _mrList = [];
+function drawMeteorOnTile(tx, ty, px, py) {
+    if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (_mrFrame !== f0) { _mrFrame = f0; _mrList = [];   // (once a frame: the craters there are)
+        for (const e of elementEffects) { if (e.type !== "meteorrain" || !(e.life > 0)) continue; const age = e.maxLife - e.life; for (const r of e.rocks) { const s = age - r.at; if (s >= 0 && s < ULT_METEOR.mark) _mrList.push({ r, s, room: _sfRoomAt(r.x, r.y) }); } } }
+    if (!_mrList.length) return;
+    let room, roomKnown = false, open = false;
+    const three = typeof fx3dOn === "function" && fx3dOn("meteorcrater") && fx3dReady("meteorcrater");
+    for (const it of _mrList) {
+        const r = it.r; if (Math.abs(tx - r.x) > 1.3 || Math.abs(ty - r.y) > 1.3) continue;
+        if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
+        if (room !== it.room) continue;
+        if (!open) { open = true; ctx.save(); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip(); }
+        const cx = px + ((r.x - tx) - (r.y - ty)) * TILE_W, cy = py + TILE_H + ((r.x - tx) + (r.y - ty)) * TILE_H, a = Math.max(0, Math.min(1, (ULT_METEOR.mark - it.s) / 50)), z = 1.1 * r.s;
+        ctx.globalAlpha = a;
+        if (three) { ctx.save(); ctx.translate(cx, cy); ctx.scale(z, z); fx3dDrawAnim(ctx, "meteorcrater", 0, 0, Math.min(11, Math.floor(it.s / (METEOR_COOL / 12))), false); ctx.restore(); continue; }
+        const rr = 26 * r.s, hot = it.s < 40;
+        ctx.fillStyle = "#120806"; ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#2b130c"; ctx.beginPath(); ctx.ellipse(cx, cy + 2, rr * 0.66, rr * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = a * Math.max(0, 1 - it.s / METEOR_COOL); ctx.strokeStyle = hot ? "#ffd24a" : "#ff5a1a"; ctx.lineWidth = 2.2;
+        for (let i = 0; i < 5; i++) { const an = r.spin + i * 1.2566, c = Math.cos(an), sn = Math.sin(an) * 0.5; ctx.beginPath(); ctx.moveTo(cx + c * rr * 0.15, cy + sn * rr * 0.15); ctx.lineTo(cx + c * rr * 0.95, cy + sn * rr * 0.95); ctx.stroke(); }
+    }
+    if (open) ctx.restore();
+}
 function _hxH(a, b) { const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return x - Math.floor(x); }   // (a number from 0 to 1 from two: no random, the same each frame)
 // its shape, made once for a crater, in the circle's own units (-1 to 1 across it): the rim, the fissure's two edges, the short cracks, the cracks out to the edge, the vents and the rock
 function _hxShape(e) {

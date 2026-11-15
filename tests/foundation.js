@@ -121,12 +121,12 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
 
     group('AN ULTIMATE WORKS WITHIN ITS REACH');
     run(`globalThis.__foes = (f) => { actors = actors.filter(a => !(a.speciesName) || a.isClone); const near = spawnCreature({ species: 'ant', className: 'scout', x: f.x + 4, y: f.y }), far = spawnCreature({ species: 'ant', className: 'scout', x: f.x + 40, y: f.y }); for (const c of [near, far]) { c.shielded = true; c.shieldAmount = 5; c._shieldMax = 5; c.moveSpeed = 0; } return [near, far]; };`);
-    check('ULT_REACH is twelve tiles: the Ember Hood\'s VOLCANIC ERUPTION goes for the biggest enemy within it (never one out of it). The element Ultimates (the toxic smoke, the flux disorient, the EMP, the blizzard) are gone since build 2026-11-09b, and so are their effects and what only they set', () => {
+    check('ULT_REACH is twelve tiles: the Ember Hood\'s METEOR RAIN (VOLCANIC ERUPTION until build 2026-11-15g) goes for the biggest enemy within it (never one out of it). The element Ultimates (the toxic smoke, the flux disorient, the EMP, the blizzard) are gone since build 2026-11-09b, and so are their effects and what only they set', () => {
         const r = J(`(function(){ const f = followers.find(x => !x.dead), o = { reach: ULT_REACH }; let [near, far] = __foes(f); const big = spawnCreature({ species: 'beetle', className: 'tank', x: f.x + 6, y: f.y + 1 }); far.health = far.maxHealth = 1e6; big.health = big.maxHealth = 500; near.health = 10;
-            o.pick = ultBiggestFoe(f) === big; o.notFar = ultBiggestFoe(f) !== far; o.erupt = FORM_ULTIMATES.embercowl === ULT_VOLCANIC_ERUPTION;
+            o.pick = ultBiggestFoe(f) === big; o.notFar = ultBiggestFoe(f) !== far; o.erupt = FORM_ULTIMATES.embercowl === ULT_METEOR_RAIN;
             o.gone = ['FOLLOWER_ULTIMATES', 'SMOKE_SCREEN_REACH', 'activeEmpEffect', 'FX_EMP_FRAMES', 'FX_FROST_ALPHA'].filter(k => (function(){ try { return eval('typeof ' + k) !== 'undefined'; } catch (e) { return false; } })());
             actors = actors.filter(a => a !== big); return o; })()`);
-        same(r.reach, 12, 'ULT_REACH'); same(r.pick && r.notFar, true, 'the eruption\'s target'); same(r.erupt, true, 'the Ember Hood\'s own');
+        same(r.reach, 12, 'ULT_REACH'); same(r.pick && r.notFar, true, 'the rain\'s target'); same(r.erupt, true, 'the Ember Hood\'s own');
         same(r.gone.join(), '', 'still defined');
         for (const [file, re] of [['js/elements.js', /blizzardField|smokeScreen|empGlow|_empBoost|disorientFF/], ['js/game.js', /smokeScreen|SMOKE_SCREEN/], ['js/predator.js', /disorientFF|disorientPowerFactor/], ['js/npc.js', /_empBoost/], ['js/combat.js', /empGlow/]]) ok(!re.test(rd(file)), file + ' still has ' + re);
     });
