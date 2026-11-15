@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15h` · branch `claude/start-game-project-HSh7Z` · the Sewers: no dark block over the river by the outfall
+- **The report** (the owner, circling it on a picture of `2026-11-15g`): "I see this error": a dark block standing over the river's west end, beside the outfall pipe.
+- **Why:** the new look cuts every near wall clean and hangs its face below the floor. The south side of the little alcove beside the outfall is a near wall, but it is the end of the west wall itself, so its face hung where the river is, and the river is drawn before everything. The same thing happened, hidden, at the two corners where the south wall meets the subway passage and the Nest.
+- **What it does** (`docs/FACILITY.md`, "The new look"): a near wall inside another wall's mass gets no section, and a face hangs only as deep as no floor or wall stands in front of it. Nothing else changes.
+- `js/facilitysewers.js`, `tests/sewerlook.js` (three new checks: the alcove's wall has no section, every face clear of what stands in front of it, and on the real page no section paints over the river where the block was; that last check failed before the fix), `docs/FACILITY.md`.
+- **Verified:** `tests/sewerlook.js` and the full suite; pictures of the west end and both corners, no page errors. **Not playtested on an iPad.**
+
 ### Build `2026-11-15g` · branch `claude/start-game-project-HSh7Z` · the Sewers' new look: look 1's walls, look 4's floor
 - **The ask** (the owner, 2026-11-15, of six looks drawn on the game, `design/sewer-looks/`): "I like 1 but the floor tiles of 4"; earlier, of the river's edge, "Change the bank's edge".
 - **What it does** (`docs/FACILITY.md`, "The new look"), in the Sewers' tunnel; the Nest keeps its damp look:

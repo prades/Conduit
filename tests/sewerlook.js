@@ -1,11 +1,13 @@
 // THE SEWERS' NEW LOOK (build 2026-11-15g; docs/FACILITY.md, "The Sewers"). The owner, 2026-11-15, of six looks drawn on the game (design/sewer-looks/): "I like 1 but the floor tiles of 4".
 // So the tunnel (all of the Sewers but the Nest, which keeps its look) has look 1's walls and look 4's floor (js/facilitysewers.js, THE TUNNEL'S REFIT). These checks:
-//   THE WALLS    every plain wall piece of the tunnel drawn by the refit and none of the Nest's (the old look not run for them); each near wall piece under a section of its own (the wall cut clean) and
-//                no section on a far piece; a lintel over each of the five north passages' mouths, found from the room's outline; the passages' east jambs only their tops; lamps on the far walls, none
-//                by a door or a light of the map's; every new piece drawn without an error
+//   THE WALLS    every plain wall piece of the tunnel drawn by the refit and none of the Nest's (the old look not run for them); each near wall piece under a section of its own (the wall cut clean) or
+//                inside another wall's mass (the end of a wall: the alcove beside the outfall, the owner's circle of 2026-11-15, build 2026-11-15h), and no section on a far piece; each face hanging
+//                as deep as nothing stands in front of it; a lintel over each of the five north passages' mouths, found from the room's outline; the passages' east jambs only their tops; lamps on
+//                the far walls, none by a door or a light of the map's; every new piece drawn without an error
 //   THE FLOOR    the tunnel's tiles checker plate on a base of their own, the plate's ticks shared every 6 tiles and the same as each tile's own; a hazard kerb on every side over the water and none
 //                elsewhere; dark at a wall's foot; the Nest's floor as it was; no other room's touched; the marks' memory bounded; a mark of many short lines painted in one stroke
-//   THE PAGE     game.html in Chromium: no errors, the refit drawn, and a frame's canvas calls at the north bank and the west bridge within 15% of the old walls' (graphics HIGH and LOW)
+//   THE PAGE     game.html in Chromium: no errors, the refit drawn, and a frame's canvas calls at the north bank and the west bridge within 15% of the old walls' (graphics HIGH and LOW); over the
+//                river's west end, where the owner circled a dark block, the water is drawn and no wall section is
 const fs = require('fs'), vm = require('vm'), path = require('path'), os = require('os');
 const { execFileSync } = require('child_process');
 const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
@@ -45,7 +47,23 @@ const FACTS = `(function () {
     // the near walls cut clean: each near piece under a section, no section on a far piece; the section's outer edge towards the camera
     var S = _fp.items.filter(function (i) { return i.fp === 'sewer' && i.what === 'section'; });
     out.sections = S.length;
-    out.nearNoSection = near.filter(function (w) { var m = [(w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2]; return !S.some(function (s) { return onSeg(m, s.a, s.b); }); }).map(function (w) { return w.a; });
+    // what stands in front of a near wall: the walls' masses (a far wall's a tile behind it, a jamb's a tile towards the camera) and every room's floor; a near piece whose strip is inside one is covered
+    var masses = [], nrm = function (w) { var dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy) || 1, nx = dy / L, ny = -dx / L; return nx + ny < 0 ? [-nx, -ny] : [nx, ny]; };
+    F.walls.forEach(function (w) { if (w.room !== 'sewers' || w.kind !== 'wall') return; var s = _fpWallOut(w, w.a, w.b, F) === 1 ? (_fpSewerJamb(w, F) ? 1 : 0) : -1; if (!s) return; var n = nrm(w), mx = n[0] * s, my = n[1] * s;
+        masses.push([Math.min(w.a[0], w.b[0], w.a[0] + mx, w.b[0] + mx), Math.min(w.a[1], w.b[1], w.a[1] + my, w.b[1] + my), Math.max(w.a[0], w.b[0], w.a[0] + mx, w.b[0] + mx), Math.max(w.a[1], w.b[1], w.a[1] + my, w.b[1] + my)]); });
+    var blockedT = function (x, y) { return !!facilityRoomAt(x, y, F) || masses.some(function (r) { return x > r[0] + 1e-6 && x < r[2] - 1e-6 && y > r[1] + 1e-6 && y < r[3] - 1e-6; }); };
+    var covered = function (w) { var n = nrm(w); return blockedT((w.a[0] + w.b[0]) / 2 + n[0] * 0.2, (w.a[1] + w.b[1]) / 2 + n[1] * 0.2); };
+    var inAlcove = function (a, b) { return Math.abs(a[1] - 109.5) < 1e-6 && Math.abs(b[1] - 109.5) < 1e-6 && Math.min(a[0], b[0]) >= -49.5 - 1e-6 && Math.max(a[0], b[0]) <= -48.5 + 1e-6; };
+    out.covered = near.filter(covered).length;
+    out.alcove = { covered: near.filter(function (w) { return inAlcove(w.a, w.b) && covered(w); }).length, sections: S.filter(function (s) { return inAlcove(s.a, s.b); }).length };
+    out.nearNoSection = near.filter(function (w) { var m = [(w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2]; return !covered(w) && !S.some(function (s) { return onSeg(m, s.a, s.b); }); }).map(function (w) { return w.a; });
+    out.sectionCovered = S.filter(function (s) { return [0.25, 0.75].some(function (u) { return blockedT(s.a[0] + (s.b[0] - s.a[0]) * u + (s.outer.a[0] - s.a[0]) * 0.45, s.a[1] + (s.b[1] - s.a[1]) * u + (s.outer.a[1] - s.a[1]) * 0.45); }); }).map(function (s) { return s.a; });
+    // each face hangs as deep as nothing stands in front of it: clear all the way down (a point of it z deep shows where the floor is z / 2 TILE_H tiles towards the camera), and cut short only where something is
+    var D = C.nearD, H2 = 2 * TILE_H; out.faceOver = []; out.faceShort = []; out.partial = 0;
+    S.forEach(function (s) { var dep = s.dep || [D, D, D, D, D]; if (s.dep) out.partial++;
+        [0.001, 0.25, 0.5, 0.75, 0.999].forEach(function (u, i) { var x = s.outer.a[0] + (s.outer.b[0] - s.outer.a[0]) * u, y = s.outer.a[1] + (s.outer.b[1] - s.outer.a[1]) * u, d = dep[i] / H2, clear = true;
+            for (var t = 0.02; t < d - 0.03; t += 0.01) if (blockedT(x + t, y + t)) { clear = false; break; }
+            if (!clear) out.faceOver.push([s.a, u, dep[i]]); else if (dep[i] < D - 1 && !blockedT(x + d + 0.03, y + d + 0.03)) out.faceShort.push([s.a, u, dep[i]]); }); });
     out.sectionOffNear = S.filter(function (s) { return [0.25, 0.75].some(function (t) { var p = [s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t]; return !near.some(function (w) { return onSeg(p, w.a, w.b); }); }); }).map(function (s) { return s.a; });
     out.sectionBadOuter = S.filter(function (s) { var ox = s.outer.a[0] - s.a[0], oy = s.outer.a[1] - s.a[1]; return !(Math.abs(Math.hypot(ox, oy) - C.nearT) < 1e-6 && ox + oy > 0 && Math.abs((s.outer.b[0] - s.b[0]) - ox) < 1e-9 && Math.abs((s.outer.b[1] - s.b[1]) - oy) < 1e-9 && Math.abs((s.b[0] - s.a[0]) * ox + (s.b[1] - s.a[1]) * oy) < 1e-9); }).map(function (s) { return s.a; });
     // the north passages: their mouths from the outline, a lintel over each, the east jambs' tops
@@ -127,6 +145,19 @@ window.addEventListener('load', function(){ setTimeout(function(){
       });
     });
     window._fpSewerRefitWall = rw; window.facilitySewerDraw = sd;
+    // THE OWNER'S CIRCLE (2026-11-15, "I see this error"): a dark block over the river's west end, by the outfall. Three points of the river there: the water paints them, no wall section may
+    gfxLow = false; player.x = player.targetX = player.visualX = -39.5; player.y = player.targetY = player.visualY = 112; player.fpPath = null;
+    for (let i = 0; i < 40; i++) { frame++; render(); }
+    const G = canvas.getContext('2d'), probe = [[-48.0, 110.9], [-47.6, 111.3], [-47.3, 111.6]], paints = { water: 0, section: 0, at: [] };
+    window.facilitySewerDraw = function (it) {
+      if (it.what !== 'water' && it.what !== 'section') return sd(it);
+      const T = G.getTransform(), pts = probe.map(function (q) { const p = _fpP(q[0], q[1], 0), d = T.transformPoint(new DOMPoint(p[0], p[1])); return [Math.round(d.x), Math.round(d.y)]; });
+      const read = function () { return pts.map(function (q) { return q[0] >= 0 && q[1] >= 0 && q[0] < canvas.width && q[1] < canvas.height ? Array.from(G.getImageData(q[0], q[1], 1, 1).data).join() : 'off'; }); };
+      const b0 = read(), r = sd(it), b1 = read();
+      if (b0.some(function (v, i) { return v !== b1[i] && v !== 'off'; })) { paints[it.what]++; if (it.what === 'section') paints.at.push(it.a); }
+      out.probeOn = pts.every(function (q) { return q[0] >= 0 && q[1] >= 0 && q[0] < canvas.width && q[1] < canvas.height; });
+      return r; };
+    frame++; render(); window.facilitySewerDraw = sd; out.probe = paints;
   } catch (err) { out.err = String(err && err.stack || err); }
   out.errs = window.__errs.slice(0, 3);
   var pre = document.createElement('pre'); pre.id = '__sl'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -170,11 +201,21 @@ function realPage() {
         same(X.hook.oldForTunnel, 0, 'tunnel pieces the old look also ran for');
         same(X.hook.oldForNest, X.pieces.nest, 'Nest pieces the old look ran for');
     });
-    check('the near walls cut clean: ' + X.sections + ' sections, a tile each; every near piece under one, none on anything else, each\'s outer edge ' + 'FP_SEWER_REFIT.nearT towards the camera', () => {
-        ok(X.sections * 2 >= X.pieces.near, 'sections: ' + X.sections + ' for ' + X.pieces.near + ' half-tile pieces');
-        same(X.nearNoSection.length, 0, 'near pieces with no section, at ' + JSON.stringify(X.nearNoSection.slice(0, 4)));
+    check('the near walls cut clean: ' + X.sections + ' sections, a tile each; every near piece under one or inside another wall\'s mass (' + X.covered + ' half tiles: the ends of walls), none on anything else, each\'s outer edge FP_SEWER_REFIT.nearT towards the camera', () => {
+        ok(X.sections * 2 + X.covered >= X.pieces.near, 'sections: ' + X.sections + ' and ' + X.covered + ' covered for ' + X.pieces.near + ' half-tile pieces');
+        same(X.nearNoSection.length, 0, 'near pieces with no section and not covered, at ' + JSON.stringify(X.nearNoSection.slice(0, 4)));
         same(X.sectionOffNear.length, 0, 'sections not on a near piece, at ' + JSON.stringify(X.sectionOffNear.slice(0, 4)));
+        same(X.sectionCovered.length, 0, 'sections inside another wall\'s mass, at ' + JSON.stringify(X.sectionCovered.slice(0, 4)));
         same(X.sectionBadOuter.length, 0, 'sections whose outer edge is not nearT towards the camera, at ' + JSON.stringify(X.sectionBadOuter.slice(0, 4)));
+    });
+    check('the owner\'s circle (2026-11-15): the south side of the alcove beside the outfall is the west wall\'s end, inside its mass, so it has no section (it hung a dark block over the river)', () => {
+        same(X.alcove.covered, 2, 'the alcove\'s two half-tile pieces at y 109.5 covered');
+        same(X.alcove.sections, 0, 'sections there');
+    });
+    check('each section\'s face hangs as deep as nothing stands in front of it (' + X.partial + ' cut short where a floor or a wall\'s mass is in front): never over one, never short of one', () => {
+        ok(X.partial >= 2, 'faces cut short: ' + X.partial + ' (the corners of the subway passage and the Nest have them)');
+        same(X.faceOver.length, 0, 'faces hanging where something is in front of them (section, along, px): ' + JSON.stringify(X.faceOver.slice(0, 3)));
+        same(X.faceShort.length, 0, 'faces cut short with nothing in front (section, along, px): ' + JSON.stringify(X.faceShort.slice(0, 3)));
     });
     check('the five north passages\' mouths found from the room\'s outline, a lintel over each (spanning, its box the mouth\'s), and each east jamb only its top, all the way up', () => {
         same(JSON.stringify(X.mouths), JSON.stringify([[-48.5, -46.5, 107.5], [-45.5, -43.5, 107.5], [-41.5, -35.5, 107.5], [-33.5, -28.5, 107.5], [-22.5, -16.5, 107.5]]), 'the mouths (x0, x1, y)');
@@ -229,6 +270,11 @@ function realPage() {
                 ok(s.drawn.wall > 20, 'wall pieces drawn by the refit: ' + s.drawn.wall);
                 same(s.drawnOld.wall + s.drawnOld.section + s.drawnOld.lintel + s.drawnOld.lamp, 0, 'the refit drawn with it turned off');
                 ok(s.nNew <= s.nOld * 1.15, 'canvas calls a frame, refit and old: ' + s.nNew + ', ' + s.nOld);
+            });
+            check('the owner\'s circle (2026-11-15): over the river\'s west end, by the outfall, the water is drawn and no wall section is (it was a dark block: a section hung below the end of the west wall)', () => {
+                ok(real.probe && real.probeOn, 'the probe points are not on the screen: ' + JSON.stringify(real.probe));
+                ok(real.probe.water > 0, 'the water did not paint the probe points (the probe is not over the river)');
+                same(real.probe.section, 0, 'sections painted over the river there, at ' + JSON.stringify(real.probe.at));
             });
             check('at the north bank a lintel and a section are on the screen; lamps somewhere', () => {
                 const nb = real.spots.filter(s => s.name === 'north bank'); ok(nb.length && nb.every(s => s.drawn.lintel > 0 && s.drawn.section > 0), 'the north bank: ' + JSON.stringify(nb.map(s => s.drawn)));

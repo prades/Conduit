@@ -507,7 +507,8 @@ function facilitySewerMeasures() {
 //               glow lies over the panels either side). Every wall's top is the dark cut, so the walls between the north side passages no longer read as boxes; a LINTEL spans each passage's mouth (the
 //               mouths found from the room's outline: _fpSewerMouths), and the passages' east jambs show only their tops.
 //   NEAR WALLS  (the south side, the subway passage) are cut clean as a section: the dark cut flush with the floor and the outer face hanging below it, fading to dark. They were drawn full height on their
-//               inner line, so each half tile's top and the next one's face overlapped: the saw-teeth along their tops.
+//               inner line, so each half tile's top and the next one's face overlapped: the saw-teeth along their tops. A near wall that is the end of another wall (inside its mass) has no section,
+//               and a face hangs only as deep as no floor or wall stands in front of it (build 2026-11-15h; the owner circled a dark block over the river by the outfall).
 //   FLOOR       checker plate in bolted plates two tiles by one, the rows staggered; a hazard kerb where it meets the river (the owner, of the drafts: "Change the bank's edge"); dark at the walls' feet.
 //               Painted once per tile with the floor's other marks (js/facilitydecor.js _fpFloorBuild), the plate's ticks shared (_fpSewerTicks). A frame takes fewer canvas calls than with the old
 //               walls (tests/sewerlook.js).
@@ -605,6 +606,17 @@ function _fpSewerRefitItems(F) {
         if (!_fpRoomStyle(room).refit || !F.byId.has(room)) continue; const base = facilityRoomHeight(room, F) * FP_ELEV_PX;
         const busy = (F.decor || []).filter(d => d.room === room && d.a && d.b && (d.kind === "portal_door" || d.kind === "wall_light" || d.kind === "brood_hole"));   // (no lamp on a door or beside the map's own lights)
         const nearBusy = (x, y) => busy.some(d => { const ax = d.a[0], ay = d.a[1], bx = d.b[0], by = d.b[1], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)); return Math.hypot(ax + dx * t - x, ay + dy * t - y) < 0.9; });
+        // WHAT STANDS IN FRONT OF A NEAR WALL: the walls' masses (a far wall's a tile deep behind its face, a jamb's a tile towards the camera) and every room's floor. A section whose own strip is
+        // inside a mass is the end of another wall (the owner, 2026-11-15, of a dark block over the river's west end: the alcove beside the outfall, whose south side is the west wall's end): it has
+        // none. A face hangs only as deep as nothing stands in front of it: a point of it at depth z is on the screen where the floor is (z / 2 TILE_H) tiles towards the camera.
+        const masses = [];
+        for (const w of F.walls) {
+            if (w.room !== room || w.kind !== "wall") continue; const s = _fpWallOut(w, w.a, w.b, F) === 1 ? (_fpSewerJamb(w, F) ? 1 : 0) : -1; if (!s) continue;
+            _fpRfNormal(w.a[0], w.a[1], w.b[0], w.b[1]); const mx = _fpRf.nx * s, my = _fpRf.ny * s;
+            masses.push([Math.min(w.a[0], w.b[0], w.a[0] + mx, w.b[0] + mx), Math.min(w.a[1], w.b[1], w.a[1] + my, w.b[1] + my), Math.max(w.a[0], w.b[0], w.a[0] + mx, w.b[0] + mx), Math.max(w.a[1], w.b[1], w.a[1] + my, w.b[1] + my)]);
+        }
+        const blocked = (x, y) => !!facilityRoomAt(x, y, F) || masses.some(r => x > r[0] + 1e-6 && x < r[2] - 1e-6 && y > r[1] + 1e-6 && y < r[3] - 1e-6);
+        const dMax = C.nearD / (2 * TILE_H);
         for (const w of F.walls) {
             if (w.room !== room || w.kind !== "wall" || _fpSewerOwnLook((w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2, F)) continue;
             const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy); if (len < 1e-6) continue;
@@ -613,7 +625,10 @@ function _fpSewerRefitItems(F) {
                 const n = Math.max(1, Math.round(len));
                 for (let i = 0; i < n; i++) {
                     const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n]; _fpRfNormal(a[0], a[1], b[0], b[1]); const nx = _fpRf.nx * C.nearT, ny = _fpRf.ny * C.nearT;
-                    out.push({ type: "fp", fp: "sewer", what: "section", room, base, a, b, outer: { a: [a[0] + nx, a[1] + ny], b: [b[0] + nx, b[1] + ny] }, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, depth: (a[0] + b[0]) / 2 + (a[1] + b[1]) / 2 + (nx + ny) + 0.05 });
+                    if ([0.1, 0.5, 0.9].some(u => blocked(a[0] + (b[0] - a[0]) * u + nx / 2, a[1] + (b[1] - a[1]) * u + ny / 2))) continue;   // (inside another wall's mass: nothing of it shows)
+                    const o = { a: [a[0] + nx, a[1] + ny], b: [b[0] + nx, b[1] + ny] }, dep = [0.001, 0.25, 0.5, 0.75, 0.999].map(u => {
+                        const x = o.a[0] + (o.b[0] - o.a[0]) * u, y = o.a[1] + (o.b[1] - o.a[1]) * u; let t = 0.02; while (t < dMax && !blocked(x + t, y + t)) t += 0.02; return Math.round(Math.min(t, dMax) * 2 * TILE_H); });
+                    out.push({ type: "fp", fp: "sewer", what: "section", room, base, a, b, outer: o, dep: dep.some(d => d < C.nearD) ? dep : null, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, depth: (a[0] + b[0]) / 2 + (a[1] + b[1]) / 2 + (nx + ny) + 0.05 });
                 }
             } else {   // a far wall: a lamp every C.lampEvery tiles along it
                 const alongX = Math.abs(dy) < 1e-6, s0 = alongX ? w.a[0] : w.a[1], s1 = alongX ? w.b[0] : w.b[1], lo = Math.min(s0, s1), hi = Math.max(s0, s1), ux = dx / len * 0.15, uy = dy / len * 0.15;
@@ -630,9 +645,15 @@ function _fpSewerRefitItems(F) {
 // A NEAR WALL CUT CLEAN: the outer face hanging below the floor and fading to dark, the dark cut on top flush with the floor, a lit edge along the room's side
 function _fpSewerSection(it) {
     const C = FP_SEWER_REFIT, D = C.nearD, iA = _fpP(it.a[0], it.a[1], 0), iB = _fpP(it.b[0], it.b[1], 0), oA = _fpP(it.outer.a[0], it.outer.a[1], 0), oB = _fpP(it.outer.b[0], it.outer.b[1], 0);
-    _fpRfSet(it.outer.a[0], it.outer.a[1], it.outer.b[0], it.outer.b[1]);
+    const R = _fpRf, dep = it.dep; _fpRfSet(it.outer.a[0], it.outer.a[1], it.outer.b[0], it.outer.b[1]);
+    if (dep) {   // (something stands in front of part of it: the face goes no deeper than _fpSewerRefitItems found, its foot a line through the depths along it)
+        const m = dep.length - 1; ctx.save(); ctx.beginPath(); ctx.moveTo(R.X0 - R.DX * 0.02, R.Y0 - R.DY * 0.02); ctx.lineTo(R.X0 + R.DX * 1.02, R.Y0 + R.DY * 1.02); ctx.lineTo(R.X0 + R.DX * 1.02, R.Y0 + R.DY * 1.02 + dep[m]);
+        for (let i = m; i >= 0; i--) ctx.lineTo(R.X0 + R.DX * i / m, R.Y0 + R.DY * i / m + dep[i]);
+        ctx.lineTo(R.X0 - R.DX * 0.02, R.Y0 - R.DY * 0.02 + dep[0]); ctx.closePath(); ctx.clip();
+    }
     _fpRfBand(-0.02, 1.02, -D, 0, C.faceD); _fpRfSeams(-D, -8, 1.2, false); _fpRfLine(0, -6, 1, -6, C.accDim, 1.4);
     if (typeof _fpWallGrad === "function") _fpWallGrad(it.outer, -0.02, 1.02, -D, 0, C.fade, "sewerSection" + D);   // (the fade to dark: one gradient for every piece, js/facilitystyle.js)
+    if (dep) ctx.restore();
     ctx.fillStyle = C.cut; ctx.beginPath(); ctx.moveTo(iA[0], iA[1]); ctx.lineTo(iB[0], iB[1]); ctx.lineTo(oB[0], oB[1]); ctx.lineTo(oA[0], oA[1]); ctx.closePath(); ctx.fill();
     ctx.lineWidth = 1.4; ctx.strokeStyle = C.nearEdge; ctx.beginPath(); ctx.moveTo(iA[0], iA[1]); ctx.lineTo(iB[0], iB[1]); ctx.stroke();
     ctx.lineWidth = 1; ctx.strokeStyle = C.nearEdge2; ctx.beginPath(); ctx.moveTo(oA[0], oA[1]); ctx.lineTo(oB[0], oB[1]); ctx.stroke();
