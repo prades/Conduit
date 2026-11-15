@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15g` · branch `claude/start-game-project-HSh7Z` · the Sewers' new look: look 1's walls, look 4's floor
+- **The ask** (the owner, 2026-11-15, of six looks drawn on the game, `design/sewer-looks/`): "I like 1 but the floor tiles of 4"; earlier, of the river's edge, "Change the bank's edge".
+- **What it does** (`docs/FACILITY.md`, "The new look"), in the Sewers' tunnel; the Nest keeps its damp look:
+  - **Walls:** the facility's panels over a dark wainscot, a green light strip, a conduit under the cap; dark wall tops; a bulkhead lamp every 4 tiles; a lintel over each of the five north passages; the passages' east jambs only their tops.
+  - **Near walls** (the south side) cut clean, flush with the floor, their face hanging below it: no saw-teeth along their tops.
+  - **Floor:** steel checker plate in bolted plates, a hazard kerb along the river, dark at the walls' feet; the bridges' gratings as they were.
+  - **Cost:** fewer canvas calls a frame than the old walls; the plate's ticks are shared every 6 tiles, so the floor's marks stay small in memory.
+- Colours, sizes and spacing (`FP_SEWER_REFIT`) are the agent's, provisional. Every other room is drawn as before.
+- `js/facilitysewers.js` (the refit), `js/facilitystyle.js` and `js/facilitystyleall.js` (the hooks), `js/facilitydecor.js` (a floor base per tile; a mark of many short lines), `tests/sewerlook.js` (new: 15 checks in the game's scripts, 6 on the real page), `docs/FACILITY.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`, `design/sewer-looks/README.md`, `bible.html`.
+- **Verified:** `tests/sewerlook.js` and the suites near it; on the real page, pictures of the north bank, the west bridge, the subway passage, the west end and the Nest's edge, no page errors. **Not playtested on an iPad.**
+
 ### Build `2026-11-15f` · branch `claude/start-game-project-HSh7Z` · Side Quest in the Lounge: a pack when you meet him, his face beside SHOP
 - **The ask** (the owner, 2026-11-15): "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the player with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest". Then, asked: the room is **The Lounge**, the reward is for **meeting him**, and **both spots stay**.
 - **What it does** (`docs/SEWER-QUEST.md`, "Side Quest in the Lounge"):

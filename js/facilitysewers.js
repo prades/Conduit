@@ -71,6 +71,7 @@ function facilitySewerItems(F) {
         const a = alongX ? [x0, (y0 + y1) / 2] : [(x0 + x1) / 2, y0], b = alongX ? [x1, (y0 + y1) / 2] : [(x0 + x1) / 2, y1];
         items.push({ type: "fp", fp: "sewer", what: "gate", room: s.room, base: base(s.room), x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, a, b, boss: s.kind === "boss_gate", id: s.id, depth: Math.max(a[0] + a[1], b[0] + b[1]) + 0.03, seed: _fpHash(Math.round(a[0] * 3), Math.round(a[1] * 3)) });
     }
+    if (typeof _fpSewerRefitItems === "function") for (const it of _fpSewerRefitItems(F)) items.push(it);   // THE TUNNEL'S REFIT: its near walls cut clean, the lintels over the north passages, its lamps (below)
     return items;
 }
 // the water's outline: the river's band (from the west end of the westmost length to the east end of the eastmost: the bridges' gaps are water too, under the grating), the round pools, and the POOLS OF ANY
@@ -108,6 +109,7 @@ function facilitySewerDraw(it) {
     if (it.what === "water") _fpSewerWater(it, f); else if (it.what === "rail") _fpSewerRail(it); else if (it.what === "stump") _fpSewerStump(it, f);
     else if (it.what === "gate") _fpSewerGate(it, f); else if (it.what === "grate") _fpOverflowGrate(it, f); else if (it.what === "glass") _fpSightGlass(it, f); else if (it.what === "mist") _fpSewerMist(it, f);
     else if (it.what === "egg") _fpNestEgg(it, f); else if (it.what === "junk") _fpNestJunk(it, f); else if (it.what === "rim") _fpNestRim(it, f); else if (it.what === "falls") _fpNestFalls(it, f);
+    else if (it.what === "section") _fpSewerSection(it); else if (it.what === "lintel") _fpSewerLintel(it); else if (it.what === "lamp") _fpSewerLamp(it);
 }
 const _fpSwLine = (p, q) => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
 const _fpSwPath = (pts) => { ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); };
@@ -496,4 +498,199 @@ function facilitySewerMeasures() {
         nestW: A ? A.rect[2] - A.rect[0] : 0, nestH: A ? A.rect[3] - A.rect[1] : 0, dam: dam.length, reservoir: wet(sol("nest_reservoir")), moat: wet(sol("nest_moat")), farFromPost: Math.round(far * 10) / 10,
         falls: items("falls"), holes: F.decor.filter(d => d.room === "sewers" && d.kind === "brood_hole").length, eggs: (_fp.items || []).filter(i => i.fp === "sewer" && i.what === "egg" && i.room === "sewers").length, cells: [..._fp.cellsP.values()].filter(c => { const r = facilityRoomAt(c[0], c[1], F); return r && r.id === "sewers"; }).length,
     };
+}
+
+// ═════════════ THE TUNNEL'S REFIT (build 2026-11-15g) ═════════════
+// The owner, 2026-11-15, of six looks drawn on the game (design/sewer-looks/): "I like 1 but the floor tiles of 4". So the Sewers' tunnel (all of it but the Nest, whose look stays its own: the room's
+// `area`) has look 1's walls and look 4's floor (FP_ROOM_STYLE.sewers.refit, js/facilitystyleall.js):
+//   WALLS       the facility's panels, a tile wide, over a dark wainscot; a reveal, a green light strip, a conduit under the cap band; a bulkhead light every FP_SEWER_REFIT.lampEvery tiles (an item, so its
+//               glow lies over the panels either side). Every wall's top is the dark cut, so the walls between the north side passages no longer read as boxes; a LINTEL spans each passage's mouth (the
+//               mouths found from the room's outline: _fpSewerMouths), and the passages' east jambs show only their tops.
+//   NEAR WALLS  (the south side, the subway passage) are cut clean as a section: the dark cut flush with the floor and the outer face hanging below it, fading to dark. They were drawn full height on their
+//               inner line, so each half tile's top and the next one's face overlapped: the saw-teeth along their tops.
+//   FLOOR       checker plate in bolted plates two tiles by one, the rows staggered; a hazard kerb where it meets the river (the owner, of the drafts: "Change the bank's edge"); dark at the walls' feet.
+//               Painted once per tile with the floor's other marks (js/facilitydecor.js _fpFloorBuild), the plate's ticks shared (_fpSewerTicks). A frame takes fewer canvas calls than with the old
+//               walls (tests/sewerlook.js).
+const FP_SEWER_REFIT = {
+    wain: "#161c1b", faceD: "#2c3533", faceL: "#35403d", capBand: "#202826", seam: "rgba(6,12,12,0.65)", seamLit: "rgba(150,190,175,0.18)",
+    acc: "#46d62e", accGlow: "rgba(70,214,46,0.22)", accDim: "rgba(70,214,46,0.5)",
+    cut: "#0b0d0e", cutEdge: "rgba(120,220,140,0.35)", nearEdge: "rgba(120,220,140,0.45)", nearEdge2: "rgba(170,180,180,0.25)",
+    pipe: { z: 98, r: 3.2, body: "#3e4a48", lit: "#6f817c", dark: "#1f2726", flange: "#28312f", every: 2, at: 0.25 },
+    lamp: "#d8f6ff", lampEvery: 4, lampAt: 1.75, lintelZ: 104, nearT: 0.45, nearD: 120,
+    fade: [[0, "rgba(0,0,0,1)"], [0.45, "rgba(0,0,0,0.35)"], [1, "rgba(0,0,0,0)"]],
+    floor: "#3f474c", floor2: "#444d53", plateEdge: "rgba(8,10,12,0.9)", bolt: "rgba(190,205,215,0.55)", tick: "rgba(15,20,24,0.55)", tickLit: "rgba(200,215,225,0.16)",
+    kerb: "#151515", hazard: "#e0b31f", kerbW: 0.18, foot: "#1b2024",
+};
+const _fpRfOwn = new WeakMap(), _fpRfMouths = new WeakMap(), _fpRfWater = new WeakMap(), _fpRfKinds = new WeakMap();   // (worked out once per building, or once per wall piece)
+// is (x, y) in a part of the Sewers with a look of its own (its `area`: THE NEST)?
+function _fpSewerOwnLook(x, y, F) {
+    F = F || (typeof _fp !== "undefined" && _fp ? _fp.F : null); if (!F) return false;
+    let R = _fpRfOwn.get(F); if (!R) { R = (F.decor || []).filter(d => d.kind === "area" && d.room === "sewers" && d.rect).map(d => d.rect); _fpRfOwn.set(F, R); }
+    for (const r of R) if (x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]) return true;
+    return false;
+}
+// THE NORTH SIDE PASSAGES' MOUTHS, found from the room's outline: where it turns north off a line and comes back to the same line, the line going on east ({x0, x1, y, top}: top, how far north it went)
+function _fpSewerMouths(F, room) {
+    let M = _fpRfMouths.get(F); if (!M) { M = new Map(); _fpRfMouths.set(F, M); } if (M.has(room)) return M.get(room);
+    const r = F.byId && F.byId.get(room), P = r && r.poly, out = [], n = P ? P.length : 0;
+    for (let i = 0; i < n; i++) {
+        const p = P[i], q = P[(i + 1) % n]; if (Math.abs(p[0] - q[0]) > 1e-6 || q[1] >= p[1] - 1e-6) continue;   // (a side going north off the line)
+        const y0 = p[1]; let top = q[1], k = (i + 1) % n;
+        for (let step = 0; step < n; step++) {
+            const a = P[k], b = P[(k + 1) % n]; top = Math.min(top, a[1]);
+            if (Math.abs(b[1] - y0) < 1e-6 && Math.abs(a[0] - b[0]) < 1e-6 && a[1] < y0) { const c = P[(k + 2) % n]; if (Math.abs(c[1] - y0) < 1e-6 && c[0] > b[0] && b[0] > p[0] && !_fpSewerOwnLook((p[0] + b[0]) / 2, y0 - 0.5, F)) out.push({ x0: p[0], x1: b[0], y: y0, top }); break; }
+            if (b[1] >= y0 - 1e-6) break;   // (back on the line, or past it, some other way: not a passage)
+            k = (k + 1) % n;
+        }
+    }
+    M.set(room, out); return out;
+}
+// a passage's east jamb (a near wall north of the line, at a mouth's east end): only its top shows
+function _fpSewerJamb(w, F) {
+    if (Math.abs(w.a[0] - w.b[0]) > 1e-6) return false; const x = w.a[0], y0 = Math.min(w.a[1], w.b[1]), y1 = Math.max(w.a[1], w.b[1]);
+    for (const m of _fpSewerMouths(F, w.room)) if (Math.abs(m.x1 - x) < 1e-6 && y0 >= m.top - 1e-6 && y1 <= m.y + 1e-6) return true;
+    return false;
+}
+// the face of the piece being drawn: (X0, Y0) its start on screen, (DX, DY) along it; s0..s1 where it runs along the wall (x or y); its camera-facing normal (one object, filled for each piece: nothing allocated)
+const _fpRf = { X0: 0, Y0: 0, DX: 0, DY: 0, ax: 0, ay: 0, bx: 0, by: 0, nx: 0, ny: 1, len: 1, s0: 0, s1: 1, lit: false };
+function _fpRfNormal(ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; } _fpRf.nx = nx; _fpRf.ny = ny; _fpRf.len = L; }
+function _fpRfSet(ax, ay, bx, by) {
+    const R = _fpRf; _fpRfNormal(ax, ay, bx, by); const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0);
+    R.X0 = a0[0]; R.Y0 = a0[1]; R.DX = b0[0] - a0[0]; R.DY = b0[1] - a0[1]; R.ax = ax; R.ay = ay; R.bx = bx; R.by = by; R.lit = R.nx > R.ny;
+    const alongX = Math.abs(by - ay) < 1e-6; R.s0 = alongX ? ax : ay; R.s1 = alongX ? bx : by; return R;
+}
+function _fpRfU(s) { return (s - _fpRf.s0) / ((_fpRf.s1 - _fpRf.s0) || 1); }
+function _fpRfBand(u0, u1, z0, z1, col) { const R = _fpRf; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(R.X0 + R.DX * u0, R.Y0 + R.DY * u0 - z0); ctx.lineTo(R.X0 + R.DX * u1, R.Y0 + R.DY * u1 - z0); ctx.lineTo(R.X0 + R.DX * u1, R.Y0 + R.DY * u1 - z1); ctx.lineTo(R.X0 + R.DX * u0, R.Y0 + R.DY * u0 - z1); ctx.closePath(); ctx.fill(); }
+function _fpRfLine(u0, z0, u1, z1, col, w) { const R = _fpRf; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(R.X0 + R.DX * u0, R.Y0 + R.DY * u0 - z0); ctx.lineTo(R.X0 + R.DX * u1, R.Y0 + R.DY * u1 - z1); ctx.stroke(); }
+// the wall's top, the dark cut: t tiles deep, away from the camera (out -1) or towards it (+1), a lit edge along the face
+function _fpRfSlab(Hd, out, t, col, edge) {
+    const R = _fpRf, e = 0.02, mx = R.nx * out, my = R.ny * out, ux = (R.bx - R.ax) / R.len * e, uy = (R.by - R.ay) / R.len * e;
+    const p0 = _fpP(R.ax - ux, R.ay - uy, Hd), p1 = _fpP(R.bx + ux, R.by + uy, Hd), p2 = _fpP(R.bx + ux + mx * t, R.by + uy + my * t, Hd), p3 = _fpP(R.ax - ux + mx * t, R.ay - uy + my * t, Hd);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.lineTo(p3[0], p3[1]); ctx.closePath(); ctx.fill();
+    if (edge) { ctx.strokeStyle = edge; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); }
+}
+// the panel seams, a tile apart (at the tiles' edges), between two heights
+function _fpRfSeams(z0, z1, w, lit) {
+    const R = _fpRf, lo = Math.min(R.s0, R.s1), hi = Math.max(R.s0, R.s1);
+    for (let k = Math.ceil(lo - 0.5 - 1e-6); k + 0.5 <= hi + 1e-6; k++) { const u = _fpRfU(k + 0.5); _fpRfLine(u, z0, u, z1, FP_SEWER_REFIT.seam, w); if (lit) _fpRfLine(u + 0.03, z0, u + 0.03, z1, FP_SEWER_REFIT.seamLit, 1); }
+}
+// LOOK 1's FACE on the piece in _fpRf: the wainscot, the panels and their reveal, the cap band, the conduit, the light strip
+function _fpRfFace(Hd) {
+    const C = FP_SEWER_REFIT, R = _fpRf, cap = Hd - 10, P = C.pipe;
+    _fpRfBand(-0.02, 1.02, 0, 24, C.wain); _fpRfBand(-0.02, 1.02, 24, cap, R.lit ? C.faceL : C.faceD);
+    _fpRfSeams(30, cap, 1.6, true);
+    _fpRfLine(0, 78, 1, 78, C.seam, 1.4); _fpRfLine(0, 79.5, 1, 79.5, C.seamLit, 1);   // the reveal
+    _fpRfBand(-0.02, 1.02, cap, Hd, C.capBand);
+    _fpRfBand(-0.02, 1.02, P.z - P.r, P.z + P.r, P.body); _fpRfBand(-0.02, 1.02, P.z + P.r * 0.25, P.z + P.r * 0.8, P.lit); _fpRfBand(-0.02, 1.02, P.z - P.r, P.z - P.r * 0.45, P.dark);   // the conduit
+    { const lo = Math.min(R.s0, R.s1), hi = Math.max(R.s0, R.s1), w = 0.05 / Math.max(0.1, R.len);
+      for (let k = Math.ceil((lo - P.at) / P.every - 1e-6); k * P.every + P.at <= hi + 1e-6; k++) { const u = _fpRfU(k * P.every + P.at); _fpRfBand(u - w, u + w, P.z - P.r - 1.5, P.z + P.r + 1.5, P.flange); _fpRfLine(u - w, P.z - P.r - 1.5, u - w, P.z + P.r + 1.5, P.lit, 1); } }   // its flanges
+    _fpRfLine(0, 26, 1, 26, C.accGlow, 6); _fpRfLine(0, 26, 1, 26, C.acc, 1.8);   // the light strip
+    _fpRfLine(0, 0, 1, 0, "rgba(0,0,0,0.6)", 2); _fpRfLine(0, cap, 1, cap, "rgba(0,0,0,0.5)", 1.2);
+}
+// a wall piece of the tunnel (js/facilitystyle.js _fpStyleWall): false for one this does not draw (the Nest's, one that is not a plain wall)
+function _fpSewerRefitWall(it, Hd) {
+    const F = typeof _fp !== "undefined" && _fp ? _fp.F : null; if (!F || it.kind !== "wall") return false;
+    let k = _fpRfKinds.get(it);
+    if (k === undefined) { k = _fpSewerOwnLook((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2, F) ? 0 : it.out === 1 ? (_fpSewerJamb(it, F) ? 2 : 3) : 1; _fpRfKinds.set(it, k); }   // 0 its own look, 1 a far wall, 2 a jamb, 3 a near wall
+    if (k === 0) return false;
+    const C = FP_SEWER_REFIT; _fpRfSet(it.a[0], it.a[1], it.b[0], it.b[1]);
+    if (k === 2) _fpRfSlab(Hd, 1, 1.0, C.cut, null);   // (a passage's jamb: its top only)
+    else if (k === 1) { _fpRfSlab(Hd, -1, 1.0, C.cut, C.cutEdge); _fpRfFace(Hd); }
+    return true;   // (a near wall: its section is an item of its own, _fpSewerSection)
+}
+// THE REFIT'S ITEMS (facilitySewerItems): each near wall's section a tile at a time, a lintel over each north passage's mouth, a lamp every few tiles along the far walls (not by a door or a light of the map's)
+function _fpSewerRefitItems(F) {
+    const out = [], C = FP_SEWER_REFIT;
+    for (const room of ["sewers"]) {
+        if (!_fpRoomStyle(room).refit || !F.byId.has(room)) continue; const base = facilityRoomHeight(room, F) * FP_ELEV_PX;
+        const busy = (F.decor || []).filter(d => d.room === room && d.a && d.b && (d.kind === "portal_door" || d.kind === "wall_light" || d.kind === "brood_hole"));   // (no lamp on a door or beside the map's own lights)
+        const nearBusy = (x, y) => busy.some(d => { const ax = d.a[0], ay = d.a[1], bx = d.b[0], by = d.b[1], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)); return Math.hypot(ax + dx * t - x, ay + dy * t - y) < 0.9; });
+        for (const w of F.walls) {
+            if (w.room !== room || w.kind !== "wall" || _fpSewerOwnLook((w.a[0] + w.b[0]) / 2, (w.a[1] + w.b[1]) / 2, F)) continue;
+            const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], len = Math.hypot(dx, dy); if (len < 1e-6) continue;
+            if (_fpWallOut(w, w.a, w.b, F) === 1) {   // a near wall: its section, a tile at a time (not a passage's jamb)
+                if (_fpSewerJamb(w, F)) continue;
+                const n = Math.max(1, Math.round(len));
+                for (let i = 0; i < n; i++) {
+                    const a = [w.a[0] + dx * i / n, w.a[1] + dy * i / n], b = [w.a[0] + dx * (i + 1) / n, w.a[1] + dy * (i + 1) / n]; _fpRfNormal(a[0], a[1], b[0], b[1]); const nx = _fpRf.nx * C.nearT, ny = _fpRf.ny * C.nearT;
+                    out.push({ type: "fp", fp: "sewer", what: "section", room, base, a, b, outer: { a: [a[0] + nx, a[1] + ny], b: [b[0] + nx, b[1] + ny] }, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, depth: (a[0] + b[0]) / 2 + (a[1] + b[1]) / 2 + (nx + ny) + 0.05 });
+                }
+            } else {   // a far wall: a lamp every C.lampEvery tiles along it
+                const alongX = Math.abs(dy) < 1e-6, s0 = alongX ? w.a[0] : w.a[1], s1 = alongX ? w.b[0] : w.b[1], lo = Math.min(s0, s1), hi = Math.max(s0, s1), ux = dx / len * 0.15, uy = dy / len * 0.15;
+                for (let k = Math.ceil((lo + 0.3 - C.lampAt) / C.lampEvery); k * C.lampEvery + C.lampAt <= hi - 0.3 + 1e-6; k++) {
+                    const s = k * C.lampEvery + C.lampAt, t = (s - s0) / (s1 - s0), x = w.a[0] + dx * t, y = w.a[1] + dy * t; if (nearBusy(x, y)) continue;
+                    out.push({ type: "fp", fp: "sewer", what: "lamp", room, base, a: [x - ux, y - uy], b: [x + ux, y + uy], x, y, depth: x + y + 0.55 });
+                }
+            }
+        }
+        for (const m of _fpSewerMouths(F, room)) out.push({ type: "fp", fp: "sewer", what: "lintel", room, base, x0: m.x0, x1: m.x1, y0: m.y, x: (m.x0 + m.x1) / 2, y: m.y, span: true, bb: [m.x0, m.y - 1, m.x1, m.y + 1], depth: m.x1 + m.y + 0.15 });
+    }
+    return out;
+}
+// A NEAR WALL CUT CLEAN: the outer face hanging below the floor and fading to dark, the dark cut on top flush with the floor, a lit edge along the room's side
+function _fpSewerSection(it) {
+    const C = FP_SEWER_REFIT, D = C.nearD, iA = _fpP(it.a[0], it.a[1], 0), iB = _fpP(it.b[0], it.b[1], 0), oA = _fpP(it.outer.a[0], it.outer.a[1], 0), oB = _fpP(it.outer.b[0], it.outer.b[1], 0);
+    _fpRfSet(it.outer.a[0], it.outer.a[1], it.outer.b[0], it.outer.b[1]);
+    _fpRfBand(-0.02, 1.02, -D, 0, C.faceD); _fpRfSeams(-D, -8, 1.2, false); _fpRfLine(0, -6, 1, -6, C.accDim, 1.4);
+    if (typeof _fpWallGrad === "function") _fpWallGrad(it.outer, -0.02, 1.02, -D, 0, C.fade, "sewerSection" + D);   // (the fade to dark: one gradient for every piece, js/facilitystyle.js)
+    ctx.fillStyle = C.cut; ctx.beginPath(); ctx.moveTo(iA[0], iA[1]); ctx.lineTo(iB[0], iB[1]); ctx.lineTo(oB[0], oB[1]); ctx.lineTo(oA[0], oA[1]); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 1.4; ctx.strokeStyle = C.nearEdge; ctx.beginPath(); ctx.moveTo(iA[0], iA[1]); ctx.lineTo(iB[0], iB[1]); ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeStyle = C.nearEdge2; ctx.beginPath(); ctx.moveTo(oA[0], oA[1]); ctx.lineTo(oB[0], oB[1]); ctx.stroke();
+}
+// A LINTEL over a north passage's mouth: the wall's face from FP_SEWER_REFIT.lintelZ up (the gates under it are FP_SEWER.gateH tall), its top the dark cut a tile deep, the light strip carried across
+function _fpSewerLintel(it) {
+    const C = FP_SEWER_REFIT, Hd = FP_WALL_H, z0 = C.lintelZ; _fpRfSet(it.x0, it.y0, it.x1, it.y0);
+    _fpRfSlab(Hd, -1, 1.0, C.cut, C.cutEdge);
+    _fpRfBand(-0.01, 1.01, z0, Hd - 10, C.faceD); _fpRfBand(-0.01, 1.01, Hd - 10, Hd, C.capBand); _fpRfSeams(z0, Hd - 10, 1.4, false);
+    _fpRfLine(0, z0, 1, z0, "rgba(0,0,0,0.75)", 2.5); _fpRfLine(0, z0 + 3, 1, z0 + 3, C.accGlow, 6); _fpRfLine(0, z0 + 3, 1, z0 + 3, C.acc, 1.6);
+}
+// A BULKHEAD LIGHT on a far wall: its glow on the panels, its bracket and lens
+function _fpSewerLamp(it) {
+    const C = FP_SEWER_REFIT, z = 62, h = 6; _fpRfSet(it.a[0], it.a[1], it.b[0], it.b[1]);
+    if (typeof _fpGlow === "function") _fpGlow(_fpRf.X0 + _fpRf.DX * 0.5, _fpRf.Y0 + _fpRf.DY * 0.5 - z, 40, C.lamp, 0.22);
+    _fpRfBand(-0.07, 1.07, z - h / 2 - 2, z + h / 2 + 2, "#1b1d1f"); _fpRfBand(0, 1, z - h / 2, z + h / 2, C.lamp); _fpRfLine(0, z + h / 2 - 1, 1, z + h / 2 - 1, "rgba(255,255,255,0.8)", 1);
+}
+// THE FLOOR (js/facilitystyleall.js _fpStyleFloorFor): the tunnel's cells in checker plate on a base of their own, the Nest's as they were
+function _fpSewerRefitStyle(S, id) {
+    return { base: S.base, alt: null, a: S.a, ao: S.ao, baseAt: (x, y) => _fpSewerOwnLook(x, y) ? null : FP_SEWER_REFIT.floor, mark: (h, o, x, y) => { if (_fpSewerOwnLook(x, y)) S.mark(h, o, x, y); else _fpSewerPlate(o, x, y); } };
+}
+function _fpSwRnd(a, b, k) { return (_fpHash(Math.round(a * 8) + k * 7919, Math.round(b * 8) - k * 104729) % 100000) / 100000; }
+function _fpSewerWaterCells(F) {   // the cells under the river and the pools
+    let W = _fpRfWater.get(F); if (W) return W; W = new Set();
+    for (const s of F.solids) if ((s.kind === "river" || s.kind === "pool") && s.bb) for (let x = Math.floor(s.bb[0]); x <= Math.ceil(s.bb[2]); x++) for (let y = Math.floor(s.bb[1]); y <= Math.ceil(s.bb[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) W.add(x + "," + y);
+    _fpRfWater.set(F, W); return W;
+}
+// THE PLATE'S RAISED TICKS on a tile, in its own (u, v): a grid of short strokes 0.12 of a tile apart, every other row shifted, the strokes turned two ways. The grid comes round to the same place
+// every 6 tiles each way (6 / 0.12 = 50, an even count, so the turns line up too), so the tiles share 36 pairs of marks (one pair a tile was 3.9 MB for the tunnel's 396 tiles)
+const _fpRfTicks = new Map();
+function _fpSewerTicks(x, y) {
+    const mx = ((x % 6) + 6) % 6, my = ((y % 6) + 6) % 6, key = mx + "," + my; let T = _fpRfTicks.get(key); if (T) return T;
+    const C = FP_SEWER_REFIT, dark = [], lit = [], d = 0.025, st = 0.12;
+    for (let a = Math.floor((mx - 0.6) / st); a * st <= mx + 0.6; a++) for (let b = Math.floor((my - 0.6) / st); b * st <= my + 0.6; b++) {
+        const u = a * st - mx + ((b % 2) ? 0.06 : 0), v = b * st - my, s = ((a + b) % 2) ? 1 : -1;
+        dark.push(u - d, v - d * s, u + d, v + d * s); lit.push(u - d, v - d * s - 0.01, u + d, v + d * s - 0.01);
+    }
+    T = [{ t: "M", c: C.tick, w: 2.2, cap: "round", p: dark }, { t: "M", c: C.tickLit, w: 2.2, cap: "round", p: lit }]; _fpRfTicks.set(key, T); return T;   // (shared: a floor's marks are never changed once made)
+}
+// one tile's checker plate, in its own (u, v): the plates two tiles by one (each row shifted a tile), two tones, their bolted edges, the plate's raised ticks; a hazard kerb on a side over the river; dark at a wall's foot
+function _fpSewerPlate(o, x, y) {
+    const C = FP_SEWER_REFIT, plates = [];
+    for (let j = Math.floor(y - 0.6); j <= Math.floor(y + 0.6); j++) { const off = ((j % 2) + 2) % 2;
+        for (let i = Math.floor((x - 0.6 - off) / 2); i <= Math.floor((x + 0.6 - off) / 2); i++) { const u0 = i * 2 + off - x, v0 = j - y; plates.push([u0, v0, u0 + 2, v0 + 1]); o.push({ t: "P", c: _fpSwRnd(i, j, 4) < 0.5 ? C.floor : C.floor2, p: [u0, v0, u0 + 2, v0, u0 + 2, v0 + 1, u0, v0 + 1] }); } }
+    for (const t of _fpSewerTicks(x, y)) o.push(t);
+    for (const [u0, v0, u1, v1] of plates) {
+        o.push({ t: "M", c: C.plateEdge, w: 2, p: [u0, v0, u1, v0, u1, v0, u1, v1, u1, v1, u0, v1, u0, v1, u0, v0] });
+        for (const [bu, bv] of [[u0 + 0.06, v0 + 0.06], [u1 - 0.06, v0 + 0.06], [u1 - 0.06, v1 - 0.06], [u0 + 0.06, v1 - 0.06]]) if (Math.abs(bu) < 0.6 && Math.abs(bv) < 0.6) o.push({ t: "C", c: C.bolt, u: bu, v: bv, r: 0.018 });
+    }
+    const F = typeof _fp !== "undefined" && _fp ? _fp.F : null, Wt = F ? _fpSewerWaterCells(F) : null, E = typeof _fp !== "undefined" && _fp ? _fp.wallEdges : null, w = C.kerbW, sh = ((x + y) % 2) * 0.11;
+    if (Wt) for (const [sd, dx, dy] of [["n", 0, -1], ["s", 0, 1], ["w", -1, 0], ["e", 1, 0]]) {
+        if (!Wt.has((x + dx) + "," + (y + dy))) continue;
+        if (dy) { const vA = dy > 0 ? 0.5 - w : -0.5, vB = vA + w; o.push({ t: "P", c: C.kerb, p: [-0.6, vA, 0.6, vA, 0.6, vB, -0.6, vB] });
+            for (let k = -1.4; k < 1.4; k += 0.22) { const uA = k + sh + (vA + 0.7) * 0.5, uB = k + sh + (vB + 0.7) * 0.5; o.push({ t: "P", c: C.hazard, p: [uA - 0.045, vA, uA + 0.045, vA, uB + 0.045, vB, uB - 0.045, vB] }); }
+            const ve = dy > 0 ? vA : vB; o.push({ t: "L", c: "rgba(0,0,0,0.7)", w: 1.6, p: [-0.6, ve, 0.6, ve] }); }
+        else { const uA = dx > 0 ? 0.5 - w : -0.5, uB = uA + w; o.push({ t: "P", c: C.kerb, p: [uA, -0.6, uB, -0.6, uB, 0.6, uA, 0.6] });
+            for (let k = -1.8; k < 1.8; k += 0.22) { const vA = (uA - k - sh) * 2 - 0.7, vB = (uB - k - sh) * 2 - 0.7; o.push({ t: "P", c: C.hazard, p: [uA, vA - 0.09, uA, vA + 0.09, uB, vB + 0.09, uB, vB - 0.09] }); }
+            const ue = dx > 0 ? uA : uB; o.push({ t: "L", c: "rgba(0,0,0,0.7)", w: 1.6, p: [ue, -0.6, ue, 0.6] }); }
+    }
+    if (E) { if (E.has(x + "," + y + ",N")) o.push({ t: "P", c: C.foot, p: [-0.6, -0.5, 0.6, -0.5, 0.6, -0.4, -0.6, -0.4] }); if (E.has(x + "," + y + ",W")) o.push({ t: "P", c: C.foot, p: [-0.5, -0.6, -0.4, -0.6, -0.4, 0.6, -0.5, 0.6] }); }
 }

@@ -1,6 +1,8 @@
 # Sewer looks: six drafts (2026-11-15)
 
-**Proposed, nothing built.** The owner, 2026-11-15: "Can you take six different looks at the sewer system in trying to make a aesthetically pleasing walls that doesn't have judging architecture and fix the four tiles and just overall make this go from a concept to a fledged out complex shoot me some recommendations" (read as: walls without jutting architecture, the floor tiles fixed, a fleshed-out complex). The choice is open (docs/OPEN-QUESTIONS.md).
+**Chosen and built** (build `2026-11-15g`): the owner, "I like 1 but the floor tiles of 4", so the game has look 1's walls with look 4's floor (js/facilitysewers.js, "THE TUNNEL'S REFIT"; docs/FACILITY.md, "The new look"). These drafts stay as the record of the six.
+
+**As proposed.** The owner, 2026-11-15: "Can you take six different looks at the sewer system in trying to make a aesthetically pleasing walls that doesn't have judging architecture and fix the four tiles and just overall make this go from a concept to a fledged out complex shoot me some recommendations" (read as: walls without jutting architecture, the floor tiles fixed, a fleshed-out complex). The choice is open (docs/OPEN-QUESTIONS.md).
 
 Each look is drawn on the game itself: the real Sewers, its props, river, bridges and lighting, with the tunnel's walls and floor painted over by the look (the Nest keeps its own). `common.js` is the layer every look shares; each `L*.js` sets `window.SL_LOOK` first.
 

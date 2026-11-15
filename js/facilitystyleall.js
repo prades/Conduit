@@ -30,7 +30,7 @@ const FP_ROOM_STYLE = {
     elec_circuitry:      { acc: "#3fa9ff",     wain: "#1a2430", fa: "#1c222b", fb: "#181d25", dark: true, wallLit: "#263040", wallDark: "#1a212b", cap: "#161c24" },
     subway_platform:     { acc: "#ffcc33",     wain: "#2c3632", fa: "#565b57", fb: "#4c514d", dark: true, damp: true, wallLit: "#7f8a83", wallDark: "#5c655f", cap: "#353c37" },   // THE SUBWAY (build 2026-11-15c): old tile gone grey, damp, the platform's yellow edge (the agent's, provisional)
     subway_tracks:       { acc: "#ff3b30",     wain: "#1c1d1c", fa: "#2b2926", fb: "#252320", dark: true, damp: true, wallLit: "#3a3a37", wallDark: "#2a2a28", cap: "#1f1f1d" },   //   its track bed: sooty concrete, red signals
-    sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
+    sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826", refit: true },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only; the Nest's, since the tunnel's REFIT: js/facilitysewers.js, build 2026-11-15g)
 };
 for (const id of FP_NEST_ROOMS) if (!FP_ROOM_STYLE[id]) FP_ROOM_STYLE[id] = FP_ROOM_STYLE.nest_area;   // (the Nest grown out, build 2026-11-12a: every room of it the packed dirt of its cavern)
 
@@ -42,7 +42,7 @@ function _fpStyleFloorFor(id) {
     const R = _fpRoomStyle(id), dark = !!R.dark;
     // a SIMPLE floor: one tone per room with a very slight variation from tile to tile, a lit bevel on the far edges and a soft shadow on the near ones (so each tile reads as a panel, with no dark seam), a sheen that is lighter towards the far
     // corner, and, in the dark earth floors, a few pits. The walls darken the floor along their foot (js/facilitydecor.js _fpFloorBuild, the "A" marks). No neon seams and no hazard stripes on floors.
-    return { base: R.fa, alt: null, a: 1, ao: dark ? 0.7 : 1, mark: (h, o, x, y) => {
+    const S = { base: R.fa, alt: null, a: 1, ao: dark ? 0.7 : 1, mark: (h, o, x, y) => {
         const j = (h % 5) - 2; if (j) o.push({ t: "D", c: j > 0 ? "rgba(255,255,255," + (j * 0.014).toFixed(3) + ")" : "rgba(8,26,34," + (-j * 0.014).toFixed(3) + ")" });   // a hair of tone variation
         if (dark) { o.push({ t: "S", a: 0.04, b: 0.07 });
             if (R.damp) {   // DAMP (the sewers): a wet sheen here and there, moss in a crack, a dark seep
@@ -62,6 +62,7 @@ function _fpStyleFloorFor(id) {
             if (h % 11 === 0) o.push({ t: "L", c: "rgba(90,140,170,0.45)", w: 1, p: [-0.3, -0.1, 0.05, 0.05] }, { t: "L", c: "rgba(90,140,170,0.45)", w: 1, p: [0.05, 0.05, 0.2, 0.32] });
         }
     } };
+    return R.refit && typeof _fpSewerRefitStyle === "function" ? _fpSewerRefitStyle(S, id) : S;   // (the Sewers' refit: look 4's floor in the tunnel, js/facilitysewers.js; the Nest keeps these marks)
 }
 
 // ── the toon prism for a cell of a solid prop: only the exposed faces, one bold outline round the exposed silhouette ──

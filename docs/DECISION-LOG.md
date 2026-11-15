@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The Sewers' new look: look 1's walls with look 4's floor (the owner's pick of six drafts)
+
+- **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15g`
+- **Status:** Approved (the owner's pick); the colours and sizes are the agent's, provisional; built
+- **Context:** the owner asked for six looks for the Sewers with walls that do not jut, the floor tiles fixed, and the place turned from a concept into a complex. Six drafts were drawn on the game (`design/sewer-looks/`), all sharing one wall fix (near walls cut clean, dark wall tops, a lintel over each passage, one floor pattern).
+- **Decision:** "I like 1 but the floor tiles of 4": look 1's walls (the facility's panels, a green light strip, a conduit, bulkhead lamps) and look 4's floor (steel checker plate in bolted plates). Earlier answers kept: not look 6, and "Change the bank's edge" (a hazard kerb along the river). The Nest keeps its own look.
+- **Agent's choices, provisional:** every colour, size and spacing in `FP_SEWER_REFIT` (a lamp every 4 tiles, the lintel at 104 px, the section's depth, the kerb's width and stripes, the plate's two tones); the fix in the Sewers' tunnel only.
+- **Alternatives offered:** looks 2 to 6, or a mix (the agent suggested 2 with 4's pipe runs).
+- **Still open:** whether the wall fix (near walls cut clean) should go to every room (`OPEN-QUESTIONS.md`).
+- **Affects:** `js/facilitysewers.js`, `js/facilitystyle.js`, `js/facilitystyleall.js`, `js/facilitydecor.js`; `docs/FACILITY.md`; `tests/sewerlook.js`.
+
 ## DECISION: Side Quest in the Lounge after the Sewers: a pack when you meet him, his face beside SHOP (the owner's idea and picks)
 
 - **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15f`

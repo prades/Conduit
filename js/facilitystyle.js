@@ -139,6 +139,7 @@ function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink, cap) {   // the thick 
     _fpEdge(p3, p2, FP_EDGE.dark, 1.6);        // the far edge of the slab
 }
 function _fpStyleWall(it, Hd) {
+    if (_fpRoomStyle(it.room).refit && typeof _fpSewerRefitWall === "function" && _fpSewerRefitWall(it, Hd)) return;   // (the Sewers' tunnel: look 1's walls, js/facilitysewers.js)
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const lit = nx > ny, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), zb = Hd - capH;
     if (!it.underRock && it.kind !== "divider") {   // the wall's thickness: a slab over the band (the building is spaced out for it); none under the rock's roof (js/facilitydecor.js _fpUnderRock), nor on a DIVIDER (THE LOUNGE's south side: a thin wall, no band behind it)
