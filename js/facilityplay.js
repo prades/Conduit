@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lounge: "#8a4a6a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", catwalk_spur: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lounge: "#8a4a6a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", catwalk_spur: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a", elec_servers: "#2a4a6a", elec_circuitry: "#1f3a5a", subway_platform: "#6a6233", subway_tracks: "#4a3f2a" };
 for (const id of FP_NEST_ROOMS) if (!FP_ROOM_COL[id]) FP_ROOM_COL[id] = FP_ROOM_COL.nest_area;   // (the Nest grown out: its rooms the cavern's colour on the map)
 
 // ── the world ──

@@ -20,7 +20,7 @@
 //   bridge       a footbridge from each tank's top to the catwalks' deck: `bridges` in js/facilitymap.js, drawn as a row of one-tile pieces (mid, with a tank-end and a deck-end) at the deck's height.
 // The light: a prop in the dark is dimmed by drawing its silhouette in the dark navy the flat drawing fades to, and the lit sprite over it at the room's light level (as the dimmed pen does for colours).
 const PS = { dark: "#060b16", aimSteps: 16 };
-const _psImgs = {}, _psSils = {};
+const _psImgs = {};
 function _psImg(fam) {
     if (_psImgs[fam] !== undefined) { const e = _psImgs[fam]; if (e && e.complete && e.naturalWidth) return e; if (e && typeof startupWant === "function") startupWant(e); return null; }   // (a sheet that has not arrived: the start screen is told, while it is still finding out which sheets the first picture wants: js/init.js)
     _psImgs[fam] = null;
@@ -29,11 +29,6 @@ function _psImg(fam) {
     im.decoding = "async";
     const p = "img/props/" + fam + ".png"; im.src = typeof imgSrc === "function" ? imgSrc(p) : p;   // (game.html preloads these same addresses: tools/images.js)
     _psImgs[fam] = im; if (typeof startupAsset === "function") startupAsset(im, "props/" + fam); return null;
-}
-// the whole sheet in the dark navy, same alpha (built once)
-function _psSil(fam, img) {
-    if (_psSils[fam]) return _psSils[fam];
-    try { const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight; const g = c.getContext("2d"); g.drawImage(img, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, c.width, c.height); return (_psSils[fam] = c); } catch (e) { return (_psSils[fam] = img); }
 }
 // A SLOW DEVICE: if the game keeps running under 28 frames a second (three readings in a row, a second and a half apart, once it has settled), the graphics go to LOW for the session (no contact shadows,
 // no soft glows: the settings window's GRAPHICS switch does the same by hand). It never goes back by itself, so it cannot flicker between the two.
@@ -51,12 +46,38 @@ function facilityPerfTick() {
 function facilityPropsPreload() { if (typeof PROP_ATLAS !== "undefined") for (const fam of Object.keys(PROP_ATLAS)) _psImg(fam); }
 function _psCell(fam, name) { const A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null; return A && A.cells[name] ? A.cells[name] : null; }
 // ONE CELL'S SLICE of a big sprite: the pixels of the sprite that lie in the column of one tile (the diamond on the floor and the same lifted as high as the sprite goes), cut once and kept, so a multi-cell prop is drawn
-// with plain drawImage of small canvases and no clip per cell per frame (a clip and its restore were a fifth of the frame). ox, oy: where the cell is from the prop's centre, in tiles. Returns { cv, sil, dx, dy } (the
-// canvas, its dark silhouette when it was first needed, and where its top-left is from the cell's ground point) or null when nothing of the sprite is in that column.
+// with plain drawImage of small canvases and no clip per cell per frame (a clip and its restore were a fifth of the frame). ox, oy: where the cell is from the prop's centre, in tiles. Returns { cv, dx, dy } (the
+// canvas, and where its top-left is from the cell's ground point; its dimmed copies in `dim`: _psDimmed) or null when nothing of the sprite is in that column.
 const _psSlices = new Map();
-function _psSlice(fam, name, ox, oy, img, c) {
+// THE PROPS' PICTURES, BOUNDED (the owner, 2026-11-15: "every single time I be playing my game, it starts lagging, or so the frame rate dips to about half after like 5 minutes of play"): the slices, their
+// silhouettes and the dimmed copies of the sprites (one for each light level a prop was ever seen at) were kept for good: after exploring the whole facility the diagnostics counted about 2,200 of them,
+// 185 MB of canvases, and the more a browser holds the slower an iPad draws (and past its limit iPadOS makes no more canvases: pictures that do not come). Now each holder (a slice, or a whole sprite's
+// cell with its dimmed copies) counts its pixels and the frame it was last drawn; past the budget the least recently drawn are let go, their memory released at once (as the floor tiles' and the rock
+// walls' are: js/facilitydecor.js), down to three quarters of it, never one drawn this frame. One let go is cut again the next time it is drawn (the same picture). Build 2026-11-15a.
+// The budget is PS_MEM.budget pixels, or `screens` times the screen's own pixels on a big screen: it must hold the busiest room's props with room to spare, or the same pictures would be cut again as the
+// view moves (measured on a screen of 1180 by 820, 0.97 M px: the arena's props hold 4.7 M once its light has settled, about 7 M while it changes; most rooms under 3 M).
+const PS_MEM = { budget: 12e6, screens: 12, dimHold: 60 };   // pixels (about 48 MB); frames (a second): the agent's, provisional
+const _psHeld = { px: 0, all: new Set(), at: -1 };   // (the pixels held, who holds them, the frame of the last trim: one a frame at most)
+function _psBudget() { const a = typeof canvas !== "undefined" && canvas && canvas.width ? canvas.width * canvas.height : 0; return Math.max(PS_MEM.budget, PS_MEM.screens * a); }
+function _psHold(h, cv, f) {
+    const n = cv.width * cv.height; h._px = (h._px || 0) + n; _psHeld.px += n; _psHeld.all.add(h);
+    if (_psHeld.px > _psBudget() && _psHeld.at !== f) _psTrim(f);
+}
+function _psTrim(f) {
+    _psHeld.at = f; const B = _psBudget() * 0.75, age = h => h._u <= f ? f - h._u : 1e15;   // (a stamp ahead of the clock is from before a new game set the clock back: the oldest)
+    const old = []; for (const h of _psHeld.all) if (h._u !== f) old.push(h);
+    old.sort((p, q) => age(q) - age(p));
+    for (const h of old) { if (_psHeld.px <= B) break; _psLetGo(h); }
+}
+function _psLetGo(h) {
+    const cs = [h.cv]; if (h.dim) for (const b in h.dim) cs.push(h.dim[b]);
+    for (const c of cs) if (c) c.width = c.height = 0;
+    _psHeld.px = Math.max(0, _psHeld.px - (h._px || 0)); h._px = 0; h.dim = h.dimU = null; h.dimSweep = undefined; _psHeld.all.delete(h);
+    if (h._key !== undefined) { _psSlices.delete(h._key); h.cv = null; }   // (a slice: cut again when it is next drawn)
+}
+function _psSlice(fam, name, ox, oy, img, c, f) {
     const key = fam + "|" + name + "|" + ox + "|" + oy; let sl = _psSlices.get(key); if (sl !== undefined) return sl;
-    if (_psSlices.size > 900) _psSlices.clear();   // (a bound on the memory: they are cut again when needed)
+    if (_psSlices.size > 900) { for (const s of _psSlices.values()) if (s) _psLetGo(s); _psSlices.clear(); }   // (a bound on how many: they are cut again when needed)
     sl = null;
     try {
         const cx = c.ax + (ox - oy) * TILE_W, cy = c.ay + (ox + oy) * TILE_H, H = c.ay + 6;   // the cell's ground point in the sprite's own pixels, and how high the column goes
@@ -68,34 +89,45 @@ function _psSlice(fam, name, ox, oy, img, c) {
             // cut to what is in it
             const d = g.getImageData(0, 0, cv.width, cv.height).data; let a0 = cv.width, b0 = cv.height, a1 = -1, b1 = -1;
             for (let y = 0; y < cv.height; y++) for (let x = 0; x < cv.width; x++) if (d[(y * cv.width + x) * 4 + 3] > 6) { if (x < a0) a0 = x; if (x > a1) a1 = x; if (y < b0) b0 = y; if (y > b1) b1 = y; }
-            if (a1 >= 0) { const w = a1 - a0 + 1, h = b1 - b0 + 1, o = document.createElement("canvas"); o.width = w; o.height = h; o.getContext("2d").drawImage(cv, a0, b0, w, h, 0, 0, w, h); sl = { cv: o, sil: null, dx: x0 + a0 - cx, dy: y0 + b0 - cy }; }
+            if (a1 >= 0) { const w = a1 - a0 + 1, h = b1 - b0 + 1, o = document.createElement("canvas"); o.width = w; o.height = h; o.getContext("2d").drawImage(cv, a0, b0, w, h, 0, 0, w, h); sl = { cv: o, dx: x0 + a0 - cx, dy: y0 + b0 - cy, _key: key, _u: f }; }
+            cv.width = cv.height = 0;   // (the uncut column, done with: its memory back now, not whenever it is collected)
         }
     } catch (e) { sl = null; }
-    _psSlices.set(key, sl); return sl;
-}
-function _psSliceSil(sl) {
-    if (sl.sil) return sl.sil;
-    try { const c = document.createElement("canvas"); c.width = sl.cv.width; c.height = sl.cv.height; const g = c.getContext("2d"); g.drawImage(sl.cv, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, c.width, c.height); return (sl.sil = c); } catch (e) { return (sl.sil = sl.cv); }
+    _psSlices.set(key, sl); if (sl) _psHold(sl, sl.cv, f); return sl;
 }
 // THE LIGHT: a prop in a dim room is its dark silhouette with the lit sprite over it at the room's light level k (the dimmed pen's factor, ctx._k). Drawing both every frame doubles the work of every prop in the dark
 // (which is most of them), so: nearly dark (k < 0.1) is the silhouette alone, and between it is composed once per light level (k rounded to a twelfth) into a small canvas that is then drawn as one image.
+// Since build 2026-11-15a the silhouette is made in that canvas (the picture, filled with the dark navy in its own alpha, then the picture over it at the light level: the same pixels as a silhouette
+// kept beside it, which doubled the memory of every prop in the dark), and the copies of the levels a holder has not been drawn at for PS_MEM.dimHold frames are let go, looked at once in that time
+// (a light that changed or came on leaves them behind; a whole sprite's cell is shared by every prop of that look, so the levels they are all drawn at this frame are all kept).
 const PS_DIM_STEPS = 12;
-function _psDimmed(cv, src, sx, sy, sw, sh, sil, bucket, store) {   // store: the object that keeps this canvas's dimmed versions by bucket
+function _psDimmed(h, src, sx, sy, sw, sh, bucket, f) {   // h: what keeps this picture's dimmed versions (h.dim, by bucket): a slice, or a whole sprite's cell
+    const store = h.dim || (h.dim = {}); (h.dimU || (h.dimU = {}))[bucket] = f; _psDimSweep(h, f);
     let d = store[bucket]; if (d) return d;
-    try { const c = document.createElement("canvas"); c.width = sw; c.height = sh; const g = c.getContext("2d"); g.drawImage(sil, sx, sy, sw, sh, 0, 0, sw, sh); g.globalAlpha = bucket / PS_DIM_STEPS; g.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh); d = store[bucket] = c; } catch (e) { d = store[bucket] = null; }
+    try {
+        const c = document.createElement("canvas"); c.width = sw; c.height = sh; const g = c.getContext("2d");
+        g.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh); g.globalCompositeOperation = "source-in"; g.fillStyle = PS.dark; g.fillRect(0, 0, sw, sh);
+        if (bucket > 0) { g.globalCompositeOperation = "source-over"; g.globalAlpha = bucket / PS_DIM_STEPS; g.drawImage(src, sx, sy, sw, sh, 0, 0, sw, sh); }
+        d = store[bucket] = c; _psHold(h, c, f);
+    } catch (e) { d = store[bucket] = null; }
     return d;
 }
+function _psDimSweep(h, f) {
+    const hold = PS_MEM.dimHold, fresh = u => u <= f && f - u <= hold;   // (a stamp ahead of the clock is from before a new game set it back: not fresh)
+    if (!h.dim || fresh(h.dimSweep)) return; h.dimSweep = f;
+    for (const b in h.dim) if (!fresh(h.dimU && h.dimU[b])) _psDimDrop(h, b);
+}
+function _psDimDrop(h, b) { const c = h.dim[b]; if (c) { const n = c.width * c.height; h._px -= n; _psHeld.px = Math.max(0, _psHeld.px - n); c.width = c.height = 0; } delete h.dim[b]; if (h.dimU) delete h.dimU[b]; }
 // draw one sprite with the model's origin at world (x, y) on the current item's floor; `clip` (a cell's x, y) draws only that tile's column of it. Returns the sprite's top-left on screen, or null (not drawn).
 function _psBlit(fam, name, x, y, clip) {
     const img = _psImg(fam), c = _psCell(fam, name); if (!img || !c) return null;
-    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS));
+    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS)), f = typeof frame !== "undefined" ? frame : 0;
     if (clip) {
-        const sl = _psSlice(fam, name, Math.round((clip[0] - x) * 100) / 100, Math.round((clip[1] - y) * 100) / 100, img, c), g = _fpP(clip[0], clip[1], 0);
+        const sl = _psSlice(fam, name, Math.round((clip[0] - x) * 100) / 100, Math.round((clip[1] - y) * 100) / 100, img, c, f), g = _fpP(clip[0], clip[1], 0);
         if (sl) {
-            const px = g[0] + sl.dx, py = g[1] + sl.dy;
-            if (bucket >= PS_DIM_STEPS) ctx.drawImage(sl.cv, px, py);
-            else if (bucket === 0) ctx.drawImage(_psSliceSil(sl), px, py);
-            else { sl.dim = sl.dim || {}; const d = _psDimmed(sl.cv, sl.cv, 0, 0, sl.cv.width, sl.cv.height, _psSliceSil(sl), bucket, sl.dim); ctx.drawImage(d || sl.cv, px, py); }
+            sl._u = f; const px = g[0] + sl.dx, py = g[1] + sl.dy;
+            if (bucket >= PS_DIM_STEPS) { if (sl.dim) _psDimSweep(sl, f); ctx.drawImage(sl.cv, px, py); }
+            else { const d = _psDimmed(sl, sl.cv, 0, 0, sl.cv.width, sl.cv.height, bucket, f); ctx.drawImage(d || sl.cv, px, py); }
         }
         if (typeof _bvNoteRect === "function") { if (sl) _bvNoteRect(g[0] + sl.dx, g[1] + sl.dy, sl.cv.width, sl.cv.height); else _bvNoteRect(g[0], g[1], 0, 0); }   // (the battle view: does this tile's column of it hide a fighter: js/battleview.js)
         const p = _fpP(x, y, 0);
@@ -103,9 +135,8 @@ function _psBlit(fam, name, x, y, clip) {
     }
     const p = _fpP(x, y, 0), dx = p[0] - c.ax, dy = p[1] - c.ay;
     if (typeof _bvNoteRect === "function") _bvNoteRect(dx, dy, c.w, c.h);   // (the battle view: does it hide a fighter: js/battleview.js)
-    if (bucket >= PS_DIM_STEPS) ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);
-    else if (bucket === 0) ctx.drawImage(_psSil(fam, img), c.x, c.y, c.w, c.h, dx, dy, c.w, c.h);
-    else { c.dim = c.dim || {}; const d = _psDimmed(null, img, c.x, c.y, c.w, c.h, _psSil(fam, img), bucket, c.dim); if (d) ctx.drawImage(d, dx, dy); else ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h); }
+    if (bucket >= PS_DIM_STEPS) { if (c.dim) { c._u = f; _psDimSweep(c, f); } ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h); }
+    else { c._u = f; const d = _psDimmed(c, img, c.x, c.y, c.w, c.h, bucket, f); if (d) ctx.drawImage(d, dx, dy); else ctx.drawImage(img, c.x, c.y, c.w, c.h, dx, dy, c.w, c.h); }
     return [dx, dy, c];
 }
 // where a prop is: its centre (a circle's middle, else the middle of its box)

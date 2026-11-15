@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord</title>
+  <!-- Draft, round 1: FIELD STATION (a calm, modern indie studio home). Type system B: Unbounded 700 + Archivo + IBM Plex Mono. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=IBM+Plex+Mono:wght@500&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1124; --navy-2: #0e1630; --deep: #070b16;
+      --ink: #eef2fa; --ink-2: #b3c0d8; --ink-3: #8393b2;
+      --teal: #19e6c1; --hair: rgba(238,242,250,0.45);
+      --px: max(5vw, 40px); --py: clamp(30px, 4vw, 50px);
+      --disp: 'Unbounded', 'Arial Black', sans-serif;
+      --body: 'Archivo', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: var(--deep); }
+    body { background: var(--deep); color: var(--ink); font-family: var(--body); font-size: 18px; line-height: 1.6; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
+    .skip { position: absolute; left: var(--px); top: -80px; z-index: 10; background: var(--ink); color: var(--deep); font: 500 13px/1 var(--mono); letter-spacing: .1em; padding: 12px 14px; text-transform: uppercase; }
+    .skip:focus { top: 12px; }
+
+    /* the live backdrop (as index.html); a soft scrim at the top (the bar) and at the bottom (the line and PLAY), the middle left open */
+    #bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 50% 40%, #0d1830 0%, #060a14 72%); }
+    #bg iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity 3.5s ease; }
+    #bg.ready iframe { opacity: 1; }
+    #bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,11,22,0.88) 0%, rgba(7,11,22,0.5) 9%, rgba(7,11,22,0) 18%); }
+
+    .label { font: 500 13px/1.3 var(--mono); letter-spacing: .11em; text-transform: uppercase; color: var(--ink-2); }
+
+    /* ── the top bar ── */
+    .bar { position: absolute; z-index: 2; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: var(--py) var(--px) 0; }
+    .mark { font: 700 17px/1 var(--disp); letter-spacing: .01em; color: var(--ink); }
+    .bar nav { display: flex; gap: clamp(20px, 3vw, 40px); }
+    .bar nav a { padding: 14px 0; color: var(--ink); opacity: .86; transition: opacity .2s; }
+    .bar nav a:hover { opacity: 1; }
+
+    /* ── the first screen: the game, one line and PLAY ── */
+    .first { position: relative; z-index: 1; min-height: 100svh; }
+    .first::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 32%; z-index: -1; pointer-events: none;
+      background: linear-gradient(180deg, rgba(11,17,36,0) 0%, rgba(11,17,36,0.55) 45%, rgba(11,17,36,0.92) 85%, var(--navy) 100%); }
+    .brk { position: absolute; width: 18px; height: 18px; border: 0 solid var(--hair); opacity: .8; pointer-events: none; }
+    .brk.tl { left: calc(var(--px) - 22px); top: calc(var(--py) - 16px); border-width: 1px 0 0 1px; }
+    .brk.tr { right: calc(var(--px) - 22px); top: calc(var(--py) - 16px); border-width: 1px 1px 0 0; }
+    .brk.bl { left: calc(var(--px) - 22px); bottom: calc(var(--py) - 16px); border-width: 0 0 1px 1px; }
+    .brk.br { right: calc(var(--px) - 22px); bottom: calc(var(--py) - 16px); border-width: 0 1px 1px 0; }
+    .hello { position: absolute; left: max(var(--px), 22vw); right: var(--px); bottom: var(--py); display: flex; align-items: flex-end; gap: 20px 32px; flex-wrap: wrap; }
+    .hello .lead { max-width: 21em; }
+    .hello .label { margin-bottom: 10px; }
+    .hello p.line { font: 500 clamp(22px, 2.3vw, 30px)/1.25 var(--body); letter-spacing: -0.01em; color: var(--ink); }
+    .live::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); margin-right: 10px; vertical-align: 1px; }
+
+    /* PLAY: the one filled thing, a chamfered slab */
+    .play { display: inline-block; }
+    .play span { display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 32px 0 28px; background: var(--teal); color: #04110e; font: 700 19px/1 var(--disp); letter-spacing: .04em; text-transform: uppercase;
+      clip-path: polygon(14px 0, 100% 0, calc(100% - 8px) 100%, 0 100%, 0 14px); transition: transform .2s ease-out; }
+    .play span::after { content: ""; border-left: 11px solid currentColor; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
+    .play:hover span { transform: translateY(-3px); }
+
+    /* ── the content: calm, flat navy ── */
+    main { position: relative; z-index: 1; background: var(--navy); }
+    .wrap { padding: 0 var(--px); max-width: 1440px; margin: 0 auto; }
+    .featured { padding: clamp(56px, 8vw, 112px) 0 clamp(64px, 9vw, 120px); display: grid; grid-template-columns: 1.15fr 1fr; gap: 32px 64px; align-items: end; }
+    .featured h2 { font: 700 clamp(64px, 8vw, 104px)/.95 var(--disp); letter-spacing: -0.02em; margin: 14px 0 18px; }
+    .featured .core { color: var(--ink); }
+    .featured .desc { color: var(--ink-2); max-width: 46ch; margin-bottom: 30px; }
+    .featured .meta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .featured .meta .label { color: var(--ink-3); }
+
+    .list-head { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 18px; }
+    .list { list-style: none; border-top: 1px solid rgba(238,242,250,0.14); }
+    .list li { border-bottom: 1px solid rgba(238,242,250,0.14); }
+    .list a { display: grid; grid-template-columns: minmax(260px, 1fr) 1.4fr 72px; align-items: center; gap: 8px 48px; padding: 30px 0; }
+    .list h3 { font: 700 clamp(34px, 3.6vw, 48px)/1.05 var(--disp); letter-spacing: -0.015em; transition: transform .2s ease-out; }
+    .list p { color: var(--ink-2); }
+    .list .go { text-align: right; color: var(--ink-3); transition: color .2s, transform .2s ease-out; }
+    .list a:hover h3 { transform: translateX(4px); }
+    .list a:hover .go { color: var(--ink); transform: translateX(4px); }
+
+    .about { padding: clamp(72px, 10vw, 140px) 0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px 64px; }
+    .about h2 { font: 700 34px/1.15 var(--disp); letter-spacing: -0.01em; margin-top: 12px; }
+    .about p { color: var(--ink-2); max-width: 56ch; }
+    .about p + p { margin-top: 16px; }
+    .about strong { color: var(--ink); font-weight: 500; }
+    footer { position: relative; z-index: 1; background: var(--deep); }
+    footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; padding-top: 28px; padding-bottom: var(--py); }
+    footer .label { color: var(--ink-3); }
+    footer a.label:hover { color: var(--ink); }
+
+    @media (orientation: portrait), (max-width: 900px) {
+      .hello { left: var(--px); }
+      .featured, .about { grid-template-columns: 1fr; align-items: start; }
+      .list a { grid-template-columns: 1fr 72px; }
+      .list p { grid-column: 1; }
+      .list .go { grid-row: 1; grid-column: 2; }
+    }
+    @media (max-width: 560px) { .bar nav a:nth-child(1) { display: none; } }
+
+    /* one entrance: the bar settles, then the line and PLAY rise (60 ms apart) */
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    .bar { animation: fade .4s ease-out both; }
+    .hello > * { animation: rise .45s ease-out both; }
+    .hello > :nth-child(1) { animation-delay: .2s; } .hello > :nth-child(2) { animation-delay: .26s; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to the projects</a>
+
+<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<div id="bg"></div>
+
+<header class="bar">
+  <a class="mark" href="#top" aria-label="Dragonlord, home">Dragonlord</a>
+  <nav class="label" aria-label="Projects">
+    <a href="../../../bible.html">Game Bible</a>
+    <a href="../../../romlab/index.html">ROM Lab</a>
+    <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a>
+  </nav>
+</header>
+
+<section class="first" id="top" aria-label="Conduit, live">
+  <span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span>
+  <div class="hello">
+    <div class="lead">
+      <p class="label live">Conduit · live behind this page</p>
+      <p class="line">A top-down survival game in a ruined research facility.</p>
+    </div>
+    <a class="play" href="../../../play.html" aria-label="Play Conduit"><span>Play</span></a>
+  </div>
+</section>
+
+<main id="content">
+  <div class="wrap">
+    <section class="featured" aria-labelledby="h-conduit">
+      <div>
+        <p class="label">Featured game</p>
+        <h2 id="h-conduit">Conduit</h2>
+        <p class="label core">C.O.R.E. Strategy · Combat Operations Roguelite Evolutions</p>
+      </div>
+      <div>
+        <p class="desc">A top-down survival game in a ruined research facility: restore its power room by room, recruit and evolve a squad of followers, and fight what lives in the arena. Pure canvas, zero dependencies.</p>
+        <div class="meta">
+          <a class="play" href="../../../play.html" aria-label="Play Conduit"><span>Play</span></a>
+          <span class="label">Build 2026-11-15c · in the browser</span>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="More projects">
+      <div class="list-head"><p class="label">More from Dragonlord</p></div>
+      <ul class="list">
+        <li><a href="../../../bible.html"><h3>Game Bible</h3><p>The whole game on one page: every room, form and rule.</p><span class="label go">Open →</span></a></li>
+        <li><a href="../../../romlab/index.html"><h3>ROM Lab</h3><p>A sample workstation: ROM samples and audio stems on pads, with a step sequencer.</p><span class="label go">Open →</span></a></li>
+        <li><a href="https://github.com/prades" target="_blank" rel="noopener"><h3>GitHub</h3><p>github.com/prades</p><span class="label go">Visit ↗</span></a></li>
+      </ul>
+    </section>
+
+    <section class="about" aria-labelledby="h-about">
+      <div>
+        <p class="label">About</p>
+        <h2 id="h-about">Dragonlord, game developer &amp; digital architect.</h2>
+      </div>
+      <div>
+        <p>I build worlds from code. Browser games, 3D environments, and interactive experiences crafted from the ground up — no engines, just raw creativity and JavaScript.</p>
+        <p>I'm passionate about pushing what the browser can do, from real-time 3D with <strong>Three.js</strong> to complex game systems built on raw Canvas APIs. Everything here runs natively in your browser, no plugins required.</p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="label">© Dragonlord</span>
+    <a class="label" href="https://github.com/prades" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</footer>
+
+<!-- ── Background: the Conduit facility (play.html?attract, js/attract.js), as index.html does it ── -->
+<script>
+(function () {
+  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
+  if ((mq && mq.matches) || net.saveData) return;
+  var frame = null, giveUp = null;
+  function start() {
+    frame = document.createElement('iframe');
+    frame.src = '../../../play.html?attract';
+    frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
+    bg.appendChild(frame);
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
+  }
+  window.addEventListener('message', function (e) {
+    if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
+  });
+  function later() { (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(start, { timeout: 2500 }); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+</script>
+</body>
+</html>

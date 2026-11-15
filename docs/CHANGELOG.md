@@ -2,6 +2,65 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-15
+
+### Build `2026-11-15e` · branch `claude/friendly-thompson-w581x0` · the home page is CONSOLE
+- **The ask** (the owner: a new look for the website over the live game, from research and drafts; of six drafts, "Number 1").
+- **What it does:** `index.html` is the facility's monitoring console over the live game: corner brackets, FACILITY FEED · LIVE and the build at the top, DRAGONLORD in bold italic at the lower left with PLAY (the one filled button), the Game Bible, ROM Lab and GitHub as a numbered index at the lower right, and the projects and the bio below on flat navy. The live background is as it was. `tools/stamp.js` now keeps the page's build numbers (marked `data-build`) current.
+- `index.html`, `tools/stamp.js`, `tests/attract.js` and `tests/bible.js` (they read the new page), `docs/WEBSITE.md` (the decision).
+- **Verified:** the full suite; screenshots at 1180 × 820, 820 × 1180, 1440 × 900 and two phone widths (no sideways scroll, the game ready, the fonts loaded). **Not checked on a real iPad.**
+
+### Build `2026-11-15d` · branch `claude/friendly-thompson-w581x0` · the website's background shows no HUD
+- **Why:** the home page's live background (`play.html?attract`, js/attract.js) showed the facility's network panel (top right) and the ammunition pill (left) through it: they are drawn on the canvas, which the attract css (which hides the page's own elements) does not reach (docs/WEBSITE.md §4.2).
+- **What it does:** in attract mode `drawFacilityNetworkHUD` (js/facilitynet.js) and `drawTargetUI` (js/targeting.js) draw nothing. The game itself is unchanged.
+- **Also:** six drafts of a new home page (design/web/round1/: Console, Slab, Bulkhead, Field Station, Lab Notebook, Broadcast), for the owner's choice; the live page (index.html) is unchanged. docs/WEBSITE.md and `.claude/agents/web-designer.md` hold the research and the rules they follow.
+- **Verified:** tests/attract.js, tests/bundle.js and the full suite; a screenshot of `play.html?attract` with no HUD. **Not playtested.**
+
+### Build `2026-11-15c` · branch `claude/start-game-project-HSh7Z` · a subway off the Sewers (empty, to build on)
+- **The ask** (the owner, 2026-11-15): "I want a subway system to connect from the sewer system. Just go ahead and put it in there, and then I'll use that to jog my memory for later updates." Every size, name, look and prop is the agent's, provisional (`docs/DECISION-LOG.md`).
+- **The way in:** the Sewers' side passage off the south ledge opens (its gate `sewer_gate_s1` taken away). At its end, a stairwell door in its west wall with **SUBWAY** over it. You and the squad following you go down to the platform; its stairs (**SEWERS** over them) bring you back.
+- **The subway** (`docs/FACILITY.md`, "The subway"): one interior of two rooms, built far from everything.
+  - **The platform** ("Subway Platform"): 30 × 5 tiles at the Sewers' level, with vending machines, bins, crates, four lamps and a yellow edge with a rail along it.
+  - **The track bed** ("Subway Tracks"): 38 × 4 a level below, one track painted on it (two rails and sleepers). Three steps go down to it at the platform's east end. Both tunnels are sealed, with red signals, drums and a barrier.
+  - **Around it:** the Armory relay powers it (36 rooms on the network panel), its two rooms are one place to hold, and nothing lives there.
+- **New floor marks** (js/facilitydecor.js): `rails` (a railway track along a rectangle) and `platform_edge` (a painted safety line a styled room still shows).
+- **Tests:** `tests/subway.js` (new). The sewers, cover, facility and facility play suites count the new rooms, doorway, steps and props, and the Sewers' two remaining gates. The Bible lists the two rooms.
+- `js/facilitymap.js`, `js/facilitydecor.js`, `js/facilitystyleall.js`, `js/facilitystyle.js`, `js/facilitynet.js`, `js/facilityplay.js`, `js/party.js`, `tests/subway.js`, `tests/run.js`, `tests/sewers.js`, `tests/cover.js`, `tests/facility.js`, `tests/facilityplay.js`, `bible.html`, `docs/FACILITY.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- Not playtested.
+
+### Build `2026-11-15b` · branch `claude/start-game-project-HSh7Z` · the floor painted once: less for the iPad to paint each frame
+- **The report** (the owner, 2026-11-15, a screenshot of Settings → PERFORMANCE on the iPad, Main Hallway, build `2026-11-15a`, graphics LOW): **FPS 27**, frame 37 ms = logic 0.6 + draw 8.6 + catch-up 2.1 + **browser 25.5**; gaps between frames steady at 38 to 48 ms.
+  - The game's own work was 11 ms of each frame. The rest was the browser painting what the game drew.
+- **Found** (headless Chromium, the same spot at the iPad's size, 1366 by 892, graphics LOW): the canvas was asked for **4,021 operations a frame**. That included 941 pictures covering 7.3 M pixels (six times the screen) and 415 filled shapes, 244 of them drawn with additive light.
+  - The page's own controls changed about once a frame and only by writing the same value again, and the CORE cube's canvas did 18 operations. So the cost is the game's canvas.
+  - **The floor was painted twice.** Every tile drew the game's own tile (447 pictures, 3.4 M pixels), then the facility's tile over it, whose opaque base covers it whole.
+  - **Every flickering pool of light** (the lamps' light on the floor) was a shape built and filled each frame, tile by tile.
+- **Fixed** (the same look):
+  - **The game's own tile is left out under a facility tile with an opaque base** (js/game.js; js/facilitydecor.js `facilityFloorHides`), once that tile's picture is made. The bridge's grating and the fill cells under the walls are as before.
+  - **A flickering light is stamped** from a diamond painted once per colour, at its strength this frame (`_fpGlowPic`). Through the dimmed pen it is filled as before, since the pen darkens a colour and never a picture.
+- **After** (the same spot): **2,110 operations a frame** (48% fewer), 738 pictures covering 5.7 M pixels, 171 shapes filled.
+- **The look:** the same frames drawn the new and the old way in 15 rooms differ by at most 13 levels (of 255), along the seams between floor tiles and inside the pools of light. The seams are a hair lighter (44,324 pixels lighter, 4,555 darker in the Main Hallway), because the old dark tile no longer shows through them.
+- **Tests:** `tests/floorpaint.js` (new) checks the wiring, the Main Hallway and the arena (the game's tile left out under all 474 and 379 tiles, the lights stamped, the frame within 16 levels of the old), and the dimmed pen. `tests/run.js`.
+- `js/game.js`, `js/facilitydecor.js`, `tests/floorpaint.js`, `tests/run.js`, `docs/TUTORIAL.md` (Frame cost).
+- **Not measured on an iPad.** How much faster the iPad paints is not known until the readout is taken again there.
+
+### Build `2026-11-15a` · branch `claude/start-game-project-HSh7Z` · the pictures kept to a budget: no slowdown after minutes of play
+- **The report** (the owner, 2026-11-15): "So every single time I be playing my game, it starts lagging, or so the frame rate dips to about half after like 5 minutes of play. Can we make it to where it doesn't do that and loads new assets correctly? Or I don't think it's because I'm on the iPad."
+- **Found.** The test: headless Chromium, the player taken to a new room every 8 seconds, every canvas the game made tracked while it lived, counted after a full garbage collection. The game kept a picture of every floor tile it had ever drawn. For the props it kept every slice, a silhouette of each slice, and a dimmed copy for every light level a prop was ever seen at. None was ever let go. After 3.5 minutes that was **380 MB of canvases, still climbing** (floor tiles 137 MB, dimmed props 134 MB, slices and their silhouettes 50 MB). The creatures, the script's own memory (about 30 MB) and the followers stayed steady.
+  - On an iPad, the more canvas memory the browser holds, the slower it draws. Past iPadOS's limit (a few hundred MB) it can make no new canvas, which likely explains pictures not loading.
+  - So it is not the iPad: the same climb happens on any device, and the iPad feels it first.
+- **Fixed** (js/facilitydecor.js `FP_FLOOR_SPR`, js/propsprites.js `PS_MEM`). Each picture is counted as it is made and stamped with the frame it is drawn in. Past a budget, those least recently drawn are let go, their memory released at once, down to three quarters of the budget. One drawn this frame is never let go, and one let go is made again, the same picture, the next time it is on the screen. The rock walls' pictures already worked this way (build `2026-11-12c`).
+  - **Budgets** (the agent's, provisional): floor 6 M pixels (about 24 MB), props 12 M (about 48 MB). On a bigger screen they grow to 6 and 12 times the screen's pixels, so one screen's pictures always fit.
+  - **A dimmed copy now carries its own silhouette** (made on its own canvas, the same pixels), so no silhouette is kept beside each slice and prop sheet. This saves a third of a dim room's prop memory: the arena's props take 4.7 M pixels once its light has held, down from 7 M.
+  - **A light level not drawn for a second is let go** (`PS_MEM.dimHold`), so a light that changed or came on leaves no copies behind.
+- **After** (the same exploration, 4.5 minutes): canvas memory levels off at **100 to 116 MB**. That is rock 31 MB (its old budget), floor 19, dimmed props 15, slices 14, the battle view's layers 11.
+  - The cost: a room seen again after its pictures were let go has them made again, as on its first visit.
+- **The look is unchanged.** The same frames drawn by the old and the new code matched pixel for pixel in 12 rooms, with the units left out of the shot. In two runs, under 30 pixels differed in one or two rooms, where two frames of the same code also differed (scene noise).
+- **Tests:** `tests/picmem.js` (new) checks the counts, the same picture after everything is let go, the dimmed copies against the old way, a level let go after a second, the budgets on a big screen, and a tour of every room within the budgets with no room making pictures again on its second frame. `tests/ghost.js` allows the new drawing state. `tests/facilityplay.js` no longer stubs the removed silhouette sheets.
+  - **The first full run:** 123 of 124 suites passed. The one failure was `tests/facilityplay.js`'s check that no follower stalls on its way to you (one follower stalled in one 40-frame window). That check draws nothing, and its followers move by chance that is not seeded. It passed 11 times after, alone and four at a time, and in the 11 full runs before this build.
+- `js/facilitydecor.js`, `js/propsprites.js`, `tests/picmem.js`, `tests/run.js`, `tests/ghost.js`, `tests/facilityplay.js`, `docs/TUTORIAL.md` (Frame cost), `docs/OPEN-QUESTIONS.md` (a pointer for the modelled walls).
+- **Not measured on an iPad; not playtested.** The 30 MB of rock pictures and the units' cached cells (`spriteCell`, 12 M pixels at most) keep their old budgets.
+
 ## 2026-11-14
 
 ### Build `2026-11-14u` (stamped 14t on its branch) · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger

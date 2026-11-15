@@ -215,7 +215,7 @@ function _tgChipsOff() {
     if (typeof drawPlayerCombatChips === "function") drawPlayerCombatChips(null);   // (nothing to draw by: GUARD's and STUN's taps off)
 }
 function drawTargetUI() {
-    _tgDial = null; if (!targetOn() || typeof ctx === "undefined") { _tgChipsOff(); return; }
+    _tgDial = null; if (!targetOn() || typeof ctx === "undefined" || (typeof attractOn === "function" && attractOn())) { _tgChipsOff(); return; }   // (the website's background, js/attract.js: no ammunition or target dial over the picture, build 2026-11-15d)
     if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen)) { _tgChipsOff(); return; }
     if (typeof drawPlayerCombatChips === "function") drawPlayerCombatChips(_tgAnchor());   // GUARD and STUN, round, just left of the dial (js/playercombat.js)
     const a = targetCurrent(); if (!a) { _tgAmmoDraw(); return; }   // (no creature: the ammunition is still there, where the button comes up)

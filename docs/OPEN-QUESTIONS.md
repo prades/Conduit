@@ -8,6 +8,13 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-14, the balance targets** (build `2026-11-14t`; the owner: "Freeze the targets"): fixed at Brawler 79, Mage 44, Technician 35. Still open: SUNDEW at 69% of its target after its sting's buff, the Hornshell at 69%, the Rimestar and the Frost Maw at 74%, the Goo Proxy at 75% (the last three within a point or two of their bands). As it stood: **the balance targets move** (build `2026-11-14q`): a role's target is the middle score of its forms, so lifting some forms raises the target and others fall out of the band without changing (the Rimestar). The owner has not set fixed targets; until then a pass can chase its own tail. SUNDEW is at 55% of the Brawler target with its heal measured (about 8 a second): what lifts it is not decided.
 
+**Open 2026-11-15, the subway** (build `2026-11-15c`; docs/FACILITY.md, "The subway"). The owner asked for it as a starting point "to jog my memory for later updates", so all of it is open:
+- Where do its tunnels lead (other stations, the domains, the Nest)?
+- Are there trains, and what are they for?
+- What lives there?
+- Should its door stay open from the start, or open with something?
+- Its name, its size, its look and its props are the agent's, provisional.
+
 **Open 2026-11-14, the followers' traits** (the four removed in build `2026-11-14f`; the owner: "Remove all four"): whether a low-health damage boost (BERSERKER's) and a target-the-weakest choice (OPPORTUNISTIC's) come back as something the player chooses or earns, with the perks' redesign. The tables stay, empty.
 
 **Open 2026-11-14, the followers' perks** (removed in build `2026-11-14e`; the owner: "maybe we can redesign those at a later time"): what a follower's perk should be, if anything, is to be designed. The table `PERKS` (js/traits.js) is kept, empty, with its hooks (a hit taken, a hit dealt).
@@ -782,7 +789,7 @@ The owner, 2026-11-09: "Audit for optimization", "Finish the optimization audit"
 2. **The catch-up steps** (js/game.js `_simStep`). When a frame comes late, each step it owes runs the whole frame's code on a blank canvas, drawing code included: about 6.9 ms a step, against about 2.4 ms of the game's own work. In the busy fight (14 frames a second here) they were 54% of the drawing work. The slower the frames, the more steps are owed, so it feeds on itself. On an iPad at 60 frames a second they are rare; in a heavy fight they are not. Splitting the step from the drawing would cut them to the game's own work, but it is a broad change.
 3. **Garbage:** about 53 MB a second in the busy fight (about 50 at 09d). Mostly the walkability tests (1 cuts most of it), route planning (text keys for cells), the Blight Spider's pods' and REEF's floor (a gradient per tile per frame, about 4 MB a second) and the effects. An iPad collects it in pauses: stutters.
 4. ~~**The forms' sheets' memory.**~~ *Built in `2026-11-09r` (the owner: "Crop the form sheets"): each cell cut to its picture and packed, no sheet wider than 4096 px. Today's forms' sheets (their ground pools too) 308 MB unpacked → 140 MB; all of them 419 → 188 MB.*
-5. **If the modelled walls come back:** their darkened strips need the props' way first (the silhouette with the lit strip over it at the room's light: one copy whatever the light). Kept as a copy per light level, a tour kept 37.8 MB of them, and a long session in dim rooms would keep more.
+5. **If the modelled walls come back:** their darkened strips need the props' way first (the silhouette with the lit strip over it at the room's light: one copy whatever the light). Kept as a copy per light level, a tour kept 37.8 MB of them, and a long session in dim rooms would keep more. (The props' own copies are kept to a budget since build `2026-11-15a`, the least recently drawn let go: js/propsprites.js `PS_MEM`, the way to follow.)
 6. **Smaller:** the office's props sheet is 3839 × 817 (12 MB unpacked) and loads at the start. The 92 script files are sent one by one (fine on Wi-Fi; a first load on a phone network is slower).
 - **On your iPad:** Settings → PERFORMANCE: ON shows the frame rate and the frame's parts in a real fight.
 

@@ -30,7 +30,7 @@ function partyRoomOf(f) {
 // of your squad so like if you take the nest, you can just have followers down there roaming even though they'll die typically if they're not strong enough"; then "The whole Nest is one", "2, like most rooms"): each domain
 // and the Ant Nest is one place, its rooms together. A follower posted there holds all of it: it roams every room of it (partyPickStop) and fights what it meets in any (js/npc.js), and the place's count and cap are
 // one (two). The electrical domain is one now; the volcanic layer and the crystalline area will be one each when they are built.
-const PARTY_PLACES = [{ id: "nest", name: "Ant Nest", match: /^nest_/ }, { id: "electrical", name: "Electrical Domain", match: /^elec_/ }];
+const PARTY_PLACES = [{ id: "nest", name: "Ant Nest", match: /^nest_/ }, { id: "electrical", name: "Electrical Domain", match: /^elec_/ }, { id: "subway", name: "Subway", match: /^subway_/ }];   // (the subway's platform and track bed one place, as the electrical domain's two rooms: build 2026-11-15c)
 function partyPlaceDef(id) { for (const p of PARTY_PLACES) if (p.id === id) return p; return null; }
 // the place a room belongs to: its domain's or the Nest's, else the room itself
 function partyPlaceOf(room) { if (!room) return room; for (const p of PARTY_PLACES) if (p.match.test(room)) return p.id; return room; }

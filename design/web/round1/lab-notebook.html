@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord</title>
+  <!-- Draft, round 1: LAB NOTEBOOK. A designer's journal over the facility. Type system C (Bricolage Grotesque + Space Mono). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #050810;
+      --navy-2: #0a1122;
+      --ink: #eef3fb;
+      --body: #b9c8de;
+      --dim: #8497b5;
+      --rule: rgba(200, 216, 240, 0.16);
+      --teal: #19e6c1;
+      --teal-ink: #03140f;
+      --pad-x: max(5vw, 40px);
+      --pad-y: clamp(30px, 4vw, 50px);
+      --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+      --mono: "Space Mono", ui-monospace, Menlo, monospace;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: var(--navy); }
+    body {
+      background: var(--navy); color: var(--body);
+      font-family: var(--display); font-optical-sizing: auto;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
+
+    .skip {
+      position: absolute; left: 12px; top: -60px; z-index: 10;
+      background: var(--ink); color: var(--navy); padding: 10px 14px;
+      font: 700 13px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .skip:focus { top: 12px; }
+
+    /* ── The live background: as index.html (the facility in an iframe that takes no taps), a dark gradient until it is showing ── */
+    #bg {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 60% 40%, #0b1626 0%, #040810 72%);
+    }
+    #bg iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+      opacity: 0; transition: opacity 3.5s ease;
+    }
+    #bg.ready iframe { opacity: 1; }
+
+    /* ── The first screen ── */
+    .hero { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; }
+    /* the soft dark side: a static gradient from the left edge (not a box), and the fade into the navy below */
+    .hero::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(5,8,16,0.95) 0%, rgba(5,8,16,0.9) 24%, rgba(5,8,16,0.62) 36%, rgba(5,8,16,0.18) 47%, rgba(5,8,16,0) 56%),
+        linear-gradient(180deg, rgba(5,8,16,0) 70%, rgba(5,8,16,0.75) 92%, var(--navy) 100%);
+    }
+
+    .col {
+      position: relative;
+      width: min(34vw, 500px);
+      min-height: 100vh; min-height: 100svh;
+      padding: var(--pad-y) 0 var(--pad-y) var(--pad-x);
+      display: flex; flex-direction: column; justify-content: space-between; gap: 28px;
+    }
+
+    .label {
+      font: 400 13px/1.4 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim);
+    }
+
+    h1 {
+      margin-top: 18px;
+      font-family: var(--display); font-weight: 800; font-variation-settings: "opsz" 96;
+      font-size: clamp(60px, 7.2vw, 104px); line-height: 0.92; letter-spacing: -0.03em;
+      color: var(--ink);
+    }
+    .tagline { margin-top: 14px; color: var(--body); }
+    .intro {
+      margin-top: 20px; max-width: 30ch;
+      font-weight: 400; font-variation-settings: "opsz" 24;
+      font-size: clamp(18px, 1.55vw, 22px); line-height: 1.55; color: var(--body);
+    }
+
+    /* ── The four projects: an editorial list, fine hairlines between ── */
+    .work-head { margin-bottom: 10px; }
+    .work { list-style: none; }
+    .work li { border-top: 1px solid var(--rule); }
+    .work li:last-child { border-bottom: 1px solid var(--rule); }
+    .entry { display: block; padding: 11px 0 12px; transition: transform 180ms ease-out; }
+    .entry:hover { transform: translateX(4px); }
+    .entry h3 {
+      font-weight: 800; font-variation-settings: "opsz" 32;
+      font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; color: var(--ink);
+    }
+    .entry h3 .arr { font-weight: 400; color: var(--dim); margin-left: 6px; }
+    .entry p { margin-top: 4px; font-size: 15px; line-height: 1.5; color: var(--body); }
+    .entry .meta { margin-top: 4px; display: block; }
+
+    .feature { display: flex; align-items: center; gap: 18px; padding: 12px 0 13px; }
+    .feature .entry { padding: 0; flex: 1; min-width: 0; }
+    .play {
+      flex: none; display: inline-flex; align-items: center; justify-content: center;
+      min-width: 112px; height: 56px; padding: 0 26px 0 30px;
+      background: var(--teal); color: var(--teal-ink);
+      font: 700 14px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+      clip-path: polygon(16px 0, 100% 0, calc(100% - 8px) 100%, 0 100%, 0 16px);
+      transition: transform 180ms ease-out;
+    }
+    .play:hover { transform: translateX(3px); }
+    .play:focus-visible { outline-offset: 5px; }
+
+    /* the small note at the lower right: the game behind is live */
+    .live {
+      position: absolute; z-index: 2; right: var(--pad-x); bottom: var(--pad-y);
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      background: rgba(5,8,16,0.78); color: var(--body);
+    }
+    .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex: none; }
+
+    /* ── Below the first screen: flat navy ── */
+    .page { position: relative; z-index: 1; background: var(--navy); }
+    .notes {
+      display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 3fr);
+      gap: 24px 48px; padding: 72px var(--pad-x) 0; max-width: 1180px;
+    }
+    .notes + .notes { padding-top: 56px; }
+    .notes .label { padding-top: 8px; }
+    .notes h2 {
+      font-weight: 800; font-variation-settings: "opsz" 72;
+      font-size: clamp(36px, 4vw, 52px); line-height: 1; letter-spacing: -0.02em; color: var(--ink);
+    }
+    .notes p { font-size: clamp(18px, 1.5vw, 21px); line-height: 1.65; max-width: 60ch; color: var(--body); }
+    .notes p + p, .notes h2 + p { margin-top: 18px; }
+    .notes p.label, .notes p.core { font-size: 13px; line-height: 1.5; }
+    .notes strong { color: var(--ink); font-weight: 800; }
+    .notes .core { font: 400 13px/1.5 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+    footer {
+      margin-top: 88px; padding: 28px var(--pad-x) var(--pad-y);
+      border-top: 1px solid var(--rule);
+      display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between;
+    }
+    footer a:hover { color: var(--ink); }
+
+    /* ── One entrance: 400 ms, ease-out, a 50 ms stagger ── */
+    .in { opacity: 0; transform: translateY(8px); animation: rise 420ms ease-out forwards; animation-delay: calc(var(--i, 0) * 50ms + 120ms); }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* ── Portrait (an iPad held upright): the name at the top, the list along the bottom, the middle clear ── */
+    @media (orientation: portrait) {
+      .hero::before {
+        background:
+          linear-gradient(180deg, rgba(5,8,16,0.9) 0%, rgba(5,8,16,0.7) 15%, rgba(5,8,16,0) 27%),
+          linear-gradient(0deg, var(--navy) 0%, rgba(5,8,16,0.93) 22%, rgba(5,8,16,0.6) 31%, rgba(5,8,16,0) 40%);
+      }
+      .col { width: 100%; padding-right: var(--pad-x); }
+      .intro { display: none; }
+      .work { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 28px; }
+      .work li { border-bottom: 1px solid var(--rule); }
+      .work li:first-child { grid-column: 1 / -1; border-bottom: 0; }
+      .live { top: var(--pad-y); bottom: auto; background: transparent; padding: 0; }
+      .notes { grid-template-columns: 1fr; gap: 14px; }
+    }
+    /* a phone is not supported, but must not break */
+    @media (max-width: 600px) {
+      .work { grid-template-columns: 1fr; }
+      .live { display: none; }
+    }
+    /* a short landscape screen: the intro waits below */
+    @media (orientation: landscape) and (max-height: 760px) { .intro { display: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .in { animation: none; opacity: 1; transform: none; }
+      .entry, .play { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip" href="#work">Skip to the projects</a>
+
+<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<div id="bg"></div>
+
+<main>
+  <section class="hero" aria-label="Dragonlord">
+    <div class="col">
+      <header>
+        <p class="label in" style="--i:0">A notebook · from the facility</p>
+        <h1 class="in" style="--i:1">Dragonlord</h1>
+        <p class="label tagline in" style="--i:2">Game developer &amp; digital architect</p>
+        <p class="intro in" style="--i:3">I build worlds from code: browser games, 3D environments and interactive experiences. No engines, just JavaScript.</p>
+      </header>
+
+      <nav id="work" aria-label="Projects">
+        <p class="label work-head in" style="--i:4">The work</p>
+        <ol class="work">
+          <li class="feature in" style="--i:5">
+            <a class="entry" href="../../../play.html">
+              <h3>Conduit</h3>
+              <p>A survival game in a ruined facility.</p>
+              <span class="label meta">Game</span>
+            </a>
+            <a class="play" href="../../../play.html" aria-label="Play Conduit">Play</a>
+          </li>
+          <li class="in" style="--i:6">
+            <a class="entry" href="../../../bible.html">
+              <h3>Game Bible<span class="arr" aria-hidden="true">→</span></h3>
+              <p>The whole game on one page.</p>
+              <span class="label meta">Design reference</span>
+            </a>
+          </li>
+          <li class="in" style="--i:7">
+            <a class="entry" href="../../../romlab/index.html">
+              <h3>ROM Lab<span class="arr" aria-hidden="true">→</span></h3>
+              <p>A sample workstation for sound.</p>
+              <span class="label meta">Audio tool</span>
+            </a>
+          </li>
+          <li class="in" style="--i:8">
+            <a class="entry" href="https://github.com/prades" target="_blank" rel="noopener">
+              <h3>GitHub<span class="arr" aria-hidden="true">↗</span></h3>
+              <p>github.com/prades</p>
+              <span class="label meta">Code</span>
+            </a>
+          </li>
+        </ol>
+      </nav>
+    </div>
+
+    <p class="live label in" style="--i:9"><i aria-hidden="true"></i>Live · Conduit build <span data-build>2026-11-15c</span></p>
+  </section>
+
+  <div class="page">
+    <section class="notes" aria-labelledby="about-h">
+      <p class="label">About</p>
+      <div>
+        <h2 id="about-h">I go by Dragonlord online.</h2>
+        <p>I'm passionate about pushing what the browser can do, from real-time 3D with <strong>Three.js</strong> to complex game systems built on raw Canvas APIs. Everything here runs natively in your browser, no plugins required.</p>
+      </div>
+    </section>
+
+    <section class="notes" aria-labelledby="conduit-h">
+      <p class="label">Now building</p>
+      <div>
+        <h2 id="conduit-h">Conduit</h2>
+        <p class="core">C.O.R.E. Strategy · Combat Operations Roguelite Evolutions</p>
+        <p>A top-down survival game in a ruined research facility: restore its power room by room, recruit and evolve a squad of followers, and fight what lives in the arena. Pure canvas, zero dependencies.</p>
+        <p>The <a href="../../../bible.html"><strong>Game Bible</strong></a> holds the whole game on one page: the facility room by room, the classes, every follower form and creature, the rules and their numbers, the interface, how it is built, and what is still to be decided.</p>
+      </div>
+    </section>
+
+    <section class="notes" aria-labelledby="rom-h">
+      <p class="label">On the side</p>
+      <div>
+        <h2 id="rom-h">ROM Lab</h2>
+        <p>A sample workstation. Scans a ROM for its instrument samples, or splits an audio file into drum, bass, vocal and instrumental stems, then plays them on pads with a step sequencer, FX and MP3 export.</p>
+      </div>
+    </section>
+
+    <footer>
+      <p class="label">© Dragonlord · <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></p>
+      <p class="label">Conduit build <span data-build>2026-11-15c</span></p>
+    </footer>
+  </div>
+</main>
+
+<!-- ── Background: the Conduit facility, dark, with followers searching its halls (play.html?attract, js/attract.js); as index.html, the path adjusted ── -->
+<script>
+(function () {
+  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
+  if ((mq && mq.matches) || net.saveData) return;
+  var frame = null, giveUp = null;
+  function start() {
+    frame = document.createElement('iframe');
+    frame.src = '../../../play.html?attract';   // (the players' page: one script file, tools/bundle.js)
+    frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
+    bg.appendChild(frame);
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
+  }
+  window.addEventListener('message', function (e) {
+    if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
+  });
+  function later() { (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(start, { timeout: 2500 }); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+</script>
+</body>
+</html>

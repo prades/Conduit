@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord</title>
+  <!-- Draft, round 1: BULKHEAD (industrial facility signage). Type system A: Big Shoulders Display 800 + Space Grotesk + JetBrains Mono. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #070b16; --navy-2: #0b1124; --deep: #050810;
+      --ink: #e8eef8; --ink-2: #a9b8d2; --ink-3: #7d8eac;
+      --teal: #19e6c1; --gold: #ffcc44; --hair: rgba(232,238,248,0.5);
+      --px: max(5vw, 40px); --py: clamp(30px, 4vw, 50px);
+      --disp: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+      --body: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: var(--deep); }
+    body { background: var(--deep); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
+    .skip { position: absolute; left: var(--px); top: -80px; z-index: 10; background: var(--ink); color: var(--deep); font: 500 13px/1 var(--mono); letter-spacing: .1em; padding: 12px 14px; text-transform: uppercase; }
+    .skip:focus { top: 12px; }
+
+    /* the live backdrop (as index.html): the facility in an iframe that takes nothing; a static scrim, heavier on the left where the signage is */
+    #bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 60% 40%, #0b1626 0%, #040810 72%); }
+    #bg iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity 3.5s ease; }
+    #bg.ready iframe { opacity: 1; }
+    #bg::after { content: ""; position: absolute; inset: 0;
+      background:
+        linear-gradient(90deg, rgba(5,8,16,0.92) 0%, rgba(5,8,16,0.78) 18%, rgba(5,8,16,0.25) 36%, rgba(5,8,16,0) 48%),
+        linear-gradient(180deg, rgba(5,8,16,0.35) 0%, rgba(5,8,16,0) 18%); }
+
+    .label { font: 500 13px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+
+    /* ── the first screen ── */
+    .first { position: relative; z-index: 1; min-height: 100svh; padding: var(--py) var(--px); }
+    /* the gradient into the content: the last 30% of the screen to flat navy */
+    .first::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 30%; background: linear-gradient(180deg, rgba(7,11,22,0) 0%, rgba(7,11,22,0.7) 70%, var(--navy) 100%); pointer-events: none; z-index: -1; }
+    .brk { position: absolute; width: 20px; height: 20px; border: 0 solid var(--hair); opacity: .9; pointer-events: none; }
+    .brk.tl { left: calc(var(--px) - 20px); top: calc(var(--py) - 14px); border-width: 1px 0 0 1px; }
+    .brk.tr { right: calc(var(--px) - 20px); top: calc(var(--py) - 14px); border-width: 1px 1px 0 0; }
+    .brk.bl { left: calc(var(--px) - 20px); bottom: calc(var(--py) - 14px); border-width: 0 0 1px 1px; }
+    .brk.br { right: calc(var(--px) - 20px); bottom: calc(var(--py) - 14px); border-width: 0 1px 1px 0; }
+    .readout { position: absolute; right: var(--px); text-align: right; }
+    .readout.top { top: var(--py); }
+    .readout.bot { bottom: var(--py); display: grid; gap: 6px; justify-items: end; }
+    .live::before { content: ""; display: inline-block; width: 8px; height: 8px; background: var(--teal); margin-right: 10px; vertical-align: 1px; }
+    .live b { color: var(--teal); font-weight: 500; }
+
+    .col { position: relative; width: min(25vw - var(--px) + 40px, 300px); min-width: 232px; min-height: calc(100svh - 2 * var(--py)); display: flex; flex-direction: column; justify-content: space-between; gap: 32px; }
+    .name { font: 800 104px/.82 var(--disp); text-transform: uppercase; letter-spacing: -0.01em; color: var(--ink); margin-left: -4px; }
+    .name span { display: block; }
+    .hazard { width: 112px; height: 6px; margin: 18px 0 14px; background: repeating-linear-gradient(-45deg, var(--gold) 0 5px, transparent 5px 10px); opacity: .85; }
+
+    .bays { list-style: none; display: flex; flex-direction: column; gap: 22px; }
+    .bay { display: block; }
+    .bay .label { display: block; margin-bottom: 4px; }
+    .bay .label i { font-style: normal; color: var(--ink-3); }
+    .bay .t { display: inline-block; font: 800 48px/.95 var(--disp); text-transform: uppercase; letter-spacing: -0.005em; color: var(--ink); transition: transform .2s ease-out, color .2s; }
+    .bay .t:hover { transform: translateX(4px); }
+    .bay.b1 .t { color: #fff; }
+
+    /* PLAY: the one filled thing, a chamfered slab */
+    .play { display: inline-block; margin-top: 12px; }
+    .play span { display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 30px 0 26px; background: var(--teal); color: #04110e; font: 800 34px/1 var(--disp); letter-spacing: .04em; text-transform: uppercase;
+      clip-path: polygon(16px 0, 100% 0, calc(100% - 9px) 100%, 0 100%, 0 16px); transition: transform .2s ease-out; }
+    .play span::after { content: ""; width: 0; height: 0; border-left: 13px solid currentColor; border-top: 8px solid transparent; border-bottom: 8px solid transparent; }
+    .play:hover span { transform: translateX(4px); }
+
+    /* portrait (an iPad held upright): the name at the top, the bays along the bottom, the middle left to the game */
+    @media (orientation: portrait) {
+      #bg::after { background: linear-gradient(180deg, rgba(5,8,16,0.85) 0%, rgba(5,8,16,0.4) 16%, rgba(5,8,16,0) 26%), linear-gradient(90deg, rgba(5,8,16,0.4) 0%, rgba(5,8,16,0) 40%); }
+      .first::after { height: 34%; background: linear-gradient(180deg, rgba(7,11,22,0) 0%, rgba(7,11,22,0.85) 55%, var(--navy) 100%); }
+      .col { width: 100%; min-width: 0; }
+      .bays { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; column-gap: 40px; row-gap: 18px; }
+      .bay.b1 { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 28px; }
+      .bay.b1 .play { margin: 0; }
+      .readout.bot { bottom: calc(var(--py) + 96px); }
+    }
+
+    /* ── the content: flat navy, signage panels (rules and labels, no boxes) ── */
+    main { position: relative; z-index: 1; background: var(--navy); }
+    .panel { padding: 72px var(--px); }
+    .panel + .panel { padding-top: 0; }
+    .rule { display: flex; align-items: center; gap: 16px; border-top: 1px solid rgba(232,238,248,0.22); padding-top: 14px; margin-bottom: 40px; }
+    .rule .label:last-child { margin-left: auto; color: var(--ink-3); }
+    .feature { display: grid; grid-template-columns: minmax(180px, 1fr) 3fr; gap: 24px 48px; }
+    .feature h2 { font: 800 72px/.88 var(--disp); text-transform: uppercase; }
+    .feature .core { font: 500 13px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); margin: 16px 0 18px; }
+    .feature p { max-width: 58ch; color: var(--ink-2); }
+    .specs { list-style: none; display: grid; gap: 8px; align-content: start; }
+    .specs li { color: var(--ink-3); }
+    .specs li b { color: var(--ink-2); font-weight: 500; }
+    .rows { list-style: none; }
+    .rows li { border-bottom: 1px solid rgba(232,238,248,0.12); }
+    .rows a { display: grid; grid-template-columns: minmax(180px, 1fr) 1.2fr 1.8fr; gap: 12px 48px; align-items: start; padding: 26px 0; transition: transform .2s ease-out; }
+    .rows a:hover { transform: translateX(4px); }
+    .rows h3 { font: 800 48px/.95 var(--disp); text-transform: uppercase; }
+    .rows p { color: var(--ink-2); font-size: 16px; max-width: 52ch; padding-top: 4px; }
+    .rows a > .label { padding-top: 16px; }
+    .rows .go { color: var(--ink); }
+    .about { display: grid; grid-template-columns: minmax(180px, 1fr) 3fr; gap: 24px 48px; }
+    .about p { max-width: 60ch; color: var(--ink-2); }
+    .about p + p { margin-top: 14px; }
+    .about strong { color: var(--ink); font-weight: 500; }
+    footer { position: relative; z-index: 1; background: var(--navy); padding: 28px var(--px) var(--py); display: flex; flex-wrap: wrap; gap: 12px 32px; }
+    footer .label { color: var(--ink-3); }
+    footer a.label:hover { color: var(--ink); }
+    @media (max-width: 900px) {
+      .feature, .about { grid-template-columns: 1fr; }
+      .rows a { grid-template-columns: 1fr; gap: 6px; }
+    }
+    @media (max-width: 560px) { .name { font-size: 88px; } .feature h2 { font-size: 56px; } }
+
+    /* one entrance: the name, then the bays down the column (40 ms apart) */
+    @keyframes inL { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+    @keyframes inU { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .name, .hazard, .tagline { animation: inL .45s ease-out both; }
+    .bay { animation: inU .35s ease-out both; }
+    .bay:nth-child(1) { animation-delay: .18s; } .bay:nth-child(2) { animation-delay: .22s; } .bay:nth-child(3) { animation-delay: .26s; } .bay:nth-child(4) { animation-delay: .30s; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to the projects</a>
+
+<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<div id="bg"></div>
+
+<section class="first" aria-label="Dragonlord">
+  <span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span>
+  <div class="readout bot"><p class="label">Conduit · build 2026-11-15c</p><p class="label live">Facility feed · <b>LIVE</b></p></div>
+
+  <div class="col">
+    <div>
+      <h1 class="name"><span>Dragon</span><span>lord</span></h1>
+      <div class="hazard" aria-hidden="true"></div>
+      <p class="label tagline">Game Developer &amp; Digital Architect</p>
+    </div>
+    <ol class="bays">
+      <li class="bay b1">
+        <div>
+          <span class="label">Bay 01 <i>· Game</i></span>
+          <a class="t" href="#conduit">Conduit</a>
+        </div>
+        <a class="play" href="../../../play.html" aria-label="Play Conduit"><span>Play</span></a>
+      </li>
+      <li class="bay"><span class="label">Bay 02 <i>· Reference</i></span><a class="t" href="../../../bible.html">Game Bible</a></li>
+      <li class="bay"><span class="label">Bay 03 <i>· Tool</i></span><a class="t" href="../../../romlab/index.html">ROM Lab</a></li>
+      <li class="bay"><span class="label">Bay 04 <i>· Code</i></span><a class="t" href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></li>
+    </ol>
+  </div>
+</section>
+
+<main id="content">
+  <section class="panel" id="conduit" aria-labelledby="h-conduit">
+    <div class="rule"><span class="label">Bay 01</span><span class="hazard" style="margin:0;width:56px" aria-hidden="true"></span><span class="label">Build 2026-11-15c</span></div>
+    <div class="feature">
+      <ul class="specs label">
+        <li><b>Game</b></li>
+        <li>Canvas 2D</li>
+        <li>Vanilla JS</li>
+        <li>Followers</li>
+        <li>3D props</li>
+      </ul>
+      <div>
+        <h2 id="h-conduit">Conduit</h2>
+        <p class="core">C.O.R.E. Strategy · Combat Operations Roguelite Evolutions</p>
+        <p>A top-down survival game in a ruined research facility: restore its power room by room, recruit and evolve a squad of followers, and fight what lives in the arena. Pure canvas, zero dependencies.</p>
+        <a class="play" href="../../../play.html" aria-label="Play Conduit" style="margin-top:28px"><span>Play</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Other projects">
+    <div class="rule"><span class="label">Bays 02 – 04</span><span class="label">Other projects</span></div>
+    <ul class="rows">
+      <li><a href="../../../bible.html"><span class="label">Bay 02 · Reference</span><h3>Game Bible</h3><p>The whole game on one page: the facility room by room, the classes, every follower form and creature, the rules and their numbers, the interface, how it is built, and what is still to be decided.</p></a></li>
+      <li><a href="../../../romlab/index.html"><span class="label">Bay 03 · Tool</span><h3>ROM Lab</h3><p>A sample workstation. Scans a ROM for its instrument samples, or splits an audio file into drum, bass, vocal and instrumental stems, then plays them on pads with a step sequencer, FX and MP3 export.</p></a></li>
+      <li><a href="https://github.com/prades" target="_blank" rel="noopener"><span class="label">Bay 04 · Code</span><h3>GitHub</h3><p class="label go">github.com/prades ↗</p></a></li>
+    </ul>
+  </section>
+
+  <section class="panel" aria-labelledby="h-about">
+    <div class="rule"><span class="label" id="h-about">Operator</span><span class="label">Dragonlord</span></div>
+    <div class="about">
+      <p class="label">Game Developer &amp;<br>Digital Architect</p>
+      <div>
+        <p>I build worlds from code. Browser games, 3D environments, and interactive experiences crafted from the ground up — no engines, just raw creativity and JavaScript.</p>
+        <p>I go by <strong>Dragonlord</strong> online. I'm passionate about pushing what the browser can do, from real-time 3D with <strong>Three.js</strong> to complex game systems built on raw Canvas APIs. Everything here runs natively in your browser, no plugins required.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="label">© Dragonlord</span>
+  <a class="label" href="https://github.com/prades" target="_blank" rel="noopener">GitHub ↗</a>
+  <span class="label">Conduit build 2026-11-15c</span>
+</footer>
+
+<!-- ── Background: the Conduit facility (play.html?attract, js/attract.js), as index.html does it ── -->
+<script>
+(function () {
+  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
+  if ((mq && mq.matches) || net.saveData) return;
+  var frame = null, giveUp = null;
+  function start() {
+    frame = document.createElement('iframe');
+    frame.src = '../../../play.html?attract';
+    frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
+    bg.appendChild(frame);
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
+  }
+  window.addEventListener('message', function (e) {
+    if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
+  });
+  function later() { (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(start, { timeout: 2500 }); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+</script>
+</body>
+</html>
