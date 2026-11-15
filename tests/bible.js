@@ -105,7 +105,7 @@ function measure(w, h) {
 
     group('THE PAGE');
     check('the home page has the bible\'s card (a project card that goes to bible.html), and the bible goes back to the home page', () => {
-        ok(/<a class="project-card[^"]*" href="bible\.html">[\s\S]*?Game Bible[\s\S]*?<\/a>/.test(home), 'no card for the bible on index.html');
+        ok(/<a[^>]*href="bible\.html"[^>]*>[\s\S]*?Bible[\s\S]*?<\/a>/.test(home), 'no link to the bible on index.html');   // (a row of the home page's index since build 2026-11-15e, CONSOLE)
         ok(/href="index\.html"/.test(page), 'no way back to the home page');
         ok(/<title>Conduit Game Bible<\/title>/.test(page), 'the title');
     });

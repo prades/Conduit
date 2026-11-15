@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15e` · branch `claude/friendly-thompson-w581x0` · the home page is CONSOLE
+- **The ask** (the owner: a new look for the website over the live game, from research and drafts; of six drafts, "Number 1").
+- **What it does:** `index.html` is the facility's monitoring console over the live game: corner brackets, FACILITY FEED · LIVE and the build at the top, DRAGONLORD in bold italic at the lower left with PLAY (the one filled button), the Game Bible, ROM Lab and GitHub as a numbered index at the lower right, and the projects and the bio below on flat navy. The live background is as it was. `tools/stamp.js` now keeps the page's build numbers (marked `data-build`) current.
+- `index.html`, `tools/stamp.js`, `tests/attract.js` and `tests/bible.js` (they read the new page), `docs/WEBSITE.md` (the decision).
+- **Verified:** the full suite; screenshots at 1180 × 820, 820 × 1180, 1440 × 900 and two phone widths (no sideways scroll, the game ready, the fonts loaded). **Not checked on a real iPad.**
+
 ### Build `2026-11-15d` · branch `claude/friendly-thompson-w581x0` · the website's background shows no HUD
 - **Why:** the home page's live background (`play.html?attract`, js/attract.js) showed the facility's network panel (top right) and the ammunition pill (left) through it: they are drawn on the canvas, which the attract css (which hides the page's own elements) does not reach (docs/WEBSITE.md §4.2).
 - **What it does:** in attract mode `drawFacilityNetworkHUD` (js/facilitynet.js) and `drawTargetUI` (js/targeting.js) draw nothing. The game itself is unchanged.

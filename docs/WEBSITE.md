@@ -1,6 +1,6 @@
 # The website (Dragonlord home page)
 
-- **Status:** Research done; redesign **Proposed** (no direction chosen yet). The live page is `index.html` as it was before this redesign.
+- **Status:** CONSOLE chosen (2026-11-15) and **Implemented** in `index.html` (build `2026-11-15e`); verified by tests/attract.js and tests/bible.js and screenshots at iPad, desktop and phone sizes; not checked on a real iPad.
 - **Owner:** User (creative direction); agent (research, drafts, implementation).
 - **Last updated:** 2026-11-15
 - **Branch/build context:** `claude/friendly-thompson-w581x0`, at main's build `2026-11-15c`.
@@ -66,8 +66,12 @@ Limits: the session's network blocked the design galleries (Awwwards, Typewolf, 
 6. The reduced-motion choice is read once only.
 
 ## 5. Decisions
-None yet. Round 1 drafts (2026-11-15), for the owner's choice: `design/web/round1/` console, slab, bulkhead, field-station, lab-notebook, broadcast.
+- **2026-11-15: CONSOLE** (the owner, of the six round-1 drafts in `design/web/round1/`: "Number 1"). The home page is the facility's monitoring console over the live game: four hairline corner brackets; small mono readouts (FACILITY FEED · LIVE, the Conduit build and today's date) at the top; DRAGONLORD in Chakra Petch bold italic at the lower left with the tagline over it; the one filled button, PLAY, a chamfered teal slab, with Conduit's line beside it; GAME BIBLE, ROM LAB and GITHUB a numbered mono index at the lower right; below the first screen, a static fade into flat navy with a row for each project and the bio. Type system D (Chakra Petch + IBM Plex Sans + IBM Plex Mono). Built into `index.html` in build `2026-11-15e`; the build numbers marked `data-build` are kept current by `tools/stamp.js`.
+  - The agent's, provisional: on a phone the name scales with the width (`clamp(36px, 12.5vw, 64px)`); the measured rule that keeps the middle of the screen free is bent on a landscape screen, where the name reaches into the bottom of that band (as in the draft the owner chose).
+- The other five drafts are kept in `design/web/round1/` as history.
 
 ## 6. Open questions
+- On a phone, two of the game's round phone buttons show faintly through the background at the right edge (the game's phone layout is the owner's to change; phones are not a target).
+- Next engineering steps from §4: a still poster before the game is ready; pausing the game when it cannot be seen (needs a message in js/attract.js).
 - Which direction (drafts to come).
 - ~~Whether the network may reach the design galleries~~ (approved 2026-11-15: twenty hosts added to the environment; round 2 above).
