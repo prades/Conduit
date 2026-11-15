@@ -4,6 +4,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15c` · branch `claude/start-game-project-HSh7Z` · a subway off the Sewers (empty, to build on)
+- **The ask** (the owner, 2026-11-15): "I want a subway system to connect from the sewer system. Just go ahead and put it in there, and then I'll use that to jog my memory for later updates." Every size, name, look and prop is the agent's, provisional (`docs/DECISION-LOG.md`).
+- **The way in:** the Sewers' side passage off the south ledge opens (its gate `sewer_gate_s1` taken away). At its end, a stairwell door in its west wall with **SUBWAY** over it. You and the squad following you go down to the platform; its stairs (**SEWERS** over them) bring you back.
+- **The subway** (`docs/FACILITY.md`, "The subway"): one interior of two rooms, built far from everything.
+  - **The platform** ("Subway Platform"): 30 × 5 tiles at the Sewers' level, with vending machines, bins, crates, four lamps and a yellow edge with a rail along it.
+  - **The track bed** ("Subway Tracks"): 38 × 4 a level below, one track painted on it (two rails and sleepers). Three steps go down to it at the platform's east end. Both tunnels are sealed, with red signals, drums and a barrier.
+  - **Around it:** the Armory relay powers it (36 rooms on the network panel), its two rooms are one place to hold, and nothing lives there.
+- **New floor marks** (js/facilitydecor.js): `rails` (a railway track along a rectangle) and `platform_edge` (a painted safety line a styled room still shows).
+- **Tests:** `tests/subway.js` (new). The sewers, cover, facility and facility play suites count the new rooms, doorway, steps and props, and the Sewers' two remaining gates. The Bible lists the two rooms.
+- `js/facilitymap.js`, `js/facilitydecor.js`, `js/facilitystyleall.js`, `js/facilitystyle.js`, `js/facilitynet.js`, `js/facilityplay.js`, `js/party.js`, `tests/subway.js`, `tests/run.js`, `tests/sewers.js`, `tests/cover.js`, `tests/facility.js`, `tests/facilityplay.js`, `bible.html`, `docs/FACILITY.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- Not playtested.
+
 ### Build `2026-11-15b` · branch `claude/start-game-project-HSh7Z` · the floor painted once: less for the iPad to paint each frame
 - **The report** (the owner, 2026-11-15, a screenshot of Settings → PERFORMANCE on the iPad, Main Hallway, build `2026-11-15a`, graphics LOW): **FPS 27**, frame 37 ms = logic 0.6 + draw 8.6 + catch-up 2.1 + **browser 25.5**; gaps between frames steady at 38 to 48 ms.
   - The game's own work was 11 ms of each frame. The rest was the browser painting what the game drew.

@@ -13,6 +13,7 @@ const FP_ROOM_TAG = {
     experiment_lab: "Experiment Lab", lounge: "The Lounge", lab_passage: "Lab Passage", teleport_stair_room: "Stair Room", teleport_room_2: "Teleport Room 2", observation_deck: "Observation Deck", armory: "Armory",
     catwalks: "Catwalks", catwalk_spur: "Catwalk Spur", arena: "Arena", nest_area: "Ant Nest", cold_storage: "Cold Storage", sewers: "Sewers",
     elec_servers: "Deep Server Room", elec_circuitry: "The Circuitry",   // (the electrical domain's two rooms: docs/DOMAINS.md; the names provisional)
+    subway_platform: "Subway Platform", subway_tracks: "Subway Tracks",   // (the subway off the Sewers, build 2026-11-15c: docs/FACILITY.md; the names provisional)
 };
 if (typeof FP_NEST_TAGS !== "undefined") for (const id in FP_NEST_TAGS) if (!FP_ROOM_TAG[id]) FP_ROOM_TAG[id] = FP_NEST_TAGS[id];   // (the Nest grown out, build 2026-11-12a: its tunnels read Ant Nest, its caves their names)
 

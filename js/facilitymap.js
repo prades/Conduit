@@ -199,6 +199,18 @@ const FACILITY_MAP = {
           note: "The electrical domain's big open hall, 32 tiles across and 23 deep (about the arena's size), below the deep server room: its north edge under the room above is open (the ledge's rail is that room's), the rest wall.",
           polygon: [[280, 600], [360, 600], [840, 600], [920, 600], [920, 1060], [280, 1060]],
           edge_kinds: ["wall", "open", "wall", "wall", "wall", "wall"] },
+        // THE SUBWAY (the owner, 2026-11-15: "I want a subway system to connect from the sewer system. Just go ahead and put it in there, and then I'll use that to jog my memory for later updates"): an
+        //   INTERIOR of two rooms, drawn here under the Sewers' south side, reached by a door at the end of the Sewers' side passage off the south ledge (its gate taken away). A long PLATFORM, and a level
+        //   down beside it the TRACK BED, its rails running into tunnels sealed at both ends (for later); steps down from the platform's east end. Empty: no creatures, no trains. Every size,
+        //   name and look the agent's, provisional (docs/FACILITY.md, "The subway").
+        { id: "subway_platform", label: "Subway Platform", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "The subway's platform: 30 tiles long and 5 deep, the stairs back up to the Sewers in an alcove in its north wall, its south edge a drop to the tracks with a rail along it, steps down to them at its east end.",
+          polygon: [[300, 1200], [380, 1200], [380, 1180], [420, 1180], [420, 1200], [900, 1200], [900, 1300], [300, 1300]],
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "deck_rail", "wall"] },
+        { id: "subway_tracks", label: "Subway Tracks", level: -2, status: "placed", wall_material: "solid", interior: true,
+          note: "The track bed below the platform's edge: 38 tiles long and 4 across, one track along it; its north side under the platform is open (the platform's rail is that room's), both ends tunnels sealed (for later).",
+          polygon: [[220, 1300], [300, 1300], [900, 1300], [980, 1300], [980, 1380], [220, 1380]],
+          edge_kinds: ["wall", "open", "wall", "wall", "wall", "wall"] },   // (the tunnel ends sealed walls: rock would need its modelled strips baked, js/cavewalls.js)
     ],
 
     // INTERIORS: rooms that are not beside any other room but under or inside one. The data draws them where they belong (the armory under the Observation Deck); the building pass (js/facilitygrow.js) puts each in a part of
@@ -225,6 +237,8 @@ const FACILITY_MAP = {
         { id: "nest_down_low", under: "arena", offset: [0, 2240] },
         { id: "elec_servers", under: "front_lobby", offset: [2560, 0] },        // THE ELECTRICAL DOMAIN (128 tiles east, beyond the Armory's part of the map: nothing is in sight of it); its two rooms share one
         { id: "elec_circuitry", under: "front_lobby", offset: [2560, 0] },      //   offset, so the steps between them are one interior (js/facilitygrow.js carries their door and steps; js/facility.js lets them join)
+        { id: "subway_platform", under: "sewers", offset: [-2560, 2560] },      // THE SUBWAY (128 tiles west and 128 south of where it is drawn: 65 tiles and more from the Sewers and the Ant Nest, nothing in sight of it);
+        { id: "subway_tracks", under: "sewers", offset: [-2560, 2560] },        //   its two rooms share one offset, so the steps between them are one interior, as the electrical domain's
     ],
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
@@ -267,6 +281,11 @@ const FACILITY_MAP = {
           note: "The little door down to the electrical domain, in an alcove in the Server Room's north wall beside the junction. Shut until the junction is repaired." },
         { id: "portal_elec_lobby", room: "elec_servers", rect: [680, 220, 720, 240], arrive: [700, 262], to: "portal_lobby_elec", label: "SERVER ROOM", kind: "stairs_up",
           note: "The stairs back up to the Server Room, in an alcove in the deep server room's north wall." },
+        // THE SUBWAY (docs/FACILITY.md, "The subway"): a stairwell door in the west wall at the end of the side passage off the Sewers' south ledge (the passage's gate taken away), down to the platform.
+        { id: "portal_sewers_subway", room: "sewers", rect: [600, 1100, 620, 1140], arrive: [630, 1110], to: "portal_subway_sewers", label: "SUBWAY", kind: "stairs_down",
+          note: "The way down to the subway: a stairwell door in the west wall at the end of the south ledge's side passage." },
+        { id: "portal_subway_sewers", room: "subway_platform", rect: [380, 1180, 420, 1200], arrive: [400, 1222], to: "portal_sewers_subway", label: "SEWERS", kind: "stairs_up",
+          note: "The stairs back up to the Sewers, in an alcove in the platform's north wall." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -473,7 +492,7 @@ const FACILITY_MAP = {
         { id: "nest_moat", room: "sewers", shape: "poly", poly: [[1060, 1080], [1320, 1080], [1320, 860], [1360, 860], [1360, 1120], [1060, 1120]], status: "placed", kind: "pool", note: "THE MOAT round the dam's south and east sides, from under the causeway to the Nest's east edge, where it spills over: the waterfall. Not walkable." },
         { id: "sewer_gate_n1", room: "sewers", shape: "poly", poly: [[360, 856], [400, 856], [400, 864], [360, 864]], status: "placed", kind: "gate", note: "A barred gate across the first side passage off the north ledge: shut (an area for later)." },
         { id: "sewer_gate_n2", room: "sewers", shape: "poly", poly: [[600, 856], [700, 856], [700, 864], [600, 864]], status: "placed", kind: "gate", note: "A barred gate, five tiles wide, across SIDE QUEST'S MAINTENANCE PLATFORM off the north ledge (2026-11-01: he was in the south passage, behind walls the camera hides): its back wall faces you, so the platform is seen through the bars from the ledges and the bridge. Opened when he appears (js/sidequest.js)." },
-        { id: "sewer_gate_s1", room: "sewers", shape: "poly", poly: [[600, 1076], [640, 1076], [640, 1084], [600, 1084]], status: "placed", kind: "gate", note: "A barred gate across the side passage off the south ledge: shut (an area for later)." },
+        // (sewer_gate_s1, the barred gate across the side passage off the south ledge, was taken away in build 2026-11-15c: the passage leads to THE SUBWAY now)
         // THE CHOKE: the collapsed tunnel's whole mouth (x 820 to 940), filled with fallen concrete and rock (kind `rubble`: a thin solid across the mouth, like a gate; the rubble entry below is what a fire technician drills, from the
         //   LEDGE: the sample puzzle, docs/SEWER-QUEST.md). It lies a hair inside the mouth's line (y 852 to 858, not 856 to 864: the drill's work spot is on the ledge, and a spot half a tile in front of the pile must be clear
         //   floor for the rubble to be seen from it, js/facility.js). Drilled through it is OPEN for good (js/facilityplay.js facilitySolidOpen) and the tunnel is walked into.
@@ -499,6 +518,18 @@ const FACILITY_MAP = {
         { id: "elec_rack_3", room: "elec_servers", shape: "rect", rect: [520, 280, 540, 380], status: "placed", kind: "server_rack" },
         { id: "elec_rack_4", room: "elec_servers", shape: "rect", rect: [580, 280, 600, 380], status: "placed", kind: "server_rack" },
         { id: "elec_rack_5", room: "elec_servers", shape: "rect", rect: [760, 280, 780, 380], status: "placed", kind: "server_rack" },
+        // THE SUBWAY's platform and track bed (build 2026-11-15c; the agent's, provisional): vending machines and bins along the platform's back wall, crates left at its west end, a work light and drums
+        //   on the tracks by the sealed tunnels (no floodlight: a floodlight is an emergency light in a blackout), a road barrier across the track before the east one
+        { id: "subway_vending_1", room: "subway_platform", shape: "rect", rect: [460, 1200, 480, 1220], status: "placed", kind: "vending" },
+        { id: "subway_vending_2", room: "subway_platform", shape: "rect", rect: [480, 1200, 500, 1220], status: "placed", kind: "vending" },
+        { id: "subway_bin_1", room: "subway_platform", shape: "rect", rect: [580, 1200, 600, 1220], status: "placed", kind: "bin" },
+        { id: "subway_bin_2", room: "subway_platform", shape: "rect", rect: [760, 1200, 780, 1220], status: "placed", kind: "bin" },
+        { id: "subway_crate_1", room: "subway_platform", shape: "rect", rect: [300, 1200, 320, 1220], status: "placed", kind: "crate" },
+        { id: "subway_crate_2", room: "subway_platform", shape: "rect", rect: [320, 1200, 340, 1220], status: "placed", kind: "crate" },
+        { id: "subway_crate_3", room: "subway_platform", shape: "rect", rect: [300, 1220, 320, 1240], status: "placed", kind: "crate" },
+        { id: "subway_barrier", room: "subway_tracks", shape: "rect", rect: [920, 1320, 940, 1360], status: "placed", kind: "barrier" },
+        { id: "subway_drum_1", room: "subway_tracks", shape: "rect", rect: [240, 1360, 260, 1380], status: "placed", kind: "barrel" },
+        { id: "subway_drum_2", room: "subway_tracks", shape: "rect", rect: [260, 1360, 280, 1380], status: "placed", kind: "barrel" },
         { id: "elec_rack_6", room: "elec_servers", shape: "rect", rect: [800, 280, 820, 380], status: "placed", kind: "server_rack" },
         { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1150, 830, 1190, 850], status: "placed", kind: "console", note: "The Nest's control console, on the dam at the head of the reservoir, below the big barred arch: the purification module mounts here (the PURIFIER MOUNT station)." },
         // SEWER MACHINERY the Flux Technician can move (Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.3; the owner, 2026-11-07: "Sewer machinery" first): pump housings on the dam, low cover that stops shots, turned and moved by FLUX MOVE
@@ -661,7 +692,7 @@ const FACILITY_MAP = {
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
         { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
-        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "catwalk_spur", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers"], feeds: [] },   // (and the Sewers under the arena)
+        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "catwalk_spur", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers", "subway_platform", "subway_tracks"], feeds: [] },   // (and the Sewers under the arena, and the subway off them)
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
@@ -699,6 +730,8 @@ const FACILITY_MAP = {
         { room: "nest_down_low", style: "sand", colour: "#3b2e22" },
         { room: "elec_servers", style: "plate" },     // THE ELECTRICAL DOMAIN: dark steel plate (its room style darkens it: js/facilitystyleall.js)
         { room: "elec_circuitry", style: "plate" },
+        { room: "subway_platform", style: "tile" },     // THE SUBWAY: the platform's tiles, the track bed's concrete (their room styles darken them: js/facilitystyleall.js)
+        { room: "subway_tracks", style: "concrete" },
         { room: "sewers", style: "concrete", colour: "#272d2c" },   // (darker since build 2026-11-07a: Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.1; it was #3e4744)
     ],
 
@@ -1202,6 +1235,22 @@ const FACILITY_MAP = {
         { id: "elec_pipe_1", room: "elec_servers", kind: "pipe", a: [370, 248], b: [674, 248], colour: "#2c3a52", z: 66 },
         { id: "elec_pipe_2", room: "elec_servers", kind: "pipe", a: [726, 248], b: [830, 248], colour: "#2c3a52", z: 66 },
         { id: "elec_screen_1", room: "elec_servers", kind: "screen", a: [430, 248], b: [470, 248], colour: "#31e8ff", z: 36 },
+        // THE SUBWAY (build 2026-11-15c; the agent's, provisional): the doors at both ends of the way down, the track (`rails`: js/facilitydecor.js), the platform's yellow edge (`platform_edge`),
+        //   the platform's lamps (one stutters) and a red signal by each sealed tunnel
+        { id: "sewer_subway_door", room: "sewers", kind: "portal_door", a: [600, 1100], b: [600, 1140], colour: "#ffcc33" },
+        { id: "subway_stairs_door", room: "subway_platform", kind: "portal_door", a: [380, 1180], b: [420, 1180], colour: "#ffcc33", up: true },
+        { id: "subway_rails", room: "subway_tracks", kind: "rails", rect: [220, 1320, 980, 1360] },
+        { id: "subway_edge", room: "subway_platform", kind: "platform_edge", a: [320, 1294], b: [880, 1294], colour: "#ffcc33" },
+        { id: "subway_light_1", room: "subway_platform", kind: "light", at: [400, 1250], radius: 90, colour: "#e2ecd6", a: 0.16 },
+        { id: "subway_light_2", room: "subway_platform", kind: "light", at: [560, 1250], radius: 90, colour: "#e2ecd6", a: 0.14 },
+        { id: "subway_light_3", room: "subway_platform", kind: "light", at: [720, 1250], radius: 90, colour: "#e2ecd6", a: 0.14, flicker: true },
+        { id: "subway_light_4", room: "subway_platform", kind: "light", at: [860, 1250], radius: 80, colour: "#e2ecd6", a: 0.12 },
+        { id: "subway_signal_w", room: "subway_tracks", kind: "light", at: [250, 1340], radius: 50, colour: "#ff3b30", a: 0.16 },
+        { id: "subway_signal_e", room: "subway_tracks", kind: "light", at: [950, 1340], radius: 50, colour: "#ff3b30", a: 0.16, flicker: true },
+        { id: "subway_debris_1", room: "subway_tracks", kind: "debris", at: [270, 1340], radius: 20, n: 5 },
+        { id: "subway_debris_2", room: "subway_tracks", kind: "debris", at: [960, 1310], radius: 16, n: 4 },
+        { id: "subway_stain_1", room: "subway_tracks", kind: "stain", at: [620, 1330], radius: 18, colour: "#0c0b0a" },
+        { id: "subway_papers", room: "subway_platform", kind: "papers", at: [640, 1260], radius: 20, n: 5 },
         { id: "elec_screen_2", room: "elec_servers", kind: "screen", a: [560, 248], b: [600, 248], colour: "#3fa9ff", z: 36 },
         { id: "antnest_light_eggs", room: "nest_area", kind: "light", at: [705, 1370], radius: 80, colour: "#ffe9a0", a: 0.1 },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
@@ -1288,6 +1337,8 @@ const FACILITY_MAP = {
         { id: "open_nest_down", a: [20, 2020], b: [80, 2020], rooms: ["nest_down", "nest_down_low"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the way down, half way." },
         { id: "open_elec_steps", a: [480, 600], b: [720, 600], rooms: ["elec_servers", "elec_circuitry"], door: null, position_status: "approximate",
           note: "THE ELECTRICAL DOMAIN: the wide steps down from the deep server room into the circuitry (twelve tiles across), an open mouth with no door." },
+        { id: "open_subway_steps", a: [840, 1300], b: [900, 1300], rooms: ["subway_platform", "subway_tracks"], door: null, position_status: "approximate",
+          note: "THE SUBWAY: the steps down from the platform's east end to the track bed (three tiles across), an open mouth with no door." },
     ],
     connections: [
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
@@ -1314,6 +1365,8 @@ const FACILITY_MAP = {
         { id: "conn_arena_nest", rooms: ["arena", "nest_area"], portal: "portal_arena_nest" },   // (the sketch's candidate c_arena_nest, made real: through the drilled rubble)
         { id: "conn_lobby_elec", rooms: ["front_lobby", "elec_servers"], portal: "portal_lobby_elec" },
         { id: "conn_elec_steps", rooms: ["elec_servers", "elec_circuitry"], opening: "open_elec_steps", ramp: "r_elec_steps" },
+        { id: "conn_sewers_subway", rooms: ["sewers", "subway_platform"], portal: "portal_sewers_subway" },
+        { id: "conn_subway_steps", rooms: ["subway_platform", "subway_tracks"], opening: "open_subway_steps", ramp: "r_subway_steps" },
         { id: "conn_nest_t1", rooms: ["nest_area", "nest_t1"], opening: "open_nest_t1" },
         { id: "conn_nest_t1_brood", rooms: ["nest_t1", "nest_brood"], opening: "open_nest_t1_brood" },
         { id: "conn_nest_brood_t3", rooms: ["nest_brood", "nest_t3"], opening: "open_nest_brood_t3" },
@@ -1342,6 +1395,9 @@ const FACILITY_MAP = {
         { id: "r_elec_steps", rooms: ["elec_servers", "elec_circuitry"], shape: "steps", between_levels: [-1, -2], descends_toward: "elec_circuitry", position_status: "placed",
           zone: { rect: [480, 560, 720, 660], axis: "y", c0: 570, c1: 650, steps: 4 },
           note: "THE ELECTRICAL DOMAIN: four wide steps down from the deep server room into the circuitry." },
+        { id: "r_subway_steps", rooms: ["subway_platform", "subway_tracks"], shape: "steps", between_levels: [-1, -2], descends_toward: "subway_tracks", position_status: "placed",
+          zone: { rect: [840, 1260, 900, 1340], axis: "y", c0: 1270, c1: 1330, steps: 3 },
+          note: "THE SUBWAY: three steps down from the platform's east end to the track bed." },
         { id: "r_nest_down", rooms: ["nest_down", "nest_down_low"], shape: "slope", between_levels: [-1, -2], descends_toward: "nest_down_low", position_status: "placed",
           zone: { rect: [20, 1920, 80, 2120], axis: "y", c0: 1930, c1: 2110 },
           note: "THE ANT NEST: the way down, a sloping tunnel you walk straight down (the owner: 'I want the nests to descend without stairs'; 'Sloping tunnels'): no steps, a slope of dirt over nine tiles, to the volcanic layer's level (a zone without `steps` is a slope: js/facility.js)." },

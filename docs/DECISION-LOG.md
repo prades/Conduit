@@ -14,6 +14,22 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: A subway off the Sewers, as a first place to build on (the owner's request; the details the agent's)
+
+- **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15c`
+- **Status:** Approved in outline (the owner's words); the details are the agent's, provisional; built
+- **Context:** the owner: "I want a subway system to connect from the sewer system. Just go ahead and put it in there, and then I'll use that to jog my memory for later updates."
+- **Decision:** a subway reached from the Sewers, empty, as a starting point for later updates.
+- **Agent's choices, provisional:**
+  - **The way in:** the side passage off the south ledge, its gate taken away (the Sewers' notes say a later area opens one that way). The north one was not used: it is two tiles from the culvert's arrival, where followers were once put behind its gate.
+  - **The layout:** one platform with a railed edge, one track bed a level below it, three steps between them, and both tunnels sealed with walls.
+  - **The look:** old grey tile, sooty concrete, a yellow edge and red signals.
+  - **The props:** vending machines, bins, crates, drums and a barrier.
+  - **The names:** "Subway Platform" and "Subway Tracks".
+  - **The rest:** it is on the Armory relay, its two rooms are one place to hold, and nothing lives there.
+- **Alternatives:** the north side passage, or a stairwell in the passage's floor (the floor stairwell is drawn facing one way only, and here it would have faced away from where you come in).
+- **Affects:** `js/facilitymap.js`, `js/facilitydecor.js` (the `rails` and `platform_edge` floor marks), `js/facilitystyleall.js`, `js/facilitystyle.js`, `js/facilitynet.js`, `js/facilityplay.js`, `js/party.js`; `docs/FACILITY.md` ("The subway"); the Bible's room tables; `tests/subway.js`.
+
 ## DECISION: VOLTWYRM redesigned: tail A, strut legs, a more angular head (the owner's picks)
 
 - **Date:** 2026-11-14 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-14m`

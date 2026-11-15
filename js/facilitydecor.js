@@ -132,6 +132,15 @@ function _fpFloorBuild(F, only) {
                 if (side[0]) o.push(along ? { t: "P", c: "#4a5560", p: [-0.5, -0.5, -0.34, -0.5, -0.34, 0.5, -0.5, 0.5] } : { t: "P", c: "#4a5560", p: [-0.5, -0.5, 0.5, -0.5, 0.5, -0.34, -0.5, -0.34] });
                 if (side[1]) o.push(along ? { t: "P", c: "#56626e", p: [0.34, -0.5, 0.5, -0.5, 0.5, 0.5, 0.34, 0.5] } : { t: "P", c: "#56626e", p: [-0.5, 0.34, 0.5, 0.34, 0.5, 0.5, -0.5, 0.5] });
             }
+        } else if (k === "rails") {   // A RAILWAY TRACK (the subway's, build 2026-11-15c): two steel rails along the rectangle's long side on its middle line, timber sleepers across them every half tile
+            const r = d.rect, along = (r[2] - r[0]) >= (r[3] - r[1]), mid = along ? (r[1] + r[3]) / 2 : (r[0] + r[2]) / 2, G = 0.36, S = 0.62;   // (G: half the gauge; S: half a sleeper's length; tiles)
+            const L = (a, b, c2, d2, c, w) => along ? { t: "L", c, w, p: [a, b, c2, d2] } : { t: "L", c, w, p: [b, a, d2, c2] };
+            for (const key of facilityRectCells(r)) { if (!_fp.cells.has(key)) continue; const [x, y] = key.split(",").map(Number), o = _fpCellOps(map, x, y), m = mid - (along ? y : x);   // (the middle line in the tile's own frame)
+                const v0 = Math.max(-0.5, m - S), v1 = Math.min(0.5, m + S); if (v1 > v0) for (const t of [-0.25, 0.25]) o.push(L(t, v0, t, v1, "rgba(96,74,54,0.95)", 5));   // the sleepers
+                for (const g of [-G, G]) { const v = m + g; if (v < -0.5 || v > 0.5) continue; o.push(L(-0.5, v, 0.5, v, "rgba(10,12,14,0.92)", 3.4), L(-0.5, v - 0.03, 0.5, v - 0.03, "rgba(196,204,212,0.9)", 1.4)); }   // the rails: a dark foot, a bright head
+            }
+        } else if (k === "platform_edge") {   // the yellow safety line along a platform's edge (the subway's, build 2026-11-15c): painted in a styled room too, unlike a lane
+            _fpSeg(map, d.a[0], d.a[1], d.b[0], d.b[1], { c: _fpRgba(d.colour || "#ffcc33", 0.85), w: 7 }, F);
         } else if (k === "ice_sheet") {   // glassy ice over the floor (the Cold Storage's cave, the frost before its door): a pale blue glaze on every tile inside the outline, a sheen streak, now and then a crack
             const off = F.snapped ? 0.5 : 0, xs = d.path.map(q => q[0]), ys = d.path.map(q => q[1]);   // (the outline is unsnapped, the tiles are on the snapped grid: half a tile apart)
             for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)) + 1; x++) for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)) + 1; y++) {

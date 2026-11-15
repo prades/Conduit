@@ -8,6 +8,13 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Closed 2026-11-14, the balance targets** (build `2026-11-14t`; the owner: "Freeze the targets"): fixed at Brawler 79, Mage 44, Technician 35. Still open: SUNDEW at 69% of its target after its sting's buff, the Hornshell at 69%, the Rimestar and the Frost Maw at 74%, the Goo Proxy at 75% (the last three within a point or two of their bands). As it stood: **the balance targets move** (build `2026-11-14q`): a role's target is the middle score of its forms, so lifting some forms raises the target and others fall out of the band without changing (the Rimestar). The owner has not set fixed targets; until then a pass can chase its own tail. SUNDEW is at 55% of the Brawler target with its heal measured (about 8 a second): what lifts it is not decided.
 
+**Open 2026-11-15, the subway** (build `2026-11-15c`; docs/FACILITY.md, "The subway"). The owner asked for it as a starting point "to jog my memory for later updates", so all of it is open:
+- Where do its tunnels lead (other stations, the domains, the Nest)?
+- Are there trains, and what are they for?
+- What lives there?
+- Should its door stay open from the start, or open with something?
+- Its name, its size, its look and its props are the agent's, provisional.
+
 **Open 2026-11-14, the followers' traits** (the four removed in build `2026-11-14f`; the owner: "Remove all four"): whether a low-health damage boost (BERSERKER's) and a target-the-weakest choice (OPPORTUNISTIC's) come back as something the player chooses or earns, with the perks' redesign. The tables stay, empty.
 
 **Open 2026-11-14, the followers' perks** (removed in build `2026-11-14e`; the owner: "maybe we can redesign those at a later time"): what a follower's perk should be, if anything, is to be designed. The table `PERKS` (js/traits.js) is kept, empty, with its hooks (a hit taken, a hit dealt).
