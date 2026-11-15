@@ -40,6 +40,23 @@ Limits: the session's network blocked the design galleries (Awwwards, Typewolf, 
 - Use `100svh`; a visible `:focus-visible`; a skip link; keep the iframe `pointer-events: none`, `inert`, `aria-hidden`, `tabIndex=-1`.
 - A still poster image first, cross-faded to the live game when it is ready.
 
+**Round 2 (2026-11-15, with gallery and example hosts allowed; LOADED = read from the real page or its code)**
+- Loaded: messenger.abeto.co, lusion.co, bruno-simon.com, www.supergiantgames.com (their HTML, CSS and JS), Typewolf and Fonts In Use pages, the Google Fonts API. Still blocked or not reached: www.igloo.inc, awwwards.com, blog.lusion.co, tympanus.net (a bot check), godly.website.
+- **Measured rules** (from Lusion, Messenger, Bruno Simon, Supergiant):
+  1. Edge padding `max(5vw, 40px)` left/right, `clamp(30px, 4vw, 50px)` top/bottom; every overlay piece snaps to it.
+  2. Two type sizes: labels 13–14 px (mono, uppercase, 500, tracked 0.1–0.125 em) and display 48 px and up (tracked −0.01 to −0.02 em); one intro line up to 34 px at most between them.
+  3. At most one oversized element (96–112 px), flush to an edge.
+  4. The middle half of the width and the middle 60% of the height free of text.
+  5. Colours from the game's own palette; the accent only on PLAY and a LIVE mark (under 5%).
+  6. Icon controls (pause, sound) 44–56 px in one column on an edge.
+  7. PLAY the only filled button, 56 px tall or more, a chamfered slab; the other links mono text rows.
+  8. Panels at most `min(360px, 100% - 40px)` wide; hover moves 4 px at most, no glow.
+  9. Corner brackets: four 16–24 px L shapes in 1 px hairlines at 40–60% opacity, at the padding inset; no other borders.
+  10. Into the content: a static gradient to navy over the last 25–35% of the first screen, then flat navy; a −4° skew allowed on labels.
+- Messenger draws its whole UI in the game's palette (its body is empty: the text is WebGL); Lusion: "Fewer typefaces. Fewer colours. Fewer UI ideas competing for attention"; Supergiant keeps the hero art clean and puts the store buttons just below it; Bruno Simon greets with one small card, then gets out of the way.
+- **Fonts, checked against the Google Fonts API:** Chakra Petch 300–700 with italics (no 800/900); Archivo 100–900 with italics and a width axis to 125 (Black Italic at width 125 is the closest free match to the game's italic 900); Saira the same with widths 50–125; Big Shoulders Display 100–900, no italics; Unbounded 200–900, no italics; Bricolage Grotesque 200–800 with an optical-size axis. Avoid: Michroma, Orbitron, Exo 2 (clichés, confirmed), Oxanium (now Halo's menu face).
+- **Five type systems:** A Bulkhead (Big Shoulders Display 800 + Space Grotesk + JetBrains Mono: industrial signage); B Field Station (Unbounded 700 + Archivo + IBM Plex Mono: a calm modern studio); C Lab Notebook (Bricolage Grotesque + Space Mono: editorial, personal); D Console (Chakra Petch italic + IBM Plex Sans + Plex Mono: the facility's console); E Slab Voice (Archivo Black Italic width 125 + Archivo + Tomorrow: the game's own voice, the lightest download).
+
 ## 4. Problems in the current page (found 2026-11-15)
 1. **The game never pauses**, and with `gameState.running` false it still draws every frame (js/game.js `gameLoop`). Needs a pause/resume message in `js/attract.js`.
 2. **HUD pieces show through**: the network panel and the ammunition pill are drawn on the canvas, so the attract CSS that hides the page's elements does not hide them (seen in a screenshot of the page).
@@ -53,4 +70,4 @@ None yet. Drafts first; the owner chooses.
 
 ## 6. Open questions
 - Which direction (drafts to come).
-- Whether the session's network may reach the design galleries for a second, deeper round of research (needs the owner's approval).
+- ~~Whether the network may reach the design galleries~~ (approved 2026-11-15: twenty hosts added to the environment; round 2 above).

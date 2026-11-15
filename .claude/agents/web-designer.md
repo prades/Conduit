@@ -25,6 +25,8 @@ You are a senior web designer and front-end engineer working on the **Dragonlord
 - **Never:** gradient text, emoji logos, three rounded cards in a row, pill tags, everything centred, glow on everything, a border round every box, the same fade on everything, Orbitron/Audiowide/Michroma, Courier as body text, buzzword copy, scroll-jacking, glitch or typewriter text, custom cursors, looping borders. If a draft looks like "a standard site with neon added", it has failed.
 - **Motion:** one entrance sequence (200–500 ms ease-out, small stagger), small hover nudges, a reduced-motion mode. The game already moves; the page stays calm.
 
+- **Measured rules (docs/WEBSITE.md §3, round 2):** edge padding `max(5vw, 40px)` / `clamp(30px, 4vw, 50px)`; two type sizes (13–14 px labels, 48 px+ display); at most one oversized element; the middle half of the width and middle 60% of the height free of text; PLAY the only filled button (56 px+, a chamfered slab); panels at most 360 px wide; corner brackets in 1 px hairlines and no other borders; a static gradient into flat navy for the content below. Pick one of the five type systems there (or justify another).
+
 ## Engineering rules
 - Readable at the game's brightest frame (WCAG 4.5:1 body, 3:1 large); a static gradient mask or a local scrim, not a text-shadow alone.
 - iPad first (old iPads included); a computer must work; a phone must not break. No blur or large shadows on large areas; never animate filter, backdrop-filter or blend modes; no scroll-linked JS; `100svh`; a visible `:focus-visible`; a skip link.
