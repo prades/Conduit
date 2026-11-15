@@ -58,6 +58,10 @@ const PIECES = {
   // Seeper's caldera as its foot comes down: a fat gout straight up and fourteen glossy blobs arcing out all round, landing 0.8 to 1.5 tiles off and spreading into splats that sink away. ANIMATED: 12
   // columns, the throw to the last of the splats; the Seeper's foot (the floor under its middle) is the origin, at the middle of its cell.
   goosplash: { form: 936, color: '#33dd55', anim: true, cell: 256, yaws: 12, pitches: [0], h: 1.2 },
+  // METEOR RAIN's CRATER (the Ember Hood's Ultimate, a DRAFT for the owner, 2026-11-15: "Change the craters to 3d art"): where a burning rock has struck: a bowl punched below the floor with a jagged
+  // rim of broken rock thrown up round it, molten at its bottom, glowing cracks up its wall and out over the floor, rubble flung round it, the floor scorched. ANIMATED: 12 columns, the strike (white hot,
+  // the rim thrown up) cooling to a dark crust; the floor under its middle is the origin, at the middle of its cell.
+  meteorcrater: { form: 938, color: '#ff4400', anim: true, cell: 192, yaws: 12, pitches: [0], h: 0.5 },
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -180,6 +184,33 @@ window.__fx = async function (mode, piece, P) {
         drops.forEach(D => { const t = Math.max(0, Math.min(1, (u - D.lag) / 0.52)), x = Math.cos(D.a) * D.R * t, z = Math.sin(D.a) * D.R * t;
           if (t < 1) { const y = TOP * (1 - t) + 4 * D.h * t * (1 - t) + 0.03; D.m.position.set(x, y, z); const st = 1 + 0.5 * Math.abs(1 - 2 * t); D.m.scale.set(D.sz / Math.sqrt(st), D.sz * st, D.sz / Math.sqrt(st)); }   // (stretched as it flies fast, round at the top of its arc)
           else { const sp = Math.min(1, (u - D.lag - 0.52) / 0.2), w = D.sz * (1.3 + 1.7 * sp); D.m.position.set(Math.cos(D.a) * D.R, 0.02, Math.sin(D.a) * D.R); D.m.scale.set(w, D.sz * (0.45 - 0.3 * sp), w); } });   // (landed: a splat, spreading)
+      };
+      g.userData.pose(0);
+    }
+    if (piece === 'meteorcrater') {
+      const R = 1.0, NA = 26, PROF = [[0, -0.46], [0.42, -0.44], [0.64, -0.3], [0.79, 0.0], [0.89, 0.2], [0.99, 0.08], [1.12, 0]];
+      const rock = new T.MeshStandardMaterial({ color: new T.Color(0x2c2320).convertSRGBToLinear(), roughness: 0.9, metalness: 0.05, flatShading: true, side: T.DoubleSide }); rock.envMapIntensity = 0.35;
+      const lava = new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), pool = new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), scorch = new T.MeshBasicMaterial({ color: 0x070403, transparent: true, opacity: 0.5, depthWrite: false });
+      const V = (k, j) => { const a = j % NA * 2 * PI / NA, n = _hz(j % NA * 37 + 5, k * 11, 3), n2 = _hz(j % NA * 53 + 9, 7, k), [fr, fy] = PROF[k];
+        const rr = R * fr * (k >= 2 ? 0.86 + 0.28 * n : 1), y = k === 4 ? fy * (0.45 + 1.15 * n2) : k === 5 ? fy * (0.5 + n) : k === 3 ? fy + 0.1 * (n - 0.5) : fy; return [Math.cos(a) * rr, y, Math.sin(a) * rr]; };
+      const pos = [], idx = []; for (let k = 0; k < PROF.length; k++) for (let j = 0; j < NA; j++) pos.push(...V(k, j));
+      for (let k = 0; k < PROF.length - 1; k++) for (let j = 0; j < NA; j++) { const a = k * NA + j, b = k * NA + (j + 1) % NA, c = a + NA, d = b + NA; idx.push(a, b, c, b, d, c); }
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+      const bowl = new T.Group(); g.add(bowl); bowl.add(new T.Mesh(geo, rock));
+      for (const [rr, op] of [[1.75, 0.3], [1.4, 0.45]]) { const m = new T.Mesh(new T.RingGeometry(R * 0.98, R * rr, 30), scorch.clone()); m.material.opacity = op; m.rotation.x = -PI / 2; m.position.y = 0.004 + rr * 0.001; m.renderOrder = -1; g.add(m); }   // (the floor scorched round it)
+      const pl = new T.Mesh(new T.CircleGeometry(R * 0.6, 14), pool); pl.rotation.x = -PI / 2; pl.position.y = -0.4; bowl.add(pl);   // (the molten bottom)
+      const seg = (A, B, w) => { const a = new T.Vector3(...A), b = new T.Vector3(...B), m = new T.Mesh(new T.BoxGeometry(w, w * 0.5, 1), lava); m.scale.z = a.distanceTo(b) * 1.08; m.position.copy(a).add(b).multiplyScalar(0.5); m.position.y += 0.015; m.lookAt(b.x, b.y + 0.015, b.z); return m; };
+      [1, 5, 10, 14, 19, 23].forEach((j, i) => { for (let k = 1; k < PROF.length - 1; k++) bowl.add(seg(V(k, j + (k > 3 ? i % 2 : 0)), V(k + 1, j + (k + 1 > 3 ? i % 2 : 0)), 0.05 - 0.006 * k));   // (the glowing cracks: up the wall, over the rim)
+        const o = V(PROF.length - 1, j + i % 2), a = Math.atan2(o[2], o[0]) + (i % 2 ? 0.22 : -0.18), L = 1.45 + 0.35 * (i % 3) / 2; g.add(seg(o, [Math.cos(a) * R * L, 0.004, Math.sin(a) * R * L], 0.02)); });   // (and out over the floor, thin)
+      for (let i = 0; i < 11; i++) { const a = i * 2.399 + 0.5, d = R * (1.15 + 0.55 * _hz(i, 3, 8)), sz = 0.07 + 0.09 * _hz(i, 9, 2), m = new T.Mesh(new T.DodecahedronGeometry(sz, 0), rock);
+        m.position.set(Math.cos(a) * d, sz * 0.55, Math.sin(a) * d); m.rotation.set(i * 1.3, i * 2.1, i * 0.7); m.scale.y = 0.75; g.add(m); }   // (rubble flung round it)
+      const heat = new T.PointLight(0xff7a2a, 0, 3.2, 1.6); heat.position.set(0, -0.15, 0); g.add(heat);
+      const ramp = (u, st) => { let a = st[0]; for (let i = 1; i < st.length; i++) { const b = st[i]; if (u <= b[0]) { const t = (u - a[0]) / (b[0] - a[0] || 1); return new T.Color(a[1]).lerp(new T.Color(b[1]), t).convertSRGBToLinear(); } a = b; } return new T.Color(a[1]).convertSRGBToLinear(); };
+      g.userData.pose = u => {
+        bowl.scale.y = u < 0.1 ? 0.4 + 0.6 * u / 0.1 : 1;   // (the rim thrown up as it strikes)
+        pool.color.copy(ramp(u, [[0, 0xfff6c8], [0.12, 0xffc44a], [0.35, 0xff5a14], [0.65, 0x8a1c08], [1, 0x1c0a06]]));
+        lava.color.copy(ramp(u, [[0, 0xfff0a8], [0.2, 0xffa62a], [0.5, 0xff4e10], [0.8, 0x7a1806], [1, 0x2a0c06]]));
+        heat.intensity = 0.5 + 8 * Math.pow(1 - u, 1.6);
       };
       g.userData.pose(0);
     }
