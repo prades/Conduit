@@ -42,8 +42,11 @@ const footRe = new RegExp('written against build ' + esc(old) + ' \\([^)]*\\)');
 if (!footRe.test(b)) fail('bible.html\'s footer does not say "written against build ' + old + ' (…)"');
 b = b.replace(footRe, 'written against build ' + next + ' (' + when + ')');
 
-wr('game.html', g); wr('js/config.js', cfg.replace(cm[0], 'const BUILD_VERSION = "' + next + '";')); wr('bible.html', b);
-console.log('stamped ' + next + ' (was ' + old + '): game.html ' + tags + ' cache-busters and __PAGE_BUILD, js/config.js BUILD_VERSION, bible.html its number and footer (' + when + ')');
+// index.html (the home page, build 2026-11-15e): every build number marked data-build (its readouts), when it has any
+let ix = rd('index.html'); const ixOld = ' data-build>' + old + '<', ixN = ix.split(ixOld).length - 1;
+if (ixN) ix = ix.split(ixOld).join(' data-build>' + next + '<');
+wr('game.html', g); wr('js/config.js', cfg.replace(cm[0], 'const BUILD_VERSION = "' + next + '";')); wr('bible.html', b); if (ixN) wr('index.html', ix);
+console.log('stamped ' + next + ' (was ' + old + '): game.html ' + tags + ' cache-busters and __PAGE_BUILD, js/config.js BUILD_VERSION, bible.html its number and footer (' + when + ')' + (ixN ? ', index.html ' + ixN + ' build number' + (ixN > 1 ? 's' : '') : ''));
 
 // the pictures (tools/images.js; build 2026-11-11c): a changed picture's WebP copy and fingerprint, js/imgmap.js and game.html's image preloads; then the players' page and its one script
 // (tools/bundle.js; build 2026-11-11b), made again from game.html and js/*.js, so they name this build and hold this code

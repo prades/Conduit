@@ -1,350 +1,236 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dragonlord — Home</title>
+  <title>Dragonlord</title>
+  <!-- The home page: CONSOLE, the facility's monitoring console over the live game (the owner chose it, 2026-11-15, of six drafts: design/web/round1/; docs/WEBSITE.md). Type: Chakra Petch + IBM Plex Sans + IBM Plex Mono. A build number marked data-build is kept current by tools/stamp.js. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@1,600;1,700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --navy: #050810;
+      --navy-2: #0a1122;
+      --ink: #e4ecf8;
+      --dim: #9fb2cc;
+      --faint: #6f84a3;
+      --teal: #19e6c1;
+      --teal-ink: #03140f;
+      --px: max(5vw, 40px);
+      --py: clamp(30px, 4vw, 50px);
+      --display: 'Chakra Petch', 'Segoe UI', sans-serif;
+      --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: var(--navy); -webkit-text-size-adjust: 100%; }
+    body { background: var(--navy); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.6; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
 
-    body {
-      background: #040810;
-      color: #c8d8f0;
-      font-family: 'Courier New', monospace;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+    .skip { position: absolute; left: var(--px); top: 8px; z-index: 10; transform: translateY(-200%); background: var(--navy); color: var(--ink); padding: 10px 14px; font: 500 13px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .skip:focus { transform: none; }
 
-    /* The live background: the Conduit facility (play.html?attract: the game's scripts as one file, tools/bundle.js) in an iframe that takes no clicks, under a scrim that keeps the text readable */
-    #bg {
-      position: fixed; inset: 0; z-index: 0; overflow: hidden;
-      pointer-events: none;
-      background: radial-gradient(ellipse at 50% 35%, #0b1626 0%, #040810 72%);
-    }
-    #bg iframe {
-      position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
-      opacity: 0; transition: opacity 3.5s ease;
-    }
-    #bg.ready iframe { opacity: 0.9; }
-    #bg::after {
-      content: ""; position: absolute; inset: 0;
+    /* ── the live background (as index.html): the facility in an iframe that takes no taps ── */
+    #bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 38%, #0b1626 0%, #040810 72%); }
+    #bg iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; opacity: 0; transition: opacity 3.5s ease; }
+    #bg.ready iframe { opacity: 1; }
+    /* the console's mask: static, drawn once. A light vignette, a darker band at the top for the readouts, the right edge for the index, and the lower-left for the title block */
+    #bg::after { content: ""; position: absolute; inset: 0;
       background:
-        radial-gradient(ellipse at 50% 45%, rgba(4,8,16,0.2) 0%, rgba(4,8,16,0.6) 100%),
-        linear-gradient(rgba(4,8,16,0.3), rgba(4,8,16,0.05) 40%, rgba(4,8,16,0.45));
-    }
+        linear-gradient(to bottom, rgba(5,8,16,.72) 0, rgba(5,8,16,0) 22%),
+        radial-gradient(ellipse 70% 60% at 0% 100%, rgba(5,8,16,.88) 0%, rgba(5,8,16,.55) 45%, rgba(5,8,16,0) 75%),
+        radial-gradient(ellipse 45% 55% at 100% 100%, rgba(5,8,16,.85) 0%, rgba(5,8,16,0) 70%),
+        radial-gradient(ellipse at 50% 45%, rgba(5,8,16,0) 40%, rgba(5,8,16,.45) 100%); }
 
-    .content { position: relative; z-index: 1; }
+    main { position: relative; z-index: 1; }
 
-    /* ── Hero ── */
-    .hero {
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center; padding: 40px 20px;
-    }
+    /* ── the first screen: an instrument over the feed ── */
+    .feed { position: relative; height: 100vh; height: 100svh; min-height: 560px; }
+    .feed::after { /* the static fall into the navy below: the last 30% of the screen */
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 30%; pointer-events: none; z-index: 0;
+      background: linear-gradient(to bottom, rgba(5,8,16,0) 0%, rgba(5,8,16,.55) 55%, var(--navy) 100%); }
+    .feed > * { position: absolute; z-index: 1; }
 
-    @keyframes floatIcon {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-10px); }
-    }
+    .br { width: 20px; height: 20px; opacity: .5; border-color: var(--ink); border-style: solid; border-width: 0; }
+    .br.tl { left: calc(var(--px) - 14px); top: calc(var(--py) - 14px); border-left-width: 1px; border-top-width: 1px; }
+    .br.tr { right: calc(var(--px) - 14px); top: calc(var(--py) - 14px); border-right-width: 1px; border-top-width: 1px; }
+    .br.bl { left: calc(var(--px) - 14px); bottom: calc(var(--py) - 14px); border-left-width: 1px; border-bottom-width: 1px; }
+    .br.br-r { right: calc(var(--px) - 14px); bottom: calc(var(--py) - 14px); border-right-width: 1px; border-bottom-width: 1px; }
 
-    /* Logo image — black-on-white PNG colorized to match the site palette */
-    .hero-logo {
-      display: block;
-      max-width: min(580px, 88vw);
-      height: auto;
-      margin: 0 auto 22px;
-      /*
-        1. invert()  → white background becomes black, black strokes become white
-        2. sepia+saturate → tint the white strokes to warm orange-gold
-        3. drop-shadow → the signature site glow
-        4. mix-blend-mode: screen → the now-black background disappears against
-           the dark page, leaving only the glowing strokes visible
-      */
-      filter:
-        invert(1)
-        sepia(1)
-        saturate(8)
-        brightness(1.15)
-        drop-shadow(0 0 16px rgba(255,120,0,0.7))
-        drop-shadow(0 0 36px rgba(255,80,0,0.35));
-      mix-blend-mode: screen;
-      animation: floatIcon 3.5s ease-in-out infinite;
-    }
+    .label { font: 500 13px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+    .ro-tl { left: var(--px); top: var(--py); display: flex; align-items: center; gap: 10px; color: var(--ink); }
+    .dot { width: 8px; height: 8px; background: var(--teal); flex: none; }
+    .ro-tl .state { color: var(--teal); }
+    .ro-tr { right: var(--px); top: var(--py); text-align: right; }
+    .ro-tr b { font-weight: 500; color: var(--ink); text-transform: none; }
 
-    /* Fallback text title shown only when logo.png is absent */
-    .hero h1 {
-      font-size: clamp(2.6rem, 7vw, 5rem);
-      font-weight: 900;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      background: linear-gradient(135deg, #ff6600, #ffcc00, #ff3300);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: none;
-      filter: drop-shadow(0 0 18px rgba(255,100,0,0.5));
-      margin-bottom: 14px;
-    }
+    .title { left: var(--px); bottom: var(--py); max-width: calc(100% - 2 * var(--px)); }
+    .title .label { display: block; margin-bottom: 10px; }
+    .wordmark { font: italic 700 clamp(64px, min(9.4vw, 12vh), 112px)/.86 var(--display); letter-spacing: -.02em; color: var(--ink); text-transform: uppercase; margin-left: -.04em; }
+    .conduit { display: flex; align-items: center; gap: 22px; margin-top: 18px; flex-wrap: wrap; }
+    .play { display: inline-flex; align-items: center; gap: 14px; height: 58px; padding: 0 30px 0 26px; background: var(--teal); color: var(--teal-ink);
+      font: italic 700 22px/1 var(--display); letter-spacing: .04em; text-transform: uppercase;
+      clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%, 0 16px); transition: transform .2s ease-out; }
+    .play:hover { transform: translateX(4px); }
+    .play svg { width: 14px; height: 16px; fill: currentColor; }
+    .conduit .what { display: grid; gap: 3px; }
+    .conduit .what .label { margin: 0; color: var(--ink); }
+    .conduit .what .label i { font-style: normal; color: var(--teal); }
+    .conduit .what .sub { font: 400 14px/1.35 var(--sans); color: var(--dim); }
 
-    .hero .tagline {
-      font-size: clamp(0.85rem, 2vw, 1.1rem);
-      color: #7bb8e8;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      margin-bottom: 32px;
-      opacity: 0.85;
-    }
+    .index { right: var(--px); bottom: var(--py); width: min(236px, 100% - 2 * var(--px)); list-style: none; }
+    .index .head { margin-bottom: 6px; color: var(--faint); text-align: right; }
+    .index a { display: flex; align-items: center; gap: 12px; min-height: 44px; font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); transition: transform .2s ease-out; }
+    .index a .n { color: var(--faint); }
+    .index a .lead { flex: 1; height: 1px; align-self: center; opacity: .35;
+      background-image: linear-gradient(to right, var(--dim) 1px, transparent 1px); background-size: 5px 1px; }
+    .index a .arr { color: var(--dim); }
+    .index a:hover { transform: translateX(-4px); }
+    .index a:hover .arr { color: var(--teal); }
 
-    .hero .bio {
-      max-width: 560px;
-      font-size: 1rem;
-      line-height: 1.8;
-      color: #a0bcd8;
-      margin-bottom: 40px;
-    }
+    /* ── below the first screen: flat navy ── */
+    .below { position: relative; background: var(--navy); padding: clamp(48px, 7vw, 96px) var(--px) var(--py); }
+    .row { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2.4fr); gap: 20px 48px; max-width: 1180px; padding: 40px 0; }
+    .row + .row { margin-top: 8px; }
+    .row .meta { display: grid; align-content: start; gap: 8px; padding-top: 10px; }
+    .row .meta .n { color: var(--teal); }
+    .row h2 { font: italic 600 clamp(40px, 5vw, 56px)/1 var(--display); letter-spacing: -.01em; text-transform: uppercase; margin-bottom: 14px; }
+    .row p { max-width: 62ch; color: var(--dim); }
+    .row .core { font: 500 13px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink); margin-bottom: 12px; }
+    .go { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 14px; font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); transition: transform .2s ease-out; }
+    .go span { color: var(--teal); }
+    .go:hover { transform: translateX(4px); }
+    .about p { color: var(--ink); font-size: 19px; line-height: 1.6; }
+    .about p + p { margin-top: 14px; color: var(--dim); font-size: 17px; }
+    footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; max-width: 1180px; padding-top: 56px; color: var(--faint); }
+    footer a { color: var(--dim); }
+    footer a:hover { color: var(--ink); }
 
-    .scroll-hint {
-      color: #4a7a9e; font-size: 12px; letter-spacing: 2px;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50%       { opacity: 1; }
-    }
+    /* ── one entrance: the readouts, then the title block, then the index ── */
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .in { animation: rise .42s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 50ms + 120ms); }
 
-    /* ── Section ── */
-    .section {
-      max-width: 960px; margin: 0 auto; padding: 80px 24px;
+    @media (max-width: 900px) {
+      .row { grid-template-columns: 1fr; gap: 6px; }
+      .row .meta { grid-auto-flow: column; justify-content: start; gap: 16px; padding: 0; }
     }
-
-    .section-title {
-      font-size: 1rem; letter-spacing: 4px; text-transform: uppercase;
-      color: #ff6600; margin-bottom: 48px; text-align: center;
-      position: relative;
+    @media (max-aspect-ratio: 1/1) and (min-width: 761px) {  /* an upright iPad: the index rises above the title block and keeps to the edge */
+      .index { width: 160px; bottom: calc(var(--py) + 200px); }
+      .index a .lead { display: none; }
+      .index a .arr { margin-left: auto; }
     }
-    .section-title::after {
-      content: ''; display: block; width: 60px; height: 2px;
-      background: linear-gradient(to right, #ff6600, #ffcc00);
-      margin: 12px auto 0;
+    @media (max-width: 760px) {  /* (a phone: not a target, but nothing may break) */
+      .index { bottom: auto; top: calc(var(--py) + 64px); }
+      .ro-tr { display: none; }
+      .wordmark { font-size: clamp(36px, 12.5vw, 64px); }   /* (the name fits a phone's width) */
     }
-
-    /* ── Project Grid ── */
-    .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-
-    .project-card {
-      position: relative; overflow: hidden;
-      border: 1px solid rgba(255,100,0,0.2);
-      border-radius: 12px;
-      background: rgba(10,20,40,0.7);
-      padding: 28px 24px;
-      text-decoration: none;
-      color: inherit;
-      transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
-      backdrop-filter: blur(6px);
-    }
-    .project-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(255,150,0,0.55);
-      box-shadow: 0 12px 40px rgba(255,100,0,0.18);
-    }
-    .project-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,100,0,0.06), transparent 60%);
-      pointer-events: none;
-    }
-
-    .card-badge {
-      display: inline-block; font-size: 10px; letter-spacing: 2px;
-      text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
-      margin-bottom: 14px; font-weight: bold;
-    }
-    .badge-new    { background: rgba(255,200,0,0.15); color: #ffcc00; border: 1px solid #ffcc0044; }
-    .badge-game   { background: rgba(0,200,120,0.12); color: #00e676; border: 1px solid #00e67644; }
-    .badge-active { background: rgba(100,160,255,0.12); color: #7cb8ff; border: 1px solid #7cb8ff44; }
-    .badge-docs   { background: rgba(25,230,193,0.12); color: #19e6c1; border: 1px solid #19e6c144; }
-
-    .project-card h3 {
-      font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 10px;
-      color: #e8f0ff;
-    }
-    .project-card p {
-      font-size: 0.875rem; line-height: 1.7; color: #7a99bc; margin-bottom: 18px;
-    }
-    .project-card .card-core {
-      margin: -6px 0 10px; font-size: 0.72rem; letter-spacing: 2px; color: #00ff88;
-    }
-    .card-tech {
-      display: flex; flex-wrap: wrap; gap: 6px;
-    }
-    .tag {
-      font-size: 10px; padding: 2px 8px; border-radius: 3px;
-      background: rgba(255,255,255,0.05); color: #6a8fb0;
-      border: 1px solid rgba(255,255,255,0.08); letter-spacing: 1px;
-    }
-    .card-arrow {
-      position: absolute; top: 24px; right: 24px;
-      color: rgba(255,150,0,0.4); font-size: 18px;
-      transition: color 0.2s, transform 0.2s;
-    }
-    .project-card:hover .card-arrow {
-      color: #ff9900; transform: translate(3px, -3px);
-    }
-
-    /* ── Featured project glow ── */
-    .project-card.featured {
-      border-color: rgba(255,200,0,0.35);
-      box-shadow: 0 0 30px rgba(255,180,0,0.1);
-    }
-
-    /* ── About strip ── */
-    .about-strip {
-      background: rgba(10,25,50,0.6);
-      border-top: 1px solid rgba(255,100,0,0.12);
-      border-bottom: 1px solid rgba(255,100,0,0.12);
-      padding: 60px 24px;
-      text-align: center;
-    }
-    .about-strip p {
-      max-width: 620px; margin: 0 auto;
-      line-height: 1.9; color: #8aafc8; font-size: 0.95rem;
-    }
-    .about-strip strong { color: #ffcc00; }
-
-    /* ── Footer ── */
-    footer {
-      text-align: center; padding: 40px 20px;
-      color: #2a4060; font-size: 12px; letter-spacing: 2px;
-    }
-    footer a { color: #3a6080; text-decoration: none; }
-    footer a:hover { color: #7cb8ff; }
-
-    /* ── Divider ── */
-    .divider {
-      border: none; height: 1px;
-      background: linear-gradient(to right, transparent, rgba(255,100,0,0.18), transparent);
-      margin: 0;
+    @media (prefers-reduced-motion: reduce) {
+      .in { animation: none; }
+      .play, .index a, .go { transition: none; }
+      #bg iframe { transition: none; }
     }
   </style>
 </head>
 <body>
+<a class="skip" href="#projects">Skip to the projects</a>
 
-<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<!-- the live background (the script at the end): a dark gradient until the facility is showing -->
 <div id="bg"></div>
 
-<div class="content">
+<main>
+  <section class="feed" aria-label="Dragonlord">
+    <span class="br tl" aria-hidden="true"></span><span class="br tr" aria-hidden="true"></span>
+    <span class="br bl" aria-hidden="true"></span><span class="br br-r" aria-hidden="true"></span>
 
-  <!-- ── Hero ── -->
-  <section class="hero">
-    <div class="dragon-icon">🐉</div>
-    <h1>Dragonlord</h1>
-    <p class="tagline">Game Developer &amp; Digital Architect</p>
-    <p class="bio">
-      I build worlds from code. Browser games, 3D environments, and interactive
-      experiences crafted from the ground up — no engines, just raw creativity
-      and JavaScript.
-    </p>
-    <p class="scroll-hint">▼ &nbsp; explore projects &nbsp; ▼</p>
-  </section>
+    <p class="label ro-tl in" style="--i:0"><span class="dot" aria-hidden="true"></span>Facility feed · <span class="state">Live</span></p>
+    <p class="label ro-tr in" style="--i:1">Conduit build <b data-build>2026-11-15e</b><br><span id="today">2026-11-15</span></p>
 
-  <hr class="divider">
-
-  <!-- ── Projects ── -->
-  <section class="section">
-    <h2 class="section-title">Public Projects</h2>
-    <div class="projects">
-      <!-- Conduit -->
-      <a class="project-card featured" href="play.html">
-        <span class="card-arrow">↗</span>
-        <span class="card-badge badge-game">Game</span>
-        <h3>Conduit</h3>
-        <p class="card-core">C.O.R.E. STRATEGY · Combat Operations Roguelite Evolutions</p>
-        <p>
-          A top-down survival game in a ruined research facility: restore its
-          power room by room, recruit and evolve a squad of followers, and fight
-          what lives in the arena. Pure canvas, zero dependencies.
-        </p>
-        <div class="card-tech">
-          <span class="tag">Canvas 2D</span>
-          <span class="tag">Vanilla JS</span>
-          <span class="tag">Followers</span>
-          <span class="tag">3D Props</span>
+    <div class="title">
+      <span class="label in" style="--i:2">Game Developer &amp; Digital Architect</span>
+      <h1 class="wordmark in" style="--i:3">Dragonlord</h1>
+      <div class="conduit in" style="--i:4">
+        <a class="play" href="play.html" aria-label="Play Conduit"><svg viewBox="0 0 14 16" aria-hidden="true"><path d="M0 0 14 8 0 16z"/></svg>Play</a>
+        <div class="what">
+          <span class="label"><i>01</i> &nbsp;Conduit · C.O.R.E. Strategy</span>
+          <span class="sub">Combat Operations Roguelite Evolutions</span>
         </div>
-      </a>
-
-      <!-- Conduit's game bible (bible.html): the design reference, one page -->
-      <a class="project-card featured" href="bible.html">
-        <span class="card-arrow">↗</span>
-        <span class="card-badge badge-docs">Game Bible</span>
-        <h3>Conduit · Game Bible</h3>
-        <p>
-          The whole game on one page: the facility room by room, the classes,
-          every follower form and creature, the rules and their numbers, the
-          interface, how it is built, and what is still to be decided.
-        </p>
-        <div class="card-tech">
-          <span class="tag">Design Reference</span>
-          <span class="tag">Systems</span>
-          <span class="tag">Numbers</span>
-          <span class="tag">Art</span>
-        </div>
-      </a>
-
-      <!-- ROM Lab -->
-      <a class="project-card featured" href="romlab/index.html">
-        <span class="card-arrow">↗</span>
-        <span class="card-badge badge-new">New</span>
-        <h3>ROM Lab</h3>
-        <p>
-          A sample workstation. Scans a ROM for its instrument samples, or
-          splits an audio file into drum, bass, vocal and instrumental stems —
-          then plays them on pads with a step sequencer, FX and MP3 export.
-        </p>
-        <div class="card-tech">
-          <span class="tag">BRR Decoder</span>
-          <span class="tag">Stem Splitter</span>
-          <span class="tag">Web Audio API</span>
-          <span class="tag">Sampler</span>
-          <span class="tag">Sequencer</span>
-        </div>
-      </a>
-
+      </div>
     </div>
+
+    <nav class="index in" style="--i:5" aria-label="Other projects">
+      <p class="label head">Index · 04</p>
+      <a href="bible.html"><span class="n">02</span>Game Bible<span class="lead" aria-hidden="true"></span><span class="arr">↗</span></a>
+      <a href="romlab/index.html"><span class="n">03</span>ROM Lab<span class="lead" aria-hidden="true"></span><span class="arr">↗</span></a>
+      <a href="https://github.com/prades" target="_blank" rel="noopener"><span class="n">04</span>GitHub<span class="lead" aria-hidden="true"></span><span class="arr">↗</span></a>
+    </nav>
   </section>
 
-  <hr class="divider">
-
-  <!-- ── About ── -->
-  <div class="about-strip">
-    <p>
-      I go by <strong>Dragonlord</strong> online. I'm passionate about pushing
-      what the browser can do — from real-time 3D with <strong>Three.js</strong>
-      to complex game systems built on raw Canvas APIs. Everything you see here
-      runs natively in your browser, no plugins required.
-    </p>
+  <div class="below" id="projects">
+    <section class="row">
+      <div class="meta"><span class="label n">01</span><span class="label">Game</span></div>
+      <div>
+        <h2>Conduit</h2>
+        <p class="core">C.O.R.E. Strategy · Combat Operations Roguelite Evolutions</p>
+        <p>A top-down survival game in a ruined research facility: restore its power room by room, recruit and evolve a squad of followers, and fight what lives in the arena. Pure canvas, zero dependencies.</p>
+        <a class="go" href="play.html">Play Conduit <span>→</span></a>
+      </div>
+    </section>
+    <section class="row">
+      <div class="meta"><span class="label n">02</span><span class="label">Design reference</span></div>
+      <div>
+        <h2>Game Bible</h2>
+        <p>The whole game on one page: the facility room by room, the classes, every follower form and creature, the rules and their numbers, the interface, how it is built, and what is still to be decided.</p>
+        <a class="go" href="bible.html">Open the Bible <span>↗</span></a>
+      </div>
+    </section>
+    <section class="row">
+      <div class="meta"><span class="label n">03</span><span class="label">Sample workstation</span></div>
+      <div>
+        <h2>ROM Lab</h2>
+        <p>A sample workstation. Scans a ROM for its instrument samples, or splits an audio file into drum, bass, vocal and instrumental stems — then plays them on pads with a step sequencer, FX and MP3 export.</p>
+        <a class="go" href="romlab/index.html">Open ROM Lab <span>↗</span></a>
+      </div>
+    </section>
+    <section class="row">
+      <div class="meta"><span class="label n">04</span><span class="label">Code</span></div>
+      <div>
+        <h2>GitHub</h2>
+        <a class="go" href="https://github.com/prades" target="_blank" rel="noopener">github.com/prades <span>↗</span></a>
+      </div>
+    </section>
+    <section class="row about">
+      <div class="meta"><span class="label n">—</span><span class="label">About</span></div>
+      <div>
+        <p>I build worlds from code. Browser games, 3D environments, and interactive experiences crafted from the ground up — no engines, just JavaScript.</p>
+        <p>I go by Dragonlord online. From real-time 3D with Three.js to complex game systems built on raw Canvas APIs, everything here runs natively in your browser, no plugins required.</p>
+      </div>
+    </section>
+    <footer class="label">
+      <span>© Dragonlord</span>
+      <span>Conduit build <span style="text-transform:none" data-build>2026-11-15e</span> · <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub ↗</a></span>
+    </footer>
   </div>
+</main>
 
-  <hr class="divider">
-
-  <!-- ── Footer ── -->
-  <footer>
-    <p>© Dragonlord &nbsp;·&nbsp; <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></p>
-  </footer>
-
-</div>
-
-<!-- ── Background: the Conduit facility, dark, with followers searching its halls (play.html?attract, js/attract.js) ── -->
 <script>
 (function () {
-  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  // today's date for the top-right readout (static otherwise)
+  try { var d = new Date(), t = document.getElementById('today'); t.textContent = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); } catch (e) {}
+})();
+(function () {
+  // The facility (as index.html): loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
   var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
   if ((mq && mq.matches) || net.saveData) return;
   var frame = null, giveUp = null;
   function start() {
     frame = document.createElement('iframe');
-    frame.src = 'play.html?attract';   // (the players' page: one script file, tools/bundle.js)
+    frame.src = 'play.html?attract';
     frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
     bg.appendChild(frame);
-    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);
   }
   window.addEventListener('message', function (e) {
     if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
@@ -353,6 +239,5 @@
   if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
 })();
 </script>
-
 </body>
 </html>
