@@ -173,6 +173,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Specimens | `SPECIMENS.md` |
 | Startup/loading | `STARTUP.md` |
 | UI presentation | `UI-STYLE.md` |
+| The website (the Dragonlord home page over the live game: its intent, research, problems and the owner's decisions; its agent is `../.claude/agents/web-designer.md`) | `WEBSITE.md` |
 | Art process | `ART-PROCESS.md` |
 | Visual reference | `STYLE-CRYSTAL-LAB.md` |
 | Feature/decision templates | `FEATURE-SPEC-TEMPLATE.md` |
