@@ -1,0 +1,14 @@
+{
+ "piece": "meteorcrater",
+ "cell": 192,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 96.00000000000004,
+  "y": 96.00000000000004
+ },
+ "unitsPerCell": 4.533333333333333,
+ "upright": false
+}
