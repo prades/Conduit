@@ -668,6 +668,14 @@ function facilityDrawFloorOn(obj, px, py) {
     _fpDrawOps(ops, px, py + TILE_H, key);
     if (typeof _fpTileLight === "function" && obj.room) _fpDarkTileOver(px, py + TILE_H, _fpTileLight(obj.x, obj.y, obj.room));   // the tile's light: its room's, or a pool from an open door, over the lit room's dark its sprite carries (js/facilitystyle.js)
 }
+// THE GAME'S OWN TILE UNDER A FACILITY TILE (build 2026-11-15b): a facility tile whose first mark is an opaque base (painted a hair wider than the tile: FP_BASE_EX, FP_BASE_EY) covers
+// the game's own tile under it whole, so js/game.js leaves that one out. The owner's iPad readout in the Main Hallway, 2026-11-15: 27 frames a second, the browser's painting 25 of every
+// 37 ms; the floor was 894 of the 941 pictures drawn a frame, 7.0 of their 7.3 M pixels, half of it hidden. Only once the tile's picture is made (its first frame draws both, as before).
+function facilityFloorHides(obj) {
+    const S = _fp && _fp.spr; if (!S) return false;
+    const key = obj.x + "," + obj.y; if (!S.get(key)) return false;
+    const ops = _fp.floorOps && _fp.floorOps.get(key), o = ops && ops[0]; return !!(o && o.t === "D" && o.x);
+}
 // (cx, cy) is the middle of the tile on screen; key names the tile's cached sprite
 // The opaque base of a floor tile is painted this many pixels wider (EX) and higher (EY) than the tile's diamond, over the fringe of the tile sprite under it and so that two tiles overlap and no hair of the ground shows between them.
 // The DARK of an unlit tile (js/facilitystyle.js _fpDarkTile) must cover that whole base, and a hair more for its antialiased edge, or the base's fringe stays bright along every edge of every tile: a dotted white grid on an unlit floor.
@@ -707,6 +715,21 @@ function _fpDrawOps(ops, cx, cy, key) {
         const A0 = typeof _fpFloorA0 === "function" ? _fpFloorA0() : 0; if (A0 > 0.002) { ctx.fillStyle = "rgba(6,11,22," + A0.toFixed(3) + ")"; ctx.fill(); } ctx.restore(); }   // (the same lit room's dark, with no sprite to carry it)
     for (let i = 0; i < ops.length; i++) if (ops[i].t === "G" && ops[i].fl) _fpPaintOps(ctx, [ops[i]], cx, cy, false);
 }
+// A FLICKERING POOL OF LIGHT ON A TILE (`light` decor with `flicker`: the G marks painted live, below): the tile's diamond in the light's colour, added (lighter) at its strength this
+// frame. Stamped from a diamond painted once per colour (build 2026-11-15b: it was a shape built and filled every frame, 244 of them a frame in the Main Hallway, where the owner's iPad
+// ran at 27 frames a second); the same light. Null with no canvas to paint on (the tests), and then it is filled as before.
+const _fpGlowPics = new Map();
+function _fpGlowPic(hex) {
+    let c = _fpGlowPics.get(hex); if (c !== undefined) return c;
+    c = null;
+    try {
+        if (typeof document !== "undefined" && document.createElement) {
+            const W = TILE_W, H = TILE_H, cv = document.createElement("canvas"); cv.width = W * 2 + 2; cv.height = H * 2 + 2; const g = cv.getContext("2d");
+            if (g && g.fill) { g.fillStyle = _fpRgba(hex, 1); g.beginPath(); g.moveTo(W + 1, 1); g.lineTo(W * 2 + 1, H + 1); g.lineTo(W + 1, H * 2 + 1); g.lineTo(1, H + 1); g.closePath(); g.fill(); c = cv; }
+        }
+    } catch (e) { c = null; }
+    _fpGlowPics.set(hex, c); return c;
+}
 // staticPass: paint the marks (not the light); otherwise only the light
 function _fpPaintOps(g, ops, cx, cy, staticPass, wide) {
     const W = TILE_W, H = TILE_H, f = _fpFrame();
@@ -714,7 +737,11 @@ function _fpPaintOps(g, ops, cx, cy, staticPass, wide) {
     for (let i = 0; i < ops.length; i++) {
         const o = ops[i], t = o.t;
         if (t === "G" && !o.fl) { if (!staticPass) continue; g.fillStyle = _fpRgba(o.c, o.a * 0.8); g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); continue; }   // a steady light is baked into the sprite as a warm wash
-        if (t === "G") { if (staticPass) continue; const fl = o.fl ? 0.7 + 0.3 * Math.sin(f * 0.07 * o.fl + o.fl * 3) * (Math.sin(f * 0.013 * o.fl) > 0.2 ? 1 : 0.4) : 1; g.globalCompositeOperation = "lighter"; g.fillStyle = _fpRgba(o.c, o.a * fl); g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); g.globalCompositeOperation = "source-over"; continue; }
+        if (t === "G") { if (staticPass) continue; const fl = o.fl ? 0.7 + 0.3 * Math.sin(f * 0.07 * o.fl + o.fl * 3) * (Math.sin(f * 0.013 * o.fl) > 0.2 ? 1 : 0.4) : 1; g.globalCompositeOperation = "lighter";
+            const pic = g._k < 1 ? null : _fpGlowPic(o.c);   // (stamped: _fpGlowPic; through the dimmed pen, which darkens a colour and never a picture, filled as before)
+            if (pic) { const a0 = g.globalAlpha; g.globalAlpha = a0 * o.a * fl; g.drawImage(pic, cx - W - 1, cy - H - 1); g.globalAlpha = a0; }
+            else { g.fillStyle = _fpRgba(o.c, o.a * fl); g.beginPath(); g.moveTo(cx, cy - H); g.lineTo(cx + W, cy); g.lineTo(cx, cy + H); g.lineTo(cx - W, cy); g.closePath(); g.fill(); }
+            g.globalCompositeOperation = "source-over"; continue; }
         if (!staticPass) continue;
         if (t === "D") { const ex = wide && o.x ? wide[0] : 0, ey = wide && o.x ? wide[1] : 0; g.fillStyle = o.c; g.beginPath(); g.moveTo(cx, cy - H - ey); g.lineTo(cx + W + ex, cy); g.lineTo(cx, cy + H + ey); g.lineTo(cx - W - ex, cy); g.closePath(); g.fill(); }
         else if (t === "A") {   // ambient darkening along one edge: a gradient in the tile's own (u, v) frame, so its lines run parallel to the edge, from the edge in over 0.55 tile

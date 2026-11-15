@@ -4,6 +4,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15b` · branch `claude/start-game-project-HSh7Z` · the floor painted once: less for the iPad to paint each frame
+- **The report** (the owner, 2026-11-15, a screenshot of Settings → PERFORMANCE on the iPad, Main Hallway, build `2026-11-15a`, graphics LOW): **FPS 27**, frame 37 ms = logic 0.6 + draw 8.6 + catch-up 2.1 + **browser 25.5**; gaps between frames steady at 38 to 48 ms.
+  - The game's own work was 11 ms of each frame. The rest was the browser painting what the game drew.
+- **Found** (headless Chromium, the same spot at the iPad's size, 1366 by 892, graphics LOW): the canvas was asked for **4,021 operations a frame**. That included 941 pictures covering 7.3 M pixels (six times the screen) and 415 filled shapes, 244 of them drawn with additive light.
+  - The page's own controls changed about once a frame and only by writing the same value again, and the CORE cube's canvas did 18 operations. So the cost is the game's canvas.
+  - **The floor was painted twice.** Every tile drew the game's own tile (447 pictures, 3.4 M pixels), then the facility's tile over it, whose opaque base covers it whole.
+  - **Every flickering pool of light** (the lamps' light on the floor) was a shape built and filled each frame, tile by tile.
+- **Fixed** (the same look):
+  - **The game's own tile is left out under a facility tile with an opaque base** (js/game.js; js/facilitydecor.js `facilityFloorHides`), once that tile's picture is made. The bridge's grating and the fill cells under the walls are as before.
+  - **A flickering light is stamped** from a diamond painted once per colour, at its strength this frame (`_fpGlowPic`). Through the dimmed pen it is filled as before, since the pen darkens a colour and never a picture.
+- **After** (the same spot): **2,110 operations a frame** (48% fewer), 738 pictures covering 5.7 M pixels, 171 shapes filled.
+- **The look:** the same frames drawn the new and the old way in 15 rooms differ by at most 13 levels (of 255), along the seams between floor tiles and inside the pools of light. The seams are a hair lighter (44,324 pixels lighter, 4,555 darker in the Main Hallway), because the old dark tile no longer shows through them.
+- **Tests:** `tests/floorpaint.js` (new) checks the wiring, the Main Hallway and the arena (the game's tile left out under all 474 and 379 tiles, the lights stamped, the frame within 16 levels of the old), and the dimmed pen. `tests/run.js`.
+- `js/game.js`, `js/facilitydecor.js`, `tests/floorpaint.js`, `tests/run.js`, `docs/TUTORIAL.md` (Frame cost).
+- **Not measured on an iPad.** How much faster the iPad paints is not known until the readout is taken again there.
+
 ### Build `2026-11-15a` · branch `claude/start-game-project-HSh7Z` · the pictures kept to a budget: no slowdown after minutes of play
 - **The report** (the owner, 2026-11-15): "So every single time I be playing my game, it starts lagging, or so the frame rate dips to about half after like 5 minutes of play. Can we make it to where it doesn't do that and loads new assets correctly? Or I don't think it's because I'm on the iPad."
 - **Found.** The test: headless Chromium, the player taken to a new room every 8 seconds, every canvas the game made tracked while it lived, counted after a full garbage collection. The game kept a picture of every floor tile it had ever drawn. For the props it kept every slice, a silhouette of each slice, and a dimmed copy for every light level a prop was ever seen at. None was ever let go. After 3.5 minutes that was **380 MB of canvases, still climbing** (floor tiles 137 MB, dimmed props 134 MB, slices and their silhouettes 50 MB). The creatures, the script's own memory (about 30 MB) and the followers stayed steady.
