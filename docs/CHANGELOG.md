@@ -2,6 +2,25 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-15
+
+### Build `2026-11-15a` · branch `claude/start-game-project-HSh7Z` · the pictures kept to a budget: no slowdown after minutes of play
+- **The report** (the owner, 2026-11-15): "So every single time I be playing my game, it starts lagging, or so the frame rate dips to about half after like 5 minutes of play. Can we make it to where it doesn't do that and loads new assets correctly? Or I don't think it's because I'm on the iPad."
+- **Found.** The test: headless Chromium, the player taken to a new room every 8 seconds, every canvas the game made tracked while it lived, counted after a full garbage collection. The game kept a picture of every floor tile it had ever drawn. For the props it kept every slice, a silhouette of each slice, and a dimmed copy for every light level a prop was ever seen at. None was ever let go. After 3.5 minutes that was **380 MB of canvases, still climbing** (floor tiles 137 MB, dimmed props 134 MB, slices and their silhouettes 50 MB). The creatures, the script's own memory (about 30 MB) and the followers stayed steady.
+  - On an iPad, the more canvas memory the browser holds, the slower it draws. Past iPadOS's limit (a few hundred MB) it can make no new canvas, which likely explains pictures not loading.
+  - So it is not the iPad: the same climb happens on any device, and the iPad feels it first.
+- **Fixed** (js/facilitydecor.js `FP_FLOOR_SPR`, js/propsprites.js `PS_MEM`). Each picture is counted as it is made and stamped with the frame it is drawn in. Past a budget, those least recently drawn are let go, their memory released at once, down to three quarters of the budget. One drawn this frame is never let go, and one let go is made again, the same picture, the next time it is on the screen. The rock walls' pictures already worked this way (build `2026-11-12c`).
+  - **Budgets** (the agent's, provisional): floor 6 M pixels (about 24 MB), props 12 M (about 48 MB). On a bigger screen they grow to 6 and 12 times the screen's pixels, so one screen's pictures always fit.
+  - **A dimmed copy now carries its own silhouette** (made on its own canvas, the same pixels), so no silhouette is kept beside each slice and prop sheet. This saves a third of a dim room's prop memory: the arena's props take 4.7 M pixels once its light has held, down from 7 M.
+  - **A light level not drawn for a second is let go** (`PS_MEM.dimHold`), so a light that changed or came on leaves no copies behind.
+- **After** (the same exploration, 4.5 minutes): canvas memory levels off at **100 to 116 MB**. That is rock 31 MB (its old budget), floor 19, dimmed props 15, slices 14, the battle view's layers 11.
+  - The cost: a room seen again after its pictures were let go has them made again, as on its first visit.
+- **The look is unchanged.** The same frames drawn by the old and the new code matched pixel for pixel in 12 rooms, with the units left out of the shot. In two runs, under 30 pixels differed in one or two rooms, where two frames of the same code also differed (scene noise).
+- **Tests:** `tests/picmem.js` (new) checks the counts, the same picture after everything is let go, the dimmed copies against the old way, a level let go after a second, the budgets on a big screen, and a tour of every room within the budgets with no room making pictures again on its second frame. `tests/ghost.js` allows the new drawing state. `tests/facilityplay.js` no longer stubs the removed silhouette sheets.
+  - **The first full run:** 123 of 124 suites passed. The one failure was `tests/facilityplay.js`'s check that no follower stalls on its way to you (one follower stalled in one 40-frame window). That check draws nothing, and its followers move by chance that is not seeded. It passed 11 times after, alone and four at a time, and in the 11 full runs before this build.
+- `js/facilitydecor.js`, `js/propsprites.js`, `tests/picmem.js`, `tests/run.js`, `tests/ghost.js`, `tests/facilityplay.js`, `docs/TUTORIAL.md` (Frame cost), `docs/OPEN-QUESTIONS.md` (a pointer for the modelled walls).
+- **Not measured on an iPad; not playtested.** The 30 MB of rock pictures and the units' cached cells (`spriteCell`, 12 M pixels at most) keep their old budgets.
+
 ## 2026-11-14
 
 ### Build `2026-11-14u` (stamped 14t on its branch) · branch `claude/targets-sting` · the balance targets are fixed; SUNDEW's sting is stronger

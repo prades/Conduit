@@ -157,7 +157,7 @@ function _fpFloorBuild(F, only) {
     }
     } finally { _fpOpsOnly = null; _FP_OPS_SINK.length = 0; }
     if (only) return { map, under };
-    _fp.underOps = under; _fp.spr = new Map();
+    _fp.underOps = under; if (_fp.spr) for (const c of _fp.spr.values()) if (c) c.width = c.height = 0; _fp.spr = new Map(); _fp.sprPx = 0;   // (the old pictures released: build 2026-11-15a)
     return map;
 }
 // the box a floor decor can paint into (its rectangle, its points, its path; a mark round a point reaches out by its radius and a little more), or null when it says nothing of where it is
@@ -177,7 +177,7 @@ function facilityFloorRedo(keys) {
         _fp.floorOps.delete(k); _fp.underOps.delete(k);
         if (got.map.has(k)) _fp.floorOps.set(k, got.map.get(k));
         if (got.under.has(k)) _fp.underOps.set(k, got.under.get(k));
-        if (_fp.spr) { _fp.spr.delete(k); _fp.spr.delete("u" + k); }
+        if (_fp.spr) { _fpSprDrop(k); _fpSprDrop("u" + k); }
     }
 }
 // FILL CELLS: floor that is not walkable but must be there, so no black shows where a wall meets the floor. A cell that a room only partly covers (the arena's rock edge is diagonal) gets
@@ -672,8 +672,23 @@ function facilityDrawFloorOn(obj, px, py) {
 // The opaque base of a floor tile is painted this many pixels wider (EX) and higher (EY) than the tile's diamond, over the fringe of the tile sprite under it and so that two tiles overlap and no hair of the ground shows between them.
 // The DARK of an unlit tile (js/facilitystyle.js _fpDarkTile) must cover that whole base, and a hair more for its antialiased edge, or the base's fringe stays bright along every edge of every tile: a dotted white grid on an unlit floor.
 const FP_BASE_EX = 2, FP_BASE_EY = 1;
+// THE FLOOR TILES' PICTURES, BOUNDED (the owner, 2026-11-15: "every single time I be playing my game, it starts lagging, or so the frame rate dips to about half after like 5 minutes of play"): a
+// picture was kept for every floor tile ever on screen and none was let go: the diagnostics counted 3,556 after 5 minutes of exploring, about 115 MB of canvases, and the more a browser holds the
+// slower an iPad draws. Now, past FP_FLOOR_SPR.budget pixels, the ones least recently drawn are let go (their memory released at once, as the rock walls' are: FP_ROCK_SPR), down to three quarters
+// of it, never one drawn this frame; one is painted again the next time its tile is on the screen (the same picture). Build 2026-11-15a.
+// The budget is FP_FLOOR_SPR.budget pixels, or `screens` times the screen's own pixels on a big screen: a budget smaller than one screen of floor would paint the same tiles again every frame (measured
+// on a screen of 1180 by 820, 0.97 M px: a room's floor holds up to 3.7 M, 460 tiles, the under-floor ones counted).
+const FP_FLOOR_SPR = { budget: 6e6, screens: 6 };   // pixels (about 24 MB): the agent's, provisional
+function _fpSprBudget() { const a = typeof canvas !== "undefined" && canvas && canvas.width ? canvas.width * canvas.height : 0; return Math.max(FP_FLOOR_SPR.budget, FP_FLOOR_SPR.screens * a); }
+function _fpSprTrim(f) {
+    const B = _fpSprBudget() * 0.75, old = []; for (const [k, c] of _fp.spr) if (c && c._u < f) old.push([k, c]);
+    old.sort((p, q) => p[1]._u - q[1]._u);
+    for (const [k, c] of old) { if ((_fp.sprPx || 0) <= B) break; _fp.sprPx -= c.width * c.height; c.width = c.height = 0; _fp.spr.delete(k); }
+}
+// a tile's picture let go (its floor changed: facilityFloorRedo)
+function _fpSprDrop(k) { const c = _fp.spr.get(k); if (c) { _fp.sprPx = Math.max(0, (_fp.sprPx || 0) - c.width * c.height); c.width = c.height = 0; } _fp.spr.delete(k); }
 function _fpDrawOps(ops, cx, cy, key) {
-    const W = TILE_W, H = TILE_H, EX = FP_BASE_EX, EY = FP_BASE_EY;
+    const W = TILE_W, H = TILE_H, EX = FP_BASE_EX, EY = FP_BASE_EY; const f = _fpFrame();
     let spr = _fp.spr.get(key);
     if (spr === undefined) {   // not painted yet: paint it (null if there is no canvas to paint on, as in the tests)
         spr = null;
@@ -686,7 +701,8 @@ function _fpDrawOps(ops, cx, cy, key) {
             }
         } catch (e) { spr = null; }
         _fp.spr.set(key, spr);
-    }
+        if (spr) { spr._u = f; _fp.sprPx = (_fp.sprPx || 0) + spr.width * spr.height; if (_fp.sprPx > _fpSprBudget()) _fpSprTrim(f); }
+    } else if (spr) spr._u = f;
     if (spr) ctx.drawImage(spr, cx - W - 1 - EX, cy - H - 1 - EY); else { ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy - H); ctx.lineTo(cx + W, cy); ctx.lineTo(cx, cy + H); ctx.lineTo(cx - W, cy); ctx.closePath(); ctx.clip(); _fpPaintOps(ctx, ops, cx, cy, true);
         const A0 = typeof _fpFloorA0 === "function" ? _fpFloorA0() : 0; if (A0 > 0.002) { ctx.fillStyle = "rgba(6,11,22," + A0.toFixed(3) + ")"; ctx.fill(); } ctx.restore(); }   // (the same lit room's dark, with no sprite to carry it)
     for (let i = 0; i < ops.length; i++) if (ops[i].t === "G" && ops[i].fl) _fpPaintOps(ctx, [ops[i]], cx, cy, false);
