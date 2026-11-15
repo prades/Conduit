@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Side Quest in the Lounge after the Sewers: a pack when you meet him, his face beside SHOP (the owner's idea and picks)
+
+- **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15f`
+- **Status:** Approved (the owner's idea, and three picks); the details are the agent's, provisional; built
+- **Context:** the owner: "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the player with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest."
+- **Decision** (asked, the owner's picks): the room is **The Lounge**; the pack is the reward for **meeting him** there; **both spots stay**: his platform in the Sewers for the quest, the Lounge once the Sewers are done.
+- **Agent's choices, provisional:** his spot (between the sofa and the coffee table: the Lounge's last two rows are behind the Main Hallway's wall), his call and two lines, the note; the pack is the one a chest gives (Pack 1, or Series 2 as well once open); "…" after his lines, as his standing rule after the queen's fate; the face is a round button straight after the SHOP tab that opens the SHOP; the SHOP's packs stay on sale as before.
+- **Alternatives offered:** the Server Room (the old Front Lobby) or the Crystal Chamber; the pack for his promise talk or for clearing the Sewers; moving his whole shop to the lobby, or the lobby only for the pack.
+- **Affects:** `js/sidequest.js`, `js/cardsui.js`, `game.html`; `docs/SEWER-QUEST.md`, `docs/UI-STYLE.md`; `tests/sidequest.js`.
+
 ## DECISION: A subway off the Sewers, as a first place to build on (the owner's request; the details the agent's)
 
 - **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15c`

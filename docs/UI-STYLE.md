@@ -280,6 +280,7 @@ The owner: "make it to where the items in the shop are in a new menu on the card
 - **CARDS**: THE COLLECTION (below), with the start of a run's banner when the hand is chosen.
 - **SHOP**: the booster packs (Pack 1, then SERIES 2) and the MARKET's shelf, as they were.
 - The menu shown is kept between openings; the start of a run always opens CARDS.
+- **Side Quest's face beside SHOP** (build `2026-11-15f`; the owner, 2026-11-15: "there's a little icon next to the shop button in the card screen that shows side quest"): once he has given you his pack in the Lounge (docs/SEWER-QUEST.md, "Side Quest in the Lounge"), a round button straight after the SHOP tab, 46 px, ringed in his colour, with his picture cut from his sheet (the void walker facing you, as in the dialogue box). A tap on it opens the SHOP. Not there before his pack.
 
 **The collection's view** (beside SORT BY): **OWNED** (the player's own cards: kept for good, and found this run, marked ★) or **ALL** (every card in the game, the locked ones too, each unlockable from the stage as before). OWNED is the default; with nothing owned it is off and ALL is shown. The rows of big cards for YOUR HAND and FOUND THIS RUN are gone: those cards are on the rail. **Nothing is beside the stage**: the card and its labels stand in the middle of the collection's width.
 

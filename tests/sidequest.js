@@ -10,6 +10,7 @@
 //   THE TALK       four lines a press, the archive's opening first; the choice of two buttons; I PROMISE or NO PROMISES recorded; his answer, then the hint; the quest line untouched by any of it; the shop after
 //   AFTER          the queen's fate decided (calm, or defeated): "…", and the shop
 //   HIS LOOK       the void walker (the owner, 2026-11-02; build 2026-11-02f): the old flux worker's sheet, in the world turned toward you and in the dialogue box facing you
+//   THE LOUNGE     (build 2026-11-15f) once the Sewers are done and you are out of his room, he moves up to the Lounge: his call, a free pack with his first line, his face beside SHOP after it, all saved
 //   THE SAVE       he comes back where he was (by the Crystal, or on his platform with the gate open; an old save: the platform), the talk and the promise kept; the plate's install hint names him once he is there
 const fs = require('fs');
 const vm = require('vm');
@@ -192,6 +193,62 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const sv2 = facilitySaveCollect(); delete sv2.sidequest.w; __reload(sv2); o.old = [sqPresent(), sqAtCrystal(), (__st('st_sidequest') || {}).room, facilitySolidIsOpen('sewer_gate_n2'), sqWhereSaid()]; return o; })()`);
         same(r.saved, 'crystal', 'the record'); same(r.back.join('|'), 'true|true|crystal_chamber|BY THE CRYSTAL|1', 'the load by the Crystal');
         same(r.old.join('|'), 'true|false|sewers|true|ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE', 'an old record');
+    });
+
+    // THE LOUNGE (build 2026-11-15f; the owner, 2026-11-15: "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the player
+    // with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest"; then the room "The Lounge", the reward for "Meeting him", and "Keep both spots")
+    group('THE LOUNGE (build 2026-11-15f: once the Sewers are done; js/sidequest.js SIDEQUEST.lounge, sqGiftPack, sqShopFace; js/cardsui.js _cdSqFace)');
+    run(`globalThis.__lounge = () => { const t = _fp.F.solids.find(q => q.id === 'lounge_table'); return _fpNearestCell((t.bb[0] + t.bb[2]) / 2, (t.bb[1] + t.bb[3]) / 2 + 2.5); };
+         globalThis.__said = (re) => JSON.stringify(dialogueLines()).search(re) >= 0;`);
+    check('his platform for the quest: with the water not yet clean he stays there wherever you are; once the Sewers are done (the water purified) he stays while you are in the Sewers, and moves up to the Lounge once you are out of them: by its coffee table, on Lounge floor, his station on him, your note of it; the install hint says IN THE LOUNGE', () => {
+        const r = J(`(function(){ const o = {}; const S = __S(), Q = __Q(); S.where = 'platform'; _fp._sqSpot = null; sqPlace(false); Q.purifiedAt = 0; dialogueClear();
+            const L = __lounge(); __put(L[0], L[1]); __tick(3); o.before = [S.where, (__st('st_sidequest') || {}).room];
+            Q.purifiedAt = 1; __sewers(); __tick(3); o.inSewers = [S.where, (__st('st_sidequest') || {}).room, __said(/MOVED UP TO THE LOUNGE/)];
+            __put(L[0], L[1]); __tick(2); const st = __st('st_sidequest'), sp = sqLoungeSpot(), t = _fp.F.solids.find(q => q.id === 'lounge_table');
+            o.moved = [S.where, st && st.room, facilityRoomAt(sp[0], sp[1], _fp.F).id, !!st && st.x === sp[0] && st.y === sp[1], _fp.items.filter(i => i.fp === 'sidequest').length, sqWhereSaid(), __said(/MOVED UP TO THE LOUNGE, OFF THE MAIN HALLWAY/)];
+            o.spot = [sp[0] - (t.bb[0] + t.bb[2]) / 2, sp[1] - (t.bb[1] + t.bb[3]) / 2]; return o; })()`);
+        same(r.before.join('|'), 'platform|sewers', 'the water not yet clean: his platform'); same(r.inSewers.join('|'), 'platform|sewers|false', 'the Sewers done, you in them: not yet');
+        same(r.moved.join('|'), 'lounge|lounge|lounge|true|1|IN THE LOUNGE|true', 'moved up to the Lounge'); same(r.spot.join(), '0.5,-1', 'between the sofa and the coffee table (the first of his spots there: in sight; the Lounge\'s last two rows are behind the Main Hallway\'s wall)');
+    });
+    check('in the Lounge: his call the first time you come near (once); at his station TALK TO SIDE QUEST, and the first tap is his first line and HIS PACK, free (the one a chest gives: PACK 1 or SERIES 2), its cards dealt and its reveal up; NEXT; his second line (packs any time, from the SHOP); then the potion on his station, that line a while, then "…"; no second pack', () => {
+        const r = J(`(function(){ const o = {}; const S = __S(), st = __st('st_sidequest'); dialogueClear(); S.lcall = 0; S.lt = 0; S.gift = 0; o.faceBefore = sqShopFace();
+            __near(st); __tick(2); o.call = [S.lcall > 0, __said(/OVER HERE, BY THE TABLE/)]; const c1 = S.lcall; __tick(5); o.once = S.lcall === c1;
+            o.verb0 = STATION_KINDS.sidequest.verbFn(st); shardCount = 500; equipPackLast = null; const rf = cardsRevealFound; let asked = 0; cardsRevealFound = () => { asked++; return rf(); };
+            const u1 = stationUse(st); cardsRevealFound = rf; o.first = [u1.ok, S.lt, sqSpeech() === SIDEQUEST.lines.lounge[0], S.gift > 0, shardCount, !!equipPackLast && ['pack1', 'series2'].indexOf(equipPackLast.pack) >= 0, !!equipPackLast && equipPackLast.ids.length > 0, asked];   // (its reveal asked for: the chest's own, js/cardsui.js cardsRevealFound; up on the real page, not in this stub)
+            o.dealt = !!equipPackLast && equipPackLast.ids.every(id => equipOwns(id) || equipIsFound(id) || equipPackLast.dupes.indexOf(id) >= 0);
+            if (typeof cardsClose === 'function') cardsClose();
+            o.verb1 = STATION_KINDS.sidequest.verbFn(st);
+            const u2 = stationUse(st); o.second = [u2.ok, S.lt, sqSpeech() === SIDEQUEST.lines.lounge[1], STATION_KINDS.sidequest.verbFn(st)];
+            frame += SIDEQUEST.replyFrames + 1; o.later = sqSpeech();
+            const g = S.gift, last = equipPackLast; shardCount = 0; stationUse(st); o.noSecond = [S.gift === g, equipPackLast === last]; o.faceAfter = sqShopFace(); return o; })()`);
+        same(r.faceBefore, false, 'no face beside SHOP before his pack'); same(r.call.join(), 'true,true', 'his call'); same(r.once, true, 'once');
+        same(r.verb0, 'TALK TO SIDE QUEST', 'the station before'); same(r.first.join('|'), 'true|1|true|true|500|true|true|1', 'the first tap: his line, his pack (free), its reveal'); same(r.dealt, true, 'the pack\'s cards are yours');
+        same(r.verb1, 'NEXT', 'then NEXT'); same(r.second.join('|'), 'true|2|true|BUY A SLEEPING POTION ◆100', 'his second line, then the potion on his station'); same(r.later, '…', 'then "…"');
+        same(r.noSecond.join(), 'true,true', 'no second pack'); same(r.faceAfter, true, 'his face beside SHOP after');
+    });
+    check('his face beside SHOP on the CARDS screen (js/cardsui.js _cdTabs): none before his pack; after it, a round button straight after the SHOP tab with his picture cut from his sheet (the void walker facing you), and a tap on it opens the SHOP', () => {
+        const r = J(`(function(){ const o = {}; const S = __S(), realEl = _cdEl, realClick = _cdClick, realRender = cardsRender;
+            const mk = (tag, cls, txt) => ({ tag, cls: cls || '', txt: txt || '', kids: [], style: {}, attrs: {}, appendChild(k) { this.kids.push(k); }, setAttribute(a, v) { this.attrs[a] = v; } });
+            _cdEl = mk; _cdClick = (el, fn) => { el.fn = fn; }; cardsRender = () => {};
+            try {
+                const g = S.gift; S.gift = 0; o.before = _cdTabs(3).kids.map(k => k.cls); S.gift = g;
+                const bar = _cdTabs(3); o.after = bar.kids.map(k => k.cls); const face = bar.kids[2];
+                o.pic = face && face.kids[0] ? [face.kids[0].style.backgroundImage.indexOf('img/evo/hauler.') >= 0, face.kids[0].style.backgroundSize, face.attrs['aria-label']] : null;
+                _cdTab = 'cards'; face.fn(); o.tab = _cdTab;
+            } finally { _cdEl = realEl; _cdClick = realClick; cardsRender = realRender; }
+            return o; })()`);
+        same(r.before.join('|'), 'cd-tab on|cd-tab', 'before his pack: the two tabs'); same(r.after.join('|'), 'cd-tab on|cd-tab|cd-sqface', 'after it: his face straight after SHOP');
+        same(JSON.stringify(r.pic), JSON.stringify([true, '829px 415px', 'SIDE QUEST KEEPS YOU SUPPLIED WITH PACKS']), 'his picture: his sheet, at its scale'); same(r.tab, 'shop', 'a tap opens the SHOP');
+    });
+    check('the Lounge is saved: where he is, his lines there, his pack given; a load puts him back in the Lounge with his face beside SHOP and no second pack; a record from before the Lounge, with the Sewers done, has him on his platform until you are out of the Sewers, then in the Lounge with his pack still to give', () => {
+        const r = J(`(function(){ const o = {}; const sv = facilitySaveCollect(); o.saved = [sv.sidequest.w, sv.sidequest.lt, sv.sidequest.gift > 0, sv.sidequest.lcall > 0];
+            __reload(sv); const S = __S(); o.back = [sqInLounge(), (__st('st_sidequest') || {}).room, S.lt, sqShopFace(), STATION_KINDS.sidequest.verbFn(__st('st_sidequest'))];
+            const sv2 = facilitySaveCollect(); sv2.sidequest.w = 'platform'; delete sv2.sidequest.lt; delete sv2.sidequest.gift; delete sv2.sidequest.lcall; __reload(sv2); const S2 = __S();
+            __sewers(); __tick(2); o.oldInSewers = [S2.where, (__st('st_sidequest') || {}).room, sqShopFace()];
+            const L = __lounge(); __put(L[0], L[1]); __tick(2); o.oldOut = [S2.where, S2.lt, S2.gift, sqShopFace(), STATION_KINDS.sidequest.verbFn(__st('st_sidequest'))];
+            const Q = __Q(); Q.purifiedAt = 0; return o; })()`);
+        same(r.saved.join('|'), 'lounge|2|true|true', 'the record'); same(r.back.join('|'), 'true|lounge|2|true|BUY A SLEEPING POTION ◆100', 'the load: in the Lounge, his face, the talk done');
+        same(r.oldInSewers.join('|'), 'platform|sewers|false', 'an older record, you in the Sewers'); same(r.oldOut.join('|'), 'lounge|0|0|false|TALK TO SIDE QUEST', 'then up to the Lounge, his pack to give');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

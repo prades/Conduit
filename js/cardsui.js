@@ -329,9 +329,23 @@ function _cdTabs(nOwned) {
     [["cards", "CARDS", "THE COLLECTION · " + nOwned + " OWNED"], ["shop", "SHOP", "PACKS · MARKET"]].forEach(([k, t, sub]) => {
         const b = _cdEl("button", "cd-tab" + (_cdTab === k ? " on" : "")); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", _cdTab === k ? "true" : "false");
         b.appendChild(_cdEl("span", "cd-tl", t)); b.appendChild(_cdEl("small", null, sub));
-        _cdClick(b, () => { if (_cdTab !== k) { _cdTab = k; _cdArm = null; cardsRender(true); } }); bar.appendChild(b);
+        const open = () => { if (_cdTab !== k) { _cdTab = k; _cdArm = null; cardsRender(true); } };
+        _cdClick(b, open); bar.appendChild(b);
+        if (k === "shop" && typeof sqShopFace === "function" && sqShopFace()) bar.appendChild(_cdSqFace(open));   // (Side Quest's face beside SHOP, once he has given you his pack: below)
     });
     return bar;
+}
+// SIDE QUEST'S FACE BESIDE SHOP (build 2026-11-15f; the owner, 2026-11-15: "there's a little icon next to the shop button in the card screen that shows side quest"): once he has given you his pack in the
+// Lounge (js/sidequest.js sqShopFace) he is the one who keeps you supplied with packs. A round button with his picture: the void walker facing you, the frame the dialogue box shows (js/sidequest.js
+// sqPortrait), cut from his sheet by the page itself (the sheet's address from js/config.js imgSrc), centred on his core. A tap on it opens the SHOP, as the tab does.
+function _cdSqFace(open) {
+    const b = _cdEl("button", "cd-sqface"); b.type = "button"; b.title = "SIDE QUEST KEEPS YOU SUPPLIED WITH PACKS"; b.setAttribute("aria-label", b.title);
+    if (typeof SQ_LOOK !== "undefined" && typeof imgSrc === "function") {
+        const C = SQ_LOOK.cell, D = 46, k = 0.36, row = typeof _evoFacing === "function" && typeof _SQ_FRONT !== "undefined" ? _evoFacing(_SQ_FRONT) : 1, cx = SQ_LOOK.core[0], cy = SQ_LOOK.core[1];   // (D: the button's size in px; k: the sheet's scale in it)
+        const pic = _cdEl("i"); pic.style.backgroundImage = "url(" + imgSrc(SQ_LOOK.sheet) + ")"; pic.style.backgroundSize = Math.round(16 * C * k) + "px " + Math.round(8 * C * k) + "px";   // (16 frames by 8 facings)
+        pic.style.backgroundPosition = Math.round(D / 2 - cx * k) + "px " + Math.round(D / 2 - (row * C + cy) * k) + "px"; b.appendChild(pic);
+    }
+    _cdClick(b, open); return b;
 }
 
 // ── A PACK OPENED (build 2026-11-01l; the owner: "when a player opens a pack ... make a new transparent menu pop up where the cards come up out of the pack one by one to fill the screen in a straight row with
