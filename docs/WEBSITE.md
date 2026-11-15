@@ -59,14 +59,14 @@ Limits: the session's network blocked the design galleries (Awwwards, Typewolf, 
 
 ## 4. Problems in the current page (found 2026-11-15)
 1. **The game never pauses**, and with `gameState.running` false it still draws every frame (js/game.js `gameLoop`). Needs a pause/resume message in `js/attract.js`.
-2. **HUD pieces show through**: the network panel and the ammunition pill are drawn on the canvas, so the attract CSS that hides the page's elements does not hide them (seen in a screenshot of the page).
+2. ~~**HUD pieces show through**~~ (fixed in build `2026-11-15d`: in attract mode the network panel and the target UI draw nothing): the network panel and the ammunition pill are drawn on the canvas, so the attract CSS that hides the page's elements does not hide them (seen in a screenshot of the page).
 3. **No poster**: a gradient only until the game is ready (or for 45 s on a failure).
 4. **The logo's glow, blend mode and endless float** recomposite over the live iframe every frame.
 5. `#bg.ready iframe { opacity: 0.9 }` keeps the iframe a blended layer for good.
 6. The reduced-motion choice is read once only.
 
 ## 5. Decisions
-None yet. Drafts first; the owner chooses.
+None yet. Round 1 drafts (2026-11-15), for the owner's choice: `design/web/round1/` console, slab, bulkhead, field-station, lab-notebook, broadcast.
 
 ## 6. Open questions
 - Which direction (drafts to come).

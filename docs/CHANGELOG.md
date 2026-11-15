@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15d` · branch `claude/friendly-thompson-w581x0` · the website's background shows no HUD
+- **Why:** the home page's live background (`play.html?attract`, js/attract.js) showed the facility's network panel (top right) and the ammunition pill (left) through it: they are drawn on the canvas, which the attract css (which hides the page's own elements) does not reach (docs/WEBSITE.md §4.2).
+- **What it does:** in attract mode `drawFacilityNetworkHUD` (js/facilitynet.js) and `drawTargetUI` (js/targeting.js) draw nothing. The game itself is unchanged.
+- **Also:** six drafts of a new home page (design/web/round1/: Console, Slab, Bulkhead, Field Station, Lab Notebook, Broadcast), for the owner's choice; the live page (index.html) is unchanged. docs/WEBSITE.md and `.claude/agents/web-designer.md` hold the research and the rules they follow.
+- **Verified:** tests/attract.js, tests/bundle.js and the full suite; a screenshot of `play.html?attract` with no HUD. **Not playtested.**
+
 ### Build `2026-11-15c` · branch `claude/start-game-project-HSh7Z` · a subway off the Sewers (empty, to build on)
 - **The ask** (the owner, 2026-11-15): "I want a subway system to connect from the sewer system. Just go ahead and put it in there, and then I'll use that to jog my memory for later updates." Every size, name, look and prop is the agent's, provisional (`docs/DECISION-LOG.md`).
 - **The way in:** the Sewers' side passage off the south ledge opens (its gate `sewer_gate_s1` taken away). At its end, a stairwell door in its west wall with **SUBWAY** over it. You and the squad following you go down to the platform; its stairs (**SEWERS** over them) bring you back.

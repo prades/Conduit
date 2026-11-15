@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragonlord</title>
+  <!-- Draft, round 1: BROADCAST FEED. The game as a live camera feed. Type: Archivo (widths; system E's family) with IBM Plex Mono for the readouts. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,100,400;0,100,600;1,125,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #050810;
+      --navy-2: #0a1224;
+      --ink: #eef3fb;
+      --body: #b9c8de;
+      --dim: #8a9cba;
+      --hair: rgba(232, 240, 255, 0.34);
+      --teal: #19e6c1;
+      --teal-ink: #03140f;
+      --pad-x: max(5vw, 40px);
+      --pad-y: clamp(30px, 4vw, 50px);
+      --inset: clamp(14px, 1.8vw, 24px);
+      --sans: "Archivo", "Segoe UI", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { background: var(--navy); }
+    body { background: var(--navy); color: var(--body); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+    .mono { font: 500 13px/1.3 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+
+    .skip {
+      position: absolute; left: 12px; top: -60px; z-index: 10;
+      background: var(--ink); color: var(--navy); padding: 10px 14px;
+    }
+    .skip:focus { top: 12px; }
+
+    /* ── The live background: as index.html (the facility in an iframe that takes no taps), a dark gradient until it is showing ── */
+    #bg {
+      position: fixed; inset: 0; z-index: 0; overflow: hidden;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 40%, #0b1626 0%, #040810 72%);
+    }
+    #bg iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+      opacity: 0; transition: opacity 3.5s ease;
+    }
+    #bg.ready iframe { opacity: 1; }
+
+    /* ── The first screen: the feed ── */
+    .feed { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; overflow: hidden; }
+    /* static scrims: the top edge for the readouts, the bottom for the ident and the guide, then into the navy below */
+    .feed::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(5,8,16,0.7) 0%, rgba(5,8,16,0) 18%),
+        linear-gradient(0deg, var(--navy) 0%, rgba(5,8,16,0.88) 12%, rgba(5,8,16,0.5) 26%, rgba(5,8,16,0) 38%);
+    }
+    /* the broadcast frame: one thin inset rectangle, rounded only here; outside it, the dark of a monitor's bezel (a flat spread, no blur) */
+    .frame {
+      position: absolute; inset: var(--inset); pointer-events: none;
+      border: 1px solid var(--hair); border-radius: 22px;
+      box-shadow: 0 0 0 200vmax rgba(5,8,16,0.55);
+    }
+
+    .readout {
+      position: absolute; top: var(--pad-y); display: flex; align-items: center; gap: 14px;
+      color: var(--ink);
+    }
+    .readout.tl { left: var(--pad-x); }
+    .readout.tr { right: var(--pad-x); flex-direction: column; align-items: flex-end; gap: 6px; }
+    .live { display: inline-flex; align-items: center; gap: 8px; color: var(--teal); }
+    .live i { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+    .sep { color: var(--dim); }
+    .tc b { font-weight: 500; color: var(--ink); }
+    .tr .sub { color: var(--dim); }
+
+    /* the channel ident, lower left, with its lower third */
+    .ident { position: absolute; left: var(--pad-x); bottom: var(--pad-y); max-width: 46vw; }
+    .ident h1 {
+      font-family: var(--sans); font-weight: 800; font-style: italic; font-stretch: 125%;
+      font-size: clamp(48px, 6vw, 92px); line-height: 0.9; letter-spacing: -0.015em;
+      color: var(--ink); text-transform: uppercase;
+    }
+    .third {
+      margin-top: 14px; display: inline-flex; align-items: stretch;
+      background: rgba(5,8,16,0.86);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    }
+    .third .ch { display: flex; align-items: center; padding: 0 12px; background: rgba(232,240,255,0.14); color: var(--ink); }
+    .third p { padding: 11px 26px 11px 14px; font: 600 18px/1.2 var(--sans); color: var(--ink); }
+
+    /* the channel guide, lower right */
+    .guide {
+      position: absolute; right: var(--pad-x); bottom: var(--pad-y);
+      width: min(340px, 100% - 40px);
+      background: rgba(5,8,16,0.86);
+    }
+    .guide-head { display: flex; justify-content: space-between; padding: 10px 14px 9px; color: var(--dim); }
+    .guide ol { list-style: none; }
+    .row { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; column-gap: 10px; padding: 9px 14px; transition: transform 160ms ease-out; }
+    .guide li:nth-child(odd) .row { background: rgba(232,240,255,0.045); }
+    a.row:hover { transform: translateX(3px); }
+    .row .n { color: var(--dim); }
+    .row h3 { font: 600 18px/1.15 var(--sans); color: var(--ink); }
+    .row .what { display: block; margin-top: 3px; color: var(--dim); font-size: 12px; letter-spacing: 0.1em; }
+    .row .go { color: var(--dim); font: 500 14px/1 var(--mono); }
+    .row.feature { padding-top: 12px; padding-bottom: 12px; }
+    .play {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 56px; min-width: 104px; padding: 0 22px 0 26px;
+      background: var(--teal); color: var(--teal-ink);
+      font: 800 17px/1 var(--sans); font-style: italic; font-stretch: 125%; letter-spacing: 0.04em; text-transform: uppercase;
+      clip-path: polygon(14px 0, 100% 0, calc(100% - 8px) 100%, 0 100%, 0 14px);
+      transition: transform 160ms ease-out;
+    }
+    .play:hover { transform: translateX(3px); }
+    .play:focus-visible { outline-offset: 4px; }
+
+    /* ── Below the first screen: flat sections ── */
+    .page { position: relative; z-index: 1; background: var(--navy); padding: 64px var(--pad-x) 0; }
+    .page h2 { color: var(--dim); margin-bottom: 26px; }
+    .notes { list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px 56px; max-width: 1200px; }
+    .note { display: grid; grid-template-columns: 40px 1fr; column-gap: 10px; }
+    .note .n { color: var(--dim); padding-top: 6px; }
+    .note h3 { font: 800 30px/1.05 var(--sans); font-stretch: 125%; font-style: italic; text-transform: uppercase; color: var(--ink); letter-spacing: -0.01em; }
+    .note .core { margin-top: 8px; color: var(--dim); }
+    .note p { margin-top: 10px; font-size: 17px; line-height: 1.6; max-width: 54ch; }
+    .note p.core { font-size: 13px; line-height: 1.5; color: var(--dim); }
+    .note .link { display: inline-block; margin-top: 12px; color: var(--ink); }
+    .note .link:hover { color: var(--teal); }
+    .about { margin-top: 72px; max-width: 760px; }
+    .about p { font-size: clamp(19px, 1.7vw, 24px); line-height: 1.55; color: var(--body); }
+    .about strong { color: var(--ink); font-weight: 600; }
+    footer { margin-top: 80px; padding: 26px 0 var(--pad-y); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; color: var(--dim); }
+    footer a:hover { color: var(--ink); }
+
+    /* ── One entrance: 360 ms ease-out, a 50 ms stagger ── */
+    .in { opacity: 0; transform: translateY(6px); animation: rise 360ms ease-out forwards; animation-delay: calc(var(--i, 0) * 50ms + 150ms); }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* ── Portrait (an iPad held upright): the ident moves up under the tag; the guide keeps the lower right ── */
+    @media (orientation: portrait) {
+      .feed::before {
+        background:
+          linear-gradient(180deg, rgba(5,8,16,0.9) 0%, rgba(5,8,16,0.72) 15%, rgba(5,8,16,0) 27%),
+          linear-gradient(0deg, var(--navy) 0%, rgba(5,8,16,0.86) 14%, rgba(5,8,16,0) 30%);
+      }
+      .ident { top: calc(var(--pad-y) + 46px); bottom: auto; max-width: none; }
+      .notes { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .ident h1 { font-size: 40px; }
+      .third p { font-size: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .in { animation: none; opacity: 1; transform: none; }
+      .row, .play { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip mono" href="#guide">Skip to the channel guide</a>
+
+<!-- the live background (see the script at the end): a dark gradient until the facility is showing -->
+<div id="bg"></div>
+
+<main>
+  <section class="feed" aria-label="Dragonlord">
+    <div class="frame" aria-hidden="true"></div>
+
+    <p class="readout tl mono in" style="--i:0">
+      <span class="live"><i aria-hidden="true"></i>Live</span>
+      <span>Cam 01</span><span class="sep">·</span><span>Facility</span>
+    </p>
+    <div class="readout tr mono in" style="--i:1">
+      <span class="tc">TC <b id="tc">00:00:00</b></span>
+    </div>
+
+    <div class="ident">
+      <h1 class="in" style="--i:2">Dragonlord</h1>
+      <div class="third in" style="--i:3">
+        <span class="ch mono">CH 01</span>
+        <p>Game Developer &amp; Digital Architect</p>
+      </div>
+    </div>
+
+    <nav class="guide in" id="guide" aria-label="Channel guide" style="--i:4">
+      <div class="guide-head mono"><span>Channel guide</span><span>Build <span data-build>2026-11-15c</span></span></div>
+      <ol>
+        <li>
+          <div class="row feature">
+            <span class="n mono">01</span>
+            <a href="../../../play.html"><h3>Conduit</h3><span class="what mono">C.O.R.E. Strategy</span></a>
+            <a class="play" href="../../../play.html" aria-label="Play Conduit">Play</a>
+          </div>
+        </li>
+        <li><a class="row" href="../../../bible.html"><span class="n mono">02</span><span><h3>Game Bible</h3><span class="what mono">Design reference</span></span><span class="go" aria-hidden="true">→</span></a></li>
+        <li><a class="row" href="../../../romlab/index.html"><span class="n mono">03</span><span><h3>ROM Lab</h3><span class="what mono">Sample workstation</span></span><span class="go" aria-hidden="true">→</span></a></li>
+        <li><a class="row" href="https://github.com/prades" target="_blank" rel="noopener"><span class="n mono">04</span><span><h3>GitHub</h3><span class="what mono">github.com/prades</span></span><span class="go" aria-hidden="true">↗</span></a></li>
+      </ol>
+    </nav>
+  </section>
+
+  <div class="page">
+    <h2 class="mono">Programme notes</h2>
+    <ol class="notes">
+      <li class="note">
+        <span class="n mono">01</span>
+        <div>
+          <h3>Conduit</h3>
+          <p class="core mono">C.O.R.E. Strategy · Combat Operations Roguelite Evolutions</p>
+          <p>A top-down survival game in a ruined research facility: restore its power room by room, recruit and evolve a squad of followers, and fight what lives in the arena. Pure canvas, zero dependencies.</p>
+          <a class="link mono" href="../../../play.html">Play Conduit →</a>
+        </div>
+      </li>
+      <li class="note">
+        <span class="n mono">02</span>
+        <div>
+          <h3>Game Bible</h3>
+          <p>The whole game on one page: the facility room by room, the classes, every follower form and creature, the rules and their numbers, the interface, how it is built, and what is still to be decided.</p>
+          <a class="link mono" href="../../../bible.html">Open the Bible →</a>
+        </div>
+      </li>
+      <li class="note">
+        <span class="n mono">03</span>
+        <div>
+          <h3>ROM Lab</h3>
+          <p>A sample workstation. Scans a ROM for its instrument samples, or splits an audio file into drum, bass, vocal and instrumental stems, then plays them on pads with a step sequencer, FX and MP3 export.</p>
+          <a class="link mono" href="../../../romlab/index.html">Open ROM Lab →</a>
+        </div>
+      </li>
+      <li class="note">
+        <span class="n mono">04</span>
+        <div>
+          <h3>GitHub</h3>
+          <p>The code, at github.com/prades.</p>
+          <a class="link mono" href="https://github.com/prades" target="_blank" rel="noopener">Visit GitHub ↗</a>
+        </div>
+      </li>
+    </ol>
+
+    <section class="about" aria-label="About">
+      <h2 class="mono">About</h2>
+      <p>I go by <strong>Dragonlord</strong> online. I'm passionate about pushing what the browser can do, from real-time 3D with <strong>Three.js</strong> to complex game systems built on raw Canvas APIs. Everything here runs natively in your browser, no plugins required.</p>
+    </section>
+
+    <footer class="mono">
+      <span>© Dragonlord · <a href="https://github.com/prades" target="_blank" rel="noopener">GitHub</a></span>
+      <span>Conduit build <span data-build>2026-11-15c</span></span>
+    </footer>
+  </div>
+</main>
+
+<!-- ── Background: the Conduit facility, dark, with followers searching its halls (play.html?attract, js/attract.js); as index.html, the path adjusted ── -->
+<script>
+(function () {
+  // The facility is loaded after the page has painted, and only for a visitor who has not asked for less: reduced motion or a data saver keeps the dark gradient.
+  var bg = document.getElementById('bg'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)'), net = navigator.connection || {};
+  if ((mq && mq.matches) || net.saveData) return;
+  var frame = null, giveUp = null;
+  function start() {
+    frame = document.createElement('iframe');
+    frame.src = '../../../play.html?attract';   // (the players' page: one script file, tools/bundle.js)
+    frame.title = ''; frame.setAttribute('aria-hidden', 'true'); frame.tabIndex = -1; frame.inert = true;
+    bg.appendChild(frame);
+    giveUp = setTimeout(function () { if (!bg.classList.contains('ready')) { frame.remove(); frame = null; } }, 45000);   // never showed: the gradient stays
+  }
+  window.addEventListener('message', function (e) {
+    if (frame && e.source === frame.contentWindow && e.data && e.data.conduit === 'attract-ready') { clearTimeout(giveUp); bg.classList.add('ready'); }
+  });
+  function later() { (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(start, { timeout: 2500 }); }
+  if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
+})();
+
+// ── The timecode (top right): the time on air since the page opened, once a second; it stands still under reduced motion and while the page is hidden ──
+(function () {
+  var el = document.getElementById('tc'), mq = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)');
+  if (!el || (mq && mq.matches)) return;
+  var t0 = Date.now(), held = 0, hiddenAt = 0;
+  function two(n) { return n < 10 ? '0' + n : '' + n; }
+  function tick() {
+    if (document.hidden) return;
+    var s = Math.floor((Date.now() - t0 - held) / 1000);
+    el.textContent = two(Math.floor(s / 3600)) + ':' + two(Math.floor(s / 60) % 60) + ':' + two(s % 60);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) hiddenAt = Date.now(); else if (hiddenAt) { held += Date.now() - hiddenAt; hiddenAt = 0; tick(); }
+  });
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
