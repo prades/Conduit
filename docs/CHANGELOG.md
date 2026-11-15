@@ -4,6 +4,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Build `2026-11-15f` · branch `claude/start-game-project-HSh7Z` · Side Quest in the Lounge: a pack when you meet him, his face beside SHOP
+- **The ask** (the owner, 2026-11-15): "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the player with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest". Then, asked: the room is **The Lounge**, the reward is for **meeting him**, and **both spots stay**.
+- **What it does** (`docs/SEWER-QUEST.md`, "Side Quest in the Lounge"):
+  - **The move:** once the Sewers are done and you are out of his room, Side Quest moves up to the Lounge for good, between its sofa and coffee table, with your note of it. A game saved with the Sewers already done does the same.
+  - **The pack:** the first time you talk to him there, his first line comes with a free pack (the one a chest gives) and its reveal. His second line: he'll keep you supplied with packs, any time, from the SHOP. Once only.
+  - **His face beside SHOP:** from then on a round button with his picture stands beside the SHOP tab on the CARDS screen (`docs/UI-STYLE.md`); a tap on it opens the SHOP. The SHOP is as it was.
+  - **His shop** (the potion, his cards) goes with him. His lines there, his spot and which pack are the agent's, provisional.
+- **Saved:** where he is (`lounge`), his lines there, the pack given.
+- `js/sidequest.js`, `js/cardsui.js`, `game.html` (the button's style), `tests/sidequest.js` (four new checks: the move, the talk and the pack, the face beside SHOP, the save and an older save), `docs/SEWER-QUEST.md`, `docs/UI-STYLE.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- **Also on this branch:** six drafts of a new look for the Sewers (`design/sewer-looks/`; nothing in the game) and main's builds `2026-11-15d` and `e` merged in.
+- **Verified:** `tests/sidequest.js`; on the real page at iPad size, the move, the call, the pack's reveal, the second line and the face beside SHOP, which opens the SHOP; no page errors. **Not playtested on an iPad.**
+
 ### Build `2026-11-15e` · branch `claude/friendly-thompson-w581x0` · the home page is CONSOLE
 - **The ask** (the owner: a new look for the website over the live game, from research and drafts; of six drafts, "Number 1").
 - **What it does:** `index.html` is the facility's monitoring console over the live game: corner brackets, FACILITY FEED · LIVE and the build at the top, DRAGONLORD in bold italic at the lower left with PLAY (the one filled button), the Game Bible, ROM Lab and GitHub as a numbered index at the lower right, and the projects and the bio below on flat navy. The live background is as it was. `tools/stamp.js` now keeps the page's build numbers (marked `data-build`) current.

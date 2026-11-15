@@ -15,12 +15,14 @@
 //   WHEN           sqUnlocked (since build 2026-11-09tt; the owner, 2026-11-09: "The queen takes out the player, upon returning side quest talks to you"; seen "Only when she" does): once the queen's ambush has
 //                  taken you out (js/quests.js queenOutAt), he is waiting BY THE CRYSTAL (SIDEQUEST.crystal), where it sent you, and calls you over there; the talk over (or the queen's fate decided) and you gone
 //                  from the Crystal Chamber, he is back on his platform (WHERE), his gate open, your note of it. Until build 2026-11-09tt: the samples turned in at the lab AND about ten toxic ants of the Sewers killed.
+//   THE LOUNGE     once the Sewers are done and you are out of his room, he moves up to the Lounge for good (build 2026-11-15f; SIDEQUEST.lounge below): a pack, free, the first time you meet him there, and his
+//                  face beside SHOP on the CARDS screen from then on.
 //   THE TALK       four lines, one a press (the archive's opening verbatim, then his name and the Queen blocking the system, his idea that she only needs to be moved, and the PROMISE he asks for), then a choice of two
 //                  buttons: I PROMISE or NO PROMISES (sqChoose: recorded in `promised`, 1 or −1; it changes nothing of the quest line, and killing her later invalidates nothing: the archive). Either way he sells
 //                  the potion after. Come back and he gives the hint. Once the queen's fate is decided (the quest line's bossResolvedAt), everything he says is "…" (SIDEQUEST.lines.after), and he still sells.
 //   THE SHOP       the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep), on his station; and, after each quest, its quest line's three PLAYER CARDS (below, "his cards":
 //                  the following update's Part 1d), on buttons in his line. His "gadgets and gizmos" and his later role are open (the archive).
-//   SAVED          `sidequest` (js/facilitysave.js): that he appeared, where (`w`: "crystal" or the platform), how far the talk got, the promise, that he called you over. A load puts him back there (on the
+//   SAVED          `sidequest` (js/facilitysave.js): that he appeared, where (`w`: "crystal", the platform or "lounge"), his lines in the Lounge, his pack given (`lt`, `gift`, `lcall`), how far the talk got, the promise, that he called you over. A load puts him back there (on the
 //                  platform: the gate open again; a save from before build 2026-11-09tt, with no `w`: the platform).
 //   HIS LOOK       the void walker, the old flux worker's form (the owner, 2026-11-02): see "drawing" below. (Until build 2026-11-02f he was a small black saucer drawn here in code.)
 //   PROVISIONAL    the platform as his spot, his spot by the Crystal and when he goes back down, and every line but the archive's opening (its wording "can be polished during implementation").
@@ -31,6 +33,12 @@ const SIDEQUEST = {
     // (js/quests.js questQueenTakesYou): the first of these offsets (tiles) from the Crystal that is Crystal Chamber floor. He talks and sells there; once the talk is over and you have left the chamber, he is back on
     // his platform in the Sewers (as he told you in the tutorial: "I'M GOING BACK DOWN BELOW"). The spots and his call there are the agent's (provisional).
     crystal: { room: "crystal_chamber", spots: [[-2, 1.5], [-2.5, -1], [0, 2.5], [2, 2.5], [-1, 3]] },
+    // IN THE LOUNGE (build 2026-11-15f; the owner, 2026-11-15: "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the
+    // player with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest"; the room "The Lounge", the reward for "Meeting him", and "Keep both spots": his
+    // platform for the quest, the Lounge after it). Once the Sewers are done (js/quests.js questDone("purify")) and you are out of the room he is in, he is in the Lounge: the first of these offsets (tiles)
+    // from its coffee table (`near`) that is Lounge floor. The first time you talk to him there he gives you a pack (sqGiftPack), and from then on his face is beside SHOP on the CARDS screen (sqShopFace,
+    // js/cardsui.js). He sells the potion and his cards there as on his platform. The spots and his lines there are the agent's (provisional).
+    lounge: { room: "lounge", near: "lounge_table", spots: [[0.5, -1], [1.5, 0], [-1.5, 0], [3.5, -1]] },   // (between the sofa and the coffee table: the Lounge's last two rows are behind the Main Hallway's wall)
     lines: {
         call: "PSST. UP HERE, ON THE MAINTENANCE PLATFORM.",
         callCrystal: "OVER HERE. I SAW WHAT SHE DID TO YOU DOWN THERE. WE NEED TO TALK.",
@@ -45,6 +53,13 @@ const SIDEQUEST = {
         declined: "…FINE. I'LL STILL SELL YOU THE POTION. GET HER TO MOVE. THAT'S ALL I ASK.",
         hint: "SHE SITS ROOTED AT THE CONSOLE. ASLEEP SHE LETS GO OF IT FOR A MOMENT; HURT ENOUGH, SHE PANICS AND ROAMS. LURE HER OFF, THEN WORK.",
         after: "…",   // (the user, 2026-10-31: after the queen's fate is decided, spared or killed, this and nothing else, for now)
+        // the Lounge (above): his call, your note that he has moved, and his two lines the first time (the pack comes with the first); after them, "…" as everywhere once the queen's fate is decided
+        callLounge: "HEY. OVER HERE, BY THE TABLE.",
+        moved: "◈ SIDE QUEST HAS MOVED UP TO THE LOUNGE, OFF THE MAIN HALLWAY",
+        lounge: [
+            "THERE YOU ARE. HERE, I PUT THIS ASIDE FOR YOU: A PACK, STILL SEALED.",
+            "AND THERE'S MORE WHERE THAT CAME FROM. I'LL KEEP YOU SUPPLIED WITH PACKS, ANY TIME: OPEN YOUR CARDS AND GO TO THE SHOP. THAT'S ME.",
+        ],
     },
     replyFrames: 480,   // how long his answer to the promise stays before the hint takes its place
     // HIS CARDS (the owner, 2026-11-02: "side quest should sell them after each quest for the quest lines elements"; approved with the following update's Part 1: "◆1,000 each, kept for good"): a quest line and its element.
@@ -58,7 +73,7 @@ function _sqFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _sqNow() { return typeof techClock === "number" ? techClock : _sqFrame(); }
 function sqState() {
     if (typeof _fp === "undefined" || !_fp) return null;
-    if (!_fp.sidequest) _fp.sidequest = { appearedAt: 0, talk: 0, promised: 0, promisedAt: 0, calledAt: 0, metAt: 0, replyUntil: 0, where: "" };   // (where: "crystal" or "platform", once he has appeared)
+    if (!_fp.sidequest) _fp.sidequest = { appearedAt: 0, talk: 0, promised: 0, promisedAt: 0, calledAt: 0, metAt: 0, replyUntil: 0, where: "", lt: 0, gift: 0, lcall: 0 };   // (where: "crystal", "platform" or "lounge", once he has appeared; lt: his lines in the Lounge so far; gift: when he gave you the pack; lcall: his call there)
     return _fp.sidequest;
 }
 function sqReset() {
@@ -70,12 +85,25 @@ function _sqQuest() { return typeof questState === "function" ? questState("puri
 function sqUnlocked() { const Q = _sqQuest(); return !!Q && Q.queenOutAt > 0; }
 function sqPresent() { const S = sqState(); return !!(S && S.appearedAt); }
 function sqAtCrystal() { const S = sqState(); return !!(S && S.appearedAt && S.where === "crystal"); }
+function sqInLounge() { const S = sqState(); return !!(S && S.appearedAt && S.where === "lounge"); }
+// the Sewers done (js/quests.js): he moves up to the Lounge (SIDEQUEST.lounge)
+function sqSewersDone() { return typeof questDone === "function" && !!questDone("purify"); }
+// his face beside SHOP on the CARDS screen (js/cardsui.js _cdTabs): once he has given you his pack in the Lounge
+function sqShopFace() { const S = sqState(); return !!(S && S.gift > 0); }
 // where he is, for a hint (js/quests.js: the install step's): null before he appears
-function sqWhereSaid() { return !sqPresent() ? null : sqAtCrystal() ? "BY THE CRYSTAL" : "ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE"; }
+function sqWhereSaid() { return !sqPresent() ? null : sqAtCrystal() ? "BY THE CRYSTAL" : sqInLounge() ? "IN THE LOUNGE" : "ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE"; }
 // his spot at the Crystal (SIDEQUEST.crystal)
 function sqCrystalSpot() {
     if (typeof crystal === "undefined" || !crystal || typeof _fpNearestCell !== "function" || typeof facilityRoomAt !== "function") return null;
     for (const d of SIDEQUEST.crystal.spots) { const p = _fpNearestCell(crystal.x + d[0], crystal.y + d[1]); if (p && (facilityRoomAt(p[0], p[1], _fp.F) || {}).id === SIDEQUEST.crystal.room) return p; }
+    return null;
+}
+// his spot in the Lounge (SIDEQUEST.lounge): the first offset from its coffee table that is Lounge floor
+function sqLoungeSpot() {
+    if (typeof _fp === "undefined" || !_fp || !_fp.F || typeof _fpNearestCell !== "function" || typeof facilityRoomAt !== "function") return null;
+    const L = SIDEQUEST.lounge, t = _fp.F.solids.find(q => q.id === L.near); if (!t || !t.bb) return null;
+    const cx = (t.bb[0] + t.bb[2]) / 2, cy = (t.bb[1] + t.bb[3]) / 2;
+    for (const d of L.spots) { const p = _fpNearestCell(cx + d[0], cy + d[1]); if (p && (facilityRoomAt(p[0], p[1], _fp.F) || {}).id === L.room) return p; }
     return null;
 }
 // the queen's fate is decided (spared or killed): his line is the placeholder
@@ -85,6 +113,7 @@ function sqSpot() {
     if (typeof _fp === "undefined" || !_fp || !_fp.F) return null;
     if (_fp._sqSpot) return _fp._sqSpot;
     if ((sqState() || {}).where === "crystal") { const p = sqCrystalSpot(); return p ? (_fp._sqSpot = [p[0], p[1]]) : null; }   // (by the Crystal, the first time: SIDEQUEST.crystal; asked as he is placed, before he has appeared)
+    if ((sqState() || {}).where === "lounge") { const p = sqLoungeSpot(); return p ? (_fp._sqSpot = [p[0], p[1]]) : null; }     // (the Lounge, once the Sewers are done: SIDEQUEST.lounge)
     const g = _fp.F.solids.find(q => q.id === SIDEQUEST.gate); if (!g || !g.bb || typeof facilitySolidIsOpen !== "function" || !facilitySolidIsOpen(SIDEQUEST.gate)) return null;
     const cx = (g.bb[0] + g.bb[2]) / 2, cy = (g.bb[1] + g.bb[3]) / 2, c = typeof _fpNearestCell === "function" ? _fpNearestCell(cx, cy + SIDEQUEST.into) : null; if (!c) return null;
     return (_fp._sqSpot = [c[0], c[1]]);
@@ -93,10 +122,10 @@ function _sqStation() { return typeof _fp !== "undefined" && _fp && _fp.stations
 // he appears (or is put back by a load): the gate opens, he hovers on the platform, his station is on him
 function sqPlace(announce) {
     const S = sqState(); if (!S || typeof _fp === "undefined" || !_fp || !_fp.items || !_fp.stations) return false;
-    const atC = S.where === "crystal";   // (by the Crystal, the first time; else his platform, whose gate opens)
-    if (!atC && typeof facilitySolidOpen === "function") facilitySolidOpen(SIDEQUEST.gate);
+    const atC = S.where === "crystal", atL = S.where === "lounge";   // (by the Crystal, the first time; in the Lounge once the Sewers are done; else his platform, whose gate opens)
+    if (!atC && !atL && typeof facilitySolidOpen === "function") facilitySolidOpen(SIDEQUEST.gate);
     _fp._sqSpot = null; const at = sqSpot(); if (!at) return false;
-    const x = at[0], y = at[1], room = atC ? SIDEQUEST.crystal.room : SIDEQUEST.room, base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(room, _fp.F) * FP_ELEV_PX : 0, seed = typeof _fpHash === "function" ? _fpHash(Math.round(x * 3), Math.round(y * 7)) : 1;
+    const x = at[0], y = at[1], room = atC ? SIDEQUEST.crystal.room : atL ? SIDEQUEST.lounge.room : SIDEQUEST.room, base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(room, _fp.F) * FP_ELEV_PX : 0, seed = typeof _fpHash === "function" ? _fpHash(Math.round(x * 3), Math.round(y * 7)) : 1;
     _fp.items = _fp.items.filter(i => !(i.fp === "sidequest" || (i.fp === "station" && i.id === "st_sidequest"))); _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest");
     const bb = [x - 0.45, y - 0.45, x + 0.45, y + 0.45], st = { id: "st_sidequest", kind: "sidequest", room, prop: null, bb, x, y };
     _fp.stations.push(st);
@@ -105,7 +134,7 @@ function sqPlace(announce) {
     _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest", room, x, y, depth: x + y + 0.02, base, seed });
     sqSheet();   // (his sheet starts on its way now, so it is in by the time you reach him: js/evolution.js _evoImg)
     if (!S.appearedAt) S.appearedAt = Math.max(1, _sqNow());
-    if (announce && typeof dialogueSay === "function") dialogueSay("player", atC ? "◈ SIDE QUEST IS WAITING BY THE CRYSTAL" : SIDEQUEST.lines.gone, { key: atC ? "sq:crystal" : "sq:opened" });   // (your note of it: the dialogue box)
+    if (announce && typeof dialogueSay === "function") dialogueSay("player", atC ? "◈ SIDE QUEST IS WAITING BY THE CRYSTAL" : atL ? SIDEQUEST.lines.moved : SIDEQUEST.lines.gone, { key: atC ? "sq:crystal" : atL ? "sq:lounge" : "sq:opened" });   // (your note of it: the dialogue box)
     return true;
 }
 // each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may (by the Crystal); he is put back if the stations were rebuilt; he calls you over the first time you come near; his talk over and you
@@ -117,17 +146,30 @@ function sqTick() {
     if (!S.where) S.where = "platform";
     if (!_sqStation()) sqPlace(false);
     const here = typeof player !== "undefined" && typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, atC = S.where === "crystal";
+    if (S.where === "lounge") {   // (the Lounge, once the Sewers are done: his call there, once, the first time you come near)
+        if (!S.lcall && here === SIDEQUEST.lounge.room) { const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.lcall = Math.max(1, _sqNow()); if (typeof dialogueSay === "function") dialogueSay("sidequest", SIDEQUEST.lines.callLounge, { key: "sq:callLounge" }); } }
+        return;
+    }
+    if (sqSewersDone() && here && here !== (atC ? SIDEQUEST.crystal.room : SIDEQUEST.room)) { S.where = "lounge"; sqPlace(true); return; }   // (up to the Lounge once the Sewers are done, while you are out of his room)
     if (atC && (S.talk >= SIDEQUEST.lines.talk.length && S.promised !== 0 || sqAfter()) && here && here !== SIDEQUEST.crystal.room) { S.where = "platform"; sqPlace(true); return; }   // (back down below: the talk over, or the queen's fate decided without it)
     if (!S.calledAt && here === (atC ? SIDEQUEST.crystal.room : SIDEQUEST.room)) {
         const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.calledAt = Math.max(1, _sqNow()); if (typeof dialogueSay === "function") dialogueSay("sidequest", atC ? SIDEQUEST.lines.callCrystal : SIDEQUEST.lines.call, { key: atC ? "sq:callCrystal" : "sq:call" }); }   // (his call, in the dialogue box with his picture)
     }
 }
 // ── the talk, through his station (js/stations.js STATION_KINDS.sidequest) ──
-function sqChoosing() { const S = sqState(); return !!S && S.talk >= SIDEQUEST.lines.talk.length && S.promised === 0 && !sqAfter(); }
+function sqChoosing() { const S = sqState(); return !!S && S.talk >= SIDEQUEST.lines.talk.length && S.promised === 0 && !sqAfter() && S.where !== "lounge"; }
 function sqTalking() { const S = sqState(); return !!S && S.talk > 0 && S.talk < SIDEQUEST.lines.talk.length && !sqAfter(); }
+// his two lines in the Lounge still to come (a tap on him is NEXT); the first comes with his pack
+function sqLoungeTalk() { const S = sqState(); return sqInLounge() && S.lt < SIDEQUEST.lines.lounge.length; }
 // what he is saying now: the placeholder once the queen's fate is decided; his call before the first talk; the talk's line; his answer to the promise for a while; then the hint
 function sqSpeech() {
     const S = sqState(); if (!S || !S.appearedAt) return null;
+    if (S.where === "lounge") {   // (the Lounge: his call, his two lines, the last of them for a while; then "…")
+        const L = SIDEQUEST.lines.lounge;
+        if (S.lt === 0) return S.lcall ? SIDEQUEST.lines.callLounge : null;
+        if (S.lt < L.length || S.replyUntil > _sqFrame()) return L[Math.min(S.lt, L.length) - 1];
+        return SIDEQUEST.lines.after;
+    }
     if (sqAfter()) return SIDEQUEST.lines.after;
     const T = SIDEQUEST.lines.talk;
     if (S.talk === 0) return S.calledAt ? (S.where === "crystal" ? SIDEQUEST.lines.callCrystal : SIDEQUEST.lines.call) : null;
@@ -138,7 +180,8 @@ function sqSpeech() {
 function _sqShopVerb() { return "BUY A SLEEPING POTION ◆" + (typeof potionPrice === "function" ? potionPrice() : 100); }
 function sqVerb() {
     const S = sqState(); if (!S) return "TALK";
-    if (sqAfter()) return _sqShopVerb();
+    if (sqLoungeTalk()) return S.lt === 0 ? "TALK TO SIDE QUEST" : "NEXT";
+    if (sqAfter() || S.where === "lounge") return _sqShopVerb();
     if (S.talk === 0) return "TALK TO SIDE QUEST";
     if (S.talk < SIDEQUEST.lines.talk.length) return "NEXT";
     if (S.promised === 0) return "CHOOSE";
@@ -146,14 +189,34 @@ function sqVerb() {
 }
 function sqCan() {
     const S = sqState(); if (!S || !S.appearedAt) return { ok: false, why: "NOBODY HERE" };
+    if (sqLoungeTalk()) return { ok: true };
     if (sqChoosing()) return { ok: false, why: "CHOOSE: I PROMISE, OR NO PROMISES" };
-    if (sqAfter() || S.talk >= SIDEQUEST.lines.talk.length) return typeof potionBuyCan === "function" ? potionBuyCan() : { ok: false, why: "NO POTION" };
+    if (sqAfter() || S.where === "lounge" || S.talk >= SIDEQUEST.lines.talk.length) return typeof potionBuyCan === "function" ? potionBuyCan() : { ok: false, why: "NO POTION" };
     return { ok: true };
 }
 function sqUse() {
     const S = sqState(), can = sqCan(); if (!can.ok) return can;
+    if (sqLoungeTalk()) {   // (the Lounge: the first line comes with his pack, the last stays a while)
+        S.lt++; if (!S.metAt) S.metAt = Math.max(1, _sqNow());
+        if (S.lt === 1) sqGiftPack();
+        if (S.lt === SIDEQUEST.lines.lounge.length) S.replyUntil = _sqFrame() + SIDEQUEST.replyFrames;
+        return { ok: true, quiet: true, talk: S.lt };
+    }
     if (!sqAfter() && S.talk < SIDEQUEST.lines.talk.length) { S.talk++; if (!S.metAt) S.metAt = Math.max(1, _sqNow()); return { ok: true, quiet: true, talk: S.talk }; }
     return typeof potionBuy === "function" ? potionBuy() : { ok: false, why: "NO POTION" };
+}
+// HIS PACK (the owner, 2026-11-15: "give the player a pack as a reward", for "Meeting him" in the Lounge): once, the first time you talk to him there. It is the pack a chest gives (js/chests.js CHESTS.packs:
+// PACK 1, or SERIES 2 as well once it is open to you, an even chance), opened free with the reveal you know (js/cards.js equipPackOpen, js/cardsui.js cardsRevealFound). Given, it is saved (`gift`), and his face
+// is beside SHOP on the CARDS screen from then on (sqShopFace). True when a pack was dealt.
+function sqGiftPack() {
+    const S = sqState(); if (!S || S.gift) return false;
+    S.gift = Math.max(1, _sqNow());
+    const open = typeof equipPacksOpen === "function" ? equipPacksOpen().map(p => p.id) : [], ids = (typeof CHESTS !== "undefined" && CHESTS.packs ? CHESTS.packs : ["pack1"]).filter(id => open.indexOf(id) >= 0);
+    const pid = ids.length ? ids[Math.floor(Math.random() * ids.length)] : null, pack = pid && typeof EQUIP_PACKS !== "undefined" ? EQUIP_PACKS.find(p => p.id === pid) : null;
+    const dealt = pack && typeof equipPackOpen === "function" ? equipPackOpen(undefined, pack, true) : null;
+    if (dealt && typeof cardsRevealFound === "function") try { cardsRevealFound(); } catch (e) { /* the pack is dealt either way: its cards are in your collection */ }
+    if (typeof facilitySaveWrite === "function") try { facilitySaveWrite(); } catch (e) {}
+    return !!dealt;
 }
 // the choice: I PROMISE (1) or NO PROMISES (−1); nothing of the quest line changes with it
 function sqChoose(yes) {
@@ -254,19 +317,20 @@ function sqDrawOverlay() {
     if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
     const st = _sqStation(), near = _sqNear(), text = near ? sqSpeech() : null;
     if (!text) { if (typeof dialogueDismiss === "function") dialogueDismiss("sq"); return; }
-    const choosing = sqChoosing(), next = !sqAfter() && S.talk < SIDEQUEST.lines.talk.length, sale = choosing || next ? [] : sqCardsForSale();
-    dialogueSay("sidequest", text, { key: "sq:" + S.talk + ":" + (choosing ? "choose" : S.promised) + ":" + text + (sale.length ? ":" + sale.map(c => c.id).join(",") : ""), group: "sq", hold: true, now: true,
+    const lounge = S.where === "lounge", choosing = sqChoosing(), next = lounge ? sqLoungeTalk() : !sqAfter() && S.talk < SIDEQUEST.lines.talk.length, sale = choosing || next ? [] : sqCardsForSale();
+    dialogueSay("sidequest", text, { key: "sq:" + (lounge ? "L" + S.lt : S.talk) + ":" + (choosing ? "choose" : S.promised) + ":" + text + (sale.length ? ":" + sale.map(c => c.id).join(",") : ""), group: "sq", hold: true, now: true,
         onTap: next ? () => { if (typeof stationUse === "function") stationUse(st); else sqUse(); } : null,
         choices: choosing ? [{ label: "I PROMISE", col: "#9dffb6", yes: true, fn: () => sqChoose(true) }, { label: "NO PROMISES", col: "#ff9c8a", yes: false, fn: () => sqChoose(false) }]
             : sale.length ? sale.map(c => ({ label: c.name, sub: "◆" + SIDEQUEST.cardPrice + " · KEPT FOR GOOD", col: SIDEQUEST.cardCol, card: c.id, fn: () => sqCardBuy(c.id) })) : null });
 }
 // ── saving (js/facilitysave.js) ──
-function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt, w: S.where } : null; }
+function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt, w: S.where, lt: S.lt, gift: S.gift, lcall: S.lcall } : null; }
 function sqApply(d) {
     sqReset(); const S = sqState(); if (!S || !d || typeof d !== "object") return false;
     S.appearedAt = Number.isFinite(d.at) ? Math.max(0, d.at) : 0; S.talk = Math.max(0, Math.min(SIDEQUEST.lines.talk.length, d.talk | 0)); S.promised = d.promised === 1 || d.promised === -1 ? d.promised : 0;
     S.promisedAt = Number.isFinite(d.pAt) ? d.pAt : 0; S.calledAt = Number.isFinite(d.called) ? d.called : 0; S.metAt = Number.isFinite(d.met) ? d.met : 0; S.replyUntil = 0;
-    S.where = S.appearedAt ? (d.w === "crystal" ? "crystal" : "platform") : "";   // (a game from before build 2026-11-09tt: he is on his platform)
+    S.where = S.appearedAt ? (d.w === "crystal" ? "crystal" : d.w === "lounge" ? "lounge" : "platform") : "";   // (a game from before build 2026-11-09tt: he is on his platform; one whose Sewers are done moves him up to the Lounge: sqTick)
+    S.lt = Math.max(0, Math.min(SIDEQUEST.lines.lounge.length, d.lt | 0)); S.gift = Number.isFinite(d.gift) ? Math.max(0, d.gift) : 0; S.lcall = Number.isFinite(d.lcall) ? Math.max(0, d.lcall) : 0;   // (the Lounge, since build 2026-11-15f: an older game has none of it)
     if (S.appearedAt) sqPlace(false);
     return true;
 }

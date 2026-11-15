@@ -144,6 +144,18 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 Before he is met in the Sewers, Side Quest helps in the tutorial (the owner, 2026-11-07: "you have to get the help of a NPC like side quest to retrieve the item ... and side quest's ability is to fly"; answer "Side Quest himself", met "Under the catwalks"). While the junction's POWER MODULE is up on the catwalks he waits on the arena floor by them (a station on him, `STATION_KINDS.sidequest_tut`), calls you over once, says two lines, flies up, takes the module, lands on the catwalks, walks to their ledge and steps off it ("to show the player how it works"), walks to you and hands it over, then flies off. In the Sewers he is met later as before: his unlock, lines and shop are unchanged (his unlock changed in build `2026-11-09tt`: the ambush). His words there and his timings are the agent's (provisional). docs/TUTORIAL.md, "The server room, the warehouse and the one repair".
 
+### Side Quest in the Lounge (build 2026-11-15f)
+
+The owner, 2026-11-15: "we'd have side quest give the player a pack as a reward. He's somewhere in the lobby, but he basically tells the player that he'll supply the player with packs at any time and there's a little icon next to the shop button in the card screen that shows side quest"; then, asked: the room is **The Lounge**, the reward is for **meeting him**, and **both spots stay** (his platform for the quest, the Lounge after it).
+
+- **When:** once the Sewers are done (the water purified: js/quests.js `questDone("purify")`) and you are out of the room he is in, he moves up to the Lounge for good, with your note of it ("◈ SIDE QUEST HAS MOVED UP TO THE LOUNGE, OFF THE MAIN HALLWAY"). A game saved earlier with the Sewers done does the same the first time you are out of them.
+- **Where:** between the Lounge's sofa and its coffee table (`SIDEQUEST.lounge`: offsets from the table; the Lounge's last two rows are behind the Main Hallway's wall), his station on him. He calls you over once ("HEY. OVER HERE, BY THE TABLE.").
+- **The pack:** the first time you talk to him there his first line comes with a pack, free: the one a chest gives (PACK 1, or SERIES 2 as well once it is open, an even chance: js/chests.js `CHESTS.packs`), opened with the reveal you know (`sqGiftPack`). His second line: "AND THERE'S MORE WHERE THAT CAME FROM. I'LL KEEP YOU SUPPLIED WITH PACKS, ANY TIME: OPEN YOUR CARDS AND GO TO THE SHOP. THAT'S ME." After it, "…", as everywhere once the queen's fate is decided. Once only.
+- **His face beside SHOP** on the CARDS screen from then on (js/cardsui.js `_cdSqFace`; docs/UI-STYLE.md). The SHOP itself is as it was: its packs were on sale before him and still are.
+- **His shop** goes with him: the potion on his station and his cards on the buttons under his line, in the Lounge.
+- **Saved:** `w: "lounge"`, his lines there (`lt`), the pack given (`gift`), his call (`lcall`).
+- **Provisional (the agent's):** his spot, his call, his two lines and the note; which pack it is.
+
 ## What a player does, in order
 
 1. Go down the culvert behind the arena's north tank. The reading comes as you arrive (your note in the dialogue box): PURIFY THE SEWERS 1/5 in the QUESTS box.
@@ -154,6 +166,7 @@ Before he is met in the Sewers, Side Quest helps in the tutorial (the owner, 202
 6. Side Quest is waiting by the Crystal: talk, promise or not, buy the SLEEPING POTION ◆100 and EQUIP it in the pack. After that he is on his maintenance platform off the north ledge.
 7. Back at the console the queen sleeps beside it. INSTALL THE MODULE again: she wakes, rooted, throwing toxic bombs and calling her brood; the install holds while she sits there. Sleep her (the POTION pill, or T), or have your squad stun, freeze or glitch her, and the install runs; at half her health she goes frantic and roams: lure her off, sleep her, install. Her bites do not stop the install; walking away does. Or kill her.
 8. The module runs thirty seconds; the river clears as it goes. At the end the water is clean, the brood thins to a straggler, and a living queen settles by the console, calm: the quest line is done either way. Side Quest says "…", and from then on sells the three toxic Player cards (◆1,000 each, kept for good) on the buttons under his line. Series 2 opens on the CARDS screen.
+9. Out of the Sewers, Side Quest has moved up to the Lounge (since build `2026-11-15f`): talk to him there for a free pack; his face is beside SHOP on the CARDS screen from then on.
 
 ## Still open (docs/OPEN-QUESTIONS.md)
 

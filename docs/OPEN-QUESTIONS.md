@@ -12,6 +12,9 @@ The first version of this file listed fifteen choices I had made that the briefs
 - Which look: 1 facility refined, 2 storm drain (concrete), 3 Victorian brick, 4 pipeworks, 5 tiled service tunnel, 6 overgrown, or a mix (the agent's suggestion: 2, with 4's pipe runs, and 6's growth in the stretch before the Nest).
 - The wall fix all six share (the near walls cut clean, dark wall tops, a lintel or arch over each side passage, one floor pattern): for the Sewers only, or for every room? The near walls' saw-teeth come from how every near wall is drawn; only the Sewers were checked.
 - "Fix the four tiles" was read as the floor tiles; if four particular tiles were meant, which ones?
+- The owner's answers so far (2026-11-15): **not look 6** (overgrown: "I don't like that look"), and **change the bank's edge** (the river's edge, marked on that look). Which look is still open.
+
+**Open 2026-11-15, Side Quest in the Lounge** (build `2026-11-15f`; docs/SEWER-QUEST.md, "Side Quest in the Lounge"). The agent's, to confirm or change: his spot there, his call and two lines, which pack he gives (the chest's: Pack 1 or Series 2), "…" after his lines, and the face beside SHOP opening the SHOP.
 
 **Open 2026-11-15, the subway** (build `2026-11-15c`; docs/FACILITY.md, "The subway"). The owner asked for it as a starting point "to jog my memory for later updates", so all of it is open:
 - Where do its tunnels lead (other stations, the domains, the Nest)?
