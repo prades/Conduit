@@ -62,6 +62,8 @@ const PIECES = {
   // rim of broken rock thrown up round it, molten at its bottom, glowing cracks up its wall and out over the floor, rubble flung round it, the floor scorched. ANIMATED: 12 columns, the strike (white hot,
   // the rim thrown up) cooling to a dark crust; the floor under its middle is the origin, at the middle of its cell.
   meteorcrater: { form: 938, color: '#ff4400', anim: true, cell: 192, yaws: 12, pitches: [0], h: 0.5 },
+  // METEOR RAIN's ROCK (a DRAFT, with its crater): a burning boulder, black broken rock with glowing seams, tumbling as it falls: 12 steps of its turn.
+  meteorrock: { form: 938, color: '#ff4400', cell: 96, yaws: 12, pitches: [0], tumble: { axes: [[1, 0.3, 0.6]] }, len: 0.9 },
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -188,8 +190,8 @@ window.__fx = async function (mode, piece, P) {
       g.userData.pose(0);
     }
     if (piece === 'meteorcrater') {
-      const R = 1.0, NA = 26, PROF = [[0, -0.46], [0.42, -0.44], [0.64, -0.3], [0.79, 0.0], [0.89, 0.2], [0.99, 0.08], [1.12, 0]];
-      const rock = new T.MeshStandardMaterial({ color: new T.Color(0x2c2320).convertSRGBToLinear(), roughness: 0.9, metalness: 0.05, flatShading: true, side: T.DoubleSide }); rock.envMapIntensity = 0.35;
+      const R = 1.0, NA = 26, PROF = [[0, -0.36], [0.5, -0.35], [0.7, -0.22], [0.82, 0.0], [0.9, 0.13], [1.0, 0.06], [1.12, 0]];
+      const rock = new T.MeshStandardMaterial({ color: new T.Color(0x17110f).convertSRGBToLinear(), roughness: 0.95, metalness: 0.05, flatShading: true, side: T.DoubleSide }); rock.envMapIntensity = 0.35;
       const lava = new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), pool = new T.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }), scorch = new T.MeshBasicMaterial({ color: 0x070403, transparent: true, opacity: 0.5, depthWrite: false });
       const V = (k, j) => { const a = j % NA * 2 * PI / NA, n = _hz(j % NA * 37 + 5, k * 11, 3), n2 = _hz(j % NA * 53 + 9, 7, k), [fr, fy] = PROF[k];
         const rr = R * fr * (k >= 2 ? 0.86 + 0.28 * n : 1), y = k === 4 ? fy * (0.45 + 1.15 * n2) : k === 5 ? fy * (0.5 + n) : k === 3 ? fy + 0.1 * (n - 0.5) : fy; return [Math.cos(a) * rr, y, Math.sin(a) * rr]; };
@@ -198,21 +200,35 @@ window.__fx = async function (mode, piece, P) {
       const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
       const bowl = new T.Group(); g.add(bowl); bowl.add(new T.Mesh(geo, rock));
       for (const [rr, op] of [[1.75, 0.3], [1.4, 0.45]]) { const m = new T.Mesh(new T.RingGeometry(R * 0.98, R * rr, 30), scorch.clone()); m.material.opacity = op; m.rotation.x = -PI / 2; m.position.y = 0.004 + rr * 0.001; m.renderOrder = -1; g.add(m); }   // (the floor scorched round it)
-      const pl = new T.Mesh(new T.CircleGeometry(R * 0.6, 14), pool); pl.rotation.x = -PI / 2; pl.position.y = -0.4; bowl.add(pl);   // (the molten bottom)
+      const pl = new T.Mesh(new T.CircleGeometry(R * 0.7, 16), pool); pl.rotation.x = -PI / 2; pl.position.y = -0.28;
+      // the crust that forms over the molten bottom as it cools: dark plates growing till only glowing seams are left between them
+      const plates = []; for (let i = 0; i < 7; i++) { const a = i * 2 * PI / 6 + 0.3, d = i === 6 ? 0 : R * 0.4, m = new T.Mesh(new T.CylinderGeometry(R * 0.2, R * 0.2, 0.012, i === 6 ? 6 : 5), rock); m.position.set(Math.cos(a) * d, -0.27, Math.sin(a) * d); m.rotation.y = i * 1.1; bowl.add(m); plates.push(m); }
+      // broken slabs of the floor stood up along its rim, so its edge is ragged
+      for (let i = 0; i < 9; i++) { const a = i * 2 * PI / 9 + 0.2 * _hz(i, 4, 4), h = 0.16 + 0.2 * _hz(i, 6, 1), m = new T.Mesh(new T.ConeGeometry(0.13 + 0.07 * _hz(i, 2, 2), h, 4), rock); m.position.set(Math.cos(a) * R * 0.93, 0.08 + h * 0.3, Math.sin(a) * R * 0.93); m.rotation.set(Math.sin(a) * 0.5, i * 0.9, -Math.cos(a) * 0.5); bowl.add(m); } bowl.add(pl);   // (the molten bottom)
       const seg = (A, B, w) => { const a = new T.Vector3(...A), b = new T.Vector3(...B), m = new T.Mesh(new T.BoxGeometry(w, w * 0.5, 1), lava); m.scale.z = a.distanceTo(b) * 1.08; m.position.copy(a).add(b).multiplyScalar(0.5); m.position.y += 0.015; m.lookAt(b.x, b.y + 0.015, b.z); return m; };
       [1, 5, 10, 14, 19, 23].forEach((j, i) => { for (let k = 1; k < PROF.length - 1; k++) bowl.add(seg(V(k, j + (k > 3 ? i % 2 : 0)), V(k + 1, j + (k + 1 > 3 ? i % 2 : 0)), 0.05 - 0.006 * k));   // (the glowing cracks: up the wall, over the rim)
         const o = V(PROF.length - 1, j + i % 2), a = Math.atan2(o[2], o[0]) + (i % 2 ? 0.22 : -0.18), L = 1.45 + 0.35 * (i % 3) / 2; g.add(seg(o, [Math.cos(a) * R * L, 0.004, Math.sin(a) * R * L], 0.02)); });   // (and out over the floor, thin)
       for (let i = 0; i < 11; i++) { const a = i * 2.399 + 0.5, d = R * (1.15 + 0.55 * _hz(i, 3, 8)), sz = 0.07 + 0.09 * _hz(i, 9, 2), m = new T.Mesh(new T.DodecahedronGeometry(sz, 0), rock);
         m.position.set(Math.cos(a) * d, sz * 0.55, Math.sin(a) * d); m.rotation.set(i * 1.3, i * 2.1, i * 0.7); m.scale.y = 0.75; g.add(m); }   // (rubble flung round it)
-      const heat = new T.PointLight(0xff7a2a, 0, 3.2, 1.6); heat.position.set(0, -0.15, 0); g.add(heat);
+      const heat = new T.PointLight(0xff7a2a, 0, 3.2, 1.6); heat.position.set(0, -0.2, 0); g.add(heat);
       const ramp = (u, st) => { let a = st[0]; for (let i = 1; i < st.length; i++) { const b = st[i]; if (u <= b[0]) { const t = (u - a[0]) / (b[0] - a[0] || 1); return new T.Color(a[1]).lerp(new T.Color(b[1]), t).convertSRGBToLinear(); } a = b; } return new T.Color(a[1]).convertSRGBToLinear(); };
       g.userData.pose = u => {
         bowl.scale.y = u < 0.1 ? 0.4 + 0.6 * u / 0.1 : 1;   // (the rim thrown up as it strikes)
         pool.color.copy(ramp(u, [[0, 0xfff6c8], [0.12, 0xffc44a], [0.35, 0xff5a14], [0.65, 0x8a1c08], [1, 0x1c0a06]]));
         lava.color.copy(ramp(u, [[0, 0xfff0a8], [0.2, 0xffa62a], [0.5, 0xff4e10], [0.8, 0x7a1806], [1, 0x2a0c06]]));
-        heat.intensity = 0.5 + 8 * Math.pow(1 - u, 1.6);
+        heat.intensity = 0.25 + 5 * Math.pow(1 - u, 2.2); plates.forEach((m, i) => { const k = Math.max(0, Math.min(1, (u - 0.22 - i * 0.03) / 0.5)); m.visible = k > 0; m.scale.set(0.2 + 0.85 * k, 1, 0.2 + 0.85 * k); });
       };
       g.userData.pose(0);
+    }
+    if (piece === 'meteorrock') {
+      const rock = new T.MeshStandardMaterial({ color: new T.Color(0x1d1512).convertSRGBToLinear(), emissive: new T.Color(0xff3a08).convertSRGBToLinear().multiplyScalar(0.025), roughness: 0.85, metalness: 0.05, flatShading: true }); rock.envMapIntensity = 0.3;
+      const hot = new T.MeshBasicMaterial({ color: new T.Color(0xffb02a).convertSRGBToLinear(), toneMapped: false });
+      const geo = new T.IcosahedronGeometry(0.42, 1), q = geo.attributes.position;
+      for (let v = 0; v < q.count; v++) { const x = q.getX(v), y = q.getY(v), z = q.getZ(v), n = _hz(Math.round(x * 300) + 3, Math.round(y * 300), Math.round(z * 300)), k = 0.74 + 0.5 * n; q.setXYZ(v, x * k * 1.15, y * k * 0.9, z * k); }
+      geo.computeVertexNormals(); const tum = new T.Group(); tum.add(new T.Mesh(geo, rock));
+      const core = new T.Mesh(new T.IcosahedronGeometry(0.385, 1), hot); core.scale.set(1.15, 0.9, 1); tum.add(core);   // (its hot heart, showing where the rock is pulled in thin)
+      for (let i = 0; i < 0; i++) { const a = new T.Vector3(_hz(i, 1, 1) - 0.5, _hz(i, 2, 5) - 0.5, _hz(i, 3, 9) - 0.5).normalize(), m = new T.Mesh(new T.BoxGeometry(0.05, 0.03, 0.4), hot); m.position.copy(a).multiplyScalar(0.4); m.lookAt(a.clone().multiplyScalar(2)); m.rotateZ(i * 1.3); m.rotateX(PI / 2); tum.add(m); }   // (glowing seams across its faces)
+      g.add(tum); g.userData.tumbler = tum;
     }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)

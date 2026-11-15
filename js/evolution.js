@@ -1776,6 +1776,8 @@ function blazeCol(f, f0, d) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (mv && mv.id === "hexfire" && f._altWind > 0 && f._altWindMax > 0) return 24 + Math.min(5, Math.floor((f._altWindMax - f._altWind) / f._altWindMax * 6 + 1e-9));
     if (f._hexAt !== undefined) { const a = f0 - f._hexAt; if (a >= 0 && a < 5) return 30; if (a >= 5 && a < 14) return 31; }
+    if (f._meteorAt !== undefined && typeof ULT_METEOR !== "undefined") { const a = f0 - f._meteorAt, C = ULT_METEOR.cast, E = C + ULT_METEOR.rain;   // (METEOR RAIN, js/elements.js: it lights up over the cast, blazes while the rocks fall, then lets go)
+        if (a >= 0 && a < C) return 24 + Math.min(5, Math.floor(a / C * 6)); if (a >= C && a < E) return 29; if (a >= E && a < E + 6) return 30; if (a >= E + 6 && a < E + 14) return 31; }
     return -1;
 }
 

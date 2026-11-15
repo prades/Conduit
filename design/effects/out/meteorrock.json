@@ -1,0 +1,15 @@
+{
+ "piece": "meteorrock",
+ "cell": 96,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 48.00000000000004,
+  "y": 48.00000000000004
+ },
+ "unitsPerCell": 2.2666666666666666,
+ "len": 0.9,
+ "upright": false
+}
