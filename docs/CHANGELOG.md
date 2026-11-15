@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-15
 
+### Drafts, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · ten directions for the game's look and combat
+- **The ask** (the owner): "I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable. Can you give me 10 suggestions including example pictures."
+- **What there is:** `docs/STYLE-EVOLUTION.md` (**Proposed**) holds ten directions. Each pairs a look with a fight idea that slows the fight or makes it readable, and comes with a picture of the same moment in the Sewers, built in real 3D from the game's own map and models (`design/style-evolution/`).
+  - The directions: DIORAMA with SLOW TIME; PIXEL SQUAD with a TURN QUEUE; INK TOON with TELEGRAPHS; LOW-POLY TACTICS on the grid; VOXEL LAB with PAUSE AND PLAN; HOLO-TACTICAL with INTENT AND THREAT; BATTLE STAGE with a COMMAND MENU; NOIR LIGHT with SPOTLIGHT AND HIT-STOP; TABLETOP with CARDS; PAINTED, HEAVY AND DELIBERATE.
+  - Also in the document: what 3D or 2.5D would take, and the agent's suggestion.
+- **Reopened, not changed:** "Stay 2D for now" (2026-11-09) and "real time stays" (2026-11-11) stand until the owner chooses (`docs/OPEN-QUESTIONS.md`).
+- **Not tested:** the pictures are stills from a software renderer and say nothing about speed on an iPad. No game code changed, so no suite was run.
+
 ### Build `2026-11-15j` · branch `claude/start-game-project-HSh7Z` · the Sewers' gates: drawn behind whoever stands in front of them
 - **The ask** (the owner: "Fix the gate"): after `2026-11-15h`'s pictures, where the player stood in front of the wide gate to Side Quest's platform and its bars were drawn over them.
 - **Why:** each gate was one item, sorted as a whole by its far (east) end. Anyone in front of the rest of it was sorted before it, so the bars covered them.

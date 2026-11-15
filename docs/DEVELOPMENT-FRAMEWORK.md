@@ -154,6 +154,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Combat (and walls, cover and sight: §8, built in `2026-11-06h`) | `COMBAT.md` |
 | The player's part in a fight: the bars come back, the repair kit, GUARD and STUN DIVE (designed 2026-11-11) | `PLAYER-COMBAT.md` |
 | The battle look, the JRPG feel: the battle view (zoom, soft edges), bigger numbers in a face per damage type, attack frames per form (designed 2026-11-11; nothing built) | `BATTLE-LOOK.md` |
+| The game's look and combat evolved: 3D or 2.5D and a slower, readable fight. Ten directions with pictures (proposed 2026-11-15; nothing chosen, nothing built) | `STYLE-EVOLUTION.md` |
 | How the forms' second attacks and Ultimates look (the 3-D flare pass; the optimization check's budget for effects) | `EFFECTS.md` |
 | The fire and electric followers' attack redesign | `FOLLOWER-COMBAT-REDESIGN.md` |
 | Facility/core systems | `FACILITY.md` |
