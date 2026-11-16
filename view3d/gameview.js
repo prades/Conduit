@@ -153,7 +153,7 @@ const GAMEVIEW = (function () {
     fxDrew = false; if (floorMarks) { fxG.save(); try { floorMarks(fxG); } finally { fxG.restore(); } } if (fxDrew) fxTex.needsUpdate = true; return fxDrew ? fxTex : null; }
 
   const OWN = new Set(['wall', 'door', 'prop', 'fixture', 'wdecor', 'fill', 'pillar', 'rigpad', 'tank', 'stair', 'rockbend']);   // (the facility's items this view builds: js/facilityplay.js _fp.items)
-  const WDECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);   // (the wall's things it builds, round2/chamber.js and live/floor.js; any other, a shelf, a clock, a sign, the game draws on the wall where the view's wall is)
+  const WDECOR = BUILT_WALL_DECOR;   // (the wall's things it builds, round2/chamber.js and live/floor.js; any other, a shelf, a clock, a sign, is not drawn while the view shows: keeps, below)
 
   // ── everything made: the still and the moving given their colours for the ink line; the bodies first seen made now ──
   tagInk(scene); warm();
@@ -174,7 +174,9 @@ const GAMEVIEW = (function () {
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
-    keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false; return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
+    keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false;
+      if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play)
+      return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
   };

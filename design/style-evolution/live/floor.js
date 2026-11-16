@@ -58,6 +58,8 @@ function moreFittings(P, acc) {
 //   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail or railing_wall) is a railing, not a wall
 //   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; a draft: ?draft=arena, docs/VIEW-3D.md); a wall facing a
 //   dark room (the arena's style) is dark; a ledge between two floors (the catwalk spur's over the arena) has no wall over it, its railing on the higher floor
+// the wall's things the 3D builds (round2/chamber.js and moreFittings above; the game's view, view3d/gameview.js, leaves the others undrawn): only these keep a rock face flat
+const BUILT_WALL_DECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);
 function buildLabFloor(lab, P0, how) {
   const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
   const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
@@ -90,7 +92,8 @@ function buildLabFloor(lab, P0, how) {
     doors.push(d); }
 
   // a rock block a door or a sign hangs on (a room's wall decor, from end to end) stays flat, so the thing sits flush on it
-  if (live) for (const rec of recs) for (const d of rec.decor || []) { if (!d.a || !d.b) continue; const L = Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1]); for (let i = 0; i <= Math.ceil(L * 2); i++) { const t = L ? i / Math.ceil(L * 2) : 0, px = d.a[0] + (d.b[0] - d.a[0]) * t, py = d.a[1] + (d.b[1] - d.a[1]) * t;
+  if (live) for (const rec of recs) for (const d of rec.decor || []) { if (!d.a || !d.b || !BUILT_WALL_DECOR.has(d.kind)) continue;   // (one drawn in 3D: since 2026-11-16 the others are not drawn there)
+    const L = Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1]); for (let i = 0; i <= Math.ceil(L * 2); i++) { const t = L ? i / Math.ceil(L * 2) : 0, px = d.a[0] + (d.b[0] - d.a[0]) * t, py = d.a[1] + (d.b[1] - d.a[1]) * t;
       for (const [ox, oy] of [[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) { const b = band.get(K(Math.round(px + ox), Math.round(py + oy))); if (b && b.rock) b.flat = true; } } }
 
   // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together
@@ -117,7 +120,7 @@ function buildLabFloor(lab, P0, how) {
   // skyline (each corner's height from where it is, so the blocks beside it share it). In sand, the owner's pick of two (2026-11-16, of brown and sand: "I like the sand"); then, of the sand:
   // "Kind of want to switch to where the rock walls match the floor color. So I like the texture. I just want to change the color": each stratum is the cave floor's own colour (the two
   // tiles of its room's floor, a dark room's, else the arena's), as much lighter or darker as the sand's was, so the texture is the same
-  const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4;
+  const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4, JUT_P = 0.6, JUT_MIN = 0.16, JUT_MORE = 0.42;   // (JUT_: how often a stratum's slab juts out of a tile's face, and how far: the agent's, provisional)
   const sumOf = h => { const c = new T.Color(h); return c.r + c.g + c.b; }, sandMean = SAND.reduce((t, h) => t + sumOf(h), 0) / SAND.length, strataBy = {};
   const STRATA = id => { const st = rooms[id] && rooms[id].style && rooms[id].style.dark ? rooms[id].style : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, key = st ? st.fa + st.fb : '';
     return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
@@ -135,7 +138,19 @@ function buildLabFloor(lab, P0, how) {
       const edge = (c === 0 && !gp) || (c === COLS && !gq), d = edge || b.flat || r === 0 || r === ROWS ? 0 : 0.18 * swell(x, zz, y) * Math.sin(Math.PI * t);   // (out and in, none at the top, the foot, a turning edge or where a door or a sign hangs)
       row.push([x + dx * d, y, zz + dy * d, x * dy - zz * dx, y]); } V.push(row); }   // (its last two: where the pits' picture is laid: along the wall, and up it)
     const tri3 = (a, bb, c, col) => { for (const v of [a, bb, c]) { G.rface.pos.push(v[0], v[1], v[2]); G.rface.nor.push(dx, 0, dy); G.rface.uv.push(v[3] / 0.9, v[4] / 0.9); G.rface.col.push(col.r, col.g, col.b); } };
-    for (let r = 0; r < ROWS; r++) { const col = pal[r % pal.length]; for (let c = 0; c < COLS; c++) { const A = V[r][c], B = V[r][c + 1], C = V[r + 1][c + 1], D = V[r + 1][c]; tri3(A, B, C, col); tri3(A, C, D, col); } } };
+    for (let r = 0; r < ROWS; r++) { const col = pal[r % pal.length]; for (let c = 0; c < COLS; c++) { const A = V[r][c], B = V[r][c + 1], C = V[r + 1][c + 1], D = V[r + 1][c]; tri3(A, B, C, col); tri3(A, C, D, col); } }
+    // THE BITS THAT JUT OUT (the owner, 2026-11-16, of the rock in the floor's colour: "it lacks depth and it lacks three-dimensionality. It should have like little bits of wall that's hanging
+    // out, irregularly"): here and there a slab of a stratum stands out of the face, part or all of the tile wide and as tall as its stratum, its front corners uneven, its top lighter and its
+    // underside darker; none at the foot or the top, or where a door or a sign hangs. Its back is inside the face (past the deepest the face swells in), so no gap shows behind it.
+    if (!b.flat) for (let r = 1; r < ROWS - 1; r++) { if (rnd(cx * 3.1 + r, cz * 2.7 - r, 11) > JUT_P) continue;
+      const s0 = rnd(cx, cz + r, 12) * 0.55, s1 = Math.min(1, s0 + 0.3 + rnd(cx + r, cz, 13) * 0.7), e = JUT_MIN + rnd(cx - r, cz, 14) * JUT_MORE, j = k => rnd(cx + k, cz - k, r + 15) - 0.5, up = r < ROWS - 2 && rnd(cx + r, cz + r, 16) < 0.3 ? 2 : 1;   // (up: one stratum tall, or now and then two)
+      const yAt = (rr, s3) => { const x = p[0] + (q[0] - p[0]) * s3, zz = p[1] + (q[1] - p[1]) * s3; let y = y0 + (ta + (tb - ta) * s3 - y0) * rr / ROWS; if (rr > 0 && rr < ROWS) y += wave(x, zz); return y; };
+      const P = (s3, y, e2) => { const x = p[0] + (q[0] - p[0]) * s3 + dx * e2, zz = p[1] + (q[1] - p[1]) * s3 + dy * e2; return [x, y, zz, x * dy - zz * dx, y]; };
+      const yb0 = yAt(r, s0), yb1 = yAt(r, s1), yt0 = yAt(r + up, s0), yt1 = yAt(r + up, s1), back = -0.2;
+      const B0 = P(s0, yb0, back), B1 = P(s1, yb1, back), T0 = P(s0, yt0, back), T1 = P(s1, yt1, back);
+      const F0 = P(s0, yb0 + j(1) * 0.06, e + j(2) * 0.08), F1 = P(s1, yb1 + j(3) * 0.06, e + j(4) * 0.08), U0 = P(s0, yt0 + j(5) * 0.05, e * (0.85 + j(6) * 0.2)), U1 = P(s1, yt1 + j(7) * 0.05, e * (0.85 + j(8) * 0.2));
+      const col = pal[r % pal.length], tone = k => ({ r: col.r * k, g: col.g * k, b: col.b * k }), quad4 = (a, bb, c, d, cc) => { tri3(a, bb, c, cc); tri3(a, c, d, cc); };
+      quad4(F0, F1, U1, U0, col); quad4(U0, U1, T1, T0, tone(1.18)); quad4(B0, B1, F1, F0, tone(0.7)); quad4(B0, F0, U0, T0, tone(0.9)); quad4(F1, B1, T1, U1, tone(0.9)); } };   // (its face, top, underside and two ends)
   // the top: the skyline's four corners, in the top stratum's colour
   const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = pal[ROWS % pal.length];
     putQuad(G.rcap, C[0], C[1], C[2], C[3], [0, 1, 0], [col.r, col.g, col.b], C.map(c => [c[0] / 0.9, c[2] / 0.9])); };
