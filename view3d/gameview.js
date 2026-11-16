@@ -4,7 +4,7 @@
 //   THE CAMERA   the game's own: the same angle (2:1, 30 degrees down), the same scale (a tile TILE_W px across) and on the player as the game's is (js/facilityplay.js _fpP), so a
 //                point of the world is on the screen exactly where the game's own drawing puts it, and every 2D drawing laid over the picture (bars, plates, effects, marks, taps) lies
 //                where it did. (Turning it waits for the effects in 3D: the 2D ones are drawn for this angle.)
-//   THE WORLD    the lab's ground floor (view3d/gamemap.js VIEW3D_LAB), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
+//   THE WORLD    the lab's floors (view3d/gamemap.js VIEW3D_ROOMS: stage 1 its ground floor, stage 2 its other floors), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
 //                floor.js), with its stairs, its doors opening and shutting as the game's do, the walls in front of the room you are in sunk, and each room as lit as the game has it
 //   THE LIGHT    the game's own (js/facilitystyle.js: the room you are in lit, the others dark, a pool of light at an open door; a blackout): a map of the tiles, written from the game's
 //                levels and laid on the world's every surface by the tile in front of it, as dark as the game lays its dark on: the room you are in too, at the game's lit level (FP_LIT,
@@ -152,7 +152,8 @@ const GAMEVIEW = (function () {
   function marks(floorMarks) { const W = game.width, H = game.height; if (fxCv.width !== W || fxCv.height !== H) { fxCv.width = W; fxCv.height = H; } else { fxG.setTransform(1, 0, 0, 1, 0, 0); fxG.clearRect(0, 0, W, H); }
     fxDrew = false; if (floorMarks) { fxG.save(); try { floorMarks(fxG); } finally { fxG.restore(); } } if (fxDrew) fxTex.needsUpdate = true; return fxDrew ? fxTex : null; }
 
-  const OWN = new Set(['wall', 'door', 'prop', 'fixture', 'wdecor', 'fill', 'pillar', 'rigpad', 'tank', 'stair', 'stairwell', 'rockbend']);   // (the facility's items this view builds: js/facilityplay.js _fp.items)
+  const OWN = new Set(['wall', 'door', 'prop', 'fixture', 'wdecor', 'fill', 'pillar', 'rigpad', 'tank', 'stair', 'rockbend']);   // (the facility's items this view builds: js/facilityplay.js _fp.items)
+  const WDECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);   // (the wall's things it builds, round2/chamber.js and live/floor.js; any other, a shelf, a clock, a sign, the game draws on the wall where the view's wall is)
 
   // ── everything made: the still and the moving given their colours for the ink line; the bodies first seen made now ──
   tagInk(scene); warm();
@@ -173,7 +174,7 @@ const GAMEVIEW = (function () {
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
-    keeps(it) { if (OWN.has(it.fp)) return false; return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
+    keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false; return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
   };

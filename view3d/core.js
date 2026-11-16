@@ -114,7 +114,7 @@ function view3dCore(opts) {
     return world;
   }
   // the walls in front of a room sink (the room that is opened), the others stand: eased over `dt` seconds of the wall's clock (0: at once)
-  function openRoom(world, room, dt) { for (const G of world.groups) { G.want = G.hide.includes(room) ? 1 : 0; if (G.down !== G.want) { G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want; G.g.position.y = -ease(G.down) * (WALL_H + 0.16); G.g.visible = G.down < 1; } } }
+  function openRoom(world, room, dt) { for (const G of world.groups) { G.want = G.hide.includes(room) ? 1 : 0; if (G.down !== G.want) { G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want; G.g.position.y = -ease(G.down) * (G.sink || WALL_H + 0.16); G.g.visible = G.down < 1; } } }
 
   // the light goes with the camera, a whole dot of its shadow at a time (so a shadow's edge does not crawl), and reaches farther when the camera is far
   let Ld = null, Lz = null, Lx = null, Ly = null, shadowSize = 0;

@@ -1,6 +1,6 @@
 # The game in 3D (the 3D view)
 
-**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a` (its light the game's own dark since `2026-11-16b`), **behind a switch** (`?engine=3d`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
+**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a` (its light the game's own dark since `2026-11-16b`); stage 2 **in progress**: the lab's other floors built in `2026-11-16c`, **behind a switch** (`?engine=3d`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
 
 ## 1. The decision
 
@@ -20,7 +20,7 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 ## 3. The stages (the agent's plan, for the owner to reorder)
 
 1. **The lab's ground floor** (the eight rooms of the test page): **built**, this stage.
-2. The other rooms in the lab's style, and the other levels (the deck, the arena, the Experiment Lab, the Cold Storage).
+2. The other rooms in the lab's style, and the other levels. **In progress:** the lab's other floors, up and down its stairs, are built (`2026-11-16c`): the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck. Next: the arena and its catwalks (rock walls: a look to make), then the areas behind a portal (the Armory, the Cold Storage, the electrical domain, the subway).
 3. The caves, the water and the dark places: the sewers, the Nest, the domains.
 4. Models for the other creatures: the beetle, scorpion, spider, mantis, moth, roly-poly and larva (the ant has one), the clones, the bosses.
 5. The effects in 3D: the attacks, the Ultimates, the numbers and words (today the 2D ones are laid over the picture).
@@ -33,10 +33,10 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 **The game's own camera**: the same angle (2:1, 30° down), the same scale (a tile `TILE_W` px across) and centred on the player, riding the player's floor as the game's does (`js/facilityplay.js` `_fpP`, `_fpCam`). A point of the world is on the screen exactly where the game's drawing puts it (within a pixel, tested), so every 2D drawing laid over the picture lies where it did: bars, plates, effects, marks, the start screen's panels, and every tap.
 
 ### 4.2 The world
-- **The eight rooms** read from the running game when the view is made (`view3d/gamemap.js`), built as the test page builds them (`design/style-evolution/live/floor.js`, round 2's `chamber.js` for each room's props, wall fittings and floor marks; the props from the game's own models).
+- **The rooms** (`view3d/gamemap.js` `VIEW3D_ROOMS`: the eight of the lab's ground floor, then its other floors) read from the running game when the view is made, built as the test page builds them (`design/style-evolution/live/floor.js`, round 2's `chamber.js` for each room's props, wall fittings and floor marks; the props from the game's own models).
 - **The walls in front of the room you are in sink** into the floor (the test page's way; the game's 2D walls cut down).
 - **The doors** slide open and shut as the game's do (`facilityDoorsTick`).
-- **The stairs**: a tile higher or lower than its room (the hallway's stairs down to the arena, Teleport Room 1's up to the deck) stands at its height, with risers.
+- **Every floor at its own height** (`2026-11-16c`): a room's floor, its props and fittings, its doors and windows stand on its level; a staircase's treads each at theirs, with risers. A wall between two floors stands from the lower up a wall's height over the higher, as the game's does, and its stub (when the walls in front of your room sink) over the higher; a group of walls sinks as deep as it is tall. A deck's railing (Teleport Room 2's edge) is a low railing of posts and two rails (its height, 0.62 of a tile, the agent's).
 - **The Crystal** turns and bobs in its tank as the game's does, amber when it is hurt, red when it is failing (the game's three bands).
 
 ### 4.3 The light
@@ -53,7 +53,7 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 ### 4.5 What is still drawn in 2D, over the picture
 - Everything over a unit, the effects, the numbers and words, the panels and cards.
 - **The floor's marks that are play** (the evolved forms' pools, fire, acid, the serum's pool, the Frost Patch, the Mage's aura, THORNWHIP's thicket and seedfall, HEXFIRE, the meteor craters, the long-press ring) are the game's own 2D drawing, made into a layer the view lays on its floor, under all that stands on it.
-- **The facility's items the view does not build:** pickups, a station's ring, a follower's spot (in the rooms it has built).
+- **The facility's items the view does not build:** pickups, a station's ring, a follower's spot, a stairwell down (the Experiment Lab's to the Cold Storage), and the wall's things it has no model for (a shelf, a clock, a sign), drawn on the wall where the view's wall is (in the rooms it has built).
 
 ### 4.6 Not in stage 1
 - The battle view's zoom: off while the 3D view shows.

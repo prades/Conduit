@@ -12,7 +12,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get antColour() { return typeof SPECIES !== "undefined" && SPECIES.ant ? SPECIES.ant.color : null; }, get species() { return typeof SPECIES !== "undefined" ? SPECIES : {}; },
   get psFamily() { return PS_FAMILY; }, psHash(s) { return _psHash(s); }, psResolve(fam, kind, dims, st, seed) { return _psResolve(fam, kind, dims, st, seed); },
   roomAt(x, y, F) { return facilityRoomAt(x, y, F); }, wallOut(w, F) { return _fpWallOut(w, w.a, w.b, F); }, heightAt(x, y, F) { return typeof facilityHeightAt === "function" ? facilityHeightAt(x, y, F) : 0; },
-  get elevPx() { return typeof FP_ELEV_PX !== "undefined" ? FP_ELEV_PX : 0; }, liftPx(x, y) { return typeof facilityLiftPx === "function" ? facilityLiftPx(x, y) : 0; }, get camLift() { return typeof _fpCam !== "undefined" ? _fpCam : 0; },
+  get elevPx() { return typeof FP_ELEV_PX !== "undefined" ? FP_ELEV_PX : 0; }, roomHeight(id, F) { return typeof facilityRoomHeight === "function" ? facilityRoomHeight(id, F) : 0; }, liftPx(x, y) { return typeof facilityLiftPx === "function" ? facilityLiftPx(x, y) : 0; }, get camLift() { return typeof _fpCam !== "undefined" ? _fpCam : 0; },
   evolvedDef(f) { return typeof evolvedDef === "function" ? evolvedDef(f) : null; }, evoFrame(f, d, f0) { return _evoFrame(f, d, f0); }, eggSheet(f) { return typeof hdEggSheet === "function" ? hdEggSheet(f) : null; },
   playerState() { return typeof hdPlayerState === "function" ? hdPlayerState() : { row: 1, walking: false, f0: 0 }; }, playerGear(w) { return typeof playerGearSheet === "function" ? playerGearSheet(w) : null; },
   gearFacing(r) { return typeof playerGearFacing === "function" ? playerGearFacing(r) : r; },
@@ -27,11 +27,13 @@ const VIEW3D_GAME = (0, eval)(`({
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; }
 })`);
 
-// the lab's ground floor: the eight rooms on the Crystal Chamber's level (the first the 3D view builds)
+// the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
+// the rooms the game's 3D view builds: the lab's ground floor and its other floors, up and down its stairs (stage 2: the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck)
+const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck']);
 
-// a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile that stands higher or lower than the
-// room's floor (a staircase's tread) carries its height, in the game's px ([x, y, h])
+// a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile carries its height if it has one, in the
+// game's px ([x, y, h]: a floor off the ground floor's level, a staircase's tread), and the room its floor's (base)
 function view3dRoomRecord(F, R, lab, live) {
   const G = VIEW3D_GAME, room = F.rooms.find(r => r.id === R);
   const strip = o => JSON.parse(JSON.stringify(o, (k, v) => k === 'raw' || k === 'note' ? undefined : v));
@@ -51,7 +53,7 @@ function view3dRoomRecord(F, R, lab, live) {
   const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
     fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
     solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || null };
-  if (lab) rec.label = room.label || R; return rec;
+  if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx; return rec;
 }
 // the map the builders take: the Crystal Chamber (the pictures' room), and with `ids` those rooms as one floor (`lab`) with the openings between them.
 // live: for the game's own view. The Crystal stands where the game stands it (the middle of its tile: the pictures and the test page have it where the map's note is, half a tile off), and

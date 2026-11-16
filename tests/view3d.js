@@ -7,6 +7,8 @@
 //   SWITCH ON     in a real browser (software WebGL): the view is made behind the start screen with no error; in the Crystal Chamber it shows, the game's canvas is clear where the
 //                 world is and the view's picture is not blank
 //   THE CAMERA    a point of the world is where the game's own projection (js/facilityplay.js _fpP) puts it, to the pixel, on the floor and on the stairs (the camera riding the floor)
+//   STAGE 2       the lab's other floors are built (the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck): a floor up and a floor down, the camera is the game's and
+//                 the cube stands on that floor
 //   THE BODIES    the cube, the eggs, an evolved form and the ants are the view's (the 2D drawing leaves them out); a beetle is the game's own; a unit's bars go down with its body
 //   THE WORLD     a door opens as the game's does; each room as dark as the game draws it (the one you are in at its lit level, the others dark); a blackout darkens it; the floor's marks are laid on its floor; the
 //                 facility's items it does not build are the game's to draw, and only in its rooms
@@ -112,6 +114,12 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
+  // the lab's other floors (stage 2): built; a floor up and a floor down, the camera is the game's and the cube stands on the floor
+  var cellIn = function (id) { var rr = _fp.F.rooms.filter(function (q) { return q.id === id; })[0], cx = (rr.bb[0] + rr.bb[2]) / 2, cy = (rr.bb[1] + rr.bb[3]) / 2, best = null, bd = 1e9; for (var x = Math.floor(rr.bb[0]); x <= Math.ceil(rr.bb[2]); x++) for (var y = Math.floor(rr.bb[1]); y <= Math.ceil(rr.bb[3]); y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === id && facilityWalkable(x, y, _fp.F) && Math.hypot(x - cx, y - cy) < bd) { bd = Math.hypot(x - cx, y - cy); best = [x, y]; } } return best; };
+  out.covers = ['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck'].map(function (id) { return V.covers(id); });
+  out.floors = ['observation_deck', 'experiment_lab'].map(function (id) { var c = cellIn(id); put(c[0], c[1]); step(3); worst = 0; var h = facilityLiftPx(c[0], c[1]); pts = [[c[0], c[1], h], [c[0] - 2, c[1] - 1, h + 50], [c[0] + 1, c[1] + 2, h]]; err();
+    var b = V.core.scene.children.filter(function (o) { return o.visible && o.userData && o.userData.form; }).map(function (o) { return Math.abs(o.position.y - h / 73.48469228349533) < 1e-3 && Math.abs(o.position.x - player.visualX) < 1e-6 ? 1 : 0; }).reduce(function (a, v) { return a + v; }, 0);
+    return { id: id, showing: VIEW3D.showing, err: worst, cam: _fpCam, h: h, cube: V.has(player) ? b : -1 }; });
   // the bodies
   put(13, 19); step(2); actors = actors.filter(function (a) { return !(a instanceof Predator); });
   var ant = spawnCreature({ species: 'ant', className: 'striker', x: 11, y: 18, level: 4 }); ant.x = 11; ant.y = 18; ant.update = function () {}; ant.spawnProtection = 0;
@@ -141,6 +149,10 @@ else {
     });
     check('THE CAMERA is the game\'s own: a point of the world is where js/facilityplay.js _fpP puts it, to the pixel, on the floor, up a wall, at the gem and down the stairs', () => {
         ok(ON.camErr < 1, 'off by ' + ON.camErr + ' px'); ok(ON.stairCam < -10, 'the stairs did not take the camera down: ' + ON.stairCam); same(ON.stairShowing, true, 'on the stairs'); ok(ON.stairErr < 1, 'on the stairs off by ' + ON.stairErr + ' px');
+    });
+    check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
+        same(ON.covers.join(' '), 'true true true true', 'built');
+        for (const f of ON.floors) { same(f.showing, true, f.id + ': showing'); ok(f.err < 1, f.id + ': off by ' + f.err + ' px'); ok(Math.abs(f.cam - f.h) < 1e-6 && Math.abs(f.h) > 50, f.id + ': the camera does not ride its floor (' + f.cam + ', ' + f.h + ')'); same(f.cube, 1, f.id + ': the cube on its floor'); }
     });
     check('THE BODIES: the cube, an egg, an evolved form and an ant are the view\'s; a beetle is the game\'s; what is drawn over a unit goes down with its body', () => {
         same(JSON.stringify(ON.has), JSON.stringify({ cube: true, egg: true, evolved: true, ant: true, beetle: false }), 'whose bodies'); same(ON.antTop, 28, 'a striker\'s bars, as the game\'s drawing has them (its width)');

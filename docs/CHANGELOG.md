@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### Build `2026-11-16c` · branch `claude/start-game-project-HSh7Z` · the game in 3D, stage 2 begun: the lab's other floors (behind `?engine=3d`)
+- **What** (`docs/VIEW-3D.md` §3, stage 2, the agent's plan; the owner's ask: "Can we build the full game up to this point?", "The real game in 3D"): the 3D view now builds the lab's other floors too, up and down its stairs: **the Experiment Lab** (a floor down), **the Stair Room** and **Teleport Room 2** (a floor up), **the Observation Deck** (two up).
+- **Every floor at its own height:** a room's floor, props, fittings, doors and windows stand on its level, a staircase's treads on theirs; a wall between two floors stands from the lower up past the higher, as the game's does; the walls in front of your room sink as deep as they are tall; Teleport Room 2's edge is a low railing.
+- **Left to the game's 2D drawing there:** the Experiment Lab's stairwell down to the Cold Storage, and a wall's shelf, clock or sign (drawn on the wall where the 3D wall is).
+- **Verified:** `tests/view3d.js` (15 checks: the four rooms built; a floor up and a floor down the camera is the game's to the pixel and the cube stands on that floor), `tests/lab3d.js` (the test page as before) and the nearest suites; pictures from the real page. **Not seen on an iPad.**
+
 ### Build `2026-11-16b` · branch `claude/start-game-project-HSh7Z` · the 3D view as dark as the 2D game
 - **The ask** (the owner, having tried the 3D view's room as bright as the chosen pictures and, with `?dark=game`, as dark as the 2D game's): **"Definitely liking the dark mode more"**.
 - **The 3D view's light is the game's own dark** (`docs/VIEW-3D.md` §4.3): the room you are in at the game's lit level (two fifths darker than the look's palette, `FP_LIT`), a room you are not in as dark as the game's, as are its pools at open doors and a blackout. `?dark=game` is gone: it is how it is drawn. The game's own `?lit=` works in 3D too.

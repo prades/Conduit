@@ -3,7 +3,7 @@
 //   node tools/view3d.js    dist/view3d.js, from the sources below (the stamp runs it: tools/stamp.js)
 // What goes into it, as one function (window.__view3d(opts) gives the view), in this order:
 //   the followers' forms (design/evolutions/forms-core.js, forms*.js) and the props' models (design/props/models/*.js): the game's own 3D models, as its bakers load them
-//   the reader of the game's map (view3d/gamemap.js), and the map it reads from the running game: the lab's ground floor
+//   the reader of the game's map (view3d/gamemap.js), and the map it reads from the running game: the rooms the view builds (VIEW3D_ROOMS)
 //   the round 2 kit, chamber and styles (design/style-evolution/round2/), the lab floor's builder (design/style-evolution/live/floor.js) and the 3D core (view3d/core.js): the look, as the
 //   test page has it (lab3d/, tools/lab3d.js)
 //   the bakers' table of jobs (design/evolutions/bake.js JOBS: which model, in which colour, posed how, each sprite sheet is baked from), as VIEW3D_JOBS
@@ -34,7 +34,7 @@ function build() {
   js += 'window.__view3d = function (opts) {\n' + S.forms.map(one).join('');
   js += 'if (!T.Pass) T.Pass = class {};\n';
   js += 'const px = h => h / 73.48469228349533, PROPS = {};\n(function () {\n' + S.models.map(one).join('') + '})();\n{\n';
-  js += S.map.map(one).join('') + 'const map = view3dMap(VIEW3D_GAME.fp.F, VIEW3D_LAB, true);\n';
+  js += S.map.map(one).join('') + 'const map = view3dMap(VIEW3D_GAME.fp.F, VIEW3D_ROOMS, true);\n';
   js += S.look.map(one).join('') + 'const VIEW3D_JOBS = ' + JSON.stringify(J) + ';\n' + S.view.map(one).join('') + 'return GAMEVIEW;\n}\n};\n';
   return { js, version, hash: crypto.createHash('sha1').update(js).digest('hex').slice(0, 10), files: S.forms.concat(S.models, S.map, S.look, S.view, ['design/evolutions/bake.js']), jobs: Object.keys(J).length, stripped: !!ts };
 }
