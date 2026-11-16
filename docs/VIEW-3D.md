@@ -20,7 +20,7 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 ## 3. The stages (the agent's plan, for the owner to reorder)
 
 1. **The lab's ground floor** (the eight rooms of the test page): **built**, this stage.
-2. The other rooms in the lab's style, and the other levels. **In progress:** the lab's other floors, up and down its stairs, are built (`2026-11-16c`): the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck. Next: the arena and its catwalks (rock walls: a look to make), then the areas behind a portal (the Armory, the Cold Storage, the electrical domain, the subway).
+2. The other rooms in the lab's style, and the other levels. **In progress:** the lab's other floors, up and down its stairs, are built (`2026-11-16c`): the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck. Next: the arena and its catwalks, then the areas behind a portal (the Armory, the Cold Storage, the electrical domain, the subway). **The arena is a draft, for the owner** (`2026-11-16c`, only with `?draft=arena`): its rock walls as blocks of rock in the game's rock colours (`FP_WALL.rock`), faceted, with a jagged peaked ridge (the agent's; rock in 3D has no chosen look), and its railing walls as railings. The rock stands mostly on the arena's south edge, in front of you, so it sinks with the walls in front of your room: whether rock should sink, or stay as low cliffs, is open (§7).
 3. The caves, the water and the dark places: the sewers, the Nest, the domains.
 4. Models for the other creatures: the beetle, scorpion, spider, mantis, moth, roly-poly and larva (the ant has one), the clones, the bosses.
 5. The effects in 3D: the attacks, the Ultimates, the numbers and words (today the 2D ones are laid over the picture).
@@ -87,5 +87,6 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 
 - ~~The room you are in: as bright as the chosen look, or as dark as the 2D game's?~~ *(answered 2026-11-16: "Definitely liking the dark mode more": the game's own dark, §4.3.)*
 - The order of the stages (§3).
+- The arena's rock (`?draft=arena`): this look, or another? And should rock in front of you sink as the lab's walls do, or stay standing as low cliffs?
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - When the 3D view becomes the default.

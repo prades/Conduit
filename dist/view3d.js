@@ -24654,6 +24654,8 @@ const VIEW3D_GAME = (0, eval)(`({
 })`);
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
 const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck']);
+if (typeof location !== 'undefined' && /[?&]draft=arena(?:&|$)/.test(String(location.search || '')))
+    VIEW3D_ROOMS.push('arena', 'catwalks', 'catwalk_spur');
 function view3dRoomRecord(F, R, lab, live) {
     const G = VIEW3D_GAME, room = F.rooms.find(r => r.id === R);
     const strip = o => JSON.parse(JSON.stringify(o, (k, v) => k === 'raw' || k === 'note' ? undefined : v));
@@ -27052,7 +27054,7 @@ function buildLabFloor(lab, P0, how) {
             if (w0.kind === 'open')
                 return;
             const w = R.WALLS[wi];
-            if (live && w0.kind === 'deck_rail') {
+            if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) {
                 rails.push({ w, room: rec.id });
                 return;
             }
@@ -27066,7 +27068,7 @@ function buildLabFloor(lab, P0, how) {
                     }
                 }
                 else if (!band.has(K(bx, by)))
-                    band.set(K(bx, by), { x: bx, y: by, own: rec.id });
+                    band.set(K(bx, by), { x: bx, y: by, own: rec.id, rock: live && w0.kind === 'rock' });
             }
         });
     }
@@ -27078,7 +27080,7 @@ function buildLabFloor(lab, P0, how) {
                     if (band.has(k) || roomAt.has(k))
                         continue;
                     if (band.has(K(c[0] + sx, c[1])) && band.has(K(c[0], c[1] + sy)))
-                        band.set(k, { x: c[0] + sx, y: c[1] + sy, own: rec.id });
+                        band.set(k, { x: c[0] + sx, y: c[1] + sy, own: rec.id, rock: band.get(K(c[0] + sx, c[1])).rock && band.get(K(c[0], c[1] + sy)).rock });
                 }
     const doors = [], aprons = new Map();
     for (const o0 of lab.openings) {
@@ -27114,7 +27116,7 @@ function buildLabFloor(lab, P0, how) {
             s.push(r);
     } return s.sort(); };
     const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) {
-        G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), down: 0, want: 0 };
+        G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 };
         G.g.userData.dynamic = true;
         groups.set(k, G);
         g.add(G.g);
@@ -27154,9 +27156,30 @@ function buildLabFloor(lab, P0, how) {
         if (y1 > yt + 1e-4)
             sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, WHITE, 0.45, 0.85);
     };
+    const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => (rnd(x, z) - 0.35) * 0.62, ROCK = lin('#4a3a30'), ROCK_TOP = lin('#9a7a62');
+    const tri = (q, a, b, c, col) => { for (const p of [a, b, c]) {
+        q.pos.push(p[0], p[1], p[2]);
+        q.nor.push(0, 1, 0);
+        q.uv.push(0, 0);
+        q.col.push(col[0], col[1], col[2]);
+    } };
+    const shade = (k, v) => [k.r * v, k.g * v, k.b * v];
+    const rockFace = (q, b, dx, dy, y0, top) => {
+        const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, A = [cx - rx, y0, cz - rz], B = [cx + rx, y0, cz + rz], C = [cx + rx, top + jag(cx + rx, cz + rz), cz + rz], D = [cx - rx, top + jag(cx - rx, cz - rz), cz - rz];
+        const out = 0.06 + rnd(cx, cz, 1) * 0.16, ym = y0 + (top - y0) * (0.45 + rnd(cx, cz, 2) * 0.25), M = [cx + dx * out + rx * (rnd(cx, cz, 3) - 0.5) * 0.5, ym, cz + dy * out + rz * (rnd(cx, cz, 3) - 0.5) * 0.5];
+        [[A, B], [B, C], [C, D], [D, A]].forEach((e, i) => tri(q, e[0], e[1], M, shade(ROCK, 0.78 + ((i + Math.floor(rnd(cx, cz, 4) * 4)) % 4) * 0.11)));
+    };
+    const rockCap = (q, b, top) => {
+        const x = b.x, z = b.y, P = [x - 0.5, top + jag(x - 0.5, z + 0.5), z + 0.5], Q = [x + 0.5, top + jag(x + 0.5, z + 0.5), z + 0.5], R = [x + 0.5, top + jag(x + 0.5, z - 0.5), z - 0.5], S = [x - 0.5, top + jag(x - 0.5, z - 0.5), z - 0.5];
+        const M = [x + (rnd(x, z, 5) - 0.5) * 0.4, top + 0.12 + rnd(x, z, 6) * 0.45, z + (rnd(x, z, 7) - 0.5) * 0.4];
+        [[P, Q], [Q, R], [R, S], [S, P]].forEach((e, i) => tri(q, e[0], e[1], M, shade(ROCK_TOP, 0.72 + ((i + Math.floor(rnd(x, z, 8) * 4)) % 4) * 0.12)));
+    };
     for (const b of band.values()) {
         const G = b.G, top = b.hi + WALL_H;
-        topQuad(G.cap, b.x, b.y, top, WHITE);
+        if (b.rock)
+            rockCap(G.rcap, b, top);
+        else
+            topQuad(G.cap, b.x, b.y, top, WHITE);
         for (const [dx, dy] of DIRS) {
             const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;
             if (b.header) {
@@ -27172,6 +27195,11 @@ function buildLabFloor(lab, P0, how) {
             }
             if (same)
                 continue;
+            if (b.rock) {
+                if (!(nb && nb.rock && nb.G === G))
+                    rockFace(G.rface, b, dx, dy, z + B0, top);
+                continue;
+            }
             face(G.face, b, dx, dy, z + B0, top, c, z);
             if (!nb && rid && (dx === 1 || dy === 1)) {
                 const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid));
@@ -27240,11 +27268,12 @@ function buildLabFloor(lab, P0, how) {
             }
         }
     }
+    const rockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, vertexColors: true, flatShading: true });
     for (const G of groups.values()) {
-        const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }]);
+        const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: rockMat }, { q: G.rcap, mat: rockMat }]);
         m.castShadow = m.receiveShadow = true;
         m.userData.inkKey = 'wall';
-        m.userData.inkIds = [0, 1];
+        m.userData.inkIds = [0, 1, 2, 2];
         G.g.add(m);
         G.mesh = m;
     }

@@ -55,7 +55,9 @@ function moreFittings(P, acc) {
 //   every door's two leaves are made whole and can slide (door.leaves, door.set(k): 0 shut, 1 open): the game's doors open and shut as someone comes near; no door is the raid's
 //   rooms on many levels: a tile stands at its own height (a cell [x, y, h], h in the game's px of height: a room's floor, a staircase's treads), with the risers between; a room's
 //   things stand on its floor (rec.base, px); a wall's block stands from the lowest floor beside it to a wall's height over the highest (as the game's: js/facilityplay.js base2),
-//   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail) is a railing, not a wall
+//   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail or railing_wall) is a railing, not a wall
+//   a ROCK wall (the arena's, kind rock) is a block of rock: the game's rock colours (js/facilityplay.js FP_WALL.rock), its top a jagged ridge (each corner's height its own, shared
+//   with the blocks beside it). A DRAFT for the owner (?draft=arena: docs/VIEW-3D.md): the look of rock in 3D is not chosen
 function buildLabFloor(lab, P0, how) {
   const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
   const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
@@ -67,11 +69,11 @@ function buildLabFloor(lab, P0, how) {
 
   // the walls: a block a tile of the gap between rooms (band), or a thin wall on the line where two rooms touch (thin)
   const band = new Map(), thin = [], thinSeen = new Set(), rails = [];
-  for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && w0.kind === 'deck_rail') { rails.push({ w, room: rec.id }); return; }
+  for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) { rails.push({ w, room: rec.id }); return; }
     for (let i = 0, n = Math.round(w.L); i < n; i++) { const m = [w.a[0] + w.u[0] * (i + 0.5), w.a[1] + w.u[1] * (i + 0.5)], bx = Math.round(m[0] + w.n[0] * 0.5), by = Math.round(m[1] + w.n[1] * 0.5);
       if (roomAt.has(K(bx, by))) { const k = m[0] + ',' + m[1]; if (!thinSeen.has(k)) { thinSeen.add(k); thin.push({ m, u: [Math.abs(w.u[0]), Math.abs(w.u[1])], glass: !!w0.window && !w0.divider }); } }
-      else if (!band.has(K(bx, by))) band.set(K(bx, by), { x: bx, y: by, own: rec.id }); } }); }
-  for (const rec of recs) for (const c of rec.cells) for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const k = K(c[0] + sx, c[1] + sy); if (band.has(k) || roomAt.has(k)) continue; if (band.has(K(c[0] + sx, c[1])) && band.has(K(c[0], c[1] + sy))) band.set(k, { x: c[0] + sx, y: c[1] + sy, own: rec.id }); }   // (a corner piece where a room turns outwards)
+      else if (!band.has(K(bx, by))) band.set(K(bx, by), { x: bx, y: by, own: rec.id, rock: live && w0.kind === 'rock' }); } }); }
+  for (const rec of recs) for (const c of rec.cells) for (const sx of [-1, 1]) for (const sy of [-1, 1]) { const k = K(c[0] + sx, c[1] + sy); if (band.has(k) || roomAt.has(k)) continue; if (band.has(K(c[0] + sx, c[1])) && band.has(K(c[0], c[1] + sy))) band.set(k, { x: c[0] + sx, y: c[1] + sy, own: rec.id, rock: band.get(K(c[0] + sx, c[1])).rock && band.get(K(c[0], c[1] + sy)).rock }); }   // (a corner piece where a room turns outwards)
 
   // the openings: a door stands in its tunnel through the wall (the side of the line where wall stands at both its ends), or on the line itself in a thin wall
   const doors = [], aprons = new Map();
@@ -89,7 +91,7 @@ function buildLabFloor(lab, P0, how) {
 
   // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together
   const hideOf = (x, y) => { const s = []; for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) { const r = roomAt.get(K(x + dx, y + dy)); if (r && !s.includes(r)) s.push(r); } return s.sort(); };
-  const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) { G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };
+  const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) { G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };
   for (const b of band.values()) { b.hide = hideOf(b.x, b.y); b.G = groupOf(b.hide);
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
     see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi; }   // (a corner piece: its diagonal neighbours)
@@ -101,11 +103,23 @@ function buildLabFloor(lab, P0, how) {
   const wain = id => { const c = lin((rooms[id] && rooms[id].style.wain) || PAL.wallBase); return [c.r, c.g, c.b]; };
   const face = (q, b, dx, dy, y0, y1, c, z) => { z = z || 0; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
     if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), WHITE, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, WHITE, 0.45, 0.85); };   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
-  for (const b of band.values()) { const G = b.G, top = b.hi + WALL_H; topQuad(G.cap, b.x, b.y, top, WHITE);
+  // rock: each corner of the ridge its own height (from where it is, so the blocks beside it share it); the faces in the game's rock colour, a little lighter or darker a block
+  const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => (rnd(x, z) - 0.35) * 0.62, ROCK = lin('#4a3a30'), ROCK_TOP = lin('#9a7a62');
+  const tri = (q, a, b, c, col) => { for (const p of [a, b, c]) { q.pos.push(p[0], p[1], p[2]); q.nor.push(0, 1, 0); q.uv.push(0, 0); q.col.push(col[0], col[1], col[2]); } };   // (its own facet: the rock's material is flat-shaded)
+  const shade = (k, v) => [k.r * v, k.g * v, k.b * v];
+  // a face: four facets round a middle that bulges out, each a little lighter or darker
+  const rockFace = (q, b, dx, dy, y0, top) => { const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, A = [cx - rx, y0, cz - rz], B = [cx + rx, y0, cz + rz], C = [cx + rx, top + jag(cx + rx, cz + rz), cz + rz], D = [cx - rx, top + jag(cx - rx, cz - rz), cz - rz];
+    const out = 0.06 + rnd(cx, cz, 1) * 0.16, ym = y0 + (top - y0) * (0.45 + rnd(cx, cz, 2) * 0.25), M = [cx + dx * out + rx * (rnd(cx, cz, 3) - 0.5) * 0.5, ym, cz + dy * out + rz * (rnd(cx, cz, 3) - 0.5) * 0.5];
+    [[A, B], [B, C], [C, D], [D, A]].forEach((e, i) => tri(q, e[0], e[1], M, shade(ROCK, 0.78 + ((i + Math.floor(rnd(cx, cz, 4) * 4)) % 4) * 0.11))); };
+  // the top: a peak off the middle, its four facets in the rock's lighter colour
+  const rockCap = (q, b, top) => { const x = b.x, z = b.y, P = [x - 0.5, top + jag(x - 0.5, z + 0.5), z + 0.5], Q = [x + 0.5, top + jag(x + 0.5, z + 0.5), z + 0.5], R = [x + 0.5, top + jag(x + 0.5, z - 0.5), z - 0.5], S = [x - 0.5, top + jag(x - 0.5, z - 0.5), z - 0.5];
+    const M = [x + (rnd(x, z, 5) - 0.5) * 0.4, top + 0.12 + rnd(x, z, 6) * 0.45, z + (rnd(x, z, 7) - 0.5) * 0.4];
+    [[P, Q], [Q, R], [R, S], [S, P]].forEach((e, i) => tri(q, e[0], e[1], M, shade(ROCK_TOP, 0.72 + ((i + Math.floor(rnd(x, z, 8) * 4)) % 4) * 0.12))); };
+  for (const b of band.values()) { const G = b.G, top = b.hi + WALL_H; if (b.rock) rockCap(G.rcap, b, top); else topQuad(G.cap, b.x, b.y, top, WHITE);
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
-      if (same) continue; face(G.face, b, dx, dy, z + B0, top, c, z);
+      if (same) continue; if (b.rock) { if (!(nb && nb.rock && nb.G === G)) rockFace(G.rface, b, dx, dy, z + B0, top); continue; } face(G.face, b, dx, dy, z + B0, top, c, z);
       if (!nb && rid && (dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
 
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
@@ -128,7 +142,8 @@ function buildLabFloor(lab, P0, how) {
       for (const s of [1, -1]) { face(G.face, { x: x + nr[0] * s * (hw - 0.5), y: y + nr[1] * s * (hw - 0.5) }, nr[0] * s, nr[1] * s, z0 + B0, z0 + WALL_H, c, z0); sideQuad(sFace, x + nr[0] * s * (hw - 0.5), y + nr[1] * s * (hw - 0.5), nr[0] * s, nr[1] * s, z0 + B0, z0 + CUT_H, WHITE, 0, 1);
         if (!thin.some(q => !q.glass && Math.abs(q.m[0] - x - t.u[0] * s) < 0.01 && Math.abs(q.m[1] - y - t.u[1] * s) < 0.01)) for (const [q, h] of [[G.face, z0 + WALL_H], [sFace, z0 + CUT_H]]) {   // (its end, where it does not go on)
           const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw; putQuad(q, [ex - rx, z0 + B0, ez - rz], [ex + rx, z0 + B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]); } } } }
-  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1]; G.g.add(m); G.mesh = m; }
+  const rockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, vertexColors: true, flatShading: true });
+  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: rockMat }, { q: G.rcap, mat: rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
   const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: sFace, mat: cutFace }, { q: sTop, mat: P0.cutTop }]); stubs.receiveShadow = true; stubs.userData.inkKey = 'wall'; stubs.userData.inkIds = [0, 1]; rest.add(stubs);
 
   // the floors, each room in its own colours; the dark aprons beyond the ways out; the ground outside
