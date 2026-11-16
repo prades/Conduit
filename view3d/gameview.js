@@ -48,9 +48,12 @@ const GAMEVIEW = (function () {
   for (const b of world.band.values()) wallLit.push({ i: at4(b.x, b.y), own: b.own });
   for (const b of world.band.values()) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const x = b.x + dx, y = b.y + dy; if (world.band.has(K(x, y)) || world.roomAt(x, y)) continue;   // (just outside a wall: an outer face looks up its wall's light there)
     const i = at4(x, y); let h = halo.get(i); if (!h) halo.set(i, h = []); h.push(at4(b.x, b.y)); }
-  // the game's level (lv: 0 dark, its lit room's level when lit) as how dark here: the game's own (js/facilitystyle.js _fpDarkTileOver: its night laid on at amt * (1 - lv))
-  function lights() { if (!GM.lightOn) return; const amt = GM.darkAmt, own = {}; let changed = false;
-    const dk = lv => Math.round(255 * Math.max(0, Math.min(1, amt * (1 - Math.min(1, lv))))), put = (i, v) => { if (ldata[i] !== v) { ldata[i] = v; changed = true; } };
+  // the game's level (lv: 0 dark, its lit room's level when lit) as how dark here. MORE LIT UP than the game (the owner, 2026-11-16, of the 3D arena, shown it brighter: "I like the rock color the
+  // way it is I think the facilities should be more lit up"; in 3D it supersedes "Definitely liking the dark mode more", build 2026-11-16b): the room you are in at full light (the game's
+  // lit level counts as full), a room you are not in as dark as the room you are in was (the game's night, js/facilitystyle.js _fpDarkTileOver, laid on at amt * (1 - lit)), a pool at a
+  // door in between; a blackout as dark as the game's own (amt * (1 - lv)): it is play
+  function lights() { if (!GM.lightOn) return; const amt = GM.darkAmt, L = Math.max(0.05, GM.lit), bo = GM.blackout, own = {}; let changed = false;
+    const dk = lv => Math.round(255 * Math.max(0, Math.min(1, bo ? amt * (1 - Math.min(1, lv)) : amt * (1 - L) * (1 - Math.min(1, lv / L))))), put = (i, v) => { if (ldata[i] !== v) { ldata[i] = v; changed = true; } };
     for (const t of lit) put(t.i, dk(GM.tileLight(t.x, t.y, t.room)));
     for (const t of wallLit) put(t.i, own[t.own] !== undefined ? own[t.own] : (own[t.own] = dk(GM.roomLight(t.own))));
     for (const [i, from] of halo) { let v = 255; for (const j of from) v = Math.min(v, ldata[j]); put(i, v); }

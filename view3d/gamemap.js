@@ -22,7 +22,7 @@ const VIEW3D_GAME = (0, eval)(`({
   burrowDepth(f) { return typeof burrowerDepth === "function" ? burrowerDepth(f) : null; }, swirling(f) { return typeof skinkSwirling === "function" && skinkSwirling(f); },
   visible(x, y) { return typeof visibleForDraw === "function" ? visibleForDraw(x, y) : true; },
   roomLight(id) { return typeof _fpRoomLight === "function" ? _fpRoomLight(id) : 1; }, tileLight(x, y, id) { return typeof _fpTileLight === "function" ? _fpTileLight(x, y, id) : 1; },
-  get lit() { return typeof _fpLit === "function" ? _fpLit() : 1; }, get darkAmt() { return typeof _fpDarkAmt === "function" ? _fpDarkAmt() : (typeof FP_DARK !== "undefined" ? FP_DARK : 0.82); },
+  get lit() { return typeof _fpLit === "function" ? _fpLit() : 1; }, get blackout() { return typeof facilityBlackout === "function" ? facilityBlackout() : false; }, get darkAmt() { return typeof _fpDarkAmt === "function" ? _fpDarkAmt() : (typeof FP_DARK !== "undefined" ? FP_DARK : 0.82); },
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; }
 })`);
