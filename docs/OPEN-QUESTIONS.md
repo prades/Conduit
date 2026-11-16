@@ -10,7 +10,7 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 **Answered in part 2026-11-16, the game's look and combat** (`docs/STYLE-EVOLUTION.md`; the owner, of two rounds of ten directions: **"I like the direction of 1"**, round 2's CRYSTAL LAB 3D with the slowed and signalled fight; `DECISION-LOG.md`). Nothing is built. Still open:
 - Real 3D or 2.5D? If real 3D, the Crystal Chamber behind a flag (`?engine=3d`) first? "Stay 2D for now" (2026-11-09) stands until this is answered.
-- ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built as `lab3d/`, a page apart from the game: `STYLE-EVOLUTION.md` §8.)* **Waiting on the owner's two iPads:** the frame rate it reads with everything on, with SHARP at 1× and 2×, with the ink line off and with the shadows off; and whether it starts on the older one.
+- ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built as `lab3d/`, a page apart from the game: `STYLE-EVOLUTION.md` §8.)* **One reading in** (2026-11-15, a 12.9-inch iPad by its pixels): 52 fps with everything on at SHARP 2×. **Still waiting:** the older iPad (does it start, and at what rate), and what the owner wants to see next ("I'd love to see more").
 - How slow is the fight, and which marks does a blow leave on the floor before it lands? (The picture's "×0.6" and its shapes are the agent's.)
 - The oldest iPads (iPadOS 13.4 to 14) and WebGL 1. This joins the old-iPads question below.
 - A reference from the owner (a game, a screenshot, a picture) for the next step (`ART-PROCESS.md`).

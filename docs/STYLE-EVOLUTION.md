@@ -183,6 +183,12 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 - Not a measure of the whole game in 3D: it is one room with eight units. A bigger room, more creatures and the effects would cost more.
 - Its ant, crystal, doors and wall fittings are the pictures' stand-ins (§3.2).
 
+**Readings**
+- **The owner's first, 2026-11-15** (a screenshot from the live site, Chrome on an iPad; 2732 pixels wide, so a 12.9-inch one by the agent's reading): **52 fps**, 19.2 ms a frame, worst 20, with INK LINE on, SHADOWS on and SHARP at 2× (2732 × 1784 pixels, WebGL 2), 395 draws. The owner: "Wow, that's exciting. I'd love to see more".
+  - It is the heaviest setting the page has, on the sharpest screen an iPad has, and it is just under the screen's 60.
+  - Seen in that picture: the glow round the Crystal draws as a ring of dots. To fix.
+- Not read yet: the older iPad; the other switches on this one.
+
 **What to read on each iPad**
 1. The rate with everything on (INK LINE on, SHADOWS on, SHARP 1.5×).
 2. The rate with SHARP at 2×, and at 1×.
