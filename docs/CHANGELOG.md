@@ -2,6 +2,12 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-16
+
+### A decision, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the look and combat: direction 1 chosen
+- **The owner, of round 2's ten directions:** "I like the direction of 1": CRYSTAL LAB 3D (the game's own cartoon lab look as a real 3D world) with the slowed and signalled fight (real time, slower, every blow marked on the floor before it lands).
+- Recorded in `docs/DECISION-LOG.md` and `docs/STYLE-EVOLUTION.md`. Nothing is built. Still open (`docs/OPEN-QUESTIONS.md`): real 3D or 2.5D, the first piece, the pace and the marks.
+
 ## 2026-11-15
 
 ### Drafts, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the look and combat, round 2: ten directions reimagined

@@ -14,6 +14,20 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
+
+- **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, on `2026-11-15j` (no build: nothing is built)
+- **Status:** A direction, chosen by the owner. Not designed in detail; nothing built
+- **Context:** the owner asked for "a real update in style for the overall game", "3d or 2.5d graphics", and to "slow down the combat to make it completely readable". Two rounds of ten directions followed, each with a picture (`STYLE-EVOLUTION.md`).
+- **Decision:** "I like the direction of 1": round 2's direction 1.
+  - **Its look:** the game's own Crystal Laboratory style (`STYLE-CRYSTAL-LAB.md`: flat colour, one bold ink line round every solid, neon seams) as a real 3D world.
+  - **Its fight:** real time kept, at a slower pace, with every blow marked on the floor before it lands.
+- **Not decided by this** (`OPEN-QUESTIONS.md`): real 3D or baked 2.5D; which piece is built first; how slow, and which marks; the oldest iPads.
+- **Agent's choices, provisional:** everything in the picture but the direction: its colours, its camera, its screen (the bars, the cards, "×0.6"), the marks' shapes.
+- **Alternatives offered:** round 2's directions 2 to 10 and round 1's ten, all kept in `STYLE-EVOLUTION.md`.
+- **Earlier decisions:** "Real-time stays" (2026-11-11, `BATTLE-LOOK.md`) stands: direction 1 keeps real time. "Stay 2D for now" (2026-11-09, below) stands until the owner chooses between real 3D and 2.5D.
+- **Affects:** `docs/STYLE-EVOLUTION.md`. Nothing in the game yet.
+
 ## DECISION: The Sewers' new look: look 1's walls with look 4's floor (the owner's pick of six drafts)
 
 - **Date:** 2026-11-15 · **Branch/build:** `claude/start-game-project-HSh7Z`, `2026-11-15g`

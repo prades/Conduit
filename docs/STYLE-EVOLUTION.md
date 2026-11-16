@@ -1,8 +1,8 @@
 # The game's look and combat, evolved (3D or 2.5D, a slower fight)
 
-- **Status:** **Proposed.** Two rounds of ten directions, each with an example picture, for the owner to choose from. Round 2 (§3) is the current set; round 1 (§7) is kept. Nothing is built in the game and nothing here is approved.
+- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail and nothing is built. The other nineteen directions stay here as offered.
 - **Owner:** the user (creative direction); the agent (drafts and implementation support)
-- **Last updated:** 2026-11-15
+- **Last updated:** 2026-11-16
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-15j` (the game is unchanged by this)
 - **Related docs:** `STYLE-CRYSTAL-LAB.md` (the look the game has now), `BATTLE-LOOK.md` (the JRPG battle look; real time kept, 2026-11-11), `DECISION-LOG.md` ("Stay 2D for now", 2026-11-09), `COMBAT.md`, `ART-PROCESS.md`, `OPEN-QUESTIONS.md`
 - **The drafts:** `design/style-evolution/` (round 1) and `design/style-evolution/round2/` (how to make the pictures again: the README there)
@@ -11,13 +11,14 @@
 
 - The owner, 2026-11-15: "Im looking for a real update in style for the overall game. I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable. Can you give me 10 suggestions including example pictures. Im looking to evolve my game entirely"
 - The owner, the same day, after round 1: "Reimagine it now". Round 2 is that: the same request, answered again from the start.
+- The owner, 2026-11-16, of round 2: **"I like the direction of 1"** (`DECISION-LOG.md`).
 
 ## 2. Earlier decisions this reopens
 
 - **2026-11-09, "Stay 2D for now"** (`DECISION-LOG.md`). The owner then: "I intend to make this a fully 3-D game"; offered a prototype, going all in or staying 2D, they stayed 2D: "I don't wanna take any risks". A real-time 3D engine was left open for later.
 - **2026-11-11, "Real-time stays"** (`BATTLE-LOOK.md` §2, item 1). Turn-based battles and "dramatic beats" (a freeze or slow motion on big moves) were offered and not chosen.
 
-Both stand until the owner chooses here. In round 2, directions 3 to 5 and 7 to 10 would supersede the second (they are not plain real time), and 1 and 2 bring back a slower clock.
+Both still stand after the owner's pick. Direction 1 keeps real time (it slows the pace; it is not turn-based). "Stay 2D" stands until the owner chooses between real 3D and 2.5D (§6).
 
 ## 3. Round 2: ten directions, reimagined (the current set)
 
@@ -117,9 +118,9 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ## 6. Open questions
 
-1. Which look, or which mix? Round 1's looks (§7) can still be chosen.
-2. Which fight? Does "real time stays" (2026-11-11) still hold?
-3. Real 3D or 2.5D? If real 3D, the Crystal Chamber behind a flag first?
+1. ~~Which look, or which mix?~~ *(answered 2026-11-16: direction 1, "I like the direction of 1")*
+2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: how slow, and which marks. The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
+3. Real 3D or 2.5D? If real 3D, the Crystal Chamber behind a flag first? And which piece is built first?
 4. The oldest iPads (iPadOS 13.4 to 14): keep them (WebGL 1, an older three.js), or not?
 5. A reference would help the next step: a game, a screenshot or a picture that shows the feel the owner has in mind (`ART-PROCESS.md`).
 
