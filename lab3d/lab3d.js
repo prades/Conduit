@@ -28490,12 +28490,17 @@ const LIVE = (function () {
         }
         x /= who.length;
         y /= who.length;
+        if (!who.includes(player) && Math.hypot(player.x - x, player.y - y) < 9) {
+            x = (x * who.length + player.x) / (who.length + 1);
+            y = (y * who.length + player.y) / (who.length + 1);
+            who.push(player);
+        }
         for (const o of who)
             far = Math.max(far, Math.hypot(o.x - x, o.y - y));
         return { x, y, far, who };
     }
     function place(dt) {
-        const f = fightAt(), near = state.cam === 'near' || (state.cam === 'auto' && !!f && Math.hypot(f.x - player.x, f.y - player.y) < 16);
+        const f = fightAt(), near = state.cam === 'near' || (state.cam === 'auto' && !!f && Math.hypot(f.x - player.x, f.y - player.y) < 11);
         view.k = dt ? view.k + ((near ? 1 : 0) - view.k) * Math.min(1, dt * 2.2) : (near ? 1 : 0);
         const k = ease(clamp(view.k, 0, 1));
         orbit.sway += ((clock - orbit.touched > 6 ? 1 : 0) - orbit.sway) * Math.min(1, dt * 2.4);

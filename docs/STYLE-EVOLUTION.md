@@ -202,7 +202,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ### 8.4 A battle camera
 
-- **CAMERA** has three settings. **AUTO**: when a fight is on near the cube the camera comes down close to it (lower and nearer, looking at the middle of the fight), and goes back out when it is over. **NEAR**: held close, on the fight or else on the cube. **FAR**: never comes down.
+- **CAMERA** has three settings. **AUTO**: when a fight is on by the cube the camera comes down close to it (lower and nearer, looking at the middle of the fight, the cube kept in the picture), and goes back out when it is over or when the cube walks away. **NEAR**: held close, on the fight or else on the cube. **FAR**: never comes down.
 - In the fight's view the walls in front of the fight sink too, wherever the cube is.
 - It is this page's own. The game has a battle view already (`js/battleview.js`: a zoom, soft edges, faint walls); this one is a camera that moves in 3D.
 
