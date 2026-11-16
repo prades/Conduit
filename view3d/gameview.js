@@ -24,7 +24,7 @@ const GAMEVIEW = (function () {
   const q = String((typeof location !== 'undefined' && location.search) || ''), arg = (k, d) => { const m = new RegExp('[?&]' + k + '=([\\d.]+)').exec(q); return m ? parseFloat(m[1]) : d; };
   const state = { ink: arg('ink', 1) !== 0, shadows: arg('shadows', 1) !== 0, sharp: Math.max(1, Math.min(2, arg('sharp', 1))) };   // (?ink=0 ?shadows=0 ?sharp=1.5, as the test page; the game's own canvas is drawn at one pixel a point)
   const CORE = view3dCore({ canvas, state, map, dK: 0.008 }), { scene, ctx: look, tagInk, mergeRigid, antBody } = CORE;
-  const world = CORE.buildWorld(map.lab, { live: true });
+  const world = CORE.buildWorld(map.lab, { live: true, rock: (/[?&]rock=(brown|sand)(?:&|$)/.exec(q) || [])[1] || 'brown' });   // (rock: the draft's colouring, ?draft=arena&rock=brown|sand, docs/VIEW-3D.md)
 
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)

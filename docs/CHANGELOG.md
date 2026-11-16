@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### Build `2026-11-16d` · branch `claude/start-game-project-HSh7Z` · the game in 3D: the arena's rock redrafted after the owner's picture (a draft, `?engine=3d&draft=arena`)
+- **The asks** (the owner): of the first rock, **"I don't like the rock in the arena"**; then, sending a picture of layered cave walls, **"These are nice walls"**.
+- **Redrafted** (`docs/VIEW-3D.md` §3): our own rock with the picture's qualities, not a copy of it: wavy horizontal strata in lighter and darker stone, speckled with small pits, big low-poly faces pushed in and out, flat facets with no smooth shading. The rock stays flat where a door or a sign hangs on it (the Sewers door). Two colourings to choose from: `&rock=brown` (the cave's brown the owner chose on 2026-11-09; the default) and `&rock=sand` (nearer the picture's).
+- **Still only a draft:** without `&draft=arena` nothing of the arena is drawn in 3D. Open: brown or sand, and whether rock in front of you sinks with the walls in front of your room.
+- **Verified:** `tests/view3d.js` and `tests/lab3d.js` passing; pictures from the real page of both colourings at the arena's north and west walls. **Not seen on an iPad.**
+
 ### Build `2026-11-16c` · branch `claude/start-game-project-HSh7Z` · the game in 3D, stage 2 begun: the lab's other floors (behind `?engine=3d`)
 - **What** (`docs/VIEW-3D.md` §3, stage 2, the agent's plan; the owner's ask: "Can we build the full game up to this point?", "The real game in 3D"): the 3D view now builds the lab's other floors too, up and down its stairs: **the Experiment Lab** (a floor down), **the Stair Room** and **Teleport Room 2** (a floor up), **the Observation Deck** (two up).
 - **Every floor at its own height:** a room's floor, props, fittings, doors and windows stand on its level, a staircase's treads on theirs; a wall between two floors stands from the lower up past the higher, as the game's does; the walls in front of your room sink as deep as they are tall; Teleport Room 2's edge is a low railing.
