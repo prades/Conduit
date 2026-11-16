@@ -153,7 +153,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ## 8. The live 3D test page (`lab3d/`)
 
-- **Status:** **Implemented; verified** by `tests/lab3d.js` (22 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
+- **Status:** **Implemented; verified** by `tests/lab3d.js` (21 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
 - **The asks** (the owner):
   1. 2026-11-16, of three first pieces: "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads.
   2. 2026-11-16, having seen it run: "Wow, that's exciting. I'd love to see more". Asked what to see next in the page (one or more of three), all three: **"Walk the lab floor"**, **"A fight at the new pace"**, **"A battle camera"**.
