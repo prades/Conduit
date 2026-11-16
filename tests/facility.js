@@ -164,7 +164,7 @@ function measure(w, h, query) {
     group('NAVIGATION: only confirmed openings join rooms');
     check('only the confirmed links join rooms: the unconfirmed candidates are listed but never walked', () => {
         same(J('facilityComponents(null, false).length'), 4, 'areas (the Nest\'s shelf on its own since build 2026-11-12a, the Catwalk Spur since build 2026-11-12v)'); same(J('facilityComponents(null, true).length'), 3, 'areas if every candidate were real (and the Nest\'s shelf, the Catwalk Spur)');
-        const f = J(`(function(){ const F = facilityGet(), c = facilityFlood(F.byId.get('catwalks').poly[0][0] + 2, F.byId.get('catwalks').poly[0][1] + 2, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))); })()`);
+        const f = J(`(function(){ const F = facilityGet(), c = facilityFlood(F.byId.get('catwalks').poly[0][0] + 2, F.byId.get('catwalks').poly[0][1] + 3.5, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))); })()`);   // (the spot it always started from: the catwalks' north end is a tile and a half further north since build 2026-11-16e)
         same(f.length, 1, 'a flood left the catwalks: ' + f.join());
     });
     check('a confirmed opening (added to a COPY, not the data) cuts the wall, lets a body through; the arena\'s other walls and the catwalks stay shut', () => {
@@ -473,9 +473,9 @@ function measure(w, h, query) {
             M.decor = keep; out.good = facilityValidateDressing(facilityBuild({ snap: true, margin: 0.3 })).length; return out; })()`);
         for (const id of ['x_wrong_side', 'x_on_glass', 'x_not_wall', 'x_over_door', 'x_outside', 'x_rug_leaves', 'x_hidden_diag', 'x_outside_but_front']) ok(r[id] > 0, id + ' passed'); same(r.good, 0, 'the real data stopped validating after the probe');
     });
-    check('the arena\'s rock walls are detailed (diagonal walls, outside faces), and the catwalks are scaffolding, not a room: marked so in the data, no wall decor (there are no walls to hang it on), floor markings and furniture on the deck', () => {
+    check('the arena\'s rock walls are detailed (outside faces; straight since build 2026-11-16e, the owner: "less nooks", so nothing hangs on a slant), and the catwalks are scaffolding, not a room: marked so in the data, no wall decor (there are no walls to hang it on), floor markings and furniture on the deck', () => {
         const M = J('FACILITY_MAP'), A = M.decor.filter(d => d.room === 'arena' && d.a && d.b && d.kind !== 'lane'), K = M.decor.filter(d => d.room === 'catwalks');
-        ok(A.length >= 40, 'arena wall decor: ' + A.length); ok(A.filter(d => d.a[0] !== d.b[0] && d.a[1] !== d.b[1]).length >= 25, 'diagonal rock decor'); ok(A.filter(d => d.outside).length >= 12, 'outside-face decor: ' + A.filter(d => d.outside).length);
+        ok(A.length >= 40, 'arena wall decor: ' + A.length); same(A.filter(d => d.a[0] !== d.b[0] && d.a[1] !== d.b[1]).map(d => d.id).join(), '', 'rock decor on a slant (the arena\'s walls run straight)'); ok(A.filter(d => d.outside).length >= 12, 'outside-face decor: ' + A.filter(d => d.outside).length);
         ok(new Set(A.map(d => d.kind)).size >= 12, 'arena decor kinds: ' + new Set(A.map(d => d.kind)).size); for (const k of ['vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'scoreboard', 'bulbs', 'moss', 'crack']) ok(A.some(d => d.kind === k), 'no ' + k + ' on the arena walls');
         same(M.rooms.find(r => r.id === 'catwalks').structure, 'scaffold', 'the catwalks are not marked as scaffolding'); same(K.filter(d => d.a && d.b && d.kind !== 'lane' && d.kind !== 'arrows').length, 0, 'wall decor on the catwalks'); ok(K.length >= 10, 'catwalk floor decor: ' + K.length); ok(M.props.filter(p => p.room === 'catwalks').length >= 12, 'catwalk furniture: ' + M.props.filter(p => p.room === 'catwalks').length);
         for (const k of ['speaker', 'floodlight', 'spool', 'generator', 'console', 'chair', 'toolbox']) ok(M.props.some(p => p.room === 'catwalks' && p.kind === k), 'no ' + k + ' on the catwalks');

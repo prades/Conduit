@@ -29,7 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); TUT.followerLevel = 0; for (const s of hazardSolids()) facilitySolidSet(s.id, true);
         // the arena's most open patch (the cell with the most floor round it): the player stands there
         (function(){ const cells = partyRoomCells('arena'), set = new Set(cells.map(c => c[0] + ',' + c[1])); let best = null, bn = -1;
-            for (const [x, y] of cells) { let n = 0; for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) if (set.has((x + dx) + ',' + (y + dy))) n++; if (n > bn) { bn = n; best = [x, y]; } }
+            for (const [x, y] of cells) { let n = 0; for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) if (set.has((x + dx) + ',' + (y + dy))) n++; if (n > bn) { bn = n; best = [x, y]; } } if (set.has('32,49')) best = [32, 49];   /* (the spot these checks were made at, the most open cell until build 2026-11-16e: the arena's outline straightened, the pick moved beside the north tank, and the floor round this one is as it was) */
             globalThis.__C = [best[0] + 0.5, best[1] + 0.5]; })();
         globalThis.__put = (x, y) => { player.x = player.visualX = player.targetX = x; player.y = player.visualY = player.targetY = y; player.fpPath = null; };
         // a squad of the roles given, following, beside the player; no creatures

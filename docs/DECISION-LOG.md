@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Fewer nooks round the arena (the map reshaped); Teleport Room 2 to become a staircase up to a new floor
+
+- **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-16e`
+- **Status:** the reshape implemented and verified by the test suites and pictures (`FACILITY.md`, "Fewer nooks round the arena"); not played, not seen on an iPad. The new floor: decided in direction only, not designed or built.
+- **Context:** the owner, of an iPad picture of the 3D view round the arena: "This looks like shit I don't know why it looks like this, but if you need to make the layout of the facility or the arena a different way to make it more uniform when it comes to The graphics I guess please do that. I don't care as long as I still have the same rooms I don't even have use for the teleporter room number two. I was thinking about making that a staircase up to the second floor."
+- **Decision:** asked how far the layout may change: **"Keep the different levels just change it to where there's less nooks"**; asked what the staircase leads to: **"A new floor"**.
+- **Built (the agent's plan within that):** the arena's north and south walls straight, the wall to the hallway two tiles thick with the doorways' alcoves cut into it in line (an alcove is how a portal works, so the alcoves stay; the agent's first proposal to make some doors flush was withdrawn for that reason), the spur a rectangle, Teleport Room 2 two rows shorter. The same rooms, levels, doors and portals.
+- **Open:** the new floor (where its staircase stands, what is on it, when); `OPEN-QUESTIONS.md`.
+- **Affects:** `FACILITY.md`, `VIEW-3D.md`; `js/facilitymap.js`, `js/facilitygrow.js`, `js/facilitydecor.js`, `design/style-evolution/live/floor.js`, `img/cave/`, `js/caveatlas.js`, `js/caverubble.js`; `tests/facility.js`, `tests/facilityplay.js`, `tests/reef.js`, `tests/cavewalls.js`.
+
 ## DECISION: The real game in 3D, built area by area behind a switch (stage 1: the lab's ground floor)
 
 - **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-16a`

@@ -94,7 +94,10 @@ function buildLabFloor(lab, P0, how) {
       for (const [ox, oy] of [[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) { const b = band.get(K(Math.round(px + ox), Math.round(py + oy))); if (b && b.rock) b.flat = true; } } }
 
   // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together
-  const hideOf = (x, y) => { const s = []; for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) { const r = roomAt.get(K(x + dx, y + dy)); if (r && !s.includes(r)) s.push(r); } return s.sort(); };
+  const hideOf = (x, y) => { const s = []; for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) { const r = roomAt.get(K(x + dx, y + dy)); if (r && !s.includes(r)) s.push(r); }
+    // (live: a wall more than a tile thick, the arena's north wall: a block with a room on its camera side stands in front of the room behind the wall too, straight or diagonally, and sinks with it)
+    if (live) for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) if (roomAt.has(K(x - dx, y - dy))) for (let k = 1; k <= 3 && band.has(K(x + dx * k, y + dy * k)); k++) { const r = roomAt.get(K(x + dx * (k + 1), y + dy * (k + 1))); if (r) { if (!s.includes(r)) s.push(r); break; } }
+    return s.sort(); };
   const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) { G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };
   for (const b of band.values()) { b.hide = hideOf(b.x, b.y); b.G = groupOf(b.hide);
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
@@ -140,7 +143,9 @@ function buildLabFloor(lab, P0, how) {
 
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
   const sFace = quads(), sTop = quads();
-  for (const b of band.values()) { if (!b.hide.length || b.header) continue; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy)); if (nb && !nb.header) continue; sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, b.hi + CUT_H, WHITE, 0, 1); } }   // (over the highest floor beside it)
+  for (const b of band.values()) { if (!b.hide.length || b.header) continue; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
+      if (nb && !nb.header) { if (live && nb.hide.length && nb.hi < b.hi - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, nb.hi + CUT_H, b.hi + CUT_H, WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
+      sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, b.hi + CUT_H, WHITE, 0, 1); } }   // (over the highest floor beside it)
 
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
   const edges = new Set(), glassMat = new T.MeshStandardMaterial({ color: lin('#96e6f2'), transparent: true, opacity: 0.2, roughness: 0.1, depthWrite: false, side: T.DoubleSide });

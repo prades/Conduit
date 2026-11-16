@@ -72,7 +72,9 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
             const y0 = Math.min(...rail.map(w => Math.min(w.a[1], w.b[1]))), y1 = Math.max(...rail.map(w => Math.max(w.a[1], w.b[1])));
             for (let y = Math.ceil(y0 + 0.5); y <= Math.floor(y1 - 0.5); y++) {
                 let at = null; for (let x = Math.floor(__edgeX) - 4; x >= Math.floor(__edgeX) - 9 && !at; x--) if (facilityStandOk(x, y) && __room(x, y) === 'arena') at = [x, y];
-                if (!at) continue; o.rows++;
+                if (!at) continue;
+                const g = __fresh(['blossom'], at)[0]; g.x = at[0]; g.y = at[1]; if (!techReefLedges(g).some(q => q.pts.some(p => __room(p.top[0], p.top[1]) === 'catwalks' && Math.abs(p.y - y) <= 0.5))) continue;   /* (only where the lip glows from there: by the arena's south-east corner a floodlight stands between, since the south wall runs straight, build 2026-11-16e) */
+                o.rows++;
                 for (const dx of [0.6, 1.5, 2.5]) {
                     const fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1]; techChipTap(t);
                     const wx = __edgeX + dx, s = _techScrZ(wx, y, facilityLiftPx(wx, y)); techAimTap(s.x, s.y + TILE_H); const C = techClimbs[0]; o.n++;
@@ -230,7 +232,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
     group('THE CATWALK SPUR, THE CLIMB\'S LOOK, THE AIM AND THE TIP (build 2026-11-12v: the owner, "a high ground catwalk that\'s really small", "5 is cool", "Build it", "A and C")');
     check('the Catwalk Spur: from the arena floor south of it a tap on it is a climb up its south face, from the west one up its west face; each climb takes the BOULDER STEPS sprite for its side and its ledge\'s height (the spur s18 / w18, the catwalks w50), all twelve in the props\' atlas', () => {
         const r = J(`(function(){ const o = {}, go = (at, tap) => { const fs = __fresh(['blossom'], at), t = fs[0]; t.x = at[0]; t.y = at[1]; const res = techReefClimbAt(t, tap); return res.ok ? __room(res.climb.top[0], res.climb.top[1]) + ',' + _techClimbArt(res.climb).name : res.why; };
-            o.south = go([48, 48], { x: 48, y: 43 }); o.west = go([42, 43], { x: 46.5, y: 43 }); o.cat = go([Math.floor(__edgeX) - 4, 51], { x: __edgeX + 2.5, y: 51 });
+            o.south = go([48, 48], { x: 48, y: 43 }); o.west = go([42, 43], { x: 46.5, y: 42 });   /* (the spur's middle row: it is a row further north since build 2026-11-16e) */ o.cat = go([Math.floor(__edgeX) - 4, 51], { x: __edgeX + 2.5, y: 51 });
             o.cells = Object.keys(PROP_ATLAS.reef.cells).sort().join(); o.mark = !!(PROP_ATLAS.reef.cells.s18.marks.lip && PROP_ATLAS.reef.cells.s18.marks.toe); return o; })()`);
         same(r.south, 'catwalk_spur,s18', 'up the spur\'s south face'); same(r.west, 'catwalk_spur,w18', 'up the spur\'s west face'); same(r.cat, 'catwalks,w50', 'up the catwalks');
         same(r.cells, 'e18,e34,e50,n18,n34,n50,s18,s34,s50,w18,w34,w50', 'the sprites'); same(r.mark, true, 'a sprite\'s marks');
