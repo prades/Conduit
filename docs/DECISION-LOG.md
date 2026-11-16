@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The real game in 3D, built area by area behind a switch (stage 1: the lab's ground floor)
+
+- **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-16a`
+- **Status:** Stage 1 implemented behind `?engine=3d` and verified in a headless browser (`tests/view3d.js`); not seen on an iPad. The 2D game is unchanged and stays the default.
+- **Context:** having walked the lab floor and fought on the test page (`lab3d/`), the owner asked: **"Can we build the full game up to this point?"** The agent asked which way (the real game in 3D; the test page grown into a fuller demo; the look on the 2D game). The owner chose **"The real game in 3D"**, whose option read: "Your actual game, drawn in this 3D look, built area by area. Its rules, squad, creatures, cards and saves stay exactly as they are; only the drawing changes. It runs behind a switch while it grows, so today's 2D game keeps working and stays what players get until you say otherwise. This is the 'move to real 3D' decision: with the switch on, the game loads the 3D engine. I start now with the real game's lab floor."
+- **Decision:** real 3D (three.js r128, `vendor/three.min.js`), drawing the actual game, built area by area behind `?engine=3d`. Only the drawing changes. Without the switch nothing of it is fetched or run.
+- **Built (stage 1, `VIEW-3D.md`):** the lab's eight ground-floor rooms with their doors, stairs and the game's light; the cube, the eggs and the evolved forms from their own models; the ants; the game's own camera (the same angle and scale, so every 2D drawing over it lies where it did). Everything else is the game's 2D drawing over the picture; another area's frame is the 2D game's.
+- **Agent's choices, provisional:** the order of the stages (`VIEW-3D.md` §3); the camera kept at the game's angle until the effects are 3D; the room you are in as bright as the chosen look rather than the 2D game's two-fifths-darker level (`?dark=game` to compare); what goes over a unit drawn half a tile lower, where the body stands; the battle view's zoom off in 3D for now.
+- **Supersedes in part:** "Stay 2D for now" (2026-11-09, below): real 3D is now being built, behind a switch; the 2D game stays what players get. Answers "Real 3D or 2.5D?" (`OPEN-QUESTIONS.md`).
+- **Affects:** `VIEW-3D.md`; `js/view3d.js`, `js/config.js`, `js/init.js`, `js/game.js`, `js/facilityplay.js`, `js/draw.js`, `js/input.js`, `game.html`; `view3d/`, `tools/view3d.js`, `dist/view3d.js`, `vendor/`; `tests/view3d.js`.
+
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 
 - **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, on `2026-11-15j` (no build: nothing is built)
@@ -27,7 +38,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Alternatives offered:** round 2's directions 2 to 10 and round 1's ten, all kept in `STYLE-EVOLUTION.md`.
 - **Earlier decisions:** "Real-time stays" (2026-11-11, `BATTLE-LOOK.md`) stands: direction 1 keeps real time. "Stay 2D for now" (2026-11-09, below) stands until the owner chooses between real 3D and 2.5D.
 - **The first piece** (the owner, the same day, of three offered: a live 3D test room, the slower fight in today's game, the look without a 3D engine): **"Live 3D test room"**. Built as `lab3d/`, a page apart from the game (`STYLE-EVOLUTION.md` §8): implemented and tested in a headless browser; not yet measured on an iPad.
-  - **With it, three.js r128 comes into the repository** (`lab3d/three.min.js`, MIT), for that page alone. The game does not load it. Whether the game gets a 3D engine is still the owner's to decide, after the readings.
+  - **With it, three.js r128 comes into the repository** (`lab3d/three.min.js`, MIT), for that page alone. The game does not load it. Whether the game gets a 3D engine is still the owner's to decide, after the readings. *(Decided 2026-11-16, "The real game in 3D": the decision above. three.js moved to `vendor/three.min.js`, which the test page and the game's 3D view both load; the game only with its switch on.)*
 - **What next in the page** (the owner, 2026-11-16, having read 52 fps on an iPad: "Wow, that's exciting. I'd love to see more"; of three offered, one or more): **all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"**. Built in `lab3d/` (`STYLE-EVOLUTION.md` §8.2 to §8.4): implemented and tested in a headless browser; not measured on an iPad as it is now.
   - **These decide nothing about the game.** The fight there is a test of pace and signals: the ants' speeds, health and power and the bite's two beats are the game's, and every other number is the agent's stand-in.
   - **Agent's choices in it, provisional, for the owner to keep or change:** the walls in front of your room sink into the floor (in the game a wall always stands); each blow's shape on the floor (a wedge, a disc, a strip, a dashed line); the four paces offered (×1, ×0.8, ×0.6, ×0.4); the CAMERA button's two angles, NEAR and FAR.
@@ -2932,6 +2943,8 @@ Offered and passed over: depth drawn in code (like STAKE RING and VOLCANIC ERUPT
 Supersedes the drawn 2D quill (kept only for the moment before the sheet arrives). `EFFECTS.md` §3 is the canonical record.
 
 ## DECISION: Stay 2D for now (a real-time 3D engine not now); the Rimestar's modelled icicle
+*(**Superseded in part, 2026-11-16:** "The real game in 3D" (above): real 3D is being built behind `?engine=3d`; the 2D game stays what players get until the owner says otherwise.)*
+
 - Date and build: 2026-11-09, builds `2026-11-09g` (built on the preview) and `2026-11-09h` (for everyone), branch `claude/start-game-project-HSh7Z`.
 - The owner's words: on the icicle's preview, "I intend to make this a fully 3-D game and if we're sitting here wasting resources making each projectile when we could just make a 3-D engine right now what do you say?"; then, offered a prototype behind a flag, going all in, or staying 2D: "Stay [2D] for now I mean, I don't wanna take [any] risks. Are we gonna be able to fit the whole library of different effects and keep a 3-D aesthetic as well throughout the entire game with 60 FPS on browser"; then "Yes, build it (Recommended)" (the icicle's model) and "Approve it for everyone (Recommended)" (in the game).
 

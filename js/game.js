@@ -588,6 +588,32 @@ function visibleTilesForDraw() {
     return out;
 }
 
+// THE FLOOR'S MARKS THAT ARE PLAY, on the floor tile `obj` whose top corner is at (px, py): pools, fire, acid, auras and the like, and the long-press ring. Drawn after the tile itself;
+// threeD: by THE 3D VIEW (js/view3d.js), into a layer it lays on its own floor, which is its own (so not the facility's coverings and decals, nor the tile's dark: the view has its own)
+function drawFloorTileMarks(obj, px, py, threeD) {
+    if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
+    if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
+    if (!threeD) facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
+    if (typeof drawAcidOnTile === "function") drawAcidOnTile(obj.x, obj.y, px, py);   // a hazard container's acid (js/hazards.js): over the floor's paint, as the serum's pool is
+    if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
+    if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
+    if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it
+    if (typeof drawThicketOnTile === "function") drawThicketOnTile(obj.x, obj.y, px, py);   // THORNWHIP's PINK THICKET, its bushes and aura on the floor of its room (js/elements.js)
+    if (typeof drawHexfireOnTile === "function") drawHexfireOnTile(obj.x, obj.y, px, py);   // the Ember Hood's HEXFIRE, a pool of lava on the floor of its room (js/elements.js): the walls and units in front cover it
+    if (typeof drawMeteorOnTile === "function") drawMeteorOnTile(obj.x, obj.y, px, py);   // the Ember Hood's METEOR RAIN, its craters on the floor of their room (js/elements.js)
+    if (typeof drawBudsOnTile === "function") drawBudsOnTile(obj.x, obj.y, px, py);   // the Thornwhip's SEEDFALL buds, on the floor of its room (js/elements.js)
+    if (typeof drawSeedfallOnTile === "function") drawSeedfallOnTile(obj.x, obj.y, px, py);   // a THORNWHIP's SEEDFALL, on the floor of its room (js/elements.js): the walls and units in front cover it
+
+    // The tile a long-press ring was opened on (js/input.js handleLongHold): lit while the ring is up
+    if (commandMode&&commandTarget===obj) {
+        ctx.save();
+        ctx.strokeStyle="rgba(0,255,136,0.9)"; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.stroke();
+        ctx.strokeStyle="rgba(0,255,136,0.25)"; ctx.lineWidth=8; ctx.stroke();
+        ctx.restore();
+    }
+}
+
 function visibleForDraw(x, y) {
     const dx = x - player.visualX, dy = y - player.visualY;
     const px = (dx - dy) * TILE_W + canvas.width / 2;
@@ -703,7 +729,12 @@ function gameLoopStart() {
 }
 
 // The frame's clear: black (the facility's floors, walls and dark are painted over it).
-function clearFrame() { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+// (A frame whose world THE 3D VIEW draws, js/view3d.js, is cleared to nothing instead: the 3D view's canvas lies under this one. Whether it is such a frame is decided here, once a frame.)
+function clearFrame() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (typeof view3dBegin === "function" && view3dBegin()) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
 
 // ─────────────────────────────────────────────────────────
 //  THE FRAME: one step of the game, and its picture
@@ -841,6 +872,7 @@ function render() {
     // ── THE PLAYER: a path of waypoints and real walls (js/facilityplay.js) ──
     facilityPlayerStep();
     if (typeof battleViewTick === "function") battleViewTick();   // THE BATTLE VIEW: a creature engaging eases the camera in (js/battleview.js)
+    if (typeof view3dShowing === "function" && view3dShowing() && typeof battleViewOn === "function" && battleViewOn()) battleViewReset();   // (it zooms the 2D picture: THE 3D VIEW does without it for now, docs/VIEW-3D.md)
 
     // ── UPDATE HAZARDS ──
 
@@ -997,7 +1029,11 @@ function render() {
     perfDrawStart();   // the logic is done; from here on it is drawing
     // A step with NO PICTURE (gameLoop: a device that is behind runs several a frame) draws no floor tile and no item: the walls, doors, props and floors were ~7 ms of drawing into a null context, three
     // times a frame at 15 fps, which made the frame longer and so owed more of them. Nothing in them is logic (audited): the facility's per-step logic (the light, the tick, the doors) runs in facilityDrawItems (js/facilityplay.js).
+    // THE 3D VIEW (js/view3d.js; its switch on, and the room you are in one it has built): it draws the floor, the walls, the props and the bodies it has models for, under this canvas. This frame
+    // then lays out no floor tile and no wall or prop, and what is drawn below is what the 3D view does not draw: the bars and plates over everyone, the effects, the panels.
+    const _v3 = !_simGhost && typeof view3dShowing === "function" && view3dShowing();
     let drawList=_simGhost?[]:visibleTilesForDraw();
+    const _v3tiles = _v3 ? drawList : null; if (_v3) drawList = [];   // (the tiles on the screen: the 3D view's floor has their marks laid on it)
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     // A catch-up step (gameLoop) draws nothing, and drawing a unit changes
     // nothing — so its units are not even laid out: the predators' body maths
@@ -1014,12 +1050,14 @@ function render() {
 
     // The pools of material evolved followers stand in (js/evolution.js GROUND): painted by the floor tiles below.
     if (!_simGhost && typeof evoGroundBegin === "function") evoGroundBegin();
+    if (_v3) view3dDraw(_v3tiles);   // (everyone is where this step left them: the 3D picture of it, with the floor's marks below laid on its floor)
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
         let py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
         if (obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
+        if (_v3 && obj.type !== 'fp' && obj.type !== 'crystal') py += view3dFeet();   // (THE 3D VIEW stands a body where the game has it, half a tile down the screen from where this drawing put its feet: what is drawn over it goes with it, js/view3d.js)
 
         if (obj.type==='player') {
             if (player._flight && typeof techFlightLift === "function") py -= techFlightLift(player);   // (carried by a Kinetic Launcher you are drawn up in the air: js/techabilities.js)
@@ -1070,6 +1108,7 @@ function render() {
             const rx  = 27, ry = 13.5;               // equator radii (2:1 iso)
             const topY = 42, botY = 32;              // apex heights
 
+            if (!_v3) {   // (in the 3D view the gem is the 3D view's, in its tank: only its bar and the ticker are drawn here)
             ctx.save();
 
             // ── Light pool on the floor, so it reads as hovering ──
@@ -1166,6 +1205,7 @@ function render() {
             }
 
             ctx.restore();
+            }
 
             const barY = tank ? py + TILE_H - tank.z1 - 16 : py - 118 + bob;   // (over the tank's top, not in it)
             drawHealthBar(px - 25, barY, 50, 7, crystal.health, crystal.maxHealth);
@@ -1184,27 +1224,7 @@ function render() {
             if (obj.deck) { /* a bridge's grating has nothing under it: the water shows through (js/facilitysewers.js) */ }
             else if (_spr) { if (!(typeof facilityFloorHides === "function" && facilityFloorHides(obj))) ctx.drawImage(_spr, px - TILE_W - 1, py - 1); }   // (not where the facility's tile, painted next, covers it whole: js/facilitydecor.js, build 2026-11-15b)
             else _drawFloorTile(ctx, px, py, dist);
-            if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
-            if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
-            facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
-            if (typeof drawAcidOnTile === "function") drawAcidOnTile(obj.x, obj.y, px, py);   // a hazard container's acid (js/hazards.js): over the floor's paint, as the serum's pool is
-            if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
-            if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
-            if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it
-            if (typeof drawThicketOnTile === "function") drawThicketOnTile(obj.x, obj.y, px, py);   // THORNWHIP's PINK THICKET, its bushes and aura on the floor of its room (js/elements.js)
-            if (typeof drawHexfireOnTile === "function") drawHexfireOnTile(obj.x, obj.y, px, py);   // the Ember Hood's HEXFIRE, a pool of lava on the floor of its room (js/elements.js): the walls and units in front cover it
-            if (typeof drawMeteorOnTile === "function") drawMeteorOnTile(obj.x, obj.y, px, py);   // the Ember Hood's METEOR RAIN, its craters on the floor of their room (js/elements.js)
-            if (typeof drawBudsOnTile === "function") drawBudsOnTile(obj.x, obj.y, px, py);   // the Thornwhip's SEEDFALL buds, on the floor of its room (js/elements.js)
-            if (typeof drawSeedfallOnTile === "function") drawSeedfallOnTile(obj.x, obj.y, px, py);   // a THORNWHIP's SEEDFALL, on the floor of its room (js/elements.js): the walls and units in front cover it
-
-            // The tile a long-press ring was opened on (js/input.js handleLongHold): lit while the ring is up
-            if (commandMode&&commandTarget===obj) {
-                ctx.save();
-                ctx.strokeStyle="rgba(0,255,136,0.9)"; ctx.lineWidth=3;
-                ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.stroke();
-                ctx.strokeStyle="rgba(0,255,136,0.25)"; ctx.lineWidth=8; ctx.stroke();
-                ctx.restore();
-            }
+            drawFloorTileMarks(obj, px, py, false);
         }
     });
 

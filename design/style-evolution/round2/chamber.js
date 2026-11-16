@@ -158,10 +158,11 @@ function buildRoom(R, P, opt) {
 }
 
 // ── THE ANT (after js/bugs3d.js _drawAnt3D): it faces +x; cls: worker, scout, striker, tank (a soldier: a bigger head and jaws) ──
+// (size 0.5 with zk 2 is the game's own ant, measure for measure: the game's 3D view, view3d/gameview.js. As the pictures and the test page have it, it is twice as long and half as tall again.)
 const ANT_W = { worker: 20, scout: 22, striker: 28, tank: 36 }, ANT_JAW_LEN = { worker: 0.9, scout: 1.05, striker: 1.15, tank: 1.3 }, ANT_ZK = 1.5;
 const ANT_LEGS_3D = [{ f: 0.2, hs: 0.13, hz: 6, kf: 0.2, ks: 0.62, kz: 12, tf: 0.62, ts: 0.92 }, { f: 0.05, hs: 0.15, hz: 6, kf: 0, ks: 0.7, kz: 12, tf: 0.02, ts: 1.02 }, { f: -0.1, hs: 0.13, hz: 6, kf: -0.25, ks: 0.66, kz: 12, tf: -0.72, ts: 0.95 }];
 function buildAnt(P, o) {
-  o = o || {}; const cls = o.cls || 'scout', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, Z = z => z / UH * s * ANT_ZK, soldier = cls === 'tank', hsz = soldier ? 1.3 : 1, ml = ANT_JAW_LEN[cls] || 1.05;
+  o = o || {}; const cls = o.cls || 'scout', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, Z = z => z / UH * s * (o.zk || ANT_ZK), soldier = cls === 'tank', hsz = soldier ? 1.3 : 1, ml = ANT_JAW_LEN[cls] || 1.05;
   const accent = o.accent || ANT_COLOUR, chitin = P.chitin(accent), eye = glowMat(accent, 1.0), rim = glowMat(accent, 0.7), g = new T.Group(), open = o.open === undefined ? 0.01 : o.open, walk = o.walk === undefined ? 0.6 : o.walk;
   const NR = 24, ring = (f0, L, W, z, K) => { const r = []; for (let i = 0; i < NR; i++) { const t = i / NR * Math.PI * 2, k = K ? K[i] : 1; r.push([(f0 + L * Math.cos(t) * k) * U, Z(z), W * Math.sin(t) * k * U]); } return r; };
   const blob = (f0, L, W, z0, rz, K) => { const rings = []; for (let i = 0; i <= 10; i++) { const ph = -Math.PI / 2 + Math.PI * (i + 0.5) / 11, k = Math.sin(ph), sc = Math.cos(ph); rings.push(ring(f0, L * sc, W * sc, z0 + rz * k, K)); } return loft(rings, chitin); };
@@ -187,7 +188,7 @@ function buildAnt(P, o) {
     g.add(rodBetween([(hf - hL * 0.05) * U, Z(hz + hr * 0.78), side * hW * 0.9 * U], [(hf + hL * 0.55) * U, Z(hz + hr * 0.66), side * hW * 0.3 * U], Z(0.7), P.leg, 6));
     const p0 = [(hf + hL * 0.6) * U, Z(hz + hr * 0.6), side * 0.09 * U], p1 = [(hf + hL * 0.6 + 0.12) * U, Z(17), side * 0.34 * U], p2 = [(hf + hL + 0.45) * U, Z(11), side * 0.3 * U]; g.add(rodBetween(p0, p1, 0.009 * s, P.leg, 6)); g.add(rodBetween(p1, p2, 0.007 * s, P.leg, 6)); }
   // six legs: hip, knee, foot on the floor, in a tripod gait
-  ANT_LEGS_3D.forEach((L, i) => { for (const side of [-1, 1]) { const ph = walk * Math.PI * 2 + ((i % 2 === 0) === (side > 0) ? 0 : Math.PI), sw = Math.sin(ph) * 0.36, up = Math.max(0, Math.cos(ph)) * 4;
+  ANT_LEGS_3D.forEach((L, i) => { for (const side of [-1, 1]) { const ph = walk * Math.PI * 2 + ((i % 2 === 0) === (side > 0) ? 0 : Math.PI), sw = o.stand ? 0 : Math.sin(ph) * 0.36, up = o.stand ? 0 : Math.max(0, Math.cos(ph)) * 4;   // (stand: every foot down, as the game draws one that is not walking)
     const hip = [L.f * U, Z(L.hz), side * L.hs * U], knee = [(L.f + L.kf + sw * 0.5) * U, Z(L.kz + up), side * L.ks * U], foot = [(L.f + L.tf + sw) * U, Z(up * 0.5) + 0.012, side * L.ts * U];
     g.add(rodBetween(hip, knee, 0.02 * s, P.leg, 8)); g.add(rodBetween(knee, foot, 0.015 * s, P.leg, 8)); g.add(at3(new T.Mesh(new T.SphereGeometry(0.022 * s, 8, 6), P.leg), knee[0], knee[1], knee[2])); } });
   setShadows(g); g.userData.ant = { cls, s, len: 2.95 * U, top: Z(soldier ? 16 : 13), headAt: [hf * U, Z(hz), 0], jawTip: [(hf + hL + 0.47 * ml) * U, Z(8), 0] };

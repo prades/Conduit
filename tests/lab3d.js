@@ -3,8 +3,9 @@
 // offered next: "Walk the lab floor", "A fight at the new pace", "A battle camera". Then, having tried those, two things to change (2026-11-16): its models were "squashed"
 // at a battle's end (the agent's own way of showing one of yours at no health), and the camera went by itself to "action that happens across the map": "Just make it to
 // where it's always near the player, and the player can change the angle of it".
-//   THE PAGE      lab3d/ holds its page, its bundle, three.js r128 and three's licence; the page and the bundle belong together (the fingerprint); the tool can make them again
-//   APART         it is a test page: the game, the players' page, the website and the game's scripts do not load it or link to it
+//   THE PAGE      lab3d/ holds its page and its bundle, and loads three.js r128 from vendor/ (with three's licence, which the game's 3D view loads too: docs/VIEW-3D.md); the page and
+//                 the bundle belong together (the fingerprint); the tool can make them again
+//   APART         it is a test page: the game, the players' page, the website and the game's scripts do not load it or link to it (the game's own 3D view: tests/view3d.js)
 //   IT RUNS       in a real browser (software WebGL): it starts with no error, frames are drawn, the picture is not blank, time moves, and it draws far fewer meshes than it built
 //   OLD iPADS     the same with WebGL 1 (an iPad before iPadOS 15)
 //   THE SWITCHES  the ink line and the shadows off: the room's second and third drawings are gone; SHARP: more pixels on a sharper screen
@@ -35,10 +36,11 @@ function findChromium() {
 }
 
 group('THE PAGE (lab3d/, made by tools/lab3d.js)');
-check('lab3d/ holds the page, the bundle, three.js r128 as published and three\'s licence', () => {
-    for (const f of ['lab3d/index.html', 'lab3d/lab3d.js', 'lab3d/three.min.js', 'lab3d/three.LICENSE.txt']) ok(fs.existsSync(path.join(ROOT, f)), f + ' is missing');
-    const three = rd('lab3d/three.min.js'); ok(/Three\.js Authors/.test(three.slice(0, 200)) && /SPDX-License-Identifier: MIT/.test(three.slice(0, 200)), 'three.min.js has lost its licence line'); ok(/REVISION\s*=\s*"128"|="128"/.test(three.slice(0, 4000)), 'three.min.js is not r128 (the bakers\' version, which still draws on WebGL 1)');
-    ok(/MIT License/.test(rd('lab3d/three.LICENSE.txt')), 'the licence file is not the MIT licence');
+check('lab3d/ holds the page and the bundle; the page loads three.js r128 as published from vendor/, with three\'s licence', () => {
+    for (const f of ['lab3d/index.html', 'lab3d/lab3d.js', 'vendor/three.min.js', 'vendor/three.LICENSE.txt']) ok(fs.existsSync(path.join(ROOT, f)), f + ' is missing');
+    ok(rd('lab3d/index.html').includes('<script src="../vendor/three.min.js"></script>'), 'the page does not load vendor/three.min.js');
+    const three = rd('vendor/three.min.js'); ok(/Three\.js Authors/.test(three.slice(0, 200)) && /SPDX-License-Identifier: MIT/.test(three.slice(0, 200)), 'three.min.js has lost its licence line'); ok(/REVISION\s*=\s*"128"|="128"/.test(three.slice(0, 4000)), 'three.min.js is not r128 (the bakers\' version, which still draws on WebGL 1)');
+    ok(/MIT License/.test(rd('vendor/three.LICENSE.txt')), 'the licence file is not the MIT licence');
 });
 check('the page and the bundle belong together: the page asks for the bundle by its fingerprint, both name one build, both say they are generated', () => {
     const js = rd('lab3d/lab3d.js'), page = rd('lab3d/index.html'), hash = crypto.createHash('sha1').update(js).digest('hex').slice(0, 10);
@@ -55,9 +57,9 @@ check('the bundle is one script a browser can read, and the tool can make it aga
 });
 
 group('APART FROM THE GAME');
-check('the game, the players\' page, the website and every script of the game: none loads or links the test room, or three.js', () => {
-    const files = ['game.html', 'play.html', 'index.html', 'dist/conduit.js'].concat(fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f));
-    for (const f of files) { const s = rd(f); ok(!/lab3d/i.test(s), f + ' names lab3d'); ok(!/three\.min\.js/.test(s), f + ' names three.min.js'); }
+check('the game, the players\' page, the website and every script of the game: none loads or links the test room; three.js only through the game\'s 3D view (js/view3d.js)', () => {
+    const files = ['game.html', 'play.html', 'index.html', 'dist/conduit.js', 'dist/view3d.js'].concat(fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f));
+    for (const f of files) { const s = rd(f); ok(!/lab3d/i.test(s), f + ' names lab3d'); if (f !== 'js/view3d.js' && f !== 'play.html' && f !== 'dist/conduit.js') ok(!/three\.min\.js/.test(s), f + ' names three.min.js'); }
 });
 
 // the page in a real browser: ?test=N draws N frames at once (a tenth of a second apart on a clock of their own: a headless browser's frame clock runs at no steady rate) and leaves

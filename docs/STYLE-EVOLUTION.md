@@ -153,6 +153,8 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ## 8. The live 3D test page (`lab3d/`)
 
+*(Then the owner chose **"The real game in 3D"** (2026-11-16): the actual game drawn in this look, area by area, behind `?engine=3d`. That is `VIEW-3D.md`; this page stays a test page. The two share the drawing core, `view3d/core.js`, and three.js, `vendor/three.min.js`.)*
+
 - **Status:** **Implemented; verified** by `tests/lab3d.js` (21 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
 - **The asks** (the owner):
   1. 2026-11-16, of three first pieces: "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads.
@@ -235,7 +237,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 - `node tools/lab3d.js` writes `lab3d/lab3d.js` (the forms' and props' models; round 2's kit, chamber and styles; `live/floor.js`, `live/walk.js`, `live/viewer.js`; the lab floor's map, `live/lab.json`; comments out) and `lab3d/index.html` (from `live/page.html`). `--export` reads the eight rooms from the running game first (`round2/export.js --lab`).
 - The rooms' floor marks, wall fittings and props are round 2's room builder (`round2/chamber.js` `buildRoom`), now able to build any room. The ten still pictures render byte for byte as before.
-- `lab3d/three.min.js` is three.js r128 as published (MIT, `lab3d/three.LICENSE.txt`): the bakers' version, which still draws on WebGL 1. **Only this page loads it; the game loads no library.**
+- three.js r128 as published (MIT, `vendor/three.LICENSE.txt`), the bakers' version, which still draws on WebGL 1, is `vendor/three.min.js` (it was `lab3d/three.min.js`): this page loads it, and so does the game's 3D view, only with its switch on (`VIEW-3D.md`).
 - **It is a snapshot** of the map and the models at the build the page names. Nothing remakes it when they change and no test fails when it is behind; run the tool to bring it up to date.
 
 ### 8.8 What it is not

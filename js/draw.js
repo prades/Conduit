@@ -266,7 +266,7 @@ function _drawPredatorBody(actor, px, py, drawCtx) {
     // the body they were modded from.
     const _style = typeof bugBodyStyle === "function" ? bugBodyStyle(actor) : null;
     if (_style) {
-        const _top = drawBug3D(actor, px, py, drawCtx, _style);
+        const _top = typeof view3dBody === "function" && view3dBody(actor) ? view3dTop(actor) : drawBug3D(actor, px, py, drawCtx, _style);   // (THE 3D VIEW draws the bodies it has models for, js/view3d.js: its bars still go over it)
         // Its bars just over its body.
         _drawPredatorBars(actor, px, py + Math.max(0, 69 - _top) - (actor.leapLift || 0), drawCtx);
         return;
@@ -1467,7 +1467,8 @@ function _drawVirus(actor, px, py, drawCtx) {
 
     const _figOpts = _virusSpriteOk(actor) ? null : { bubbles: true };
     // EVOLVED (js/evolution.js): the machine it molted into, not the egg.
-    if (typeof drawEvolvedFollower === "function" && drawEvolvedFollower(actor, px, py, drawCtx)) {}
+    if (typeof view3dBody === "function" && view3dBody(actor)) {}   // THE 3D VIEW draws it (js/view3d.js): an egg or an evolved form it has the model of
+    else if (typeof drawEvolvedFollower === "function" && drawEvolvedFollower(actor, px, py, drawCtx)) {}
     else if (_figOpts === null && typeof drawHdEgg === "function" && drawHdEgg(actor, px, py, drawCtx, flash)) {}   // the 3D egg (js/hdsprites.js)
     else if (_figOpts) _drawVirusFigure(drawCtx, px, py, actor, flash, er, eg, eb, wc, _figOpts);
     else {
@@ -1649,6 +1650,7 @@ function _drawVirus(actor, px, py, drawCtx) {
 // ─────────────────────────────────────────────────────────
 function drawPlayer(p) {
     if (player.angryTimer>0) player.angryTimer--;
+    if (typeof view3dBody === "function" && view3dBody(player)) return;   // THE 3D VIEW draws the cube (js/view3d.js)
     if (typeof drawHdPlayer === "function" && drawHdPlayer(p)) return;   // the 3D cube (js/hdsprites.js), once its sheet has arrived
     const bob=Math.sin(frame*cfg.bobSpeed)*cfg.bobAmount;
     let targetTilt=player.targetX>player.x?cfg.tiltIntensity:(player.targetX<player.x?-cfg.tiltIntensity:0);

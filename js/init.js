@@ -108,7 +108,10 @@ function _suFirstPicture() {
     render(); STARTUP.pictures++;
 }
 function _suAssets() {
-    if (!STARTUP.watching) return null;
+    // THE 3D VIEW (js/view3d.js; its switch on): its scripts fetched and its rooms built here, behind the start screen, while the sheets come. It never fails the start: without it the
+    // game is drawn as ever.
+    const v3 = typeof view3dPrepare === "function" ? view3dPrepare() : null;
+    if (!STARTUP.watching) return v3;
     const round = n => {
         const need = STARTUP.skipped ? [] : _suPending();
         if (!need.length) return null;
@@ -121,6 +124,7 @@ function _suAssets() {
         });
     };
     const r = round(0);
+    if (v3) return (r ? r.then(_suSettle) : Promise.resolve(_suSettle())).then(() => v3);   // (the start waits for the 3D view too)
     return r ? r.then(_suSettle) : _suSettle();
 }
 function _suSettle() {

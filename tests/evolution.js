@@ -602,7 +602,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.body.draws === 1 && r.body.ellipses === 0, 'the body is drawn with no pool in it and no shadow: ' + JSON.stringify(r.body));
         same(r.molting, 1, 'a molting follower paints no pool until it is out of the egg');
         const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-        ok(/_drawFloorTile\(ctx, px, py[^\n]*\n\s*if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile\(obj\.x, obj\.y, px, py\)/.test(GAME), 'the floor tile does not paint the pools');
+        ok(/_drawFloorTile\(ctx, px, py[^\n]*\n\s*drawFloorTileMarks\(obj, px, py, false\);/.test(GAME) && /function drawFloorTileMarks\(obj, px, py, threeD\) \{\n\s*if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile\(obj\.x, obj\.y, px, py\)/.test(GAME), 'the floor tile does not paint the pools');   // (build 2026-11-16a: the floor's play marks are one function, drawFloorTileMarks, which the 3D view's floor uses too)
         ok(GAME.indexOf('evoGroundBegin()') > 0 && GAME.indexOf('evoGroundBegin()') < GAME.indexOf('drawList.forEach(obj=>{'), 'the ground list is not built before the world is drawn');
     });
     check('THE ASK: a bundle of followers stands a little further apart (FOLLOWER_SEP), so every unit shows', () => {

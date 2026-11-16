@@ -9,8 +9,8 @@
 //   the round 2 kit, chamber and styles (design/style-evolution/round2/): the room builder and the look, the very code that drew picture 1
 //   the lab floor and its ways (design/style-evolution/live/floor.js, walk.js), and the viewer (viewer.js): the drawing, the walk, the test fight, the camera
 // and the lab floor's map (design/style-evolution/live/lab.json) beside it (window.__lab3dMap). Comments are taken out by TypeScript's printer, as tools/bundle.js does.
-// lab3d/index.html is design/style-evolution/live/page.html with the build's name and the bundle's fingerprint filled in. lab3d/three.min.js is three.js r128 as published
-// (three@0.128.0, MIT: lab3d/three.LICENSE.txt), the version the bakers use; it draws on WebGL 1 too, which an iPad before iPadOS 15 needs.
+// lab3d/index.html is design/style-evolution/live/page.html with the build's name and the bundle's fingerprint filled in. It loads three.js from vendor/three.min.js: three.js r128 as
+// published (three@0.128.0, MIT: vendor/three.LICENSE.txt), the version the bakers use, which draws on WebGL 1 too (an iPad before iPadOS 15 needs it); the game's 3D view loads the same file.
 // IT IS A SNAPSHOT: nothing remakes it when a model or the map changes, and no test fails when it is behind (the page says which build it was made from). Run this to bring it up to date.
 // Do not edit lab3d/lab3d.js or lab3d/index.html by hand.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
@@ -30,7 +30,7 @@ function strip(ts, src, file) {   // a script without its comments (as tools/bun
 function sources() {
   const forms = ['forms-core.js'].concat(fs.readdirSync(path.join(ROOT, EVO)).filter(f => /^forms\d+\.js$/.test(f)).sort((a, b) => parseInt(a.slice(5)) - parseInt(b.slice(5)))).map(f => EVO + '/' + f);
   const all = fs.readdirSync(path.join(ROOT, MODELS)).filter(f => f.endsWith('.js')).sort(), models = all.filter(f => f.startsWith('_')).concat(all.filter(f => !f.startsWith('_'))).map(f => MODELS + '/' + f);
-  return { forms, models, look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', LIVE + '/walk.js', LIVE + '/viewer.js'] };
+  return { forms, models, look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js', LIVE + '/walk.js', LIVE + '/viewer.js'] };   // (view3d/core.js: the drawing's core, which the game's 3D view shares)
 }
 function build() {
   const S = sources(), ts = loadTs(), one = f => '/* ' + f + ' */\n' + strip(ts, rd(f), f) + '\n;\n';   // (a ; between files: one that ends without its own cannot run into the next)
@@ -48,10 +48,10 @@ function build() {
 }
 function write() {
   const b = build(); fs.mkdirSync(path.join(ROOT, 'lab3d'), { recursive: true });
-  if (!fs.existsSync(path.join(ROOT, 'lab3d/three.min.js'))) throw new Error('lab3d/three.min.js is missing (three@0.128.0\'s build/three.min.js)');
+  if (!fs.existsSync(path.join(ROOT, 'vendor/three.min.js'))) throw new Error('vendor/three.min.js is missing (three@0.128.0\'s build/three.min.js)');
   fs.writeFileSync(path.join(ROOT, 'lab3d/lab3d.js'), b.js); fs.writeFileSync(path.join(ROOT, 'lab3d/index.html'), b.page); return b;
 }
-module.exports = { build, write, sources };
+module.exports = { build, write, sources, strip, loadTs };
 if (require.main === module) {
   if (process.argv.includes('--export')) require('child_process').execFileSync(process.execPath, [path.join(ROOT, R2, 'export.js'), path.join(ROOT, LIVE, 'lab.json'), '--lab'], { stdio: 'inherit' });
   const b = write();

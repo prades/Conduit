@@ -51,10 +51,16 @@ function moreFittings(P, acc) {
 }
 
 // ── THE LAB FLOOR ──
-function buildLabFloor(lab, P0) {
-  const g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], B0 = -0.12, vD = DOOR_H / WALL_H;
+// how.live (the game's own view, view3d/gameview.js):
+//   every door's two leaves are made whole and can slide (door.leaves, door.set(k): 0 shut, 1 open): the game's doors open and shut as someone comes near; no door is the raid's
+//   a tile may stand higher or lower than its room (a cell [x, y, h], h in the game's px of height: the treads of a staircase), with the risers between; and the walls reach further
+//   down under the floor, past the lowest tread
+function buildLabFloor(lab, P0, how) {
+  const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
+  const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
   g.add(rest);   // (what belongs to no one room: the stubs, the aprons, the ground)
-  for (const rec of recs) { rooms[rec.id] = { id: rec.id, rec, R: roomOf(rec), g: new T.Group(), label: rec.label || rec.id, style: rec.style || { acc: PAL.cyan, wain: PAL.wallBase, fa: PAL.floorA, fb: PAL.floorB } }; g.add(rooms[rec.id].g); for (const c of rec.cells) roomAt.set(K(c[0], c[1]), rec.id); }
+  for (const rec of recs) { rooms[rec.id] = { id: rec.id, rec, R: roomOf(rec), g: new T.Group(), label: rec.label || rec.id, style: rec.style || { acc: PAL.cyan, wain: PAL.wallBase, fa: PAL.floorA, fb: PAL.floorB } }; g.add(rooms[rec.id].g); for (const c of rec.cells) { roomAt.set(K(c[0], c[1]), rec.id); if (live && c[2]) cellH.set(K(c[0], c[1]), c[2] / UH); } }
+  const hAt = (x, y) => cellH.get(K(x, y)) || 0;
   const at = (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null;
 
   // the walls: a block a tile of the gap between rooms (band), or a thin wall on the line where two rooms touch (thin)
@@ -72,10 +78,10 @@ function buildLabFloor(lab, P0) {
     const rA = at(m[0] + nr[0] * 0.5 - u[0] * 0.01, m[1] + nr[1] * 0.5 - u[1] * 0.01), rB = at(m[0] - nr[0] * 0.5 - u[0] * 0.01, m[1] - nr[1] * 0.5 - u[1] * 0.01); if ((!rA && !rB) || (rA && rB && !o.door)) continue;   // (two rooms open to each other: nothing stands there)
     const end = (s, k, e) => { const p = e < 0 ? o.a : o.b; return K(Math.round(p[0] + u[0] * e * 0.5 + nr[0] * s * (k - 0.5)), Math.round(p[1] + u[1] * e * 0.5 + nr[1] * s * (k - 0.5))); };
     const depth = s => { let k = 0; while (k < 8 && band.has(end(s, k + 1, -1)) && band.has(end(s, k + 1, 1))) k++; return k; }, dA = depth(1), dB = depth(-1), side = dA && (!dB || dA <= dB) ? 1 : dB ? -1 : 0;
-    const out = !rA ? 1 : !rB ? -1 : 0, kind = !o.door ? 'mouth' : !out ? 'open' : o.id === 'door_arena_hallway' ? 'raid' : 'shut', cellOf = (i, s, k) => [Math.round(o.a[0] + u[0] * (i + 0.5) + nr[0] * s * (k - 0.5)), Math.round(o.a[1] + u[1] * (i + 0.5) + nr[1] * s * (k - 0.5))];
+    const out = !rA ? 1 : !rB ? -1 : 0, kind = !o.door ? 'mouth' : !out ? 'open' : o.id === 'door_arena_hallway' && !live ? 'raid' : 'shut', cellOf = (i, s, k) => [Math.round(o.a[0] + u[0] * (i + 0.5) + nr[0] * s * (k - 0.5)), Math.round(o.a[1] + u[1] * (i + 0.5) + nr[1] * s * (k - 0.5))];
     const d = { id: o.id, kind, L, u, nr, m, side, out, room: rA || rB, rooms: [rA, rB], c: [m[0] + nr[0] * side * 0.5, m[1] + nr[1] * side * 0.5], over: [] };
     if (o.door && side) for (let i = 0; i < L; i++) { const c = cellOf(i, side, 1), b = { x: c[0], y: c[1], own: d.room, header: true }; band.set(K(c[0], c[1]), b); d.over.push(b); }   // (the wall goes on over the door)
-    if (out) for (let k = 1, n = kind === 'raid' ? 3 : kind === 'shut' ? 1 : 2; k <= n; k++) for (let i = 0; i < L; i++) { const c = cellOf(i, out, k); if (!roomAt.has(K(c[0], c[1]))) aprons.set(K(c[0], c[1]), { x: c[0], y: c[1] }); }
+    if (out) for (let k = 1, n = kind === 'raid' ? 3 : kind === 'shut' && !liveDoors ? 1 : 2; k <= n; k++) for (let i = 0; i < L; i++) { const c = cellOf(i, out, k); if (!roomAt.has(K(c[0], c[1]))) aprons.set(K(c[0], c[1]), { x: c[0], y: c[1] }); }
     doors.push(d); }
 
   // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together
@@ -120,8 +126,8 @@ function buildLabFloor(lab, P0) {
   const plate = new T.MeshStandardMaterial({ map: floorTexture(), roughness: 0.42, metalness: 0.08, vertexColors: true }), F0 = lin('#c9dce1'), floorMats = {};
   for (const rec of recs) { const rm = rooms[rec.id], st = rm.style, kind = (rec.floor && rec.floor.style) || 'plate', own = kind === 'wood' || kind === 'grate', top = quads(), side = quads(), base = lin(hexMix(st.fa, st.fb, 0.4));
     const mat = own ? (floorMats[rec.id] = new T.MeshStandardMaterial({ map: kind === 'wood' ? plankTexture(st.fa, st.fb) : grateTexture(st.fa, st.fb), roughness: 0.5, metalness: 0.05, vertexColors: true })) : plate, k = own ? [1, 1, 1] : [base.r / F0.r, base.g / F0.g, base.b / F0.b];
-    for (const c of rec.cells) { const v = ((c[0] * 7 + c[1] * 13) % 5) / 5; topQuad(top, c[0], c[1], 0, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
-      for (const [dx, dy] of DIRS) { const q = K(c[0] + dx, c[1] + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header)) continue; sideQuad(side, c[0], c[1], dx, dy, B0, 0, WHITE, 0, 1); } }
+    for (const c of rec.cells) { const v = ((c[0] * 7 + c[1] * 13) % 5) / 5, h = hAt(c[0], c[1]); topQuad(top, c[0], c[1], h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
+      for (const [dx, dy] of DIRS) { const q = K(c[0] + dx, c[1] + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q)) { const h2 = roomAt.has(q) ? hAt(c[0] + dx, c[1] + dy) : 0; if (h2 < h - 1e-4) sideQuad(side, c[0], c[1], dx, dy, h2, h, WHITE, 0, 1); continue; } if (nb && !nb.header) continue; sideQuad(side, c[0], c[1], dx, dy, B0, h, WHITE, 0, 1); } }   // (a riser down to a lower tread)
     const fm = quadMesh([{ q: top, mat }, { q: side, mat: P0.floorSide }]); fm.receiveShadow = true; fm.userData.inkKey = 'floor'; rm.g.add(fm); rm.floor = fm; }
   if (aprons.size && P0.outside) { const top = quads(), side = quads(); for (const a of aprons.values()) { topQuad(top, a.x, a.y, -0.004, WHITE); for (const [dx, dy] of DIRS) { const q = K(a.x + dx, a.y + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header)) continue; sideQuad(side, a.x, a.y, dx, dy, B0, -0.004, WHITE, 0, 1); } }
     const am = quadMesh([{ q: top, mat: P0.outside }, { q: side, mat: P0.outside }]); am.receiveShadow = true; am.userData.inkKey = 'apron'; rest.add(am); }
@@ -134,13 +140,14 @@ function buildLabFloor(lab, P0) {
     for (const q of [low, tall]) { q.position.set(d.c[0], 0, d.c[1]); q.rotation.y = th; q.userData.inkGroup = true; } rooms[d.room].g.add(low); G.g.add(tall);
     const box = (w, h, dep, mat) => new T.Mesh(new T.BoxGeometry(w, h, dep), mat), put = (par, m, x, y, z) => { m.position.set(x, y, z || 0); par.add(m); return m; }, ph = DOOR_H - 0.02;
     for (const s of [-1, 1]) { put(tall, box(0.15, DOOR_H, 0.44, P0.frame), s * (L / 2 - 0.085), DOOR_H / 2); put(low, box(0.13, CUT_H + 0.05, 0.42, P0.frame), s * (L / 2 - 0.085), (CUT_H + 0.05) / 2);
-      if (shut) { const lw = L / 2 - 0.17; put(tall, box(lw, ph, 0.09, P0.steel), s * (lw / 2 + 0.01), ph / 2); put(tall, box(0.05, ph, 0.1, P0.hazard), s * 0.036, ph / 2); const win = put(tall, box(lw * 0.5, 0.12, 0.1, P0.amberGlow), s * (lw / 2 + 0.03), 0.95); win.userData.noInk = true; }
+      if (liveDoors) { const lw = L / 2 - 0.17, lg = new T.Group(); lg.userData.dynamic = true; put(lg, box(lw, ph, 0.09, P0.steel), s * (lw / 2 + 0.01), ph / 2); put(lg, box(0.05, ph, 0.1, P0.hazard), s * 0.036, ph / 2); tall.add(lg); (d.leaves = d.leaves || []).push({ g: lg, s, slide: Math.max(0, L / 2 - 0.221 - L * 0.2) }); }   // (slid all the way, as much of it shows as an open door's leaf below; the rest is in the wall)
+      else if (shut) { const lw = L / 2 - 0.17; put(tall, box(lw, ph, 0.09, P0.steel), s * (lw / 2 + 0.01), ph / 2); put(tall, box(0.05, ph, 0.1, P0.hazard), s * 0.036, ph / 2); const win = put(tall, box(lw * 0.5, 0.12, 0.1, P0.amberGlow), s * (lw / 2 + 0.03), 0.95); win.userData.noInk = true; }
       else { put(tall, box(L * 0.2, ph, 0.09, P0.steel), s * (L / 2 - 0.16 - L * 0.1), ph / 2); put(tall, box(0.05, ph, 0.1, P0.hazard), s * (L / 2 - 0.16 - L * 0.2 - 0.025), ph / 2); } }
     if (thinDoor) put(tall, box(L - 0.02, WALL_H - DOOR_H, 0.2, P0.frame), 0, DOOR_H + (WALL_H - DOOR_H) / 2);
-    const lit = shut ? P0.amberGlow : d.kind === 'raid' ? glowMat('#ff3b5c', 1) : Pd.lampOpen;   // (a shut door's lamp is amber; the door the raid comes up through, the ants' red)
+    const lit = shut && !liveDoors ? P0.amberGlow : d.kind === 'raid' ? glowMat('#ff3b5c', 1) : Pd.lampOpen;   // (a shut door's lamp is amber; the door the raid comes up through, the ants' red)
     const lamp = put(tall, box(0.5, 0.06, 0.04, lit), 0, DOOR_H + 0.08, fs * (thinDoor ? 0.11 : 0.512)); lamp.userData.noInk = true;
     const thr = put(low, box(L, 0.012, 0.5, P0.hazard), 0, 0.008); const line = put(low, box(L, 0.014, 0.05, lit), 0, 0.012, fs * 0.3); line.userData.noInk = true;
-    setShadows(tall); setShadows(low); thr.castShadow = false; d.G = G; }
+    setShadows(tall); setShadows(low); thr.castShadow = false; d.G = G; d.open = 0; if (d.leaves) d.set = k => { if (k === d.open) return; d.open = k; for (const lf of d.leaves) lf.g.position.x = lf.s * k * lf.slide; }; }
 
   // each room's own things: its floor marks, wall fittings (which go with the wall they hang on) and props
   const props = {}, sentries = [];

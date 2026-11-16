@@ -675,7 +675,8 @@ function facilityDrawItems(drawList) {
     if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
     if (typeof facilityTutorialTick === "function") facilityTutorialTick();
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // a step with no picture draws nothing: no item is added to the draw list (see render(), js/game.js)
-    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
+    const v3 = typeof view3dShowing === "function" && view3dShowing();   // THE 3D VIEW (js/view3d.js) draws the walls, doors, props and the rest of what it builds: only what it does not (a pickup, a station's ring, a spot) is added, in the rooms it has built
+    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it)) && (!v3 || view3dKeeps(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn inside its tank: after the pad with the tank's far side, before the tank's near side
     if (typeof battleViewDecals === "function") battleViewDecals(drawList);   // the battle view: what is written on the floor (js/battleview.js)
 }

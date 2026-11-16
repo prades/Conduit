@@ -279,7 +279,7 @@ async function boot(search, store) {
 
     group('THE PAGE');
     check('the hooks are where the game makes the numbers: the overlays draw the auras; applyDamage gives the clone its aura and lets the aura\'s holders reach equipOnHit; dmgApply asks equipOpportunity; the card tick works out the auras and pays the refund', () => {
-        ok(/equipAuraDraw\(\)/.test(rd('js/game.js')), 'the overlays (the glints)'); ok(/obj\.type==='floor'[\s\S]{0,1800}equipAuraOnTile\(obj\.x, obj\.y, px, py\)/.test(rd('js/game.js')), 'the floor pass does not draw the ring'); ok(/source\.isClone && source\.team === "green" && source\._aura/.test(rd('js/helpers.js')), 'the clone\'s aura');
+        ok(/equipAuraDraw\(\)/.test(rd('js/game.js')), 'the overlays (the glints)'); ok(/obj\.type==='floor'[\s\S]{0,1800}drawFloorTileMarks\(obj, px, py, false\)/.test(rd('js/game.js')) && /function drawFloorTileMarks[\s\S]{0,2400}equipAuraOnTile\(obj\.x, obj\.y, px, py\)/.test(rd('js/game.js')), 'the floor pass does not draw the ring');   // (build 2026-11-16a: the floor's play marks are one function, drawFloorTileMarks, which the 3D view's floor uses too) ok(/source\.isClone && source\.team === "green" && source\._aura/.test(rd('js/helpers.js')), 'the clone\'s aura');
         ok(/\(source\.isFollower && \(source\.cards \|\| source\._aura\)\) \|\| \(source\.isClone && source\._aura\)/.test(rd('js/helpers.js')), 'equipOnHit\'s door (a follower with cards or an aura; the clone with an aura only)'); ok(/equipOpportunity\(source\)/.test(rd('js/damage.js')), 'dmgApply');
         ok(/_equipAuraTick\(\);[\s\S]{0,120}equipRefundTick\(\);/.test(rd('js/cards.js')), 'the tick');
     });

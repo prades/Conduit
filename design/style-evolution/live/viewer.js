@@ -3,8 +3,8 @@
 // love to see more"), asked what to see next, all three: "Walk the lab floor", "A fight at the new pace", "A battle camera".
 // This file is the last part of the bundle (tools/lab3d.js): the forms' and props' models, the round 2 kit, chamber and styles, the lab floor (floor.js) and its ways (walk.js)
 // come before it, in one function, so the look is the very code that drew picture 1 (STYLES.lab). What is here:
-//   CHEAP TO DRAW    everything that stands still is merged, one mesh a material a room; each solid's own flat colour for the ink line is carried in its vertices (`idc`);
-//                    the marks on the floor, the bars and the numbers are each one mesh, rewritten every frame; the shadows are drawn every other frame
+//   THE DRAWING      is the 3D core's (view3d/core.js), which the game's own 3D view shares: the world merged so it is cheap to draw, the ink line, the shadows every other
+//                    frame. Here: the marks on the floor, the bars and the numbers, each one mesh rewritten every frame
 //   WALK THE FLOOR   tap the floor: the cube walks there (walk.js) and the squad follows in its steps; the walls in front of the room you are in sink
 //   A FIGHT          ants come up in waves for the Crystal; the squad and the sentries fight them. EVERY BLOW IS MARKED ON THE FLOOR BEFORE IT LANDS: its shape, filling; it
 //                    lands on whoever stands in the shape when it is full. PACE is the fight's speed (×1 is the game's own for what is the game's: the ants' speeds, health and
@@ -19,92 +19,16 @@
 const LIVE = (function () {
   const S = STYLES.lab, canvas = opts.canvas, PACES = [1, 0.8, 0.6, 0.4], CAMS = ['far', 'near'];
   const state = { ink: opts.ink !== false, shadows: opts.shadows !== false, sharp: opts.sharp || 1.5, cam: CAMS.includes(opts.cam) ? opts.cam : 'far', pace: PACES.includes(opts.pace) ? opts.pace : 0.6, raid: opts.raid !== false };
-  const renderer = new (opts.gl1 ? T.WebGL1Renderer : T.WebGLRenderer)({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-  const gl2 = renderer.capabilities.isWebGL2, depthOK = gl2 || !!renderer.extensions.get('WEBGL_depth_texture');
-  renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.NoToneMapping; renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFShadowMap; renderer.shadowMap.autoUpdate = false; renderer.info.autoReset = false;
+  const CORE = view3dCore({ canvas, gl1: opts.gl1, state, chunk: opts.chunk, test: opts.test, map }), { renderer, scene, P, ctx, gl2, depthOK, mergeStill, tagInk, mergeRigid, Batch, antBody } = CORE;   // (view3d/core.js: the renderer, the look, the world, a frame's drawing)
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), ease = k => k * k * (3 - 2 * k), dist2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), TAU = Math.PI * 2;
   const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
 
   // ── the lab floor and the squad, in picture 1's look ──
-  const scene = new T.Scene(), P = S.palette(), U0 = RAID(), squadDefs = {}; for (const k of SQUAD) squadDefs[k] = U0[k];
-  const ctx = { renderer, P, S, units: squadDefs, scene, map, portraits: {} };
-  S.env(scene, ctx); scene.background = new T.Color('#0d1d26');   // (as it is written: the picture is drawn in the colours the screen shows, see the ink line below)
-  const world = buildLabFloor(map.lab, P); ctx.world = world; scene.add(world.g);
-  const cast = buildCast(P, squadDefs); ctx.cast = cast; scene.add(cast.g);
-  S.world(world, scene, ctx); world.settle(); S.cast(cast, scene, ctx); S.lights(scene, ctx);
-  let key = null; scene.traverse(o => { if (o.isDirectionalLight && o.castShadow) key = o; });
+  const U0 = RAID(), squadDefs = {}; for (const k of SQUAD) squadDefs[k] = U0[k]; ctx.units = squadDefs;
+  const world = CORE.buildWorld(map.lab);
+  const cast = buildCast(P, squadDefs); ctx.cast = cast; scene.add(cast.g); S.cast(cast, scene, ctx);
   const walk = makeWalk(world), pa = world.parts, CR = world.crystal || [11.5, 15.5];
-  // the glow round the Crystal: its soft disc from numbers, not from a canvas's gradient (an iPad's canvas dithers a gradient, and the glow drew as a ring of dots)
-  scene.traverse(o => { if (!o.isSprite) return; const N = 64, d = new Uint8Array(N * N * 4); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const r = Math.hypot((x + 0.5) / N - 0.5, (y + 0.5) / N - 0.5) * 2, a = r < 0.35 ? 1 - 0.55 * r / 0.35 : 0.45 * Math.max(0, 1 - (r - 0.35) / 0.65), i = (y * N + x) * 4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = Math.round(a * 255); }
-    const tex = new T.DataTexture(d, N, N, T.RGBAFormat); tex.magFilter = tex.minFilter = T.LinearFilter; tex.needsUpdate = true; o.material.map = tex; o.material.needsUpdate = true; });
-
-  // ── cheap to draw ──
-  let idCount = 0;
-  const idMat = new T.ShaderMaterial({ side: T.DoubleSide, vertexShader: 'attribute vec3 idc; varying vec3 vId;\n#include <common>\nvoid main() { vId = idc;\n#include <begin_vertex>\n#include <project_vertex>\n}', fragmentShader: 'varying vec3 vId; void main() { gl_FragColor = vec4(vId, 1.0); }' });   // (the ink line's drawing: each solid in its own flat colour)
-  idMat.shadowSide = T.BackSide;
-  const keyIds = {}, idOf = h => { if (h.userData._ink === undefined) { const k = h.userData.inkKey; h.userData._ink = k ? (keyIds[k] || (keyIds[k] = ++idCount * 3)) : ++idCount * 3; } return h.userData._ink; };   // (inkKey: many meshes that are one solid: the walls, the floors)
-  const idCol = id => [((id * 67 + 13) % 251) / 251, ((id * 131 + 7) % 241) / 241, ((id * 29 + 101) % 239) / 239];
-  const holderOf = o => { let root = null; for (let q = o; q; q = q.parent) if (q.userData.inkGroup) root = q; return root || o; };
-  const noInk = o => { for (let q = o; q; q = q.parent) if (q.userData.noInk) return true; return [].concat(o.material).some(m => (m.userData && m.userData.noInk) || (m.transparent && m.opacity < 0.3)); };
-  const sig = m => m.map || m.emissiveMap || m.alphaMap ? m.uuid : m.isMeshBasicMaterial ? ['b', m.color.getHex(), m.opacity, m.transparent, m.blending, m.depthWrite, m.side, m.polygonOffset].join(',')
-    : m.isMeshToonMaterial ? ['t', m.color.getHex(), m.emissive.getHex(), m.emissiveIntensity, m.opacity, m.transparent, m.depthWrite, m.side, m.vertexColors, m.gradientMap ? m.gradientMap.uuid : 0].join(',') : m.uuid;   // (two plain materials of one colour are one material)
-  // every still mesh under root as one mesh a material, in root's own space; each vertex carries its solid's colour for the ink line. Plain materials (no picture, not see-through,
-  // not glowing of themselves) that differ only in colour become ONE material, the colour carried in the vertices
-  const plain = m => !m.map && !m.emissiveMap && !m.alphaMap && !m.transparent && (m.isMeshBasicMaterial || (m.isMeshToonMaterial && (m.emissive.r + m.emissive.g + m.emissive.b) * m.emissiveIntensity < 0.004));
-  // o.chunk: a big room's meshes are kept in squares of that many tiles (by where each thing stands, counted from o.from), so what is out of the camera's sight is not drawn.
-  // o.copy: the ink line's drawing of the room needs no materials, only each solid's colour, and the shadows' drawing needs only its shape: so the room gets ONE plain copy a
-  // square for those two drawings (layer 3), and its meshes by material (layer 1) are left out of them: one draw a square there, not one a material
-  function dropArray() { this.array = null; }
-  function mergeStill(root, o2) {
-    const chunk = o2 && o2.chunk, from = o2 && o2.from, copies = o2 && o2.copy ? new Map() : null;
-    root.updateMatrixWorld(true); const inv = new T.Matrix4().copy(root.matrixWorld).invert(), buckets = new Map(), gone = [], v = new T.Vector3();
-    root.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !shownChain(o)) return; for (let q = o; q && q !== root; q = q.parent) if (q.userData.dynamic) return; if (o.userData.dynamic) return;
-      const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry, mats = [].concat(o.material), pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv, col = geo.attributes.color;
-      const groups = Array.isArray(o.material) && geo.groups.length ? geo.groups : [{ start: 0, count: pos.count, materialIndex: 0 }];
-      const m4 = new T.Matrix4().multiplyMatrices(inv, o.matrixWorld), n3 = new T.Matrix3().getNormalMatrix(m4), flip = m4.determinant() < 0, ni = noInk(o), id = ni ? 0 : idOf(holderOf(o));
-      let where = ''; if (chunk) { if (!geo.boundingBox) geo.computeBoundingBox(); geo.boundingBox.getCenter(v).applyMatrix4(m4); where = '|' + Math.floor((v.x - (from ? from[0] : 0)) / chunk) + ',' + Math.floor((v.z - (from ? from[1] : 0)) / chunk); }
-      for (const gr of groups) { const mat = mats[gr.materialIndex] || mats[0], paint = plain(mat), k = (paint ? [mat.type, mat.side, mat.depthWrite, mat.toneMapped, mat.polygonOffset, mat.gradientMap ? mat.gradientMap.uuid : 0].join(',') : sig(mat)) + '|' + (ni ? 1 : 0) + (o.castShadow ? 1 : 0) + (o.receiveShadow ? 1 : 0) + '|' + (o.renderOrder || 0) + where;
-        let b = buckets.get(k); if (!b) { let m2 = mat; if (paint) { m2 = mat.clone(); m2.color.setRGB(1, 1, 1); m2.vertexColors = true; } b = { mat: m2, ni, cast: o.castShadow, recv: o.receiveShadow, order: o.renderOrder || 0, pos: [], nor: [], uv: [], col: [], idc: [], needUv: !!(mat.map || mat.emissiveMap), needCol: paint || !!mat.vertexColors }; buckets.set(k, b); }
-        const tint = paint ? mat.color : null, own = mat.vertexColors ? col : null;
-        const c = idCol(id + (o.userData.inkIds ? o.userData.inkIds[gr.materialIndex] || 0 : 0));
-        let cp = null; if (copies && !ni) { cp = copies.get(where); if (!cp) copies.set(where, cp = { pos: [], idc: [] }); }
-        const push = i => { v.fromBufferAttribute(pos, i).applyMatrix4(m4); b.pos.push(v.x, v.y, v.z); if (cp) { cp.pos.push(v.x, v.y, v.z); cp.idc.push(c[0], c[1], c[2]); } else b.idc.push(c[0], c[1], c[2]);
-          if (nor) { v.fromBufferAttribute(nor, i).applyMatrix3(n3).normalize(); b.nor.push(v.x, v.y, v.z); } else b.nor.push(0, 1, 0);
-          if (b.needUv) b.uv.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0); if (b.needCol) b.col.push((own ? own.getX(i) : 1) * (tint ? tint.r : 1), (own ? own.getY(i) : 1) * (tint ? tint.g : 1), (own ? own.getZ(i) : 1) * (tint ? tint.b : 1)); };
-        for (let i = gr.start; i + 2 < gr.start + gr.count; i += 3) { push(i); push(flip ? i + 2 : i + 1); push(flip ? i + 1 : i + 2); } }
-      gone.push(o); });
-    for (const o of gone) o.parent.remove(o);
-    const attr = (list, n) => { const a = new T.Float32BufferAttribute(list, n); if (o2 && o2.copy) a.onUpload(dropArray); return a; };   // (a room's own: not kept in memory once it is on the graphics card)
-    for (const b of buckets.values()) { if (!b.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', attr(b.pos, 3)); g.setAttribute('normal', attr(b.nor, 3)); if (b.needUv) g.setAttribute('uv', attr(b.uv, 2)); if (b.needCol) g.setAttribute('color', attr(b.col, 3)); if (b.idc.length) g.setAttribute('idc', attr(b.idc, 3)); g.computeBoundingSphere();
-      const m = new T.Mesh(g, b.mat); m.castShadow = b.cast; m.receiveShadow = b.recv; m.renderOrder = b.order; m.userData.merged = true; if (b.ni) m.layers.set(2); else if (copies) m.layers.set(1); root.add(m); }
-    if (copies) for (const cp of copies.values()) { const g = new T.BufferGeometry(); g.setAttribute('position', attr(cp.pos, 3)); g.setAttribute('idc', attr(cp.idc, 3)); g.computeBoundingSphere(); const m = new T.Mesh(g, idMat); m.layers.set(3); m.castShadow = true; m.userData.merged = true; root.add(m); }
-    return buckets.size;
-  }
-  // what still moves (the squad's parts, the crystal): each vertex its solid's colour; what carries no line goes to layer 2, which the line's drawing leaves out
-  function tagInk(root) { root.traverse(o => { if (o.isSprite || o.isLine || o.isPoints) { o.layers.set(2); return; } if (!o.isMesh || o.userData.merged || (o.geometry.attributes.idc && o.geometry.userData.ink === undefined)) return; if (noInk(o)) { o.layers.set(2); return; }
-    const id = idOf(holderOf(o)); let g = o.geometry; if (g.userData.ink !== undefined) { if (g.userData.ink === id) return; g = o.geometry = g.clone(); }
-    const n = g.attributes.position.count, a = new Float32Array(n * 3), set = (i, c) => { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; }, base = idCol(id); for (let i = 0; i < n; i++) set(i, base);
-    if (o.userData.inkIds && g.groups.length) for (const gr of g.groups) { const c = idCol(id + (o.userData.inkIds[gr.materialIndex] || 0)); for (let i = gr.start; i < gr.start + gr.count; i++) set(g.index ? g.index.getX(i) : i, c); }
-    g.setAttribute('idc', new T.BufferAttribute(a, 3)); g.userData.ink = id; }); }
-  // a form's parts that never move against their parent (found by posing it many ways and watching) are merged with that parent's other still parts
-  function mergeRigid(holder) { const f = holder.userData.form; if (!f || !f.B.update) return; const nodes = [], first = new Map(); f.B.g.traverse(o => nodes.push(o));
-    for (const t of [0, 0.37, 0.91, 1.7, 2.9, 4.3]) for (const act of [0, 0.25, 0.5, 0.75, 1]) { f.B.update(t, act); for (const o of f.hidden) o.visible = false;
-      for (const o of nodes) { o.updateMatrix(); const e = o.matrix.elements, a = first.get(o); if (!a) { first.set(o, { e: e.slice(), v: o.visible }); continue; } if (a.v !== o.visible) o.userData.dynamic = true; else for (let i = 0; i < 16; i++) if (Math.abs(a.e[i] - e[i]) > 1e-5) { o.userData.dynamic = true; break; } } }
-    f.B.update(0.6, 0); for (const o of f.hidden) o.visible = false;
-    const roots = [holder].concat(nodes.filter(o => o.userData.dynamic && o.children.length)); for (const r of roots) mergeStill(r); }
-  const CHUNK = opts.chunk || 7;   // (tiles: smaller, fewer triangles a frame and more draws; ?chunk= in the address tries another)
-  const countMeshes = () => { let n = 0; scene.traverse(o => { if (o.isMesh && shownChain(o)) n++; }); return n; };
-  const before = countMeshes();
-
-  // ── THE ANTS: a body a class, in five poses (four steps of its walk; its jaws wide, a bite on its way); the ants of a class share its shapes ──
-  const ANT_POSES = [{ walk: 0 }, { walk: 0.25 }, { walk: 0.5 }, { walk: 0.75 }, { walk: 0.3, open: 0.3 }], antKits = {};
-  function antKit(cls, size) { const k = cls + size; if (antKits[k]) return antKits[k]; const root = new T.Group(), poses = ANT_POSES.map(p => buildAnt(P, Object.assign({ cls, size }, p))); root.userData.inkGroup = true; for (const g of poses) root.add(g);
-    toonify(root, ctx.grad, { sat: 1.1 }); for (const g of poses) mergeStill(g); return (antKits[k] = { poses, info: poses[0].userData.ant }); }
-  function antBody(cls, size) { const kit = antKit(cls, size), holder = new T.Group(), id = ++idCount * 3, c = idCol(id); holder.userData.inkGroup = true; holder.userData._ink = id;
-    const poses = kit.poses.map(pg => { const g = new T.Group(); for (const m of pg.children) { let geo = m.geometry; if (m.layers.mask !== 4) { geo = new T.BufferGeometry(); for (const a of Object.keys(m.geometry.attributes)) if (a !== 'idc') geo.setAttribute(a, m.geometry.attributes[a]);
-          const n = m.geometry.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; } geo.setAttribute('idc', new T.BufferAttribute(a, 3)); }
-        const q = new T.Mesh(geo, m.material); q.castShadow = m.castShadow; q.receiveShadow = m.receiveShadow; q.layers.mask = m.layers.mask; q.renderOrder = m.renderOrder; g.add(q); } g.visible = false; holder.add(g); return g; });
-    holder.visible = false; scene.add(holder); return { holder, poses, info: kit.info }; }
+  const before = CORE.built() + (() => { let n = 0; cast.g.traverse(o => { if (o.isMesh && shownChain(o)) n++; }); return n; })();   // (the meshes built, before any is merged)
 
   // ── what is in the air, made once and shown when it happens: icicles, stakes, a sentry's beam, the spark of a blow ──
   const air = new T.Group(); air.userData.noInk = true; scene.add(air);
@@ -117,13 +41,6 @@ const LIVE = (function () {
   const sparks = []; for (let k = 0; k < 6; k++) { const g = new T.Group(); g.add(burst([0, 0, 0], '#eaffff', 10, 0.36, { w: 0.016 })); g.userData.dynamic = true; air.add(g); mergeStill(g); g.visible = false; sparks.push({ g, t: -1 }); }
 
   // ── marks, bars and numbers: each ONE mesh whose triangles are written again every frame ──
-  // (a vertex at a time, straight into the arrays: three vertices are a triangle. Nothing is made anew each frame)
-  function Batch(maxTris, mat, uvs) { const max = maxTris * 3, pos = new Float32Array(max * 3), col = new Float32Array(max * 4), uv = uvs ? new Float32Array(max * 2) : null, geo = new T.BufferGeometry(), aP = new T.BufferAttribute(pos, 3), aC = new T.BufferAttribute(col, 4), aU = uv ? new T.BufferAttribute(uv, 2) : null;
-    aP.setUsage(T.DynamicDrawUsage); aC.setUsage(T.DynamicDrawUsage); geo.setAttribute('position', aP); geo.setAttribute('color', aC); if (aU) { aU.setUsage(T.DynamicDrawUsage); geo.setAttribute('uv', aU); }
-    const mesh = new T.Mesh(geo, mat); mesh.frustumCulled = false; mesh.layers.set(2); let n = 0;
-    return { mesh, count: () => n / 3, begin() { n = 0; },
-      v(x, y, z, k, al, s, t) { if (n >= max) return; let i = n * 3; pos[i] = x; pos[i + 1] = y; pos[i + 2] = z; i = n * 4; col[i] = k.r; col[i + 1] = k.g; col[i + 2] = k.b; col[i + 3] = al; if (uv) { uv[n * 2] = s; uv[n * 2 + 1] = t; } n++; },
-      end() { n -= n % 3; geo.setDrawRange(0, n); for (const a of [aP, aC, aU]) if (a) { a.updateRange.offset = 0; a.updateRange.count = Math.max(a.itemSize * 3, n * a.itemSize); a.needsUpdate = true; } } }; }
   const markMat = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
   const FM = Batch(5200, markMat); scene.add(FM.mesh);   // the floor's marks: in the room, under whoever stands on them
   const over = new T.Scene(), barMat = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthTest: false, depthWrite: false, toneMapped: false, side: T.DoubleSide });
@@ -187,11 +104,11 @@ const LIVE = (function () {
   if (raidDoor) for (let i = 0; i < raidDoor.L; i++) { const p = [raidDoor.m[0] + raidDoor.u[0] * (i + 0.5 - raidDoor.L / 2) - raidDoor.nr[0] * raidDoor.out * 0.5, raidDoor.m[1] + raidDoor.u[1] * (i + 0.5 - raidDoor.L / 2) - raidDoor.nr[1] * raidDoor.out * 0.5]; if (world.walkable(Math.round(p[0]), Math.round(p[1]))) gate.push({ at: p, out: [raidDoor.nr[0] * raidDoor.out, raidDoor.nr[1] * raidDoor.out] }); }
 
   // ── everything made: merge what stands still, give what moves its colours for the ink line ──
-  for (const id of world.order) mergeStill(world.rooms[id].g, { chunk: CHUNK, from: world.rooms[id].rec.bb, copy: true }); for (const G of world.groups) mergeStill(G.g, { chunk: CHUNK * 2, copy: true }); for (const q of world.sentries) mergeStill(q.head); mergeStill(world.rest, { copy: true }); for (const k of SQUAD) mergeRigid(cast.parts[k]);
+  for (const k of SQUAD) mergeRigid(cast.parts[k]);   // (the world was merged as it was built: the core's)
   tagInk(scene);
   // how tall each of the squad stands at rest (picture 1 has the Jelly Ram reared up for its blow, half as tall again): a bar sits just over its head
   for (const u of squad) { const box = new T.Box3(); u.holder.updateMatrixWorld(true); u.holder.traverse(o => { if (o.isMesh && shownChain(o) && (o.layers.mask & 1)) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); box.union(tmpBox.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } }); if (box.max.y > 0.2) u.top = box.max.y; }   // (its solid parts: not a faint glow round it)
-  const after = countMeshes();
+  const after = CORE.countMeshes();
 
   const faceTo = (u, a, dt, rate) => { const d = angDiff(a, u.ang), m = (rate || 9) * dt; u.ang += Math.abs(d) < m ? d : Math.sign(d) * m; };
   function moveAlong(u, dt, speed) { let left = speed * dt; while (u.path && u.pi < u.path.length && left > 1e-9) { const p = u.path[u.pi], dx = p[0] - u.x, dy = p[1] - u.y, d = Math.hypot(dx, dy); if (d > 1e-6) faceTo(u, Math.atan2(dy, dx), dt);
@@ -301,7 +218,7 @@ const LIVE = (function () {
   // ── THE CAMERA: the game's own angle, always on the cube. A finger turns and tilts it, two fingers come nearer; CAMERA swings it to one of two angles, NEAR or FAR, and the
   // finger goes on from there. It never moves by itself, but for a little sway when left alone. The cube sits a little above the middle of the picture, as picture 1 has it
   // (ABOVE of the way from the middle to the top), so more of the floor in front of it shows over the buttons: the camera looks at a point that far in front of the cube ──
-  const cam = new T.PerspectiveCamera(22, 1, 1, 100), SEE = () => { cam.layers.set(0); cam.layers.enable(1); cam.layers.enable(2); }; SEE();   // (layers: 0 what moves, 1 what stands still, 2 what carries no ink line; 3 is the still things' plain copies, for the line's drawing and the shadows')
+  const cam = new T.PerspectiveCamera(22, 1, 1, 100); CORE.SEE(cam);
   const ANGLES = { far: { el: 33, dist: 23 }, near: { el: 25, dist: 12.5 } }, ABOVE = 0.27, HALF = Math.tan(11 * Math.PI / 180);   // (far: picture 1's; HALF: of the lens's 22 degrees)
   const orbit = { az: 45, el: ANGLES[state.cam].el, dist: ANGLES[state.cam].dist, touched: -1e9, sway: 1 };   // (what the finger and the CAMERA button set)
   const view = { tx: player.x, ty: 0.35, tz: player.y, el: orbit.el, dist: orbit.dist, snap: true };   // (what is drawn: it eases after the cube and after `orbit`; snap: at once, when the cube is set down somewhere else)
@@ -311,15 +228,7 @@ const LIVE = (function () {
     const az = (orbit.az + Math.sin(clock * 0.22) * 5 * orbit.sway) * Math.PI / 180, e = view.el * Math.PI / 180, d = view.dist, front = ABOVE * d * HALF / Math.sin(e);   // (left alone, it sways a little)
     view.tx += (player.x + Math.cos(az) * front - view.tx) * m; view.tz += (player.y + Math.sin(az) * front - view.tz) * m;
     cam.position.set(view.tx + Math.cos(az) * Math.cos(e) * d, view.ty + Math.sin(e) * d, view.tz + Math.sin(az) * Math.cos(e) * d); cam.lookAt(view.tx, view.ty, view.tz); cam.near = Math.max(0.2, d * 0.3); cam.far = d * 3 + 30; cam.updateProjectionMatrix(); cam.updateMatrixWorld();
-    // the walls in front of the room you are in sink
-    for (const G of world.groups) { G.want = G.hide.includes(sim.room) ? 1 : 0; if (G.down !== G.want) { G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want; G.g.position.y = -ease(G.down) * (WALL_H + 0.16); G.g.visible = G.down < 1; } }
-    sim.open[0] = sim.room; }
-  // the light goes with the camera, a whole dot of its shadow at a time (so a shadow's edge does not crawl), and reaches farther when the camera is far
-  const Ld = key ? new T.Vector3(8, 14, 3) : null, Lz = Ld ? Ld.clone().normalize() : null, Lx = Ld ? new T.Vector3().crossVectors(UP, Lz).normalize() : null, Ly = Ld ? new T.Vector3().crossVectors(Lz, Lx) : null; let shadowSize = 0;
-  function aimLight() { if (!key) return; const s = clamp(Math.round(view.dist * 0.5 / 2) * 2, 11, 34); if (s !== shadowSize) { shadowSize = s; Object.assign(key.shadow.camera, { left: -s, right: s, top: s, bottom: -s }); key.shadow.camera.updateProjectionMatrix(); }
-    const tex = 2 * s / key.shadow.mapSize.x, p = tmpV.set(view.tx, 0, view.tz), a = Math.round(p.dot(Lx) / tex) * tex, b = Math.round(p.dot(Ly) / tex) * tex, c = p.dot(Lz); p.set(0, 0, 0).addScaledVector(Lx, a).addScaledVector(Ly, b).addScaledVector(Lz, c);
-    key.target.position.copy(p); key.position.copy(p).add(Ld); key.target.updateMatrixWorld(); key.updateMatrixWorld(); }
-
+    CORE.openRoom(world, sim.room, dt); sim.open[0] = sim.room; }   // (the walls in front of the room you are in sink)
   // ── fingers: one turns the room, two come nearer; a tap on the floor walks the cube there ──
   const fingers = new Map(), ray = new T.Raycaster(); let pinch = 0, tapAt = null;
   function floorAt(cx, cy) { const r = canvas.getBoundingClientRect(); ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, cam); const o = ray.ray.origin, d = ray.ray.direction; if (d.y > -1e-4) return null; const t = -o.y / d.y; return [o.x + d.x * t, o.z + d.z * t]; }
@@ -330,23 +239,6 @@ const LIVE = (function () {
   canvas.addEventListener('pointerup', e => { if (tapAt && fingers.size === 1 && tapAt.far <= 9 && performance.now() - tapAt.at < 600) { const p = floorAt(e.clientX, e.clientY); if (p) walkTo(p); } tapAt = null; });
   for (const n of ['pointerup', 'pointercancel', 'pointerleave']) canvas.addEventListener(n, e => { fingers.delete(e.pointerId); pinch = 0; });
   canvas.addEventListener('wheel', e => { orbit.dist = clamp(orbit.dist * Math.exp(e.deltaY * 0.001), 9, 80); orbit.touched = clock; e.preventDefault(); }, { passive: false });
-
-  // ── the ink line: the room drawn a second time in its solids' flat colours, then one pass over the screen. The picture itself is drawn in the colours the screen shows
-  // (not in linear light, turned at the end): eight bits of linear light are too few in the dark, and an iPad showed the glow round the Crystal as a ring of dots ──
-  const target = () => { const r = new T.WebGLRenderTarget(4, 4, { minFilter: T.NearestFilter, magFilter: T.NearestFilter }); if (depthOK) { r.depthTexture = new T.DepthTexture(4, 4); r.depthTexture.type = T.UnsignedIntType; } return r; };
-  const rtMain = target(), rtId = target(); rtMain.texture.minFilter = rtMain.texture.magFilter = T.LinearFilter; rtMain.texture.encoding = T.sRGBEncoding;
-  const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: 0.02 }, useDepth: { value: depthOK ? 1 : 0 } },
-    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: `uniform sampler2D tMain, tId, tDepth; uniform vec2 res; uniform vec3 ink; uniform float thick, near, far, dK, useDepth; varying vec2 vUv;
-    float lin(vec2 uv) { float z = texture2D(tDepth, uv).x; return (2.0 * near * far) / (far + near - (z * 2.0 - 1.0) * (far - near)); }
-    void main() { vec2 e = thick / res, uA = vUv + e, uB = vUv - e, uC = vUv + e * vec2(1.0, -1.0), uD = vUv - e * vec2(1.0, -1.0); vec3 c = texture2D(tMain, vUv).rgb;
-      float k = step(0.004, length(texture2D(tId, uA).rgb - texture2D(tId, uB).rgb) + length(texture2D(tId, uC).rgb - texture2D(tId, uD).rgb));
-      if (useDepth > 0.5) { float dA = lin(uA), dB = lin(uB), dC = lin(uC), dD = lin(uD); k = max(k, smoothstep(dK, dK * 2.2, (abs(dA - dB) + abs(dC - dD)) / min(min(dA, dB), min(dC, dD)))); }
-      gl_FragColor = vec4(mix(c, ink, k), 1.0); }` });
-  const quadScene = new T.Scene(), quadCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), quad = new T.Mesh(new T.PlaneGeometry(2, 2), comp); quad.frustumCulled = false; quadScene.add(quad);
-  let pxW = 4, pxH = 4, sized = '';
-  function resize() { const w = canvas.clientWidth || 4, h = canvas.clientHeight || 4, pr = Math.min(state.sharp, Math.max(1, window.devicePixelRatio || 1)), k = w + 'x' + h + '@' + pr; if (k === sized) return; sized = k;
-    renderer.setPixelRatio(pr); renderer.setSize(w, h, false); pxW = Math.round(w * pr); pxH = Math.round(h * pr); rtMain.setSize(pxW, pxH); rtId.setSize(pxW, pxH); comp.uniforms.res.value.set(pxW, pxH); comp.uniforms.thick.value = Math.max(1, pxW / 940); cam.aspect = w / h; }
 
   // ── everyone and everything put where the step left them ──
   const gy0 = pa.gem ? pa.gem.position.y : 0, span = pa.tankSpan || [0, 1], bub = (pa.bubbles || []).map((b, i) => ({ b, y: b.position.y, v: 0.16 + (i % 5) * 0.05 }));
@@ -384,22 +276,14 @@ const LIVE = (function () {
       for (let i = 0; i < n.s.length; i++) { const gi = GLYPHS.indexOf(n.s[i]); if (gi < 0) continue; rect(NM, n.x, y, n.y, x0 + i * w - w * 0.2, x0 + (i + 1) * w + w * 0.2, -sc / 2, sc / 2, n.k, al, gi / GLYPHS.length, (gi + 1) / GLYPHS.length); } }
     BR.end(); NM.end(); }
 
-  const stats = { fps: 0, ms: 0, worst: 0, draws: 0, tris: 0, frames: 0, w: 0, h: 0, webgl: gl2 ? 2 : 1, depth: depthOK, meshesBefore: before, meshesAfter: after, solids: idCount, rooms: world.order.length, wallPieces: world.groups.length };
-  let last = 0, acc = 0, n = 0, worst = 0, stopped = false, raf = 0, owed = 0, hudAt = -1, hudWas = '', drawn = 0;
+  const stats = { fps: 0, ms: 0, worst: 0, draws: 0, tris: 0, frames: 0, w: 0, h: 0, webgl: gl2 ? 2 : 1, depth: depthOK, meshesBefore: before, meshesAfter: after, solids: CORE.solids(), rooms: world.order.length, wallPieces: world.groups.length };
+  let last = 0, acc = 0, n = 0, worst = 0, stopped = false, raf = 0, owed = 0, hudAt = -1, hudWas = '';
   // time moved on: the steps owed (a sixtieth of a second each, at most six a frame), then the camera
   function advance(dt) { clock += dt; owed += dt; let k = 0; while (owed >= 1 / 60 - 1e-9 && k < 6) { step(1 / 60); owed -= 1 / 60; k++; } if (k === 6) owed = 0; place(dt); }
-  // one frame's drawing: with the ink line, the room twice (as it is; then in its solids' flat colours) and one pass over the screen; without it, the room once, straight to the screen.
-  // Then the bars and the numbers, over the finished picture
-  // the shadows are drawn from what moves and the still things' plain copies (layers 0 and 3). three draws them inside the room's own drawing, after it has listed what the
-  // camera sees and with that camera's layers: so the camera's layers are changed at the moment the shadows begin (the light's shadow is told to bring itself up to date just then)
-  if (key) { const upd = key.shadow.updateMatrices; key.shadow.updateMatrices = function (light) { upd.call(this, light); cam.layers.set(0); cam.layers.enable(3); }; }
-  function draw() { resize(); pose(clock); marks(); bars(); aimLight(); renderer.info.reset(); if (key && key.castShadow !== state.shadows) key.castShadow = state.shadows; renderer.shadowMap.needsUpdate = state.shadows && (drawn++ % 2 === 0 || !!opts.test);   // (the shadows: every other frame)
-    if (state.ink) { SEE(); renderer.setRenderTarget(rtMain); renderer.render(scene, cam);
-      const bg = scene.background; scene.background = null; scene.overrideMaterial = idMat; cam.layers.set(0); cam.layers.enable(3); renderer.setRenderTarget(rtId); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, cam); scene.overrideMaterial = null; scene.background = bg;
-      comp.uniforms.near.value = cam.near; comp.uniforms.far.value = cam.far; renderer.setRenderTarget(null); renderer.render(quadScene, quadCam); }
-    else { SEE(); renderer.setRenderTarget(null); renderer.render(scene, cam); }
-    cam.layers.set(0); renderer.autoClear = false; renderer.render(over, cam); renderer.autoClear = true; SEE(); }
-  const tell = () => { stats.draws = renderer.info.render.calls; stats.tris = renderer.info.render.triangles; stats.w = pxW; stats.h = pxH; };
+  // one frame's drawing: everyone put where the step left them, the marks, the bars and the numbers written, then the core's drawing (the shadows, the room, the ink line), the bars
+  // and the numbers over the finished picture
+  function draw() { if (CORE.resize()) { const z = CORE.size(); cam.aspect = z.w / z.h; cam.updateProjectionMatrix(); } pose(clock); marks(); bars(); CORE.aimLight(view.tx, view.tz, view.dist * 0.5); CORE.draw(cam, over); }
+  const tell = () => { const z = CORE.size(); stats.draws = renderer.info.render.calls; stats.tris = renderer.info.render.triangles; stats.w = z.pxW; stats.h = z.pxH; };
   const label = id => (world.rooms[id] ? world.rooms[id].label : '').replace(/\s*\(.*\)\s*$/, '').replace(/ past the Experiment Lab$/, '');
   function hud(force) { if (!opts.onHud) return; const h = { room: label(sim.room), raid: raid.phase, wave: raid.wave, waves: WAVES.length, crystal: Math.round(crystal.hp / crystal.max * 100), fight: sim.fight, pace: state.pace, cam: state.cam, coming: ants.some(a => a.alive && !a.engaged), away: squad.filter(u => u.down > 0).map(u => [u.name, Math.ceil(u.down)]), back: sim.back > 0 }, s = JSON.stringify(h); if (s !== hudWas || force) { hudWas = s; opts.onHud(h); } }
   // what the tests read: where everyone is and how the fight stands
@@ -412,10 +296,10 @@ const LIVE = (function () {
     if (acc >= 500) { stats.ms = acc / n; stats.fps = 1000 / stats.ms; stats.worst = worst; tell(); acc = 0; n = 0; worst = 0; if (opts.onStats) opts.onStats(stats, state); }
     if (clock - hudAt > 0.2) { hudAt = clock; hud(); }
     if (opts.test && stats.frames >= opts.test) { stopped = true; cancelAnimationFrame(raf); tell();
-      const gl = renderer.getContext(), px = new Uint8Array(4), seen = new Set(); for (let i = 0; i < 12; i++) for (let j = 0; j < 8; j++) { gl.readPixels(Math.floor((i + 0.5) / 12 * pxW), Math.floor((j + 0.5) / 8 * pxH), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); seen.add(px[0] + ',' + px[1] + ',' + px[2]); }
+      const gl = renderer.getContext(), px = new Uint8Array(4), seen = new Set(), pxW = CORE.size().pxW, pxH = CORE.size().pxH; for (let i = 0; i < 12; i++) for (let j = 0; j < 8; j++) { gl.readPixels(Math.floor((i + 0.5) / 12 * pxW), Math.floor((j + 0.5) / 8 * pxH), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); seen.add(px[0] + ',' + px[1] + ',' + px[2]); }
       stats.colours = seen.size; stats.sim = snapshot(); if (opts.onDone) opts.onDone(stats, state); } }
   const api = { stats, state, scene, room: world.g, world, units, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
-    set(k, v) { state[k] = v; sized = ''; if (k === 'cam' && ANGLES[v]) { orbit.el = ANGLES[v].el; orbit.dist = ANGLES[v].dist; } if (opts.onStats) opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
+    set(k, v) { state[k] = v; CORE.resized(); if (k === 'cam' && ANGLES[v]) { orbit.el = ANGLES[v].el; orbit.dist = ANGLES[v].dist; } if (opts.onStats) opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
     step(dt) { stopped = true; cancelAnimationFrame(raf); advance(dt); draw(); tell(); hud(); },   // (one frame, the clock moved on by hand: for a recording)
     strike(key, n) { const u = units.find(q => q.key === key); if (u) hurt(u, n, null); },   // (a blow from nowhere: for the tests)
     run(seconds) { for (let i = 0, k = Math.round(seconds * 60); i < k; i++) { clock += 1 / 60; step(1 / 60); place(1 / 60); } hud(true); } };   // (time run on with nothing drawn: for the tests)

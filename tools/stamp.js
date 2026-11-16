@@ -4,7 +4,8 @@
 //   js/config.js  const BUILD_VERSION
 //   bible.html    the BUILD_VERSION number and the footer's "written against build <build> (<day> <Month> <year>)"
 // and then brings the pictures up to date (tools/images.js: a changed picture's WebP copy and fingerprint, js/imgmap.js, game.html's image preloads) and makes the players' page again
-// (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js) and the balance page (tools/balance.js: balance.html, read from the code).
+// (tools/bundle.js: dist/conduit.js and play.html, from game.html and js/*.js), the game's 3D view (tools/view3d.js: dist/view3d.js, which names the build) and the balance page
+// (tools/balance.js: balance.html, read from the code).
 // It refuses a name that is not a date and letters, and the build already stamped. Anything else that still names the old build (a comment, say) is listed, not changed:
 // a find-and-replace over the whole page used to rewrite such comments too, so they named the wrong build.
 const fs = require('fs'), path = require('path');
@@ -53,6 +54,7 @@ console.log('stamped ' + next + ' (was ' + old + '): game.html ' + tags + ' cach
 require('./images.js').write({ log: m => console.log('  ' + m) }).then(im => {
     console.log('pictures: ' + im.stale.length + ' changed, ' + im.converted.length + ' converted to WebP' + (im.magick ? '' : ' (ImageMagick not found: a changed picture loads as its PNG)') + '; js/imgmap.js and game.html\'s preloads written');
     const bd = require('./bundle.js').write(); console.log('bundled ' + bd.files.length + ' scripts into dist/conduit.js and wrote play.html (build ' + bd.build + ')' + (bd.stripped ? '' : ': TypeScript not found, the scripts went in with their comments'));
+    const v3 = require('./view3d.js').write(); console.log('the 3D view: ' + v3.files.length + ' sources into dist/view3d.js (build ' + v3.version + ', docs/VIEW-3D.md)');   // (build 2026-11-16a: it names the build, so it is made again too)
     // what still names the old build in the page or config: listed for a person to look at, not changed (the Bible's prose names past builds on purpose: "since build …")
     const left = [];
     for (const f of ['game.html', 'js/config.js']) rd(f).split('\n').forEach((line, i) => { if (line.indexOf(old) >= 0) left.push('  ' + f + ':' + (i + 1) + '  ' + line.trim().slice(0, 140)); });

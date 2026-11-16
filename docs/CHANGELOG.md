@@ -4,6 +4,16 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### Build `2026-11-16a` · branch `claude/start-game-project-HSh7Z` · the real game in 3D, stage 1: the lab's ground floor (behind `?engine=3d`)
+- **The ask** (the owner, having tried the test page: "Can we build the full game up to this point?"; asked which way): **"The real game in 3D"**: the actual game drawn in the chosen look, built area by area, behind a switch while it grows; its rules, squad, creatures, cards and saves as they are.
+- **The switch** (`docs/VIEW-3D.md`): `?engine=3d` on `play.html` or `game.html?dev`. **Without it the game is as before**: nothing of the 3D view is fetched or run.
+- **With it, in the lab's eight ground-floor rooms** the world is drawn in 3D: the rooms, walls, doors (opening and shutting as the game's do), stairs and props, the Crystal in its tank, lit as the game lights them (the room you are in lit, the others dark, pools of light at open doors, a blackout). **The cube, the eggs, the evolved forms and the ants** are their 3D models, posed as their sprites' frames are chosen. The camera is the game's own, so the bars, plates, effects, panels and taps lie where they always did. The floor's play marks (pools, fire, auras, the long-press ring) are laid on the 3D floor.
+- **Still 2D in it:** the other creatures, the effects, the numbers, pickups and stations' rings, over the picture; and in any other area the frame is the 2D game's. The battle view's zoom is off while the 3D view shows.
+- **One thing moves:** what is drawn over a unit (its bars, its plate) is drawn half a tile lower while the 3D view shows, where the body stands (the 2D drawing put a unit's feet at its tile's top corner).
+- **Agent's choices, provisional** (`docs/DECISION-LOG.md`): the room you are in as bright as the chosen look (`?dark=game` makes it as dark as the 2D game's, to compare); the stages' order; the camera at the game's angle until the effects are 3D.
+- **How it is made:** `node tools/view3d.js` (the stamp runs it) makes `dist/view3d.js`. three.js r128 moved to `vendor/three.min.js`, shared with the test page. The test page and the view share one drawing core (`view3d/core.js`) and one reader of the game's map (`view3d/gamemap.js`).
+- **Verified:** `tests/view3d.js` (14 checks: the files; off, nothing of it; on, made with no error and showing; the camera the game's projection to the pixel on the floor and the stairs; the bodies; doors, light, blackout, floor marks, the items kept; away in the arena in 2D; a failure leaves the game in 2D), `tests/lab3d.js` (21) and the full suite; pictures from the real page in every room. **Not seen on an iPad.**
+
 ### A test page, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the test page: the camera always on the cube, and no model flattened
 - **The asks** (the owner, having tried the page, "My only two critiques"):
   - "maybe the player or the models get squashed by something. I'm not sure what it is, but they get squashed on the map and then they return to normal."

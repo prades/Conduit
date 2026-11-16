@@ -31,7 +31,7 @@ const PICK_RADIUS = 45;
 // which is where a follower's body is drawn; a clone is a creature's body: low and long.
 function followerPickPoint(f) {
     const px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
-    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2 - facilityLiftRel(f.x, f.y);
+    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2 - facilityLiftRel(f.x, f.y) + (typeof view3dFeet === "function" ? view3dFeet() : 0);   // (THE 3D VIEW stands it half a tile lower: js/view3d.js)
     const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - (f.isClone ? 22 : 55)) : [px, py - (f.isClone ? 22 : 55)];   // (where it is on the screen, the battle view's zoom too: js/battleview.js)
     return { x: q[0], y: q[1] };
 }

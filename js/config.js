@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-15j";
+const BUILD_VERSION = "2026-11-16a";
 // The address a picture is loaded from, by its .png path (build 2026-11-11c; tools/images.js): the one js/imgmap.js names (the picture's lossless WebP copy where that is smaller) with a
 // fingerprint of the picture, so a new build does not make a player download every picture again; a picture the map does not have yet: its path and the build.
 function imgSrc(p) { const m = typeof IMG_MAP !== "undefined" ? IMG_MAP[p] : undefined; return m || p + "?v=" + BUILD_VERSION; }
@@ -45,9 +45,11 @@ let lifetimeKills = 0;
 
 // ── CANVAS / CTX ──────────────────────────────────────────
 const canvas  = document.getElementById('cavernCanvas');
+// THE 3D VIEW's switch (js/view3d.js, docs/VIEW-3D.md; the owner, 2026-11-16: "The real game in 3D"): ?engine=3d in the address. Without it nothing of the 3D view is loaded or run.
+const VIEW3D_ON = typeof location !== "undefined" && /[?&]engine=3d(?:&|$)/.test(String(location.search || ""));
 // Opaque: every frame paints the whole canvas, so the browser need not blend
-// it with the page behind (a cheaper composite on every frame).
-let ctx       = canvas.getContext('2d', { alpha: false }) || canvas.getContext('2d');
+// it with the page behind (a cheaper composite on every frame). (With the 3D view's switch on it is see-through: the 3D view's own canvas lies under this one and shows where a frame leaves it clear.)
+let ctx       = canvas.getContext('2d', { alpha: VIEW3D_ON }) || canvas.getContext('2d');
 const hpBar   = document.getElementById('hp');
 const ultBar  = document.getElementById('ult');
 const ultWrap = document.getElementById('ultWrap');
