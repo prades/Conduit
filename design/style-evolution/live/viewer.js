@@ -105,7 +105,7 @@ const LIVE = (function () {
 
   // ── what is in the air, made once and shown when it happens: icicles, stakes, a sentry's beam, the spark of a blow ──
   const air = new T.Group(); air.userData.noInk = true; scene.add(air);
-  const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), UP = new T.Vector3(0, 1, 0), tmpV = new T.Vector3(), tmpW = new T.Vector3();
+  const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), UP = new T.Vector3(0, 1, 0), tmpV = new T.Vector3(), tmpW = new T.Vector3(), tmpBox = new T.Box3();
   const icicles = []; for (let i = 0; i < 6; i++) { const c = new T.Mesh(new T.ConeGeometry(0.05, 0.36, 5), iceMat); c.castShadow = true; c.visible = false; air.add(c); icicles.push({ m: c, on: false }); }
   const stakeMat = new T.MeshToonMaterial({ color: lin('#ff9ccc'), emissive: lin('#ff5fa8'), emissiveIntensity: 0.5, gradientMap: ctx.grad }), stakeSets = [];
   for (let k = 0; k < 2; k++) { const g = new T.Group(); for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + 0.4, h = 0.34 + (i % 3) * 0.1, c = new T.Mesh(new T.ConeGeometry(0.075, h, 5), stakeMat); c.position.set(Math.cos(a) * 0.82, h / 2, Math.sin(a) * 0.82); c.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22); c.castShadow = true; g.add(c); }
@@ -182,6 +182,8 @@ const LIVE = (function () {
   // ── everything made: merge what stands still, give what moves its colours for the ink line ──
   for (const id of world.order) mergeStill(world.rooms[id].g, { chunk: CHUNK, from: world.rooms[id].rec.bb, copy: true }); for (const G of world.groups) mergeStill(G.g, { chunk: CHUNK * 2, copy: true }); for (const q of world.sentries) mergeStill(q.head); mergeStill(world.rest, { copy: true }); for (const k of SQUAD) mergeRigid(cast.parts[k]);
   tagInk(scene);
+  // how tall each of the squad stands at rest (picture 1 has the Jelly Ram reared up for its blow, half as tall again): a bar sits just over its head
+  for (const u of squad) { const box = new T.Box3(); u.holder.updateMatrixWorld(true); u.holder.traverse(o => { if (o.isMesh && shownChain(o) && (o.layers.mask & 1)) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); box.union(tmpBox.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld)); } }); if (box.max.y > 0.2) u.top = box.max.y; }   // (its solid parts: not a faint glow round it)
   const after = countMeshes();
 
   const faceTo = (u, a, dt, rate) => { const d = angDiff(a, u.ang), m = (rate || 9) * dt; u.ang += Math.abs(d) < m ? d : Math.sign(d) * m; };
@@ -190,7 +192,7 @@ const LIVE = (function () {
     if (u.path && u.pi >= u.path.length) { u.path = null; return true; } return false; }
   const go = (u, to, r) => { const p = walk.route([u.x, u.y], to, r); if (p && p.length > 1) { u.path = p; u.pi = 1; return true; } u.path = null; return false; };
   const sight = (a, b) => { const d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.ceil(d / 0.3); for (let i = 1; i < n; i++) { const t = i / n; if (!world.roomAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) return false; } return true; };   // (no wall between: a prop does not hide one from another here)
-  function number(o, n, k) { if (numbers.length > 24) numbers.shift(); const near = numbers.filter(q => q.t < 0.35 && Math.hypot(q.x - o.x, q.y - o.y) < 1.2).length; numbers.push({ x: o.x, y: o.y, h: (o.top || 1) + 0.45 + near * 0.34, s: String(Math.round(n)), t: 0, k, j: ((near + 1) % 3 - 1) * 0.3 }); }   // (those that land together stand one over the other)
+  function number(o, n, k) { if (numbers.length > 24) numbers.shift(); const near = numbers.filter(q => q.t < 0.35 && Math.hypot(q.x - o.x, q.y - o.y) < 1.2).length; numbers.push({ x: o.x, y: o.y, h: Math.min(o.top || 1, 1.3) + 0.4 + near * 0.34, s: String(Math.round(n)), t: 0, k, j: ((near + 1) % 3 - 1) * 0.3 }); }   // (those that land together stand one over the other)
   function spark(x, h, y) { const s = sparks.find(q => q.t < 0) || sparks[0]; s.t = 0; s.g.position.set(x, h, y); }
   function hurt(o, dmg, by) { if (!o.alive || dmg <= 0) return; o.hp = Math.max(0, o.hp - dmg); log.hits++; number(o, dmg, o.team === 'ants' ? C.white : C.hurt); spark(o.x, o.crystal ? 1.4 : Math.min(0.6, (o.top || 1) * 0.6), o.y); if (by && o.kind === 'ant') o.hitBy = by;
     if (o.hp > 0 || o.crystal) return; if (o.kind === 'ant') { o.alive = false; o.dying = 0.3; o.st = 'dead'; o.path = null; o.aim = null; log.antsDown++; } else { o.down = DOWN_FOR; o.st = 'idle'; o.path = null; o.target = null; o.aim = null; log.squadDown++; } }
@@ -365,7 +367,7 @@ const LIVE = (function () {
   const corner = (Bt, x, y, z, a, b, k, al, s, t) => Bt.v(x + cR.x * a + cU.x * b, y + cR.y * a + cU.y * b, z + cR.z * a + cU.z * b, k, al, s, t);
   function rect(Bt, x, y, z, x0, x1, y0, y1, k, al, s0, s1) { corner(Bt, x, y, z, x0, y0, k, al, s0, 0); corner(Bt, x, y, z, x1, y0, k, al, s1, 0); corner(Bt, x, y, z, x1, y1, k, al, s1, 1); corner(Bt, x, y, z, x0, y0, k, al, s0, 0); corner(Bt, x, y, z, x1, y1, k, al, s1, 1); corner(Bt, x, y, z, x0, y1, k, al, s0, 1); }
   function bars() { cR.setFromMatrixColumn(cam.matrixWorld, 0); cU.setFromMatrixColumn(cam.matrixWorld, 1); BR.begin(); NM.begin();
-    const bar = (o, w, h, up) => { const f = clamp(o.hp / o.max, 0, 1), g = clamp(o.lag / o.max, 0, 1), y = (o.top || 1) + up, e = h * 0.35; rect(BR, o.x, y, o.y, -w / 2 - e, w / 2 + e, -h / 2 - e, h / 2 + e, C.dark, 0.82); if (g > f) rect(BR, o.x, y, o.y, -w / 2 + w * f, -w / 2 + w * g, -h / 2, h / 2, C.ghost, 0.8);
+    const bar = (o, w, h, up) => { const f = clamp(o.hp / o.max, 0, 1), g = clamp(o.lag / o.max, 0, 1), y = (o.crystal ? o.top : Math.min(o.top || 1, 1.45)) + up, e = h * 0.35;   // (over its head; a tall one's, across its shoulders: a bar high over a tall one reads as someone else's) rect(BR, o.x, y, o.y, -w / 2 - e, w / 2 + e, -h / 2 - e, h / 2 + e, C.dark, 0.82); if (g > f) rect(BR, o.x, y, o.y, -w / 2 + w * f, -w / 2 + w * g, -h / 2, h / 2, C.ghost, 0.8);
       if (f > 0) rect(BR, o.x, y, o.y, -w / 2, -w / 2 + w * f, -h / 2, h / 2, o.team === 'ants' ? C.bad : f > 0.5 ? C.ok : f > 0.3 ? C.warn : C.bad, 1); };
     for (const u of ants) if (u.alive && !u.entering) bar(u, u.cls === 'tank' ? 1.05 : 0.78, 0.085, 0.22); for (const u of squad) if (u.hp < u.max) bar(u, 0.9, 0.085, 0.24); if (crystal.hp < crystal.max) bar(crystal, 1.5, 0.11, 0);   // (an ant's bar always; one of yours, and the Crystal's, once it is hurt)
     for (const n of numbers) { const p = n.t / 0.9, sc = (n.t < 0.1 ? 1 + (1 - n.t / 0.1) * 0.5 : 1) * 0.46, w = sc * 0.62, x0 = -n.s.length * w / 2 + n.j, y = n.h + p * 0.75, al = p > 0.65 ? 1 - (p - 0.65) / 0.35 : 1;
@@ -402,7 +404,7 @@ const LIVE = (function () {
     if (opts.test && stats.frames >= opts.test) { stopped = true; cancelAnimationFrame(raf); tell();
       const gl = renderer.getContext(), px = new Uint8Array(4), seen = new Set(); for (let i = 0; i < 12; i++) for (let j = 0; j < 8; j++) { gl.readPixels(Math.floor((i + 0.5) / 12 * pxW), Math.floor((j + 0.5) / 8 * pxH), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); seen.add(px[0] + ',' + px[1] + ',' + px[2]); }
       stats.colours = seen.size; stats.sim = snapshot(); if (opts.onDone) opts.onDone(stats, state); } }
-  const api = { stats, state, scene, room: world.g, world, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
+  const api = { stats, state, scene, room: world.g, world, units, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
     set(k, v) { state[k] = v; sized = ''; if (opts.onStats) opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
     step(dt) { stopped = true; cancelAnimationFrame(raf); advance(dt); draw(); tell(); hud(); },   // (one frame, the clock moved on by hand: for a recording)
     run(seconds) { for (let i = 0, k = Math.round(seconds * 60); i < k; i++) { clock += 1 / 60; step(1 / 60); place(1 / 60); } hud(true); } };   // (time run on with nothing drawn: for the tests)

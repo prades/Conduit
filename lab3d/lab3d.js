@@ -27680,7 +27680,7 @@ const LIVE = (function () {
     const air = new T.Group();
     air.userData.noInk = true;
     scene.add(air);
-    const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), UP = new T.Vector3(0, 1, 0), tmpV = new T.Vector3(), tmpW = new T.Vector3();
+    const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), UP = new T.Vector3(0, 1, 0), tmpV = new T.Vector3(), tmpW = new T.Vector3(), tmpBox = new T.Box3();
     const icicles = [];
     for (let i = 0; i < 6; i++) {
         const c = new T.Mesh(new T.ConeGeometry(0.05, 0.36, 5), iceMat);
@@ -27880,6 +27880,17 @@ const LIVE = (function () {
     for (const k of SQUAD)
         mergeRigid(cast.parts[k]);
     tagInk(scene);
+    for (const u of squad) {
+        const box = new T.Box3();
+        u.holder.updateMatrixWorld(true);
+        u.holder.traverse(o => { if (o.isMesh && shownChain(o) && (o.layers.mask & 1)) {
+            if (!o.geometry.boundingBox)
+                o.geometry.computeBoundingBox();
+            box.union(tmpBox.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld));
+        } });
+        if (box.max.y > 0.2)
+            u.top = box.max.y;
+    }
     const after = countMeshes();
     const faceTo = (u, a, dt, rate) => { const d = angDiff(a, u.ang), m = (rate || 9) * dt; u.ang += Math.abs(d) < m ? d : Math.sign(d) * m; };
     function moveAlong(u, dt, speed) {
@@ -27919,7 +27930,7 @@ const LIVE = (function () {
             return false;
     } return true; };
     function number(o, n, k) { if (numbers.length > 24)
-        numbers.shift(); const near = numbers.filter(q => q.t < 0.35 && Math.hypot(q.x - o.x, q.y - o.y) < 1.2).length; numbers.push({ x: o.x, y: o.y, h: (o.top || 1) + 0.45 + near * 0.34, s: String(Math.round(n)), t: 0, k, j: ((near + 1) % 3 - 1) * 0.3 }); }
+        numbers.shift(); const near = numbers.filter(q => q.t < 0.35 && Math.hypot(q.x - o.x, q.y - o.y) < 1.2).length; numbers.push({ x: o.x, y: o.y, h: Math.min(o.top || 1, 1.3) + 0.4 + near * 0.34, s: String(Math.round(n)), t: 0, k, j: ((near + 1) % 3 - 1) * 0.3 }); }
     function spark(x, h, y) { const s = sparks.find(q => q.t < 0) || sparks[0]; s.t = 0; s.g.position.set(x, h, y); }
     function hurt(o, dmg, by) {
         if (!o.alive || dmg <= 0)
@@ -28732,10 +28743,7 @@ const LIVE = (function () {
         BR.begin();
         NM.begin();
         const bar = (o, w, h, up) => {
-            const f = clamp(o.hp / o.max, 0, 1), g = clamp(o.lag / o.max, 0, 1), y = (o.top || 1) + up, e = h * 0.35;
-            rect(BR, o.x, y, o.y, -w / 2 - e, w / 2 + e, -h / 2 - e, h / 2 + e, C.dark, 0.82);
-            if (g > f)
-                rect(BR, o.x, y, o.y, -w / 2 + w * f, -w / 2 + w * g, -h / 2, h / 2, C.ghost, 0.8);
+            const f = clamp(o.hp / o.max, 0, 1), g = clamp(o.lag / o.max, 0, 1), y = (o.crystal ? o.top : Math.min(o.top || 1, 1.45)) + up, e = h * 0.35;
             if (f > 0)
                 rect(BR, o.x, y, o.y, -w / 2, -w / 2 + w * f, -h / 2, h / 2, o.team === 'ants' ? C.bad : f > 0.5 ? C.ok : f > 0.3 ? C.warn : C.bad, 1);
         };
@@ -28875,7 +28883,7 @@ const LIVE = (function () {
                 opts.onDone(stats, state);
         }
     }
-    const api = { stats, state, scene, room: world.g, world, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
+    const api = { stats, state, scene, room: world.g, world, units, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
         set(k, v) { state[k] = v; sized = ''; if (opts.onStats)
             opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
         step(dt) { stopped = true; cancelAnimationFrame(raf); advance(dt); draw(); tell(); hud(); },
