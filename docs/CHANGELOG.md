@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### A test page, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the live 3D test room (`lab3d/`)
+- **The ask** (the owner, of three first pieces for the direction they picked): "Live 3D test room".
+- **What it is** (`docs/STYLE-EVOLUTION.md` §8): the Crystal Chamber running in real 3D in look 1 (flat cartoon colour, one ink line round every solid), on a page of its own, `lab3d/index.html`. A readout shows the frame rate; three switches (INK LINE, SHADOWS, SHARP) show what each costs; a finger turns the room. A few seconds of the raid loop so the rate is measured on a room that moves; the loop is not a design of the fight.
+- **Apart from the game:** the game, the players' page and the website do not load it or link to it. Nothing in the game changed.
+- **three.js r128 comes into the repository** (`lab3d/three.min.js`, MIT, with its licence), for that page alone.
+- **How it is made:** `node tools/lab3d.js` (the forms' and props' models, the round 2 look, the viewer and the room's map as one script). A snapshot of the models at the build it names.
+- **Verified:** `tests/lab3d.js` (11 checks; in a headless browser with software WebGL it starts with no error, draws and moves, with WebGL 1 as well; the switches; a finger), and the full suite. A recording and pictures from the real page. **Not measured on an iPad: that is what the page is for.**
+
 ### A decision, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the look and combat: direction 1 chosen
 - **The owner, of round 2's ten directions:** "I like the direction of 1": CRYSTAL LAB 3D (the game's own cartoon lab look as a real 3D world) with the slowed and signalled fight (real time, slower, every blow marked on the floor before it lands).
 - Recorded in `docs/DECISION-LOG.md` and `docs/STYLE-EVOLUTION.md`. Nothing is built. Still open (`docs/OPEN-QUESTIONS.md`): real 3D or 2.5D, the first piece, the pace and the marks.

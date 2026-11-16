@@ -1,17 +1,19 @@
 # The game's look and combat, evolved (3D or 2.5D, a slower fight)
 
-- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail and nothing is built. The other nineteen directions stay here as offered.
+- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail. **Its first piece is built** (§8): a live 3D test room, `lab3d/`, apart from the game; it is tested in a headless browser and **not yet measured on an iPad**. Nothing in the game is changed. The other nineteen directions stay here as offered.
 - **Owner:** the user (creative direction); the agent (drafts and implementation support)
 - **Last updated:** 2026-11-16
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-15j` (the game is unchanged by this)
 - **Related docs:** `STYLE-CRYSTAL-LAB.md` (the look the game has now), `BATTLE-LOOK.md` (the JRPG battle look; real time kept, 2026-11-11), `DECISION-LOG.md` ("Stay 2D for now", 2026-11-09), `COMBAT.md`, `ART-PROCESS.md`, `OPEN-QUESTIONS.md`
 - **The drafts:** `design/style-evolution/` (round 1) and `design/style-evolution/round2/` (how to make the pictures again: the README there)
+- **The live test room:** `lab3d/` (the page), `tools/lab3d.js` (makes it), `design/style-evolution/live/` (its viewer and page template), `tests/lab3d.js`
 
 ## 1. The requests
 
 - The owner, 2026-11-15: "Im looking for a real update in style for the overall game. I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable. Can you give me 10 suggestions including example pictures. Im looking to evolve my game entirely"
 - The owner, the same day, after round 1: "Reimagine it now". Round 2 is that: the same request, answered again from the start.
 - The owner, 2026-11-16, of round 2: **"I like the direction of 1"** (`DECISION-LOG.md`).
+- The owner, the same day, asked which piece to build first (a live 3D test room, the slower fight in today's game, or the look without a 3D engine): **"Live 3D test room"** (§8).
 
 ## 2. Earlier decisions this reopens
 
@@ -120,7 +122,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 1. ~~Which look, or which mix?~~ *(answered 2026-11-16: direction 1, "I like the direction of 1")*
 2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: how slow, and which marks. The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
-3. Real 3D or 2.5D? If real 3D, the Crystal Chamber behind a flag first? And which piece is built first?
+3. Real 3D or 2.5D? ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built, §8.)* Still open: **what the room reads on the owner's two iPads**, and then real 3D or 2.5D.
 4. The oldest iPads (iPadOS 13.4 to 14): keep them (WebGL 1, an older three.js), or not?
 5. A reference would help the next step: a game, a screenshot or a picture that shows the feel the owner has in mind (`ART-PROCESS.md`).
 
@@ -147,3 +149,42 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 - Turn-based: 2 TURN QUEUE, 4 THE GRID, 7 COMMAND MENU, 9 CARDS.
 
 **Round 1's recommendation, as given then:** the DIORAMA look with SLOW TIME, TELEGRAPHS and an intent chip, starting as an `?engine=3d` prototype of the Sewers. Round 2's (§5) replaces it as the agent's suggestion.
+
+## 8. The first piece: the live 3D test room (`lab3d/`)
+
+- **Status:** **Implemented; verified** by `tests/lab3d.js` in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Not measured on an iPad**: that is what it is for.
+- **The ask** (the owner, 2026-11-16, of three first pieces): "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads. It answers whether real 3D runs well enough.
+
+**What it is**
+- A page of its own, `lab3d/index.html`. The game does not load it or link to it, and it changes nothing in the game.
+- The same room and look as picture 1, from the same code (`round2/` `STYLES.lab`), drawn every frame: flat cartoon colour and one ink line round every solid.
+- A loop of a few seconds so the rate is measured on a room that moves: the squad's own idle and attack poses, a bite's shape filling on the floor before the soldier lunges, icicles, stakes, the sentry's beam, the Crystal turning. **The loop is for the test; it is not a design of the fight.**
+- One finger turns the room (kept on the side of the cut walls), two fingers come nearer. Left alone, the camera sways.
+
+**What it shows**
+- **The readout** (top right): frames a second, milliseconds a frame and the worst frame, draws and triangles a frame, the picture's size in pixels, WebGL 1 or 2.
+- **Three switches** (bottom), to see what each costs:
+  - INK LINE: off, the room is drawn once instead of three times, and loses its outline.
+  - SHADOWS: off, no shadow drawing.
+  - SHARP: 1×, 1.5× or 2× the screen's points in pixels (never more than the screen has).
+
+**How it is drawn cheaply** (`design/style-evolution/live/viewer.js`)
+- Everything that stands still is merged into one mesh a material, and plain materials that differ only in colour share one, the colour carried in the vertices. The squad's parts that never move against their parent are merged too. The room builds 1,259 meshes and draws 176.
+- The ink line needs the room drawn a second time in each solid's flat colour. That colour is carried in the vertices, so the second drawing is one cheap material.
+- With the ink line and the shadows on, a frame is three drawings of the room (shadows, the room, the flat colours) and one pass over the screen: about 380 draws and 400,000 triangles in all.
+
+**How it is made**
+- `node tools/lab3d.js` writes `lab3d/lab3d.js` (the forms' and props' models, the round 2 kit, chamber and styles, the viewer, the room's map; comments out) and `lab3d/index.html` (from `design/style-evolution/live/page.html`). `--export` reads the room from the running game first.
+- `lab3d/three.min.js` is three.js r128 as published (MIT, `lab3d/three.LICENSE.txt`): the bakers' version, which still draws on WebGL 1 (an iPad before iPadOS 15). **Only this page loads it; the game loads no library.**
+- **It is a snapshot** of the models at the build the page names. Nothing remakes it when a model changes and no test fails when it is behind; run the tool to bring it up to date.
+
+**What it is not**
+- Not the game: no walking, no fight rules, no HUD of the game's.
+- Not a measure of the whole game in 3D: it is one room with eight units. A bigger room, more creatures and the effects would cost more.
+- Its ant, crystal, doors and wall fittings are the pictures' stand-ins (§3.2).
+
+**What to read on each iPad**
+1. The rate with everything on (INK LINE on, SHADOWS on, SHARP 1.5×).
+2. The rate with SHARP at 2×, and at 1×.
+3. The rate with INK LINE off, and with SHADOWS off.
+4. Whether it starts at all on the older iPad, and whether turning the room feels smooth.

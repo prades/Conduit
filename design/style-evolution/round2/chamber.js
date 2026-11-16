@@ -133,9 +133,10 @@ function buildChamber(P, opt) {
     const zc = (TANK.z0 + TANK.z1) / 2 / UH, hz = (TANK.z1 - TANK.z0) / 2 / UH, rAt = y => { const t = (y - zc) / hz; return t * t >= 1 ? 0.0001 : TANK.r * Math.sqrt(1 - t * t); };
     const yFill = (TANK.z0 + (TANK.z1 - TANK.z0) * (TANK.fill || 0.84)) / UH, pts = []; for (let i = 0; i <= 40; i++) { const y = TANK.z0 / UH + (yFill - TANK.z0 / UH) * i / 40; pts.push(new T.Vector2(rAt(y) * 0.95, y)); } pts.push(new T.Vector2(0.0001, yFill));
     const liquid = new T.Mesh(new T.LatheGeometry(pts, 48), P.liquid); liquid.userData.noInk = true; liquid.renderOrder = 2; rig.add(liquid); parts.liquid = liquid;
-    const gem = new T.Group(), gy = (TANK.gemZ || 104) / UH; gem.position.y = gy; const oct = new T.Mesh(new T.OctahedronGeometry(1, 0), P.crystal); oct.scale.set(0.27, 0.52, 0.27); oct.rotation.y = 0.5; gem.userData.inkGroup = true; gem.add(oct);
+    const gem = new T.Group(), gy = (TANK.gemZ || 104) / UH; gem.position.y = gy; gem.userData.dynamic = true; const oct = new T.Mesh(new T.OctahedronGeometry(1, 0), P.crystal); oct.scale.set(0.27, 0.52, 0.27); oct.rotation.y = 0.5; gem.userData.inkGroup = true; gem.add(oct);
     const core = new T.Mesh(new T.OctahedronGeometry(1, 0), P.crystalCore); core.scale.set(0.11, 0.3, 0.11); core.rotation.y = 0.5; core.userData.noInk = true; gem.add(core); rig.add(gem); parts.gem = gem; parts.gemAt = [CRYSTAL[0], gy, CRYSTAL[1]];
-    if (P.bubble) for (let i = 0; i < 16; i++) { const y = TANK.z0 / UH + 0.12 + ((i * 0.37) % 1) * (yFill - TANK.z0 / UH - 0.2), a = i * 2.39, r = rAt(y) * (0.3 + (i * 0.29 % 1) * 0.55), b = new T.Mesh(new T.SphereGeometry(0.018 + (i % 3) * 0.009, 8, 6), P.bubble); b.position.set(Math.cos(a) * r, y, Math.sin(a) * r); b.userData.noInk = true; rig.add(b); }
+    parts.bubbles = []; parts.tankSpan = [TANK.z0 / UH + 0.12, yFill - 0.08];
+    if (P.bubble) for (let i = 0; i < 16; i++) { const y = TANK.z0 / UH + 0.12 + ((i * 0.37) % 1) * (yFill - TANK.z0 / UH - 0.2), a = i * 2.39, r = rAt(y) * (0.3 + (i * 0.29 % 1) * 0.55), b = new T.Mesh(new T.SphereGeometry(0.018 + (i % 3) * 0.009, 8, 6), P.bubble); b.position.set(Math.cos(a) * r, y, Math.sin(a) * r); b.userData.noInk = true; b.userData.dynamic = true; rig.add(b); parts.bubbles.push(b); }
     const tb = PROPS.crystaltank.build('back'), tf = PROPS.crystaltank.build('front'); for (const q of [tb.g, tf.g]) { q.traverse(o => { if (o.isMesh) { o.renderOrder = 3; if ([].concat(o.material).some(m => m.transparent)) o.userData.noInk = true; } }); rig.add(q); } parts.tank = [tb.g, tf.g];
   }
   return { g, parts };
@@ -185,13 +186,13 @@ function buildForm(c) {
   const B = (FORMS2[c.form] || FORMS[c.form]).build(), g = new T.Group();
   const ground = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   if (B.update) B.update(c.t === undefined ? 0.6 : c.t, c.act || 0);
-  B.g.traverse(o => { if (o.isSprite || o.isLight || (M.rotWash && o.material === M.rotWash) || ground(o) || (o.isMesh && /^(Circle|Ring)/.test(o.geometry.type) && [].concat(o.material)[0].transparent)) o.visible = false; });   // (and its flat discs of light on the floor)
+  const hidden = []; B.g.traverse(o => { if (o.isSprite || o.isLight || (M.rotWash && o.material === M.rotWash) || ground(o) || (o.isMesh && /^(Circle|Ring)/.test(o.geometry.type) && [].concat(o.material)[0].transparent)) { o.visible = false; hidden.push(o); } });   // (and its flat discs of light on the floor)
   B.g.traverse(o => { if (o.isMesh) { o.material = Array.isArray(o.material) ? o.material.map(m => m.clone()) : o.material.clone(); o.castShadow = true; o.receiveShadow = true; } });
   B.g.updateMatrixWorld(true); const box = new T.Box3();
   B.g.traverse(o => { if (o.isMesh && shownChain(o)) { o.geometry.computeBoundingBox(); box.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
   const h = box.max.y - box.min.y || 1, len = Math.max(box.max.x - box.min.x, box.max.z - box.min.z) || 1, s = Math.min(c.h / h, (c.w || 1.2) / len);   // (as tall as c.h, no longer than c.w)
   B.g.scale.setScalar(s); B.g.position.set(-(box.min.x + box.max.x) / 2 * s, -box.min.y * s + (c.lift || 0), -(box.min.z + box.max.z) / 2 * s); g.add(B.g);
-  g.userData.size = [(box.max.x - box.min.x) * s, h * s, (box.max.z - box.min.z) * s]; return g;
+  g.userData.size = [(box.max.x - box.min.x) * s, h * s, (box.max.z - box.min.z) * s]; g.userData.form = { B, hidden }; return g;   // (form: its model's own update, and what of it is kept hidden: the live room poses it every frame)
 }
 // units: { key: { kind: 'form' | 'ant', at, face, ... } }; each stands at `at` facing `face`
 function buildCast(P, units) {
@@ -199,7 +200,7 @@ function buildCast(P, units) {
   for (const key of Object.keys(units)) { const c = units[key], holder = new T.Group(); let body;
     if (c.kind === 'ant') { body = buildAnt(P, c); holder.rotation.y = -Math.atan2(c.face[1] - c.at[1], c.face[0] - c.at[0]); c.top = body.userData.ant.top; }
     else { body = buildForm(c); holder.rotation.y = Math.atan2(c.face[0] - c.at[0], c.face[1] - c.at[1]); c.top = body.userData.size[1] + (c.lift || 0); }
-    holder.add(body); holder.position.set(c.at[0], 0, c.at[1]); holder.userData.unit = c; holder.userData.inkGroup = true; g.add(holder); parts[key] = holder; }
+    holder.add(body); holder.position.set(c.at[0], 0, c.at[1]); holder.userData.unit = c; holder.userData.inkGroup = true; holder.userData.form = body.userData.form || null; g.add(holder); parts[key] = holder; }
   return { g, parts };
 }
 // a unit's picture, alone, for the HUD (as the game's baked sprites: the studio's light, no background)
