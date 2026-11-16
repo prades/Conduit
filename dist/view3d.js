@@ -27161,18 +27161,20 @@ function buildLabFloor(lab, P0, how) {
             b.G.sink = Math.max(b.G.sink, b.hi + WALL_H - (b.lo + B0) + 0.16);
     const faceMat = new T.MeshStandardMaterial({ map: wallTexture({ base: '#ffffff' }), roughness: 0.62, metalness: 0.05, vertexColors: true }), seams = {}, seamOf = id => seams[id] || (seams[id] = id === 'crystal_chamber' && P0.seam ? P0.seam : glowMat(rooms[id].style.acc, 1.0));
     const wain = id => { const c = lin((rooms[id] && rooms[id].style.wain) || PAL.wallBase); return [c.r, c.g, c.b]; };
-    const face = (q, b, dx, dy, y0, y1, c, z) => {
+    const face = (q, b, dx, dy, y0, y1, c, z, body) => {
         z = z || 0;
+        body = body || WHITE;
         const yb = z + WALL_H * 0.2, yt = z + WALL_H;
         if (y0 < yb)
             sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
         if (y1 > yb && y0 < yt)
-            sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), WHITE, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H);
+            sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H);
         if (y1 > yt + 1e-4)
-            sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, WHITE, 0.45, 0.85);
+            sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, body, 0.45, 0.85);
     };
-    const RPAL = { brown: ['#4a3a30', '#5e4a3b', '#6f5847', '#54412f', '#7f6752', '#5a4636', '#685240'], sand: ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'] };
-    const STRATA = (RPAL[how && how.rock] || RPAL.brown).map(h => lin(h)), RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4;
+    const bodyOf = id => { const st = live && rooms[id] && rooms[id].style; if (!st || !st.dark)
+        return WHITE; const k = lin(hexMix(st.wain || '#3a3532', '#ffffff', 0.25)); return [k.r, k.g, k.b]; };
+    const STRATA = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'].map(h => lin(h)), RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4;
     const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => rnd(x, z) * 50 / UH;
     const swell = (x, z, y) => Math.sin(x * 1.31 + z * 0.73 + y * 1.9) * 0.5 + Math.sin(x * 0.37 - z * 1.13 + y * 0.81 + 1.3) * 0.35 + Math.sin(-x * 0.93 + z * 0.47 - y * 2.6 + 4.1) * 0.15;
     const wave = (x, z) => Math.sin(x * 0.9 + z * 0.61) * 0.11 + Math.sin(x * 2.1 - z * 1.7 + 0.7) * 0.05;
@@ -27186,7 +27188,7 @@ function buildLabFloor(lab, P0, how) {
         const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, p = [cx - rx, cz - rz], q = [cx + rx, cz + rz];
         const goes = e => { const nb = band.get(K(b.x + (e < 0 ? -rx * 2 : rx * 2), b.y + (e < 0 ? -rz * 2 : rz * 2))); if (!nb || !nb.rock || nb.G !== b.G)
             return false; const out = band.get(K(nb.x + dx, nb.y + dy)); return !(out && out.rock && out.G === b.G); };
-        const gp = goes(-1), gq = goes(1), ta = z + RH + jag(p[0], p[1]), tb = z + RH + jag(q[0], q[1]), V = [];
+        const gp = goes(-1), gq = goes(1), ta = b.hi + RH + jag(p[0], p[1]), tb = b.hi + RH + jag(q[0], q[1]), V = [];
         for (let r = 0; r <= ROWS; r++) {
             const row = [];
             for (let c = 0; c <= COLS; c++) {
@@ -27244,7 +27246,7 @@ function buildLabFloor(lab, P0, how) {
                     rockFace(G, b, dx, dy, z + B0, z);
                 continue;
             }
-            face(G.face, b, dx, dy, z + B0, top, c, z);
+            face(G.face, b, dx, dy, z + B0, top, c, z, bodyOf(rid || b.own));
             if (!nb && rid && (dx === 1 || dy === 1)) {
                 const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid));
                 s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512);
@@ -27274,6 +27276,8 @@ function buildLabFloor(lab, P0, how) {
         t.front = front;
         t.G = G;
         edges.add(K(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) + '|' + K(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)));
+        if (live && front && back && Math.abs(hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) - hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5))) > 0.05)
+            continue;
         if (t.glass) {
             const sill = 0.19, rail = 0.095;
             const s = put(rooms[front || back].g, box(1, sill, 0.16, P0.frame), sill / 2);
@@ -27434,15 +27438,24 @@ function buildLabFloor(lab, P0, how) {
                 lf.g.position.x = lf.s * k * lf.slide; };
     }
     for (const r of rails) {
-        const w = r.w, gp = new T.Group(), z = baseOf(r.room), RH = 0.62, n = Math.max(1, Math.round(w.L));
+        const w = r.w, gp = new T.Group(), RH = 0.62, n = Math.max(1, Math.round(w.L));
+        let zIn = -1e9, zOut = -1e9;
+        for (let i = 0; i < n; i++) {
+            const mx = w.a[0] + w.u[0] * (i + 0.5) * w.L / n, my = w.a[1] + w.u[1] * (i + 0.5) * w.L / n, ci = [Math.round(mx - w.n[0] * 0.5), Math.round(my - w.n[1] * 0.5)], co = [Math.round(mx + w.n[0] * 0.5), Math.round(my + w.n[1] * 0.5)];
+            if (roomAt.has(K(ci[0], ci[1])))
+                zIn = Math.max(zIn, hAt(ci[0], ci[1]));
+            if (roomAt.has(K(co[0], co[1])))
+                zOut = Math.max(zOut, hAt(co[0], co[1]));
+        }
+        const z = Math.max(zIn, zOut, -1e8) > -1e8 ? Math.max(zIn, zOut) : baseOf(r.room), sd = zOut > zIn + 0.05 ? 1 : -1;
         for (let i = 0; i <= n; i++) {
             const p = new T.Mesh(new T.BoxGeometry(0.06, RH, 0.06), P0.steelDk);
-            p.position.set(w.a[0] + w.u[0] * w.L * i / n - w.n[0] * 0.08, z + RH / 2, w.a[1] + w.u[1] * w.L * i / n - w.n[1] * 0.08);
+            p.position.set(w.a[0] + w.u[0] * w.L * i / n + sd * w.n[0] * 0.08, z + RH / 2, w.a[1] + w.u[1] * w.L * i / n + sd * w.n[1] * 0.08);
             gp.add(p);
         }
         for (const [y, th] of [[RH, 0.05], [RH * 0.5, 0.03]]) {
             const b = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : th, th, w.u[1] ? w.L : th), P0.frame);
-            b.position.set(w.mid[0] - w.n[0] * 0.08, z + y, w.mid[1] - w.n[1] * 0.08);
+            b.position.set(w.mid[0] + sd * w.n[0] * 0.08, z + y, w.mid[1] + sd * w.n[1] * 0.08);
             gp.add(b);
         }
         gp.userData.inkKey = 'rail';
@@ -27980,7 +27993,7 @@ const GAMEVIEW = (function () {
     const q = String((typeof location !== 'undefined' && location.search) || ''), arg = (k, d) => { const m = new RegExp('[?&]' + k + '=([\\d.]+)').exec(q); return m ? parseFloat(m[1]) : d; };
     const state = { ink: arg('ink', 1) !== 0, shadows: arg('shadows', 1) !== 0, sharp: Math.max(1, Math.min(2, arg('sharp', 1))) };
     const CORE = view3dCore({ canvas, state, map, dK: 0.008 }), { scene, ctx: look, tagInk, mergeRigid, antBody } = CORE;
-    const world = CORE.buildWorld(map.lab, { live: true, rock: (/[?&]rock=(brown|sand)(?:&|$)/.exec(q) || [])[1] || 'brown' });
+    const world = CORE.buildWorld(map.lab, { live: true });
     const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);
     const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
     const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3();

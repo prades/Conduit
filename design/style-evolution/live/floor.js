@@ -56,7 +56,8 @@ function moreFittings(P, acc) {
 //   rooms on many levels: a tile stands at its own height (a cell [x, y, h], h in the game's px of height: a room's floor, a staircase's treads), with the risers between; a room's
 //   things stand on its floor (rec.base, px); a wall's block stands from the lowest floor beside it to a wall's height over the highest (as the game's: js/facilityplay.js base2),
 //   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail or railing_wall) is a railing, not a wall
-//   a ROCK wall (the arena's, kind rock) is a block of layered rock, after the owner's reference picture (below; a draft: ?draft=arena&rock=brown|sand, docs/VIEW-3D.md)
+//   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; a draft: ?draft=arena, docs/VIEW-3D.md); a wall facing a
+//   dark room (the arena's style) is dark; a ledge between two floors (the catwalk spur's over the arena) has no wall over it, its railing on the higher floor
 function buildLabFloor(lab, P0, how) {
   const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
   const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
@@ -104,15 +105,14 @@ function buildLabFloor(lab, P0, how) {
   // one picture for every room's wall face: the body, the groove the neon seam sits in, a join, the line under the cap; its base band is white, and takes each room's own colour
   const faceMat = new T.MeshStandardMaterial({ map: wallTexture({ base: '#ffffff' }), roughness: 0.62, metalness: 0.05, vertexColors: true }), seams = {}, seamOf = id => seams[id] || (seams[id] = id === 'crystal_chamber' && P0.seam ? P0.seam : glowMat(rooms[id].style.acc, 1.0));
   const wain = id => { const c = lin((rooms[id] && rooms[id].style.wain) || PAL.wallBase); return [c.r, c.g, c.b]; };
-  const face = (q, b, dx, dy, y0, y1, c, z) => { z = z || 0; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
-    if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), WHITE, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, WHITE, 0.45, 0.85); };   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
+  const face = (q, b, dx, dy, y0, y1, c, z, body) => { z = z || 0; body = body || WHITE; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
+    if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, body, 0.45, 0.85); };
+  const bodyOf = id => { const st = live && rooms[id] && rooms[id].style; if (!st || !st.dark) return WHITE; const k = lin(hexMix(st.wain || '#3a3532', '#ffffff', 0.25)); return [k.r, k.g, k.b]; };   // (a face looking into a dark room, the arena's: the game draws its walls dark)   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
   // ROCK (the arena's rock walls; a draft for the owner, ?draft=arena: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
   // (the first draft, faceted blocks, was not liked). From it, our own rock: wavy horizontal strata in lighter and darker stone, speckled with small pits, big low-poly faces pushed in
   // and out, flat facets with no smooth shading. As tall as the game's far drawn rock (168 px over its floor and up to 50 more: js/facilitydecor.js _fpRockHeights), its top a jagged
-  // skyline (each corner's height from where it is, so the blocks beside it share it). Two colourings (how.rock): 'brown', the cave's brown the owner chose on 2026-11-09; 'sand',
-  // nearer the picture's
-  const RPAL = { brown: ['#4a3a30', '#5e4a3b', '#6f5847', '#54412f', '#7f6752', '#5a4636', '#685240'], sand: ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'] };
-  const STRATA = (RPAL[how && how.rock] || RPAL.brown).map(h => lin(h)), RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4;
+  // skyline (each corner's height from where it is, so the blocks beside it share it). In sand, the owner's pick of two (2026-11-16, of brown and sand: "I like the sand")
+  const STRATA = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'].map(h => lin(h)), RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4;
   const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => rnd(x, z) * 50 / UH;
   const swell = (x, z, y) => Math.sin(x * 1.31 + z * 0.73 + y * 1.9) * 0.5 + Math.sin(x * 0.37 - z * 1.13 + y * 0.81 + 1.3) * 0.35 + Math.sin(-x * 0.93 + z * 0.47 - y * 2.6 + 4.1) * 0.15;   // (smooth, from where it is)
   const wave = (x, z) => Math.sin(x * 0.9 + z * 0.61) * 0.11 + Math.sin(x * 2.1 - z * 1.7 + 0.7) * 0.05;   // (how a stratum's edge rises and falls along the wall)
@@ -121,7 +121,7 @@ function buildLabFloor(lab, P0, how) {
   // a corner or ends, so faces meet with no gap); each row its stratum's colour; flat facets
   const rockFace = (G, b, dx, dy, y0, z) => { const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, p = [cx - rx, cz - rz], q = [cx + rx, cz + rz];
     const goes = e => { const nb = band.get(K(b.x + (e < 0 ? -rx * 2 : rx * 2), b.y + (e < 0 ? -rz * 2 : rz * 2))); if (!nb || !nb.rock || nb.G !== b.G) return false; const out = band.get(K(nb.x + dx, nb.y + dy)); return !(out && out.rock && out.G === b.G); };
-    const gp = goes(-1), gq = goes(1), ta = z + RH + jag(p[0], p[1]), tb = z + RH + jag(q[0], q[1]), V = [];
+    const gp = goes(-1), gq = goes(1), ta = b.hi + RH + jag(p[0], p[1]), tb = b.hi + RH + jag(q[0], q[1]), V = [];   // (up to the block's own top, whichever floor the face rises from)
     for (let r = 0; r <= ROWS; r++) { const row = []; for (let c = 0; c <= COLS; c++) { const s2 = c / COLS, x = p[0] + (q[0] - p[0]) * s2, zz = p[1] + (q[1] - p[1]) * s2, t = r / ROWS, top = ta + (tb - ta) * s2;
       let y = y0 + (top - y0) * t; if (r > 0 && r < ROWS) y += wave(x, zz);   // (inside rows wave)
       const edge = (c === 0 && !gp) || (c === COLS && !gq), d = edge || b.flat || r === 0 || r === ROWS ? 0 : 0.18 * swell(x, zz, y) * Math.sin(Math.PI * t);   // (out and in, none at the top, the foot, a turning edge or where a door or a sign hangs)
@@ -135,7 +135,7 @@ function buildLabFloor(lab, P0, how) {
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
-      if (same) continue; if (b.rock) { if (!(nb && nb.rock && nb.G === G)) rockFace(G, b, dx, dy, z + B0, z); continue; } face(G.face, b, dx, dy, z + B0, top, c, z);
+      if (same) continue; if (b.rock) { if (!(nb && nb.rock && nb.G === G)) rockFace(G, b, dx, dy, z + B0, z); continue; } face(G.face, b, dx, dy, z + B0, top, c, z, bodyOf(rid || b.own));
       if (!nb && rid && (dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
 
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
@@ -148,6 +148,7 @@ function buildLabFloor(lab, P0, how) {
     const z0 = live ? Math.max(front ? hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) : -1e9, back ? hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) : -1e9) : 0;   // (its floor)
     const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(ax ? len : dep, h, ax ? dep : len), mat), put = (par, m, y, off) => { m.position.set(t.m[0] + nr[0] * (off || 0), z0 + y, t.m[1] + nr[1] * (off || 0)); par.add(m); return m; };
     t.back = back; t.front = front; t.G = G; edges.add(K(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) + '|' + K(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)));
+    if (live && front && back && Math.abs(hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) - hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5))) > 0.05) continue;   // (a ledge between two floors, the catwalk spur's over the arena: the floor's riser is its face, a railing on it if the map has one, as the game draws it)
     if (t.glass) { const sill = 0.19, rail = 0.095;   // (the sill stays when the glass sinks; the rail and the posts are one solid along the whole window)
       const s = put(rooms[front || back].g, box(1, sill, 0.16, P0.frame), sill / 2); s.castShadow = s.receiveShadow = true; s.userData.inkKey = 'sill';
       const pane = put(G.g, box(1, WALL_H - sill - rail, 0.03, glassMat), sill + (WALL_H - sill - rail) / 2); pane.userData.noInk = true; pane.renderOrder = 3;
@@ -190,9 +191,12 @@ function buildLabFloor(lab, P0, how) {
     setShadows(tall); setShadows(low); thr.castShadow = false; d.G = G; d.open = 0; if (d.leaves) d.set = k => { if (k === d.open) return; d.open = k; for (const lf of d.leaves) lf.g.position.x = lf.s * k * lf.slide; }; }
 
   // a deck's railing (the game's deck_rail): posts and two rails on the room's floor, along the edge
-  for (const r of rails) { const w = r.w, gp = new T.Group(), z = baseOf(r.room), RH = 0.62, n = Math.max(1, Math.round(w.L));
-    for (let i = 0; i <= n; i++) { const p = new T.Mesh(new T.BoxGeometry(0.06, RH, 0.06), P0.steelDk); p.position.set(w.a[0] + w.u[0] * w.L * i / n - w.n[0] * 0.08, z + RH / 2, w.a[1] + w.u[1] * w.L * i / n - w.n[1] * 0.08); gp.add(p); }
-    for (const [y, th] of [[RH, 0.05], [RH * 0.5, 0.03]]) { const b = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : th, th, w.u[1] ? w.L : th), P0.frame); b.position.set(w.mid[0] - w.n[0] * 0.08, z + y, w.mid[1] - w.n[1] * 0.08); gp.add(b); }
+  for (const r of rails) { const w = r.w, gp = new T.Group(), RH = 0.62, n = Math.max(1, Math.round(w.L)); let zIn = -1e9, zOut = -1e9;
+    for (let i = 0; i < n; i++) { const mx = w.a[0] + w.u[0] * (i + 0.5) * w.L / n, my = w.a[1] + w.u[1] * (i + 0.5) * w.L / n, ci = [Math.round(mx - w.n[0] * 0.5), Math.round(my - w.n[1] * 0.5)], co = [Math.round(mx + w.n[0] * 0.5), Math.round(my + w.n[1] * 0.5)];
+      if (roomAt.has(K(ci[0], ci[1]))) zIn = Math.max(zIn, hAt(ci[0], ci[1])); if (roomAt.has(K(co[0], co[1]))) zOut = Math.max(zOut, hAt(co[0], co[1])); }
+    const z = Math.max(zIn, zOut, -1e8) > -1e8 ? Math.max(zIn, zOut) : baseOf(r.room), sd = zOut > zIn + 0.05 ? 1 : -1;   // (on the higher floor beside it, on that floor's side of the line)
+    for (let i = 0; i <= n; i++) { const p = new T.Mesh(new T.BoxGeometry(0.06, RH, 0.06), P0.steelDk); p.position.set(w.a[0] + w.u[0] * w.L * i / n + sd * w.n[0] * 0.08, z + RH / 2, w.a[1] + w.u[1] * w.L * i / n + sd * w.n[1] * 0.08); gp.add(p); }
+    for (const [y, th] of [[RH, 0.05], [RH * 0.5, 0.03]]) { const b = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : th, th, w.u[1] ? w.L : th), P0.frame); b.position.set(w.mid[0] + sd * w.n[0] * 0.08, z + y, w.mid[1] + sd * w.n[1] * 0.08); gp.add(b); }
     gp.userData.inkKey = 'rail'; setShadows(gp); rooms[r.room].g.add(gp); }
 
   // each room's own things: its floor marks, wall fittings (which go with the wall they hang on) and props
