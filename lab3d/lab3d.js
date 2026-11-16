@@ -27375,8 +27375,8 @@ function makeWalk(world) {
 ;
 /* design/style-evolution/live/viewer.js */
 const LIVE = (function () {
-    const S = STYLES.lab, canvas = opts.canvas, PACES = [1, 0.8, 0.6, 0.4], CAMS = ['auto', 'near', 'far'];
-    const state = { ink: opts.ink !== false, shadows: opts.shadows !== false, sharp: opts.sharp || 1.5, cam: CAMS.includes(opts.cam) ? opts.cam : 'auto', pace: PACES.includes(opts.pace) ? opts.pace : 0.6, raid: opts.raid !== false };
+    const S = STYLES.lab, canvas = opts.canvas, PACES = [1, 0.8, 0.6, 0.4], CAMS = ['far', 'near'];
+    const state = { ink: opts.ink !== false, shadows: opts.shadows !== false, sharp: opts.sharp || 1.5, cam: CAMS.includes(opts.cam) ? opts.cam : 'far', pace: PACES.includes(opts.pace) ? opts.pace : 0.6, raid: opts.raid !== false };
     const renderer = new (opts.gl1 ? T.WebGL1Renderer : T.WebGLRenderer)({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
     const gl2 = renderer.capabilities.isWebGL2, depthOK = gl2 || !!renderer.extensions.get('WEBGL_depth_texture');
     renderer.outputEncoding = T.sRGBEncoding;
@@ -27790,7 +27790,7 @@ const LIVE = (function () {
     NM.mesh.layers.set(0);
     NM.mesh.renderOrder = 2;
     over.add(NM.mesh);
-    const C = { squad: lin(TEAM.squad), ants: lin(TEAM.ants), white: lin('#eaffff'), dark: lin('#040a0e'), ok: lin('#43e0a8'), warn: lin('#f2b13a'), bad: lin('#ff4d6a'), hurt: lin('#ff8a9c'), ghost: lin('#ffffff'), grey: lin('#8aa3ad') };
+    const C = { squad: lin(TEAM.squad), ants: lin(TEAM.ants), white: lin('#eaffff'), dark: lin('#040a0e'), ok: lin('#43e0a8'), warn: lin('#f2b13a'), bad: lin('#ff4d6a'), hurt: lin('#ff8a9c'), ghost: lin('#ffffff') };
     const Y0 = 0.014;
     const fQuad = (ax, az, bx, bz, cx, cz, dx, dz, y, k, al) => { FM.v(ax, y, az, k, al); FM.v(bx, y, bz, k, al); FM.v(cx, y, cz, k, al); FM.v(ax, y, az, k, al); FM.v(cx, y, cz, k, al); FM.v(dx, y, dz, k, al); };
     const fTri = (ax, az, bx, bz, cx, cz, y, k, al) => { FM.v(ax, y, az, k, al); FM.v(bx, y, bz, k, al); FM.v(cx, y, cz, k, al); };
@@ -27831,13 +27831,13 @@ const LIVE = (function () {
         star: { hp: 120, speed: 1.8, atk: { kind: 'bolt', name: 'ICICLE VOLLEY', range: 6, wind: 12 / 60, rest: 55 / 60, dmg: 8, shots: 3, fly: 11 } } };
     const SENTRY_ATK = { kind: 'beam', range: 5.5, wind: 0.5, rest: 1.0, dmg: 10 }, LUNGE = { wind: 0.6, len: 3.2, fly: 9, from: 2.2, to: 4.6, every: 6, k: 1.2, rest: 0.9 };
     const WAVES = [['worker', 'worker', 'scout'], ['scout', 'scout', 'striker', 'worker'], ['tank', 'striker', 'worker', 'worker', 'scout']], POOL = { worker: 3, scout: 3, striker: 2, tank: 1 };
-    const NOTICE = 4.5, HURRY = 6, CRYSTAL_HP = 400, DOWN_FOR = 5, FOLLOW_GAP = 1.15, NEARBY = [[1.4, -0.7], [-0.7, 1.4], [-1.3, -0.4], [-0.4, -1.3], [1.9, -1.6], [-1.6, 1.9], [-1.5, -1.5], [2.4, -0.2], [-0.2, 2.4]];
+    const NOTICE = 4.5, HURRY = 6, CRYSTAL_HP = 400, BACK_IN = 180 / 60, POP = 0.3, FOLLOW_GAP = 1.15, NEARBY = [[1.4, -0.7], [-0.7, 1.4], [-1.3, -0.4], [-0.4, -1.3], [1.9, -1.6], [-1.6, 1.9], [-1.5, -1.5], [2.4, -0.2], [-0.2, 2.4]];
     const units = [], squad = [], ants = [];
     for (const k of SQUAD) {
         const c = U0[k], kit = KIT[k], h = cast.parts[k];
         c.key = k;
         const u = { key: k, team: 'squad', kind: 'form', name: c.name, holder: h, form: h.userData.form, x: c.at[0], y: c.at[1], ang: Math.atan2(c.face[1] - c.at[1], c.face[0] - c.at[0]), r: reach(c), top: c.top, lift: c.lift || 0, hp: kit.hp, max: kit.hp, lag: kit.hp, speed: kit.speed, atk: kit.atk || null,
-            alive: true, down: 0, path: null, pi: 0, st: 'idle', t: 0, target: null, aim: null, think: 0, repath: 0, act: 0, jab: 0 };
+            alive: true, down: 0, pop: 0, home: [c.at[0], c.at[1]], path: null, pi: 0, st: 'idle', t: 0, target: null, aim: null, think: 0, repath: 0, act: 0, jab: 0 };
         units.push(u);
         squad.push(u);
     }
@@ -27854,8 +27854,8 @@ const LIVE = (function () {
         }
     const sentries = world.sentries.map(s => ({ s, x: s.at[0], y: s.at[1], ang: 0, st: 'idle', t: 0, target: null, aim: null, mz: Math.hypot(s.muzzle[0], s.muzzle[2]), my: s.muzzle[1] }));
     const crystal = { x: CR[0], y: CR[1], hp: CRYSTAL_HP, max: CRYSTAL_HP, lag: CRYSTAL_HP, team: 'squad', crystal: true, alive: true, r: world.padR, top: 2.7 };
-    const everyone = units.concat([crystal]), numbers = [], trail = [], log = { marks: 0, blows: 0, hits: 0, minLead: 1e9, antsDown: 0, squadDown: 0, waves: 0, raids: 0, held: 0, fell: 0 };
-    const raid = { phase: state.raid ? 'calm' : 'off', wave: 0, t: 0.6, first: true }, sim = { t: 0, scale: 1, fight: false, tap: null, room: world.roomAt(player.x, player.y), steps: 0, open: null, still: 0, hold: 0 };
+    const everyone = units.concat([crystal]), numbers = [], trail = [], log = { marks: 0, blows: 0, hits: 0, minLead: 1e9, antsDown: 0, squadDown: 0, knockouts: 0, waves: 0, raids: 0, held: 0, fell: 0 };
+    const raid = { phase: state.raid ? 'calm' : 'off', wave: 0, t: 0.6, first: true }, sim = { t: 0, scale: 1, fight: false, tap: null, room: world.roomAt(player.x, player.y), steps: 0, open: [null], still: 0, hold: 0, back: 0 };
     const spots = [];
     for (let x = Math.floor(CR[0] - 4); x <= Math.ceil(CR[0] + 4); x++)
         for (let y = Math.floor(CR[1] - 4); y <= Math.ceil(CR[1] + 4); y++) {
@@ -27951,8 +27951,18 @@ const LIVE = (function () {
             o.aim = null;
             log.antsDown++;
         }
+        else if (o === player) {
+            toCrystal(o);
+            sim.tap = null;
+            trail.length = 0;
+            sim.back = 2.5;
+            sim.room = world.roomAt(o.x, o.y) || sim.room;
+            view.snap = true;
+            log.knockouts++;
+        }
         else {
-            o.down = DOWN_FOR;
+            o.down = BACK_IN;
+            o.pop = POP;
             o.st = 'idle';
             o.path = null;
             o.target = null;
@@ -27960,6 +27970,7 @@ const LIVE = (function () {
             log.squadDown++;
         }
     }
+    function toCrystal(u) { const at = walk.standable(u.home) ? u.home : (walk.nearest(u.home, 3) || u.home); u.x = at[0]; u.y = at[1]; u.hp = u.lag = u.max; u.down = 0; u.pop = u === player ? 0 : POP; u.path = null; u.target = null; u.aim = null; u.st = 'idle'; }
     const standing = u => u.alive && !(u.down > 0);
     function land(u, a, foes) {
         log.blows++;
@@ -28036,8 +28047,9 @@ const LIVE = (function () {
         } });
     }
     function restore() { crystal.hp = crystal.lag = crystal.max; crystal.alive = true; for (const u of squad) {
+        if (u.down > 0)
+            toCrystal(u);
         u.hp = u.lag = u.max;
-        u.down = 0;
     } }
     const fall = a => { a.alive = false; a.dying = 0.3; a.st = 'dead'; a.aim = null; a.path = null; };
     function tickRaid(dt) {
@@ -28238,7 +28250,7 @@ const LIVE = (function () {
         if (u.down > 0) {
             u.down -= dt;
             if (u.down <= 0)
-                u.hp = u.lag = Math.round(u.max / 2);
+                toCrystal(u);
             return;
         }
         u.act += ((u.st === 'wind' ? 0.35 + 0.65 * u.t / u.aim.wind : u.st === 'rest' && u.t < 0.25 ? 1 - u.t / 0.25 : 0) - u.act) * Math.min(1, dt * 18);
@@ -28393,12 +28405,12 @@ const LIVE = (function () {
         sim.t += dt;
         sim.steps++;
         tickRaid(dtReal);
-        if (player.down > 0) {
-            player.down -= dt;
-            if (player.down <= 0)
-                player.hp = player.lag = Math.round(player.max / 2);
-        }
-        else if (player.path) {
+        for (const u of squad)
+            if (u.pop > 0)
+                u.pop -= dtReal;
+        if (sim.back > 0)
+            sim.back -= dtReal;
+        if (player.path) {
             const x0 = player.x, y0 = player.y, last = trail.length ? trail[trail.length - 1] : null;
             if (!last || Math.hypot(last[0] - x0, last[1] - y0) > 0.3) {
                 trail.push([x0, y0]);
@@ -28463,88 +28475,38 @@ const LIVE = (function () {
             sim.tap.t += dtReal;
         sim.room = world.roomAt(player.x, player.y) || sim.room;
     }
-    function walkTo(p) { if (player.down > 0)
-        return false; if (!go(player, p, 2.5))
-        return false; const e = player.path[player.path.length - 1]; sim.tap = { x: e[0], y: e[1], t: 0 }; orbit.follow = true; return true; }
+    function walkTo(p) { if (!go(player, p, 2.5))
+        return false; const e = player.path[player.path.length - 1]; sim.tap = { x: e[0], y: e[1], t: 0 }; return true; }
     const cam = new T.PerspectiveCamera(22, 1, 1, 100), SEE = () => { cam.layers.set(0); cam.layers.enable(1); cam.layers.enable(2); };
     SEE();
-    const orbit = { az: 45, el: 33, dist: 23, target: [13.25, 0.35, 20.3], touched: -1e9, sway: 1, follow: false };
-    const view = { tx: 13.25, ty: 0.35, tz: 20.3, el: 33, dist: 23, k: 0 }, NEAR = { el: 25, dist: 12.5 };
+    const ANGLES = { far: { el: 33, dist: 23 }, near: { el: 25, dist: 12.5 } }, ABOVE = 0.27, HALF = Math.tan(11 * Math.PI / 180);
+    const orbit = { az: 45, el: ANGLES[state.cam].el, dist: ANGLES[state.cam].dist, touched: -1e9, sway: 1 };
+    const view = { tx: player.x, ty: 0.35, tz: player.y, el: orbit.el, dist: orbit.dist, snap: true };
     let clock = 0;
-    function fightAt() {
-        const who = [];
-        for (const a of ants)
-            if (a.alive && a.engaged)
-                who.push(a);
-        if (!who.length) {
-            if (!sim.fight)
-                return null;
-            for (const a of ants)
-                if (a.alive && Math.hypot(a.x - CR[0], a.y - CR[1]) < 16)
-                    who.push(a);
-            for (const u of squad)
-                if (standing(u) && u !== player)
-                    who.push(u);
-            if (!who.length)
-                return null;
-        }
-        const n0 = who.length;
-        for (const s of squad)
-            if (standing(s) && (s.st !== 'idle' || s.target || who.slice(0, n0).some(a => dist2(a, s) < 5)))
-                who.push(s);
-        if (who.slice(0, n0).some(a => Math.hypot(a.x - CR[0], a.y - CR[1]) < world.padR + 2))
-            who.push(crystal);
-        let x = 0, y = 0, far = 0;
-        for (const o of who) {
-            x += o.x;
-            y += o.y;
-        }
-        x /= who.length;
-        y /= who.length;
-        if (!who.includes(player) && Math.hypot(player.x - x, player.y - y) < 9) {
-            x = (x * who.length + player.x) / (who.length + 1);
-            y = (y * who.length + player.y) / (who.length + 1);
-            who.push(player);
-        }
-        for (const o of who)
-            far = Math.max(far, Math.hypot(o.x - x, o.y - y));
-        return { x, y, far, who };
-    }
     function place(dt) {
-        const f = fightAt(), near = state.cam === 'near' || (state.cam === 'auto' && !!f && Math.hypot(f.x - player.x, f.y - player.y) < 11);
-        view.k = dt ? view.k + ((near ? 1 : 0) - view.k) * Math.min(1, dt * 2.2) : (near ? 1 : 0);
-        const k = ease(clamp(view.k, 0, 1));
         orbit.sway += ((clock - orbit.touched > 6 ? 1 : 0) - orbit.sway) * Math.min(1, dt * 2.4);
-        const fx = orbit.follow ? player.x : orbit.target[0], fz = orbit.follow ? player.y : orbit.target[2], nx = f ? f.x : player.x, nz = f ? f.y : player.y, nd = f ? clamp(8.5 + f.far * 1.9, 11, 17) : NEAR.dist;
-        const gx = fx + (nx - fx) * k, gz = fz + (nz - fz) * k, m = dt ? Math.min(1, dt * 5) : 1;
-        view.tx += (gx - view.tx) * m;
-        view.tz += (gz - view.tz) * m;
-        view.ty += ((0.35 + 0.1 * k) - view.ty) * m;
-        view.el += ((orbit.el + (Math.min(NEAR.el, orbit.el) - orbit.el) * k) - view.el) * m;
-        view.dist += ((orbit.dist + (Math.min(nd, orbit.dist) - orbit.dist) * k) - view.dist) * m;
-        const az = (orbit.az + Math.sin(clock * 0.22) * 5 * orbit.sway) * Math.PI / 180, e = view.el * Math.PI / 180, d = view.dist;
+        const m = dt && !view.snap ? Math.min(1, dt * 5) : 1, sw = dt ? Math.min(1, dt * 3) : 1;
+        view.snap = false;
+        view.el += (orbit.el - view.el) * sw;
+        view.dist += (orbit.dist - view.dist) * sw;
+        const az = (orbit.az + Math.sin(clock * 0.22) * 5 * orbit.sway) * Math.PI / 180, e = view.el * Math.PI / 180, d = view.dist, front = ABOVE * d * HALF / Math.sin(e);
+        view.tx += (player.x + Math.cos(az) * front - view.tx) * m;
+        view.tz += (player.y + Math.sin(az) * front - view.tz) * m;
         cam.position.set(view.tx + Math.cos(az) * Math.cos(e) * d, view.ty + Math.sin(e) * d, view.tz + Math.sin(az) * Math.cos(e) * d);
         cam.lookAt(view.tx, view.ty, view.tz);
         cam.near = Math.max(0.2, d * 0.3);
         cam.far = d * 3 + 30;
         cam.updateProjectionMatrix();
         cam.updateMatrixWorld();
-        const open = new Set([sim.room]);
-        if (f && view.k > 0.5)
-            for (const o of f.who) {
-                const r = world.roomAt(o.x, o.y);
-                if (r)
-                    open.add(r);
-            }
         for (const G of world.groups) {
-            G.want = G.hide.some(r => open.has(r)) ? 1 : 0;
+            G.want = G.hide.includes(sim.room) ? 1 : 0;
             if (G.down !== G.want) {
                 G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want;
                 G.g.position.y = -ease(G.down) * (WALL_H + 0.16);
                 G.g.visible = G.down < 1;
             }
         }
-        sim.open = open;
+        sim.open[0] = sim.room;
     }
     const Ld = key ? new T.Vector3(8, 14, 3) : null, Lz = Ld ? Ld.clone().normalize() : null, Lx = Ld ? new T.Vector3().crossVectors(UP, Lz).normalize() : null, Ly = Ld ? new T.Vector3().crossVectors(Lz, Lx) : null;
     let shadowSize = 0;
@@ -28640,11 +28602,20 @@ const LIVE = (function () {
     }
     const gy0 = pa.gem ? pa.gem.position.y : 0, span = pa.tankSpan || [0, 1], bub = (pa.bubbles || []).map((b, i) => ({ b, y: b.position.y, v: 0.16 + (i % 5) * 0.05 }));
     function pose(t) {
-        squad.forEach((u, i) => { const h = u.holder, f = u.form, dn = u.down > 0; h.position.set(u.x, 0, u.y); h.rotation.y = Math.PI / 2 - u.ang; h.scale.set(1, dn ? 0.3 : 1, 1); if (f && f.B.update) {
-            f.B.update(t + i * 1.1, dn ? 0 : (u.act || 0));
-            for (const o of f.hidden)
-                o.visible = false;
-        } });
+        squad.forEach((u, i) => {
+            const h = u.holder, f = u.form, away = u.down > 0, k = Math.max(0, u.pop) / POP, sc = away ? k : 1 - k;
+            h.visible = sc > 0.001;
+            if (!h.visible)
+                return;
+            h.position.set(u.x, 0, u.y);
+            h.rotation.y = Math.PI / 2 - u.ang;
+            h.scale.setScalar(sc);
+            if (f && f.B.update) {
+                f.B.update(t + i * 1.1, away ? 0 : (u.act || 0));
+                for (const o of f.hidden)
+                    o.visible = false;
+            }
+        });
         for (const u of ants) {
             const h = u.holder, show = u.alive || u.dying > 0;
             h.visible = show;
@@ -28704,7 +28675,8 @@ const LIVE = (function () {
     function marks() {
         FM.begin();
         for (const u of squad)
-            mRing(u.x, u.y, u.r, 0.045, u.down > 0 ? C.grey : C.squad, 0.95);
+            if (!(u.down > 0))
+                mRing(u.x, u.y, u.r, 0.045, C.squad, 0.95);
         for (const u of ants)
             if (u.alive && !u.entering)
                 mRing(u.x, u.y, u.r, 0.045, C.ants, 0.95);
@@ -28751,7 +28723,7 @@ const LIVE = (function () {
             if (u.alive && !u.entering)
                 bar(u, u.cls === 'tank' ? 1.05 : 0.78, 0.085, 0.22);
         for (const u of squad)
-            if (u.hp < u.max)
+            if (u.hp < u.max && !(u.down > 0))
                 bar(u, 0.9, 0.085, 0.24);
         if (crystal.hp < crystal.max)
             bar(crystal, 1.5, 0.11, 0);
@@ -28823,13 +28795,13 @@ const LIVE = (function () {
     const tell = () => { stats.draws = renderer.info.render.calls; stats.tris = renderer.info.render.triangles; stats.w = pxW; stats.h = pxH; };
     const label = id => (world.rooms[id] ? world.rooms[id].label : '').replace(/\s*\(.*\)\s*$/, '').replace(/ past the Experiment Lab$/, '');
     function hud(force) { if (!opts.onHud)
-        return; const h = { room: label(sim.room), raid: raid.phase, wave: raid.wave, waves: WAVES.length, crystal: Math.round(crystal.hp / crystal.max * 100), fight: sim.fight, pace: state.pace, cam: state.cam, near: view.k > 0.5, coming: ants.some(a => a.alive && !a.engaged), down: squad.filter(u => u.down > 0).map(u => u.name) }, s = JSON.stringify(h); if (s !== hudWas || force) {
+        return; const h = { room: label(sim.room), raid: raid.phase, wave: raid.wave, waves: WAVES.length, crystal: Math.round(crystal.hp / crystal.max * 100), fight: sim.fight, pace: state.pace, cam: state.cam, coming: ants.some(a => a.alive && !a.engaged), away: squad.filter(u => u.down > 0).map(u => [u.name, Math.ceil(u.down)]), back: sim.back > 0 }, s = JSON.stringify(h); if (s !== hudWas || force) {
         hudWas = s;
         opts.onHud(h);
     } }
     function snapshot() {
-        return { t: +sim.t.toFixed(2), clock: +clock.toFixed(2), room: sim.room, player: [+player.x.toFixed(2), +player.y.toFixed(2)], walking: !!player.path, squad: squad.map(u => [u.key, +u.x.toFixed(2), +u.y.toFixed(2), Math.round(u.hp), u.down > 0 ? 1 : 0]), ants: ants.filter(a => a.alive).map(a => [a.cls, +a.x.toFixed(2), +a.y.toFixed(2), Math.round(a.hp), a.engaged ? 1 : 0, a.st]),
-            crystal: Math.round(crystal.hp), raid: raid.phase, wave: raid.wave, fight: sim.fight, scale: +sim.scale.toFixed(3), wallsDown: world.groups.filter(G => G.want).map(G => G.key), open: [...(sim.open || [])], cam: { k: +view.k.toFixed(2), el: +view.el.toFixed(1), dist: +view.dist.toFixed(1), at: [+view.tx.toFixed(2), +view.tz.toFixed(2)] }, marksNow: FM.count(), log: Object.assign({}, log, { minLead: log.minLead > 1e8 ? null : +log.minLead.toFixed(3) }) };
+        return { t: +sim.t.toFixed(2), clock: +clock.toFixed(2), room: sim.room, player: [+player.x.toFixed(2), +player.y.toFixed(2)], walking: !!player.path, squad: squad.map(u => [u.key, +u.x.toFixed(2), +u.y.toFixed(2), Math.round(u.hp), u.down > 0 ? 1 : 0, u.holder.visible ? +(u.holder.scale.y / u.holder.scale.x).toFixed(2) : 0]), ants: ants.filter(a => a.alive).map(a => [a.cls, +a.x.toFixed(2), +a.y.toFixed(2), Math.round(a.hp), a.engaged ? 1 : 0, a.st]),
+            crystal: Math.round(crystal.hp), raid: raid.phase, wave: raid.wave, fight: sim.fight, scale: +sim.scale.toFixed(3), wallsDown: world.groups.filter(G => G.want).map(G => G.key), open: sim.open.slice(), cam: { el: +view.el.toFixed(1), dist: +view.dist.toFixed(1), at: [+view.tx.toFixed(2), +view.tz.toFixed(2)], cube: (() => { const v = tmpV.set(player.x, 0.35, player.y).project(cam); return [+((v.x + 1) / 2).toFixed(3), +((1 - v.y) / 2).toFixed(3)]; })() }, marksNow: FM.count(), log: Object.assign({}, log, { minLead: log.minLead > 1e8 ? null : +log.minLead.toFixed(3) }) };
     }
     function frame(now) { if (stopped)
         return; raf = requestAnimationFrame(frame); loop(now); }
@@ -28884,9 +28856,14 @@ const LIVE = (function () {
         }
     }
     const api = { stats, state, scene, room: world.g, world, units, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
-        set(k, v) { state[k] = v; sized = ''; if (opts.onStats)
+        set(k, v) { state[k] = v; sized = ''; if (k === 'cam' && ANGLES[v]) {
+            orbit.el = ANGLES[v].el;
+            orbit.dist = ANGLES[v].dist;
+        } if (opts.onStats)
             opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
         step(dt) { stopped = true; cancelAnimationFrame(raf); advance(dt); draw(); tell(); hud(); },
+        strike(key, n) { const u = units.find(q => q.key === key); if (u)
+            hurt(u, n, null); },
         run(seconds) { for (let i = 0, k = Math.round(seconds * 60); i < k; i++) {
             clock += 1 / 60;
             step(1 / 60);

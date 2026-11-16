@@ -4,11 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### A test page, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the test page: the camera always on the cube, and no model flattened
+- **The asks** (the owner, having tried the page, "My only two critiques"):
+  - "maybe the player or the models get squashed by something. I'm not sure what it is, but they get squashed on the map and then they return to normal."
+  - "it automatically zooms into action that happens across the map, and that interferes with the auto camera mode, which I don't know. Just make it to where it's always near the player, and the player can change the angle of it."
+- **No model is flattened** (`docs/STYLE-EVOLUTION.md` §8.3). The flattening was the agent's own way of showing one of yours at no health. Now it goes the game's way: a follower shrinks away and is back by the Crystal three seconds later, whole; the cube is set back by the Crystal at once. A line under the Crystal's meter says who is coming back.
+- **The camera is always on the cube** (§8.4), a little above the middle of the picture. One finger turns and tilts it, two fingers come nearer, and CAMERA swings it between two angles, FAR and NEAR. It never moves by itself. **The camera that came down to a fight by itself (AUTO) is taken out**, and only the walls in front of the cube's room sink.
+- **Verified:** `tests/lab3d.js` (22 checks: the cube's place in the picture in every state of a play-through; a fight leaves the camera's angle alone; no one's shape ever flattened; a follower at no health away and back by the Crystal in three seconds, whole; the cube set back by the Crystal; and the page as a visitor opens it starts its own frames), and the full suite. **Not seen on an iPad.**
+
 ### A test page, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the test page: walk the lab floor, a fight at a pace you set, a battle camera
 - **The ask** (the owner, having read 52 fps on an iPad: "Wow, that's exciting. I'd love to see more"; of three things offered next, all three): "Walk the lab floor", "A fight at the new pace", "A battle camera".
 - **Walk the lab floor** (`docs/STYLE-EVOLUTION.md` §8.2): the page is now the lab's whole ground floor in look 1, eight rooms from the game's map and prop models. Tap the floor and the cube walks there; the squad follows; the camera follows; the walls in front of the room you are in sink into the floor.
 - **A fight at the new pace** (§8.3): ants come up in waves for the Crystal and the squad and the sentries fight them. Every blow is marked on the floor before it lands (a wedge, a disc, a strip or a dashed line, filling), and lands on whoever stands in the shape then. PACE sets the fight's speed (×1, ×0.8, ×0.6, ×0.4). **A test of pace and signals:** the ants' speeds, health and power and the bite's two beats are the game's; every other number is a stand-in, and none is a decision about the game.
-- **A battle camera** (§8.4): CAMERA AUTO comes down close to a fight and goes back out after it; NEAR and FAR hold it.
+- **A battle camera** (§8.4): CAMERA AUTO comes down close to a fight and goes back out after it; NEAR and FAR hold it. *(AUTO taken out the same day: the entry above.)*
 - **The glow round the Crystal** drew as a ring of dots on the owner's iPad. The picture is now drawn in the colours the screen shows, and the glow's disc is made from numbers, not a canvas gradient. Not yet seen on an iPad.
 - **Cost** (§8.6): about 390 draws and 600,000 triangles a frame at the Crystal Chamber with the shadows' drawing, about 290 and 355,000 on the frames between (the first room alone: 395 and 397,000). Each room has one plain copy for the ink line's and the shadows' drawings; the shadows are drawn every other frame.
 - **Round 2's room builder** (`design/style-evolution/round2/chamber.js`) can now build any room; the ten still pictures render byte for byte as before. Its exporter gained `--lab`.

@@ -17,7 +17,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 
 - **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, on `2026-11-15j` (no build: nothing is built)
-- **Status:** A direction, chosen by the owner. Not designed in detail; a test page built for it (the lab floor to walk, a test fight, a battle camera); nothing in the game
+- **Status:** A direction, chosen by the owner. Not designed in detail; a test page built for it (the lab floor to walk, a test fight, a camera always on the cube); nothing in the game
 - **Context:** the owner asked for "a real update in style for the overall game", "3d or 2.5d graphics", and to "slow down the combat to make it completely readable". Two rounds of ten directions followed, each with a picture (`STYLE-EVOLUTION.md`).
 - **Decision:** "I like the direction of 1": round 2's direction 1.
   - **Its look:** the game's own Crystal Laboratory style (`STYLE-CRYSTAL-LAB.md`: flat colour, one bold ink line round every solid, neon seams) as a real 3D world.
@@ -30,7 +30,10 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
   - **With it, three.js r128 comes into the repository** (`lab3d/three.min.js`, MIT), for that page alone. The game does not load it. Whether the game gets a 3D engine is still the owner's to decide, after the readings.
 - **What next in the page** (the owner, 2026-11-16, having read 52 fps on an iPad: "Wow, that's exciting. I'd love to see more"; of three offered, one or more): **all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"**. Built in `lab3d/` (`STYLE-EVOLUTION.md` §8.2 to §8.4): implemented and tested in a headless browser; not measured on an iPad as it is now.
   - **These decide nothing about the game.** The fight there is a test of pace and signals: the ants' speeds, health and power and the bite's two beats are the game's, and every other number is the agent's stand-in.
-  - **Agent's choices in it, provisional, for the owner to keep or change:** the walls in front of your room sink into the floor (in the game a wall always stands); the camera comes down to a fight by itself; each blow's shape on the floor (a wedge, a disc, a strip, a dashed line); the four paces offered (×1, ×0.8, ×0.6, ×0.4).
+  - **Agent's choices in it, provisional, for the owner to keep or change:** the walls in front of your room sink into the floor (in the game a wall always stands); each blow's shape on the floor (a wedge, a disc, a strip, a dashed line); the four paces offered (×1, ×0.8, ×0.6, ×0.4); the CAMERA button's two angles, NEAR and FAR.
+- **The camera in the page: always on the cube** (the owner, 2026-11-16, having tried it): "it automatically zooms into action that happens across the map, and that interferes with the auto camera mode, which I don't know. Just make it to where it's always near the player, and the player can change the angle of it."
+  - **Superseded by this:** the battle camera that came down to a fight by itself (AUTO; the agent's reading of "A battle camera"). Taken out. The camera moves with the cube, a finger and the CAMERA button only (`STYLE-EVOLUTION.md` §8.4).
+- **No model flattened** (the owner, the same day): "maybe the player or the models get squashed by something. I'm not sure what it is, but they get squashed on the map and then they return to normal." It was the agent's own way of showing one of yours at no health (flat where it stood for five seconds, then up at half). Replaced by the game's own way: a follower leaves and is back by the Crystal three seconds later, whole; the cube is set back by the Crystal (`STYLE-EVOLUTION.md` §8.3).
 - **Affects:** `docs/STYLE-EVOLUTION.md`; `lab3d/`, `tools/lab3d.js`, `design/style-evolution/live/`, `tests/lab3d.js`. Nothing in the game.
 
 ## DECISION: The Sewers' new look: look 1's walls with look 4's floor (the owner's pick of six drafts)

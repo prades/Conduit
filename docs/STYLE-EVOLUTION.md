@@ -1,6 +1,6 @@
 # The game's look and combat, evolved (3D or 2.5D, a slower fight)
 
-- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail. **Its test page is built** (§8), `lab3d/`, apart from the game: first the Crystal Chamber (read once on an iPad: 52 fps), then, at the owner's asking, the lab's whole ground floor to walk, a fight at a pace you set with every blow marked before it lands, and a battle camera. It is tested in a headless browser; **as it is now it has not been measured on an iPad**, and the fight's rules are stand-ins. Nothing in the game is changed. The other nineteen directions stay here as offered.
+- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail. **Its test page is built** (§8), `lab3d/`, apart from the game: first the Crystal Chamber (read once on an iPad: 52 fps), then, at the owner's asking, the lab's whole ground floor to walk, a fight at a pace you set with every blow marked before it lands, and a battle camera; then, the owner having tried those, the camera kept always on the cube and no model flattened. It is tested in a headless browser; **as it is now it has not been measured on an iPad**, and the fight's rules are stand-ins. Nothing in the game is changed. The other nineteen directions stay here as offered.
 - **Owner:** the user (creative direction); the agent (drafts and implementation support)
 - **Last updated:** 2026-11-16
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-15j` (the game is unchanged by this)
@@ -123,7 +123,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 1. ~~Which look, or which mix?~~ *(answered 2026-11-16: direction 1, "I like the direction of 1")*
 2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: **how slow, and which marks**. The test page now lets the owner try four paces and one set of marks by eye (§8.3, §8.10). The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
 3. Real 3D or 2.5D? ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built, §8.)* ~~What next in it?~~ *(answered 2026-11-16, all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"; built, §8.2 to §8.4.)* Still open: **what the page reads on the owner's two iPads as it is now** (one reading of the first room: 52 fps), and then real 3D or 2.5D.
-6. The test page's own choices, each the agent's and for the owner to keep or change: the walls in front of your room sinking (the game's walls always stand), the camera coming down by itself in a fight, the fight's stand-in numbers (§8.3).
+6. The test page's own choices, each the agent's and for the owner to keep or change: the walls in front of your room sinking (the game's walls always stand), the fight's stand-in numbers (§8.3), the CAMERA button's two angles (§8.4). ~~The camera coming down by itself in a fight~~ *(answered 2026-11-16: taken out; "Just make it to where it's always near the player, and the player can change the angle of it".)*
 4. The oldest iPads (iPadOS 13.4 to 14): keep them (WebGL 1, an older three.js), or not?
 5. A reference would help the next step: a game, a screenshot or a picture that shows the feel the owner has in mind (`ART-PROCESS.md`).
 
@@ -153,10 +153,13 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ## 8. The live 3D test page (`lab3d/`)
 
-- **Status:** **Implemented; verified** by `tests/lab3d.js` (20 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
+- **Status:** **Implemented; verified** by `tests/lab3d.js` (22 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
 - **The asks** (the owner):
   1. 2026-11-16, of three first pieces: "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads.
   2. 2026-11-16, having seen it run: "Wow, that's exciting. I'd love to see more". Asked what to see next in the page (one or more of three), all three: **"Walk the lab floor"**, **"A fight at the new pace"**, **"A battle camera"**.
+  3. 2026-11-16, having tried those, "My only two critiques":
+     - "every now and again when I finish a battle, maybe the player or the models get squashed by something. I'm not sure what it is, but they get squashed on the map and then they return to normal." It was the agent's own way of showing one of yours at no health. Taken out (§8.3).
+     - "it automatically zooms into action that happens across the map, and that interferes with the auto camera mode, which I don't know. **Just make it to where it's always near the player, and the player can change the angle of it.**" Done (§8.4).
 
 ### 8.1 What it is
 
@@ -166,13 +169,12 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 ### 8.2 Walk the lab floor
 
-- **Tap the floor**: the cube walks there by the shortest way round the walls and the props. The squad follows in its steps, and gathers round it when it stops. The camera follows.
+- **Tap the floor**: the cube walks there by the shortest way round the walls and the props. The squad follows in its steps, and gathers round it when it stops. The camera is always on the cube (§8.4).
 - **The rooms** (1,080 tiles, 76 props, from the game's map and the game's own prop models): Crystal Chamber, Teleport Room 1, Server Room, Security Room, Warehouse, the Hallway, The Lounge, the narrow passage. Each has its own floor and wall colours (the game's `FP_ROOM_STYLE`); the Lounge is wood and the passage a grate. The room's name shows at the top.
 - **The walls.** The game spaces its rooms a tile apart and that gap is the wall. Here each tile of it is a block a tile thick, one wall between two rooms.
   - **The walls in front of the room you are in sink into the floor**, leaving a cut stub (picture 1's cut-down near walls). Walk into the next room and they rise behind you while its own sink. In the game a wall always stands at full height; this is the test page's way of seeing into a room in 3D, and it is the agent's.
   - Where two rooms touch with no gap the wall is thin: glass (the Warehouse's west side) or a solid divider (the Lounge's south side).
 - **The ways out** of these eight rooms are not built: the door to the deck is shut, and the arena's door and the two stairs end in a dark apron.
-- **The camera**: one finger turns it (kept on the side the walls sink on), two fingers come nearer or go far enough out to see the whole floor.
 
 ### 8.3 A fight at the new pace
 
@@ -197,14 +199,20 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 | The four ants' speed, health and power | `js/species.js`, the first ants: worker 1.44 tiles a second, 45, 7; scout 1.32, 60, 18; striker 1.08, 100, 27; soldier 0.72, 180, 38 |
 | The bite's two beats and its reach | `js/combat.js` `COMBAT.bite`: it rears back 18 frames, lands, rests 45; reach 1.5 tiles |
 | The Rimestar's wind-up and rest | `js/npc.js`: 12 frames and 55 frames |
+| One of yours at no health: a follower leaves and is back by the Crystal three seconds later (of the fight's clock), its health as it was; the cube is set back by the Crystal | `js/game.js` (a follower's 180 frames on the respawn queue); `PLAYER-COMBAT.md` (the knockout) |
 
-**Stand-ins, the agent's, for this page only:** the squad's health, speeds, reach and damage; the Jelly Ram's and Stonepetal's timings; the sentries' beam; the lunge; the Crystal's 400 health; the waves; how far an ant notices; that the ants hurry up the hallway (6 tiles a second, outside the pace) until they are near; that one of yours at no health is down for five seconds and gets up at half. None of the game's damage types, statuses, cards or abilities is in it.
+- **One of yours at no health** shrinks away where it fell; a line under the Crystal's meter says who is coming back and in how long (the game has a ticker over the Crystal). No model is ever flattened: that was the agent's own way of showing it (flattened where it stood for five seconds, then up at half health), and it read as a fault.
 
-### 8.4 A battle camera
+**Stand-ins, the agent's, for this page only:** the squad's health, speeds, reach and damage; the Jelly Ram's and Stonepetal's timings; the sentries' beam; the lunge; the Crystal's 400 health; the waves; how far an ant notices; that the ants hurry up the hallway (6 tiles a second, outside the pace) until they are near; the cube's bar of 100 (the game's player has three hits); that a follower come back walks to you (in the game it waits by the Crystal for you). None of the game's damage types, statuses, cards or abilities is in it, nor the cost of a return in the Crystal's power.
 
-- **CAMERA** has three settings. **AUTO**: when a fight is on by the cube the camera comes down close to it (lower and nearer, looking at the middle of the fight, the cube kept in the picture), and goes back out when it is over or when the cube walks away. **NEAR**: held close, on the fight or else on the cube. **FAR**: never comes down.
-- In the fight's view the walls in front of the fight sink too, wherever the cube is.
-- It is this page's own. The game has a battle view already (`js/battleview.js`: a zoom, soft edges, faint walls); this one is a camera that moves in 3D.
+### 8.4 The camera
+
+- **It is always on the cube** (the owner, 2026-11-16: "Just make it to where it's always near the player, and the player can change the angle of it"). The cube sits a little above the middle of the picture, as picture 1 has it, so more of the floor in front of it shows over the buttons.
+- **You change the angle:** one finger turns and tilts it (kept on the side the walls sink on); two fingers come nearer, or go far enough out to see the whole floor.
+- **CAMERA** swings it to one of two angles, **FAR** (picture 1's, where it starts) and **NEAR** (lower and closer), and the finger goes on from there. The two angles are the agent's.
+- **It never moves by itself**, but for a little sway when left alone.
+- **Superseded, 2026-11-16: the battle camera that came down by itself** (AUTO). Asked for as "A battle camera", it came down close to a fight when one was on and went back out after; it looked at the middle of the fight, wherever that was, and sank the walls in front of it. The owner, having tried it: "it automatically zooms into action that happens across the map, and that interferes". Taken out. Only the walls in front of the room the cube is in sink now.
+- The game has a battle view of its own (`js/battleview.js`: a zoom, soft edges, faint walls). This page does not use it.
 
 ### 8.5 The readout and the switches
 
@@ -255,4 +263,4 @@ On each iPad:
 
 And by eye, which the page cannot measure:
 - **Which PACE reads best**, and whether the marks give enough warning at it.
-- Whether the walls sinking and the camera coming down are right, or too much.
+- Whether the walls sinking are right, or too much; whether the CAMERA button's two angles are the right two.
