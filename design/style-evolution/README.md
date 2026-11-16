@@ -2,7 +2,7 @@
 
 **This folder is round 1.** Round 2, the same request answered again in the Crystal Chamber with the game's own props, is in `round2/` (its own README). Both rounds are in `docs/STYLE-EVOLUTION.md`.
 
-**`live/`** holds the live 3D test room's viewer (`viewer.js`), its page's template (`page.html`) and the room's map (`chamber.json`, written by `round2/export.js`). `node tools/lab3d.js` makes the page, `lab3d/`, from them and from `round2/` (`docs/STYLE-EVOLUTION.md` §8).
+**`live/`** holds the live 3D test page's parts: the lab floor (`floor.js`: one shell of walls, doors and floors for the lab's eight ground-floor rooms, each room's own things built by `round2/chamber.js`), its ways (`walk.js`), the viewer (`viewer.js`: the drawing, the walk, the test fight, the camera), the page's template (`page.html`) and the map (`lab.json`, written by `round2/export.js --lab`). `node tools/lab3d.js` makes the page, `lab3d/`, from them and from `round2/` (`docs/STYLE-EVOLUTION.md` §8).
 
 **Proposed, nothing chosen, nothing in the game.** The owner, 2026-11-15: "Im looking for a real update in style for the overall game. I want 3d or 2.5d graphics and I want to slow down the combat to make it completely readable. Can you give me 10 suggestions including example pictures. Im looking to evolve my game entirely". The directions are in `docs/STYLE-EVOLUTION.md` §7.
 

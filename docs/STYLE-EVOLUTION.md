@@ -1,12 +1,12 @@
 # The game's look and combat, evolved (3D or 2.5D, a slower fight)
 
-- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail. **Its first piece is built** (§8): a live 3D test room, `lab3d/`, apart from the game; it is tested in a headless browser and **not yet measured on an iPad**. Nothing in the game is changed. The other nineteen directions stay here as offered.
+- **Status:** **A direction is chosen** (2026-11-16): round 2's direction 1, CRYSTAL LAB 3D with the slowed and signalled fight (the owner: "I like the direction of 1"). It is not designed in detail. **Its test page is built** (§8), `lab3d/`, apart from the game: first the Crystal Chamber (read once on an iPad: 52 fps), then, at the owner's asking, the lab's whole ground floor to walk, a fight at a pace you set with every blow marked before it lands, and a battle camera. It is tested in a headless browser; **as it is now it has not been measured on an iPad**, and the fight's rules are stand-ins. Nothing in the game is changed. The other nineteen directions stay here as offered.
 - **Owner:** the user (creative direction); the agent (drafts and implementation support)
 - **Last updated:** 2026-11-16
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-15j` (the game is unchanged by this)
 - **Related docs:** `STYLE-CRYSTAL-LAB.md` (the look the game has now), `BATTLE-LOOK.md` (the JRPG battle look; real time kept, 2026-11-11), `DECISION-LOG.md` ("Stay 2D for now", 2026-11-09), `COMBAT.md`, `ART-PROCESS.md`, `OPEN-QUESTIONS.md`
 - **The drafts:** `design/style-evolution/` (round 1) and `design/style-evolution/round2/` (how to make the pictures again: the README there)
-- **The live test room:** `lab3d/` (the page), `tools/lab3d.js` (makes it), `design/style-evolution/live/` (its viewer and page template), `tests/lab3d.js`
+- **The live test page:** `lab3d/` (the page), `tools/lab3d.js` (makes it), `design/style-evolution/live/` (the lab floor, its ways, the viewer, the page's template, the map), `tests/lab3d.js`
 
 ## 1. The requests
 
@@ -121,8 +121,9 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 ## 6. Open questions
 
 1. ~~Which look, or which mix?~~ *(answered 2026-11-16: direction 1, "I like the direction of 1")*
-2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: how slow, and which marks. The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
-3. Real 3D or 2.5D? ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built, §8.)* Still open: **what the room reads on the owner's two iPads**, and then real 3D or 2.5D.
+2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: **how slow, and which marks**. The test page now lets the owner try four paces and one set of marks by eye (§8.3, §8.10). The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
+3. Real 3D or 2.5D? ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built, §8.)* ~~What next in it?~~ *(answered 2026-11-16, all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"; built, §8.2 to §8.4.)* Still open: **what the page reads on the owner's two iPads as it is now** (one reading of the first room: 52 fps), and then real 3D or 2.5D.
+6. The test page's own choices, each the agent's and for the owner to keep or change: the walls in front of your room sinking (the game's walls always stand), the camera coming down by itself in a fight, the fight's stand-in numbers (§8.3).
 4. The oldest iPads (iPadOS 13.4 to 14): keep them (WebGL 1, an older three.js), or not?
 5. A reference would help the next step: a game, a screenshot or a picture that shows the feel the owner has in mind (`ART-PROCESS.md`).
 
@@ -150,47 +151,108 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 **Round 1's recommendation, as given then:** the DIORAMA look with SLOW TIME, TELEGRAPHS and an intent chip, starting as an `?engine=3d` prototype of the Sewers. Round 2's (§5) replaces it as the agent's suggestion.
 
-## 8. The first piece: the live 3D test room (`lab3d/`)
+## 8. The live 3D test page (`lab3d/`)
 
-- **Status:** **Implemented; verified** by `tests/lab3d.js` in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Not measured on an iPad**: that is what it is for.
-- **The ask** (the owner, 2026-11-16, of three first pieces): "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads. It answers whether real 3D runs well enough.
+- **Status:** **Implemented; verified** by `tests/lab3d.js` (20 checks) in a headless browser with software WebGL (WebGL 2 and WebGL 1). **Measured on one iPad once, before the lab floor and the fight were added** (§8.9). Not measured since. **The fight is a test of pace and signals: its rules and most of its numbers are the agent's stand-ins (§8.3), and none is a decision about the game.**
+- **The asks** (the owner):
+  1. 2026-11-16, of three first pieces: "Live 3D test room": the Crystal Chamber running in real 3D in look 1, on a separate page with a frame-rate readout, to try on both iPads.
+  2. 2026-11-16, having seen it run: "Wow, that's exciting. I'd love to see more". Asked what to see next in the page (one or more of three), all three: **"Walk the lab floor"**, **"A fight at the new pace"**, **"A battle camera"**.
 
-**What it is**
+### 8.1 What it is
+
 - A page of its own, `lab3d/index.html`. The game does not load it or link to it, and it changes nothing in the game.
-- The same room and look as picture 1, from the same code (`round2/` `STYLES.lab`), drawn every frame: flat cartoon colour and one ink line round every solid.
-- A loop of a few seconds so the rate is measured on a room that moves: the squad's own idle and attack poses, a bite's shape filling on the floor before the soldier lunges, icicles, stakes, the sentry's beam, the Crystal turning. **The loop is for the test; it is not a design of the fight.**
-- One finger turns the room (kept on the side of the cut walls), two fingers come nearer. Left alone, the camera sways.
+- The lab's ground floor, the eight rooms on the Crystal Chamber's level, in the look of picture 1 from the same code (`round2/` `STYLES.lab`): flat cartoon colour and one ink line round every solid.
+- It opens on the Crystal Chamber, as picture 1 has it, with a raid arriving at the chamber's east door.
 
-**What it shows**
+### 8.2 Walk the lab floor
+
+- **Tap the floor**: the cube walks there by the shortest way round the walls and the props. The squad follows in its steps, and gathers round it when it stops. The camera follows.
+- **The rooms** (1,080 tiles, 76 props, from the game's map and the game's own prop models): Crystal Chamber, Teleport Room 1, Server Room, Security Room, Warehouse, the Hallway, The Lounge, the narrow passage. Each has its own floor and wall colours (the game's `FP_ROOM_STYLE`); the Lounge is wood and the passage a grate. The room's name shows at the top.
+- **The walls.** The game spaces its rooms a tile apart and that gap is the wall. Here each tile of it is a block a tile thick, one wall between two rooms.
+  - **The walls in front of the room you are in sink into the floor**, leaving a cut stub (picture 1's cut-down near walls). Walk into the next room and they rise behind you while its own sink. In the game a wall always stands at full height; this is the test page's way of seeing into a room in 3D, and it is the agent's.
+  - Where two rooms touch with no gap the wall is thin: glass (the Warehouse's west side) or a solid divider (the Lounge's south side).
+- **The ways out** of these eight rooms are not built: the door to the deck is shut, and the arena's door and the two stairs end in a dark apron.
+- **The camera**: one finger turns it (kept on the side the walls sink on), two fingers come nearer or go far enough out to see the whole floor.
+
+### 8.3 A fight at the new pace
+
+- **Raids** come by themselves: three waves of ants (3, 4 and 5), up from the arena's door and round to the Crystal by either of the chamber's doors. A wave sets out when one ant of the wave before is left. A raid held, there is a rest, and the next comes. RAIDS turns them off.
+- **The squad fights by itself**: the Jelly Ram, Stonepetal and the Rimestar go for the nearest ant; the two sentries fire. You walk the cube, which does not attack. Ants go for whoever of yours is near, else for the Crystal.
+- **Every blow is marked on the floor before it lands.** Its shape appears with its outline and fills; when it is full the blow lands **on whoever stands in the shape at that moment**, so stepping out of a shape is stepping out of the blow.
+
+| Blow | Its shape on the floor |
+|---|---|
+| An ant's bite; the Jelly Ram's WOBBLE SLAM | A wedge in front of it |
+| Stonepetal's STAKE RING | A disc round its target; stakes rise in it |
+| The Rimestar's ICICLE VOLLEY; a sentry's beam | A strip from it to its target |
+| A striker ant's lunge | A dashed line with an arrowhead, then it dashes along it |
+
+- The ants' marks are red, yours cyan. Bars stand over the ants, and over yours and the Crystal once hurt; a bar keeps a pale piece of the health just lost (the game's `lagBar`). Numbers rise from each blow. The Crystal's health and the wave are at the top left.
+- **PACE** (×1, ×0.8, ×0.6, ×0.4; it starts at ×0.6, picture 1's): the speed of the fight's clock. **While a fight is on, everything runs at that pace**, the cube's walk too; with no fight on, the page runs at ×1. FIGHT SPEED shows at the top while it applies.
+
+**What is the game's, and what is a stand-in**
+
+| The game's own (at PACE ×1) | Where from |
+|---|---|
+| The four ants' speed, health and power | `js/species.js`, the first ants: worker 1.44 tiles a second, 45, 7; scout 1.32, 60, 18; striker 1.08, 100, 27; soldier 0.72, 180, 38 |
+| The bite's two beats and its reach | `js/combat.js` `COMBAT.bite`: it rears back 18 frames, lands, rests 45; reach 1.5 tiles |
+| The Rimestar's wind-up and rest | `js/npc.js`: 12 frames and 55 frames |
+
+**Stand-ins, the agent's, for this page only:** the squad's health, speeds, reach and damage; the Jelly Ram's and Stonepetal's timings; the sentries' beam; the lunge; the Crystal's 400 health; the waves; how far an ant notices; that the ants hurry up the hallway (6 tiles a second, outside the pace) until they are near; that one of yours at no health is down for five seconds and gets up at half. None of the game's damage types, statuses, cards or abilities is in it.
+
+### 8.4 A battle camera
+
+- **CAMERA** has three settings. **AUTO**: when a fight is on near the cube the camera comes down close to it (lower and nearer, looking at the middle of the fight), and goes back out when it is over. **NEAR**: held close, on the fight or else on the cube. **FAR**: never comes down.
+- In the fight's view the walls in front of the fight sink too, wherever the cube is.
+- It is this page's own. The game has a battle view already (`js/battleview.js`: a zoom, soft edges, faint walls); this one is a camera that moves in 3D.
+
+### 8.5 The readout and the switches
+
 - **The readout** (top right): frames a second, milliseconds a frame and the worst frame, draws and triangles a frame, the picture's size in pixels, WebGL 1 or 2.
-- **Three switches** (bottom), to see what each costs:
-  - INK LINE: off, the room is drawn once instead of three times, and loses its outline.
+- **Three small switches** under it, to see what each costs:
+  - INK LINE: off, the room loses its outline and its second drawing.
   - SHADOWS: off, no shadow drawing.
   - SHARP: 1×, 1.5× or 2× the screen's points in pixels (never more than the screen has).
+- In the address: `?ink=0`, `?shadows=0`, `?sharp=`, `?cam=`, `?pace=`, `?raid=0`, `?gl=1` (WebGL 1, as an iPad before iPadOS 15), `?chunk=N` (§8.6).
 
-**How it is drawn cheaply** (`design/style-evolution/live/viewer.js`)
-- Everything that stands still is merged into one mesh a material, and plain materials that differ only in colour share one, the colour carried in the vertices. The squad's parts that never move against their parent are merged too. The room builds 1,259 meshes and draws 176.
-- The ink line needs the room drawn a second time in each solid's flat colour. That colour is carried in the vertices, so the second drawing is one cheap material.
-- With the ink line and the shadows on, a frame is three drawings of the room (shadows, the room, the flat colours) and one pass over the screen: about 380 draws and 400,000 triangles in all.
+### 8.6 How it is drawn cheaply (`design/style-evolution/live/viewer.js`)
 
-**How it is made**
-- `node tools/lab3d.js` writes `lab3d/lab3d.js` (the forms' and props' models, the round 2 kit, chamber and styles, the viewer, the room's map; comments out) and `lab3d/index.html` (from `design/style-evolution/live/page.html`). `--export` reads the room from the running game first.
-- `lab3d/three.min.js` is three.js r128 as published (MIT, `lab3d/three.LICENSE.txt`): the bakers' version, which still draws on WebGL 1 (an iPad before iPadOS 15). **Only this page loads it; the game loads no library.**
-- **It is a snapshot** of the models at the build the page names. Nothing remakes it when a model changes and no test fails when it is behind; run the tool to bring it up to date.
+- **Merged.** Everything that stands still is one mesh a material, a room at a time, in squares of 7 tiles so what is out of sight is not drawn (`?chunk=N` tries another size: smaller means fewer triangles and more draws). Plain materials that differ only in colour share one, the colour carried in the vertices. The page builds 7,828 meshes and draws 673.
+- **A plain copy for the second and third drawings.** The ink line needs the room drawn again in each solid's flat colour, and the shadows need its shape. Neither needs materials, so each square of a room has one plain copy for those two drawings: one draw there, not one a material.
+- **Shadows every other frame.**
+- **The marks on the floor, the bars and the numbers** are each one mesh, written again every frame.
+- **A frame at the Crystal Chamber**, ink line and shadows on: 386 draws and 597,000 triangles with the shadows' drawing, 288 and 355,000 on the frames between. In a fight, 393 and 672,000, and 294 and 418,000. (The first test room, one room and no fight: 395 and 397,000 every frame.)
 
-**What it is not**
-- Not the game: no walking, no fight rules, no HUD of the game's.
-- Not a measure of the whole game in 3D: it is one room with eight units. A bigger room, more creatures and the effects would cost more.
-- Its ant, crystal, doors and wall fittings are the pictures' stand-ins (§3.2).
+### 8.7 How it is made
 
-**Readings**
-- **The owner's first, 2026-11-15** (a screenshot from the live site, Chrome on an iPad; 2732 pixels wide, so a 12.9-inch one by the agent's reading): **52 fps**, 19.2 ms a frame, worst 20, with INK LINE on, SHADOWS on and SHARP at 2× (2732 × 1784 pixels, WebGL 2), 395 draws. The owner: "Wow, that's exciting. I'd love to see more".
-  - It is the heaviest setting the page has, on the sharpest screen an iPad has, and it is just under the screen's 60.
-  - Seen in that picture: the glow round the Crystal draws as a ring of dots. To fix.
-- Not read yet: the older iPad; the other switches on this one.
+- `node tools/lab3d.js` writes `lab3d/lab3d.js` (the forms' and props' models; round 2's kit, chamber and styles; `live/floor.js`, `live/walk.js`, `live/viewer.js`; the lab floor's map, `live/lab.json`; comments out) and `lab3d/index.html` (from `live/page.html`). `--export` reads the eight rooms from the running game first (`round2/export.js --lab`).
+- The rooms' floor marks, wall fittings and props are round 2's room builder (`round2/chamber.js` `buildRoom`), now able to build any room. The ten still pictures render byte for byte as before.
+- `lab3d/three.min.js` is three.js r128 as published (MIT, `lab3d/three.LICENSE.txt`): the bakers' version, which still draws on WebGL 1. **Only this page loads it; the game loads no library.**
+- **It is a snapshot** of the map and the models at the build the page names. Nothing remakes it when they change and no test fails when it is behind; run the tool to bring it up to date.
 
-**What to read on each iPad**
-1. The rate with everything on (INK LINE on, SHADOWS on, SHARP 1.5×).
-2. The rate with SHARP at 2×, and at 1×.
+### 8.8 What it is not
+
+- **Not the game, and not a design of the game's fight.** It is a place to see the look move, to feel a pace, and to read a frame rate.
+- **Not the whole facility**: one level, eight rooms. No deck, arena, Nest, sewers or domains.
+- Its ant, crystal, doors, glass and wall fittings are modelled for the pictures after the game's drawings (§3.2); the game draws those in code.
+- The ways it finds (`live/walk.js`, a grid) are its own, not the game's (`js/facility.js`).
+
+### 8.9 Readings
+
+- **The owner's first, 2026-11-15** (a screenshot from the live site, Chrome on an iPad; 2732 pixels wide, so a 12.9-inch one by the agent's reading), of the first test room (one room, a loop, no fight): **52 fps**, 19.2 ms a frame, worst 20, with INK LINE on, SHADOWS on and SHARP at 2× (2732 × 1784 pixels, WebGL 2), 395 draws. The owner: "Wow, that's exciting. I'd love to see more".
+  - It was the heaviest setting the page had, on the sharpest screen an iPad has, and just under the screen's 60.
+  - **Seen in that picture: the glow round the Crystal drew as a ring of coloured dots.** Changed since (not yet seen on an iPad): the picture is now drawn in the colours the screen shows rather than in linear light turned at the end (eight bits of linear light are too few in the dark, where one step shows as thirteen), and the glow's soft disc is made from numbers, not from a canvas gradient (which an iPad's browser dithers).
+- **Not read yet:** this page as it is now, on either iPad; the older iPad at all.
+
+### 8.10 What to read, and what to tell
+
+On each iPad:
+1. The rate at the Crystal Chamber in a fight, everything on (SHARP 1.5×, then 2×).
+2. The rate walking the Hallway and the Warehouse, the heaviest rooms.
 3. The rate with INK LINE off, and with SHADOWS off.
-4. Whether it starts at all on the older iPad, and whether turning the room feels smooth.
+4. Whether the glow round the Crystal is smooth now.
+5. On the older iPad: whether it starts at all, and whether walking feels smooth.
+
+And by eye, which the page cannot measure:
+- **Which PACE reads best**, and whether the marks give enough warning at it.
+- Whether the walls sinking and the camera coming down are right, or too much.

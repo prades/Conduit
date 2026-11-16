@@ -7,7 +7,7 @@ Every picture is the same moment, built in real 3D: ants raid the Crystal in the
 | File | What it does |
 |---|---|
 | `export.js` | Reads the map from the running game (`game.html?dev`): the Crystal Chamber's tiles, walls, doors, wall fittings, floor marks and props (each with the model variant the game picks for it: `js/propsprites.js`), and the whole facility's plan (rooms, walls, doors, connections) for the war table. |
-| `chamber.js` | Builds the room in three.js from that: the floor, the walls (the near ones cut down), the doors, the fittings and the marks; the props from the game's own models (`design/props/models/`); the Crystal's pad and tank from the game's models, with the crystal, the liquid and the bubbles modelled here; the squad from the forms' own models (`design/evolutions/`); and THE ANT, modelled here after `js/bugs3d.js`. Also a unit's portrait for a HUD. |
+| `chamber.js` | Builds a room in three.js from that (`buildRoom`; the pictures' room is the Crystal Chamber, `buildChamber`; the live test page builds the lab's other rooms with it too): the floor, the walls (the near ones cut down), the doors, the fittings and the marks; the props from the game's own models (`design/props/models/`); the Crystal's pad and tank from the game's models, with the crystal, the liquid and the bubbles modelled here; the squad from the forms' own models (`design/evolutions/`); and THE ANT, modelled here after `js/bugs3d.js`. Also a unit's portrait for a HUD. |
 | `kit.js` | What the looks share: cameras, lights, the post-processing passes (the ink line by solid, big pixels, screen tone, paper), the mirror floor, the changes to materials (cel shading, facets, a hologram, a pixel sprite), floor marks, and the 2D drawing for the HUDs. |
 | `styles.js` | The moment (`RAID`), the caption strip, and the ten directions: `lab`, `diorama`, `noir`, `comic`, `pixel`, `third`, `cartridge`, `facet`, `paper`, `table`. Also `base`, the room plain, to check it against the game. |
 | `render.js` | Renders them in headless Chromium (software WebGL): the picture at 1600 × 1120 over a 132 px caption strip. |
@@ -16,6 +16,7 @@ Run (with `<three>`, an unpacked three@0.128.0 npm package, as `design/evolution
 
 ```
 node design/style-evolution/round2/export.js <dir>/chamber.json
+node design/style-evolution/round2/export.js <file> --lab               and the lab's eight ground-floor rooms, for the live test page (tools/lab3d.js --export)
 node design/style-evolution/round2/render.js <three> <dir>                 all ten, <dir>/<id>.png
 node design/style-evolution/round2/render.js <three> <dir> lab noir base   only those
 ```

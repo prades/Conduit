@@ -25136,24 +25136,28 @@ function lightShaft(at, r0, r1, h, hex, op) {
 ;
 /* design/style-evolution/round2/chamber.js */
 const UH = 73.48469228349533, WALL_H = map.wallH / UH, WALL_T = 0.8, CUT_H = 0.26, DOOR_H = 1.32;
-const CH = map.chamber, CRYSTAL = CH.crystal, TANK = map.tank || { r: 0.56, z0: 26, z1: 192, fill: 0.84, gemZ: 104 };
-const cellKey = (x, y) => x + ',' + y, CELLS = new Set(CH.cells.map(c => cellKey(c[0], c[1]))), inRoom = (x, y) => CELLS.has(cellKey(Math.round(x), Math.round(y)));
+const TANK = map.tank || { r: 0.56, z0: 26, z1: 192, fill: 0.84, gemZ: 104 }, cellKey = (x, y) => x + ',' + y;
 const PAL = Object.assign({ ink: '#16303a', cap: '#f1f8fa', wallLit: '#c6dae1', wallDark: '#a3c0ca', wallBase: '#3d93a0', floorA: '#d8e8ec', floorB: '#b4cdd5', cyan: '#31e8ff', blue: '#3a7bff', violet: '#9a5cff', amber: '#f2b13a', teal: '#4f9aa0' }, map.pal || {});
 const ANT_COLOUR = map.antColour || '#aa55ff';
-const WALLS = CH.walls.map(w => {
-    const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
-    let nx = uy, ny = -ux;
-    const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2;
-    if (inRoom(mx + nx * 0.5, my + ny * 0.5)) {
+function roomOf(rec) {
+    const CELLS = new Set(rec.cells.map(c => cellKey(c[0], c[1]))), inRoom = (x, y) => CELLS.has(cellKey(Math.round(x), Math.round(y)));
+    const WALLS = rec.walls.map(w => {
+        const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+        let nx = uy, ny = -ux;
+        const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2;
+        if (inRoom(mx + nx * 0.5, my + ny * 0.5)) {
+            nx = -nx;
+            ny = -ny;
+        }
+        return { a: w.a, b: w.b, L, u: [ux, uy], n: [nx, ny], mid: [mx, my] };
+    });
+    const DOORS = rec.doors.map(d => { const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy); let nx = dy / L, ny = -dx / L; if (inRoom(mx + nx * 0.5, my + ny * 0.5)) {
         nx = -nx;
         ny = -ny;
-    }
-    return { a: w.a, b: w.b, L, u: [ux, uy], n: [nx, ny], mid: [mx, my] };
-});
-const DOORS = CH.doors.map(d => { const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy); let nx = dy / L, ny = -dx / L; if (inRoom(mx + nx * 0.5, my + ny * 0.5)) {
-    nx = -nx;
-    ny = -ny;
-} return { id: d.id, a: d.a, b: d.b, L, u: [dx / L, dy / L], n: [nx, ny], mid: [mx, my] }; });
+    } return { id: d.id, a: d.a, b: d.b, L, u: [dx / L, dy / L], n: [nx, ny], mid: [mx, my] }; });
+    return { CH: rec, CRYSTAL: rec.crystal, CELLS, inRoom, WALLS, DOORS };
+}
+const ROOM0 = roomOf(map.chamber), CH = ROOM0.CH, CRYSTAL = ROOM0.CRYSTAL, CELLS = ROOM0.CELLS, inRoom = ROOM0.inRoom, WALLS = ROOM0.WALLS, DOORS = ROOM0.DOORS;
 function wallTexture(o) {
     o = Object.assign({ base: PAL.wallBase, body: '#c3d8df', join: 'rgba(22,48,58,0.16)', groove: '#1d5560', line: 'rgba(22,48,58,0.55)', baseShade: 'rgba(0,0,0,0.12)' }, o);
     return canvasTex(128, 212, (g, w, h) => {
@@ -25240,101 +25244,104 @@ function setShadows(root, cast, recv) { root.traverse(o => { if (o.isMesh) {
     o.castShadow = cast !== false;
     o.receiveShadow = recv !== false;
 } }); return root; }
-function buildChamber(P, opt) {
+function buildChamber(P, opt) { return buildRoom(ROOM0, P, opt); }
+function buildRoom(R, P, opt) {
     opt = opt || {};
-    const g = new T.Group(), parts = { props: {} };
+    const CH = R.CH, CRYSTAL = R.CRYSTAL, inRoom = R.inRoom, WALLS = R.WALLS, DOORS = R.DOORS, shell = opt.shell !== false, g = new T.Group(), parts = { props: {} };
     const cutN = n => n[0] * P.cutDir[0] + n[1] * P.cutDir[1] > 0.01, same = (p, q) => Math.abs(p[0] - q[0]) < 0.01 && Math.abs(p[1] - q[1]) < 0.01;
-    const cut = (n, w) => cutN(n) || (!!w && DOORS.some(d => cutN(d.n) && (same(d.a, w.a) || same(d.a, w.b) || same(d.b, w.a) || same(d.b, w.b))));
-    if (P.ground) {
-        const gr = new T.Mesh(new T.PlaneGeometry(120, 120), P.ground);
-        gr.rotation.x = -Math.PI / 2;
-        gr.position.set(13, -0.13, 18.5);
-        gr.receiveShadow = true;
-        g.add(gr);
-        parts.ground = gr;
-    }
-    const fl = new T.InstancedMesh(new T.BoxGeometry(1, 0.12, 1), [P.floorSide, P.floorSide, P.floor, P.floorSide, P.floorSide, P.floorSide], CH.cells.length), m4 = new T.Matrix4(), col = new T.Color();
-    CH.cells.forEach((c, i) => { m4.makeTranslation(c[0], -0.06, c[1]); fl.setMatrixAt(i, m4); const v = ((c[0] * 7 + c[1] * 13) % 5) / 5; col.setRGB(1 - v * 0.035, 1 - v * 0.03, 1 - v * 0.025); if (P.floorTint)
-        P.floorTint(c, col, v); fl.setColorAt(i, col); });
-    fl.receiveShadow = true;
-    g.add(fl);
-    parts.floor = fl;
-    if (P.outside)
-        for (const d of DOORS) {
-            const ap = new T.Mesh(new T.BoxGeometry(d.u[0] ? d.L + 1.6 : 2.6, 0.12, d.u[1] ? d.L + 1.6 : 2.6), P.outside);
-            ap.position.set(d.mid[0] + d.n[0] * 1.3, -0.065, d.mid[1] + d.n[1] * 1.3);
-            ap.receiveShadow = true;
-            g.add(ap);
+    const cut = (n, w) => cutN(n) || (shell && !!w && DOORS.some(d => cutN(d.n) && (same(d.a, w.a) || same(d.a, w.b) || same(d.b, w.a) || same(d.b, w.b))));
+    if (shell) {
+        if (P.ground) {
+            const gr = new T.Mesh(new T.PlaneGeometry(120, 120), P.ground);
+            gr.rotation.x = -Math.PI / 2;
+            gr.position.set(13, -0.13, 18.5);
+            gr.receiveShadow = true;
+            g.add(gr);
+            parts.ground = gr;
         }
-    const full = [], low = [];
-    const convexEnd = (w, E, dir) => !inRoom(E[0] + w.u[0] * dir * 0.5 - w.n[0] * 0.5, E[1] + w.u[1] * dir * 0.5 - w.n[1] * 0.5);
-    for (const w of WALLS) {
-        const list = cut(w.n, w) ? low : full, n = Math.round(w.L);
-        for (let i = 0; i < n; i++) {
-            const t = (i + 0.5) / n;
-            list.push({ x: w.a[0] + (w.b[0] - w.a[0]) * t + w.n[0] * WALL_T / 2, z: w.a[1] + (w.b[1] - w.a[1]) * t + w.n[1] * WALL_T / 2, rot: w.u[0] ? 0 : Math.PI / 2, len: w.L / n });
+        const fl = new T.InstancedMesh(new T.BoxGeometry(1, 0.12, 1), [P.floorSide, P.floorSide, P.floor, P.floorSide, P.floorSide, P.floorSide], CH.cells.length), m4 = new T.Matrix4(), col = new T.Color();
+        CH.cells.forEach((c, i) => { m4.makeTranslation(c[0], -0.06, c[1]); fl.setMatrixAt(i, m4); const v = ((c[0] * 7 + c[1] * 13) % 5) / 5; col.setRGB(1 - v * 0.035, 1 - v * 0.03, 1 - v * 0.025); if (P.floorTint)
+            P.floorTint(c, col, v); fl.setColorAt(i, col); });
+        fl.receiveShadow = true;
+        g.add(fl);
+        parts.floor = fl;
+        if (P.outside)
+            for (const d of DOORS) {
+                const ap = new T.Mesh(new T.BoxGeometry(d.u[0] ? d.L + 1.6 : 2.6, 0.12, d.u[1] ? d.L + 1.6 : 2.6), P.outside);
+                ap.position.set(d.mid[0] + d.n[0] * 1.3, -0.065, d.mid[1] + d.n[1] * 1.3);
+                ap.receiveShadow = true;
+                g.add(ap);
+            }
+        const full = [], low = [];
+        const convexEnd = (w, E, dir) => !inRoom(E[0] + w.u[0] * dir * 0.5 - w.n[0] * 0.5, E[1] + w.u[1] * dir * 0.5 - w.n[1] * 0.5);
+        for (const w of WALLS) {
+            const list = cut(w.n, w) ? low : full, n = Math.round(w.L);
+            for (let i = 0; i < n; i++) {
+                const t = (i + 0.5) / n;
+                list.push({ x: w.a[0] + (w.b[0] - w.a[0]) * t + w.n[0] * WALL_T / 2, z: w.a[1] + (w.b[1] - w.a[1]) * t + w.n[1] * WALL_T / 2, rot: w.u[0] ? 0 : Math.PI / 2, len: w.L / n });
+            }
+            for (const [E, dir] of [[w.a, -1], [w.b, 1]])
+                if (convexEnd(w, E, dir))
+                    list.push({ x: E[0] + w.u[0] * dir * WALL_T / 2 + w.n[0] * WALL_T / 2, z: E[1] + w.u[1] * dir * WALL_T / 2 + w.n[1] * WALL_T / 2, rot: w.u[0] ? 0 : Math.PI / 2, len: WALL_T, corner: true });
         }
-        for (const [E, dir] of [[w.a, -1], [w.b, 1]])
-            if (convexEnd(w, E, dir))
-                list.push({ x: E[0] + w.u[0] * dir * WALL_T / 2 + w.n[0] * WALL_T / 2, z: E[1] + w.u[1] * dir * WALL_T / 2 + w.n[1] * WALL_T / 2, rot: w.u[0] ? 0 : Math.PI / 2, len: WALL_T, corner: true });
-    }
-    const lay = (list, h, mats, y0) => {
-        if (!list.length)
-            return null;
-        const im = new T.InstancedMesh(new T.BoxGeometry(1, h, WALL_T), mats, list.length), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3();
-        list.forEach((e, i) => { q.setFromAxisAngle(new T.Vector3(0, 1, 0), e.rot); s.set(e.len, 1, 1); p.set(e.x, (y0 || 0) + h / 2, e.z); m4.compose(p, q, s); im.setMatrixAt(i, m4); });
-        im.castShadow = true;
-        im.receiveShadow = true;
-        g.add(im);
-        return im;
-    };
-    parts.walls = lay(full, opt.wallH || WALL_H, [P.wallFace, P.wallFace, P.wallCap, P.wallCap, P.wallFace, P.wallFace]);
-    parts.cutWalls = lay(low, CUT_H, [P.cutFace, P.cutFace, P.cutTop, P.cutTop, P.cutFace, P.cutFace]);
-    if (opt.upper && P.wallUpper) {
-        parts.upper = lay(full, opt.upper, [P.wallUpper, P.wallUpper, P.wallCap, P.wallUpper, P.wallUpper, P.wallUpper], WALL_H);
-        if (P.lightBar)
+        const lay = (list, h, mats, y0) => {
+            if (!list.length)
+                return null;
+            const im = new T.InstancedMesh(new T.BoxGeometry(1, h, WALL_T), mats, list.length), q = new T.Quaternion(), s = new T.Vector3(), p = new T.Vector3();
+            list.forEach((e, i) => { q.setFromAxisAngle(new T.Vector3(0, 1, 0), e.rot); s.set(e.len, 1, 1); p.set(e.x, (y0 || 0) + h / 2, e.z); m4.compose(p, q, s); im.setMatrixAt(i, m4); });
+            im.castShadow = true;
+            im.receiveShadow = true;
+            g.add(im);
+            return im;
+        };
+        parts.walls = lay(full, opt.wallH || WALL_H, [P.wallFace, P.wallFace, P.wallCap, P.wallCap, P.wallFace, P.wallFace]);
+        parts.cutWalls = lay(low, CUT_H, [P.cutFace, P.cutFace, P.cutTop, P.cutTop, P.cutFace, P.cutFace]);
+        if (opt.upper && P.wallUpper) {
+            parts.upper = lay(full, opt.upper, [P.wallUpper, P.wallUpper, P.wallCap, P.wallUpper, P.wallUpper, P.wallUpper], WALL_H);
+            if (P.lightBar)
+                for (const w of WALLS)
+                    if (!cut(w.n, w)) {
+                        const s2 = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L - 0.4 : 0.05, 0.06, w.u[1] ? w.L - 0.4 : 0.05), P.lightBar);
+                        s2.position.set(w.mid[0] - w.n[0] * 0.03, WALL_H + opt.upper - 0.5, w.mid[1] - w.n[1] * 0.03);
+                        s2.userData.noInk = true;
+                        g.add(s2);
+                    }
+        }
+        for (const w of [parts.walls, parts.cutWalls])
+            if (w)
+                w.userData.inkIds = [0, 0, 1, 1, 0, 0];
+        if (P.seam)
             for (const w of WALLS)
                 if (!cut(w.n, w)) {
-                    const s2 = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L - 0.4 : 0.05, 0.06, w.u[1] ? w.L - 0.4 : 0.05), P.lightBar);
-                    s2.position.set(w.mid[0] - w.n[0] * 0.03, WALL_H + opt.upper - 0.5, w.mid[1] - w.n[1] * 0.03);
-                    s2.userData.noInk = true;
-                    g.add(s2);
+                    const s = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : 0.03, 0.028, w.u[1] ? w.L : 0.03), P.seam);
+                    s.position.set(w.mid[0] - w.n[0] * 0.012, WALL_H * 0.2 + 0.012, w.mid[1] - w.n[1] * 0.012);
+                    s.userData.noInk = true;
+                    g.add(s);
                 }
-    }
-    for (const w of [parts.walls, parts.cutWalls])
-        if (w)
-            w.userData.inkIds = [0, 0, 1, 1, 0, 0];
-    if (P.seam)
-        for (const w of WALLS)
-            if (!cut(w.n, w)) {
-                const s = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : 0.03, 0.028, w.u[1] ? w.L : 0.03), P.seam);
-                s.position.set(w.mid[0] - w.n[0] * 0.012, WALL_H * 0.2 + 0.012, w.mid[1] - w.n[1] * 0.012);
-                s.userData.noInk = true;
-                g.add(s);
+        parts.doors = [];
+        for (const d of DOORS) {
+            const dg = new T.Group(), low2 = cutN(d.n), H = low2 ? CUT_H : WALL_H, ph = low2 ? CUT_H * 0.9 : DOOR_H, along = d.u[0] ? 'x' : 'z', depth = WALL_T * 0.55;
+            const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(along === 'x' ? len : dep, h, along === 'x' ? dep : len), mat), put = (m, t, y, off) => { m.position.set(d.mid[0] + d.u[0] * t + d.n[0] * (off || 0), y, d.mid[1] + d.u[1] * t + d.n[1] * (off || 0)); dg.add(m); return m; };
+            const fh = low2 ? CUT_H + 0.06 : WALL_H;
+            for (const s of [-1, 1]) {
+                put(box(0.15, fh, depth, P.frame), s * (d.L / 2 - 0.085), fh / 2, depth / 2 - 0.06);
+                put(box(d.L * 0.2, ph, 0.09, P.steel), s * (d.L / 2 - 0.16 - d.L * 0.1), ph / 2, depth / 2 - 0.06);
+                put(box(0.05, ph, 0.1, P.hazard), s * (d.L / 2 - 0.16 - d.L * 0.2 - 0.025), ph / 2, depth / 2 - 0.06);
             }
-    parts.doors = [];
-    for (const d of DOORS) {
-        const dg = new T.Group(), low2 = cutN(d.n), H = low2 ? CUT_H : WALL_H, ph = low2 ? CUT_H * 0.9 : DOOR_H, along = d.u[0] ? 'x' : 'z', depth = WALL_T * 0.55;
-        const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(along === 'x' ? len : dep, h, along === 'x' ? dep : len), mat), put = (m, t, y, off) => { m.position.set(d.mid[0] + d.u[0] * t + d.n[0] * (off || 0), y, d.mid[1] + d.u[1] * t + d.n[1] * (off || 0)); dg.add(m); return m; };
-        const fh = low2 ? CUT_H + 0.06 : WALL_H;
-        for (const s of [-1, 1]) {
-            put(box(0.15, fh, depth, P.frame), s * (d.L / 2 - 0.085), fh / 2, depth / 2 - 0.06);
-            put(box(d.L * 0.2, ph, 0.09, P.steel), s * (d.L / 2 - 0.16 - d.L * 0.1), ph / 2, depth / 2 - 0.06);
-            put(box(0.05, ph, 0.1, P.hazard), s * (d.L / 2 - 0.16 - d.L * 0.2 - 0.025), ph / 2, depth / 2 - 0.06);
+            if (!low2) {
+                put(box(d.L - 0.02, WALL_H - DOOR_H, depth, P.frame), 0, DOOR_H + (WALL_H - DOOR_H) / 2, depth / 2 - 0.06);
+                const lamp = put(box(0.5, 0.07, 0.04, P.lampOpen), 0, DOOR_H + 0.14, -0.08);
+                lamp.userData.noInk = true;
+            }
+            const th = put(box(d.L, 0.012, 0.5, P.hazard), 0, 0.008, 0.1);
+            th.receiveShadow = true;
+            const line = put(box(d.L, 0.014, 0.05, P.lampOpen), 0, 0.012, -0.2);
+            line.userData.noInk = true;
+            setShadows(dg);
+            dg.userData.inkGroup = true;
+            g.add(dg);
+            parts.doors.push(dg);
         }
-        if (!low2) {
-            put(box(d.L - 0.02, WALL_H - DOOR_H, depth, P.frame), 0, DOOR_H + (WALL_H - DOOR_H) / 2, depth / 2 - 0.06);
-            const lamp = put(box(0.5, 0.07, 0.04, P.lampOpen), 0, DOOR_H + 0.14, -0.08);
-            lamp.userData.noInk = true;
-        }
-        const th = put(box(d.L, 0.012, 0.5, P.hazard), 0, 0.008, 0.1);
-        th.receiveShadow = true;
-        const line = put(box(d.L, 0.014, 0.05, P.lampOpen), 0, 0.012, -0.2);
-        line.userData.noInk = true;
-        setShadows(dg);
-        dg.userData.inkGroup = true;
-        g.add(dg);
-        parts.doors.push(dg);
     }
     const marks = new T.Group();
     marks.userData.inkGroup = true;
@@ -25403,13 +25410,24 @@ function buildChamber(P, opt) {
                 q.castShadow = true;
                 marks.add(q);
             }
+        else if (d.kind === 'rug' && P.rug !== null) {
+            const r = d.rect, k = 0.08;
+            decalPoly(marks, [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]], d.colour || '#1d2b3f', 0.6, 0.011);
+            decalLine(marks, [[r[0] + k, r[1] + k], [r[2] - k, r[1] + k], [r[2] - k, r[3] - k], [r[0] + k, r[3] - k], [r[0] + k, r[1] + k]], 0.06, d.border || '#ffd34d', 0.8, 0.0125);
+        }
+        else if (d.kind === 'puddle' && P.puddle) {
+            decalDisc(marks, d.at, d.radius, d.colour || P.puddle[0], P.puddle[1]);
+            decalDisc(marks, [d.at[0] + d.radius * 0.45, d.at[1] - d.radius * 0.2], d.radius * 0.5, d.colour || P.puddle[0], P.puddle[1]);
+        }
     }
     const fit = new T.Group();
     g.add(fit);
     parts.fittings = fit;
-    const wallOf = (a, b) => WALLS.find(w => Math.abs((a[0] + b[0]) / 2 * w.n[0] + (a[1] + b[1]) / 2 * w.n[1] - (w.mid[0] * w.n[0] + w.mid[1] * w.n[1])) < 0.01 && Math.abs(w.u[0] * (b[0] - a[0]) + w.u[1] * (b[1] - a[1])) > 0.5);
-    const onWall = (w, t, y, off, m) => { m.userData.inkGroup = true; m.position.set(w.a[0] + w.u[0] * t - w.n[0] * off, y, w.a[1] + w.u[1] * t - w.n[1] * off); m.rotation.y = Math.atan2(-w.n[0], -w.n[1]); fit.add(m); return m; };
     const tOf = (w, p) => (p[0] - w.a[0]) * w.u[0] + (p[1] - w.a[1]) * w.u[1];
+    const onLine = (w, a, b) => Math.abs((a[0] + b[0]) / 2 * w.n[0] + (a[1] + b[1]) / 2 * w.n[1] - (w.mid[0] * w.n[0] + w.mid[1] * w.n[1])) < 0.01 && Math.abs(w.u[0] * (b[0] - a[0]) + w.u[1] * (b[1] - a[1])) > 0.5;
+    const wallOf = (a, b) => (shell ? null : WALLS.find(w => { if (!onLine(w, a, b))
+        return false; const t = tOf(w, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); return t > -0.01 && t < w.L + 0.01; })) || WALLS.find(w => onLine(w, a, b));
+    const onWall = (w, t, y, off, m) => { m.userData.inkGroup = true; m.userData.wall = w; m.position.set(w.a[0] + w.u[0] * t - w.n[0] * off, y, w.a[1] + w.u[1] * t - w.n[1] * off); m.rotation.y = Math.atan2(-w.n[0], -w.n[1]); fit.add(m); return m; };
     for (const d of CH.decor) {
         if (!d.a || !d.b)
             continue;
@@ -25486,6 +25504,8 @@ function buildChamber(P, opt) {
             gp.add(at3(new T.Mesh(new T.BoxGeometry(0.04, 0.04, 0.025), P.graphite), 0, -0.085, 0.004));
             onWall(w, tm, 1.16, 0.015, setShadows(gp));
         }
+        else if (P.more)
+            P.more(d, w, { t0, t1, tm, len, onWall, at3 });
     }
     for (const f of CH.fixtures)
         if (f.type === 'power_pack_area' && P.graphite) {
@@ -26772,9 +26792,591 @@ style('base', {
     camera: (W, H) => ortho(W, H, 15.5, [13.2, 0.4, 18.8], 45, 30),
 });
 ;
+/* design/style-evolution/live/floor.js */
+const hexMix = (a, b, t) => '#' + new T.Color(a).lerp(new T.Color(b), t).getHexString();
+const seedOf = s => { let h = 7; for (let i = 0; i < s.length; i++)
+    h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; };
+function quads() { return { pos: [], nor: [], uv: [], col: [] }; }
+function putQuad(q, a, b, c, d, n, col, uv) { const U = uv || [[0, 0], [1, 0], [1, 1], [0, 1]], P = [a, b, c, d]; for (const i of [0, 1, 2, 0, 2, 3]) {
+    q.pos.push(P[i][0], P[i][1], P[i][2]);
+    q.nor.push(n[0], n[1], n[2]);
+    q.uv.push(U[i][0], U[i][1]);
+    q.col.push(col[0], col[1], col[2]);
+} }
+function sideQuad(q, x, y, dx, dy, y0, y1, col, v0, v1, half) {
+    const h = half === undefined ? 0.5 : half, cx = x + dx * h, cz = y + dy * h, rx = dy / 2, rz = -dx / 2;
+    putQuad(q, [cx - rx, y0, cz - rz], [cx + rx, y0, cz + rz], [cx + rx, y1, cz + rz], [cx - rx, y1, cz - rz], [dx, 0, dy], col, [[0, v0], [1, v0], [1, v1], [0, v1]]);
+}
+function topQuad(q, x, y, h, col, sx, sz) { sx = sx === undefined ? 0.5 : sx; sz = sz === undefined ? sx : sz; putQuad(q, [x - sx, h, y + sz], [x + sx, h, y + sz], [x + sx, h, y - sz], [x - sx, h, y - sz], [0, 1, 0], col); }
+function quadMesh(parts) {
+    const pos = [], nor = [], uv = [], col = [], geo = new T.BufferGeometry(), mats = [];
+    let n = 0;
+    parts.forEach((p, i) => { for (const v of p.q.pos)
+        pos.push(v); for (const v of p.q.nor)
+        nor.push(v); for (const v of p.q.uv)
+        uv.push(v); for (const v of p.q.col)
+        col.push(v); geo.addGroup(n, p.q.pos.length / 3, i); n += p.q.pos.length / 3; mats.push(p.mat); });
+    geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new T.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2));
+    geo.setAttribute('color', new T.Float32BufferAttribute(col, 3));
+    return new T.Mesh(geo, mats);
+}
+function plankTexture(fa, fb) {
+    return canvasTex(256, 256, (g, w, h) => {
+        const rows = 4, ph = h / rows;
+        for (let r = 0; r < rows; r++) {
+            const off = (r * 97) % w;
+            for (let k = 0; k < 2; k++) {
+                const x0 = (off + k * w / 2) % w, t = ((r * 5 + k * 3) % 4) / 3;
+                g.fillStyle = hexMix(fa, fb, 0.25 + t * 0.6);
+                g.fillRect(x0, r * ph, w / 2, ph);
+                if (x0 + w / 2 > w)
+                    g.fillRect(x0 - w, r * ph, w / 2, ph);
+                g.fillStyle = 'rgba(70,40,30,0.3)';
+                g.fillRect(x0, r * ph, 2, ph);
+            }
+            g.fillStyle = 'rgba(70,40,30,0.32)';
+            g.fillRect(0, r * ph, w, 2);
+            g.fillStyle = 'rgba(255,255,255,0.22)';
+            g.fillRect(0, r * ph + 2, w, 1.5);
+        }
+    }, { repeat: true });
+}
+function grateTexture(fa, fb) {
+    return canvasTex(128, 128, (g, w, h) => {
+        g.fillStyle = hexMix(fa, fb, 0.5);
+        g.fillRect(0, 0, w, h);
+        g.fillStyle = 'rgba(22,48,58,0.55)';
+        for (let i = 0; i < 4; i++)
+            for (let j = 0; j < 4; j++) {
+                g.beginPath();
+                const x = 10 + i * 30, y = 8 + j * 30;
+                g.moveTo(x + 4, y);
+                g.lineTo(x + 14, y);
+                g.arcTo(x + 18, y, x + 18, y + 4, 4);
+                g.lineTo(x + 18, y + 12);
+                g.arcTo(x + 18, y + 16, x + 14, y + 16, 4);
+                g.lineTo(x + 4, y + 16);
+                g.arcTo(x, y + 16, x, y + 12, 4);
+                g.lineTo(x, y + 4);
+                g.arcTo(x, y, x + 4, y, 4);
+                g.fill();
+            }
+        g.strokeStyle = 'rgba(60,110,125,0.45)';
+        g.lineWidth = 3;
+        g.strokeRect(0, 0, w, h);
+    });
+}
+function moreFittings(P, acc) {
+    const box = (w, h, d, mat) => new T.Mesh(new T.BoxGeometry(w, h, d), mat), glow = (w, h, hex, k) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), glowMat(hex, k === undefined ? 1 : k)); m.userData.noInk = true; return m; };
+    const paint = hex => std(hex, { roughness: 0.6 });
+    return function (d, w, h) {
+        const gp = new T.Group(), seed = seedOf(String(d.id)), add = (m, x, y, z) => gp.add(h.at3(m, x, y, z || 0));
+        if (d.kind === 'poster') {
+            const pal = [[PAL.teal, PAL.cap], [PAL.violet, PAL.cap], [PAL.blue, '#ffffff'], ['#43e0a8', PAL.ink], [PAL.amber, PAL.ink]][seed % 5];
+            add(box(0.76, 0.52, 0.03, P.frame), 0, 0);
+            add(box(0.64, 0.4, 0.034, paint(pal[0])), 0, 0);
+            add(box(0.48, 0.06, 0.038, paint(pal[1])), 0, 0.11);
+            add(box(0.34, 0.035, 0.038, paint(pal[1])), -0.07, 0.03);
+            h.onWall(w, h.tm, 0.98, 0.016, setShadows(gp));
+        }
+        else if (d.kind === 'board') {
+            const L = h.len * 0.88;
+            add(box(L, 0.46, 0.03, P.frame), 0, 0);
+            [PAL.cyan, PAL.violet, PAL.amber, '#43e0a8'].forEach((c, k) => add(box(L * 0.12, 0.14, 0.036, paint(c)), -L / 2 + L * (0.12 + ((seed >>> k) % 6) * 0.13), -0.12 + ((seed >>> (k + 3)) % 3) * 0.12));
+            h.onWall(w, h.tm, 1.0, 0.016, setShadows(gp));
+        }
+        else if (d.kind === 'exit_sign') {
+            add(box(0.6, 0.15, 0.05, P.graphite), 0, 0);
+            add(glow(0.46, 0.07, '#43e0a8', 0.95), 0, 0, 0.027);
+            h.onWall(w, h.tm, WALL_H - 0.12, 0.026, setShadows(gp));
+        }
+        else if (d.kind === 'graffiti') {
+            const m = paint(acc);
+            for (let k = 0; k < 5; k++) {
+                const s = (seed >>> k) % 3, b = box(0.055, 0.3 - s * 0.05, 0.012, m);
+                b.rotation.z = -0.3;
+                add(b, (-0.36 + k * 0.18) * h.len / 2, s * 0.03);
+            }
+            h.onWall(w, h.tm, 0.72, 0.008, gp);
+        }
+        else if (d.kind === 'cable_run') {
+            [PAL.cyan, PAL.violet, PAL.blue].forEach((c, k) => { const x = (0.15 + k * 0.28 - 0.5) * h.len, y1 = 0.45 + k * 0.12, m = paint(c), pts = []; for (let i = 0; i <= 6; i++) {
+                const t = i / 6;
+                pts.push([x + t * t * 0.14 * h.len, WALL_H - 0.04 - (WALL_H - 0.04 - y1) * (1 - (1 - t) * (1 - t)), 0.02]);
+            } for (let i = 0; i + 1 < pts.length; i++)
+                gp.add(rodBetween(pts[i], pts[i + 1], 0.022, m, 6)); });
+            h.onWall(w, h.tm, 0, 0.012, setShadows(gp));
+        }
+        else if (d.kind === 'monitor_bank') {
+            const cols = Math.max(1, Math.round(h.len / 0.95)), rows = 3, cw = h.len / cols, rh = 0.4, feed = ['#0c3140', '#12324a', '#183a30', '#2a3340', '#0e2a38'];
+            add(box(h.len - 0.02, rows * rh + 0.08, 0.05, P.tealDk), 0, 0);
+            for (let r = 0; r < rows; r++)
+                for (let c = 0; c < cols; c++) {
+                    const k = (seed + r * 5 + c * 3) % 7, x = -h.len / 2 + (c + 0.5) * cw, y = (r - 1) * rh;
+                    add(glow(cw * 0.86, rh - 0.06, feed[k % 5], 1.6), x, y, 0.027);
+                    if (k < 5)
+                        add(glow(cw * 0.5, 0.05, k % 2 ? '#6adfff' : '#3a7bff', 0.9), x - cw * 0.1, y + 0.08 - (k % 3) * 0.07, 0.029);
+                    if (k === 2)
+                        add(glow(cw * 0.16, 0.16, '#f2b13a', 0.9), x + cw * 0.26, y - 0.06, 0.029);
+                }
+            h.onWall(w, h.tm, 1.0, 0.026, setShadows(gp));
+        }
+        else if (d.kind === 'portal_door') {
+            const L = h.len, col = d.colour || PAL.amber;
+            add(box(L - 0.04, 1.36, 0.08, P.tealDk), 0, 0.68);
+            const dark = new T.Mesh(new T.PlaneGeometry(L * 0.82, 1.14), glowMat('#04070d', 1));
+            dark.userData.noInk = true;
+            add(dark, 0, 0.6, 0.042);
+            for (const s of [-1, 1])
+                add(glow(0.035, 1.14, col, 0.95), s * L * 0.41, 0.6, 0.044);
+            add(glow(L * 0.82, 0.035, col, 0.95), 0, 1.17, 0.044);
+            add(glow(L * 0.5, 0.07, col, 0.8), 0, 1.27, 0.044);
+            h.onWall(w, h.tm, 0, 0.041, setShadows(gp));
+        }
+    };
+}
+function buildLabFloor(lab, P0) {
+    const g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], B0 = -0.12, vD = DOOR_H / WALL_H;
+    g.add(rest);
+    for (const rec of recs) {
+        rooms[rec.id] = { id: rec.id, rec, R: roomOf(rec), g: new T.Group(), label: rec.label || rec.id, style: rec.style || { acc: PAL.cyan, wain: PAL.wallBase, fa: PAL.floorA, fb: PAL.floorB } };
+        g.add(rooms[rec.id].g);
+        for (const c of rec.cells)
+            roomAt.set(K(c[0], c[1]), rec.id);
+    }
+    const at = (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null;
+    const band = new Map(), thin = [], thinSeen = new Set();
+    for (const rec of recs) {
+        const R = rooms[rec.id].R;
+        rec.walls.forEach((w0, wi) => {
+            if (w0.kind === 'open')
+                return;
+            const w = R.WALLS[wi];
+            for (let i = 0, n = Math.round(w.L); i < n; i++) {
+                const m = [w.a[0] + w.u[0] * (i + 0.5), w.a[1] + w.u[1] * (i + 0.5)], bx = Math.round(m[0] + w.n[0] * 0.5), by = Math.round(m[1] + w.n[1] * 0.5);
+                if (roomAt.has(K(bx, by))) {
+                    const k = m[0] + ',' + m[1];
+                    if (!thinSeen.has(k)) {
+                        thinSeen.add(k);
+                        thin.push({ m, u: [Math.abs(w.u[0]), Math.abs(w.u[1])], glass: !!w0.window && !w0.divider });
+                    }
+                }
+                else if (!band.has(K(bx, by)))
+                    band.set(K(bx, by), { x: bx, y: by, own: rec.id });
+            }
+        });
+    }
+    for (const rec of recs)
+        for (const c of rec.cells)
+            for (const sx of [-1, 1])
+                for (const sy of [-1, 1]) {
+                    const k = K(c[0] + sx, c[1] + sy);
+                    if (band.has(k) || roomAt.has(k))
+                        continue;
+                    if (band.has(K(c[0] + sx, c[1])) && band.has(K(c[0], c[1] + sy)))
+                        band.set(k, { x: c[0] + sx, y: c[1] + sy, own: rec.id });
+                }
+    const doors = [], aprons = new Map();
+    for (const o0 of lab.openings) {
+        const flip = (o0.b[0] - o0.a[0]) + (o0.b[1] - o0.a[1]) < 0, o = { id: o0.id, door: o0.door, a: flip ? o0.b : o0.a, b: flip ? o0.a : o0.b };
+        const dx = o.b[0] - o.a[0], dy = o.b[1] - o.a[1], L = Math.round(Math.hypot(dx, dy)), u = [dx / L, dy / L], nr = [u[1], -u[0]], m = [(o.a[0] + o.b[0]) / 2, (o.a[1] + o.b[1]) / 2];
+        const rA = at(m[0] + nr[0] * 0.5 - u[0] * 0.01, m[1] + nr[1] * 0.5 - u[1] * 0.01), rB = at(m[0] - nr[0] * 0.5 - u[0] * 0.01, m[1] - nr[1] * 0.5 - u[1] * 0.01);
+        if ((!rA && !rB) || (rA && rB && !o.door))
+            continue;
+        const end = (s, k, e) => { const p = e < 0 ? o.a : o.b; return K(Math.round(p[0] + u[0] * e * 0.5 + nr[0] * s * (k - 0.5)), Math.round(p[1] + u[1] * e * 0.5 + nr[1] * s * (k - 0.5))); };
+        const depth = s => { let k = 0; while (k < 8 && band.has(end(s, k + 1, -1)) && band.has(end(s, k + 1, 1)))
+            k++; return k; }, dA = depth(1), dB = depth(-1), side = dA && (!dB || dA <= dB) ? 1 : dB ? -1 : 0;
+        const out = !rA ? 1 : !rB ? -1 : 0, kind = !o.door ? 'mouth' : !out ? 'open' : o.id === 'door_arena_hallway' ? 'raid' : 'shut', cellOf = (i, s, k) => [Math.round(o.a[0] + u[0] * (i + 0.5) + nr[0] * s * (k - 0.5)), Math.round(o.a[1] + u[1] * (i + 0.5) + nr[1] * s * (k - 0.5))];
+        const d = { id: o.id, kind, L, u, nr, m, side, out, room: rA || rB, rooms: [rA, rB], c: [m[0] + nr[0] * side * 0.5, m[1] + nr[1] * side * 0.5], over: [] };
+        if (o.door && side)
+            for (let i = 0; i < L; i++) {
+                const c = cellOf(i, side, 1), b = { x: c[0], y: c[1], own: d.room, header: true };
+                band.set(K(c[0], c[1]), b);
+                d.over.push(b);
+            }
+        if (out)
+            for (let k = 1, n = kind === 'raid' ? 3 : kind === 'shut' ? 1 : 2; k <= n; k++)
+                for (let i = 0; i < L; i++) {
+                    const c = cellOf(i, out, k);
+                    if (!roomAt.has(K(c[0], c[1])))
+                        aprons.set(K(c[0], c[1]), { x: c[0], y: c[1] });
+                }
+        doors.push(d);
+    }
+    const hideOf = (x, y) => { const s = []; for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) {
+        const r = roomAt.get(K(x + dx, y + dy));
+        if (r && !s.includes(r))
+            s.push(r);
+    } return s.sort(); };
+    const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) {
+        G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), down: 0, want: 0 };
+        G.g.userData.dynamic = true;
+        groups.set(k, G);
+        g.add(G.g);
+    } return G; };
+    for (const b of band.values()) {
+        b.hide = hideOf(b.x, b.y);
+        b.G = groupOf(b.hide);
+    }
+    const faceMat = new T.MeshStandardMaterial({ map: wallTexture({ base: '#ffffff' }), roughness: 0.62, metalness: 0.05, vertexColors: true }), seams = {}, seamOf = id => seams[id] || (seams[id] = id === 'crystal_chamber' && P0.seam ? P0.seam : glowMat(rooms[id].style.acc, 1.0));
+    const wain = id => { const c = lin((rooms[id] && rooms[id].style.wain) || PAL.wallBase); return [c.r, c.g, c.b]; };
+    const face = (q, b, dx, dy, y0, y1, c) => { const yb = WALL_H * 0.2; if (y0 < yb)
+        sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, Math.min(y1, yb) / WALL_H); if (y1 > yb)
+        sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), y1, WHITE, Math.max(y0, yb) / WALL_H, y1 / WALL_H); };
+    for (const b of band.values()) {
+        const G = b.G;
+        topQuad(G.cap, b.x, b.y, WALL_H, WHITE);
+        for (const [dx, dy] of DIRS) {
+            const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G;
+            if (b.header) {
+                if (!same)
+                    face(G.face, b, dx, dy, DOOR_H, WALL_H, c);
+                continue;
+            }
+            if (nb && nb.header) {
+                face(G.face, b, dx, dy, B0, DOOR_H, c);
+                if (!same)
+                    face(G.face, b, dx, dy, DOOR_H, WALL_H, c);
+                continue;
+            }
+            if (same)
+                continue;
+            face(G.face, b, dx, dy, B0, WALL_H, c);
+            if (!nb && rid && (dx === 1 || dy === 1)) {
+                const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid));
+                s.position.set(b.x + dx * 0.512, WALL_H * 0.2 + 0.012, b.y + dy * 0.512);
+                s.userData.noInk = true;
+                G.g.add(s);
+            }
+        }
+    }
+    const sFace = quads(), sTop = quads();
+    for (const b of band.values()) {
+        if (!b.hide.length || b.header)
+            continue;
+        topQuad(sTop, b.x, b.y, CUT_H, WHITE);
+        for (const [dx, dy] of DIRS) {
+            const nb = band.get(K(b.x + dx, b.y + dy));
+            if (nb && !nb.header)
+                continue;
+            sideQuad(sFace, b.x, b.y, dx, dy, B0, CUT_H, WHITE, 0, 1);
+        }
+    }
+    const edges = new Set(), glassMat = new T.MeshStandardMaterial({ color: lin('#96e6f2'), transparent: true, opacity: 0.2, roughness: 0.1, depthWrite: false, side: T.DoubleSide });
+    for (const t of thin) {
+        const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), G = groupOf(back ? [back] : []), ax = t.u[0] ? 1 : 0;
+        const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(ax ? len : dep, h, ax ? dep : len), mat), put = (par, m, y, off) => { m.position.set(t.m[0] + nr[0] * (off || 0), y, t.m[1] + nr[1] * (off || 0)); par.add(m); return m; };
+        t.back = back;
+        t.front = front;
+        t.G = G;
+        edges.add(K(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) + '|' + K(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)));
+        if (t.glass) {
+            const sill = 0.19, rail = 0.095;
+            const s = put(rooms[front || back].g, box(1, sill, 0.16, P0.frame), sill / 2);
+            s.castShadow = s.receiveShadow = true;
+            s.userData.inkKey = 'sill';
+            const pane = put(G.g, box(1, WALL_H - sill - rail, 0.03, glassMat), sill + (WALL_H - sill - rail) / 2);
+            pane.userData.noInk = true;
+            pane.renderOrder = 3;
+            const r = put(G.g, box(1, rail, 0.14, P0.frame), WALL_H - rail / 2);
+            r.castShadow = true;
+            r.userData.inkKey = 'rail';
+            if (Math.round(t.m[0] * t.u[0] + t.m[1] * t.u[1] - 0.5) % 2 === 0) {
+                const p = new T.Mesh(new T.BoxGeometry(ax ? 0.07 : 0.18, WALL_H - sill, ax ? 0.18 : 0.07), P0.frame);
+                p.position.set(t.m[0] - t.u[0] * 0.5, sill + (WALL_H - sill) / 2, t.m[1] - t.u[1] * 0.5);
+                p.castShadow = true;
+                p.userData.inkKey = 'rail';
+                G.g.add(p);
+            }
+            if (front) {
+                const a = put(rooms[front].g, box(1, 0.028, 0.02, seamOf(front)), sill - 0.03, 0.085);
+                a.userData.noInk = true;
+            }
+        }
+        else {
+            const c = wain(front || back), hw = 0.08, x = t.m[0], y = t.m[1];
+            topQuad(G.cap, x, y, WALL_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5);
+            topQuad(sTop, x, y, CUT_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5);
+            for (const s of [1, -1]) {
+                face(G.face, { x: x + nr[0] * s * (hw - 0.5), y: y + nr[1] * s * (hw - 0.5) }, nr[0] * s, nr[1] * s, B0, WALL_H, c);
+                sideQuad(sFace, x + nr[0] * s * (hw - 0.5), y + nr[1] * s * (hw - 0.5), nr[0] * s, nr[1] * s, B0, CUT_H, WHITE, 0, 1);
+                if (!thin.some(q => !q.glass && Math.abs(q.m[0] - x - t.u[0] * s) < 0.01 && Math.abs(q.m[1] - y - t.u[1] * s) < 0.01))
+                    for (const [q, h] of [[G.face, WALL_H], [sFace, CUT_H]]) {
+                        const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw;
+                        putQuad(q, [ex - rx, B0, ez - rz], [ex + rx, B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]);
+                    }
+            }
+        }
+    }
+    for (const G of groups.values()) {
+        const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }]);
+        m.castShadow = m.receiveShadow = true;
+        m.userData.inkKey = 'wall';
+        m.userData.inkIds = [0, 1];
+        G.g.add(m);
+        G.mesh = m;
+    }
+    const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: sFace, mat: cutFace }, { q: sTop, mat: P0.cutTop }]);
+    stubs.receiveShadow = true;
+    stubs.userData.inkKey = 'wall';
+    stubs.userData.inkIds = [0, 1];
+    rest.add(stubs);
+    const plate = new T.MeshStandardMaterial({ map: floorTexture(), roughness: 0.42, metalness: 0.08, vertexColors: true }), F0 = lin('#c9dce1'), floorMats = {};
+    for (const rec of recs) {
+        const rm = rooms[rec.id], st = rm.style, kind = (rec.floor && rec.floor.style) || 'plate', own = kind === 'wood' || kind === 'grate', top = quads(), side = quads(), base = lin(hexMix(st.fa, st.fb, 0.4));
+        const mat = own ? (floorMats[rec.id] = new T.MeshStandardMaterial({ map: kind === 'wood' ? plankTexture(st.fa, st.fb) : grateTexture(st.fa, st.fb), roughness: 0.5, metalness: 0.05, vertexColors: true })) : plate, k = own ? [1, 1, 1] : [base.r / F0.r, base.g / F0.g, base.b / F0.b];
+        for (const c of rec.cells) {
+            const v = ((c[0] * 7 + c[1] * 13) % 5) / 5;
+            topQuad(top, c[0], c[1], 0, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
+            for (const [dx, dy] of DIRS) {
+                const q = K(c[0] + dx, c[1] + dy), nb = band.get(q);
+                if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header))
+                    continue;
+                sideQuad(side, c[0], c[1], dx, dy, B0, 0, WHITE, 0, 1);
+            }
+        }
+        const fm = quadMesh([{ q: top, mat }, { q: side, mat: P0.floorSide }]);
+        fm.receiveShadow = true;
+        fm.userData.inkKey = 'floor';
+        rm.g.add(fm);
+        rm.floor = fm;
+    }
+    if (aprons.size && P0.outside) {
+        const top = quads(), side = quads();
+        for (const a of aprons.values()) {
+            topQuad(top, a.x, a.y, -0.004, WHITE);
+            for (const [dx, dy] of DIRS) {
+                const q = K(a.x + dx, a.y + dy), nb = band.get(q);
+                if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header))
+                    continue;
+                sideQuad(side, a.x, a.y, dx, dy, B0, -0.004, WHITE, 0, 1);
+            }
+        }
+        const am = quadMesh([{ q: top, mat: P0.outside }, { q: side, mat: P0.outside }]);
+        am.receiveShadow = true;
+        am.userData.inkKey = 'apron';
+        rest.add(am);
+    }
+    let bb = [1e9, 1e9, -1e9, -1e9];
+    for (const rec of recs)
+        bb = [Math.min(bb[0], rec.bb[0]), Math.min(bb[1], rec.bb[1]), Math.max(bb[2], rec.bb[2]), Math.max(bb[3], rec.bb[3])];
+    if (P0.ground) {
+        const gr = new T.Mesh(new T.PlaneGeometry(260, 260), P0.ground);
+        gr.rotation.x = -Math.PI / 2;
+        gr.position.set((bb[0] + bb[2]) / 2, -0.13, (bb[1] + bb[3]) / 2);
+        gr.receiveShadow = true;
+        rest.add(gr);
+    }
+    for (const d of doors) {
+        if (d.kind === 'mouth')
+            continue;
+        const th = -Math.atan2(d.u[1], d.u[0]), fs = d.u[0] ? 1 : -1, shut = d.kind === 'shut', L = d.L, low = new T.Group(), tall = new T.Group(), thinDoor = !d.side;
+        const G = d.over.length ? d.over[0].G : groupOf((() => { const r = at(d.m[0] - Math.abs(d.nr[0]) * 0.5, d.m[1] - Math.abs(d.nr[1]) * 0.5); return r ? [r] : []; })()), Pd = d.room === 'crystal_chamber' ? P0 : Object.assign({}, P0, { lampOpen: seamOf(d.room) });
+        for (const q of [low, tall]) {
+            q.position.set(d.c[0], 0, d.c[1]);
+            q.rotation.y = th;
+            q.userData.inkGroup = true;
+        }
+        rooms[d.room].g.add(low);
+        G.g.add(tall);
+        const box = (w, h, dep, mat) => new T.Mesh(new T.BoxGeometry(w, h, dep), mat), put = (par, m, x, y, z) => { m.position.set(x, y, z || 0); par.add(m); return m; }, ph = DOOR_H - 0.02;
+        for (const s of [-1, 1]) {
+            put(tall, box(0.15, DOOR_H, 0.44, P0.frame), s * (L / 2 - 0.085), DOOR_H / 2);
+            put(low, box(0.13, CUT_H + 0.05, 0.42, P0.frame), s * (L / 2 - 0.085), (CUT_H + 0.05) / 2);
+            if (shut) {
+                const lw = L / 2 - 0.17;
+                put(tall, box(lw, ph, 0.09, P0.steel), s * (lw / 2 + 0.01), ph / 2);
+                put(tall, box(0.05, ph, 0.1, P0.hazard), s * 0.036, ph / 2);
+                const win = put(tall, box(lw * 0.5, 0.12, 0.1, P0.amberGlow), s * (lw / 2 + 0.03), 0.95);
+                win.userData.noInk = true;
+            }
+            else {
+                put(tall, box(L * 0.2, ph, 0.09, P0.steel), s * (L / 2 - 0.16 - L * 0.1), ph / 2);
+                put(tall, box(0.05, ph, 0.1, P0.hazard), s * (L / 2 - 0.16 - L * 0.2 - 0.025), ph / 2);
+            }
+        }
+        if (thinDoor)
+            put(tall, box(L - 0.02, WALL_H - DOOR_H, 0.2, P0.frame), 0, DOOR_H + (WALL_H - DOOR_H) / 2);
+        const lit = shut ? P0.amberGlow : d.kind === 'raid' ? glowMat('#ff3b5c', 1) : Pd.lampOpen;
+        const lamp = put(tall, box(0.5, 0.06, 0.04, lit), 0, DOOR_H + 0.08, fs * (thinDoor ? 0.11 : 0.512));
+        lamp.userData.noInk = true;
+        const thr = put(low, box(L, 0.012, 0.5, P0.hazard), 0, 0.008);
+        const line = put(low, box(L, 0.014, 0.05, lit), 0, 0.012, fs * 0.3);
+        line.userData.noInk = true;
+        setShadows(tall);
+        setShadows(low);
+        thr.castShadow = false;
+        d.G = G;
+    }
+    const props = {}, sentries = [];
+    for (const rec of recs) {
+        const rm = rooms[rec.id], chamber = rec.id === 'crystal_chamber', hi = hexMix(rm.style.acc, '#ffffff', 0.35), Pr = Object.assign({}, P0, { puddle: ['#3a7a90', 0.2] });
+        if (!chamber)
+            Object.assign(Pr, { seam: seamOf(rec.id), lampOpen: seamOf(rec.id), screen: glowMat(hi, 0.95), ringGlow: [rm.style.acc, 0.85], ringDash: [hi, 0.55] });
+        Pr.more = moreFittings(Pr, rm.style.acc);
+        const B = buildRoom(rm.R, Pr, { shell: false });
+        rm.parts = B.parts;
+        rm.g.add(B.g);
+        for (const f of B.parts.fittings.children.slice()) {
+            const w = f.userData.wall, b = w && band.get(K(Math.round(f.position.x + w.n[0] * 0.56), Math.round(f.position.z + w.n[1] * 0.56)));
+            if (b)
+                b.G.g.add(f);
+        }
+        for (const id of Object.keys(B.parts.props)) {
+            const p = B.parts.props[id];
+            props[id] = p;
+            if (p.s.kind === 'sentry') {
+                const head = p.g.children.find(c => c.isGroup && Math.abs(c.position.y - 47 / UH) < 1e-3);
+                if (head) {
+                    head.userData.dynamic = true;
+                    sentries.push({ id, at: p.s.c, room: rec.id, g: p.g, head, muzzle: p.marks.muzzle || [0.6, 0.72, 0] });
+                }
+            }
+        }
+    }
+    const blocked = new Set(), ch = rooms.crystal_chamber, crystal = ch ? ch.rec.crystal : null;
+    for (const rec of recs)
+        for (const s of rec.solids)
+            for (let x = Math.ceil(s.bb[0] + 0.01); x <= Math.floor(s.bb[2] - 0.01); x++)
+                for (let y = Math.ceil(s.bb[1] + 0.01); y <= Math.floor(s.bb[3] - 0.01); y++)
+                    blocked.add(K(x, y));
+    let padR = 1.2;
+    if (ch && ch.parts.pad) {
+        const box = new T.Box3().setFromObject(ch.parts.pad);
+        padR = Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 2;
+    }
+    if (crystal)
+        for (let x = Math.floor(crystal[0] - padR); x <= Math.ceil(crystal[0] + padR); x++)
+            for (let y = Math.floor(crystal[1] - padR); y <= Math.ceil(crystal[1] + padR); y++)
+                if (Math.hypot(x - crystal[0], y - crystal[1]) < padR - 0.15)
+                    blocked.add(K(x, y));
+    return { g, rest, rooms, order: recs.map(r => r.id), parts: ch ? ch.parts : {}, props, sentries, doors, groups: [...groups.values()], band, aprons, stubs, crystal, padR, bb, roomAt: (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null,
+        blocked, edges, walkable: (x, y) => roomAt.has(K(x, y)) && !blocked.has(K(x, y)),
+        settle() { const m = stubs.material[0]; m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 1; } };
+}
+;
+/* design/style-evolution/live/walk.js */
+function makeWalk(world) {
+    const K = cellKey, ok = (x, y) => world.walkable(x, y), edge = (x0, y0, x1, y1) => world.edges.has(K(x0, y0) + '|' + K(x1, y1)) || world.edges.has(K(x1, y1) + '|' + K(x0, y0));
+    const step = (x0, y0, x1, y1) => {
+        if (!ok(x1, y1))
+            return false;
+        const dx = x1 - x0, dy = y1 - y0;
+        if (!dx || !dy)
+            return !edge(x0, y0, x1, y1);
+        return ok(x0 + dx, y0) && ok(x0, y0 + dy) && !edge(x0, y0, x0 + dx, y0) && !edge(x0 + dx, y0, x1, y1) && !edge(x0, y0, x0, y0 + dy) && !edge(x0, y0 + dy, x1, y1);
+    };
+    function path(from, to) {
+        if (!ok(from[0], from[1]) || !ok(to[0], to[1]))
+            return null;
+        const sk = K(from[0], from[1]), tk = K(to[0], to[1]);
+        if (sk === tk)
+            return [[from[0], from[1]]];
+        const open = [{ x: from[0], y: from[1], g: 0, f: 0, k: sk, p: null }], best = new Map([[sk, 0]]), done = new Set();
+        while (open.length) {
+            let bi = 0;
+            for (let i = 1; i < open.length; i++)
+                if (open[i].f < open[bi].f)
+                    bi = i;
+            const n = open[bi];
+            open[bi] = open[open.length - 1];
+            open.pop();
+            if (done.has(n.k))
+                continue;
+            done.add(n.k);
+            if (n.k === tk) {
+                const out = [];
+                for (let q = n; q; q = q.p)
+                    out.push([q.x, q.y]);
+                return out.reverse();
+            }
+            for (let dx = -1; dx <= 1; dx++)
+                for (let dy = -1; dy <= 1; dy++) {
+                    if (!dx && !dy)
+                        continue;
+                    const x = n.x + dx, y = n.y + dy, k = K(x, y);
+                    if (done.has(k) || !step(n.x, n.y, x, y))
+                        continue;
+                    const g = n.g + (dx && dy ? 1.4142 : 1);
+                    if (best.has(k) && best.get(k) <= g)
+                        continue;
+                    best.set(k, g);
+                    const hx = Math.abs(to[0] - x), hy = Math.abs(to[1] - y);
+                    open.push({ x, y, g, f: g + Math.max(hx, hy) + 0.4142 * Math.min(hx, hy), k, p: n });
+                }
+        }
+        return null;
+    }
+    function clear(a, b, r) {
+        r = r === undefined ? 0.3 : r;
+        const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        if (d < 1e-6)
+            return ok(Math.round(a[0]), Math.round(a[1]));
+        const n = Math.ceil(d / 0.2), px = -(b[1] - a[1]) / d * r, py = (b[0] - a[0]) / d * r;
+        let lx = 0, ly = 0, has = false;
+        for (let i = 0; i <= n; i++) {
+            const t = i / n, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
+            if (!ok(Math.round(x + px), Math.round(y + py)) || !ok(Math.round(x - px), Math.round(y - py)))
+                return false;
+            const cx = Math.round(x), cy = Math.round(y);
+            if (has && (cx !== lx || cy !== ly) && !step(lx, ly, cx, cy))
+                return false;
+            lx = cx;
+            ly = cy;
+            has = true;
+        }
+        return true;
+    }
+    const standable = p => clear(p, p) && [[0.3, 0], [-0.3, 0], [0, 0.3], [0, -0.3]].every(o => ok(Math.round(p[0] + o[0]), Math.round(p[1] + o[1])));
+    function nearest(p, r) {
+        r = r === undefined ? 2 : r;
+        const cx = Math.round(p[0]), cy = Math.round(p[1]);
+        if (ok(cx, cy))
+            return [cx, cy];
+        let best = null, bd = 1e9;
+        const R = Math.ceil(r);
+        for (let x = cx - R; x <= cx + R; x++)
+            for (let y = cy - R; y <= cy + R; y++)
+                if (ok(x, y)) {
+                    const d = Math.hypot(x - p[0], y - p[1]);
+                    if (d < bd && d <= r + 0.71) {
+                        bd = d;
+                        best = [x, y];
+                    }
+                }
+        return best;
+    }
+    const smooth = pts => { if (pts.length < 3)
+        return pts; const out = [pts[0]]; let i = 0; while (i < pts.length - 1) {
+        let j = pts.length - 1;
+        while (j > i + 1 && !clear(pts[i], pts[j]))
+            j--;
+        out.push(pts[j]);
+        i = j;
+    } return out; };
+    function route(from, to, r) {
+        const a = nearest(from, 1.6), b = nearest(to, r === undefined ? 2.5 : r);
+        if (!a || !b)
+            return null;
+        const p = path(a, b);
+        if (!p)
+            return null;
+        const pts = [[from[0], from[1]]].concat(p.map(c => [c[0], c[1]]));
+        if (Math.round(to[0]) === b[0] && Math.round(to[1]) === b[1] && standable(to))
+            pts.push([to[0], to[1]]);
+        return smooth(pts);
+    }
+    const length = pts => { let d = 0; for (let i = 0; i + 1 < pts.length; i++)
+        d += Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]); return d; };
+    return { ok, step, path, clear, standable, nearest, smooth, route, length };
+}
+;
 /* design/style-evolution/live/viewer.js */
 const LIVE = (function () {
-    const S = STYLES.lab, canvas = opts.canvas, state = { ink: opts.ink !== false, shadows: opts.shadows !== false, sharp: opts.sharp || 1.5 };
+    const S = STYLES.lab, canvas = opts.canvas, PACES = [1, 0.8, 0.6, 0.4], CAMS = ['auto', 'near', 'far'];
+    const state = { ink: opts.ink !== false, shadows: opts.shadows !== false, sharp: opts.sharp || 1.5, cam: CAMS.includes(opts.cam) ? opts.cam : 'auto', pace: PACES.includes(opts.pace) ? opts.pace : 0.6, raid: opts.raid !== false };
     const renderer = new (opts.gl1 ? T.WebGL1Renderer : T.WebGLRenderer)({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
     const gl2 = renderer.capabilities.isWebGL2, depthOK = gl2 || !!renderer.extensions.get('WEBGL_depth_texture');
     renderer.outputEncoding = T.sRGBEncoding;
@@ -26783,72 +27385,54 @@ const LIVE = (function () {
     renderer.shadowMap.type = T.PCFShadowMap;
     renderer.shadowMap.autoUpdate = false;
     renderer.info.autoReset = false;
-    const scene = new T.Scene(), P = S.palette(), units = RAID(), ctx = { renderer, P, S, units, scene, map, portraits: {} };
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), ease = k => k * k * (3 - 2 * k), dist2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y), TAU = Math.PI * 2;
+    const angDiff = (a, b) => { let d = a - b; while (d > Math.PI)
+        d -= TAU; while (d < -Math.PI)
+        d += TAU; return d; };
+    const scene = new T.Scene(), P = S.palette(), U0 = RAID(), squadDefs = {};
+    for (const k of SQUAD)
+        squadDefs[k] = U0[k];
+    const ctx = { renderer, P, S, units: squadDefs, scene, map, portraits: {} };
     S.env(scene, ctx);
-    const world = buildChamber(P, S.room);
+    scene.background = new T.Color('#0d1d26');
+    const world = buildLabFloor(map.lab, P);
     ctx.world = world;
     scene.add(world.g);
-    const cast = buildCast(P, units);
+    const cast = buildCast(P, squadDefs);
     ctx.cast = cast;
     scene.add(cast.g);
     S.world(world, scene, ctx);
+    world.settle();
     S.cast(cast, scene, ctx);
     S.lights(scene, ctx);
     let key = null;
     scene.traverse(o => { if (o.isDirectionalLight && o.castShadow)
         key = o; });
-    const U = units, pa = world.parts;
-    const marks = new T.Group();
-    scene.add(marks);
-    teamRings(marks, ctx, { w: 0.045, op: 0.95 });
-    const biteAng = angTo(U.soldier.at, U.ram.at), dyn = o => { o.userData.dynamic = true; return o; };
-    const biteOut = dyn(new T.Group());
-    decalPoly(biteOut, wedge(U.soldier.at, biteAng, 2.15, 0.42), '#ff3b5c', 0.2);
-    decalLine(biteOut, wedge(U.soldier.at, biteAng, 2.15, 0.42).concat([U.soldier.at]), 0.045, '#ff3b5c', 1);
-    marks.add(biteOut);
-    const biteIn = dyn(decalPoly(marks, wedge([0, 0], biteAng, 2.15, 0.42), '#ff3b5c', 0.42, 0.016));
-    biteIn.position.x = U.soldier.at[0];
-    biteIn.position.z = U.soldier.at[1];
-    const lunge = dyn(new T.Group());
-    decalDashes(lunge, [along(U.striker.at, U.crab.at, 0.3), along(U.striker.at, U.crab.at, 0.72)], 0.07, '#ff3b5c', 0.95, 0.16, 0.1);
-    decalArrow(lunge, along(U.striker.at, U.crab.at, 0.6), along(U.striker.at, U.crab.at, 0.78), 0.07, '#ff3b5c', 0.95);
-    marks.add(lunge);
-    const air = new T.Group();
-    air.userData.noInk = true;
-    scene.add(air);
-    const sp = pa.props.sentry_chamber_1, mz = (sp && sp.marks.muzzle) || [0, 0.72, 0], bA = [SENTRY[0] + mz[0], mz[1], SENTRY[1] + mz[2]], bB = [U.scout.at[0], 0.2, U.scout.at[1]];
-    const beam = new T.Group();
-    beam.add(boltBetween(bA, bB, PAL.cyan, { jag: 0, r: 0.022, n: 2 }));
-    beam.add(glowBall(bA, 0.1, PAL.cyan));
-    beam.add(burst(bB, PAL.cyan, 9, 0.3));
-    air.add(beam);
-    const iA = new T.Vector3(U.star.at[0], 0.62 + (U.star.lift || 0), U.star.at[1]), iB = new T.Vector3(U.striker.at[0], 0.28, U.striker.at[1]), iDir = iB.clone().sub(iA).normalize();
-    const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), icicles = [];
-    for (let i = 0; i < 3; i++) {
-        const c = new T.Mesh(new T.ConeGeometry(0.05, 0.36, 5), iceMat);
-        c.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), iDir);
-        c.castShadow = true;
-        air.add(c);
-        icicles.push(c);
-    }
-    const stakes = new T.Group(), stakeMat = new T.MeshToonMaterial({ color: lin('#ff9ccc'), emissive: lin('#ff5fa8'), emissiveIntensity: 0.5, gradientMap: ctx.grad });
-    for (let i = 0; i < 7; i++) {
-        const a = i / 7 * Math.PI * 2 + 0.4, h = 0.34 + (i % 3) * 0.1, c = new T.Mesh(new T.ConeGeometry(0.075, h, 5), stakeMat);
-        c.position.set(Math.cos(a) * 0.82, h / 2, Math.sin(a) * 0.82);
-        c.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22);
-        c.castShadow = true;
-        stakes.add(c);
-    }
-    stakes.position.set(U.striker.at[0], 0, U.striker.at[1]);
-    stakes.userData.inkGroup = true;
-    stakes.userData.dynamic = true;
-    scene.add(stakes);
-    const hitAt = [U.ram.at[0] + (U.soldier.at[0] - U.ram.at[0]) * 0.6, 0.5, U.ram.at[1] + (U.soldier.at[1] - U.ram.at[1]) * 0.6], hit = new T.Group();
-    hit.add(burst(hitAt, '#eaffff', 12, 0.42, { w: 0.016 }));
-    hit.add(glowBall(hitAt, 0.12, '#2fe0c0', { op: 0.55 }));
-    air.add(hit);
+    const walk = makeWalk(world), pa = world.parts, CR = world.crystal || [11.5, 15.5];
+    scene.traverse(o => {
+        if (!o.isSprite)
+            return;
+        const N = 64, d = new Uint8Array(N * N * 4);
+        for (let y = 0; y < N; y++)
+            for (let x = 0; x < N; x++) {
+                const r = Math.hypot((x + 0.5) / N - 0.5, (y + 0.5) / N - 0.5) * 2, a = r < 0.35 ? 1 - 0.55 * r / 0.35 : 0.45 * Math.max(0, 1 - (r - 0.35) / 0.65), i = (y * N + x) * 4;
+                d[i] = d[i + 1] = d[i + 2] = 255;
+                d[i + 3] = Math.round(a * 255);
+            }
+        const tex = new T.DataTexture(d, N, N, T.RGBAFormat);
+        tex.magFilter = tex.minFilter = T.LinearFilter;
+        tex.needsUpdate = true;
+        o.material.map = tex;
+        o.material.needsUpdate = true;
+    });
     let idCount = 0;
-    const idOf = h => (h.userData._ink === undefined ? (h.userData._ink = ++idCount * 3) : h.userData._ink), idCol = id => [((id * 67 + 13) % 251) / 251, ((id * 131 + 7) % 241) / 241, ((id * 29 + 101) % 239) / 239];
+    const idMat = new T.ShaderMaterial({ side: T.DoubleSide, vertexShader: 'attribute vec3 idc; varying vec3 vId;\n#include <common>\nvoid main() { vId = idc;\n#include <begin_vertex>\n#include <project_vertex>\n}', fragmentShader: 'varying vec3 vId; void main() { gl_FragColor = vec4(vId, 1.0); }' });
+    idMat.shadowSide = T.BackSide;
+    const keyIds = {}, idOf = h => { if (h.userData._ink === undefined) {
+        const k = h.userData.inkKey;
+        h.userData._ink = k ? (keyIds[k] || (keyIds[k] = ++idCount * 3)) : ++idCount * 3;
+    } return h.userData._ink; };
+    const idCol = id => [((id * 67 + 13) % 251) / 251, ((id * 131 + 7) % 241) / 241, ((id * 29 + 101) % 239) / 239];
     const holderOf = o => { let root = null; for (let q = o; q; q = q.parent)
         if (q.userData.inkGroup)
             root = q; return root || o; };
@@ -26858,7 +27442,9 @@ const LIVE = (function () {
     const sig = m => m.map || m.emissiveMap || m.alphaMap ? m.uuid : m.isMeshBasicMaterial ? ['b', m.color.getHex(), m.opacity, m.transparent, m.blending, m.depthWrite, m.side, m.polygonOffset].join(',')
         : m.isMeshToonMaterial ? ['t', m.color.getHex(), m.emissive.getHex(), m.emissiveIntensity, m.opacity, m.transparent, m.depthWrite, m.side, m.vertexColors, m.gradientMap ? m.gradientMap.uuid : 0].join(',') : m.uuid;
     const plain = m => !m.map && !m.emissiveMap && !m.alphaMap && !m.transparent && (m.isMeshBasicMaterial || (m.isMeshToonMaterial && (m.emissive.r + m.emissive.g + m.emissive.b) * m.emissiveIntensity < 0.004));
-    function mergeStill(root) {
+    function dropArray() { this.array = null; }
+    function mergeStill(root, o2) {
+        const chunk = o2 && o2.chunk, from = o2 && o2.from, copies = o2 && o2.copy ? new Map() : null;
         root.updateMatrixWorld(true);
         const inv = new T.Matrix4().copy(root.matrixWorld).invert(), buckets = new Map(), gone = [], v = new T.Vector3();
         root.traverse(o => {
@@ -26872,8 +27458,15 @@ const LIVE = (function () {
             const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry, mats = [].concat(o.material), pos = geo.attributes.position, nor = geo.attributes.normal, uv = geo.attributes.uv, col = geo.attributes.color;
             const groups = Array.isArray(o.material) && geo.groups.length ? geo.groups : [{ start: 0, count: pos.count, materialIndex: 0 }];
             const m4 = new T.Matrix4().multiplyMatrices(inv, o.matrixWorld), n3 = new T.Matrix3().getNormalMatrix(m4), flip = m4.determinant() < 0, ni = noInk(o), id = ni ? 0 : idOf(holderOf(o));
+            let where = '';
+            if (chunk) {
+                if (!geo.boundingBox)
+                    geo.computeBoundingBox();
+                geo.boundingBox.getCenter(v).applyMatrix4(m4);
+                where = '|' + Math.floor((v.x - (from ? from[0] : 0)) / chunk) + ',' + Math.floor((v.z - (from ? from[1] : 0)) / chunk);
+            }
             for (const gr of groups) {
-                const mat = mats[gr.materialIndex] || mats[0], paint = plain(mat), k = (paint ? [mat.type, mat.side, mat.depthWrite, mat.toneMapped, mat.polygonOffset, mat.gradientMap ? mat.gradientMap.uuid : 0].join(',') : sig(mat)) + '|' + (ni ? 1 : 0) + (o.castShadow ? 1 : 0) + (o.receiveShadow ? 1 : 0) + '|' + (o.renderOrder || 0);
+                const mat = mats[gr.materialIndex] || mats[0], paint = plain(mat), k = (paint ? [mat.type, mat.side, mat.depthWrite, mat.toneMapped, mat.polygonOffset, mat.gradientMap ? mat.gradientMap.uuid : 0].join(',') : sig(mat)) + '|' + (ni ? 1 : 0) + (o.castShadow ? 1 : 0) + (o.receiveShadow ? 1 : 0) + '|' + (o.renderOrder || 0) + where;
                 let b = buckets.get(k);
                 if (!b) {
                     let m2 = mat;
@@ -26887,9 +27480,21 @@ const LIVE = (function () {
                 }
                 const tint = paint ? mat.color : null, own = mat.vertexColors ? col : null;
                 const c = idCol(id + (o.userData.inkIds ? o.userData.inkIds[gr.materialIndex] || 0 : 0));
+                let cp = null;
+                if (copies && !ni) {
+                    cp = copies.get(where);
+                    if (!cp)
+                        copies.set(where, cp = { pos: [], idc: [] });
+                }
                 const push = i => {
                     v.fromBufferAttribute(pos, i).applyMatrix4(m4);
                     b.pos.push(v.x, v.y, v.z);
+                    if (cp) {
+                        cp.pos.push(v.x, v.y, v.z);
+                        cp.idc.push(c[0], c[1], c[2]);
+                    }
+                    else
+                        b.idc.push(c[0], c[1], c[2]);
                     if (nor) {
                         v.fromBufferAttribute(nor, i).applyMatrix3(n3).normalize();
                         b.nor.push(v.x, v.y, v.z);
@@ -26900,7 +27505,6 @@ const LIVE = (function () {
                         b.uv.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0);
                     if (b.needCol)
                         b.col.push((own ? own.getX(i) : 1) * (tint ? tint.r : 1), (own ? own.getY(i) : 1) * (tint ? tint.g : 1), (own ? own.getZ(i) : 1) * (tint ? tint.b : 1));
-                    b.idc.push(c[0], c[1], c[2]);
                 };
                 for (let i = gr.start; i + 2 < gr.start + gr.count; i += 3) {
                     push(i);
@@ -26912,23 +27516,44 @@ const LIVE = (function () {
         });
         for (const o of gone)
             o.parent.remove(o);
+        const attr = (list, n) => { const a = new T.Float32BufferAttribute(list, n); if (o2 && o2.copy)
+            a.onUpload(dropArray); return a; };
         for (const b of buckets.values()) {
+            if (!b.pos.length)
+                continue;
             const g = new T.BufferGeometry();
-            g.setAttribute('position', new T.Float32BufferAttribute(b.pos, 3));
-            g.setAttribute('normal', new T.Float32BufferAttribute(b.nor, 3));
+            g.setAttribute('position', attr(b.pos, 3));
+            g.setAttribute('normal', attr(b.nor, 3));
             if (b.needUv)
-                g.setAttribute('uv', new T.Float32BufferAttribute(b.uv, 2));
+                g.setAttribute('uv', attr(b.uv, 2));
             if (b.needCol)
-                g.setAttribute('color', new T.Float32BufferAttribute(b.col, 3));
-            g.setAttribute('idc', new T.Float32BufferAttribute(b.idc, 3));
+                g.setAttribute('color', attr(b.col, 3));
+            if (b.idc.length)
+                g.setAttribute('idc', attr(b.idc, 3));
+            g.computeBoundingSphere();
             const m = new T.Mesh(g, b.mat);
             m.castShadow = b.cast;
             m.receiveShadow = b.recv;
             m.renderOrder = b.order;
+            m.userData.merged = true;
             if (b.ni)
                 m.layers.set(2);
+            else if (copies)
+                m.layers.set(1);
             root.add(m);
         }
+        if (copies)
+            for (const cp of copies.values()) {
+                const g = new T.BufferGeometry();
+                g.setAttribute('position', attr(cp.pos, 3));
+                g.setAttribute('idc', attr(cp.idc, 3));
+                g.computeBoundingSphere();
+                const m = new T.Mesh(g, idMat);
+                m.layers.set(3);
+                m.castShadow = true;
+                m.userData.merged = true;
+                root.add(m);
+            }
         return buckets.size;
     }
     function tagInk(root) {
@@ -26937,7 +27562,7 @@ const LIVE = (function () {
                 o.layers.set(2);
                 return;
             }
-            if (!o.isMesh || (o.geometry.attributes.idc && !o.geometry.userData.ink))
+            if (!o.isMesh || o.userData.merged || (o.geometry.attributes.idc && o.geometry.userData.ink === undefined))
                 return;
             if (noInk(o)) {
                 o.layers.set(2);
@@ -26998,39 +27623,939 @@ const LIVE = (function () {
         for (const r of roots)
             mergeStill(r);
     }
-    const before = (() => { let n = 0; scene.traverse(o => { if (o.isMesh && shownChain(o))
-        n++; }); return n; })();
-    mergeStill(world.g);
-    mergeStill(marks);
-    mergeStill(biteOut);
-    mergeStill(lunge);
-    for (const k of ANTS)
-        mergeStill(cast.parts[k]);
+    const CHUNK = opts.chunk || 7;
+    const countMeshes = () => { let n = 0; scene.traverse(o => { if (o.isMesh && shownChain(o))
+        n++; }); return n; };
+    const before = countMeshes();
+    const ANT_POSES = [{ walk: 0 }, { walk: 0.25 }, { walk: 0.5 }, { walk: 0.75 }, { walk: 0.3, open: 0.3 }], antKits = {};
+    function antKit(cls, size) {
+        const k = cls + size;
+        if (antKits[k])
+            return antKits[k];
+        const root = new T.Group(), poses = ANT_POSES.map(p => buildAnt(P, Object.assign({ cls, size }, p)));
+        root.userData.inkGroup = true;
+        for (const g of poses)
+            root.add(g);
+        toonify(root, ctx.grad, { sat: 1.1 });
+        for (const g of poses)
+            mergeStill(g);
+        return (antKits[k] = { poses, info: poses[0].userData.ant });
+    }
+    function antBody(cls, size) {
+        const kit = antKit(cls, size), holder = new T.Group(), id = ++idCount * 3, c = idCol(id);
+        holder.userData.inkGroup = true;
+        holder.userData._ink = id;
+        const poses = kit.poses.map(pg => {
+            const g = new T.Group();
+            for (const m of pg.children) {
+                let geo = m.geometry;
+                if (m.layers.mask !== 4) {
+                    geo = new T.BufferGeometry();
+                    for (const a of Object.keys(m.geometry.attributes))
+                        if (a !== 'idc')
+                            geo.setAttribute(a, m.geometry.attributes[a]);
+                    const n = m.geometry.attributes.position.count, a = new Float32Array(n * 3);
+                    for (let i = 0; i < n; i++) {
+                        a[i * 3] = c[0];
+                        a[i * 3 + 1] = c[1];
+                        a[i * 3 + 2] = c[2];
+                    }
+                    geo.setAttribute('idc', new T.BufferAttribute(a, 3));
+                }
+                const q = new T.Mesh(geo, m.material);
+                q.castShadow = m.castShadow;
+                q.receiveShadow = m.receiveShadow;
+                q.layers.mask = m.layers.mask;
+                q.renderOrder = m.renderOrder;
+                g.add(q);
+            }
+            g.visible = false;
+            holder.add(g);
+            return g;
+        });
+        holder.visible = false;
+        scene.add(holder);
+        return { holder, poses, info: kit.info };
+    }
+    const air = new T.Group();
+    air.userData.noInk = true;
+    scene.add(air);
+    const iceMat = new T.MeshToonMaterial({ color: lin('#dff6ff'), emissive: lin('#7fd6ff'), emissiveIntensity: 0.8, gradientMap: ctx.grad }), UP = new T.Vector3(0, 1, 0), tmpV = new T.Vector3(), tmpW = new T.Vector3();
+    const icicles = [];
+    for (let i = 0; i < 6; i++) {
+        const c = new T.Mesh(new T.ConeGeometry(0.05, 0.36, 5), iceMat);
+        c.castShadow = true;
+        c.visible = false;
+        air.add(c);
+        icicles.push({ m: c, on: false });
+    }
+    const stakeMat = new T.MeshToonMaterial({ color: lin('#ff9ccc'), emissive: lin('#ff5fa8'), emissiveIntensity: 0.5, gradientMap: ctx.grad }), stakeSets = [];
+    for (let k = 0; k < 2; k++) {
+        const g = new T.Group();
+        for (let i = 0; i < 7; i++) {
+            const a = i / 7 * TAU + 0.4, h = 0.34 + (i % 3) * 0.1, c = new T.Mesh(new T.ConeGeometry(0.075, h, 5), stakeMat);
+            c.position.set(Math.cos(a) * 0.82, h / 2, Math.sin(a) * 0.82);
+            c.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22);
+            c.castShadow = true;
+            g.add(c);
+        }
+        g.userData.inkGroup = true;
+        g.userData.dynamic = true;
+        scene.add(g);
+        mergeStill(g);
+        g.visible = false;
+        stakeSets.push({ g, t: -1 });
+    }
+    const beams = [];
+    for (let k = 0; k < 2; k++) {
+        const g = new T.Group(), core = new T.Mesh(new T.CylinderGeometry(0.022, 0.022, 1, 6), glowMat('#ffffff', 1)), halo = new T.Mesh(new T.CylinderGeometry(0.057, 0.057, 1, 6), glowMat(PAL.cyan, 1, { transparent: true, opacity: 0.45, depthWrite: false }));
+        g.add(halo);
+        g.add(core);
+        g.visible = false;
+        air.add(g);
+        beams.push({ g, t: -1 });
+    }
+    const sparks = [];
+    for (let k = 0; k < 6; k++) {
+        const g = new T.Group();
+        g.add(burst([0, 0, 0], '#eaffff', 10, 0.36, { w: 0.016 }));
+        g.userData.dynamic = true;
+        air.add(g);
+        mergeStill(g);
+        g.visible = false;
+        sparks.push({ g, t: -1 });
+    }
+    function Batch(maxTris, mat, uvs) {
+        const max = maxTris * 3, pos = new Float32Array(max * 3), col = new Float32Array(max * 4), uv = uvs ? new Float32Array(max * 2) : null, geo = new T.BufferGeometry(), aP = new T.BufferAttribute(pos, 3), aC = new T.BufferAttribute(col, 4), aU = uv ? new T.BufferAttribute(uv, 2) : null;
+        aP.setUsage(T.DynamicDrawUsage);
+        aC.setUsage(T.DynamicDrawUsage);
+        geo.setAttribute('position', aP);
+        geo.setAttribute('color', aC);
+        if (aU) {
+            aU.setUsage(T.DynamicDrawUsage);
+            geo.setAttribute('uv', aU);
+        }
+        const mesh = new T.Mesh(geo, mat);
+        mesh.frustumCulled = false;
+        mesh.layers.set(2);
+        let n = 0;
+        return { mesh, count: () => n / 3, begin() { n = 0; },
+            v(x, y, z, k, al, s, t) { if (n >= max)
+                return; let i = n * 3; pos[i] = x; pos[i + 1] = y; pos[i + 2] = z; i = n * 4; col[i] = k.r; col[i + 1] = k.g; col[i + 2] = k.b; col[i + 3] = al; if (uv) {
+                uv[n * 2] = s;
+                uv[n * 2 + 1] = t;
+            } n++; },
+            end() { n -= n % 3; geo.setDrawRange(0, n); for (const a of [aP, aC, aU])
+                if (a) {
+                    a.updateRange.offset = 0;
+                    a.updateRange.count = Math.max(a.itemSize * 3, n * a.itemSize);
+                    a.needsUpdate = true;
+                } } };
+    }
+    const markMat = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, toneMapped: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 });
+    const FM = Batch(5200, markMat);
+    scene.add(FM.mesh);
+    const over = new T.Scene(), barMat = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthTest: false, depthWrite: false, toneMapped: false, side: T.DoubleSide });
+    const BR = Batch(700, barMat);
+    BR.mesh.layers.set(0);
+    over.add(BR.mesh);
+    const GLYPHS = '0123456789-+', GW = 56, GH = 76, numCanvas = document.createElement('canvas');
+    numCanvas.width = GW * GLYPHS.length;
+    numCanvas.height = GH;
+    const numTex = new T.CanvasTexture(numCanvas);
+    numTex.encoding = T.sRGBEncoding;
+    numTex.generateMipmaps = false;
+    numTex.minFilter = numTex.magFilter = T.LinearFilter;
+    function drawGlyphs() {
+        const g = numCanvas.getContext('2d');
+        g.clearRect(0, 0, numCanvas.width, numCanvas.height);
+        g.font = '58px "L3 Title", "Arial Black", "DejaVu Sans", sans-serif';
+        g.textAlign = 'center';
+        g.textBaseline = 'middle';
+        g.lineJoin = 'round';
+        for (let i = 0; i < GLYPHS.length; i++) {
+            const x = i * GW + GW / 2, y = GH / 2 + 2;
+            g.lineWidth = 12;
+            g.strokeStyle = '#16303a';
+            g.strokeText(GLYPHS[i], x, y);
+            g.fillStyle = '#ffffff';
+            g.fillText(GLYPHS[i], x, y);
+        }
+        numTex.needsUpdate = true;
+    }
+    drawGlyphs();
+    if (document.fonts && document.fonts.load)
+        document.fonts.load('58px "L3 Title"').then(drawGlyphs, () => { });
+    const NM = Batch(260, new T.MeshBasicMaterial({ map: numTex, vertexColors: true, transparent: true, depthTest: false, depthWrite: false, toneMapped: false, side: T.DoubleSide }), true);
+    NM.mesh.layers.set(0);
+    NM.mesh.renderOrder = 2;
+    over.add(NM.mesh);
+    const C = { squad: lin(TEAM.squad), ants: lin(TEAM.ants), white: lin('#eaffff'), dark: lin('#040a0e'), ok: lin('#43e0a8'), warn: lin('#f2b13a'), bad: lin('#ff4d6a'), hurt: lin('#ff8a9c'), ghost: lin('#ffffff'), grey: lin('#8aa3ad') };
+    const Y0 = 0.014;
+    const fQuad = (ax, az, bx, bz, cx, cz, dx, dz, y, k, al) => { FM.v(ax, y, az, k, al); FM.v(bx, y, bz, k, al); FM.v(cx, y, cz, k, al); FM.v(ax, y, az, k, al); FM.v(cx, y, cz, k, al); FM.v(dx, y, dz, k, al); };
+    const fTri = (ax, az, bx, bz, cx, cz, y, k, al) => { FM.v(ax, y, az, k, al); FM.v(bx, y, bz, k, al); FM.v(cx, y, cz, k, al); };
+    const mRing = (x, z, r, w, k, al) => { const n = 36, r0 = r - w / 2, r1 = r + w / 2; let c0 = 1, s0 = 0; for (let i = 1; i <= n; i++) {
+        const a = i / n * TAU, c1 = Math.cos(a), s1 = Math.sin(a);
+        fQuad(x + c0 * r0, z + s0 * r0, x + c1 * r0, z + s1 * r0, x + c1 * r1, z + s1 * r1, x + c0 * r1, z + s0 * r1, Y0 + 0.002, k, al);
+        c0 = c1;
+        s0 = s1;
+    } };
+    const mFan = (x, z, r, a0, a1, k, al, y) => { const n = Math.max(6, Math.ceil(Math.abs(a1 - a0) / 0.12)), h = y || Y0; let c0 = Math.cos(a0), s0 = Math.sin(a0); for (let i = 1; i <= n; i++) {
+        const a = a0 + (a1 - a0) * i / n, c1 = Math.cos(a), s1 = Math.sin(a);
+        fTri(x, z, x + c0 * r, z + s0 * r, x + c1 * r, z + s1 * r, h, k, al);
+        c0 = c1;
+        s0 = s1;
+    } };
+    const mLine = (ax, az, bx, bz, w, k, al, y) => { const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz) || 1, nx = -dz / L * w / 2, nz = dx / L * w / 2; fQuad(ax + nx, az + nz, bx + nx, bz + nz, bx - nx, bz - nz, ax - nx, az - nz, y || Y0 + 0.003, k, al); };
+    const mArc = (x, z, r, a0, a1, w, k, al) => { const n = Math.max(6, Math.ceil(Math.abs(a1 - a0) / 0.12)); for (let i = 0; i < n; i++) {
+        const p = a0 + (a1 - a0) * i / n, q = a0 + (a1 - a0) * (i + 1) / n;
+        mLine(x + Math.cos(p) * r, z + Math.sin(p) * r, x + Math.cos(q) * r, z + Math.sin(q) * r, w, k, al);
+    } };
+    const mWedge = (x, z, ang, r, half, k, p) => { mFan(x, z, r, ang - half, ang + half, k, 0.2); mFan(x, z, r * p, ang - half, ang + half, k, 0.42, Y0 + 0.002); mArc(x, z, r, ang - half, ang + half, 0.045, k, 1); mLine(x, z, x + Math.cos(ang - half) * r, z + Math.sin(ang - half) * r, 0.045, k, 1); mLine(x, z, x + Math.cos(ang + half) * r, z + Math.sin(ang + half) * r, 0.045, k, 1); };
+    const mDisc = (x, z, r, k, p) => { mFan(x, z, r, 0, TAU, k, 0.2); mFan(x, z, r * p, 0, TAU, k, 0.42, Y0 + 0.002); mRing(x, z, r, 0.045, k, 1); };
+    const mStrip = (ax, az, bx, bz, w, k, p) => { mLine(ax, az, bx, bz, w, k, 0.2, Y0); mLine(ax, az, ax + (bx - ax) * p, az + (bz - az) * p, w, k, 0.45, Y0 + 0.002); const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz) || 1, nx = -dz / L * w / 2, nz = dx / L * w / 2; mLine(ax + nx, az + nz, bx + nx, bz + nz, 0.035, k, 1); mLine(ax - nx, az - nz, bx - nx, bz - nz, 0.035, k, 1); };
+    const mDash = (ax, az, bx, bz, w, k, al, p) => {
+        const L = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / L, uz = (bz - az) / L, h = w * 2.6;
+        for (let t = 0; t < L - h; t += 0.26)
+            mLine(ax + ux * t, az + uz * t, ax + ux * Math.min(L - h, t + 0.16), az + uz * Math.min(L - h, t + 0.16), w, k, al);
+        const ex = bx - ux * h, ez = bz - uz * h;
+        fTri(bx, bz, ex - uz * h * 0.6, ez + ux * h * 0.6, ex + uz * h * 0.6, ez - ux * h * 0.6, Y0 + 0.003, k, al);
+        if (p > 0)
+            mLine(ax, az, ax + (bx - ax) * p, az + (bz - az) * p, w * 2.4, k, 0.3, Y0);
+    };
+    const ANT = { worker: { hp: 45, power: 7, speed: 0.024 * 60 }, scout: { hp: 60, power: 18, speed: 0.022 * 60 }, striker: { hp: 100, power: 27, speed: 0.018 * 60 }, tank: { hp: 180, power: 38, speed: 0.012 * 60 } };
+    const BITE = { wind: 18 / 60, rest: 45 / 60, reach: 1.5, half: 0.42 };
+    const KIT = { player: { hp: 100, speed: 3.4 },
+        ram: { hp: 220, speed: 2.0, atk: { kind: 'wedge', name: 'WOBBLE SLAM', range: 1.45, reach: 1.9, half: 0.62, wind: 0.42, rest: 1.0, dmg: 30 } },
+        crab: { hp: 150, speed: 1.7, atk: { kind: 'ring', name: 'STAKE RING', range: 4.2, radius: 1.0, wind: 0.6, rest: 1.5, dmg: 16 } },
+        star: { hp: 120, speed: 1.8, atk: { kind: 'bolt', name: 'ICICLE VOLLEY', range: 6, wind: 12 / 60, rest: 55 / 60, dmg: 8, shots: 3, fly: 11 } } };
+    const SENTRY_ATK = { kind: 'beam', range: 5.5, wind: 0.5, rest: 1.0, dmg: 10 }, LUNGE = { wind: 0.6, len: 3.2, fly: 9, from: 2.2, to: 4.6, every: 6, k: 1.2, rest: 0.9 };
+    const WAVES = [['worker', 'worker', 'scout'], ['scout', 'scout', 'striker', 'worker'], ['tank', 'striker', 'worker', 'worker', 'scout']], POOL = { worker: 3, scout: 3, striker: 2, tank: 1 };
+    const NOTICE = 4.5, HURRY = 6, CRYSTAL_HP = 400, DOWN_FOR = 5, FOLLOW_GAP = 1.15, NEARBY = [[1.4, -0.7], [-0.7, 1.4], [-1.3, -0.4], [-0.4, -1.3], [1.9, -1.6], [-1.6, 1.9], [-1.5, -1.5], [2.4, -0.2], [-0.2, 2.4]];
+    const units = [], squad = [], ants = [];
+    for (const k of SQUAD) {
+        const c = U0[k], kit = KIT[k], h = cast.parts[k];
+        c.key = k;
+        const u = { key: k, team: 'squad', kind: 'form', name: c.name, holder: h, form: h.userData.form, x: c.at[0], y: c.at[1], ang: Math.atan2(c.face[1] - c.at[1], c.face[0] - c.at[0]), r: reach(c), top: c.top, lift: c.lift || 0, hp: kit.hp, max: kit.hp, lag: kit.hp, speed: kit.speed, atk: kit.atk || null,
+            alive: true, down: 0, path: null, pi: 0, st: 'idle', t: 0, target: null, aim: null, think: 0, repath: 0, act: 0, jab: 0 };
+        units.push(u);
+        squad.push(u);
+    }
+    const player = squad[0], followers = squad.slice(1);
+    for (const u of followers)
+        u.by = [u.x - player.x, u.y - player.y];
+    for (const cls of Object.keys(POOL))
+        for (let i = 0; i < POOL[cls]; i++) {
+            const size = cls === 'tank' ? 0.86 : 1, b = antBody(cls, size), def = { kind: 'ant', cls, size };
+            const u = { key: cls + i, team: 'ants', kind: 'ant', cls, name: cls, holder: b.holder, poses: b.poses, x: 0, y: 0, ang: 0, r: reach(def), top: b.info.top, lift: 0, hp: 0, max: ANT[cls].hp, lag: 0, speed: ANT[cls].speed, power: ANT[cls].power,
+                alive: false, path: null, pi: 0, st: 'idle', t: 0, target: null, aim: null, think: 0, repath: 0, moved: 0, engaged: false, entering: false, spot: null, lungeIn: 0, dying: 0, hitBy: null, jab: 0 };
+            units.push(u);
+            ants.push(u);
+        }
+    const sentries = world.sentries.map(s => ({ s, x: s.at[0], y: s.at[1], ang: 0, st: 'idle', t: 0, target: null, aim: null, mz: Math.hypot(s.muzzle[0], s.muzzle[2]), my: s.muzzle[1] }));
+    const crystal = { x: CR[0], y: CR[1], hp: CRYSTAL_HP, max: CRYSTAL_HP, lag: CRYSTAL_HP, team: 'squad', crystal: true, alive: true, r: world.padR, top: 2.7 };
+    const everyone = units.concat([crystal]), numbers = [], trail = [], log = { marks: 0, blows: 0, hits: 0, minLead: 1e9, antsDown: 0, squadDown: 0, waves: 0, raids: 0, held: 0, fell: 0 };
+    const raid = { phase: state.raid ? 'calm' : 'off', wave: 0, t: 0.6, first: true }, sim = { t: 0, scale: 1, fight: false, tap: null, room: world.roomAt(player.x, player.y), steps: 0, open: null, still: 0, hold: 0 };
+    const spots = [];
+    for (let x = Math.floor(CR[0] - 4); x <= Math.ceil(CR[0] + 4); x++)
+        for (let y = Math.floor(CR[1] - 4); y <= Math.ceil(CR[1] + 4); y++) {
+            const d = Math.hypot(x - CR[0], y - CR[1]);
+            if (world.walkable(x, y) && d > world.padR && d < world.padR + 1.25)
+                spots.push([x, y]);
+        }
+    const raidDoor = world.doors.find(d => d.kind === 'raid') || null, gate = [];
+    if (raidDoor)
+        for (let i = 0; i < raidDoor.L; i++) {
+            const p = [raidDoor.m[0] + raidDoor.u[0] * (i + 0.5 - raidDoor.L / 2) - raidDoor.nr[0] * raidDoor.out * 0.5, raidDoor.m[1] + raidDoor.u[1] * (i + 0.5 - raidDoor.L / 2) - raidDoor.nr[1] * raidDoor.out * 0.5];
+            if (world.walkable(Math.round(p[0]), Math.round(p[1])))
+                gate.push({ at: p, out: [raidDoor.nr[0] * raidDoor.out, raidDoor.nr[1] * raidDoor.out] });
+        }
+    for (const id of world.order)
+        mergeStill(world.rooms[id].g, { chunk: CHUNK, from: world.rooms[id].rec.bb, copy: true });
+    for (const G of world.groups)
+        mergeStill(G.g, { chunk: CHUNK * 2, copy: true });
+    for (const q of world.sentries)
+        mergeStill(q.head);
+    mergeStill(world.rest, { copy: true });
     for (const k of SQUAD)
         mergeRigid(cast.parts[k]);
     tagInk(scene);
-    const after = (() => { let n = 0; scene.traverse(o => { if (o.isMesh && shownChain(o))
-        n++; }); return n; })();
-    const count = root => { let n = 0; root.traverse(o => { if (o.isMesh)
-        n++; }); return n; }, parts = { room: count(world.g), squad: SQUAD.map(k => k + ' ' + count(cast.parts[k])).join(', '), ants: ANTS.reduce((a, k) => a + count(cast.parts[k]), 0), marks: count(marks) };
-    const cam = new T.PerspectiveCamera(22, 1, 1, 100), orbit = { az: 45, el: 33, dist: 23, target: [13.25, 0.35, 20.3], touched: -1e9, sway: 1 };
-    cam.layers.enable(2);
-    function place(t) {
-        orbit.sway += ((t - orbit.touched > 6 ? 1 : 0) - orbit.sway) * 0.04;
-        const az = (orbit.az + Math.sin(t * 0.22) * 7 * orbit.sway) * Math.PI / 180, e = orbit.el * Math.PI / 180, d = orbit.dist, g = orbit.target;
-        cam.position.set(g[0] + Math.cos(az) * Math.cos(e) * d, g[1] + Math.sin(e) * d, g[2] + Math.sin(az) * Math.cos(e) * d);
-        cam.lookAt(g[0], g[1], g[2]);
-        cam.near = Math.max(0.2, d * 0.3);
-        cam.far = d * 3 + 20;
-        cam.updateProjectionMatrix();
+    const after = countMeshes();
+    const faceTo = (u, a, dt, rate) => { const d = angDiff(a, u.ang), m = (rate || 9) * dt; u.ang += Math.abs(d) < m ? d : Math.sign(d) * m; };
+    function moveAlong(u, dt, speed) {
+        let left = speed * dt;
+        while (u.path && u.pi < u.path.length && left > 1e-9) {
+            const p = u.path[u.pi], dx = p[0] - u.x, dy = p[1] - u.y, d = Math.hypot(dx, dy);
+            if (d > 1e-6)
+                faceTo(u, Math.atan2(dy, dx), dt);
+            if (d <= left) {
+                u.x = p[0];
+                u.y = p[1];
+                left -= d;
+                u.pi++;
+                u.moved = (u.moved || 0) + d;
+            }
+            else {
+                u.x += dx / d * left;
+                u.y += dy / d * left;
+                u.moved = (u.moved || 0) + left;
+                left = 0;
+            }
+        }
+        if (u.path && u.pi >= u.path.length) {
+            u.path = null;
+            return true;
+        }
+        return false;
     }
-    const fingers = new Map();
-    let pinch = 0, clock = 0;
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const go = (u, to, r) => { const p = walk.route([u.x, u.y], to, r); if (p && p.length > 1) {
+        u.path = p;
+        u.pi = 1;
+        return true;
+    } u.path = null; return false; };
+    const sight = (a, b) => { const d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.ceil(d / 0.3); for (let i = 1; i < n; i++) {
+        const t = i / n;
+        if (!world.roomAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t))
+            return false;
+    } return true; };
+    function number(o, n, k) { if (numbers.length > 24)
+        numbers.shift(); const near = numbers.filter(q => q.t < 0.35 && Math.hypot(q.x - o.x, q.y - o.y) < 1.2).length; numbers.push({ x: o.x, y: o.y, h: (o.top || 1) + 0.45 + near * 0.34, s: String(Math.round(n)), t: 0, k, j: ((near + 1) % 3 - 1) * 0.3 }); }
+    function spark(x, h, y) { const s = sparks.find(q => q.t < 0) || sparks[0]; s.t = 0; s.g.position.set(x, h, y); }
+    function hurt(o, dmg, by) {
+        if (!o.alive || dmg <= 0)
+            return;
+        o.hp = Math.max(0, o.hp - dmg);
+        log.hits++;
+        number(o, dmg, o.team === 'ants' ? C.white : C.hurt);
+        spark(o.x, o.crystal ? 1.4 : Math.min(0.6, (o.top || 1) * 0.6), o.y);
+        if (by && o.kind === 'ant')
+            o.hitBy = by;
+        if (o.hp > 0 || o.crystal)
+            return;
+        if (o.kind === 'ant') {
+            o.alive = false;
+            o.dying = 0.3;
+            o.st = 'dead';
+            o.path = null;
+            o.aim = null;
+            log.antsDown++;
+        }
+        else {
+            o.down = DOWN_FOR;
+            o.st = 'idle';
+            o.path = null;
+            o.target = null;
+            o.aim = null;
+            log.squadDown++;
+        }
+    }
+    const standing = u => u.alive && !(u.down > 0);
+    function land(u, a, foes) {
+        log.blows++;
+        log.minLead = Math.min(log.minLead, a.lead);
+        if (a.kind === 'wedge') {
+            for (const f of foes) {
+                if (!standing(f))
+                    continue;
+                const d = dist2(u, f);
+                if (d <= a.reach + f.r * 0.5 && (d < 0.3 || Math.abs(angDiff(Math.atan2(f.y - u.y, f.x - u.x), a.ang)) <= a.half + 0.12))
+                    hurt(f, a.dmg, u);
+            }
+            if (a.crystal && crystal.alive && dist2(u, crystal) <= a.reach + crystal.r)
+                hurt(crystal, a.dmg, u);
+        }
+        else if (a.kind === 'ring') {
+            for (const f of foes)
+                if (standing(f) && Math.hypot(f.x - a.x, f.y - a.y) <= a.radius + f.r * 0.5)
+                    hurt(f, a.dmg, u);
+            const s = stakeSets.find(q => q.t < 0) || stakeSets[0];
+            s.t = 0;
+            s.g.position.set(a.x, 0, a.y);
+        }
+        else if (a.kind === 'bolt') {
+            for (let i = 0; i < a.shots; i++) {
+                const c = icicles.find(q => !q.on);
+                if (!c)
+                    break;
+                c.on = true;
+                c.wait = i * 0.07;
+                c.u = 0;
+                c.from = [u.x, 0.62 + (u.lift || 0), u.y];
+                c.to = a.target;
+                c.dmg = a.dmg;
+                c.by = u;
+                c.side = i - (a.shots - 1) / 2;
+                c.fly = a.fly;
+            }
+        }
+        else if (a.kind === 'beam') {
+            const f = a.target;
+            if (f && standing(f))
+                hurt(f, a.dmg, null);
+            const b = beams.find(q => q.t < 0) || beams[0];
+            b.t = 0;
+            b.from = a.from;
+            b.to = [f ? f.x : a.x, 0.25, f ? f.y : a.y];
+        }
+    }
+    function spawn(cls, at, hurry) {
+        const u = ants.find(a => a.cls === cls && !a.alive && a.dying <= 0) || ants.find(a => a.cls === cls && !a.alive);
+        if (!u)
+            return null;
+        Object.assign(u, { x: at[0], y: at[1], hp: u.max, lag: u.max, alive: true, st: 'idle', t: 0, target: null, aim: null, path: null, think: 0, repath: 0, engaged: !hurry, entering: false, lungeIn: 2, hitBy: null, moved: 0, jab: 0, dying: 0 });
+        u.spot = spots.length ? spots[(ants.indexOf(u) * 3 + raid.wave) % spots.length] : [Math.round(CR[0] + 2), Math.round(CR[1])];
+        u.ang = Math.atan2(CR[1] - u.y, CR[0] - u.x);
+        return u;
+    }
+    function sendWave() {
+        raid.wave++;
+        log.waves++;
+        const list = WAVES[raid.wave - 1];
+        if (raid.first) {
+            raid.first = false;
+            const near = [[21, 22], [22, 23], [21, 24], [23, 22], [23, 24]].filter(p => world.walkable(p[0], p[1]));
+            list.forEach((c, i) => spawn(c, near[i % Math.max(1, near.length)] || [20, 22], false));
+            return;
+        }
+        list.forEach((c, i) => { const q = gate.length ? gate[i % gate.length] : null, row = gate.length ? Math.floor(i / gate.length) : 0, u = spawn(c, q ? [q.at[0] + q.out[0] * (1.5 + row * 1.1), q.at[1] + q.out[1] * (1.5 + row * 1.1)] : [20, 38], true); if (u && q) {
+            u.path = [[q.at[0], q.at[1]]];
+            u.pi = 0;
+            u.entering = true;
+            u.ang = Math.atan2(-q.out[1], -q.out[0]);
+        } });
+    }
+    function restore() { crystal.hp = crystal.lag = crystal.max; crystal.alive = true; for (const u of squad) {
+        u.hp = u.lag = u.max;
+        u.down = 0;
+    } }
+    const fall = a => { a.alive = false; a.dying = 0.3; a.st = 'dead'; a.aim = null; a.path = null; };
+    function tickRaid(dt) {
+        let alive = 0;
+        for (const a of ants)
+            if (a.alive)
+                alive++;
+        if (!state.raid) {
+            if (raid.phase !== 'off') {
+                for (const a of ants)
+                    if (a.alive)
+                        fall(a);
+                raid.phase = 'off';
+                raid.wave = 0;
+                restore();
+            }
+            return;
+        }
+        if (raid.phase === 'off') {
+            raid.phase = 'calm';
+            raid.t = 1;
+            raid.wave = 0;
+        }
+        if (crystal.hp <= 0 && raid.phase !== 'fell') {
+            raid.phase = 'fell';
+            raid.t = 6;
+            log.fell++;
+            crystal.alive = false;
+            for (const a of ants)
+                if (a.alive)
+                    fall(a);
+            return;
+        }
+        if (raid.phase === 'calm') {
+            raid.t -= dt;
+            if (raid.t <= 0) {
+                raid.wave = 0;
+                log.raids++;
+                sendWave();
+                raid.phase = 'wave';
+            }
+        }
+        else if (raid.phase === 'wave') {
+            if (raid.wave < WAVES.length) {
+                if (!alive || (alive <= 1 && ants.every(a => !a.alive || a.engaged)))
+                    sendWave();
+            }
+            else if (!alive) {
+                raid.phase = 'held';
+                raid.t = 6;
+                log.held++;
+            }
+        }
+        else {
+            raid.t -= dt;
+            if (raid.t <= 0) {
+                restore();
+                raid.phase = 'calm';
+                raid.t = 7;
+                raid.wave = 0;
+            }
+        }
+    }
+    function windUp(u, a) { u.st = 'wind'; u.t = 0; u.aim = a; u.path = null; log.marks++; }
+    function tickBlow(u, dt) {
+        if (u.st === 'wind') {
+            u.t += dt;
+            faceTo(u, u.aim.ang, dt, 14);
+            if (u.t >= u.aim.wind) {
+                u.aim.lead = u.t;
+                land(u, u.aim, u.team === 'ants' ? squad : ants);
+                u.st = 'rest';
+                u.t = 0;
+                u.jab = 0.3;
+            }
+            return true;
+        }
+        if (u.st === 'rest') {
+            u.t += dt;
+            if (u.t >= u.aim.rest) {
+                u.st = 'idle';
+                u.aim = null;
+            }
+            return true;
+        }
+        return false;
+    }
+    function tickAnt(u, dt, k) {
+        if (!u.alive) {
+            if (u.dying > 0)
+                u.dying -= dt / k;
+            return;
+        }
+        if (u.jab > 0)
+            u.jab -= dt;
+        if (u.lungeIn > 0)
+            u.lungeIn -= dt;
+        if (u.entering) {
+            if (moveAlong(u, dt / k, HURRY))
+                u.entering = false;
+            return;
+        }
+        if (!u.engaged) {
+            if (Math.hypot(u.x - CR[0], u.y - CR[1]) < 9 || squad.some(s => standing(s) && dist2(u, s) < NOTICE)) {
+                u.engaged = true;
+                u.path = null;
+            }
+            else {
+                if (!u.path)
+                    go(u, u.spot, 3);
+                moveAlong(u, dt / k, HURRY);
+                return;
+            }
+        }
+        if (u.st === 'lunge') {
+            const a = u.aim, d = LUNGE.fly * dt;
+            u.x += Math.cos(a.ang) * d;
+            u.y += Math.sin(a.ang) * d;
+            a.gone += d;
+            u.moved += d;
+            for (const s of squad)
+                if (standing(s) && !a.struck.includes(s) && dist2(u, s) < 0.6 + s.r * 0.5) {
+                    a.struck.push(s);
+                    hurt(s, a.dmg, u);
+                }
+            if (a.gone >= a.len) {
+                u.st = 'rest';
+                u.t = 0;
+            }
+            return;
+        }
+        if (u.st === 'aim') {
+            u.t += dt;
+            faceTo(u, u.aim.ang, dt, 14);
+            if (u.t >= LUNGE.wind) {
+                log.blows++;
+                log.minLead = Math.min(log.minLead, u.t);
+                u.st = 'lunge';
+                u.aim.gone = 0;
+                u.aim.struck = [];
+                u.lungeIn = LUNGE.every;
+            }
+            return;
+        }
+        if (tickBlow(u, dt))
+            return;
+        u.think -= dt;
+        if (u.think <= 0) {
+            u.think = 0.4;
+            let best = null, bd = NOTICE;
+            if (u.hitBy && standing(u.hitBy) && dist2(u, u.hitBy) < 8)
+                best = u.hitBy;
+            else
+                for (const s of squad) {
+                    const d = dist2(u, s);
+                    if (standing(s) && d < bd) {
+                        bd = d;
+                        best = s;
+                    }
+                }
+            if (best !== u.target)
+                u.repath = 0;
+            u.target = best;
+        }
+        const tg = u.target && standing(u.target) ? u.target : null;
+        if (tg) {
+            const d = dist2(u, tg), a = Math.atan2(tg.y - u.y, tg.x - u.x);
+            if (d <= BITE.reach * 0.85 + tg.r * 0.3)
+                return windUp(u, { kind: 'wedge', ang: a, reach: BITE.reach + (u.cls === 'tank' ? 0.3 : 0), half: BITE.half, wind: BITE.wind, rest: BITE.rest, dmg: u.power });
+            if (u.cls === 'striker' && u.lungeIn <= 0 && d >= LUNGE.from && d <= LUNGE.to) {
+                let len = LUNGE.len;
+                while (len > 1 && !walk.clear([u.x, u.y], [u.x + Math.cos(a) * len, u.y + Math.sin(a) * len], 0.2))
+                    len -= 0.4;
+                if (len > 1.6) {
+                    u.st = 'aim';
+                    u.t = 0;
+                    u.path = null;
+                    u.aim = { kind: 'lunge', ang: a, len, dmg: Math.round(u.power * LUNGE.k), wind: LUNGE.wind, rest: LUNGE.rest };
+                    log.marks++;
+                    return;
+                }
+            }
+            u.repath -= dt;
+            if (u.repath <= 0 || !u.path) {
+                u.repath = 0.4;
+                go(u, [tg.x, tg.y], 2);
+            }
+            moveAlong(u, dt, u.speed);
+            return;
+        }
+        if (crystal.alive && Math.hypot(u.x - CR[0], u.y - CR[1]) <= world.padR + 1.3)
+            return windUp(u, { kind: 'wedge', ang: Math.atan2(CR[1] - u.y, CR[0] - u.x), reach: BITE.reach, half: BITE.half, wind: BITE.wind, rest: BITE.rest, dmg: u.power, crystal: true });
+        if (!u.path)
+            go(u, u.spot, 3);
+        moveAlong(u, dt, u.speed);
+    }
+    function tickFollower(u, i, dt) {
+        if (u.down > 0) {
+            u.down -= dt;
+            if (u.down <= 0)
+                u.hp = u.lag = Math.round(u.max / 2);
+            return;
+        }
+        u.act += ((u.st === 'wind' ? 0.35 + 0.65 * u.t / u.aim.wind : u.st === 'rest' && u.t < 0.25 ? 1 - u.t / 0.25 : 0) - u.act) * Math.min(1, dt * 18);
+        if (tickBlow(u, dt))
+            return;
+        u.think -= dt;
+        if (u.think <= 0) {
+            u.think = 0.35;
+            let best = null, bd = 1e9;
+            for (const a of ants) {
+                if (!a.alive || !a.engaged)
+                    continue;
+                const d = dist2(u, a);
+                if ((d < 7.5 || dist2(player, a) < 7.5 || (Math.hypot(a.x - CR[0], a.y - CR[1]) < world.padR + 2.2 && Math.hypot(u.x - CR[0], u.y - CR[1]) < 16)) && d < bd) {
+                    bd = d;
+                    best = a;
+                }
+            }
+            if (best !== u.target)
+                u.repath = 0;
+            u.target = best;
+        }
+        const tg = u.target && u.target.alive ? u.target : null, A = u.atk;
+        if (tg) {
+            const d = dist2(u, tg), a = Math.atan2(tg.y - u.y, tg.x - u.x), seen = A.kind === 'wedge' || sight(u, tg);
+            if (d <= A.range + tg.r * 0.3 && seen) {
+                if (A.kind === 'wedge')
+                    return windUp(u, { kind: 'wedge', ang: a, reach: A.reach, half: A.half, wind: A.wind, rest: A.rest, dmg: A.dmg });
+                if (A.kind === 'ring')
+                    return windUp(u, { kind: 'ring', ang: a, x: tg.x, y: tg.y, radius: A.radius, wind: A.wind, rest: A.rest, dmg: A.dmg });
+                return windUp(u, { kind: 'bolt', ang: a, target: tg, wind: A.wind, rest: A.rest, dmg: A.dmg, shots: A.shots, fly: A.fly });
+            }
+            u.repath -= dt;
+            if (u.repath <= 0 || !u.path) {
+                u.repath = 0.4;
+                go(u, [tg.x, tg.y], 2);
+            }
+            moveAlong(u, dt, u.speed);
+            return;
+        }
+        let slot = null;
+        if (sim.still < 0.9) {
+            let need = FOLLOW_GAP * (i + 1), px = player.x, py = player.y;
+            for (let j = trail.length - 1; j >= 0 && !slot; j--) {
+                const q = trail[j], d = Math.hypot(q[0] - px, q[1] - py);
+                if (d >= need)
+                    slot = [px + (q[0] - px) * need / d, py + (q[1] - py) * need / d];
+                else {
+                    need -= d;
+                    px = q[0];
+                    py = q[1];
+                }
+            }
+        }
+        else {
+            const fits = q => walk.standable(q) && walk.clear([player.x, player.y], q, 0.2), want = [player.x + u.by[0], player.y + u.by[1]];
+            slot = fits(want) ? want : null;
+            for (let j = 0; j < NEARBY.length && !slot; j++) {
+                const o = NEARBY[(i * 2 + j) % NEARBY.length], q = [player.x + o[0], player.y + o[1]];
+                if (fits(q))
+                    slot = q;
+            }
+        }
+        if (!slot) {
+            if (sim.still >= 0.9)
+                u.path = null;
+            return;
+        }
+        const off = Math.hypot(slot[0] - u.x, slot[1] - u.y);
+        u.repath -= dt;
+        if (off > 0.45 && (u.repath <= 0 || !u.path)) {
+            u.repath = sim.still < 0.9 ? 0.3 : 1.2;
+            go(u, slot, 1.5);
+        }
+        else if (off <= 0.45 && sim.still >= 0.9)
+            u.path = null;
+        if (u.path)
+            moveAlong(u, dt, off > 2.4 ? KIT.player.speed * 1.25 : KIT.player.speed * (sim.still < 0.9 ? 1 : 0.7));
+    }
+    function tickSentry(q, dt) {
+        const A = SENTRY_ATK;
+        if (q.st === 'wind') {
+            q.t += dt;
+            const f = q.aim.target;
+            if (f && f.alive) {
+                q.aim.ang = Math.atan2(f.y - q.y, f.x - q.x);
+                q.aim.x = f.x;
+                q.aim.y = f.y;
+            }
+            q.ang += angDiff(q.aim.ang, q.ang) * Math.min(1, dt * 12);
+            if (q.t >= A.wind) {
+                q.aim.lead = q.t;
+                q.aim.from = [q.x + Math.cos(q.ang) * q.mz, q.my, q.y + Math.sin(q.ang) * q.mz];
+                land(q, q.aim, ants);
+                q.st = 'rest';
+                q.t = 0;
+            }
+            return;
+        }
+        if (q.st === 'rest') {
+            q.t += dt;
+            if (q.t >= A.rest)
+                q.st = 'idle';
+            return;
+        }
+        let best = null, bd = A.range;
+        for (const a of ants) {
+            if (!a.alive || !a.engaged)
+                continue;
+            const d = Math.hypot(a.x - q.x, a.y - q.y);
+            if (d < bd && d > 0.8 && sight({ x: q.x + (a.x - q.x) / d * 0.7, y: q.y + (a.y - q.y) / d * 0.7 }, a)) {
+                bd = d;
+                best = a;
+            }
+        }
+        if (best) {
+            q.st = 'wind';
+            q.t = 0;
+            q.aim = { kind: 'beam', target: best, x: best.x, y: best.y, ang: Math.atan2(best.y - q.y, best.x - q.x), wind: A.wind, rest: A.rest, dmg: A.dmg };
+            log.marks++;
+        }
+    }
+    function apart(list) {
+        for (let i = 0; i < list.length; i++)
+            for (let j = i + 1; j < list.length; j++) {
+                const a = list[i], b = list[j];
+                if (!standing(a) || !standing(b) || a.st === 'lunge' || b.st === 'lunge' || a.entering || b.entering)
+                    continue;
+                const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = (a.r + b.r) * 0.72;
+                if (d >= min || d < 1e-4)
+                    continue;
+                const push = (min - d) * 0.12, ux = dx / d, uy = dy / d;
+                for (const [o, s] of [[a, -1], [b, 1]]) {
+                    if (o === player)
+                        continue;
+                    const nx = o.x + ux * push * s, ny = o.y + uy * push * s;
+                    if (walk.standable([nx, ny])) {
+                        o.x = nx;
+                        o.y = ny;
+                    }
+                }
+            }
+    }
+    function step(dtReal) {
+        if (ants.some(a => a.alive && a.engaged))
+            sim.hold = 1.5;
+        else
+            sim.hold = ants.some(a => a.alive) ? Math.max(0, sim.hold - dtReal) : 0;
+        sim.fight = sim.hold > 0;
+        sim.scale += ((sim.fight ? state.pace : 1) - sim.scale) * Math.min(1, dtReal * 5);
+        const k = sim.scale, dt = dtReal * k;
+        sim.t += dt;
+        sim.steps++;
+        tickRaid(dtReal);
+        if (player.down > 0) {
+            player.down -= dt;
+            if (player.down <= 0)
+                player.hp = player.lag = Math.round(player.max / 2);
+        }
+        else if (player.path) {
+            const x0 = player.x, y0 = player.y, last = trail.length ? trail[trail.length - 1] : null;
+            if (!last || Math.hypot(last[0] - x0, last[1] - y0) > 0.3) {
+                trail.push([x0, y0]);
+                if (trail.length > 60)
+                    trail.shift();
+            }
+            if (moveAlong(player, dt, player.speed))
+                sim.tap = null;
+        }
+        sim.still = player.path ? 0 : sim.still + dt;
+        followers.forEach((u, i) => tickFollower(u, i, dt));
+        for (const a of ants)
+            tickAnt(a, dt, k);
+        for (const q of sentries)
+            tickSentry(q, dt);
+        apart(squad);
+        apart(ants);
+        for (const c of icicles) {
+            if (!c.on)
+                continue;
+            if (c.wait > 0) {
+                c.wait -= dt;
+                continue;
+            }
+            const f = c.to, L = Math.hypot(f.x - c.from[0], f.y - c.from[2]) || 1;
+            c.u += c.fly * dt / L;
+            if (c.u >= 1) {
+                c.on = false;
+                if (f.alive)
+                    hurt(f, c.dmg, c.by);
+            }
+        }
+        for (const o of everyone)
+            if (o.lag > o.hp)
+                o.lag = Math.max(o.hp, o.lag - o.max * dt / 0.6);
+            else
+                o.lag = o.hp;
+        for (let i = numbers.length - 1; i >= 0; i--) {
+            numbers[i].t += dtReal;
+            if (numbers[i].t > 0.9)
+                numbers.splice(i, 1);
+        }
+        for (const s of stakeSets)
+            if (s.t >= 0) {
+                s.t += dt;
+                if (s.t > 0.9)
+                    s.t = -1;
+            }
+        for (const b of beams)
+            if (b.t >= 0) {
+                b.t += dtReal;
+                if (b.t > 0.14)
+                    b.t = -1;
+            }
+        for (const s of sparks)
+            if (s.t >= 0) {
+                s.t += dtReal;
+                if (s.t > 0.16)
+                    s.t = -1;
+            }
+        if (sim.tap)
+            sim.tap.t += dtReal;
+        sim.room = world.roomAt(player.x, player.y) || sim.room;
+    }
+    function walkTo(p) { if (player.down > 0)
+        return false; if (!go(player, p, 2.5))
+        return false; const e = player.path[player.path.length - 1]; sim.tap = { x: e[0], y: e[1], t: 0 }; orbit.follow = true; return true; }
+    const cam = new T.PerspectiveCamera(22, 1, 1, 100), SEE = () => { cam.layers.set(0); cam.layers.enable(1); cam.layers.enable(2); };
+    SEE();
+    const orbit = { az: 45, el: 33, dist: 23, target: [13.25, 0.35, 20.3], touched: -1e9, sway: 1, follow: false };
+    const view = { tx: 13.25, ty: 0.35, tz: 20.3, el: 33, dist: 23, k: 0 }, NEAR = { el: 25, dist: 12.5 };
+    let clock = 0;
+    function fightAt() {
+        const who = [];
+        for (const a of ants)
+            if (a.alive && a.engaged)
+                who.push(a);
+        if (!who.length) {
+            if (!sim.fight)
+                return null;
+            for (const a of ants)
+                if (a.alive && Math.hypot(a.x - CR[0], a.y - CR[1]) < 16)
+                    who.push(a);
+            for (const u of squad)
+                if (standing(u) && u !== player)
+                    who.push(u);
+            if (!who.length)
+                return null;
+        }
+        const n0 = who.length;
+        for (const s of squad)
+            if (standing(s) && (s.st !== 'idle' || s.target || who.slice(0, n0).some(a => dist2(a, s) < 5)))
+                who.push(s);
+        if (who.slice(0, n0).some(a => Math.hypot(a.x - CR[0], a.y - CR[1]) < world.padR + 2))
+            who.push(crystal);
+        let x = 0, y = 0, far = 0;
+        for (const o of who) {
+            x += o.x;
+            y += o.y;
+        }
+        x /= who.length;
+        y /= who.length;
+        for (const o of who)
+            far = Math.max(far, Math.hypot(o.x - x, o.y - y));
+        return { x, y, far, who };
+    }
+    function place(dt) {
+        const f = fightAt(), near = state.cam === 'near' || (state.cam === 'auto' && !!f && Math.hypot(f.x - player.x, f.y - player.y) < 16);
+        view.k = dt ? view.k + ((near ? 1 : 0) - view.k) * Math.min(1, dt * 2.2) : (near ? 1 : 0);
+        const k = ease(clamp(view.k, 0, 1));
+        orbit.sway += ((clock - orbit.touched > 6 ? 1 : 0) - orbit.sway) * Math.min(1, dt * 2.4);
+        const fx = orbit.follow ? player.x : orbit.target[0], fz = orbit.follow ? player.y : orbit.target[2], nx = f ? f.x : player.x, nz = f ? f.y : player.y, nd = f ? clamp(8.5 + f.far * 1.9, 11, 17) : NEAR.dist;
+        const gx = fx + (nx - fx) * k, gz = fz + (nz - fz) * k, m = dt ? Math.min(1, dt * 5) : 1;
+        view.tx += (gx - view.tx) * m;
+        view.tz += (gz - view.tz) * m;
+        view.ty += ((0.35 + 0.1 * k) - view.ty) * m;
+        view.el += ((orbit.el + (Math.min(NEAR.el, orbit.el) - orbit.el) * k) - view.el) * m;
+        view.dist += ((orbit.dist + (Math.min(nd, orbit.dist) - orbit.dist) * k) - view.dist) * m;
+        const az = (orbit.az + Math.sin(clock * 0.22) * 5 * orbit.sway) * Math.PI / 180, e = view.el * Math.PI / 180, d = view.dist;
+        cam.position.set(view.tx + Math.cos(az) * Math.cos(e) * d, view.ty + Math.sin(e) * d, view.tz + Math.sin(az) * Math.cos(e) * d);
+        cam.lookAt(view.tx, view.ty, view.tz);
+        cam.near = Math.max(0.2, d * 0.3);
+        cam.far = d * 3 + 30;
+        cam.updateProjectionMatrix();
+        cam.updateMatrixWorld();
+        const open = new Set([sim.room]);
+        if (f && view.k > 0.5)
+            for (const o of f.who) {
+                const r = world.roomAt(o.x, o.y);
+                if (r)
+                    open.add(r);
+            }
+        for (const G of world.groups) {
+            G.want = G.hide.some(r => open.has(r)) ? 1 : 0;
+            if (G.down !== G.want) {
+                G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want;
+                G.g.position.y = -ease(G.down) * (WALL_H + 0.16);
+                G.g.visible = G.down < 1;
+            }
+        }
+        sim.open = open;
+    }
+    const Ld = key ? new T.Vector3(8, 14, 3) : null, Lz = Ld ? Ld.clone().normalize() : null, Lx = Ld ? new T.Vector3().crossVectors(UP, Lz).normalize() : null, Ly = Ld ? new T.Vector3().crossVectors(Lz, Lx) : null;
+    let shadowSize = 0;
+    function aimLight() {
+        if (!key)
+            return;
+        const s = clamp(Math.round(view.dist * 0.5 / 2) * 2, 11, 34);
+        if (s !== shadowSize) {
+            shadowSize = s;
+            Object.assign(key.shadow.camera, { left: -s, right: s, top: s, bottom: -s });
+            key.shadow.camera.updateProjectionMatrix();
+        }
+        const tex = 2 * s / key.shadow.mapSize.x, p = tmpV.set(view.tx, 0, view.tz), a = Math.round(p.dot(Lx) / tex) * tex, b = Math.round(p.dot(Ly) / tex) * tex, c = p.dot(Lz);
+        p.set(0, 0, 0).addScaledVector(Lx, a).addScaledVector(Ly, b).addScaledVector(Lz, c);
+        key.target.position.copy(p);
+        key.position.copy(p).add(Ld);
+        key.target.updateMatrixWorld();
+        key.updateMatrixWorld();
+    }
+    const fingers = new Map(), ray = new T.Raycaster();
+    let pinch = 0, tapAt = null;
+    function floorAt(cx, cy) { const r = canvas.getBoundingClientRect(); ray.setFromCamera({ x: (cx - r.left) / r.width * 2 - 1, y: -((cy - r.top) / r.height) * 2 + 1 }, cam); const o = ray.ray.origin, d = ray.ray.direction; if (d.y > -1e-4)
+        return null; const t = -o.y / d.y; return [o.x + d.x * t, o.z + d.z * t]; }
     canvas.addEventListener('pointerdown', e => { try {
         canvas.setPointerCapture(e.pointerId);
     }
-    catch (x) { } fingers.set(e.pointerId, [e.clientX, e.clientY]); pinch = 0; orbit.touched = clock; e.preventDefault(); });
+    catch (x) { } fingers.set(e.pointerId, [e.clientX, e.clientY]); pinch = 0; orbit.touched = clock; tapAt = fingers.size === 1 ? { x: e.clientX, y: e.clientY, at: performance.now(), far: 0 } : null; e.preventDefault(); });
     canvas.addEventListener('pointermove', e => {
         const p = fingers.get(e.pointerId);
         if (!p)
@@ -27039,6 +28564,11 @@ const LIVE = (function () {
         p[0] = e.clientX;
         p[1] = e.clientY;
         orbit.touched = clock;
+        if (tapAt) {
+            tapAt.far = Math.max(tapAt.far, Math.hypot(e.clientX - tapAt.x, e.clientY - tapAt.y));
+            if (tapAt.far <= 9)
+                return;
+        }
         if (fingers.size === 1) {
             orbit.az = clamp(orbit.az + dx * 0.25, 8, 82);
             orbit.el = clamp(orbit.el + dy * 0.2, 14, 72);
@@ -27046,29 +28576,33 @@ const LIVE = (function () {
         else if (fingers.size === 2) {
             const q = [...fingers.values()], d = Math.hypot(q[0][0] - q[1][0], q[0][1] - q[1][1]);
             if (pinch)
-                orbit.dist = clamp(orbit.dist * pinch / d, 9, 34);
+                orbit.dist = clamp(orbit.dist * pinch / d, 9, 80);
             pinch = d;
         }
     });
+    canvas.addEventListener('pointerup', e => { if (tapAt && fingers.size === 1 && tapAt.far <= 9 && performance.now() - tapAt.at < 600) {
+        const p = floorAt(e.clientX, e.clientY);
+        if (p)
+            walkTo(p);
+    } tapAt = null; });
     for (const n of ['pointerup', 'pointercancel', 'pointerleave'])
         canvas.addEventListener(n, e => { fingers.delete(e.pointerId); pinch = 0; });
-    canvas.addEventListener('wheel', e => { orbit.dist = clamp(orbit.dist * Math.exp(e.deltaY * 0.001), 9, 34); orbit.touched = clock; e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('wheel', e => { orbit.dist = clamp(orbit.dist * Math.exp(e.deltaY * 0.001), 9, 80); orbit.touched = clock; e.preventDefault(); }, { passive: false });
     const target = () => { const r = new T.WebGLRenderTarget(4, 4, { minFilter: T.NearestFilter, magFilter: T.NearestFilter }); if (depthOK) {
         r.depthTexture = new T.DepthTexture(4, 4);
         r.depthTexture.type = T.UnsignedIntType;
     } return r; };
     const rtMain = target(), rtId = target();
     rtMain.texture.minFilter = rtMain.texture.magFilter = T.LinearFilter;
-    const idMat = new T.ShaderMaterial({ side: T.DoubleSide, vertexShader: 'attribute vec3 idc; varying vec3 vId;\n#include <common>\nvoid main() { vId = idc;\n#include <begin_vertex>\n#include <project_vertex>\n}', fragmentShader: 'varying vec3 vId; void main() { gl_FragColor = vec4(vId, 1.0); }' });
-    const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: lin('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: 0.02 }, useDepth: { value: depthOK ? 1 : 0 } },
+    rtMain.texture.encoding = T.sRGBEncoding;
+    const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: 0.02 }, useDepth: { value: depthOK ? 1 : 0 } },
         vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
         fragmentShader: `uniform sampler2D tMain, tId, tDepth; uniform vec2 res; uniform vec3 ink; uniform float thick, near, far, dK, useDepth; varying vec2 vUv;
     float lin(vec2 uv) { float z = texture2D(tDepth, uv).x; return (2.0 * near * far) / (far + near - (z * 2.0 - 1.0) * (far - near)); }
-    vec3 srgb(vec3 c) { return mix(c * 12.92, pow(c, vec3(1.0 / 2.4)) * 1.055 - 0.055, step(vec3(0.0031308), c)); }
     void main() { vec2 e = thick / res, uA = vUv + e, uB = vUv - e, uC = vUv + e * vec2(1.0, -1.0), uD = vUv - e * vec2(1.0, -1.0); vec3 c = texture2D(tMain, vUv).rgb;
       float k = step(0.004, length(texture2D(tId, uA).rgb - texture2D(tId, uB).rgb) + length(texture2D(tId, uC).rgb - texture2D(tId, uD).rgb));
       if (useDepth > 0.5) { float dA = lin(uA), dB = lin(uB), dC = lin(uC), dD = lin(uD); k = max(k, smoothstep(dK, dK * 2.2, (abs(dA - dB) + abs(dC - dD)) / min(min(dA, dB), min(dC, dD)))); }
-      gl_FragColor = vec4(srgb(clamp(mix(c, ink, k), 0.0, 1.0)), 1.0); }` });
+      gl_FragColor = vec4(mix(c, ink, k), 1.0); }` });
     const quadScene = new T.Scene(), quadCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), quad = new T.Mesh(new T.PlaneGeometry(2, 2), comp);
     quad.frustumCulled = false;
     quadScene.add(quad);
@@ -27088,81 +28622,202 @@ const LIVE = (function () {
         comp.uniforms.thick.value = Math.max(1, pxW / 940);
         cam.aspect = w / h;
     }
-    const CYCLE = 4.8, pulse = (p, t0, len) => { const u = (p - t0) / len; return u <= 0 || u >= 1 ? 0 : Math.sin(u * Math.PI); }, gy0 = pa.gem.position.y, sDir = [Math.cos(biteAng), Math.sin(biteAng)], span = pa.tankSpan;
-    const bub = pa.bubbles.map((b, i) => ({ b, y: b.position.y, v: 0.16 + (i % 5) * 0.05 }));
-    function animate(t) {
-        const p = t % CYCLE;
-        for (const [k, act] of [['player', 0], ['ram', pulse(p, 2.0, 0.7)], ['crab', pulse(p, 3.3, 0.8)], ['star', Math.max(pulse(p, 0.3, 0.6), pulse(p, 2.8, 0.6))]]) {
-            const f = cast.parts[k].userData.form;
-            if (f && f.B.update) {
-                f.B.update(t + k.length * 0.37, act);
-                for (const o of f.hidden)
-                    o.visible = false;
+    const gy0 = pa.gem ? pa.gem.position.y : 0, span = pa.tankSpan || [0, 1], bub = (pa.bubbles || []).map((b, i) => ({ b, y: b.position.y, v: 0.16 + (i % 5) * 0.05 }));
+    function pose(t) {
+        squad.forEach((u, i) => { const h = u.holder, f = u.form, dn = u.down > 0; h.position.set(u.x, 0, u.y); h.rotation.y = Math.PI / 2 - u.ang; h.scale.set(1, dn ? 0.3 : 1, 1); if (f && f.B.update) {
+            f.B.update(t + i * 1.1, dn ? 0 : (u.act || 0));
+            for (const o of f.hidden)
+                o.visible = false;
+        } });
+        for (const u of ants) {
+            const h = u.holder, show = u.alive || u.dying > 0;
+            h.visible = show;
+            if (!show)
+                continue;
+            const j = u.jab > 0 ? Math.sin((0.3 - u.jab) / 0.3 * Math.PI) * 0.28 : u.st === 'wind' || u.st === 'aim' ? -0.12 * Math.min(1, u.t / 0.2) : 0;
+            h.position.set(u.x + Math.cos(u.ang) * j, 0, u.y + Math.sin(u.ang) * j);
+            h.rotation.y = -u.ang;
+            const s = u.alive ? 1 : Math.max(0.001, u.dying / 0.3);
+            h.scale.set(s, s, s);
+            const pi = u.st === 'wind' || u.st === 'aim' ? 4 : Math.floor((u.moved || 0) * 2.6) % 4;
+            for (let i = 0; i < u.poses.length; i++)
+                u.poses[i].visible = i === pi;
+        }
+        for (const q of sentries)
+            q.s.head.rotation.y = -q.ang;
+        for (const c of icicles) {
+            const m = c.m;
+            m.visible = c.on && c.wait <= 0;
+            if (!m.visible)
+                continue;
+            const f = c.to, a = tmpV.set(c.from[0], c.from[1], c.from[2]), b = tmpW.set(f.x, Math.min(0.5, (f.top || 0.6) * 0.5), f.y), dir = b.clone().sub(a).normalize();
+            m.position.copy(a).lerp(b, c.u);
+            m.position.y += Math.sin(c.u * Math.PI) * 0.1;
+            m.position.x += c.side * 0.1 * dir.z;
+            m.position.z -= c.side * 0.1 * dir.x;
+            m.quaternion.setFromUnitVectors(UP, dir);
+        }
+        for (const s of stakeSets) {
+            s.g.visible = s.t >= 0;
+            if (s.t >= 0) {
+                const k = s.t < 0.12 ? s.t / 0.12 : s.t < 0.7 ? 1 : 1 - (s.t - 0.7) / 0.2;
+                s.g.scale.set(1, Math.max(0.001, k), 1);
             }
         }
-        const w = clamp(p / 1.6, 0, 1), go = p < 1.78;
-        biteOut.visible = go;
-        biteIn.visible = go;
-        biteIn.scale.set(w, w, 1);
-        const l = p < 1.6 ? 0 : p < 1.74 ? (p - 1.6) / 0.14 : p < 2.1 ? 1 - (p - 1.74) / 0.36 : 0;
-        cast.parts.soldier.position.set(U.soldier.at[0] + sDir[0] * l * 0.3, 0, U.soldier.at[1] + sDir[1] * l * 0.3);
-        hit.visible = p > 2.3 && p < 2.55;
-        lunge.visible = p > 2.4;
-        for (let i = 0; i < 3; i++) {
-            const t0 = (p > 2.4 ? 2.95 : 0.45) + i * 0.07, u = (p - t0) / 0.5, c = icicles[i];
-            c.visible = u > 0 && u < 1;
-            if (c.visible) {
-                c.position.copy(iA).lerp(iB, u);
-                c.position.y += Math.sin(u * Math.PI) * 0.1;
-                c.position.x += (i - 1) * 0.1 * iDir.z;
-                c.position.z -= (i - 1) * 0.1 * iDir.x;
+        for (const b of beams) {
+            b.g.visible = b.t >= 0;
+            if (b.t >= 0) {
+                const a = tmpV.set(b.from[0], b.from[1], b.from[2]), e = tmpW.set(b.to[0], b.to[1], b.to[2]), d = e.clone().sub(a), L = d.length() || 1;
+                b.g.position.copy(a).addScaledVector(d, 0.5);
+                b.g.quaternion.setFromUnitVectors(UP, d.normalize());
+                b.g.scale.set(1, L, 1);
             }
         }
-        const s = p < 3.6 ? 0 : p < 3.8 ? (p - 3.6) / 0.2 : p < 4.5 ? 1 : p < 4.7 ? 1 - (p - 4.5) / 0.2 : 0;
-        stakes.visible = s > 0;
-        stakes.scale.set(1, Math.max(0.001, s), 1);
-        beam.visible = (t % 1.2) < 0.2;
-        pa.gem.rotation.y = t * 0.6;
-        pa.gem.position.y = gy0 + Math.sin(t * 1.3) * 0.07;
+        for (const s of sparks) {
+            s.g.visible = s.t >= 0;
+            if (s.t >= 0)
+                s.g.scale.setScalar(0.7 + s.t / 0.16 * 0.8);
+        }
+        if (pa.gem) {
+            pa.gem.rotation.y = t * 0.6;
+            pa.gem.position.y = gy0 + Math.sin(t * 1.3) * 0.07;
+        }
         for (const q of bub)
             q.b.position.y = span[0] + ((q.y - span[0] + t * q.v) % (span[1] - span[0]));
     }
-    const stats = { fps: 0, ms: 0, worst: 0, draws: 0, tris: 0, frames: 0, w: 0, h: 0, webgl: gl2 ? 2 : 1, depth: depthOK, meshesBefore: before, meshesAfter: after, solids: idCount, parts };
-    let last = 0, acc = 0, n = 0, worst = 0, stopped = false, raf = 0;
+    function marks() {
+        FM.begin();
+        for (const u of squad)
+            mRing(u.x, u.y, u.r, 0.045, u.down > 0 ? C.grey : C.squad, 0.95);
+        for (const u of ants)
+            if (u.alive && !u.entering)
+                mRing(u.x, u.y, u.r, 0.045, C.ants, 0.95);
+        for (const u of units) {
+            if (!u.alive || !u.aim)
+                continue;
+            const a = u.aim, k = u.team === 'ants' ? C.ants : C.squad;
+            if (u.st === 'wind') {
+                const p = clamp(u.t / a.wind, 0, 1);
+                if (a.kind === 'wedge')
+                    mWedge(u.x, u.y, a.ang, a.reach, a.half, k, p);
+                else if (a.kind === 'ring')
+                    mDisc(a.x, a.y, a.radius, k, p);
+                else if (a.kind === 'bolt' && a.target.alive)
+                    mStrip(u.x, u.y, a.target.x, a.target.y, 0.2, k, p);
+            }
+            else if (u.st === 'aim')
+                mDash(u.x, u.y, u.x + Math.cos(a.ang) * a.len, u.y + Math.sin(a.ang) * a.len, 0.07, k, 0.95, clamp(u.t / LUNGE.wind, 0, 1));
+        }
+        for (const q of sentries)
+            if (q.st === 'wind')
+                mStrip(q.x + Math.cos(q.ang) * 0.4, q.y + Math.sin(q.ang) * 0.4, q.aim.x, q.aim.y, 0.14, C.squad, clamp(q.t / SENTRY_ATK.wind, 0, 1));
+        if (sim.tap && player.path) {
+            const p = (sim.tap.t * 1.6) % 1;
+            mRing(sim.tap.x, sim.tap.y, 0.18 + p * 0.3, 0.05, C.white, 0.9 * (1 - p));
+            mRing(sim.tap.x, sim.tap.y, 0.16, 0.05, C.white, 0.9);
+        }
+        FM.end();
+    }
+    const cR = new T.Vector3(), cU = new T.Vector3();
+    const corner = (Bt, x, y, z, a, b, k, al, s, t) => Bt.v(x + cR.x * a + cU.x * b, y + cR.y * a + cU.y * b, z + cR.z * a + cU.z * b, k, al, s, t);
+    function rect(Bt, x, y, z, x0, x1, y0, y1, k, al, s0, s1) { corner(Bt, x, y, z, x0, y0, k, al, s0, 0); corner(Bt, x, y, z, x1, y0, k, al, s1, 0); corner(Bt, x, y, z, x1, y1, k, al, s1, 1); corner(Bt, x, y, z, x0, y0, k, al, s0, 0); corner(Bt, x, y, z, x1, y1, k, al, s1, 1); corner(Bt, x, y, z, x0, y1, k, al, s0, 1); }
+    function bars() {
+        cR.setFromMatrixColumn(cam.matrixWorld, 0);
+        cU.setFromMatrixColumn(cam.matrixWorld, 1);
+        BR.begin();
+        NM.begin();
+        const bar = (o, w, h, up) => {
+            const f = clamp(o.hp / o.max, 0, 1), g = clamp(o.lag / o.max, 0, 1), y = (o.top || 1) + up, e = h * 0.35;
+            rect(BR, o.x, y, o.y, -w / 2 - e, w / 2 + e, -h / 2 - e, h / 2 + e, C.dark, 0.82);
+            if (g > f)
+                rect(BR, o.x, y, o.y, -w / 2 + w * f, -w / 2 + w * g, -h / 2, h / 2, C.ghost, 0.8);
+            if (f > 0)
+                rect(BR, o.x, y, o.y, -w / 2, -w / 2 + w * f, -h / 2, h / 2, o.team === 'ants' ? C.bad : f > 0.5 ? C.ok : f > 0.3 ? C.warn : C.bad, 1);
+        };
+        for (const u of ants)
+            if (u.alive && !u.entering)
+                bar(u, u.cls === 'tank' ? 1.05 : 0.78, 0.085, 0.22);
+        for (const u of squad)
+            if (u.hp < u.max)
+                bar(u, 0.9, 0.085, 0.24);
+        if (crystal.hp < crystal.max)
+            bar(crystal, 1.5, 0.11, 0);
+        for (const n of numbers) {
+            const p = n.t / 0.9, sc = (n.t < 0.1 ? 1 + (1 - n.t / 0.1) * 0.5 : 1) * 0.46, w = sc * 0.62, x0 = -n.s.length * w / 2 + n.j, y = n.h + p * 0.75, al = p > 0.65 ? 1 - (p - 0.65) / 0.35 : 1;
+            for (let i = 0; i < n.s.length; i++) {
+                const gi = GLYPHS.indexOf(n.s[i]);
+                if (gi < 0)
+                    continue;
+                rect(NM, n.x, y, n.y, x0 + i * w - w * 0.2, x0 + (i + 1) * w + w * 0.2, -sc / 2, sc / 2, n.k, al, gi / GLYPHS.length, (gi + 1) / GLYPHS.length);
+            }
+        }
+        BR.end();
+        NM.end();
+    }
+    const stats = { fps: 0, ms: 0, worst: 0, draws: 0, tris: 0, frames: 0, w: 0, h: 0, webgl: gl2 ? 2 : 1, depth: depthOK, meshesBefore: before, meshesAfter: after, solids: idCount, rooms: world.order.length, wallPieces: world.groups.length };
+    let last = 0, acc = 0, n = 0, worst = 0, stopped = false, raf = 0, owed = 0, hudAt = -1, hudWas = '', drawn = 0;
+    function advance(dt) { clock += dt; owed += dt; let k = 0; while (owed >= 1 / 60 - 1e-9 && k < 6) {
+        step(1 / 60);
+        owed -= 1 / 60;
+        k++;
+    } if (k === 6)
+        owed = 0; place(dt); }
+    if (key) {
+        const upd = key.shadow.updateMatrices;
+        key.shadow.updateMatrices = function (light) { upd.call(this, light); cam.layers.set(0); cam.layers.enable(3); };
+    }
     function draw() {
         resize();
-        animate(clock);
-        place(clock);
+        pose(clock);
+        marks();
+        bars();
+        aimLight();
         renderer.info.reset();
         if (key && key.castShadow !== state.shadows)
             key.castShadow = state.shadows;
-        renderer.shadowMap.needsUpdate = state.shadows;
+        renderer.shadowMap.needsUpdate = state.shadows && (drawn++ % 2 === 0 || !!opts.test);
         if (state.ink) {
-            cam.layers.enable(2);
+            SEE();
             renderer.setRenderTarget(rtMain);
             renderer.render(scene, cam);
             const bg = scene.background;
             scene.background = null;
             scene.overrideMaterial = idMat;
             cam.layers.set(0);
+            cam.layers.enable(3);
             renderer.setRenderTarget(rtId);
             renderer.setClearColor(0x000000, 1);
             renderer.clear();
             renderer.render(scene, cam);
             scene.overrideMaterial = null;
             scene.background = bg;
-            cam.layers.enable(2);
             comp.uniforms.near.value = cam.near;
             comp.uniforms.far.value = cam.far;
             renderer.setRenderTarget(null);
             renderer.render(quadScene, quadCam);
         }
         else {
+            SEE();
             renderer.setRenderTarget(null);
             renderer.render(scene, cam);
         }
+        cam.layers.set(0);
+        renderer.autoClear = false;
+        renderer.render(over, cam);
+        renderer.autoClear = true;
+        SEE();
     }
     const tell = () => { stats.draws = renderer.info.render.calls; stats.tris = renderer.info.render.triangles; stats.w = pxW; stats.h = pxH; };
+    const label = id => (world.rooms[id] ? world.rooms[id].label : '').replace(/\s*\(.*\)\s*$/, '').replace(/ past the Experiment Lab$/, '');
+    function hud(force) { if (!opts.onHud)
+        return; const h = { room: label(sim.room), raid: raid.phase, wave: raid.wave, waves: WAVES.length, crystal: Math.round(crystal.hp / crystal.max * 100), fight: sim.fight, pace: state.pace, cam: state.cam, near: view.k > 0.5, coming: ants.some(a => a.alive && !a.engaged), down: squad.filter(u => u.down > 0).map(u => u.name) }, s = JSON.stringify(h); if (s !== hudWas || force) {
+        hudWas = s;
+        opts.onHud(h);
+    } }
+    function snapshot() {
+        return { t: +sim.t.toFixed(2), clock: +clock.toFixed(2), room: sim.room, player: [+player.x.toFixed(2), +player.y.toFixed(2)], walking: !!player.path, squad: squad.map(u => [u.key, +u.x.toFixed(2), +u.y.toFixed(2), Math.round(u.hp), u.down > 0 ? 1 : 0]), ants: ants.filter(a => a.alive).map(a => [a.cls, +a.x.toFixed(2), +a.y.toFixed(2), Math.round(a.hp), a.engaged ? 1 : 0, a.st]),
+            crystal: Math.round(crystal.hp), raid: raid.phase, wave: raid.wave, fight: sim.fight, scale: +sim.scale.toFixed(3), wallsDown: world.groups.filter(G => G.want).map(G => G.key), open: [...(sim.open || [])], cam: { k: +view.k.toFixed(2), el: +view.el.toFixed(1), dist: +view.dist.toFixed(1), at: [+view.tx.toFixed(2), +view.tz.toFixed(2)] }, marksNow: FM.count(), log: Object.assign({}, log, { minLead: log.minLead > 1e8 ? null : +log.minLead.toFixed(3) }) };
+    }
     function frame(now) { if (stopped)
         return; raf = requestAnimationFrame(frame); loop(now); }
     function loop(now) {
@@ -27170,7 +28825,7 @@ const LIVE = (function () {
             last = now;
         const dtMs = now - last;
         last = now;
-        clock += Math.min(0.1, dtMs / 1000);
+        advance(Math.min(0.1, dtMs / 1000));
         draw();
         stats.frames++;
         if (dtMs > 0 && stats.frames > 1) {
@@ -27179,7 +28834,7 @@ const LIVE = (function () {
             worst = Math.max(worst, dtMs);
         }
         if (opts.test) {
-            const now2 = [biteIn.scale.x, pa.gem.rotation.y, cam.position.x];
+            const now2 = [sim.t, pa.gem ? pa.gem.rotation.y : 0, cam.position.x];
             if (stats.frames === 2)
                 stats.first = now2;
             stats.last = now2;
@@ -27195,6 +28850,10 @@ const LIVE = (function () {
             if (opts.onStats)
                 opts.onStats(stats, state);
         }
+        if (clock - hudAt > 0.2) {
+            hudAt = clock;
+            hud();
+        }
         if (opts.test && stats.frames >= opts.test) {
             stopped = true;
             cancelAnimationFrame(raf);
@@ -27206,14 +28865,27 @@ const LIVE = (function () {
                     seen.add(px[0] + ',' + px[1] + ',' + px[2]);
                 }
             stats.colours = seen.size;
+            stats.sim = snapshot();
             if (opts.onDone)
                 opts.onDone(stats, state);
         }
     }
-    const api = { stats, state, scene, room: world.g, orbit, set(k, v) { state[k] = v; sized = ''; if (opts.onStats)
-            opts.onStats(stats, state); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
-        step(dt) { stopped = true; cancelAnimationFrame(raf); clock += dt; draw(); tell(); } };
+    const api = { stats, state, scene, room: world.g, world, orbit, view, sim, PACES, CAMS, snapshot, walkTo, renderer, cam,
+        set(k, v) { state[k] = v; sized = ''; if (opts.onStats)
+            opts.onStats(stats, state); hud(true); }, stop() { stopped = true; cancelAnimationFrame(raf); }, start() { stopped = false; last = 0; raf = requestAnimationFrame(frame); },
+        step(dt) { stopped = true; cancelAnimationFrame(raf); advance(dt); draw(); tell(); hud(); },
+        run(seconds) { for (let i = 0, k = Math.round(seconds * 60); i < k; i++) {
+            clock += 1 / 60;
+            step(1 / 60);
+            place(1 / 60);
+        } hud(true); } };
+    place(0);
+    hud(true);
     if (opts.test) {
+        if (opts.walk)
+            walkTo(opts.walk);
+        if (opts.skip)
+            api.run(opts.skip);
         for (let i = 0; i < opts.test && !stopped; i++)
             loop(100 * (i + 1));
     }
@@ -27225,4 +28897,4 @@ const LIVE = (function () {
 return LIVE;
 }
 };
-window.__lab3dMap = {"chamber":{"id":"crystal_chamber","poly":[[8.5,12.5],[17.5,12.5],[17.5,21.5],[18.5,21.5],[18.5,23.5],[17.5,23.5],[17.5,24.5],[12.5,24.5],[12.5,25.5],[10.5,25.5],[10.5,24.5],[8.5,24.5]],"bb":[8.5,12.5,18.5,25.5],"cells":[[9,13],[9,14],[9,15],[9,16],[9,17],[9,18],[9,19],[9,20],[9,21],[9,22],[9,23],[9,24],[10,13],[10,14],[10,15],[10,16],[10,17],[10,18],[10,19],[10,20],[10,21],[10,22],[10,23],[10,24],[11,13],[11,14],[11,15],[11,16],[11,17],[11,18],[11,19],[11,20],[11,21],[11,22],[11,23],[11,24],[11,25],[12,13],[12,14],[12,15],[12,16],[12,17],[12,18],[12,19],[12,20],[12,21],[12,22],[12,23],[12,24],[12,25],[13,13],[13,14],[13,15],[13,16],[13,17],[13,18],[13,19],[13,20],[13,21],[13,22],[13,23],[13,24],[14,13],[14,14],[14,15],[14,16],[14,17],[14,18],[14,19],[14,20],[14,21],[14,22],[14,23],[14,24],[15,13],[15,14],[15,15],[15,16],[15,17],[15,18],[15,19],[15,20],[15,21],[15,22],[15,23],[15,24],[16,13],[16,14],[16,15],[16,16],[16,17],[16,18],[16,19],[16,20],[16,21],[16,22],[16,23],[16,24],[17,13],[17,14],[17,15],[17,16],[17,17],[17,18],[17,19],[17,20],[17,21],[17,22],[17,23],[17,24],[18,22],[18,23]],"walls":[{"a":[8.5,12.5],"b":[17.5,12.5],"kind":"wall","out":-1},{"a":[17.5,12.5],"b":[17.5,21.5],"kind":"wall","out":1},{"a":[17.5,21.5],"b":[18.5,21.5],"kind":"wall","out":-1},{"a":[18.5,23.5],"b":[17.5,23.5],"kind":"wall","out":1},{"a":[17.5,23.5],"b":[17.5,24.5],"kind":"wall","out":1},{"a":[17.5,24.5],"b":[12.5,24.5],"kind":"wall","out":1},{"a":[12.5,24.5],"b":[12.5,25.5],"kind":"wall","out":1},{"a":[10.5,25.5],"b":[10.5,24.5],"kind":"wall","out":-1},{"a":[10.5,24.5],"b":[8.5,24.5],"kind":"wall","out":1},{"a":[8.5,24.5],"b":[8.5,12.5],"kind":"wall","out":-1}],"doors":[{"id":"door_chamber_teleport_1","a":[10.5,25.5],"b":[12.5,25.5],"to":"teleport_room_1","door":"sliding_access_door"},{"id":"door_crystal_hallway","a":[18.5,21.5],"b":[18.5,23.5],"to":"lab_hallway","door":"sliding_access_door"}],"crystal":[11.5,15.5],"fixtures":[{"id":"power_pack_area","type":"power_pack_area","room":"crystal_chamber","edge":0,"a":[12.5,12.5],"b":[17.5,12.5],"status":"approximate"}],"decor":[{"id":"ring_1","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":3.4,"colour":"#6adfff","a":0.75,"w":3,"glow":true},{"id":"ring_2","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":2.2,"colour":"#6adfff","a":0.6,"w":2,"dashed":true},{"id":"ring_3","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":4.7,"colour":"#ffd34d","a":0.5,"w":2,"dashed":true},{"id":"light_1","room":"crystal_chamber","kind":"light","at":[11.5,15.5],"radius":6.5,"colour":"#6adfff","a":0.3},{"id":"light_2","room":"crystal_chamber","kind":"light","at":[15,22],"radius":4,"colour":"#ffe9a0","a":0.14,"flicker":true},{"id":"cables_1","room":"crystal_chamber","kind":"cables","path":[[15,13.4],[15,16],[13.2,16]],"colour":"#ffb347"},{"id":"cables_2","room":"crystal_chamber","kind":"cables","path":[[16,13.4],[16,18.5],[12,18.5],[12,17.7]],"colour":"#6adfff"},{"id":"cables_3","room":"crystal_chamber","kind":"cables","path":[[16.8,15],[14.5,15],[14.5,16]],"colour":"#ff6a4a"},{"id":"hazard_1","room":"crystal_chamber","kind":"hazard","rect":[15.5,20.5,17.5,23.5]},{"id":"hazard_2","room":"crystal_chamber","kind":"hazard","rect":[10.5,23.5,12.5,24.5]},{"id":"scorch_1","room":"crystal_chamber","kind":"scorch","at":[14,20],"radius":1,"colour":"#0c0c10"},{"id":"stain_1","room":"crystal_chamber","kind":"stain","at":[10,18],"radius":0.8,"colour":"#2a1a10"},{"id":"papers_1","room":"crystal_chamber","kind":"papers","at":[10.5,19.5],"radius":1,"n":6},{"id":"debris_1","room":"crystal_chamber","kind":"debris","at":[15.5,23],"radius":1,"n":5},{"id":"pipe_1","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[8.5,24.5],"colour":"#ffb347","z":62},{"id":"panel_1","room":"crystal_chamber","kind":"panel","a":[8.5,13.5],"b":[8.5,14.5]},{"id":"vent_1","room":"crystal_chamber","kind":"vent","a":[8.5,15.5],"b":[8.5,16.5]},{"id":"relay_node_chamber","room":"crystal_chamber","kind":"relay_node","a":[8.5,17.5],"b":[8.5,18.5]},{"id":"screen_1","room":"crystal_chamber","kind":"screen","a":[8.5,19.5],"b":[8.5,21.5],"colour":"#6adfff"},{"id":"wall_light_1","room":"crystal_chamber","kind":"wall_light","a":[8.5,21.5],"b":[8.5,23.5],"h":1},{"id":"hazard_sign_1","room":"crystal_chamber","kind":"hazard_sign","a":[8.5,12.5],"b":[9.5,12.5]},{"id":"vent_2","room":"crystal_chamber","kind":"vent","a":[10.5,12.5],"b":[11.5,12.5]},{"id":"pipe_2","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[12.5,12.5],"colour":"#ffb347","z":60},{"id":"wall_light_2","room":"crystal_chamber","kind":"wall_light","a":[9.5,12.5],"b":[12.5,12.5],"h":1}],"floor":{"room":"crystal_chamber","style":"plate","colour":"#2a4458"},"solids":[{"id":"generator_1","kind":"generator","room":"crystal_chamber","bb":[8.5,13.5,9.5,15.5],"c":[9,14.5],"fam":"lab","variant":"generator.1x2","cover":false,"low":false},{"id":"crate_stack_1","kind":"crate_stack","room":"crystal_chamber","bb":[8.5,21.5,9.5,22.5],"c":[9,22],"fam":"cargo","variant":"crate_stack.s1","cover":true,"low":false},{"id":"crate_1","kind":"crate","room":"crystal_chamber","bb":[8.5,20.5,9.5,21.5],"c":[9,21],"fam":"cargo","variant":"crate.s2","cover":true,"low":true},{"id":"crate_2","kind":"crate","room":"crystal_chamber","bb":[9.5,21.5,10.5,22.5],"c":[10,22],"fam":"cargo","variant":"crate.s3","cover":true,"low":true},{"id":"barrel_1","kind":"barrel","room":"crystal_chamber","bb":[8.5,22.5,9.5,23.5],"c":[9,23],"fam":"cargo","variant":"barrel.s3","cover":true,"low":true},{"id":"barrel_2","kind":"barrel","room":"crystal_chamber","bb":[8.5,23.5,9.5,24.5],"c":[9,24],"fam":"cargo","variant":"barrel.s0","cover":true,"low":true},{"id":"console_1","kind":"console","room":"crystal_chamber","bb":[8.5,16.5,9.5,19.5],"c":[9,18],"fam":"office","variant":"console.1x3","cover":true,"low":false},{"id":"plant_1","kind":"plant","room":"crystal_chamber","bb":[16.5,18.5,17.5,19.5],"c":[17,19],"fam":"plant","variant":"p2","cover":false,"low":false},{"id":"sentry_chamber_1","kind":"sentry","room":"crystal_chamber","bb":[15.5,20.5,16.5,21.5],"c":[16,21],"fam":"sentry","variant":"a00","cover":false,"low":true}],"style":{"acc":"#31e8ff","wain":"#3d93a0","fa":"#d8e8ec","fb":"#b4cdd5"}},"facility":{"rooms":[{"id":"crystal_chamber","label":"Crystal Chamber","level":0,"poly":[[8.5,12.5],[17.5,12.5],[17.5,21.5],[18.5,21.5],[18.5,23.5],[17.5,23.5],[17.5,24.5],[12.5,24.5],[12.5,25.5],[10.5,25.5],[10.5,24.5],[8.5,24.5]],"bb":[8.5,12.5,18.5,25.5]},{"id":"teleport_room_1","label":"Teleport Room 1","level":0,"poly":[[8.5,25.5],[17.5,25.5],[17.5,27.5],[14.5,27.5],[14.5,28.5],[15.5,28.5],[15.5,30.5],[14.5,30.5],[14.5,38.5],[8.5,38.5]],"bb":[8.5,25.5,17.5,38.5]},{"id":"front_lobby","label":"Server Room","level":0,"poly":[[18.5,10.5],[33.5,10.5],[33.5,9.5],[35.5,9.5],[35.5,10.5],[40.5,10.5],[40.5,14.5],[41.5,14.5],[41.5,16.5],[40.5,16.5],[40.5,19.5],[39.5,19.5],[39.5,20.5],[37.5,20.5],[37.5,19.5],[22.5,19.5],[22.5,20.5],[20.5,20.5],[20.5,19.5],[18.5,19.5]],"bb":[18.5,9.5,41.5,20.5]},{"id":"security_room","label":"Security Room","level":0,"poly":[[41.5,12.5],[46.5,12.5],[46.5,19.5],[45.5,19.5],[45.5,20.5],[43.5,20.5],[43.5,19.5],[41.5,19.5]],"bb":[41.5,12.5,46.5,20.5]},{"id":"show_room","label":"Warehouse","level":0,"poly":[[47.5,13.5],[55.5,13.5],[55.5,30.5],[48.5,30.5],[47.5,30.5]],"bb":[47.5,13.5,55.5,30.5]},{"id":"lab_hallway","label":"Hallway past the Experiment Lab","level":0,"poly":[[18.5,20.5],[47.5,20.5],[47.5,30.5],[43.5,30.5],[43.5,38.5],[34.5,38.5],[34.5,37.5],[29.5,37.5],[29.5,38.5],[15.5,38.5],[15.5,31.5],[21.5,31.5],[21.5,32.5],[37.5,32.5],[37.5,26.5],[21.5,26.5],[18.5,26.5]],"bb":[15.5,20.5,47.5,38.5]},{"id":"lounge","label":"The Lounge","level":0,"poly":[[21.5,26.5],[37.5,26.5],[37.5,32.5],[21.5,32.5]],"bb":[21.5,26.5,37.5,32.5]},{"id":"lab_passage","label":"Narrow passage (lab to Teleport Room 1)","level":0,"poly":[[15.5,28.5],[20.5,28.5],[21.5,28.5],[21.5,30.5],[20.5,30.5],[15.5,30.5]],"bb":[15.5,28.5,21.5,30.5]},{"id":"experiment_lab","label":"Experiment Lab","level":-1,"poly":[[-15.5,26.5],[7.5,26.5],[7.5,31.5],[8.5,31.5],[8.5,34.5],[7.5,34.5],[7.5,38.5],[-15.5,38.5]],"bb":[-15.5,26.5,8.5,38.5]},{"id":"teleport_stair_room","label":"Teleport Stair Room","level":1,"poly":[[43.5,31.5],[47.5,31.5],[47.5,34.5],[48.5,34.5],[48.5,36.5],[47.5,36.5],[47.5,38.5],[43.5,38.5]],"bb":[43.5,31.5,48.5,38.5]},{"id":"teleport_room_2","label":"Teleport Room 2","level":1,"poly":[[48.5,30.5],[55.5,30.5],[55.5,40.5],[48.5,40.5]],"bb":[48.5,30.5,55.5,40.5]},{"id":"observation_deck","label":"Observation Deck","level":2,"poly":[[9.5,39.5],[11.5,39.5],[11.5,38.5],[13.5,38.5],[13.5,39.5],[17.5,39.5],[17.5,48.5],[9.5,48.5],[9.5,46.5],[8.5,46.5],[8.5,44.5],[9.5,44.5]],"bb":[8.5,38.5,17.5,48.5]},{"id":"armory","label":"Armory","level":-1,"poly":[[73.5,47.5],[74.5,47.5],[74.5,46.5],[76.5,46.5],[76.5,47.5],[78.5,47.5],[78.5,46.5],[80.5,46.5],[80.5,47.5],[81.5,47.5],[81.5,57.5],[73.5,57.5]],"bb":[73.5,46.5,81.5,57.5]},{"id":"catwalks","label":"Catwalks","level":2,"poly":[[50.5,41.5],[55.5,41.5],[55.5,61.5],[50.5,61.5]],"bb":[50.5,41.5,55.5,61.5]},{"id":"catwalk_spur","label":"Catwalk Spur","level":0,"poly":[[45.5,41.5],[46.5,40.5],[50.5,41.5],[50.5,44.5],[45.5,44.5]],"bb":[45.5,40.5,50.5,44.5]},{"id":"arena","label":"Arena","level":-1,"poly":[[17.5,39.5],[18.5,39.5],[18.5,38.5],[22.5,38.5],[22.5,39.5],[27.5,39.5],[29.5,39.5],[29.5,38.5],[30.5,38.5],[33.5,38.5],[34.5,38.5],[34.5,39.5],[35.5,39.5],[38.5,41.5],[39.5,41.5],[39.5,40.5],[42.5,40.5],[42.5,41.5],[45.5,41.5],[45.5,44.5],[50.5,44.5],[50.5,60.5],[40.5,58.5],[32.5,57.5],[28.5,57.5],[26.5,60.5],[22.5,61.5],[19.5,60.5],[17.5,59.5],[17.5,57.5],[16.5,57.5],[16.5,55.5],[17.5,55.5],[17.5,48.5]],"bb":[16.5,38.5,50.5,61.5]},{"id":"cold_storage","label":"Cold Storage","level":-1,"poly":[[-73.5,27.5],[-61.5,27.5],[-61.5,34.5],[-59.5,35.5],[-58.5,37.5],[-57.5,39.5],[-57.5,41.5],[-59.5,43.5],[-61.5,44.5],[-64.5,45.5],[-66.5,44.5],[-68.5,43.5],[-69.5,41.5],[-71.5,40.5],[-72.5,38.5],[-73.5,38.5],[-73.5,31.5],[-74.5,31.5],[-74.5,28.5],[-73.5,28.5]],"bb":[-74.5,27.5,-57.5,45.5]},{"id":"sewers","label":"Sewers","level":-1,"poly":[[-49.5,107.5],[-48.5,107.5],[-48.5,106.5],[-46.5,106.5],[-46.5,107.5],[-45.5,107.5],[-45.5,104.5],[-43.5,104.5],[-43.5,107.5],[-41.5,107.5],[-41.5,103.5],[-35.5,103.5],[-35.5,107.5],[-33.5,107.5],[-33.5,104.5],[-28.5,104.5],[-28.5,107.5],[-22.5,107.5],[-22.5,103.5],[-16.5,103.5],[-16.5,107.5],[-12.5,107.5],[-11.5,107.5],[-11.5,104.5],[-10.5,104.5],[4.5,104.5],[4.5,107.5],[4.5,120.5],[-10.5,120.5],[-10.5,118.5],[-31.5,118.5],[-31.5,121.5],[-33.5,121.5],[-33.5,118.5],[-48.5,118.5],[-49.5,118.5],[-49.5,116.5],[-48.5,116.5],[-48.5,109.5],[-49.5,109.5]],"bb":[-49.5,103.5,4.5,121.5]},{"id":"nest_area","label":"Ant Nest","level":-1,"poly":[[24.5,171.5],[28.5,171.5],[28.5,170.5],[30.5,170.5],[30.5,171.5],[36.5,171.5],[38.5,172.5],[38.5,180.5],[37.5,182.5],[35.5,183.5],[25.5,183.5],[23.5,182.5],[22.5,180.5],[22.5,173.5]],"bb":[22.5,170.5,38.5,183.5]},{"id":"nest_t1","label":"Ant Nest","level":-1,"poly":[[13.5,175.5],[22.5,175.5],[22.5,178.5],[13.5,178.5]],"bb":[13.5,175.5,22.5,178.5]},{"id":"nest_brood","label":"Brood Chamber","level":-1,"poly":[[1.5,173.5],[3.5,171.5],[10.5,171.5],[11.5,171.5],[13.5,172.5],[13.5,179.5],[11.5,181.5],[3.5,181.5],[1.5,180.5]],"bb":[1.5,171.5,13.5,181.5]},{"id":"nest_shelf","label":"Shelf","level":1,"poly":[[0.5,167.5],[2.5,165.5],[8.5,165.5],[10.5,166.5],[10.5,171.5],[3.5,171.5],[1.5,170.5],[0.5,168.5]],"bb":[0.5,165.5,10.5,171.5]},{"id":"nest_t3","label":"Ant Nest","level":-1,"poly":[[5.5,181.5],[8.5,181.5],[8.5,190.5],[10.5,190.5],[10.5,192.5],[8.5,192.5],[8.5,195.5],[5.5,195.5]],"bb":[5.5,181.5,10.5,195.5]},{"id":"nest_t4","label":"Ant Nest","level":-1,"poly":[[8.5,186.5],[17.5,186.5],[17.5,189.5],[8.5,189.5]],"bb":[8.5,186.5,17.5,189.5]},{"id":"nest_stream","label":"Stream Cave","level":-1,"poly":[[17.5,186.5],[19.5,184.5],[21.5,184.5],[23.5,185.5],[23.5,190.5],[21.5,192.5],[19.5,192.5],[17.5,191.5]],"bb":[17.5,184.5,23.5,192.5]},{"id":"nest_t6","label":"Ant Nest","level":-1,"poly":[[25.5,183.5],[28.5,183.5],[28.5,184.5],[27.5,184.5],[27.5,185.5],[29.5,185.5],[29.5,186.5],[27.5,186.5],[27.5,187.5],[28.5,187.5],[28.5,189.5],[25.5,189.5]],"bb":[25.5,183.5,29.5,189.5]},{"id":"nest_burrow","label":"The Old Burrow","level":-1,"poly":[[24.5,190.5],[25.5,189.5],[31.5,189.5],[33.5,190.5],[33.5,194.5],[31.5,196.5],[26.5,196.5],[24.5,195.5]],"bb":[24.5,189.5,33.5,196.5]},{"id":"nest_deep","label":"The Deep Brood","level":-1,"poly":[[1.5,197.5],[3.5,195.5],[19.5,195.5],[21.5,196.5],[21.5,205.5],[19.5,207.5],[1.5,207.5]],"bb":[1.5,195.5,21.5,207.5]},{"id":"nest_t7","label":"Ant Nest","level":-1,"poly":[[21.5,200.5],[26.5,200.5],[26.5,203.5],[21.5,203.5]],"bb":[21.5,200.5,26.5,203.5]},{"id":"nest_larder","label":"The Larder","level":-1,"poly":[[26.5,198.5],[27.5,197.5],[31.5,197.5],[33.5,198.5],[33.5,203.5],[31.5,205.5],[28.5,205.5],[26.5,204.5]],"bb":[26.5,197.5,33.5,205.5]},{"id":"nest_down","label":"The Way Down","level":-1,"poly":[[1.5,207.5],[4.5,207.5],[4.5,213.5],[1.5,213.5]],"bb":[1.5,207.5,4.5,213.5]},{"id":"nest_down_low","label":"The Way Down","level":-2,"poly":[[1.5,213.5],[4.5,213.5],[4.5,219.5],[1.5,219.5]],"bb":[1.5,213.5,4.5,219.5]},{"id":"elec_servers","label":"Deep Server Room","level":-1,"poly":[[146.5,12.5],[162.5,12.5],[162.5,11.5],[164.5,11.5],[164.5,12.5],[170.5,12.5],[170.5,30.5],[146.5,30.5]],"bb":[146.5,11.5,170.5,30.5]},{"id":"elec_circuitry","label":"The Circuitry","level":-2,"poly":[[142.5,30.5],[146.5,30.5],[170.5,30.5],[174.5,30.5],[174.5,53.5],[142.5,53.5]],"bb":[142.5,30.5,174.5,53.5]},{"id":"subway_platform","label":"Subway Platform","level":-1,"poly":[[-112.5,188.5],[-108.5,188.5],[-108.5,187.5],[-106.5,187.5],[-106.5,188.5],[-82.5,188.5],[-82.5,193.5],[-112.5,193.5]],"bb":[-112.5,187.5,-82.5,193.5]},{"id":"subway_tracks","label":"Subway Tracks","level":-2,"poly":[[-116.5,193.5],[-112.5,193.5],[-82.5,193.5],[-78.5,193.5],[-78.5,197.5],[-116.5,197.5]],"bb":[-116.5,193.5,-78.5,197.5]}],"walls":[{"a":[8.5,12.5],"b":[17.5,12.5],"kind":"wall","room":"crystal_chamber"},{"a":[17.5,12.5],"b":[17.5,21.5],"kind":"wall","room":"crystal_chamber"},{"a":[17.5,21.5],"b":[18.5,21.5],"kind":"wall","room":"crystal_chamber"},{"a":[18.5,23.5],"b":[17.5,23.5],"kind":"wall","room":"crystal_chamber"},{"a":[17.5,23.5],"b":[17.5,24.5],"kind":"wall","room":"crystal_chamber"},{"a":[17.5,24.5],"b":[12.5,24.5],"kind":"wall","room":"crystal_chamber"},{"a":[12.5,24.5],"b":[12.5,25.5],"kind":"wall","room":"crystal_chamber"},{"a":[10.5,25.5],"b":[10.5,24.5],"kind":"wall","room":"crystal_chamber"},{"a":[10.5,24.5],"b":[8.5,24.5],"kind":"wall","room":"crystal_chamber"},{"a":[8.5,24.5],"b":[8.5,12.5],"kind":"wall","room":"crystal_chamber"},{"a":[8.5,25.5],"b":[10.5,25.5],"kind":"wall","room":"teleport_room_1"},{"a":[12.5,25.5],"b":[17.5,25.5],"kind":"wall","room":"teleport_room_1"},{"a":[17.5,25.5],"b":[17.5,27.5],"kind":"wall","room":"teleport_room_1"},{"a":[17.5,27.5],"b":[14.5,27.5],"kind":"wall","room":"teleport_room_1"},{"a":[14.5,27.5],"b":[14.5,28.5],"kind":"wall","room":"teleport_room_1"},{"a":[14.5,28.5],"b":[15.5,28.5],"kind":"wall","room":"teleport_room_1"},{"a":[15.5,30.5],"b":[14.5,30.5],"kind":"wall","room":"teleport_room_1"},{"a":[14.5,30.5],"b":[14.5,38.5],"kind":"wall","room":"teleport_room_1"},{"a":[14.5,38.5],"b":[13.5,38.5],"kind":"wall","room":"teleport_room_1"},{"a":[11.5,38.5],"b":[8.5,38.5],"kind":"wall","room":"teleport_room_1"},{"a":[8.5,38.5],"b":[8.5,34.5],"kind":"wall","room":"teleport_room_1"},{"a":[8.5,31.5],"b":[8.5,25.5],"kind":"wall","room":"teleport_room_1"},{"a":[18.5,10.5],"b":[33.5,10.5],"kind":"wall","room":"front_lobby"},{"a":[33.5,10.5],"b":[33.5,9.5],"kind":"wall","room":"front_lobby"},{"a":[33.5,9.5],"b":[35.5,9.5],"kind":"wall","room":"front_lobby"},{"a":[35.5,9.5],"b":[35.5,10.5],"kind":"wall","room":"front_lobby"},{"a":[35.5,10.5],"b":[40.5,10.5],"kind":"wall","room":"front_lobby"},{"a":[40.5,10.5],"b":[40.5,14.5],"kind":"wall","room":"front_lobby"},{"a":[40.5,14.5],"b":[41.5,14.5],"kind":"wall","room":"front_lobby"},{"a":[41.5,16.5],"b":[40.5,16.5],"kind":"wall","room":"front_lobby"},{"a":[40.5,16.5],"b":[40.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[40.5,19.5],"b":[39.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[39.5,19.5],"b":[39.5,20.5],"kind":"wall","room":"front_lobby"},{"a":[37.5,20.5],"b":[37.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[37.5,19.5],"b":[22.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[22.5,19.5],"b":[22.5,20.5],"kind":"wall","room":"front_lobby"},{"a":[20.5,20.5],"b":[20.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[20.5,19.5],"b":[18.5,19.5],"kind":"wall","room":"front_lobby"},{"a":[18.5,19.5],"b":[18.5,10.5],"kind":"wall","room":"front_lobby"},{"a":[41.5,12.5],"b":[46.5,12.5],"kind":"wall","room":"security_room"},{"a":[46.5,12.5],"b":[46.5,19.5],"kind":"wall","room":"security_room"},{"a":[46.5,19.5],"b":[45.5,19.5],"kind":"wall","room":"security_room"},{"a":[45.5,19.5],"b":[45.5,20.5],"kind":"wall","room":"security_room"},{"a":[43.5,20.5],"b":[43.5,19.5],"kind":"wall","room":"security_room"},{"a":[43.5,19.5],"b":[41.5,19.5],"kind":"wall","room":"security_room"},{"a":[41.5,19.5],"b":[41.5,16.5],"kind":"wall","room":"security_room"},{"a":[41.5,14.5],"b":[41.5,12.5],"kind":"wall","room":"security_room"},{"a":[47.5,13.5],"b":[55.5,13.5],"kind":"wall","room":"show_room"},{"a":[55.5,13.5],"b":[55.5,30.5],"kind":"wall","room":"show_room"},{"a":[55.5,30.5],"b":[48.5,30.5],"kind":"open","room":"show_room"},{"a":[48.5,30.5],"b":[47.5,30.5],"kind":"wall","room":"show_room"},{"a":[47.5,30.5],"b":[47.5,27.5],"kind":"wall","room":"show_room"},{"a":[47.5,24.5],"b":[47.5,20.5],"kind":"wall","room":"show_room"},{"a":[47.5,20.5],"b":[47.5,13.5],"kind":"wall","room":"show_room"},{"a":[18.5,20.5],"b":[20.5,20.5],"kind":"wall","room":"lab_hallway"},{"a":[22.5,20.5],"b":[37.5,20.5],"kind":"wall","room":"lab_hallway"},{"a":[39.5,20.5],"b":[43.5,20.5],"kind":"wall","room":"lab_hallway"},{"a":[45.5,20.5],"b":[47.5,20.5],"kind":"wall","room":"lab_hallway"},{"a":[47.5,20.5],"b":[47.5,24.5],"kind":"wall","room":"lab_hallway"},{"a":[47.5,27.5],"b":[47.5,30.5],"kind":"wall","room":"lab_hallway"},{"a":[47.5,30.5],"b":[43.5,30.5],"kind":"wall","room":"lab_hallway"},{"a":[43.5,30.5],"b":[43.5,31.5],"kind":"wall","room":"lab_hallway"},{"a":[43.5,38.5],"b":[34.5,38.5],"kind":"wall","room":"lab_hallway"},{"a":[34.5,38.5],"b":[34.5,37.5],"kind":"wall","room":"lab_hallway"},{"a":[34.5,37.5],"b":[29.5,37.5],"kind":"wall","room":"lab_hallway"},{"a":[29.5,37.5],"b":[29.5,38.5],"kind":"wall","room":"lab_hallway"},{"a":[29.5,38.5],"b":[22.5,38.5],"kind":"wall","room":"lab_hallway"},{"a":[18.5,38.5],"b":[15.5,38.5],"kind":"wall","room":"lab_hallway"},{"a":[15.5,38.5],"b":[15.5,31.5],"kind":"wall","room":"lab_hallway"},{"a":[15.5,31.5],"b":[21.5,31.5],"kind":"wall","room":"lab_hallway"},{"a":[21.5,31.5],"b":[21.5,32.5],"kind":"wall","room":"lab_hallway"},{"a":[21.5,32.5],"b":[37.5,32.5],"kind":"wall","room":"lab_hallway"},{"a":[21.5,26.5],"b":[18.5,26.5],"kind":"wall","room":"lab_hallway"},{"a":[18.5,26.5],"b":[18.5,23.5],"kind":"wall","room":"lab_hallway"},{"a":[18.5,21.5],"b":[18.5,20.5],"kind":"wall","room":"lab_hallway"},{"a":[37.5,32.5],"b":[21.5,32.5],"kind":"wall","room":"lounge"},{"a":[21.5,32.5],"b":[21.5,31.5],"kind":"wall","room":"lounge"},{"a":[21.5,31.5],"b":[21.5,30.5],"kind":"wall","room":"lounge"},{"a":[21.5,28.5],"b":[21.5,26.5],"kind":"wall","room":"lounge"},{"a":[15.5,28.5],"b":[20.5,28.5],"kind":"wall","room":"lab_passage"},{"a":[20.5,28.5],"b":[21.5,28.5],"kind":"wall","room":"lab_passage"},{"a":[21.5,30.5],"b":[20.5,30.5],"kind":"wall","room":"lab_passage"},{"a":[20.5,30.5],"b":[15.5,30.5],"kind":"wall","room":"lab_passage"},{"a":[-15.5,26.5],"b":[7.5,26.5],"kind":"wall","room":"experiment_lab"},{"a":[7.5,26.5],"b":[7.5,31.5],"kind":"wall","room":"experiment_lab"},{"a":[7.5,31.5],"b":[8.5,31.5],"kind":"wall","room":"experiment_lab"},{"a":[8.5,34.5],"b":[7.5,34.5],"kind":"wall","room":"experiment_lab"},{"a":[7.5,34.5],"b":[7.5,38.5],"kind":"wall","room":"experiment_lab"},{"a":[7.5,38.5],"b":[-15.5,38.5],"kind":"wall","room":"experiment_lab"},{"a":[-15.5,38.5],"b":[-15.5,26.5],"kind":"wall","room":"experiment_lab"},{"a":[43.5,31.5],"b":[47.5,31.5],"kind":"wall","room":"teleport_stair_room"},{"a":[47.5,31.5],"b":[47.5,34.5],"kind":"wall","room":"teleport_stair_room"},{"a":[47.5,34.5],"b":[48.5,34.5],"kind":"wall","room":"teleport_stair_room"},{"a":[48.5,36.5],"b":[47.5,36.5],"kind":"wall","room":"teleport_stair_room"},{"a":[47.5,36.5],"b":[47.5,38.5],"kind":"wall","room":"teleport_stair_room"},{"a":[47.5,38.5],"b":[43.5,38.5],"kind":"wall","room":"teleport_stair_room"},{"a":[48.5,30.5],"b":[55.5,30.5],"kind":"deck_rail","room":"teleport_room_2"},{"a":[55.5,30.5],"b":[55.5,40.5],"kind":"wall","room":"teleport_room_2"},{"a":[55.5,40.5],"b":[48.5,40.5],"kind":"wall","room":"teleport_room_2"},{"a":[48.5,40.5],"b":[48.5,36.5],"kind":"wall","room":"teleport_room_2"},{"a":[48.5,34.5],"b":[48.5,30.5],"kind":"wall","room":"teleport_room_2"},{"a":[9.5,39.5],"b":[11.5,39.5],"kind":"wall","room":"observation_deck"},{"a":[11.5,39.5],"b":[11.5,38.5],"kind":"wall","room":"observation_deck"},{"a":[13.5,38.5],"b":[13.5,39.5],"kind":"wall","room":"observation_deck"},{"a":[13.5,39.5],"b":[17.5,39.5],"kind":"wall","room":"observation_deck"},{"a":[17.5,39.5],"b":[17.5,48.5],"kind":"wall","room":"observation_deck"},{"a":[17.5,48.5],"b":[9.5,48.5],"kind":"wall","room":"observation_deck"},{"a":[9.5,48.5],"b":[9.5,46.5],"kind":"wall","room":"observation_deck"},{"a":[9.5,46.5],"b":[8.5,46.5],"kind":"wall","room":"observation_deck"},{"a":[8.5,46.5],"b":[8.5,44.5],"kind":"wall","room":"observation_deck"},{"a":[8.5,44.5],"b":[9.5,44.5],"kind":"wall","room":"observation_deck"},{"a":[9.5,44.5],"b":[9.5,39.5],"kind":"wall","room":"observation_deck"},{"a":[73.5,47.5],"b":[74.5,47.5],"kind":"wall","room":"armory"},{"a":[74.5,47.5],"b":[74.5,46.5],"kind":"wall","room":"armory"},{"a":[74.5,46.5],"b":[76.5,46.5],"kind":"wall","room":"armory"},{"a":[76.5,46.5],"b":[76.5,47.5],"kind":"wall","room":"armory"},{"a":[76.5,47.5],"b":[78.5,47.5],"kind":"wall","room":"armory"},{"a":[78.5,47.5],"b":[78.5,46.5],"kind":"wall","room":"armory"},{"a":[78.5,46.5],"b":[80.5,46.5],"kind":"wall","room":"armory"},{"a":[80.5,46.5],"b":[80.5,47.5],"kind":"wall","room":"armory"},{"a":[80.5,47.5],"b":[81.5,47.5],"kind":"wall","room":"armory"},{"a":[81.5,47.5],"b":[81.5,57.5],"kind":"wall","room":"armory"},{"a":[81.5,57.5],"b":[73.5,57.5],"kind":"wall","room":"armory"},{"a":[73.5,57.5],"b":[73.5,47.5],"kind":"wall","room":"armory"},{"a":[50.5,41.5],"b":[55.5,41.5],"kind":"wall","room":"catwalks"},{"a":[55.5,41.5],"b":[55.5,61.5],"kind":"wall","room":"catwalks"},{"a":[55.5,61.5],"b":[50.5,61.5],"kind":"wall","room":"catwalks"},{"a":[50.5,61.5],"b":[50.5,41.5],"kind":"wall","room":"catwalks"},{"a":[45.5,41.5],"b":[46.5,40.5],"kind":"rock","room":"catwalk_spur"},{"a":[46.5,40.5],"b":[50.5,41.5],"kind":"rock","room":"catwalk_spur"},{"a":[50.5,41.5],"b":[50.5,44.5],"kind":"wall","room":"catwalk_spur"},{"a":[50.5,44.5],"b":[45.5,44.5],"kind":"wall","room":"catwalk_spur"},{"a":[45.5,44.5],"b":[45.5,41.5],"kind":"wall","room":"catwalk_spur"},{"a":[17.5,39.5],"b":[18.5,39.5],"kind":"rock","room":"arena"},{"a":[18.5,39.5],"b":[18.5,38.5],"kind":"wall","room":"arena"},{"a":[22.5,38.5],"b":[22.5,39.5],"kind":"wall","room":"arena"},{"a":[22.5,39.5],"b":[27.5,39.5],"kind":"rock","room":"arena"},{"a":[27.5,39.5],"b":[29.5,39.5],"kind":"rock","room":"arena"},{"a":[29.5,39.5],"b":[29.5,38.5],"kind":"rock","room":"arena"},{"a":[29.5,38.5],"b":[30.5,38.5],"kind":"rock","room":"arena"},{"a":[30.5,38.5],"b":[33.5,38.5],"kind":"wall","room":"arena"},{"a":[33.5,38.5],"b":[34.5,38.5],"kind":"rock","room":"arena"},{"a":[34.5,38.5],"b":[34.5,39.5],"kind":"rock","room":"arena"},{"a":[34.5,39.5],"b":[35.5,39.5],"kind":"rock","room":"arena"},{"a":[35.5,39.5],"b":[38.5,41.5],"kind":"rock","room":"arena"},{"a":[38.5,41.5],"b":[39.5,41.5],"kind":"rock","room":"arena"},{"a":[39.5,41.5],"b":[39.5,40.5],"kind":"rock","room":"arena"},{"a":[39.5,40.5],"b":[42.5,40.5],"kind":"rock","room":"arena"},{"a":[42.5,40.5],"b":[42.5,41.5],"kind":"rock","room":"arena"},{"a":[42.5,41.5],"b":[45.5,41.5],"kind":"rock","room":"arena"},{"a":[45.5,41.5],"b":[45.5,44.5],"kind":"railing_wall","room":"arena"},{"a":[45.5,44.5],"b":[50.5,44.5],"kind":"railing_wall","room":"arena"},{"a":[50.5,44.5],"b":[50.5,60.5],"kind":"railing_wall","room":"arena"},{"a":[50.5,60.5],"b":[40.5,58.5],"kind":"rock","room":"arena"},{"a":[40.5,58.5],"b":[32.5,57.5],"kind":"rock","room":"arena"},{"a":[32.5,57.5],"b":[28.5,57.5],"kind":"rock","room":"arena"},{"a":[28.5,57.5],"b":[26.5,60.5],"kind":"rock","room":"arena"},{"a":[26.5,60.5],"b":[22.5,61.5],"kind":"rock","room":"arena"},{"a":[22.5,61.5],"b":[19.5,60.5],"kind":"rock","room":"arena"},{"a":[19.5,60.5],"b":[17.5,59.5],"kind":"rock","room":"arena"},{"a":[17.5,59.5],"b":[17.5,57.5],"kind":"rock","room":"arena"},{"a":[17.5,57.5],"b":[16.5,57.5],"kind":"wall","room":"arena"},{"a":[16.5,57.5],"b":[16.5,55.5],"kind":"wall","room":"arena"},{"a":[16.5,55.5],"b":[17.5,55.5],"kind":"wall","room":"arena"},{"a":[17.5,55.5],"b":[17.5,48.5],"kind":"rock","room":"arena"},{"a":[17.5,48.5],"b":[17.5,39.5],"kind":"deck_wall","room":"arena"},{"a":[-73.5,27.5],"b":[-61.5,27.5],"kind":"wall","room":"cold_storage"},{"a":[-61.5,27.5],"b":[-61.5,34.5],"kind":"wall","room":"cold_storage"},{"a":[-61.5,34.5],"b":[-59.5,35.5],"kind":"rock","room":"cold_storage"},{"a":[-59.5,35.5],"b":[-58.5,37.5],"kind":"rock","room":"cold_storage"},{"a":[-58.5,37.5],"b":[-57.5,39.5],"kind":"rock","room":"cold_storage"},{"a":[-57.5,39.5],"b":[-57.5,41.5],"kind":"rock","room":"cold_storage"},{"a":[-57.5,41.5],"b":[-59.5,43.5],"kind":"rock","room":"cold_storage"},{"a":[-59.5,43.5],"b":[-61.5,44.5],"kind":"rock","room":"cold_storage"},{"a":[-61.5,44.5],"b":[-64.5,45.5],"kind":"rock","room":"cold_storage"},{"a":[-64.5,45.5],"b":[-66.5,44.5],"kind":"rock","room":"cold_storage"},{"a":[-66.5,44.5],"b":[-68.5,43.5],"kind":"rock","room":"cold_storage"},{"a":[-68.5,43.5],"b":[-69.5,41.5],"kind":"rock","room":"cold_storage"},{"a":[-69.5,41.5],"b":[-71.5,40.5],"kind":"rock","room":"cold_storage"},{"a":[-71.5,40.5],"b":[-72.5,38.5],"kind":"rock","room":"cold_storage"},{"a":[-72.5,38.5],"b":[-73.5,38.5],"kind":"rock","room":"cold_storage"},{"a":[-73.5,38.5],"b":[-73.5,31.5],"kind":"wall","room":"cold_storage"},{"a":[-73.5,31.5],"b":[-74.5,31.5],"kind":"wall","room":"cold_storage"},{"a":[-74.5,31.5],"b":[-74.5,28.5],"kind":"wall","room":"cold_storage"},{"a":[-74.5,28.5],"b":[-73.5,28.5],"kind":"wall","room":"cold_storage"},{"a":[-73.5,28.5],"b":[-73.5,27.5],"kind":"wall","room":"cold_storage"},{"a":[-49.5,107.5],"b":[-48.5,107.5],"kind":"wall","room":"sewers"},{"a":[-48.5,107.5],"b":[-48.5,106.5],"kind":"wall","room":"sewers"},{"a":[-48.5,106.5],"b":[-46.5,106.5],"kind":"wall","room":"sewers"},{"a":[-46.5,106.5],"b":[-46.5,107.5],"kind":"wall","room":"sewers"},{"a":[-46.5,107.5],"b":[-45.5,107.5],"kind":"wall","room":"sewers"},{"a":[-45.5,107.5],"b":[-45.5,104.5],"kind":"wall","room":"sewers"},{"a":[-45.5,104.5],"b":[-43.5,104.5],"kind":"wall","room":"sewers"},{"a":[-43.5,104.5],"b":[-43.5,107.5],"kind":"wall","room":"sewers"},{"a":[-43.5,107.5],"b":[-41.5,107.5],"kind":"wall","room":"sewers"},{"a":[-41.5,107.5],"b":[-41.5,103.5],"kind":"wall","room":"sewers"},{"a":[-41.5,103.5],"b":[-35.5,103.5],"kind":"wall","room":"sewers"},{"a":[-35.5,103.5],"b":[-35.5,107.5],"kind":"wall","room":"sewers"},{"a":[-35.5,107.5],"b":[-33.5,107.5],"kind":"wall","room":"sewers"},{"a":[-33.5,107.5],"b":[-33.5,104.5],"kind":"wall","room":"sewers"},{"a":[-33.5,104.5],"b":[-28.5,104.5],"kind":"wall","room":"sewers"},{"a":[-28.5,104.5],"b":[-28.5,107.5],"kind":"wall","room":"sewers"},{"a":[-28.5,107.5],"b":[-22.5,107.5],"kind":"wall","room":"sewers"},{"a":[-22.5,107.5],"b":[-22.5,103.5],"kind":"wall","room":"sewers"},{"a":[-22.5,103.5],"b":[-16.5,103.5],"kind":"wall","room":"sewers"},{"a":[-16.5,103.5],"b":[-16.5,107.5],"kind":"wall","room":"sewers"},{"a":[-16.5,107.5],"b":[-12.5,107.5],"kind":"wall","room":"sewers"},{"a":[-12.5,107.5],"b":[-11.5,107.5],"kind":"wall","room":"sewers"},{"a":[-11.5,107.5],"b":[-11.5,104.5],"kind":"wall","room":"sewers"},{"a":[-11.5,104.5],"b":[-10.5,104.5],"kind":"wall","room":"sewers"},{"a":[-10.5,104.5],"b":[4.5,104.5],"kind":"wall","room":"sewers"},{"a":[4.5,104.5],"b":[4.5,107.5],"kind":"wall","room":"sewers"},{"a":[4.5,107.5],"b":[4.5,120.5],"kind":"spill","room":"sewers"},{"a":[4.5,120.5],"b":[-10.5,120.5],"kind":"spill","room":"sewers"},{"a":[-10.5,120.5],"b":[-10.5,118.5],"kind":"wall","room":"sewers"},{"a":[-10.5,118.5],"b":[-31.5,118.5],"kind":"wall","room":"sewers"},{"a":[-31.5,118.5],"b":[-31.5,121.5],"kind":"wall","room":"sewers"},{"a":[-31.5,121.5],"b":[-33.5,121.5],"kind":"wall","room":"sewers"},{"a":[-33.5,121.5],"b":[-33.5,118.5],"kind":"wall","room":"sewers"},{"a":[-33.5,118.5],"b":[-48.5,118.5],"kind":"wall","room":"sewers"},{"a":[-48.5,118.5],"b":[-49.5,118.5],"kind":"wall","room":"sewers"},{"a":[-49.5,118.5],"b":[-49.5,116.5],"kind":"wall","room":"sewers"},{"a":[-49.5,116.5],"b":[-48.5,116.5],"kind":"wall","room":"sewers"},{"a":[-48.5,116.5],"b":[-48.5,109.5],"kind":"wall","room":"sewers"},{"a":[-48.5,109.5],"b":[-49.5,109.5],"kind":"wall","room":"sewers"},{"a":[-49.5,109.5],"b":[-49.5,107.5],"kind":"wall","room":"sewers"},{"a":[24.5,171.5],"b":[28.5,171.5],"kind":"rock","room":"nest_area"},{"a":[28.5,171.5],"b":[28.5,170.5],"kind":"rock","room":"nest_area"},{"a":[28.5,170.5],"b":[30.5,170.5],"kind":"rock","room":"nest_area"},{"a":[30.5,170.5],"b":[30.5,171.5],"kind":"rock","room":"nest_area"},{"a":[30.5,171.5],"b":[36.5,171.5],"kind":"rock","room":"nest_area"},{"a":[36.5,171.5],"b":[38.5,172.5],"kind":"rock","room":"nest_area"},{"a":[38.5,172.5],"b":[38.5,180.5],"kind":"rock","room":"nest_area"},{"a":[38.5,180.5],"b":[37.5,182.5],"kind":"rock","room":"nest_area"},{"a":[37.5,182.5],"b":[35.5,183.5],"kind":"rock","room":"nest_area"},{"a":[35.5,183.5],"b":[28.5,183.5],"kind":"rock","room":"nest_area"},{"a":[25.5,183.5],"b":[23.5,182.5],"kind":"rock","room":"nest_area"},{"a":[23.5,182.5],"b":[22.5,180.5],"kind":"rock","room":"nest_area"},{"a":[22.5,180.5],"b":[22.5,178.5],"kind":"rock","room":"nest_area"},{"a":[22.5,175.5],"b":[22.5,173.5],"kind":"rock","room":"nest_area"},{"a":[22.5,173.5],"b":[24.5,171.5],"kind":"rock","room":"nest_area"},{"a":[13.5,175.5],"b":[22.5,175.5],"kind":"rock","room":"nest_t1"},{"a":[22.5,178.5],"b":[13.5,178.5],"kind":"rock","room":"nest_t1"},{"a":[1.5,173.5],"b":[3.5,171.5],"kind":"rock","room":"nest_brood"},{"a":[3.5,171.5],"b":[10.5,171.5],"kind":"rock","room":"nest_brood"},{"a":[10.5,171.5],"b":[11.5,171.5],"kind":"rock","room":"nest_brood"},{"a":[11.5,171.5],"b":[13.5,172.5],"kind":"rock","room":"nest_brood"},{"a":[13.5,172.5],"b":[13.5,175.5],"kind":"rock","room":"nest_brood"},{"a":[13.5,178.5],"b":[13.5,179.5],"kind":"rock","room":"nest_brood"},{"a":[13.5,179.5],"b":[11.5,181.5],"kind":"rock","room":"nest_brood"},{"a":[11.5,181.5],"b":[8.5,181.5],"kind":"rock","room":"nest_brood"},{"a":[5.5,181.5],"b":[3.5,181.5],"kind":"rock","room":"nest_brood"},{"a":[3.5,181.5],"b":[1.5,180.5],"kind":"rock","room":"nest_brood"},{"a":[1.5,180.5],"b":[1.5,173.5],"kind":"rock","room":"nest_brood"},{"a":[0.5,167.5],"b":[2.5,165.5],"kind":"rock","room":"nest_shelf"},{"a":[2.5,165.5],"b":[8.5,165.5],"kind":"rock","room":"nest_shelf"},{"a":[8.5,165.5],"b":[10.5,166.5],"kind":"rock","room":"nest_shelf"},{"a":[10.5,166.5],"b":[10.5,171.5],"kind":"rock","room":"nest_shelf"},{"a":[10.5,171.5],"b":[3.5,171.5],"kind":"open","room":"nest_shelf"},{"a":[3.5,171.5],"b":[1.5,170.5],"kind":"rock","room":"nest_shelf"},{"a":[1.5,170.5],"b":[0.5,168.5],"kind":"rock","room":"nest_shelf"},{"a":[0.5,168.5],"b":[0.5,167.5],"kind":"rock","room":"nest_shelf"},{"a":[8.5,181.5],"b":[8.5,186.5],"kind":"rock","room":"nest_t3"},{"a":[8.5,189.5],"b":[8.5,190.5],"kind":"rock","room":"nest_t3"},{"a":[8.5,190.5],"b":[10.5,190.5],"kind":"rock","room":"nest_t3"},{"a":[10.5,190.5],"b":[10.5,192.5],"kind":"rock","room":"nest_t3"},{"a":[10.5,192.5],"b":[8.5,192.5],"kind":"rock","room":"nest_t3"},{"a":[8.5,192.5],"b":[8.5,195.5],"kind":"rock","room":"nest_t3"},{"a":[5.5,195.5],"b":[5.5,181.5],"kind":"rock","room":"nest_t3"},{"a":[8.5,186.5],"b":[17.5,186.5],"kind":"rock","room":"nest_t4"},{"a":[17.5,189.5],"b":[8.5,189.5],"kind":"rock","room":"nest_t4"},{"a":[17.5,186.5],"b":[19.5,184.5],"kind":"rock","room":"nest_stream"},{"a":[19.5,184.5],"b":[21.5,184.5],"kind":"rock","room":"nest_stream"},{"a":[21.5,184.5],"b":[23.5,185.5],"kind":"rock","room":"nest_stream"},{"a":[23.5,185.5],"b":[23.5,190.5],"kind":"rock","room":"nest_stream"},{"a":[23.5,190.5],"b":[21.5,192.5],"kind":"rock","room":"nest_stream"},{"a":[21.5,192.5],"b":[19.5,192.5],"kind":"rock","room":"nest_stream"},{"a":[19.5,192.5],"b":[17.5,191.5],"kind":"rock","room":"nest_stream"},{"a":[17.5,191.5],"b":[17.5,189.5],"kind":"rock","room":"nest_stream"},{"a":[28.5,183.5],"b":[28.5,184.5],"kind":"rock","room":"nest_t6"},{"a":[28.5,184.5],"b":[27.5,184.5],"kind":"rock","room":"nest_t6"},{"a":[27.5,184.5],"b":[27.5,185.5],"kind":"rock","room":"nest_t6"},{"a":[27.5,185.5],"b":[29.5,185.5],"kind":"rock","room":"nest_t6"},{"a":[29.5,185.5],"b":[29.5,186.5],"kind":"rock","room":"nest_t6"},{"a":[29.5,186.5],"b":[27.5,186.5],"kind":"rock","room":"nest_t6"},{"a":[27.5,186.5],"b":[27.5,187.5],"kind":"rock","room":"nest_t6"},{"a":[27.5,187.5],"b":[28.5,187.5],"kind":"rock","room":"nest_t6"},{"a":[28.5,187.5],"b":[28.5,189.5],"kind":"rock","room":"nest_t6"},{"a":[25.5,189.5],"b":[25.5,183.5],"kind":"rock","room":"nest_t6"},{"a":[24.5,190.5],"b":[25.5,189.5],"kind":"rock","room":"nest_burrow"},{"a":[28.5,189.5],"b":[31.5,189.5],"kind":"rock","room":"nest_burrow"},{"a":[31.5,189.5],"b":[33.5,190.5],"kind":"rock","room":"nest_burrow"},{"a":[33.5,190.5],"b":[33.5,194.5],"kind":"rock","room":"nest_burrow"},{"a":[33.5,194.5],"b":[31.5,196.5],"kind":"rock","room":"nest_burrow"},{"a":[31.5,196.5],"b":[26.5,196.5],"kind":"rock","room":"nest_burrow"},{"a":[26.5,196.5],"b":[24.5,195.5],"kind":"rock","room":"nest_burrow"},{"a":[24.5,195.5],"b":[24.5,190.5],"kind":"rock","room":"nest_burrow"},{"a":[1.5,197.5],"b":[3.5,195.5],"kind":"rock","room":"nest_deep"},{"a":[3.5,195.5],"b":[5.5,195.5],"kind":"rock","room":"nest_deep"},{"a":[8.5,195.5],"b":[19.5,195.5],"kind":"rock","room":"nest_deep"},{"a":[19.5,195.5],"b":[21.5,196.5],"kind":"rock","room":"nest_deep"},{"a":[21.5,196.5],"b":[21.5,200.5],"kind":"rock","room":"nest_deep"},{"a":[21.5,203.5],"b":[21.5,205.5],"kind":"rock","room":"nest_deep"},{"a":[21.5,205.5],"b":[19.5,207.5],"kind":"rock","room":"nest_deep"},{"a":[19.5,207.5],"b":[4.5,207.5],"kind":"rock","room":"nest_deep"},{"a":[1.5,207.5],"b":[1.5,197.5],"kind":"rock","room":"nest_deep"},{"a":[21.5,200.5],"b":[26.5,200.5],"kind":"rock","room":"nest_t7"},{"a":[26.5,203.5],"b":[21.5,203.5],"kind":"rock","room":"nest_t7"},{"a":[26.5,198.5],"b":[27.5,197.5],"kind":"rock","room":"nest_larder"},{"a":[27.5,197.5],"b":[31.5,197.5],"kind":"rock","room":"nest_larder"},{"a":[31.5,197.5],"b":[33.5,198.5],"kind":"rock","room":"nest_larder"},{"a":[33.5,198.5],"b":[33.5,203.5],"kind":"rock","room":"nest_larder"},{"a":[33.5,203.5],"b":[31.5,205.5],"kind":"rock","room":"nest_larder"},{"a":[31.5,205.5],"b":[28.5,205.5],"kind":"rock","room":"nest_larder"},{"a":[28.5,205.5],"b":[26.5,204.5],"kind":"rock","room":"nest_larder"},{"a":[26.5,204.5],"b":[26.5,203.5],"kind":"rock","room":"nest_larder"},{"a":[26.5,200.5],"b":[26.5,198.5],"kind":"rock","room":"nest_larder"},{"a":[4.5,207.5],"b":[4.5,213.5],"kind":"rock","room":"nest_down"},{"a":[1.5,213.5],"b":[1.5,207.5],"kind":"rock","room":"nest_down"},{"a":[4.5,213.5],"b":[4.5,219.5],"kind":"rock","room":"nest_down_low"},{"a":[4.5,219.5],"b":[1.5,219.5],"kind":"rock","room":"nest_down_low"},{"a":[1.5,219.5],"b":[1.5,213.5],"kind":"rock","room":"nest_down_low"},{"a":[146.5,12.5],"b":[162.5,12.5],"kind":"wall","room":"elec_servers"},{"a":[162.5,12.5],"b":[162.5,11.5],"kind":"wall","room":"elec_servers"},{"a":[162.5,11.5],"b":[164.5,11.5],"kind":"wall","room":"elec_servers"},{"a":[164.5,11.5],"b":[164.5,12.5],"kind":"wall","room":"elec_servers"},{"a":[164.5,12.5],"b":[170.5,12.5],"kind":"wall","room":"elec_servers"},{"a":[170.5,12.5],"b":[170.5,30.5],"kind":"wall","room":"elec_servers"},{"a":[170.5,30.5],"b":[164.5,30.5],"kind":"deck_rail","room":"elec_servers"},{"a":[152.5,30.5],"b":[146.5,30.5],"kind":"deck_rail","room":"elec_servers"},{"a":[146.5,30.5],"b":[146.5,12.5],"kind":"wall","room":"elec_servers"},{"a":[142.5,30.5],"b":[146.5,30.5],"kind":"wall","room":"elec_circuitry"},{"a":[146.5,30.5],"b":[152.5,30.5],"kind":"open","room":"elec_circuitry"},{"a":[164.5,30.5],"b":[170.5,30.5],"kind":"open","room":"elec_circuitry"},{"a":[170.5,30.5],"b":[174.5,30.5],"kind":"wall","room":"elec_circuitry"},{"a":[174.5,30.5],"b":[174.5,53.5],"kind":"wall","room":"elec_circuitry"},{"a":[174.5,53.5],"b":[142.5,53.5],"kind":"wall","room":"elec_circuitry"},{"a":[142.5,53.5],"b":[142.5,30.5],"kind":"wall","room":"elec_circuitry"},{"a":[-112.5,188.5],"b":[-108.5,188.5],"kind":"wall","room":"subway_platform"},{"a":[-108.5,188.5],"b":[-108.5,187.5],"kind":"wall","room":"subway_platform"},{"a":[-108.5,187.5],"b":[-106.5,187.5],"kind":"wall","room":"subway_platform"},{"a":[-106.5,187.5],"b":[-106.5,188.5],"kind":"wall","room":"subway_platform"},{"a":[-106.5,188.5],"b":[-82.5,188.5],"kind":"wall","room":"subway_platform"},{"a":[-82.5,188.5],"b":[-82.5,193.5],"kind":"wall","room":"subway_platform"},{"a":[-85.5,193.5],"b":[-112.5,193.5],"kind":"deck_rail","room":"subway_platform"},{"a":[-112.5,193.5],"b":[-112.5,188.5],"kind":"wall","room":"subway_platform"},{"a":[-116.5,193.5],"b":[-112.5,193.5],"kind":"wall","room":"subway_tracks"},{"a":[-112.5,193.5],"b":[-85.5,193.5],"kind":"open","room":"subway_tracks"},{"a":[-82.5,193.5],"b":[-78.5,193.5],"kind":"wall","room":"subway_tracks"},{"a":[-78.5,193.5],"b":[-78.5,197.5],"kind":"wall","room":"subway_tracks"},{"a":[-78.5,197.5],"b":[-116.5,197.5],"kind":"wall","room":"subway_tracks"},{"a":[-116.5,197.5],"b":[-116.5,193.5],"kind":"wall","room":"subway_tracks"}],"doors":[{"a":[10.5,25.5],"b":[12.5,25.5],"rooms":["crystal_chamber","teleport_room_1"]},{"a":[11.5,38.5],"b":[13.5,38.5],"rooms":["teleport_room_1","observation_deck"]},{"a":[20.5,20.5],"b":[22.5,20.5],"rooms":["front_lobby","lab_hallway"]},{"a":[37.5,20.5],"b":[39.5,20.5],"rooms":["front_lobby","lab_hallway"]},{"a":[41.5,14.5],"b":[41.5,16.5],"rooms":["security_room","front_lobby"]},{"a":[43.5,20.5],"b":[45.5,20.5],"rooms":["security_room","lab_hallway"]},{"a":[47.5,24.5],"b":[47.5,27.5],"rooms":["show_room","lab_hallway"]},{"a":[18.5,38.5],"b":[22.5,38.5],"rooms":["arena","lab_hallway"]},{"a":[15.5,28.5],"b":[15.5,30.5],"rooms":["lab_passage","teleport_room_1"]},{"a":[21.5,28.5],"b":[21.5,30.5],"rooms":["lounge","lab_passage"]},{"a":[21.5,26.5],"b":[37.5,26.5],"rooms":["lounge","lab_hallway"]},{"a":[37.5,26.5],"b":[37.5,32.5],"rooms":["lounge","lab_hallway"]},{"a":[8.5,31.5],"b":[8.5,34.5],"rooms":["teleport_room_1","experiment_lab"]},{"a":[18.5,21.5],"b":[18.5,23.5],"rooms":["crystal_chamber","lab_hallway"]},{"a":[43.5,31.5],"b":[43.5,38.5],"rooms":["teleport_stair_room","lab_hallway"]},{"a":[48.5,34.5],"b":[48.5,36.5],"rooms":["teleport_stair_room","teleport_room_2"]},{"a":[22.5,175.5],"b":[22.5,178.5],"rooms":["nest_area","nest_t1"]},{"a":[13.5,175.5],"b":[13.5,178.5],"rooms":["nest_t1","nest_brood"]},{"a":[5.5,181.5],"b":[8.5,181.5],"rooms":["nest_brood","nest_t3"]},{"a":[8.5,186.5],"b":[8.5,189.5],"rooms":["nest_t3","nest_t4"]},{"a":[17.5,186.5],"b":[17.5,189.5],"rooms":["nest_t4","nest_stream"]},{"a":[5.5,195.5],"b":[8.5,195.5],"rooms":["nest_t3","nest_deep"]},{"a":[25.5,183.5],"b":[28.5,183.5],"rooms":["nest_area","nest_t6"]},{"a":[25.5,189.5],"b":[28.5,189.5],"rooms":["nest_t6","nest_burrow"]},{"a":[21.5,200.5],"b":[21.5,203.5],"rooms":["nest_deep","nest_t7"]},{"a":[26.5,200.5],"b":[26.5,203.5],"rooms":["nest_t7","nest_larder"]},{"a":[1.5,207.5],"b":[4.5,207.5],"rooms":["nest_deep","nest_down"]},{"a":[1.5,213.5],"b":[4.5,213.5],"rooms":["nest_down","nest_down_low"]},{"a":[152.5,30.5],"b":[164.5,30.5],"rooms":["elec_servers","elec_circuitry"]},{"a":[-85.5,193.5],"b":[-82.5,193.5],"rooms":["subway_platform","subway_tracks"]}],"solids":[{"kind":"tank","room":"experiment_lab","bb":[0.25,34.25,2.75,36.75],"at":[1.5,35.5],"r":1.25},{"kind":"server_rack","room":"front_lobby","bb":[18.5,12.5,19.5,17.5],"at":null,"r":null},{"kind":"server_rack","room":"front_lobby","bb":[38.5,10.5,40.5,13.5],"at":null,"r":null},{"kind":"server_rack","room":"front_lobby","bb":[23.5,11.5,24.5,16.5],"at":null,"r":null},{"kind":"server_rack","room":"front_lobby","bb":[26.5,11.5,27.5,16.5],"at":null,"r":null},{"kind":"server_rack","room":"front_lobby","bb":[29.5,11.5,30.5,16.5],"at":null,"r":null},{"kind":"server_rack","room":"front_lobby","bb":[32.5,11.5,33.5,16.5],"at":null,"r":null},{"kind":"console","room":"front_lobby","bb":[27.5,18.5,30.5,19.5],"at":null,"r":null},{"kind":"junction","room":"front_lobby","bb":[35.5,10.5,37.5,12.5],"at":null,"r":null},{"kind":"lab_bench","room":"experiment_lab","bb":[-12.5,30.5,-7.5,32.5],"at":null,"r":null},{"kind":"fume_hood","room":"experiment_lab","bb":[-15.5,26.5,-12.5,28.5],"at":null,"r":null},{"kind":"lab_bench","room":"experiment_lab","bb":[-5.5,30.5,2.5,32.5],"at":null,"r":null},{"kind":"test_chamber","room":"experiment_lab","bb":[-15.35,29.65,-13.65,31.35],"at":[-14.5,30.5],"r":0.85},{"kind":"test_chamber","room":"experiment_lab","bb":[-15.25,32.75,-13.75,34.25],"at":[-14.5,33.5],"r":0.75},{"kind":"holding_tank","room":"experiment_lab","bb":[-11.5,26.5,-9.5,28.5],"at":null,"r":null},{"kind":"holding_tank","room":"experiment_lab","bb":[-7.5,26.5,-5.5,28.5],"at":null,"r":null},{"kind":"holding_tank","room":"experiment_lab","bb":[-3.5,26.5,-1.5,28.5],"at":null,"r":null},{"kind":"holding_tank","room":"experiment_lab","bb":[-11.5,34.5,-9.5,36.5],"at":null,"r":null},{"kind":"holding_tank","room":"experiment_lab","bb":[-7.5,34.5,-5.5,36.5],"at":null,"r":null},{"kind":"holding_tank","room":"experiment_lab","bb":[-3.5,34.5,-1.5,36.5],"at":null,"r":null},{"kind":"semi_truck","room":"arena","bb":[20.5,43.5,25.5,54.5],"at":null,"r":null},{"kind":"liquid_reserve","room":"arena","bb":[39.25,44.25,43.75,48.75],"at":[41.5,46.5],"r":2.25},{"kind":"liquid_reserve","room":"arena","bb":[40.25,52.25,44.75,56.75],"at":[42.5,54.5],"r":2.25},{"kind":"generator","room":"crystal_chamber","bb":[8.5,13.5,9.5,15.5],"at":null,"r":null},{"kind":"crate_stack","room":"crystal_chamber","bb":[8.5,21.5,9.5,22.5],"at":null,"r":null},{"kind":"crate","room":"crystal_chamber","bb":[8.5,20.5,9.5,21.5],"at":null,"r":null},{"kind":"crate","room":"crystal_chamber","bb":[9.5,21.5,10.5,22.5],"at":null,"r":null},{"kind":"barrel","room":"crystal_chamber","bb":[8.5,22.5,9.5,23.5],"at":null,"r":null},{"kind":"barrel","room":"crystal_chamber","bb":[8.5,23.5,9.5,24.5],"at":null,"r":null},{"kind":"console","room":"crystal_chamber","bb":[8.5,16.5,9.5,19.5],"at":null,"r":null},{"kind":"plant","room":"crystal_chamber","bb":[16.5,18.5,17.5,19.5],"at":null,"r":null},{"kind":"vending","room":"teleport_room_1","bb":[8.5,25.5,9.5,26.5],"at":null,"r":null},{"kind":"vending","room":"teleport_room_1","bb":[8.5,26.5,9.5,27.5],"at":null,"r":null},{"kind":"cooler","room":"teleport_room_1","bb":[9.5,26.5,10.5,27.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_1","bb":[8.5,29.5,9.5,30.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_1","bb":[8.5,34.5,9.5,35.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_1","bb":[13.5,34.5,14.5,35.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_1","bb":[13.5,31.5,14.5,32.5],"at":null,"r":null},{"kind":"console","room":"teleport_room_1","bb":[13.5,25.5,16.5,26.5],"at":null,"r":null},{"kind":"computer_desk","room":"security_room","bb":[41.5,12.5,45.5,13.5],"at":null,"r":null},{"kind":"locker","room":"security_room","bb":[45.5,12.5,46.5,13.5],"at":null,"r":null},{"kind":"cabinet","room":"security_room","bb":[41.5,16.5,42.5,17.5],"at":null,"r":null},{"kind":"cabinet","room":"security_room","bb":[41.5,17.5,42.5,18.5],"at":null,"r":null},{"kind":"cabinet","room":"security_room","bb":[41.5,18.5,42.5,19.5],"at":null,"r":null},{"kind":"chair","room":"security_room","bb":[43.5,13.5,44.5,14.5],"at":null,"r":null},{"kind":"cooler","room":"security_room","bb":[45.5,17.5,46.5,18.5],"at":null,"r":null},{"kind":"bin","room":"security_room","bb":[45.5,18.5,46.5,19.5],"at":null,"r":null},{"kind":"plant","room":"lab_hallway","bb":[23.5,20.5,24.5,21.5],"at":null,"r":null},{"kind":"plant","room":"lab_hallway","bb":[35.5,20.5,36.5,21.5],"at":null,"r":null},{"kind":"cooler","room":"lab_hallway","bb":[26.5,20.5,27.5,21.5],"at":null,"r":null},{"kind":"vending","room":"lab_hallway","bb":[28.5,20.5,30.5,21.5],"at":null,"r":null},{"kind":"bin","room":"lab_hallway","bb":[33.5,20.5,34.5,21.5],"at":null,"r":null},{"kind":"locker","room":"lab_hallway","bb":[24.5,37.5,28.5,38.5],"at":null,"r":null},{"kind":"crate_stack","room":"lab_hallway","bb":[35.5,37.5,36.5,38.5],"at":null,"r":null},{"kind":"barrel","room":"lab_hallway","bb":[37.5,37.5,38.5,38.5],"at":null,"r":null},{"kind":"barrel","room":"lab_hallway","bb":[38.5,37.5,39.5,38.5],"at":null,"r":null},{"kind":"plant","room":"lab_hallway","bb":[15.5,31.5,16.5,32.5],"at":null,"r":null},{"kind":"cabinet","room":"experiment_lab","bb":[-0.5,26.5,0.5,28.5],"at":null,"r":null},{"kind":"cart","room":"experiment_lab","bb":[-15.5,35.5,-14.5,36.5],"at":null,"r":null},{"kind":"whiteboard_stand","room":"lounge","bb":[22.5,26.5,24.5,28.5],"at":null,"r":null},{"kind":"beanbag","room":"lounge","bb":[25.5,27.5,26.5,28.5],"at":null,"r":null},{"kind":"beanbag","room":"lounge","bb":[27.5,27.5,28.5,28.5],"at":null,"r":null},{"kind":"beanbag","room":"lounge","bb":[25.5,29.5,26.5,30.5],"at":null,"r":null},{"kind":"beanbag","room":"lounge","bb":[27.5,29.5,28.5,30.5],"at":null,"r":null},{"kind":"couch","room":"lounge","bb":[30.5,27.5,33.5,28.5],"at":null,"r":null},{"kind":"couch","room":"lounge","bb":[34.5,27.5,35.5,30.5],"at":null,"r":null},{"kind":"table","room":"lounge","bb":[31.5,29.5,33.5,30.5],"at":null,"r":null},{"kind":"plant","room":"lounge","bb":[29.5,27.5,30.5,28.5],"at":null,"r":null},{"kind":"plant","room":"lounge","bb":[29.5,29.5,30.5,30.5],"at":null,"r":null},{"kind":"console","room":"teleport_room_2","bb":[50.5,31.5,54.5,32.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_2","bb":[54.5,33.5,55.5,34.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_2","bb":[50.5,38.5,51.5,39.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_2","bb":[53.5,38.5,54.5,39.5],"at":null,"r":null},{"kind":"teleporter","room":"teleport_room_2","bb":[54.5,36.5,55.5,37.5],"at":null,"r":null},{"kind":"crate","room":"teleport_room_2","bb":[54.5,39.5,55.5,40.5],"at":null,"r":null},{"kind":"couch","room":"observation_deck","bb":[10.5,46.5,13.5,47.5],"at":null,"r":null},{"kind":"beanbag","room":"observation_deck","bb":[14.5,43.5,15.5,44.5],"at":null,"r":null},{"kind":"telescope","room":"observation_deck","bb":[16.5,43.5,17.5,44.5],"at":null,"r":null},{"kind":"telescope","room":"observation_deck","bb":[16.5,47.5,17.5,48.5],"at":null,"r":null},{"kind":"plant","room":"observation_deck","bb":[9.5,41.5,10.5,42.5],"at":null,"r":null},{"kind":"plant","room":"observation_deck","bb":[16.5,41.5,17.5,42.5],"at":null,"r":null},{"kind":"plant","room":"observation_deck","bb":[9.5,40.5,10.5,41.5],"at":null,"r":null},{"kind":"cooler","room":"observation_deck","bb":[9.5,47.5,10.5,48.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[26.5,41.5,27.5,42.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[45.5,58.5,46.5,59.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[26.5,58.5,27.5,59.5],"at":null,"r":null},{"kind":"barrier","room":"arena","bb":[29.5,46.5,31.5,47.5],"at":null,"r":null},{"kind":"barrier","room":"arena","bb":[33.5,53.5,35.5,54.5],"at":null,"r":null},{"kind":"barrel","room":"arena","bb":[24.5,55.5,25.5,56.5],"at":null,"r":null},{"kind":"barrel","room":"arena","bb":[25.5,55.5,26.5,56.5],"at":null,"r":null},{"kind":"barrel","room":"arena","bb":[25.5,56.5,26.5,57.5],"at":null,"r":null},{"kind":"crate","room":"arena","bb":[47.5,56.5,48.5,57.5],"at":null,"r":null},{"kind":"crate","room":"arena","bb":[48.5,56.5,49.5,57.5],"at":null,"r":null},{"kind":"crate","room":"arena","bb":[48.5,57.5,49.5,58.5],"at":null,"r":null},{"kind":"crate_stack","room":"arena","bb":[48.5,49.5,49.5,50.5],"at":null,"r":null},{"kind":"hazard_explosive","room":"arena","bb":[34.5,46.5,35.5,47.5],"at":null,"r":null},{"kind":"hazard_explosive","room":"arena","bb":[37.5,53.5,38.5,54.5],"at":null,"r":null},{"kind":"console","room":"catwalks","bb":[51.5,41.5,54.5,42.5],"at":null,"r":null},{"kind":"chair","room":"catwalks","bb":[52.5,42.5,53.5,43.5],"at":null,"r":null},{"kind":"toolbox","room":"catwalks","bb":[54.5,41.5,55.5,42.5],"at":null,"r":null},{"kind":"speaker","room":"catwalks","bb":[54.5,43.5,55.5,44.5],"at":null,"r":null},{"kind":"speaker","room":"catwalks","bb":[54.5,49.5,55.5,50.5],"at":null,"r":null},{"kind":"speaker","room":"catwalks","bb":[54.5,55.5,55.5,56.5],"at":null,"r":null},{"kind":"floodlight","room":"catwalks","bb":[54.5,45.5,55.5,46.5],"at":null,"r":null},{"kind":"floodlight","room":"catwalks","bb":[54.5,51.5,55.5,52.5],"at":null,"r":null},{"kind":"floodlight","room":"catwalks","bb":[54.5,57.5,55.5,58.5],"at":null,"r":null},{"kind":"spool","room":"catwalks","bb":[54.5,47.5,55.5,48.5],"at":null,"r":null},{"kind":"barrel","room":"catwalks","bb":[54.5,53.5,55.5,54.5],"at":null,"r":null},{"kind":"generator","room":"catwalks","bb":[54.5,59.5,55.5,60.5],"at":null,"r":null},{"kind":"crate","room":"catwalks","bb":[53.5,59.5,54.5,60.5],"at":null,"r":null},{"kind":"barrel","room":"catwalks","bb":[53.5,58.5,54.5,59.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[41.5,28.5,42.5,29.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[24.5,33.5,25.5,34.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[23.5,24.5,24.5,25.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[34.5,24.5,35.5,25.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[35.5,33.5,36.5,34.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[17.5,32.5,18.5,33.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[41.5,21.5,42.5,22.5],"at":null,"r":null},{"kind":"floodlight","room":"lab_hallway","bb":[40.5,36.5,41.5,37.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[34.5,55.5,35.5,56.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[32.5,43.5,33.5,44.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[18.5,49.5,19.5,50.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[48.5,51.5,49.5,52.5],"at":null,"r":null},{"kind":"floodlight","room":"arena","bb":[18.5,44.5,19.5,45.5],"at":null,"r":null},{"kind":"mech_bay","room":"show_room","bb":[49.5,19.5,51.5,21.5],"at":null,"r":null},{"kind":"pallet_rack","room":"show_room","bb":[47.5,16.5,48.5,19.5],"at":null,"r":null},{"kind":"pallet_rack","room":"show_room","bb":[48.5,13.5,51.5,14.5],"at":null,"r":null},{"kind":"pallet_rack","room":"show_room","bb":[52.5,18.5,53.5,22.5],"at":null,"r":null},{"kind":"pallet_rack","room":"show_room","bb":[54.5,17.5,55.5,22.5],"at":null,"r":null},{"kind":"pallet_rack","room":"show_room","bb":[54.5,23.5,55.5,27.5],"at":null,"r":null},{"kind":"crate","room":"show_room","bb":[54.5,13.5,55.5,14.5],"at":null,"r":null},{"kind":"cart","room":"show_room","bb":[50.5,23.5,52.5,24.5],"at":null,"r":null},{"kind":"crate_stack","room":"show_room","bb":[52.5,23.5,53.5,24.5],"at":null,"r":null},{"kind":"crate_stack","room":"show_room","bb":[48.5,28.5,49.5,29.5],"at":null,"r":null},{"kind":"locker","room":"show_room","bb":[49.5,29.5,53.5,30.5],"at":null,"r":null},{"kind":"barrel","room":"show_room","bb":[53.5,29.5,54.5,30.5],"at":null,"r":null},{"kind":"barrel","room":"show_room","bb":[54.5,28.5,55.5,29.5],"at":null,"r":null},{"kind":"sentry","room":"crystal_chamber","bb":[15.5,20.5,16.5,21.5],"at":null,"r":null},{"kind":"sentry","room":"lab_hallway","bb":[37.5,24.5,38.5,25.5],"at":null,"r":null},{"kind":"charger","room":"lab_hallway","bb":[19.5,31.5,20.5,32.5],"at":null,"r":null},{"kind":"computer_desk","room":"armory","bb":[73.5,51.5,74.5,53.5],"at":null,"r":null},{"kind":"desk","room":"armory","bb":[75.5,51.5,78.5,52.5],"at":null,"r":null},{"kind":"toolbox","room":"armory","bb":[77.5,52.5,78.5,53.5],"at":null,"r":null},{"kind":"cart","room":"armory","bb":[76.5,54.5,78.5,55.5],"at":null,"r":null},{"kind":"crate","room":"armory","bb":[80.5,50.5,81.5,51.5],"at":null,"r":null},{"kind":"crate","room":"armory","bb":[79.5,50.5,80.5,51.5],"at":null,"r":null},{"kind":"crate","room":"armory","bb":[80.5,51.5,81.5,52.5],"at":null,"r":null},{"kind":"crate","room":"armory","bb":[79.5,51.5,80.5,52.5],"at":null,"r":null},{"kind":"crate","room":"armory","bb":[80.5,52.5,81.5,53.5],"at":null,"r":null},{"kind":"barrel","room":"armory","bb":[80.5,55.5,81.5,56.5],"at":null,"r":null},{"kind":"barrel","room":"armory","bb":[80.5,56.5,81.5,57.5],"at":null,"r":null},{"kind":"locker","room":"armory","bb":[73.5,56.5,74.5,57.5],"at":null,"r":null},{"kind":"locker","room":"armory","bb":[74.5,56.5,75.5,57.5],"at":null,"r":null},{"kind":"locker","room":"armory","bb":[75.5,56.5,76.5,57.5],"at":null,"r":null},{"kind":"locker","room":"armory","bb":[76.5,56.5,77.5,57.5],"at":null,"r":null},{"kind":"freezer_bank","room":"cold_storage","bb":[-71.5,27.5,-61.5,30.5],"at":null,"r":null},{"kind":"toppled_rack","room":"cold_storage","bb":[-68.72,32.89,-66.28,37.31],"at":null,"r":null},{"kind":"toppled_rack","room":"cold_storage","bb":[-67.245,32.5,-64.955,36.7],"at":null,"r":null},{"kind":"river","room":"sewers","bb":[-48.5,110.5,-40.5,113.5],"at":null,"r":null},{"kind":"river","room":"sewers","bb":[-38.5,110.5,-14.5,113.5],"at":null,"r":null},{"kind":"river","room":"sewers","bb":[-12.5,110.5,-10.5,113.5],"at":null,"r":null},{"kind":"pool","room":"sewers","bb":[-10.5,104.5,-6.5,115.5],"at":null,"r":null},{"kind":"pool","room":"sewers","bb":[-10.5,107.5,4.5,120.5],"at":null,"r":null},{"kind":"gate","room":"sewers","bb":[-45.5,107.3,-43.5,107.7],"at":null,"r":null},{"kind":"gate","room":"sewers","bb":[-33.5,107.3,-28.5,107.7],"at":null,"r":null},{"kind":"rubble","room":"sewers","bb":[-22.5,107.1,-16.5,107.4],"at":null,"r":null},{"kind":"rubble","room":"nest_t1","bb":[17.35,175.5,17.65,178.5],"at":null,"r":null},{"kind":"cracked_wall","room":"nest_t3","bb":[5.5,193.35,8.5,193.65],"at":null,"r":null},{"kind":"hazard_explosive","room":"nest_t3","bb":[8.5,191.5,9.5,192.5],"at":null,"r":null},{"kind":"pool","room":"nest_t4","bb":[11.5,186.5,14.5,189.5],"at":null,"r":null},{"kind":"boulder","room":"nest_t6","bb":[25.5,185.5,27.5,186.5],"at":null,"r":null},{"kind":"hazard_corrosive","room":"nest_t7","bb":[22.5,201.5,23.5,202.5],"at":null,"r":null},{"kind":"resin_seal","room":"nest_t7","bb":[23.55,200.5,23.85,203.5],"at":null,"r":null},{"kind":"chest","room":"nest_shelf","bb":[3.5,167.5,4.5,168.5],"at":null,"r":null},{"kind":"chest","room":"nest_stream","bb":[20.5,187.5,21.5,188.5],"at":null,"r":null},{"kind":"chest","room":"nest_burrow","bb":[28.5,192.5,29.5,193.5],"at":null,"r":null},{"kind":"chest","room":"nest_larder","bb":[29.5,200.5,30.5,201.5],"at":null,"r":null},{"kind":"chest","room":"catwalk_spur","bb":[47.5,42.5,48.5,43.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[148.5,14.5,149.5,19.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[151.5,14.5,152.5,19.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[154.5,14.5,155.5,19.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[157.5,14.5,158.5,19.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[166.5,14.5,167.5,19.5],"at":null,"r":null},{"kind":"vending","room":"subway_platform","bb":[-104.5,188.5,-103.5,189.5],"at":null,"r":null},{"kind":"vending","room":"subway_platform","bb":[-103.5,188.5,-102.5,189.5],"at":null,"r":null},{"kind":"bin","room":"subway_platform","bb":[-98.5,188.5,-97.5,189.5],"at":null,"r":null},{"kind":"bin","room":"subway_platform","bb":[-89.5,188.5,-88.5,189.5],"at":null,"r":null},{"kind":"crate","room":"subway_platform","bb":[-112.5,188.5,-111.5,189.5],"at":null,"r":null},{"kind":"crate","room":"subway_platform","bb":[-111.5,188.5,-110.5,189.5],"at":null,"r":null},{"kind":"crate","room":"subway_platform","bb":[-112.5,189.5,-111.5,190.5],"at":null,"r":null},{"kind":"barrier","room":"subway_tracks","bb":[-81.5,194.5,-80.5,196.5],"at":null,"r":null},{"kind":"barrel","room":"subway_tracks","bb":[-115.5,196.5,-114.5,197.5],"at":null,"r":null},{"kind":"barrel","room":"subway_tracks","bb":[-114.5,196.5,-113.5,197.5],"at":null,"r":null},{"kind":"server_rack","room":"elec_servers","bb":[168.5,14.5,169.5,19.5],"at":null,"r":null},{"kind":"console","room":"sewers","bb":[-6.5,105.5,-4.5,106.5],"at":null,"r":null},{"kind":"pump","room":"sewers","bb":[-2.5,114.5,-0.5,115.5],"at":null,"r":null},{"kind":"pump","room":"sewers","bb":[-4.5,114.5,-3.5,116.5],"at":null,"r":null},{"kind":"valve","room":"sewers","bb":[-1.5,113.5,-0.5,114.5],"at":null,"r":null},{"kind":"valve","room":"sewers","bb":[-3.5,115.5,-2.5,116.5],"at":null,"r":null},{"kind":"hazard_corrosive","room":"sewers","bb":[-3.5,111.5,-2.5,112.5],"at":null,"r":null},{"kind":"pump","room":"sewers","bb":[-41.5,103.5,-39.5,104.5],"at":null,"r":null},{"kind":"valve","room":"sewers","bb":[-37.5,103.5,-36.5,104.5],"at":null,"r":null},{"kind":"valve","room":"sewers","bb":[-39.5,105.5,-38.5,106.5],"at":null,"r":null},{"kind":"rubble","room":"sewers","bb":[-44.9,113.5,-44.6,118.5],"at":null,"r":null},{"kind":"rubble","room":"sewers","bb":[-10.7,115.5,-10.3,118.5],"at":null,"r":null}],"relays":[{"id":"relay_chamber","room":"crystal_chamber"},{"id":"relay_hall","room":"lab_hallway"},{"id":"relay_lobby","room":"front_lobby"},{"id":"relay_lab","room":"lab_passage"},{"id":"relay_show","room":"show_room"},{"id":"relay_armory","room":"armory"}],"conns":[{"rooms":["crystal_chamber","teleport_room_1"],"at":[11.5,25.5],"ramp":false,"portal":false},{"rooms":["teleport_room_1","observation_deck"],"at":[12.5,38.5],"ramp":true,"portal":false},{"rooms":["front_lobby","lab_hallway"],"at":[21.5,20.5],"ramp":false,"portal":false},{"rooms":["front_lobby","lab_hallway"],"at":[38.5,20.5],"ramp":false,"portal":false},{"rooms":["security_room","front_lobby"],"at":[41.5,15.5],"ramp":false,"portal":false},{"rooms":["security_room","lab_hallway"],"at":[44.5,20.5],"ramp":false,"portal":false},{"rooms":["show_room","lab_hallway"],"at":[47.5,26],"ramp":false,"portal":false},{"rooms":["arena","lab_hallway"],"at":[20.5,38.5],"ramp":true,"portal":false},{"rooms":["lounge","lab_passage"],"at":[21.5,29.5],"ramp":false,"portal":false},{"rooms":["lounge","lab_hallway"],"at":[29.5,26.5],"ramp":false,"portal":false},{"rooms":["lounge","lab_hallway"],"at":[37.5,29.5],"ramp":false,"portal":false},{"rooms":["teleport_room_1","experiment_lab"],"at":[8.5,33],"ramp":true,"portal":false},{"rooms":["lab_passage","teleport_room_1"],"at":[15.5,29.5],"ramp":false,"portal":false},{"rooms":["crystal_chamber","lab_hallway"],"at":[18.5,22.5],"ramp":false,"portal":false},{"rooms":["teleport_stair_room","lab_hallway"],"at":[43.5,35],"ramp":true,"portal":false},{"rooms":["teleport_stair_room","teleport_room_2"],"at":[48.5,35.5],"ramp":false,"portal":false},{"rooms":["observation_deck","armory"],"at":null,"ramp":false,"portal":true},{"rooms":["arena","armory"],"at":null,"ramp":false,"portal":true},{"rooms":["arena","cold_storage"],"at":null,"ramp":false,"portal":true},{"rooms":["experiment_lab","cold_storage"],"at":null,"ramp":false,"portal":true},{"rooms":["arena","sewers"],"at":null,"ramp":false,"portal":true},{"rooms":["arena","nest_area"],"at":null,"ramp":false,"portal":true},{"rooms":["front_lobby","elec_servers"],"at":null,"ramp":false,"portal":true},{"rooms":["elec_servers","elec_circuitry"],"at":[158.5,30.5],"ramp":true,"portal":false},{"rooms":["sewers","subway_platform"],"at":null,"ramp":false,"portal":true},{"rooms":["subway_platform","subway_tracks"],"at":[-84,193.5],"ramp":true,"portal":false},{"rooms":["nest_area","nest_t1"],"at":[22.5,177],"ramp":false,"portal":false},{"rooms":["nest_t1","nest_brood"],"at":[13.5,177],"ramp":false,"portal":false},{"rooms":["nest_brood","nest_t3"],"at":[7,181.5],"ramp":false,"portal":false},{"rooms":["nest_t3","nest_t4"],"at":[8.5,188],"ramp":false,"portal":false},{"rooms":["nest_t4","nest_stream"],"at":[17.5,188],"ramp":false,"portal":false},{"rooms":["nest_t3","nest_deep"],"at":[7,195.5],"ramp":false,"portal":false},{"rooms":["nest_area","nest_t6"],"at":[27,183.5],"ramp":false,"portal":false},{"rooms":["nest_t6","nest_burrow"],"at":[27,189.5],"ramp":false,"portal":false},{"rooms":["nest_deep","nest_t7"],"at":[21.5,202],"ramp":false,"portal":false},{"rooms":["nest_t7","nest_larder"],"at":[26.5,202],"ramp":false,"portal":false},{"rooms":["nest_deep","nest_down"],"at":[3,207.5],"ramp":false,"portal":false},{"rooms":["nest_down","nest_down_low"],"at":[3,213.5],"ramp":true,"portal":false}]},"wallH":122,"wallT":1,"pal":{"ink":"#16303a","cap":"#f1f8fa","wallLit":"#c6dae1","wallDark":"#a3c0ca","wallBase":"#3d93a0","floorA":"#d8e8ec","floorB":"#b4cdd5","seam":"#8fb6bf","teal":"#4f9aa0","tealLit":"#6cb3bb","tealDark":"#2f6a73","case":"#a9c4cc","caseLit":"#dbeaee","cyan":"#31e8ff","blue":"#3a7bff","violet":"#9a5cff","amber":"#f2b13a","white":"#eaffff","leaf":"#4fa58a"},"tile":[60,30],"antColour":"#aa55ff","tank":{"r":0.56,"z0":26,"z1":192,"fill":0.84,"gemZ":104,"rise":12}};
+window.__lab3dMap = {"chamber":{"id":"crystal_chamber","poly":[[8.5,12.5],[17.5,12.5],[17.5,21.5],[18.5,21.5],[18.5,23.5],[17.5,23.5],[17.5,24.5],[12.5,24.5],[12.5,25.5],[10.5,25.5],[10.5,24.5],[8.5,24.5]],"bb":[8.5,12.5,18.5,25.5],"cells":[[9,13],[9,14],[9,15],[9,16],[9,17],[9,18],[9,19],[9,20],[9,21],[9,22],[9,23],[9,24],[10,13],[10,14],[10,15],[10,16],[10,17],[10,18],[10,19],[10,20],[10,21],[10,22],[10,23],[10,24],[11,13],[11,14],[11,15],[11,16],[11,17],[11,18],[11,19],[11,20],[11,21],[11,22],[11,23],[11,24],[11,25],[12,13],[12,14],[12,15],[12,16],[12,17],[12,18],[12,19],[12,20],[12,21],[12,22],[12,23],[12,24],[12,25],[13,13],[13,14],[13,15],[13,16],[13,17],[13,18],[13,19],[13,20],[13,21],[13,22],[13,23],[13,24],[14,13],[14,14],[14,15],[14,16],[14,17],[14,18],[14,19],[14,20],[14,21],[14,22],[14,23],[14,24],[15,13],[15,14],[15,15],[15,16],[15,17],[15,18],[15,19],[15,20],[15,21],[15,22],[15,23],[15,24],[16,13],[16,14],[16,15],[16,16],[16,17],[16,18],[16,19],[16,20],[16,21],[16,22],[16,23],[16,24],[17,13],[17,14],[17,15],[17,16],[17,17],[17,18],[17,19],[17,20],[17,21],[17,22],[17,23],[17,24],[18,22],[18,23]],"walls":[{"a":[8.5,12.5],"b":[17.5,12.5],"kind":"wall","out":-1},{"a":[17.5,12.5],"b":[17.5,21.5],"kind":"wall","out":1},{"a":[17.5,21.5],"b":[18.5,21.5],"kind":"wall","out":-1},{"a":[18.5,23.5],"b":[17.5,23.5],"kind":"wall","out":1},{"a":[17.5,23.5],"b":[17.5,24.5],"kind":"wall","out":1},{"a":[17.5,24.5],"b":[12.5,24.5],"kind":"wall","out":1},{"a":[12.5,24.5],"b":[12.5,25.5],"kind":"wall","out":1},{"a":[10.5,25.5],"b":[10.5,24.5],"kind":"wall","out":-1},{"a":[10.5,24.5],"b":[8.5,24.5],"kind":"wall","out":1},{"a":[8.5,24.5],"b":[8.5,12.5],"kind":"wall","out":-1}],"doors":[{"id":"door_chamber_teleport_1","a":[10.5,25.5],"b":[12.5,25.5],"to":"teleport_room_1","door":"sliding_access_door"},{"id":"door_crystal_hallway","a":[18.5,21.5],"b":[18.5,23.5],"to":"lab_hallway","door":"sliding_access_door"}],"crystal":[11.5,15.5],"fixtures":[{"id":"power_pack_area","type":"power_pack_area","room":"crystal_chamber","edge":0,"a":[12.5,12.5],"b":[17.5,12.5],"status":"approximate"}],"decor":[{"id":"ring_1","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":3.4,"colour":"#6adfff","a":0.75,"w":3,"glow":true},{"id":"ring_2","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":2.2,"colour":"#6adfff","a":0.6,"w":2,"dashed":true},{"id":"ring_3","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":4.7,"colour":"#ffd34d","a":0.5,"w":2,"dashed":true},{"id":"light_1","room":"crystal_chamber","kind":"light","at":[11.5,15.5],"radius":6.5,"colour":"#6adfff","a":0.3},{"id":"light_2","room":"crystal_chamber","kind":"light","at":[15,22],"radius":4,"colour":"#ffe9a0","a":0.14,"flicker":true},{"id":"cables_1","room":"crystal_chamber","kind":"cables","path":[[15,13.4],[15,16],[13.2,16]],"colour":"#ffb347"},{"id":"cables_2","room":"crystal_chamber","kind":"cables","path":[[16,13.4],[16,18.5],[12,18.5],[12,17.7]],"colour":"#6adfff"},{"id":"cables_3","room":"crystal_chamber","kind":"cables","path":[[16.8,15],[14.5,15],[14.5,16]],"colour":"#ff6a4a"},{"id":"hazard_1","room":"crystal_chamber","kind":"hazard","rect":[15.5,20.5,17.5,23.5]},{"id":"hazard_2","room":"crystal_chamber","kind":"hazard","rect":[10.5,23.5,12.5,24.5]},{"id":"scorch_1","room":"crystal_chamber","kind":"scorch","at":[14,20],"radius":1,"colour":"#0c0c10"},{"id":"stain_1","room":"crystal_chamber","kind":"stain","at":[10,18],"radius":0.8,"colour":"#2a1a10"},{"id":"papers_1","room":"crystal_chamber","kind":"papers","at":[10.5,19.5],"radius":1,"n":6},{"id":"debris_1","room":"crystal_chamber","kind":"debris","at":[15.5,23],"radius":1,"n":5},{"id":"pipe_1","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[8.5,24.5],"colour":"#ffb347","z":62},{"id":"panel_1","room":"crystal_chamber","kind":"panel","a":[8.5,13.5],"b":[8.5,14.5]},{"id":"vent_1","room":"crystal_chamber","kind":"vent","a":[8.5,15.5],"b":[8.5,16.5]},{"id":"relay_node_chamber","room":"crystal_chamber","kind":"relay_node","a":[8.5,17.5],"b":[8.5,18.5]},{"id":"screen_1","room":"crystal_chamber","kind":"screen","a":[8.5,19.5],"b":[8.5,21.5],"colour":"#6adfff"},{"id":"wall_light_1","room":"crystal_chamber","kind":"wall_light","a":[8.5,21.5],"b":[8.5,23.5],"h":1},{"id":"hazard_sign_1","room":"crystal_chamber","kind":"hazard_sign","a":[8.5,12.5],"b":[9.5,12.5]},{"id":"vent_2","room":"crystal_chamber","kind":"vent","a":[10.5,12.5],"b":[11.5,12.5]},{"id":"pipe_2","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[12.5,12.5],"colour":"#ffb347","z":60},{"id":"wall_light_2","room":"crystal_chamber","kind":"wall_light","a":[9.5,12.5],"b":[12.5,12.5],"h":1}],"floor":{"room":"crystal_chamber","style":"plate","colour":"#2a4458"},"solids":[{"id":"generator_1","kind":"generator","room":"crystal_chamber","bb":[8.5,13.5,9.5,15.5],"c":[9,14.5],"fam":"lab","variant":"generator.1x2","cover":false,"low":false},{"id":"crate_stack_1","kind":"crate_stack","room":"crystal_chamber","bb":[8.5,21.5,9.5,22.5],"c":[9,22],"fam":"cargo","variant":"crate_stack.s1","cover":true,"low":false},{"id":"crate_1","kind":"crate","room":"crystal_chamber","bb":[8.5,20.5,9.5,21.5],"c":[9,21],"fam":"cargo","variant":"crate.s2","cover":true,"low":true},{"id":"crate_2","kind":"crate","room":"crystal_chamber","bb":[9.5,21.5,10.5,22.5],"c":[10,22],"fam":"cargo","variant":"crate.s3","cover":true,"low":true},{"id":"barrel_1","kind":"barrel","room":"crystal_chamber","bb":[8.5,22.5,9.5,23.5],"c":[9,23],"fam":"cargo","variant":"barrel.s3","cover":true,"low":true},{"id":"barrel_2","kind":"barrel","room":"crystal_chamber","bb":[8.5,23.5,9.5,24.5],"c":[9,24],"fam":"cargo","variant":"barrel.s0","cover":true,"low":true},{"id":"console_1","kind":"console","room":"crystal_chamber","bb":[8.5,16.5,9.5,19.5],"c":[9,18],"fam":"office","variant":"console.1x3","cover":true,"low":false},{"id":"plant_1","kind":"plant","room":"crystal_chamber","bb":[16.5,18.5,17.5,19.5],"c":[17,19],"fam":"plant","variant":"p2","cover":false,"low":false},{"id":"sentry_chamber_1","kind":"sentry","room":"crystal_chamber","bb":[15.5,20.5,16.5,21.5],"c":[16,21],"fam":"sentry","variant":"a00","cover":false,"low":true}],"style":{"acc":"#31e8ff","wain":"#3d93a0","fa":"#d8e8ec","fb":"#b4cdd5"}},"wallH":122,"wallT":1,"pal":{"ink":"#16303a","cap":"#f1f8fa","wallLit":"#c6dae1","wallDark":"#a3c0ca","wallBase":"#3d93a0","floorA":"#d8e8ec","floorB":"#b4cdd5","seam":"#8fb6bf","teal":"#4f9aa0","tealLit":"#6cb3bb","tealDark":"#2f6a73","case":"#a9c4cc","caseLit":"#dbeaee","cyan":"#31e8ff","blue":"#3a7bff","violet":"#9a5cff","amber":"#f2b13a","white":"#eaffff","leaf":"#4fa58a"},"tile":[60,30],"antColour":"#aa55ff","tank":{"r":0.56,"z0":26,"z1":192,"fill":0.84,"gemZ":104,"rise":12},"lab":{"rooms":[{"id":"crystal_chamber","poly":[[8.5,12.5],[17.5,12.5],[17.5,21.5],[18.5,21.5],[18.5,23.5],[17.5,23.5],[17.5,24.5],[12.5,24.5],[12.5,25.5],[10.5,25.5],[10.5,24.5],[8.5,24.5]],"bb":[8.5,12.5,18.5,25.5],"cells":[[9,13],[9,14],[9,15],[9,16],[9,17],[9,18],[9,19],[9,20],[9,21],[9,22],[9,23],[9,24],[10,13],[10,14],[10,15],[10,16],[10,17],[10,18],[10,19],[10,20],[10,21],[10,22],[10,23],[10,24],[11,13],[11,14],[11,15],[11,16],[11,17],[11,18],[11,19],[11,20],[11,21],[11,22],[11,23],[11,24],[11,25],[12,13],[12,14],[12,15],[12,16],[12,17],[12,18],[12,19],[12,20],[12,21],[12,22],[12,23],[12,24],[12,25],[13,13],[13,14],[13,15],[13,16],[13,17],[13,18],[13,19],[13,20],[13,21],[13,22],[13,23],[13,24],[14,13],[14,14],[14,15],[14,16],[14,17],[14,18],[14,19],[14,20],[14,21],[14,22],[14,23],[14,24],[15,13],[15,14],[15,15],[15,16],[15,17],[15,18],[15,19],[15,20],[15,21],[15,22],[15,23],[15,24],[16,13],[16,14],[16,15],[16,16],[16,17],[16,18],[16,19],[16,20],[16,21],[16,22],[16,23],[16,24],[17,13],[17,14],[17,15],[17,16],[17,17],[17,18],[17,19],[17,20],[17,21],[17,22],[17,23],[17,24],[18,22],[18,23]],"walls":[{"a":[8.5,12.5],"b":[17.5,12.5],"kind":"wall","out":-1},{"a":[17.5,12.5],"b":[17.5,21.5],"kind":"wall","out":1},{"a":[17.5,21.5],"b":[18.5,21.5],"kind":"wall","out":-1},{"a":[18.5,23.5],"b":[17.5,23.5],"kind":"wall","out":1},{"a":[17.5,23.5],"b":[17.5,24.5],"kind":"wall","out":1},{"a":[17.5,24.5],"b":[12.5,24.5],"kind":"wall","out":1},{"a":[12.5,24.5],"b":[12.5,25.5],"kind":"wall","out":1},{"a":[10.5,25.5],"b":[10.5,24.5],"kind":"wall","out":-1},{"a":[10.5,24.5],"b":[8.5,24.5],"kind":"wall","out":1},{"a":[8.5,24.5],"b":[8.5,12.5],"kind":"wall","out":-1}],"doors":[{"id":"door_chamber_teleport_1","a":[10.5,25.5],"b":[12.5,25.5],"to":"teleport_room_1","door":"sliding_access_door"},{"id":"door_crystal_hallway","a":[18.5,21.5],"b":[18.5,23.5],"to":"lab_hallway","door":"sliding_access_door"}],"crystal":[11.5,15.5],"fixtures":[{"id":"power_pack_area","type":"power_pack_area","room":"crystal_chamber","edge":0,"a":[12.5,12.5],"b":[17.5,12.5],"status":"approximate"}],"decor":[{"id":"ring_1","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":3.4,"colour":"#6adfff","a":0.75,"w":3,"glow":true},{"id":"ring_2","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":2.2,"colour":"#6adfff","a":0.6,"w":2,"dashed":true},{"id":"ring_3","room":"crystal_chamber","kind":"ring","at":[11.5,15.5],"radius":4.7,"colour":"#ffd34d","a":0.5,"w":2,"dashed":true},{"id":"light_1","room":"crystal_chamber","kind":"light","at":[11.5,15.5],"radius":6.5,"colour":"#6adfff","a":0.3},{"id":"light_2","room":"crystal_chamber","kind":"light","at":[15,22],"radius":4,"colour":"#ffe9a0","a":0.14,"flicker":true},{"id":"cables_1","room":"crystal_chamber","kind":"cables","path":[[15,13.4],[15,16],[13.2,16]],"colour":"#ffb347"},{"id":"cables_2","room":"crystal_chamber","kind":"cables","path":[[16,13.4],[16,18.5],[12,18.5],[12,17.7]],"colour":"#6adfff"},{"id":"cables_3","room":"crystal_chamber","kind":"cables","path":[[16.8,15],[14.5,15],[14.5,16]],"colour":"#ff6a4a"},{"id":"hazard_1","room":"crystal_chamber","kind":"hazard","rect":[15.5,20.5,17.5,23.5]},{"id":"hazard_2","room":"crystal_chamber","kind":"hazard","rect":[10.5,23.5,12.5,24.5]},{"id":"scorch_1","room":"crystal_chamber","kind":"scorch","at":[14,20],"radius":1,"colour":"#0c0c10"},{"id":"stain_1","room":"crystal_chamber","kind":"stain","at":[10,18],"radius":0.8,"colour":"#2a1a10"},{"id":"papers_1","room":"crystal_chamber","kind":"papers","at":[10.5,19.5],"radius":1,"n":6},{"id":"debris_1","room":"crystal_chamber","kind":"debris","at":[15.5,23],"radius":1,"n":5},{"id":"pipe_1","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[8.5,24.5],"colour":"#ffb347","z":62},{"id":"panel_1","room":"crystal_chamber","kind":"panel","a":[8.5,13.5],"b":[8.5,14.5]},{"id":"vent_1","room":"crystal_chamber","kind":"vent","a":[8.5,15.5],"b":[8.5,16.5]},{"id":"relay_node_chamber","room":"crystal_chamber","kind":"relay_node","a":[8.5,17.5],"b":[8.5,18.5]},{"id":"screen_1","room":"crystal_chamber","kind":"screen","a":[8.5,19.5],"b":[8.5,21.5],"colour":"#6adfff"},{"id":"wall_light_1","room":"crystal_chamber","kind":"wall_light","a":[8.5,21.5],"b":[8.5,23.5],"h":1},{"id":"hazard_sign_1","room":"crystal_chamber","kind":"hazard_sign","a":[8.5,12.5],"b":[9.5,12.5]},{"id":"vent_2","room":"crystal_chamber","kind":"vent","a":[10.5,12.5],"b":[11.5,12.5]},{"id":"pipe_2","room":"crystal_chamber","kind":"pipe","a":[8.5,12.5],"b":[12.5,12.5],"colour":"#ffb347","z":60},{"id":"wall_light_2","room":"crystal_chamber","kind":"wall_light","a":[9.5,12.5],"b":[12.5,12.5],"h":1}],"floor":{"room":"crystal_chamber","style":"plate","colour":"#2a4458"},"solids":[{"id":"generator_1","kind":"generator","room":"crystal_chamber","bb":[8.5,13.5,9.5,15.5],"c":[9,14.5],"fam":"lab","variant":"generator.1x2","cover":false,"low":false},{"id":"crate_stack_1","kind":"crate_stack","room":"crystal_chamber","bb":[8.5,21.5,9.5,22.5],"c":[9,22],"fam":"cargo","variant":"crate_stack.s1","cover":true,"low":false},{"id":"crate_1","kind":"crate","room":"crystal_chamber","bb":[8.5,20.5,9.5,21.5],"c":[9,21],"fam":"cargo","variant":"crate.s2","cover":true,"low":true},{"id":"crate_2","kind":"crate","room":"crystal_chamber","bb":[9.5,21.5,10.5,22.5],"c":[10,22],"fam":"cargo","variant":"crate.s3","cover":true,"low":true},{"id":"barrel_1","kind":"barrel","room":"crystal_chamber","bb":[8.5,22.5,9.5,23.5],"c":[9,23],"fam":"cargo","variant":"barrel.s3","cover":true,"low":true},{"id":"barrel_2","kind":"barrel","room":"crystal_chamber","bb":[8.5,23.5,9.5,24.5],"c":[9,24],"fam":"cargo","variant":"barrel.s0","cover":true,"low":true},{"id":"console_1","kind":"console","room":"crystal_chamber","bb":[8.5,16.5,9.5,19.5],"c":[9,18],"fam":"office","variant":"console.1x3","cover":true,"low":false},{"id":"plant_1","kind":"plant","room":"crystal_chamber","bb":[16.5,18.5,17.5,19.5],"c":[17,19],"fam":"plant","variant":"p2","cover":false,"low":false},{"id":"sentry_chamber_1","kind":"sentry","room":"crystal_chamber","bb":[15.5,20.5,16.5,21.5],"c":[16,21],"fam":"sentry","variant":"a00","cover":false,"low":true}],"style":{"acc":"#31e8ff","wain":"#3d93a0","fa":"#d8e8ec","fb":"#b4cdd5"},"label":"Crystal Chamber"},{"id":"teleport_room_1","poly":[[8.5,25.5],[17.5,25.5],[17.5,27.5],[14.5,27.5],[14.5,28.5],[15.5,28.5],[15.5,30.5],[14.5,30.5],[14.5,38.5],[8.5,38.5]],"bb":[8.5,25.5,17.5,38.5],"cells":[[9,26],[9,27],[9,28],[9,29],[9,30],[9,31],[9,32],[9,33],[9,34],[9,35],[9,36],[9,37],[9,38],[10,26],[10,27],[10,28],[10,29],[10,30],[10,31],[10,32],[10,33],[10,34],[10,35],[10,36],[10,37],[10,38],[11,26],[11,27],[11,28],[11,29],[11,30],[11,31],[11,32],[11,33],[11,34],[11,35],[11,36],[11,37],[11,38],[12,26],[12,27],[12,28],[12,29],[12,30],[12,31],[12,32],[12,33],[12,34],[12,35],[12,36],[12,37],[12,38],[13,26],[13,27],[13,28],[13,29],[13,30],[13,31],[13,32],[13,33],[13,34],[13,35],[13,36],[13,37],[13,38],[14,26],[14,27],[14,28],[14,29],[14,30],[14,31],[14,32],[14,33],[14,34],[14,35],[14,36],[14,37],[14,38],[15,26],[15,27],[15,29],[15,30],[16,26],[16,27],[17,26],[17,27]],"walls":[{"a":[8.5,25.5],"b":[10.5,25.5],"kind":"wall","out":-1},{"a":[12.5,25.5],"b":[17.5,25.5],"kind":"wall","out":-1},{"a":[17.5,25.5],"b":[17.5,27.5],"kind":"wall","out":1},{"a":[17.5,27.5],"b":[14.5,27.5],"kind":"wall","out":1},{"a":[14.5,27.5],"b":[14.5,28.5],"kind":"wall","out":1},{"a":[14.5,28.5],"b":[15.5,28.5],"kind":"wall","out":-1},{"a":[15.5,30.5],"b":[14.5,30.5],"kind":"wall","out":1},{"a":[14.5,30.5],"b":[14.5,38.5],"kind":"wall","out":1},{"a":[14.5,38.5],"b":[13.5,38.5],"kind":"wall","out":1},{"a":[11.5,38.5],"b":[8.5,38.5],"kind":"wall","out":1},{"a":[8.5,38.5],"b":[8.5,34.5],"kind":"wall","out":-1},{"a":[8.5,31.5],"b":[8.5,25.5],"kind":"wall","out":-1}],"doors":[{"id":"door_chamber_teleport_1","a":[10.5,25.5],"b":[12.5,25.5],"to":"crystal_chamber","door":"sliding_access_door"},{"id":"door_teleport_1_deck","a":[11.5,38.5],"b":[13.5,38.5],"to":"observation_deck","door":"sliding_access_door"},{"id":"door_passage_teleport_1","a":[15.5,28.5],"b":[15.5,30.5],"to":"lab_passage","door":"sliding_access_door"},{"id":"open_lab_stair","a":[8.5,31.5],"b":[8.5,34.5],"to":"experiment_lab","door":null}],"crystal":null,"fixtures":[],"decor":[{"id":"ring_4","room":"teleport_room_1","kind":"ring","at":[11.5,32.5],"radius":2.4,"colour":"#a64dff","a":0.8,"w":3,"glow":true},{"id":"ring_5","room":"teleport_room_1","kind":"ring","at":[11.5,32.5],"radius":1.3,"colour":"#a64dff","a":0.6,"w":2,"dashed":true},{"id":"ring_6","room":"teleport_room_1","kind":"ring","at":[11.5,32.5],"radius":3.3,"colour":"#ffd34d","a":0.45,"w":2,"dashed":true},{"id":"light_3","room":"teleport_room_1","kind":"light","at":[11.5,32.5],"radius":6,"colour":"#a64dff","a":0.3},{"id":"light_4","room":"teleport_room_1","kind":"light","at":[11.5,28],"radius":3,"colour":"#ffe9a0","a":0.12,"flicker":true},{"id":"arrows_1","room":"teleport_room_1","kind":"arrows","a":[11.5,26.5],"b":[11.5,29.6],"colour":"#a64dff"},{"id":"hazard_3","room":"teleport_room_1","kind":"hazard","rect":[10.5,34.5,14.5,35.5]},{"id":"cables_4","room":"teleport_room_1","kind":"cables","path":[[9.6,28],[9.6,32.5],[10.8,32.5]],"colour":"#a64dff"},{"id":"cables_5","room":"teleport_room_1","kind":"cables","path":[[14,34.5],[13,34.5],[12.8,33.8]],"colour":"#6adfff"},{"id":"scorch_2","room":"teleport_room_1","kind":"scorch","at":[13,30],"radius":0.9,"colour":"#0c0c10"},{"id":"papers_2","room":"teleport_room_1","kind":"papers","at":[10,34],"radius":1,"n":5},{"id":"debris_2","room":"teleport_room_1","kind":"debris","at":[15.5,26.5],"radius":1,"n":4},{"id":"pipe_3","room":"teleport_room_1","kind":"pipe","a":[8.5,25.5],"b":[8.5,31.5],"colour":"#a64dff","z":64},{"id":"pipe_3b","room":"teleport_room_1","kind":"pipe","a":[8.5,34.5],"b":[8.5,38.5],"colour":"#a64dff","z":64},{"id":"poster_1","room":"teleport_room_1","kind":"poster","a":[8.5,27.5],"b":[8.5,29.5]},{"id":"panel_2","room":"teleport_room_1","kind":"panel","a":[8.5,29.5],"b":[8.5,30.5]},{"id":"screen_2","room":"teleport_room_1","kind":"screen","a":[8.5,35.5],"b":[8.5,37.5],"colour":"#a64dff"},{"id":"vent_3","room":"teleport_room_1","kind":"vent","a":[8.5,37.5],"b":[8.5,38.5]},{"id":"wall_light_3","room":"teleport_room_1","kind":"wall_light","a":[8.5,28.5],"b":[8.5,31.5],"h":1,"colour":"#c9a0ff"},{"id":"screen_3","room":"teleport_room_1","kind":"screen","a":[12.5,25.5],"b":[14.5,25.5],"colour":"#a64dff"},{"id":"poster_2","room":"teleport_room_1","kind":"poster","a":[14.5,25.5],"b":[15.5,25.5]},{"id":"hazard_sign_2","room":"teleport_room_1","kind":"hazard_sign","a":[15.5,25.5],"b":[16.5,25.5]},{"id":"pipe_4","room":"teleport_room_1","kind":"pipe","a":[12.5,25.5],"b":[17.5,25.5],"colour":"#a64dff","z":62},{"id":"wall_light_4","room":"teleport_room_1","kind":"wall_light","a":[12.5,25.5],"b":[17.5,25.5],"colour":"#c9a0ff"}],"floor":{"room":"teleport_room_1","style":"plate","colour":"#3a2f5a"},"solids":[{"id":"vending_1","kind":"vending","room":"teleport_room_1","bb":[8.5,25.5,9.5,26.5],"c":[9,26],"fam":"lounge","variant":"vending.1x1.s1","cover":false,"low":false},{"id":"vending_2","kind":"vending","room":"teleport_room_1","bb":[8.5,26.5,9.5,27.5],"c":[9,27],"fam":"lounge","variant":"vending.1x1.s2","cover":false,"low":false},{"id":"cooler_1","kind":"cooler","room":"teleport_room_1","bb":[9.5,26.5,10.5,27.5],"c":[10,27],"fam":"lounge","variant":"cooler","cover":false,"low":false},{"id":"teleporter_1","kind":"teleporter","room":"teleport_room_1","bb":[8.5,29.5,9.5,30.5],"c":[9,30],"fam":"tech","variant":"teleporter.s1","cover":false,"low":false},{"id":"teleporter_2","kind":"teleporter","room":"teleport_room_1","bb":[8.5,34.5,9.5,35.5],"c":[9,35],"fam":"tech","variant":"teleporter.s0","cover":false,"low":false},{"id":"teleporter_3","kind":"teleporter","room":"teleport_room_1","bb":[13.5,34.5,14.5,35.5],"c":[14,35],"fam":"tech","variant":"teleporter.s1","cover":false,"low":false},{"id":"teleporter_4","kind":"teleporter","room":"teleport_room_1","bb":[13.5,31.5,14.5,32.5],"c":[14,32],"fam":"tech","variant":"teleporter.s0","cover":false,"low":false},{"id":"console_2","kind":"console","room":"teleport_room_1","bb":[13.5,25.5,16.5,26.5],"c":[15,26],"fam":"office","variant":"console.3x1.s1","cover":true,"low":false}],"style":{"acc":"#9a5cff","wain":"#7a62c0","fa":"#e0dcf0","fb":"#bfb8de"},"label":"Teleport Room 1"},{"id":"front_lobby","poly":[[18.5,10.5],[33.5,10.5],[33.5,9.5],[35.5,9.5],[35.5,10.5],[40.5,10.5],[40.5,14.5],[41.5,14.5],[41.5,16.5],[40.5,16.5],[40.5,19.5],[39.5,19.5],[39.5,20.5],[37.5,20.5],[37.5,19.5],[22.5,19.5],[22.5,20.5],[20.5,20.5],[20.5,19.5],[18.5,19.5]],"bb":[18.5,9.5,41.5,20.5],"cells":[[19,11],[19,12],[19,13],[19,14],[19,15],[19,16],[19,17],[19,18],[19,19],[20,11],[20,12],[20,13],[20,14],[20,15],[20,16],[20,17],[20,18],[20,19],[21,11],[21,12],[21,13],[21,14],[21,15],[21,16],[21,17],[21,18],[21,19],[21,20],[22,11],[22,12],[22,13],[22,14],[22,15],[22,16],[22,17],[22,18],[22,19],[22,20],[23,11],[23,12],[23,13],[23,14],[23,15],[23,16],[23,17],[23,18],[23,19],[24,11],[24,12],[24,13],[24,14],[24,15],[24,16],[24,17],[24,18],[24,19],[25,11],[25,12],[25,13],[25,14],[25,15],[25,16],[25,17],[25,18],[25,19],[26,11],[26,12],[26,13],[26,14],[26,15],[26,16],[26,17],[26,18],[26,19],[27,11],[27,12],[27,13],[27,14],[27,15],[27,16],[27,17],[27,18],[27,19],[28,11],[28,12],[28,13],[28,14],[28,15],[28,16],[28,17],[28,18],[28,19],[29,11],[29,12],[29,13],[29,14],[29,15],[29,16],[29,17],[29,18],[29,19],[30,11],[30,12],[30,13],[30,14],[30,15],[30,16],[30,17],[30,18],[30,19],[31,11],[31,12],[31,13],[31,14],[31,15],[31,16],[31,17],[31,18],[31,19],[32,11],[32,12],[32,13],[32,14],[32,15],[32,16],[32,17],[32,18],[32,19],[33,11],[33,12],[33,13],[33,14],[33,15],[33,16],[33,17],[33,18],[33,19],[34,10],[34,11],[34,12],[34,13],[34,14],[34,15],[34,16],[34,17],[34,18],[34,19],[35,10],[35,11],[35,12],[35,13],[35,14],[35,15],[35,16],[35,17],[35,18],[35,19],[36,11],[36,12],[36,13],[36,14],[36,15],[36,16],[36,17],[36,18],[36,19],[37,11],[37,12],[37,13],[37,14],[37,15],[37,16],[37,17],[37,18],[37,19],[38,11],[38,12],[38,13],[38,14],[38,15],[38,16],[38,17],[38,18],[38,19],[38,20],[39,11],[39,12],[39,13],[39,14],[39,15],[39,16],[39,17],[39,18],[39,19],[39,20],[40,11],[40,12],[40,13],[40,14],[40,15],[40,16],[40,17],[40,18],[40,19],[41,15],[41,16]],"walls":[{"a":[18.5,10.5],"b":[33.5,10.5],"kind":"wall","out":-1},{"a":[33.5,10.5],"b":[33.5,9.5],"kind":"wall","out":-1},{"a":[33.5,9.5],"b":[35.5,9.5],"kind":"wall","out":-1},{"a":[35.5,9.5],"b":[35.5,10.5],"kind":"wall","out":1},{"a":[35.5,10.5],"b":[40.5,10.5],"kind":"wall","out":-1},{"a":[40.5,10.5],"b":[40.5,14.5],"kind":"wall","out":1},{"a":[40.5,14.5],"b":[41.5,14.5],"kind":"wall","out":-1},{"a":[41.5,16.5],"b":[40.5,16.5],"kind":"wall","out":1},{"a":[40.5,16.5],"b":[40.5,19.5],"kind":"wall","out":1},{"a":[40.5,19.5],"b":[39.5,19.5],"kind":"wall","out":1},{"a":[39.5,19.5],"b":[39.5,20.5],"kind":"wall","out":1},{"a":[37.5,20.5],"b":[37.5,19.5],"kind":"wall","out":-1},{"a":[37.5,19.5],"b":[22.5,19.5],"kind":"wall","out":1},{"a":[22.5,19.5],"b":[22.5,20.5],"kind":"wall","out":1},{"a":[20.5,20.5],"b":[20.5,19.5],"kind":"wall","out":-1},{"a":[20.5,19.5],"b":[18.5,19.5],"kind":"wall","out":1},{"a":[18.5,19.5],"b":[18.5,10.5],"kind":"wall","out":-1}],"doors":[{"id":"door_lobby_hallway_west","a":[20.5,20.5],"b":[22.5,20.5],"to":"lab_hallway","door":"sliding_access_door"},{"id":"door_lobby_hallway_east","a":[37.5,20.5],"b":[39.5,20.5],"to":"lab_hallway","door":"sliding_access_door"},{"id":"door_security_lobby","a":[41.5,14.5],"b":[41.5,16.5],"to":"security_room","door":"sliding_access_door"}],"crystal":null,"fixtures":[],"decor":[{"id":"light_5","room":"front_lobby","kind":"light","at":[25,14],"radius":3.5,"colour":"#3fa9ff","a":0.14},{"id":"light_6","room":"front_lobby","kind":"light","at":[31,14],"radius":3.5,"colour":"#3fa9ff","a":0.14,"flicker":true},{"id":"light_7","room":"front_lobby","kind":"light","at":[36,14],"radius":3.2,"colour":"#31e8ff","a":0.16},{"id":"light_8","room":"front_lobby","kind":"light","at":[29,17.5],"radius":3,"colour":"#43e0a8","a":0.12},{"id":"cables_6","room":"front_lobby","kind":"cables","path":[[24,16.6],[33.5,16.6],[33.5,12.5],[35,12.5]],"colour":"#31e8ff"},{"id":"cables_7","room":"front_lobby","kind":"cables","path":[[19.6,16.6],[22.5,16.6],[22.5,16.1]],"colour":"#6adfff"},{"id":"cables_8","room":"front_lobby","kind":"cables","path":[[27,16.6],[27,18],[27.75,18]],"colour":"#43e0a8"},{"id":"stain_2","room":"front_lobby","kind":"stain","at":[34,14],"radius":0.9,"colour":"#0a0e18"},{"id":"pipe_5","room":"front_lobby","kind":"pipe","a":[18.5,10.5],"b":[32.5,10.5],"colour":"#3a4a66","z":66},{"id":"pipe_5b","room":"front_lobby","kind":"pipe","a":[35.5,10.5],"b":[40.5,10.5],"colour":"#3a4a66","z":66},{"id":"srv_screen_1","room":"front_lobby","kind":"screen","a":[20.5,10.5],"b":[22.5,10.5],"colour":"#31e8ff","z":36},{"id":"srv_screen_2","room":"front_lobby","kind":"screen","a":[28.5,10.5],"b":[30.5,10.5],"colour":"#43e0a8","z":36},{"id":"vent_4","room":"front_lobby","kind":"vent","a":[38.5,10.5],"b":[40.5,10.5]},{"id":"relay_node_lobby","room":"front_lobby","kind":"relay_node","a":[30.5,10.5],"b":[31.5,10.5]},{"id":"cable_run_1","room":"front_lobby","kind":"cable_run","a":[18.5,12.5],"b":[18.5,17.5]},{"id":"lobby_elec_door","room":"front_lobby","kind":"portal_door","a":[33.5,9.5],"b":[35.5,9.5],"colour":"#8fe3ff"}],"floor":{"room":"front_lobby","style":"plate","colour":null},"solids":[{"id":"racks_west","kind":"server_rack","room":"front_lobby","bb":[18.5,12.5,19.5,17.5],"c":[19,15],"fam":"office","variant":"server_rack.1x5","cover":false,"low":false},{"id":"racks_east","kind":"server_rack","room":"front_lobby","bb":[38.5,10.5,40.5,13.5],"c":[39.5,12],"fam":"office","variant":"server_rack.2x3","cover":false,"low":false},{"id":"srv_row_1","kind":"server_rack","room":"front_lobby","bb":[23.5,11.5,24.5,16.5],"c":[24,14],"fam":"office","variant":"server_rack.1x5","cover":false,"low":false},{"id":"srv_row_2","kind":"server_rack","room":"front_lobby","bb":[26.5,11.5,27.5,16.5],"c":[27,14],"fam":"office","variant":"server_rack.1x5","cover":false,"low":false},{"id":"srv_row_3","kind":"server_rack","room":"front_lobby","bb":[29.5,11.5,30.5,16.5],"c":[30,14],"fam":"office","variant":"server_rack.1x5","cover":false,"low":false},{"id":"srv_row_4","kind":"server_rack","room":"front_lobby","bb":[32.5,11.5,33.5,16.5],"c":[33,14],"fam":"office","variant":"server_rack.1x5","cover":false,"low":false},{"id":"srv_console","kind":"console","room":"front_lobby","bb":[27.5,18.5,30.5,19.5],"c":[29,19],"fam":"office","variant":"console.3x1.s0","cover":true,"low":false},{"id":"junction","kind":"junction","room":"front_lobby","bb":[35.5,10.5,37.5,12.5],"c":[36.5,11.5],"fam":"tech","variant":"junction.2x2.off","cover":false,"low":false}],"style":{"acc":"#3a7bff","wain":"#4a7fb0","fa":"#dde6ee","fb":"#bccbd9"},"label":"Server Room"},{"id":"security_room","poly":[[41.5,12.5],[46.5,12.5],[46.5,19.5],[45.5,19.5],[45.5,20.5],[43.5,20.5],[43.5,19.5],[41.5,19.5]],"bb":[41.5,12.5,46.5,20.5],"cells":[[42,13],[42,14],[42,15],[42,16],[42,17],[42,18],[42,19],[43,13],[43,14],[43,15],[43,16],[43,17],[43,18],[43,19],[44,13],[44,14],[44,15],[44,16],[44,17],[44,18],[44,19],[44,20],[45,13],[45,14],[45,15],[45,16],[45,17],[45,18],[45,19],[45,20],[46,13],[46,14],[46,15],[46,16],[46,17],[46,18],[46,19]],"walls":[{"a":[41.5,12.5],"b":[46.5,12.5],"kind":"wall","out":-1},{"a":[46.5,12.5],"b":[46.5,19.5],"kind":"wall","out":1},{"a":[46.5,19.5],"b":[45.5,19.5],"kind":"wall","out":1},{"a":[45.5,19.5],"b":[45.5,20.5],"kind":"wall","out":1},{"a":[43.5,20.5],"b":[43.5,19.5],"kind":"wall","out":-1},{"a":[43.5,19.5],"b":[41.5,19.5],"kind":"wall","out":1},{"a":[41.5,19.5],"b":[41.5,16.5],"kind":"wall","out":-1},{"a":[41.5,14.5],"b":[41.5,12.5],"kind":"wall","out":-1}],"doors":[{"id":"door_security_lobby","a":[41.5,14.5],"b":[41.5,16.5],"to":"front_lobby","door":"sliding_access_door"},{"id":"door_security_hallway","a":[43.5,20.5],"b":[45.5,20.5],"to":"lab_hallway","door":"sliding_access_door"}],"crystal":null,"fixtures":[],"decor":[{"id":"light_9","room":"security_room","kind":"light","at":[44,16],"radius":3.2,"colour":"#6adfff","a":0.2,"flicker":true},{"id":"light_9b","room":"security_room","kind":"light","at":[42.5,14],"radius":2.5,"colour":"#6adfff","a":0.16,"flicker":true},{"id":"rug_sec","room":"security_room","kind":"rug","rect":[42.5,14.5,45.5,17.5],"colour":"#1d2b3f","border":"#3a7bff"},{"id":"papers_6","room":"security_room","kind":"papers","at":[44,15.5],"radius":1,"n":5},{"id":"mon_n","room":"security_room","kind":"monitor_bank","a":[41.5,12.5],"b":[46.5,12.5]},{"id":"mon_w1","room":"security_room","kind":"monitor_bank","a":[41.5,12.5],"b":[41.5,14.5]},{"id":"mon_w2","room":"security_room","kind":"monitor_bank","a":[41.5,16.5],"b":[41.5,19.5]}],"floor":{"room":"security_room","style":"tile","colour":null},"solids":[{"id":"sec_desk","kind":"computer_desk","room":"security_room","bb":[41.5,12.5,45.5,13.5],"c":[43.5,13],"fam":"office","variant":"computer_desk.4x1","cover":true,"low":true},{"id":"sec_locker","kind":"locker","room":"security_room","bb":[45.5,12.5,46.5,13.5],"c":[46,13],"fam":"tech","variant":"locker.1x1.s1","cover":false,"low":false},{"id":"sec_drawers_1","kind":"cabinet","room":"security_room","bb":[41.5,16.5,42.5,17.5],"c":[42,17],"fam":"tech","variant":"cabinet.1x1","cover":false,"low":false},{"id":"sec_drawers_2","kind":"cabinet","room":"security_room","bb":[41.5,17.5,42.5,18.5],"c":[42,18],"fam":"tech","variant":"cabinet.1x1","cover":false,"low":false},{"id":"sec_drawers_3","kind":"cabinet","room":"security_room","bb":[41.5,18.5,42.5,19.5],"c":[42,19],"fam":"tech","variant":"cabinet.1x1","cover":false,"low":false},{"id":"sec_chair","kind":"chair","room":"security_room","bb":[43.5,13.5,44.5,14.5],"c":[44,14],"fam":"lounge","variant":"chair","cover":false,"low":false},{"id":"sec_cooler","kind":"cooler","room":"security_room","bb":[45.5,17.5,46.5,18.5],"c":[46,18],"fam":"lounge","variant":"cooler","cover":false,"low":false},{"id":"sec_bin","kind":"bin","room":"security_room","bb":[45.5,18.5,46.5,19.5],"c":[46,19],"fam":"lounge","variant":"bin.s0","cover":false,"low":false}],"style":{"acc":"#3a7bff","wain":"#3a5a82","fa":"#c6d0dd","fb":"#a5b3c6"},"label":"Security Room"},{"id":"show_room","poly":[[47.5,13.5],[55.5,13.5],[55.5,30.5],[48.5,30.5],[47.5,30.5]],"bb":[47.5,13.5,55.5,30.5],"cells":[[48,14],[48,15],[48,16],[48,17],[48,18],[48,19],[48,20],[48,21],[48,22],[48,23],[48,24],[48,25],[48,26],[48,27],[48,28],[48,29],[48,30],[49,14],[49,15],[49,16],[49,17],[49,18],[49,19],[49,20],[49,21],[49,22],[49,23],[49,24],[49,25],[49,26],[49,27],[49,28],[49,29],[49,30],[50,14],[50,15],[50,16],[50,17],[50,18],[50,19],[50,20],[50,21],[50,22],[50,23],[50,24],[50,25],[50,26],[50,27],[50,28],[50,29],[50,30],[51,14],[51,15],[51,16],[51,17],[51,18],[51,19],[51,20],[51,21],[51,22],[51,23],[51,24],[51,25],[51,26],[51,27],[51,28],[51,29],[51,30],[52,14],[52,15],[52,16],[52,17],[52,18],[52,19],[52,20],[52,21],[52,22],[52,23],[52,24],[52,25],[52,26],[52,27],[52,28],[52,29],[52,30],[53,14],[53,15],[53,16],[53,17],[53,18],[53,19],[53,20],[53,21],[53,22],[53,23],[53,24],[53,25],[53,26],[53,27],[53,28],[53,29],[53,30],[54,14],[54,15],[54,16],[54,17],[54,18],[54,19],[54,20],[54,21],[54,22],[54,23],[54,24],[54,25],[54,26],[54,27],[54,28],[54,29],[54,30],[55,14],[55,15],[55,16],[55,17],[55,18],[55,19],[55,20],[55,21],[55,22],[55,23],[55,24],[55,25],[55,26],[55,27],[55,28],[55,29],[55,30]],"walls":[{"a":[47.5,13.5],"b":[55.5,13.5],"kind":"wall","out":-1},{"a":[55.5,13.5],"b":[55.5,30.5],"kind":"wall","out":1},{"a":[55.5,30.5],"b":[48.5,30.5],"kind":"open","out":1},{"a":[48.5,30.5],"b":[47.5,30.5],"kind":"wall","out":1},{"a":[47.5,30.5],"b":[47.5,27.5],"kind":"wall","out":-1,"window":"show_window_west"},{"a":[47.5,24.5],"b":[47.5,20.5],"kind":"wall","out":-1,"window":"show_window_west"},{"a":[47.5,20.5],"b":[47.5,13.5],"kind":"wall","out":-1}],"doors":[{"id":"door_showroom_hallway","a":[47.5,24.5],"b":[47.5,27.5],"to":"lab_hallway","door":"sliding_access_door"}],"crystal":null,"fixtures":[],"decor":[{"id":"relay_node_show","room":"show_room","kind":"relay_node","a":[47.5,15.5],"b":[47.5,16.5]},{"id":"hazard_sign_wh","room":"show_room","kind":"hazard_sign","a":[47.5,19.5],"b":[47.5,20.5]},{"id":"light_10","room":"show_room","kind":"light","at":[50.5,18],"radius":4,"colour":"#ffe2b0","a":0.2},{"id":"light_11","room":"show_room","kind":"light","at":[51.5,26],"radius":4.5,"colour":"#ffe2b0","a":0.18,"flicker":true},{"id":"stain_6","room":"show_room","kind":"stain","at":[53.5,16.5],"radius":0.8,"colour":"#10101a"},{"id":"papers_7","room":"show_room","kind":"papers","at":[50,28],"radius":1.2,"n":5},{"id":"debris_3","room":"show_room","kind":"debris","at":[51.5,27],"radius":1,"n":4}],"floor":{"room":"show_room","style":"concrete","colour":null},"solids":[{"id":"mech_bay","kind":"mech_bay","room":"show_room","bb":[49.5,19.5,51.5,21.5],"c":[50.5,20.5],"fam":"tech","variant":"mech_bay","cover":false,"low":false},{"id":"rack_w1","kind":"pallet_rack","room":"show_room","bb":[47.5,16.5,48.5,19.5],"c":[48,18],"fam":"cargo","variant":"pallet_rack.1x3.s1","cover":false,"low":false},{"id":"rack_n1","kind":"pallet_rack","room":"show_room","bb":[48.5,13.5,51.5,14.5],"c":[50,14],"fam":"cargo","variant":"pallet_rack.3x1.s0","cover":false,"low":false},{"id":"rack_m1","kind":"pallet_rack","room":"show_room","bb":[52.5,18.5,53.5,22.5],"c":[53,20.5],"fam":"cargo","variant":"pallet_rack.1x4.s1","cover":false,"low":false},{"id":"rack_e1","kind":"pallet_rack","room":"show_room","bb":[54.5,17.5,55.5,22.5],"c":[55,20],"fam":"cargo","variant":"pallet_rack.1x5.s1","cover":false,"low":false},{"id":"rack_e2","kind":"pallet_rack","room":"show_room","bb":[54.5,23.5,55.5,27.5],"c":[55,25.5],"fam":"cargo","variant":"pallet_rack.1x4.s0","cover":false,"low":false},{"id":"wh_crate_1","kind":"crate","room":"show_room","bb":[54.5,13.5,55.5,14.5],"c":[55,14],"fam":"cargo","variant":"crate.s2","cover":true,"low":true},{"id":"wh_cart","kind":"cart","room":"show_room","bb":[50.5,23.5,52.5,24.5],"c":[51.5,24],"fam":"lab","variant":"cart.2x1","cover":false,"low":true},{"id":"wh_stack_1","kind":"crate_stack","room":"show_room","bb":[52.5,23.5,53.5,24.5],"c":[53,24],"fam":"cargo","variant":"crate_stack.s1","cover":true,"low":false},{"id":"wh_stack_2","kind":"crate_stack","room":"show_room","bb":[48.5,28.5,49.5,29.5],"c":[49,29],"fam":"cargo","variant":"crate_stack.s0","cover":true,"low":false},{"id":"wh_lockers","kind":"locker","room":"show_room","bb":[49.5,29.5,53.5,30.5],"c":[51.5,30],"fam":"tech","variant":"locker.4x1","cover":false,"low":false},{"id":"wh_barrel_1","kind":"barrel","room":"show_room","bb":[53.5,29.5,54.5,30.5],"c":[54,30],"fam":"cargo","variant":"barrel.s3","cover":true,"low":true},{"id":"wh_barrel_2","kind":"barrel","room":"show_room","bb":[54.5,28.5,55.5,29.5],"c":[55,29],"fam":"cargo","variant":"barrel.s0","cover":true,"low":true}],"style":{"acc":"#9a5cff","wain":"#7a62c0","fa":"#e4e2f2","fb":"#c6c3de"},"label":"Warehouse"},{"id":"lab_hallway","poly":[[18.5,20.5],[47.5,20.5],[47.5,30.5],[43.5,30.5],[43.5,38.5],[34.5,38.5],[34.5,37.5],[29.5,37.5],[29.5,38.5],[15.5,38.5],[15.5,31.5],[21.5,31.5],[21.5,32.5],[37.5,32.5],[37.5,26.5],[21.5,26.5],[18.5,26.5]],"bb":[15.5,20.5,47.5,38.5],"cells":[[16,32],[16,33],[16,34],[16,35],[16,36],[16,37],[16,38],[17,32],[17,33],[17,34],[17,35],[17,36],[17,37],[17,38],[18,32],[18,33],[18,34],[18,35],[18,36],[18,37],[18,38],[19,21],[19,22],[19,23],[19,24],[19,25],[19,26],[19,32],[19,33],[19,34],[19,35],[19,36],[19,37],[19,38],[20,21],[20,22],[20,23],[20,24],[20,25],[20,26],[20,32],[20,33],[20,34],[20,35],[20,36],[20,37],[20,38],[21,21],[21,22],[21,23],[21,24],[21,25],[21,26],[21,32],[21,33],[21,34],[21,35],[21,36],[21,37],[21,38],[22,21],[22,22],[22,23],[22,24],[22,25],[22,26],[22,33],[22,34],[22,35],[22,36],[22,37],[22,38],[23,21],[23,22],[23,23],[23,24],[23,25],[23,26],[23,33],[23,34],[23,35],[23,36],[23,37],[23,38],[24,21],[24,22],[24,23],[24,24],[24,25],[24,26],[24,33],[24,34],[24,35],[24,36],[24,37],[24,38],[25,21],[25,22],[25,23],[25,24],[25,25],[25,26],[25,33],[25,34],[25,35],[25,36],[25,37],[25,38],[26,21],[26,22],[26,23],[26,24],[26,25],[26,26],[26,33],[26,34],[26,35],[26,36],[26,37],[26,38],[27,21],[27,22],[27,23],[27,24],[27,25],[27,26],[27,33],[27,34],[27,35],[27,36],[27,37],[27,38],[28,21],[28,22],[28,23],[28,24],[28,25],[28,26],[28,33],[28,34],[28,35],[28,36],[28,37],[28,38],[29,21],[29,22],[29,23],[29,24],[29,25],[29,26],[29,33],[29,34],[29,35],[29,36],[29,37],[29,38],[30,21],[30,22],[30,23],[30,24],[30,25],[30,26],[30,33],[30,34],[30,35],[30,36],[30,37],[31,21],[31,22],[31,23],[31,24],[31,25],[31,26],[31,33],[31,34],[31,35],[31,36],[31,37],[32,21],[32,22],[32,23],[32,24],[32,25],[32,26],[32,33],[32,34],[32,35],[32,36],[32,37],[33,21],[33,22],[33,23],[33,24],[33,25],[33,26],[33,33],[33,34],[33,35],[33,36],[33,37],[34,21],[34,22],[34,23],[34,24],[34,25],[34,26],[34,33],[34,34],[34,35],[34,36],[34,37],[35,21],[35,22],[35,23],[35,24],[35,25],[35,26],[35,33],[35,34],[35,35],[35,36],[35,37],[35,38],[36,21],[36,22],[36,23],[36,24],[36,25],[36,26],[36,33],[36,34],[36,35],[36,36],[36,37],[36,38],[37,21],[37,22],[37,23],[37,24],[37,25],[37,26],[37,33],[37,34],[37,35],[37,36],[37,37],[37,38],[38,21],[38,22],[38,23],[38,24],[38,25],[38,26],[38,27],[38,28],[38,29],[38,30],[38,31],[38,32],[38,33],[38,34],[38,35],[38,36],[38,37],[38,38],[39,21],[39,22],[39,23],[39,24],[39,25],[39,26],[39,27],[39,28],[39,29],[39,30],[39,31],[39,32],[39,33],[39,34],[39,35],[39,36],[39,37],[39,38],[40,21],[40,22],[40,23],[40,24],[40,25],[40,26],[40,27],[40,28],[40,29],[40,30],[40,31],[40,32],[40,33],[40,34],[40,35],[40,36],[40,37],[40,38],[41,21],[41,22],[41,23],[41,24],[41,25],[41,26],[41,27],[41,28],[41,29],[41,30],[41,31],[41,32],[41,33],[41,34],[41,35],[41,36],[41,37],[41,38],[42,21],[42,22],[42,23],[42,24],[42,25],[42,26],[42,27],[42,28],[42,29],[42,30],[42,31],[42,32],[42,33],[42,34],[42,35],[42,36],[42,37],[42,38],[43,21],[43,22],[43,23],[43,24],[43,25],[43,26],[43,27],[43,28],[43,29],[43,30],[43,31],[43,32],[43,33],[43,34],[43,35],[43,36],[43,37],[43,38],[44,21],[44,22],[44,23],[44,24],[44,25],[44,26],[44,27],[44,28],[44,29],[44,30],[45,21],[45,22],[45,23],[45,24],[45,25],[45,26],[45,27],[45,28],[45,29],[45,30],[46,21],[46,22],[46,23],[46,24],[46,25],[46,26],[46,27],[46,28],[46,29],[46,30],[47,21],[47,22],[47,23],[47,24],[47,25],[47,26],[47,27],[47,28],[47,29],[47,30]],"walls":[{"a":[18.5,20.5],"b":[20.5,20.5],"kind":"wall","out":-1},{"a":[22.5,20.5],"b":[37.5,20.5],"kind":"wall","out":-1},{"a":[39.5,20.5],"b":[43.5,20.5],"kind":"wall","out":-1},{"a":[45.5,20.5],"b":[47.5,20.5],"kind":"wall","out":-1},{"a":[47.5,20.5],"b":[47.5,24.5],"kind":"wall","out":1,"window":"show_window_west"},{"a":[47.5,27.5],"b":[47.5,30.5],"kind":"wall","out":1,"window":"show_window_west"},{"a":[47.5,30.5],"b":[43.5,30.5],"kind":"wall","out":1},{"a":[43.5,30.5],"b":[43.5,31.5],"kind":"wall","out":1},{"a":[43.5,38.5],"b":[34.5,38.5],"kind":"wall","out":1},{"a":[34.5,38.5],"b":[34.5,37.5],"kind":"wall","out":-1},{"a":[34.5,37.5],"b":[29.5,37.5],"kind":"wall","out":1},{"a":[29.5,37.5],"b":[29.5,38.5],"kind":"wall","out":1},{"a":[29.5,38.5],"b":[22.5,38.5],"kind":"wall","out":1},{"a":[18.5,38.5],"b":[15.5,38.5],"kind":"wall","out":1},{"a":[15.5,38.5],"b":[15.5,31.5],"kind":"wall","out":-1},{"a":[15.5,31.5],"b":[21.5,31.5],"kind":"wall","out":-1},{"a":[21.5,31.5],"b":[21.5,32.5],"kind":"wall","out":1,"window":"lab_window_west_lower"},{"a":[21.5,32.5],"b":[37.5,32.5],"kind":"wall","out":-1,"window":"lounge_divider_south","divider":true},{"a":[21.5,26.5],"b":[18.5,26.5],"kind":"wall","out":1},{"a":[18.5,26.5],"b":[18.5,23.5],"kind":"wall","out":-1},{"a":[18.5,21.5],"b":[18.5,20.5],"kind":"wall","out":-1}],"doors":[{"id":"door_lobby_hallway_west","a":[20.5,20.5],"b":[22.5,20.5],"to":"front_lobby","door":"sliding_access_door"},{"id":"door_lobby_hallway_east","a":[37.5,20.5],"b":[39.5,20.5],"to":"front_lobby","door":"sliding_access_door"},{"id":"door_security_hallway","a":[43.5,20.5],"b":[45.5,20.5],"to":"security_room","door":"sliding_access_door"},{"id":"door_showroom_hallway","a":[47.5,24.5],"b":[47.5,27.5],"to":"show_room","door":"sliding_access_door"},{"id":"door_arena_hallway","a":[18.5,38.5],"b":[22.5,38.5],"to":"arena","door":"sliding_access_door"},{"id":"open_lounge_north","a":[21.5,26.5],"b":[37.5,26.5],"to":"lounge","door":null},{"id":"open_lounge_east","a":[37.5,26.5],"b":[37.5,32.5],"to":"lounge","door":null},{"id":"door_crystal_hallway","a":[18.5,21.5],"b":[18.5,23.5],"to":"crystal_chamber","door":"sliding_access_door"},{"id":"open_stair_mouth","a":[43.5,31.5],"b":[43.5,38.5],"to":"teleport_stair_room","door":null}],"crystal":null,"fixtures":[],"decor":[{"id":"pipe_6","room":"lab_hallway","kind":"pipe","a":[20.5,20.5],"b":[41.5,20.5],"colour":"#7d8aa6","z":64},{"id":"exit_sign_1","room":"lab_hallway","kind":"exit_sign","a":[20.5,20.5],"b":[22.5,20.5]},{"id":"relay_node_hall","room":"lab_hallway","kind":"relay_node","a":[31.5,20.5],"b":[32.5,20.5]},{"id":"exit_sign_2","room":"lab_hallway","kind":"exit_sign","a":[37.5,20.5],"b":[41.5,20.5]},{"id":"exit_sign_3","room":"lab_hallway","kind":"exit_sign","a":[43.5,20.5],"b":[45.5,20.5]},{"id":"poster_7","room":"lab_hallway","kind":"poster","a":[23.5,20.5],"b":[25.5,20.5],"z":34},{"id":"vent_5","room":"lab_hallway","kind":"vent","a":[26.5,20.5],"b":[27.5,20.5]},{"id":"poster_8","room":"lab_hallway","kind":"poster","a":[28.5,20.5],"b":[30.5,20.5],"z":34},{"id":"panel_3","room":"lab_hallway","kind":"panel","a":[31.5,20.5],"b":[32.5,20.5]},{"id":"poster_9","room":"lab_hallway","kind":"poster","a":[33.5,20.5],"b":[35.5,20.5],"z":34},{"id":"hazard_sign_3","room":"lab_hallway","kind":"hazard_sign","a":[35.5,20.5],"b":[36.5,20.5]},{"id":"wall_light_7","room":"lab_hallway","kind":"wall_light","a":[23.5,20.5],"b":[29.5,20.5],"h":1},{"id":"wall_light_8","room":"lab_hallway","kind":"wall_light","a":[30.5,20.5],"b":[36.5,20.5],"colour":"#bfe8ff"},{"id":"graffiti_1","room":"lab_hallway","kind":"graffiti","a":[41.5,20.5],"b":[43.5,20.5],"colour":"#ff3da6","z":26},{"id":"lane_3","room":"lab_hallway","kind":"lane","a":[20,23.5],"b":[44,23.5],"colour":"#ffd21a","dashed":true,"w":2},{"id":"lane_4","room":"lab_hallway","kind":"lane","a":[41,27],"b":[41,36],"colour":"#ffd21a","dashed":true,"w":2},{"id":"lane_5","room":"lab_hallway","kind":"lane","a":[41,35.5],"b":[22,35.5],"colour":"#ffd21a","dashed":true,"w":2},{"id":"arrows_2","room":"lab_hallway","kind":"arrows","a":[20,22],"b":[44,22],"colour":"#ffd21a"},{"id":"arrows_3","room":"lab_hallway","kind":"arrows","a":[41.7,27],"b":[41.7,36],"colour":"#ffd21a"},{"id":"arrows_4","room":"lab_hallway","kind":"arrows","a":[40,36.9],"b":[23,36.9],"colour":"#ffd21a"},{"id":"hazard_4","room":"lab_hallway","kind":"hazard","rect":[18.5,36.5,22.5,37.5]},{"id":"hazard_5","room":"lab_hallway","kind":"hazard","rect":[18.5,21.5,19.5,24.5]},{"id":"hazard_6","room":"lab_hallway","kind":"hazard","rect":[20.5,20.5,22.5,21.5]},{"id":"hazard_7","room":"lab_hallway","kind":"hazard","rect":[37.5,20.5,41.5,21.5]},{"id":"hazard_8","room":"lab_hallway","kind":"hazard","rect":[43.5,20.5,45.5,21.5]},{"id":"hazard_9","room":"lab_hallway","kind":"hazard","rect":[44.5,24.5,45.5,27.5]},{"id":"hazard_10","room":"lab_hallway","kind":"hazard","rect":[42.5,30.5,43.5,37.5],"colour":"#ffe733"},{"id":"light_14","room":"lab_hallway","kind":"light","at":[25,23.5],"radius":4.5,"colour":"#ffe9a0","a":0.2,"flicker":true},{"id":"light_15","room":"lab_hallway","kind":"light","at":[34,23.5],"radius":4.5,"colour":"#bfe8ff","a":0.2},{"id":"light_16","room":"lab_hallway","kind":"light","at":[43,28],"radius":4.5,"colour":"#ffe9a0","a":0.2},{"id":"light_17","room":"lab_hallway","kind":"light","at":[40,34],"radius":4.5,"colour":"#ffe9a0","a":0.2,"flicker":true},{"id":"light_18","room":"lab_hallway","kind":"light","at":[30,35],"radius":4.5,"colour":"#bfe8ff","a":0.2},{"id":"light_19","room":"lab_hallway","kind":"light","at":[21,34],"radius":4.5,"colour":"#ffe9a0","a":0.2},{"id":"stain_7","room":"lab_hallway","kind":"stain","at":[28,24],"radius":1,"colour":"#1a1008"},{"id":"stain_8","room":"lab_hallway","kind":"stain","at":[36,22],"radius":0.8,"colour":"#1a1008"},{"id":"stain_9","room":"lab_hallway","kind":"stain","at":[40,31],"radius":1.1,"colour":"#1a1008"},{"id":"stain_10","room":"lab_hallway","kind":"stain","at":[26,36],"radius":0.9,"colour":"#1a1008"},{"id":"stain_11","room":"lab_hallway","kind":"stain","at":[33,34],"radius":1,"colour":"#10121a"},{"id":"stain_12","room":"lab_hallway","kind":"stain","at":[20,36],"radius":0.8,"colour":"#1a1008"},{"id":"stain_13","room":"lab_hallway","kind":"stain","at":[42,34],"radius":0.9,"colour":"#1a1008"},{"id":"puddle_3","room":"lab_hallway","kind":"puddle","at":[38,25],"radius":0.9,"colour":"#3a7a90"},{"id":"puddle_4","room":"lab_hallway","kind":"puddle","at":[24,34],"radius":0.8,"colour":"#3a7a90"},{"id":"papers_8","room":"lab_hallway","kind":"papers","at":[31,24],"radius":2,"n":7},{"id":"papers_9","room":"lab_hallway","kind":"papers","at":[27,35],"radius":2,"n":6},{"id":"debris_4","room":"lab_hallway","kind":"debris","at":[43,29],"radius":1.4,"n":5},{"id":"debris_5","room":"lab_hallway","kind":"debris","at":[22,36],"radius":1.4,"n":5},{"id":"papers_10","room":"lab_hallway","kind":"papers","at":[36,36],"radius":1.4,"n":4},{"id":"cables_9","room":"lab_hallway","kind":"cables","path":[[23,21.3],[37,21.3]],"colour":"#3a3a48"},{"id":"cables_10","room":"lab_hallway","kind":"cables","path":[[16.4,32.25],[16.4,37.6],[19,37.6]],"colour":"#3a3a48"},{"id":"poster_11","room":"lab_hallway","kind":"poster","a":[15.5,30.5],"b":[15.5,32.5]},{"id":"vent_7","room":"lab_hallway","kind":"vent","a":[15.5,33.5],"b":[15.5,34.5]},{"id":"board_2","room":"lab_hallway","kind":"board","a":[15.5,34.5],"b":[15.5,36.5]},{"id":"wall_light_9","room":"lab_hallway","kind":"wall_light","a":[15.5,31.5],"b":[15.5,37.5],"h":1},{"id":"pipe_7","room":"lab_hallway","kind":"pipe","a":[15.5,30.5],"b":[15.5,38.5],"colour":"#7d8aa6","z":66},{"id":"poster_12","room":"lab_hallway","kind":"poster","a":[15.5,31.5],"b":[17.5,31.5]},{"id":"hazard_sign_4","room":"lab_hallway","kind":"hazard_sign","a":[18.5,31.5],"b":[19.5,31.5]},{"id":"pipe_8","room":"lab_hallway","kind":"pipe","a":[15.5,31.5],"b":[21.5,31.5],"colour":"#7d8aa6","z":64},{"id":"exit_sign_4","room":"lab_hallway","kind":"exit_sign","a":[18.5,21.5],"b":[18.5,24.5]}],"floor":{"room":"lab_hallway","style":"concrete","colour":null},"solids":[{"id":"plant_8","kind":"plant","room":"lab_hallway","bb":[23.5,20.5,24.5,21.5],"c":[24,21],"fam":"plant","variant":"d1","cover":false,"low":false},{"id":"plant_9","kind":"plant","room":"lab_hallway","bb":[35.5,20.5,36.5,21.5],"c":[36,21],"fam":"plant","variant":"p2","cover":false,"low":false},{"id":"cooler_3","kind":"cooler","room":"lab_hallway","bb":[26.5,20.5,27.5,21.5],"c":[27,21],"fam":"lounge","variant":"cooler","cover":false,"low":false},{"id":"vending_5","kind":"vending","room":"lab_hallway","bb":[28.5,20.5,30.5,21.5],"c":[29.5,21],"fam":"lounge","variant":"vending.2x1","cover":false,"low":false},{"id":"bin_3","kind":"bin","room":"lab_hallway","bb":[33.5,20.5,34.5,21.5],"c":[34,21],"fam":"lounge","variant":"bin.s0","cover":false,"low":false},{"id":"locker_1","kind":"locker","room":"lab_hallway","bb":[24.5,37.5,28.5,38.5],"c":[26.5,38],"fam":"tech","variant":"locker.4x1","cover":false,"low":false},{"id":"crate_stack_2","kind":"crate_stack","room":"lab_hallway","bb":[35.5,37.5,36.5,38.5],"c":[36,38],"fam":"cargo","variant":"crate_stack.s0","cover":true,"low":false},{"id":"barrel_3","kind":"barrel","room":"lab_hallway","bb":[37.5,37.5,38.5,38.5],"c":[38,38],"fam":"cargo","variant":"barrel.s1","cover":true,"low":true},{"id":"barrel_4","kind":"barrel","room":"lab_hallway","bb":[38.5,37.5,39.5,38.5],"c":[39,38],"fam":"cargo","variant":"barrel.s2","cover":true,"low":true},{"id":"plant_10","kind":"plant","room":"lab_hallway","bb":[15.5,31.5,16.5,32.5],"c":[16,32],"fam":"plant","variant":"p2","cover":false,"low":false},{"id":"floodlight_hall_1","kind":"floodlight","room":"lab_hallway","bb":[41.5,28.5,42.5,29.5],"c":[42,29],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_2","kind":"floodlight","room":"lab_hallway","bb":[24.5,33.5,25.5,34.5],"c":[25,34],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_3","kind":"floodlight","room":"lab_hallway","bb":[23.5,24.5,24.5,25.5],"c":[24,25],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_4","kind":"floodlight","room":"lab_hallway","bb":[34.5,24.5,35.5,25.5],"c":[35,25],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_5","kind":"floodlight","room":"lab_hallway","bb":[35.5,33.5,36.5,34.5],"c":[36,34],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_6","kind":"floodlight","room":"lab_hallway","bb":[17.5,32.5,18.5,33.5],"c":[18,33],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_7","kind":"floodlight","room":"lab_hallway","bb":[41.5,21.5,42.5,22.5],"c":[42,22],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"floodlight_hall_8","kind":"floodlight","room":"lab_hallway","bb":[40.5,36.5,41.5,37.5],"c":[41,37],"fam":"cargo","variant":"floodlight","cover":false,"low":false},{"id":"sentry_hall","kind":"sentry","room":"lab_hallway","bb":[37.5,24.5,38.5,25.5],"c":[38,25],"fam":"sentry","variant":"a00","cover":false,"low":true},{"id":"charger_hall","kind":"charger","room":"lab_hallway","bb":[19.5,31.5,20.5,32.5],"c":[20,32],"fam":"tech","variant":"charger.on","cover":false,"low":false}],"style":{"acc":"#31e8ff","wain":"#3d93a0","fa":"#d6e0e3","fb":"#b2c2c8"},"label":"Hallway past the Experiment Lab"},{"id":"lounge","poly":[[21.5,26.5],[37.5,26.5],[37.5,32.5],[21.5,32.5]],"bb":[21.5,26.5,37.5,32.5],"cells":[[22,27],[22,28],[22,29],[22,30],[22,31],[22,32],[23,27],[23,28],[23,29],[23,30],[23,31],[23,32],[24,27],[24,28],[24,29],[24,30],[24,31],[24,32],[25,27],[25,28],[25,29],[25,30],[25,31],[25,32],[26,27],[26,28],[26,29],[26,30],[26,31],[26,32],[27,27],[27,28],[27,29],[27,30],[27,31],[27,32],[28,27],[28,28],[28,29],[28,30],[28,31],[28,32],[29,27],[29,28],[29,29],[29,30],[29,31],[29,32],[30,27],[30,28],[30,29],[30,30],[30,31],[30,32],[31,27],[31,28],[31,29],[31,30],[31,31],[31,32],[32,27],[32,28],[32,29],[32,30],[32,31],[32,32],[33,27],[33,28],[33,29],[33,30],[33,31],[33,32],[34,27],[34,28],[34,29],[34,30],[34,31],[34,32],[35,27],[35,28],[35,29],[35,30],[35,31],[35,32],[36,27],[36,28],[36,29],[36,30],[36,31],[36,32],[37,27],[37,28],[37,29],[37,30],[37,31],[37,32]],"walls":[{"a":[37.5,32.5],"b":[21.5,32.5],"kind":"wall","out":1,"window":"lounge_divider_south","divider":true},{"a":[21.5,32.5],"b":[21.5,31.5],"kind":"wall","out":-1,"window":"lab_window_west_lower"},{"a":[21.5,31.5],"b":[21.5,30.5],"kind":"wall","out":-1},{"a":[21.5,28.5],"b":[21.5,26.5],"kind":"wall","out":-1}],"doors":[{"id":"door_lab_passage","a":[21.5,28.5],"b":[21.5,30.5],"to":"lab_passage","door":"sliding_access_door"},{"id":"open_lounge_north","a":[21.5,26.5],"b":[37.5,26.5],"to":"lab_hallway","door":null},{"id":"open_lounge_east","a":[37.5,26.5],"b":[37.5,32.5],"to":"lab_hallway","door":null}],"crystal":null,"fixtures":[],"decor":[{"id":"lounge_rug","room":"lounge","kind":"rug","rect":[24.5,27.5,29.5,30.5],"colour":"#b85a72","border":"#ffd34d"},{"id":"lounge_light_1","room":"lounge","kind":"light","at":[27,29],"radius":5,"colour":"#ffd9a0","a":0.22},{"id":"lounge_light_2","room":"lounge","kind":"light","at":[33,29],"radius":3.5,"colour":"#ffd9a0","a":0.18},{"id":"lounge_light_3","room":"lounge","kind":"light","at":[24,29],"radius":2.5,"colour":"#fff4e0","a":0.14},{"id":"lounge_papers","room":"lounge","kind":"papers","at":[29,29],"radius":0.9,"n":3}],"floor":{"room":"lounge","style":"wood","colour":null},"solids":[{"id":"lounge_whiteboard","kind":"whiteboard_stand","room":"lounge","bb":[22.5,26.5,24.5,28.5],"c":[23.5,27.5],"fam":"whiteboard","variant":"whiteboard_stand","cover":false,"low":false},{"id":"lounge_beanbag_1","kind":"beanbag","room":"lounge","bb":[25.5,27.5,26.5,28.5],"c":[26,28],"fam":"lounge","variant":"beanbag.s0","cover":false,"low":false},{"id":"lounge_beanbag_2","kind":"beanbag","room":"lounge","bb":[27.5,27.5,28.5,28.5],"c":[28,28],"fam":"lounge","variant":"beanbag.s1","cover":false,"low":false},{"id":"lounge_beanbag_3","kind":"beanbag","room":"lounge","bb":[25.5,29.5,26.5,30.5],"c":[26,30],"fam":"lounge","variant":"beanbag.s2","cover":false,"low":false},{"id":"lounge_beanbag_4","kind":"beanbag","room":"lounge","bb":[27.5,29.5,28.5,30.5],"c":[28,30],"fam":"lounge","variant":"beanbag.s3","cover":false,"low":false},{"id":"lounge_couch_1","kind":"couch","room":"lounge","bb":[30.5,27.5,33.5,28.5],"c":[32,28],"fam":"lounge","variant":"couch.3x1.s0","cover":false,"low":true},{"id":"lounge_couch_2","kind":"couch","room":"lounge","bb":[34.5,27.5,35.5,30.5],"c":[35,29],"fam":"lounge","variant":"couch.1x3.s1","cover":false,"low":true},{"id":"lounge_table","kind":"table","room":"lounge","bb":[31.5,29.5,33.5,30.5],"c":[32.5,30],"fam":"lounge","variant":"table","cover":false,"low":true},{"id":"lounge_plant_1","kind":"plant","room":"lounge","bb":[29.5,27.5,30.5,28.5],"c":[30,28],"fam":"plant","variant":"p3","cover":false,"low":false},{"id":"lounge_plant_2","kind":"plant","room":"lounge","bb":[29.5,29.5,30.5,30.5],"c":[30,30],"fam":"plant","variant":"p0","cover":false,"low":false}],"style":{"acc":"#f2b13a","wain":"#a0606e","fa":"#efe3da","fb":"#d9c6b8"},"label":"The Lounge"},{"id":"lab_passage","poly":[[15.5,28.5],[20.5,28.5],[21.5,28.5],[21.5,30.5],[20.5,30.5],[15.5,30.5]],"bb":[15.5,28.5,21.5,30.5],"cells":[[16,29],[16,30],[17,29],[17,30],[18,29],[18,30],[19,29],[19,30],[20,29],[20,30],[21,29],[21,30]],"walls":[{"a":[15.5,28.5],"b":[20.5,28.5],"kind":"wall","out":-1},{"a":[20.5,28.5],"b":[21.5,28.5],"kind":"wall","out":-1},{"a":[21.5,30.5],"b":[20.5,30.5],"kind":"wall","out":1},{"a":[20.5,30.5],"b":[15.5,30.5],"kind":"wall","out":1}],"doors":[{"id":"door_passage_teleport_1","a":[15.5,28.5],"b":[15.5,30.5],"to":"teleport_room_1","door":"sliding_access_door"},{"id":"door_lab_passage","a":[21.5,28.5],"b":[21.5,30.5],"to":"lounge","door":"sliding_access_door"}],"crystal":null,"fixtures":[],"decor":[{"id":"hazard_11","room":"lab_passage","kind":"hazard","rect":[15.5,28.5,16.5,30.5]},{"id":"hazard_12","room":"lab_passage","kind":"hazard","rect":[20.5,28.5,21.5,30.5]},{"id":"light_22","room":"lab_passage","kind":"light","at":[18.5,29.5],"radius":3,"colour":"#ffe9a0","a":0.18,"flicker":true},{"id":"pipe_9","room":"lab_passage","kind":"pipe","a":[15.5,28.5],"b":[21.5,28.5],"colour":"#ffb347","z":60},{"id":"vent_8","room":"lab_passage","kind":"vent","a":[16.5,28.5],"b":[17.5,28.5]},{"id":"relay_node_lab","room":"lab_passage","kind":"relay_node","a":[19.5,28.5],"b":[20.5,28.5]},{"id":"wall_light_10","room":"lab_passage","kind":"wall_light","a":[17.5,28.5],"b":[19.5,28.5],"h":1}],"floor":{"room":"lab_passage","style":"grate","colour":null},"solids":[],"style":{"acc":"#31e8ff","wain":"#3d93a0","fa":"#cfdadd","fb":"#a9bcc2"},"label":"Narrow passage (lab to Teleport Room 1)"}],"openings":[{"id":"door_chamber_teleport_1","a":[10.5,25.5],"b":[12.5,25.5],"rooms":["crystal_chamber","teleport_room_1"],"door":"sliding_access_door","open":false},{"id":"door_teleport_1_deck","a":[11.5,38.5],"b":[13.5,38.5],"rooms":["teleport_room_1","observation_deck"],"door":"sliding_access_door","open":false},{"id":"door_lobby_hallway_west","a":[20.5,20.5],"b":[22.5,20.5],"rooms":["front_lobby","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"door_lobby_hallway_east","a":[37.5,20.5],"b":[39.5,20.5],"rooms":["front_lobby","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"door_security_lobby","a":[41.5,14.5],"b":[41.5,16.5],"rooms":["security_room","front_lobby"],"door":"sliding_access_door","open":false},{"id":"door_security_hallway","a":[43.5,20.5],"b":[45.5,20.5],"rooms":["security_room","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"door_showroom_hallway","a":[47.5,24.5],"b":[47.5,27.5],"rooms":["show_room","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"door_arena_hallway","a":[18.5,38.5],"b":[22.5,38.5],"rooms":["arena","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"door_passage_teleport_1","a":[15.5,28.5],"b":[15.5,30.5],"rooms":["lab_passage","teleport_room_1"],"door":"sliding_access_door","open":false},{"id":"door_lab_passage","a":[21.5,28.5],"b":[21.5,30.5],"rooms":["lounge","lab_passage"],"door":"sliding_access_door","open":false},{"id":"open_lounge_north","a":[21.5,26.5],"b":[37.5,26.5],"rooms":["lounge","lab_hallway"],"door":null,"open":true},{"id":"open_lounge_east","a":[37.5,26.5],"b":[37.5,32.5],"rooms":["lounge","lab_hallway"],"door":null,"open":true},{"id":"open_lab_stair","a":[8.5,31.5],"b":[8.5,34.5],"rooms":["teleport_room_1","experiment_lab"],"door":null,"open":false},{"id":"door_crystal_hallway","a":[18.5,21.5],"b":[18.5,23.5],"rooms":["crystal_chamber","lab_hallway"],"door":"sliding_access_door","open":false},{"id":"open_stair_mouth","a":[43.5,31.5],"b":[43.5,38.5],"rooms":["teleport_stair_room","lab_hallway"],"door":null,"open":false}]}};

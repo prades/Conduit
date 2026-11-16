@@ -17,7 +17,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 
 - **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, on `2026-11-15j` (no build: nothing is built)
-- **Status:** A direction, chosen by the owner. Not designed in detail; its first piece (a test page) built; nothing in the game
+- **Status:** A direction, chosen by the owner. Not designed in detail; a test page built for it (the lab floor to walk, a test fight, a battle camera); nothing in the game
 - **Context:** the owner asked for "a real update in style for the overall game", "3d or 2.5d graphics", and to "slow down the combat to make it completely readable". Two rounds of ten directions followed, each with a picture (`STYLE-EVOLUTION.md`).
 - **Decision:** "I like the direction of 1": round 2's direction 1.
   - **Its look:** the game's own Crystal Laboratory style (`STYLE-CRYSTAL-LAB.md`: flat colour, one bold ink line round every solid, neon seams) as a real 3D world.
@@ -28,6 +28,9 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Earlier decisions:** "Real-time stays" (2026-11-11, `BATTLE-LOOK.md`) stands: direction 1 keeps real time. "Stay 2D for now" (2026-11-09, below) stands until the owner chooses between real 3D and 2.5D.
 - **The first piece** (the owner, the same day, of three offered: a live 3D test room, the slower fight in today's game, the look without a 3D engine): **"Live 3D test room"**. Built as `lab3d/`, a page apart from the game (`STYLE-EVOLUTION.md` §8): implemented and tested in a headless browser; not yet measured on an iPad.
   - **With it, three.js r128 comes into the repository** (`lab3d/three.min.js`, MIT), for that page alone. The game does not load it. Whether the game gets a 3D engine is still the owner's to decide, after the readings.
+- **What next in the page** (the owner, 2026-11-16, having read 52 fps on an iPad: "Wow, that's exciting. I'd love to see more"; of three offered, one or more): **all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"**. Built in `lab3d/` (`STYLE-EVOLUTION.md` §8.2 to §8.4): implemented and tested in a headless browser; not measured on an iPad as it is now.
+  - **These decide nothing about the game.** The fight there is a test of pace and signals: the ants' speeds, health and power and the bite's two beats are the game's, and every other number is the agent's stand-in.
+  - **Agent's choices in it, provisional, for the owner to keep or change:** the walls in front of your room sink into the floor (in the game a wall always stands); the camera comes down to a fight by itself; each blow's shape on the floor (a wedge, a disc, a strip, a dashed line); the four paces offered (×1, ×0.8, ×0.6, ×0.4).
 - **Affects:** `docs/STYLE-EVOLUTION.md`; `lab3d/`, `tools/lab3d.js`, `design/style-evolution/live/`, `tests/lab3d.js`. Nothing in the game.
 
 ## DECISION: The Sewers' new look: look 1's walls with look 4's floor (the owner's pick of six drafts)

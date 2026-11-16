@@ -7,15 +7,20 @@
 // In scope: T, FORMS, FORMS2, M, EL, setElementColour, G, cbox, cyl, torus (forms-core.js), PROPS, px (the props), the kit, and `map` (export.js's JSON).
 
 const UH = 73.48469228349533, WALL_H = map.wallH / UH, WALL_T = 0.8, CUT_H = 0.26, DOOR_H = 1.32;
-const CH = map.chamber, CRYSTAL = CH.crystal, TANK = map.tank || { r: 0.56, z0: 26, z1: 192, fill: 0.84, gemZ: 104 };
-const cellKey = (x, y) => x + ',' + y, CELLS = new Set(CH.cells.map(c => cellKey(c[0], c[1]))), inRoom = (x, y) => CELLS.has(cellKey(Math.round(x), Math.round(y)));
+const TANK = map.tank || { r: 0.56, z0: 26, z1: 192, fill: 0.84, gemZ: 104 }, cellKey = (x, y) => x + ',' + y;
 const PAL = Object.assign({ ink: '#16303a', cap: '#f1f8fa', wallLit: '#c6dae1', wallDark: '#a3c0ca', wallBase: '#3d93a0', floorA: '#d8e8ec', floorB: '#b4cdd5', cyan: '#31e8ff', blue: '#3a7bff', violet: '#9a5cff', amber: '#f2b13a', teal: '#4f9aa0' }, map.pal || {});
 const ANT_COLOUR = map.antColour || '#aa55ff';
 
-// ── the walls: which way is out, and which are cut down so the camera sees in ──
-const WALLS = CH.walls.map(w => { const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; let nx = uy, ny = -ux; const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2;
-  if (inRoom(mx + nx * 0.5, my + ny * 0.5)) { nx = -nx; ny = -ny; } return { a: w.a, b: w.b, L, u: [ux, uy], n: [nx, ny], mid: [mx, my] }; });   // n: out of the room
-const DOORS = CH.doors.map(d => { const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy); let nx = dy / L, ny = -dx / L; if (inRoom(mx + nx * 0.5, my + ny * 0.5)) { nx = -nx; ny = -ny; } return { id: d.id, a: d.a, b: d.b, L, u: [dx / L, dy / L], n: [nx, ny], mid: [mx, my] }; });
+// ── a room's record (export.js) made ready: its tiles, and its walls and doors with which way is out of the room ──
+function roomOf(rec) {
+  const CELLS = new Set(rec.cells.map(c => cellKey(c[0], c[1]))), inRoom = (x, y) => CELLS.has(cellKey(Math.round(x), Math.round(y)));
+  const WALLS = rec.walls.map(w => { const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; let nx = uy, ny = -ux; const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2;
+    if (inRoom(mx + nx * 0.5, my + ny * 0.5)) { nx = -nx; ny = -ny; } return { a: w.a, b: w.b, L, u: [ux, uy], n: [nx, ny], mid: [mx, my] }; });   // n: out of the room
+  const DOORS = rec.doors.map(d => { const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy); let nx = dy / L, ny = -dx / L; if (inRoom(mx + nx * 0.5, my + ny * 0.5)) { nx = -nx; ny = -ny; } return { id: d.id, a: d.a, b: d.b, L, u: [dx / L, dy / L], n: [nx, ny], mid: [mx, my] }; });
+  return { CH: rec, CRYSTAL: rec.crystal, CELLS, inRoom, WALLS, DOORS };
+}
+// the Crystal Chamber, the room of the ten pictures: its walls (which are cut down so the camera sees in is the look's, cutDir)
+const ROOM0 = roomOf(map.chamber), CH = ROOM0.CH, CRYSTAL = ROOM0.CRYSTAL, CELLS = ROOM0.CELLS, inRoom = ROOM0.inRoom, WALLS = ROOM0.WALLS, DOORS = ROOM0.DOORS;
 
 // ── the room's own colours and materials (a look replaces what it wants) ──
 function wallTexture(o) {   // one tile of wall: the dark base, the groove the neon seam sits in, the body, a join, the line under the cap
@@ -58,10 +63,14 @@ function loft(rings, mat) {
 function setShadows(root, cast, recv) { root.traverse(o => { if (o.isMesh) { o.castShadow = cast !== false; o.receiveShadow = recv !== false; } }); return root; }
 
 // ── THE ROOM ──
-function buildChamber(P, opt) {
-  opt = opt || {}; const g = new T.Group(), parts = { props: {} };
+function buildChamber(P, opt) { return buildRoom(ROOM0, P, opt); }
+// a room (roomOf) built: R's tiles, walls and doors, its floor marks, wall fittings and props. opt.shell === false leaves out the ground, the floor, the walls and the doors, and puts
+// fittings on every far wall (the live page's lab floor builds one shell for all its rooms: design/style-evolution/live/floor.js)
+function buildRoom(R, P, opt) {
+  opt = opt || {}; const CH = R.CH, CRYSTAL = R.CRYSTAL, inRoom = R.inRoom, WALLS = R.WALLS, DOORS = R.DOORS, shell = opt.shell !== false, g = new T.Group(), parts = { props: {} };
   const cutN = n => n[0] * P.cutDir[0] + n[1] * P.cutDir[1] > 0.01, same = (p, q) => Math.abs(p[0] - q[0]) < 0.01 && Math.abs(p[1] - q[1]) < 0.01;
-  const cut = (n, w) => cutN(n) || (!!w && DOORS.some(d => cutN(d.n) && (same(d.a, w.a) || same(d.a, w.b) || same(d.b, w.a) || same(d.b, w.b))));   // (a door's alcove is cut down with its door)
+  const cut = (n, w) => cutN(n) || (shell && !!w && DOORS.some(d => cutN(d.n) && (same(d.a, w.a) || same(d.a, w.b) || same(d.b, w.a) || same(d.b, w.b))));   // (a door's alcove is cut down with its door)
+  if (shell) {
   // the ground outside, and a dark apron of floor beyond each door
   if (P.ground) { const gr = new T.Mesh(new T.PlaneGeometry(120, 120), P.ground); gr.rotation.x = -Math.PI / 2; gr.position.set(13, -0.13, 18.5); gr.receiveShadow = true; g.add(gr); parts.ground = gr; }
   // the floor: a slab a tile
@@ -91,6 +100,7 @@ function buildChamber(P, opt) {
     if (!low2) { put(box(d.L - 0.02, WALL_H - DOOR_H, depth, P.frame), 0, DOOR_H + (WALL_H - DOOR_H) / 2, depth / 2 - 0.06); const lamp = put(box(0.5, 0.07, 0.04, P.lampOpen), 0, DOOR_H + 0.14, -0.08); lamp.userData.noInk = true; }
     const th = put(box(d.L, 0.012, 0.5, P.hazard), 0, 0.008, 0.1); th.receiveShadow = true; const line = put(box(d.L, 0.014, 0.05, P.lampOpen), 0, 0.012, -0.2); line.userData.noInk = true;
     setShadows(dg); dg.userData.inkGroup = true; g.add(dg); parts.doors.push(dg); }
+  }
   // the floor's marks: the rings round the Crystal, the cables, the hazard zones by the doors, a scorch, a stain, papers, debris
   const marks = new T.Group(); marks.userData.inkGroup = true; g.add(marks); parts.marks = marks;
   for (const d of CH.decor) {
@@ -103,12 +113,16 @@ function buildChamber(P, opt) {
     else if (d.kind === 'stain' && P.stain) decalDisc(marks, d.at, d.radius, P.stain[0], P.stain[1]);
     else if (d.kind === 'papers' && P.white) for (let i = 0; i < (d.n || 5); i++) { const a = i * 2.4, r = d.radius * (0.25 + (i * 37 % 10) / 14), q = new T.Mesh(new T.BoxGeometry(0.2, 0.006, 0.27), P.white); q.position.set(d.at[0] + Math.cos(a) * r, 0.004, d.at[1] + Math.sin(a) * r); q.rotation.y = i * 1.3; q.receiveShadow = true; marks.add(q); }
     else if (d.kind === 'debris' && P.steelDk) for (let i = 0; i < (d.n || 5); i++) { const a = i * 1.9 + 0.4, r = d.radius * (0.2 + (i * 53 % 10) / 13), q = new T.Mesh(new T.BoxGeometry(0.1 + (i % 3) * 0.04, 0.05, 0.07), P.steelDk); q.position.set(d.at[0] + Math.cos(a) * r, 0.025, d.at[1] + Math.sin(a) * r); q.rotation.y = i * 0.9; q.castShadow = true; marks.add(q); }
+    // (the other rooms' marks, as the game's style draws them: a rug with its border, a puddle. It draws no lane lines or arrows on a styled floor, so none here)
+    else if (d.kind === 'rug' && P.rug !== null) { const r = d.rect, k = 0.08; decalPoly(marks, [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]], d.colour || '#1d2b3f', 0.6, 0.011); decalLine(marks, [[r[0] + k, r[1] + k], [r[2] - k, r[1] + k], [r[2] - k, r[3] - k], [r[0] + k, r[3] - k], [r[0] + k, r[1] + k]], 0.06, d.border || '#ffd34d', 0.8, 0.0125); }
+    else if (d.kind === 'puddle' && P.puddle) { decalDisc(marks, d.at, d.radius, d.colour || P.puddle[0], P.puddle[1]); decalDisc(marks, [d.at[0] + d.radius * 0.45, d.at[1] - d.radius * 0.2], d.radius * 0.5, d.colour || P.puddle[0], P.puddle[1]); }
   }
   // the fittings on the far walls: pipes, a panel, vents, the relay's node, screens, light bars, a hazard sign, and the power pack's unit
   const fit = new T.Group(); g.add(fit); parts.fittings = fit;
-  const wallOf = (a, b) => WALLS.find(w => Math.abs((a[0] + b[0]) / 2 * w.n[0] + (a[1] + b[1]) / 2 * w.n[1] - (w.mid[0] * w.n[0] + w.mid[1] * w.n[1])) < 0.01 && Math.abs(w.u[0] * (b[0] - a[0]) + w.u[1] * (b[1] - a[1])) > 0.5);
-  const onWall = (w, t, y, off, m) => { m.userData.inkGroup = true; m.position.set(w.a[0] + w.u[0] * t - w.n[0] * off, y, w.a[1] + w.u[1] * t - w.n[1] * off); m.rotation.y = Math.atan2(-w.n[0], -w.n[1]); fit.add(m); return m; };   // (a fitting is built facing +z, its width along x)
   const tOf = (w, p) => (p[0] - w.a[0]) * w.u[0] + (p[1] - w.a[1]) * w.u[1];
+  const onLine = (w, a, b) => Math.abs((a[0] + b[0]) / 2 * w.n[0] + (a[1] + b[1]) / 2 * w.n[1] - (w.mid[0] * w.n[0] + w.mid[1] * w.n[1])) < 0.01 && Math.abs(w.u[0] * (b[0] - a[0]) + w.u[1] * (b[1] - a[1])) > 0.5;
+  const wallOf = (a, b) => (shell ? null : WALLS.find(w => { if (!onLine(w, a, b)) return false; const t = tOf(w, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]); return t > -0.01 && t < w.L + 0.01; })) || WALLS.find(w => onLine(w, a, b));   // (a room of many walls: the one the stretch lies on)
+  const onWall = (w, t, y, off, m) => { m.userData.inkGroup = true; m.userData.wall = w; m.position.set(w.a[0] + w.u[0] * t - w.n[0] * off, y, w.a[1] + w.u[1] * t - w.n[1] * off); m.rotation.y = Math.atan2(-w.n[0], -w.n[1]); fit.add(m); return m; };   // (a fitting is built facing +z, its width along x)
   for (const d of CH.decor) { if (!d.a || !d.b) continue; const w = wallOf(d.a, d.b); if (!w || cut(w.n, w)) continue; const t0 = Math.min(tOf(w, d.a), tOf(w, d.b)), t1 = Math.max(tOf(w, d.a), tOf(w, d.b)), tm = (t0 + t1) / 2, len = t1 - t0;
     if (d.kind === 'pipe' && P.pipe) { const y = (d.z || 60) / UH + 0.75, p = new T.Mesh(new T.CylinderGeometry(0.035, 0.035, len - 0.1, 10), P.pipe); p.rotation.z = Math.PI / 2; const gp = new T.Group(); gp.add(p); for (let i = 0; i < len; i += 1.5) gp.add(at3(new T.Mesh(new T.BoxGeometry(0.05, 0.1, 0.09), P.steelDk), -len / 2 + 0.4 + i, 0, -0.03)); onWall(w, tm, y, 0.06, setShadows(gp)); }
     else if (d.kind === 'panel' && P.tealDk) { const gp = new T.Group(); gp.add(new T.Mesh(new T.BoxGeometry(0.72, 0.5, 0.03), P.tealDk)); gp.add(at3(new T.Mesh(new T.BoxGeometry(0.6, 0.06, 0.035), P.steel), 0, 0.14, 0.004)); for (const x of [-0.22, 0, 0.22]) { const l = at3(new T.Mesh(new T.BoxGeometry(0.07, 0.07, 0.03), x ? P.screen : P.amberGlow), x, -0.08, 0.012); l.userData.noInk = true; gp.add(l); } onWall(w, tm, 0.92, 0.02, setShadows(gp)); }
@@ -117,6 +131,7 @@ function buildChamber(P, opt) {
     else if (d.kind === 'screen' && P.screen) for (let i = 0; i < Math.round(len); i++) { const gp = new T.Group(); gp.add(new T.Mesh(new T.BoxGeometry(0.88, 0.52, 0.05), P.graphite || P.steelDk)); const f = at3(new T.Mesh(new T.PlaneGeometry(0.78, 0.42), P.screen), 0, 0, 0.027); f.userData.noInk = true; gp.add(f); for (let k = 0; k < 4; k++) { const b = at3(new T.Mesh(new T.PlaneGeometry(0.1, 0.06 + ((k * 7 + i * 3) % 5) * 0.05), P.screenBlue), -0.26 + k * 0.17, -0.06, 0.029); b.userData.noInk = true; gp.add(b); } onWall(w, t0 + 0.5 + i, 1.02, 0.03, setShadows(gp)); }
     else if (d.kind === 'wall_light' && P.lightBar) for (let i = 0; i < Math.round(len); i++) { const gp = new T.Group(); gp.add(new T.Mesh(new T.BoxGeometry(0.7, 0.07, 0.05), P.steelDk)); const l = at3(new T.Mesh(new T.BoxGeometry(0.62, 0.035, 0.03), P.lightBar), 0, -0.03, 0.02); l.userData.noInk = true; gp.add(l); onWall(w, t0 + 0.5 + i, WALL_H - 0.17, 0.03, gp); }
     else if (d.kind === 'hazard_sign' && P.amber) { const gp = new T.Group(), s = new T.Mesh(new T.BoxGeometry(0.3, 0.3, 0.02), P.amber); s.rotation.z = Math.PI / 4; gp.add(s); gp.add(at3(new T.Mesh(new T.BoxGeometry(0.04, 0.13, 0.025), P.graphite), 0, 0.025, 0.004)); gp.add(at3(new T.Mesh(new T.BoxGeometry(0.04, 0.04, 0.025), P.graphite), 0, -0.085, 0.004)); onWall(w, tm, 1.16, 0.015, setShadows(gp)); }
+    else if (P.more) P.more(d, w, { t0, t1, tm, len, onWall, at3 });   // (the other rooms' fittings, which the chamber has none of: the live page's lab floor, design/style-evolution/live/floor.js)
   }
   for (const f of CH.fixtures) if (f.type === 'power_pack_area' && P.graphite) { const w = wallOf(f.a, f.b); if (!w || cut(w.n, w)) continue; const tm = (tOf(w, f.a) + tOf(w, f.b)) / 2, gp = new T.Group();   // "four charging capsules under a shard" (docs/STYLE-CRYSTAL-LAB.md)
     gp.add(at3(new T.Mesh(new T.BoxGeometry(2.3, 0.86, 0.2), P.graphite), 0, 0, 0)); gp.add(at3(new T.Mesh(new T.BoxGeometry(2.4, 0.1, 0.24), P.teal), 0, 0.46, 0)); gp.add(at3(new T.Mesh(new T.BoxGeometry(2.4, 0.08, 0.24), P.teal), 0, -0.45, 0));

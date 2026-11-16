@@ -1,15 +1,17 @@
-// Makes THE LIVE 3D TEST ROOM's page, lab3d/ (the owner, 2026-11-16, of the look they picked, round 2's CRYSTAL LAB 3D: "Live 3D test room": the Crystal Chamber running in real 3D
-// in that look, on a separate page with a frame-rate readout, to try on both iPads; docs/STYLE-EVOLUTION.md §8). It is a TEST PAGE: the game does not load it or link to it.
+// Makes THE LIVE 3D TEST PAGE, lab3d/ (the owner, 2026-11-16, of the look they picked, round 2's CRYSTAL LAB 3D: "Live 3D test room": the Crystal Chamber running in real 3D in
+// that look, on a separate page with a frame-rate readout, to try on both iPads; then, having seen it run, "Walk the lab floor", "A fight at the new pace", "A battle camera":
+// docs/STYLE-EVOLUTION.md §8). It is a TEST PAGE: the game does not load it or link to it.
 //   node tools/lab3d.js            lab3d/lab3d.js and lab3d/index.html, from the sources below
-//   node tools/lab3d.js --export   first reads the room again from the running game (design/style-evolution/round2/export.js, into design/style-evolution/live/chamber.json)
+//   node tools/lab3d.js --export   first reads the lab's eight ground-floor rooms again from the running game (design/style-evolution/round2/export.js --lab, into
+//                                  design/style-evolution/live/lab.json)
 // What goes into lab3d/lab3d.js, as one function (window.__lab3d), in this order:
 //   the followers' forms (design/evolutions/forms-core.js, forms*.js) and the props' models (design/props/models/*.js): the game's own 3D models, as its bakers load them
-//   the round 2 kit, chamber and styles (design/style-evolution/round2/): the room and the look, the very code that drew picture 1
-//   the live viewer (design/style-evolution/live/viewer.js): the room drawn every frame
-// and the room's map (design/style-evolution/live/chamber.json) beside it (window.__lab3dMap). Comments are taken out by TypeScript's printer, as tools/bundle.js does.
+//   the round 2 kit, chamber and styles (design/style-evolution/round2/): the room builder and the look, the very code that drew picture 1
+//   the lab floor and its ways (design/style-evolution/live/floor.js, walk.js), and the viewer (viewer.js): the drawing, the walk, the test fight, the camera
+// and the lab floor's map (design/style-evolution/live/lab.json) beside it (window.__lab3dMap). Comments are taken out by TypeScript's printer, as tools/bundle.js does.
 // lab3d/index.html is design/style-evolution/live/page.html with the build's name and the bundle's fingerprint filled in. lab3d/three.min.js is three.js r128 as published
 // (three@0.128.0, MIT: lab3d/three.LICENSE.txt), the version the bakers use; it draws on WebGL 1 too, which an iPad before iPadOS 15 needs.
-// IT IS A SNAPSHOT: nothing remakes it when a model changes, and no test fails when it is behind (the page says which build it was made from). Run this to bring it up to date.
+// IT IS A SNAPSHOT: nothing remakes it when a model or the map changes, and no test fails when it is behind (the page says which build it was made from). Run this to bring it up to date.
 // Do not edit lab3d/lab3d.js or lab3d/index.html by hand.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
@@ -28,12 +30,13 @@ function strip(ts, src, file) {   // a script without its comments (as tools/bun
 function sources() {
   const forms = ['forms-core.js'].concat(fs.readdirSync(path.join(ROOT, EVO)).filter(f => /^forms\d+\.js$/.test(f)).sort((a, b) => parseInt(a.slice(5)) - parseInt(b.slice(5)))).map(f => EVO + '/' + f);
   const all = fs.readdirSync(path.join(ROOT, MODELS)).filter(f => f.endsWith('.js')).sort(), models = all.filter(f => f.startsWith('_')).concat(all.filter(f => !f.startsWith('_'))).map(f => MODELS + '/' + f);
-  return { forms, models, look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/viewer.js'] };
+  return { forms, models, look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', LIVE + '/walk.js', LIVE + '/viewer.js'] };
 }
 function build() {
   const S = sources(), ts = loadTs(), one = f => '/* ' + f + ' */\n' + strip(ts, rd(f), f) + '\n;\n';   // (a ; between files: one that ends without its own cannot run into the next)
   const version = (rd('js/config.js').match(/BUILD_VERSION = "([^"]+)"/) || [])[1]; if (!version) throw new Error('js/config.js names no build');
-  const map = JSON.parse(rd(LIVE + '/chamber.json')); if (!map.chamber || !map.chamber.cells.length) throw new Error(LIVE + '/chamber.json holds no room: node tools/lab3d.js --export');
+  const map = JSON.parse(rd(LIVE + '/lab.json')); if (!map.chamber || !map.chamber.cells.length || !map.lab || map.lab.rooms.length < 2) throw new Error(LIVE + '/lab.json holds no lab floor: node tools/lab3d.js --export');
+  delete map.facility;   // (the whole facility's plan is round 2's war table's: the page does not use it)
   let js = '// GENERATED by tools/lab3d.js (the game at build ' + version + '): the live 3D test room, lab3d/index.html. ' + (ts ? 'Without its sources\' comments. ' : '') + 'Do not edit: change the sources and run node tools/lab3d.js.\n';
   js += 'window.__lab3d = function (map, opts) {\n' + S.forms.map(one).join('');
   js += 'if (!T.Pass) T.Pass = class {};   // (the kit\'s passes for the still pictures stand on three\'s composer, which this page does not load)\n';
@@ -50,7 +53,7 @@ function write() {
 }
 module.exports = { build, write, sources };
 if (require.main === module) {
-  if (process.argv.includes('--export')) require('child_process').execFileSync(process.execPath, [path.join(ROOT, R2, 'export.js'), path.join(ROOT, LIVE, 'chamber.json')], { stdio: 'inherit' });
+  if (process.argv.includes('--export')) require('child_process').execFileSync(process.execPath, [path.join(ROOT, R2, 'export.js'), path.join(ROOT, LIVE, 'lab.json'), '--lab'], { stdio: 'inherit' });
   const b = write();
   console.log('lab3d/lab3d.js: ' + b.files.length + ' sources, ' + (b.js.length / 1024).toFixed(0) + ' KB' + (b.stripped ? ' (comments out)' : ' (TypeScript not found: comments kept)') + ', fingerprint ' + b.hash + '; lab3d/index.html: the game at build ' + b.version);
 }
