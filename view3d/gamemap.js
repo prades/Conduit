@@ -55,7 +55,7 @@ function view3dRoomRecord(F, R, lab, live) {
   const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
     fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
     solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || null };
-  if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx; return rec;
+  if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx; if (live && room.raw && room.raw.structure) rec.structure = room.raw.structure; return rec;   // (structure: 'scaffold', the catwalks and the spur, steel decks: their edges stay steel)
 }
 // the map the builders take: the Crystal Chamber (the pictures' room), and with `ids` those rooms as one floor (`lab`) with the openings between them.
 // live: for the game's own view. The Crystal stands where the game stands it (the middle of its tile: the pictures and the test page have it where the map's note is, half a tile off), and
