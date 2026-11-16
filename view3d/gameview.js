@@ -7,8 +7,9 @@
 //   THE WORLD    the lab's ground floor (view3d/gamemap.js VIEW3D_LAB), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
 //                floor.js), with its stairs, its doors opening and shutting as the game's do, the walls in front of the room you are in sunk, and each room as lit as the game has it
 //   THE LIGHT    the game's own (js/facilitystyle.js: the room you are in lit, the others dark, a pool of light at an open door; a blackout): a map of the tiles, written from the game's
-//                levels and laid on the world's every surface by the tile in front of it. The room you are in is the look as chosen; a dark one as much darker than it as the game's is
-//                than its lit room. (The agent's choice, to be the owner's: ?dark=game makes the room you are in as dark as the 2D game's, FP_LIT, the owner's "two fifths darker")
+//                levels and laid on the world's every surface by the tile in front of it, as dark as the game lays its dark on: the room you are in too, at the game's lit level (FP_LIT,
+//                the owner's "two fifths darker", 2026-11-09). (The owner, 2026-11-16, of the 3D view's room as bright as the chosen pictures and as dark as the game's, tried side by side:
+//                "Definitely liking the dark mode more".)
 //   THE BODIES   the cube, the eggs and the evolved forms from their own 3D models (the ones their sprites are baked from, with the bakers' own table: VIEW3D_JOBS), at the sprites'
 //                scale, turned and posed as the sprites' frames are chosen (js/hdsprites.js, js/evolution.js _evoFrame); the ants from the ant model at the game's own measures
 //                (js/bugs3d.js). A body stands where the game has the unit, on its floor. (The 2D drawing put a unit's feet half a tile up the screen from there: the game draws a unit's
@@ -21,7 +22,7 @@
 const GAMEVIEW = (function () {
   const GM = VIEW3D_GAME, game = opts.game, canvas = opts.canvas, TAU = Math.PI * 2, K = cellKey, JOBS = VIEW3D_JOBS;
   const q = String((typeof location !== 'undefined' && location.search) || ''), arg = (k, d) => { const m = new RegExp('[?&]' + k + '=([\\d.]+)').exec(q); return m ? parseFloat(m[1]) : d; };
-  const state = { ink: arg('ink', 1) !== 0, shadows: arg('shadows', 1) !== 0, sharp: Math.max(1, Math.min(2, arg('sharp', 1))), gameDark: /[?&]dark=game(?:&|$)/.test(q) };   // (?ink=0 ?shadows=0 ?sharp=1.5, as the test page; the game's own canvas is drawn at one pixel a point)
+  const state = { ink: arg('ink', 1) !== 0, shadows: arg('shadows', 1) !== 0, sharp: Math.max(1, Math.min(2, arg('sharp', 1))) };   // (?ink=0 ?shadows=0 ?sharp=1.5, as the test page; the game's own canvas is drawn at one pixel a point)
   const CORE = view3dCore({ canvas, state, map, dK: 0.008 }), { scene, ctx: look, tagInk, mergeRigid, antBody } = CORE;
   const world = CORE.buildWorld(map.lab, { live: true });
 
@@ -38,7 +39,7 @@ const GAMEVIEW = (function () {
   function fit(f0) { if (f0 - fitAt < 60 && game.width === gw && game.height === gh) return; fitAt = f0; gw = game.width; gh = game.height; const w = game.clientWidth || gw, h = game.clientHeight || gh;
     if (w !== cssW || h !== cssH) { cssW = w; cssH = h; canvas.style.width = w + 'px'; canvas.style.height = h + 'px'; } CORE.resize(); }
 
-  // ── THE LIGHT: a texel a tile, how dark (0 the room you are in; up to the game's dark), laid on every surface of the world by the tile in front of it ──
+  // ── THE LIGHT: a texel a tile, how dark (the game's own dark: its lit room's, a dark room's), laid on every surface of the world by the tile in front of it ──
   const LB = world.bb, X0 = Math.floor(LB[0]) - 3, Z0 = Math.floor(LB[1]) - 3, LW = Math.ceil(LB[2]) - X0 + 4, LH = Math.ceil(LB[3]) - Z0 + 4;
   const ldata = new Uint8Array(LW * LH * 4), ltex = new T.DataTexture(ldata, LW, LH, T.RGBAFormat); ltex.magFilter = ltex.minFilter = T.NearestFilter; ltex.generateMipmaps = false; ltex.needsUpdate = true;
   const LU = { tLight: { value: ltex }, lightBox: { value: new T.Vector4(X0, Z0, 1 / LW, 1 / LH) }, nightCol: { value: new T.Vector3(6 / 255, 11 / 255, 22 / 255) } };   // (the game's night: rgba(6, 11, 22), js/facilitystyle.js)
@@ -47,9 +48,9 @@ const GAMEVIEW = (function () {
   for (const b of world.band.values()) wallLit.push({ i: at4(b.x, b.y), own: b.own });
   for (const b of world.band.values()) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const x = b.x + dx, y = b.y + dy; if (world.band.has(K(x, y)) || world.roomAt(x, y)) continue;   // (just outside a wall: an outer face looks up its wall's light there)
     const i = at4(x, y); let h = halo.get(i); if (!h) halo.set(i, h = []); h.push(at4(b.x, b.y)); }
-  // the game's level (lv: 0 dark, its lit room's level when lit) as how dark here: none in the room you are in, and a dark room as much darker than it as the game's is than its lit room
-  function lights() { if (!GM.lightOn) return; const amt = GM.darkAmt, base = state.gameDark ? 1 : 1 - amt * (1 - GM.lit), own = {}; let changed = false;   // (base 1: the game's own dark, the room you are in too)
-    const dk = lv => Math.round(255 * Math.max(0, Math.min(1, 1 - (1 - amt * (1 - Math.min(1, lv))) / base))), put = (i, v) => { if (ldata[i] !== v) { ldata[i] = v; changed = true; } };
+  // the game's level (lv: 0 dark, its lit room's level when lit) as how dark here: the game's own (js/facilitystyle.js _fpDarkTileOver: its night laid on at amt * (1 - lv))
+  function lights() { if (!GM.lightOn) return; const amt = GM.darkAmt, own = {}; let changed = false;
+    const dk = lv => Math.round(255 * Math.max(0, Math.min(1, amt * (1 - Math.min(1, lv))))), put = (i, v) => { if (ldata[i] !== v) { ldata[i] = v; changed = true; } };
     for (const t of lit) put(t.i, dk(GM.tileLight(t.x, t.y, t.room)));
     for (const t of wallLit) put(t.i, own[t.own] !== undefined ? own[t.own] : (own[t.own] = dk(GM.roomLight(t.own))));
     for (const [i, from] of halo) { let v = 255; for (const j of from) v = Math.min(v, ldata[j]); put(i, v); }

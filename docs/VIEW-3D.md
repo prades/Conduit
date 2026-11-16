@@ -1,6 +1,6 @@
 # The game in 3D (the 3D view)
 
-**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a`, **behind a switch** (`?engine=3d`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
+**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a` (its light the game's own dark since `2026-11-16b`), **behind a switch** (`?engine=3d`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
 
 ## 1. The decision
 
@@ -15,7 +15,7 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 - **The same game, drawn in 3D.** The rules, the squad, the creatures, the cards, the saves, the panels and every tap are the game's own and are not touched. Only the world and the bodies in it are drawn by a 3D view, in the chosen look.
 - **The switch:** `?engine=3d` in the address (`js/config.js` `VIEW3D_ON`), on `play.html` or `game.html?dev`. Without it nothing of the view is fetched or run.
 - **Built area by area.** Where the view has built the room you are in, it draws the frame's world; anywhere else the frame is the 2D game's, as before.
-- More in the address, as on the test page: `?ink=0`, `?shadows=0`, `?sharp=1.5` (more pixels; the game's own canvas has one a point), and `?dark=game` (§4.3).
+- More in the address, as on the test page: `?ink=0`, `?shadows=0`, `?sharp=1.5` (more pixels; the game's own canvas has one a point). The game's own `?lit=` (its lit room's level, 0.4 to 1) works here too.
 
 ## 3. The stages (the agent's plan, for the owner to reorder)
 
@@ -42,7 +42,7 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 ### 4.3 The light
 The game's own light (`js/facilitystyle.js`): the room you are in is lit, the others are dark, an open door throws a pool of light, a blackout leaves only the emergency lights. A map of the tiles is written from the game's levels each frame (only when they change is it sent on) and laid on every surface of the world by the tile in front of it.
 
-**The agent's choice, the owner's to make:** the room you are in is drawn as bright as the chosen look (the pictures the owner chose), and a dark room as much darker than it as the 2D game's dark rooms are than its lit room. The 2D game draws its lit room two fifths darker than its palette (the owner, 2026-11-09, `FP_LIT`); `?dark=game` draws the 3D room you are in that dark too, to compare.
+**As dark as the 2D game** (build `2026-11-16b`): the dark is laid on as the game lays it on, so the room you are in is at the game's lit level, two fifths darker than the look's palette (the owner, 2026-11-09, `FP_LIT`), and a dark room is as dark as the game's. The owner, 2026-11-16, having tried both on an iPad (the room you are in as bright as the chosen pictures, the agent's first choice; and as dark as the game's, then `?dark=game`): **"Definitely liking the dark mode more"**. *(Superseded: the bright room, build `2026-11-16a`, and its `?dark=game`.)*
 
 ### 4.4 The bodies
 - **The cube, the eggs and the evolved forms** are their own 3D models: the ones their sprites are baked from (`design/evolutions`), built as the bakers build them (`design/evolutions/bake.js`, whose table of jobs goes into the view), at the sprites' scale, turned to the sprites' row and posed for the sprites' frame (`js/hdsprites.js`, `js/evolution.js` `_evoFrame`): idle breaths, walking, signature moves, special blocks, the class gear, red eyes when angry, the evolved forms growing as they molt.
@@ -85,7 +85,7 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 
 ## 7. Open questions
 
-- The room you are in: as bright as the chosen look, or as dark as the 2D game's (`?dark=game`)? (§4.3)
+- ~~The room you are in: as bright as the chosen look, or as dark as the 2D game's?~~ *(answered 2026-11-16: "Definitely liking the dark mode more": the game's own dark, §4.3.)*
 - The order of the stages (§3).
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - When the 3D view becomes the default.

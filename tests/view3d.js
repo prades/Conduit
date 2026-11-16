@@ -8,7 +8,7 @@
 //                 world is and the view's picture is not blank
 //   THE CAMERA    a point of the world is where the game's own projection (js/facilityplay.js _fpP) puts it, to the pixel, on the floor and on the stairs (the camera riding the floor)
 //   THE BODIES    the cube, the eggs, an evolved form and the ants are the view's (the 2D drawing leaves them out); a beetle is the game's own; a unit's bars go down with its body
-//   THE WORLD     a door opens as the game's does; the rooms you are not in are dark, the one you are in not; a blackout darkens it; the floor's marks are laid on its floor; the
+//   THE WORLD     a door opens as the game's does; each room as dark as the game draws it (the one you are in at its lit level, the others dark); a blackout darkens it; the floor's marks are laid on its floor; the
 //                 facility's items it does not build are the game's to draw, and only in its rooms
 //   AWAY          in a room it has not built (the arena) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
@@ -123,7 +123,7 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   // the doors, the light, the floor's marks, the items kept
   var door = V.world.doors.filter(function (q) { return q.id === 'door_crystal_hallway'; })[0], st = _fp.items.filter(function (i) { return i.fp === 'door' && i.id === 'door_crystal_hallway'; })[0].st;
   st.open = 0; V.draw(null); out.doorShut = door.open; st.open = 1; V.draw(null); out.doorOpen = door.open;
-  step(40); out.lightHere = V.lightAt(13, 19); out.lightAway = V.lightAt(30, 15); facilityBlackoutSet(true); step(80); out.lightBlack = 0; for (var bx = 9; bx <= 18; bx++) for (var by = 13; by <= 25; by++) { var br = facilityRoomAt(bx, by, _fp.F); if (br && br.id === 'crystal_chamber') out.lightBlack = Math.max(out.lightBlack, V.lightAt(bx, by)); } facilityBlackoutSet(false); step(80);   // (the darkest tile of the chamber: by the Crystal the game's emergency light keeps a pool)
+  step(40); out.lightHere = V.lightAt(13, 19); out.lightAway = V.lightAt(30, 15); out.wantHere = _fpDarkAmt() * (1 - _fpLit()); out.wantAway = _fpDarkAmt(); facilityBlackoutSet(true); step(80); out.lightBlack = 0; for (var bx = 9; bx <= 18; bx++) for (var by = 13; by <= 25; by++) { var br = facilityRoomAt(bx, by, _fp.F); if (br && br.id === 'crystal_chamber') out.lightBlack = Math.max(out.lightBlack, V.lightAt(bx, by)); } facilityBlackoutSet(false); step(80);   // (the darkest tile of the chamber: by the Crystal the game's emergency light keeps a pool)
   commandMode = true; commandTarget = world.filter(function (t) { return t.x === 13 && t.y === 22; })[0]; step(1); out.fxRing = V.stats.fx; commandMode = false; commandTarget = null; step(1); out.fxNone = V.stats.fx;
   out.keeps = [V.keeps({ fp: 'pickup', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wall', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'pickup', room: 'arena', x: 0, y: 0 }), V.keeps({ fp: 'station', room: 'lab_passage', x: 19, y: 30 })];
   // away, and back
@@ -146,8 +146,8 @@ else {
         same(JSON.stringify(ON.has), JSON.stringify({ cube: true, egg: true, evolved: true, ant: true, beetle: false }), 'whose bodies'); same(ON.antTop, 28, 'a striker\'s bars, as the game\'s drawing has them (its width)');
         same(ON.feet, 30, 'the bodies\' offset'); ok(ON.drawnAt.length === 2 && ON.drawnAt.every(q => q[1] === 30), 'units drawn at ' + JSON.stringify(ON.drawnAt)); ok(ON.bodies >= 5, 'bodies in the picture: ' + ON.bodies);
     });
-    check('THE WORLD: a door as open as the game\'s; the room you are in not dark, one you are not in dark; a blackout darkens it; the floor\'s marks laid on; the items it does not build left to the game, in its rooms', () => {
-        same(ON.doorShut, 0, 'the door shut'); same(ON.doorOpen, 1, 'the door open'); same(ON.lightHere, 0, 'the room you are in'); ok(ON.lightAway > 0.4, 'a room you are not in: ' + ON.lightAway); ok(ON.lightBlack > 0.3, 'the blackout, the chamber\'s darkest tile: ' + ON.lightBlack);
+    check('THE WORLD: a door as open as the game\'s; the room you are in as dark as the game\'s lit room, one you are not in as dark as the game\'s (the owner: "Definitely liking the dark mode more"); a blackout darkens it; the floor\'s marks laid on; the items it does not build left to the game, in its rooms', () => {
+        same(ON.doorShut, 0, 'the door shut'); same(ON.doorOpen, 1, 'the door open'); ok(Math.abs(ON.lightHere - ON.wantHere) < 0.006, 'the room you are in, as dark as the game\'s lit room (' + ON.wantHere + '): ' + ON.lightHere); ok(Math.abs(ON.lightAway - ON.wantAway) < 0.006, 'a room you are not in, as dark as the game\'s (' + ON.wantAway + '): ' + ON.lightAway); ok(ON.lightBlack > 0.3, 'the blackout, the chamber\'s darkest tile: ' + ON.lightBlack);
         same(ON.fxRing, true, 'the long-press ring'); same(ON.fxNone, false, 'nothing on the floor'); same(ON.keeps.join(' '), 'true false false true', 'the items kept');
     });
     check('AWAY: in a room it has not built it hides and the frame is the 2D game\'s, opaque, units where they were; back in the lab it shows again', () => {

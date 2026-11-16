@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### Build `2026-11-16b` · branch `claude/start-game-project-HSh7Z` · the 3D view as dark as the 2D game
+- **The ask** (the owner, having tried the 3D view's room as bright as the chosen pictures and, with `?dark=game`, as dark as the 2D game's): **"Definitely liking the dark mode more"**.
+- **The 3D view's light is the game's own dark** (`docs/VIEW-3D.md` §4.3): the room you are in at the game's lit level (two fifths darker than the look's palette, `FP_LIT`), a room you are not in as dark as the game's, as are its pools at open doors and a blackout. `?dark=game` is gone: it is how it is drawn. The game's own `?lit=` works in 3D too.
+- **Verified:** `tests/view3d.js` (each room as dark as the game draws it: the one you are in at its lit level, one you are not in at its dark) and the nearest suites. Not seen on an iPad in this build.
+
 ### Build `2026-11-16a` · branch `claude/start-game-project-HSh7Z` · the real game in 3D, stage 1: the lab's ground floor (behind `?engine=3d`)
 - **The ask** (the owner, having tried the test page: "Can we build the full game up to this point?"; asked which way): **"The real game in 3D"**: the actual game drawn in the chosen look, built area by area, behind a switch while it grows; its rules, squad, creatures, cards and saves as they are.
 - **The switch** (`docs/VIEW-3D.md`): `?engine=3d` on `play.html` or `game.html?dev`. **Without it the game is as before**: nothing of the 3D view is fetched or run.
