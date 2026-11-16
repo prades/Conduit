@@ -102,9 +102,23 @@ function buildLabFloor(lab, P0, how) {
     if (live) for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) if (roomAt.has(K(x - dx, y - dy))) for (let k = 1; k <= 3 && band.has(K(x + dx * k, y + dy * k)); k++) { const r = roomAt.get(K(x + dx * (k + 1), y + dy * (k + 1))); if (r) { if (!s.includes(r)) s.push(r); break; } }
     return s.sort(); };
   const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) { G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };
-  for (const b of band.values()) { b.hide = hideOf(b.x, b.y); b.G = groupOf(b.hide);
+  for (const b of band.values()) {
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
     see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi; }   // (a corner piece: its diagonal neighbours)
+  // (live: a block that could hide someone standing in a room sinks with that room too: the owner, 2026-11-16, "the rock that is obscuring the player should sink in". The camera sees a block over
+  // the tiles behind it on the screen (smaller x + y, its x - y within one), as far back as its top, from that tile's floor, climbs on the screen: TILE_H 30 px of screen a step of x + y, UH px a
+  // unit of height. Its top: a wall's height over its highest floor, a rock's skyline at its tallest. Measured from the feet of whoever stands there, a little over the floor.)
+  const TOP_ROCK = (120 + (WALL_H * UH - 74) + 50) / UH, SEE = UH / 30, FEET = 0.15;
+  const hideMore = b => { const top = b.hi + (b.rock ? TOP_ROCK : WALL_H), s0 = b.x + b.y, d0 = b.x - b.y;
+    for (let D = 1; D <= Math.ceil((top - minH) * SEE) + 1; D++) for (const sd of D % 2 ? [-1, 1] : [0]) { const cx = (s0 - D + d0 + sd) / 2, cy = (s0 - D - d0 - sd) / 2, r = roomAt.get(K(cx, cy));
+      if (r && !b.hide.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 1) b.hide.push(r); }   // (+ 1: from its back corner, a step nearer the tiles behind it than its middle)
+    b.hide.sort(); };
+  // (and a thin wall, glass or a divider, on its line m: the tiles behind it on the screen, its x - y within half a tile of the line's)
+  const hideThin = (m, top, list) => { const s0 = m[0] + m[1], d0 = m[0] - m[1];
+    for (let D = 0.5; D <= (top - minH) * SEE + 0.5; D += 1) for (const sd of [-0.5, 0.5]) { const cx = (s0 - D + d0 + sd) / 2, cy = (s0 - D - d0 - sd) / 2; if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6) continue;
+      const r = roomAt.get(K(cx, cy)); if (r && !list.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 0.5) list.push(r); }
+    return list.sort(); };
+  for (const b of band.values()) { b.hide = hideOf(b.x, b.y); if (live) hideMore(b); b.G = groupOf(b.hide); }
   for (const G of groups.values()) G.sink = WALL_H + 0.16;
   if (live) for (const b of band.values()) b.G.sink = Math.max(b.G.sink, b.hi + WALL_H - (b.lo + B0) + 0.16);   // (how far a group sinks: past its lowest floor)
 
@@ -120,7 +134,7 @@ function buildLabFloor(lab, P0, how) {
   // skyline (each corner's height from where it is, so the blocks beside it share it). In sand, the owner's pick of two (2026-11-16, of brown and sand: "I like the sand"); then, of the sand:
   // "Kind of want to switch to where the rock walls match the floor color. So I like the texture. I just want to change the color": each stratum is the cave floor's own colour (the two
   // tiles of its room's floor, a dark room's, else the arena's), as much lighter or darker as the sand's was, so the texture is the same
-  const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4, JUT_P = 0.6, JUT_MIN = 0.16, JUT_MORE = 0.42;   // (JUT_: how often a stratum's slab juts out of a tile's face, and how far: the agent's, provisional)
+  const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4, JUT_P = 0.6, JUT_MIN = 0.16, JUT_MORE = 0.26;   // (at most a little under half a tile out, so no slab overhangs the middle of the floor's first row, where someone stands against the wall)   // (JUT_: how often a stratum's slab juts out of a tile's face, and how far: the agent's, provisional)
   const sumOf = h => { const c = new T.Color(h); return c.r + c.g + c.b; }, sandMean = SAND.reduce((t, h) => t + sumOf(h), 0) / SAND.length, strataBy = {};
   const STRATA = id => { const st = rooms[id] && rooms[id].style && rooms[id].style.dark ? rooms[id].style : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, key = st ? st.fa + st.fb : '';
     return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
@@ -169,8 +183,9 @@ function buildLabFloor(lab, P0, how) {
 
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
   const edges = new Set(), glassMat = new T.MeshStandardMaterial({ color: lin('#96e6f2'), transparent: true, opacity: 0.2, roughness: 0.1, depthWrite: false, side: T.DoubleSide });
-  for (const t of thin) { const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), G = groupOf(back ? [back] : []), ax = t.u[0] ? 1 : 0;
+  for (const t of thin) { const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), ax = t.u[0] ? 1 : 0;
     const z0 = live ? Math.max(front ? hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) : -1e9, back ? hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) : -1e9) : 0;   // (its floor)
+    const G = groupOf(live ? hideThin(t.m, z0 + WALL_H, back ? [back] : []) : back ? [back] : []);   // (live: and with the rooms it could hide someone in)
     const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(ax ? len : dep, h, ax ? dep : len), mat), put = (par, m, y, off) => { m.position.set(t.m[0] + nr[0] * (off || 0), z0 + y, t.m[1] + nr[1] * (off || 0)); par.add(m); return m; };
     t.back = back; t.front = front; t.G = G; edges.add(K(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) + '|' + K(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)));
     if (live && front && back && Math.abs(hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) - hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5))) > 0.05) continue;   // (a ledge between two floors, the catwalk spur's over the arena: the floor's riser is its face, a railing on it if the map has one, as the game draws it)

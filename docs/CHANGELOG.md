@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-16
 
+### Build `2026-11-16i` · branch `claude/start-game-project-HSh7Z` · the game in 3D: nothing standing hides the player
+- **The ask** (the owner, of the open question whether rock in front of you sinks): **"Yes, the rock that is obscuring the player should sink in"**.
+- **In 3D** (`docs/VIEW-3D.md` §4.2): a piece of wall or rock, or a thin wall, sinks with every room it could hide someone standing in, from the camera, as far back as its top climbs on the screen from that room's floor. Measured on every floor tile of the rooms the view builds: nothing left standing covers anyone. Before, rock covered a body on 4 tiles (the hallway's east end, the top of the arena's stairs, a tile of the spur) and plain walls on 64 (the arena's south-east corner behind the catwalks' end wall, the Experiment Lab's east side behind Teleport Room 1's, Teleport Room 1, the Show Room, Teleport Room 2). The rock's jutting slabs reach a little under half a tile out (they reached more than half), so none hangs over someone standing against the wall.
+- **The 2D game is unchanged** (its walls never react, the owner's rule of 2026-11-09).
+- **Verified:** `tests/view3d.js` (on every floor tile of the built rooms, no standing wall or rock covers a body) and the nearest suites; pictures from the real page, before and after. **Not seen on an iPad.**
+
 ### Build `2026-11-16h` · branch `claude/start-game-project-HSh7Z` · the game in 3D, more lit up
 - **The ask** (the owner, of the 3D arena with the jutting rock: "Honestly, yeah, it looks a lot better ... It's kind of dark now. Maybe we should go back to the brighter settings"; shown the same spot four ways, its rock back in sand, the room brighter, both, or as it was): **"No, I like the rock color the way it is I think the facilities should be more lit up"**.
 - **The light in 3D** (`docs/VIEW-3D.md` §4.3): the room you are in at full light (the game's lit level counts as full), a room you are not in as dark as the room you were in was, a door's pool in between; a blackout as dark as the game's own. *(Superseded in 3D: dark mode, `2026-11-16b`.)* The rock stays in the floor's colour; the 2D game is unchanged.
