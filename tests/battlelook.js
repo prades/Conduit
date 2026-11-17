@@ -159,7 +159,7 @@ function realPage() {
     });
     check('the world pass holds back the network panel while the view is on, so a frame in a fight draws the panel once, after the copy; the copy is made just before the floating words', () => {
         const G = rd('js/game.js');
-        ok(/if \(!\(typeof battleViewDefers === "function" && battleViewDefers\(\)\)\) drawFacilityNetworkHUD\(\);/.test(G), 'the network panel is not held back');
+        ok(/if \(!\(typeof battleViewDefers === "function" && battleViewDefers\(\)\)( && !\(typeof view3dShowing === "function" && view3dShowing\(\)\))?\) drawFacilityNetworkHUD\(\);/.test(G), 'the network panel is not held back');   // (and while THE 3D VIEW shows, held back to after its zoom too: js/view3d.js view3dWorldEnd)
         ok(/if \(typeof battleViewPost === "function"\) battleViewPost\(\);[^\n]*\n\s*drawFloatingTexts\(\);/.test(G), 'the copy is not made just before the floating words');
         ok(/facilityPlayerStep\(\);\n\s*if \(typeof battleViewTick === "function"\) battleViewTick\(\);/.test(G), 'the view is not stepped each frame');
         const r = J(`(function(){ __calm(); __mid(); __off(); const foe = __foe(3, 0); foe.currentTarget = player; for (let i = 0; i < BATTLE_VIEW.easeIn + 2; i++) render();

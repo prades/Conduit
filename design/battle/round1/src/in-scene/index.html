@@ -1,0 +1,184 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,900&family=IBM+Plex+Mono:wght@600;700&display=block" rel="stylesheet">
+<style>
+:root{--core:#33e6c4;--ice:#8fe3ff;--blos:#ff7ab8;--gold:#ffcc44;--red:#ff4a1c;--ink:#060a14;--W:1180px;--H:820px}
+*{box-sizing:border-box;margin:0}
+body{width:var(--W);height:var(--H);overflow:hidden;background:#070b16;font-family:"Barlow Condensed",sans-serif;color:#eef6ff;position:relative}
+.mono{font-family:"IBM Plex Mono",monospace;font-weight:700;letter-spacing:.06em}
+#stage{position:absolute;left:0;top:0;width:1180px;height:820px;background:url(bg.png) center/100% 100% no-repeat;overflow:hidden}
+body.port #stage{width:988px;height:686px;top:200px;left:-118px;overflow:visible;background:none}
+body.port #stage:before{content:'';position:absolute;inset:0;background:url(bg.png) center/100% 100% no-repeat;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 80%,transparent 100%)}
+body.port #stage:after{display:none}
+body.port:before{content:'';position:absolute;inset:-40px;background:url(bg.png) center 70%/auto 140% no-repeat;filter:blur(22px) brightness(.45) saturate(.8)}
+/* vignette so the UI reads */
+#stage:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 70% at 50% 42%,transparent 55%,rgba(6,10,20,.55) 100%);pointer-events:none}
+.at{position:absolute;transform:translate(-50%,-50%)}
+/* health ring at the feet */
+.ring{position:absolute;transform:translate(-50%,-50%);z-index:2}
+.ring svg{display:block;overflow:visible}
+.hp{position:absolute;left:50%;top:100%;transform:translate(-50%,4px);white-space:nowrap;font-size:12px;padding:2px 8px 2px 10px;background:rgba(6,10,20,.82);clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+.hp b{font-family:"Barlow Condensed";font-style:italic;font-weight:900;font-size:15px;margin-right:6px;letter-spacing:.02em}
+/* fans */
+.fan{position:absolute;z-index:4;perspective:700px}
+.card{position:absolute;width:var(--cw,82px);height:var(--ch,114px);border-radius:3px;background:linear-gradient(170deg,#121c3a,#05070f 80%);
+  border:2px solid var(--c);clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);padding:16px 6px 6px 7px;overflow:hidden;transform-origin:50% 100%}
+.card:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 18%,color-mix(in srgb,var(--c) 38%,transparent),transparent 62%),repeating-linear-gradient(120deg,transparent 0 9px,rgba(255,255,255,.035) 9px 10px)}
+.card>*{position:relative}
+.card .who{white-space:nowrap;overflow:hidden;position:absolute;top:0;left:0;right:0;height:13px;background:var(--c);color:var(--ink);font-size:9px;padding:1px 0 0 14px;letter-spacing:.08em}
+.card .nm{font-style:italic;font-weight:900;font-size:17px;line-height:.92;text-transform:uppercase;margin-top:3px;min-height:32px;text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+.card .fx{max-height:34px;overflow:hidden;font-family:"IBM Plex Mono";font-weight:600;font-size:9.5px;line-height:1.15;color:#c5d3ea;margin-top:4px;letter-spacing:0}
+.card .st{white-space:nowrap;letter-spacing:.02em;position:absolute;left:5px;right:5px;bottom:5px;font-size:12px;text-align:center;padding:2px 0;background:var(--c);color:var(--ink);clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%)}
+.card.ready{box-shadow:0 0 0 1px var(--c)}
+.glow{filter:drop-shadow(0 0 7px var(--c)) drop-shadow(0 0 2px var(--c))}
+.card.wait{filter:saturate(.25) brightness(.72);border-style:dashed}
+.card .st b{font-size:15px;line-height:1}
+.card.wait .st{background:rgba(6,10,20,.85);color:#dfe8f7;border:1px solid #6f7d99}
+.card.wait .big{position:absolute;right:6px;bottom:24px;font-style:italic;font-weight:900;font-size:34px;color:#fff;opacity:.85;line-height:1}
+.card.ult{--c:var(--gold)}
+.card.ult .fx{max-height:23px}
+.card.ult .nm{color:#ffe7a6}
+.card.ult .who{background:linear-gradient(90deg,var(--gold),var(--fc))}
+.tagline{position:absolute;z-index:5;font-size:11px;padding:3px 9px 3px 12px;background:rgba(6,10,20,.85);border-left:3px solid var(--c);white-space:nowrap}
+/* enemies */
+.foe{position:absolute;z-index:5;transform:translate(-50%,-100%);text-align:left}
+.intent{display:flex;align-items:center;gap:6px;background:#2a0b0b;border:2px solid var(--red);padding:3px 10px 3px 8px;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);white-space:nowrap;box-shadow:0 0 12px rgba(255,74,28,.5)}
+.intent .ic{font-size:14px;color:var(--red)}
+.intent .t{font-style:italic;font-weight:900;font-size:16px;letter-spacing:.02em}
+.intent .t i{color:#ffb19a;font-style:italic}
+.intent .d{font-family:"IBM Plex Mono";font-weight:700;font-size:13px;background:var(--red);color:#fff;padding:0 5px;margin-left:2px}
+.fname{font-size:11px;margin:4px 0 3px 4px;color:#ffd6cc;background:rgba(6,10,20,.8);padding:1px 6px;display:inline-block}
+.bar{height:9px;width:var(--bw,120px);background:rgba(6,10,20,.85);border:1px solid #ffb19a55;position:relative;transform:skewX(-14deg);margin-left:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#ff7a55,#e8341a)}
+.bar u{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 11px,rgba(6,10,20,.9) 11px 13px)}
+.fhp{font-size:11px;margin:3px 0 0 4px;color:#fff;background:rgba(6,10,20,.8);padding:1px 6px;display:inline-block}
+/* bottom strip */
+#strip{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:8;display:flex;align-items:stretch;gap:14px;background:linear-gradient(180deg,rgba(14,22,46,.94),rgba(5,8,16,.96));
+  border:2px solid #19e6c1;clip-path:polygon(22px 0,100% 0,100% 100%,0 100%,0 22px);padding:10px 16px 10px 26px;box-shadow:0 0 24px rgba(25,230,193,.25)}
+.turn{display:flex;flex-direction:column;justify-content:center;padding-right:6px}
+.turn .k{font-size:12px;color:#19e6c1}
+.turn .h{font-style:italic;font-weight:900;font-size:34px;line-height:.95;text-shadow:0 0 14px rgba(25,230,193,.55)}
+.turn .s{font-size:12px;color:#c9d6ee;margin-top:3px}
+.basic{--c:#dfe8f7;display:flex;gap:10px;align-items:center;width:270px;border:2px solid #dfe8f7;background:linear-gradient(170deg,#1a2442,#070a14);clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);padding:8px 12px 8px 16px;box-shadow:0 0 14px rgba(223,232,247,.35)}
+.basic .nm{font-style:italic;font-weight:900;font-size:24px;line-height:.9}
+.basic .fx{font-family:"IBM Plex Mono";font-weight:600;font-size:11px;color:#c5d3ea;margin-top:3px}
+.basic .st{font-size:11px;background:#dfe8f7;color:var(--ink);padding:2px 8px;margin-top:5px;display:inline-block}
+.hint{display:flex;align-items:center;justify-content:center;flex-direction:column;padding:0 10px 0 4px;border-left:1px solid #2c3d63}
+.hint .h{font-style:italic;font-weight:900;font-size:22px;color:var(--gold);text-shadow:0 0 12px rgba(255,204,68,.5)}
+.hint .s{font-size:11px;color:#c9d6ee}
+#top{position:absolute;left:16px;top:14px;z-index:9;display:flex;gap:10px;align-items:center}
+#top .chip{font-size:12px;padding:5px 12px 5px 14px;background:rgba(6,10,20,.85);clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+#top .chip.t{background:#19e6c1;color:var(--ink)}
+#top .chip.r{background:var(--red);color:#fff}
+#flee{position:absolute;right:16px;top:14px;z-index:9;font-size:12px;padding:8px 14px;border:2px solid #6f7d99;background:rgba(6,10,20,.85);clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px);color:#c9d6ee}
+/* frame 2 */
+#mask{display:none;position:absolute;inset:0;z-index:3;background:radial-gradient(ellipse 13% 15% at var(--tx) var(--ty),transparent 60%,rgba(4,7,16,.62) 100%)}
+body.f2 #mask{display:block}
+body.f2 .fan,body.f2 .ring.fol{opacity:.35}
+body.f2 .fan.src{opacity:1}
+body.f2 .fan.src .card{opacity:.35}
+body.f2 .fan.src .picked{opacity:.2}
+#pick .card .fx{max-height:none}
+body.f2 #strip{display:none}
+body.f2 .foe.no{opacity:.4;filter:grayscale(.6)}
+#line{display:none;position:absolute;left:0;top:0;width:100%;height:100%;z-index:4;pointer-events:none}
+body.f2 #line{display:block}
+#pick{display:none;position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:9;align-items:flex-end;gap:16px}
+body.f2 #pick{display:flex}
+#pick .card{position:relative;--cw:150px;--ch:206px;padding:24px 11px 10px 12px;transform:rotate(-2deg)}
+#pick .card .who{white-space:nowrap;overflow:hidden;height:20px;font-size:12px;padding:3px 0 0 18px}
+#pick .card .nm{font-size:30px;min-height:56px}
+#pick .card .fx{font-size:12px}
+#pick .card .st{font-size:13px;bottom:9px;left:9px;right:9px;padding:4px 0}
+.aim{background:linear-gradient(180deg,rgba(14,22,46,.94),rgba(5,8,16,.96));border:2px solid var(--gold);clip-path:polygon(16px 0,100% 0,100% 100%,0 100%,0 16px);padding:12px 18px 12px 22px;margin-bottom:6px}
+.aim .h{font-style:italic;font-weight:900;font-size:30px;color:var(--gold);line-height:1}
+.aim .s{font-size:12px;color:#c9d6ee;margin-top:4px}
+.aim .row{display:flex;gap:8px;margin-top:10px}
+.btn{font-size:12px;padding:7px 12px;border:2px solid #6f7d99;clip-path:polygon(7px 0,100% 0,100% 100%,0 100%,0 7px)}
+.btn.g{border-color:var(--gold);background:var(--gold);color:var(--ink)}
+.lit{display:none}
+body.f2 .lit{display:block}
+body.port #strip{width:780px;flex-wrap:wrap;padding:12px 16px 12px 24px;bottom:20px}
+body.port .turn{width:100%;flex-direction:row;align-items:baseline;gap:12px}
+body.port .basic{flex:1}
+</style></head><body>
+<div id="stage">
+  <div id="mask"></div>
+  <svg id="line" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+</div>
+<div id="top"><span class="chip mono t">TURN 3</span><span class="chip mono">CRYSTAL CHAMBER</span><span class="chip mono r">3 ANTS</span></div>
+<div id="flee" class="mono">RUN ✕</div>
+<div id="strip">
+  <div class="turn"><div class="k mono">● YOUR TURN</div><div class="h">PICK ONE CARD</div><div class="s mono">THEN THE ANTS ACT</div></div>
+  <div class="basic glow"><div><div class="mono" style="font-size:10px;color:#9fb0cf">SQUAD · ALWAYS READY</div><div class="nm">BASIC ATTACK</div><div class="fx">The nearest follower hits one ant · 4</div><span class="st mono">READY</span></div></div>
+  <div class="hint"><div class="h">TAP A CARD</div><div class="s mono">BESIDE A FOLLOWER</div></div>
+</div>
+<div id="pick">
+  <div class="card ready glow" style="--c:var(--ice)"><div class="who mono">RIMESTAR</div><div class="nm">SHOT</div><div class="fx">An ice shot at one ant · 3 damage · it is slowed</div><div class="st mono">PICKED</div></div>
+  <div class="aim"><div class="h">TAP AN ANT</div><div class="s mono">RIMESTAR AIMS AT THE ONE YOU TAP</div><div class="row"><span class="btn g mono">FIRE AT STRIKER</span><span class="btn mono">BACK</span></div></div>
+</div>
+<script>
+const Q=new URLSearchParams(location.search), PORT=Q.get('o')==='port', F2=Q.get('f')==='2';
+if(PORT){document.documentElement.style.setProperty('--W','820px');document.documentElement.style.setProperty('--H','1180px');document.body.classList.add('port')}
+if(F2)document.body.classList.add('f2');
+const st=document.getElementById('stage');
+const sw=PORT?988:1180, sh=PORT?686:820, k=1;
+const P=(x,y)=>`left:${x}%;top:${y}%`;
+// followers: x%, feet y%, ring width (stage px at 1180)
+const fol=[
+ {n:'JELLY RAM',c:'#33e6c4',x:14,y:33.5,rw:150,side:1,hp:44,max:63},
+ {n:'RIMESTAR',c:'#8fe3ff',x:36,y:31.5,rw:92,hp:37,max:63},
+ {n:'STONEPETAL',c:'#ff7ab8',x:20.5,y:55,rw:130,hp:58,max:63},
+ {n:'YOU',c:'#dfe8f7',x:42.5,y:51,rw:130,hp:80,max:100},
+];
+for(const f of fol){const w=f.rw*k*(sw/1180)*1.0,h=w*.36,fr=f.hp/f.max,cx=w/2,cy=h/2,rx=w/2-3,ry=h/2-3;
+ const L=Math.PI*(rx+ry)*1.0;
+ const d=document.createElement('div');d.className='ring'+(f.n!=='YOU'?' fol':'');d.style.cssText=P(f.x,f.y);
+ d.innerHTML=`<svg width="${w}" height="${h}"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="rgba(6,10,20,.55)" stroke-width="7"/>
+ <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="${f.c}" stroke-width="4.5" pathLength="100" stroke-dasharray="${fr*100} 100" style="filter:drop-shadow(0 0 4px ${f.c})"/></svg>
+ <div class="hp mono" style="color:${f.c}${f.side?';left:88%;top:18%;transform:none':''}"><b>${f.n}</b><span style="color:#fff">${f.hp}/${f.max}</span></div>`;st.appendChild(d)}
+// card fans: position (stage %), cards
+const C={core:'#33e6c4',ice:'#8fe3ff',blos:'#ff7ab8'};
+const fans=[
+ {x:1.2,y:8,px:12.5,py:-16,ry:24,cards:[
+   {who:'JELLY RAM',c:C.core,nm:'WOBBLE SLAM',fx:'Ants close by · 6 · stagger',st:'READY'},
+   {who:'JELLY RAM',c:C.core,nm:'JELLY SHIELDS',fx:'Shields the whole squad',ult:4}]},
+ {x:37,y:2.5,py:-17,ry:-18,src:1,cards:[
+   {who:'RIMESTAR',c:C.ice,nm:'SHOT',fx:'One ant · 3 · it is slowed',st:'READY',picked:1},
+   {who:'RIMESTAR',c:C.ice,nm:'ICICLE VOLLEY',fx:'3 icicles · 3 each · freeze',wait:2},
+   {who:'RIMESTAR',c:C.ice,nm:'WHITEOUT',fx:'Snowstorm; slows all',ult:5}]},
+ {x:0.8,y:44,px:13,py:64,ry:24,cards:[
+   {who:'STONEPETAL',c:C.blos,nm:'STAKE RING',fx:'Spikes all round · 5 · push back',st:'READY'},
+   {who:'STONEPETAL',c:C.blos,nm:'REEF PILLAR',fx:'Wall; mends the squad',ult:6}]},
+];
+for(const f of fans){const d=document.createElement('div');d.className='fan'+(f.src?' src':'');d.style.cssText=P(PORT&&f.px!=null?f.px:f.x,PORT&&f.py!=null?f.py:f.y)+`;width:${f.cards.length*60+30}px;height:130px`;
+ const n=f.cards.length;f.cards.forEach((c,i)=>{const e=document.createElement('div');
+  const rot=(i-(n-1)/2)*4, dx=i*(84*k), dy=Math.abs(i-(n-1)/2)*5;
+  e.className='card '+(c.ult?'ult wait':c.wait?'wait':'ready glow')+(c.picked?' picked':'');
+  e.style.cssText=`--c:${c.c};--fc:${c.c};--cw:${80*k}px;--ch:${126*k}px;left:${dx}px;top:${dy}px;transform:rotateY(${f.ry}deg) rotate(${rot}deg);z-index:${c.wait||c.ult?1:5}`;
+  const status=c.ult?`<b>${c.ult}</b> TURNS`:c.wait?`<b>${c.wait}</b> TURNS`:'READY';
+  e.innerHTML=`<div class="who mono">${c.who}</div>${c.ult?'<div class="mono" style="font-size:9px;color:#ffcc44;margin-top:2px">ULTIMATE</div>':''}<div class="nm">${c.nm}</div><div class="fx">${c.fx}</div><div class="st mono">${status}</div>`;
+  if(c.ult)e.querySelector('.st').style.cssText='border-color:var(--gold);color:var(--gold)';
+  d.appendChild(e)});st.appendChild(d)}
+// ants: anchor = top of the ant (x%, y%)
+const ants=[
+ {n:'SOLDIER ANT',x:77,px:78,y:20,hp:62,max:90,bw:150,mv:'CRUSH',to:'STONEPETAL',dmg:8},
+ {n:'ANT STRIKER',x:61,y:40.5,hp:18,max:40,bw:100,mv:'BITE',to:'JELLY RAM',dmg:6,tgt:1},
+ {n:'ANT WORKER',x:88,px:83,y:42.5,hp:21,max:30,bw:80,mv:'SPIT',to:'RIMESTAR',dmg:3},
+];
+for(const a of ants){const d=document.createElement('div');d.className='foe'+(a.tgt?'':' no');d.style.cssText=P(PORT&&a.px?a.px:a.x,a.y);
+ d.innerHTML=`<div class="intent"><span class="ic">▲</span><span class="t">${a.mv} <i>→</i> ${a.to}</span><span class="d">${a.dmg}</span></div>
+ <div class="fname mono">${a.n} · NEXT</div><div class="bar" style="--bw:${a.bw*k}px"><i style="width:${a.hp/a.max*100}%"></i><u></u></div><div class="fhp mono">${a.hp}/${a.max}</div>`;
+ st.appendChild(d)}
+if(F2){const t={x:63,y:48};document.getElementById('mask').style.cssText=`--tx:${t.x}%;--ty:${t.y}%`;
+ // target ring and readout
+ const r=document.createElement('div');r.className='ring lit';r.style.cssText=P(63,55)+';z-index:4';
+ const w=210*k*(sw/1180),h=w*.38;r.innerHTML=`<svg width="${w}" height="${h}"><ellipse cx="${w/2}" cy="${h/2}" rx="${w/2-4}" ry="${h/2-4}" fill="rgba(255,204,68,.12)" stroke="#ffcc44" stroke-width="4" stroke-dasharray="14 8" style="filter:drop-shadow(0 0 8px #ffcc44)"/></svg>`;st.appendChild(r);
+ const tg=document.createElement('div');tg.className='lit';tg.style.cssText=`position:absolute;${P(63,58.5)};transform:translateX(-50%);z-index:6`;
+ tg.innerHTML=`<div class="mono" style="background:#ffcc44;color:#060a14;font-size:12px;padding:3px 10px;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);white-space:nowrap">TARGET · −3 · SLOWED</div>`;st.appendChild(tg);
+ // line from Rimestar's shot (36,24) to the striker (63,47)
+ const ln=document.getElementById('line');
+ ln.innerHTML=`<defs><marker id="m" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ffcc44"/></marker></defs>
+ <path d="M37 23 Q 54 22 61.5 44" fill="none" stroke="#060a14" stroke-width="1.3" vector-effect="non-scaling-stroke" style="stroke-width:9px"/>
+ <path d="M37 23 Q 54 22 61.5 44" fill="none" stroke="#ffcc44" style="stroke-width:4px;stroke-dasharray:14 8;filter:drop-shadow(0 0 6px #ffcc44)" vector-effect="non-scaling-stroke" marker-end="url(#m)"/>`;
+}
+</script></body></html>

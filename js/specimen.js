@@ -146,7 +146,7 @@ function specimenRestore() {
 function specimenUseItem() { const u = specimenRestore(); return u ? { ok: true, msg: "RESTORED" } : { ok: false, why: specimenCarried.length ? (specimenInZone() ? "IT COULD NOT COME BACK NOW" : "TAKE IT TO THE RESURRECTION ZONE: THE CRYSTAL") : "NO SPECIMEN IN IT" }; }
 
 // ── drawing: a frozen body is a capsule; the Ice Mage's beam while it works; the zone's ring and its plate ──
-function _spScr(x, y) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
+function _spScr(x, y) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
 // the capsule over a frozen body (js/mutator.js drawCloneBody calls this after the body)
 function drawSpecimenCapsule(b, px, py) {
     const f = _spFrame(), w = 46, h = 64, x = px - w / 2, y = py - h + 8, pul = 0.6 + 0.4 * Math.sin(f * 0.07 + b.id);

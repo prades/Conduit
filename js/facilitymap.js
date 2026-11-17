@@ -81,29 +81,34 @@ const FACILITY_MAP = {
         { id: "catwalks", label: "Catwalks", level: 2, status: "traced", development: "blocked_off_for_now",
           structure: "scaffold",
           note: "The zone to the right of the arena: NOT a room but scaffolding at the top of the arena, an open steel deck with railings on legs along its east edge. It is BLOCKED OFF for now (not being developed): the player can walk up to it, not into it.",
-          polygon: [[1005, 810], [1100, 810], [1100, 1210], [1005, 1210]] },
+          polygon: [[1005, 780], [1100, 780], [1100, 1210], [1005, 1210]] },   // (build 2026-11-16e: their north end in line with the spur's and the arena's)
         { id: "catwalk_spur", label: "Catwalk Spur", level: 0, status: "placed", structure: "scaffold",
           note: "THE CATWALK SPUR (build 2026-11-12v; the owner, 2026-11-12: \"let's make another place that it's a high ground catwalk that's really small that could show off this technique better\", \"maybe the top right next to the other part of the catwalk. Maybe it could be like a L-shaped sort of vibe\"; the lower of two drafts, B): a small steel deck in the arena's north-east corner, against the catwalks, a level above the arena floor. No stairs: the way up is a REEF climb (STONEPETAL's utility), up its west or south face. Its back (north) is the cave's rock, on the line the arena's wall took; a chest stands on it.",
-          polygon: [[905, 801.5], [935, 795], [1000, 810], [1000, 860], [905, 860]], edge_kinds: ["rock", "rock", "wall", "wall", "wall"] },   // (five tiles by three, as built; its west face 2 tiles clear of the north tank: tests/facility.js THE VATS LEAVE ROOM)
+          polygon: [[905, 780], [1000, 780], [1000, 840], [905, 840]], edge_kinds: ["rock", "wall", "wall", "wall"] },   // (five tiles by three, as built; its west face 2 tiles clear of the north tank: tests/facility.js THE VATS LEAVE ROOM; since build 2026-11-16e a rectangle, its north side in line with the arena's and the catwalks': it was a slanted back on the old rock line)
         { id: "arena", label: "Arena", level: -1, status: "traced",
           boundary_type: "solid_walls_or_rock_formations", boundary_blocks_movement: true,
           // The floor outline, clockwise from the top-left. Every edge is solid; `edge_kinds[i]` is the edge from point i to point i+1.
           // THE COLD STORAGE DOOR: the arena's north side, where the generator stood (its bay was cut back from a lobe of rock that ran down to y 825), is cave rock again, and in it an ALCOVE five tiles wide and one deep
           // (x 580 to 680) holds the Cold Storage's double door, set in boulders, on its middle three tiles (x 600 to 660): the doorway into the Cold Storage, which lies under the Experiment Lab (a portal: it is an interior,
           // see `interiors`). The door's wall is plain wall, built into the rock, with a tile of rock either side of it; the alcove's two sides are rock (the owner, 2026-11-09: "Rock curves into the alcove";
-          // they were plain wall), the rock rounded round its corners (js/facilitydecor.js, rounded rock). It takes the one-tile band of wall between the arena
-          // and the hallway above it, so the hallway gives up the tile behind it (a notch in its south side: js/facilitygrow.js) and a wall of full thickness still stands between the two. (Five wide, not three: the
+          // they were plain wall), the rock rounded round its corners (js/facilitydecor.js, rounded rock). Until build 2026-11-16e it took the one-tile band of wall between the arena
+          // and the hallway above it, so the hallway gave up the tile behind it (a notch in its south side); now that wall is two tiles thick (FEWER NOOKS, below). (Five wide, not three: the
           // camera looks at the north wall from the south-east, and the rock in front of an alcove's east corner hides the last tile of its back wall, so the door stops a tile short of it.)
           // THE SEWER CULVERT: a second alcove in the north rock, behind the north tank (three tiles wide, x 780 to 840, one deep): an arched concrete culvert with its grating raised, the way down to the Sewers
           // (a portal: the Sewers are an interior). The tanks' runoff goes down to them through the overflow grates at the tanks' feet (floor decor `overflow_grate`).
-          polygon: [[340, 760], [540, 760], [580, 760], [580, 740], [600, 740], [660, 740], [680, 740], [680, 760], [715, 760], [778, 808], [780, 808], [780, 788], [840, 788], [840, 808], [900, 802], [900, 860], [1000, 860],
+          // FEWER NOOKS (build 2026-11-16e; the owner, 2026-11-16, of the arena's corners in 3D: "Keep the different levels just change it to where there's less nooks"): the north edge runs STRAIGHT, a tile further south
+          // than it did (y 780), so the wall between the arena and the hallway above is two tiles thick all along; the Cold Storage's alcove and the sewer culvert's are cut into that wall to one depth (their backs
+          // at y 760), so the hallway no longer gives up a tile behind either; the stairs from the hallway come down through it (a tile of it here, the other the tunnel js/facilitygrow.js cuts). The diagonal
+          // and the step east of the culvert are gone, the spur's north side is in line, and the south edge runs straight (y 1190: on the half tile, so the sketch and the grid agree), the Nest's rubble moved down onto it. Every doorway keeps its alcove: an
+          // alcove is how a portal works (js/facilityportals.js).
+          polygon: [[340, 780], [370, 780], [370, 760], [440, 760], [440, 780], [580, 780], [580, 760], [600, 760], [660, 760], [680, 760], [680, 780], [780, 780], [780, 760], [840, 760], [840, 780], [900, 780], [900, 840], [1000, 840],
                     // THE ARMORY DOOR: an ALCOVE in the west cave wall just south of the two garage doors, where the Armory's own door used to be (two tiles wide at y 1090 to 1130, one deep): the doorway into the Armory
                     // from the arena (a portal: the Armory is an interior, see `interiors`). Its three sides are plain wall, built into the rock.
-                    [1000, 1180], [805, 1155], [640, 1135], [560, 1138], [520, 1180], [440, 1215], [380, 1190], [340, 1165], [340, 1130], [320, 1130], [320, 1090], [340, 1090], [340, 950]],
-          // THE CATWALK SPUR (build 2026-11-12v): the north-east corner, x 900 to 1000 and up to y 860, is the spur's (a low deck, level 0, an L with the catwalks), so the arena's outline steps round it: the spur's
+                    [1000, 1190], [340, 1190], [340, 1130], [320, 1130], [320, 1090], [340, 1090], [340, 950]],
+          // THE CATWALK SPUR (build 2026-11-12v): the north-east corner, x 900 to 1000 and down to y 840 (860 until build 2026-11-16e), is the spur's (a low deck, level 0, an L with the catwalks), so the arena's outline steps round it: the spur's
           // west and south faces are the arena's railing walls, open faces a REEF climb goes up (the owner: "a high ground catwalk that's really small that could show off this technique better").
-          edge_kinds: ["rock", "rock", "rock", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall", "railing_wall", "railing_wall",
-                       "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
+          edge_kinds: ["rock", "wall", "rock", "wall", "rock", "rock", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall", "railing_wall", "railing_wall",
+                       "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "cold_storage", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
           note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up in the floor at the west side, two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
           // the room from the user's plan (20 px to a tile; its top-left at (440, 540)): the built part is twelve tiles wide; its east wall runs seven tiles down and its west wall eleven; between them the ICE CAVE's rough
@@ -251,7 +256,7 @@ const FACILITY_MAP = {
           note: "The stairs down to the Armory, in an alcove in the deck's west wall." },
         { id: "portal_armory_deck", room: "armory", rect: [290, 930, 330, 950], arrive: [310, 980], to: "portal_deck_armory", label: "OBSERVATION DECK", kind: "stairs_up",
           note: "The stairs back up to the Observation Deck, in an alcove in the armory's north wall." },
-        { id: "portal_arena_cold", room: "arena", rect: [580, 740, 680, 760], arrive: [630, 790], to: "portal_cold_arena", label: "COLD STORAGE", kind: "door",
+        { id: "portal_arena_cold", room: "arena", rect: [580, 760, 680, 780], arrive: [630, 810], to: "portal_cold_arena", label: "COLD STORAGE", kind: "door",
           note: "The Cold Storage's double freezer door, set in boulders in an alcove in the arena's north cave wall, where the generator stood." },
         { id: "portal_cold_arena", room: "cold_storage", rect: [420, 560, 440, 620], arrive: [470, 590], to: "portal_arena_cold", label: "ARENA", kind: "door",
           note: "The freezer door back out to the arena: the entrance, an alcove in the cold storage's west wall at the top." },
@@ -259,7 +264,7 @@ const FACILITY_MAP = {
           note: "A STAIRWELL in the Experiment Lab's floor, in its north-east corner north of the foot of the staircase from Teleport Room 1 (the lab moved west in build 2026-11-13a, the owner's pick: \"Move to new lab\"; it was in the old lab's north-west corner by its door): steps going down to the north, to the Cold Storage, entered from the south. Not an alcove: an opening in the floor with a rail round three sides." },
         { id: "portal_cold_lab", room: "cold_storage", rect: [490, 660, 530, 720], arrive: [510, 750], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
           note: "The stairs up to the Experiment Lab: a flight standing in the floor at the cold storage's west side (the plan's STAIRS)." },
-        { id: "portal_arena_sewers", room: "arena", rect: [780, 788, 840, 808], arrive: [810, 840], to: "portal_sewers_arena", label: "SEWERS", kind: "door",
+        { id: "portal_arena_sewers", room: "arena", rect: [780, 760, 840, 780], arrive: [810, 810], to: "portal_sewers_arena", label: "SEWERS", kind: "door",
           note: "The sewer culvert: an arched concrete mouth with its grating raised, in an alcove in the arena's north rock behind the north tank." },
         { id: "portal_sewers_arena", room: "sewers", rect: [280, 860, 300, 900], arrive: [330, 880], to: "portal_arena_sewers", label: "ARENA", kind: "door",
           note: "The culvert back up to the arena: an alcove at the west end of the north ledge, beside the outfall where the runoff pours in." },
@@ -272,7 +277,7 @@ const FACILITY_MAP = {
           note: "The drain pipe's other end, in the north ledge's wall beside the arena culvert: its grate opens only from inside." },
         // THE ANT NEST (docs/NEST.md): the way in is the HOLE drilled through the arena's south rubble. `rubble`: the doorway is shut until that rubble is drilled through (js/facilityportals.js facilityPortalShut), and the
         //   rubble draws it (the hole); `rect` is the floor in front of the hole, the last row of floor under the rock. Drilled rubble stays drilled (saved), so the way stays open.
-        { id: "portal_arena_nest", room: "arena", rect: [570, 1110, 610, 1130], arrive: [590, 1080], to: "portal_nest_arena", label: "ANT NEST", kind: "stairs_down", rubble: "rubble_arena_south",
+        { id: "portal_arena_nest", room: "arena", rect: [570, 1170, 610, 1190], arrive: [590, 1140], to: "portal_nest_arena", label: "ANT NEST", kind: "stairs_down", rubble: "rubble_arena_south",
           note: "The hole a fire technician drills through the arena's south rubble: a tunnel down to the Ant Nest. Shut until the rubble is drilled through." },
         { id: "portal_nest_arena", room: "nest_area", rect: [570, 1160, 610, 1180], arrive: [590, 1210], to: "portal_arena_nest", label: "ARENA", kind: "stairs_up",
           note: "The tunnel mouth back up to the arena, in an alcove in the Ant Nest's north wall." },
@@ -378,10 +383,10 @@ const FACILITY_MAP = {
         { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [590, 590, 610, 610], status: "placed", kind: "plant" },
         { id: "console_3", room: "teleport_room_2", shape: "rect", rect: [990, 610, 1070, 630], status: "placed", kind: "console" },
         { id: "teleporter_5", room: "teleport_room_2", shape: "rect", rect: [1070, 650, 1090, 670], status: "placed", kind: "teleporter" },
-        { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 750, 1010, 770], status: "placed", kind: "teleporter" },
-        { id: "teleporter_7", room: "teleport_room_2", shape: "rect", rect: [1050, 750, 1070, 770], status: "placed", kind: "teleporter" },
+        { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 690, 1010, 710], status: "placed", kind: "teleporter" },
+        { id: "teleporter_7", room: "teleport_room_2", shape: "rect", rect: [1050, 690, 1070, 710], status: "placed", kind: "teleporter" },
         { id: "teleporter_8", room: "teleport_room_2", shape: "rect", rect: [1070, 710, 1090, 730], status: "placed", kind: "teleporter" },
-        { id: "crate_3", room: "teleport_room_2", shape: "rect", rect: [1070, 770, 1090, 790], status: "placed", kind: "crate" },
+        { id: "crate_3", room: "teleport_room_2", shape: "rect", rect: [1070, 610, 1090, 630], status: "placed", kind: "crate" },
         { id: "couch_2", room: "observation_deck", shape: "rect", rect: [210, 910, 270, 930], status: "placed", kind: "couch" },
         { id: "beanbag_4", room: "observation_deck", shape: "rect", rect: [290, 850, 310, 870], status: "placed", kind: "beanbag" },
         { id: "telescope_1", room: "observation_deck", shape: "rect", rect: [330, 850, 350, 870], status: "placed", kind: "telescope" },
@@ -512,7 +517,7 @@ const FACILITY_MAP = {
         { id: "chest_nest_b", room: "nest_stream", shape: "rect", rect: [410, 1510, 430, 1530], status: "placed", kind: "chest", note: "A CHEST in the stream cave (B: an ice bridge over the stream)." },
         { id: "chest_nest_c", room: "nest_burrow", shape: "rect", rect: [570, 1610, 590, 1630], status: "placed", kind: "chest", note: "A CHEST in the old burrow (C: FLUX MOVE the boulder)." },
         { id: "chest_nest_d", room: "nest_larder", shape: "rect", rect: [590, 1770, 610, 1790], status: "placed", kind: "chest", note: "A CHEST in the larder (D: the acid flask eats the resin seal)." },
-        { id: "chest_spur", room: "catwalk_spur", shape: "rect", rect: [950, 825, 970, 845], status: "placed", kind: "chest", note: "A CHEST on the Catwalk Spur (a REEF climb up its face)." },
+        { id: "chest_spur", room: "catwalk_spur", shape: "rect", rect: [950, 800, 970, 820], status: "placed", kind: "chest", note: "A CHEST on the Catwalk Spur (a REEF climb up its face)." },
         { id: "elec_rack_1", room: "elec_servers", shape: "rect", rect: [400, 280, 420, 380], status: "placed", kind: "server_rack", note: "THE ELECTRICAL DOMAIN's racks still standing, in rows near the door (docs/DOMAINS.md); the ones further in lie toppled (step 2)." },
         { id: "elec_rack_2", room: "elec_servers", shape: "rect", rect: [460, 280, 480, 380], status: "placed", kind: "server_rack" },
         { id: "elec_rack_3", room: "elec_servers", shape: "rect", rect: [520, 280, 540, 380], status: "placed", kind: "server_rack" },
@@ -630,7 +635,7 @@ const FACILITY_MAP = {
     ],
 
     // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
-    // of the southern wall [...] Treat it as a placeholder for a future insect burrow or dungeon entrance"; then the arena's south rock, on its nearest straight stretch (its exact middle is on a slant), the map not changed.
+    // of the southern wall [...] Treat it as a placeholder for a future insect burrow or dungeon entrance"; then the arena's south rock, on its nearest straight stretch (its exact middle was on a slant), the map not changed; since build 2026-11-16e the south rock runs straight, the rubble west of its middle.
     // `a`-`b`: the stretch of the room's edge it covers (drawn on the edge's face, like a wall's decor); `work`: where the technician stands to drill it (the middle of a tile, out from under the rock's overhang so it is seen).
     // Drilled through it leaves a dark hole in the rock, sealed for now: nothing walks in (no wall changes).
     rubble: [
@@ -641,8 +646,8 @@ const FACILITY_MAP = {
           say: "CRACKED ROCK ACROSS THE TUNNEL · A BLAST BREAKS IT: SHOOT THE FLASK BESIDE IT (TAP IT), AND STAND BACK · OR A FIRE TECHNICIAN CAN DRILL IT THROUGH: PRESS AND HOLD IT",
           opened: "THE CRACKED ROCK IS BROKEN THROUGH · THE WAY TO THE DEEP BROOD IS OPEN",
           note: "THE ANT NEST's cracked rock across the tunnel south to the deep brood (the owner, 2026-11-13, of the flat cracked wall: \"3D rock, blast or drill\"; build 2026-11-13r): the cave's rock modelled as the rubble is (design/cave/bake_rubble.js); an explosive flask's blast breaks it (js/nestways.js), or a fire technician drills it from the north, the brood chamber's side." },
-        { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
-          note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
+        { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1190], b: [610, 1190], work: [590, 1140],
+          note: "In the arena's south rock (straight since build 2026-11-16e), west of its middle, the red banner (banner_4) beside it to the east. Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
         //   is on the LEDGE, in front of the pile's middle: a fire technician in the squad drills it from there, with nothing else needed (an `inside: true` choke, with its work spot behind it, would be drilled from the far side
         //   instead, and the order from outside refused: js/techabilities.js _techCanReach; none is so now).
@@ -916,11 +921,11 @@ const FACILITY_MAP = {
         { id: "arrows_5", room: "teleport_room_2", kind: "arrows", a: [968, 660], b: [1000, 700], colour: "#a64dff" },
         { id: "cables_13", room: "teleport_room_2", kind: "cables", path: [[980, 632], [980, 710], [1004, 710]], colour: "#a64dff" },
         { id: "scorch_3", room: "teleport_room_2", kind: "scorch", at: [1060, 660], radius: 18, colour: "#0c0c10" },
-        { id: "debris_6", room: "teleport_room_2", kind: "debris", at: [990, 750], radius: 20, n: 5 },
+        { id: "debris_6", room: "teleport_room_2", kind: "debris", at: [1000, 650], radius: 20, n: 5 },
         // (screen_5, screen_6, pipe_11, vent_9 and wall_light_12 hung on Teleport Room 2's north wall, the wall between it and the warehouse: they went with it, build 2026-11-09uu: js/facilitygrow.js)
-        { id: "poster_13", room: "teleport_room_2", kind: "poster", a: [950, 710], b: [950, 750] },
-        { id: "vent_10", room: "teleport_room_2", kind: "vent", a: [950, 750], b: [950, 770] },
-        { id: "panel_4", room: "teleport_room_2", kind: "panel", a: [950, 770], b: [950, 790] },
+        { id: "poster_13", room: "teleport_room_2", kind: "poster", a: [950, 700], b: [950, 740] },
+        { id: "vent_10", room: "teleport_room_2", kind: "vent", a: [950, 620], b: [950, 640] },
+        { id: "panel_4", room: "teleport_room_2", kind: "panel", a: [950, 600], b: [950, 620] },
         { id: "rug_5", room: "observation_deck", kind: "rug", rect: [210, 870, 330, 930], colour: "#5a2a3a", border: "#ffd34d" },
         { id: "light_25", room: "observation_deck", kind: "light", at: [260, 940], radius: 68, colour: "#ffd9a0", a: 0.22, flicker: true },
         { id: "light_27", room: "observation_deck", kind: "light", at: [320, 920], radius: 60, colour: "#bfe8ff", a: 0.18 },
@@ -934,11 +939,11 @@ const FACILITY_MAP = {
         { id: "wall_light_13", room: "observation_deck", kind: "wall_light", a: [190, 910], b: [190, 930], colour: "#ffe9a0" },
         { id: "sign_4", room: "observation_deck", kind: "sign", a: [190, 770], b: [230, 770], colour: "#8fe3ff" },
         { id: "poster_17", room: "observation_deck", kind: "poster", a: [310, 770], b: [350, 770] },
-        { id: "light_spur", room: "catwalk_spur", kind: "light", at: [960, 830], radius: 60, colour: "#ffe9a0", a: 0.18 },   // THE CATWALK SPUR's deck (build 2026-11-12v): paint and light only
-        { id: "lane_spur", room: "catwalk_spur", kind: "lane", a: [920, 825], b: [990, 825], colour: "#ffd21a", dashed: true, w: 2 },
-        { id: "hazard_spur", room: "catwalk_spur", kind: "hazard", rect: [920, 840, 1000, 860] },
-        { id: "stain_spur", room: "catwalk_spur", kind: "stain", at: [930, 835], radius: 14, colour: "#4a2a10" },
-        { id: "debris_spur", room: "catwalk_spur", kind: "debris", at: [985, 840], radius: 14, n: 4 },
+        { id: "light_spur", room: "catwalk_spur", kind: "light", at: [960, 810], radius: 60, colour: "#ffe9a0", a: 0.18 },   // THE CATWALK SPUR's deck (build 2026-11-12v): paint and light only
+        { id: "lane_spur", room: "catwalk_spur", kind: "lane", a: [920, 805], b: [990, 805], colour: "#ffd21a", dashed: true, w: 2 },
+        { id: "hazard_spur", room: "catwalk_spur", kind: "hazard", rect: [920, 820, 1000, 840] },
+        { id: "stain_spur", room: "catwalk_spur", kind: "stain", at: [930, 815], radius: 14, colour: "#4a2a10" },
+        { id: "debris_spur", room: "catwalk_spur", kind: "debris", at: [985, 820], radius: 14, n: 4 },
         { id: "light_28", room: "catwalks", kind: "light", at: [1060, 920], radius: 68, colour: "#ff4a3a", a: 0.18, flicker: true },
         { id: "light_29", room: "catwalks", kind: "light", at: [1060, 1100], radius: 68, colour: "#ff4a3a", a: 0.16 },
         { id: "hazard_13", room: "catwalks", kind: "hazard", rect: [1010, 810, 1110, 830] },
@@ -949,17 +954,17 @@ const FACILITY_MAP = {
         { id: "lane_7", room: "arena", kind: "lane", a: [650, 870], b: [650, 1110], colour: "#ffd21a", dashed: true, w: 2 },
         { id: "ring_15", room: "arena", kind: "ring", at: [830, 910], radius: 62, colour: "#ffd21a", a: 0.6, w: 2, dashed: true },
         { id: "ring_16", room: "arena", kind: "ring", at: [850, 1070], radius: 62, colour: "#ffd21a", a: 0.6, w: 2, dashed: true },
-        { id: "pipe_13", room: "arena", kind: "pipe", a: [450, 770], b: [530, 770], colour: "#7d8aa6", z: 64 },
-        { id: "banner_3", room: "arena", kind: "banner", a: [450, 770], b: [490, 770], colour: "#8a1f2a" },
-        { id: "wall_light_15", room: "arena", kind: "wall_light", a: [490, 770], b: [530, 770], h: 1, colour: "#ffe9a0" },
-        { id: "hazard_sign_6", room: "arena", kind: "hazard_sign", a: [510, 770], b: [530, 770] },
+        { id: "pipe_13", room: "arena", kind: "pipe", a: [450, 790], b: [530, 790], colour: "#7d8aa6", z: 64 },
+        { id: "banner_3", room: "arena", kind: "banner", a: [450, 790], b: [490, 790], colour: "#8a1f2a" },
+        { id: "wall_light_15", room: "arena", kind: "wall_light", a: [490, 790], b: [530, 790], h: 1, colour: "#ffe9a0" },
+        { id: "hazard_sign_6", room: "arena", kind: "hazard_sign", a: [510, 790], b: [530, 790] },
         { id: "debris_8", room: "arena", kind: "debris", at: [580, 880], radius: 32, n: 8 },
         { id: "debris_13", room: "arena", kind: "debris", at: [570, 850], radius: 24, n: 6 },
         { id: "light_30", room: "arena", kind: "light", at: [540, 830], radius: 140, colour: "#fff2c0", a: 0.2 },
         // ── the Cold Storage's door in the arena's north rock: its double freezer door set in boulders (`cold`), the cold breathing out of it (a frost on the floor in front, a pale blue glow) ──
-        { id: "arena_cold_door", room: "arena", kind: "portal_door", a: [600, 740], b: [660, 740], colour: "#9be8ff", flat: true, cold: true },
+        { id: "arena_cold_door", room: "arena", kind: "portal_door", a: [600, 760], b: [660, 760], colour: "#9be8ff", flat: true, cold: true },
         { id: "arena_cold_frost", room: "arena", kind: "ice_sheet", path: [[600, 772], [660, 772], [684, 795], [652, 818], [606, 818], [578, 795]] },
-        { id: "arena_cold_light", room: "arena", kind: "light", at: [630, 775], radius: 90, colour: "#9be8ff", a: 0.18, flicker: true },
+        { id: "arena_cold_light", room: "arena", kind: "light", at: [630, 795], radius: 90, colour: "#9be8ff", a: 0.18, flicker: true },
         { id: "light_32", room: "arena", kind: "light", at: [920, 1150], radius: 140, colour: "#fff2c0", a: 0.2 },
         { id: "light_33", room: "arena", kind: "light", at: [540, 1150], radius: 140, colour: "#fff2c0", a: 0.2 },
         { id: "light_34", room: "arena", kind: "light", at: [650, 990], radius: 140, colour: "#ff6a4a", a: 0.1, flicker: true },
@@ -975,52 +980,52 @@ const FACILITY_MAP = {
         { id: "stain_16", room: "arena", kind: "stain", at: [680, 1060], radius: 20, colour: "#8a1f2a" },
         { id: "stain_17", room: "arena", kind: "stain", at: [540, 980], radius: 16, colour: "#8a1f2a" },
         { id: "stain_18", room: "arena", kind: "stain", at: [720, 920], radius: 16, colour: "#8a1f2a" },
-        { id: "lane_8", room: "arena", kind: "lane", a: [530, 1050], b: [600, 1120], colour: "#14161c", dashed: false, w: 4 },
-        { id: "lane_9", room: "arena", kind: "lane", a: [544, 1050], b: [614, 1126], colour: "#14161c", dashed: false, w: 4 },
+        { id: "lane_8", room: "arena", kind: "lane", a: [530, 1100], b: [600, 1170], colour: "#14161c", dashed: false, w: 4 },
+        { id: "lane_9", room: "arena", kind: "lane", a: [544, 1100], b: [614, 1176], colour: "#14161c", dashed: false, w: 4 },
         { id: "debris_9", room: "arena", kind: "debris", at: [700, 900], radius: 28, n: 6 },
-        { id: "debris_10", room: "arena", kind: "debris", at: [600, 1100], radius: 32, n: 7 },
+        { id: "debris_10", room: "arena", kind: "debris", at: [600, 1150], radius: 32, n: 7 },
         { id: "debris_11", room: "arena", kind: "debris", at: [720, 1120], radius: 28, n: 6 },
         { id: "debris_12", room: "arena", kind: "debris", at: [920, 1000], radius: 28, n: 5 },
-        { id: "beam_1", room: "arena", kind: "beam", a: [711.2, 770.8], b: [737.6, 788.4] },
-        { id: "ooze_drip_1", room: "arena", kind: "ooze_drip", a: [742.4, 791.6], b: [768.8, 809.2], colour: "#a64dff" },
-        { id: "moss_3", room: "arena", kind: "moss", a: [770, 810], b: [790, 810] },   // (the north rock either side of the sewer culvert's alcove, as built: a tile of it west of the alcove, then its slant east of it from (42.5, 40.5) to (46.5, 39.5) before the arena's shift)
-        { id: "vein_2", room: "arena", kind: "vein", a: [772, 810], b: [790, 810], colour: "#ff6a4a" },
-        { id: "scoreboard_1", room: "arena", kind: "scoreboard", a: [850, 810], b: [890, 810], z: 12 },   // (east of the sewer culvert's alcove: the three tiles of north rock the arena keeps there, as built from (42.5, 40.5) to (45.5, 40.5) before the arena's shift; the rest of that slant is the Catwalk Spur's back since build 2026-11-12v, so the scoreboard, its bulbs and lamp moved off it)
-        { id: "bulbs_1", room: "arena", kind: "bulbs", a: [850, 810], b: [890, 810] },
-        { id: "plate_2", room: "arena", kind: "plate", a: [1002.0, 1188.4], b: [974.0, 1182.8], outside: true },
-        { id: "hazard_sign_8", room: "arena", kind: "hazard_sign", a: [970.0, 1182.0], b: [958.0, 1179.6], outside: true },
-        { id: "lamp_4", room: "arena", kind: "lamp", a: [950.0, 1178.0], b: [938.0, 1175.6], outside: true, h: 1 },
-        { id: "bulbs_2", room: "arena", kind: "bulbs", a: [934.0, 1174.8], b: [820.0, 1152.0], outside: true },
-        { id: "graffiti_2", room: "arena", kind: "graffiti", a: [900.0, 1168.0], b: [854.0, 1158.8], outside: true, colour: "#6dff5a" },
-        { id: "vein_3", room: "arena", kind: "vein", a: [1010.0, 1190.0], b: [950.0, 1178.0], outside: true, colour: "#a64dff" },
-        { id: "crack_3", room: "arena", kind: "crack", a: [930.0, 1174.0], b: [910.0, 1170.0], outside: true },
-        { id: "claw_2", room: "arena", kind: "claw", a: [846.0, 1157.2], b: [820.0, 1152.0], outside: true },
-        { id: "ladder_1", room: "arena", kind: "ladder", a: [797.2, 1148.4], b: [781.2, 1146.4], outside: true },
-        { id: "beam_3", room: "arena", kind: "beam", a: [770.0, 1145.0], b: [726.8, 1139.6], outside: true },
-        { id: "moss_4", room: "arena", kind: "moss", a: [720.4, 1138.8], b: [682.0, 1134.0], outside: true },
-        { id: "chain_3", room: "arena", kind: "chain", a: [675.6, 1133.2], b: [653.2, 1130.4], outside: true },
-        { id: "banner_4", room: "arena", kind: "banner", a: [650.0, 1130.0], b: [606.0, 1130.0], outside: true, colour: "#8a1f2a" },
-        { id: "vein_4", room: "arena", kind: "vein", a: [606.0, 1130.0], b: [570.0, 1130.0], outside: true, colour: "#6adfff" },
-        { id: "plate_3", room: "arena", kind: "plate", a: [568.0, 1133.0], b: [554.0, 1154.0], outside: true },
-        { id: "ooze_drip_2", room: "arena", kind: "ooze_drip", a: [552.0, 1157.0], b: [538.0, 1178.0], outside: true, colour: "#6dff5a" },
-        { id: "lamp_5", room: "arena", kind: "lamp", a: [536.0, 1181.0], b: [530.8, 1188.8], outside: true },
-        { id: "claw_3", room: "arena", kind: "claw", a: [526.0, 1191.0], b: [506.0, 1196.0], outside: true },
-        { id: "crack_4", room: "arena", kind: "crack", a: [503.6, 1196.6], b: [486.0, 1201.0], outside: true },
-        { id: "moss_5", room: "arena", kind: "moss", a: [482.0, 1202.0], b: [466.0, 1206.0], outside: true },
-        { id: "hazard_sign_9", room: "arena", kind: "hazard_sign", a: [462.8, 1206.8], b: [452.4, 1209.4], outside: true },
-        { id: "beam_4", room: "arena", kind: "beam", a: [447.0, 1209.0], b: [420.0, 1200.0], outside: true },
-        { id: "chain_4", room: "arena", kind: "chain", a: [414.0, 1198.0], b: [394.8, 1191.6], outside: true },
-        { id: "ladder_2", room: "arena", kind: "ladder", a: [386.0, 1188.0], b: [374.0, 1182.0], outside: true },
-        { id: "vein_5", room: "arena", kind: "vein", a: [370.0, 1180.0], b: [352.0, 1171.0], outside: true, colour: "#ff6a4a" },
+        { id: "beam_1", room: "arena", kind: "beam", a: [690, 790], b: [712, 790] },
+        { id: "ooze_drip_1", room: "arena", kind: "ooze_drip", a: [716, 790], b: [740, 790], colour: "#a64dff" },
+        { id: "moss_3", room: "arena", kind: "moss", a: [750, 790], b: [770, 790] },   // (the north rock west of the sewer culvert's alcove; until build 2026-11-16e a tile of it there, then a slant east of the alcove)
+        { id: "vein_2", room: "arena", kind: "vein", a: [752, 790], b: [770, 790], colour: "#ff6a4a" },
+        { id: "scoreboard_1", room: "arena", kind: "scoreboard", a: [850, 790], b: [890, 790], z: 12 },   // (east of the sewer culvert's alcove: the three tiles of north rock the arena keeps there, up to the Catwalk Spur's back; the scoreboard, its bulbs and lamp moved here off the spur's back in build 2026-11-12v; the wall straight since build 2026-11-16e)
+        { id: "bulbs_1", room: "arena", kind: "bulbs", a: [850, 790], b: [890, 790] },
+        { id: "plate_2", room: "arena", kind: "plate", a: [995, 1190], b: [974, 1190], outside: true },
+        { id: "hazard_sign_8", room: "arena", kind: "hazard_sign", a: [970, 1190], b: [958, 1190], outside: true },
+        { id: "lamp_4", room: "arena", kind: "lamp", a: [950, 1190], b: [938, 1190], outside: true, h: 1 },
+        { id: "bulbs_2", room: "arena", kind: "bulbs", a: [934, 1190], b: [820, 1190], outside: true },
+        { id: "graffiti_2", room: "arena", kind: "graffiti", a: [900, 1190], b: [854, 1190], outside: true, colour: "#6dff5a" },
+        { id: "vein_3", room: "arena", kind: "vein", a: [995, 1190], b: [950, 1190], outside: true, colour: "#a64dff" },
+        { id: "crack_3", room: "arena", kind: "crack", a: [930, 1190], b: [910, 1190], outside: true },
+        { id: "claw_2", room: "arena", kind: "claw", a: [846, 1190], b: [820, 1190], outside: true },
+        { id: "ladder_1", room: "arena", kind: "ladder", a: [800, 1190], b: [780, 1190], outside: true },
+        { id: "beam_3", room: "arena", kind: "beam", a: [770, 1190], b: [726.8, 1190], outside: true },
+        { id: "moss_4", room: "arena", kind: "moss", a: [720.4, 1190], b: [682, 1190], outside: true },
+        { id: "chain_3", room: "arena", kind: "chain", a: [675.6, 1190], b: [653.2, 1190], outside: true },
+        { id: "banner_4", room: "arena", kind: "banner", a: [650, 1190], b: [606, 1190], outside: true, colour: "#8a1f2a" },
+        { id: "vein_4", room: "arena", kind: "vein", a: [606, 1190], b: [570, 1190], outside: true, colour: "#6adfff" },
+        { id: "plate_3", room: "arena", kind: "plate", a: [568, 1190], b: [554, 1190], outside: true },
+        { id: "ooze_drip_2", room: "arena", kind: "ooze_drip", a: [552, 1190], b: [538, 1190], outside: true, colour: "#6dff5a" },
+        { id: "lamp_5", room: "arena", kind: "lamp", a: [540, 1190], b: [520, 1190], outside: true },
+        { id: "claw_3", room: "arena", kind: "claw", a: [526, 1190], b: [506, 1190], outside: true },
+        { id: "crack_4", room: "arena", kind: "crack", a: [503.6, 1190], b: [486, 1190], outside: true },
+        { id: "moss_5", room: "arena", kind: "moss", a: [482, 1190], b: [466, 1190], outside: true },
+        { id: "hazard_sign_9", room: "arena", kind: "hazard_sign", a: [462.8, 1190], b: [452.4, 1190], outside: true },
+        { id: "beam_4", room: "arena", kind: "beam", a: [447, 1190], b: [420, 1190], outside: true },
+        { id: "chain_4", room: "arena", kind: "chain", a: [414, 1190], b: [394.8, 1190], outside: true },
+        { id: "ladder_2", room: "arena", kind: "ladder", a: [386, 1190], b: [374, 1190], outside: true },
+        { id: "vein_5", room: "arena", kind: "vein", a: [370, 1190], b: [352, 1190], outside: true, colour: "#ff6a4a" },
         { id: "light_35", room: "arena", kind: "light", at: [650, 856], radius: 84, colour: "#ffe9a0", a: 0.2, flicker: true },
         { id: "light_36", room: "arena", kind: "light", at: [850, 836], radius: 100, colour: "#ff4a3a", a: 0.16 },
         { id: "debris_14", room: "arena", kind: "debris", at: [730, 836], radius: 26, n: 6 },
         { id: "debris_15", room: "arena", kind: "debris", at: [860, 826], radius: 28, n: 6 },
-        { id: "puddle_11", room: "arena", kind: "puddle", at: [600, 1104], radius: 16, colour: "#6dff5a" },
+        { id: "puddle_11", room: "arena", kind: "puddle", at: [600, 1154], radius: 16, colour: "#6dff5a" },
         { id: "puddle_12", room: "arena", kind: "puddle", at: [740, 1100], radius: 16, colour: "#a64dff" },
         { id: "puddle_13", room: "arena", kind: "puddle", at: [900, 1116], radius: 16, colour: "#6adfff" },
         { id: "debris_17", room: "arena", kind: "debris", at: [860, 1116], radius: 28, n: 6 },
-        { id: "debris_18", room: "arena", kind: "debris", at: [540, 1110], radius: 24, n: 5 },
+        { id: "debris_18", room: "arena", kind: "debris", at: [540, 1160], radius: 24, n: 5 },
         { id: "lane_10", room: "catwalks", kind: "lane", a: [1044, 840], b: [1044, 1180], colour: "#ffd21a", dashed: false, w: 2 },
         { id: "lane_11", room: "catwalks", kind: "lane", a: [1076, 840], b: [1076, 1180], colour: "#ffd21a", dashed: true, w: 2 },
         { id: "arrows_6", room: "catwalks", kind: "arrows", a: [1060, 860], b: [1060, 1160], colour: "#ffd21a" },
@@ -1061,7 +1066,7 @@ const FACILITY_MAP = {
         // ── the way down to the Sewers: the culvert in the arena's north rock (portal_door, `culvert`: an arched concrete mouth, its grating raised, a SEWER plate over it), and the tanks' RUNOFF: a small overflow
         //    grate where each tank's pipe goes into the floor (the north tank's fat manifold, the south tank's small line with its valve), the violet runoff glowing under the bars and seen running down a sight glass in
         //    the pipe (decor `overflow_grate`: `at` the grate, `pipe` the pipe's foot, `glass` the sight glass's [bottom, top, half-width] in px). Subtle: no words on the floor.
-        { id: "arena_sewer_door", room: "arena", kind: "portal_door", a: [780, 788], b: [840, 788], colour: "#c08aff", culvert: true },
+        { id: "arena_sewer_door", room: "arena", kind: "portal_door", a: [780, 760], b: [840, 760], colour: "#c08aff", culvert: true },
         { id: "overflow_grate_1", room: "arena", kind: "overflow_grate", at: [835, 962], pipe: [835, 954], glass: [22, 34, 7], note: "Under the north tank's fat manifold, where it goes into the floor." },
         { id: "overflow_grate_2", room: "arena", kind: "overflow_grate", at: [902, 1076], pipe: [894, 1075], glass: [13, 26, 5], note: "Under the south tank's small line, past its valve." },
         // ── THE SEWERS: the culvert up to the arena (the inside of the arena's), the OUTFALL where the runoff pours into the head of the river, the bridge's grating and the broken bridge's two stumps, the collapsed
@@ -1272,7 +1277,7 @@ const FACILITY_MAP = {
     // A window marked `divider` is a thin wall that is NOT glass: drawn solid, full height, with no thick top (THE LOUNGE's south side, build 2026-11-13a; the owner: "It's a full wall, but it's only on the south side").
     windows: [
         { id: "lounge_divider_south", a: [750, 640], b: [430, 640], rooms: ["lounge", "lab_hallway"], divider: true },   // (the old lab's south glass, lab_window_south, until build 2026-11-13a)
-        { id: "deck_window_arena", a: [340, 760], b: [340, 950], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
+        { id: "deck_window_arena", a: [340, 780], b: [340, 950], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
         { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room", "lab_hallway"] },   // the hallway side only (its north part is the security room's wall). Glass for BOTH rooms' pieces, as the lab's windows are: the hallway's own piece of this edge was an opaque wall standing in front of the glass (and its thick top ran over the show room's floor)
         { id: "lab_window_west_lower", a: [430, 605], b: [430, 640], rooms: ["lounge", "lab_hallway"] },
     ],

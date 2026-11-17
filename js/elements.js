@@ -299,8 +299,8 @@ const ELEMENT_ATTACKS = {
                                 applyDamage(a, dmg, caster, "toxic", false, false, DMG_HIT_SPECIAL);
                                 a.toxicWeakened = 240; // 4s: reduces attack power
                                 a.smokeDebuff = Math.max(a.smokeDebuff||0, 180); // 3s: reduces accuracy
-                                const _tpx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
-                                const _tpy=(a.x-player.visualX+(a.y-player.visualY))*TILE_H+canvas.height/2;
+                                const _tpx=isoSX(a.x, a.y)+canvas.width/2;
+                                const _tpy=isoSY(a.x, a.y)+canvas.height/2;
                                 floatingTexts.push({x:_tpx,y:_tpy-35,text:"WEAKENED",color:"#88ff44",life:55,vy:-0.65});
                             }
                         }
@@ -374,8 +374,8 @@ const ULT_VOLCANIC_ERUPTION = {
             frames: 0, maxFrames: 138,
             crackDirs
         };
-        const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-        const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+        const _px=isoSX(actor.x, actor.y)+canvas.width/2;
+        const _py=isoSY(actor.x, actor.y)+canvas.height/2;
         floatingTexts.push({x:_px,y:_py-80,text:"VOLCANIC ERUPTION",color:"#ff4400",life:138,vy:-0.45});
     }
 };
@@ -911,8 +911,8 @@ function updateElementEffects() {
             spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:38, maxLife:38, radius:6.5, element:"fire"});
             spawnElementEffect({type:"fireShockwave", x:tx,y:ty, life:55, maxLife:55, radius:10.0, element:"fire"});
             spawnElementEffect({type:"flameCrater",   x:tx,y:ty, radius:3.0, color:"#ff4400", life:FX_CRATER_FRAMES, maxLife:FX_CRATER_FRAMES, element:"fire", tickDamage:dmg*0.06});
-            const _tpx=(tx-player.visualX-(ty-player.visualY))*TILE_W+canvas.width/2;
-            const _tpy=(tx-player.visualX+(ty-player.visualY))*TILE_H+canvas.height/2;
+            const _tpx=isoSX(tx, ty)+canvas.width/2;
+            const _tpy=isoSY(tx, ty)+canvas.height/2;
             floatingTexts.push({x:_tpx,y:_tpy-60,text:"ERUPTION!",color:"#ff2200",life:65,vy:-0.9});
         }
     }
@@ -1117,8 +1117,8 @@ function drawElementEffects() {
         const afe = activeFireEruption;
         const { frames, maxFrames, tx, ty } = afe;
         // World → screen for target
-        const tpx = (tx - player.visualX - (ty - player.visualY)) * TILE_W + canvas.width  / 2;
-        const tpy = (tx - player.visualX + (ty - player.visualY)) * TILE_H + canvas.height / 2;
+        const tpx = isoSX(tx, ty) + canvas.width  / 2;
+        const tpy = isoSY(tx, ty) + canvas.height / 2;
 
         // ── PHASE CONSTANTS ──────────────────────────────────
         const chargeEnd  = 50;   // 0–50  : ground charge
@@ -1170,8 +1170,8 @@ function drawElementEffects() {
             ctx.lineWidth = 1.8; ctx.shadowBlur = 0;
             afe.crackDirs.forEach(c => {
                 // World-space direction → iso screen offset
-                const cDX = (Math.cos(c.a) - Math.sin(c.a)) * TILE_W;
-                const cDY = (Math.cos(c.a) + Math.sin(c.a)) * TILE_H;
+                const cDX = isoDX(Math.cos(c.a), Math.sin(c.a));
+                const cDY = isoDY(Math.cos(c.a), Math.sin(c.a));
                 const len  = crackProg * maxCrackR;
                 ctx.globalAlpha  = crackProg * fadeOut * 0.75;
                 ctx.strokeStyle  = "#ff5500";
@@ -1320,8 +1320,8 @@ function drawElementEffects() {
                     const ewx    = tx + Math.cos(worldA) * spd * cyT * 3.8;
                     const ewy    = ty + Math.sin(worldA) * spd * cyT * 3.8;
                     const eScrZ  = Math.sin(cyT * Math.PI) * (50 + spd * 70);  // screen-px height
-                    const epx2   = (ewx - player.visualX - (ewy - player.visualY)) * TILE_W + canvas.width  / 2;
-                    const epy2   = (ewx - player.visualX + (ewy - player.visualY)) * TILE_H + canvas.height / 2;
+                    const epx2   = isoSX(ewx, ewy) + canvas.width  / 2;
+                    const epy2   = isoSY(ewx, ewy) + canvas.height / 2;
                     const eSize  = 1.8 + ((seed2 >> 9) & 3) * 0.6;
                     const eBr    = 60 + ((seed2 >> 13) & 3) * 9;
                     ctx.globalAlpha = (1 - cyT) * 0.88 * growT;
@@ -1339,8 +1339,8 @@ function drawElementEffects() {
     }
 
     elementEffects.forEach(e => {
-        const px = (e.x - player.visualX - (e.y - player.visualY)) * TILE_W + canvas.width/2;
-        const py = (e.x - player.visualX + (e.y - player.visualY)) * TILE_H + canvas.height/2;
+        const px = isoSX(e.x, e.y) + canvas.width/2;
+        const py = isoSY(e.x, e.y) + canvas.height/2;
         const alpha = Math.min(1, e.life / 20);
 
         ctx.save();
@@ -1401,7 +1401,7 @@ function drawElementEffects() {
                 const M = ULT_METEOR, age = e.maxLife - e.life, rock3 = typeof fx3dOn === "function" && fx3dOn("meteorrock") && fx3dReady("meteorrock");
                 ctx.globalAlpha = 1;
                 for (const r of e.rocks) {
-                    const t = age - (r.at - M.fall), rx = (r.x - player.visualX - (r.y - player.visualY)) * TILE_W + canvas.width / 2, ry = (r.x - player.visualX + (r.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+                    const t = age - (r.at - M.fall), rx = isoSX(r.x, r.y) + canvas.width / 2, ry = isoSY(r.x, r.y) + canvas.height / 2 + TILE_H;
                     if (t < -M.warn || t > M.fall + 110) continue;
                     if (t < M.fall) { const w = Math.min(1, (t + M.warn) / (M.warn + M.fall)), rr = 30 * r.s;   // (the mark)
                         ctx.globalAlpha = 0.25 + 0.3 * w; ctx.fillStyle = "#ff3a12"; ctx.beginPath(); ctx.ellipse(rx, ry, rr * w, rr * 0.5 * w, 0, 0, Math.PI * 2); ctx.fill();
@@ -1505,7 +1505,7 @@ function drawElementEffects() {
             case "thicket": break;   // (PINK THICKET's bushes and aura lie on the floor too: drawThicketOnTile)
             // CONTAMINATION NETWORK (FORM_ULTIMATES): glowing toxic strands between its pods, a pulse running along them
             case "toxicnet": {
-                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), cy0 = py + TILE_H, S = (x, y) => [px + ((x - e.x) - (y - e.y)) * TILE_W, cy0 + ((x - e.x) + (y - e.y)) * TILE_H];
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), cy0 = py + TILE_H, S = (x, y) => [px + isoDX(x - e.x, y - e.y), cy0 + isoDY(x - e.x, y - e.y)];
                 for (const s of e.segs) {
                     const a = S(s[0][0], s[0][1]), b = S(s[1][0], s[1][1]);
                     ctx.globalAlpha = 0.35 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
@@ -1540,7 +1540,7 @@ function drawElementEffects() {
                 ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
                 // (with the modelled black spike its spikes stand among everything else instead: rotSpikeDrawItems, below; here, the drawn ones)
-                if (b > 0 && !(typeof fx3dOn === "function" && fx3dOn("rotspike") && fx3dReady("rotspike"))) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
+                if (b > 0 && !(typeof fx3dOn === "function" && fx3dOn("rotspike") && fx3dReady("rotspike"))) for (const s of e.shards) _fxRotSpikes(px + isoDX(s[0] - e.x, s[1] - e.y), cy0 + isoDY(s[0] - e.x, s[1] - e.y), 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
                 break;
             }
             // CRYSTAL SPIKE TRIO (a card attack: cardAttackTry): the same cluster, larger, under the enemy it struck: it rises fast and fades
@@ -1551,7 +1551,7 @@ function drawElementEffects() {
             }
             // SEARED CHARGE (a card attack: cardAttackTry): a streak of fire from where the Quillstone set off to where it struck, and a burst there
             case "searedcharge": {
-                const k = e.life / e.maxLife, cy0 = py + TILE_H, ax = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, ay = cy0 + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H;
+                const k = e.life / e.maxLife, cy0 = py + TILE_H, ax = px + isoDX(e.x0 - e.x, e.y0 - e.y), ay = cy0 + isoDY(e.x0 - e.x, e.y0 - e.y);
                 ctx.lineCap = "round"; ctx.globalAlpha = 0.45 * k; ctx.strokeStyle = "#ff4a12"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke();
                 ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#ffd27a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke(); ctx.lineCap = "butt";
                 ctx.globalAlpha = k; ctx.fillStyle = "#ffb04a"; ctx.beginPath(); ctx.arc(px, cy0 - 10, 6 + 14 * (1 - k), 0, Math.PI * 2); ctx.fill();
@@ -1579,7 +1579,7 @@ function drawElementEffects() {
                 for (const r of e.rings) {
                     const t = (age - r.at) / 24; if (t < 0 || t > 1) continue;
                     const rad = 0.6 + t * (W.len - 0.6), ox = r.x - e.x, oy = r.y - e.y, pts = [];
-                    for (let i = 0; i <= 12; i++) { const th = an - 0.87 + i * 0.145, wx = ox + Math.cos(th) * rad, wy = oy + Math.sin(th) * rad; pts.push([px + (wx - wy) * TILE_W, py + TILE_H + (wx + wy) * TILE_H]); }
+                    for (let i = 0; i <= 12; i++) { const th = an - 0.87 + i * 0.145, wx = ox + Math.cos(th) * rad, wy = oy + Math.sin(th) * rad; pts.push([px + isoDX(wx, wy), py + TILE_H + isoDY(wx, wy)]); }
                     for (const [w, c, al] of [[7, "#33e6c4", 0.55], [2.5, "#e9fffb", 0.95]]) { ctx.globalAlpha = al * (1 - t); ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
                 }
                 break;
@@ -1587,7 +1587,7 @@ function drawElementEffects() {
             // DRIFT SLASH (FORM_ULTIMATES.hovershell): a curved sword trail along the last stretch of its oval, thin and faint at its tail, bright at the Hover Shell
             case "hoverdrift": {
                 if (!e.path || e.i < 2) break;
-                const n0 = Math.max(0, e.i - 12), pts = e.path.slice(n0, e.i).map(q => { const fx = q[0] - e.x, fy = q[1] - e.y; return [px + (fx - fy) * TILE_W, py + TILE_H * 0.4 + (fx + fy) * TILE_H]; });
+                const n0 = Math.max(0, e.i - 12), pts = e.path.slice(n0, e.i).map(q => { const fx = q[0] - e.x, fy = q[1] - e.y; return [px + isoDX(fx, fy), py + TILE_H * 0.4 + isoDY(fx, fy)]; });
                 for (let k = 1; k < pts.length; k++) { const t = k / (pts.length - 1 || 1);
                     for (const [w, c, al] of [[10 * t + 2, "#ffee33", 0.35 * t], [3 * t + 1, "#ffffff", 0.9 * t]]) { ctx.globalAlpha = al; ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke(); } }
                 break;
@@ -1615,7 +1615,7 @@ function drawElementEffects() {
                 ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#fff27a"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.75 * k; ctx.fillStyle = "#1c1f2b"; for (let i = 0; i < 5; i++) { const ox = (i - 2) * 16 + Math.sin(frame * 0.03 + i) * 3; ctx.beginPath(); ctx.ellipse(px + ox, top + (i % 2) * 5, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.boltAt;
-                if (e.bolt && since < 10) { const bx = px + ((e.bolt[0] - e.x) - (e.bolt[1] - e.y)) * TILE_W, by = cy + ((e.bolt[0] - e.x) + (e.bolt[1] - e.y)) * TILE_H - 10; ctx.globalAlpha = (1 - since / 10) * k; ctx.strokeStyle = "#fffbd0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, top + 8); for (let s = 1; s < 6; s++) { const u = s / 6; ctx.lineTo(px + (bx - px) * u + ((s * 37) % 11 - 5) * 2, top + 8 + (by - top - 8) * u); } ctx.lineTo(bx, by); ctx.stroke(); }
+                if (e.bolt && since < 10) { const bx = px + isoDX(e.bolt[0] - e.x, e.bolt[1] - e.y), by = cy + isoDY(e.bolt[0] - e.x, e.bolt[1] - e.y) - 10; ctx.globalAlpha = (1 - since / 10) * k; ctx.strokeStyle = "#fffbd0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, top + 8); for (let s = 1; s < 6; s++) { const u = s / 6; ctx.lineTo(px + (bx - px) * u + ((s * 37) % 11 - 5) * 2, top + 8 + (by - top - 8) * u); } ctx.lineTo(bx, by); ctx.stroke(); }
                 break;
             }
             // EVENT HORIZON (FORM_ULTIMATES.voidstar): a black disc ringed in violet light, a swirl of light being drawn into it
@@ -1652,7 +1652,7 @@ function drawElementEffects() {
             // ...broken: its black shards scattered on the floor, still in the green haze, fading
             // The Rotshard's ROTTEN DECOY (js/evolution.js rottenDecoy): the black crystal that broke free of it, flying in an arc to where the decoy is set, turning as it goes; flat shapes
             case "decoylob": {
-                const u = Math.min(1, (e.maxLife - e.life) / e.maxLife), tx = px, ty = py + TILE_H * 0.5, sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H - 20;
+                const u = Math.min(1, (e.maxLife - e.life) / e.maxLife), tx = px, ty = py + TILE_H * 0.5, sx0 = px + isoDX(e.x0 - e.x, e.y0 - e.y), sy0 = py + isoDY(e.x0 - e.x, e.y0 - e.y) - 20;
                 const x = sx0 + (tx - sx0) * u, y = sy0 + (ty - sy0) * u - Math.sin(Math.PI * u) * 34, an = u * 9, c = Math.cos(an), sn = Math.sin(an), P = [[0, -12], [4, -2], [3, 9], [-3, 9], [-4, -2]].map(q => [x + q[0] * c - q[1] * sn * 0.5, y + q[0] * sn + q[1] * c * 0.8]);
                 ctx.save(); ctx.globalAlpha = 0.3 * (1 - u); ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.arc(x - (tx - sx0) * 0.05, y + 6, 5, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 1; ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); ctx.fill();
@@ -1664,7 +1664,7 @@ function drawElementEffects() {
             // falling off it; when the dash is over the streak thins and goes.
             case "emberdash": {
                 const age = e.maxLife - e.life, u = Math.min(1, age / EMBER_DASH), fade = age <= EMBER_DASH ? 1 : Math.max(0, e.life / 14);
-                const sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H, hx = sx0 + (px - sx0) * u, hy = sy0 + (py - sy0) * u, cy = -34;
+                const sx0 = px + isoDX(e.x0 - e.x, e.y0 - e.y), sy0 = py + isoDY(e.x0 - e.x, e.y0 - e.y), hx = sx0 + (px - sx0) * u, hy = sy0 + (py - sy0) * u, cy = -34;
                 const L = Math.hypot(hx - sx0, hy - sy0) || 1, nx = -(hy - sy0) / L, ny = (hx - sx0) / L, w = 13 * fade;
                 ctx.save(); ctx.globalAlpha = 0.85 * fade;
                 ctx.fillStyle = "#ff7a2a"; ctx.beginPath(); ctx.moveTo(sx0, sy0 + cy); ctx.lineTo(hx + nx * w, hy + cy + ny * w); ctx.lineTo(hx - nx * w, hy + cy - ny * w); ctx.closePath(); ctx.fill();
@@ -1675,7 +1675,7 @@ function drawElementEffects() {
             // RIFT IMPALE (riftImpale): where it stood, its shape breaks into strips that slide apart and thin away (it glitches out); RIFT_OUT frames on, under the enemy (e.x, e.y), strips slide together and a
             // crystal spike drives up through it, then sinks. Violet, flat.
             case "riftglitch": {
-                const age = e.maxLife - e.life, sx0 = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, sy0 = py + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H;
+                const age = e.maxLife - e.life, sx0 = px + isoDX(e.x0 - e.x, e.y0 - e.y), sy0 = py + isoDY(e.x0 - e.x, e.y0 - e.y);
                 const strips = (cx, cy, k, a) => { ctx.globalAlpha = a; for (let i = 0; i < 9; i++) { const yy = cy - 62 + i * 7, off = ((i * 37 + age * 13) % 23 - 11) * k, wd = (20 - Math.abs(i - 4) * 2.5) * (1 - 0.6 * k); ctx.fillStyle = i % 3 === 0 ? "#e0a8ff" : i % 3 === 1 ? "#9933ff" : "#5a1fa8"; ctx.fillRect(cx - wd / 2 + off, yy, wd, 5 - 3 * k); } };
                 ctx.save();
                 if (age < RIFT_OUT) strips(sx0, sy0, age / RIFT_OUT, 1 - 0.5 * age / RIFT_OUT);
@@ -1690,7 +1690,7 @@ function drawElementEffects() {
             case "bladeroll": {
                 const age = e.maxLife - e.life, cy = py - 16, r = 15, an = age * 0.55, bx = ((e.ux || 0) - (e.uy || 0)), by = ((e.ux || 0) + (e.uy || 0)) * 0.5, bl = Math.hypot(bx, by) || 1;
                 if (typeof fx3dOn === "function" && fx3dOn("slugball") && fx3dReady("slugball")) {   // (the 3-D rendered ball, js/fx3d.js: one spike's worth of its turn, 12 columns, looped by how far it has rolled on the screen)
-                    const sdx = ((e.x - e.x0) - (e.y - e.y0)) * TILE_W, sdy = ((e.x - e.x0) + (e.y - e.y0)) * TILE_H, turn = Math.hypot(sdx, sdy) / 14.1, step = 2 * Math.PI / 9;
+                    const sdx = isoDX(e.x - e.x0, e.y - e.y0), sdy = isoDY(e.x - e.x0, e.y - e.y0), turn = Math.hypot(sdx, sdy) / 14.1, step = 2 * Math.PI / 9;
                     ctx.save(); ctx.globalAlpha = 0.35; ctx.fillStyle = "#0b1a18"; ctx.beginPath(); ctx.ellipse(px, py + 2, 20, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
                     fx3dDrawAnim(ctx, "slugball", px, py, Math.floor((turn % step) / step * 12), bx < 0); ctx.restore(); break; }
                 ctx.save();
@@ -1804,7 +1804,7 @@ function drawElementEffects() {
                 for (let pass = 0; pass < 2; pass++) {
                     ctx.globalAlpha = k * (pass ? 0.85 : 0.3 + 0.12 * Math.sin(frame * 0.25)); ctx.strokeStyle = pass ? "#ffb04a" : "#ff3a0a"; ctx.lineWidth = pass ? 2 : 8;
                     ctx.beginPath();
-                    for (let i = 0; i < P.length; i++) { const tx = (P[i].x - player.visualX - (P[i].y - player.visualY)) * TILE_W + W, ty = (P[i].x - player.visualX + (P[i].y - player.visualY)) * TILE_H + H + TILE_H; if (i) ctx.lineTo(tx, ty); else ctx.moveTo(tx, ty); }
+                    for (let i = 0; i < P.length; i++) { const tx = isoSX(P[i].x, P[i].y) + W, ty = isoSY(P[i].x, P[i].y) + H + TILE_H; if (i) ctx.lineTo(tx, ty); else ctx.moveTo(tx, ty); }
                     ctx.stroke();
                 }
                 if (e.reached > 0) {   // (the stretch it has passed)
@@ -1812,7 +1812,7 @@ function drawElementEffects() {
                     for (let i = 0; i < P.length; i++) {
                         let qx = P[i].x, qy = P[i].y;
                         if (C[i] > e.reached) { const a = P[i - 1], sg = (C[i] - C[i - 1]) || 1e-9, t = (e.reached - C[i - 1]) / sg; qx = a.x + (P[i].x - a.x) * t; qy = a.y + (P[i].y - a.y) * t; }
-                        const tx = (qx - player.visualX - (qy - player.visualY)) * TILE_W + W, ty = (qx - player.visualX + (qy - player.visualY)) * TILE_H + H + TILE_H;
+                        const tx = isoSX(qx, qy) + W, ty = isoSY(qx, qy) + H + TILE_H;
                         if (i) ctx.lineTo(tx, ty); else ctx.moveTo(tx, ty);
                         if (C[i] > e.reached) break;
                     }
@@ -1839,9 +1839,9 @@ function drawElementEffects() {
                     ctx.globalAlpha = (pass ? 1 : 0.4) * k; ctx.strokeStyle = pass ? "#ffffff" : (e.color || "#ffee33"); ctx.lineWidth = pass ? 1.6 : 4;
                     ctx.beginPath();
                     for (let i = 0; i < P.length; i++) {
-                        const bx = (P[i].x - player.visualX - (P[i].y - player.visualY)) * TILE_W + W, by = (P[i].x - player.visualX + (P[i].y - player.visualY)) * TILE_H + H + TILE_H - 26;
+                        const bx = isoSX(P[i].x, P[i].y) + W, by = isoSY(P[i].x, P[i].y) + H + TILE_H - 26;
                         if (!i) { ctx.moveTo(bx, by); continue; }
-                        const ax = (P[i - 1].x - player.visualX - (P[i - 1].y - player.visualY)) * TILE_W + W, ay = (P[i - 1].x - player.visualX + (P[i - 1].y - player.visualY)) * TILE_H + H + TILE_H - 26;
+                        const ax = isoSX(P[i - 1].x, P[i - 1].y) + W, ay = isoSY(P[i - 1].x, P[i - 1].y) + H + TILE_H - 26;
                         for (let s = 1; s < 5; s++) { const q = s / 5, jg = 7 * Math.sin(frame * 1.3 + i * 2.1 + s * 1.7); ctx.lineTo(ax + (bx - ax) * q + jg, ay + (by - ay) * q - jg * 0.6); }
                         ctx.lineTo(bx, by);
                     }
@@ -1890,7 +1890,7 @@ function drawSeedfallOnTile(tx, ty, px, py) {
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const sd = { x: 0, y: 0, ph: 0 };
         const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), age = e.maxLife - e.life, rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H;
-        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];   // (a ground point, from this tile)
+        const at = (x, y) => [px + isoDX(x - tx, y - ty), py + TILE_H + isoDY(x - tx, y - ty)];   // (a ground point, from this tile)
         const [cx, cy] = at(e.x, e.y);
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
@@ -1927,7 +1927,7 @@ function drawBudsOnTile(tx, ty, px, py) {
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const age = e.maxLife - e.life, wilt = Math.min(1, e.life / 40), sd = { x: 0, y: 0 };
-        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];   // (a ground point, from this tile)
+        const at = (x, y) => [px + isoDX(x - tx, y - ty), py + TILE_H + isoDY(x - tx, y - ty)];   // (a ground point, from this tile)
         const [cx, cy] = at(e.x, e.y);
         ctx.save(); ctx.lineCap = "round";
         for (let i = 0; i < 9; i++) {
@@ -2032,7 +2032,7 @@ function drawThicketOnTile(tx, ty, px, py) {
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const age = e.maxLife - e.life, grow = Math.min(1, age / 24, e.life / 30), pulse = e.healAt != null ? Math.max(0, 1 - (f0 - e.healAt) / 20) : 0;
-        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H], [cx, cy] = at(e.x, e.y), rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H;
+        const at = (x, y) => [px + isoDX(x - tx, y - ty), py + TILE_H + isoDY(x - tx, y - ty)], [cx, cy] = at(e.x, e.y), rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H;
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         ctx.globalAlpha = (0.16 + 0.2 * pulse) * grow; ctx.fillStyle = "#ff7ab8"; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();   // (the healing aura)
@@ -2074,7 +2074,7 @@ function drawMeteorOnTile(tx, ty, px, py) {
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;
         if (!open) { open = true; ctx.save(); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip(); }
-        const cx = px + ((r.x - tx) - (r.y - ty)) * TILE_W, cy = py + TILE_H + ((r.x - tx) + (r.y - ty)) * TILE_H, a = Math.max(0, Math.min(1, (ULT_METEOR.mark - it.s) / 50)), z = 1.1 * r.s;
+        const cx = px + isoDX(r.x - tx, r.y - ty), cy = py + TILE_H + isoDY(r.x - tx, r.y - ty), a = Math.max(0, Math.min(1, (ULT_METEOR.mark - it.s) / 50)), z = 1.1 * r.s;
         ctx.globalAlpha = a;
         if (three) { ctx.save(); ctx.translate(cx, cy); ctx.scale(z, z); fx3dDrawAnim(ctx, "meteorcrater", 0, 0, Math.min(11, Math.floor(it.s / (METEOR_COOL / 12))), false); ctx.restore(); continue; }
         const rr = 26 * r.s, hot = it.s < 40;
@@ -2118,7 +2118,7 @@ function drawHexfireOnTile(tx, ty, px, py) {
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const S = e._hx || (e._hx = _hxShape(e)), age = e.maxLife - e.life, open = Math.min(1, age / 14), eo = 1 - Math.pow(1 - open, 2), fade = Math.min(1, e.life / 24), cool = 1 - fade, heat = 1 - cool * 0.85;
-        const rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H, at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];
+        const rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H, at = (x, y) => [px + isoDX(x - tx, y - ty), py + TILE_H + isoDY(x - tx, y - ty)];
         const [cx, cy] = at(e.x, e.y), P = (u, v, k) => [cx + u * (k == null ? eo : k) * rx, cy + v * (k == null ? eo : k) * ry], drop = ry * 0.1 * eo;   // (a point of it, grown out from the middle as it opens; drop: how far below the rim the floor lies)
         const poly = (pts, fill, a) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.closePath(); ctx.fill(); };
         const line = (pts, col, lw, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); };

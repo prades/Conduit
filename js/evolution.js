@@ -1581,7 +1581,7 @@ function drawEvoGroundOnTile(tx, ty, px, py, g) {
         if (Math.abs(f.x - tx - 0.5) > 1.4 || Math.abs(f.y - ty - 0.5) > 1.4) continue;
         const d = evolvedDef(f), img = d && _evoGroundImg(d); if (!img || !_evoImg(d)) continue;
         const fr = _evoFrame(f, d, f0), C = d.cell, s = fr.s;
-        const fx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width / 2, fy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height / 2;
+        const fx = isoSX(f.x, f.y) + canvas.width / 2, fy = isoSY(f.x, f.y) + canvas.height / 2;
         g.save();
         g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + 2 * TILE_H); g.lineTo(px - TILE_W, py + TILE_H); g.closePath(); g.clip();
         g.globalAlpha *= fr.rise;
@@ -1615,8 +1615,8 @@ function drawEvolvedOverlay(f, px, py, g) {
     }
     // the Reaver's arc, from its reactor along the targets it hit
     if (f._arcUntil > f0 && f._arcPts && f._arcPts.length && typeof player !== "undefined") {
-        const scr = p => [(p.x - player.visualX - (p.y - player.visualY)) * TILE_W + canvas.width / 2,
-                          (p.x - player.visualX + (p.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - 26];
+        const scr = p => [isoSX(p.x, p.y) + canvas.width / 2,
+                          isoSY(p.x, p.y) + canvas.height / 2 + TILE_H - 26];
         const s = EVO_SCALE; let [x0, y0] = [px + (d.core[0] - d.anchor[0]) * s, py + (d.core[1] - d.anchor[1]) * s];
         const al = (f._arcUntil - f0) / 20;
         g.lineCap = "round"; g.lineJoin = "round";

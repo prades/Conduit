@@ -39,15 +39,15 @@
         teleport_room_1: [[165, 500], [350, 500], [350, 550], [290, 550], [290, 760], [165, 760]],
         teleport_stair_room: [[870, 620], [945, 620], [945, 760], [870, 760]],   // one row shorter, so its west wall ends where the hallway's does (no stub of wall beside the steps)
         lab_passage: [[310, 565], [410, 565], [410, 605], [310, 605]],
-        lab_hallway: [[370, 410], [950, 410], [950, 600], [870, 600], [870, 760], [680, 760], [680, 740], [580, 740], [580, 760], [310, 760], [310, 630], [430, 630], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]],
+        lab_hallway: [[370, 410], [950, 410], [950, 600], [870, 600], [870, 760], [310, 760], [310, 630], [430, 630], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]],   // (its south side straight since build 2026-11-16e: the arena's Cold Storage alcove is cut into a wall two tiles thick, so the hallway gives up no tile behind it)
         // THE WALL BETWEEN THE WAREHOUSE AND TELEPORT ROOM 2 IS GONE, and the hole at the hallway's corner by the warehouse's glass is plugged (the owner, 2026-11-10: "simply remove one wall that is near the
         // teleporter room and the warehouse", "just plugging that hole that I circled", and of the picture: "This looks correct"; the HOLE of 2026-11-09). Teleport Room 2 takes that wall's band: its floor
         // runs north to the warehouse's edge, one row deeper, so its west wall (the stair room's band) runs up to the glass's corner and closes the gap that was left between the walls there. The line between
         // the warehouse and Teleport Room 2 is the warehouse floor's edge (`open`: nothing drawn) and Teleport Room 2's raised deck's (`deck_rail`: a fascia, posts and two rails, as the catwalks' edge).
         // Still solid: nobody walks or shoots across it (build 2026-11-09uu).
-        teleport_room_2: [[965, 600], [1110, 600], [1110, 810], [965, 810]],
+        teleport_room_2: [[965, 600], [1110, 600], [1110, 760], [965, 760]],   // (two rows shorter since build 2026-11-16e, its south wall in line with the hallway's and the stair room's: the owner, 2026-11-16, "less nooks"; "I don't even have use for the teleporter room number two")
         show_room: [[950, 275], [1110, 275], [1110, 600], [965, 600], [950, 600]],   // (its south edge in two: the part on Teleport Room 2, open, and the tile at its west end, the wall of the band beyond)
-        // (the notch in its south side, x 580 to 680: the arena's Cold Storage alcove takes the band of wall below it, so the hallway gives up that tile and a wall of full thickness stands between the two)
+        // (the notch that was in its south side, x 580 to 680, for the arena's Cold Storage alcove: gone in build 2026-11-16e, the alcove in a wall two tiles thick)
     };
     const edgeKinds = (room) => room.edge_kinds;
 

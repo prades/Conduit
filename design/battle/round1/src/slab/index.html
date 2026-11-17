@@ -1,0 +1,247 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Slab Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@1,700;1,900&family=JetBrains+Mono:wght@700;800&display=block" rel="stylesheet">
+<style>
+:root{
+  --core:#33e6c4; --ice:#8fe3ff; --bloom:#ff7ab8; --ant:#b06bff; --red:#ff4a1c; --gold:#ffcc44; --teal:#19e6c1;
+  --mono:"JetBrains Mono",ui-monospace,monospace; --head:"Barlow Condensed",sans-serif;
+  --cut:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#05080f;color:#fff;font-family:var(--head)}
+.bgfill{position:absolute;inset:0;background:url(bg.png) center/cover;filter:blur(18px) brightness(.5);transform:scale(1.1)}
+.stage{position:absolute;left:0;top:0;width:100%;height:100%}
+.stage > img.bg{position:absolute;inset:0;width:100%;height:100%}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to top,rgba(4,7,16,.86) 0,rgba(4,7,16,.4) 24%,rgba(4,7,16,0) 38%),radial-gradient(60% 40% at 92% 0%,rgba(4,7,16,.6),rgba(4,7,16,0))}
+.anch{position:absolute;transform:translate(-50%,0);z-index:3}
+
+/* slab primitives */
+.slab{clip-path:var(--cut)}
+.edge{position:relative;padding:2px;background:var(--c);clip-path:var(--cut)}
+.glow{filter:drop-shadow(0 0 7px var(--c)) drop-shadow(0 3px 0 rgba(0,0,0,.45))}
+
+/* ---------- turn banner ---------- */
+.turn{position:absolute;left:16px;top:12px;z-index:5;--c:var(--teal)}
+.turn .edge{--cut:polygon(22px 0,100% 0,calc(100% - 14px) 100%,0 100%,0 22px)}
+.turn .in{display:flex;align-items:center;gap:14px;padding:8px 30px 9px 18px;background:linear-gradient(100deg,#0f1730,#05070f);clip-path:polygon(22px 0,100% 0,calc(100% - 14px) 100%,0 100%,0 22px)}
+.turn .t{font:900 italic 34px/1 var(--head);letter-spacing:.03em;color:var(--teal);text-shadow:0 0 14px rgba(25,230,193,.8)}
+.turn .s{display:flex;flex-direction:column;gap:3px;font:800 12px/1 var(--mono);letter-spacing:.08em;color:#b8c6e2}
+.turn .s b{color:#fff}
+.order{display:flex;gap:4px;margin-top:6px;margin-left:8px;align-items:center}
+.order span{font:900 italic 13px/1 var(--head);letter-spacing:.06em;padding:4px 10px 4px;background:rgba(7,11,22,.86);color:#8fa0c4;clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+.order span.now{background:var(--teal);color:#04201b}
+.order span.e{color:#d9c2ff}
+.order i{font:800 11px/1 var(--mono);color:#5d6c90;font-style:normal}
+
+/* ---------- enemy cards (top right) ---------- */
+.foes{position:absolute;right:14px;top:12px;display:flex;gap:9px;z-index:5}
+.foe{--c:var(--ant);width:112px}
+.foe .edge{--cut:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.foe .in{display:flex;flex-direction:column;height:172px;background:linear-gradient(170deg,#141a36,#05070f);clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.foe .art{position:relative;height:66px;background:radial-gradient(70% 80% at 50% 70%,rgba(176,107,255,.45),rgba(176,107,255,0)) ,#0b0f22;overflow:hidden}
+.foe .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 62% 66% at 50% 52%,#000 45%,transparent 100%)}
+.foe .ord{position:absolute;left:0;top:0;width:26px;height:24px;display:grid;place-items:center;background:var(--ant);color:#12051f;font:900 italic 17px/1 var(--head);clip-path:polygon(12px 0,100% 0,calc(100% - 5px) 100%,0 100%,0 12px)}
+.foe .nm{padding:4px 7px 0;font:900 italic 15px/1 var(--head);letter-spacing:.03em}
+.foe .hp{display:flex;justify-content:space-between;padding:3px 7px 0;font:800 10px/1 var(--mono);color:#b8c6e2}
+.foe .bar{margin:3px 7px 0;height:7px;background:#221a38;clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+.foe .bar i{display:block;height:100%;background:linear-gradient(90deg,#8a4dff,#c79bff)}
+.foe .int{margin-top:auto;padding:5px 7px 13px;background:linear-gradient(to bottom,rgba(255,74,28,.55),rgba(255,74,28,.28));border-top:1px solid rgba(255,190,170,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.foe .int .m{font:900 italic 14px/1 var(--head);letter-spacing:.04em;color:#fff;white-space:nowrap}
+.foe .int .w{display:flex;justify-content:space-between;align-items:center;margin-top:3px;font:800 10px/1 var(--mono);color:#ffe0d6;white-space:nowrap}
+.foe .int .w b{display:inline-grid;place-items:center;min-width:20px;height:18px;border-radius:50%;background:#000;border:2px solid var(--gold);color:var(--gold);font:800 10px/1 var(--mono)}
+
+/* intent marks over the ants in the scene */
+.mark{display:flex;align-items:center;gap:5px;padding:3px 8px 3px 4px;background:rgba(7,11,22,.88);border:2px solid var(--red);clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);font:900 italic 14px/1 var(--head);letter-spacing:.04em;white-space:nowrap}
+.mark .o{display:grid;place-items:center;width:18px;height:18px;background:var(--ant);color:#12051f;font-size:13px;clip-path:polygon(6px 0,100% 0,calc(100% - 4px) 100%,0 100%,0 6px)}
+.mark b{color:var(--gold);font-family:var(--mono);font-style:normal;font-size:12px}
+
+/* squad plates in the scene */
+.plate{width:132px;--cut:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.plate .in{padding:4px 8px 6px;background:linear-gradient(170deg,#0f1730,#05070f);clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.plate .nm{display:flex;justify-content:space-between;align-items:baseline;font:900 italic 15px/1 var(--head);letter-spacing:.03em;color:var(--c)}
+.plate .nm b{font:800 10px/1 var(--mono);color:#dfe8f5}
+.plate .bar{position:relative;margin-top:4px;height:7px;background:#1b2338;clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+.plate .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--c)}
+.plate .inc{position:absolute;right:-6px;top:-12px;padding:2px 6px;background:var(--red);color:#fff;font:900 italic 12px/1 var(--head);letter-spacing:.04em;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%);z-index:2}
+
+/* ---------- the hand of slab cards ---------- */
+.hand{position:absolute;left:14px;right:14px;bottom:12px;display:flex;gap:10px;align-items:flex-end;z-index:5}
+.card{flex:1 1 0;min-width:0}
+.card .edge{--cut:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}
+.card .in{position:relative;display:flex;flex-direction:column;height:196px;background:radial-gradient(90% 55% at 50% 22%,color-mix(in srgb,var(--c) 40%,transparent),transparent 70%),linear-gradient(170deg,#0f1730,#05070f);clip-path:var(--cut);overflow:hidden}
+.card .in::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-62deg,rgba(255,255,255,.035) 0 2px,transparent 2px 14px);pointer-events:none}
+.card .art{position:relative;height:84px;overflow:hidden}
+.card .art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;-webkit-mask-image:radial-gradient(ellipse 60% 62% at 50% 55%,#000 40%,transparent 100%);opacity:.95}
+.card .who{position:absolute;left:0;top:0;z-index:2;padding:4px 12px 4px 18px;background:var(--c);color:#07101c;font:800 10px/1 var(--mono);letter-spacing:.06em;clip-path:polygon(0 0,100% 0,calc(100% - 7px) 100%,0 100%)}
+.card .el{position:absolute;right:6px;top:4px;font:800 9px/1 var(--mono);letter-spacing:.1em;color:var(--c)}
+.card .fx{padding:5px 9px 0;font:700 10.5px/1.3 var(--mono);color:#c6d2ea;min-height:42px}
+.card .bot{margin-top:auto;position:relative;padding:10px 9px 13px;background:linear-gradient(to bottom,color-mix(in srgb,var(--c) 42%,transparent),color-mix(in srgb,var(--c) 16%,rgba(5,7,15,.6)));border-top:1px solid color-mix(in srgb,var(--c) 70%,#fff);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.card .bot::before{content:"";position:absolute;left:0;right:0;top:0;height:45%;background:linear-gradient(to bottom,rgba(255,255,255,.22),rgba(255,255,255,0))}
+.card .mv{position:relative;white-space:nowrap;font:900 italic 18px/.95 var(--head);letter-spacing:.03em;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.6),0 0 10px color-mix(in srgb,var(--c) 80%,transparent)}
+.card .dmg{position:absolute;right:7px;top:-15px;display:grid;place-items:center;min-width:28px;height:28px;padding:0 4px;border-radius:14px;background:#000;border:2px solid var(--gold);color:var(--gold);font:800 11px/1 var(--mono);z-index:2}
+.card .rdy{position:absolute;left:9px;top:-10px;padding:3px 8px;background:var(--c);color:#07101c;font:900 italic 11px/1 var(--head);letter-spacing:.12em;clip-path:polygon(5px 0,100% 0,calc(100% - 5px) 100%,0 100%);z-index:2}
+.card.basic{--c:#dfe8f5}
+.card.basic .art{display:grid;place-items:center}
+.card.basic .art svg{width:70px;height:70px}
+/* recharging: darker, a turn ring */
+.card.wait .edge{background:color-mix(in srgb,var(--c) 30%,#1a2238)}
+.card.wait .glow{filter:drop-shadow(0 3px 0 rgba(0,0,0,.45))}
+.card.wait .in{background:linear-gradient(170deg,#0b1024,#04060c)}
+.card.wait .art img{filter:grayscale(1) brightness(.35)}
+.card.wait .who{background:color-mix(in srgb,var(--c) 30%,#1a2238);color:var(--c)}
+.card.wait .fx{color:#5d6a88}
+.card.wait .bot{background:linear-gradient(to bottom,rgba(60,72,104,.5),rgba(20,26,44,.6));border-top-color:#465476}
+.card.wait .mv{color:#8591ae;text-shadow:none}
+.card.wait .dmg{border-color:#4a5677;color:#6d7998}
+.ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:70px;height:70px}
+.ring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 italic 30px/.9 var(--head);color:#fff}
+.ring .n small{font:800 9px/1 var(--mono);letter-spacing:.1em;color:#b8c6e2;margin-top:2px}
+.card.ult .edge{background:linear-gradient(160deg,#ffcc44,#7a6220 50%,#ffcc44)}
+.card.ult .ultb{position:absolute;right:0;top:0;padding:4px 7px 4px 12px;background:var(--gold);color:#2a1d00;font:900 italic 11px/1 var(--head);letter-spacing:.1em;clip-path:polygon(7px 0,100% 0,100% 100%,0 100%)}
+.card.ult .el{display:none}
+
+/* ---------- pick frame ---------- */
+.dim,.reticle,.prompt,.cando{display:none}
+body.pick .dim{display:block;position:absolute;inset:0;z-index:2}
+body.pick .plate,body.pick .anch.mk{opacity:.35}
+body.pick .hand .card:not(.picked){filter:brightness(.42) saturate(.5)}
+body.pick .card.picked{transform:translateY(-20px)}
+body.pick .card.picked .edge{background:#fff}
+body.pick .card.picked .glow{filter:drop-shadow(0 0 14px var(--c)) drop-shadow(0 0 4px #fff)}
+body.pick .foe:not(.lit){opacity:.55}
+body.pick .foe.lit{transform:translateY(4px) scale(1.06)}
+body.pick .foe.lit .edge{background:#fff}
+body.pick .foe.lit .glow{filter:drop-shadow(0 0 12px #fff)}
+body.pick .reticle{display:block;position:absolute;transform:translate(-50%,-50%);z-index:3}
+body.pick .prompt{display:flex;position:absolute;left:50%;transform:translateX(-50%);bottom:236px;z-index:6;gap:8px}
+.prompt .p{padding:8px 18px;background:#fff;color:#07101c;font:900 italic 21px/1 var(--head);letter-spacing:.05em;clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%)}
+.prompt .p em{font-style:normal;color:#0d8f78}
+.prompt .x{padding:8px 16px;background:rgba(7,11,22,.92);color:#fff;font:900 italic 18px/1 var(--head);letter-spacing:.08em;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);border:0;box-shadow:inset 0 0 0 2px #fff}
+.preview{position:absolute;transform:translate(-50%,0);z-index:4;padding:4px 12px;background:var(--gold);color:#2a1d00;font:900 italic 20px/1 var(--head);letter-spacing:.04em;clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);display:none;white-space:nowrap}
+body.pick .preview{display:block}
+body.pick .turn .t{color:#fff;text-shadow:0 0 14px rgba(255,255,255,.6)}
+
+/* ---------- upright iPad ---------- */
+body.port .stage{top:210px;height:auto;aspect-ratio:2360/1640;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 7%,#000 90%,transparent 100%)}
+body.port .foes{top:14px}
+body.port .turn{top:14px}
+body.port .turn .in{flex-direction:column;align-items:flex-start;gap:6px;padding:12px 26px 12px 18px}
+body.port .order{flex-wrap:wrap;width:340px}
+body.port .hand{flex-wrap:wrap;gap:12px 10px}
+body.port .card{flex:0 0 calc(25% - 7.5px)}
+body.port .card .in{height:206px}
+body.port .card .art{height:100px}
+body.port .card .art img{object-fit:contain}
+body.port .prompt{bottom:476px}
+</style></head>
+<body>
+<div class="bgfill"></div>
+
+<div class="stage">
+  <img class="bg" src="bg.png" alt="">
+  <div class="dim" id="dim"></div>
+
+  <!-- squad plates -->
+  <div class="anch" data-x="86" data-y="314"><div class="plate glow" style="--c:var(--core)"><div class="edge"><div class="in"><div class="nm">JELLY RAM <b>47/63</b></div><div class="bar"><i style="width:75%"></i></div></div></div></div></div>
+  <div class="anch" data-x="528" data-y="98"><div class="plate glow" style="--c:var(--ice)"><div class="edge"><div class="in"><div class="nm">RIMESTAR <b>39/63</b></div><div class="bar"><i style="width:62%"></i></div></div></div></div></div>
+  <div class="anch" data-x="240" data-y="488"><div class="plate glow" style="--c:var(--bloom)"><div class="edge"><div class="in"><div class="nm">STONEPETAL <b>58/63</b></div><div class="bar"><i style="width:92%"></i></div></div></div></div></div>
+  <div class="anch" data-x="505" data-y="436"><div class="plate glow" style="--c:#dfe8f5"><div class="edge"><div class="in"><div class="nm">CUBE <b>82/100</b></div><div class="bar"><i style="width:82%"></i></div></div></div></div></div>
+
+  <!-- intent marks over the ants -->
+  <div class="anch mk" data-x="770" data-y="196"><div class="mark"><span class="o">1</span>BITE → STONEPETAL <b>8</b></div></div>
+  <div class="anch mk" data-x="742" data-y="322"><div class="mark"><span class="o">2</span>MANDIBLE FRENZY → JELLY RAM <b>6</b></div></div>
+  <div class="anch mk" data-x="1040" data-y="336"><div class="mark"><span class="o">3</span>BITE → CUBE <b>3</b></div></div>
+
+  <!-- pick frame -->
+  <svg class="reticle" data-x="752" data-y="402" width="240" height="120" viewBox="0 0 240 120"><ellipse cx="120" cy="60" rx="112" ry="50" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="26 10" style="filter:drop-shadow(0 0 6px #fff)"/><path d="M120 2v18M120 100v18M2 60h22M216 60h22" stroke="#fff" stroke-width="4"/></svg>
+  <div class="preview" data-x="752" data-y="456">TENTACLE LASH −7 · 24/60 LEFT</div>
+</div>
+
+<!-- whose turn -->
+<div class="turn">
+  <div class="glow" style="--c:var(--teal)"><div class="edge" style="clip-path:polygon(22px 0,100% 0,calc(100% - 14px) 100%,0 100%,0 22px)"><div class="in">
+    <span class="t" id="tt">YOUR TURN</span>
+    <span class="s"><span>TURN <b>3</b> · ROUND <b>2</b></span><span id="ts">PICK ONE CARD</span></span>
+  </div></div></div>
+  <div class="order"><span class="now">YOU</span><i>›</i><span class="e">1 SOLDIER</span><i>›</i><span class="e">2 STRIKER</span><i>›</i><span class="e">3 WORKER</span></div>
+</div>
+
+<!-- enemy cards -->
+<div class="foes">
+  <div class="foe"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-soldier.png"><span class="ord">1</span></div>
+    <div class="nm">SOLDIER ANT</div><div class="hp"><span>HP</span><span>96/140</span></div><div class="bar"><i style="width:69%"></i></div>
+    <div class="int"><div class="m">BITE</div><div class="w">→ STONEPETAL<b>8</b></div></div>
+  </div></div></div></div>
+  <div class="foe lit"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-striker.png"><span class="ord">2</span></div>
+    <div class="nm">ANT STRIKER</div><div class="hp"><span>HP</span><span>31/60</span></div><div class="bar"><i style="width:52%"></i></div>
+    <div class="int"><div class="m">MANDIBLE FRENZY</div><div class="w">→ JELLY RAM<b>6</b></div></div>
+  </div></div></div></div>
+  <div class="foe"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-worker.png"><span class="ord">3</span></div>
+    <div class="nm">ANT WORKER</div><div class="hp"><span>HP</span><span>22/40</span></div><div class="bar"><i style="width:55%"></i></div>
+    <div class="int"><div class="m">BITE</div><div class="w">→ CUBE<b>3</b></div></div>
+  </div></div></div></div>
+</div>
+
+<div class="prompt"><span class="p">TENTACLE LASH · <em>TAP AN ANT</em></span><span class="x">✕ BACK</span></div>
+
+<!-- the hand -->
+<div class="hand">
+  <div class="card basic"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><svg viewBox="0 0 64 64"><path d="M14 50 L44 20 M40 14 L50 24 M18 40 L24 46" stroke="#dfe8f5" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M50 50 L20 20 M24 14 L14 24 M46 40 L40 46" stroke="#19e6c1" stroke-width="6" stroke-linecap="round" fill="none"/></svg><span class="who">SQUAD</span></div>
+    <div class="fx">One hit on one ant. Always ready.</div>
+    <div class="bot"><span class="rdy">ALWAYS</span><span class="dmg">4</span><div class="mv">BASIC ATTACK</div></div>
+  </div></div></div></div>
+  <div class="card picked" style="--c:var(--core)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-jellyram.png"><span class="who">JELLY RAM</span></div>
+    <div class="fx">Lashes one ant. Crushing.</div>
+    <div class="bot"><span class="rdy">READY</span><span class="dmg">7</span><div class="mv">TENTACLE LASH</div></div>
+  </div></div></div></div>
+  <div class="card" style="--c:var(--core)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-jellyram.png"><span class="who">JELLY RAM</span></div>
+    <div class="fx">Every ant in reach, staggered.</div>
+    <div class="bot"><span class="rdy">READY</span><span class="dmg">5·ALL</span><div class="mv">WOBBLE SLAM</div></div>
+  </div></div></div></div>
+  <div class="card" style="--c:var(--ice)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-rimestar.png"><span class="who">RIMESTAR</span></div>
+    <div class="fx">An ice shot at one ant. Slows it.</div>
+    <div class="bot"><span class="rdy">READY</span><span class="dmg">4</span><div class="mv">SHOT</div></div>
+  </div></div></div></div>
+  <div class="card" style="--c:var(--bloom)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-stonepetal.png"><span class="who">STONEPETAL</span></div>
+    <div class="fx">One crushing hit on one ant.</div>
+    <div class="bot"><span class="rdy">READY</span><span class="dmg">6</span><div class="mv">PLAIN HIT</div></div>
+  </div></div></div></div>
+  <div class="card wait" style="--c:var(--bloom)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-stonepetal.png"><span class="who">STONEPETAL</span>
+      <div class="ring"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="rgba(5,7,15,.7)" stroke="#2b3556" stroke-width="6"/><circle cx="35" cy="35" r="30" fill="none" stroke="var(--c)" stroke-width="6" stroke-dasharray="94.2 188.5" transform="rotate(-90 35 35)"/></svg><div class="n">1<small>TURN</small></div></div></div>
+    <div class="fx">Spikes all round it; ants pushed out.</div>
+    <div class="bot"><span class="dmg">5·ALL</span><div class="mv">STAKE RING</div></div>
+  </div></div></div></div>
+  <div class="card wait" style="--c:var(--ice)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-rimestar.png"><span class="who">RIMESTAR</span>
+      <div class="ring"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="rgba(5,7,15,.7)" stroke="#2b3556" stroke-width="6"/><circle cx="35" cy="35" r="30" fill="none" stroke="var(--c)" stroke-width="6" stroke-dasharray="62.8 188.5" transform="rotate(-90 35 35)"/></svg><div class="n">2<small>TURNS</small></div></div></div>
+    <div class="fx">3 icicles at one ant; each freezes.</div>
+    <div class="bot"><span class="dmg">3×4</span><div class="mv">ICICLE VOLLEY</div></div>
+  </div></div></div></div>
+  <div class="card wait ult" style="--c:var(--ice)"><div class="glow"><div class="edge"><div class="in">
+    <div class="art"><img src="u-rimestar.png"><span class="who">RIMESTAR</span><span class="ultb">ULTIMATE</span>
+      <div class="ring"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="rgba(5,7,15,.7)" stroke="#3a3420" stroke-width="6"/><circle cx="35" cy="35" r="30" fill="none" stroke="#ffcc44" stroke-width="6" stroke-dasharray="37.7 188.5" transform="rotate(-90 35 35)"/></svg><div class="n" style="color:#ffcc44">4<small>TURNS</small></div></div></div>
+    <div class="fx">A snowstorm: ants slowed and chilled.</div>
+    <div class="bot"><div class="mv">WHITEOUT</div></div>
+  </div></div></div></div>
+</div>
+
+<script>
+const port = innerHeight > innerWidth, pick = location.hash === '#pick';
+if (port) document.body.classList.add('port');
+if (pick) { document.body.classList.add('pick'); document.getElementById('tt').textContent = 'PICK A TARGET'; document.getElementById('ts').textContent = 'JELLY RAM · TENTACLE LASH'; }
+for (const el of document.querySelectorAll('[data-x]')) { el.style.left = (el.dataset.x / 11.8) + '%'; el.style.top = (el.dataset.y / 8.2) + '%'; }
+const S = [[858, 262, 170, 90], [752, 402, 130, 70], [1040, 398, 95, 55]];
+document.getElementById('dim').innerHTML = `<svg viewBox="0 0 1180 820" preserveAspectRatio="none" style="width:100%;height:100%;display:block"><defs><filter id="f"><feGaussianBlur stdDeviation="14"/></filter><mask id="m"><rect width="1180" height="820" fill="#fff"/><g filter="url(#f)">${S.map(([x,y,rx,ry],i) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${i==1?'#000':'#666'}"/>`).join('')}</g></mask></defs><rect width="1180" height="820" fill="rgba(4,7,15,.66)" mask="url(#m)"/></svg>`;
+</script>
+</body></html>

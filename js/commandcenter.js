@@ -188,7 +188,7 @@ function drawSelectedUnitRings() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of selectedUnits) {
         if (!a || a.dead) continue;
-        const px = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + W, py = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + H + ccGroundOffset(a), rx = a.evolved ? 34 : 26, ry = a.evolved ? 15 : 12;
+        const px = isoSX(a.x, a.y) + W, py = isoSY(a.x, a.y) + H + ccGroundOffset(a), rx = a.evolved ? 34 : 26, ry = a.evolved ? 15 : 12;
         if (px < -60 || px > canvas.width + 60 || py < -60 || py > canvas.height + 60) continue;
         // (no shadowBlur: the game keeps it off the canvas for speed. A wider, fainter ring under the sharp one gives the glow.)
         ctx.lineWidth = 7; ctx.strokeStyle = "rgba(25,230,193,0.22)"; ctx.beginPath(); ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();

@@ -221,7 +221,7 @@ function mutatorFacing() {
 }
 // THE LASH, DRAWN (over the scene, js/game.js): while it draws back, a tentacle curls up behind the player, away from the creature; when it lands, a whip from the player to the creature that fades, purple on a hit,
 // grey on a miss. The player's own sheet is not changed (the brief: no redesign of an established character).
-function _mxScr(x, y) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
+function _mxScr(x, y) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
 function _mxCurve(x0, y0, cx, cy, x1, y1, t) {   // the first t of a quadratic curve, as a path
     const ax = x0 + (cx - x0) * t, ay = y0 + (cy - y0) * t, bx = cx + (x1 - cx) * t, by = cy + (y1 - cy) * t, ex = ax + (bx - ax) * t, ey = ay + (by - ay) * t;
     ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(ax, ay, ex, ey);

@@ -66,6 +66,25 @@ const FACTS = `(function () {
             if (!clear) out.faceOver.push([s.a, u, dep[i]]); else if (dep[i] < D - 1 && !blockedT(x + d + 0.03, y + d + 0.03)) out.faceShort.push([s.a, u, dep[i]]); }); });
     out.sectionOffNear = S.filter(function (s) { return [0.25, 0.75].some(function (t) { var p = [s.a[0] + (s.b[0] - s.a[0]) * t, s.a[1] + (s.b[1] - s.a[1]) * t]; return !near.some(function (w) { return onSeg(p, w.a, w.b); }); }); }).map(function (s) { return s.a; });
     out.sectionBadOuter = S.filter(function (s) { var ox = s.outer.a[0] - s.a[0], oy = s.outer.a[1] - s.a[1]; return !(Math.abs(Math.hypot(ox, oy) - C.nearT) < 1e-6 && ox + oy > 0 && Math.abs((s.outer.b[0] - s.b[0]) - ox) < 1e-9 && Math.abs((s.outer.b[1] - s.b[1]) - oy) < 1e-9 && Math.abs((s.b[0] - s.a[0]) * ox + (s.b[1] - s.a[1]) * oy) < 1e-9); }).map(function (s) { return s.a; });
+    // THE GATES: a piece a bar, cut midway between the bars, each sorted by its own far end; the lock sorted just after the pieces it lies across; for a body on every tile along a gate (half a tile
+    // wide on the screen, half a tile from the gate's line), every piece and the lock it overlaps on the screen sort before it in front of the gate and after it behind
+    out.gates = []; var GI = _fp.items.filter(function (i) { return i.fp === 'sewer' && i.what === 'gate'; }), ids = [];
+    GI.forEach(function (i) { if (ids.indexOf(i.id) < 0) ids.push(i.id); });
+    ids.forEach(function (id) {
+        var P = GI.filter(function (i) { return i.id === id && !i.lock; }).sort(function (p, q) { return p.u0 - q.u0; }), lock = GI.filter(function (i) { return i.id === id && i.lock; }), g = P[0], a = g.a, b = g.b, L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = _fpGateBars(L, !!g.boss);
+        var at = function (u) { return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; }, sx = function (p) { return p[0] - p[1]; }, dep = function (u0, u1) { var p = at(u0), q = at(u1); return Math.max(p[0] + p[1], q[0] + q[1]) + 0.03; };
+        var r = { id: id, pieces: P.length, n: n, locks: lock.length, gaps: 0, bars: 0, most: 0, depthOff: 0, lockOff: 0, wrong: [] };
+        P.forEach(function (p, i) { if (i === 0 ? p.u0 !== 0 : Math.abs(p.u0 - P[i - 1].u1) > 1e-9) r.gaps++; if (Math.abs(p.depth - dep(p.u0, p.u1)) > 1e-9) r.depthOff++; var c = 0; for (var k = 1; k < n; k++) if (p.u0 < k / n && k / n < p.u1) c++; r.most = Math.max(r.most, c); });
+        for (var k = 1; k < n; k++) if (P.filter(function (p) { return p.u0 < k / n - 1e-6 && k / n < p.u1 - 1e-6; }).length === 1) r.bars++;   // (each bar inside one piece, never on a cut)
+        if (P[P.length - 1].u1 !== 1) r.gaps++;
+        var lu = 0.25 / L, under = P.filter(function (p) { return p.u1 > 0.5 - lu && p.u0 < 0.5 + lu; }).map(function (p) { return p.depth; });
+        if (lock.length !== 1 || Math.abs(lock[0].depth - (Math.max.apply(null, under) + 0.001)) > 1e-9) r.lockOff++;
+        var nrm2 = nrm({ a: a, b: b }), parts = P.map(function (p) { return { lo: Math.min(sx(at(p.u0)), sx(at(p.u1))), hi: Math.max(sx(at(p.u0)), sx(at(p.u1))), d: p.depth, k: +p.u0.toFixed(3) }; });
+        if (lock.length) parts.push({ lo: Math.min(sx(at(0.5 - lu)), sx(at(0.5 + lu))), hi: Math.max(sx(at(0.5 - lu)), sx(at(0.5 + lu))), d: lock[0].depth, k: 'lock' });
+        for (var t = 0.5; t < L; t += 1) [1, -1].forEach(function (side) { var m = at(t / L), bx = m[0] + nrm2[0] * 0.5 * side, by = m[1] + nrm2[1] * 0.5 * side, c = bx - by, d = bx + by;
+            parts.forEach(function (q) { if (q.hi > c - 0.45 && q.lo < c + 0.45 && (side > 0 ? q.d >= d : q.d <= d)) r.wrong.push([bx, by, side > 0 ? 'front' : 'behind', q.k]); }); });
+        out.gates.push(r);
+    });
     // the north passages: their mouths from the outline, a lintel over each, the east jambs' tops
     out.mouths = _fpSewerMouths(F, 'sewers').map(function (m) { return [m.x0, m.x1, m.y]; });
     out.lintels = _fp.items.filter(function (i) { return i.fp === 'sewer' && i.what === 'lintel'; }).map(function (i) { return [i.x0, i.x1, i.y0, !!i.span, i.bb.join()]; });
@@ -158,6 +177,25 @@ window.addEventListener('load', function(){ setTimeout(function(){
       out.probeOn = pts.every(function (q) { return q[0] >= 0 && q[1] >= 0 && q[0] < canvas.width && q[1] < canvas.height; });
       return r; };
     frame++; render(); window.facilitySewerDraw = sd; out.probe = paints;
+    // THE GATES (the owner, 2026-11-15: "Fix the gate"): the wide gate was one item sorted by its east end, so the player in front of its west part was drawn behind its bars. A body's pixels: the
+    // gate's pieces drawn before it and after it that paint them. In front, all before; behind (a follower on Side Quest's platform), all after
+    const dp = window.drawPlayer, dn = window.drawNPC, body = function (who, x, y) {
+      if (who === player) { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; }
+      else { who.x = who.visualX = x; who.y = who.visualY = y; who.fpPath = null; player.x = player.targetX = player.visualX = x + 1; player.y = player.targetY = player.visualY = y + 2.5; player.fpPath = null; }
+      for (let i = 0; i < 30; i++) { frame++; render(); }
+      let box = null, drawn = false; const res = { before: 0, after: 0, ids: [] };
+      const mark = function (o) { const T = G.getTransform(); box = []; for (let dx = -9; dx <= 9; dx += 6) for (let dy = -36; dy <= -6; dy += 6) { const d = T.transformPoint(new DOMPoint(o.x + dx, o.y + dy)); box.push([Math.round(d.x), Math.round(d.y)]); } };
+      window.drawPlayer = function (o) { if (who === player) { if (!box) mark(o); drawn = true; } return dp.apply(this, arguments); };
+      window.drawNPC = function (a, px, py) { if (a === who) { if (!box) mark({ x: px, y: py }); drawn = true; } return dn.apply(this, arguments); };
+      const pin = function () { if (who !== player) { who.x = who.visualX = x; who.y = who.visualY = y; who.fpPath = null; } };   // (a follower's own step pulls it back towards the squad's places: held where it is put)
+      pin(); frame++; render(); drawn = false;   // (the first frame finds where the body is on the screen)
+      const read = function () { return box.map(function (q) { return Array.from(G.getImageData(q[0], q[1], 1, 1).data).join(); }); };
+      window.facilitySewerDraw = function (it) { if (it.what !== 'gate' || !box) return sd(it); const b0 = read(), r = sd(it), b1 = read(); if (b0.some(function (v, i) { return v !== b1[i]; })) { res[drawn ? 'after' : 'before']++; if (res.ids.indexOf(it.id) < 0) res.ids.push(it.id); } return r; };
+      pin(); frame++; render(); window.drawPlayer = dp; window.drawNPC = dn; window.facilitySewerDraw = sd; res.seen = !!box; res.at = who === player ? [player.x, player.y] : [who.x, who.y]; return res;
+    };
+    out.gateFront = body(player, -32, 108);
+    const fol = (typeof followers !== 'undefined' && followers || []).filter(function (f) { return !f.dead; })[0];
+    out.gateBehind = fol ? body(fol, -31, 107) : null;
   } catch (err) { out.err = String(err && err.stack || err); }
   out.errs = window.__errs.slice(0, 3);
   var pre = document.createElement('pre'); pre.id = '__sl'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -222,6 +260,14 @@ function realPage() {
         same(JSON.stringify(X.lintels), JSON.stringify(X.mouths.map(m => [m[0], m[1], m[2], true, [m[0], m[2] - 1, m[1], m[2] + 1].join()])), 'the lintels');
         for (const j of X.jambs) same(j[1], j[2], 'the jamb at x ' + j[0] + ': its length drawn as a top');
     });
+    check('the gates (2026-11-15, "Fix the gate"): ' + X.gates.map(g => g.id + ' in ' + g.pieces + ' pieces').join(', ') + ', two bars a piece (a post with the bars beside it at each end), cut between the bars, each sorted by its own far end; the lock just after the pieces under it; on every tile along them a body in front sorts after every piece it overlaps, a body behind before', () => {
+        same(X.gates.length, 2, 'gates');
+        for (const g of X.gates) {
+            same(g.gaps, 0, g.id + ': gaps or overlaps between pieces'); same(g.bars, g.n - 1, g.id + ': bars each inside one piece, none on a cut'); ok(g.most <= 2 && g.pieces >= g.n / 2, g.id + ': ' + g.pieces + ' pieces for ' + g.n + ' bars, at most ' + g.most + ' bars a piece');
+            same(g.depthOff, 0, g.id + ': pieces not sorted by their own far end'); same(g.locks, 1, g.id + ': locks'); same(g.lockOff, 0, g.id + ': the lock not just after the pieces under it');
+            same(g.wrong.length, 0, g.id + ': bodies sorted the wrong side of a piece (x, y, where, piece): ' + JSON.stringify(g.wrong.slice(0, 3)));
+        }
+    });
     check('a lamp every few tiles on the far walls (' + X.lamps + '), none off a far wall or within 0.9 of a door, a light or a brood hole of the map\'s (' + X.busy + ')', () => {
         ok(X.lamps >= 5, 'lamps: ' + X.lamps);
         same(X.lampOffFar.length, 0, 'lamps off a far wall, at ' + JSON.stringify(X.lampOffFar.slice(0, 4)));
@@ -275,6 +321,12 @@ function realPage() {
                 ok(real.probe && real.probeOn, 'the probe points are not on the screen: ' + JSON.stringify(real.probe));
                 ok(real.probe.water > 0, 'the water did not paint the probe points (the probe is not over the river)');
                 same(real.probe.section, 0, 'sections painted over the river there, at ' + JSON.stringify(real.probe.at));
+            });
+            check('the gate (2026-11-15, "Fix the gate"): the player in front of the wide gate\'s west part is drawn over its bars (' + JSON.stringify(real.gateFront) + '); a follower behind it, on Side Quest\'s platform, under them (' + JSON.stringify(real.gateBehind) + ')', () => {
+                ok(real.gateFront && real.gateFront.before > 0, 'the gate is not behind the player there (the probe is not over the gate): ' + JSON.stringify(real.gateFront));
+                same(real.gateFront.after, 0, 'gate pieces drawn over the player in front of the gate');
+                ok(real.gateBehind && real.gateBehind.after > 0, 'the gate is not over the follower behind it: ' + JSON.stringify(real.gateBehind));
+                same(real.gateBehind.before, 0, 'gate pieces drawn under the follower behind the gate');
             });
             check('at the north bank a lintel and a section are on the screen; lamps somewhere', () => {
                 const nb = real.spots.filter(s => s.name === 'north bank'); ok(nb.length && nb.every(s => s.drawn.lintel > 0 && s.drawn.section > 0), 'the north bank: ' + JSON.stringify(nb.map(s => s.drawn)));

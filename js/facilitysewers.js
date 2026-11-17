@@ -69,7 +69,20 @@ function facilitySewerItems(F) {
     for (const s of F.solids) if (s.kind === "gate" || s.kind === "boss_gate") {   // a gate: on the long middle line of its thin outline
         const xs = s.poly.map(q => q[0]), ys = s.poly.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), alongX = x1 - x0 >= y1 - y0;
         const a = alongX ? [x0, (y0 + y1) / 2] : [(x0 + x1) / 2, y0], b = alongX ? [x1, (y0 + y1) / 2] : [(x0 + x1) / 2, y1];
-        items.push({ type: "fp", fp: "sewer", what: "gate", room: s.room, base: base(s.room), x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, a, b, boss: s.kind === "boss_gate", id: s.id, depth: Math.max(a[0] + a[1], b[0] + b[1]) + 0.03, seed: _fpHash(Math.round(a[0] * 3), Math.round(a[1] * 3)) });
+        // IN PIECES (build 2026-11-15j; the owner: "Fix the gate"): one item for the whole gate was sorted by its far end, so anyone standing in front of the rest of it was drawn behind its bars. Cut
+        // between the bars, two bars a piece (0.4 of a tile: what stands in front of a piece, half a tile from the gate at least, sorts after it, and the gate costs a frame what it did), each piece
+        // sorted by its own far end as the walls' pieces are. The chain and padlock (and a boss gate's plate) are an item of their own, sorted just after the pieces they lie across.
+        const boss = s.kind === "boss_gate", L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = _fpGateBars(L, boss), at = u => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+        const common = { type: "fp", fp: "sewer", what: "gate", room: s.room, base: base(s.room), a, b, boss, id: s.id, seed: _fpHash(Math.round(a[0] * 3), Math.round(a[1] * 3)) }, lu = 0.25 / Math.max(L, 0.01);   // (lu: the lock reaches a quarter of a tile either side of the middle)
+        let lockDepth = -Infinity; const cuts = [0]; for (let k = 1; k + 1 < n; k += 2) cuts.push((k + 0.5) / n);   // (two bars a piece, cut between bars 1 and 2, 3 and 4...; the posts go with the bars beside them)
+        const lockCut = (Math.ceil((0.5 + lu) * n - 0.5) + 0.5) / n; if (lockCut < 1 && !cuts.some(c => Math.abs(c - lockCut) < 1e-9)) cuts.push(lockCut);   // (and one just past the lock's east edge: the pieces under it end there, so it sorts with them, before what stands in front)
+        cuts.sort((p, q) => p - q); cuts.push(1);
+        for (let j = 0; j + 1 < cuts.length; j++) {
+            const u0 = cuts[j], u1 = cuts[j + 1], p = at(u0), q = at(u1), depth = Math.max(p[0] + p[1], q[0] + q[1]) + 0.03;
+            items.push(Object.assign({ x: (p[0] + q[0]) / 2, y: (p[1] + q[1]) / 2, u0, u1, depth }, common));
+            if (u1 > 0.5 - lu && u0 < 0.5 + lu) lockDepth = Math.max(lockDepth, depth);
+        }
+        const m = at(0.5); items.push(Object.assign({ x: m[0], y: m[1], lock: true, depth: lockDepth + 0.001 }, common));
     }
     if (typeof _fpSewerRefitItems === "function") for (const it of _fpSewerRefitItems(F)) items.push(it);   // THE TUNNEL'S REFIT: its near walls cut clean, the lintels over the north passages, its lamps (below)
     return items;
@@ -100,8 +113,8 @@ function _fpWaterPoly(s, wet) {
 }
 // is a long item on the screen (its whole box, not its middle)
 function _fpSpanVisible(it) {
-    const b = it.bb, cx = player.visualX, cy = player.visualY, sx0 = (b[0] - b[3] - (cx - cy)) * TILE_W + canvas.width / 2, sx1 = (b[2] - b[1] - (cx - cy)) * TILE_W + canvas.width / 2;
-    const sy0 = (b[0] + b[1] - (cx + cy)) * TILE_H + canvas.height / 2 - 200, sy1 = (b[2] + b[3] - (cx + cy)) * TILE_H + canvas.height / 2 + 200;
+    const b = it.bb, cs = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]], xs = cs.map(c => isoSX(c[0], c[1])), ys = cs.map(c => isoSY(c[0], c[1]));   // (its box's four corners, through the view's turn: js/config.js)
+    const sx0 = Math.min(...xs) + canvas.width / 2, sx1 = Math.max(...xs) + canvas.width / 2, sy0 = Math.min(...ys) + canvas.height / 2 - 200, sy1 = Math.max(...ys) + canvas.height / 2 + 200;
     return sx1 > -120 && sx0 < canvas.width + 120 && sy1 > -120 && sy0 < canvas.height + 120;
 }
 function facilitySewerDraw(it) {
@@ -220,22 +233,32 @@ function _fpSewerStump(it, f) {
     const sp = P(r[2], ye, drop - 2), ph = (f * 0.03 + it.seed % 7) % 1; ctx.strokeStyle = "rgba(220,190,255," + (0.5 * (1 - ph)).toFixed(2) + ")"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(sp[0], sp[1], 6 + ph * 10, 3 + ph * 5, 0, 0, 6.2832); ctx.stroke();   // the water round it
 }
 // ── a gate: two posts, bars, three cross rails, a chain and padlock; the boss's heavier, with red lamps and a warning plate ──
+function _fpGateBars(L, boss) { return Math.max(4, Math.round(L * (boss ? 6 : 5))); }   // (the bars across a gate L tiles long: its pieces are cut midway between them, facilitySewerItems)
+const _fpSwPath2 = (pts) => { ctx.beginPath(); for (let i = 0; i < pts.length; i += 2) { ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(pts[i + 1][0], pts[i + 1][1]); } ctx.stroke(); };   // (separate lines, one stroke)
+// ONE PIECE OF A GATE (u0..u1 along it): its bars, its stretch of the rails, a post if it is an end; or (it.lock) the chain and padlock, and a boss gate's plate. The colour and shine of a piece's
+// rails begin a hair before its dark edge, so the seam with the piece drawn before it is not darkened (the gate drawn this way differs from one drawn whole by a few faint pixels at the seams).
 function _fpSewerGate(it, f) {
-    const P = _fpP, a = it.a, b = it.b, H = FP_SEWER.gateH, boss = !!it.boss, L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(4, Math.round(L * (boss ? 6 : 5)));
+    const P = _fpP, a = it.a, b = it.b, H = FP_SEWER.gateH, boss = !!it.boss, L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = _fpGateBars(L, boss);
     const open = typeof facilitySolidIsOpen === "function" && facilitySolidIsOpen(it.id), z0 = open ? H * 0.64 : 0;   // OPEN (the boss gate's seal broken, js/quests.js): the grille is raised into the arch, the chain is off, the lamps are green
     const at = (u, z) => P(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, z);
     ctx.lineCap = "butt";
+    if (it.lock) {   // a chain round the middle and a padlock (off an open gate); a boss gate's black and yellow plate with a skull
+        const c = at(0.5, H * 0.5); if (!open) { ctx.strokeStyle = "#a9b3bd"; ctx.lineWidth = 1.6; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.ellipse(c[0] + k * 4, c[1] + (k & 1 ? 2 : -2), 3, 2, 0.6, 0, 6.2832); ctx.stroke(); }
+        ctx.fillStyle = "#c8962e"; ctx.fillRect(c[0] - 4, c[1] + 3, 8, 8); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1; ctx.strokeRect(c[0] - 4, c[1] + 3, 8, 8); }
+        if (boss) { const s = at(0.5, H * 0.72); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 13, s[1] - 9, 26, 18); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1.5; ctx.strokeRect(s[0] - 13, s[1] - 9, 26, 18);
+            ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.arc(s[0], s[1] - 1, 5, 0, 6.2832); ctx.fill(); ctx.fillRect(s[0] - 3, s[1] + 2, 6, 4); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 3, s[1] - 2, 2, 2); ctx.fillRect(s[0] + 1, s[1] - 2, 2, 2); }
+        return;
+    }
+    const u0 = it.u0 === undefined ? 0 : it.u0, u1 = it.u1 === undefined ? 1 : it.u1;
     const bar = (u, z0, z1, w, col) => { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = w + 2; _fpSwLine(at(u, z0), at(u, z1)); ctx.strokeStyle = col; ctx.lineWidth = w; _fpSwLine(at(u, z0), at(u, z1)); };
-    for (let k = 1; k < n; k++) bar(k / n, z0, H - 6, boss ? 3 : 2.2, boss ? "#6b3a40" : "#56636f");
-    for (const z of (open ? [z0 + 4, H - 8] : [6, H * 0.5, H - 8])) { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = boss ? 7 : 5.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = boss ? "#8a3a44" : "#6f7d8a"; ctx.lineWidth = boss ? 5 : 3.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 1; _fpSwLine(at(0, z + 1.5), at(1, z + 1.5)); }
-    for (const u of [0, 1]) bar(u, 0, H + 4, boss ? 7 : 5, boss ? "#7a434a" : "#66737f");
-    // a chain round the middle and a padlock (off an open gate)
-    const c = at(0.5, H * 0.5); if (!open) { ctx.strokeStyle = "#a9b3bd"; ctx.lineWidth = 1.6; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.ellipse(c[0] + k * 4, c[1] + (k & 1 ? 2 : -2), 3, 2, 0.6, 0, 6.2832); ctx.stroke(); }
-    ctx.fillStyle = "#c8962e"; ctx.fillRect(c[0] - 4, c[1] + 3, 8, 8); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1; ctx.strokeRect(c[0] - 4, c[1] + 3, 8, 8); }
-    if (boss) {   // two red lamps on the posts, blinking in turn (steady green once it is open), and a black and yellow plate with a skull
-        for (const u of [0, 1]) { const q = at(u, H + 9), on = open || Math.floor(f / 24 + u) % 2 === 0, lc = open ? "#4aff7a" : "#ff3a4a"; ctx.fillStyle = on ? lc : "#5a1018"; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, 6.2832); ctx.fill(); if (on) _fpGlow(q[0], q[1], 22, lc, 0.35); }
-        const s = at(0.5, H * 0.72); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 13, s[1] - 9, 26, 18); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1.5; ctx.strokeRect(s[0] - 13, s[1] - 9, 26, 18);
-        ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.arc(s[0], s[1] - 1, 5, 0, 6.2832); ctx.fill(); ctx.fillRect(s[0] - 3, s[1] + 2, 6, 4); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 3, s[1] - 2, 2, 2); ctx.fillRect(s[0] + 1, s[1] - 2, 2, 2);
+    { const w = boss ? 3 : 2.2, ks = []; for (let k = Math.max(1, Math.ceil(u0 * n)); k < n && k / n < u1; k++) ks.push(at(k / n, z0), at(k / n, H - 6));   // its bars (one path for their dark edges, one for their colour)
+      if (ks.length) { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = w + 2; _fpSwPath2(ks); ctx.strokeStyle = boss ? "#6b3a40" : "#56636f"; ctx.lineWidth = w; _fpSwPath2(ks); } }
+    const rails = open ? [z0 + 4, H - 8] : [6, H * 0.5, H - 8], A = at(0, 0), B = at(1, 0), e = u0 > 0 ? 1.5 / (Math.hypot(B[0] - A[0], B[1] - A[1]) || 1) : 0;
+    const run = (from, dz, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); for (const z of rails) { const p = at(from, z + dz), q = at(u1, z + dz); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } ctx.stroke(); };
+    run(u0, 0, "#0e1216", boss ? 7 : 5.5); run(u0 - e, 0, boss ? "#8a3a44" : "#6f7d8a", boss ? 5 : 3.5); run(u0 - e, 1.5, "rgba(255,255,255,0.25)", 1);
+    for (const u of [0, 1]) if (u === 0 ? u0 === 0 : u1 === 1) {   // a post, and on a boss gate its red lamp, blinking in turn with the other (steady green once it is open)
+        bar(u, 0, H + 4, boss ? 7 : 5, boss ? "#7a434a" : "#66737f");
+        if (boss) { const q = at(u, H + 9), on = open || Math.floor(f / 24 + u) % 2 === 0, lc = open ? "#4aff7a" : "#ff3a4a"; ctx.fillStyle = on ? lc : "#5a1018"; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, 6.2832); ctx.fill(); if (on) _fpGlow(q[0], q[1], 22, lc, 0.35); }
     }
 }
 // ── the arena's overflow grate, one tile's share of it (cut to the tile, so the floor drawn after never covers it): a steel frame, the violet runoff glowing under the bars and turning ──

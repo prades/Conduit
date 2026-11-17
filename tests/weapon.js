@@ -43,6 +43,8 @@ function makeEnv() {
     sandbox.Predator = class Predator {};
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
+    const CFG = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8'), v0 = CFG.indexOf('let VIEW_TURN'), v1 = CFG.indexOf('\n', CFG.indexOf('function isoDepth'));   // (the screen's turn, which input.js lays its taps through: js/config.js; 0 here)
+    vm.runInContext(CFG.slice(v0, v1), ctx, { filename: 'js/config.js' });
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/damage.js'), 'utf8'), ctx, { filename: 'js/damage.js' });   // (what a shot is: DMG_HIT_GUN)
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8'), ctx, { filename: 'js/input.js' });
     return { sandbox, shots, run: s => vm.runInContext(s, ctx) };

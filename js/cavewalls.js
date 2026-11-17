@@ -81,12 +81,12 @@ function caveHoleOn() { return CAVE_HOLE_APPROVED || (_caveWallsPrev === null ? 
 // draw a rubble patch's picture: `stage` the stones shown ("9" ... "3") or "left" (what a drilled choke leaves); its atlas entry when drawn (e[7]: its seams, on the screen from the patch's start),
 // false when it has none or the sheet has not arrived (the drawn pile instead)
 function caveRubbleDraw(it, stage) {
-    if (!caveRubbleOn() || typeof CAVE_RUBBLE === "undefined") return false;
+    if (!caveRubbleOn() || typeof CAVE_RUBBLE === "undefined" || (typeof VIEW_TURN !== "undefined" && VIEW_TURN)) return false;   // (the 3D view turned: the picture is the game's one angle's, so the drawn pile, laid out through the turn, instead: js/config.js)
     return _caveRubblePic(it, stage);
 }
 // draw the hole a drilled rubble against a wall leaves: its atlas entry when drawn (e[7]: its rim, still warm, on the screen from the patch's start), false when not (the drawn hole instead)
 function caveHoleDraw(it) {
-    if (!caveHoleOn() || typeof CAVE_RUBBLE === "undefined") return false;
+    if (!caveHoleOn() || typeof CAVE_RUBBLE === "undefined" || (typeof VIEW_TURN !== "undefined" && VIEW_TURN)) return false;   // (turned: the drawn hole, as above)
     return _caveRubblePic(it, "hole");
 }
 function _caveRubblePic(it, stage) {

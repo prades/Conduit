@@ -128,7 +128,7 @@ function _wSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof c
 function facilityDrawBeams() {
     const B = typeof _fp !== "undefined" && _fp && _fp.beams; if (!B || !B.length || typeof ctx === "undefined") return;
     const f = typeof frame !== "undefined" ? frame : 0; _fp.beams = B.filter(b => f - b.t0 < WEAPON_RULES.beamFrames);
-    const W = canvas.width, H = canvas.height, sc = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + H / 2 - 40];
+    const W = canvas.width, H = canvas.height, sc = (x, y) => [isoSX(x, y) + W / 2, isoSY(x, y) + H / 2 - 40];
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
     for (const b of _fp.beams) {
         const k = 1 - (f - b.t0) / WEAPON_RULES.beamFrames, a = sc(b.x0, b.y0), z = sc(b.x1, b.y1);

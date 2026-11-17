@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
     check('every rock wall piece has its strip, and the bake was made from the walls the game has now (the signature: bake again when the walls change)', () => {
         const r = J('(function(){ const its = __rocks(); return { n: its.length, missing: its.filter(it => !CAVE_ATLAS.pieces[caveWallKey(it)]).map(caveWallKey).slice(0, 5), extra: Object.keys(CAVE_ATLAS.pieces).length - its.length, sig: caveWallsSig(), baked: CAVE_ATLAS.sig, rooms: [...new Set(its.map(i => i.room))].sort() }; })()');
-        ok(r.n > 300, 'only ' + r.n + ' rock pieces'); same(r.missing.length, 0, 'pieces with no strip (' + r.missing.join(' ') + ')'); same(r.extra, 0, 'strips for pieces the game does not have');
+        ok(r.n > 290, 'only ' + r.n + ' rock pieces');   /* (310 until build 2026-11-16e, 299 since: the arena's walls run straight, so they are shorter) */ same(r.missing.length, 0, 'pieces with no strip (' + r.missing.join(' ') + ')'); same(r.extra, 0, 'strips for pieces the game does not have');
         same(r.sig, r.baked, 'the walls changed since the bake: node design/cave/bake_walls.js <three>'); same(r.rooms.join(), 'arena,catwalk_spur,cold_storage,nest_area', 'the caves (the Catwalk Spur\'s back is the cave\'s rock since build 2026-11-12v)');
     });
     check('each cave has its sheet, its size as the atlas says, every strip inside it', () => {
@@ -95,7 +95,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
     check('the walls\' off-screen cull keeps a piece whose strip is on the screen (its box holds the strip)', () => {
         const r = J(`(function(){ let bad = 0, n = 0; for (const it of __rocks()) { const cb = caveWallBox(it); if (!cb) continue; n++; it._wb = undefined; const wb = _fpWallBounds(it); if (wb[0] > cb[0] || wb[1] > cb[1] || wb[2] < cb[2] || wb[3] < cb[3]) bad++; } return { n, bad }; })()`);
-        ok(r.n > 300, 'only ' + r.n + ' boxes'); same(r.bad, 0, 'pieces whose cull box is smaller than their strip');
+        ok(r.n > 290, 'only ' + r.n + ' boxes');   /* (a box a rock piece: 299 since build 2026-11-16e) */ same(r.bad, 0, 'pieces whose cull box is smaller than their strip');
         run('_caveWallsPrev = false; for (const r in _caveImgs) delete _caveImgs[r];');
     });
 

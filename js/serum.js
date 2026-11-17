@@ -91,7 +91,7 @@ function drawSerumOnTile(tx, ty, px, py) {
     const f = _srFrame(), R = SERUM.splash.radius;
     for (const z of serumZones) {
         if (Math.abs(z.x - tx) > R + 1 || Math.abs(z.y - ty) > R + 1) continue;
-        const life = Math.min(1, (z.until - f) / 60, (f - z.t0 + 1) / 8), zx = (z.x - player.visualX - (z.y - player.visualY)) * TILE_W + canvas.width / 2, zy = (z.x - player.visualX + (z.y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(z.x, z.y) : 0);
+        const life = Math.min(1, (z.until - f) / 60, (f - z.t0 + 1) / 8), zx = isoSX(z.x, z.y) + canvas.width / 2, zy = isoSY(z.x, z.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(z.x, z.y) : 0);
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         ctx.translate(zx, zy); ctx.scale(1, TILE_H / TILE_W);
@@ -111,7 +111,7 @@ function drawSerumOverlay() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of actors) {
         if (!a || a.dead || !(f - (a._serumAt === undefined ? -1e9 : a._serumAt) <= SERUM.splash.every + 2)) continue;
-        const sx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, sy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0);
+        const sx = isoSX(a.x, a.y) + canvas.width / 2, sy = isoSY(a.x, a.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0);
         const pul = 0.6 + 0.4 * Math.sin(f * 0.2);
         ctx.save(); ctx.translate(sx, sy + TILE_H * 0.6); ctx.scale(1, 0.45); ctx.globalAlpha = 0.7 * pul; ctx.strokeStyle = "#7dffb0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
         ctx.globalAlpha = 0.85; ctx.fillStyle = "#7dffb0"; ctx.font = "bold 13px monospace"; ctx.textAlign = "center"; ctx.fillText("+", sx + 18, sy - 40 - (f % 30));

@@ -456,7 +456,7 @@ function bossWanderTarget(a) {
 // is this creature a boss nobody should start on by itself? (js/helpers.js isHostileTarget: your followers and your gun's auto-lock leave a sleeping or calm boss alone; a tap on it, or an order, still fights it)
 function bossPassive(a) { return !!(a && a.bossId && (a.bossAsleep || a.bossCalm) && !a.provoked); }
 // ── over the scene (js/game.js, after the serum's overlay): a wind-up's ring where the shot will land and the word over her; each shot in the air with its shadow and its landing ring ──
-function _bossScr(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
+function _bossScr(x, y, z) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
 function _bossRing(x, y, r, k, col) {
     const [cx, cy] = _bossScr(x, y, 0), R = r * TILE_W * Math.SQRT2;
     ctx.save(); ctx.translate(cx, cy); ctx.scale(1, TILE_H / TILE_W);

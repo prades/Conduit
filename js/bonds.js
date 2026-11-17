@@ -98,8 +98,8 @@ function _bondHeartTick(a, p) {
 function drawBonds() {
     if (typeof followers === "undefined" || followers.length === 0) return;
     const W = canvas.width / 2, H = canvas.height / 2, B = BOND_HEARTS;
-    const scr = o => [(o.x - player.visualX - (o.y - player.visualY)) * TILE_W + W,
-                      (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + H];
+    const scr = o => [isoSX(o.x, o.y) + W,
+                      isoSY(o.x, o.y) + H];
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of followers) {
         if (a.dead || !a.partnerUid || !(a.uid < a.partnerUid)) continue;   // each pair once
