@@ -59,6 +59,16 @@ const SAMPLES = {
     lights: { hemi: [0x8aa8d0, 0x061426, 0.3], key: [0xe8f4ff, 0.6], low: [0x9fe8ff, 0, 0, 0.3, 3.0] },
     cam: { pos: [-0.35, 0.7, 7.8], look: [-0.25, 0.85, 0.5], fov: 38, roll: -0.22 },   // (shifted so his mouth and fangs sit in the middle, clear of the frame's edge)
   },
+  // THE HAMMER SLUG (core Technician, evolved form 'hammerslug', design No. 469: design/evolutions/bake.js JOBS, forms20.js _slugReal) in the Technician style (the owner, 2026-11-17:
+  // "surrounded by a very intact ring of crystals while they raise their claws or whatever they have"). It has no claws: it rears its front up (the hammer head and eye-stalks),
+  // in its action pose (act 1: the lunge, its fin raised and its scutes flared), inside a whole ring of the game's crystals, the core energy card's reactor behind.
+  hammerslug_ring: {
+    style: 'tech', form: 469, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 469,
+    pose: { t: 0.4, act: 1 }, yaw: 1.2, rear: 0.5, lift: 0.15,   // (turned side-on to the camera, its head to the right: its long tiled body, spiked spine and raised hammer head all show)
+    ring: { n: 12, r: 2.0, h: [0.3, 1.25], w: 0.14 },
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
+    cam: { pos: [1.3, 1.4, 7.6], look: [0.3, -0.25, 0], fov: 38, roll: -0.18 },   // (above the ring, looking down into it a little, so the whole ring shows round it, all above the name plate; rolled about 10 degrees)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -337,10 +347,58 @@ function SHATTER_SLABS(o) {
   g.save(); g.globalCompositeOperation = 'lighter'; blob(g, HIT[0], HIT[1], 40, [[0, 'rgba(255,255,255,0.55)'], [0.4, fxa(0.2)], [1, fxa(0)]]); g.restore();
 }
 
+// ---------- A TECHNICIAN'S PICTURE (the ring style: the owner, 2026-11-17, "surrounded by a very intact ring of crystals while they raise their claws or whatever they have"):
+// its element's world behind, the floor, the follower rearing inside a WHOLE ring of crystals (in the 3-D render), the ring's light on the floor and rising off it. Clean: no cracks,
+// no grit (those are the Brawlers'). Run in the page (its source is put there with toString), after the 3-D renders.
+function TECH(o) {
+  const { W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, ringTips } = o, PI = Math.PI, TAU = 2 * PI;
+  const rgb = (h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)])(P.fx), fxa = a => 'rgba(' + rgb.join(',') + ',' + a + ')';
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const mask = (src, blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(src, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  // 1. FAR: the core energy card's reactor (its hex lattice and rings: js/energygem.js, with that card's own seed), tilted with the horizon, softened
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#010a09'; g.fillRect(0, 0, W, H);
+  { const hz = hzAt(W / 2), top = -(hz + 60), hh = hz + 110, kx = 1.6;
+    g.save(); g.translate(W / 2, hz); g.rotate(slope); g.filter = 'blur(1.5px)'; g.drawImage(ws, -225 * kx, top, 450 * kx, hh); g.filter = 'none';
+    g.globalAlpha = 0.6; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -110, 0, 30); lg.addColorStop(0, 'rgba(4,38,31,0)'); lg.addColorStop(0.8, 'rgba(6,60,50,0.85)'); lg.addColorStop(1, '#04261f');
+  g.fillStyle = lg; g.fillRect(-W, -110, 2 * W, 140); g.restore();
+  // 2. THE FLOOR (3-D), a line of the reactor's light along the horizon, and the ring's light on the floor: a glowing circle where the crystals stand, soft light pooled inside it
+  g.drawImage(floorCv, 0, 0);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[24, 0.1], [7, 0.22], [2, 0.5]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, fxa(0)); lb.addColorStop(0.5, fxa(a)); lb.addColorStop(1, fxa(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  const circ = (r, y) => { const pts = []; for (let i = 0; i <= 96; i++) { const a = i / 96 * TAU; pts.push(pr([Math.sin(a) * r, y || 0.01, Math.cos(a) * r])); } return pts; };
+  const line = (pts, w, col, blur) => { g.save(); g.globalCompositeOperation = 'lighter'; if (blur) g.filter = 'blur(' + blur + 'px)'; g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.restore(); };
+  { const pool = circ(P.ring.r); g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)'; g.fillStyle = fxa(0.16); g.beginPath(); pool.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.fill(); g.restore();
+    line(pool, 14, fxa(0.25), 8); line(pool, 3, fxa(0.7), 1); line(pool, 1, 'rgba(220,255,248,0.8)');
+    const inner = circ(P.ring.r * 0.72); g.save(); g.setLineDash([10, 9]); line(inner, 1.5, fxa(0.45)); g.restore(); }   // (an inner dashed ring, as the reactor's own)
+  // 3. THE FOLLOWER AND ITS RING: a dark halo behind them so they stand off the floor, the follower's teal glow, the 3-D render (the ring in it, whole), the ring's glow
+  g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, 'rgba(0,8,6,1)'), 0, 5); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.drawImage(mask(bodyCv, 16, P.fx), 0, 0); g.restore();
+  g.drawImage(model, 0, 0);
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.55; g.drawImage(mask(ringCv, 12, P.fx), 0, 0); g.globalAlpha = 0.35; g.drawImage(mask(ringCv, 3, '#d8fff6'), 0, 0); g.restore();
+  // light rising off each crystal's point (the world's up), and a bright star at the tallest points
+  g.save(); g.globalCompositeOperation = 'lighter';
+  ringTips.forEach(([x, y]) => { const L = 50 + R() * 70, ex = x + up[0] * L, ey = y + up[1] * L, gr = g.createLinearGradient(x, y, ex, ey); gr.addColorStop(0, fxa(0.35)); gr.addColorStop(1, fxa(0));
+    g.strokeStyle = gr; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y); g.lineTo(ex, ey); g.stroke(); blob(g, x, y, 9, [[0, 'rgba(230,255,250,0.7)'], [0.4, fxa(0.3)], [1, fxa(0)]]); });
+  // motes of the reactor's light rising inside the ring
+  for (let i = 0; i < 40; i++) { const a = R() * TAU, rr = Math.sqrt(R()) * P.ring.r * 0.95, p = pr([Math.sin(a) * rr, 0.1 + R() * 1.6, Math.cos(a) * rr]); blob(g, p[0], p[1], 1.5 + R() * 2.5, [[0, 'rgba(220,255,248,0.9)'], [0.4, fxa(0.5)], [1, fxa(0)]]); }
+  g.restore();
+  // 4. THE GRADE: a vignette, darker at the foot (the name plate reads over it). Clean: the ring is whole and the card is unmarked.
+  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(0,8,6,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, 'rgba(1,10,9,0)'); lg.addColorStop(1, 'rgba(1,10,9,0.65)'); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
+  return { png: out.toDataURL('image/png'), info };
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
 ${SHATTER_SLABS.toString()}
+${TECH.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -357,7 +415,8 @@ window.__card = async function (P, W, H, modelOnly) {
   const soft = (w, h, x, y, z, c, ry, rx) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: c, side: T.DoubleSide })); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, 0); es.add(m); };
   soft(3, 4, 9, 2, 2, 0x8a9bb0, -PI / 2); soft(2, 4, -9, 2, -3, 0x3c5478, PI / 2); soft(6, 1.2, 0, 2.5, 9, 0x5a6678, PI);
   const ICE = P.world === 'ice';   // (the ice world: cold light everywhere; the fire world's lava below is the Mage sample's)
-  soft(14, 6, 0, -6, 3, ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
+  const CORE = P.world === 'core';   // (the core world: the reactor's teal light)
+  soft(14, 6, 0, -6, 3, CORE ? 0x0a5a4a : ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
   EL = { color: P.color }; setElementColour(P.color); M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8);   // (as the forms' baker sets a numbered form's crystal)
   const scene = new T.Scene(); scene.environment = env;
@@ -370,10 +429,27 @@ window.__card = async function (P, W, H, modelOnly) {
   const B = FORMS2[P.form].build(); scene.add(B.g); B.g.rotation.y = P.yaw;
   // (its glow sprites are kept: the diamond's blaze is the model's own; the game's sheets leave them to the game, design/evolutions/bake.js)
   B.update(P.pose.t, P.pose.act, P.pose.v);
+  if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
+  // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
+  // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
+  const ringG = new T.Group(), ringTips = []; if (P.ring) { const Q = P.ring, cdir = Math.atan2(P.cam.pos[0], P.cam.pos[2]);
+    for (let i = 0; i < Q.n; i++) { const a = (i + 0.5) / Q.n * 2 * PI + cdir, f = 0.5 + 0.5 * Math.cos(a - cdir), cr = Q.r * (0.97 + 0.06 * R());   // (f: 1 in front, toward the camera, 0 behind)
+      const put = (h, r, da, lean, dr) => { const c = hexCrystal(r, h, r * 1.8); const aa = a + da, x = Math.sin(aa) * (cr + dr), z = Math.cos(aa) * (cr + dr); c.position.set(x, h * 0.42, z);
+        c.rotation.order = 'YXZ'; c.rotation.y = aa; c.rotation.x = lean; c.rotation.z = (R() - 0.5) * 0.12; ringG.add(c); ringTips.push([x + Math.sin(aa) * Math.sin(lean) * (h * 0.5 + r * 1.8), h * 0.42 + Math.cos(lean) * (h * 0.5 + r * 1.8), z + Math.cos(aa) * Math.sin(lean) * (h * 0.5 + r * 1.8)]); };
+      const h = Q.h[1] - (Q.h[1] - Q.h[0]) * Math.pow(f, 0.7) * (0.85 + 0.3 * R());
+      put(h, Q.w * (0.9 + 0.2 * R()), 0, 0.12 + R() * 0.12, 0);   // the main crystal of this place in the ring, leaning a little outward
+      put(h * (0.45 + 0.2 * R()), Q.w * 0.6, (R() < 0.5 ? -1 : 1) * 0.09, 0.35 + R() * 0.2, 0.08);   // and a smaller one at its foot, leaning further
+    } scene.add(ringG);
+    const cm = M.crystal.clone(), em = new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }); ringG.traverse(m => { if (m.isLineSegments) m.material = em; else if (m.isMesh) m.material = cm; }); }   // (its own materials, so the follower can be drawn depth-only over it)
   // THE FLOOR: dark lava crust split by glowing cracks, far into the haze (so the tilted horizon is a real one), and the hot glow under the follower
   const ft = cv(1024, 1024), fg = ft.getContext('2d'), fe = cv(1024, 1024), fge = fe.getContext('2d');
   const crack = (g, pts, w, c) => { g.strokeStyle = c; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
-  if (ICE) {   // THE ICE FLOOR: packed snow and blue ice, frost cracks catching a faint cold light, far into the haze
+  if (CORE) {   // THE CORE FLOOR: dark teal plates in a hex lattice (the reactor's), their seams faintly lit
+    fg.fillStyle = '#06201c'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
+    for (let k = 0; k < 300; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 40; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '14,52,46' : '2,12,10') + ',' + (0.25 + R() * 0.35) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
+    const s6 = 64, h6 = s6 * Math.sqrt(3) / 2; for (let row = -1; row * h6 * 2 < 1100; row++) for (let col = -1; col * s6 * 1.5 < 1100; col++) { const x = col * s6 * 1.5, y = row * h6 * 2 + (col % 2 ? h6 : 0), pts = []; for (let k = 0; k <= 6; k++) pts.push([x + Math.cos(k / 6 * 2 * PI) * s6 * 0.97, y + Math.sin(k / 6 * 2 * PI) * s6 * 0.97]);
+      crack(fg, pts, 4, '#020a08'); crack(fge, pts, 1.5, 'rgba(25,230,193,' + (0.12 + 0.18 * R()) + ')'); }
+  } else if (ICE) {   // THE ICE FLOOR: packed snow and blue ice, frost cracks catching a faint cold light, far into the haze
     fg.fillStyle = '#121f33'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
     for (let k = 0; k < 500; k++) { const x = R() * 1024, y = R() * 1024, r = 8 + R() * 46; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '70,100,140' : '14,30,52') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
     for (let k = 0; k < 30; k++) { let x = R() * 1024, y = R() * 1024, a = R() * 2 * PI; const pts = [[x, y]]; for (let j = 0; j < 8; j++) { a += (R() - 0.5) * 1.6; x += Math.cos(a) * 30; y += Math.sin(a) * 30; pts.push([x, y]); }
@@ -388,16 +464,20 @@ window.__card = async function (P, W, H, modelOnly) {
   const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.MeshStandardMaterial({ map: tx(ft), emissiveMap: tx(fe), emissive: new T.Color(0xffffff), emissiveIntensity: 1.3, roughness: ICE ? 0.55 : 0.85, metalness: 0.1 }));
   floor.rotation.x = -PI / 2; scene.add(floor);
   const pool = cv(256, 256), pg = pool.getContext('2d'); const pgr = pg.createRadialGradient(128, 128, 0, 128, 128, 128); if (ICE) { pgr.addColorStop(0, 'rgba(150,220,255,0.5)'); pgr.addColorStop(0.4, 'rgba(90,170,255,0.2)'); pgr.addColorStop(1, 'rgba(60,140,255,0)'); } else { pgr.addColorStop(0, 'rgba(255,120,40,0.9)'); pgr.addColorStop(0.4, 'rgba(255,60,10,0.4)'); pgr.addColorStop(1, 'rgba(255,40,0,0)'); } pg.fillStyle = pgr; pg.fillRect(0, 0, 256, 256);
+  if (CORE) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); g2.addColorStop(0, 'rgba(60,240,205,0.45)'); g2.addColorStop(0.5, 'rgba(25,200,170,0.15)'); g2.addColorStop(1, 'rgba(25,200,170,0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
   const glowUnder = new T.Mesh(new T.PlaneGeometry(4.2, 4.2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(pool), transparent: true, blending: T.AdditiveBlending, depthWrite: false }));
   glowUnder.rotation.x = -PI / 2; glowUnder.position.y = 0.02; scene.add(glowUnder);
-  const HAZE = ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
+  const HAZE = CORE ? '#04261f' : ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
   const cam = new T.PerspectiveCamera(P.cam.fov, W / H, 0.05, 80);
   cam.position.set(...P.cam.pos); cam.lookAt(new T.Vector3(...P.cam.look)); cam.rotateZ(P.cam.roll); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
   const grab = () => { renderer.render(scene, cam); const c = cv(); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(renderer.domElement, 0, 0, W, H); return c; };
-  B.g.visible = false; const floorCv = grab();
-  B.g.visible = true; glowUnder.visible = false;
-  if (P.style === 'brawler') { floor.material.colorWrite = false; floor.renderOrder = -1; } else floor.visible = false;   // (a Brawler sits ON the floor, sunk into it: the floor hides what is under it (its cave's lower half) but is not drawn)
+  B.g.visible = false; ringG.visible = false; const floorCv = grab();
+  B.g.visible = true; ringG.visible = true; glowUnder.visible = false;
+  if (P.style === 'brawler' || P.style === 'tech') { floor.material.colorWrite = false; floor.renderOrder = -1; } else floor.visible = false;   // (a Brawler sits ON the floor, sunk into it: the floor hides what is under it (its cave's lower half) but is not drawn)
   const model = grab();
+  let ringCv = null, bodyCv = null; if (P.ring) {   // (the ring where it shows (the follower drawn depth-only, hiding what is behind it) and the follower alone, for their glows)
+    const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
+    ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; }
   // where things land on the picture: the heart (its diamond), its foot, the horizon (eye-level points far off, projected)
   const pr = v => { const p = new T.Vector3(...v).project(cam); return [(p.x * 0.5 + 0.5) * W, (1 - (p.y * 0.5 + 0.5)) * H]; };
   const heart = pr([0, B.core, 0]), foot = pr([0, 0, 0]);
@@ -408,6 +488,7 @@ window.__card = async function (P, W, H, modelOnly) {
   const up = [Math.sin(slope), -Math.cos(slope)];   // the world's up, on the picture (square to the horizon)
   const info = { heart: heart.map(Math.round), foot: foot.map(Math.round), horizonDeg: +(slope * 180 / PI).toFixed(1), horizonMid: Math.round(hzAt(W / 2)) };
   if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); return { png: c.toDataURL('image/png'), info }; }
+  if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
 
   // ---------- THE PICTURE, back to front ----------
