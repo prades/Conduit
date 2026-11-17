@@ -35,7 +35,7 @@ function _tgColour(a) { if (a && a.isHazardTarget) return a.color; const el = a.
 // the nearest creature in range that can be seen
 function targetNearest() {
     let best = null, bd = TARGET.range;
-    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a) || (typeof spiderLurking === "function" && spiderLurking(a)) || (typeof bossPassive === "function" && bossPassive(a))) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }   // (a spider lurking at cover is passed by: js/facilityspawn.js; so is a boss asleep or calm in its lair: a tap still locks it, js/bosses.js)
+    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a) || (typeof spiderLurking === "function" && spiderLurking(a)) || (typeof bossPassive === "function" && bossPassive(a)) || (typeof cardBattleMayTarget === "function" && !cardBattleMayTarget(a))) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }   // (a spider lurking at cover is passed by: js/facilityspawn.js; so is a boss asleep or calm in its lair: a tap still locks it, js/bosses.js)
     return best;
 }
 function targetSet(foe, manual) {
@@ -81,6 +81,7 @@ function _tgOnInfo(ex, ey) { const d = _tgDial; return !!d && Math.hypot(ex - d.
 // pointerdown: true when it is the targeting's
 function targetPress(ex, ey) {
     if (!targetOn()) return false;
+    if (typeof cardBattleTap === "function" && cardBattleTap(ex, ey)) { _tgBtnDown = null; _targetPressed = true; return true; }   // CARD BATTLES (?cards with ?engine=3d): a tap on a creature starts a battle with it (js/cardbattle.js)
     if (_tgDial && (_tgOnInfo(ex, ey) || _tgOnDial(ex, ey))) {
         if (_tgOnInfo(ex, ey)) { _tgBtnDown = { kind: "info", x: ex, y: ey }; _targetPressed = true; return true; }
         // the dial itself is the FIRE button: a click is a shot, holding it keeps firing at the locked creature

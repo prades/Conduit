@@ -1,6 +1,6 @@
 # Card battles (turn-based, one card a turn)
 
-- **Status:** **Designed in direction** (the owner's rules below, 2026-11-17); the battle screen's look is at the mockup stage; **nothing is built.**
+- **Status:** **Designed** (the owner's rules, §2.1 to §2.27, 2026-11-17); the battle screen chosen (SQUAD ROWS, a mockup). **Step 1 implemented** in `2026-11-17d` behind `?cards` with `?engine=3d`: a battle starts and looks like one (§9); verified by `tests/cardbattle.js` and in a browser; not playtested. **No cards or turns yet.**
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-17
 - **Branch/build context:** `claude/friendly-thompson-w581x0`, on main's build `2026-11-17c` (the game going 3D behind `?engine=3d`)
@@ -80,10 +80,18 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 - The battle ends correctly in every case of §7.
 
 ## 9. Implementation notes
-None yet: mockups first (§2.8).
+**Step 1, built in `2026-11-17d`: how a battle starts and how it looks** (the owner: "Build it"). `js/cardbattle.js`. **No cards and no turns yet:** inside a battle the fight is still the real-time one until steps 2 and 3 replace it.
+- **The switch:** `?cards` with `?engine=3d`, and only while the 3D view is drawing the room (`view3dShowing`). Off: nothing happens, and the game is as it was.
+- **Starting** (§2.5): a tap on a creature (`js/targeting.js` `targetPress` asks `cardBattleTap` first) or a creature's hit on you or yours (`js/helpers.js` `applyDamage` tells `cardBattleHit`). The battle takes that creature and those within `CARD_BATTLE.group` (3.5) tiles of it, at most `most` (4).
+- **A far enemy** (§2.27): farther than `far` (6 tiles): you walk towards it (`facilityWalkTo`) for `walk` (36) frames, the screen goes black (`blackIn` 14 frames, held `blackHold` 8; a page element, `#cbBlack`), and in the black you land `land` (2.2) tiles in front of it, at the first spot round it that is open floor in its room and in its sight; your squad round you; then the black lifts (`blackOut` 22).
+- **The camera** (§2.26, §2.6): `cardBattleCam` (eased over `easeIn` 40 / `easeOut` 36 frames) reaches the 3D view through its bridge (`view3d/gamemap.js` `battleCam`); `view3d/gameview.js` `place` eases the camera to the middle of the fight, down to `pitch` 17° (the game's own is 30°), turned `yaw` 0.6 radians to the side, `zoom` 1.55 nearer. Off the game's own camera the 2D drawn over the picture waits (bars, labels, floor marks), as while the camera swings (`swinging`).
+- **The edges** (§2.6): `cardBattlePost` blurs (HIGH) and darkens the 3D picture's edges, made as the battle view makes its own (`js/battleview.js` `_bvCv`, `_bvRing`), from the 3D view's canvas. The 2D battle view stands aside during a card battle.
+- **Walking past** (§2.6): a creature not in the battle picks no prey among you and yours (`js/predator.js` `predatorPreyOk` asks `cardBattleBars`), and stops going for you as the battle starts; your squad (`js/npc.js`) and your gun's own pick (`targetNearest`) go only for the creatures in it (`cardBattleMayTarget`).
+- **Ending:** every creature in it down or gone; your squad all down (§2.23: their fall as now); you `leave` (14) tiles from it; or **RUN**, step 1's stand-in: a button at the right (`#cbRun`). The enemies' last hit (§2.16) comes with the turns. For `calm` (240 frames, 4 s) after a battle the creatures that were in it start nothing and go for nobody (else their real-time blows started a new battle at once).
+- **Every number above is the agent's, provisional**, for the owner to judge on the iPad (§11.11).
 
 ## 10. Verification record
-None: nothing is built.
+- **Step 1 (`2026-11-17d`):** `tests/cardbattle.js` (9 checks, the game's logic in the sandbox): off without the switch or the 3D view; a near creature starts it where you stand, with the creatures round it (at most four); a far one walks, goes black, lands you and your squad in front of it in its room and in its sight, then eases the camera in, lower and nearer; a hit starts one; outsiders go for nobody of yours, your squad and gun only for those in it; RUN ends it and its creatures stay calm for a while; it ends when its creatures are down; the pieces are wired. **Seen in a real browser** (headless Chromium with software WebGL, at 1180 × 820): the walk, the black, the landing in sight of three ants in the Server Room, the battle camera with blurred edges, RUN, and the camera easing back. **Not playtested; not seen on an iPad.**
 
 ## 11. Open questions
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.

@@ -875,7 +875,8 @@ function render() {
 
     // ── THE PLAYER: a path of waypoints and real walls (js/facilityplay.js) ──
     facilityPlayerStep();
-    if (typeof battleViewTick === "function") battleViewTick();   // THE BATTLE VIEW: a creature engaging eases the camera in (js/battleview.js)
+    if (typeof battleViewTick === "function") battleViewTick();
+    if (typeof cardBattleTick === "function") cardBattleTick();   // CARD BATTLES: the start, the black, the camera (js/cardbattle.js)   // THE BATTLE VIEW: a creature engaging eases the camera in (js/battleview.js)
     if (typeof view3dShowing === "function" && view3dShowing() && typeof battleViewOn === "function" && battleViewOn()) battleViewReset();   // (it zooms the 2D picture: THE 3D VIEW does without it for now, docs/VIEW-3D.md)
 
     // ── UPDATE HAZARDS ──
@@ -1404,7 +1405,7 @@ function render() {
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     if (typeof view3dWorldEnd === "function" && view3dWorldEnd()) drawFacilityNetworkHUD();   // THE 3D VIEW: the zoom off; while it swings round a turn the 2D over it is wiped (it lines up only at a quarter turn); the network panel, held back from the world pass, unzoomed (js/view3d.js)
-    if (typeof battleViewPost === "function") battleViewPost();   // THE BATTLE VIEW: the world picture zoomed, its edges, the HUD the world pass held back (js/battleview.js)
+    if (typeof battleViewPost === "function") battleViewPost();   if (typeof cardBattlePost === "function") cardBattlePost();   // CARD BATTLES: the 3D picture's edges blurred and darkened (js/cardbattle.js)
     drawFloatingTexts();
     if (typeof dialogueDraw === "function") dialogueDraw();   // the dialogue box: who is talking, their picture, what they said (js/dialogue.js); the panels below draw over it
     // The clone bay first, then its button over it, so the button that

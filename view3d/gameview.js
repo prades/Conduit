@@ -37,12 +37,15 @@ const GAMEVIEW = (function () {
   const SWING = 0.4; let yaw = 0;
   const twist = () => GM.viewTwist || 0, yawWant = () => (GM.viewTurn || 0) * Math.PI / 2 + twist(), yawLeft = () => { const d = yawWant() - yaw; return d - Math.round(d / (2 * Math.PI)) * 2 * Math.PI; };   // (the short way round)
   const turning = () => Math.abs(yawLeft()) > 1e-4 || Math.abs(twist()) > 1e-4;
+  const battling = () => { const B = GM.battleCam; return !!B && B.k > 1e-4; };   // CARD BATTLES (js/cardbattle.js): off the game's own camera, as in a swing, the game's drawing over the picture waits
   // the middle of the screen: the player's ground on the camera's floor (the game's _fpCam: the camera rides the player's floor), then TILE_H px up the screen, as _fpP has it
   function place(dt) { const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
     yaw = !dt || twist() || Math.abs(d) <= step ? yawWant() : yaw + Math.sign(d) * step;
-    const a = Math.PI / 4 - yaw, ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(ELV) * ca, Math.sin(ELV), Math.cos(ELV) * sa); UPV.set(-Math.sin(ELV) * ca, Math.cos(ELV), -Math.sin(ELV) * sa);
-    cam.left = -W / 2 / UNIT / k; cam.right = W / 2 / UNIT / k; cam.top = H / 2 / UNIT / k; cam.bottom = -H / 2 / UNIT / k;
-    at.set(pl.visualX, GM.camLift / UPX, pl.visualY).addScaledVector(UPV, TH / UNIT); cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
+    // A CARD BATTLE's camera (js/cardbattle.js cardBattleCam): eased (B.k) to the middle of the fight, lower, turned to the side and nearer
+    const B = GM.battleCam, bk = B ? B.k : 0, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * (bk ? 1 + (B.zoom - 1) * bk : 1);
+    const a = Math.PI / 4 - yaw - (bk ? B.yaw * bk : 0), ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa); UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);
+    cam.left = -W / 2 / UNIT / kz; cam.right = W / 2 / UNIT / kz; cam.top = H / 2 / UNIT / kz; cam.bottom = -H / 2 / UNIT / kz;
+    at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT); cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
   let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0; if (typeof window !== 'undefined') window.addEventListener('resize', () => { fitAt = -1e9; });
   function fit(f0) { if (f0 - fitAt < 60 && game.width === gw && game.height === gh) return; fitAt = f0; gw = game.width; gh = game.height; const w = game.clientWidth || gw, h = game.clientHeight || gh;
@@ -177,13 +180,13 @@ const GAMEVIEW = (function () {
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
-    const fx = turning() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
+    const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
     stats, state, world, camera: cam, core: CORE,
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
-    swinging() { return turning(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
+    swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)

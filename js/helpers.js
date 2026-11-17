@@ -153,7 +153,8 @@ function hurtPlayer(amount, shakeAmt, source) {
 // BLIND (the owner, 2026-11-13: "Blinded doesn't mean that they don't hit. It means that they have a lower chance of hitting"; asked, chosen: change blind everywhere, and 50%): a blinded creature still
 // sees, chases and attacks, but each hit it deals MISSES with this chance (a bite, a shot, an ability's hit, each on its own roll; a reflected hit is not its own and cannot miss). A MISS floats over the target.
 const BLIND_MISS = 0.5;
-function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
+function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {
+    if (typeof cardBattleHit === "function") cardBattleHit(target, source);   // CARD BATTLES: a creature hitting you or yours starts a battle where you stand (js/cardbattle.js)   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
     // A recruit walking to the Crystal takes NOTHING, from anyone or anything.
