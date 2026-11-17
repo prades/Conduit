@@ -188,6 +188,19 @@ const SAMPLES = {
       screen: [3.35, 1.5], near: [[-0.8, 0.8, 1.4, 0.35, 0.5, 0.15]], nearBlur: 3,   // (all flying left and a little down on the picture, and at the lens; one more at the lens, top left, out of focus)
       release: [-0.2, 1.1, 0.9], trail: 340, trailW: 18, dim: 0.5, floorDim: 0.45, glow: [0.5, 0.45], inner: 0.25, heartGlow: 0.1, burst: 0.5 },   // (the world, the floor and its own glow held down: a white follower on the snow)
   },
+  // THE ELECTRO SKINK (electric Brawler, evolved form 'electroskink', design No. 905: design/evolutions/bake.js JOBS, forms36.js _electroSkink) with ZIGZAG DASH (docs/COMBAT.md: "it darts through the
+  // nearest enemy within 4 tiles and on, a hop of 2.5 tiles at a time, 3 at most"), in the Brawler style as the Frost Maw's round 3 and the Seeper's: it dashes head-on at the lens, its action's
+  // strike (act 1: reared, then lunging forward, its head thrust out), and the card's glass breaks where its snout hits. Its zigzag way behind it in lightning (ZIG_DASH). The storm behind.
+  electroskink_zigzag: {
+    style: 'brawler', form: 905, color: '#ffe033', rim: '#fff27a', fx: '#ffee33', world: 'electric', seed: 905,
+    pose: { t: 1.24, act: 1 }, yaw: -0.25, hit: [0.4, 0.47], glass: 'slabs', pieces: 'clear', powder: 0, through: 56,   // (yaw: its head at the lens, its body and its bolt of a tail running back up to the right; through: its head punched through the glass)
+    clear: [[185, 280, 90], [300, 250, 70], [360, 170, 60], [390, 280, 50]],   // (its head, its body, its tail and its hind legs: no flying piece lands on them)
+    lights: { hemi: [0x8a84b0, 0x0a0618, 0.5], key: [0xfff6d8, 1.1], rim: 3.0, back: 1.5, low: [0xffe040, 1.5, 0, 0.6, 2.0] },
+    cam: { pos: [0.0, 1.0, 4.3], look: [-0.6, -0.05, 0.6], fov: 42, roll: -0.22 },   // (a little above it, so its tail shows behind its body; rolled as the Frost Maw's)
+    zig: { path: [[3.2, 0.05, -7], [-2.0, 0.05, -3.6], [0.2, 0.15, -0.6]], band: 22, w: 2.6, flash: 120, forks: 5, edgeArcs: 8 },   // (its last two hops, on the floor behind it)
+    tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], hot: '255,250,200', halo: 'rgba(4,2,10,1)', chip: ['#5a5470', '#2a2638', '#08060e', 'rgba(255,238,51,0.35)'], vig: 'rgba(6,4,14,0.65)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 1.0, '#fff27a'] },
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -232,7 +245,8 @@ function BRAWLER(o) {
   for (let i = 0; i < 26; i++) { const a = R() * TAU, d = 20 + R() * 120; blob(g, HIT[0] + Math.cos(a) * d, HIT[1] + Math.sin(a) * d * 0.8, 18 + R() * 40, [[0, 'rgba(230,245,255,' + 0.16 * PW + ')'], [1, 'rgba(200,235,255,0)']]); }   // (the powder)
   g.restore();
   if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
-  if (P.goo) GOO_SPLASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });   // (followers round 2, TOXIC STOMP: goo flung out of its caldera, a splash of it where the foot lands)   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
+  if (P.goo) GOO_SPLASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
+  if (P.zig) ZIG_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU, pr: o.pr });   // (followers round 3, ZIGZAG DASH: its way behind it a zigzag of lightning, arcs off it, the strike's bolts at the lens)   // (followers round 2, TOXIC STOMP: goo flung out of its caldera, a splash of it where the foot lands)   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
     G.save(); G.globalAlpha = alpha; G.beginPath(); pts.forEach(([px, py], i) => i ? G.lineTo(px, py) : G.moveTo(px, py)); G.closePath();
@@ -855,6 +869,39 @@ function GOO_SPLASH(o) {
   for (let i = 0; i < Q.splash; i++) { const a = R() * TAU, d = 20 + Math.pow(R(), 0.8) * 150, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d * 0.8; if (y > H * 0.7) continue; dropOff(x, y, 3 + R() * 6 * (d / 150 + 0.4), a, 2.5 + R() * 3, 0.95); }
 }
 
+// ---------- ZIGZAG DASH'S LIGHTNING on a Brawler card (followers round 3, the Electro Skink; docs/COMBAT.md: "it darts through the nearest enemy ... a hop of 2.5 tiles at a time, 3 at most"): the dash's
+// way behind it as a zigzag of lightning along the floor (its hops, from far back to it: P.zig.path, world points), hidden where its body is; arcs crawling off its edges; and the strike's
+// flash at the lens, short bolts and sparks thrown out from it. Called by BRAWLER after the follower is drawn, before the glass breaks (in the picture the glass breaks over).
+function ZIG_DASH(o) {
+  const { g, W, H, R, cv, model, HIT, P, PI, TAU, pr } = o, Z = P.zig;
+  const Y = a => 'rgba(255,238,51,' + a + ')', Yw = a => 'rgba(255,250,200,' + a + ')';   // (electric's colour, js/config.js ELEMENTS, and its white-hot core)
+  const jag = (pts, amp, depth) => { let p = pts; for (let d = 0; d < depth; d++) { const q = [p[0]]; for (let i = 1; i < p.length; i++) { const [x0, y0] = p[i - 1], [x1, y1] = p[i], L = Math.hypot(x1 - x0, y1 - y0) || 1, k = (R() - 0.5) * amp * L / 60;
+    q.push([(x0 + x1) / 2 - (y1 - y0) / L * k, (y0 + y1) / 2 + (x1 - x0) / L * k], [x1, y1]); } p = q; amp *= 0.62; } return p; };
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const bolt = (G, pts, w, a) => { G.save(); G.globalCompositeOperation = 'lighter'; G.filter = 'blur(' + (3 + w * 2.5) + 'px)'; stroke(G, pts, w * 5, Y(0.22 * a)); G.filter = 'blur(' + (1 + w * 0.6) + 'px)'; stroke(G, pts, w * 2, Y(0.7 * a)); G.filter = 'none'; stroke(G, pts, Math.max(0.6, w * 0.7), Yw(a)); G.restore(); };
+  const blob = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); G.fillStyle = gr; G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  // 1. the way it dashed: its hops as straight runs with sharp turns (a zigzag), a wide band of light along the floor under a bolt, two thinner bolts beside it, hidden where its body is
+  const way = Z.path.map(pr), tr = cv(), tg = tr.getContext('2d');
+  { const band = []; way.forEach(p => band.push(p)); tg.save(); tg.globalCompositeOperation = 'lighter'; tg.filter = 'blur(10px)';
+    for (let i = 1; i < band.length; i++) { const t = i / (band.length - 1); stroke(tg, [band[i - 1], band[i]], (Z.band || 30) * (0.35 + 0.65 * t), Y(0.18 + 0.2 * t)); } tg.restore(); }
+  for (let i = 1; i < way.length; i++) { const t = i / (way.length - 1), w = (Z.w || 3) * (0.4 + 0.6 * t); bolt(tg, jag([way[i - 1], way[i]], 30, 4), w, 0.7 + 0.3 * t);
+    for (let k = 0; k < 2; k++) { const off = (k ? 1 : -1) * (6 + 10 * t); bolt(tg, jag([[way[i - 1][0], way[i - 1][1] + off], [way[i][0], way[i][1] + off]], 40, 4), w * 0.4, 0.5); } }
+  { const id = tg.getImageData(0, 0, W, H), d = id.data; for (let i = 0; i < W * H; i++) { const a = md[i * 4 + 3]; if (a) d[i * 4 + 3] = d[i * 4 + 3] * (1 - a / 255); } tg.putImageData(id, 0, 0); }   // (behind it)
+  g.drawImage(tr, 0, 0);
+  // 2. arcs crawling off its edges, out from its middle
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  const mid = edges.reduce((a, p) => [a[0] + p[0] / edges.length, a[1] + p[1] / edges.length], [0, 0]);
+  for (let i = 0; i < (Z.edgeArcs || 16); i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const a = Math.atan2(e[1] - mid[1], e[0] - mid[0]) + (R() - 0.5) * 0.9, len = 14 + R() * 36; bolt(g, jag([e, [e[0] + Math.cos(a) * len, e[1] + Math.sin(a) * len]], 30, 3), 0.8 + R() * 0.6, 0.8); }
+  // 3. the strike: a flash where its snout hits, short forked bolts thrown out from it, sparks at the lens
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(g, HIT[0], HIT[1], Z.flash || 120, [[0, Yw(0.6)], [0.3, Y(0.3)], [1, Y(0)]]); g.restore();
+  for (let k = 0; k < (Z.forks || 7); k++) { const a = R() * TAU, L = 50 + R() * 90, e = [HIT[0] + Math.cos(a) * L, HIT[1] + Math.sin(a) * L * 0.85]; if (e[1] > H * 0.68) continue; bolt(g, jag([HIT, e], 40, 4), 1.2 + R() * 1.2, 0.85); }
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  for (let k = 0; k < 60; k++) { const a = R() * TAU, d = 30 + Math.pow(R(), 0.7) * 220, L = 6 + R() * 22, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d; if (y > H * 0.7) continue;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, Yw(1)); sg.addColorStop(0.3, Y(0.85)); sg.addColorStop(1, Y(0)); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.8; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
@@ -865,6 +912,7 @@ ${FLAME_DASH.toString()}
 ${GOO_SPLASH.toString()}
 ${VOID_MAGE.toString()}
 ${ICE_MAGE.toString()}
+${ZIG_DASH.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
