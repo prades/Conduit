@@ -229,6 +229,20 @@ const SAMPLES = {
       dim: 0.45, glow: 0.9, edge: [2, 1.0, '#f0dcff'] },   // (the void dimmed, a strong violet glow and a bright edge round it: its near-black shard stands out against the void as a silhouette)
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
   },
+  // ---------- FOLLOWERS, ROUND 4 (2026-11-17: the owner of round 3, "They're awesome.") ----------
+  // THE HORNSHELL (core Mage, evolved form 'hornshell', design No. 942: design/evolutions/bake.js JOBS, forms13.js _fatDragger) casting ECHO PULSE (docs/COMBAT.md: "every enemy within 4 tiles", its
+  // wind-up broken), in the Mage style as the Ember Hood's: its pose the pulse's release (the sheet's extra block, column 22: its tentacles drawn into the jar, a ring of water spreading round it);
+  // turned so its mouth and horn face out to the left of the lens; charged with the core (CORE_MAGE, below); the pulse's rings sent out of its mouth at the lens, in the very front of the card.
+  // The core energy card's reactor lattice behind.
+  hornshell_echopulse: {
+    style: 'core', form: 942, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 942,
+    pose: { t: 0.55, act: 0, v: { pull: 1, ring: 0.2 } }, yaw: -0.8,   // (its jar lies on its side: turned so its mouth and horn face left, toward the lens)
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.5], key: [0xf0fffa, 1.0], rim: 2.6, back: 1.4, low: [0x19e6c1, 2, -0.6, 1.6, 3.0] },
+    cam: { pos: [3.0, 1.7, 5.4], look: [-0.35, 0.05, -0.2], fov: 38, roll: -0.27 },   // (rolled as the Ember Hood's; aimed low, so its body sits above the name plate)
+    pulse: { rings: [1.1], near: [], mouth: [0.12, 0.95, -0.12], edge: [3, 0.9, '#7fffe6'],   // (rings: the pulse's ring on the floor round it; mouth: its jar's mouth, where its inner light is strongest)
+      echo: { from: [0.12, 0.95, -0.12], to: [0.4, 1.05, 4.4], rings: [[0.3, 0.4, 4, 0.8], [0.52, 0.6, 7, 0.95], [0.74, 0.85, 10, 1], [0.93, 1.2, 16, 1]], blurFrom: 0.9, film: 0.1 },   // (each ring: [how far along its way, radius, width, strength]; the nearest out of focus)
+      lens: [[0.08, 0.1, 30, 0.3], [0.9, 0.06, 22, 1.0], [0.04, 0.52, 18, 0.6]] },   // (hex shards of light at the lens, out of focus: [x, y on the picture, size, turn])
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -844,6 +858,108 @@ function ICE_MAGE(o) {
   return { png: out.toDataURL('image/png'), info: Object.assign({ release: F0.map(Math.round) }, info) };
 }
 
+// ---------- A CORE MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the reactor: followers round 4, 2026-11-17): the core energy card's world (its reactor lattice) behind,
+// tilted with the horizon; the follower CHARGED with the core (a dark halo and a bright teal edge round its near-black shell, a teal light inside its outline strongest at its mouth, fine teal
+// arcs and hex sparks crawling off it); and in the very front of the card, the focus, its ECHO PULSE (docs/COMBAT.md: "every enemy within 4 tiles"; the game's two rings, js/elements.js): rings of
+// teal energy spreading out from it along the floor, the nearest a great wave of light breaking across the front of the card at the lens, its crest white-hot, sparks and hex shards thrown off
+// it, out of focus. Run in the page (its source is put there with toString), after the 3-D renders.
+function CORE_MAGE(o) {
+  const { W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, heart, ahead } = o, PI = Math.PI, TAU = 2 * PI, Q = P.pulse;
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  function T3(a) { this.x = a[0]; this.y = a[1]; this.z = a[2]; }   // (a small vector, for the echo's rings)
+  Object.assign(T3.prototype, { add(b) { return new T3([this.x + b.x, this.y + b.y, this.z + b.z]); }, sub(b) { return new T3([this.x - b.x, this.y - b.y, this.z - b.z]); }, scale(k) { return new T3([this.x * k, this.y * k, this.z * k]); },
+    len() { return Math.hypot(this.x, this.y, this.z); }, norm() { return this.scale(1 / this.len()); }, cross(b) { return new T3([this.y * b.z - this.z * b.y, this.z * b.x - this.x * b.z, this.x * b.y - this.y * b.x]); }, arr() { return [this.x, this.y, this.z]; } });
+  const C = a => 'rgba(25,230,193,' + a + ')', Cw = a => 'rgba(215,255,246,' + a + ')', Cd = a => 'rgba(0,204,170,' + a + ')';   // (core's colours, js/config.js ELEMENTS: #00ccaa and its light #19e6c1, and a white-hot teal)
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const jag = (pts, amp, depth) => { let p = pts; for (let d = 0; d < depth; d++) { const q = [p[0]]; for (let i = 1; i < p.length; i++) { const [x0, y0] = p[i - 1], [x1, y1] = p[i], L = Math.hypot(x1 - x0, y1 - y0) || 1, k = (R() - 0.5) * amp * L / 60;
+    q.push([(x0 + x1) / 2 - (y1 - y0) / L * k, (y0 + y1) / 2 + (x1 - x0) / L * k], [x1, y1]); } p = q; amp *= 0.62; } return p; };
+  const arc = (G, pts, w, a) => { G.save(); G.globalCompositeOperation = 'lighter'; G.filter = 'blur(' + (2 + w * 2) + 'px)'; stroke(G, pts, w * 4, C(0.25 * a)); G.filter = 'none'; stroke(G, pts, w * 1.6, C(0.75 * a)); stroke(G, pts, Math.max(0.5, w * 0.6), Cw(a)); G.restore(); };
+  const hex = (G, x, y, r, rot, fill, line, lw) => { G.beginPath(); for (let k = 0; k <= 6; k++) { const a = rot + k / 6 * TAU; k ? G.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : G.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } if (fill) { G.fillStyle = fill; G.fill(); } if (line) { G.strokeStyle = line; G.lineWidth = lw || 1; G.stroke(); } };
+  const mask = (blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(model, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  // 1. FAR: the core energy card's world (its reactor lattice and rings: js/energygem.js, with that card's own seed), tilted with the horizon, softened, dimmed so the dark follower reads
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#010a09'; g.fillRect(0, 0, W, H);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.filter = 'blur(2px)'; const k = 1.55; g.drawImage(ws, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.filter = 'none';
+  g.globalAlpha = 0.7; g.drawImage(wm, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.restore(); g.globalAlpha = 1;
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -150, 0, 40); lg.addColorStop(0, 'rgba(4,38,31,0)'); lg.addColorStop(0.75, 'rgba(6,60,50,0.85)'); lg.addColorStop(1, '#04261f');
+  g.fillStyle = lg; g.fillRect(-W, -150, 2 * W, 190); g.restore();
+  g.fillStyle = 'rgba(0,0,0,' + (Q.dim == null ? 0.35 : Q.dim) + ')'; g.fillRect(0, 0, W, H);   // (the reactor dimmed behind its near-black shell, as the Seeper's swamp)
+  // 2. THE FLOOR (3-D, darkened so the pulse is the light), a line of the reactor's light along the horizon (so the tilt reads), a glow round the follower
+  { const fl = cv(), fc = fl.getContext('2d'); fc.drawImage(floorCv, 0, 0); fc.globalCompositeOperation = 'source-atop'; fc.fillStyle = 'rgba(1,10,9,' + (Q.floorDim == null ? 0.5 : Q.floorDim) + ')'; fc.fillRect(0, 0, W, H); g.drawImage(fl, 0, 0); }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[30, 0.1], [10, 0.22], [2.5, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, C(0)); lb.addColorStop(0.5, h < 4 ? Cw(a) : C(a)); lb.addColorStop(1, C(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, heart[0], heart[1], 230, [[0, C(0.16)], [0.45, C(0.05)], [1, C(0)]]); g.fillRect(0, 0, W, H); g.restore();
+  // 3. THE PULSE'S FAR RINGS on the floor round it (behind the near wave): circles of teal light spreading out from its foot, lying on the floor so they tilt with the world
+  const ctr = Q.c || [0, 0.02, 0], ring = (r, n) => { n = n || 120; const runs = [[]]; for (let i = 0; i <= 2 * n; i++) { const a = i / n * TAU, w = [ctr[0] + Math.cos(a) * r, ctr[1], ctr[2] + Math.sin(a) * r];   // (a circle on the floor; where it passes behind the camera it is cut, the arc in front kept whole)
+      if (ahead(w)) runs[runs.length - 1].push(pr(w)); else if (runs[runs.length - 1].length) runs.push([]); }
+    const best = runs.reduce((a, b) => b.length > a.length ? b : a, []); return best.length > n + 1 ? best.slice(0, n + 1) : best; };
+  const rc = cv(), rg = rc.getContext('2d');
+  (Q.rings || [0.9, 1.7]).forEach((r, i) => { const pts = ring(r); rg.save(); rg.globalCompositeOperation = 'lighter'; rg.filter = 'blur(8px)'; stroke(rg, pts, 16, C(0.22)); rg.filter = 'blur(2px)'; stroke(rg, pts, 5, C(0.55)); rg.filter = 'none'; stroke(rg, pts, 1.6, Cw(0.85)); rg.restore(); });
+  g.drawImage(rc, 0, 0);
+  // 4. THE FOLLOWER, CHARGED: a dark halo (its near-black shell stands off the floor), its silhouette glowing teal (wide and tight) and a thin bright edge, fine arcs crawling off its edges,
+  //    its own render, then a teal light inside its outline (strongest at its mouth) with fine arcs over it, and hex sparks thrown off it
+  g.save(); g.globalAlpha = 0.85; g.drawImage(mask(14, 'rgba(0,8,6,1)'), 0, 6); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.glow == null ? 0.7 : Q.glow; g.drawImage(mask(22, '#00ccaa'), 0, 0); g.globalAlpha = 0.6; g.drawImage(mask(6, '#19e6c1'), 0, 0); g.restore();
+  if (Q.edge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.edge[1]; g.drawImage(mask(Q.edge[0], Q.edge[2]), 0, 0); g.restore(); }
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  const inside = []; for (let y = 2; y < H - 2; y += 4) for (let x = 2; x < W - 2; x += 4) if (A(x, y) > 200) inside.push([x, y]);
+  for (let i = 0; i < (Q.edgeArcs || 16); i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const a = Math.atan2(e[1] - heart[1], e[0] - heart[0]) + (R() - 0.5) * 0.9, len = 14 + R() * 36;
+    arc(g, jag([e, [e[0] + Math.cos(a) * len, e[1] + Math.sin(a) * len]], 30, 3), 0.8 + R() * 0.6, 0.8); }
+  g.drawImage(model, 0, 0);
+  { const ig = cv(), ic = ig.getContext('2d'), M0 = Q.mouth ? pr(Q.mouth) : heart; ic.fillStyle = rad(ic, M0[0], M0[1], 120, [[0, 'rgba(200,255,240,0.85)'], [0.35, C(0.45)], [1, Cd(0.05)]]); ic.fillRect(0, 0, W, H);
+    for (let i = 0; i < (Q.bodyArcs || 4); i++) { const a = inside[Math.floor(R() * inside.length)], b = inside[Math.floor(R() * inside.length)]; if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) < 40) { i -= 0.5; continue; } arc(ic, jag([a, b], 40, 4), 0.7 + R() * 0.5, 0.9); }
+    ic.globalCompositeOperation = 'destination-in'; ic.drawImage(model, 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.inner == null ? 0.5 : Q.inner; g.drawImage(ig, 0, 0); g.restore(); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 26; i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 8 + R() * 70, x = e[0] + (e[0] - heart[0]) / 120 * d + (R() - 0.5) * 20, y = e[1] + (e[1] - heart[1]) / 120 * d + (R() - 0.5) * 20;
+    if (R() < 0.4) hex(g, x, y, 2 + R() * 3, R() * PI, Cw(0.9)); else blob(g, x, y, 1.2 + R() * 2.2, [[0, Cw(1)], [0.4, C(0.8)], [1, C(0)]]); }
+  g.restore();
+  // 5. NEAR: the ECHO PULSE's wave at the lens. The nearest rings of the pulse, so near they sweep across the front of the card as great arcs of light (a soft band, a bright body, a
+  //    white-hot crest), each echoed by a fainter ring just inside it; the wave's crest throwing off sparks and hex shards toward the lens; a ripple of the glitch where it passes.
+  const wv = cv(), wg = wv.getContext('2d');
+  (Q.near || []).forEach(([r, wd, a0]) => { const pts = ring(r, 240).filter(([x, y]) => y > -200 && y < H + 400 && x > -400 && x < W + 400);
+    wg.save(); wg.globalCompositeOperation = 'lighter';
+    wg.filter = 'blur(' + (wd * 1.4) + 'px)'; stroke(wg, pts, wd * 4.5, C(0.2 * a0)); wg.filter = 'blur(' + (wd * 0.4) + 'px)'; stroke(wg, pts, wd * 1.6, C(0.6 * a0)); wg.filter = 'none'; stroke(wg, pts, wd * 0.45, Cw(0.95 * a0));
+    const pi = ring(r * 0.94, 240).filter(([x, y]) => y > -200 && y < H + 400); wg.filter = 'blur(2px)'; stroke(wg, pi, wd * 0.5, C(0.35 * a0)); wg.restore(); });
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(10px)'; g.globalAlpha = 0.35; g.drawImage(wv, 0, 0); g.filter = 'none'; g.globalAlpha = 1; g.drawImage(wv, 0, 0); g.restore();
+  // THE ECHO at the lens: the pulse's rings sent out of its mouth toward the lens (Q.echo: from its mouth to a point by the camera), each a circle square to its way, bigger and nearer in
+  //    turn, the nearest so near it frames the front of the card, out of focus; each a soft band, a bright body and a white-hot crest, a fainter echo just inside it
+  const crest = []; if (Q.echo) { const E = Q.echo, F = new T3(E.from), D = new T3(E.to).sub(F), Ln = D.len(), d = D.scale(1 / Ln), u0 = Math.abs(d.y) < 0.9 ? new T3([0, 1, 0]) : new T3([1, 0, 0]), s1 = d.cross(u0).norm(), s2 = s1.cross(d).norm();
+    const ec = cv(), eg = ec.getContext('2d'), near = cv(), ng2 = near.getContext('2d');
+    E.rings.forEach(([t, r, wd, a0], i) => { const c = F.add(d.scale(Ln * t)), runs = [[]];
+      for (let k = 0; k <= 180; k++) { const a = k / 180 * TAU, w = c.add(s1.scale(Math.cos(a) * r)).add(s2.scale(Math.sin(a) * r)).arr(); if (ahead(w)) runs[runs.length - 1].push(pr(w)); else if (runs[runs.length - 1].length) runs.push([]); }
+      const G2 = t >= (E.blurFrom || 2) ? ng2 : eg;
+      if (E.film && runs.length === 1 && runs[0].length > 2) { const pts = runs[0]; G2.save(); G2.globalCompositeOperation = 'lighter'; G2.filter = 'blur(' + (wd * 2) + 'px)'; G2.fillStyle = C(E.film * a0); G2.beginPath(); pts.forEach(([x, y], q) => q ? G2.lineTo(x, y) : G2.moveTo(x, y)); G2.fill(); G2.restore(); }   // (a faint film of the pulse across the ring: the wave's body)
+      runs.filter(q => q.length > 1).forEach(pts => { G2.save(); G2.globalCompositeOperation = 'lighter'; G2.filter = 'blur(' + (wd * 1.4) + 'px)'; stroke(G2, pts, wd * 4.5, C(0.2 * a0)); G2.filter = 'blur(' + (wd * 0.4) + 'px)'; stroke(G2, pts, wd * 1.6, C(0.6 * a0));
+        G2.filter = 'none'; stroke(G2, pts, wd * 0.45, Cw(0.95 * a0)); G2.restore(); pts.forEach(p => { if (p[0] > 0 && p[0] < W && p[1] > 0 && p[1] < H * (Q.sparkMaxY || 0.68)) crest.push(p); }); }); });
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(10px)'; g.globalAlpha = 0.35; g.drawImage(ec, 0, 0); g.filter = 'none'; g.globalAlpha = 1; g.drawImage(ec, 0, 0);
+    g.filter = 'blur(' + (E.nearBlur || 3) + 'px)'; g.drawImage(near, 0, 0); g.restore(); }
+  // sparks off the crest: short streaks thrown out along the floor (away from its middle), and arcs leaping off it
+  (Q.near || []).forEach(([r]) => ring(r, 240).forEach(p => { if (p[0] > 0 && p[0] < W && p[1] > 0 && p[1] < H * (Q.sparkMaxY || 0.68)) crest.push(p); }));
+  const c0 = pr(ctr);
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  for (let i = 0; i < (Q.sparks || 80); i++) { const p = crest[Math.floor(R() * crest.length)]; if (!p) continue; const a = Math.atan2(p[1] - c0[1], p[0] - c0[0]) + (R() - 0.5) * 0.7, d = R() * 40, L = 8 + R() * 30, x = p[0] + Math.cos(a) * d, y = p[1] + Math.sin(a) * d - R() * 20;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, Cw(1)); sg.addColorStop(0.3, C(0.85)); sg.addColorStop(1, C(0)); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.8; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+  for (let i = 0; i < (Q.crestArcs || 8); i++) { const p = crest[Math.floor(R() * crest.length)]; if (!p) continue; const a = -PI / 2 + slope + (R() - 0.5) * 1.4, len = 20 + R() * 50; arc(g, jag([p, [p[0] + Math.cos(a) * len, p[1] + Math.sin(a) * len]], 34, 3), 0.9 + R() * 0.7, 0.85); }
+  // the nearest plane: hex shards of the reactor's light flying past the lens, out of focus, and soft bokeh
+  { const nr = cv(), ng = nr.getContext('2d'); ng.globalCompositeOperation = 'lighter';
+    (Q.lens || []).forEach(([x, y, r, rot]) => { hex(ng, x * W, y * H, r, rot, C(0.22), Cw(0.9), 2.5); hex(ng, x * W, y * H, r * 0.62, rot, null, C(0.6), 1.5); });
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(' + (Q.lensBlur || 4) + 'px)'; g.drawImage(nr, 0, 0); g.restore(); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const x = R() * W, y = R() * H * 0.6, r = 10 + R() * 22; blob(g, x, y, r, [[0, C(0.15)], [0.75, C(0.1)], [1, C(0)]]); }
+  g.restore();
+  // 6. THE GRADE: a vignette, darker at the foot (the name plate reads over it)
+  g.save(); g.fillStyle = rad(g, W * 0.55, H * 0.4, H * 0.75, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(1,10,9,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.7, 0, H); lg.addColorStop(0, 'rgba(1,10,9,0)'); lg.addColorStop(1, 'rgba(1,10,9,' + (Q.foot == null ? 0.5 : Q.foot) + ')'); g.fillStyle = lg; g.fillRect(0, H * 0.7, W, H * 0.3); g.restore();
+  return { png: out.toDataURL('image/png'), info };
+}
+
 // ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
 // from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
 // Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
@@ -975,6 +1091,7 @@ ${VOID_MAGE.toString()}
 ${ICE_MAGE.toString()}
 ${ZIG_DASH.toString()}
 ${RIFT_GLITCH.toString()}
+${CORE_MAGE.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -1200,6 +1317,7 @@ window.__card = async function (P, W, H, modelOnly) {
   if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
   if (P.style === 'ice') { const k0 = Math.max(...iceAxes.map(q => q[2])); return ICE_MAGE({ W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, B, heart, iceTips: iceAxes.map(([a, b, sc]) => [pr([a.x, a.y, a.z]), pr([b.x, b.y, b.z]), sc / k0]) }); }
   if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
+  if (P.style === 'core') return CORE_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
   if (P.style === 'storm') return STORM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
 
