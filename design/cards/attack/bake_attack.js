@@ -135,6 +135,19 @@ const SAMPLES = {
     lights: { hemi: [0xd0a0b8, 0x1a0610, 0.45], key: [0xfff0f6, 1.0], rim: 2.4, back: 1.4, low: [0xff7ab8, 2.2, 0, 0.4, 2.2] },
     cam: { pos: [0.7, 1.15, 6.3], look: [-0.15, 0.2, 0], fov: 38, roll: -0.18 },
   },
+  // ---------- FOLLOWERS, ROUND 2 (the owner, 2026-11-17: "Continue") ----------
+  // THE VOIDSTAR (flux Mage, evolved form 'voidstar', design No. 946: design/evolutions/bake.js JOBS, forms24.js _starfish) casting MAELSTROM (docs/COMBAT.md; the owner, 2026-11-12: "a little
+  // maelstrom AoE effect that throws like purple crystals everywhere"), in the Mage style as the Ember Hood's: its pose the reach as the swirl opens (the sheet's extra block, column 22:
+  // lift 1, thrust 1: the arms that face the enemy lifted and thrust at it); charged with the void (VOID_MAGE, below); the swirl of crystals in the very front of the card, at the lens.
+  voidstar_maelstrom: {
+    style: 'void', form: 946, color: '#9933ff', rim: '#b366ff', fx: '#9933ff', world: 'flux', seed: 946,
+    pose: { t: 0.55, act: 0, v: { lift: 1, thrust: 1 } }, yaw: 0.25,   // (its front, the arms that reach, turned to the lens: the enemy's place)
+    lights: { hemi: [0x9a88c0, 0x0a0418, 0.5], key: [0xf4ecff, 1.0], rim: 2.6, back: 1.4, low: [0xb070ff, 4, -1.4, 0.5, 3.4] },
+    cam: { pos: [1.4, 1.6, 6.6], look: [-0.5, 0.12, 1.2], fov: 42, roll: -0.27 },   // (above it and looking down past it to the floor in front, so its five arms and its orb read up on the right and the swirl fills the middle left; rolled as the Ember Hood's)
+    swirl: { at: [-0.42, 0.06], r: 1.0, arms: 3, per: 7, thrown: 18, size: 0.17, nearBlur: 2.2,
+      lens: [{ w: 5, pts: [[-20, 100], [30, 170], [60, 245]] }, { w: 3.5, pts: [[-20, 450], [40, 400], [90, 340]] }],   // (the nearest filaments: down the left edge into the eye, and up from the lower left; each ends at the eye) cast: [0.6, 0.27],   // (the swirl's middle on the floor where the ray through this point of the picture (-1..1) meets it; its radius, world units)
+      near: [[-0.85, 0.75, 1.3, 0.16, 0.6], [0.9, 0.85, 1.5, 0.13, -0.4], [-0.95, -0.2, 1.2, 0.12, 2.2], [0.7, 0.2, 1.7, 0.08, 1.0], [-0.55, 0.95, 2.0, 0.07, -1.2]] },   // (the nearest crystals, flying past the lens: [x, y on the picture, distance, size, turn])
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -561,6 +574,93 @@ function STORM_MAGE(o) {
   return { png: out.toDataURL('image/png'), info: Object.assign({ eye: E.map(Math.round) }, info) };
 }
 
+// ---------- A FLUX MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the void: followers round 2, 2026-11-17): the flux energy card's world (the void over its
+// warped grid) behind, tilted with the horizon; the follower CHARGED with the void (its silhouette glowing violet, a light inside its outline, fine violet filaments crawling off its
+// edges and over it); and in the very front of the card, the focus, its MAELSTROM: a swirl of violet light on the floor at the lens round a dark eye, the game's crystals turning in
+// it and thrown out all round (3-D, in swirlCv), and the nearest crystals flying past the lens, out of focus (nearCv). Run in the page (its source is put there with toString).
+function VOID_MAGE(o) {
+  const { W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, heart, swirlC } = o, PI = Math.PI, TAU = 2 * PI;
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const V = a => 'rgba(153,51,255,' + a + ')', Vl = a => 'rgba(190,130,255,' + a + ')', Vw = a => 'rgba(241,227,255,' + a + ')';   // (flux's colour, js/config.js ELEMENTS; a lighter violet; its white-hot core)
+  const jag = (pts, amp, depth) => { let p = pts; for (let d = 0; d < depth; d++) { const q = [p[0]]; for (let i = 1; i < p.length; i++) { const [x0, y0] = p[i - 1], [x1, y1] = p[i], L = Math.hypot(x1 - x0, y1 - y0) || 1, k = (R() - 0.5) * amp * L / 60;
+    q.push([(x0 + x1) / 2 - (y1 - y0) / L * k, (y0 + y1) / 2 + (x1 - x0) / L * k], [x1, y1]); } p = q; amp *= 0.62; } return p; };
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const fil = (G, pts, w, a) => { G.save(); G.globalCompositeOperation = 'lighter'; G.filter = 'blur(' + (2 + w * 2) + 'px)'; stroke(G, pts, w * 4, V(0.3 * a)); G.filter = 'blur(1px)'; stroke(G, pts, w * 1.8, Vl(0.7 * a)); G.filter = 'none'; stroke(G, pts, Math.max(0.5, w * 0.6), Vw(a)); G.restore(); };   // (a filament of the void's energy)
+  const S = P.swirl;
+  // 1. FAR: the flux energy card's world (the void, its nebula and stars over its warped grid: js/energygem.js, with that card's own seed), tilted with the horizon, softened
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#06030e'; g.fillRect(0, 0, W, H);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.filter = 'blur(1.5px)'; const k = 1.55; g.drawImage(ws, -225 * k, -630 * 0.62 * k, 450 * k, 630 * k); g.filter = 'none';
+  g.globalAlpha = 0.85; g.drawImage(wm, -225 * k, -630 * 0.62 * k, 450 * k, 630 * k); g.restore(); g.globalAlpha = 1;
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -130, 0, 30); lg.addColorStop(0, 'rgba(40,12,80,0)'); lg.addColorStop(0.8, 'rgba(46,14,90,0.8)'); lg.addColorStop(1, '#14062a');
+  g.fillStyle = lg; g.fillRect(-W, -130, 2 * W, 160); g.restore();
+  // 2. THE FLOOR (3-D), a line of violet light along the horizon (so the tilt reads), a glow round the follower
+  g.drawImage(floorCv, 0, 0);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[28, 0.12], [9, 0.25], [2.5, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, V(0)); lb.addColorStop(0.5, h < 4 ? Vw(a) : V(a)); lb.addColorStop(1, V(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, heart[0], heart[1], 230, [[0, V(0.2)], [0.45, V(0.07)], [1, V(0)]]); g.fillRect(0, 0, W, H); g.restore();
+  // 3. THE FOLLOWER, CHARGED: a dark halo (so its near-black body stands off the floor), its silhouette glowing violet (wide and tight), filaments crawling off its edges, its own
+  //    render, then lit from within (a violet light inside its outline, strongest at its orb) with fine filaments running over it, and motes thrown off it
+  const mask = (src, blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(src, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  g.save(); g.globalAlpha = 0.7; g.drawImage(mask(model, 10, 'rgba(4,1,10,1)'), 0, 4); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.9; g.drawImage(mask(model, 20, '#8a2be2'), 0, 0); g.globalAlpha = 0.75; g.drawImage(mask(model, 5, '#c08cff'), 0, 0); g.restore();
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  const inside = []; for (let y = 2; y < H - 2; y += 4) for (let x = 2; x < W - 2; x += 4) if (A(x, y) > 200) inside.push([x, y]);
+  { const hl = cv(), hg = hl.getContext('2d');
+    for (let i = 0; i < 26; i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const dx = e[0] - heart[0], dy = e[1] - heart[1], len = 14 + R() * 38, a = Math.atan2(dy, dx) + (R() - 0.5) * 1.0;
+      fil(hg, jag([e, [e[0] + Math.cos(a) * len, e[1] + Math.sin(a) * len]], 26, 3), 0.8 + R() * 0.6, 0.85); }
+    g.drawImage(hl, 0, 0); }
+  g.drawImage(model, 0, 0);
+  { const ig = cv(), ic = ig.getContext('2d'); ic.fillStyle = rad(ic, heart[0], heart[1], 150, [[0, 'rgba(220,170,255,0.7)'], [0.35, 'rgba(160,70,255,0.4)'], [1, 'rgba(120,40,220,0.12)']]); ic.fillRect(0, 0, W, H);
+    for (let i = 0; i < 8; i++) { const a = inside[Math.floor(R() * inside.length)], b = inside[Math.floor(R() * inside.length)]; if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) < 40) { i -= 0.5; continue; } fil(ic, jag([a, b], 34, 4), 0.7 + R() * 0.5, 0.9); }
+    ic.globalCompositeOperation = 'destination-in'; ic.drawImage(model, 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.6; g.drawImage(ig, 0, 0); g.restore(); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 30; i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 8 + R() * 60, x = e[0] + up[0] * d + (R() - 0.5) * 24, y = e[1] + up[1] * d + (R() - 0.5) * 12; blob(g, x, y, 1.2 + R() * 2.2, [[0, Vw(1)], [0.4, Vl(0.8)], [1, V(0)]]); }
+  g.restore();
+  // 4. NEAR: MAELSTROM at the lens. On the floor round its middle, a swirl of violet light (bands spiralling in to a dark eye, lying on the floor so it tilts with the world), filaments
+  //    along its arms; the game's crystals turning in it and thrown out all round (3-D), their glow; a filament from the Voidstar's reaching arm into it (the cast).
+  const E = pr(swirlC), on = (t, r) => pr([swirlC[0] + Math.cos(t) * r * S.r * 1.5, 0.02, swirlC[2] + Math.sin(t) * r * S.r * 1.5]);
+  const vx = cv(), vg = vx.getContext('2d');
+  { const rim = []; for (let i = 0; i <= 48; i++) rim.push(on(i / 48 * TAU, 1)); vg.save(); vg.globalCompositeOperation = 'lighter'; vg.filter = 'blur(18px)'; vg.fillStyle = V(0.22); vg.beginPath(); rim.forEach(([x, y], i) => i ? vg.lineTo(x, y) : vg.moveTo(x, y)); vg.fill(); vg.restore(); }
+  for (let a = 0; a < 4; a++) { const t0 = a / 4 * TAU + R() * 0.4, turns = 1.1 + R() * 0.3, pts = [];
+    for (let i = 0; i <= 40; i++) { const u = i / 40, r = Math.pow(1 - u, 1.2) * 1.05, t = t0 - u * turns * TAU; pts.push(on(t, Math.max(0.02, r))); }
+    vg.save(); vg.globalCompositeOperation = 'lighter'; vg.filter = 'blur(6px)'; stroke(vg, pts, 16, V(0.22)); vg.filter = 'blur(2px)'; stroke(vg, pts, 5, Vl(0.35)); vg.restore();
+    fil(vg, jag(pts, 12, 3), 1.6 + R(), 0.9); }
+  vg.save(); vg.globalCompositeOperation = 'lighter'; blob(vg, E[0], E[1], 46, [[0, Vw(0.5)], [0.35, Vl(0.45)], [1, V(0)]]); vg.restore();
+  vg.save(); vg.fillStyle = rad(vg, E[0], E[1], 14, [[0, 'rgba(6,0,14,0.95)'], [0.7, 'rgba(20,4,40,0.8)'], [1, 'rgba(20,4,40,0)']]); vg.translate(E[0], E[1]); vg.scale(1, 0.55); vg.translate(-E[0], -E[1]); vg.beginPath(); vg.arc(E[0], E[1], 14, 0, TAU); vg.fill(); vg.restore();   // (the void at its eye)
+  { const c0 = S.cast ? [S.cast[0] * W, S.cast[1] * H] : [heart[0] - 30, heart[1] + 10]; fil(vg, jag([c0, [(c0[0] + E[0]) / 2, (c0[1] + E[1]) / 2 - 20], E], 50, 4), 1.8, 0.8); }
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(8px)'; g.globalAlpha = 0.4; g.drawImage(vx, 0, 0); g.filter = 'none'; g.globalAlpha = 1; g.drawImage(vx, 0, 0); g.restore();
+  // the crystals: their violet glow, then the crystals themselves; streaks of light behind the thrown ones would be motion (left out: the swirl turns, it is not a shot)
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.9; g.drawImage(mask(swirlCv, 10, '#9933ff'), 0, 0); g.restore();
+  const deep = (src, col) => { const c = cv(), m = c.getContext('2d'); m.drawImage(src, 0, 0); m.globalCompositeOperation = 'multiply'; m.fillStyle = col; m.fillRect(0, 0, W, H); m.globalCompositeOperation = 'destination-in'; m.drawImage(src, 0, 0); return c; };   // (the crystals' faces deepened toward violet: the key light whitens them)
+  g.drawImage(deep(swirlCv, S.tint || '#c090ff'), 0, 0);
+  // motes pulled in along the swirl
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  for (let i = 0; i < 70; i++) { const r = 0.15 + R() * 1.0, t = R() * TAU, p = on(t, r), q = on(t + 0.14 + 0.1 * R(), r * 1.06), sg = g.createLinearGradient(p[0], p[1], q[0], q[1]); sg.addColorStop(0, Vw(1)); sg.addColorStop(1, V(0)); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.4; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke(); }
+  g.restore();
+  // the nearest plane: big crystals flying past the lens, out of focus, with their glow
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)'; g.globalAlpha = 0.9; g.drawImage(mask(nearCv, 0, '#9933ff'), 0, 0); g.restore();
+  g.save(); g.filter = 'blur(' + (S.nearBlur || 4) + 'px)'; g.drawImage(deep(nearCv, S.tint || '#c090ff'), 0, 0); g.restore();
+  // the nearest filaments: big ones at the lens curling in from the card's edge to the eye, out of focus, with crisp cores (as the Thunderhead's bolts)
+  { const nr = cv(), ng = nr.getContext('2d');
+    (S.lens || []).forEach(L => { const J = jag(L.pts.concat([E]), 40, 4); fil(ng, J, L.w, 1); for (let f = 0; f < 2; f++) { const i = 2 + Math.floor(R() * (J.length - 4)), p = J[i], an = R() * TAU, len = 40 + R() * 50; fil(ng, jag([p, [p[0] + Math.cos(an) * len, p[1] + Math.sin(an) * len]], 26, 3), L.w * 0.5, 0.8); } });
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(3px)'; g.drawImage(nr, 0, 0); g.filter = 'blur(1px)'; g.globalAlpha = 0.6; g.drawImage(nr, 0, 0); g.restore(); }
+  // bokeh: a few soft violet motes right at the lens
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const x = R() * W, y = R() * H * 0.6, r = 10 + R() * 22; blob(g, x, y, r, [[0, Vl(0.14)], [0.75, V(0.1)], [1, V(0)]]); }
+  g.restore();
+  // 5. THE GRADE: a vignette, darker at the foot (the name plate reads over it)
+  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.75, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(6,2,14,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.66, 0, H); lg.addColorStop(0, 'rgba(6,2,14,0)'); lg.addColorStop(1, 'rgba(6,2,14,0.55)'); g.fillStyle = lg; g.fillRect(0, H * 0.66, W, H * 0.34); g.restore();
+  return { png: out.toDataURL('image/png'), info: Object.assign({ eye: E.map(Math.round) }, info) };
+}
+
 // ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
 // from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
 // Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
@@ -604,6 +704,7 @@ ${SHATTER_SLABS.toString()}
 ${TECH.toString()}
 ${STORM_MAGE.toString()}
 ${FLAME_DASH.toString()}
+${VOID_MAGE.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -622,7 +723,8 @@ window.__card = async function (P, W, H, modelOnly) {
   const ICE = P.world === 'ice';   // (the ice world: cold light everywhere; the fire world's lava below is the Mage sample's)
   const CORE = P.world === 'core';   // (the core world: the reactor's teal light)
   const STORM = P.world === 'electric', GARDEN = P.world === 'blossom';   // (followers round 1: the storm's yellow light; the garden's pink)
-  soft(14, 6, 0, -6, 3, STORM ? 0x4a4010 : GARDEN ? 0x5a1a3a : CORE ? 0x0a5a4a : ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
+  const VOID = P.world === 'flux';   // (followers round 2: the void's violet)
+  soft(14, 6, 0, -6, 3, VOID ? 0x2a0a5a : STORM ? 0x4a4010 : GARDEN ? 0x5a1a3a : CORE ? 0x0a5a4a : ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
   EL = { color: P.color }; setElementColour(P.color); M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8);   // (as the forms' baker sets a numbered form's crystal)
   const scene = new T.Scene(); scene.environment = env;
@@ -713,6 +815,11 @@ window.__card = async function (P, W, H, modelOnly) {
     } scene.add(ringG);
     const cm = M.crystal.clone(), em = new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }); ringG.traverse(m => { if (m.isLineSegments) m.material = em; else if (m.isMesh) m.material = cm; }); }   // (its own materials, so the follower can be drawn depth-only over it)
   if (P.ring && P.ring.dim) ringG.traverse(m => { if (m.isMesh && !m.material.userData.dimmed) { m.material.userData.dimmed = true; m.material.color.multiplyScalar(P.ring.dim[0]); m.material.emissive.multiplyScalar(P.ring.dim[1]); } });   // (followers round 1: a light element colour, bloom's pink, whites out the crystals; dimmed once, they share one material)
+  // MAELSTROM'S SWIRL (followers round 2, the Voidstar; js/elements.js "maelstrom": three spiral arms of crystals turning, crystals thrown out all round on arcs, a dark crystal at its middle):
+  // the game's diamond crystals (a four-sided bipyramid, flat-shaded, white edges) in flux's violets, in 3-D, set after the camera (their place is found through it). Built only for P.swirl.
+  const swirlG = new T.Group(), nearG = new T.Group(); let swirlC = null;
+  const gemOf = (sz, col, emi) => { const geo = new T.OctahedronGeometry(1, 0); geo.scale(sz * 0.55, sz, sz * 0.55); const m = new T.Mesh(geo, new T.MeshPhysicalMaterial({ color: col, emissive: emi, roughness: 0.3, metalness: 0, clearcoat: 0.4, flatShading: true })); m.material.envMapIntensity = 0.5;
+    m.add(new T.LineSegments(new T.EdgesGeometry(geo), new T.LineBasicMaterial({ color: 0xf1e3ff, transparent: true, opacity: 0.55 }))); return m; };
   // THE FLOOR: dark lava crust split by glowing cracks, far into the haze (so the tilted horizon is a real one), and the hot glow under the follower
   const ft = cv(1024, 1024), fg = ft.getContext('2d'), fe = cv(1024, 1024), fge = fe.getContext('2d');
   const crack = (g, pts, w, c) => { g.strokeStyle = c; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
@@ -726,6 +833,11 @@ window.__card = async function (P, W, H, modelOnly) {
     for (let k = 0; k < 420; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '42,38,64' : '6,5,12') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
     for (let k = 0; k < 26; k++) { let x = R() * 1024, y = R() * 1024, a = R() * 2 * PI; const pts = [[x, y]]; for (let j = 0; j < 10; j++) { a += (R() - 0.5) * 1.9; x += Math.cos(a) * 26; y += Math.sin(a) * 26; pts.push([x, y]); }
       const w = 1 + R() * 2.5; crack(fg, pts, w + 3, '#050409'); crack(fge, pts, w + 6, 'rgba(255,220,40,0.12)'); crack(fge, pts, w, 'rgba(255,230,90,0.45)'); }
+  } else if (VOID) {   // THE VOID FLOOR: near-black violet glass, a warped grid faintly lit (the flux energy card's own grid, under the stars)
+    fg.fillStyle = '#0c0618'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
+    for (let k = 0; k < 360; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '40,20,72' : '4,2,10') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
+    for (let k = 0; k <= 8; k++) { const q = k * 128; crack(fge, [[q, 0], [q + 20, 512], [q, 1024]], 2, 'rgba(180,120,255,0.3)'); crack(fge, [[0, q], [512, q - 20], [1024, q]], 2, 'rgba(180,120,255,0.3)'); }
+    for (let k = 0; k < 40; k++) { const x = R() * 1024, y = R() * 1024; fge.fillStyle = 'rgba(220,190,255,' + (0.3 + R() * 0.5) + ')'; fge.beginPath(); fge.arc(x, y, 1 + R() * 2, 0, 2 * PI); fge.fill(); }
   } else if (GARDEN) {   // THE GARDEN FLOOR: dark plum earth and moss under the garden's light, fallen petals glowing faintly pink
     fg.fillStyle = '#1a0812'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
     for (let k = 0; k < 420; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '62,22,44' : '10,3,8') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
@@ -742,21 +854,36 @@ window.__card = async function (P, W, H, modelOnly) {
     const w = 2 + R() * 5; crack(fg, pts, w + 4, '#080202'); crack(fge, pts, w + 10, 'rgba(255,60,10,0.25)'); crack(fge, pts, w, '#ff6a1a'); crack(fge, pts, w * 0.4, '#ffd27a'); }
   }
   const tx = t => { const x = new T.CanvasTexture(t); x.encoding = T.sRGBEncoding; x.wrapS = x.wrapT = T.RepeatWrapping; x.repeat.set(6, 6); x.anisotropy = 8; return x; };
-  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.MeshStandardMaterial({ map: tx(ft), emissiveMap: tx(fe), emissive: new T.Color(0xffffff), emissiveIntensity: 1.3, roughness: (ICE || STORM) ? 0.55 : 0.85, metalness: 0.1 }));
+  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.MeshStandardMaterial({ map: tx(ft), emissiveMap: tx(fe), emissive: new T.Color(0xffffff), emissiveIntensity: 1.3, roughness: (ICE || STORM || VOID) ? 0.55 : 0.85, metalness: 0.1 }));
   floor.rotation.x = -PI / 2; scene.add(floor);
   const pool = cv(256, 256), pg = pool.getContext('2d'); const pgr = pg.createRadialGradient(128, 128, 0, 128, 128, 128); if (ICE) { pgr.addColorStop(0, 'rgba(150,220,255,0.5)'); pgr.addColorStop(0.4, 'rgba(90,170,255,0.2)'); pgr.addColorStop(1, 'rgba(60,140,255,0)'); } else { pgr.addColorStop(0, 'rgba(255,120,40,0.9)'); pgr.addColorStop(0.4, 'rgba(255,60,10,0.4)'); pgr.addColorStop(1, 'rgba(255,40,0,0)'); } pg.fillStyle = pgr; pg.fillRect(0, 0, 256, 256);
-  if (STORM || GARDEN) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); const cc = STORM ? '255,230,80' : '255,122,184'; g2.addColorStop(0, 'rgba(' + cc + ',0.45)'); g2.addColorStop(0.5, 'rgba(' + cc + ',0.14)'); g2.addColorStop(1, 'rgba(' + cc + ',0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
+  if (STORM || GARDEN || VOID) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); const cc = STORM ? '255,230,80' : VOID ? '170,100,255' : '255,122,184'; g2.addColorStop(0, 'rgba(' + cc + ',0.45)'); g2.addColorStop(0.5, 'rgba(' + cc + ',0.14)'); g2.addColorStop(1, 'rgba(' + cc + ',0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
   if (CORE) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); g2.addColorStop(0, 'rgba(60,240,205,0.45)'); g2.addColorStop(0.5, 'rgba(25,200,170,0.15)'); g2.addColorStop(1, 'rgba(25,200,170,0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
   const glowUnder = new T.Mesh(new T.PlaneGeometry(4.2, 4.2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(pool), transparent: true, blending: T.AdditiveBlending, depthWrite: false }));
   glowUnder.rotation.x = -PI / 2; glowUnder.position.y = 0.02; scene.add(glowUnder);
-  const HAZE = STORM ? '#1a1630' : GARDEN ? '#3a0a26' : CORE ? '#04261f' : ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
+  const HAZE = VOID ? '#14062a' : STORM ? '#1a1630' : GARDEN ? '#3a0a26' : CORE ? '#04261f' : ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
   const cam = new T.PerspectiveCamera(P.cam.fov, W / H, 0.05, 80);
   cam.position.set(...P.cam.pos); cam.lookAt(new T.Vector3(...P.cam.look)); cam.rotateZ(P.cam.roll); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
+  if (P.swirl) { const Q = P.swirl, COLS = [[0x3a1290, 0x14043a], [0x6a28d8, 0x22085a], [0x9a5cf0, 0x30106e]];   // (the game's three violets, deepened: under the scene's white key light the game's own whiten out)
+    const ray = (nx, ny) => new T.Vector3(nx, ny, 0.5).unproject(cam).sub(cam.position).normalize();
+    { const d = ray(Q.at[0], Q.at[1]), t = -cam.position.y / d.y; swirlC = cam.position.clone().addScaledVector(d, t); }
+    for (let arm = 0; arm < Q.arms; arm++) for (let j = 0; j < Q.per; j++) {   // (the arms turning in it, growing outward)
+      const an = arm * 2 * PI / Q.arms + j * 0.62, rd = Q.r * (0.12 + 0.13 * j), C = COLS[(arm + j) % 3], m = gemOf(Q.size * (0.7 + 0.12 * j), C[0], C[1]);
+      m.position.set(swirlC.x + Math.cos(an) * rd, 0.12 + 0.05 * j, swirlC.z + Math.sin(an) * rd); m.rotation.set(0.5 + R() * 0.4, -an, an + 1.2); swirlG.add(m); }
+    for (let i = 0; i < Q.thrown; i++) {   // (crystals thrown out all round, each on its arc: further out, higher, then falling)
+      const an = i * 2.4 + R() * 0.6, u = 0.15 + 0.85 * R(), dist = Q.r * (0.3 + 1.6 * u), h = 0.15 + Math.sin(PI * Math.min(1, u * 1.1)) * 1.1, C = COLS[i % 3], m = gemOf(Q.size * (1.2 - 0.5 * u), C[0], C[1]);
+      m.position.set(swirlC.x + Math.cos(an) * dist, h, swirlC.z + Math.sin(an) * dist); m.rotation.set(R() * PI, R() * PI, R() * PI); swirlG.add(m); }
+    { const m = gemOf(Q.size * 1.6, 0x2a0f55, 0x12042a); m.position.set(swirlC.x, 0.18, swirlC.z); m.rotation.set(0, 0.4, 0); swirlG.add(m); }   // (its middle: the dark crystal)
+    (Q.near || []).forEach(([nx, ny, d, sz, rot], i) => { const C = COLS[(i + 1) % 3], m = gemOf(sz, C[0], C[1]); m.position.copy(cam.position).addScaledVector(ray(nx, ny), d); m.rotation.set(rot, rot * 1.7, rot * 0.6); nearG.add(m); });
+    swirlG.visible = nearG.visible = false; scene.add(swirlG); scene.add(nearG); }
   const grab = () => { renderer.render(scene, cam); const c = cv(); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(renderer.domElement, 0, 0, W, H); return c; };
   B.g.visible = false; ringG.visible = false; const floorCv = grab();
   B.g.visible = true; ringG.visible = true; glowUnder.visible = false;
   if (P.style === 'brawler' || P.style === 'tech') { floor.material.colorWrite = false; floor.renderOrder = -1; } else floor.visible = false;   // (a Brawler sits ON the floor, sunk into it: the floor hides what is under it (its cave's lower half) but is not drawn)
   const model = grab();
+  let swirlCv = null, nearCv = null; if (P.swirl) {   // (the swirl where it shows: the follower drawn depth-only, hiding what is behind it; then the nearest crystals alone)
+    const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
+    swirlG.visible = true; swirlCv = grab(); swirlG.visible = false; B.g.visible = false; nearG.visible = true; nearCv = grab(); nearG.visible = false; B.g.visible = true; cw.forEach(([x, v]) => { x.colorWrite = v; }); }
   let ringCv = null, bodyCv = null; if (P.ring) {   // (the ring where it shows (the follower drawn depth-only, hiding what is behind it) and the follower alone, for their glows)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
     ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; }
@@ -771,6 +898,7 @@ window.__card = async function (P, W, H, modelOnly) {
   const info = { heart: heart.map(Math.round), foot: foot.map(Math.round), horizonDeg: +(slope * 180 / PI).toFixed(1), horizonMid: Math.round(hzAt(W / 2)) };
   if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); return { png: c.toDataURL('image/png'), info }; }
   if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
+  if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
   if (P.style === 'storm') return STORM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
 
