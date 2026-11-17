@@ -210,6 +210,38 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(/if \(typeof cardBattleHolds === "function" && cardBattleHolds\(f\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\)\) return;/.test(i), true, 'the gun');
     });
 
+    group('LINED UP, SIDE ON; THE BATTLE\'S SQUAD (the owner, 2026-11-17)');
+    check('the turns begin lined up on squares: your squad on one side, the enemies on the other, each on its own tile, no two in one column across the line; everyone eases there and faces the other side', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
+            const L = _cb.lay; if (!L) return { none: true }; __ticks(120);
+            const along = o => (o.x - L.mx) * L.ux + (o.y - L.my) * L.uy, us = [], keys = new Set(), at = [];
+            for (const [o, s] of _cb.slots) { us.push(Math.round(along(s) * 10)); keys.add(s.x + ',' + s.y); at.push(Math.hypot(o.x - s.x, o.y - s.y)); }
+            const mine = [...followers.filter(f => _cb.slots.has(f)), player].map(along), theirs = [a, b, c].map(along);
+            return { n: _cb.slots.size, tiles: keys.size, cols: new Set(us).size, mineSide: mine.every(u => u < 0), theirSide: theirs.every(u => u > 0), at: Math.max(...at), axis: Math.abs(L.ux) + Math.abs(L.uy), dir: cardBattleCam() && cardBattleCam().dir, ux: L.ux, uy: L.uy }; })()`);
+        same(!!r.none, false, 'no line-up'); same(r.n, 7, 'three of yours, you and three enemies'); same(r.tiles, 7, 'each its own tile'); same(r.cols, 7, 'no two in one column across the line');
+        same(r.mineSide, true, 'yours on one side'); same(r.theirSide, true, 'theirs on the other'); ok(r.at < 0.05, 'eased to their squares: ' + r.at); same(r.axis, 1, 'along a direction of the floor');
+        ok(Math.abs(Math.cos(r.dir) * r.ux + Math.sin(r.dir) * r.uy) < 1e-9, 'the camera looks across the line');
+    });
+    check('the one whose turn it is leaves its square to strike, and goes back to it after', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __live(90);
+            const f = followers[0], s = _cb.slots.get(f); cardBattlePlay(f, 'basic', null, a); let left = 0; for (let i = 0; i < 900 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { __live(1); left = Math.max(left, Math.hypot(f.x - s.x, f.y - s.y)); }
+            __live(60); return { left, back: Math.hypot(f.x - s.x, f.y - s.y) }; })()`);
+        ok(r.left > 0.3, 'it never left its square: ' + r.left); ok(r.back < 0.05, 'not back on its square: ' + r.back);
+    });
+    check('all your squad down: the battle ends (§2.23), even where the fallen rejoin at once (the Crystal Chamber); one that comes back meanwhile is out of the battle', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const [f, g] = followers; f.health = 0; __ticks(1); f.health = f.maxHealth; const o = { back: cardBattlePlay(f, 'basic', null, a), phase1: cardBattlePhase() };
+            g.health = 0; __ticks(2); o.phase2 = cardBattlePhase(); return o; })()`);
+        same(r.back, false, 'one back from down played a card'); same(r.phase1, 'on', 'with one still up'); same(r.phase2 === 'end' || r.phase2 === 'off', true, 'all down: ' + r.phase2);
+    });
+    check('a dragged card shrinks to a floor tile under the finger; the camera\'s turn across the line is the 3D view\'s', () => {
+        const c = rd('js/cardbattle.js'), h = rd('game.html'), v = rd('view3d/gameview.js');
+        same(/t = _cbTilePx\(\), w = t, h = Math\.round\(t \* 1\.3\)/.test(c) && /requestAnimationFrame\(shrink\)/.test(c), true, 'the shrink');
+        same(/#cbScreen \.cb-ghost :is\(\.cb-tag, \.cb-fx, \.cb-rc, \.cb-meter, \.cb-st\) \{ display: none; \}/.test(h), true, 'its look');
+        same(/a0 \+ bk \* \(B\.side \? wrapA\(B\.dir - a0\) : acrossTurn\(B\.dir, a0\)\)/.test(v), true, 'view3d/gameview.js');
+        same(/Math\.sin\(a\); DIR\.set\(Math\.cos\(elv\) \* ca/.test(v), true, 'the camera\'s direction still set after the battle\'s turn (a comment once swallowed it)');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

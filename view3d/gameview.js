@@ -37,13 +37,15 @@ const GAMEVIEW = (function () {
   const SWING = 0.4; let yaw = 0;
   const twist = () => GM.viewTwist || 0, yawWant = () => (GM.viewTurn || 0) * Math.PI / 2 + twist(), yawLeft = () => { const d = yawWant() - yaw; return d - Math.round(d / (2 * Math.PI)) * 2 * Math.PI; };   // (the short way round)
   const turning = () => Math.abs(yawLeft()) > 1e-4 || Math.abs(twist()) > 1e-4;
+  const wrapA = d => Math.atan2(Math.sin(d), Math.cos(d));
+  const acrossTurn = (dir, a0) => { const d1 = wrapA(dir - a0), d2 = wrapA(dir + Math.PI - a0); return Math.abs(d1) <= Math.abs(d2) ? d1 : d2; };   // CARD BATTLES lined up: the turn to look across the line from whichever side is nearer
   const battling = () => { const B = GM.battleCam; return !!B && B.k > 1e-4; };   // CARD BATTLES (js/cardbattle.js): off the game's own camera, as in a swing, the game's drawing over the picture waits
   // the middle of the screen: the player's ground on the camera's floor (the game's _fpCam: the camera rides the player's floor), then TILE_H px up the screen, as _fpP has it
   function place(dt) { const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
     yaw = !dt || twist() || Math.abs(d) <= step ? yawWant() : yaw + Math.sign(d) * step;
     // A CARD BATTLE's camera (js/cardbattle.js cardBattleCam): eased (B.k) to the middle of the fight, lower, turned to the side and nearer
     const B = GM.battleCam, bk = B ? B.k : 0, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * (bk ? 1 + (B.zoom - 1) * bk : 1);
-    const a = Math.PI / 4 - yaw - (bk ? B.yaw * bk : 0), ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa); UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);
+    const a0 = Math.PI / 4 - yaw, a = !bk ? a0 : B.dir === undefined ? a0 - B.yaw * bk : a0 + bk * (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa); UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);   // (lined up, B.dir: it looks across the line, from the side the battle chose or the nearer one)
     cam.left = -W / 2 / UNIT / kz; cam.right = W / 2 / UNIT / kz; cam.top = H / 2 / UNIT / kz; cam.bottom = -H / 2 / UNIT / kz;
     at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT); cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
