@@ -78,6 +78,7 @@ function _fnDial(cx, cy, N, S) {
 let _fnBottom = 0;   // where the panel ends on screen (0: not drawn): on a phone the round button (js/targeting.js) goes under it
 let _fnRect = null;   // the panel on screen, for a tap (facilityNetTap)
 function drawFacilityNetworkHUD() {
+    if (typeof cardBattleCam === "function" && cardBattleCam()) return;   // (a card battle: its enemy list is there, js/cardbattle.js)
     if (typeof attractOn === "function" && attractOn()) return;   // (the website's background, js/attract.js: no HUD over the picture; it showed through the home page, build 2026-11-15d)
     _fnBottom = 0;
     const N = facilityNetState(), S = FP_NET_STATES[N.state], narrow = canvas.width < 600;

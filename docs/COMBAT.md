@@ -589,6 +589,17 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
 - **Walking is another question:** route smoothing, steering, wander spots, leaps, the clone's pounce, PINBALL's roll and FAULTLINE's path keep the walking test. A crate is seen over and still not walked through.
 - **What changed for sight** (it was the walking test until this build): low furniture, water and barred gates are now seen over. Walls, glass and tall objects hide what is behind them, as before.
 
+### 8.3a Only the room you are in shows its creatures (build `2026-11-17n`)
+
+The owner, 2026-11-17: **"Shouldn't be able to see enemies in other rooms. Only the rooms that you're in."** (`js/facilityplay.js` `facilityShowsActor`.)
+- **A creature not of yours in another room is not drawn** (the 2D game and the 3D view, `?engine=3d`), **cannot be tapped** (`findEnemyAtScreen`) and **is not locked by the gun** (`targetNearest`). It still lives and moves; it shows the moment it is in your room (through a doorway, it shows once it is over the line).
+- **Always shown:** you, your followers and anything of yours wherever they are; a creature a card battle is taking you to (`cardBattleHas`, from the walk on).
+- **The Nest's tunnels and caves are one place** (as for a tap, `FP_NEST_ROOMS`).
+- **As before** outside the building, on the title's background, and when you stand on no floor.
+- A card battle takes in only the creatures of its creature's room (`js/cardbattle.js` `_cbGroup`).
+- **Not changed** (open, §8 is the owner's to extend): the creatures' own sight and aim, sounds, the map, and a creature's hit from beyond a doorway.
+- Tests: `tests/roomsight.js`.
+
 ### 8.4 Shots (`facilityShotStop`, `facilityShotReach`; the shots in flight, `js/game.js`)
 
 - **A shot that travels** is anything on the shared shot list:

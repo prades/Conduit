@@ -19,30 +19,84 @@ function _facetDome(R, sy, mouthDir, mouthAng, shade, seed, detail, grain) {   /
   const m = new T.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95, metalness: 0.0 }); m.envMapIntensity = 0.2;   // (the environment's bright panels would wash a pale shell out)
   return new T.Mesh(geo, m);
 }
-function _iceRubble(R, n, seed, colour) {   // chunks round the base: tagged ground
+// POWDER SNOW (No. 947, a draft for the owner, 2026-11-17: "He's supposed to have two icicles fangs and their within his Pac-Man looking body but it's made of powdered snow ... but instead right now it looks
+// like it's a crystaline looking icy exterior"; of the first draft (smooth, round-mouthed, icicle fangs): "No, I like his old teeth and the powder material needs more of a snowy texture"). The same dome and the
+// same mouth as No. 934 (cut on the same faces, so its jagged teeth are the same), each face split finely and rounded so it reads soft, with a snow texture over it: a grainy, sparkling surface (a colour map
+// and a bump map painted once, wrapped round the dome) instead of flat facets of different brightness.
+function _vn3(x, y, z, sd) {   // smooth 3-D value noise, 0..1 (a lattice of _hz, blended)
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), tx = x - xi, ty = y - yi, tz = z - zi, s = t => t * t * (3 - 2 * t), u = s(tx), v = s(ty), w = s(tz), h = (i, j, k) => _hz(i + sd * 131, j + sd * 17, k);
+  const L = (a, b, t) => a + (b - a) * t;
+  return L(L(L(h(xi, yi, zi), h(xi + 1, yi, zi), u), L(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u), v), L(L(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), L(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u), v), w);
+}
+function _powderDome(R, sy, mouthDir, mouthAng, seed, cols, detail, sub) {
+  const src = new T.IcosahedronGeometry(1, detail || 3).attributes.position.array, pos = [], col = [], N = sub || 8;
+  const md = new T.Vector3(mouthDir[0], mouthDir[1], mouthDir[2]).normalize(), lo = new T.Color(cols[0]), hi = new T.Color(cols[1]), lip = new T.Color(cols[2]), hollow = new T.Color(cols[3] || 0x8fa6c8), k = new T.Color();
+  // THE SNOW: soft clumps over the dome, smaller lumps on them and a fine crust; the hollows between them faintly blue, the odd grain bright (a sparkle). It is in the shape, not a picture laid on it, so it has no seam.
+  const snow = v => { const c1 = _vn3(v.x * 5 + 7, v.y * 5, v.z * 5, seed) - 0.5, c2 = _vn3(v.x * 13, v.y * 13 + 3, v.z * 13, seed + 1) - 0.5, c3 = _vn3(v.x * 31, v.y * 31, v.z * 31 + 5, seed + 2) - 0.5;
+    return { d: 0.065 * c1 + 0.035 * c2 + 0.014 * c3, hol: Math.max(0, -(c1 * 0.6 + c2 + c3 * 0.6)), spark: _hz(Math.round(v.x * 90) + seed, Math.round(v.y * 90), Math.round(v.z * 90)) > 0.985 }; };
+  const a = new T.Vector3(), b = new T.Vector3(), d = new T.Vector3(), c = new T.Vector3(), upM = new T.Vector3(0, 1, 0).sub(md.clone().multiplyScalar(md.y)).normalize();
+  const rimAt = v => { const u = v.clone().normalize(), cc = u.dot(md), q = u.sub(md.clone().multiplyScalar(cc)); if (q.lengthSq() < 1e-9) return v; q.normalize(); return md.clone().multiplyScalar(Math.cos(mouthAng)).add(q.multiplyScalar(Math.sin(mouthAng))); };   // (a point moved out onto the mouth's round rim)
+  const put = (v, edge) => { const S = snow(v), n = 1 + S.d, y = Math.max(0, v.y);
+    pos.push(v.x * R * n, y * R * sy * n, v.z * R * n);
+    k.copy(lo).lerp(hi, Math.min(1, Math.pow(y, 0.8) * 1.15)); if (edge < 0.3) k.lerp(lip, 1 - Math.max(0, edge) / 0.3);
+    k.lerp(hollow, Math.min(0.8, S.hol * 2.2)); if (S.spark) k.setRGB(1, 1, 1); col.push(k.r, k.g, k.b); };
+  for (let i = 0; i < src.length; i += 9) {
+    a.set(src[i], src[i + 1], src[i + 2]); b.set(src[i + 3], src[i + 4], src[i + 5]); d.set(src[i + 6], src[i + 7], src[i + 8]);
+    c.copy(a).add(b).add(d).multiplyScalar(1 / 3); const ch = c.clone().normalize();
+    if (c.y < -0.02) continue;                                        // a dome, not a ball (as No. 934)
+    const fa = Math.acos(Math.max(-1, Math.min(1, ch.dot(md)))), pp = ch.clone().sub(md.clone().multiplyScalar(ch.dot(md)));
+    const side = pp.lengthSq() > 1e-9 && pp.normalize().dot(upM) < 0.45;   // (this face is round the sides or the bottom of the mouth, not its top)
+    if (side) {   // THE SIDES ROUND, NO TEETH THERE (the owner, 2026-11-17, circling the two points low at each side of the mouth: "Get rid of the side teeth somehow"): a face across the rim has its corners inside put on the rim
+      const ins = [a, b, d].map(v => Math.acos(Math.max(-1, Math.min(1, v.clone().normalize().dot(md)))) < mouthAng); if (ins.every(Boolean)) continue;
+      [a, b, d].forEach((v, j) => { if (ins[j]) v.copy(rimAt(v)); });
+    } else if (fa < mouthAng) continue;                               // the top of the mouth: the same faces left out as No. 934, so its teeth along the top are the same
+    const edge = Math.max(0, fa - mouthAng), P = (i2, j2) => a.clone().multiplyScalar(1 - (i2 + j2) / N).add(b.clone().multiplyScalar(i2 / N)).add(d.clone().multiplyScalar(j2 / N)).normalize();
+    for (let i2 = 0; i2 < N; i2++) for (let j2 = 0; j2 < N - i2; j2++) {   // (the face split into little faces on the sphere, so the snow's lumps have room)
+      for (const q of [P(i2, j2), P(i2 + 1, j2), P(i2, j2 + 1)]) put(q, edge);
+      if (j2 < N - i2 - 1) for (const q of [P(i2 + 1, j2), P(i2 + 1, j2 + 1), P(i2, j2 + 1)]) put(q, edge); }
+  }
+  // smooth normals: each corner the average of the faces that meet at that point (the little faces are separate, so they are joined by their position)
+  const nor = new Float32Array(pos.length), acc = new Map(), key = j => Math.round(pos[j] * 4000) + ',' + Math.round(pos[j + 1] * 4000) + ',' + Math.round(pos[j + 2] * 4000), e1 = new T.Vector3(), e2 = new T.Vector3();
+  for (let j = 0; j < pos.length; j += 9) { e1.set(pos[j + 3] - pos[j], pos[j + 4] - pos[j + 1], pos[j + 5] - pos[j + 2]); e2.set(pos[j + 6] - pos[j], pos[j + 7] - pos[j + 1], pos[j + 8] - pos[j + 2]); const fn = e1.clone().cross(e2);
+    for (let m = 0; m < 9; m += 3) { const kk = key(j + m), cur = acc.get(kk); if (cur) cur.add(fn); else acc.set(kk, fn.clone()); } }
+  for (let j = 0; j < pos.length; j += 3) { const v = acc.get(key(j)).clone().normalize(); nor[j] = v.x; nor[j + 1] = v.y; nor[j + 2] = v.z; }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3));
+  const m = new T.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 1, metalness: 0 }); m.envMapIntensity = 0.1;   // (its outside only, as No. 934's: the inside of the mouth is the dark cave)
+  return new T.Mesh(geo, m);
+}
+// AN ICICLE (No. 947's fangs): a long tapering spike of clear pale ice, its base at y = 0 and its point at -h, ridged a little where it dripped as it froze; glossy, faintly lit from within
+function _icicle(r, h, seed) {
+  const geo = new T.CylinderGeometry(r, 0.004, h, 10, 8), q = geo.attributes.position;
+  for (let v = 0; v < q.count; v++) { const y = q.getY(v), u = 0.5 - y / h, rr = 1 + 0.13 * Math.sin(u * 19 + seed) * (1 - u) + 0.05 * Math.sin(Math.atan2(q.getZ(v), q.getX(v)) * 3 + seed); q.setX(v, q.getX(v) * rr); q.setZ(v, q.getZ(v) * rr); }
+  geo.translate(0, -h / 2, 0); geo.computeVertexNormals();
+  const m = new T.MeshStandardMaterial({ color: new T.Color(0xd8f4ff), emissive: new T.Color(0x5fb8e8), emissiveIntensity: 0.28, roughness: 0.08, metalness: 0.05, transparent: true, opacity: 0.92 }); m.envMapIntensity = 0.9;
+  return new T.Mesh(geo, m);
+}
+function _iceRubble(R, n, seed, colour, soft) {   // chunks round the base: tagged ground (soft, No. 947: clumps of snow, not cut ice)
   const g = G(); g.userData.ground = true;
-  const mat = new T.MeshStandardMaterial({ color: colour, flatShading: true, roughness: 0.95, metalness: 0.0 }); mat.envMapIntensity = 0.2;
-  for (let i = 0; i < n; i++) { const a = i * TAU / n + (_hz(i, seed, 1) - 0.5) * 0.6, r = R * (1.0 + 0.32 * _hz(i, seed, 2)), s = 0.1 + 0.2 * _hz(i, seed, 3);
-    const m = new T.Mesh(new T.IcosahedronGeometry(1, 0), mat); m.scale.set(s * 1.3, s * 0.38, s); m.position.set(Math.sin(a) * r, s * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, seed, 4) * 3; g.add(m); }
+  const mat = new T.MeshStandardMaterial({ color: colour, flatShading: !soft, roughness: 0.95, metalness: 0.0 }); mat.envMapIntensity = 0.2;
+  for (let i = 0; i < n; i++) { const a = i * TAU / n + (_hz(i, seed, 1) - 0.5) * 0.6, s = 0.1 + 0.2 * _hz(i, seed, 3), r = soft ? R + s * 1.35 + 0.1 * _hz(i, seed, 2) : R * (1.0 + 0.32 * _hz(i, seed, 2));   // (soft, No. 947: outside the wall, so none shows inside its mouth)
+    const m = new T.Mesh(new T.IcosahedronGeometry(1, soft ? 2 : 0), mat); m.scale.set(s * 1.3, s * 0.38, s); m.position.set(Math.sin(a) * r, s * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, seed, 4) * 3; g.add(m); }
   return g;
 }
 function _iceMaw(o) {
   const g = G(), b = G(); g.add(b); if (o.S) b.scale.setScalar(o.S);
   const bodyG = o.lunge ? G() : b; if (o.lunge) b.add(bodyG);   // (o.lunge, No. 934: the body (all but the rubble on the floor) moves as a whole)
   const R = o.R, sy = o.sy, mAng = o.mouth, md = o.md || [0, 0.22, 1];
-  const dome = _facetDome(R, sy, md, mAng, o.shade, o.seed || 3, o.detail, o.grain); bodyG.add(dome);
+  const dome = o.powder ? _powderDome(R, sy, md, mAng, o.seed || 3, o.powder, o.detail || 3, 8) : _facetDome(R, sy, md, mAng, o.shade, o.seed || 3, o.detail, o.grain); bodyG.add(dome);   // (o.powder, No. 947: smooth powder snow)
   // the cave: the inside of a slightly smaller dome, a dark glow
   const cave = new T.Mesh(new T.IcosahedronGeometry(R * 0.93, 2), new T.MeshBasicMaterial({ color: o.cave != null ? new T.Color(o.cave) : new T.Color(EL.color).multiplyScalar(0.07), side: T.BackSide })); cave.scale.y = sy; bodyG.add(cave);
   const floorGlow = new T.Mesh(new T.CircleGeometry(R * 0.7, 10), new T.MeshBasicMaterial({ color: o.caveFloor != null ? new T.Color(o.caveFloor) : new T.Color(EL.color).multiplyScalar(0.07) })); floorGlow.rotation.x = -PI / 2; floorGlow.position.set(0, 0.02, R * 0.25); bodyG.add(floorGlow);
   // the fangs hang INSIDE the mouth, from its ceiling; casting, they swing forward and down
   const a = R * Math.sin(mAng), lipY = R * sy * 0.28 + a * 0.92, lipZ = R * 0.9;
   const jaw = G(); jaw.position.set(0, lipY - 0.08, R * 0.34); bodyG.add(jaw);   // inside the cave, hanging from the ceiling of the mouth
-  const fangs = []; for (const s of [-1, 1]) { const f = hexCrystal(o.fang, 0.1, o.fangH, M.crystal); f.position.set(s * a * (o.fSp || 0.62), -(0.1 + o.fangH * 1.7) / 2 + 0.07, 0.05); f.rotation.z = PI + s * (o.fTilt == null ? 0.18 : o.fTilt); jaw.add(f); fangs.push(f); }   // point down, a little inward
-  const rub = _iceRubble(R, o.rubble || 12, o.seed || 3, o.rubbleColour); b.add(rub);
+  const fangs = []; for (const s of [-1, 1]) { if (o.icicle) { const f = _icicle(o.icicle[0], o.icicle[1], s + 2); f.position.set(s * a * (o.fSp || 0.62), 0.0, 0.14); f.rotation.z = s * (o.fTilt == null ? 0.12 : o.fTilt); jaw.add(f); fangs.push(f); continue; }   // (o.icicle, No. 947: [radius, length]: an icicle hanging from the mouth's ceiling)
+    const f = hexCrystal(o.fang, 0.1, o.fangH, M.crystal); f.position.set(s * a * (o.fSp || 0.62), -(0.1 + o.fangH * 1.7) / 2 + 0.07, 0.05); f.rotation.z = PI + s * (o.fTilt == null ? 0.18 : o.fTilt); jaw.add(f); fangs.push(f); }   // point down, a little inward
+  const rub = _iceRubble(R, o.rubble || 12, o.seed || 3, o.rubbleColour, o.powder); b.add(rub);
   if (o.snow) {   // (No. 934) a drift of powder heaped round its foot, in front of the body's layer and not moving with it: it sits sunk into the floor. Soft lumps, a little taller at the back.
-    const sm = new T.MeshStandardMaterial({ color: o.snow, roughness: 1, metalness: 0, flatShading: true }); sm.envMapIntensity = 0.25;
-    for (let i = 0; i < 26; i++) { const a = i * TAU / 26 + (_hz(i, o.seed || 3, 7) - 0.5) * 0.25, r = R * (0.98 + 0.14 * _hz(i, o.seed || 3, 8)), sz = 0.11 + 0.09 * _hz(i, o.seed || 3, 9);
-      const m = new T.Mesh(new T.IcosahedronGeometry(1, 1), sm); m.scale.set(sz * 1.5, sz * (Math.cos(a) < 0 ? 0.7 : 0.4), sz * 1.2); m.position.set(Math.sin(a) * r, sz * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, 5, 6) * 3; b.add(m); } }
+    const sm = new T.MeshStandardMaterial({ color: o.snow, roughness: 1, metalness: 0, flatShading: !o.powder }); sm.envMapIntensity = 0.25;
+    for (let i = 0; i < 26; i++) { const a = i * TAU / 26 + (_hz(i, o.seed || 3, 7) - 0.5) * 0.25, sz = 0.11 + 0.09 * _hz(i, o.seed || 3, 9), r = o.powder ? R + sz * 1.5 + 0.02 * _hz(i, o.seed || 3, 8) : R * (0.98 + 0.14 * _hz(i, o.seed || 3, 8));   // (o.powder, No. 947: heaped against the outside of the wall, never through it, so none shows inside its mouth: the owner, 2026-11-17)
+      const m = new T.Mesh(new T.IcosahedronGeometry(1, o.powder ? 3 : 1), sm); m.scale.set(sz * 1.5, sz * (Math.cos(a) < 0 ? 0.7 : 0.4), sz * 1.2); m.position.set(Math.sin(a) * r, sz * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, 5, 6) * 3; b.add(m); } }
   const L = new T.PointLight(0xffffff, 0.5, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.5, R * 0.5); bodyG.add(L); LIGHTS.push(L);
   return { g, core: 0.5 * (o.S || 1), update(t, act, v) { const ac = act || 0;
     dome.scale.y = 1 + 0.015 * Math.sin(1.6 * t) - 0.04 * ac; jaw.rotation.x = -(o.swing || 0.6) * ac; L.intensity = 0.5 + 0.2 * Math.sin(1.6 * t) + 0.5 * ac;
@@ -86,3 +140,5 @@ fx(157, "Pale dome, narrow mouth, long thin fangs.", () => _iceMaw({ R: 0.95, sy
 // the powder snow of No. 934 (the owner, 2026-11-11: "a powdered snow Pac-Man with teeth that's sunken into the floor": keep the design, the shape; redo the texture): pale blue-white, the lip round the mouth the brightest
 const _snowTop = _hexc(0x7a8fb0), _snowMid = _hexc(0x566b8e), _snowLip = _hexc(0xa8bbd8);
 fx(934, "The FROST MAW's lunge-bite and CHOMP: No. 156 as powder snow, its body thrown forward and rearing up, its short fangs staying in its mouth.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.1, fangH: 0.2, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 0.2, detail: 3, grain: 0.34, snow: 0x9db0cc, cave: 0x081c30, caveFloor: 0x143a56, shade: (cy, e) => e < 0.3 ? _snowLip : cy > 0.55 ? _snowTop : _snowMid }));
+fx(947, "DRAFT (2026-11-17, not approved): the FROST MAW as No. 934, its teeth and shape the same, its body powder snow (soft and grainy, sparkling) instead of cut facets.", () => _iceMaw({ S: 1.15, R: 0.95, sy: 0.9, mouth: 0.68, fang: 0.1, fangH: 0.2, seed: 41, rubble: 12, rubbleColour: 0xc4d3e8, lunge: 0.8, swing: 0.2, detail: 3, snow: 0xb4c6de, cave: 0x081c30, caveFloor: 0x143a56,
+  powder: [0x6a81a6, 0xc4d2e6, 0xe2eaf6, 0x7f98c2] }));

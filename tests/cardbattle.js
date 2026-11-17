@@ -69,6 +69,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.inPrey, true, 'one in it may go for you'); same(r.outPrey, false, 'one outside goes for you'); same(r.outFol, false, 'one outside goes for your squad'); same(r.target, false, 'one outside kept you as its target');
         same(r.mayIn, true, 'your squad may go for one in it'); same(r.mayOut, false, 'your squad goes for one outside'); same(r.gun, true, 'your gun picks one outside');
     });
+    check('the world goes on (§2.28, the owner: "Both at once"): a follower holding a room (HOLD) is not in the battle: creatures outside it may still go for it, it fights them, and their hits on it start no battle', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const F = partyMembers(), held = F[2]; partyApplyStance([held], 'hold');
+            const o = { posted: !!held.post, member: partyIsMember(held) }; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); const out = __ant(held.x + 1.5, held.y);   // (after the battle began: not one of it)
+            o.preyHeld = predatorPreyOk(out, held); o.preySquad = predatorPreyOk(out, partyMembers()[0]); o.heldMay = cardBattleMayTarget(out, held); o.squadMay = cardBattleMayTarget(out, partyMembers()[0]);
+            cardBattleRun(); __ticks(CARD_BATTLE.easeOut + CARD_BATTLE.calm + 4); applyDamage(held, 1, out); o.started = cardBattlePhase(); return o; })()`);
+        same(r.posted, true, 'held'); same(r.member, false, 'still in the squad');
+        same(r.preyHeld, true, 'a creature outside may go for the one holding a room'); same(r.preySquad, false, 'nor for your squad'); same(r.heldMay, true, 'the one holding a room fights it'); same(r.squadMay, false, 'your squad does not');
+        same(r.started, 'off', 'a hit on the one holding a room started a battle');
+    });
     check('RUN ends it (§2.12): the camera eases back, and the creatures of the battle start nothing and go for nobody for a while; then all as ever', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(CARD_BATTLE.easeIn + 2);
             const o = { ran: cardBattleRun(), p: cardBattlePhase() }; applyDamage(player, 1, a); o.after = cardBattlePhase(); o.prey = predatorPreyOk(a, player); o.calmed = !a.provoked;
@@ -76,12 +85,28 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ran, true, 'ran'); same(r.p, 'end', 'phase'); same(r.after, 'end', 'its last blow started one again'); same(r.prey, false, 'it goes for you at once'); same(r.calmed, true, 'still provoked');
         same(r.off, 'off', 'phase, after the camera is out'); same(r.cam, null, 'the camera'); same(r.preyLater, true, 'later, as ever');
     });
+    check('its prey down, a creature in the battle keeps at it (the owner, 2026-11-17): it goes for the nearest of yours still up, instead of calming down and wandering off', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a);
+            const gone = followers[0]; a.currentTarget = gone; a.provoked = true; gone.health = 0; gone.dead = true; let at = null;
+            for (let i = 0; i < 60; i++) { frame++; a.update(); cardBattleTick(); }
+            return { phase: cardBattlePhase(), state: a.state, provoked: a.provoked, onTheOther: a.currentTarget === followers[1] || a.currentTarget === player }; })()`);
+        same(r.phase, 'on', 'the battle'); same(r.provoked, true, 'it calmed down'); same(r.onTheOther, true, 'it went for another of yours'); same(r.state === 'wander', false, 'it wandered off');
+    });
+    check('one far from you all the same is let go: out of the battle, calm, and the camera no longer takes it in; the last one let go ends the battle and the camera comes back', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.5, player.y + 1); cardBattleChoose(a);
+            const o = { both: cardBattleFoes().length }; a.x = player.x + CARD_BATTLE.leave + 2; __ticks(10);
+            o.left = cardBattleFoes().indexOf(a) < 0; o.calm = !a.provoked && a.state === 'wander'; o.bars = cardBattleBars(a, player); o.still = cardBattlePhase();
+            b.x = player.x - CARD_BATTLE.leave - 2; __ticks(10); o.end = cardBattlePhase(); __ticks(CARD_BATTLE.easeOut + 5); o.cam = cardBattleCam(); o.off = cardBattlePhase();
+            return o; })()`);
+        same(r.both, 2, 'both in it'); same(r.left, true, 'the far one let go'); same(r.calm, true, 'calmed'); same(r.bars, true, 'it goes for nobody of yours for a while'); same(r.still, 'on', 'the battle with the other');
+        same(r.end, 'end', 'the last one let go'); same(r.cam, null, 'the camera'); same(r.off, 'off', 'then');
+    });
     check('it ends by itself when every creature in it is down', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(CARD_BATTLE.easeIn + 2); for (const f of cardBattleFoes()) f.dead = true; __ticks(1); return cardBattlePhase(); })()`);
         same(r, 'end', 'phase');
     });
 
-    check('THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "time slows down to about half ... like the crystal being destroyed in half speed"; "Clock only"): in a battle every countdown of the world runs at half, the raids\' clock, the spawns\', the Crystal\'s idle refill, a turret\'s shots and the bites of a creature outside it; a creature in it bites at its own pace; out of a battle all as ever', () => {
+    check('THE CLOCK AT HALF (§2.30; the owner, 2026-11-17: "time slows down to about half ... like the crystal being destroyed in half speed"; "Clock only"): in a battle every countdown of the world runs at half, the raids\' clock, the spawns\', the Crystal\'s idle refill, a turret\'s shots and the bites of a creature outside it; a creature in it bites at its own pace; out of a battle all as ever', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true;
             const a = __ant(player.x + 2, player.y), out = __ant(player.x - 6, player.y + 1), R = _raidState(), keepOn = raidsOn, it = sentryItems()[0];
             const bites = (c, n) => { let k = 0; const keep = c.bite; c.bite = function () { k++; return null; }; c.attackCooldown = 0; c.attackWindup = 0; c.attackAnim = 0; for (let i = 0; i < n; i++) { frame++; c._biteTick(crystal); } c.bite = keep; return k; };
@@ -98,15 +123,38 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify(r.inside.clock), JSON.stringify([0.5, 0.5, 1]), 'the clock in a battle: the world\'s, one outside it, one in it'); same(r.outside.clock, 1, 'out of a battle'); same(r.after, 1, 'after RUN');
     });
 
+    group('THE BATTLE SCREEN (step 2): SQUAD ROWS\' cards');
+    check('each member\'s own cards (§2.25): its BASIC ATTACK always ready; each second attack it may use, its recharge its wait time at 2 s a turn (rounded up), ready or the turns left; its Ultimate by its meter', () => {
+        const r = J(`(function(){ __fresh(3); const F = partyMembers(); F[0].evolved = 'jellyram'; F[0].element = 'core'; energyFill(F[0]); F[0].ultimateCharge = 100; F[1].evolved = 'rimestar'; F[1].element = 'ice'; energyFill(F[1]); F[1].ultimateCharge = 40;
+            const a = cardBattleCards(F[0]), b = cardBattleCards(F[1]), egg = cardBattleCards(F[2]);
+            const cooler = F.find(f => altCools(f)) || (F[2].role = 'brawler', F[2]); cooler._altReadyAt = frame + 150; const cooling = cardBattleCards(cooler).find(c => c.kind === 'move');   // (one that cools down after its move: a Brawler, js/moves.js altCools)
+            const pick = cs => cs.map(c => c.kind + ':' + c.name + ':' + (c.ready ? 'R' : 'W') + (c.recharge ? ':' + c.recharge : '') + (c.kind === 'ult' ? ':' + c.charge : ''));
+            return { a: pick(a), b: pick(b), egg: pick(egg), cooling: [cooling.ready, cooling.turns], wob: Math.max(1, Math.ceil(MOVES.wobble_slam.windup / 2)), icy: Math.max(1, Math.ceil(MOVES[b[1].name === MOVES.icicle_volley.name ? 'icicle_volley' : 'icicle_volley'].windup / 2)), fx: a[1].fx.length > 10 && b[2].fx.length > 10 }; })()`);
+        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100', 'the Jelly Ram\'s');
+        same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40', 'the Rimestar\'s');
+        same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
+    });
+    check('a named everyday attack is the basic card\'s name (a Mage\'s shot), with the game\'s own effect line', () => {
+        const r = J(`(function(){ __fresh(1); const f = partyMembers()[0]; f.evolved = 'thunderhead'; f.element = 'electric'; energyFill(f); const c = cardBattleCards(f)[0]; return [c.kind, c.name, c.fx.length > 10]; })()`);
+        same(r.join(), 'basic,CHAIN LIGHTNING,true', 'the basic card');
+    });
+    check('the screen: a battle on puts it up (body.cb-on) with the rest of the HUD out of its way; the network panel waits; game.html styles it after SQUAD ROWS', () => {
+        const html = rd('game.html');
+        ok(/body\.cb-on #cbScreen \{ display: block;/.test(html), 'the screen shown'); ok(/body\.cb-on :is\(#squadBar, #mixTool, #coreHud, #btnPack, #kitCards, #topToggles, #squadFly, #zoneLine\) \{ visibility: hidden !important; \}/.test(html), 'the HUD out of its way');
+        ok(/cardBattleCam\(\)\) return;/.test(rd('js/facilitynet.js')), 'the network panel');
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(2); const on = cardBattleShown(); cardBattleRun(); __ticks(CARD_BATTLE.easeOut + 2); return [on, cardBattleShown()]; })()`);
+        same(r.join(), 'true,false', 'the screen up in the battle, and after it');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
         ok(/<script src="js\/cardbattle\.js\?v=/.test(html) && /"js\/cardbattle\.js": "CARD_BATTLE"/.test(html), 'the page');
         ok(/cardBattleTap\(ex, ey\)/.test(rd('js/targeting.js')) && /cardBattleMayTarget/.test(rd('js/targeting.js')), 'the tap and the gun');
-        ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a\)/.test(rd('js/npc.js')), 'the squad');
+        ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
-        ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.28): the raids, the three spawns, the refill, the turrets, the bites');
+        ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

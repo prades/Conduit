@@ -32,7 +32,9 @@ const CARD_BATTLE = {
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
-    clock: 0.5,                 // THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "time slows down to about half"): the world's countdowns in a battle run at this rate
+    turnSec: 2,                 // seconds of today's wait times a turn (§2.21, the owner's: "2 seconds = 1 turn"); a part of a turn counts as a whole one (the agent's, open: §11.6)
+    every: 15,                  // frames between two refreshes of the battle screen (4 a second)
+    clock: 0.5,                 // THE CLOCK AT HALF (§2.30; the owner, 2026-11-17: "time slows down to about half"): the world's countdowns in a battle run at this rate
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -44,13 +46,18 @@ function cardBattleActive() { return _cb.phase !== "off" && _cb.phase !== "end";
 function cardBattlePhase() { return _cb.phase; }
 function cardBattleFoes() { return _cb.foes.slice(); }
 function cardBattleBlack() { return _cb.black; }   // the black's strength, 0 to 1
+function cardBattleShown() { return cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black"; }   // is the battle screen up (body.cb-on)?
+function cardBattleHas(a) { return _cb.phase !== 'off' && _cb.foes.indexOf(a) >= 0; }   // (from the walk on: one you are walking to is shown, even in another room)
 function cardBattleIn(a) { return cardBattleActive() && _cb.foes.indexOf(a) >= 0; }
 function _cbFoeOk(a) { return !!a && !a.dead && !a.isClone && a.team !== "green" && !a.untargetable && !(a.health <= 0) && (typeof Predator === "undefined" || a instanceof Predator); }
+// THE BATTLE'S OWN SIDE: you, your squad's members and the Mutator's clone. Followers holding a room (HOLD) are not in it: the rest of the world goes on in real time while you battle, and they
+// hold the fort (§2.28, the owner: "Both at once")
+function _cbMine(a) { if (!a) return false; if (typeof player !== "undefined" && a === player) return true; if (typeof partyIsMember === "function" && partyIsMember(a)) return true; const c = typeof partyClone === "function" ? partyClone() : null; return !!c && a === c; }
 function _cbSquad() { const m = typeof partyMembers === "function" ? partyMembers().filter(f => f && !f.dead) : []; const c = typeof partyClone === "function" ? partyClone() : null; if (c && !c.dead) m.push(c); return m; }
 // the creatures in a battle with `foe`: it, and the others round it, nearest first
 function _cbGroup(foe) {
-    const out = [foe], R = CARD_BATTLE.group, near = [];
-    for (const a of (typeof actors !== "undefined" ? actors : [])) { if (a === foe || !_cbFoeOk(a)) continue; const d = Math.hypot(a.x - foe.x, a.y - foe.y); if (d <= R) near.push([d, a]); }
+    const out = [foe], R = CARD_BATTLE.group, near = [], room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(foe.x, foe.y) : null;
+    for (const a of (typeof actors !== "undefined" ? actors : [])) { if (a === foe || !_cbFoeOk(a)) continue; if (room && facilityRoomIdAt(a.x, a.y) !== room) continue; const d = Math.hypot(a.x - foe.x, a.y - foe.y); if (d <= R) near.push([d, a]); }
     near.sort((p, q) => p[0] - q[0]); for (const [, a] of near) { if (out.length >= CARD_BATTLE.most) break; out.push(a); }
     return out;
 }
@@ -64,7 +71,7 @@ function _cbSettle() {
     for (const a of (typeof actors !== "undefined" ? actors : [])) {
         if (!a || a.dead || !(typeof Predator === "undefined" || a instanceof Predator) || a.team === "green") continue;
         if (_cb.foes.indexOf(a) >= 0) { a.provoked = true; if (a.state === "wander") a.state = "hunt"; continue; }
-        const t = a.currentTarget; if (t && (t === player || t.team === "green")) { a.currentTarget = null; a.biteTarget = null; }
+        const t = a.currentTarget; if (t && _cbMine(t)) { a.currentTarget = null; a.biteTarget = null; }   // (one going for a follower holding a room keeps at it: §2.28)
     }
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
@@ -90,22 +97,22 @@ function cardBattleChoose(foe) {
 function cardBattleHit(target, source) {
     if (!cardBattleOn() || cardBattleActive() || !target || !source) return;
     const src = typeof predatorSource === "function" ? predatorSource(source) : source;
-    const ours = (typeof player !== "undefined" && target === player) || target.team === "green" || target.isFollower === true;
+    const ours = _cbMine(target);   // (you or your squad: a follower holding a room fights its own fight, §2.28)
     if (!ours || !_cbFoeOk(src)) return;
     if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return;   // (the battle just ended: its creatures' last blows start nothing)
     _cbBegin(src, false);
 }
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
-function cardBattleBars(p) { return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }
+function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
-function cardBattleMayTarget(a) { return !cardBattleActive() || _cb.foes.indexOf(a) >= 0; }
-// THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "the game clock slows down so that you ... don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight
+function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; return !cardBattleActive() || _cb.foes.indexOf(a) >= 0; }   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
+// THE CLOCK AT HALF (§2.30, on §2.28's world that goes on while you battle; the owner, 2026-11-17: "the game clock slows down so that you ... don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight
 // because things are still happening behind you, like the crystal being destroyed in half speed"; of three offered, "Clock only"): while a battle is on, every countdown of the world runs at
 // CARD_BATTLE.clock (the raids' clock, the spawns', the Crystal's idle refill, a turret's shots, a creature's rest between its bites), and everyone still walks and moves at full speed.
-// `a`, a creature: one in the battle, or your squad's clone, keeps its own pace (the fight in the battle is unchanged). 1 out of a battle.
+// `a`, a creature: one in the battle, or your squad's own (the Mutator's clone), keeps its own pace (the fight in the battle is unchanged). 1 out of a battle.
 function cardBattleClock(a) {
     if (!cardBattleActive()) return 1;
-    if (a && (_cb.foes.indexOf(a) >= 0 || (a.isClone && typeof partyClone === "function" && partyClone() === a))) return 1;
+    if (a && (_cb.foes.indexOf(a) >= 0 || _cbMine(a))) return 1;
     return CARD_BATTLE.clock;
 }
 // a creature's rest between bites at the clock's pace, so that its bites come at the clock's rate while its rear-back and lunge stay at full speed (js/predator.js _biteTick)
@@ -150,7 +157,7 @@ function cardBattleTick() {
             if (el === CARD_BATTLE.blackIn) _cbLand();
             if (el >= CARD_BATTLE.blackIn + CARD_BATTLE.blackHold) { _cb.phase = "on"; _cb.t = f; }
         }
-        if (_cb.phase === "on" && f % 10 === 0) _cbCentre();
+        if (_cb.phase === "on" && f % 10 === 0) { _cbKeepAtIt(); _cbCentre(); }
     }
     // the black: in during "black" (then held), out after it
     if (_cb.phase === "black") _cb.black = Math.min(1, (f - _cb.t) / CARD_BATTLE.blackIn);
@@ -161,8 +168,29 @@ function cardBattleTick() {
     if (_cb.phase === "end" && _cb.k <= 0) { _cb.phase = "off"; _cb.foes = []; _cb.target = null; }
     _cbDom();
 }
+// THE CREATURES IN A BATTLE KEEP AT IT (the owner, 2026-11-17: a battle on, "the creature was not attacking. It was drifting away [...] Might have been because [...] the follower had died. But in that
+// instance, the creature should keep attacking. But whatever happens, it shouldn't continue to keep the camera locked onto him."): the game's own rule calms a creature whose prey is gone (js/predator.js);
+// in a battle each one stays provoked and, its prey gone, goes for the nearest of yours still up (you or a member of the squad). One that is far from you all the same (further than `leave`) is let go:
+// out of the battle, calmed as at its end, and the camera no longer takes it in; the last one let go ends the battle.
+function _cbKeepAtIt() {
+    if (typeof player === "undefined") return;
+    const ours = _cbSquad(); ours.push(player);
+    for (const a of _cb.foes.slice()) {
+        if (!_cbFoeOk(a)) continue;
+        if (Math.hypot(a.x - player.x, a.y - player.y) > CARD_BATTLE.leave) {
+            _cb.foes.splice(_cb.foes.indexOf(a), 1); a.provoked = false; a.state = "wander"; a.currentTarget = null; a.biteTarget = null; a._prey = null;
+            if (_cb.calm.indexOf(a) < 0) _cb.calm.push(a); _cb.calmUntil = Math.max(_cb.calmUntil, _cbF() + CARD_BATTLE.calm); continue;
+        }
+        a.provoked = true; if (a.state === "wander") a.state = "hunt";
+        const ct = a.currentTarget, ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(a, t));
+        if (ok(ct)) continue;
+        let best = null, bd = Infinity; for (const t of ours) { if (!ok(t)) continue; const d = Math.hypot(t.x - a.x, t.y - a.y); if (d < bd) { bd = d; best = t; } }
+        if (best) { a.currentTarget = best; a._prey = best; a.biteTarget = null; a.attackWindup = 0; if (a.state === "wander") a.state = "hunt"; }
+    }
+    if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
+}
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
-    _cb.calm = _cb.foes.slice(); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;
+    _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12; step 1's stand-in: a button. The enemies' last hit, §2.16, comes with the turns)
 function cardBattleRun() { _cb.ranAt = _cbF(); return cardBattleEnd(); }
@@ -200,12 +228,71 @@ let _cbEls = null;
 function _cbMake() {
     if (_cbEls || typeof document === "undefined" || !document.createElement || !document.body) return _cbEls;
     const black = document.createElement("div"); black.id = "cbBlack"; black.style.cssText = "position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:60;";
+    // THE BATTLE SCREEN (step 2, build 2026-11-17l; §2.9 SQUAD ROWS): the enemy list at the top right (their names and health; not their next moves, §2.15) with RUN under it, and the band along
+    // the bottom, a column for each member of the squad (cardBattleScreen fills them)
+    const scr = document.createElement("div"); scr.id = "cbScreen"; scr.setAttribute("aria-label", "Battle");
+    scr.innerHTML = '<div class="cb-foes"><h4>ENEMIES</h4><div class="cb-foelist"></div></div><div class="cb-band"><div class="cb-row"></div></div>';
     const run = document.createElement("button"); run.id = "cbRun"; run.type = "button"; run.textContent = "RUN"; run.setAttribute("aria-label", "Run from the battle");
-    run.style.cssText = "position:fixed;right:calc(28px + env(safe-area-inset-right, 0px));top:calc(206px + env(safe-area-inset-top, 0px));transform:skewX(-9deg);z-index:61;display:none;min-width:150px;height:56px;padding:0 26px;border:2px solid #ff4a1c;background:linear-gradient(180deg,#3a1a1a,#12080a);color:#fff;font:italic 900 22px/1 'Arial Black',system-ui,sans-serif;letter-spacing:.06em;box-shadow:0 0 14px -2px #ff4a1c;cursor:pointer;touch-action:manipulation;";
     run.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); cardBattleRun(); });
-    document.body.appendChild(black); document.body.appendChild(run); _cbEls = { black, run };
+    scr.querySelector(".cb-foes").appendChild(run);
+    document.body.appendChild(black); document.body.appendChild(scr); _cbEls = { black, run, scr, foes: scr.querySelector(".cb-foelist"), row: scr.querySelector(".cb-row"), sig: "", at: -1e9 };
     return _cbEls;
 }
-function _cbButtons() { const E = _cbMake(); if (!E) return; E.run.style.display = cardBattleActive() && _cb.phase !== "walk" ? "block" : "none"; }
-function _cbDom() { const E = _cbEls || (_cb.phase !== "off" ? _cbMake() : null); if (!E) return; const o = _cb.black.toFixed(3); if (E.black.style.opacity !== o) E.black.style.opacity = o; const show = cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black" ? "block" : "none"; if (E.run.style.display !== show) E.run.style.display = show; }
+function _cbButtons() { _cbMake(); _cbDom(); }
+function _cbDom() {
+    const E = _cbEls || (_cb.phase !== "off" ? _cbMake() : null); if (!E) return; const o = _cb.black.toFixed(3); if (E.black.style.opacity !== o) E.black.style.opacity = o;
+    const on = cardBattleShown(), body = typeof document !== "undefined" && document.body;
+    if (body && body.classList && body.classList.contains("cb-on") !== on) body.classList.toggle("cb-on", on);   // (game.html: the battle screen shown, the rest of the HUD out of the way)
+    if (on && _cbF() - E.at >= CARD_BATTLE.every) { E.at = _cbF(); cardBattleScreen(); }
+}
+// ── THE BATTLE SCREEN'S CARDS (§2.9, §2.18, §2.19, §2.21, §2.22, §2.25): each member's own BASIC ATTACK (always ready), each second attack it may use (ready, or the turns until it is; its
+// recharge from its wait time, CARD_BATTLE.turnSec a turn), and its Ultimate (by its meter, §2.11). Their names and effect lines are the game's own (js/moves.js MOVES, js/unitinfo.js
+// MOVE_INFO, SHOT_INFO, the Ultimate's note): nothing is written for the cards. Step 2 shows them; playing them (dragging one onto an enemy, §2.17) and the turns are step 3. ──
+function _cbTurns(sec) { return Math.max(1, Math.ceil((sec || 0) / CARD_BATTLE.turnSec - 1e-9)); }
+function _cbRow(rows, key) { const r = (rows || []).find(x => x[0] === key); return r ? String(r[1]) : ""; }
+function _cbInfoRows(table, name) { try { const fn = table && table[name]; return typeof fn === "function" ? fn() : null; } catch (e) { return null; } }
+function cardBattleCards(f) {
+    const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);
+    { const named = d && (d.shot || d.hit) ? (d.shot || d.hit) : null, rows = named && typeof SHOT_INFO !== "undefined" ? _cbInfoRows(SHOT_INFO, named) : null;
+      out.push({ kind: "basic", tag: "BASIC ATTACK", name: named || "BASIC ATTACK", fx: _cbRow(rows, "EFFECT") || "Its everyday hit.", ready: true, turns: 0, col }); }
+    const md = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, ids = md && typeof evoMoveIds === "function" ? evoMoveIds(md).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(f, md, id)) : [];
+    const f0 = _cbF(), cools = typeof altCools === "function" && altCools(f);
+    for (const id of ids) {
+        const m = typeof MOVES !== "undefined" ? MOVES[id] : null; if (!m) continue;
+        const rows = typeof MOVE_INFO !== "undefined" ? _cbInfoRows(MOVE_INFO, m.name) : null, rech = _cbTurns(m.windup), left = cools ? Math.max(0, ((f._altReadyAt || 0) - f0) / 60) : 0;
+        out.push({ kind: "move", tag: "ATTACK", name: m.name, fx: _cbRow(rows, "EFFECT"), ready: left <= 0, turns: left > 0 ? _cbTurns(left) : 0, recharge: rech, col });
+    }
+    const u = typeof followerUltimate === "function" ? followerUltimate(f) : null;
+    if (u) { const pct = Math.max(0, Math.min(100, Math.round(f.ultimateCharge || 0)));
+        let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
+        out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
+    return out;
+}
+function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
+const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function _cbCardHTML(c) {
+    const st = c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
+    const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : "";
+    return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '"><i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
+}
+// fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
+function cardBattleScreen() {
+    const E = _cbEls; if (!E || !E.scr) return;
+    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), squad = (typeof partyMembers === "function" ? partyMembers() : []).slice(), clone = typeof partyClone === "function" ? partyClone() : null; if (clone) squad.push(clone);
+    const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
+    if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
+    const cols = squad.map(f => { const down = !!f.dead || !(f.health > 0), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
+        const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
+        return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
+    const sig = cols.map(c => c.key + c.html).join("§");
+    if (E.sig === sig) return; E.sig = sig;
+    const old = Array.from(E.row.children || []);
+    cols.forEach((c, i) => {
+        let el = old[i]; if (!el) { el = document.createElement("div"); el.className = "cb-col"; E.row.appendChild(el); }
+        const keep = el._key === c.key ? el.querySelector(".cb-pt") : null;
+        el.innerHTML = c.html; el._key = c.key; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", c.col); if (el.classList) el.classList.toggle("down", c.down);
+        const cv = el.querySelector(".cb-pt"); if (keep && cv && keep.width) { cv.getContext && cv.getContext("2d") && cv.getContext("2d").drawImage(keep, 0, 0); } else if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, c.f); } catch (e) {} }
+    });
+    for (let i = cols.length; i < old.length; i++) old[i].remove();
+}
 function cardBattleReset() { _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

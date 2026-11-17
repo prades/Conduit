@@ -377,6 +377,21 @@ function facilityRoomIdAt(x, y) {
     let r = facilityRoomAt(x, y, F); if (!r && _fp.cellsP) { const c = _fpNearestCell(x, y); if (c) r = facilityRoomAt(c[0], c[1], F); }
     return r ? r.id : null;
 }
+// ONLY THE ROOM YOU ARE IN SHOWS ITS CREATURES (the owner, 2026-11-17: "Shouldn't be able to see enemies in other rooms. Only the rooms that you're in."): a creature not of yours is drawn, and may be tapped
+// or locked, only while it is in the player's room (the Nest's tunnels and caves are one place, as for a tap). Yours always show; so does a creature in a card battle with you (js/cardbattle.js). Out of the
+// building (no facility), the title's background, or the player on no floor: all show, as before. The player's room is worked out once a frame (again if the player has moved).
+const _fpSeen = { f: -1, x: NaN, y: NaN, room: null };
+function facilityShowsActor(a) {
+    if (!_fp || !_fp.F || !a || a.team === "green" || (typeof player !== "undefined" && a === player)) return true;
+    if (typeof attractOn === "function" && attractOn()) return true;
+    if (typeof player === "undefined" || !player) return true;
+    const f = typeof frame !== "undefined" ? frame : 0;
+    if (_fpSeen.f !== f || _fpSeen.x !== player.x || _fpSeen.y !== player.y) { _fpSeen.f = f; _fpSeen.x = player.x; _fpSeen.y = player.y; _fpSeen.room = facilityRoomIdAt(player.x, player.y); }
+    const here = _fpSeen.room; if (!here) return true;
+    if (typeof cardBattleHas === "function" && cardBattleHas(a)) return true;
+    const there = facilityRoomIdAt(a.x, a.y); if (!there || there === here) return true;
+    return typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(here) && FP_NEST_ROOMS.has(there);
+}
 // may a tap at the tile (gx, gy) send the player there? (a tap that is not on the floor at all is facilityWalkTo's to refuse)
 function facilityTapAllowed(gx, gy) {
     if (!_fp || !_fp.F || !_fp.cellsP) return true;
