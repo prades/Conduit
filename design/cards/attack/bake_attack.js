@@ -37,6 +37,17 @@ const SAMPLES = {
     lights: { hemi: [0x8aa8d0, 0x061426, 0.3], key: [0xe8f4ff, 0.6], low: [0x9fe8ff, 0, 0, 0.3, 3.0] },
     cam: { pos: [0.5, 0.4, 8.6], look: [0, 0.8, 0.5], fov: 36, roll: -0.22 },   // low, close, square to its mouth; a lighter tilt than the Mage's (about 12.6 degrees)
   },
+  // ROUND 2 of the same (the owner, 2026-11-17, "Needs change": "Fewer, bigger cracks" and "Pieces flying out"; "Head-on, jaws bigger"; "Cleaner"): the camera head-on, closer and
+  // lower, the open mouth and fangs filling the card; the glass in a few large slabs with its middle burst out toward the lens; less grit and fewer scratches.
+  maw_chomp_r2: {
+    style: 'brawler', form: 934, color: '#7fd6ff', rim: '#99ddff', fx: '#99ddff', world: 'ice', seed: 9342,
+    pose: { t: 0.3, act: 0, v: { sw: 0.6, rot: 0.1, z: 0.45, y: 0.2, fang: 0.24 } },
+    yaw: 0, hit: [0.5, 0.5], glass: 'slabs', powder: 0.35,
+    clear: [[80, 305, 55], [305, 235, 55]],   // (its two fangs, on the picture: no flying piece lands on them)
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+    lights: { hemi: [0x8aa8d0, 0x061426, 0.3], key: [0xe8f4ff, 0.6], low: [0x9fe8ff, 0, 0, 0.3, 3.0] },
+    cam: { pos: [0.0, 0.25, 6.4], look: [0.12, 0.95, 0.6], fov: 40, roll: -0.22 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -71,8 +82,9 @@ function BRAWLER(o) {
   g.drawImage(model, 0, 0);
   // 4. THE BITE AT THE LENS: a burst of powder and ice chips thrown out of its mouth at the camera, a cold flash where the fangs strike
   g.save(); g.globalCompositeOperation = 'lighter';
-  blob(g, HIT[0], HIT[1], 160, [[0, 'rgba(230,250,255,0.3)'], [0.25, fxa(0.16)], [1, fxa(0)]]);
-  for (let i = 0; i < 26; i++) { const a = R() * TAU, d = 20 + R() * 120; blob(g, HIT[0] + Math.cos(a) * d, HIT[1] + Math.sin(a) * d * 0.8, 18 + R() * 40, [[0, 'rgba(230,245,255,0.16)'], [1, 'rgba(200,235,255,0)']]); }   // (the powder)
+  const PW = P.powder == null ? 1 : P.powder;   // (round 2: less, so its open mouth stays clear)
+  blob(g, HIT[0], HIT[1], 160, [[0, 'rgba(230,250,255,' + 0.3 * PW + ')'], [0.25, fxa(0.16 * PW)], [1, fxa(0)]]);
+  for (let i = 0; i < 26; i++) { const a = R() * TAU, d = 20 + R() * 120; blob(g, HIT[0] + Math.cos(a) * d, HIT[1] + Math.sin(a) * d * 0.8, 18 + R() * 40, [[0, 'rgba(230,245,255,' + 0.16 * PW + ')'], [1, 'rgba(200,235,255,0)']]); }   // (the powder)
   g.restore();
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
@@ -92,6 +104,9 @@ function BRAWLER(o) {
   // The crack pattern: lines radiating from the point of impact (jagged), crossed by rings of cracks round it; each cell between them is a shard. Cells merge where a ring's crack
   // is missing (real glass does not break into a perfect web). The inner shards are knocked further out of line and turned more; a few of the second ring are knocked out.
   const snap = cv(); snap.getContext('2d').drawImage(out, 0, 0);
+  const SLABS = P.glass === 'slabs', RU = Object.assign({ scuffs: 22, scrapes: 7, singles: 40, longs: 3, grain: 14, specks: 0.006, edgeSpecks: 0.03, dust: 60, chips: 26 }, P.rough || {});   // (round 2's glass and its cleaner finish; the defaults are round 1's)
+  const fade = y => y > H * 0.7 ? 0.45 : 1;   // (lighter over the name plate)
+  if (SLABS) SHATTER_SLABS({ g, W, H, R, cv, clear: P.clear || [], snap, HIT, blob, fxa, fade, PI, TAU }); else {
   const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
   const NR = P.cracks || 13, RINGS = [0, 22, 52, 96, 160, 250, 380, 1100];
   const angs = []; for (let i = 0; i < NR; i++) angs.push((i + (R() - 0.5) * 0.7) / NR * TAU); angs.sort((a, b) => a - b);
@@ -125,7 +140,6 @@ function BRAWLER(o) {
     g.globalCompositeOperation = 'lighter'; g.fillStyle = sh; g.fillRect(0, 0, W, H); g.restore();
   });
   // the crack lines: each shard's edge as a bevel (a dark line, a bright edge where the glass's thickness catches the light), heavier near the middle and thinner going out
-  const fade = y => y > H * 0.7 ? 0.45 : 1;   // (lighter over the name plate)
   shards.forEach(s => { if (!s.d) return; const f = Math.max(0, 1 - s.k0 / 6);
     const path = (ox, oy) => { g.beginPath(); s.poly.forEach(([x, y], q) => { const X = x + s.d[0] + ox, Y = y + s.d[1] + oy; q ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.closePath(); };
     g.save(); g.lineJoin = 'round'; const al = fade(s.c[1]) * (s.on ? 0.75 : 1);
@@ -155,11 +169,13 @@ function BRAWLER(o) {
     blob(g, x, y, 7 + R() * 7, [[0, 'rgba(255,255,255,0.85)'], [0.3, 'rgba(200,240,255,0.3)'], [1, 'rgba(200,240,255,0)']]);
     g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 0.7; const L = 8 + R() * 10; g.beginPath(); g.moveTo(x - L, y); g.lineTo(x + L, y); g.moveTo(x, y - L * 0.6); g.lineTo(x, y + L * 0.6); g.stroke(); }
   g.restore();
+  info.shards = shards.length; info.holes = holes.length;
+  }
 
   // ---------- 7. ROUGHED UP: scratches, scuffs, grit, dust, chipped edges ----------
   // scuffs: rubbed patches (lighter, soft) and grime (darker, soft), mostly toward the edges and corners
   g.save();
-  for (let i = 0; i < 22; i++) { const edge = R() < 0.7, x = edge ? (R() < 0.5 ? R() * W * 0.25 : W - R() * W * 0.25) : R() * W, y = R() * H, r = 20 + R() * 60, light = R() < 0.55;
+  for (let i = 0; i < RU.scuffs; i++) { const edge = R() < 0.7, x = edge ? (R() < 0.5 ? R() * W * 0.25 : W - R() * W * 0.25) : R() * W, y = R() * H, r = 20 + R() * 60, light = R() < 0.55;
     g.save(); g.translate(x, y); g.rotate(R() * PI); g.scale(1, 0.3 + R() * 0.5); blob(g, 0, 0, r, light ? [[0, 'rgba(200,220,235,0.1)'], [1, 'rgba(200,220,235,0)']] : [[0, 'rgba(10,8,6,0.28)'], [1, 'rgba(10,8,6,0)']]); g.restore(); }
   g.restore();
   // scratches: fine bright lines, some alone, some in parallel bunches (a scrape), a few long ones across the card
@@ -168,19 +184,19 @@ function BRAWLER(o) {
     g.strokeStyle = gr; g.lineWidth = w; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(mx, my, ex, ey); g.stroke();
     g.strokeStyle = 'rgba(0,0,0,' + al * 0.5 + ')'; g.lineWidth = w * 0.8; g.beginPath(); g.moveTo(x + 0.8, y + 0.8); g.quadraticCurveTo(mx + 0.8, my + 0.8, ex + 0.8, ey + 0.8); g.stroke(); };
   g.save(); g.lineCap = 'round';
-  for (let i = 0; i < 7; i++) { const x = R() * W, y = R() * H, a = -0.4 + (R() - 0.5) * 1.2, n = 3 + Math.floor(R() * 5); for (let q = 0; q < n; q++) scratch(x + q * 2.2 + R(), y + q * 3 + R() * 2, a + (R() - 0.5) * 0.04, 30 + R() * 70, 0.6 + R() * 0.5, 0.26 + R() * 0.24); }
-  for (let i = 0; i < 40; i++) scratch(R() * W, R() * H, R() * TAU, 6 + R() * 30, 0.5 + R() * 0.6, 0.15 + R() * 0.25);
-  for (let i = 0; i < 3; i++) scratch(R() * W * 0.3, R() * H, -0.3 + (R() - 0.5) * 0.5, 200 + R() * 200, 0.8, 0.22);
+  for (let i = 0; i < RU.scrapes; i++) { const x = R() * W, y = R() * H, a = -0.4 + (R() - 0.5) * 1.2, n = 3 + Math.floor(R() * 5); for (let q = 0; q < n; q++) scratch(x + q * 2.2 + R(), y + q * 3 + R() * 2, a + (R() - 0.5) * 0.04, 30 + R() * 70, 0.6 + R() * 0.5, 0.26 + R() * 0.24); }
+  for (let i = 0; i < RU.singles; i++) scratch(R() * W, R() * H, R() * TAU, 6 + R() * 30, 0.5 + R() * 0.6, 0.15 + R() * 0.25);
+  for (let i = 0; i < RU.longs; i++) scratch(R() * W * 0.3, R() * H, -0.3 + (R() - 0.5) * 0.5, 200 + R() * 200, 0.8, 0.22);
   g.restore();
   // grit: a fine speckle of dark and light specks all over, thicker at the edges
   { const id = g.getImageData(0, 0, W, H), d = id.data;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const e = Math.min(x, y, W - 1 - x, H - 1 - y), edge = e < 30 ? 1 - e / 30 : 0, n = R(), i4 = (y * W + x) * 4, j = (R() - 0.5) * 14;   // (a light grain over everything)
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const e = Math.min(x, y, W - 1 - x, H - 1 - y), edge = e < 30 ? 1 - e / 30 : 0, n = R(), i4 = (y * W + x) * 4, j = (R() - 0.5) * RU.grain;   // (a light grain over everything)
       d[i4] += j; d[i4 + 1] += j; d[i4 + 2] += j;
-      if (n < 0.006 + 0.03 * edge) { const v = R() < 0.6 ? -70 - R() * 60 : 60 + R() * 60; d[i4] += v; d[i4 + 1] += v; d[i4 + 2] += v; } }
+      if (n < RU.specks + RU.edgeSpecks * edge) { const v = R() < 0.6 ? -70 - R() * 60 : 60 + R() * 60; d[i4] += v; d[i4 + 1] += v; d[i4 + 2] += v; } }
     g.putImageData(id, 0, 0); }
   // dust: soft motes in the air and a haze of grit settled along the bottom and in the corners
   g.save(); g.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 60; i++) { const x = R() * W, y = R() * H, r = 0.6 + Math.pow(R(), 3) * 3; blob(g, x, y, r * 2.5, [[0, 'rgba(220,235,250,' + (0.25 + R() * 0.35) + ')'], [1, 'rgba(220,235,250,0)']]); }
+  for (let i = 0; i < RU.dust; i++) { const x = R() * W, y = R() * H, r = 0.6 + Math.pow(R(), 3) * 3; blob(g, x, y, r * 2.5, [[0, 'rgba(220,235,250,' + (0.25 + R() * 0.35) + ')'], [1, 'rgba(220,235,250,0)']]); }
   g.restore();
   // chipped edges: bites knocked out of the card's edge (the dark card stock showing, a pale broken rim), more at the corners
   g.save();
@@ -189,18 +205,93 @@ function BRAWLER(o) {
     pts.push([x + tx * r + nx * 4, y + ty * r + ny * 4]); pts.push([x - tx * r + nx * 4, y - ty * r + ny * 4]);
     g.beginPath(); pts.forEach(([X, Y], q) => q ? g.lineTo(X, Y) : g.moveTo(X, Y)); g.closePath(); g.fillStyle = '#05070c'; g.fill();
     g.strokeStyle = 'rgba(190,215,235,0.55)'; g.lineWidth = 0.9; g.beginPath(); pts.slice(0, n + 1).forEach(([X, Y], q) => q ? g.lineTo(X, Y) : g.moveTo(X, Y)); g.stroke(); };
-  for (let i = 0; i < 26; i++) { const side = Math.floor(R() * 4), t = R() < 0.4 ? (R() < 0.5 ? R() * 0.12 : 1 - R() * 0.12) : R(), r = 2 + Math.pow(R(), 2) * 9;
+  for (let i = 0; i < RU.chips; i++) { const side = Math.floor(R() * 4), t = R() < 0.4 ? (R() < 0.5 ? R() * 0.12 : 1 - R() * 0.12) : R(), r = 2 + Math.pow(R(), 2) * 9;
     if (side === 0) chipEdge(t * W, 0, 0, -1, r); else if (side === 1) chipEdge(t * W, H, 0, 1, r); else if (side === 2) chipEdge(0, t * H, -1, 0, r); else chipEdge(W, t * H, 1, 0, r); }
   // the corners worn: rounded off and rubbed pale
   for (const [cx, cy] of [[0, 0], [W, 0], [0, H], [W, H]]) blob(g, cx, cy, 28 + R() * 14, [[0, 'rgba(200,215,230,0.22)'], [1, 'rgba(200,215,230,0)']]);
   g.restore();
-  info.hit = HIT.map(Math.round); info.shards = shards.length; info.holes = holes.length;
+  info.hit = HIT.map(Math.round);
   return { png: out.toDataURL('image/png'), info };
+}
+
+// ROUND 2's GLASS (the owner, 2026-11-17: "Fewer, bigger cracks" and "Pieces flying out"): a few bold breaks from the point of impact that split the card into large slabs, the
+// middle knocked clean out, and those pieces (and a few more) bursting toward the viewer: bigger as they come nearer, turned, each carrying its own bit of the picture, with the
+// glass's thickness at its edge. The gaps they left are dark, their broken rims glinting.
+function SHATTER_SLABS(o) {
+  const { g, W, H, R, cv, clear, snap, HIT, blob, fxa, fade, PI, TAU } = o;
+  const NR = 7, RAD = [0, 46, 120, 215, 330, 500, 1100];   // (radii along each break; rings of cracks only at 46 (the hole's rim), sometimes at 120 or 215, and the edge)
+  const angs = []; for (let i = 0; i < NR; i++) angs.push((i + (R() - 0.5) * 0.55) / NR * TAU + 0.35); angs.sort((a, b) => a - b);
+  const V = angs.map(a => RAD.map((r, k) => { if (k === 0) return HIT.slice(); const aa = a + (R() - 0.5) * (k === 1 ? 0.25 : 0.1), rr = r * (0.88 + R() * 0.24); return [HIT[0] + Math.cos(aa) * rr, HIT[1] + Math.sin(aa) * rr]; }));
+  const ringOn = angs.map(() => RAD.map((r, k) => k === 1 || k === RAD.length - 1 || ((k === 2 || k === 3) && R() < 0.3)));
+  const mid = angs.map((a, i) => RAD.map((r, k) => { const p = V[i][k], q = V[(i + 1) % NR][k], m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2], dx = m[0] - HIT[0], dy = m[1] - HIT[1], L = Math.hypot(dx, dy) || 1, b = (R() - 0.2) * 0.22 * r; return [m[0] + dx / L * b, m[1] + dy / L * b]; }));
+  const shards = [];
+  for (let i = 0; i < NR; i++) { const j = (i + 1) % NR; let k0 = 0;
+    for (let k = 1; k < RAD.length; k++) { if (!ringOn[i][k]) continue;
+      const poly = []; for (let q = k0; q <= k; q++) poly.push(V[i][q]); poly.push(mid[i][k]); for (let q = k; q >= k0; q--) poly.push(V[j][q]); if (k0 > 0) poly.push(mid[i][k0]);
+      const c = poly.reduce((a, p) => [a[0] + p[0] / poly.length, a[1] + p[1] / poly.length], [0, 0]); shards.push({ poly, k0, k, i, c }); k0 = k; } }
+  // which go: every piece of the middle (inside the hole's rim), and one or two of the slabs round it whose middle is dark (the cave or the sky: the Maw's shell stays in place)
+  const lum = (x, y) => { const d = snap.getContext('2d').getImageData(Math.max(0, Math.min(W - 1, x | 0)), Math.max(0, Math.min(H - 1, y | 0)), 1, 1).data; return 0.3 * d[0] + 0.59 * d[1] + 0.11 * d[2]; };
+  shards.forEach(s => { if (s.k0 === 0) s.out = true; });
+  const cand = shards.filter(s => s.k0 === 1 && s.k === 2 && s.c[1] < H * 0.62 && lum(s.c[0], s.c[1]) < 90); for (let n = 0; n < 1 && cand.length; n++) cand.splice(Math.floor(R() * cand.length), 1)[0].out = true;
+  const path = (G, poly, d, ox, oy) => { G.beginPath(); poly.forEach(([x, y], q) => { const X = x + d[0] + (ox || 0), Y = y + d[1] + (oy || 0); q ? G.lineTo(X, Y) : G.moveTo(X, Y); }); G.closePath(); };
+  // behind the glass: dark, a cold light leaking round the hole
+  g.fillStyle = '#01040a'; g.fillRect(0, 0, W, H);
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(g, HIT[0], HIT[1], 120, [[0, fxa(0.22)], [1, fxa(0)]]); g.restore();
+  // the slabs that stay: nudged out of line a little and turned a hair, each with its own sheen
+  shards.forEach(s => { if (s.out) return; const dx = s.c[0] - HIT[0], dy = s.c[1] - HIT[1], L = Math.hypot(dx, dy) || 1, push = (s.k0 === 1 ? 4 : 2) + R() * 2.5, side = (R() - 0.5) * 3;
+    s.d = [dx / L * push - dy / L * side, dy / L * push + dx / L * side]; const rot = (R() - 0.5) * (s.k0 === 1 ? 0.02 : 0.01);
+    g.save(); path(g, s.poly, s.d); g.clip(); g.translate(s.c[0] + s.d[0], s.c[1] + s.d[1]); g.rotate(rot); g.translate(-s.c[0], -s.c[1]); g.drawImage(snap, 0, 0); g.restore();
+    g.save(); path(g, s.poly, s.d); g.clip(); const a = R() * TAU, sh = g.createLinearGradient(s.c[0] - Math.cos(a) * 140, s.c[1] - Math.sin(a) * 140, s.c[0] + Math.cos(a) * 140, s.c[1] + Math.sin(a) * 140);
+    sh.addColorStop(0, 'rgba(220,245,255,0)'); sh.addColorStop(0.5, 'rgba(220,245,255,' + (0.04 + 0.06 * R()) + ')'); sh.addColorStop(1, 'rgba(220,245,255,0)'); g.globalCompositeOperation = 'lighter'; g.fillStyle = sh; g.fillRect(0, 0, W, H); g.restore(); });
+  // the bold breaks: a dark gap, the glass's thick edge catching the light on one side
+  shards.forEach(s => { if (!s.d) return; const al = fade(s.c[1]);
+    g.save(); g.lineJoin = 'round'; g.strokeStyle = 'rgba(0,3,10,' + (0.85 * al) + ')'; g.lineWidth = 3.2; path(g, s.poly, s.d); g.stroke();
+    g.globalCompositeOperation = 'lighter'; g.strokeStyle = 'rgba(190,235,255,' + (0.55 * al) + ')'; g.lineWidth = 1.5; path(g, s.poly, s.d, -1.1, -1.1); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,' + (0.35 * al) + ')'; g.lineWidth = 0.6; path(g, s.poly, s.d, -1.6, -1.6); g.stroke(); g.restore(); });
+  // the gaps' rims: the broken edge of the glass round where the pieces came out, glinting, a few short fractures running off it
+  shards.forEach(s => { if (!s.out) return; const rim = s.k0 === 0 ? s.poly.filter(p => p !== HIT && !(p[0] === HIT[0] && p[1] === HIT[1])) : s.poly;   // (the middle's pieces: only their outer edge is the hole's rim)
+    g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = 'rgba(210,245,255,0.75)'; g.lineWidth = 1.4; g.beginPath(); rim.forEach(([x, y], q) => q ? g.lineTo(x, y) : g.moveTo(x, y)); if (s.k0) g.closePath(); g.stroke(); g.restore(); });
+  g.save(); g.lineCap = 'round';
+  for (let n = 0; n < 26; n++) { const a = R() * TAU, r0 = 44 + R() * 8, r1 = r0 + 8 + R() * 26, x0 = HIT[0] + Math.cos(a) * r0, y0 = HIT[1] + Math.sin(a) * r0, x1 = HIT[0] + Math.cos(a + (R() - 0.5) * 0.15) * r1, y1 = HIT[1] + Math.sin(a + (R() - 0.5) * 0.15) * r1;
+    g.strokeStyle = 'rgba(0,3,10,0.6)'; g.lineWidth = 1; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); g.strokeStyle = 'rgba(210,240,255,0.45)'; g.lineWidth = 0.6; g.beginPath(); g.moveTo(x0 - 0.6, y0 - 0.6); g.lineTo(x1 - 0.6, y1 - 0.6); g.stroke(); }
+  g.restore();
+  // THE PIECES FLYING OUT: each piece that went, and the middle broken in two more, thrown out from the hit toward the lens: further out and bigger the nearer they come,
+  // turned and tipped (a skew), the glass's thickness drawn as a pale edge behind its face, its face carrying its bit of the picture under a bright sheen, its rim white.
+  const pieces = []; shards.forEach(s => { if (!s.out) return;
+    pieces.push(s.poly); });
+  const fly = [];
+  pieces.forEach(poly => { const c = poly.reduce((a, p) => [a[0] + p[0] / poly.length, a[1] + p[1] / poly.length], [0, 0]); let dx = c[0] - HIT[0], dy = c[1] - HIT[1]; const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+    const near = fly.length / pieces.length * 0.8 + R() * 0.2; fly.push({ poly, c, dx, dy, dist: 40 + near * 250 + L * 0.4, sc: 1.3 + near * 1.6, rot: (R() - 0.5) * 1.2, skew: (R() - 0.5) * 0.5, near }); });   // (spread from near the hole to past the lens)
+  fly.sort((a, b) => a.near - b.near);   // (the nearest drawn last)
+  fly.forEach(f => {
+    const pc = cv(), pg = pc.getContext('2d'); pg.save(); path(pg, f.poly, [0, 0]); pg.clip(); pg.drawImage(snap, 0, 0); pg.restore();
+    let X, Y, ok = false; for (let t = 0; t < 60; t++) {   // (where it lands: along its way out, nudged off the follower's fangs (clear: [x, y, r] on the picture) so they stay in sight)
+      const a = Math.atan2(f.dy, f.dx) + (t ? (R() - 0.5) * 1.4 : 0), d = f.dist * (t ? 0.7 + R() * 0.6 : 1); X = f.c[0] + Math.cos(a) * d; Y = f.c[1] + Math.sin(a) * d * 0.9;
+      const sz = 22 * f.sc; if (Y + sz * 0.5 < H * 0.6 && clear.every(([cx, cy, cr]) => Math.hypot(X - cx, Y - cy) > cr + sz)) { ok = true; break; } }   // (and none over the name plate)
+    if (!ok) return;   // (nowhere clear for it: left out)
+    const put = (G, fn) => { G.save(); G.translate(X, Y); G.rotate(f.rot); G.transform(1, 0, f.skew, 1, 0, 0); G.scale(f.sc, f.sc); G.translate(-f.c[0], -f.c[1]); fn(G); G.restore(); };
+    const lay = cv(), lg = lay.getContext('2d');
+    put(lg, G => { G.fillStyle = 'rgba(70,140,180,0.9)'; path(G, f.poly, [2.5, 3.5]); G.fill(); G.strokeStyle = 'rgba(200,240,255,0.7)'; G.lineWidth = 1 / f.sc; G.stroke(); });   // (its thickness)
+    put(lg, G => { G.globalAlpha = 0.6; G.drawImage(pc, 0, 0); G.globalAlpha = 1; G.save(); path(G, f.poly, [0, 0]); G.clip();
+      const sh = G.createLinearGradient(f.c[0] - 60, f.c[1] - 60, f.c[0] + 60, f.c[1] + 60); sh.addColorStop(0, 'rgba(230,250,255,0.3)'); sh.addColorStop(0.45, 'rgba(200,240,255,0.04)'); sh.addColorStop(1, 'rgba(200,240,255,0.14)');
+      G.fillStyle = sh; G.fillRect(0, 0, W, H); G.strokeStyle = 'rgba(255,255,255,0.35)'; G.lineWidth = 5 / f.sc; path(G, f.poly, [0, 0]); G.stroke(); G.restore(); G.strokeStyle = 'rgba(255,255,255,0.95)'; G.lineWidth = 1.4 / f.sc; path(G, f.poly, [0, 0]); G.stroke(); });   // (a clear face: the world behind shows through it, its rim bright inside and out)
+    g.save(); g.globalAlpha = 0.6; g.filter = 'blur(6px)'; g.drawImage(lay, 0, 0); g.restore();   // (a soft shadow-glow round it, for depth)
+    g.save(); if (f.near > 0.75) g.filter = 'blur(' + (1.5 + (f.near - 0.75) * 10) + 'px)'; g.drawImage(lay, 0, 0); g.restore();   // (the nearest out of focus)
+  });
+  // splinters: small bright slivers of glass thrown out with them
+  g.save();
+  for (let n = 0; n < 14; n++) { const a = R() * TAU, d = 40 + Math.pow(R(), 0.7) * 230, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d, L = 4 + R() * 12 * (d / 150), w = 1.5 + R() * 3;
+    g.save(); g.translate(x, y); g.rotate(a + (R() - 0.5) * 1.5); g.beginPath(); g.moveTo(-L, 0); g.lineTo(0, -w); g.lineTo(L * 0.7, 0); g.lineTo(0, w * 0.6); g.closePath();
+    g.fillStyle = 'rgba(200,240,255,0.55)'; g.fill(); g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 0.7; g.stroke(); g.restore(); }
+  g.restore();
+  // the hit's cold flash, small, at the heart of the hole
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(g, HIT[0], HIT[1], 40, [[0, 'rgba(255,255,255,0.55)'], [0.4, fxa(0.2)], [1, fxa(0)]]); g.restore();
 }
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
+${SHATTER_SLABS.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
