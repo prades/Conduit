@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17k` (stamped `2026-11-17e` on its branch; main had taken e to j) · branch `claude/card-artist` · the Frost Maw is powder snow
+- **The ask** (the owner, 2026-11-17, of the Frost Maw on a draft attack card: "it's hard to tell what he is"): "He's supposed to have two icicles fangs and their within his Pac-Man looking body but it's made of powdered snow ... but instead right now it looks like it's a crystaline looking icy exterior". Of a first draft (smooth, a round mouth, icicle fangs): **"No, I like his old teeth and the powder material needs more of a snowy texture."** Of the second: **"shouldn't be able to see snow inside of his mouth in the back, but other than that, it looks absolutely awesome"**, then, circling the two points low at each side of the mouth: **"Get rid of the side teeth somehow."** Of the third: **"Frost maw looks good"**.
+- **What changed** (`design/evolutions/forms10.js`: the new model is No. 947, `_powderDome`; No. 934 kept as its history; `design/evolutions/bake.js` bakes `maw` from No. 947): his body is powder snow, soft clumps with smaller lumps and faint blue in the hollows, built into the shape (not a picture laid on it), instead of flat facets of different brightness. His shape, size, colours, the jagged teeth along the top of his mouth and his two crystal fangs are as they were. The two points low at each side of his mouth are gone (the sides and bottom of the mouth's edge are round). The snow heaped round his foot and the chunks on the floor sit outside his body, so none shows inside his mouth.
+- **His sheets** (`img/evo/maw.png`, `maw_g.png`) baked again, all 8 facings and 32 frames (idle, the lunge-bite, CHOMP), cropped (`js/evopack.js`); his Bible picture (`img/bible/forms/maw.webp`) made again. His moves, timings and numbers are unchanged.
+- **Found and fixed on the way:** the Bible's form pictures (`design/bible/pictures.js forms`) cut a form's first cell from the top-left corner of its sheet, which on a cropped sheet (since build `2026-11-09r`) is a jumble of packed cells. It now finds the cell in `js/evopack.js`, as the game does; `FORMS=maw` makes only the forms named. Only the Frost Maw's picture was made again (the others, made before the sheets were cropped, are right).
+- **Known, not changed:** 29 of his 256 frames (his biggest lunge and CHOMP poses) touch the edge of their 192 px cell; the old model's did the same 29.
+- Verified: the full test run (see the commit); the new Frost Maw in the real game page (standing, and swallowing with ABSOLUTE ZERO), its picture right after the picture tool's WebP copy was made. **Not playtested on an iPad.**
+
 ### Build `2026-11-17j` · branch `claude/start-game-project-HSh7Z`, pushed to `main` · main's card battles merged in
 - **The ask** (the owner): **"Push"**. `main` had moved with another branch's work (card battles, build `2026-11-17d` on `claude/friendly-thompson-w581x0`, below); it is merged into this branch and the two kept together. The one place both changed, `view3d/gameview.js`: the battle's camera (`swinging()` while a battle's camera is off the game's own) and this branch's test hook for the followers' bodies (`checkBody`). Build `2026-11-17j` is new to both.
 - **Two builds are named `2026-11-17d`**, one on each branch: this branch's (a Thunderhead no longer turns the 3D view off) and `main`'s (card battles, step 1). Both are listed below, by time.
@@ -166,6 +174,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 ### A decision, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-15j`) · the look and combat: direction 1 chosen
 - **The owner, of round 2's ten directions:** "I like the direction of 1": CRYSTAL LAB 3D (the game's own cartoon lab look as a real 3D world) with the slowed and signalled fight (real time, slower, every blow marked on the floor before it lands).
 - Recorded in `docs/DECISION-LOG.md` and `docs/STYLE-EVOLUTION.md`. Nothing is built. Still open (`docs/OPEN-QUESTIONS.md`): real 3D or 2.5D, the first piece, the pace and the marks.
+
+### No build · branch `claude/card-artist` · the card artist agent and the attack cards' art brief
+- **The ask** (the owner, 2026-11-17): an agent to make the attack cards' pictures: "dynamic shots of elementals using their attacks where they look elementally charged", "the horizon to be slanted", "shocks or fire in the front of the card as focus"; for brawlers "impact looking cards that have shattered screens and maybe make them look roughed up".
+- **Added:** `.claude/agents/card-artist.md` (the card illustrator: renders the followers' own 3-D models mid-attack, one piece first, checks each picture in the real card frame at iPad size, builds only when told) and `docs/ATTACK-CARD-ART.md` (the brief in the owner's words, what is fixed, what is open, the decisions to come). The documentation map lists it.
+- No game code, picture or test changed. Open for the owner: whether "elementals" means the Mages, the Technicians' style, which cards and how many, and the first piece.
 
 ## 2026-11-15
 
