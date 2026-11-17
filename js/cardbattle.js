@@ -402,6 +402,8 @@ function _cbCamDir(L) {
     for (const d of [base + k, base - k]) if (Math.cos(d) * -L.ux + Math.sin(d) * -L.uy > 0) return d;
     return base;
 }
+// everyone in the battle (its creatures still up, your squad still up, you): the 3D view keeps them in sight (view3d/gameview.js seeThrough)
+function cardBattleFighters() { if (_cb.phase === "off") return []; const out = _cb.foes.filter(_cbFoeOk).concat(_cbSquad()); if (typeof player !== "undefined" && player) out.push(player); return out; }
 // THE CAMERA, for the 3D view (view3d/gameview.js): null out of a battle; else how far in (k, eased), where it looks, how low, how turned, how near
 function cardBattleCam() {
     if (_cb.k <= 0.0001) return null;

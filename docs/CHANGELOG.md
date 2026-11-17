@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17w` · branch `claude/friendly-thompson-w581x0` · card battles: the battle always seen (what is in the way made see-through) (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-17, of a battle in the arena under the observation deck): "I can't see shit [...] make sure that all the creatures are visible. Make objects transparent, whatever it takes to make the battle scene visible."
+- **What it does:** while a battle is on, anything between a fighter and the camera (a tower, a lamp post, the semi truck's rockets, a roof) is drawn see-through, and a wall's or an upper floor's tile in the way is left out, until it is out of the way or the battle ends. Bodies and the floor under the fight are never touched. One-time tips (REEF IS READY) wait until the battle is over.
+- `view3d/gameview.js`, `view3d/gamemap.js`, `view3d/core.js`, `js/cardbattle.js`, `js/techabilities.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.35, §9, §10.
+- **Verified:** tests/cardbattle.js (30 checks), tests/view3d.js, the full suite; in a real browser under the observation deck. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17v` · branch `claude/friendly-thompson-w581x0` · card battles: a battle by a doorway is fought in one room (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17): a battle between two rooms, "You can't tell what's going on because the enemies would be invisible [...] make the battle happen in one room rather than take place in separate rooms."
 - **What it does:** a battle is fought in its enemies' room: the line-up's middle and every square are in it; if you or your squad stand in the next room, the screen goes black and everyone is put on its square in the enemies' room, so all of it is seen. A far enemy's battle puts everyone on its square in its one black.

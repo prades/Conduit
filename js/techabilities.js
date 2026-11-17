@@ -2060,6 +2060,7 @@ function techReefTipTick() {
     if (_techTipEl) { if (_techTipEl.isConnected) _techReefTipPlace(_techTipEl); else _techTipEl = null; return; }
     if (techReefTipSeen || typeof document === "undefined" || !document.body || !document.createElement || typeof facilityPlay === "undefined" || !facilityPlay) return;
     if ((typeof attractOn === "function" && attractOn()) || typeof partyMembers !== "function" || (typeof gameState !== "undefined" && gameState && !gameState.running)) return;
+    if (typeof cardBattlePhase === "function" && cardBattlePhase() !== "off") return;   // (a CARD BATTLE on: it waits until it is over, so nothing covers the fight: js/cardbattle.js)
     const t = partyMembers().find(f => f && !f.dead && (techAbilityOf(f) || {}).id === "reef" && techReadyIn(f) <= 0); if (t) techReefTipShow(t);
 }
 function _techReefTipPlace(el) {   // under QUESTS, and under the Crystal's box while it is up

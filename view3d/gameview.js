@@ -39,6 +39,45 @@ const GAMEVIEW = (function () {
   const turning = () => Math.abs(yawLeft()) > 1e-4 || Math.abs(twist()) > 1e-4;
   const wrapA = d => Math.atan2(Math.sin(d), Math.cos(d));
   const acrossTurn = (dir, a0) => { const d1 = wrapA(dir - a0), d2 = wrapA(dir + Math.PI - a0); return Math.abs(d1) <= Math.abs(d2) ? d1 : d2; };   // CARD BATTLES lined up: the turn to look across the line from whichever side is nearer
+  // A CARD BATTLE SEEN WHOLE (the owner, 2026-11-17, of a battle under the arena's observatory: "I can't see shit [...] make sure that all the creatures are visible. Make objects transparent, whatever it
+  // takes"): while a battle is on, four times a second, a line goes from each fighter (at its feet, its middle and its head) towards the camera (the camera has no perspective: one direction for all).
+  // A thing the camera draws that the line passes through (a tower, a lamp, a truck, a roof) is drawn see-through; a tile of a wall or a floor (the instanced sets: one tile at a time, by its box) is left
+  // out; both until it is out of the way or the battle is over. Each material's see-through copy is made once; the sets' tiles' boxes are found once a battle.
+  const RC = new T.Raycaster(), seeFrom = new T.Vector3(), faded = new Map(), fadeOf = new Map(), cut = new Map(); let seeAt = -1e9, seeList = null, seeSets = null, seeBoxes = null;
+  RC.layers.enableAll();   // (the built world is on layers 1 to 3, its ink and its shadows' copies: view3d/core.js; a line on layer 0 alone passed through all of it)
+  const SEE_UP = [0.15, 0.55, 0.95], SEE_ALPHA = 0.2, seeFeet = new T.Vector3(), seeRay = new T.Ray(), seeM = new T.Matrix4(), ZERO = new T.Matrix4().makeScale(0, 0, 0);
+  function seeable(o) { if (!o.layers.test(cam.layers)) return false; for (let p = o; p && p !== scene; p = p.parent) { if (!p.visible) return false; if (p.userData && p.userData.body) return false; } return true; }
+  function fadedMat(m) { let f = fadeOf.get(m); if (!f) { f = m.clone(); f.onBeforeCompile = m.onBeforeCompile; if (m.customProgramCacheKey) f.customProgramCacheKey = m.customProgramCacheKey; f.transparent = true; f.opacity = SEE_ALPHA * (m.opacity === undefined ? 1 : m.opacity); f.depthWrite = false; fadeOf.set(m, f); } return f; }
+  function seeFind() {   // once a battle: what may stand in the way (what the camera draws, but the bodies), and each instanced set's tiles' boxes
+    seeList = []; seeSets = []; seeBoxes = [];
+    scene.traverse(o => { if (!o.isMesh || !seeable(o)) return;
+      const pos = o.geometry.attributes.position;
+      if (!o.isInstancedMesh && pos && pos.array) { seeList.push(o); return; }
+      if (!o.isInstancedMesh) { if (o.geometry.boundingBox) { o.updateMatrixWorld(); seeBoxes.push({ o, box: o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld) }); } return; }   // (a room's things merged, its points let go once drawn: by its box)
+      if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); o.updateMatrixWorld(); const boxes = [];
+      for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, seeM); seeM.premultiply(o.matrixWorld); boxes.push(o.geometry.boundingBox.clone().applyMatrix4(seeM)); }
+      seeSets.push({ o, boxes }); });
+  }
+  function seeRestore() { for (const [o, m] of faded) o.material = m; faded.clear(); for (const [k, v] of cut) { v.o.setMatrixAt(v.i, v.m); v.o.instanceMatrix.needsUpdate = true; } cut.clear(); seeList = seeSets = seeBoxes = null; }
+  let seeBroke = false;   // (a failure here turns it off and puts everything back: it never stops the view)
+  function seeThrough(f0) { if (seeBroke) return; try { seeThroughStep(f0); } catch (e) { seeBroke = true; try { seeRestore(); } catch (x) {} if (typeof console !== 'undefined' && console.warn) console.warn('the battle\'s see-through is off: ' + ((e && e.stack) || e)); } }
+  function seeThroughStep(f0) {
+    const list = battling() ? GM.battleFighters : null;
+    if (!list || !list.length) { if (faded.size || cut.size || seeList) seeRestore(); return; }
+    if (f0 - seeAt < 15) return; seeAt = f0; if (!seeList) seeFind();
+    const hit = new Set(), tiles = new Map(); RC.far = BACK + 20;
+    for (const a of list) { if (!a || a.dead || !Number.isFinite(a.x)) continue; const y0 = GM.liftPx(a.x, a.y) / UPX; seeFeet.set(a.x, y0 + 0.02, a.y);
+      for (const up of SEE_UP) { seeFrom.set(a.x, y0 + up, a.y); RC.set(seeFrom, DIR); seeRay.set(seeFrom, DIR);
+        for (const h of RC.intersectObjects(seeList, false)) hit.add(h.object);
+        for (const B of seeBoxes) if (seeRay.intersectsBox(B.box) && !B.box.containsPoint(seeFeet)) hit.add(B.o);   // (one round the fighter's feet is the room's floor and walls as one: never)
+        for (const S of seeSets) for (let i = 0; i < S.boxes.length; i++) if (seeRay.intersectsBox(S.boxes[i]) && !S.boxes[i].containsPoint(seeFrom)) tiles.set(S.o.uuid + ':' + i, { o: S.o, i }); } }
+    for (const [o, m] of faded) if (!hit.has(o)) { o.material = m; faded.delete(o); }
+    for (const o of hit) if (!faded.has(o)) { faded.set(o, o.material); o.material = Array.isArray(o.material) ? o.material.map(fadedMat) : fadedMat(o.material); }
+    const dirty = new Set();
+    for (const [k, v] of cut) if (!tiles.has(k)) { v.o.setMatrixAt(v.i, v.m); dirty.add(v.o); cut.delete(k); }
+    for (const [k, v] of tiles) if (!cut.has(k)) { const m = new T.Matrix4(); v.o.getMatrixAt(v.i, m); cut.set(k, { o: v.o, i: v.i, m }); v.o.setMatrixAt(v.i, ZERO); dirty.add(v.o); }
+    for (const o of dirty) o.instanceMatrix.needsUpdate = true;
+  }
   const battling = () => { const B = GM.battleCam; return !!B && B.k > 1e-4; };   // CARD BATTLES (js/cardbattle.js): off the game's own camera, as in a swing, the game's drawing over the picture waits
   // the middle of the screen: the player's ground on the camera's floor (the game's _fpCam: the camera rides the player's floor), then TILE_H px up the screen, as _fpP has it
   function place(dt) { const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
@@ -122,7 +161,7 @@ const GAMEVIEW = (function () {
   const free = new Map(), live = new Map(), shown = new Set(), bad = new Set(); let stamp = 0;   // (free: bodies not in use, by kind; live: each unit's; shown: the units whose bodies this frame's picture has)
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
     if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
-    b.used = stamp; return b; }
+    b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
   function give(b) { b.holder.visible = false; let l = free.get(b.key); if (!l) free.set(b.key, l = []); l.push(b); }
   const turn = (b, tgt, dt) => { if (b.ang === null || !dt) { b.ang = tgt; return; } let d = tgt - b.ang; d -= TAU * Math.round(d / TAU); b.ang += d * Math.min(1, dt * 14); };
   const faceOf = row => Math.PI / 2 - row * Math.PI / 4;   // (a sheet's row, as the bakers turn the model for it)
@@ -184,7 +223,7 @@ const GAMEVIEW = (function () {
   const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
-    fit(f0); place(dt); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
+    fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
@@ -208,6 +247,8 @@ const GAMEVIEW = (function () {
       if (it.fp === 'stairwell' && it.up) return false;   // (a flight of stairs up, the Cold Storage's to the Experiment Lab: the view builds it, design/style-evolution/live/floor.js; a stairwell down, a hole in the floor, is still the game's)
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
+    seeingThrough() { return faded.size + cut.size; },
+    seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },   // (for the tests)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
   };
 })();
