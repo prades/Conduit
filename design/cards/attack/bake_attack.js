@@ -269,6 +269,19 @@ const SAMPLES = {
     lights: { hemi: [0x9a88c0, 0x0a0418, 0.5], key: [0xf4ecff, 1.0], rim: 2.6, back: 1.4, low: [0xb070ff, 1.2, 0, 0.6, 2.0] },
     cam: { pos: [1.0, 1.75, 5.3], look: [0, 0.05, 0], fov: 38, roll: -0.18 },   // (above the ring, rolled about 10 degrees, as the Hammer Slug's, the whole ring in the card)
   },
+  // THE THORNWHIP (bloom Mage, evolved form 'shrub', design No. 921: design/evolutions/bake.js JOBS, forms39.js _bloomShrub) with BRIAR SWEEP (docs/COMBAT.md: it sweeps its whip in a circle, every enemy
+  // within 2 tiles, leaves, petals and thorns shaken off), in the Mage style as the Ember Hood's: BRIAR SWEEP over SEEDFALL, as SEEDFALL is a heal (it hurts no enemy) while the sweep throws its
+  // petals, leaves and thorns out at the lens. Its pose: its action with its vines whipped out along the floor (pr 0.56, just after the crack); charged with bloom (BLOOM_MAGE, below). The bloom
+  // energy card's garden behind.
+  shrub_briarsweep: {
+    style: 'bloom', form: 921, color: '#ff7ab8', rim: '#ff9ccc', fx: '#ff7ab8', world: 'blossom', seed: 921,
+    pose: { t: 1.24, act: 1 }, yaw: -0.6,   // (its vines struck out to the left of the lens)
+    lights: { hemi: [0xd0a0b8, 0x1a0610, 0.5], key: [0xfff0f6, 1.0], rim: 2.4, back: 1.3, low: [0xff7ab8, 2, -0.6, 1.6, 3.0] },
+    cam: { pos: [2.4, 1.5, 8.4], look: [-0.9, 0.1, 0], fov: 40, roll: -0.27 },   // (rolled as the Ember Hood's; it up on the right, the sweep out to the left; aimed low, so its whip sits above the name plate)
+    sweep: { arc: [2.3, -2.4, 1.0], n: 110, scale: 1.6, edge: [3, 0.6, '#ffc2e0'],   // (arc: the sweep on the floor round it, [radius, from, to] radians; n: the pieces along it)
+      mid: [[0.2, 0.3, 26, 0, -2.6], [0.1, 0.44, 30, 1, -2.9], [0.32, 0.19, 20, 2, -2.4], [0.25, 0.47, 22, 2, 2.9], [0.38, 0.34, 16, 1, -2.2], [0.07, 0.21, 20, 1, -2.8], [0.46, 0.24, 12, 0, -2.0]],   // (nearer pieces, in focus: [x, y, size, kind (0 petal, 1 leaf, 2 thorn), way])
+      lens: [[0.12, 0.14, 30, 0, 0.6], [0.86, 0.06, 18, 2, 2.2], [0.04, 0.62, 26, 1, -0.4], [0.5, 0.05, 14, 0, 1.4], [0.3, 0.6, 22, 0, 2.0]] },   // (at the lens, out of focus)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -986,6 +999,87 @@ function CORE_MAGE(o) {
   return { png: out.toDataURL('image/png'), info };
 }
 
+// ---------- A BLOOM MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the garden: followers round 4, 2026-11-17): the bloom energy card's world (the garden, its shafts of
+// light) behind, tilted with the horizon; the follower CHARGED with bloom (a pink glow round it, a pink light inside its outline, glowing pollen thrown off it); and in the very front of the card, the
+// focus, its BRIAR SWEEP (docs/COMBAT.md: it sweeps its whip in a circle, "a bunch of leaves pop off of them, and leaves and thorns shake off"; the game's "briarburst", js/elements.js: pink petals,
+// green leaves and brown thorns thrown out all round): the sweep's arc of pink light on the floor round it, and its petals, leaves and thorns flung out along it at the lens, the nearest big and out of
+// focus. Run in the page (its source is put there with toString), after the 3-D renders.
+function BLOOM_MAGE(o) {
+  const { W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, heart, ahead } = o, PI = Math.PI, TAU = 2 * PI, Q = P.sweep;
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const Pk = a => 'rgba(255,122,184,' + a + ')', Pw = a => 'rgba(255,230,242,' + a + ')';   // (bloom's colour, js/config.js ELEMENTS #ff7ab8, and its white-hot pink)
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const mask = (blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(model, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  // the pieces BRIAR SWEEP throws (the game's own three: a pink petal, a green leaf, a brown thorn), each lit with bloom's light at its edge
+  const petal = (G, x, y, r, a) => { G.save(); G.translate(x, y); G.rotate(a); const gr = G.createLinearGradient(-r, 0, r, 0); gr.addColorStop(0, '#c2457f'); gr.addColorStop(0.55, '#ff9ccc'); gr.addColorStop(1, '#ffe2f0'); G.fillStyle = gr;
+    G.beginPath(); G.moveTo(-r, 0); G.bezierCurveTo(-r * 0.4, -r * 0.62, r * 0.6, -r * 0.55, r, 0); G.bezierCurveTo(r * 0.6, r * 0.55, -r * 0.4, r * 0.62, -r, 0); G.fill();
+    G.strokeStyle = 'rgba(255,240,248,0.7)'; G.lineWidth = Math.max(0.6, r * 0.06); G.stroke(); G.restore(); };
+  const leaf = (G, x, y, r, a) => { G.save(); G.translate(x, y); G.rotate(a); const gr = G.createLinearGradient(0, -r * 0.5, 0, r * 0.5); gr.addColorStop(0, '#9be07f'); gr.addColorStop(0.5, '#6fbf5a'); gr.addColorStop(1, '#2f6a2a'); G.fillStyle = gr;
+    G.beginPath(); G.moveTo(-r, 0); G.quadraticCurveTo(0, -r * 0.62, r, 0); G.quadraticCurveTo(0, r * 0.62, -r, 0); G.fill(); G.strokeStyle = 'rgba(30,70,25,0.9)'; G.lineWidth = Math.max(0.6, r * 0.07);
+    G.beginPath(); G.moveTo(-r * 0.9, 0); G.lineTo(r * 0.85, 0); G.stroke(); G.strokeStyle = Pk(0.75); G.lineWidth = Math.max(0.6, r * 0.06); G.beginPath(); G.moveTo(-r, 0); G.quadraticCurveTo(0, -r * 0.62, r, 0); G.stroke(); G.restore(); };
+  const thorn = (G, x, y, r, a) => { G.save(); G.translate(x, y); G.rotate(a); G.fillStyle = '#3a2418'; G.beginPath(); G.moveTo(r * 1.2, 0); G.lineTo(-r * 0.6, -r * 0.42); G.lineTo(-r * 0.45, r * 0.42); G.closePath(); G.fill();
+    G.strokeStyle = Pk(0.9); G.lineWidth = Math.max(0.7, r * 0.1); G.beginPath(); G.moveTo(r * 1.2, 0); G.lineTo(-r * 0.6, -r * 0.42); G.stroke(); G.restore(); };
+  const piece = (G, k, x, y, r, a) => (k === 0 ? petal : k === 1 ? leaf : thorn)(G, x, y, r, a);
+  // 1. FAR: the bloom energy card's garden (js/energygem.js, with that card's own seed), tilted with the horizon, softened, dimmed so the follower and the sweep read
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#14030c'; g.fillRect(0, 0, W, H);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.filter = 'blur(2px)'; const k = 1.55; g.drawImage(ws, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.filter = 'none';
+  g.globalAlpha = 0.7; g.drawImage(wm, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.restore(); g.globalAlpha = 1;
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -150, 0, 40); lg.addColorStop(0, 'rgba(58,10,38,0)'); lg.addColorStop(0.75, 'rgba(80,16,52,0.85)'); lg.addColorStop(1, '#3a0a26');
+  g.fillStyle = lg; g.fillRect(-W, -150, 2 * W, 190); g.restore();
+  g.fillStyle = 'rgba(0,0,0,' + (Q.dim == null ? 0.3 : Q.dim) + ')'; g.fillRect(0, 0, W, H);
+  // 2. THE FLOOR (3-D, darkened so the sweep is the light), a line of the garden's light along the horizon (so the tilt reads), a glow round the follower
+  { const fl = cv(), fc = fl.getContext('2d'); fc.drawImage(floorCv, 0, 0); fc.globalCompositeOperation = 'source-atop'; fc.fillStyle = 'rgba(12,3,8,' + (Q.floorDim == null ? 0.45 : Q.floorDim) + ')'; fc.fillRect(0, 0, W, H); g.drawImage(fl, 0, 0); }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[30, 0.1], [10, 0.22], [2.5, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, Pk(0)); lb.addColorStop(0.5, h < 4 ? Pw(a) : Pk(a)); lb.addColorStop(1, Pk(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, heart[0], heart[1], 230, [[0, Pk(0.16)], [0.45, Pk(0.05)], [1, Pk(0)]]); g.fillRect(0, 0, W, H); g.restore();
+  // 3. THE SWEEP on the floor: the arc its whip swept round it (Q.arc: [radius, from, to] in radians round it), a band of pink light, brightest and widest at its leading end
+  const ctr = Q.c || [0, 0.03, 0], arcPts = []; for (let i = 0; i <= 120; i++) { const a = Q.arc[1] + (Q.arc[2] - Q.arc[1]) * i / 120, w = [ctr[0] + Math.sin(a) * Q.arc[0], ctr[1], ctr[2] + Math.cos(a) * Q.arc[0]]; if (ahead(w)) arcPts.push([pr(w), i / 120]); }
+  { const sc = cv(), sg = sc.getContext('2d'); sg.globalCompositeOperation = 'lighter';
+    for (let i = 1; i < arcPts.length; i++) { const [p0] = arcPts[i - 1], [p1, t] = arcPts[i], e = Math.pow(t, 1.5);
+      sg.filter = 'blur(10px)'; stroke(sg, [p0, p1], 6 + 40 * e, Pk(0.12 + 0.2 * e)); sg.filter = 'blur(2px)'; stroke(sg, [p0, p1], 2 + 10 * e, Pk(0.3 + 0.5 * e)); sg.filter = 'none'; stroke(sg, [p0, p1], 0.8 + 2.5 * e, Pw(0.35 + 0.6 * e)); }
+    g.drawImage(sc, 0, 0); }
+  // 4. THE FOLLOWER, CHARGED: a dark halo, its silhouette glowing pink (wide and tight) and a thin bright edge, its own render, then a pink light inside its outline (strongest at its heart),
+  //    and glowing pollen thrown off its edges
+  g.save(); g.globalAlpha = 0.8; g.drawImage(mask(14, 'rgba(10,2,6,1)'), 0, 6); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.glow == null ? 0.6 : Q.glow; g.drawImage(mask(22, '#ff7ab8'), 0, 0); g.globalAlpha = 0.5; g.drawImage(mask(6, '#ff9ccc'), 0, 0); g.restore();
+  if (Q.edge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.edge[1]; g.drawImage(mask(Q.edge[0], Q.edge[2]), 0, 0); g.restore(); }
+  g.drawImage(model, 0, 0);
+  { const ig = cv(), ic = ig.getContext('2d'); ic.fillStyle = rad(ic, heart[0], heart[1], 120, [[0, 'rgba(255,220,236,0.8)'], [0.4, Pk(0.4)], [1, Pk(0.04)]]); ic.fillRect(0, 0, W, H);
+    ic.globalCompositeOperation = 'destination-in'; ic.drawImage(model, 0, 0); g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.inner == null ? 0.4 : Q.inner; g.drawImage(ig, 0, 0); g.restore(); }
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 40; i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 8 + R() * 70, x = e[0] + (e[0] - heart[0]) / 120 * d + (R() - 0.5) * 20, y = e[1] + (e[1] - heart[1]) / 120 * d + (R() - 0.5) * 20; blob(g, x, y, 1.2 + R() * 2.4, [[0, Pw(1)], [0.4, Pk(0.8)], [1, Pk(0)]]); }
+  g.restore();
+  // 5. NEAR: the pieces flung off the sweep: along its arc, thrown outward from it (away from its middle on the picture), bigger the nearer the front of the card, never on the follower; then the
+  //    nearest few right at the lens, big and out of focus. Light streaks behind each, back along its flight.
+  const c0 = pr(ctr), fly = cv(), fg2 = fly.getContext('2d');
+  for (let i = 0; i < (Q.n || 50); i++) { const pick = arcPts[Math.floor(Math.pow(R(), 0.6) * arcPts.length)]; if (!pick) continue; const [p, t] = pick, a = Math.atan2(p[1] - c0[1], p[0] - c0[0]) + (R() - 0.5) * 0.9, d = R() * 90 * (0.4 + t);
+    const x = p[0] + Math.cos(a) * d, y = p[1] + Math.sin(a) * d * 0.7 - R() * 50, r = (3 + R() * 5) * (0.6 + 1.2 * Math.max(0, y / H)) * (Q.scale || 1); if (A(x, y) > 20 || y > H * (Q.maxY || 0.66) || y < 0) continue;
+    fg2.save(); fg2.globalCompositeOperation = 'lighter'; const L = r * 4, sg = fg2.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, Pk(0.45)); sg.addColorStop(1, Pk(0)); fg2.strokeStyle = sg; fg2.lineWidth = r * 0.6; fg2.lineCap = 'round';
+    fg2.beginPath(); fg2.moveTo(x, y); fg2.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); fg2.stroke(); fg2.restore();
+    piece(fg2, i % 3, x, y, r, a + (R() - 0.5) * 2); }
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(6px)'; g.globalAlpha = 0.5; g.drawImage(fly, 0, 0); g.restore();   // (their glow)
+  g.drawImage(fly, 0, 0);
+  (Q.mid || []).forEach(([x, y, r, kind, a]) => { const X = x * W, Y = y * H, L = r * 5, b = a + PI, sg = g.createLinearGradient(X, Y, X + Math.cos(b) * L, Y + Math.sin(b) * L);   // (the nearer pieces, in focus: flying at the lens, a streak of light back along their way)
+    g.save(); g.globalCompositeOperation = 'lighter'; sg.addColorStop(0, Pk(0.5)); sg.addColorStop(1, Pk(0)); g.strokeStyle = sg; g.lineCap = 'round'; g.lineWidth = r * 0.8; g.beginPath(); g.moveTo(X, Y); g.lineTo(X + Math.cos(b) * L, Y + Math.sin(b) * L); g.stroke();
+    g.filter = 'blur(' + (r * 0.4) + 'px)'; blob(g, X, Y, r * 1.5, [[0, Pk(0.3)], [1, Pk(0)]]); g.restore(); piece(g, kind, X, Y, r, a + (kind === 2 ? 0 : 0.5)); });
+  { const nr = cv(), ng = nr.getContext('2d'); (Q.lens || []).forEach(([x, y, r, kind, a]) => { ng.save(); ng.globalCompositeOperation = 'lighter'; ng.filter = 'blur(' + (r * 0.5) + 'px)'; blob(ng, x * W, y * H, r * 1.6, [[0, Pk(0.35)], [1, Pk(0)]]); ng.restore(); piece(ng, kind, x * W, y * H, r, a); });
+    g.save(); g.filter = 'blur(' + (Q.lensBlur || 4) + 'px)'; g.drawImage(nr, 0, 0); g.restore(); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 9; i++) { const x = R() * W, y = R() * H * 0.6, r = 10 + R() * 22; blob(g, x, y, r, [[0, Pk(0.14)], [0.75, Pk(0.09)], [1, Pk(0)]]); }
+  g.restore();
+  // 6. THE GRADE: a vignette, darker at the foot (the name plate reads over it)
+  g.save(); g.fillStyle = rad(g, W * 0.55, H * 0.4, H * 0.75, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(12,3,8,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.7, 0, H); lg.addColorStop(0, 'rgba(12,3,8,0)'); lg.addColorStop(1, 'rgba(12,3,8,' + (Q.foot == null ? 0.5 : Q.foot) + ')'); g.fillStyle = lg; g.fillRect(0, H * 0.7, W, H * 0.3); g.restore();
+  return { png: out.toDataURL('image/png'), info };
+}
+
 // ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
 // from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
 // Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
@@ -1118,6 +1212,7 @@ ${ICE_MAGE.toString()}
 ${ZIG_DASH.toString()}
 ${RIFT_GLITCH.toString()}
 ${CORE_MAGE.toString()}
+${BLOOM_MAGE.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -1348,6 +1443,7 @@ window.__card = async function (P, W, H, modelOnly) {
   if (P.style === 'ice') { const k0 = Math.max(...iceAxes.map(q => q[2])); return ICE_MAGE({ W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, B, heart, iceTips: iceAxes.map(([a, b, sc]) => [pr([a.x, a.y, a.z]), pr([b.x, b.y, b.z]), sc / k0]) }); }
   if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
   if (P.style === 'core') return CORE_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
+  if (P.style === 'bloom') return BLOOM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
   if (P.style === 'storm') return STORM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
 
