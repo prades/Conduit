@@ -60,7 +60,7 @@ None yet: mockups first (§2.8).
 None: nothing is built.
 
 ## 11. Open questions
-1. **The battle screen's look** (the mockups, next).
+1. **The battle screen's look**: six mockups, round 1 (`design/battle/round1/`: hand of cards, squad rows, turn track, slab cards, cards in the scene, tactical console), for the owner's choice.
 2. **The player's part in a battle:** does the player (the cube) have its own cards or actions (the gun, GUARD, STUN DIVE, the repair kit), or only command the squad?
 3. **Ultimates:** a card like the others (with a long recharge), or charged by the Ultimate meter as now?
 4. **Targets:** with several enemies, how a card's target is chosen (tap the enemy after the card, or the card picks).
