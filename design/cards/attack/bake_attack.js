@@ -214,6 +214,21 @@ const SAMPLES = {
     lights: { hemi: [0x8a6a60, 0x1a0602, 0.45], key: [0xffeee0, 1.1], rim: 2.6, back: 1.4, low: [0xff5a14, 1.2, 0, 0.6, 2.0] },
     cam: { pos: [1.2, 1.75, 7.3], look: [-0.05, 0.0, 0], fov: 37, roll: -0.18 },   // (above the ring, rolled about 10 degrees, as the Hammer Slug's, the whole ring in the card)
   },
+  // THE RIFT MIMIC (flux Brawler, evolved form 'mimic', design No. 937: design/evolutions/bake.js JOBS, forms6.js _groundDesign, stab) with RIFT IMPALE (docs/COMBAT.md: "it glitches out and pops up under
+  // the nearest enemy it can see within 5 tiles, impaling it"), in the Brawler style as the Frost Maw's round 3: RIFT IMPALE over GRAVITY SLAM, as the impale comes up at the lens (its big shard thrust
+  // up at the enemy above it, the camera) while GRAVITY SLAM flattens it on the floor, away from the glass. Its pose: its own big shard risen out of the blob and tipped at the enemy (the sheet's
+  // extra block, v up, tilt), the shard's point striking the glass; it glitching back into being (RIFT_GLITCH). The flux energy card's void behind.
+  mimic_riftimpale: {
+    style: 'brawler', form: 937, color: '#9933ff', rim: '#b366ff', fx: '#b366ff', world: 'flux', seed: 937,
+    pose: { t: 0.3, act: 0, v: { up: 0.45, tilt: 1, grow: 1 } }, yaw: 0.8, hit: [0.718, 0.158], glass: 'slabs', pieces: 'clear', powder: 0, through: 30,   // (its big shard half risen out of it and tipped at the enemy; turned so the shard thrusts up across the card to the upper right; through: the shard's point punched through the glass)
+    clear: [[190, 250, 40], [240, 195, 40], [285, 145, 35], [240, 340, 110], [110, 380, 70], [380, 330, 60]],   // (its shard along its length, and its blob: no flying piece lands on them)
+    lights: { hemi: [0x9a88c0, 0x0a0418, 0.5], key: [0xf4ecff, 1.0], rim: 2.6, back: 1.4, low: [0xb070ff, 1.5, 0, 1.2, 2.0] },
+    cam: { pos: [1.05, 1.2, 3.05], look: [0.1, 0.45, 0.2], fov: 56, roll: -0.22 },   // (close and a little above it, the enemy's place over it; rolled as the Frost Maw's)
+    glitch: { n: 6, h: 9, shift: 22, strips: 10, rift: [0, 0.02, 0, 1.25], flash: 110 },   // (slices knocked sideways, strips of violet beside it, the rift on the floor round it)
+    tone: { sky: '#06030e', hz: ['rgba(40,12,80,0)', 'rgba(46,14,90,0.8)', '#14062a'], hot: '241,227,255', halo: 'rgba(4,1,10,1)', chip: ['#4a3a6a', '#1e1430', '#06030c', 'rgba(153,51,255,0.35)'], vig: 'rgba(6,2,14,0.65)', foot: ['rgba(6,2,14,0)', 'rgba(6,2,14,0.7)'],
+      dim: 0.45, glow: 0.9, edge: [2, 1.0, '#f0dcff'] },   // (the void dimmed, a strong violet glow and a bright edge round it: its near-black shard stands out against the void as a silhouette)
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -259,6 +274,7 @@ function BRAWLER(o) {
   g.restore();
   if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
   if (P.goo) GOO_SPLASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
+  if (P.glitch) RIFT_GLITCH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU, pr: o.pr });   // (followers round 3, RIFT IMPALE: it glitches back into being, a rift under it, the strike's flash)
   if (P.zig) ZIG_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU, pr: o.pr });   // (followers round 3, ZIGZAG DASH: its way behind it a zigzag of lightning, arcs off it, the strike's bolts at the lens)   // (followers round 2, TOXIC STOMP: goo flung out of its caldera, a splash of it where the foot lands)   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
@@ -918,6 +934,35 @@ function ZIG_DASH(o) {
   g.restore();
 }
 
+// ---------- RIFT IMPALE'S GLITCH on a Brawler card (followers round 3, the Rift Mimic; docs/COMBAT.md: "it glitches out and pops up under the nearest enemy ... impaling it"; js/elements.js
+// "riftglitch": its shape in strips that slide together as it reappears, in the game's three violets): slices of the follower knocked sideways as it pops back into being, a few flat strips of
+// violet beside them, a rift of violet light opened in the floor under it, and a flash where its shard strikes. Called by BRAWLER after the follower is drawn, before the glass breaks.
+function RIFT_GLITCH(o) {
+  const { g, W, H, R, cv, model, HIT, P, PI, TAU, pr } = o, Q = P.glitch, COLS = ['#e0a8ff', '#9933ff', '#5a1fa8'];
+  const blob = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); G.fillStyle = gr; G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data; let y0 = H, y1 = 0, x0 = W, x1 = 0;
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (md[(y * W + x) * 4 + 3] > 60) { y0 = Math.min(y0, y); y1 = Math.max(y1, y); x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+  // 1. the rift under it: a ring of violet light on the floor round where it came up, torn (jagged), its glow
+  if (Q.rift) { const pts = []; for (let i = 0; i <= 64; i++) { const a = i / 64 * TAU, r = Q.rift[3] * (0.9 + 0.2 * R()); pts.push(pr([Q.rift[0] + Math.cos(a) * r, Q.rift[1], Q.rift[2] + Math.sin(a) * r])); }
+    const rc = cv(), rg = rc.getContext('2d'); rg.lineJoin = 'round';
+    for (const [w, c, b] of [[18, 'rgba(153,51,255,0.35)', 10], [6, 'rgba(190,130,255,0.7)', 2], [1.6, 'rgba(241,227,255,0.95)', 0]]) { rg.save(); rg.filter = b ? 'blur(' + b + 'px)' : 'none'; rg.strokeStyle = c; rg.lineWidth = w; rg.beginPath(); pts.forEach(([x, y], i) => i ? rg.lineTo(x, y) : rg.moveTo(x, y)); rg.stroke(); rg.restore(); }
+    const id = rg.getImageData(0, 0, W, H), d = id.data; for (let i = 0; i < W * H; i++) { const a = md[i * 4 + 3]; if (a) d[i * 4 + 3] = d[i * 4 + 3] * (1 - a / 255); } rg.putImageData(id, 0, 0);   // (behind it where its body is)
+    g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(rc, 0, 0); g.restore(); }
+  // 2. the glitch: slices of it knocked sideways (each a copy of its own render, tinted one of the three violets at its edge), and flat strips of violet beside them
+  const snap = cv(); snap.getContext('2d').drawImage(g.canvas, 0, 0);
+  for (let i = 0; i < Q.n; i++) { const y = y0 + (Q.band ? Q.band[0] + R() * (Q.band[1] - Q.band[0]) : R()) * (y1 - y0), h = 2 + R() * Q.h, dx = (R() < 0.5 ? -1 : 1) * (5 + R() * Q.shift), c = COLS[i % 3];
+    g.save(); g.beginPath(); g.rect(0, y, W, h); g.clip(); g.drawImage(snap, dx, 0); g.globalCompositeOperation = 'source-atop'; g.restore();
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.35; g.fillStyle = c; const sl = cv(), sc = sl.getContext('2d'); sc.drawImage(model, dx, 0); sc.globalCompositeOperation = 'source-in'; sc.fillStyle = c; sc.fillRect(0, 0, W, H);
+    g.beginPath(); g.rect(0, y, W, h); g.clip(); g.drawImage(sl, 0, 0); g.restore(); }
+  for (let i = 0; i < Q.strips; i++) { const y = y0 + R() * (y1 - y0), side = R() < 0.5, wd = 14 + R() * 40, x = side ? x0 - wd - R() * 30 : x1 + R() * 30;
+    g.save(); g.globalAlpha = 0.55 + 0.35 * R(); g.fillStyle = COLS[i % 3]; g.fillRect(x, y, wd, 2 + R() * 4); g.restore(); }
+  // 3. the strike: a violet flash where its shard's point hits, sparks of the void thrown out
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(g, HIT[0], HIT[1], Q.flash || 110, [[0, 'rgba(241,227,255,0.6)'], [0.3, 'rgba(153,51,255,0.3)'], [1, 'rgba(153,51,255,0)']]); g.lineCap = 'round';
+  for (let k = 0; k < 50; k++) { const a = R() * TAU, d = 30 + Math.pow(R(), 0.7) * 200, L = 6 + R() * 20, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d; if (y > H * 0.7) continue;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, 'rgba(241,227,255,1)'); sg.addColorStop(0.3, 'rgba(190,130,255,0.85)'); sg.addColorStop(1, 'rgba(153,51,255,0)'); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.6; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
@@ -929,6 +974,7 @@ ${GOO_SPLASH.toString()}
 ${VOID_MAGE.toString()}
 ${ICE_MAGE.toString()}
 ${ZIG_DASH.toString()}
+${RIFT_GLITCH.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -1026,6 +1072,8 @@ window.__card = async function (P, W, H, modelOnly) {
       const M2 = about(knee.position.clone(), new T.Matrix4().makeRotationX(-Q.fwd * PIo).multiply(new T.Matrix4().makeRotationZ(s * (Q.stake - Q.seg) * PIo))); move(stake, M2); });
     if (Q.lighten) { const lm = new Map(); meshes.forEach(m => { if (!lm.has(m.material)) { const c = m.material.clone(); if (c.emissive) c.emissive.add(new T.Color(Q.lighten)); lm.set(m.material, c); } m.material = lm.get(m.material); }); }   // (round 2: all four legs lifted a touch against the dark plum, a faint glow of their own; their own copy of the material, the body untouched)
   }
+  if (P.lightenDark) { const lm = new Map(); B.g.traverse(m => { if (!m.isMesh || !m.material || !m.material.color || m.material.transparent) return; const c = m.material.color; if (c.r + c.g + c.b > 0.15) return;
+    if (!lm.has(m.material)) { const k = m.material.clone(); if (k.emissive) k.emissive.add(new T.Color(P.lightenDark)); lm.set(m.material, k); } m.material = lm.get(m.material); }); }   // (followers round 3, the Rift Mimic: its near-black shards lit a touch from within against the void; their own copy of the material, this render only)
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
   // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
