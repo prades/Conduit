@@ -243,6 +243,20 @@ const SAMPLES = {
       echo: { from: [0.12, 0.95, -0.12], to: [0.4, 1.05, 4.4], rings: [[0.3, 0.4, 4, 0.8], [0.52, 0.6, 7, 0.95], [0.74, 0.85, 10, 1], [0.93, 1.2, 16, 1]], blurFrom: 0.9, film: 0.1 },   // (each ring: [how far along its way, radius, width, strength]; the nearest out of focus)
       lens: [[0.08, 0.1, 30, 0.3], [0.9, 0.06, 22, 1.0], [0.04, 0.52, 18, 0.6]] },   // (hex shards of light at the lens, out of focus: [x, y on the picture, size, turn])
   },
+  // THE STATIC ORB (electric Brawler, evolved form 'staticorb', design No. 791: design/evolutions/bake.js JOBS, forms28.js _orbBrawler) with SONIC ROLL (docs/COMBAT.md; STATIC RUSH renamed: an instant dash
+  // to the nearest enemy, a stun, a shock jumping on), in the Brawler style as the Frost Maw's round 3 and the Electro Skink's: SONIC ROLL over CAPACITOR DISCHARGE, as the roll rams head-on at the lens
+  // while the discharge stands still storing charges. Its action pose (act 1: its tread spinning, its core flared, static arcing), turned a little so its amber core shows through its open shell,
+  // and the card's glass breaks where its tread band hits. Its way behind it in lightning (ZIG_DASH). The storm behind.
+  staticorb_sonicroll: {
+    style: 'brawler', form: 791, color: '#ffe033', rim: '#fff27a', fx: '#ffee33', world: 'electric', seed: 791,
+    pose: { t: 0.3, act: 1 }, yaw: -0.45, hit: [0.3, 0.4], glass: 'slabs', pieces: 'clear', powder: 0, through: 40,
+    clear: [[135, 250, 75], [250, 250, 60], [195, 115, 50], [320, 100, 50], [95, 140, 40]],   // (its tread band, its core, its two brackets: no flying piece lands on them; through: the band punched through the glass)
+    lights: { hemi: [0x8a84b0, 0x0a0618, 0.5], key: [0xfff6d8, 1.1], rim: 3.0, back: 1.5, low: [0xffe040, 0, 0.6, 2.0, 2.0] },
+    cam: { pos: [0.3, 1.3, 5.0], look: [0, 0.4, 0], fov: 44, roll: -0.22 },   // (rolled as the Frost Maw's; aimed low, so its body sits above the name plate)
+    zig: { path: [[4.5, 0.05, -9], [2.0, 0.08, -4], [0.5, 0.1, -0.4]], band: 34, w: 3.2, flash: 120, forks: 6, edgeArcs: 10 },   // (its roll behind it, on the floor: from far back on the right, in to it; it is straight in the game, a slight bend here so it shows past its body)
+    tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], hot: '255,250,200', halo: 'rgba(4,2,10,1)', chip: ['#5a5470', '#2a2638', '#08060e', 'rgba(255,238,51,0.35)'], vig: 'rgba(6,4,14,0.65)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 1.0, '#fff27a'] },
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
