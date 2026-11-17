@@ -4,7 +4,7 @@
 //   THE CAMERA   the game's own: the same angle (2:1, 30 degrees down), the same scale (a tile TILE_W px across) and on the player as the game's is (js/facilityplay.js _fpP), so a
 //                point of the world is on the screen exactly where the game's own drawing puts it, and every 2D drawing laid over the picture (bars, plates, effects, marks, taps) lies
 //                where it did. (Turning it waits for the effects in 3D: the 2D ones are drawn for this angle.)
-//   THE WORLD    the lab's floors (view3d/gamemap.js VIEW3D_ROOMS: stage 1 its ground floor, stage 2 its other floors), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
+//   THE WORLD    the lab's floors and the arena (view3d/gamemap.js VIEW3D_ROOMS: stage 1 the lab's ground floor, stage 2 its other floors and the arena), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
 //                floor.js), with its stairs, its doors opening and shutting as the game's do, the walls in front of the room you are in sunk, and each room as lit as the game has it
 //   THE LIGHT    the game's own (js/facilitystyle.js: the room you are in lit, the others dark, a pool of light at an open door; a blackout): a map of the tiles, written from the game's
 //                levels and laid on the world's every surface by the tile in front of it, as dark as the game lays its dark on: the room you are in too, at the game's lit level (FP_LIT,
@@ -134,7 +134,12 @@ const GAMEVIEW = (function () {
     turn(b, faceOf(row), dt); pose(b, walking ? 8 + (f0 / 4) % 8 : 0, (f0 / 7) % 8); stand(b, pl.visualX, pl.visualY, GM.flightLift(pl), SC_PLAYER); shown.add(pl); }
   // ONE OF YOURS (a follower, a recruit): its evolved form as js/evolution.js draws it (_evoFrame: its row, its frame, its size as it molts), or its egg as js/hdsprites.js drawHdEgg does.
   // False: the game draws it as ever (a form still cracking out of its egg, one under the floor, a ghost, one in smoke form, one with no model)
-  function follower(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
+  // A FOLLOWER WHOSE BODY FAILS to build or pose is drawn by the game in 2D (its form not tried again), the view going on: one form's fault never stops the view. (It did: a Thunderhead in the
+  // squad turned the 3D view off for good, 2026-11-17, the owner: "it only switches back when I have a certain follower, and it doesn't switch back to 3D now that I have the follower")
+  function follower(f, f0, dt) { try { return followerIn(f, f0, dt); } catch (e) {
+      const d = f.evolved ? GM.evolvedDef(f) : null, key = d ? d.id : GM.eggSheet(f), b = live.get(f); if (key) bad.add(key); if (b) { b.holder.visible = false; live.delete(f); }
+      if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + key + ' in 2D: ' + ((e && e.message) || e)); return false; } }
+  function followerIn(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
     const d = f.evolved ? GM.evolvedDef(f) : null;
     if (d) { if (!JOBS[d.id] || bad.has(d.id)) return false;
       if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < GM.EVO_MOLT * 0.3 || GM.burrowDepth(f) !== null) return false;
@@ -174,9 +179,10 @@ const GAMEVIEW = (function () {
   tagInk(scene); warm();
   let lastF = null, snap = true, roomWas = null;
   const stats = { frames: 0, draws: 0, tris: 0, bodies: 0, ms: 0, fx: false, built: CORE.built(), webgl: CORE.gl2 ? 2 : 1 };   // (fx: this frame's floor marks were laid on)
+  const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
-    fit(f0); place(dt); lights(); doors(); crystal(f0);
+    fit(f0); place(dt); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
@@ -187,11 +193,17 @@ const GAMEVIEW = (function () {
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
     swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
+    // for tests (tests/view3d.js): a form or an egg built as a follower's body is, and put in every pose the game can ask of it (its sheet's idle, action and block columns), without
+    // drawing: why it fails, or null
+    checkBody(id) { let b = null; try { if (!JOBS[id]) return 'no model'; b = formBody(id); if (!b) return 'not built';
+        const n = 16 + 8 * (b.job.blocks ? b.job.blocks.length : b.job.consume ? 1 : 0); for (let c = 0; c < n; c++) pose(b, c); return null; }
+      catch (e) { return String((e && e.message) || e); } finally { if (b) scene.remove(b.holder); } },
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
     keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false;
-      if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play)
+      if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play; the sewers' own things, fp sewer, the view builds or does not draw yet: design/style-evolution/live/floor.js)
+      if (it.fp === 'stairwell' && it.up) return false;   // (a flight of stairs up, the Cold Storage's to the Experiment Lab: the view builds it, design/style-evolution/live/floor.js; a stairwell down, a hole in the floor, is still the game's)
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }

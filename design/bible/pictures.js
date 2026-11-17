@@ -18,11 +18,11 @@ const EXE = process.env.CHROMIUM_PATH || undefined;
 const want = process.argv.slice(2), on = k => !want.length || want.includes(k);
 const webp = (src, dst, q, extra) => { fs.mkdirSync(path.dirname(dst), { recursive: true }); execFileSync('convert', [src].concat(extra || [], ['-quality', String(q), dst])); };
 
-// where to stand for each room (tiles): its middle, or the floor nearest to it
+// where to stand for each room (tiles): its middle, or the floor nearest to it (the Cold Storage's since its interior moved west, build 2026-11-13a; its intact part since build 2026-11-17h)
 const ROOMS = {
   crystal_chamber: [13.5, 19], computer_lab: [30, 15.5], security_room: [44, 16.5], show_room: [51.5, 22], main_hallway: [40, 23.5], experiment_lab: [29.5, 29.5],
   teleport_room_1: [13, 32], teleport_room_2: [52, 36], stair_room: [46, 35], observation_deck: [13, 43.5], arena: [33.5, 50], arena_culvert: [41, 44], arena_grates: [43.5, 51.5],
-  catwalks: [53, 51.5], armory: [77.5, 52], cold_storage: [-34, 36.5], sewers_west: [-44, 111.5], sewers_mid: [-30, 111.5], sewers_east: [-14, 111.5], sewers_cistern: [-4, 110],
+  catwalks: [53, 51.5], armory: [77.5, 52], cold_storage: [-66, 36.5], cold_annex: [-44, 41], sewers_west: [-44, 111.5], sewers_mid: [-30, 111.5], sewers_east: [-14, 111.5], sewers_cistern: [-4, 110],
 };
 // the game, opened and powered: graphics HIGH, the blackout over, every relay online, five followers, and a helper that finds the floor nearest to a spot
 async function openGame(b, w, h) {
@@ -46,8 +46,9 @@ async function openGame(b, w, h) {
   if (on('rooms')) {
     const { p, errs } = await openGame(b, 1400, 900);
     await p.evaluate(() => { const st = document.createElement('style'); st.textContent = 'body > *:not(canvas):not(#gameCanvas) { visibility: hidden !important; }'; document.head.appendChild(st);
-      window.drawFacilityNetworkHUD = () => {}; window.facilityDrawObjective = () => {}; window._tgAmmoDraw = () => {}; actors = actors.filter(a => !(a instanceof Predator)); });
-    for (const [k, at] of Object.entries(ROOMS)) {
+      window.drawFacilityNetworkHUD = () => {}; window.facilityDrawObjective = () => {}; window._tgAmmoDraw = () => {}; window.dialogueDraw = () => {}; actors = actors.filter(a => !(a instanceof Predator)); });   // (and no dialogue: the Crystal's lines are drawn on the canvas, at the top left, since build 2026-11-12g)
+    const only = (process.env.BIBLE_ROOMS || '').split(',').filter(Boolean);   // (BIBLE_ROOMS=a,b: those rooms only)
+    for (const [k, at] of Object.entries(ROOMS)) { if (only.length && !only.includes(k)) continue;
       const room = await p.evaluate(a => __stand(a[0], a[1]), at); await p.waitForTimeout(1100);
       const f = path.join(TMP, k + '.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'rooms', k + '.webp'), 78); console.log('rooms/' + k, room);
     }
