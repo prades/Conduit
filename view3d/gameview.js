@@ -32,7 +32,7 @@ const GAMEVIEW = (function () {
   const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(); CORE.SEE(cam);
   // TURNED AND ZOOMED (js/view3d.js VIEW3D.turn, VIEW3D.zoom; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"): it swings round
   // the vertical to the quarter turn chosen, a quarter in SWING s (js/config.js turns the game's own drawing over it the same way, and while it swings that drawing waits); its picture is scaled
-  // about the screen's middle, as the game's drawing over it is (js/view3d.js view3dWorldBegin). TWISTED (two fingers, js/view3d.js VIEW3D.twist): it goes round with the fingers, at once,
+  // about the screen's middle, as the game's drawing over it is (js/view3d.js view3dWorldBegin). SWIPED (a finger, js/view3d.js VIEW3D.twist): it goes round with the finger, at once,
   // off its quarter turn; let go, it swings to the quarter turn it settles on. Off a quarter turn, as in a swing, the game's drawing over it waits.
   const SWING = 0.4; let yaw = 0;
   const twist = () => GM.viewTwist || 0, yawWant = () => (GM.viewTurn || 0) * Math.PI / 2 + twist(), yawLeft = () => { const d = yawWant() - yaw; return d - Math.round(d / (2 * Math.PI)) * 2 * Math.PI; };   // (the short way round)
@@ -183,7 +183,7 @@ const GAMEVIEW = (function () {
     stats, state, world, camera: cam, core: CORE,
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
-    swinging() { return turning(); },   // (swinging round to a quarter turn, or twisted off one: js/view3d.js view3dSwinging)
+    swinging() { return turning(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)

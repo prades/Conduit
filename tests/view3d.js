@@ -127,14 +127,19 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   // with the dialogue's box up (it hangs under QUESTS too: js/dialogue.js) the buttons are under the box, and still work
   dialogueSay('crystal', 'A WORD FOR THE TEST', { now: true, hold: true, key: 'v3btn' }); step(1); out.btnDlg = [_dlgBox.w > 0, bt.y >= _dlgBox.y + _dlgBox.h + bt.r, tapB(1), VIEW3D.turn, [_dlgBox.x, _dlgBox.y, _dlgBox.w, _dlgBox.h, bt.y]];
   dialogueClear(); VIEW3D.turn = 0; V.show(true); step(2);
-  // THE TWIST (the owner, 2026-11-17: "It won't allow me to use my fingers to rotate the screen"): two fingers twisted, the room goes round with them past a few degrees (the camera itself, while
-  // the game's drawing over it waits); let go, it settles on a quarter turn: the next one the way it went once VIEW3D_CAM.twistCommit degrees past one, else back
-  var fing = function (deg) { var r = deg * Math.PI / 180; return [[600 - 100 * Math.cos(r), 400 - 100 * Math.sin(r)], [600 + 100 * Math.cos(r), 400 + 100 * Math.sin(r)]]; };
+  // THE SWIPE (the owner, 2026-11-17: "one finger will allow you to rotate the camera. And you swipe it"): on a press the game left plain, a finger gone sideways past VIEW3D_CAM.swipeStart px
+  // turns the room with it (the camera itself, while the game's drawing over it waits); let go, it settles on a quarter turn: the next one past VIEW3D_CAM.settle degrees, or flicked, else back.
+  // Not a short drag, not up and down, not a press that is something's (here a creature's lock); two fingers only zoom (a pinch with a twist in it does not turn)
   var camAng = function () { var v = new THREE.Vector3(); V.camera.getWorldDirection(v); return Math.atan2(v.z, v.x) * 180 / Math.PI; };
-  var tw = function (deg) { var a0 = camAng(); _v3twoStart.apply(null, fing(0)); for (var i = 1; i <= 8; i++) _v3twoMove.apply(null, fing(deg * i / 8)); step(1);
-    var t = VIEW3D.twist * 180 / Math.PI, turned = camAng() - a0; turned -= Math.round(turned / 360) * 360; var mid = [Math.round(t), view3dSwinging(), Math.abs(turned + t) < 0.5];
-    _v3twoEnd(); var k = VIEW3D.turn, left = VIEW3D.twist; V.show(true); step(2); return mid.concat([k, left, view3dSwinging()]); };
-  out.twist = [tw(5), tw(20), tw(35), tw(-35), tw(-130)]; VIEW3D.turn = 0; V.show(true); step(2);
+  var press = function (own) { isPressing = true; longHoldFired = false; touchMoved = false; commandMode = false; commandPendingTap = false; _gunPressed = false; _dlgPressed = false; _techAimPressed = false; _cloneDrag = null; _targetPressed = !!own; };
+  var sw = function (dx, dy, n, ms, own) { var a0 = camAng(), took = 0; press(own); _v3swipeDown(7, 500, 400, 1000);
+    for (var i = 1; i <= n; i++) if (_v3swipeMove(7, 500 + dx * i / n, 400 + dy * i / n, 1000 + ms * i)) took++;
+    if (!_v3swipe.on) isPressing = false; step(1);   // (a press the swipe did not take is let go before a frame: no hold from it)
+    var t = VIEW3D.twist * 180 / Math.PI, turned = camAng() - a0; turned -= Math.round(turned / 360) * 360; var mid = [took > 0, Math.round(t), view3dSwinging(), Math.abs(turned + t) < 0.5];
+    var lifted = _v3swipeUp(7, 1000 + ms * n + 5, true), k = VIEW3D.turn; isPressing = false; _targetPressed = false; V.show(true); step(2); return mid.concat([lifted, k, VIEW3D.twist, view3dSwinging()]); };
+  out.swipe = [sw(10, 0, 2, 40), sw(150, 4, 10, 40), sw(-64, 0, 8, 40), sw(-40, 0, 2, 10), sw(6, 170, 10, 40), sw(150, 0, 10, 40, true)];
+  _v3twoStart([500, 400], [600, 400]); _v3twoMove([450, 380], [650, 420]); out.pinch = [+VIEW3D.zoom.toFixed(2), VIEW3D.twist, VIEW3D.turn];
+  VIEW3D.turn = 0; VIEW3D.zoom = 1; V.show(true); step(2);
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
@@ -189,9 +194,11 @@ else {
         same(JSON.stringify(ON.btn), JSON.stringify([true, true, 1, true, 1.2, false, false, 1]), 'shown, turn right, its turn, zoom in, its zoom; with the pack up: shown, turn left, its turn');
         same(JSON.stringify(ON.btnDlg.slice(0, 4)), JSON.stringify([true, true, true, 1]), 'with a line said: the box drawn, the buttons under it, a tap on one, its turn (the box and the row: ' + JSON.stringify(ON.btnDlg[4]) + ')');
     });
-    check('THE TWIST (the owner, 2026-11-17: "It won\'t allow me to use my fingers to rotate the screen"): two fingers twisted, the camera goes round with them past 8 degrees, the game\'s drawing over it waiting; let go, it settles on a quarter turn (the next one its way past 20 degrees, else back)', () => {
-        same(JSON.stringify(ON.twist), JSON.stringify([[0, false, true, 0, 0, false], [12, true, true, 0, 0, false], [27, true, true, 1, 0, false], [-27, true, true, 0, 0, false], [-122, true, true, 2, 0, false]]),
-            'for twists of 5, 20, 35, -35 and -130 degrees: the room\'s twist, the drawing waiting, the camera turned by it; then the quarter turn it settled on, the twist left, still swinging');
+    check('THE SWIPE (the owner, 2026-11-17: "one finger will allow you to rotate the camera. And you swipe it"): a finger swiped sideways past 22 px turns the room with it, the game\'s drawing over it waiting; let go, it settles on a quarter turn (the next one past 20 degrees, or flicked, else back); not a short drag, not up and down, not a press that is a creature\'s; two fingers only zoom', () => {
+        same(JSON.stringify(ON.swipe), JSON.stringify([[false, 0, false, true, false, 0, 0, false], [true, -30, true, true, true, 3, 0, false], [true, 10, true, true, true, 3, 0, false],
+            [true, 0, false, true, true, 0, 0, false], [false, 0, false, true, false, 0, 0, false], [false, 0, false, true, false, 0, 0, false]]),
+            'a 10 px drag; 150 px right, slowly; 64 px left; a flick of 40 px left; up and down; 150 px on a creature. Each: the swipe\'s, its twist, the drawing waiting, the camera turned by it; the lift the swipe\'s, the quarter turn, the twist left, still swinging');
+        same(JSON.stringify(ON.pinch), JSON.stringify([1.8, 0, 0]), 'a pinch with a twist in it: zoomed (as far as it goes), not turned');
     });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');

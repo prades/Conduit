@@ -65,8 +65,8 @@ function view3dBegin() {
 // THE CAMERA, turned a quarter at a time and zoomed (the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"). Only while the view shows:
 // the 2D game has one angle and one scale. VIEW3D.turn 0 to 3 (js/config.js VIEW_TURN is it while the view shows: everything the game lays out on the screen goes through it, so the 2D over the
 // picture lines up in each of the four views); VIEW3D.zoom how near (1 the game's own), its camera and the world's 2D drawing scaled about the screen's middle together; VIEW3D.twist (radians)
-// how far two fingers have the camera round from its quarter turn as they twist (0 the rest of the time: the controls below).
-const VIEW3D_CAM = { zoomMin: 0.6, zoomMax: 1.8, zoomStep: 1.2, twistDead: 8, twistCommit: 20 };   // (the agent's, provisional; the twist's in degrees)
+// how far a swiping finger has the camera round from its quarter turn (0 the rest of the time: the controls below).
+const VIEW3D_CAM = { zoomMin: 0.6, zoomMax: 1.8, zoomStep: 1.2, swipeStart: 22, swipeDeg: 0.25, settle: 20, flick: 0.5 };   // (the agent's, provisional: px, degrees a px, degrees, px a ms)
 function view3dZoom() { return VIEW3D.showing ? VIEW3D.zoom : 1; }
 // n quarter turns (to the right, the world clockwise; less than 0, to the left)
 function view3dTurnBy(n) { const q = Math.round(n); if (!VIEW3D.showing || !q) return false; VIEW3D.turn = ((VIEW3D.turn + q) % 4 + 4) % 4; VIEW_TURN = VIEW3D.turn; return true; }
@@ -128,8 +128,8 @@ function view3dBody(a) { return VIEW3D.showing && VIEW3D.view.has(a); }
 // How far over its feet its body's top is on the screen (px), for the bars over it.
 function view3dTop(a) { return VIEW3D.view.top(a); }
 
-// ── THE CAMERA'S CONTROLS (the 3D view only): four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad two fingers, pinched to zoom and twisted to turn (the
-// room goes round with them, and settles on a quarter turn); on a computer the wheel zooms, [ and ] turn, - and = zoom. A twist turns the way the fingers go (clockwise, the world clockwise).
+// ── THE CAMERA'S CONTROLS (the 3D view only): four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad one finger swiped sideways turns (the room goes round
+// with it, and settles on a quarter turn) and two fingers pinched zoom; on a computer a drag sideways turns as a swipe does, the wheel zooms, [ and ] turn, - and = zoom.
 // The buttons' places and sizes are the agent's.
 const _V3BTN = { r: 17, y0: 80, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
 // a panel up over the world (the clone bay, Settings, the INFO panel, the pack, the armoury, the class picker, the quest box: js/game.js keeps _lastPanelOpen each frame): the buttons are not
@@ -162,22 +162,42 @@ function view3dButtonTap(x, y) {
     for (let i = 0; i < _V3BTN.xs.length; i++) if (Math.hypot(x - _V3BTN.xs[i], y - _V3BTN.y) <= _V3BTN.r + 6) { _V3BTN.acts[i](); return true; }
     return false;
 }
-// two fingers on the picture: a pinch zooms; a twist turns the room with the fingers as they go (VIEW3D.twist: past VIEW3D_CAM.twistDead degrees of it, so that a pinch does not wobble it),
-// and let go it settles on a quarter turn: the next one the way it went once VIEW3D_CAM.twistCommit degrees past one, else back (the owner, 2026-11-17, of the twist that turned nothing
-// before 40 degrees and then a quarter at once: "It won't allow me to use my fingers to rotate the screen"). The fingers' own taps and holds are not the game's.
-const _v3touch = { ptrs: new Map(), on: false, d0: 0, a0: 0, tw: 0, z0: 1, ids: new Set() };
 function _v3gestureTarget() { return VIEW3D.showing && !(typeof techAimActive === "function" && techAimActive()) && !_v3panelUp(); }
-// the two fingers down (a, b: their places on the screen), as they move, and off
-function _v3twoStart(a, b) { const G = _v3touch; G.d0 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; G.a0 = Math.atan2(b[1] - a[1], b[0] - a[0]); G.tw = 0; G.z0 = VIEW3D.zoom; VIEW3D.twist = 0; }
-function _v3twoMove(a, b) {
-    const G = _v3touch, an = Math.atan2(b[1] - a[1], b[0] - a[0]); let da = an - G.a0; da -= Math.round(da / (2 * Math.PI)) * 2 * Math.PI; G.a0 = an; G.tw += da;   // (the twist so far, round and round)
-    view3dZoomTo(G.z0 * Math.hypot(b[0] - a[0], b[1] - a[1]) / G.d0);
-    const dead = VIEW3D_CAM.twistDead * Math.PI / 180; VIEW3D.twist = Math.sign(G.tw) * Math.max(0, Math.abs(G.tw) - dead);   // (clockwise, the world clockwise: as a turn to the right)
+// ONE FINGER SWIPED SIDEWAYS TURNS THE ROOM (the owner, 2026-11-17: "let's just do it where it's one finger will allow you to rotate the camera. And you swipe it"; before, two fingers twisted it,
+// and before that only past 40 degrees of twist: "It won't allow me to use my fingers to rotate the screen"). On a press the game left plain (not on a creature or its card's buttons, the gun's
+// shot, the dialogue's box, an aim, a ring: js/input.js), once the finger has gone VIEW3D_CAM.swipeStart px more sideways than up or down (the game's own drag: a tap stays a tap), the room goes
+// round with it (VIEW3D.twist), VIEW3D_CAM.swipeDeg degrees a px, the floor in front the way the finger goes; let go, it settles on a quarter turn: the next one the way it went once
+// VIEW3D_CAM.settle degrees past one, or one on if it was flicked (faster than VIEW3D_CAM.flick px a ms at the end), else back.
+const _v3swipe = { id: null, x0: 0, y0: 0, on: false, x: 0, t: 0, v: 0 };
+function _v3plainPress() {
+    return typeof isPressing !== "undefined" && isPressing && !longHoldFired && !commandMode && !commandPendingTap
+        && !(typeof _gunPressed !== "undefined" && _gunPressed) && !(typeof _targetPressed !== "undefined" && _targetPressed) && !(typeof _dlgPressed !== "undefined" && _dlgPressed)
+        && !(typeof _techAimPressed !== "undefined" && _techAimPressed) && !(typeof _cloneDrag !== "undefined" && _cloneDrag);
 }
-function _v3twoEnd() {
-    const q = VIEW3D.twist / (Math.PI / 2), c = 1 - VIEW3D_CAM.twistCommit / 90, k = q >= 0 ? Math.floor(q + c) : -Math.floor(c - q);
-    VIEW3D.twist = 0; _v3touch.tw = 0; if (k) view3dTurnBy(k);
+// the finger down (before the game has it: x, y on the screen, t the event's time in ms), as it moves (true: the move is the swipe's), and off (true: the lift is the swipe's; flick false: a
+// cancel, or a second finger, settles it without one)
+function _v3swipeDown(id, x, y, t) { const S = _v3swipe; S.id = id; S.x0 = S.x = x; S.y0 = y; S.t = t; S.v = 0; S.on = false; }
+function _v3swipeMove(id, x, y, t) {
+    const S = _v3swipe; if (id !== S.id) return false;
+    const dt = t - S.t; if (dt > 0) S.v = 0.5 * S.v + 0.5 * (x - S.x) / dt; S.x = x; S.t = t;   // (its speed sideways, px a ms, lately)
+    if (!S.on) {
+        const dx = x - S.x0, dy = y - S.y0;
+        if (Math.abs(dx) < VIEW3D_CAM.swipeStart || Math.abs(dx) <= Math.abs(dy) || !_v3gestureTarget() || !_v3plainPress()) return false;
+        S.on = true; S.x0 = x; _v3takePress(); return true;   // (the room goes round from here: no jump)
+    }
+    VIEW3D.twist = -(x - S.x0) * VIEW3D_CAM.swipeDeg * Math.PI / 180;   // (to the right, the floor in front goes right: the world anticlockwise, as a turn to the left)
+    return true;
 }
+function _v3swipeUp(id, t, flick) {
+    const S = _v3swipe; if (id !== S.id) return false; S.id = null; if (!S.on) return false; S.on = false;
+    const q = VIEW3D.twist / (Math.PI / 2), c = 1 - VIEW3D_CAM.settle / 90; let k = q >= 0 ? Math.floor(q + c) : -Math.floor(c - q);
+    if (!k && flick !== false && t - S.t < 80 && Math.abs(S.v) >= VIEW3D_CAM.flick) k = S.v > 0 ? -1 : 1;   // (flicked: one on, its way)
+    VIEW3D.twist = 0; if (k) view3dTurnBy(k); return true;
+}
+// two fingers on the picture pinch to zoom, and only that (a, b: their places on the screen)
+const _v3touch = { ptrs: new Map(), on: false, d0: 0, z0: 1, ids: new Set() };
+function _v3twoStart(a, b) { const G = _v3touch; G.d0 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; G.z0 = VIEW3D.zoom; }
+function _v3twoMove(a, b) { const G = _v3touch; view3dZoomTo(G.z0 * Math.hypot(b[0] - a[0], b[1] - a[1]) / G.d0); }
 // the first finger's press is the gesture's now: no hold, no tap, no shot held, no lock, no box tapped (js/input.js; its lift will not reach the game); a ring its hold opened (or one
 // waiting for its tap) closes with nothing done, as the game's own reset closes it (js/facilityplay.js)
 function _v3takePress() {
@@ -191,25 +211,29 @@ function _v3takePress() {
     }
 }
 if (VIEW3D.on && typeof canvas !== "undefined" && canvas && canvas.addEventListener) {
-    const at = e => [e.clientX, e.clientY], G = _v3touch, pair = () => [...G.ptrs.values()].slice(0, 2);
+    const at = e => [e.clientX, e.clientY], G = _v3touch, S = _v3swipe, pair = () => [...G.ptrs.values()].slice(0, 2);
     canvas.addEventListener("pointerdown", e => {
+        if (e.isPrimary) { G.ptrs.clear(); G.ids.clear(); G.on = false; }   // (a first finger: none other is down, whatever was kept of one whose lift never came)
         G.ptrs.set(e.pointerId, at(e));
+        if (G.ptrs.size === 1) _v3swipeDown(e.pointerId, e.clientX, e.clientY, e.timeStamp);
         if (G.ptrs.size === 2 && !G.on && _v3gestureTarget()) {
+            if (S.id !== null) _v3swipeUp(S.id, e.timeStamp, false);   // (a swipe under way settles)
             G.on = true; G.ids = new Set(G.ptrs.keys()); _v3twoStart(...pair()); _v3takePress();
             e.stopImmediatePropagation(); e.preventDefault();
         } else if (G.on) { G.ids.add(e.pointerId); if (G.ptrs.size === 2) _v3twoStart(...pair()); e.stopImmediatePropagation(); e.preventDefault(); }   // (a finger back on: a new pair, from here)
     }, { capture: true });
     canvas.addEventListener("pointermove", e => {
         if (!G.ptrs.has(e.pointerId)) return; G.ptrs.set(e.pointerId, at(e));
-        if (!G.on || !G.ids.has(e.pointerId)) return; e.stopImmediatePropagation();
+        if (!G.on) { if (_v3swipeMove(e.pointerId, e.clientX, e.clientY, e.timeStamp)) e.stopImmediatePropagation(); return; }   // (the swipe's moves are not the game's)
+        if (!G.ids.has(e.pointerId)) return; e.stopImmediatePropagation();
         if (G.ptrs.size >= 2) _v3twoMove(...pair());
     }, { capture: true });
     const lift = e => {
-        const was = G.ids.has(e.pointerId), two = G.on && G.ptrs.size >= 2; G.ptrs.delete(e.pointerId);
+        const was = G.ids.has(e.pointerId); G.ptrs.delete(e.pointerId);
+        if (_v3swipeUp(e.pointerId, e.timeStamp, e.type === "pointerup")) e.stopImmediatePropagation();   // (the swipe's lift: the room settles, and the game has no tap)
         if (was) {
             G.ids.delete(e.pointerId); e.stopImmediatePropagation(); if (typeof isPressing !== "undefined") isPressing = false;
-            if (two && G.ptrs.size < 2) _v3twoEnd();   // (two fingers no more: the room settles)
-            else if (G.ptrs.size >= 2) { const [a, b] = pair(); G.a0 = Math.atan2(b[1] - a[1], b[0] - a[0]); G.d0 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; G.z0 = VIEW3D.zoom; }   // (a third finger's pair: no jump)
+            if (G.ptrs.size >= 2) _v3twoStart(...pair());   // (a third finger's pair: no jump)
         }
         if (!G.ids.size) G.on = false;
     };
