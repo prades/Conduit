@@ -10,7 +10,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { execFile, execFileSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
-const DIRS = ['cards', 'cave', 'evo', 'fx', 'hd', 'hud', 'props'];   // (hud: THE CORE's frames, design/hud/bake-core.js; build 2026-11-11t)
+const DIRS = ['cards', 'cards/attack', 'cave', 'evo', 'fx', 'hd', 'hud', 'props'];   // (hud: THE CORE's frames, design/hud/bake-core.js; build 2026-11-11t)
 const MAP_FILE = 'js/imgmap.js';
 const PRELOAD = /(<link rel="preload" as="image" href=")(img\/[^"?]+)\.(?:png|webp)\?v=[^"]*(">)/g;
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -21,7 +21,7 @@ const print = f => crypto.createHash('sha1').update(fs.readFileSync(path.join(RO
 function pictures() {
     const out = [];
     for (const d of DIRS) for (const n of fs.readdirSync(path.join(ROOT, 'img', d)).sort()) if (/\.png$/.test(n)) out.push('img/' + d + '/' + n);
-    return out;
+    return out.sort();   // (as one list: a folder in a folder, cards/attack, sorts among its parent's pictures)
 }
 // the map as js/imgmap.js has it now ({} when there is none, or it does not read)
 function current() {
@@ -57,9 +57,18 @@ function hasMagick() { try { execFileSync('convert', ['-version'], { stdio: 'ign
 const run = (args, enc) => new Promise((res, rej) => execFile('convert', args, { encoding: enc || 'buffer', maxBuffer: 1024 * 1024 * 1024 }, (e, out) => e ? rej(e) : res(out)));
 // every channel of every pixel, as 8-bit RGBA
 const rgba = f => run([path.join(ROOT, f), '-depth', '8', 'rgba:-']);
+// ATTACK CARD ART is saved lighter (the owner, 2026-11-17, ATTACK-CARD-ART.md §4: "Lighter format"): a lossy WebP at a quality that looks the same to the eye, kept when smaller; every other picture exact
+const LOSSY = p => /^img\/cards\/attack\//.test(p), LOSSY_Q = '82';
 // the WebP copy of one picture: { p, w } when it is exact and smaller (written), else { p, why }
 async function convert(p) {
     const w = p.replace(/\.png$/, '.webp'), tmp = path.join(ROOT, w + '.tmp');
+    if (LOSSY(p)) try {
+        await run([path.join(ROOT, p), '-strip', '-quality', LOSSY_Q, '-define', 'webp:method=6', 'webp:' + tmp]);
+        const sp = fs.statSync(path.join(ROOT, p)).size, sw = fs.statSync(tmp).size;
+        if (sw >= sp) return { p, why: 'is not smaller (' + sw + ' bytes, the PNG ' + sp + ')' };
+        fs.renameSync(tmp, path.join(ROOT, w)); return { p, w };
+    } catch (e) { return { p, why: 'failed: ' + String(e.message).split('\n')[0] }; }
+    finally { try { fs.unlinkSync(tmp); } catch (e) { /* gone */ } }
     try {
         await run([path.join(ROOT, p), '-strip', '-define', 'webp:lossless=true', '-define', 'webp:method=6', '-define', 'webp:exact=true', 'webp:' + tmp]);
         const [a, b] = await Promise.all([rgba(p), run(['webp:' + tmp, '-depth', '8', 'rgba:-'])]);

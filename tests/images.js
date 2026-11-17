@@ -27,6 +27,7 @@ function findChromium() {
     return null;
 }
 const MAP = I.current(), PICS = I.pictures(), file = a => a.replace(/\?.*/, ''), WEBP = PICS.filter(p => (MAP[p] || '').indexOf('.webp?') > 0);
+const LOSSY = p => /^img\/cards\/attack\//.test(p), EXACTW = WEBP.filter(p => !LOSSY(p));   // (attack card art is saved lighter, lossy: ATTACK-CARD-ART.md §4; the rest exact)
 const magick = (() => { try { execFileSync('convert', ['-version'], { stdio: 'ignore' }); return true; } catch (e) { return false; } })();
 const rgba = f => new Promise((res, rej) => execFile('convert', [path.join(ROOT, f), '-depth', '8', 'rgba:-'], { encoding: 'buffer', maxBuffer: 1024 * 1024 * 1024 }, (e, out) => e ? rej(e) : res(out)));
 async function pool(items, n, fn) { const q = items.slice(), out = []; await Promise.all(Array.from({ length: n }, async () => { while (q.length) { const it = q.shift(); out.push(await fn(it)); } })); return out; }
@@ -58,14 +59,14 @@ async function pool(items, n, fn) { const q = items.slice(), out = []; await Pro
             ok(b.length < sp, w + ' is not smaller than its PNG (' + b.length + ' >= ' + sp + ')');
             same(b.toString('latin1', 0, 4) + b.toString('latin1', 8, 12), 'RIFFWEBP', w + ': not a WebP');
             const ch = []; for (let i = 12; i < b.length;) { const n = b.readUInt32LE(i + 4); ch.push(b.toString('latin1', i, i + 4)); i += 8 + n + (n & 1); }
-            same(ch.join(), 'VP8L', w + ': its chunks');
+            if (LOSSY(p)) ok(/^(VP8 |VP8X,(ALPH,)?VP8 )$/.test(ch.join()), w + ': its chunks, a plain lossy WebP: ' + ch.join()); else same(ch.join(), 'VP8L', w + ': its chunks');
         }
         for (const p of PICS) { const b = fs.readFileSync(path.join(ROOT, p)); const ch = []; for (let i = 8; i < b.length;) { const n = b.readUInt32BE(i); ch.push(b.toString('latin1', i + 4, i + 8)); i += 12 + n; } ok(!ch.some(c => /^(gAMA|iCCP|sRGB|cHRM)$/.test(c)), p + ' has colour information (' + ch.join() + '): its WebP would not show it'); }
     });
     if (!magick) console.log('  (no ImageMagick here: the pixels were not compared)');
     else {
         await check('every WebP is lossless: every channel of every pixel is its PNG\'s, the colour under a clear pixel included (' + WEBP.length + ' pictures, decoded by ImageMagick)', async () => {
-            const bad = (await pool(WEBP, 4, async p => { const [a, b] = await Promise.all([rgba(p), rgba(file(MAP[p]))]); return a.equals(b) ? null : p; })).filter(Boolean);
+            const bad = (await pool(EXACTW, 4, async p => { const [a, b] = await Promise.all([rgba(p), rgba(file(MAP[p]))]); return a.equals(b) ? null : p; })).filter(Boolean);
             same(bad.join(', '), '', 'pictures whose WebP differs');
         });
         await check('a picture left a PNG is one whose WebP would be bigger (not one left so because ImageMagick was missing)', async () => {
@@ -107,7 +108,7 @@ async function pool(items, n, fn) { const q = items.slice(), out = []; await Pro
     const bin = findChromium();
     if (!bin) console.log('  (no Chromium here: skipped)');
     else await check('in a real browser every WebP the map names loads at its PNG\'s size and looks as its PNG does: every opaque and every clear pixel exactly its PNG\'s, every pixel\'s alpha too, and drawn over the game\'s dark no value more than 1 of 255 off (a partly clear pixel: Chromium\'s WebP decoder rounds it its own way) (' + WEBP.length + ' pictures)', () => {
-        const pairs = WEBP.map(p => [p, MAP[p]]), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'imb-')), page = path.join(dir, 'p.html');
+        const pairs = EXACTW.map(p => [p, MAP[p]]), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'imb-')), page = path.join(dir, 'p.html');
         fs.writeFileSync(page, '<!doctype html><html><head><base href="file://' + ROOT + '/"></head><body><script>var P = ' + JSON.stringify(pairs) + ', out = {};'
             + 'function load(u) { return new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = u; }); }'
             + 'function px(im, w, h, bg) { var c = document.createElement("canvas"); c.width = w; c.height = h; var g = c.getContext("2d", { willReadFrequently: true }); if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); } g.drawImage(im, 0, 0); return g.getImageData(0, 0, w, h).data; }'
@@ -122,7 +123,7 @@ async function pool(items, n, fn) { const q = items.slice(), out = []; await Pro
         try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
         const m = dom.match(/<pre id="__im">([\s\S]*?)<\/pre>/); ok(m, 'the page produced nothing');
         const out = JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'));
-        same(WEBP.filter(p => out[p] !== 'same').map(p => p + ' ' + (out[p] || 'not reached')).join(', '), '', 'pictures whose WebP does not look as its PNG in the browser');
+        same(EXACTW.filter(p => out[p] !== 'same').map(p => p + ' ' + (out[p] || 'not reached')).join(', '), '', 'pictures whose WebP does not look as its PNG in the browser');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
