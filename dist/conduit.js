@@ -27363,7 +27363,7 @@ function cardBattleScreen() {
     {
         const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
         const mv = T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";
-        const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length; return n > 1 ? n + " TO PLAY · DRAG A CARD ONTO AN ENEMY" : "DRAG A CARD ONTO AN ENEMY"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
+        const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length; return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO AN ENEMY"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
         if (E.turn && E.turn._t !== txt) {
             E.turn._t = txt;
             E.turn.textContent = txt;
