@@ -121,6 +121,12 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
     out.turnErr.push(+w.toFixed(2)); out.gameErr.push(+wg.toFixed(2));
     var tb = 0; [[13, 19], [11, 22], [15, 17]].forEach(function (c) { var s = projT(c[0], c[1], facilityLiftPx(c[0], c[1]), tk[0], tk[1]), q = techScreenToWorld(s[0], s[1]); tb = Math.max(tb, Math.hypot(q.x - c[0], q.y - c[1])); }); out.tapBack.push(+tb.toFixed(3)); });
   VIEW3D.turn = 0; VIEW3D.zoom = 1; V.show(true); step(2); out.turnBack = [VIEW_TURN, view3dZoom()];
+  // THE CAMERA'S BUTTONS under QUESTS: a tap on one turns or zooms; with a panel up (the pack) they are not drawn, and a tap where they are is the panel's, not theirs
+  var bt = _V3BTN, tapB = function (i) { return view3dButtonTap(bt.xs[i], bt.y); }; step(1); out.btn = [bt.shown, tapB(1), VIEW3D.turn, tapB(3), +VIEW3D.zoom.toFixed(2)];
+  invOpen(); step(1); out.btn.push(bt.shown, tapB(0), VIEW3D.turn); invClose(); VIEW3D.turn = 0; VIEW3D.zoom = 1; V.show(true); step(2);
+  // with the dialogue's box up (it hangs under QUESTS too: js/dialogue.js) the buttons are under the box, and still work
+  dialogueSay('crystal', 'A WORD FOR THE TEST', { now: true, hold: true, key: 'v3btn' }); step(1); out.btnDlg = [_dlgBox.w > 0, bt.y >= _dlgBox.y + _dlgBox.h + bt.r, tapB(1), VIEW3D.turn, [_dlgBox.x, _dlgBox.y, _dlgBox.w, _dlgBox.h, bt.y]];
+  dialogueClear(); VIEW3D.turn = 0; V.show(true); step(2);
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
@@ -170,6 +176,10 @@ else {
     });
     check('THE CAMERA is the game\'s own: a point of the world is where js/facilityplay.js _fpP puts it, to the pixel, on the floor, up a wall, at the gem and down the stairs; turned a quarter at a time and zoomed (the owner, 2026-11-17: "90° steps"), the view and the game\'s own drawing still agree, and a tap comes back to its tile', () => {
         ok(ON.camErr < 1, 'off by ' + ON.camErr + ' px'); ok(ON.turnErr && ON.turnErr.length === 6 && ON.turnErr.every(function (w) { return w < 1; }), 'turned and zoomed, the view off by ' + JSON.stringify(ON.turnErr) + ' px'); ok(ON.gameErr.every(function (w) { return w < 1; }), 'turned and zoomed, the game\'s own off by ' + JSON.stringify(ON.gameErr) + ' px'); ok(ON.tapBack.every(function (w) { return w < 0.05; }), 'a tap turned and zoomed back off its tile by ' + JSON.stringify(ON.tapBack)); same(ON.turnBack.join(), '0,1', 'the camera back to the game\'s own'); ok(ON.stairCam < -10, 'the stairs did not take the camera down: ' + ON.stairCam); same(ON.stairShowing, true, 'on the stairs'); ok(ON.stairErr < 1, 'on the stairs off by ' + ON.stairErr + ' px');
+    });
+    check('THE CAMERA\'S BUTTONS under QUESTS: a tap on one turns the camera or zooms it; with a panel up (the pack) they are not drawn and a tap where they are is not theirs; with the dialogue\'s box up they are under it', () => {
+        same(JSON.stringify(ON.btn), JSON.stringify([true, true, 1, true, 1.2, false, false, 1]), 'shown, turn right, its turn, zoom in, its zoom; with the pack up: shown, turn left, its turn');
+        same(JSON.stringify(ON.btnDlg.slice(0, 4)), JSON.stringify([true, true, true, 1]), 'with a line said: the box drawn, the buttons under it, a tap on one, its turn (the box and the row: ' + JSON.stringify(ON.btnDlg[4]) + ')');
     });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');

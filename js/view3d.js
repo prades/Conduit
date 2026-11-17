@@ -128,10 +128,16 @@ function view3dTop(a) { return VIEW3D.view.top(a); }
 
 // ── THE CAMERA'S CONTROLS (the 3D view only): four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad two fingers, pinched to zoom and twisted to turn a
 // quarter; on a computer the wheel zooms, [ and ] turn, - and = zoom. A twist turns the way the fingers go (clockwise, the world clockwise). The buttons' places and sizes are the agent's.
-const _V3BTN = { r: 17, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
+const _V3BTN = { r: 17, y0: 80, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
+// a panel up over the world (the clone bay, Settings, the INFO panel, the pack, the armoury, the class picker, the quest box: js/game.js keeps _lastPanelOpen each frame): the buttons are not
+// drawn over it (nor take its taps), and two fingers, the wheel and the keys leave the camera alone
+function _v3panelUp() { return (typeof _lastPanelOpen !== "undefined" && _lastPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
 function view3dDrawButtons() {
     _V3BTN.shown = false;
-    if (!VIEW3D.showing || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen)) return;
+    if (!VIEW3D.showing || _v3panelUp()) return;
+    // under QUESTS; while the dialogue's box hangs there (js/dialogue.js, drawn just before: _dlgBox), under the box
+    const B = typeof _dlgBox !== "undefined" ? _dlgBox : null, R = _V3BTN.r, Y = _V3BTN.y0;
+    _V3BTN.y = B && B.w > 0 && B.x < _V3BTN.xs[_V3BTN.xs.length - 1] + R && B.y < Y + R && B.y + B.h > Y - R ? Math.round(B.y + B.h) + 8 + R : Y;
     _V3BTN.shown = true; const { r, y, xs } = _V3BTN, sw = view3dSwinging();
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round";
     xs.forEach((x, i) => {
@@ -155,7 +161,7 @@ function view3dButtonTap(x, y) {
 }
 // two fingers on the picture: a pinch zooms, a twist turns (each 40 degrees of it a quarter); the fingers' own taps and holds are not the game's
 const _v3touch = { ptrs: new Map(), on: false, d0: 0, a0: 0, z0: 1, ids: new Set() };
-function _v3gestureTarget() { return VIEW3D.showing && !(typeof techAimActive === "function" && techAimActive()) && !(typeof infoPanelOpen !== "undefined" && infoPanelOpen) && !(typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
+function _v3gestureTarget() { return VIEW3D.showing && !(typeof techAimActive === "function" && techAimActive()) && !_v3panelUp(); }
 if (VIEW3D.on && typeof canvas !== "undefined" && canvas && canvas.addEventListener) {
     const at = e => [e.clientX, e.clientY], G = _v3touch;
     canvas.addEventListener("pointerdown", e => {
