@@ -206,7 +206,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             let hits = 0; const by = new Set(); for (let i = 0; i < 1500 && cardBattlePhase() === 'on'; i++) { const t = cardBattleTurnInfo(); if (t && t.actor) by.add(t.actor); __live(1); }
             o.end = cardBattlePhase(); o.both = by.has(a) && by.has(b); o.hurt = followers.reduce((s, f) => s + f.health, 0) < hp0; return o; })()`);
         same(r.during, false, 'RUN during another turn'); same(r.ran, true, 'RUN'); same(r.runTurn, true, 'their last hits'); same(r.both, true, 'each enemy had its turn');
-        same(r.hurt, true, 'no last hit landed on the squad'); same(r.end === 'end' || r.end === 'off', true, 'out: ' + r.end);
+        same(r.end === 'end' || r.end === 'off', true, 'out: ' + r.end);   // (whether a last hit lands is the creature's own attack: a scout may call for backup instead, COMBAT.md §9; so not asked here)
     });
     check('the drag: the cards carry what they play; the band\'s cards take the press; the screen dims them out of your turn; the hold-still in the follower step and the moves\' cycle; the gun', () => {
         const c = rd('js/cardbattle.js'), h = rd('game.html'), n = rd('js/npc.js'), e = rd('js/evolution.js'), i = rd('js/input.js');
@@ -295,6 +295,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.allIn = [player].concat(followers).every(x => facilityRoomIdAt(x.x, x.y) === room); o.squares = [..._cb.slots.values()].every(s => facilityRoomIdAt(s.x, s.y) === room); o.seen = facilityShowsActor(a); return o; })()`);
         same(!!r.none, false, 'no doorway to try'); same(r.split, true, 'the setup: you and it in two rooms'); same(r.chose, true, 'chose');
         same(r.black, true, 'the black'); same(r.who, 'you', 'then your turn'); same(r.squares, true, 'every square in its room'); same(r.allIn, true, 'all of yours in its room'); same(r.seen, true, 'it is seen');
+    });
+
+    check('the battle seen whole (the owner, 2026-11-17, under the arena\'s observatory): the 3D view makes what stands between a fighter and the camera see-through, a wall\'s or floor\'s tile left out, never a body nor the floor round a fighter; a failure there turns it off and keeps the view; the one-time tip waits', () => {
+        const v = rd('view3d/gameview.js'), m = rd('view3d/gamemap.js'), c = rd('view3d/core.js'), ta = rd('js/techabilities.js'), h = rd('game.html'), cb = rd('js/cardbattle.js');
+        same(/place\(dt\); seeThrough\(f0\);/.test(v), true, 'called each frame after the camera is placed');
+        same(/RC\.layers\.enableAll\(\);/.test(v), true, 'every layer (the world is on 1 to 3)');
+        same(/b\.holder\.userData\.body = true;/.test(v) && /if \(p\.userData && p\.userData\.body\) return false;/.test(v), true, 'bodies never');
+        same(/!B\.box\.containsPoint\(seeFeet\)/.test(v), true, 'never the floor round a fighter');
+        same(/try \{ seeThroughStep\(f0\); \} catch \(e\) \{ seeBroke = true;/.test(v), true, 'a failure turns it off');
+        same(/get battleFighters\(\) \{ return typeof cardBattleFighters === "function"/.test(m) && /function cardBattleFighters\(\)/.test(cb), true, 'the fighters reach the view');
+        same(/if \(o2 && o2\.copy\) \{ g\.computeBoundingBox\(\); g\.computeBoundingSphere\(\); \}/.test(c), true, 'a merged room\'s bounds kept');
+        same(/cardBattlePhase\(\) !== "off"\) return;/.test(ta) && /body\.cb-on #reefTip \{ display: none !important; \}/.test(h), true, 'the one-time tip waits');
     });
 
     group('A RETICLE ON EVERY ENEMY (§2.37; the owner: "So we need to fix that to where it shows each enemy with one of those")');

@@ -542,7 +542,7 @@ These fights are not §1's audit runs (the setup differs); they compare the two 
 - **Status:** Implemented and tested in build `2026-11-06h` (on main at the owner's word); the moves that strike at once needing sight (§8.5) in build `2026-11-06i` (branch `claude/start-game-project-HSh7Z`). **Not playtested.**
 - **Source:** the owner's answers of 2026-11-06 (`DECISION-LOG.md`), from the study in `FLUX-MOVEMENT.md` §13 (the roadmap's Milestone Two, `NEXT-PHASE-ROADMAP.md`). This section is the canonical statement of the rules.
 - **Readings:** what nothing said is marked **[reading]**; each one is listed for the owner in `OPEN-QUESTIONS.md` §1x.
-- **In a card battle** (behind `?cards`; `CARD-BATTLES.md` §2.38, the owner's "Card battles only", build `2026-11-17x`): a shot fired in the battle's room passes over every low object, cover too; walls and tall objects still stop it. Out of a battle, the rules below as they are.
+- **In a card battle** (behind `?cards`; `CARD-BATTLES.md` §2.38, the owner's "Card battles only", build `2026-11-17y`): a shot fired in the battle's room passes over every low object, cover too; walls and tall objects still stop it. Out of a battle, the rules below as they are.
 
 ### 8.1 The owner's rules (quoted)
 
