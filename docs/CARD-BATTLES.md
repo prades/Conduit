@@ -1,6 +1,6 @@
 # Card battles (turn-based, one card a turn)
 
-- **Status:** **Designed** (the owner's rules, §2.1 to §2.27, 2026-11-17); the battle screen chosen (SQUAD ROWS, a mockup). **Step 1 implemented** in `2026-11-17d` behind `?cards` with `?engine=3d`: a battle starts and looks like one (§9); verified by `tests/cardbattle.js` and in a browser; not playtested. **No cards or turns yet.**
+- **Status:** **Designed** (the owner's rules, §2.1 to §2.27, 2026-11-17); the battle screen chosen (SQUAD ROWS, a mockup). **Step 1 implemented** in `2026-11-17d` behind `?cards` with `?engine=3d`: a battle starts and looks like one (§9); verified by `tests/cardbattle.js` and in a browser; not playtested. **No cards or turns yet.** **The clock at half in a battle** (§2.28) implemented in `2026-11-17l` on `claude/start-game-project-HSh7Z`, verified by `tests/cardbattle.js`; not playtested.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-17
 - **Branch/build context:** `claude/friendly-thompson-w581x0`, on main's build `2026-11-17c` (the game going 3D behind `?engine=3d`)
@@ -47,6 +47,8 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 
 27. **Choosing an enemy that is far away:** the player moves towards it, the screen goes **black**, and the player is **teleported right in front of the creature, in the battle screen** (the owner: "If the player selects an enemy that's far away, the player should move towards it, and the game should black screen and teleport the player right in front of the creature in the new battle screen"). The squad comes with the player (§2.7). A near enemy, or one that attacks you, starts the battle where you stand, with no black screen (§2.5, §2.6, §2.26). *What counts as far, how long the walk and the black last, and how close in front of the creature the squad lands are numbers for the first playable step, for the owner to judge.*
 
+28. **While a battle is on, the world's clock runs at half speed** (the owner, 2026-11-17: "I want to make it to where whenever you enter battle, time slows down to about half. But when you enter the battle, you still see other creatures moving around full speed, if that makes sense. I want to make it to where like the game clock slows down so that you can't you don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight because things are still happening behind you, like the crystal being destroyed in half speed."). Of three offered, **"Clock only"** (not "Clock and the fight", not "Whole world slowed"): creatures outside the battle keep walking and animating at full speed, but **every countdown is halved**: their bites on the Crystal and the turrets, the raids' clock, new creatures spawning, the Crystal's charge and refill. The Crystal falls half as fast while you are in a battle. **The fight inside the battle is unchanged** (turns will replace it). *"About half": 0.5 (`CARD_BATTLE.clock`).*
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -90,8 +92,16 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 - **Ending:** every creature in it down or gone; your squad all down (§2.23: their fall as now); you `leave` (14) tiles from it; or **RUN**, step 1's stand-in: a button at the right (`#cbRun`). The enemies' last hit (§2.16) comes with the turns. For `calm` (240 frames, 4 s) after a battle the creatures that were in it start nothing and go for nobody (else their real-time blows started a new battle at once).
 - **Every number above is the agent's, provisional**, for the owner to judge on the iPad (§11.11).
 
+**The clock at half (§2.28), built in `2026-11-17l`.** `cardBattleClock(a)` (`js/cardbattle.js`) is `CARD_BATTLE.clock` (0.5) while a battle is on (from its start, the walk and the black too) and 1 otherwise; for a creature in the battle, or your squad's clone, it is 1 (the fight in it is unchanged). The countdowns that read it:
+- **The raids' clock** (`js/antraids.js` `raidTick`) and **the spawns'** (`js/facilityspawn.js`: the arena's, the Sewers' brood, the electrical domain's roly-polies): each frame of a battle their next time moves half a frame later.
+- **The Crystal's idle refill** (`js/crystalpower.js` `crystalRefillTick`): its wait after a draw counts at half and it refills half as much a frame.
+- **A turret's shots** (`js/stations.js` `facilitySentryTick`): its wait between shots counts at half, so it fires, and draws on the Crystal, half as often.
+- **A creature's bites** (`js/predator.js` `_biteTick`): for one outside the battle the rest between bites counts down slower (`cardBattleRest`), so it bites half as often (a bite every 126 frames, not 63); its rear-back and lunge stay at full speed, as its walk does.
+- Not slowed (not in the owner's list): the alarm, the fallen followers' wait at the Crystal, the scrap cases' expiry, a boss's own moves. A battle's own fight, its creatures and your squad, keeps its pace.
+
 ## 10. Verification record
 - **Step 1 (`2026-11-17d`):** `tests/cardbattle.js` (9 checks, the game's logic in the sandbox): off without the switch or the 3D view; a near creature starts it where you stand, with the creatures round it (at most four); a far one walks, goes black, lands you and your squad in front of it in its room and in its sight, then eases the camera in, lower and nearer; a hit starts one; outsiders go for nobody of yours, your squad and gun only for those in it; RUN ends it and its creatures stay calm for a while; it ends when its creatures are down; the pieces are wired. **Seen in a real browser** (headless Chromium with software WebGL, at 1180 × 820): the walk, the black, the landing in sight of three ants in the Server Room, the battle camera with blurred edges, RUN, and the camera easing back. **Not playtested; not seen on an iPad.**
+- **The clock at half (`2026-11-17l`):** `tests/cardbattle.js` THE CLOCK AT HALF: out of a battle, in 40 frames a raid and a spawn come 40 frames nearer, the Crystal refills 40 frames' worth and a turret's wait runs 40 frames; in a battle, 20 of each; a creature's bites in 630 frames: 10 out of a battle, 5 in one when it is outside the battle, 10 when it is in it; after RUN the clock is full again. Seen only in the sandbox; not playtested; not seen on an iPad.
 
 ## 11. Open questions
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.

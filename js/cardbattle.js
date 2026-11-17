@@ -32,6 +32,7 @@ const CARD_BATTLE = {
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
+    clock: 0.5,                 // THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "time slows down to about half"): the world's countdowns in a battle run at this rate
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -98,6 +99,21 @@ function cardBattleHit(target, source) {
 function cardBattleBars(p) { return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
 function cardBattleMayTarget(a) { return !cardBattleActive() || _cb.foes.indexOf(a) >= 0; }
+// THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "the game clock slows down so that you ... don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight
+// because things are still happening behind you, like the crystal being destroyed in half speed"; of three offered, "Clock only"): while a battle is on, every countdown of the world runs at
+// CARD_BATTLE.clock (the raids' clock, the spawns', the Crystal's idle refill, a turret's shots, a creature's rest between its bites), and everyone still walks and moves at full speed.
+// `a`, a creature: one in the battle, or your squad's clone, keeps its own pace (the fight in the battle is unchanged). 1 out of a battle.
+function cardBattleClock(a) {
+    if (!cardBattleActive()) return 1;
+    if (a && (_cb.foes.indexOf(a) >= 0 || (a.isClone && typeof partyClone === "function" && partyClone() === a))) return 1;
+    return CARD_BATTLE.clock;
+}
+// a creature's rest between bites at the clock's pace, so that its bites come at the clock's rate while its rear-back and lunge stay at full speed (js/predator.js _biteTick)
+function cardBattleRest(a) {
+    const r = cardBattleClock(a); if (r >= 1) return 1;
+    const c = typeof COMBAT !== "undefined" ? COMBAT.bite.cooldown : 45, w = typeof COMBAT !== "undefined" ? COMBAT.bite.windup : 18;
+    return c / ((c + w) / r - w);   // (a bite every (c + w) / r frames: the rest counts down this much a frame)
+}
 
 // THE MOVE IN THE BLACK: you in front of the creature, your squad round you
 function _cbLand() {

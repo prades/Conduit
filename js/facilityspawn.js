@@ -128,6 +128,7 @@ function facilitySpawnTick() {
     if (!_fp || !_fp.cellsP) return;
     const f = typeof frame !== "undefined" ? frame : 0;
     if (_fp.spawnAt === undefined) _fp.spawnAt = f + FP_SPAWN.first;
+    if (typeof cardBattleClock === "function") _fp.spawnAt += 1 - cardBattleClock();   // (in a card battle the clock runs at half: js/cardbattle.js; the brood's and the roly-polies' below too)
     // the scrap cases left on the floor go after a while
     if (f % 60 === 0 && _fp.items) _fp.items = _fp.items.filter(i => !(i.fp === "pickup" && i.temp && (i.taken || f > i.expires)));
     facilityBroodTick(f);
@@ -141,6 +142,7 @@ function facilityBroodTick(f) {
     const P = FP_SPAWN_SEWERS; if (typeof player === "undefined" || typeof partyRoomAt !== "function" || partyRoomAt(player.x, player.y) !== P.room) return;
     const after = typeof nestInfested === "function" && !nestInfested(P.nest) ? P.after : null, cap = after ? after.cap : P.cap, every = after ? after.every : P.every;   // (the Nest calmed or cleared, the water purified: a few stragglers, now and then)
     if (_fp.broodAt === undefined) { _fp.broodAt = f + (after ? every : P.first); for (let i = 0; i < (after ? 0 : P.start) && facilityCreatures(P.room).length < cap; i++) facilitySpawnCreature(null, null, P); return; }
+    if (typeof cardBattleClock === "function") _fp.broodAt += 1 - cardBattleClock();
     if (f < _fp.broodAt) return;
     _fp.broodAt = f + every;
     if (facilityCreatures(P.room).length < cap) facilitySpawnCreature(null, null, P);
@@ -149,6 +151,7 @@ function facilityBroodTick(f) {
 function facilityElecTick(f) {
     const P = FP_SPAWN_ELEC; if (typeof player === "undefined" || typeof partyRoomAt !== "function" || typeof partyPlaceOf !== "function" || partyPlaceOf(partyRoomAt(player.x, player.y)) !== P.room) return;
     if (_fp.elecAt === undefined) { _fp.elecAt = f + P.first; for (let i = 0; i < P.start && facilityCreatures(P.room).length < P.cap; i++) facilitySpawnCreature(null, null, P); return; }
+    if (typeof cardBattleClock === "function") _fp.elecAt += 1 - cardBattleClock();
     if (f < _fp.elecAt) return;
     _fp.elecAt = f + P.every;
     if (facilityCreatures(P.room).length < P.cap) facilitySpawnCreature(null, null, P);

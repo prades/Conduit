@@ -76,6 +76,7 @@ function raidTick() {
     for (const a of raidRaiders()) if (a.state !== "attack" && a.state !== "hunt") { a.state = "hunt"; a.provoked = true; }   // (after a fight on the way, back on the march)
     if (!raidsOn()) { R.nextAt = null; return; }
     if (R.nextAt === null) { R.nextAt = f + RAID.every; return; }
+    if (typeof cardBattleClock === "function") R.nextAt += 1 - cardBattleClock();   // (in a card battle the clock runs at half: js/cardbattle.js)
     if (f >= R.nextAt) { R.nextAt = f + RAID.every; raidStart(); }
 }
 // a raid now: RAID.size ants of the arena march on the building (the arena's own wanderers first, the rest up out of its grates); returns them

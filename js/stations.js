@@ -250,7 +250,7 @@ function facilitySentryTick() {
     for (const it of _fp.items) {
         if (it.fp !== "prop" || it.kind !== "sentry") continue;
         it.on = typeof sentryOn === "function" ? sentryOn(it) : facilityFeedOn(it.id); if (it.flash > 0) it.flash--; if (!it.on) continue;
-        if (it.cd > 0) { it.cd--; continue; }
+        if (it.cd > 0) { it.cd -= typeof cardBattleClock === "function" ? cardBattleClock() : 1; continue; }   // (in a card battle the clock runs at half: js/cardbattle.js)
         let best = null, bd = SENTRY_RANGE; for (const a of actors) { if (!a || a.dead || a.team !== "red" || (typeof isHostileTarget === "function" && !isHostileTarget(a))) continue; const d = Math.hypot(a.x - it.x, a.y - it.y); if (d < bd && (typeof facilityShotClear !== "function" || facilityShotClear(it.x, it.y, a.x, a.y))) { bd = d; best = a; } }   // (only with a clear shot: a wall or cover would stop it, and every shot is paid from the Crystal: Milestone Two)
         if (!best) continue;
         if (typeof crystalDraw === "function" && !crystalDraw("shot")) continue;   // (the shot is paid from the Crystal)

@@ -222,7 +222,7 @@ class Predator {
         }
         if (this.attackAnim > 0) { this.attackAnim += 0.18; if (this.attackAnim >= Math.PI) this.attackAnim = 0; }   // the lunge after a landed bite
         if (!this.attackCooldown) this.attackCooldown = 0;
-        this.attackCooldown--;
+        this.attackCooldown -= typeof cardBattleRest === "function" ? cardBattleRest(this) : 1;   // (in a card battle one outside it bites at half the rate: js/cardbattle.js)
         if (this.attackCooldown <= 0) { this.attackWindup = COMBAT.bite.windup; this.biteTarget = target; }
     }
 

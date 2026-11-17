@@ -52,8 +52,9 @@ function crystalRefillTick() {
     if (typeof crystal === "undefined" || !crystal || !crystal.maxHealth || crystal.health <= 0 || crystal.health >= crystal.maxHealth) return;
     if (typeof alertActive !== "undefined" && alertActive) return;
     if (typeof raidActive === "function" && raidActive()) return;   // (nor while an ant raid is on: js/antraids.js)
-    if (_cpFrame() - _crystalDrawnAt < CRYSTAL_POWER.refill.idleAfter) return;
-    crystal.health = Math.min(crystal.maxHealth, crystal.health + crystal.maxHealth / CRYSTAL_POWER.refill.fullFrames);
+    const r = typeof cardBattleClock === "function" ? cardBattleClock() : 1;   // (in a card battle the clock runs at half, its wait and its refill: js/cardbattle.js)
+    if (_cpFrame() - _crystalDrawnAt < CRYSTAL_POWER.refill.idleAfter) { if (r < 1) _crystalDrawnAt += 1 - r; return; }
+    crystal.health = Math.min(crystal.maxHealth, crystal.health + crystal.maxHealth / CRYSTAL_POWER.refill.fullFrames * r);
 }
 // THE CHARGE AT ◆50 (a tap on the network meter): { ok, why }
 function crystalChargeWhyNot() {

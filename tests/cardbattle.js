@@ -81,6 +81,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r, 'end', 'phase');
     });
 
+    check('THE CLOCK AT HALF (§2.28; the owner, 2026-11-17: "time slows down to about half ... like the crystal being destroyed in half speed"; "Clock only"): in a battle every countdown of the world runs at half, the raids\' clock, the spawns\', the Crystal\'s idle refill, a turret\'s shots and the bites of a creature outside it; a creature in it bites at its own pace; out of a battle all as ever', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true;
+            const a = __ant(player.x + 2, player.y), out = __ant(player.x - 6, player.y + 1), R = _raidState(), keepOn = raidsOn, it = sentryItems()[0];
+            const bites = (c, n) => { let k = 0; const keep = c.bite; c.bite = function () { k++; return null; }; c.attackCooldown = 0; c.attackWindup = 0; c.attackAnim = 0; for (let i = 0; i < n; i++) { frame++; c._biteTick(crystal); } c.bite = keep; return k; };
+            const clocks = (n) => { R.nextAt = frame + 1000; _fp.spawnAt = frame + 1000; crystal.health = crystal.maxHealth / 2; _crystalDrawnAt = -1e9; const h0 = crystal.health; if (it) it.cd = 50; raidsOn = function () { return true; };
+                for (let i = 0; i < n; i++) { frame++; raidTick(); facilitySpawnTick(); crystalRefillTick(); facilitySentryTick(); }
+                raidsOn = keepOn; return { raid: R.nextAt - frame, spawn: _fp.spawnAt - frame, refill: Math.round((crystal.health - h0) / crystal.maxHealth * CRYSTAL_POWER.refill.fullFrames * 1000) / 1000, turret: it ? it.cd : null }; };
+            const o = { outside: { clocks: clocks(40), bites: bites(out, 630), clock: cardBattleClock() } };
+            cardBattleChoose(a); o.phase = cardBattlePhase();
+            o.inside = { clocks: clocks(40), bitesOut: bites(out, 630), bitesIn: bites(a, 630), clock: [cardBattleClock(), cardBattleClock(out), cardBattleClock(a)] };
+            cardBattleRun(); o.after = cardBattleClock(out); return o; })()`);
+        same(r.phase, 'on', 'the battle'); same(JSON.stringify(r.outside.clocks), JSON.stringify({ raid: 960, spawn: 960, refill: 40, turret: 10 }), 'out of a battle, after 40 frames: the raid and the spawn 960 frames off, 40 frames of refill, the turret 10 frames from its shot');
+        same(JSON.stringify(r.inside.clocks), JSON.stringify({ raid: 980, spawn: 980, refill: 20, turret: 30 }), 'in a battle, after 40 frames: half as far on');
+        same(r.outside.bites, 10, 'a creature\'s bites in 630 frames out of a battle'); same(r.inside.bitesOut, 5, 'in a battle, one outside it'); same(r.inside.bitesIn, 10, 'in a battle, one in it');
+        same(JSON.stringify(r.inside.clock), JSON.stringify([0.5, 0.5, 1]), 'the clock in a battle: the world\'s, one outside it, one in it'); same(r.outside.clock, 1, 'out of a battle'); same(r.after, 1, 'after RUN');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
@@ -89,6 +106,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
+        ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.28): the raids, the three spawns, the refill, the turrets, the bites');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

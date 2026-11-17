@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17l` · branch `claude/start-game-project-HSh7Z` · card battles: the world's clock at half while a battle is on
+- **The ask** (the owner): "I want to make it to where whenever you enter battle, time slows down to about half. But when you enter the battle, you still see other creatures moving around full speed, if that makes sense. I want to make it to where like the game clock slows down so that you can't you don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight because things are still happening behind you, like the crystal being destroyed in half speed." Asked what runs at half, of three (clock only; the clock and the fight; the whole world slowed): **"Clock only"**.
+- **What it does, only in a card battle** (behind `?cards` with `?engine=3d`; `js/cardbattle.js` `cardBattleClock`; `docs/CARD-BATTLES.md` §2.28, §9): creatures outside the battle keep walking and animating at full speed, and every countdown of the world runs at half: the ant raids' clock and the spawns' (`js/antraids.js`, `js/facilityspawn.js`), the Crystal's idle refill (`js/crystalpower.js`), a turret's shots, which draw on the Crystal (`js/stations.js`), and the bites of every creature outside the battle (`js/predator.js`: the rest between bites slower, its rear-back and lunge at full speed). So the Crystal falls half as fast while you are in a battle. The fight inside the battle keeps its pace. Out of a battle, and without the switch, nothing changes.
+- **"About half"** is 0.5 (`CARD_BATTLE.clock`).
+- **Tests**: `tests/cardbattle.js` THE CLOCK AT HALF (each countdown half as far on in a battle; a creature outside it bites 5 times where it would bite 10, one in it still 10; full again after RUN) and THE PIECES (the countdowns ask the clock).
+- **Verified**: the full run passing. Not playtested; not seen on an iPad.
+
 ### Build `2026-11-17j` · branch `claude/start-game-project-HSh7Z`, pushed to `main` · main's card battles merged in
 - **The ask** (the owner): **"Push"**. `main` had moved with another branch's work (card battles, build `2026-11-17d` on `claude/friendly-thompson-w581x0`, below); it is merged into this branch and the two kept together. The one place both changed, `view3d/gameview.js`: the battle's camera (`swinging()` while a battle's camera is off the game's own) and this branch's test hook for the followers' bodies (`checkBody`). Build `2026-11-17j` is new to both.
 - **Two builds are named `2026-11-17d`**, one on each branch: this branch's (a Thunderhead no longer turns the 3D view off) and `main`'s (card battles, step 1). Both are listed below, by time.
