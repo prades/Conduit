@@ -35,7 +35,7 @@ function _tgColour(a) { if (a && a.isHazardTarget) return a.color; const el = a.
 // the nearest creature in range that can be seen
 function targetNearest() {
     let best = null, bd = TARGET.range;
-    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a) || (typeof spiderLurking === "function" && spiderLurking(a)) || (typeof bossPassive === "function" && bossPassive(a)) || (typeof cardBattleMayTarget === "function" && !cardBattleMayTarget(a))) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }   // (a spider lurking at cover is passed by: js/facilityspawn.js; so is a boss asleep or calm in its lair: a tap still locks it, js/bosses.js)
+    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a) || (typeof spiderLurking === "function" && spiderLurking(a)) || (typeof bossPassive === "function" && bossPassive(a)) || (typeof cardBattleMayTarget === "function" && !cardBattleMayTarget(a)) || (typeof facilityShowsActor === "function" && !facilityShowsActor(a))) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }   // (a spider lurking at cover is passed by: js/facilityspawn.js; so is a boss asleep or calm in its lair: a tap still locks it, js/bosses.js)
     return best;
 }
 function targetSet(foe, manual) {

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17g` · branch `claude/friendly-thompson-w581x0` · only the room you are in shows its creatures
+- **The ask** (the owner, 2026-11-17): "Shouldn't be able to see enemies in other rooms. Only the rooms that you're in."
+- **What it does:** a creature not of yours in another room is not drawn (2D and the 3D view), cannot be tapped and is not locked by the gun; it shows once it is in your room. Yours always show; the Nest's tunnels and caves are one place; a card battle's creature shows on the walk to it, and a battle takes in only its creature's room. Outside the building and on the title's background, as before.
+- `js/facilityplay.js` (`facilityShowsActor`), `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`, `tests/roomsight.js` (new), `tests/run.js` (it, and `tests/cardbattle.js`, which was not on the run's list), `docs/COMBAT.md` §8.3a, `docs/DECISION-LOG.md`.
+- **Verified:** tests/roomsight.js (6 checks) and the full suite. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17f` · branch `claude/friendly-thompson-w581x0` · card battles: the world goes on while you battle (followers holding a room hold the fort)
 - **The ask** (the owner: "There's still interactions that go on in the background, fighting. That way you have it to where it can hold the fort"; of three offered, "Both at once").
 - **What it does, with `?cards` and `?engine=3d`:** during a card battle only you and your squad are kept out of the world's fights. A follower holding a room (HOLD) still defends it in real time: creatures may go for it and it fights them, and their hits on it start no battle. (In step 1 every follower was kept out.)

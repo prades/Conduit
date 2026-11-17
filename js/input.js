@@ -41,7 +41,7 @@ function followerPickPoint(f) {
 function findEnemyAtScreen(ex, ey) {
     let best = null, bestD = PICK_RADIUS;
     for (const a of actors) {
-        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
+        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone || (typeof facilityShowsActor === "function" && !facilityShowsActor(a))) continue;   // (one in another room is not shown: js/facilityplay.js facilityShowsActor)
         const apx = isoSX(a.x, a.y) + canvas.width/2;
         const apy = isoSY(a.x, a.y) + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
         const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
