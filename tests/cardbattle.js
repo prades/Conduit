@@ -505,6 +505,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify(r.before), '[true,true,true]', 'unhurt: no tally, the front line');
         same(r.after.join(), 'tank,brawler,brawler', 'the front ant, the second, the third'); same(r.mage, 'mage', 'the second, hurt more by the Mage after'); same(r.turn, 'tank', 'the front ant on its turn');
     });
+    check('a TANK sits out front (the owner: "Sit out front"): a technician set to TANK is lined up on the front square, before the Brawler; then the Mage; you behind them all', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1);
+            const L = _cb.lay, along = u => { const s = _cbSq(u); return (s[0] - L.mx) * L.ux + (s[1] - L.my) * L.uy; }, o = { tank: along(t), brawler: along(b), mage: along(m), you: along(player) }; t.playStyle = undefined; return o; })()`);
+        ok(r.tank > r.brawler && r.brawler > r.mage && r.mage > r.you, 'from the middle of the line: the TANK technician ' + r.tank + ', the Brawler ' + r.brawler + ', the Mage ' + r.mage + ', you ' + r.you);
+    });
     check('one it cannot reach it passes over for the next most (your squad all round the one that hurt it most); the tally is the battle\'s, gone when it ends', () => {
         const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); const all = [t, m, b, player];
             cardBattleHurt(a, t, 30); cardBattleHurt(a, b, 10); const o = { top: _cbGrudge(a, all) === t };

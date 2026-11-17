@@ -308,10 +308,11 @@ function _cbLayout() {
     _cbCentre();
 }
 // THE FRONT LINE (§2.40) lined up: your squad in the formation's order (js/formation.js, the owner, 2026-11-10: "put the brawlers in front of the player ... put the mage behind"): Brawlers
-// (and hybrids, and the Mutator's clone) on the front squares, then technicians, then Mages; the squad's own order within each; you behind them all, as before (§2.31)
+// (and hybrids, and the Mutator's clone) on the front squares, then technicians, then Mages; the squad's own order within each; you behind them all, as before (§2.31). A TANK SITS OUT FRONT
+// (§2.47; the owner, 2026-11-17, asked whether a TANK should stand at the front of the line: "Sit out front"): a follower whose play style is TANK takes the front squares, before the Brawlers
 const _CB_RANK = { brawler: 0, camper: 1, sniper: 2 };
 function _cbFrontFirst(list) {
-    const rank = f => _CB_RANK[typeof formationRole === "function" ? formationRole(f) : f && (f.role === "sniper" || f.role === "camper") ? f.role : "brawler"];
+    const rank = f => _cbTank(f) ? -1 : _CB_RANK[typeof formationRole === "function" ? formationRole(f) : f && (f.role === "sniper" || f.role === "camper") ? f.role : "brawler"];
     return list.map((f, i) => [f, i]).sort((p, q) => rank(p[0]) - rank(q[0]) || p[1] - q[1]).map(p => p[0]);
 }
 // is any of yours (you, a member) outside the battle's room?

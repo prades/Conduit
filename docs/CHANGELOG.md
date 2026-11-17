@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ae` · branch `claude/start-game-project-HSh7Z` · a TANK sits out front (card battles behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, asked whether a TANK should stand at the front of the battle line): "Sit out front".
+- **What it does** (`docs/CARD-BATTLES.md` §2.47): when a battle lines up, a follower whose play style is TANK takes the front square, before the Brawlers; then technicians, Mages and you as before. No taunt, no damage change.
+- `js/cardbattle.js` (`_cbFrontFirst`), `bible.html` (the play styles' paragraph).
+- **Tests:** `tests/cardbattle.js` (58 checks). **Verified before it:** the full run on `2026-11-17ad` (the merge with main's `2026-11-17aa`) passing, 132 suites. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ad` · branch `claude/start-game-project-HSh7Z` · the enemies' focus: whoever has hurt them most; a TANK no longer taunts (card battles behind `?cards` with `?engine=3d`); main merged in
 - **Merged with main's** `2026-11-17aa` (`claude/friendly-thompson-w581x0`: each follower attacks every turn, one follower at a time in a pop-up, HEXFIRE's card picture). This branch's rules renumbered §2.43 to §2.46 after main's §2.41 and §2.42; this branch's own `2026-11-17aa` (the TAUNT card, superseded) keeps its label in its commit.
 - **The ask** (the owner): "I don't think the tank role should have automatic taunting. I think that the tank role would be best if it just did enough damage to outclass the brawler when it comes to one-on-one combat. That way, if the enemies are focused on who's doing the highest damage, then they will always choose the tank." Then: "each creature independently checks their own health for Who Is done the most damage to them, and therefore, when the technician hits for a above average normal, hit the brawler would do less damage via AOE to all the targets, therefore keeping the focus on the tank"; "Card battles only"; and "Don't change the damage numbers on any of the roles".
