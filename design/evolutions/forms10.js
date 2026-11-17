@@ -34,7 +34,8 @@ function _powderDome(R, sy, mouthDir, mouthAng, seed, cols, detail, sub) {
   // THE SNOW: soft clumps over the dome, smaller lumps on them and a fine crust; the hollows between them faintly blue, the odd grain bright (a sparkle). It is in the shape, not a picture laid on it, so it has no seam.
   const snow = v => { const c1 = _vn3(v.x * 5 + 7, v.y * 5, v.z * 5, seed) - 0.5, c2 = _vn3(v.x * 13, v.y * 13 + 3, v.z * 13, seed + 1) - 0.5, c3 = _vn3(v.x * 31, v.y * 31, v.z * 31 + 5, seed + 2) - 0.5;
     return { d: 0.065 * c1 + 0.035 * c2 + 0.014 * c3, hol: Math.max(0, -(c1 * 0.6 + c2 + c3 * 0.6)), spark: _hz(Math.round(v.x * 90) + seed, Math.round(v.y * 90), Math.round(v.z * 90)) > 0.985 }; };
-  const a = new T.Vector3(), b = new T.Vector3(), d = new T.Vector3(), c = new T.Vector3();
+  const a = new T.Vector3(), b = new T.Vector3(), d = new T.Vector3(), c = new T.Vector3(), upM = new T.Vector3(0, 1, 0).sub(md.clone().multiplyScalar(md.y)).normalize();
+  const rimAt = v => { const u = v.clone().normalize(), cc = u.dot(md), q = u.sub(md.clone().multiplyScalar(cc)); if (q.lengthSq() < 1e-9) return v; q.normalize(); return md.clone().multiplyScalar(Math.cos(mouthAng)).add(q.multiplyScalar(Math.sin(mouthAng))); };   // (a point moved out onto the mouth's round rim)
   const put = (v, edge) => { const S = snow(v), n = 1 + S.d, y = Math.max(0, v.y);
     pos.push(v.x * R * n, y * R * sy * n, v.z * R * n);
     k.copy(lo).lerp(hi, Math.min(1, Math.pow(y, 0.8) * 1.15)); if (edge < 0.3) k.lerp(lip, 1 - Math.max(0, edge) / 0.3);
@@ -43,9 +44,13 @@ function _powderDome(R, sy, mouthDir, mouthAng, seed, cols, detail, sub) {
     a.set(src[i], src[i + 1], src[i + 2]); b.set(src[i + 3], src[i + 4], src[i + 5]); d.set(src[i + 6], src[i + 7], src[i + 8]);
     c.copy(a).add(b).add(d).multiplyScalar(1 / 3); const ch = c.clone().normalize();
     if (c.y < -0.02) continue;                                        // a dome, not a ball (as No. 934)
-    const fa = Math.acos(Math.max(-1, Math.min(1, ch.dot(md))));
-    if (fa < mouthAng) continue;                                      // the mouth: the same faces left out as No. 934, so its teeth are the same
-    const edge = fa - mouthAng, P = (i2, j2) => a.clone().multiplyScalar(1 - (i2 + j2) / N).add(b.clone().multiplyScalar(i2 / N)).add(d.clone().multiplyScalar(j2 / N)).normalize();
+    const fa = Math.acos(Math.max(-1, Math.min(1, ch.dot(md)))), pp = ch.clone().sub(md.clone().multiplyScalar(ch.dot(md)));
+    const side = pp.lengthSq() > 1e-9 && pp.normalize().dot(upM) < 0.45;   // (this face is round the sides or the bottom of the mouth, not its top)
+    if (side) {   // THE SIDES ROUND, NO TEETH THERE (the owner, 2026-11-17, circling the two points low at each side of the mouth: "Get rid of the side teeth somehow"): a face across the rim has its corners inside put on the rim
+      const ins = [a, b, d].map(v => Math.acos(Math.max(-1, Math.min(1, v.clone().normalize().dot(md)))) < mouthAng); if (ins.every(Boolean)) continue;
+      [a, b, d].forEach((v, j) => { if (ins[j]) v.copy(rimAt(v)); });
+    } else if (fa < mouthAng) continue;                               // the top of the mouth: the same faces left out as No. 934, so its teeth along the top are the same
+    const edge = Math.max(0, fa - mouthAng), P = (i2, j2) => a.clone().multiplyScalar(1 - (i2 + j2) / N).add(b.clone().multiplyScalar(i2 / N)).add(d.clone().multiplyScalar(j2 / N)).normalize();
     for (let i2 = 0; i2 < N; i2++) for (let j2 = 0; j2 < N - i2; j2++) {   // (the face split into little faces on the sphere, so the snow's lumps have room)
       for (const q of [P(i2, j2), P(i2 + 1, j2), P(i2, j2 + 1)]) put(q, edge);
       if (j2 < N - i2 - 1) for (const q of [P(i2 + 1, j2), P(i2 + 1, j2 + 1), P(i2, j2 + 1)]) put(q, edge); }
@@ -56,7 +61,7 @@ function _powderDome(R, sy, mouthDir, mouthAng, seed, cols, detail, sub) {
     for (let m = 0; m < 9; m += 3) { const kk = key(j + m), cur = acc.get(kk); if (cur) cur.add(fn); else acc.set(kk, fn.clone()); } }
   for (let j = 0; j < pos.length; j += 3) { const v = acc.get(key(j)).clone().normalize(); nor[j] = v.x; nor[j + 1] = v.y; nor[j + 2] = v.z; }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new T.BufferAttribute(nor, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3));
-  const m = new T.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 1, metalness: 0, side: T.DoubleSide }); m.envMapIntensity = 0.1;
+  const m = new T.MeshStandardMaterial({ vertexColors: true, flatShading: false, roughness: 1, metalness: 0 }); m.envMapIntensity = 0.1;   // (its outside only, as No. 934's: the inside of the mouth is the dark cave)
   return new T.Mesh(geo, m);
 }
 // AN ICICLE (No. 947's fangs): a long tapering spike of clear pale ice, its base at y = 0 and its point at -h, ridged a little where it dripped as it froze; glossy, faintly lit from within
@@ -70,7 +75,7 @@ function _icicle(r, h, seed) {
 function _iceRubble(R, n, seed, colour, soft) {   // chunks round the base: tagged ground (soft, No. 947: clumps of snow, not cut ice)
   const g = G(); g.userData.ground = true;
   const mat = new T.MeshStandardMaterial({ color: colour, flatShading: !soft, roughness: 0.95, metalness: 0.0 }); mat.envMapIntensity = 0.2;
-  for (let i = 0; i < n; i++) { const a = i * TAU / n + (_hz(i, seed, 1) - 0.5) * 0.6, r = R * (1.0 + 0.32 * _hz(i, seed, 2)), s = 0.1 + 0.2 * _hz(i, seed, 3);
+  for (let i = 0; i < n; i++) { const a = i * TAU / n + (_hz(i, seed, 1) - 0.5) * 0.6, s = 0.1 + 0.2 * _hz(i, seed, 3), r = soft ? R + s * 1.35 + 0.1 * _hz(i, seed, 2) : R * (1.0 + 0.32 * _hz(i, seed, 2));   // (soft, No. 947: outside the wall, so none shows inside its mouth)
     const m = new T.Mesh(new T.IcosahedronGeometry(1, soft ? 2 : 0), mat); m.scale.set(s * 1.3, s * 0.38, s); m.position.set(Math.sin(a) * r, s * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, seed, 4) * 3; g.add(m); }
   return g;
 }
@@ -90,7 +95,7 @@ function _iceMaw(o) {
   const rub = _iceRubble(R, o.rubble || 12, o.seed || 3, o.rubbleColour, o.powder); b.add(rub);
   if (o.snow) {   // (No. 934) a drift of powder heaped round its foot, in front of the body's layer and not moving with it: it sits sunk into the floor. Soft lumps, a little taller at the back.
     const sm = new T.MeshStandardMaterial({ color: o.snow, roughness: 1, metalness: 0, flatShading: !o.powder }); sm.envMapIntensity = 0.25;
-    for (let i = 0; i < 26; i++) { const a = i * TAU / 26 + (_hz(i, o.seed || 3, 7) - 0.5) * 0.25, r = R * (0.98 + 0.14 * _hz(i, o.seed || 3, 8)), sz = 0.11 + 0.09 * _hz(i, o.seed || 3, 9);
+    for (let i = 0; i < 26; i++) { const a = i * TAU / 26 + (_hz(i, o.seed || 3, 7) - 0.5) * 0.25, sz = 0.11 + 0.09 * _hz(i, o.seed || 3, 9), r = o.powder ? R + sz * 1.5 + 0.02 * _hz(i, o.seed || 3, 8) : R * (0.98 + 0.14 * _hz(i, o.seed || 3, 8));   // (o.powder, No. 947: heaped against the outside of the wall, never through it, so none shows inside its mouth: the owner, 2026-11-17)
       const m = new T.Mesh(new T.IcosahedronGeometry(1, o.powder ? 3 : 1), sm); m.scale.set(sz * 1.5, sz * (Math.cos(a) < 0 ? 0.7 : 0.4), sz * 1.2); m.position.set(Math.sin(a) * r, sz * 0.2, Math.cos(a) * r); m.rotation.y = _hz(i, 5, 6) * 3; b.add(m); } }
   const L = new T.PointLight(0xffffff, 0.5, 3.5, 2); L.color.set(EL.color); L.position.set(0, 0.5, R * 0.5); bodyG.add(L); LIGHTS.push(L);
   return { g, core: 0.5 * (o.S || 1), update(t, act, v) { const ac = act || 0;
