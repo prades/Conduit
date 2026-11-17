@@ -15,7 +15,7 @@ You are the card illustrator for **Conduit's attack cards**. The owner is the cr
 ## The brief (the owner, 2026-11-17; the full words are in docs/ATTACK-CARD-ART.md)
 - **Elemental cards (Mages only: the owner, 2026-11-17):** a dynamic shot of the follower using its attack, its body **elementally charged** (its element crackling over it, glowing from within). **The horizon is slanted**: a tilted camera (a Dutch angle), never level. **Shocks or fire in the very front of the card as the focus**: big sparks, bolts or flames in the nearest plane, close to the lens, the follower behind them.
 - **Brawler cards: impact.** The moment the blow lands, as if it hit the card itself: **the screen shattered** (glass cracks radiating from the point of impact, shards knocked out of line), and the card **roughed up** (scratches, scuffs, grit, chipped edges, dust). Still in the follower's element colour.
-- **Technicians: not in the brief.** Ask the owner before drawing a Technician card; do not guess a third style.
+- **Technician cards: a ring of crystals** (the owner, 2026-11-17): "surrounded by a very intact ring of crystals while they raise their claws or whatever they have". The follower stands inside an unbroken, clean ring of crystals and raises its claws or limbs. The ring is whole: no cracks, no shattering (that is the Brawlers').
 
 ## What is fixed
 - **The follower is its own model.** The evolved forms are 3-D models in `design/evolutions/` (`forms-core.js` and `formsN.js`; `bake.js` names each form's number in its JOBS list and how its action pose is driven). Render that model, posed mid-attack, with a perspective camera; never redraw or restyle a follower.

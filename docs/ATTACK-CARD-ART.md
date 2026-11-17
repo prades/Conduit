@@ -13,6 +13,7 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
 ## 2. The brief (the owner's)
 - **Elemental cards:** a dynamic shot of the follower using its attack; the follower **elementally charged**; **the horizon slanted** (a tilted camera); **shocks or fire in the front of the card as the focus**.
 - **Brawler cards:** **impact**: a **shattered screen**, the card **roughed up**.
+- **Technician cards** (the owner, 2026-11-17): "the technician cards are gonna be like surrounded by a very intact ring of crystals while they raise their claws or whatever they have": the follower **inside an unbroken ring of crystals**, **raising its claws** (or whatever limbs it has). The ring is whole and clean, the opposite of a Brawler's shattered card.
 
 ## 3. Fixed and open
 **Fixed (the agent's reading of the brief and the project's rules, not new design):**
@@ -22,7 +23,6 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
 - No card's name, stats or effect is invented for a picture.
 
 **Open, for the owner:**
-- **Technicians:** not in the brief, and not given the elemental style (§4). Which style, decided later.
 - **Which cards, and how many:** roadmap §12.5 keeps the count and the elements open (six cards, or two per element, were both mentioned). Not to be assumed.
 
 ## 4. Decisions
@@ -43,4 +43,4 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
   - **He reads as the Frost Maw at the card's size:** the camera pulled back a little and raised a little, turned a touch (about 17 degrees) and shifted so his mouth sits in the middle: his snowy dome shows round the open mouth (straight on, he read as an arch), with the jagged top teeth and both crystal fangs clear of the frame's edge. No flying piece lands on his fangs or the teeth between them, and every piece lands well out from his mouth.
   - **The flying pieces read as clear glass:** each shows the card behind it seen through it, shifted and a little magnified (refraction) and faintly tinted, with a streak of reflection across it, its thickness as a pale band with a bright line, a white rim with a hair of colour split at its edge, and a faint shadow lifting it off the card; the nearest are out of focus. They burst all round the hit (up, down and to the sides); below the name's top only down the card's two sides, so the name stays clear. The middle's pieces are each broken in two (11 land; any with nowhere clear to land is left out).
   - Not changed, to note: the gap where they came out is the hole at the middle of the hit; no slab beside it was knocked out this time (none was over his dark mouth without covering his teeth).
-
+- **2026-11-17, the Technicians' style.** Shown the Technicians' secondary attacks (SHELL GUARD, BLADE ROLL, PHASE SWAP, MAGMA VENT, VENOM BITE, SHOCK ZAP, SKATE CHARGE, STAKE RING) and asked for a style, the owner: **"the technician cards are gonna be like surrounded by a very intact ring of crystals while they raise their claws or whatever they have"**. Passed over: the Mage style, the Brawler style. Not chosen yet: which Technician is drawn first.
