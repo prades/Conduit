@@ -174,6 +174,20 @@ const SAMPLES = {
     tone: { sky: '#020902', hz: ['rgba(10,42,10,0)', 'rgba(16,64,14,0.85)', '#0a2a0a'], hot: '210,255,200', halo: 'rgba(0,8,0,1)', chip: ['#4a6a40', '#1a2a14', '#040a03', 'rgba(102,255,102,0.35)'], vig: 'rgba(0,6,0,0.65)', foot: ['rgba(1,8,1,0)', 'rgba(1,8,1,0.7)'], dim: 0.35, glow: 0.25, edge: [3, 0.8, '#9dff80'] },
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },   // (low on the floor where the foot will land, the enemy's place, looking up at it; rolled as the Frost Maw's)
   },
+  // ---------- FOLLOWERS, ROUND 3 (2026-11-17: the owner of round 2, "I love those cards. Keep going.") ----------
+  // THE RIMESTAR (ice Mage, evolved form 'rimestar', design No. 940: design/evolutions/bake.js JOBS, forms32.js _rimestar) casting ICICLE VOLLEY (docs/COMBAT.md: "three icicles in a fan at the
+  // nearest enemy"; the owner, 2026-11-12: "it turns into a fan and it shoots crystals at the enemy"), in the Mage style as the Ember Hood's: its pose the fan's release (the sheet's second extra
+  // block, column 30: the fan at full, a crystal at each blade's tip, three thrown; its haze lighter than the sheet's 0.52, so the blades read); charged with frost (ICE_MAGE, below); the game's
+  // own icicles flying off the fan at the lens, in the very front of the card. The ice energy card's glacier behind.
+  rimestar_volley: {
+    style: 'ice', form: 940, color: '#7fd6ff', rim: '#99ddff', fx: '#7fd6ff', world: 'ice', seed: 940,
+    pose: { t: 0.55, act: 0, v: { fan: 1, cry: 1, rot: 4.9, blur: 0.3, go: 0.5 } }, yaw: 0.45,
+    lights: { hemi: [0x8aa8d0, 0x061426, 0.45], key: [0xf0f8ff, 1.0], rim: 2.4, back: 1.3, low: [0x9fe8ff, 2, -0.6, 1.6, 3.0] },
+    cam: { pos: [2.2, 1.1, 7.8], look: [-0.8, 0.3, 0], fov: 38, roll: -0.27 },   // (it up on the right, the volley flying out to the left above the name plate; rolled as the Ember Hood's)
+    volley: { icicles: [[0.05, 0.02, 2.1, 0.88, 0.3, -0.1], [-0.22, 0.58, 3.4, 0.85, 1.1, 0.1], [0.04, 0.33, 4.8, 0.8, 2.0, 0]],   // (each: [x, y on the picture, distance, size, roll, its turn in the fan])
+      screen: [3.35, 1.5], near: [[-0.8, 0.8, 1.4, 0.35, 0.5, 0.15]], nearBlur: 3,   // (all flying left and a little down on the picture, and at the lens; one more at the lens, top left, out of focus)
+      release: [-0.2, 1.1, 0.9], trail: 340, trailW: 18, dim: 0.5, floorDim: 0.45, glow: [0.5, 0.45], inner: 0.25, heartGlow: 0.1, burst: 0.5 },   // (the world, the floor and its own glow held down: a white follower on the snow)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -691,6 +705,99 @@ function VOID_MAGE(o) {
   return { png: out.toDataURL('image/png'), info: Object.assign({ eye: E.map(Math.round) }, info) };
 }
 
+// ---------- AN ICE MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the ice: followers round 3, 2026-11-17): the ice energy card's world (its glacier under the
+// aurora) behind, tilted with the horizon; the follower CHARGED with frost (its silhouette glowing ice-blue, a cold light inside its outline strongest at its diamond, branching frost
+// creeping off its edges, glints on it); and in the very front of the card, the focus, its ICICLE VOLLEY: the game's own icicles (3-D, in iceCv) flying off its fan at the lens, a trail of
+// frost behind each, a burst of frost where they left the fan, and ice dust and shards right at the lens, out of focus. Run in the page (its source is put there with toString).
+function ICE_MAGE(o) {
+  const { W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, heart, iceTips } = o, PI = Math.PI, TAU = 2 * PI;
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const I = a => 'rgba(127,214,255,' + a + ')', Il = a => 'rgba(190,236,255,' + a + ')', Iw = a => 'rgba(240,250,255,' + a + ')';   // (ice's colour, js/config.js ELEMENTS; a paler blue; its white)
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const mask = (src, blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(src, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  // frost: a crystal's branching growth from a point along a way, side branches at 60 degrees, finer as it goes (drawn as light)
+  const frost = (G, x, y, a, L, w, al, depth) => { const ex = x + Math.cos(a) * L, ey = y + Math.sin(a) * L;
+    G.save(); G.globalCompositeOperation = 'lighter'; G.filter = 'blur(' + (1 + w) + 'px)'; stroke(G, [[x, y], [ex, ey]], w * 3, I(0.35 * al)); G.filter = 'none'; stroke(G, [[x, y], [ex, ey]], Math.max(0.5, w * 0.7), Iw(0.9 * al)); G.restore();
+    if (depth > 0) { const n = 2 + Math.floor(R() * 2); for (let k = 1; k <= n; k++) { const t = k / (n + 1) + (R() - 0.5) * 0.1, bx = x + (ex - x) * t, by = y + (ey - y) * t, s = R() < 0.5 ? -1 : 1;
+      frost(G, bx, by, a + s * PI / 3, L * (0.45 - 0.25 * t) * (0.7 + R() * 0.5), w * 0.65, al * 0.9, depth - 1); } } };
+  const glint = (G, x, y, r, al) => { G.save(); G.globalCompositeOperation = 'lighter'; blob(G, x, y, r * 0.6, [[0, Iw(al)], [0.4, Il(0.4 * al)], [1, I(0)]]);
+    for (const [dx, dy, k] of [[1, 0, 1], [0, 1, 1], [0.7, 0.7, 0.45], [0.7, -0.7, 0.45]]) { const gr = G.createLinearGradient(x - dx * r * k, y - dy * r * k, x + dx * r * k, y + dy * r * k); gr.addColorStop(0, Iw(0)); gr.addColorStop(0.5, Iw(al)); gr.addColorStop(1, Iw(0));
+      G.strokeStyle = gr; G.lineWidth = 1.1; G.beginPath(); G.moveTo(x - dx * r * k, y - dy * r * k); G.lineTo(x + dx * r * k, y + dy * r * k); G.stroke(); } G.restore(); };
+  const V = P.volley;
+  // 1. FAR: the ice energy card's world (its glacier under the aurora: js/energygem.js, with that card's own seed), tilted with the horizon, softened, a little dimmed so the white follower reads
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#020818'; g.fillRect(0, 0, W, H);
+  { const hz = hzAt(W / 2), top = -(hz + 60), hh = hz + 110, kx = 1.7;
+    g.save(); g.translate(W / 2, hz); g.rotate(slope); g.filter = 'blur(2px)'; g.drawImage(ws, -225 * kx, top, 450 * kx, hh); g.filter = 'none';
+    g.globalAlpha = 0.6; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -120, 0, 30); lg.addColorStop(0, 'rgba(12,42,74,0)'); lg.addColorStop(0.8, 'rgba(20,60,100,0.85)'); lg.addColorStop(1, '#0c2a4a');
+  g.fillStyle = lg; g.fillRect(-W, -120, 2 * W, 150); g.restore();
+  if (V.dim) { g.fillStyle = 'rgba(1,4,14,' + V.dim + ')'; g.fillRect(0, 0, W, H); }
+  // 2. THE FLOOR (3-D, darkened under the volley so the ice is the light), a cold line of light along the horizon (so the tilt reads), a glow round the follower
+  { const fl = cv(), fc = fl.getContext('2d'); fc.drawImage(floorCv, 0, 0); fc.globalCompositeOperation = 'source-atop'; fc.fillStyle = 'rgba(2,8,22,' + (V.floorDim || 0) + ')'; fc.fillRect(0, 0, W, H); g.drawImage(fl, 0, 0); }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[28, 0.1], [9, 0.22], [2.5, 0.55]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, I(0)); lb.addColorStop(0.5, h < 4 ? Iw(a) : I(a)); lb.addColorStop(1, I(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, heart[0], heart[1], 230, [[0, I(V.heartGlow == null ? 0.2 : V.heartGlow)], [0.45, I(0.07)], [1, I(0)]]); g.fillRect(0, 0, W, H); g.restore();
+  // 3. THE FOLLOWER, CHARGED: a dark halo (its white fins stand off the snow), its silhouette glowing ice-blue (wide and tight), frost creeping off its edges, its own render, then a cold light
+  //    inside its outline (strongest at its diamond), fine frost over it, glints at its tips, motes of frost rising off it
+  g.save(); g.globalAlpha = 0.75; g.drawImage(mask(model, 12, 'rgba(0,4,14,1)'), 0, 5); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = V.glow ? V.glow[0] : 0.85; g.drawImage(mask(model, 20, '#3aa8ff'), 0, 0); g.globalAlpha = V.glow ? V.glow[1] : 0.7; g.drawImage(mask(model, 5, '#bfeaff'), 0, 0); g.restore();
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  const inside = []; for (let y = 2; y < H - 2; y += 4) for (let x = 2; x < W - 2; x += 4) if (A(x, y) > 200) inside.push([x, y]);
+  { const hl = cv(), hg = hl.getContext('2d');
+    for (let i = 0; i < (V.edgeFrost || 18); i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const a = Math.atan2(e[1] - heart[1], e[0] - heart[0]) + (R() - 0.5) * 0.8; frost(hg, e[0], e[1], a, 14 + R() * 26, 1.3, 0.85, 2); }
+    g.drawImage(hl, 0, 0); }
+  g.drawImage(model, 0, 0);
+  { const ig = cv(), ic = ig.getContext('2d'); ic.fillStyle = rad(ic, heart[0], heart[1], 150, [[0, 'rgba(225,245,255,0.7)'], [0.35, 'rgba(120,200,255,0.35)'], [1, 'rgba(80,160,255,0.08)']]); ic.fillRect(0, 0, W, H);
+    for (let i = 0; i < 9; i++) { const p = inside[Math.floor(R() * inside.length)]; if (!p) continue; frost(ic, p[0], p[1], R() * TAU, 10 + R() * 18, 0.9, 0.8, 1); }
+    ic.globalCompositeOperation = 'destination-in'; ic.drawImage(model, 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = V.inner == null ? 0.5 : V.inner; g.drawImage(ig, 0, 0); g.restore(); }
+  for (let i = 0; i < 10; i++) { const e = edges[Math.floor(R() * edges.length)]; if (e) glint(g, e[0], e[1], 7 + R() * 9, 0.85); }
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 30; i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 8 + R() * 60, x = e[0] + up[0] * d + (R() - 0.5) * 24, y = e[1] + up[1] * d + (R() - 0.5) * 12; blob(g, x, y, 1.2 + R() * 2.2, [[0, Iw(1)], [0.4, Il(0.8)], [1, I(0)]]); }
+  g.restore();
+  // 4. NEAR: ICICLE VOLLEY at the lens. A burst of frost where they left the fan; a trail of frost and powder behind each icicle, back toward the fan; the icicles' cold glow; the icicles
+  //    themselves (the game's own, 3-D); ice dust and splinters around them; the nearest out of focus.
+  const F0 = V.release ? pr(V.release) : heart;
+  g.save(); g.globalCompositeOperation = 'lighter'; const BU = V.burst == null ? 1 : V.burst; blob(g, F0[0], F0[1], 90, [[0, Iw(0.5 * BU)], [0.3, Il(0.25 * BU)], [1, I(0)]]);
+  for (let i = 0; i < 20; i++) { const a = R() * TAU, d = 10 + R() * 60; blob(g, F0[0] + Math.cos(a) * d, F0[1] + Math.sin(a) * d * 0.8, 14 + R() * 26, [[0, Iw(0.12)], [1, Il(0)]]); }
+  g.restore();
+  iceTips.forEach(([tip, tail, k]) => {   // (the trail: from the icicle's tail back along its way toward the fan, a widening band of frost, streaks in it, flakes shed)
+    const dx = tail[0] - tip[0], dy = tail[1] - tip[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, len = Math.min(V.trail || 260, Math.hypot(F0[0] - tail[0], F0[1] - tail[1]) * 1.1), nx = -uy, ny = ux, wd = (V.trailW || 18) * k;
+    const tr = cv(), tg = tr.getContext('2d'), e = [tail[0] + ux * len, tail[1] + uy * len];
+    tg.globalCompositeOperation = 'lighter';
+    const band = tg.createLinearGradient(tail[0], tail[1], e[0], e[1]); band.addColorStop(0, Iw(0.55)); band.addColorStop(0.25, Il(0.3)); band.addColorStop(1, I(0)); tg.fillStyle = band;
+    tg.beginPath(); tg.moveTo(tail[0] + nx * wd * 0.35, tail[1] + ny * wd * 0.35); tg.lineTo(e[0] + nx * wd, e[1] + ny * wd); tg.lineTo(e[0] - nx * wd, e[1] - ny * wd); tg.lineTo(tail[0] - nx * wd * 0.35, tail[1] - ny * wd * 0.35); tg.closePath(); tg.fill();
+    for (let s = 0; s < 7; s++) { const o2 = (R() - 0.5) * wd * 1.2, l2 = len * (0.3 + R() * 0.7), gr = tg.createLinearGradient(tail[0], tail[1], tail[0] + ux * l2, tail[1] + uy * l2); gr.addColorStop(0, Iw(0.7)); gr.addColorStop(1, Iw(0)); tg.strokeStyle = gr; tg.lineWidth = 0.8 + R() * 1.4 * k;
+      tg.beginPath(); tg.moveTo(tail[0] + nx * o2 * 0.3, tail[1] + ny * o2 * 0.3); tg.lineTo(tail[0] + ux * l2 + nx * o2, tail[1] + uy * l2 + ny * o2); tg.stroke(); }
+    for (let s = 0; s < 22; s++) { const t = Math.pow(R(), 0.7), x = tail[0] + ux * len * t + nx * (R() - 0.5) * wd * 2 * t, y = tail[1] + uy * len * t + ny * (R() - 0.5) * wd * 2 * t; blob(tg, x, y, (1 + R() * 2.5) * k, [[0, Iw(0.9)], [0.4, Il(0.5)], [1, I(0)]]); }
+    g.save(); g.filter = 'blur(' + (1.5 + 2 * k) + 'px)'; g.drawImage(tr, 0, 0); g.filter = 'blur(0.5px)'; g.globalAlpha = 0.6; g.drawImage(tr, 0, 0); g.restore(); });
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.9; g.drawImage(mask(iceCv, 12, '#5ab8ff'), 0, 0); g.globalAlpha = 0.5; g.drawImage(mask(iceCv, 3, '#e8f8ff'), 0, 0); g.restore();
+  g.drawImage(iceCv, 0, 0);
+  iceTips.forEach(([tip, tail, k]) => glint(g, tip[0], tip[1], 12 + 10 * k, 0.95));   // (a glint at each icicle's point)
+  // ice dust and splinters thrown with them
+  g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+  for (let i = 0; i < 60; i++) { const q = iceTips[Math.floor(R() * iceTips.length)]; if (!q) continue; const [tip, tail, k] = q, a = Math.atan2(tip[1] - tail[1], tip[0] - tail[0]) + (R() - 0.5) * 1.2, d = R() * 120 * k, x = (tip[0] + tail[0]) / 2 + Math.cos(a) * d + (R() - 0.5) * 30, y = (tip[1] + tail[1]) / 2 + Math.sin(a) * d + (R() - 0.5) * 30, L = 3 + R() * 10 * k;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, Iw(0.95)); sg.addColorStop(1, I(0)); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.2; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+  // the nearest plane: icicles and shards of ice right at the lens, out of focus, with their glow
+  if (iceNearCv) { g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)'; g.globalAlpha = 0.8; g.drawImage(mask(iceNearCv, 0, '#5ab8ff'), 0, 0); g.restore();
+    g.save(); g.filter = 'blur(' + (V.nearBlur || 4) + 'px)'; g.drawImage(iceNearCv, 0, 0); g.restore(); }
+  // bokeh: soft flakes of frost right at the lens
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 12; i++) { const x = R() * W, y = R() * H * 0.62, r = 8 + R() * 22; blob(g, x, y, r, [[0, Il(0.16)], [0.75, I(0.1)], [1, I(0)]]); }
+  g.restore();
+  // 5. THE GRADE: a vignette, darker at the foot (the name plate reads over it)
+  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.75, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(1,6,16,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.66, 0, H); lg.addColorStop(0, 'rgba(1,6,16,0)'); lg.addColorStop(1, 'rgba(1,6,16,0.55)'); g.fillStyle = lg; g.fillRect(0, H * 0.66, W, H * 0.34); g.restore();
+  return { png: out.toDataURL('image/png'), info: Object.assign({ release: F0.map(Math.round) }, info) };
+}
+
 // ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
 // from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
 // Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
@@ -757,6 +864,7 @@ ${STORM_MAGE.toString()}
 ${FLAME_DASH.toString()}
 ${GOO_SPLASH.toString()}
 ${VOID_MAGE.toString()}
+${ICE_MAGE.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
@@ -934,6 +1042,27 @@ window.__card = async function (P, W, H, modelOnly) {
     { const m = gemOf(Q.size * 1.6, 0x2a0f55, 0x12042a); m.position.set(swirlC.x, 0.18, swirlC.z); m.rotation.set(0, 0.4, 0); swirlG.add(m); }   // (its middle: the dark crystal)
     (Q.near || []).forEach(([nx, ny, d, sz, rot], i) => { const C = COLS[(i + 1) % 3], m = gemOf(sz, C[0], C[1]); m.position.copy(cam.position).addScaledVector(ray(nx, ny), d); m.rotation.set(rot, rot * 1.7, rot * 0.6); nearG.add(m); });
     swirlG.visible = nearG.visible = false; scene.add(swirlG); scene.add(nearG); }
+  // ICICLE VOLLEY'S ICICLES (followers round 3, the Rimestar): the game's own icicle (design/effects/bake_fx.js 'icicle', approved 2026-11-09: a slender six-sided spike of pale blue ice, long-pointed
+  // in front, a short faceted point behind, a little uneven, glossy flat-shaded facets, a cold glow from within), each set where a ray through the picture meets its distance, pointing on along
+  // its way from the fan (where they left it) toward the lens. Built only for P.volley.
+  const iceG = new T.Group(), iceNearG = new T.Group(), iceAxes = [];
+  if (P.volley) { const Q = P.volley; B.g.updateMatrixWorld(true);
+    const rel = Q.release ? new T.Vector3(...Q.release) : B.g.localToWorld(new T.Vector3(0, B.core, 0.4)); Q.release = [rel.x, rel.y, rel.z];
+    const ray = (nx, ny) => new T.Vector3(nx, ny, 0.5).unproject(cam).sub(cam.position).normalize();
+    const ice = new T.MeshStandardMaterial({ color: new T.Color(0x7cc8f2).convertSRGBToLinear(), emissive: new T.Color(0x1f6fc4).multiplyScalar(0.45), roughness: 0.3, metalness: 0.05, flatShading: true }); ice.envMapIntensity = 0.55;
+    const icicle = (len, r, back, sd) => { const front = len - back, mk = (h, tip, sd2) => { const geo = new T.ConeGeometry(r, h, 6, 1), q = geo.attributes.position;
+        for (let v = 0; v < q.count; v++) { const x = q.getX(v), y = q.getY(v), z = q.getZ(v), n = _hz(Math.round(x * 400) + sd2, Math.round(y * 400), Math.round(z * 400)); q.setXYZ(v, x * (0.8 + 0.4 * n), y, z * (0.8 + 0.4 * (1 - n))); }
+        geo.translate(0, h / 2, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, ice); if (!tip) m.rotation.z = PI; return m; };
+      const sp = new T.Group(); sp.add(mk(front, true, sd)); sp.add(mk(back, false, sd + 7)); return { sp, front, back }; };   // (its point along +y, its widest at the origin)
+    const place = (grp, list, near) => list.forEach(([nx, ny, d, sc, roll, aim], i) => { const ic = icicle(0.95 * sc, 0.085 * sc, 0.15 * sc, 3 + i * 11 + (near ? 50 : 0)), pos = cam.position.clone().addScaledVector(ray(nx, ny), d);
+      let dir = pos.clone().sub(rel).normalize(); if (aim && !Q.screen) dir.lerp(cam.position.clone().sub(pos).normalize(), aim).normalize();   // (along its way from the fan; aim: turned a little more toward the lens)
+      if (Q.screen) { const e = cam.matrixWorld.elements, rx = new T.Vector3(e[0], e[1], e[2]), uy = new T.Vector3(e[4], e[5], e[6]), bz = new T.Vector3(e[8], e[9], e[10]), a = Q.screen[0] + (aim || 0);   // (screen: its way set on the picture (an angle, 0 to the right, up positive) and how far it comes at the lens; aim: its own turn in the fan)
+        dir = rx.multiplyScalar(Math.cos(a)).add(uy.multiplyScalar(Math.sin(a))).add(bz.multiplyScalar(Q.screen[1])).normalize(); }
+      if (Q.flat) { const fw = new T.Vector3(); cam.getWorldDirection(fw); dir.addScaledVector(fw, -dir.dot(fw) * Q.flat).normalize(); }   // (flat: turned more across the picture, so its long point shows, not its end)
+      ic.sp.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), dir); ic.sp.rotateY(roll || 0); ic.sp.position.copy(pos); grp.add(ic.sp);
+      if (!near) iceAxes.push([pos.clone().addScaledVector(dir, ic.front), pos.clone().addScaledVector(dir, -ic.back), sc]); });
+    place(iceG, Q.icicles, false); place(iceNearG, Q.near || [], true);
+    iceG.visible = iceNearG.visible = false; scene.add(iceG); scene.add(iceNearG); }
   const grab = () => { renderer.render(scene, cam); const c = cv(); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(renderer.domElement, 0, 0, W, H); return c; };
   B.g.visible = false; ringG.visible = false; const floorCv = grab();
   B.g.visible = true; ringG.visible = true; glowUnder.visible = false;
@@ -942,6 +1071,7 @@ window.__card = async function (P, W, H, modelOnly) {
   let swirlCv = null, nearCv = null; if (P.swirl) {   // (the swirl where it shows: the follower drawn depth-only, hiding what is behind it; then the nearest crystals alone)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
     swirlG.visible = true; swirlCv = grab(); swirlG.visible = false; B.g.visible = false; nearG.visible = true; nearCv = grab(); nearG.visible = false; B.g.visible = true; cw.forEach(([x, v]) => { x.colorWrite = v; }); }
+  let iceCv = null, iceNearCv = null; if (P.volley) { B.g.visible = false; iceG.visible = true; iceCv = grab(); iceG.visible = false; if ((P.volley.near || []).length) { iceNearG.visible = true; iceNearCv = grab(); iceNearG.visible = false; } B.g.visible = true; }   // (the icicles alone: they fly in front of it)
   let ringCv = null, bodyCv = null; if (P.ring) {   // (the ring where it shows (the follower drawn depth-only, hiding what is behind it) and the follower alone, for their glows)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
     ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; }
@@ -956,6 +1086,7 @@ window.__card = async function (P, W, H, modelOnly) {
   const info = { heart: heart.map(Math.round), foot: foot.map(Math.round), horizonDeg: +(slope * 180 / PI).toFixed(1), horizonMid: Math.round(hzAt(W / 2)) };
   if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); return { png: c.toDataURL('image/png'), info }; }
   if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
+  if (P.style === 'ice') { const k0 = Math.max(...iceAxes.map(q => q[2])); return ICE_MAGE({ W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, B, heart, iceTips: iceAxes.map(([a, b, sc]) => [pr([a.x, a.y, a.z]), pr([b.x, b.y, b.z]), sc / k0]) }); }
   if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
   if (P.style === 'storm') return STORM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
