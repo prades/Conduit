@@ -45,6 +45,8 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 
 26. **Entering a battle, the camera shifts its angle** (the owner: "whenever you enter a battle, like maybe the camera shifts its angle"), as well as zooming in (§2.6), so a battle is framed apart from exploring; leaving it, the camera returns. *The angle itself (e.g. lower and more side-on, the squad on one side and the enemies on the other) is to be shown in the first playable step for the owner's choice. This is a battle-only move: it does not undo the owner's answer for exploring on the 3D test page (2026-11-16: the camera stays near the player and the player turns it, `STYLE-EVOLUTION.md` §6.6).*
 
+27. **Choosing an enemy that is far away:** the player moves towards it, the screen goes **black**, and the player is **teleported right in front of the creature, in the battle screen** (the owner: "If the player selects an enemy that's far away, the player should move towards it, and the game should black screen and teleport the player right in front of the creature in the new battle screen"). The squad comes with the player (§2.7). A near enemy, or one that attacks you, starts the battle where you stand, with no black screen (§2.5, §2.6, §2.26). *What counts as far, how long the walk and the black last, and how close in front of the creature the squad lands are numbers for the first playable step, for the owner to judge.*
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -92,7 +94,7 @@ None: nothing is built.
 6. **The numbers:** *(answered in part 2026-11-17: all attacks show, §2.18; recharge from today's wait times, §2.19, at 2 s a turn, §2.21)*. Still open: damage in a turn-based fight (today's numbers as they are, or rescaled), and how a fraction of a turn rounds.
 7. ~~**Enemies' turns**~~ *(answered 2026-11-17: one by one, a surprise, §2.15)*. Their order: fastest first (§2.20).
 9. ~~**A follower that goes down**~~ *(answered 2026-11-17: out until the battle ends, §2.22)*.
-11. **The battle camera's angle** (§2.26): shown in the first playable step.
+11. **The battle camera's angle** (§2.26) and **the black screen's numbers** (§2.27: what is far, the walk, the black, the landing): shown in the first playable step.
 10. **The end of a battle:** ~~the whole squad down~~ *(answered 2026-11-17: as the game does now, §2.23)*. Still open: what you get for winning (XP as now, anything else).
 8. ~~**The 2D game or the 3D one first**~~ *(answered 2026-11-17: in the 3D game, behind a switch, §2.24)*.
 
