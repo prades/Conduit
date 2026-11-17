@@ -1,6 +1,6 @@
 # Attack card art
 
-- **Status:** Designed (the owner's brief, 2026-11-17). No picture drawn or approved yet.
+- **Status:** Designed. The Mage style approved on its first sample (2026-11-17, §4); nothing in the game yet. The Brawler style not drawn yet.
 - **Owner:** User (creative direction); agent (drafts, rendering, baking).
 - **Last updated:** 2026-11-17
 - **Branch/build context:** written on `claude/card-artist`, at main's build `2026-11-15i`.
@@ -30,3 +30,4 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
 
 - **2026-11-17, "elementals" are the Mages.** Asked which followers get the charged, tilted-camera style, the owner chose **"Mages only"**. Passed over: Mages and Technicians. Brawlers keep the impact style; the Technicians' style is open.
 - **2026-11-17, the first piece is the Ember Hood (fire).** Asked which single card to draw first to check the style, the owner chose **"Ember Hood (fire)"**: the fire Mage casting, its hood blazing, flames in the front of the card. Passed over: Thunderhead (shocks), a Brawler impact, one of each. It is a style sample of an existing attack, not a new card.
+- **2026-11-17, the Mage style is approved.** Of the first sample (the Ember Hood casting HEXFIRE: `design/cards/attack/drafts/round1/embercowl_hexfire.png`, made by `design/cards/attack/bake_attack.js`; the camera rolled about 15.5°, the hood glowing, a plume of fire bursting in front on the left, sparks and lava drops past the lens, the fire energy card's lava cave behind), the owner: **"You've absolutely got it with the cards"**. The agent's, provisional, carried with it: the hood's heat held at 0.35 of its cast pose (at full heat its faces go one flat orange), the camera's roll, the plume on the left. Still open: the picture's weight (504 KB as a PNG, about 275 KB as the game's lossless WebP; a lighter format needs a change to the picture tool) and the attack card's own frame.
