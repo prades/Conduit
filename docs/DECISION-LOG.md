@@ -57,6 +57,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Supersedes:** "Real-time stays" (2026-11-11, `BATTLE-LOOK.md` §2.1) for battles; the real-time fight of the look-and-combat direction (2026-11-16, below). Exploring stays real time. The look of direction 1 (CRYSTAL LAB 3D) stands.
 - **Open:** `CARD-BATTLES.md` §11 (the player's part, Ultimates, targets, leaving, the numbers, the enemies' turns, 2D or 3D first).
 - **The battle screen** (the owner, the same day, of six mockups in `design/battle/round1/`: "2"): **SQUAD ROWS**: one column per follower with its cards under its portrait, the basic attack its own card at the far left, the enemies' next moves listed top right and shown over them (`CARD-BATTLES.md` §2.9).
+- **Three more rules** (the owner, the same day): **the cube commands only** (no cards of its own); **Ultimates are charged by the Ultimate meter** (not a long recharge); **a RUN card is always available** (`CARD-BATTLES.md` §2.10 to §2.12).
 
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 

@@ -22,6 +22,10 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 8. **The first step: pictures of the battle screen** (mockups to choose from) before anything is built. (Of three offered: "Pictures of the battle screen".)
 9. **The battle screen: SQUAD ROWS** (the owner, of six mockups in `design/battle/round1/`: "2"). The bottom band is split into **one column per follower**, each headed by its portrait, name, element colour and health, with **that follower's cards under it** (ready ones lit, recharging ones dimmed with their turns to go); the **basic attack** is its own always-ready card at the far left. **A "their turn next" list** at the top right gives each enemy's health and its next move (target and damage), and each enemy shows its next move over it in the scene too. Picking a card, then tapping an enemy, chooses the target (`2-pick.jpg`). The mockup's wording, numbers, ant move names and the basic attack's owner are the mockup maker's, not decisions.
 
+10. **The player (the cube) commands only:** it has no cards and no actions of its own in a battle; you play the squad's cards. (Of three offered: "Commands only", not its own cards, not a free action each turn.)
+11. **Ultimates are charged by the Ultimate meter**, as now: a follower's Ultimate card becomes playable when its meter is full, and empties when played. (Of two offered: "Charged by the meter", not a card with a long recharge.) *How the meter fills in a turn-based battle is open (§11).*
+12. **A RUN card is always available:** playing it uses your turn and leaves the battle. (Of three offered: "A RUN card", not no escape, not walking away.) *Its cost, if any, is open (§11).*
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -62,10 +66,10 @@ None: nothing is built.
 
 ## 11. Open questions
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.
-2. **The player's part in a battle:** does the player (the cube) have its own cards or actions (the gun, GUARD, STUN DIVE, the repair kit), or only command the squad?
-3. **Ultimates:** a card like the others (with a long recharge), or charged by the Ultimate meter as now?
+2. ~~**The player's part in a battle**~~ *(answered 2026-11-17: commands only, §2.10)*.
+3. ~~**Ultimates**~~ *(answered 2026-11-17: charged by the meter, §2.11)*. Still open: how the meter fills turn by turn.
 4. **Targets:** with several enemies, how a card's target is chosen (tap the enemy after the card, or the card picks).
-5. **Leaving a battle:** can you run, and at what cost?
+5. ~~**Leaving a battle**~~ *(answered 2026-11-17: a RUN card, §2.12)*. Still open: its cost, if any.
 6. **The numbers:** each card's recharge in turns, damage, how many cards show at once (all ready attacks, or a hand of a few).
 7. **Enemies' turns:** all at once or one by one; their order; how they show what they will do.
 8. **The 2D game or the 3D one first:** the game is going 3D (`VIEW-3D.md`); the battle could be built in either.
