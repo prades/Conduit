@@ -124,7 +124,7 @@ function isNeutralBystander(a) {
 // A hit from something (a predator's bite) knocks you a step away from it.
 function hurtPlayer(amount, shakeAmt, source) {
     if (!(amount > 0)) return false;
-    if (typeof cardBattleHit === "function" && typeof player !== "undefined" && cardBattleHit(player, source)) return false;   // CARD BATTLES: a creature's blow on you starts a battle and does not land (js/cardbattle.js §2.31)
+    if (typeof cardBattleHit === "function" && typeof player !== "undefined" && cardBattleHit(player, source)) return false;   // CARD BATTLES: a creature's blow on you starts a battle and does not land (js/cardbattle.js §2.35)
     if (player.invuln > 0) return false;
     health = Math.max(0, health - 1);
     player.invuln = PLAYER_HIT_GRACE; player.lastHitAt = typeof frame !== "undefined" ? frame : 0;   // (lastHitAt: a build or repair you are at is not cancelled by the step a hit knocks you: js/stations.js facilityRelayTick)
@@ -155,7 +155,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 // sees, chases and attacks, but each hit it deals MISSES with this chance (a bite, a shot, an ability's hit, each on its own roll; a reflected hit is not its own and cannot miss). A MISS floats over the target.
 const BLIND_MISS = 0.5;
 function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {
-    if (typeof cardBattleHit === "function" && cardBattleHit(target, source)) return;   // CARD BATTLES: a creature hitting you or yours starts a battle where you stand, and that blow does not land (js/cardbattle.js §2.31)   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
+    if (typeof cardBattleHit === "function" && cardBattleHit(target, source)) return;   // CARD BATTLES: a creature hitting you or yours starts a battle where you stand, and that blow does not land (js/cardbattle.js §2.35)   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
     // A recruit walking to the Crystal takes NOTHING, from anyone or anything.

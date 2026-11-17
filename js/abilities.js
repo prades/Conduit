@@ -341,7 +341,7 @@ function abilityTick(pred) {
 
     // ── HOLDING STILL in a card battle (js/cardbattle.js cardBattleHolds: everyone in it but the one whose turn it is): it charges and starts nothing ──
     if (typeof cardBattleHolds === 'function' && cardBattleHolds(pred)) return false;
-    if (pred.isClone && typeof cardBattleNoFight === 'function' && cardBattleNoFight(pred)) return false;   // (and your squad's clone out of a battle: §2.31, either a battle or none)
+    if (pred.isClone && typeof cardBattleNoFight === 'function' && cardBattleNoFight(pred)) return false;   // (and your squad's clone out of a battle: §2.35, either a battle or none)
 
     // ── GLITCHED (an equip card's Static Lock, js/cards.js): a wind-up it is in fails, and it cannot start one, until the glitch is over ──
     if (pred.glitched > 0 && pred.abilityPhase === 'winding') { pred.abilityPhase = 'ready'; pred.abilityTimer = 0; return false; }

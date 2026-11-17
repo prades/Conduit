@@ -27,13 +27,19 @@ const CARD_BATTLE = {
     blackIn: 14, blackHold: 8, blackOut: 22,   // frames: the black coming, held (the move is made in it), going
     land: 2.2,                  // tiles in front of the creature where you land
     easeIn: 40, easeOut: 36,    // frames: the camera to the battle and back
-    pitch: 17,                  // degrees down (the game's own camera is 30)
+    pitch: 50,                  // degrees down (the game's own camera is 30): nearly top down, the tiles nearly square to lay the cards on (the owner, 2026-11-17: "still top down so I can lay the cards down on the almost completed tiles")
     yaw: 0.6,                   // radians turned to the side
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
     turnSec: 2,                 // seconds of today's wait times a turn (§2.21, the owner's: "2 seconds = 1 turn"); a part of a turn counts as a whole one (the agent's, open: §11.6)
     every: 15,                  // frames between two refreshes of the battle screen (4 a second)
+    lineGap: 2,                 // tiles from the middle of the line to the first of each side (lined up: the agent's)
+    slide: 0.09,                // tiles a frame, easing to a square
+    skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
+    fit: 0.88, zoomMin: 0.8,
+    raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
+    tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
     foeMax: 210,                // frames: an enemy's turn (3.5 s); it ends sooner once its blow has landed
@@ -59,7 +65,11 @@ function _cbFoeOk(a) { return !!a && !a.dead && !a.isClone && a.team !== "green"
 // THE BATTLE'S OWN SIDE: you, your squad's members and the Mutator's clone. Followers holding a room (HOLD) are not in it: the rest of the world goes on in real time while you battle, and they
 // hold the fort (§2.28, the owner: "Both at once")
 function _cbMine(a) { if (!a) return false; if (typeof player !== "undefined" && a === player) return true; if (typeof partyIsMember === "function" && partyIsMember(a)) return true; const c = typeof partyClone === "function" ? partyClone() : null; return !!c && a === c; }
-function _cbSquad() { const m = typeof partyMembers === "function" ? partyMembers().filter(f => f && !f.dead) : []; const c = typeof partyClone === "function" ? partyClone() : null; if (c && !c.dead) m.push(c); return m; }
+function _cbSquadNow() { const m = typeof partyMembers === "function" ? partyMembers().filter(f => f && !f.dead) : []; const c = typeof partyClone === "function" ? partyClone() : null; if (c && !c.dead) m.push(c); return m; }
+// THE BATTLE'S SQUAD (the owner, 2026-11-17: "when all my creatures are destroyed, the battle concludes"): the members it began with. One that goes down is out of it until it ends (§2.22), even
+// if the game brings it back meanwhile (in the Crystal Chamber the fallen rejoin the squad at once: js/party.js partyFallenTick); none left standing, the battle is over (§2.23).
+function _cbAlive(f) { return !!f && !f.dead && f.health > 0 && !_cb.out.has(f); }
+function _cbSquad() { return _cb.phase !== "off" && _cb.squad ? _cb.squad.filter(_cbAlive) : _cbSquadNow(); }
 // the creatures in a battle with `foe`: it, and the others round it, nearest first
 function _cbGroup(foe) {
     const out = [foe], R = CARD_BATTLE.group, near = [], room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(foe.x, foe.y) : null;
@@ -68,6 +78,7 @@ function _cbGroup(foe) {
     return out;
 }
 function _cbCentre() {
+    if (_cb.lay) { _cb.cx = _cb.lay.mx; _cb.cy = _cb.lay.my; return; }   // (lined up: the camera on the middle of the line)
     const live = _cb.foes.filter(_cbFoeOk); let sx = 0, sy = 0; for (const a of live) { sx += a.x; sy += a.y; }
     if (!live.length || typeof player === "undefined") return;
     const ex = sx / live.length, ey = sy / live.length; _cb.cx = (ex + player.x) / 2; _cb.cy = (ey + player.y) / 2;
@@ -82,6 +93,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
+    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false;
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -107,7 +119,7 @@ function cardBattleHit(target, source) {
         else if (T.who === "foe" && src === T.a && _cbMine(target) && !T.hit) T.hit = f0;
         return false;
     }
-    // EITHER A BATTLE OR NONE (§2.31, the owner: "no intermediary fighting with my squad. It's either battle or no battle"): the blow that starts a battle does not land (true: the caller,
+    // EITHER A BATTLE OR NONE (§2.35, the owner: "no intermediary fighting with my squad. It's either battle or no battle"): the blow that starts a battle does not land (true: the caller,
     // js/helpers.js applyDamage and hurtPlayer, lets it fall), nor does the rest of that same blow this frame (a slam's other victims)
     if (!cardBattleOn() || !target || !source) return false;
     const src = typeof predatorSource === "function" ? predatorSource(source) : source;
@@ -121,9 +133,9 @@ function cardBattleHit(target, source) {
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
 function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
-function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return !cardBattleOn();   /* (out of a battle your squad and your gun go for nothing: §2.31) */ if (_cb.foes.indexOf(a) < 0) return false;
+function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return !cardBattleOn();   /* (out of a battle your squad and your gun go for nothing: §2.35) */ if (_cb.foes.indexOf(a) < 0) return false;
     const T = _cb.turn; if (!T) return true; return T.who === "act" && who === T.f && (a === T.target || T.kind !== "basic"); }   // (the turns: only the one doing its card, at its target; the gun holds its fire, §2.10)   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
-// EITHER A BATTLE OR NONE (§2.31; the owner, 2026-11-17: "it gets really confusing when I am close to an enemy, because my followers will start attacking the creature, or there'll be some
+// EITHER A BATTLE OR NONE (§2.35; the owner, 2026-11-17: "it gets really confusing when I am close to an enemy, because my followers will start attacking the creature, or there'll be some
 // sort of combat that's not based in the combat or card-based turn system. So make it to where there's no intermediary fighting with my squad. It's either battle or no battle"): with the
 // switch on and no battle, you and your squad fight nothing. Your squad picks no target (cardBattleMayTarget) and fires no second attack (js/evolution.js) or Ultimate (js/elements.js), the
 // Mutator's clone no special (js/abilities.js), your gun holds its fire (js/input.js, js/targeting.js); a creature's blow on you or them starts the battle and does not land (cardBattleHit), and
@@ -177,7 +189,7 @@ function cardBattleTick() {
         }
         if (_cb.phase === "walk" && el >= CARD_BATTLE.walk) { _cb.phase = "black"; _cb.t = f; }
         else if (_cb.phase === "black") {
-            if (el === CARD_BATTLE.blackIn) _cbLand();
+            if (el === CARD_BATTLE.blackIn) { if (!_cb.snap) { _cbLand(); _cbLayout(); } _cbSnap(); }   // (a far one: you land, and in the same black everyone is on its square in its room)
             if (el >= CARD_BATTLE.blackIn + CARD_BATTLE.blackHold) { _cb.phase = "on"; _cb.t = f; }
         }
         if (_cb.phase === "on" && f % 10 === 0) { _cbKeepAtIt(); _cbCentre(); }
@@ -214,7 +226,7 @@ function _cbKeepAtIt() {
     if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
-    _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0;
+    _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null;
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12, §2.16): on your turn it uses the turn: each enemy gets its last hit (fastest first), then you are out. Before the turns begin (the walk, the black), it ends the battle as it is.
@@ -230,7 +242,91 @@ function cardBattleRun() {
 // (its speed), alone moves for a window and goes for one of yours (its prey, else the nearest), until its blow lands or `foeMax`. Then your turn again: each second attack played counts down a turn
 // (its RECHARGE, from its wait time). RUN uses your turn: the enemies get their last hit, then you are out. The cube commands only (§2.10): your gun holds its fire in a battle.
 // _cb.turn: null out of the turns; { who: "you" }; { who: "act", f, kind, id, target, t0, hit, fired, saved }; { who: "foe", a, t0, hit, queue, run }. _cb.cd: follower → { move id: turns to go }.
-_cb.turn = null; _cb.cd = new Map(); _cb.round = 0;
+_cb.turn = null; _cb.cd = new Map(); _cb.round = 0; _cb.squad = null; _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null;
+// ── LINED UP ON SQUARES, SIDE ON (the owner, 2026-11-17: "the camera should rotate [...] to a place where there's a clear divide, where it looks like everything takes place on a horizontal plane.
+// Things aren't stacked on top of each other. Also, the creatures need to line up on squares"): when the turns begin, the fight is laid out along one of the floor's two directions (the one nearest
+// from you to the enemies that has room): your squad on one side of the middle, the enemies on the other, each on its own tile, one tile further out than the one before and a step to the side
+// (so no two stand in the same column of the picture), you behind your squad; everyone eases to its square and faces the other side, and goes back to it after its turn. The camera turns to look
+// across the line (cardBattleCam `dir`), so your side is on one half of the screen and theirs on the other. Numbers the agent's. ──
+function _cbLayout() {
+    const foes = _cb.foes.filter(_cbFoeOk), squad = _cbSquad(); _cb.slots = new Map(); _cb.lay = null;
+    if (!foes.length || typeof player === "undefined" || typeof _fpNearestCellOpen !== "function") return;
+    let fx = 0, fy = 0; for (const a of foes) { fx += a.x; fy += a.y; } fx /= foes.length; fy /= foes.length;
+    const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(fx, fy) : null, wx = fx - player.x, wy = fy - player.y, L = Math.hypot(wx, wy) || 1;
+    // ONE ROOM (the owner, 2026-11-17: "if a battle would take place near the doorway, make the battle happen in one room rather than take place in separate rooms"): the battle's room is its
+    // enemies' (the battle takes in only the creatures of that room, _cbGroup); the middle of the line and every square are in it, and any of yours outside it is brought in (cardBattleTick, the black)
+    let mc = _fpNearestCellOpen((fx + player.x) / 2, (fy + player.y) / 2);
+    if (room && (!mc || facilityRoomIdAt(mc[0], mc[1]) !== room) && typeof partyRoomCells === "function") { let bd = Infinity; for (const c of partyRoomCells(room)) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd) { bd = d; mc = c; } } }   // (a room's cells are its walkable tiles: js/party.js partyRoomCells)
+    if (!mc) return;
+    const cx = mc[0], cy = mc[1];   // (the middle on a tile, so every square is a tile's middle)
+    let best = null;
+    for (const gap of [CARD_BATTLE.lineGap, 1]) {   // (a room too narrow for the line: the two sides closer to the middle)
+    if (best && best.cost < 99) break;
+    for (const [ux, uy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const vx = -uy, vy = ux, want = [], used = new Set(), cols = new Set(), out = [];
+        squad.forEach((f, i) => want.push([f, -1, gap + i, i === 1 ? 1 : i === 2 ? -1 : 0]));
+        want.push([player, -1, gap + squad.length, 0]);
+        foes.forEach((a, i) => want.push([a, 1, gap + i, i === 1 ? -1 : i === 2 ? 1 : 0]));
+        let cost = 0;
+        for (const [a, side, du0, dv0] of want) {
+            let got = null;
+            for (let t = 0; t < 5 && !got; t++) for (const dv of [dv0, dv0 + 1, dv0 - 1, dv0 + 2, dv0 - 2]) {   // (a square in a column of its own: outwards, then to the sides)
+                const du = side * (du0 + t), ix = cx + ux * du + vx * dv, iy = cy + uy * du + vy * dv, c = _fpNearestCellOpen(ix, iy);
+                if (!c || Math.hypot(c[0] - ix, c[1] - iy) > 0.35 || used.has(c[0] + "," + c[1]) || cols.has(du)) continue;
+                if (room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(c[0], c[1]) !== room) continue;
+                got = [c, du, t + Math.abs(dv - dv0)]; break;
+            }
+            if (!got) { cost += 99; continue; }
+            used.add(got[0][0] + "," + got[0][1]); cols.add(got[1]); cost += got[2]; out.push([a, got[0][0], got[0][1]]);
+        }
+        cost += (1 - (ux * wx + uy * wy) / L) * 2;   // (the way you face the enemies, other things equal)
+        if (!best || cost < best.cost) best = { cost, ux, uy, out, gap };
+    }
+    }
+    if (!best) return;
+    for (const [a, x, y] of best.out) _cb.slots.set(a, { x, y });
+    // the room too small for the whole line: the rest on the nearest free tiles of the room (one each)
+    if (room && typeof partyRoomCells === "function") {
+        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]));
+        for (const a of all) { if (_cb.slots.has(a)) continue; let bi = -1, bd = Infinity; free.forEach((c, i) => { const d = Math.hypot(c[0] - cx, c[1] - cy); if (d < bd) { bd = d; bi = i; } }); if (bi < 0) break; const c = free.splice(bi, 1)[0]; _cb.slots.set(a, { x: c[0], y: c[1] }); }
+    }
+    const gap = best.gap; _cb.lay = { room, ux: best.ux, uy: best.uy, mx: cx, my: cy, sx: cx - best.ux * gap, sy: cy - best.uy * gap, ex: cx + best.ux * gap, ey: cy + best.uy * gap, dir: undefined };
+    // the camera's zoom: near, but never so near that the line runs off the screen (its span in tiles and a tile on each end, in `fit` of the screen's width)
+    { let lo = Infinity, hi = -Infinity; for (const [, x, y] of best.out) { const u = (x - cx) * best.ux + (y - cy) * best.uy; lo = Math.min(lo, u); hi = Math.max(hi, u); }
+      const tpx = (typeof TILE_W !== "undefined" ? TILE_W : 64) * Math.SQRT2, W = typeof canvas !== "undefined" && canvas.width ? canvas.width : 1180;
+      _cb.lay.zoom = Math.max(CARD_BATTLE.zoomMin, Math.min(CARD_BATTLE.zoom, CARD_BATTLE.fit * W / ((hi - lo + 2) * tpx))); }
+    // the camera's side of the line: the one with less in the way (a server rack, a wall) between it and the fighters; even, the nearer turn (view3d/gameview.js)
+    if (typeof facilitySolidAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F) {
+        const F = _fp.F, score = sgn => { const px = -best.uy * sgn, py = best.ux * sgn; let n = 0; for (const [, x, y] of best.out) for (let t = 1; t <= 4; t++) { const qx = x + px * t, qy = y + py * t; if (facilitySolidAt(qx, qy, F) || (typeof facilityRoomAt === "function" && !facilityRoomAt(qx, qy, F))) n += 5 - t; } return n; };
+        const a = score(1), b = score(-1); if (a !== b) { const sg = a < b ? 1 : -1; _cb.lay.dir = Math.atan2(best.ux * sg, -best.uy * sg); }
+    }
+    _cbCentre();
+}
+// is any of yours (you, a member) outside the battle's room?
+function _cbOutside() {
+    const L = _cb.lay; if (!L || !L.room || typeof facilityRoomIdAt !== "function") return false;
+    for (const a of _cb.slots.keys()) if (a && (a === player || _cbMine(a)) && facilityRoomIdAt(a.x, a.y) !== L.room) return true;
+    return false;
+}
+// in the black: everyone on its square at once (no one walks through a wall to get there)
+function _cbSnap() {
+    _cb.snap = false;
+    for (const [a, s] of _cb.slots) { if (!a || a.dead) continue; a.x = s.x; a.y = s.y; if (Number.isFinite(a.visualX)) { a.visualX = s.x; a.visualY = s.y; } if (a === player) { player.targetX = s.x; player.targetY = s.y; player.fpPath = null; } else a._fpPath = null; }
+}
+// each frame of the turns: everyone not in its own turn eases to its square and faces the other side
+function _cbSlide() {
+    const T = _cb.turn, L = _cb.lay; if (!L) return;
+    const sp = CARD_BATTLE.slide;
+    for (const [a, s] of _cb.slots) {
+        if (!a || a.dead || (T && ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)))) continue;
+        const dx = s.x - a.x, dy = s.y - a.y, d = Math.hypot(dx, dy);
+        if (d > 1e-3) { const k = Math.min(1, sp / d); a.x += dx * k; a.y += dy * k; }
+        if (a === player) { player.targetX = s.x; player.targetY = s.y; player.fpPath = null; if (Number.isFinite(player.visualX)) { player.visualX = player.x; player.visualY = player.y; } continue; }
+        if (Number.isFinite(a.visualX)) { a.visualX = a.x; a.visualY = a.y; }
+        const mine = _cb.foes.indexOf(a) < 0, ox = mine ? L.ex : L.sx, oy = mine ? L.ey : L.sy;
+        if (d < 0.6 && typeof faceToward === "function") faceToward(a, ox, oy, 0.3);
+    }
+}
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }
 function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run } : null; }
 // does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is)
@@ -292,7 +388,12 @@ function _cbNextFoe() {
 function _cbTurnTick() {
     if (_cb.phase !== "on") return;
     const T = _cb.turn, f0 = _cbF(), C = CARD_BATTLE;
-    if (!T) { _cbYourTurn(); _cbRefresh(); return; }
+    for (const f of (_cb.squad || [])) if (f && (f.dead || !(f.health > 0))) _cb.out.add(f);   // (down once: out of this battle)
+    if (!T) {
+        if (!_cb.lay) { _cbLayout(); if (_cbOutside()) { _cb.phase = "black"; _cb.t = f0; _cb.snap = true; return; } }   // (one of yours in another room: the black, and all on their squares in it)
+        _cbYourTurn(); _cbRefresh(); return;
+    }
+    _cbSlide();
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0;
         if (T.kind === "move" && f._altLive) T.fired = true;
@@ -305,10 +406,24 @@ function _cbTurnTick() {
     }
 }
 function _cbRefresh() { if (_cbEls) _cbEls.at = -1e9; }
+// the camera's direction lined up: across the line, from the side chosen (L.dir) or the nearer turn, turned `skew` towards your side (the side the line's -u points to)
+function _cbCamDir(L) {
+    const base = L.dir !== undefined ? L.dir : Math.atan2(L.ux, -L.uy), k = CARD_BATTLE.skew * Math.PI / 180;
+    for (const d of [base + k, base - k]) if (Math.cos(d) * -L.ux + Math.sin(d) * -L.uy > 0) return d;
+    return base;
+}
 // THE CAMERA, for the 3D view (view3d/gameview.js): null out of a battle; else how far in (k, eased), where it looks, how low, how turned, how near
 function cardBattleCam() {
     if (_cb.k <= 0.0001) return null;
-    return { k: _cbSmooth(_cb.k), x: _cb.cx, y: _cb.cy, pitch: CARD_BATTLE.pitch * Math.PI / 180, yaw: CARD_BATTLE.yaw, zoom: CARD_BATTLE.zoom };
+    const L = _cb.lay;   // (lined up: it looks across the line, from one side or the other, whichever is the nearer turn: view3d/gameview.js)
+    let x = _cb.cx, y = _cb.cy;
+    if (L) {   // (the fight in the middle of the screen above the cards: the camera's aim moved towards it by half the band's height, on the floor)
+        const dir = _cbCamDir(L), z = L.zoom || CARD_BATTLE.zoom;
+        const band = _cbEls && _cbEls.band && _cbEls.band.getBoundingClientRect ? _cbEls.band.getBoundingClientRect().height : 250, r = typeof canvas !== "undefined" && canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
+        const px = band / 2 * (r && r.width ? canvas.width / r.width : 1), t = px / ((typeof TILE_W !== "undefined" ? TILE_W : 60) * Math.SQRT2 * z * Math.sin(CARD_BATTLE.pitch * Math.PI / 180));
+        if (Number.isFinite(t)) { x += Math.cos(dir) * t * CARD_BATTLE.raise; y += Math.sin(dir) * t * CARD_BATTLE.raise; }
+    }
+    return { k: _cbSmooth(_cb.k), x, y, pitch: CARD_BATTLE.pitch * Math.PI / 180, yaw: CARD_BATTLE.yaw, zoom: L && L.zoom ? L.zoom : CARD_BATTLE.zoom, dir: L ? _cbCamDir(L) : undefined, side: !!L && L.dir !== undefined };
 }
 // THE EDGES (js/game.js render, after the battle view's): the 3D picture's edges blurred (HIGH) and darkened, at the battle's strength. Built as the battle view builds its own (js/battleview.js:
 // a small copy scaled up, kept towards the edges by a ring), from the 3D view's canvas: drawn in the same frame the view drew it, so its picture is still there to copy.
@@ -393,10 +508,10 @@ function _cbCardHTML(c) {
 // fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
 function cardBattleScreen() {
     const E = _cbEls; if (!E || !E.scr) return;
-    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), squad = (typeof partyMembers === "function" ? partyMembers() : []).slice(), clone = typeof partyClone === "function" ? partyClone() : null; if (clone) squad.push(clone);
+    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), squad = _cb.squad ? _cb.squad.slice() : _cbSquadNow();
     const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
-    const cols = squad.map(f => { const down = !!f.dead || !(f.health > 0), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
+    const cols = squad.map(f => { const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
         const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
@@ -420,14 +535,24 @@ function _cbDragStart(ev) {
     const card = ev.target && ev.target.closest ? ev.target.closest(".cb-card") : null, col = card && card.closest(".cb-col"), f = col && col._f, T = _cb.turn;
     if (!card || !f || !T || T.who !== "you" || !card.classList.contains("ready")) return;
     ev.preventDefault(); ev.stopPropagation(); _cbDragCancel();
-    const r = card.getBoundingClientRect(), g = card.cloneNode(true); g.classList.add("cb-ghost");
+    // (the owner, 2026-11-17: "the cards that get dragged need to get smaller and tile sized": picked up, it shrinks to a floor tile as the picture shows one, under the finger)
+    const r = card.getBoundingClientRect(), g = card.cloneNode(true), t = _cbTilePx(), w = t, h = Math.round(t * 1.3); g.classList.add("cb-ghost");
     g.style.cssText = "position:fixed;left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px;z-index:70;pointer-events:none;--k:" + (card.style.getPropertyValue ? card.style.getPropertyValue("--k") : "");
+    const shrink = () => { const D = _cbDrag; if (!D || D.g !== g) return; g.style.left = (ev.clientX - w / 2) + "px"; g.style.top = (ev.clientY - h / 2) + "px"; g.style.width = w + "px"; g.style.height = h + "px"; };
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(shrink); else setTimeout(shrink, 0);   // (it is seen shrinking from the card to a tile)
     (_cbEls.scr || document.body).appendChild(g); card.classList.add("lifted");   // (in the battle screen, so it keeps the card's look)
-    _cbDrag = { f, kind: card.dataset.kind, id: card.dataset.id || null, g, card, dx: ev.clientX - r.left, dy: ev.clientY - r.top, foe: null };
+    _cbDrag = { f, kind: card.dataset.kind, id: card.dataset.id || null, g, card, dx: w / 2, dy: h / 2, foe: null };
     _cbDrag.pid = ev.pointerId;
     if (typeof window !== "undefined" && window.addEventListener) { window.addEventListener("pointermove", _cbDragMove, true); window.addEventListener("pointerup", _cbDragEnd, true); window.addEventListener("pointercancel", _cbDragCancel, true); }
 }
 // the enemy of the battle under a point of the screen: where the 3D view draws it (its battle camera is lower and turned, so the 2D's own reckoning would miss), else the 2D's (findEnemyAtScreen)
+// a floor tile's width on the page, as the 3D view draws one at the middle of the fight (screen points; 56 without the view)
+function _cbTilePx() {
+    const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenOf === "function" ? VIEW3D.view : null;
+    if (!V || typeof canvas === "undefined" || !canvas.getBoundingClientRect) return CARD_BATTLE.tileCard;
+    try { const r = canvas.getBoundingClientRect(), k = r.width / (canvas.width || 1), a = V.screenOf(_cb.cx, _cb.cy, 0), b = V.screenOf(_cb.cx + 1, _cb.cy, 0), c = V.screenOf(_cb.cx, _cb.cy + 1, 0);
+        const px = Math.max(Math.hypot(b[0] - a[0], b[1] - a[1]), Math.hypot(c[0] - a[0], c[1] - a[1])) * k; return Number.isFinite(px) ? Math.max(44, Math.min(72, Math.round(px * 0.8))) : CARD_BATTLE.tileCard; } catch (e) { return CARD_BATTLE.tileCard; }
+}
 function _cbDragFoe(ev) {
     if (typeof toCanvas !== "function") return null;
     const p = toCanvas(ev.clientX, ev.clientY), V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenOf === "function" ? VIEW3D.view : null;
@@ -443,7 +568,7 @@ function _cbDragFoe(ev) {
 function _cbOverBand(ev) { const b = _cbEls && _cbEls.band && _cbEls.band.getBoundingClientRect ? _cbEls.band.getBoundingClientRect() : null; return !!b && ev.clientY >= b.top; }
 function _cbDragMove(ev) {
     const D = _cbDrag; if (!D || (D.pid !== undefined && ev.pointerId !== D.pid)) return; ev.preventDefault(); ev.stopPropagation();
-    D.g.style.left = (ev.clientX - D.dx) + "px"; D.g.style.top = (ev.clientY - D.dy) + "px";
+    D.g.style.left = (ev.clientX - D.dx) + "px"; D.g.style.top = (ev.clientY - D.dy) + "px"; D.g.style.width = (D.dx * 2) + "px"; D.g.style.height = (D.dy * 2) + "px";
     D.foe = _cbOverBand(ev) ? null : _cbDragFoe(ev); D.g.classList.toggle("on", !!D.foe);
 }
 function _cbDragEnd(ev) {
@@ -454,4 +579,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
