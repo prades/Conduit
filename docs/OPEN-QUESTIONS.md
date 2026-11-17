@@ -900,3 +900,10 @@ Examples shown (3D studies from `design/creatures/electric_breed_examples.js`, t
 
 ## Card battles (2026-11-17, `CARD-BATTLES.md` §11)
 Designed by the owner the same day (§2.1 to §2.25: each follower's own basic attack card; turn-based, one card a turn from the whole squad, SQUAD ROWS, drag a card onto its target, the cube commands only, Ultimates by the meter, RUN with a last hit, enemies one by one and fastest first, as a surprise; built first in the 3D game behind a switch). Still open: damage in a turn-based fight (as now, or rescaled); how a fraction of a turn rounds; playing a move with no single target; what winning gives.
+
+## The wild ants' own specials (built in `2026-11-17r`; `COMBAT.md` §9)
+1. **The numbers** (the agent's): charge times, LEAP STRIKE from 2 to 4 tiles and landing 0.75 short, GROUND SLAM 1.3 to start and 1.6 across, a bite's worth and 0.9 of one, the backup a level under its caller. To judge in play.
+2. **Does a boss's brood call for backup?** Not now (the agent's choice: the Ant Queen's waves are tuned as they are).
+3. **In a card battle**, should a scout's backup join the battle? Today it comes up outside it and leaves you and your squad alone (`CARD-BATTLES.md` §2.6): for the card battles' work.
+4. **Your clones** keep their species' specials (an ant scout clone still leaps, an ant striker or tank clone still has MANDIBLE FRENZY): should an ant clone of yours get the new ones instead?
+

@@ -45,7 +45,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dealt > 5, 'a bite is not the plain 1.25 swing any more: ' + r.dealt);
     });
     check('ONE PREDATOR AGAINST ONE CLONE (the brief\'s test): a fresh ant scout clone beats an ant scout of its own level, several bites each way, and keeps most of its health', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const c = makeClone('ant', 'scout', player.x + 1, player.y + 0.5, 'hunt'); const e = __creature('ant', 'scout', c.level, 3, 0.5);
+        const r = J(`(function(){ __clear(); __class('mutator'); const c = makeClone('ant', 'scout', player.x + 1, player.y + 0.5, 'hunt'); const e = __creature('ant', 'scout', c.level, 3, 0.5); e.calledBackup = true;   // (one against one: its CALL FOR BACKUP spent, js/abilities.js)
             let cb = 0, eb = 0; const _ad = applyDamage; applyDamage = function (t, a, s, el, rf) { const h = t.health; _ad(t, a, s, el, rf); if (t.health < h) { if (t === e) cb++; else if (t === c) eb++; } };
             let n = 0; for (; n < 1500 && !c.dead && !e.dead; n++) render(); applyDamage = _ad; return { cloneDead: !!c.dead, enemyDead: !!e.dead, cb, eb, n, left: c.health / c.maxHealth }; })()`);
         same(r.enemyDead, true, 'the creature still stands after ' + r.n + ' frames'); same(r.cloneDead, false, 'the clone fell');
