@@ -432,6 +432,39 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.carried > 2, 'the carry was held back: ' + r.carried); same(r.moved, true, 'carried: a new square'); ok(r.near < 1.5, 'its new square far from where it was carried: ' + r.near);
     });
 
+    group('THE FRONT LINE (§2.40; the owner: "the predators typically attack who\'s in front of them ... we can have characters absorb damage in front lines")');
+    check('lined up in the formation\'s order, whatever the squad\'s: a Brawler on the front square, then a technician, then a Mage; you behind them all', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [m, t, b] = followers; m.role = 'sniper'; t.role = 'camper'; b.role = 'brawler'; const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1);
+            const L = _cb.lay, along = u => { const s = _cbSq(u); return (s[0] - L.mx) * L.ux + (s[1] - L.my) * L.uy; };
+            return { squad: _cb.squad.map(f => f.role).join(), b: along(b), t: along(t), m: along(m), you: along(player) }; })()`);
+        same(r.squad, 'sniper,camper,brawler', 'the setup: the squad\'s own order, the Mage first');
+        ok(r.b > r.t && r.t > r.m && r.m > r.you, 'from the middle of the line: the Brawler ' + r.b + ', the technician ' + r.t + ', the Mage ' + r.m + ', you ' + r.you);
+    });
+    check('a creature goes for the one in front of it, not the one it was after (the Mage that shot it, behind): the Brawler in front, far off or next to it; next to it, its turn is the bite', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [m, b] = followers; m.role = 'sniper'; b.role = 'brawler'; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            a.currentTarget = m; a.lastAttacker = m;   /* (as if the Mage had shot it) */
+            const o = { far: _cbFront(a, [m, b, player]) === b }; __nextTo(b, a); o.near = _cbFront(a, [m, b, player]) === b;
+            _cbFoesTurn(false); const T = cardBattleTurnInfo(); o.turn = !!T && T.actor === a; o.walk = T ? T.walk : -1; o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === m ? 'the Mage' : 'another'; return o; })()`);
+        same(JSON.stringify([r.far, r.near, r.turn, r.walk, r.prey]), '[true,true,true,0,"the Brawler"]', 'in front far off, in front next to it, its turn, no walk, its prey');
+    });
+    check('one of yours in the way is a wall to it: with the Brawler in front and the Mage behind, its walk goes for the Brawler', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [m, b] = followers; m.role = 'sniper'; b.role = 'brawler'; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            a.currentTarget = m; const d0 = Math.hypot(_cbSq(a)[0] - _cbSq(b)[0], _cbSq(a)[1] - _cbSq(b)[1]); _cbFoesTurn(false); const T = cardBattleTurnInfo(), prey = a.currentTarget === b ? 'the Brawler' : 'the Mage';
+            for (let i = 0; i < 300 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === a; i++) { frame++; cardBattleTick(); }
+            return { walk: T ? T.walk : 0, prey, d0: +d0.toFixed(2), d1: +Math.hypot(_cbSq(a)[0] - _cbSq(b)[0], _cbSq(a)[1] - _cbSq(b)[1]).toFixed(2) }; })()`);
+        same(r.prey, 'the Brawler', 'its prey'); ok(r.walk >= 1 && r.d1 < r.d0, 'it walked ' + r.walk + ' towards the Brawler (' + r.d0 + ' to ' + r.d1 + ')');
+    });
+    check('a pounce still goes over the front line (the owner: "unless they have some sort of ranged attack or pounce attack"): a striker with its LEAP STRIKE ready, a Brawler next to it and a Mage 3 tiles off, leaps at the Mage', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [m, b] = followers; m.role = 'sniper'; b.role = 'brawler'; m.health = m.maxHealth = b.health = b.maxHealth = 5000;
+            const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
+            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
+            if (!c) return { none: true }; _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(b, st);
+            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; const front = _cbFront(st, [m, b, player]) === b;
+            _cbFoesTurn(false); let picked = null, flew = false; for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (st.abilityPhase === 'winding' && !picked) picked = st.strikeTarget === m ? 'the Mage' : st.strikeTarget === b ? 'the Brawler' : 'another'; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
+            return { front, picked, flew }; })()`);
+        same(!!r.none, false, 'no square three tiles off in sight to try'); same(JSON.stringify([r.front, r.picked, r.flew]), '[true,"the Mage",true]', 'the Brawler in front of it; it leapt, at the Mage');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

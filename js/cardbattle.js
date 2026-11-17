@@ -254,7 +254,7 @@ _cb.turn = null; _cb.cd = new Map(); _cb.round = 0; _cb.squad = null; _cb.out = 
 // (so no two stand in the same column of the picture), you behind your squad; everyone eases to its square and faces the other side, and goes back to it after its turn. The camera turns to look
 // across the line (cardBattleCam `dir`), so your side is on one half of the screen and theirs on the other. Numbers the agent's. ──
 function _cbLayout() {
-    const foes = _cb.foes.filter(_cbFoeOk), squad = _cbSquad(); _cb.slots = new Map(); _cb.lay = null;
+    const foes = _cb.foes.filter(_cbFoeOk), squad = _cbFrontFirst(_cbSquad()); _cb.slots = new Map(); _cb.lay = null;
     if (!foes.length || typeof player === "undefined" || typeof _fpNearestCellOpen !== "function") return;
     let fx = 0, fy = 0; for (const a of foes) { fx += a.x; fy += a.y; } fx /= foes.length; fy /= foes.length;
     const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(fx, fy) : null, wx = fx - player.x, wy = fy - player.y, L = Math.hypot(wx, wy) || 1;
@@ -306,6 +306,13 @@ function _cbLayout() {
         const a = score(1), b = score(-1); if (a !== b) { const sg = a < b ? 1 : -1; _cb.lay.dir = Math.atan2(best.ux * sg, -best.uy * sg); }
     }
     _cbCentre();
+}
+// THE FRONT LINE (§2.40) lined up: your squad in the formation's order (js/formation.js, the owner, 2026-11-10: "put the brawlers in front of the player ... put the mage behind"): Brawlers
+// (and hybrids, and the Mutator's clone) on the front squares, then technicians, then Mages; the squad's own order within each; you behind them all, as before (§2.31)
+const _CB_RANK = { brawler: 0, camper: 1, sniper: 2 };
+function _cbFrontFirst(list) {
+    const rank = f => _CB_RANK[typeof formationRole === "function" ? formationRole(f) : f && (f.role === "sniper" || f.role === "camper") ? f.role : "brawler"];
+    return list.map((f, i) => [f, i]).sort((p, q) => rank(p[0]) - rank(q[0]) || p[1] - q[1]).map(p => p[0]);
 }
 // is any of yours (you, a member) outside the battle's room?
 function _cbOutside() {
@@ -360,16 +367,22 @@ function _cbHitsFrom(x, y, u, t, kind, id) {
     return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, q[0], q[1]);
 }
 function _cbCanHit(u, t, kind, id) { if (!u || !t) return false; const s = _cbSq(u); return _cbHitsFrom(s[0], s[1], u, t, kind, id); }
-// THE WALK: the squares `u` can reach this turn (its tiles, a step to any of the 8 round: no wall, no corner cut, js/facilityplay.js _fpEdgeOk; in the battle's room; through its own side's squares,
-// never through the other side's; stopping on a free one), and of them the nearest it can hit `t` from; none, the one nearest by the floor to such a square (or, there being none, nearer `t`).
-// Its squares after its own, or null when it can get no nearer.
-function _cbWalkPath(u, t, kind, id) {
-    const n = _cbTiles(u); if (!n || !t || typeof _fp === "undefined" || !_fp || !_fp.cellsP || typeof _fpEdgeOk !== "function") return null;
+// THE FLOOR for `u`, in the battle's room: the squares' keys, which are taken (anyone's square) and which block it (the other side's), its own square, and a step to any of the 8 round (no wall,
+// no corner cut, js/facilityplay.js _fpEdgeOk; in the room; never onto the other side's squares). Null without the facility's floor.
+function _cbGrid(u) {
+    if (typeof _fp === "undefined" || !_fp || !_fp.cellsP || typeof _fpEdgeOk !== "function") return null;
     const L = _cb.lay, K = (x, y) => Math.round(x) + "," + Math.round(y), cells = L && L.room && typeof partyRoomCells === "function" ? partyRoomCells(L.room) : null, room = cells ? new Set(cells.map(c => K(c[0], c[1]))) : null;
     const ours = _cb.foes.indexOf(u) < 0, taken = new Set(), block = new Set();
     for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; const k = K(s.x, s.y); taken.add(k); if ((_cb.foes.indexOf(a) < 0) !== ours) block.add(k); }
-    const s0 = _cbSq(u), k0 = K(s0[0], s0[1]), at = new Map([[k0, [Math.round(s0[0]), Math.round(s0[1])]]]);
+    const s0 = _cbSq(u), c0 = [Math.round(s0[0]), Math.round(s0[1])], k0 = c0[0] + "," + c0[1];
     const open = (x, y, nx, ny) => { const nk = nx + "," + ny; return !block.has(nk) && (!room || room.has(nk)) && _fpEdgeOk(x, y, nx, ny); };
+    return { K, cells, taken, s0, c0, k0, open };
+}
+// THE WALK: the squares `u` can reach this turn (its tiles over _cbGrid's floor: through its own side's squares, never through the other side's; stopping on a free one), and of them the nearest
+// it can hit `t` from; none, the one nearest by the floor to such a square (or, there being none, nearer `t`). Its squares after its own, or null when it can get no nearer.
+function _cbWalkPath(u, t, kind, id) {
+    const n = _cbTiles(u), G = n && t ? _cbGrid(u) : null; if (!G) return null;
+    const { K, cells, taken, s0, k0, open } = G, at = new Map([[k0, G.c0]]);
     const steps = new Map([[k0, 0]]), prev = new Map(), order = [k0];
     for (let i = 0; i < order.length; i++) { const k = order[i], [x, y] = at.get(k), st = steps.get(k); if (st >= n) continue;
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
@@ -385,6 +398,28 @@ function _cbWalkPath(u, t, kind, id) {
     if (!best) return null;
     const path = []; for (let k = best; k && k !== k0; k = prev.get(k)) path.unshift(at.get(k));
     return path.length ? path : null;
+}
+// THE FRONT LINE (§2.40; the owner, 2026-11-17: "make it to where the predators typically attack who's in front of them, unless they have some sort of ranged attack or pounce attack that allows
+// them to move ... a few spaces over for their attack ... I guess certain types can do those range attacks, and we'll keep it that way. But I want to make it to where we can have tanks in the game.
+// We can have characters absorb damage in front lines"): of yours (`list`), the one a creature reaches first over the floor (your squares stand in its way: it walks through none of them), so the
+// one in front of it; of those, the nearest, and the one straight ahead of it first. One it can bite from its square is reached at once. A special that reaches from where it stands (the
+// striker's LEAP STRIKE, its own pick) is its own (_cbSpecialNow). Null when the list is empty.
+const _CB_TIE = 1e-6;   // (two distances this close are a tie)
+function _cbFront(a, list) {
+    if (!list.length) return null;
+    const G = _cbGrid(a); if (!G) return _cbNearest(a, list);
+    const dist = new Map([[G.k0, 0]]), q = [G.c0];
+    for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = dist.get(x + "," + y); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (dist.has(nk) || !G.open(x, y, nx, ny)) continue; dist.set(nk, d + 1); q.push([nx, ny]); } }
+    const L = _cb.lay, fx = L ? -L.ux : 0, fy = L ? -L.uy : 0, sa = G.s0;   // (ahead of it: towards your side of the line)
+    let best = null, bd = Infinity, be = Infinity, bh = -Infinity;
+    for (const t of list) {
+        const st = _cbSq(t), R = _cbReach(a, t, "basic"), w = Math.ceil(R); let d = _cbCanHit(a, t, "basic") ? 0 : Infinity;
+        if (d) for (let gx = Math.round(st[0]) - w; gx <= Math.round(st[0]) + w; gx++) for (let gy = Math.round(st[1]) - w; gy <= Math.round(st[1]) + w; gy++) {   // (the nearest by the floor of the free squares it could bite it from)
+            const k = gx + "," + gy, s = dist.get(k); if (s === undefined || s >= d || (G.taken.has(k) && k !== G.k0) || !_cbHitsFrom(gx, gy, a, t, "basic")) continue; d = s; }
+        const e = Math.hypot(st[0] - sa[0], st[1] - sa[1]), h = (st[0] - sa[0]) * fx + (st[1] - sa[1]) * fy;
+        if (d < bd || (d === bd && (e < be - _CB_TIE || (Math.abs(e - be) <= _CB_TIE && h > bh)))) { best = t; bd = d; be = e; bh = h; }
+    }
+    return best;
 }
 // a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
 function _cbWalkTick(T, u) {
@@ -518,14 +553,13 @@ function _cbNextFoe() {
     const ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(T.a, t));
     while (T.queue.length) {
         const a = T.queue.shift(); if (!_cbFoeOk(a)) continue;
-        T.a = a; let prey = ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, ours.filter(ok));
+        T.a = a; const live = ours.filter(ok);
+        const prey = !T.run && _cb.lay ? _cbFront(a, live) : ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, live);   // (THE FRONT LINE, §2.40: the one in front of it, not whoever it was after; RUN's last hits as before, §2.16)
         if (!prey) continue;
         T.walk = null; T.wi = 0; T.arrived = 0; T.sp = false; T.spOn = false; T.spEnd = 0; T.anc = null;
-        // MOVE NOW, ATTACK LATER (§2.39): it bites one of yours next to its square (its prey first), or its special goes off from there; else its turn is a walk towards its prey (RUN's last hits as before, §2.16)
+        // MOVE NOW, ATTACK LATER (§2.39): it bites the one in front if it can from its square, or its special goes off from there; else its turn is a walk towards that one
         if (!T.run && _cb.lay && !_cbCanHit(a, prey, "basic")) {
-            const near = ours.filter(t => ok(t) && _cbCanHit(a, t, "basic"));
-            if (near.length) prey = _cbNearest(a, near);
-            else if (_cbSpecialNow(a)) T.sp = true;
+            if (_cbSpecialNow(a)) T.sp = true;
             else { const walk = _cbWalkPath(a, prey, "basic"); if (!walk) continue; T.walk = walk; }
         }
         a.currentTarget = prey; a._prey = prey; a.provoked = true; if (a.state === "wander") a.state = "hunt";

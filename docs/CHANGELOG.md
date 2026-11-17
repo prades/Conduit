@@ -4,11 +4,18 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17z` · branch `claude/friendly-thompson-w581x0` · card battles: each follower attacks every turn (behind `?cards` with `?engine=3d`)
+### Build `2026-11-17aa` · branch `claude/friendly-thompson-w581x0` · card battles: each follower attacks every turn (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17): "the battle turns should allow each of my followers to attack. It's only allowing one per turn, and the enemy gets two."
 - **What it does:** your turn is now a round in which every follower still standing plays one card, in the order you choose; once all have, the enemies take theirs; then a new round. A follower that has played shows its cards greyed (DONE); the banner says how many are still to play; a recharge counts rounds. Supersedes `CARD-BATTLES.md` §2.2 (one card a turn).
-- `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.2, §2.40, §9, §10.
+- `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.2, §2.41, §9, §10.
 - **Verified:** tests/cardbattle.js and the full suite. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17z` · branch `claude/start-game-project-HSh7Z` · card battles: the front line (creatures attack who is in front of them; Brawlers lined up in front) (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner): "when it comes to the battle mode, you need to make it to where the predators typically attack who's in front of them, unless they have some sort of ranged attack or pounce attack that allows them to move several, well, a few spaces over for their attack. And they shouldn't do it automatically. They should do it if I don't know. I don't know. I guess certain types can do those range attacks, and we'll keep it that way. But I want to make it to where we can have tanks in the game. We can have characters absorb damage in front lines."
+- **What it does** (`docs/CARD-BATTLES.md` §2.40, §9): on its turn a creature goes for **the one of yours in front of it** (the one it reaches first over the floor, your squares standing in its way), not whoever it was after (the Mage that shot it). The striker's pounce (LEAP STRIKE) still goes for a Mage, and the types that shoot keep their shots as the game has them. **The line-up puts your Brawlers on the front squares**, then technicians, then Mages (the owner's formation of 2026-11-10), you behind them all, so a Brawler in front takes the hits.
+- `js/cardbattle.js` (`_cbFront`, `_cbGrid`, `_cbFrontFirst`, `_cbNextFoe`, `_cbLayout`).
+- **The agent's readings, provisional** (`CARD-BATTLES.md` §11.18): "in front" by the floor, then the nearest, then straight ahead; the formation's order on the line; a tank role of its own (a taunt) left open. §11.15 (creatures that shoot) answered by "we'll keep it that way": as built.
+- **Tests:** `tests/cardbattle.js` THE FRONT LINE (4 checks, 49 in all). **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17y` · branch `claude/start-game-project-HSh7Z` · card battles: a reticle on every enemy, ranged attacks over low objects, moving takes a turn by speed (behind `?cards` with `?engine=3d`); main merged in
 - **The ask** (the owner): "The red blinking square like reticule thing is not locked on to anything. So we need to fix that to where it shows each enemy with one of those. And then also, sometimes when I'm near objects, attacks won't go through. Like the followers will try to reposition and it'll get canceled and they'll lose their attack. So considering that objects do have some sort of relationship to the battles, let's make it to where ranged attacks can go over objects if, you know, they don't exceed a certain height, and let's make it to where followers can move and change their position in the battle of both enemy and ally, but it takes a move to reposition to attack the target, and it's based on their speed, how many tiles they can move, up to 3 if their speed is really high." Answers: "Move now, attack later", "Automatic", "Brawlers adjacent", "Card battles only".
