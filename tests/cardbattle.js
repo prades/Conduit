@@ -150,7 +150,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('THE TURNS (step 3): one card, then the enemies one by one, fastest first; recharge by turns; RUN with a last hit; the cube commands only');
     run(`globalThis.__live = (n) => { for (let i = 0; i < n; i++) _simStep(false); };
-        globalThis.__walker = (x, y) => { const e = __ant(x, y); e.moveSpeed = e.baseMoveSpeed = 0.04; return e; };`);
+        globalThis.__walker = (x, y) => { const e = __ant(x, y); e.moveSpeed = e.baseMoveSpeed = 0.04; return e; };
+        globalThis.__nextTo = (u, t) => { const s = _cb.slots.get(t), o = _cbSq(u), taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== u).map(e => e[1].x + ',' + e[1].y)), c = [];   /* (u onto a free square next to t's, the nearest to u's own: §2.39's "next to") */
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const x = s.x + dx, y = s.y + dy; if ((dx || dy) && !taken.has(x + ',' + y) && _fp.cellsP.has(x + ',' + y) && facilityRoomIdAt(x, y) === _cb.lay.room && facilitySeesFrom(x, y, s.x, s.y)) c.push([Math.hypot(x - o[0], y - o[1]), x, y]); }
+            c.sort((p, q) => p[0] - q[0]); if (!c.length) return false; const [, x, y] = c[0]; _cb.slots.set(u, { x, y }); u.x = x; u.y = y; if (Number.isFinite(u.visualX)) { u.visualX = x; u.visualY = y; } return true; };`);
+    const CARD_BATTLE_TETHER = J('CARD_BATTLE.tether');
     check('a battle on: your turn first; everyone in it holds still but the cube; the gun holds its fire; the screen says it is your turn', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
             const T = cardBattleTurnInfo(), h0 = a.health; firePlayerShot(a); __ticks(CARD_BATTLE.every + 1);
@@ -159,7 +163,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('a basic card dragged onto an enemy: that follower alone does its attack on it (the game\'s own damage); then each enemy its turn; then yours again', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
-            const f = followers[0], h0 = a.health, o = { played: cardBattlePlay(f, 'basic', null, a) }; const T = cardBattleTurnInfo(); o.who = T.who; o.actor = T.actor === f; o.otherHolds = cardBattleHolds(followers[1]);
+            const f = followers[0]; __nextTo(f, a);   /* (next to it: whatever its role, it can hit it from its square, §2.39) */
+            const h0 = a.health, o = { played: cardBattlePlay(f, 'basic', null, a) }; const T = cardBattleTurnInfo(); o.who = T.who; o.actor = T.actor === f; o.otherHolds = cardBattleHolds(followers[1]);
             const seen = []; let last = ''; for (let i = 0; i < 900; i++) { __live(1); const t = cardBattleTurnInfo(); const k = t ? t.who : cardBattlePhase(); if (k !== last) { seen.push(k); last = k; } if (k === 'you' && seen.length > 1) break; }
             o.seen = seen.join(','); o.hurt = a.health < h0; o.again = cardBattlePlay(followers[1], 'basic', null, a) || cardBattlePhase() !== 'on'; return o; })()`);
         same(r.played, true, 'played'); same(r.who, 'act', 'its turn'); same(r.actor, true, 'the follower'); same(r.otherHolds, true, 'the other member holds');
@@ -178,7 +183,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r, 'bca', 'the order');
     });
     check('a second attack card: that follower does that move (its mode for the turn, then its own back); it then sits out its RECHARGE in turns, and is ready after', () => {
-        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.alt = null; const a = __ant(player.x + 1.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.alt = null; const a = __ant(player.x + 1.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(f, a);   /* (in its move's reach: §2.39) */
             const mv = cardBattleCards(f).find(c => c.kind === 'move'); if (!mv) return { none: true }; const o = { id: mv.id, rech: mv.recharge, played: cardBattlePlay(f, 'move', mv.id, a), mode: f.alt };
             const waits = []; for (let turn = 0; turn < mv.recharge + 2; turn++) { for (let i = 0; i < 2000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); }
                 const c = cardBattleCards(f).find(x => x.kind === 'move' && x.id === mv.id); waits.push(c.ready ? 'R' : c.turns); if (c.ready) break; cardBattlePlay(f, 'basic', null, a); }
@@ -256,11 +261,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.mineSide, true, 'yours on one side'); same(r.theirSide, true, 'theirs on the other'); ok(r.at < 0.05, 'eased to their squares: ' + r.at); same(r.axis, 1, 'along a direction of the floor');
         { const off = Math.asin(Math.max(-1, Math.min(1, -(Math.cos(r.dir) * r.ux + Math.sin(r.dir) * r.uy)))) * 180 / Math.PI; ok(Math.abs(off - r.skew) < 1e-6, 'the camera looks across the line, turned ' + r.skew + '° towards your side: ' + off); }
     });
-    check('the one whose turn it is leaves its square to strike, and goes back to it after', () => {
+    check('the one whose turn it is strikes from its square, next to the enemy (a step off it at most, §2.39: it was the walk up to strike), and is back on it after', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __live(90);
-            const f = followers[0], s = _cb.slots.get(f); cardBattlePlay(f, 'basic', null, a); let left = 0; for (let i = 0; i < 900 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { __live(1); left = Math.max(left, Math.hypot(f.x - s.x, f.y - s.y)); }
-            __live(60); return { left, back: Math.hypot(f.x - s.x, f.y - s.y) }; })()`);
-        ok(r.left > 0.3, 'it never left its square: ' + r.left); ok(r.back < 0.05, 'not back on its square: ' + r.back);
+            const f = followers[0]; __nextTo(f, a); const s = _cb.slots.get(f), h0 = a.health; cardBattlePlay(f, 'basic', null, a); let left = 0;
+            for (let i = 0; i < 900 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { __live(1); const t = cardBattleTurnInfo(); if (t && t.actor === f) left = Math.max(left, Math.hypot(f.x - s.x, f.y - s.y)); }
+            __live(60); return { left, back: Math.hypot(f.x - s.x, f.y - s.y), hurt: h0 - a.health, kept: _cb.slots.get(f) === s, role: f.role }; })()`);
+        ok(r.left < CARD_BATTLE_TETHER + 0.1, 'it went off its square (' + r.role + '): ' + r.left); ok(r.back < 0.05, 'not back on its square: ' + r.back); ok(r.hurt > 0, 'the enemy not hurt (' + r.role + ')'); same(r.kept, true, 'its square kept');
     });
     check('all your squad down: the battle ends (§2.23), even where the fallen rejoin at once (the Crystal Chamber); one that comes back meanwhile is out of the battle', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
@@ -291,6 +297,121 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.black, true, 'the black'); same(r.who, 'you', 'then your turn'); same(r.squares, true, 'every square in its room'); same(r.allIn, true, 'all of yours in its room'); same(r.seen, true, 'it is seen');
     });
 
+    group('A RETICLE ON EVERY ENEMY (§2.37; the owner: "So we need to fix that to where it shows each enemy with one of those")');
+    check('in a battle the red corners go round each of its enemies, where the 3D view draws it by its camera as drawn (not placed again); the gun\'s own are not drawn; out of a battle the gun\'s as ever', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.6, player.y + 1);
+            const pts = [], keep = { moveTo: ctx.moveTo, stroke: ctx.stroke }; let strokes = 0; ctx.moveTo = function (x, y) { pts.push([x, y]); }; ctx.stroke = function () { strokes++; };
+            const V0 = VIEW3D.view, S0 = VIEW3D.showing; let placed = 0; const fake = { screenNow: (x, y, h) => [x * 100, y * 100 - (h || 0)], screenOf: () => { placed++; return [0, 0]; }, has: () => true, top: () => 20 };
+            const o = {}, at = e => [e.x * 100, e.y * 100 - 10], near = (p, e) => Math.hypot(p[0] - at(e)[0], p[1] - at(e)[1]) < 40;
+            try {
+                playerAttackMode = true; playerLockTarget = a; o.outBattle = cardBattleReticles(); drawLockReticle(); o.outStrokes = strokes;
+                cardBattleChoose(a); __ticks(1); VIEW3D.view = fake; VIEW3D.showing = true; strokes = 0; pts.length = 0;
+                o.taken = cardBattleReticles(); o.inStrokes = strokes; o.round = [a, b].map(e => pts.filter(p => near(p, e)).length);
+                strokes = 0; pts.length = 0; drawLockReticle(); o.gunStrokes = strokes; o.allOnThem = pts.every(p => near(p, a) || near(p, b)); o.placed = placed; o.aiming = cardBattleAiming();
+            } finally { VIEW3D.view = V0; VIEW3D.showing = S0; ctx.moveTo = keep.moveTo; ctx.stroke = keep.stroke; playerAttackMode = false; playerLockTarget = null; }
+            cardBattleReset(); o.after = cardBattleAiming(); return o; })()`);
+        same(JSON.stringify([r.outBattle, r.outStrokes]), '[false,4]', 'out of a battle: not the battle\'s; the gun\'s four corners');
+        same(JSON.stringify([r.taken, r.inStrokes].concat(r.round)), '[true,8,4,4]', 'in it: four corners round each of its two enemies');
+        same(JSON.stringify([r.gunStrokes, r.allOnThem, r.placed, r.aiming, r.after]), '[8,true,0,true,false]', 'the gun\'s draw: the battle\'s corners only, all on its enemies; the camera not placed again; aiming in it, not after');
+    });
+
+    group('OVER LOW OBJECTS (§2.38; the owner: "ranged attacks can go over objects if, you know, they don\'t exceed a certain height"; "Card battles only")');
+    check('in a battle\'s room a shot passes over a low object that gives cover (a crate, a barrel, a desk); a tall one still stops it; out of the battle, or fired from another room, the cover rule as ever', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const F = _fp.F;
+            const across = so => { if (so.open || so.shape === 'circle' || !so.bb) return null; const cx = (so.bb[0] + so.bb[2]) / 2, cy = (so.bb[1] + so.bb[3]) / 2, w = so.bb[2] - so.bb[0] + 2.8, h = so.bb[3] - so.bb[1] + 2.8;
+                for (const [dx, dy] of [[w / 2, 0], [0, h / 2]]) { const p = [cx - dx, cy - dy], q = [cx + dx, cy + dy], rm = facilityRoomIdAt(p[0], p[1]);
+                    if (rm && rm === facilityRoomIdAt(q[0], q[1]) && facilityWalkable(p[0], p[1], F) && facilityWalkable(q[0], q[1], F) && partyRoomCells(rm).length > 20 && facilityShotStop(p[0], p[1], q[0], q[1], p[0], p[1], F)) return { p, q, room: rm, kind: so.kind }; } return null; };
+            let L = null, H = null; for (const so of F.solids) { if (!L && so.cover && so.low) L = across(so); if (!H && !so.low && !so.cover) H = across(so); if (L && H) break; }
+            if (!L || !H) return { none: [!!L, !!H] };
+            const stop = (s, o) => !!facilityShotStop(s.p[0], s.p[1], s.q[0], s.q[1], o[0], o[1], F), other = partyRoomCells(L.room === 'crystal_chamber' ? 'arena' : 'crystal_chamber')[0];
+            const o = { low: L.kind, tall: H.kind, before: stop(L, L.p) };
+            const c = __cell(L.room, 0.4); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; const a = __ant(c[0] + 2, c[1]); cardBattleChoose(a); for (let i = 0; i < 200 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) __ticks(1);   /* (your squad brought in, in a black: then the turns) */
+            o.room = _cb.lay && _cb.lay.room === L.room; o.inBattle = stop(L, L.p); o.fromOther = stop(L, other); o.tallIn = stop(H, L.p); cardBattleReset(); o.after = stop(L, L.p); return o; })()`);
+        same(JSON.stringify(r.none || null), 'null', 'no low cover object or tall one with floor round it to try (found: ' + JSON.stringify(r.none) + ')');
+        same(JSON.stringify([r.before, r.room, r.inBattle, r.fromOther, r.tallIn, r.after]), '[true,true,false,true,true,true]', 'a ' + r.low + ' stops it before; the battle in its room; over it in the battle; fired from another room; a ' + r.tall + ' in the battle; after it');
+    });
+
+    group('MOVE NOW, ATTACK LATER (§2.39; the owner: "it takes a move to reposition to attack the target, and it\'s based on their speed, how many tiles they can move, up to 3 if their speed is really high")');
+    check('the tiles a turn by its lasting pace, 1 to 3: a tank and the Ant Queen 1, a scout and a striker 2, a nymph 3; a quick form\'s own pace counts', () => {
+        const r = J(`(function(){ __fresh(0); const t = c => { const e = spawnCreature({ species: 'ant', className: c }); const n = _cbTiles(e); e.dead = true; e.health = 0; return n; };
+            return { paces: [0, 0.008, 0.012, 0.016, 0.018, 0.022, 0.023, 0.026, 0.028, 0.032].map(s => _cbTiles({ baseMoveSpeed: s })), ants: ['tank', 'scout', 'striker', 'nymph'].map(t), boss: _cbTiles({ baseMoveSpeed: PREDATOR_TYPES.boss.moveSpeed }),
+                plain: _cbTiles({ baseMoveSpeed: 0.02 }), skink: _cbTiles({ baseMoveSpeed: 0.02, evolved: 'electroskink' }), pace: EVOLUTIONS.electroskink.pace }; })()`);
+        same(r.paces.join(), '0,1,1,2,2,2,2,3,3,3', 'by pace (0, 0.008, 0.012, 0.016, 0.018, 0.022, 0.023, 0.026, 0.028, 0.032)'); same(r.ants.join(), '1,2,2,3', 'a tank, a scout, a striker, a nymph'); same(r.boss, 1, 'the Ant Queen');
+        same(JSON.stringify([r.plain, r.skink]), '[2,3]', 'a pace of 0.02 as itself and as an Electro Skink (its pace ' + r.pace + ')');
+    });
+    check('a Brawler that cannot hit from its square: its card is a walk instead (the owner: "Automatic"), up to its tiles, onto a free square next to the enemy; the card stays ready, nothing is hurt, the banner says so; that is its square; then the enemies; next turn the card is its attack', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'brawler'; f.moveSpeed = f.baseMoveSpeed = 0.028; f.health = f.maxHealth = 1e5;
+            const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            const s0 = _cbSq(f), qa = _cbSq(a), h0 = a.health, o = { d0: Math.hypot(s0[0] - qa[0], s0[1] - qa[1]), can0: _cbCanHit(f, a, 'basic'), played: cardBattlePlay(f, 'basic', null, a) };
+            const T = cardBattleTurnInfo(); o.walk = T.walk; o.holds = cardBattleHolds(f); __ticks(CARD_BATTLE.every + 1); o.banner = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : '';
+            for (let i = 0; i < 600 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1);
+            const s1 = _cbSq(f); o.at = +Math.hypot(f.x - s1[0], f.y - s1[1]).toFixed(3); o.steps = Math.max(Math.abs(s1[0] - s0[0]), Math.abs(s1[1] - s0[1])); o.d1 = +Math.hypot(s1[0] - qa[0], s1[1] - qa[1]).toFixed(2);
+            o.hurt = h0 - a.health; o.ready = cardBattleCards(f).find(c => c.kind === 'basic').ready; o.next = cardBattleTurnInfo() && cardBattleTurnInfo().who;
+            for (let i = 0; i < 2000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) __live(1);
+            o.can1 = _cbCanHit(f, a, 'basic'); o.played2 = cardBattlePlay(f, 'basic', null, a); o.walk2 = cardBattleTurnInfo() && cardBattleTurnInfo().walk;
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); o.hurt2 = h0 - a.health; return o; })()`);
+        same(JSON.stringify([r.d0, r.can0, r.played]), '[4,false,true]', 'four tiles off, out of its reach, played');
+        same(JSON.stringify([r.walk, r.holds]), '[3,true]', 'a walk of its three tiles, the battle walking it'); ok(/MOVES 3 TILES/.test(r.banner), 'the banner: ' + r.banner);
+        ok(r.at < 0.01 && r.steps >= 1 && r.steps <= 3 && r.d1 <= 1.5, 'on its new square, next to the enemy (' + r.at + ' off it, ' + r.steps + ' squares from its own, ' + r.d1 + ' from the enemy)');
+        same(JSON.stringify([r.hurt, r.ready, r.next]), '[0,true,"foe"]', 'nothing hurt, its card still ready, the enemies\' turn');
+        same(JSON.stringify([r.can1, r.played2, r.walk2]), '[true,true,0]', 'next turn: next to it, the card is its attack'); ok(r.hurt2 > 0, 'the enemy not hurt by it');
+    });
+    check('a Mage hits from its square, near or far, when it sees the enemy: from next to it (no backing off) and from six tiles (no walking in), and is on its square after', () => {
+        const r = J(`(function(){ const one = far => { __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+                if (far) { const s = _cbSq(a), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 6) < 0.6 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0]; if (!c) return null; _cb.slots.set(f, { x: c[0], y: c[1] }); f.x = c[0]; f.y = c[1]; }
+                else __nextTo(f, a);
+                const s = _cb.slots.get(f), d = Math.hypot(s.x - _cbSq(a)[0], s.y - _cbSq(a)[1]), h0 = a.health, played = cardBattlePlay(f, 'basic', null, a), walk = cardBattleTurnInfo().walk; let left = 0;
+                for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); left = Math.max(left, Math.hypot(f.x - s.x, f.y - s.y)); }
+                return { d: +d.toFixed(2), played, walk, left: +left.toFixed(2), hurt: h0 - a.health > 0, back: +Math.hypot(f.x - s.x, f.y - s.y).toFixed(2) }; };
+            return { near: one(false), far: one(true) }; })()`);
+        for (const k of ['near', 'far']) { const o = r[k]; ok(o, 'no square six tiles off in sight to try'); same(JSON.stringify([o.played, o.walk, o.hurt]), '[true,0,true]', k + ' (' + o.d + ' tiles): played, no walk, the enemy hurt'); ok(o.left < 0.3 && o.back < 0.3, k + ': it moved off its square (' + o.left + ', ' + o.back + ')'); }
+    });
+    check('one that cannot see the enemy from its square (a wall or a tall object in the way) walks to the nearest square it can, the fewest steps', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const s = _cbSq(f), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.round(x0) === s[0] && Math.round(y0) === s[1]) && keep(x0, y0, x1, y1); };   /* (as if a tall object stood between its square and the enemy) */
+            let o; try { o = { can: _cbCanHit(f, a, 'basic'), played: cardBattlePlay(f, 'basic', null, a), walk: cardBattleTurnInfo().walk }; } finally { facilitySeesFrom = keep; } return o; })()`);
+        same(JSON.stringify([r.can, r.played, r.walk]), '[false,true,1]', 'out of sight from its square; played: a walk of one square');
+    });
+    check('the walk keeps to the battle\'s room and the floor, never onto or through the other side\'s squares, no further than its tiles (through its own side\'s it may)', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
+            const room = _cb.lay.room, theirs = new Set([a, b, c].map(e => _cbSq(e).join())), all = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), bad = [];
+            for (const f of followers) { f.role = 'brawler'; for (const t of [a, b, c]) { const w = _cbWalkPath(f, t, 'basic'); if (!w) continue; let p = _cbSq(f);
+                if (w.length > _cbTiles(f)) bad.push('too long'); if (all.has(w[w.length - 1].join())) bad.push('ends on a square');
+                for (const q of w) { if (theirs.has(q.join())) bad.push('through theirs'); if (facilityRoomIdAt(q[0], q[1]) !== room) bad.push('off the room'); if (Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1])) !== 1 || !_fpEdgeOk(p[0], p[1], q[0], q[1])) bad.push('not a step'); p = q; } } }
+            const f = followers[0], s = _cbSq(f); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (dx || dy) { _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy }); }   /* (boxed in by its own side: it may pass, not stop) */
+            return { bad: [...new Set(bad)], boxed: !!_cbWalkPath(f, a, 'basic') }; })()`);
+        same(r.bad.join('; '), '', 'the walks'); same(r.boxed, true, 'boxed in by its own side, it walks through');
+    });
+    check('an enemy the same (the owner: "both enemy and ally"): not next to any of yours, its turn is a walk of its tiles towards its prey and it bites nobody; next to one, it bites', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; const a = __walker(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            const turn = () => { const seen = { walk: 0, hurt: 0 }; cardBattlePlay(f, 'basic', null, a); for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { const t = cardBattleTurnInfo(); if (t && t.who === 'foe' && t.actor === a) { if (t.walk) seen.walk = t.walk; if (_cb.turn.hit) seen.hurt = 1; } __live(1); } seen.d = +Math.hypot(_cbSq(a)[0] - _cbSq(f)[0], _cbSq(a)[1] - _cbSq(f)[1]).toFixed(2); return seen; };   /* (hurt: its blow landed, by the battle's own reckoning) */
+            const d0 = Math.hypot(_cbSq(a)[0] - _cbSq(f)[0], _cbSq(a)[1] - _cbSq(f)[1]), one = turn(), two = turn(); return { d0, tiles: _cbTiles(a), one, two }; })()`);
+        ok(r.d0 > 1.5, 'the setup: it began next to one of yours (' + r.d0 + ')'); ok(r.one.walk >= 1 && r.one.walk <= r.tiles && r.one.hurt === 0, 'its first turn: a walk of ' + r.one.walk + ' (its tiles ' + r.tiles + '), its blow landing: ' + r.one.hurt);
+        ok(r.one.d <= 1.5 || r.two.walk >= 1, 'it got no nearer (' + r.one.d + ')'); ok(r.one.d > 1.5 || (r.two.walk === 0 && r.two.hurt > 0), 'next to it, its second turn bit nobody (' + JSON.stringify(r.two) + ')');
+    });
+    check('a striker\'s LEAP STRIKE ready, one of yours 2 to 4 tiles off: its turn is the leap, not a walk; where it lands is its square ("They jump and create new positioning")', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5;
+            const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
+            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
+            if (!c) return { none: true }; _cb.slots.set(f, { x: c[0], y: c[1] }); f.x = c[0]; f.y = c[1];
+            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; f.alt = null;
+            cardBattlePlay(f, 'basic', null, st); let sp = false, walk = 0, flew = false;
+            for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { const t = cardBattleTurnInfo(); if (t && t.who === 'foe' && t.actor === st) { if (_cb.turn.sp) sp = true; if (t.walk) walk = t.walk; } if ((st.leapLift || 0) > 5) flew = true; __live(1); }
+            __live(40); const s1 = _cbSq(st); return { key: st.abilityKey, sp, walk, flew, moved: +Math.hypot(s1[0] - s[0], s1[1] - s[1]).toFixed(2), byIt: +Math.hypot(s1[0] - c[0], s1[1] - c[1]).toFixed(2), on: +Math.hypot(st.x - s1[0], st.y - s1[1]).toFixed(2) }; })()`);
+        same(!!r.none, false, 'no square three tiles off in sight to try'); same(r.key, 'LEAP_STRIKE', 'its special');
+        same(JSON.stringify([r.sp, r.walk, r.flew]), '[true,0,true]', 'its turn its special, no walk, it leapt'); ok(r.moved >= 1 && r.byIt <= 1.6, 'its new square by the one it leapt at (' + r.moved + ' from its own, ' + r.byIt + ' from it)'); ok(r.on < 0.3, 'not on its new square: ' + r.on);
+    });
+    check('on its attack\'s turn one keeps to its square on its own legs (a tether), and a leap or a dash carries it to a new square', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const s = _cbSq(f), T = {}; f.x = s[0]; f.y = s[1]; f.baseMoveSpeed = f.moveSpeed = 0.025; _cbTether(T, f); let far = 0;
+            for (let i = 0; i < 120; i++) { f.x += 0.025; _cbTether(T, f); far = Math.max(far, Math.hypot(f.x - s[0], f.y - s[1])); }
+            const walked = +far.toFixed(2); _cbResquare(f); const kept = _cbSq(f).join() === s.join();
+            f.x += 2.4; _cbTether(T, f); const carried = +Math.hypot(f.x - s[0], f.y - s[1]).toFixed(2); _cbResquare(f); const s2 = _cbSq(f);
+            return { walked, kept, carried, moved: s2.join() !== s.join(), near: +Math.hypot(s2[0] - f.x, s2[1] - f.y).toFixed(2) }; })()`);
+        ok(r.walked <= CARD_BATTLE_TETHER + 0.03, 'it walked off its square: ' + r.walked); same(r.kept, true, 'a step within the tether keeps its square');
+        ok(r.carried > 2, 'the carry was held back: ' + r.carried); same(r.moved, true, 'carried: a new square'); ok(r.near < 1.5, 'its new square far from where it was carried: ' + r.near);
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
@@ -300,6 +421,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
         ok(/cardBattleHit\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardBattleHit\(player, source\)\) return false;/.test(rd('js/helpers.js')) && /cardBattleNoFight\(\)\) return;/.test(rd('js/input.js')) && /_noFight/.test(rd('js/evolution.js')) && /cardBattleNoFight\(f\)\) return false;/.test(rd('js/elements.js')) && /cardBattleNoFight\(\) && typeof cardBattleChoose/.test(rd('js/mixtool.js')) && /cardBattleNoFight\(pred\)/.test(rd('js/abilities.js')), 'either a battle or none (§2.35): the blow, the gun, the second attack, the Ultimate, ATTACK, the clone\'s special');
+        ok(/cardBattleStands\(actor\)/.test(rd('js/npc.js')) && /cardBattleOverLow\(ox, oy\)/.test(rd('js/facility.js')) && /cardBattleReticles\(\)\) return;/.test(rd('js/gunfire.js')) && /cardBattleAiming\(\)\)\) \{ const k = age/.test(rd('js/targeting.js')) && /screenNow\(x, y, hPx\) \{ const v = SCR\.set/.test(rd('view3d/gameview.js')), 'the reticles, the shots over low objects, the moves (§2.37 to §2.39): the gun\'s corners and its locking-on, the 3D view\'s point, the cover rule, the Mage\'s stand');
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });
 

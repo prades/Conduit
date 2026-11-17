@@ -264,8 +264,9 @@ function facilityShotStop(x0, y0, x1, y1, ox, oy, F) {
     const w = _facWallCrossed(x0, y0, x1, y1, F); if (w) return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, wall: w };
     if (!facilityRoomAt(x1, y1, F)) return { x: x0, y: y0, wall: true };
     const ix = _facIndex(F), a = [x0, y0], b = [x1, y1], seen = new Set(), own = so => { const dx = Math.max(so.bb[0] - ox, 0, ox - so.bb[2]), dy = Math.max(so.bb[1] - oy, 0, oy - so.bb[3]); return Math.hypot(dx, dy) <= FAC_SHOT.own; };
+    const over = typeof cardBattleOverLow === "function" && cardBattleOverLow(ox, oy);   // (a shot fired in a card battle passes over every LOW object, cover too: js/cardbattle.js)
     for (const q of [[x0, y0], [x1, y1]]) for (const so of _facNear(ix.solids, ix, q[0], q[1])) {
-        if (seen.has(so)) continue; seen.add(so); if (so.open || !(so.cover || !so.low) || (so.cover && own(so))) continue;
+        if (seen.has(so)) continue; seen.add(so); if (so.open || !(so.cover || !so.low) || (so.cover && own(so)) || (over && so.low)) continue;
         if (facilitySolidAt(x1, y1, F) === so) return { x: x1, y: y1, solid: so };
         if (so.shape !== "circle") for (let i = 0; i < so.poly.length; i++) if (facilitySegmentsCross(a, b, so.poly[i], so.poly[(i + 1) % so.poly.length])) return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, solid: so };
     }

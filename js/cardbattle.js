@@ -47,6 +47,11 @@ const CARD_BATTLE = {
     ultHold: 90,                // frames: an Ultimate's turn (1.5 s)
     pick: 70, pickH: 30,        // the drag: an enemy is under the finger within this many screen points of where the 3D view draws it, at this height (px of the world) over its feet
     clock: 0.5,                 // THE CLOCK AT HALF (§2.30; the owner, 2026-11-17: "time slows down to about half"): the world's countdowns in a battle run at this rate
+    // MOVE NOW, ATTACK LATER (§2.39; the agent's, provisional): the tiles a turn's walk may take by the walker's own pace (its base speed, tiles a frame: at least the first number, that many)
+    tiles: [[0.026, 3], [0.016, 2], [0, 1]],   // (your followers 0.023 to 0.028: 2 or 3; an ant scout 0.022 and a striker 0.018: 2; a tank 0.012 and the Ant Queen 0.008: 1; a nymph 0.030: 3)
+    stepPace: 0.06,             // tiles a frame along the walk (3.6 a second)
+    stepBeat: 12,               // frames after a walk before the next turn (0.2 s)
+    tether: 0.8,                // tiles: on its attack's turn one may step this far off its square on its own legs (a leap, a dash or a charge carries it further: its new square)
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -327,12 +332,132 @@ function _cbSlide() {
         if (d < 0.6 && typeof faceToward === "function") faceToward(a, ox, oy, 0.3);
     }
 }
+// ── MOVE NOW, ATTACK LATER (§2.39; the owner, 2026-11-17: "sometimes when I'm near objects, attacks won't go through. Like the followers will try to reposition and it'll get canceled and they'll lose
+// their attack ... let's make it to where followers can move and change their position in the battle of both enemy and ally, but it takes a move to reposition to attack the target, and it's based on
+// their speed, how many tiles they can move, up to 3 if their speed is really high"; of what was offered: "Move now, attack later", "Automatic", "Brawlers adjacent"). A card dropped on an enemy the
+// follower cannot hit from its square is not played: its turn is a WALK, up to its tiles (_cbTiles, by its own pace) over the floor's squares towards one it can hit from, and the card stays ready.
+// An enemy on its turn does the same: one of yours it can hit from its square it attacks (its special ready and in its reach counts), else it walks. Where one stops is its square from then on.
+// WHO HITS FROM WHERE (_cbReach): a Brawler, a technician, a clone and every creature's bite only from a square next to the target (the 8 round it; a huge body from its edge); a Mage's shot from any
+// square it sees the target from (in a battle a shot passes over low objects, §2.38, so only a wall or a tall object is in the way); a second attack within its own reach (js/moves.js moveReach); a
+// card attack within the card's. On its attack's turn one keeps to its square (_cbTether) unless the attack carries it (a leap, a dash: its new square, _cbResquare). The Ultimate is fired from
+// where it stands, and RUN's last hits are as before (§2.16).
+function _cbTiles(u) {   // (its lasting pace: its base speed and its form's own, js/abilities.js tickSlowSpeed; not a slow or a haste of the moment)
+    const fd = u && u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null;
+    const s = u ? (u.baseMoveSpeed || u.moveSpeed || 0) * (u.paceMult > 0 ? u.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1) : 0; if (!(s > 0)) return 0;
+    for (const [at, n] of CARD_BATTLE.tiles) if (s >= at) return n;
+    return 1;
+}
+function _cbSq(a) { const s = _cb.slots.get(a); return s ? [s.x, s.y] : [a.x, a.y]; }
+function _cbReach(u, t, kind, id) {
+    const edge = Math.max(1.5, ((t && t.bodyR) || 0) + 0.3);   // (next to it: the 8 squares round its own, 1 or 1.41 tiles off; a huge body, from its edge)
+    if (kind === "move" && id && typeof moveReach === "function") return moveReach(id);
+    if (u.isClone || _cb.foes.indexOf(u) >= 0) return Math.max(edge, u.biteReach || (typeof COMBAT !== "undefined" ? COMBAT.bite.reach : 1.5));   // (a bite: a boss's reaches from her body)
+    const sp = typeof equipSpecial === "function" ? equipSpecial(u) : null; if (sp && sp.attack && sp.attack.reach > 0) return sp.attack.reach;   // (a card attack set: js/cards.js cardAttackTry)
+    return u.role === "sniper" ? Infinity : edge;
+}
+function _cbHitsFrom(x, y, u, t, kind, id) {
+    const q = _cbSq(t); if (Math.hypot(q[0] - x, q[1] - y) > _cbReach(u, t, kind, id) + 0.05) return false;
+    return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, q[0], q[1]);
+}
+function _cbCanHit(u, t, kind, id) { if (!u || !t) return false; const s = _cbSq(u); return _cbHitsFrom(s[0], s[1], u, t, kind, id); }
+// THE WALK: the squares `u` can reach this turn (its tiles, a step to any of the 8 round: no wall, no corner cut, js/facilityplay.js _fpEdgeOk; in the battle's room; through its own side's squares,
+// never through the other side's; stopping on a free one), and of them the nearest it can hit `t` from; none, the one nearest by the floor to such a square (or, there being none, nearer `t`).
+// Its squares after its own, or null when it can get no nearer.
+function _cbWalkPath(u, t, kind, id) {
+    const n = _cbTiles(u); if (!n || !t || typeof _fp === "undefined" || !_fp || !_fp.cellsP || typeof _fpEdgeOk !== "function") return null;
+    const L = _cb.lay, K = (x, y) => Math.round(x) + "," + Math.round(y), cells = L && L.room && typeof partyRoomCells === "function" ? partyRoomCells(L.room) : null, room = cells ? new Set(cells.map(c => K(c[0], c[1]))) : null;
+    const ours = _cb.foes.indexOf(u) < 0, taken = new Set(), block = new Set();
+    for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; const k = K(s.x, s.y); taken.add(k); if ((_cb.foes.indexOf(a) < 0) !== ours) block.add(k); }
+    const s0 = _cbSq(u), k0 = K(s0[0], s0[1]), at = new Map([[k0, [Math.round(s0[0]), Math.round(s0[1])]]]);
+    const open = (x, y, nx, ny) => { const nk = nx + "," + ny; return !block.has(nk) && (!room || room.has(nk)) && _fpEdgeOk(x, y, nx, ny); };
+    const steps = new Map([[k0, 0]]), prev = new Map(), order = [k0];
+    for (let i = 0; i < order.length; i++) { const k = order[i], [x, y] = at.get(k), st = steps.get(k); if (st >= n) continue;
+        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
+    const ends = order.filter(k => k !== k0 && !taken.has(k));   // (breadth first: the fewest steps first)
+    let best = ends.find(k => { const c = at.get(k); return _cbHitsFrom(c[0], c[1], u, t, kind, id); }) || null;
+    if (!best && cells) {   // none in reach this turn: towards the nearest square it could hit from, by the floor the same way
+        const qt = _cbSq(t), R = _cbReach(u, t, kind, id), far = new Map(), q = [];
+        for (const c of cells) { const k = K(c[0], c[1]); if ((taken.has(k) && k !== k0) || (R !== Infinity && Math.hypot(c[0] - qt[0], c[1] - qt[1]) > R + 0.05) || !_cbHitsFrom(c[0], c[1], u, t, kind, id)) continue; if (!far.has(k)) { far.set(k, 0); q.push([Math.round(c[0]), Math.round(c[1])]); } }
+        for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = far.get(x + "," + y); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (far.has(nk) || !open(x, y, nx, ny)) continue; far.set(nk, d + 1); q.push([nx, ny]); } }
+        let bd = far.has(k0) ? far.get(k0) : Infinity; for (const k of ends) { const d = far.has(k) ? far.get(k) : Infinity; if (d < bd) { bd = d; best = k; } }
+    }
+    if (!best) { const qt = _cbSq(t); let be = Math.hypot(s0[0] - qt[0], s0[1] - qt[1]) - 0.5; for (const k of ends) { const c = at.get(k), e = Math.hypot(c[0] - qt[0], c[1] - qt[1]); if (e < be) { be = e; best = k; } } }   // (no square to hit it from at all: nearer it)
+    if (!best) return null;
+    const path = []; for (let k = best; k && k !== k0; k = prev.get(k)) path.unshift(at.get(k));
+    return path.length ? path : null;
+}
+// a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
+function _cbWalkTick(T, u) {
+    const f0 = _cbF(); if (!u || u.dead || !(u.health > 0)) return true;
+    if (T.arrived) return f0 - T.arrived >= CARD_BATTLE.stepBeat;
+    const c = T.walk[T.wi]; if (!c || f0 - T.t0 > 600) { T.arrived = f0; return false; }
+    const dx = c[0] - u.x, dy = c[1] - u.y, d = Math.hypot(dx, dy), sp = CARD_BATTLE.stepPace;
+    if (d <= sp) { u.x = c[0]; u.y = c[1]; if (++T.wi >= T.walk.length) { T.arrived = f0; _cb.slots.set(u, { x: c[0], y: c[1] }); } }
+    else { u.x += dx / d * sp; u.y += dy / d * sp; u.dirX = dx / d; u.dirY = dy / d; }
+    u.walkCycle = (u.walkCycle || 0) + sp * 40; u._fpPath = null; if (Number.isFinite(u.visualX)) { u.visualX = u.x; u.visualY = u.y; }
+    return false;
+}
+// a frame of an attack's turn: one that walks off its square on its own legs (no faster than its pace) is kept within `tether` of it; one carried (a leap, a dash, a charge, a roll: faster than it
+// walks) goes, and where it is carried to is held instead
+function _cbTether(T, u) {
+    if (!u || u.dead) return;
+    if (!T.anc) { const s = _cbSq(u); T.anc = [s[0], s[1]]; T.px = u.x; T.py = u.y; return; }
+    if (Math.hypot(u.x - T.px, u.y - T.py) > (u.baseMoveSpeed || u.moveSpeed || 0.02) * 2.5 + 0.01) T.anc = [u.x, u.y];
+    else { const dx = u.x - T.anc[0], dy = u.y - T.anc[1], d = Math.hypot(dx, dy), R = CARD_BATTLE.tether; if (d > R) { const m = Math.min(d - R, CARD_BATTLE.slide); u.x -= dx / d * m; u.y -= dy / d * m; if (Number.isFinite(u.visualX)) { u.visualX = u.x; u.visualY = u.y; } } }   // (eased back, as to a square: one still on its way to it is not jerked)
+    T.px = u.x; T.py = u.y;
+}
+// after its attack: one carried a tile or more off its square (the owner, of the striker's leap: "They jump and create new positioning") takes the free square of the room nearest where it stands
+function _cbResquare(u) {
+    const s = u && _cb.slots.get(u), L = _cb.lay; if (!s || u.dead || Math.hypot(u.x - s.x, u.y - s.y) < 1 || !L || !L.room || typeof partyRoomCells !== "function") return;
+    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== u && !a.dead && !_cb.out.has(a)) taken.add(Math.round(q.x) + "," + Math.round(q.y));
+    let best = null, bd = 1.5; for (const c of partyRoomCells(L.room)) { if (taken.has(c[0] + "," + c[1])) continue; const d = Math.hypot(c[0] - u.x, c[1] - u.y); if (d < bd) { bd = d; best = c; } }
+    if (best) _cb.slots.set(u, { x: best[0], y: best[1] });
+}
+// a creature's special, ready, that would go off from where it stands (the striker's LEAP STRIKE at range; not a call for backup or an escape leap, which hit nobody): its turn is that, not a walk
+function _cbSpecialNow(a) {
+    if (!a || a.abilityPhase !== "ready" || !a.abilityDef || a.abilityKey === "BACKUP_CALL" || a.abilityKey === "LEAP") return false;
+    try { return typeof _abShouldFire === "function" && !!_abShouldFire(a, a.abilityDef); } catch (e) { return false; }
+}
+// is `a` doing its card on its turn, from its square? (js/npc.js: a Mage then shoots from there, near or far, and never backs off or walks in)
+function cardBattleStands(a) { const T = _cb.turn; return !!T && !!a && _cb.phase === "on" && !!_cb.lay && T.who === "act" && T.f === a && !T.walk; }
+// OVER LOW OBJECTS (§2.38; the owner, 2026-11-17: "considering that objects do have some sort of relationship to the battles, let's make it to where ranged attacks can go over objects if, you know,
+// they don't exceed a certain height"; of two offered, "Card battles only"): a shot fired in the battle's room while its turns are on passes over every LOW object (waist high or less: js/facility.js
+// FAC_LOW, a crate, a barrel, a desk, a barrier, a pump), cover too; a wall or a tall object (a crate stack, a console, a generator) still stops it. Out of a battle, and outside its room, the
+// game's own cover rule (docs/COMBAT.md §8). `ox, oy`: where the shot was fired (js/facility.js facilityShotStop).
+function cardBattleOverLow(ox, oy) {
+    if (_cb.phase !== "on" || !_cb.turn || !_cb.lay || !_cb.lay.room || typeof facilityRoomIdAt !== "function") return false;
+    return facilityRoomIdAt(ox, oy) === _cb.lay.room;
+}
+// A RETICLE ON EVERY ENEMY (§2.37; the owner, 2026-11-17: "The red blinking square like reticule thing is not locked on to anything. So we need to fix that to where it shows each enemy with one of
+// those"): while a battle is on, the gun's corners (js/gunfire.js drawLockReticle: red, turning in and out) go round each of its enemies, where the 3D view draws it (the battle's camera is lower
+// and turned: the 2D's own reckoning had put the gun's one set off its creature). The gun's own, and its locking-on corners (js/targeting.js), are not drawn while the battle or its camera is up.
+const _CB_CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+function cardBattleAiming() { return cardBattleActive() || _cb.k > 0.0001; }
+function cardBattleReticles() {
+    if (!cardBattleAiming()) return false;
+    if (typeof ctx === "undefined" || typeof canvas === "undefined" || !cardBattleActive() || _cb.phase === "black") return true;
+    const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenNow === "function" ? VIEW3D.view : null, pulse = 3 * Math.sin(_cbF() * 0.15);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.globalAlpha = 0.9;
+    for (const a of _cb.foes) {
+        if (!_cbFoeOk(a)) continue;
+        let x, y, r = 26;
+        if (V) { if (typeof V.has === "function" && !V.has(a)) continue;
+            const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, 0), q = V.screenNow(a.x, a.y, top), e = V.screenNow(a.x + 1, a.y, 0); x = (p[0] + q[0]) / 2; y = (p[1] + q[1]) / 2;
+            r = Math.max(22, Math.min(80, 0.8 * top * Math.hypot(e[0] - p[0], e[1] - p[1]) / ((typeof TILE_W !== "undefined" ? TILE_W : 64) * Math.SQRT2) + 8)); }   // (round its body as the picture draws it, a tank's as a scout's: its width, px of the game's drawing, at the floor's scale there; the agent's)
+        else if (typeof _gunScreen === "function") { const p = _gunScreen(a); x = p.x; y = p.y; }
+        else continue;
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        const R = r + pulse, k = Math.max(8, R * 0.35);
+        for (const [sx, sy] of _CB_CORNERS) { ctx.beginPath(); ctx.moveTo(x + sx * R, y + sy * (R - k)); ctx.lineTo(x + sx * R, y + sy * R); ctx.lineTo(x + sx * (R - k), y + sy * R); ctx.stroke(); }
+    }
+    ctx.restore(); return true;
+}
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }
-function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run } : null; }
-// does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is)
+function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run, walk: T.walk ? T.walk.length : 0 } : null; }   // (walk: the tiles of a walk, §2.39; 0 for an attack)
+// does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is; and that one too while it walks: the battle walks it, §2.39)
 function cardBattleHolds(a) {
     const T = _cb.turn; if (!T || _cb.phase !== "on" || !a) return false;
-    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return false;
+    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return !!T.walk;
     if (_cb.foes.indexOf(a) >= 0) return true;
     return a !== (typeof player !== "undefined" ? player : null) && _cbMine(a);
 }
@@ -352,6 +477,13 @@ function cardBattlePlay(f, kind, id, target) {
     if (live.indexOf(target) < 0) target = _cbNearest(f, live);
     const card = cardBattleCards(f).find(c => c.kind === kind && (kind !== "move" || c.id === id));
     if (!card || !card.ready) return false;
+    // MOVE NOW, ATTACK LATER (§2.39): it cannot hit that enemy from its square: its turn is a walk towards one it can (the card stays ready); no way nearer, nothing is played
+    if (kind !== "ult" && _cb.lay && !_cbCanHit(f, target, kind, id)) {
+        const walk = _cbWalkPath(f, target, kind, id);
+        if (!walk) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "NO WAY THROUGH", color: "#ffb347", life: 50, vy: -0.05 }); return false; }
+        _cb.turn = { who: "act", f, kind, id: kind === "move" ? id : null, target, t0: _cbF(), hit: 0, fired: false, saved: null, walk, wi: 0, arrived: 0 };
+        _cbRefresh(); return true;
+    }
     const T = { who: "act", f, kind, id: kind === "move" ? id : null, target, t0: _cbF(), hit: 0, fired: false, saved: { alt: f.alt || null, both: !!f.altBoth } };
     if (kind === "move") {
         f.alt = id; f.altBoth = false; f._altWind = 0; f._altLive = null; f._altReadyAt = 0; f._altRest = false; f._altTurn = false;
@@ -376,8 +508,16 @@ function _cbNextFoe() {
     const ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(T.a, t));
     while (T.queue.length) {
         const a = T.queue.shift(); if (!_cbFoeOk(a)) continue;
-        T.a = a; const prey = ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, ours.filter(ok));
+        T.a = a; let prey = ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, ours.filter(ok));
         if (!prey) continue;
+        T.walk = null; T.wi = 0; T.arrived = 0; T.sp = false; T.spOn = false; T.spEnd = 0; T.anc = null;
+        // MOVE NOW, ATTACK LATER (§2.39): it bites one of yours next to its square (its prey first), or its special goes off from there; else its turn is a walk towards its prey (RUN's last hits as before, §2.16)
+        if (!T.run && _cb.lay && !_cbCanHit(a, prey, "basic")) {
+            const near = ours.filter(t => ok(t) && _cbCanHit(a, t, "basic"));
+            if (near.length) prey = _cbNearest(a, near);
+            else if (_cbSpecialNow(a)) T.sp = true;
+            else { const walk = _cbWalkPath(a, prey, "basic"); if (!walk) continue; T.walk = walk; }
+        }
         a.currentTarget = prey; a._prey = prey; a.provoked = true; if (a.state === "wander") a.state = "hunt";
         T.t0 = _cbF(); T.hit = 0; _cbRefresh(); return;
     }
@@ -395,14 +535,19 @@ function _cbTurnTick() {
     }
     _cbSlide();
     if (T.who === "act") {
-        const f = T.f, el = f0 - T.t0;
+        const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
+        if (T.walk) { if (_cbWalkTick(T, f) || !live) { if (live) _cbFoesTurn(false); else _cb.turn = { who: "you", t0: f0 }; } return; }   // (its walk, §2.39: then the enemies, as after a card)
+        if (_cb.lay) _cbTether(T, f);
         if (T.kind === "move" && f._altLive) T.fired = true;
-        const live = _cb.foes.some(_cbFoeOk), landed = T.hit && f0 - T.hit >= C.beat;
+        const landed = T.hit && f0 - T.hit >= C.beat;
         const done = T.kind === "ult" ? el >= C.ultHold : T.kind === "basic" ? landed : (T.fired && !f._altLive && el >= C.beat) || (landed && !f._altLive);
-        if (done || el >= C.actMax || f.dead || !(f.health > 0) || !live) { _cbActEnd(); if (live) _cbFoesTurn(false); else _cb.turn = { who: "you", t0: f0 }; }
+        if (done || el >= C.actMax || f.dead || !(f.health > 0) || !live) { _cbActEnd(); _cbResquare(f); if (live) _cbFoesTurn(false); else _cb.turn = { who: "you", t0: f0 }; }
     } else if (T.who === "foe") {
         const a = T.a;
-        if (!a || !_cbFoeOk(a) || (T.hit && f0 - T.hit >= C.beat) || f0 - T.t0 >= C.foeMax) _cbNextFoe();
+        if (T.walk) { if (_cbWalkTick(T, a)) _cbNextFoe(); return; }
+        if (a && !T.run && _cb.lay) _cbTether(T, a);
+        if (T.sp && a) { const busy = a.abilityPhase === "winding" || a.abilityPhase === "active"; if (busy) T.spOn = true; else if (!T.spEnd && (T.spOn || f0 - T.t0 > 30)) T.spEnd = f0; }   // (a turn for its special: over once it has gone off and missed)
+        if (!a || !_cbFoeOk(a) || (T.hit && f0 - T.hit >= C.beat) || f0 - T.t0 >= C.foeMax || (T.spEnd && !T.hit && f0 - T.spEnd >= C.beat)) { if (a && !T.run) _cbResquare(a); _cbNextFoe(); }
     }
 }
 function _cbRefresh() { if (_cbEls) _cbEls.at = -1e9; }
@@ -515,7 +660,8 @@ function cardBattleScreen() {
         const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
-      const txt = !T ? "" : T.who === "you" ? "YOUR TURN · DRAG A CARD ONTO AN ENEMY" : T.who === "act" ? nm(T.f) + " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK") : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a);
+      const mv = T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39)
+      const txt = !T ? "" : T.who === "you" ? "YOUR TURN · DRAG A CARD ONTO AN ENEMY" : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }

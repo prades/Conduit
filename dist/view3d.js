@@ -28775,7 +28775,7 @@ const GAMEVIEW = (function () {
     const world = CORE.buildWorld(map.lab, { live: true });
     const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);
     const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
-    const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3();
+    const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3();
     CORE.SEE(cam);
     const SWING = 0.4;
     let yaw = 0;
@@ -29265,7 +29265,8 @@ const GAMEVIEW = (function () {
                 return false;
             return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y);
         },
-        screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
+        screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+        screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
     };
 })();
 ;

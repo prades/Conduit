@@ -222,7 +222,7 @@ function drawTargetUI() {
     const a = targetCurrent(); if (!a) { _tgAmmoDraw(); return; }   // (no creature: the ammunition is still there, where the button comes up)
     const f = typeof frame !== "undefined" ? frame : 0, p = _tgScreen(a), age = f - _acquireAt;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (age >= 0 && age < TARGET.acquire) { const k = age / TARGET.acquire; _tgCorners(p, 60 - 34 * k, 10, k > 0.7 ? "#ff4a3a" : "#ffb347", 3, 0.95); }   // locking on: the corners close in (then drawLockReticle's red ones stay)
+    if (age >= 0 && age < TARGET.acquire && !(typeof cardBattleAiming === "function" && cardBattleAiming())) { const k = age / TARGET.acquire; _tgCorners(p, 60 - 34 * k, 10, k > 0.7 ? "#ff4a3a" : "#ffb347", 3, 0.95); }   // locking on: the corners close in (then drawLockReticle's red ones stay)
     ctx.restore();
     _tgDialDraw(a, f);
 }

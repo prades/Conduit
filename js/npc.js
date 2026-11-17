@@ -273,8 +273,9 @@ function updateRTSNPC(actor) {
         if (role === "sniper") {
             const SNIPER_PREFERRED = 4.0;
             const SNIPER_MIN       = 2.5;
+            const _cbStand = typeof cardBattleStands === "function" && cardBattleStands(actor);   // CARD BATTLES: its card's turn, from its square: it shoots from there, near or far, never backing off or walking in (js/cardbattle.js)
 
-            if (nearestEnemy && nearestEnemyDist < 10 * _reach) {
+            if (nearestEnemy && (nearestEnemyDist < 10 * _reach || _cbStand)) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored for the same reason as the brawler's distance: the
                 // back-off below runs for every dist under SNIPER_MIN, zero
@@ -289,17 +290,17 @@ function updateRTSNPC(actor) {
 
                 // THE FORMATION (js/formation.js, build 2026-11-10b; the owner: "Fight from their places"): a Mage with its place behind you shoots from there, at an enemy it can see within
                 // FORMATION.mageRange; it moves only to see one (as before), keeps its place when one is farther, and goes back to it between shots. One sent at a creature fights as before.
-                const _fmSpot = !_ord && typeof formationSpot === "function" ? formationSpot(actor) : null, _range = _fmSpot ? FORMATION.mageRange : SNIPER_PREFERRED;
-                if (seen && dist < SNIPER_MIN) {
+                const _fmSpot = !_ord && !_cbStand && typeof formationSpot === "function" ? formationSpot(actor) : null, _range = _fmSpot ? FORMATION.mageRange : SNIPER_PREFERRED;
+                if (seen && dist < SNIPER_MIN && !_cbStand) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
                     actor.y-=(dy/dist)*actor.moveSpeed*1.2;
                 } else if (_fmSpot && seen && dist > _range) {
                     followPlayer(actor);   // (beyond its reach: it keeps its place, and the Brawlers meet it)
-                } else if (!seen || dist > _range) {
+                } else if ((!seen || dist > _range) && !_cbStand) {
                     const _sp = _ord && dist > SNIPER_PREFERRED + 2 ? 1 : 0.6;   // (a creature it was sent at, far off: at its full pace)
                     actor.x+=(dx/dist)*actor.moveSpeed*_sp;
                     actor.y+=(dy/dist)*actor.moveSpeed*_sp;
-                } else {
+                } else if (seen) {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
                     if ((typeof cardAttackHolds === "function" && cardAttackHolds(actor)) || (typeof followerAltLocked === "function" && followerAltLocked(actor))) { /* a card attack set, or locked on its chosen alternate (js/moves.js): no shot */ }

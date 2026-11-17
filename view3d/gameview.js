@@ -29,7 +29,7 @@ const GAMEVIEW = (function () {
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
   const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
-  const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(); CORE.SEE(cam);
+  const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3(); CORE.SEE(cam);   // (SCR: screenNow's point, kept)
   // TURNED AND ZOOMED (js/view3d.js VIEW3D.turn, VIEW3D.zoom; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"): it swings round
   // the vertical to the quarter turn chosen, a quarter in SWING s (js/config.js turns the game's own drawing over it the same way, and while it swings that drawing waits); its picture is scaled
   // about the screen's middle, as the game's drawing over it is (js/view3d.js view3dWorldBegin). SWIPED (a finger, js/view3d.js VIEW3D.twist): it goes round with the finger, at once,
@@ -208,6 +208,8 @@ const GAMEVIEW = (function () {
       if (it.fp === 'stairwell' && it.up) return false;   // (a flight of stairs up, the Cold Storage's to the Experiment Lab: the view builds it, design/style-evolution/live/floor.js; a stairwell down, a hole in the floor, is still the game's)
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
-    screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
+    screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+    // the same by the camera as the last frame drew it, not placed again (a card battle's reticles ask it every frame, js/cardbattle.js: placing it would cut a turn's swing short)
+    screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
   };
 })();

@@ -49,6 +49,7 @@ function gunTick() {
 }
 // the lock's reticle: four red corners round the locked enemy, turning in and out
 function drawLockReticle() {
+    if (typeof cardBattleReticles === "function" && cardBattleReticles()) return;   // (a card battle: these corners round each of its enemies instead, where the 3D view draws it: js/cardbattle.js)
     if (!playerAttackMode || !_gunLive(playerLockTarget) || typeof ctx === "undefined") return;
     const p = _gunScreen(playerLockTarget), f = typeof frame !== "undefined" ? frame : 0, r = 26 + 3 * Math.sin(f * 0.15), k = 9;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.globalAlpha = 0.9;
