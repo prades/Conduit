@@ -30,6 +30,8 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 ## 4. Stage 1: what it draws
 
 ### 4.1 The camera
+*(A card battle, `?cards`, build `2026-11-17d`: the camera eases to the fight, lower, turned and nearer, while the 2D over the picture waits: `CARD-BATTLES.md` §9.)*
+
 **The game's own camera**: the same angle (2:1, 30° down), the same scale (a tile `TILE_W` px across) and centred on the player, riding the player's floor as the game's does (`js/facilityplay.js` `_fpP`, `_fpCam`). A point of the world is on the screen exactly where the game's drawing puts it (within a pixel, tested), so every 2D drawing laid over the picture lies where it did: bars, plates, effects, marks, the start screen's panels, and every tap.
 
 **Turned and zoomed** (build `2026-11-17a`). The owner, 2026-11-17, asked what next: **"there was so much more in the demo than there is now there was a one key thing of note is the fact that I could rotate the camera and zoom in zoom out"**; asked how to turn, given the 2D still drawn over the picture: **"90° steps"**.

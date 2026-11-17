@@ -82,6 +82,7 @@ function battleViewTick() {
     let want = f - _bv.engagedAt <= BATTLE_VIEW.hold ? 1 : 0;
     if (typeof dialogueCurrent === "function" && dialogueCurrent()) want = 0;   // the dialogue box: out
     if (typeof attractOn === "function" && attractOn()) want = 0;
+    if (typeof cardBattleCam === "function" && cardBattleCam()) want = 0;   // a card battle has its own camera and edges (js/cardbattle.js)
     if (want > _bv.k) _bv.k = Math.min(1, _bv.k + 1 / BATTLE_VIEW.easeIn + 1e-9); else if (want < _bv.k) _bv.k = Math.max(0, _bv.k - 1 / BATTLE_VIEW.easeOut - 1e-9);   // (the hair: exactly 1 and 0 at the ends)
     _bv.z = _bv.k > 0 ? 1 + (BATTLE_VIEW.zoom - 1) * _bvSmooth(_bv.k) : 1;
 }

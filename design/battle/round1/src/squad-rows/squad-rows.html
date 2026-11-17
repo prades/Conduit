@@ -1,0 +1,125 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Squad rows</title>
+<script src="../shared/scene.js"></script>
+<style id="st"></style>
+<style>
+html,body{margin:0;background:#070b16;overflow:hidden}
+#root{position:relative;overflow:hidden;--band:236px}
+#root.port{--band:478px}
+.ban{position:absolute;left:50%;top:10px;transform:translateX(-50%);text-align:center;color:#fff}
+.ban .t{display:inline-block;padding:3px 26px 5px;background:#19e6c1;color:#070b16;font-family:Barlow,sans-serif;font-size:30px;letter-spacing:1px;
+  clip-path:polygon(12px 0,100% 0,calc(100% - 9px) 100%,0 100%,0 12px);box-shadow:0 0 30px #19e6c1}
+.ban .s{margin-top:4px;font-family:Chakra,monospace;font-size:14px;letter-spacing:1px;background:rgba(7,11,22,.85);display:inline-block;padding:2px 12px}
+.ban .s b{color:#ffcc44}
+/* the enemy list, top right */
+.foes{position:absolute;right:12px;top:10px;width:262px;background:rgba(7,11,22,.88);padding:6px 10px 8px 12px;border-top:3px solid #ff4a1c;
+  clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);font-family:Chakra,monospace;color:#fff}
+.foes h4{margin:0 0 4px;font-family:Barlow,sans-serif;font-weight:400;font-size:16px;letter-spacing:1.5px;color:#ff8a6a}
+.foe{display:grid;grid-template-columns:1fr auto;gap:0 8px;margin-top:5px;align-items:center}
+.foe b{font-family:Barlow,sans-serif;font-weight:400;font-size:16px}
+.foe .hp{font-size:12px;opacity:.85}
+.foe .bar{grid-column:1/3;display:flex;gap:2px;transform:skewX(-14deg)}.foe .bar i{flex:1;height:6px;background:rgba(255,255,255,.14)}.foe .bar i.on{background:#ff4a1c}
+.foe .it{grid-column:1/3;font-size:12px;color:#ffd9cf;margin-top:2px}.foe .it strong{background:#fff;color:#ff4a1c;padding:0 5px;font-family:Titan,sans-serif;font-weight:400}
+.foe.dim{opacity:.35}.foe.lit{outline:2px solid #fff;outline-offset:2px}
+/* the band */
+.band{position:absolute;left:0;right:0;bottom:0;height:var(--band);background:linear-gradient(to bottom,rgba(5,8,16,.0),rgba(5,8,16,.82) 26px,rgba(5,8,16,.95));}
+.row{position:absolute;left:12px;right:12px;bottom:10px;top:20px;display:flex;gap:9px}
+.basic{flex:0 0 118px}
+.col{flex:1;display:flex;flex-direction:column;min-width:0;border-top:3px solid var(--c);background:linear-gradient(to bottom,color-mix(in srgb,var(--c) 16%,transparent),transparent 60%);
+  clip-path:polygon(12px 0,100% 0,100% 100%,0 100%,0 12px);padding:6px 7px 0}
+.col.dimc{opacity:.35}
+.head{display:flex;align-items:center;gap:8px;height:44px}
+.head .pt{width:40px;height:40px;border-radius:50%;border:3px solid var(--c);overflow:hidden;flex:0 0 auto;background:#dfeef2}
+.head .pt img{width:100%;height:100%;object-fit:cover}
+.head .nmw{flex:1;min-width:0}
+.head .nm{font-family:Barlow,sans-serif;font-size:20px;line-height:20px;color:#fff;display:flex;justify-content:space-between;gap:6px}
+.head .nm small{font-family:Chakra,monospace;font-size:12px;color:var(--c);align-self:flex-end}
+.head .hb{display:flex;gap:2px;margin-top:4px;transform:skewX(-14deg)}.head .hb i{flex:1;height:7px;background:rgba(255,255,255,.14)}.head .hb i.on{background:var(--c)}
+.head .hpn{font-family:Chakra,monospace;font-size:13px;color:#fff;white-space:nowrap}
+.cards{flex:1;display:flex;gap:7px;padding:6px 0 0}
+.card{position:relative;flex:1;min-width:0;color:#fff;font-family:Chakra,monospace;--k:var(--c)}
+.card .face{position:absolute;inset:0;background:linear-gradient(160deg,#16224a 0%,#0b1124 55%,#05070f 100%);border:2px solid var(--k);
+  clip-path:polygon(16px 0,100% 0,100% 100%,0 100%,0 16px);overflow:hidden}
+.card .face:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,var(--k) 0,transparent 60%);opacity:.35}
+.card .face:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-62deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)}
+.card .kind{position:absolute;left:14px;top:6px;font-size:10px;letter-spacing:1px;color:var(--k);z-index:2}
+.card .ic{position:absolute;right:8px;top:4px;font-size:30px;color:var(--k);text-shadow:0 0 12px var(--k);z-index:2}
+.card .nm{position:absolute;left:0;right:0;top:36px;padding:3px 6px 2px 9px;font-family:Barlow,sans-serif;font-size:19px;line-height:19px;border-left:4px solid var(--k);background:rgba(0,0,0,.45);z-index:2}
+.card .fx{position:absolute;left:8px;right:6px;top:64px;font-size:11.5px;line-height:13.5px;color:#d8e2f5;z-index:2}
+.card .st{position:absolute;left:2px;right:2px;bottom:2px;height:24px;display:flex;align-items:center;justify-content:center;font-family:Barlow,sans-serif;font-size:16px;letter-spacing:1px;z-index:2}
+.card.ready .st{background:var(--k);color:#070b16}
+.card.ready .face{box-shadow:0 0 0 2px var(--k)}
+.card.ready{filter:drop-shadow(0 0 8px var(--k))}
+.card.wait .face{filter:brightness(.42) saturate(.3)}
+.card.wait .st{background:#1a2238;color:#9fb0d0}
+.card .turns{position:absolute;right:8px;top:58px;z-index:3;font-family:Titan,sans-serif;font-size:44px;line-height:44px;color:#fff;text-align:center;
+  text-shadow:0 3px 0 #000,3px 0 0 #000,-3px 0 0 #000,0 -3px 0 #000,0 0 14px var(--k)}
+.card .turns small{display:block;font-family:Barlow,sans-serif;font-size:13px;line-height:13px;letter-spacing:1px}
+.card.wait .fx{opacity:.55;right:58px}
+.card.ult{--k:#ffcc44}
+.card.ult .face{border-image:linear-gradient(135deg,#ffcc44,#fff2b8,#ffcc44) 1}
+.card.picked{transform:translateY(-4px) scale(1.03);filter:drop-shadow(0 0 16px #fff)}.card.picked .face{border-color:#fff}
+.basic .card{height:100%}
+.basic .card .who{position:absolute;left:0;right:0;top:44px;text-align:center;z-index:2;font-size:46px;color:#ffcc44;text-shadow:0 0 18px #ffcc44}
+.basic .card .nm{top:108px}.basic .card .fx{top:150px}
+.tgt{position:absolute}
+.reticle{position:absolute;width:150px;height:76px;border:4px solid #fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 24px #8fe3ff,inset 0 0 18px #8fe3ff}
+.cancel{position:absolute;font-family:Barlow,sans-serif;font-size:20px;color:#fff;background:rgba(7,11,22,.9);border:2px solid #ff4a1c;padding:6px 18px;clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px)}
+.port .basic{flex:0 0 96px}.port .card .nm{font-size:17px;line-height:17px}.port .basic .card .nm{top:118px}.port .basic .card .fx{top:160px}
+.port .cards{flex-direction:column}.port .card .fx{top:60px}
+.port .head .nm small{display:none}.port .head .nm{font-size:19px}
+.port .basic .card .who{top:120px;font-size:56px}.port .basic .card .nm{top:210px;font-size:22px;line-height:22px}.port .basic .card .fx{top:268px;font-size:13px;line-height:16px}
+.port .card .fx{font-size:12.5px;line-height:15px;top:62px}.port .card .turns{top:96px}
+.port .row{top:24px}
+</style></head><body><div id="root"></div>
+<script>
+document.getElementById('st').textContent = fontFaces() + SCENE_CSS;
+const q = new URLSearchParams(location.search), PORT = q.get('o') === 'p', F2 = q.get('f') === '2';
+const W = PORT ? 820 : 1180, H = PORT ? 1180 : 820;
+const root = document.getElementById('root'); root.style.width = W + 'px'; root.style.height = H + 'px'; if (PORT) root.className = 'port';
+window.SCENE = PORT ? { s: 0.8, ox: -50, oy: 70 } : { s: 1, ox: 0, oy: -14 };
+if (PORT) root.insertAdjacentHTML('beforeend', `<img class="bg" src="../../battle-bg-blur.png" style="left:-300px;top:0;width:1420px;height:1180px;filter:blur(14px) brightness(.8)">`);
+drawScene(root, { mask: PORT, bg: '../../battle-bg-blur.png', dim: F2 ? ['soldier', 'worker'] : null, lit: F2 ? 'striker' : null, arrows: !F2,
+  nudge: PORT ? { worker: [-10, 128], rime: [12, 0] } : { soldier: [-190, 0] } });
+if (F2) {
+  const [rx, ry] = P(752, 410);
+  [...root.querySelectorAll('.bg')].pop().insertAdjacentHTML('afterend', `<div class="dimmer" style="position:absolute;inset:0;background:radial-gradient(ellipse ${170 * SCENE.s}px ${120 * SCENE.s}px at ${rx}px ${ry - 30 * SCENE.s}px,transparent 70%,rgba(7,11,22,.5))"></div>`);
+  root.insertAdjacentHTML('beforeend', `<div class="reticle" style="left:${rx}px;top:${ry}px"></div>`);
+}
+root.insertAdjacentHTML('beforeend', F2
+  ? `<div class="ban"><div class="t" style="background:#8fe3ff;box-shadow:0 0 30px #8fe3ff">ICICLE VOLLEY</div><br><div class="s">RIMESTAR · <b>TAP AN ANT</b> TO AIM IT</div></div>`
+  : `<div class="ban"><div class="t">YOUR TURN</div><br><div class="s">TURN 3 · <b>PICK ONE CARD</b></div></div>`);
+// the enemy list
+const foes = UNITS.filter(u => u.side === 'them').map(u => {
+  const on = Math.ceil(u.hp / u.max * 10), cls = F2 ? (u.id === 'striker' ? ' lit' : ' dim') : '';
+  return `<div class="foe${cls}"><b>${u.name}</b><span class="hp">${u.hp}/${u.max}</span><div class="bar">${Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="it">${u.intent} → ${u.target} <strong>${u.dmg}</strong></div></div>`;
+}).join('');
+root.insertAdjacentHTML('beforeend', PORT ? '' : `<div class="foes"><h4>THEIR TURN NEXT</h4>${foes}</div>`);
+if (PORT) root.insertAdjacentHTML('beforeend', `<div class="foes" style="top:auto;bottom:calc(var(--band) + 6px);right:10px"><h4>THEIR TURN NEXT</h4>${foes}</div>`);
+// the band: the basic attack, then one column per follower
+const SQUAD = [
+  { id: 'jelly', name: 'JELLY RAM', el: 'core', lab: 'CORE', hp: 52, max: 63, cards: [
+    { nm: 'WOBBLE SLAM', kind: 'MOVE', fx: 'Hits every enemy near it; they stagger.', dmg: 12, wait: 2, ic: '◎' },
+    { nm: 'JELLY SHIELDS', kind: 'ULTIMATE', fx: 'Shields the squad; knocks attackers back.', wait: 4, ult: true, ic: '⛨' } ] },
+  { id: 'stone', name: 'STONEPETAL', el: 'blossom', lab: 'BLOOM', hp: 41, max: 63, cards: [
+    { nm: 'STAKE RING', kind: 'MOVE', fx: 'Crystal spikes round it push enemies out.', dmg: 11, ready: true, ic: '✸' },
+    { nm: 'REEF PILLAR', kind: 'ULTIMATE', fx: 'A crystal wall that mends followers near it.', wait: 6, ult: true, ic: '▲' } ] },
+  { id: 'rime', name: 'RIMESTAR', el: 'ice', lab: 'ICE', hp: 63, max: 63, cards: [
+    { nm: 'ICICLE VOLLEY', kind: 'MOVE', fx: '3 icicles at one enemy; each freezes it.', dmg: '5×3', ready: true, ic: '❄' },
+    { nm: 'WHITEOUT', kind: 'ULTIMATE', fx: 'A snowstorm: enemies slowed and chilled.', wait: 3, ult: true, ic: '❅' } ] }
+];
+const card = (c, picked) => `<div class="card ${c.ready ? 'ready' : 'wait'}${c.ult ? ' ult' : ''}${picked ? ' picked' : ''}"><div class="face"></div>
+  <div class="kind">${c.kind}</div><div class="ic">${c.ic}</div><div class="nm">${c.nm}</div><div class="fx">${c.fx}</div>
+  ${c.ready ? '' : `<div class="turns">${c.wait}<small>${c.wait === 1 ? 'TURN' : 'TURNS'}</small></div>`}
+  <div class="st">${c.ready ? (picked ? 'AIMING…' : 'READY') + (c.dmg ? ' · ' + c.dmg : '') : c.ult ? 'CHARGING' : 'RECHARGING'}</div></div>`;
+let band = `<div class="band"><div class="row"><div class="basic" style="--c:#ffcc44">
+  <div class="card ready" style="${F2 ? 'opacity:.4' : ''}"><div class="face"></div><div class="kind">THE SQUAD'S</div><div class="who">◆</div><div class="nm">BASIC ATTACK</div><div class="fx">Hits one enemy. Always ready.</div><div class="st">READY · 6</div></div></div>`;
+SQUAD.forEach(f => {
+  const on = Math.ceil(f.hp / f.max * 10);
+  band += `<div class="col${F2 && f.id !== 'rime' ? ' dimc' : ''}" style="--c:${col(f.el)}"><div class="head"><div class="pt"><img src="../shared/p-${f.id}.png"></div>
+    <div class="nmw"><div class="nm">${f.name}<small>${f.lab}</small></div><div class="hb">${Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div></div>
+    <div class="hpn">${f.hp}/${f.max}</div></div><div class="cards">${f.cards.map(c => card(c, F2 && c.nm === 'ICICLE VOLLEY')).join('')}</div></div>`;
+});
+root.insertAdjacentHTML('beforeend', band + '</div></div>');
+if (F2) root.insertAdjacentHTML('beforeend', `<div class="cancel" style="left:12px;bottom:calc(var(--band) + 4px)">✕ BACK TO CARDS</div>`);
+</script></body></html>

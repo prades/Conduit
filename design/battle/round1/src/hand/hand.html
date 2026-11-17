@@ -1,0 +1,95 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Hand of cards</title>
+<script src="../shared/scene.js"></script>
+<style id="st"></style>
+<style>
+html,body{margin:0;background:#070b16;overflow:hidden}
+#root{position:relative;overflow:hidden}
+.vig{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(5,8,16,.92) 0,rgba(5,8,16,.55) 150px,rgba(5,8,16,0) 260px)}
+.banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);text-align:center;color:#fff;pointer-events:none}
+.banner .slab{background:${'#ffcc44'};}
+.ban{display:inline-block;padding:4px 30px 6px;background:#19e6c1;color:#070b16;font-family:Barlow,sans-serif;font-size:34px;letter-spacing:1px;
+  clip-path:polygon(14px 0,100% 0,calc(100% - 10px) 100%,0 100%,0 14px);box-shadow:0 0 30px #19e6c1}
+.sub{margin-top:4px;font-family:Chakra,monospace;font-size:14px;letter-spacing:1px;background:rgba(7,11,22,.85);display:inline-block;padding:2px 12px}
+.sub b{color:#ffcc44}
+.hand{position:absolute;left:0;right:0;bottom:0;height:0}
+.card{position:absolute;width:150px;height:212px;transform-origin:50% 160%;color:#fff;font-family:Chakra,monospace}
+.card .face{position:absolute;inset:0;background:linear-gradient(160deg,#16224a 0%,#0b1124 55%,#05070f 100%);
+  clip-path:polygon(22px 0,100% 0,100% 100%,0 100%,0 22px);overflow:hidden}
+.card .face:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,var(--c) 0,transparent 62%);opacity:.38}
+.card .face:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-62deg,rgba(255,255,255,.05) 0 2px,transparent 2px 16px)}
+.card .edge{position:absolute;inset:0;clip-path:polygon(22px 0,100% 0,100% 100%,0 100%,0 22px);background:var(--c);z-index:-1;transform:scale(1.035);filter:drop-shadow(0 0 10px var(--c))}
+.card .who{position:absolute;left:8px;top:8px;width:44px;height:44px;border-radius:50%;border:3px solid var(--c);overflow:hidden;background:#dfeef2;z-index:2}
+.card .who img{width:100%;height:100%;object-fit:cover}
+.card .who.sig{display:flex;align-items:center;justify-content:center;background:#070b16;font-size:24px;color:var(--c)}
+.card .own{position:absolute;left:58px;top:10px;right:8px;font-size:11px;line-height:13px;color:var(--c);z-index:2;letter-spacing:.5px}
+.card .own small{display:block;color:#9fb0d0;font-size:10px}
+.card .art{position:absolute;left:0;right:0;top:56px;height:62px;display:flex;align-items:center;justify-content:center;z-index:1}
+.card .nm{position:absolute;left:0;right:0;top:118px;padding:4px 8px 3px 12px;font-family:Barlow,sans-serif;font-size:21px;line-height:21px;
+  background:linear-gradient(90deg,rgba(0,0,0,.65),rgba(0,0,0,.2));border-left:5px solid var(--c);z-index:2}
+.card .fx{position:absolute;left:10px;right:8px;top:146px;font-size:12px;line-height:14px;color:#d8e2f5;z-index:2}
+.card .st{position:absolute;left:0;right:0;bottom:0;height:24px;display:flex;align-items:center;justify-content:center;font-family:Barlow,sans-serif;font-size:17px;letter-spacing:1px;z-index:2}
+.card.ready .st{background:var(--c);color:#070b16}
+.card.wait .face{filter:brightness(.42) saturate(.35)}
+.card.wait .edge{filter:none;opacity:.35}
+.card.wait .st{background:#1a2238;color:#9fb0d0}
+.card.ult .st{background:#3a2f10;color:#ffcc44;font-size:15px}
+.card .turns{position:absolute;left:0;right:0;top:46px;text-align:center;z-index:3;font-family:Titan,sans-serif;font-size:58px;line-height:58px;color:#fff;
+  text-shadow:0 0 0 #000,0 3px 0 #000,3px 0 0 #000,-3px 0 0 #000,0 -3px 0 #000,0 0 18px var(--c)}
+.card .turns small{display:block;font-family:Barlow,sans-serif;font-size:16px;line-height:14px;letter-spacing:2px;text-shadow:0 2px 0 #000}
+.card.ult .edge{background:linear-gradient(135deg,#ffcc44,#fff2b8,#ffcc44)}
+.card.ult .ultag{position:absolute;right:-2px;top:58px;z-index:4;background:#ffcc44;color:#070b16;font-family:Barlow,sans-serif;font-size:13px;padding:1px 8px 1px 10px;
+  clip-path:polygon(6px 0,100% 0,100% 100%,0 100%)}
+.card .meter{position:absolute;left:10px;right:10px;bottom:30px;height:6px;display:flex;gap:2px;z-index:3;transform:skewX(-14deg)}
+.card .meter i{flex:1;background:rgba(255,255,255,.18)}.card .meter i.on{background:#ffcc44}
+.card.picked .edge{background:#fff;filter:drop-shadow(0 0 22px #fff)}
+.hint{position:absolute;font-family:Chakra,monospace;font-size:13px;color:#9fb0d0;background:rgba(7,11,22,.8);padding:3px 10px}
+.tgt{position:absolute;left:50%;top:76px;transform:translateX(-50%);font-family:Barlow,sans-serif;font-size:24px;color:#070b16;background:#8fe3ff;padding:3px 22px;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 8px) 100%,0 100%,0 10px);white-space:nowrap}
+.reticle{position:absolute;width:150px;height:76px;border:4px solid #fff;border-radius:50%;transform:translate(-50%,-50%) rotateX(0);box-shadow:0 0 24px #8fe3ff,inset 0 0 18px #8fe3ff}
+.dimmer{position:absolute;inset:0;background:rgba(7,11,22,.35);pointer-events:none}
+.cancel{position:absolute;font-family:Barlow,sans-serif;font-size:20px;color:#fff;background:rgba(7,11,22,.9);border:2px solid #ff4a1c;padding:6px 18px;
+  clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px)}
+.port .card{width:138px}.port .card .nm{font-size:19px}
+</style></head><body><div id="root"></div>
+<script>
+document.getElementById('st').textContent = fontFaces() + SCENE_CSS;
+const q = new URLSearchParams(location.search), PORT = q.get('o') === 'p', F2 = q.get('f') === '2';
+const W = PORT ? 820 : 1180, H = PORT ? 1180 : 820;
+const root = document.getElementById('root'); root.style.width = W + 'px'; if (PORT) root.className = 'port'; root.style.height = H + 'px';
+window.SCENE = PORT ? { s: 0.8, ox: -50, oy: 190 } : { s: 1, ox: 0, oy: 0 };
+if (PORT) root.insertAdjacentHTML('beforeend', `<img class="bg" src="../../battle-bg-blur.png" style="left:-300px;top:0;width:1420px;height:1180px;filter:blur(14px) brightness(.8)">`);
+drawScene(root, { mask: PORT, nudge: PORT ? { worker: [-10, 128] } : null, bg: '../../battle-bg-blur.png', dim: F2 ? ['soldier', 'worker'] : null, lit: F2 ? 'striker' : null, arrows: !F2 });
+root.insertAdjacentHTML('beforeend', '<div class="vig"></div>');
+if (F2) {
+  const [rx, ry] = P(752, 410);
+  [...root.querySelectorAll('.bg')].pop().insertAdjacentHTML('afterend', `<div class="dimmer" style="background:radial-gradient(ellipse ${170*SCENE.s}px ${120*SCENE.s}px at ${rx}px ${ry-30*SCENE.s}px,transparent 70%,rgba(7,11,22,.5))"></div><div class="reticle" style="left:${rx}px;top:${ry}px"></div>`);
+}
+root.insertAdjacentHTML('beforeend', F2
+  ? `<div class="banner"><div class="ban" style="background:#8fe3ff;box-shadow:0 0 30px #8fe3ff">ICICLE VOLLEY</div><br><div class="sub">RIMESTAR · <b>TAP AN ANT</b> TO AIM IT</div></div>`
+  : `<div class="banner"><div class="ban">YOUR TURN</div><br><div class="sub">TURN 3 · <b>PICK ONE CARD</b></div></div>`);
+const CARDS = [
+  { nm: 'BASIC ATTACK', who: 'SQUAD', el: 'gold', sig: '◆', fx: 'Hits one enemy. Always ready.', dmg: 6, ready: true, art: '✦' },
+  { nm: 'TENTACLE LASH', who: 'JELLY RAM', el: 'core', p: 'jelly', fx: 'Whips one enemy up close.', dmg: 9, ready: true, art: '〰' },
+  { nm: 'WOBBLE SLAM', who: 'JELLY RAM', el: 'core', p: 'jelly', fx: 'Hits every enemy near it; they stagger.', dmg: 12, wait: 2, art: '◎' },
+  { nm: 'STAKE RING', who: 'STONEPETAL', el: 'blossom', p: 'stone', fx: 'Crystal spikes all round it push enemies out.', dmg: 11, ready: true, art: '✸' },
+  { nm: 'ICICLE VOLLEY', who: 'RIMESTAR', el: 'ice', p: 'rime', fx: '3 icicles at one enemy; each freezes it.', dmg: '5×3', ready: true, art: '❄' },
+  { nm: 'JELLY SHIELDS', who: 'JELLY RAM', el: 'core', p: 'jelly', fx: 'Shields the squad; knocks attackers back.', wait: 4, ult: true, art: '⛨' }
+];
+const n = CARDS.length, spread = PORT ? 123 : 132, cx = W / 2, base = H - 18;
+CARDS.forEach((c, i) => {
+  const k = i - (n - 1) / 2, rot = k * (PORT ? 2.4 : 3.6), x = cx + k * spread - (PORT ? 69 : 75), lift = Math.abs(k) * Math.abs(k) * 3;
+  const picked = F2 && c.nm === 'ICICLE VOLLEY';
+  const y = H - 262 - (c.ready ? 18 : -8) + lift - (picked ? 50 : 0);
+  const cl = c.el === 'gold' ? C.gold : col(c.el);
+  const who = c.p ? `<div class="who"><img src="../shared/p-${c.p}.png"></div>` : `<div class="who sig">${c.sig}</div>`;
+  const st = c.ready ? (picked ? 'AIMING…' : 'READY') + (c.dmg ? ` · ${c.dmg}` : '') : c.ult ? 'ULTIMATE · CHARGING' : 'RECHARGING';
+  let h = `<div class="card ${c.ready ? 'ready' : 'wait'}${c.ult ? ' ult' : ''}${picked ? ' picked' : ''}" style="left:${x}px;top:${y}px;transform:rotate(${rot}deg) ${picked ? 'scale(1.08)' : ''};--c:${cl};z-index:${picked ? 30 : 10 + i}${F2 && !picked ? ';opacity:.55' : ''}">
+    <div class="edge"></div><div class="face"></div>${who}<div class="own">${c.who}<small>${c.el === 'gold' ? 'ANY' : c.el === 'blossom' ? 'BLOOM' : c.el.toUpperCase()}</small></div>
+    <div class="art" style="font-size:46px;color:${cl};text-shadow:0 0 16px ${cl}">${c.art}</div>
+    <div class="nm">${c.nm}</div><div class="fx">${c.fx}</div><div class="st">${st}</div>`;
+  if (!c.ready) h += `<div class="turns">${c.wait}<small>${c.wait === 1 ? 'TURN' : 'TURNS'}</small></div>`;
+  if (c.ult) h += ``;
+  root.insertAdjacentHTML('beforeend', h + '</div>');
+});
+if (F2) root.insertAdjacentHTML('beforeend', `<div class="cancel" style="right:${PORT ? 16 : 24}px;top:${PORT ? 16 : 18}px">✕ BACK TO CARDS</div>`);
+</script></body></html>

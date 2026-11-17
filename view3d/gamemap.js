@@ -23,6 +23,7 @@ const VIEW3D_GAME = (0, eval)(`({
   visible(x, y) { return typeof visibleForDraw === "function" ? visibleForDraw(x, y) : true; },
   roomLight(id) { return typeof _fpRoomLight === "function" ? _fpRoomLight(id) : 1; }, tileLight(x, y, id) { return typeof _fpTileLight === "function" ? _fpTileLight(x, y, id) : 1; },
   get lit() { return typeof _fpLit === "function" ? _fpLit() : 1; }, get viewTurn() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? VIEW3D.turn : 0; }, get viewZoom() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? VIEW3D.zoom : 1; }, get viewTwist() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? (VIEW3D.twist || 0) : 0; }, get blackout() { return typeof facilityBlackout === "function" ? facilityBlackout() : false; }, get darkAmt() { return typeof _fpDarkAmt === "function" ? _fpDarkAmt() : (typeof FP_DARK !== "undefined" ? FP_DARK : 0.82); },
+  get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
   // the sewers (js/facilitysewers.js): their water's colours as the 2D has them, the toxic green clearing as the purification runs; the Nest's state; its eggs, junk and rim where the
   // 2D puts them; the dam's pools

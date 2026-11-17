@@ -20,7 +20,7 @@ What it is today:
 
 ## 2. Approved design (2026-11-11, chosen from options)
 
-1. **Real-time stays.** Fights keep their rules (you move, your squad fights as now). Only the look and feel become a JRPG battle's. Turn-based battles and "dramatic beats" (a freeze or slow motion on big moves) were offered and not chosen.
+1. ~~**Real-time stays.**~~ *(Superseded 2026-11-17 for battles by the owner's card battles: turn-based, one card a turn, `CARD-BATTLES.md`. The battle view's zoom and blur below carry over.)* **Real-time stays.** Fights keep their rules (you move, your squad fights as now). Only the look and feel become a JRPG battle's. Turn-based battles and "dramatic beats" (a freeze or slow motion on big moves) were offered and not chosen.
 2. **The battle view comes on when a creature engages** you or your squad: the camera eases in and the edges soften. It eases back out a few seconds after the last one is down or gone. The other offers were "when you lock a target" and "big moves only".
 3. **Fonts: one face for each damage type, and one for statuses.**
    - The six damage types: slashing, piercing, projectile, crushing, earthquake, elemental.
