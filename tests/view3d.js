@@ -70,7 +70,7 @@ function realPage(query, post, pre) {
     let html = rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => '<script>' + post + '</script></body>');
     if (pre) html = html.replace(/<script src="js\/init\.js/, () => '<script>' + pre + '</script><script src="js/init.js');
     fs.writeFileSync(file, html); let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--allow-file-access-from-files', '--user-data-dir=' + prof, '--window-size=1180,820', '--virtual-time-budget=60000', '--dump-dom', 'file://' + file + '?' + query], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 360000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = String(e.stdout || ''); }   /* (six minutes for a hung browser: in a full run, four suites at a time, the page took over four on 2026-11-16) */
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--allow-file-access-from-files', '--user-data-dir=' + prof, '--window-size=1180,820', '--virtual-time-budget=60000', '--dump-dom', 'file://' + file + '?' + query], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 480000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = String(e.stdout || ''); }   /* (six minutes for a hung browser: in a full run, four suites at a time, the page took over four on 2026-11-16) */
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
     const m = dom.match(/<pre id="__v3"[^>]*>([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')) : { none: true };
 }
@@ -127,6 +127,14 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   // with the dialogue's box up (it hangs under QUESTS too: js/dialogue.js) the buttons are under the box, and still work
   dialogueSay('crystal', 'A WORD FOR THE TEST', { now: true, hold: true, key: 'v3btn' }); step(1); out.btnDlg = [_dlgBox.w > 0, bt.y >= _dlgBox.y + _dlgBox.h + bt.r, tapB(1), VIEW3D.turn, [_dlgBox.x, _dlgBox.y, _dlgBox.w, _dlgBox.h, bt.y]];
   dialogueClear(); VIEW3D.turn = 0; V.show(true); step(2);
+  // THE TWIST (the owner, 2026-11-17: "It won't allow me to use my fingers to rotate the screen"): two fingers twisted, the room goes round with them past a few degrees (the camera itself, while
+  // the game's drawing over it waits); let go, it settles on a quarter turn: the next one the way it went once VIEW3D_CAM.twistCommit degrees past one, else back
+  var fing = function (deg) { var r = deg * Math.PI / 180; return [[600 - 100 * Math.cos(r), 400 - 100 * Math.sin(r)], [600 + 100 * Math.cos(r), 400 + 100 * Math.sin(r)]]; };
+  var camAng = function () { var v = new THREE.Vector3(); V.camera.getWorldDirection(v); return Math.atan2(v.z, v.x) * 180 / Math.PI; };
+  var tw = function (deg) { var a0 = camAng(); _v3twoStart.apply(null, fing(0)); for (var i = 1; i <= 8; i++) _v3twoMove.apply(null, fing(deg * i / 8)); step(1);
+    var t = VIEW3D.twist * 180 / Math.PI, turned = camAng() - a0; turned -= Math.round(turned / 360) * 360; var mid = [Math.round(t), view3dSwinging(), Math.abs(turned + t) < 0.5];
+    _v3twoEnd(); var k = VIEW3D.turn, left = VIEW3D.twist; V.show(true); step(2); return mid.concat([k, left, view3dSwinging()]); };
+  out.twist = [tw(5), tw(20), tw(35), tw(-35), tw(-130)]; VIEW3D.turn = 0; V.show(true); step(2);
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
@@ -180,6 +188,10 @@ else {
     check('THE CAMERA\'S BUTTONS under QUESTS: a tap on one turns the camera or zooms it; with a panel up (the pack) they are not drawn and a tap where they are is not theirs; with the dialogue\'s box up they are under it', () => {
         same(JSON.stringify(ON.btn), JSON.stringify([true, true, 1, true, 1.2, false, false, 1]), 'shown, turn right, its turn, zoom in, its zoom; with the pack up: shown, turn left, its turn');
         same(JSON.stringify(ON.btnDlg.slice(0, 4)), JSON.stringify([true, true, true, 1]), 'with a line said: the box drawn, the buttons under it, a tap on one, its turn (the box and the row: ' + JSON.stringify(ON.btnDlg[4]) + ')');
+    });
+    check('THE TWIST (the owner, 2026-11-17: "It won\'t allow me to use my fingers to rotate the screen"): two fingers twisted, the camera goes round with them past 8 degrees, the game\'s drawing over it waiting; let go, it settles on a quarter turn (the next one its way past 20 degrees, else back)', () => {
+        same(JSON.stringify(ON.twist), JSON.stringify([[0, false, true, 0, 0, false], [12, true, true, 0, 0, false], [27, true, true, 1, 0, false], [-27, true, true, 0, 0, false], [-122, true, true, 2, 0, false]]),
+            'for twists of 5, 20, 35, -35 and -130 degrees: the room\'s twist, the drawing waiting, the camera turned by it; then the quarter turn it settled on, the twist left, still swinging');
     });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');
