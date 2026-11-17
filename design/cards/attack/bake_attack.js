@@ -257,6 +257,18 @@ const SAMPLES = {
     tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], hot: '255,250,200', halo: 'rgba(4,2,10,1)', chip: ['#5a5470', '#2a2638', '#08060e', 'rgba(255,238,51,0.35)'], vig: 'rgba(6,4,14,0.65)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 1.0, '#fff27a'] },
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
   },
+  // THE GOO PROXY (flux Technician, evolved form 'gooproxy', design No. 853: design/evolutions/bake.js JOBS, forms31.js _gooFrog) for PHASE SWAP, in the Technician style as the Hammer Slug's round 3:
+  // inside a whole ring of the game's crystals in flux's colour, raising what it has. Its model is a frog's head of violet goo with two bulging eyes, sitting in a black ring with four spikes at its
+  // quarters: it has no legs or claws, so it rears up (P.rear: the ring rigid, the whole of it tipped back) and raises the two spikes at its sides at their root, as arms (P.spikes: this render only,
+  // the game's model is not changed). Its action pose (act 1: its head puffed, its eyes popped). The flux energy card's void behind.
+  gooproxy_phaseswap: {
+    style: 'tech', form: 853, color: '#9933ff', rim: '#b366ff', fx: '#9933ff', world: 'flux', seed: 853,
+    pose: { t: 0.4, act: 1 }, yaw: 0.15, rear: 0.35, lift: 0.08, spikes: { up: 1.0 },   // (reared about 20 degrees; its side spikes turned up about 57 degrees at their root, from leaning down a little to pointing up and out)
+    ring: { n: 12, r: 1.0, h: [0.25, 0.8], w: 0.1, dim: [0.4, 0.2] },   // (dimmed as the Stonepetal's: under the white key light flux's violet whitened the crystals)
+    tone: { sky: '#06030e', hz: ['rgba(40,12,80,0)', 'rgba(46,14,90,0.8)', '#14062a'], halo: 'rgba(4,1,10,1)', white: '235,220,255', ringWhite: '#ecdcff', star: '241,227,255', vig: 'rgba(6,2,14,0.6)', foot: ['rgba(6,2,14,0)', 'rgba(6,2,14,0.65)'], worldK: 0.6, ringGlow: [0.5, 0.25] },
+    lights: { hemi: [0x9a88c0, 0x0a0418, 0.5], key: [0xf4ecff, 1.0], rim: 2.6, back: 1.4, low: [0xb070ff, 1.2, 0, 0.6, 2.0] },
+    cam: { pos: [1.0, 1.75, 5.3], look: [0, 0.05, 0], fov: 38, roll: -0.18 },   // (above the ring, rolled about 10 degrees, as the Hammer Slug's, the whole ring in the card)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -1205,6 +1217,10 @@ window.__card = async function (P, W, H, modelOnly) {
   }
   if (P.lightenDark) { const lm = new Map(); B.g.traverse(m => { if (!m.isMesh || !m.material || !m.material.color || m.material.transparent) return; const c = m.material.color; if (c.r + c.g + c.b > 0.15) return;
     if (!lm.has(m.material)) { const k = m.material.clone(); if (k.emissive) k.emissive.add(new T.Color(P.lightenDark)); lm.set(m.material, k); } m.material = lm.get(m.material); }); }   // (followers round 3, the Rift Mimic: its near-black shards lit a touch from within against the void; their own copy of the material, this render only)
+  if (P.spikes) {   // RAISING ITS SIDE SPIKES (followers round 4, the Goo Proxy: it has no claws or legs, only the four spikes out at its ring's quarters): this render only, the game's model is not changed.
+    // Each spike hangs on its own group (tilted down by its model's o.tilt), on a group turned to its quarter; the two at the sides (odd quarters) are turned up at their root by P.spikes.up radians.
+    B.g.traverse(m => { if (!m.isGroup || !m.parent || !m.children.some(k => k.isMesh && k.geometry.type === 'ConeGeometry')) return; const k = Math.round(m.parent.rotation.y / (PI / 2));
+      if (Math.abs(m.parent.rotation.y - k * PI / 2) < 1e-6 && k % 2 === 1) m.rotation.x -= P.spikes.up; }); }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
   // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
