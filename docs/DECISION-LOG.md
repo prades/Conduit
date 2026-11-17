@@ -61,6 +61,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Four more** (the same day): **the basic attack: you pick the follower** (and the target); **the Ultimate meter fills from hits landed and taken**; **the enemies' turns: one by one, a surprise** (their next moves not shown; SQUAD ROWS' list keeps their health only); **RUN: the enemies get a last hit** (`CARD-BATTLES.md` §2.13 to §2.16).
 - **Four more** (the same day): **targets: drag the card onto the enemy** (the owner's own answer); **every attack shows** (not a hand); **recharge turns from today's wait times** (one rule; its ratio to approve); **the enemies act fastest first** (`CARD-BATTLES.md` §2.17 to §2.20).
 - **Four more** (the same day): **2 seconds of today's wait times make one turn**; **a follower that goes down is out until the battle ends**; **the whole squad down: as the game does now**; **the first playable version in the 3D game behind a switch** (`CARD-BATTLES.md` §2.21 to §2.24).
+- **Corrected** (the owner, the same day: "The basic attack should just be like another card ... obviously every creature has it"): **each follower has its own basic attack card** in its column, always ready; no shared squad card, no picking a follower for it. Supersedes "the basic attack: you pick the follower" (§2.13) and SQUAD ROWS' single basic attack card (`CARD-BATTLES.md` §2.25).
 
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 
