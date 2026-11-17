@@ -1,6 +1,6 @@
 # Card battles (turn-based, one card a turn)
 
-- **Status:** **Designed** (the owner's rules, §2.1 to §2.27, 2026-11-17); the battle screen chosen (SQUAD ROWS, a mockup). **Step 1 implemented** in `2026-11-17d` behind `?cards` with `?engine=3d`: a battle starts and looks like one (§9); verified by `tests/cardbattle.js` and in a browser; not playtested. **No cards or turns yet.**
+- **Status:** **Designed** (the owner's rules, §2.1 to §2.27, 2026-11-17); the battle screen chosen (SQUAD ROWS, a mockup). **Steps 1 and 2 implemented** behind `?cards` with `?engine=3d`: a battle starts and looks like one (`2026-11-17d`), and the battle screen, SQUAD ROWS, shows every member's cards (`2026-11-17e`) (§9); verified by `tests/cardbattle.js` and in a browser; not playtested. **The cards are not played yet and there are no turns** (step 3).
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-17
 - **Branch/build context:** `claude/friendly-thompson-w581x0`, on main's build `2026-11-17c` (the game going 3D behind `?engine=3d`)
@@ -90,8 +90,21 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 - **Ending:** every creature in it down or gone; your squad all down (§2.23: their fall as now); you `leave` (14) tiles from it; or **RUN**, step 1's stand-in: a button at the right (`#cbRun`). The enemies' last hit (§2.16) comes with the turns. For `calm` (240 frames, 4 s) after a battle the creatures that were in it start nothing and go for nobody (else their real-time blows started a new battle at once).
 - **Every number above is the agent's, provisional**, for the owner to judge on the iPad (§11.11).
 
+**Step 2, built in `2026-11-17e`: the battle screen, SQUAD ROWS** (the owner: "2", of carrying on with card battles or the 3D rooms; the 3D rooms are another session's). `js/cardbattle.js` `cardBattleScreen`, `cardBattleCards`; its look in `game.html` ("CARD BATTLES, the battle screen"). **The cards show; they are not played yet** (dragging one onto an enemy and the turns are step 3).
+- **Up while a battle is on** (not during the walk or the black): `body.cb-on`. The rest of the HUD at the bottom and the right is out of its way (the squad strip, the orders and the enemy card, THE CORE, the PACK and CARDS, the dock, the room's tag; the network panel waits). The quest box and the dialogue at the top left stay.
+- **The enemy list, top right:** each creature in the battle, its name and health (not its next move, §2.15); **RUN** under it (it was a button at the right in step 1).
+- **The band along the bottom:** a column for each member of the squad (and the Mutator's clone), in its element's colour: its picture, name, level, health; then **its cards**:
+  - **BASIC ATTACK** (§2.25), always ready: named after its everyday attack where the form has one (a Mage's shot: FIREBALL, CHAIN LIGHTNING; the Thermite Burrower's BURROW STRIKE), with that attack's effect line (`SHOT_INFO`); otherwise "BASIC ATTACK", "Its everyday hit."
+  - **Each second attack it may use** (`evoMoveIds`, `evoMoveAllowed`: BASH before it evolves), its effect line (`MOVE_INFO`), **RECHARGE n TURNS** (its wait time, `MOVES[id].windup`, at `turnSec` 2 s a turn, a part of a turn counted whole: the agent's, open), and **READY** or, while it cools down in today's real-time fight, the turns left.
+  - **Its Ultimate** (§2.11), its effect line (its INFO card's), a gold meter with the charge, **READY** when full.
+  - A member that is down: its column greyed, no cards (§2.22).
+- **Refreshed** 4 times a second (`every` 15 frames), rebuilt only when what it shows has changed.
+- **Upright** (an iPad held tall): the band is taller and a column's cards stack.
+- **Seen in a real browser** (1180 × 820 and 820 × 1180) with the Jelly Ram, Stonepetal and Rimestar against three ants. **Two things seen, not changed:** a one-time tip (REEF IS READY) can open over the battle; the members' pictures came out as plain discs in that browser (the forms' pictures did not load there), to be checked on the iPad.
+
 ## 10. Verification record
 - **Step 1 (`2026-11-17d`):** `tests/cardbattle.js` (9 checks, the game's logic in the sandbox): off without the switch or the 3D view; a near creature starts it where you stand, with the creatures round it (at most four); a far one walks, goes black, lands you and your squad in front of it in its room and in its sight, then eases the camera in, lower and nearer; a hit starts one; outsiders go for nobody of yours, your squad and gun only for those in it; RUN ends it and its creatures stay calm for a while; it ends when its creatures are down; the pieces are wired. **Seen in a real browser** (headless Chromium with software WebGL, at 1180 × 820): the walk, the black, the landing in sight of three ants in the Server Room, the battle camera with blurred edges, RUN, and the camera easing back. **Not playtested; not seen on an iPad.**
+- **Step 2 (`2026-11-17e`):** `tests/cardbattle.js` (12 checks now): each member's own cards (the Jelly Ram's BASIC ATTACK, WOBBLE SLAM and JELLY SHIELDS, the Rimestar's with ICICLE VOLLEY and WHITEOUT at 40%, an egg's BASH), the recharge from the wait time, a second attack cooling 2.5 s showing 2 turns, a Mage's named shot as its basic card; the screen up in a battle and down after. **Seen in a real browser** at both iPad sizes. **Not playtested; not seen on an iPad.**
 
 ## 11. Open questions
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.

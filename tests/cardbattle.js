@@ -81,6 +81,29 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r, 'end', 'phase');
     });
 
+    group('THE BATTLE SCREEN (step 2): SQUAD ROWS\' cards');
+    check('each member\'s own cards (§2.25): its BASIC ATTACK always ready; each second attack it may use, its recharge its wait time at 2 s a turn (rounded up), ready or the turns left; its Ultimate by its meter', () => {
+        const r = J(`(function(){ __fresh(3); const F = partyMembers(); F[0].evolved = 'jellyram'; F[0].element = 'core'; energyFill(F[0]); F[0].ultimateCharge = 100; F[1].evolved = 'rimestar'; F[1].element = 'ice'; energyFill(F[1]); F[1].ultimateCharge = 40;
+            const a = cardBattleCards(F[0]), b = cardBattleCards(F[1]), egg = cardBattleCards(F[2]);
+            const cooler = F.find(f => altCools(f)) || (F[2].role = 'brawler', F[2]); cooler._altReadyAt = frame + 150; const cooling = cardBattleCards(cooler).find(c => c.kind === 'move');   // (one that cools down after its move: a Brawler, js/moves.js altCools)
+            const pick = cs => cs.map(c => c.kind + ':' + c.name + ':' + (c.ready ? 'R' : 'W') + (c.recharge ? ':' + c.recharge : '') + (c.kind === 'ult' ? ':' + c.charge : ''));
+            return { a: pick(a), b: pick(b), egg: pick(egg), cooling: [cooling.ready, cooling.turns], wob: Math.max(1, Math.ceil(MOVES.wobble_slam.windup / 2)), icy: Math.max(1, Math.ceil(MOVES[b[1].name === MOVES.icicle_volley.name ? 'icicle_volley' : 'icicle_volley'].windup / 2)), fx: a[1].fx.length > 10 && b[2].fx.length > 10 }; })()`);
+        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100', 'the Jelly Ram\'s');
+        same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40', 'the Rimestar\'s');
+        same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
+    });
+    check('a named everyday attack is the basic card\'s name (a Mage\'s shot), with the game\'s own effect line', () => {
+        const r = J(`(function(){ __fresh(1); const f = partyMembers()[0]; f.evolved = 'thunderhead'; f.element = 'electric'; energyFill(f); const c = cardBattleCards(f)[0]; return [c.kind, c.name, c.fx.length > 10]; })()`);
+        same(r.join(), 'basic,CHAIN LIGHTNING,true', 'the basic card');
+    });
+    check('the screen: a battle on puts it up (body.cb-on) with the rest of the HUD out of its way; the network panel waits; game.html styles it after SQUAD ROWS', () => {
+        const html = rd('game.html');
+        ok(/body\.cb-on #cbScreen \{ display: block;/.test(html), 'the screen shown'); ok(/body\.cb-on :is\(#squadBar, #mixTool, #coreHud, #btnPack, #kitCards, #topToggles, #squadFly, #zoneLine\) \{ visibility: hidden !important; \}/.test(html), 'the HUD out of its way');
+        ok(/cardBattleCam\(\)\) return;/.test(rd('js/facilitynet.js')), 'the network panel');
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(2); const on = cardBattleShown(); cardBattleRun(); __ticks(CARD_BATTLE.easeOut + 2); return [on, cardBattleShown()]; })()`);
+        same(r.join(), 'true,false', 'the screen up in the battle, and after it');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

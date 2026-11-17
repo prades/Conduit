@@ -32,6 +32,8 @@ const CARD_BATTLE = {
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
+    turnSec: 2,                 // seconds of today's wait times a turn (§2.21, the owner's: "2 seconds = 1 turn"); a part of a turn counts as a whole one (the agent's, open: §11.6)
+    every: 15,                  // frames between two refreshes of the battle screen (4 a second)
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -43,6 +45,7 @@ function cardBattleActive() { return _cb.phase !== "off" && _cb.phase !== "end";
 function cardBattlePhase() { return _cb.phase; }
 function cardBattleFoes() { return _cb.foes.slice(); }
 function cardBattleBlack() { return _cb.black; }   // the black's strength, 0 to 1
+function cardBattleShown() { return cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black"; }   // is the battle screen up (body.cb-on)?
 function cardBattleIn(a) { return cardBattleActive() && _cb.foes.indexOf(a) >= 0; }
 function _cbFoeOk(a) { return !!a && !a.dead && !a.isClone && a.team !== "green" && !a.untargetable && !(a.health <= 0) && (typeof Predator === "undefined" || a instanceof Predator); }
 function _cbSquad() { const m = typeof partyMembers === "function" ? partyMembers().filter(f => f && !f.dead) : []; const c = typeof partyClone === "function" ? partyClone() : null; if (c && !c.dead) m.push(c); return m; }
@@ -184,12 +187,71 @@ let _cbEls = null;
 function _cbMake() {
     if (_cbEls || typeof document === "undefined" || !document.createElement || !document.body) return _cbEls;
     const black = document.createElement("div"); black.id = "cbBlack"; black.style.cssText = "position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:60;";
+    // THE BATTLE SCREEN (step 2, build 2026-11-17e; §2.9 SQUAD ROWS): the enemy list at the top right (their names and health; not their next moves, §2.15) with RUN under it, and the band along
+    // the bottom, a column for each member of the squad (cardBattleScreen fills them)
+    const scr = document.createElement("div"); scr.id = "cbScreen"; scr.setAttribute("aria-label", "Battle");
+    scr.innerHTML = '<div class="cb-foes"><h4>ENEMIES</h4><div class="cb-foelist"></div></div><div class="cb-band"><div class="cb-row"></div></div>';
     const run = document.createElement("button"); run.id = "cbRun"; run.type = "button"; run.textContent = "RUN"; run.setAttribute("aria-label", "Run from the battle");
-    run.style.cssText = "position:fixed;right:calc(28px + env(safe-area-inset-right, 0px));top:calc(206px + env(safe-area-inset-top, 0px));transform:skewX(-9deg);z-index:61;display:none;min-width:150px;height:56px;padding:0 26px;border:2px solid #ff4a1c;background:linear-gradient(180deg,#3a1a1a,#12080a);color:#fff;font:italic 900 22px/1 'Arial Black',system-ui,sans-serif;letter-spacing:.06em;box-shadow:0 0 14px -2px #ff4a1c;cursor:pointer;touch-action:manipulation;";
     run.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); cardBattleRun(); });
-    document.body.appendChild(black); document.body.appendChild(run); _cbEls = { black, run };
+    scr.querySelector(".cb-foes").appendChild(run);
+    document.body.appendChild(black); document.body.appendChild(scr); _cbEls = { black, run, scr, foes: scr.querySelector(".cb-foelist"), row: scr.querySelector(".cb-row"), sig: "", at: -1e9 };
     return _cbEls;
 }
-function _cbButtons() { const E = _cbMake(); if (!E) return; E.run.style.display = cardBattleActive() && _cb.phase !== "walk" ? "block" : "none"; }
-function _cbDom() { const E = _cbEls || (_cb.phase !== "off" ? _cbMake() : null); if (!E) return; const o = _cb.black.toFixed(3); if (E.black.style.opacity !== o) E.black.style.opacity = o; const show = cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black" ? "block" : "none"; if (E.run.style.display !== show) E.run.style.display = show; }
+function _cbButtons() { _cbMake(); _cbDom(); }
+function _cbDom() {
+    const E = _cbEls || (_cb.phase !== "off" ? _cbMake() : null); if (!E) return; const o = _cb.black.toFixed(3); if (E.black.style.opacity !== o) E.black.style.opacity = o;
+    const on = cardBattleShown(), body = typeof document !== "undefined" && document.body;
+    if (body && body.classList && body.classList.contains("cb-on") !== on) body.classList.toggle("cb-on", on);   // (game.html: the battle screen shown, the rest of the HUD out of the way)
+    if (on && _cbF() - E.at >= CARD_BATTLE.every) { E.at = _cbF(); cardBattleScreen(); }
+}
+// ── THE BATTLE SCREEN'S CARDS (§2.9, §2.18, §2.19, §2.21, §2.22, §2.25): each member's own BASIC ATTACK (always ready), each second attack it may use (ready, or the turns until it is; its
+// recharge from its wait time, CARD_BATTLE.turnSec a turn), and its Ultimate (by its meter, §2.11). Their names and effect lines are the game's own (js/moves.js MOVES, js/unitinfo.js
+// MOVE_INFO, SHOT_INFO, the Ultimate's note): nothing is written for the cards. Step 2 shows them; playing them (dragging one onto an enemy, §2.17) and the turns are step 3. ──
+function _cbTurns(sec) { return Math.max(1, Math.ceil((sec || 0) / CARD_BATTLE.turnSec - 1e-9)); }
+function _cbRow(rows, key) { const r = (rows || []).find(x => x[0] === key); return r ? String(r[1]) : ""; }
+function _cbInfoRows(table, name) { try { const fn = table && table[name]; return typeof fn === "function" ? fn() : null; } catch (e) { return null; } }
+function cardBattleCards(f) {
+    const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);
+    { const named = d && (d.shot || d.hit) ? (d.shot || d.hit) : null, rows = named && typeof SHOT_INFO !== "undefined" ? _cbInfoRows(SHOT_INFO, named) : null;
+      out.push({ kind: "basic", tag: "BASIC ATTACK", name: named || "BASIC ATTACK", fx: _cbRow(rows, "EFFECT") || "Its everyday hit.", ready: true, turns: 0, col }); }
+    const md = typeof followerMoveDef === "function" ? followerMoveDef(f) : null, ids = md && typeof evoMoveIds === "function" ? evoMoveIds(md).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(f, md, id)) : [];
+    const f0 = _cbF(), cools = typeof altCools === "function" && altCools(f);
+    for (const id of ids) {
+        const m = typeof MOVES !== "undefined" ? MOVES[id] : null; if (!m) continue;
+        const rows = typeof MOVE_INFO !== "undefined" ? _cbInfoRows(MOVE_INFO, m.name) : null, rech = _cbTurns(m.windup), left = cools ? Math.max(0, ((f._altReadyAt || 0) - f0) / 60) : 0;
+        out.push({ kind: "move", tag: "ATTACK", name: m.name, fx: _cbRow(rows, "EFFECT"), ready: left <= 0, turns: left > 0 ? _cbTurns(left) : 0, recharge: rech, col });
+    }
+    const u = typeof followerUltimate === "function" ? followerUltimate(f) : null;
+    if (u) { const pct = Math.max(0, Math.min(100, Math.round(f.ultimateCharge || 0)));
+        let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
+        out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
+    return out;
+}
+function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
+const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function _cbCardHTML(c) {
+    const st = c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
+    const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : "";
+    return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '"><i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
+}
+// fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
+function cardBattleScreen() {
+    const E = _cbEls; if (!E || !E.scr) return;
+    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), squad = (typeof partyMembers === "function" ? partyMembers() : []).slice(), clone = typeof partyClone === "function" ? partyClone() : null; if (clone) squad.push(clone);
+    const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
+    if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
+    const cols = squad.map(f => { const down = !!f.dead || !(f.health > 0), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
+        const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
+        return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
+    const sig = cols.map(c => c.key + c.html).join("§");
+    if (E.sig === sig) return; E.sig = sig;
+    const old = Array.from(E.row.children || []);
+    cols.forEach((c, i) => {
+        let el = old[i]; if (!el) { el = document.createElement("div"); el.className = "cb-col"; E.row.appendChild(el); }
+        const keep = el._key === c.key ? el.querySelector(".cb-pt") : null;
+        el.innerHTML = c.html; el._key = c.key; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", c.col); if (el.classList) el.classList.toggle("down", c.down);
+        const cv = el.querySelector(".cb-pt"); if (keep && cv && keep.width) { cv.getContext && cv.getContext("2d") && cv.getContext("2d").drawImage(keep, 0, 0); } else if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, c.f); } catch (e) {} }
+    });
+    for (let i = cols.length; i < old.length; i++) old[i].remove();
+}
 function cardBattleReset() { _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

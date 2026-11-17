@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17e` · branch `claude/friendly-thompson-w581x0` · card battles, step 2: the battle screen (SQUAD ROWS) with each follower's cards (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner: carry on with card battles, "2"; the 3D rooms are another session's).
+- **What it does, only with `?cards` and `?engine=3d`, in a battle:** the band along the bottom has a column for each squad member (picture, name, level, health) with **its own cards**: its BASIC ATTACK (always ready; a Mage's named shot where it has one), each second attack it may use (its effect, RECHARGE n TURNS from its wait time at 2 s a turn, READY or the turns left), and its Ultimate (by its meter, READY when full). The enemies' names and health are listed at the top right, RUN under them. The rest of the bottom HUD, the room's tag and the network panel make way. **The cards are not played yet; no turns** (step 3).
+- `js/cardbattle.js`, `js/facilitynet.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §9 and §10.
+- **Verified:** tests/cardbattle.js (12 checks) and the full suite; seen in a headless browser at both iPad sizes. **Not playtested; not seen on an iPad.** Seen and left: a one-time tip can open over a battle; the pictures in the columns, to check on the iPad.
+
 ### Build `2026-11-17d` · branch `claude/friendly-thompson-w581x0` · card battles, step 1: a battle starts and looks like one (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17: turn-based card battles, `CARD-BATTLES.md`; then "Build it": the first playable step, in the 3D game behind a switch).
 - **What it does, only with `?cards` and `?engine=3d`:** a tap on a creature, or a creature's hit on you or your squad, starts a battle with it and the creatures round it. A far creature: you walk towards it, the screen goes black, and you and your squad land in front of it in its sight. The camera eases to the fight, lower, turned to the side and nearer; the edges blur and darken; the bars and labels over the picture wait. Creatures not in it walk past; your squad goes only for those in it. RUN (a button for now) ends it. **No cards or turns yet**: inside the battle the fight is the real-time one. Without the switch nothing changes.
