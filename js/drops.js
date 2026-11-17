@@ -11,8 +11,8 @@ function onPredatorDeath(predator) {
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
     if (typeof questAntKilled === "function") questAntKilled(predator);   // and it is counted (Side Quest's appearance needed about ten of them until build 2026-11-09tt: js/quests.js)
     if (typeof questTrioKilled === "function") questTrioKilled(predator);   // one of the purification's three toxic ants: the third, and the queen comes out (js/quests.js)
-    const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width / 2;
-    const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height / 2;
+    const px = isoSX(predator.x, predator.y) + canvas.width / 2;
+    const py = isoSY(predator.x, predator.y) + canvas.height / 2;
     if (!isNymph(predator)) {
         const worth = Math.max(1, Math.round(predator.shardDrop || 5));
         shardCount += worth;
@@ -35,7 +35,7 @@ function onPredatorDeath(predator) {
 function floatingTextScreen(t) {
     if (!t.world) return [t.x, t.y];
     const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
-    const p = [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
+    const p = [isoSX(t.x, t.y) + W + (t.dx || 0), isoSY(t.x, t.y) + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
     return typeof bvZoomPt === "function" ? bvZoomPt(p[0], p[1]) : p;   // (drawn after the battle view's copy: where the copy puts the unit: js/battleview.js)
 }
 // ONE VOICE. A banner is a text pushed at the centre of the screen. Only the oldest batch shows and counts down — texts pushed on the same frame are one batch, so a title and its line stay together — and the
@@ -65,6 +65,7 @@ function updateFloatingTexts() {
 }
 
 function drawFloatingTexts() {
+    if (typeof view3dSwinging === "function" && view3dSwinging()) return;   // (not while THE 3D VIEW's camera swings round a quarter turn: they line up only once it is there, js/view3d.js)
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.textAlign = "center";

@@ -54,8 +54,10 @@ function battleViewZoom() { return _bv.z; }
 function battleViewDrop() { _bv.engagedAt = -1e9; }
 function battleViewReset() { _bv.k = 0; _bv.z = 1; _bv.engagedAt = -1e9; _bv.checkAt = -1e9; _bvDraw.fade = new Map(); _bvDraw.wfade = new Map(); _bvDraw.wallHide = new Set(); _bvDraw.floorKey = new Map(); _bvDraw.chunks = []; _bvDraw.pops = []; }
 // a point drawn before the copy, where the copy puts it on the screen; and back
-function bvZoomPt(x, y) { const z = _bv.z; if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) * z, cy + (y - cy) * z]; }
-function bvUnzoom(x, y) { const z = _bv.z; if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) / z, cy + (y - cy) / z]; }
+function bvZoomPt(x, y) { const z = _bv.z * (typeof view3dZoom === "function" ? view3dZoom() : 1);   // (and THE 3D VIEW's camera zoom: js/view3d.js)
+    if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) * z, cy + (y - cy) * z]; }
+function bvUnzoom(x, y) { const z = _bv.z * (typeof view3dZoom === "function" ? view3dZoom() : 1);   // (and THE 3D VIEW's camera zoom)
+    if (z === 1 || typeof canvas === "undefined") return [x, y]; const cx = canvas.width / 2, cy = canvas.height / 2; return [cx + (x - cx) / z, cy + (y - cy) / z]; }
 
 // ── WHEN: a creature engages you or your squad ──
 function _bvGreen(u) { return !!u && (u === (typeof player !== "undefined" ? player : null) || u.team === "green" || u.isFollower === true); }
@@ -152,7 +154,7 @@ function _bvFighters() {
 }
 // a unit's picture on the screen (the world pass's coordinates): its feet and a box over them
 function _bvUnitBox(x, y) {
-    const sx = (x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, sy = (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0);
+    const sx = isoSX(x, y) + canvas.width / 2, sy = isoSY(x, y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0);
     return [sx - 0.45 * TILE_W, sy - 1.6 * TILE_W, sx + 0.45 * TILE_W, sy + 8];
 }
 
@@ -352,7 +354,7 @@ function _bvKindOf(hit, source) {
 function battleNumberTag(t, target, source, hit, share) {
     if (!t || !target) return;
     let dx = 0.8, dy = -0.6;   // (no attacker: up and away)
-    if (source && source !== target && Number.isFinite(source.x) && Number.isFinite(source.y)) { const wx = target.x - source.x, wy = target.y - source.y, sx = (wx - wy) * TILE_W, sy = (wx + wy) * TILE_H, L = Math.hypot(sx, sy); if (L > 1e-3) { dx = sx / L; dy = sy / L; } }
+    if (source && source !== target && Number.isFinite(source.x) && Number.isFinite(source.y)) { const wx = target.x - source.x, wy = target.y - source.y, sx = isoDX(wx, wy), sy = isoDY(wx, wy), L = Math.hypot(sx, sy); if (L > 1e-3) { dx = sx / L; dy = sy / L; } }
     const all = Math.abs(parseInt(String(t.text).replace("−", ""), 10)) || 0, b0 = share < 1 && all >= 2 ? Math.max(1, Math.round(all * share)) : all;
     _bvDraw.hits.set(t, { unit: target, kind: _bvKindOf(hit, source), dir: [dx, dy], all, bonus: all - b0 });
     if (!battleViewOn() && _bvHitEngages(target, source)) { _bv.engagedAt = _bvF(); battleViewTick(); }
@@ -380,7 +382,7 @@ function battleBarHealth(a, t0, part) {
     return Math.max(0, Math.min(a.maxHealth || hp, hp));
 }
 // a point of the world (x, y, up px over its floor) where the zoomed picture shows it
-function _bvScr(x, y, up) { return bvZoomPt((x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0) - (up || 0)); }
+function _bvScr(x, y, up) { return bvZoomPt(isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0) - (up || 0)); }
 function _bvEaseIO(u) { return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
 function _bvEaseOut(u) { return 1 - Math.pow(1 - u, 3); }
 // js/drops.js drawFloatingTexts: a hit's number on its way, its main part and then its bonus

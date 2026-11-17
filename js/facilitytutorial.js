@@ -156,7 +156,7 @@ function facilityDrawFlares() {
     const T = _fp && _fp.tut; if (!T || typeof ctx === "undefined") return; const now = typeof frame !== "undefined" ? frame : 0;
     for (const s of T.sources) {
         if (s.what !== "flare" || s.until < now) continue;
-        const fade = Math.min(1, (s.until - now) / 120, (now - s.born) / 12 + 0.2), fl = 0.8 + 0.2 * Math.sin(now * 0.31 + s.x), px = (s.x - player.visualX - (s.y - player.visualY)) * TILE_W + canvas.width / 2, py = (s.x - player.visualX + (s.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
+        const fade = Math.min(1, (s.until - now) / 120, (now - s.born) / 12 + 0.2), fl = 0.8 + 0.2 * Math.sin(now * 0.31 + s.x), px = isoSX(s.x, s.y) + canvas.width / 2, py = isoSY(s.x, s.y) + canvas.height / 2 + TILE_H;
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.translate(px, py); ctx.scale(1, TILE_H / TILE_W);
         const R = s.r * TILE_W * 1.4142 * 0.8, g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, "rgba(" + FP_TUT.flareRgb + "," + (0.3 * fade * fl).toFixed(3) + ")"); g.addColorStop(0.35, "rgba(" + FP_TUT.flareRgb + "," + (0.12 * fade).toFixed(3) + ")"); g.addColorStop(1, "rgba(" + FP_TUT.flareRgb + ",0)");
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.fill(); ctx.restore();

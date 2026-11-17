@@ -7,7 +7,7 @@ const _FIRE_BLOB = { trail: '#ff7a1a', halo: '#ff9a2a', body: '#ff7a14', rim: '#
 function _drawFireBlob(ctx, p, sx, sy, pal) {
     pal = pal || _FIRE_BLOB;
     const f = p.frame || 0, R = (p.radius || 5) * 2.1, vx = p.vx || 0, vy = p.vy || 0;
-    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    let ux = isoDX(vx, vy), uy = isoDY(vx, vy); const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
     const ang = Math.atan2(uy, ux), blob = (x, y, r, wob, fill, a) => {
         ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();
         for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.55 * Math.sin(3 * t + f * 0.33) + 0.45 * Math.sin(2 * t - f * 0.23)), s = 1 + 0.16 * Math.cos(t - ang) * 0 , px = Math.cos(t) * r * k, py = Math.sin(t) * r * k;
@@ -26,7 +26,7 @@ function _drawFireBlob(ctx, p, sx, sy, pal) {
 // goo (three flat strokes, dark to light, and a shine along its upper edge), a faint glow round it, and drops of goo shed behind. Flat colours only, as the effects plan asks (docs/EFFECTS.md): a few strokes and fills.
 function _drawGooRing(ctx, p, sx, sy) {
     const f = p.frame || 0, R = (p.radius || 5) * 2.7 * (1 + 0.05 * Math.sin(f * 0.5)), vx = p.vx || 0, vy = p.vy || 0;
-    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    let ux = isoDX(vx, vy), uy = isoDY(vx, vy); const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
     const ang = Math.atan2(uy, ux), tilt = 0.38 + 0.4 * Math.abs(Math.sin(f * 0.13)), rot = ang + Math.PI / 2;   // (a ring flying head on is seen edge-on; it turns, so it shows its hole and its face in turn)
     ctx.globalAlpha = 1; ctx.fillStyle = '#2f9bff';
     for (let i = 1; i <= 3; i++) { const d = R * (0.9 + i * 0.75), r = R * (0.34 - i * 0.07), w = Math.sin(f * 0.35 + i * 2) * R * 0.18; ctx.globalAlpha = 0.6 - i * 0.14; ctx.beginPath(); ctx.arc(sx - ux * d - uy * w, sy - uy * d + ux * w, Math.max(1, r), 0, Math.PI * 2); ctx.fill(); }   // (drops of goo behind it)
@@ -51,7 +51,7 @@ function _boltPath(ctx, ax, ay, bx, by, seed, jit) {
 function _drawThunderBolt(ctx, p, sx, sy) {
     const f = p.frame || 0, r = p.radius || 5, src = p.source, seed = Math.floor(f / 2) + 1;
     let ox = 0, oy = -26, dist = 0;   // (where the Thunderhead is, from the shot, on the screen: its body's middle; and how far the shot has gone, in tiles)
-    if (src && typeof src.x === "number") { const wx = src.x - p.x, wy = src.y - p.y; ox = (wx - wy) * TILE_W; oy = (wx + wy) * TILE_H - 26; dist = Math.hypot(wx, wy); }
+    if (src && typeof src.x === "number") { const wx = src.x - p.x, wy = src.y - p.y; ox = isoDX(wx, wy); oy = isoDY(wx, wy) - 26; dist = Math.hypot(wx, wy); }
     const stroke = (w, col, a) => { ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = w; };
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     let s = 0;   // how much of the string has gone: 0 whole, 1 gone
@@ -75,7 +75,7 @@ function _drawThunderBolt(ctx, p, sx, sy) {
 const _SOUL = { body: '#9adeae', lit: '#c4eed0', smoke: '#6f8f7c', arc: '#a9c4b3', tail: '#68c58a' };
 function _drawSoulBlob(ctx, p, sx, sy) {
     const f = p.frame || 0, R = (p.radius || 5) * 2.3, vx = p.vx || 0, vy = p.vy || 0;
-    let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
+    let ux = isoDX(vx, vy), uy = isoDY(vx, vy); const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;   // (its way on the screen)
     const ang = Math.atan2(uy, ux), cx = Math.cos(ang), sn = Math.sin(ang);
     const blob = (x, y, r, wob, fill, a, st) => { ctx.globalAlpha = a; ctx.fillStyle = fill; ctx.beginPath();   // (st: how much it is stretched along its flight)
         for (let i = 0; i <= 18; i++) { const t = i / 18 * Math.PI * 2, k = 1 + wob * (0.5 * Math.sin(3 * t + f * 0.4) + 0.4 * Math.sin(2 * t - f * 0.27)), qx = Math.cos(t) * r * k * st, qy = Math.sin(t) * r * k * 0.8, X = x + qx * cx - qy * sn, Y = y + qx * sn + qy * cx; if (i) ctx.lineTo(X, Y); else ctx.moveTo(X, Y); }
@@ -105,7 +105,7 @@ function _drawSoulBlob(ctx, p, sx, sy) {
 // (`tendrilslap`, js/elements.js). Flat colours, no gradient and no shadow (the effects plan, docs/EFFECTS.md).
 const _TEND = { glow: '#9933ff', body: '#bb66ff', core: '#ead6ff' };
 function _drawTendrils(ctx, p, sx, sy) {
-    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0; let ux = (vx - vy) * TILE_W, uy = (vx + vy) * TILE_H; const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
+    const f = p.frame || 0, vx = p.vx || 0, vy = p.vy || 0; let ux = isoDX(vx, vy), uy = isoDY(vx, vy); const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
     for (let i = 3; i >= 1; i--) { ctx.globalAlpha = 0.5 - i * 0.12; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx - ux * i * 6 + Math.sin(f * 0.5 + i) * 1.6, sy - uy * i * 6 + Math.cos(f * 0.5 + i) * 1.6, 3.2 - i * 0.6, 0, Math.PI * 2); ctx.fill(); }   // (specks trailing it)
     ctx.globalAlpha = 0.3; ctx.fillStyle = _TEND.glow; ctx.beginPath(); ctx.arc(sx, sy, 8, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 0.9; ctx.fillStyle = _TEND.body; ctx.beginPath(); ctx.arc(sx, sy, 4.6 + Math.sin(f * 0.6) * 0.6, 0, Math.PI * 2); ctx.fill();
@@ -359,7 +359,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     } else if (el === 'blossom') {
         // SEED SHOT (build 2026-11-08j): a glowing pink seed pointed along its flight, a soft glow round it and a short trail (every BLOOM follower's shot: the THORNWHIP's, and a BLOOM Mage's
         // before it evolves)
-        const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, an = Math.atan2(uy, ux), pulse = 1 + Math.sin(f * 0.5) * 0.12;
+        const dx = isoDX(p.vx, p.vy), dy = isoDY(p.vx, p.vy), L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, an = Math.atan2(uy, ux), pulse = 1 + Math.sin(f * 0.5) * 0.12;
         ctx.globalAlpha = 0.3; ctx.fillStyle = '#ff7ab8'; ctx.beginPath(); ctx.arc(sx, sy, r * 2.2 * pulse, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 0.35; ctx.strokeStyle = '#ff7ab8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx - ux * r * 1.4, sy - uy * r * 1.4); ctx.lineTo(sx - ux * r * 4, sy - uy * r * 4); ctx.stroke();
         ctx.globalAlpha = 1; ctx.fillStyle = '#ff9ccc'; ctx.beginPath(); ctx.ellipse(sx, sy, r * 1.5, r * 0.85, an, 0, Math.PI * 2); ctx.fill();
@@ -382,7 +382,7 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
 // its shadow on the floor under it (a little smaller while it is higher) and its trail behind it. False when the piece is not on (approved, or the preview ?fx=3d) or its sheet has not arrived: the caller draws the old look.
 function _drawFx3dShot(ctx, p, sx, sy, piece, trail, arc) {
     if (typeof fx3dOn !== "function" || !fx3dOn(piece) || !fx3dReady(piece)) return false;
-    const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;   // its flight on screen
+    const dx = isoDX(p.vx, p.vy), dy = isoDY(p.vx, p.vy), L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;   // its flight on screen
     const T = Math.max(1, (p.frame || 0) + Math.max(0, p.life || 0)), t = Math.min(1, (p.frame || 0) / T), lift = arc * Math.sin(Math.PI * t), rise = arc * Math.PI / T * Math.cos(Math.PI * t), qy = sy - lift;
     ctx.globalAlpha = 0.28; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(sx, sy + 40, 8 - lift * 0.15, 3.2 - lift * 0.06, 0, 0, Math.PI * 2); ctx.fill();   // (its shadow on the floor: shots fly 40 px up)
     ctx.globalAlpha = 0.35; ctx.strokeStyle = trail; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx - ux * 10, qy - uy * 10); ctx.lineTo(sx - ux * 22, qy - uy * 22); ctx.stroke(); ctx.globalAlpha = 1;   // (its trail)
@@ -393,7 +393,7 @@ const QUILL_ARC = 16;   // px: how much higher than a shot's 40 px the modelled 
 // A QUILL BURST quill: the modelled one above; until its sheet has arrived, the old drawn one: a dark crystal shard pointed along its flight, red-hot at its tip. A HEXFIRE shot: an ember in a hexagon of fire that turns as it flies. (Drawn in screen space.)
 function _drawRedesignShot(ctx, p, sx, sy) {
     if (p.kind === "quill") {
-        const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;   // its flight on screen
+        const dx = isoDX(p.vx, p.vy), dy = isoDY(p.vx, p.vy), L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;   // its flight on screen
         // THE MODELLED QUILL (docs/EFFECTS.md, the 3-D flare pass: js/fx3d.js; approved in the game 2026-11-09, for everyone since build 2026-11-09f): one of the QUILLSTONE's own red shards, its heat trailing
         if (_drawFx3dShot(ctx, p, sx, sy, "quill", "#ff7a2e", QUILL_ARC)) return;
         ctx.fillStyle = "#1a0b08"; ctx.strokeStyle = "#ff5a1f"; ctx.lineWidth = 1;
@@ -494,6 +494,7 @@ function drawCloneRespawnTicker(cx, topY) {
 // ─────────────────────────────────────────────────────────
 // One place decides what draws in front of what: depth is x + y (a bigger sum draws lower and in front).
 function drawDepthOf(o) {
+    if (VIEW_TURN) return isoDepth(o.x, o.y) + ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined ? o.depth - (o.x + o.y) : 0);   // THE VIEW'S TURN (the 3D view's camera, js/config.js): what is in front is the turned view's (an item's own offset kept)
     if ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it; the crystal after its pad (js/facilitydecor.js)
     if (o.type === 'floor' && typeof battleFloorFirst === "function" && battleFloorFirst(o)) return o.x + o.y + BV_FLOOR0;   // (the battle view: the floor first, so what is written on it lies under all that stands on it: js/battleview.js)
     return o.x + o.y;
@@ -567,8 +568,10 @@ function visibleTilesForDraw() {
     const aMax = (canvas.width + DRAW_CULL_SIDE - halfW) / TILE_W;      // max (dx-dy)
     const bMin = (-DRAW_CULL_TOP - halfH) / TILE_H;                     // min (dx+dy)
     const bMax = (canvas.height + DRAW_CULL_BOTTOM - halfH) / TILE_H;   // max (dx+dy)
-    const xMin = Math.floor(player.visualX + (aMin + bMin) / 2);
-    const xMax = Math.ceil (player.visualX + (aMax + bMax) / 2);
+    let xMin = Math.floor(player.visualX + (aMin + bMin) / 2);
+    let xMax = Math.ceil (player.visualX + (aMax + bMax) / 2);
+    const _vk = typeof view3dZoom === "function" ? view3dZoom() : 1;   // THE 3D VIEW's camera turned or zoomed out (js/view3d.js): the columns as far as the screen reaches either way, each still tested below
+    if (VIEW_TURN || _vk !== 1) { const R = ((halfW / _vk + DRAW_CULL_SIDE) / TILE_W + (halfH / _vk + DRAW_CULL_BOTTOM) / TILE_H) / 2; xMin = Math.floor(player.visualX - R); xMax = Math.ceil(player.visualX + R); }
     const out = [];
     let scanned = 0;
     for (let x = xMin; x <= xMax; x++) {
@@ -615,11 +618,11 @@ function drawFloorTileMarks(obj, px, py, threeD) {
 }
 
 function visibleForDraw(x, y) {
-    const dx = x - player.visualX, dy = y - player.visualY;
-    const px = (dx - dy) * TILE_W + canvas.width / 2;
-    if (px < -DRAW_CULL_SIDE || px > canvas.width + DRAW_CULL_SIDE) return false;
-    const py = (dx + dy) * TILE_H + canvas.height / 2;
-    return py >= -DRAW_CULL_TOP && py <= canvas.height + DRAW_CULL_BOTTOM;
+    const k = typeof view3dZoom === "function" ? view3dZoom() : 1, hw = canvas.width / 2 / k, hh = canvas.height / 2 / k;   // (THE 3D VIEW zoomed out: more of the world is on the screen; turned: isoSX/isoSY, js/config.js)
+    const px = isoSX(x, y);
+    if (px < -hw - DRAW_CULL_SIDE || px > hw + DRAW_CULL_SIDE) return false;
+    const py = isoSY(x, y);
+    return py >= -hh - DRAW_CULL_TOP && py <= hh + DRAW_CULL_BOTTOM;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -866,6 +869,7 @@ function render() {
 
     // ── CLEAR SCREEN ──
     clearFrame();
+    if (typeof view3dWorldBegin === "function") view3dWorldBegin();   // THE 3D VIEW's zoom: the world's drawing from here to the overlays' end is scaled with its camera (js/view3d.js)
     ctx.save();
     if (shake>0) { ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake*=0.9; }
 
@@ -1054,8 +1058,8 @@ function render() {
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
-        const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
-        let py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
+        const px=isoSX(obj.x, obj.y)+canvas.width/2;
+        let py=isoSY(obj.x, obj.y)+canvas.height/2;
         if (obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
         if (_v3 && obj.type !== 'fp' && obj.type !== 'crystal') py += view3dFeet();   // (THE 3D VIEW stands a body where the game has it, half a tile down the screen from where this drawing put its feet: what is drawn over it goes with it, js/view3d.js)
 
@@ -1068,7 +1072,9 @@ function render() {
         }
         else if (obj.type==='npc') {
             if (typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
-            drawNPC(obj.actor, px, obj.actor._flight && typeof techFlightLift === "function" ? py - techFlightLift(obj.actor) : py);   // (one thrown by a Kinetic Launcher is drawn up in the air: js/techabilities.js)
+            const _na = obj.actor, _nt = VIEW_TURN && typeof _na.dirX === "number" && typeof _na.dirY === "number", _ndx = _na.dirX, _ndy = _na.dirY;   // (THE VIEW'S TURN: a body the 2D draws faces its way as the turned view sees it, for the drawing only: js/config.js)
+            if (_nt) { _na.dirX = viewTU(_ndx, _ndy); _na.dirY = viewTV(_ndx, _ndy); }
+            try { drawNPC(_na, px, _na._flight && typeof techFlightLift === "function" ? py - techFlightLift(obj.actor) : py); } finally { if (_nt) { _na.dirX = _ndx; _na.dirY = _ndy; } }   // (one thrown by a Kinetic Launcher is drawn up in the air: js/techabilities.js)
         }
         else if (obj.type==='rotspike') { if (typeof rotSpikeDrawItem === "function") rotSpikeDrawItem(obj, px, py); }   // (js/elements.js)
         else if (obj.type==='tech') {
@@ -1229,7 +1235,7 @@ function render() {
     });
 
     // ── THE NETWORK PANEL: the relays and the rooms with power (js/facilitynet.js) ──
-    if (!(typeof battleViewDefers === "function" && battleViewDefers())) drawFacilityNetworkHUD();   // (in the battle view it waits for after the zoom: js/battleview.js battleViewPost)
+    if (!(typeof battleViewDefers === "function" && battleViewDefers()) && !(typeof view3dShowing === "function" && view3dShowing())) drawFacilityNetworkHUD();   // (in the battle view it waits for after the zoom: js/battleview.js battleViewPost)
 
     // ── SMOKE ──
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
@@ -1240,8 +1246,8 @@ function render() {
         const sm=smoke[i];
         sm.ox+=sm.vox; sm.oy+=sm.voy; sm.life-=0.025; sm.size+=0.25;
         if(sm.life<=0){smoke.splice(i,1);continue;}
-        const bpx=(sm.wx-player.visualX-(sm.wy-player.visualY))*TILE_W+canvas.width/2;
-        const bpy=(sm.wx-player.visualX+(sm.wy-player.visualY))*TILE_H+canvas.height/2;
+        const bpx=isoSX(sm.wx, sm.wy)+canvas.width/2;
+        const bpy=isoSY(sm.wx, sm.wy)+canvas.height/2;
         ctx.save(); ctx.globalAlpha=sm.life; ctx.fillStyle=cfg.smokeColor;
         ctx.beginPath(); ctx.ellipse(bpx+sm.ox,bpy+sm.oy,sm.size,sm.size*0.5,0,0,Math.PI*2); ctx.fill();
         ctx.restore();
@@ -1347,8 +1353,8 @@ function render() {
             p.arcData.screenOffset = p.arcData.peakHeight * Math.sin(arcT * Math.PI);
         }
         // Screen coords
-        const sx=(p.x-player.visualX-(p.y-player.visualY))*TILE_W+canvas.width/2;
-        const sy=(p.x-player.visualX+(p.y-player.visualY))*TILE_H+canvas.height/2 - 40;
+        const sx=isoSX(p.x, p.y)+canvas.width/2;
+        const sy=isoSY(p.x, p.y)+canvas.height/2 - 40;
         // Draw element-specific projectile
         _drawFollowerProjectile(ctx, p, sx, sy);
         // Landing callback for arc bombs when they expire
@@ -1397,6 +1403,7 @@ function render() {
     if (typeof drawFollowerPoisonMarks === "function") drawFollowerPoisonMarks();   // green bubbles over a poisoned follower (js/combat.js)
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
+    if (typeof view3dWorldEnd === "function" && view3dWorldEnd()) drawFacilityNetworkHUD();   // THE 3D VIEW: the zoom off; while it swings round a turn the 2D over it is wiped (it lines up only at a quarter turn); the network panel, held back from the world pass, unzoomed (js/view3d.js)
     if (typeof battleViewPost === "function") battleViewPost();   // THE BATTLE VIEW: the world picture zoomed, its edges, the HUD the world pass held back (js/battleview.js)
     drawFloatingTexts();
     if (typeof dialogueDraw === "function") dialogueDraw();   // the dialogue box: who is talking, their picture, what they said (js/dialogue.js); the panels below draw over it
@@ -1408,6 +1415,7 @@ function render() {
     drawInfoPanel();
     if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); if (typeof drawArmoryPanel === "function") drawArmoryPanel(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
     if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)
+    if (typeof view3dDrawButtons === "function") view3dDrawButtons();   // THE 3D VIEW's camera buttons: turn, zoom (js/view3d.js)
     if (typeof drawTargetUI === "function") drawTargetUI();   // the selection, the aim meter and the index card (js/targeting.js)
     if (!dockHasMenus() && !infoPanelOpen) { drawSettingsButton(); if (typeof drawQuestButton === "function") drawQuestButton(); }   // a phone has no dock: its round SETTINGS button (js/settings.js) and its QUESTS button over it (js/questbox.js)
     drawSettingsPanel();

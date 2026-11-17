@@ -1406,7 +1406,7 @@ function techAimPickSpot(p) { return _techAimLast("spot", p); }
 function techScreenToWorld(ex, ey) {
     if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPickLift === "function" ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
-    return { x: (dy / TILE_H + dx / TILE_W) / 2 + player.visualX, y: (dy / TILE_H - dx / TILE_W) / 2 + player.visualY };
+    const bk = isoBack(dx / TILE_W, dy / TILE_H); return { x: bk[0] + player.visualX, y: bk[1] + player.visualY };   // (through the view's turn: js/config.js)
 }
 // REEF's tap and its ghost: the floor DRAWN at a point of the screen, the front one (build 2026-11-13t; the owner: "It works on the north side catwalk, but it does not work on the ... east side at
 // all"). A high floor is drawn over the low floor behind it, and the pick above settles from the low floor up, so a tap on the catwalks' deck within about 2.5 tiles of its lip, where its ledge glows, was
@@ -1419,7 +1419,7 @@ function techReefScreenToWorld(ex, ey) {
     const dx = ex - canvas.width / 2, cam = typeof _fpCam === "number" ? _fpCam : 0, el = typeof FP_ELEV_PX === "number" ? FP_ELEV_PX : 34; let best = null, top = -Infinity;
     for (const h of F.levelH.values()) {
         const L = h * el - cam; if (L <= top) continue;
-        const dy = ey + L - canvas.height / 2 - TILE_H, x = (dy / TILE_H + dx / TILE_W) / 2 + player.visualX, y = (dy / TILE_H - dx / TILE_W) / 2 + player.visualY;
+        const dy = ey + L - canvas.height / 2 - TILE_H, bk = isoBack(dx / TILE_W, dy / TILE_H), x = bk[0] + player.visualX, y = bk[1] + player.visualY;
         if (facilityRoomAt(x, y, F) && Math.abs(facilityLiftRel(x, y) - L) < 0.5) { best = { x, y }; top = L; }
     }
     return best || base;
@@ -1535,11 +1535,11 @@ function techAbilityInfo(f) {
 }
 
 // ── drawing ──
-function _techScr(x, y) { return { x: (x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, y: (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0) }; }
+function _techScr(x, y) { return { x: isoSX(x, y) + canvas.width / 2, y: isoSY(x, y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0) }; }
 // a point on a flight's arc, on the screen (`z0`/`z1`: the floors' heights at its ends, px; `peak`: the arc's height)
 function _techArcScr(x0, y0, x1, y1, z0, z1, peak, t) {
     const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t, cam = typeof _fpCam !== "undefined" ? _fpCam : 0;
-    return { x: (x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, y: (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (z0 + (z1 - z0) * t - cam) - peak * 4 * t * (1 - t) };
+    return { x: isoSX(x, y) + canvas.width / 2, y: isoSY(x, y) + canvas.height / 2 - (z0 + (z1 - z0) * t - cam) - peak * 4 * t * (1 - t) };
 }
 // ── THE RUBBLE, AND THE HOLE IT LEAVES: drawn on the face of the room's edge like its decor (js/facilitydecor.js FP_WALL_KINDS.rubble asks this), u along the stretch, z px up from the floor ──
 // Broken rock lighter than the cliff round it, a cracked slab with hazard paint across it and seams that glow as it is drilled; boulders fall away with each hit. Drilled through: a dark hole, scorched round its mouth.
@@ -1628,7 +1628,7 @@ function techDrawRubbleOn(it, f) {
 function techDrawOnTile(tx, ty, px, py) {
     const FX = techAim && techAim.flux && techAim.flux.s && typeof fluxDrawOnTile === "function" ? techAim : null;   // FLUX MOVE's grid, on the floor (js/fluxmove.js): drawn last on the tile
     if (!techFrosts.length && !techPools.length && !techBridges.length && !techReefs.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
-    const g = ctx, f0 = _techFrame(), W = TILE_W, H = TILE_H, S = (x, y) => [px + ((x - tx) - (y - ty)) * W, py + H + ((x - tx) + (y - ty)) * H];   // a point of the floor near this tile, on the screen
+    const g = ctx, f0 = _techFrame(), W = TILE_W, H = TILE_H, S = (x, y) => [px + isoDX(x - tx, y - ty), py + H + isoDY(x - tx, y - ty)];   // a point of the floor near this tile, on the screen
     const tile = () => { g.beginPath(); g.moveTo(px, py); g.lineTo(px + W, py + H); g.lineTo(px, py + 2 * H); g.lineTo(px - W, py + H); g.closePath(); };
     const key = tx + "," + ty;
     for (const P of techFrosts) {
@@ -1779,7 +1779,7 @@ function _techDrawClimb(g, o, px, py, f0) {
     const C = o.C;
     if (o.kind === "climbRock") {   // the rock, anchored at the foot of the face (the climb's edge point, on the low floor)
         const rel = typeof facilityLiftRel === "function" ? facilityLiftRel(o.x, o.y) - facilityLiftRel(C.foot[0], C.foot[1]) : 0, E = C.edge, my = py + rel;
-        const ax = px + ((E[0] - o.x) - (E[1] - o.y)) * TILE_W, ay = my + ((E[0] - o.x) + (E[1] - o.y)) * TILE_H, A = REEF_CLIMB_ART;
+        const ax = px + isoDX(E[0] - o.x, E[1] - o.y), ay = my + isoDY(E[0] - o.x, E[1] - o.y), A = REEF_CLIMB_ART;
         let a = 1, s = 1;
         if (o.gone !== undefined) { const q = Math.min(1, (f0 - o.gone) / A.fade); a = 1 - q; s = 1 - 0.12 * q; }   // fading out: it sinks a little as it goes
         else { const p = Math.min(1, Math.max(0, (f0 - C.t0) / A.grow)), e = 1 - Math.pow(1 - p, 3); a = Math.min(1, p * 2.5); s = 0.35 + 0.65 * e + 0.08 * Math.sin(Math.PI * e); }   // growing: it heaves up out of the floor, a little past its size, and settles
@@ -1831,14 +1831,14 @@ function techDrawItem(o, px, py) {
         }
     } else if (o.kind === "ledge") {
         // THE LEDGE (build 2026-11-07qq): over the deck's edge where the rail stops (js/facilitydecor.js draws the gap and its hazard paint), arrows pointing down, one after another, so the way down reads from the floor too
-        const L = o.L, q = _techScr(L.at[0], L.at[1]), d = o.d, ex = q.x + (d[0] - d[1]) * TILE_W * 0.5, ey = q.y + (d[0] + d[1]) * TILE_H * 0.5;
+        const L = o.L, q = _techScr(L.at[0], L.at[1]), d = o.d, ex = q.x + isoDX(d[0], d[1]) * 0.5, ey = q.y + isoDY(d[0], d[1]) * 0.5;
         g.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); g.textAlign = "center"; g.textBaseline = "middle";
         for (let k = 0; k < 3; k++) { const t = ((f0 * 0.012 + k / 3) % 1), y = ey - 8 + t * 34; g.globalAlpha = Math.sin(t * Math.PI) * 0.9; g.fillStyle = "#0b0c10"; g.fillText("▼", ex + 1, y + 1); g.fillStyle = "#ffd21a"; g.fillText("▼", ex, y); }
         g.globalAlpha = 1;
     } else if (o.kind === "shield") {
         // a piece of a Photonic Shield: a pane of teal light standing on the floor, its foot and top lit, light running up it; a ripple where it stopped something; it rises as it goes up and flickers in its last 3 s
         const W = o.W, um = (o.ua + o.ub) / 2, age = f0 - W.t0, left = W.until - f0;
-        const sxu = du => (-W.ny - W.nx) * TILE_W * du, syu = du => (W.nx - W.ny) * TILE_H * du;   // (a step along it, on the screen)
+        const sxu = du => isoDX(-W.ny, W.nx) * du, syu = du => isoDY(-W.ny, W.nx) * du;   // (a step along it, on the screen)
         const a0 = o.first ? o.ua - 0.12 : o.ua, a1 = o.last ? o.ub + 0.12 : o.ub;   // (a little past its ends, to meet a wall)
         const x0 = px + sxu(a0 - um), y0 = py + syu(a0 - um), x1 = px + sxu(a1 - um), y1 = py + syu(a1 - um);
         const H = 58 * Math.min(1, age / 8), vis = left < 180 ? 0.6 + 0.4 * Math.sin(f0 * 0.5) : 1;

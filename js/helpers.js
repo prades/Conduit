@@ -478,8 +478,8 @@ function drawSiphonWisps() {
         const wx = w.ax + (player.visualX - w.ax) * e;
         const wy = w.ay + (player.visualY - w.ay) * e;
         const dx = wx - player.visualX, dy = wy - player.visualY;
-        const px = (dx - dy) * TILE_W + cx;
-        const py = (dx + dy) * TILE_H + cy + TILE_H - 14 - 10 * (1 - w.t);
+        const px = isoDX(dx, dy) + cx;
+        const py = isoDY(dx, dy) + cy + TILE_H - 14 - 10 * (1 - w.t);
         // Brightest in the middle of the trip, so it does not pop in or out.
         ctx.globalAlpha = 0.30 + 0.45 * Math.sin(Math.PI * w.t);
         // Laid ALONG the direction of travel, with the jitter perpendicular to

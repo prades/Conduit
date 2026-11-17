@@ -689,13 +689,13 @@ function facilityLiftPx(x, y) { return _fp ? facilityHeightAt(x, y, _fp.F) * FP_
 function facilityLiftRel(x, y) { return facilityLiftPx(x, y) - _fpCam; }
 // What to add to a screen y so a tap lands on the tile DRAWN there (the tile's own lift moves it up the screen): found by trying the tile under the tap and correcting.
 function facilityPickLift(ex, ey) {
-    let lift = 0; for (let i = 0; i < 4; i++) { const dx = ex - canvas.width / 2, dy = ey + lift - canvas.height / 2 - TILE_H, gx = Math.round((dy / TILE_H + dx / TILE_W) / 2 + player.visualX), gy = Math.round((dy / TILE_H - dx / TILE_W) / 2 + player.visualY); lift = facilityLiftRel(gx, gy); }
+    let lift = 0; for (let i = 0; i < 4; i++) { const dx = ex - canvas.width / 2, dy = ey + lift - canvas.height / 2 - TILE_H, bk = isoBack(dx / TILE_W, dy / TILE_H), gx = Math.round(bk[0] + player.visualX), gy = Math.round(bk[1] + player.visualY); lift = facilityLiftRel(gx, gy); }
     return lift;
 }
 
 // ── drawing ──
 // A point at height z above the current item's floor (_fpBase, in px of height), on screen.
-function _fpP(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0) - (_fpBase - _fpCam)]; }
+function _fpP(x, y, z) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (_fpBase - _fpCam)]; }
 function _fpQuad(pts, fill, stroke, lw) {
     ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.lineWidth = lw || 1; ctx.strokeStyle = stroke; ctx.stroke(); }

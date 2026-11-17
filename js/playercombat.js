@@ -167,7 +167,7 @@ function playerCombatTap(ex, ey) {
 // on the floor: the guard's reach round you while it is up; the swoop's streak (js/game.js, with the other overlays)
 function drawPlayerCombatFx() {
     if (typeof ctx === "undefined" || typeof player === "undefined" || typeof facilityPlay === "undefined" || !facilityPlay || (typeof attractOn === "function" && attractOn())) return;
-    const scr = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)];
+    const scr = (x, y) => [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)];
     ctx.save();
     if (playerGuardOn) {
         const c = scr(player.visualX, player.visualY), R = PLAYER_COMBAT.guard.reach * Math.SQRT2, f = _pcFrame();   // (where the player is drawn: the camera eases after a swoop)

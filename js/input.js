@@ -30,8 +30,8 @@ const PICK_RADIUS = 45;
 // Where a unit is TAPPED. Most stand about 55px above their projected point,
 // which is where a follower's body is drawn; a clone is a creature's body: low and long.
 function followerPickPoint(f) {
-    const px = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
-    const py = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2 - facilityLiftRel(f.x, f.y) + (typeof view3dFeet === "function" ? view3dFeet() : 0);   // (THE 3D VIEW stands it half a tile lower: js/view3d.js)
+    const px = isoSX(f.x, f.y) + canvas.width/2;
+    const py = isoSY(f.x, f.y) + canvas.height/2 - facilityLiftRel(f.x, f.y) + (typeof view3dFeet === "function" ? view3dFeet() : 0);   // (THE 3D VIEW stands it half a tile lower: js/view3d.js)
     const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - (f.isClone ? 22 : 55)) : [px, py - (f.isClone ? 22 : 55)];   // (where it is on the screen, the battle view's zoom too: js/battleview.js)
     return { x: q[0], y: q[1] };
 }
@@ -42,8 +42,8 @@ function findEnemyAtScreen(ex, ey) {
     let best = null, bestD = PICK_RADIUS;
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
-        const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
-        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
+        const apx = isoSX(a.x, a.y) + canvas.width/2;
+        const apy = isoSY(a.x, a.y) + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
         const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) { bestD = d; best = a; }
     }
@@ -53,8 +53,8 @@ function enemyPickDistance(ex, ey) {
     let bestD = Infinity;
     for (const a of actors) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
-        const apx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width/2;
-        const apy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
+        const apx = isoSX(a.x, a.y) + canvas.width/2;
+        const apy = isoSY(a.x, a.y) + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
         const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) bestD = d;
     }
@@ -151,8 +151,9 @@ const handleInput=(ex,ey)=>{
     // Movement is never locked — there is no stun any more. A path through the facility's doors (js/facilityplay.js).
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
-    const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
-    const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
+    const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
+    const gx=Math.round(_bk[0]+player.visualX);
+    const gy=Math.round(_bk[1]+player.visualY);
     // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off the Mutator's lash: it would walk the player back to the creature)
@@ -162,8 +163,8 @@ const handleInput=(ex,ey)=>{
 };
 
 function isTapNearCrystal(ex, ey) {
-    const px = (crystal.x - player.visualX - (crystal.y - player.visualY)) * TILE_W + canvas.width/2;
-    const py = (crystal.x - player.visualX + (crystal.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
+    const px = isoSX(crystal.x, crystal.y) + canvas.width/2;
+    const py = isoSY(crystal.x, crystal.y) + canvas.height/2 + TILE_H;
     const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py) : [px, py];   // (where it shows: the battle view's zoom, js/battleview.js)
     return Math.hypot(ex - q[0], ey - q[1]) < 60;
 }
@@ -196,8 +197,9 @@ function handleLongHold(ex,ey) {
     noteRingUsed();
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
-    const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
-    const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
+    const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
+    const gx=Math.round(_bk[0]+player.visualX);
+    const gy=Math.round(_bk[1]+player.visualY);
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
     // Whichever is CLOSER to the finger wins, rather than the enemy always
@@ -267,8 +269,9 @@ canvas.addEventListener('pointerdown', e=>{
 
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(pressX, pressY) : [pressX, pressY];   // (the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
-    const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
-    const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
+    const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
+    const gx=Math.round(_bk[0]+player.visualX);
+    const gy=Math.round(_bk[1]+player.visualY);
     const t=getTile(gx,gy);
     if (t&&!t.type.includes("wall")) commandTarget=t;
 });
@@ -309,6 +312,8 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
     // The POTION pill beside those (js/potion.js): a tap throws the Sleeping Potion in hand
     if (!touchMoved && typeof potionChipTap === "function" && potionChipTap(upX, upY)) { isPressing=false; return; }
+    // THE 3D VIEW's camera buttons under QUESTS: turn, zoom (js/view3d.js)
+    if (!touchMoved && typeof view3dButtonTap === "function" && view3dButtonTap(upX, upY)) { isPressing=false; return; }
     // GUARD and STUN, the two round buttons by the dial (js/playercombat.js)
     if (!touchMoved && typeof playerCombatTap === "function" && playerCombatTap(upX, upY)) { isPressing=false; return; }
     // The KIT pill beside those (js/playercombat.js): a tap uses a repair kit
@@ -346,8 +351,8 @@ canvas.addEventListener('pointerup', e=>{
         let _tappedFollower = null;
         for (const f of followers) {
             if (f.dead) continue;
-            const _fpx = (f.x - player.visualX - (f.y - player.visualY)) * TILE_W + canvas.width/2;
-            const _fpy = (f.x - player.visualX + (f.y - player.visualY)) * TILE_H + canvas.height/2;
+            const _fpx = isoSX(f.x, f.y) + canvas.width/2;
+            const _fpy = isoSY(f.x, f.y) + canvas.height/2;
             if (Math.hypot(upX - _fpx, upY - (_fpy - 55)) < 40) {
                 _tappedFollower = f;
                 break;

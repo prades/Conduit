@@ -2,6 +2,16 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-17
+
+### Build `2026-11-17a` · branch `claude/start-game-project-HSh7Z` · the game in 3D: the camera turns a quarter at a time and zooms
+- **The ask** (the owner, of what next): **"there was so much more in the demo than there is now there was a one key thing of note is the fact that I could rotate the camera and zoom in zoom out"**; asked how to turn, with the 2D still drawn over the picture laid out for one angle: **"90° steps"**.
+- **Turning** (`docs/VIEW-3D.md` §4.1): a quarter at a time, the camera swinging there in 0.4 s. Everything the game lays out on the screen from the world now goes through one turn (`js/config.js` `VIEW_TURN`, `isoSX`, `isoSY`, `isoDX`, `isoDY`, `isoBack`, `isoDepth`: 114 lines across 28 files that worked out the screen by the one angle's formula; the facility's own `_fpP`): bars, plates, numbers, effects, the floor's marks, taps, the order of drawing, the 2D creatures' facing. While it swings the 2D over the picture waits. The walls that sink are those in front of your room as the turned camera sees them (each wall piece knows its rooms for each turn).
+- **Zoom**, 0.6 to 1.8 times: the camera and the world's 2D drawing scaled about the screen's middle together; taps come back through it; zoomed out, more of the world is drawn.
+- **Controls**: four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad a pinch zooms and a two-finger twist turns; on a computer the wheel zooms, `[` `]` turn, `-` `=` zoom. Only while the 3D view shows; the 2D game keeps its one angle and scale. Turned, the drillable rubble is drawn as its drawn pile.
+- **Tests**: `tests/view3d.js` (in three turns and three zooms the view and the game's own layout match a turned projection to the pixel; a tap comes back to its tile; nothing standing hides anyone in any of the four turns); `tests/battlelook.js`, `tests/weapon.js` follow the change (the network panel held back while the 3D view shows; the weapon's tap through the turn).
+- **Verified:** the full run, all 129 suites passing; pictures from the real page, the buttons clicked, the wheel and the keys. **Not seen on an iPad; the pinch and twist not tried on a touch screen.**
+
 ## 2026-11-16
 
 ### Build `2026-11-16i` · branch `claude/start-game-project-HSh7Z` · the game in 3D: nothing standing hides the player

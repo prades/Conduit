@@ -1564,8 +1564,8 @@ function _drawVirus(actor, px, py, drawCtx) {
             drawCtx.strokeStyle = "#aaffff"; drawCtx.lineWidth = 1.2;
             actor._electricChainTargets.forEach(t => {
                 if (!t || t.dead) return;
-                const _tx = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width  / 2;
-                const _ty = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height / 2 - 30;
+                const _tx = isoSX(t.x, t.y) + canvas.width  / 2;
+                const _ty = isoSY(t.x, t.y) + canvas.height / 2 - 30;
                 drawCtx.globalAlpha = _sAlpha * 0.85;
                 drawCtx.beginPath(); drawCtx.moveTo(px, _attBodyY);
                 const _arcSegs = 5;
@@ -1584,8 +1584,8 @@ function _drawVirus(actor, px, py, drawCtx) {
     // ── ICE — GIANT ICICLES PROJECTING TOWARD TARGET ────────────────────────
     if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
         const _it       = actor.icicleAttack;
-        const _tpx      = (_it.tx - player.visualX - (_it.ty - player.visualY)) * TILE_W + canvas.width  / 2;
-        const _tpy      = (_it.tx - player.visualX + (_it.ty - player.visualY)) * TILE_H + canvas.height / 2 - 30;
+        const _tpx      = isoSX(_it.tx, _it.ty) + canvas.width  / 2;
+        const _tpy      = isoSY(_it.tx, _it.ty) + canvas.height / 2 - 30;
         const _ddx      = _tpx - px, _ddy = _tpy - _attBodyY;
         const _dMag     = Math.hypot(_ddx, _ddy) || 1;
         const _ux       = _ddx / _dMag, _uy = _ddy / _dMag;

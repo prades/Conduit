@@ -75,7 +75,7 @@ function _atSweep() { for (let i = actors.length - 1; i >= 0; i--) if (actors[i]
 // is a spot out of the picture (given the camera)? A margin of a tile or two.
 function _atOff(x, y, cam) {
     const dx = x - cam.x, dy = y - cam.y;
-    return Math.abs((dx - dy) * TILE_W) > canvas.width / 2 + 90 || Math.abs((dx + dy) * TILE_H) > canvas.height / 2 + 150;
+    return Math.abs(isoDX(dx, dy)) > canvas.width / 2 + 90 || Math.abs(isoDY(dx, dy)) > canvas.height / 2 + 150;
 }
 // a main-floor tile between r0 and r1 from (x, y) that `ok` allows, else null
 function _atCell(x, y, r0, r1, ok) {

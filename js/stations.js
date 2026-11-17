@@ -136,7 +136,7 @@ function facilityStationTap(ex, ey) {
     }
     return false;
 }
-function _stScreen(s) { return { x: (s.x - player.visualX - (s.y - player.visualY)) * TILE_W + canvas.width / 2, y: (s.x - player.visualX + (s.y - player.visualY)) * TILE_H + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(s.x, s.y) : 0) - 18 }; }
+function _stScreen(s) { return { x: isoSX(s.x, s.y) + canvas.width / 2, y: isoSY(s.x, s.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(s.x, s.y) : 0) - 18 }; }
 // where to walk to use it: the walkable tile round the prop nearest the player (js/facilityplay.js knows the walls)
 function _stApproach(s) { return typeof facilityApproachTile === "function" ? facilityApproachTile(s.bb, STATION_RANGE - 0.3) : null; }
 

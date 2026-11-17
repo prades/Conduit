@@ -939,7 +939,7 @@ function equipAuraOnTile(tx, ty, px, py) {
         if (r.rf !== t) { r.rf = t; r.room = _equipRoomAt(f.x, f.y); }   // (the Mage's room, once a frame)
         if (!roomKnown) { room = _equipRoomAt(tx, ty); roomKnown = true; }
         if (room !== r.room) continue;   // (a tile of another room shows none of it)
-        const cx = px + ((f.x - tx) - (f.y - ty)) * TILE_W, cy = py + TILE_H + ((f.x - tx) + (f.y - ty)) * TILE_H;   // the Mage's ground point, from this tile
+        const cx = px + isoDX(f.x - tx, f.y - ty), cy = py + TILE_H + isoDY(f.x - tx, f.y - ty);   // the Mage's ground point, from this tile
         ctx.save(); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         ctx.lineWidth = L.width; ctx.setLineDash(L.dash); ctx.globalAlpha = L.alpha;
         for (let i = 0; i < r.cols.length; i++) { ctx.strokeStyle = r.cols[i]; ctx.lineDashOffset = -(t * L.turn + i * 12); ctx.beginPath(); ctx.ellipse(cx, cy, rx - i * 5, ry - i * 2.5, 0, 0, Math.PI * 2); ctx.stroke(); }
@@ -949,7 +949,7 @@ function equipAuraOnTile(tx, ty, px, py) {
 function equipAuraDraw() {   // the glints, over the world
     if (!_equipAuraHeld.length || typeof ctx === "undefined" || !ctx || typeof player === "undefined" || typeof canvas === "undefined") return;
     const L = EQUIP_AURA_LOOK, W = canvas.width / 2, H = canvas.height / 2, t = _equipNow();
-    const scr = (x, y, o) => { o.x = (x - player.visualX - (y - player.visualY)) * TILE_W + W; o.y = (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0); return o; };
+    const scr = (x, y, o) => { o.x = isoSX(x, y) + W; o.y = isoSY(x, y) + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0); return o; };
     const p = _equipAuraPt;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const u of _equipAuraHeld) {

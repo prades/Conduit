@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The 3D view's camera turns a quarter at a time and zooms
+
+- **Date:** 2026-11-17 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-17a`
+- **Status:** implemented behind `?engine=3d`, verified by `tests/view3d.js` and the full run; not seen on an iPad.
+- **Context:** asked what next, the owner: "Fuck, no dude there was so much more in the demo than there is now there was a one key thing of note is the fact that I could rotate the camera and zoom in zoom out". The game's 3D view had kept the game's one camera because the 2D drawn over the picture (bars, numbers, effects, taps, the creatures with no model yet) was laid out for that one angle (`VIEW-3D.md` §3, stage 6, then planned for after the effects are 3D).
+- **Decision:** asked how turning should work (in 90° steps with everything lining up; freely with everything following, the longest; freely with the 2D hidden while turned), the owner chose **"90° steps"**. Zoom in and out either way.
+- **Agent's choices, provisional:** the swing's time (0.4 s), the zoom's range (0.6 to 1.8) and step, the buttons' place and look under QUESTS, 40° of twist a quarter turn, the keys.
+- **Affects:** `VIEW-3D.md` §4.1; `js/config.js`, `js/view3d.js`, `js/cavewalls.js` and the 28 files whose screen layout now goes through the turn (`js/game.js`, `js/input.js`, `js/battleview.js`, `js/drops.js` among them); `view3d/gameview.js`, `view3d/gamemap.js`, `view3d/core.js`, `design/style-evolution/live/floor.js`; `tests/view3d.js`.
+
 ## DECISION: Fewer nooks round the arena (the map reshaped); Teleport Room 2 to become a staircase up to a new floor
 
 - **Date:** 2026-11-16 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-16e`

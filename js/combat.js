@@ -47,7 +47,7 @@ function healUnit(t, amount, source) {
 function drawBiteTelegraphs() {
     if (typeof ctx === "undefined" || typeof actors === "undefined" || typeof Predator === "undefined") return;
     const W = canvas.width / 2, H = canvas.height / 2;
-    const scr = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W, (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)];
+    const scr = (x, y) => [isoSX(x, y) + W, isoSY(x, y) + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)];
     let drew = false;
     for (const a of actors) {
         if (!a || a.dead || !(a.attackWindup > 0) || !(a instanceof Predator)) continue;
@@ -129,7 +129,7 @@ function drawFollowerPoisonMarks() {
     ctx.fillStyle = FOLLOWER_POISON.col; ctx.strokeStyle = "rgba(10,30,8,0.85)"; ctx.lineWidth = 1.5;
     for (const a of followers) {
         if (!a || a.dead || !(a.poisoned > 0)) continue;
-        const sx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, sy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0);
+        const sx = isoSX(a.x, a.y) + canvas.width / 2, sy = isoSY(a.x, a.y) + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0);
         for (let i = 0; i < 3; i++) { const u = ((f * 0.015) + i / 3) % 1; ctx.globalAlpha = 0.9 * (1 - u * u); ctx.beginPath(); ctx.arc(sx - 14 - i * 7 + Math.sin((f + i * 20) * 0.1) * 2, sy - 100 - u * 30, 3.2 + i * 0.9, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
     }
     ctx.globalAlpha = 1;

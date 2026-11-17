@@ -30,9 +30,16 @@ const GAMEVIEW = (function () {
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
   const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
   const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(); CORE.SEE(cam);
+  // TURNED AND ZOOMED (js/view3d.js VIEW3D.turn, VIEW3D.zoom; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"): it swings round
+  // the vertical to the quarter turn chosen, a quarter in SWING s (js/config.js turns the game's own drawing over it the same way, and while it swings that drawing waits); its picture is scaled
+  // about the screen's middle, as the game's drawing over it is (js/view3d.js view3dWorldBegin)
+  const SWING = 0.4; let yaw = 0;
+  const yawWant = () => (GM.viewTurn || 0) * Math.PI / 2, yawLeft = () => { const d = yawWant() - yaw; return d - Math.round(d / (2 * Math.PI)) * 2 * Math.PI; };   // (the short way round)
   // the middle of the screen: the player's ground on the camera's floor (the game's _fpCam: the camera rides the player's floor), then TILE_H px up the screen, as _fpP has it
-  function place() { const W = game.width, H = game.height, pl = GM.player;
-    cam.left = -W / 2 / UNIT; cam.right = W / 2 / UNIT; cam.top = H / 2 / UNIT; cam.bottom = -H / 2 / UNIT;
+  function place(dt) { const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
+    yaw = !dt || Math.abs(d) <= step ? yawWant() : yaw + Math.sign(d) * step;
+    const a = Math.PI / 4 - yaw, ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(ELV) * ca, Math.sin(ELV), Math.cos(ELV) * sa); UPV.set(-Math.sin(ELV) * ca, Math.cos(ELV), -Math.sin(ELV) * sa);
+    cam.left = -W / 2 / UNIT / k; cam.right = W / 2 / UNIT / k; cam.top = H / 2 / UNIT / k; cam.bottom = -H / 2 / UNIT / k;
     at.set(pl.visualX, GM.camLift / UPX, pl.visualY).addScaledVector(UPV, TH / UNIT); cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
   let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0; if (typeof window !== 'undefined') window.addEventListener('resize', () => { fitAt = -1e9; });
@@ -164,16 +171,17 @@ const GAMEVIEW = (function () {
   const stats = { frames: 0, draws: 0, tris: 0, bodies: 0, ms: 0, fx: false, built: CORE.built(), webgl: CORE.gl2 ? 2 : 1 };   // (fx: this frame's floor marks were laid on)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
-    fit(f0); place(); lights(); doors(); crystal(f0);
-    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt); roomWas = room; }
+    fit(f0); place(dt); lights(); doors(); crystal(f0);
+    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, GM.viewTurn || 0); roomWas = room; }
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
-    const fx = marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT); CORE.draw(cam, null, { fx });
+    const fx = Math.abs(yawLeft()) > 1e-4 ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
     stats, state, world, camera: cam, core: CORE,
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
+    swinging() { return Math.abs(yawLeft()) > 1e-4; },   // (swinging round to a new quarter turn: js/view3d.js view3dSwinging)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)

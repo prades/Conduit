@@ -1,6 +1,6 @@
 # The game in 3D (the 3D view)
 
-**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a` (its light the game's own dark since `2026-11-16b`); stage 2 **in progress**: the lab's other floors built in `2026-11-16c`, the arena a draft (`2026-11-16d`; the map round it reshaped for fewer nooks in `2026-11-16e`), **behind a switch** (`?engine=3d`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
+**Status:** Stage 1 **implemented** on branch `claude/start-game-project-HSh7Z`, build `2026-11-16a` (its light the game's own dark since `2026-11-16b`); stage 2 **in progress**: the lab's other floors built in `2026-11-16c`, the arena a draft (`2026-11-16d`; the map round it reshaped for fewer nooks in `2026-11-16e`), **behind a switch** (`?engine=3d`). The camera turns a quarter at a time and zooms (`2026-11-17a`). Verified in a headless browser with software WebGL (`tests/view3d.js`). **Not seen on an iPad.** Without the switch the game is exactly as before, and that is what players get until the owner says otherwise.
 
 ## 1. The decision
 
@@ -24,13 +24,21 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 3. The caves, the water and the dark places: the sewers, the Nest, the domains.
 4. Models for the other creatures: the beetle, scorpion, spider, mantis, moth, roly-poly and larva (the ant has one), the clones, the bosses.
 5. The effects in 3D: the attacks, the Ultimates, the numbers and words (today the 2D ones are laid over the picture).
-6. Turning and tilting the camera, once the effects are 3D (the 2D effects are drawn for the game's one angle).
+6. Turning and tilting the camera. **Turning (a quarter at a time) and zoom: built** (`2026-11-17a`), at the owner's ask, before the effects are 3D: the 2D over the picture is laid out through the turn (§4.1). Tilting: not built.
 7. Then: the battle view's zoom in 3D, real lights for the dark rooms, the 3D view as the default.
 
 ## 4. Stage 1: what it draws
 
 ### 4.1 The camera
 **The game's own camera**: the same angle (2:1, 30° down), the same scale (a tile `TILE_W` px across) and centred on the player, riding the player's floor as the game's does (`js/facilityplay.js` `_fpP`, `_fpCam`). A point of the world is on the screen exactly where the game's drawing puts it (within a pixel, tested), so every 2D drawing laid over the picture lies where it did: bars, plates, effects, marks, the start screen's panels, and every tap.
+
+**Turned and zoomed** (build `2026-11-17a`). The owner, 2026-11-17, asked what next: **"there was so much more in the demo than there is now there was a one key thing of note is the fact that I could rotate the camera and zoom in zoom out"**; asked how to turn, given the 2D still drawn over the picture: **"90° steps"**.
+- **A quarter turn at a time**: the camera swings round the vertical to it in 0.4 s. Everything the game lays out on the screen from the world goes through one turn (`js/config.js`: `VIEW_TURN`, `isoSX`, `isoSY` for a place, `isoDX`, `isoDY` for a way, `isoBack` for a tap, `isoDepth` for what is in front): the bars, plates and numbers, the effects, the floor's marks, the taps, the order things are drawn in, and the creatures it still draws in 2D and the way they face. So it lines up in each of the four views; while the camera swings, the 2D over the picture waits (it is wiped, and the floating words and the floor's marks are not drawn).
+- **Zoom**, 0.6 to 1.8 times (the agent's range, provisional): the camera and the world's 2D drawing are scaled about the screen's middle together (`js/view3d.js` `view3dWorldBegin`: while the world is drawn, a part that sets its own transform is taken as within the zoom); taps come back through it; zoomed out, more of the world is drawn.
+- **The walls that sink** are those in front of the room you are in, and those that could hide someone in it, as the turned camera sees them: each wall piece knows its rooms for each of the four turns (`design/style-evolution/live/floor.js`).
+- **The controls**: four round buttons under QUESTS (turn left, turn right, zoom out, zoom in; their place and look are the agent's); on an iPad, two fingers pinched to zoom and twisted to turn (40° of twist a quarter turn, the way the fingers go); on a computer, the wheel zooms, `[` and `]` turn, `-` and `=` zoom.
+- **Only while the 3D view shows**: the 2D game keeps its one angle and scale (outside the rooms the view has built, the turn is the game's own).
+- When turned, the rubble a fire technician drills is drawn as its drawn pile (its picture is made for the game's one angle).
 
 ### 4.2 The world
 - **The rooms** (`view3d/gamemap.js` `VIEW3D_ROOMS`: the eight of the lab's ground floor, then its other floors) read from the running game when the view is made, built as the test page builds them (`design/style-evolution/live/floor.js`, round 2's `chamber.js` for each room's props, wall fittings and floor marks; the props from the game's own models).
@@ -59,7 +67,7 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 
 ### 4.6 Not in stage 1
 - The battle view's zoom: off while the 3D view shows.
-- Turning the camera (§3).
+- Tilting the camera (turning and zoom are built: §4.1).
 - A body's flash when it is hit (its bars and numbers show the hit).
 - The stairs' floor marks follow the room's floor, not each tread.
 - A relay's or charger's look as it powers up (built as "on").
@@ -83,12 +91,13 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 
 ## 6. Tests
 
-`tests/view3d.js`: the files (the view's script fresh from its sources; every evolved form, the cube and every egg in the bakers' table; three.js r128 with its licence; fetched only through `js/view3d.js` behind the switch; the page loads it before the boot check). Then, in a real browser: **off**, nothing of it is fetched or made and the game's canvas is opaque; **on**, it is made with no error and shows in the Crystal Chamber with a picture that is not blank; **the camera** is the game's projection to the pixel, on the floor, up a wall, at the gem and down the stairs; **the bodies** (the cube, an egg, an evolved form, an ant; a beetle left to the game; what is over a unit drawn with its body); **the world** (a door as open as the game's; light and dark rooms; a blackout; the floor marks laid on; the items kept); **away** in the arena it hides and the frame is the 2D game's; **a failure** leaves the game in 2D.
+`tests/view3d.js`: the files (the view's script fresh from its sources; every evolved form, the cube and every egg in the bakers' table; three.js r128 with its licence; fetched only through `js/view3d.js` behind the switch; the page loads it before the boot check). Then, in a real browser: **off**, nothing of it is fetched or made and the game's canvas is opaque; **on**, it is made with no error and shows in the Crystal Chamber with a picture that is not blank; **the camera** is the game's projection to the pixel, on the floor, up a wall, at the gem and down the stairs; **the bodies** (the cube, an egg, an evolved form, an ant; a beetle left to the game; what is over a unit drawn with its body); **the world** (a door as open as the game's; light and dark rooms; a blackout; the floor marks laid on; the items kept); **away** in the arena it hides and the frame is the 2D game's; **a failure** leaves the game in 2D. **Turned and zoomed**: in three quarter turns and at three zooms the view's camera and the game's own 2D layout both match a turned and zoomed projection written in the test, to the pixel; a tap there comes back to its tile; nothing standing hides anyone in any of the four turns.
 
 ## 7. Open questions
 
 - ~~The room you are in: as bright as the chosen look, or as dark as the 2D game's?~~ *(answered 2026-11-16: "Definitely liking the dark mode more": the game's own dark, §4.3.)*
 - The order of the stages (§3).
 - ~~The arena's rock: should rock in front of you sink as the lab's walls do, or stay standing as low cliffs?~~ *(answered 2026-11-16: **"Yes, the rock that is obscuring the player should sink in"**: §4.2.)* Is the arena ready to be built for everyone with `?engine=3d`?
+- The camera (§4.1): its buttons' place and look, the zoom's range; tilting; turning freely rather than a quarter at a time, once the effects are 3D.
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - When the 3D view becomes the default.

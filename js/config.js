@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-16i";
+const BUILD_VERSION = "2026-11-17a";
 // The address a picture is loaded from, by its .png path (build 2026-11-11c; tools/images.js): the one js/imgmap.js names (the picture's lossless WebP copy where that is smaller) with a
 // fingerprint of the picture, so a new build does not make a player download every picture again; a picture the map does not have yet: its path and the build.
 function imgSrc(p) { const m = typeof IMG_MAP !== "undefined" ? IMG_MAP[p] : undefined; return m || p + "?v=" + BUILD_VERSION; }
@@ -126,6 +126,22 @@ const cfg = {
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const TILE_W = 60, TILE_H = 30, RENDER_DIST = 22;
+// THE VIEW'S QUARTER TURN (the 3D view's camera; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out", and of how: "90° steps"; docs/VIEW-3D.md).
+// VIEW_TURN 0 is the game's own angle; 1 to 3 a quarter turn each. It is only ever set while the 3D view shows (js/view3d.js): the 2D game is drawn for one angle. Everything laid out on the
+// screen from the world goes through these, so it lines up with the turned 3D picture: a world offset (dx, dy) turned is (viewTU, viewTV), and the screen's x and y come from those as from (dx, dy).
+let VIEW_TURN = 0;
+function viewTU(dx, dy) { return VIEW_TURN === 0 ? dx : VIEW_TURN === 1 ? -dy : VIEW_TURN === 2 ? -dx : dy; }
+function viewTV(dx, dy) { return VIEW_TURN === 0 ? dy : VIEW_TURN === 1 ? dx : VIEW_TURN === 2 ? -dy : -dx; }
+// where (x, y) of the world is on the screen from the player, px: across (isoSX) and down (isoSY); add the screen's middle (and the rest of the game's own offsets) as before
+function isoSX(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) - viewTV(dx, dy)) * TILE_W; }
+function isoSY(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) + viewTV(dx, dy)) * TILE_H; }
+// a way (vx, vy) of the world on the screen, px: across and down
+function isoDX(vx, vy) { return (viewTU(vx, vy) - viewTV(vx, vy)) * TILE_W; }
+function isoDY(vx, vy) { return (viewTU(vx, vy) + viewTV(vx, vy)) * TILE_H; }
+// back: a screen offset from the player's point (a = across / TILE_W, b = down / TILE_H) as a world offset [dx, dy]
+function isoBack(a, b) { const u = (b + a) / 2, v = (b - a) / 2; return VIEW_TURN === 0 ? [u, v] : VIEW_TURN === 1 ? [v, -u] : VIEW_TURN === 2 ? [-u, -v] : [-v, u]; }
+// how far in front a world point is, for drawing in order (a bigger one draws later, in front): x + y at the game's own angle
+function isoDepth(x, y) { return viewTU(x, y) + viewTV(x, y); }
 // A role's name on screen. The ids ("brawler", "sniper", "camper") are what saves, tests and the code know them by;
 // the ranged role is a MAGE to the player, and the post-holding role a TECHNICIAN.
 const ROLE_LABELS = { sniper: "MAGE", camper: "TECHNICIAN" };

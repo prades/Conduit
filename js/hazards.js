@@ -72,7 +72,7 @@ function hazardTargetAtScreen(ex, ey) {
     let best = null, bd = typeof PICK_RADIUS !== "undefined" ? PICK_RADIUS : 44;
     for (const s of hazardSolids()) {
         if (s.open) continue; const [x, y] = hazardCentre(s);
-        const px = (x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, py = (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0);
+        const px = isoSX(x, y) + canvas.width / 2, py = isoSY(x, y) + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0);
         const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - 30) : [px, py - 30], d = Math.hypot(ex - q[0], ey - q[1]);   // (the battle view's zoom: js/battleview.js)
         if (d < bd) { bd = d; best = s; }
     }
@@ -172,7 +172,7 @@ function drawAcidOnTile(tx, ty, px, py) {
     const f = _hzFrame();
     for (const P of _hz.pools) {
         if (Math.abs(P.x - tx) > P.r + 0.75 || Math.abs(P.y - ty) > P.r + 0.75) continue;
-        const a = Math.max(0, Math.min(1, (P.until - f) / 60, (f - P.born + 1) / 8)), dx = P.x - tx, dy = P.y - ty, cx = px + (dx - dy) * TILE_W, cy = py + TILE_H + (dx + dy) * TILE_H, rx = P.r * TILE_W * 1.4142, ry = P.r * TILE_H * 1.4142;
+        const a = Math.max(0, Math.min(1, (P.until - f) / 60, (f - P.born + 1) / 8)), dx = P.x - tx, dy = P.y - ty, cx = px + isoDX(dx, dy), cy = py + TILE_H + isoDY(dx, dy), rx = P.r * TILE_W * 1.4142, ry = P.r * TILE_H * 1.4142;
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         // a soft puddle of a few overlapping lobes, drawn as circles in a space squashed to the floor's 2:1 (so it fades the same way to every side)
@@ -191,7 +191,7 @@ function drawAcidOnTile(tx, ty, px, py) {
         ctx.restore();
     }
 }
-function _hzScr(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
+function _hzScr(x, y, z) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
 // the blast and the splash, over everything (js/game.js, after the fire bombs in flight)
 function drawHazardBlasts() {
     if (!_hz.blasts.length) return;

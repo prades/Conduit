@@ -19,14 +19,14 @@
 //   - In a room the view has not built, the frame is drawn in 2D exactly as with the switch off.
 // The view itself, and what it does and does not draw yet, is view3d/gameview.js.
 
-const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0 };
+const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1 };
 const VIEW3D_FILES = ["vendor/three.min.js", "dist/view3d.js"];
 
 function _view3dLoad(src) {
     return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = () => ok(); s.onerror = () => no(new Error("did not load: " + src)); document.head.appendChild(s); });
 }
 function _view3dFail(e) {
-    VIEW3D.state = "failed"; VIEW3D.error = String((e && e.message) || e);
+    VIEW3D.state = "failed"; VIEW3D.error = String((e && e.message) || e); VIEW_TURN = 0;
     if (VIEW3D.showing) { VIEW3D.showing = false; try { VIEW3D.view.show(false); } catch (x) { /* it is going anyway */ } }
     if (typeof console !== "undefined" && console.warn) console.warn("the 3D view is off: " + VIEW3D.error);
 }
@@ -58,7 +58,44 @@ function view3dBegin() {
         const r = facilityRoomAt(player.x, player.y, _fp.F); want = !!r && VIEW3D.view.covers(r.id);
     }
     if (want !== VIEW3D.showing) { VIEW3D.showing = want; try { VIEW3D.view.show(want); } catch (e) { _view3dFail(e); return false; } }
+    VIEW_TURN = want ? VIEW3D.turn : 0;   // (the turn only while the view shows: the 2D game has one angle, js/config.js)
     return want;
+}
+
+// THE CAMERA, turned a quarter at a time and zoomed (the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"). Only while the view shows:
+// the 2D game has one angle and one scale. VIEW3D.turn 0 to 3 (js/config.js VIEW_TURN is it while the view shows: everything the game lays out on the screen goes through it, so the 2D over the
+// picture lines up in each of the four views); VIEW3D.zoom how near (1 the game's own), its camera and the world's 2D drawing scaled about the screen's middle together.
+const VIEW3D_CAM = { zoomMin: 0.6, zoomMax: 1.8, zoomStep: 1.2 };   // (the agent's, provisional)
+function view3dZoom() { return VIEW3D.showing ? VIEW3D.zoom : 1; }
+function view3dTurnBy(dir) { if (!VIEW3D.showing) return false; VIEW3D.turn = (VIEW3D.turn + (dir < 0 ? 3 : 1)) % 4; VIEW_TURN = VIEW3D.turn; return true; }
+function view3dZoomTo(z) { if (!VIEW3D.showing || !Number.isFinite(z)) return false; VIEW3D.zoom = Math.max(VIEW3D_CAM.zoomMin, Math.min(VIEW3D_CAM.zoomMax, z)); return true; }
+function view3dZoomBy(steps) { return view3dZoomTo(VIEW3D.zoom * Math.pow(VIEW3D_CAM.zoomStep, steps)); }
+// is the camera swinging round to a new quarter turn? The 2D over the picture lines up only at a quarter turn, so meanwhile it is not drawn
+function view3dSwinging() { return VIEW3D.showing && !!VIEW3D.view && typeof VIEW3D.view.swinging === "function" && VIEW3D.view.swinging(); }
+// THE ZOOM ON THE WORLD'S DRAWING: a context's transforms taken as within the zoom (a part that sets its own, setTransform(1, 0, 0, 1, 0, 0), as many do, is drawn zoomed too), and back
+function _view3dZoomOn(g, k) {
+    const own = n => Object.prototype.hasOwnProperty.call(g, n) ? g[n] : undefined, set = g.setTransform, cx = canvas.width / 2, cy = canvas.height / 2, ox = cx * (1 - k), oy = cy * (1 - k);
+    g.__v3z = { set: own("setTransform"), reset: own("resetTransform") };
+    g.setTransform = function (a, b, c, d, e, f) { if (a && typeof a === "object") { b = a.b; c = a.c; d = a.d; e = a.e; f = a.f; a = a.a; } return set.call(this, a * k, b * k, c * k, d * k, e * k + ox, f * k + oy); };
+    g.resetTransform = function () { return set.call(this, k, 0, 0, k, ox, oy); };
+    g.setTransform(1, 0, 0, 1, 0, 0);
+}
+function _view3dZoomOff(g) {
+    const o = g.__v3z; if (!o) return; delete g.__v3z;
+    if (o.set) g.setTransform = o.set; else delete g.setTransform;
+    if (o.reset) g.resetTransform = o.reset; else delete g.resetTransform;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+}
+let _view3dZoomed = null;
+// the world's drawing begins (js/game.js render, after the frame is cleared): zoomed, if the camera is
+function view3dWorldBegin() { const k = view3dZoom(); if (k === 1 || _view3dZoomed) return; _view3dZoomed = ctx; _view3dZoomOn(ctx, k); }
+// the world's drawing done (before the panels): the zoom off, the 2D over the picture wiped while the camera swings round; true while the view shows (then the network panel, which the
+// world's drawing held back so that it is neither zoomed nor wiped, is drawn now)
+function view3dWorldEnd() {
+    if (_view3dZoomed) { _view3dZoomOff(_view3dZoomed); _view3dZoomed = null; }
+    if (!VIEW3D.showing) return false;
+    if (view3dSwinging()) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return true;
 }
 function view3dShowing() { return VIEW3D.showing; }
 // The frame's 3D picture, from the game as this step left it. tiles: the floor's tiles on the screen (js/game.js visibleTilesForDraw), whose marks go on the view's floor.
@@ -70,13 +107,14 @@ function view3dDraw(tiles) {
 function _view3dFloorMarks(g, tiles) {
     const keep = ctx; ctx = g;
     try {
-        tiles = tiles.slice().sort((a, b) => a.x + a.y - b.x - b.y);   // (back to front, as the game's own list draws them)
+        tiles = tiles.slice().sort((a, b) => isoDepth(a.x, a.y) - isoDepth(b.x, b.y));   // (back to front, as the game's own list draws them, in the view's turn)
+        const k = view3dZoom(); if (k !== 1) _view3dZoomOn(g, k);   // (the layer zoomed as the camera is)
         for (const t of tiles) {
             if (t.deck) continue;   // (a bridge's grating over water: none in the rooms the view has built)
-            const px = (t.x - player.visualX - (t.y - player.visualY)) * TILE_W + canvas.width / 2, py = (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + canvas.height / 2 - facilityLiftRel(t.x, t.y);
+            const px = isoSX(t.x, t.y) + canvas.width / 2, py = isoSY(t.x, t.y) + canvas.height / 2 - facilityLiftRel(t.x, t.y);
             drawFloorTileMarks(t, px, py, true);
         }
-    } finally { ctx = keep; }
+    } finally { ctx = keep; _view3dZoomOff(g); }
 }
 // How far down the screen a unit's body is in the 3D view from where the 2D drawing puts its feet (px): the view stands it where the game has it, the middle of its tile; the 2D drawing put
 // its feet at the tile's top corner. What the game draws over a unit (its bars, its plate, the marks round it) goes down with it.
@@ -87,3 +125,62 @@ function view3dKeeps(it) { return VIEW3D.showing && VIEW3D.view.keeps(it); }
 function view3dBody(a) { return VIEW3D.showing && VIEW3D.view.has(a); }
 // How far over its feet its body's top is on the screen (px), for the bars over it.
 function view3dTop(a) { return VIEW3D.view.top(a); }
+
+// ── THE CAMERA'S CONTROLS (the 3D view only): four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad two fingers, pinched to zoom and twisted to turn a
+// quarter; on a computer the wheel zooms, [ and ] turn, - and = zoom. A twist turns the way the fingers go (clockwise, the world clockwise). The buttons' places and sizes are the agent's.
+const _V3BTN = { r: 17, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
+function view3dDrawButtons() {
+    _V3BTN.shown = false;
+    if (!VIEW3D.showing || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen)) return;
+    _V3BTN.shown = true; const { r, y, xs } = _V3BTN, sw = view3dSwinging();
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    xs.forEach((x, i) => {
+        ctx.fillStyle = "rgba(10,16,24,0.82)"; ctx.strokeStyle = "rgba(64,224,208,0.65)"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = ctx.fillStyle = sw && i < 2 ? "rgba(64,224,208,0.45)" : "#c8fff4"; ctx.lineWidth = 2.2;
+        if (i < 2) {   // a turn: three quarters of a circle and its arrowhead, the way it turns
+            const s = i ? 1 : -1, a0 = s > 0 ? -2.4 : -0.74, a1 = s > 0 ? 1.0 : 2.14, rr = 8, ae = s > 0 ? a1 : a0;
+            ctx.beginPath(); ctx.arc(x, y, rr, Math.min(a0, a1), Math.max(a0, a1)); ctx.stroke();
+            const hx = x + Math.cos(ae) * rr, hy = y + Math.sin(ae) * rr, tx = -Math.sin(ae) * s, ty = Math.cos(ae) * s;   // (the arrowhead along the arc's way)
+            ctx.beginPath(); ctx.moveTo(hx + tx * 5, hy + ty * 5); ctx.lineTo(hx - ty * 4 - tx * 1, hy + tx * 4 - ty * 1); ctx.lineTo(hx + ty * 4 - tx * 1, hy - tx * 4 - ty * 1); ctx.closePath(); ctx.fill();
+        } else { ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y); if (i === 3) { ctx.moveTo(x, y - 7); ctx.lineTo(x, y + 7); } ctx.stroke(); }   // (- and +)
+    });
+    ctx.restore();
+}
+// a tap (js/input.js, on the finger's lift): one of the buttons? Then it acts, and the tap is its own
+function view3dButtonTap(x, y) {
+    if (!_V3BTN.shown || !VIEW3D.showing) return false;
+    for (let i = 0; i < _V3BTN.xs.length; i++) if (Math.hypot(x - _V3BTN.xs[i], y - _V3BTN.y) <= _V3BTN.r + 6) { _V3BTN.acts[i](); return true; }
+    return false;
+}
+// two fingers on the picture: a pinch zooms, a twist turns (each 40 degrees of it a quarter); the fingers' own taps and holds are not the game's
+const _v3touch = { ptrs: new Map(), on: false, d0: 0, a0: 0, z0: 1, ids: new Set() };
+function _v3gestureTarget() { return VIEW3D.showing && !(typeof techAimActive === "function" && techAimActive()) && !(typeof infoPanelOpen !== "undefined" && infoPanelOpen) && !(typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
+if (VIEW3D.on && typeof canvas !== "undefined" && canvas && canvas.addEventListener) {
+    const at = e => [e.clientX, e.clientY], G = _v3touch;
+    canvas.addEventListener("pointerdown", e => {
+        G.ptrs.set(e.pointerId, at(e));
+        if (G.ptrs.size === 2 && _v3gestureTarget()) {
+            const [a, b] = [...G.ptrs.values()]; G.on = true; G.d0 = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; G.a0 = Math.atan2(b[1] - a[1], b[0] - a[0]); G.z0 = VIEW3D.zoom; G.ids = new Set(G.ptrs.keys());
+            if (typeof isPressing !== "undefined") { isPressing = false; touchMoved = true; }   // (the first finger's press is the gesture's now: no hold, no tap)
+            e.stopImmediatePropagation(); e.preventDefault();
+        } else if (G.on) { G.ids.add(e.pointerId); e.stopImmediatePropagation(); e.preventDefault(); }
+    }, { capture: true });
+    canvas.addEventListener("pointermove", e => {
+        if (!G.ptrs.has(e.pointerId)) return; G.ptrs.set(e.pointerId, at(e));
+        if (!G.on || !G.ids.has(e.pointerId)) return; e.stopImmediatePropagation();
+        if (G.ptrs.size < 2) return; const [a, b] = [...G.ptrs.values()], d = Math.hypot(b[0] - a[0], b[1] - a[1]), an = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        view3dZoomTo(G.z0 * d / G.d0);
+        let da = an - G.a0; da -= Math.round(da / (2 * Math.PI)) * 2 * Math.PI;
+        if (Math.abs(da) > 40 * Math.PI / 180) { view3dTurnBy(da > 0 ? 1 : -1); G.a0 = an; }
+    }, { capture: true });
+    const lift = e => { const was = G.ids.has(e.pointerId); G.ptrs.delete(e.pointerId); if (was) { G.ids.delete(e.pointerId); e.stopImmediatePropagation(); if (typeof isPressing !== "undefined") isPressing = false; } if (!G.ids.size) G.on = false; };
+    canvas.addEventListener("pointerup", lift, { capture: true });
+    canvas.addEventListener("pointercancel", lift, { capture: true });
+    canvas.addEventListener("wheel", e => { if (!_v3gestureTarget() || (typeof cloneMenuOpen !== "undefined" && cloneMenuOpen)) return; e.preventDefault(); view3dZoomBy(e.deltaY < 0 ? 1 : -1); }, { passive: false });
+    window.addEventListener("keydown", e => {
+        const tg = e.target && e.target.tagName; if (tg === "INPUT" || tg === "TEXTAREA" || e.metaKey || e.ctrlKey || !_v3gestureTarget()) return;
+        if (e.key === "[") view3dTurnBy(-1); else if (e.key === "]") view3dTurnBy(1); else if (e.key === "-") view3dZoomBy(-1); else if (e.key === "=" || e.key === "+") view3dZoomBy(1); else return;
+        e.preventDefault();
+    });
+}

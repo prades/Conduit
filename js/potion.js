@@ -125,7 +125,7 @@ function potionTick() {
     potionFlights = potionFlights.filter(p => f < p.until); potionSplashes = potionSplashes.filter(s => f < s.until);
 }
 // ── drawing (js/game.js, after the serum's overlay): a potion in the air on its arc with its shadow, the mist where one shattered, and the marks over everyone asleep ──
-function _ptScr(x, y, z) { return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
+function _ptScr(x, y, z) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)]; }
 function drawPotionOverlay() {
     if (typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas || typeof player === "undefined" || typeof actors === "undefined") return;
     const f = _ptFrame(), sleepers = actors.filter(a => a && !a.dead && a.asleep > 0);

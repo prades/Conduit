@@ -111,7 +111,7 @@ function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what e
     actor.fireOrbitTimer = 30; return n;
 }
 // ── DRAWING ──
-function _fireScr(x, y, z) { const W = canvas.width / 2, H = canvas.height / 2; return [(x - player.visualX - (y - player.visualY)) * TILE_W + W, (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (z || 0) * FIRE_Z_PX]; }
+function _fireScr(x, y, z) { const W = canvas.width / 2, H = canvas.height / 2; return [isoSX(x, y) + W, isoSY(x, y) + H + TILE_H - (z || 0) * FIRE_Z_PX]; }
 // The burning ground, painted by each floor tile as it is drawn (under whoever stands there): called with the tile's top corner (px, py).
 function drawFireOnTile(tx, ty, px, py) {
     if (!fireTiles.size) return;

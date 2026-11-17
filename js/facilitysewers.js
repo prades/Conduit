@@ -113,8 +113,8 @@ function _fpWaterPoly(s, wet) {
 }
 // is a long item on the screen (its whole box, not its middle)
 function _fpSpanVisible(it) {
-    const b = it.bb, cx = player.visualX, cy = player.visualY, sx0 = (b[0] - b[3] - (cx - cy)) * TILE_W + canvas.width / 2, sx1 = (b[2] - b[1] - (cx - cy)) * TILE_W + canvas.width / 2;
-    const sy0 = (b[0] + b[1] - (cx + cy)) * TILE_H + canvas.height / 2 - 200, sy1 = (b[2] + b[3] - (cx + cy)) * TILE_H + canvas.height / 2 + 200;
+    const b = it.bb, cs = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]], xs = cs.map(c => isoSX(c[0], c[1])), ys = cs.map(c => isoSY(c[0], c[1]));   // (its box's four corners, through the view's turn: js/config.js)
+    const sx0 = Math.min(...xs) + canvas.width / 2, sx1 = Math.max(...xs) + canvas.width / 2, sy0 = Math.min(...ys) + canvas.height / 2 - 200, sy1 = Math.max(...ys) + canvas.height / 2 + 200;
     return sx1 > -120 && sx0 < canvas.width + 120 && sy1 > -120 && sy0 < canvas.height + 120;
 }
 function facilitySewerDraw(it) {

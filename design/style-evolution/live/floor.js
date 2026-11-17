@@ -96,12 +96,17 @@ function buildLabFloor(lab, P0, how) {
     const L = Math.hypot(d.b[0] - d.a[0], d.b[1] - d.a[1]); for (let i = 0; i <= Math.ceil(L * 2); i++) { const t = L ? i / Math.ceil(L * 2) : 0, px = d.a[0] + (d.b[0] - d.a[0]) * t, py = d.a[1] + (d.b[1] - d.a[1]) * t;
       for (const [ox, oy] of [[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) { const b = band.get(K(Math.round(px + ox), Math.round(py + oy))); if (b && b.rock) b.flat = true; } } }
 
-  // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together
-  const hideOf = (x, y) => { const s = []; for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) { const r = roomAt.get(K(x + dx, y + dy)); if (r && !s.includes(r)) s.push(r); }
+  // which rooms a block stands in front of (seen from the camera's side), and the pieces that sink together. LIVE (the game's view), for each of the camera's four quarter turns (the owner,
+  // 2026-11-17: "rotate the camera", "90° steps"; js/config.js VIEW_TURN): as it looks from there. A world offset turned is (tu, tv), as the game turns it; fromT turns one back.
+  const TURNS = live ? [0, 1, 2, 3] : [0];
+  const tu = (t, dx, dy) => t === 0 ? dx : t === 1 ? -dy : t === 2 ? -dx : dy, tv = (t, dx, dy) => t === 0 ? dy : t === 1 ? dx : t === 2 ? -dy : -dx;
+  const fromT = (t, u, v) => t === 0 ? [u, v] : t === 1 ? [v, -u] : t === 2 ? [-u, -v] : [-v, u];
+  const AWAY = [[0, -1], [-1, 0], [-1, -1]];   // (away from the camera at the game's own angle: north, west and between; turned with it)
+  const hideOf = (x, y, t) => { const s = [], aw = AWAY.map(d => fromT(t, d[0], d[1])); for (const [dx, dy] of aw) { const r = roomAt.get(K(x + dx, y + dy)); if (r && !s.includes(r)) s.push(r); }
     // (live: a wall more than a tile thick, the arena's north wall: a block with a room on its camera side stands in front of the room behind the wall too, straight or diagonally, and sinks with it)
-    if (live) for (const [dx, dy] of [[0, -1], [-1, 0], [-1, -1]]) if (roomAt.has(K(x - dx, y - dy))) for (let k = 1; k <= 3 && band.has(K(x + dx * k, y + dy * k)); k++) { const r = roomAt.get(K(x + dx * (k + 1), y + dy * (k + 1))); if (r) { if (!s.includes(r)) s.push(r); break; } }
-    return s.sort(); };
-  const groups = new Map(), groupOf = hide => { const k = hide.join('|'); let G = groups.get(k); if (!G) { G = { key: k, hide, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };
+    if (live) for (const [dx, dy] of aw) if (roomAt.has(K(x - dx, y - dy))) for (let k = 1; k <= 3 && band.has(K(x + dx * k, y + dy * k)); k++) { const r = roomAt.get(K(x + dx * (k + 1), y + dy * (k + 1))); if (r) { if (!s.includes(r)) s.push(r); break; } }
+    return s; };
+  const groups = new Map(), groupOf = hides => { const k = hides.map(h => h.join('|')).join('/'); let G = groups.get(k); if (!G) { G = { key: k, hide: hides[0], hides, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };   // (hide: the game's own angle's; hides: each turn's)
   for (const b of band.values()) {
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
     see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi; }   // (a corner piece: its diagonal neighbours)
@@ -109,16 +114,16 @@ function buildLabFloor(lab, P0, how) {
   // the tiles behind it on the screen (smaller x + y, its x - y within one), as far back as its top, from that tile's floor, climbs on the screen: TILE_H 30 px of screen a step of x + y, UH px a
   // unit of height. Its top: a wall's height over its highest floor, a rock's skyline at its tallest. Measured from the feet of whoever stands there, a little over the floor.)
   const TOP_ROCK = (120 + (WALL_H * UH - 74) + 50) / UH, SEE = UH / 30, FEET = 0.15;
-  const hideMore = b => { const top = b.hi + (b.rock ? TOP_ROCK : WALL_H), s0 = b.x + b.y, d0 = b.x - b.y;
-    for (let D = 1; D <= Math.ceil((top - minH) * SEE) + 1; D++) for (const sd of D % 2 ? [-1, 1] : [0]) { const cx = (s0 - D + d0 + sd) / 2, cy = (s0 - D - d0 - sd) / 2, r = roomAt.get(K(cx, cy));
-      if (r && !b.hide.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 1) b.hide.push(r); }   // (+ 1: from its back corner, a step nearer the tiles behind it than its middle)
-    b.hide.sort(); };
+  const hideMore = (b, t, list) => { const top = b.hi + (b.rock ? TOP_ROCK : WALL_H), U = tu(t, b.x, b.y), V = tv(t, b.x, b.y), s0 = U + V, d0 = U - V;   // (in the turned view's x + y and x - y)
+    for (let D = 1; D <= Math.ceil((top - minH) * SEE) + 1; D++) for (const sd of D % 2 ? [-1, 1] : [0]) { const [cx, cy] = fromT(t, (s0 - D + d0 + sd) / 2, (s0 - D - d0 - sd) / 2), r = roomAt.get(K(cx, cy));
+      if (r && !list.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 1) list.push(r); }   // (+ 1: from its back corner, a step nearer the tiles behind it than its middle)
+    return list; };
   // (and a thin wall, glass or a divider, on its line m: the tiles behind it on the screen, its x - y within half a tile of the line's)
-  const hideThin = (m, top, list) => { const s0 = m[0] + m[1], d0 = m[0] - m[1];
-    for (let D = 0.5; D <= (top - minH) * SEE + 0.5; D += 1) for (const sd of [-0.5, 0.5]) { const cx = (s0 - D + d0 + sd) / 2, cy = (s0 - D - d0 - sd) / 2; if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6) continue;
+  const hideThin = (m, top, list, t) => { const U = tu(t, m[0], m[1]), V = tv(t, m[0], m[1]), s0 = U + V, d0 = U - V;
+    for (let D = 0.5; D <= (top - minH) * SEE + 0.5; D += 1) for (const sd of [-0.5, 0.5]) { const [cx, cy] = fromT(t, (s0 - D + d0 + sd) / 2, (s0 - D - d0 - sd) / 2); if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6) continue;
       const r = roomAt.get(K(cx, cy)); if (r && !list.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 0.5) list.push(r); }
     return list.sort(); };
-  for (const b of band.values()) { b.hide = hideOf(b.x, b.y); if (live) hideMore(b); b.G = groupOf(b.hide); }
+  for (const b of band.values()) { b.hides = TURNS.map(t => { const s = hideOf(b.x, b.y, t); if (live) hideMore(b, t, s); return s.sort(); }); b.hide = b.hides[0]; b.G = groupOf(b.hides); }
   for (const G of groups.values()) G.sink = WALL_H + 0.16;
   if (live) for (const b of band.values()) b.G.sink = Math.max(b.G.sink, b.hi + WALL_H - (b.lo + B0) + 0.16);   // (how far a group sinks: past its lowest floor)
 
@@ -173,19 +178,20 @@ function buildLabFloor(lab, P0, how) {
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
       if (same) continue; if (b.rock) { if (!(nb && nb.rock && nb.G === G)) rockFace(G, b, dx, dy, z + B0, z); continue; } face(G.face, b, dx, dy, z + B0, top, c, z, bodyOf(rid || b.own));
-      if (!nb && rid && (dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
+      if (!nb && rid && (live || dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
 
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
   const sFace = quads(), sTop = quads();
-  for (const b of band.values()) { if (!b.hide.length || b.header) continue; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
-      if (nb && !nb.header) { if (live && nb.hide.length && nb.hi < b.hi - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, nb.hi + CUT_H, b.hi + CUT_H, WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
+  for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
+      if (nb && !nb.header) { if (live && nb.hides.some(h => h.length) && nb.hi < b.hi - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, nb.hi + CUT_H, b.hi + CUT_H, WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
       sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, b.hi + CUT_H, WHITE, 0, 1); } }   // (over the highest floor beside it)
 
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
   const edges = new Set(), glassMat = new T.MeshStandardMaterial({ color: lin('#96e6f2'), transparent: true, opacity: 0.2, roughness: 0.1, depthWrite: false, side: T.DoubleSide });
   for (const t of thin) { const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), ax = t.u[0] ? 1 : 0;
     const z0 = live ? Math.max(front ? hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) : -1e9, back ? hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) : -1e9) : 0;   // (its floor)
-    const G = groupOf(live ? hideThin(t.m, z0 + WALL_H, back ? [back] : []) : back ? [back] : []);   // (live: and with the rooms it could hide someone in)
+    const behindT = tt => { const pa = [t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5], pb = [t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5]; return tu(tt, pa[0], pa[1]) + tv(tt, pa[0], pa[1]) < tu(tt, pb[0], pb[1]) + tv(tt, pb[0], pb[1]) ? at(pa[0], pa[1]) : at(pb[0], pb[1]); };   // (the side away from the camera, turned)
+    const G = groupOf(TURNS.map(tt => { const bk = live ? behindT(tt) : back; return live ? hideThin(t.m, z0 + WALL_H, bk ? [bk] : [], tt) : bk ? [bk] : []; }));   // (live: and with the rooms it could hide someone in, each turn)
     const box = (len, h, dep, mat) => new T.Mesh(new T.BoxGeometry(ax ? len : dep, h, ax ? dep : len), mat), put = (par, m, y, off) => { m.position.set(t.m[0] + nr[0] * (off || 0), z0 + y, t.m[1] + nr[1] * (off || 0)); par.add(m); return m; };
     t.back = back; t.front = front; t.G = G; edges.add(K(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) + '|' + K(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)));
     if (live && front && back && Math.abs(hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) - hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5))) > 0.05) continue;   // (a ledge between two floors, the catwalk spur's over the arena: the floor's riser is its face, a railing on it if the map has one, as the game draws it)
@@ -220,7 +226,7 @@ function buildLabFloor(lab, P0, how) {
 
   // the doors
   for (const d of doors) { if (d.kind === 'mouth') continue; const th = -Math.atan2(d.u[1], d.u[0]), fs = d.u[0] ? 1 : -1, shut = d.kind === 'shut', L = d.L, low = new T.Group(), tall = new T.Group(), thinDoor = !d.side;
-    const G = d.over.length ? d.over[0].G : groupOf((() => { const r = at(d.m[0] - Math.abs(d.nr[0]) * 0.5, d.m[1] - Math.abs(d.nr[1]) * 0.5); return r ? [r] : []; })()), Pd = d.room === 'crystal_chamber' ? P0 : Object.assign({}, P0, { lampOpen: seamOf(d.room) });
+    const G = d.over.length ? d.over[0].G : groupOf(TURNS.map(tt => { const pa = [d.m[0] - Math.abs(d.nr[0]) * 0.5, d.m[1] - Math.abs(d.nr[1]) * 0.5], pb = [d.m[0] + Math.abs(d.nr[0]) * 0.5, d.m[1] + Math.abs(d.nr[1]) * 0.5], r = tu(tt, pa[0], pa[1]) + tv(tt, pa[0], pa[1]) <= tu(tt, pb[0], pb[1]) + tv(tt, pb[0], pb[1]) ? at(pa[0], pa[1]) : at(pb[0], pb[1]); return r ? [r] : []; })), Pd = d.room === 'crystal_chamber' ? P0 : Object.assign({}, P0, { lampOpen: seamOf(d.room) });
     for (const q of [low, tall]) { q.position.set(d.c[0], live ? d.h : 0, d.c[1]); q.rotation.y = th; q.userData.inkGroup = true; } rooms[d.room].g.add(low); G.g.add(tall);
     const box = (w, h, dep, mat) => new T.Mesh(new T.BoxGeometry(w, h, dep), mat), put = (par, m, x, y, z) => { m.position.set(x, y, z || 0); par.add(m); return m; }, ph = DOOR_H - 0.02;
     for (const s of [-1, 1]) { put(tall, box(0.15, DOOR_H, 0.44, P0.frame), s * (L / 2 - 0.085), DOOR_H / 2); put(low, box(0.13, CUT_H + 0.05, 0.42, P0.frame), s * (L / 2 - 0.085), (CUT_H + 0.05) / 2);
