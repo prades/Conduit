@@ -190,7 +190,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(/data-kind="' \+ c\.kind/.test(c) && /addEventListener\("pointerdown", _cbDragStart\)/.test(c) && /findEnemyAtScreen\(p\[0\], p\[1\]\)/.test(c), true, 'the drag');
         same(/#cbScreen \.cb-card \{ pointer-events: auto; touch-action: none; \}/.test(h) && /#cbScreen:not\(\.yours\) \.cb-card/.test(h) && /#cbScreen \.cb-turn/.test(h), true, 'its look');
         same(/function updateNPC\(actor\) \{\n    if \(typeof cardBattleHolds === "function" && cardBattleHolds\(actor\)\) return;/.test(n), true, 'js/npc.js');
-        same(/cardBattleHolds\(f\)\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\)\) return;/.test(i), true, 'the gun');
+        same(/if \(typeof cardBattleHolds === "function" && cardBattleHolds\(f\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\)\) return;/.test(i), true, 'the gun');
     });
 
     group('THE PIECES');
