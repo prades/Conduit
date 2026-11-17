@@ -465,6 +465,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(!!r.none, false, 'no square three tiles off in sight to try'); same(JSON.stringify([r.front, r.picked, r.flew]), '[true,"the Mage",true]', 'the Brawler in front of it; it leapt, at the Mage');
     });
 
+    check('one at a time (the owner, 2026-11-17): the pop-up holds the follower whose turn it is, in the squad\'s order; only its cards play; played, the next one\'s; HEXFIRE\'s card has its picture; the light copy of the art', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            const [f, g] = _cbSquad(), o = { first: _cbCurrent() === f, outOfTurn: cardBattlePlay(g, 'basic', null, a), inTurn: cardBattlePlay(f, 'basic', null, a) };
+            for (let i = 0; i < 900 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); } o.next = _cbCurrent() === g;
+            const e = { evolved: 'embercowl' }; o.art = _cbArt(e, 'hexfire'); o.none = _cbArt(e, 'fireball'); o.other = _cbArt({ evolved: 'jellyram' }, 'hexfire'); return o; })()`);
+        same(r.first, true, 'the first in the squad\'s order first'); same(r.outOfTurn, false, 'another\'s card played out of its turn'); same(r.inTurn, true, 'its own played');
+        same(r.next, true, 'then the next one\'s turn'); ok(/img\/cards\/attack\/embercowl_hexfire\.(webp|png)/.test(r.art || ''), 'HEXFIRE\'s picture: ' + r.art); same(r.none, null, 'a card with no picture'); same(r.other, null, 'another form\'s HEXFIRE (the picture is the Ember Hood\'s)');
+        const c = rd('js/cardbattle.js'), h = rd('game.html'), im = rd('tools/images.js');
+        same(/E\.band\.classList\.add\("cb-pop"\); E\.band\.classList\.toggle\("away", away\);/.test(c) && /#cbScreen \.cb-band\.cb-pop\.swap \{ animation: cbSwapIn/.test(h), true, 'the pop-up, away and switching in');
+        same(/const LOSSY = p => \/\^img\\\/cards\\\/attack\\\/\/\.test\(p\)/.test(im) && fs.statSync(path.join(ROOT, 'img/cards/attack/embercowl_hexfire.webp')).size < 60000, true, 'the art saved lighter (under 60 KB)');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

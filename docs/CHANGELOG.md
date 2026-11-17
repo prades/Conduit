@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17aa` · branch `claude/friendly-thompson-w581x0` · card battles: one follower at a time, its attacks in a pop-up; the first attack card's picture (HEXFIRE)
+- **The ask** (the owner, 2026-11-17): "begin incorporating the cards that have been created for the attacks", and "go through them one by one [...] show all of their attacks as a pop-up [...] whenever you select the attack, it [...] switch[es] in to the next follower". Asked: each attack plays at once, no going back; dragged onto an enemy; the pop-up at the bottom centre; pictures where they exist.
+- **What it does:** on your turn a pop-up at the bottom centre shows one follower (in the squad's order) and its cards, larger; drag one onto an enemy, it plays out, and the pop-up switches in the next follower; then the enemies. The squad's names over it show done, now and next. The Ember Hood's HEXFIRE card shows its picture (the only approved one so far); the others keep their plain faces.
+- **The lighter format for attack card art** (the owner's earlier choice, ATTACK-CARD-ART.md §4) is built: `tools/images.js` saves `img/cards/attack/` as lossy WebP (HEXFIRE: 23 KB, from a 504 KB PNG); `tests/images.js` checks those as smaller plain lossy WebPs. The picture list is now sorted as one (a folder in a folder).
+- `js/cardbattle.js`, `game.html`, `img/cards/attack/` (new), `tools/images.js`, `tests/images.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.42, §9, §10, `docs/ATTACK-CARD-ART.md` §4.
+- **Verified:** tests/cardbattle.js (50 checks), tests/images.js, the full suite; in a real browser, a whole round with the pop-up. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17aa` · branch `claude/friendly-thompson-w581x0` · card battles: each follower attacks every turn (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17): "the battle turns should allow each of my followers to attack. It's only allowing one per turn, and the enemy gets two."
 - **What it does:** your turn is now a round in which every follower still standing plays one card, in the order you choose; once all have, the enemies take theirs; then a new round. A follower that has played shows its cards greyed (DONE); the banner says how many are still to play; a recharge counts rounds. Supersedes `CARD-BATTLES.md` §2.2 (one card a turn).
