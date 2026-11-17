@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17p` · branch `claude/friendly-thompson-w581x0` · card battles, step 3: the turns (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-17: "Next step", of card battles).
+- **What it does, only with `?cards` and `?engine=3d`, in a battle:** YOUR TURN first, with everyone in the battle holding still. Drag a ready card from the band onto an enemy: that follower alone does that attack on it (its everyday hits, its second attack, or its Ultimate with the meter full), with the game's own damage and effects. Then each enemy, fastest first, gets a turn at one of yours. Then yours again. A second attack then sits out its RECHARGE in turns. RUN on your turn gives each enemy a last hit, then you are out. The cube's gun holds its fire; a sentry station leaves the battle's creatures alone while the turns are on. A banner says whose turn it is.
+- `js/cardbattle.js`, `js/npc.js`, `js/evolution.js`, `js/input.js`, `js/stations.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §9, §10, §11.
+- **Verified:** tests/cardbattle.js (23 checks) and the full suite; in a real browser, a drag onto an ant, its blow, the enemies' turn and yours again. **Not playtested; not seen on an iPad.** The agent's, provisional: today's damage unscaled, the turn windows (5 s, 3.5 s), a card let go off an enemy plays on the nearest.
+
 ### Build `2026-11-17o` · branch `claude/friendly-thompson-w581x0` · card battles: a creature in a battle keeps attacking; the camera lets go of one that leaves
 - **The ask** (the owner, 2026-11-17): a battle on, the creature "was not attacking. It was drifting away [...] Might have been because [...] the follower had died. But in that instance, the creature should keep attacking. But whatever happens, it shouldn't continue to keep the camera locked onto him."
 - **The cause:** the game's own rule calms a creature whose prey is gone, and a calm creature wanders; the battle did not stop that, and its camera takes in every creature in it.

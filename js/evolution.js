@@ -404,7 +404,7 @@ function evolutionTick() {
     if (typeof followers === "undefined") return;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
-        if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
+        if (!f || f.dead || f._flight || (typeof cardBattleHolds === "function" && cardBattleHolds(f))) continue;   // (CARD BATTLES' turns: one holding still winds up nothing, js/cardbattle.js) (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
         if (f._quillFire) quillFireTick(f, f0);   // (a QUILL BURST turning round: its quills leave a moment after it begins to turn)
         if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined") altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
         const d = evolvedDef(f); if (!d) continue;
