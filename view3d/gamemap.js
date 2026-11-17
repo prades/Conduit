@@ -24,6 +24,10 @@ const VIEW3D_GAME = (0, eval)(`({
   roomLight(id) { return typeof _fpRoomLight === "function" ? _fpRoomLight(id) : 1; }, tileLight(x, y, id) { return typeof _fpTileLight === "function" ? _fpTileLight(x, y, id) : 1; },
   get lit() { return typeof _fpLit === "function" ? _fpLit() : 1; }, get viewTurn() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? VIEW3D.turn : 0; }, get viewZoom() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? VIEW3D.zoom : 1; }, get viewTwist() { return typeof VIEW3D !== "undefined" && VIEW3D.showing ? (VIEW3D.twist || 0) : 0; }, get blackout() { return typeof facilityBlackout === "function" ? facilityBlackout() : false; }, get darkAmt() { return typeof _fpDarkAmt === "function" ? _fpDarkAmt() : (typeof FP_DARK !== "undefined" ? FP_DARK : 0.82); },
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
+  // the sewers (js/facilitysewers.js): their water's colours as the 2D has them, the toxic green clearing as the purification runs; the Nest's state; its eggs, junk and rim where the
+  // 2D puts them; the dam's pools
+  sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
+  sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; }
 })`);
 
@@ -31,7 +35,7 @@ const VIEW3D_GAME = (0, eval)(`({
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
 // the rooms the game's 3D view builds: the lab's ground floor and its other floors, up and down its stairs (stage 2: the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck),
 // and the arena with its catwalks and spur, its rock in the look the owner shaped (docs/VIEW-3D.md stage 2; a draft behind ?draft=arena until build 2026-11-17e)
-const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex']);
+const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex', 'sewers']);
 
 // a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile carries its height if it has one, in the
 // game's px ([x, y, h]: a floor off the ground floor's level, a staircase's tread), and the room its floor's (base)
@@ -45,7 +49,7 @@ function view3dRoomRecord(F, R, lab, live) {
     if (s.kind === 'plant') variant = seed % 3 === 0 ? 'd' + (seed % 2) : 'p' + (seed % 4);
     else if (s.kind === 'sentry') variant = 'a00';
     else if (fam) variant = G.psResolve(fam, s.kind, dims, s.kind === 'relay' || s.kind === 'charger' ? 'on' : null, seed);
-    const o = { id: s.id, kind: s.kind, room: s.room, bb: s.bb, c, fam, variant, cover: !!s.cover, low: !!s.low }; if (lab && circle) o.r = s.r; return o;   // (the lab floor's: a round prop's radius, for where one can walk)
+    const o = { id: s.id, kind: s.kind, room: s.room, bb: s.bb, c, fam, variant, cover: !!s.cover, low: !!s.low }; if (lab && circle) o.r = s.r; if (s.poly && /^(river|pool|gate|boss_gate)$/.test(s.kind)) o.poly = s.poly.map(q => q.slice()); return o;   // (the lab floor's: a round prop's radius, for where one can walk)
   };
   const cells = []; for (let x = Math.floor(room.bb[0]); x <= Math.ceil(room.bb[2]); x++) for (let y = Math.floor(room.bb[1]); y <= Math.ceil(room.bb[3]); y++) { const r = G.roomAt(x, y, F); if (!r || r.id !== R) continue; const h = live ? G.heightAt(x, y, F) * G.elevPx : 0; cells.push(h ? [x, y, h] : [x, y]); }
   const walls = F.walls.filter(w => w.room === R).map(w => { const o = { a: w.a, b: w.b, kind: w.kind, out: G.wallOut(w, F) }; if (lab && w.window) { o.window = w.window; if (w.divider) o.divider = true; } return o; });   // (out: +1 a near wall, the room behind the face the camera sees; -1 a far wall; window: glass, or with divider a thin solid wall)
@@ -54,7 +58,11 @@ function view3dRoomRecord(F, R, lab, live) {
   const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
     fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
     solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || null };
-  if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx; if (live && room.raw && room.raw.structure) rec.structure = room.raw.structure; return rec;   // (structure: 'scaffold', the catwalks and the spur, steel decks: their edges stay steel)
+  if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx;
+  if (live && (rec.solids.some(s => s.kind === 'river' || s.kind === 'pool') || rec.decor.some(d => d.kind === 'egg_cluster' || d.kind === 'junk'))) {   // (the Nest's eggs, the dam's junk and its rim, where the 2D puts them: js/facilitysewers.js)
+    rec.nest = G.sewerItems(F).filter(it => it.room === R && (it.what === 'egg' || it.what === 'junk' || it.what === 'rim')).map(it => ({ what: it.what, x: it.x, y: it.y, s: it.s, seed: it.seed, u: it.u, w: it.w, half: it.half }));
+    rec.dam = G.damPools.filter(id => rec.solids.some(s => s.id === id)); }
+  if (live && room.raw && room.raw.structure) rec.structure = room.raw.structure; return rec;   // (structure: 'scaffold', the catwalks and the spur, steel decks: their edges stay steel)
 }
 // the map the builders take: the Crystal Chamber (the pictures' room), and with `ids` those rooms as one floor (`lab`) with the openings between them.
 // live: for the game's own view. The Crystal stands where the game stands it (the middle of its tile: the pictures and the test page have it where the map's note is, half a tile off), and
