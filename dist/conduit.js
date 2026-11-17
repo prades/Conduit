@@ -26990,8 +26990,8 @@ function cardBattlePlay(f, kind, id, target) {
     if (kind !== "ult" && _cb.lay && !_cbCanHit(f, target, kind, id)) {
         const walk = _cbWalkPath(f, target, kind, id);
         if (!walk) {
-            if (typeof floatingTexts !== "undefined")
-                floatingTexts.push({ world: true, x: f.x, y: f.y, text: "NO WAY THROUGH", color: "#ffb347", life: 50, vy: -0.05 });
+            _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · NO WAY THROUGH", until: _cbF() + 120 };
+            _cbRefresh();
             return false;
         }
         _cb.turn = { who: "act", f, kind, id: kind === "move" ? id : null, target, t0: _cbF(), hit: 0, fired: false, saved: null, walk, wi: 0, arrived: 0 };
@@ -27347,7 +27347,7 @@ function cardBattleScreen() {
     {
         const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
         const mv = T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";
-        const txt = !T ? "" : T.who === "you" ? "YOUR TURN · DRAG A CARD ONTO AN ENEMY" : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
+        const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · DRAG A CARD ONTO AN ENEMY") : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
         if (E.turn && E.turn._t !== txt) {
             E.turn._t = txt;
             E.turn.textContent = txt;

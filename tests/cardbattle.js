@@ -384,6 +384,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             let o; try { o = { can: _cbCanHit(f, a, 'basic'), played: cardBattlePlay(f, 'basic', null, a), walk: cardBattleTurnInfo().walk }; } finally { facilitySeesFrom = keep; } return o; })()`);
         same(JSON.stringify([r.can, r.played, r.walk]), '[false,true,1]', 'out of sight from its square; played: a walk of one square');
     });
+    check('no way nearer (no pace to walk with, or boxed in): nothing is played, it is still your turn, and the banner says so for a moment (words over the world wait while the battle\'s camera is up)', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'brawler'; f.moveSpeed = f.baseMoveSpeed = 0; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const o = { can: _cbCanHit(f, a, 'basic'), played: cardBattlePlay(f, 'basic', null, a), who: cardBattleTurnInfo().who }; __ticks(CARD_BATTLE.every + 1); o.banner = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : '';
+            __ticks(130); o.later = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : ''; return o; })()`);
+        same(JSON.stringify([r.can, r.played, r.who]), '[false,false,"you"]', 'out of its reach, not played, your turn still'); ok(/ · NO WAY THROUGH$/.test(r.banner), 'the banner: ' + r.banner); ok(/^YOUR TURN/.test(r.later), 'the banner after: ' + r.later);
+    });
     check('the walk keeps to the battle\'s room and the floor, never onto or through the other side\'s squares, no further than its tiles (through its own side\'s it may)', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
             const room = _cb.lay.room, theirs = new Set([a, b, c].map(e => _cbSq(e).join())), all = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), bad = [];
