@@ -27,7 +27,7 @@ const CARD_BATTLE = {
     blackIn: 14, blackHold: 8, blackOut: 22,   // frames: the black coming, held (the move is made in it), going
     land: 2.2,                  // tiles in front of the creature where you land
     easeIn: 40, easeOut: 36,    // frames: the camera to the battle and back
-    pitch: 17,                  // degrees down (the game's own camera is 30)
+    pitch: 55,                  // degrees down (the game's own camera is 30): nearly top down, the tiles nearly square to lay the cards on (the owner, 2026-11-17: "still top down so I can lay the cards down on the almost completed tiles")
     yaw: 0.6,                   // radians turned to the side
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it

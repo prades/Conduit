@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17s` · branch `claude/friendly-thompson-w581x0` · card battles: the battle camera nearly top down (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-17, of `2026-11-17r`'s pictures): "the map looks compressed. I don't want it directly horizontal. I want it to be still top down so I can lay the cards down on the almost completed tiles."
+- **What it does:** the battle camera looks down at 55° (it was 17°; the game's own is 30°), still across the line, so the floor's tiles show nearly square and the fighters stand on them, the line still running across the screen.
+- `js/cardbattle.js` (`CARD_BATTLE.pitch`), `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.32, §9.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser (the Crystal Chamber, three ants). **Not playtested; not seen on an iPad.** 55° is the agent's, for the owner to judge.
+
 ### Build `2026-11-17r` · branch `claude/friendly-thompson-w581x0` · card battles: lined up on squares, side on; tile-sized cards; the battle ends with the squad (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17): the camera turning to "a clear divide [...] on a horizontal plane. Things aren't stacked on top of each other"; the creatures "line up on squares"; the dragged cards "smaller and tile sized"; "when all my creatures are destroyed, the battle concludes."
 - **What it does:** when the turns begin, your squad and the cube line up on one side and the enemies on the other, each on its own tile and in its own column across the screen; the camera turns side on to the line (from the side with less in the way) and zooms to fit it. Each goes back to its square after its turn. A card picked up shrinks to a tile's size. The battle remembers the squad it began with: once they are all down it ends, even in the Crystal Chamber, where the fallen rejoin at once (that is why it never ended there).
