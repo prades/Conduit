@@ -124,6 +124,16 @@ const SAMPLES = {
     tone: { sky: '#14030c', hz: ['rgba(58,10,38,0)', 'rgba(80,16,52,0.85)', '#3a0a26'], halo: 'rgba(10,2,6,1)', white: '255,230,242', ringWhite: '#ffe6f2', star: '255,236,246', vig: 'rgba(10,2,6,0.6)', foot: ['rgba(12,3,8,0)', 'rgba(12,3,8,0.65)'], worldK: 0.8, ringGlow: [0.4, 0.15] },
     lights: { hemi: [0xd0a0b8, 0x1a0610, 0.45], key: [0xfff0f6, 1.0], rim: 2.4, back: 1.4, low: [0xff7ab8, 2.2, 0, 0.4, 2.2] },
     cam: { pos: [0.7, 1.15, 6.3], look: [-0.15, 0.2, 0], fov: 38, roll: -0.18 },
+  },  // ROUND 2 (the owner, 2026-11-17: "The Stone Petal has his arms completely 180 degrees in the air, when in reality he should only be moving his shoulder ... Upper arm, and he has his
+  // forearm still angled towards the ground"): each front leg lifts at its shoulder only (its short upper segment raised, up and a little out), bent at its knee (the elbow), the stake
+  // (the forearm) still angled down toward the ground, its point hanging down. Everything else as round 1.
+  coralcrab_stakering_r2: {
+    style: 'tech', form: 923, color: '#ff7ab8', rim: '#ff9ccc', fx: '#ff7ab8', world: 'blossom', seed: 923,
+    pose: { t: 1.124, act: 1 }, yaw: 0.9, raise: { seg: 75, stake: 22, fwd: 10, lighten: 0x12060c },
+    ring: { n: 12, r: 1.35, h: [0.3, 1.0], w: 0.12, dim: [0.4, 0.2] },
+    tone: { sky: '#14030c', hz: ['rgba(58,10,38,0)', 'rgba(80,16,52,0.85)', '#3a0a26'], halo: 'rgba(10,2,6,1)', white: '255,230,242', ringWhite: '#ffe6f2', star: '255,236,246', vig: 'rgba(10,2,6,0.6)', foot: ['rgba(12,3,8,0)', 'rgba(12,3,8,0.65)'], worldK: 0.8, ringGlow: [0.4, 0.15] },
+    lights: { hemi: [0xd0a0b8, 0x1a0610, 0.45], key: [0xfff0f6, 1.0], rim: 2.4, back: 1.4, low: [0xff7ab8, 2.2, 0, 0.4, 2.2] },
+    cam: { pos: [0.7, 1.15, 6.3], look: [-0.15, 0.2, 0], fov: 38, roll: -0.18 },
   },
 };
 
@@ -688,6 +698,7 @@ window.__card = async function (P, W, H, modelOnly) {
       const pa0 = segM.geometry.attributes.position, hip = new T.Vector3(); for (let i = 0; i < 10; i++) hip.add(v.fromBufferAttribute(pa0, i)); hip.divideScalar(10);
       const M1 = about(hip, new T.Matrix4().makeRotationZ(s * Q.seg * PIo)); [segM, knee, stake].forEach(m => move(m, M1));
       const M2 = about(knee.position.clone(), new T.Matrix4().makeRotationX(-Q.fwd * PIo).multiply(new T.Matrix4().makeRotationZ(s * (Q.stake - Q.seg) * PIo))); move(stake, M2); });
+    if (Q.lighten) { const lm = new Map(); meshes.forEach(m => { if (!lm.has(m.material)) { const c = m.material.clone(); if (c.emissive) c.emissive.add(new T.Color(Q.lighten)); lm.set(m.material, c); } m.material = lm.get(m.material); }); }   // (round 2: all four legs lifted a touch against the dark plum, a faint glow of their own; their own copy of the material, the body untouched)
   }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
