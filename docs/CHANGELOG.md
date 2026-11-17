@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17v` · branch `claude/friendly-thompson-w581x0` · card battles: a battle by a doorway is fought in one room (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-17): a battle between two rooms, "You can't tell what's going on because the enemies would be invisible [...] make the battle happen in one room rather than take place in separate rooms."
+- **What it does:** a battle is fought in its enemies' room: the line-up's middle and every square are in it; if you or your squad stand in the next room, the screen goes black and everyone is put on its square in the enemies' room, so all of it is seen. A far enemy's battle puts everyone on its square in its one black.
+- `js/cardbattle.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.34, §9, §10.
+- **Verified:** tests/cardbattle.js and the full suite; in a real browser by the Crystal Chamber's doorway. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17u` · branch `claude/friendly-thompson-w581x0` · card battles: the battle camera with an isometric feel (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-17, of `2026-11-17t`'s picture): "Needs an isometric feel, make the camera rotate slightly too."
 - **What it does:** the battle camera looks down at 50° and turns 15° off straight across the line, towards your side, so the tiles show as tilted diamonds, your squad nearer and lower on the screen, the enemies further and higher; the fight is aimed into the open screen above the cards (it had sat low enough for one to go under them).

@@ -93,7 +93,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null;
+    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false;
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -179,7 +179,7 @@ function cardBattleTick() {
         }
         if (_cb.phase === "walk" && el >= CARD_BATTLE.walk) { _cb.phase = "black"; _cb.t = f; }
         else if (_cb.phase === "black") {
-            if (el === CARD_BATTLE.blackIn) _cbLand();
+            if (el === CARD_BATTLE.blackIn) { if (!_cb.snap) { _cbLand(); _cbLayout(); } _cbSnap(); }   // (a far one: you land, and in the same black everyone is on its square in its room)
             if (el >= CARD_BATTLE.blackIn + CARD_BATTLE.blackHold) { _cb.phase = "on"; _cb.t = f; }
         }
         if (_cb.phase === "on" && f % 10 === 0) { _cbKeepAtIt(); _cbCentre(); }
@@ -243,7 +243,11 @@ function _cbLayout() {
     if (!foes.length || typeof player === "undefined" || typeof _fpNearestCellOpen !== "function") return;
     let fx = 0, fy = 0; for (const a of foes) { fx += a.x; fy += a.y; } fx /= foes.length; fy /= foes.length;
     const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(fx, fy) : null, wx = fx - player.x, wy = fy - player.y, L = Math.hypot(wx, wy) || 1;
-    const mc = _fpNearestCellOpen((fx + player.x) / 2, (fy + player.y) / 2); if (!mc) return;
+    // ONE ROOM (the owner, 2026-11-17: "if a battle would take place near the doorway, make the battle happen in one room rather than take place in separate rooms"): the battle's room is its
+    // enemies' (the battle takes in only the creatures of that room, _cbGroup); the middle of the line and every square are in it, and any of yours outside it is brought in (cardBattleTick, the black)
+    let mc = _fpNearestCellOpen((fx + player.x) / 2, (fy + player.y) / 2);
+    if (room && (!mc || facilityRoomIdAt(mc[0], mc[1]) !== room) && typeof partyRoomCells === "function") { let bd = Infinity; for (const c of partyRoomCells(room)) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F))) { bd = d; mc = c; } } }
+    if (!mc) return;
     const cx = mc[0], cy = mc[1];   // (the middle on a tile, so every square is a tile's middle)
     let best = null;
     for (const gap of [CARD_BATTLE.lineGap, 1]) {   // (a room too narrow for the line: the two sides closer to the middle)
@@ -271,7 +275,12 @@ function _cbLayout() {
     }
     if (!best) return;
     for (const [a, x, y] of best.out) _cb.slots.set(a, { x, y });
-    const gap = best.gap; _cb.lay = { ux: best.ux, uy: best.uy, mx: cx, my: cy, sx: cx - best.ux * gap, sy: cy - best.uy * gap, ex: cx + best.ux * gap, ey: cy + best.uy * gap, dir: undefined };
+    // the room too small for the whole line: the rest on the nearest free tiles of the room (one each)
+    if (room && typeof partyRoomCells === "function") {
+        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]) && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F)));
+        for (const a of all) { if (_cb.slots.has(a)) continue; let bi = -1, bd = Infinity; free.forEach((c, i) => { const d = Math.hypot(c[0] - cx, c[1] - cy); if (d < bd) { bd = d; bi = i; } }); if (bi < 0) break; const c = free.splice(bi, 1)[0]; _cb.slots.set(a, { x: c[0], y: c[1] }); }
+    }
+    const gap = best.gap; _cb.lay = { room, ux: best.ux, uy: best.uy, mx: cx, my: cy, sx: cx - best.ux * gap, sy: cy - best.uy * gap, ex: cx + best.ux * gap, ey: cy + best.uy * gap, dir: undefined };
     // the camera's zoom: near, but never so near that the line runs off the screen (its span in tiles and a tile on each end, in `fit` of the screen's width)
     { let lo = Infinity, hi = -Infinity; for (const [, x, y] of best.out) { const u = (x - cx) * best.ux + (y - cy) * best.uy; lo = Math.min(lo, u); hi = Math.max(hi, u); }
       const tpx = (typeof TILE_W !== "undefined" ? TILE_W : 64) * Math.SQRT2, W = typeof canvas !== "undefined" && canvas.width ? canvas.width : 1180;
@@ -282,6 +291,17 @@ function _cbLayout() {
         const a = score(1), b = score(-1); if (a !== b) { const sg = a < b ? 1 : -1; _cb.lay.dir = Math.atan2(best.ux * sg, -best.uy * sg); }
     }
     _cbCentre();
+}
+// is any of yours (you, a member) outside the battle's room?
+function _cbOutside() {
+    const L = _cb.lay; if (!L || !L.room || typeof facilityRoomIdAt !== "function") return false;
+    for (const a of _cb.slots.keys()) if (a && (a === player || _cbMine(a)) && facilityRoomIdAt(a.x, a.y) !== L.room) return true;
+    return false;
+}
+// in the black: everyone on its square at once (no one walks through a wall to get there)
+function _cbSnap() {
+    _cb.snap = false;
+    for (const [a, s] of _cb.slots) { if (!a || a.dead) continue; a.x = s.x; a.y = s.y; if (Number.isFinite(a.visualX)) { a.visualX = s.x; a.visualY = s.y; } if (a === player) { player.targetX = s.x; player.targetY = s.y; player.fpPath = null; } else a._fpPath = null; }
 }
 // each frame of the turns: everyone not in its own turn eases to its square and faces the other side
 function _cbSlide() {
@@ -359,7 +379,10 @@ function _cbTurnTick() {
     if (_cb.phase !== "on") return;
     const T = _cb.turn, f0 = _cbF(), C = CARD_BATTLE;
     for (const f of (_cb.squad || [])) if (f && (f.dead || !(f.health > 0))) _cb.out.add(f);   // (down once: out of this battle)
-    if (!T) { _cbLayout(); _cbYourTurn(); _cbRefresh(); return; }
+    if (!T) {
+        if (!_cb.lay) { _cbLayout(); if (_cbOutside()) { _cb.phase = "black"; _cb.t = f0; _cb.snap = true; return; } }   // (one of yours in another room: the black, and all on their squares in it)
+        _cbYourTurn(); _cbRefresh(); return;
+    }
     _cbSlide();
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0;
@@ -546,4 +569,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
