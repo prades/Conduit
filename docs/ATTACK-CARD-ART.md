@@ -22,10 +22,11 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
 - No card's name, stats or effect is invented for a picture.
 
 **Open, for the owner:**
-- **"Elementals":** the agent reads it as the Mages (the casters), with Brawlers as the impact style. Is that right, or should every non-Brawler card be "elemental"?
-- **Technicians:** not in the brief. Which style, or a third?
+- **Technicians:** not in the brief, and not given the elemental style (§4). Which style, decided later.
 - **Which cards, and how many:** roadmap §12.5 keeps the count and the elements open (six cards, or two per element, were both mentioned). Not to be assumed.
-- **The first piece:** which card (or which existing move, as a sample) to draw first.
 
 ## 4. Decisions
-*(None yet. Each decision about the look goes here: the date, the owner's words, what was chosen and what was passed over, and what is the agent's.)*
+*(Each decision about the look goes here: the date, the owner's words, what was chosen and what was passed over, and what is the agent's.)*
+
+- **2026-11-17, "elementals" are the Mages.** Asked which followers get the charged, tilted-camera style, the owner chose **"Mages only"**. Passed over: Mages and Technicians. Brawlers keep the impact style; the Technicians' style is open.
+- **2026-11-17, the first piece is the Ember Hood (fire).** Asked which single card to draw first to check the style, the owner chose **"Ember Hood (fire)"**: the fire Mage casting, its hood blazing, flames in the front of the card. Passed over: Thunderhead (shocks), a Brawler impact, one of each. It is a style sample of an existing attack, not a new card.

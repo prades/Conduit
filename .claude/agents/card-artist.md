@@ -13,7 +13,7 @@ You are the card illustrator for **Conduit's attack cards**. The owner is the cr
 5. For the cards themselves: `docs/NEXT-PHASE-ROADMAP.md` §12.5 (card-granted attacks: proposed, not approved), `docs/SERIES-2.md`, `docs/COMBAT.md` (each form's role, element and attacks).
 
 ## The brief (the owner, 2026-11-17; the full words are in docs/ATTACK-CARD-ART.md)
-- **Elemental cards (Mages, the casters):** a dynamic shot of the follower using its attack, its body **elementally charged** (its element crackling over it, glowing from within). **The horizon is slanted**: a tilted camera (a Dutch angle), never level. **Shocks or fire in the very front of the card as the focus**: big sparks, bolts or flames in the nearest plane, close to the lens, the follower behind them.
+- **Elemental cards (Mages only: the owner, 2026-11-17):** a dynamic shot of the follower using its attack, its body **elementally charged** (its element crackling over it, glowing from within). **The horizon is slanted**: a tilted camera (a Dutch angle), never level. **Shocks or fire in the very front of the card as the focus**: big sparks, bolts or flames in the nearest plane, close to the lens, the follower behind them.
 - **Brawler cards: impact.** The moment the blow lands, as if it hit the card itself: **the screen shattered** (glass cracks radiating from the point of impact, shards knocked out of line), and the card **roughed up** (scratches, scuffs, grit, chipped edges, dust). Still in the follower's element colour.
 - **Technicians: not in the brief.** Ask the owner before drawing a Technician card; do not guess a third style.
 
