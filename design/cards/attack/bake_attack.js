@@ -201,6 +201,19 @@ const SAMPLES = {
     tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], hot: '255,250,200', halo: 'rgba(4,2,10,1)', chip: ['#5a5470', '#2a2638', '#08060e', 'rgba(255,238,51,0.35)'], vig: 'rgba(6,4,14,0.65)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 1.0, '#fff27a'] },
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
   },
+  // THE THERMITE BURROWER (fire Technician, evolved form 'thermite', design No. 855: design/evolutions/bake.js JOBS, forms31.js _thermiteBlack, the bear) for MAGMA VENT, in the Technician style as the
+  // Hammer Slug's round 3 and the Igloo Skater's: inside a whole ring of the game's crystals in fire's colour, raising what it has: it is a bear-like tank animal on four clawed paws with a drill
+  // for a snout, so it rears up as a bear does (P.rear: the whole model tipped back, its hind paws on the floor), its front paws lifted off it, still hanging down, its drill raised. Its action
+  // pose (act 1: the drill turning, its tip white-hot, sparks off it). The fire energy card's lava cave behind.
+  thermite_magmavent: {
+    style: 'tech', form: 855, color: '#ff3300', rim: '#ff6a3a', fx: '#ff4a1a', world: 'fire', seed: 855,
+    pose: { t: 1.2, act: 0.35 }, yaw: 1.0, rear: 0.8, lift: 0.15,   // (its action a third of the way in: the drill turning, its tip hot, not yet white; turned side-on, its drill to the right; reared about 46 degrees)
+    ring: { n: 12, r: 1.35, h: [0.3, 1.0], w: 0.12, dim: [0.5, 0.35] },   // (dimmed as the Stonepetal's: under the white key light fire's red turned the crystals pale yellow)
+    tone: { sky: '#120201', hz: ['rgba(60,11,5,0)', 'rgba(90,20,6,0.85)', '#3c0b05'], halo: 'rgba(10,2,0,1)', white: '255,225,190', ringWhite: '#ffe0c8', star: '255,236,210', vig: 'rgba(10,2,1,0.6)', foot: ['rgba(10,2,1,0)', 'rgba(10,2,1,0.65)'], worldK: 0.6, ringGlow: [0.5, 0.25],
+      dim: 0.3, floorDim: 0.35, edge: [3, 0.9, '#ff8a4a'] },   // (the world and the glowing floor held down, a thin bright edge round its black body: a dark follower on a dark-red cave)
+    lights: { hemi: [0x8a6a60, 0x1a0602, 0.45], key: [0xffeee0, 1.1], rim: 2.6, back: 1.4, low: [0xff5a14, 1.2, 0, 0.6, 2.0] },
+    cam: { pos: [1.2, 1.75, 7.3], look: [-0.05, 0.0, 0], fov: 37, roll: -0.18 },   // (above the ring, rolled about 10 degrees, as the Hammer Slug's, the whole ring in the card)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -510,7 +523,9 @@ function TECH(o) {
     g.globalAlpha = TN.worldK; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
   g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -110, 0, 30); lg.addColorStop(0, TN.hz[0]); lg.addColorStop(0.8, TN.hz[1]); lg.addColorStop(1, TN.hz[2]);
   g.fillStyle = lg; g.fillRect(-W, -110, 2 * W, 140); g.restore();
+  if (TN.dim) { g.fillStyle = 'rgba(0,0,0,' + TN.dim + ')'; g.fillRect(0, 0, W, H); }   // (followers round 3: the world dimmed behind a dark follower, as the Seeper's)
   // 2. THE FLOOR (3-D), a line of the reactor's light along the horizon, and the ring's light on the floor: a glowing circle where the crystals stand, soft light pooled inside it
+  if (TN.floorDim) { const fl = cv(), fc = fl.getContext('2d'); fc.drawImage(floorCv, 0, 0); fc.globalCompositeOperation = 'source-atop'; fc.fillStyle = 'rgba(0,0,0,' + TN.floorDim + ')'; fc.fillRect(0, 0, W, H); g.drawImage(fl, 0, 0); } else
   g.drawImage(floorCv, 0, 0);
   g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
   for (const [h, a] of [[24, 0.1], [7, 0.22], [2, 0.5]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, fxa(0)); lb.addColorStop(0.5, fxa(a)); lb.addColorStop(1, fxa(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
@@ -523,6 +538,7 @@ function TECH(o) {
   // 3. THE FOLLOWER AND ITS RING: a dark halo behind them so they stand off the floor, the follower's teal glow, the 3-D render (the ring in it, whole), the ring's glow
   g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, TN.halo), 0, 5); g.restore();
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.drawImage(mask(bodyCv, 16, P.fx), 0, 0); g.restore();
+  if (TN.edge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = TN.edge[1]; g.drawImage(mask(bodyCv, TN.edge[0], TN.edge[2]), 0, 0); g.restore(); }   // (followers round 3: a thin bright edge round a dark follower, as the Seeper's)
   g.drawImage(model, 0, 0);
   if (P.pudding) {   // (the jelly's soft glow from within: a light inside his body, strongest at its middle, kept inside his outline)
     const ig = cv(), ic = ig.getContext('2d'); ic.drawImage(mask(bodyCv, 10, '#6fffe6'), 0, 0); ic.globalCompositeOperation = 'destination-in'; ic.drawImage(mask(bodyCv, 0, '#000'), 0, 0);
