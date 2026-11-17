@@ -29,10 +29,9 @@ const VIEW3D_GAME = (0, eval)(`({
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
-// the rooms the game's 3D view builds: the lab's ground floor and its other floors, up and down its stairs (stage 2: the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck)
-const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck']);
-// A DRAFT, for the owner (docs/VIEW-3D.md): the arena and its catwalks, with rock walls in 3D (a look not chosen), only with ?draft=arena in the address
-if (typeof location !== 'undefined' && /[?&]draft=arena(?:&|$)/.test(String(location.search || ''))) VIEW3D_ROOMS.push('arena', 'catwalks', 'catwalk_spur');
+// the rooms the game's 3D view builds: the lab's ground floor and its other floors, up and down its stairs (stage 2: the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck),
+// and the arena with its catwalks and spur, its rock in the look the owner shaped (docs/VIEW-3D.md stage 2; a draft behind ?draft=arena until build 2026-11-17e)
+const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur']);
 
 // a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile carries its height if it has one, in the
 // game's px ([x, y, h]: a floor off the ground floor's level, a staircase's tread), and the room its floor's (base)

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17e` · branch `claude/start-game-project-HSh7Z` · the game in 3D: the arena built (no longer a draft)
+- **The ask** (the owner): **"Continue updating"**. Taken as: go on with the 3D view's stages (`docs/VIEW-3D.md` §3). Stage 2's next room was the arena, whose look the owner shaped over builds `2026-11-16c` to `i` behind `?draft=arena`.
+- **Now** (`view3d/gamemap.js`): with `?engine=3d` the arena, its catwalks and the spur are built for everyone, as the lab's floors are: walking from the lab into the arena stays in 3D (it went to 2D without the draft flag). `?draft=arena` is retired. The arena's wall things with no 3D model yet (its banners, scoreboard, lamps, beams, chains and the rest) are not drawn while the view shows, as since `2026-11-16g` ("then we'll work on 3D versions after"). The agent's step; for the owner to send back to a draft if they wish.
+- **Tests**: `tests/view3d.js`: with the arena built, its check that nothing standing hides the player covers every arena, catwalk and spur tile in each of the four quarter turns, and passes; its "away" checks (a room the view has not built) now use the Armory.
+- **Verified:** the full run, all 129 suites passing; a picture of the arena in 3D on the players' page with only `?engine=3d`. **Not tried on an iPad.**
+
 ### Build `2026-11-17d` · branch `claude/start-game-project-HSh7Z` · the game in 3D: a Thunderhead no longer turns the 3D view off
 - **The report** (the owner): **"it only switches back when I have a certain follower, and it doesn't switch back to 3D now that I have the follower"** … **"It's the thungerhead btw"**. Reproduced: a Thunderhead in the room, and on the first frame the view failed ("Cannot read properties of undefined (reading 'material')") and the game went to 2D for the rest of the game, as a failure does.
 - **The cause** (`view3d/core.js`): building a form's body, the view merges the parts that never move into one shape, and took the merged parts out of the model. The Thunderhead's shards fade their glowing edges each frame, finding the edge as its group's second part; with the shard's core merged and taken out, the edge was the first, and there was no second. **Fixed:** a form's merged parts stay where they were, hidden (a room's are still taken out, to keep the iPad's memory).

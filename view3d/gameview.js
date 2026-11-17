@@ -4,7 +4,7 @@
 //   THE CAMERA   the game's own: the same angle (2:1, 30 degrees down), the same scale (a tile TILE_W px across) and on the player as the game's is (js/facilityplay.js _fpP), so a
 //                point of the world is on the screen exactly where the game's own drawing puts it, and every 2D drawing laid over the picture (bars, plates, effects, marks, taps) lies
 //                where it did. (Turning it waits for the effects in 3D: the 2D ones are drawn for this angle.)
-//   THE WORLD    the lab's floors (view3d/gamemap.js VIEW3D_ROOMS: stage 1 its ground floor, stage 2 its other floors), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
+//   THE WORLD    the lab's floors and the arena (view3d/gamemap.js VIEW3D_ROOMS: stage 1 the lab's ground floor, stage 2 its other floors and the arena), read from the running game and built in the look as the test page builds it (design/style-evolution/live/
 //                floor.js), with its stairs, its doors opening and shutting as the game's do, the walls in front of the room you are in sunk, and each room as lit as the game has it
 //   THE LIGHT    the game's own (js/facilitystyle.js: the room you are in lit, the others dark, a pool of light at an open door; a blackout): a map of the tiles, written from the game's
 //                levels and laid on the world's every surface by the tile in front of it, as dark as the game lays its dark on: the room you are in too, at the game's lit level (FP_LIT,

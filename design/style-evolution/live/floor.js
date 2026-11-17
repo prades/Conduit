@@ -56,7 +56,7 @@ function moreFittings(P, acc) {
 //   rooms on many levels: a tile stands at its own height (a cell [x, y, h], h in the game's px of height: a room's floor, a staircase's treads), with the risers between; a room's
 //   things stand on its floor (rec.base, px); a wall's block stands from the lowest floor beside it to a wall's height over the highest (as the game's: js/facilityplay.js base2),
 //   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail or railing_wall) is a railing, not a wall
-//   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; a draft: ?draft=arena, docs/VIEW-3D.md); a wall facing a
+//   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; in the game's 3D view since build 2026-11-17e, a draft behind ?draft=arena before: docs/VIEW-3D.md); a wall facing a
 //   dark room (the arena's style) is dark; a ledge between two floors (the catwalk spur's over the arena) has no wall over it, its railing on the higher floor
 // the wall's things the 3D builds (round2/chamber.js and moreFittings above; the game's view, view3d/gameview.js, leaves the others undrawn): only these keep a rock face flat
 const BUILT_WALL_DECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);
@@ -133,7 +133,7 @@ function buildLabFloor(lab, P0, how) {
   const face = (q, b, dx, dy, y0, y1, c, z, body) => { z = z || 0; body = body || WHITE; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
     if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, body, 0.45, 0.85); };
   const bodyOf = id => { const st = live && rooms[id] && rooms[id].style; if (!st || !st.dark) return WHITE; const k = lin(hexMix(st.wain || '#3a3532', '#ffffff', 0.25)); return [k.r, k.g, k.b]; };   // (a face looking into a dark room, the arena's: the game draws its walls dark)   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
-  // ROCK (the arena's rock walls; a draft for the owner, ?draft=arena: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
+  // ROCK (the arena's rock walls; in the game's 3D view since build 2026-11-17e, a draft behind ?draft=arena before: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
   // (the first draft, faceted blocks, was not liked). From it, our own rock: wavy horizontal strata in lighter and darker stone, speckled with small pits, big low-poly faces pushed in
   // and out, flat facets with no smooth shading. As tall as the game's far drawn rock (168 px over its floor and up to 50 more: js/facilitydecor.js _fpRockHeights), its top a jagged
   // skyline (each corner's height from where it is, so the blocks beside it share it). In sand, the owner's pick of two (2026-11-16, of brown and sand: "I like the sand"); then, of the sand:

@@ -12,7 +12,7 @@
 //   THE BODIES    the cube, the eggs, an evolved form and the ants are the view's (the 2D drawing leaves them out); a beetle is the game's own; a unit's bars go down with its body
 //   THE WORLD     a door opens as the game's does; each room as dark as the game draws it (the one you are in at its lit level, the others dark); a blackout darkens it; the floor's marks are laid on its floor; the
 //                 facility's items it does not build are the game's to draw, and only in its rooms
-//   AWAY          in a room it has not built (the arena) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
+//   AWAY          in a room it has not built (the Armory) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -167,7 +167,7 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   st.open = 0; V.draw(null); out.doorShut = door.open; st.open = 1; V.draw(null); out.doorOpen = door.open;
   step(40); out.lightHere = V.lightAt(13, 19); out.lightAway = V.lightAt(30, 15); out.wantHere = 0; out.wantAway = _fpDarkAmt() * (1 - _fpLit()); facilityBlackoutSet(true); step(80); out.lightBlack = 0; for (var bx = 9; bx <= 18; bx++) for (var by = 13; by <= 25; by++) { var br = facilityRoomAt(bx, by, _fp.F); if (br && br.id === 'crystal_chamber') out.lightBlack = Math.max(out.lightBlack, V.lightAt(bx, by)); } facilityBlackoutSet(false); step(80);   // (the darkest tile of the chamber: by the Crystal the game's emergency light keeps a pool)
   commandMode = true; commandTarget = world.filter(function (t) { return t.x === 13 && t.y === 22; })[0]; step(1); out.fxRing = V.stats.fx; commandMode = false; commandTarget = null; step(1); out.fxNone = V.stats.fx;
-  out.keeps = [V.keeps({ fp: 'pickup', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wall', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'pickup', room: 'arena', x: 0, y: 0 }), V.keeps({ fp: 'station', room: 'lab_passage', x: 19, y: 30 }), V.keeps({ fp: 'wdecor', kind: 'shelf', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'poster', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'rubble', room: 'crystal_chamber', x: 13, y: 19 })];
+  out.keeps = [V.keeps({ fp: 'pickup', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wall', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'pickup', room: 'armory', x: 0, y: 0 }), V.keeps({ fp: 'station', room: 'lab_passage', x: 19, y: 30 }), V.keeps({ fp: 'wdecor', kind: 'shelf', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'poster', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'rubble', room: 'crystal_chamber', x: 13, y: 19 })];
   // nothing standing hides anyone (the owner, 2026-11-16: "Yes, the rock that is obscuring the player should sink in"): for every floor tile of every room built, with that room the one you are in, no wall or rock left standing covers a body there (its feet and its middle) from the camera
   out.hides = (function () { var W = V.world, UHh = 73.48469228349533, n = 0, where = [];
    for (var t = 0; t < 4; t++) {   // (in each of the camera's quarter turns: the turned view's screen and depth, and the walls that sink in it)
@@ -180,7 +180,7 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
    }
     return { n: n, where: where, rooms: Object.keys(W.rooms).length }; })();
   // away, and back
-  var A = _fp.F.byId.get('arena').bb; put(Math.round((A[0] + A[2]) / 2), Math.round((A[1] + A[3]) / 2)); step(3); var d2 = ctx.getImageData(40, 300, 1, 1).data;
+  var A = _fp.F.byId.get('armory').bb; put(Math.round((A[0] + A[2]) / 2), Math.round((A[1] + A[3]) / 2)); step(3); var d2 = ctx.getImageData(40, 300, 1, 1).data;
   out.away = { showing: VIEW3D.showing, display: gl.style.display, px: d2[3], feet: view3dFeet(), body: view3dBody(player) };
   put(13, 19); step(3); out.back = { showing: VIEW3D.showing, display: gl.style.display };`));
 if (ON === null) console.log('  (no Chromium here: skipped)');
@@ -225,7 +225,7 @@ else {
         ok(ON.hides && ON.hides.rooms >= 12, 'the rooms measured: ' + (ON.hides && ON.hides.rooms)); same(ON.hides.n, 0, 'tiles where something standing covers a body (' + ON.hides.where.join(' | ') + ')');
     });
     check('AWAY: in a room it has not built it hides and the frame is the 2D game\'s, opaque, units where they were; back in the lab it shows again', () => {
-        same(JSON.stringify(ON.away), JSON.stringify({ showing: false, display: 'none', px: 255, feet: 0, body: false }), 'in the arena'); same(JSON.stringify(ON.back), JSON.stringify({ showing: true, display: 'block' }), 'back');
+        same(JSON.stringify(ON.away), JSON.stringify({ showing: false, display: 'none', px: 255, feet: 0, body: false }), 'in the Armory'); same(JSON.stringify(ON.back), JSON.stringify({ showing: true, display: 'block' }), 'back');
     });
 }
 
