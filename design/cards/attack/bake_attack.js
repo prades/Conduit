@@ -60,14 +60,25 @@ const SAMPLES = {
     cam: { pos: [-0.35, 0.7, 7.8], look: [-0.25, 0.85, 0.5], fov: 38, roll: -0.22 },   // (shifted so his mouth and fangs sit in the middle, clear of the frame's edge)
   },
   // THE HAMMER SLUG (core Technician, evolved form 'hammerslug', design No. 469: design/evolutions/bake.js JOBS, forms20.js _slugReal) in the Technician style (the owner, 2026-11-17:
-  // "surrounded by a very intact ring of crystals while they raise their claws or whatever they have"). It has no claws: it rears its front up (the hammer head and eye-stalks),
+  // "surrounded by a very intact ring of crystals while they raise their claws or whatever they have"). It has no claws: it rears its front up (his head, raised),
   // in its action pose (act 1: the lunge, its fin raised and its scutes flared), inside a whole ring of the game's crystals, the core energy card's reactor behind.
   hammerslug_ring: {
     style: 'tech', form: 469, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 469,
-    pose: { t: 0.4, act: 1 }, yaw: 1.2, rear: 0.5, lift: 0.15,   // (turned side-on to the camera, its head to the right: its long tiled body, spiked spine and raised hammer head all show)
+    pose: { t: 0.4, act: 1 }, yaw: 1.2, rear: 0.5, lift: 0.15,   // (turned side-on to the camera, its head to the right: its long tiled body, spiked spine and raised head all show)
     ring: { n: 12, r: 2.0, h: [0.3, 1.25], w: 0.14 },
     lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
     cam: { pos: [1.3, 1.4, 7.6], look: [0.3, -0.25, 0], fov: 38, roll: -0.18 },   // (above the ring, looking down into it a little, so the whole ring shows round it, all above the name plate; rolled about 10 degrees)
+  },
+  // ROUND 2 (the owner, 2026-11-17: "He needs to have a pudding like body, and he needs to fold upwards"; "Only on the card"; his head is his own soft head, not a hammer):
+  // the same card with his body and head as glossy jelly (P.pudding, above: this render only, the game's model unchanged) and his front half folding up at his middle
+  // instead of the whole model tipped back. Everything else as round 1.
+  hammerslug_ring_r2: {
+    style: 'tech', form: 469, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 469,
+    pose: { t: 0.4, act: 1 }, yaw: 1.75,   // (side-on to the camera, his front to the right, so the fold shows in profile)
+    pudding: { top: 0x13a890, low: 0x1236b4, glow: 0x063d35, glowK: 0.45, plump: 1.18, wobble: 0.012, headThick: 4, z0: -0.2, fold: 1.4, arc: 0.95, yp: 0.28, headTip: 0.9 },
+    ring: { n: 12, r: 2.0, h: [0.3, 1.25], w: 0.14 },
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
+    cam: { pos: [1.3, 1.5, 8.2], look: [0.35, 0.3, 0], fov: 38, roll: -0.18 },   // (back a little and aimed higher than round 1: his folded-up front fits under the top, and the scene sits lower on the card)
   },
 };
 
@@ -380,6 +391,9 @@ function TECH(o) {
   g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, 'rgba(0,8,6,1)'), 0, 5); g.restore();
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.drawImage(mask(bodyCv, 16, P.fx), 0, 0); g.restore();
   g.drawImage(model, 0, 0);
+  if (P.pudding) {   // (the jelly's soft glow from within: a light inside his body, strongest at its middle, kept inside his outline)
+    const ig = cv(), ic = ig.getContext('2d'); ic.drawImage(mask(bodyCv, 10, '#6fffe6'), 0, 0); ic.globalCompositeOperation = 'destination-in'; ic.drawImage(mask(bodyCv, 0, '#000'), 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.28; g.drawImage(ig, 0, 0); g.restore(); }
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.55; g.drawImage(mask(ringCv, 12, P.fx), 0, 0); g.globalAlpha = 0.35; g.drawImage(mask(ringCv, 3, '#d8fff6'), 0, 0); g.restore();
   // light rising off each crystal's point (the world's up), and a bright star at the tallest points
   g.save(); g.globalCompositeOperation = 'lighter';
@@ -429,6 +443,41 @@ window.__card = async function (P, W, H, modelOnly) {
   const B = FORMS2[P.form].build(); scene.add(B.g); B.g.rotation.y = P.yaw;
   // (its glow sprites are kept: the diamond's blaze is the model's own; the game's sheets leave them to the game, design/evolutions/bake.js)
   B.update(P.pose.t, P.pose.act, P.pose.v);
+  if (P.pudding) {   // THE CARD-ONLY PUDDING BODY AND FOLD (the owner, 2026-11-17, of the Hammer Slug card: "He needs to have a pudding like body, and he needs to fold upwards"; "Only on the card":
+    // the game's model is not changed, only this render of it). His body and his head (the wide lobe at its front: his own head, soft like the rest of him, not a hammer) turn to one
+    // glossy, soft, plump jelly in his colours (the teal glow of his tiles over his deep blue, the blue of his sole underneath); his hex tiles, sole and keel are smoothed away into it;
+    // his back spikes and eye-stalks stay as they are. Then the body FOLDS UP at its middle: everything ahead of the bend point curls up along an arc (the front half lifting, as a
+    // slug rears), the back half staying on the floor; the spikes and his head ride the curl, turned with it.
+    const Q = P.pudding, bb = B.g.children[0], tube = bb.children[0];
+    const jelly = new T.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, emissive: new T.Color(Q.glow), emissiveIntensity: Q.glowK, reflectivity: 0.6 }); jelly.envMapIntensity = 0.7;
+    const tint = (geo, toB) => { const pa = geo.attributes.position, na = geo.attributes.normal, col = new Float32Array(pa.count * 3), top = new T.Color(Q.top), low = new T.Color(Q.low), c = new T.Color(), n = new T.Vector3();
+      for (let i = 0; i < pa.count; i++) { n.set(na.getX(i), na.getY(i), na.getZ(i)); if (toB) n.applyMatrix3(toB).normalize(); const k = Math.max(0, Math.min(1, 0.5 + 0.8 * n.y)); c.copy(low).lerp(top, k).convertSRGBToLinear(); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
+      geo.setAttribute('color', new T.BufferAttribute(col, 3)); };
+    // the soft body: plumper, its skin rippled a little (a set pudding's wobble)
+    tube.scale.x *= Q.plump; tube.scale.y *= Q.plump * 1.15; tube.updateMatrix();
+    { const geo = tube.geometry; geo.computeVertexNormals(); const pa = geo.attributes.position, na = geo.attributes.normal;
+      for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), w = Q.wobble * (Math.sin(z * 9 + x * 4) * 0.6 + Math.sin(z * 4.3 - y * 6 + 1) * 0.4); pa.setXYZ(i, x + na.getX(i) * w, y + na.getY(i) * w, z + na.getZ(i) * w); } }
+    // his head: the same jelly, thicker (a soft lobe, not a flat bar)
+    const head = bb.children.find(c => c.isGroup && c.children.some(k => k.isMesh && k.geometry.type === 'BufferGeometry'));
+    if (head) { head.scale.y *= Q.headThick; head.traverse(m => { if (m.isMesh && m.geometry.type === 'BufferGeometry') { m.geometry = m.geometry.clone(); m.geometry.computeVertexNormals(); tint(m.geometry); m.material = jelly; }
+      else if (m.isMesh) m.scale.y /= Q.headThick; }); }   // (the round beads at its two ends stay his: glossy black, like eyes, and round)
+    bb.children.forEach(c => { if (c.isGroup && c.children.length === 1 && c.children[0].isMesh && c.children[0].geometry.type === 'CylinderGeometry') c.visible = false; });   // (the hex tiles: smoothed away)
+    bb.children.forEach(c => { if (c.isMesh && (c.geometry.type === 'CylinderGeometry' || c.geometry.type === 'BoxGeometry')) c.visible = false; });   // (the sole and the keel: inside the jelly now)
+    tube.material = jelly;
+    // THE FOLD: a bend of constant curvature starting at z0 (in the body's own space: +z is his front), turning up to Q.fold radians, then straight on
+    const z0 = Q.z0, kc = Q.fold / Q.arc, rho = 1 / kc, sMax = Q.arc;
+    const yp = Q.yp || 0;   // (the bend's middle line, about the body's own middle height: rho must be more than any point's distance from it, or the top would fold through itself)
+    const bend = (y, z) => { const sA = z - z0; if (sA <= 0) return [y, z, 0]; const d = y - yp, s2 = Math.min(sA, sMax), th = kc * s2, ez = z0 + (rho - d) * Math.sin(th), ey = yp + rho - (rho - d) * Math.cos(th), rest = sA - s2;
+      return [ey + Math.sin(th) * rest, ez + Math.cos(th) * rest, th]; };
+    // his head set on the front end of his body (in the model it hangs low at the front, at the sole's height: on a body folded up it would end up on the belly side of the fold)
+    if (head) { let zm = -9; const pa0 = tube.geometry.attributes.position; tube.updateMatrix(); const v0 = new T.Vector3(); for (let i = 0; i < pa0.count; i++) { v0.set(pa0.getX(i), pa0.getY(i), pa0.getZ(i)).applyMatrix4(tube.matrix); zm = Math.max(zm, v0.z); }
+      head.position.set(0, (Q.yp || 0) / (Q.plump * 1.15), zm - (Q.headIn || 0.12)); }
+    { tube.updateMatrix(); const geo = tube.geometry, pa = geo.attributes.position, Mt = tube.matrix, Mi = new T.Matrix4().copy(Mt).invert(), v = new T.Vector3();
+      for (let i = 0; i < pa.count; i++) { v.set(pa.getX(i), pa.getY(i), pa.getZ(i)).applyMatrix4(Mt); const [y2, z2] = bend(v.y, v.z); v.y = y2; v.z = z2; v.applyMatrix4(Mi); pa.setXYZ(i, v.x, v.y, v.z); }
+      pa.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); tint(geo, new T.Matrix3().getNormalMatrix(Mt)); tube.frustumCulled = false; }
+    bb.children.forEach(c => { if (c === tube || !c.visible || c.isLight) return; c.position.y *= Q.plump * 1.15; const [y2, z2, th] = bend(c.position.y, c.position.z); c.position.y = y2; c.position.z = z2;   // (sat on the plumper body, then carried by the fold)
+      c.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -(c === head ? Math.max(0, th - (Q.headTip || 0)) : th))); });   // (his head tipped forward again off the top of the fold, looking out)
+  }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
   // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
