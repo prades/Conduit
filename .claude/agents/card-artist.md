@@ -19,6 +19,7 @@ You are the card illustrator for **Conduit's attack cards**. The owner is the cr
 
 ## What is fixed
 - **The follower is its own model.** The evolved forms are 3-D models in `design/evolutions/` (`forms-core.js` and `formsN.js`; `bake.js` names each form's number in its JOBS list and how its action pose is driven). Render that model, posed mid-attack, with a perspective camera; never redraw or restyle a follower.
+- **Names are not things:** the Hammer Slug has no hammer (the owner, 2026-11-17: "he does not have an actual iron hammer as his head. He just has the name Hammer"). His head is a fleshy hammerhead-shark shape, part of his body. Never draw a follower's name as an object it carries; draw its own model.
 - **The frame:** the picture fills a card's `.cd-art`, 225 × 315 CSS px (5:7). Bake it at 2× (450 × 630). The card's name plate fades in over the bottom and chips sit over the top corners: keep the focus in the middle and upper-middle, and make sure the name reads over the bottom third.
 - **Colours:** each element's colour from `js/config.js` `ELEMENTS`; bloom `#ff7ab8`. Reuse the energy cards' element worlds (`docs/ENERGY-CARDS.md`, `js/energygem.js`) as the far background where they fit, so the families match.
 - **A baked picture may use gradients, glow and blur.** The effects plan's flat-colour rule (`docs/EFFECTS.md`) is for effects drawn live every frame, not for a picture baked once.
