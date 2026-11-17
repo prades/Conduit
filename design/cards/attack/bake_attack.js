@@ -114,6 +114,17 @@ const SAMPLES = {
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
     cam: { pos: [0.2, 0.55, 6.0], look: [0, 0.5, 0.3], fov: 42, roll: -0.22 },
   },
+  // THE STONEPETAL (bloom Technician, evolved form 'coralcrab', design No. 923: design/evolutions/bake.js JOBS, forms38.js _coralTick) for STAKE RING, in the Technician style as the
+  // Hammer Slug's round 3: inside a whole ring of the game's crystals in bloom's pink, raising what it has: it has no claws, so it rears (its action's rearing, its head lifted)
+  // and raises its front pair of stake legs (P.raise: this render only; the game's model is not changed). The bloom energy card's garden behind.
+  coralcrab_stakering: {
+    style: 'tech', form: 923, color: '#ff7ab8', rim: '#ff9ccc', fx: '#ff7ab8', world: 'blossom', seed: 923,
+    pose: { t: 1.124, act: 1 }, yaw: 0.9, raise: { seg: 40, stake: 150, fwd: 25 },
+    ring: { n: 12, r: 1.35, h: [0.3, 1.0], w: 0.12, dim: [0.4, 0.2] },
+    tone: { sky: '#14030c', hz: ['rgba(58,10,38,0)', 'rgba(80,16,52,0.85)', '#3a0a26'], halo: 'rgba(10,2,6,1)', white: '255,230,242', ringWhite: '#ffe6f2', star: '255,236,246', vig: 'rgba(10,2,6,0.6)', foot: ['rgba(12,3,8,0)', 'rgba(12,3,8,0.65)'], worldK: 0.8, ringGlow: [0.4, 0.15] },
+    lights: { hemi: [0xd0a0b8, 0x1a0610, 0.45], key: [0xfff0f6, 1.0], rim: 2.4, back: 1.4, low: [0xff7ab8, 2.2, 0, 0.4, 2.2] },
+    cam: { pos: [0.7, 1.15, 6.3], look: [-0.15, 0.2, 0], fov: 38, roll: -0.18 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -403,17 +414,20 @@ function TECH(o) {
   const { W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, ringTips } = o, PI = Math.PI, TAU = 2 * PI;
   const rgb = (h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)])(P.fx), fxa = a => 'rgba(' + rgb.join(',') + ',' + a + ')';
   const out = cv(), g = out.getContext('2d');
+  // the world's tones (followers round 1: P.tone for a Technician in another world than the core; the defaults are the Hammer Slug's, unchanged)
+  const TN = Object.assign({ sky: '#010a09', hz: ['rgba(4,38,31,0)', 'rgba(6,60,50,0.85)', '#04261f'], halo: 'rgba(0,8,6,1)', white: '220,255,248', ringWhite: '#d8fff6', star: '230,255,250', vig: 'rgba(0,8,6,0.6)', foot: ['rgba(1,10,9,0)', 'rgba(1,10,9,0.65)'],
+    worldK: 0.6, ringGlow: [0.55, 0.35] }, P.tone || {});
   const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
   const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
   const mask = (src, blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(src, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
   // 1. FAR: the core energy card's reactor (its hex lattice and rings: js/energygem.js, with that card's own seed), tilted with the horizon, softened
   const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
     _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
-  g.fillStyle = '#010a09'; g.fillRect(0, 0, W, H);
+  g.fillStyle = TN.sky; g.fillRect(0, 0, W, H);
   { const hz = hzAt(W / 2), top = -(hz + 60), hh = hz + 110, kx = 1.6;
     g.save(); g.translate(W / 2, hz); g.rotate(slope); g.filter = 'blur(1.5px)'; g.drawImage(ws, -225 * kx, top, 450 * kx, hh); g.filter = 'none';
-    g.globalAlpha = 0.6; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
-  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -110, 0, 30); lg.addColorStop(0, 'rgba(4,38,31,0)'); lg.addColorStop(0.8, 'rgba(6,60,50,0.85)'); lg.addColorStop(1, '#04261f');
+    g.globalAlpha = TN.worldK; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -110, 0, 30); lg.addColorStop(0, TN.hz[0]); lg.addColorStop(0.8, TN.hz[1]); lg.addColorStop(1, TN.hz[2]);
   g.fillStyle = lg; g.fillRect(-W, -110, 2 * W, 140); g.restore();
   // 2. THE FLOOR (3-D), a line of the reactor's light along the horizon, and the ring's light on the floor: a glowing circle where the crystals stand, soft light pooled inside it
   g.drawImage(floorCv, 0, 0);
@@ -423,26 +437,26 @@ function TECH(o) {
   const circ = (r, y) => { const pts = []; for (let i = 0; i <= 96; i++) { const a = i / 96 * TAU; pts.push(pr([Math.sin(a) * r, y || 0.01, Math.cos(a) * r])); } return pts; };
   const line = (pts, w, col, blur) => { g.save(); g.globalCompositeOperation = 'lighter'; if (blur) g.filter = 'blur(' + blur + 'px)'; g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.restore(); };
   { const pool = circ(P.ring.r); g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)'; g.fillStyle = fxa(0.16); g.beginPath(); pool.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.fill(); g.restore();
-    line(pool, 14, fxa(0.25), 8); line(pool, 3, fxa(0.7), 1); line(pool, 1, 'rgba(220,255,248,0.8)');
+    line(pool, 14, fxa(0.25), 8); line(pool, 3, fxa(0.7), 1); line(pool, 1, 'rgba(' + TN.white + ',0.8)');
     const inner = circ(P.ring.r * 0.72); g.save(); g.setLineDash([10, 9]); line(inner, 1.5, fxa(0.45)); g.restore(); }   // (an inner dashed ring, as the reactor's own)
   // 3. THE FOLLOWER AND ITS RING: a dark halo behind them so they stand off the floor, the follower's teal glow, the 3-D render (the ring in it, whole), the ring's glow
-  g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, 'rgba(0,8,6,1)'), 0, 5); g.restore();
+  g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, TN.halo), 0, 5); g.restore();
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.drawImage(mask(bodyCv, 16, P.fx), 0, 0); g.restore();
   g.drawImage(model, 0, 0);
   if (P.pudding) {   // (the jelly's soft glow from within: a light inside his body, strongest at its middle, kept inside his outline)
     const ig = cv(), ic = ig.getContext('2d'); ic.drawImage(mask(bodyCv, 10, '#6fffe6'), 0, 0); ic.globalCompositeOperation = 'destination-in'; ic.drawImage(mask(bodyCv, 0, '#000'), 0, 0);
     g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.28; g.drawImage(ig, 0, 0); g.restore(); }
-  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.55; g.drawImage(mask(ringCv, 12, P.fx), 0, 0); g.globalAlpha = 0.35; g.drawImage(mask(ringCv, 3, '#d8fff6'), 0, 0); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = TN.ringGlow[0]; g.drawImage(mask(ringCv, 12, P.fx), 0, 0); g.globalAlpha = TN.ringGlow[1]; g.drawImage(mask(ringCv, 3, TN.ringWhite), 0, 0); g.restore();
   // light rising off each crystal's point (the world's up), and a bright star at the tallest points
   g.save(); g.globalCompositeOperation = 'lighter';
   ringTips.forEach(([x, y]) => { const L = 50 + R() * 70, ex = x + up[0] * L, ey = y + up[1] * L, gr = g.createLinearGradient(x, y, ex, ey); gr.addColorStop(0, fxa(0.35)); gr.addColorStop(1, fxa(0));
-    g.strokeStyle = gr; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y); g.lineTo(ex, ey); g.stroke(); blob(g, x, y, 9, [[0, 'rgba(230,255,250,0.7)'], [0.4, fxa(0.3)], [1, fxa(0)]]); });
+    g.strokeStyle = gr; g.lineWidth = 5; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y); g.lineTo(ex, ey); g.stroke(); blob(g, x, y, 9, [[0, 'rgba(' + TN.star + ',0.7)'], [0.4, fxa(0.3)], [1, fxa(0)]]); });
   // motes of the reactor's light rising inside the ring
-  for (let i = 0; i < 40; i++) { const a = R() * TAU, rr = Math.sqrt(R()) * P.ring.r * 0.95, p = pr([Math.sin(a) * rr, 0.1 + R() * 1.6, Math.cos(a) * rr]); blob(g, p[0], p[1], 1.5 + R() * 2.5, [[0, 'rgba(220,255,248,0.9)'], [0.4, fxa(0.5)], [1, fxa(0)]]); }
+  for (let i = 0; i < 40; i++) { const a = R() * TAU, rr = Math.sqrt(R()) * P.ring.r * 0.95, p = pr([Math.sin(a) * rr, 0.1 + R() * 1.6, Math.cos(a) * rr]); blob(g, p[0], p[1], 1.5 + R() * 2.5, [[0, 'rgba(' + TN.white + ',0.9)'], [0.4, fxa(0.5)], [1, fxa(0)]]); }
   g.restore();
   // 4. THE GRADE: a vignette, darker at the foot (the name plate reads over it). Clean: the ring is whole and the card is unmarked.
-  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(0,8,6,0.6)']]); g.fillRect(0, 0, W, H);
-  lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, 'rgba(1,10,9,0)'); lg.addColorStop(1, 'rgba(1,10,9,0.65)'); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
+  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.5, 'rgba(0,0,0,0)'], [1, TN.vig]]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, TN.foot[0]); lg.addColorStop(1, TN.foot[1]); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
   return { png: out.toDataURL('image/png'), info };
 }
 
@@ -660,6 +674,21 @@ window.__card = async function (P, W, H, modelOnly) {
       if (c.isLight) return;   // (round 3: his own glow light carried inside the fold with him, as in the model it sits inside his body; round 2 left it where it was)
       c.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -(c === head ? Math.max(0, th - (Q.headTip || 0)) : th))); });   // (his head tipped forward again off the top of the fold, looking out)
   }
+  if (P.raise) {   // RAISING ITS FRONT LEGS (followers round 1, the Stonepetal: "while they raise their claws or whatever they have"; it has stake legs, no claws): this render only, the game's
+    // model is not changed. Each front leg (the meshes hung straight on the model's scaled group, forward of its middle: its short segment, its knee and its stake) is raised as an
+    // arm: the segment turned up about its hip (seg degrees), then the stake turned about its knee (stake degrees), up and out, and tipped forward (fwd degrees), its point held high.
+    const Q = P.raise, bb = B.g.children[0], v = new T.Vector3(), PIo = PI / 180;
+    const about = (p, M) => new T.Matrix4().makeTranslation(p.x, p.y, p.z).multiply(M).multiply(new T.Matrix4().makeTranslation(-p.x, -p.y, -p.z));
+    const meshes = bb.children.filter(m => m.isMesh), mid = m => { if (m.geometry.type === 'SphereGeometry') return m.position.clone(); const pa = m.geometry.attributes.position, c = new T.Vector3(); for (let i = 0; i < pa.count; i++) c.add(v.fromBufferAttribute(pa, i)); return c.divideScalar(pa.count); };
+    const move = (m, M) => { if (m.geometry.type === 'SphereGeometry') { m.position.applyMatrix4(M); return; } const pa = m.geometry.attributes.position; for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(M); pa.setXYZ(i, v.x, v.y, v.z); }
+      pa.needsUpdate = true; m.geometry.computeVertexNormals(); m.geometry.computeBoundingSphere(); m.frustumCulled = false; };
+    [-1, 1].forEach(s => { const mine = meshes.filter(m => { const c = mid(m); return c.z > (Q.minZ || 0) && Math.sign(c.x) === s; });
+      const segM = mine.find(m => m.geometry.type !== 'SphereGeometry' && m.geometry.attributes.position.count <= 60), knee = mine.find(m => m.geometry.type === 'SphereGeometry'), stake = mine.find(m => m !== segM && m !== knee);
+      if (!segM || !knee || !stake) return;
+      const pa0 = segM.geometry.attributes.position, hip = new T.Vector3(); for (let i = 0; i < 10; i++) hip.add(v.fromBufferAttribute(pa0, i)); hip.divideScalar(10);
+      const M1 = about(hip, new T.Matrix4().makeRotationZ(s * Q.seg * PIo)); [segM, knee, stake].forEach(m => move(m, M1));
+      const M2 = about(knee.position.clone(), new T.Matrix4().makeRotationX(-Q.fwd * PIo).multiply(new T.Matrix4().makeRotationZ(s * (Q.stake - Q.seg) * PIo))); move(stake, M2); });
+  }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
   // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
@@ -672,6 +701,7 @@ window.__card = async function (P, W, H, modelOnly) {
       put(h * (0.45 + 0.2 * R()), Q.w * 0.6, (R() < 0.5 ? -1 : 1) * 0.09, 0.35 + R() * 0.2, 0.08);   // and a smaller one at its foot, leaning further
     } scene.add(ringG);
     const cm = M.crystal.clone(), em = new T.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.55 }); ringG.traverse(m => { if (m.isLineSegments) m.material = em; else if (m.isMesh) m.material = cm; }); }   // (its own materials, so the follower can be drawn depth-only over it)
+  if (P.ring && P.ring.dim) ringG.traverse(m => { if (m.isMesh && !m.material.userData.dimmed) { m.material.userData.dimmed = true; m.material.color.multiplyScalar(P.ring.dim[0]); m.material.emissive.multiplyScalar(P.ring.dim[1]); } });   // (followers round 1: a light element colour, bloom's pink, whites out the crystals; dimmed once, they share one material)
   // THE FLOOR: dark lava crust split by glowing cracks, far into the haze (so the tilted horizon is a real one), and the hot glow under the follower
   const ft = cv(1024, 1024), fg = ft.getContext('2d'), fe = cv(1024, 1024), fge = fe.getContext('2d');
   const crack = (g, pts, w, c) => { g.strokeStyle = c; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); };
