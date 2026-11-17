@@ -308,6 +308,15 @@ const SAMPLES = {
       lensDrops: [[0.13, 0.09, 30, -2.2], [0.93, 0.33, 22, -0.5], [0.64, 0.04, 16, -1.3], [0.03, 0.6, 20, 2.6]], lensBubbles: [[0.8, 0.12, 24], [0.32, 0.03, 14]], lensBlur: 3.5,
       lens: [{ w: 4.5, pts: [[470, 160], [410, 110], [380, 40], [330, -10]], forks: 3 }, { w: 3.5, pts: [[-20, 140], [25, 80], [15, 20], [60, -10]], forks: 2 }] },
   },
+  blightspider_venombite: {
+    style: 'tech', form: 873, color: '#33dd55', rim: '#7dff6a', fx: '#66ff66', world: 'toxic', seed: 873,
+    pose: { t: 0.4, act: 1 }, yaw: 0.35, legs: { k: [2, 5], thigh: [0.5, 0.85, 0.35], shin: [0.25, -0.8, 0.55] },
+    ring: { n: 12, r: 1.02, h: [0.25, 0.85], w: 0.1, dim: [0.4, 0.2] },
+    tone: { sky: '#020902', hz: ['rgba(10,42,10,0)', 'rgba(16,64,14,0.85)', '#0a2a0a'], halo: 'rgba(0,8,0,1)', white: '225,255,215', ringWhite: '#e0ffd8', star: '235,255,230', vig: 'rgba(0,6,0,0.6)', foot: ['rgba(1,8,1,0)', 'rgba(1,8,1,0.65)'], worldK: 0.6, ringGlow: [0.45, 0.2],
+      dim: 0.3, floorDim: 0.4, edge: [3, 0.9, '#b8ff9a'] },
+    lights: { hemi: [0x90c090, 0x041a06, 0.5], key: [0xf0fff0, 1.1], rim: 2.6, back: 1.4, low: [0x66ff66, 1.2, 0, 0.6, 2.0] },
+    cam: { pos: [0.8, 1.55, 5.3], look: [0, -0.15, 0], fov: 38, roll: -0.18 },
+  },
   jellyram_wobbleslam: {
     style: 'brawler', form: 935, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 935,
     pose: { t: 0.3, act: 0 }, yaw: 0, rear: -0.4, lift: 0.7, hit: [0.47, 0.37], glass: 'slabs', pieces: 'clear', powder: 0, through: 40,
@@ -1456,6 +1465,18 @@ window.__card = async function (P, W, H, modelOnly) {
     // Each spike hangs on its own group (tilted down by its model's o.tilt), on a group turned to its quarter; the two at the sides (odd quarters) are turned up at their root by P.spikes.up radians.
     B.g.traverse(m => { if (!m.isGroup || !m.parent || !m.children.some(k => k.isMesh && k.geometry.type === 'ConeGeometry')) return; const k = Math.round(m.parent.rotation.y / (PI / 2));
       if (Math.abs(m.parent.rotation.y - k * PI / 2) < 1e-6 && k % 2 === 1) m.rotation.x -= P.spikes.up; }); }
+  if (P.legs) {   // RAISING ITS FRONT LEGS AT THE SHOULDER (followers round 5, the Blight Spider: "while they raise their claws or whatever they have"; the owner on the Stonepetal, 2026-11-17: "he should only be
+    // moving his shoulder ... Upper arm, and he has his forearm still angled towards the ground"): this render only, the game's model is not changed. Its six legs are each a thigh (a box from hip to knee), a knee
+    // and a shin (a spike from knee to foot), hung on the model's scaled group in the order the model makes them; the front pair (P.legs.k) is re-laid: each thigh turned up at its hip along P.legs.thigh
+    // (its length kept), its shin from the new knee along P.legs.shin, still angled down (its length kept). x is mirrored for the left leg.
+    const Q = P.legs, bb = B.g.children[0], kids = bb.children.filter(m => m.isMesh);
+    const thighs = kids.filter(m => m.geometry.type === 'BoxGeometry' && m.geometry.parameters.height === 1), shins = kids.filter(m => m.geometry.type === 'ConeGeometry' && m.geometry.parameters.radialSegments === 4), knees = kids.filter(m => m.geometry.type === 'IcosahedronGeometry');
+    const upv = new T.Vector3(0, 1, 0), lay = (m, a, b, base) => { const d = b.clone().sub(a), L = d.length(); m.position.copy(base ? a : a.clone().add(b).multiplyScalar(0.5)); m.quaternion.setFromUnitVectors(upv, d.divideScalar(L)); m.scale.set(1, L, 1); };
+    if (thighs.length === 6 && shins.length === 6 && knees.length === 6) Q.k.forEach(k => { const th = thighs[k], sh = shins[k], kn = knees[k], knee = sh.position.clone(), hip = th.position.clone().multiplyScalar(2).sub(knee), sx = Math.sign(knee.x) || 1;
+      const foot = knee.clone().add(new T.Vector3(0, 1, 0).applyQuaternion(sh.quaternion).multiplyScalar(sh.scale.y)), tl = knee.distanceTo(hip), sl = foot.distanceTo(knee);
+      const k2 = hip.clone().add(new T.Vector3(sx * Q.thigh[0], Q.thigh[1], Q.thigh[2]).normalize().multiplyScalar(tl)), f2 = k2.clone().add(new T.Vector3(sx * Q.shin[0], Q.shin[1], Q.shin[2]).normalize().multiplyScalar(sl));
+      lay(th, hip, k2, false); kn.position.copy(k2); lay(sh, k2, f2, true); });
+  }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // ROTTEN DECOY'S BLACK PIECES (followers round 5, the Rotshard): the decoy, the game's own black Rotshard (design/effects/bake_fx.js rotdecoy, approved in the game 2026-11-09: "Approve the black decoy"):
   // the Rotshard's own model (No. 101) all in its old shell's glassy black, its pool tar-black, its glows, washes and light off, only its shell shard's hairline green crack kept; rising out of the floor
