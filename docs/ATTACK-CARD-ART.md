@@ -1,6 +1,6 @@
 # Attack card art
 
-- **Status:** Designed. The Mage style approved on its first sample (2026-11-17, §4); nothing in the game yet. The Brawler style: its first sample drawn (the Frost Maw biting with CHOMP, round 1, 2026-11-17); the owner asked for changes (§4); after round 2 the Frost Maw's model was redesigned (No. 947, powder snow), and round 3 (`design/cards/attack/drafts/round3/maw_chomp.png`) is waiting for the owner.
+- **Status:** Designed. Approved on 2026-11-17 (§4): the Mage style (the Ember Hood) and the Technician style (the Hammer Slug, round 3). The Brawler style (the Frost Maw, round 3) is waiting for the owner. Nothing in the game yet.
 - **Owner:** User (creative direction); agent (drafts, rendering, baking).
 - **Last updated:** 2026-11-17
 - **Branch/build context:** written on `claude/card-artist`, at main's build `2026-11-15i`.
