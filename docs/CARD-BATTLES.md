@@ -26,6 +26,11 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 11. **Ultimates are charged by the Ultimate meter**, as now: a follower's Ultimate card becomes playable when its meter is full, and empties when played. (Of two offered: "Charged by the meter", not a card with a long recharge.) *How the meter fills in a turn-based battle is open (§11).*
 12. **A RUN card is always available:** playing it uses your turn and leaves the battle. (Of three offered: "A RUN card", not no escape, not walking away.) *Its cost, if any, is open (§11).*
 
+13. **The basic attack: you pick the follower.** Tap the BASIC ATTACK card, then the follower who does it and the enemy it hits. (Of three offered: "You pick the follower", not the nearest follower, not everyone a little.)
+14. **The Ultimate meter fills from hits landed and taken**, as in real time now. (Of three offered: "From hits landed and taken", not a bit every turn, not from the cards played.)
+15. **The enemies' turns: one by one, a surprise.** After your card each enemy acts in turn, one after another; **their next moves are not shown ahead of time** (of three offered: "One by one, a surprise", not shown first, not all at once). *This changes the chosen screen (§2.9): its "their turn next" list keeps each enemy's health but not its next move, and no move is written over the enemies before they act. A hint short of the move (e.g. whom it will go for) is the owner's to add or not.*
+16. **RUN's cost: the enemies get a last hit.** You escape, but each enemy in the battle attacks once as you leave. (Of three offered: "Enemies get a last hit", not free but not from bosses, not completely free.)
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -67,11 +72,11 @@ None: nothing is built.
 ## 11. Open questions
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.
 2. ~~**The player's part in a battle**~~ *(answered 2026-11-17: commands only, §2.10)*.
-3. ~~**Ultimates**~~ *(answered 2026-11-17: charged by the meter, §2.11)*. Still open: how the meter fills turn by turn.
+3. ~~**Ultimates**~~ *(answered 2026-11-17: charged by the meter, §2.11; it fills from hits landed and taken, §2.14)*.
 4. **Targets:** with several enemies, how a card's target is chosen (tap the enemy after the card, or the card picks).
-5. ~~**Leaving a battle**~~ *(answered 2026-11-17: a RUN card, §2.12)*. Still open: its cost, if any.
+5. ~~**Leaving a battle**~~ *(answered 2026-11-17: a RUN card, §2.12; the enemies get a last hit, §2.16)*.
 6. **The numbers:** each card's recharge in turns, damage, how many cards show at once (all ready attacks, or a hand of a few).
-7. **Enemies' turns:** all at once or one by one; their order; how they show what they will do.
+7. ~~**Enemies' turns**~~ *(answered 2026-11-17: one by one, a surprise, §2.15)*. Still open: their order (fixed, by speed, or random).
 8. **The 2D game or the 3D one first:** the game is going 3D (`VIEW-3D.md`); the battle could be built in either.
 
 ## 12. History
