@@ -217,10 +217,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const along = o => (o.x - L.mx) * L.ux + (o.y - L.my) * L.uy, us = [], keys = new Set(), at = [];
             for (const [o, s] of _cb.slots) { us.push(Math.round(along(s) * 10)); keys.add(s.x + ',' + s.y); at.push(Math.hypot(o.x - s.x, o.y - s.y)); }
             const mine = [...followers.filter(f => _cb.slots.has(f)), player].map(along), theirs = [a, b, c].map(along);
-            return { n: _cb.slots.size, tiles: keys.size, cols: new Set(us).size, mineSide: mine.every(u => u < 0), theirSide: theirs.every(u => u > 0), at: Math.max(...at), axis: Math.abs(L.ux) + Math.abs(L.uy), dir: cardBattleCam() && cardBattleCam().dir, ux: L.ux, uy: L.uy }; })()`);
+            return { n: _cb.slots.size, tiles: keys.size, cols: new Set(us).size, mineSide: mine.every(u => u < 0), theirSide: theirs.every(u => u > 0), at: Math.max(...at), axis: Math.abs(L.ux) + Math.abs(L.uy), dir: cardBattleCam() && cardBattleCam().dir, ux: L.ux, uy: L.uy, skew: CARD_BATTLE.skew }; })()`);
         same(!!r.none, false, 'no line-up'); same(r.n, 7, 'three of yours, you and three enemies'); same(r.tiles, 7, 'each its own tile'); same(r.cols, 7, 'no two in one column across the line');
         same(r.mineSide, true, 'yours on one side'); same(r.theirSide, true, 'theirs on the other'); ok(r.at < 0.05, 'eased to their squares: ' + r.at); same(r.axis, 1, 'along a direction of the floor');
-        ok(Math.abs(Math.cos(r.dir) * r.ux + Math.sin(r.dir) * r.uy) < 1e-9, 'the camera looks across the line');
+        { const off = Math.asin(Math.max(-1, Math.min(1, -(Math.cos(r.dir) * r.ux + Math.sin(r.dir) * r.uy)))) * 180 / Math.PI; ok(Math.abs(off - r.skew) < 1e-6, 'the camera looks across the line, turned ' + r.skew + '° towards your side: ' + off); }
     });
     check('the one whose turn it is leaves its square to strike, and goes back to it after', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __live(90);

@@ -27,7 +27,7 @@ const CARD_BATTLE = {
     blackIn: 14, blackHold: 8, blackOut: 22,   // frames: the black coming, held (the move is made in it), going
     land: 2.2,                  // tiles in front of the creature where you land
     easeIn: 40, easeOut: 36,    // frames: the camera to the battle and back
-    pitch: 55,                  // degrees down (the game's own camera is 30): nearly top down, the tiles nearly square to lay the cards on (the owner, 2026-11-17: "still top down so I can lay the cards down on the almost completed tiles")
+    pitch: 50,                  // degrees down (the game's own camera is 30): nearly top down, the tiles nearly square to lay the cards on (the owner, 2026-11-17: "still top down so I can lay the cards down on the almost completed tiles")
     yaw: 0.6,                   // radians turned to the side
     zoom: 1.55,                 // nearer than the game's own camera
     leave: 14,                  // tiles: you walking this far from the fight ends it
@@ -36,7 +36,9 @@ const CARD_BATTLE = {
     every: 15,                  // frames between two refreshes of the battle screen (4 a second)
     lineGap: 2,                 // tiles from the middle of the line to the first of each side (lined up: the agent's)
     slide: 0.09,                // tiles a frame, easing to a square
-    fit: 0.88, zoomMin: 0.8,    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
+    skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
+    fit: 0.88, zoomMin: 0.8,
+    raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
     tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
@@ -371,11 +373,24 @@ function _cbTurnTick() {
     }
 }
 function _cbRefresh() { if (_cbEls) _cbEls.at = -1e9; }
+// the camera's direction lined up: across the line, from the side chosen (L.dir) or the nearer turn, turned `skew` towards your side (the side the line's -u points to)
+function _cbCamDir(L) {
+    const base = L.dir !== undefined ? L.dir : Math.atan2(L.ux, -L.uy), k = CARD_BATTLE.skew * Math.PI / 180;
+    for (const d of [base + k, base - k]) if (Math.cos(d) * -L.ux + Math.sin(d) * -L.uy > 0) return d;
+    return base;
+}
 // THE CAMERA, for the 3D view (view3d/gameview.js): null out of a battle; else how far in (k, eased), where it looks, how low, how turned, how near
 function cardBattleCam() {
     if (_cb.k <= 0.0001) return null;
     const L = _cb.lay;   // (lined up: it looks across the line, from one side or the other, whichever is the nearer turn: view3d/gameview.js)
-    return { k: _cbSmooth(_cb.k), x: _cb.cx, y: _cb.cy, pitch: CARD_BATTLE.pitch * Math.PI / 180, yaw: CARD_BATTLE.yaw, zoom: L && L.zoom ? L.zoom : CARD_BATTLE.zoom, dir: L ? (L.dir !== undefined ? L.dir : Math.atan2(L.ux, -L.uy)) : undefined, side: !!L && L.dir !== undefined };
+    let x = _cb.cx, y = _cb.cy;
+    if (L) {   // (the fight in the middle of the screen above the cards: the camera's aim moved towards it by half the band's height, on the floor)
+        const dir = _cbCamDir(L), z = L.zoom || CARD_BATTLE.zoom;
+        const band = _cbEls && _cbEls.band && _cbEls.band.getBoundingClientRect ? _cbEls.band.getBoundingClientRect().height : 250, r = typeof canvas !== "undefined" && canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
+        const px = band / 2 * (r && r.width ? canvas.width / r.width : 1), t = px / ((typeof TILE_W !== "undefined" ? TILE_W : 60) * Math.SQRT2 * z * Math.sin(CARD_BATTLE.pitch * Math.PI / 180));
+        if (Number.isFinite(t)) { x += Math.cos(dir) * t * CARD_BATTLE.raise; y += Math.sin(dir) * t * CARD_BATTLE.raise; }
+    }
+    return { k: _cbSmooth(_cb.k), x, y, pitch: CARD_BATTLE.pitch * Math.PI / 180, yaw: CARD_BATTLE.yaw, zoom: L && L.zoom ? L.zoom : CARD_BATTLE.zoom, dir: L ? _cbCamDir(L) : undefined, side: !!L && L.dir !== undefined };
 }
 // THE EDGES (js/game.js render, after the battle view's): the 3D picture's edges blurred (HIGH) and darkened, at the battle's strength. Built as the battle view builds its own (js/battleview.js:
 // a small copy scaled up, kept towards the edges by a ring), from the 3D view's canvas: drawn in the same frame the view drew it, so its picture is still there to copy.
