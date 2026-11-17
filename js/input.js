@@ -92,6 +92,7 @@ function followerPickDistance(ex, ey) {
 
 let playerShotsFired = 0;   // shots the player has fired (the tutorial's gun lesson counts them: js/tutorial.js)
 function firePlayerShot(foe) {
+    if (typeof cardBattleTurn === "function" && cardBattleTurn()) return;   // CARD BATTLES' turns: the cube commands only, its gun holds its fire (js/cardbattle.js, docs/CARD-BATTLES.md §2.10)
     if (!foe || foe.dead) return false;
     if (typeof weaponDef === "function" && weaponDef().kind === "hybrid" && typeof technoAttack === "function") return technoAttack(foe);   // the Technomancer's gauntlet: a punch in reach, an arc out of it (js/technomancer.js)
     if (typeof weaponMelee === "function" && weaponMelee() && typeof mutatorLash === "function") return mutatorLash(foe);   // a melee weapon in hand (the Mutator's lash): walk into reach, draw back, strike (js/mutator.js)

@@ -400,6 +400,7 @@ function followPlayer(actor) {
 
 // A step of a follower's mind, with two card attacks' marks (cardAttackTry): WRAITHFIRE's ghost moves itself (wraithfireTick), and a VOLTAGE FIELD's mark makes it faster for this step
 function updateNPC(actor) {
+    if (typeof cardBattleHolds === "function" && cardBattleHolds(actor)) return;   // CARD BATTLES' turns: everyone in the battle but the one whose turn it is holds still (js/cardbattle.js)
     if (actor && actor._wraith && typeof wraithfireTick === "function") { wraithfireTick(actor); return; }
     const v = actor && actor._voltUntil > (typeof frame !== "undefined" ? frame : 0) ? actor._voltMove || 1 : 1;
     if (v === 1) return _updateNPCStep(actor);
