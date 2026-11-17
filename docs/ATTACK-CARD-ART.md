@@ -15,6 +15,12 @@ The owner, 2026-11-17: "we're about to have to create a whole bunch of different
 - **Brawler cards:** **impact**: a **shattered screen**, the card **roughed up**.
 - **Technician cards** (the owner, 2026-11-17): "the technician cards are gonna be like surrounded by a very intact ring of crystals while they raise their claws or whatever they have": the follower **inside an unbroken ring of crystals**, **raising its claws** (or whatever limbs it has). The ring is whole and clean, the opposite of a Brawler's shattered card.
 
+## 2b. Basic attack cards (the owner, 2026-11-17)
+"Now do a different card for followers' basic attacks. You can use basically generic looking cards for this, but make them have a little bit of character for the different types of attacks that we have in the game."
+- **One generic card per attack type**, not per follower: no follower's model on them.
+- **The types:** the five the followers' basic attacks use (js/damage.js `DMG_FORM` `main`): **Slashing** (Frost Maw, Electro Skink, Seeper, Rift Mimic), **Piercing** (Quillstone, Hammer Slug, Thermite Burrower, Blight Spider, Sundew), **Crushing** (Static Orb, Goo Proxy, Hover Shell, Igloo Skater, Jelly Ram, Stonepetal), **Projectile** (Rimestar, Hornshell, Rotshard) and **Elemental** (Thunderhead, Voidstar, Ember Hood, Thornwhip). Earthquake is not a follower's basic attack (only the Kinetic Launcher's throw), so it has no card; the agent's reading, provisional.
+- **Generic, with a little character:** each card shows its type's kind of hit, simpler and calmer than the follower attack cards, one family.
+
 ## 3. Fixed and open
 **Fixed (the agent's reading of the brief and the project's rules, not new design):**
 - The follower in a card is its own 3-D model (`design/evolutions/`), posed mid-attack, never redrawn.
