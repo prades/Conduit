@@ -295,6 +295,19 @@ const SAMPLES = {
     tone: { sky: '#14030c', hz: ['rgba(58,10,38,0)', 'rgba(80,16,52,0.85)', '#3a0a26'], hot: '255,230,242', halo: 'rgba(10,2,6,1)', chip: ['#7a4a5e', '#3a1a2a', '#0a0306', 'rgba(255,122,184,0.35)'], vig: 'rgba(10,2,6,0.65)', foot: ['rgba(12,3,8,0)', 'rgba(12,3,8,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 0.9, '#ffc2e0'] },   // (the garden dimmed, a pink glow and a pale-pink edge round it: its dark blade-leaf and stem read against the garden)
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
   },
+  // ---------- FOLLOWERS, ROUND 5 (2026-11-17: the owner of round 4, "Keep going"): the last four ----------
+  rotshard_rottendecoy: {
+    style: 'toxic', form: 945, color: '#14c040', rim: '#7dff6a', fx: '#66ff66', world: 'toxic', seed: 945,
+    pose: { t: 0.55, act: 0, v: { split: 1, go: 0.45 } }, yaw: 0.6,
+    decoy: { form: 101, at: [2.66, 0.37], sink: 0.35, yaw: 0.4, split: true, lightK: 0.32 },
+    lights: { hemi: [0x90c090, 0x041a06, 0.5], key: [0xf0fff0, 1.0], rim: 2.6, back: 1.4, low: [0x66ff66, 1.5, 0, 1.6, 2.6] },
+    cam: { pos: [-0.2, 1.5, 7.6], look: [0.8, 0.4, 0], fov: 40, roll: -0.27 },
+    toxic: { dim: 0.4, floorDim: 0.5, glow: 0.5, inner: 0.3, edge: [3, 0.6, '#b8ff9a'], blackEdge: [2, 0.55, '#c8d4cc'], bodyArcs: 4, edgeArcs: 12, bubbles: 16,
+      burst: { from: [0.47, 0.57], dir: -1.95, spread: 2.8, reach: 330, n: 45, flash: 80 }, maxY: 0.6,   // (the poison thrown up out of its pool where the crystal tears free)
+      mid: [[0.5, 0.22, 11, -1.2], [0.6, 0.36, 8, -0.6], [0.42, 0.12, 9, -1.8], [0.68, 0.17, 7, -0.9]],   // (nearer drops, in focus, flying at the lens in the gap between it and the decoy)
+      lensDrops: [[0.13, 0.09, 30, -2.2], [0.93, 0.33, 22, -0.5], [0.64, 0.04, 16, -1.3], [0.03, 0.6, 20, 2.6]], lensBubbles: [[0.8, 0.12, 24], [0.32, 0.03, 14]], lensBlur: 3.5,
+      lens: [{ w: 4.5, pts: [[470, 160], [410, 110], [380, 40], [330, -10]], forks: 3 }, { w: 3.5, pts: [[-20, 140], [25, 80], [15, 20], [60, -10]], forks: 2 }] },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -1094,6 +1107,89 @@ function BLOOM_MAGE(o) {
   return { png: out.toDataURL('image/png'), info };
 }
 
+// ---------- A TOXIC MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the swamp: followers round 5, 2026-11-17): the toxic energy card's world (its swamp) behind, tilted
+// with the horizon; the follower CHARGED with toxic (a dark halo, its silhouette glowing green, a green light inside its crystal, crackles of flat neon green over it: the owner's look for its
+// CORRODE SHOT, 2026-11-12, "Crackling with neon, bright neon green, but no gradient just highlighter color"); its black pieces (P.decoy: the decoy and the crystal breaking free) in a layer of
+// their own with no green glow round them (the owner, 2026-11-09: "I don't like the green aura"), only a thin neutral edge; and in the very front of the card, the focus, the poison thrown as the
+// crystal tears free: drops of toxic ooze flung out of its pool at the lens (the nearest huge and out of focus), bubbles, and neon crackles snapping across the front. Run in the page (its source is
+// put there with toString), after the 3-D renders.
+function TOXIC_MAGE(o) {
+  const { W, H, R, cv, model, blackCv, floorCv, pr, hzAt, slope, up, info, P, heart } = o, PI = Math.PI, TAU = 2 * PI, Q = P.toxic, glowCv = o.glowCv || model;
+  const out = cv(), g = out.getContext('2d');
+  const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
+  const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const Gr = a => 'rgba(102,255,102,' + a + ')', Gw = a => 'rgba(225,255,215,' + a + ')', NEON = '#9dff3c';   // (toxic's colour, js/config.js ELEMENTS #66ff66, its white-hot green, and a flat highlighter neon)
+  const stroke = (G, pts, w, col) => { G.strokeStyle = col; G.lineWidth = w; G.lineJoin = 'round'; G.lineCap = 'round'; G.beginPath(); pts.forEach(([x, y], i) => i ? G.lineTo(x, y) : G.moveTo(x, y)); G.stroke(); };
+  const jag = (pts, amp, depth) => { let p = pts; for (let d = 0; d < depth; d++) { const q = [p[0]]; for (let i = 1; i < p.length; i++) { const [x0, y0] = p[i - 1], [x1, y1] = p[i], L = Math.hypot(x1 - x0, y1 - y0) || 1, k = (R() - 0.5) * amp * L / 60;
+    q.push([(x0 + x1) / 2 - (y1 - y0) / L * k, (y0 + y1) / 2 + (x1 - x0) / L * k], [x1, y1]); } p = q; amp *= 0.62; } return p; };
+  const crackle = (G, pts, w, a) => { G.save(); G.globalAlpha = a; G.globalCompositeOperation = 'lighter'; G.filter = 'blur(' + (2 + w * 2) + 'px)'; stroke(G, pts, w * 3.5, Gr(0.35)); G.filter = 'none'; G.globalCompositeOperation = 'source-over'; stroke(G, pts, w, NEON); G.restore(); };   // (flat neon, a soft glow under it)
+  const mask = (src, blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(src, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
+  const drop = (G, x, y, r, ang, stretch) => { G.save(); G.translate(x, y); G.rotate(ang);   // (a drop of ooze: a teardrop along its flight, dark green at its tail, bright at its head, a white glint)
+    const gr = G.createLinearGradient(-r * stretch, 0, r, 0); gr.addColorStop(0, 'rgba(20,90,20,0)'); gr.addColorStop(0.5, 'rgba(60,200,50,0.9)'); gr.addColorStop(0.85, '#8dff70'); gr.addColorStop(1, '#d8ffc8'); G.fillStyle = gr;
+    G.beginPath(); G.moveTo(-r * stretch, 0); G.quadraticCurveTo(-r * 0.2, -r, r * 0.4, -r * 0.95); G.arc(r * 0.4, 0, r * 0.95, -PI / 2, PI / 2); G.quadraticCurveTo(-r * 0.2, r, -r * stretch, 0); G.fill();
+    G.fillStyle = 'rgba(240,255,235,0.9)'; G.beginPath(); G.arc(r * 0.6, -r * 0.35, r * 0.22, 0, TAU); G.fill(); G.restore(); };
+  const bubble = (G, x, y, r) => { G.save(); G.fillStyle = 'rgba(60,200,50,0.18)'; G.strokeStyle = Gw(0.7); G.lineWidth = Math.max(0.8, r * 0.09); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); G.stroke();
+    G.fillStyle = 'rgba(245,255,240,0.85)'; G.beginPath(); G.ellipse(x - r * 0.38, y - r * 0.4, r * 0.24, r * 0.14, -0.7, 0, TAU); G.fill(); G.restore(); };
+  // 1. FAR: the toxic energy card's world (its swamp: js/energygem.js, with that card's own seed), tilted with the horizon, softened, dimmed so the follower and the black decoy read
+  const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
+  g.fillStyle = '#020902'; g.fillRect(0, 0, W, H);
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.filter = 'blur(2px)'; const k = 1.55; g.drawImage(ws, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.filter = 'none';
+  g.globalAlpha = 0.7; g.drawImage(wm, -225 * k, -630 * 0.74 * k, 450 * k, 630 * k); g.restore(); g.globalAlpha = 1;
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -150, 0, 40); lg.addColorStop(0, 'rgba(10,42,10,0)'); lg.addColorStop(0.75, 'rgba(16,64,14,0.85)'); lg.addColorStop(1, '#0a2a0a');
+  g.fillStyle = lg; g.fillRect(-W, -150, 2 * W, 190); g.restore();
+  g.fillStyle = 'rgba(0,0,0,' + (Q.dim == null ? 0.35 : Q.dim) + ')'; g.fillRect(0, 0, W, H);
+  // 2. THE FLOOR (3-D, darkened so the poison is the light), a line of the swamp's light along the horizon (so the tilt reads), a glow round the follower (not the decoy)
+  { const fl = cv(), fc = fl.getContext('2d'); fc.drawImage(floorCv, 0, 0); fc.globalCompositeOperation = 'source-atop'; fc.fillStyle = 'rgba(1,8,1,' + (Q.floorDim == null ? 0.5 : Q.floorDim) + ')'; fc.fillRect(0, 0, W, H); g.drawImage(fl, 0, 0); }
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
+  for (const [h, a] of [[30, 0.1], [10, 0.22], [2.5, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, Gr(0)); lb.addColorStop(0.5, h < 4 ? Gw(a) : Gr(a)); lb.addColorStop(1, Gr(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rad(g, heart[0], heart[1], 200, [[0, Gr(0.14)], [0.45, Gr(0.04)], [1, Gr(0)]]); g.fillRect(0, 0, W, H); g.restore();
+  // 3. THE FOLLOWER, CHARGED: a dark halo, its silhouette glowing green (wide and tight) and a thin bright edge, its own render, a green light inside it (strongest at its heart), flat neon crackles
+  //    over it and off its edges, bubbles rising off it
+  g.save(); g.globalAlpha = 0.85; g.drawImage(mask(model, 14, 'rgba(0,8,0,1)'), 0, 6); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.glow == null ? 0.6 : Q.glow; g.drawImage(mask(glowCv, 22, '#33dd33'), 0, 0); g.globalAlpha = 0.5; g.drawImage(mask(glowCv, 6, '#7dff6a'), 0, 0); g.restore();
+  if (Q.edge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.edge[1]; g.drawImage(mask(glowCv, Q.edge[0], Q.edge[2]), 0, 0); g.restore(); }
+  const md = glowCv.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const mm = model.getContext('2d').getImageData(0, 0, W, H).data, Am = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : mm[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];   // (the whole follower, its shell shard too: nothing thrown lands on it)
+  const bd = blackCv ? blackCv.getContext('2d').getImageData(0, 0, W, H).data : null, Bk = (x, y) => !bd || x < 0 || y < 0 || x >= W || y >= H ? 0 : bd[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  const edges = []; for (let y = 2; y < H - 2; y += 2) for (let x = 2; x < W - 2; x += 2) { if (A(x, y) > 120 && (A(x - 3, y) < 40 || A(x + 3, y) < 40 || A(x, y - 3) < 40 || A(x, y + 3) < 40)) edges.push([x, y]); }
+  const inside = []; for (let y = 2; y < H - 2; y += 4) for (let x = 2; x < W - 2; x += 4) if (A(x, y) > 200 && y < (Q.innerMaxY || H) * 1) inside.push([x, y]);
+  for (let i = 0; i < (Q.edgeArcs || 14); i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const a = Math.atan2(e[1] - heart[1], e[0] - heart[0]) + (R() - 0.5) * 0.9, len = 14 + R() * 34, e1 = [e[0] + Math.cos(a) * len, e[1] + Math.sin(a) * len];
+    if (Bk(e1[0], e1[1]) > 20) continue; crackle(g, jag([e, e1], 30, 3), 1 + R() * 0.8, 0.9); }
+  g.drawImage(model, 0, 0);
+  { const ig = cv(), ic = ig.getContext('2d'); ic.fillStyle = rad(ic, heart[0], heart[1], 130, [[0, 'rgba(220,255,210,0.8)'], [0.35, Gr(0.45)], [1, Gr(0.05)]]); ic.fillRect(0, 0, W, H);
+    ic.globalCompositeOperation = 'destination-in'; ic.drawImage(glowCv, 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.inner == null ? 0.45 : Q.inner; g.drawImage(ig, 0, 0); g.restore(); }
+  { const cc = cv(), c2 = cc.getContext('2d');   // (crackles over its body, clipped to it)
+    for (let i = 0; i < (Q.bodyArcs || 4); i++) { const a = inside[Math.floor(R() * inside.length)], b = inside[Math.floor(R() * inside.length)]; if (!a || !b || Math.hypot(a[0] - b[0], a[1] - b[1]) < 40) { i -= 0.5; continue; } crackle(c2, jag([a, b], 40, 4), 1.1 + R() * 0.6, 1); }
+    c2.globalCompositeOperation = 'destination-in'; c2.drawImage(glowCv, 0, 0); g.drawImage(cc, 0, 0); }
+  for (let i = 0; i < (Q.bubbles || 14); i++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 6 + R() * 60, x = e[0] + up[0] * d + (R() - 0.5) * 16, y = e[1] + up[1] * d; if (Bk(x, y) > 20 || Am(x, y) > 20) continue; bubble(g, x, y, 1.5 + R() * 3.5); }
+  // 4. ITS BLACK PIECES (the decoy rising, the crystal breaking free): a dark halo, a thin neutral edge, their own render; no green glow round them
+  if (blackCv) { g.save(); g.globalAlpha = 0.7; g.drawImage(mask(blackCv, 10, 'rgba(0,4,0,1)'), 0, 4); g.restore();
+    if (Q.blackEdge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Q.blackEdge[1]; g.drawImage(mask(blackCv, Q.blackEdge[0], Q.blackEdge[2]), 0, 0); g.restore(); }
+    g.drawImage(blackCv, 0, 0); }
+  // 5. NEAR: the poison thrown as the crystal tears free (Q.burst: where on the picture, from the follower's pool): drops of ooze flung out and at the lens, bigger the further out (nearer the
+  //    lens), never on the follower or the decoy; the nearest at the lens, big and out of focus; bubbles; and flat neon crackles snapping across the very front (Q.lens: [[x, y], ...] on the picture)
+  const S = [Q.burst.from[0] * W, Q.burst.from[1] * H], fly = cv(), fg = fly.getContext('2d');
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(g, S[0], S[1], Q.burst.flash || 70, [[0, Gw(0.35)], [0.35, Gr(0.2)], [1, Gr(0)]]); g.restore();
+  for (let i = 0; i < Q.burst.n; i++) { const a = Q.burst.dir + (R() - 0.5) * Q.burst.spread, d = 20 + Math.pow(R(), 0.8) * Q.burst.reach, x = S[0] + Math.cos(a) * d, y = S[1] + Math.sin(a) * d - d * d * 0.0006, r = 2 + (d / Q.burst.reach) * (4 + R() * 9);
+    if (y > H * (Q.maxY || 0.66) || y < 0 || x < 0 || x > W || Am(x, y) > 20 || Bk(x, y) > 20) continue; drop(fg, x, y, r, a, 2.2 + R() * 2.5); }
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(6px)'; g.globalAlpha = 0.5; g.drawImage(fly, 0, 0); g.restore(); g.drawImage(fly, 0, 0);
+  (Q.mid || []).forEach(([x, y, r, a]) => { g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(' + (r * 0.5) + 'px)'; blob(g, x * W, y * H, r * 2, [[0, Gr(0.3)], [1, Gr(0)]]); g.restore(); drop(g, x * W, y * H, r, a, 3); });
+  { const nr = cv(), ng = nr.getContext('2d'); (Q.lensDrops || []).forEach(([x, y, r, a]) => drop(ng, x * W, y * H, r, a, 3.2)); (Q.lensBubbles || []).forEach(([x, y, r]) => bubble(ng, x * W, y * H, r));
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(10px)'; g.globalAlpha = 0.6; g.drawImage(nr, 0, 0); g.restore();
+    g.save(); g.filter = 'blur(' + (Q.lensBlur || 4) + 'px)'; g.drawImage(nr, 0, 0); g.restore(); }
+  (Q.lens || []).forEach(L => { const pts = jag(L.pts, 70, 5); crackle(g, pts, L.w, 1); for (let f = 0; f < (L.forks || 0); f++) { const p0 = pts[Math.floor(R() * pts.length)], a = R() * TAU, len = 30 + R() * 60; crackle(g, jag([p0, [p0[0] + Math.cos(a) * len, p0[1] + Math.sin(a) * len]], 50, 3), L.w * 0.45, 0.9); } });
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 8; i++) { const x = R() * W, y = R() * H * 0.6, r = 10 + R() * 22; blob(g, x, y, r, [[0, Gr(0.12)], [0.75, Gr(0.08)], [1, Gr(0)]]); }
+  g.restore();
+  // 6. THE GRADE: a vignette, darker at the foot (the name plate reads over it)
+  g.save(); g.fillStyle = rad(g, W * 0.55, H * 0.4, H * 0.75, [[0.5, 'rgba(0,0,0,0)'], [1, 'rgba(1,8,1,0.6)']]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.7, 0, H); lg.addColorStop(0, 'rgba(1,8,1,0)'); lg.addColorStop(1, 'rgba(1,8,1,' + (Q.foot == null ? 0.5 : Q.foot) + ')'); g.fillStyle = lg; g.fillRect(0, H * 0.7, W, H * 0.3); g.restore();
+  return { png: out.toDataURL('image/png'), info };
+}
+
 // ---------- THE SUNDEW'S STING on a Brawler card (followers round 4; docs/COMBAT.md: NECTAR STING, its blade-leaf's sting): the moment its blade-leaf strikes the glass: a pink flash at its point,
 // sparks of bloom's light and drops of nectar thrown out from it, a few petals shaken loose; none on its body. Called by BRAWLER after the follower is drawn, before the glass breaks.
 function STING_BURST(o) {
@@ -1246,6 +1342,7 @@ ${ZIG_DASH.toString()}
 ${RIFT_GLITCH.toString()}
 ${CORE_MAGE.toString()}
 ${BLOOM_MAGE.toString()}
+${TOXIC_MAGE.toString()}
 ${STING_BURST.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
@@ -1351,6 +1448,18 @@ window.__card = async function (P, W, H, modelOnly) {
     B.g.traverse(m => { if (!m.isGroup || !m.parent || !m.children.some(k => k.isMesh && k.geometry.type === 'ConeGeometry')) return; const k = Math.round(m.parent.rotation.y / (PI / 2));
       if (Math.abs(m.parent.rotation.y - k * PI / 2) < 1e-6 && k % 2 === 1) m.rotation.x -= P.spikes.up; }); }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
+  // ROTTEN DECOY'S BLACK PIECES (followers round 5, the Rotshard): the decoy, the game's own black Rotshard (design/effects/bake_fx.js rotdecoy, approved in the game 2026-11-09: "Approve the black decoy"):
+  // the Rotshard's own model (No. 101) all in its old shell's glassy black, its pool tar-black, its glows, washes and light off, only its shell shard's hairline green crack kept; rising out of the floor
+  // where it is set (P.decoy: its place in the follower's own space, how far it is still sunk, its turn). And the second black crystal breaking free of the Rotshard's pool (its own model's split).
+  // Both are drawn in a layer of their own, never inside the follower's green glow (the owner, 2026-11-09: "I don't like the green aura"), lit by a neutral light at their edges, not green.
+  const blackG = new T.Group(), blackParts = [];
+  if (P.decoy) { const Q = P.decoy, glass = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); glass.envMapIntensity = 1.7;
+    const tar = new T.MeshPhysicalMaterial({ color: 0x030303, metalness: 0.05, roughness: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.35 }); tar.envMapIntensity = 0.35;
+    const D = FORMS2[Q.form].build(); D.update(P.pose.t, 0); D.g.traverse(o => { if (o.isSprite || o.isLight) { o.visible = false; if (o.isLight) o.intensity = 0; return; } if (!o.isMesh) return; const m = o.material;
+      if (m === M.glow) return; if (m.transparent || m.blending === T.AdditiveBlending) { o.visible = false; return; } o.material = (m === M.slurry || m === M.rotDk) ? tar : glass; });
+    const c = Math.cos(P.yaw), s = Math.sin(P.yaw); D.g.position.set(Q.at[0] * c + Q.at[1] * s, -Q.sink, -Q.at[0] * s + Q.at[1] * c); D.g.rotation.y = Q.yaw; blackG.add(D.g); scene.add(blackG); }
+  if (P.decoy && P.decoy.split) { const bb = B.g.children[0], sp = bb.children.find(c => c.isGroup && c.visible && c.children.length === 2 && c.children.every(k => k.isGroup));   // (its split: two crossed plates of the old black shell)
+    if (sp) { sp.traverse(k => { if (k.isMesh) k.material = k.material.clone(); }); blackParts.push(sp); } }   // (its own copy of the shell's black: the follower can be drawn depth-only while it is drawn)
   // THE RING OF CRYSTALS (a Technician card, the owner, 2026-11-17: "surrounded by a very intact ring of crystals"): the game's own crystal (hexCrystal: a six-sided prism with
   // pointed ends, the element's colour, its edges white) set all round the follower on the floor, every one whole; tall at the back and sides, short at the front so the follower shows over them.
   const ringG = new T.Group(), ringTips = []; if (P.ring) { const Q = P.ring, cdir = Math.atan2(P.cam.pos[0], P.cam.pos[2]);
@@ -1452,14 +1561,21 @@ window.__card = async function (P, W, H, modelOnly) {
     place(iceG, Q.icicles, false); place(iceNearG, Q.near || [], true);
     iceG.visible = iceNearG.visible = false; scene.add(iceG); scene.add(iceNearG); }
   const grab = () => { renderer.render(scene, cam); const c = cv(); const g = c.getContext('2d'); g.imageSmoothingQuality = 'high'; g.drawImage(renderer.domElement, 0, 0, W, H); return c; };
-  B.g.visible = false; ringG.visible = false; const floorCv = grab();
+  B.g.visible = false; ringG.visible = false; blackG.visible = false; const floorCv = grab();
   B.g.visible = true; ringG.visible = true; glowUnder.visible = false;
   if (P.style === 'brawler' || P.style === 'tech') { floor.material.colorWrite = false; floor.renderOrder = -1; } else floor.visible = false;   // (a Brawler sits ON the floor, sunk into it: the floor hides what is under it (its cave's lower half) but is not drawn)
-  const model = grab();
+  let glowCv = null; if (P.decoy) {   // (the follower without its own black shell shard, for its glows: no green haze round black shell)
+    const hid = []; B.g.traverse(m => { if (m.isMesh && m.material === M.black && m.parent && m.parent.visible) { hid.push(m.parent); } }); hid.forEach(q => { q.visible = false; }); blackParts.forEach(sp => { sp.visible = false; }); glowCv = grab(); hid.forEach(q => { q.visible = true; }); }
+  blackParts.forEach(sp => { sp.visible = false; }); const model = grab(); blackParts.forEach(sp => { sp.visible = true; }); blackG.visible = true;   // (the follower alone: its black pieces are drawn in a layer of their own)
   let swirlCv = null, nearCv = null; if (P.swirl) {   // (the swirl where it shows: the follower drawn depth-only, hiding what is behind it; then the nearest crystals alone)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
     swirlG.visible = true; swirlCv = grab(); swirlG.visible = false; B.g.visible = false; nearG.visible = true; nearCv = grab(); nearG.visible = false; B.g.visible = true; cw.forEach(([x, v]) => { x.colorWrite = v; }); }
   let iceCv = null, iceNearCv = null; if (P.volley) { B.g.visible = false; iceG.visible = true; iceCv = grab(); iceG.visible = false; if ((P.volley.near || []).length) { iceNearG.visible = true; iceNearCv = grab(); iceNearG.visible = false; } B.g.visible = true; }   // (the icicles alone: they fly in front of it)
+  let blackCv = null; if (P.decoy) {   // (the black pieces alone: the follower drawn depth-only, hiding what is behind it, the floor depth-only, hiding the decoy's sunk part; lit neutral at their edges)
+    const cw = []; B.g.traverse(m => { if (m.material && !blackParts.some(sp => { let q = m; while (q) { if (q === sp) return true; q = q.parent; } return false; })) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
+    const fv = floor.visible, fcw = floor.material.colorWrite; floor.visible = true; floor.material.colorWrite = false; floor.renderOrder = -1; const rc = rim.color.clone(), bc = back.color.clone(), lc = lava.color.clone();
+    rim.color.set(P.decoy.light || 0xdfe6e2).multiplyScalar(P.decoy.lightK || 1); back.color.set(P.decoy.light || 0xdfe6e2).multiplyScalar(P.decoy.lightK || 1); lava.color.set(P.decoy.light || 0xdfe6e2).multiplyScalar(P.decoy.lightK || 1);
+    blackCv = grab(); rim.color.copy(rc); back.color.copy(bc); lava.color.copy(lc); floor.visible = fv; floor.material.colorWrite = fcw; cw.forEach(([x, v]) => { x.colorWrite = v; }); }
   let ringCv = null, bodyCv = null; if (P.ring) {   // (the ring where it shows (the follower drawn depth-only, hiding what is behind it) and the follower alone, for their glows)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
     ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; }
@@ -1472,12 +1588,13 @@ window.__card = async function (P, W, H, modelOnly) {
   const hzAt = x => hA[1] + (x - hA[0]) * Math.tan(slope);   // the horizon's height at x
   const up = [Math.sin(slope), -Math.cos(slope)];   // the world's up, on the picture (square to the horizon)
   const info = { heart: heart.map(Math.round), foot: foot.map(Math.round), horizonDeg: +(slope * 180 / PI).toFixed(1), horizonMid: Math.round(hzAt(W / 2)) };
-  if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); return { png: c.toDataURL('image/png'), info }; }
+  if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); if (blackCv) g.drawImage(blackCv, 0, 0); return { png: c.toDataURL('image/png'), info }; }
   if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
   if (P.style === 'ice') { const k0 = Math.max(...iceAxes.map(q => q[2])); return ICE_MAGE({ W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, B, heart, iceTips: iceAxes.map(([a, b, sc]) => [pr([a.x, a.y, a.z]), pr([b.x, b.y, b.z]), sc / k0]) }); }
   if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
   if (P.style === 'core') return CORE_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
   if (P.style === 'bloom') return BLOOM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
+  if (P.style === 'toxic') return TOXIC_MAGE({ W, H, R, cv, model, glowCv, blackCv, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'storm') return STORM_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart });
   if (P.style === 'brawler') return BRAWLER({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, mouthAt: P.impact ? pr(P.impact) : heart });
 
