@@ -64,6 +64,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Corrected** (the owner, the same day: "The basic attack should just be like another card ... obviously every creature has it"): **each follower has its own basic attack card** in its column, always ready; no shared squad card, no picking a follower for it. Supersedes "the basic attack: you pick the follower" (§2.13) and SQUAD ROWS' single basic attack card (`CARD-BATTLES.md` §2.25).
 - **The camera** (the owner, the same day): **entering a battle, the camera shifts its angle** as well as zooming in; the angle to be shown in the first playable step (`CARD-BATTLES.md` §2.26). A battle-only move: the 3D test page's answer for exploring (the camera stays near the player, 2026-11-16) stands.
 - **A far enemy** (the owner, the same day): choosing one, the player walks towards it, the screen goes black, and the player (with the squad) is teleported right in front of the creature in the battle screen; a near enemy or one that attacks starts the battle where you stand (`CARD-BATTLES.md` §2.27).
+- **Both at once** (the owner, the same day: "There's still interactions that go on in the background, fighting. That way you have it to where it can hold the fort"): your battle is turn-based while the world outside it runs in real time; followers holding a room defend it on their own (`CARD-BATTLES.md` §2.28).
 
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 

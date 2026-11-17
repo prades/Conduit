@@ -48,6 +48,9 @@ function cardBattleBlack() { return _cb.black; }   // the black's strength, 0 to
 function cardBattleShown() { return cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black"; }   // is the battle screen up (body.cb-on)?
 function cardBattleIn(a) { return cardBattleActive() && _cb.foes.indexOf(a) >= 0; }
 function _cbFoeOk(a) { return !!a && !a.dead && !a.isClone && a.team !== "green" && !a.untargetable && !(a.health <= 0) && (typeof Predator === "undefined" || a instanceof Predator); }
+// THE BATTLE'S OWN SIDE: you, your squad's members and the Mutator's clone. Followers holding a room (HOLD) are not in it: the rest of the world goes on in real time while you battle, and they
+// hold the fort (§2.28, the owner: "Both at once")
+function _cbMine(a) { if (!a) return false; if (typeof player !== "undefined" && a === player) return true; if (typeof partyIsMember === "function" && partyIsMember(a)) return true; const c = typeof partyClone === "function" ? partyClone() : null; return !!c && a === c; }
 function _cbSquad() { const m = typeof partyMembers === "function" ? partyMembers().filter(f => f && !f.dead) : []; const c = typeof partyClone === "function" ? partyClone() : null; if (c && !c.dead) m.push(c); return m; }
 // the creatures in a battle with `foe`: it, and the others round it, nearest first
 function _cbGroup(foe) {
@@ -66,7 +69,7 @@ function _cbSettle() {
     for (const a of (typeof actors !== "undefined" ? actors : [])) {
         if (!a || a.dead || !(typeof Predator === "undefined" || a instanceof Predator) || a.team === "green") continue;
         if (_cb.foes.indexOf(a) >= 0) { a.provoked = true; if (a.state === "wander") a.state = "hunt"; continue; }
-        const t = a.currentTarget; if (t && (t === player || t.team === "green")) { a.currentTarget = null; a.biteTarget = null; }
+        const t = a.currentTarget; if (t && _cbMine(t)) { a.currentTarget = null; a.biteTarget = null; }   // (one going for a follower holding a room keeps at it: §2.28)
     }
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
@@ -92,15 +95,15 @@ function cardBattleChoose(foe) {
 function cardBattleHit(target, source) {
     if (!cardBattleOn() || cardBattleActive() || !target || !source) return;
     const src = typeof predatorSource === "function" ? predatorSource(source) : source;
-    const ours = (typeof player !== "undefined" && target === player) || target.team === "green" || target.isFollower === true;
+    const ours = _cbMine(target);   // (you or your squad: a follower holding a room fights its own fight, §2.28)
     if (!ours || !_cbFoeOk(src)) return;
     if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return;   // (the battle just ended: its creatures' last blows start nothing)
     _cbBegin(src, false);
 }
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
-function cardBattleBars(p) { return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }
+function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
-function cardBattleMayTarget(a) { return !cardBattleActive() || _cb.foes.indexOf(a) >= 0; }
+function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; return !cardBattleActive() || _cb.foes.indexOf(a) >= 0; }   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
 
 // THE MOVE IN THE BLACK: you in front of the creature, your squad round you
 function _cbLand() {

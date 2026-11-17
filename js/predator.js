@@ -14,7 +14,7 @@ function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x,
 function predatorAlarm(p) { return (!!alertActive || !!(p && p.raid)) && !(p && (p.bossAsleep || p.bossCalm)); }   // (a raider of an ANT RAID is alarmed on its own: js/antraids.js)
 function predatorPreyOk(p, a) {
     if (!a || a.dead) return false;
-    if (typeof cardBattleBars === "function" && cardBattleBars(p)) return false;   // CARD BATTLES: a creature not in the battle walks past (js/cardbattle.js)
+    if (typeof cardBattleBars === "function" && cardBattleBars(p, a)) return false;   // CARD BATTLES: a creature not in the battle walks past (js/cardbattle.js)
     if (typeof player !== "undefined" && a === player) return typeof predatorMayHurtPlayer !== "function" || predatorMayHurtPlayer();
     return a.team === "green" && !isNeutralBystander(a) && !((a.spawnProtection || 0) > 0) && !a.untargetable && !a.dismissed && Number.isFinite(a.x);
 }

@@ -69,6 +69,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.inPrey, true, 'one in it may go for you'); same(r.outPrey, false, 'one outside goes for you'); same(r.outFol, false, 'one outside goes for your squad'); same(r.target, false, 'one outside kept you as its target');
         same(r.mayIn, true, 'your squad may go for one in it'); same(r.mayOut, false, 'your squad goes for one outside'); same(r.gun, true, 'your gun picks one outside');
     });
+    check('the world goes on (§2.28, the owner: "Both at once"): a follower holding a room (HOLD) is not in the battle: creatures outside it may still go for it, it fights them, and their hits on it start no battle', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const F = partyMembers(), held = F[2]; partyApplyStance([held], 'hold');
+            const o = { posted: !!held.post, member: partyIsMember(held) }; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); const out = __ant(held.x + 1.5, held.y);   // (after the battle began: not one of it)
+            o.preyHeld = predatorPreyOk(out, held); o.preySquad = predatorPreyOk(out, partyMembers()[0]); o.heldMay = cardBattleMayTarget(out, held); o.squadMay = cardBattleMayTarget(out, partyMembers()[0]);
+            cardBattleRun(); __ticks(CARD_BATTLE.easeOut + CARD_BATTLE.calm + 4); applyDamage(held, 1, out); o.started = cardBattlePhase(); return o; })()`);
+        same(r.posted, true, 'held'); same(r.member, false, 'still in the squad');
+        same(r.preyHeld, true, 'a creature outside may go for the one holding a room'); same(r.preySquad, false, 'nor for your squad'); same(r.heldMay, true, 'the one holding a room fights it'); same(r.squadMay, false, 'your squad does not');
+        same(r.started, 'off', 'a hit on the one holding a room started a battle');
+    });
     check('RUN ends it (§2.12): the camera eases back, and the creatures of the battle start nothing and go for nobody for a while; then all as ever', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(CARD_BATTLE.easeIn + 2);
             const o = { ran: cardBattleRun(), p: cardBattlePhase() }; applyDamage(player, 1, a); o.after = cardBattlePhase(); o.prey = predatorPreyOk(a, player); o.calmed = !a.provoked;
@@ -109,7 +118,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
         ok(/<script src="js\/cardbattle\.js\?v=/.test(html) && /"js\/cardbattle\.js": "CARD_BATTLE"/.test(html), 'the page');
         ok(/cardBattleTap\(ex, ey\)/.test(rd('js/targeting.js')) && /cardBattleMayTarget/.test(rd('js/targeting.js')), 'the tap and the gun');
-        ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a\)/.test(rd('js/npc.js')), 'the squad');
+        ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
     });

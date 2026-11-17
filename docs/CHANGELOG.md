@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17f` · branch `claude/friendly-thompson-w581x0` · card battles: the world goes on while you battle (followers holding a room hold the fort)
+- **The ask** (the owner: "There's still interactions that go on in the background, fighting. That way you have it to where it can hold the fort"; of three offered, "Both at once").
+- **What it does, with `?cards` and `?engine=3d`:** during a card battle only you and your squad are kept out of the world's fights. A follower holding a room (HOLD) still defends it in real time: creatures may go for it and it fights them, and their hits on it start no battle. (In step 1 every follower was kept out.)
+- `js/cardbattle.js`, `js/predator.js`, `js/npc.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` (§2.28, §9).
+- **Verified:** tests/cardbattle.js (13 checks) and the full suite. **Not playtested.**
+
 ### Build `2026-11-17e` · branch `claude/friendly-thompson-w581x0` · card battles, step 2: the battle screen (SQUAD ROWS) with each follower's cards (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner: carry on with card battles, "2"; the 3D rooms are another session's).
 - **What it does, only with `?cards` and `?engine=3d`, in a battle:** the band along the bottom has a column for each squad member (picture, name, level, health) with **its own cards**: its BASIC ATTACK (always ready; a Mage's named shot where it has one), each second attack it may use (its effect, RECHARGE n TURNS from its wait time at 2 s a turn, READY or the turns left), and its Ultimate (by its meter, READY when full). The enemies' names and health are listed at the top right, RUN under them. The rest of the bottom HUD, the room's tag and the network panel make way. **The cards are not played yet; no turns** (step 3).
