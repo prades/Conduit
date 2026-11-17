@@ -140,6 +140,11 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   out.swipe = [sw(10, 0, 2, 40), sw(150, 4, 10, 40), sw(-64, 0, 8, 40), sw(-40, 0, 2, 10), sw(6, 170, 10, 40), sw(150, 0, 10, 40, true)];
   _v3twoStart([500, 400], [600, 400]); _v3twoMove([450, 380], [650, 420]); out.pinch = [+VIEW3D.zoom.toFixed(2), VIEW3D.twist, VIEW3D.turn];
   VIEW3D.turn = 0; VIEW3D.zoom = 1; V.show(true); step(2);
+  // EVERY FOLLOWER'S BODY (the owner, 2026-11-17: "it only switches back when I have a certain follower": the Thunderhead): each form and egg built as a follower's is and put in every pose
+  // the game can ask of it, with no error; and a Thunderhead beside you is the view's, the view still on
+  out.badBodies = Object.keys(EVOLUTIONS).concat(HD_ELEMENTS.map(function (e) { return 'egg_' + e; }), ['egg_neutral']).map(function (id) { return [id, V.checkBody(id)]; }).filter(function (q) { return q[1]; });
+  var th = followers[1] || followers[0], thWas = [th.evolved, th._moltAt, th.x, th.y]; th.evolved = 'thunderhead'; th._moltAt = -9999; th.x = 14; th.y = 19.5; step(3);
+  out.thunder = [VIEW3D.state, VIEW3D.showing, V.has(th)]; th.evolved = thWas[0]; th._moltAt = thWas[1]; th.x = thWas[2]; th.y = thWas[3]; step(2);
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
@@ -199,6 +204,10 @@ else {
             [true, 0, false, true, true, 0, 0, false], [false, 0, false, true, false, 0, 0, false], [false, 0, false, true, false, 0, 0, false]]),
             'a 10 px drag; 150 px right, slowly; 64 px left; a flick of 40 px left; up and down; 150 px on a creature. Each: the swipe\'s, its twist, the drawing waiting, the camera turned by it; the lift the swipe\'s, the quarter turn, the twist left, still swinging');
         same(JSON.stringify(ON.pinch), JSON.stringify([1.8, 0, 0]), 'a pinch with a twist in it: zoomed (as far as it goes), not turned');
+    });
+    check('EVERY FOLLOWER\'S BODY (the owner, 2026-11-17: "it only switches back when I have a certain follower": the Thunderhead): each form and egg built as a follower\'s is and put in every pose the game can ask of it, with no error; a Thunderhead beside you is drawn by the view, the view still on', () => {
+        same(JSON.stringify(ON.badBodies), '[]', 'the bodies that fail, with why');
+        same(JSON.stringify(ON.thunder), JSON.stringify(['ready', true, true]), 'the view\'s state, showing, the Thunderhead its own body');
     });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');

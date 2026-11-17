@@ -131,7 +131,12 @@ const GAMEVIEW = (function () {
     turn(b, faceOf(row), dt); pose(b, walking ? 8 + (f0 / 4) % 8 : 0, (f0 / 7) % 8); stand(b, pl.visualX, pl.visualY, GM.flightLift(pl), SC_PLAYER); shown.add(pl); }
   // ONE OF YOURS (a follower, a recruit): its evolved form as js/evolution.js draws it (_evoFrame: its row, its frame, its size as it molts), or its egg as js/hdsprites.js drawHdEgg does.
   // False: the game draws it as ever (a form still cracking out of its egg, one under the floor, a ghost, one in smoke form, one with no model)
-  function follower(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
+  // A FOLLOWER WHOSE BODY FAILS to build or pose is drawn by the game in 2D (its form not tried again), the view going on: one form's fault never stops the view. (It did: a Thunderhead in the
+  // squad turned the 3D view off for good, 2026-11-17, the owner: "it only switches back when I have a certain follower, and it doesn't switch back to 3D now that I have the follower")
+  function follower(f, f0, dt) { try { return followerIn(f, f0, dt); } catch (e) {
+      const d = f.evolved ? GM.evolvedDef(f) : null, key = d ? d.id : GM.eggSheet(f), b = live.get(f); if (key) bad.add(key); if (b) { b.holder.visible = false; live.delete(f); }
+      if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + key + ' in 2D: ' + ((e && e.message) || e)); return false; } }
+  function followerIn(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
     const d = f.evolved ? GM.evolvedDef(f) : null;
     if (d) { if (!JOBS[d.id] || bad.has(d.id)) return false;
       if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < GM.EVO_MOLT * 0.3 || GM.burrowDepth(f) !== null) return false;
@@ -184,6 +189,11 @@ const GAMEVIEW = (function () {
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
     swinging() { return turning(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
+    // for tests (tests/view3d.js): a form or an egg built as a follower's body is, and put in every pose the game can ask of it (its sheet's idle, action and block columns), without
+    // drawing: why it fails, or null
+    checkBody(id) { let b = null; try { if (!JOBS[id]) return 'no model'; b = formBody(id); if (!b) return 'not built';
+        const n = 16 + 8 * (b.job.blocks ? b.job.blocks.length : b.job.consume ? 1 : 0); for (let c = 0; c < n; c++) pose(b, c); return null; }
+      catch (e) { return String((e && e.message) || e); } finally { if (b) scene.remove(b.holder); } },
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
