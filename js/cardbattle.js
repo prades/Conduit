@@ -387,7 +387,7 @@ function _cbWalkPath(u, t, kind, id) {
     for (let i = 0; i < order.length; i++) { const k = order[i], [x, y] = at.get(k), st = steps.get(k); if (st >= n) continue;
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
     const ends = order.filter(k => k !== k0 && !taken.has(k));   // (breadth first: the fewest steps first)
-    let best = ends.find(k => { const c = at.get(k); return _cbHitsFrom(c[0], c[1], u, t, kind, id); }) || null;
+    let best = _cbPickSquare(u, ends.filter(k => { const c = at.get(k); return _cbHitsFrom(c[0], c[1], u, t, kind, id); }), at, t);
     if (!best && cells) {   // none in reach this turn: towards the nearest square it could hit from, by the floor the same way
         const qt = _cbSq(t), R = _cbReach(u, t, kind, id), far = new Map(), q = [];
         for (const c of cells) { const k = K(c[0], c[1]); if ((taken.has(k) && k !== k0) || (R !== Infinity && Math.hypot(c[0] - qt[0], c[1] - qt[1]) > R + 0.05) || !_cbHitsFrom(c[0], c[1], u, t, kind, id)) continue; if (!far.has(k)) { far.set(k, 0); q.push([Math.round(c[0]), Math.round(c[1])]); } }
@@ -449,6 +449,19 @@ function _cbTaunter(a, live) {
 }
 // is `a` (a creature, on its own turn) drawn by a tank? (js/abilities.js: it starts no special while it is)
 function cardBattleTaunted(a) { const T = _cb.turn; return !!T && _cb.phase === "on" && T.who === "foe" && T.a === a && !!T.taunted; }
+// THE PLAY STYLES' SQUARE (§2.43; the owner, 2026-11-17: "there needs to be another one where it prefers to keep distance and one where it just tries to get maximum output, not giving
+// Who or what touches it"; of what was offered, "Shoots from far" and "Into the crowd"; "none of them do anything with damage"; named "CAUTIOUS / RECKLESS"): of the squares a follower of yours
+// can hit `t` from this turn (`keys`, the fewest steps first), the one it walks to: CAUTIOUS (play style "defensive") the farthest from `t`; RECKLESS ("aggressive") the one next to the most
+// enemies; a tie, or any other style (BALANCED, TANK), the fewest steps. Null when there are none.
+function _cbPickSquare(u, keys, at, t) {
+    if (!keys.length) return null;
+    const ps = _cb.foes.indexOf(u) < 0 ? u.playStyle : null; if (ps !== "defensive" && ps !== "aggressive") return keys[0];
+    const q = _cbSq(t); let best = keys[0], bv = -Infinity;
+    for (const k of keys) { const c = at.get(k), v = ps === "defensive" ? Math.hypot(c[0] - q[0], c[1] - q[1]) : _cbFoesNextTo(c); if (v > bv + _CB_TIE) { bv = v; best = k; } }
+    return best;
+}
+// the enemies of the battle on the 8 squares round a square (a RECKLESS one's crowd)
+function _cbFoesNextTo(c) { let n = 0; for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const s = _cbSq(a); if (Math.max(Math.abs(Math.round(s[0]) - c[0]), Math.abs(Math.round(s[1]) - c[1])) === 1) n++; } return n; }
 // a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
 function _cbWalkTick(T, u) {
     const f0 = _cbF(); if (!u || u.dead || !(u.health > 0)) return true;

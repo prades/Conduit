@@ -47,14 +47,14 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // THE CAROUSEL: the settings beside the creature in view, one drop-down open at a time, a pick folds it shut and sets that creature's style
     var f = ccFocusUnit(); out.focusName = unitTypeLabel(f); out.focusSide = { title: document.querySelector('#ccFocus .cf-name').textContent, bars: document.querySelectorAll('#ccFocus .cf-bar').length };
     dd('PLAY STYLE'); out.ddOpen = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('ATTACK STYLE'); out.ddOne = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('PLAY STYLE');
-    out.aggr = click('AGGRESSIVE'); await wait(50); out.ddAfter = document.querySelectorAll('#ccSide .cc-dd-list').length; out.styles = [f.playStyle, followers.filter(function(x){ return x !== f && x.playStyle === 'aggressive'; }).length];
+    out.aggr = click('RECKLESS'); await wait(50); out.ddAfter = document.querySelectorAll('#ccSide .cc-dd-list').length; out.styles = [f.playStyle, followers.filter(function(x){ return x !== f && x.playStyle === 'aggressive'; }).length];
     out.swap = txt('#ccSwap .cc-sw-l, #ccSwap .cc-pick .cc-pk-t').join('|');
   } else {
     // A PHONE: the grid of cards, and the side panel guides the selection: select what is shown, a style for all of them at once, the squad's buttons
     out.hint = txt('#ccSide .cc-sel-title, #ccSide .cc-sel-sub');
     out.everyone = click('SELECT SHOWN'); await wait(50); out.selected = selectedUnits.size; out.side2 = txt('#ccSide .cc-sel-title'); out.dds2 = txt('#ccSide .cc-dd .cc-dd-k'); out.sideBtns2 = txt('#ccSide .cc-btn .cc-bl');
     dd('PLAY STYLE'); out.ddOpen = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('ATTACK STYLE'); out.ddOne = document.querySelectorAll('#ccSide .cc-dd-list').length; dd('PLAY STYLE');
-    out.aggr = click('AGGRESSIVE'); await wait(50); out.ddAfter = document.querySelectorAll('#ccSide .cc-dd-list').length; out.styles = followers.map(function(x){ return x.playStyle; }).join();
+    out.aggr = click('RECKLESS'); await wait(50); out.ddAfter = document.querySelectorAll('#ccSide .cc-dd-list').length; out.styles = followers.map(function(x){ return x.playStyle; }).join();
     ccSetSelection([followers[0]]); ccRender(); out.one = { title: document.querySelector('#ccSide .cc-sel-title').textContent, name: unitTypeLabel(followers[0]), stats: document.querySelectorAll('#ccSide .cc-stat').length, play: (function(){ var b = Array.prototype.find.call(document.querySelectorAll('#ccSide .cc-dd'), function(x){ return x.querySelector('.cc-dd-k').textContent === 'PLAY STYLE'; }); return b ? b.querySelector('.cc-dd-v').textContent : null; })(), lists: document.querySelectorAll('#ccSide .cc-dd-list').length, btns: txt('#ccSide .cc-btn .cc-bl') };
     out.clear = click('CLEAR SELECTION'); await wait(50); out.cleared = selectedUnits.size;
   }
@@ -109,7 +109,7 @@ else for (const [w, h] of [[1200, 780], [600, 800]]) {
     else check(w + ': a phone: nothing selected is a hint; SELECT SHOWN selects every card shown and a pick sets them all; one creature shows its name, a stat index and its play style as the current value; CLEAR SELECTION empties it', () => {
         ok(r.hint.length >= 1 && /NOTHING SELECTED/.test(r.hint[0]), 'the empty panel is not the hint: ' + r.hint);
         same(r.everyone, true, 'SELECT SHOWN'); same(r.selected, 4, 'selected'); ok(/SELECTED 4/.test(r.side2[0]), 'the summary: ' + r.side2); ok(r.styles.split(',').every(s => s === 'aggressive'), 'styles ' + r.styles);
-        same(r.one.title, r.one.name, 'title'); ok(r.one.stats >= 8, 'stat rows ' + r.one.stats); same(r.one.play, 'AGGRESSIVE', 'play style value'); same(r.one.lists, 0, 'choices showing'); ok(r.one.btns.some(b => /REMOVE FROM SQUAD/.test(b)), 'no squad button for a member: ' + r.one.btns);
+        same(r.one.title, r.one.name, 'title'); ok(r.one.stats >= 8, 'stat rows ' + r.one.stats); same(r.one.play, 'RECKLESS', 'play style value (AGGRESSIVE until 2026-11-17)'); same(r.one.lists, 0, 'choices showing'); ok(r.one.btns.some(b => /REMOVE FROM SQUAD/.test(b)), 'no squad button for a member: ' + r.one.btns);
         same(r.clear, true, 'CLEAR SELECTION'); same(r.cleared, 0, 'not cleared');
     });
     check(w + ': SQUADS opens YOUR SQUAD over the roster: the three cards with REMOVE, DISBAND SQUAD and the squad\'s orders (SWITCH ROLES; no ALL TO WORK / FIGHT); it closes again', () => {

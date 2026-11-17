@@ -499,6 +499,33 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify([r.prey, r.drawn, r.bit, r.flew]), '["the tank",true,true,false]', 'its prey, drawn, its bite landed, it leapt');
     });
 
+    group('THE PLAY STYLES IN A BATTLE (§2.43; the owner: "Shoots from far", "Into the crowd", "none of them do anything with damage", "CAUTIOUS / RECKLESS")');
+    check('the roster calls them CAUTIOUS, BALANCED, RECKLESS and TANK, with their words; the saved ids are kept; the tags say CAUT and RECK', () => {
+        const r = J(`PLAY_STYLES.map(p => p.id + ':' + p.label + ':' + p.blurb)`);
+        same(r.join('|'), 'defensive:CAUTIOUS:PREFERS TO KEEP ITS DISTANCE|balanced:BALANCED:THE USUAL REACH|aggressive:RECKLESS:MAXIMUM OUTPUT, WHATEVER TOUCHES IT|tank:TANK:DAMAGE ABSORPTION / TAUNTING', 'the play styles');
+        ok(/"defensive" \? "CAUT" : r\.playStyle === "aggressive" \? "RECK"/.test(rd('js/commandcenter.js')) && /"defensive" \? "CAUT" : f\.playStyle === "aggressive" \? "RECK"/.test(rd('js/squadfly.js')), 'the roster card\'s and the squad bar\'s tags');
+    });
+    check('CAUTIOUS walks to the farthest square it can hit from (a Mage that cannot see from its own square); BALANCED, the fewest steps', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const s = _cbSq(f), q = _cbSq(a), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.round(x0) === s[0] && Math.round(y0) === s[1]) && keep(x0, y0, x1, y1); };   /* (it cannot see the ant from its own square: it must walk) */
+            const end = () => { const w = _cbWalkPath(f, a, 'basic'), e = w[w.length - 1]; return { steps: w.length, d: +Math.hypot(e[0] - q[0], e[1] - q[1]).toFixed(2), sees: _cbHitsFrom(e[0], e[1], f, a, 'basic') }; };
+            let o; try { f.playStyle = undefined; const bal = end(); f.playStyle = 'defensive'; const cau = end(); o = { bal, cau }; } finally { facilitySeesFrom = keep; f.playStyle = undefined; } return o; })()`);
+        same(JSON.stringify([r.bal.steps, r.bal.sees, r.cau.sees]), '[1,true,true]', 'BALANCED one step; both can hit from where they stop');
+        ok(r.cau.d >= r.bal.d + 1, 'CAUTIOUS no farther than BALANCED: ' + r.cau.d + ' (' + r.cau.steps + ' steps) and ' + r.bal.d);
+    });
+    check('RECKLESS walks to the square next to the most enemies (a Brawler going for the front ant of three): never fewer than BALANCED, more where it can', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'brawler'; f.moveSpeed = f.baseMoveSpeed = 0.028;
+            const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
+            const q = _cbSq(a), taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y)), tries = [];
+            for (const cell of partyRoomCells(_cb.lay.room)) { const dd = Math.max(Math.abs(cell[0] - q[0]), Math.abs(cell[1] - q[1])); if (dd < 2 || dd > 3 || taken.has(cell[0] + ',' + cell[1])) continue;
+                _cb.slots.set(f, { x: cell[0], y: cell[1] }); f.x = cell[0]; f.y = cell[1]; if (_cbCanHit(f, a, 'basic')) continue;
+                f.playStyle = undefined; const w0 = _cbWalkPath(f, a, 'basic'); f.playStyle = 'aggressive'; const w1 = _cbWalkPath(f, a, 'basic'); f.playStyle = undefined; if (!w0 || !w1) continue;
+                const e0 = w0[w0.length - 1], e1 = w1[w1.length - 1]; if (!_cbHitsFrom(e0[0], e0[1], f, a, 'basic') || !_cbHitsFrom(e1[0], e1[1], f, a, 'basic')) continue;
+                tries.push([_cbFoesNextTo(e0), _cbFoesNextTo(e1)]); }
+            return { n: tries.length, never: tries.every(t => t[1] >= t[0]), better: tries.filter(t => t[1] > t[0]).length }; })()`);
+        ok(r.n > 0, 'no start square to try'); same(r.never, true, 'RECKLESS stood next to fewer enemies than BALANCED'); ok(r.better > 0, 'RECKLESS never went into a bigger crowd (' + r.n + ' starts)');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

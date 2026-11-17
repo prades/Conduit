@@ -100,7 +100,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // the settings are for the one in view alone
     var tgt = _ccFocus, other = followers.filter(function(f){ return f !== tgt; }), roles0 = other.map(function(f){ return f.role + '/' + f.playStyle; }).join(), dd = function(i){ return $$('#ccSide .cc-dd')[i]; };
     click(dd(0)); await wait(40); out.roleList = texts('#ccSide .cc-dd-list .cc-btn .cc-bl'); click($$('#ccSide .cc-dd-list .cc-btn').find(function(b){ return b.textContent.indexOf('MAGE') === 0; })); await wait(60);
-    click(dd(1)); await wait(40); out.playList = texts('#ccSide .cc-dd-list .cc-btn .cc-bl'); click($$('#ccSide .cc-dd-list .cc-btn').find(function(b){ return b.textContent.indexOf('AGGRESSIVE') === 0; })); await wait(60);
+    click(dd(1)); await wait(40); out.playList = texts('#ccSide .cc-dd-list .cc-btn .cc-bl'); click($$('#ccSide .cc-dd-list .cc-btn').find(function(b){ return b.textContent.indexOf('RECKLESS') === 0; })); await wait(60);
     out.styles = { role: tgt.role, play: tgt.playStyle, others: other.map(function(f){ return f.role + '/' + f.playStyle; }).join() === roles0, value: texts('#ccSide .cc-dd .cc-dd-v'), closed: $$('#ccSide .cc-dd-list').length };
     out.stats = { secs: texts('#ccSide .cc-sec'), rows: texts('#ccSide .cc-stat .cc-stat-k') };
     // INFO opens the unit's own card (attacks, jobs, stats)
@@ -273,7 +273,7 @@ function measure(w, h) {
             same(r.openAdded.in, true, 'added'); same(r.openAdded.stays, true, 'in view'); same(r.openAdded.members, 3, 'the squad'); same(r.openAdded.slot, -1, 'a slot is still open');
         });
         check(w + ': ATTACK STYLE and PLAY STYLE open as lists and change the one in view alone; the column lists its base stats (not the ones the card has); INFO opens its own card', () => {
-            same(r.roleList.join(), 'BRAWLER,MAGE,TECHNICIAN', 'attack styles'); same(r.playList.join(), 'DEFENSIVE,BALANCED,AGGRESSIVE,TANK', 'play styles (TANK: the owner, 2026-11-17, docs/CARD-BATTLES.md §2.42)'); same(r.styles.role, 'sniper', 'MAGE'); same(r.styles.play, 'aggressive', 'AGGRESSIVE'); same(r.styles.others, true, 'the others were changed'); same(r.styles.closed, 0, 'the lists fold shut'); same(r.styles.value.join(), 'MAGE,AGGRESSIVE,NORMAL ATTACK,NO CARDS IN YOUR HAND,NO CARDS IN YOUR HAND', 'the values');
+            same(r.roleList.join(), 'BRAWLER,MAGE,TECHNICIAN', 'attack styles'); same(r.playList.join(), 'CAUTIOUS,BALANCED,RECKLESS,TANK', 'play styles (TANK, and CAUTIOUS and RECKLESS for DEFENSIVE and AGGRESSIVE: the owner, 2026-11-17, docs/CARD-BATTLES.md §2.42, §2.43)'); same(r.styles.role, 'sniper', 'MAGE'); same(r.styles.play, 'aggressive', 'AGGRESSIVE'); same(r.styles.others, true, 'the others were changed'); same(r.styles.closed, 0, 'the lists fold shut'); same(r.styles.value.join(), 'MAGE,RECKLESS,NORMAL ATTACK,NO CARDS IN YOUR HAND,NO CARDS IN YOUR HAND', 'the values');
             ok(r.stats.secs.some(s => /^BASE STATS/.test(s)), 'sections ' + r.stats.secs); ok(r.stats.rows.includes('HP') && !r.stats.rows.includes('DEFENSE') && !r.stats.rows.includes('ATTACK'), 'rows ' + r.stats.rows); ok(!r.stats.secs.includes('VITALS'), 'VITALS twice');
             same(r.info.open, true, 'INFO'); same(r.info.title, r.info.is, 'its card');
         });
