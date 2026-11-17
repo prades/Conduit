@@ -463,6 +463,48 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(!!r.none, false, 'no square three tiles off in sight to try'); same(JSON.stringify([r.front, r.picked, r.flew]), '[true,"the Mage",true]', 'the Brawler in front of it; it leapt, at the Mage');
     });
 
+    group('TANKS: THE TECHNICIAN\'S TAUNT (§2.41; the owner: "The technicians are built as a tank"; "When it taunts"; "Draws attacks only")');
+    run(`globalThis.__tanks = () => { __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [t, m, b] = followers; t.role = 'camper'; m.role = 'sniper'; b.role = 'brawler'; for (const f of followers) f.health = f.maxHealth = 5000; return { t, m, b }; };
+        globalThis.__toYou = () => { for (let i = 0; i < 4000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); } };`);
+    check('a technician has a TAUNT card, always ready; a Mage and a Brawler have none', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1);
+            const has = f => cardBattleCards(f).filter(c => c.kind === 'taunt').map(c => c.name + ':' + c.ready).join(); return [has(t), has(m), has(b)]; })()`);
+        same(JSON.stringify(r), '["TAUNT:true","",""]', 'the technician, the Mage, the Brawler');
+    });
+    check('TAUNT is the technician\'s turn (it holds still, the banner says TAUNT); then a creature next to the Brawler in front goes for the technician instead, held by the taunt', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
+            const o = { front: _cbFront(a, [t, m, b, player]) === b, played: cardBattlePlay(t, 'taunt', null, a) }; const T = cardBattleTurnInfo(); o.kind = T.kind; o.holds = cardBattleHolds(t);
+            __ticks(CARD_BATTLE.every + 1); o.banner = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : ''; o.on = _cb.taunt ? _cb.taunt.turns : 0;
+            for (let i = 0; i < 400 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'foe'); i++) { frame++; cardBattleTick(); }
+            o.prey = a.currentTarget === t ? 'the technician' : a.currentTarget === b ? 'the Brawler' : 'another'; o.taunted = cardBattleTaunted(a); return o; })()`);
+        same(JSON.stringify([r.front, r.played, r.kind, r.holds, r.on]), '[true,true,"taunt",true,2]', 'the Brawler in front of it, played, a taunt, the technician holding still, two of their turns');
+        ok(/ · TAUNT$/.test(r.banner), 'the banner: ' + r.banner); same(JSON.stringify([r.prey, r.taunted]), '["the technician",true]', 'its prey, held by the taunt');
+    });
+    check('the taunt holds for two of their turns (its card says ON), then they go for the front line again', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
+            const st = () => { const c = cardBattleCards(t).find(x => x.kind === 'taunt'); return c.on ? 'ON ' + c.on : 'READY'; }; const o = {};
+            cardBattlePlay(t, 'taunt', null, a); __toYou(); o.one = [_cb.taunt ? _cb.taunt.turns : 0, st()];
+            cardBattlePlay(m, 'basic', null, a); __toYou(); o.two = [_cb.taunt ? _cb.taunt.turns : 0, st()];
+            o.drawn = !!_cbTaunter(a, [t, m, b, player]); _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the technician' : 'another'; return o; })()`);
+        same(JSON.stringify([r.one, r.two]), '[[1,"ON 1"],[0,"READY"]]', 'after their first turn, after their second'); same(JSON.stringify([r.drawn, r.prey]), '[false,"the Brawler"]', 'then: not drawn, the front line');
+    });
+    check('one that cannot reach the technician is not drawn (your squad all round it): it goes for the front line', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); cardBattlePlay(t, 'taunt', null, a); __toYou();
+            const s = _cbSq(t); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if ((dx || dy) && ![..._cb.slots.values()].some(q => q.x === s[0] + dx && q.y === s[1] + dy)) _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy });   /* (yours on every square round it) */
+            const o = { on: !!_cb.taunt, drawn: !!_cbTaunter(a, [t, m, b, player]) }; _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the technician' : 'another'; return o; })()`);
+        same(JSON.stringify([r.on, r.drawn, r.prey]), '[true,false,"the Brawler"]', 'the taunt on, not drawn, its prey');
+    });
+    check('taunted, a creature starts no special: a striker with its LEAP STRIKE ready, next to the technician and a Mage 3 tiles off, bites the technician and does not leap', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
+            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
+            if (!c) return { none: true }; _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(t, st); cardBattlePlay(t, 'taunt', null, st); __toYou();
+            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; _cbFoesTurn(false); let flew = false, taunted = false, bit = false;
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (cardBattleTaunted(st)) taunted = true; if (_cb.turn.hit) bit = true; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
+            return { prey: st.currentTarget === t ? 'the technician' : 'another', taunted, bit, flew, phase: st.abilityPhase }; })()`);
+        same(!!r.none, false, 'no square three tiles off in sight to try');
+        same(JSON.stringify([r.prey, r.taunted, r.bit, r.flew]), '["the technician",true,true,false]', 'its prey, held by the taunt, its bite landed, it leapt');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
@@ -472,6 +514,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
         ok(/cardBattleHit\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardBattleHit\(player, source\)\) return false;/.test(rd('js/helpers.js')) && /cardBattleNoFight\(\)\) return;/.test(rd('js/input.js')) && /_noFight/.test(rd('js/evolution.js')) && /cardBattleNoFight\(f\)\) return false;/.test(rd('js/elements.js')) && /cardBattleNoFight\(\) && typeof cardBattleChoose/.test(rd('js/mixtool.js')) && /cardBattleNoFight\(pred\)/.test(rd('js/abilities.js')), 'either a battle or none (§2.35): the blow, the gun, the second attack, the Ultimate, ATTACK, the clone\'s special');
+        ok(/!\(typeof cardBattleTaunted === 'function' && cardBattleTaunted\(pred\)\) && _abShouldFire\(pred, def\)/.test(rd('js/abilities.js')), 'a taunted creature starts no special (§2.41): js/abilities.js');
         ok(/cardBattleStands\(actor\)/.test(rd('js/npc.js')) && /cardBattleOverLow\(ox, oy\)/.test(rd('js/facility.js')) && /cardBattleReticles\(\)\) return;/.test(rd('js/gunfire.js')) && /cardBattleAiming\(\)\)\) \{ const k = age/.test(rd('js/targeting.js')) && /screenNow\(x, y, hPx\) \{ const v = SCR\.set/.test(rd('view3d/gameview.js')), 'the reticles, the shots over low objects, the moves (§2.37 to §2.39): the gun\'s corners and its locking-on, the 3D view\'s point, the cover rule, the Mage\'s stand');
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });
