@@ -463,46 +463,40 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(!!r.none, false, 'no square three tiles off in sight to try'); same(JSON.stringify([r.front, r.picked, r.flew]), '[true,"the Mage",true]', 'the Brawler in front of it; it leapt, at the Mage');
     });
 
-    group('TANKS: THE TECHNICIAN\'S TAUNT (§2.41; the owner: "The technicians are built as a tank"; "When it taunts"; "Draws attacks only")');
-    run(`globalThis.__tanks = () => { __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [t, m, b] = followers; t.role = 'camper'; m.role = 'sniper'; b.role = 'brawler'; for (const f of followers) f.health = f.maxHealth = 5000; return { t, m, b }; };
-        globalThis.__toYou = () => { for (let i = 0; i < 4000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); } };`);
-    check('a technician has a TAUNT card, always ready; a Mage and a Brawler have none', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1);
-            const has = f => cardBattleCards(f).filter(c => c.kind === 'taunt').map(c => c.name + ':' + c.ready).join(); return [has(t), has(m), has(b)]; })()`);
-        same(JSON.stringify(r), '["TAUNT:true","",""]', 'the technician, the Mage, the Brawler');
+    group('TANKS: THE TANK PLAY STYLE (§2.42; the owner: "a setting on each follower in the roster ... a play style where it says like damage absorption / taunting")');
+    run(`globalThis.__tanks = () => { __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [t, m, b] = followers; t.role = 'camper'; m.role = 'sniper'; b.role = 'brawler'; for (const f of followers) f.health = f.maxHealth = 5000; return { t, m, b }; };`);
+    check('the roster\'s PLAY STYLE has TANK, "DAMAGE ABSORPTION / TAUNTING", set on any follower and kept in its save; its tags say TANK; no TAUNT card in a battle; out of a battle it fights at the usual reach', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const P = PLAY_STYLES.find(x => x.id === 'tank'); const o = { label: P && P.label, blurb: P && P.blurb, set: ccApplyPlayStyle([m, b], 'tank'), styles: [t.playStyle || 'balanced', m.playStyle, b.playStyle].join() };
+            o.saved = /"playStyle":"tank"/.test(JSON.stringify(followerRosterSnapshot())); o.reach = playReach(b); o.tag = ccRow(ccUnits({}).find(u => u === b) || b).playStyle;
+            const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(CARD_BATTLE.every + 1); o.cards = cardBattleCards(b).some(c => c.kind === 'taunt'); o.column = _cbTank(b) && !_cbTank(t);
+            for (const f of followers) f.playStyle = undefined; return o; })()`);
+        same(JSON.stringify([r.label, r.blurb, r.set, r.styles]), '["TANK","DAMAGE ABSORPTION / TAUNTING",2,"balanced,tank,tank"]', 'the style, set on a Mage and a Brawler');
+        same(JSON.stringify([r.saved, r.reach, r.tag, r.cards]), '[true,1,"tank",false]', 'saved, the usual reach out of a battle, its roster row, no TAUNT card'); same(r.column, true, 'a tank, and not the technician left at BALANCED'); ok(/class="cb-sub">LV ' \+ \(f\.level \|\| 1\) \+ \(_cbTank\(f\) \? " · TANK" : ""\)/.test(rd('js/cardbattle.js')), 'the battle screen\'s column says TANK');
+        ok(/r\.playStyle === "tank" \? "TANK"/.test(rd('js/commandcenter.js')) && /f\.playStyle === "tank" \? "TANK"/.test(rd('js/squadfly.js')), 'the roster card\'s and the squad bar\'s tags');
     });
-    check('TAUNT is the technician\'s turn (it holds still, the banner says TAUNT); then a creature next to the Brawler in front goes for the technician instead, held by the taunt', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
-            const o = { front: _cbFront(a, [t, m, b, player]) === b, played: cardBattlePlay(t, 'taunt', null, a) }; const T = cardBattleTurnInfo(); o.kind = T.kind; o.holds = cardBattleHolds(t);
-            __ticks(CARD_BATTLE.every + 1); o.banner = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : ''; o.on = _cb.taunt ? _cb.taunt.turns : 0;
-            for (let i = 0; i < 400 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'foe'); i++) { frame++; cardBattleTick(); }
-            o.prey = a.currentTarget === t ? 'the technician' : a.currentTarget === b ? 'the Brawler' : 'another'; o.taunted = cardBattleTaunted(a); return o; })()`);
-        same(JSON.stringify([r.front, r.played, r.kind, r.holds, r.on]), '[true,true,"taunt",true,2]', 'the Brawler in front of it, played, a taunt, the technician holding still, two of their turns');
-        ok(/ · TAUNT$/.test(r.banner), 'the banner: ' + r.banner); same(JSON.stringify([r.prey, r.taunted]), '["the technician",true]', 'its prey, held by the taunt');
+    check('a creature next to the Brawler in front goes for a TANK behind it instead, drawn (no special), on its own turn', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
+            const o = { front: _cbFront(a, [t, m, b, player]) === b, tank: _cbTaunter(a, [t, m, b, player]) === t }; _cbFoesTurn(false); const T = cardBattleTurnInfo();
+            o.turn = !!T && T.actor === a; o.prey = a.currentTarget === t ? 'the tank' : a.currentTarget === b ? 'the Brawler' : 'another'; o.drawn = cardBattleTaunted(a); t.playStyle = undefined; return o; })()`);
+        same(JSON.stringify([r.front, r.tank, r.turn, r.prey, r.drawn]), '[true,true,true,"the tank",true]', 'the Brawler in front, the tank drawing it, its turn, its prey, drawn');
     });
-    check('the taunt holds for two of their turns (its card says ON), then they go for the front line again', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
-            const st = () => { const c = cardBattleCards(t).find(x => x.kind === 'taunt'); return c.on ? 'ON ' + c.on : 'READY'; }; const o = {};
-            cardBattlePlay(t, 'taunt', null, a); __toYou(); o.one = [_cb.taunt ? _cb.taunt.turns : 0, st()];
-            cardBattlePlay(m, 'basic', null, a); __toYou(); o.two = [_cb.taunt ? _cb.taunt.turns : 0, st()];
-            o.drawn = !!_cbTaunter(a, [t, m, b, player]); _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the technician' : 'another'; return o; })()`);
-        same(JSON.stringify([r.one, r.two]), '[[1,"ON 1"],[0,"READY"]]', 'after their first turn, after their second'); same(JSON.stringify([r.drawn, r.prey]), '[false,"the Brawler"]', 'then: not drawn, the front line');
+    check('with no tank the front line as before; one that cannot reach the tank (your squad all round it) goes for the front; of two tanks, the one it reaches first', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); const all = [t, m, b, player], o = {};
+            o.none = _cbTaunter(a, all) === null && _cbFront(a, all) === b;
+            m.playStyle = 'tank'; t.playStyle = 'tank'; const ds = _cbDistFrom(a), first = _cbStepsTo(a, t, ds) <= _cbStepsTo(a, m, ds) ? t : m; o.first = _cbTaunter(a, all) === first;
+            m.playStyle = undefined; const s = _cbSq(t); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if ((dx || dy) && ![..._cb.slots.values()].some(q => q.x === s[0] + dx && q.y === s[1] + dy)) _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy });   /* (yours on every square round it) */
+            o.boxed = _cbTaunter(a, all) === null; _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the tank' : 'another'; t.playStyle = undefined; return o; })()`);
+        same(JSON.stringify([r.none, r.first, r.boxed, r.prey]), '[true,true,true,"the Brawler"]', 'no tank, two tanks, the tank boxed in, its prey');
     });
-    check('one that cannot reach the technician is not drawn (your squad all round it): it goes for the front line', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); cardBattlePlay(t, 'taunt', null, a); __toYou();
-            const s = _cbSq(t); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if ((dx || dy) && ![..._cb.slots.values()].some(q => q.x === s[0] + dx && q.y === s[1] + dy)) _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy });   /* (yours on every square round it) */
-            const o = { on: !!_cb.taunt, drawn: !!_cbTaunter(a, [t, m, b, player]) }; _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the technician' : 'another'; return o; })()`);
-        same(JSON.stringify([r.on, r.drawn, r.prey]), '[true,false,"the Brawler"]', 'the taunt on, not drawn, its prey');
-    });
-    check('taunted, a creature starts no special: a striker with its LEAP STRIKE ready, next to the technician and a Mage 3 tiles off, bites the technician and does not leap', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
+    check('drawn by a tank, a creature starts no special: a striker with its LEAP STRIKE ready, next to the tank and a Mage 3 tiles off, bites the tank and does not leap', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
             const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
-            if (!c) return { none: true }; _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(t, st); cardBattlePlay(t, 'taunt', null, st); __toYou();
-            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; _cbFoesTurn(false); let flew = false, taunted = false, bit = false;
-            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (cardBattleTaunted(st)) taunted = true; if (_cb.turn.hit) bit = true; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
-            return { prey: st.currentTarget === t ? 'the technician' : 'another', taunted, bit, flew, phase: st.abilityPhase }; })()`);
+            if (!c) { t.playStyle = undefined; return { none: true }; } _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(t, st);
+            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; _cbFoesTurn(false); let flew = false, drawn = false, bit = false;
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (cardBattleTaunted(st)) drawn = true; if (_cb.turn.hit) bit = true; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
+            const o = { prey: st.currentTarget === t ? 'the tank' : 'another', drawn, bit, flew }; t.playStyle = undefined; return o; })()`);
         same(!!r.none, false, 'no square three tiles off in sight to try');
-        same(JSON.stringify([r.prey, r.taunted, r.bit, r.flew]), '["the technician",true,true,false]', 'its prey, held by the taunt, its bite landed, it leapt');
+        same(JSON.stringify([r.prey, r.drawn, r.bit, r.flew]), '["the tank",true,true,false]', 'its prey, drawn, its bite landed, it leapt');
     });
 
     group('THE PIECES');

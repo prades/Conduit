@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ab` · branch `claude/start-game-project-HSh7Z` · tanks: a TANK play style in the roster, in place of the TAUNT card (battles behind `?cards` with `?engine=3d`)
+- **The ask** (the owner): "I think a better idea, rather than doing a taunt move card, would be maybe having a setting on each follower in the roster or under their equipment and strategy card. It should have a play style where it says like damage absorption / taunting."
+- **What it does** (`docs/CARD-BATTLES.md` §2.42, §9): the roster's **PLAY STYLE** has a fourth choice, **TANK** ("DAMAGE ABSORPTION / TAUNTING"), for any follower, saved with it; the roster card's and the squad bar's tags say TANK. In a battle every creature that can reach a TANK goes for it instead of whoever is in front (the one it reaches first of two) and starts no special; the column says "LV n · TANK". Out of a battle a TANK fights at the usual reach. The TAUNT card of `2026-11-17aa` is gone (§2.41, superseded).
+- `js/commandcenter.js` (`PLAY_STYLES`, the tag), `js/squadfly.js` (the tag), `js/cardbattle.js` (`_cbTank`, `_cbTaunter`; the card, its turn and its count removed).
+- **The agent's readings, provisional** (`CARD-BATTLES.md` §11.19): not made tougher (the earlier "Draws attacks only"); always on while set; nobody is a TANK until set, technicians included.
+- **Tests:** `tests/cardbattle.js` TANKS (4 checks, 53 in all), `tests/carousel.js` (the PLAY STYLE list with TANK). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17aa` · branch `claude/start-game-project-HSh7Z` · card battles: tanks, the technician's TAUNT (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner): "add a tank role that draws attacks"; asked who, how and how tough: "The technicians are built as a tank, but you should just make it to where whoever's right in front of the creature is who it attacks at the beginning. I don't know I mean, we could think we could think this through because I'm not quite sure."; "When it taunts"; "Draws attacks only".
 - **What it does** (`docs/CARD-BATTLES.md` §2.41, §9): every technician has a **TAUNT** card (TANK). Playing it is its turn, and for the enemies' next 2 turns every creature that can reach it goes for it (bites it, or walks towards it) and starts no special. It is not made tougher. A creature that cannot reach it attacks the front line as before (§2.40). The card says ON · n TURNS while it holds.

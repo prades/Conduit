@@ -52,9 +52,6 @@ const CARD_BATTLE = {
     stepPace: 0.06,             // tiles a frame along the walk (3.6 a second)
     stepBeat: 12,               // frames after a walk before the next turn (0.2 s)
     tether: 0.8,                // tiles: on its attack's turn one may step this far off its square on its own legs (a leap, a dash or a charge carries it further: its new square)
-    // TANKS: THE TECHNICIAN'S TAUNT (§2.41)
-    taunt: 2,                   // the enemies' turns a taunt holds them (the owner's pick: "When it taunts", "for the next 2 turns")
-    tauntHold: 45,              // frames: the technician's turn as it taunts (0.75 s; the agent's)
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -101,7 +98,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.taunt = null;
+    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false;
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -234,7 +231,7 @@ function _cbKeepAtIt() {
     if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
-    _cbActEnd(); _cb.turn = null; _cb.taunt = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null;
+    _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null;
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12, §2.16): on your turn it uses the turn: each enemy gets its last hit (fastest first), then you are out. Before the turns begin (the walk, the black), it ends the battle as it is.
@@ -436,18 +433,21 @@ function _cbFront(a, list) {
     }
     return best;
 }
-// TANKS: THE TECHNICIAN'S TAUNT (§2.41; the owner, 2026-11-17: "add a tank role that draws attacks"; asked who, how and how tough: "The technicians are built as a tank, but you should just make it to
-// where whoever's right in front of the creature is who it attacks at the beginning", "When it taunts", "Draws attacks only"). A technician (js/formation.js formationRole "camper") has a TAUNT
-// card, always ready: playing it is its turn (it holds still and taunts) and, for the enemies' next CARD_BATTLE.taunt turns, every creature in the battle that can reach it (a way over the floor to
-// a square it could bite it from, your squad standing in the way) goes for it instead of the front line, and starts no special meanwhile (cardBattleTaunted, js/abilities.js). It takes the hits as
-// it is: no less damage, no more health. One that cannot reach it attacks the front as before (§2.40). RUN's last hits pick as before.
-function _cbTank(f) { return !!f && !f.isClone && (typeof formationRole === "function" ? formationRole(f) : f.role) === "camper"; }
-// the technician taunting `a` this turn, or null: its taunt on, it up and in the battle, and `a` able to reach it
+// TANKS: THE TANK PLAY STYLE (§2.42; the owner, 2026-11-17: "rather than doing a taunt move card, would be maybe having a setting on each follower in the roster or under their equipment and strategy
+// card. It should have a play style where it says like damage absorption / taunting"; it replaces §2.41's TAUNT card, built and superseded the same day). A follower whose PLAY STYLE is TANK
+// (js/commandcenter.js PLAY_STYLES, set on its roster card and saved with it) draws the creatures in a battle: on its turn every creature that can reach one (a way over the floor to a square it could
+// bite it from, your squad standing in the way) goes for it instead of the front line, the one it reaches first of two, and starts no special meanwhile (cardBattleTaunted, js/abilities.js). It is not
+// made tougher (§2.41's "Draws attacks only"). One that cannot reach a tank attacks the front as before (§2.40). RUN's last hits pick as before.
+function _cbTank(f) { return !!f && !f.isClone && f.playStyle === "tank"; }
+// the tank drawing `a` this turn, or null: of yours still up (`live`), one whose play style is TANK and that `a` can reach, the one it reaches first (then the nearest)
 function _cbTaunter(a, live) {
-    const K = _cb.taunt, t = K && K.by; if (!t || !_cb.lay || live.indexOf(t) < 0) return null;
-    return _cbStepsTo(a, t, _cbDistFrom(a)) < Infinity ? t : null;
+    if (!_cb.lay) return null;
+    const tanks = live.filter(_cbTank); if (!tanks.length) return null;
+    const D = _cbDistFrom(a), sa = _cbSq(a); let best = null, bd = Infinity, be = Infinity;
+    for (const t of tanks) { const d = _cbStepsTo(a, t, D); if (d === Infinity) continue; const q = _cbSq(t), e = Math.hypot(q[0] - sa[0], q[1] - sa[1]); if (d < bd || (d === bd && e < be - _CB_TIE)) { best = t; bd = d; be = e; } }
+    return best;
 }
-// is `a` (a creature, on its own turn) held by a taunt? (js/abilities.js: it starts no special while it is)
+// is `a` (a creature, on its own turn) drawn by a tank? (js/abilities.js: it starts no special while it is)
 function cardBattleTaunted(a) { const T = _cb.turn; return !!T && _cb.phase === "on" && T.who === "foe" && T.a === a && !!T.taunted; }
 // a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
 function _cbWalkTick(T, u) {
@@ -520,7 +520,7 @@ function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, act
 // does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is; and that one too while it walks: the battle walks it, §2.39)
 function cardBattleHolds(a) {
     const T = _cb.turn; if (!T || _cb.phase !== "on" || !a) return false;
-    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return !!T.walk || T.kind === "taunt";   // (a technician taunting holds still: §2.41)
+    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return !!T.walk;
     if (_cb.foes.indexOf(a) >= 0) return true;
     return a !== (typeof player !== "undefined" ? player : null) && _cbMine(a);
 }
@@ -529,7 +529,6 @@ function _cbNearest(from, list) { let best = null, bd = Infinity; for (const t o
 function _cbYourTurn() {
     _cb.round++;
     if (_cb.round > 1) for (const m of _cb.cd.values()) for (const id in m) if (m[id] > 0) m[id]--;
-    if (_cb.taunt && --_cb.taunt.turns <= 0) _cb.taunt = null;   // (a taunt holds for the enemies' next CARD_BATTLE.taunt turns: §2.41)
     _cb.turn = { who: "you", t0: _cbF() };
 }
 // PLAY A CARD (the drag, §2.17; the tests call it too): `f` a member of the squad still up, `kind` "basic", "move" (with its `id`) or "ult", `target` the enemy it was dropped on (another
@@ -541,12 +540,6 @@ function cardBattlePlay(f, kind, id, target) {
     if (live.indexOf(target) < 0) target = _cbNearest(f, live);
     const card = cardBattleCards(f).find(c => c.kind === kind && (kind !== "move" || c.id === id));
     if (!card || !card.ready) return false;
-    if (kind === "taunt") {   // TAUNT (§2.41): its turn is its taunt; the enemies that can reach it go for it for their next CARD_BATTLE.taunt turns
-        _cb.taunt = { by: f, turns: CARD_BATTLE.taunt };
-        _cb.turn = { who: "act", f, kind, id: null, target, t0: _cbF(), hit: 0, fired: true, saved: null };
-        if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "ring", x: f.x, y: f.y, radius: 1.6, color: "#00ccaa", life: 30 });   // (SHELL GUARD's ring, js/evolution.js)
-        _cbRefresh(); return true;
-    }
     // MOVE NOW, ATTACK LATER (§2.39): it cannot hit that enemy from its square: its turn is a walk towards one it can (the card stays ready); no way nearer, nothing is played
     if (kind !== "ult" && _cb.lay && !_cbCanHit(f, target, kind, id)) {
         const walk = _cbWalkPath(f, target, kind, id);
@@ -578,13 +571,13 @@ function _cbNextFoe() {
     const ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(T.a, t));
     while (T.queue.length) {
         const a = T.queue.shift(); if (!_cbFoeOk(a)) continue;
-        T.a = a; const live = ours.filter(ok), tk = !T.run ? _cbTaunter(a, live) : null;   // (a technician's taunt draws one that can reach it, §2.41)
+        T.a = a; const live = ours.filter(ok), tk = !T.run ? _cbTaunter(a, live) : null;   // (a TANK draws one that can reach it, §2.42)
         const prey = tk || (!T.run && _cb.lay ? _cbFront(a, live) : ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, live));   // (THE FRONT LINE, §2.40: the one in front of it, not whoever it was after; RUN's last hits as before, §2.16)
         if (!prey) continue;
         T.walk = null; T.wi = 0; T.arrived = 0; T.sp = false; T.spOn = false; T.spEnd = 0; T.anc = null; T.taunted = !!tk;
         // MOVE NOW, ATTACK LATER (§2.39): it bites the one in front if it can from its square, or its special goes off from there; else its turn is a walk towards that one
         if (!T.run && _cb.lay && !_cbCanHit(a, prey, "basic")) {
-            if (!T.taunted && _cbSpecialNow(a)) T.sp = true;   // (taunted, it goes for the technician: no special)
+            if (!T.taunted && _cbSpecialNow(a)) T.sp = true;   // (drawn by a tank, it goes for it: no special)
             else { const walk = _cbWalkPath(a, prey, "basic"); if (!walk) continue; T.walk = walk; }
         }
         a.currentTarget = prey; a._prey = prey; a.provoked = true; if (a.state === "wander") a.state = "hunt";
@@ -609,7 +602,7 @@ function _cbTurnTick() {
         if (_cb.lay) _cbTether(T, f);
         if (T.kind === "move" && f._altLive) T.fired = true;
         const landed = T.hit && f0 - T.hit >= C.beat;
-        const done = T.kind === "ult" ? el >= C.ultHold : T.kind === "taunt" ? el >= C.tauntHold : T.kind === "basic" ? landed : (T.fired && !f._altLive && el >= C.beat) || (landed && !f._altLive);
+        const done = T.kind === "ult" ? el >= C.ultHold : T.kind === "basic" ? landed : (T.fired && !f._altLive && el >= C.beat) || (landed && !f._altLive);
         if (done || el >= C.actMax || f.dead || !(f.health > 0) || !live) { _cbActEnd(); _cbResquare(f); if (live) _cbFoesTurn(false); else _cb.turn = { who: "you", t0: f0 }; }
     } else if (T.who === "foe") {
         const a = T.a;
@@ -708,8 +701,6 @@ function cardBattleCards(f) {
         const left = cools ? Math.max(0, ((f._altReadyAt || 0) - f0) / 60) : 0;
         out.push({ kind: "move", id, tag: "ATTACK", name: m.name, fx: _cbRow(rows, "EFFECT"), ready: left <= 0, turns: left > 0 ? _cbTurns(left) : 0, recharge: rech, col });
     }
-    if (_cbTank(f)) { const on = _cb.taunt && _cb.taunt.by === f ? _cb.taunt.turns : 0;   // TANKS (§2.41): a technician's TAUNT, always ready (its turn); on, the enemies' turns it still holds
-        out.push({ kind: "taunt", tag: "TANK", name: "TAUNT", fx: "The enemies that can reach it go for it, " + CARD_BATTLE.taunt + " turns", ready: true, turns: 0, on, col }); }
     const u = typeof followerUltimate === "function" ? followerUltimate(f) : null;
     if (u) { const pct = Math.max(0, Math.min(100, Math.round(f.ultimateCharge || 0)));
         let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
@@ -719,7 +710,7 @@ function cardBattleCards(f) {
 function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function _cbCardHTML(c) {
-    const st = c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.kind === "taunt" && c.on ? "ON · " + c.on + (c.on === 1 ? " TURN" : " TURNS") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
+    const st = c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
     const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '"><i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
 }
@@ -731,10 +722,10 @@ function cardBattleScreen() {
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
     const cols = squad.map(f => { const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
         const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
-        return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
+        return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (_cbTank(f) ? " · TANK" : "") + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
       const mv = T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39)
-      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · DRAG A CARD ONTO AN ENEMY") : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "taunt" ? "TAUNT" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
+      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · DRAG A CARD ONTO AN ENEMY") : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }
@@ -798,4 +789,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.taunt = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

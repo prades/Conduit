@@ -10,7 +10,7 @@
 //
 //   ROSTER   every follower and clone as a CARD. On a phone, clicking a card selects it (click again to let it go); the right-hand panel then changes the
 //            whole selection at once: ADD TO / REMOVE FROM / SWAP into THE SQUAD (js/party.js), ATTACK STYLE (brawler / mage / technician), PLAY STYLE
-//            (defensive / balanced / aggressive) and RE-ROLL. A tablet or a desktop shows it as THE CAROUSEL (below).
+//            (defensive / balanced / aggressive / tank) and RE-ROLL. A tablet or a desktop shows it as THE CAROUSEL (below).
 //   SQUADS   the button at the top opens YOUR SQUAD: the squad's three cards (REMOVE on each), DISBAND SQUAD, and the squad's orders (who the world
 //            commands go to, SWITCH ROLES).
 //
@@ -20,7 +20,8 @@
 // (The ZONES page, the roster squads A / B / C, the DUTY setting and the build order picker were the strip game's: gone with it. Nobody works.)
 //
 // PLAY STYLE is an engagement reach (PLAY_STYLES): a DEFENSIVE unit only takes on enemies close to it, an AGGRESSIVE one goes after enemies much
-// further out (npc.js multiplies its role's reach by playReach()). It is saved with the follower.
+// further out (npc.js multiplies its role's reach by playReach()). A TANK ("DAMAGE ABSORPTION / TAUNTING") draws the creatures in a card battle (js/cardbattle.js, docs/CARD-BATTLES.md
+// §2.42) and has the usual reach out of one. It is saved with the follower.
 //
 // THE CAROUSEL (the facility on a tablet or a desktop: hudCorners(), js/party.js; ASKED: the "Roster 5 · CAROUSEL" layout, "but no recruit button at the top"). The roster is ONE creature at a time: the squad's three slots across the top (a tap
 // looks at that member, ✕ REMOVE takes it out, DISBAND the lot), the creature in view big in the middle with ◂ ▸ to walk the roster and its settings beside it (ATTACK STYLE, PLAY STYLE, RE-ROLL, INFO and its base stats), the filters and a strip
@@ -34,6 +35,7 @@ const PLAY_STYLES = [
     { id: "defensive",  label: "DEFENSIVE",  reach: 0.6, blurb: "ONLY FIGHTS WHAT COMES CLOSE" },
     { id: "balanced",   label: "BALANCED",   reach: 1.0, blurb: "THE USUAL REACH" },
     { id: "aggressive", label: "AGGRESSIVE", reach: 1.7, blurb: "GOES AFTER ENEMIES FAR OUT" },
+    { id: "tank",       label: "TANK",       reach: 1.0, blurb: "DAMAGE ABSORPTION / TAUNTING" },   // (the owner, 2026-11-17: "a play style where it says like damage absorption / taunting": in a card battle the creatures go for it, js/cardbattle.js §2.42; out of one, the usual reach)
 ];
 const ATTACK_STYLES = [
     { id: "brawler", label: "BRAWLER",    col: "#ff4a1c", blurb: "CLOSES IN AND FIGHTS" },
@@ -502,7 +504,7 @@ function _ccUpdateCard(card, r) {
     const st = card.querySelector(".cc-status"); if (st) { st.textContent = r.status ? r.status.text + (r.status.room ? " \u00b7 " + r.status.room : "") : ""; st.setAttribute("style", r.status ? "--c:" + r.status.col + ";" : "display:none;"); }   // (a follower holding a room says which)
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
-    if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : "BAL");
+    if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : r.playStyle === "tank" ? "TANK" : "BAL");
     if (!r.clone && typeof partyIsMember === "function" && partyIsMember(r.unit)) want.push("SQUAD");   // (the squad's own tag, js/party.js)
     if (r.unit.post) want.push("POST"); else if (r.holding) want.push("HOLD"); if (r.evolved) want.push("EVOLVED");
     const sig = want.join("|"); if (tags._sig !== sig) { tags._sig = sig; tags.textContent = ""; want.forEach(w => tags.appendChild(_ccEl("span", "cc-tag " + w.toLowerCase(), w))); }
