@@ -161,14 +161,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { who: T && T.who, foe: cardBattleHolds(a), member: cardBattleHolds(followers[0]), me: cardBattleHolds(player), gun: a.health === h0, banner: _cbEls && _cbEls.turn ? _cbEls.turn.textContent : '' }; })()`);
         same(r.who, 'you', 'first'); same(r.foe, true, 'the enemy holds'); same(r.member, true, 'a member holds'); same(r.me, false, 'the cube holds'); same(r.gun, true, 'the gun fired'); same(/YOUR TURN/.test(r.banner), true, 'the banner: ' + r.banner);
     });
-    check('a basic card dragged onto an enemy: that follower alone does its attack on it (the game\'s own damage); then each enemy its turn; then yours again', () => {
+    check('a basic card dragged onto an enemy: that follower alone does its attack on it (the game\'s own damage); then your other follower its card (the owner, 2026-11-17: each follower attacks); then each enemy its turn; then yours again', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
             const f = followers[0]; __nextTo(f, a);   /* (next to it: whatever its role, it can hit it from its square, §2.39) */
             const h0 = a.health, o = { played: cardBattlePlay(f, 'basic', null, a) }; const T = cardBattleTurnInfo(); o.who = T.who; o.actor = T.actor === f; o.otherHolds = cardBattleHolds(followers[1]);
-            const seen = []; let last = ''; for (let i = 0; i < 900; i++) { __live(1); const t = cardBattleTurnInfo(); const k = t ? t.who : cardBattlePhase(); if (k !== last) { seen.push(k); last = k; } if (k === 'you' && seen.length > 1) break; }
-            o.seen = seen.join(','); o.hurt = a.health < h0; o.again = cardBattlePlay(followers[1], 'basic', null, a) || cardBattlePhase() !== 'on'; return o; })()`);
+            const g = followers[1]; let second = false; const seen = []; let last = ''; for (let i = 0; i < 2400; i++) { __live(1); const t = cardBattleTurnInfo(); const k = t ? t.who : cardBattlePhase(); if (k !== last) { seen.push(k); last = k; }
+                if (k === 'you' && !second) { o.firstAgain = cardBattlePlay(f, 'basic', null, a); __nextTo(g, a); o.second = second = cardBattlePlay(g, 'basic', null, a); last = 'act'; seen.push('act'); continue; } if (k === 'you' && second) break; }
+            o.seen = seen.join(','); o.hurt = a.health < h0; o.again = cardBattlePlay(f, 'basic', null, a) || cardBattlePhase() !== 'on'; return o; })()`);
         same(r.played, true, 'played'); same(r.who, 'act', 'its turn'); same(r.actor, true, 'the follower'); same(r.otherHolds, true, 'the other member holds');
-        same(r.hurt, true, 'the enemy took no damage'); same(/^act,foe,you$/.test(r.seen), true, 'the turns: ' + r.seen); same(r.again, true, 'your turn again');
+        same(r.firstAgain, false, 'the first played twice in a round'); same(r.second, true, 'the second played');
+        same(r.hurt, true, 'the enemy took no damage'); same(/^act,you,act,foe,you$/.test(r.seen), true, 'the turns: ' + r.seen); same(r.again, true, 'your turn again (a new round: the first plays again)');
     });
     check('only on your turn, and only a card that is ready: not during another turn, not a member that is down (§2.22)', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
@@ -178,7 +180,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the enemies act fastest first, by their own speed (§2.20), each in its own window', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.5, player.y + 0.8), c = __ant(player.x + 1.8, player.y - 0.8);
             a.baseMoveSpeed = 0.02; b.baseMoveSpeed = 0.06; c.baseMoveSpeed = 0.04; cardBattleChoose(a); __ticks(1); cardBattlePlay(followers[0], 'basic', null, a);
-            const order = []; for (let i = 0; i < 2000; i++) { frame++; cardBattleTick(); const t = cardBattleTurnInfo(); if (t && t.who === 'foe' && t.actor && order[order.length - 1] !== t.actor) { order.push(t.actor); } if (t && t.who === 'you') break; }
+            const order = []; for (let i = 0; i < 4000; i++) { frame++; cardBattleTick(); const t = cardBattleTurnInfo(); if (t && t.who === 'foe' && t.actor && order[order.length - 1] !== t.actor) { order.push(t.actor); } if (t && t.who === 'you') { if (cardBattlePlay(followers[1], 'basic', null, a)) continue; break; } }
             return order.map(x => x === a ? 'a' : x === b ? 'b' : x === c ? 'c' : '?').join(''); })()`);
         same(r, 'bca', 'the order');
     });
@@ -220,7 +222,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('out of a battle, with the switch on, your squad and your gun fight nothing: a provoked creature beside them is not attacked in the game\'s own frames, and no battle starts; with the switch off they fight it as ever', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 1.6, player.y + 0.4); a.provoked = true; a.state = 'hunt'; a.noBite = true; a.health = a.maxHealth = 1e6;
             const sentries = sentryItems(); for (const it of sentries) it.broken = true; followerProjectiles.length = 0; projectiles.length = 0;   // (the facility's turrets are the world's, not your squad: they fire as ever, §2.28; and the shots an earlier check left in the air go)
-            const mine = u => u === player || partyMembers().indexOf(u) >= 0 || (typeof partyClone === 'function' && u === partyClone());   // (you and your squad: a follower holding a room may fight, §2.28)
+            const mine = u => !!u && (u === player || partyMembers().indexOf(u) >= 0 || (typeof partyClone === 'function' && u === partyClone()));   // (you and your squad: a follower holding a room may fight, §2.28; a blow with no source is no one's: with no clone, partyClone() is null too)
             let squadHurt = 0; const by = [], _ad = applyDamage; applyDamage = function (t, amt, src) { if (t === a && mine(src)) { squadHurt += amt; by.push(Math.round(amt) + ' from ' + (src === player ? 'you' : 'a squad member (' + (src.element || '') + ')')); } return _ad.apply(this, arguments); };
             const h0 = a.health; __live(300); applyDamage = _ad; const o = { phase: cardBattlePhase(), hurt: squadHurt, by: by.slice(0, 4), gun: targetNearest() === a, picked: partyMembers().some(f => f._nearestEnemy === a) };
             CARD_BATTLE.on = false; __live(300); o.offHurt = h0 - a.health; for (const it of sentries) it.broken = false; return o; })()`);
