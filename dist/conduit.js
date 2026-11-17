@@ -26509,7 +26509,7 @@ function _cbLayout() {
         let bd = Infinity;
         for (const c of partyRoomCells(room)) {
             const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2);
-            if (d < bd && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F))) {
+            if (d < bd) {
                 bd = d;
                 mc = c;
             }
@@ -26559,7 +26559,7 @@ function _cbLayout() {
     for (const [a, x, y] of best.out)
         _cb.slots.set(a, { x, y });
     if (room && typeof partyRoomCells === "function") {
-        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]) && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F)));
+        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]));
         for (const a of all) {
             if (_cb.slots.has(a))
                 continue;

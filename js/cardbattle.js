@@ -246,7 +246,7 @@ function _cbLayout() {
     // ONE ROOM (the owner, 2026-11-17: "if a battle would take place near the doorway, make the battle happen in one room rather than take place in separate rooms"): the battle's room is its
     // enemies' (the battle takes in only the creatures of that room, _cbGroup); the middle of the line and every square are in it, and any of yours outside it is brought in (cardBattleTick, the black)
     let mc = _fpNearestCellOpen((fx + player.x) / 2, (fy + player.y) / 2);
-    if (room && (!mc || facilityRoomIdAt(mc[0], mc[1]) !== room) && typeof partyRoomCells === "function") { let bd = Infinity; for (const c of partyRoomCells(room)) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F))) { bd = d; mc = c; } } }
+    if (room && (!mc || facilityRoomIdAt(mc[0], mc[1]) !== room) && typeof partyRoomCells === "function") { let bd = Infinity; for (const c of partyRoomCells(room)) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd) { bd = d; mc = c; } } }   // (a room's cells are its walkable tiles: js/party.js partyRoomCells)
     if (!mc) return;
     const cx = mc[0], cy = mc[1];   // (the middle on a tile, so every square is a tile's middle)
     let best = null;
@@ -277,7 +277,7 @@ function _cbLayout() {
     for (const [a, x, y] of best.out) _cb.slots.set(a, { x, y });
     // the room too small for the whole line: the rest on the nearest free tiles of the room (one each)
     if (room && typeof partyRoomCells === "function") {
-        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]) && (typeof facilityWalkable !== "function" || facilityWalkable(c[0], c[1], _fp.F)));
+        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]));
         for (const a of all) { if (_cb.slots.has(a)) continue; let bi = -1, bd = Infinity; free.forEach((c, i) => { const d = Math.hypot(c[0] - cx, c[1] - cy); if (d < bd) { bd = d; bi = i; } }); if (bi < 0) break; const c = free.splice(bi, 1)[0]; _cb.slots.set(a, { x: c[0], y: c[1] }); }
     }
     const gap = best.gap; _cb.lay = { room, ux: best.ux, uy: best.uy, mx: cx, my: cy, sx: cx - best.ux * gap, sy: cy - best.uy * gap, ex: cx + best.ux * gap, ey: cy + best.uy * gap, dir: undefined };
