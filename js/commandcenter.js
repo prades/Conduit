@@ -20,8 +20,8 @@
 // (The ZONES page, the roster squads A / B / C, the DUTY setting and the build order picker were the strip game's: gone with it. Nobody works.)
 //
 // PLAY STYLE is an engagement reach (PLAY_STYLES): a CAUTIOUS unit (DEFENSIVE until 2026-11-17) only takes on enemies close to it, a RECKLESS one (AGGRESSIVE) goes after enemies much
-// further out (npc.js multiplies its role's reach by playReach()). A TANK ("DAMAGE ABSORPTION / TAUNTING") draws the creatures in a card battle (js/cardbattle.js, docs/CARD-BATTLES.md
-// §2.42) and has the usual reach out of one. It is saved with the follower.
+// further out (npc.js multiplies its role's reach by playReach()). A TANK has the usual reach; no play style changes damage (in a card battle each creature goes for whoever has hurt it
+// most: js/cardbattle.js, docs/CARD-BATTLES.md §2.46). It is saved with the follower.
 //
 // THE CAROUSEL (the facility on a tablet or a desktop: hudCorners(), js/party.js; ASKED: the "Roster 5 · CAROUSEL" layout, "but no recruit button at the top"). The roster is ONE creature at a time: the squad's three slots across the top (a tap
 // looks at that member, ✕ REMOVE takes it out, DISBAND the lot), the creature in view big in the middle with ◂ ▸ to walk the roster and its settings beside it (ATTACK STYLE, PLAY STYLE, RE-ROLL, INFO and its base stats), the filters and a strip
@@ -33,11 +33,11 @@
 
 const PLAY_STYLES = [
     // (the owner, 2026-11-17, naming them for the card battles: "CAUTIOUS / RECKLESS" in place of DEFENSIVE / AGGRESSIVE; the ids are kept, so a save keeps its follower's choice. In a battle:
-    // CAUTIOUS walks to the farthest square it can hit from, RECKLESS to the one next to the most enemies, js/cardbattle.js §2.43; out of one, each its reach as before)
+    // CAUTIOUS walks to the farthest square it can hit from, RECKLESS to the one next to the most enemies, js/cardbattle.js §2.45; out of one, each its reach as before)
     { id: "defensive",  label: "CAUTIOUS",   reach: 0.6, blurb: "PREFERS TO KEEP ITS DISTANCE" },
     { id: "balanced",   label: "BALANCED",   reach: 1.0, blurb: "THE USUAL REACH" },
     { id: "aggressive", label: "RECKLESS",   reach: 1.7, blurb: "MAXIMUM OUTPUT, WHATEVER TOUCHES IT" },
-    { id: "tank",       label: "TANK",       reach: 1.0, blurb: "DAMAGE ABSORPTION / TAUNTING" },   // (the owner, 2026-11-17: "a play style where it says like damage absorption / taunting": in a card battle the creatures go for it, js/cardbattle.js §2.42; out of one, the usual reach)
+    { id: "tank",       label: "TANK",       reach: 1.0, blurb: "DAMAGE ABSORPTION" },   // (the owner, 2026-11-17: a play style for "damage absorption / taunting"; then "I don't think the tank role should have automatic taunting", and "Don't change the damage numbers on any of the roles": in a card battle each creature goes for whoever has hurt it most, js/cardbattle.js §2.46; out of one, the usual reach)
 ];
 const ATTACK_STYLES = [
     { id: "brawler", label: "BRAWLER",    col: "#ff4a1c", blurb: "CLOSES IN AND FIGHTS" },

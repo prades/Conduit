@@ -265,6 +265,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (dmg > 0 && target.speciesName === "rolypoly" && typeof rolyAfterHit === "function") rolyAfterHit(target);   // a hit that leaves a roly-poly under half its health curls it up (js/rolypoly.js)
     if (source && !isReflected && dmg > 0 && source.element === "blossom" && typeof elementMend === "function") elementMend(source);   // BLOOM's MEND: the most hurt of yours nearby is healed a little (js/elements.js)
     if (source) target.lastAttacker = typeof predatorSource === "function" ? predatorSource(source) : source;   // (the player's hit: the player itself, js/predator.js, so a creature turns on the player)
+    if (source && !isReflected && dmg > 0 && typeof cardBattleHurt === "function") cardBattleHurt(target, source, dmg);   // CARD BATTLES: each creature's tally of who has hurt it most (js/cardbattle.js §2.46)
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
     // ── DAMAGE TICKER ───────────────────────────────────────── an enemy's hit in its element's colour; one of yours, red with a minus (COMBAT.numbers.ally). Anchored to the unit (a world text, js/drops.js).

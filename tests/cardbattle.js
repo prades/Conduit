@@ -463,46 +463,46 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(!!r.none, false, 'no square three tiles off in sight to try'); same(JSON.stringify([r.front, r.picked, r.flew]), '[true,"the Mage",true]', 'the Brawler in front of it; it leapt, at the Mage');
     });
 
-    group('TANKS: THE TANK PLAY STYLE (§2.42; the owner: "a setting on each follower in the roster ... a play style where it says like damage absorption / taunting")');
+    group('TANKS AND THE ENEMIES\' FOCUS (§2.46; the owner: "each creature independently checks their own health for Who Is done the most damage to them"; "Card battles only"; "Don\'t change the damage numbers on any of the roles")');
     run(`globalThis.__tanks = () => { __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [t, m, b] = followers; t.role = 'camper'; m.role = 'sniper'; b.role = 'brawler'; for (const f of followers) f.health = f.maxHealth = 5000; return { t, m, b }; };`);
-    check('the roster\'s PLAY STYLE has TANK, "DAMAGE ABSORPTION / TAUNTING", set on any follower and kept in its save; its tags say TANK; no TAUNT card in a battle; out of a battle it fights at the usual reach', () => {
+    check('the roster\'s TANK ("DAMAGE ABSORPTION"), set on any follower and kept in its save; its tags say TANK; no TAUNT card; out of a battle it fights at the usual reach', () => {
         const r = J(`(function(){ const { t, m, b } = __tanks(); const P = PLAY_STYLES.find(x => x.id === 'tank'); const o = { label: P && P.label, blurb: P && P.blurb, set: ccApplyPlayStyle([m, b], 'tank'), styles: [t.playStyle || 'balanced', m.playStyle, b.playStyle].join() };
             o.saved = /"playStyle":"tank"/.test(JSON.stringify(followerRosterSnapshot())); o.reach = playReach(b); o.tag = ccRow(ccUnits({}).find(u => u === b) || b).playStyle;
             const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(CARD_BATTLE.every + 1); o.cards = cardBattleCards(b).some(c => c.kind === 'taunt'); o.column = _cbTank(b) && !_cbTank(t);
             for (const f of followers) f.playStyle = undefined; return o; })()`);
-        same(JSON.stringify([r.label, r.blurb, r.set, r.styles]), '["TANK","DAMAGE ABSORPTION / TAUNTING",2,"balanced,tank,tank"]', 'the style, set on a Mage and a Brawler');
-        same(JSON.stringify([r.saved, r.reach, r.tag, r.cards]), '[true,1,"tank",false]', 'saved, the usual reach out of a battle, its roster row, no TAUNT card'); same(r.column, true, 'a tank, and not the technician left at BALANCED'); ok(/class="cb-sub">LV ' \+ \(f\.level \|\| 1\) \+ \(_cbTank\(f\) \? " · TANK" : ""\)/.test(rd('js/cardbattle.js')), 'the battle screen\'s column says TANK');
-        ok(/r\.playStyle === "tank" \? "TANK"/.test(rd('js/commandcenter.js')) && /f\.playStyle === "tank" \? "TANK"/.test(rd('js/squadfly.js')), 'the roster card\'s and the squad bar\'s tags');
+        same(JSON.stringify([r.label, r.blurb, r.set, r.styles]), '["TANK","DAMAGE ABSORPTION",2,"balanced,tank,tank"]', 'the style, set on a Mage and a Brawler');
+        same(JSON.stringify([r.saved, r.reach, r.tag, r.cards, r.column]), '[true,1,"tank",false,true]', 'saved, the usual reach out of a battle, its roster row, no TAUNT card, a tank');
+        ok(/r\.playStyle === "tank" \? "TANK"/.test(rd('js/commandcenter.js')) && /f\.playStyle === "tank" \? "TANK"/.test(rd('js/squadfly.js')) && /class="cb-sub">LV ' \+ \(f\.level \|\| 1\) \+ \(_cbTank\(f\) \? " · TANK" : ""\)/.test(rd('js/cardbattle.js')), 'the roster card\'s, the squad bar\'s and the battle column\'s TANK');
     });
-    check('a creature next to the Brawler in front goes for a TANK behind it instead, drawn (no special), on its own turn', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const a = __walker(player.x + 2.4, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(b, a);
-            const o = { front: _cbFront(a, [t, m, b, player]) === b, tank: _cbTaunter(a, [t, m, b, player]) === t }; _cbFoesTurn(false); const T = cardBattleTurnInfo();
-            o.turn = !!T && T.actor === a; o.prey = a.currentTarget === t ? 'the tank' : a.currentTarget === b ? 'the Brawler' : 'another'; o.drawn = cardBattleTaunted(a); t.playStyle = undefined; return o; })()`);
-        same(JSON.stringify([r.front, r.tank, r.turn, r.prey, r.drawn]), '[true,true,true,"the tank",true]', 'the Brawler in front, the tank drawing it, its turn, its prey, drawn');
+    check('no play style changes damage (the owner: "Don\'t change the damage numbers on any of the roles"): a hit by a TANK on its turn deals what the same hit deals when it is BALANCED, CAUTIOUS or RECKLESS', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); a.health = a.maxHealth = 1e6; cardBattleChoose(a); __ticks(1); __nextTo(t, a); cardBattlePlay(t, 'basic', null, a);
+            const hit = ps => { t.playStyle = ps; const h0 = a.health; applyDamage(a, 10, t, null, false, false, DMG_HIT_MAIN); return +(h0 - a.health).toFixed(4); };
+            const o = ['tank', undefined, 'defensive', 'aggressive'].map(hit); t.playStyle = undefined; return o; })()`);
+        same(new Set(r).size, 1, 'the damage of one hit under each play style: ' + r.join(', '));
     });
-    check('with no tank the front line as before; one that cannot reach the tank (your squad all round it) goes for the front; of two tanks, the one it reaches first', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); const all = [t, m, b, player], o = {};
-            o.none = _cbTaunter(a, all) === null && _cbFront(a, all) === b;
-            m.playStyle = 'tank'; t.playStyle = 'tank'; const ds = _cbDistFrom(a), first = _cbStepsTo(a, t, ds) <= _cbStepsTo(a, m, ds) ? t : m; o.first = _cbTaunter(a, all) === first;
-            m.playStyle = undefined; const s = _cbSq(t); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if ((dx || dy) && ![..._cb.slots.values()].some(q => q.x === s[0] + dx && q.y === s[1] + dy)) _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy });   /* (yours on every square round it) */
-            o.boxed = _cbTaunter(a, all) === null; _cbFoesTurn(false); o.prey = a.currentTarget === b ? 'the Brawler' : a.currentTarget === t ? 'the tank' : 'another'; t.playStyle = undefined; return o; })()`);
-        same(JSON.stringify([r.none, r.first, r.boxed, r.prey]), '[true,true,true,"the Brawler"]', 'no tank, two tanks, the tank boxed in, its prey');
+    check('each creature goes for whoever has hurt it most (its own tally): the technician\'s one hit on the front ant tops the Brawler\'s blows spread over all three, so the front ant goes for the TANK and the other two for the Brawler; unhurt, the front line', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const a = __ant(player.x + 2.4, player.y - 0.6), c = __ant(player.x + 3, player.y + 0.7), d = __ant(player.x + 2.2, player.y + 1.4);
+            for (const e of [a, c, d]) { e.health = e.maxHealth = 1e6; e.moveSpeed = e.baseMoveSpeed = 0.04; } cardBattleChoose(a); __ticks(1); const all = [t, m, b, player], o = {};   /* (walkers: a test ant has no pace of its own) */
+            o.before = [a, c, d].map(e => _cbGrudge(e, all) === null && _cbFront(e, all) !== null);
+            cardBattleHurt(a, t, 15); for (const e of [a, c, d]) cardBattleHurt(e, b, 6);   /* (the tank's one heavy hit; the Brawler's spread over all three) */
+            const who = e => { const g = _cbGrudge(e, all); return g === t ? 'tank' : g === b ? 'brawler' : g === m ? 'mage' : 'none'; }; o.after = [a, c, d].map(who);
+            cardBattleHurt(c, m, 40); o.mage = who(c); _cbFoesTurn(false); let first = null; for (let i = 0; i < 3000 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'foe'; i++) { const T = _cb.turn; if (T.a === a && !first) first = a.currentTarget === t ? 'tank' : 'other'; frame++; cardBattleTick(); }
+            o.turn = first; t.playStyle = undefined; return o; })()`);
+        same(JSON.stringify(r.before), '[true,true,true]', 'unhurt: no tally, the front line');
+        same(r.after.join(), 'tank,brawler,brawler', 'the front ant, the second, the third'); same(r.mage, 'mage', 'the second, hurt more by the Mage after'); same(r.turn, 'tank', 'the front ant on its turn');
     });
-    check('drawn by a tank, a creature starts no special: a striker with its LEAP STRIKE ready, next to the tank and a Mage 3 tiles off, bites the tank and does not leap', () => {
-        const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
-            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
-            if (!c) { t.playStyle = undefined; return { none: true }; } _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(t, st);
-            initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; _cbFoesTurn(false); let flew = false, drawn = false, bit = false;
-            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (cardBattleTaunted(st)) drawn = true; if (_cb.turn.hit) bit = true; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
-            const o = { prey: st.currentTarget === t ? 'the tank' : 'another', drawn, bit, flew }; t.playStyle = undefined; return o; })()`);
-        same(!!r.none, false, 'no square three tiles off in sight to try');
-        same(JSON.stringify([r.prey, r.drawn, r.bit, r.flew]), '["the tank",true,true,false]', 'its prey, drawn, its bite landed, it leapt');
+    check('one it cannot reach it passes over for the next most (your squad all round the one that hurt it most); the tally is the battle\'s, gone when it ends', () => {
+        const r = J(`(function(){ const { t, m, b } = __tanks(); const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1); __nextTo(b, a); const all = [t, m, b, player];
+            cardBattleHurt(a, t, 30); cardBattleHurt(a, b, 10); const o = { top: _cbGrudge(a, all) === t };
+            const s = _cbSq(t); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if ((dx || dy) && ![..._cb.slots.values()].some(q => q.x === s[0] + dx && q.y === s[1] + dy)) _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy });   /* (yours on every square round it) */
+            o.next = _cbGrudge(a, all) === b; cardBattleEnd(); o.gone = _cb.grudge.size === 0; cardBattleHurt(a, t, 5); o.outside = _cb.grudge.size === 0; return o; })()`);
+        same(JSON.stringify([r.top, r.next, r.gone, r.outside]), '[true,true,true,true]', 'the one that hurt it most, then the next when it cannot reach it, gone at the end, nothing kept out of a battle');
     });
 
-    group('THE PLAY STYLES IN A BATTLE (§2.43; the owner: "Shoots from far", "Into the crowd", "none of them do anything with damage", "CAUTIOUS / RECKLESS")');
+    group('THE PLAY STYLES IN A BATTLE (§2.45; the owner: "Shoots from far", "Into the crowd", "none of them do anything with damage", "CAUTIOUS / RECKLESS")');
     check('the roster calls them CAUTIOUS, BALANCED, RECKLESS and TANK, with their words; the saved ids are kept; the tags say CAUT and RECK', () => {
         const r = J(`PLAY_STYLES.map(p => p.id + ':' + p.label + ':' + p.blurb)`);
-        same(r.join('|'), 'defensive:CAUTIOUS:PREFERS TO KEEP ITS DISTANCE|balanced:BALANCED:THE USUAL REACH|aggressive:RECKLESS:MAXIMUM OUTPUT, WHATEVER TOUCHES IT|tank:TANK:DAMAGE ABSORPTION / TAUNTING', 'the play styles');
+        same(r.join('|'), 'defensive:CAUTIOUS:PREFERS TO KEEP ITS DISTANCE|balanced:BALANCED:THE USUAL REACH|aggressive:RECKLESS:MAXIMUM OUTPUT, WHATEVER TOUCHES IT|tank:TANK:DAMAGE ABSORPTION', 'the play styles');
         ok(/"defensive" \? "CAUT" : r\.playStyle === "aggressive" \? "RECK"/.test(rd('js/commandcenter.js')) && /"defensive" \? "CAUT" : f\.playStyle === "aggressive" \? "RECK"/.test(rd('js/squadfly.js')), 'the roster card\'s and the squad bar\'s tags');
     });
     check('CAUTIOUS walks to the farthest square it can hit from (a Mage that cannot see from its own square); BALANCED, the fewest steps', () => {
@@ -535,7 +535,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
         ok(/cardBattleHit\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardBattleHit\(player, source\)\) return false;/.test(rd('js/helpers.js')) && /cardBattleNoFight\(\)\) return;/.test(rd('js/input.js')) && /_noFight/.test(rd('js/evolution.js')) && /cardBattleNoFight\(f\)\) return false;/.test(rd('js/elements.js')) && /cardBattleNoFight\(\) && typeof cardBattleChoose/.test(rd('js/mixtool.js')) && /cardBattleNoFight\(pred\)/.test(rd('js/abilities.js')), 'either a battle or none (§2.35): the blow, the gun, the second attack, the Ultimate, ATTACK, the clone\'s special');
-        ok(/!\(typeof cardBattleTaunted === 'function' && cardBattleTaunted\(pred\)\) && _abShouldFire\(pred, def\)/.test(rd('js/abilities.js')), 'a taunted creature starts no special (§2.41): js/abilities.js');
+        ok(/cardBattleHurt\(target, source, dmg\);/.test(rd('js/helpers.js')) && !/cardBattleDamageMult|tankHit/.test(rd('js/helpers.js') + rd('js/cardbattle.js')) && !/cardBattleTaunted/.test(rd('js/abilities.js')), 'the focus (§2.46): js/helpers.js tells the battle each blow; no damage share for a play style; no taunt left in js/abilities.js');
         ok(/cardBattleStands\(actor\)/.test(rd('js/npc.js')) && /cardBattleOverLow\(ox, oy\)/.test(rd('js/facility.js')) && /cardBattleReticles\(\)\) return;/.test(rd('js/gunfire.js')) && /cardBattleAiming\(\)\)\) \{ const k = age/.test(rd('js/targeting.js')) && /screenNow\(x, y, hPx\) \{ const v = SCR\.set/.test(rd('view3d/gameview.js')), 'the reticles, the shots over low objects, the moves (§2.37 to §2.39): the gun\'s corners and its locking-on, the 3D view\'s point, the cover rule, the Mage\'s stand');
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });

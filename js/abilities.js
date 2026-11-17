@@ -369,7 +369,7 @@ function abilityTick(pred) {
         return false;
     }
     pred.abilityPhase = 'ready';
-    if (!(pred.glitched > 0) && !(typeof cardBattleTaunted === 'function' && cardBattleTaunted(pred)) && _abShouldFire(pred, def)) {   // (taunted in a card battle, it starts none: it goes for the technician, js/cardbattle.js)
+    if (!(pred.glitched > 0) && _abShouldFire(pred, def)) {
         pred.abilityPhase = 'winding';
         pred.abilityTimer = def.windup;
         _abSay(pred, def.name + '!', def.color);

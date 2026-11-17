@@ -98,7 +98,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false;
+    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map();
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -231,7 +231,7 @@ function _cbKeepAtIt() {
     if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
-    _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null;
+    _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null;
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12, §2.16): on your turn it uses the turn: each enemy gets its last hit (fastest first), then you are out. Before the turns begin (the walk, the black), it ends the battle as it is.
@@ -247,7 +247,7 @@ function cardBattleRun() {
 // (its speed), alone moves for a window and goes for one of yours (its prey, else the nearest), until its blow lands or `foeMax`. Then your turn again: each second attack played counts down a turn
 // (its RECHARGE, from its wait time). RUN uses your turn: the enemies get their last hit, then you are out. The cube commands only (§2.10): your gun holds its fire in a battle.
 // _cb.turn: null out of the turns; { who: "you" }; { who: "act", f, kind, id, target, t0, hit, fired, saved }; { who: "foe", a, t0, hit, queue, run }. _cb.cd: follower → { move id: turns to go }.
-_cb.turn = null; _cb.cd = new Map(); _cb.round = 0; _cb.squad = null; _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null;
+_cb.turn = null; _cb.cd = new Map(); _cb.round = 0; _cb.squad = null; _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.grudge = new Map();   // (grudge: each creature's tally of who has hurt it, §2.46)
 // ── LINED UP ON SQUARES, SIDE ON (the owner, 2026-11-17: "the camera should rotate [...] to a place where there's a clear divide, where it looks like everything takes place on a horizontal plane.
 // Things aren't stacked on top of each other. Also, the creatures need to line up on squares"): when the turns begin, the fight is laid out along one of the floor's two directions (the one nearest
 // from you to the enemies that has room): your squad on one side of the middle, the enemies on the other, each on its own tile, one tile further out than the one before and a step to the side
@@ -433,23 +433,29 @@ function _cbFront(a, list) {
     }
     return best;
 }
-// TANKS: THE TANK PLAY STYLE (§2.42; the owner, 2026-11-17: "rather than doing a taunt move card, would be maybe having a setting on each follower in the roster or under their equipment and strategy
-// card. It should have a play style where it says like damage absorption / taunting"; it replaces §2.41's TAUNT card, built and superseded the same day). A follower whose PLAY STYLE is TANK
-// (js/commandcenter.js PLAY_STYLES, set on its roster card and saved with it) draws the creatures in a battle: on its turn every creature that can reach one (a way over the floor to a square it could
-// bite it from, your squad standing in the way) goes for it instead of the front line, the one it reaches first of two, and starts no special meanwhile (cardBattleTaunted, js/abilities.js). It is not
-// made tougher (§2.41's "Draws attacks only"). One that cannot reach a tank attacks the front as before (§2.40). RUN's last hits pick as before.
+// TANKS AND THE ENEMIES' FOCUS (§2.46; the owner, 2026-11-17: "I don't think the tank role should have automatic taunting. I think that the tank role would be best if it just did enough damage to
+// outclass the brawler when it comes to one-on-one combat. That way, if the enemies are focused on who's doing the highest damage, then they will always choose the tank"; "each creature
+// independently checks their own health for Who Is done the most damage to them, and therefore, when the technician hits for a above average normal, hit the brawler would do less damage via AOE
+// to all the targets, therefore keeping the focus on the tank"; "Card battles only"). It replaces §2.44's draw (a TANK no longer taunts).
+//   THE FOCUS: each creature in a battle keeps its own tally of the damage each of yours has dealt it (cardBattleHurt, from js/helpers.js applyDamage); on its turn it goes for the one that has
+//   hurt it most (_cbGrudge), if it can reach it (a way over the floor, your squad standing in the way); the next most, else; none, whoever is in front (§2.40). Its special keeps its own pick.
+//   THE TANK: a follower whose PLAY STYLE is TANK (js/commandcenter.js) no longer draws them; no play style changes damage (the owner: "Don't change the damage numbers on any of the roles"). A
+//   technician's one hit on a creature can top that creature's tally where a Brawler's blows spread over many: that is the player's to play. RUN's last hits pick as before.
 function _cbTank(f) { return !!f && !f.isClone && f.playStyle === "tank"; }
-// the tank drawing `a` this turn, or null: of yours still up (`live`), one whose play style is TANK and that `a` can reach, the one it reaches first (then the nearest)
-function _cbTaunter(a, live) {
-    if (!_cb.lay) return null;
-    const tanks = live.filter(_cbTank); if (!tanks.length) return null;
-    const D = _cbDistFrom(a), sa = _cbSq(a); let best = null, bd = Infinity, be = Infinity;
-    for (const t of tanks) { const d = _cbStepsTo(a, t, D); if (d === Infinity) continue; const q = _cbSq(t), e = Math.hypot(q[0] - sa[0], q[1] - sa[1]); if (d < bd || (d === bd && e < be - _CB_TIE)) { best = t; bd = d; be = e; } }
-    return best;
+// a blow landed on `target` by `source`, `dmg` of its health (js/helpers.js applyDamage, after every cut): in a battle, a creature of it hurt by one of yours remembers how much
+function cardBattleHurt(target, source, dmg) {
+    if (!cardBattleActive() || !(dmg > 0) || _cb.foes.indexOf(target) < 0) return;
+    const src = typeof predatorSource === "function" ? predatorSource(source) : source; if (!_cbMine(src)) return;
+    let m = _cb.grudge.get(target); if (!m) { m = new Map(); _cb.grudge.set(target, m); } m.set(src, (m.get(src) || 0) + dmg);
 }
-// is `a` (a creature, on its own turn) drawn by a tank? (js/abilities.js: it starts no special while it is)
-function cardBattleTaunted(a) { const T = _cb.turn; return !!T && _cb.phase === "on" && T.who === "foe" && T.a === a && !!T.taunted; }
-// THE PLAY STYLES' SQUARE (§2.43; the owner, 2026-11-17: "there needs to be another one where it prefers to keep distance and one where it just tries to get maximum output, not giving
+// the one of yours (`live`) that has hurt `a` most and that it can reach, or null (none has, or it can reach none of them)
+function _cbGrudge(a, live) {
+    const m = _cb.grudge.get(a); if (!m || !_cb.lay) return null;
+    const hurt = live.filter(t => (m.get(t) || 0) > 0).sort((p, q) => m.get(q) - m.get(p)); if (!hurt.length) return null;
+    const D = _cbDistFrom(a); for (const t of hurt) if (_cbStepsTo(a, t, D) < Infinity) return t;
+    return null;
+}
+// THE PLAY STYLES' SQUARE (§2.45; the owner, 2026-11-17: "there needs to be another one where it prefers to keep distance and one where it just tries to get maximum output, not giving
 // Who or what touches it"; of what was offered, "Shoots from far" and "Into the crowd"; "none of them do anything with damage"; named "CAUTIOUS / RECKLESS"): of the squares a follower of yours
 // can hit `t` from this turn (`keys`, the fewest steps first), the one it walks to: CAUTIOUS (play style "defensive") the farthest from `t`; RECKLESS ("aggressive") the one next to the most
 // enemies; a tie, or any other style (BALANCED, TANK), the fewest steps. Null when there are none.
@@ -584,13 +590,13 @@ function _cbNextFoe() {
     const ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(T.a, t));
     while (T.queue.length) {
         const a = T.queue.shift(); if (!_cbFoeOk(a)) continue;
-        T.a = a; const live = ours.filter(ok), tk = !T.run ? _cbTaunter(a, live) : null;   // (a TANK draws one that can reach it, §2.42)
-        const prey = tk || (!T.run && _cb.lay ? _cbFront(a, live) : ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, live));   // (THE FRONT LINE, §2.40: the one in front of it, not whoever it was after; RUN's last hits as before, §2.16)
+        T.a = a; const live = ours.filter(ok), gr = !T.run ? _cbGrudge(a, live) : null;   // (THE FOCUS, §2.46: whoever has hurt it most)
+        const prey = gr || (!T.run && _cb.lay ? _cbFront(a, live) : ok(a.currentTarget) && ours.indexOf(a.currentTarget) >= 0 ? a.currentTarget : _cbNearest(a, live));   // (none: THE FRONT LINE, §2.40, the one in front of it; RUN's last hits as before, §2.16)
         if (!prey) continue;
-        T.walk = null; T.wi = 0; T.arrived = 0; T.sp = false; T.spOn = false; T.spEnd = 0; T.anc = null; T.taunted = !!tk;
+        T.walk = null; T.wi = 0; T.arrived = 0; T.sp = false; T.spOn = false; T.spEnd = 0; T.anc = null;
         // MOVE NOW, ATTACK LATER (§2.39): it bites the one in front if it can from its square, or its special goes off from there; else its turn is a walk towards that one
         if (!T.run && _cb.lay && !_cbCanHit(a, prey, "basic")) {
-            if (!T.taunted && _cbSpecialNow(a)) T.sp = true;   // (drawn by a tank, it goes for it: no special)
+            if (_cbSpecialNow(a)) T.sp = true;
             else { const walk = _cbWalkPath(a, prey, "basic"); if (!walk) continue; T.walk = walk; }
         }
         a.currentTarget = prey; a._prey = prey; a.provoked = true; if (a.state === "wander") a.state = "hunt";
@@ -802,4 +808,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
