@@ -20,7 +20,7 @@
 - **2026-11-09, "Stay 2D for now"** (`DECISION-LOG.md`). The owner then: "I intend to make this a fully 3-D game"; offered a prototype, going all in or staying 2D, they stayed 2D: "I don't wanna take any risks". A real-time 3D engine was left open for later.
 - **2026-11-11, "Real-time stays"** (`BATTLE-LOOK.md` §2, item 1). Turn-based battles and "dramatic beats" (a freeze or slow motion on big moves) were offered and not chosen.
 
-Both still stand after the owner's pick. Direction 1 keeps real time (it slows the pace; it is not turn-based). "Stay 2D" stands until the owner chooses between real 3D and 2.5D (§6).
+Both still stood after the owner's pick: direction 1 kept real time (it slowed the pace; it was not turn-based). *(2026-11-17: the owner's card battles replace real time in battles: turn-based, one card a turn from the whole squad, `CARD-BATTLES.md`. Round 1's 7 COMMAND MENU, 9 CARDS and 7's BATTLE STAGE are its nearest ancestors here.)* "Stay 2D" stands until the owner chooses between real 3D and 2.5D (§6).
 
 ## 3. Round 2: ten directions, reimagined (the current set)
 
@@ -121,7 +121,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 ## 6. Open questions
 
 1. ~~Which look, or which mix?~~ *(answered 2026-11-16: direction 1, "I like the direction of 1")*
-2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays.)* Still open: **how slow, and which marks**. The test page now lets the owner try four paces and one set of marks by eye (§8.3, §8.10). The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
+2. ~~Which fight?~~ *(answered with it: direction 1's, slowed and signalled; real time stays. Superseded 2026-11-17: turn-based card battles, `CARD-BATTLES.md`.)* Still open: **how slow, and which marks**. The test page now lets the owner try four paces and one set of marks by eye (§8.3, §8.10). The game already has wind-ups to build on (a creature rears back before a bite, `COMBAT.md`).
 3. Real 3D or 2.5D? ~~Which piece is built first?~~ *(answered 2026-11-16: "Live 3D test room"; built, §8.)* ~~What next in it?~~ *(answered 2026-11-16, all three: "Walk the lab floor", "A fight at the new pace", "A battle camera"; built, §8.2 to §8.4.)* Still open: **what the page reads on the owner's two iPads as it is now** (one reading of the first room: 52 fps), and then real 3D or 2.5D.
 6. The test page's own choices, each the agent's and for the owner to keep or change: the walls in front of your room sinking (the game's walls always stand), the fight's stand-in numbers (§8.3), the CAMERA button's two angles (§8.4). ~~The camera coming down by itself in a fight~~ *(answered 2026-11-16: taken out; "Just make it to where it's always near the player, and the player can change the angle of it".)*
 4. The oldest iPads (iPadOS 13.4 to 14): keep them (WebGL 1, an older three.js), or not?
