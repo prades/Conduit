@@ -31,6 +31,11 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 15. **The enemies' turns: one by one, a surprise.** After your card each enemy acts in turn, one after another; **their next moves are not shown ahead of time** (of three offered: "One by one, a surprise", not shown first, not all at once). *This changes the chosen screen (§2.9): its "their turn next" list keeps each enemy's health but not its next move, and no move is written over the enemies before they act. A hint short of the move (e.g. whom it will go for) is the owner's to add or not.*
 16. **RUN's cost: the enemies get a last hit.** You escape, but each enemy in the battle attacks once as you leave. (Of three offered: "Enemies get a last hit", not free but not from bosses, not completely free.)
 
+17. **Targets: drag the card onto the enemy.** You choose a card's target by dragging the card onto the enemy it should hit (the owner's own answer: "Dragging the card to the enemy", of "tap the card, then the enemy" and "the card picks"). The basic attack (§2.13) is dragged onto its target after its follower is picked. *How a move with no single target (one that hits every enemy or shields the squad) is played — dropped anywhere in the battle, or onto the squad — is the agent's suggestion, open.*
+18. **Every attack shows:** all of the squad's attacks are on screen at all times, ready or recharging (as in SQUAD ROWS); none is dealt or hidden. (Of two offered: "All of the squad's attacks", not a hand of a few.)
+19. **Recharge turns come from today's wait times:** each move's wait or wind-up in seconds today becomes a number of turns, by one rule, so stronger moves still take longer; the owner can then change any card. (Of three offered: "From today's wait times", not set one by one, not the same for all.) *The rule's ratio (e.g. 2 seconds a turn) is a number for the owner to approve.*
+20. **The enemies act fastest first**, by the speed each creature already has. (Of three offered: "Fastest first", not a fixed order, not random.)
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -73,10 +78,12 @@ None: nothing is built.
 1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.
 2. ~~**The player's part in a battle**~~ *(answered 2026-11-17: commands only, §2.10)*.
 3. ~~**Ultimates**~~ *(answered 2026-11-17: charged by the meter, §2.11; it fills from hits landed and taken, §2.14)*.
-4. **Targets:** with several enemies, how a card's target is chosen (tap the enemy after the card, or the card picks).
+4. ~~**Targets**~~ *(answered 2026-11-17: drag the card onto the enemy, §2.17)*. Still open: playing a move with no single target.
 5. ~~**Leaving a battle**~~ *(answered 2026-11-17: a RUN card, §2.12; the enemies get a last hit, §2.16)*.
-6. **The numbers:** each card's recharge in turns, damage, how many cards show at once (all ready attacks, or a hand of a few).
-7. ~~**Enemies' turns**~~ *(answered 2026-11-17: one by one, a surprise, §2.15)*. Still open: their order (fixed, by speed, or random).
+6. **The numbers:** *(answered in part 2026-11-17: all attacks show, §2.18; recharge from today's wait times, §2.19)*. Still open: the seconds-to-turns ratio; damage in a turn-based fight (today's numbers as they are, or rescaled).
+7. ~~**Enemies' turns**~~ *(answered 2026-11-17: one by one, a surprise, §2.15)*. Their order: fastest first (§2.20).
+9. **A follower that goes down** in a battle: its cards greyed out for the rest of it, and what brings it back.
+10. **The end of a battle:** what you get for winning (XP as now, anything else), and what happens when the whole squad is down.
 8. **The 2D game or the 3D one first:** the game is going 3D (`VIEW-3D.md`); the battle could be built in either.
 
 ## 12. History
