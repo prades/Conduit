@@ -117,14 +117,22 @@ async function openGame(b, w, h) {
   if (on('forms')) {
     const vm = require('vm'), ctx = {}; vm.createContext(ctx); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8') + ';this.__E = EVOLUTIONS;', ctx);
     const ids = Object.values(ctx.__E).filter(e => !e.legacy).map(e => e.id);
+    // A CROPPED SHEET (design/evolutions/crop_sheets.js, since build 2026-11-09r) has its cells packed, not on a grid: cell 0 is found in js/evopack.js (where it is in the sheet, and where it goes in its full
+    // cell) and put back on a clear full cell, as the game draws it (js/evolution.js evoCellRect). Cutting the sheet's top-left corner, as before, took a jumble of packed cells from a cropped sheet.
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/evopack.js'), 'utf8') + ';this.__P = typeof EVO_PACK !== "undefined" ? EVO_PACK : {};', ctx);
+    const only = (process.env.FORMS || '').split(',').filter(Boolean);   // (FORMS=maw: only those forms' pictures are made)
+    const cut = (file, C, out) => { const key = 'img/evo/' + path.basename(file), P = ctx.__P[key], [w, h] = execFileSync('identify', ['-format', '%w %h', file]).toString().split(' ').map(Number);
+      if (P && P.w === w && P.h === h) { const c = P.cells; execFileSync('convert', ['-size', C + 'x' + C, 'xc:none', '(', file, '-crop', c[2] + 'x' + c[3] + '+' + c[0] + '+' + c[1], '+repage', ')', '-geometry', '+' + c[4] + '+' + c[5], '-composite', out]); }
+      else execFileSync('convert', [file, '-crop', C + 'x' + C + '+0+0', '+repage', out]); };
     for (const id of ids) {
-      const sheet = path.join(ROOT, 'img/evo', id + '.png'), ground = path.join(ROOT, 'img/evo', id + '_g.png'), cell = path.join(TMP, 'form_' + id + '.png');
-      const meta = path.join(ROOT, 'img/evo', id + '.json'), C = (fs.existsSync(meta) && JSON.parse(fs.readFileSync(meta, 'utf8')).cell) || 144, box = C + 'x' + C + '+0+0';   // (its cell: 144 px, or 192 for the Electro Skink and the Little Shrub)
-      if (fs.existsSync(ground)) execFileSync('convert', [ground, '-crop', box, '+repage', '(', sheet, '-crop', box, '+repage', ')', '-composite', cell]);
-      else execFileSync('convert', [sheet, '-crop', box, '+repage', cell]);
+      if (only.length && !only.includes(id)) continue;
+      const sheet = path.join(ROOT, 'img/evo', id + '.png'), ground = path.join(ROOT, 'img/evo', id + '_g.png'), cell = path.join(TMP, 'form_' + id + '.png'), gcell = path.join(TMP, 'form_' + id + '_g.png');
+      const meta = path.join(ROOT, 'img/evo', id + '.json'), C = (fs.existsSync(meta) && JSON.parse(fs.readFileSync(meta, 'utf8')).cell) || 144;   // (its cell: 144 px, or 192 for the Electro Skink and the Little Shrub)
+      cut(sheet, C, cell);
+      if (fs.existsSync(ground)) { cut(ground, C, gcell); execFileSync('convert', [gcell, cell, '-composite', cell]); }
       webp(cell, path.join(OUT, 'forms', id + '.webp'), 88, ['-trim', '+repage', '-resize', '220x220>']);
     }
-    console.log('forms: ' + ids.length);
+    console.log('forms: ' + (only.length ? only.join(',') : ids.length));
   }
   if (on('poster')) {
     const f = path.join(TMP, 'poster.png'); execFileSync('node', [path.join(ROOT, 'design/roster-poster/poster.js'), f], { stdio: 'inherit' });

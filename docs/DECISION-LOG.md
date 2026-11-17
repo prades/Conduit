@@ -16,11 +16,11 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: Only the room you are in shows its creatures
 
-- **Date:** 2026-11-17 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17m`
+- **Date:** 2026-11-17 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17n`
 - **Status:** implemented in the 2D game and the 3D view, verified by `tests/roomsight.js` and the full run; not seen on an iPad.
 - **Decision:** the owner: "Shouldn't be able to see enemies in other rooms. Only the rooms that you're in." A creature not of yours is drawn, tapped and locked only in the player's room; yours always show; the Nest is one place; a card battle's creature shows on the walk to it.
 - **Agent's choices, provisional:** applied to both views (the owner named no view); creatures only, not your followers; a creature in a doorway counts in the room of its nearest floor cell; a card battle takes in only its creature's room.
-- **Affects:** `COMBAT.md` §8.3a; `js/facilityplay.js`, `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`; `tests/roomsight.js`; `CHANGELOG.md` `2026-11-17m`.
+- **Affects:** `COMBAT.md` §8.3a; `js/facilityplay.js`, `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`; `tests/roomsight.js`; `CHANGELOG.md` `2026-11-17n`.
 
 ## DECISION: The 3D view's camera turns a quarter at a time and zooms
 
@@ -3618,3 +3618,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The rules, each chosen from options: the rocks land **"All random"** (passed over: a third aimed at enemies, the agent's suggestion; every rock aimed); the craters **show only** (passed over: burning while hot); the strength the **"Same total"** as the eruption's (passed over: weaker, stronger); the name **METEOR RAIN** (passed over: VOLCANIC ERUPTION, CINDER STORM).
 - Agent's choices (provisional): every number (`ULT_METEOR`), the measure the total was matched on (three still ants, which take the eruption's crater burn in full), leaving the eruption's code in place unused, no room tint (the effects plan's rule), the icon.
 - Status: Implemented (build `2026-11-15i`); verified by `tests/followercombat.js`, `tests/foundation.js`, `tests/fx3d.js` and a video from the real page; not playtested. `COMBAT.md`, `EFFECTS.md`, `CHANGELOG.md`, the Bible. Supersedes VOLCANIC ERUPTION as the Hood's Ultimate (`NEXT-PHASE-ROADMAP.md` §12.3, roadmap 7).
+
+## DECISION: The Frost Maw is powder snow; his teeth stay, his side teeth go (2026-11-17, build `2026-11-17k`, branch `claude/card-artist`)
+- The owner, seeing him on a draft attack card: "Frostwall needs a bit of a redesign. Not much, but it's hard to tell what he is". Offered small additions (eyes, more teeth, a glowing throat, back spikes), the owner answered instead: **"He's supposed to have two icicles fangs and their within his Pac-Man looking body but it's made of powdered snow supposed to be but instead right now it looks like it's a crystaline looking icy exterior."** So the material, not the shape (as decided 2026-11-11: "Not the shape, but the texture").
+- Round 1 (smooth snow, a round mouth, two clear icicles): **"No, I like his old teeth and the powder material needs more of a snowy texture."** So the teeth and mouth of No. 934 were kept and the snow made clumpy.
+- Round 2: **"shouldn't be able to see snow inside of his mouth in the back, but other than that, it looks absolutely awesome."** Then, on a picture with the two points low at each side of the mouth circled: **"Get rid of the side teeth somehow."** Round 3: **"Frost maw looks good."**
+- Passed over: glowing eyes; bigger fangs and more teeth; a dark mouth with a glowing throat; ice spikes on his back; the icicle fangs; a snow texture painted on as a picture (it looked like static and streaked at the top).
+- Agent's, provisional: how lumpy the snow is and its colours, the line between the mouth's top (jagged) and its sides (round).
+- Status: Implemented (build `2026-11-17k`); verified by the test run and the real game page; not playtested. `CHANGELOG.md`, the Bible's picture. Supersedes the faceted look of build `2026-11-11v`.
