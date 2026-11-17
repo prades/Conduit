@@ -82,7 +82,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cbCentre(); _cbSettle();
+    _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
     else _cb.phase = "on";
@@ -105,20 +105,30 @@ function cardBattleHit(target, source) {
         const T = _cb.turn, src = typeof predatorSource === "function" ? predatorSource(source) : source, f0 = _cbF();
         if (T.who === "act" && src === T.f && _cb.foes.indexOf(target) >= 0 && !T.hit) T.hit = f0;
         else if (T.who === "foe" && src === T.a && _cbMine(target) && !T.hit) T.hit = f0;
-        return;
+        return false;
     }
-    if (!cardBattleOn() || cardBattleActive() || !target || !source) return;
+    // EITHER A BATTLE OR NONE (§2.31, the owner: "no intermediary fighting with my squad. It's either battle or no battle"): the blow that starts a battle does not land (true: the caller,
+    // js/helpers.js applyDamage and hurtPlayer, lets it fall), nor does the rest of that same blow this frame (a slam's other victims)
+    if (!cardBattleOn() || !target || !source) return false;
     const src = typeof predatorSource === "function" ? predatorSource(source) : source;
     const ours = _cbMine(target);   // (you or your squad: a follower holding a room fights its own fight, §2.28)
-    if (!ours || !_cbFoeOk(src)) return;
-    if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return;   // (the battle just ended: its creatures' last blows start nothing)
-    _cbBegin(src, false);
+    if (cardBattleActive()) return !!(ours && _cb.startHit && src === _cb.target && _cb.t === _cbF());
+    if (!ours || !_cbFoeOk(src)) return false;
+    if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return false;   // (the battle just ended: its creatures' last blows start nothing)
+    _cbBegin(src, false); _cb.startHit = true;
+    return true;
 }
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
 function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
-function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return true; if (_cb.foes.indexOf(a) < 0) return false;
+function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return !cardBattleOn();   /* (out of a battle your squad and your gun go for nothing: §2.31) */ if (_cb.foes.indexOf(a) < 0) return false;
     const T = _cb.turn; if (!T) return true; return T.who === "act" && who === T.f && (a === T.target || T.kind !== "basic"); }   // (the turns: only the one doing its card, at its target; the gun holds its fire, §2.10)   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
+// EITHER A BATTLE OR NONE (§2.31; the owner, 2026-11-17: "it gets really confusing when I am close to an enemy, because my followers will start attacking the creature, or there'll be some
+// sort of combat that's not based in the combat or card-based turn system. So make it to where there's no intermediary fighting with my squad. It's either battle or no battle"): with the
+// switch on and no battle, you and your squad fight nothing. Your squad picks no target (cardBattleMayTarget) and fires no second attack (js/evolution.js) or Ultimate (js/elements.js), the
+// Mutator's clone no special (js/abilities.js), your gun holds its fire (js/input.js, js/targeting.js); a creature's blow on you or them starts the battle and does not land (cardBattleHit), and
+// the enemy card's ATTACK starts one (js/mixtool.js). A follower holding a room is not your squad: it fights in real time (§2.28). `a`: one of yours (none: you, your gun)
+function cardBattleNoFight(a) { return cardBattleOn() && !cardBattleActive() && (a === undefined || a === null || _cbMine(a)); }
 // THE CLOCK AT HALF (§2.30, on §2.28's world that goes on while you battle; the owner, 2026-11-17: "the game clock slows down so that you ... don't automatically lose if you're stalling in a fight, but it still is risky stalling in a fight
 // because things are still happening behind you, like the crystal being destroyed in half speed"; of three offered, "Clock only"): while a battle is on, every countdown of the world runs at
 // CARD_BATTLE.clock (the raids' clock, the spawns', the Crystal's idle refill, a turret's shots, a creature's rest between its bites), and everyone still walks and moves at full speed.

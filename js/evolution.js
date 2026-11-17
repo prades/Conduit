@@ -407,12 +407,13 @@ function evolutionTick() {
         if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
         if (typeof cardBattleHolds === "function" && cardBattleHolds(f)) continue;   // (CARD BATTLES' turns: one holding still winds up nothing, js/cardbattle.js)
         if (f._quillFire) quillFireTick(f, f0);   // (a QUILL BURST turning round: its quills leave a moment after it begins to turn)
-        if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined") altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
+        const _noFight = typeof cardBattleNoFight === "function" && cardBattleNoFight(f);   // (CARD BATTLES, §2.31: out of a battle your squad fires no second attack; it still evolves)
+        if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined" && !_noFight) altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         if (f._pinball) continue;   // a PINBALL rolling: nothing else fires, and its wait starts when it stops (pinballStep)
-        altTick(f, d, f0);   // its chosen alternate's cycle (js/moves.js: on its normal attack it has none)
+        if (!_noFight) altTick(f, d, f0);   // its chosen alternate's cycle (js/moves.js: on its normal attack it has none)
     }
 }
 // THE ALTERNATE'S CYCLE (js/moves.js, "THE ALTERNATE ATTACK IS A CHOSEN MODE"): READY → WIND-UP (f._altWind frames, standing still: js/npc.js) → the move → its EFFECT (f._altLive: the effects, shots, bombs
