@@ -25,7 +25,9 @@ const FP_ROOM_STYLE = {
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
     catwalk_spur:        { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },   // (the Catwalk Spur: the catwalks' steel)
     nest_area:           { acc: FP_ACC.mint, wain: "#33281d", fa: "#4a3a2b", fb: "#403224", dark: true },   // (the Ant Nest: packed dirt, build 2026-11-07ll)
-    cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
+    cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },
+    cold_tunnel:         { acc: "#9be8ff",     wain: "#5f93ad", fa: "#c4dce7", fb: "#b2cddb", ice: true },   // THE ICE TUNNEL (build 2026-11-17h): the cave's icy rock, its floor a little darker (the agent's, provisional)
+    cold_annex:          { acc: "#9be8ff",     wain: "#4f6d7d", fa: "#c9d5db", fb: "#bcc9d0" },              // THE COLD STORAGE'S INTACT PART: whole walls, not frozen (the agent's, provisional)   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
     elec_servers:        { acc: FP_ACC.blue,   wain: "#22303f", fa: "#2a323c", fb: "#242b34", dark: true, wallLit: "#2c3643", wallDark: "#1f2630", cap: "#1b222b" },   // THE ELECTRICAL DOMAIN: dark steel, blue light (look A, docs/DOMAINS.md)
     elec_circuitry:      { acc: "#3fa9ff",     wain: "#1a2430", fa: "#1c222b", fb: "#181d25", dark: true, wallLit: "#263040", wallDark: "#1a212b", cap: "#161c24" },
     subway_platform:     { acc: "#ffcc33",     wain: "#2c3632", fa: "#565b57", fb: "#4c514d", dark: true, damp: true, wallLit: "#7f8a83", wallDark: "#5c655f", cap: "#353c37" },   // THE SUBWAY (build 2026-11-15c): old tile gone grey, damp, the platform's yellow edge (the agent's, provisional)

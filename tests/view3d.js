@@ -12,7 +12,7 @@
 //   THE BODIES    the cube, the eggs, an evolved form and the ants are the view's (the 2D drawing leaves them out); a beetle is the game's own; a unit's bars go down with its body
 //   THE WORLD     a door opens as the game's does; each room as dark as the game draws it (the one you are in at its lit level, the others dark); a blackout darkens it; the floor's marks are laid on its floor; the
 //                 facility's items it does not build are the game's to draw, and only in its rooms
-//   AWAY          in a room it has not built (the arena) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
+//   AWAY          in a room it has not built (the Armory) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -140,6 +140,11 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   out.swipe = [sw(10, 0, 2, 40), sw(150, 4, 10, 40), sw(-64, 0, 8, 40), sw(-40, 0, 2, 10), sw(6, 170, 10, 40), sw(150, 0, 10, 40, true)];
   _v3twoStart([500, 400], [600, 400]); _v3twoMove([450, 380], [650, 420]); out.pinch = [+VIEW3D.zoom.toFixed(2), VIEW3D.twist, VIEW3D.turn];
   VIEW3D.turn = 0; VIEW3D.zoom = 1; V.show(true); step(2);
+  // EVERY FOLLOWER'S BODY (the owner, 2026-11-17: "it only switches back when I have a certain follower": the Thunderhead): each form and egg built as a follower's is and put in every pose
+  // the game can ask of it, with no error; and a Thunderhead beside you is the view's, the view still on
+  out.badBodies = Object.keys(EVOLUTIONS).concat(HD_ELEMENTS.map(function (e) { return 'egg_' + e; }), ['egg_neutral']).map(function (id) { return [id, V.checkBody(id)]; }).filter(function (q) { return q[1]; });
+  var th = followers[1] || followers[0], thWas = [th.evolved, th._moltAt, th.x, th.y]; th.evolved = 'thunderhead'; th._moltAt = -9999; th.x = 14; th.y = 19.5; step(3);
+  out.thunder = [VIEW3D.state, VIEW3D.showing, V.has(th)]; th.evolved = thWas[0]; th._moltAt = thWas[1]; th.x = thWas[2]; th.y = thWas[3]; step(2);
   var r = _fp.F.rooms.find(function (q) { return q.id === 'lab_hallway'; }), low = null;
   for (var x = Math.floor(r.bb[0]); x <= Math.ceil(r.bb[2]) && !low; x++) for (var y = Math.floor(r.bb[1]); y <= Math.ceil(r.bb[3]) && !low; y++) { var q = facilityRoomAt(x, y, _fp.F); if (q && q.id === 'lab_hallway' && facilityHeightAt(x, y, _fp.F) < -0.5) low = [x, y]; }
   put(low[0], low[1]); step(3); worst = 0; pts = [[low[0], low[1], facilityLiftPx(low[0], low[1])], [low[0] - 3, low[1] - 4, 0], [low[0] + 2, low[1] - 2, 60]]; err(); out.stairErr = worst; out.stairCam = _fpCam; out.stairShowing = VIEW3D.showing;
@@ -162,7 +167,19 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   st.open = 0; V.draw(null); out.doorShut = door.open; st.open = 1; V.draw(null); out.doorOpen = door.open;
   step(40); out.lightHere = V.lightAt(13, 19); out.lightAway = V.lightAt(30, 15); out.wantHere = 0; out.wantAway = _fpDarkAmt() * (1 - _fpLit()); facilityBlackoutSet(true); step(80); out.lightBlack = 0; for (var bx = 9; bx <= 18; bx++) for (var by = 13; by <= 25; by++) { var br = facilityRoomAt(bx, by, _fp.F); if (br && br.id === 'crystal_chamber') out.lightBlack = Math.max(out.lightBlack, V.lightAt(bx, by)); } facilityBlackoutSet(false); step(80);   // (the darkest tile of the chamber: by the Crystal the game's emergency light keeps a pool)
   commandMode = true; commandTarget = world.filter(function (t) { return t.x === 13 && t.y === 22; })[0]; step(1); out.fxRing = V.stats.fx; commandMode = false; commandTarget = null; step(1); out.fxNone = V.stats.fx;
-  out.keeps = [V.keeps({ fp: 'pickup', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wall', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'pickup', room: 'arena', x: 0, y: 0 }), V.keeps({ fp: 'station', room: 'lab_passage', x: 19, y: 30 }), V.keeps({ fp: 'wdecor', kind: 'shelf', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'poster', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'rubble', room: 'crystal_chamber', x: 13, y: 19 })];
+  // THE COLD STORAGE (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers ... and the cold storage"): built; its flight of stairs up is the view's own, the lab's stairwell down still the game's; its ice cave's rock icy
+  var stairsN = 0, iceRock = 0; V.core.scene.traverse(function (o) { if (o.userData && o.userData.inkKey === 'stairs') stairsN++; }); iceRock = ((V.world.rooms.cold_storage && V.world.rooms.cold_storage.iceRock) || 0) && ((V.world.rooms.cold_tunnel && V.world.rooms.cold_tunnel.iceRock) || 0);
+  out.cold = [V.covers('cold_storage') && V.covers('cold_tunnel') && V.covers('cold_annex'), V.keeps({ fp: 'stairwell', up: true, room: 'cold_annex', x: 0, y: 0 }), V.keeps({ fp: 'stairwell', up: false, room: 'experiment_lab', x: 0, y: 0 }), stairsN > 0, iceRock > 0];
+  // THE SEWERS (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers"): built; their water seen from above (no ground over it), in the 2D's colour and clearing with it
+  // as the purification runs; the falls, the arch's stream and the outfall's pour, the brood holes' glow and every egg the view's own
+  var swc = cellIn('sewers'); put(swc[0], swc[1]); step(3); var S3 = V.world.sewer, riv = _fp.F.solids.filter(function (s) { return s.id === 'sewer_river_e'; })[0], wc = null;
+  for (var x = Math.ceil(riv.bb[0]); x <= Math.floor(riv.bb[2]) && !wc; x++) for (var y = Math.ceil(riv.bb[1]); y <= Math.floor(riv.bb[3]) && !wc; y++) if (facilityPointInPoly(x, y, riv.poly) && !(_fp.F.decor || []).some(function (d) { return d.room === 'sewers' && d.rect && x > d.rect[0] - 1 && x < d.rect[2] + 1; })) wc = [x, y];
+  var wy = S3.waterAt(wc[0], wc[1]), gy = V.world.groundAt(wc[0], wc[1]), pitY = V.world.groundAt(Math.round(_fp.F.decor.filter(function (d) { return d.kind === 'falls' && d.room === 'sewers'; })[0].a[0]) + 2, Math.round(_fp.F.decor.filter(function (d) { return d.kind === 'falls' && d.room === 'sewers'; })[0].a[1]) + 3);   // (the ground under the river, and in the falls' pit past the lip)
+  var hx = function (c) { return '#' + new THREE.Color(c).getHexString(); }, cleanFn = typeof questWaterClean === 'function' ? questWaterClean : null, colFoul = [S3.colour(), hx(_fpSwCol('#6b2cc4'))]; questWaterClean = function () { return 1; }; V.draw(null); var colClean = [S3.colour(), hx(_fpSwCol('#6b2cc4'))]; questWaterClean = cleanFn; V.draw(null);
+  out.sewers = { built: V.covers('sewers'), showing: VIEW3D.showing, keeps: V.keeps({ fp: 'sewer', what: 'water', room: 'sewers', x: swc[0], y: swc[1] }), seen: wy !== null && (gy === null || gy < wy - 0.01) && pitY !== null && pitY < wy - 2, heights: [wy, gy, pitY], foul: colFoul[0] === colFoul[1], clean: colClean[0] === colClean[1] && colClean[0] !== colFoul[0], cols: [colFoul, colClean], parts: S3.parts(),
+    eggs: facilitySewerItems(_fp.F).filter(function (it) { return it.room === 'sewers' && it.what === 'egg'; }).length, brood: _fp.F.decor.filter(function (d) { return d.room === 'sewers' && d.kind === 'brood_hole'; }).length };
+  put(13, 19); step(3);
+  out.keeps = [V.keeps({ fp: 'pickup', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wall', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'pickup', room: 'armory', x: 0, y: 0 }), V.keeps({ fp: 'station', room: 'lab_passage', x: 19, y: 30 }), V.keeps({ fp: 'wdecor', kind: 'shelf', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'poster', room: 'crystal_chamber', x: 13, y: 19 }), V.keeps({ fp: 'wdecor', kind: 'rubble', room: 'crystal_chamber', x: 13, y: 19 })];
   // nothing standing hides anyone (the owner, 2026-11-16: "Yes, the rock that is obscuring the player should sink in"): for every floor tile of every room built, with that room the one you are in, no wall or rock left standing covers a body there (its feet and its middle) from the camera
   out.hides = (function () { var W = V.world, UHh = 73.48469228349533, n = 0, where = [];
    for (var t = 0; t < 4; t++) {   // (in each of the camera's quarter turns: the turned view's screen and depth, and the walls that sink in it)
@@ -175,7 +192,7 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
    }
     return { n: n, where: where, rooms: Object.keys(W.rooms).length }; })();
   // away, and back
-  var A = _fp.F.byId.get('arena').bb; put(Math.round((A[0] + A[2]) / 2), Math.round((A[1] + A[3]) / 2)); step(3); var d2 = ctx.getImageData(40, 300, 1, 1).data;
+  var A = _fp.F.byId.get('armory').bb; put(Math.round((A[0] + A[2]) / 2), Math.round((A[1] + A[3]) / 2)); step(3); var d2 = ctx.getImageData(40, 300, 1, 1).data;
   out.away = { showing: VIEW3D.showing, display: gl.style.display, px: d2[3], feet: view3dFeet(), body: view3dBody(player) };
   put(13, 19); step(3); out.back = { showing: VIEW3D.showing, display: gl.style.display };`));
 if (ON === null) console.log('  (no Chromium here: skipped)');
@@ -200,6 +217,18 @@ else {
             'a 10 px drag; 150 px right, slowly; 64 px left; a flick of 40 px left; up and down; 150 px on a creature. Each: the swipe\'s, its twist, the drawing waiting, the camera turned by it; the lift the swipe\'s, the quarter turn, the twist left, still swinging');
         same(JSON.stringify(ON.pinch), JSON.stringify([1.8, 0, 0]), 'a pinch with a twist in it: zoomed (as far as it goes), not turned');
     });
+    check('EVERY FOLLOWER\'S BODY (the owner, 2026-11-17: "it only switches back when I have a certain follower": the Thunderhead): each form and egg built as a follower\'s is and put in every pose the game can ask of it, with no error; a Thunderhead beside you is drawn by the view, the view still on', () => {
+        same(JSON.stringify(ON.badBodies), '[]', 'the bodies that fail, with why');
+        same(JSON.stringify(ON.thunder), JSON.stringify(['ready', true, true]), 'the view\'s state, showing, the Thunderhead its own body');
+    });
+    check('THE COLD STORAGE (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers ... and the cold storage"): built with its ice tunnel and its intact part (the owner: "a bit of a tunnel of rocky or icy rock material until you reach another part of the cold storage that is still put together and not frozen"), the flight of stairs up in the intact part the view\'s own (the lab\'s stairwell down still the game\'s), the cave\'s and the tunnel\'s rock icy', () => {
+        same(JSON.stringify(ON.cold), JSON.stringify([true, false, true, true, true]), 'built, the flight left to the game, the stairwell down left to the game, the flight built, icy rock');
+    });
+    check('THE SEWERS (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers"): built and shown; their water seen from above (no ground over it), in the 2D\'s colour and clearing with it as the purification runs; the falls, the arch\'s stream and the outfall\'s pour, the brood holes\' glow and every egg the view\'s own, the game\'s drawing of them left out', () => {
+        const S = ON.sewers; same(JSON.stringify([S.built, S.showing, S.keeps, S.seen]), JSON.stringify([true, true, false, true]), 'built, showing, the game\'s drawing left out, no ground over the river\'s water and the falls\' pit deep (' + JSON.stringify(S.heights) + ')');
+        ok(S.foul && S.clean, 'the water\'s colour, the view\'s and the 2D\'s, foul and clean: ' + JSON.stringify(S.cols));
+        same(JSON.stringify([S.parts.flows >= 3, S.parts.glows, S.parts.eggs, S.parts.waters >= 3]), JSON.stringify([true, S.brood, S.eggs, true]), 'the streams (falls, arch, outfall), a glow a brood hole, an egg an egg, the water\'s bodies: ' + JSON.stringify(S.parts));
+    });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');
         for (const f of ON.floors) { same(f.showing, true, f.id + ': showing'); ok(f.err < 1, f.id + ': off by ' + f.err + ' px'); ok(Math.abs(f.cam - f.h) < 1e-6 && Math.abs(f.h) > 50, f.id + ': the camera does not ride its floor (' + f.cam + ', ' + f.h + ')'); same(f.cube, 1, f.id + ': the cube on its floor'); }
@@ -216,7 +245,7 @@ else {
         ok(ON.hides && ON.hides.rooms >= 12, 'the rooms measured: ' + (ON.hides && ON.hides.rooms)); same(ON.hides.n, 0, 'tiles where something standing covers a body (' + ON.hides.where.join(' | ') + ')');
     });
     check('AWAY: in a room it has not built it hides and the frame is the 2D game\'s, opaque, units where they were; back in the lab it shows again', () => {
-        same(JSON.stringify(ON.away), JSON.stringify({ showing: false, display: 'none', px: 255, feet: 0, body: false }), 'in the arena'); same(JSON.stringify(ON.back), JSON.stringify({ showing: true, display: 'block' }), 'back');
+        same(JSON.stringify(ON.away), JSON.stringify({ showing: false, display: 'none', px: 255, feet: 0, body: false }), 'in the Armory'); same(JSON.stringify(ON.back), JSON.stringify({ showing: true, display: 'block' }), 'back');
     });
 }
 

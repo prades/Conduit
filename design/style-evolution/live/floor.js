@@ -47,6 +47,46 @@ function moreFittings(P, acc) {
       h.onWall(w, h.tm, 1.0, 0.026, setShadows(gp)); }
     else if (d.kind === 'portal_door') { const L = h.len, col = d.colour || PAL.amber; add(box(L - 0.04, 1.36, 0.08, P.tealDk), 0, 0.68); const dark = new T.Mesh(new T.PlaneGeometry(L * 0.82, 1.14), glowMat('#04070d', 1)); dark.userData.noInk = true; add(dark, 0, 0.6, 0.042);
       for (const s of [-1, 1]) add(glow(0.035, 1.14, col, 0.95), s * L * 0.41, 0.6, 0.044); add(glow(L * 0.82, 0.035, col, 0.95), 0, 1.17, 0.044); add(glow(L * 0.5, 0.07, col, 0.8), 0, 1.27, 0.044); h.onWall(w, h.tm, 0, 0.041, setShadows(gp)); }
+    // THE SEWERS' (as js/facilitysewers.js draws them, its sizes in the game's px; the looks the agent's, provisional): the big barred arch and the stream out under its bars, the outfall and its
+    // pour, a brood hole, the colony's resin, the sealed hatch. A stream's colours and a hole's glow are set a frame by the view (P.flows, P.glows: the sewers' tick, below)
+    else if (d.kind === 'sewer_arch' || d.kind === 'outfall' || d.kind === 'brood_hole' || d.kind === 'resin' || d.kind === 'sealed_hatch') {
+      const L = h.len, px = v => v / UH, hr = (a, b) => { const q = Math.sin(seed * 0.001 + a * 78.233 + b * 37.719) * 43758.5453; return q - Math.floor(q); }, dyn = m => { m.userData.dynamic = true; m.userData.noInk = true; return m; };
+      const ribbon = (pts, wd, cols, tex) => { const pos = [], uv = [], col = [], idx = []; pts.forEach((p, i) => { pos.push(p[0] - wd / 2, p[1], p[2], p[0] + wd / 2, p[1], p[2]); uv.push(0, (pts.length - 1 - i) * 0.5, 1, (pts.length - 1 - i) * 0.5); for (let k = 0; k < 2; k++) col.push(...cols(i / (pts.length - 1))); if (i) idx.push(i * 2 - 2, i * 2, i * 2 - 1, i * 2 - 1, i * 2, i * 2 + 1); });
+        const geo = new T.BufferGeometry(); geo.setIndex(idx); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 4));
+        return dyn(new T.Mesh(geo, new T.MeshBasicMaterial({ map: tex, vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide }))); };
+      const streaks = () => canvasTex(16, 64, (g, w2, hh) => { g.fillStyle = '#c8c8c8'; g.fillRect(0, 0, w2, hh); for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(hr(i, 1) * w2, hr(i, 2) * hh, 1.5, 8 + hr(i, 3) * 10); } }, { repeat: true });
+      const lin4 = (c, a) => { const q = new T.Color(`rgb(${c[0]},${c[1]},${c[2]})`).convertSRGBToLinear(); return [q.r, q.g, q.b, a]; }, mix4 = (A, B, t) => A.map((v, i) => v + (B[i] - v) * t);
+      if (d.kind === 'sewer_arch') { const H = px(168), h0 = px(92), arch = (A, s1, top, path) => { const p = path ? new T.Path() : new T.Shape(); p.moveTo(-A, 0); p.lineTo(-A, s1); p.absellipse(0, s1, A, top - s1, Math.PI, 0, true); p.lineTo(A, 0); p.lineTo(-A, 0); return p; };
+        const head = arch(0.54 * L, px(100), px(184)); head.holes.push(arch(0.42 * L, h0, H, true)); add(new T.Mesh(new T.ExtrudeGeometry(head, { depth: 0.08, bevelEnabled: false, curveSegments: 20 }), std('#61666d', { roughness: 0.85 })), 0, 0, 0);   // the headwall, past the wall's top
+        const dk = canvasTex(4, 64, (g, w2, hh) => { const gr = g.createLinearGradient(0, hh, 0, 0); gr.addColorStop(0, '#4a1f86'); gr.addColorStop(0.28, '#140a26'); gr.addColorStop(1, '#020103'); g.fillStyle = gr; g.fillRect(0, 0, w2, hh); }); dk.repeat.set(1 / L, 1 / H);
+        const mouth = new T.Mesh(new T.ShapeGeometry(arch(0.42 * L, h0, H), 20), new T.MeshBasicMaterial({ map: dk })); mouth.userData.noInk = true; add(mouth, 0, 0, 0.004);   // the old tunnel, dark behind the bars
+        const bar = std('#6f7c89', { roughness: 0.45, metalness: 0.5 }), rail = std('#7d8a97', { roughness: 0.45, metalness: 0.5 });
+        for (let k = 1; k < 10; k++) { const u = 0.08 + k * 0.84 / 10, dd = (u - 0.5) / 0.42, zt = h0 + Math.sqrt(Math.max(0, 1 - dd * dd)) * (H - h0) - px(2); add(box(0.05, zt, 0.05, bar), (u - 0.5) * L, zt / 2, 0.05); }   // the bars, down
+        for (const y of [px(26), h0 - px(6)]) add(box(0.84 * L, 0.07, 0.06, rail), 0, y, 0.06);
+        add(box(0.16 * L, px(14), 0.03, std('#c8962e', { roughness: 0.6 })), 0, h0 + px(15), 0.1); add(box(0.12 * L, px(18), 0.11, std('#71767d', { roughness: 0.85 })), 0, H + px(7), 0.04);   // a rusted plate, the keystone
+        const tex = streaks(), m = ribbon([[0, px(2), 0.08], [0, -px(4), 0.35], [0, -px(12), 0.62]], 0.6 * L, t => [1, 1, 1, 1], tex); add(m, 0, 0, 0);   // the stream, out over the sill and down into the reservoir
+        if (P.flows) P.flows.push({ tex, col: m.geometry.attributes.color, speed: 0.02, stops: [[[214, 170, 255], [170, 236, 248], 0.92], [[167, 110, 238], [115, 203, 229], 0.86], [[120, 50, 220], [60, 170, 210], 0.8]] });
+        h.onWall(w, h.tm, 0, 0.03, setShadows(gp)); }
+      else if (d.kind === 'outfall') { const zc = px(32), cyl = (r, dep, mat, z) => { const m = new T.Mesh(new T.CylinderGeometry(r, r, dep, 24), mat); m.rotation.x = Math.PI / 2; add(m, 0, zc, z); return m; };
+        cyl(0.43, 0.1, std('#6b6f75', { roughness: 0.85 }), 0.05); cyl(0.31, 0.24, std('#2a2f36', { roughness: 0.55, metalness: 0.3 }), 0.12); const hole = new T.Mesh(new T.CircleGeometry(0.25, 20), glowMat('#090510', 1)); hole.userData.noInk = true; add(hole, 0, zc, 0.242);
+        const A = [0, px(14), 0.26], B = [0, px(4), 0.5], C = [0, -px(12), 0.76], pts = []; for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push([0, 1, 2].map(k => (1 - t) * (1 - t) * A[k] + 2 * (1 - t) * t * B[k] + t * t * C[k])); }
+        const c0 = lin4([206, 150, 255], 0.95), c1 = lin4([130, 60, 230], 0.85), tex = streaks(); add(ribbon(pts, 0.26, t => mix4(c0, c1, t), tex), 0, 0, 0); if (P.flows) P.flows.push({ tex, speed: 0.03 });   // (its pour stays violet: the tanks leak what they leak)
+        h.onWall(w, h.tm, 0, 0.02, setShadows(gp)); }
+      else if (d.kind === 'brood_hole') { const n = 12, js = []; for (let k = 0; k < n; k++) js.push(0.78 + 0.22 * hr(k, 4));
+        const outline = e => { const s = new T.Shape(); for (let k = 0; k <= n; k++) { const a = (k % n) / n * Math.PI * 2, j = js[k % n] + e, x = Math.cos(a) * 0.36 * L * j, y = Math.max(0, px(17) + Math.sin(a) * px(15) * j); k ? s.lineTo(x, y) : s.moveTo(x, y); } return s; };
+        add(new T.Mesh(new T.ShapeGeometry(outline(0.18)), std('#7a8c3a', { roughness: 0.3 })), 0, 0, 0.004); const hole = new T.Mesh(new T.ShapeGeometry(outline(0)), glowMat('#050604', 1)); hole.userData.noInk = true; add(hole, 0, 0, 0.008);   // the resin round it, the gallery
+        const gl = dyn(new T.Mesh(new T.PlaneGeometry(0.5 * L, px(16)), new T.MeshBasicMaterial({ map: canvasTex(32, 16, (g, w2, hh) => { const r = g.createRadialGradient(w2 / 2, hh / 2, 0, w2 / 2, hh / 2, w2 / 2); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w2, hh); }), color: 0x8cff5a, transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false })));
+        add(gl, 0, px(14), 0.012); if (P.glows) P.glows.push({ m: gl, k: 0.6, ph: seed % 7 });   // the brood's green deep in it, with the Nest's state
+        h.onWall(w, h.tm, 0, 0.005, gp); }
+      else if (d.kind === 'resin') { const mat = std('#7a8a38', { roughness: 0.3, transparent: true, opacity: 0.62 });
+        for (let k = 0; k < 5; k++) { const u0 = k / 5 + hr(k, 1) * 0.05, u1 = Math.min(1, u0 + 0.16 + hr(k, 2) * 0.08), z1 = px(24 + hr(k, 3) * 60); add(new T.Mesh(new T.PlaneGeometry((u1 - u0) * L, z1), mat), ((u0 + u1) / 2 - 0.5) * L, z1 / 2, 0.004 + k * 0.001); }
+        h.onWall(w, h.tm, 0, 0.004, gp); }
+      else { const Hh = px(112), rail = std('#8e9cab', { roughness: 0.4, metalness: 0.5 }), rung = std('#b9c6d3', { roughness: 0.4, metalness: 0.5 }), rust = std('#c26a2e', { roughness: 0.5 });   // the sealed hatch
+        for (const u of [0.18, 0.82]) add(box(0.045, Hh - px(26), 0.045, rail), (u - 0.5) * L, (Hh - px(26)) / 2, 0.1);
+        for (let z = 10; z < 82; z += 11) add(box(0.64 * L, 0.03, 0.03, rung), 0, px(z), 0.1);
+        add(box(1.5 * L, px(28), 0.06, std('#3b434c', { roughness: 0.7 })), 0, Hh - px(14), 0.03); add(box(1.24 * L, px(20), 0.07, std('#252b31', { roughness: 0.7 })), 0, Hh - px(14), 0.032);
+        for (const s of [1, -1]) { const b = box(Math.hypot(1.2 * L, px(16)), 0.045, 0.045, rust); b.rotation.z = s * Math.atan2(px(16), 1.2 * L); add(b, 0, Hh - px(14), 0.08); }   // its lid welded shut
+        add(box(0.6 * L, px(10), 0.02, std('#f0b030', { roughness: 0.5 })), 0, px(75), 0.075); h.onWall(w, h.tm, 0, 0.005, setShadows(gp)); } }
   };
 }
 
@@ -56,7 +96,7 @@ function moreFittings(P, acc) {
 //   rooms on many levels: a tile stands at its own height (a cell [x, y, h], h in the game's px of height: a room's floor, a staircase's treads), with the risers between; a room's
 //   things stand on its floor (rec.base, px); a wall's block stands from the lowest floor beside it to a wall's height over the highest (as the game's: js/facilityplay.js base2),
 //   its stub over the highest; a door on its floor; and a deck's railing (a wall of kind deck_rail or railing_wall) is a railing, not a wall
-//   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; a draft: ?draft=arena, docs/VIEW-3D.md); a wall facing a
+//   a ROCK wall (the arena's, kind rock) is a block of layered rock in sand, after the owner's reference picture (below; in the game's 3D view since build 2026-11-17e, a draft behind ?draft=arena before: docs/VIEW-3D.md); a wall facing a
 //   dark room (the arena's style) is dark; a ledge between two floors (the catwalk spur's over the arena) has no wall over it, its railing on the higher floor
 // the wall's things the 3D builds (round2/chamber.js and moreFittings above; the game's view, view3d/gameview.js, leaves the others undrawn): only these keep a rock face flat
 const BUILT_WALL_DECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);
@@ -70,8 +110,8 @@ function buildLabFloor(lab, P0, how) {
   const at = (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null;
 
   // the walls: a block a tile of the gap between rooms (band), or a thin wall on the line where two rooms touch (thin)
-  const band = new Map(), thin = [], thinSeen = new Set(), rails = [];
-  for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) { rails.push({ w, room: rec.id }); return; }
+  const band = new Map(), thin = [], thinSeen = new Set(), rails = [], spills = [];
+  for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && w0.kind === 'spill') { spills.push({ w, room: rec.id }); return; }   /* (a spill lip: the sewers' own, below) */ if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) { rails.push({ w, room: rec.id }); return; }
     for (let i = 0, n = Math.round(w.L); i < n; i++) { const m = [w.a[0] + w.u[0] * (i + 0.5), w.a[1] + w.u[1] * (i + 0.5)], bx = Math.round(m[0] + w.n[0] * 0.5), by = Math.round(m[1] + w.n[1] * 0.5);
       if (roomAt.has(K(bx, by))) { const k = m[0] + ',' + m[1]; if (!thinSeen.has(k)) { thinSeen.add(k); thin.push({ m, u: [Math.abs(w.u[0]), Math.abs(w.u[1])], glass: !!w0.window && !w0.divider }); } }
       else if (!band.has(K(bx, by))) band.set(K(bx, by), { x: bx, y: by, own: rec.id, rock: live && w0.kind === 'rock' }); } }); }
@@ -133,7 +173,7 @@ function buildLabFloor(lab, P0, how) {
   const face = (q, b, dx, dy, y0, y1, c, z, body) => { z = z || 0; body = body || WHITE; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
     if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, body, 0.45, 0.85); };
   const bodyOf = id => { const st = live && rooms[id] && rooms[id].style; if (!st || !st.dark) return WHITE; const k = lin(hexMix(st.wain || '#3a3532', '#ffffff', 0.25)); return [k.r, k.g, k.b]; };   // (a face looking into a dark room, the arena's: the game draws its walls dark)   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
-  // ROCK (the arena's rock walls; a draft for the owner, ?draft=arena: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
+  // ROCK (the arena's rock walls; in the game's 3D view since build 2026-11-17e, a draft behind ?draft=arena before: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
   // (the first draft, faceted blocks, was not liked). From it, our own rock: wavy horizontal strata in lighter and darker stone, speckled with small pits, big low-poly faces pushed in
   // and out, flat facets with no smooth shading. As tall as the game's far drawn rock (168 px over its floor and up to 50 more: js/facilitydecor.js _fpRockHeights), its top a jagged
   // skyline (each corner's height from where it is, so the blocks beside it share it). In sand, the owner's pick of two (2026-11-16, of brown and sand: "I like the sand"); then, of the sand:
@@ -141,12 +181,16 @@ function buildLabFloor(lab, P0, how) {
   // tiles of its room's floor, a dark room's, else the arena's), as much lighter or darker as the sand's was, so the texture is the same
   const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4, JUT_P = 0.6, JUT_MIN = 0.16, JUT_MORE = 0.26;   // (at most a little under half a tile out, so no slab overhangs the middle of the floor's first row, where someone stands against the wall)   // (JUT_: how often a stratum's slab juts out of a tile's face, and how far: the agent's, provisional)
   const sumOf = h => { const c = new T.Color(h); return c.r + c.g + c.b; }, sandMean = SAND.reduce((t, h) => t + sumOf(h), 0) / SAND.length, strataBy = {};
-  const STRATA = id => { const st = rooms[id] && rooms[id].style && rooms[id].style.dark ? rooms[id].style : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, key = st ? st.fa + st.fb : '';
-    return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
+  // (an ICE room's own, the Cold Storage's cave, 2026-11-17: its strata in its own blues, half its walls' and half its floor's, so the rock reads as rock glazed with frost and not as its white
+  //  floor; its top frost-white, and icicles under the bits that jut out, as the 2D game hangs icicles on that rock: the agent's, provisional)
+  const iceOf = id => !!(rooms[id] && rooms[id].style && rooms[id].style.ice), FROST = lin('#eef9ff'), ICICLE = lin('#e2f6ff');
+  const STRATA = id => { const own = rooms[id] && rooms[id].style, st = own && (own.dark || own.ice) ? own : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, ice = !!(st && st.ice), key = st ? st.fa + st.fb + (ice ? st.wain : '') : '';
+    return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(ice ? hexMix(st.wain, hexMix(st.fa, st.fb, 0.5), 0.45) : hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
   const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => rnd(x, z) * 50 / UH;
   const swell = (x, z, y) => Math.sin(x * 1.31 + z * 0.73 + y * 1.9) * 0.5 + Math.sin(x * 0.37 - z * 1.13 + y * 0.81 + 1.3) * 0.35 + Math.sin(-x * 0.93 + z * 0.47 - y * 2.6 + 4.1) * 0.15;   // (smooth, from where it is)
   const wave = (x, z) => Math.sin(x * 0.9 + z * 0.61) * 0.11 + Math.sin(x * 2.1 - z * 1.7 + 0.7) * 0.05;   // (how a stratum's edge rises and falls along the wall)
-  const speck = live ? canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(40,26,16,0.55)'; for (let i = 0; i < 16; i++) { const x = rnd(i, 3, 1) * w, y = rnd(i, 7, 2) * h, r = 1.2 + rnd(i, 9, 3) * 1.8; g.beginPath(); g.ellipse(x, y, r * 1.3, r, 0, 0, 6.2832); g.fill(); } }, { repeat: true }) : null;   // (small pits in the stone)
+  const pits = ink => live ? canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = ink; for (let i = 0; i < 16; i++) { const x = rnd(i, 3, 1) * w, y = rnd(i, 7, 2) * h, r = 1.2 + rnd(i, 9, 3) * 1.8; g.beginPath(); g.ellipse(x, y, r * 1.3, r, 0, 0, 6.2832); g.fill(); } }, { repeat: true }) : null;
+  const speck = pits('rgba(40,26,16,0.55)'), speckIce = pits('rgba(36,78,104,0.32)');   // (small pits in the stone; in an ice room's rock, cold blue-grey ones)
   // a rock block's face, side (dx, dy), from y0 up to its skyline: ROWS rows of COLS columns; inside rows wave, inside points swell in and out (none at an edge where the face turns
   // a corner or ends, so faces meet with no gap); each row its stratum's colour; flat facets
   const rockFace = (G, b, dx, dy, y0, z, flatTop) => { const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, p = [cx - rx, cz - rz], q = [cx + rx, cz + rz], pal = STRATA(b.own);   // (flatTop: a cliff's, up to a higher floor's edge)
@@ -169,11 +213,15 @@ function buildLabFloor(lab, P0, how) {
       const B0 = P(s0, yb0, back), B1 = P(s1, yb1, back), T0 = P(s0, yt0, back), T1 = P(s1, yt1, back);
       const F0 = P(s0, yb0 + j(1) * 0.06, e + j(2) * 0.08), F1 = P(s1, yb1 + j(3) * 0.06, e + j(4) * 0.08), U0 = P(s0, yt0 + j(5) * 0.05, e * (0.85 + j(6) * 0.2)), U1 = P(s1, yt1 + j(7) * 0.05, e * (0.85 + j(8) * 0.2));
       const col = pal[r % pal.length], tone = k => ({ r: col.r * k, g: col.g * k, b: col.b * k }), quad4 = (a, bb, c, d, cc) => { tri3(a, bb, c, cc); tri3(a, c, d, cc); };
-      quad4(F0, F1, U1, U0, col); quad4(U0, U1, T1, T0, tone(1.18)); quad4(B0, B1, F1, F0, tone(0.7)); quad4(B0, F0, U0, T0, tone(0.9)); quad4(F1, B1, T1, U1, tone(0.9)); } };   // (its face, top, underside and two ends)
+      quad4(F0, F1, U1, U0, col); quad4(U0, U1, T1, T0, iceOf(b.own) ? FROST : tone(1.18)); quad4(B0, B1, F1, F0, tone(0.7)); quad4(B0, F0, U0, T0, tone(0.9)); quad4(F1, B1, T1, U1, tone(0.9));   // (its face, top, underside and two ends)
+      if (iceOf(b.own)) for (let i = 0, n = 2 + Math.floor(rnd(cx + r, cz - r, 17) * 3); i < n; i++) {   // ICICLES under its front edge: a cross of two thin blades each, so they show from every quarter turn
+        const s3 = s0 + (s1 - s0) * (i + 0.5) / n, w2 = 0.025 + rnd(cx + i, cz + r, 18) * 0.025, L2 = 0.1 + rnd(cx - i, cz + r, 19) * 0.22, f = P(s3, yAt(r, s3), e * 0.85), tip = [f[0], f[1] - L2, f[2], f[3], f[4] - L2];
+        const along = [(q[0] - p[0]) * w2, (q[1] - p[1]) * w2], out2 = [dx * w2, dy * w2], pt = (o, k) => [f[0] + o[0] * k, f[1], f[2] + o[1] * k, f[3], f[4]];
+        tri3(pt(along, -1), pt(along, 1), tip, ICICLE); tri3(pt(out2, -1), pt(out2, 1), tip, ICICLE); } } };
   // the top: the skyline's four corners, in the top stratum's colour
-  const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = pal[ROWS % pal.length];
+  const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = iceOf(b.own) ? FROST : pal[ROWS % pal.length];
     putQuad(G.rcap, C[0], C[1], C[2], C[3], [0, 1, 0], [col.r, col.g, col.b], C.map(c => [c[0] / 0.9, c[2] / 0.9])); };
-  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) rockCap(G, b, top); else topQuad(G.cap, b.x, b.y, top, WHITE);
+  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) { rockCap(G, b, top); if (iceOf(b.own)) { G.ice = true; rooms[b.own].iceRock = (rooms[b.own].iceRock || 0) + 1; } } else topQuad(G.cap, b.x, b.y, top, WHITE);
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
@@ -206,23 +254,48 @@ function buildLabFloor(lab, P0, how) {
         if (!thin.some(q => !q.glass && Math.abs(q.m[0] - x - t.u[0] * s) < 0.01 && Math.abs(q.m[1] - y - t.u[1] * s) < 0.01)) for (const [q, h] of [[G.face, z0 + WALL_H], [sFace, z0 + CUT_H]]) {   // (its end, where it does not go on)
           const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw; putQuad(q, [ex - rx, z0 + B0, ez - rz], [ex + rx, z0 + B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]); } } } }
   const rockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, vertexColors: true, map: speck, flatShading: true });
-  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: rockMat }, { q: G.rcap, mat: rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
+  const iceRockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.05, vertexColors: true, map: speckIce, flatShading: true });   // (glazed: a little sheen)
+  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: G.ice ? iceRockMat : rockMat }, { q: G.rcap, mat: G.ice ? iceRockMat : rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
   const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: sFace, mat: cutFace }, { q: sTop, mat: P0.cutTop }]); stubs.receiveShadow = true; stubs.userData.inkKey = 'wall'; stubs.userData.inkIds = [0, 1]; rest.add(stubs);
 
   // the floors, each room in its own colours; the dark aprons beyond the ways out; the ground outside
   const plate = new T.MeshStandardMaterial({ map: floorTexture(), roughness: 0.42, metalness: 0.08, vertexColors: true }), F0 = lin('#c9dce1'), floorMats = {};
   const rocky = new Set(live ? recs.filter(r => r.walls.some(w => w.kind === 'rock')).map(r => r.id) : []);   // (live: the rooms with rock walls, the arena's cave; a drop into one from a floor that is not steel is a cliff of its rock)
+  // THE SEWERS' WATER (the sewers' own, below): a room's river and pools (solids of kind river and pool) have no floor, nor a bridge's tiles (decor bridge_deck: a grating over the water)
+  const inPoly = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+  const wet = new Map(), banks = [];   // (wet: a tile's key -> { room, deck, body, h }; banks: a floor tile's edge onto water, [x, y, dx, dy, h, room])
+  if (live) for (const rec of recs) { const waters = rec.solids.filter(s => (s.kind === 'river' || s.kind === 'pool') && s.poly), decks = (rec.decor || []).filter(d => d.kind === 'bridge_deck' && d.rect);
+    if (!waters.length) continue;
+    for (const c of rec.cells) { const x = c[0], y = c[1], w = waters.find(s => inPoly(x, y, s.poly)), dk = decks.find(d => x > d.rect[0] && x < d.rect[2] && y > d.rect[1] && y < d.rect[3]);
+      if (w || dk) wet.set(K(x, y), { room: rec.id, deck: !!dk, body: w ? w.id : 'river', h: hAt(x, y) }); } }
+  // and their falls (decor falls), on the line of the spill lip nearest each, as the 2D puts them (js/facilitysewers.js); n: out of the room, the way they pour
+  const fallsAt = []; if (live) for (const rec of recs) for (const d of rec.decor || []) { if (d.kind !== 'falls' || !d.a || !d.b) continue;
+    const vert = Math.abs(d.b[0] - d.a[0]) < Math.abs(d.b[1] - d.a[1]), lip = spills.filter(sp => vert ? Math.abs(sp.w.u[0]) < 1e-6 : Math.abs(sp.w.u[1]) < 1e-6).sort((p, q) => vert ? Math.abs(p.w.a[0] - d.a[0]) - Math.abs(q.w.a[0] - d.a[0]) : Math.abs(p.w.a[1] - d.a[1]) - Math.abs(q.w.a[1] - d.a[1]))[0];
+    const A = lip ? (vert ? [lip.w.a[0], d.a[1]] : [d.a[0], lip.w.a[1]]) : d.a, B = lip ? (vert ? [lip.w.a[0], d.b[1]] : [d.b[0], lip.w.a[1]]) : d.b, L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1, u = [(B[0] - A[0]) / L, (B[1] - A[1]) / L];
+    let n = lip ? lip.w.n : [u[1], -u[0]]; if (!lip && roomAt.has(K(Math.round((A[0] + B[0]) / 2 + n[0] * 0.6), Math.round((A[1] + B[1]) / 2 + n[1] * 0.6)))) n = [-n[0], -n[1]];
+    fallsAt.push({ room: rec.id, A, B, L, u, n }); }
   for (const rec of recs) { const rm = rooms[rec.id], st = rm.style, kind = (rec.floor && rec.floor.style) || 'plate', own = kind === 'wood' || kind === 'grate', top = quads(), side = quads(), base = lin(hexMix(st.fa, st.fb, 0.4)), cliff = { rface: quads() };
     const mat = own ? (floorMats[rec.id] = new T.MeshStandardMaterial({ map: kind === 'wood' ? plankTexture(st.fa, st.fb) : grateTexture(st.fa, st.fb), roughness: 0.5, metalness: 0.05, vertexColors: true })) : plate, k = own ? [1, 1, 1] : [base.r / F0.r, base.g / F0.g, base.b / F0.b];
-    for (const c of rec.cells) { const v = ((c[0] * 7 + c[1] * 13) % 5) / 5, h = hAt(c[0], c[1]); topQuad(top, c[0], c[1], h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
-      for (const [dx, dy] of DIRS) { const q = K(c[0] + dx, c[1] + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q)) { const h2 = roomAt.has(q) ? hAt(c[0] + dx, c[1] + dy) : 0, low = roomAt.get(q);
+    for (const c of rec.cells) { if (wet.has(K(c[0], c[1]))) continue; const v = ((c[0] * 7 + c[1] * 13) % 5) / 5, h = hAt(c[0], c[1]); topQuad(top, c[0], c[1], h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
+      for (const [dx, dy] of DIRS) { const q = K(c[0] + dx, c[1] + dy), nb = band.get(q); if (wet.has(q)) { banks.push([c[0], c[1], dx, dy, h, rec.id]); continue; } if (roomAt.has(q) || aprons.has(q)) { const h2 = roomAt.has(q) ? hAt(c[0] + dx, c[1] + dy) : 0, low = roomAt.get(q);
           if (h2 < h - 0.6 && low && low !== rec.id && rocky.has(low) && rec.structure !== 'scaffold') rockFace(cliff, { x: c[0], y: c[1], hi: h, own: low }, dx, dy, h2 + B0, h2, h); else if (h2 < h - 1e-4) sideQuad(side, c[0], c[1], dx, dy, h2, h, WHITE, 0, 1); continue; } if (nb && !nb.header) continue; sideQuad(side, c[0], c[1], dx, dy, minH + B0, h, WHITE, 0, 1); } }   // (a riser down to a lower tread; an edge over the void, down past the lowest floor)
     const fm = quadMesh([{ q: top, mat }, { q: side, mat: P0.floorSide }]); fm.receiveShadow = true; fm.userData.inkKey = 'floor'; rm.g.add(fm); rm.floor = fm;
     if (cliff.rface.pos.length) { const cm = quadMesh([{ q: cliff.rface, mat: rockMat }]); cm.castShadow = cm.receiveShadow = true; cm.userData.inkKey = 'wall'; rm.g.add(cm); } }
   if (aprons.size && P0.outside) { const top = quads(), side = quads(); for (const a of aprons.values()) { const ah = live ? a.h : 0; topQuad(top, a.x, a.y, ah - 0.004, WHITE); for (const [dx, dy] of DIRS) { const q = K(a.x + dx, a.y + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header)) continue; sideQuad(side, a.x, a.y, dx, dy, minH + B0, ah - 0.004, WHITE, 0, 1); } }
     const am = quadMesh([{ q: top, mat: P0.outside }, { q: side, mat: P0.outside }]); am.receiveShadow = true; am.userData.inkKey = 'apron'; rest.add(am); }
   let bb = [1e9, 1e9, -1e9, -1e9]; for (const rec of recs) bb = [Math.min(bb[0], rec.bb[0]), Math.min(bb[1], rec.bb[1]), Math.max(bb[2], rec.bb[2]), Math.max(bb[3], rec.bb[3])];
-  if (P0.ground) { const gr = new T.Mesh(new T.PlaneGeometry(260, 260), P0.ground); gr.rotation.x = -Math.PI / 2; gr.position.set((bb[0] + bb[2]) / 2, minH - 0.13, (bb[1] + bb[3]) / 2); gr.receiveShadow = true; rest.add(gr); }
+  // the ground: none where the sewers' water lies (sunk under it) nor where their falls pour (out to three tiles past the lip), so they show; the falls' pit dark far down, under the room's edge too
+  let groundAt = () => null;   // (for the tests: the ground's height under a tile, or null where there is none)
+  if (P0.ground) { const gy = minH - 0.13, cx = (bb[0] + bb[2]) / 2, cz = (bb[1] + bb[3]) / 2, hole = new Set(wet.keys()), pit = new Set();
+    for (const f of fallsAt) for (let t = -0.5; t <= f.L + 0.5; t += 0.5) for (let s = 0.5; s <= 3; s += 0.5) { const k = K(Math.round(f.A[0] + f.u[0] * t + f.n[0] * s), Math.round(f.A[1] + f.u[1] * t + f.n[1] * s)); if (!roomAt.has(k)) { hole.add(k); pit.add(k); } }
+    groundAt = (x, y) => { const k = K(Math.round(x), Math.round(y)); return pit.has(k) ? gy - 2.6 : hole.has(k) ? null : gy; };
+    if (!hole.size) { const gr = new T.Mesh(new T.PlaneGeometry(260, 260), P0.ground); gr.rotation.x = -Math.PI / 2; gr.position.set(cx, gy, cz); gr.receiveShadow = true; rest.add(gr); }
+    else { const q = quads(), sq = (x0, z0, x1, z1, y) => putQuad(q, [x0, y, z1], [x1, y, z1], [x1, y, z0], [x0, y, z0], [0, 1, 0], WHITE), box = s => { let b = [1e9, 1e9, -1e9, -1e9]; for (const k of s) { const [x, y] = k.split(',').map(Number); b = [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x), Math.max(b[3], y)]; } return b; };
+      const hb = box(hole), x0 = hb[0] - 0.5, z0 = hb[1] - 0.5, x1 = hb[2] + 0.5, z1 = hb[3] + 0.5;   // (the plane in four pieces round the holes' box, and in that box a tile at a time)
+      sq(cx - 130, cz - 130, cx + 130, z0, gy); sq(cx - 130, z1, cx + 130, cz + 130, gy); sq(cx - 130, z0, x0, z1, gy); sq(x1, z0, cx + 130, z1, gy);
+      for (let x = hb[0]; x <= hb[2]; x++) for (let y = hb[1]; y <= hb[3]; y++) if (!hole.has(K(x, y))) topQuad(q, x, y, gy, WHITE);
+      if (pit.size) { const pb = box(pit); sq(pb[0] - 4, pb[1] - 4, pb[2] + 4, pb[3] + 4, gy - 2.6); }
+      const gr = quadMesh([{ q, mat: P0.ground }]); gr.receiveShadow = true; rest.add(gr); } }
 
   // the doors
   for (const d of doors) { if (d.kind === 'mouth') continue; const th = -Math.atan2(d.u[1], d.u[0]), fs = d.u[0] ? 1 : -1, shut = d.kind === 'shut', L = d.L, low = new T.Group(), tall = new T.Group(), thinDoor = !d.side;
@@ -249,12 +322,139 @@ function buildLabFloor(lab, P0, how) {
     gp.userData.inkKey = 'rail'; setShadows(gp); rooms[r.room].g.add(gp); }
 
   // each room's own things: its floor marks, wall fittings (which go with the wall they hang on) and props
-  const props = {}, sentries = [];
+  const props = {}, sentries = [], flows = [], glows = [];   // (flows, glows: the sewers' streams and the brood holes' glow, which their tick sets a frame: below)
   for (const rec of recs) { const rm = rooms[rec.id], chamber = rec.id === 'crystal_chamber', hi = hexMix(rm.style.acc, '#ffffff', 0.35), Pr = Object.assign({}, P0, { puddle: ['#3a7a90', 0.2] });
     if (!chamber) Object.assign(Pr, { seam: seamOf(rec.id), lampOpen: seamOf(rec.id), screen: glowMat(hi, 0.95), ringGlow: [rm.style.acc, 0.85], ringDash: [hi, 0.55] });
-    Pr.more = moreFittings(Pr, rm.style.acc); const B = buildRoom(rm.R, Pr, { shell: false }); rm.parts = B.parts; rm.g.add(B.g); B.g.position.y = baseOf(rec.id);   // (on its floor)
+    if (live) Object.assign(Pr, { flows, glows }); Pr.more = moreFittings(Pr, rm.style.acc); const B = buildRoom(rm.R, Pr, { shell: false }); rm.parts = B.parts; rm.g.add(B.g); B.g.position.y = baseOf(rec.id);   // (on its floor)
     for (const f of B.parts.fittings.children.slice()) { const w = f.userData.wall, b = w && band.get(K(Math.round(f.position.x + w.n[0] * 0.56), Math.round(f.position.z + w.n[1] * 0.56))); if (b) { f.position.y += B.g.position.y; b.G.g.add(f); } }
     for (const id of Object.keys(B.parts.props)) { const p = B.parts.props[id]; props[id] = p; if (p.s.kind === 'sentry') { const head = p.g.children.find(c => c.isGroup && Math.abs(c.position.y - 47 / UH) < 1e-3); if (head) { head.userData.dynamic = true; sentries.push({ id, at: p.s.c, room: rec.id, g: p.g, head, muzzle: p.marks.muzzle || [0.6, 0.72, 0] }); } } } }
+
+  // THE COLD STORAGE'S OWN (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers ... and the cold storage"): its ice cave's glassy floor (decor ice_sheet, the look
+  // only) and a flight of stairs up (decor stairwell, up: its stairs to the Experiment Lab), built as the 2D game draws them (js/facilitydecor.js _fpDrawStairwell: five steps of 12 px rising to
+  // the far, north end, a frame 64 px tall on the top step with the dark way up in it, a post at each corner and a rail down each side). The game leaves them to the view (view3d/gameview.js keeps)
+  if (live) for (const rec of recs) for (const d of rec.decor || []) { const rm = rooms[rec.id], y0 = baseOf(rec.id);
+    if (d.kind === 'ice_sheet' && d.path && d.path.length > 2) {
+      const m = new T.Mesh(new T.ShapeGeometry(new T.Shape(d.path.map(p => new T.Vector2(p[0], -p[1])))), std('#9fdcf3', { roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      m.rotation.x = -Math.PI / 2; m.position.y = y0 + 0.006; m.receiveShadow = true; m.userData.noInk = true; rm.g.add(m); }
+    else if (d.kind === 'stairwell' && d.up && d.rect) {
+      const [x0, z0, x1, z1] = d.rect, N = 5, L = z1 - z0, W = x1 - x0, cx = (x0 + x1) / 2, gp = new T.Group(), top = N * 12 / UH, fh = 64 / UH, ink = std('#1d2a33', { roughness: 0.5 }), tread = std('#dbe8ee', { roughness: 0.55 });
+      for (let k = 0; k < N; k++) { const h = (k + 1) * 12 / UH, za = z1 - (k + 1) * L / N, zb = z1 - k * L / N, s = new T.Mesh(new T.BoxGeometry(W, h, zb - za), tread); s.position.set(cx, y0 + h / 2, (za + zb) / 2); gp.add(s); }
+      const frame = new T.Mesh(new T.BoxGeometry(W, fh, 0.1), std('#2f4553', { roughness: 0.6 })); frame.position.set(cx, y0 + top + fh / 2, z0 + 0.05); gp.add(frame);
+      const dark = new T.Mesh(new T.PlaneGeometry(W - 0.36, 54 / UH), glowMat('#05080d', 1)); dark.position.set(cx, y0 + top + 27 / UH, z0 + 0.104); dark.userData.noInk = true; gp.add(dark);
+      const lit = new T.Mesh(new T.PlaneGeometry(W - 0.5, 0.05), glowMat(d.colour || '#9be8ff', 0.8)); lit.position.set(cx, y0 + top + 0.02, z0 + 0.106); lit.userData.noInk = true; gp.add(lit);   // (the cold light from the way up)
+      for (const x of [x0, x1]) { gp.add(rodBetween([x, y0, z1], [x, y0 + 16 / UH, z1], 0.03, ink, 6)); gp.add(rodBetween([x, y0 + top, z0], [x, y0 + top + 16 / UH, z0], 0.03, ink, 6)); gp.add(rodBetween([x, y0 + 16 / UH, z1], [x, y0 + top + 16 / UH, z0], 0.025, ink, 6)); }
+      gp.userData.inkKey = 'stairs'; setShadows(gp); rm.g.add(gp); } }
+
+  // THE SEWERS' OWN (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers"; their 2D drawing: js/facilitysewers.js): the water of their river and pools, sunk 12 px
+  // (FP_SEWER.sink) under the floor, its current drifting the way it flows (the river east, a pool its FP_POOL_FLOW), its colour the 2D's: a toxic green clearing to a cold blue-green as the
+  // purification runs (set a frame by the view: sewer.tick, view3d/gameview.js); the banks down to it, a hazard stripe along their lips; a bridge's tiles a steel grating over it, a rail each side;
+  // the broken bridge's two stumps bent down into it; the gates' bars (104 px); the pumps' and the valves' housings (drawn in code in 2D: js/facilitydecor.js); the Nest end's low spill lips and the
+  // falls pouring over them into the dark. Sizes are the 2D's; the looks the agent's, provisional. (Not built yet: the walls' sections, lintels and lamps, the Nest's eggs and junk, the outfall,
+  // the other things on the walls.)
+  const sewer = { tick: null };
+  if (live && (wet.size || spills.length)) {
+    const S = 12 / UH, px = v => v / UH, waters = [], lin3 = h => { const c = lin(h); return [c.r, c.g, c.b]; };
+    const FALLS = [[[214, 170, 255], [170, 236, 248], 0.9], [[150, 80, 235], [80, 190, 220], 0.72], [[60, 20, 120], [20, 70, 90], 0]];   // (the falls' colours down it, foul and clean, and how much of it shows: the 2D's)
+    const steel = std('#3b4652', { roughness: 0.5, metalness: 0.35 }), steelDk = std('#2a323b', { roughness: 0.55, metalness: 0.35 }), steelLt = std('#9aa8b6', { roughness: 0.4, metalness: 0.4 }), amber = std('#f2b13a', { roughness: 0.45 }), rust = std('#8a2e22', { roughness: 0.6 }), curb = std('#4a524f', { roughness: 0.9 });
+    const box = (w, h, d, mat, x, y, z, par) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); par.add(m); return m; };
+    const glowAt = (w, h, hex, x, y, z, ry, par) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), glowMat(hex, 0.95)); m.position.set(x, y, z); m.rotation.y = ry || 0; m.userData.noInk = true; par.add(m); return m; };
+    const floorAt = (x, y, room) => { const k = K(Math.round(x), Math.round(y)); return roomAt.has(k) && !wet.has(k) ? hAt(Math.round(x), Math.round(y)) : wet.has(k) ? wet.get(k).h : baseOf(room); };
+    // the water: a mesh a body, its streaks (world-scaled: a picture three tiles across) drifting the way it flows
+    const streaks = () => canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#b8b8b8'; g.fillRect(0, 0, w, h); for (let i = 0; i < 18; i++) { const x = rnd(i, 1, 21) * w, y = rnd(i, 2, 22) * h, L = 8 + rnd(i, 3, 23) * 16; g.fillStyle = 'rgba(255,255,255,' + (0.3 + rnd(i, 4, 24) * 0.5).toFixed(2) + ')'; g.fillRect(x, y, L, 1.6); g.fillRect(x - w, y, L, 1.6); } }, { repeat: true });
+    const bodies = new Map(); for (const [k, v] of wet) { const [x, y] = k.split(',').map(Number); let b = bodies.get(v.body); if (!b) bodies.set(v.body, b = { cells: [], room: v.room }); b.cells.push([x, y, v.h]); }
+    for (const [id, b] of bodies) { const q = quads(), tex = streaks(), mat = new T.MeshBasicMaterial({ map: tex, color: 0x2e7a1e }), f = id !== 'river' && typeof FP_POOL_FLOW !== 'undefined' && FP_POOL_FLOW[id] ? FP_POOL_FLOW[id] : [1, 0], fL = Math.hypot(f[0], f[1]) || 1;
+      for (const [x, y, h] of b.cells) { const y0 = h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
+      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL] }); }   // (dynamic: left out of the view's merging, so its colour can change)
+    // the banks down to it, and the hazard stripe along their lips (yellow and black, four a tile)
+    const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#141414' : '#f2c11a'; g.beginPath(); g.moveTo(i * 8, h); g.lineTo(i * 8 + 8, h); g.lineTo(i * 8 + 12, 0); g.lineTo(i * 8 + 4, 0); g.fill(); } g.fillStyle = '#f2c11a'; g.beginPath(); g.moveTo(-4, h); g.lineTo(4, h); g.lineTo(8, 0); g.lineTo(0, 0); g.fill(); }, { repeat: true });
+    const bankMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, vertexColors: true }), lipMat = new T.MeshStandardMaterial({ map: stripes, roughness: 0.7 }), BANK = lin3('#1d2422');
+    const damOf = new Set(recs.flatMap(r => r.dam || [])), TRASH = ['#4a3c2c', '#3a3f3a', '#55432f', '#33403d', '#4b4a44'].map(lin3);   // (the dam's pools: their banks the dam's face of compacted trash, no stripe: the rim's junk along them, below)
+    const byRoomBanks = new Map(); for (const bk of banks) { let e = byRoomBanks.get(bk[5]); if (!e) byRoomBanks.set(bk[5], e = { side: quads(), lip: quads() }); const [x, y, dx, dy, h] = bk, wq = wet.get(K(x + dx, y + dy));
+      if (wq && damOf.has(wq.body)) { sideQuad(e.side, x, y, dx, dy, h - S - 0.1, h, TRASH[Math.abs(x * 7 + y * 13 + dx * 3 + dy * 5) % 5], 0, 1); continue; }
+      sideQuad(e.side, x, y, dx, dy, h - S - 0.1, h, BANK, 0, 1);
+      const W = 0.1, ex = x + dx * 0.5, ez = y + dy * 0.5, ax = dy !== 0, cx = ex - dx * W / 2, cz = ez - dy * W / 2, hx = ax ? 0.5 : W / 2, hz = ax ? W / 2 : 0.5, yy = h + 0.004;   // (the stripe along the edge, on the floor)
+      const C = [[cx - hx, yy, cz + hz], [cx + hx, yy, cz + hz], [cx + hx, yy, cz - hz], [cx - hx, yy, cz - hz]]; putQuad(e.lip, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, ax ? [[0, 0], [1, 0], [1, 1], [0, 1]] : [[0, 1], [0, 0], [1, 0], [1, 1]]); }
+    for (const [room, e] of byRoomBanks) { const m = quadMesh([{ q: e.side, mat: bankMat }, { q: e.lip, mat: lipMat }]); m.receiveShadow = true; m.userData.inkKey = 'floor'; rooms[room].g.add(m); }
+    // a bridge's grating, with a rail each side (posts every half tile, 30 px: the amber rail on top, a grey one halfway) and the girder under each side down to the water
+    const grate = canvasTex(64, 64, (g, w, h) => { g.clearRect(0, 0, w, h); g.fillStyle = '#5c6873'; for (let i = 0; i < 8; i++) { g.fillRect(i * 8, 0, 2.5, h); g.fillRect(0, i * 8, w, 2.5); } g.fillRect(0, 0, w, 3); g.fillRect(0, 0, 3, h); }, { repeat: true });
+    const grateMat = new T.MeshStandardMaterial({ map: grate, alphaTest: 0.5, transparent: false, side: T.DoubleSide, roughness: 0.5, metalness: 0.4 });
+    for (const rec of recs) { const decks = (rec.decor || []).filter(d => d.kind === 'bridge_deck' && d.rect), rm = rooms[rec.id];
+      if (decks.length) { const q = quads(); for (const [k, v] of wet) { if (!v.deck || v.room !== rec.id) continue; const [x, y] = k.split(',').map(Number); topQuad(q, x, y, v.h, WHITE); } const m = quadMesh([{ q, mat: grateMat }]); m.receiveShadow = true; m.castShadow = true; m.userData.inkKey = 'rail'; rm.g.add(m); }
+      for (const d of decks) { const r = d.rect, along = (r[3] - r[1]) >= (r[2] - r[0]), L = along ? r[3] - r[1] : r[2] - r[0], h = floorAt((r[0] + r[2]) / 2, (r[1] + r[3]) / 2, rec.id), gp = new T.Group(), H = px(30);
+        for (const s2 of [0, 1]) { const at = (u, y) => along ? [s2 ? r[2] : r[0], y, r[1] + u] : [r[0] + u, y, s2 ? r[3] : r[1]];
+          for (let u = 0; u <= L + 1e-6; u += 0.5) gp.add(rodBetween(at(u, h), at(u, h + H), 0.022, steelLt, 6));
+          gp.add(rodBetween(at(0, h + H), at(L, h + H), 0.026, amber, 6)); gp.add(rodBetween(at(0, h + H / 2), at(L, h + H / 2), 0.016, steelLt, 6));
+          const mid = at(L / 2, h - (S - px(2)) / 2); box(along ? 0.06 : L, S - px(2), along ? L : 0.06, steel, mid[0], mid[1], mid[2], gp); }
+        gp.userData.inkKey = 'rail'; setShadows(gp); rm.g.add(gp); }
+      // the broken bridge: a stump out from each bank, flat for most of it and bent down where it tore, a rail on its flat part
+      for (const d of (rec.decor || []).filter(d => d.kind === 'bridge_broken' && d.rect)) { const r = d.rect, L = Math.min(1.7, (r[3] - r[1]) * 0.3), W = r[2] - r[0], cx = (r[0] + r[2]) / 2, gp = new T.Group();
+        for (const dir of [1, -1]) { const yb = dir > 0 ? r[1] : r[3], h = floorAt(cx, yb - dir * 0.6, rec.id), Lf = L * 0.62, Lb = L - Lf, drop = S - px(3), H = px(30);
+          const flat = new T.Mesh(new T.BoxGeometry(W, 0.04, Lf), grateMat); flat.position.set(cx, h - 0.02, yb + dir * Lf / 2); gp.add(flat);
+          const bent = new T.Mesh(new T.BoxGeometry(W, 0.04, Math.hypot(Lb, drop)), grateMat); bent.position.set(cx, h - 0.02 - drop / 2, yb + dir * (Lf + Lb / 2)); bent.rotation.x = dir * Math.atan2(drop, Lb); gp.add(bent);
+          for (const x of [r[0], r[2]]) { const p0 = [x, h, yb], p1 = [x, h, yb + dir * Lf]; gp.add(rodBetween(p0, [x, h + H, yb], 0.022, steelLt, 6)); gp.add(rodBetween([p1[0], h, p1[2]], [p1[0], h + H * (x === r[2] ? 0.7 : 1), p1[2]], 0.022, steelLt, 6)); gp.add(rodBetween([x, h + H, yb], [x, h + H * (x === r[2] ? 0.7 : 1), p1[2]], 0.026, amber, 6)); } }
+        gp.userData.inkKey = 'rail'; setShadows(gp); rm.g.add(gp); }
+      // the gates: posts at the ends, bars (five a tile; a boss gate's six), three cross rails, 104 px tall, on their wall line
+      for (const s2 of rec.solids.filter(s => (s.kind === 'gate' || s.kind === 'boss_gate'))) { const b = s2.bb, along = (b[2] - b[0]) >= (b[3] - b[1]), L = along ? b[2] - b[0] : b[3] - b[1], mx = (b[0] + b[2]) / 2, mz = (b[1] + b[3]) / 2, H = px(104), boss = s2.kind === 'boss_gate';
+        const h = floorAt(mx, mz + (along ? 0.6 : 0), rec.id), n = Math.max(4, Math.round(L * (boss ? 6 : 5))), gp = new T.Group(), at = u => along ? [b[0] + u, mz] : [mx, b[1] + u];
+        for (const u of [0.04, L - 0.04]) { const p = at(u); box(0.08, H, 0.08, steelDk, p[0], h + H / 2, p[1], gp); }
+        for (let i = 1; i < n; i++) { const p = at(L * i / n); box(0.035, H, 0.035, steel, p[0], h + H / 2, p[1], gp); }
+        for (const t of [0.08, 0.5, 0.94]) { const p = at(L / 2); box(along ? L : 0.05, 0.045, along ? 0.05 : L, steelDk, p[0], h + H * t, p[1], gp); }
+        gp.userData.inkKey = 'rail'; setShadows(gp); rooms[rec.id].g.add(gp); }
+      // the pumps' and the valves' housings, as the 2D draws them: a squat dark-steel box (28 px) with a motor drum on top and a toxic-green gauge; a low block (18 px), a stub of pipe and a rust-red
+      // handwheel, a green tell-tale
+      for (const s2 of rec.solids.filter(s => s.kind === 'pump' || s.kind === 'valve')) { const b = s2.bb, w = b[2] - b[0] - 0.12, d = b[3] - b[1] - 0.12, cx = (b[0] + b[2]) / 2, cz = (b[1] + b[3]) / 2, h = floorAt(cx, cz, rec.id), gp = new T.Group();
+        if (s2.kind === 'pump') { const Hb = px(28); box(w, Hb, d, steelDk, cx, h + Hb / 2, cz, gp); const drum = new T.Mesh(new T.CylinderGeometry(0.32, 0.32, px(14), 20), steel); drum.position.set(cx, h + Hb + px(7), cz); gp.add(drum);
+          glowAt(Math.min(0.28, w * 0.3), px(9), '#7dff4a', cx - w * 0.2, h + px(16.5), cz + d / 2 + 0.002, 0, gp); glowAt(Math.min(0.28, d * 0.3), px(9), '#7dff4a', cx + w / 2 + 0.002, h + px(16.5), cz + d * 0.2, Math.PI / 2, gp); }
+        else { const Hb = px(18); box(w, Hb, d, steelDk, cx, h + Hb / 2, cz, gp); gp.add(rodBetween([cx, h + Hb, cz], [cx, h + px(34), cz], 0.05, steel, 10));
+          const wheel = new T.Mesh(new T.TorusGeometry(0.28, 0.025, 6, 20), rust); wheel.rotation.x = Math.PI / 2; wheel.position.set(cx, h + px(34), cz); gp.add(wheel);
+          for (let i = 0; i < 3; i++) { const an = i * Math.PI / 3; gp.add(rodBetween([cx - Math.cos(an) * 0.28, h + px(34), cz - Math.sin(an) * 0.28], [cx + Math.cos(an) * 0.28, h + px(34), cz + Math.sin(an) * 0.28], 0.014, rust, 5)); }
+          glowAt(Math.min(0.18, w * 0.25), px(5), '#7dff4a', cx + w * 0.2, h + px(10.5), cz + d / 2 + 0.002, 0, gp); }
+        setShadows(gp); rooms[rec.id].g.add(gp); }
+      // the falls (decor falls: the Nest end's, over its spill lip into the dark): a sheet of the water pouring down, from 9 px over the floor to 170 px under it, in the 2D's colours (light at the
+      // lip, the water's own a third of the way down, then dark and gone: js/facilitysewers.js _fpNestFalls, set a frame by sewer.tick, as the purification runs), its streaks running down
+      for (const fa of fallsAt.filter(fa => fa.room === rec.id)) { const L = fa.L, nx = fa.n[0], nz = fa.n[1], X = (fa.A[0] + fa.B[0]) / 2 + nx * 0.06, Z = (fa.A[1] + fa.B[1]) / 2 + nz * 0.06, ux = fa.u[0] * L / 2, uz = fa.u[1] * L / 2;
+        const h = floorAt(X - nx * 0.66, Z - nz * 0.66, rec.id), top = h + px(9), bot = h - px(170), ys = [top, top - (top - bot) * 0.3, bot], pos = [], uv = [], geo = new T.BufferGeometry();
+        for (const y of ys) { const v = (y - bot) / (top - bot) * 3; pos.push(X - ux, y, Z - uz, X + ux, y, Z + uz); uv.push(0, v, L, v); }   // (its streaks a third of its height long, a tile across)
+        geo.setIndex([0, 2, 1, 1, 2, 3, 2, 4, 3, 3, 4, 5]); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new T.Float32BufferAttribute(new Array(24).fill(1), 4));
+        const tex = canvasTex(32, 64, (g, w, hh) => { g.fillStyle = '#c4c4c4'; g.fillRect(0, 0, w, hh); for (let i = 0; i < 9; i++) { g.fillStyle = 'rgba(255,255,255,' + (0.4 + rnd(i, 5, 31) * 0.5).toFixed(2) + ')'; const x = rnd(i, 6, 32) * w, y = rnd(i, 7, 33) * hh, l = 10 + rnd(i, 8, 34) * 14; g.fillRect(x, y, 1.6, l); g.fillRect(x, y - hh, 1.6, l); } }, { repeat: true });
+        const mat = new T.MeshBasicMaterial({ map: tex, vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide }), m = new T.Mesh(geo, mat); m.userData.noInk = true; m.userData.dynamic = true; rooms[rec.id].g.add(m); flows.push({ tex, col: geo.attributes.color, speed: 0.012, stops: FALLS }); } }
+    // the spill lips (a wall of kind spill is no wall): a low curb (9 px) on the edge the water spills over, inside the line, from under the water's top, and under it the edge's face down into
+    // the dark (to 54 px under the floor, darkening, as the 2D's: js/facilitysewers.js _fpDrawSpillLip)
+    const lipFace = new Map(); for (const sp of spills) { const w = sp.w, L = w.L, mx = w.a[0] + w.u[0] * L / 2, mz = w.a[1] + w.u[1] * L / 2, h = floorAt(mx - w.n[0] * 0.4, mz - w.n[1] * 0.4, sp.room), H = px(9), lo = h - S - 0.05, gp = new T.Group();
+      box(w.u[0] ? L : 0.14, h + H - lo, w.u[1] ? L : 0.14, curb, mx - w.n[0] * 0.07, (lo + h + H) / 2, mz - w.n[1] * 0.07, gp); setShadows(gp); rooms[sp.room].g.add(gp);
+      let q = lipFace.get(sp.room); if (!q) lipFace.set(sp.room, q = quads()); const ox = mx + w.n[0] * 0.002, oz = mz + w.n[1] * 0.002, rx = w.n[1] * L / 2, rz = -w.n[0] * L / 2;
+      for (const [y1, y0, c] of [[lo, h - px(30), '#2b3331'], [h - px(30), h - px(42), '#1a201f'], [h - px(42), h - px(54), '#0c0f0f']]) putQuad(q, [ox - rx, y0, oz - rz], [ox + rx, y0, oz + rz], [ox + rx, y1, oz + rz], [ox - rx, y1, oz - rz], [w.n[0], 0, w.n[1]], lin3(c)); }
+    for (const [room, q] of lipFace) { const m = quadMesh([{ q, mat: bankMat }]); m.userData.inkKey = 'floor'; rooms[room].g.add(m); }
+    // THE NEST'S OWN (rec.nest: the 2D's eggs, the dam's junk and its rim, js/facilitysewers.js; sizes the 2D's, the looks the agent's, provisional): an egg a pale shell, its brood's green glowing
+    // through it as the Nest stands (the tick); a piece of junk a crate, a barrel, a tyre, a pipe or a bag; the rim's crest a small crate, a barrel on its side, a plank or a bag along the dam's edge
+    const eggMeshes = [], wood = std('#6a5238', { roughness: 0.8 }), woodDk = std('#5a452f', { roughness: 0.8 }), teal = std('#3f6b66', { roughness: 0.6, metalness: 0.2 }), tyre = std('#161616', { roughness: 0.9 }), pipeM = std('#6b7580', { roughness: 0.5, metalness: 0.4 }), bag = std('#2b3527', { roughness: 0.45 });
+    for (const rec of recs) { if (!rec.nest || !rec.nest.length) continue; const eggs = [], junkG = new T.Group();
+      for (const it of rec.nest) { const s = it.s || 0.2, k = it.seed % 5, h = floorAt(it.x, it.y, rec.id);
+        if (it.what === 'egg') eggs.push([it.x, h, it.y, s * 0.78, s * 0.92]);
+        else if (it.what === 'junk') { const gp = new T.Group(); gp.position.set(it.x, h, it.y); gp.rotation.y = (it.seed % 628) / 100;
+          if (k === 0) box(s * 0.9, s * 46 / UH, s * 0.72, wood, 0, s * 23 / UH, 0, gp); else if (k === 1) { const b = new T.Mesh(new T.CylinderGeometry(s * 0.39, s * 0.39, s * 58 / UH, 14), teal); b.position.y = s * 29 / UH; gp.add(b); }
+          else if (k === 2) { const t = new T.Mesh(new T.TorusGeometry(s * 0.42, s * 0.16, 8, 16), tyre); t.rotation.x = Math.PI / 2; t.position.y = s * 0.16; gp.add(t); } else if (k === 3) box(s * 1.8, s * 26 / UH, s * 0.36, pipeM, 0, s * 13 / UH, 0, gp);
+          else { const b = new T.Mesh(new T.SphereGeometry(s * 0.45, 12, 8), bag); b.scale.y = 0.6; b.position.y = s * 0.22; gp.add(b); } junkG.add(gp); }
+        else if (it.what === 'rim' && it.u && it.w) { const q = it.seed % 4, zc = (4 + it.seed % 5) / UH, gp = new T.Group(); gp.position.set(it.x - it.w[0] * 0.08, h, it.y - it.w[1] * 0.08); gp.rotation.y = -Math.atan2(it.u[1], it.u[0]);
+          if (q === 0) box(0.3, zc + 4 / UH, 0.3, wood, 0, (zc + 4 / UH) / 2, 0, gp); else if (q === 1) { const b = new T.Mesh(new T.CylinderGeometry(0.13, 0.13, 0.36, 12), teal); b.rotation.z = Math.PI / 2; b.position.y = 0.13; gp.add(b); }
+          else if (q === 2) box((it.half || 0.25) * 2 + 0.1, 4 / UH, 0.16, woodDk, 0, 2 / UH, 0, gp); else { const b = new T.Mesh(new T.SphereGeometry(0.15, 10, 7), bag); b.scale.y = 0.55; b.position.y = 0.06; gp.add(b); } junkG.add(gp); } }
+      if (junkG.children.length) { setShadows(junkG); junkG.userData.inkKey = 'props'; rooms[rec.id].g.add(junkG); }
+      if (eggs.length) { const em = new T.InstancedMesh(new T.SphereGeometry(1, 14, 10), std('#d3e6ae', { roughness: 0.45 }), eggs.length), m4 = new T.Matrix4(), q4 = new T.Quaternion(), v3 = new T.Vector3(), s3 = new T.Vector3();   // (one draw for a room's eggs)
+        eggs.forEach((e, i) => em.setMatrixAt(i, m4.compose(v3.set(e[0], e[1] + e[4], e[2]), q4, s3.set(e[3], e[4], e[3])))); em.castShadow = em.receiveShadow = true; em.userData.dynamic = true; rooms[rec.id].g.add(em); eggMeshes.push(em); } }
+    // A FRAME: the water's current and the streams' and falls' streaks run; their colours only when the purification has moved them on (the 2D's: colOf, toneOf); the eggs' and the brood
+    // holes' green as the Nest stands (nestOf: infested, stirred, calmed, cleared)
+    const cc = new T.Color(); let was = null, nestWas = null;
+    sewer.tick = (f0, gm) => { for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
+      const T0 = gm && gm.nest ? gm.nest(f0) : null; if (T0) { const ph = Math.sin(f0 * T0.p * 2);
+        for (const gl of glows) gl.m.material.opacity = T0.g * gl.k * (0.7 + 0.3 * Math.sin(f0 * T0.p * 2 + gl.ph));
+        if (T0.s !== nestWas || T0.g > 0.05) { nestWas = T0.s; for (const em of eggMeshes) { const M = em.material; if (T0.s === 'cleared') { M.color.set('#5e6356').convertSRGBToLinear(); M.emissive.setRGB(0, 0, 0); } else { M.color.set('#d3e6ae').convertSRGBToLinear(); M.emissive.set('#8cff5a').convertSRGBToLinear().multiplyScalar(T0.g * (0.3 + 0.1 * ph)); } } } }
+      const c = gm ? gm.col('#6b2cc4') : null; if (!c || c === was) return; was = c;
+      for (const w of waters) w.mat.color.setStyle(c).convertSRGBToLinear();
+      for (const fl of flows) if (fl.stops && fl.col) { fl.stops.forEach((st, r) => { cc.setStyle(gm.tone(st[0], st[1])).convertSRGBToLinear(); fl.col.setXYZW(r * 2, cc.r, cc.g, cc.b, st[2]); fl.col.setXYZW(r * 2 + 1, cc.r, cc.g, cc.b, st[2]); }); fl.col.needsUpdate = true; } };
+    // (for the tests, tests/view3d.js: what was built, and the water's colour as the screen shows it)
+    sewer.waterAt = (x, y) => { const v = wet.get(K(Math.round(x), Math.round(y))); return v ? v.h - S : null; };
+    sewer.parts = () => ({ waters: waters.length, flows: flows.length, glows: glows.length, eggs: eggMeshes.reduce((a, m) => a + m.count, 0) }); sewer.colour = () => waters.length ? '#' + waters[0].mat.color.clone().convertLinearToSRGB().getHexString() : null;
+  }
 
   // where one can walk
   const blocked = new Set(), ch = rooms.crystal_chamber, crystal = ch ? ch.rec.crystal : null;
@@ -262,7 +462,7 @@ function buildLabFloor(lab, P0, how) {
   let padR = 1.2; if (ch && ch.parts.pad) { const box = new T.Box3().setFromObject(ch.parts.pad); padR = Math.max(box.max.x - box.min.x, box.max.z - box.min.z) / 2; }
   if (crystal) for (let x = Math.floor(crystal[0] - padR); x <= Math.ceil(crystal[0] + padR); x++) for (let y = Math.floor(crystal[1] - padR); y <= Math.ceil(crystal[1] + padR); y++) if (Math.hypot(x - crystal[0], y - crystal[1]) < padR - 0.15) blocked.add(K(x, y));
 
-  return { g, rest, rooms, order: recs.map(r => r.id), parts: ch ? ch.parts : {}, props, sentries, doors, groups: [...groups.values()], band, aprons, stubs, crystal, padR, bb, roomAt: (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null,
+  return { g, rest, rooms, sewer, groundAt, order: recs.map(r => r.id), parts: ch ? ch.parts : {}, props, sentries, doors, groups: [...groups.values()], band, aprons, stubs, crystal, padR, bb, roomAt: (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null,
     blocked, edges, walkable: (x, y) => roomAt.has(K(x, y)) && !blocked.has(K(x, y)),
     // (after the look has changed the materials: the stubs' sides lie in the walls' faces, and give way to them)
     settle() { const m = stubs.material[0]; m.polygonOffset = true; m.polygonOffsetFactor = 1; m.polygonOffsetUnits = 1; } };

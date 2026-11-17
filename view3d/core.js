@@ -52,7 +52,7 @@ function view3dCore(opts) {
           if (b.needUv) b.uv.push(uv ? uv.getX(i) : 0, uv ? uv.getY(i) : 0); if (b.needCol) b.col.push((own ? own.getX(i) : 1) * (tint ? tint.r : 1), (own ? own.getY(i) : 1) * (tint ? tint.g : 1), (own ? own.getZ(i) : 1) * (tint ? tint.b : 1)); };
         for (let i = gr.start; i + 2 < gr.start + gr.count; i += 3) { push(i); push(flip ? i + 2 : i + 1); push(flip ? i + 1 : i + 2); } }
       gone.push(o); });
-    for (const o of gone) o.parent.remove(o);
+    for (const o of gone) { if (o2 && o2.keep) { o.visible = false; o.userData.gone = true; } else o.parent.remove(o); }   // (keep: hidden where it was, so its siblings keep their places: a form's own code finds its parts by place)
     const attr = (list, n) => { const a = new T.Float32BufferAttribute(list, n); if (o2 && o2.copy) a.onUpload(dropArray); return a; };   // (a room's own: not kept in memory once it is on the graphics card)
     for (const b of buckets.values()) { if (!b.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', attr(b.pos, 3)); g.setAttribute('normal', attr(b.nor, 3)); if (b.needUv) g.setAttribute('uv', attr(b.uv, 2)); if (b.needCol) g.setAttribute('color', attr(b.col, 3)); if (b.idc.length) g.setAttribute('idc', attr(b.idc, 3)); g.computeBoundingSphere();
       const m = new T.Mesh(g, b.mat); m.castShadow = b.cast; m.receiveShadow = b.recv; m.renderOrder = b.order; m.userData.merged = true; if (b.ni) m.layers.set(2); else if (copies) m.layers.set(1); root.add(m); }
@@ -60,7 +60,7 @@ function view3dCore(opts) {
     return buckets.size;
   }
   // what still moves (the squad's parts, the crystal): each vertex its solid's colour; what carries no line goes to layer 2, which the line's drawing leaves out
-  function tagInk(root) { root.traverse(o => { if (o.isSprite || o.isLine || o.isPoints) { o.layers.set(2); return; } if (!o.isMesh || o.userData.merged || (o.geometry.attributes.idc && o.geometry.userData.ink === undefined)) return; if (noInk(o)) { o.layers.set(2); return; }
+  function tagInk(root) { root.traverse(o => { if (o.isSprite || o.isLine || o.isPoints) { o.layers.set(2); return; } if (!o.isMesh || o.userData.merged || o.userData.gone || (o.geometry.attributes.idc && o.geometry.userData.ink === undefined)) return; if (noInk(o)) { o.layers.set(2); return; }
     const id = idOf(holderOf(o)); let g = o.geometry; if (g.userData.ink !== undefined) { if (g.userData.ink === id) return; g = o.geometry = g.clone(); }
     const n = g.attributes.position.count, a = new Float32Array(n * 3), set = (i, c) => { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; }, base = idCol(id); for (let i = 0; i < n; i++) set(i, base);
     if (o.userData.inkIds && g.groups.length) for (const gr of g.groups) { const c = idCol(id + (o.userData.inkIds[gr.materialIndex] || 0)); for (let i = gr.start; i < gr.start + gr.count; i++) set(g.index ? g.index.getX(i) : i, c); }
@@ -74,7 +74,7 @@ function view3dCore(opts) {
     for (const q of poses) { if (q[2]) f.B.update(q[0], q[1], q[2]); else f.B.update(q[0], q[1]); for (const o of f.hidden) o.visible = false;
       for (const o of nodes) { o.updateMatrix(); const e = o.matrix.elements, a = first.get(o), sh = shapeSum(o); if (!a) { first.set(o, { e: e.slice(), v: o.visible, sh }); continue; } if (a.v !== o.visible || Math.abs(a.sh - sh) > 1e-6 * (1 + Math.abs(sh))) o.userData.dynamic = true; else for (let i = 0; i < 16; i++) if (Math.abs(a.e[i] - e[i]) > 1e-5) { o.userData.dynamic = true; break; } } }
     f.B.update(0.6, 0); for (const o of f.hidden) o.visible = false;
-    const roots = [holder].concat(nodes.filter(o => o.userData.dynamic && o.children.length)); for (const r of roots) mergeStill(r); }
+    const roots = [holder].concat(nodes.filter(o => o.userData.dynamic && o.children.length)); for (const r of roots) mergeStill(r, { keep: true }); }   // (keep: the Thunderhead's shard fades its edge as children[1]; with its core taken out, there was none)
 
   // ── THE ANTS: a body a class, in five poses (four steps of its walk; its jaws wide, a bite on its way); the ants of a class share its shapes ──
   // (how: its size, or { size, zk, accent, stand }: buildAnt's own; stand adds a sixth pose, every foot down)

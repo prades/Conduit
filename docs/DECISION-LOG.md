@@ -16,11 +16,11 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: Only the room you are in shows its creatures
 
-- **Date:** 2026-11-17 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17g`
+- **Date:** 2026-11-17 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17m`
 - **Status:** implemented in the 2D game and the 3D view, verified by `tests/roomsight.js` and the full run; not seen on an iPad.
 - **Decision:** the owner: "Shouldn't be able to see enemies in other rooms. Only the rooms that you're in." A creature not of yours is drawn, tapped and locked only in the player's room; yours always show; the Nest is one place; a card battle's creature shows on the walk to it.
 - **Agent's choices, provisional:** applied to both views (the owner named no view); creatures only, not your followers; a creature in a doorway counts in the room of its nearest floor cell; a card battle takes in only its creature's room.
-- **Affects:** `COMBAT.md` §8.3a; `js/facilityplay.js`, `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`; `tests/roomsight.js`; `CHANGELOG.md` `2026-11-17g`.
+- **Affects:** `COMBAT.md` §8.3a; `js/facilityplay.js`, `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`; `tests/roomsight.js`; `CHANGELOG.md` `2026-11-17m`.
 
 ## DECISION: The 3D view's camera turns a quarter at a time and zooms
 

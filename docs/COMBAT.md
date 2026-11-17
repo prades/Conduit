@@ -589,7 +589,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
 - **Walking is another question:** route smoothing, steering, wander spots, leaps, the clone's pounce, PINBALL's roll and FAULTLINE's path keep the walking test. A crate is seen over and still not walked through.
 - **What changed for sight** (it was the walking test until this build): low furniture, water and barred gates are now seen over. Walls, glass and tall objects hide what is behind them, as before.
 
-### 8.3a Only the room you are in shows its creatures (build `2026-11-17g`)
+### 8.3a Only the room you are in shows its creatures (build `2026-11-17m`)
 
 The owner, 2026-11-17: **"Shouldn't be able to see enemies in other rooms. Only the rooms that you're in."** (`js/facilityplay.js` `facilityShowsActor`.)
 - **A creature not of yours in another room is not drawn** (the 2D game and the 3D view, `?engine=3d`), **cannot be tapped** (`findEnemyAtScreen`) and **is not locked by the gun** (`targetNearest`). It still lives and moves; it shows the moment it is in your room (through a doorway, it shows once it is over the line).

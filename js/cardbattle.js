@@ -191,7 +191,7 @@ let _cbEls = null;
 function _cbMake() {
     if (_cbEls || typeof document === "undefined" || !document.createElement || !document.body) return _cbEls;
     const black = document.createElement("div"); black.id = "cbBlack"; black.style.cssText = "position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:60;";
-    // THE BATTLE SCREEN (step 2, build 2026-11-17e; §2.9 SQUAD ROWS): the enemy list at the top right (their names and health; not their next moves, §2.15) with RUN under it, and the band along
+    // THE BATTLE SCREEN (step 2, build 2026-11-17k; §2.9 SQUAD ROWS): the enemy list at the top right (their names and health; not their next moves, §2.15) with RUN under it, and the band along
     // the bottom, a column for each member of the squad (cardBattleScreen fills them)
     const scr = document.createElement("div"); scr.id = "cbScreen"; scr.setAttribute("aria-label", "Battle");
     scr.innerHTML = '<div class="cb-foes"><h4>ENEMIES</h4><div class="cb-foelist"></div></div><div class="cb-band"><div class="cb-row"></div></div>';
