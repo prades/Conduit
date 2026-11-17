@@ -56,6 +56,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Chosen from:** each turn: "One card, then enemies act" (not one card with the others' basic attacks, not a speed order); charging: "By turns" (not like the Ultimate meter, not by time); starting: "You start it, or they do" (not only when you start it); first step: "Pictures of the battle screen" (not a playable test page, not straight into the game).
 - **Supersedes:** "Real-time stays" (2026-11-11, `BATTLE-LOOK.md` §2.1) for battles; the real-time fight of the look-and-combat direction (2026-11-16, below). Exploring stays real time. The look of direction 1 (CRYSTAL LAB 3D) stands.
 - **Open:** `CARD-BATTLES.md` §11 (the player's part, Ultimates, targets, leaving, the numbers, the enemies' turns, 2D or 3D first).
+- **The battle screen** (the owner, the same day, of six mockups in `design/battle/round1/`: "2"): **SQUAD ROWS**: one column per follower with its cards under its portrait, the basic attack its own card at the far left, the enemies' next moves listed top right and shown over them (`CARD-BATTLES.md` §2.9).
 
 ## DECISION: The look and combat's direction: CRYSTAL LAB 3D with the slowed and signalled fight (the owner's pick of round 2's ten)
 

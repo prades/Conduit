@@ -20,6 +20,7 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 6. **The battle screen zooms in on the fight and blurs everything else.** Creatures **not in the battle do not join it: they walk past in the background.**
 7. **Several enemies** can be in one battle. **Your whole squad is always there.**
 8. **The first step: pictures of the battle screen** (mockups to choose from) before anything is built. (Of three offered: "Pictures of the battle screen".)
+9. **The battle screen: SQUAD ROWS** (the owner, of six mockups in `design/battle/round1/`: "2"). The bottom band is split into **one column per follower**, each headed by its portrait, name, element colour and health, with **that follower's cards under it** (ready ones lit, recharging ones dimmed with their turns to go); the **basic attack** is its own always-ready card at the far left. **A "their turn next" list** at the top right gives each enemy's health and its next move (target and damage), and each enemy shows its next move over it in the scene too. Picking a card, then tapping an enemy, chooses the target (`2-pick.jpg`). The mockup's wording, numbers, ant move names and the basic attack's owner are the mockup maker's, not decisions.
 
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
@@ -60,7 +61,7 @@ None yet: mockups first (§2.8).
 None: nothing is built.
 
 ## 11. Open questions
-1. **The battle screen's look**: six mockups, round 1 (`design/battle/round1/`: hand of cards, squad rows, turn track, slab cards, cards in the scene, tactical console), for the owner's choice.
+1. ~~**The battle screen's look**~~ *(answered 2026-11-17: **SQUAD ROWS**, §2.9)*.
 2. **The player's part in a battle:** does the player (the cube) have its own cards or actions (the gun, GUARD, STUN DIVE, the repair kit), or only command the squad?
 3. **Ultimates:** a card like the others (with a long recharge), or charged by the Ultimate meter as now?
 4. **Targets:** with several enemies, how a card's target is chosen (tap the enemy after the card, or the card picks).
