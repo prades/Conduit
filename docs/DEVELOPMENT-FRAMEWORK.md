@@ -174,6 +174,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Startup/loading | `STARTUP.md` |
 | UI presentation | `UI-STYLE.md` |
 | The website (the Dragonlord home page over the live game: its intent, research, problems and the owner's decisions; its agent is `../.claude/agents/web-designer.md`) | `WEBSITE.md` |
+| Attack card art (the owner's brief for the attack cards' pictures, 2026-11-17: Mages charged with their element under a tilted camera, sparks or fire in front; Brawlers an impact with shattered glass, roughed up; its agent is `../.claude/agents/card-artist.md`; nothing drawn yet) | `ATTACK-CARD-ART.md` |
 | Art process | `ART-PROCESS.md` |
 | Visual reference | `STYLE-CRYSTAL-LAB.md` |
 | Feature/decision templates | `FEATURE-SPEC-TEMPLATE.md` |

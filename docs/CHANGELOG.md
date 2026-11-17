@@ -2,6 +2,13 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-17
+
+### No build · branch `claude/card-artist` · the card artist agent and the attack cards' art brief
+- **The ask** (the owner, 2026-11-17): an agent to make the attack cards' pictures: "dynamic shots of elementals using their attacks where they look elementally charged", "the horizon to be slanted", "shocks or fire in the front of the card as focus"; for brawlers "impact looking cards that have shattered screens and maybe make them look roughed up".
+- **Added:** `.claude/agents/card-artist.md` (the card illustrator: renders the followers' own 3-D models mid-attack, one piece first, checks each picture in the real card frame at iPad size, builds only when told) and `docs/ATTACK-CARD-ART.md` (the brief in the owner's words, what is fixed, what is open, the decisions to come). The documentation map lists it.
+- No game code, picture or test changed. Open for the owner: whether "elementals" means the Mages, the Technicians' style, which cards and how many, and the first piece.
+
 ## 2026-11-15
 
 ### Build `2026-11-15i` (stamped `2026-11-15g` on its branch; main had taken g and h) · branch `claude/meteor-look` · METEOR RAIN: the Ember Hood's new Ultimate (VOLCANIC ERUPTION is superseded)
