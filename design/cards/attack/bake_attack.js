@@ -282,6 +282,19 @@ const SAMPLES = {
       mid: [[0.2, 0.3, 26, 0, -2.6], [0.1, 0.44, 30, 1, -2.9], [0.32, 0.19, 20, 2, -2.4], [0.25, 0.47, 22, 2, 2.9], [0.38, 0.34, 16, 1, -2.2], [0.07, 0.21, 20, 1, -2.8], [0.46, 0.24, 12, 0, -2.0]],   // (nearer pieces, in focus: [x, y, size, kind (0 petal, 1 leaf, 2 thorn), way])
       lens: [[0.12, 0.14, 30, 0, 0.6], [0.86, 0.06, 18, 2, 2.2], [0.04, 0.62, 26, 1, -0.4], [0.5, 0.05, 14, 0, 1.4], [0.3, 0.6, 22, 0, 2.0]] },   // (at the lens, out of focus)
   },
+  // THE SUNDEW (bloom Brawler, evolved form 'sundew', design No. 925: design/evolutions/bake.js JOBS, forms37.js _sundewPitcher, sting) for SWEET SCENT (docs/COMBAT.md: a lure, no damage), in the Brawler style
+  // as the Frost Maw's round 3: SWEET SCENT has no blow of its own, so the impact is its own body's strike, its blade-leaf's sting (its action: the stem arching over from behind like a scorpion's tail
+  // to stab with the blade), caught as the blade swings down at the lens, the card's glass breaking at its point. The bloom energy card's garden behind.
+  sundew_sweetscent: {
+    style: 'brawler', form: 925, color: '#ff7ab8', rim: '#ff9ccc', fx: '#ff7ab8', world: 'blossom', seed: 925,
+    pose: { t: 1.195, act: 1 }, yaw: 0.2, hit: [0.765, 0.425], glass: 'slabs', pieces: 'clear', powder: 0, through: 28,   // (its sting's swing, just before the stab lands; through: the blade's point punched through the glass)
+    clear: [[150, 250, 80], [290, 180, 45], [200, 95, 35], [150, 110, 40], [245, 300, 40]],   // (its flower, its blade, the head of its stem, its roots: no flying piece lands on them)
+    sting: { flash: 80, sparks: 60, drops: 10, petals: 6 },
+    lights: { hemi: [0xd0a0b8, 0x1a0610, 0.55], key: [0xfff0f6, 1.1], rim: 3.0, back: 1.5, low: [0xff7ab8, 1.5, 0, 1.2, 2.0] },
+    cam: { pos: [-0.2, 0.95, 3.5], look: [0.35, 0.25, 0], fov: 52, roll: -0.22 },   // (low in front of it, the enemy's place, its blade swinging down at the lens; rolled as the Frost Maw's)
+    tone: { sky: '#14030c', hz: ['rgba(58,10,38,0)', 'rgba(80,16,52,0.85)', '#3a0a26'], hot: '255,230,242', halo: 'rgba(10,2,6,1)', chip: ['#7a4a5e', '#3a1a2a', '#0a0306', 'rgba(255,122,184,0.35)'], vig: 'rgba(10,2,6,0.65)', foot: ['rgba(12,3,8,0)', 'rgba(12,3,8,0.7)'], dim: 0.35, glow: 0.3, edge: [3, 0.9, '#ffc2e0'] },   // (the garden dimmed, a pink glow and a pale-pink edge round it: its dark blade-leaf and stem read against the garden)
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -328,6 +341,7 @@ function BRAWLER(o) {
   if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
   if (P.goo) GOO_SPLASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
   if (P.glitch) RIFT_GLITCH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU, pr: o.pr });   // (followers round 3, RIFT IMPALE: it glitches back into being, a rift under it, the strike's flash)
+  if (P.sting) STING_BURST({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });   // (followers round 4, the Sundew: the flash, sparks, nectar and petals where its blade-leaf strikes)
   if (P.zig) ZIG_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU, pr: o.pr });   // (followers round 3, ZIGZAG DASH: its way behind it a zigzag of lightning, arcs off it, the strike's bolts at the lens)   // (followers round 2, TOXIC STOMP: goo flung out of its caldera, a splash of it where the foot lands)   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
@@ -1080,6 +1094,25 @@ function BLOOM_MAGE(o) {
   return { png: out.toDataURL('image/png'), info };
 }
 
+// ---------- THE SUNDEW'S STING on a Brawler card (followers round 4; docs/COMBAT.md: NECTAR STING, its blade-leaf's sting): the moment its blade-leaf strikes the glass: a pink flash at its point,
+// sparks of bloom's light and drops of nectar thrown out from it, a few petals shaken loose; none on its body. Called by BRAWLER after the follower is drawn, before the glass breaks.
+function STING_BURST(o) {
+  const { g, W, H, R, model, HIT, P, PI, TAU } = o, Q = P.sting;
+  const blob = (x, y, r, stops) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, onIt = (x, y) => x >= 0 && y >= 0 && x < W && y < H && md[((y | 0) * W + (x | 0)) * 4 + 3] > 20;
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(HIT[0], HIT[1], Q.flash || 120, [[0, 'rgba(255,235,245,0.6)'], [0.3, 'rgba(255,122,184,0.32)'], [1, 'rgba(255,122,184,0)']]); g.lineCap = 'round';
+  for (let k = 0; k < (Q.sparks || 60); k++) { const a = R() * TAU, d = 30 + Math.pow(R(), 0.7) * 210, L = 6 + R() * 22, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d; if (y > H * 0.7 || onIt(x, y)) continue;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, 'rgba(255,240,248,1)'); sg.addColorStop(0.3, 'rgba(255,156,204,0.85)'); sg.addColorStop(1, 'rgba(255,122,184,0)'); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 1.8; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+  for (let k = 0; k < (Q.drops || 10); k++) { const a = R() * TAU, d = 30 + R() * 130, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d * 0.85, r = 2 + R() * 4.5; if (y > H * 0.7 || onIt(x, y)) continue;   // (drops of nectar: glossy, pink-gold, a white glint)
+    g.save(); g.translate(x, y); g.rotate(a); const gr = g.createLinearGradient(-r * 3, 0, r, 0); gr.addColorStop(0, 'rgba(255,150,190,0)'); gr.addColorStop(0.55, 'rgba(255,170,200,0.85)'); gr.addColorStop(1, '#ffe6c8'); g.fillStyle = gr;
+    g.beginPath(); g.moveTo(-r * 3, 0); g.quadraticCurveTo(-r * 0.2, -r, r * 0.4, -r * 0.95); g.arc(r * 0.4, 0, r * 0.95, -PI / 2, PI / 2); g.quadraticCurveTo(-r * 0.2, r, -r * 3, 0); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(r * 0.6, -r * 0.35, r * 0.22, 0, TAU); g.fill(); g.restore(); }
+  for (let k = 0; k < (Q.petals || 6); k++) { const a = R() * TAU, d = 40 + R() * 150, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d, r = 4 + R() * 6; if (y > H * 0.7 || onIt(x, y)) continue;
+    g.save(); g.translate(x, y); g.rotate(R() * TAU); const gr = g.createLinearGradient(-r, 0, r, 0); gr.addColorStop(0, '#c2457f'); gr.addColorStop(0.55, '#ff9ccc'); gr.addColorStop(1, '#ffe2f0'); g.fillStyle = gr;
+    g.beginPath(); g.moveTo(-r, 0); g.bezierCurveTo(-r * 0.4, -r * 0.62, r * 0.6, -r * 0.55, r, 0); g.bezierCurveTo(r * 0.6, r * 0.55, -r * 0.4, r * 0.62, -r, 0); g.fill(); g.restore(); }
+}
+
 // ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
 // from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
 // Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
@@ -1213,6 +1246,7 @@ ${ZIG_DASH.toString()}
 ${RIFT_GLITCH.toString()}
 ${CORE_MAGE.toString()}
 ${BLOOM_MAGE.toString()}
+${STING_BURST.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
