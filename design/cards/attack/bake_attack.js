@@ -308,6 +308,15 @@ const SAMPLES = {
       lensDrops: [[0.13, 0.09, 30, -2.2], [0.93, 0.33, 22, -0.5], [0.64, 0.04, 16, -1.3], [0.03, 0.6, 20, 2.6]], lensBubbles: [[0.8, 0.12, 24], [0.32, 0.03, 14]], lensBlur: 3.5,
       lens: [{ w: 4.5, pts: [[470, 160], [410, 110], [380, 40], [330, -10]], forks: 3 }, { w: 3.5, pts: [[-20, 140], [25, 80], [15, 20], [60, -10]], forks: 2 }] },
   },
+  jellyram_wobbleslam: {
+    style: 'brawler', form: 935, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 935,
+    pose: { t: 0.3, act: 0 }, yaw: 0, rear: -0.4, lift: 0.7, hit: [0.47, 0.37], glass: 'slabs', pieces: 'clear', powder: 0, through: 40,
+    clear: [[205, 150, 85], [205, 232, 62], [200, 320, 70], [310, 310, 40], [148, 350, 35]],   // (its glass head, its collar and its tentacles: no flying piece lands on them)
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.55], key: [0xf0fffa, 1.1], rim: 3.0, back: 1.5, low: [0x19e6c1, 0, 0.3, 1.5, 2.0] },
+    cam: { pos: [0, 0.45, 4.2], look: [0, 0.95, 0.3], fov: 52, roll: -0.22 },
+    tone: { sky: '#010a09', hz: ['rgba(4,38,31,0)', 'rgba(6,60,50,0.85)', '#04261f'], hot: '215,255,246', halo: 'rgba(0,8,6,1)', chip: ['#3a6a60', '#14302a', '#020a08', 'rgba(25,230,193,0.35)'], vig: 'rgba(1,10,9,0.65)', foot: ['rgba(1,10,9,0)', 'rgba(1,10,9,0.7)'], dim: 0.55, glow: 0.2, edge: [2, 1.0, '#e0fff8'] },   // (the reactor dimmed hard, a white edge: its see-through glass and jelly on the teal reactor)
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
