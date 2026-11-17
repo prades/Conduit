@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17f` · branch `claude/start-game-project-HSh7Z` · the Cold Storage's stairs up to the Experiment Lab on its east wall
+- **The ask** (the owner): **"we need to make the cold storage the staircase that goes to the experiment lab. It should be in a different spot on the east wall, I think. Whatever wall would be closest to the real location of the experiment lab"**, then **"make the staircase on the side of the wall inside the cold storage that isn't broken into"**.
+- **Now** (`js/facilitymap.js`: `portal_cold_lab`, `cold_lab_stairs`; `docs/FACILITY.md`): the flight up stands against the Cold Storage's east wall, in the stretch the ice cave has not broken into, a tile south of the freezers, rising to the north as before; you step on from the cave's floor to the south, and coming down from the lab you arrive at its foot. The room lies under the lab, whose stairwell is in its north-east corner, and its door from the arena is its west wall, so the lab is to its north-east. It stood in the floor at the west side before.
+- In 2D the cave's rock beside the flight hides its lower steps (the 2D game draws rock in front of you whole).
+- **Tests**: `tests/facility.js` (the flight against a straight piece of the east wall, south of the freezers); the map's validator (doorways on floor, the spots in front of them in the room, agents walking) and `tests/facilityplay.js` (down the stairwell and up the stairs) pass unchanged.
+- **Verified:** `facility`, `facilityplay`, `bundle`, `view3d`; pictures from the 2D game (arriving from the lab, and the room). **Not tried on an iPad.**
+
 ### Build `2026-11-17e` · branch `claude/start-game-project-HSh7Z` · the game in 3D: the arena built (no longer a draft)
 - **The ask** (the owner): **"Continue updating"**. Taken as: go on with the 3D view's stages (`docs/VIEW-3D.md` §3). Stage 2's next room was the arena, whose look the owner shaped over builds `2026-11-16c` to `i` behind `?draft=arena`.
 - **Now** (`view3d/gamemap.js`): with `?engine=3d` the arena, its catwalks and the spur are built for everyone, as the lab's floors are: walking from the lab into the arena stays in 3D (it went to 2D without the draft flag). `?draft=arena` is retired. The arena's wall things with no 3D model yet (its banners, scoreboard, lamps, beams, chains and the rest) are not drawn while the view shows, as since `2026-11-16g` ("then we'll work on 3D versions after"). The agent's step; for the owner to send back to a draft if they wish.
