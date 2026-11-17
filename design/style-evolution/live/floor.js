@@ -141,12 +141,16 @@ function buildLabFloor(lab, P0, how) {
   // tiles of its room's floor, a dark room's, else the arena's), as much lighter or darker as the sand's was, so the texture is the same
   const SAND = ['#9c7a4a', '#b38d58', '#c9a46a', '#a8834f', '#d6b67e', '#a07d4c', '#bd9862'], RH = (120 + (WALL_H * UH - 74)) / UH, ROWS = 7, COLS = 4, JUT_P = 0.6, JUT_MIN = 0.16, JUT_MORE = 0.26;   // (at most a little under half a tile out, so no slab overhangs the middle of the floor's first row, where someone stands against the wall)   // (JUT_: how often a stratum's slab juts out of a tile's face, and how far: the agent's, provisional)
   const sumOf = h => { const c = new T.Color(h); return c.r + c.g + c.b; }, sandMean = SAND.reduce((t, h) => t + sumOf(h), 0) / SAND.length, strataBy = {};
-  const STRATA = id => { const st = rooms[id] && rooms[id].style && rooms[id].style.dark ? rooms[id].style : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, key = st ? st.fa + st.fb : '';
-    return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
+  // (an ICE room's own, the Cold Storage's cave, 2026-11-17: its strata in its own blues, half its walls' and half its floor's, so the rock reads as rock glazed with frost and not as its white
+  //  floor; its top frost-white, and icicles under the bits that jut out, as the 2D game hangs icicles on that rock: the agent's, provisional)
+  const iceOf = id => !!(rooms[id] && rooms[id].style && rooms[id].style.ice), FROST = lin('#eef9ff'), ICICLE = lin('#e2f6ff');
+  const STRATA = id => { const own = rooms[id] && rooms[id].style, st = own && (own.dark || own.ice) ? own : rooms.arena && rooms.arena.style && rooms.arena.style.dark ? rooms.arena.style : null, ice = !!(st && st.ice), key = st ? st.fa + st.fb + (ice ? st.wain : '') : '';
+    return strataBy[key] || (strataBy[key] = SAND.map(h => { if (!st) return lin(h); const c = new T.Color(ice ? hexMix(st.wain, hexMix(st.fa, st.fb, 0.5), 0.45) : hexMix(st.fa, st.fb, 0.5)).multiplyScalar(sumOf(h) / sandMean); return lin('#' + new T.Color(Math.min(1, c.r), Math.min(1, c.g), Math.min(1, c.b)).getHexString()); })); };
   const rnd = (x, z, k) => { let h = Math.sin(x * 12.9898 + z * 78.233 + (k || 0) * 37.719) * 43758.5453; return h - Math.floor(h); }, jag = (x, z) => rnd(x, z) * 50 / UH;
   const swell = (x, z, y) => Math.sin(x * 1.31 + z * 0.73 + y * 1.9) * 0.5 + Math.sin(x * 0.37 - z * 1.13 + y * 0.81 + 1.3) * 0.35 + Math.sin(-x * 0.93 + z * 0.47 - y * 2.6 + 4.1) * 0.15;   // (smooth, from where it is)
   const wave = (x, z) => Math.sin(x * 0.9 + z * 0.61) * 0.11 + Math.sin(x * 2.1 - z * 1.7 + 0.7) * 0.05;   // (how a stratum's edge rises and falls along the wall)
-  const speck = live ? canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(40,26,16,0.55)'; for (let i = 0; i < 16; i++) { const x = rnd(i, 3, 1) * w, y = rnd(i, 7, 2) * h, r = 1.2 + rnd(i, 9, 3) * 1.8; g.beginPath(); g.ellipse(x, y, r * 1.3, r, 0, 0, 6.2832); g.fill(); } }, { repeat: true }) : null;   // (small pits in the stone)
+  const pits = ink => live ? canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); g.fillStyle = ink; for (let i = 0; i < 16; i++) { const x = rnd(i, 3, 1) * w, y = rnd(i, 7, 2) * h, r = 1.2 + rnd(i, 9, 3) * 1.8; g.beginPath(); g.ellipse(x, y, r * 1.3, r, 0, 0, 6.2832); g.fill(); } }, { repeat: true }) : null;
+  const speck = pits('rgba(40,26,16,0.55)'), speckIce = pits('rgba(36,78,104,0.32)');   // (small pits in the stone; in an ice room's rock, cold blue-grey ones)
   // a rock block's face, side (dx, dy), from y0 up to its skyline: ROWS rows of COLS columns; inside rows wave, inside points swell in and out (none at an edge where the face turns
   // a corner or ends, so faces meet with no gap); each row its stratum's colour; flat facets
   const rockFace = (G, b, dx, dy, y0, z, flatTop) => { const cx = b.x + dx * 0.5, cz = b.y + dy * 0.5, rx = dy / 2, rz = -dx / 2, p = [cx - rx, cz - rz], q = [cx + rx, cz + rz], pal = STRATA(b.own);   // (flatTop: a cliff's, up to a higher floor's edge)
@@ -169,11 +173,15 @@ function buildLabFloor(lab, P0, how) {
       const B0 = P(s0, yb0, back), B1 = P(s1, yb1, back), T0 = P(s0, yt0, back), T1 = P(s1, yt1, back);
       const F0 = P(s0, yb0 + j(1) * 0.06, e + j(2) * 0.08), F1 = P(s1, yb1 + j(3) * 0.06, e + j(4) * 0.08), U0 = P(s0, yt0 + j(5) * 0.05, e * (0.85 + j(6) * 0.2)), U1 = P(s1, yt1 + j(7) * 0.05, e * (0.85 + j(8) * 0.2));
       const col = pal[r % pal.length], tone = k => ({ r: col.r * k, g: col.g * k, b: col.b * k }), quad4 = (a, bb, c, d, cc) => { tri3(a, bb, c, cc); tri3(a, c, d, cc); };
-      quad4(F0, F1, U1, U0, col); quad4(U0, U1, T1, T0, tone(1.18)); quad4(B0, B1, F1, F0, tone(0.7)); quad4(B0, F0, U0, T0, tone(0.9)); quad4(F1, B1, T1, U1, tone(0.9)); } };   // (its face, top, underside and two ends)
+      quad4(F0, F1, U1, U0, col); quad4(U0, U1, T1, T0, iceOf(b.own) ? FROST : tone(1.18)); quad4(B0, B1, F1, F0, tone(0.7)); quad4(B0, F0, U0, T0, tone(0.9)); quad4(F1, B1, T1, U1, tone(0.9));   // (its face, top, underside and two ends)
+      if (iceOf(b.own)) for (let i = 0, n = 2 + Math.floor(rnd(cx + r, cz - r, 17) * 3); i < n; i++) {   // ICICLES under its front edge: a cross of two thin blades each, so they show from every quarter turn
+        const s3 = s0 + (s1 - s0) * (i + 0.5) / n, w2 = 0.025 + rnd(cx + i, cz + r, 18) * 0.025, L2 = 0.1 + rnd(cx - i, cz + r, 19) * 0.22, f = P(s3, yAt(r, s3), e * 0.85), tip = [f[0], f[1] - L2, f[2], f[3], f[4] - L2];
+        const along = [(q[0] - p[0]) * w2, (q[1] - p[1]) * w2], out2 = [dx * w2, dy * w2], pt = (o, k) => [f[0] + o[0] * k, f[1], f[2] + o[1] * k, f[3], f[4]];
+        tri3(pt(along, -1), pt(along, 1), tip, ICICLE); tri3(pt(out2, -1), pt(out2, 1), tip, ICICLE); } } };
   // the top: the skyline's four corners, in the top stratum's colour
-  const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = pal[ROWS % pal.length];
+  const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = iceOf(b.own) ? FROST : pal[ROWS % pal.length];
     putQuad(G.rcap, C[0], C[1], C[2], C[3], [0, 1, 0], [col.r, col.g, col.b], C.map(c => [c[0] / 0.9, c[2] / 0.9])); };
-  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) rockCap(G, b, top); else topQuad(G.cap, b.x, b.y, top, WHITE);
+  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) { rockCap(G, b, top); if (iceOf(b.own)) { G.ice = true; rooms[b.own].iceRock = (rooms[b.own].iceRock || 0) + 1; } } else topQuad(G.cap, b.x, b.y, top, WHITE);
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
@@ -206,7 +214,8 @@ function buildLabFloor(lab, P0, how) {
         if (!thin.some(q => !q.glass && Math.abs(q.m[0] - x - t.u[0] * s) < 0.01 && Math.abs(q.m[1] - y - t.u[1] * s) < 0.01)) for (const [q, h] of [[G.face, z0 + WALL_H], [sFace, z0 + CUT_H]]) {   // (its end, where it does not go on)
           const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw; putQuad(q, [ex - rx, z0 + B0, ez - rz], [ex + rx, z0 + B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]); } } } }
   const rockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, vertexColors: true, map: speck, flatShading: true });
-  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: rockMat }, { q: G.rcap, mat: rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
+  const iceRockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.05, vertexColors: true, map: speckIce, flatShading: true });   // (glazed: a little sheen)
+  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: G.ice ? iceRockMat : rockMat }, { q: G.rcap, mat: G.ice ? iceRockMat : rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
   const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: sFace, mat: cutFace }, { q: sTop, mat: P0.cutTop }]); stubs.receiveShadow = true; stubs.userData.inkKey = 'wall'; stubs.userData.inkIds = [0, 1]; rest.add(stubs);
 
   // the floors, each room in its own colours; the dark aprons beyond the ways out; the ground outside
@@ -255,6 +264,22 @@ function buildLabFloor(lab, P0, how) {
     Pr.more = moreFittings(Pr, rm.style.acc); const B = buildRoom(rm.R, Pr, { shell: false }); rm.parts = B.parts; rm.g.add(B.g); B.g.position.y = baseOf(rec.id);   // (on its floor)
     for (const f of B.parts.fittings.children.slice()) { const w = f.userData.wall, b = w && band.get(K(Math.round(f.position.x + w.n[0] * 0.56), Math.round(f.position.z + w.n[1] * 0.56))); if (b) { f.position.y += B.g.position.y; b.G.g.add(f); } }
     for (const id of Object.keys(B.parts.props)) { const p = B.parts.props[id]; props[id] = p; if (p.s.kind === 'sentry') { const head = p.g.children.find(c => c.isGroup && Math.abs(c.position.y - 47 / UH) < 1e-3); if (head) { head.userData.dynamic = true; sentries.push({ id, at: p.s.c, room: rec.id, g: p.g, head, muzzle: p.marks.muzzle || [0.6, 0.72, 0] }); } } } }
+
+  // THE COLD STORAGE'S OWN (the owner, 2026-11-17: "The next places to upgrade to the 3D design are the sewers ... and the cold storage"): its ice cave's glassy floor (decor ice_sheet, the look
+  // only) and a flight of stairs up (decor stairwell, up: its stairs to the Experiment Lab), built as the 2D game draws them (js/facilitydecor.js _fpDrawStairwell: five steps of 12 px rising to
+  // the far, north end, a frame 64 px tall on the top step with the dark way up in it, a post at each corner and a rail down each side). The game leaves them to the view (view3d/gameview.js keeps)
+  if (live) for (const rec of recs) for (const d of rec.decor || []) { const rm = rooms[rec.id], y0 = baseOf(rec.id);
+    if (d.kind === 'ice_sheet' && d.path && d.path.length > 2) {
+      const m = new T.Mesh(new T.ShapeGeometry(new T.Shape(d.path.map(p => new T.Vector2(p[0], -p[1])))), std('#9fdcf3', { roughness: 0.06, metalness: 0.1, transparent: true, opacity: 0.5, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      m.rotation.x = -Math.PI / 2; m.position.y = y0 + 0.006; m.receiveShadow = true; m.userData.noInk = true; rm.g.add(m); }
+    else if (d.kind === 'stairwell' && d.up && d.rect) {
+      const [x0, z0, x1, z1] = d.rect, N = 5, L = z1 - z0, W = x1 - x0, cx = (x0 + x1) / 2, gp = new T.Group(), top = N * 12 / UH, fh = 64 / UH, ink = std('#1d2a33', { roughness: 0.5 }), tread = std('#dbe8ee', { roughness: 0.55 });
+      for (let k = 0; k < N; k++) { const h = (k + 1) * 12 / UH, za = z1 - (k + 1) * L / N, zb = z1 - k * L / N, s = new T.Mesh(new T.BoxGeometry(W, h, zb - za), tread); s.position.set(cx, y0 + h / 2, (za + zb) / 2); gp.add(s); }
+      const frame = new T.Mesh(new T.BoxGeometry(W, fh, 0.1), std('#2f4553', { roughness: 0.6 })); frame.position.set(cx, y0 + top + fh / 2, z0 + 0.05); gp.add(frame);
+      const dark = new T.Mesh(new T.PlaneGeometry(W - 0.36, 54 / UH), glowMat('#05080d', 1)); dark.position.set(cx, y0 + top + 27 / UH, z0 + 0.104); dark.userData.noInk = true; gp.add(dark);
+      const lit = new T.Mesh(new T.PlaneGeometry(W - 0.5, 0.05), glowMat(d.colour || '#9be8ff', 0.8)); lit.position.set(cx, y0 + top + 0.02, z0 + 0.106); lit.userData.noInk = true; gp.add(lit);   // (the cold light from the way up)
+      for (const x of [x0, x1]) { gp.add(rodBetween([x, y0, z1], [x, y0 + 16 / UH, z1], 0.03, ink, 6)); gp.add(rodBetween([x, y0 + top, z0], [x, y0 + top + 16 / UH, z0], 0.03, ink, 6)); gp.add(rodBetween([x, y0 + 16 / UH, z1], [x, y0 + top + 16 / UH, z0], 0.025, ink, 6)); }
+      gp.userData.inkKey = 'stairs'; setShadows(gp); rm.g.add(gp); } }
 
   // where one can walk
   const blocked = new Set(), ch = rooms.crystal_chamber, crystal = ch ? ch.rec.crystal : null;

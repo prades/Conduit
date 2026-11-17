@@ -20,7 +20,7 @@ const FP_PAL = {
     teal: "#4f9aa0", tealLit: "#6cb3bb", tealDark: "#2f6a73", case: "#a9c4cc", caseLit: "#dbeaee",
     cyan: "#31e8ff", blue: "#3a7bff", violet: "#9a5cff", amber: "#f2b13a", white: "#eaffff", leaf: "#4fa58a",
 };
-const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lounge", "lab_passage", "observation_deck", "catwalks", "catwalk_spur", "arena", "nest_area", "cold_storage", "sewers", "elec_servers", "elec_circuitry", "subway_platform", "subway_tracks", ...FP_NEST_ROOMS]);   // every room (the Nest's rooms: FP_NEST_ROOMS, js/facilitymap.js)
+const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lounge", "lab_passage", "observation_deck", "catwalks", "catwalk_spur", "arena", "nest_area", "cold_storage", "cold_tunnel", "cold_annex", "sewers", "elec_servers", "elec_circuitry", "subway_platform", "subway_tracks", ...FP_NEST_ROOMS]);   // every room (the Nest's rooms: FP_NEST_ROOMS, js/facilitymap.js)
 function facilityStyleRoom(id) { return !!id && FP_STYLE_ROOMS.has(id); }
 
 // floor decals keep their kind and place; their colours are brought into the palette

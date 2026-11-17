@@ -110,13 +110,26 @@ const FACILITY_MAP = {
           edge_kinds: ["rock", "wall", "rock", "wall", "rock", "rock", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall", "railing_wall", "railing_wall",
                        "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "cold_storage", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
-          note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up against the east wall, where the ice cave has not broken it (the west side until build 2026-11-17f), two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
+          note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, no stairs (since build 2026-11-17h the stairs up are in the cold storage's intact part, through an ice tunnel out of the cave's east edge; they stood at the west side until build 2026-11-17f, then against the east wall), two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
           // the room from the user's plan (20 px to a tile; its top-left at (440, 540)): the built part is twelve tiles wide; its east wall runs seven tiles down and its west wall eleven; between them the ICE CAVE's rough
           // edge bulges out to the south-east. The ENTRANCE is an alcove in the west wall at the top (three tiles, x 420 to 440): the freezer door back out to the arena.
           // (The cave's south-west edge zigzags, two tiles across to one down: a piece running at 45 degrees, north-west to south-east, would be seen exactly side-on and show no rock at all.)
-          polygon: [[440, 540], [680, 540], [680, 680], [720, 700], [740, 740], [760, 780], [760, 820], [720, 860], [680, 880], [620, 900], [580, 880], [540, 860], [520, 820], [480, 800], [460, 760],
+          polygon: [[440, 540], [680, 540], [680, 680], [760, 700], [780, 740], [800, 780], [800, 820], [760, 860], [680, 880], [620, 900], [580, 880], [540, 860], [520, 820], [480, 800], [460, 760],
                     [440, 760], [440, 620], [420, 620], [420, 560], [440, 560]],
           edge_kinds: ["wall", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "wall", "wall"] },
+        // THE ICE TUNNEL AND THE COLD STORAGE'S INTACT PART (build 2026-11-17h; the owner, 2026-11-17: "the ice chamber or the cold storage, it should not have the staircase there. Let's do it to where there's
+        // a bit of a tunnel of rocky or icy rock material until you reach another part of the cold storage that is still put together and not frozen, basically, that has the staircase and a few other
+        // equipment"). Out of the ice cave's straight east edge (x 800: two tiles further east since the owner's picture, 2026-11-17, "Move this wall over") a tunnel of icy rock runs east, two tiles wide at its ends and four in its middle, to a doorway in the west wall of the cold storage's
+        // intact part: an eight-tile room of whole walls, not frozen, with the stairs up to the Experiment Lab against its north wall at its north-east (the lab lies to the north-east), a console beside them,
+        // standing pallet racks either side of the doorway, crates and a barrel. Its layout and its things are the agent's, provisional. (The tunnel has no piece at 45 degrees from north-west to south-east.)
+        { id: "cold_tunnel", label: "Ice Tunnel", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "THE ICE TUNNEL: a short tunnel of icy rock from the ice cave's east edge to the doorway of the cold storage's intact part. ICE: the look only (frost, icicles); it plays like any floor.",
+          polygon: [[800, 780], [820, 780], [820, 760], [900, 760], [900, 780], [940, 780], [940, 820], [900, 820], [900, 840], [820, 840], [820, 820], [800, 820]],
+          edge_kinds: ["rock", "rock", "rock", "rock_low", "rock", "wall", "rock_low", "rock_low", "rock_low", "rock", "rock_low", "rock"] },   // (its far sides tall rock, its near sides a low rim of rock, as the Nest's tunnels: the 2D game draws rock in front of you whole, and a narrow tunnel's near wall would hide it)
+        { id: "cold_annex", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "THE COLD STORAGE'S INTACT PART: past the ice tunnel, still put together and not frozen. The stairs up to the Experiment Lab against its north wall at its north-east, a console beside them, standing pallet racks either side of the doorway from the tunnel, crates and a barrel.",
+          polygon: [[940, 720], [1100, 720], [1100, 880], [940, 880]],
+          edge_kinds: ["wall", "wall", "wall", "wall"] },
         { id: "sewers", label: "Sewers", level: -1, status: "placed", wall_material: "solid", interior: true,
           note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it, a broken one, and a service bridge by the Nest; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), one of them SIDE QUEST'S MAINTENANCE PLATFORM; a COLLAPSED TUNNEL off the north ledge: a broken-off stretch of an old side tunnel's floor, open onto the ledge and choked along its whole mouth with the collapse's rubble (a solid of kind `rubble`, drilled through from the ledge; a Kinetic Launcher there carries you over it, and its broken edge drops you back: the sample puzzle, docs/SEWER-QUEST.md) and a sealed hatch, a way in for later; and at the east end THE NEST (js/population.js NESTS): the Toxic Ant Queen's colony, built on a TRASH DAM over the water, behind the BOSS GATE (sealed until the purification module is brought to it). Its creatures: the Nest's toxic ants (js/population.js SPAWN_TABLES.sewers).",
           // the tunnel from the user's layout (20 px to a tile; its top-left at (300, 860)): thirty-eight tiles long to the Nest, the north ledge two tiles deep (y 860 to 900), the river six (900 to 1020), the south ledge
@@ -244,6 +257,8 @@ const FACILITY_MAP = {
         { id: "elec_circuitry", under: "front_lobby", offset: [2560, 0] },      //   offset, so the steps between them are one interior (js/facilitygrow.js carries their door and steps; js/facility.js lets them join)
         { id: "subway_platform", under: "sewers", offset: [-2560, 2560] },      // THE SUBWAY (128 tiles west and 128 south of where it is drawn: 65 tiles and more from the Sewers and the Ant Nest, nothing in sight of it);
         { id: "subway_tracks", under: "sewers", offset: [-2560, 2560] },        //   its two rooms share one offset, so the steps between them are one interior, as the electrical domain's
+        { id: "cold_tunnel", under: "experiment_lab", offset: [-1920, 0] },   // (the Cold Storage grown out, build 2026-11-17h: one interior with it; at the end, so the others keep their places)
+        { id: "cold_annex", under: "experiment_lab", offset: [-1920, 0] },
     ],
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
@@ -262,8 +277,8 @@ const FACILITY_MAP = {
           note: "The freezer door back out to the arena: the entrance, an alcove in the cold storage's west wall at the top." },
         { id: "portal_lab_cold", room: "experiment_lab", rect: [70, 530, 130, 570], arrive: [100, 600], to: "portal_cold_lab", label: "COLD STORAGE", kind: "stairs_down", well: true,
           note: "A STAIRWELL in the Experiment Lab's floor, in its north-east corner north of the foot of the staircase from Teleport Room 1 (the lab moved west in build 2026-11-13a, the owner's pick: \"Move to new lab\"; it was in the old lab's north-west corner by its door): steps going down to the north, to the Cold Storage, entered from the south. Not an alcove: an opening in the floor with a rail round three sides." },
-        { id: "portal_cold_lab", room: "cold_storage", rect: [640, 620, 680, 680], arrive: [660, 710], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
-          note: "The stairs up to the Experiment Lab: a flight against the east wall, in the stretch of it the ice cave has not broken into, a tile south of the freezers, rising to the north; you step on from the cave's floor to the south. (The owner, 2026-11-17: \"It should be in a different spot on the east wall, I think. Whatever wall would be closest to the real location of the experiment lab\"; \"make the staircase on the side of the wall inside the cold storage that isn't broken into\". The room lies under the lab, whose stairwell down is in its north-east corner, and its door from the arena is its west wall, so the lab is to its north-east. Until then the flight stood in the floor at the west side, the plan's STAIRS.)" },
+        { id: "portal_cold_lab", room: "cold_annex", rect: [1040, 720, 1080, 780], arrive: [1060, 810], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
+          note: "The stairs up to the Experiment Lab, in the cold storage's intact part past the ice tunnel: a flight against its north wall at its north-east, rising to the north; you step on from the south. (The owner, 2026-11-17: \"the ice chamber or the cold storage, it should not have the staircase there\": build 2026-11-17h. They stood in the ice chamber's floor at its west side, the plan's STAIRS, until build 2026-11-17f, then against its east wall.)" },
         { id: "portal_arena_sewers", room: "arena", rect: [780, 760, 840, 780], arrive: [810, 810], to: "portal_sewers_arena", label: "SEWERS", kind: "door",
           note: "The sewer culvert: an arched concrete mouth with its grating raised, in an alcove in the arena's north rock behind the north tank." },
         { id: "portal_sewers_arena", room: "sewers", rect: [280, 860, 300, 900], arrive: [330, 880], to: "portal_arena_sewers", label: "ARENA", kind: "door",
@@ -482,6 +497,12 @@ const FACILITY_MAP = {
         { id: "cold_freezers", room: "cold_storage", shape: "rect", rect: [480, 540, 680, 600], status: "placed", kind: "freezer_bank", note: "A bank of walk-in freezers along the north wall: five frosted doors on its front. Solid." },
         { id: "cold_rack_1", room: "cold_storage", shape: "poly", poly: [[557.4, 647.8], [584.4, 655.0], [562.6, 736.2], [535.6, 729.0]], status: "placed", kind: "toppled_rack", note: "A tall storage rack toppled over on its back, lying at an angle; its spilled boxes beside it." },
         { id: "cold_rack_2", room: "cold_storage", shape: "poly", poly: [[585.8, 640.0], [610.9, 646.7], [590.2, 724.0], [565.1, 717.3]], status: "placed", kind: "toppled_rack", note: "A second rack toppled over beside the first, against it." },
+        { id: "annex_console", room: "cold_annex", shape: "rect", rect: [960, 720, 1020, 740], status: "placed", kind: "console", note: "The cold storage's controls, against the intact part's north wall, west of the stairs." },
+        { id: "annex_rack_1", room: "cold_annex", shape: "rect", rect: [940, 720, 960, 780], status: "placed", kind: "pallet_rack", note: "A pallet rack still standing, against the west wall north of the doorway from the ice tunnel." },
+        { id: "annex_rack_2", room: "cold_annex", shape: "rect", rect: [940, 820, 960, 880], status: "placed", kind: "pallet_rack", note: "A second, south of the doorway." },
+        { id: "annex_crates", room: "cold_annex", shape: "rect", rect: [1060, 840, 1080, 860], status: "placed", kind: "crate_stack", note: "Stores, stacked." },
+        { id: "annex_crate", room: "cold_annex", shape: "rect", rect: [1080, 860, 1100, 880], status: "placed", kind: "crate", note: "A crate in the south-east corner." },
+        { id: "annex_barrel", room: "cold_annex", shape: "rect", rect: [1080, 820, 1100, 840], status: "placed", kind: "barrel", note: "A barrel against the east wall." },
 
         // ── THE SEWERS: the DEEP RIVER between the two ledges (kind `river`: nothing walks in it; it draws itself, sunk below the ledges and flowing east, js/facilitysewers.js), in three lengths with two bridges between
         //    (THE RIVER NARROWED, 2026-11-07, the owner: "make the sewer river 3 tiles wide": it was 6, y 900 to 1020; the north ledge took the 3 tiles, so it is 5 deep now, the bridges and the outfall shortened to it.)
@@ -695,7 +716,7 @@ const FACILITY_MAP = {
         { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
         { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room", "lounge"], feeds: ["charger_hall"] },   // (the Lounge since build 2026-11-13g: open onto the hallway, lit with it, as the Stair Room is)   // (its sentry runs on the Crystal's power since 2026-11-01)
         { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room", "elec_servers", "elec_circuitry"], feeds: [] },   // (and the electrical domain under it: its door opens with the junction, which turns every relay on)
-        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage)
+        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage", "cold_tunnel", "cold_annex"], feeds: [] },   // (and the Cold Storage, its ice tunnel and its intact part)
         { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
         { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "catwalk_spur", "nest_area", "nest_t1", "nest_brood", "nest_shelf", "nest_t3", "nest_t4", "nest_stream", "nest_t6", "nest_burrow", "nest_deep", "nest_t7", "nest_larder", "nest_down", "nest_down_low", "sewers", "subway_platform", "subway_tracks"], feeds: [] },   // (and the Sewers under the arena, and the subway off them)
     ],
@@ -719,6 +740,8 @@ const FACILITY_MAP = {
         { room: "arena", style: "sand" },
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
+        { room: "cold_tunnel", style: "sand", colour: "#b8cfda" },   // (icy rock underfoot)
+        { room: "cold_annex", style: "plate", colour: "#c5d1d7" },
         { room: "nest_area", style: "sand", colour: "#3b2e22" },   // (packed dirt: the room's own style, FP_ROOM_STYLE.nest_area, colours it)
         { room: "nest_t1", style: "sand", colour: "#3b2e22" },
         { room: "nest_brood", style: "sand", colour: "#3b2e22" },
@@ -1057,12 +1080,21 @@ const FACILITY_MAP = {
         // ── the Cold Storage: its freezer door at the entrance (the inside of the arena's), the stairwell down to it in the Experiment Lab's floor and the stairs up inside it, the ice cave's glassy floor, cold lights ──
         { id: "cold_arena_door", room: "cold_storage", kind: "portal_door", a: [420, 560], b: [420, 620], colour: "#9be8ff", flat: true, cold: true },
         { id: "lab_cold_stairwell", room: "experiment_lab", kind: "stairwell", rect: [70, 530, 130, 570], dir: "n", colour: "#9be8ff", note: "A stairwell in the lab's floor, north of the foot of the staircase from Teleport Room 1: steps going down to the north, into the Cold Storage; a rail round three sides, open at the south where you step in." },
-        { id: "cold_lab_stairs", room: "cold_storage", kind: "stairwell", rect: [640, 620, 680, 680], dir: "n", up: true, colour: "#9be8ff", note: "The flight up to the Experiment Lab, against the east wall where the ice cave has not broken it (build 2026-11-17f; it stood in the floor at the west side before): steps rising to the north." },
-        { id: "cold_cave_ice", room: "cold_storage", kind: "ice_sheet", path: [[456, 748], [500, 745], [560, 752], [610, 724], [650, 712], [675, 690], [712, 708], [730, 745], [749, 782], [749, 818], [718, 850], [675, 872], [620, 890], [585, 870], [545, 852], [530, 812], [490, 794], [466, 754]],
+        { id: "cold_lab_stairs", room: "cold_annex", kind: "stairwell", rect: [1040, 720, 1080, 780], dir: "n", up: true, colour: "#9be8ff", note: "The flight up to the Experiment Lab, against the north wall of the cold storage's intact part (build 2026-11-17h; in the ice chamber before): steps rising to the north." },
+        { id: "cold_cave_ice", room: "cold_storage", kind: "ice_sheet", path: [[456, 748], [500, 745], [560, 752], [610, 724], [650, 712], [675, 690], [740, 712], [768, 748], [788, 786], [788, 816], [750, 852], [675, 872], [620, 890], [585, 870], [545, 852], [530, 812], [490, 794], [466, 754]],
           note: "The ice cave's floor: glassy ice over the rock (the look only: it plays like any floor)." },
         { id: "cold_light_1", room: "cold_storage", kind: "light", at: [560, 630], radius: 140, colour: "#bfefff", a: 0.16 },
         { id: "cold_light_2", room: "cold_storage", kind: "light", at: [640, 800], radius: 130, colour: "#8fdcff", a: 0.14, flicker: true },
         { id: "cold_wall_light", room: "cold_storage", kind: "wall_light", a: [440, 540], b: [480, 540], colour: "#dff6ff" },
+        { id: "annex_wall_light", room: "cold_annex", kind: "wall_light", a: [1020, 720], b: [1040, 720], colour: "#dff6ff" },
+        { id: "annex_pipe", room: "cold_annex", kind: "pipe", a: [940, 720], b: [1040, 720], colour: "#9fb8c6", z: 66 },   // (the coolant run along the north wall, over the console)
+        { id: "annex_vent", room: "cold_annex", kind: "vent", a: [1080, 720], b: [1100, 720] },
+        { id: "tunnel_debris_1", room: "cold_tunnel", kind: "debris", at: [830, 800], radius: 18, n: 5 },   // (bits of broken ice and rock)
+        { id: "tunnel_debris_2", room: "cold_tunnel", kind: "debris", at: [892, 790], radius: 14, n: 4 },
+        { id: "annex_light", room: "cold_annex", kind: "light", at: [1020, 800], radius: 130, colour: "#dff3ff", a: 0.12 },
+        { id: "tunnel_light", room: "cold_tunnel", kind: "light", at: [860, 800], radius: 110, colour: "#8fdcff", a: 0.12, flicker: true },
+        { id: "tunnel_ice", room: "cold_tunnel", kind: "ice_sheet", path: [[810, 790], [830, 790], [832, 772], [870, 770], [888, 778], [886, 806], [860, 830], [836, 826], [828, 812], [810, 810]],
+          note: "The ice tunnel's floor at its cave end: glassy ice over the rock, thinning out towards the intact part (the look only)." },
         // ── the way down to the Sewers: the culvert in the arena's north rock (portal_door, `culvert`: an arched concrete mouth, its grating raised, a SEWER plate over it), and the tanks' RUNOFF: a small overflow
         //    grate where each tank's pipe goes into the floor (the north tank's fat manifold, the south tank's small line with its valve), the violet runoff glowing under the bars and seen running down a sight glass in
         //    the pipe (decor `overflow_grate`: `at` the grate, `pipe` the pipe's foot, `glass` the sight glass's [bottom, top, half-width] in px). Subtle: no words on the floor.
@@ -1333,6 +1365,8 @@ const FACILITY_MAP = {
         { id: "open_nest_brood_t3", a: [110, 1380], b: [170, 1380], rooms: ["nest_brood", "nest_t3"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the brood chamber's south mouth." },
         { id: "open_nest_t3_t4", a: [170, 1480], b: [170, 1540], rooms: ["nest_t3", "nest_t4"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the stream's tunnel." },
         { id: "open_nest_t4_stream", a: [350, 1480], b: [350, 1540], rooms: ["nest_t4", "nest_stream"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the stream cave." },
+        { id: "open_cold_tunnel", a: [800, 780], b: [800, 820], rooms: ["cold_storage", "cold_tunnel"], door: null, cave: true, position_status: "approximate", note: "THE COLD STORAGE: the ice cave's east edge opens into the ice tunnel (build 2026-11-17h)." },
+        { id: "open_cold_annex", a: [940, 780], b: [940, 820], rooms: ["cold_tunnel", "cold_annex"], door: null, position_status: "approximate", note: "THE COLD STORAGE: the doorway at the ice tunnel's east end, in the west wall of the intact part (build 2026-11-17h)." },
         { id: "open_nest_t3_deep", a: [110, 1660], b: [170, 1660], rooms: ["nest_t3", "nest_deep"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the deep brood." },
         { id: "open_nest_t6", a: [510, 1420], b: [570, 1420], rooms: ["nest_area", "nest_t6"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: the queen's cavern's south mouth." },
         { id: "open_nest_t6_burrow", a: [510, 1540], b: [570, 1540], rooms: ["nest_t6", "nest_burrow"], door: null, cave: true, position_status: "approximate", note: "THE ANT NEST: into the old burrow." },
@@ -1365,7 +1399,7 @@ const FACILITY_MAP = {
         { id: "conn_deck_armory", rooms: ["observation_deck", "armory"], portal: "portal_deck_armory" },
         { id: "conn_arena_armory", rooms: ["arena", "armory"], portal: "portal_arena_armory" },
         { id: "conn_arena_cold", rooms: ["arena", "cold_storage"], portal: "portal_arena_cold" },
-        { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_storage"], portal: "portal_lab_cold" },
+        { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_annex"], portal: "portal_lab_cold" },   // (to the cold storage's intact part since build 2026-11-17h)
         { id: "conn_arena_sewers", rooms: ["arena", "sewers"], portal: "portal_arena_sewers" },
         { id: "conn_arena_nest", rooms: ["arena", "nest_area"], portal: "portal_arena_nest" },   // (the sketch's candidate c_arena_nest, made real: through the drilled rubble)
         { id: "conn_lobby_elec", rooms: ["front_lobby", "elec_servers"], portal: "portal_lobby_elec" },
@@ -1377,6 +1411,8 @@ const FACILITY_MAP = {
         { id: "conn_nest_brood_t3", rooms: ["nest_brood", "nest_t3"], opening: "open_nest_brood_t3" },
         { id: "conn_nest_t3_t4", rooms: ["nest_t3", "nest_t4"], opening: "open_nest_t3_t4" },
         { id: "conn_nest_t4_stream", rooms: ["nest_t4", "nest_stream"], opening: "open_nest_t4_stream" },
+        { id: "conn_cold_tunnel", rooms: ["cold_storage", "cold_tunnel"], opening: "open_cold_tunnel" },
+        { id: "conn_cold_annex", rooms: ["cold_tunnel", "cold_annex"], opening: "open_cold_annex" },
         { id: "conn_nest_t3_deep", rooms: ["nest_t3", "nest_deep"], opening: "open_nest_t3_deep" },
         { id: "conn_nest_t6", rooms: ["nest_area", "nest_t6"], opening: "open_nest_t6" },
         { id: "conn_nest_t6_burrow", rooms: ["nest_t6", "nest_burrow"], opening: "open_nest_t6_burrow" },
