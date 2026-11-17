@@ -148,6 +148,18 @@ const SAMPLES = {
       lens: [{ w: 5, pts: [[-20, 100], [30, 170], [60, 245]] }, { w: 3.5, pts: [[-20, 450], [40, 400], [90, 340]] }],   // (the nearest filaments: down the left edge into the eye, and up from the lower left; each ends at the eye) cast: [0.6, 0.27],   // (the swirl's middle on the floor where the ray through this point of the picture (-1..1) meets it; its radius, world units)
       near: [[-0.85, 0.75, 1.3, 0.16, 0.6], [0.9, 0.85, 1.5, 0.13, -0.4], [-0.95, -0.2, 1.2, 0.12, 2.2], [0.7, 0.2, 1.7, 0.08, 1.0], [-0.55, 0.95, 2.0, 0.07, -1.2]] },   // (the nearest crystals, flying past the lens: [x, y on the picture, distance, size, turn])
   },
+  // THE IGLOO SKATER (ice Technician, evolved form 'igloo', design No. 857: design/evolutions/bake.js JOBS, forms31.js _iglooBricks) for SKATE CHARGE, in the Technician style as the Hammer
+  // Slug's round 3: inside a whole ring of the game's crystals in ice's colour, raising what it has: it has no claws or arms, only its four diamonds (its skates) set under its box of
+  // bricks, so it rears its front end up (P.rear: its body is fitted bricks, rigid, so the whole of it tips back), its front diamonds lifted off the ice, still pointing down.
+  // The ice energy card's glacier under its aurora behind.
+  igloo_skatecharge: {
+    style: 'tech', form: 857, color: '#7fd6ff', rim: '#99ddff', fx: '#99ddff', world: 'ice', seed: 857,
+    pose: { t: 0.4, act: 0 }, yaw: 1.05, rear: 0.5, lift: 0.12,   // (side-on, its front to the right: its back diamonds on the ice, its front end and front diamonds raised)
+    ring: { n: 12, r: 1.6, h: [0.3, 1.1], w: 0.13, dim: [0.35, 0.15] },   // (dimmed as the Stonepetal's: ice's pale blue whites the crystals out otherwise)
+    tone: { sky: '#020818', hz: ['rgba(12,42,74,0)', 'rgba(20,60,100,0.85)', '#0c2a4a'], halo: 'rgba(0,6,16,1)', white: '225,245,255', ringWhite: '#e0f4ff', star: '235,248,255', vig: 'rgba(0,4,12,0.6)', foot: ['rgba(2,8,18,0)', 'rgba(2,8,18,0.65)'], worldK: 0.6, ringGlow: [0.35, 0.15] },
+    lights: { hemi: [0x8aa8d0, 0x061426, 0.45], key: [0xf0f8ff, 1.0], rim: 2.4, back: 1.4, low: [0x99ddff, 1.2, 0, 0.6, 1.8] },
+    cam: { pos: [1.2, 1.5, 7.4], look: [-0.1, 0.05, 0], fov: 38, roll: -0.18 },   // (above the ring, rolled about 10 degrees, as the Hammer Slug's, the whole ring in the card)
+  },
   // THE SEEPER (toxic Brawler, evolved form 'seeper', design No. 936: design/evolutions/bake.js JOBS, forms22.js _walker) with TOXIC STOMP (docs/COMBAT.md: "it stomps: every enemy within
   // 1.5 tiles"; it plays the Seeper's own leg stomp, goo thrown out of its caldera), in the Brawler style as the Frost Maw's round 3: TOXIC STOMP over ERUPTION, as the stomp comes down
   // head-on: its front foot slams down on the lens (the enemy's place), and the card's glass breaks where it lands. Its pose: the stomp block (its sheet's columns 16-23: v up, fwd,
