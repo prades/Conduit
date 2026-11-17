@@ -317,6 +317,15 @@ const SAMPLES = {
     lights: { hemi: [0x90c090, 0x041a06, 0.5], key: [0xf0fff0, 1.1], rim: 2.6, back: 1.4, low: [0x66ff66, 1.2, 0, 0.6, 2.0] },
     cam: { pos: [0.8, 1.55, 5.3], look: [0, -0.15, 0], fov: 38, roll: -0.18 },
   },
+  hovershell_shockzap: {
+    style: 'tech', form: 882, color: '#ffe033', rim: '#fff27a', fx: '#ffee33', world: 'electric', seed: 882,
+    pose: { t: 1.23, act: 1 }, yaw: 0.35, wings: { up: 0.75 },
+    ring: { n: 12, r: 1.25, h: [0.28, 0.95], w: 0.11, dim: [0.35, 0.15] },
+    tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], halo: 'rgba(4,2,10,1)', white: '255,250,210', ringWhite: '#fff8d0', star: '255,250,220', vig: 'rgba(6,4,14,0.6)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.65)'], worldK: 0.6, ringGlow: [0.45, 0.2],
+      dim: 0.3, floorDim: 0.4, edge: [3, 0.9, '#fff27a'] },
+    lights: { hemi: [0x8a84b0, 0x0a0618, 0.5], key: [0xfff6d8, 1.1], rim: 2.6, back: 1.4, low: [0xffe040, 1.2, 0, 0.6, 2.0] },
+    cam: { pos: [0.8, 1.7, 6.4], look: [0, -0.05, 0], fov: 38, roll: -0.18 },
+  },
   jellyram_wobbleslam: {
     style: 'brawler', form: 935, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 935,
     pose: { t: 0.3, act: 0 }, yaw: 0, rear: -0.4, lift: 0.7, hit: [0.47, 0.37], glass: 'slabs', pieces: 'clear', powder: 0, through: 40,
@@ -1477,6 +1486,10 @@ window.__card = async function (P, W, H, modelOnly) {
       const k2 = hip.clone().add(new T.Vector3(sx * Q.thigh[0], Q.thigh[1], Q.thigh[2]).normalize().multiplyScalar(tl)), f2 = k2.clone().add(new T.Vector3(sx * Q.shin[0], Q.shin[1], Q.shin[2]).normalize().multiplyScalar(sl));
       lay(th, hip, k2, false); kn.position.copy(k2); lay(sh, k2, f2, true); });
   }
+  if (P.wings) {   // RAISING ITS WINGS (followers round 5, the Hover Shell: it has no claws or legs, only its two long manta wings out of its sides): this render only, the game's model is not changed.
+    // Each wing is a group mirrored by its scale (x -1 for the left); both are turned up about the body's long axis at their root by P.wings.up radians, as a manta lifts its wings.
+    B.g.traverse(m => { if (!m.isGroup || m.scale.x !== -1 || !m.parent) return; const twin = m.parent.children.find(k => k !== m && k.isGroup && k.scale.x === 1 && k.position.y === m.position.y && k.children.length === m.children.length);
+      if (!twin) return; m.rotation.z = -P.wings.up; twin.rotation.z = P.wings.up; }); }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // ROTTEN DECOY'S BLACK PIECES (followers round 5, the Rotshard): the decoy, the game's own black Rotshard (design/effects/bake_fx.js rotdecoy, approved in the game 2026-11-09: "Approve the black decoy"):
   // the Rotshard's own model (No. 101) all in its old shell's glassy black, its pool tar-black, its glows, washes and light off, only its shell shard's hairline green crack kept; rising out of the floor
