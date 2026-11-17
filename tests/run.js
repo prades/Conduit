@@ -52,6 +52,7 @@ const SUITES = [
     ['the moves table',          'moves.js'],
     ['the follower combat redesign: QUILL BURST\'s five quills, FIREBALL, HEXFIRE\'s stationary circle, SONIC ROLL kept, PINBALL\'s ricochet, CHAIN LIGHTNING by distance, STATIC VORTEX; the Hover Shell and its Kinetic Launcher unchanged', 'followercombat.js'],
     ['insect abilities',         'abtest.js'],
+    ['the wild ants\' own specials: CALL FOR BACKUP, LEAP STRIKE, GROUND SLAM (the owner, 2026-11-17)', 'antmoves.js'],
     ['attack facing',            'facing.js'],
     ['targeting rules',          'targets.js'],
     ['player weapon',            'weapon.js'],

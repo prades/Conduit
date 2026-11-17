@@ -83,7 +83,7 @@ const DMG_RETIRED_ALT = { bloom: "elemental" };
 const DMG_EGG = "slashing", DMG_EGG_SHOT = "projectile";
 // The enemies' attacks (docs/COMBAT.md §7.8): each race's bite and its special; a clone (the Mutator's) bites with Piercing
 const DMG_RACE_BITE = { ant: "slashing", beetle: "crushing", scorpion: "piercing", spider: "piercing", mantis: "slashing", moth: "crushing", rolypoly: "crushing" };
-const DMG_ABILITY = { "MANDIBLE FRENZY": "slashing", "CARAPACE SLAM": "earthquake", "VENOM LANCE": "piercing", "BLADE FLURRY": "slashing" };
+const DMG_ABILITY = { "MANDIBLE FRENZY": "slashing", "CARAPACE SLAM": "earthquake", "VENOM LANCE": "piercing", "BLADE FLURRY": "slashing", "LEAP STRIKE": "slashing", "GROUND SLAM": "earthquake" };   // (the wild ants' LEAP STRIKE and GROUND SLAM, js/abilities.js: the agent's, provisional)
 
 // The hits, made once (an attack passes one of these; nothing is allocated per hit)
 const DMG_HIT_MAIN = Object.freeze({ which: "main", stat: "atk" });          // a follower's plain hit, its element's physical move, a job's attack

@@ -367,7 +367,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 
 | Race | Bite | Special |
 |---|---|---|
-| Ant | Slashing (mandibles) | MANDIBLE FRENZY: Slashing |
+| Ant | Slashing (mandibles) | MANDIBLE FRENZY: Slashing (the boss's, and a clone's of yours); the wild ants' own (§9): LEAP STRIKE: Slashing; GROUND SLAM: Earthquake; CALL FOR BACKUP: no damage |
 | Beetle | Crushing (horn) | CARAPACE SLAM: Earthquake |
 | Scorpion | Piercing (stinger) | VENOM LANCE: Piercing |
 | Spider | Piercing (fangs); its shot: Projectile | WEB SNARE: no damage |
@@ -375,7 +375,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 | Moth | Crushing (wing buffet) | BLINDING DUST: small toxic ticks, left on the old rule (the owner kept them, 2026-11-02; this table first said "no damage") |
 
 - **The Toxic Queen** fights as an ant; her bomb is Earthquake and her spit Projectile. **A boss uses its race's row** in §7.3.
-- A scout's LEAP does no damage.
+- A scout's LEAP does no damage (every species' scout but the wild ant's: §9).
 - **An enemy with an element** (today the toxic brood and the Toxic Queen): every hit is half its type and half Elemental in its element, and the element triangle falls on the elemental half. An enemy without one: all physical.
 
 **What your followers are weak to and resist, by subclass** (weak ×1.3, resists ×0.7; the subclass is the form's tag, js/cards.js `EQUIP_FORM_SUBCLASS`):
@@ -660,3 +660,16 @@ A moved object keeps its kind and its traits. It gives cover, and is seen over, 
 - **Tests:**
   - `tests/cover.js` (new, 19 checks; the real page on a tablet; 22 since build `2026-11-06i`: the moves that strike at once);
   - suites whose fixtures faked sight with the walking test, or placed units outside the building or across walls, were updated: `tests/enemycard.js`, `tests/facilityplay.js`, `tests/followercombat.js`, `tests/technomancer.js`, `tests/mutator.js`, `tests/playercards.js`, `tests/evolution.js`.
+
+## 9. The wild ants' own specials (the owner, 2026-11-17; built in `2026-11-17r`)
+
+- **Asked** (the owner, 2026-11-17): "I want to make it to where the different species of ants have different abilities. The scout ant should be able to call for backup. Two other lower level instances of its form. So two more scouts appear. And then the striker has an ability to where it can attack from several tiles away. And that's exclusive to him, so the others need to not have that ability. And then the tank has an ability that has an AoE effect. And they all have Normal attacks as well"; then "They jump and create new positioning". Then, asked: the scout calls **"Once, when hurt"** (not on first sight, not every so often); its backup drops **"Nothing"**; of the jump, **"Tank no jump, strikers only"**; the striker's leap is not an acid spray ("No") and is **"Engineered to take out high impact mages, I think of an algorithm that will target them for the predators"**; the tank's area attack: **"Slam around itself"**.
+- **Before this**, every scout (the ant's too) had LEAP, an escape jump when hurt, and the ant's striker, tank and boss had MANDIBLE FRENZY. Now, for the **wild** ants (`js/abilities.js` `ANT_ABILITY`, `resolveAbilityKey`):
+  - **The scout: CALL FOR BACKUP.** Once, when it drops below half its health, it calls for half a second (rooted; kill it then and nobody comes); **two scouts of its kind, a level under it,** come up 1.2 to 2.8 tiles from it on open floor in its room and in its sight, with its element and its brood's mark, set on whoever it was fighting. **They pay nothing** (no crystals, DNA or XP: `noReward`, `js/drops.js`, `js/levels.js`) and never call themselves. It no longer leaps.
+  - **The striker: LEAP STRIKE, the jump, its alone.** With one of yours 2 to 4 tiles away and in its sight, it crouches 0.4 s (its landing marked on the floor) and leaps (the scout's arc, 0.37 s), landing 0.75 tiles short of it and biting it a bite's worth if it is still within a tile; one that got clear in the air is missed, and it fights the one it landed on. **Whom it picks** (`_abStrikeTarget`): a **Mage** first (a follower that fires from a distance, role `sniper`), the hardest hitter of them; else the one it was going for; else the hardest hitter in reach.
+  - **The tank: GROUND SLAM.** With one of yours within 1.3 tiles it rears up for 0.7 s, rooted, a ring closing in on the floor, then slams: everyone of yours within 1.6 tiles takes 0.9 of its bite (Earthquake).
+  - **All of them bite as ever.** The worker and the nymph have no special; the boss (the Ant Queen) keeps MANDIBLE FRENZY and her own moves (`js/bosses.js`).
+- **The agent's, provisional:** every number above (the charge times, the 2 to 4 tiles, 0.75, the damage, the windups, the ring's size, a level under); the names LEAP STRIKE and GROUND SLAM (POUNCE is the Mutator clone's move); that the backup never calls and **a boss's brood never calls** (her waves are tuned as they are); that **a clone of yours keeps its species' special** and its scout's LEAP (the Mutator's upgrades: `js/mutator.js`); that a creature holding still in a card battle (not its turn) charges and starts nothing (`js/cardbattle.js` `cardBattleHolds`).
+- **Not done:** in a card battle the backup comes up outside the battle (so it leaves you and your squad alone, `CARD-BATTLES.md` §2.6), and a turn's real-time window may cut a wind-up short: for the card battles' work. The 3D view shows the leap (the arc) and the bites, but no pose of its own for the crouch, the call or the slam.
+- **Code:** `js/abilities.js` (the three, the striker's pick, the landing and the backup; the warnings drawn on the floor with the bosses' ring, `js/bosses.js` `_bossRing`), `js/damage.js` (`DMG_ABILITY`). **Tests:** `tests/abtest.js` (the machine against stubs: who has which, the backup once and paying nothing, the Mage picked and bitten, only from 2 to 4 tiles, a miss, the slam's ring, nothing while holding still in a card battle); `tests/antmoves.js` (new: the same in the real game's logic, backup in its room and a toxic scout's toxic, the leap in the game's own frames, the slam); `bible.html` (the specials' table).
+

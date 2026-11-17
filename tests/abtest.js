@@ -104,9 +104,10 @@ check('a worker gets no ability (it stays chaff, like a nymph)', () => {
     for (const sp of ['ant', 'beetle', 'scorpion', 'spider', 'mantis', 'moth'])
         eq(run('resolveAbilityKey')(sp, 'worker'), null, sp);
 });
-check('scout class always gets LEAP', () => {
-    for (const sp of ['ant', 'moth', 'spider'])
+check('scout class always gets LEAP (but the wild ant\'s: it calls for backup; an ant scout clone of yours still leaps)', () => {
+    for (const sp of ['beetle', 'moth', 'spider'])
         eq(run('resolveAbilityKey')(sp, 'scout'), 'LEAP', sp);
+    eq(run('resolveAbilityKey')('ant', 'scout', true), 'LEAP', 'an ant scout clone');
 });
 check('nymphs get no ability', () => eq(run('resolveAbilityKey')('ant', 'nymph'), null, 'nymph'));
 check('each species has its own signature special', () => {
@@ -114,7 +115,7 @@ check('each species has its own signature special', () => {
                    spider: 'WEB_SNARE', mantis: 'BLADE_FLURRY', moth: 'BLINDING_DUST' };
     for (const [sp, key] of Object.entries(want)) {
         for (const cls of ['striker', 'tank', 'boss'])
-            eq(run('resolveAbilityKey')(sp, cls), key, sp + '/' + cls);
+            eq(run('resolveAbilityKey')(sp, cls, sp === 'ant' && cls !== 'boss'), key, sp + '/' + cls);   // (the wild ant striker and tank have their own: below; a clone of yours keeps the species')
     }
     eq(new Set(Object.values(want)).size, 6, 'all six specials distinct');
 });
@@ -161,27 +162,27 @@ check('an unknown class never returns undefined', () => {
 group('charge machine');
 check('charge does not build for an unprovoked wanderer', () => {
     reset();
-    const b = mkBug('ant', 'striker', { state: 'wander', provoked: false });
+    const b = mkBug('ant', 'boss', { state: 'wander', provoked: false });
     spin(b, 120);
     eq(b.abilityCharge, 0, 'charge');
 });
 check('charge builds while engaged and reaches ready', () => {
     reset();
-    const b = mkBug('ant', 'striker');
+    const b = mkBug('ant', 'boss');
     spin(b, 300);
     eq(b.abilityCharge, 100, 'charge full');
     ok(b.abilityPhase === 'ready' || b.abilityPhase === 'winding' || b.abilityPhase === 'active', b.abilityPhase);
 });
 check('a primed insect with no target waits in ready rather than firing', () => {
     reset();
-    const b = mkBug('ant', 'striker');
+    const b = mkBug('ant', 'boss');
     spin(b, 400);
     eq(b.abilityPhase, 'ready', 'phase');
     eq(sandbox.damageLog.length, 0, 'no damage dealt');
 });
 check('windup roots the insect, so the telegraph is fair', () => {
     reset();
-    const b = mkBug('ant', 'striker'); mkFoe();
+    const b = mkBug('ant', 'boss'); mkFoe();
     spin(b, 260);
     eq(b.abilityPhase, 'winding', 'phase');
     eq(run('abilityTick')(b), true, 'claims the frame');
@@ -200,7 +201,7 @@ check('a worker has no ability: the machine never claims its frame, and nothing 
 });
 check('the full cycle completes and resets to charging', () => {
     reset();
-    const b = mkBug('ant', 'striker'); mkFoe();
+    const b = mkBug('ant', 'boss'); mkFoe();
     spin(b, 700);
     eq(b.abilityPhase, 'charging', 'back to charging');
     ok(sandbox.damageLog.length > 0, 'frenzy dealt damage');
@@ -209,7 +210,7 @@ check('the full cycle completes and resets to charging', () => {
 group('species specials');
 check('MANDIBLE FRENZY lands repeated hits over its duration', () => {
     reset();
-    const b = mkBug('ant', 'striker'); const f = mkFoe({ health: 10000, maxHealth: 10000 });
+    const b = mkBug('ant', 'boss'); const f = mkFoe({ health: 10000, maxHealth: 10000 });
     spin(b, 400);
     const hits = sandbox.damageLog.filter(d => d.target === f).length;
     ok(hits >= 4, 'expected several frenzy hits, got ' + hits);
@@ -269,7 +270,7 @@ check('THE RULE: no special touches the player, hostile or friendly', () => {
     // them up close (js/predator.js, tests/threehits.js), never with a special.
     reset();
     sandbox.player.x = 5.2; sandbox.player.y = 2;
-    const b = mkBug('ant', 'striker'); mkFoe();
+    const b = mkBug('ant', 'boss'); mkFoe();
     spin(b, 500);
     eq(sandbox.health, 3, 'a hostile frenzy should not touch the player');
 
@@ -285,7 +286,7 @@ check('but the special still lands on what it IS aimed at', () => {
     // The gate must not have quietly disarmed the ability itself.
     reset();
     sandbox.player.x = 99; sandbox.player.y = 99;      // far away, irrelevant
-    const b = mkBug('ant', 'striker');
+    const b = mkBug('ant', 'boss');
     const foe = mkFoe();
     spin(b, 500);
     ok(sandbox.damageLog.some(d => d.target === foe),
@@ -308,13 +309,14 @@ check('a special spares a recruit waiting in its egg', () => {
 });
 
 group('scout leap');
+// (a beetle's scout here: the wild ant scout calls for backup instead, below)
 // "The predators should use their leap to escape if they are low health and not
 // to attack." The leap fires only below ABILITY_DEFS.LEAP.escapeBelow, jumps
 // away from the nearest foe, and lands without hurting anybody.
 const lowHp = () => run('ABILITY_DEFS').LEAP.escapeBelow * 0.5 * 100;
 check('a HEALTHY scout never leaps, however close the foe', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2 });
+    const b = mkBug('beetle', 'scout', { x: 5, y: 2 });
     mkFoe({ x: 6.5, y: 2, health: 1e9, maxHealth: 1e9 });
     let flew = false;
     for (let i = 0; i < 600; i++) { sandbox.frame++; run('abilityTick')(b); if (b.leapLift > 0) flew = true; }
@@ -322,7 +324,7 @@ check('a HEALTHY scout never leaps, however close the foe', () => {
 });
 check('a healthy scout does not leap at a distant foe or toward the crystal either', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2, state: 'hunt' });
+    const b = mkBug('beetle', 'scout', { x: 5, y: 2, state: 'hunt' });
     mkFoe({ x: 9, y: 2, health: 1e9, maxHealth: 1e9 });
     let flew = false;
     for (let i = 0; i < 600; i++) { sandbox.frame++; run('abilityTick')(b); if (b.leapLift > 0) flew = true; }
@@ -330,7 +332,7 @@ check('a healthy scout does not leap at a distant foe or toward the crystal eith
 });
 check('a wounded scout leaps to ESCAPE: arcs up, lands flat, and ends farther from the foe', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    const b = mkBug('beetle', 'scout', { x: 5, y: 2, health: lowHp() });
     const foe = mkFoe({ x: 7, y: 2, health: 1e9, maxHealth: 1e9 });
     const d0 = Math.hypot(foe.x - b.x, foe.y - b.y);
     let peak = 0, sawFlight = false;
@@ -347,7 +349,7 @@ check('a wounded scout leaps to ESCAPE: arcs up, lands flat, and ends farther fr
 });
 check('the escape is capped at the ability distance', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    const b = mkBug('beetle', 'scout', { x: 5, y: 2, health: lowHp() });
     mkFoe({ x: 7, y: 2, health: 1e9, maxHealth: 1e9 });
     const x0 = b.x;
     let sawFlight = false;
@@ -363,10 +365,73 @@ check('the escape is capped at the ability distance', () => {
 });
 check('landing hurts nobody', () => {
     reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 2, health: lowHp() });
+    const b = mkBug('beetle', 'scout', { x: 5, y: 2, health: lowHp() });
     const foe = mkFoe({ x: 6, y: 2, health: 1000, maxHealth: 1000 });
     for (let i = 0; i < 400; i++) { sandbox.frame++; run('abilityTick')(b); }
     eq(foe.health, 1000, 'the leap damaged the foe');
+});
+
+group('the wild ants (the owner, 2026-11-17: "the different species of ants have different abilities")');
+check('a scout CALLS FOR BACKUP, a striker LEAP STRIKEs, a tank GROUND SLAMs; the boss keeps MANDIBLE FRENZY; a worker and a nymph nothing; a clone of yours keeps its species\' special and its scout\'s LEAP; the other species as they were', () => {
+    const R = run('resolveAbilityKey');
+    eq(R('ant', 'scout'), 'BACKUP_CALL', 'scout'); eq(R('ant', 'striker'), 'LEAP_STRIKE', 'striker'); eq(R('ant', 'tank'), 'GROUND_SLAM', 'tank'); eq(R('ant', 'boss'), 'MANDIBLE_FRENZY', 'boss');
+    eq(R('ant', 'worker'), null, 'worker'); eq(R('ant', 'nymph'), null, 'nymph');
+    eq(R('ant', 'scout', true), 'LEAP', 'a scout clone'); eq(R('ant', 'striker', true), 'MANDIBLE_FRENZY', 'a striker clone'); eq(R('ant', 'tank', true), 'MANDIBLE_FRENZY', 'a tank clone');
+    eq(R('beetle', 'scout'), 'LEAP', 'a beetle scout'); eq(R('beetle', 'tank'), 'CARAPACE_SLAM', 'a beetle tank');
+});
+check('the jump is the striker\'s alone among the wild ants (the owner: "that\'s exclusive to him, so the others need to not have that ability"; "Tank no jump, strikers only")', () => {
+    for (const cls of ['scout', 'worker', 'tank', 'boss', 'nymph']) { const k = run('resolveAbilityKey')('ant', cls); ok(k !== 'LEAP' && k !== 'LEAP_STRIKE', cls + ': ' + k); }
+});
+check('CALL FOR BACKUP (the owner: "Once, when hurt"; "Nothing"): at full health never; below half, once, after half a second: two scouts of its kind a level under it, beside it, on its target, paying nothing; they never call; killed while it calls, nobody comes', () => {
+    reset(); sandbox.player.x = 99;
+    const made = []; sandbox.spawnCreature = o => { const p = mkBug(o.species, o.className, { x: o.x, y: o.y, level: o.level }); made.push(p); return p; };
+    const s = mkBug('ant', 'scout', { level: 5 }), foe = mkFoe({ x: 6, y: 2, health: 1e9, maxHealth: 1e9 }); s.currentTarget = foe;
+    spin(s, 200); eq(made.length, 0, 'at full health');
+    s.health = 40; spin(s, 10); eq(made.length, 0, 'before its call is out (0.5 s)');
+    spin(s, 40); eq(made.length, 2, 'two answered');
+    ok(made.every(p => p.speciesName === 'ant' && p.className === 'scout' && p.level === 4 && p.backup && p.noReward && p.provoked && p.currentTarget === foe), 'the two: ' + JSON.stringify(made.map(p => [p.className, p.level, !!p.backup, !!p.noReward, p.currentTarget === foe])));
+    ok(made.every(p => { const d = Math.hypot(p.x - s.x, p.y - s.y); return d >= 1.2 - 1e-6 && d <= 2.8 + 1e-6; }), 'beside it: ' + made.map(p => Math.hypot(p.x - s.x, p.y - s.y).toFixed(2)));
+    s.health = 10; spin(s, 300); eq(made.length, 2, 'it calls once');
+    for (const p of made.slice()) { p.health = 10; spin(p, 200); } eq(made.length, 2, 'the backup never calls');
+    reset(); made.length = 0; const s2 = mkBug('ant', 'scout', { level: 5, health: 40 }); mkFoe({ x: 6, y: 2, health: 1e9, maxHealth: 1e9 });
+    spin(s2, 10); s2.dead = true; spin(s2, 60); eq(made.length, 0, 'killed while calling');
+    delete sandbox.spawnCreature;
+});
+check('LEAP STRIKE (the owner: "Engineered to take out high impact mages"): of yours 2 to 4 tiles off it picks the Mage over a harder-hitting brawler, crouches, leaps up and down, lands 0.75 tiles short and bites it a bite\'s worth; nobody else is hurt', () => {
+    reset(); sandbox.player.x = 99;
+    const st = mkBug('ant', 'striker', { x: 5, y: 2, power: 20 });
+    const brawler = mkFoe({ x: 7.5, y: 2, health: 1e9, maxHealth: 1e9, role: 'brawler', power: 40 }), mage = mkFoe({ x: 5, y: 5.5, health: 1e9, maxHealth: 1e9, role: 'sniper', power: 15 });
+    let peak = 0, picked = null;
+    for (let i = 0; i < 700; i++) { sandbox.frame++; run('abilityTick')(st); if (st.abilityPhase === 'winding' && !picked) picked = st.strikeTarget; peak = Math.max(peak, st.leapLift || 0); if (peak > 0 && st.abilityPhase === 'charging') break; }
+    ok(picked === mage, 'it picked ' + (picked === brawler ? 'the brawler' : String(picked)));
+    ok(peak > 10, 'no leap: ' + peak); eq(st.leapLift, 0, 'lands flat');
+    const d = Math.hypot(mage.x - st.x, mage.y - st.y); ok(Math.abs(d - 0.75) < 0.05, 'lands short of it: ' + d.toFixed(2));
+    const bit = sandbox.damageLog.filter(e => e.target === mage); eq(bit.length, 1, 'bites on landing'); eq(bit[0].amount, 20, 'a bite\'s worth');
+    ok(!sandbox.damageLog.some(e => e.target === brawler), 'the brawler was hurt');
+});
+check('LEAP STRIKE only from range: never at one within 2 tiles nor beyond 4; one that gets clear while it is in the air is missed', () => {
+    reset(); sandbox.player.x = 99;
+    const st = mkBug('ant', 'striker', { x: 5, y: 2 }); mkFoe({ x: 6.2, y: 2, health: 1e9, maxHealth: 1e9 }); mkFoe({ x: 9.6, y: 2, health: 1e9, maxHealth: 1e9 });
+    spin(st, 600); eq(st.abilityPhase, 'ready', 'it waits'); ok(!(st.leapLift > 0) && !sandbox.damageLog.length, 'it leapt');
+    reset(); sandbox.player.x = 99;
+    const s2 = mkBug('ant', 'striker', { x: 5, y: 2 }), f = mkFoe({ x: 8, y: 2, health: 1e9, maxHealth: 1e9 });
+    for (let i = 0; i < 700 && s2.abilityPhase !== 'active'; i++) { sandbox.frame++; run('abilityTick')(s2); }
+    eq(s2.abilityPhase, 'active', 'it leapt'); f.y = 6; spin(s2, 40); ok(!sandbox.damageLog.some(e => e.target === f), 'it bit one that got clear');
+});
+check('GROUND SLAM: with one of yours within 1.3 tiles the tank rears up, rooted, then slams: everyone of yours within 1.6 tiles takes 0.9 of its bite, nobody farther', () => {
+    reset(); sandbox.player.x = 99;
+    const t = mkBug('ant', 'tank', { x: 5, y: 2, power: 30 });
+    const a = mkFoe({ x: 6, y: 2, health: 1e9, maxHealth: 1e9 }), b = mkFoe({ x: 5, y: 3.4, health: 1e9, maxHealth: 1e9 }), far = mkFoe({ x: 8, y: 2, health: 1e9, maxHealth: 1e9 });
+    let rooted = 0; for (let i = 0; i < 900 && !sandbox.damageLog.length; i++) { sandbox.frame++; if (run('abilityTick')(t) && t.abilityPhase !== 'charging') rooted++; }
+    ok(rooted >= run('ABILITY_DEFS').GROUND_SLAM.windup - 1, 'rooted for its wind-up: ' + rooted);
+    ok(sandbox.damageLog.some(e => e.target === a) && sandbox.damageLog.some(e => e.target === b), 'the two near'); ok(!sandbox.damageLog.some(e => e.target === far), 'the far one');
+    eq(sandbox.damageLog.find(e => e.target === a).amount, 30 * 0.9, 'its bite x 0.9');
+});
+check('in a card battle, one holding still (not its turn) charges and starts nothing (js/cardbattle.js cardBattleHolds)', () => {
+    reset(); sandbox.player.x = 99; sandbox.cardBattleHolds = () => true;
+    const t = mkBug('ant', 'tank', { x: 5, y: 2 }); mkFoe({ x: 6, y: 2, health: 1e9, maxHealth: 1e9 });
+    spin(t, 900); eq(t.abilityCharge, 0, 'charge'); eq(sandbox.damageLog.length, 0, 'damage');
+    delete sandbox.cardBattleHolds;
 });
 
 group('slow plumbing (previously a no-op)');

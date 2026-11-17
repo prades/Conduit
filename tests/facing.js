@@ -181,7 +181,7 @@ function runAbility(p, frames) {
 }
 check('the windup telegraph turns toward its target', () => {
     reset();
-    const p = mkPred('ant', 'striker', 5, 2);
+    const p = mkPred('ant', 'boss', 5, 2);           // (MANDIBLE FRENZY: the wild ant striker's special is now its LEAP STRIKE, from range: docs/COMBAT.md §9)
     const foe = mkFoe(4.2, 2);                      // behind the predator
     let sawWinding = false, errAtWinding = 999;
     for (let i = 0; i < 400; i++) {
@@ -194,7 +194,7 @@ check('the windup telegraph turns toward its target', () => {
 });
 check('a scout lands facing where it leapt', () => {
     reset();
-    const p = mkPred('ant', 'scout', 5, 2);
+    const p = mkPred('beetle', 'scout', 5, 2);       // (a beetle's: the wild ant scout calls for backup instead, docs/COMBAT.md §9)
     p.health = p.maxHealth * 0.1;                   // leaps only to escape
     const foe = mkFoe(2.4, 2);                      // behind it: it jumps away, to +x
     let flew = false;

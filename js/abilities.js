@@ -14,6 +14,9 @@
 //     scout → LEAP
 //     striker / tank / boss → the species signature special
 //     nymph, worker → none (they stay chaff)
+//  but THE WILD ANTS have their own (the owner, 2026-11-17: "the different species of ants have different abilities"):
+//     scout → CALL FOR BACKUP, striker → LEAP STRIKE (the leap is his alone), tank → GROUND SLAM; the boss keeps MANDIBLE FRENZY
+//  (a clone of yours keeps its species' special and its scout's LEAP: js/mutator.js)
 // ─────────────────────────────────────────────────────────
 
 const ABILITY_DEFS = {
@@ -60,6 +63,29 @@ const ABILITY_DEFS = {
         radius: 3.0, slowFrames: 180, slowFactor: 0.45,
         shred: 0.55, dotEvery: 30, dotDmg: 0.12,
     },
+
+    // ── The wild ants' own (the owner, 2026-11-17: "the different species of ants have different abilities. The scout ant should be able to call for backup. Two other lower
+    // level instances of its form ... the striker has an ability to where it can attack from several tiles away. And that's exclusive to him, so the others need to not have that
+    // ability. And then the tank has an ability that has an AoE effect. And they all have normal attacks as well"; "They jump and create new positioning"). Of what was offered:
+    // the scout calls once, when hurt; its backup pays nothing; the jump is the striker's, not the tank's ("Tank no jump, strikers only"), "Engineered to take out high impact mages";
+    // the tank slams round itself. The numbers are the agent's, provisional (docs/COMBAT.md).
+    BACKUP_CALL: {
+        name: 'CALL FOR BACKUP', color: '#ffb347',
+        chargeRate: 100, windup: 30, duration: 1,   // ready at once; 0.5 s calling (kill it first and nobody comes)
+        below: 0.5,                                 // once, when it drops below half its health
+        n: 2, levelDown: 1, near: [1.2, 2.8],       // two of its kind a level under it, 1.2 to 2.8 tiles from it on open floor in its room
+    },
+    LEAP_STRIKE: {
+        name: 'LEAP STRIKE', color: '#ff6a4a',
+        chargeRate: 0.40, windup: 24, duration: 22,  // ~4 s of a fight to charge; 0.4 s crouched, its landing marked on the floor; 0.37 s in the air
+        min: 2.0, max: 4.0, peakLift: 34,            // at one of yours 2 to 4 tiles away, in its sight
+        land: 0.75, hitR: 1.0, dmg: 1.0,             // lands 0.75 tiles short of it, and bites it if it is still within a tile (a bite's worth)
+    },
+    GROUND_SLAM: {
+        name: 'GROUND SLAM', color: '#ffb347',
+        chargeRate: 0.30, windup: 42, duration: 1,  // ~5.6 s of a fight to charge; 0.7 s reared up, the ring on the floor warning
+        trigger: 1.3, radius: 1.6, dmg: 0.9,         // when one of yours is within 1.3 tiles; everyone of yours within 1.6 takes 0.9 of its bite
+    },
 };
 
 const SPECIES_ABILITY = {
@@ -71,9 +97,12 @@ const SPECIES_ABILITY = {
     moth:     'BLINDING_DUST',
 };
 
-function resolveAbilityKey(speciesName, className) {
+// the wild ants' own, by class (above); `clone`: one of yours keeps its species' special
+const ANT_ABILITY = { scout: 'BACKUP_CALL', striker: 'LEAP_STRIKE', tank: 'GROUND_SLAM' };
+function resolveAbilityKey(speciesName, className, clone) {
     if (className === 'worker' || className === 'nymph') return null;
     if (speciesName === 'rolypoly') return null;   // its one special is the CURL, every class's (js/rolypoly.js; docs/ELECTRIC-BREED.md): no LEAP for its scout
+    if (speciesName === 'ant' && !clone && ANT_ABILITY[className]) return ANT_ABILITY[className];
     if (className === 'scout') return 'LEAP';
     return SPECIES_ABILITY[speciesName] || null;
 }
@@ -227,6 +256,7 @@ function _abSay(pred, text, color) {
 // Where this ability is pointed. Recomputed each windup frame so the telegraph
 // tracks a target that is still moving.
 function _abAimPoint(pred, def) {
+    if (pred.abilityKey === 'LEAP_STRIKE') { const t = pred.strikeTarget; return t && !t.dead ? { x: t.x, y: t.y } : null; }   // (crouched, it watches the one it will land on)
     const reach = pred.abilityKey === 'LEAP' ? 6
                 : pred.abilityKey === 'CARAPACE_SLAM' ? 5
                 : Math.max(2, def.radius || 2) + 1;
@@ -239,7 +269,7 @@ function _abAimPoint(pred, def) {
 
 // ── Charge / phase machine ───────────────────────────────
 function initAbility(pred) {
-    const key = resolveAbilityKey(pred.speciesName, pred.className);
+    const key = resolveAbilityKey(pred.speciesName, pred.className, !!pred.isClone);
     pred.abilityKey   = key;
     pred.abilityDef   = key ? ABILITY_DEFS[key] : null;
     pred.abilityCharge = 0;
@@ -272,6 +302,13 @@ function _abShouldFire(pred, def) {
         case 'WEB_SNARE':
         case 'BLINDING_DUST':
             return !!_abNearestFoe(pred, def.radius);
+        case 'BACKUP_CALL':   // once, below half its health; never one that is itself backup, nor a boss's brood (her waves are hers: js/bosses.js)
+            return !pred.isClone && !pred.backup && !pred.calledBackup && !pred.bossWave && pred.maxHealth > 0 && pred.health / pred.maxHealth < def.below;
+        case 'LEAP_STRIKE':
+            pred.strikeTarget = _abStrikeTarget(pred, def);
+            return !!pred.strikeTarget;
+        case 'GROUND_SLAM':
+            return !!_abNearestFoe(pred, def.trigger);
         case 'CARAPACE_SLAM': {
             const foe = _abNearestFoe(pred, 5);
             return !!foe && Math.hypot(foe.x - pred.x, foe.y - pred.y) > 1.0;
@@ -301,6 +338,9 @@ function abilityTick(pred) {
         }
         return took;
     }
+
+    // ── HOLDING STILL in a card battle (js/cardbattle.js cardBattleHolds: everyone in it but the one whose turn it is): it charges and starts nothing ──
+    if (typeof cardBattleHolds === 'function' && cardBattleHolds(pred)) return false;
 
     // ── GLITCHED (an equip card's Static Lock, js/cards.js): a wind-up it is in fails, and it cannot start one, until the glitch is over ──
     if (pred.glitched > 0 && pred.abilityPhase === 'winding') { pred.abilityPhase = 'ready'; pred.abilityTimer = 0; return false; }
@@ -365,6 +405,24 @@ function _abStartActive(pred, def) {
             faceToward(pred, pred.leapToX, pred.leapToY, 1);
             break;
         }
+        case 'BACKUP_CALL':
+            pred.calledBackup = true;
+            _abBackup(pred, def);
+            break;
+        case 'LEAP_STRIKE': {
+            const t = pred.strikeTarget && !pred.strikeTarget.dead ? pred.strikeTarget : null;
+            pred.leapFromX = pred.x; pred.leapFromY = pred.y; pred.leapToX = pred.x; pred.leapToY = pred.y; pred.leapT = 0;
+            const L = t ? _abStrikeLanding(pred, t, def) : null;   // (nowhere to land, or out of sight now: it stays where it is)
+            if (L) { pred.leapToX = L[0]; pred.leapToY = L[1]; faceToward(pred, t.x, t.y, 1); }
+            break;
+        }
+        case 'GROUND_SLAM':
+            _abForEachFoeInRadius(pred, def.radius, v => _abHurt(pred, v, pred.power * def.dmg));
+            elementEffects.push({ type: 'ring', x: pred.x, y: pred.y, radius: def.radius, color: def.color, life: 24 });
+            _abBurst(pred, '#c9a060', 1.4, 22, 5);
+            pred.attackAnim = 0.01;
+            if (typeof shake !== 'undefined') shake = Math.max(shake || 0, 6);
+            break;
         case 'CARAPACE_SLAM': {
             const foe = _abNearestFoe(pred, 5);
             let ax = pred.dirX, ay = pred.dirY;
@@ -417,7 +475,8 @@ function _abStartActive(pred, def) {
 
 function _abRunActive(pred, def) {
     switch (pred.abilityKey) {
-        case 'LEAP': {
+        case 'LEAP':
+        case 'LEAP_STRIKE': {
             pred.leapT = Math.min(1, pred.leapT + 1 / def.duration);
             const t = pred.leapT;
             pred.x = pred.leapFromX + (pred.leapToX - pred.leapFromX) * t;
@@ -482,6 +541,65 @@ function _abEndActive(pred, def) {
         _abBurst(pred, def.color, 0.8, 14, 2);
     }
     if (pred.abilityKey === 'CARAPACE_SLAM') pred.slamHit = null;
+    if (pred.abilityKey === 'LEAP_STRIKE') {
+        pred.leapLift = 0;
+        const t = pred.strikeTarget; pred.strikeTarget = null;
+        if (t && !t.dead && Math.hypot(t.x - pred.x, t.y - pred.y) <= def.hitR && !_abWalled(pred, t)) {   // (one that got clear in the air is missed)
+            faceToward(pred, t.x, t.y, 1); _abHurt(pred, t, pred.power * def.dmg); pred.attackAnim = 0.01;
+            if (!pred.isClone) { pred.currentTarget = t; pred._prey = t; pred.state = 'attack'; }   // (and it fights the one it landed on)
+        }
+        _abBurst(pred, def.color, 0.9, 16, 3);
+    }
+}
+
+// THE STRIKER'S PICK (the owner, 2026-11-17, of the leap: "Engineered to take out high impact mages, I think of an algorithm that will target them for the predators"): of yours from
+// `min` to `max` tiles off, in its sight and one it may go for, A MAGE FIRST (your followers that fire from a distance: role "sniper", js/commandcenter.js ATTACK_STYLES), and of those
+// the one that hits hardest (its power); else the one it is already going for; else the hardest hitter in reach
+function _abStrikeTarget(pred, def) {
+    const team = _abHostileTeam(pred); let best = null, bs = -1;
+    for (const a of actors) {
+        if (a === pred || a.dead || a.team !== team || a.untargetable || isNeutralBystander(a)) continue;
+        const d = Math.hypot(a.x - pred.x, a.y - pred.y); if (d < def.min || d > def.max || _abWalled(pred, a)) continue;
+        if (!pred.isClone && typeof predatorPreyOk === 'function' && !predatorPreyOk(pred, a)) continue;   // (in a card battle: not your squad from outside it, js/cardbattle.js)
+        const score = (a.role === 'sniper' && !a.isClone ? 1e6 : 0) + (a === pred.currentTarget ? 1e3 : 0) + Math.min(999, a.power || 0);
+        if (score > bs) { bs = score; best = a; }
+    }
+    return best;
+}
+// where a leap strike lands: `land` tiles short of its target on the striker's side, on floor it can see and get to in a line (the facility's walls and props), not over a Photonic Shield
+function _abStrikeLanding(pred, t, def) {
+    const d = Math.hypot(t.x - pred.x, t.y - pred.y) || 1, x = t.x + (pred.x - t.x) / d * def.land, y = t.y + (pred.y - t.y) / d * def.land;
+    if (typeof facilityLosFrom === 'function' && !facilityLosFrom(pred.x, pred.y, x, y)) return null;
+    if (!pred.isClone && typeof techShieldBetween === 'function' && techShieldBetween(pred.x, pred.y, x, y)) return null;
+    return [x, y];
+}
+// CALL FOR BACKUP: two of its kind a level under it come up beside it (open floor in its room, in its sight) and go for whoever it was fighting. They cannot call in their turn and pay
+// nothing, no crystals, no DNA, no XP (the owner: "Nothing"; noReward, js/drops.js, js/levels.js). Its element and its brood's mark are theirs (a toxic ant's backup is toxic).
+function _abBackup(pred, def) {
+    const room = typeof partyRoomAt === 'function' ? partyRoomAt(pred.x, pred.y) : null, lv = Math.max(1, (pred.level || 1) - def.levelDown), spots = [], made = [];
+    for (let k = 0; k < 24 && spots.length < def.n; k++) {
+        const a = k * 2.39996 + (pred.x * 1.7 + pred.y * 0.9), r = def.near[0] + (def.near[1] - def.near[0]) * ((k * 0.618034) % 1);
+        const c = typeof _fpNearestCellOpen === 'function' ? _fpNearestCellOpen(pred.x + Math.cos(a) * r, pred.y + Math.sin(a) * r) : [pred.x + Math.cos(a) * r, pred.y + Math.sin(a) * r];
+        if (!c || (room && partyRoomAt(c[0], c[1]) !== room) || Math.hypot(c[0] - pred.x, c[1] - pred.y) < 0.8) continue;
+        if (typeof facilitySeesFrom === 'function' && !facilitySeesFrom(pred.x, pred.y, c[0], c[1])) continue;
+        if (spots.some(s => Math.hypot(s[0] - c[0], s[1] - c[1]) < 0.7)) continue;
+        spots.push(c);
+    }
+    for (const s of spots) {
+        let p = null;
+        try {
+            p = room && typeof facilitySpawnCreature === 'function'
+                ? facilitySpawnCreature(pred.speciesName, s, { room, species: [pred.speciesName], classes: { [pred.className]: 1 }, levels: [lv, lv], element: pred.element || null, brood: !!pred.sewerBrood, minFromPlayer: 0, spacing: 0 })
+                : spawnCreature({ species: pred.speciesName, className: pred.className, x: s[0], y: s[1], level: lv, state: 'wander' });
+        } catch (e) { p = null; }
+        if (!p) continue;
+        p.backup = true; p.noReward = true; p.provoked = true; p.spawnProtection = 0; p.lastAttacker = pred.lastAttacker || null; if (pred.raid) p.raid = pred.raid;
+        const t = pred.currentTarget && !pred.currentTarget.dead ? pred.currentTarget : null;
+        if (t && (typeof predatorPreyOk !== 'function' || predatorPreyOk(p, t))) { p.currentTarget = t; p._prey = t; p.state = 'attack'; } else p.state = 'hunt';
+        _abBurst(p, def.color, 0.8, 18, 2); made.push(p);
+    }
+    if (made.length) _abSay(pred, made.length === 1 ? 'ONE ANSWERS' : made.length + ' ANSWER', def.color);
+    return made;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -532,4 +650,11 @@ function drawAbilityCharge(actor, px, py, drawCtx) {
         }
     }
     drawCtx.restore();
+    if (phase === 'winding' && drawCtx === (typeof ctx !== 'undefined' ? ctx : null) && typeof _bossRing === 'function') {
+        const k = Math.max(0, Math.min(1, 1 - actor.abilityTimer / Math.max(1, def.windup)));
+        if (actor.abilityKey === 'GROUND_SLAM') _bossRing(actor.x, actor.y, def.radius, k, def.color);
+        else if (actor.abilityKey === 'LEAP_STRIKE' && actor.strikeTarget && !actor.strikeTarget.dead) {
+            const t = actor.strikeTarget, L = _abStrikeLanding(actor, t, def); if (L) _bossRing(L[0], L[1], 0.55, k, def.color);
+        }
+    }
 }

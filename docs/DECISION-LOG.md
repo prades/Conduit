@@ -22,6 +22,16 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Agent's choices, provisional:** applied to both views (the owner named no view); creatures only, not your followers; a creature in a doorway counts in the room of its nearest floor cell; a card battle takes in only its creature's room.
 - **Affects:** `COMBAT.md` §8.3a; `js/facilityplay.js`, `js/game.js`, `js/input.js`, `js/targeting.js`, `js/cardbattle.js`, `view3d/gameview.js`, `view3d/gamemap.js`; `tests/roomsight.js`; `CHANGELOG.md` `2026-11-17n`.
 
+## DECISION: The wild ants' own specials: the scout calls for backup, the striker leaps, the tank slams
+
+- **Date:** 2026-11-17 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-17r`
+- **Status:** implemented; verified by `tests/abtest.js`, `tests/antmoves.js` and the full run; not playtested, not seen on an iPad.
+- **Context:** the owner, while another agent works on the card battles: "I want to make it to where the different species of ants have different abilities. The scout ant should be able to call for backup. Two other lower level instances of its form. So two more scouts appear. And then the striker has an ability to where it can attack from several tiles away. And that's exclusive to him, so the others need to not have that ability. And then the tank has an ability that has an AoE effect. And they all have Normal attacks as well"; then "They jump and create new positioning".
+- **Decision** (asked): the scout calls **once, when hurt** (below half), two scouts of its kind a level under it, and they **pay nothing**; the jump is **the striker's only** ("Tank no jump, strikers only"; not an acid spray), from several tiles away, **targeting the high-impact Mages** ("Engineered to take out high impact mages, I think of an algorithm that will target them for the predators"); the tank **slams round itself**. All keep their bites.
+- **Replaces** for the wild ants: the scout's escape LEAP and the striker's and tank's MANDIBLE FRENZY. The boss and a clone of yours keep theirs.
+- **Agent's choices, provisional:** the numbers, the names LEAP STRIKE and GROUND SLAM, the pick's order (a Mage, the hardest hitter of them; else its target; else the hardest hitter), that backup and a boss's brood never call, that a creature holding still in a card battle starts nothing (`COMBAT.md` §9).
+- **Affects:** `COMBAT.md` §9, `bible.html`; `js/abilities.js`, `js/damage.js`; `tests/abtest.js`, `tests/antmoves.js`, `tests/run.js`.
+
 ## DECISION: The 3D view's camera turns a quarter at a time and zooms
 
 - **Date:** 2026-11-17 · **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-17a`
