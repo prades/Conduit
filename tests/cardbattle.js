@@ -211,6 +211,39 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(/if \(typeof cardBattleHolds === "function" && cardBattleHolds\(f\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\)\) return;/.test(i), true, 'the gun');
     });
 
+    group('EITHER A BATTLE OR NONE (§2.35; the owner: "no intermediary fighting with my squad. It\'s either battle or no battle")');
+    check('out of a battle, with the switch on, your squad and your gun fight nothing: a provoked creature beside them is not attacked in the game\'s own frames, and no battle starts; with the switch off they fight it as ever', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 1.6, player.y + 0.4); a.provoked = true; a.state = 'hunt'; a.noBite = true; a.health = a.maxHealth = 1e6;
+            const sentries = sentryItems(); for (const it of sentries) it.broken = true; followerProjectiles.length = 0; projectiles.length = 0;   // (the facility's turrets are the world's, not your squad: they fire as ever, §2.28; and the shots an earlier check left in the air go)
+            const mine = u => u === player || partyMembers().indexOf(u) >= 0 || (typeof partyClone === 'function' && u === partyClone());   // (you and your squad: a follower holding a room may fight, §2.28)
+            let squadHurt = 0; const by = [], _ad = applyDamage; applyDamage = function (t, amt, src) { if (t === a && mine(src)) { squadHurt += amt; by.push(Math.round(amt) + ' from ' + (src === player ? 'you' : 'a squad member (' + (src.element || '') + ')')); } return _ad.apply(this, arguments); };
+            const h0 = a.health; __live(300); applyDamage = _ad; const o = { phase: cardBattlePhase(), hurt: squadHurt, by: by.slice(0, 4), gun: targetNearest() === a, picked: partyMembers().some(f => f._nearestEnemy === a) };
+            CARD_BATTLE.on = false; __live(300); o.offHurt = h0 - a.health; for (const it of sentries) it.broken = false; return o; })()`);
+        same(r.phase, 'off', 'a battle started'); same(r.hurt, 0, 'damage your side dealt it (' + r.by.join('; ') + ')'); same(r.gun, false, 'your gun locked on it'); same(r.picked, false, 'a member of your squad went for it');
+        ok(r.offHurt > 0, 'with the switch off, your squad did not fight it');
+    });
+    check('a creature\'s blow on a follower, or on you, starts the battle and does not land; nor does the rest of that blow on another of yours that frame', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 1.5, player.y);
+            const f1 = followers[0], f2 = followers[1], h1 = f1.health, h2 = f2.health; applyDamage(f1, 5, a); applyDamage(f2, 5, a); const o = { phase: cardBattlePhase(), l1: h1 - f1.health, l2: h2 - f2.health };
+            cardBattleReset(); player.invuln = 0; const hp = health, b = __ant(player.x + 1.2, player.y + 0.6); o.ret = hurtPlayer(1, 4, b); o.phase2 = cardBattlePhase(); o.you = hp - health; return o; })()`);
+        same(JSON.stringify([r.phase, r.l1, r.l2]), JSON.stringify(['on', 0, 0]), 'the battle on, the blow on the first and on the second');
+        same(JSON.stringify([r.phase2, r.you, r.ret]), JSON.stringify(['on', 0, false]), 'on you: the battle on, your health, the blow');
+    });
+    check('out of a battle your squad fires no second attack and no Ultimate (it says ONLY IN A BATTLE), and it still evolves; the enemy card\'s ATTACK starts a battle with that creature', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = partyMembers()[0]; f.evolved = 'jellyram'; f.element = 'core'; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;
+            const a = __ant(f.x + 1, f.y); a.provoked = true; a.state = 'hunt'; a.noBite = true; a.health = a.maxHealth = 1e6; let wound = 0;
+            for (let i = 0; i < 240; i++) { frame++; evolutionTick(); if (f._altWind > 0 || f._altLive) wound++; }
+            const o = { wound, ult: followerUltFire(f), charge: f.ultimateCharge, said: cardBattleNoFight(f) };
+            o.attack = mixToolAttack(a); o.phase = cardBattlePhase(); o.orders = followers.filter(u => u.attackOrder).length; return o; })()`);
+        same(r.wound, 0, 'frames its second attack wound up or was live'); same(JSON.stringify([r.ult, r.charge, r.said]), JSON.stringify([false, 100, true]), 'its Ultimate, its meter, ONLY IN A BATTLE');
+        same(JSON.stringify([r.attack, r.phase, r.orders]), JSON.stringify([1, 'on', 0]), 'ATTACK: taken, the battle on, no orders to fight outside one');
+    });
+    check('a follower holding a room is not your squad: it still fights what is in its room (§2.28), while your squad may not', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); const h = followers[2]; h.post = partyRoomAt(h.x, h.y); partyTick();
+            return { holder: cardBattleMayTarget(a, h), squad: cardBattleMayTarget(a, partyMembers().filter(m => m !== h)[0]), holdNo: cardBattleNoFight(h) }; })()`);
+        same(JSON.stringify([r.holder, r.squad, r.holdNo]), JSON.stringify([true, false, false]), 'the holder may, the squad may not, the holder is not held back');
+    });
+
     group('LINED UP, SIDE ON; THE BATTLE\'S SQUAD (the owner, 2026-11-17)');
     check('the turns begin lined up on squares: your squad on one side, the enemies on the other, each on its own tile, no two in one column across the line; everyone eases there and faces the other side', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
@@ -278,6 +311,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');
         ok(/get battleCam\(\)/.test(view) && /GM\.battleCam/.test(view) && /battling\(\)/.test(view), 'the 3D view');
+        ok(/cardBattleHit\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardBattleHit\(player, source\)\) return false;/.test(rd('js/helpers.js')) && /cardBattleNoFight\(\)\) return;/.test(rd('js/input.js')) && /_noFight/.test(rd('js/evolution.js')) && /cardBattleNoFight\(f\)\) return false;/.test(rd('js/elements.js')) && /cardBattleNoFight\(\) && typeof cardBattleChoose/.test(rd('js/mixtool.js')) && /cardBattleNoFight\(pred\)/.test(rd('js/abilities.js')), 'either a battle or none (§2.35): the blow, the gun, the second attack, the Ultimate, ATTACK, the clone\'s special');
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });
 

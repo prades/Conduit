@@ -819,6 +819,7 @@ function formUltPending(id) { return !!id && typeof EVOLUTIONS !== "undefined" &
 // (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge. (A bonded pair's DUO is gone since build 2026-11-09b: a bond is for breeding: js/bonds.js.)
 function followerUltFire(f) {
     if (!f || f.dead || !(f.ultimateCharge >= 100)) return false;
+    if (typeof cardBattleNoFight === "function" && cardBattleNoFight(f)) return false;   // (your squad's, out of a battle: nothing, js/cardbattle.js §2.35)
     const u = followerUltimate(f); if (!u) return false;
     u.execute(f);
     return !(f.ultimateCharge >= 100);

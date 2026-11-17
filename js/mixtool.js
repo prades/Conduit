@@ -109,6 +109,7 @@ function mixToolFoe() { return typeof targetIndexSubject === "function" ? target
 function mixToolOrdered(foe) { const f0 = typeof frame !== "undefined" ? frame : 0; return foe ? mixToolAttackPool(foe).filter(a => a.attackOrder && a.attackOrder.target === foe && f0 <= a.attackOrder.until).length : 0; }
 function mixToolAttack(foe) {
     foe = foe || mixToolFoe(); if (!foe || foe.dead) { mixToolSay("NOTHING TO ATTACK", "#8aa0c8"); return 0; }
+    if (typeof cardBattleNoFight === "function" && cardBattleNoFight() && typeof cardBattleChoose === "function") return cardBattleChoose(foe) ? 1 : 0;   // CARD BATTLES (§2.35): it starts a battle with it, not a fight outside one
     const pool = mixToolAttackPool(foe); if (!pool.length) { mixToolSay(foe.isHazardTarget ? "NO MAGE TO SHOOT IT FROM AFAR · FIRE AT IT YOURSELF" : "NOBODY TO SEND", "#8aa0c8"); return 0; }
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of pool) { a.attackOrder = { target: foe, until: f0 + BATTLE_ATTACK_FRAMES }; a.retreatUntil = 0; if (a.job && a.job.type === "move") a.job = null; if (!a.post) a.stance = "follow"; a._nearestEnemy = foe; a._enemyCacheFrame = f0; }   // (a follower holding a room goes, and goes back to its round afterwards)

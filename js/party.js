@@ -300,7 +300,7 @@ function partyBarClick(ev) {
     }
     // ITS ULTIMATE (build 2026-11-07ss; the owner: "more visible ultimate bar on followers and access to use them"): the meter on its card, full, fires it (js/elements.js followerUltFire); not full, a tap is a tap on the card
     if (f && hit.ult && f.ultimateCharge >= 100 && typeof followerUltFire === "function") {
-        if (!followerUltFire(f) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "NOTHING TO HIT", color: "#ffe733", life: 60, vy: -0.05, size: 10 });
+        if (!followerUltFire(f) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: typeof cardBattleNoFight === "function" && cardBattleNoFight(f) ? "ONLY IN A BATTLE" : "NOTHING TO HIT", color: "#ffe733", life: 60, vy: -0.05, size: 10 });
         partyBarRender(true); return;
     }
     if (f && typeof techAimActive === "function" && techAimActive() && typeof techAimPickFollower === "function" && techAimPickFollower(f)) { partyBarRender(true); return; }
