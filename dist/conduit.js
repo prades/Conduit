@@ -12396,7 +12396,9 @@ function evolutionTick() {
         return;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
-        if (!f || f.dead || f._flight || (typeof cardBattleHolds === "function" && cardBattleHolds(f)))
+        if (!f || f.dead || f._flight)
+            continue;
+        if (typeof cardBattleHolds === "function" && cardBattleHolds(f))
             continue;
         if (f._quillFire)
             quillFireTick(f, f0);
