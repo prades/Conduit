@@ -36,6 +36,11 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 19. **Recharge turns come from today's wait times:** each move's wait or wind-up in seconds today becomes a number of turns, by one rule, so stronger moves still take longer; the owner can then change any card. (Of three offered: "From today's wait times", not set one by one, not the same for all.) *The rule's ratio (e.g. 2 seconds a turn) is a number for the owner to approve.*
 20. **The enemies act fastest first**, by the speed each creature already has. (Of three offered: "Fastest first", not a fixed order, not random.)
 
+21. **One turn is worth 2 seconds of today's wait times** (the ratio of §2.19: a move that waits 4 s recharges in 2 turns). (Of three offered: "2 seconds = 1 turn", not 1 s, not 3 s.) *How a fraction is rounded (a 3 s move: 1 turn or 2) is the agent's to propose.*
+22. **A follower that goes down is out until the battle ends:** its column greys out and its cards cannot be played; afterwards it comes back as a fallen follower does now. (Of two offered: "Out until the battle ends", not a REVIVE card.)
+23. **The whole squad down: as the game does now:** the battle ends and the followers fall as they do today (back at the Crystal, waiting for you); no new penalty. (Of two offered: "As the game does now", not the cube knocked out too.)
+24. **The first playable version is built in the 3D game, behind a switch** (`?engine=3d` with a card-battle switch on; the normal game untouched until the owner says otherwise). (Of three offered: "In the 3D game, behind a switch", not the 3D test page, not the 2D game.)
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
@@ -80,11 +85,11 @@ None: nothing is built.
 3. ~~**Ultimates**~~ *(answered 2026-11-17: charged by the meter, §2.11; it fills from hits landed and taken, §2.14)*.
 4. ~~**Targets**~~ *(answered 2026-11-17: drag the card onto the enemy, §2.17)*. Still open: playing a move with no single target.
 5. ~~**Leaving a battle**~~ *(answered 2026-11-17: a RUN card, §2.12; the enemies get a last hit, §2.16)*.
-6. **The numbers:** *(answered in part 2026-11-17: all attacks show, §2.18; recharge from today's wait times, §2.19)*. Still open: the seconds-to-turns ratio; damage in a turn-based fight (today's numbers as they are, or rescaled).
+6. **The numbers:** *(answered in part 2026-11-17: all attacks show, §2.18; recharge from today's wait times, §2.19, at 2 s a turn, §2.21)*. Still open: damage in a turn-based fight (today's numbers as they are, or rescaled), and how a fraction of a turn rounds.
 7. ~~**Enemies' turns**~~ *(answered 2026-11-17: one by one, a surprise, §2.15)*. Their order: fastest first (§2.20).
-9. **A follower that goes down** in a battle: its cards greyed out for the rest of it, and what brings it back.
-10. **The end of a battle:** what you get for winning (XP as now, anything else), and what happens when the whole squad is down.
-8. **The 2D game or the 3D one first:** the game is going 3D (`VIEW-3D.md`); the battle could be built in either.
+9. ~~**A follower that goes down**~~ *(answered 2026-11-17: out until the battle ends, §2.22)*.
+10. **The end of a battle:** ~~the whole squad down~~ *(answered 2026-11-17: as the game does now, §2.23)*. Still open: what you get for winning (XP as now, anything else).
+8. ~~**The 2D game or the 3D one first**~~ *(answered 2026-11-17: in the 3D game, behind a switch, §2.24)*.
 
 ## 12. History
 - 2026-11-11: "Real-time stays" (`BATTLE-LOOK.md`); turn-based battles offered and not chosen then.
