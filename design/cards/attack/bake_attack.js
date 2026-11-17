@@ -102,6 +102,18 @@ const SAMPLES = {
     vortex: { eye: [0.25, 0.53], rx: 0.4, squash: 0.36, arms: 4, inner: 0.35, bodyArcs: 4, edgeArcs: 20,
       lens: [{ w: 9, pts: [[-30, -20], [50, 90], [15, 190], [112, 334]] }, { w: 6, pts: [[-30, 520], [40, 450], [70, 400], [112, 334]] }] },   // (the nearest bolts: a huge one down the left edge into the whirl's eye, a smaller one across the foot)
   },
+  // THE QUILLSTONE (fire Brawler, evolved form 'quillstone', design No. 927: design/evolutions/bake.js JOBS, forms15.js _porcupine) with EMBER SLASH (docs/COMBAT.md: a dash 4 tiles
+  // in a line toward the nearest enemy and through it, a streak of fire behind it), in the Brawler style as the Frost Maw's round 3: it dives head-on at the lens (its everyday dive
+  // pose, act 1: forward, nose down, its quills bristling), and the card's glass breaks where its nose strikes. The fire energy card's lava cave behind.
+  quillstone_emberslash: {
+    style: 'brawler', form: 927, color: '#ff3300', rim: '#ff6a3a', fx: '#ff7a2a', world: 'fire', seed: 927,
+    pose: { t: 0.3, act: 1 }, yaw: 0, hit: [0.5, 0.52], glass: 'slabs', pieces: 'clear', powder: 0,
+    flame: { from: [0.66, 0.5], to: [0.5, 0.64], width: 0.42, n: 90, quillFlames: 26 },
+    tone: { sky: '#120201', hz: ['rgba(60,11,5,0)', 'rgba(90,20,6,0.85)', '#3c0b05'], hot: '255,200,120', halo: 'rgba(10,2,0,1)', chip: ['#3a2a26', '#1a0d0a', '#060202', 'rgba(255,90,20,0.35)'], vig: 'rgba(10,2,1,0.65)', foot: ['rgba(10,2,1,0)', 'rgba(10,2,1,0.7)'] },
+    clear: [[225, 125, 100], [150, 215, 38], [305, 205, 42]],   // (its crown of quills and its two front spikes: no flying piece lands on them)
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
+    cam: { pos: [0.2, 0.55, 6.0], look: [0, 0.5, 0.3], fov: 42, roll: -0.22 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -114,24 +126,27 @@ function BRAWLER(o) {
   const rad = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); return gr; };
   const blob = (G, x, y, r, stops) => { G.fillStyle = rad(G, x, y, r, stops); G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
   const HIT = P.impact ? o.mouthAt.slice() : [P.hit[0] * W, P.hit[1] * H];   // the point of impact on the glass (where the bite lands: at its mouth, in front of the fangs)
+  // the world's tones (followers round 1: P.tone for a Brawler in another world than the ice; the defaults are the Frost Maw's, unchanged)
+  const TN = Object.assign({ sky: '#020818', hz: ['rgba(12,42,74,0)', 'rgba(20,60,100,0.85)', '#0c2a4a'], hot: '220,245,255', halo: 'rgba(0,6,16,1)', chip: ['#f4fcff', '#a8dcf6', '#3a7cb0', 'rgba(20,70,120,0.45)'],
+    vig: 'rgba(0,4,12,0.65)', foot: ['rgba(2,8,18,0)', 'rgba(2,8,18,0.7)'] }, P.tone || {});
   // 1. FAR: its element's world (the ice energy card's glacier under an aurora: js/energygem.js, with that card's own seed), tilted with the horizon, softened
   const ws = cv(450, 630), wm = cv(450, 630); { let s = 7; for (const ch of 'world' + P.world) s = (s * 31 + ch.charCodeAt(0)) % 2147483647; const RW = () => (s = (s * 16807) % 2147483647) / 2147483647;
     _EW_PAINT[P.world](ws.getContext('2d'), wm.getContext('2d'), wm.getContext('2d'), 450, 630, RW); }
-  g.fillStyle = '#020818'; g.fillRect(0, 0, W, H);
+  g.fillStyle = TN.sky; g.fillRect(0, 0, W, H);
   // (the world's glacier and aurora fill the sky from the card's top down to the horizon: drawn wider than it is tall, as the tilted sky needs the width; its blur hides the stretch)
   { const hz = hzAt(W / 2), top = -(hz + 60), hh = hz + 110, kx = 1.7;
     g.save(); g.translate(W / 2, hz); g.rotate(slope); g.filter = 'blur(2px)'; g.drawImage(ws, -225 * kx, top, 450 * kx, hh); g.filter = 'none';
     g.globalAlpha = 0.5; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
-  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -120, 0, 30); lg.addColorStop(0, 'rgba(12,42,74,0)'); lg.addColorStop(0.8, 'rgba(20,60,100,0.85)'); lg.addColorStop(1, '#0c2a4a');
+  g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -120, 0, 30); lg.addColorStop(0, TN.hz[0]); lg.addColorStop(0.8, TN.hz[1]); lg.addColorStop(1, TN.hz[2]);
   g.fillStyle = lg; g.fillRect(-W, -120, 2 * W, 150); g.restore();
   // 2. THE FLOOR (3-D), a cold line of light along the horizon (so the tilt reads)
   g.drawImage(floorCv, 0, 0);
   g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
-  for (const [h, a] of [[26, 0.12], [8, 0.25], [2, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, fxa(0)); lb.addColorStop(0.5, h < 4 ? 'rgba(220,245,255,' + a + ')' : fxa(a)); lb.addColorStop(1, fxa(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
+  for (const [h, a] of [[26, 0.12], [8, 0.25], [2, 0.6]]) { const lb = g.createLinearGradient(0, -h, 0, h); lb.addColorStop(0, fxa(0)); lb.addColorStop(0.5, h < 4 ? 'rgba(' + TN.hot + ',' + a + ')' : fxa(a)); lb.addColorStop(1, fxa(0)); g.fillStyle = lb; g.fillRect(-W, -h, 2 * W, 2 * h); }
   g.restore();
   // 3. THE FOLLOWER: a cold glow round its silhouette (its element), then its own render, darkened a touch at its foot so the snow shell stands off the floor
   const mask = (blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(model, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
-  g.save(); g.globalAlpha = 0.85; g.drawImage(mask(14, 'rgba(0,6,16,1)'), 0, 6); g.restore();   // (a dark halo behind it: its outline reads against the bright aurora and floor)
+  g.save(); g.globalAlpha = 0.85; g.drawImage(mask(14, TN.halo), 0, 6); g.restore();   // (a dark halo behind it: its outline reads against the bright aurora and floor)
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5; g.drawImage(mask(18, FX), 0, 0); g.restore();
   g.drawImage(model, 0, 0);
   // 4. THE BITE AT THE LENS: a burst of powder and ice chips thrown out of its mouth at the camera, a cold flash where the fangs strike
@@ -140,19 +155,20 @@ function BRAWLER(o) {
   blob(g, HIT[0], HIT[1], 160, [[0, 'rgba(230,250,255,' + 0.3 * PW + ')'], [0.25, fxa(0.16 * PW)], [1, fxa(0)]]);
   for (let i = 0; i < 26; i++) { const a = R() * TAU, d = 20 + R() * 120; blob(g, HIT[0] + Math.cos(a) * d, HIT[1] + Math.sin(a) * d * 0.8, 18 + R() * 40, [[0, 'rgba(230,245,255,' + 0.16 * PW + ')'], [1, 'rgba(200,235,255,0)']]); }   // (the powder)
   g.restore();
+  if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
     G.save(); G.globalAlpha = alpha; G.beginPath(); pts.forEach(([px, py], i) => i ? G.lineTo(px, py) : G.moveTo(px, py)); G.closePath();
-    G.fillStyle = rad(G, x - r * 0.3, y - r * 0.3, r * 1.8, [[0, '#f4fcff'], [0.5, '#a8dcf6'], [1, '#3a7cb0']]); G.fill(); G.strokeStyle = 'rgba(255,255,255,0.9)'; G.lineWidth = 1; G.stroke();
-    G.beginPath(); G.moveTo(x, y); G.lineTo(pts[0][0], pts[0][1]); G.lineTo(pts[1][0], pts[1][1]); G.closePath(); G.fillStyle = 'rgba(20,70,120,0.45)'; G.fill(); G.restore(); };
+    G.fillStyle = rad(G, x - r * 0.3, y - r * 0.3, r * 1.8, [[0, TN.chip[0]], [0.5, TN.chip[1]], [1, TN.chip[2]]]); G.fill(); G.strokeStyle = 'rgba(255,255,255,0.9)'; G.lineWidth = 1; G.stroke();
+    G.beginPath(); G.moveTo(x, y); G.lineTo(pts[0][0], pts[0][1]); G.lineTo(pts[1][0], pts[1][1]); G.closePath(); G.fillStyle = TN.chip[3]; G.fill(); G.restore(); };
   const chips = cv(), cg = chips.getContext('2d');
   for (let i = 0; i < 18; i++) { const a = R() * TAU, d = 40 + Math.pow(R(), 0.8) * 200, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d * 0.9; if (y > H * 0.66) continue; chip(cg, x, y, 2.5 + R() * 6 * (d / 200), a, 0.9); }
   g.drawImage(chips, 0, 0);
   { const big = cv(), bg = big.getContext('2d'); [[W * 0.08, H * 0.12, 20], [W * 0.92, H * 0.2, 16], [W * 0.86, H * 0.05, 11], [W * 0.15, H * 0.42, 12]].forEach(([x, y, r]) => chip(bg, x, y, r, R() * TAU, 0.85));
     g.save(); g.filter = 'blur(4px)'; g.drawImage(big, 0, 0); g.restore(); }   // (the nearest chips, flying past the lens, out of focus)
   // 5. THE GRADE before the hit: a vignette, darker at the foot (the name plate reads over it)
-  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.45, 'rgba(0,0,0,0)'], [1, 'rgba(0,4,12,0.65)']]); g.fillRect(0, 0, W, H);
-  lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, 'rgba(2,8,18,0)'); lg.addColorStop(1, 'rgba(2,8,18,0.7)'); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
+  g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.45, 'rgba(0,0,0,0)'], [1, TN.vig]]); g.fillRect(0, 0, W, H);
+  lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, TN.foot[0]); lg.addColorStop(1, TN.foot[1]); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
 
   // ---------- 6. THE GLASS SHATTERED ----------
   // The crack pattern: lines radiating from the point of impact (jagged), crossed by rings of cracks round it; each cell between them is a shard. Cells merge where a ring's crack
@@ -521,12 +537,49 @@ function STORM_MAGE(o) {
   return { png: out.toDataURL('image/png'), info: Object.assign({ eye: E.map(Math.round) }, info) };
 }
 
+// ---------- EMBER SLASH'S FIRE on a Brawler card (followers round 1, the Quillstone): the dash's streak of fire behind it (docs/COMBAT.md: "A streak of fire follows it"), coming
+// from far back down the line it ran, hidden where its body is; its quills burning, flames streaming back off its top edges; and the strike's burst of flame and embers at the lens.
+// Called by BRAWLER after the follower is drawn, before the glass breaks (the fire is in the picture the glass breaks over).
+function FLAME_DASH(o) {
+  const { g, W, H, R, cv, model, HIT, up, P, PI, TAU } = o, F = P.flame;
+  const FIRE = [[0, 'rgba(255,240,190,1)'], [0.25, 'rgba(255,170,50,0.95)'], [0.6, 'rgba(255,70,10,0.7)'], [1, 'rgba(200,20,0,0)']];
+  const tongue = (G, x, y, len, wid, ang, bend, alpha) => { G.save(); G.translate(x, y); G.rotate(ang); G.globalAlpha = alpha;
+    const gr = G.createLinearGradient(0, 0, 0, -len); FIRE.forEach(([q, c]) => gr.addColorStop(q, c)); G.fillStyle = gr;
+    G.beginPath(); G.moveTo(-wid, 0); G.bezierCurveTo(-wid * 1.1, -len * 0.35, bend * 0.5 - wid * 0.4, -len * 0.7, bend, -len);
+    G.bezierCurveTo(bend * 0.5 + wid * 0.4, -len * 0.7, wid * 1.1, -len * 0.35, wid, 0); G.quadraticCurveTo(0, wid * 0.8, -wid, 0); G.fill(); G.restore(); };
+  const blob = (G, x, y, r, stops) => { const gr = G.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); G.fillStyle = gr; G.beginPath(); G.arc(x, y, r, 0, TAU); G.fill(); };
+  const md = model.getContext('2d').getImageData(0, 0, W, H).data, A = (x, y) => (x < 0 || y < 0 || x >= W || y >= H) ? 0 : md[(Math.floor(y) * W + Math.floor(x)) * 4 + 3];
+  // 1. the streak: from the vanishing point behind it (F.from, on the picture) out past its sides, widening toward the lens, its flames streaming back along it
+  const tr = cv(), tg = tr.getContext('2d'); tg.globalCompositeOperation = 'lighter';
+  const V0 = [F.from[0] * W, F.from[1] * H], C = [F.to[0] * W, F.to[1] * H];
+  for (let k = 0; k < (F.n || 160); k++) { const t = Math.pow(R(), 0.8), x = V0[0] + (C[0] - V0[0]) * t, y = V0[1] + (C[1] - V0[1]) * t, half = 6 + t * F.width * W, s = (R() - 0.5) * 2 * half, ang = Math.atan2(V0[1] - C[1], V0[0] - C[0]) + PI / 2;
+    tongue(tg, x + Math.cos(ang - PI / 2) * 0 + (R() - 0.5) * half * 0.3 + s * Math.cos(ang), y + s * Math.sin(ang) * 0.35, (30 + R() * 90) * (0.4 + t), (5 + R() * 12) * (0.5 + t), ang + (R() - 0.5) * 0.4, (R() - 0.5) * 20, 0.12 + R() * 0.2); }
+  { const id = tg.getImageData(0, 0, W, H), d = id.data; for (let i = 0; i < W * H; i++) { const a = md[i * 4 + 3]; if (a) d[i * 4 + 3] = d[i * 4 + 3] * (1 - a / 255); } tg.putImageData(id, 0, 0); }   // (hidden where its body is: the streak is behind it)
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(8px)'; g.globalAlpha = 0.7; g.drawImage(tr, 0, 0); g.filter = 'blur(1px)'; g.globalAlpha = 1; g.drawImage(tr, 0, 0); g.restore();
+  // 2. its quills burning: flames rooted on the top of its silhouette, streaming back (up the picture: it is rushing at the lens)
+  const edges = []; for (let x = 2; x < W - 2; x += 3) { for (let y = 0; y < H; y++) if (A(x, y) > 128) { edges.push([x, y]); break; } }
+  const upAng = Math.atan2(up[0], -up[1]);
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < (F.quillFlames || 60); k++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; tongue(g, e[0], e[1] + 5, 14 + R() * 34, 3 + R() * 5, upAng + (R() - 0.5) * 0.5, (R() - 0.5) * 14, 0.35 + R() * 0.4); }
+  for (let k = 0; k < 40; k++) { const e = edges[Math.floor(R() * edges.length)]; if (!e) continue; const d = 10 + R() * 80; blob(g, e[0] + (R() - 0.5) * 30, e[1] - d, 1.5 + R() * 2.5, [[0, 'rgba(255,230,160,1)'], [0.4, 'rgba(255,120,30,0.8)'], [1, 'rgba(255,60,10,0)']]); }
+  g.restore();
+  // 3. the strike: a flash of flame where its nose hits, embers and sparks thrown out at the lens
+  g.save(); g.globalCompositeOperation = 'lighter';
+  blob(g, HIT[0], HIT[1], 120, [[0, 'rgba(255,230,170,0.55)'], [0.3, 'rgba(255,120,30,0.3)'], [1, 'rgba(255,60,10,0)']]);
+  for (let k = 0; k < 24; k++) { const a = R() * TAU; tongue(g, HIT[0] + Math.cos(a) * 10, HIT[1] + Math.sin(a) * 10, 30 + R() * 60, 6 + R() * 10, a + PI / 2, (R() - 0.5) * 20, 0.18 + R() * 0.2); }
+  g.lineCap = 'round';
+  for (let k = 0; k < 70; k++) { const a = R() * TAU, d = 30 + Math.pow(R(), 0.7) * 230, L = 6 + R() * 26, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d; if (y > H * 0.72) continue;
+    const sg = g.createLinearGradient(x, y, x - Math.cos(a) * L, y - Math.sin(a) * L); sg.addColorStop(0, 'rgba(255,248,215,1)'); sg.addColorStop(0.3, 'rgba(255,170,50,0.85)'); sg.addColorStop(1, 'rgba(255,60,10,0)'); g.strokeStyle = sg; g.lineWidth = 0.8 + R() * 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x - Math.cos(a) * L, y - Math.sin(a) * L); g.stroke(); }
+  g.restore();
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
 ${SHATTER_SLABS.toString()}
 ${TECH.toString()}
 ${STORM_MAGE.toString()}
+${FLAME_DASH.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
   {   // (a block of its own: the forms' code above declares names of its own, mask among them)
