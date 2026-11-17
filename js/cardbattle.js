@@ -141,7 +141,7 @@ function cardBattleTick() {
             if (el === CARD_BATTLE.blackIn) _cbLand();
             if (el >= CARD_BATTLE.blackIn + CARD_BATTLE.blackHold) { _cb.phase = "on"; _cb.t = f; }
         }
-        if (_cb.phase === "on" && f % 10 === 0) _cbCentre();
+        if (_cb.phase === "on" && f % 10 === 0) { _cbKeepAtIt(); _cbCentre(); }
     }
     // the black: in during "black" (then held), out after it
     if (_cb.phase === "black") _cb.black = Math.min(1, (f - _cb.t) / CARD_BATTLE.blackIn);
@@ -152,8 +152,29 @@ function cardBattleTick() {
     if (_cb.phase === "end" && _cb.k <= 0) { _cb.phase = "off"; _cb.foes = []; _cb.target = null; }
     _cbDom();
 }
+// THE CREATURES IN A BATTLE KEEP AT IT (the owner, 2026-11-17: a battle on, "the creature was not attacking. It was drifting away [...] Might have been because [...] the follower had died. But in that
+// instance, the creature should keep attacking. But whatever happens, it shouldn't continue to keep the camera locked onto him."): the game's own rule calms a creature whose prey is gone (js/predator.js);
+// in a battle each one stays provoked and, its prey gone, goes for the nearest of yours still up (you or a member of the squad). One that is far from you all the same (further than `leave`) is let go:
+// out of the battle, calmed as at its end, and the camera no longer takes it in; the last one let go ends the battle.
+function _cbKeepAtIt() {
+    if (typeof player === "undefined") return;
+    const ours = _cbSquad(); ours.push(player);
+    for (const a of _cb.foes.slice()) {
+        if (!_cbFoeOk(a)) continue;
+        if (Math.hypot(a.x - player.x, a.y - player.y) > CARD_BATTLE.leave) {
+            _cb.foes.splice(_cb.foes.indexOf(a), 1); a.provoked = false; a.state = "wander"; a.currentTarget = null; a.biteTarget = null; a._prey = null;
+            if (_cb.calm.indexOf(a) < 0) _cb.calm.push(a); _cb.calmUntil = Math.max(_cb.calmUntil, _cbF() + CARD_BATTLE.calm); continue;
+        }
+        a.provoked = true; if (a.state === "wander") a.state = "hunt";
+        const ct = a.currentTarget, ok = t => t && !t.dead && !(t.health <= 0) && (typeof predatorPreyOk !== "function" || predatorPreyOk(a, t));
+        if (ok(ct)) continue;
+        let best = null, bd = Infinity; for (const t of ours) { if (!ok(t)) continue; const d = Math.hypot(t.x - a.x, t.y - a.y); if (d < bd) { bd = d; best = t; } }
+        if (best) { a.currentTarget = best; a._prey = best; a.biteTarget = null; a.attackWindup = 0; if (a.state === "wander") a.state = "hunt"; }
+    }
+    if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
+}
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
-    _cb.calm = _cb.foes.slice(); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;
+    _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12; step 1's stand-in: a button. The enemies' last hit, §2.16, comes with the turns)
 function cardBattleRun() { _cb.ranAt = _cbF(); return cardBattleEnd(); }

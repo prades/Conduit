@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17n` · branch `claude/friendly-thompson-w581x0` · card battles: a creature in a battle keeps attacking; the camera lets go of one that leaves
+- **The ask** (the owner, 2026-11-17): a battle on, the creature "was not attacking. It was drifting away [...] Might have been because [...] the follower had died. But in that instance, the creature should keep attacking. But whatever happens, it shouldn't continue to keep the camera locked onto him."
+- **The cause:** the game's own rule calms a creature whose prey is gone, and a calm creature wanders; the battle did not stop that, and its camera takes in every creature in it.
+- **What it does now** (only with `?cards` and `?engine=3d`): each creature in the battle stays provoked and, its prey gone, goes for the nearest of yours still up. One that is far from you all the same (14 tiles) is let go: out of the battle, calm, and out of the camera's view; the last one let go ends the battle and the camera comes back.
+- `js/cardbattle.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.29, §9, §10.
+- **Verified:** tests/cardbattle.js (15 checks; the report reproduced without the fix) and the full suite. **Not playtested; not seen on an iPad.**
+- **Also:** `docs/CARD-BATTLES.md` restored (the merge of `2026-11-17m` had left it empty).
+
 ### Build `2026-11-17m` · branch `claude/friendly-thompson-w581x0` · only the room you are in shows its creatures
 - **The ask** (the owner, 2026-11-17): "Shouldn't be able to see enemies in other rooms. Only the rooms that you're in."
 - **What it does:** a creature not of yours in another room is not drawn (2D and the 3D view), cannot be tapped and is not locked by the gun; it shows once it is in your room. Yours always show; the Nest's tunnels and caves are one place; a card battle's creature shows on the walk to it, and a battle takes in only its creature's room. Outside the building and on the title's background, as before.
