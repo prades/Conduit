@@ -80,6 +80,16 @@ const SAMPLES = {
     lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
     cam: { pos: [1.3, 1.5, 8.2], look: [0.35, 0.3, 0], fov: 38, roll: -0.18 },   // (back a little and aimed higher than round 1: his folded-up front fits under the top, and the scene sits lower on the card)
   },
+  // ROUND 3 (the owner, 2026-11-17: "Forget about the pudding body, man. He looks fine other than that one picture where you gave him a iron hammer head"): his own look as the
+  // game's model has it, the fold upwards kept (P.fold: the same bend as round 2), his head lit matte as living flesh in a lifted navy, not a dark metal slab. Else as rounds 1 and 2.
+  hammerslug_ring_r3: {
+    style: 'tech', form: 469, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 469,
+    pose: { t: 0.4, act: 1 }, yaw: 1.75,
+    fold: { z0: -0.2, fold: 1.4, arc: 0.95, yp: 0.22, headTip: 0.9, headTurn: -0.8, headColour: 0x0a1a48, headGlow: 0 },
+    ring: { n: 12, r: 2.0, h: [0.3, 1.25], w: 0.14 },
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
+    cam: { pos: [1.3, 1.5, 8.2], look: [0.35, 0.3, 0], fov: 38, roll: -0.18 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -443,27 +453,40 @@ window.__card = async function (P, W, H, modelOnly) {
   const B = FORMS2[P.form].build(); scene.add(B.g); B.g.rotation.y = P.yaw;
   // (its glow sprites are kept: the diamond's blaze is the model's own; the game's sheets leave them to the game, design/evolutions/bake.js)
   B.update(P.pose.t, P.pose.act, P.pose.v);
-  if (P.pudding) {   // THE CARD-ONLY PUDDING BODY AND FOLD (the owner, 2026-11-17, of the Hammer Slug card: "He needs to have a pudding like body, and he needs to fold upwards"; "Only on the card":
+  if (P.pudding || P.fold) {   // THE CARD-ONLY PUDDING BODY AND FOLD (the owner, 2026-11-17, of the Hammer Slug card: "He needs to have a pudding like body, and he needs to fold upwards"; "Only on the card":
     // the game's model is not changed, only this render of it). His body and his head (the wide lobe at its front: his own head, soft like the rest of him, not a hammer) turn to one
     // glossy, soft, plump jelly in his colours (the teal glow of his tiles over his deep blue, the blue of his sole underneath); his hex tiles, sole and keel are smoothed away into it;
     // his back spikes and eye-stalks stay as they are. Then the body FOLDS UP at its middle: everything ahead of the bend point curls up along an arc (the front half lifting, as a
     // slug rears), the back half staying on the floor; the spikes and his head ride the curl, turned with it.
-    const Q = P.pudding, bb = B.g.children[0], tube = bb.children[0];
+    // (P.fold, round 3: the owner, "Forget about the pudding body": the FOLD alone, on his own look (his tiles, colours and spikes as the game's model has them); only his head is
+    // lit matte, as living flesh, never a dark metal slab: "He looks fine other than that one picture where you gave him a iron hammer head")
+    const JELLY = !!P.pudding, Q = P.pudding || P.fold, PL = JELLY ? Q.plump * 1.15 : 1, bb = B.g.children[0], tube = bb.children[0];
     const jelly = new T.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.32, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, emissive: new T.Color(Q.glow), emissiveIntensity: Q.glowK, reflectivity: 0.6 }); jelly.envMapIntensity = 0.7;
     const tint = (geo, toB) => { const pa = geo.attributes.position, na = geo.attributes.normal, col = new Float32Array(pa.count * 3), top = new T.Color(Q.top), low = new T.Color(Q.low), c = new T.Color(), n = new T.Vector3();
       for (let i = 0; i < pa.count; i++) { n.set(na.getX(i), na.getY(i), na.getZ(i)); if (toB) n.applyMatrix3(toB).normalize(); const k = Math.max(0, Math.min(1, 0.5 + 0.8 * n.y)); c.copy(low).lerp(top, k).convertSRGBToLinear(); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
       geo.setAttribute('color', new T.BufferAttribute(col, 3)); };
+    const head = bb.children.find(c => c.isGroup && c.children.some(k => k.isMesh && k.geometry.type === 'BufferGeometry'));
+    let keel = null;
+    if (JELLY) {
     // the soft body: plumper, its skin rippled a little (a set pudding's wobble)
     tube.scale.x *= Q.plump; tube.scale.y *= Q.plump * 1.15; tube.updateMatrix();
     { const geo = tube.geometry; geo.computeVertexNormals(); const pa = geo.attributes.position, na = geo.attributes.normal;
       for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), w = Q.wobble * (Math.sin(z * 9 + x * 4) * 0.6 + Math.sin(z * 4.3 - y * 6 + 1) * 0.4); pa.setXYZ(i, x + na.getX(i) * w, y + na.getY(i) * w, z + na.getZ(i) * w); } }
     // his head: the same jelly, thicker (a soft lobe, not a flat bar)
-    const head = bb.children.find(c => c.isGroup && c.children.some(k => k.isMesh && k.geometry.type === 'BufferGeometry'));
     if (head) { head.scale.y *= Q.headThick; head.traverse(m => { if (m.isMesh && m.geometry.type === 'BufferGeometry') { m.geometry = m.geometry.clone(); m.geometry.computeVertexNormals(); tint(m.geometry); m.material = jelly; }
       else if (m.isMesh) m.scale.y /= Q.headThick; }); }   // (the round beads at its two ends stay his: glossy black, like eyes, and round)
     bb.children.forEach(c => { if (c.isGroup && c.children.length === 1 && c.children[0].isMesh && c.children[0].geometry.type === 'CylinderGeometry') c.visible = false; });   // (the hex tiles: smoothed away)
     bb.children.forEach(c => { if (c.isMesh && (c.geometry.type === 'CylinderGeometry' || c.geometry.type === 'BoxGeometry')) c.visible = false; });   // (the sole and the keel: inside the jelly now)
     tube.material = jelly;
+    } else {
+      // his head as living flesh: its own shape, in a deep navy lifted from the near-black of the model's head and matte (no sheen, no reflections), so it lights like a creature's
+      // head, not a dark slab of metal; the round beads at its ends stay glossy black (they read as eyes)
+      if (head) head.traverse(m => { if (m.isMesh && m.geometry.type === 'BufferGeometry') { const fm = new T.MeshStandardMaterial({ color: new T.Color(Q.headColour), emissive: new T.Color(Q.headGlow || 0), roughness: 0.95, metalness: 0, side: T.DoubleSide }); fm.envMapIntensity = 0; m.material = fm; } });
+      // his sole (a flat disc under him) kept under the back half only: the folded-up front's underside is his body's own belly
+      const foot = bb.children.find(c => c.isMesh && c.geometry.type === 'CylinderGeometry'); if (foot) { const back = foot.position.z - foot.scale.z, half = (Q.z0 - back) / 2; foot.position.z = back + half; foot.scale.z = half; }
+      // his keel (a thin ridge down his back), cut finer along its length so it can bend with him
+      keel = bb.children.find(c => c.isMesh && c.geometry.type === 'BoxGeometry'); if (keel) { const pr0 = keel.geometry.parameters; keel.geometry = new T.BoxGeometry(pr0.width, pr0.height, pr0.depth, 1, 1, 40); }
+    }
     // THE FOLD: a bend of constant curvature starting at z0 (in the body's own space: +z is his front), turning up to Q.fold radians, then straight on
     const z0 = Q.z0, kc = Q.fold / Q.arc, rho = 1 / kc, sMax = Q.arc;
     const yp = Q.yp || 0;   // (the bend's middle line, about the body's own middle height: rho must be more than any point's distance from it, or the top would fold through itself)
@@ -471,11 +494,12 @@ window.__card = async function (P, W, H, modelOnly) {
       return [ey + Math.sin(th) * rest, ez + Math.cos(th) * rest, th]; };
     // his head set on the front end of his body (in the model it hangs low at the front, at the sole's height: on a body folded up it would end up on the belly side of the fold)
     if (head) { let zm = -9; const pa0 = tube.geometry.attributes.position; tube.updateMatrix(); const v0 = new T.Vector3(); for (let i = 0; i < pa0.count; i++) { v0.set(pa0.getX(i), pa0.getY(i), pa0.getZ(i)).applyMatrix4(tube.matrix); zm = Math.max(zm, v0.z); }
-      head.position.set(0, (Q.yp || 0) / (Q.plump * 1.15), zm - (Q.headIn || 0.12)); }
-    { tube.updateMatrix(); const geo = tube.geometry, pa = geo.attributes.position, Mt = tube.matrix, Mi = new T.Matrix4().copy(Mt).invert(), v = new T.Vector3();
+      head.position.set(0, (Q.yp || 0) / PL, zm - (Q.headIn || 0.12)); if (Q.headTurn) head.rotateY(Q.headTurn); }   // (headTurn, round 3: his head turned on his neck toward the camera, so its width shows, not its end)
+    for (const msh of [tube].concat(keel ? [keel] : [])) { const tube = msh; tube.updateMatrix(); const geo = tube.geometry, pa = geo.attributes.position, Mt = tube.matrix, Mi = new T.Matrix4().copy(Mt).invert(), v = new T.Vector3();
       for (let i = 0; i < pa.count; i++) { v.set(pa.getX(i), pa.getY(i), pa.getZ(i)).applyMatrix4(Mt); const [y2, z2] = bend(v.y, v.z); v.y = y2; v.z = z2; v.applyMatrix4(Mi); pa.setXYZ(i, v.x, v.y, v.z); }
-      pa.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); tint(geo, new T.Matrix3().getNormalMatrix(Mt)); tube.frustumCulled = false; }
-    bb.children.forEach(c => { if (c === tube || !c.visible || c.isLight) return; c.position.y *= Q.plump * 1.15; const [y2, z2, th] = bend(c.position.y, c.position.z); c.position.y = y2; c.position.z = z2;   // (sat on the plumper body, then carried by the fold)
+      pa.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere(); if (JELLY) tint(geo, new T.Matrix3().getNormalMatrix(Mt)); tube.frustumCulled = false; }
+    bb.children.forEach(c => { if (c === tube || c === keel || !c.visible || (c.isLight && JELLY) || (!JELLY && c.isMesh && c.geometry.type === 'CylinderGeometry')) return; c.position.y *= PL; const [y2, z2, th] = bend(c.position.y, c.position.z); c.position.y = y2; c.position.z = z2;   // (sat on the plumper body, then carried by the fold)
+      if (c.isLight) return;   // (round 3: his own glow light carried inside the fold with him, as in the model it sits inside his body; round 2 left it where it was)
       c.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -(c === head ? Math.max(0, th - (Q.headTip || 0)) : th))); });   // (his head tipped forward again off the top of the fold, looking out)
   }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
