@@ -148,6 +148,20 @@ const SAMPLES = {
       lens: [{ w: 5, pts: [[-20, 100], [30, 170], [60, 245]] }, { w: 3.5, pts: [[-20, 450], [40, 400], [90, 340]] }],   // (the nearest filaments: down the left edge into the eye, and up from the lower left; each ends at the eye) cast: [0.6, 0.27],   // (the swirl's middle on the floor where the ray through this point of the picture (-1..1) meets it; its radius, world units)
       near: [[-0.85, 0.75, 1.3, 0.16, 0.6], [0.9, 0.85, 1.5, 0.13, -0.4], [-0.95, -0.2, 1.2, 0.12, 2.2], [0.7, 0.2, 1.7, 0.08, 1.0], [-0.55, 0.95, 2.0, 0.07, -1.2]] },   // (the nearest crystals, flying past the lens: [x, y on the picture, distance, size, turn])
   },
+  // THE SEEPER (toxic Brawler, evolved form 'seeper', design No. 936: design/evolutions/bake.js JOBS, forms22.js _walker) with TOXIC STOMP (docs/COMBAT.md: "it stomps: every enemy within
+  // 1.5 tiles"; it plays the Seeper's own leg stomp, goo thrown out of its caldera), in the Brawler style as the Frost Maw's round 3: TOXIC STOMP over ERUPTION, as the stomp comes down
+  // head-on: its front foot slams down on the lens (the enemy's place), and the card's glass breaks where it lands. Its pose: the stomp block (its sheet's columns 16-23: v up, fwd,
+  // lean, splat), between its leg raised highest and the slam. The toxic energy card's swamp behind.
+  seeper_stomp: {
+    style: 'brawler', form: 936, color: '#66ff66', rim: '#7dff6a', fx: '#66ff66', world: 'toxic', seed: 936,
+    pose: { t: 0.3, act: 0, v: { up: 0.3, fwd: 0.42, lean: 0.02, splat: 0 } }, yaw: -0.8, hit: [0.456, 0.468], glass: 'slabs', pieces: 'clear', powder: 0,
+    clear: [[120, 235, 55], [240, 120, 85], [260, 240, 55], [350, 220, 50], [150, 325, 40]],   // (its eye, its cone, its stomping leg, its shell's side and its front legs: no flying piece lands on them)   // (yaw: its stomping leg, which reaches forward and out at 45 degrees, aimed at the lens)
+    lights: { hemi: [0x90c090, 0x041a06, 0.55], key: [0xf0fff0, 1.15], rim: 3.0, back: 1.5, low: [0x66ff66, 1.5, 0, 1.4, 1.6] },
+    cam: { pos: [0.0, 0.3, 3.2], look: [-0.25, 0.36, 0.3], fov: 50, roll: -0.22 },
+    goo: { from: [0.54, 0.15], n: 10, splash: 18, flash: 70 }, through: 36,   // (the stomp's goo (docs/COMBAT.md: "goo thrown out of its caldera"): drops flung up out of its caldera (from, on the picture) and a splash where the foot lands)
+    tone: { sky: '#020902', hz: ['rgba(10,42,10,0)', 'rgba(16,64,14,0.85)', '#0a2a0a'], hot: '210,255,200', halo: 'rgba(0,8,0,1)', chip: ['#4a6a40', '#1a2a14', '#040a03', 'rgba(102,255,102,0.35)'], vig: 'rgba(0,6,0,0.65)', foot: ['rgba(1,8,1,0)', 'rgba(1,8,1,0.7)'], dim: 0.35, glow: 0.25, edge: [3, 0.8, '#9dff80'] },
+    rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },   // (low on the floor where the foot will land, the enemy's place, looking up at it; rolled as the Frost Maw's)
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -173,6 +187,7 @@ function BRAWLER(o) {
     g.globalAlpha = 0.5; g.drawImage(wm, -225 * kx, top, 450 * kx, hh); g.restore(); g.globalAlpha = 1; }
   g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); let lg = g.createLinearGradient(0, -120, 0, 30); lg.addColorStop(0, TN.hz[0]); lg.addColorStop(0.8, TN.hz[1]); lg.addColorStop(1, TN.hz[2]);
   g.fillStyle = lg; g.fillRect(-W, -120, 2 * W, 150); g.restore();
+  if (TN.dim) { g.fillStyle = 'rgba(0,0,0,' + TN.dim + ')'; g.fillRect(0, 0, W, H); }   // (followers round 2: the world dimmed behind a dark follower, so it stands out)
   // 2. THE FLOOR (3-D), a cold line of light along the horizon (so the tilt reads)
   g.drawImage(floorCv, 0, 0);
   g.save(); g.translate(W / 2, hzAt(W / 2)); g.rotate(slope); g.globalCompositeOperation = 'lighter';
@@ -181,7 +196,8 @@ function BRAWLER(o) {
   // 3. THE FOLLOWER: a cold glow round its silhouette (its element), then its own render, darkened a touch at its foot so the snow shell stands off the floor
   const mask = (blur, col) => { const c = cv(), m = c.getContext('2d'); m.filter = 'blur(' + blur + 'px)'; m.drawImage(model, 0, 0); m.filter = 'none'; m.globalCompositeOperation = 'source-in'; m.fillStyle = col; m.fillRect(0, 0, W, H); return c; };
   g.save(); g.globalAlpha = 0.85; g.drawImage(mask(14, TN.halo), 0, 6); g.restore();   // (a dark halo behind it: its outline reads against the bright aurora and floor)
-  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5; g.drawImage(mask(18, FX), 0, 0); g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = TN.glow == null ? 0.5 : TN.glow; g.drawImage(mask(18, FX), 0, 0); g.restore();
+  if (TN.edge) { g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = TN.edge[1]; g.drawImage(mask(TN.edge[0], TN.edge[2]), 0, 0); g.restore(); }   // (followers round 2: a thin bright edge round a dark follower's silhouette, so its shape reads through the cracks)
   g.drawImage(model, 0, 0);
   // 4. THE BITE AT THE LENS: a burst of powder and ice chips thrown out of its mouth at the camera, a cold flash where the fangs strike
   g.save(); g.globalCompositeOperation = 'lighter';
@@ -189,7 +205,8 @@ function BRAWLER(o) {
   blob(g, HIT[0], HIT[1], 160, [[0, 'rgba(230,250,255,' + 0.3 * PW + ')'], [0.25, fxa(0.16 * PW)], [1, fxa(0)]]);
   for (let i = 0; i < 26; i++) { const a = R() * TAU, d = 20 + R() * 120; blob(g, HIT[0] + Math.cos(a) * d, HIT[1] + Math.sin(a) * d * 0.8, 18 + R() * 40, [[0, 'rgba(230,245,255,' + 0.16 * PW + ')'], [1, 'rgba(200,235,255,0)']]); }   // (the powder)
   g.restore();
-  if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
+  if (P.flame) FLAME_DASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });
+  if (P.goo) GOO_SPLASH({ g, W, H, R, cv, model, HIT, up, P, PI, TAU });   // (followers round 2, TOXIC STOMP: goo flung out of its caldera, a splash of it where the foot lands)   // (followers round 1, EMBER SLASH: its dash's streak of fire behind it, its quills burning, flames bursting at the strike)
   const chip = (G, x, y, r, ang, alpha) => {   // a faceted chip of ice: a lit face and a shaded one, a white edge
     const n = 4 + Math.floor(R() * 3), pts = []; for (let i = 0; i < n; i++) { const a = ang + i / n * TAU + (R() - 0.5) * 0.6, rr = r * (0.55 + R() * 0.6) * (i % 2 ? 1 : 1.6); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.75]); }
     G.save(); G.globalAlpha = alpha; G.beginPath(); pts.forEach(([px, py], i) => i ? G.lineTo(px, py) : G.moveTo(px, py)); G.closePath();
@@ -275,6 +292,7 @@ function BRAWLER(o) {
   g.restore();
   info.shards = shards.length; info.holes = holes.length;
   }
+  if (P.through) { g.save(); g.beginPath(); g.arc(HIT[0], HIT[1], P.through, 0, TAU); g.clip(); g.drawImage(model, 0, 0); g.restore(); }   // (followers round 2: its foot punched through the glass: in the hole where the glass came out, the follower itself, unbroken)
 
   // ---------- 7. ROUGHED UP: scratches, scuffs, grit, dust, chipped edges ----------
   // scuffs: rubbed patches (lighter, soft) and grime (darker, soft), mostly toward the edges and corners
@@ -697,6 +715,27 @@ function FLAME_DASH(o) {
   g.restore();
 }
 
+// ---------- TOXIC STOMP'S GOO on a Brawler card (followers round 2, the Seeper; docs/COMBAT.md: the stomp "with goo thrown out of its caldera"): glossy drops of toxic goo flung up out
+// of its caldera and arcing over, a splash of it bursting where its foot lands (at the lens), a green glow there. Called by BRAWLER before the glass breaks (in the picture it breaks over).
+function GOO_SPLASH(o) {
+  const { g, W, H, R, HIT, up, P, PI, TAU } = o, Q = P.goo;
+  const drop = (x, y, r, ang, stretch, a) => { g.save(); g.translate(x, y); g.rotate(ang); g.globalAlpha = a;   // (a drop: a teardrop along its flight, dark green at its tail, bright at its head, a white glint)
+    const gr = g.createLinearGradient(-r * stretch, 0, r, 0); gr.addColorStop(0, 'rgba(20,90,20,0)'); gr.addColorStop(0.5, 'rgba(60,200,50,0.9)'); gr.addColorStop(0.85, '#8dff70'); gr.addColorStop(1, '#d8ffc8'); g.fillStyle = gr;
+    g.beginPath(); g.moveTo(-r * stretch, 0); g.quadraticCurveTo(-r * 0.2, -r, r * 0.4, -r * 0.95); g.arc(r * 0.4, 0, r * 0.95, -PI / 2, PI / 2); g.quadraticCurveTo(-r * 0.2, r, -r * stretch, 0); g.fill();
+    g.fillStyle = 'rgba(240,255,235,0.9)'; g.beginPath(); g.arc(r * 0.6, -r * 0.35, r * 0.22, 0, TAU); g.fill(); g.restore(); };
+  const blob = (x, y, r, stops) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
+  const md = o.model.getContext('2d').getImageData(0, 0, W, H).data, onIt = (x, y) => x >= 0 && y >= 0 && x < W && y < H && md[((y | 0) * W + (x | 0)) * 4 + 3] > 20;   // (no drop lands on its body: it must read)
+  const drop0 = drop; const dropOff = (x, y, ...r) => { if (!onIt(x, y)) drop0(x, y, ...r); };
+  const upA = Math.atan2(up[1], up[0]);
+  // 1. out of its caldera: drops flung up and over, on arcs falling away to the sides
+  const C = [Q.from[0] * W, Q.from[1] * H];
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(C[0], C[1], 50, [[0, 'rgba(140,255,120,0.35)'], [1, 'rgba(60,200,50,0)']]); g.restore();
+  for (let i = 0; i < Q.n; i++) { const a = upA + (R() - 0.5) * 2.2, sp = 30 + R() * 150, x = C[0] + Math.cos(a) * sp, y = C[1] + Math.sin(a) * sp * 0.7 + sp * sp * 0.002; if (y < 4) continue; dropOff(x, y, 2 + R() * 4.5, a + PI + (R() - 0.5) * 0.4, 2 + R() * 2.5, 0.9); }
+  // 2. where the foot lands: a burst of green light, a crown of goo splashing out all round, drops flung at the lens
+  g.save(); g.globalCompositeOperation = 'lighter'; blob(HIT[0], HIT[1], Q.flash || 130, [[0, 'rgba(200,255,180,0.45)'], [0.3, 'rgba(102,255,102,0.25)'], [1, 'rgba(60,200,50,0)']]); g.restore();
+  for (let i = 0; i < Q.splash; i++) { const a = R() * TAU, d = 20 + Math.pow(R(), 0.8) * 150, x = HIT[0] + Math.cos(a) * d, y = HIT[1] + Math.sin(a) * d * 0.8; if (y > H * 0.7) continue; dropOff(x, y, 3 + R() * 6 * (d / 150 + 0.4), a, 2.5 + R() * 3, 0.95); }
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
 ${worldSrc}
 ${BRAWLER.toString()}
@@ -704,6 +743,7 @@ ${SHATTER_SLABS.toString()}
 ${TECH.toString()}
 ${STORM_MAGE.toString()}
 ${FLAME_DASH.toString()}
+${GOO_SPLASH.toString()}
 ${VOID_MAGE.toString()}
 window.__card = async function (P, W, H, modelOnly) {
   ${formsSrc}
@@ -723,8 +763,8 @@ window.__card = async function (P, W, H, modelOnly) {
   const ICE = P.world === 'ice';   // (the ice world: cold light everywhere; the fire world's lava below is the Mage sample's)
   const CORE = P.world === 'core';   // (the core world: the reactor's teal light)
   const STORM = P.world === 'electric', GARDEN = P.world === 'blossom';   // (followers round 1: the storm's yellow light; the garden's pink)
-  const VOID = P.world === 'flux';   // (followers round 2: the void's violet)
-  soft(14, 6, 0, -6, 3, VOID ? 0x2a0a5a : STORM ? 0x4a4010 : GARDEN ? 0x5a1a3a : CORE ? 0x0a5a4a : ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
+  const VOID = P.world === 'flux', SWAMP = P.world === 'toxic';   // (followers round 2: the void's violet; the swamp's green)
+  soft(14, 6, 0, -6, 3, SWAMP ? 0x1a5a10 : VOID ? 0x2a0a5a : STORM ? 0x4a4010 : GARDEN ? 0x5a1a3a : CORE ? 0x0a5a4a : ICE ? 0x1a4a70 : 0x8a2a08, 0, PI / 2);
   const env = new T.PMREMGenerator(renderer).fromScene(es, 0.03).texture;
   EL = { color: P.color }; setElementColour(P.color); M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8);   // (as the forms' baker sets a numbered form's crystal)
   const scene = new T.Scene(); scene.environment = env;
@@ -838,6 +878,12 @@ window.__card = async function (P, W, H, modelOnly) {
     for (let k = 0; k < 360; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '40,20,72' : '4,2,10') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
     for (let k = 0; k <= 8; k++) { const q = k * 128; crack(fge, [[q, 0], [q + 20, 512], [q, 1024]], 2, 'rgba(180,120,255,0.3)'); crack(fge, [[0, q], [512, q - 20], [1024, q]], 2, 'rgba(180,120,255,0.3)'); }
     for (let k = 0; k < 40; k++) { const x = R() * 1024, y = R() * 1024; fge.fillStyle = 'rgba(220,190,255,' + (0.3 + R() * 0.5) + ')'; fge.beginPath(); fge.arc(x, y, 1 + R() * 2, 0, 2 * PI); fge.fill(); }
+  } else if (SWAMP) {   // THE SWAMP FLOOR: black-green mud, pools of toxic ooze glowing green, rings of scum round them (the toxic energy card's swamp)
+    fg.fillStyle = '#0a160a'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
+    for (let k = 0; k < 420; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '28,52,24' : '3,8,3') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
+    for (let k = 0; k < 26; k++) { const x = R() * 1024, y = R() * 1024, r = 14 + R() * 50, sq = 0.5 + R() * 0.5;
+      for (const [G2, c] of [[fg, '#0e3a0c'], [fge, 'rgba(102,255,102,' + (0.14 + R() * 0.16) + ')']]) { G2.fillStyle = c; G2.beginPath(); G2.ellipse(x, y, r, r * sq, R() * PI, 0, 2 * PI); G2.fill(); }
+      fge.strokeStyle = 'rgba(160,255,120,0.35)'; fge.lineWidth = 2; fge.beginPath(); fge.ellipse(x, y, r * 1.08, r * sq * 1.08, 0, 0, 2 * PI); fge.stroke(); }
   } else if (GARDEN) {   // THE GARDEN FLOOR: dark plum earth and moss under the garden's light, fallen petals glowing faintly pink
     fg.fillStyle = '#1a0812'; fg.fillRect(0, 0, 1024, 1024); fge.fillStyle = '#000'; fge.fillRect(0, 0, 1024, 1024);
     for (let k = 0; k < 420; k++) { const x = R() * 1024, y = R() * 1024, r = 10 + R() * 44; fg.fillStyle = 'rgba(' + (R() < 0.5 ? '62,22,44' : '10,3,8') + ',' + (0.25 + R() * 0.4) + ')'; fg.beginPath(); fg.arc(x, y, r, 0, 2 * PI); fg.fill(); }
@@ -854,14 +900,14 @@ window.__card = async function (P, W, H, modelOnly) {
     const w = 2 + R() * 5; crack(fg, pts, w + 4, '#080202'); crack(fge, pts, w + 10, 'rgba(255,60,10,0.25)'); crack(fge, pts, w, '#ff6a1a'); crack(fge, pts, w * 0.4, '#ffd27a'); }
   }
   const tx = t => { const x = new T.CanvasTexture(t); x.encoding = T.sRGBEncoding; x.wrapS = x.wrapT = T.RepeatWrapping; x.repeat.set(6, 6); x.anisotropy = 8; return x; };
-  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.MeshStandardMaterial({ map: tx(ft), emissiveMap: tx(fe), emissive: new T.Color(0xffffff), emissiveIntensity: 1.3, roughness: (ICE || STORM || VOID) ? 0.55 : 0.85, metalness: 0.1 }));
+  const floor = new T.Mesh(new T.PlaneGeometry(60, 60), new T.MeshStandardMaterial({ map: tx(ft), emissiveMap: tx(fe), emissive: new T.Color(0xffffff), emissiveIntensity: 1.3, roughness: (ICE || STORM || VOID || SWAMP) ? 0.55 : 0.85, metalness: 0.1 }));
   floor.rotation.x = -PI / 2; scene.add(floor);
   const pool = cv(256, 256), pg = pool.getContext('2d'); const pgr = pg.createRadialGradient(128, 128, 0, 128, 128, 128); if (ICE) { pgr.addColorStop(0, 'rgba(150,220,255,0.5)'); pgr.addColorStop(0.4, 'rgba(90,170,255,0.2)'); pgr.addColorStop(1, 'rgba(60,140,255,0)'); } else { pgr.addColorStop(0, 'rgba(255,120,40,0.9)'); pgr.addColorStop(0.4, 'rgba(255,60,10,0.4)'); pgr.addColorStop(1, 'rgba(255,40,0,0)'); } pg.fillStyle = pgr; pg.fillRect(0, 0, 256, 256);
-  if (STORM || GARDEN || VOID) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); const cc = STORM ? '255,230,80' : VOID ? '170,100,255' : '255,122,184'; g2.addColorStop(0, 'rgba(' + cc + ',0.45)'); g2.addColorStop(0.5, 'rgba(' + cc + ',0.14)'); g2.addColorStop(1, 'rgba(' + cc + ',0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
+  if (STORM || GARDEN || VOID || SWAMP) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); const cc = STORM ? '255,230,80' : VOID ? '170,100,255' : SWAMP ? '102,255,102' : '255,122,184'; g2.addColorStop(0, 'rgba(' + cc + ',0.45)'); g2.addColorStop(0.5, 'rgba(' + cc + ',0.14)'); g2.addColorStop(1, 'rgba(' + cc + ',0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
   if (CORE) { pg.clearRect(0, 0, 256, 256); const g2 = pg.createRadialGradient(128, 128, 0, 128, 128, 128); g2.addColorStop(0, 'rgba(60,240,205,0.45)'); g2.addColorStop(0.5, 'rgba(25,200,170,0.15)'); g2.addColorStop(1, 'rgba(25,200,170,0)'); pg.fillStyle = g2; pg.fillRect(0, 0, 256, 256); }
   const glowUnder = new T.Mesh(new T.PlaneGeometry(4.2, 4.2), new T.MeshBasicMaterial({ map: new T.CanvasTexture(pool), transparent: true, blending: T.AdditiveBlending, depthWrite: false }));
   glowUnder.rotation.x = -PI / 2; glowUnder.position.y = 0.02; scene.add(glowUnder);
-  const HAZE = VOID ? '#14062a' : STORM ? '#1a1630' : GARDEN ? '#3a0a26' : CORE ? '#04261f' : ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
+  const HAZE = SWAMP ? '#0a2a0a' : VOID ? '#14062a' : STORM ? '#1a1630' : GARDEN ? '#3a0a26' : CORE ? '#04261f' : ICE ? '#0c2a4a' : '#3c0b05'; scene.fog = new T.Fog(new T.Color(HAZE), 5, 26);
   const cam = new T.PerspectiveCamera(P.cam.fov, W / H, 0.05, 80);
   cam.position.set(...P.cam.pos); cam.lookAt(new T.Vector3(...P.cam.look)); cam.rotateZ(P.cam.roll); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
   if (P.swirl) { const Q = P.swirl, COLS = [[0x3a1290, 0x14043a], [0x6a28d8, 0x22085a], [0x9a5cf0, 0x30106e]];   // (the game's three violets, deepened: under the scene's white key light the game's own whiten out)
