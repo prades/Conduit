@@ -392,15 +392,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             __ticks(130); o.later = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : ''; return o; })()`);
         same(JSON.stringify([r.can, r.played, r.who]), '[false,false,"you"]', 'out of its reach, not played, your turn still'); ok(/ · NO WAY THROUGH$/.test(r.banner), 'the banner: ' + r.banner); ok(/^YOUR TURN/.test(r.later), 'the banner after: ' + r.later);
     });
-    check('the walk keeps to the battle\'s room and the floor, never onto or through the other side\'s squares, no further than its tiles (through its own side\'s it may)', () => {
+    check('the walk keeps to the battle\'s room and the floor, never onto or through a taken square (its own side\'s too: the owner, 2026-11-18, "Make sure that they avoid interactions with their teammates"), no further than its tiles; boxed in by its own side it has no way', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
-            const room = _cb.lay.room, theirs = new Set([a, b, c].map(e => _cbSq(e).join())), all = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), bad = [];
-            for (const f of followers) { f.role = 'brawler'; for (const t of [a, b, c]) { const w = _cbWalkPath(f, t, 'basic'); if (!w) continue; let p = _cbSq(f);
+            const room = _cb.lay.room, bad = [];
+            for (const f of followers) { f.role = 'brawler'; const all = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y)); for (const t of [a, b, c]) { const w = _cbWalkPath(f, t, 'basic'); if (!w) continue; let p = _cbSq(f);
                 if (w.length > _cbTiles(f)) bad.push('too long'); if (all.has(w[w.length - 1].join())) bad.push('ends on a square');
-                for (const q of w) { if (theirs.has(q.join())) bad.push('through theirs'); if (facilityRoomIdAt(q[0], q[1]) !== room) bad.push('off the room'); if (Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1])) !== 1 || !_fpEdgeOk(p[0], p[1], q[0], q[1])) bad.push('not a step'); p = q; } } }
-            const f = followers[0], s = _cbSq(f); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (dx || dy) { _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy }); }   /* (boxed in by its own side: it may pass, not stop) */
+                for (const q of w) { if (all.has(q.join())) bad.push('through a taken square'); if (facilityRoomIdAt(q[0], q[1]) !== room) bad.push('off the room'); if (Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1])) !== 1 || !_fpEdgeOk(p[0], p[1], q[0], q[1])) bad.push('not a step'); p = q; } } }
+            const f = followers[0], s = _cbSq(f); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (dx || dy) { _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy }); }   /* (boxed in by its own side: no way round, none through) */
             return { bad: [...new Set(bad)], boxed: !!_cbWalkPath(f, a, 'basic') }; })()`);
-        same(r.bad.join('; '), '', 'the walks'); same(r.boxed, true, 'boxed in by its own side, it walks through');
+        same(r.bad.join('; '), '', 'the walks'); same(r.boxed, false, 'boxed in by its own side, it walked through');
     });
     check('an enemy the same (the owner: "both enemy and ally"): not next to any of yours, its turn is a walk of its tiles towards its prey and it bites nobody; next to one, it bites', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; const a = __walker(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
@@ -545,10 +545,143 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.n > 0, 'no start square to try'); same(r.never, true, 'RECKLESS stood next to fewer enemies than BALANCED'); ok(r.better > 0, 'RECKLESS never went into a bigger crowd (' + r.n + ' starts)');
     });
 
+    group('ROUND EVERYONE, NEVER THROUGH (the owner, 2026-11-18: "Whenever creatures have to pass through other creatures for their attack, the game freezes up. Make sure that they avoid interactions with their teammates")');
+    run(`/* two of yours on the line to the enemy, f four squares from it and g two, in front of f: a battle of brawlers (f quick) */
+        globalThis.__behind = () => { __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [f, g] = followers; f.role = g.role = 'brawler'; f.health = f.maxHealth = g.health = g.maxHealth = 1e5;
+            f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            const qa = _cbSq(a), L = _cb.lay, sq = k => [qa[0] - L.ux * k, qa[1] - L.uy * k], room = new Set(partyRoomCells(L.room).map(c => c.join())), fs = sq(4), gs = sq(2);
+            if (![1, 2, 3, 4].every(k => room.has(sq(k).join()))) return null;
+            for (const [u, q] of [[f, fs], [g, gs]]) { _cb.slots.set(u, { x: q[0], y: q[1] }); u.x = q[0]; u.y = q[1]; }
+            for (const [u, s] of [..._cb.slots]) if (u !== f && u !== g && u !== a && [1, 2, 3, 4].some(k => sq(k)[0] === s.x && sq(k)[1] === s.y)) { const c = partyRoomCells(L.room).find(c => ![..._cb.slots.values()].some(t => t.x === c[0] && t.y === c[1]) && ![1, 2, 3, 4].some(k => sq(k).join() === c.join())); if (c) { _cb.slots.set(u, { x: c[0], y: c[1] }); u.x = c[0]; u.y = c[1]; } }
+            while (_cbCurrent() && _cbCurrent() !== f) _cb.acted.add(_cbCurrent());
+            return { f, g, a, sq, gs }; };`);
+    check('a follower behind a teammate on its way to the enemy walks round it: no square of its walk is taken, and its turn is over in moments, on its new square (it froze 10 s, held 0.75 tiles short of the square it shared)', () => {
+        const r = J(`(function(){ const B = __behind(); if (!B) return null; const { f, g, a, gs } = B, taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y));
+            const played = cardBattlePlay(f, 'basic', null, a), w = _cb.turn.walk || []; let n = 0, near = 9;
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); n++; near = Math.min(near, Math.hypot(f.x - g.x, f.y - g.y)); }
+            const s = _cbSq(f); return { played, steps: w.length, through: w.some(q => taken.has(q.join())), frames: n, at: +Math.hypot(f.x - s[0], f.y - s[1]).toFixed(3), near: +near.toFixed(2) }; })()`);
+        ok(r, 'no line of four free squares to try'); same(JSON.stringify([r.played, r.through]), '[true,false]', 'played; its walk through a taken square'); ok(r.steps >= 1, 'no walk');
+        ok(r.frames < 150, 'its turn took ' + r.frames + ' frames'); ok(r.at < 0.01, 'not on its square (' + r.at + ' off)'); ok(r.near >= 0.7, 'it came ' + r.near + ' tiles from its teammate');
+    });
+    check('one walked through a teammate\'s square all the same is not held back by the squad\'s spacing: the walk still ends in moments', () => {
+        const r = J(`(function(){ const B = __behind(); if (!B) return null; const { f, a, sq, gs } = B; cardBattlePlay(f, 'basic', null, a); if (!_cb.turn.walk) return { noWalk: true };
+            _cb.turn.walk = [sq(3), gs, sq(1)]; let n = 0; for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); n++; }
+            const s = _cbSq(f); return { frames: n, on: s[0] === sq(1)[0] && s[1] === sq(1)[1] }; })()`);
+        ok(r && !r.noWalk, 'the setup: no walk'); ok(r.frames < 150, 'its walk took ' + r.frames + ' frames (it was held for 600)'); same(r.on, true, 'it did not get to the square past its teammate');
+    });
+    check('an enemy behind another on its way walks round it too', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5; const a = __walker(player.x + 2, player.y), b = __walker(player.x + 3, player.y); a.health = a.maxHealth = b.health = b.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            const qf = _cbSq(f), L = _cb.lay, sq = k => [qf[0] + L.ux * k, qf[1] + L.uy * k], room = new Set(partyRoomCells(L.room).map(c => c.join()));
+            if (![1, 2, 3, 4].every(k => room.has(sq(k).join()))) return null;
+            for (const [u, q] of [[b, sq(2)], [a, sq(4)]]) { _cb.slots.set(u, { x: q[0], y: q[1] }); u.x = q[0]; u.y = q[1]; }
+            const taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== a).map(e => e[1].x + ',' + e[1].y)), w = _cbWalkPath(a, f, 'basic');
+            return { w: !!w, through: !!w && w.some(q => taken.has(q.join())) }; })()`);
+        ok(r, 'no line of four free squares to try'); same(JSON.stringify([r.w, r.through]), '[true,false]', 'a walk, through no taken square');
+    });
+
+    group('THE TILE ATTACKS (§2.48; the owner: "The shape decides who\'s hit", "From what each attack does now"; of the page of every card\'s shape: "Approve and push the new tile attack")');
+    run(`/* a battle of one follower of form 'form' (none: an egg) and enemies at offsets [dx, dy] from its square, every one on a floor square it sees; { f, foes, P } */
+        globalThis.__shaped = (form, offs) => { __fresh(1); elementEffects.length = 0; followerProjectiles.length = 0; rotDecoys.length = 0; CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0];
+            if (form) { f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); }
+            f.health = f.maxHealth = 1e6;
+            const foes = offs.map((o, i) => { const e = __ant(player.x + 2 + i * 0.4, player.y + (i % 2)); e.health = e.maxHealth = 9999; return e; });
+            cardBattleChoose(foes[0]); __ticks(1); if (!_cb.lay) return null;
+            const room = new Set(partyRoomCells(_cb.lay.room).map(c => c.join())), mid = [_cb.lay.mx, _cb.lay.my], want = offs.concat([[0, 0]]);
+            const cells = partyRoomCells(_cb.lay.room).slice().sort((p, q) => Math.hypot(p[0] - mid[0], p[1] - mid[1]) - Math.hypot(q[0] - mid[0], q[1] - mid[1]));
+            const P = cells.find(c => want.every(o => room.has((c[0] + o[0]) + ',' + (c[1] + o[1])) && facilitySeesFrom(c[0], c[1], c[0] + o[0], c[1] + o[1]))); if (!P) return null;
+            const put = (a, x, y) => { _cb.slots.set(a, { x, y }); a.x = x; a.y = y; if (Number.isFinite(a.visualX)) { a.visualX = x; a.visualY = y; } }, used = new Set(want.map(o => (P[0] + o[0]) + ',' + (P[1] + o[1])));
+            for (const [a] of [..._cb.slots]) { if (a === f || foes.indexOf(a) >= 0) continue; const c = cells.slice().reverse().find(c => !used.has(c.join())); if (c) { used.add(c.join()); put(a, c[0], c[1]); } }
+            put(f, P[0], P[1]); foes.forEach((a, i) => put(a, P[0] + offs[i][0], P[1] + offs[i][1]));
+            return { f, foes, P }; };
+        /* play a card and run its turn: the damage each enemy took in it */
+        globalThis.__card = (f, kind, id, target, foes) => { const h0 = foes.map(a => a.health), played = cardBattlePlay(f, kind, id, target), T = _cb.turn, S = T && T.shape; let n = 0;
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); n++; }
+            return { played, frames: n, walk: !!(T && T.walk), hit: S ? S.hit.length : -1, eff: S ? S.eff.length : -1, mask: S ? S.mask.map(a => foes.indexOf(a)).sort().join() : '', hurt: foes.map((a, i) => h0[i] - a.health > 0.001 ? 1 : 0).join('') }; };`);
+    check('every attack card has its shape, let go where its shape takes it: a blast and the decoy on a floor square, a ring and CAPACITOR DISCHARGE anywhere, the rest on an enemy; an Ultimate has none (its shapes are the next page)', () => {
+        const r = J(`(function(){ const bad = [], by = { tile: [], any: [], foe: [] };
+            for (const k in EVOLUTIONS) { const f = { evolved: k }; const d0 = cardShapeDef(f, 'basic'); if (!d0) bad.push(k + ' basic'); for (const id of evoMoveIds(EVOLUTIONS[k])) { const d = cardShapeDef(f, 'move', id); if (!d || d === CARD_SHAPES._basic && !CARD_SHAPES[id]) bad.push(k + ' ' + id); else if (by[cardShapeAim(d)].indexOf(id) < 0) by[cardShapeAim(d)].push(id); } }
+            for (const id of UNEVOLVED_MOVES.moves) if (!CARD_SHAPES[id]) bad.push('egg ' + id);
+            return { bad, tile: by.tile.sort().join(), any: by.any.sort().join(), foe: by.foe.sort().join(), ult: cardShapeDef({ evolved: 'maw' }, 'ult'), thunder: cardShapeDef({ evolved: 'thunderhead' }, 'basic').kind, rot: cardShapeDef({ evolved: 'rotshard' }, 'basic').r ? 'splash' : 'one' }; })()`);
+        same(r.bad.join('; '), '', 'without a shape of its own');
+        same(r.tile, 'hexfire,maelstrom,magma_vent,rotten_decoy,singularity_shot,static_vortex', 'let go on a floor square');
+        same(r.any, 'briar_sweep,capacitor_discharge,echo_pulse,eruption,gravity_slam,petal_blaze,seedfall,shell_guard,stake_ring,sweet_scent,toxic_stomp,wobble_slam', 'let go anywhere'); same(r.foe, 'arc_volley,blade_roll,chomp,ember_slash,icicle_volley,phase_swap,quill_burst,rift_impale,shock_zap,skate_charge,static_rush,venom_bite,zigzag_dash', 'on an enemy');
+        same(JSON.stringify([r.ult, r.thunder, r.rot]), '[null,"chain","splash"]', 'an Ultimate; the Thunderhead\'s CHAIN LIGHTNING; the Rotshard\'s CORRODE SHOT');
+    });
+    check('the sizes are the attacks\' own (the page\'s): STAKE RING 8 squares, BRIAR SWEEP and GRAVITY SLAM 12, ERUPTION 20, ECHO PULSE 48; MAELSTROM and MAGMA VENT 3×3, HEXFIRE a cross of 5, STATIC VORTEX 21', () => {
+        const r = J(`[STAKE_RADIUS, BRIAR_RADIUS, MIMIC_RADIUS, CALDERA_RADIUS, ECHO_RADIUS].map(x => _csDisc(0, 0, x, true).length).concat([MAEL_RADIUS, MAGMA_RADIUS, HALO_RADIUS, VORTEX_RADIUS].map(x => _csDisc(0, 0, x, false).length))`);
+        same(r.join(), '8,12,12,20,48,9,9,5,21', 'the squares');
+    });
+    check('one target: a Brawler\'s everyday hit hurts only the enemy it is dropped on, not the one beside it; a Mage\'s shot only the one it is dropped on, not one in front of it', () => {
+        const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0], [1, 1]]), B = A && __card(A.f, 'basic', null, A.foes[0], A.foes), C = __shaped('rimestar', [[2, 0], [4, 0]]), D = C && __card(C.f, 'basic', null, C.foes[1], C.foes); return [B, D]; })()`);
+        ok(r[0] && r[1], 'no room to set it up'); same(JSON.stringify([r[0].played, r[0].hurt]), '[true,"10"]', 'the Brawler'); same(JSON.stringify([r[1].played, r[1].hurt]), '[true,"01"]', 'the Mage');
+    });
+    check('a ring round itself (WOBBLE SLAM, played anywhere): the enemies on its squares are hurt, one a square beyond it is not; with none on them it is not played, the card still ready', () => {
+        const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0], [-1, 1], [2, 0]]); if (!A) return null; const o = __card(A.f, 'move', 'wobble_slam', null, A.foes);
+            const B = __shaped('jellyram', [[3, 0]]), p = cardBattlePlay(B.f, 'move', 'wobble_slam', null); return { o, empty: [p, _cb.say && _cb.say.text, cardBattleCards(B.f).find(c => c.id === 'wobble_slam').ready] }; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hit, r.o.hurt]), '[true,8,"110"]', 'played, its 8 squares, who was hurt'); same(r.empty[0], false, 'played with nobody in it'); ok(/NO ENEMY IN ITS SQUARES/.test(r.empty[1]) && r.empty[2] === true, 'the banner and the card: ' + JSON.stringify(r.empty));
+    });
+    check('a chain (SONIC ROLL): its target and the next two each within its hop of the last; one farther off is not hurt', () => {
+        const r = J(`(function(){ const A = __shaped('staticorb', [[2, 0], [3, 1], [4, 2], [2, -3]]); return A && __card(A.f, 'move', 'static_rush', A.foes[0], A.foes); })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.mask, r.hurt]), '[true,"0,1,2","1110"]', 'played, its chain, who was hurt');
+    });
+    check('paths: EMBER SLASH along the line through its target, not the one beside it; ZIGZAG DASH every enemy on its zigzag, not one off it', () => {
+        const r = J(`(function(){ const A = __shaped('quillstone', [[1, 0], [3, 0], [2, 1]]), a = A && __card(A.f, 'move', 'ember_slash', A.foes[0], A.foes), B = __shaped('electroskink', [[1, -1], [2, 0], [3, -1], [2, 2]]), b = B && __card(B.f, 'move', 'zigzag_dash', B.foes[1], B.foes); return [a, b]; })()`);
+        ok(r[0] && r[1], 'no room'); same(r[0].hurt, '110', 'EMBER SLASH'); same(JSON.stringify([r[1].hit, r[1].hurt]), '[3,"1110"]', 'ZIGZAG DASH (its zigzag stops at a wall)');
+    });
+    check('a fan (ICICLE VOLLEY): each icicle the first enemy on its line; one behind another on the same line is untouched', () => {
+        const r = J(`(function(){ const A = __shaped('rimestar', [[3, 0], [5, 0], [4, 1]]); return A && __card(A.f, 'move', 'icicle_volley', A.foes[0], A.foes); })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.hurt]), '[true,"101"]', 'played; who was hurt');
+    });
+    check('a blast on a floor square (MAELSTROM): it opens on the square it is let go on and hurts only the enemies in its area; it stays 2 enemy turns, biting at the start of each and never between, and closes as your next turn comes', () => {
+        const r = J(`(function(){ const A = __shaped('voidstar', [[4, 0], [5, 1], [4, -2]]); if (!A) return null; const bites = () => A.foes.map(a => Math.round((9999 - a.health) * 10));
+            cardBattlePlay(A.f, 'move', 'maelstrom', { x: A.P[0] + 4, y: A.P[1], tile: true }); const e = elementEffects.find(e => e.type === 'maelstrom'), o = { at: e ? [e.x - A.P[0], e.y - A.P[1]] : null, cast: bites(), log: [] };
+            for (let k = 0; k < 3; k++) { for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) __live(1); const t0 = bites(); __live(240); o.log.push([t0, JSON.stringify(bites()) === JSON.stringify(t0), elementEffects.indexOf(e) >= 0]); cardBattlePlay(A.f, 'basic', null, A.foes[2]); for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); }
+            return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify(r.at), '[4,0]', 'where it opened'); const one = r.cast[0];
+        ok(one > 0 && r.cast[1] === one && r.cast[2] === 0, 'its first bite, as it opens, only on the two in it: ' + JSON.stringify(r.cast));
+        same(JSON.stringify(r.log.map(x => [Math.round(x[0][0] / one), x[1], x[2]])), '[[2,true,true],[3,true,false],[3,true,false]]', 'its bites by each of your turns (as it opened and at the first enemy turn: 2; at the second: 3), none while you wait, and there after a wait (after its second enemy turn it closes)');
+    });
+    check('the draws kept (the owner): SHELL GUARD draws the enemies on its squares, and one it drew comes for it on the enemies\' next turn although another hurt it more; ROTTEN DECOY is set on the square it is let go on, and the enemies near it go for it', () => {
+        const r = J(`(function(){ const A = __shaped('hammerslug', [[1, 0], [2, 2], [0, 4]]); if (!A) return null; A.foes[0].moveSpeed = A.foes[0].baseMoveSpeed = 0.04;
+            cardBattleHurt(A.foes[0], player, 500); const o = __card(A.f, 'move', 'shell_guard', null, A.foes), prey = []; o.drawn = A.foes.map(a => a._scentBy === A.f ? 1 : 0).join(''); o.braced = A.f._guardUntil > frame + 1000;
+            for (let i = 0; i < 3000 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'foe'; i++) { const t = _cb.turn; if (t.a === A.foes[0] && !prey.length) prey.push(t.a.currentTarget === A.f ? 'it' : 'another'); __live(1); }
+            const B = __shaped('rotshard', [[4, 0], [5, 1]]); for (const a of B.foes) a.moveSpeed = a.baseMoveSpeed = 0.04; cardBattlePlay(B.f, 'move', 'rotten_decoy', { x: B.P[0] + 2, y: B.P[1] + 1, tile: true }); const d = rotDecoys[0], went = [];
+            for (let i = 0; i < 3000; i++) { const t = _cb.turn; if (t && t.who === 'foe' && t.a && went.indexOf(t.a) < 0 && t.a.currentTarget === d) went.push(t.a); if (t && t.who === 'you' && i > 30) break; __live(1); }
+            return { o, prey: prey[0], decoy: d ? [d.x - B.P[0], d.y - B.P[1]] : null, went: went.length }; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hurt, r.o.drawn, r.o.braced]), '[true,"000","110",true]', 'played, nobody hurt, who was drawn (the third 4 squares off), braced');
+        same(r.prey, 'it', 'the one it drew, hurt more by you, went for'); same(JSON.stringify(r.decoy), '[2,1]', 'the decoy set at'); same(r.went, 2, 'the enemies that went for the decoy');
+    });
+    check('PHASE SWAP: it and the enemy it is let go on change squares, and keep them', () => {
+        const r = J(`(function(){ const A = __shaped('gooproxy', [[3, 0]]); if (!A) return null; const a0 = _cbSq(A.f).join(), b0 = _cbSq(A.foes[0]).join(), o = __card(A.f, 'move', 'phase_swap', A.foes[0], A.foes); __live(60);
+            return { o, swapped: _cbSq(A.f).join() === b0 && _cbSq(A.foes[0]).join() === a0, at: +Math.hypot(A.f.x - _cbSq(A.f)[0], A.f.y - _cbSq(A.f)[1]).toFixed(2) }; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hurt, r.swapped]), '[true,"1",true]', 'played, the enemy hurt, the squares swapped'); ok(r.at < 0.3, 'it is not on its new square: ' + r.at);
+    });
+    check('CAPACITOR DISCHARGE (played anywhere): a full release on its chain, from the nearest enemy within its reach; it recharges for a full charge\'s time (4 × 0.75 s: 2 turns)', () => {
+        const r = J(`(function(){ const A = __shaped('staticorb', [[1, 0], [3, 0], [5, 0]]); if (!A) return null; const o = __card(A.f, 'move', 'capacitor_discharge', null, A.foes), c = cardBattleCards(A.f).find(c => c.id === 'capacitor_discharge'); return { o, rech: c.recharge, ready: c.ready }; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hurt, r.rech, r.ready]), '[true,"111",2,false]', 'played, who was hurt, its recharge, ready'); ok(r.o.frames < 120, 'its turn took ' + r.o.frames + ' frames');
+    });
+    check('no number changes (the owner: "Don\'t change the damage numbers"): a shaped hit is the move\'s own blow, the same as out of a battle', () => {
+        const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0]]); if (!A) return null; const o = __card(A.f, 'move', 'wobble_slam', null, A.foes), inB = 9999 - A.foes[0].health;
+            const x = A.f.x, y = A.f.y, ex = A.foes[0].x, ey = A.foes[0].y; cardBattleReset(); CARD_BATTLE.on = false; A.f.x = x; A.f.y = y; const e = A.foes[0]; e.x = ex; e.y = ey; e.health = e.maxHealth = 9999; e.stunned = 0; A.f._sigAt = -1;
+            let fired = false; try { fired = wobbleSlam(A.f); } finally { CARD_BATTLE.on = true; } return { inB: +inB.toFixed(3), out: +(9999 - e.health).toFixed(3), fired }; })()`);
+        ok(r && r.fired, 'out of a battle it did not fire'); ok(r.inB > 0 && r.inB === r.out, 'in a battle ' + r.inB + ', out of one ' + r.out);
+    });
+    check('dragged, a card\'s squares are lit on the floor where the 3D view draws them (a ring round it; a blast\'s area on the square under the finger, the square in gold); over the band, none', () => {
+        const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0]]); if (!A) return null; const V = { screenNow: (x, y) => [x * 20, y * 20] }; let fills = 0, gold = 0; const kf = ctx.fill, ks = ctx.stroke;
+            ctx.fill = function () { fills++; }; ctx.stroke = function () { if (ctx.strokeStyle === '#ffe733') gold++; };
+            try { _cbDrag = { f: A.f, kind: 'move', id: 'wobble_slam', aim: true, col: '#00ccaa' }; cardShapeDraw(V); const ring = fills; fills = 0;
+                const B = __shaped('voidstar', [[4, 0]]), T = { x: B.P[0] + 4, y: B.P[1], tile: true }; _cbDrag = { f: B.f, kind: 'move', id: 'maelstrom', aim: T, col: '#cc88ff' }; cardShapeDraw(V); const blast = fills, area = cardShapeFor(B.f, 'move', 'maelstrom', T).hit.length; fills = 0;
+                _cbDrag = { f: B.f, kind: 'move', id: 'maelstrom', aim: null }; cardShapeDraw(V); return { ring, blast, area, gold, none: fills }; }
+            finally { ctx.fill = kf; ctx.stroke = ks; _cbDrag = null; } })()`);
+        ok(r, 'no room'); same(r.ring, 8, 'WOBBLE SLAM\'s squares lit'); ok(r.blast >= 1 && r.blast === r.area, 'MAELSTROM\'s squares lit: ' + r.blast + ' of its ' + r.area); same(r.gold, 1, 'its square in gold'); same(r.none, 0, 'with nothing under the finger');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
         ok(/<script src="js\/cardbattle\.js\?v=/.test(html) && /"js\/cardbattle\.js": "CARD_BATTLE"/.test(html), 'the page');
+        ok(/<script src="js\/cardbattle\.js\?v=[^"]+"><\/script>\n<script src="js\/cardshapes\.js\?v=/.test(html) && /"js\/cardshapes\.js": "CARD_SHAPES"/.test(html), 'the page loads js/cardshapes.js after it, with its boot check');
+        ok(/cardShapeFoes\(x, y\)/.test(rd('js/evolution.js')) && /cardShapeSees\(a\)\) \|\| typeof facilitySeesFrom/.test(rd('js/evolution.js')) && /cardShapeSpared\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardShapeShot\(p, actor\)/.test(rd('js/clone.js')) && /p\._cbOnly && !p\._cbOnly\.has\(a\)/.test(rd('js/game.js')) && /cardBattleWalking\(_a\) \|\| cardBattleWalking\(_b\)/.test(rd('js/game.js')) && (rd('js/elements.js').match(/!e\._cbHeld/g) || []).length === 4, 'the shapes\' hooks (§2.48) and the walk\'s (the spacing)');
         ok(/cardBattleTap\(ex, ey\)/.test(rd('js/targeting.js')) && /cardBattleMayTarget/.test(rd('js/targeting.js')), 'the tap and the gun');
         ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');

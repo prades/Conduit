@@ -389,10 +389,11 @@ function rotDecoyTick() {   // (each frame, from evolutionTick): time out, the m
         if (!d.dead && f0 >= d.until) d.dead = true;
         if (d.dead) { if (!d._gone) { d._gone = true; if (d.goo) gooProxyBurst(d); else if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "rotshards", x: d.x, y: d.y, life: 45, maxLife: 45, element: "toxic" }); } continue; }
         if (d.goo) continue;   // (a PROXY SWARM copy has no mist)
-        if ((f0 - d.until) % DECOY_TICK === 0 && typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && Math.hypot(a.x - d.x, a.y - d.y) <= DECOY_MIST && typeof applyWeaken === "function") applyWeaken(a, DECOY_POISON);
+        if ((f0 - d.until) % DECOY_TICK === 0 && !d._cbHeld) rotDecoyMist(d);   // (held in a card battle: its mist bites at the enemies' turns instead, js/cardshapes.js)
     }
     rotDecoys = rotDecoys.filter(d => !d._gone);
 }
+function rotDecoyMist(d) { if (typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && Math.hypot(a.x - d.x, a.y - d.y) <= DECOY_MIST && typeof applyWeaken === "function") applyWeaken(a, DECOY_POISON); }   // (a beat of its mist)
 // A PROXY SWARM copy (the Goo Proxy's Ultimate, js/elements.js FORM_ULTIMATES.gooproxy), broken or timed out: it bursts, d.bite (flux) to every enemy within ULT_PROXY.burst tiles
 function gooProxyBurst(d) {
     const R = typeof ULT_PROXY !== "undefined" ? ULT_PROXY.burst : 1.5;
@@ -476,6 +477,7 @@ function _altLiveAny(L) {
     return false;
 }
 function _evoFoes(x, y, r) {
+    if (typeof cardShapeFoes === "function") { const S = cardShapeFoes(x, y); if (S) return S; }   // (a card's turn in a battle: exactly its shape's enemies, js/cardshapes.js)
     const near = typeof unitsNear === "function" ? unitsNear(x, r) : actors;
     return near.filter(a => a && !a.dead && typeof isHostileTarget === "function" && isHostileTarget(a) && Math.hypot(a.x - x, a.y - y) <= r);
 }
@@ -483,11 +485,12 @@ function _evoFoes(x, y, r) {
 // (js/facility.js facilityShotStop). A move that STRIKES AT ONCE needs sight too (the owner, 2026-11-06: "Need sight"; nothing strikes through a wall or a tall object): it is used only on an enemy the
 // follower can see, and what it reaches beyond that enemy (a chain's next jump, a splash, a pull, a slow, an area round the follower, a storm or a burning circle) is only what can be seen from where the
 // strike comes. Cover does not stop such a strike: it does not travel. Sight passes over low objects (js/facilityplay.js facilitySeesFrom).
-function _evoSees(x, y, a) { return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, a.x, a.y); }
+function _evoSees(x, y, a) { return (typeof cardShapeSees === "function" && cardShapeSees(a)) || typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, a.x, a.y); }   // (a card's shape in a battle has taken sight into account: js/cardshapes.js)
 function _evoSeen(f, foes) { return foes.filter(a => _evoSees(f.x, f.y, a)); }                         // (of these, the ones the follower sees)
 function _evoFoesSeen(x, y, r) { return _evoFoes(x, y, r).filter(a => _evoSees(x, y, a)); }          // (the enemies within r of a point that can be seen from it)
 // SONIC ROLL's dash puts the body where it ends: only along floor it could walk in a straight line (the walking test, as PINBALL rolls), so never through a wall nor over an object (stepping over: "Not yet")
-function _evoDashOk(f, a) { if (typeof facilityLosFrom !== "function") return true; const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8); return facilityLosFrom(f.x, f.y, f.x + dx / L * s, f.y + dy / L * s); }
+function _evoDashOk(f, a) { if (typeof facilityLosFrom !== "function" || (typeof cardShapeSees === "function" && cardShapeSees(a))) return true;   // (a card's shape in a battle has taken the walls into account: js/cardshapes.js)
+     const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8); return facilityLosFrom(f.x, f.y, f.x + dx / L * s, f.y + dy / L * s); }
 // PETAL BLAZE: a ring of fire from the opened petals. True when it fired.
 function petalBlaze(f) {
     const foes = _evoFoesSeen(f.x, f.y, BLOOM_RADIUS);

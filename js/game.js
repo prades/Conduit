@@ -896,6 +896,7 @@ function render() {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
             if (_a._flight || _b._flight) continue;   // (one in the air, thrown by a Kinetic Launcher, is not jostled: js/techabilities.js)
+            if (typeof cardBattleWalking === "function" && (cardBattleWalking(_a) || cardBattleWalking(_b))) continue;   // (nor one a card battle is walking, nor one it walks past: pushed, a walk never got there, js/cardbattle.js)
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= _SEP2 || _d2 < 0.000001) continue;
@@ -1367,7 +1368,7 @@ function render() {
                 if (hit || a.dead) return;
                 const isTarget = p.targetsGreen
                     ? a.team === "green" && !(typeof techShieldBetween === "function" && techShieldBetween(p.x, p.y, a.x, a.y))   // (an enemy's shot hits nothing on the far side of a Photonic Shield: js/techabilities.js)
-                    : isHostileTarget(a);
+                    : isHostileTarget(a) && !(p._cbOnly && !p._cbOnly.has(a));   // (_cbOnly: a card's shot in a battle hits only its own target, js/cardshapes.js)
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30 + (a.bodyR || 0) * TILE_W) {   // (bodyR: a huge body, THE ANT QUEEN's, is hit anywhere on it: js/bosses.js)

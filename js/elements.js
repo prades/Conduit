@@ -947,7 +947,7 @@ function updateElementEffects() {
 
         // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
-        if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
+        if (e.type === "hexfire" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
         if (e.type === "meteorrain") meteorRainTick(e);   // (the Ember Hood's METEOR RAIN: each rock's strike)
         if (e.type === "mawchomp" && typeof mawChompTick === "function") mawChompTick(e);   // (the Frost Maw's CHOMP: js/evolution.js)
         if (e.type === "emberdash" && typeof emberDashTick === "function") emberDashTick(e);   // (the extra attacks, js/evolution.js: the Quillstone's dash, the Rift Mimic's reappearance, the Hammer Slug's ball)
@@ -957,10 +957,10 @@ function updateElementEffects() {
         if (e.type === "mimicshot" && typeof mimicShotTick === "function") mimicShotTick(e);   // (the Rift Mimic's everyday hit: js/evolution.js)
         if (e.type === "skinkswirl" && typeof skinkSwirlTick === "function") skinkSwirlTick(e);   // (the Electro Skink's everyday hit: js/evolution.js)
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
-        if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
-        if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
+        if (e.type === "magmavent" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
+        if (e.type === "staticVortex" && !e._cbHeld && typeof staticVortexTick === "function") staticVortexTick(e);   // (_cbHeld: an area that stays in a card battle bites at the enemies' turns, js/cardshapes.js)
         if (e.type === "buds") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
-        if (e.type === "maelstrom") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
+        if (e.type === "maelstrom" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
         // in front of it when its time is up, or at once if SUNDEW falls; a catch that dies inside is gone

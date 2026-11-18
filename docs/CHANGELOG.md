@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ag` · branch `claude/start-game-project-HSh7Z` · card battles: the tile attacks; walks go round everyone
+- **The asks** (the owner): "We should have some cards that are single target and some cards that are tile target AoE attacks ... some might only strike in zigzag formations"; of the page of every card's shape, "Approve and push the new tile attack" (2026-11-18); and "Whenever creatures have to pass through other creatures for their attack, the game freezes up. Make sure that they avoid interactions with their teammates."
+- **The tile attacks** (`CARD-BATTLES.md` §2.48): each attack card has a shape on the battle's squares, from the attack's own reach and radius (one target, a chain, a path, a zigzag, a fan, a swap, a blast, the decoy, a ring round itself). While a card is dragged its squares light up on the floor; let go (on an enemy, on a floor square for a blast or the decoy, anywhere for a ring), exactly the enemies on them take the attack's own blow and effects. A move goes off at once. MAELSTROM, HEXFIRE, MAGMA VENT, STATIC VORTEX and ROTTEN DECOY's mist stay 2 enemy turns, biting at the start of each. SWEET SCENT, SHELL GUARD and ROTTEN DECOY draw the enemies to them on the enemies' next turn. PHASE SWAP's squares change hands. CAPACITOR DISCHARGE: a full release, recharging 2 turns (the agent's, provisional). No damage number changed.
+- **The freeze fixed** (§2.49): a walk went through its own side's squares, and there the squad's spacing held it 0.75 tiles short, so the battle stood still for 10 s. Every walk now goes round every taken square, and one being walked is not pushed.
+- `js/cardshapes.js` (new), `js/cardbattle.js`, `js/evolution.js` (`_evoFoes`, `_evoSees`, `_evoDashOk`, `rotDecoyMist`), `js/helpers.js` (`applyDamage`), `js/clone.js` (`spawnFollowerProjectile`), `js/game.js` (a shot's own target; the spacing), `js/elements.js` (held areas), `game.html`, `tests/cardbattle.js` (16 new checks, 1 changed: 74), `docs/CARD-BATTLES.md` (§2.48, §2.49, §9, §10, §11.20 to §11.23), `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- **Verified:** tests/cardbattle.js and the full suite; cards dragged with the mouse in a real browser. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17af` · branch `claude/friendly-thompson-w581x0` · card battles: the Frost Maw's CHOMP card has its picture
 - **The ask** (the owner, 2026-11-18): "Approve the CHOMP card and put it in."
 - **What it does:** the Frost Maw's CHOMP card in the battle's pop-up shows its picture (round 2: the Maw head-on, its jaws coming down on shattering glass), as the Ember Hood's HEXFIRE does. Saved light (28 KB).
