@@ -19,7 +19,7 @@ function view3dFireForms(K) {
   const flame = (x, y, z, s, c, a) => put(FIRE, x, y + s * 0.42, z, c[0], c[1], c[2], a, s);   // (a flame tongue standing on y, s tall)
   const glow = (x, y, z, s, c, a) => put(FIRE, x, y, z, c[0], c[1], c[2], a, -s);
   const haze = (x, y, z, s, c, a) => put(SMOKE, x, y, z, c[0], c[1], c[2], a, -s);
-  const lump = (x, y, z, s, c, a) => put(SMOKE, x, y, z, c[0], c[1], c[2], a, s);
+  const lump = (x, y, z, s, c, a) => put(SMOKE, x, Math.max(y, floorY(x, z) + s * 0.45), z, c[0], c[1], c[2], a, s);   // (a lump never half in the floor)
   const spark = (x, y, z, s, a) => put(GLINT, x, y, z, 1.0, 0.72, 0.3, a, s);
   // the colours, as the screen shows them (ELEMENTS' fire #ff5a1f; the game's own fire colours)
   const WHITE = [1, 0.96, 0.78], YEL = [1, 0.84, 0.38], ORA = [1, 0.48, 0.12], RED = [0.9, 0.22, 0.05], DARKRED = [0.55, 0.08, 0.03], SMK = [0.26, 0.23, 0.21], ASH = [0.42, 0.39, 0.36], EARTH = [0.55, 0.4, 0.26], ROCKC = [0.3, 0.17, 0.11];
@@ -92,7 +92,7 @@ function view3dFireForms(K) {
             const ns = low() ? 6 : 12; for (let i = 0; i < ns; i++) { const an = H(i, s, 2) * TAU, v = 0.05 + 0.04 * H(i, s, 3), a2 = Math.min(age, 24), y = Y + 0.4 + 0.05 * a2 - 0.003 * a2 * a2; if (y < Y) continue; spark(X + Math.cos(an) * v * a2, y, Z + Math.sin(an) * v * a2, 0.2, clamp(1 - age / 24, 0, 1)); }
             return; }
           const u = clamp(age / 12, 0, 1), r = 0.3 + (R - 0.3) * outC(u), k = clamp(1 - (age - 10) / 22, 0, 1);
-          flat(DISCF, X, Y, Z, r * 0.96, 0.12, 0.05, 0.03, 0.28 * k); flat(GLOWF, X, Y, Z, r * 1.08, 1, 0.42, 0.1, 0.65 * k); flat(RINGF, X, Y, Z, r, 1, 0.5, 0.15, 0.8 * k);
+          flat(DISCF, X, Y, Z, r * 0.96, 0.12, 0.05, 0.03, 0.28 * k); flat(GLOWF, X, Y, Z, r * 1.08, 1, 0.42, 0.1, 0.45 * k); flat(RINGF, X, Y, Z, r, 1, 0.5, 0.15, 0.8 * k);
           const n = low() ? 11 : 22; for (let i = 0; i < n; i++) { const an = (i + 0.4 * H(i, s, 1)) / n * TAU, rr = r * (0.95 + 0.1 * H(i, s, 2)), fl = 1 + 0.18 * Math.sin(f0 * 0.6 + i * 1.7), sz = (0.46 - 0.2 * u) * (0.6 + 0.5 * H(i, s, 3)) * k * fl;
             flame(X + Math.cos(an) * rr, Y, Z + Math.sin(an) * rr, sz, heatC(0.9 - 0.55 * u - 0.15 * H(i, s, 4)), 0.95 * k);
             if (i % 2 === 0) { const ri = rr * 0.62; flame(X + Math.cos(an) * ri, Y, Z + Math.sin(an) * ri, sz * 0.55 * k, heatC(0.4), 0.8 * k * k); } }
@@ -202,11 +202,15 @@ function view3dFireForms(K) {
           const ca = Math.cos(D.ang), sa = Math.sin(D.ang), CW = R * 0.85;
           flat(DISCF, X, Y, Z, R * (0.55 + 0.45 * eo), 0.07, 0.04, 0.03, 0.5 * fade); flat(RINGF, X, Y, Z, R, 0.8, 0.22, 0.06, 0.4 * fade); flat(GLOWF, X, Y, Z, CW * 0.7 * eo, 1, 0.42, 0.1, 0.55 * fade * heatK);
           const fl = (0.85 + 0.15 * Math.sin(f0 * 0.3 + X)) * heatK * fade; heatC(0.55 + 0.35 * heatK);
-          solid(HEXC, X, Y - (1 - fade) * 0.18, Z, 0, 1, 0, -D.ang, 0.7 + 0.3 * eo, CW * eo, 0.3, 0.17, 0.11, HC[0] * 1.5 * fl, HC[1] * 1.5 * fl, HC[2] * 1.5 * fl);
-          for (let i = 0; i < D.vents.length; i++) { const v = D.vents[i], vx = X + ca * v.u * CW * eo, vz = Z - sa * v.u * CW * eo, vy = Y + 0.04, t0 = age + v.ph, ph = (t0 % v.per) / v.per, burst = age < 22 ? 1 - age / 22 : 0, act = ph < 0.42 ? ph / 0.42 : -1;
+          solid(HEXC, X, Y - (1 - fade) * 0.18, Z, 0, 1, 0, -D.ang, 0.7 + 0.3 * eo, CW * eo, 0.2, 0.11, 0.08, HC[0] * 2.1 * fl, HC[1] * 2.1 * fl, HC[2] * 2.1 * fl);
+          // the fissure of lava split across its crust (wide in its middle, pinched at its ends): two ribbons, its glow and its white-hot core
+          const fw = t => Math.pow(Math.max(0, 1 - Math.pow(Math.abs(t), 1.7)), 0.8), fy = Y + 0.02 - (1 - fade) * 0.18;
+          ribbon(11, (i, P) => { const t = i / 5 - 1, d = t * 0.5 * CW * eo; P.x = X + ca * d; P.z = Z + sa * d; P.y = fy; P.w = (0.13 * fw(t) * CW + 0.012) * eo; P.r = 1; P.g = 0.42; P.b = 0.08; P.a = 0.95 * fl; });
+          ribbon(11, (i, P) => { const t = i / 5 - 1, d = t * 0.5 * CW * eo; P.x = X + ca * d; P.z = Z + sa * d; P.y = fy + 0.004; P.w = (0.05 * fw(t) * CW + 0.004) * eo; P.r = 1; P.g = 0.9; P.b = 0.55; P.a = 0.95 * fl; });
+          for (let i = 0; i < D.vents.length; i++) { const v = D.vents[i], vx = X + ca * v.u * CW * eo, vz = Z + sa * v.u * CW * eo, vy = Y + 0.04, t0 = age + v.ph, ph = (t0 % v.per) / v.per, burst = age < 22 ? 1 - age / 22 : 0, act = ph < 0.42 ? ph / 0.42 : -1;
             if (act >= 0 || burst > 0) { const u2 = act >= 0 ? act : 0.5, sz = v.big * (1 + burst * 0.8), nb = low() ? 3 : 6;
               for (let k = 0; k < nb; k++) { const kk = (u2 + k * 0.16) % 1, hgt = Math.sin(Math.PI * kk) * pxU(38 + 36 * sz) * (0.7 + 0.3 * H(i * 9 + k, s, 31)), out = (kk - 0.5) * pxR(8 + 18 * H(i * 9 + k, s, 32)) * 2 * (k % 2 ? 1 : -1), r = (0.1 + 0.06 * H(i * 9 + k, s, 33)) * (1 - kk * 0.3), a = 0.95 * fade * heatK;
-                const ox = -sa * out, oz = -ca * out; glow(vx + ox, vy + hgt, vz + oz, r * 2.2, RED, a); glow(vx + ox, vy + hgt + r * 0.3, vz + oz, r * 1.3, k % 2 ? YEL : ORA, a); }
+                const ox = -sa * out, oz = ca * out; glow(vx + ox, vy + hgt, vz + oz, r * 2.2, RED, a); glow(vx + ox, vy + hgt + r * 0.3, vz + oz, r * 1.3, k % 2 ? YEL : ORA, a); }
               for (let k = 0; k < (low() ? 2 : 4); k++) { const kk = (u2 * 1.3 + k * 0.2) % 1; spark(vx + (H(i * 11 + k, s, 34) - 0.5) * 0.6 * kk, vy + Math.sin(Math.PI * kk) * pxU(46 + 30 * sz), vz + (H(i * 11 + k, s, 35) - 0.5) * 0.6 * kk, 0.14, 0.9 * fade * (1 - kk)); } }
             for (let k = 0; k < (low() ? 1 : 2); k++) { const q = (((age * 0.55) + i * 17 + k * 26) % 52) / 52; haze(vx + Math.sin(q * 5 + i + k) * 0.12, vy + 0.25 + q * 1.4, vz + (k - 0.5) * q * 0.2, 0.18 + 0.5 * q, k ? ASH : SMK, 0.42 * (1 - q) * fade * open); } }
         } },
@@ -243,7 +247,7 @@ function view3dFireForms(K) {
               const x = X + Math.cos(an) * v * g, z = Z + Math.sin(an) * v * g, a = Math.min(1, (30 - g) / 10); if (i % 3) lump(x, Y + hh, z, 0.11 + 0.04 * rs, ROCKC, a); else glow(x, Y + hh, z, 0.14, YEL, a); }
             if (g >= 0 && g < MET.mark) { const a = clamp((MET.mark - g) / 50, 0, 1), cs = pxR(26 * rs) * 1.25, hk = clamp(1 - g / COOL, 0, 1);   // the crater, cooling
               heatC(hk); const ek = hk > 0 ? 0.25 + 1.3 * hk : 0;
-              solid(CRATERS, X, Y - (1 - a) * 0.22, Z, 0, 1, 0, r.spin, cs * 0.9 * (0.6 + 0.4 * a), cs * (0.7 + 0.3 * a), 0.3, 0.17, 0.12, HC[0] * ek, HC[1] * ek, HC[2] * ek);
+              solid(CRATERS, X, Y - (1 - a) * 0.4, Z, 0, 1, 0, r.spin, cs * 0.9 * (0.3 + 0.7 * a), cs * (0.15 + 0.85 * a), 0.2, 0.11, 0.08, HC[0] * ek * 1.5, HC[1] * ek * 1.5, HC[2] * ek * 1.5);
               if (g < 30) flat(DISCF, X, Y, Z, cs * 1.25, 0.08, 0.04, 0.03, 0.4 * (1 - g / 30) + 0.25); else flat(DISCF, X, Y, Z, cs * 1.25, 0.08, 0.04, 0.03, 0.25 * a);
               if (g < 110) for (let i = 0; i < (low() ? 2 : 3); i++) { const off = pxR(9 * rs) * (i - 1) * 1.6, hh = pxU((8 + 4 * Math.sin((age + i * 9) * 0.5)) * rs * (1 - g / 110)) * 2.2; flame(X + D.rx * off, Y + 0.05, Z + D.rz * off, hh, i === 1 ? YEL : ORA, 0.9); }
               if (g < 160 && !low()) { const q = ((age * 0.5 + ri * 13) % 40) / 40; haze(X + 0.1 * Math.sin(q * 4 + ri), Y + 0.2 + q * 1.1, Z, 0.25 + 0.45 * q, SMK, 0.3 * (1 - q) * (1 - g / 160)); } }
@@ -340,7 +344,8 @@ function view3dFireForms(K) {
           const X = o.x, Z = o.y, Y = m.data.Y, k = Math.min(1, age / 10, (o.life || 0) / 20), R = o.radius || M.magmaR || 1.5, since = age - (o.burstAt || 0), bk = Math.max(0, 1 - since / 24); if (k <= 0) return;
           flat(GLOWF, X, Y, Z, R, 1, 0.29, 0.07, (0.14 + 0.25 * bk) * k); flat(RINGF, X, Y, Z, R, 1, 0.54, 0.23, (0.35 + 0.5 * bk) * k); flat(GLOWF, X, Y, Z, 0.55, 1, 0.5, 0.12, 0.6 * k);
           const em = (1.15 + 0.5 * bk + 0.12 * Math.sin(f0 * 0.2)) * k;
-          solid(VENTS, X, Y - (1 - k) * 0.1, Z, 0, 1, 0, s, 0.55 * (0.5 + 0.5 * k), 0.6 * (0.6 + 0.4 * k), 0.24, 0.13, 0.09, 1 * em, 0.48 * em, 0.12 * em);
+          solid(VENTS, X, Y - (1 - k) * 0.1, Z, 0, 1, 0, s, 0.42 * (0.5 + 0.5 * k), 0.38 * (0.6 + 0.4 * k), 0.24, 0.13, 0.09, 1 * em, 0.48 * em, 0.12 * em);
+          for (let i = 0; i < (low() ? 2 : 3); i++) { const an = i / 3 * TAU + f0 * 0.05; flame(X + Math.cos(an) * 0.06, Y + 0.08, Z + Math.sin(an) * 0.06, (0.2 + 0.07 * Math.sin(f0 * 0.6 + i * 2)) * k, i ? ORA : YEL, 0.9 * k); }   // (flames licking out of its mouth)
           for (let i = 0; i < 3; i++) { const q = ((age + i * 11 + s) % 30) / 30; if (q < 0.5) glow(X + (H(i, s, 1) - 0.5) * 0.2, Y + 0.12 + 0.1 * Math.sin(q * 2 * Math.PI), Z + (H(i, s, 2) - 0.5) * 0.2, 0.16 * Math.sin(q * 2 * Math.PI), YEL, 0.9 * k); }
           for (let i = 0; i < (low() ? 2 : 4); i++) { const q = (age * 0.012 + i * 0.25 + H(i, s, 3) * 0.1) % 1; haze(X + 0.3 * q * Math.sin(i * 2 + s), Y + 0.3 + 1.6 * q, Z + 0.3 * q * Math.cos(i * 2 + s), 0.3 + 0.6 * q, SMK, 0.42 * (1 - q) * k); }
           if (bk > 0) { const n = low() ? 5 : 10; for (let j = 0; j < n; j++) { const q = j / n, hh = q * 1.9 * (0.55 + 0.45 * outC(Math.min(1, since / 6))), sz = (0.55 * (1 - q) + 0.12) * bk; flame(X + 0.05 * Math.sin(f0 * 0.5 + j), Y + 0.1 + hh * 0.75, Z + 0.05 * Math.cos(f0 * 0.4 + j), sz, heatC(0.95 - 0.65 * q), 0.95 * bk); }
@@ -366,7 +371,7 @@ function view3dFireForms(K) {
     // UNDER THE FLOOR (BURROW STRIKE, FAULTLINE: the game's burrowerDepth): its mound as the 2D has it (a mound of dark earth with glowing cracks and embers) made real: a lumpy dome of earth rising as
     // it dives, cracks glowing and pulsing, embers popping off it, earth sprayed up behind it as it goes, a little dust.
     on(f, b, f0) { const dep = GM.burrowDepth(f); if (dep === null) return; const s = (f.x * 7 | 0) + 3, k = dep, X = f.x, Z = f.y, Y = floorY(X, Z), w = (0.32 + 0.04 * Math.sin(f0 * 0.4 + f.x * 3)) * (0.35 + 0.65 * k);
-      const cr = 0.55 + 0.35 * Math.sin(f0 * 0.3); solid(MOUNDS, X, Y - 0.02, Z, 0, 1, 0, f0 * 0.02, w * 0.85, w, EARTH[0], EARTH[1], EARTH[2], 1.2 * cr, 0.5 * cr, 0.18 * cr);
+      const cr = 0.55 + 0.35 * Math.sin(f0 * 0.3); solid(MOUNDS, X, Y - 0.02, Z, 0, 1, 0, f0 * 0.02, w * 0.85, w, 0.42, 0.29, 0.19, 1.6 * cr, 0.62 * cr, 0.2 * cr);
       flat(DISCF, X, Y, Z, w * 1.3, 0.12, 0.08, 0.05, 0.35);
       for (let i = 0; i < 3; i++) { const an = f0 * 0.22 + i * 2.1, ex = X + Math.cos(an) * w * 0.7, ez = Z + Math.sin(an) * w * 0.7; spark(ex, Y + w * 0.4 + Math.abs(Math.sin(f0 * 0.2 + i)) * 0.25 * k, ez, 0.14, 0.9); }
       let dx = f.dirX || 0, dz = f.dirY || 0; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;

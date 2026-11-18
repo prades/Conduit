@@ -69,13 +69,14 @@ function view3dAttacks(env) {
   MOLTEN.customProgramCacheKey = () => 'fx3d-molten';
   const SOLIDS = [];
   // a kind of solid: its shape (geo, along +y, its foot at 0), its glow over it (glow(x, y, z, face): 0 to 1), whether it carries the ink line
+  // (its colours are made for all it can hold: three makes them for the count it has when first asked)
   function solidKind(name, geo, cap, glow, ink) {
     const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals(); const n = g.attributes.position.count, P = g.attributes.position, gl = new Float32Array(n);
     for (let i = 0; i < n; i++) gl[i] = glow ? glow(P.getX(i), P.getY(i), P.getZ(i), Math.floor(i / 3)) : 0;
     g.setAttribute('aGlow', new T.BufferAttribute(gl, 1)); const em = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3); em.setUsage(T.DynamicDrawUsage); g.setAttribute('iEmis', em);
     if (ink) { const c = env.ink, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; } g.setAttribute('idc', new T.BufferAttribute(a, 3)); g.userData.ink = true; }
     const m = new T.InstancedMesh(g, MOLTEN, cap); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; m.userData.fx3d = true; if (!ink) { m.layers.set(2); m.userData.noInk = true; }
-    m.setColorAt(0, new T.Color(1, 1, 1)); scene.add(m); const S = { name, m, em, cap, n: 0 }; SOLIDS.push(S); return S; }
+    m.count = cap; m.setColorAt(0, new T.Color(1, 1, 1)); m.count = 0; scene.add(m); const S = { name, m, em, cap, n: 0 }; SOLIDS.push(S); return S; }
   const Q2 = new T.Quaternion(), V3 = new T.Vector3();
   // one of a kind: its foot at (x, y, z), along (dx, dy, dz), turned `spin` about that line, wid wide and len long; its colour (r, g, b), its glow (er, eg, eb), in the screen's colours
   function solid(S, x, y, z, dx, dy, dz, spin, len, wid, r, g, b, er, eg, eb) { if (len <= 0.004 || wid <= 0.002) return; const lim = low() ? S.cap >> 1 : S.cap; if (S.n >= lim) return; const i = S.n++;
@@ -100,7 +101,7 @@ function view3dAttacks(env) {
     return d < w ? 1 : d < w * 2.6 ? 0.45 * (1 - (d - w) / (w * 1.6)) : 0.03; } }; })();
   const HEXC = solidKind('hexcrater', FISS.g, 4, FISS.glow, true);
   const MOUNDS = (() => { const g = new T.SphereGeometry(1, 12, 6, 0, TAU, 0, Math.PI / 2), P = g.attributes.position; for (let i = 0; i < P.count; i++) { V1.fromBufferAttribute(P, i); const k = 0.85 + 0.25 * H(Math.round(V1.x * 5), Math.round(V1.z * 5), 2); P.setXYZ(i, V1.x * k, V1.y * k * 0.7, V1.z * k); }
-    return solidKind('mound', g, 4, (x, y, z) => { const a = Math.atan2(z, x); return Math.abs(Math.sin(a * 2.5 + y * 3)) < 0.12 && y > 0.05 ? 1 : 0.02; }, true); })();
+    return solidKind('mound', g, 4, (x, y, z) => { const a = Math.atan2(z, x); return Math.abs(Math.sin(a * 2.5 + y * 3)) < 0.22 && y > 0.05 ? 1 : 0.02; }, true); })();
   const VENTS = solidKind('vent', new T.LatheGeometry([new T.Vector2(0, 0.08), new T.Vector2(0.3, 0.1), new T.Vector2(0.42, 0.34), new T.Vector2(0.62, 0.3), new T.Vector2(1, 0)], 9), 4, (x, y) => Math.hypot(x, 0) < 0.36 && y < 0.2 ? 1 : 0.04, true);
   const BLOBS = solidKind('blob', new T.IcosahedronGeometry(1, 2), 12, () => 1, false);
   // FLATS ON THE FLOOR, many of a kind in one draw, each its own colour and strength: a ring, a disc (drawn over the floor), a glow (a soft disc, added)
