@@ -314,7 +314,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('A RETICLE ON EVERY ENEMY (§2.37; the owner: "So we need to fix that to where it shows each enemy with one of those")');
     check('in a battle the red corners go round each of its enemies, where the 3D view draws it by its camera as drawn (not placed again); the gun\'s own are not drawn; out of a battle the gun\'s as ever', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.6, player.y + 1);
-            const pts = [], keep = { moveTo: ctx.moveTo, stroke: ctx.stroke }; let strokes = 0; ctx.moveTo = function (x, y) { pts.push([x, y]); }; ctx.stroke = function () { strokes++; };
+            const pts = [], keep = { moveTo: ctx.moveTo, stroke: ctx.stroke, bar: _cbGroundBar }; let strokes = 0; _cbGroundBar = function () {};   /* (the corners only: the health on the ground has its own check) */ ctx.moveTo = function (x, y) { pts.push([x, y]); }; ctx.stroke = function () { strokes++; };
             const V0 = VIEW3D.view, S0 = VIEW3D.showing; let placed = 0; const fake = { screenNow: (x, y, h) => [x * 100, y * 100 - (h || 0)], screenOf: () => { placed++; return [0, 0]; }, has: () => true, top: () => 20 };
             const o = {}, at = e => [e.x * 100, e.y * 100 - 10], near = (p, e) => Math.hypot(p[0] - at(e)[0], p[1] - at(e)[1]) < 40;
             try {
@@ -322,7 +322,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 cardBattleChoose(a); __ticks(1); VIEW3D.view = fake; VIEW3D.showing = true; strokes = 0; pts.length = 0;
                 o.taken = cardBattleReticles(); o.inStrokes = strokes; o.round = [a, b].map(e => pts.filter(p => near(p, e)).length);
                 strokes = 0; pts.length = 0; drawLockReticle(); o.gunStrokes = strokes; o.allOnThem = pts.every(p => near(p, a) || near(p, b)); o.placed = placed; o.aiming = cardBattleAiming();
-            } finally { VIEW3D.view = V0; VIEW3D.showing = S0; ctx.moveTo = keep.moveTo; ctx.stroke = keep.stroke; playerAttackMode = false; playerLockTarget = null; }
+            } finally { VIEW3D.view = V0; VIEW3D.showing = S0; ctx.moveTo = keep.moveTo; ctx.stroke = keep.stroke; _cbGroundBar = keep.bar; playerAttackMode = false; playerLockTarget = null; }
             cardBattleReset(); o.after = cardBattleAiming(); return o; })()`);
         same(JSON.stringify([r.outBattle, r.outStrokes]), '[false,4]', 'out of a battle: not the battle\'s; the gun\'s four corners');
         same(JSON.stringify([r.taken, r.inStrokes].concat(r.round)), '[true,8,4,4]', 'in it: four corners round each of its two enemies');
@@ -510,7 +510,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const L = _cb.lay, along = u => { const s = _cbSq(u); return (s[0] - L.mx) * L.ux + (s[1] - L.my) * L.uy; }, o = { tank: along(t), brawler: along(b), mage: along(m), you: along(player) }; t.playStyle = undefined; return o; })()`);
         ok(r.tank > r.brawler && r.brawler > r.mage && r.mage > r.you, 'from the middle of the line: the TANK technician ' + r.tank + ', the Brawler ' + r.brawler + ', the Mage ' + r.mage + ', you ' + r.you);
     });
-    check('THE OPENING STANCE (§2.51; the owner: "the tank and the aggressive play style should be upfront maybe two spaces"): a TANK and a RECKLESS start side by side two squares ahead of the line, a TANK first; BALANCED in its role\'s place; CAUTIOUS at the back of the squad, before you', () => {
+    check('THE OPENING STANCE (§2.53; the owner: "the tank and the aggressive play style should be upfront maybe two spaces"): a TANK and a RECKLESS start side by side two squares ahead of the line, a TANK first; BALANCED in its role\'s place; CAUTIOUS at the back of the squad, before you', () => {
         const r = J(`(function(){ const { t, m, b } = __tanks(); t.playStyle = 'tank'; m.playStyle = 'aggressive'; b.playStyle = 'defensive'; const a = __ant(player.x + 2.4, player.y); cardBattleChoose(a); __ticks(1);
             const L = _cb.lay, along = u => { const s = _cbSq(u); return (s[0] - L.mx) * L.ux + (s[1] - L.my) * L.uy; }, o = { tank: along(t), reckless: along(m), cautious: along(b), you: along(player), gap: CARD_BATTLE.lineGap, up: CARD_BATTLE.upFront, order: _cbFrontFirst([b, m, t]).map(f => f === t ? 'tank' : f === m ? 'reckless' : 'cautious').join() };
             for (const f of [t, m, b]) f.playStyle = undefined; __fresh(3); const B = __tanks(); B.b.playStyle = 'defensive'; const a2 = __ant(player.x + 2.4, player.y); cardBattleChoose(a2); __ticks(1); const L2 = _cb.lay, al = u => { const s = _cbSq(u); return (s[0] - L2.mx) * L2.ux + (s[1] - L2.my) * L2.uy; };
@@ -552,6 +552,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 tries.push([_cbFoesNextTo(e0), _cbFoesNextTo(e1)]); }
             return { n: tries.length, never: tries.every(t => t[1] >= t[0]), better: tries.filter(t => t[1] > t[0]).length }; })()`);
         ok(r.n > 0, 'no start square to try'); same(r.never, true, 'RECKLESS stood next to fewer enemies than BALANCED'); ok(r.better > 0, 'RECKLESS never went into a bigger crowd (' + r.n + ' starts)');
+    });
+
+    check('each enemy\'s health, a callout (the owner, 2026-11-18): a raised bar floating up and to the side of it, a line from a dot on the creature to it, its health from the left, its numbers', () => {
+        const r = J(`(function(){ const ops = []; let path = [], fs = null; const saved = ctx;
+            const fake = { save(){}, restore(){}, beginPath(){ path = []; }, closePath(){}, moveTo(x, y){ path.push(['m', x, y]); }, lineTo(x, y){ path.push(['l', x, y]); }, arc(x, y){ path.push(['a', x, y]); },
+                fill(){ ops.push({ op: 'fill', style: this.fillStyle, path: path.slice() }); }, stroke(){ ops.push({ op: 'stroke', path: path.slice() }); }, createLinearGradient(){ return { addColorStop(){}, grad: true }; },
+                strokeText(){}, fillText(s){ ops.push({ op: 'text', s }); } };
+            ctx = fake; const V = { screenNow: (x, y, h) => [x * 40, y * 30 - h], top: () => 20 };
+            try { _cbGroundBar(V, { x: 25, y: 10, health: 30, maxHealth: 60 }); } finally { ctx = saved; }
+            const cx = 25 * 40, cy = 10 * 30 - 20 * 0.55, fills = ops.filter(o => o.op === 'fill' && o.path.length === 4), face = fills[1], hp = fills.find(o => o.style && o.style.grad);
+            const lineFrom = ops.find(o => o.op === 'stroke' && o.path.length === 3);
+            return { lineStarts: lineFrom && Math.hypot(lineFrom.path[0][1] - cx, lineFrom.path[0][2] - cy) < 1e-6, above: face && Math.max(...face.path.map(q => q[2])) < cy - 20,
+                aside: face && (Math.min(...face.path.map(q => q[1])) > cx || Math.max(...face.path.map(q => q[1])) < cx), half: hp && +((hp.path[1][1] - hp.path[0][1]) / (face.path[1][1] - face.path[0][1])).toFixed(2), text: (ops.find(o => o.op === 'text') || {}).s }; })()`);
+        same(r.lineStarts, true, 'the line starts on the creature'); same(r.above, true, 'the bar above it'); same(r.aside, true, 'to its side'); same(r.half, 0.5, 'half its health, half the bar'); same(r.text, '30/60', 'its numbers');
+        same(/if \(V\) _cbGroundBar\(V, a\);/.test(rd('js/cardbattle.js')), true, 'drawn with each enemy\'s corners');
     });
 
     group('ROUND EVERYONE, NEVER THROUGH (the owner, 2026-11-18: "Whenever creatures have to pass through other creatures for their attack, the game freezes up. Make sure that they avoid interactions with their teammates")');
@@ -685,7 +700,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r, 'no room'); same(r.ring, 8, 'WOBBLE SLAM\'s squares lit'); ok(r.blast >= 1 && r.blast === r.area, 'MAELSTROM\'s squares lit: ' + r.blast + ' of its ' + r.area); same(r.gold, 1, 'its square in gold'); same(r.none, 0, 'with nothing under the finger');
     });
 
-    group('STATUSES IN TURNS, SPLASH IN THE BATTLE (§2.50; the owner: "it\'s calculated within the parameters of the battle and not outside of it"; a status shorter than a turn: "At least one turn")');
+    check('the numbers (the owner, 2026-11-18): a hit on an enemy in a battle is tagged; its bar shows the health before it until the number lands, then the health after; a hit on one of yours is tagged and cuts no bar; out of a battle nothing is tagged', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 60; const o = {}; _cbNums.clear(); _cbHp.clear();
+            CARD_BATTLE.on = false; applyDamage(a, 5, followers[0]); o.outside = _cbNums.size; CARD_BATTLE.on = true;   /* (no battle: nothing tagged) */
+            cardBattleChoose(a); __ticks(1); _cbNums.clear(); _cbHp.clear(); const h0 = a.health;
+            applyDamage(a, 7, followers[0]); const n = [..._cbNums.values()].find(x => x.unit === a); o.tagged = !!n && n.foe; o.hp = Math.round(a.health); o.before = Math.round(_cbShown(a).v);
+            if (n) _cbNumLand(n); for (let i = 0; i < 40; i++) _cbShown(a); o.after = Math.round(_cbShown(a).v);
+            applyDamage(followers[0], 3, a); o.mine = [..._cbNums.values()].some(x => x.unit === followers[0] && !x.foe); o.mineBar = _cbHp.has(followers[0]); o.h0 = Math.round(h0);
+            cardBattleReset(); cardBattleNumbers(); o.cleared = _cbNums.size + _cbHp.size; return o; })()`);
+        same(r.outside, 0, 'tagged out of a battle'); same(r.tagged, true, 'the hit on the enemy tagged'); same(r.before, r.h0, 'its bar before the number lands: the health before the hit'); same(r.after, r.hp, 'after it lands: the health after');
+        same(r.mine, true, 'a hit on one of yours tagged'); same(r.mineBar, false, 'one of yours has no bar to cut'); same(r.cleared, 0, 'the battle over, nothing left');
+        same(/if \(typeof cardBattleNumbers === "function" && cardBattleNumbers\(\)\) return;/.test(rd('js/drops.js')) && /cardBattleNumberTag\(floatingTexts\[floatingTexts\.length - 1\], target, dmg\)/.test(rd('js/helpers.js')), true, 'wired: the words drawn by the battle; the hit tagged');
+    });
+
+    group('STATUSES IN TURNS, SPLASH IN THE BATTLE (§2.52; the owner: "it\'s calculated within the parameters of the battle and not outside of it"; a status shorter than a turn: "At least one turn")');
     run(`/* your follower's card passed (a test's shortcut to the enemies' turn), then the battle run until your turn again; what happened in it */
         globalThis.__pass = (f) => { _cb.acted.add(f); _cbAfterAct(frame); const o = { lost: [], walks: [] }; let seen = false;
             for (let i = 0; i < 4000; i++) { const T = _cb.turn; if (T && T.who === 'foe') { seen = true; if (T.hit) o.hit = true; if (T.lost && o.lost.indexOf(T.lostWord) < 0) { o.lost.push(T.lostWord); __ticks(CARD_BATTLE.every + 1); o.banner = _cbEls && _cbEls.turn ? _cbEls.turn.textContent : ''; } if (T.walk && o.walks.indexOf(T.a) < 0) o.walks.push(T.a); } if (seen && T && T.who === 'you') break; __live(1); }
@@ -745,7 +773,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/<script src="js\/cardbattle\.js\?v=/.test(html) && /"js\/cardbattle\.js": "CARD_BATTLE"/.test(html), 'the page');
         ok(/<script src="js\/cardbattle\.js\?v=[^"]+"><\/script>\n<script src="js\/cardshapes\.js\?v=/.test(html) && /"js\/cardshapes\.js": "CARD_SHAPES"/.test(html), 'the page loads js/cardshapes.js after it, with its boot check');
         ok(/cardShapeFoes\(x, y\)/.test(rd('js/evolution.js')) && /cardShapeSees\(a\)\) \|\| typeof facilitySeesFrom/.test(rd('js/evolution.js')) && /cardShapeSpared\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardShapeShot\(p, actor\)/.test(rd('js/clone.js')) && /p\._cbOnly && !p\._cbOnly\.has\(a\)/.test(rd('js/game.js')) && /cardBattleWalking\(_a\) \|\| cardBattleWalking\(_b\)/.test(rd('js/game.js')) && (rd('js/elements.js').match(/!e\._cbHeld/g) || []).length === 5, 'the shapes\' hooks (§2.48) and the walk\'s (the spacing)');
-        ok(/cardBattleStatusHeld\(actor\)\)\) statusTimersStep\(actor\)/.test(rd('js/combat.js')) && (rd('js/combat.js').match(/cardBattleStatusOk\(t\)/g) || []).length === 6 && /cardBattleStatusHeld\(this\)/.test(rd('js/predator.js')) && /cardBattleTouches\(this, a\)/.test(rd('js/predator.js')) && /cardBattleStatusOk\(actor\)/.test(rd('js/abilities.js')) && /cardBattleTouches\(pred, victim\)/.test(rd('js/abilities.js')) && (rd('js/evolution.js').match(/cardBattleTouches\(/g) || []).length === 5 && (rd('js/elements.js').match(/cardBattleTouches\(actor, a\)/g) || []).length === 6, 'the statuses\' clock and the splash\'s bounds (§2.50)');
+        ok(/cardBattleStatusHeld\(actor\)\)\) statusTimersStep\(actor\)/.test(rd('js/combat.js')) && (rd('js/combat.js').match(/cardBattleStatusOk\(t\)/g) || []).length === 6 && /cardBattleStatusHeld\(this\)/.test(rd('js/predator.js')) && /cardBattleTouches\(this, a\)/.test(rd('js/predator.js')) && /cardBattleStatusOk\(actor\)/.test(rd('js/abilities.js')) && /cardBattleTouches\(pred, victim\)/.test(rd('js/abilities.js')) && (rd('js/evolution.js').match(/cardBattleTouches\(/g) || []).length === 5 && (rd('js/elements.js').match(/cardBattleTouches\(actor, a\)/g) || []).length === 6, 'the statuses\' clock and the splash\'s bounds (§2.52)');
         ok(/cardBattleTap\(ex, ey\)/.test(rd('js/targeting.js')) && /cardBattleMayTarget/.test(rd('js/targeting.js')), 'the tap and the gun');
         ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
         ok(/cardBattleTick\(\)/.test(rd('js/game.js')) && /cardBattlePost\(\)/.test(rd('js/game.js')), 'the step and the edges');

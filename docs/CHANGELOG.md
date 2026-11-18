@@ -4,13 +4,25 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17ah` · branch `claude/start-game-project-HSh7Z` · card battles: statuses count in turns, splash stays in the battle; the opening stance
+### Build `2026-11-17aj` · branch `claude/start-game-project-HSh7Z` · card battles: statuses count in turns, splash stays in the battle; the opening stance
 - **The asks** (the owner, 2026-11-18): "find every instance of when a status is inflicted or poison or something that relays the game clock, and make sure that ... when you do a damage that has some sort of splash or whatever, it's calculated within the parameters of the battle and not outside of it" (a status shorter than a turn: "At least one turn"); and "the tank and the aggressive play style should be upfront maybe two spaces".
-- **Statuses in turns** (`CARD-BATTLES.md` §2.50): in a battle, everyone's statuses stop running down in real seconds and count in turns (2 s a turn; at least one turn). A stunned, sleeping or frozen creature loses its turn; a glitched one may walk but not bite or start its special; a slowed one walks fewer squares; burn, poison and SEEDFALL's healing come a turn's worth at a time, the same in all. Before, a stun often ran out before the creature's turn came, and burns ticked between turns.
+- **Statuses in turns** (`CARD-BATTLES.md` §2.52): in a battle, everyone's statuses stop running down in real seconds and count in turns (2 s a turn; at least one turn). A stunned, sleeping or frozen creature loses its turn; a glitched one may walk but not bite or start its special; a slowed one walks fewer squares; burn, poison and SEEDFALL's healing come a turn's worth at a time, the same in all. Before, a stun often ran out before the creature's turn came, and burns ticked between turns.
 - **Splash in the battle:** your squad's areas, splashes and element hits touch only the battle's creatures (a card's shape during it); the battle's creatures' specials and rear shots touch only your side of it.
-- **The opening stance** (§2.51): as a battle lines up, a TANK and a RECKLESS follower start side by side two squares ahead of the line; a CAUTIOUS one at the back of the squad.
-- `js/combat.js` (`statusTimersStep`; the statuses' own functions), `js/cardbattle.js`, `js/cardshapes.js`, `js/predator.js`, `js/abilities.js`, `js/evolution.js`, `js/elements.js`, `tests/cardbattle.js` (10 new checks, 2 changed: 84), `bible.html`, `docs/CARD-BATTLES.md` (§2.50, §2.51, §9, §10, §11.24, §11.25), `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- **The opening stance** (§2.53): as a battle lines up, a TANK and a RECKLESS follower start side by side two squares ahead of the line; a CAUTIOUS one at the back of the squad.
+- `js/combat.js` (`statusTimersStep`; the statuses' own functions), `js/cardbattle.js`, `js/cardshapes.js`, `js/predator.js`, `js/abilities.js`, `js/evolution.js`, `js/elements.js`, `tests/cardbattle.js` (10 new checks, 2 changed: 86 with main's), `bible.html`, `docs/CARD-BATTLES.md` (§2.52, §2.53, §9, §10, §11.24, §11.25), `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
 - **Verified:** tests/cardbattle.js and the full suite; the line-up seen in a real browser. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ai` · branch `claude/friendly-thompson-w581x0` · card battles: the hit numbers back, flying into the health bar (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "We need to bring back all of the numbers that have the animation after they hit and then they affect the health bar."
+- **What it does:** in a battle, a hit's damage number pops at the creature, then flies into that enemy's health callout; the bar drops only as it lands (the piece lost flashes pale). A hit on one of yours shows its number rising off it. MISS, RESIST and the other words show again, above the numbers. (In a battle no words or numbers had been drawn at all.)
+- `js/cardbattle.js`, `js/helpers.js`, `js/drops.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.51, §9, §10.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.** Timings the agent's.
+
+### Build `2026-11-17ah` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health as a callout (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "Need to make it to where the health bars are visible somehow on the ground near each enemy"; then, of the bar laid on the floor: "a more 3D looking health bar that kind of like has a line drawn from the creature into a 2D health bar that floats atop to the side."
+- **What it does:** in a battle, over each enemy, up and to its side, a raised health bar (a slanted face with a darker underside: red its health left, dark what it has lost, its numbers over it), joined to the creature by a line from a dot on it. It follows the creature; the callouts lean outwards, away from the middle of the screen.
+- `js/cardbattle.js` (`_cbGroundBar`, `CARD_BATTLE.hpBar`), `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.50, §9.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.** Sizes the agent's.
 
 ### Build `2026-11-17ag` · branch `claude/start-game-project-HSh7Z` · card battles: the tile attacks; walks go round everyone
 - **The asks** (the owner): "We should have some cards that are single target and some cards that are tile target AoE attacks ... some might only strike in zigzag formations"; of the page of every card's shape, "Approve and push the new tile attack" (2026-11-18); and "Whenever creatures have to pass through other creatures for their attack, the game freezes up. Make sure that they avoid interactions with their teammates."

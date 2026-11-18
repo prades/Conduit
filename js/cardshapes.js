@@ -172,7 +172,7 @@ function cardShapeFoes(x, y) {
 function cardShapeSees(a) { const T = _csTurn(); return !!T && !!a && T.shape.maskSet.has(a); }
 // js/helpers.js applyDamage: a blow of the card's follower (or of its shot or field) on an enemy of the battle off its shape does not land
 function cardShapeSpared(target, source) {
-    const T = _csTurn(); if (!T || !target || !source || target.team === "green" || !(_cb.foes.indexOf(target) >= 0 || (typeof isEnemyUnit === "function" && isEnemyUnit(target)))) return false;   // (a creature of the battle, or one outside it: §2.50)
+    const T = _csTurn(); if (!T || !target || !source || target.team === "green" || !(_cb.foes.indexOf(target) >= 0 || (typeof isEnemyUnit === "function" && isEnemyUnit(target)))) return false;   // (a creature of the battle, or one outside it: §2.52)
     const who = typeof predatorSource === "function" ? predatorSource(source.by || source) : (source.by || source);
     return who === T.f && !T.shape.maskSet.has(target);
 }
@@ -203,7 +203,7 @@ function cardShapeFire(f, id, S) {
     if (S.def.kind === "decoy" && S.tile) for (const d of newDc) { d.x = S.tile[0]; d.y = S.tile[1]; for (const e of newFx) if (e.on === d || e.type === "decoylob") { e.x = d.x; e.y = d.y; } }   // (on the square it was dropped on)
     if (S.def.kind === "swap" && S.main) { const a = _cb.slots.get(f), b = _cb.slots.get(S.main); if (a && b) { _cb.slots.set(f, b); _cb.slots.set(S.main, a); } }   // (where each now stands is its square)
     if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && o && o.type === "buds"));   // (SEEDFALL's buds heal on round it; the card's turn does not wait for them to wither)
-    for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.50: cardShapeBuds)
+    for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.52: cardShapeBuds)
     if (S.def.stays) {   // (held: no bites of its own while the battle is on; its life put out of reach, its age kept for its look)
         const held = newFx.filter(e => e.by === f && _CS_STAYS[e.type] || (e.type === "rotdecoy" && newDc.indexOf(e.on) >= 0));
         for (const e of held) { e._cbHeld = true; e._cbTurns = CARD_SHAPE_STAY; e.life += 1e5; e.maxLife += 1e5; }
@@ -222,7 +222,7 @@ function cardShapeBuds(n) {
     }
 }
 // THE AREAS THAT STAY, at the turns (js/cardbattle.js): "foes", the start of the enemies' turn: each bites what stands in it; "you", the start of your round: those whose turns are over close;
-// "end", the battle over: all close (SEEDFALL's buds left heal on in real time). (The draws and the bracing count by the battle's turns as every status does: js/cardbattle.js §2.50.)
+// "end", the battle over: all close (SEEDFALL's buds left heal on in real time). (The draws and the bracing count by the battle's turns as every status does: js/cardbattle.js §2.52.)
 function cardShapeStays(at) {
     if (typeof _cb === "undefined") return;
     const f0 = _cbF();

@@ -219,7 +219,7 @@ function applyKnockback(t, from, push) {
 
 // ONE FRAME OF A UNIT'S TIMED STATUSES. `part`: "act" (what hampers its own turn: the burn's and the poison's ticks, stun, glitch, sleep, freeze, slow, disorient, weakness), "take" (what changes what is
 // done to it: armour shred, smoke form, defence boost, invulnerable), or both. Every frame for everyone (updateStatusEffects), but for a card battle's fighters while its turns run: theirs count by the
-// battle's turns instead (js/cardbattle.js cardBattleStatusHeld, _cbStatusTurn; docs/CARD-BATTLES.md §2.50).
+// battle's turns instead (js/cardbattle.js cardBattleStatusHeld, _cbStatusTurn; docs/CARD-BATTLES.md §2.52).
 function statusTimersStep(actor, part) {
     if (part !== "take") {
         // ── BURN ──
