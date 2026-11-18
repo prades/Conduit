@@ -378,5 +378,6 @@ function view3dFireForms(K) {
       for (let i = 0; i < (low() ? 3 : 6); i++) { const q = (f0 * 0.07 + i / 6) % 1, side = (H(i, s, 1) - 0.5) * 0.5; lump(X - dx * (0.25 + q * 0.6) - dz * side * q, Y + 0.05 + Math.sin(Math.PI * q) * 0.3, Z - dz * (0.25 + q * 0.6) + dx * side * q, 0.11 * (1 - q) + 0.05, EARTH, 0.95 * (1 - q * q)); }
       if (!low()) haze(X - dx * 0.4, Y + 0.15, Z - dz * 0.4, 0.45, ASH, 0.25 * k); },
   };
+  Object.assign(K, { bodyH, blockAt, bmReset, bmApply, BM });   // (shared with the ice line, view3d/attacks_ice.js: a body's height, a sheet block played smoothly, the tilt and push put on a body)
   return { quillstone: QUILL, embercowl: HOOD, thermite: TH };
 }

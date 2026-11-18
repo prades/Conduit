@@ -18,7 +18,7 @@ function view3dAttacks(env) {
   const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };   // (a fixed number in [0, 1) for a particle i of an effect s)
   const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
   // the agent's budget (provisional): points a frame, crystals a frame; halved on LOW graphics
-  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each)
+  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all)
 
   // ── THE POOLS ──
   const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';   // (a size below 0: a puff with no rim)
@@ -279,9 +279,13 @@ function view3dAttacks(env) {
 
   // THE FIRE LINE (view3d/attacks_fire.js): the Quillstone, the Ember Hood and the Thermite Burrower, from the same kit
   const KIT = { T, GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, PUFF, GLINT, FIRE, SMOKE, solid, QUILLS, ROCKS, SPIKES, CRATERS, HEXC, MOUNDS, VENTS, BLOBS, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf,
-    curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null };
+    curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null,
+    crystal, flatK, RINGS, DISCS, SNOW, FROST, COLD, GLOW, iceHit: FORMS.maw.fx.impact.draw, ice: null };   // (the ice line's: the Maw's crystals, rings, discs and colours, and his bite's burst)
   try { KIT.measures = GM.fireMeasures; } catch (e) { KIT.measures = {}; }
   if (typeof view3dFireForms === 'function') Object.assign(FORMS, view3dFireForms(KIT));
+  // THE ICE LINE (view3d/attacks_ice.js): the Igloo Skater and the Rimestar, from the same kit (and the fire line's body helpers). Made apart: a fault in making them leaves them to the 2D, the rest going on
+  try { KIT.ice = GM.iceMeasures; } catch (e) { KIT.ice = {}; }
+  if (typeof view3dIceForms === 'function') { try { Object.assign(FORMS, view3dIceForms(KIT)); } catch (x) { lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the ice line\'s attacks in 2D: ' + lastErr); } }
 
   // ── EACH FRAME ──
   const live = new Set();   // (the effects and shots seen this frame)
