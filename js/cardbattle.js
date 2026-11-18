@@ -39,6 +39,7 @@ const CARD_BATTLE = {
     skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
+    winAfter: 52, winHold: 480,  // frames: the team's experience comes up this long after a battle is won (the camera back, the last faint over); it stays this long (8 s) unless put away
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
     num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
     byClass: true,              // the charge and the cooldown by class (the owner, 2026-11-18); off, every attack at once and every second attack cooling (the tests of other things turn it off)
@@ -103,7 +104,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map();
+    _cb.squad = _cbSquadNow(); _cbXpStart(); _cbWinHide(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map();
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -212,6 +213,7 @@ function cardBattleTick() {
     const want = _cb.phase === "on" ? 1 : 0;
     if (want > _cb.k) _cb.k = Math.min(1, _cb.k + 1 / CARD_BATTLE.easeIn); else if (want < _cb.k) _cb.k = Math.max(0, _cb.k - 1 / CARD_BATTLE.easeOut);
     if (_cb.phase === "end" && _cb.k <= 0) { _cb.phase = "off"; _cb.foes = []; _cb.target = null; }
+    _cbWinTick();   // (the team's experience, once a battle is won and the camera is back)
     _cbDom();
 }
 // THE CREATURES IN A BATTLE KEEP AT IT (the owner, 2026-11-17: a battle on, "the creature was not attacking. It was drifting away [...] Might have been because [...] the follower had died. But in that
@@ -235,7 +237,36 @@ function _cbKeepAtIt() {
     }
     if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
 }
+// THE TEAM'S EXPERIENCE (the owner, 2026-11-18: "whenever it's the final kill, it will transition to the other camera angle while the fainting animation is concluding, and then pop up for team kill
+// experience"): a battle won (its creatures all down, some of yours still up; not RUN, not let go), a panel comes up once the camera is back (`winAfter` frames after the end): what each member of the
+// battle's squad gained in it (the game's own sharing, js/levels.js awardKillXp), its level (and the levels it gained), how far it is to the next; the total. CONTINUE, a tap anywhere on it, or
+// `winHold` frames puts it away; a new battle too. Nothing is paid by it: it reads what the kills paid.
+function _cbXpOf(f) { return Number.isFinite(f.xp) ? f.xp : (typeof xpForLevel === "function" ? xpForLevel(f.level || 1) : 0); }
+function _cbXpStart() { _cb.xp0 = new Map(); for (const f of (_cb.squad || [])) _cb.xp0.set(f, { xp: _cbXpOf(f), level: f.level || 1 }); _cb.win = null; }
+function cardBattleWinRows() {
+    const rows = []; if (!_cb.xp0) return rows;
+    for (const [f, s] of _cb.xp0) { const p = typeof xpProgress === "function" ? xpProgress(f) : null, down = !_cbAlive(f);
+        rows.push({ f, name: typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", col: _cbCol(f), gained: Math.max(0, Math.round(_cbXpOf(f) - s.xp)), level: f.level || 1, ups: Math.max(0, (f.level || 1) - s.level), frac: p ? p.frac : 0, max: !!(p && p.max), toNext: p ? p.toNext : 0, down }); }
+    return rows;
+}
+function _cbWinShow() {
+    const rows = cardBattleWinRows(); if (!rows.length || typeof document === "undefined" || !document.createElement || !document.body) return;
+    _cbWinHide(); const el = document.createElement("div"); el.id = "cbWin";
+    const total = rows.reduce((n, r) => n + r.gained, 0);
+    el.innerHTML = '<div class="cw-box"><h3>ENEMIES DEFEATED</h3><p class="cw-sub">TEAM EXPERIENCE · +' + total + ' XP</p>' + rows.map(r => '<div class="cw-row' + (r.down ? " down" : "") + '" style="--c:' + r.col + '"><b>' + _cbEsc(r.name) + '</b><i class="cw-lv">LV ' + r.level + (r.ups ? ' <u>▲ +' + r.ups + '</u>' : "") + '</i><span class="cw-xp">' + (r.down ? "DOWN" : "+" + r.gained + " XP") + '</span><i class="cw-bar"><u style="width:' + Math.round(r.frac * 100) + '%"></u></i><i class="cw-next">' + (r.max ? "MAX LEVEL" : r.toNext + " XP TO LV " + (r.level + 1)) + '</i></div>').join("") + '<button type="button" class="cw-ok">CONTINUE</button></div>';
+    if (el.addEventListener) el.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); _cbWinHide(); });
+    document.body.appendChild(el); _cb.winEl = el; _cb.winUntil = _cbF() + CARD_BATTLE.winHold;
+}
+function _cbWinHide() { const el = _cb.winEl; _cb.winEl = null; if (el && el.remove) el.remove(); }
+function cardBattleWinShown() { return !!_cb.winEl; }
+function _cbWinTick() {
+    const f0 = _cbF();
+    if (_cb.win && _cb.phase === "off" && f0 >= _cb.win.at) { _cb.win = null; _cbWinShow(); }
+    if (_cb.winEl && f0 >= _cb.winUntil) _cbWinHide();
+}
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
+    { const won = _cb.phase === "on" && _cb.foes.length > 0 && !_cb.foes.some(_cbFoeOk) && _cbSquad().length > 0 && _cb.ranAt !== _cbF();   // (won: every creature of it down, yours still standing, not by RUN)
+      _cb.win = won ? { at: _cbF() + CARD_BATTLE.winAfter } : null; }
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
     _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null;
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
@@ -1075,4 +1106,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; _cb.win = null; _cbWinHide(); if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

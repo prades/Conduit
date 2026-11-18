@@ -806,6 +806,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ult, 0, 'an Ultimate charges');
     });
 
+    check('a battle won (the owner, 2026-11-18): once the camera is back the team\'s experience comes up: what each member gained from the kill, its level, the total; put away by a tap; RUN brings none; a faint is the view\'s', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const o = { before: cardBattleWinShown() }; a.lastAttacker = followers[0]; applyDamage(a, 99999, followers[0]); __live(3);
+            o.ended = cardBattlePhase() !== 'on'; o.pending = !!_cb.win; o.early = cardBattleWinShown();
+            for (let i = 0; i < CARD_BATTLE.winAfter + CARD_BATTLE.easeOut + 30 && !cardBattleWinShown(); i++) __live(1);
+            o.shown = cardBattleWinShown(); const rows = cardBattleWinRows(); o.rows = rows.length; o.gained = rows.reduce((n, x) => n + x.gained, 0); o.killerMost = rows[0].gained >= rows[1].gained;
+            _cbWinHide(); o.away = cardBattleWinShown();
+            __fresh(2); CARD_BATTLE.on = true; const b = __ant(player.x + 2, player.y); cardBattleChoose(b); __ticks(1); __run(); __ticks(CARD_BATTLE.winAfter + CARD_BATTLE.easeOut + 30); o.afterRun = cardBattleWinShown() || !!_cb.win;
+            return o; })()`);
+        same(r.before, false, 'shown before the battle is won'); same(r.ended, true, 'the battle over'); same(r.pending, true, 'the experience to come'); same(r.early, false, 'up before the camera is back');
+        same(r.shown, true, 'the team\'s experience up'); same(r.rows, 2, 'a row for each member'); ok(r.gained > 0, 'nothing gained: ' + r.gained); same(r.killerMost, true, 'the one that made the kill gained less than the other');
+        same(r.away, false, 'put away'); same(r.afterRun, false, 'after RUN');
+        const v = rd('view3d/gameview.js'), h = rd('game.html');
+        same(/if \(!faintStart\(u, b, f0\)\) give\(b\); live\.delete\(u\); \}\n    faintStep\(f0\);/.test(v) && /if \(!u \|\| !u\.dead \|\| !battling\(\)/.test(v), true, 'the faint: a body of the battle that goes down is kept and tipped over before it goes');
+        same(/#cbWin \.cw-box/.test(h), true, 'the panel\'s look');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
