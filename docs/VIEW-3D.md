@@ -123,4 +123,4 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 - The camera (§4.1): its buttons' place and look, the zoom's range; tilting; turning freely rather than a quarter at a time, once the effects are 3D.
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - When the 3D view becomes the default.
-- The attacks in 3D (§4.7): the Frost Maw's three looks, for the owner's approval before the next form; whether his effects should also hide the game's floating CHOMP word and numbers (they are 2D, and wiped in a battle); the order of the next forms and the enemies; the budget's numbers on an old iPad.
+- The attacks in 3D (§4.7): the Frost Maw's three looks approved (the owner, 2026-11-18: "Wow yes! Push"); whether his effects should also hide the game's floating CHOMP word and numbers (they are 2D, and wiped in a battle); the order of the next forms and the enemies; the budget's numbers on an old iPad.
