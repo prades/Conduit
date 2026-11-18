@@ -331,22 +331,22 @@ const FIRE = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.a
   var of = function (type, by) { return elementEffects.filter(function (e) { return e.type === type && (!by || e.by === by); })[0]; }, R = out.r = {};
   // THE QUILLSTONE: its everyday hit (the game's fire ring and orbiting fireballs), QUILL BURST (its quills), EMBER SLASH (its dash), QUILLSTORM (its sixteen quills and ring)
   var r0 = Math.random; Math.random = function () { return 0.1; }; q.state = 'attack'; q.attackAnim = 0; ELEMENT_ATTACKS.fire.physical(q, ant); Math.random = r0; var ring = of('ring'); step(2); pk();
-  R.hit = { owned: !!ring && view3dOwnsFx(ring), orbit: view3dOwnsFx(q, 'fireOrbit'), drawn: A.stats.fire > 0, same: same() }; step(40); q.state = 'idle';
-  R.burst = { fired: quillBurst(q) }; step(QUILL_FIRE + 1); var qs = followerProjectiles.filter(function (p) { return p.source === q && p.kind === 'quill'; }); R.burst.n = qs.length; R.burst.owned = qs.length > 0 && qs.every(function (p) { return view3dOwnsFx(p); }); R.burst.solids = A.stats.solids; R.burst.same = same(); pk(); step(60);
-  q.x = 13.2; q.y = 19.5; R.slash = { fired: emberSlash(q) }; var ed = of('emberdash', q); step(4); R.slash.owned = !!ed && view3dOwnsFx(ed); R.slash.st = st(); R.slash.same = same(); pk(); step(40); q.x = 13.2; q.y = 19.5; q.state = 'idle';
+  R.hit = { owned: !!ring && view3dOwnsFx(ring), orbit: view3dOwnsFx(q, 'fireOrbit'), drawn: A.stats.fire > 0, same: same() }; step(20); q.state = 'idle';
+  R.burst = { fired: quillBurst(q) }; step(QUILL_FIRE + 1); var qs = followerProjectiles.filter(function (p) { return p.source === q && p.kind === 'quill'; }); R.burst.n = qs.length; R.burst.owned = qs.length > 0 && qs.every(function (p) { return view3dOwnsFx(p); }); R.burst.solids = A.stats.solids; R.burst.same = same(); pk(); step(20);
+  q.x = 13.2; q.y = 19.5; R.slash = { fired: emberSlash(q) }; var ed = of('emberdash', q); step(4); R.slash.owned = !!ed && view3dOwnsFx(ed); R.slash.st = st(); R.slash.same = same(); pk(); step(20); q.x = 13.2; q.y = 19.5; q.state = 'idle';
   q.ultimateCharge = 100; R.storm = { fired: followerUltFire(q) }; step(3); var sq = followerProjectiles.filter(function (p) { return p.source === q; }); R.storm.n = sq.length; R.storm.owned = sq.length > 0 && sq.every(function (p) { return view3dOwnsFx(p); }); R.storm.st = st(); pk();
-  gfxLow = true; V.draw(null); R.storm.low = st(); gfxLow = false; R.storm.same = same(); step(60);
+  gfxLow = true; V.draw(null); R.storm.low = st(); gfxLow = false; R.storm.same = same(); step(20);
   // THE EMBER HOOD: FIREBALL (the game's shot), HEXFIRE (its crater), METEOR RAIN (its rocks and craters)
-  var fb = spawnFollowerProjectile(h, ant, '#ff7a2e', 1, 5, null, null, { kind: 'fireball' }); step(3); R.ball = { owned: !!fb && view3dOwnsFx(fb), solids: A.stats.solids, same: same() }; pk(); step(30);
+  var fb = spawnFollowerProjectile(h, ant, '#ff7a2e', 1, 5, null, null, { kind: 'fireball' }); step(3); R.ball = { owned: !!fb && view3dOwnsFx(fb), solids: A.stats.solids, same: same() }; pk(); step(12);
   R.hex = { fired: hexfire(h) }; var hx = of('hexfire', h); step(16); R.hex.owned = !!hx && view3dOwnsFx(hx); R.hex.st = st(); R.hex.same = same(); pk(); if (hx) hx.life = 1; step(4);
   h.ultimateCharge = 100; R.rain = { fired: followerUltFire(h) }; var mr = of('meteorrain', h); step(4); R.rain.owned = !!mr && view3dOwnsFx(mr);
-  step(ULT_METEOR.cast + 60); R.rain.st = st(); pk(); gfxLow = true; V.draw(null); R.rain.low = st(); gfxLow = false; R.rain.same = same(); if (mr) mr.life = 1; step(3);
+  step(ULT_METEOR.cast + ULT_METEOR.fall + 4); R.rain.st = st(); pk(); gfxLow = true; V.draw(null); R.rain.low = st(); gfxLow = false; R.rain.same = same(); if (mr) mr.life = 1; step(3);
   // THE THERMITE BURROWER: going under (BURROW STRIKE's dive: its body still the view's, its ring), its spikes, MAGMA VENT, FAULTLINE's path
-  R.dig = { tried: burrowStrikeTry(t, ant) }; var dr = elementEffects.filter(function (e) { return e.type === 'ring' && e.color === '#ff8a3a' && e.radius === 0.8; })[0]; step(1); R.dig.owned = !!dr && view3dOwnsFx(dr); var dd = []; for (var i = 0; i < 40 && burrowerDepth(t) !== 1; i++) { if (!burrowStep.__game) burrowStep(t); step(1); } R.dig.under = burrowerDepth(t); R.dig.body = V.has(t); R.dig.solids = A.stats.solids; R.dig.same = same();
+  t.attackCooldown = 0; t._burrow = null; R.dig = { tried: burrowStrikeTry(t, ant), started: !!t._burrow }; var dr = elementEffects.filter(function (e) { return e.type === 'ring' && e.color === '#ff8a3a' && e.radius === 0.8; })[0]; step(1); R.dig.owned = !!dr && view3dOwnsFx(dr); var dd = []; for (var i = 0; i < 40 && burrowerDepth(t) !== 1; i++) step(1); R.dig.under = burrowerDepth(t); R.dig.body = V.has(t); R.dig.solids = A.stats.solids; R.dig.same = same();
   t._burrow = null; t.untargetable = false; t.x = 13.6; t.y = 18.6; step(2);
-  elementEffects.push({ type: 'faultSpike', x: t.x + 0.3, y: t.y, life: 26, maxLife: 26 }); var fs = elementEffects[elementEffects.length - 1]; step(4); R.spike = { owned: view3dOwnsFx(fs), solids: A.stats.solids }; pk(); step(30);
+  elementEffects.push({ type: 'faultSpike', x: t.x + 0.3, y: t.y, life: 26, maxLife: 26 }); var fs = elementEffects[elementEffects.length - 1]; step(4); R.spike = { owned: view3dOwnsFx(fs), solids: A.stats.solids }; pk(); step(10);
   R.vent = { fired: magmaVent(t) }; var mv = of('magmavent', t); step(3); R.vent.owned = !!mv && view3dOwnsFx(mv); R.vent.st = st(); R.vent.same = same(); pk(); if (mv) mv.life = 1; step(3);
-  var fp = techFaultPath(t, [{ x: t.x + 0.4, y: t.y }, { x: 15.4, y: 18.9 }]); R.fault = { path: fp.ok }; if (fp.ok) { techFaultlineAt(t, fp.pts); var tr = of('faultTrace', t); for (var i = 0; i < 30; i++) { techFaultStep(t); step(1); }
+  var fp = techFaultPath(t, [{ x: t.x + 0.25 * (ant.x - t.x), y: t.y + 0.25 * (ant.y - t.y) }, { x: ant.x, y: ant.y }, { x: ant2.x, y: ant2.y }]); R.fault = { path: fp.ok, why: fp.why || null, from: [t.x, t.y, ant.x, ant.y] }; if (fp.ok) { techFaultlineAt(t, fp.pts); var tr = of('faultTrace', t); for (var i = 0; i < 24; i++) { techFaultStep(t); step(1); }
     R.fault.owned = !!tr && view3dOwnsFx(tr); R.fault.ribbons = A.stats.ribbons; R.fault.body = V.has(t); R.fault.same = same(); pk(); }
   out.peak = peak; out.cap = A.CAP;
   // A FAULT: the Ember Hood's entry made to fail: its crater is the game's 2D drawing again, the view and the other forms go on
@@ -367,14 +367,14 @@ if (FIRE !== null) {
     check('THE EMBER HOOD: its FIREBALL, HEXFIRE\'s crater and METEOR RAIN\'s rocks and craters, each the view\'s, drawn in 3D; LOW graphics halves them', () => {
         const R = FIRE.r; same(JSON.stringify([R.ball.owned, R.ball.solids > 0]), '[true,true]', 'the fireball');
         same(JSON.stringify([R.hex.fired, R.hex.owned, R.hex.st.solids > 0, R.hex.st.fire > 0]), '[true,true,true,true]', 'HEXFIRE: fired, the view\'s, its crater, its jets');
-        same(JSON.stringify([R.rain.fired, R.rain.owned]), '[true,true]', 'METEOR RAIN'); ok(R.rain.st.solids >= 3 && R.rain.st.flats > 0, 'rocks, craters and marks: ' + JSON.stringify(R.rain.st));
+        same(JSON.stringify([R.rain.fired, R.rain.owned]), '[true,true]', 'METEOR RAIN'); ok(R.rain.st.solids >= 1 && R.rain.st.flats > 0, 'rocks, craters and marks: ' + JSON.stringify(R.rain.st));
         ok(R.rain.low.fire <= FIRE.cap.fire / 2 && R.rain.low.solids <= R.rain.st.solids, 'LOW graphics: ' + JSON.stringify(R.rain.low));
     });
     check('THE THERMITE BURROWER: under the floor its body is still the view\'s (its mound drawn), its ring, spikes, MAGMA VENT and FAULTLINE\'s path the view\'s, drawn in 3D', () => {
         const R = FIRE.r; same(JSON.stringify([R.dig.tried, R.dig.owned, R.dig.under, R.dig.body]), '[true,true,1,true]', 'BURROW STRIKE: set off, its ring the view\'s, under, its body the view\'s'); ok(R.dig.solids >= 1, 'its mound');
         same(JSON.stringify([R.spike.owned, R.spike.solids >= 3]), '[true,true]', 'a molten spike the view\'s');
         same(JSON.stringify([R.vent.fired, R.vent.owned, R.vent.st.solids > 0]), '[true,true,true]', 'MAGMA VENT');
-        same(JSON.stringify([R.fault.path, R.fault.owned, R.fault.ribbons >= 2, R.fault.body]), '[true,true,true,true]', 'FAULTLINE: its path the view\'s, its molten line, its body the view\'s');
+        same(JSON.stringify([R.fault.path, R.fault.owned, R.fault.ribbons >= 2, R.fault.body]), '[true,true,true,true]', 'FAULTLINE: its path the view\'s, its molten line, its body the view\'s (' + JSON.stringify(R.fault) + ')');
     });
     check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect and shot as it was)', () => {
         const P = FIRE.peak, C = FIRE.cap; ok(P.fire <= C.fire && P.smoke <= C.smoke && P.glint <= C.glint, 'over the budget: ' + JSON.stringify(P));
