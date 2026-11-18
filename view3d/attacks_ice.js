@@ -123,7 +123,7 @@ function view3dIceForms(K) {
           { const c = (((age * 0.006) % 1.5) - 0.25) * 2 - 1, cc = c * r, hl = Math.sqrt(Math.max(0, r * r - cc * cc)) * 0.96, ux = 0.7071, uz = -0.7071;   // (the sweep of light: a chord across it, along a diagonal)
             if (hl > 0.1) ribbon(2, (i, P) => { const q = i ? 1 : -1; P.x = X + ux * cc - uz * q * hl; P.z = Z + uz * cc + ux * q * hl; P.y = Y + 0.007; P.w = 0.16; P.r = 1; P.g = 1; P.b = 1; P.a = 0.42 * k * (1 - Math.abs(c)); }); }
           const nc = low() ? 7 : 14; for (let i = 0; i < nc; i++) { const an = (i + 0.4 * H(i, s, 1)) / nc * TAU, rr = r * (0.96 + 0.06 * H(i, s, 2)), gr = outC(clamp((age - 10 - 4 * H(i, s, 3)) / 8, 0, 1)) * k, ca = Math.cos(an), sa = Math.sin(an);
-            shard(X + ca * rr, Y - 0.03, Z + sa * rr, ca * 0.45, 1, sa * 0.45, (0.2 + 0.16 * H(i, s, 4)) * gr, 0.11 * gr); }
+            shard(X + ca * rr, Y - 0.05, Z + sa * rr, ca * 0.4, 1, sa * 0.4, (0.42 + 0.3 * H(i, s, 4)) * gr, 0.17 * gr); }
           if (age < 26) { const u = age / 26; for (let i = 0; i < (low() ? 12 : 24); i++) { const an = (i + H(i, s, 5)) / 24 * TAU; snow(X + Math.cos(an) * r, Y + 0.06 + 0.25 * Math.sin(Math.PI * u) * H(i, s, 6), Z + Math.sin(an) * r, 0.16 + 0.1 * H(i, s, 7), Math.min(0.95, 2.4 * (1 - u))); } }
           if (age < 8) { flat(DISCF, X, Y + 0.008, Z, 0.5 + age * 0.12, 1, 1, 1, 0.7 * (1 - age / 8)); glint(X, Y + 0.3, Z, 1.1 * (1 - age / 8), 1 - age / 8); }
           for (let i = 0; i < (low() ? 5 : 10); i++) { const an = H(i, s, 8) * TAU, rr = Math.sqrt(H(i, s, 9)) * r * 0.9, tw = Math.pow(Math.max(0, Math.sin(age * 0.09 + i * 2.1)), 6); if (tw > 0.02) glint(X + Math.cos(an) * rr, Y + 0.05, Z + Math.sin(an) * rr, 0.3, tw * k); }

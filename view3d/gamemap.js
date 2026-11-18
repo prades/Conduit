@@ -38,7 +38,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get shots() { return typeof followerProjectiles !== "undefined" ? followerProjectiles : null; },
   get fireMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { emberDash: v("EMBER_DASH", 10), emberBand: v("EMBER_BAND", 0.8), quillAnim: v("QUILL_ANIM_FRAMES", 95), quillFire: v("QUILL_FIRE", 12), quillArc: v("QUILL_ARC", 16), meteor: v("ULT_METEOR", null), meteorCool: v("METEOR_COOL", 156),
-      haloR: v("HALO_RADIUS", 1.2), magmaR: v("MAGMA_RADIUS", 1.5), faultTrace: v("TECH_AB", null) ? TECH_AB.fault.trace : 90 }; }
+      haloR: v("HALO_RADIUS", 1.2), magmaR: v("MAGMA_RADIUS", 1.5), faultTrace: v("TECH_AB", null) ? TECH_AB.fault.trace : 90 }; },
   // the ice line's (view3d/attacks_ice.js): the measures its looks follow (read once: the game's own constants)
   get iceMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { skateBand: v("SKATE_BAND", 0.8), icicleFreeze: v("ICICLE_FREEZE", 90), quillArc: v("QUILL_ARC", 16), rink: v("ULT_RINK", null), whiteout: v("ULT_WHITEOUT", null) }; }

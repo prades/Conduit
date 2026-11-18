@@ -16,7 +16,9 @@
 //   THE ATTACKS   stage 5 (view3d/attacks.js): the Frost Maw's bite, CHOMP and ABSOLUTE ZERO drawn in 3D by the view's registry; the game leaves out its 2D drawing of exactly those effects; drawing
 //                 writes nothing of the game's; LOW graphics halves them; a fault in one sends its effects back to 2D and the view goes on. The fire line's ten (the owner, 2026-11-18: "Through the fire line."):
 //                 the Quillstone's, the Ember Hood's and the Thermite Burrower's attacks made by the game's own functions, each drawn and claimed (effects, shots, the orbiting fireballs), the Burrower's
-//                 body the view's under the floor, the budget held and halved on LOW, nothing written, a fault sending one form's back to 2D
+//                 body the view's under the floor, the budget held and halved on LOW, nothing written, a fault sending one form's back to 2D. The ice line's six (the Igloo Skater's and the Rimestar's):
+//                 each made by the game's own functions, drawn and claimed (the hit and its icicles, SKATE CHARGE's line, ICE RINK, the iceball, the three icicles, WHITEOUT), within the budget and halved
+//                 on LOW, nothing written, a fault sending one form's back to 2D
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -385,6 +387,66 @@ if (FIRE !== null) {
     });
     check('the game\'s side: the shots and the orbiting fireballs ask the view first (js/game.js, js/draw.js)', () => {
         ok(/if \(!\(typeof view3dOwnsFx === "function" && view3dOwnsFx\(p\)\)\) _drawFollowerProjectile/.test(rd('js/game.js')), 'js/game.js'); ok(/view3dOwnsFx\(actor, "fireOrbit"\)/.test(rd('js/draw.js')), 'js/draw.js');
+    });
+}
+
+group('STAGE 5, THE ICE LINE IN 3D (the fire line approved, the owner, 2026-11-18: "They\'re good enough"; the ice line next): the Igloo Skater and the Rimestar');
+// The two ice forms beside two ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const ICE = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x) { spawnFollowerAtCrystal('ice'); var f = followers[followers.length - 1]; f.element = 'ice'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = 19.5; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; return f; };
+  var g = mk('igloo', 'camper', 13.4), r = mk('rimestar', 'sniper', 12.4); r.y = 18.6;
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 14.5; ant.y = 19.5; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.x = 15.6; ant2.y = 19.0; ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; }); step(3);
+  out.types = A.types(); out.bodies = [V.has(g), V.has(r)];
+  var snap = function () { var keep = function (o) { var q = {}; Object.keys(o).forEach(function (k) { var v = o[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') q[k] = v; }); return q; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { puff: 0, glint: 0, ice: 0, solids: 0, flats: 0, ribbons: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, k, v) { return elementEffects.filter(function (e) { return e.type === type && (!k || e[k] === v); })[0]; }, R = out.r = {};
+  // THE IGLOO SKATER: its everyday hit (the game's ice hit and its icicles), SKATE CHARGE (its line of small hits; it is at the end at once), ICE RINK
+  var r0 = Math.random; Math.random = function () { return 0.5; }; g.state = 'attack'; g.attackAnim = 0; ELEMENT_ATTACKS.ice.physical(g, ant); Math.random = r0;
+  var hit = elementEffects.filter(function (e) { return e.type === 'impact' && e.element === 'ice'; })[0]; step(4); pk();
+  R.hit = { made: !!hit, owned: !!hit && view3dOwnsFx(hit), icicle: !!g.icicleAttack && view3dOwnsFx(g.icicleAttack), ice: A.stats.ice, same: same() }; step(30); g.state = 'idle'; g.icicleAttack = null; elementEffects.length = 0; step(2);
+  var x0 = g.x, y0 = g.y; R.skate = { fired: skateCharge(g) }; var sk = elementEffects.filter(function (e) { return e.type === 'impact' && e.color === '#cff4ff'; }); step(1);
+  R.skate.n = sk.length; R.skate.moved = +Math.hypot(g.x - x0, g.y - y0).toFixed(2); R.skate.owned = sk.length > 0 && sk.every(function (e) { return view3dOwnsFx(e); }); R.skate.body = V.has(g);
+  step(6); R.skate.st = st(); R.skate.same = same(); pk(); step(40); g.x = 13.4; g.y = 19.5; g.state = 'idle'; elementEffects.length = 0; step(2);
+  g.ultimateCharge = 100; R.rink = { fired: followerUltFire(g) }; var rk = of('icerink', 'by', g); step(22); R.rink.owned = !!rk && view3dOwnsFx(rk); R.rink.st = st(); pk();
+  gfxLow = true; V.draw(null); R.rink.low = st(); gfxLow = false; R.rink.same = same(); if (rk) rk.life = 1; step(3);
+  // THE RIMESTAR: its everyday shot (the game's iceball), ICICLE VOLLEY (its three icicles), WHITEOUT
+  var ib = spawnFollowerProjectile(r, ant, '#99ddff', 1, 5, null, null, { kind: 'iceball' }); step(3); R.ball = { owned: !!ib && view3dOwnsFx(ib), solids: A.stats.solids, same: same() }; pk(); step(14);
+  R.volley = { fired: icicleVolley(r) }; step(3); var ic = followerProjectiles.filter(function (p) { return p.source === r && p.kind === 'icicle'; }); R.volley.n = ic.length; R.volley.owned = ic.length > 0 && ic.every(function (p) { return view3dOwnsFx(p); }); R.volley.st = st(); R.volley.same = same(); pk(); step(30);
+  r.ultimateCharge = 100; R.white = { fired: followerUltFire(r) }; var wo = of('whiteout', 'on', r); step(30); R.white.owned = !!wo && view3dOwnsFx(wo); R.white.st = st(); pk();
+  gfxLow = true; V.draw(null); R.white.low = st(); gfxLow = false; R.white.same = same();
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Rimestar's entry made to fail: its storm is the game's 2D drawing again, the view and the other forms go on
+  A.breakFor('rimestar'); step(2); out.fault = { bad: A.bad(), owned: !!wo && view3dOwnsFx(wo), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(r), others: V.has(g) }; A.mend('rimestar'); if (wo) wo.life = 1; step(2);`));
+if (ICE !== null) {
+    check('the registry: the ice line\'s entries (the Igloo Skater, the Rimestar), their effects and shots; their bodies the view\'s', () => {
+        ok(!ICE.none, 'the page left no result'); ok(!ICE.threw, ICE.threw); same(ICE.errs.join(' | '), '', 'errors'); same(ICE.state, 'ready', 'the view');
+        same(JSON.stringify([ICE.types.igloo, ICE.types.rimestar]), JSON.stringify([['icicle', 'impact', 'icerink'], ['whiteout', 'shot:iceball', 'shot:icicle']]), 'what each draws');
+        same(JSON.stringify(ICE.bodies), '[true,true]', 'their bodies the view\'s');
+    });
+    check('THE IGLOO SKATER: its hit and its icicles, SKATE CHARGE\'s line (every one of its small hits), ICE RINK: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = ICE.r; same(JSON.stringify([R.hit.made, R.hit.owned, R.hit.icicle]), '[true,true,true]', 'the hit: made, the view\'s, its icicles the view\'s'); ok(R.hit.ice >= 3, 'its icicles and shards: ' + R.hit.ice);
+        same(JSON.stringify([R.skate.fired, R.skate.owned, R.skate.body]), '[true,true,true]', 'SKATE CHARGE: fired, its hits the view\'s, its body'); ok(R.skate.n >= 2 && R.skate.moved >= 1, 'its line: ' + JSON.stringify(R.skate));
+        ok(R.skate.st.ribbons >= 2 && R.skate.st.puff > 0, 'its grooves and snow: ' + JSON.stringify(R.skate.st));
+        same(JSON.stringify([R.rink.fired, R.rink.owned]), '[true,true]', 'ICE RINK: fired, the view\'s'); ok(R.rink.st.flats >= 2 && R.rink.st.ribbons >= 2 && R.rink.st.ice >= 6, 'its sheet, rim and crystals: ' + JSON.stringify(R.rink.st));
+        ok(R.rink.low.ice <= ICE.cap.ice / 2 && R.rink.low.ice < R.rink.st.ice && R.rink.low.puff <= ICE.cap.puff / 2, 'LOW graphics: ' + JSON.stringify(R.rink.low) + ' of ' + JSON.stringify(R.rink.st));
+    });
+    check('THE RIMESTAR: its iceball, ICICLE VOLLEY\'s three icicles and WHITEOUT\'s storm, each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = ICE.r; same(JSON.stringify([R.ball.owned, R.ball.solids > 0]), '[true,true]', 'the iceball');
+        same(JSON.stringify([R.volley.fired, R.volley.n, R.volley.owned]), '[true,3,true]', 'ICICLE VOLLEY: fired, three icicles, the view\'s'); ok(R.volley.st.ice >= 3, 'its icicles: ' + JSON.stringify(R.volley.st));
+        same(JSON.stringify([R.white.fired, R.white.owned]), '[true,true]', 'WHITEOUT: fired, the view\'s'); ok(R.white.st.puff >= 30 && R.white.st.flats >= 1, 'its storm: ' + JSON.stringify(R.white.st));
+        ok(R.white.low.puff <= ICE.cap.puff / 2 && R.white.low.puff < R.white.st.puff, 'LOW graphics: ' + JSON.stringify(R.white.low) + ' of ' + JSON.stringify(R.white.st));
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect and shot as it was)', () => {
+        const P = ICE.peak, C = ICE.cap; ok(P.puff <= C.puff && P.glint <= C.glint && P.ice <= C.ice, 'over the budget: ' + JSON.stringify(P));
+        const R = ICE.r; same(JSON.stringify([R.hit.same, R.skate.same, R.rink.same, R.ball.same, R.volley.same, R.white.same]), JSON.stringify(new Array(6).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one ice form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = ICE.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['rimestar'], false, 'ready', true, true, true]), 'after the fault');
     });
 }
 
