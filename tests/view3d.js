@@ -409,7 +409,7 @@ const ICE = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.at
   var r0 = Math.random; Math.random = function () { return 0.5; }; g.state = 'attack'; g.attackAnim = 0; ELEMENT_ATTACKS.ice.physical(g, ant); Math.random = r0;
   var hit = elementEffects.filter(function (e) { return e.type === 'impact' && e.element === 'ice'; })[0]; step(4); pk();
   R.hit = { made: !!hit, owned: !!hit && view3dOwnsFx(hit), icicle: !!g.icicleAttack && view3dOwnsFx(g.icicleAttack), ice: A.stats.ice, same: same() }; step(30); g.state = 'idle'; g.icicleAttack = null; elementEffects.length = 0; step(2);
-  var x0 = g.x, y0 = g.y; R.skate = { fired: skateCharge(g) }; var sk = elementEffects.filter(function (e) { return e.type === 'impact' && e.color === '#cff4ff'; }); step(1);
+  g.x = 11.8; g.y = 19.5; step(2); var x0 = g.x, y0 = g.y; R.skate = { fired: skateCharge(g) }; var sk = elementEffects.filter(function (e) { return e.type === 'impact' && e.color === '#cff4ff'; }); step(1);
   R.skate.n = sk.length; R.skate.moved = +Math.hypot(g.x - x0, g.y - y0).toFixed(2); R.skate.owned = sk.length > 0 && sk.every(function (e) { return view3dOwnsFx(e); }); R.skate.body = V.has(g);
   step(6); R.skate.st = st(); R.skate.same = same(); pk(); step(40); g.x = 13.4; g.y = 19.5; g.state = 'idle'; elementEffects.length = 0; step(2);
   g.ultimateCharge = 100; R.rink = { fired: followerUltFire(g) }; var rk = of('icerink', 'by', g); step(22); R.rink.owned = !!rk && view3dOwnsFx(rk); R.rink.st = st(); pk();
