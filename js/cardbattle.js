@@ -41,6 +41,7 @@ const CARD_BATTLE = {
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
     num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
+    byClass: true,              // the charge and the cooldown by class (the owner, 2026-11-18); off, every attack at once and every second attack cooling (the tests of other things turn it off)
     tileCard: 56,
     dragUp: 14,                 // screen points between a dragged card's foot and the finger               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
@@ -236,7 +237,7 @@ function _cbKeepAtIt() {
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
-    _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); _cb.slots = new Map(); _cb.lay = null;
+    _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null;
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12, §2.16): on your turn it uses the turn: each enemy gets its last hit (fastest first), then you are out. Before the turns begin (the walk, the black), it ends the battle as it is.
@@ -712,6 +713,7 @@ function _cbAfterAct(f0) {
 }
 function _cbYourTurn() {
     _cb.acted.clear();
+    for (const [f, c] of _cb.charge) { if (!_cbAlive(f)) { _cb.charge.delete(f); continue; } c.left--; if (c.left > 0) _cb.acted.add(f); }   // (still charging: its turn passes; charged: it fires at its turn)
     _cb.round++;
     if (_cb.round > 1) for (const m of _cb.cd.values()) for (const id in m) if (m[id] > 0) m[id]--;
     if (_cb.round > 1) _cbStatusTurn("foes");   // (the enemies' turn over: a turn on the statuses, §2.52)
@@ -720,7 +722,23 @@ function _cbYourTurn() {
 }
 // PLAY A CARD (the drag, §2.17; the tests call it too): `f` a member of the squad still up, `kind` "basic", "move" (with its `id`) or "ult", `target` the enemy it was dropped on (another
 // place: the nearest enemy to it; the agent's, for a move with no single target, §11.4). False when it cannot be played now.
-function cardBattlePlay(f, kind, id, target) {
+// CHARGE AND COOL DOWN, BY CLASS (the owner, 2026-11-18: "you can't use some attacks until you wait a turn charge up [...] the [Mage's] normal [attack] and the secondary [attack]. The ultimate don't
+// have a cast; the brawler they can attack immediately but they have a cool down, and a technician, they have a wind up and a cool down"; asked: "Charges now, fires next turn", "Both charge up", "From
+// each move's wait time"): a MAGE's basic attack and second attack CHARGE: played on an enemy, it charges (its turn is over) and the attack fires on its own at its turn when the charge is done (using that
+// turn); no cooldown. A BRAWLER's attacks fire at once; its second attack then COOLS DOWN (its RECHARGE). A TECHNICIAN's second attack charges, fires, then cools down; its basic fires at once. An
+// ULTIMATE fires at once. The lengths: a move's wait time at 2 s a turn (a part counts whole, at least 1); a Mage's basic, 1 turn.
+_cb.charge = new Map();   // follower → { kind, id, target, aim, left: turns still to charge }
+function _cbChargeTurns(f, kind, id) {
+    if (!f || kind === "ult" || !CARD_BATTLE.byClass) return 0;
+    const m = kind === "move" && typeof MOVES !== "undefined" ? MOVES[id] : null, t = m ? _cbTurns(m.windup) : 1;
+    const role = _cbRole(f);
+    if (role === "sniper") return t;               // (a Mage: both its cards)
+    if (role === "camper") return kind === "move" ? t : 0;   // (a Technician: its second attack)
+    return 0;                                         // (a Brawler: at once)
+}
+function _cbCools(f, kind) { return kind === "move" && !!f && (!CARD_BATTLE.byClass || _cbRole(f) !== "sniper"); }
+function _cbRole(f) { const d = f && f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null; return (d && d.role) || (f && f.role); }   // (its form's class: an evolved one's is fixed by its form)   // (a Brawler's and a Technician's second attack cool down; a Mage's does not)
+function cardBattlePlay(f, kind, id, target, fire) {
     const T0 = _cb.turn; if (!cardBattleActive() || !T0 || T0.who !== "you") return false;
     if (!f || f.dead || !(f.health > 0) || _cbSquad().indexOf(f) < 0 || _cb.acted.has(f) || f !== _cbCurrent()) return false;   // (one card each a round, each in its turn: the squad's order)
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
@@ -733,7 +751,7 @@ function cardBattlePlay(f, kind, id, target) {
     if (aimK === "tile" && !aim) { const q = _cbSq(target); aim = { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
     if (aimK === "foe") aim = target;
     const card = cardBattleCards(f).find(c => c.kind === kind && (kind !== "move" || c.id === id));
-    if (!card || !card.ready) return false;
+    if (!card || (!card.ready && !fire)) return false;
     const say = w => { _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };   // (said in the banner for 2 s: words over the world wait while the battle's camera is up, js/drops.js)
     // MOVE NOW, ATTACK LATER (§2.39): it cannot hit that enemy (or reach and see that square) from its square: its turn is a walk towards one it can (the card stays ready); no way nearer, nothing is
     // played. A card played anywhere needs no walk.
@@ -746,10 +764,16 @@ function cardBattlePlay(f, kind, id, target) {
     }
     const S = def && _cb.lay && typeof cardShapeFor === "function" ? cardShapeFor(f, kind, id, aimK === "any" ? null : aim) : null;
     if (S && !S.ok) return say(S.why);   // (nothing in its shape to strike: not played, its card still ready)
+    const ct = fire ? 0 : _cbChargeTurns(f, kind, id);
+    if (ct > 0) {   // (it charges: its turn is over; the attack fires on its own when the charge is done)
+        _cb.charge.set(f, { kind, id: kind === "move" ? id : null, target, aim: aimK === "tile" ? aim : aimK === "any" ? null : target, left: ct });
+        _cb.acted.add(f); if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHARGING", color: "#ffe733", size: 12, life: 50, vy: -0.03 });
+        _cbAfterAct(_cbF()); _cbRefresh(); return true;
+    }
     const T = { who: "act", f, kind, id: kind === "move" ? id : null, target, t0: _cbF(), hit: 0, fired: false, saved: { alt: f.alt || null, both: !!f.altBoth }, shape: S };
     if (kind === "move") {
         f.alt = id; f.altBoth = false; f._altWind = 0; f._altLive = null; f._altReadyAt = 0; f._altRest = false; f._altTurn = false;
-        let m = _cb.cd.get(f); if (!m) { m = {}; _cb.cd.set(f, m); } m[id] = (card.recharge || 1) + 1;   // (RECHARGE n TURNS: it sits out your next n turns; the count drops at the start of each of yours, so it shows n on the next)
+        if (_cbCools(f, kind)) { let m = _cb.cd.get(f); if (!m) { m = {}; _cb.cd.set(f, m); } m[id] = (card.recharge || 1) + 1; }   // (RECHARGE n TURNS: it sits out your next n turns; the count drops at the start of each of yours, so it shows n on the next)
     } else { f.alt = null; f.altBoth = false; f._altWind = 0; }
     f._nearestEnemy = S && S.main ? S.main : target; f._enemyCacheFrame = 0;
     _cb.turn = T; _cb.acted.add(f);
@@ -793,6 +817,12 @@ function _cbNextFoe() {
     if (T.run) { cardBattleEnd(); return; }
     _cbYourTurn(); _cbRefresh();
 }
+function _cbChargeFire() {   // the follower whose turn it is has its charge done: its attack fires on its own
+    const T = _cb.turn; if (!T || T.who !== "you") return false; const f = _cbCurrent(), c = f && _cb.charge.get(f); if (!c || c.left > 0) return false;
+    _cb.charge.delete(f); const live = _cb.foes.filter(_cbFoeOk), aim = c.aim && c.aim.tile ? c.aim : (live.indexOf(c.target) >= 0 ? c.target : null);
+    if (cardBattlePlay(f, c.kind, c.id, aim, true)) return true;
+    _cb.acted.add(f); _cbAfterAct(_cbF()); return true;   // (it could not fire after all: its turn passes)
+}
 function _cbTurnTick() {
     if (_cb.phase !== "on") return;
     const T = _cb.turn, f0 = _cbF(), C = CARD_BATTLE;
@@ -803,6 +833,7 @@ function _cbTurnTick() {
     }
     _cbSlide();
     _cbHoldUntil();   // (the statuses kept as an end time do not run out in real time: §2.52)
+    if (T.who === "you" && _cbChargeFire()) return;   // (a charged attack fires at its follower's turn)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
@@ -918,6 +949,7 @@ function cardBattleCards(f) {
         let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
         out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
     for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; }
+    for (const c of out) { c.chargeT = _cbChargeTurns(f, c.kind, c.id); if (c.kind === "move" && !_cbCools(f, "move")) c.recharge = 0; }   // (by class: a Mage's charge, a Brawler's cooldown, a Technician's both)
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.acted && _cb.acted.has(f)) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its card this round)
     return out;
 }
@@ -925,7 +957,8 @@ function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function _cbCardHTML(c) {
     const st = c.done ? "DONE" : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
-    const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : "";
+    const tn = n => n + (n === 1 ? " TURN" : " TURNS"), rc = [c.chargeT > 0 ? "CHARGE " + tn(c.chargeT) : "", c.kind === "move" && c.recharge > 0 ? "RECHARGE " + tn(c.recharge) : ""].filter(Boolean).join(" · ");
+    const meta = c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : rc ? '<i class="cb-rc">' + rc + '</i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + (c.done ? " done" : "") + (c.art ? " art" : "") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '">' + (c.art ? '<i class="cb-art" style="background-image:url(\'' + _cbEsc(c.art) + '\')"></i>' : "") + '<i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
 }
 // fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
@@ -934,7 +967,7 @@ function cardBattleScreen() {
     const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), all = _cb.squad ? _cb.squad.slice() : _cbSquadNow(), cur = _cbCurrent(), T0 = _cb.turn;
     // (one at a time: the pop-up holds the follower whose turn it is; out of your turn it is away, still holding the last one, so it does not flicker)
     if (cur) E.popF = cur; const shown = E.popF && all.indexOf(E.popF) >= 0 ? E.popF : (all.find(_cbAlive) || null), squad = shown ? [shown] : [];
-    const chips = '<div class="cb-chips">' + all.map(f => '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
+    const chips = '<div class="cb-chips">' + all.map(f => '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
     const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
     const cols = squad.map(f => { const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
@@ -1042,4 +1075,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

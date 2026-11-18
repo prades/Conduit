@@ -22,7 +22,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
-        globalThis.__fresh = (n) => { cardBattleReset(); actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); frame = 1000;
+        globalThis.__fresh = (n) => { CARD_BATTLE.byClass = false; cardBattleReset();   /* (each check of something else, at once; the charge and the cooldown by class have checks of their own) */ actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); frame = 1000;
             const c = __cell('crystal_chamber'); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null;
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire'][i % 3]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; } partyTick(); return followers.slice(); };
         globalThis.__ant = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'scout' }); const c = _fpNearestCellOpen(x, y); e.x = c[0]; e.y = c[1]; e.moveSpeed = 0; e.baseMoveSpeed = 0; e.provoked = false; e.state = 'wander'; return e; };
@@ -777,6 +777,33 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const c = rd('js/cardbattle.js');
         same(/const foe = _cbDragFoe\(ev\) \|\| _cbFoeOnTileAt\(ev\),/.test(c) && /if \(_cbOverBand\(ev\)\) \{ D\.foe = null; return null; \}/.test(c) && /if \(V\) _cbFoeTileDraw\(V\);/.test(c), true, 'wired: over its square counts; back over the cards nothing; drawn with the battle\'s marks');
         same(/up: h \/ 2 \+ CARD_BATTLE\.dragUp/.test(c), true, 'the dragged card rides above the finger');
+    });
+
+    group('CHARGE AND COOL DOWN, BY CLASS (the owner, 2026-11-18): a Mage charges both its cards, a Brawler acts at once and cools down, a Technician charges its second attack and cools it down; an Ultimate at once');
+    run(`globalThis.__one = (role) => { __fresh(1); CARD_BATTLE.byClass = true; const f = followers[0]; f.role = role; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(f, a); return { f, a }; };
+        globalThis.__toYou = () => { for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); } };`);
+    check('a Mage: its basic card charges (its turn passes, CHARGING) and fires on its own at its next turn; its card reads CHARGE 1 TURN', () => {
+        const r = J(`(function(){ const { f, a } = __one('sniper'); const c0 = cardBattleCards(f).find(c => c.kind === 'basic'); const o = { label: c0.chargeT, played: cardBattlePlay(f, 'basic', null, a) };
+            o.charging = _cb.charge.has(f); o.left = _cb.charge.get(f) && _cb.charge.get(f).left; const T = cardBattleTurnInfo(); o.after = T && T.who; o.actedNow = !(T && T.who === 'act' && T.actor === f);
+            __toYou(); for (let i = 0; i < 5; i++) { frame++; cardBattleTick(); } const T2 = cardBattleTurnInfo(); o.fired = !!T2 && T2.who === 'act' && T2.actor === f && T2.kind === 'basic'; o.gone = !_cb.charge.has(f); return o; })()`);
+        same(r.label, 1, 'its card: CHARGE 1 TURN'); same(r.played, true, 'played'); same(r.charging, true, 'charging'); same(r.left, 1, 'one turn to charge'); same(r.actedNow, true, 'it struck at once');
+        same(r.fired, true, 'it fired on its own at its next turn'); same(r.gone, true, 'its charge spent');
+    });
+    check('a Mage\'s second attack charges by its wait time and does not cool down after', () => {
+        const r = J(`(function(){ const { f, a } = __one('sniper'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); if (!mv) return { none: true };
+            return { charge: mv.chargeT, want: _cbTurns(MOVES[mv.id].windup), recharge: mv.recharge, cools: _cbCools(f, 'move') }; })()`);
+        same(!!r.none, false, 'no second attack'); same(r.charge, r.want, 'its charge from its wait time'); same(r.recharge, 0, 'no recharge shown'); same(r.cools, false, 'it cools down');
+    });
+    check('a Brawler acts at once, its second attack then cools down; a Technician\'s basic at once, its second attack charges and cools down; an Ultimate charges for no one', () => {
+        const r = J(`(function(){ const o = {};
+            { const { f, a } = __one('brawler'); o.bBasic = _cbChargeTurns(f, 'basic'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); o.bMove = mv ? _cbChargeTurns(f, 'move', mv.id) : null; o.bCools = _cbCools(f, 'move'); o.bPlayed = cardBattlePlay(f, 'basic', null, a); o.bNow = cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; }
+            { const { f } = __one('camper'); o.tBasic = _cbChargeTurns(f, 'basic'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); o.tMove = mv ? _cbChargeTurns(f, 'move', mv.id) : null; o.tCools = _cbCools(f, 'move'); o.tLabel = mv ? _cbCardHTML(mv) : ''; }
+            { const { f } = __one('sniper'); o.ult = _cbChargeTurns(f, 'ult'); }
+            return o; })()`);
+        same(JSON.stringify([r.bBasic, r.bMove, r.bCools, r.bPlayed, r.bNow]), '[0,0,true,true,true]', 'the Brawler: at once, its second attack cooling, its basic played at once');
+        same(JSON.stringify([r.tBasic, r.tMove > 0, r.tCools]), '[0,true,true]', 'the Technician: its basic at once, its second attack charging and cooling');
+        ok(/CHARGE \d+ TURNS? · RECHARGE \d+ TURNS?/.test(r.tLabel), 'its card reads both: ' + (r.tLabel.match(/cb-rc">([^<]*)/) || [])[1]);
+        same(r.ult, 0, 'an Ultimate charges');
     });
 
     group('THE PIECES');

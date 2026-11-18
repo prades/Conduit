@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17al` · branch `claude/friendly-thompson-w581x0` · card battles: charge and cool down by class (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): Mages' attacks charge up before they fire, Brawlers attack at once with a cooldown, Technicians wind up and cool down, Ultimates have no cast time. Asked: charges now and fires next turn; both of a Mage's cards charge; the lengths from each move's wait time.
+- **What it does:** a Mage's basic and second attack charge: drag the card onto an enemy and the Mage starts charging (its turn passes, its name tag glows); at its turn once charged the attack fires on its own. A Brawler acts at once and its second attack cools down after. A Technician's second attack charges, fires, then cools down; its basic is at once. Ultimates fire at once. The cards read CHARGE n TURNS and/or RECHARGE n TURNS.
+- `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.55, §9, §10.
+- **Verified:** tests/cardbattle.js and the full suite. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ak` · branch `claude/friendly-thompson-w581x0` · card battles: the enemy's square lit as a card is dragged over it (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-18): "got to make sure that whenever you are dragging a tile or a card to an enemy, it lights up the tile that the enemy is on."
 - **What it does:** while you drag a card over an enemy (or over the square it stands on), its floor square glows yellow, pulsing, with a bright rim. The dragged card now rides just above your finger, so the enemy and its square are not hidden under it.
