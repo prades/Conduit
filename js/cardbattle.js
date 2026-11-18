@@ -39,7 +39,7 @@ const CARD_BATTLE = {
     skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
-    hpBar: { len: 0.9, wide: 0.16, ahead: 0.55 },   // tiles: an enemy's health bar on the floor (its length across the screen, its depth, how far in front of the creature)
+    hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
     tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
@@ -537,20 +537,33 @@ function cardBattleReticles() {
     }
     ctx.restore(); return true;
 }
-// ITS HEALTH ON THE GROUND (the owner, 2026-11-18: "the health bars are visible somehow on the ground near each enemy"): a bar laid flat on the floor in front of each enemy of the battle (on the
-// camera's side of it), level across the screen whatever the camera's turn, drawn where the 3D view puts the floor: red its health left, dark what it has lost, a pale rim. It goes where the creature goes. Sizes the agent's.
+// ITS HEALTH, A CALLOUT (the owner, 2026-11-18: first "the health bars are visible somehow on the ground near each enemy", then "a more 3D looking health bar that kind of like has a line drawn
+// from the creature into a 2D health bar that floats atop to the side"): over each enemy of the battle, up and to its side (the side away from the middle of the screen, so they spread out), a
+// raised bar (a slanted face with a darker underside and a light top edge: red its health left, from the left, dark what it has lost, its numbers over it); a line from a dot on the creature rises
+// to it and runs along under it. It goes where the creature goes. Sizes the agent's (CARD_BATTLE.hpBar, screen points).
 function _cbGroundBar(V, a) {
-    // the floor's two ways as the picture shows them here: which way on the floor is across the screen, which is down it (towards the camera), whatever the camera's turn
-    const o = V.screenNow(a.x, a.y, 0), X = V.screenNow(a.x + 1, a.y, 0), Y = V.screenNow(a.x, a.y + 1, 0), e0 = X[0] - o[0], e1 = X[1] - o[1], g0 = Y[0] - o[0], g1 = Y[1] - o[1], det = e0 * g1 - g0 * e1;
-    if (!(Math.abs(det) > 1e-6)) return;
-    let rx = g1 / det, ry = -e1 / det, dx = -g0 / det, dy = e0 / det; const rl = Math.hypot(rx, ry), dl = Math.hypot(dx, dy); rx /= rl; ry /= rl; dx /= dl; dy /= dl;
-    const B = CARD_BATTLE.hpBar, cx = a.x + dx * B.ahead, cy = a.y + dy * B.ahead, hl = B.len / 2, hw = B.wide / 2;
-    const P = (u, v) => V.screenNow(cx + rx * u + dx * v, cy + ry * u + dy * v, 0);
-    const quad = (u0, u1, fill) => { const p = [P(u0, -hw), P(u1, -hw), P(u1, hw), P(u0, hw)]; if (!p.every(q => Number.isFinite(q[0]) && Number.isFinite(q[1]))) return null; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0], p[i][1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); return p; };
-    const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1)));
-    ctx.save(); ctx.globalAlpha = 0.92;
-    const rim = quad(-hl, hl, "rgba(6,10,20,0.85)"); if (k > 0) quad(-hl, -hl + 2 * hl * k, "#ff4a1c");   // (full from the left of the screen)
-    if (rim) { ctx.beginPath(); ctx.moveTo(rim[0][0], rim[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(rim[i][0], rim[i][1]); ctx.closePath(); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,230,220,0.8)"; ctx.stroke(); }
+    const B = CARD_BATTLE.hpBar, r = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? canvas.width / r.width : 1;
+    const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, top * 0.55); if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return;
+    const side = p[0] < canvas.width / 2 ? -1 : 1, w = B.w * k, h = B.h * k, d = B.depth * k, sk = B.slant * k;
+    const ex = p[0] + side * B.out * k, ey = p[1] - B.up * k;   // (where the line meets the bar: the bar's near end)
+    const x0 = side > 0 ? ex : ex - w, y0 = ey - h;   // (the bar's top-left)
+    const k1 = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1)));
+    const face = (x, y, ww, hh) => { ctx.beginPath(); ctx.moveTo(x + sk, y); ctx.lineTo(x + ww + sk, y); ctx.lineTo(x + ww, y + hh); ctx.lineTo(x, y + hh); ctx.closePath(); };
+    ctx.save(); ctx.globalAlpha = 0.95;
+    // the line: a dot on the creature, up at a slant, then along under the bar
+    const line = () => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(ex - side * B.run * k, ey); ctx.lineTo(ex + side * w * 0.6, ey); ctx.stroke(); };
+    ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(5,8,16,0.85)"; ctx.lineWidth = 4 * k; line(); ctx.strokeStyle = "#ff8a6a"; ctx.lineWidth = 1.8 * k; line();   // (a dark edge under a bright core: seen on a light floor and a dark one)
+    ctx.beginPath(); ctx.arc(p[0], p[1], 3.5 * k, 0, Math.PI * 2); ctx.fillStyle = "rgba(5,8,16,0.85)"; ctx.fill(); ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * k, 0, Math.PI * 2); ctx.fillStyle = "#ffd2c8"; ctx.fill();
+    // the bar: its underside (depth), its face, its health, its top edge
+    face(x0, y0 + d, w, h); ctx.fillStyle = "#3a0d08"; ctx.fill();
+    face(x0, y0, w, h); ctx.fillStyle = "#0b1020"; ctx.fill();
+    if (k1 > 0) { face(x0, y0, w * k1, h); const g = ctx.createLinearGradient(0, y0, 0, y0 + h); g.addColorStop(0, "#ff8a5a"); g.addColorStop(0.45, "#ff4a1c"); g.addColorStop(1, "#b8260c"); ctx.fillStyle = g; ctx.fill(); }
+    face(x0, y0, w, h); ctx.strokeStyle = "rgba(255,235,228,0.9)"; ctx.lineWidth = 1.2 * k; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0 + sk + 1.5 * k, y0 + 1.5 * k); ctx.lineTo(x0 + sk + w * Math.max(k1, 0.02) - 1.5 * k, y0 + 1.5 * k); ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1 * k; ctx.stroke();
+    // its numbers, over the bar
+    ctx.font = "italic 900 " + Math.round(B.font * k) + "px system-ui, sans-serif"; ctx.textAlign = side > 0 ? "left" : "right"; ctx.textBaseline = "bottom";
+    const tx = side > 0 ? x0 + sk : x0 + w + sk, ty = y0 - 2 * k, txt = Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0);
+    ctx.lineWidth = 3 * k; ctx.strokeStyle = "rgba(5,8,16,0.9)"; ctx.strokeText(txt, tx, ty); ctx.fillStyle = "#fff"; ctx.fillText(txt, tx, ty);
     ctx.restore();
 }
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }

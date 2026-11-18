@@ -4,10 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17ag` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health bar on the ground (behind `?cards` with `?engine=3d`)
-- **The ask** (the owner, 2026-11-18): "Need to make it to where the health bars are visible somehow on the ground near each enemy."
-- **What it does:** in a battle, each enemy has a health bar lying on the floor just in front of it, level across the screen: red for its health left, dark for what it has lost. It follows the creature.
-- `js/cardbattle.js` (`_cbGroundBar`, `CARD_BATTLE.hpBar`), `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2, §9.
+### Build `2026-11-17ag` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health as a callout (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "Need to make it to where the health bars are visible somehow on the ground near each enemy"; then, of the bar laid on the floor: "a more 3D looking health bar that kind of like has a line drawn from the creature into a 2D health bar that floats atop to the side."
+- **What it does:** in a battle, over each enemy, up and to its side, a raised health bar (a slanted face with a darker underside: red its health left, dark what it has lost, its numbers over it), joined to the creature by a line from a dot on it. It follows the creature; the callouts lean outwards, away from the middle of the screen.
+- `js/cardbattle.js` (`_cbGroundBar`, `CARD_BATTLE.hpBar`), `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.48, §9.
 - **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.** Sizes the agent's.
 
 ### Build `2026-11-17af` · branch `claude/friendly-thompson-w581x0` · card battles: the Frost Maw's CHOMP card has its picture

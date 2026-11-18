@@ -545,14 +545,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.n > 0, 'no start square to try'); same(r.never, true, 'RECKLESS stood next to fewer enemies than BALANCED'); ok(r.better > 0, 'RECKLESS never went into a bigger crowd (' + r.n + ' starts)');
     });
 
-    check('each enemy\'s health on the ground (the owner, 2026-11-18): a bar on the floor in front of it, level across the screen, its health from the left', () => {
-        const r = J(`(function(){ const calls = []; const saved = ctx; const fake = { save(){}, restore(){}, beginPath(){}, closePath(){}, fill(){ calls.push(['fill', this.fillStyle, this._pts.slice()]); this._pts = []; }, stroke(){ this._pts = []; },
-                moveTo(x, y){ this._pts = [[x, y]]; }, lineTo(x, y){ this._pts.push([x, y]); }, _pts: [] };
-            ctx = fake; const V = { screenNow: (x, y, h) => [600 + (x - y) * 40, 300 + (x + y) * 20 - h] };   /* (a camera turned 45°: the floor's ways are diagonal on the screen) */
-            _cbGroundBar(V, { x: 10, y: 10, health: 30, maxHealth: 60 }); ctx = saved;
-            const fills = calls.filter(c => c[0] === 'fill'), base = fills[0], red = fills[1]; const ys = p => p.map(q => q[1]), xs = p => p.map(q => q[0]);
-            return { n: fills.length, red: red && red[1], level: Math.abs(base[2][0][1] - base[2][1][1]) < 1e-6, below: Math.min(...ys(base[2])) > 300 + 20 * 20, half: +((Math.max(...xs(red[2])) - Math.min(...xs(red[2]))) / (Math.max(...xs(base[2])) - Math.min(...xs(base[2])))).toFixed(2), left: Math.min(...xs(red[2])) === Math.min(...xs(base[2])) }; })()`);
-        same(r.n, 2, 'the bar and its health'); same(r.red, '#ff4a1c', 'its health red'); same(r.level, true, 'level across the screen'); same(r.below, true, 'in front of it (lower on the screen)'); same(r.half, 0.5, 'half its health, half the bar'); same(r.left, true, 'full from the left');
+    check('each enemy\'s health, a callout (the owner, 2026-11-18): a raised bar floating up and to the side of it, a line from a dot on the creature to it, its health from the left, its numbers', () => {
+        const r = J(`(function(){ const ops = []; let path = [], fs = null; const saved = ctx;
+            const fake = { save(){}, restore(){}, beginPath(){ path = []; }, closePath(){}, moveTo(x, y){ path.push(['m', x, y]); }, lineTo(x, y){ path.push(['l', x, y]); }, arc(x, y){ path.push(['a', x, y]); },
+                fill(){ ops.push({ op: 'fill', style: this.fillStyle, path: path.slice() }); }, stroke(){ ops.push({ op: 'stroke', path: path.slice() }); }, createLinearGradient(){ return { addColorStop(){}, grad: true }; },
+                strokeText(){}, fillText(s){ ops.push({ op: 'text', s }); } };
+            ctx = fake; const V = { screenNow: (x, y, h) => [x * 40, y * 30 - h], top: () => 20 };
+            try { _cbGroundBar(V, { x: 25, y: 10, health: 30, maxHealth: 60 }); } finally { ctx = saved; }
+            const cx = 25 * 40, cy = 10 * 30 - 20 * 0.55, fills = ops.filter(o => o.op === 'fill' && o.path.length === 4), face = fills[1], hp = fills.find(o => o.style && o.style.grad);
+            const lineFrom = ops.find(o => o.op === 'stroke' && o.path.length === 3);
+            return { lineStarts: lineFrom && Math.hypot(lineFrom.path[0][1] - cx, lineFrom.path[0][2] - cy) < 1e-6, above: face && Math.max(...face.path.map(q => q[2])) < cy - 20,
+                aside: face && (Math.min(...face.path.map(q => q[1])) > cx || Math.max(...face.path.map(q => q[1])) < cx), half: hp && +((hp.path[1][1] - hp.path[0][1]) / (face.path[1][1] - face.path[0][1])).toFixed(2), text: (ops.find(o => o.op === 'text') || {}).s }; })()`);
+        same(r.lineStarts, true, 'the line starts on the creature'); same(r.above, true, 'the bar above it'); same(r.aside, true, 'to its side'); same(r.half, 0.5, 'half its health, half the bar'); same(r.text, '30/60', 'its numbers');
         same(/if \(V\) _cbGroundBar\(V, a\);/.test(rd('js/cardbattle.js')), true, 'drawn with each enemy\'s corners');
     });
 
