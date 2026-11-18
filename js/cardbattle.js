@@ -1005,9 +1005,14 @@ function _cbDom() {
 function _cbTurns(sec) { return Math.max(1, Math.ceil((sec || 0) / CARD_BATTLE.turnSec - 1e-9)); }
 function _cbRow(rows, key) { const r = (rows || []).find(x => x[0] === key); return r ? String(r[1]) : ""; }
 function _cbInfoRows(table, name) { try { const fn = table && table[name]; return typeof fn === "function" ? fn() : null; } catch (e) { return null; } }
-// THE ATTACK CARDS' PICTURES (ATTACK-CARD-ART.md; the owner, 2026-11-17: "begin incorporating the cards that have been created for the attacks", asked, "Pictures where they exist"): the approved ones,
-// by the form and its move; every other card keeps its plain face until its picture is drawn and approved.
-const CARD_BATTLE_ART = { "embercowl:hexfire": "img/cards/attack/embercowl_hexfire.png", "maw:chomp": "img/cards/attack/maw_chomp.png" };   // (CHOMP: round 2, approved by the owner 2026-11-18)
+// THE ATTACK CARDS' PICTURES (ATTACK-CARD-ART.md; the owner, 2026-11-17: "begin incorporating the cards that have been created for the attacks", asked, "Pictures where they exist"; 2026-11-18,
+// of the twenty approved ones that had stayed on the art's branch, "What happened to my attack cards?", and, asked whether to bring them in: "Yes"): every evolved form's approved picture, by the
+// form and the move it shows (img/cards/attack/<form>_<move>.png, each the approved draft as it is: ATTACK-CARD-ART.md §4). A form's other second attack keeps its plain face (no picture drawn).
+// The Hammer Slug's shows no attack of its own (the Technicians' style: rearing in its ring of crystals): on SHELL GUARD, its stance, the agent's reading. CHOMP's is round 3, his redesigned model.
+const CARD_BATTLE_ART = {};
+for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "thunderhead:static_vortex", "quillstone:ember_slash", "coralcrab:stake_ring", "voidstar:maelstrom", "seeper:toxic_stomp",
+    "igloo:skate_charge", "rimestar:icicle_volley", "electroskink:zigzag_dash", "thermite:magma_vent", "mimic:rift_impale", "hornshell:echo_pulse", "staticorb:static_rush", "gooproxy:phase_swap",
+    "shrub:briar_sweep", "sundew:sweet_scent", "rotshard:rotten_decoy", "jellyram:wobble_slam", "blightspider:venom_bite", "hovershell:shock_zap"]) CARD_BATTLE_ART[k] = "img/cards/attack/" + k.replace(":", "_") + ".png";
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
 function cardBattleCards(f) {
     const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);
