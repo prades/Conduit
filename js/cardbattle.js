@@ -724,8 +724,8 @@ function _cbTurns(sec) { return Math.max(1, Math.ceil((sec || 0) / CARD_BATTLE.t
 function _cbRow(rows, key) { const r = (rows || []).find(x => x[0] === key); return r ? String(r[1]) : ""; }
 function _cbInfoRows(table, name) { try { const fn = table && table[name]; return typeof fn === "function" ? fn() : null; } catch (e) { return null; } }
 // THE ATTACK CARDS' PICTURES (ATTACK-CARD-ART.md; the owner, 2026-11-17: "begin incorporating the cards that have been created for the attacks", asked, "Pictures where they exist"): the approved ones,
-// by the form and its move; every other card keeps its plain face until its picture is drawn and approved. (The Frost Maw's CHOMP waits for the owner's approval of its round 2.)
-const CARD_BATTLE_ART = { "embercowl:hexfire": "img/cards/attack/embercowl_hexfire.png" };
+// by the form and its move; every other card keeps its plain face until its picture is drawn and approved.
+const CARD_BATTLE_ART = { "embercowl:hexfire": "img/cards/attack/embercowl_hexfire.png", "maw:chomp": "img/cards/attack/maw_chomp.png" };   // (CHOMP: round 2, approved by the owner 2026-11-18)
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
 function cardBattleCards(f) {
     const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);

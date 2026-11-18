@@ -4,6 +4,7 @@ const IMG_MAP = {
     "img/cards/amorphous_body.png": "img/cards/amorphous_body.webp?v=32b78058",
     "img/cards/arc_capacitor.png": "img/cards/arc_capacitor.webp?v=e03a6d7e",
     "img/cards/attack/embercowl_hexfire.png": "img/cards/attack/embercowl_hexfire.webp?v=31526b0a",
+    "img/cards/attack/maw_chomp.png": "img/cards/attack/maw_chomp.webp?v=e6b33254",
     "img/cards/attuned_core.png": "img/cards/attuned_core.webp?v=a18ace16",
     "img/cards/barnacle_bracer.png": "img/cards/barnacle_bracer.webp?v=ee9c4c33",
     "img/cards/bedrock_matrix.png": "img/cards/bedrock_matrix.webp?v=f43e0c8b",

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17af` · branch `claude/friendly-thompson-w581x0` · card battles: the Frost Maw's CHOMP card has its picture
+- **The ask** (the owner, 2026-11-18): "Approve the CHOMP card and put it in."
+- **What it does:** the Frost Maw's CHOMP card in the battle's pop-up shows its picture (round 2: the Maw head-on, its jaws coming down on shattering glass), as the Ember Hood's HEXFIRE does. Saved light (28 KB).
+- `img/cards/attack/maw_chomp.png` (new; from `design/cards/attack/drafts/round2/`), `js/cardbattle.js` (`CARD_BATTLE_ART`), `tests/cardbattle.js`, `docs/ATTACK-CARD-ART.md` (status, §4), `docs/CARD-BATTLES.md` §9.
+- **Verified:** tests/cardbattle.js, tests/images.js and the full suite; seen in a real browser (the Frost Maw's turn). **Not seen on an iPad.**
+
 ### Build `2026-11-17ae` · branch `claude/start-game-project-HSh7Z` · a TANK sits out front (card battles behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, asked whether a TANK should stand at the front of the battle line): "Sit out front".
 - **What it does** (`docs/CARD-BATTLES.md` §2.47): when a battle lines up, a follower whose play style is TANK takes the front square, before the Brawlers; then technicians, Mages and you as before. No taunt, no damage change.
