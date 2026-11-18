@@ -3647,3 +3647,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Passed over: glowing eyes; bigger fangs and more teeth; a dark mouth with a glowing throat; ice spikes on his back; the icicle fangs; a snow texture painted on as a picture (it looked like static and streaked at the top).
 - Agent's, provisional: how lumpy the snow is and its colours, the line between the mouth's top (jagged) and its sides (round).
 - Status: Implemented (build `2026-11-17k`); verified by the test run and the real game page; not playtested. `CHANGELOG.md`, the Bible's picture. Supersedes the faceted look of build `2026-11-11v`.
+
+## DECISION: Every attack animated in the battles: body and 3D effect; followers and enemies; the Frost Maw first (2026-11-18, branch `claude/battle-anims`, on main's `2026-11-17ah`)
+- The owner: **"I need to begin work animating every single attack in the new battle phase menu or not menu but you know what I mean."**
+- Asked three things, the owner chose: scope **"Followers and enemies"** (passed over: followers' 72 first, the agent's suggestion; everything with the player's attacks); "animated" means **"Body + 3D effect"** (each attack's own body motion and its effect rebuilt in 3D in the battle view, in place of the 2D drawing laid over it; passed over: 3D effects only; body only); start with **"Frost Maw's three"** (his basic bite, CHOMP, ABSOLUTE ZERO) as one sample, the rest once its look is approved (passed over: the Ember Hood's three; one attack type across all followers).
+- The inventory (main's `2026-11-17ah`): 22 forms, 72 follower attacks (a basic attack, one or two second attacks, an Ultimate each); the enemies' to be listed.
+- Status: Designed (direction); the sample in progress. `VIEW-3D.md` §3 stage 5, `CARD-BATTLES.md`.
