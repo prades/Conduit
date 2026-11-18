@@ -81,7 +81,7 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.54)
+    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.55)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;
 }
@@ -246,7 +246,7 @@ function cardShapeDraw(V) {
     if (S.tile) { ctx.globalAlpha = 1; ctx.strokeStyle = "#ffe733"; ctx.lineWidth = 3; quad(S.tile[0], S.tile[1], 0.02); ctx.stroke(); }
     ctx.restore();
 }
-// THE MOVE CARD dragged (js/cardbattle.js §2.54): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
+// THE MOVE CARD dragged (js/cardbattle.js §2.55): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
 function _csDrawWalk(V, D) {
     const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
     const quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };

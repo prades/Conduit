@@ -132,7 +132,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const cooler = F.find(f => altCools(f)) || (F[2].role = 'brawler', F[2]); cooler._altReadyAt = frame + 150; const cooling = cardBattleCards(cooler).find(c => c.kind === 'move');   // (one that cools down after its move: a Brawler, js/moves.js altCools)
             const pick = cs => cs.map(c => c.kind + ':' + c.name + ':' + (c.ready ? 'R' : 'W') + (c.recharge ? ':' + c.recharge : '') + (c.kind === 'ult' ? ':' + c.charge : ''));
             return { a: pick(a), b: pick(b), egg: pick(egg), cooling: [cooling.ready, cooling.turns], wob: Math.max(1, Math.ceil(MOVES.wobble_slam.windup / 2)), icy: Math.max(1, Math.ceil(MOVES[b[1].name === MOVES.icicle_volley.name ? 'icicle_volley' : 'icicle_volley'].windup / 2)), fx: a[1].fx.length > 10 && b[2].fx.length > 10 }; })()`);
-        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.54)');
+        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.55)');
         same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40,walk:MOVE:R', 'the Rimestar\'s');
         same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1,walk:MOVE:R', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
     });
@@ -767,7 +767,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.member, false, 'the setup: the one holding a room is in the squad'); same(r.held, 0, 'the one holding a room hurt'); ok(r.squad > 0, 'your squad\'s member not hurt');
     });
 
-    group('THE MOVE CARD (§2.54; the owner: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card")');
+    check('the enemy\'s square lit (the owner, 2026-11-18): a card dragged over an enemy lights the square it stands on (a pulsing fill and a bright rim, drawn on the floor); over its square counts as over it; back over the cards, nothing lit', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const q = _cbSq(a), fills = []; let path = []; const saved = ctx; const fake = { save(){}, restore(){}, setTransform(){}, beginPath(){ path = []; }, closePath(){}, moveTo(x, y){ path.push([x, y]); }, lineTo(x, y){ path.push([x, y]); }, fill(){ fills.push({ s: this.fillStyle, p: path.slice() }); }, stroke(){} };
+            const V = { screenNow: (x, y) => [x * 50, y * 50] }; _cbDrag = { foe: a }; ctx = fake; try { _cbFoeTileDraw(V); } finally { ctx = saved; }
+            const sq = fills.find(f => f.s === '#ffe733'), cx = sq ? sq.p.reduce((s, c) => s + c[0], 0) / 4 / 50 : null, cy = sq ? sq.p.reduce((s, c) => s + c[1], 0) / 4 / 50 : null;
+            _cbDrag = null; return { lit: !!sq, on: sq && Math.abs(cx - Math.round(q[0])) < 1e-6 && Math.abs(cy - Math.round(q[1])) < 1e-6 }; })()`);
+        same(r.lit, true, 'its square lit'); same(r.on, true, 'the square it stands on');
+        const c = rd('js/cardbattle.js');
+        same(/const foe = _cbDragFoe\(ev\) \|\| _cbFoeOnTileAt\(ev\),/.test(c) && /if \(_cbOverBand\(ev\)\) \{ D\.foe = null; return null; \}/.test(c) && /if \(V\) _cbFoeTileDraw\(V\);/.test(c), true, 'wired: over its square counts; back over the cards nothing; drawn with the battle\'s marks');
+        same(/up: h \/ 2 \+ CARD_BATTLE\.dragUp/.test(c), true, 'the dragged card rides above the finger');
+    });
+    group('THE MOVE CARD (§2.55; the owner: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card")');
     check('every follower has a MOVE card, always ready like its basic attack, its reach its tiles by its pace; one with no pace cannot use it', () => {
         const r = J(`(function(){ __fresh(2); const [f, g] = followers; f.moveSpeed = f.baseMoveSpeed = 0.028; g.moveSpeed = g.baseMoveSpeed = 0; const c = cardBattleCards(f).find(x => x.kind === 'walk'), d = cardBattleCards(g).find(x => x.kind === 'walk');
             return { c: c && [c.tag, c.name, c.ready, c.tiles, /3 squares/.test(c.fx)], html: c && /UP TO 3 SQUARES/.test(_cbCardHTML(c)) && /data-kind="walk"/.test(_cbCardHTML(c)), d: d && [d.ready, /NO PACE/.test(_cbCardHTML(d))] }; })()`);

@@ -41,7 +41,8 @@ const CARD_BATTLE = {
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
     num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
-    tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
+    tileCard: 56,
+    dragUp: 14,                 // screen points between a dragged card's foot and the finger               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
     foeMax: 210,                // frames: an enemy's turn (3.5 s); it ends sooner once its blow has landed
@@ -422,7 +423,7 @@ function _cbWalkPath(u, t, kind, id) {
     if (!best) return null;
     return _cbPathTo(R, best);
 }
-// THE MOVE CARD (§2.54; the owner, 2026-11-18: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card"): the free squares `f` can
+// THE MOVE CARD (§2.55; the owner, 2026-11-18: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card"): the free squares `f` can
 // walk to this turn (its tiles by its pace, round everyone: §2.39, §2.49), and the way to one of them (null: out of its reach, taken or not floor)
 function cardBattleWalkSquares(f) { const R = _cbReachable(f); return R ? R.ends.map(k => R.at.get(k)) : []; }
 function _cbStepPath(f, x, y) { const R = _cbReachable(f), k = Math.round(x) + "," + Math.round(y); return R && R.ends.indexOf(k) >= 0 ? _cbPathTo(R, k) : null; }
@@ -587,7 +588,8 @@ function cardBattleReticles() {
     if (!cardBattleAiming()) return false;
     if (typeof ctx === "undefined" || typeof canvas === "undefined" || !cardBattleActive() || _cb.phase === "black") return true;
     const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenNow === "function" ? VIEW3D.view : null, pulse = 3 * Math.sin(_cbF() * 0.15);
-    if (V && typeof cardShapeDraw === "function") cardShapeDraw(V);   // (a card being dragged: its squares lit on the floor, under the reticles, §2.48)
+    if (V && typeof cardShapeDraw === "function") cardShapeDraw(V);
+    if (V) _cbFoeTileDraw(V);   // (the enemy a dragged card is over: its square lit)   // (a card being dragged: its squares lit on the floor, under the reticles, §2.48)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.globalAlpha = 0.9;
     for (const a of _cb.foes) {
         if (!_cbFoeOk(a)) continue;
@@ -742,7 +744,7 @@ function cardBattlePlay(f, kind, id, target) {
     if (!card || !card.ready) return false;
     const aimSq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? [Math.round(t.x), Math.round(t.y)] : null;
     const say = w => { _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };   // (said in the banner for 2 s: words over the world wait while the battle's camera is up, js/drops.js)
-    // THE MOVE CARD (§2.54): let go on a free square in its reach, its turn is the walk there (round everyone); anywhere else, nothing is played
+    // THE MOVE CARD (§2.55): let go on a free square in its reach, its turn is the walk there (round everyone); anywhere else, nothing is played
     if (kind === "walk") {
         const t = aimSq(dropped), walk = t && _cb.lay ? _cbStepPath(f, t[0], t[1]) : null, G = t && !walk ? _cbGrid(f) : null;
         if (!walk) return say(!t ? "DROP IT ON A SQUARE" : G && (G.taken.has(t[0] + "," + t[1]) || G.k0 === t[0] + "," + t[1]) ? "THAT SQUARE IS TAKEN" : "OUT OF ITS REACH");
@@ -932,7 +934,7 @@ function cardBattleCards(f) {
         let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
         out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
     for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; }
-    { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.54: always ready while it has a pace)
+    { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.55: always ready while it has a pace)
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.acted && _cb.acted.has(f)) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its card this round)
     return out;
 }
@@ -984,10 +986,10 @@ function _cbDragStart(ev) {
     // (the owner, 2026-11-17: "the cards that get dragged need to get smaller and tile sized": picked up, it shrinks to a floor tile as the picture shows one, under the finger)
     const r = card.getBoundingClientRect(), g = card.cloneNode(true), t = _cbTilePx(), w = t, h = Math.round(t * 1.3); g.classList.add("cb-ghost");
     g.style.cssText = "position:fixed;left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px;z-index:70;pointer-events:none;--k:" + (card.style.getPropertyValue ? card.style.getPropertyValue("--k") : "");
-    const shrink = () => { const D = _cbDrag; if (!D || D.g !== g) return; g.style.left = (ev.clientX - w / 2) + "px"; g.style.top = (ev.clientY - h / 2) + "px"; g.style.width = w + "px"; g.style.height = h + "px"; };
+    const shrink = () => { const D = _cbDrag; if (!D || D.g !== g) return; g.style.left = (ev.clientX - w / 2) + "px"; g.style.top = (ev.clientY - h - CARD_BATTLE.dragUp) + "px"; g.style.width = w + "px"; g.style.height = h + "px"; };
     if (typeof requestAnimationFrame === "function") requestAnimationFrame(shrink); else setTimeout(shrink, 0);   // (it is seen shrinking from the card to a tile)
     (_cbEls.scr || document.body).appendChild(g); card.classList.add("lifted");   // (in the battle screen, so it keeps the card's look)
-    _cbDrag = { f, kind: card.dataset.kind, id: card.dataset.id || null, g, card, dx: w / 2, dy: h / 2, foe: null, aim: null, col: (card.style.getPropertyValue ? card.style.getPropertyValue("--k") : "") || "#19e6c1" };
+    _cbDrag = { f, kind: card.dataset.kind, id: card.dataset.id || null, g, card, dx: w / 2, dy: h / 2, up: h / 2 + CARD_BATTLE.dragUp, foe: null, aim: null, col: (card.style.getPropertyValue ? card.style.getPropertyValue("--k") : "") || "#19e6c1" };
     _cbDrag.pid = ev.pointerId;
     if (typeof window !== "undefined" && window.addEventListener) { window.addEventListener("pointermove", _cbDragMove, true); window.addEventListener("pointerup", _cbDragEnd, true); window.addEventListener("pointercancel", _cbDragCancel, true); }
 }
@@ -1014,10 +1016,29 @@ function _cbDragFoe(ev) {
 function _cbOverBand(ev) { const b = _cbEls && _cbEls.band && _cbEls.band.getBoundingClientRect ? _cbEls.band.getBoundingClientRect() : null; return !!b && ev.clientY >= b.top; }
 // what a card dragged to this point of the screen is let go on (§2.48, js/cardshapes.js): an enemy under it; for a blast or the decoy, that enemy's square or the floor square under it; for a ring
 // or a move needing no target, anywhere (true); over the band, nothing
+// THE ENEMY'S SQUARE LIT (the owner, 2026-11-18: "whenever you are dragging a tile or a card to an enemy, it lights up the tile that the enemy is on"): while a card is dragged over an enemy of the
+// battle (over its body as the 3D view draws it, or over the floor square it stands on), that square glows on the floor, pulsing, with a bright rim, under the enemy and its corners.
+function _cbFoeOnTileAt(ev) {
+    const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view ? VIEW3D.view : null;
+    if (!V || typeof toCanvas !== "function" || typeof cardShapeTileAt !== "function") return null;
+    const p = toCanvas(ev.clientX, ev.clientY), t = cardShapeTileAt(p[0], p[1], V); if (!t) return null;
+    for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const q = _cbSq(a); if (Math.round(q[0]) === t.x && Math.round(q[1]) === t.y) return a; }
+    return null;
+}
+function _cbFoeTileDraw(V) {
+    const D = typeof _cbDrag !== "undefined" ? _cbDrag : null, a = D && D.foe; if (!a || !_cbFoeOk(a) || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
+    const q = _cbSq(a), x = Math.round(q[0]), y = Math.round(q[1]), h = 0.48, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0));
+    if (!P.every(c => Number.isFinite(c[0]) && Number.isFinite(c[1]))) return;
+    const path = () => { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); }, pulse = 0.5 + 0.5 * Math.sin(_cbF() * 0.2);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
+    path(); ctx.globalAlpha = 0.38 + 0.22 * pulse; ctx.fillStyle = "#ffe733"; ctx.fill();
+    path(); ctx.globalAlpha = 1; ctx.strokeStyle = "rgba(5,8,16,0.8)"; ctx.lineWidth = 6; ctx.stroke(); ctx.strokeStyle = "#fff6b0"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
+}
 function _cbDragAim(D, ev) {
-    if (_cbOverBand(ev)) return null;
-    const foe = _cbDragFoe(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
-    D.foe = foe;
+    if (_cbOverBand(ev)) { D.foe = null; return null; }   // (back over the cards: nothing aimed, no square lit)
+    const foe = _cbDragFoe(ev) || _cbFoeOnTileAt(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
+    D.foe = D.kind === "walk" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.55)
     if (k === "foe") return foe;
     if (k === "any") return true;
     if (foe) { const q = _cbSq(foe); return { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
@@ -1027,7 +1048,7 @@ function _cbDragAim(D, ev) {
 }
 function _cbDragMove(ev) {
     const D = _cbDrag; if (!D || (D.pid !== undefined && ev.pointerId !== D.pid)) return; ev.preventDefault(); ev.stopPropagation();
-    D.g.style.left = (ev.clientX - D.dx) + "px"; D.g.style.top = (ev.clientY - D.dy) + "px"; D.g.style.width = (D.dx * 2) + "px"; D.g.style.height = (D.dy * 2) + "px";
+    D.g.style.left = (ev.clientX - D.dx) + "px"; D.g.style.top = (ev.clientY - D.dy - (D.up || 0)) + "px";   /* (it rides just above the finger: the enemy and its lit square under the finger stay in sight) */ D.g.style.width = (D.dx * 2) + "px"; D.g.style.height = (D.dy * 2) + "px";
     D.aim = _cbDragAim(D, ev); D.g.classList.toggle("on", !!D.aim);   // (its squares are lit while it is over the fight: js/cardshapes.js cardShapeDraw)
 }
 function _cbDragEnd(ev) {
