@@ -81,7 +81,7 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "ult") return null;
+    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.54)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;
 }
@@ -236,6 +236,7 @@ function cardShapeStays(at) {
 // THE LOOK, while a card is dragged (js/cardbattle.js cardBattleReticles): its squares lit on the floor where the 3D view draws them, in its colour; an effect's dashed; a blast's square in gold
 function cardShapeDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null; if (!D || !D.aim || !V || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
+    if (D.kind === "walk") return _csDrawWalk(V, D);
     const S = cardShapeFor(D.f, D.kind, D.id, D.aim === true ? null : D.aim); if (!S) return;
     const col = D.col || "#19e6c1", quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
@@ -243,6 +244,15 @@ function cardShapeDraw(V) {
     ctx.globalAlpha = S.ok ? 0.95 : 0.4; ctx.strokeStyle = col; ctx.lineWidth = 2; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.stroke(); }
     if (ctx.setLineDash) ctx.setLineDash([6, 4]); for (const c of S.eff) { quad(c[0], c[1], 0.12); ctx.stroke(); } if (ctx.setLineDash) ctx.setLineDash([]);
     if (S.tile) { ctx.globalAlpha = 1; ctx.strokeStyle = "#ffe733"; ctx.lineWidth = 3; quad(S.tile[0], S.tile[1], 0.02); ctx.stroke(); }
+    ctx.restore();
+}
+// THE MOVE CARD dragged (js/cardbattle.js §2.54): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
+function _csDrawWalk(V, D) {
+    const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
+    const quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+    for (const c of sq) { quad(c[0], c[1], 0.08); ctx.globalAlpha = 0.18; ctx.fill(); ctx.globalAlpha = 0.6; ctx.stroke(); }
+    if (T) { const ok = sq.some(c => c[0] === T[0] && c[1] === T[1]); ctx.globalAlpha = ok ? 1 : 0.55; ctx.strokeStyle = ok ? "#ffe733" : "#ff4a3a"; ctx.lineWidth = 3; quad(T[0], T[1], 0.02); ctx.stroke(); if (ok) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#ffe733"; ctx.fill(); } }
     ctx.restore();
 }
 // the floor square of the battle's room under a point of the canvas (the 3D view's drawing), or null

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ak` · branch `claude/start-game-project-HSh7Z` · card battles: a MOVE card
+- **The ask** (the owner, 2026-11-18): "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card."
+- **What it does** (`CARD-BATTLES.md` §2.54): every follower has a MOVE card, last of its cards, always ready. Drag it: every square it can walk to this turn lights up (its tiles by its pace, round everyone), the one under your finger in gold. Let go there and its turn is the walk; on a taken square or one out of reach nothing is played and the banner says why.
+- `js/cardbattle.js`, `js/cardshapes.js`, `game.html` (the pop-up's cards may shrink a little for five), `tests/cardbattle.js` (3 new checks, 1 changed: 89), `docs/CARD-BATTLES.md` (§2.54, §9, §10, §11.26), `docs/DECISION-LOG.md`.
+- **Verified:** tests/cardbattle.js and the full suite; dragged with the mouse in a real browser. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17aj` · branch `claude/start-game-project-HSh7Z` · card battles: statuses count in turns, splash stays in the battle; the opening stance
 - **The asks** (the owner, 2026-11-18): "find every instance of when a status is inflicted or poison or something that relays the game clock, and make sure that ... when you do a damage that has some sort of splash or whatever, it's calculated within the parameters of the battle and not outside of it" (a status shorter than a turn: "At least one turn"); and "the tank and the aggressive play style should be upfront maybe two spaces".
 - **Statuses in turns** (`CARD-BATTLES.md` §2.52): in a battle, everyone's statuses stop running down in real seconds and count in turns (2 s a turn; at least one turn). A stunned, sleeping or frozen creature loses its turn; a glitched one may walk but not bite or start its special; a slowed one walks fewer squares; burn, poison and SEEDFALL's healing come a turn's worth at a time, the same in all. Before, a stun often ran out before the creature's turn came, and burns ticked between turns.

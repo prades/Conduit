@@ -399,13 +399,18 @@ function _cbGrid(u) {
 function cardBattleWalking(a) { const T = _cb.turn; return !!T && !!a && _cb.phase === "on" && !!T.walk && !T.arrived && ((T.who === "act" && T.f === a) || (T.who === "foe" && T.a === a)); }
 // THE WALK: the squares `u` can reach this turn (its tiles over _cbGrid's floor: round every taken square, never through one; stopping on a free one), and of them the nearest it can hit `t`
 // from; none, the one nearest by the floor to such a square (or, there being none, nearer `t`). Its squares after its own, or null when it can get no nearer.
-function _cbWalkPath(u, t, kind, id) {
-    const n = _cbTiles(u), G = n && t ? _cbGrid(u) : null; if (!G) return null;
-    const { K, cells, taken, s0, k0, open } = G, at = new Map([[k0, G.c0]]);
-    const steps = new Map([[k0, 0]]), prev = new Map(), order = [k0];
+// the squares `u` can walk to this turn (its tiles over _cbGrid's floor, breadth first: the fewest steps first) and the way to each; null without the floor or a pace
+function _cbReachable(u) {
+    const n = _cbTiles(u), G = n ? _cbGrid(u) : null; if (!G) return null;
+    const { taken, k0, open } = G, at = new Map([[k0, G.c0]]), steps = new Map([[k0, 0]]), prev = new Map(), order = [k0];
     for (let i = 0; i < order.length; i++) { const k = order[i], [x, y] = at.get(k), st = steps.get(k); if (st >= n) continue;
         for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
-    const ends = order.filter(k => k !== k0 && !taken.has(k));   // (breadth first: the fewest steps first)
+    return { G, n, at, steps, prev, order, ends: order.filter(k => k !== k0 && !taken.has(k)) };   // (ends: the free squares it can stop on)
+}
+function _cbPathTo(R, k) { const path = []; for (let q = k; q && q !== R.G.k0; q = R.prev.get(q)) path.unshift(R.at.get(q)); return path.length ? path : null; }
+function _cbWalkPath(u, t, kind, id) {
+    const R = t ? _cbReachable(u) : null; if (!R) return null;
+    const { G, at, prev, ends } = R, { K, cells, taken, s0, k0, open } = G;
     let best = _cbPickSquare(u, ends.filter(k => { const c = at.get(k); return _cbHitsFrom(c[0], c[1], u, t, kind, id); }), at, t);
     if (!best && cells) {   // none in reach this turn: towards the nearest square it could hit from, by the floor the same way
         const qt = _cbSq(t), R = _cbReach(u, t, kind, id), far = new Map(), q = [];
@@ -415,9 +420,12 @@ function _cbWalkPath(u, t, kind, id) {
     }
     if (!best) { const qt = _cbSq(t); let be = Math.hypot(s0[0] - qt[0], s0[1] - qt[1]) - 0.5; for (const k of ends) { const c = at.get(k), e = Math.hypot(c[0] - qt[0], c[1] - qt[1]); if (e < be) { be = e; best = k; } } }   // (no square to hit it from at all: nearer it)
     if (!best) return null;
-    const path = []; for (let k = best; k && k !== k0; k = prev.get(k)) path.unshift(at.get(k));
-    return path.length ? path : null;
+    return _cbPathTo(R, best);
 }
+// THE MOVE CARD (§2.54; the owner, 2026-11-18: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card"): the free squares `f` can
+// walk to this turn (its tiles by its pace, round everyone: §2.39, §2.49), and the way to one of them (null: out of its reach, taken or not floor)
+function cardBattleWalkSquares(f) { const R = _cbReachable(f); return R ? R.ends.map(k => R.at.get(k)) : []; }
+function _cbStepPath(f, x, y) { const R = _cbReachable(f), k = Math.round(x) + "," + Math.round(y); return R && R.ends.indexOf(k) >= 0 ? _cbPathTo(R, k) : null; }
 // THE FRONT LINE (§2.40; the owner, 2026-11-17: "make it to where the predators typically attack who's in front of them, unless they have some sort of ranged attack or pounce attack that allows
 // them to move ... a few spaces over for their attack ... I guess certain types can do those range attacks, and we'll keep it that way. But I want to make it to where we can have tanks in the game.
 // We can have characters absorb damage in front lines"): of yours (`list`), the one a creature reaches first over the floor (every taken square stands in its way, its own side's too), so the
@@ -719,7 +727,7 @@ function _cbYourTurn() {
 // PLAY A CARD (the drag, §2.17; the tests call it too): `f` a member of the squad still up, `kind` "basic", "move" (with its `id`) or "ult", `target` the enemy it was dropped on (another
 // place: the nearest enemy to it; the agent's, for a move with no single target, §11.4). False when it cannot be played now.
 function cardBattlePlay(f, kind, id, target) {
-    const T0 = _cb.turn; if (!cardBattleActive() || !T0 || T0.who !== "you") return false;
+    const T0 = _cb.turn, dropped = target; if (!cardBattleActive() || !T0 || T0.who !== "you") return false;
     if (!f || f.dead || !(f.health > 0) || _cbSquad().indexOf(f) < 0 || _cb.acted.has(f) || f !== _cbCurrent()) return false;   // (one card each a round, each in its turn: the squad's order)
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
     // THE SHAPE'S AIM (§2.48, js/cardshapes.js): let go on an enemy (`target`), on a floor square ({ x, y, tile: true }) or anywhere, as its shape takes it. A blast or the decoy let go on an
@@ -732,7 +740,15 @@ function cardBattlePlay(f, kind, id, target) {
     if (aimK === "foe") aim = target;
     const card = cardBattleCards(f).find(c => c.kind === kind && (kind !== "move" || c.id === id));
     if (!card || !card.ready) return false;
+    const aimSq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? [Math.round(t.x), Math.round(t.y)] : null;
     const say = w => { _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };   // (said in the banner for 2 s: words over the world wait while the battle's camera is up, js/drops.js)
+    // THE MOVE CARD (§2.54): let go on a free square in its reach, its turn is the walk there (round everyone); anywhere else, nothing is played
+    if (kind === "walk") {
+        const t = aimSq(dropped), walk = t && _cb.lay ? _cbStepPath(f, t[0], t[1]) : null, G = t && !walk ? _cbGrid(f) : null;
+        if (!walk) return say(!t ? "DROP IT ON A SQUARE" : G && (G.taken.has(t[0] + "," + t[1]) || G.k0 === t[0] + "," + t[1]) ? "THAT SQUARE IS TAKEN" : "OUT OF ITS REACH");
+        _cb.turn = { who: "act", f, kind, id: null, target: null, t0: _cbF(), hit: 0, fired: false, saved: null, walk, wi: 0, arrived: 0 }; _cb.acted.add(f);
+        _cbRefresh(); return true;
+    }
     // MOVE NOW, ATTACK LATER (§2.39): it cannot hit that enemy (or reach and see that square) from its square: its turn is a walk towards one it can (the card stays ready); no way nearer, nothing is
     // played. A card played anywhere needs no walk.
     const reachT = aimK === "tile" ? aim : target;
@@ -916,14 +932,15 @@ function cardBattleCards(f) {
         let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
         out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
     for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; }
+    { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.54: always ready while it has a pace)
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.acted && _cb.acted.has(f)) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its card this round)
     return out;
 }
 function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function _cbCardHTML(c) {
-    const st = c.done ? "DONE" : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
-    const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : "";
+    const st = c.done ? "DONE" : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
+    const meta = c.kind === "move" ? '<i class="cb-rc">RECHARGE ' + c.recharge + (c.recharge === 1 ? " TURN" : " TURNS") + '</i>' : c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : c.kind === "walk" ? '<i class="cb-rc">UP TO ' + c.tiles + (c.tiles === 1 ? " SQUARE" : " SQUARES") + '</i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + (c.done ? " done" : "") + (c.art ? " art" : "") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '">' + (c.art ? '<i class="cb-art" style="background-image:url(\'' + _cbEsc(c.art) + '\')"></i>' : "") + '<i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
 }
 // fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
@@ -999,7 +1016,7 @@ function _cbOverBand(ev) { const b = _cbEls && _cbEls.band && _cbEls.band.getBou
 // or a move needing no target, anywhere (true); over the band, nothing
 function _cbDragAim(D, ev) {
     if (_cbOverBand(ev)) return null;
-    const foe = _cbDragFoe(ev), def = typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = def ? cardShapeAim(def) : "foe";
+    const foe = _cbDragFoe(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
     D.foe = foe;
     if (k === "foe") return foe;
     if (k === "any") return true;
