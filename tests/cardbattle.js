@@ -691,6 +691,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r, 'no room'); same(r.ring, 8, 'WOBBLE SLAM\'s squares lit'); ok(r.blast >= 1 && r.blast === r.area, 'MAELSTROM\'s squares lit: ' + r.blast + ' of its ' + r.area); same(r.gold, 1, 'its square in gold'); same(r.none, 0, 'with nothing under the finger');
     });
 
+    check('the numbers (the owner, 2026-11-18): a hit on an enemy in a battle is tagged; its bar shows the health before it until the number lands, then the health after; a hit on one of yours is tagged and cuts no bar; out of a battle nothing is tagged', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 60; const o = {}; _cbNums.clear(); _cbHp.clear();
+            CARD_BATTLE.on = false; applyDamage(a, 5, followers[0]); o.outside = _cbNums.size; CARD_BATTLE.on = true;   /* (no battle: nothing tagged) */
+            cardBattleChoose(a); __ticks(1); _cbNums.clear(); _cbHp.clear(); const h0 = a.health;
+            applyDamage(a, 7, followers[0]); const n = [..._cbNums.values()].find(x => x.unit === a); o.tagged = !!n && n.foe; o.hp = Math.round(a.health); o.before = Math.round(_cbShown(a).v);
+            if (n) _cbNumLand(n); for (let i = 0; i < 40; i++) _cbShown(a); o.after = Math.round(_cbShown(a).v);
+            applyDamage(followers[0], 3, a); o.mine = [..._cbNums.values()].some(x => x.unit === followers[0] && !x.foe); o.mineBar = _cbHp.has(followers[0]); o.h0 = Math.round(h0);
+            cardBattleReset(); cardBattleNumbers(); o.cleared = _cbNums.size + _cbHp.size; return o; })()`);
+        same(r.outside, 0, 'tagged out of a battle'); same(r.tagged, true, 'the hit on the enemy tagged'); same(r.before, r.h0, 'its bar before the number lands: the health before the hit'); same(r.after, r.hp, 'after it lands: the health after');
+        same(r.mine, true, 'a hit on one of yours tagged'); same(r.mineBar, false, 'one of yours has no bar to cut'); same(r.cleared, 0, 'the battle over, nothing left');
+        same(/if \(typeof cardBattleNumbers === "function" && cardBattleNumbers\(\)\) return;/.test(rd('js/drops.js')) && /cardBattleNumberTag\(floatingTexts\[floatingTexts\.length - 1\], target, dmg\)/.test(rd('js/helpers.js')), true, 'wired: the words drawn by the battle; the hit tagged');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

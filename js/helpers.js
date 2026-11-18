@@ -281,7 +281,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
                     : element === "toxic"    ? "#88ff44"
                     : "#ffcc88";
         floatingTexts.push({ world: true, x: target.x + (Math.random() - 0.5) * 0.3, y: target.y + (Math.random() - 0.5) * 0.3, text: (_foe ? "" : "\u2212") + Math.round(dmg), color: _dcol, size: _foe ? 14 : 13, life: 36, vy: -0.03 - Math.random() * 0.012 });
-        if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
+        if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);
+        if (typeof cardBattleNumberTag === "function") cardBattleNumberTag(floatingTexts[floatingTexts.length - 1], target, dmg);   // CARD BATTLES: its number pops, flies into its health bar and cuts it (js/cardbattle.js)   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
     if (source && !isReflected && !fixed && dmg > 0 && hit && hit.which === "main" && source.isFollower && typeof primaryStatusOnHit === "function") primaryStatusOnHit(source, target);   // (a primary attack's status, js/combat.js)

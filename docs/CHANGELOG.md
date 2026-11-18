@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ai` · branch `claude/friendly-thompson-w581x0` · card battles: the hit numbers back, flying into the health bar (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "We need to bring back all of the numbers that have the animation after they hit and then they affect the health bar."
+- **What it does:** in a battle, a hit's damage number pops at the creature, then flies into that enemy's health callout; the bar drops only as it lands (the piece lost flashes pale). A hit on one of yours shows its number rising off it. MISS, RESIST and the other words show again, above the numbers. (In a battle no words or numbers had been drawn at all.)
+- `js/cardbattle.js`, `js/helpers.js`, `js/drops.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.51, §9, §10.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.** Timings the agent's.
+
 ### Build `2026-11-17ah` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health as a callout (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-18): "Need to make it to where the health bars are visible somehow on the ground near each enemy"; then, of the bar laid on the floor: "a more 3D looking health bar that kind of like has a line drawn from the creature into a 2D health bar that floats atop to the side."
 - **What it does:** in a battle, over each enemy, up and to its side, a raised health bar (a slanted face with a darker underside: red its health left, dark what it has lost, its numbers over it), joined to the creature by a line from a dot on it. It follows the creature; the callouts lean outwards, away from the middle of the screen.

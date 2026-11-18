@@ -65,6 +65,7 @@ function updateFloatingTexts() {
 }
 
 function drawFloatingTexts() {
+    if (typeof cardBattleNumbers === "function" && cardBattleNumbers()) return;   // (a CARD BATTLE's camera: its words and numbers where the 3D view draws the fight, js/cardbattle.js)
     if (typeof view3dSwinging === "function" && view3dSwinging()) return;   // (not while THE 3D VIEW's camera swings round a quarter turn: they line up only once it is there, js/view3d.js)
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);

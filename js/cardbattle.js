@@ -39,7 +39,8 @@ const CARD_BATTLE = {
     skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
-    hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
+    hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
+    num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
     tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
@@ -558,31 +559,89 @@ function cardBattleReticles() {
 // from the creature into a 2D health bar that floats atop to the side"): over each enemy of the battle, up and to its side (the side away from the middle of the screen, so they spread out), a
 // raised bar (a slanted face with a darker underside and a light top edge: red its health left, from the left, dark what it has lost, its numbers over it); a line from a dot on the creature rises
 // to it and runs along under it. It goes where the creature goes. Sizes the agent's (CARD_BATTLE.hpBar, screen points).
-function _cbGroundBar(V, a) {
+function _cbBarGeom(V, a) {
     const B = CARD_BATTLE.hpBar, r = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? canvas.width / r.width : 1;
-    const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, top * 0.55); if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return;
-    const side = p[0] < canvas.width / 2 ? -1 : 1, w = B.w * k, h = B.h * k, d = B.depth * k, sk = B.slant * k;
-    const ex = p[0] + side * B.out * k, ey = p[1] - B.up * k;   // (where the line meets the bar: the bar's near end)
-    const x0 = side > 0 ? ex : ex - w, y0 = ey - h;   // (the bar's top-left)
-    const k1 = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1)));
+    const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, top * 0.55); if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return null;
+    const side = p[0] < canvas.width / 2 ? -1 : 1, w = B.w * k, h = B.h * k, ex = p[0] + side * B.out * k, ey = p[1] - B.up * k;
+    return { B, k, p, side, w, h, d: B.depth * k, sk: B.slant * k, ex, ey, x0: side > 0 ? ex : ex - w, y0: ey - h };
+}
+// the health a creature's bar shows: what its numbers have brought it to as they land (eased), not yet what the blow did; the piece just lost flashes pale
+function _cbShown(a) {
+    const S = _cbHp.get(a), hp = Math.max(0, a.health); if (!S) return { v: hp, chip: 0 };
+    if (!_cbNums.size || ![..._cbNums.values()].some(n => n.unit === a && !n.landed)) S.want = hp;   // (nothing on its way: the bar goes to the health it has)
+    S.v += (Math.min(S.want, S.v) - S.v) * 0.25; if (Math.abs(S.v - S.want) < 0.05) S.v = S.want; if (S.chipT > 0) S.chipT--;
+    if (S.v <= hp + 0.05 && S.chipT <= 0 && S.want <= hp) _cbHp.delete(a);
+    return { v: S.v, chip: S.chipT > 0 ? S.chipFrom : 0 };
+}
+function _cbGroundBar(V, a) {
+    const G = _cbBarGeom(V, a); if (!G) return;
+    const { B, k, p, side, w, h, d, sk, ex, ey, x0, y0 } = G, mx = a.maxHealth || 1, sh = _cbShown(a), k1 = Math.max(0, Math.min(1, sh.v / mx)), kc = Math.max(k1, Math.min(1, sh.chip / mx));
     const face = (x, y, ww, hh) => { ctx.beginPath(); ctx.moveTo(x + sk, y); ctx.lineTo(x + ww + sk, y); ctx.lineTo(x + ww, y + hh); ctx.lineTo(x, y + hh); ctx.closePath(); };
     ctx.save(); ctx.globalAlpha = 0.95;
     // the line: a dot on the creature, up at a slant, then along under the bar
     const line = () => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(ex - side * B.run * k, ey); ctx.lineTo(ex + side * w * 0.6, ey); ctx.stroke(); };
     ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(5,8,16,0.85)"; ctx.lineWidth = 4 * k; line(); ctx.strokeStyle = "#ff8a6a"; ctx.lineWidth = 1.8 * k; line();   // (a dark edge under a bright core: seen on a light floor and a dark one)
     ctx.beginPath(); ctx.arc(p[0], p[1], 3.5 * k, 0, Math.PI * 2); ctx.fillStyle = "rgba(5,8,16,0.85)"; ctx.fill(); ctx.beginPath(); ctx.arc(p[0], p[1], 2.2 * k, 0, Math.PI * 2); ctx.fillStyle = "#ffd2c8"; ctx.fill();
-    // the bar: its underside (depth), its face, its health, its top edge
+    // the bar: its underside (depth), its face, the piece just lost (pale), its health, its top edge
     face(x0, y0 + d, w, h); ctx.fillStyle = "#3a0d08"; ctx.fill();
     face(x0, y0, w, h); ctx.fillStyle = "#0b1020"; ctx.fill();
+    if (kc > k1) { face(x0, y0, w * kc, h); ctx.fillStyle = "#ffe6dc"; ctx.fill(); }
     if (k1 > 0) { face(x0, y0, w * k1, h); const g = ctx.createLinearGradient(0, y0, 0, y0 + h); g.addColorStop(0, "#ff8a5a"); g.addColorStop(0.45, "#ff4a1c"); g.addColorStop(1, "#b8260c"); ctx.fillStyle = g; ctx.fill(); }
     face(x0, y0, w, h); ctx.strokeStyle = "rgba(255,235,228,0.9)"; ctx.lineWidth = 1.2 * k; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x0 + sk + 1.5 * k, y0 + 1.5 * k); ctx.lineTo(x0 + sk + w * Math.max(k1, 0.02) - 1.5 * k, y0 + 1.5 * k); ctx.strokeStyle = "rgba(255,255,255,0.55)"; ctx.lineWidth = 1 * k; ctx.stroke();
-    // its numbers, over the bar
+    // its numbers, over the bar (the health shown)
     ctx.font = "italic 900 " + Math.round(B.font * k) + "px system-ui, sans-serif"; ctx.textAlign = side > 0 ? "left" : "right"; ctx.textBaseline = "bottom";
-    const tx = side > 0 ? x0 + sk : x0 + w + sk, ty = y0 - 2 * k, txt = Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0);
+    const tx = side > 0 ? x0 + sk : x0 + w + sk, ty = y0 - 2 * k, txt = Math.max(0, Math.round(sh.v)) + "/" + Math.round(a.maxHealth || 0);
     ctx.lineWidth = 3 * k; ctx.strokeStyle = "rgba(5,8,16,0.9)"; ctx.strokeText(txt, tx, ty); ctx.fillStyle = "#fff"; ctx.fillText(txt, tx, ty);
     ctx.restore();
 }
+// THE NUMBERS (the owner, 2026-11-18: "bring back all of the numbers that have the animation after they hit and then they affect the health bar"): in a battle the game's own words and numbers wait
+// (the 2D's reckoning is not the battle's camera: js/drops.js); here they are drawn where the 3D view draws the fight. A hit's number pops at the creature (rising, swelling then settling: `pop`
+// frames); on an enemy it then flies into its bar, to where the bar will be cut (`glide`); as it lands the bar is cut (the piece lost flashes pale) and the number is gone. On one of yours it rises
+// and fades. Other words (MISS, DEFEATED, a status) rise from the creature. Timings the agent's, after the battle view's (js/battleview.js BATTLE_VIEW.num).
+const _cbNums = new Map(), _cbHp = new Map();   // (a number → its flight; a creature → the health its bar shows while numbers are on their way)
+function cardBattleNumberTag(t, unit, dmg) {
+    if (!t || !unit || !cardBattleAiming() || !(dmg > 0)) return;
+    const foe = _cb.foes.indexOf(unit) >= 0; if (!foe && !_cbMine(unit)) return;
+    const N = CARD_BATTLE.num; t.life = Math.max(t.life || 0, N.pop + (foe ? N.glide + 2 : N.rise));
+    _cbNums.set(t, { unit, val: dmg, t0: _cbF(), foe, landed: false, x: unit.x, y: unit.y, jit: (Math.random() - 0.5) * 18 });
+    if (foe) { let S = _cbHp.get(unit); if (!S) { S = { v: Math.max(0, unit.health) + dmg, want: Math.max(0, unit.health) + dmg, chipT: 0, chipFrom: 0 }; _cbHp.set(unit, S); } }
+}
+function cardBattleNumbers() {
+    if (!cardBattleAiming()) { if (_cbNums.size) _cbNums.clear(); if (_cbHp.size) _cbHp.clear(); return false; }
+    if (typeof ctx === "undefined" || typeof floatingTexts === "undefined") return true;
+    const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenNow === "function" ? VIEW3D.view : null, N = CARD_BATTLE.num, f0 = _cbF();
+    const r = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? canvas.width / r.width : 1;
+    for (const t of _cbNums.keys()) if (floatingTexts.indexOf(t) < 0) { const n = _cbNums.get(t); if (n.foe && !n.landed) _cbNumLand(n); _cbNums.delete(t); }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    for (const t of floatingTexts) {
+        if (t._waiting) continue;
+        const n = _cbNums.get(t);
+        if (!t.world) { ctx.globalAlpha = Math.min(1, t.life / 30); ctx.font = t.size ? "bold " + t.size + "px monospace" : "bold 13px monospace"; ctx.fillStyle = "#000"; ctx.fillText(t.text, t.x + 1, t.y + 1); ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y); continue; }
+        if (!V) continue;
+        const u = n ? n.unit : null, top = u && typeof V.top === "function" ? V.top(u) : 22, ux = u ? u.x : t.x, uy = u ? u.y : t.y, base = V.screenNow(ux, uy, top * 0.8);
+        if (!Number.isFinite(base[0]) || !Number.isFinite(base[1])) continue;
+        if (!n) {   // a word: it rises from where it was said and fades
+            const age = (t._cbAge = (t._cbAge || 0) + 1); ctx.globalAlpha = Math.min(1, t.life / 30); _cbText(t.text, base[0], base[1] - 34 * k - age * 0.6 * k, (t.size || 12) * k, t.color || "#fff", k); continue;   // (above where a number pops, so the two do not overlap)
+        }
+        const age = f0 - n.t0, sw = age < 6 ? 0.6 + age * 0.17 : age < 10 ? 1.62 - (age - 6) * 0.155 : 1;   // (swells, then settles)
+        const px = base[0] + n.jit * k, py = base[1] - 6 * k - Math.min(age, N.pop) * 0.5 * k, size = (n.foe ? 20 : 17) * k * sw, col = n.foe ? "#fff1c8" : "#ff6a5a";
+        if (!n.foe) { ctx.globalAlpha = Math.max(0, Math.min(1, (N.pop + N.rise - age) / 12)); _cbText("-" + Math.round(n.val), px, py - Math.max(0, age - N.pop) * 0.4 * k, size, col, k); continue; }
+        if (age < N.pop) { ctx.globalAlpha = 1; _cbText(Math.round(n.val), px, py, size, col, k); continue; }
+        // into the bar: to where it will be cut
+        const G = _cbBarGeom(V, u); if (!G) { if (!n.landed) _cbNumLand(n); continue; }
+        const S = _cbHp.get(u), cutAt = Math.max(0, Math.min(1, ((S ? S.want : u.health) - n.val) / (u.maxHealth || 1))), tx = G.x0 + G.sk * 0.5 + G.w * cutAt, ty = G.y0 + G.h / 2;
+        const e = Math.min(1, (age - N.pop) / N.glide), ee = e * e * (3 - 2 * e);
+        if (e >= 1) { if (!n.landed) _cbNumLand(n); continue; }
+        ctx.globalAlpha = 1 - e * 0.3; _cbText(Math.round(n.val), px + (tx - px) * ee, py + (ty - py) * ee - Math.sin(e * Math.PI) * 26 * k, size * (1 - 0.45 * ee), col, k);
+    }
+    ctx.restore(); return true;
+}
+function _cbNumLand(n) {   // a number arrives: its creature's bar is cut by it, the piece lost flashing pale
+    n.landed = true; const S = _cbHp.get(n.unit); if (!S) return;
+    S.chipFrom = Math.max(S.chipFrom && S.chipT > 0 ? S.chipFrom : 0, S.v); S.chipT = CARD_BATTLE.num.chip; S.want = Math.max(Math.max(0, n.unit.health), S.want - n.val);
+}
+function _cbText(txt, x, y, size, col, k) { ctx.font = "italic 900 " + Math.round(size) + "px system-ui, sans-serif"; ctx.lineWidth = 4 * k; ctx.strokeStyle = "rgba(5,8,16,0.9)"; ctx.strokeText(String(txt), x, y); ctx.fillStyle = col; ctx.fillText(String(txt), x, y); }
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }
 function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run, walk: T.walk ? T.walk.length : 0 } : null; }   // (walk: the tiles of a walk, §2.39; 0 for an attack)
 // does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is; and that one too while it walks: the battle walks it, §2.39)
