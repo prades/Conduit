@@ -799,11 +799,13 @@ function cardBattlePlay(f, kind, id, target, fire) {
     f._nearestEnemy = S && S.main ? S.main : target; f._enemyCacheFrame = 0;
     _cb.turn = T; _cb.acted.add(f);
     if (kind === "ult") {
+        const FT = typeof floatingTexts !== "undefined" ? floatingTexts : null, n0 = FT ? FT.length : 0;
         T.fired = typeof followerUltFire === "function" ? followerUltFire(f) : false;
-        if (!T.fired) {   // (an Ultimate that does not go off is not played, §2.58: FAULTLINE's opens the drawing of its path, which a turn does not wait for; the drawing called off, its turn and its card still its own)
+        if (!T.fired) {   // (an Ultimate that does not go off is not played, §2.58: FAULTLINE's opens the drawing of its path, which a turn does not wait for; CONTAMINATION NETWORK needs 2 toxic pods. The drawing called off, its turn and its card still its own)
             const aimed = typeof techAim !== "undefined" && techAim && techAim.f === f; if (aimed && typeof techAimCancel === "function") techAimCancel(true);
+            const why = FT ? FT.splice(n0).map(t => t && t.text).filter(Boolean).pop() : null;   // (its own words, NEEDS 2 TOXIC PODS, in the banner: over the world they would wait till the battle is over)
             _cb.turn = T0; _cb.acted.delete(f); f.alt = T.saved.alt; f.altBoth = T.saved.both;
-            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : "IT CANNOT GO OFF HERE");
+            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : why || "IT CANNOT GO OFF HERE");
         }
     }
     if (kind === "move" && S && typeof cardShapeFire === "function") {   // (its move at once, on its shape: §2.48)

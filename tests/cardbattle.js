@@ -875,12 +875,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 for (let i = 0; i < 60; i++) __live(1); return { battle: +(h[0] - a.health).toFixed(1), outside: +(h[1] - out.health).toFixed(1) }; })()`);
         ok(r, 'no room'); same(r.battle, 0, 'the battle\'s creature in its way hurt'); ok(r.outside > 0, 'the one outside the battle it was aimed at not hurt');
     });
-    check('an Ultimate that does not go off is not played (FAULTLINE: its path drawn by hand, which a turn does not wait for): its turn and card still its own, its charge kept, no drawing left open, the banner saying why', () => {
+    check('an Ultimate that does not go off is not played (FAULTLINE: its path drawn by hand, which a turn does not wait for; CONTAMINATION NETWORK with no toxic pods): its turn and card still its own, its charge kept, no drawing left open, the banner saying why', () => {
         const r = J(`(function(){ const A = __shaped('thermite', [[1, 0], [2, 1]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, null);
             const o = { played, turn: _cb.turn && _cb.turn.who, mine: _cbCurrent() === f, acted: _cb.acted.has(f), charge: f.ultimateCharge, aim: !!(typeof techAim !== 'undefined' && techAim), say: _cb.say && _cb.say.text };
             for (let i = 0; i < 300; i++) __live(1); o.after = { turn: _cb.turn && _cb.turn.who, mine: _cbCurrent() === f, fault: !!f._fault }; o.again = cardBattlePlay(f, 'basic', null, A.foes[0]); return o; })()`);
         ok(r, 'no room'); same(JSON.stringify([r.played, r.turn, r.mine, r.acted, r.charge, r.aim]), '[false,"you",true,false,100,false]', 'not played (played, turn, its turn, acted, charge, a drawing open)');
         ok(/NOT IN A BATTLE YET/.test(r.say || ''), 'the banner: ' + r.say); same(JSON.stringify([r.after.turn, r.after.mine, r.after.fault]), '["you",true,false]', 'still its turn after, not gone under'); same(r.again, true, 'another card of its played instead');
+        const s = J(`(function(){ const A = __shaped('blightspider', [[1, 0], [2, 1]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; if (typeof techPools !== 'undefined') techPools.length = 0; const n0 = floatingTexts.length;
+            const played = cardBattlePlay(f, 'ult', null, null); return { played, mine: _cbCurrent() === f, charge: f.ultimateCharge, say: _cb.say && _cb.say.text, left: floatingTexts.slice(n0).map(t => t.text) }; })()`);
+        ok(s, 'no room (the spider)'); same(JSON.stringify([s.played, s.mine, s.charge]), '[false,true,100]', 'CONTAMINATION NETWORK with no toxic pods: not played (played, its turn, charge)');
+        ok(/NEEDS 2 TOXIC PODS/.test(s.say || ''), 'its own words in the banner: ' + s.say); same(s.left.join(' / '), '', 'its words left over the world, to pop up after the battle');
     });
     check('every card speaks the battle\'s words: its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
         const r = J(`(function(){ const bad = [], seen = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { __fresh(1); const f = followers[0]; f.evolved = k; f.element = EVOLUTIONS[k].element; f.role = EVOLUTIONS[k].role; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;

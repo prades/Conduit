@@ -27565,16 +27565,18 @@ function cardBattlePlay(f, kind, id, target, fire) {
     _cb.turn = T;
     _cb.acted.add(f);
     if (kind === "ult") {
+        const FT = typeof floatingTexts !== "undefined" ? floatingTexts : null, n0 = FT ? FT.length : 0;
         T.fired = typeof followerUltFire === "function" ? followerUltFire(f) : false;
         if (!T.fired) {
             const aimed = typeof techAim !== "undefined" && techAim && techAim.f === f;
             if (aimed && typeof techAimCancel === "function")
                 techAimCancel(true);
+            const why = FT ? FT.splice(n0).map(t => t && t.text).filter(Boolean).pop() : null;
             _cb.turn = T0;
             _cb.acted.delete(f);
             f.alt = T.saved.alt;
             f.altBoth = T.saved.both;
-            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : "IT CANNOT GO OFF HERE");
+            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : why || "IT CANNOT GO OFF HERE");
         }
     }
     if (kind === "move" && S && typeof cardShapeFire === "function") {
