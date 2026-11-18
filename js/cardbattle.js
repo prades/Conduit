@@ -39,6 +39,7 @@ const CARD_BATTLE = {
     skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
+    killText: { size: 30, life: 110 },   // a kill's +N XP rising from where the creature fell: its size (screen points) and how long it lasts (frames)
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
     num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
     byClass: true,              // the charge and the cooldown by class (the owner, 2026-11-18); off, every attack at once and every second attack cooling (the tests of other things turn it off)
@@ -192,6 +193,7 @@ function _cbLand() {
 function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
     if (_cb.phase !== "off") {
+        _cbKillText();   // (a creature of the battle down: its +N XP rises from it)
         const live = _cb.foes.filter(_cbFoeOk);
         if (cardBattleActive()) {
             const squad = _cbSquad(), away = typeof player !== "undefined" && Math.hypot(player.x - _cb.cx, player.y - _cb.cy) > CARD_BATTLE.leave;
@@ -235,7 +237,16 @@ function _cbKeepAtIt() {
     }
     if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
 }
+// THE TEAM'S EXPERIENCE (the owner, 2026-11-18: "pop up for team kill experience"; then, of a panel with a CONTINUE button: "No, passive text but large text emerges from the kill"): each creature of a
+// battle that goes down, a large gold +N XP rises from where it fell and fades: what the kill paid your team (the game's own sum, js/levels.js killXp). Nothing to tap, nothing held up. The last one's
+// rises as the battle's camera eases back (drawn by the battle while its camera is up, js/cardbattle.js cardBattleNumbers; by the game after, js/drops.js).
+function _cbKillText() {
+    if (typeof floatingTexts === "undefined" || typeof killXp !== "function") return;
+    for (const a of _cb.foes) { if (!a || !a.dead || a._cbXpSaid) continue; a._cbXpSaid = true; if (a.noReward) continue;
+        const n = killXp(a); if (n > 0) floatingTexts.push({ world: true, x: a.x, y: a.y, text: "+" + n + " XP", color: "#ffe733", size: CARD_BATTLE.killText.size, life: CARD_BATTLE.killText.life, vy: -0.02, _cbBig: true }); }
+}
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
+    _cbKillText();   // (the last kill's experience, as the battle ends)
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
     _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.pushQ = [];
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
@@ -709,7 +720,9 @@ function cardBattleNumbers() {
         const u = n ? n.unit : null, top = u && typeof V.top === "function" ? V.top(u) : 22, ux = u ? u.x : t.x, uy = u ? u.y : t.y, base = V.screenNow(ux, uy, top * 0.8);
         if (!Number.isFinite(base[0]) || !Number.isFinite(base[1])) continue;
         if (!n) {   // a word: it rises from where it was said and fades
-            const age = (t._cbAge = (t._cbAge || 0) + 1); ctx.globalAlpha = Math.min(1, t.life / 30); _cbText(t.text, base[0], base[1] - 34 * k - age * 0.6 * k, (t.size || 12) * k, t.color || "#fff", k); continue;   // (above where a number pops, so the two do not overlap)
+            const age = (t._cbAge = (t._cbAge || 0) + 1); ctx.globalAlpha = Math.min(1, t.life / 30);
+            if (t._cbBig) { const sw = age < 8 ? 0.5 + age * 0.09 : age < 14 ? 1.22 - (age - 8) * 0.037 : 1; _cbText(t.text, base[0], base[1] - 20 * k - age * 0.45 * k, t.size * k * sw, t.color, k); continue; }   /* (a kill's experience: large, swelling as it comes out of the fallen one) */
+            _cbText(t.text, base[0], base[1] - 34 * k - age * 0.6 * k, (t.size || 12) * k, t.color || "#fff", k); continue;   // (above where a number pops, so the two do not overlap)
         }
         const age = f0 - n.t0, sw = age < 6 ? 0.6 + age * 0.17 : age < 10 ? 1.62 - (age - 6) * 0.155 : 1;   // (swells, then settles)
         const px = base[0] + n.jit * k, py = base[1] - 6 * k - Math.min(age, N.pop) * 0.5 * k, size = (n.foe ? 20 : 17) * k * sw, col = n.foe ? "#fff1c8" : "#ff6a5a";

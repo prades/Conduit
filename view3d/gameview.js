@@ -162,6 +162,16 @@ const GAMEVIEW = (function () {
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
     if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
     b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
+  // A FAINT (the owner, 2026-11-18: "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation
+  // is concluding"): one of a card battle that goes down (a creature, one of yours) is not gone at once: the view keeps its body for FAINT frames: it tips over onto its side (the first half), lies
+  // a moment, then sinks into the floor and shrinks away; then the body goes back to the pool. It runs on the game's frames, on its own: the last one's goes on as the battle's camera eases back.
+  const FAINT = 62, faints = [];
+  function faintStart(u, b, f0) { if (!u || !u.dead || !battling() || !b.holder.visible || faints.length >= 12) return false;
+    const h = b.holder; faints.push({ b, t0: f0, y: h.position.y, sc: h.scale.x }); return true; }
+  function faintStep(f0) { for (let i = faints.length - 1; i >= 0; i--) { const F = faints[i], h = F.b.holder, e = (f0 - F.t0) / FAINT;
+      if (!(e >= 0) || e >= 1) { h.rotation.z = 0; h.scale.setScalar(F.sc); give(F.b); faints.splice(i, 1); continue; }
+      const tip = Math.min(1, e / 0.42), tt = tip * tip * (3 - 2 * tip), down = Math.max(0, (e - 0.62) / 0.38);
+      h.rotation.z = tt * Math.PI / 2 * 0.94; h.position.y = F.y - down * down * 0.35; h.scale.setScalar(F.sc * (1 - 0.85 * down * down)); h.visible = true; } }
   function give(b) { b.holder.visible = false; let l = free.get(b.key); if (!l) free.set(b.key, l = []); l.push(b); }
   const turn = (b, tgt, dt) => { if (b.ang === null || !dt) { b.ang = tgt; return; } let d = tgt - b.ang; d -= TAU * Math.round(d / TAU); b.ang += d * Math.min(1, dt * 14); };
   const faceOf = row => Math.PI / 2 - row * Math.PI / 4;   // (a sheet's row, as the bakers turn the model for it)
@@ -226,7 +236,8 @@ const GAMEVIEW = (function () {
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
-    for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
+    for (const [u, b] of live) if (b.used !== stamp) { if (!faintStart(u, b, f0)) give(b); live.delete(u); }
+    faintStep(f0);
     const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
@@ -248,6 +259,7 @@ const GAMEVIEW = (function () {
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
     seeingThrough() { return faded.size + cut.size; },
+    fainting() { return faints.length; },   // (how many bodies are fainting now: for the tests)
     seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },   // (for the tests)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
     // the same by the camera as the last frame drew it, not placed again (a card battle's reticles ask it every frame, js/cardbattle.js: placing it would cut a turn's swing short)
