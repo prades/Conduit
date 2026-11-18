@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-18
+
+### No build yet · branch `claude/battle-anims` · the attacks in 3D begun: the Frost Maw's three, a sample (behind `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "I need to begin work animating every single attack in the new battle phase"; chosen: followers and enemies; each attack its body's motion and its effect rebuilt in 3D; the Frost Maw's three first, the rest once its look is approved (`DECISION-LOG.md`).
+- **What it does:** with the 3D view showing (and so in a card battle), the Frost Maw's bite, CHOMP and ABSOLUTE ZERO are drawn in 3D: his body's anticipation, strike and follow-through played smoothly from his sheet's poses, and their effects in powder snow and ice (shards, rings of snow, ice spikes, a frost haze; enemies pulled into his mouth, a freezing swirl, frost on him). The game leaves out its 2D drawing of exactly those effects. The game's rules, timings and numbers are untouched. In a battle the 2D effects were wiped while the battle's camera is up, so these are the first attack effects seen there. Every look and number the agent's, provisional (`VIEW-3D.md` §4.7).
+- **The system:** a registry by form in the view (`view3d/attacks.js`), keyed by the game's own effect types, drawn from the game's state without writing it; pooled points and crystals, a budget halved on LOW graphics; a fault sends that form's effects back to 2D and the view goes on.
+- `view3d/attacks.js` (new), `view3d/gameview.js`, `view3d/gamemap.js`, `tools/view3d.js`, `dist/view3d.js` (made), `js/view3d.js` (`view3dOwnsFx`), `js/elements.js` (`drawElementEffects` asks it), `js/draw.js` (the Maw's icicles), `play.html` and `dist/conduit.js` (made), `tests/view3d.js` (7 new checks, one more in the switch off), `docs/VIEW-3D.md` (§3, §4.5, §4.7, §5, §6, §7), `docs/EFFECTS.md`, `docs/CARD-BATTLES.md` §9, `docs/DECISION-LOG.md`.
+- **Verified:** tests/view3d.js; the full suite (see the commit); a video of a card battle in the real page (headless, software WebGL). **Not seen on an iPad; not approved by the owner.**
+
 ## 2026-11-17
 
 ### Build `2026-11-17ah` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health as a callout (behind `?cards` with `?engine=3d`)
