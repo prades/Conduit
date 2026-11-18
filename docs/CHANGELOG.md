@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ag` · branch `claude/friendly-thompson-w581x0` · card battles: each enemy's health bar on the ground (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "Need to make it to where the health bars are visible somehow on the ground near each enemy."
+- **What it does:** in a battle, each enemy has a health bar lying on the floor just in front of it, level across the screen: red for its health left, dark for what it has lost. It follows the creature.
+- `js/cardbattle.js` (`_cbGroundBar`, `CARD_BATTLE.hpBar`), `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2, §9.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.** Sizes the agent's.
+
 ### Build `2026-11-17af` · branch `claude/friendly-thompson-w581x0` · card battles: the Frost Maw's CHOMP card has its picture
 - **The ask** (the owner, 2026-11-18): "Approve the CHOMP card and put it in."
 - **What it does:** the Frost Maw's CHOMP card in the battle's pop-up shows its picture (round 2: the Maw head-on, its jaws coming down on shattering glass), as the Ember Hood's HEXFIRE does. Saved light (28 KB).

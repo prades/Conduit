@@ -314,7 +314,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('A RETICLE ON EVERY ENEMY (§2.37; the owner: "So we need to fix that to where it shows each enemy with one of those")');
     check('in a battle the red corners go round each of its enemies, where the 3D view draws it by its camera as drawn (not placed again); the gun\'s own are not drawn; out of a battle the gun\'s as ever', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.6, player.y + 1);
-            const pts = [], keep = { moveTo: ctx.moveTo, stroke: ctx.stroke }; let strokes = 0; ctx.moveTo = function (x, y) { pts.push([x, y]); }; ctx.stroke = function () { strokes++; };
+            const pts = [], keep = { moveTo: ctx.moveTo, stroke: ctx.stroke, bar: _cbGroundBar }; let strokes = 0; _cbGroundBar = function () {};   /* (the corners only: the health on the ground has its own check) */ ctx.moveTo = function (x, y) { pts.push([x, y]); }; ctx.stroke = function () { strokes++; };
             const V0 = VIEW3D.view, S0 = VIEW3D.showing; let placed = 0; const fake = { screenNow: (x, y, h) => [x * 100, y * 100 - (h || 0)], screenOf: () => { placed++; return [0, 0]; }, has: () => true, top: () => 20 };
             const o = {}, at = e => [e.x * 100, e.y * 100 - 10], near = (p, e) => Math.hypot(p[0] - at(e)[0], p[1] - at(e)[1]) < 40;
             try {
@@ -322,7 +322,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 cardBattleChoose(a); __ticks(1); VIEW3D.view = fake; VIEW3D.showing = true; strokes = 0; pts.length = 0;
                 o.taken = cardBattleReticles(); o.inStrokes = strokes; o.round = [a, b].map(e => pts.filter(p => near(p, e)).length);
                 strokes = 0; pts.length = 0; drawLockReticle(); o.gunStrokes = strokes; o.allOnThem = pts.every(p => near(p, a) || near(p, b)); o.placed = placed; o.aiming = cardBattleAiming();
-            } finally { VIEW3D.view = V0; VIEW3D.showing = S0; ctx.moveTo = keep.moveTo; ctx.stroke = keep.stroke; playerAttackMode = false; playerLockTarget = null; }
+            } finally { VIEW3D.view = V0; VIEW3D.showing = S0; ctx.moveTo = keep.moveTo; ctx.stroke = keep.stroke; _cbGroundBar = keep.bar; playerAttackMode = false; playerLockTarget = null; }
             cardBattleReset(); o.after = cardBattleAiming(); return o; })()`);
         same(JSON.stringify([r.outBattle, r.outStrokes]), '[false,4]', 'out of a battle: not the battle\'s; the gun\'s four corners');
         same(JSON.stringify([r.taken, r.inStrokes].concat(r.round)), '[true,8,4,4]', 'in it: four corners round each of its two enemies');
@@ -543,6 +543,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 tries.push([_cbFoesNextTo(e0), _cbFoesNextTo(e1)]); }
             return { n: tries.length, never: tries.every(t => t[1] >= t[0]), better: tries.filter(t => t[1] > t[0]).length }; })()`);
         ok(r.n > 0, 'no start square to try'); same(r.never, true, 'RECKLESS stood next to fewer enemies than BALANCED'); ok(r.better > 0, 'RECKLESS never went into a bigger crowd (' + r.n + ' starts)');
+    });
+
+    check('each enemy\'s health on the ground (the owner, 2026-11-18): a bar on the floor in front of it, level across the screen, its health from the left', () => {
+        const r = J(`(function(){ const calls = []; const saved = ctx; const fake = { save(){}, restore(){}, beginPath(){}, closePath(){}, fill(){ calls.push(['fill', this.fillStyle, this._pts.slice()]); this._pts = []; }, stroke(){ this._pts = []; },
+                moveTo(x, y){ this._pts = [[x, y]]; }, lineTo(x, y){ this._pts.push([x, y]); }, _pts: [] };
+            ctx = fake; const V = { screenNow: (x, y, h) => [600 + (x - y) * 40, 300 + (x + y) * 20 - h] };   /* (a camera turned 45°: the floor's ways are diagonal on the screen) */
+            _cbGroundBar(V, { x: 10, y: 10, health: 30, maxHealth: 60 }); ctx = saved;
+            const fills = calls.filter(c => c[0] === 'fill'), base = fills[0], red = fills[1]; const ys = p => p.map(q => q[1]), xs = p => p.map(q => q[0]);
+            return { n: fills.length, red: red && red[1], level: Math.abs(base[2][0][1] - base[2][1][1]) < 1e-6, below: Math.min(...ys(base[2])) > 300 + 20 * 20, half: +((Math.max(...xs(red[2])) - Math.min(...xs(red[2]))) / (Math.max(...xs(base[2])) - Math.min(...xs(base[2])))).toFixed(2), left: Math.min(...xs(red[2])) === Math.min(...xs(base[2])) }; })()`);
+        same(r.n, 2, 'the bar and its health'); same(r.red, '#ff4a1c', 'its health red'); same(r.level, true, 'level across the screen'); same(r.below, true, 'in front of it (lower on the screen)'); same(r.half, 0.5, 'half its health, half the bar'); same(r.left, true, 'full from the left');
+        same(/if \(V\) _cbGroundBar\(V, a\);/.test(rd('js/cardbattle.js')), true, 'drawn with each enemy\'s corners');
     });
 
     group('THE PIECES');

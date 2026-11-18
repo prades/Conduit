@@ -39,6 +39,7 @@ const CARD_BATTLE = {
     skew: 15,                   // degrees the camera turns off straight across the line, towards your side (yours nearer, lower on the screen by their cards), for an isometric feel (the owner, 2026-11-17: "Needs an isometric feel, make the camera rotate slightly too")
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
+    hpBar: { len: 0.9, wide: 0.16, ahead: 0.55 },   // tiles: an enemy's health bar on the floor (its length across the screen, its depth, how far in front of the creature)
     tileCard: 56,               // screen points: a dragged card's width without the 3D view to measure a tile by
     // STEP 3, THE TURNS (the agent's, provisional): how long each turn's real-time window may run
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
@@ -532,8 +533,25 @@ function cardBattleReticles() {
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
         const R = r + pulse, k = Math.max(8, R * 0.35);
         for (const [sx, sy] of _CB_CORNERS) { ctx.beginPath(); ctx.moveTo(x + sx * R, y + sy * (R - k)); ctx.lineTo(x + sx * R, y + sy * R); ctx.lineTo(x + sx * (R - k), y + sy * R); ctx.stroke(); }
+        if (V) _cbGroundBar(V, a);
     }
     ctx.restore(); return true;
+}
+// ITS HEALTH ON THE GROUND (the owner, 2026-11-18: "the health bars are visible somehow on the ground near each enemy"): a bar laid flat on the floor in front of each enemy of the battle (on the
+// camera's side of it), level across the screen whatever the camera's turn, drawn where the 3D view puts the floor: red its health left, dark what it has lost, a pale rim. It goes where the creature goes. Sizes the agent's.
+function _cbGroundBar(V, a) {
+    // the floor's two ways as the picture shows them here: which way on the floor is across the screen, which is down it (towards the camera), whatever the camera's turn
+    const o = V.screenNow(a.x, a.y, 0), X = V.screenNow(a.x + 1, a.y, 0), Y = V.screenNow(a.x, a.y + 1, 0), e0 = X[0] - o[0], e1 = X[1] - o[1], g0 = Y[0] - o[0], g1 = Y[1] - o[1], det = e0 * g1 - g0 * e1;
+    if (!(Math.abs(det) > 1e-6)) return;
+    let rx = g1 / det, ry = -e1 / det, dx = -g0 / det, dy = e0 / det; const rl = Math.hypot(rx, ry), dl = Math.hypot(dx, dy); rx /= rl; ry /= rl; dx /= dl; dy /= dl;
+    const B = CARD_BATTLE.hpBar, cx = a.x + dx * B.ahead, cy = a.y + dy * B.ahead, hl = B.len / 2, hw = B.wide / 2;
+    const P = (u, v) => V.screenNow(cx + rx * u + dx * v, cy + ry * u + dy * v, 0);
+    const quad = (u0, u1, fill) => { const p = [P(u0, -hw), P(u1, -hw), P(u1, hw), P(u0, hw)]; if (!p.every(q => Number.isFinite(q[0]) && Number.isFinite(q[1]))) return null; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(p[i][0], p[i][1]); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); return p; };
+    const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1)));
+    ctx.save(); ctx.globalAlpha = 0.92;
+    const rim = quad(-hl, hl, "rgba(6,10,20,0.85)"); if (k > 0) quad(-hl, -hl + 2 * hl * k, "#ff4a1c");   // (full from the left of the screen)
+    if (rim) { ctx.beginPath(); ctx.moveTo(rim[0][0], rim[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(rim[i][0], rim[i][1]); ctx.closePath(); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(255,230,220,0.8)"; ctx.stroke(); }
+    ctx.restore();
 }
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }
 function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run, walk: T.walk ? T.walk.length : 0 } : null; }   // (walk: the tiles of a walk, §2.39; 0 for an attack)
