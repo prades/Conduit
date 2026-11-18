@@ -504,6 +504,7 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit, hi
     };
     if (o && o.kind) p.kind = o.kind;
     if (o && o.onLand) p.onLand = o.onLand;
+    if (typeof cardShapeShot === "function") cardShapeShot(p, actor);   // (a card's shot in a battle: only its own target, js/cardshapes.js)
     followerProjectiles.push(p);
     return p;
 }
