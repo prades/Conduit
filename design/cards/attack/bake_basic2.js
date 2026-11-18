@@ -32,7 +32,7 @@ const TYPES = {
   projectile: { seed: 404, move: 'shot' },
   elemental:  { seed: 505, move: 'burst' },
 };
-if (!TYPES[TYN] || !/^[ABC]$/.test(OPT || '') || !ELS[ELN] || !OUT || (TYPES[TYN].move && OPT !== 'A')) {
+if (require.main === module && (!TYPES[TYN] || !/^[ABC]$/.test(OPT || '') || !ELS[ELN] || !OUT || (TYPES[TYN].move && OPT !== 'A'))) {
   console.error('usage: node design/cards/attack/bake_basic2.js <' + Object.keys(TYPES).join('|') + '> <A|B|C> <' + Object.keys(ELS).join('|') + '> <out.png>'); process.exit(1); }
 
 // ---------- (run in the page) ----------
@@ -67,10 +67,10 @@ function KIT(W, H, seed) {
 // shockwave it throws; projectile a shot on its trail coming at the lens; elemental a burst of the element at the lens.
 function OPTION_A(E, TY, W, H) {
   const K = KIT(W, H, TY.seed * 10 + 1), { R, cv, A, blob, crescent } = K, PI = Math.PI;
-  const out = cv(), g = out.getContext('2d'); g.fillStyle = E.night; g.fillRect(0, 0, W, H);
-  g.save(); g.translate(W / 2, H / 2); g.rotate(-0.19); g.filter = 'blur(2px)'; g.drawImage(K.world(E.world), -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); g.restore();
-  g.fillStyle = A(E.night, 0.35); g.fillRect(0, 0, W, H);
-  if (TY.move) { SWEEP_MOVES[TY.move](g, K, E, W, H); K.grade(g, E); return out; }   // (the other four types: below; slashing's own lines follow, unchanged)
+  const out = cv(), g = out.getContext('2d'); if (!E.strokeOnly) { g.fillStyle = E.night; g.fillRect(0, 0, W, H); }   // (strokeOnly: the stroke alone on a clear canvas, for its layers: compose_basic.js)
+  if (!E.strokeOnly) { g.save(); g.translate(W / 2, H / 2); g.rotate(-0.19); g.filter = 'blur(2px)'; g.drawImage(K.world(E.world), -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); g.restore();
+  g.fillStyle = A(E.night, 0.35); g.fillRect(0, 0, W, H); }
+  if (TY.move) { SWEEP_MOVES[TY.move](g, K, E, W, H); if (!E.strokeOnly) K.grade(g, E); return out; }   // (the other four types: below; slashing's own lines follow, unchanged)
   const CX = -70, CY = 545, RR = 540, N = 90, S = crescent(CX, CY, RR, -1.42, -0.42, 120, 0.62, N);
   const along = (g2, cols) => { const lg = g2.createLinearGradient(S.out[0][0], S.out[0][1], S.out[N][0], S.out[N][1]); cols.forEach(([q, c]) => lg.addColorStop(q, c)); return lg; };
   const sl = cv(), sg = sl.getContext('2d');
@@ -87,7 +87,7 @@ function OPTION_A(E, TY, W, H) {
   K.streak(g, hd[0] - 34, hd[1] + 18, -0.45, 120, 3, E.hot); K.streak(g, hd[0] - 34, hd[1] + 18, 1.12, 60, 2, E.hot);
   for (let i = 0; i < 8; i++) { const x = R() * W, y = R() * H * 0.6, r = 7 + R() * 16; blob(g, x, y, r, [[0, A(E.hot, 0.2)], [0.7, A(E.col, 0.1)], [1, A(E.col, 0)]]); }   // (soft motes at the lens)
   g.restore();
-  K.grade(g, E); return out;
+  if (!E.strokeOnly) K.grade(g, E); return out;
 }
 
 // ---------- B: THE CLAW MARKS ----------
@@ -269,7 +269,8 @@ ${OPTION_C.toString()}
 window.__card = function (opt, E, TY, W, H) { return ({ A: OPTION_A, B: OPTION_B, C: OPTION_C })[opt](E, TY, W, H).toDataURL('image/png'); };
 </script></body></html>`;
 
-(async () => {
+module.exports = { ELS, TYPES, KIT, OPTION_A, SWEEP_MOVES_MAKE, worldSrc };   // (compose_basic.js: the strokes as layers)
+if (require.main === module) (async () => {
   const W = 450, H = 630;
   const b = await chromium.launch({ args: ['--no-sandbox'] });
   const p = await b.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
