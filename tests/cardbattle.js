@@ -22,7 +22,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
-        globalThis.__fresh = (n) => { cardBattleReset(); actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); frame = 1000;
+        globalThis.__fresh = (n) => { CARD_BATTLE.byClass = false; cardBattleReset();   /* (each check of something else, at once; the charge and the cooldown by class have checks of their own) */ actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); frame = 1000;
             const c = __cell('crystal_chamber'); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null;
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire'][i % 3]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; } partyTick(); return followers.slice(); };
         globalThis.__ant = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'scout' }); const c = _fpNearestCellOpen(x, y); e.x = c[0]; e.y = c[1]; e.moveSpeed = 0; e.baseMoveSpeed = 0; e.provoked = false; e.state = 'wander'; return e; };
@@ -132,7 +132,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const cooler = F.find(f => altCools(f)) || (F[2].role = 'brawler', F[2]); cooler._altReadyAt = frame + 150; const cooling = cardBattleCards(cooler).find(c => c.kind === 'move');   // (one that cools down after its move: a Brawler, js/moves.js altCools)
             const pick = cs => cs.map(c => c.kind + ':' + c.name + ':' + (c.ready ? 'R' : 'W') + (c.recharge ? ':' + c.recharge : '') + (c.kind === 'ult' ? ':' + c.charge : ''));
             return { a: pick(a), b: pick(b), egg: pick(egg), cooling: [cooling.ready, cooling.turns], wob: Math.max(1, Math.ceil(MOVES.wobble_slam.windup / 2)), icy: Math.max(1, Math.ceil(MOVES[b[1].name === MOVES.icicle_volley.name ? 'icicle_volley' : 'icicle_volley'].windup / 2)), fx: a[1].fx.length > 10 && b[2].fx.length > 10 }; })()`);
-        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.55)');
+        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.56)');
         same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40,walk:MOVE:R', 'the Rimestar\'s');
         same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1,walk:MOVE:R', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
     });
@@ -652,6 +652,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const A = __shaped('quillstone', [[1, 0], [3, 0], [2, 1]]), a = A && __card(A.f, 'move', 'ember_slash', A.foes[0], A.foes), B = __shaped('electroskink', [[1, -1], [2, 0], [3, -1], [2, 2]]), b = B && __card(B.f, 'move', 'zigzag_dash', B.foes[1], B.foes); return [a, b]; })()`);
         ok(r[0] && r[1], 'no room'); same(r[0].hurt, '110', 'EMBER SLASH'); same(JSON.stringify([r[1].hit, r[1].hurt]), '[3,"1110"]', 'ZIGZAG DASH (its zigzag stops at a wall)');
     });
+    check('ZIGZAG DASH ends on a new square (§2.57; the owner: "they should end up in a different location than when they started it"): the farthest free square of its zigzag; its zigzag all taken, the free square nearest the last it struck; on the floor, and it stays there', () => {
+        const r = J(`(function(){ const one = (offs, at) => { const A = __shaped('electroskink', offs); if (!A) return null; const f = A.f, s0 = _cbSq(f).join();
+                const taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y)), S = cardShapeFor(f, 'move', 'zigzag_dash', A.foes[at]);
+                const want = S.hit.slice().reverse().find(c => !taken.has(c.join()) && c.join() !== s0), last = S.hit[S.hit.length - 1]; cardBattlePlay(f, 'move', 'zigzag_dash', A.foes[at]);
+                for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); __live(30); const s1 = _cbSq(f);   /* (a moment after its turn: settled on its square) */
+                return { s0, s1: s1.join(), want: want ? want.join() : null, fromLast: +Math.hypot(s1[0] - last[0], s1[1] - last[1]).toFixed(2), floor: facilityWalkable(s1[0], s1[1], _fp.F), at: +Math.hypot(f.x - s1[0], f.y - s1[1]).toFixed(3) }; };
+            return { open: one([[1, -1], [2, 0]], 1), full: one([[1, -1], [2, 0], [3, -1], [4, 0]], 1) }; })()`);
+        for (const k of ['open', 'full']) { const o = r[k]; ok(o, 'no room (' + k + ')'); ok(o.s1 !== o.s0, k + ': it ended where it started, ' + o.s0); same(JSON.stringify([o.floor, o.at < 0.05]), '[true,true]', k + ': on the floor, on its square'); }
+        ok(r.open.want, 'the setup: no free square on its zigzag'); same(r.open.s1, r.open.want, 'its new square (the farthest free one of its zigzag)');
+        same(r.full.want, null, 'the setup: a free square on its zigzag'); ok(r.full.fromLast <= 2.3, 'its zigzag all taken: by the last it struck (' + r.full.fromLast + ' from its zigzag\'s end)');
+    });
+    check('a move that carries its follower leaves it where it was carried (SKATE CHARGE: its new square by its dash\'s end, not eased back by its start)', () => {
+        const r = J(`(function(){ const A = __shaped('igloo', [[2, 0], [3, 0]]); if (!A) return null; const f = A.f, s0 = _cbSq(f); cardBattlePlay(f, 'move', 'skate_charge', A.foes[0]); const end = [f.x, f.y];
+            for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); const s1 = _cbSq(f);
+            return { moved: +Math.hypot(end[0] - s0[0], end[1] - s0[1]).toFixed(2), fromEnd: +Math.hypot(s1[0] - end[0], s1[1] - end[1]).toFixed(2), fromStart: +Math.hypot(s1[0] - s0[0], s1[1] - s0[1]).toFixed(2) }; })()`);
+        ok(r, 'no room'); ok(r.moved >= 3, 'the dash carried it ' + r.moved); ok(r.fromEnd <= 1.5 && r.fromStart >= 2, 'its new square: ' + r.fromEnd + ' from where the dash ended, ' + r.fromStart + ' from where it started');
+    });
     check('a fan (ICICLE VOLLEY): each icicle the first enemy on its line; one behind another on the same line is untouched', () => {
         const r = J(`(function(){ const A = __shaped('rimestar', [[3, 0], [5, 0], [4, 1]]); return A && __card(A.f, 'move', 'icicle_volley', A.foes[0], A.foes); })()`);
         ok(r, 'no room'); same(JSON.stringify([r.played, r.hurt]), '[true,"101"]', 'played; who was hurt');
@@ -778,7 +795,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(/const foe = _cbDragFoe\(ev\) \|\| _cbFoeOnTileAt\(ev\),/.test(c) && /if \(_cbOverBand\(ev\)\) \{ D\.foe = null; return null; \}/.test(c) && /if \(V\) _cbFoeTileDraw\(V\);/.test(c), true, 'wired: over its square counts; back over the cards nothing; drawn with the battle\'s marks');
         same(/up: h \/ 2 \+ CARD_BATTLE\.dragUp/.test(c), true, 'the dragged card rides above the finger');
     });
-    group('THE MOVE CARD (§2.55; the owner: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card")');
+    group('THE MOVE CARD (§2.56; the owner: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card")');
     check('every follower has a MOVE card, always ready like its basic attack, its reach its tiles by its pace; one with no pace cannot use it', () => {
         const r = J(`(function(){ __fresh(2); const [f, g] = followers; f.moveSpeed = f.baseMoveSpeed = 0.028; g.moveSpeed = g.baseMoveSpeed = 0; const c = cardBattleCards(f).find(x => x.kind === 'walk'), d = cardBattleCards(g).find(x => x.kind === 'walk');
             return { c: c && [c.tag, c.name, c.ready, c.tiles, /3 squares/.test(c.fx)], html: c && /UP TO 3 SQUARES/.test(_cbCardHTML(c)) && /data-kind="walk"/.test(_cbCardHTML(c)), d: d && [d.ready, /NO PACE/.test(_cbCardHTML(d))] }; })()`);
@@ -805,6 +822,33 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 fills = 0; strokes.length = 0; _cbDrag = { f, kind: 'walk', aim: { x: A.P[0] + 4, y: A.P[1], tile: true }, col: '#19e6c1' }; cardShapeDraw(V); const no = { fills, red: strokes.filter(c => c === '#ff4a3a').length };
                 return { n: sq.length, ok, no }; } finally { ctx.fill = kf; ctx.stroke = ks; _cbDrag = null; } })()`);
         ok(r, 'no room'); same(JSON.stringify([r.ok.fills, r.ok.gold]), JSON.stringify([r.n + 1, 1]), 'its reach lit and its square in gold'); same(JSON.stringify([r.no.fills, r.no.red]), JSON.stringify([r.n, 1]), 'on a taken square: its reach, the square in red');
+    });
+
+    group('CHARGE AND COOL DOWN, BY CLASS (the owner, 2026-11-18): a Mage charges both its cards, a Brawler acts at once and cools down, a Technician charges its second attack and cools it down; an Ultimate at once');
+    run(`globalThis.__one = (role) => { __fresh(1); CARD_BATTLE.byClass = true; const f = followers[0]; f.role = role; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(f, a); return { f, a }; };
+        globalThis.__toYou = () => { for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) { frame++; cardBattleTick(); } };`);
+    check('a Mage: its basic card charges (its turn passes, CHARGING) and fires on its own at its next turn; its card reads CHARGE 1 TURN', () => {
+        const r = J(`(function(){ const { f, a } = __one('sniper'); const c0 = cardBattleCards(f).find(c => c.kind === 'basic'); const o = { label: c0.chargeT, played: cardBattlePlay(f, 'basic', null, a) };
+            o.charging = _cb.charge.has(f); o.left = _cb.charge.get(f) && _cb.charge.get(f).left; const T = cardBattleTurnInfo(); o.after = T && T.who; o.actedNow = !(T && T.who === 'act' && T.actor === f);
+            __toYou(); for (let i = 0; i < 5; i++) { frame++; cardBattleTick(); } const T2 = cardBattleTurnInfo(); o.fired = !!T2 && T2.who === 'act' && T2.actor === f && T2.kind === 'basic'; o.gone = !_cb.charge.has(f); return o; })()`);
+        same(r.label, 1, 'its card: CHARGE 1 TURN'); same(r.played, true, 'played'); same(r.charging, true, 'charging'); same(r.left, 1, 'one turn to charge'); same(r.actedNow, true, 'it struck at once');
+        same(r.fired, true, 'it fired on its own at its next turn'); same(r.gone, true, 'its charge spent');
+    });
+    check('a Mage\'s second attack charges by its wait time and does not cool down after', () => {
+        const r = J(`(function(){ const { f, a } = __one('sniper'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); if (!mv) return { none: true };
+            return { charge: mv.chargeT, want: _cbTurns(MOVES[mv.id].windup), recharge: mv.recharge, cools: _cbCools(f, 'move') }; })()`);
+        same(!!r.none, false, 'no second attack'); same(r.charge, r.want, 'its charge from its wait time'); same(r.recharge, 0, 'no recharge shown'); same(r.cools, false, 'it cools down');
+    });
+    check('a Brawler acts at once, its second attack then cools down; a Technician\'s basic at once, its second attack charges and cools down; an Ultimate charges for no one', () => {
+        const r = J(`(function(){ const o = {};
+            { const { f, a } = __one('brawler'); o.bBasic = _cbChargeTurns(f, 'basic'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); o.bMove = mv ? _cbChargeTurns(f, 'move', mv.id) : null; o.bCools = _cbCools(f, 'move'); o.bPlayed = cardBattlePlay(f, 'basic', null, a); o.bNow = cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; }
+            { const { f } = __one('camper'); o.tBasic = _cbChargeTurns(f, 'basic'); const mv = cardBattleCards(f).find(c => c.kind === 'move'); o.tMove = mv ? _cbChargeTurns(f, 'move', mv.id) : null; o.tCools = _cbCools(f, 'move'); o.tLabel = mv ? _cbCardHTML(mv) : ''; }
+            { const { f } = __one('sniper'); o.ult = _cbChargeTurns(f, 'ult'); }
+            return o; })()`);
+        same(JSON.stringify([r.bBasic, r.bMove, r.bCools, r.bPlayed, r.bNow]), '[0,0,true,true,true]', 'the Brawler: at once, its second attack cooling, its basic played at once');
+        same(JSON.stringify([r.tBasic, r.tMove > 0, r.tCools]), '[0,true,true]', 'the Technician: its basic at once, its second attack charging and cooling');
+        ok(/CHARGE \d+ TURNS? · RECHARGE \d+ TURNS?/.test(r.tLabel), 'its card reads both: ' + (r.tLabel.match(/cb-rc">([^<]*)/) || [])[1]);
+        same(r.ult, 0, 'an Ultimate charges');
     });
 
     group('THE PIECES');

@@ -81,7 +81,7 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.55)
+    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.56)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;
 }
@@ -202,6 +202,7 @@ function cardShapeFire(f, id, S) {
     const newFx = typeof elementEffects !== "undefined" ? elementEffects.filter(e => !fx0.has(e)) : [], newDc = typeof rotDecoys !== "undefined" ? rotDecoys.filter(d => !dc0.has(d) && d.by === f) : [];
     if (S.def.kind === "decoy" && S.tile) for (const d of newDc) { d.x = S.tile[0]; d.y = S.tile[1]; for (const e of newFx) if (e.on === d || e.type === "decoylob") { e.x = d.x; e.y = d.y; } }   // (on the square it was dropped on)
     if (S.def.kind === "swap" && S.main) { const a = _cb.slots.get(f), b = _cb.slots.get(S.main); if (a && b) { _cb.slots.set(f, b); _cb.slots.set(S.main, a); } }   // (where each now stands is its square)
+    if (S.def.kind === "zigzag") _csDashEnd(f, S);   // (ZIGZAG DASH ends on a new square: js/cardbattle.js §2.57)
     if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && o && o.type === "buds"));   // (SEEDFALL's buds heal on round it; the card's turn does not wait for them to wither)
     for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.52: cardShapeBuds)
     if (S.def.stays) {   // (held: no bites of its own while the battle is on; its life put out of reach, its age kept for its look)
@@ -211,6 +212,18 @@ function cardShapeFire(f, id, S) {
         if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && held.indexOf(o) >= 0) && !(k === "dc" && newDc.indexOf(o) >= 0));   // (the card's turn does not wait for them)
     }
     return true;
+}
+// ZIGZAG DASH'S END (§2.57; the owner, 2026-11-18: "When the electroskink uses zigzag dash, they should end up in a different location than when they started it"): it ends on the farthest free square
+// of its zigzag (its own, the floor's, none of the battle's taken), else on the free square of the room nearest the last enemy it struck; never on the square it started from. That square is its own.
+// (The move's own end, 0.8 short of the last it struck, could be inside an object, and the game then put it back on open floor wherever that was.)
+function _csDashEnd(f, S) {
+    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== f && !a.dead && !_cb.out.has(a)) taken.add(_csK(Math.round(q.x), Math.round(q.y)));
+    const start = _csK(S.A[0], S.A[1]), free = c => !taken.has(_csK(c[0], c[1])) && _csK(c[0], c[1]) !== start && _csFloor(c[0], c[1]);
+    let end = null; for (let i = S.hit.length - 1; i >= 0 && !end; i--) if (free(S.hit[i])) end = S.hit[i];
+    if (!end) { const R = _csRoom(), on = S.mask.length ? _csSq(S.mask[S.mask.length - 1]) : S.A; let bd = Infinity; for (const c of (R ? R.cells : [])) { if (!free(c)) continue; const d = Math.hypot(c[0] - on[0], c[1] - on[1]); if (d < bd) { bd = d; end = c; } } }
+    if (!end) return;
+    f.x = end[0]; f.y = end[1]; f._fpPath = null; if (Number.isFinite(f.visualX)) { f.visualX = f.x; f.visualY = f.y; }
+    _cb.slots.set(f, { x: end[0], y: end[1] });
 }
 // SEEDFALL's buds in a battle (js/cardbattle.js _cbStatusTurn, your round over): a turn of their healing beats (`n` frames of their time), as the statuses count; their time over, they wither
 function cardShapeBuds(n) {
@@ -246,7 +259,7 @@ function cardShapeDraw(V) {
     if (S.tile) { ctx.globalAlpha = 1; ctx.strokeStyle = "#ffe733"; ctx.lineWidth = 3; quad(S.tile[0], S.tile[1], 0.02); ctx.stroke(); }
     ctx.restore();
 }
-// THE MOVE CARD dragged (js/cardbattle.js §2.55): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
+// THE MOVE CARD dragged (js/cardbattle.js §2.56): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
 function _csDrawWalk(V, D) {
     const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
     const quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
