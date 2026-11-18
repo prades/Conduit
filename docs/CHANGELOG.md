@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ak` · branch `claude/friendly-thompson-w581x0` · card battles: the enemy's square lit as a card is dragged over it (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "got to make sure that whenever you are dragging a tile or a card to an enemy, it lights up the tile that the enemy is on."
+- **What it does:** while you drag a card over an enemy (or over the square it stands on), its floor square glows yellow, pulsing, with a bright rim. The dragged card now rides just above your finger, so the enemy and its square are not hidden under it.
+- `js/cardbattle.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.54, §9.
+- **Verified:** tests/cardbattle.js and the full suite; seen in a real browser. **Not seen on an iPad.**
+
 ### Build `2026-11-17aj` · branch `claude/start-game-project-HSh7Z` · card battles: statuses count in turns, splash stays in the battle; the opening stance
 - **The asks** (the owner, 2026-11-18): "find every instance of when a status is inflicted or poison or something that relays the game clock, and make sure that ... when you do a damage that has some sort of splash or whatever, it's calculated within the parameters of the battle and not outside of it" (a status shorter than a turn: "At least one turn"); and "the tank and the aggressive play style should be upfront maybe two spaces".
 - **Statuses in turns** (`CARD-BATTLES.md` §2.52): in a battle, everyone's statuses stop running down in real seconds and count in turns (2 s a turn; at least one turn). A stunned, sleeping or frozen creature loses its turn; a glitched one may walk but not bite or start its special; a slowed one walks fewer squares; burn, poison and SEEDFALL's healing come a turn's worth at a time, the same in all. Before, a stun often ran out before the creature's turn came, and burns ticked between turns.

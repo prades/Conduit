@@ -767,6 +767,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.member, false, 'the setup: the one holding a room is in the squad'); same(r.held, 0, 'the one holding a room hurt'); ok(r.squad > 0, 'your squad\'s member not hurt');
     });
 
+    check('the enemy\'s square lit (the owner, 2026-11-18): a card dragged over an enemy lights the square it stands on (a pulsing fill and a bright rim, drawn on the floor); over its square counts as over it; back over the cards, nothing lit', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const q = _cbSq(a), fills = []; let path = []; const saved = ctx; const fake = { save(){}, restore(){}, setTransform(){}, beginPath(){ path = []; }, closePath(){}, moveTo(x, y){ path.push([x, y]); }, lineTo(x, y){ path.push([x, y]); }, fill(){ fills.push({ s: this.fillStyle, p: path.slice() }); }, stroke(){} };
+            const V = { screenNow: (x, y) => [x * 50, y * 50] }; _cbDrag = { foe: a }; ctx = fake; try { _cbFoeTileDraw(V); } finally { ctx = saved; }
+            const sq = fills.find(f => f.s === '#ffe733'), cx = sq ? sq.p.reduce((s, c) => s + c[0], 0) / 4 / 50 : null, cy = sq ? sq.p.reduce((s, c) => s + c[1], 0) / 4 / 50 : null;
+            _cbDrag = null; return { lit: !!sq, on: sq && Math.abs(cx - Math.round(q[0])) < 1e-6 && Math.abs(cy - Math.round(q[1])) < 1e-6 }; })()`);
+        same(r.lit, true, 'its square lit'); same(r.on, true, 'the square it stands on');
+        const c = rd('js/cardbattle.js');
+        same(/const foe = _cbDragFoe\(ev\) \|\| _cbFoeOnTileAt\(ev\),/.test(c) && /if \(_cbOverBand\(ev\)\) \{ D\.foe = null; return null; \}/.test(c) && /if \(V\) _cbFoeTileDraw\(V\);/.test(c), true, 'wired: over its square counts; back over the cards nothing; drawn with the battle\'s marks');
+        same(/up: h \/ 2 \+ CARD_BATTLE\.dragUp/.test(c), true, 'the dragged card rides above the finger');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
