@@ -4,11 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17ao` · branch `claude/friendly-thompson-w581x0` · card battles: a fainting animation; the team's experience after a win (behind `?cards` with `?engine=3d`)
-- **The ask** (the owner, 2026-11-18): "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation is concluding, and then pop up for team kill experience."
-- **What it does:** a creature (or one of yours) that goes down in a battle tips over and sinks away, about a second, instead of vanishing. On the last kill the battle ends and the camera eases back while that faint finishes; then ENEMIES DEFEATED comes up with each squad member's XP from the battle, its level and how far it is to the next. CONTINUE or a tap puts it away.
-- `view3d/gameview.js`, `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.59, §9, §10.
-- **Verified:** tests/cardbattle.js, tests/view3d.js and the full suite; seen in a real browser. **Not seen on an iPad.** Timings the agent's.
+### Build `2026-11-17ao` · branch `claude/friendly-thompson-w581x0` · card battles: a fainting animation; a kill's experience rising from it (behind `?cards` with `?engine=3d`)
+- **The ask** (the owner, 2026-11-18): "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation is concluding, and then pop up for team kill experience"; then, of the panel first built for it: "No, passive text but large text emerges from the kill."
+- **What it does:** a creature (or one of yours) that goes down in a battle tips over and sinks away, about a second, instead of vanishing. From where it fell a large gold +N XP rises and fades: what the kill paid the team. On the last kill the battle ends and the camera eases back while that faint finishes and its text rises. Nothing to tap.
+- `view3d/gameview.js`, `js/cardbattle.js`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.59, §9, §10.
+- **Verified:** tests/cardbattle.js, tests/view3d.js and the full suite; seen in a real browser. **Not seen on an iPad.** Timings and sizes the agent's.
 
 ### Build `2026-11-17an` · branch `claude/start-game-project-HSh7Z` · card battles: the cards audited
 - **The ask** (the owner, 2026-11-18): "Do an audit of all the different cards and try to make them more attuned to the new card combat system."

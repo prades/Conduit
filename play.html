@@ -1771,20 +1771,6 @@
     #cbScreen .cb-ghost.on { transform: scale(1.12) rotate(0deg); filter: drop-shadow(0 0 14px var(--k)) brightness(1.2); }
     #cbScreen #cbRun:disabled { opacity: 0.4; }
     body.cb-on #reefTip { display: none !important; }
-    /* THE TEAM'S EXPERIENCE (build 2026-11-17am; js/cardbattle.js _cbWinShow): a battle won, once the camera is back: what each member gained, its level, how far to the next. A tap puts it away. */
-    #cbWin { position: fixed; inset: 0; z-index: 62; display: flex; align-items: center; justify-content: center; background: rgba(4,7,14,0.35); font-family: var(--neo-font); color: #fff; animation: cwIn 0.3s ease-out; }
-    @keyframes cwIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-    #cbWin .cw-box { width: min(460px, calc(100vw - 32px)); padding: 16px 20px 16px; background: rgba(7,11,22,0.95); border: 2px solid #ffe733; border-top-width: 4px; box-shadow: 0 0 34px rgba(0,0,0,0.7); transform: skewX(-3deg); }
-    #cbWin h3 { margin: 0; font: italic 900 26px/1.1 var(--neo-font); letter-spacing: 0.06em; color: #ffe733; }
-    #cbWin .cw-sub { margin: 2px 0 10px; font: 700 12px/1.2 monospace; letter-spacing: 0.1em; color: #c9d6f2; }
-    #cbWin .cw-row { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 12px; align-items: baseline; padding: 7px 0 7px 10px; border-left: 4px solid var(--c); margin-top: 8px; }
-    #cbWin .cw-row b { font: italic 900 17px/1.1 var(--neo-font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #cbWin .cw-lv { font: 700 12px/1 monospace; font-style: normal; color: var(--c); } #cbWin .cw-lv u { text-decoration: none; color: #ffe733; }
-    #cbWin .cw-xp { font: italic 900 17px/1 var(--neo-font); color: #ffe733; }
-    #cbWin .cw-bar { grid-column: 1 / 4; display: block; height: 7px; background: rgba(255,255,255,0.14); transform: skewX(-14deg); } #cbWin .cw-bar u { display: block; height: 100%; background: var(--c); text-decoration: none; transition: width 0.6s ease-out; }
-    #cbWin .cw-next { grid-column: 1 / 4; font: 700 10px/1.2 monospace; font-style: normal; letter-spacing: 0.06em; color: #9fb0d6; }
-    #cbWin .cw-row.down { opacity: 0.45; } #cbWin .cw-row.down .cw-xp { color: #ff8a6a; }
-    #cbWin .cw-ok { display: block; width: 100%; margin-top: 14px; height: 46px; border: 2px solid #ffe733; background: linear-gradient(180deg, #3a3410, #12100a); color: #fff; font: italic 900 19px/1 var(--neo-font); letter-spacing: 0.1em; cursor: pointer; }
     /* ONE AT A TIME (build 2026-11-17aa; the owner: "it's going to go through them one by one [...] show all of their attacks as a pop-up", at the bottom centre; js/cardbattle.js _cbCurrent): the
        band is one follower's pop-up, its cards bigger; the squad's names over it (done, now, next); away while the cards play out and the enemies act; the next one switches in. Sizes the agent's. */
     #cbScreen .cb-band.cb-pop { left: 50%; right: auto; width: min(720px, calc(100vw - 32px)); height: calc(286px + env(safe-area-inset-bottom, 0px)); background: none; transform: translateX(-50%); transition: transform 0.28s ease, opacity 0.28s ease; }

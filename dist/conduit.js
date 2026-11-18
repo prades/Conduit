@@ -26187,7 +26187,7 @@ const CARD_BATTLE = {
     skew: 15,
     fit: 0.88, zoomMin: 0.8,
     raise: 0.75,
-    winAfter: 52, winHold: 480,
+    killText: { size: 30, life: 110 },
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
     num: { pop: 32, glide: 28, rise: 34, chip: 26 },
     byClass: true,
@@ -26285,8 +26285,6 @@ function _cbSettle() {
 }
 function _cbBegin(foe, far) {
     _cb.squad = _cbSquadNow();
-    _cbXpStart();
-    _cbWinHide();
     _cb.out = new Set();
     _cb.slots = new Map();
     _cb.lay = null;
@@ -26428,6 +26426,7 @@ function _cbLand() {
 function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
     if (_cb.phase !== "off") {
+        _cbKillText();
         const live = _cb.foes.filter(_cbFoeOk);
         if (cardBattleActive()) {
             const squad = _cbSquad(), away = typeof player !== "undefined" && Math.hypot(player.x - _cb.cx, player.y - _cb.cy) > CARD_BATTLE.leave;
@@ -26472,7 +26471,6 @@ function cardBattleTick() {
         _cb.foes = [];
         _cb.target = null;
     }
-    _cbWinTick();
     _cbDom();
 }
 function _cbKeepAtIt() {
@@ -26523,53 +26521,24 @@ function _cbKeepAtIt() {
     if (!_cb.foes.some(_cbFoeOk))
         cardBattleEnd();
 }
-function _cbXpOf(f) { return Number.isFinite(f.xp) ? f.xp : (typeof xpForLevel === "function" ? xpForLevel(f.level || 1) : 0); }
-function _cbXpStart() { _cb.xp0 = new Map(); for (const f of (_cb.squad || []))
-    _cb.xp0.set(f, { xp: _cbXpOf(f), level: f.level || 1 }); _cb.win = null; }
-function cardBattleWinRows() {
-    const rows = [];
-    if (!_cb.xp0)
-        return rows;
-    for (const [f, s] of _cb.xp0) {
-        const p = typeof xpProgress === "function" ? xpProgress(f) : null, down = !_cbAlive(f);
-        rows.push({ f, name: typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", col: _cbCol(f), gained: Math.max(0, Math.round(_cbXpOf(f) - s.xp)), level: f.level || 1, ups: Math.max(0, (f.level || 1) - s.level), frac: p ? p.frac : 0, max: !!(p && p.max), toNext: p ? p.toNext : 0, down });
-    }
-    return rows;
-}
-function _cbWinShow() {
-    const rows = cardBattleWinRows();
-    if (!rows.length || typeof document === "undefined" || !document.createElement || !document.body)
+function _cbKillText() {
+    if (typeof floatingTexts === "undefined" || typeof killXp !== "function")
         return;
-    _cbWinHide();
-    const el = document.createElement("div");
-    el.id = "cbWin";
-    const total = rows.reduce((n, r) => n + r.gained, 0);
-    el.innerHTML = '<div class="cw-box"><h3>ENEMIES DEFEATED</h3><p class="cw-sub">TEAM EXPERIENCE · +' + total + ' XP</p>' + rows.map(r => '<div class="cw-row' + (r.down ? " down" : "") + '" style="--c:' + r.col + '"><b>' + _cbEsc(r.name) + '</b><i class="cw-lv">LV ' + r.level + (r.ups ? ' <u>▲ +' + r.ups + '</u>' : "") + '</i><span class="cw-xp">' + (r.down ? "DOWN" : "+" + r.gained + " XP") + '</span><i class="cw-bar"><u style="width:' + Math.round(r.frac * 100) + '%"></u></i><i class="cw-next">' + (r.max ? "MAX LEVEL" : r.toNext + " XP TO LV " + (r.level + 1)) + '</i></div>').join("") + '<button type="button" class="cw-ok">CONTINUE</button></div>';
-    if (el.addEventListener)
-        el.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); _cbWinHide(); });
-    document.body.appendChild(el);
-    _cb.winEl = el;
-    _cb.winUntil = _cbF() + CARD_BATTLE.winHold;
-}
-function _cbWinHide() { const el = _cb.winEl; _cb.winEl = null; if (el && el.remove)
-    el.remove(); }
-function cardBattleWinShown() { return !!_cb.winEl; }
-function _cbWinTick() {
-    const f0 = _cbF();
-    if (_cb.win && _cb.phase === "off" && f0 >= _cb.win.at) {
-        _cb.win = null;
-        _cbWinShow();
+    for (const a of _cb.foes) {
+        if (!a || !a.dead || a._cbXpSaid)
+            continue;
+        a._cbXpSaid = true;
+        if (a.noReward)
+            continue;
+        const n = killXp(a);
+        if (n > 0)
+            floatingTexts.push({ world: true, x: a.x, y: a.y, text: "+" + n + " XP", color: "#ffe733", size: CARD_BATTLE.killText.size, life: CARD_BATTLE.killText.life, vy: -0.02, _cbBig: true });
     }
-    if (_cb.winEl && f0 >= _cb.winUntil)
-        _cbWinHide();
 }
 function cardBattleEnd() {
     if (_cb.phase === "off" || _cb.phase === "end")
         return false;
-    {
-        const won = _cb.phase === "on" && _cb.foes.length > 0 && !_cb.foes.some(_cbFoeOk) && _cbSquad().length > 0 && _cb.ranAt !== _cbF();
-        _cb.win = won ? { at: _cbF() + CARD_BATTLE.winAfter } : null;
-    }
+    _cbKillText();
     if (typeof cardShapeStays === "function")
         cardShapeStays("end");
     _cbActEnd();
@@ -27409,6 +27378,11 @@ function cardBattleNumbers() {
         if (!n) {
             const age = (t._cbAge = (t._cbAge || 0) + 1);
             ctx.globalAlpha = Math.min(1, t.life / 30);
+            if (t._cbBig) {
+                const sw = age < 8 ? 0.5 + age * 0.09 : age < 14 ? 1.22 - (age - 8) * 0.037 : 1;
+                _cbText(t.text, base[0], base[1] - 20 * k - age * 0.45 * k, t.size * k * sw, t.color, k);
+                continue;
+            }
             _cbText(t.text, base[0], base[1] - 34 * k - age * 0.6 * k, (t.size || 12) * k, t.color || "#fff", k);
             continue;
         }
@@ -28265,7 +28239,7 @@ function _cbDragCancel() {
     if (D.card && D.card.classList)
         D.card.classList.remove("lifted");
 }
-function cardBattleReset() { _cb.snap = false; _cb.win = null; _cbWinHide(); if (typeof cardShapeStays === "function")
+function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function")
     cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted)
     _cb.acted.clear(); if (_cb.charge)
     _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

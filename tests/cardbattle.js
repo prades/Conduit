@@ -851,21 +851,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ult, 0, 'an Ultimate charges');
     });
 
-    check('a battle won (the owner, 2026-11-18): once the camera is back the team\'s experience comes up: what each member gained from the kill, its level, the total; put away by a tap; RUN brings none; a faint is the view\'s', () => {
-        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
-            const o = { before: cardBattleWinShown() }; a.lastAttacker = followers[0]; applyDamage(a, 99999, followers[0]); __live(3);
-            o.ended = cardBattlePhase() !== 'on'; o.pending = !!_cb.win; o.early = cardBattleWinShown();
-            for (let i = 0; i < CARD_BATTLE.winAfter + CARD_BATTLE.easeOut + 30 && !cardBattleWinShown(); i++) __live(1);
-            o.shown = cardBattleWinShown(); const rows = cardBattleWinRows(); o.rows = rows.length; o.gained = rows.reduce((n, x) => n + x.gained, 0); o.killerMost = rows[0].gained >= rows[1].gained;
-            _cbWinHide(); o.away = cardBattleWinShown();
-            __fresh(2); CARD_BATTLE.on = true; const b = __ant(player.x + 2, player.y); cardBattleChoose(b); __ticks(1); __run(); __ticks(CARD_BATTLE.winAfter + CARD_BATTLE.easeOut + 30); o.afterRun = cardBattleWinShown() || !!_cb.win;
-            return o; })()`);
-        same(r.before, false, 'shown before the battle is won'); same(r.ended, true, 'the battle over'); same(r.pending, true, 'the experience to come'); same(r.early, false, 'up before the camera is back');
-        same(r.shown, true, 'the team\'s experience up'); same(r.rows, 2, 'a row for each member'); ok(r.gained > 0, 'nothing gained: ' + r.gained); same(r.killerMost, true, 'the one that made the kill gained less than the other');
-        same(r.away, false, 'put away'); same(r.afterRun, false, 'after RUN');
-        const v = rd('view3d/gameview.js'), h = rd('game.html');
+    check('a kill in a battle (the owner, 2026-11-18): a large +N XP rises from where the creature fell, once, what the kill paid; no panel, nothing to tap; a faint is the view\'s', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y), b = __ant(player.x + 2.6, player.y + 1); b.health = b.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            floatingTexts.length = 0; const want = killXp(a), ax = a.x, ay = a.y; a.lastAttacker = followers[0]; applyDamage(a, 99999, followers[0]); __ticks(2);
+            const big = floatingTexts.filter(t => t._cbBig); const o = { n: big.length, text: big[0] && big[0].text, want: '+' + want + ' XP', size: big[0] && big[0].size, at: big[0] && Math.hypot(big[0].x - ax, big[0].y - ay) < 1e-6, on: cardBattlePhase() };
+            __ticks(20); o.once = floatingTexts.filter(t => t._cbBig).length; return o; })()`);
+        same(r.n, 1, 'one text for the kill'); same(r.text, r.want, 'what the kill paid'); ok(r.size >= 26, 'large: ' + r.size); same(r.at, true, 'from where it fell'); same(r.on, 'on', 'the battle goes on with the other'); same(r.once, 1, 'said once');
+        const v = rd('view3d/gameview.js'), h = rd('game.html'), c = rd('js/cardbattle.js');
         same(/if \(!faintStart\(u, b, f0\)\) give\(b\); live\.delete\(u\); \}\n    faintStep\(f0\);/.test(v) && /if \(!u \|\| !u\.dead \|\| !battling\(\)/.test(v), true, 'the faint: a body of the battle that goes down is kept and tipped over before it goes');
-        same(/#cbWin \.cw-box/.test(h), true, 'the panel\'s look');
+        same(/#cbWin/.test(h) || /cbWin/.test(c), false, 'the panel is gone');
     });
 
     group('THE CARDS AUDITED (§2.58; the owner: "Do an audit of all the different cards and try to make them more attuned to the new card combat system")');
@@ -912,6 +906,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.bad.join(' / '), '', 'cards not in the battle\'s words');
         same(r.chomp, 'Its target; the 8 squares round it · frozen ' + r.stun + '; the squares round it slowed 1 turn', 'CHOMP'); ok(/^A cross of 5 squares on a square in reach · burns as it opens and as 2 enemy turns begin$/.test(r.hex), 'HEXFIRE: ' + r.hex);
         same(r.wob, 'The 8 squares round it · each staggered 1 turn (not a boss)', 'WOBBLE SLAM'); ok(/every enemy within 2\.5 squares of the last · 1 hit in 4: stunned 1 turn$/.test(r.base), 'CHAIN LIGHTNING: ' + r.base);
+    });
+
+    check('the battle draws its own words where the 3D view puts the fight: a hit\'s number, a word and a kill\'s large +N XP all drawn, none throwing', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
+            floatingTexts.length = 0; _cbNums.clear(); applyDamage(a, 7, followers[0]); floatingTexts.push({ world: true, x: a.x, y: a.y, text: 'MISS', color: '#fff', life: 40 });
+            floatingTexts.push({ world: true, x: a.x, y: a.y, text: '+40 XP', color: '#ffe733', size: 30, life: 110, _cbBig: true });
+            const drawn = [], sizes = {}, saved = ctx, V0 = VIEW3D.view, S0 = VIEW3D.showing; let err = '';
+            const fake = { save(){}, restore(){}, setTransform(){}, strokeText(){}, fillText(s){ drawn.push(String(s)); sizes[String(s)] = parseInt((this.font.match(/(\\d+)px/) || [0, 0])[1], 10); }, beginPath(){}, moveTo(){}, lineTo(){}, closePath(){}, fill(){}, stroke(){}, arc(){}, createLinearGradient(){ return { addColorStop(){} }; } };
+            VIEW3D.view = { screenNow: (x, y, h) => [x * 40, y * 30 - (h || 0)], top: () => 20 }; VIEW3D.showing = true; ctx = fake;
+            try { for (let i = 0; i < 12; i++) cardBattleNumbers(); } catch (e) { err = String(e && e.message || e); } finally { ctx = saved; VIEW3D.view = V0; VIEW3D.showing = S0; }
+            return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] > sizes['MISS'] * 2 }; })()`);
+        same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: more than twice a word\'s size');
     });
 
     group('THE PIECES');
