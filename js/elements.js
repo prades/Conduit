@@ -61,7 +61,7 @@ const ELEMENT_ATTACKS = {
             // Hits all enemies within ring radius
             let hits = 0;
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 2.25) { // 1.5²=2.25, no sqrt needed
                         const dmg = (actor.stats?.attack||10) * 0.4;
@@ -106,7 +106,7 @@ const ELEMENT_ATTACKS = {
                 // Find next nearest unchained enemy (squared distance — no sqrt)
                 let next = null, bd2 = 9; // 3²=9
                 actors.forEach(a => {
-                    if (isHostileTarget(a) && !chainTargets.includes(a)) {
+                    if (isHostileTarget(a) && !chainTargets.includes(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                         const dx=a.x-current.x, dy=a.y-current.y, d2=dx*dx+dy*dy;
                         if (d2 < bd2) { bd2=d2; next=a; }
                     }
@@ -137,7 +137,7 @@ const ELEMENT_ATTACKS = {
                 element: "electric"
             });
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.7, actor, "electric", DMG_HIT_SPECIAL);
@@ -173,7 +173,7 @@ const ELEMENT_ATTACKS = {
             // Ice burst — radius slow
             spawnElementEffect({ type:"ring", x:actor.x, y:actor.y, color:"#99ddff", radius:2.5, life:50, element:"ice" });
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 6.25) { // 2.5²=6.25, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice", DMG_HIT_SPECIAL);
@@ -204,7 +204,7 @@ const ELEMENT_ATTACKS = {
             spawnElementEffect({ type:"singularity", x:target.x, y:target.y, color:"#9933ff", radius:2.5, life:60, element:"flux" });
             // Pull phase — move enemies toward point
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=target.x-a.x, dy=target.y-a.y, d2=dx*dx+dy*dy;
                     if (d2 < 9 && d2 > 0.0001) { // 3²=9, avoid sqrt until we need direction
                         const dist=Math.sqrt(d2);
@@ -293,7 +293,7 @@ const ELEMENT_ATTACKS = {
                     spawnElementEffect({ type:"impact", x:lx, y:ly, color:"#88ff44", radius:2.0, life:30, element:"toxic" });
                     const r2 = 2.25; // 1.5 tile radius
                     actors.forEach(a => {
-                        if (isHostileTarget(a)) {
+                        if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                             const ddx=a.x-lx, ddy=a.y-ly;
                             if (ddx*ddx+ddy*ddy <= r2) {
                                 applyDamage(a, dmg, caster, "toxic", false, false, DMG_HIT_SPECIAL);
@@ -959,7 +959,7 @@ function updateElementEffects() {
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && !e._cbHeld && typeof staticVortexTick === "function") staticVortexTick(e);   // (_cbHeld: held in a battle of turns, it bites at the start of the enemies' turns instead)
-        if (e.type === "buds") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
+        if (e.type === "buds" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
         if (e.type === "maelstrom" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out

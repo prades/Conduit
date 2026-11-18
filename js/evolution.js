@@ -393,11 +393,11 @@ function rotDecoyTick() {   // (each frame, from evolutionTick): time out, the m
     }
     rotDecoys = rotDecoys.filter(d => !d._gone);
 }
-function rotDecoyMist(d) { if (typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && Math.hypot(a.x - d.x, a.y - d.y) <= DECOY_MIST && typeof applyWeaken === "function") applyWeaken(a, DECOY_POISON); }   // (a beat of its mist)
+function rotDecoyMist(d) { if (typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(d.by, a)) && Math.hypot(a.x - d.x, a.y - d.y) <= DECOY_MIST && typeof applyWeaken === "function") applyWeaken(a, DECOY_POISON); }   // (a beat of its mist)
 // A PROXY SWARM copy (the Goo Proxy's Ultimate, js/elements.js FORM_ULTIMATES.gooproxy), broken or timed out: it bursts, d.bite (flux) to every enemy within ULT_PROXY.burst tiles
 function gooProxyBurst(d) {
     const R = typeof ULT_PROXY !== "undefined" ? ULT_PROXY.burst : 1.5;
-    if (typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && Math.hypot(a.x - d.x, a.y - d.y) <= R) applyDamage(a, d.bite || 0, d.by && !d.by.dead ? d.by : null, "flux", false, false, typeof DMG_HIT_SPECIAL !== "undefined" ? DMG_HIT_SPECIAL : null);
+    if (typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(d.by, a)) && Math.hypot(a.x - d.x, a.y - d.y) <= R) applyDamage(a, d.bite || 0, d.by && !d.by.dead ? d.by : null, "flux", false, false, typeof DMG_HIT_SPECIAL !== "undefined" ? DMG_HIT_SPECIAL : null);
     if (typeof spawnElementEffect === "function") { spawnElementEffect({ type: "ring", x: d.x, y: d.y, radius: R, color: "#d9b0ff", life: 24, element: "flux" }); spawnElementEffect({ type: "impact", x: d.x, y: d.y, color: "#b66cf5", radius: 1, life: 18, element: "flux" }); }
 }
 function evolutionTick() {
@@ -684,7 +684,7 @@ function seedfallBeat(e) {
 function fieldBite(e, el) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
     const r2 = e.radius * e.radius;
-    for (const a of actors) { if (!a || !isHostileTarget(a)) continue; const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy <= r2 && _evoSees(e.x, e.y, a)) applyDamage(a, e.bite, e.by || null, el, false, false, DMG_HIT_ALT); }   // (only what can be seen from its middle: "Need sight")
+    for (const a of actors) { if (!a || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches(e.by, a))) continue; const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy <= r2 && _evoSees(e.x, e.y, a)) applyDamage(a, e.bite, e.by || null, el, false, false, DMG_HIT_ALT); }   // (only what can be seen from its middle: "Need sight")
 }
 
 // CORRODE SHOT: one long shot that eats the target's armour, splashing weaker corrosion round it. True when it fired.
@@ -949,7 +949,7 @@ function maelstromBeat(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
     const r2 = e.radius * e.radius;
     for (const a of actors) {
-        if (!a || !isHostileTarget(a)) continue;
+        if (!a || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches(e.by, a))) continue;   // (yours in a card battle touch only its creatures: js/cardbattle.js)
         const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy > r2 || !_evoSees(e.x, e.y, a)) continue;
         applyDamage(a, e.bite, e.by || null, "flux", false, false, DMG_HIT_ALT);
         if (!a.dead && !_evoBoss(a)) a.blinded = Math.max(a.blinded || 0, MAEL_BLIND);
@@ -1401,7 +1401,7 @@ function staticVortexTick(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
     const R = e.radius, age = e.maxLife - e.life, G = staticVortexGather(e);
     for (const a of actors) {
-        if (!a || !isHostileTarget(a)) continue;
+        if (!a || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches(e.by, a))) continue;   // (yours in a card battle touch only its creatures: js/cardbattle.js)
         if (Math.hypot(e.x - a.x, e.y - a.y) > R || !_evoSees(e.x, e.y, a)) continue;   // (in the storm: round its middle; not through a wall or a tall object: "Need sight")
         const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
         if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {

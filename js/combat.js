@@ -77,6 +77,7 @@ const DOT_TICK = 20;   // frames between the damage ticks of a burn (three a sec
 // the stun and the glitch are new, the game having neither (its hitStun is set by every hit and read by nothing). Each returns true when it was not on before.
 function applyBurn(t, perTick, frames) {   // `perTick`: the damage of one tick
     if (!t || t.dead || !(frames > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     const fresh = !(t.burning > 0);
     t.burnDamage = fresh ? perTick : Math.max(t.burnDamage || 0, perTick);   // (one that had run out starts clean: its old tick is not carried over)
     t.burning = Math.max(t.burning || 0, frames);
@@ -137,6 +138,7 @@ function drawFollowerPoisonMarks() {
 // WEAKNESS (the toxic cards' poison: no damage, it only makes the creature weak): its bite lands for `factor` of its power (0.6: the smoke bomb's, js/elements.js) for `frames`. The stronger weakness it has is kept.
 function applyWeaken(t, frames, factor) {
     if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     const fresh = !(t.toxicWeakened > 0), f = factor > 0 && factor < 1 ? factor : 0.6;
     t.toxicWeakenFactor = fresh ? f : Math.min(t.toxicWeakenFactor || 1, f);
     t.toxicWeakened = Math.max(t.toxicWeakened || 0, frames);
@@ -146,6 +148,7 @@ function applyWeaken(t, frames, factor) {
 // Creatures only: not a follower, not a clone.
 function applyStun(t, frames) {
     if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     const fresh = !(t.stunned > 0);
     t.stunned = Math.max(t.stunned || 0, frames);
     if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; t.attackCooldown = Math.max(t.attackCooldown || 0, frames); }
@@ -154,6 +157,7 @@ function applyStun(t, frames) {
 // GLITCH (the electric cards' Static Lock): every wind-up it tries fails (the rear-back before a bite, an ability's charge-up: js/predator.js _biteTick, js/abilities.js abilityTick) until the timer is out; it can still walk. Creatures only.
 function applyGlitch(t, frames) {
     if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     const fresh = !(t.glitched > 0);
     t.glitched = Math.max(t.glitched || 0, frames);
     if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; }
@@ -167,6 +171,7 @@ function applyGlitch(t, frames) {
 // true when the unit sleeps (fresh or longer), false when nothing can put it to sleep.
 function applySleep(t, frames) {
     if (!t || t.dead || t.untargetable || !(frames > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     if (typeof player !== "undefined" && t === player) return false;   // (never you)
     t.asleep = Math.max(t.asleep || 0, frames);
     if (typeof Predator !== "undefined" && t instanceof Predator && t.team !== "green") t.stunned = Math.max(t.stunned || 0, frames);
@@ -207,14 +212,16 @@ function drawPoisonChip(x, y, alpha) {
 // KNOCKBACK: a push away from `from`, as the Core bash's (a velocity that decays by itself, each frame, below; the facility's walls stop it). A second push replaces the first: it does not add to it.
 function applyKnockback(t, from, push) {
     if (!t || t.dead || t.untargetable || !from || !(push > 0)) return false;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     const dx = t.x - from.x, dy = t.y - from.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
     t.kbVX = (dx / d) * push; t.kbVY = (dy / d) * push; return true;
 }
 
-function updateStatusEffects() {
-    actors.forEach(actor => {
-        if (actor.dead) return;
-
+// ONE FRAME OF A UNIT'S TIMED STATUSES. `part`: "act" (what hampers its own turn: the burn's and the poison's ticks, stun, glitch, sleep, freeze, slow, disorient, weakness), "take" (what changes what is
+// done to it: armour shred, smoke form, defence boost, invulnerable), or both. Every frame for everyone (updateStatusEffects), but for a card battle's fighters while its turns run: theirs count by the
+// battle's turns instead (js/cardbattle.js cardBattleStatusHeld, _cbStatusTurn; docs/CARD-BATTLES.md §2.50).
+function statusTimersStep(actor, part) {
+    if (part !== "take") {
         // ── BURN ──
         if (actor.burning > 0) {
             actor.burning--;
@@ -229,7 +236,6 @@ function updateStatusEffects() {
         if (actor.stunned > 0) actor.stunned--;
         if (actor.glitched > 0) actor.glitched--;
         if (actor.asleep > 0) actor.asleep--;
-        if ((actor.curled > 0 || actor.curlRest > 0) && typeof rolyTick === "function") rolyTick(actor);   // the roly-poly's CURL and the rest after it (js/rolypoly.js)
 
         // ── FREEZE (probabilistic defrost) ──
         if (actor.frozen) {
@@ -240,13 +246,8 @@ function updateStatusEffects() {
             }
         }
 
-        // ── SLOW ──
-        // tickSlowSpeed is what actually makes a slow slow anything: it scales
-        // moveSpeed from a captured base. Before it existed, slowFactor was
-        // written in eight places and read nowhere, so ice, webs and tar traps
-        // set a number that no movement code ever looked at.
+        // ── SLOW ── (its speed is scaled each frame, below: tickSlowSpeed)
         if (actor.slowed > 0) actor.slowed--;
-        tickSlowSpeed(actor);
 
         // ── DISORIENT — scrambles movement direction ──
         if (actor.disoriented > 0) {
@@ -257,6 +258,11 @@ function updateStatusEffects() {
             }
         }
 
+        // ── TOXIC WEAKENED (smoke bomb power debuff) ──
+        if (actor.toxicWeakened > 0) actor.toxicWeakened--;
+        if (!(actor.toxicWeakened > 0) && actor.toxicWeakenFactor !== undefined) actor.toxicWeakenFactor = undefined;   // (a card's weakness has its own strength: gone with the time)
+    }
+    if (part !== "act") {
         // ── DEFENSE SHRED ──
         if (actor.defenseShredded > 0) actor.defenseShredded--;
 
@@ -268,6 +274,23 @@ function updateStatusEffects() {
 
         // ── INVULNERABLE (core special) ──
         if (actor.invulnerable > 0) actor.invulnerable--;
+    }
+}
+
+function updateStatusEffects() {
+    actors.forEach(actor => {
+        if (actor.dead) return;
+
+        // ── THE TIMED STATUSES (statusTimersStep): in real time, but a card battle's fighters' by its turns ──
+        if (!(typeof cardBattleStatusHeld === "function" && cardBattleStatusHeld(actor))) statusTimersStep(actor);
+        if ((actor.curled > 0 || actor.curlRest > 0) && typeof rolyTick === "function") rolyTick(actor);   // the roly-poly's CURL and the rest after it (js/rolypoly.js)
+
+        // ── SLOW ──
+        // tickSlowSpeed is what actually makes a slow slow anything: it scales
+        // moveSpeed from a captured base. Before it existed, slowFactor was
+        // written in eight places and read nowhere, so ice, webs and tar traps
+        // set a number that no movement code ever looked at.
+        tickSlowSpeed(actor);
 
         // ── SHIELD ──
         if (actor.shielded && actor.shieldAmount <= 0) actor.shielded = false;
@@ -285,10 +308,6 @@ function updateStatusEffects() {
             if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky);
             if (typeof techShieldKeep === "function") techShieldKeep(actor, _kx, _ky);   // (nor through a Photonic Shield, an enemy: js/techabilities.js)
         }
-
-        // ── TOXIC WEAKENED (smoke bomb power debuff) ──
-        if (actor.toxicWeakened > 0) actor.toxicWeakened--;
-        if (!(actor.toxicWeakened > 0) && actor.toxicWeakenFactor !== undefined) actor.toxicWeakenFactor = undefined;   // (a card's weakness has its own strength: gone with the time)
 
         // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
         if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;

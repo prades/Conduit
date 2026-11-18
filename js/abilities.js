@@ -119,6 +119,7 @@ function resolveAbilityKey(speciesName, className, clone) {
 // timer up.
 function applySlow(actor, frames, factor) {
     if (!actor || actor.dead) return;
+    if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(actor)) return;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
     actor.slowFactor = Math.max(0, factor);
     actor.slowed     = Math.max(actor.slowed || 0, frames);
 }
@@ -233,6 +234,7 @@ function _abForEachFoeInRadius(pred, radius, fn) {
 }
 
 function _abHurt(pred, victim, amount) {
+    if (typeof cardBattleTouches === "function" && !cardBattleTouches(pred, victim)) return;   // (a creature of a card battle: its special hurts only its side of the battle, js/cardbattle.js)
     const h0 = victim ? victim.health : 0;
     applyDamage(victim, amount, pred, null, false, false, dmgAbilityHit(pred));   // (the special's type: js/damage.js)
     if (pred && pred.poisonsFollowers && typeof poisonOnHit === "function") poisonOnHit(pred, victim, h0);   // (the purification's three toxic ants poison a follower: js/combat.js)
