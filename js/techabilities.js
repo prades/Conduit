@@ -819,7 +819,7 @@ function _techReefTick(f0) {
             if (typeof elementEffects !== "undefined") for (const c of O.parts) elementEffects.push({ type: "ring", x: c.x, y: c.y, radius: c.r + 0.5, color: "#ff7ab8", life: 22 });
             if (typeof shake !== "undefined") shake = Math.max(shake || 0, O.pillar ? 6 : 2);
         }
-        if ((f0 - O.t0) % O.every !== 0 || typeof healUnit !== "function" || typeof followers === "undefined") continue;
+        if (O._cbHeld || (f0 - O.t0) % O.every !== 0 || typeof healUnit !== "function" || typeof followers === "undefined") continue;   // (_cbHeld: REEF PILLAR in a battle of turns, mending by its turns, js/cardults.js)
         for (const a of followers) {
             if (!a || a.dead || a.team !== "green" || a._flight || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
             if (O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) <= c.r + O.mendReach && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(c.x, c.y, a.x, a.y)))) healUnit(a, a.maxHealth * O.mend, O.by);

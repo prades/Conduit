@@ -52,7 +52,7 @@ const CARD_SHAPES = {   // kind: one | chain | line | zigzag | fan | swap | blas
     singularity_shot: { kind: "blast", r: () => SERPENT_PULL_R },
     pinball:         { kind: "chain", hop: () => PIN_HOP, n: Infinity },
 };
-const _CS_STAYS = { maelstrom: e => maelstromBeat(e), hexfire: e => fieldBite(e, "fire"), magmavent: e => fieldBite(e, "fire"), staticVortex: e => { _csVortexPull(e); fieldBite(e, "electric"); }, rotdecoy: e => { if (e.on && !e.on.dead) rotDecoyMist(e.on); } };   // (each area's own bite)
+const _CS_STAYS = { maelstrom: e => maelstromBeat(e), hexfire: e => fieldBite(e, "fire"), magmavent: e => fieldBite(e, "fire"), staticVortex: e => { _csVortexPull(e); fieldBite(e, "electric"); }, rotdecoy: e => { if (e.on && !e.on.dead) rotDecoyMist(e.on); }, gooproxy: () => {} };   // (each area's own bite)
 const _cs = { of: null, keys: null, cells: [] };
 const _csK = (x, y) => x + "," + y;
 function _csV(v, f) { return typeof v === "function" ? v(f) : v; }
@@ -81,12 +81,14 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.56)
+    if (!f || kind === "walk") return null;   // (MOVE has none: js/cardbattle.js §2.56)
+    if (kind === "ult") return typeof cardUltDef === "function" ? cardUltDef(f) : null;   // (an Ultimate's: js/cardults.js §2.64)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;
 }
 // where it is let go: "foe" (on an enemy), "tile" (on a floor square), "any" (anywhere)
-function cardShapeAim(def) { return !def ? "foe" : def.kind === "blast" || def.kind === "decoy" ? "tile" : def.kind === "ring" || def.self ? "any" : "foe"; }
+function cardShapeAim(def) { return !def ? "foe" : def.kind === "blast" || def.kind === "decoy" ? "tile" : def.kind === "ring" || def.self || def.all ? "any" : def.ult && !_CS_KINDS[def.kind] && typeof cardUltAim === "function" ? cardUltAim(def) : "foe"; }
+const _CS_KINDS = { one: 1, chain: 1, line: 1, zigzag: 1, fan: 1, swap: 1, blast: 1, decoy: 1, ring: 1 };   // (the kinds laid here; an Ultimate's own are laid by js/cardults.js)
 // THE SHAPE of `f`'s card aimed at `aim` (an enemy of the battle; a floor square { x, y }; nothing): its squares (`hit`, lit; `eff`, effect only), the enemies it takes in (`mask`), the one it is
 // aimed at (`main`), what the move's own first look finds (`aim`: its target, the square of a blast as a point, or for a ring the enemies in it), a fan's shots (`rays`), a blast's square (`tile`).
 // `ok` false with `why` when it cannot be played so; null when the card has no shape here.
@@ -100,6 +102,8 @@ function cardShapeFor(f, kind, id, aim) {
     if (aimK === "foe" && !E) return bad("NO TARGET");
     if (aimK === "tile" && !T) return bad("NO SQUARE");
     const q = E ? _csSq(E) : null;
+    if (def.ult && def.reach && (q || T)) { const P = q || T; if (Math.hypot(P[0] - A[0], P[1] - A[1]) > V(def.reach) + 0.05) return bad("OUT OF ITS REACH"); if (!_csSees(A[0], A[1], P[0], P[1])) return bad("IT CANNOT SEE THERE"); }   // (an Ultimate goes off from where it stands: no walk first, §11.17)
+    if (def.noBoss && E && (E.bossName || E.bossId || E.isBoss)) return bad("NOT A BOSS");
     switch (def.kind) {
     case "one": {
         S.hit = [q]; S.main = E; S.mask = [E]; S.aim = [E];
@@ -115,7 +119,7 @@ function cardShapeFor(f, kind, id, aim) {
         break; }
     case "line": {   // (its full length if it can dash it, else only up to its target: the move's own rule)
         const ang = Math.atan2(q[1] - A[1], q[0] - A[0]), L = Math.hypot(q[0] - A[0], q[1] - A[1]), len = Math.max(L, V(def.len)), far = _csWalks(A[0], A[1], A[0] + Math.cos(ang) * len, A[1] + Math.sin(ang) * len);
-        S.hit = _csRay(A[0], A[1], ang, far ? len : L, (x, y) => _csFloor(x, y) && _csWalks(A[0], A[1], x, y));
+        S.hit = _csRay(A[0], A[1], ang, far || def.toWall ? len : L, (x, y) => _csFloor(x, y) && _csWalks(A[0], A[1], x, y));   // (toWall, FAULTLINE: its whole length, cut where a wall is)
         if (!S.hit.some(c => c[0] === q[0] && c[1] === q[1])) S.hit.push(q);   // (its target is always struck: the move's own rule)
         S.main = E; S.mask = _csOn(foes, S.hit); if (S.mask.indexOf(E) < 0) S.mask.push(E); S.aim = [E];
         break; }
@@ -127,13 +131,14 @@ function cardShapeFor(f, kind, id, aim) {
         S.main = E; S.mask = _csOn(foes, S.hit); if (S.mask.indexOf(E) < 0) S.mask.push(E); S.aim = [E];
         break; }
     case "fan": {   // (each shot along its own line, stopping at the first enemy it meets: the squares lit up to it)
-        const a0 = Math.atan2(q[1] - A[1], q[0] - A[0]), len = V(def.len), seen = new Set(); S.rays = [];
-        for (const g of def.angles) {
+        const n = def.all ? V(def.all) : 0, a0 = n ? 0 : Math.atan2(q[1] - A[1], q[0] - A[0]), len = V(def.len), seen = new Set(); S.rays = [];   // (all: so many lines all round it, QUILLSTORM)
+        for (const g of (n ? Array.from({ length: n }, (_, i) => i * 360 / n) : def.angles)) {
             const ang = a0 + g * Math.PI / 180, tiles = _csRay(A[0], A[1], ang, len, (x, y) => _csFloor(x, y) && _csSees(A[0], A[1], x, y));
             let foe = null, upto = tiles.length; for (let i = 0; i < tiles.length; i++) { const on = _csOn(foes, [tiles[i]]); if (on.length) { foe = on[0]; upto = i + 1; break; } }
             S.rays.push({ ang, foe }); for (let i = 0; i < upto; i++) { const k = _csK(tiles[i][0], tiles[i][1]); if (!seen.has(k)) { seen.add(k); S.hit.push(tiles[i]); } }
         }
-        S.main = E; S.mask = [...new Set(S.rays.map(r => r.foe).filter(Boolean))]; S.aim = [E];
+        S.main = E; S.mask = [...new Set(S.rays.map(r => r.foe).filter(Boolean))]; S.aim = n ? S.mask.slice() : [E];
+        if (n && !S.mask.length) return bad("NO ENEMY ON ITS LINES");
         break; }
     case "swap": {
         if (typeof _evoBoss === "function" && _evoBoss(E)) return bad("NOT A BOSS");
@@ -153,7 +158,7 @@ function cardShapeFor(f, kind, id, aim) {
         S.mask = heal ? [] : _csOn(foes, tiles); S.aim = heal ? foes.slice() : S.mask.slice();
         if (!heal && !S.mask.length) return bad("NO ENEMY IN ITS SQUARES");
         break; }
-    default: return null;
+    default: return def.ult && typeof cardUltShape === "function" ? cardUltShape(def, S, { f, A, foes, E, T, q, V, bad }) : null;
     }
     S.maskSet = new Set(S.mask);
     return S;
@@ -199,6 +204,7 @@ const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the
 // the words of `f`'s card in a battle (null: none of its own; an Ultimate's are its own description, its shapes the next page). They must fit the card's four lines (game.html .cb-fx):
 // about 75 letters on a follower with five cards, 90 with four.
 function cardShapeSays(f, kind, id) {
+    if (kind === "ult") return typeof cardUltSays === "function" ? cardUltSays(f) : null;   // (an Ultimate's: js/cardults.js)
     const def = cardShapeDef(f, kind, id); if (!def) return null;
     const V = v => _csV(v, f), up = t => t.charAt(0).toUpperCase() + t.slice(1);
     let where;
@@ -230,15 +236,17 @@ function _csTurn() { const T = typeof _cb !== "undefined" && _cb.phase === "on" 
 // js/evolution.js _evoFoes: the enemies a move may touch, in the battle's room (the move's first look: its target; after it: the shape's enemies, wherever they stand); null: as ever
 function cardShapeFoes(x, y, r) {
     const T0 = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null;
-    if (T0 && T0.who === "act" && !T0.shape && T0.kind === "ult" && r > 0) {   // (an Ultimate's turn, no shape yet: the battle's creatures in its reach, none outside the battle, §2.52)
+    const T = _csTurn();
+    if (!T) {   // (no card's shape on: an Ultimate without one in its turn, or a field of an Ultimate running its turn's worth, js/cardults.js: the battle's creatures in its reach, none outside the battle, §2.52)
+        if (!(r > 0) || !T0 || !((T0.who === "act" && T0.kind === "ult") || (typeof cardUltNow === "function" && cardUltNow()))) return null;
         const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;
         return _cb.foes.filter(a => _cbFoeOk(a) && Math.hypot(a.x - x, a.y - y) <= r);
     }
-    const T = _csTurn(); if (!T) return null;
     const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;   // (outside the battle's room the world goes on, §2.28)
     const S = T.shape;
     if (S.stage === "aim") { S.stage = "area"; return S.aim.filter(a => a && (a._csTile || _cbFoeOk(a))); }
-    return S.mask.filter(_cbFoeOk);
+    const m = S.mask.filter(_cbFoeOk);
+    return S.def.near && r > 0 ? m.filter(a => Math.hypot(a.x - x, a.y - y) <= r + 0.3) : m;   // (near, DRIFT SLASH: its blade reaches those by where it is on its path, not all its shape at once)
 }
 // js/evolution.js _evoSees and _evoDashOk: the shape's enemies are in sight of the move and in its dash's way (the shape already took sight and walls into account)
 function cardShapeSees(a) { const T = _csTurn(); return !!T && !!a && T.shape.maskSet.has(a); }

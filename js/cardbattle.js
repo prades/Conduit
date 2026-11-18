@@ -49,7 +49,9 @@ const CARD_BATTLE = {
     actMax: 300,                // frames: a follower doing its card (5 s); it ends sooner once its blow has landed
     foeMax: 210,                // frames: an enemy's turn (3.5 s); it ends sooner once its blow has landed
     beat: 24,                   // frames after a blow lands before the next turn (0.4 s)
-    ultHold: 90,                // frames: an Ultimate's turn (1.5 s)
+    ultHold: 90,                // frames: an Ultimate's turn (1.5 s), at least; longer while it still moves or its field's first turn's worth runs (js/cardults.js)
+    fieldMax: 140,              // frames: the longest the enemies wait, as their turn begins, for the Ultimates' fields to run their turn's worth (2 s of it: §2.64)
+    heldWait: 45,               // frames your squad waits, said in the banner, when every enemy left is held inside one of yours
     pick: 70, pickH: 30,        // the drag: an enemy is under the finger within this many screen points of where the 3D view draws it, at this height (px of the world) over its feet
     clock: 0.5,                 // THE CLOCK AT HALF (§2.30; the owner, 2026-11-17: "time slows down to about half"): the world's countdowns in a battle run at this rate
     // MOVE NOW, ATTACK LATER (§2.39; the agent's, provisional): the tiles a turn's walk may take by the walker's own pace (its base speed, tiles a frame: at least the first number, that many)
@@ -72,6 +74,7 @@ function cardBattleBlack() { return _cb.black; }   // the black's strength, 0 to
 function cardBattleShown() { return cardBattleActive() && _cb.phase !== "walk" && _cb.phase !== "black"; }   // is the battle screen up (body.cb-on)?
 function cardBattleHas(a) { return _cb.phase !== 'off' && _cb.foes.indexOf(a) >= 0; }   // (from the walk on: one you are walking to is shown, even in another room)
 function cardBattleIn(a) { return cardBattleActive() && _cb.foes.indexOf(a) >= 0; }
+function _cbFoeIn(a) { return _cbFoeOk(a) || (typeof cardUltHeldFoe === "function" && cardUltHeldFoe(a)); }   // (still in the battle: one that can be struck, or one held inside one of yours for now, js/cardults.js)
 function _cbFoeOk(a) { return !!a && !a.dead && !a.isClone && a.team !== "green" && !a.untargetable && !(a.health <= 0) && (typeof Predator === "undefined" || a instanceof Predator); }
 // THE BATTLE'S OWN SIDE: you, your squad's members and the Mutator's clone. Followers holding a room (HOLD) are not in it: the rest of the world goes on in real time while you battle, and they
 // hold the fort (§2.28, the owner: "Both at once")
@@ -145,7 +148,7 @@ function cardBattleHit(target, source) {
 function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
 function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return !cardBattleOn();   /* (out of a battle your squad and your gun go for nothing: §2.35) */ if (_cb.foes.indexOf(a) < 0) return false;
-    const T = _cb.turn; if (!T) return true; return T.who === "act" && who === T.f && (a === T.target || T.kind !== "basic"); }   // (the turns: only the one doing its card, at its target; the gun holds its fire, §2.10)   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
+    const T = _cb.turn; if (!T) return true; return T.who === "act" && who === T.f && T.kind !== "ult" && (a === T.target || T.kind !== "basic"); }   /* (an Ultimate's turn is its Ultimate alone: no everyday hit goes with it, §2.64) */   // (the turns: only the one doing its card, at its target; the gun holds its fire, §2.10)   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
 // EITHER A BATTLE OR NONE (§2.35; the owner, 2026-11-17: "it gets really confusing when I am close to an enemy, because my followers will start attacking the creature, or there'll be some
 // sort of combat that's not based in the combat or card-based turn system. So make it to where there's no intermediary fighting with my squad. It's either battle or no battle"): with the
 // switch on and no battle, you and your squad fight nothing. Your squad picks no target (cardBattleMayTarget) and fires no second attack (js/evolution.js) or Ultimate (js/elements.js), the
@@ -235,7 +238,7 @@ function _cbKeepAtIt() {
         let best = null, bd = Infinity; for (const t of ours) { if (!ok(t)) continue; const d = Math.hypot(t.x - a.x, t.y - a.y); if (d < bd) { bd = d; best = t; } }
         if (best) { a.currentTarget = best; a._prey = best; a.biteTarget = null; a.attackWindup = 0; if (a.state === "wander") a.state = "hunt"; }
     }
-    if (!_cb.foes.some(_cbFoeOk)) cardBattleEnd();
+    if (!_cb.foes.some(_cbFoeIn)) cardBattleEnd();
 }
 // THE TEAM'S EXPERIENCE (the owner, 2026-11-18: "pop up for team kill experience"; then, of a panel with a CONTINUE button: "No, passive text but large text emerges from the kill"): each creature of a
 // battle that goes down, a large gold +N XP rises from where it fell and fades: what the kill paid your team (the game's own sum, js/levels.js killXp). Nothing to tap, nothing held up. The last one's
@@ -248,6 +251,7 @@ function _cbKillText() {
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
     _cbKillText();   // (the last kill's experience, as the battle ends)
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
+    if (typeof cardUltEnd === "function") cardUltEnd();   // (and what the Ultimates left: §2.64)
     _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.pushQ = [];
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
@@ -375,7 +379,8 @@ function _cbSlide() {
 // where it stands, and RUN's last hits are as before (§2.16).
 function _cbTiles(u) {   // (its lasting pace: its base speed and its form's own, js/abilities.js tickSlowSpeed; slowed, the slow's share of it, §2.52; not a haste of the moment)
     const fd = u && u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null, slow = u && u.slowed > 0 && u.slowFactor >= 0 && u.slowFactor < 1 ? u.slowFactor : 1;
-    const s = u ? (u.baseMoveSpeed || u.moveSpeed || 0) * (u.paceMult > 0 ? u.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1) * slow : 0; if (!(s > 0)) return 0;
+    const fast = Math.max(u && u._voltUntil > _cbF() && u._voltMove > 1 ? u._voltMove : 1, typeof cardUltPace === "function" ? cardUltPace(u) : 1);   // (a pace lent for turns: DRIFT SLASH's, an ICE RINK under it, §2.64)
+    const s = u ? (u.baseMoveSpeed || u.moveSpeed || 0) * (u.paceMult > 0 ? u.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1) * slow * fast : 0; if (!(s > 0)) return 0;
     for (const [at, n] of CARD_BATTLE.tiles) if (s >= at) return n;
     return 1;
 }
@@ -404,6 +409,7 @@ function _cbGrid(u) {
     const taken = new Set();
     for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; taken.add(K(s.x, s.y)); }
     if (typeof rotDecoys !== "undefined") for (const d of rotDecoys) if (d && !d.dead && d !== u) taken.add(K(d.x, d.y));
+    if (typeof cardUltWalls === "function") for (const c of cardUltWalls()) taken.add(K(c[0], c[1]));   // (REEF PILLAR's spikes: js/cardults.js)
     const s0 = _cbSq(u), c0 = [Math.round(s0[0]), Math.round(s0[1])], k0 = c0[0] + "," + c0[1];
     const open = (x, y, nx, ny) => { const nk = nx + "," + ny; return !taken.has(nk) && (!room || room.has(nk)) && _fpEdgeOk(x, y, nx, ny); };
     return { K, cells, taken, s0, c0, k0, open };
@@ -560,7 +566,7 @@ function _cbWalkTick(T, u) {
     if (T.arrived) return f0 - T.arrived >= CARD_BATTLE.stepBeat;
     const c = T.walk[T.wi]; if (!c || f0 - T.t0 > 600) { T.arrived = f0; return false; }
     const dx = c[0] - u.x, dy = c[1] - u.y, d = Math.hypot(dx, dy), sp = CARD_BATTLE.stepPace;
-    if (d <= sp) { u.x = c[0]; u.y = c[1]; if (++T.wi >= T.walk.length) { T.arrived = f0; _cb.slots.set(u, { x: c[0], y: c[1] }); } }
+    if (d <= sp) { u.x = c[0]; u.y = c[1]; if (typeof cardUltStepOn === "function") cardUltStepOn(T, u, c); if (++T.wi >= T.walk.length) { T.arrived = f0; _cb.slots.set(u, { x: c[0], y: c[1] }); } }   // (cardUltStepOn: across a strand of CONTAMINATION NETWORK, js/cardults.js)
     else { u.x += dx / d * sp; u.y += dy / d * sp; u.dirX = dx / d; u.dirY = dy / d; }
     u.walkCycle = (u.walkCycle || 0) + sp * 40; u._fpPath = null; if (Number.isFinite(u.visualX)) { u.visualX = u.x; u.visualY = u.y; }
     return false;
@@ -747,7 +753,7 @@ function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, act
 // does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is; and that one too while it walks: the battle walks it, §2.39)
 function cardBattleHolds(a) {
     const T = _cb.turn; if (!T || _cb.phase !== "on" || !a) return false;
-    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return !!T.walk || !!T.lost;   // (and one that lost its turn to a status, §2.52)
+    if ((T.who === "act" && a === T.f) || (T.who === "foe" && a === T.a)) return !!T.walk || !!T.lost || (T.who === "act" && T.kind === "ult" && !!T.shape && !a._fault);   // (and one that lost its turn to a status, §2.52; and one in its Ultimate's turn, which is its Ultimate alone: no step or hit of its own, §2.64; FAULTLINE's run is its own)
     if (_cb.foes.indexOf(a) >= 0) return true;
     return a !== (typeof player !== "undefined" ? player : null) && _cbMine(a);
 }
@@ -763,7 +769,7 @@ _cb.acted = new Set();
 // out at once, and the pop-up switches in the next.
 function _cbCurrent() { if (!_cb.turn) return null; for (const f of _cbSquad()) if (!_cb.acted.has(f)) return f; return null; }
 function _cbAfterAct(f0) {
-    if (!_cb.foes.some(_cbFoeOk)) { _cb.turn = { who: "you", t0: f0 }; return; }
+    if (!_cb.foes.some(_cbFoeIn)) { _cb.turn = { who: "you", t0: f0 }; return; }
     if (_cbSquad().some(f => !_cb.acted.has(f))) { _cb.turn = { who: "you", t0: f0 }; _cbRefresh(); return; }   // (another of yours still to act)
     _cbFoesTurn(false);
 }
@@ -773,6 +779,8 @@ function _cbYourTurn() {
     _cb.round++;
     if (_cb.round > 1) for (const m of _cb.cd.values()) for (const id in m) if (m[id] > 0) m[id]--;
     if (_cb.round > 1) _cbStatusTurn("foes");   // (the enemies' turn over: a turn on the statuses, §2.52)
+    if (_cb.round > 1 && typeof cardUltTurnEnd === "function") cardUltTurnEnd();   // (and on what an Ultimate holds, shields or walls: §2.64)
+    for (const f of _cbSquad()) if (f && f._consume) _cb.acted.add(f);   // (the Sundew holds still while it digests, §2.64: it plays no card)
     if (typeof cardShapeStays === "function") cardShapeStays("you");   // (an area whose turns are over closes; last round's draws and bracing end: §2.48)
     _cb.turn = { who: "you", t0: _cbF() };
 }
@@ -800,7 +808,7 @@ function cardBattlePlay(f, kind, id, target, fire) {
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
     // THE SHAPE'S AIM (§2.48, js/cardshapes.js): let go on an enemy (`target`), on a floor square ({ x, y, tile: true }) or anywhere, as its shape takes it. A blast or the decoy let go on an
     // enemy takes that enemy's square; let go nowhere, a card takes the nearest enemy (or its square), as before (§11.4)
-    const def = kind !== "ult" && typeof cardShapeDef === "function" ? cardShapeDef(f, kind, id) : null, aimK = def ? cardShapeAim(def) : "foe";
+    const def = typeof cardShapeDef === "function" ? cardShapeDef(f, kind, id) : null, aimK = def ? cardShapeAim(def) : "foe";   // (an Ultimate's shape too: js/cardults.js §2.64)
     let aim = null;
     if (aimK === "tile" && target && target.tile && Number.isFinite(target.x) && Number.isFinite(target.y)) aim = { x: Math.round(target.x), y: Math.round(target.y), tile: true };
     if (live.indexOf(target) < 0) target = _cbNearest(f, live);
@@ -843,12 +851,12 @@ function cardBattlePlay(f, kind, id, target, fire) {
     _cb.turn = T; _cb.acted.add(f);
     if (kind === "ult") {
         const FT = typeof floatingTexts !== "undefined" ? floatingTexts : null, n0 = FT ? FT.length : 0;
-        T.fired = typeof followerUltFire === "function" ? followerUltFire(f) : false;
+        T.fired = S && typeof cardUltFire === "function" ? cardUltFire(f, S, T) : typeof followerUltFire === "function" ? followerUltFire(f) : false;   // (on its shape, its lasting part on the battle's clock: js/cardults.js)
         if (!T.fired) {   // (an Ultimate that does not go off is not played, §2.58: FAULTLINE's opens the drawing of its path, which a turn does not wait for; CONTAMINATION NETWORK needs 2 toxic pods. The drawing called off, its turn and its card still its own)
             const aimed = typeof techAim !== "undefined" && techAim && techAim.f === f; if (aimed && typeof techAimCancel === "function") techAimCancel(true);
             const why = FT ? FT.splice(n0).map(t => t && t.text).filter(Boolean).pop() : null;   // (its own words, NEEDS 2 TOXIC PODS, in the banner: over the world they would wait till the battle is over)
             _cb.turn = T0; _cb.acted.delete(f); f.alt = T.saved.alt; f.altBoth = T.saved.both;
-            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : why || "IT CANNOT GO OFF HERE");
+            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : (S && S.why) || why || "IT CANNOT GO OFF HERE");
         }
     }
     if (kind === "move" && S && typeof cardShapeFire === "function") {   // (its move at once, on its shape: §2.48)
@@ -866,6 +874,7 @@ function _cbFoesTurn(run) {
     _cb.turn = { who: "foe", a: null, t0: _cbF(), hit: 0, queue, run: !!run };
     if (!run) _cbStatusTurn("you");   // (your round over: a turn on the statuses, §2.52)
     if (!run && typeof cardShapeStays === "function") cardShapeStays("foes");   // (each area that stays bites what stands in it, the card's turn over: §2.48)
+    if (!run && typeof cardUltWindow === "function" && cardUltWindow()) { _cb.turn.field = _cbF(); _cbRefresh(); return; }   // (an Ultimate's field runs its next turn's worth first, the enemies waiting: §2.64)
     _cbNextFoe();
 }
 function _cbNextFoe() {
@@ -911,17 +920,22 @@ function _cbTurnTick() {
     _cbSlide();
     _cbHoldUntil();   // (the statuses kept as an end time do not run out in real time: §2.52)
     if (T.who === "you" && _cbChargeFire()) return;   // (a charged attack fires at its follower's turn)
+    if (T.who === "you" && !_cb.foes.some(_cbFoeOk) && _cb.foes.some(_cbFoeIn)) {   // (every enemy left is held inside one of yours, ABSOLUTE ZERO, CONSUME: nothing to strike; your squad waits a moment, said in the banner, and the round passes)
+        if (!T.heldAt) { T.heldAt = f0; _cb.say = { text: "THEY ARE HELD · YOUR SQUAD WAITS", until: f0 + C.heldWait }; _cbRefresh(); } else if (f0 - T.heldAt >= C.heldWait) _cbFoesTurn(false);
+        return;
+    }
     if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
-        if (_cb.lay) _cbTether(T, f);
+        if (_cb.lay && !(T.kind === "ult" && T.shape && T.shape.def.kind === "cone")) _cbTether(T, f);   // (WAVE MAKER moves up behind its waves at a walk: not held to its square, its new one after, §2.64)
         if (T.kind === "move" && f._altLive) T.fired = true;
         const landed = T.hit && f0 - T.hit >= C.beat;
-        const done = T.kind === "ult" ? el >= C.ultHold : T.kind === "basic" ? landed : (T.fired && !f._altLive && el >= C.beat) || (landed && !f._altLive) || (T.failed && el >= C.beat);   // (failed: its move found nothing after all)
+        const done = T.kind === "ult" ? (typeof cardUltDone === "function" ? cardUltDone(T, el) : el >= C.ultHold) : T.kind === "basic" ? landed : (T.fired && !f._altLive && el >= C.beat) || (landed && !f._altLive) || (T.failed && el >= C.beat);   // (failed: its move found nothing after all)
         if (done || el >= C.actMax || f.dead || !(f.health > 0) || !live) { _cbActEnd(); _cbResquare(f); _cbAfterAct(f0); }
     } else if (T.who === "foe") {
         const a = T.a;
+        if (T.field) { if (f0 - T.field >= C.fieldMax || !(typeof cardUltLive === "function" && cardUltLive())) { T.field = 0; _cbNextFoe(); } return; }   // (THE FIELDS' TURN'S WORTH first, as the enemies' turn begins: §2.64)
         if (T.lost) { if (f0 - T.lost >= C.beat * 2) _cbNextFoe(); return; }   // (its turn lost to a status: the banner says so a moment, §2.52)
         if (T.walk) { if (_cbWalkTick(T, a)) _cbNextFoe(); return; }
         if (a && !T.run && _cb.lay) _cbTether(T, a);
@@ -1060,7 +1074,7 @@ function cardBattleScreen() {
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (_cbTank(f) ? " · TANK" : "") + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
       const mv = T && T.lost ? " · " + T.lostWord : T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39; a turn lost to a status: §2.52)
-      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length; return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : "ENEMY TURN · " + nm(T.a) + mv;
+      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length; return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }
@@ -1160,4 +1174,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

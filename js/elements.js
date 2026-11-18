@@ -396,12 +396,12 @@ const ULT_METEOR_RAIN = {
     name: "Meteor Rain",
     execute(actor) {
         if (actor.dead || elementEffects.some(e => e.type === "meteorrain" && e.by === actor && e.life > 0)) return;
-        const target = ultBiggestFoe(actor);
+        const aimed = typeof cardUltPoint === "function" ? cardUltPoint(actor) : null, target = aimed || ultBiggestFoe(actor);   // (a battle of turns: the tile it was aimed at, js/cardults.js)
         if (!target) return;
         const M = ULT_METEOR, cx = target.x, cy = target.y, rocks = [], sees = (x, y) => typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y);
         for (let i = 0; i < M.count; i++) {
             let x = 0, y = 0, ok = false;
-            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r;
+            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r; if (aimed) { x = Math.round(x); y = Math.round(y); }   /* (there, each rock on a square) */
                 ok = sees(x, y) && !rocks.some(q => Math.hypot(q.x - x, q.y - y) < M.apart); }
             if (!ok) continue;   // (no room left for it: a rain in a small room has fewer rocks)
             rocks.push({ x, y, at: M.cast + M.fall + Math.round(i * (M.rain - M.fall) / M.count + Math.random() * 6), s: 0.75 + Math.random() * 0.6, spin: Math.floor(Math.random() * 12), hit: false });
@@ -920,7 +920,15 @@ function updateElementEffects() {
         }
     }
 
-    elementEffects = elementEffects.filter(e => {
+    elementEffects = elementEffects.filter(elementEffectStep);
+    if (typeof cardUltGate === "function") cardUltGate(null);
+    if (_fxLater.length) { for (const e of _fxLater) elementEffects.push(e); _fxLater = []; }   // (made during the update: fxLater)
+    fxTidy();
+}
+// a frame of one effect: false when it is over. (Its own function so that a battle of turns can count what an Ultimate leaves by its turns: js/cardults.js; in such a battle an effect of an
+// Ultimate stands still between its turns.)
+function elementEffectStep(e) {
+        if (typeof cardUltGate === "function" && cardUltGate(e)) return true;
         e.life--;
 
         // Toxic cloud deals tick damage
@@ -999,13 +1007,13 @@ function updateElementEffects() {
             for (const a of actors) {
                 if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
-                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (typeof cardBattlePull === "function" && cardBattlePull(a, e.x, e.y, v)) { /* (a battle of turns: drawn in on its squares) */ } else if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) { const h0 = a.health; applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH); const by = e.by; if (by && !by.dead && h0 > a.health) by.health = Math.min(by.maxHealth || by.health, by.health + (h0 - a.health) * V.heal); }
             }
         }
         if (e.type === "toxicpuddle") {
             const P = ULT_PUDDLE, age = e.maxLife - e.life;
-            e.radius = P.from + (P.radius - P.from) * Math.min(1, age / P.grow);
+            e.radius = e._cbFull ? P.radius : P.from + (P.radius - P.from) * Math.min(1, age / P.grow);   // (_cbFull: a battle of turns, at its full size from the start, js/cardults.js)
             if (age > 0 && e.life > 0 && age % P.tick === 0) {
                 e.shards = []; e.shardAt = age;
                 for (const a of actors) {
@@ -1078,7 +1086,7 @@ function updateElementEffects() {
             for (const a of actors) {
                 if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
-                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (typeof cardBattlePull === "function" && cardBattlePull(a, e.x, e.y, v)) { /* (a battle of turns: drawn in on its squares) */ } else if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH);
             }
         }
@@ -1108,9 +1116,6 @@ function updateElementEffects() {
         }
 
         return e.life > 0;
-    });
-    if (_fxLater.length) { for (const e of _fxLater) elementEffects.push(e); _fxLater = []; }   // (made during the update: fxLater)
-    fxTidy();
 }
 
 function drawElementEffects() {
@@ -1515,6 +1520,7 @@ function drawElementEffects() {
                     ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#d6ff9a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
                     const t = (frame % 40) / 40; ctx.fillStyle = "#ffffff"; ctx.globalAlpha = k; ctx.beginPath(); ctx.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 3, 0, Math.PI * 2); ctx.fill();
                 }
+                if (e.pods) for (const q of e.pods) { const a = S(q[0], q[1]); ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#10261a"; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(a[0], a[1] - 5, 10, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }   // (its own pods, the strands' ends: a battle of turns, js/cardults.js; their look the agent's, provisional)
                 break;
             }
             // SHARD VORTEX (FORM_ULTIMATES): a violet swirl with four crystal shards spinning round its middle
