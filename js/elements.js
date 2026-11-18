@@ -1339,7 +1339,9 @@ function drawElementEffects() {
         ctx.restore();
     }
 
+    const v3 = typeof view3dOwnsFx === "function" && typeof view3dShowing === "function" && view3dShowing();   // THE 3D VIEW draws some attacks' effects itself (view3d/attacks.js): those it drew this frame are left out here
     elementEffects.forEach(e => {
+        if (v3 && view3dOwnsFx(e)) return;
         const px = isoSX(e.x, e.y) + canvas.width/2;
         const py = isoSY(e.x, e.y) + canvas.height/2;
         const alpha = Math.min(1, e.life / 20);

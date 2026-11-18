@@ -30,7 +30,10 @@ const VIEW3D_GAME = (0, eval)(`({
   // 2D puts them; the dam's pools
   sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
   sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
-  flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; }
+  flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
+  // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
+  get fx() { return typeof elementEffects !== "undefined" ? elementEffects : null; }, get gfxLow() { return typeof gfxLow !== "undefined" && !!gfxLow; },
+  get mawChomp() { return typeof MAW_CHOMP !== "undefined" ? MAW_CHOMP : { snap: 16, total: 32 }; }, get mawSlowR() { return typeof MAW_SLOW_R !== "undefined" ? MAW_SLOW_R : 1.6; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)

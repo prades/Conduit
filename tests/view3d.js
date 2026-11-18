@@ -13,6 +13,8 @@
 //   THE WORLD     a door opens as the game's does; each room as dark as the game draws it (the one you are in at its lit level, the others dark); a blackout darkens it; the floor's marks are laid on its floor; the
 //                 facility's items it does not build are the game's to draw, and only in its rooms
 //   AWAY          in a room it has not built (the Armory) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
+//   THE ATTACKS   stage 5 (view3d/attacks.js): the Frost Maw's bite, CHOMP and ABSOLUTE ZERO drawn in 3D by the view's registry; the game leaves out its 2D drawing of exactly those effects; drawing
+//                 writes nothing of the game's; LOW graphics halves them; a fault in one sends its effects back to 2D and the view goes on
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -91,12 +93,12 @@ group('SWITCH OFF: nothing of it is fetched or made');
 const OFF = realPage('dev', RUN(SETUP + `put(13, 19); step(3);
   out.three = typeof THREE !== 'undefined'; out.canvas = !!document.getElementById('view3dCanvas'); out.scripts = [].slice.call(document.scripts).map(function (s) { return s.src; }).filter(function (s) { return /three|view3d\\.js(?!\\?v=)|dist\\/view3d/.test(s); });
   out.alpha = ctx.getContextAttributes ? ctx.getContextAttributes().alpha : null; out.feet = view3dFeet(); out.body = view3dBody(player); out.showing = VIEW3D.showing;
-  var d = ctx.getImageData(40, 300, 1, 1).data; out.px = [d[0], d[1], d[2], d[3]];`));
+  var d = ctx.getImageData(40, 300, 1, 1).data; out.px = [d[0], d[1], d[2], d[3]]; out.owns = view3dOwnsFx({ type: 'impact' });`));
 if (OFF === null) console.log('  (no Chromium here: skipped)');
 else check('the game starts as ever: the switch is off, no three.js, no second canvas, no script of the view; the game\'s canvas opaque; units drawn where they always were', () => {
     ok(!OFF.none, 'the page left no result'); same(OFF.start, 'done', 'the start'); same(OFF.on, false, 'the switch'); same(OFF.state, 'off', 'the view'); same(OFF.errs.join(' | '), '', 'errors'); ok(!OFF.threw, OFF.threw);
     same(OFF.three, false, 'three.js loaded'); same(OFF.canvas, false, 'a canvas of the view'); same(OFF.scripts.join(' '), '', 'scripts of the view'); same(OFF.alpha, false, 'the canvas is see-through'); same(OFF.px[3], 255, 'a pixel of the frame');
-    same(OFF.feet, 0, 'units moved'); same(OFF.body, false, 'the view claims the cube'); same(OFF.showing, false, 'showing');
+    same(OFF.feet, 0, 'units moved'); same(OFF.body, false, 'the view claims the cube'); same(OFF.showing, false, 'showing'); same(OFF.owns, false, 'the view claims an effect');
 });
 
 group('SWITCH ON, in a real browser (software WebGL: its speed here says nothing of an iPad)');
@@ -246,6 +248,67 @@ else {
     });
     check('AWAY: in a room it has not built it hides and the frame is the 2D game\'s, opaque, units where they were; back in the lab it shows again', () => {
         same(JSON.stringify(ON.away), JSON.stringify({ showing: false, display: 'none', px: 255, feet: 0, body: false }), 'in the Armory'); same(JSON.stringify(ON.back), JSON.stringify({ showing: true, display: 'block' }), 'back');
+    });
+}
+
+group('STAGE 5, THE ATTACKS IN 3D (the owner, 2026-11-18: "I need to begin work animating every single attack in the new battle phase"; the Frost Maw\'s three first)');
+// The Frost Maw beside an ant in the Crystal Chamber; his bite (the game's own ice hit), CHOMP and ABSOLUTE ZERO made by the game's own functions; the view's registry draws them in 3D, and the game
+// leaves out its 2D drawing of exactly those effects. snap(): every unit's and effect's own plain values (not the 2D drawing's own memory of a form's walk, _evo and _hd), to show drawing writes nothing.
+const ATK = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);   // (HIGH graphics held: a slow test browser would set LOW by itself, js/propsprites.js)
+  var m = followers[0]; if (!m) { spawnFollowerAtCrystal('ice'); m = followers[followers.length - 1]; }
+  m.element = 'ice'; m.role = 'brawler'; m.evolved = 'maw'; m._moltAt = -9999; m.level = 20; _applyFollowerLevel(m, true); if (typeof energyFill === 'function') energyFill(m); m.x = 14; m.y = 19.5; m.returningToCrystal = false; m.update = function () {}; m.currentWill = 999;
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 15.1; ant.y = 19.5; ant.update = function () {}; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var stop = function (u) { u.update = function () {}; }; actors.forEach(function (u) { if (u !== player) stop(u); }); step(3);
+  out.types = A.types(); out.hasMaw = V.has(m);
+  var snap = function () { var keep = function (o) { var r = {}; Object.keys(o).forEach(function (k) { var v = o[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), ia: m.icicleAttack ? keep(m.icicleAttack) : null }); };
+  var saves = function () { var n = 0, s0 = ctx.save; ctx.save = function () { n++; return s0.apply(this, arguments); }; try { drawElementEffects(); } finally { delete ctx.save; } return n; };
+  var foreign = function () { var e = { type: 'impact', x: 12, y: 21, color: '#ffffff', radius: 0.6, life: 20 }; elementEffects.push(e); return e; };
+  // THE BITE: the game's own ice hit, as his everyday hit lands
+  var r0 = Math.random; Math.random = function () { return 0.5; }; m.state = 'attack'; m.attackAnim = 0; ELEMENT_ATTACKS.ice.physical(m, ant); Math.random = r0;
+  var bite = elementEffects.filter(function (e) { return e.type === 'impact' && e.element === 'ice'; })[0]; V.draw(null);
+  out.bite = { made: !!bite, owned: view3dOwnsFx(bite), icicle: view3dOwnsFx(m.icicleAttack) };
+  var fo = foreign(); out.bite.foreign = view3dOwnsFx(fo); out.bite.saves2D = saves(); elementEffects.splice(elementEffects.indexOf(fo), 1); out.bite.savesOwn = saves();
+  step(5); out.bite.st = JSON.parse(JSON.stringify(A.stats));
+  var s1 = snap(); for (var i = 0; i < 5; i++) V.draw(null); out.bite.same = snap() === s1;
+  elementEffects.length = 0; m.icicleAttack = null; m.state = 'idle'; step(2);
+  // CHOMP: the game's own (MAW_CHOMP: the bite at 16 after he arrives); then LOW graphics halves its points and crystals
+  ant.x = 14.9; ant.y = 19.5; out.chomp = { fired: chomp(m) }; var ch = elementEffects.filter(function (e) { return e.type === 'mawchomp'; })[0]; step(1); out.chomp.owned = !!ch && view3dOwnsFx(ch); out.chomp.saves = saves();
+  step((ch ? ch.go : 0) + MAW_CHOMP.snap + 3); out.chomp.st = JSON.parse(JSON.stringify(A.stats)); var s2 = snap(); for (var i = 0; i < 5; i++) V.draw(null); out.chomp.same = snap() === s2;
+  gfxLow = true; V.draw(null); out.chomp.low = JSON.parse(JSON.stringify(A.stats)); gfxLow = false; out.cap = A.CAP; step(80); out.chomp.after = A.memos().filter(function (x) { return /^mawchomp/.test(x); }).length;   // (his everyday hits go on meanwhile: their own memos come and go)
+  // ABSOLUTE ZERO: the game's own Ultimate; the ant pulled in (drawn by the view on its way), held, his effects drawn; then let go
+  ant.x = 15.2; ant.y = 19.6; step(2); m.ultimateCharge = 100; out.zero = { fired: followerUltFire(m), inside: ant._swallowedBy === m }; var z = elementEffects.filter(function (e) { return e.type === 'abszero'; })[0];
+  step(4); out.zero.owned = !!z && view3dOwnsFx(z); out.zero.held = A.stats.held; step(60); out.zero.heldLater = A.stats.held; out.zero.st = JSON.parse(JSON.stringify(A.stats)); out.zero.saves = saves();
+  var s3 = snap(); for (var i = 0; i < 5; i++) V.draw(null); out.zero.same = snap() === s3;
+  // A FAULT: the Maw's entry made to fail: his effects are the game's 2D drawing again, the view goes on
+  A.breakFor('maw'); step(1); out.fault = { bad: A.bad(), owned: view3dOwnsFx(z), saves: saves(), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(m) }; A.mend('maw');
+  z.life = 1; step(3); out.zero.out = !ant._swallowedBy;`));
+if (ATK !== null) {
+    check('the registry: the Frost Maw\'s entry draws his bite (the game\'s ice hit and his icicles), CHOMP and ABSOLUTE ZERO; his body is the view\'s', () => {
+        ok(!ATK.none, 'the page left no result'); ok(!ATK.threw, ATK.threw); same(ATK.errs.join(' | '), '', 'errors'); same(ATK.state, 'ready', 'the view');
+        same(JSON.stringify(ATK.types), JSON.stringify({ maw: ['icicle', 'impact', 'mawchomp', 'abszero'] }), 'what the registry draws'); same(ATK.hasMaw, true, 'his body the view\'s');
+    });
+    check('THE BITE: his ice hit and his icicles are the view\'s, drawn in 3D (ice shards, powder); the game leaves out its 2D drawing of exactly those, and still draws another\'s hit', () => {
+        const B = ATK.bite; same(JSON.stringify([B.made, B.owned, B.icicle, B.foreign]), JSON.stringify([true, true, true, false]), 'made, his hit the view\'s, his icicles the view\'s, another\'s hit not');
+        same(B.saves2D, 1, 'the 2D effects drawn with another\'s hit beside his'); same(B.savesOwn, 0, 'the 2D effects drawn with his alone'); ok(B.st.ice > 0 && B.st.puff > 0, 'drawn in 3D: ' + JSON.stringify(B.st));
+    });
+    check('CHOMP: his effect is the view\'s; at the slam the ring of snow, the ice spikes and the frost cloud are drawn, within the budget; LOW graphics halves them; played to its end and let go', () => {
+        const C = ATK.chomp; same(C.fired, true, 'fired'); same(C.owned, true, 'the view\'s'); same(C.saves, 0, '2D drawn');
+        ok(C.st.ice >= 6 && C.st.rings >= 1 && C.st.puff >= 10, 'at the slam: ' + JSON.stringify(C.st)); ok(C.st.puff <= ATK.cap.puff && C.st.glint <= ATK.cap.glint && C.st.ice <= ATK.cap.ice, 'over the budget');
+        ok(C.low.puff <= ATK.cap.puff / 2 && C.low.ice <= ATK.cap.ice / 2 && C.low.puff < C.st.puff, 'LOW graphics: ' + JSON.stringify(C.low)); same(C.after, 0, 'CHOMP\'s memo left after it');
+    });
+    check('ABSOLUTE ZERO: the one swallowed is drawn by the view as it is pulled into his mouth, then not (inside him); his swirl, crystals and frost drawn; the game\'s 2D left out; let go at its end', () => {
+        const Z = ATK.zero; same(JSON.stringify([Z.fired, Z.inside, Z.owned]), JSON.stringify([true, true, true]), 'fired, the ant inside him, the view\'s'); same(Z.held, 1, 'pulled in, drawn'); same(Z.heldLater, 0, 'held inside, not drawn');
+        ok(Z.st.puff >= 10 && Z.st.ice >= 6, 'drawn in 3D: ' + JSON.stringify(Z.st)); same(Z.saves, 0, '2D drawn'); same(Z.out, true, 'let go');
+    });
+    check('DRAWING WRITES NOTHING: five more drawings of the same frame (the bite, the slam, the hold) leave every unit and effect of the game as it was', () => {
+        same(JSON.stringify([ATK.bite.same, ATK.chomp.same, ATK.zero.same]), '[true,true,true]', 'unchanged');
+    });
+    check('A FAULT in an attack\'s 3D drawing: that form\'s effects go back to the game\'s 2D drawing, and the view and its bodies go on', () => {
+        const F = ATK.fault; same(JSON.stringify([F.bad, F.owned, F.saves > 0, F.state, F.showing, F.body]), JSON.stringify([['maw'], false, true, 'ready', true, true]), 'after the fault');
+    });
+    check('the game\'s side: the 2D effects and the Maw\'s icicles ask the view first (js/elements.js, js/draw.js), only while it shows (js/view3d.js view3dOwnsFx)', () => {
+        ok(/if \(v3 && view3dOwnsFx\(e\)\) return;/.test(rd('js/elements.js')), 'js/elements.js drawElementEffects'); ok(/view3dOwnsFx\(actor\.icicleAttack\)/.test(rd('js/draw.js')), 'js/draw.js'); ok(/function view3dOwnsFx\(o\) \{ return VIEW3D\.showing &&/.test(rd('js/view3d.js')), 'js/view3d.js');
     });
 }
 

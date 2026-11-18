@@ -1582,7 +1582,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── ICE — GIANT ICICLES PROJECTING TOWARD TARGET ────────────────────────
-    if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
+    if (actor.icicleAttack && actor.icicleAttack.timer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor.icicleAttack))) {   // (the 3D view's own bite, view3d/attacks.js: the Frost Maw's)
         const _it       = actor.icicleAttack;
         const _tpx      = isoSX(_it.tx, _it.ty) + canvas.width  / 2;
         const _tpy      = isoSY(_it.tx, _it.ty) + canvas.height / 2 - 30;

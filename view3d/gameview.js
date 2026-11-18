@@ -16,7 +16,9 @@
 //                bars and plates from where this view stands it, js/view3d.js view3dFeet.)
 //   THE FLOOR'S MARKS that are play (pools, fire, acid, auras, the long-press ring) are the game's own 2D drawing, made into a layer of their own and laid on the floor under all that
 //                stands on it (view3d/core.js `fx`)
-//   NOT YET      everything else is the game's own 2D drawing over the picture: the other creatures, the clones, the effects, the pickups, the stations, the panels; the other areas
+//   THE ATTACKS  in 3D, form by form (view3d/attacks.js: its registry; stage 5, the Frost Maw's three first): a form's attacks' body motion, and the effects of the game's it draws in 3D,
+//                each claimed for the frame so the game leaves out its 2D drawing of exactly that effect (js/view3d.js view3dOwnsFx)
+//   NOT YET      everything else is the game's own 2D drawing over the picture: the other creatures, the clones, the other effects, the pickups, the stations, the panels; the other areas
 // In scope: T, the forms and the props' models, the kit, chamber, styles and floor, the core (view3d/core.js), VIEW3D_GAME and `map` (view3d/gamemap.js), VIEW3D_JOBS, and
 // opts = { canvas (the view's own), game (the game's canvas) }.
 const GAMEVIEW = (function () {
@@ -46,7 +48,7 @@ const GAMEVIEW = (function () {
   const RC = new T.Raycaster(), seeFrom = new T.Vector3(), faded = new Map(), fadeOf = new Map(), cut = new Map(); let seeAt = -1e9, seeList = null, seeSets = null, seeBoxes = null;
   RC.layers.enableAll();   // (the built world is on layers 1 to 3, its ink and its shadows' copies: view3d/core.js; a line on layer 0 alone passed through all of it)
   const SEE_UP = [0.15, 0.55, 0.95], SEE_ALPHA = 0.2, seeFeet = new T.Vector3(), seeRay = new T.Ray(), seeM = new T.Matrix4(), ZERO = new T.Matrix4().makeScale(0, 0, 0);
-  function seeable(o) { if (!o.layers.test(cam.layers)) return false; for (let p = o; p && p !== scene; p = p.parent) { if (!p.visible) return false; if (p.userData && p.userData.body) return false; } return true; }
+  function seeable(o) { if (!o.layers.test(cam.layers)) return false; for (let p = o; p && p !== scene; p = p.parent) { if (!p.visible) return false; if (p.userData && (p.userData.body || p.userData.fx3d)) return false; } return true; }   // (fx3d: an attack's effect, view3d/attacks.js)
   function fadedMat(m) { let f = fadeOf.get(m); if (!f) { f = m.clone(); f.onBeforeCompile = m.onBeforeCompile; if (m.customProgramCacheKey) f.customProgramCacheKey = m.customProgramCacheKey; f.transparent = true; f.opacity = SEE_ALPHA * (m.opacity === undefined ? 1 : m.opacity); f.depthWrite = false; fadeOf.set(m, f); } return f; }
   function seeFind() {   // once a battle: what may stand in the way (what the camera draws, but the bodies), and each instanced set's tiles' boxes
     seeList = []; seeSets = []; seeBoxes = [];
@@ -159,6 +161,9 @@ const GAMEVIEW = (function () {
   function antKitBody(key, cls, size, accent) { const a = antBody(cls, { size, zk: 2, stand: true, accent }); return { key, holder: a.holder, poses: a.poses, ang: null }; }
 
   const free = new Map(), live = new Map(), shown = new Set(), bad = new Set(); let stamp = 0;   // (free: bodies not in use, by kind; live: each unit's; shown: the units whose bodies this frame's picture has)
+  // THE ATTACKS IN 3D (view3d/attacks.js; docs/VIEW-3D.md stage 5): a form's attacks, its body's motion and its effects, drawn here in place of the game's 2D drawing of them (the Frost Maw first)
+  const ATT = view3dAttacks({ scene, GM, camera: cam, renderer: CORE.renderer, grad: look.grad, UPX, ink: CORE.idCol(CORE.newInk()), JOBS,
+    lastAt: u => { const b = live.get(u); return b && b.holder.visible ? b.holder.position : null; }, bodyOf: u => live.get(u) || null });
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
     if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
     b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
@@ -187,18 +192,20 @@ const GAMEVIEW = (function () {
       if ((f._fxHideUntil || 0) > f0 || (f.evolved === 'electroskink' && GM.swirling(f))) { shown.add(f); return true; }   // (out of sight for a moment: drawn by no one)
       const fr = GM.evoFrame(f, d, f0), b = bodyFor(f, d.id, () => formBody(d.id)); if (!b) return false;
       turn(b, faceOf(fr.row), dt); pose(b, fr.col, fr.col < 8 && fr.col === Math.floor(f0 / 7) % 8 ? (f0 / 7) % 8 : undefined);
-      stand(b, f.x, f.y, GM.flightLift(f), SC_EVO * (0.6 + 0.4 * fr.rise)); shown.add(f); return true; }
+      stand(b, f.x, f.y, GM.flightLift(f), SC_EVO * (0.6 + 0.4 * fr.rise)); ATT.body(f, d.id, b, f0); shown.add(f); return true; }   // (ATT.body: its attack's own motion, view3d/attacks.js)
     const key = GM.eggSheet(f); if (!key || !JOBS[key] || bad.has(key)) return false;
     const wc = f.walkCycle || 0; if (f._hdWc !== undefined && Math.abs(wc - f._hdWc) > 1e-4) f._hdMoveAt = f0; f._hdWc = wc;   // (the drawing's own memory, as drawHdEgg keeps it: walking while its walk cycle moved in the last 6 frames)
     const walking = f._hdMoveAt !== undefined && f0 - f._hdMoveAt < 6, row = f.dirX || f.dirY ? hdRowOf(f.dirX || 0, f.dirY || 0) : 1, t0 = f0 + ((f.x || 0) * 13 | 0), b = bodyFor(f, key, () => formBody(key)); if (!b) return false;
     turn(b, faceOf(row), dt); pose(b, walking ? 8 + (t0 / 4) % 8 : 0, (t0 / 7) % 8); stand(b, f.x, f.y, GM.flightLift(f), SC_EGG); shown.add(f); return true; }
   // AN ANT (js/bugs3d.js _drawAnt3D): turned at once to its heading, lunging forward on a bite with its jaws wide, its legs in step while it walks. Not a clone, an ally, a nymph or a boss
-  function ant(a) { if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph || a.isClone || a.team === 'green') return false;
+  // hp: where one swallowed (ABSOLUTE ZERO) is drawn while it is pulled in (view3d/attacks.js held): its place, its height (px), its size and its turn
+  function ant(a, hp) { if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph || a.isClone || a.team === 'green') return false;
     const w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR, key = 'ant:' + a.className + ':' + size + ':' + accent;
     const b = bodyFor(a, key, () => antKitBody(key, a.className, size, accent)); if (!b) return false;
     let fx = Number.isFinite(a.dirX) ? a.dirX : 1, fy = Number.isFinite(a.dirY) ? a.dirY : 0; const fl = Math.hypot(fx, fy); if (fl < 1e-6) { fx = 1; fy = 0; } else { fx /= fl; fy /= fl; }
     const lunge = (a.state === 'attack' ? Math.sin(a.attackAnim || 0) : 0) * 0.16 * 0.2 * w / 22, moving = GM.walking(a);   // (forward by its lunge: in its own ground units, a fifth of a tile at its scale)
     const pi = a.state === 'attack' ? 4 : !moving ? 5 : Math.round((((a.walkCycle || 0) * 0.9 / TAU) % 1 + 1) % 1 * 4) % 4; for (let i = 0; i < b.poses.length; i++) b.poses[i].visible = i === pi;
+    if (hp) { b.ang = -Math.atan2(fy, fx) + hp.spin; stand(b, hp.x, hp.y, hp.up, hp.k); return true; }   // (pulled in: not shown as a unit, nothing is drawn over it)
     b.ang = -Math.atan2(fy, fx); stand(b, a.x + fx * lunge, a.y + fy * lunge, (a.leapLift || 0) + GM.flightLift(a), 1); b.top = w; shown.add(a); return true; }   // (top: how high its bars go, as the game's drawing has it: 22 px at its scale)
   // where a unit stands on the world this view has built (a room's floor, a way out's dark apron, a door's tunnel): elsewhere it is the game's own drawing
   const onWorld = (x, y) => { const k = K(Math.round(x), Math.round(y)), b = world.band.get(k); return !!world.roomAt(x, y) || world.aprons.has(k) || !!(b && b.header); };
@@ -225,12 +232,16 @@ const GAMEVIEW = (function () {
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
-    shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
+    ATT.begin(f0); shown.clear(); cube(f0, dt);
+    for (const a of GM.actors) { if (a._swallowedBy) { const hp = GM.isCreature(a) ? ATT.held(a) : null; if (hp) ant(a, hp); continue; }   // (swallowed: drawn only while it is pulled in)
+      if (!GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
+    ATT.draw(f0, shown);   // (the attacks' effects of the forms drawn here: before the bodies not used this frame are put away, so their places are still known)
     for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
     const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
-    snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
+    snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
-    stats, state, world, camera: cam, core: CORE,
+    stats, state, world, camera: cam, core: CORE, attacks: ATT,
+    owns(o) { return ATT.owns(o); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
     swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)

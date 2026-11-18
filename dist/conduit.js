@@ -2391,7 +2391,10 @@ function drawElementEffects() {
         }
         ctx.restore();
     }
+    const v3 = typeof view3dOwnsFx === "function" && typeof view3dShowing === "function" && view3dShowing();
     elementEffects.forEach(e => {
+        if (v3 && view3dOwnsFx(e))
+            return;
         const px = isoSX(e.x, e.y) + canvas.width / 2;
         const py = isoSY(e.x, e.y) + canvas.height / 2;
         const alpha = Math.min(1, e.life / 20);
@@ -9675,7 +9678,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
+    if (actor.icicleAttack && actor.icicleAttack.timer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor.icicleAttack))) {
         const _it = actor.icicleAttack;
         const _tpx = isoSX(_it.tx, _it.ty) + canvas.width / 2;
         const _tpy = isoSY(_it.tx, _it.ty) + canvas.height / 2 - 30;
@@ -58175,6 +58178,7 @@ function view3dFeet() { return VIEW3D.showing ? TILE_H : 0; }
 function view3dKeeps(it) { return VIEW3D.showing && VIEW3D.view.keeps(it); }
 function view3dBody(a) { return VIEW3D.showing && VIEW3D.view.has(a); }
 function view3dTop(a) { return VIEW3D.view.top(a); }
+function view3dOwnsFx(o) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o); }
 const _V3BTN = { r: 17, y0: 80, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
 function _v3panelUp() { return (typeof _lastPanelOpen !== "undefined" && _lastPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
 function view3dDrawButtons() {
