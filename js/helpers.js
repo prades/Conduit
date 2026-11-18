@@ -156,6 +156,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 const BLIND_MISS = 0.5;
 function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {
     if (typeof cardShapeSpared === "function" && cardShapeSpared(target, source)) return;   // CARD BATTLES: a card's blow on an enemy off its shape does not land (js/cardshapes.js §2.48)
+    if (typeof cardBattleOutside === "function" && cardBattleOutside(target, source)) return;   // CARD BATTLES: nor one of yours on a creature outside the battle (js/cardbattle.js §2.52)
     if (typeof cardBattleHit === "function" && cardBattleHit(target, source)) return;   // CARD BATTLES: a creature hitting you or yours starts a battle where you stand, and that blow does not land (js/cardbattle.js §2.35)   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off

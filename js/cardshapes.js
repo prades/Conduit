@@ -81,7 +81,7 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "ult") return null;
+    if (!f || kind === "ult" || kind === "walk") return null;   // (an Ultimate's shapes are the next page; MOVE has none: js/cardbattle.js §2.56)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;
 }
@@ -158,10 +158,81 @@ function cardShapeFor(f, kind, id, aim) {
     S.maskSet = new Set(S.mask);
     return S;
 }
+// ── A CARD'S WORDS IN A BATTLE (§2.58; the owner, 2026-11-18: "Do an audit of all the different cards and try to make them more attuned to the new card combat system") ──
+// The cards spoke in the real time's words (seconds, tiles, "the nearest enemy", "while it lasts"). In a battle each says what it does there: its squares (its shape, above) and what it does to
+// the enemies on them in turns (a status's time at 2 s a turn, at least one: §2.52), from the attacks' own numbers. Nothing here changes what a card does.
+function _csTurns(frames) { const n = Math.max(1, Math.ceil((frames || 0) / (60 * (typeof CARD_BATTLE !== "undefined" ? CARD_BATTLE.turnSec : 2)) - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
+function _csSquares(r, skip) { return _csDisc(0, 0, r, skip).length; }
+const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the shape's words come before: cardShapeSays)
+    bash:            () => "pushed back, stunned " + _csTurns(BASH_STUN),
+    venom_bite:      () => "weakened " + _csTurns(VENOM_POISON) + "; marked: your next " + VENOM_MARK + " hits on it land harder",
+    rift_impale:     () => "glitched " + _csTurns(RIFT_GLITCH) + "; it pops up beside it",
+    chomp:           () => "frozen " + _csTurns(MAW_STUN) + "; the squares round it slowed " + _csTurns(MAW_SLOW_FRAMES),
+    static_rush:     () => "each stunned " + _csTurns(MANTA_STUN),
+    shock_zap:       () => "both glitched " + _csTurns(ZAP_GLITCH) + ", only its target hurt",
+    zigzag_dash:     () => "each glitched " + _csTurns(ZIG_GLITCH) + "; it ends on a new square",
+    ember_slash:     () => "each burning " + _csTurns(EMBER_BURN) + "; it ends past them",
+    skate_charge:    () => "each slowed " + _csTurns(SKATE_SLOW) + "; it ends past them",
+    blade_roll:      () => "each sliced; it ends past them",
+    icicle_volley:   () => "each frozen " + _csTurns(ICICLE_FREEZE) + " (a boss slowed)",
+    quill_burst:     () => "each quill the first enemy on its line",
+    phase_swap:      () => "glitched " + _csTurns(SWAP_GLITCH) + ", a goo burst on it",
+    maelstrom:       () => "bites as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin; blinded " + _csTurns(MAEL_BLIND),
+    hexfire:         () => "burns as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
+    magma_vent:      () => "bursts as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
+    static_vortex:   () => "shocks as " + CARD_SHAPE_STAY + " enemy turns begin",
+    rotten_decoy:    () => "enemies within " + DECOY_DRAW + " squares go for it; its mist weakens the " + _csSquares(DECOY_MIST, true) + " round it",
+    stake_ring:      () => "each pushed out",
+    toxic_stomp:     () => "each crushed",
+    wobble_slam:     () => "each staggered " + _csTurns(WOBBLE_STUN) + " (not a boss)",
+    briar_sweep:     () => "each pushed out",
+    gravity_slam:    () => "each shoved and slowed " + _csTurns(MIMIC_SLOW_FRAMES),
+    eruption:        () => "armour eaten " + _csTurns(CALDERA_SHRED_FRAMES),
+    echo_pulse:      () => "each glitched " + _csTurns(ECHO_GLITCH),
+    seedfall:        () => { const n = parseInt(_csTurns(BUD_LIFE), 10); return "heals your side on them as " + (n === 1 ? "your round ends" : n + " of your rounds end"); },
+    sweet_scent:     f => (f && (f._nectar || 0) >= 100) ? "heals it and your followers on them" : "drawn to it " + _csTurns(SCENT_FRAMES) + ", weakened " + _csTurns(SCENT_POISON_FRAMES) + ", stunned " + _csTurns(SCENT_STUN),
+    shell_guard:     () => "drawn to it " + _csTurns(GUARD_FRAMES) + "; it braces, " + (GUARD_CUT === 0.5 ? "half damage" : Math.round((1 - GUARD_CUT) * 100) + "% of the damage") + ", " + _csTurns(GUARD_FRAMES),
+    corrode_shot:    () => "armour eaten " + _csTurns(ROT_SHRED_FRAMES) + ", less round it",
+    _corrodeShot:    () => "armour eaten " + _csTurns(ROT_SHRED_FRAMES) + ", less round it",
+};
+// the words of `f`'s card in a battle (null: none of its own; an Ultimate's are its own description, its shapes the next page). They must fit the card's four lines (game.html .cb-fx):
+// about 75 letters on a follower with five cards, 90 with four.
+function cardShapeSays(f, kind, id) {
+    const def = cardShapeDef(f, kind, id); if (!def) return null;
+    const V = v => _csV(v, f), up = t => t.charAt(0).toUpperCase() + t.slice(1);
+    let where;
+    switch (def.kind) {
+    case "one": where = def.r ? "its target; the " + _csSquares(V(def.r), true) + " squares round it" : "its target"; break;
+    case "chain": where = def.self ? "the nearest within " + V(def.reach) + " squares, then up to " + V(def.n) + " more, each within " + V(def.hop) + " of the last" : V(def.n) === Infinity ? "its target, then on through every enemy within " + V(def.hop) + " squares of the last" : V(def.n) === 1 ? "its target, then 1 more within " + V(def.hop) + " squares of it" : "its target, then " + V(def.n) + " more each within " + V(def.hop) + " squares of the last"; break;
+    case "line": where = "a line of " + Math.round(V(def.len)) + " squares through its target"; break;
+    case "zigzag": where = "a zigzag of " + def.len + " squares to its target"; break;
+    case "fan": where = def.angles.length + " shots fanned at its target"; break;
+    case "swap": where = "it and its target swap squares"; break;
+    case "blast": { const n = _csSquares(V(def.r), false); where = n === 5 ? "a cross of 5 squares on a square in reach" : n === 9 ? "a 3×3 on a square in reach" : "the " + n + " squares round a square in reach"; break; }
+    case "decoy": where = "a decoy on a square in reach"; break;
+    case "ring": { const o = def.alt ? def.alt(f) : null, r = o ? _csV(o.r, f) : V(def.r), n = _csSquares(r, true); where = n > 24 ? "every square within " + r + " of it" : "the " + n + " squares round it"; break; }
+    default: return null;
+    }
+    const key = kind === "basic" ? (def === CARD_SHAPES._corrodeShot ? "_corrodeShot" : null) : id, what = key && CARD_SAYS[key] ? CARD_SAYS[key](f) : kind === "basic" ? _csEveryday(f) : "";
+    return up(where) + (what ? " · " + what : "");
+}
+// an everyday hit's own status (js/combat.js PRIMARY_STATUS: by form, its chance a hit), in turns
+function _csEveryday(f) {
+    const k = typeof primaryStatusOf === "function" ? primaryStatusOf(f) : null, fx = k && typeof PRIMARY_STATUS_FX !== "undefined" ? PRIMARY_STATUS_FX[k] : null; if (!fx) return "";
+    const id = typeof dmgFormId === "function" ? dmgFormId(f) : f && f.evolved, odds = typeof PRIMARY_STATUS_ODDS !== "undefined" && PRIMARY_STATUS_ODDS[id] !== undefined ? PRIMARY_STATUS_ODDS[id] : typeof PRIMARY_STATUS_CHANCE !== "undefined" ? PRIMARY_STATUS_CHANCE : 0.25;
+    const word = { stun: "stunned", slow: "slowed", poison: "poisoned", blind: "blinded", glitch: "glitched", burn: "burning" }[k] || k;
+    return (odds >= 1 ? "" : odds >= 0.5 ? "half the time: " : "1 hit in " + Math.round(1 / odds) + ": ") + word + " " + _csTurns(fx.frames);
+}
+
 // ── WHILE IT IS PLAYED (a card's turn in a battle, js/cardbattle.js _cb.turn.shape) ──
 function _csTurn() { const T = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null; return T && T.who === "act" && T.shape ? T : null; }
 // js/evolution.js _evoFoes: the enemies a move may touch, in the battle's room (the move's first look: its target; after it: the shape's enemies, wherever they stand); null: as ever
-function cardShapeFoes(x, y) {
+function cardShapeFoes(x, y, r) {
+    const T0 = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null;
+    if (T0 && T0.who === "act" && !T0.shape && T0.kind === "ult" && r > 0) {   // (an Ultimate's turn, no shape yet: the battle's creatures in its reach, none outside the battle, §2.52)
+        const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;
+        return _cb.foes.filter(a => _cbFoeOk(a) && Math.hypot(a.x - x, a.y - y) <= r);
+    }
     const T = _csTurn(); if (!T) return null;
     const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;   // (outside the battle's room the world goes on, §2.28)
     const S = T.shape;
@@ -202,6 +273,7 @@ function cardShapeFire(f, id, S) {
     const newFx = typeof elementEffects !== "undefined" ? elementEffects.filter(e => !fx0.has(e)) : [], newDc = typeof rotDecoys !== "undefined" ? rotDecoys.filter(d => !dc0.has(d) && d.by === f) : [];
     if (S.def.kind === "decoy" && S.tile) for (const d of newDc) { d.x = S.tile[0]; d.y = S.tile[1]; for (const e of newFx) if (e.on === d || e.type === "decoylob") { e.x = d.x; e.y = d.y; } }   // (on the square it was dropped on)
     if (S.def.kind === "swap" && S.main) { const a = _cb.slots.get(f), b = _cb.slots.get(S.main); if (a && b) { _cb.slots.set(f, b); _cb.slots.set(S.main, a); } }   // (where each now stands is its square)
+    if (S.def.kind === "zigzag") _csDashEnd(f, S);   // (ZIGZAG DASH ends on a new square: js/cardbattle.js §2.57)
     if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && o && o.type === "buds"));   // (SEEDFALL's buds heal on round it; the card's turn does not wait for them to wither)
     for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.52: cardShapeBuds)
     if (S.def.stays) {   // (held: no bites of its own while the battle is on; its life put out of reach, its age kept for its look)
@@ -211,6 +283,18 @@ function cardShapeFire(f, id, S) {
         if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && held.indexOf(o) >= 0) && !(k === "dc" && newDc.indexOf(o) >= 0));   // (the card's turn does not wait for them)
     }
     return true;
+}
+// ZIGZAG DASH'S END (§2.57; the owner, 2026-11-18: "When the electroskink uses zigzag dash, they should end up in a different location than when they started it"): it ends on the farthest free square
+// of its zigzag (its own, the floor's, none of the battle's taken), else on the free square of the room nearest the last enemy it struck; never on the square it started from. That square is its own.
+// (The move's own end, 0.8 short of the last it struck, could be inside an object, and the game then put it back on open floor wherever that was.)
+function _csDashEnd(f, S) {
+    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== f && !a.dead && !_cb.out.has(a)) taken.add(_csK(Math.round(q.x), Math.round(q.y)));
+    const start = _csK(S.A[0], S.A[1]), free = c => !taken.has(_csK(c[0], c[1])) && _csK(c[0], c[1]) !== start && _csFloor(c[0], c[1]);
+    let end = null; for (let i = S.hit.length - 1; i >= 0 && !end; i--) if (free(S.hit[i])) end = S.hit[i];
+    if (!end) { const R = _csRoom(), on = S.mask.length ? _csSq(S.mask[S.mask.length - 1]) : S.A; let bd = Infinity; for (const c of (R ? R.cells : [])) { if (!free(c)) continue; const d = Math.hypot(c[0] - on[0], c[1] - on[1]); if (d < bd) { bd = d; end = c; } } }
+    if (!end) return;
+    f.x = end[0]; f.y = end[1]; f._fpPath = null; if (Number.isFinite(f.visualX)) { f.visualX = f.x; f.visualY = f.y; }
+    _cb.slots.set(f, { x: end[0], y: end[1] });
 }
 // SEEDFALL's buds in a battle (js/cardbattle.js _cbStatusTurn, your round over): a turn of their healing beats (`n` frames of their time), as the statuses count; their time over, they wither
 function cardShapeBuds(n) {
@@ -236,6 +320,7 @@ function cardShapeStays(at) {
 // THE LOOK, while a card is dragged (js/cardbattle.js cardBattleReticles): its squares lit on the floor where the 3D view draws them, in its colour; an effect's dashed; a blast's square in gold
 function cardShapeDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null; if (!D || !D.aim || !V || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
+    if (D.kind === "walk") return _csDrawWalk(V, D);
     const S = cardShapeFor(D.f, D.kind, D.id, D.aim === true ? null : D.aim); if (!S) return;
     const col = D.col || "#19e6c1", quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
@@ -243,6 +328,15 @@ function cardShapeDraw(V) {
     ctx.globalAlpha = S.ok ? 0.95 : 0.4; ctx.strokeStyle = col; ctx.lineWidth = 2; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.stroke(); }
     if (ctx.setLineDash) ctx.setLineDash([6, 4]); for (const c of S.eff) { quad(c[0], c[1], 0.12); ctx.stroke(); } if (ctx.setLineDash) ctx.setLineDash([]);
     if (S.tile) { ctx.globalAlpha = 1; ctx.strokeStyle = "#ffe733"; ctx.lineWidth = 3; quad(S.tile[0], S.tile[1], 0.02); ctx.stroke(); }
+    ctx.restore();
+}
+// THE MOVE CARD dragged (js/cardbattle.js §2.56): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
+function _csDrawWalk(V, D) {
+    const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
+    const quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+    for (const c of sq) { quad(c[0], c[1], 0.08); ctx.globalAlpha = 0.18; ctx.fill(); ctx.globalAlpha = 0.6; ctx.stroke(); }
+    if (T) { const ok = sq.some(c => c[0] === T[0] && c[1] === T[1]); ctx.globalAlpha = ok ? 1 : 0.55; ctx.strokeStyle = ok ? "#ffe733" : "#ff4a3a"; ctx.lineWidth = 3; quad(T[0], T[1], 0.02); ctx.stroke(); if (ok) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#ffe733"; ctx.fill(); } }
     ctx.restore();
 }
 // the floor square of the battle's room under a point of the canvas (the 3D view's drawing), or null

@@ -4,11 +4,26 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17am` · branch `claude/friendly-thompson-w581x0` · card battles: a fainting animation; the team's experience after a win (behind `?cards` with `?engine=3d`)
+### Build `2026-11-17ao` · branch `claude/friendly-thompson-w581x0` · card battles: a fainting animation; the team's experience after a win (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-18): "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation is concluding, and then pop up for team kill experience."
 - **What it does:** a creature (or one of yours) that goes down in a battle tips over and sinks away, about a second, instead of vanishing. On the last kill the battle ends and the camera eases back while that faint finishes; then ENEMIES DEFEATED comes up with each squad member's XP from the battle, its level and how far it is to the next. CONTINUE or a tap puts it away.
-- `view3d/gameview.js`, `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.56, §9, §10.
+- `view3d/gameview.js`, `js/cardbattle.js`, `game.html`, `tests/cardbattle.js`, `docs/CARD-BATTLES.md` §2.59, §9, §10.
 - **Verified:** tests/cardbattle.js, tests/view3d.js and the full suite; seen in a real browser. **Not seen on an iPad.** Timings the agent's.
+
+### Build `2026-11-17an` · branch `claude/start-game-project-HSh7Z` · card battles: the cards audited
+- **The ask** (the owner, 2026-11-18): "Do an audit of all the different cards and try to make them more attuned to the new card combat system."
+- **The audit** (`CARD-BATTLES.md` §2.58): every card of every form (74: 22 forms and the egg) played in a battle and measured. Each plays and touches only the enemies on its squares.
+- **Each card in the battle's terms:** in a battle a card says its squares and its effects in turns ("A 3×3 on a square in reach · bites as it opens and as 2 enemy turns begin; blinded 1 turn"), no seconds, short enough for the card's four lines; an Ultimate's card no longer says to tap ULTIMATE. The words are the agent's (provisional); no number changes.
+- **Fixed:** a round whose followers still to play were all charging stood still for ever; your Ultimates hurt creatures outside the battle (METEOR RAIN 45 and a burn, TOXIC PUDDLE 16, EVENT HORIZON 14); a turret's shot at a creature outside the battle hit a battle creature in its way; FAULTLINE used up the Thermite's turn, kept its charge and left the drawing of its path open, and CONTAMINATION NETWORK without its 2 toxic pods used up the Blight Spider's: an Ultimate that does not go off is not played now, the banner saying why (ITS PATH IS DRAWN: NOT IN A BATTLE YET; NEEDS 2 TOXIC PODS), until the Ultimates' page.
+- `js/cardbattle.js`, `js/cardshapes.js`, `js/elements.js`, `js/evolution.js`, `js/game.js`, `js/helpers.js`, `tests/cardbattle.js` (5 new checks, 1 changed: 100 with main's), `docs/CARD-BATTLES.md` (§2.58, §9, §10, §11.20, §11.27), `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- **Verified:** tests/cardbattle.js and the full suite; the pop-up's cards in a real browser at 1180 × 820 and 1024 × 768. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17am` · branch `claude/start-game-project-HSh7Z` · card battles: a MOVE card; ZIGZAG DASH ends on a new square
+- **The ask** (the owner, 2026-11-18): "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card."
+- **ZIGZAG DASH ends on a new square** (§2.57; the owner: "When the electroskink uses zigzag dash, they should end up in a different location than when they started it"): the farthest free square of its zigzag (its zigzag all taken: the free square nearest the last enemy it struck). It had ended inside an object and the game moved it back to open floor elsewhere. And a dash that carries its follower (SKATE CHARGE, SONIC ROLL) keeps it where it was carried: since the tile attacks it was eased back towards its start.
+- **What it does** (`CARD-BATTLES.md` §2.56): every follower has a MOVE card, last of its cards, always ready. Drag it: every square it can walk to this turn lights up (its tiles by its pace, round everyone), the one under your finger in gold. Let go there and its turn is the walk; on a taken square or one out of reach nothing is played and the banner says why.
+- `js/cardbattle.js`, `js/cardshapes.js`, `game.html` (the pop-up's cards may shrink a little for five), `tests/cardbattle.js` (5 new checks, 1 changed: 95 with main's), `docs/CARD-BATTLES.md` (§2.56, §2.57, §9, §10, §11.26), `docs/DECISION-LOG.md`.
+- **Verified:** tests/cardbattle.js and the full suite; dragged with the mouse in a real browser. **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17al` · branch `claude/friendly-thompson-w581x0` · card battles: charge and cool down by class (behind `?cards` with `?engine=3d`)
 - **The ask** (the owner, 2026-11-18): Mages' attacks charge up before they fire, Brawlers attack at once with a cooldown, Technicians wind up and cool down, Ultimates have no cast time. Asked: charges now and fires next turn; both of a Mage's cards charge; the lengths from each move's wait time.

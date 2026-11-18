@@ -1368,7 +1368,7 @@ function render() {
                 if (hit || a.dead) return;
                 const isTarget = p.targetsGreen
                     ? a.team === "green" && !(typeof techShieldBetween === "function" && techShieldBetween(p.x, p.y, a.x, a.y))   // (an enemy's shot hits nothing on the far side of a Photonic Shield: js/techabilities.js)
-                    : isHostileTarget(a) && !(p._cbOnly && !p._cbOnly.has(a));   // (_cbOnly: a card's shot in a battle hits only its own target, js/cardshapes.js)
+                    : isHostileTarget(a) && !(p._cbOnly && !p._cbOnly.has(a)) && (typeof cardBattleTouches !== "function" || cardBattleTouches(p.source, a));   // (_cbOnly: a card's shot in a battle hits only its own target, js/cardshapes.js; a sentry's none of a battle's fighters, js/cardbattle.js)
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30 + (a.bodyR || 0) * TILE_W) {   // (bodyR: a huge body, THE ANT QUEEN's, is hit anywhere on it: js/bosses.js)

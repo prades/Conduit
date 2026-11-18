@@ -900,7 +900,7 @@ function updateElementEffects() {
             const dmg = (caster.stats?.specialAttack||10) * 3.5;
             shake = Math.max(shake, 24);
             actors.forEach(a=>{
-                if(isHostileTarget(a)){
+                if(isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(caster, a))){
                     const d=Math.hypot(a.x-tx, a.y-ty);
                     if(d<=5.5){
                         applyElementalDamage(a, dmg*(1-d*0.1), caster, "fire", DMG_HIT_SPECIAL);
@@ -925,7 +925,7 @@ function updateElementEffects() {
         if (e.type === "toxicCloud" && e.life % 20 === 0) {
             const _er2 = e.radius * e.radius;
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) {
                     const dx=a.x-e.x, dy=a.y-e.y;
                     if (dx*dx+dy*dy <= _er2) {
                         applyDamage(a, e.tickDamage || 1, null);
@@ -938,7 +938,7 @@ function updateElementEffects() {
         if (e.type === "flameCrater" && e.life % 30 === 0) {
             const _er2 = e.radius * e.radius;
             actors.forEach(a=>{
-                if(isHostileTarget(a)){
+                if(isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))){
                     const dx=a.x-e.x,dy=a.y-e.y;
                     if(dx*dx+dy*dy<=_er2) applyDamage(a,e.tickDamage||3,null,"fire");
                 }
@@ -995,7 +995,7 @@ function updateElementEffects() {
         if (e.type === "shardvortex") {
             const V = ULT_VORTEX, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % V.tick === 0;
             for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
                 if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) { const h0 = a.health; applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH); const by = e.by; if (by && !by.dead && h0 > a.health) by.health = Math.min(by.maxHealth || by.health, by.health + (h0 - a.health) * V.heal); }
@@ -1007,7 +1007,7 @@ function updateElementEffects() {
             if (age > 0 && e.life > 0 && age % P.tick === 0) {
                 e.shards = []; e.shardAt = age;
                 for (const a of actors) {
-                    if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+                    if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
                     applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, P.poison);
                     e.shards.push([a.x, a.y]);
                 }
@@ -1016,14 +1016,14 @@ function updateElementEffects() {
         if (e.type === "whiteout") {   // (the Rime Star's Ultimate: moves with it; slows and bites the enemies in it)
             const o = e.on; if (!o || o.dead) e.life = 0;
             else { e.x = o.x; e.y = o.y; const W = ULT_WHITEOUT, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % W.tick === 0;
-                for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
+                for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
         }
         if (e.type === "icerink") {   // (the Igloo Skater's Ultimate: stays put; slows and bites the enemies on it, speeds the squad on it)
             const R = ULT_RINK, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % R.tick === 0, f0 = typeof frame !== "undefined" ? frame : 0;
             for (const a of actors) {
                 if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
                 if (a.isFollower === true && a.team === "green") { if (!(a._voltUntil > f0 && (a._voltMove || 1) >= R.fast)) { a._voltUntil = f0 + 2; a._voltMove = R.fast; a._voltAtk = 1; } }   // (a voltage field as fast or faster is left as it is)
-                else if (isHostileTarget(a)) { if (typeof applySlow === "function") applySlow(a, 20, R.slow); if (bite) applyDamage(a, e.bite, e.by, "ice", false, false, DMG_HIT_SPECIAL); }
+                else if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) { if (typeof applySlow === "function") applySlow(a, 20, R.slow); if (bite) applyDamage(a, e.bite, e.by, "ice", false, false, DMG_HIT_SPECIAL); }
             }
         }
         if (e.type === "wavemaker") {   // (the Hornshell's Ultimate: a wave every ULT_WAVE.every frames; between them it moves up after the enemies it threw, onto floor only)
@@ -1074,7 +1074,7 @@ function updateElementEffects() {
         if (e.type === "eventhorizon") {   // (the Void Star's Ultimate: drags in, crushes)
             const H = ULT_HORIZON, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % H.tick === 0;
             for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
                 if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH);
@@ -1089,7 +1089,7 @@ function updateElementEffects() {
                 for (const a of actors) {
                     if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
                     if (a.isFollower === true && a.team === "green") { a._voltUntil = f0 + 2; a._voltMove = e.move; a._voltAtk = e.atk; }
-                    else if (bite && isHostileTarget(a) && (typeof _evoSees !== "function" || _evoSees(e.x, e.y, a))) applyDamage(a, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL);
+                    else if (bite && isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) && (typeof _evoSees !== "function" || _evoSees(e.x, e.y, a))) applyDamage(a, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL);
                 }
             }
         }
@@ -1100,7 +1100,7 @@ function updateElementEffects() {
         if (e.type === "toxicnet") {
             const age = e.maxLife - e.life;
             if (age > 0 && e.life > 0 && age % ULT_NETWORK.tick === 0) for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 if (e.segs.some(s => _ultSegDist(a, s[0], s[1]) <= ULT_NETWORK.touch)) { applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, ULT_NETWORK.poison); }
             }
         }
@@ -1986,7 +1986,7 @@ function thicketBeat(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return 0;
     const T = ULT_THICKET, by = e.by, r2 = e.radius * e.radius; let dealt = 0;
     for (const a of actors) {
-        if (!a || !isHostileTarget(a)) continue;
+        if (!a || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches(e.by || e.on, a))) continue;
         const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy > r2 || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
         if (typeof applySlow === "function") applySlow(a, T.tick + 2, 0);   // (bound: it cannot move till the next beat)
         const h0 = a.health; applyDamage(a, ((by && by.power) || 10) * T.mult, by || null, "blossom", false, false, DMG_HIT_SPECIAL);
