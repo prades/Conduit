@@ -23,9 +23,16 @@ const ELS = {
   ice:  { world: 'ice',  col: '#99ddff', mid: '#5ad8ff', hot: '#f2fbff', night: '#020818' },
   fire: { world: 'fire', col: '#ff3300', mid: '#ff8a1e', hot: '#fff0c8', night: '#120201' },
 };
-// THE TYPES: only slashing is drawn (the other four wait for the owner's choice of design)
-const TYPES = { slashing: { seed: 101 } };
-if (!TYPES[TYN] || !/^[ABC]$/.test(OPT || '') || !ELS[ELN] || !OUT) {
+// THE TYPES: slashing in all three designs; the other four in design A, The Sweep (the owner's pick), only
+const TYPES = {
+  slashing:   { seed: 101 },
+  // (design A only, round 3: the other four types in The Sweep's language: the owner's pick, 2026-11-18)
+  piercing:   { seed: 202, move: 'thrust' },
+  crushing:   { seed: 303, move: 'smash' },
+  projectile: { seed: 404, move: 'shot' },
+  elemental:  { seed: 505, move: 'burst' },
+};
+if (!TYPES[TYN] || !/^[ABC]$/.test(OPT || '') || !ELS[ELN] || !OUT || (TYPES[TYN].move && OPT !== 'A')) {
   console.error('usage: node design/cards/attack/bake_basic2.js <' + Object.keys(TYPES).join('|') + '> <A|B|C> <' + Object.keys(ELS).join('|') + '> <out.png>'); process.exit(1); }
 
 // ---------- (run in the page) ----------
@@ -63,6 +70,7 @@ function OPTION_A(E, TY, W, H) {
   const out = cv(), g = out.getContext('2d'); g.fillStyle = E.night; g.fillRect(0, 0, W, H);
   g.save(); g.translate(W / 2, H / 2); g.rotate(-0.19); g.filter = 'blur(2px)'; g.drawImage(K.world(E.world), -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); g.restore();
   g.fillStyle = A(E.night, 0.35); g.fillRect(0, 0, W, H);
+  if (TY.move) { SWEEP_MOVES[TY.move](g, K, E, W, H); K.grade(g, E); return out; }   // (the other four types: below; slashing's own lines follow, unchanged)
   const CX = -70, CY = 545, RR = 540, N = 90, S = crescent(CX, CY, RR, -1.42, -0.42, 120, 0.62, N);
   const along = (g2, cols) => { const lg = g2.createLinearGradient(S.out[0][0], S.out[0][1], S.out[N][0], S.out[N][1]); cols.forEach(([q, c]) => lg.addColorStop(q, c)); return lg; };
   const sl = cv(), sg = sl.getContext('2d');
@@ -162,10 +170,100 @@ function OPTION_C(E, TY, W, H) {
   K.grade(g, E); return out;
 }
 
+// THE SWEEP'S OTHER FOUR TYPES (round 3; the owner picked design A, 2026-11-18; the agent's, provisional). Each in slashing's language: one stroke of the element in motion in the
+// upper card, its tail fading into the element's middle tone, its body the element's colour, its head white-hot; speed lines along its way; sparks of the element thrown off; a flash
+// and a cross of light at its head; soft motes at the lens; the same tilted world behind and the same grade. What differs is the move's shape:
+//   thrust (piercing): one straight lance from the top right narrowing to a needle point, and the burst where the point strikes: a ring round it and a star of spikes.
+//   smash (crushing): one broad, blunt column of light driven down from the top, and the shockwave where it lands: flattened rings on the tilted ground, sparks thrown up and out.
+//   shot (projectile): a round shot near the lens, on a long trail back to the far upper left, rings shed along the trail.
+//   burst (elemental): the element bursting out of one point at the lens: a white-hot core, rays of every length, a ring wave, sparks flying out at the lens.
+function SWEEP_MOVES_MAKE() {
+  // a straight stroke from (x0, y0) to (x1, y1), its width prof(t) along it (t 0 at the tail, 1 at the head); painted as slashing's crescent is (glow, body, core), twice (lit, then laid on)
+  const beam = (x0, y0, x1, y1, prof, n) => { const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, nx = -uy, ny = ux, a = [], b = [];
+    for (let i = 0; i <= n; i++) { const t = i / n, hw = prof(t) / 2, x = x0 + dx * t, y = y0 + dy * t; a.push([x + nx * hw, y + ny * hw]); b.push([x - nx * hw, y - ny * hw]); }
+    return { ux, uy, nx, ny, L, path: (g) => { g.beginPath(); a.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); for (let i = b.length - 1; i >= 0; i--) g.lineTo(b[i][0], b[i][1]); g.closePath(); } }; };
+  const paint = (g, K, E, x0, y0, x1, y1, prof, coreK, extra) => { const { cv, A } = K, sl = cv(), sg = sl.getContext('2d');
+    const along = (cols) => { const lg = sg.createLinearGradient(x0, y0, x1, y1); cols.forEach(([q, c]) => lg.addColorStop(q, c)); return lg; };
+    const S = beam(x0, y0, x1, y1, prof, 80), C = beam(x0, y0, x1, y1, t => prof(t) * coreK, 80);
+    sg.save(); sg.filter = 'blur(24px)'; S.path(sg); sg.fillStyle = along([[0, A(E.col, 0)], [0.5, A(E.mid, 0.6)], [1, A(E.col, 0.95)]]); sg.fill(); sg.restore();
+    S.path(sg); sg.fillStyle = along([[0, A(E.mid, 0)], [0.35, A(E.mid, 0.5)], [0.75, A(E.col, 0.92)], [1, A(E.hot, 1)]]); sg.fill();
+    C.path(sg); sg.fillStyle = along([[0, A(E.hot, 0)], [0.45, A(E.hot, 0.55)], [1, A(E.hot, 1)]]); sg.fill();
+    if (extra) extra(sg, S);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(sl, 0, 0); g.restore(); g.drawImage(sl, 0, 0); return S; };
+  // speed lines along a direction (ux, uy), across a band (n of them), between t0 and t1 of a stroke from (x0, y0) of length L
+  const speed = (g, K, E, x0, y0, ux, uy, L, spread, n, t0, t1) => { const { R, A } = K, nx = -uy, ny = ux; g.save(); g.lineCap = 'round';
+    for (let i = 0; i < n; i++) { const o = (R() - 0.5) * 2 * spread, a = t0 + R() * (t1 - t0), b = a + 0.1 + R() * 0.25, sx = x0 + nx * o, sy = y0 + ny * o;
+      g.strokeStyle = A(E.col, 0.15 + R() * 0.35); g.lineWidth = 1 + R() * 2.5; g.beginPath(); g.moveTo(sx + ux * L * a, sy + uy * L * a); g.lineTo(sx + ux * L * Math.min(b, t1), sy + uy * L * Math.min(b, t1)); g.stroke(); }
+    g.restore(); };
+  const flash = (g, K, E, x, y, r, a1, a2) => { K.blob(g, x, y, r, [[0, K.A(E.hot, 0.65)], [0.3, K.A(E.col, 0.32)], [1, K.A(E.col, 0)]]); K.streak(g, x, y, a1, 120, 3, E.hot); K.streak(g, x, y, a2, 60, 2, E.hot); };
+  const motes = (g, K, E, W, H) => { for (let i = 0; i < 8; i++) { const x = K.R() * W, y = K.R() * H * 0.6, r = 7 + K.R() * 16; K.blob(g, x, y, r, [[0, K.A(E.hot, 0.2)], [0.7, K.A(E.col, 0.1)], [1, K.A(E.col, 0)]]); } };
+  const ring = (g, K, E, x, y, rx, ry, rot, w, a) => { g.save(); g.translate(x, y); g.rotate(rot); g.lineWidth = w * 3; g.strokeStyle = K.A(E.col, a * 0.35); g.filter = 'blur(6px)'; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 2 * Math.PI); g.stroke();
+    g.filter = 'none'; g.lineWidth = w; g.strokeStyle = K.A(E.hot, a); g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 2 * Math.PI); g.stroke(); g.restore(); };
+  return {
+    thrust(g, K, E, W, H) {
+      const { R } = K, PI = Math.PI, X0 = 500, Y0 = -30, X1 = 196, Y1 = 262;   // (from off the top right, the point striking left of the middle)
+      const prof = t => t < 0.86 ? 64 * Math.pow(t / 0.86, 1.4) : 64 * Math.pow((1 - t) / 0.14, 0.8);   // (widening toward the lens, then the point)
+      const S = paint(g, K, E, X0, Y0, X1, Y1, prof, 0.36, (sg, S0) => speed(sg, K, E, X0, Y0, S0.ux, S0.uy, S0.L, 70, 22, 0.05, 0.8));
+      const ang = Math.atan2(S.uy, S.ux);
+      g.save(); g.globalCompositeOperation = 'lighter';
+      // the burst where the point strikes: two rings round it (seen slant, across the thrust), a star of spikes, sparks thrown out round it
+      ring(g, K, E, X1, Y1, 34, 78, ang, 3, 0.9); ring(g, K, E, X1 - S.ux * 14, Y1 - S.uy * 14, 52, 118, ang, 1.6, 0.45);
+      for (let i = 0; i < 11; i++) { const a = i / 11 * 2 * PI + R() * 0.3, l = 40 + R() * 70, w = 5 + R() * 5, x2 = X1 + Math.cos(a) * l, y2 = Y1 + Math.sin(a) * l;
+        g.fillStyle = K.A(E.hot, 0.85); g.beginPath(); g.moveTo(X1 + Math.cos(a + PI / 2) * w, Y1 + Math.sin(a + PI / 2) * w); g.lineTo(x2, y2); g.lineTo(X1 + Math.cos(a - PI / 2) * w, Y1 + Math.sin(a - PI / 2) * w); g.closePath(); g.fill(); }
+      for (let i = 0; i < 80; i++) { const a = R() * 2 * PI, d = 20 + Math.pow(R(), 0.6) * 140, x = X1 + Math.cos(a) * d, y = Y1 + Math.sin(a) * d * 0.9; K.spark(g, x, y, a, 6 + R() * 24, 0.8 + R() * 1.8, E.hot, E.col); }
+      flash(g, K, E, X1, Y1, 130, ang + PI / 2, ang); motes(g, K, E, W, H); g.restore();
+    },
+    smash(g, K, E, W, H) {
+      const { R } = K, PI = Math.PI, X0 = 280, Y0 = -60, X1 = 222, Y1 = 262, tilt = -0.19;   // (down from above, a little slanted with the world, landing in the upper middle)
+      const prof = t => t < 0.9 ? 60 + 110 * t : 159 * Math.sqrt(Math.max(0, 1 - Math.pow((t - 0.9) / 0.1, 2)));   // (broad, widening down, its head blunt and round)
+      const S = paint(g, K, E, X0, Y0, X1, Y1, prof, 0.4, (sg, S0) => speed(sg, K, E, X0, Y0, S0.ux, S0.uy, S0.L, 110, 24, 0.0, 0.75));
+      g.save(); g.globalCompositeOperation = 'lighter';
+      // the shockwave on the ground: flattened rings round where it lands, tilted with the world; the ground's flash; sparks and chips thrown up and out
+      ring(g, K, E, X1, Y1 + 6, 70, 18, tilt, 4, 0.95); ring(g, K, E, X1, Y1 + 8, 132, 34, tilt, 2.4, 0.6); ring(g, K, E, X1, Y1 + 10, 196, 50, tilt, 1.4, 0.3);
+      for (let i = 0; i < 90; i++) { const side = R() < 0.5 ? -1 : 1, a = -PI / 2 + side * (0.5 + R() * 0.95) + tilt, d = 20 + Math.pow(R(), 0.6) * 150, x = X1 + Math.cos(a) * d * 1.3, y = Y1 + Math.sin(a) * d * 0.8;
+        K.spark(g, x, y, a, 6 + R() * 26, 0.8 + R() * 1.8, E.hot, E.col); }
+      flash(g, K, E, X1, Y1, 150, tilt, PI / 2 + tilt); motes(g, K, E, W, H); g.restore();
+    },
+    shot(g, K, E, W, H) {
+      const { R, A } = K, PI = Math.PI, X0 = -40, Y0 = 20, X1 = 258, Y1 = 238, RD = 52;   // (its trail from far off the upper left; the shot near the lens, right of the middle)
+      const prof = t => 2 * RD * 0.95 * Math.pow(t, 1.25);
+      const S = paint(g, K, E, X0, Y0, X1, Y1, prof, 0.34, (sg, S0) => speed(sg, K, E, X0, Y0, S0.ux, S0.uy, S0.L, 70, 22, 0.1, 0.85));
+      const ang = Math.atan2(S.uy, S.ux);
+      g.save(); g.globalCompositeOperation = 'lighter';
+      for (const [t, k] of [[0.5, 0.35], [0.68, 0.55], [0.84, 0.8]]) { const x = X0 + (X1 - X0) * t, y = Y0 + (Y1 - Y0) * t, r = prof(t) * 0.75 + 6; ring(g, K, E, x, y, r * 0.32, r, ang, 2, k); }   // (rings shed along its trail)
+      for (let i = 0; i < 70; i++) { const t = 0.35 + R() * 0.62, x = X0 + (X1 - X0) * t + S.nx * (R() - 0.5) * prof(t) * 1.6, y = Y0 + (Y1 - Y0) * t + S.ny * (R() - 0.5) * prof(t) * 1.6; K.spark(g, x, y, ang + (R() - 0.5) * 0.5, 6 + R() * 22, 0.8 + R() * 1.6, E.hot, E.col); }
+      // the shot: a big glow, its body (white-hot core, the element's colour at its edge), a bright rim
+      K.blob(g, X1, Y1, RD * 3.2, [[0, A(E.hot, 0.6)], [0.3, A(E.col, 0.35)], [1, A(E.col, 0)]]);
+      g.restore();
+      K.blob(g, X1, Y1, RD, [[0, A(E.hot, 1)], [0.55, A(E.hot, 0.95)], [0.85, A(E.col, 0.95)], [1, A(E.col, 0.6)]]);
+      g.save(); g.globalCompositeOperation = 'lighter'; g.strokeStyle = A(E.hot, 0.9); g.lineWidth = 2; g.beginPath(); g.arc(X1, Y1, RD, 0, 2 * PI); g.stroke();
+      flash(g, K, E, X1, Y1, 120, ang + PI / 2 - 0.25, ang); motes(g, K, E, W, H); g.restore();
+    },
+    burst(g, K, E, W, H) {
+      const { R, A, cv } = K, PI = Math.PI, X = 225, Y = 236, N = 14;
+      const rays = cv(), rg = rays.getContext('2d');
+      for (let i = 0; i < N; i++) { const a = i / N * 2 * PI + (R() - 0.5) * 0.18, down = Math.max(0, Math.sin(a)), l = (i % 2 ? 180 : 300) * (0.8 + R() * 0.35) * (1 - 0.5 * down), w = 0.11 + R() * 0.07;
+        const lg = rg.createRadialGradient(X, Y, 10, X, Y, l); lg.addColorStop(0, A(E.hot, 1)); lg.addColorStop(0.3, A(E.col, 0.92)); lg.addColorStop(0.7, A(E.mid, 0.45)); lg.addColorStop(1, A(E.mid, 0));
+        rg.fillStyle = lg; rg.beginPath(); rg.moveTo(X + Math.cos(a - w) * 40, Y + Math.sin(a - w) * 40); rg.lineTo(X + Math.cos(a) * l, Y + Math.sin(a) * l); rg.lineTo(X + Math.cos(a + w) * 40, Y + Math.sin(a + w) * 40); rg.lineTo(X, Y); rg.closePath(); rg.fill(); }
+      const gl = cv(), gg = gl.getContext('2d'); gg.filter = 'blur(24px)'; gg.drawImage(rays, 0, 0);
+      g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(gl, 0, 0); g.drawImage(rays, 0, 0); g.restore(); g.drawImage(rays, 0, 0);
+      g.save(); g.globalCompositeOperation = 'lighter';
+      // speed lines out from it, a ring wave, sparks flying out at the lens (longer the farther out), the white-hot core
+      g.lineCap = 'round'; for (let i = 0; i < 26; i++) { const a = R() * 2 * PI, d0 = 70 + R() * 90, d1 = d0 + 20 + R() * 50, k = 1 - 0.45 * Math.max(0, Math.sin(a)); g.strokeStyle = A(E.col, 0.15 + R() * 0.35); g.lineWidth = 1 + R() * 2.5;
+        g.beginPath(); g.moveTo(X + Math.cos(a) * d0 * k, Y + Math.sin(a) * d0 * k); g.lineTo(X + Math.cos(a) * d1 * k, Y + Math.sin(a) * d1 * k); g.stroke(); }
+      ring(g, K, E, X, Y, 104, 96, -0.19, 3, 0.8); ring(g, K, E, X, Y, 150, 138, -0.19, 1.4, 0.35);
+      for (let i = 0; i < 90; i++) { const a = R() * 2 * PI, d = 30 + Math.pow(R(), 0.6) * 190 * (1 - 0.45 * Math.max(0, Math.sin(a))), x = X + Math.cos(a) * d, y = Y + Math.sin(a) * d; K.spark(g, x, y, a, 4 + d * 0.12 + R() * 14, 0.8 + R() * 1.8, E.hot, E.col); }
+      K.blob(g, X, Y, 95, [[0, A(E.hot, 1)], [0.35, A(E.hot, 0.75)], [0.7, A(E.col, 0.3)], [1, A(E.col, 0)]]);
+      flash(g, K, E, X, Y, 150, -0.19, PI / 2 - 0.19); motes(g, K, E, W, H); g.restore();
+    },
+  };
+}
+
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script>
 ${worldSrc}
 ${KIT.toString()}
 ${OPTION_A.toString()}
+const SWEEP_MOVES = (${SWEEP_MOVES_MAKE.toString()})();
 ${OPTION_B.toString()}
 ${OPTION_C.toString()}
 window.__card = function (opt, E, TY, W, H) { return ({ A: OPTION_A, B: OPTION_B, C: OPTION_C })[opt](E, TY, W, H).toDataURL('image/png'); };
