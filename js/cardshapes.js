@@ -163,7 +163,7 @@ function cardShapeFor(f, kind, id, aim) {
 // the enemies on them in turns (a status's time at 2 s a turn, at least one: §2.52), from the attacks' own numbers. Nothing here changes what a card does.
 function _csTurns(frames) { const n = Math.max(1, Math.ceil((frames || 0) / (60 * (typeof CARD_BATTLE !== "undefined" ? CARD_BATTLE.turnSec : 2)) - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
 function _csSquares(r, skip) { return _csDisc(0, 0, r, skip).length; }
-function _csPushed(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " square" : " squares"); }   // (a push's own tiles as squares, a part counting whole: js/cardbattle.js §2.62)
+function _csPushed(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " square" : " squares"); }   // (a push's own tiles as squares, a part counting whole: js/cardbattle.js §2.63)
 const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the shape's words come before: cardShapeSays)
     bash:            () => "pushed back " + _csPushed(BASH_PUSH) + ", stunned " + _csTurns(BASH_STUN),
     venom_bite:      () => "weakened " + _csTurns(VENOM_POISON) + "; marked: your next " + VENOM_MARK + " hits on it land harder",
@@ -279,7 +279,7 @@ function cardShapeFire(f, id, S) {
     for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.52: cardShapeBuds)
     if (S.def.stays) {   // (held: no bites of its own while the battle is on; its life put out of reach, its age kept for its look)
         const held = newFx.filter(e => e.by === f && _CS_STAYS[e.type] || (e.type === "rotdecoy" && newDc.indexOf(e.on) >= 0));
-        for (const e of held) { e._cbHeld = true; e._cbTurns = CARD_SHAPE_STAY; e.life += 1e5; e.maxLife += 1e5; if (e.type === "staticVortex") _csVortexPull(e); }   // (STATIC VORTEX draws them in as it opens: §2.62)
+        for (const e of held) { e._cbHeld = true; e._cbTurns = CARD_SHAPE_STAY; e.life += 1e5; e.maxLife += 1e5; if (e.type === "staticVortex") _csVortexPull(e); }   // (STATIC VORTEX draws them in as it opens: §2.63)
         for (const d of newDc) { d._cbHeld = true; d.until += 1e5; }
         if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && held.indexOf(o) >= 0) && !(k === "dc" && newDc.indexOf(o) >= 0));   // (the card's turn does not wait for them)
     }
@@ -297,7 +297,7 @@ function _csDashEnd(f, S) {
     f.x = end[0]; f.y = end[1]; f._fpPath = null; if (Number.isFinite(f.visualX)) { f.visualX = f.x; f.visualY = f.y; }
     _cb.slots.set(f, { x: end[0], y: end[1] });
 }
-// STATIC VORTEX'S PULL in a battle (§2.62): held, its own pull does not run (js/elements.js). As it opens and as each of its enemy turns begins, before its shock, the enemies in it that it sees
+// STATIC VORTEX'S PULL in a battle (§2.63): held, its own pull does not run (js/elements.js). As it opens and as each of its enemy turns begins, before its shock, the enemies in it that it sees
 // are drawn towards its gathering point's square (js/evolution.js staticVortexGather), by a turn of its pull (its tiles a frame), never past that square; not a beetle or a boss.
 function _csVortexPull(e) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof staticVortexGather !== "function" || typeof cardBattlePull !== "function") return;

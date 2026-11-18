@@ -585,7 +585,7 @@ function singularityShot(f) {
     for (const a of _evoFoesSeen(tgt.x, tgt.y, SERPENT_PULL_R)) {
         if (typeof applySlow === "function") applySlow(a, SERPENT_SLOW_FRAMES, SERPENT_SLOW);
         if (a === tgt || (typeof vortexPullImmune === "function" && vortexPullImmune(a))) continue;
-        if (typeof cardBattlePull === "function" && cardBattlePull(a, tgt.x, tgt.y, Math.hypot(tgt.x - a.x, tgt.y - a.y) * SERPENT_PULL)) { pulled++; continue; }   // (a fighter of a card battle: dragged in on its squares, js/cardbattle.js §2.62)
+        if (typeof cardBattlePull === "function" && cardBattlePull(a, tgt.x, tgt.y, Math.hypot(tgt.x - a.x, tgt.y - a.y) * SERPENT_PULL)) { pulled++; continue; }   // (a fighter of a card battle: dragged in on its squares, js/cardbattle.js §2.63)
         const _px = a.x, _py = a.y; a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
         if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }
@@ -1244,7 +1244,7 @@ function gravitySlam(f) {
         if (typeof applySlow === "function") applySlow(a, MIMIC_SLOW_FRAMES, MIMIC_SLOW);
         if (typeof vortexPullImmune === "function" && vortexPullImmune(a)) continue;
         const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, _px = a.x, _py = a.y;
-        if (typeof cardBattlePush === "function" && cardBattlePush(a, dx, dy, MIMIC_PUSH)) continue;   // (a fighter of a card battle: shoved on its squares, js/cardbattle.js §2.62)
+        if (typeof cardBattlePush === "function" && cardBattlePush(a, dx, dy, MIMIC_PUSH)) continue;   // (a fighter of a card battle: shoved on its squares, js/cardbattle.js §2.63)
         a.x += dx / L * MIMIC_PUSH; a.y += dy / L * MIMIC_PUSH;
         if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }

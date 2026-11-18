@@ -570,7 +570,7 @@ function _cbResquare(u) {
     let best = null, bd = 1.5; for (const c of partyRoomCells(L.room)) { if (taken.has(c[0] + "," + c[1])) continue; const d = Math.hypot(c[0] - u.x, c[1] - u.y); if (d < bd) { bd = d; best = c; } }
     if (best) _cb.slots.set(u, { x: best[0], y: best[1] });
 }
-// PUSHES AND PULLS ON THE SQUARES (§2.62; the owner, 2026-11-18, of three offered: "Its own distance"): in a battle a push or a pull moves a fighter by its own tiles as squares, a part of a
+// PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, 2026-11-18, of three offered: "Its own distance"): in a battle a push or a pull moves a fighter by its own tiles as squares, a part of a
 // tile counting whole (BASH's 1 tile: 1 square; STAKE RING's 1.5: 2; GRAVITY SLAM's 0.5: 1), square by square along its line as a walk steps (not through a wall, not across a corner, not
 // out of the battle's room); it stops at a taken square, and where it stops is its square. A pull (`to`: the point it is drawn to) goes no further than that point's square. A boss or a huge
 // body, more than a square, is not moved (the agent's reading, §11.28). The game's own knock asks here first (js/combat.js applyKnockback, and the moves that shove by hand): true, the battle
@@ -894,7 +894,7 @@ function _cbTurnTick() {
         if (!_cb.lay) { _cbLayout(); if (_cbOutside()) { _cb.phase = "black"; _cb.t = f0; _cb.snap = true; return; } }   // (one of yours in another room: the black, and all on their squares in it)
         _cbYourTurn(); _cbRefresh(); return;
     }
-    _cbPushes();   // (the pushes and pulls of this frame, on the squares: §2.62)
+    _cbPushes();   // (the pushes and pulls of this frame, on the squares: §2.63)
     _cbSlide();
     _cbHoldUntil();   // (the statuses kept as an end time do not run out in real time: §2.52)
     if (T.who === "you" && _cbChargeFire()) return;   // (a charged attack fires at its follower's turn)
