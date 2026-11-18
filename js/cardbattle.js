@@ -500,7 +500,12 @@ function cardBattleTouches(src, a) {
     const who = typeof predatorSource === "function" ? predatorSource(src) : src;
     if (_cbMine(who)) { if (_cb.foes.indexOf(a) < 0) return false; const T = _cb.turn; return !(T && T.who === "act" && T.shape && T.f === who && !T.shape.maskSet.has(a)); }
     if (_cb.foes.indexOf(who) >= 0) return _cbMine(a) || !!a.isDecoy;
-    return true;
+    return !(_cb.foes.indexOf(a) >= 0 || _cbMine(a));   // (the world's, a sentry's shot: none on a fighter of the battle; outside it, as ever)
+}
+// js/helpers.js applyDamage: a blow of yours (or of a shot or a field of yours) on a creature outside the battle, while one is on, does not land (§2.52: an Ultimate's splash reached them)
+function cardBattleOutside(t, src) {
+    if (_cb.phase !== "on" || !t || !src || _cb.foes.indexOf(t) >= 0 || !(typeof isEnemyUnit === "function" ? isEnemyUnit(t) : t.team === "red")) return false;
+    const s = src.by && !src.isFollower ? src.by : src; return _cbMine(typeof predatorSource === "function" ? predatorSource(s) : s);
 }
 // js/combat.js and js/abilities.js, the statuses' own functions: on a card's turn, none on a creature of the battle off its shape (whatever puts it there: only that follower is acting)
 function cardBattleStatusOk(t) { const T = _cb.turn; return !(t && T && _cb.phase === "on" && T.who === "act" && T.shape && _cb.foes.indexOf(t) >= 0 && !T.shape.maskSet.has(t)); }
@@ -793,7 +798,14 @@ function cardBattlePlay(f, kind, id, target, fire) {
     } else { f.alt = null; f.altBoth = false; f._altWind = 0; }
     f._nearestEnemy = S && S.main ? S.main : target; f._enemyCacheFrame = 0;
     _cb.turn = T; _cb.acted.add(f);
-    if (kind === "ult") { T.fired = typeof followerUltFire === "function" ? followerUltFire(f) : false; }
+    if (kind === "ult") {
+        T.fired = typeof followerUltFire === "function" ? followerUltFire(f) : false;
+        if (!T.fired) {   // (an Ultimate that does not go off is not played, §2.58: FAULTLINE's opens the drawing of its path, which a turn does not wait for; the drawing called off, its turn and its card still its own)
+            const aimed = typeof techAim !== "undefined" && techAim && techAim.f === f; if (aimed && typeof techAimCancel === "function") techAimCancel(true);
+            _cb.turn = T0; _cb.acted.delete(f); f.alt = T.saved.alt; f.altBoth = T.saved.both;
+            return say(aimed ? "ITS PATH IS DRAWN: NOT IN A BATTLE YET" : "IT CANNOT GO OFF HERE");
+        }
+    }
     if (kind === "move" && S && typeof cardShapeFire === "function") {   // (its move at once, on its shape: §2.48)
         const p0 = [f.x, f.y]; T.fired = cardShapeFire(f, id, S); if (!T.fired) T.failed = true;
         else if (Math.hypot(f.x - p0[0], f.y - p0[1]) > 0.5) { T.anc = [f.x, f.y]; T.px = f.x; T.py = f.y; }   // (carried as it went off, a dash: held where it was carried, not eased back to its square, _cbTether; its square after, _cbResquare: §2.57)
@@ -853,6 +865,7 @@ function _cbTurnTick() {
     _cbSlide();
     _cbHoldUntil();   // (the statuses kept as an end time do not run out in real time: §2.52)
     if (T.who === "you" && _cbChargeFire()) return;   // (a charged attack fires at its follower's turn)
+    if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
@@ -969,6 +982,7 @@ function cardBattleCards(f) {
         out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
     for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; }
     for (const c of out) { c.chargeT = _cbChargeTurns(f, c.kind, c.id); if (c.kind === "move" && !_cbCools(f, "move")) c.recharge = 0; }   // (by class: a Mage's charge, a Brawler's cooldown, a Technician's both)
+    for (const c of out) { const say = typeof cardShapeSays === "function" ? cardShapeSays(f, c.kind, c.id) : null; if (say) c.fx = say; else if (c.kind === "ult") c.fx = String(c.fx || "").replace(/\s*When it is fully charged[^]*$/, ""); }   // (A CARD'S WORDS IN A BATTLE, §2.58: its squares and its effects in turns, js/cardshapes.js; an Ultimate's without the real time's tap)
     { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.56: always ready while it has a pace)
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.acted && _cb.acted.has(f)) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its card this round)
     return out;

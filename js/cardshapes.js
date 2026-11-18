@@ -158,10 +158,81 @@ function cardShapeFor(f, kind, id, aim) {
     S.maskSet = new Set(S.mask);
     return S;
 }
+// ── A CARD'S WORDS IN A BATTLE (§2.58; the owner, 2026-11-18: "Do an audit of all the different cards and try to make them more attuned to the new card combat system") ──
+// The cards spoke in the real time's words (seconds, tiles, "the nearest enemy", "while it lasts"). In a battle each says what it does there: its squares (its shape, above) and what it does to
+// the enemies on them in turns (a status's time at 2 s a turn, at least one: §2.52), from the attacks' own numbers. Nothing here changes what a card does.
+function _csTurns(frames) { const n = Math.max(1, Math.ceil((frames || 0) / (60 * (typeof CARD_BATTLE !== "undefined" ? CARD_BATTLE.turnSec : 2)) - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
+function _csSquares(r, skip) { return _csDisc(0, 0, r, skip).length; }
+const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the shape's words come before: cardShapeSays)
+    bash:            () => "pushed back, stunned " + _csTurns(BASH_STUN),
+    venom_bite:      () => "weakened " + _csTurns(VENOM_POISON) + "; marked: your next " + VENOM_MARK + " hits on it land harder",
+    rift_impale:     () => "glitched " + _csTurns(RIFT_GLITCH) + "; it pops up beside it",
+    chomp:           () => "frozen " + _csTurns(MAW_STUN) + "; the squares round it slowed " + _csTurns(MAW_SLOW_FRAMES),
+    static_rush:     () => "each stunned " + _csTurns(MANTA_STUN),
+    shock_zap:       () => "both glitched " + _csTurns(ZAP_GLITCH) + ", only its target hurt",
+    zigzag_dash:     () => "each glitched " + _csTurns(ZIG_GLITCH) + "; it ends on a new square",
+    ember_slash:     () => "each burning " + _csTurns(EMBER_BURN) + "; it ends past them",
+    skate_charge:    () => "each slowed " + _csTurns(SKATE_SLOW) + "; it ends past them",
+    blade_roll:      () => "each sliced; it ends past them",
+    icicle_volley:   () => "each frozen " + _csTurns(ICICLE_FREEZE) + " (a boss slowed)",
+    quill_burst:     () => "each quill the first enemy on its line",
+    phase_swap:      () => "glitched " + _csTurns(SWAP_GLITCH) + ", a goo burst on it",
+    maelstrom:       () => "bites as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin; blinded " + _csTurns(MAEL_BLIND),
+    hexfire:         () => "burns as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
+    magma_vent:      () => "bursts as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
+    static_vortex:   () => "shocks as " + CARD_SHAPE_STAY + " enemy turns begin",
+    rotten_decoy:    () => "enemies within " + DECOY_DRAW + " squares go for it; its mist weakens the " + _csSquares(DECOY_MIST, true) + " round it",
+    stake_ring:      () => "each pushed out",
+    toxic_stomp:     () => "each crushed",
+    wobble_slam:     () => "each staggered " + _csTurns(WOBBLE_STUN) + " (not a boss)",
+    briar_sweep:     () => "each pushed out",
+    gravity_slam:    () => "each shoved and slowed " + _csTurns(MIMIC_SLOW_FRAMES),
+    eruption:        () => "armour eaten " + _csTurns(CALDERA_SHRED_FRAMES),
+    echo_pulse:      () => "each glitched " + _csTurns(ECHO_GLITCH),
+    seedfall:        () => { const n = parseInt(_csTurns(BUD_LIFE), 10); return "heals your side on them as " + (n === 1 ? "your round ends" : n + " of your rounds end"); },
+    sweet_scent:     f => (f && (f._nectar || 0) >= 100) ? "heals it and your followers on them" : "drawn to it " + _csTurns(SCENT_FRAMES) + ", weakened " + _csTurns(SCENT_POISON_FRAMES) + ", stunned " + _csTurns(SCENT_STUN),
+    shell_guard:     () => "drawn to it " + _csTurns(GUARD_FRAMES) + "; it braces, " + (GUARD_CUT === 0.5 ? "half damage" : Math.round((1 - GUARD_CUT) * 100) + "% of the damage") + ", " + _csTurns(GUARD_FRAMES),
+    corrode_shot:    () => "armour eaten " + _csTurns(ROT_SHRED_FRAMES) + ", less round it",
+    _corrodeShot:    () => "armour eaten " + _csTurns(ROT_SHRED_FRAMES) + ", less round it",
+};
+// the words of `f`'s card in a battle (null: none of its own; an Ultimate's are its own description, its shapes the next page). They must fit the card's four lines (game.html .cb-fx):
+// about 75 letters on a follower with five cards, 90 with four.
+function cardShapeSays(f, kind, id) {
+    const def = cardShapeDef(f, kind, id); if (!def) return null;
+    const V = v => _csV(v, f), up = t => t.charAt(0).toUpperCase() + t.slice(1);
+    let where;
+    switch (def.kind) {
+    case "one": where = def.r ? "its target; the " + _csSquares(V(def.r), true) + " squares round it" : "its target"; break;
+    case "chain": where = def.self ? "the nearest within " + V(def.reach) + " squares, then up to " + V(def.n) + " more, each within " + V(def.hop) + " of the last" : V(def.n) === Infinity ? "its target, then on through every enemy within " + V(def.hop) + " squares of the last" : V(def.n) === 1 ? "its target, then 1 more within " + V(def.hop) + " squares of it" : "its target, then " + V(def.n) + " more each within " + V(def.hop) + " squares of the last"; break;
+    case "line": where = "a line of " + Math.round(V(def.len)) + " squares through its target"; break;
+    case "zigzag": where = "a zigzag of " + def.len + " squares to its target"; break;
+    case "fan": where = def.angles.length + " shots fanned at its target"; break;
+    case "swap": where = "it and its target swap squares"; break;
+    case "blast": { const n = _csSquares(V(def.r), false); where = n === 5 ? "a cross of 5 squares on a square in reach" : n === 9 ? "a 3×3 on a square in reach" : "the " + n + " squares round a square in reach"; break; }
+    case "decoy": where = "a decoy on a square in reach"; break;
+    case "ring": { const o = def.alt ? def.alt(f) : null, r = o ? _csV(o.r, f) : V(def.r), n = _csSquares(r, true); where = n > 24 ? "every square within " + r + " of it" : "the " + n + " squares round it"; break; }
+    default: return null;
+    }
+    const key = kind === "basic" ? (def === CARD_SHAPES._corrodeShot ? "_corrodeShot" : null) : id, what = key && CARD_SAYS[key] ? CARD_SAYS[key](f) : kind === "basic" ? _csEveryday(f) : "";
+    return up(where) + (what ? " · " + what : "");
+}
+// an everyday hit's own status (js/combat.js PRIMARY_STATUS: by form, its chance a hit), in turns
+function _csEveryday(f) {
+    const k = typeof primaryStatusOf === "function" ? primaryStatusOf(f) : null, fx = k && typeof PRIMARY_STATUS_FX !== "undefined" ? PRIMARY_STATUS_FX[k] : null; if (!fx) return "";
+    const id = typeof dmgFormId === "function" ? dmgFormId(f) : f && f.evolved, odds = typeof PRIMARY_STATUS_ODDS !== "undefined" && PRIMARY_STATUS_ODDS[id] !== undefined ? PRIMARY_STATUS_ODDS[id] : typeof PRIMARY_STATUS_CHANCE !== "undefined" ? PRIMARY_STATUS_CHANCE : 0.25;
+    const word = { stun: "stunned", slow: "slowed", poison: "poisoned", blind: "blinded", glitch: "glitched", burn: "burning" }[k] || k;
+    return (odds >= 1 ? "" : odds >= 0.5 ? "half the time: " : "1 hit in " + Math.round(1 / odds) + ": ") + word + " " + _csTurns(fx.frames);
+}
+
 // ── WHILE IT IS PLAYED (a card's turn in a battle, js/cardbattle.js _cb.turn.shape) ──
 function _csTurn() { const T = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null; return T && T.who === "act" && T.shape ? T : null; }
 // js/evolution.js _evoFoes: the enemies a move may touch, in the battle's room (the move's first look: its target; after it: the shape's enemies, wherever they stand); null: as ever
-function cardShapeFoes(x, y) {
+function cardShapeFoes(x, y, r) {
+    const T0 = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null;
+    if (T0 && T0.who === "act" && !T0.shape && T0.kind === "ult" && r > 0) {   // (an Ultimate's turn, no shape yet: the battle's creatures in its reach, none outside the battle, §2.52)
+        const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;
+        return _cb.foes.filter(a => _cbFoeOk(a) && Math.hypot(a.x - x, a.y - y) <= r);
+    }
     const T = _csTurn(); if (!T) return null;
     const L = _cb.lay; if (L && L.room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(x, y) !== L.room) return null;   // (outside the battle's room the world goes on, §2.28)
     const S = T.shape;

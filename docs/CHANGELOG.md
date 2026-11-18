@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17an` · branch `claude/start-game-project-HSh7Z` · card battles: the cards audited
+- **The ask** (the owner, 2026-11-18): "Do an audit of all the different cards and try to make them more attuned to the new card combat system."
+- **The audit** (`CARD-BATTLES.md` §2.58): every card of every form (74: 22 forms and the egg) played in a battle and measured. Each plays and touches only the enemies on its squares.
+- **Each card in the battle's terms:** in a battle a card says its squares and its effects in turns ("A 3×3 on a square in reach · bites as it opens and as 2 enemy turns begin; blinded 1 turn"), no seconds, short enough for the card's four lines; an Ultimate's card no longer says to tap ULTIMATE. The words are the agent's (provisional); no number changes.
+- **Fixed:** a round whose followers still to play were all charging stood still for ever; your Ultimates hurt creatures outside the battle (METEOR RAIN 45 and a burn, TOXIC PUDDLE 16, EVENT HORIZON 14); a turret's shot at a creature outside the battle hit a battle creature in its way; FAULTLINE used up the Thermite's turn, kept its charge and left the drawing of its path open (now refused in a battle, the banner saying why, until the Ultimates' page).
+- `js/cardbattle.js`, `js/cardshapes.js`, `js/elements.js`, `js/evolution.js`, `js/game.js`, `js/helpers.js`, `tests/cardbattle.js` (5 new checks, 1 changed: 100 with main's), `docs/CARD-BATTLES.md` (§2.58, §9, §10, §11.20, §11.27), `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`.
+- **Verified:** tests/cardbattle.js and the full suite; the pop-up's cards in a real browser at 1180 × 820 and 1024 × 768. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17am` · branch `claude/start-game-project-HSh7Z` · card battles: a MOVE card; ZIGZAG DASH ends on a new square
 - **The ask** (the owner, 2026-11-18): "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card."
 - **ZIGZAG DASH ends on a new square** (§2.57; the owner: "When the electroskink uses zigzag dash, they should end up in a different location than when they started it"): the farthest free square of its zigzag (its zigzag all taken: the free square nearest the last enemy it struck). It had ended inside an object and the game moved it back to open floor elsewhere. And a dash that carries its follower (SKATE CHARGE, SONIC ROLL) keeps it where it was carried: since the tile attacks it was eased back towards its start.

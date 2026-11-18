@@ -477,7 +477,7 @@ function _altLiveAny(L) {
     return false;
 }
 function _evoFoes(x, y, r) {
-    if (typeof cardShapeFoes === "function") { const S = cardShapeFoes(x, y); if (S) return S; }   // (a card's turn in a battle: exactly its shape's enemies, js/cardshapes.js)
+    if (typeof cardShapeFoes === "function") { const S = cardShapeFoes(x, y, r); if (S) return S; }   // (a card's turn in a battle: exactly its shape's enemies, js/cardshapes.js)
     const near = typeof unitsNear === "function" ? unitsNear(x, r) : actors;
     return near.filter(a => a && !a.dead && typeof isHostileTarget === "function" && isHostileTarget(a) && Math.hypot(a.x - x, a.y - y) <= r);
 }

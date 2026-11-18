@@ -851,12 +851,54 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ult, 0, 'an Ultimate charges');
     });
 
+    group('THE CARDS AUDITED (§2.58; the owner: "Do an audit of all the different cards and try to make them more attuned to the new card combat system")');
+    check('none of yours left to play a round (all charging): the enemies\' turn comes at once, and the charge fires when it is done (the battle waited for ever)', () => {
+        const r = J(`(function(){ const A = __shaped('voidstar', [[4, 0], [5, 1]]); if (!A) return null; CARD_BATTLE.byClass = true; const f = A.f; const played = cardBattlePlay(f, 'move', 'maelstrom', { x: A.P[0] + 4, y: A.P[1], tile: true });
+            const o = { played, say: _cb.say && _cb.say.text, charging: _cb.charge.has(f), turn: _cb.turn && _cb.turn.who, seen: [] }; let last = '';
+            for (let i = 0; i < 3000 && _cb.charge.has(f); i++) { const T = _cb.turn, k = (T ? T.who : '-') + _cb.round; if (k !== last) { o.seen.push(k); last = k; } __live(1); }
+            o.fired = !_cb.charge.has(f) && !!elementEffects.find(e => e.type === 'maelstrom'); o.round = _cb.round; CARD_BATTLE.byClass = false; return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.charging, r.fired]), '[true,true]', 'charging, then fired (' + JSON.stringify(r) + ')'); ok(r.round >= 3, 'the rounds went on (it stood on round 2 for ever): ' + r.seen.join(' '));
+    });
+    check('an Ultimate\'s splash stays in the battle: a creature outside it, in its reach, is neither hurt nor slowed (the Rimestar\'s WHITEOUT; the Ember Hood\'s rain of rocks)', () => {
+        const r = J(`(function(){ const one = form => { const A = __shaped(form, [[1, 0], [2, 1]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100;
+                const out = __ant(A.P[0] + 1, A.P[1] - 1); out.x = A.P[0] + 1; out.y = A.P[1] - 1; out.health = out.maxHealth = 9999; const inB = A.foes[0], h0 = inB.health;
+                const SD = typeof SENTRY_DAMAGE !== 'undefined' ? SENTRY_DAMAGE : 0; const hits = []; const ad = applyDamage; applyDamage = function (t, amt, src) { const h = t && t.health, r = ad.apply(this, arguments); if (t === out && t.health < h) hits.push(src && src.isFollower ? 'F' : src && src.by ? 'by' : 'world'); return r; };   /* (blows that landed on it; a sentry's are the world's) */
+                try { cardBattlePlay(f, 'ult', null, null); for (let i = 0; i < 400; i++) __live(1); } finally { applyDamage = ad; }
+                return { mine: hits.filter(h => h !== 'world').length, slowed: (out.slowed || 0) > 0, burning: (out.burning || 0) > 0, inB: +(h0 - inB.health).toFixed(1) }; };
+            return { rime: one('rimestar'), ember: one('embercowl') }; })()`);
+        for (const k of ['rime', 'ember']) { const o = r[k]; ok(o, 'no room (' + k + ')'); same(JSON.stringify([o.mine, o.slowed, o.burning]), '[0,false,false]', k + ': the one outside the battle (blows of yours on it, slowed, burning)'); }
+        ok(r.rime.inB > 0 || r.ember.inB > 0, 'the battle\'s creature was not hurt by either: ' + JSON.stringify(r));
+    });
+    check('a shot of the world\'s (a sentry\'s) strikes no fighter of a battle in its way; one outside the battle it does', () => {
+        const r = J(`(function(){ const A = __shaped(null, [[2, 0]]); if (!A) return null; const a = A.foes[0], out = __ant(A.P[0] + 4, A.P[1]); out.x = A.P[0] + 4; out.y = A.P[1]; out.health = out.maxHealth = 9999;
+                const src = { x: A.P[0] + 1, y: A.P[1], element: 'electric' }, h = [a.health, out.health]; spawnFollowerProjectile(src, out, '#7ff2ff', 8, 5, null, null);
+                for (let i = 0; i < 60; i++) __live(1); return { battle: +(h[0] - a.health).toFixed(1), outside: +(h[1] - out.health).toFixed(1) }; })()`);
+        ok(r, 'no room'); same(r.battle, 0, 'the battle\'s creature in its way hurt'); ok(r.outside > 0, 'the one outside the battle it was aimed at not hurt');
+    });
+    check('an Ultimate that does not go off is not played (FAULTLINE: its path drawn by hand, which a turn does not wait for): its turn and card still its own, its charge kept, no drawing left open, the banner saying why', () => {
+        const r = J(`(function(){ const A = __shaped('thermite', [[1, 0], [2, 1]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, null);
+            const o = { played, turn: _cb.turn && _cb.turn.who, mine: _cbCurrent() === f, acted: _cb.acted.has(f), charge: f.ultimateCharge, aim: !!(typeof techAim !== 'undefined' && techAim), say: _cb.say && _cb.say.text };
+            for (let i = 0; i < 300; i++) __live(1); o.after = { turn: _cb.turn && _cb.turn.who, mine: _cbCurrent() === f, fault: !!f._fault }; o.again = cardBattlePlay(f, 'basic', null, A.foes[0]); return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.turn, r.mine, r.acted, r.charge, r.aim]), '[false,"you",true,false,100,false]', 'not played (played, turn, its turn, acted, charge, a drawing open)');
+        ok(/NOT IN A BATTLE YET/.test(r.say || ''), 'the banner: ' + r.say); same(JSON.stringify([r.after.turn, r.after.mine, r.after.fault]), '["you",true,false]', 'still its turn after, not gone under'); same(r.again, true, 'another card of its played instead');
+    });
+    check('every card speaks the battle\'s words: its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
+        const r = J(`(function(){ const bad = [], seen = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { __fresh(1); const f = followers[0]; f.evolved = k; f.element = EVOLUTIONS[k].element; f.role = EVOLUTIONS[k].role; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;
+                const cs = cardBattleCards(f); for (const c of cs) { const t = String(c.fx || ''); if (!t.trim()) bad.push(k + ' ' + c.kind + ' empty'); if (c.kind === 'ult') { if (/tap ULTIMATE/.test(t)) bad.push(k + ' ult tap'); continue; } if (/\\d(\\.\\d+)? ?s\\b|second/.test(t)) bad.push(k + ' ' + (c.id || c.kind) + ': ' + t);
+                    if (t.length > (cs.length >= 5 ? 82 : 100)) bad.push(k + ' ' + (c.id || c.kind) + ' too long for its card (' + t.length + ' letters): ' + t); seen.push(c.kind + ':' + (c.id || '')); } }   /* (game.html .cb-fx: 4 lines; measured in a real browser, 82 letters fit a card of a follower with five, 100 one with four) */
+                const say = (form, kind, id) => { __fresh(1); const f = followers[0]; f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); return cardBattleCards(f).find(c => c.kind === kind && (!id || c.id === id)).fx; };
+                return { bad, chomp: say('maw', 'move', 'chomp'), hex: say('embercowl', 'move', 'hexfire'), wob: say('jellyram', 'move', 'wobble_slam'), stun: _csTurns(MAW_STUN), base: say('thunderhead', 'basic') }; })()`);
+        same(r.bad.join(' / '), '', 'cards not in the battle\'s words');
+        same(r.chomp, 'Its target; the 8 squares round it · frozen ' + r.stun + '; the squares round it slowed 1 turn', 'CHOMP'); ok(/^A cross of 5 squares on a square in reach · burns as it opens and as 2 enemy turns begin$/.test(r.hex), 'HEXFIRE: ' + r.hex);
+        same(r.wob, 'The 8 squares round it · each staggered 1 turn (not a boss)', 'WOBBLE SLAM'); ok(/every enemy within 2\.5 squares of the last · 1 hit in 4: stunned 1 turn$/.test(r.base), 'CHAIN LIGHTNING: ' + r.base);
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');
         ok(/<script src="js\/cardbattle\.js\?v=/.test(html) && /"js\/cardbattle\.js": "CARD_BATTLE"/.test(html), 'the page');
         ok(/<script src="js\/cardbattle\.js\?v=[^"]+"><\/script>\n<script src="js\/cardshapes\.js\?v=/.test(html) && /"js\/cardshapes\.js": "CARD_SHAPES"/.test(html), 'the page loads js/cardshapes.js after it, with its boot check');
-        ok(/cardShapeFoes\(x, y\)/.test(rd('js/evolution.js')) && /cardShapeSees\(a\)\) \|\| typeof facilitySeesFrom/.test(rd('js/evolution.js')) && /cardShapeSpared\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardShapeShot\(p, actor\)/.test(rd('js/clone.js')) && /p\._cbOnly && !p\._cbOnly\.has\(a\)/.test(rd('js/game.js')) && /cardBattleWalking\(_a\) \|\| cardBattleWalking\(_b\)/.test(rd('js/game.js')) && (rd('js/elements.js').match(/!e\._cbHeld/g) || []).length === 5, 'the shapes\' hooks (§2.48) and the walk\'s (the spacing)');
+        ok(/cardShapeFoes\(x, y, r\)/.test(rd('js/evolution.js')) && /cardShapeSees\(a\)\) \|\| typeof facilitySeesFrom/.test(rd('js/evolution.js')) && /cardShapeSpared\(target, source\)\) return;/.test(rd('js/helpers.js')) && /cardShapeShot\(p, actor\)/.test(rd('js/clone.js')) && /p\._cbOnly && !p\._cbOnly\.has\(a\)/.test(rd('js/game.js')) && /cardBattleWalking\(_a\) \|\| cardBattleWalking\(_b\)/.test(rd('js/game.js')) && (rd('js/elements.js').match(/!e\._cbHeld/g) || []).length === 5, 'the shapes\' hooks (§2.48) and the walk\'s (the spacing)');
         ok(/cardBattleStatusHeld\(actor\)\)\) statusTimersStep\(actor\)/.test(rd('js/combat.js')) && (rd('js/combat.js').match(/cardBattleStatusOk\(t\)/g) || []).length === 6 && /cardBattleStatusHeld\(this\)/.test(rd('js/predator.js')) && /cardBattleTouches\(this, a\)/.test(rd('js/predator.js')) && /cardBattleStatusOk\(actor\)/.test(rd('js/abilities.js')) && /cardBattleTouches\(pred, victim\)/.test(rd('js/abilities.js')) && (rd('js/evolution.js').match(/cardBattleTouches\(/g) || []).length === 5 && (rd('js/elements.js').match(/cardBattleTouches\(actor, a\)/g) || []).length === 6, 'the statuses\' clock and the splash\'s bounds (§2.52)');
         ok(/cardBattleTap\(ex, ey\)/.test(rd('js/targeting.js')) && /cardBattleMayTarget/.test(rd('js/targeting.js')), 'the tap and the gun');
         ok(/cardBattleHit\(target, source\)/.test(rd('js/helpers.js')), 'the hit'); ok(/cardBattleBars\(p, a\)/.test(rd('js/predator.js')), 'the prey'); ok(/cardBattleMayTarget\(a, actor\)/.test(rd('js/npc.js')), 'the squad');
