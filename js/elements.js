@@ -210,7 +210,7 @@ const ELEMENT_ATTACKS = {
                         const dist=Math.sqrt(d2);
                         // Velocity-based pull so the motion animates over several frames
                         // (not on what is too heavy to drag — vortexPullImmune).
-                        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
+                        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a)) && !(typeof cardBattlePull === "function" && cardBattlePull(a, target.x, target.y, 0.12 / KNOCK_PER_TILE))) {   // (a fighter of a card battle: on its squares, js/cardbattle.js)
                             a.kbVX = (dx/dist) * 0.12;
                             a.kbVY = (dy/dist) * 0.12;
                         }
@@ -239,8 +239,10 @@ const ELEMENT_ATTACKS = {
             if (Math.random() < ELEMENT_PROC_CHANCE.core) {
                 const dx=target.x-actor.x, dy=target.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy)||1;
-                target.kbVX = (dx/dist) * 0.22;
-                target.kbVY = (dy/dist) * 0.22;
+                if (!(typeof cardBattlePush === "function" && cardBattlePush(target, dx, dy, 0.22 / KNOCK_PER_TILE))) {   // (a fighter of a card battle: on its squares, js/cardbattle.js)
+                    target.kbVX = (dx/dist) * 0.22;
+                    target.kbVY = (dy/dist) * 0.22;
+                }
                 floatingTexts.push({ world:true, x:target.x, y:target.y, text:"BASH!", color:"#00ffcc", life:30, vy:-0.06 });
                 spawnElementEffect({ type:"ring", x:target.x, y:target.y, color:"#00ccaa", radius:0.8, life:18, element:"core" });
             }

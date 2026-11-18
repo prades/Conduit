@@ -52,7 +52,7 @@ const CARD_SHAPES = {   // kind: one | chain | line | zigzag | fan | swap | blas
     singularity_shot: { kind: "blast", r: () => SERPENT_PULL_R },
     pinball:         { kind: "chain", hop: () => PIN_HOP, n: Infinity },
 };
-const _CS_STAYS = { maelstrom: e => maelstromBeat(e), hexfire: e => fieldBite(e, "fire"), magmavent: e => fieldBite(e, "fire"), staticVortex: e => fieldBite(e, "electric"), rotdecoy: e => { if (e.on && !e.on.dead) rotDecoyMist(e.on); } };   // (each area's own bite)
+const _CS_STAYS = { maelstrom: e => maelstromBeat(e), hexfire: e => fieldBite(e, "fire"), magmavent: e => fieldBite(e, "fire"), staticVortex: e => { _csVortexPull(e); fieldBite(e, "electric"); }, rotdecoy: e => { if (e.on && !e.on.dead) rotDecoyMist(e.on); } };   // (each area's own bite)
 const _cs = { of: null, keys: null, cells: [] };
 const _csK = (x, y) => x + "," + y;
 function _csV(v, f) { return typeof v === "function" ? v(f) : v; }
@@ -163,8 +163,9 @@ function cardShapeFor(f, kind, id, aim) {
 // the enemies on them in turns (a status's time at 2 s a turn, at least one: §2.52), from the attacks' own numbers. Nothing here changes what a card does.
 function _csTurns(frames) { const n = Math.max(1, Math.ceil((frames || 0) / (60 * (typeof CARD_BATTLE !== "undefined" ? CARD_BATTLE.turnSec : 2)) - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
 function _csSquares(r, skip) { return _csDisc(0, 0, r, skip).length; }
+function _csPushed(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " square" : " squares"); }   // (a push's own tiles as squares, a part counting whole: js/cardbattle.js §2.62)
 const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the shape's words come before: cardShapeSays)
-    bash:            () => "pushed back, stunned " + _csTurns(BASH_STUN),
+    bash:            () => "pushed back " + _csPushed(BASH_PUSH) + ", stunned " + _csTurns(BASH_STUN),
     venom_bite:      () => "weakened " + _csTurns(VENOM_POISON) + "; marked: your next " + VENOM_MARK + " hits on it land harder",
     rift_impale:     () => "glitched " + _csTurns(RIFT_GLITCH) + "; it pops up beside it",
     chomp:           () => "frozen " + _csTurns(MAW_STUN) + "; the squares round it slowed " + _csTurns(MAW_SLOW_FRAMES),
@@ -180,13 +181,13 @@ const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the
     maelstrom:       () => "bites as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin; blinded " + _csTurns(MAEL_BLIND),
     hexfire:         () => "burns as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
     magma_vent:      () => "bursts as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
-    static_vortex:   () => "shocks as " + CARD_SHAPE_STAY + " enemy turns begin",
+    static_vortex:   () => "pulls them in; shocks as " + CARD_SHAPE_STAY + " enemy turns begin",
     rotten_decoy:    () => "enemies within " + DECOY_DRAW + " squares go for it; its mist weakens the " + _csSquares(DECOY_MIST, true) + " round it",
-    stake_ring:      () => "each pushed out",
+    stake_ring:      () => "each pushed " + _csPushed(STAKE_PUSH) + " out",
     toxic_stomp:     () => "each crushed",
     wobble_slam:     () => "each staggered " + _csTurns(WOBBLE_STUN) + " (not a boss)",
-    briar_sweep:     () => "each pushed out",
-    gravity_slam:    () => "each shoved and slowed " + _csTurns(MIMIC_SLOW_FRAMES),
+    briar_sweep:     () => "each pushed " + _csPushed(BRIAR_PUSH) + " out",
+    gravity_slam:    () => "each shoved " + _csPushed(MIMIC_PUSH) + " and slowed " + _csTurns(MIMIC_SLOW_FRAMES),
     eruption:        () => "armour eaten " + _csTurns(CALDERA_SHRED_FRAMES),
     echo_pulse:      () => "each glitched " + _csTurns(ECHO_GLITCH),
     seedfall:        () => { const n = parseInt(_csTurns(BUD_LIFE), 10); return "heals your side on them as " + (n === 1 ? "your round ends" : n + " of your rounds end"); },
@@ -278,7 +279,7 @@ function cardShapeFire(f, id, S) {
     for (const e of newFx) if (e.type === "buds" && e.by === f) { e._cbHeld = true; e._cbMax = e.maxLife; e._cbLeft = e.life; e.life += 1e5; e.maxLife += 1e5; }   // (their healing counts by the turns, §2.52: cardShapeBuds)
     if (S.def.stays) {   // (held: no bites of its own while the battle is on; its life put out of reach, its age kept for its look)
         const held = newFx.filter(e => e.by === f && _CS_STAYS[e.type] || (e.type === "rotdecoy" && newDc.indexOf(e.on) >= 0));
-        for (const e of held) { e._cbHeld = true; e._cbTurns = CARD_SHAPE_STAY; e.life += 1e5; e.maxLife += 1e5; }
+        for (const e of held) { e._cbHeld = true; e._cbTurns = CARD_SHAPE_STAY; e.life += 1e5; e.maxLife += 1e5; if (e.type === "staticVortex") _csVortexPull(e); }   // (STATIC VORTEX draws them in as it opens: §2.62)
         for (const d of newDc) { d._cbHeld = true; d.until += 1e5; }
         if (f._altLive && f._altLive.list) f._altLive.list = f._altLive.list.filter(([k, o]) => !(k === "fx" && held.indexOf(o) >= 0) && !(k === "dc" && newDc.indexOf(o) >= 0));   // (the card's turn does not wait for them)
     }
@@ -295,6 +296,16 @@ function _csDashEnd(f, S) {
     if (!end) return;
     f.x = end[0]; f.y = end[1]; f._fpPath = null; if (Number.isFinite(f.visualX)) { f.visualX = f.x; f.visualY = f.y; }
     _cb.slots.set(f, { x: end[0], y: end[1] });
+}
+// STATIC VORTEX'S PULL in a battle (§2.62): held, its own pull does not run (js/elements.js). As it opens and as each of its enemy turns begins, before its shock, the enemies in it that it sees
+// are drawn towards its gathering point's square (js/evolution.js staticVortexGather), by a turn of its pull (its tiles a frame), never past that square; not a beetle or a boss.
+function _csVortexPull(e) {
+    if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof staticVortexGather !== "function" || typeof cardBattlePull !== "function") return;
+    const G = staticVortexGather(e), tiles = VORTEX_PULL * 60 * CARD_BATTLE.turnSec;
+    for (const a of _cb.foes) {
+        if (!_cbFoeOk(a) || Math.hypot(e.x - a.x, e.y - a.y) > e.radius || !_evoSees(e.x, e.y, a) || (typeof vortexPullImmune === "function" && vortexPullImmune(a))) continue;
+        cardBattlePull(a, G.x, G.y, tiles);
+    }
 }
 // SEEDFALL's buds in a battle (js/cardbattle.js _cbStatusTurn, your round over): a turn of their healing beats (`n` frames of their time), as the statuses count; their time over, they wither
 function cardShapeBuds(n) {

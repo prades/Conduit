@@ -497,8 +497,10 @@ function _abRunActive(pred, def) {
                 _abHurt(pred, v, pred.power * def.dmg);
                 const dx = v.x - pred.x, dy = v.y - pred.y;
                 const len = Math.hypot(dx, dy) || 1;
-                v.kbVX = (dx / len) * def.knockback;
-                v.kbVY = (dy / len) * def.knockback;
+                if (!(typeof cardBattlePush === "function" && cardBattlePush(v, dx, dy, def.knockback / (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28)))) {   // (a fighter of a card battle: on its squares, js/cardbattle.js §2.62)
+                    v.kbVX = (dx / len) * def.knockback;
+                    v.kbVY = (dy / len) * def.knockback;
+                }
             });
             return true;
         }

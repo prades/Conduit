@@ -213,6 +213,7 @@ function drawPoisonChip(x, y, alpha) {
 function applyKnockback(t, from, push) {
     if (!t || t.dead || t.untargetable || !from || !(push > 0)) return false;
     if (typeof cardBattleStatusOk === "function" && !cardBattleStatusOk(t)) return false;   // (a card's turn in a battle: none on an enemy of it off the card's shape, js/cardbattle.js)
+    if (typeof cardBattlePush === "function" && cardBattlePush(t, t.x - from.x, t.y - from.y, push / (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28))) return true;   // (a fighter of a card battle: moved on its squares, by the push's own tiles, js/cardbattle.js §2.62)
     const dx = t.x - from.x, dy = t.y - from.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
     t.kbVX = (dx / d) * push; t.kbVY = (dy / d) * push; return true;
 }

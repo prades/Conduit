@@ -103,7 +103,7 @@ function _cbSettle() {
     for (const f of _cbSquad()) { f._nearestEnemy = null; f._enemyCacheFrame = 0; }
 }
 function _cbBegin(foe, far) {
-    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map();
+    _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map(); _cb.pushQ = [];
     _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
@@ -237,7 +237,7 @@ function _cbKeepAtIt() {
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
-    _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null;
+    _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.pushQ = [];
     _cb.calm = _cb.foes.concat(_cbF() < _cb.calmUntil ? _cb.calm.filter(a => _cb.foes.indexOf(a) < 0) : []); _cb.calmUntil = _cbF() + CARD_BATTLE.calm;   // (with those let go during it: _cbKeepAtIt)
     for (const a of _cb.calm) if (a && !a.dead) { a.provoked = false; if (a.state !== "wander") a.state = "wander"; a.currentTarget = null; a.biteTarget = null; } if (_cb.phase === "walk" && typeof player !== "undefined") { player.fpPath = null; player.targetX = player.x; player.targetY = player.y; } _cb.phase = "end"; _cb.t = _cbF(); _cbButtons(); return true; }
 // RUN (§2.12, §2.16): on your turn it uses the turn: each enemy gets its last hit (fastest first), then you are out. Before the turns begin (the walk, the black), it ends the battle as it is.
@@ -570,6 +570,36 @@ function _cbResquare(u) {
     let best = null, bd = 1.5; for (const c of partyRoomCells(L.room)) { if (taken.has(c[0] + "," + c[1])) continue; const d = Math.hypot(c[0] - u.x, c[1] - u.y); if (d < bd) { bd = d; best = c; } }
     if (best) _cb.slots.set(u, { x: best[0], y: best[1] });
 }
+// PUSHES AND PULLS ON THE SQUARES (§2.62; the owner, 2026-11-18, of three offered: "Its own distance"): in a battle a push or a pull moves a fighter by its own tiles as squares, a part of a
+// tile counting whole (BASH's 1 tile: 1 square; STAKE RING's 1.5: 2; GRAVITY SLAM's 0.5: 1), square by square along its line as a walk steps (not through a wall, not across a corner, not
+// out of the battle's room); it stops at a taken square, and where it stops is its square. A pull (`to`: the point it is drawn to) goes no further than that point's square. A boss or a huge
+// body, more than a square, is not moved (the agent's reading, §11.28). The game's own knock asks here first (js/combat.js applyKnockback, and the moves that shove by hand): true, the battle
+// moves it and there is no knock of the game's own, which the battle would only ease back. Those of one frame move together, a square at a time each (_cbPushes, each frame of the turns), so
+// one in front of another is not stopped by the square the other is leaving.
+function cardBattlePush(t, dx, dy, tiles, to) {
+    if (_cb.phase !== "on" || !t || t.dead || !_cb.slots || !_cb.slots.has(t) || _cb.out.has(t) || !(tiles > 0)) return false;
+    if (!t.isBoss && !(t.bodyR > 0) && (to || dx || dy)) (_cb.pushQ || (_cb.pushQ = [])).push({ t, dx, dy, n: Math.max(1, Math.ceil(tiles - 1e-6)), to: to ? [Math.round(to[0]), Math.round(to[1])] : null, k: 0 });
+    t.kbVX = 0; t.kbVY = 0; return true;
+}
+function cardBattlePull(t, x, y, tiles) { return cardBattlePush(t, 0, 0, tiles, [x, y]); }
+function _cbPushes() {
+    const Q = _cb.pushQ; if (!Q || !Q.length) return; _cb.pushQ = [];
+    for (const q of Q) {   // (each one's line, from its square)
+        const s = _cb.slots.get(q.t); if (!s) { q.n = 0; continue; } q.x0 = Math.round(s.x); q.y0 = Math.round(s.y); q.x = q.x0; q.y = q.y0;
+        if (q.to) { q.dx = q.to[0] - q.x0; q.dy = q.to[1] - q.y0; q.n = Math.min(q.n, Math.max(Math.abs(q.dx), Math.abs(q.dy))); }
+        const L = Math.max(Math.abs(q.dx), Math.abs(q.dy)); if (!(L > 0)) { q.n = 0; continue; } q.sx = q.dx / L; q.sy = q.dy / L;
+    }
+    for (let moved = true, pass = 0; moved && pass < 16; pass++) {
+        moved = false;
+        for (const q of Q) {
+            const t = q.t; if (q.k >= q.n || !t || t.dead || _cb.out.has(t)) continue;
+            const G = _cbGrid(t); if (!G) continue;
+            const nx = Math.round(q.x0 + q.sx * (q.k + 1)), ny = Math.round(q.y0 + q.sy * (q.k + 1)); if (!G.open(q.x, q.y, nx, ny)) continue;
+            q.x = nx; q.y = ny; q.k++; moved = true; _cb.slots.set(t, { x: nx, y: ny });
+            const T = _cb.turn; if (T && (T.f === t || T.a === t) && T.anc) T.anc = [nx, ny];   // (in its own turn, a biter thrown off a jelly shield: held by its new square from now)
+        }
+    }
+}
 // a creature's special, ready, that would go off from where it stands (the striker's LEAP STRIKE at range; not a call for backup or an escape leap, which hit nobody): its turn is that, not a walk
 function _cbSpecialNow(a) {
     if (!a || a.abilityPhase !== "ready" || !a.abilityDef || a.abilityKey === "BACKUP_CALL" || a.abilityKey === "LEAP") return false;
@@ -864,6 +894,7 @@ function _cbTurnTick() {
         if (!_cb.lay) { _cbLayout(); if (_cbOutside()) { _cb.phase = "black"; _cb.t = f0; _cb.snap = true; return; } }   // (one of yours in another room: the black, and all on their squares in it)
         _cbYourTurn(); _cbRefresh(); return;
     }
+    _cbPushes();   // (the pushes and pulls of this frame, on the squares: §2.62)
     _cbSlide();
     _cbHoldUntil();   // (the statuses kept as an end time do not run out in real time: §2.52)
     if (T.who === "you" && _cbChargeFire()) return;   // (a charged attack fires at its follower's turn)
@@ -1111,4 +1142,4 @@ function _cbDragEnd(ev) {
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
