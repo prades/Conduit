@@ -14,7 +14,9 @@
 //                 facility's items it does not build are the game's to draw, and only in its rooms
 //   AWAY          in a room it has not built (the Armory) it hides and the frame is the 2D game's, opaque; back in the lab it shows again
 //   THE ATTACKS   stage 5 (view3d/attacks.js): the Frost Maw's bite, CHOMP and ABSOLUTE ZERO drawn in 3D by the view's registry; the game leaves out its 2D drawing of exactly those effects; drawing
-//                 writes nothing of the game's; LOW graphics halves them; a fault in one sends its effects back to 2D and the view goes on
+//                 writes nothing of the game's; LOW graphics halves them; a fault in one sends its effects back to 2D and the view goes on. The fire line's ten (the owner, 2026-11-18: "Through the fire line."):
+//                 the Quillstone's, the Ember Hood's and the Thermite Burrower's attacks made by the game's own functions, each drawn and claimed (effects, shots, the orbiting fireballs), the Burrower's
+//                 body the view's under the floor, the budget held and halved on LOW, nothing written, a fault sending one form's back to 2D
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -286,7 +288,7 @@ const ATK = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.at
 if (ATK !== null) {
     check('the registry: the Frost Maw\'s entry draws his bite (the game\'s ice hit and his icicles), CHOMP and ABSOLUTE ZERO; his body is the view\'s', () => {
         ok(!ATK.none, 'the page left no result'); ok(!ATK.threw, ATK.threw); same(ATK.errs.join(' | '), '', 'errors'); same(ATK.state, 'ready', 'the view');
-        same(JSON.stringify(ATK.types), JSON.stringify({ maw: ['icicle', 'impact', 'mawchomp', 'abszero'] }), 'what the registry draws'); same(ATK.hasMaw, true, 'his body the view\'s');
+        same(JSON.stringify(ATK.types.maw), JSON.stringify(['icicle', 'impact', 'mawchomp', 'abszero']), 'what the registry draws of his'); same(ATK.hasMaw, true, 'his body the view\'s');
     });
     check('THE BITE: his ice hit and his icicles are the view\'s, drawn in 3D (ice shards, powder); the game leaves out its 2D drawing of exactly those, and still draws another\'s hit', () => {
         const B = ATK.bite; same(JSON.stringify([B.made, B.owned, B.icicle, B.foreign]), JSON.stringify([true, true, true, false]), 'made, his hit the view\'s, his icicles the view\'s, another\'s hit not');
@@ -309,6 +311,80 @@ if (ATK !== null) {
     });
     check('the game\'s side: the 2D effects and the Maw\'s icicles ask the view first (js/elements.js, js/draw.js), only while it shows (js/view3d.js view3dOwnsFx)', () => {
         ok(/if \(v3 && view3dOwnsFx\(e\)\) return;/.test(rd('js/elements.js')), 'js/elements.js drawElementEffects'); ok(/view3dOwnsFx\(actor\.icicleAttack\)/.test(rd('js/draw.js')), 'js/draw.js'); ok(/function view3dOwnsFx\(o\) \{ return VIEW3D\.showing &&/.test(rd('js/view3d.js')), 'js/view3d.js');
+    });
+}
+
+group('STAGE 5, THE FIRE LINE IN 3D (the owner, 2026-11-18: "Through the fire line."): the Quillstone, the Ember Hood and the Thermite Burrower');
+// The three fire forms beside two ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const FIRE = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x) { spawnFollowerAtCrystal('fire'); var f = followers[followers.length - 1]; f.element = 'fire'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = 19.5; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; return f; };
+  var q = mk('quillstone', 'brawler', 13.2), h = mk('embercowl', 'sniper', 12.4), t = mk('thermite', 'camper', 13.6); t.y = 18.6;
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 14.4; ant.y = 19.5; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.x = 15.4; ant2.y = 18.9; ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; }); step(3);
+  out.types = A.types(); out.bodies = [V.has(q), V.has(h), V.has(t)];
+  var snap = function () { var keep = function (o) { var r = {}; Object.keys(o).forEach(function (k) { var v = o[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { fire: 0, smoke: 0, glint: 0, solids: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, by) { return elementEffects.filter(function (e) { return e.type === type && (!by || e.by === by); })[0]; }, R = out.r = {};
+  // THE QUILLSTONE: its everyday hit (the game's fire ring and orbiting fireballs), QUILL BURST (its quills), EMBER SLASH (its dash), QUILLSTORM (its sixteen quills and ring)
+  var r0 = Math.random; Math.random = function () { return 0.1; }; q.state = 'attack'; q.attackAnim = 0; ELEMENT_ATTACKS.fire.physical(q, ant); Math.random = r0; var ring = of('ring'); step(2); pk();
+  R.hit = { owned: !!ring && view3dOwnsFx(ring), orbit: view3dOwnsFx(q, 'fireOrbit'), drawn: A.stats.fire > 0, same: same() }; step(40); q.state = 'idle';
+  R.burst = { fired: quillBurst(q) }; step(QUILL_FIRE + 3); var qs = followerProjectiles.filter(function (p) { return p.source === q && p.kind === 'quill'; }); R.burst.n = qs.length; R.burst.owned = qs.length > 0 && qs.every(function (p) { return view3dOwnsFx(p); }); R.burst.solids = A.stats.solids; R.burst.same = same(); pk(); step(60);
+  q.x = 13.2; q.y = 19.5; R.slash = { fired: emberSlash(q) }; var ed = of('emberdash', q); step(4); R.slash.owned = !!ed && view3dOwnsFx(ed); R.slash.st = st(); R.slash.same = same(); pk(); step(40); q.x = 13.2; q.y = 19.5; q.state = 'idle';
+  q.ultimateCharge = 100; R.storm = { fired: followerUltFire(q) }; step(3); var sq = followerProjectiles.filter(function (p) { return p.source === q; }); R.storm.n = sq.length; R.storm.owned = sq.length > 0 && sq.every(function (p) { return view3dOwnsFx(p); }); R.storm.st = st(); pk();
+  gfxLow = true; V.draw(null); R.storm.low = st(); gfxLow = false; R.storm.same = same(); step(60);
+  // THE EMBER HOOD: FIREBALL (the game's shot), HEXFIRE (its crater), METEOR RAIN (its rocks and craters)
+  var fb = spawnFollowerProjectile(h, ant, '#ff7a2e', 1, 5, null, null, { kind: 'fireball' }); step(3); R.ball = { owned: !!fb && view3dOwnsFx(fb), solids: A.stats.solids, same: same() }; pk(); step(30);
+  R.hex = { fired: hexfire(h) }; var hx = of('hexfire', h); step(16); R.hex.owned = !!hx && view3dOwnsFx(hx); R.hex.st = st(); R.hex.same = same(); pk(); if (hx) hx.life = 1; step(4);
+  h.ultimateCharge = 100; R.rain = { fired: followerUltFire(h) }; var mr = of('meteorrain', h); step(4); R.rain.owned = !!mr && view3dOwnsFx(mr);
+  step(ULT_METEOR.cast + 60); R.rain.st = st(); pk(); gfxLow = true; V.draw(null); R.rain.low = st(); gfxLow = false; R.rain.same = same(); if (mr) mr.life = 1; step(3);
+  // THE THERMITE BURROWER: going under (BURROW STRIKE's dive: its body still the view's, its ring), its spikes, MAGMA VENT, FAULTLINE's path
+  R.dig = { tried: burrowStrikeTry(t, ant) }; var dr = of('ring'); step(1); R.dig.owned = !!dr && view3dOwnsFx(dr); for (var i = 0; i < 24; i++) { burrowStep(t); step(1); } R.dig.under = burrowerDepth(t); R.dig.body = V.has(t); R.dig.solids = A.stats.solids; R.dig.same = same();
+  t._burrow = null; t.untargetable = false; t.x = 13.6; t.y = 18.6; step(2);
+  elementEffects.push({ type: 'faultSpike', x: t.x + 0.3, y: t.y, life: 26, maxLife: 26 }); var fs = elementEffects[elementEffects.length - 1]; step(4); R.spike = { owned: view3dOwnsFx(fs), solids: A.stats.solids }; pk(); step(30);
+  R.vent = { fired: magmaVent(t) }; var mv = of('magmavent', t); step(3); R.vent.owned = !!mv && view3dOwnsFx(mv); R.vent.st = st(); R.vent.same = same(); pk(); if (mv) mv.life = 1; step(3);
+  var fp = techFaultPath(t, [{ x: t.x + 0.4, y: t.y }, { x: 15.4, y: 18.9 }]); R.fault = { path: fp.ok }; if (fp.ok) { techFaultlineAt(t, fp.pts); var tr = of('faultTrace', t); for (var i = 0; i < 30; i++) { techFaultStep(t); step(1); }
+    R.fault.owned = !!tr && view3dOwnsFx(tr); R.fault.ribbons = A.stats.ribbons; R.fault.body = V.has(t); R.fault.same = same(); pk(); }
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Ember Hood's entry made to fail: its crater is the game's 2D drawing again, the view and the other forms go on
+  hexfire(h); var hx2 = of('hexfire', h); step(2); A.breakFor('embercowl'); step(2); out.fault = { bad: A.bad(), owned: !!hx2 && view3dOwnsFx(hx2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(h), others: V.has(q) }; A.mend('embercowl');`));
+if (FIRE !== null) {
+    check('the registry: the fire line\'s entries (the Quillstone, the Ember Hood, the Thermite Burrower), their effects and shots; their bodies the view\'s', () => {
+        ok(!FIRE.none, 'the page left no result'); ok(!FIRE.threw, FIRE.threw); same(FIRE.errs.join(' | '), '', 'errors'); same(FIRE.state, 'ready', 'the view');
+        same(JSON.stringify([FIRE.types.quillstone, FIRE.types.embercowl, FIRE.types.thermite]), JSON.stringify([['ring', 'emberdash', 'shot:quill'], ['hexfire', 'meteorrain', 'shot:fireball'], ['ring', 'impact', 'faultSpike', 'magmavent', 'faultTrace']]), 'what each draws');
+        same(JSON.stringify(FIRE.bodies), '[true,true,true]', 'their bodies the view\'s');
+    });
+    check('THE QUILLSTONE: its hit\'s fire ring and orbiting fireballs, QUILL BURST\'s five quills, EMBER SLASH\'s dash, QUILLSTORM\'s sixteen quills: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = FIRE.r; same(JSON.stringify([R.hit.owned, R.hit.orbit, R.hit.drawn]), '[true,true,true]', 'the hit: the ring, the orbit, drawn');
+        same(JSON.stringify([R.burst.fired, R.burst.n, R.burst.owned]), '[true,5,true]', 'QUILL BURST: fired, five quills, the view\'s'); ok(R.burst.solids >= 5, 'its quills solid: ' + R.burst.solids);
+        same(JSON.stringify([R.slash.fired, R.slash.owned]), '[true,true]', 'EMBER SLASH'); ok(R.slash.st.fire > 0 && R.slash.st.ribbons > 0, 'its streak and scorch: ' + JSON.stringify(R.slash.st));
+        same(JSON.stringify([R.storm.fired, R.storm.n, R.storm.owned]), '[true,16,true]', 'QUILLSTORM: fired, sixteen quills, the view\'s');
+        ok(R.storm.low.solids <= FIRE.cap.solid / 2 && R.storm.low.fire <= FIRE.cap.fire / 2 && R.storm.low.solids < R.storm.st.solids, 'LOW graphics: ' + JSON.stringify(R.storm.low) + ' of ' + JSON.stringify(R.storm.st));
+    });
+    check('THE EMBER HOOD: its FIREBALL, HEXFIRE\'s crater and METEOR RAIN\'s rocks and craters, each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = FIRE.r; same(JSON.stringify([R.ball.owned, R.ball.solids > 0]), '[true,true]', 'the fireball');
+        same(JSON.stringify([R.hex.fired, R.hex.owned, R.hex.st.solids > 0, R.hex.st.fire > 0]), '[true,true,true,true]', 'HEXFIRE: fired, the view\'s, its crater, its jets');
+        same(JSON.stringify([R.rain.fired, R.rain.owned]), '[true,true]', 'METEOR RAIN'); ok(R.rain.st.solids >= 3 && R.rain.st.flats > 0, 'rocks, craters and marks: ' + JSON.stringify(R.rain.st));
+        ok(R.rain.low.fire <= FIRE.cap.fire / 2 && R.rain.low.solids <= R.rain.st.solids, 'LOW graphics: ' + JSON.stringify(R.rain.low));
+    });
+    check('THE THERMITE BURROWER: under the floor its body is still the view\'s (its mound drawn), its ring, spikes, MAGMA VENT and FAULTLINE\'s path the view\'s, drawn in 3D', () => {
+        const R = FIRE.r; same(JSON.stringify([R.dig.tried, R.dig.owned, R.dig.under, R.dig.body]), '[true,true,1,true]', 'BURROW STRIKE: set off, its ring the view\'s, under, its body the view\'s'); ok(R.dig.solids >= 1, 'its mound');
+        same(JSON.stringify([R.spike.owned, R.spike.solids >= 3]), '[true,true]', 'a molten spike the view\'s');
+        same(JSON.stringify([R.vent.fired, R.vent.owned, R.vent.st.solids > 0]), '[true,true,true]', 'MAGMA VENT');
+        same(JSON.stringify([R.fault.path, R.fault.owned, R.fault.ribbons >= 2, R.fault.body]), '[true,true,true,true]', 'FAULTLINE: its path the view\'s, its molten line, its body the view\'s');
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect and shot as it was)', () => {
+        const P = FIRE.peak, C = FIRE.cap; ok(P.fire <= C.fire && P.smoke <= C.smoke && P.glint <= C.glint, 'over the budget: ' + JSON.stringify(P));
+        const R = FIRE.r; same(JSON.stringify([R.hit.same, R.burst.same, R.slash.same, R.storm.same, R.ball.same, R.hex.same, R.rain.same, R.dig.same, R.vent.same, R.fault.same]), JSON.stringify(new Array(10).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one fire form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = FIRE.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['embercowl'], false, 'ready', true, true, true]), 'after the fault');
+    });
+    check('the game\'s side: the shots and the orbiting fireballs ask the view first (js/game.js, js/draw.js)', () => {
+        ok(/if \(!\(typeof view3dOwnsFx === "function" && view3dOwnsFx\(p\)\)\) _drawFollowerProjectile/.test(rd('js/game.js')), 'js/game.js'); ok(/view3dOwnsFx\(actor, "fireOrbit"\)/.test(rd('js/draw.js')), 'js/draw.js');
     });
 }
 

@@ -188,7 +188,7 @@ const GAMEVIEW = (function () {
   function followerIn(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
     const d = f.evolved ? GM.evolvedDef(f) : null;
     if (d) { if (!JOBS[d.id] || bad.has(d.id)) return false;
-      if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < GM.EVO_MOLT * 0.3 || GM.burrowDepth(f) !== null) return false;
+      if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < GM.EVO_MOLT * 0.3 || (GM.burrowDepth(f) !== null && !ATT.burrows(d.id))) return false;   // (under the floor: the game's 2D, but a form whose dive and mound the view draws, view3d/attacks.js burrows)
       if ((f._fxHideUntil || 0) > f0 || (f.evolved === 'electroskink' && GM.swirling(f))) { shown.add(f); return true; }   // (out of sight for a moment: drawn by no one)
       const fr = GM.evoFrame(f, d, f0), b = bodyFor(f, d.id, () => formBody(d.id)); if (!b) return false;
       turn(b, faceOf(fr.row), dt); pose(b, fr.col, fr.col < 8 && fr.col === Math.floor(f0 / 7) % 8 ? (f0 / 7) % 8 : undefined);
@@ -241,7 +241,7 @@ const GAMEVIEW = (function () {
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
     stats, state, world, camera: cam, core: CORE, attacks: ATT,
-    owns(o) { return ATT.owns(o); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx)
+    owns(o, k) { return ATT.owns(o, k); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx; k: a unit's own, by kind)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
     swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)

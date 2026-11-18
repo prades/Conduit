@@ -9607,7 +9607,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         drawCtx.fill();
         drawCtx.restore();
     }
-    if (actor.fireOrbitTimer > 0) {
+    if (actor.fireOrbitTimer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fireOrbit"))) {
         const _foAlpha = Math.min(1, actor.fireOrbitTimer / 8);
         const _orbitR = 22;
         const _oAngle = (frame || 0) * 0.09;
@@ -57843,7 +57843,8 @@ function render() {
         }
         const sx = isoSX(p.x, p.y) + canvas.width / 2;
         const sy = isoSY(p.x, p.y) + canvas.height / 2 - 40;
-        _drawFollowerProjectile(ctx, p, sx, sy);
+        if (!(typeof view3dOwnsFx === "function" && view3dOwnsFx(p)))
+            _drawFollowerProjectile(ctx, p, sx, sy);
         if (p.life <= 0 && p.onLand)
             p.onLand();
         let hit = false;
@@ -58178,7 +58179,7 @@ function view3dFeet() { return VIEW3D.showing ? TILE_H : 0; }
 function view3dKeeps(it) { return VIEW3D.showing && VIEW3D.view.keeps(it); }
 function view3dBody(a) { return VIEW3D.showing && VIEW3D.view.has(a); }
 function view3dTop(a) { return VIEW3D.view.top(a); }
-function view3dOwnsFx(o) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o); }
+function view3dOwnsFx(o, k) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o, k); }
 const _V3BTN = { r: 17, y0: 80, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
 function _v3panelUp() { return (typeof _lastPanelOpen !== "undefined" && _lastPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
 function view3dDrawButtons() {

@@ -1358,7 +1358,7 @@ function render() {
         const sx=isoSX(p.x, p.y)+canvas.width/2;
         const sy=isoSY(p.x, p.y)+canvas.height/2 - 40;
         // Draw element-specific projectile
-        _drawFollowerProjectile(ctx, p, sx, sy);
+        if (!(typeof view3dOwnsFx === "function" && view3dOwnsFx(p))) _drawFollowerProjectile(ctx, p, sx, sy);   // (a shot the 3D view draws itself, view3d/attacks_fire.js: the fire line's quills and fireballs)
         // Landing callback for arc bombs when they expire
         if (p.life <= 0 && p.onLand) p.onLand();
         // Hit detection (skipped for bombs that trigger onLand instead)

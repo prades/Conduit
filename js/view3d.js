@@ -16,7 +16,7 @@
 //     stands a body where the game has the unit, which is half a tile down the screen from where the 2D drawing put its feet, so what is drawn over a unit goes down with it (view3dFeet).
 //   - The floor's marks that are play (pools, fire, acid, auras, the long-press ring: js/game.js drawFloorTileMarks) are drawn by the game into a layer of the view's, which lays it on
 //     its floor under all that stands there (view3dDraw).
-//   - The attacks it draws in 3D (view3d/attacks.js: the Frost Maw's first): each effect it drew this frame is the view's, and the game leaves out its 2D drawing of it (view3dOwnsFx).
+//   - The attacks it draws in 3D (view3d/attacks.js: the Frost Maw's first, then the fire line's): each effect and shot it drew this frame is the view's, and the game leaves out its 2D drawing of it (view3dOwnsFx).
 //   - In a room the view has not built, the frame is drawn in 2D exactly as with the switch off.
 // The view itself, and what it does and does not draw yet, is view3d/gameview.js.
 
@@ -131,7 +131,8 @@ function view3dTop(a) { return VIEW3D.view.top(a); }
 // THE ATTACKS IN 3D (view3d/attacks.js; docs/VIEW-3D.md stage 5, the Frost Maw's three first): does this frame's 3D picture draw this effect of the game's (an elementEffects entry, an actor's
 // icicleAttack)? Then the game leaves out its 2D drawing of it (js/elements.js drawElementEffects, js/draw.js). Asked only after the view has drawn the frame; an effect whose 3D drawing failed
 // is not the view's, so the game draws it in 2D as ever.
-function view3dOwnsFx(o) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o); }
+// k: a unit's own thing the view draws for it, by kind ("fireOrbit": the Quillstone's three orbiting fireballs, js/draw.js), the unit given as o. A shot in flight (followerProjectiles) is asked as an effect is.
+function view3dOwnsFx(o, k) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o, k); }
 
 // ── THE CAMERA'S CONTROLS (the 3D view only): four round buttons under QUESTS (turn left, turn right, zoom out, zoom in); on an iPad one finger swiped sideways turns (the room goes round
 // with it, and settles on a quarter turn) and two fingers pinched zoom; on a computer a drag sideways turns as a swipe does, the wheel zooms, [ and ] turn, - and = zoom.

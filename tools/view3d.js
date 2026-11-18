@@ -7,7 +7,7 @@
 //   the round 2 kit, chamber and styles (design/style-evolution/round2/), the lab floor's builder (design/style-evolution/live/floor.js) and the 3D core (view3d/core.js): the look, as the
 //   test page has it (lab3d/, tools/lab3d.js)
 //   the bakers' table of jobs (design/evolutions/bake.js JOBS: which model, in which colour, posed how, each sprite sheet is baked from), as VIEW3D_JOBS
-//   the attacks in 3D (view3d/attacks.js: their registry, the Frost Maw's first) and the view (view3d/gameview.js)
+//   the attacks in 3D (view3d/attacks.js: their registry, the Frost Maw's first; view3d/attacks_fire.js: the fire line's) and the view (view3d/gameview.js)
 // Comments are taken out by TypeScript's printer, as tools/bundle.js does. Do not edit dist/view3d.js by hand: tests/view3d.js fails when it is behind its sources.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..'), LAB = require('./lab3d.js');
@@ -24,7 +24,7 @@ function jobs() {
 }
 function sources() {
   const S = LAB.sources();
-  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js'], view: ['view3d/attacks.js', 'view3d/gameview.js'] };
+  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js'], view: ['view3d/attacks_fire.js', 'view3d/attacks.js', 'view3d/gameview.js'] };
 }
 function build() {
   const S = sources(), ts = LAB.loadTs(), one = f => '/* ' + f + ' */\n' + LAB.strip(ts, rd(f), f) + '\n;\n';

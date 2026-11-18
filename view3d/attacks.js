@@ -18,7 +18,7 @@ function view3dAttacks(env) {
   const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };   // (a fixed number in [0, 1) for a particle i of an effect s)
   const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
   // the agent's budget (provisional): points a frame, crystals a frame; halved on LOW graphics
-  const CAP = { puff: 140, glint: 90, ice: 64 };
+  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each)
 
   // ── THE POOLS ──
   const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';   // (a size below 0: a puff with no rim)
@@ -32,7 +32,12 @@ function view3dAttacks(env) {
     const o = new T.Points(g, m); o.frustumCulled = false; o.layers.set(2); o.renderOrder = 20; o.userData.noInk = true; o.userData.fx3d = true; scene.add(o);
     return { o, g, pos, col, size, cap, n: 0, was: -1 };
   }
-  const PUFF = points(CAP.puff, FS_PUFF, false), GLINT = points(CAP.glint, FS_GLINT, true), POOLS = [PUFF, GLINT];
+  // FIRE (the fire line's): a flame tongue (narrow at its tip, round at its foot, white-hot in its middle low down) or, its size below 0, a round glowing blob (an ember, a lava drop, a fireball's halo);
+  // drawn mostly over what is behind (so it keeps its colour on a pale floor) and a little added (so it glows). SMOKE: a lump of rubble or earth with a darker rim, or, its size below 0, a soft haze of smoke.
+  const FS_FIRE = 'varying vec4 vCol; varying float vRim; void main() { vec2 p = gl_PointCoord - 0.5; float a, core; if (vRim > 0.5) { float t = gl_PointCoord.y, w = 0.47 * pow(max(0.0, sin(3.14159 * pow(t, 2.2))), 0.6) + 0.001, x = abs(p.x) / w; a = 1.0 - smoothstep(0.5, 1.0, x); core = (1.0 - smoothstep(0.0, 0.65, x)) * smoothstep(0.35, 0.8, t); } else { float d = length(p) * 2.0; a = 1.0 - smoothstep(0.3, 1.0, d); a = mix(a * a, a, 0.4); core = (1.0 - smoothstep(0.0, 0.4, d)) * 0.45; } a *= vCol.a; if (a < 0.01) discard; vec3 c = mix(vCol.rgb, vec3(1.0, 0.95, 0.72), core * 0.7); gl_FragColor = vec4(c * a, a * 0.88); }';
+  const FS_SMOKE = 'varying vec4 vCol; varying float vRim; void main() { float d = length(gl_PointCoord - 0.5) * 2.0, a; vec3 c = vCol.rgb; if (vRim > 0.5) { a = 1.0 - smoothstep(0.78, 0.96, d); c = mix(c, c * 0.55, smoothstep(0.55, 0.85, d)); } else { a = 1.0 - smoothstep(0.1, 1.0, d); a *= a; } a *= vCol.a; if (a < 0.01) discard; gl_FragColor = vec4(c * a, a); }';
+  const PUFF = points(CAP.puff, FS_PUFF, false), GLINT = points(CAP.glint, FS_GLINT, true), FIRE = points(CAP.fire, FS_FIRE, true), SMOKE = points(CAP.smoke, FS_SMOKE, true), POOLS = [PUFF, GLINT, FIRE, SMOKE];
+  SMOKE.o.renderOrder = 19; FIRE.o.renderOrder = 21;   // (the smoke under the flames)
   function put(P, x, y, z, r, g, b, a, s) { if (a <= 0.004 || s === 0) return; const lim = low() ? P.cap >> 1 : P.cap; if (P.n >= lim) return; const i = P.n++;
     P.pos[i * 3] = x; P.pos[i * 3 + 1] = y; P.pos[i * 3 + 2] = z; P.col[i * 4] = r; P.col[i * 4 + 1] = g; P.col[i * 4 + 2] = b; P.col[i * 4 + 3] = a; P.size[i] = s; }
   // the ice crystals: a six-sided spike of clear pale ice (the game's crystals' shape), one instanced set, with the ink line round each (as every solid in the look)
@@ -55,6 +60,79 @@ function view3dAttacks(env) {
   const HEX = new Map(); const linK = h => { let c = HEX.get(h); if (!c) HEX.set(h, c = lin(h)); return c; };
   function flatK(F, x, y, z, r, hex, a) { if (F.n >= F.list.length || a <= 0.004 || r <= 0.01) return; const m = F.list[F.n++]; m.visible = true; m.position.set(x, y + 0.025, z); m.scale.set(r, 1, r); m.material.color.copy(linK(hex)); m.material.opacity = a; }
 
+  // ── THE FIRE LINE'S KIT (view3d/attacks_fire.js; made once, like the rest) ──
+  // SOLIDS: each kind one instanced set with the ink line round each (as every solid in the look): rock and crystal in the look's toon shading, and where a part of it is molten (aGlow, made with its shape)
+  // it glows by its instance's own heat (iEmis: the colour and strength of its glow, so a crater cools from white-hot to a dark crust, a quill's tip burns). Its colour (dark rock, red crystal) is the instance's.
+  const MOLTEN = new T.MeshToonMaterial({ color: 0xffffff, gradientMap: env.grad || null, side: T.DoubleSide });
+  MOLTEN.onBeforeCompile = sh => { sh.vertexShader = 'attribute float aGlow;\nattribute vec3 iEmis;\nvarying vec3 vEm;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vEm = iEmis * aGlow;');
+    sh.fragmentShader = 'varying vec3 vEm;\n' + sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vEm + diffuseColor.rgb * 0.5;'); };
+  MOLTEN.customProgramCacheKey = () => 'fx3d-molten';
+  const SOLIDS = [];
+  // a kind of solid: its shape (geo, along +y, its foot at 0), its glow over it (glow(x, y, z, face): 0 to 1), whether it carries the ink line
+  function solidKind(name, geo, cap, glow, ink) {
+    const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals(); const n = g.attributes.position.count, P = g.attributes.position, gl = new Float32Array(n);
+    for (let i = 0; i < n; i++) gl[i] = glow ? glow(P.getX(i), P.getY(i), P.getZ(i), Math.floor(i / 3)) : 0;
+    g.setAttribute('aGlow', new T.BufferAttribute(gl, 1)); const em = new T.InstancedBufferAttribute(new Float32Array(cap * 3), 3); em.setUsage(T.DynamicDrawUsage); g.setAttribute('iEmis', em);
+    if (ink) { const c = env.ink, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; } g.setAttribute('idc', new T.BufferAttribute(a, 3)); g.userData.ink = true; }
+    const m = new T.InstancedMesh(g, MOLTEN, cap); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; m.userData.fx3d = true; if (!ink) { m.layers.set(2); m.userData.noInk = true; }
+    m.setColorAt(0, new T.Color(1, 1, 1)); scene.add(m); const S = { name, m, em, cap, n: 0 }; SOLIDS.push(S); return S; }
+  const Q2 = new T.Quaternion(), V3 = new T.Vector3();
+  // one of a kind: its foot at (x, y, z), along (dx, dy, dz), turned `spin` about that line, wid wide and len long; its colour (r, g, b), its glow (er, eg, eb), in the screen's colours
+  function solid(S, x, y, z, dx, dy, dz, spin, len, wid, r, g, b, er, eg, eb) { if (len <= 0.004 || wid <= 0.002) return; const lim = low() ? S.cap >> 1 : S.cap; if (S.n >= lim) return; const i = S.n++;
+    V1.set(dx, dy, dz); const L = V1.length(); if (L < 1e-6) V1.set(0, 1, 0); else V1.multiplyScalar(1 / L); Q.setFromUnitVectors(UP, V1); if (spin) Q.multiply(Q2.setFromAxisAngle(UP, spin));
+    SC.set(wid, len, wid); V2.set(x, y, z); M4.compose(V2, Q, SC); S.m.setMatrixAt(i, M4); S.m.setColorAt(i, C1.setRGB(r * r, g * g, b * b));
+    S.em.array[i * 3] = er * er; S.em.array[i * 3 + 1] = eg * eg; S.em.array[i * 3 + 2] = eb * eb; }   // (squared: near enough the screen's colours made linear, as the look's materials are)
+  // the shapes (made once): a quill (one of the Quillstone's red shards: five-sided, faceted, its tip hot); a rock (a lumpy boulder, some of its faces molten); a molten spike (dark rock, a seam and its
+  // tip glowing); a crater (a pit with a broken rim, its bottom molten); HEXFIRE's crater (the same, wider, a fissure of lava split across its crust); a mound of earth (glowing cracks); a vent (a cone with a
+  // molten mouth); a fireball (a glowing blob, no ink line)
+  const jag = (a, s) => 0.86 + 0.14 * Math.sin(a * 5 + s) * Math.sin(a * 3 + s * 2) + 0.06 * Math.sin(a * 11 + s * 3);
+  function craterGeo(rimH, segs, rings, s) { const pos = [], idx = [], prof = [];   // (a lathe of my own: the rim's height and its jags by angle)
+    for (let k = 0; k <= rings; k++) prof.push([0.55 * k / rings, 0.02]); prof.push([0.66, 0.1], [0.78, rimH], [0.9, rimH * 0.45], [1.0, 0.0]);
+    for (let j = 0; j <= segs; j++) { const a = j / segs * TAU, c = Math.cos(a), sn = Math.sin(a), J = jag(a, s); for (let k = 0; k < prof.length; k++) { const r = prof[k][0] * (k > rings ? J : 1), y = prof[k][1] * (k === rings + 2 ? 0.7 + 0.6 * J * J : 1); pos.push(c * r, y, sn * r); } }
+    const np = prof.length; for (let j = 0; j < segs; j++) for (let k = 0; k < np - 1; k++) { const a = j * np + k, b = a + np; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); return g; }
+  const QUILLS = solidKind('quill', new T.LatheGeometry([new T.Vector2(0, 0), new T.Vector2(0.13, 0.12), new T.Vector2(0.1, 0.72), new T.Vector2(0, 1)], 5), 40, (x, y) => y > 0.75 ? 1 : 0.18 + 0.3 * y, true);
+  const ROCKS = (() => { const g = new T.IcosahedronGeometry(1, 1), P = g.attributes.position; for (let i = 0; i < P.count; i++) { V1.fromBufferAttribute(P, i); const k = 0.8 + 0.25 * H(Math.round(V1.x * 7), Math.round(V1.y * 7), Math.round(V1.z * 7)); P.setXYZ(i, V1.x * k, V1.y * k * 0.85 + 0.85, V1.z * k); }
+    return solidKind('rock', g, 24, (x, y, z, f) => H(f, 3, 1) < 0.32 ? 1 : 0.05, true); })();
+  const SPIKES = solidKind('spike', new T.LatheGeometry([new T.Vector2(0, 0), new T.Vector2(0.4, 0.06), new T.Vector2(0.24, 0.6), new T.Vector2(0, 1)], 6), 48, (x, y, z, f) => (f % 4 === 1 ? 0.85 : 0.08) + 0.9 * Math.max(0, y - 0.7), true);
+  const CRATERS = solidKind('crater', craterGeo(0.2, 28, 3, 1.7), 16, (x, y, z) => { const r = Math.hypot(x, z); return r < 0.56 ? 1 : r < 0.7 ? 0.35 : 0; }, true);
+  const FISS = (() => { const g = craterGeo(0.16, 56, 10, 4.1); return { g, glow: (x, y, z) => { const r = Math.hypot(x, z); if (r > 0.6) return r < 0.7 ? 0.12 : 0; const t = x / 0.5, w = 0.11 * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(t), 1.7)), 0.8) + 0.01, d = Math.abs(z - 0.04 * Math.sin(x * 9));
+    return d < w ? 1 : d < w * 2.6 ? 0.45 * (1 - (d - w) / (w * 1.6)) : 0.03; } }; })();
+  const HEXC = solidKind('hexcrater', FISS.g, 4, FISS.glow, true);
+  const MOUNDS = (() => { const g = new T.SphereGeometry(1, 12, 6, 0, TAU, 0, Math.PI / 2), P = g.attributes.position; for (let i = 0; i < P.count; i++) { V1.fromBufferAttribute(P, i); const k = 0.85 + 0.25 * H(Math.round(V1.x * 5), Math.round(V1.z * 5), 2); P.setXYZ(i, V1.x * k, V1.y * k * 0.7, V1.z * k); }
+    return solidKind('mound', g, 4, (x, y, z) => { const a = Math.atan2(z, x); return Math.abs(Math.sin(a * 2.5 + y * 3)) < 0.12 && y > 0.05 ? 1 : 0.02; }, true); })();
+  const VENTS = solidKind('vent', new T.LatheGeometry([new T.Vector2(0, 0.08), new T.Vector2(0.3, 0.1), new T.Vector2(0.42, 0.34), new T.Vector2(0.62, 0.3), new T.Vector2(1, 0)], 9), 4, (x, y) => Math.hypot(x, 0) < 0.36 && y < 0.2 ? 1 : 0.04, true);
+  const BLOBS = solidKind('blob', new T.IcosahedronGeometry(1, 2), 12, () => 1, false);
+  // FLATS ON THE FLOOR, many of a kind in one draw, each its own colour and strength: a ring, a disc (drawn over the floor), a glow (a soft disc, added)
+  const FLAT_VS = 'attribute vec4 iCol; varying vec4 vC; varying vec2 vU; void main() { vC = iCol; vU = uv; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0); }';
+  function flatKind(geo, fs, add) { const cap = CAP.flat, a = new T.InstancedBufferAttribute(new Float32Array(cap * 4), 4); a.setUsage(T.DynamicDrawUsage); geo.setAttribute('iCol', a);
+    const mat = new T.ShaderMaterial({ vertexShader: FLAT_VS, fragmentShader: fs, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, blending: T.CustomBlending });
+    mat.blendSrc = T.OneFactor; mat.blendDst = T.OneMinusSrcAlphaFactor;
+    const m = new T.InstancedMesh(geo, mat, cap); m.count = 0; m.frustumCulled = false; m.layers.set(2); m.renderOrder = 16; m.userData.noInk = true; m.userData.fx3d = true; scene.add(m); return { m, a, cap, n: 0 }; }
+  const RINGF = flatKind(new T.RingGeometry(0.82, 1, 48).rotateX(-Math.PI / 2), 'varying vec4 vC; void main() { gl_FragColor = vec4(vC.rgb * vC.a, vC.a); }');
+  const DISCF = flatKind(new T.CircleGeometry(1, 40).rotateX(-Math.PI / 2), 'varying vec4 vC; varying vec2 vU; void main() { float d = length(vU - 0.5) * 2.0, a = vC.a * (1.0 - smoothstep(0.86, 1.0, d)); gl_FragColor = vec4(vC.rgb * a, a); }');
+  const GLOWF = flatKind(new T.CircleGeometry(1, 32).rotateX(-Math.PI / 2), 'varying vec4 vC; varying vec2 vU; void main() { float d = length(vU - 0.5) * 2.0, a = vC.a * (1.0 - smoothstep(0.0, 1.0, d)); a *= a; gl_FragColor = vec4(vC.rgb * a, 0.0); }');
+  const FLATK = [RINGF, DISCF, GLOWF];
+  function flat(F, x, y, z, r, cr, cg, cb, a) { if (F.n >= F.cap || a <= 0.004 || r <= 0.01) return; const i = F.n++; SC.set(r, 1, r); V2.set(x, y + 0.03, z); Q.set(0, 0, 0, 1); M4.compose(V2, Q, SC); F.m.setMatrixAt(i, M4);
+    F.a.array[i * 4] = cr; F.a.array[i * 4 + 1] = cg; F.a.array[i * 4 + 2] = cb; F.a.array[i * 4 + 3] = Math.min(1, a); }
+  // RIBBONS laid along the floor (FAULTLINE's molten line, EMBER SLASH's scorch): a strip through up to RIB_N points, its width and colour at each
+  const RIB_N = 72, RIBS = [];
+  for (let k = 0; k < 6; k++) { const g = new T.BufferGeometry(), pos = new Float32Array(RIB_N * 2 * 3), col = new Float32Array(RIB_N * 2 * 4), idx = [];
+    for (let i = 0; i < RIB_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 2, a + 1, a + 3); }
+    g.setAttribute('position', new T.BufferAttribute(pos, 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aC', new T.BufferAttribute(col, 4).setUsage(T.DynamicDrawUsage)); g.setIndex(idx); g.setDrawRange(0, 0);
+    const mat = new T.ShaderMaterial({ vertexShader: 'attribute vec4 aC; varying vec4 vC; void main() { vC = aC; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }', fragmentShader: 'varying vec4 vC; void main() { gl_FragColor = vec4(vC.rgb * vC.a, vC.a); }',
+      transparent: true, depthWrite: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, blending: T.CustomBlending }); mat.blendSrc = T.OneFactor; mat.blendDst = T.OneMinusSrcAlphaFactor;
+    const m = new T.Mesh(g, mat); m.frustumCulled = false; m.layers.set(2); m.renderOrder = 17 + (k % 3) * 0.1; m.userData.noInk = true; m.userData.fx3d = true; m.visible = false; scene.add(m); RIBS.push({ m, g, pos, col, n: 0 }); }
+  let ribN = 0;
+  // a ribbon through `n` points given by at(i, P) (P: { x, y, z, w (half width), r, g, b, a }), or false when none is left
+  const RP = { x: 0, y: 0, z: 0, w: 0, r: 0, g: 0, b: 0, a: 0 };
+  function ribbon(n, at) { if (ribN >= RIBS.length || n < 2) return false; const R = RIBS[ribN++]; n = Math.min(n, RIB_N); let px = 0, pz = 0;
+    for (let i = 0; i < n; i++) { at(i, RP); let dx, dz; if (i < n - 1) { const x0 = RP.x, z0 = RP.z; at(i + 1, RP); dx = RP.x - x0; dz = RP.z - z0; at(i, RP); } else { dx = RP.x - px; dz = RP.z - pz; }
+      const L = Math.hypot(dx, dz) || 1, nx = -dz / L * RP.w, nz = dx / L * RP.w, o = i * 6, c = i * 8; px = RP.x; pz = RP.z;
+      R.pos[o] = RP.x + nx; R.pos[o + 1] = RP.y + 0.035; R.pos[o + 2] = RP.z + nz; R.pos[o + 3] = RP.x - nx; R.pos[o + 4] = RP.y + 0.035; R.pos[o + 5] = RP.z - nz;
+      for (let q = 0; q < 2; q++) { R.col[c + q * 4] = RP.r; R.col[c + q * 4 + 1] = RP.g; R.col[c + q * 4 + 2] = RP.b; R.col[c + q * 4 + 3] = Math.max(0, Math.min(1, RP.a)); } }
+    R.n = n; R.g.setDrawRange(0, (n - 1) * 6); R.g.attributes.position.needsUpdate = true; R.g.attributes.aC.needsUpdate = true; R.m.visible = true; return true; }
+
   // THE COLOURS (the Frost Maw's look: powder snow, ice, the cold blue #7fd6ff), as the screen shows them (the points are drawn in the screen's colours)
   const SNOW = [1.0, 1.0, 1.0], FROST = [0.72, 0.88, 1.0], COLD = [0.5, 0.84, 1.0], GLOW = [0.78, 0.95, 1.0];
 
@@ -68,7 +146,7 @@ function view3dAttacks(env) {
   const memos = new Map(); let seq = 0;
   function memo(o, type, owner, f0) { let m = memos.get(o); if (!m) { m = { o, type, owner, seed: (seq++ % 997) + 1, born: f0, l0: o.maxLife || o.life || 0, age: 0, seen: f0, x: o.x || 0, y: o.y || 0, gone: false, data: null }; memos.set(o, m); } return m; }
   const claimed = new Set(), bad = new Set(); let drew = 0, errs = 0, lastErr = null;
-  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (held: the swallowed drawn this frame, being pulled in)
+  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (held: the swallowed drawn this frame, being pulled in)
   // ── THE REGISTRY ──
   const FORMS = {};
 
@@ -78,7 +156,9 @@ function view3dAttacks(env) {
   const VV = { sw: 0, rot: 0, z: 0, y: 0, fang: 0 }, lerp = (a, b, k) => a + (b - a) * k;
   function blockAt(bl, x) { const i = clamp(Math.floor(x), 0, 7), j = Math.min(7, i + 1), k = clamp(x - i, 0, 1), A = bl[i], B = bl[j]; VV.sw = lerp(A.sw, B.sw, k); VV.rot = lerp(A.rot, B.rot, k); VV.z = lerp(A.z, B.z, k); VV.y = lerp(A.y, B.y, k); VV.fang = lerp(A.fang, B.fang, k); return VV; }
   function setV(sw, rot, z, y, fang) { VV.sw = sw; VV.rot = rot; VV.z = z; VV.y = y; VV.fang = fang; return VV; }
-  const zeroOf = new Map();   // (the ABSOLUTE ZERO under way of each Maw: its memo)
+  // the effects under way that a body's motion follows (an entry's effect marked `held` or `pre`), by type and by form: read before the bodies are posed (begin)
+  const CUR = new Map(), curMap = t => { let M = CUR.get(t); if (!M) CUR.set(t, M = new Map()); return M; }, curOf = (f, t) => { const M = CUR.get(t); return M ? M.get(f) || null : null; };
+  const zeroOf = curMap('abszero');   // (the ABSOLUTE ZERO under way of each Maw: its memo)
   const tint = new Map(), frostNow = new Set();     // (a Maw's body's glowing materials and their own glow, kept the first time it is frosted; the bodies frosted this frame)
   function frostBody(b, k) { if (k > 0) frostNow.add(b); let L = tint.get(b); if (!L) { if (k <= 0) return; L = []; L.b = b; b.holder.traverse(o => { if (!o.isMesh) return; for (const m of [].concat(o.material)) if (m && m.emissive && !L.some(q => q.m === m)) L.push({ m, e: m.emissive.clone(), c: m.color ? m.color.clone() : null }); }); tint.set(b, L); L.k = -1; }
     if (Math.abs(L.k - k) < 0.003) return; L.k = k; const cold = linK('#7fd6ff'), ice = linK('#dff6ff');
@@ -122,6 +202,7 @@ function view3dAttacks(env) {
       icicle: { claim(o, f) { return true; }, draw() {} },
       impact: {
         claim(e, f) { const ia = f.icicleAttack; return !!ia && e.element === 'ice' && Math.abs(e.x - ia.tx) < 1e-6 && Math.abs(e.y - ia.ty) < 1e-6; },
+        find(e, f) { return !!e.element && !!f.icicleAttack && this.claim(e, f); },   // (the bite's ice hit names no maker: the Maw whose icicles aim where it is)
         span: MAW.BITE_SPAN,
         draw(m, age, f0, b) { if (!m.data) { const dx = m.x - b.holder.position.x, dz = m.y - b.holder.position.z, L = Math.hypot(dx, dz) || 1; m.data = { dx: dx / L, dz: dz / L, y0: floorY(m.x, m.y) }; }
           const D = m.data, s = m.seed, a = age - 3; if (a < 0) return;   // (three frames in, as his jaws shut)
@@ -195,61 +276,86 @@ function view3dAttacks(env) {
     },
   };
 
+  // THE FIRE LINE (view3d/attacks_fire.js): the Quillstone, the Ember Hood and the Thermite Burrower, from the same kit
+  const KIT = { T, GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, PUFF, GLINT, FIRE, SMOKE, solid, QUILLS, ROCKS, SPIKES, CRATERS, HEXC, MOUNDS, VENTS, BLOBS, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf,
+    curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null };
+  try { KIT.measures = GM.fireMeasures; } catch (e) { KIT.measures = {}; }
+  if (typeof view3dFireForms === 'function') Object.assign(FORMS, view3dFireForms(KIT));
+
   // ── EACH FRAME ──
-  const live = new Set();   // (the effects seen this frame)
+  const live = new Set();   // (the effects and shots seen this frame)
+  const claimedK = new Map(), lastShown = new Set();   // (claimedK: what of a unit's own the view draws this frame, by kind, as its fire orbit; lastShown: the bodies of the frame before, to find an effect's maker before the bodies)
+  function claimK(k, o) { let C = claimedK.get(k); if (!C) claimedK.set(k, C = new Set()); C.add(o); }
   const HP = { x: 0, y: 0, up: 0, k: 1, spin: 0 };
-  // before the bodies: the effects of this frame read, the new ones remembered (ABSOLUTE ZERO's swallowed, where they stood), each Maw's ABSOLUTE ZERO found
-  function begin(f0) { live.clear(); zeroOf.clear(); frostNow.clear(); stats.held = 0; PUFF.n = 0; GLINT.n = 0; iceN = 0; RINGS.n = 0; DISCS.n = 0; claimed.clear();
-    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0)) continue; const f = e.by; if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || X.held === undefined) continue;
-      try { if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = (e.maxLife || m.l0) - e.life; m.seen = f0; m.gone = false; if (X.begin) X.begin(m, f0); zeroOf.set(f, m); } catch (x) { fail(f.evolved, x); } } }
+  // an effect that names no maker (a hit, a ring, a spike): the form with an entry, its body the view's, that made it (its entry's find), or the one it was found for before
+  function makerOf(e, set) { const mm = memos.get(e); if (mm) return set.has(mm.owner) ? mm.owner : null;
+    for (const f of set) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || !X.find) continue; try { if (X.find(e, f)) return f; } catch (x) { fail(f.evolved, x); } } return null; }
+  // before the bodies: the pools emptied; the effects of this frame read, the new ones remembered (ABSOLUTE ZERO's swallowed, where they stood), each form's effects that its body follows found
+  function begin(f0) { live.clear(); for (const M of CUR.values()) M.clear(); frostNow.clear(); stats.held = 0; PUFF.n = 0; GLINT.n = 0; FIRE.n = 0; SMOKE.n = 0; iceN = 0; RINGS.n = 0; DISCS.n = 0; ribN = 0; claimed.clear();
+    for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; for (const C of claimedK.values()) C.clear();
+    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0)) continue; const f = e.by && e.by.evolved ? e.by : makerOf(e, lastShown); if (!f || !f.evolved) continue;
+      const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || !(X.held || X.pre)) continue;
+      try { if (typeof X.pre === 'function' && !X.pre(e, f)) continue; if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = (e.maxLife || m.l0) - e.life; m.now = m.age; m.seen = f0; m.gone = false; if (X.begin) X.begin(m, f0); curMap(e.type).set(f, m); } catch (x) { fail(f.evolved, x); } }
+    // (an effect the game has ended that a body still follows, played on to its own end: its age now)
+    for (const m of memos.values()) { if (m.shot || m.seen === f0 || !m.owner || !m.owner.evolved) continue; const E = FORMS[m.owner.evolved], X = E && E.fx[m.type]; if (!X || !X.pre || bad.has(m.owner.evolved)) continue;
+      const M = curMap(m.type); if (M.has(m.owner)) continue; const age = m.age + (f0 - m.seen), span = typeof X.span === 'function' ? X.span(m) : X.span || 0; if (age > span) continue;
+      try { if (typeof X.pre === 'function' && !X.pre(m.o, m.owner)) continue; } catch (x) { continue; } m.now = age; M.set(m.owner, m); } }
   function fail(id, x) { bad.add(id); errs++; lastErr = String((x && x.message) || x); stats.bad = [...bad]; if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + id + '\'s attacks in 2D: ' + ((x && x.stack) || x)); }
-  // a form's body's motion (after the view posed it from its sheet's column)
-  function body(f, id, b, f0) { const E = FORMS[id]; if (!E || !E.body || bad.has(id)) return; try { E.body(f, b, f0); } catch (x) { fail(id, x); } }
+  // a form's body's motion (after the view posed it from its sheet's column); its tilt put back first (a body's motion tilts it on its own: view3d/attacks_fire.js)
+  function body(f, id, b, f0) { const E = FORMS[id]; if (!E) return; const h = b.holder; if (E.tilts) { h.rotation.order = 'YXZ'; h.rotation.x = 0; h.rotation.z = 0; } if (!E.body || bad.has(id)) return; try { E.body(f, b, f0); } catch (x) { fail(id, x); } }
+  // a form whose body goes under the floor and is still the view's there (BURROW STRIKE, FAULTLINE: its mound is the view's)
+  function burrows(id) { const E = FORMS[id]; return !!(E && E.burrows && !bad.has(id)); }
   // where one swallowed is drawn this frame (or null)
   function held(a) { const by = a._swallowedBy; if (!by || !by.evolved) return null; const m = zeroOf.get(by), E = FORMS[by.evolved]; if (!m || !E || bad.has(by.evolved)) return null; const b = env.bodyOf(by); if (!b) return null;
     try { const P = E.fx[m.type].held(m, a, b, HP); if (P) stats.held++; return P; } catch (x) { fail(by.evolved, x); return null; } }
-  const PEND = [];
-  // after the bodies: every effect of a form whose body was drawn, drawn; claimed for this frame (its 2D left out); those just gone played to their end
+  // after the bodies: every effect and shot of a form whose body was drawn, drawn; claimed for this frame (its 2D left out); those just gone played to their end
   function draw(f0, shown) { const t0 = (typeof performance !== 'undefined' ? performance.now() : 0);
     const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (e && e.life > 0) live.add(e); }
-    // the Maws (and any form with an entry) whose bodies are the view's: their effects found (an effect with no maker named is matched by its entry: the bite's ice hit), drawn and claimed
+    // the forms with an entry whose bodies are the view's: their effects found (an effect with no maker named is matched by its entry: the Maw's ice hit, the Burrower's spikes), drawn and claimed
     if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0)) continue;
-      let f = e.by && e.by.evolved ? e.by : null;
-      if (!f && e.type === 'impact' && e.element) f = findMaker(e, shown);
+      const f = e.by && e.by.evolved ? e.by : makerOf(e, shown);
       if (!f || !shown.has(f)) continue; const id = f.evolved, E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X) continue;
       const b = env.bodyOf(f); if (!b) continue;
       try { if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = e.maxLife ? e.maxLife - e.life : m.l0 - e.life; m.seen = f0; m.gone = false; m.x = e.x; m.y = e.y; if (X.begin) X.begin(m, f0);
         X.draw(m, m.age, f0, b); claimed.add(e); } catch (x) { fail(id, x); } }
+    // their shots in flight (the game's follower shots, by kind: a quill, a fireball): drawn and claimed
+    const sh = GM.shots; if (sh) for (let i = 0; i < sh.length; i++) { const p = sh[i]; if (!p || !p.kind) continue; const f = p.source; if (!f || !f.evolved || !shown.has(f)) continue; const id = f.evolved, E = FORMS[id];
+      if (!E || !E.shots || bad.has(id)) continue; const X = E.shots[p.kind]; if (!X) continue; const b = env.bodyOf(f); if (!b) continue; live.add(p);
+      try { const m = memo(p, p.kind, f, f0); m.shot = true; m.age = p.frame || 0; m.seen = f0; m.gone = false; m.x = p.x; m.y = p.y; m.life = p.life; X.draw(m, m.age, f0, b); claimed.add(p); } catch (x) { fail(id, x); } }
     // his icicles (js/draw.js, an actor's icicleAttack): left out while his body and his bite are the view's
     for (const f of shown) { if (!f || !f.evolved || !f.icicleAttack) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved) || !E.fx.icicle) continue; try { if (E.fx.icicle.claim(f.icicleAttack, f)) claimed.add(f.icicleAttack); } catch (x) { fail(f.evolved, x); } }
-    // the effects gone from the game this frame: played on to their end (their afterglow), from their last age
-    for (const m of memos.values()) { const o = m.o; if (live.has(o) && m.seen === f0) continue; const E = FORMS[m.owner.evolved], X = E && E.fx[m.type];
+    // what a form's own state carries (the Quillstone's orbiting fireballs, the Burrower's mound): its entry's `on`
+    for (const f of shown) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || !E.on || bad.has(f.evolved)) continue; const b = env.bodyOf(f); if (!b) continue; try { E.on(f, b, f0); } catch (x) { fail(f.evolved, x); } }
+    // the effects and shots gone from the game this frame: played on to their end (their afterglow, a shot's burst where it struck), from their last age
+    for (const m of memos.values()) { const o = m.o; if (live.has(o) && m.seen === f0) continue; const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
       const span = X ? (typeof X.span === 'function' ? X.span(m) : X.span || 0) : 0, age = m.age + (f0 - m.seen);
       if (!X || bad.has(m.owner.evolved) || age > span || m.owner.dead) { memos.delete(o); continue; }
       const b = shown.has(m.owner) ? env.bodyOf(m.owner) : null; if (!b) { memos.delete(o); continue; }
-      try { X.draw(m, age, f0, b); } catch (x) { fail(m.owner.evolved, x); memos.delete(o); } }
+      m.gone = true; try { X.draw(m, age, f0, b); } catch (x) { fail(m.owner.evolved, x); memos.delete(o); } }
     // a Maw no longer frosted: his own glow back
     for (const L of tint.values()) if (L.k > 0 && !frostNow.has(L.b)) frostBody(L.b, 0);
+    lastShown.clear(); for (const f of shown) lastShown.add(f);
     finish(); drew++; stats.memos = memos.size; stats.claimed = claimed.size; stats.ms = (typeof performance !== 'undefined' ? performance.now() : 0) - t0; }
-  // the bite's ice hit names no maker: the Maw (shown, with an entry) whose icicles aim where it is
-  function findMaker(e, shown) { for (const f of shown) { if (!f || !f.evolved || !f.icicleAttack) continue; const E = FORMS[f.evolved]; if (!E || !E.fx[e.type] || bad.has(f.evolved)) continue; const ia = f.icicleAttack; if (Math.abs(e.x - ia.tx) < 1e-6 && Math.abs(e.y - ia.ty) < 1e-6) return f; } return null; }
   const BUF = new T.Vector2();
   function finish() {
     env.renderer.getDrawingBufferSize(BUF); const cam = env.camera, sc = BUF.y / Math.max(1e-6, (cam.top - cam.bottom) / (cam.zoom || 1));
     for (const P of POOLS) { P.o.material.uniforms.uScale.value = sc; P.g.setDrawRange(0, P.n); if (P.n || P.was) { P.g.attributes.position.needsUpdate = true; P.g.attributes.aCol.needsUpdate = true; P.g.attributes.aSize.needsUpdate = true; } P.was = P.n; P.o.visible = P.n > 0; }
     ICE.count = iceN; ICE.visible = iceN > 0; if (iceN) { ICE.instanceMatrix.needsUpdate = true; if (ICE.instanceColor) ICE.instanceColor.needsUpdate = true; }
+    let ns = 0; for (const S of SOLIDS) { S.m.count = S.n; S.m.visible = S.n > 0; ns += S.n; if (S.n) { S.m.instanceMatrix.needsUpdate = true; if (S.m.instanceColor) S.m.instanceColor.needsUpdate = true; S.em.needsUpdate = true; } }
+    let nf = 0; for (const F of FLATK) { F.m.count = F.n; F.m.visible = F.n > 0; nf += F.n; if (F.n) { F.m.instanceMatrix.needsUpdate = true; F.a.needsUpdate = true; } }
+    for (let i = ribN; i < RIBS.length; i++) RIBS[i].m.visible = false;
     for (const F of FLATS) for (let i = F.n; i < F.list.length; i++) F.list[i].visible = false;
-    stats.puff = PUFF.n; stats.glint = GLINT.n; stats.ice = iceN; stats.rings = RINGS.n + DISCS.n; }
+    stats.puff = PUFF.n; stats.glint = GLINT.n; stats.ice = iceN; stats.rings = RINGS.n + DISCS.n; stats.fire = FIRE.n; stats.smoke = SMOKE.n; stats.solids = ns; stats.flats = nf; stats.ribbons = ribN; }
   // nothing drawn (the view hidden, a frame with no picture): all put away
-  function clear() { PUFF.n = GLINT.n = iceN = RINGS.n = DISCS.n = 0; claimed.clear(); for (const L of tint.values()) if (L.k > 0) frostBody(L.b, 0); finish(); }
+  function clear() { PUFF.n = GLINT.n = FIRE.n = SMOKE.n = iceN = RINGS.n = DISCS.n = ribN = 0; for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; claimed.clear(); for (const C of claimedK.values()) C.clear(); for (const L of tint.values()) if (L.k > 0) frostBody(L.b, 0); finish(); }
   return {
-    stats, FORMS, CAP, begin, body, held, draw, clear,
-    owns(o) { return claimed.has(o); },
-    // what the registry draws: each form's effect types (for the tests and the docs)
-    types() { const out = {}; for (const id of Object.keys(FORMS)) out[id] = Object.keys(FORMS[id].fx); return out; },
+    stats, FORMS, CAP, begin, body, held, draw, clear, burrows,
+    owns(o, k) { if (k) { const C = claimedK.get(k); return !!C && C.has(o); } return claimed.has(o); },
+    // what the registry draws: each form's effect types, and its shots by kind (for the tests and the docs)
+    types() { const out = {}; for (const id of Object.keys(FORMS)) { const E = FORMS[id]; out[id] = Object.keys(E.fx).concat(E.shots ? Object.keys(E.shots).map(k => 'shot:' + k) : []); } return out; },
     bad() { return [...bad]; }, error() { return lastErr; }, memos() { return [...memos.values()].map(m => m.type + ':' + m.age + ':' + (m.o.life || 0)); },
     // for the tests: an entry made to fail as it next draws (its effects go back to the game's 2D drawing)
-    breakFor(id) { const E = FORMS[id]; if (!E) return false; for (const k of Object.keys(E.fx)) { const X = E.fx[k], d = X.draw; X.draw = function () { throw new Error('a test broke ' + id + '\'s ' + k); }; X._d = d; } return true; },
-    mend(id) { const E = FORMS[id]; if (!E) return false; for (const k of Object.keys(E.fx)) { const X = E.fx[k]; if (X._d) { X.draw = X._d; delete X._d; } } bad.delete(id); stats.bad = [...bad]; return true; },
+    breakFor(id) { const E = FORMS[id]; if (!E) return false; for (const X of Object.values(E.fx).concat(Object.values(E.shots || {}))) { const d = X.draw; X.draw = function () { throw new Error('a test broke ' + id + '\'s attacks'); }; X._d = d; } return true; },
+    mend(id) { const E = FORMS[id]; if (!E) return false; for (const X of Object.values(E.fx).concat(Object.values(E.shots || {}))) { if (X._d) { X.draw = X._d; delete X._d; } } bad.delete(id); stats.bad = [...bad]; return true; },
   };
 }

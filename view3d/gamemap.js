@@ -33,7 +33,12 @@ const VIEW3D_GAME = (0, eval)(`({
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
   // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
   get fx() { return typeof elementEffects !== "undefined" ? elementEffects : null; }, get gfxLow() { return typeof gfxLow !== "undefined" && !!gfxLow; },
-  get mawChomp() { return typeof MAW_CHOMP !== "undefined" ? MAW_CHOMP : { snap: 16, total: 32 }; }, get mawSlowR() { return typeof MAW_SLOW_R !== "undefined" ? MAW_SLOW_R : 1.6; }
+  get mawChomp() { return typeof MAW_CHOMP !== "undefined" ? MAW_CHOMP : { snap: 16, total: 32 }; }, get mawSlowR() { return typeof MAW_SLOW_R !== "undefined" ? MAW_SLOW_R : 1.6; },
+  // the fire line's (view3d/attacks_fire.js): the shots in flight (QUILL BURST's and QUILLSTORM's quills, the Ember Hood's FIREBALL), and the measures its looks follow (read once: the game's own constants)
+  get shots() { return typeof followerProjectiles !== "undefined" ? followerProjectiles : null; },
+  get fireMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { emberDash: v("EMBER_DASH", 10), emberBand: v("EMBER_BAND", 0.8), quillAnim: v("QUILL_ANIM_FRAMES", 95), quillFire: v("QUILL_FIRE", 12), quillArc: v("QUILL_ARC", 16), meteor: v("ULT_METEOR", null), meteorCool: v("METEOR_COOL", 156),
+      haloR: v("HALO_RADIUS", 1.2), magmaR: v("MAGMA_RADIUS", 1.5), faultTrace: v("TECH_AB", null) ? TECH_AB.fault.trace : 90 }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)

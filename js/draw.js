@@ -1515,7 +1515,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── FIRE — 3 ORBITING FIREBALLS ─────────────────────────────────────────
-    if (actor.fireOrbitTimer > 0) {
+    if (actor.fireOrbitTimer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fireOrbit"))) {   // (the 3D view's own, view3d/attacks_fire.js: the Quillstone's)
         const _foAlpha = Math.min(1, actor.fireOrbitTimer / 8);
         const _orbitR  = 22;
         const _oAngle  = (frame||0) * 0.09;
