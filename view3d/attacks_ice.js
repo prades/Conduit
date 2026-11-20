@@ -74,13 +74,12 @@ function view3dIceForms(K) {
       // patch at its feet); at the end a spray of snow thrown out by its hockey stop.
       impact: {
         pre(e) { return isSkate(e); }, claim() { return true; },
-        find(e, f) { if (isSkate(e)) { const L = Math.hypot(f.dirX || 0, f.dirY || 0) || 1, ux = (f.dirX || 0) / L, uy = (f.dirY || 0) / L, rx = f.x - e.x, ry = f.y - e.y;   // (on its line, behind it)
-            return Math.abs(rx * uy - ry * ux) < 0.05 && rx * ux + ry * uy > -0.05 && Math.hypot(rx, ry) < 5; }
+        find(e, f) { if (isSkate(e)) return Math.hypot(f.x - e.x, f.y - e.y) < 5;   // (on its line behind it: only SKATE CHARGE makes this hit, and the game has the Skater at the line's end. Not by its facing: the game turns it to its foe before the view first sees the line)
           const ia = f.icicleAttack; return !!ia && e.element === 'ice' && Math.abs(e.x - ia.tx) < 1e-6 && Math.abs(e.y - ia.ty) < 1e-6; },
         span(m) { return isSkate(m.o) ? 64 : 36; },
         begin(m) { if (m.data || !isSkate(m.o)) return; const e = m.o, f = m.owner; let S = SK.get(f);
           if (!S || S.born !== m.born) { const L = Math.hypot(f.dirX || 0, f.dirY || 0) || 1; S = { born: m.born, x1: f.x, y1: f.y, dx: (f.dirX || 0) / L, dz: (f.dirY || 0) / L, len: 0, Y: floorY(f.x, f.y), foes: null, flen: -1 }; SK.set(f, S); }
-          const d = Math.hypot(S.x1 - e.x, S.y1 - e.y); if (d > S.len) S.len = d; m.data = { S, d }; },
+          const d = Math.hypot(S.x1 - e.x, S.y1 - e.y); if (d > S.len) { S.len = d; if (d > 1e-6) { S.dx = (S.x1 - e.x) / d; S.dz = (S.y1 - e.y) / d; } } m.data = { S, d }; },   // (the line's way from its farthest hit to its end, not the Skater's facing)
         draw(m, age, f0, b) { if (!isSkate(m.o)) { iceHit(m, age, f0, b); icicles(m, age, b); return; }
           const D = m.data; if (!D) return; const S = D.S, s = m.seed, a = f0 - S.born, Y = S.Y, nx = -S.dz, nz = S.dx, X0 = S.x1 - S.dx * S.len, Z0 = S.y1 - S.dz * S.len, G1 = SKG.crouch + SKG.glide;
           // at this spot, snow kicked up as it passes

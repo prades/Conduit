@@ -29841,10 +29841,8 @@ function view3dIceForms(K) {
             impact: {
                 pre(e) { return isSkate(e); }, claim() { return true; },
                 find(e, f) {
-                    if (isSkate(e)) {
-                        const L = Math.hypot(f.dirX || 0, f.dirY || 0) || 1, ux = (f.dirX || 0) / L, uy = (f.dirY || 0) / L, rx = f.x - e.x, ry = f.y - e.y;
-                        return Math.abs(rx * uy - ry * ux) < 0.05 && rx * ux + ry * uy > -0.05 && Math.hypot(rx, ry) < 5;
-                    }
+                    if (isSkate(e))
+                        return Math.hypot(f.x - e.x, f.y - e.y) < 5;
                     const ia = f.icicleAttack;
                     return !!ia && e.element === 'ice' && Math.abs(e.x - ia.tx) < 1e-6 && Math.abs(e.y - ia.ty) < 1e-6;
                 },
@@ -29860,8 +29858,13 @@ function view3dIceForms(K) {
                         SK.set(f, S);
                     }
                     const d = Math.hypot(S.x1 - e.x, S.y1 - e.y);
-                    if (d > S.len)
+                    if (d > S.len) {
                         S.len = d;
+                        if (d > 1e-6) {
+                            S.dx = (S.x1 - e.x) / d;
+                            S.dz = (S.y1 - e.y) / d;
+                        }
+                    }
                     m.data = { S, d };
                 },
                 draw(m, age, f0, b) {
