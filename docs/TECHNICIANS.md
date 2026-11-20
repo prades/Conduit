@@ -28,6 +28,8 @@ All six are built, and the Thermite Burrower's FAULTLINE (build `2026-11-06a`). 
 
 ## The Kinetic Launcher (electric)
 
+> **Designed 2026-11-20, not built** (`SEWER-DUNGEON.md` §2.5a.6): the owner: "the launcher can only launch vertically and one cell over": straight up, landing one tile across, a way up onto a ledge, not across a gap. What follows describes the launcher as built; whether the new rule applies everywhere or in the Sewer Dungeon only is open.
+
 ASKED: two modes, Combat and Secret Access; then "the kinetic launcher should do a set amount of damage to the follower, but a more proportionate damage to the enemy. It should also have the map exploration mode as a secondary feature that is permanent, and you need to have some sort of check for a spot where it can be deployed [...] have a little notification or highlighted area near the catwalk, or in the future any sort of secret area, and have it be clickable, and the player can engage with the electric technician, and he can set up the kinetic launcher."
 
 ### Combat

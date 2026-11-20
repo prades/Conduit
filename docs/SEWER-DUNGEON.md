@@ -74,6 +74,7 @@ The toolkit is **the squad the player brings**, with limited environmental uses 
 3. **Two bridges:** the Ice Technician's **ice bridge**, or **a box pushed into the raised water**.
 4. **Who can push a box in:** the **Flux Technician** (FLUX MOVE may place an eligible box in the water: a change to `FLUX-MOVEMENT.md`, whose rule today is that objects go only onto supported floor and that Flux "does not create bridges") and the **Technomancer's mech** (from its charges).
 5. **The launcher is not a way across the channel.** It stays for smaller gaps and side spots (e.g. loot ledges).
+6. **The launcher launches only vertically, and one cell over** (the owner, 2026-11-20: "the launcher can only launch vertically and one cell over"): it throws the player straight up and lands them one tile across from where they launched, onto a raised spot such as a ledge. It is a way **up**, not a way **across** a gap. Today's Kinetic Launcher throws an arc over the collapsed tunnel's choke (`SEWER-QUEST.md`, route B; `TECHNICIANS.md`); that changes. Open: whether this applies to the launcher everywhere or only in the Sewer Dungeon, how high it reaches, and whether "one cell over" may be any direction.
 
 **Raised by the agent, to settle with the owner** (§11): the main path to the Nest and the purification chamber is on the far side of the channel, so every player must cross. As approved, crossing needs one of three helpers (Ice Technician, Flux Technician, Technomancer), and raising the water itself needs an obstacle moved; with one utility use per follower per dungeon, a crossing can cost two uses, and a way back is needed too. §2.4's rule that the main path is never impossible without one particular follower or class needs a fallback here.
 
@@ -171,6 +172,7 @@ Nothing implemented.
 
 ## 12. History
 - 2026-11-19 (Notion): the sewer as a dungeon with keys, breachable doors, shortcuts and rewarding side areas; the map boundary kept; water from the south.
+- 2026-11-20: the launcher launches only vertically and one cell over (2.5a.6).
 - 2026-11-20: the bully way, fighting straight through, open to anyone, costing loot (2.5b).
 - 2026-11-20: the channel is crossed only by raising the water and bridging it (ice, or a box pushed in by the Flux Technician or the mech); the launcher kept for side spots (2.5a).
 - 2026-11-20: the owner asked for a much larger dungeon from a reference map; approved the skeleton in §2 (entrance west, water dammed past the junction by the Nest, purification bottom right); added water level as a tool and the key-item zoom. The boundary and south-water notes are superseded.
