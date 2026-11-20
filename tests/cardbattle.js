@@ -1057,12 +1057,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardUltDraw\(V\);[^\n]*\n\s*if \(V && typeof cardShapeDraw/.test(rd('js/cardbattle.js')) && /e\._cbUlt !== "win" \|\| !\(e\.life > 0\) \|\| !cardUltShown\(e\)\) continue; const sq = cardUltSquares\(e\)/.test(rd('js/cardults.js')), 'drawn by the battle, only while the field lives');
     });
 
-    check('the fields in 3D, begun (the owner, 2026-11-20: "the full animation"; "Start with the Ultimates\' lasting fields"): the battle hands the view its live fields, none out of a battle; the view draws them while the battle\'s camera is up (view3d/fields.js: THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first)', () => {
+    check('the fields in 3D, begun (the owner, 2026-11-20: "the full animation"; "Start with the Ultimates\' lasting fields"): the battle hands the view its live fields, none out of a battle; the view draws them while the battle\'s camera is up (view3d/fields.js: all ten that last; every one the battle\'s clock keeps has its 3D field)', () => {
         const r = J(`(function(){ ${ULT} const A = __shaped('thunderhead', [[2, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(3); const on = cardUltFields().map(e => e.type).join(); cardBattleReset(); _cb.phase = 'off'; return { on, off: cardUltFields().length }; })()`);
         same(JSON.stringify(r), '{"on":"thunderstorm","off":0}', 'the fields handed over');
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
         ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
-        for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
+        same(J(`Object.keys(_CU_LAST).filter(k => _CU_LAST[k] === 'win').sort().join()`), 'circuit,eventhorizon,icerink,meteorrain,shardvortex,thicket,thunderstorm,toxicnet,toxicpuddle,whiteout', 'the fields that last');
+        for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle', 'whiteout', 'icerink', 'shardvortex', 'thicket', 'circuit', 'toxicnet', 'meteorrain']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
     });
 
     check('a field is seen only in its caster\'s turn (the owner, 2026-11-20: "The battlefield should be clear, unless it\'s the creature who casts the ultimate\'s turn"): as it is cast; while its turn\'s worth strikes; not while an enemy acts nor in another follower\'s turn; again when your round comes to its caster', () => {

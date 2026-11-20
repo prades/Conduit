@@ -239,7 +239,7 @@ const GAMEVIEW = (function () {
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { if (!faintStart(u, b, f0)) give(b); live.delete(u); }
     faintStep(f0);
-    stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js)
+    stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js)
     const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {

@@ -2,7 +2,7 @@
 // seen in a card battle (the game's 2D drawing waits while the battle's camera is up): "we should honestly begin work putting those into the game, the full animation", then "Start
 // with the Ultimates' lasting fields". Each field an Ultimate left (js/cardults.js cardUltFields) is a thing of the 3D picture while the battle's camera is up: made when first seen,
 // moved and animated by the game's own clock, taken away when the field is over. Its colours are its 2D drawing's (js/elements.js drawElementEffects); its shapes the agent's,
-// provisional. FIRST THREE (drafts for the owner): THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE. Nothing here touches what a field does.
+// provisional. All ten fields (drafts for the owner): THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first (build 2026-11-17av), then WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK, METEOR RAIN. Nothing here touches what a field does.
 // In scope: T. liftAt(x, y): the floor's height there, in the view's units.
 function battleFieldsMake(scene, liftAt) {
   const live = new Map(), UP = new T.Vector3(0, 1, 0), v = new T.Vector3();
@@ -36,12 +36,65 @@ function battleFieldsMake(scene, liftAt) {
         const since = (e.maxLife - e.life) - (e.shardAt || -99), up = Math.max(0, 1 - since / 18), rise = Math.min(1, since / 4 + 0.3), S = e.shards || [];
         spikes.children.forEach((c, i) => { const s = S[Math.floor(i / 3)]; c.visible = !!s && up > 0; if (!c.visible) return; const j = i % 3, an = j * 2.1 + s[0] * 3.1 + s[1] * 1.7, h = (j ? 0.7 : 1) * rise;
           c.position.set(s[0] - e.x + Math.cos(an) * 0.16 * (j ? 1 : 0), 0.4 * h, s[1] - e.y + Math.sin(an) * 0.16 * (j ? 1 : 0)); c.scale.set(1, h, 1); c.rotation.set(j ? Math.cos(an) * 0.3 : 0, 0, j ? Math.sin(an) * 0.3 : 0); c.userData.k = up; }); } }; },
+    // WHITEOUT: a pale wash on its ground, snow blowing across it at knee and shoulder height, a low white haze turning over it
+    whiteout(e) { const g = new T.Group(), R = e.radius || 4, fl = [], fm = mat('#ffffff', 0.8), fg = new T.BoxGeometry(0.09, 0.03, 0.03);
+      add(g, flat(new T.Mesh(new T.CircleGeometry(R, 40), mat('#e6f6ff', 0.24))), 0, 0.02, 0); const haze = add(g, flat(new T.Mesh(new T.RingGeometry(R * 0.35, R * 0.95, 40, 1, 0, 4.4), mat('#ffffff', 0.16))), 0, 0.9, 0);
+      for (let i = 0; i < 40; i++) fl.push(add(g, new T.Mesh(fg, fm)));
+      return { g, step(e, f0) { haze.rotation.z = f0 * 0.02; fl.forEach((m, i) => { const u = ((f0 * 0.012 + i * 0.137) % 1) * 2 - 1, w = ((i * 0.381) % 1) * 2 - 1, inb = u * u + w * w <= 1; m.visible = inb; if (inb) m.position.set(u * R, 0.25 + (i % 5) * 0.28 + Math.sin(f0 * 0.05 + i) * 0.05, w * R); }); } }; },
+    // ICE RINK: a sheet of pale blue ice with a white rim, skate scratches on it, a streak of light crossing it
+    icerink(e) { const g = new T.Group(), R = e.radius || 4;
+      add(g, flat(new T.Mesh(new T.CircleGeometry(R, 44), mat('#a9dcff', 0.45))), 0, 0.02, 0); add(g, flat(new T.Mesh(new T.RingGeometry(R - 0.07, R, 44), mat('#ffffff', 0.85))), 0, 0.03, 0);
+      for (let i = 0; i < 5; i++) { const r0 = R * (0.25 + (i % 3) * 0.2), m = add(g, flat(new T.Mesh(new T.RingGeometry(r0 - 0.02, r0, 30, 1, i * 1.3 + e.x, 1.2), mat('#ffffff', 0.5))), 0, 0.03, 0); m.userData.still = true; }
+      const sh = add(g, flat(new T.Mesh(new T.PlaneGeometry(0.22, R * 1.1), mat('#ffffff', 0.38))), 0, 0.035, 0); sh.rotation.z = 0.5;
+      return { g, step(e, f0) { const u = ((f0 * 0.01) % 1) * 2 - 1; sh.position.x = u * R * 0.8; sh.userData.k = 1 - u * u; } }; },
+    // SHARD VORTEX: a violet ground with arcs sweeping round it, and four black blades whirling about its middle, each at its own distance, height and speed, tumbling as it goes
+    shardvortex(e) { const g = new T.Group(), R = e.radius || 3, arcs = [], blades = [], black = solid('#0b0810'), bg = new T.OctahedronGeometry(0.2, 0);
+      add(g, flat(new T.Mesh(new T.CircleGeometry(R, 40), mat('#a070ff', 0.15))), 0, 0.02, 0);
+      for (let i = 0; i < 3; i++) arcs.push(add(g, flat(new T.Mesh(new T.TorusGeometry(R * (0.4 + i * 0.25), 0.03, 5, 36, 2.4), mat('#c9a6ff', 0.55, true))), 0, 0.04, 0));
+      for (let i = 0; i < 4; i++) { const b = add(g, new T.Mesh(bg, black)); b.scale.set(0.5, 2.6, 0.9); blades.push(b); }
+      return { g, step(e, f0) { arcs.forEach((a, i) => { a.rotation.z = -(f0 * 0.14 + i); });
+        blades.forEach((b, i) => { const an = i * 1.57 + f0 * (0.09 + i * 0.012), rr = R * (0.3 + i * 0.14 + 0.06 * Math.sin(f0 * 0.045 + i * 1.7)); b.position.set(Math.cos(an) * rr, 0.6 + i * 0.22 + 0.15 * Math.sin(f0 * 0.07 + i * 2.3), Math.sin(an) * rr); b.rotation.set(f0 * 0.11 + i, f0 * 0.07 * (i % 2 ? 1 : -1), 1.2 + i); }); } }; },
+    // PINK THICKET: a pink wash on its ground and a ring of thorn bushes grown up round it, swaying; pink motes rising
+    thicket(e) { const g = new T.Group(), R = e.radius || 2, bushes = [], motes = [], green = solid('#2e5a3a'), pink = solid('#ff7ac8'), thorn = solid('#16301f'), sg = new T.SphereGeometry(0.3, 8, 6), tg = new T.ConeGeometry(0.05, 0.42, 4), pg = new T.SphereGeometry(0.07, 6, 5), mm = mat('#ffc2e6', 0.8), seed = e.seed || 0;
+      add(g, flat(new T.Mesh(new T.CircleGeometry(R, 36), mat('#ff8fd0', 0.16))), 0, 0.02, 0);
+      const n = Math.max(7, Math.round(R * 5)); for (let i = 0; i < n; i++) { const b = new T.Group(), an = i / n * Math.PI * 2 + seed, d = R * (0.55 + 0.4 * (((i * 7 + seed) % 5) / 5)), sc = 0.8 + ((i * 3) % 4) * 0.12;
+        add(b, new T.Mesh(sg, green), 0, 0.22, 0).scale.set(1, 0.8, 1); for (let j = 0; j < 4; j++) { const t = add(b, new T.Mesh(tg, thorn), Math.cos(j * 1.6 + i) * 0.2, 0.4, Math.sin(j * 1.6 + i) * 0.2); t.rotation.set(Math.sin(j * 1.6 + i) * 0.7, 0, -Math.cos(j * 1.6 + i) * 0.7); }
+        add(b, new T.Mesh(pg, pink), 0.12, 0.44, 0.05); add(b, new T.Mesh(pg, pink), -0.14, 0.36, -0.1); b.position.set(Math.cos(an) * d, 0, Math.sin(an) * d); b.scale.setScalar(sc); b.userData.sc = sc; g.add(b); bushes.push(b); }
+      for (let i = 0; i < 8; i++) motes.push(add(g, new T.Mesh(pg, mm)));
+      return { g, step(e, f0) { const grow = Math.min(1, (e.maxLife - e.life) / 14); bushes.forEach((b, i) => { b.scale.setScalar(b.userData.sc * (0.15 + 0.85 * grow)); b.rotation.z = Math.sin(f0 * 0.05 + i) * 0.06; });
+        motes.forEach((m, i) => { const t = (f0 * 0.015 + i * 0.29) % 1, an = i * 2.4 + seed; m.position.set(Math.cos(an) * R * 0.5, 0.2 + t * 1.2, Math.sin(an) * R * 0.5); m.userData.k = 1 - t; }); } }; },
+    // LIGHTNING CIRCUIT: a ring of lightning standing round its ground, jagged and never still, brighter on each of its beats; a pale yellow wash inside it
+    circuit(e) { const g = new T.Group(), R = e.radius || 2.5, N = 36, segs = [], out = mat('#ffee33', 0.4, true), core = mat('#ffffe6', 0.95, true), og = new T.BoxGeometry(0.11, 1, 0.11), cg = new T.BoxGeometry(0.04, 1, 0.04);
+      const wash = add(g, flat(new T.Mesh(new T.CircleGeometry(R, 36), mat('#fff27a', 0.12))), 0, 0.02, 0);
+      for (let i = 0; i < N; i++) { const a = new T.Mesh(og, out), b = new T.Mesh(cg, core); g.add(a); g.add(b); segs.push([a, b]); }
+      const pt = (i, seed, o) => { const an = i / N * Math.PI * 2, j = i % N ? (((Math.sin((i + seed) * 12.9898) * 43758.5) % 1 + 1) % 1 - 0.5) : 0; o.set(Math.cos(an) * R * (1 + j * 0.16), 0.3 + Math.abs(j) * 0.5, Math.sin(an) * R * (1 + j * 0.16)); return o; }, p = new T.Vector3(), q = new T.Vector3();
+      return { g, step(e, f0) { const seed = Math.floor(f0 / 3), beat = ((e.maxLife - e.life) % 30) < 6; wash.userData.k = beat ? 1.8 : 1;
+        for (let i = 0; i < N; i++) { pt(i, seed, p); pt(i + 1, seed, q); v.subVectors(q, p); const L = v.length() || 1e-3; v.divideScalar(L); for (const m of segs[i]) { m.position.set((p.x + q.x) / 2, (p.y + q.y) / 2, (p.z + q.z) / 2); m.scale.set(1, L, 1); m.quaternion.setFromUnitVectors(UP, v); m.userData.k = beat ? 1 : 0.75; } } } }; },
+    // CONTAMINATION NETWORK: its pods, dark with a green glow, at the strands' ends; the strands glowing between them a little off the floor, a white pulse running along each
+    toxicnet(e) { const g = new T.Group(), pulses = [], S = e.segs || [], P = e.pods || [], glow = mat('#7dff4a', 0.4, true), line = mat('#d6ff9a', 0.95, true), dark = solid('#10261a'), white = mat('#ffffff', 1, true), pg = new T.SphereGeometry(0.09, 8, 6);
+      for (const s of S) { const ax = s[0][0] - e.x, az = s[0][1] - e.y, bx = s[1][0] - e.x, bz = s[1][1] - e.y; v.set(bx - ax, 0, bz - az); const L = v.length() || 1e-3; v.divideScalar(L);
+        for (const [w, m] of [[0.16, glow], [0.045, line]]) { const b = add(g, new T.Mesh(new T.BoxGeometry(w, L, w), m), (ax + bx) / 2, 0.14, (az + bz) / 2); b.quaternion.setFromUnitVectors(UP, v); }
+        const d = add(g, new T.Mesh(pg, white)); d.userData.s = [ax, az, bx, bz]; pulses.push(d); }
+      const pods = P.map(q => { const pod = new T.Group(); add(pod, new T.Mesh(new T.SphereGeometry(0.26, 12, 9), dark), 0, 0.2, 0).scale.set(1, 0.8, 1); add(pod, new T.Mesh(new T.TorusGeometry(0.2, 0.03, 5, 18), mat('#7dff4a', 0.9, true)), 0, 0.3, 0).rotation.x = Math.PI / 2; add(pod, new T.Mesh(pg, mat('#b8ff8a', 0.9, true)), 0, 0.44, 0); pod.position.set(q[0] - e.x, 0, q[1] - e.y); g.add(pod); return pod; });
+      return { g, step(e, f0) { const t = (f0 % 40) / 40; for (const d of pulses) { const s = d.userData.s; d.position.set(s[0] + (s[2] - s[0]) * t, 0.14, s[1] + (s[3] - s[1]) * t); } pods.forEach((p, i) => { const k = 1 + Math.sin(f0 * 0.12 + i * 2) * 0.06; p.scale.set(k, 2 - k, k); }); } }; },
+    // METEOR RAIN: each rock's mark on the floor, a red spot closing in as it comes; the rock itself falling in on a slant with its tail of fire; a flash and a ring where it lands
+    meteorrain(e) { const g = new T.Group(), rocks = (e.rocks || []).map(r => { const o = new T.Group(), s = r.s || 1;
+        const spot = add(o, flat(new T.Mesh(new T.CircleGeometry(0.45 * s, 20), mat('#ff3a12', 0.5))), 0, 0.02, 0), ring = add(o, flat(new T.Mesh(new T.RingGeometry(0.42 * s, 0.48 * s, 24), mat('#ffb13a', 0.9))), 0, 0.03, 0);
+        const rock = new T.Group(); add(rock, new T.Mesh(new T.DodecahedronGeometry(0.2 * s, 0), solid('#3a1208'))); [['#c2260c', 0.2, 2.2], ['#ff7a2a', 0.13, 1.8], ['#ffe08a', 0.07, 1.3]].forEach(([c, w, len]) => { const t = add(rock, new T.Mesh(new T.ConeGeometry(w * s, len * s, 6), mat(c, 0.85, true)), 0, len * s / 2, 0); t.userData.tail = true; }); rock.rotation.z = -0.39; o.add(rock);
+        const boom = add(o, new T.Mesh(new T.SphereGeometry(0.5 * s, 10, 8), mat('#ffd27a', 0.9, true)), 0, 0.2, 0), wave = add(o, flat(new T.Mesh(new T.RingGeometry(0.8, 1, 28), mat('#ff7a2a', 0.8, true))), 0, 0.04, 0);
+        g.add(o); return { o, spot, ring, rock, boom, wave, r }; });
+      return { g, step(e, f0, M) { const age = e.maxLife - e.life, fall = M.fall || 26, warn = M.warn || 34;
+        for (const k of rocks) { const r = k.r, t = age - (r.at - fall); k.o.position.set(r.x - e.x, 0, r.y - e.y); k.o.visible = t >= -warn && t <= fall + 30; if (!k.o.visible) continue;
+          const coming = t < fall, w = Math.min(1, (t + warn) / (warn + fall)); k.spot.visible = k.ring.visible = coming; if (coming) { k.spot.scale.setScalar(Math.max(0.05, w)); k.ring.scale.setScalar(1.5 - 0.5 * w); }
+          k.rock.visible = t >= 0 && coming; if (k.rock.visible) { const u = t / fall, d = 1 - u * u; k.rock.position.set(3.2 * d, 7.6 * d + 0.2, 0); }
+          const b = t - fall; k.boom.visible = k.wave.visible = b >= 0 && b < 16; if (k.boom.visible) { k.boom.scale.setScalar(0.6 + b * 0.12); k.boom.userData.k = 1 - b / 16; k.wave.scale.setScalar(0.4 + b * 0.11); k.wave.userData.k = 1 - b / 16; } } } }; },
   };
   // ONE FRAME: `list` the battle's fields (or null: none are shown), f0 the game's frame
-  function step(list, f0) {
+  const NONE = {};
+  function step(list, f0, more) {
     for (const o of live.values()) o.seen = false;
     if (list) for (const e of list) { const mk = MAKE[e.type]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
-      o.seen = true; o.g.position.set(e.x, liftAt(e.x, e.y), e.y); o.step(e, f0); fade(o.g, Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20))); }
+      o.seen = true; o.g.position.set(e.x, liftAt(e.x, e.y), e.y); o.step(e, f0, more || NONE); fade(o.g, Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20))); }
     for (const [e, o] of live) if (!o.seen) { scene.remove(o.g); o.g.traverse(m => { if (m.isMesh) m.material.dispose(); }); live.delete(e); }
     return live.size;
   }

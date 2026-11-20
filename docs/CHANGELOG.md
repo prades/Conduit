@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17aw` · branch `claude/start-game-project-HSh7Z` · card battles: the other seven fields animated in 3D (drafts)
+- **The ask** (the owner, 2026-11-20): "Do the other seven fields".
+- **What it does:** WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK and METEOR RAIN are drawn and animated in a battle, seen in their caster's turn as the first three are (`CARD-BATTLES.md` §2.67, §2.68). Drafts: the shapes are the agent's. Holds, shields, walls and everyday attacks are still not drawn in a battle.
+- `view3d/fields.js`, `view3d/gameview.js`, `view3d/gamemap.js`, `tests/cardbattle.js`.
+- **Verified:** tests/cardbattle.js, view3d, bundle; each seen in a real browser (software rendering), no page error. **Not playtested; not seen on an iPad; frame rate there not measured.**
+
 ### Build `2026-11-17av` · branch `claude/start-game-project-HSh7Z` · card battles: a field is seen only in its caster's turn
 - **The ask** (the owner, 2026-11-20): "The battlefield should be clear, unless it's the creature who casts the ultimate's turn."
 - **What it does:** a field's animation and faint squares show as it is cast and when your round comes back to its caster; otherwise the floor is clear (`CARD-BATTLES.md` §2.68). The agent's: shown too while its turn's worth strikes; the wall's squares stay.
