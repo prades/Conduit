@@ -198,7 +198,7 @@ Asked (the owner, 2026-11-20): "fill it out with some energy card pickups, maybe
 | U9 rubble | a Fire Technician drills it; the mech moves it |
 | U10 the crossing at the channel's top | raise the water, then an ice bridge or a box (2.5a) |
 
-**Open:** "attack cards" as pickups: the game's attack cards are a follower's own attacks in the card battles (`CARD-BATTLES.md`), and no attack card is found as an item yet, so what a found one gives is undecided; which elements the energy cards are; whether each check costs a utility use (2.4); the counts.
+**Attack cards found in the dungeon give a creature follower a new attack** (the owner, 2026-11-20: "There should be cards obtainable that give your creature followers a new attack, right?"). Not yet built: today a follower's attacks come from its form, and energy cards unlock its next attack and hybrid attacks (`ENERGY-CARDS.md` rules 5 and 8). **Open:** how a found attack card differs from an energy card (an attack outside the follower's own set?), which followers can take which card, and whether it is used up; which elements the energy cards are; whether each check costs a utility use (2.4); the counts.
 
 ## 3. Must-have requirements
 - [ ] A connected sewer of the approved shape (2.2) and roughly the approved scale (2.1), entered from the west.
