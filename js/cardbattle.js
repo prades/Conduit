@@ -61,6 +61,7 @@ const CARD_BATTLE = {
     tether: 0.8,                // tiles: on its attack's turn one may step this far off its square on its own legs (a leap, a dash or a charge carries it further: its new square)
     upFront: 2,                 // THE OPENING STANCE (§2.53): squares ahead of the line a TANK or a RECKLESS follower starts (the owner: "upfront maybe two spaces")
     shoot: { shots: [4, 5] },   // THE GUNSLINGER'S SHOOT (§2.66; the owner, 2026-11-20: "it does four to five shots"): the rounds of one burst, the one number or the other, an even chance
+    smash: { damage: 36, lunge: 0.5 },   // THE GUNSLINGER'S SMASH (§2.69; the owner, 2026-11-20: "a close up smash with the gun", "About a burst (36)"): its damage; how far (tiles) the cube lunges at its enemy as the blow lands, eased back to its square (the agent's, a look only)
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -381,13 +382,15 @@ function _cbSlide() {
 function _cbTiles(u) {   // (its lasting pace: its base speed and its form's own, js/abilities.js tickSlowSpeed; slowed, the slow's share of it, §2.52; not a haste of the moment)
     const fd = u && u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null, slow = u && u.slowed > 0 && u.slowFactor >= 0 && u.slowFactor < 1 ? u.slowFactor : 1;
     const fast = Math.max(u && u._voltUntil > _cbF() && u._voltMove > 1 ? u._voltMove : 1, typeof cardUltPace === "function" ? cardUltPace(u) : 1);   // (a pace lent for turns: DRIFT SLASH's, an ICE RINK under it, §2.64)
-    const s = u ? (u.baseMoveSpeed || u.moveSpeed || 0) * (u.paceMult > 0 ? u.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1) * slow * fast : 0; if (!(s > 0)) return 0;
+    const mine = !!u && typeof player !== "undefined" && u === player && typeof FP_PLAYER_SPEED === "number" ? FP_PLAYER_SPEED * (typeof classStat === "function" ? classStat("playerSpeed", 1) : 1) : 0;   // (the cube's own pace, js/facilityplay.js: it walks the squares as a follower does, by its pace, §2.69)
+    const s = mine > 0 ? mine : u ? (u.baseMoveSpeed || u.moveSpeed || 0) * (u.paceMult > 0 ? u.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1) * slow * fast : 0; if (!(s > 0)) return 0;
     for (const [at, n] of CARD_BATTLE.tiles) if (s >= at) return n;
     return 1;
 }
 function _cbSq(a) { const s = _cb.slots.get(a); return s ? [s.x, s.y] : [a.x, a.y]; }
 function _cbReach(u, t, kind, id) {
     const edge = Math.max(1.5, ((t && t.bodyR) || 0) + 0.3);   // (next to it: the 8 squares round its own, 1 or 1.41 tiles off; a huge body, from its edge)
+    if (kind === "smash") return edge;   // (the Gunslinger's SMASH, §2.69: close up, the squares next to it)
     if (kind === "move" && id && typeof moveReach === "function") return moveReach(id);
     if (u.isClone || _cb.foes.indexOf(u) >= 0) return Math.max(edge, u.biteReach || (typeof COMBAT !== "undefined" ? COMBAT.bite.reach : 1.5));   // (a bite: a boss's reaches from her body)
     const sp = typeof equipSpecial === "function" ? equipSpecial(u) : null; if (sp && sp.attack && sp.attack.reach > 0) return sp.attack.reach;   // (a card attack set: js/cards.js cardAttackTry)
@@ -408,7 +411,7 @@ function _cbGrid(u) {
     if (typeof _fp === "undefined" || !_fp || !_fp.cellsP || typeof _fpEdgeOk !== "function") return null;
     const L = _cb.lay, K = (x, y) => Math.round(x) + "," + Math.round(y), cells = L && L.room && typeof partyRoomCells === "function" ? partyRoomCells(L.room) : null, room = cells ? new Set(cells.map(c => K(c[0], c[1]))) : null;
     const taken = new Set();
-    for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; taken.add(K(s.x, s.y)); }
+    for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || (!(a.health > 0) && !(typeof player !== "undefined" && a === player)) || _cb.out.has(a)) continue; taken.add(K(s.x, s.y)); }   // (the cube has no health of a fighter's kind, its bars are the game's: its square is taken all the same, now that it walks among them, §2.69)
     if (typeof rotDecoys !== "undefined") for (const d of rotDecoys) if (d && !d.dead && d !== u) taken.add(K(d.x, d.y));
     if (typeof cardUltWalls === "function") for (const c of cardUltWalls()) taken.add(K(c[0], c[1]));   // (REEF PILLAR's spikes: js/cardults.js)
     const s0 = _cbSq(u), c0 = [Math.round(s0[0]), Math.round(s0[1])], k0 = c0[0] + "," + c0[1];
@@ -563,13 +566,13 @@ function _cbPickSquare(u, keys, at, t) {
 function _cbFoesNextTo(c) { let n = 0; for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const s = _cbSq(a); if (Math.max(Math.abs(Math.round(s[0]) - c[0]), Math.abs(Math.round(s[1]) - c[1])) === 1) n++; } return n; }
 // a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
 function _cbWalkTick(T, u) {
-    const f0 = _cbF(); if (!u || u.dead || !(u.health > 0)) return true;
+    const f0 = _cbF(), me = !!u && typeof player !== "undefined" && u === player; if (!u || u.dead || (!me && !(u.health > 0))) return true;   // (me: the cube's walk, §2.69)
     if (T.arrived) return f0 - T.arrived >= CARD_BATTLE.stepBeat;
     const c = T.walk[T.wi]; if (!c || f0 - T.t0 > 600) { T.arrived = f0; return false; }
     const dx = c[0] - u.x, dy = c[1] - u.y, d = Math.hypot(dx, dy), sp = CARD_BATTLE.stepPace;
     if (d <= sp) { u.x = c[0]; u.y = c[1]; if (typeof cardUltStepOn === "function") cardUltStepOn(T, u, c); if (++T.wi >= T.walk.length) { T.arrived = f0; _cb.slots.set(u, { x: c[0], y: c[1] }); } }   // (cardUltStepOn: across a strand of CONTAMINATION NETWORK, js/cardults.js)
     else { u.x += dx / d * sp; u.y += dy / d * sp; u.dirX = dx / d; u.dirY = dy / d; }
-    u.walkCycle = (u.walkCycle || 0) + sp * 40; u._fpPath = null; if (Number.isFinite(u.visualX)) { u.visualX = u.x; u.visualY = u.y; }
+    u.walkCycle = (u.walkCycle || 0) + sp * 40; u._fpPath = null; if (me) { u.fpPath = null; u.targetX = u.x; u.targetY = u.y; } if (Number.isFinite(u.visualX)) { u.visualX = u.x; u.visualY = u.y; }
     return false;
 }
 // a frame of an attack's turn: one that walks off its square on its own legs (no faster than its pace) is kept within `tether` of it; one carried (a leap, a dash, a charge, a roll: faster than it
@@ -781,12 +784,17 @@ function _cbAfterAct(f0) {
 // Dragged onto an enemy, a burst of 4 or 5 rounds goes off at once (no charge, no cooldown), at the gun's own rate, each round the gun's own (its damage, a role's element and kit, a round spent);
 // fewer when the rounds run out or the enemy falls. With no round left it has no turn. THE AGENT'S, PROVISIONAL: its place (after the followers); the rounds are the gun's own (so a wall or cover
 // between stops them: a drop on an enemy with no clear shot says so and plays nothing); and HOLD FIRE, a second card (a tap or a drag), passes its turn and keeps the rounds.
+// SMASH (§2.69; the owner, 2026-11-20, of its melee: "It's used as a close up smash with the gun"; asked: "Card battles only", "It walks up, like followers", "About a burst (36)", "Free, every
+// round"): its second attack card. On an enemy next to it (the 8 squares round its own, in sight) the blow lands at once for CARD_BATTLE.smash.damage, Crushing (js/damage.js DMG_HIT_SMASH: the
+// agent's reading of a smash), with no round spent, no charge and no cooldown. On one out of reach its turn is a walk towards it, by its own pace on the squares as a follower's (MOVE NOW, ATTACK
+// LATER, §2.39: the card stays ready), and where it stops is its square: the cube is in the line then, and its enemies come for it as for anyone in front (§2.40). So the cube always has a turn.
 function _cbYouIn() { return typeof player !== "undefined" && !!player && !player.dead && typeof weaponInHand === "function" && weaponInHand(); }
-function _cbYouTurn() { return _cbYouIn() && !_cb.youActed && typeof playerAmmo === "number" && playerAmmo > 0 && _cb.foes.some(_cbFoeOk); }
+function _cbYouTurn() { return _cbYouIn() && !_cb.youActed && _cb.foes.some(_cbFoeOk); }   // (with no round left it still has SMASH: §2.69)
 function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js firePlayerShot: the gun holds its fire in a battle but for its own burst)
 function _cbYouCards() {
     const S = CARD_BATTLE.shoot, ammo = typeof playerAmmo === "number" ? Math.max(0, playerAmmo) : 0, dmg = typeof weaponDamage === "function" ? weaponDamage() : 0, col = typeof classColour === "function" && typeof playerClassKey !== "undefined" ? classColour(playerClassKey) : "#ffb347";
     const out = [{ kind: "shoot", tag: "ATTACK", name: "SHOOT", fx: S.shots[0] + " to " + S.shots[1] + " rounds at one enemy, at once: " + dmg + " a round.", ready: ammo > 0, ammo, col },
+        { kind: "smash", tag: "ATTACK", name: "SMASH", fx: "A close-up blow with the gun on an enemy next to you: " + CARD_BATTLE.smash.damage + ", no round spent. Out of reach, you walk towards it first.", ready: true, col },
         { kind: "pass", tag: "HOLD", name: "HOLD FIRE", fx: "Keep your rounds: your turn passes.", ready: true, col }];
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its turn this round)
     return out;
@@ -795,9 +803,16 @@ function _cbYouPlay(kind, target) {
     if (!_cbYouTurn() || _cbCurrent() !== player) return false;
     const say = w => { _cb.say = { text: "YOU · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };
     if (kind === "pass") { _cb.youActed = true; _cbAfterAct(_cbF()); _cbRefresh(); return true; }
-    if (kind !== "shoot") return false;
+    if (kind !== "shoot" && kind !== "smash") return false;
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
     if (live.indexOf(target) < 0) target = _cbNearest(player, live);
+    if (kind === "smash") {   // (close up: next to it, the blow at once; else its turn is the walk towards it, the card still ready: §2.39, as a follower's)
+        const walk = _cb.lay && !_cbCanHit(player, target, "smash") ? _cbWalkPath(player, target, "smash", null) : null;
+        if (_cb.lay && !walk && !_cbCanHit(player, target, "smash")) return say("NO WAY THROUGH");
+        _cb.turn = { who: "act", f: player, kind: "smash", id: null, target, t0: _cbF(), hit: 0, fired: false, saved: null, walk, wi: 0, arrived: 0, last: _cbF() };
+        _cb.youActed = true; _cbRefresh(); return true;
+    }
+    if (!(playerAmmo > 0)) return say("NO AMMO");
     if (typeof facilityShotClear === "function" && !facilityShotClear(player.x, player.y, target.x, target.y)) return say("NO CLEAR SHOT");   // (the rounds are the gun's own: a wall or cover between stops them, docs/COMBAT.md §8)
     const S = CARD_BATTLE.shoot, n = S.shots[0] + Math.floor(Math.random() * (S.shots[1] - S.shots[0] + 1));
     _cb.turn = { who: "act", f: player, kind: "shoot", id: null, target, t0: _cbF(), hit: 0, fired: false, saved: null, shots: n, shot: 0, last: _cbF() };
@@ -814,6 +829,21 @@ function _cbShootTick(T, f0) {
     if (more && f0 - T.t0 < C.actMax) return;   // (the gun cycles)
     const flying = typeof followerProjectiles !== "undefined" && followerProjectiles.some(p => p && p.source && p.source.isPlayer);
     if ((!flying && f0 - T.last >= C.beat) || f0 - T.t0 >= C.actMax || !_cb.foes.some(_cbFoeIn)) _cbAfterAct(f0);
+}
+// its SMASH, each frame of its turn: the walk when it is out of reach (then the next turn); else the blow at once, the cube lunging at its enemy and eased back to its square, and a beat on the next turn
+function _cbSmashTick(T, f0) {
+    const C = CARD_BATTLE, t = T.target, live = _cb.foes.some(_cbFoeIn);
+    if (T.walk) { if (_cbWalkTick(T, player) || !live) _cbAfterAct(f0); return; }
+    if (!T.fired) {
+        T.fired = true; T.last = f0; if (!_cbFoeOk(t)) return;
+        const dx = t.x - player.x, dy = t.y - player.y, d = Math.hypot(dx, dy) || 1, src = { x: player.x, y: player.y, team: "green", element: null, isPlayer: true };
+        if (typeof applyDamage === "function") applyDamage(t, C.smash.damage, src, null, false, false, typeof DMG_HIT_SMASH !== "undefined" ? DMG_HIT_SMASH : null);
+        player.x += dx / d * C.smash.lunge; player.y += dy / d * C.smash.lunge; if (Number.isFinite(player.visualX)) { player.visualX = player.x; player.visualY = player.y; }   // (the lunge: _cbSlide eases it back to its square)
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ffd9a0", radius: 0.7, life: 16 });
+        if (typeof shake !== "undefined") shake = Math.max(shake, 4);
+        return;
+    }
+    if (f0 - T.last >= C.beat || !live) _cbAfterAct(f0);
 }
 function _cbYourTurn() {
     _cb.acted.clear(); _cb.youActed = false;
@@ -969,6 +999,7 @@ function _cbTurnTick() {
     }
     if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
     if (T.who === "act" && T.kind === "shoot") { _cbShootTick(T, f0); return; }   // (the Gunslinger's burst, §2.66: the cube is on no walk and under no tether)
+    if (T.who === "act" && T.kind === "smash") { _cbSmashTick(T, f0); return; }   // (its SMASH, §2.69: the blow, or the walk towards it)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeIn);   // (held inside one of yours, they are still in it: an Ultimate that swallows them all has its turn out, §2.64)
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
@@ -1112,7 +1143,7 @@ function cardBattleScreen() {
     if (you) all.push(you);   // (the Gunslinger has its turn after them, §2.66: its chip last, its cards in the pop-up at its turn)
     // (one at a time: the pop-up holds the follower whose turn it is; out of your turn it is away, still holding the last one, so it does not flicker)
     if (cur) E.popF = cur; const shown = E.popF && all.indexOf(E.popF) >= 0 ? E.popF : (all.find(_cbAlive) || null), squad = shown ? [shown] : [];
-    const chips = '<div class="cb-chips">' + all.map(f => f === you ? '<i class="cb-chip ' + (!(playerAmmo > 0) ? "down" : _cb.youActed && T0 ? "done" : f === shown ? "now" : "next") + '">YOU</i>' : '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
+    const chips = '<div class="cb-chips">' + all.map(f => f === you ? '<i class="cb-chip ' + (_cb.youActed && T0 ? "done" : f === shown ? "now" : "next") + '">YOU</i>' : '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
     const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
     const cols = squad.map(f => { if (f === you) {   // (the cube's own column: its bars as its health, its gun and its level, its two cards)
@@ -1123,7 +1154,7 @@ function cardBattleScreen() {
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (_cbTank(f) ? " · TANK" : "") + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
       const mv = T && T.lost ? " · " + T.lostWord : T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39; a turn lost to a status: §2.52)
-      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length + (_cbYouTurn() ? 1 : 0); return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "shoot" ? "SHOOT" : T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
+      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length + (_cbYouTurn() ? 1 : 0); return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "shoot" ? "SHOOT" : T.kind === "smash" ? "SMASH" : T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }
