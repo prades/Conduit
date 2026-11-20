@@ -17,7 +17,7 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 ## 2. Approved design (2026-11-20)
 
 ### 2.1 Size and shape
-1. **Much bigger than today.** Today's Sewers are about 54 × 18 tiles. The owner supplied a published hand-drawn sewer map as a **reference for structure and scale only**: a long central channel running north–south, a channel crossing it from the west, a round junction near the south, clusters of rooms off both sides, secret doors, a rubble-choked corridor and a cracked wall. The new layout is **inspired by it, not copied from it** (it is someone else's work; do not trace it or commit it). Working scale: roughly **60 × 90 tiles** (about 5–6× today); the exact size comes with the room-by-room pass.
+1. **Much bigger than today.** Today's Sewers are about 54 × 18 tiles. The owner supplied a published hand-drawn sewer map as a **reference for structure and scale only**: a long central channel running north–south, a channel crossing it from the west, a round junction near the south, clusters of rooms off both sides, secret doors, a rubble-choked corridor and a cracked wall. **The owner is the map's author** (2026-11-20: "I'm the author of that map"), so the dungeon follows its structure directly: its corridors, rooms, round junction and doors. Rooms proposed on 2026-11-20 as separate boxes and as an open hall were **rejected** ("it should all be one full open area with passageways and tunnels nowhere near the channel"; then "There shouldn't be any broken walls"); the room-by-room pass works from a trace of the map, each area named by the owner. Working scale: roughly **60 × 90 tiles** (about 5–6× today); the exact size comes with the room-by-room pass.
 2. **This page's layout is a skeleton.** The owner wants it elaborated into a much richer system. Every room's contents below are placeholders to be developed with the owner, not final.
 3. **Supersedes** the Notion note "the entire existing sewer map is the playable dungeon boundary; do not expand the dungeon" (2026-11-19).
 
@@ -129,7 +129,7 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 
 Each room is **proposed** until the owner approves it; approved rooms say so.
 
-### Room 1: the Entrance (west edge) — proposed
+### Room 1: the Entrance (west edge) — rejected 2026-11-20 (see §2.1); kept as history
 - Arrival from the arena into a dry, quiet tunnel beside the inflow channel; the water here runs clean and fast.
 - The first water reading here reads normal: the trouble is further in.
 - A locked side door that cannot be opened yet: later opened from its far side as a shortcut back.
