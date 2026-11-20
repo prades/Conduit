@@ -1061,7 +1061,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ ${ULT} const A = __shaped('thunderhead', [[2, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(3); const on = cardUltFields().map(e => e.type).join(); cardBattleReset(); _cb.phase = 'off'; return { on, off: cardUltFields().length }; })()`);
         same(JSON.stringify(r), '{"on":"thunderstorm","off":0}', 'the fields handed over');
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
-        ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
+        ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0, GM\.meteor\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
         same(J(`Object.keys(_CU_LAST).filter(k => _CU_LAST[k] === 'win').sort().join()`), 'circuit,eventhorizon,icerink,meteorrain,shardvortex,thicket,thunderstorm,toxicnet,toxicpuddle,whiteout', 'the fields that last');
         for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle', 'whiteout', 'icerink', 'shardvortex', 'thicket', 'circuit', 'toxicnet', 'meteorrain']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
     });
