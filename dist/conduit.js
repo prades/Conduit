@@ -26486,10 +26486,10 @@ function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
     if (_cb.phase !== "off") {
         _cbKillText();
-        const live = _cb.foes.filter(_cbFoeOk);
+        const live = _cb.foes.some(_cbFoeIn);
         if (cardBattleActive()) {
             const squad = _cbSquad(), away = typeof player !== "undefined" && Math.hypot(player.x - _cb.cx, player.y - _cb.cy) > CARD_BATTLE.leave;
-            if (!live.length || !cardBattleOn() || (typeof player !== "undefined" && (player.dead || player.health <= 0)) || (_cb.phase === "on" && (!squad.length || away)))
+            if (!live || !cardBattleOn() || (typeof player !== "undefined" && (player.dead || player.health <= 0)) || (_cb.phase === "on" && (!squad.length || away)))
                 cardBattleEnd();
         }
         if (_cb.phase === "walk" && el >= CARD_BATTLE.walk) {
@@ -27898,7 +27898,7 @@ function _cbTurnTick() {
         return;
     }
     if (T.who === "act") {
-        const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
+        const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeIn);
         if (T.walk) {
             if (_cbWalkTick(T, f) || !live)
                 _cbAfterAct(f0);

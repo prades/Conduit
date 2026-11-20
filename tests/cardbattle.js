@@ -903,9 +903,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { slam: one('hammerslug', [[5, 0]]), eat: one('sundew', [[4, 0]]) }; })()`);
         for (const [k, why] of [['slam', /NO ENEMY IN ITS SQUARES/], ['eat', /OUT OF ITS REACH/]]) { const o = r[k]; ok(o, 'no room (' + k + ')'); same(JSON.stringify([o.played, o.turn, o.mine, o.acted, o.charge, o.still]), '[false,"you",true,false,100,true]', k + ': not played (played, turn, its turn, acted, charge, still its turn after)'); ok(why.test(o.say || ''), k + ': the banner: ' + o.say); }
     });
-    check('every card speaks the battle\'s words: its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
+    check('every card speaks the battle\'s words, an Ultimate\'s too (js/cardults.js): its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
         const r = J(`(function(){ const bad = [], seen = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { __fresh(1); const f = followers[0]; f.evolved = k; f.element = EVOLUTIONS[k].element; f.role = EVOLUTIONS[k].role; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;
-                const cs = cardBattleCards(f); for (const c of cs) { const t = String(c.fx || ''); if (!t.trim()) bad.push(k + ' ' + c.kind + ' empty'); if (c.kind === 'ult') { if (/tap ULTIMATE/.test(t)) bad.push(k + ' ult tap'); continue; } if (/\\d(\\.\\d+)? ?s\\b|second/.test(t)) bad.push(k + ' ' + (c.id || c.kind) + ': ' + t);
+                const cs = cardBattleCards(f); for (const c of cs) { const t = String(c.fx || ''); if (!t.trim()) bad.push(k + ' ' + c.kind + ' empty'); if (c.kind === 'ult' && /tap ULTIMATE/.test(t)) bad.push(k + ' ult tap'); if (/\\d(\\.\\d+)? ?s\\b|second/.test(t)) bad.push(k + ' ' + (c.id || c.kind) + ': ' + t);
                     if (t.length > (cs.length >= 5 ? 82 : 100)) bad.push(k + ' ' + (c.id || c.kind) + ' too long for its card (' + t.length + ' letters): ' + t); seen.push(c.kind + ':' + (c.id || '')); } }   /* (game.html .cb-fx: 4 lines; measured in a real browser, 82 letters fit a card of a follower with five, 100 one with four) */
                 const say = (form, kind, id) => { __fresh(1); const f = followers[0]; f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); return cardBattleCards(f).find(c => c.kind === kind && (!id || c.id === id)).fx; };
                 return { bad, chomp: say('maw', 'move', 'chomp'), hex: say('embercowl', 'move', 'hexfire'), wob: say('jellyram', 'move', 'wobble_slam'), stun: _csTurns(MAW_STUN), base: say('thunderhead', 'basic') }; })()`);
@@ -924,6 +924,128 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             try { for (let i = 0; i < 12; i++) cardBattleNumbers(); } catch (e) { err = String(e && e.message || e); } finally { ctx = saved; VIEW3D.view = V0; VIEW3D.showing = S0; }
             return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] > sizes['MISS'] * 2 }; })()`);
         same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: more than twice a word\'s size');
+    });
+
+    group('THE ULTIMATES IN A BATTLE (§2.64, §13; the owner, of the page that drew each one: "Approve")');
+    const ULT = `const rel = (A, a) => { const s = _cb.slots.get(a); return s ? [s.x - A.P[0], s.y - A.P[1]].join() : (a._swallowedBy ? 'IN' : 'none'); }, act = () => { let n = 0; for (; n < 900 && _cb.turn && _cb.turn.who === 'act'; n++) __live(1); return n; },
+        foesTurn = () => { for (let i = 0; i < 1200 && _cb.turn && _cb.turn.who === 'foe'; i++) __live(1); }, pass = () => { const f = _cbCurrent(); if (f) { _cb.acted.add(f); _cbAfterAct(frame); } else __live(2); foesTurn(); },
+        fx = t => elementEffects.find(e => e.type === t), blows = (by, n) => { const ad = applyDamage; applyDamage = function (t, amt, src) { const h = t && t.health, r = ad.apply(this, arguments); if (t && t.health < h && (src === by || (src && src.by === by))) n.push(t); return r; }; return () => { applyDamage = ad; }; };`;   /* (pass: your squad's cards left unplayed, the enemies' turn had, yours again; blows: the hits of `by` that landed) */
+    check('every evolved form\'s Ultimate has its shape and the place its card is dropped (22): 7 on an enemy, 5 on a floor tile, 10 anywhere', () => {
+        const r = J(`(function(){ const by = { foe: [], tile: [], any: [] }, bad = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { const d = cardShapeDef({ evolved: k }, 'ult'); if (!d || !d.ult) { bad.push(k); continue; } by[cardShapeAim(d)].push(k); }
+            return { bad, foe: by.foe.sort().join(), tile: by.tile.sort().join(), any: by.any.sort().join() }; })()`);
+        same(r.bad.join(), '', 'without a shape'); same(r.foe, 'coralcrab,hornshell,hovershell,shrub,staticorb,sundew,thermite', 'dropped on an enemy');
+        same(r.tile, 'blightspider,electroskink,embercowl,rotshard,voidstar', 'dropped on a floor tile'); same(r.any, 'gooproxy,hammerslug,igloo,jellyram,maw,mimic,quillstone,rimestar,seeper,thunderhead', 'dropped anywhere');
+    });
+    check('a field keeps its own length in turns and its full damage, a turn\'s worth at a time (THUNDERSTORM, 6 s: 3 turns, the 11 bolts it strikes out of a battle as 4, 4 and 3): 4 as it is played, its turn lasting those 2 s; 4 as the enemies\' turn begins, the enemies waiting; standing still through your turn; its last 3 as the next enemy turn begins; then gone', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('thunderhead', [[2, 0], [3, 1]]); if (!A) return null; const f = A.f, n = [], undo = blows(f, n); f.ultimateCharge = 100; let o;
+            try { const played = cardBattlePlay(f, 'ult', null, null), e = fx('thunderstorm'), life0 = e && e.life, frames = act(); o = { played, life0, frames, ran1: life0 - e.life, n1: n.length, field: !!(_cb.turn && _cb.turn.who === 'foe' && _cb.turn.field), banner: cardUltBanner() };
+                foesTurn(); o.life2 = e.life; o.n2 = n.length; o.round = _cb.round; o.you = _cb.turn && _cb.turn.who;
+                for (let i = 0; i < 200; i++) __live(1); o.lifeHeld = e.life; o.nHeld = n.length;
+                pass(); o.n3 = n.length; o.gone = elementEffects.indexOf(e) < 0; pass(); o.n4 = n.length; } finally { undo(); }
+            /* (the same storm out of a battle, in real time: its bolts counted by their own damage) */
+            __fresh(1); CARD_BATTLE.on = false; elementEffects.length = 0; const g = followers[0]; g.evolved = 'thunderhead'; g.element = EVOLUTIONS.thunderhead.element; g.role = EVOLUTIONS.thunderhead.role; g._moltAt = -9999; energyFill(g); g.health = g.maxHealth = 1e6; g.ultimateCharge = 100;
+            const t = __ant(g.x + 2, g.y); t.health = t.maxHealth = 9999; let out = 0, bite = 0; const ad = applyDamage; applyDamage = function (u, amt, src) { if (src === g && bite && amt === bite) out++; return ad.apply(this, arguments); };
+            try { o.outFired = followerUltFire(g); const e2 = fx('thunderstorm'); bite = e2 ? e2.bite : 0; for (let i = 0; i < 400; i++) { t.x = g.x + 2; t.y = g.y; __live(1); } } finally { applyDamage = ad; CARD_BATTLE.on = true; }
+            o.out = out; return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.life0, r.n1]), '[true,360,4]', 'played: the storm\'s own length, its bolts in its turn'); ok(r.frames >= 120 && r.frames <= 121 && r.ran1 === r.frames, 'its turn lasted its 2 s, the storm running each frame of it: ' + r.frames + ' frames, ' + r.ran1 + ' of the storm');
+        same(r.field, true, 'the enemies wait for its next turn\'s worth'); ok(/^THUNDERSTORM · 2 TURNS LEFT$/.test(r.banner), 'the banner: ' + r.banner);
+        same(JSON.stringify([r.life2, r.n2, r.round, r.you]), '[120,8,2,"you"]', 'the enemies\' turn had: its time left, its bolts, the round after, yours'); same(JSON.stringify([r.lifeHeld, r.nHeld]), '[120,8]', 'through your turn (200 frames): its time left and its bolts, the same');
+        same(JSON.stringify([r.n3, r.gone, r.n4]), '[11,true,11]', 'its third turn\'s worth (3: its own rule strikes none on its last frame), then gone, no more after'); same(JSON.stringify([r.outFired, r.out]), '[true,11]', 'out of a battle, in real time: the same 11 bolts');
+    });
+    check('an Ultimate\'s turn is its Ultimate alone: no everyday hit goes with it and the follower takes no step (QUILLSTORM: one on each of two lines takes one quill\'s worth, the same)', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('quillstone', [[2, 0], [0, 2]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, null), held = cardBattleHolds(f); act();
+            return { played, held, hurt: A.foes.map(a => +(9999 - a.health).toFixed(2)), f: rel(A, f), at: +Math.hypot(f.x - A.P[0], f.y - A.P[1]).toFixed(2) }; })()`);
+        ok(r, 'no room'); same(r.played && r.held, true, 'played, and holding still in its turn'); ok(r.hurt[0] > 0 && r.hurt[0] === r.hurt[1], 'each took one quill\'s worth: ' + r.hurt); same(JSON.stringify([r.f, r.at]), '["0,0",0]', 'where it stands');
+    });
+    check('dropped on a floor tile (EVENT HORIZON): the black hole on that tile, the enemies in it drawn in on the squares and crushed; a tile beyond its reach is refused', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('voidstar', [[3, 0], [5, 0]], [[4, 0], [2, 0]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100;
+            const far = cardShapeFor(f, 'ult', null, { x: P[0] + 7, y: P[1] }), played = cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }); __live(4); const e = fx('eventhorizon'); const o = { far: far && far.why, played, at: e && [e.x - P[0], e.y - P[1]].join(), drawn: A.foes.map(a => rel(A, a)) }; act();
+            o.hurt = A.foes.map(a => a.health < 9999); return o; })()`);
+        ok(r, 'no room'); same(r.far, 'OUT OF ITS REACH', 'a tile 7 squares off'); same(JSON.stringify([r.played, r.at]), '[true,"3,0"]', 'played; the hole on the tile'); same(JSON.stringify(r.drawn), '["3,0","4,0"]', 'the one 2 squares off drawn a square in, next to the one on its middle'); same(JSON.stringify(r.hurt), '[true,true]', 'both crushed');
+    });
+    check('FAULTLINE is a line of squares (§2.61): played on an enemy, it goes under and along its line; the enemy on the line is spiked, one off it is not; it comes up on a new square at the line\'s end; its charge spent', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('thermite', [[2, 0], [1, 2]], [[1, 0], [3, 0], [4, 0]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const S = cardShapeFor(f, 'ult', null, A.foes[0]);
+            const played = cardBattlePlay(f, 'ult', null, A.foes[0]), under = !!f._fault, spent = f.ultimateCharge < 100; act(); for (let i = 0; i < 20; i++) __live(1); const s = rel(A, f).split(',').map(Number);
+            return { line: S.hit.map(c => [c[0] - A.P[0], c[1] - A.P[1]].join()).join(' '), mask: S.mask.length, played, under, spent, hurt: A.foes.map(a => a.health < 9999), f: s, up: !f._fault, aim: !!(typeof techAim !== 'undefined' && techAim) }; })()`);
+        ok(r, 'no room'); ok(/^1,0 2,0 3,0 4,0/.test(r.line), 'its line: ' + r.line); same(JSON.stringify([r.mask, r.played, r.under, r.spent, r.aim]), '[1,true,true,true,false]', 'the enemies on it, played, under, its charge spent, no drawing opened');
+        same(JSON.stringify(r.hurt), '[true,false]', 'the one on the line spiked, the one off it not'); ok(r.up && r.f[1] === 0 && r.f[0] >= 3, 'it came up on its line, past the enemy: ' + r.f);
+    });
+    check('CONTAMINATION NETWORK lays its own pods (§2.62): no pod laid before, three in a triangle round the tile, strands between; one on a strand\'s end is bitten, one inside the triangle is not; one that walks across a strand is bitten once a walk', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('blightspider', [[3, 0], [3, -2]], [[1, 1], [5, 1], [3, -1], [2, 0], [4, 0], [3, 1]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; if (typeof techPools !== 'undefined') techPools.length = 0;
+            const played = cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }), e = fx('toxicnet'); act(); const o = { played, pods: e && e.pods.map(c => [c[0] - P[0], c[1] - P[1]].join()).join(' '), segs: e && e.segs.length, turns: e && Math.ceil(e.life / 120), hurt: A.foes.map(a => a.health < 9999) };
+            const a = A.foes[0], h = a.health, T = {}; cardUltStepOn(T, a, [P[0] + 3, P[1] + 1]); o.cross = +(h - a.health).toFixed(2) > 0; o.weak = (a.weakened || 0) > 0 || (a.poisoned || 0) > 0; const h2 = a.health; cardUltStepOn(T, a, [P[0] + 2, P[1] + 1]); o.twice = a.health < h2; return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.pods, r.segs, r.turns]), '[true,"3,-2 1,1 5,1",3,4]', 'played with no pod laid; its pods; its strands; its turns left after the first'); same(JSON.stringify(r.hurt), '[false,true]', 'the one inside the triangle, the one on a strand\'s end');
+        same(JSON.stringify([r.cross, r.twice]), '[true,false]', 'walked across a strand: bitten; a second strand square the same walk: not again');
+    });
+    check('ABSOLUTE ZERO holds as a status does (3 turns): the nearest three swallowed, out of the fight, their squares free; the battle goes on with every enemy held (no card to play, your squad waits, the rounds pass); after the third enemy turn they are let go on free squares', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('maw', [[1, 0], [2, 1], [1, -1]], [[0, 1], [0, -1], [2, 0], [-1, 0]]); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, null);
+            const o = { played, in: A.foes.map(a => rel(A, a)).join(' '), hit: A.foes.some(_cbFoeOk), round0: _cb.round, say: '' }; o.frames = act(); o.on = cardBattleActive(); o.held = A.foes.every(a => !!a._swallowedBy);
+            for (let i = 0; i < 3000 && A.foes.some(a => a._swallowedBy); i++) { __live(1); if (_cb.say && /HELD/.test(_cb.say.text)) o.say = _cb.say.text; if (o.card === undefined && _cb.turn && _cb.turn.who === 'you' && A.foes.some(a => a._swallowedBy)) o.card = cardBattlePlay(f, 'basic', null, A.foes[0]); }
+            const sq = A.foes.map(a => rel(A, a)); o.round = _cb.round; o.out = sq.join(' '); o.distinct = new Set(sq).size === 3 && sq.indexOf('none') < 0 && sq.indexOf('IN') < 0; o.free = A.foes.every(a => !a.untargetable && !(a.stunned > 0)); o.hurt = A.foes.some(a => a.health < 9999); o.still = cardBattleActive(); return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.in, r.hit, r.round0]), '[true,"IN IN IN",false,1]', 'swallowed as it is played: none on a square, none to strike'); ok(r.frames >= 60, 'its turn has its moment though nothing is left to strike: ' + r.frames + ' frames');
+        same(JSON.stringify([r.on, r.held, r.card]), '[true,true,false]', 'its turn over: the battle still on, all three held, no card to play'); ok(/HELD/.test(r.say), 'the banner while they are held: ' + r.say);
+        same(JSON.stringify([r.round, r.distinct, r.free, r.hurt, r.still]), '[4,true,true,false,true]', 'let go after the third enemy turn (the round after), each on a square of its own, free to act and be struck, unhurt, the battle on: ' + r.out);
+    });
+    check('CONSUME: the enemy it is dropped on swallowed for its turns, 5 bites (2, 2, 1) as the enemies\' turns end, none in its own turn; the Sundew holds still, playing no card, till it spits it out on a free square', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('sundew', [[1, 0], [4, 0]], [[1, 1], [0, 1], [2, 0]]); if (!A) return null; const f = A.f, prey = A.foes[0], n = [], undo = blows(f, n); f.ultimateCharge = 100; let o;
+            try { const played = cardBattlePlay(f, 'ult', null, prey); o = { played, in: rel(A, prey), n0: 0, per: [] };
+                for (let i = 0, r0 = _cb.round; i < 3000 && prey._swallowedBy; i++) { if (_cb.turn && _cb.turn.who === 'act') o.n0 = n.length; __live(1); if (_cb.round !== r0) { r0 = _cb.round; o.per.push(n.length); if (prey._swallowedBy) { o.cur = _cbCurrent() === f; o.card = cardBattlePlay(f, 'basic', null, A.foes[1]); } } }
+                o.round = _cb.round; o.out = rel(A, prey); o.free = !prey.untargetable && !f._consume; __live(2); o.again = _cbCurrent() === f; } finally { undo(); }
+            return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.in, r.n0]), '[true,"IN",0]', 'swallowed, no bite in its own turn'); same(JSON.stringify(r.per), '[2,4,5]', 'its bites as each enemy turn ends'); same(JSON.stringify([r.cur, r.card]), '[false,false]', 'while it digests: not its turn, its card refused');
+        same(JSON.stringify([r.round, r.free, r.again]), '[4,true,true]', 'spat out after the third enemy turn, free; the Sundew\'s turn again'); ok(/^-?\d+,-?\d+$/.test(r.out), 'the prey on a square: ' + r.out);
+    });
+    check('shields, copies and walls count as the enemies\' turn ends: JELLY SHIELDS 5 turns; PROXY SWARM\'s three copies on free squares next to it, bursting after the third; REEF PILLAR\'s wall of three squares that nobody walks through, mending yours by it, 5 turns', () => {
+        const r = J(`(function(){ ${ULT} const o = {};
+            { const A = __shaped('jellyram', [[3, 0]]); if (!A) return null; const f = A.f, left = () => f.jellyShield && f.jellyShield.until > frame ? f.jellyShield._cbTurns : 0; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, null); o.shield = [_cb.round, left()]; act(); o.shield.push(_cb.round, left());
+              for (let i = 0; i < 3; i++) pass(); o.shield.push(_cb.round, left()); pass(); __live(3); o.shield.push(_cb.round, left()); }
+            { const A = __shaped('gooproxy', [[3, 0]], [[1, 0], [0, 1], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]); if (!A) return null; const f = A.f, taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)); f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, null);
+              const sq = rotDecoys.map(d => [d.x - A.P[0], d.y - A.P[1]]); o.copies = sq.length; o.next = sq.every(c => Math.max(Math.abs(c[0]), Math.abs(c[1])) === 1 && Number.isInteger(c[0]) && Number.isInteger(c[1])); o.apart = new Set(sq.map(c => c.join())).size === 3 && rotDecoys.every(d => !taken.has(d.x + ',' + d.y));
+              act(); __live(40); o.swarm = [_cb.round, rotDecoys.length]; pass(); __live(40); o.swarm.push(_cb.round, rotDecoys.length); pass(); __live(40); o.swarm.push(_cb.round, rotDecoys.length); }
+            { const A = __shaped('coralcrab', [[4, 0]], [[1, 0], [2, 0], [3, 0], [3, 1], [3, -1]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, A.foes[0]);
+              o.wall = cardUltWalls().map(c => [c[0] - P[0], c[1] - P[1]].join()).sort().join(' '); const G = _cbGrid(A.foes[0]); o.blocked = cardUltWalls().every(c => G.taken.has(c[0] + ',' + c[1])); act(); o.reef = [_cb.round, cardUltWalls().length];
+              _cb.slots.set(f, { x: P[0] + 2, y: P[1] }); f.x = P[0] + 2; f.y = P[1]; f.health = 5e5; pass(); o.mend = +((f.health - 5e5) / f.maxHealth).toFixed(3); pass(); pass(); o.reef.push(_cb.round, cardUltWalls().length); pass(); o.reef.push(_cb.round, cardUltWalls().length); }
+            return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify(r.shield), '[1,5,2,4,5,1,6,0]', 'the jelly shield, round by round and its turns left: 5 as it is put on, 4 after the first enemy turn, 1 after the fourth, gone after the fifth');
+        same(JSON.stringify([r.copies, r.next, r.apart]), '[3,true,true]', 'the copies: three, each on a square next to it, apart and on no taken square'); same(JSON.stringify(r.swarm), '[2,3,3,3,4,0]', 'round by round: standing after the first and the second enemy turn, burst after the third');
+        same(JSON.stringify([r.wall, r.blocked, r.mend]), '["3,-1 3,0 3,1",true,0.08]', 'the wall: its squares, closed to a walk, a turn\'s mending of one by it'); same(JSON.stringify(r.reef), '[2,3,5,3,6,0]', 'round by round: standing through its fourth enemy turn, gone after its fifth');
+    });
+    check('METEOR RAIN falls on squares round the tile it is dropped on, over 2 turns: some rocks as it is played, the rest as the enemy turn begins; its last rock down, the enemies wait for it no more', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('embercowl', [[3, 0], [4, 1]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }), e = fx('meteorrain'); act();
+            const o = { played, mid: e && [e.x - P[0], e.y - P[1]].join(), rocks: e && e.rocks.length, onSq: e && e.rocks.every(q => Number.isInteger(q.x) && Number.isInteger(q.y)), down1: e && e.rocks.filter(q => q.hit).length };
+            _cb.acted.add(f); _cbAfterAct(frame); o.field = !!(_cb.turn && _cb.turn.field); foesTurn(); o.down2 = e.rocks.filter(q => q.hit).length; o.off = !e._cbUlt; pass(); o.field2 = cardUltLive(); return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.mid, r.onSq, r.field, r.off, r.field2]), '[true,"3,0",true,true,true,false]', 'played on the tile; each rock on a square; the enemies wait for its second turn\'s worth; then it is off the battle\'s clock');
+        ok(r.rocks >= 8 && r.down1 >= 4 && r.down1 < r.rocks && r.down2 === r.rocks, 'its rocks: ' + r.down1 + ' of ' + r.rocks + ' in its turn, ' + r.down2 + ' by the end of the next turn\'s worth');
+    });
+
+    check('every Ultimate goes off in a battle and runs out (22): played, its charge spent, its turn over in time; what it leaves is on the battle\'s clock and gone when its turns are over; your turn comes again; its follower on a square of the room after; the battle on, nothing thrown', () => {
+        const r = J(`(function(){ ${ULT} const out = {};
+            for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) {
+                const A = __shaped(k, [[2, 0], [3, 1], [3, -1]], [[1, 0], [1, 1], [1, -1], [2, -2], [0, 1], [4, 1], [0, -1], [-1, 0]]); if (!A) { out[k] = { err: 'no room' }; continue; }
+                const f = A.f, P = A.P, aimK = cardShapeAim(cardShapeDef(f, 'ult')), aim = aimK === 'foe' ? A.foes[0] : aimK === 'tile' ? { x: P[0] + 2, y: P[1], tile: true } : null, h0 = A.foes.map(a => a.health); f.ultimateCharge = 100;
+                const o = out[k] = { played: false, frames: 0, spent: false, loose: '', clear: 0, err: '' };
+                try { o.played = cardBattlePlay(f, 'ult', null, aim); if (!o.played) { o.err = 'not played: ' + (_cb.say && _cb.say.text); continue; }
+                    o.frames = act(); o.spent = f.ultimateCharge < 100;
+                    o.loose = elementEffects.filter(e => _CU_LAST[e.type] && e.life > 0 && !e._cbUlt && e.type !== 'meteorrain').map(e => e.type).join();   /* (what it left that lasts, not on the battle's clock) */
+                    const left = () => elementEffects.some(e => e._cbUlt && e.life > 0) || _cbSquad().some(m => m.jellyShield && m.jellyShield._cbTurns > 0) || cardUltWalls().length > 0 || rotDecoys.length > 0 || A.foes.some(a => a._swallowedBy);
+                    for (let n = 0; n < 12 && left() && cardBattleActive(); n++) { pass(); __live(40); } o.clear = left() ? -1 : _cb.round; foesTurn(); o.back = !!_cb.turn && _cb.turn.who === 'you';
+                } catch (e) { o.err = String(e && e.message || e); }
+                const q = _cb.slots.get(f); o.on = cardBattleActive(); o.sq = !!q && Number.isInteger(q.x) && Number.isInteger(q.y) && !!_cb.lay && facilityRoomIdAt(q.x, q.y) === _cb.lay.room; o.did = A.foes.some((a, i) => a.health < h0[i]) || k === 'jellyram' || k === 'gooproxy' || k === 'coralcrab' || k === 'maw';
+            }
+            return out; })()`);
+        const bad = [], CLEAR = { thunderhead: 3, rimestar: 3, igloo: 3, mimic: 4, voidstar: 3, rotshard: 3, shrub: 3, electroskink: 3, blightspider: 5, embercowl: 2, maw: 4, sundew: 4, jellyram: 6, gooproxy: 4, coralcrab: 6 };   // (the round by which what it left is gone: a field of n turns has its last turn's worth as round n's enemy turn begins; a hold, a shield, a copy or a wall of n turns goes as its nth enemy turn ends, round n + 1)
+        same(Object.keys(r).length, 22, 'the forms');
+        for (const k in r) { const o = r[k]; if (o.err) { bad.push(k + ': ' + o.err); continue; }
+            if (!o.played || !o.spent) bad.push(k + ' not played or its charge kept'); if (!(o.frames > 0 && o.frames < 300)) bad.push(k + ' its turn: ' + o.frames + ' frames'); if (o.loose) bad.push(k + ' left off the clock: ' + o.loose);
+            if (CLEAR[k] ? o.clear !== CLEAR[k] : !(o.clear > 0)) bad.push(k + ' gone by round ' + o.clear + (CLEAR[k] ? ', not ' + CLEAR[k] : '')); if (!o.back) bad.push(k + ' your turn did not come again'); if (!o.on) bad.push(k + ' ended the battle'); if (!o.sq) bad.push(k + ' its follower off the squares'); if (!o.did) bad.push(k + ' touched no enemy'); }
+        same(bad.join(' / '), '', 'the Ultimates that did not');
+    });
+    check('wired: the page loads js/cardults.js after the shapes, with its boot check; an effect asks the battle\'s clock before its step; the battle asks the Ultimates at its turns', () => {
+        const h = rd('game.html'), e = rd('js/elements.js'), c = rd('js/cardbattle.js'), sh = rd('js/cardshapes.js');
+        ok(/<script src="js\/cardshapes\.js\?v=[^"]+"><\/script>\s*<script src="js\/cardults\.js\?v=[^"]+"><\/script>/.test(h) && /"js\/cardults\.js": "CARD_ULTS"/.test(h), 'the page');
+        ok(/function elementEffectStep\(e\) \{\s*if \(typeof cardUltGate === "function" && cardUltGate\(e\)\) return true;/.test(e) && /elementEffects\.filter\(elementEffectStep\)/.test(e) && /cardUltPoint\(actor\)/.test(e), 'the effects\' step');
+        ok(/cardUltFire\(f, S, T\)/.test(c) && /cardUltDone\(T, el\)/.test(c) && /cardUltWindow\(\)\) \{ _cb\.turn\.field = _cbF\(\)/.test(c) && /cardUltTurnEnd\(\);/.test(c) && /cardUltWalls\(\)\) taken\.add/.test(c) && /cardUltStepOn\(/.test(c) && (c.match(/cardUltEnd\(\)/g) || []).length === 2, 'the battle\'s turns');
+        ok(/cardUltDef\(f\)/.test(sh) && /cardUltShape\(/.test(sh) && /cardUltSays\(f\)/.test(sh) && /cardUltNow\(\)/.test(sh), 'the shapes');
     });
 
     group('PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, of three offered: "Its own distance")');

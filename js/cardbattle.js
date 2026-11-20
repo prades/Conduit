@@ -197,10 +197,10 @@ function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
     if (_cb.phase !== "off") {
         _cbKillText();   // (a creature of the battle down: its +N XP rises from it)
-        const live = _cb.foes.filter(_cbFoeOk);
+        const live = _cb.foes.some(_cbFoeIn);   // (one held inside one of yours is still in it: §2.64)
         if (cardBattleActive()) {
             const squad = _cbSquad(), away = typeof player !== "undefined" && Math.hypot(player.x - _cb.cx, player.y - _cb.cy) > CARD_BATTLE.leave;
-            if (!live.length || !cardBattleOn() || (typeof player !== "undefined" && (player.dead || player.health <= 0)) || (_cb.phase === "on" && (!squad.length || away))) cardBattleEnd();
+            if (!live || !cardBattleOn() || (typeof player !== "undefined" && (player.dead || player.health <= 0)) || (_cb.phase === "on" && (!squad.length || away))) cardBattleEnd();
         }
         if (_cb.phase === "walk" && el >= CARD_BATTLE.walk) { _cb.phase = "black"; _cb.t = f; }
         else if (_cb.phase === "black") {
@@ -926,7 +926,7 @@ function _cbTurnTick() {
     }
     if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
     if (T.who === "act") {
-        const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeOk);
+        const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeIn);   // (held inside one of yours, they are still in it: an Ultimate that swallows them all has its turn out, §2.64)
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
         if (_cb.lay && !(T.kind === "ult" && T.shape && T.shape.def.kind === "cone")) _cbTether(T, f);   // (WAVE MAKER moves up behind its waves at a walk: not held to its square, its new one after, §2.64)
         if (T.kind === "move" && f._altLive) T.fired = true;

@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ar` · branch `claude/start-game-project-HSh7Z` · card battles: the 22 Ultimates on the squares and in turns
+- **The ask** (the owner, 2026-11-18, of the Ultimates' page): "Approve"; the Sundew "holds still" while it digests.
+- **What it does:** each Ultimate's card is dropped on an enemy, a floor tile or anywhere, as its shape takes it, and strikes its own squares with its own numbers. A field (THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE and the rest) runs a turn's worth as played and as each enemy turn begins; a hold, shield, copy or wall counts down as each enemy turn ends. FAULTLINE is a line of squares; CONTAMINATION NETWORK lays its own three pods.
+- **Fixed on the way:** with every enemy swallowed (ABSOLUTE ZERO) the battle ended; it now waits and the rounds pass.
+- **The agent's, provisional:** `heldWait`, `fieldMax`, the network's reach (6) and pods; the readings in `CARD-BATTLES.md` §11.30. **Known gap:** a field's own look is not drawn in a battle (no attack's is yet).
+- `js/cardults.js` (new), `js/cardshapes.js`, `js/cardbattle.js`, `js/elements.js`, `game.html`, `tests/cardbattle.js` (12 new checks), `docs/CARD-BATTLES.md` §2.64, §9, §10, §11.30.
+- **Verified:** tests/cardbattle.js; ten Ultimates driven in a real browser. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17aq` · branch `claude/start-game-project-HSh7Z` · card battles: every approved attack card picture in the game
 - **The ask** (the owner, 2026-11-18, of the battle's cards, most of them plain): "What happened to my attack cards?" Only HEXFIRE's and CHOMP's pictures had been put in the game; the twenty others the owner had approved were on the art's branch (`claude/card-artist`), never merged. Asked whether to bring them in: "Yes push".
 - **What it does:** every evolved form's approved picture (22) fills the card of the attack it shows in the battle's pop-up: STATIC VORTEX, MAELSTROM, EMBER SLASH, STAKE RING and the rest (`ATTACK-CARD-ART.md` §4 has the list). A follower with two second attacks has a picture on one; the other keeps its plain face and its words. The art's branch is merged (its drafts and its record of the approvals; no game code).
