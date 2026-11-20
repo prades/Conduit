@@ -87,6 +87,16 @@ The toolkit is **the squad the player brings**, with limited environmental uses 
 
 **Open:** whether forcing through the Nest means the Queen must be killed, or she can still be slept, stunned and spared at the console; whether the missed loot is gone for good or can be gone back for later (and so what "costs you the opportunity" means in play).
 
+### 2.5c The quest through the dungeon (the owner, 2026-11-20)
+"You have to find the species or the samples, and you have to get the water sample, and then you have to run the tests into the experiment lab, and then create the module, and then install it. Nothing about killing the queen is necessary. It's just sort of in the way."
+1. Find the **samples** (the toxic ant samples) and the **water sample** in the dungeon.
+2. **Run the tests in the Experiment Lab** (today: the analysis bench, `SEWER-QUEST.md`).
+3. **Create the module** (the purification module).
+4. **Install it** in the purification chamber.
+5. **Killing the Queen is never necessary.** She is an obstacle in the way, not the goal. This answers §11's question for the bully way too: forcing through does not require killing her.
+
+This is the quest line already built (`SEWER-QUEST.md`); what changes is where its pieces sit in the new map. **Open:** today an ant sample drops only from a killed brood ant, so a player who never kills cannot finish: whether samples can also be found (shed chitin, eggs, a dead ant) or taken another way; whether "create the module" stays the bench's ◆300 purchase or becomes something made.
+
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
 - **Distraction and disguise:** e.g. the Toxic Mage's decoy, smoke, the Mutator's ant clone that matching ants treat as non-hostile.
@@ -168,7 +178,8 @@ Nothing implemented.
 9. The key-item zoom: tilt, speed, timing.
 10. Crossing the channel (2.5a): a player with none of the Ice Technician, Flux Technician or Technomancer can fight through the Nest (2.5b, to confirm); how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
 11a. The electric technician has no combat ability once the launcher's Combat mode is removed: whether it gets a new one.
-11. The bully way (2.5b): must the Queen die on it; is the missed loot lost for good.
+11. The bully way (2.5b): ~~must the Queen die on it~~ (answered 2026-11-20: no, 2.5c); is the missed loot lost for good.
+11b. Ant samples without killing; "create the module" (2.5c).
 12. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
 
 ## 12. History
