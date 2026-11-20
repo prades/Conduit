@@ -33,6 +33,12 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 - **The water purification chamber is in the bottom-right** of the map: where the purification module is installed and the Toxic Queen's encounter resolves.
 - **Supersedes** the Notion note that water enters from the south (2026-11-19).
 
+### 2.2a A deep sewer: stairs down every few tiles (the owner, 2026-11-20)
+"Can we make it like sort of elevated? [...] Like you have to descend down some stairs every few tiles. So that the player gets an idea that it is a really deep sewer system."
+- The sewer **descends as the player goes in**: the walkways step down by flights of stairs every few tiles, so the player feels how deep it goes.
+- The agent's reading: the entrance is the highest point and the levels fall toward the junction, the way the water runs. (The channel-bed key's way down is REEF, not stairs, 2.5d.)
+- **Open:** how many tiles between flights and how deep each step is; whether the rooms off the walkways sit at their walkway's level; how the levels read in the 2D view (the 3D view, `VIEW-3D.md`, shows height directly).
+
 ### 2.3 Skeleton zones (approved as a skeleton; contents are placeholders)
 
 | Zone | Where | Placeholder role |
@@ -115,7 +121,7 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 
 6. **The player can never flood themselves** (the owner, 2026-11-20: "you can't move an object and bring the water back down upon yourself"): no move that would release the water is allowed while the player is down in a dry channel.
 
-**Open:** which channel (the owner's word was unclear; the agent suggests the west channel from the entrance, the one that flows freely, 2.2); which door the key opens; whether the water comes back when the player, standing safely out of the channel, moves the obstacle away.
+**The west channel, by the entrance** (the owner, 2026-11-20: "the West Channel by the [entrance]'s fine"; the owner said "exit", read as the entrance, the only way in on the west). **Open:** which door the key opens; whether the water comes back when the player, standing safely out of the channel, moves the obstacle away.
 
 ### 2.5e The dungeon resets on every return (the owner, 2026-11-20)
 "These dungeons completely reset other than the items every single time"; "The dungeon should reset every single time the player comes back to them."
