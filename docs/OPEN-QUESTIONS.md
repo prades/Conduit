@@ -907,3 +907,6 @@ Designed by the owner the same day (§2.1 to §2.25: each follower's own basic a
 3. **In a card battle**, should a scout's backup join the battle? Today it comes up outside it and leaves you and your squad alone (`CARD-BATTLES.md` §2.6): for the card battles' work.
 4. **Your clones** keep their species' specials (an ant scout clone still leaps, an ant striker or tank clone still has MANDIBLE FRENZY): should an ant clone of yours get the new ones instead?
 
+## The Sewer Dungeon (the owner's direction, 2026-11-20; `SEWER-DUNGEON.md` §11)
+
+The skeleton is approved; the room-by-room plan, keys and doors, the water level's rules, utility charges and battery packs, world-placed energy cards and "other upgrades", the central channel's north end, the Nest's exact spot, the key-item zoom's numbers and the build order are open. The list is kept in `SEWER-DUNGEON.md` §11.

@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The sewers become a large exploration dungeon (skeleton)
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`, from main at build `2026-11-17aq`
+- **Status:** designed (skeleton approved); nothing built.
+- **Context:** the owner: "make a genuine dungeon located in the sewers ... make it ginormous compared to what it is now", with keys, energy cards and upgrades to find, a personalized toolkit, many ways through, and ways to avoid fighting. A published sewer map was given as a reference for structure and scale.
+- **Decision:** entrance on the west; water flows in freely there, south down the central channel, and is dammed past the round junction by a separate Toxic Nest; the purification chamber bottom right; roughly 60 × 90 tiles; the toolkit is the squad with per-dungeon utility uses, the mech's 3 charges and battery packs; avoiding fights by alternate routes, distraction or disguise, and non-lethal tools (no sight-cone stealth); the player raises and lowers the water by moving obstacles and opening drains to reach different places; key items are shown with a zoom, floating and turning with a slight slant. Approved "as a rough skeleton" to be elaborated.
+- **Supersedes:** the Notion notes (2026-11-19) keeping the old map boundary and bringing the water in from the south.
+- **Affects:** `SEWER-DUNGEON.md` (canonical); later `SEWER-QUEST.md` and the Sewers' map and code.
+
 ## DECISION: Only the room you are in shows its creatures
 
 - **Date:** 2026-11-17 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17n`
