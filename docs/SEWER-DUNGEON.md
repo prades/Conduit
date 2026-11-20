@@ -26,6 +26,7 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 - **Water flows in from the entrance side** and runs freely along the west channel into the central channel. **It is not blocked there.**
 - The water runs **south down the central channel to the round junction**.
 - **Past the round junction it is dammed up because of the Nest**: a **separate Toxic Nest inside the Sewers**, along the corridor running east from the junction.
+- **The central channel has a walkway along each side** (the owner, 2026-11-20), its whole length; the west channel has a walkway along each bank. The player starts on the west side; everything east of the central channel lies across the water (2.5a).
 - **Refined 2026-11-20:** the owner: "I figured the nest would be directly on top of the junction, or at least the queen area." **The Nest, or at least the Queen's area, sits on the round junction itself**: the Nest dams the water there, so it backs up into the central channel above it. The corridor east of the junction leads on to the purification chamber, so the Queen's area lies between the player and the purification chamber.
 - **The water purification chamber is in the bottom-right** of the map: where the purification module is installed and the Toxic Queen's encounter resolves.
 - **Supersedes** the Notion note that water enters from the south (2026-11-19).
