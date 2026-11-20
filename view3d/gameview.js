@@ -165,6 +165,7 @@ const GAMEVIEW = (function () {
   // A FAINT (the owner, 2026-11-18: "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation
   // is concluding"): one of a card battle that goes down (a creature, one of yours) is not gone at once: the view keeps its body for FAINT frames: it tips over onto its side (the first half), lies
   // a moment, then sinks into the floor and shrinks away; then the body goes back to the pool. It runs on the game's frames, on its own: the last one's goes on as the battle's camera eases back.
+  const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX);
   const FAINT = 62, faints = [];
   function faintStart(u, b, f0) { if (!u || !u.dead || !battling() || !b.holder.visible || faints.length >= 12) return false;
     const h = b.holder; faints.push({ b, t0: f0, y: h.position.y, sc: h.scale.x }); return true; }
@@ -238,12 +239,14 @@ const GAMEVIEW = (function () {
     shown.clear(); cube(f0, dt); for (const a of GM.actors) { if (a._swallowedBy || !GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     for (const [u, b] of live) if (b.used !== stamp) { if (!faintStart(u, b, f0)) give(b); live.delete(u); }
     faintStep(f0);
+    stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js)
     const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
     stats, state, world, camera: cam, core: CORE,
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
+    fieldKinds: FIELDS.kinds,   // (the fields this view draws in a battle: js/cardults.js keeps the faint squares for the rest)
     swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
     // for tests (tests/view3d.js): a form or an egg built as a follower's body is, and put in every pose the game can ask of it (its sheet's idle, action and block columns), without
     // drawing: why it fails, or null

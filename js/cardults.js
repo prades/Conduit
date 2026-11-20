@@ -257,6 +257,18 @@ function cardUltEnd() {
 }
 // THE FIELD'S SQUARES, FAINT (the owner, 2026-11-20: "you can have the tiles faint right now", till the fields' own animation is in the battle's view; §2.65): the squares of each
 // field an Ultimate left stay lit, faintly, in its follower's colour, while it lasts; a wall's too. One that moves with its follower is laid again when it has moved. The look the agent's.
+// the fields a battle's Ultimates left, for the 3D view to draw (view3d/gamemap.js battleFields, view3d/fields.js): the same list each frame, refilled
+const _cuFields = [];
+function cardUltFields() { _cuFields.length = 0; if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof elementEffects === "undefined") return _cuFields; for (const e of elementEffects) if (e._cbUlt === "win" && e.life > 0 && cardUltShown(e)) _cuFields.push(e); return _cuFields; }
+// WHEN A FIELD IS SEEN (the owner, 2026-11-20: "The ultimate animations should only appear when they're cast, and then they should go away for the next creature's turn [...] The battlefield
+// should be clear, unless it's the creature who casts the ultimate's turn"): in its caster's turn (as it is cast; your round come to that follower again); and, the agent's reading, while its
+// own turn's worth strikes as the enemies' turn begins (its numbers would rise from nothing). At every other time the floor is clear of it, its faint squares too.
+function cardUltShown(e) {
+    const T = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null; if (!T || !e) return false;
+    if (T.who === "act") return T.f === e._cbBy;
+    if (T.who === "you") return _cbCurrent() === e._cbBy;
+    return T.who === "foe" && !!T.field && e._cbLive > 0;
+}
 function cardUltSquares(e) {
     if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }
     return e._cbSq || null;
@@ -265,7 +277,7 @@ function cardUltDraw(V) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined") return;
     const quad = (x, y) => { const h = 0.44; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), 0); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = 1.5;
-    for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0)) continue; const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
+    for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e)) continue; const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
         ctx.fillStyle = col; ctx.strokeStyle = col; for (const c of sq) { quad(c[0], c[1]); ctx.globalAlpha = 0.14; ctx.fill(); ctx.globalAlpha = 0.4; ctx.stroke(); } }
     const W = cardUltWalls(); if (W.length) { ctx.fillStyle = ctx.strokeStyle = "#ff8fc8"; for (const c of W) { quad(c[0], c[1]); ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 0.7; ctx.stroke(); } }
     ctx.restore();
