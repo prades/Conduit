@@ -95,7 +95,11 @@ The toolkit is **the squad the player brings**, with limited environmental uses 
 4. **Install it** in the purification chamber.
 5. **Killing the Queen is never necessary.** She is an obstacle in the way, not the goal. This answers §11's question for the bully way too: forcing through does not require killing her.
 
-This is the quest line already built (`SEWER-QUEST.md`); what changes is where its pieces sit in the new map. **Open:** today an ant sample drops only from a killed brood ant, so a player who never kills cannot finish: whether samples can also be found (shed chitin, eggs, a dead ant) or taken another way; whether "create the module" stays the bench's ◆300 purchase or becomes something made.
+This is the quest line already built (`SEWER-QUEST.md`); what changes is where its pieces sit in the new map. **Answered 2026-11-20:**
+- **Samples (the owner calls them DNA samples) can be had without killing:** found as **shed chitin, eggs, or a dead ant** in the dungeon, or taken from a **sleeping or frozen ant**. A killed brood ant still drops one as today.
+- **The purification module is made from spare parts found in the sewer** (in place of buying it at the bench for ◆300).
+
+**Open:** how many samples and parts, where each lies, how a sample is taken from a sleeping or frozen ant (and whether it wakes it), where the module is assembled (the analysis bench, or elsewhere), and whether the ◆300 purchase stays as a fallback.
 
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
@@ -120,6 +124,16 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 - The item **floats** and **turns about its upright axis, tilted slightly** off straight up (the agent's reading of "rotating vertically, a little bit of a slant"; to be confirmed).
 - Kept from the earlier approved direction: brief, no long lock of the controls, shortened or skipped when the player is in danger or a fight is on. Ordinary pickups stay visually quieter.
 - Tilt angle, spin speed and timings: open.
+
+## 2.10 Rooms, one by one (the room-by-room pass, begun 2026-11-20)
+
+Each room is **proposed** until the owner approves it; approved rooms say so.
+
+### Room 1: the Entrance (west edge) — proposed
+- Arrival from the arena into a dry, quiet tunnel beside the inflow channel; the water here runs clean and fast.
+- The first water reading here reads normal: the trouble is further in.
+- A locked side door that cannot be opened yet: later opened from its far side as a shortcut back.
+- No enemies.
 
 ## 3. Must-have requirements
 - [ ] A connected sewer of the approved shape (2.2) and roughly the approved scale (2.1), entered from the west.
@@ -179,7 +193,7 @@ Nothing implemented.
 10. Crossing the channel (2.5a): a player with none of the Ice Technician, Flux Technician or Technomancer can fight through the Nest (2.5b, to confirm); how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
 11a. The electric technician has no combat ability once the launcher's Combat mode is removed: whether it gets a new one.
 11. The bully way (2.5b): ~~must the Queen die on it~~ (answered 2026-11-20: no, 2.5c); is the missed loot lost for good.
-11b. Ant samples without killing; "create the module" (2.5c).
+11b. ~~Ant samples without killing; "create the module"~~ (answered 2026-11-20, 2.5c); counts, places, assembly: open.
 12. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
 
 ## 12. History
