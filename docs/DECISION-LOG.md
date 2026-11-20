@@ -14,6 +14,13 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The bully way through the sewer: fight straight through, open to anyone, at the cost of loot
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`
+- **Status:** designed; nothing built.
+- **Decision:** the owner: a hard alternative where the player takes on the boss directly, "the bully way"; "open to anybody, not just the gunslinger"; it "costs you the opportunity to obtain a bunch of loot". The agent's reading to confirm: fight through the Nest across its dam, the crossing that needs no bridge.
+- **Affects:** `SEWER-DUNGEON.md` §2.5b, §11.
+
 ## DECISION: The sewer channel is crossed only by raising the water and bridging it
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`, from main at build `2026-11-17aq`

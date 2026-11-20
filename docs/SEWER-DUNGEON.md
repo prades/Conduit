@@ -77,6 +77,15 @@ The toolkit is **the squad the player brings**, with limited environmental uses 
 
 **Raised by the agent, to settle with the owner** (§11): the main path to the Nest and the purification chamber is on the far side of the channel, so every player must cross. As approved, crossing needs one of three helpers (Ice Technician, Flux Technician, Technomancer), and raising the water itself needs an obstacle moved; with one utility use per follower per dungeon, a crossing can cost two uses, and a way back is needed too. §2.4's rule that the main path is never impossible without one particular follower or class needs a fallback here.
 
+### 2.5b The bully way: through the Nest (the owner, 2026-11-20)
+"I kind of want to make the player able to take on the boss directly as the gunslinger. And that would be the hard alternative. The bully way of getting through the boss or the quest." Then: "it's open to anybody, not just the gunslinger. The bully way costs you the opportunity to obtain a bunch of loot."
+1. **A direct, hard route to the objective by fighting**, the alternative to the clever routes (raising the water and bridging the channel, 2.5a). The Gunslinger is the class it suits; **any player may take it**.
+2. **Its cost is loot:** the player who forces through misses the opportunity to get a lot of the loot the exploring routes reach.
+3. **The agent's reading, to confirm** (proposed in the conversation, not yet answered): the Nest is the dam (2.2), and the trash dam is walkable, so the bully way is to fight straight through the Nest across the dam, the one crossing that needs no bridge, through the brood and the Queen. This also answers §11.10's fallback: a player without bridge helpers can always fight through.
+4. The Queen's existing outcomes stay (`SEWER-QUEST.md`): killed, the purification still completes and the outcome is `defeated`.
+
+**Open:** whether forcing through the Nest means the Queen must be killed, or she can still be slept, stunned and spared at the console; whether the missed loot is gone for good or can be gone back for later (and so what "costs you the opportunity" means in play).
+
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
 - **Distraction and disguise:** e.g. the Toxic Mage's decoy, smoke, the Mutator's ant clone that matching ants treat as non-hostile.
@@ -156,10 +165,12 @@ Nothing implemented.
 7. The top of the central channel: dead end with loot, or upstream branch.
 8. Where the Nest sits exactly: in the corridor as the dam itself, or beside it with only its dam in the corridor.
 9. The key-item zoom: tilt, speed, timing.
-10. Crossing the channel (2.5a): what a player with none of the Ice Technician, Flux Technician or Technomancer does; how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
-11. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
+10. Crossing the channel (2.5a): a player with none of the Ice Technician, Flux Technician or Technomancer can fight through the Nest (2.5b, to confirm); how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
+11. The bully way (2.5b): must the Queen die on it; is the missed loot lost for good.
+12. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
 
 ## 12. History
 - 2026-11-19 (Notion): the sewer as a dungeon with keys, breachable doors, shortcuts and rewarding side areas; the map boundary kept; water from the south.
+- 2026-11-20: the bully way, fighting straight through, open to anyone, costing loot (2.5b).
 - 2026-11-20: the channel is crossed only by raising the water and bridging it (ice, or a box pushed in by the Flux Technician or the mech); the launcher kept for side spots (2.5a).
 - 2026-11-20: the owner asked for a much larger dungeon from a reference map; approved the skeleton in §2 (entrance west, water dammed past the junction by the Nest, purification bottom right); added water level as a tool and the key-item zoom. The boundary and south-water notes are superseded.
