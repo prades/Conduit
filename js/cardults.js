@@ -259,15 +259,20 @@ function cardUltEnd() {
 // field an Ultimate left stay lit, faintly, in its follower's colour, while it lasts; a wall's too. One that moves with its follower is laid again when it has moved. The look the agent's.
 // the fields a battle's Ultimates left, for the 3D view to draw (view3d/gamemap.js battleFields, view3d/fields.js): the same list each frame, refilled
 const _cuFields = [];
-function cardUltFields() { _cuFields.length = 0; if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof elementEffects === "undefined") return _cuFields; for (const e of elementEffects) if (e._cbUlt === "win" && e.life > 0 && cardUltShown(e)) _cuFields.push(e); return _cuFields; }
+function cardUltFields() { _cuFields.length = 0; if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof elementEffects === "undefined") return _cuFields; for (const e of elementEffects) { if (!(e.life > 0)) continue; if (e._cbUlt ? cardUltShown(e) : e.type === "gooproxy" && e._cbHeld) _cuFields.push(e); }   // (a copy is a body on its square, enemies go for it: always there, the agent's reading of §2.68)
+    if (typeof techReefs !== "undefined") for (const O of techReefs) if (O._cbTurns > 0) _cuFields.push(O);   // (a wall blocks a walk: always there, the same)
+    return _cuFields; }
+// the Ultimates' own numbers the 3D drawings ask for (view3d/gamemap.js): METEOR RAIN's fall and warning, CONSUME's bite, JELLY SHIELDS' soak
+let _cuNums = null;
+function cardUltNumbers() { return _cuNums || (_cuNums = { fall: ULT_METEOR.fall, warn: ULT_METEOR.warn, consume: ULT_CONSUME, jelly: ULT_JELLY }); }
 // WHEN A FIELD IS SEEN (the owner, 2026-11-20: "The ultimate animations should only appear when they're cast, and then they should go away for the next creature's turn [...] The battlefield
 // should be clear, unless it's the creature who casts the ultimate's turn"): in its caster's turn (as it is cast; your round come to that follower again); and, the agent's reading, while its
 // own turn's worth strikes as the enemies' turn begins (its numbers would rise from nothing). At every other time the floor is clear of it, its faint squares too.
 function cardUltShown(e) {
     const T = typeof _cb !== "undefined" && _cb.phase === "on" ? _cb.turn : null; if (!T || !e) return false;
     if (T.who === "act") return T.f === e._cbBy;
-    if (T.who === "you") return _cbCurrent() === e._cbBy;
-    return T.who === "foe" && !!T.field && e._cbLive > 0;
+    if (T.who === "you") return _cbCurrent() === e._cbBy || e.type === "consume";   // (the Sundew has no turn while it digests: its hold is seen through your round, the agent's reading)
+    return T.who === "foe" && !!T.field && e._cbUlt === "win" && e._cbLive > 0;
 }
 function cardUltSquares(e) {
     if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }

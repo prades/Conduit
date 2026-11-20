@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ax` · branch `claude/start-game-project-HSh7Z` · card battles: the holds, shields, copies and wall in 3D (drafts)
+- **The ask** (the owner, 2026-11-20): "Next batch".
+- **What it does:** ABSOLUTE ZERO, CONSUME, JELLY SHIELDS, PROXY SWARM's copies and REEF PILLAR's wall are drawn in a battle (`CARD-BATTLES.md` §2.67). The wall and the copies are always there; the rest follow the caster's-turn rule (the Sundew's hold through your round). Drafts: the shapes are the agent's.
+- **Not built:** everyday attacks and the seven Ultimates that are over in their own turn.
+- `view3d/fields.js`, `view3d/gamemap.js`, `js/cardults.js`, `tests/cardbattle.js`.
+- **Verified:** tests/cardbattle.js, view3d, bundle; each seen in a real browser (software rendering). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17aw` · branch `claude/start-game-project-HSh7Z` · card battles: the other seven fields animated in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Do the other seven fields".
 - **What it does:** WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK and METEOR RAIN are drawn and animated in a battle, seen in their caster's turn as the first three are (`CARD-BATTLES.md` §2.67, §2.68). Drafts: the shapes are the agent's. Holds, shields, walls and everyday attacks are still not drawn in a battle.

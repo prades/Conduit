@@ -1062,6 +1062,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify(r), '{"on":"thunderstorm","off":0}', 'the fields handed over');
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
         ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0, GM\.meteor\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
+        for (const k of ['abszero', 'consume', 'jellyshield', 'gooproxy', 'reef']) ok(new RegExp('\\n    ' + k + '\\((e|O)\\) \\{').test(f), k + ' has its 3D thing');
+        const h = J(`(function(){ ${ULT} const o = {}; { const A = __shaped('coralcrab', [[4, 0]], [[1, 0], [2, 0], [3, 0], [3, 1], [3, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); act(); foesTurn(); _cb.acted.add(A.f); o.wall = cardUltFields().filter(x => x.parts).length; }
+            { const A = __shaped('gooproxy', [[3, 0]], [[1, 0], [0, 1], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); act(); foesTurn(); _cb.acted.add(A.f); o.copies = cardUltFields().filter(x => x.type === 'gooproxy').length; }
+            { const A = __shaped('jellyram', [[3, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(2); o.shieldCast = cardUltFields().filter(x => x.type === 'jellyshield').length; act(); foesTurn(); o.shieldTurn = cardUltFields().length; _cb.acted.add(A.f); o.shieldOff = cardUltFields().length; }
+            { const A = __shaped('sundew', [[1, 0], [4, 0]], [[1, 1], [0, 1], [2, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); __live(2); const e = fx('consume'); o.gulp = [cardUltShown(e)]; _cb.turn = { who: 'you', t0: frame }; o.gulp.push(cardUltShown(e)); _cb.turn = { who: 'foe', a: A.foes[1], t0: frame, queue: [] }; o.gulp.push(cardUltShown(e)); }
+            return o; })()`);
+        same(JSON.stringify(h), '{"wall":1,"copies":3,"shieldCast":1,"shieldTurn":1,"shieldOff":0,"gulp":[true,true,false]}', 'the wall and the copies always there; a shield in its caster\'s turn; the Sundew\'s hold through your round, not an enemy\'s turn');
         same(J(`Object.keys(_CU_LAST).filter(k => _CU_LAST[k] === 'win').sort().join()`), 'circuit,eventhorizon,icerink,meteorrain,shardvortex,thicket,thunderstorm,toxicnet,toxicpuddle,whiteout', 'the fields that last');
         for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle', 'whiteout', 'icerink', 'shardvortex', 'thicket', 'circuit', 'toxicnet', 'meteorrain']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
     });
