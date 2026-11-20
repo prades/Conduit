@@ -450,6 +450,92 @@ if (ICE !== null) {
     });
 }
 
+group('STAGE 5, THE ELECTRIC LINE IN 3D (the ice line approved, the owner, 2026-11-20: "Yes"; then "Electric"): the Thunderhead, the Electro Skink, the Static Orb and the Hover Shell');
+// The four electric forms beside three ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const ELEC = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x, y) { spawnFollowerAtCrystal('electric'); var f = followers[followers.length - 1]; f.element = 'electric'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = y; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; return f; };
+  var th = mk('thunderhead', 'sniper', 12.0, 18.6), sk = mk('electroskink', 'brawler', 13.0, 20.3), o = mk('staticorb', 'brawler', 13.4, 19.5), hv = mk('hovershell', 'camper', 12.6, 19.4);
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 14.5; ant.y = 19.5; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.x = 15.5; ant2.y = 19.0; ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  var ant3 = spawnCreature({ species: 'ant', className: 'scout' }); ant3.x = 15.3; ant3.y = 20.2; ant3.health = ant3.maxHealth = 1e6; ant3.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; }); step(3);
+  out.types = A.types(); out.bodies = [V.has(th), V.has(sk), V.has(o), V.has(hv)];
+  var snap = function () { var keep = function (q) { var r = {}; Object.keys(q).forEach(function (k) { var v = q[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { bolts: 0, glint: 0, fire: 0, smoke: 0, props: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, k, v) { return elementEffects.filter(function (e) { return e.type === type && (!k || e[k] === v); })[0]; }, zaps = function (c) { return elementEffects.filter(function (e) { return e.type === 'impact' && e.color === c; }); }, R = out.r = {};
+  var home = function (u, x, y) { u.x = x; u.y = y; u.state = 'idle'; u._fpPath = null; };
+  // THE THUNDERHEAD: CHAIN LIGHTNING (its shot, kind bolt, and the hops the game's chainLightning makes), STATIC VORTEX, THUNDERSTORM
+  var bs = spawnFollowerProjectile(th, ant, '#ffee33', 1, 5, null, null, { kind: 'bolt' }); step(3); R.shot = { owned: !!bs && view3dOwnsFx(bs), bolts: A.stats.bolts, same: same() }; pk(); step(30);
+  var hops = chainLightning(th, ant, 10), cb = of('chainBolt'); step(2); R.chain = { hops: hops, owned: !!cb && view3dOwnsFx(cb), bolts: A.stats.bolts, same: same() }; pk(); step(24);
+  R.vortex = { fired: staticVortex(th) }; var vx = of('staticVortex', 'by', th); step(14); R.vortex.owned = !!vx && view3dOwnsFx(vx); R.vortex.st = st(); R.vortex.same = same(); pk(); if (vx) vx.life = 1; step(3); elementEffects.length = 0; step(2);
+  th.ultimateCharge = 100; R.storm = { fired: followerUltFire(th) }; var ts = of('thunderstorm', 'on', th); step(31); R.storm.owned = !!ts && view3dOwnsFx(ts); R.storm.st = st(); pk();
+  gfxLow = true; V.draw(null); R.storm.low = st(); gfxLow = false; R.storm.same = same(); if (ts) ts.life = 1; step(3); elementEffects.length = 0; step(2);
+  // THE ELECTRO SKINK: its everyday hit (the game's swirl round the enemy), ZIGZAG DASH (its hits; it is at the route's end at once), LIGHTNING CIRCUIT (its run, then its ring)
+  skinkSwirlStrike(sk, ant); var sw = of('skinkswirl', 'by', sk); step(4); R.swirl = { owned: !!sw && view3dOwnsFx(sw), props: A.stats.props, same: same() }; pk(); step(30); elementEffects.length = 0; home(sk, 13.0, 20.3); step(2);
+  var zx = sk.x, zy = sk.y; R.zig = { fired: zigzagDash(sk) }; var zz = zaps('#ffee33'); step(1); R.zig.n = zz.length; R.zig.moved = +Math.hypot(sk.x - zx, sk.y - zy).toFixed(2); R.zig.owned = zz.length > 0 && zz.every(function (e) { return view3dOwnsFx(e); }); R.zig.body = V.has(sk);
+  step(5); R.zig.st = st(); R.zig.same = same(); pk(); step(30); elementEffects.length = 0; home(sk, 13.0, 20.3); step(2);
+  sk.ultimateCharge = 100; R.circuit = { fired: followerUltFire(sk) }; var sl = of('skinkloop', 'on', sk); step(4); R.circuit.loop = !!sl && view3dOwnsFx(sl); var lz = zaps('#fff27a'); R.circuit.sparks = lz.length > 0 && lz.every(function (e) { return view3dOwnsFx(e); });
+  for (var i = 0; i < 40 && !of('circuit', 'by', sk); i++) step(1); var ci = of('circuit', 'by', sk); step(32); R.circuit.ring = !!ci && view3dOwnsFx(ci); R.circuit.st = st(); pk();
+  gfxLow = true; V.draw(null); R.circuit.low = st(); gfxLow = false; R.circuit.same = same(); if (ci) ci.life = 1; step(3); elementEffects.length = 0; home(sk, 13.0, 20.3); step(2);
+  // THE STATIC ORB: its everyday hit (the element's chain and its spark ring), SONIC ROLL, CAPACITOR DISCHARGE (a full release), OVERDRIVE
+  var r0 = Math.random; Math.random = function () { return 0.9; }; o.state = 'attack'; o.attackAnim = 0; ELEMENT_ATTACKS.electric.physical(o, ant); Math.random = r0; var ch = of('chain'); step(3);
+  R.hit = { made: !!ch, owned: !!ch && view3dOwnsFx(ch), spark: view3dOwnsFx(o, 'spark'), bolts: A.stats.bolts, same: same() }; pk(); step(24); home(o, 12.6, 19.9); elementEffects.length = 0; step(2);
+  var ox = o.x, oy = o.y; R.roll = { fired: staticRush(o) }; var rz = zaps('#ffee33'); step(1); R.roll.moved = +Math.hypot(o.x - ox, o.y - oy).toFixed(2); R.roll.owned = rz.length > 0 && rz.every(function (e) { return view3dOwnsFx(e); }); R.roll.body = V.has(o); step(6); R.roll.st = st(); R.roll.same = same(); pk(); step(30);
+  home(o, 13.4, 19.5); elementEffects.length = 0; step(2); var alt0 = o.alt; o.alt = 'capacitor_discharge'; o._cap = CAP_MAX; R.cap = { fired: capacitorRelease(o) }; o.alt = alt0; var cr = elementEffects.filter(function (e) { return e.type === 'ring'; })[0], cz = zaps('#ffee33'); step(2);
+  R.cap.owned = !!cr && view3dOwnsFx(cr) && cz.length > 0 && cz.every(function (e) { return view3dOwnsFx(e); }); R.cap.st = st(); R.cap.same = same(); pk(); step(30); elementEffects.length = 0; home(o, 12.6, 19.9); step(2);
+  o.ultimateCharge = 100; R.over = { fired: followerUltFire(o) }; var orr = of('ring'), oi = zaps('#fff27a')[0]; step(10); R.over.owned = !!orr && view3dOwnsFx(orr) && !!oi && view3dOwnsFx(oi); R.over.st = st(); R.over.same = same(); pk(); step(40); elementEffects.length = 0; home(o, 13.4, 19.5); step(2);
+  // THE HOVER SHELL: its everyday hit (the element's chain, from its launcher), SHOCK ZAP, DRIFT SLASH
+  Math.random = function () { return 0.9; }; hv.state = 'attack'; hv.attackAnim = 0; ELEMENT_ATTACKS.electric.physical(hv, ant); Math.random = r0; var hc = of('chain'); step(3); R.hhit = { owned: !!hc && view3dOwnsFx(hc), spark: view3dOwnsFx(hv, 'spark'), same: same() }; pk(); step(24); elementEffects.length = 0; home(hv, 12.6, 19.4); step(2);
+  R.zap = { fired: shockZap(hv) }; var hz = zaps('#ffee33'); step(2); R.zap.owned = hz.length > 0 && hz.every(function (e) { return view3dOwnsFx(e); }); R.zap.st = st(); R.zap.same = same(); pk(); step(24); elementEffects.length = 0; home(hv, 12.6, 19.4); step(2);
+  hv.ultimateCharge = 100; R.drift = { fired: followerUltFire(hv) }; var hd = of('hoverdrift', 'on', hv); var cut = []; for (var i = 0; i < 30; i++) { step(1); zaps('#fff27a').forEach(function (e) { if (cut.indexOf(e) < 0) cut.push(e); }); if (i === 12) { R.drift.st = st(); R.drift.owned = !!hd && view3dOwnsFx(hd); } }
+  R.drift.cuts = cut.length; R.drift.cutOwned = cut.every(function (e) { return !(e.life > 0) || view3dOwnsFx(e); }); R.drift.same = same(); pk();
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Thunderhead's entry made to fail: its storm is the game's 2D drawing again, the view and the other forms go on
+  elementEffects.length = 0; home(hv, 12.6, 19.4); step(2); staticVortex(th); var vx2 = of('staticVortex', 'by', th); step(2); A.breakFor('thunderhead'); step(2);
+  out.fault = { bad: A.bad(), owned: !!vx2 && view3dOwnsFx(vx2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(th), others: V.has(o) }; A.mend('thunderhead'); if (vx2) vx2.life = 1; step(2);`));
+if (ELEC !== null) {
+    check('the registry: the electric line\'s entries (the Thunderhead, the Electro Skink, the Static Orb, the Hover Shell), their effects and shots; their bodies the view\'s', () => {
+        ok(!ELEC.none, 'the page left no result'); ok(!ELEC.threw, ELEC.threw); same(ELEC.errs.join(' | '), '', 'errors'); same(ELEC.state, 'ready', 'the view');
+        same(JSON.stringify([ELEC.types.thunderhead, ELEC.types.electroskink, ELEC.types.staticorb, ELEC.types.hovershell]), JSON.stringify([['chainBolt', 'staticVortex', 'thunderstorm', 'shot:bolt'], ['skinkswirl', 'impact', 'skinkloop', 'circuit'], ['chain', 'impact', 'ring'], ['chain', 'impact', 'hoverdrift']]), 'what each draws');
+        same(JSON.stringify(ELEC.bodies), '[true,true,true,true]', 'their bodies the view\'s');
+    });
+    check('THE THUNDERHEAD: its bolt shot, CHAIN LIGHTNING\'s hops, STATIC VORTEX (the approved storm, its model) and THUNDERSTORM: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = ELEC.r; same(JSON.stringify([R.shot.owned, R.shot.bolts > 0]), '[true,true]', 'the shot and its string');
+        ok(R.chain.hops >= 1, 'the game made no hop: ' + JSON.stringify(R.chain)); same(JSON.stringify([R.chain.owned, R.chain.bolts > 0]), '[true,true]', 'the hops');
+        same(JSON.stringify([R.vortex.fired, R.vortex.owned, R.vortex.st.props]), '[true,true,1]', 'STATIC VORTEX: fired, the view\'s, its storm stood');
+        same(JSON.stringify([R.storm.fired, R.storm.owned]), '[true,true]', 'THUNDERSTORM'); ok(R.storm.st.smoke >= 10 && R.storm.st.bolts > 0, 'its cloud and strike: ' + JSON.stringify(R.storm.st));
+        ok(R.storm.low.smoke <= ELEC.cap.smoke / 2 && R.storm.low.smoke < R.storm.st.smoke && R.storm.low.bolts <= ELEC.cap.bolt / 2, 'LOW graphics: ' + JSON.stringify(R.storm.low) + ' of ' + JSON.stringify(R.storm.st));
+    });
+    check('THE ELECTRO SKINK: its swirl (the approved model), ZIGZAG DASH\'s hits, LIGHTNING CIRCUIT\'s run, sparks and ring: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = ELEC.r; same(JSON.stringify([R.swirl.owned, R.swirl.props]), '[true,1]', 'the swirl: the view\'s, its model stood');
+        same(JSON.stringify([R.zig.fired, R.zig.owned, R.zig.body]), '[true,true,true]', 'ZIGZAG DASH: fired, its hits the view\'s, its body'); ok(R.zig.n >= 2 && R.zig.moved >= 1 && R.zig.st.bolts > 0, 'its route: ' + JSON.stringify(R.zig));
+        same(JSON.stringify([R.circuit.fired, R.circuit.loop, R.circuit.sparks, R.circuit.ring]), '[true,true,true,true]', 'LIGHTNING CIRCUIT: its run, its sparks, its ring'); ok(R.circuit.st.bolts >= 20, 'its ring of lightning: ' + JSON.stringify(R.circuit.st));
+        ok(R.circuit.low.bolts <= ELEC.cap.bolt / 2 && R.circuit.low.bolts < R.circuit.st.bolts, 'LOW graphics: ' + JSON.stringify(R.circuit.low) + ' of ' + JSON.stringify(R.circuit.st));
+    });
+    check('THE STATIC ORB: its hit (the chain and its spark ring), SONIC ROLL, CAPACITOR DISCHARGE and OVERDRIVE: each the view\'s, drawn in 3D', () => {
+        const R = ELEC.r; same(JSON.stringify([R.hit.made, R.hit.owned, R.hit.spark, R.hit.bolts > 0]), '[true,true,true,true]', 'the hit: the chain, the spark ring');
+        same(JSON.stringify([R.roll.fired, R.roll.owned, R.roll.body]), '[true,true,true]', 'SONIC ROLL'); ok(R.roll.moved >= 0.5 && R.roll.st.bolts > 0, 'its roll: ' + JSON.stringify(R.roll));
+        same(JSON.stringify([R.cap.fired, R.cap.owned]), '[true,true]', 'CAPACITOR DISCHARGE'); ok(R.cap.st.bolts > 0, 'its bolts: ' + JSON.stringify(R.cap.st));
+        same(JSON.stringify([R.over.fired, R.over.owned]), '[true,true]', 'OVERDRIVE'); ok(R.over.st.bolts > 0, 'its rush: ' + JSON.stringify(R.over.st));
+    });
+    check('THE HOVER SHELL: its hit from its launcher, SHOCK ZAP and DRIFT SLASH (its blade and every slash): each the view\'s, drawn in 3D', () => {
+        const R = ELEC.r; same(JSON.stringify([R.hhit.owned, R.hhit.spark]), '[true,true]', 'the hit');
+        same(JSON.stringify([R.zap.fired, R.zap.owned, R.zap.st.bolts > 0]), '[true,true,true]', 'SHOCK ZAP');
+        same(JSON.stringify([R.drift.fired, R.drift.owned, R.drift.cutOwned, R.drift.st.bolts > 0]), '[true,true,true,true]', 'DRIFT SLASH (' + JSON.stringify(R.drift) + ')'); ok(R.drift.cuts >= 1, 'no slash: ' + JSON.stringify(R.drift));
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect and shot as it was)', () => {
+        const P = ELEC.peak, C = ELEC.cap; ok(P.bolts <= C.bolt && P.glint <= C.glint && P.fire <= C.fire && P.smoke <= C.smoke && P.props <= 4, 'over the budget: ' + JSON.stringify(P));
+        const R = ELEC.r; same(JSON.stringify([R.shot.same, R.chain.same, R.vortex.same, R.storm.same, R.swirl.same, R.zig.same, R.circuit.same, R.hit.same, R.roll.same, R.cap.same, R.over.same, R.hhit.same, R.zap.same, R.drift.same]), JSON.stringify(new Array(14).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one electric form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = ELEC.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['thunderhead'], false, 'ready', true, true, true]), 'after the fault');
+    });
+    check('the game\'s side: the spark ring round a unit on its electric hit asks the view first (js/draw.js)', () => { ok(/view3dOwnsFx\(actor, "spark"\)/.test(rd('js/draw.js')), 'js/draw.js'); });
+}
+
 group('A FAILURE never stops the game');
 const BAD = realPage('dev&engine=3d', RUN(SETUP + `put(13, 19); step(3); out.showing = VIEW3D.showing; out.feet = view3dFeet(); var d = ctx.getImageData(40, 300, 1, 1).data; out.px = d[3];`), `VIEW3D_FILES[1] = 'dist/no-such-view.js';`);
 if (BAD !== null) check('its script missing: the game starts and runs in 2D, and VIEW3D.error says why', () => {

@@ -30240,8 +30240,8 @@ function view3dIceForms(K) {
 ;
 /* view3d/attacks_electric.js */
 function view3dElectricForms(K) {
-    const { GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, GLINT, FIRE, SMOKE, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf, curOf, claimK, UPX, bodyH, bmReset, bmApply, BM, CAP, stats } = K;
-    if (!bodyH || !bmApply || !CAP || !K.hooks)
+    const { GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, GLINT, FIRE, SMOKE, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf, curOf, claimK, UPX, bmReset, bmApply, BM, CAP, stats } = K;
+    if (!bmApply || !CAP || !K.hooks)
         throw new Error('the electric line needs the fire line\'s body helpers and the kit\'s hooks');
     const M = K.elec || {}, SNAP = M.snap || 1.5, PULL = M.pull || 1.3, VR = M.vortexR || 2.5, VFRAME = M.vortexFrame || 6, VALPHA = M.vortexAlpha || 0.7;
     const SW = M.swirl || { coil: 6, spin: 12, release: 6 }, SWF = SW.coil + SW.spin + SW.release, CIR = M.circuit || { radius: 2.5, tick: 30 }, DR = M.drift || { cut: 1.8 }, ODR = (M.overdrive && M.overdrive.radius) || 2;
@@ -30258,6 +30258,22 @@ function view3dElectricForms(K) {
             NEAR.push(a);
     } return NEAR; }
     const hitY = (x, z) => floorY(x, z) + 0.3;
+    const BX = new T.Box3(), BX2 = new T.Box3();
+    function heightOf(b) {
+        if (b._elH === undefined) {
+            const h = b.holder, v = h.visible, s = h.scale.x || 1;
+            h.visible = true;
+            h.updateMatrixWorld(true);
+            BX.makeEmpty();
+            h.traverse(o => { if (!o.isMesh || !o.geometry || o.isInstancedMesh || (b.hidden && b.hidden.indexOf(o) >= 0))
+                return; const g = o.geometry; if (!g.boundingBox)
+                g.computeBoundingBox(); BX2.copy(g.boundingBox).applyMatrix4(o.matrixWorld); if (Number.isFinite(BX2.max.y) && Number.isFinite(BX2.min.y))
+                BX.union(BX2); });
+            h.visible = v;
+            b._elH = BX.isEmpty() ? 1 : clamp((BX.max.y - h.position.y) / s, 0.3, 4);
+        }
+        return b._elH * b.holder.scale.x;
+    }
     const BN = CAP.bolt || 420, bg = new T.BufferGeometry(), bpos = new Float32Array(BN * 12), bcol = new Float32Array(BN * 16), bv = new Float32Array(BN * 4), bidx = new Uint16Array(BN * 6);
     for (let i = 0; i < BN; i++) {
         const a = i * 4, o = i * 6;
@@ -30426,7 +30442,7 @@ function view3dElectricForms(K) {
         F.at.array[i * 4 + 2] = c[2];
         F.at.array[i * 4 + 3] = Math.min(1, a);
     }
-    const PROPS = { staticvortex: [], skinkswirl: [] }, used = { staticvortex: 0, skinkswirl: 0 };
+    const PROPS = { staticvortex: [], skinkswirl: [] }, used = { staticvortex: 0, skinkswirl: 0 }, periodOf = job => job.period || TAU / 1.6;
     function prop(id) {
         const L = PROPS[id], i = used[id];
         if (i >= 2)
@@ -30436,6 +30452,8 @@ function view3dElectricForms(K) {
             if (!b)
                 throw new Error('no model for ' + id);
             b.holder.userData.fx3d = true;
+            b.holder.traverse(o => { if (o.isMesh)
+                o.castShadow = false; });
             if (id === 'staticvortex') {
                 b.mats = [];
                 b.holder.traverse(o => { if (!o.isMesh)
@@ -30446,13 +30464,99 @@ function view3dElectricForms(K) {
                         b.mats.push(m);
                     } });
                 b.k = -1;
+                vortexCache(b);
             }
+            if (id === 'skinkswirl')
+                swirlBake(b);
             L[i] = b;
         }
         used[id]++;
         const b = L[i];
         b.holder.visible = true;
         return b;
+    }
+    const VPH = 16, noop = () => { };
+    function vortexCache(b) {
+        const Real = T.TubeGeometry, P = periodOf(b.job);
+        b.cache = [];
+        try {
+            for (let p = 0; p < VPH; p++) {
+                const rec = [];
+                T.TubeGeometry = function (a, c, d, e, g) { const q = new Real(a, c, d, e, g); q.dispose = noop; rec.push(q); return q; };
+                b.B.update(p / VPH * P, 0);
+                b.cache.push(rec);
+            }
+        }
+        finally {
+            T.TubeGeometry = Real;
+        }
+    }
+    function swirlBake(b) {
+        const job = b.job, P = periodOf(job), act = i => job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8, cells = [], holder = b.holder, inv = new T.Matrix4();
+        const root = new T.Group();
+        root.userData.fx3d = true;
+        root.userData.inkGroup = true;
+        root.visible = false;
+        for (let c = 0; c < 16; c++) {
+            if (c < 8)
+                b.B.update(c * P / 8, job.idleAct);
+            else
+                b.B.update(1.0 + (c - 8) * 0.06, act(c - 8));
+            for (const q of b.hidden)
+                q.visible = false;
+            holder.position.set(0, 0, 0);
+            holder.rotation.set(0, 0, 0);
+            holder.scale.setScalar(1);
+            holder.visible = true;
+            holder.updateMatrixWorld(true);
+            inv.copy(holder.matrixWorld).invert();
+            const g = new T.Group();
+            g.visible = false;
+            holder.traverse(o => {
+                if (!o.isMesh || !o.geometry)
+                    return;
+                for (let p = o; p && p !== holder; p = p.parent)
+                    if (!p.visible)
+                        return;
+                const m = new T.Mesh(o.geometry.clone(), o.material);
+                m.matrixAutoUpdate = false;
+                m.matrix.multiplyMatrices(inv, o.matrixWorld);
+                m.castShadow = false;
+                m.receiveShadow = o.receiveShadow;
+                m.layers.mask = o.layers.mask;
+                m.renderOrder = o.renderOrder;
+                m.frustumCulled = false;
+                g.add(m);
+            });
+            root.add(g);
+            cells.push(g);
+        }
+        holder.visible = false;
+        if (holder.parent)
+            holder.parent.remove(holder);
+        env.scene.add(root);
+        b.holder = root;
+        b.cells = cells;
+        b.cell = -1;
+    }
+    function swirlCell(b, c) { if (b.cell === c)
+        return; if (b.cell >= 0)
+        b.cells[b.cell].visible = false; b.cells[c].visible = true; b.cell = c; }
+    function vortexPose(b, p) {
+        const rec = b.cache && b.cache[p], P = periodOf(b.job);
+        if (!rec) {
+            b.B.update(p / VPH * P, 0);
+            return;
+        }
+        const Real = T.TubeGeometry;
+        let k = 0;
+        T.TubeGeometry = function (a, c, d, e, g) { return rec[k++] || new Real(a, c, d, e, g); };
+        try {
+            b.B.update(p / VPH * P, 0);
+        }
+        finally {
+            T.TubeGeometry = Real;
+        }
     }
     try {
         prop('staticvortex');
@@ -30463,7 +30567,6 @@ function view3dElectricForms(K) {
     for (const id in PROPS)
         for (const b of PROPS[id])
             b.holder.visible = false;
-    const periodOf = job => job.period || TAU / 1.6;
     K.hooks.push({
         begin() { bn = 0; SOFT.n = 0; used.staticvortex = used.skinkswirl = 0; const e = env.camera.matrixWorld.elements; VD.set(-e[8], -e[9], -e[10]).normalize(); },
         finish() {
@@ -30585,7 +30688,7 @@ function view3dElectricForms(K) {
     };
     const LP = { x: 0, y: 0, z: 0 };
     function launch(b) {
-        const h = b.holder, F = fwdOf(b), hb = bodyH(b);
+        const h = b.holder, F = fwdOf(b), hb = heightOf(b);
         if (b.key === 'hovershell') {
             LP.x = h.position.x - F.x * 0.05;
             LP.z = h.position.z - F.z * 0.05;
@@ -30693,14 +30796,13 @@ function view3dElectricForms(K) {
                     const V = prop('staticvortex');
                     if (!V)
                         return;
-                    const h = V.holder, sc = env.scale() * (0.4 + 0.6 * k), step = low() ? VFRAME : VFRAME / 2, ph = Math.floor(age / step);
+                    const h = V.holder, sc = env.scale() * (0.4 + 0.6 * k), per = VPH / 8, step = low() ? VFRAME : VFRAME / per, ph = (Math.floor(age / step) * (low() ? per : 1)) % VPH;
                     h.position.set(X, Y, Z);
                     h.rotation.set(0, 0, 0);
                     h.scale.setScalar(sc);
-                    if (V.ph !== ph || V.m !== m) {
+                    if (V.ph !== ph) {
                         V.ph = ph;
-                        V.m = m;
-                        V.B.update(ph * step / VFRAME * periodOf(V.job) / 8, V.job.idleAct || 0);
+                        vortexPose(V, ph);
                         for (const q of V.hidden)
                             q.visible = false;
                     }
@@ -30727,7 +30829,7 @@ function view3dElectricForms(K) {
                     const since = age - (o.boltAt === undefined ? -99 : o.boltAt), lit = since >= 0 && since < 10 ? 1 - since / 10 : 0;
                     soft(X, Y, Z, R, YEL, (0.12 + 0.18 * lit) * k);
                     ribbon(49, (i, P) => { const an = i / 48 * TAU; P.x = X + Math.cos(an) * R; P.z = Z + Math.sin(an) * R; P.y = Y + 0.004; P.w = 0.03; P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.75 * k; });
-                    const cy = b.holder.position.y + bodyH(b) + 1.25, cr = 1.5 * (0.6 + 0.4 * k), nl = low() ? 12 : 24;
+                    const cy = b.holder.position.y + heightOf(b) + 1.25, cr = 1.5 * (0.6 + 0.4 * k), nl = low() ? 12 : 24;
                     for (let i = 0; i < nl; i++) {
                         const q = Math.sqrt(H(i, s, 1)), an = H(i, s, 2) * TAU + age * (0.012 + 0.01 * (1 - q)), rr = cr * q, y = cy + 0.18 * (1 - q * q) + 0.06 * Math.sin(age * 0.05 + i) + 0.12 * H(i, s, 3), c = H(i, s, 4) < 0.5 ? SLATE : SLATE2;
                         put(SMOKE, X + Math.cos(an) * rr, y, Z + Math.sin(an) * rr, c[0], c[1], c[2], 0.92 * k, (0.5 + 0.35 * H(i, s, 5)) * (1 - 0.35 * q));
@@ -30866,23 +30968,11 @@ function view3dElectricForms(K) {
                     const S = prop('skinkswirl');
                     if (!S)
                         return;
-                    const h = S.holder, job = S.job, P = periodOf(job);
+                    const h = S.holder;
                     h.position.set(X, Y, Z);
                     h.rotation.set(0, PI / 2, 0);
                     h.scale.setScalar(env.scale());
-                    const act = (x) => job.action[0] + (job.action[1] - job.action[0]) * (x + 0.5) / 8;
-                    if (age < SW.coil) {
-                        const x = clamp(age / (SW.coil - 1), 0, 1) * 7;
-                        S.B.update(1.0 + x * 0.06, act(x));
-                    }
-                    else if (age < SW.coil + SW.spin)
-                        S.B.update(((age - SW.coil) % 8) * P / 8, job.idleAct);
-                    else {
-                        const x = (1 - clamp((age - SW.coil - SW.spin) / (SW.release - 1), 0, 1)) * 7;
-                        S.B.update(1.0 + x * 0.06, act(x));
-                    }
-                    for (const q of S.hidden)
-                        q.visible = false;
+                    swirlCell(S, age < SW.coil ? 8 + Math.round(age / (SW.coil - 1) * 7) : age < SW.coil + SW.spin ? (age - SW.coil) % 8 : 8 + Math.round((1 - Math.min(SW.release - 1, age - SW.coil - SW.spin) / (SW.release - 1)) * 7));
                     soft(X, Y, Z, 0.85, YEL, 0.45 * fade * grow);
                     if (age >= SW.coil && age < SW.coil + SW.spin)
                         for (let i = 0; i < (low() ? 3 : 6); i++) {
@@ -30989,7 +31079,7 @@ function view3dElectricForms(K) {
     const ORB = {
         tilts: true,
         body(f, b, f0) {
-            const h = b.holder, t = f0 / 60, ra = Math.max(0.1, bodyH(b) * 0.5);
+            const h = b.holder, t = f0 / 60, ra = Math.max(0.1, heightOf(b) * 0.5);
             bmReset();
             stood(f, f0);
             let act = 0;
@@ -31099,7 +31189,8 @@ function view3dElectricForms(K) {
         },
         fx: {
             chain: Object.assign({}, CHAIN),
-            impact: Object.assign(hitFx(m => { const E = EV.get(m.owner); return E && E.kind === 'roll' ? Math.max(0, rollF(E) - 1) : 0; }), {
+            impact: Object.assign(hitFx(m => { if (m.o.element === 'electric')
+                return OD.hold + OD.rush; const E = EV.get(m.owner); return E && E.kind === 'roll' ? Math.max(0, rollF(E) - 1) : 0; }), {
                 mine(e, f) {
                     const E = EV.get(f), at = typeof GM.frame === 'number' ? GM.frame : 0;
                     if (E && at - E.at < 6 && e.color === '#ffee33' && (nearAny(e, E.pts, 0.1) || Math.hypot(e.x - f.x, e.y - f.y) < 0.2))
@@ -31173,12 +31264,11 @@ function view3dElectricForms(K) {
                             bolt(X, Y + 0.3, Z, q.x, hitY(q.x, q.y), q.y, 0.15, s + j * 5 + (a >> 1), 0.06, YEL, 1 - a / 14, 1);
                         }
                     }
-                    zapHit(X, Y + 0.3, Z, Y, a, s, 1.1);
                 }
             },
         },
         on(f, b, f0) {
-            const h = b.holder, ra = bodyH(b) * 0.5;
+            const h = b.holder, ra = heightOf(b) * 0.5;
             if (f.sparkSurround > 0) {
                 claimK('spark', f);
                 const C = launch(b);
@@ -31283,7 +31373,7 @@ function view3dElectricForms(K) {
                     const o = m.o, p = o.path;
                     if (!p || (o.i || 0) < 2)
                         return;
-                    const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = bodyH(b) * 0.45;
+                    const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = heightOf(b) * 0.45;
                     pn = 0;
                     for (let j = j0; j < i; j++) {
                         const q = p[j];

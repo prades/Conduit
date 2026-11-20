@@ -12,8 +12,8 @@
 //   HOVER SHELL   its everyday hit (the element's chain, from its launcher), SHOCK ZAP, DRIFT SLASH (the game's hoverdrift)
 // In scope (dist/view3d.js): T. Called once by view3dAttacks (view3d/attacks.js) with its kit K (after the fire and ice lines); returns the four forms' entries, and hooks its own pools into the kit's frame.
 function view3dElectricForms(K) {
-  const { GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, GLINT, FIRE, SMOKE, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf, curOf, claimK, UPX, bodyH, bmReset, bmApply, BM, CAP, stats } = K;
-  if (!bodyH || !bmApply || !CAP || !K.hooks) throw new Error('the electric line needs the fire line\'s body helpers and the kit\'s hooks');
+  const { GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, GLINT, FIRE, SMOKE, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf, curOf, claimK, UPX, bmReset, bmApply, BM, CAP, stats } = K;
+  if (!bmApply || !CAP || !K.hooks) throw new Error('the electric line needs the fire line\'s body helpers and the kit\'s hooks');
   const M = K.elec || {}, SNAP = M.snap || 1.5, PULL = M.pull || 1.3, VR = M.vortexR || 2.5, VFRAME = M.vortexFrame || 6, VALPHA = M.vortexAlpha || 0.7;
   const SW = M.swirl || { coil: 6, spin: 12, release: 6 }, SWF = SW.coil + SW.spin + SW.release, CIR = M.circuit || { radius: 2.5, tick: 30 }, DR = M.drift || { cut: 1.8 }, ODR = (M.overdrive && M.overdrive.radius) || 2;
   const CAPR = M.capReach || 2, STUN = M.mantaStun || 45, flashOf = typeof M.vortexFlash === 'function' ? M.vortexFlash : () => 0;
@@ -25,7 +25,12 @@ function view3dElectricForms(K) {
   const isFoe = a => !!a && !a.dead && GM.isCreature(a) && !a._swallowedBy && a.team !== 'green' && !(a.health <= 0);
   const NEAR = [];
   function foesNear(x, z, r, n) { NEAR.length = 0; const L = GM.actors || []; for (let i = 0; i < L.length && NEAR.length < n; i++) { const a = L[i]; if (isFoe(a) && Math.hypot(a.x - x, a.y - z) <= r) NEAR.push(a); } return NEAR; }
-  const hitY = (x, z) => floorY(x, z) + 0.3;   // (an enemy's middle: the ants stand about this high)
+  const hitY = (x, z) => floorY(x, z) + 0.3;
+  // a body's height (units), measured once from its meshes only (the fire line's bodyH measures every child, and a form that keeps its glow sprites, the Thunderhead's and the Orb's, came out NaN)
+  const BX = new T.Box3(), BX2 = new T.Box3();
+  function heightOf(b) { if (b._elH === undefined) { const h = b.holder, v = h.visible, s = h.scale.x || 1; h.visible = true; h.updateMatrixWorld(true); BX.makeEmpty();
+      h.traverse(o => { if (!o.isMesh || !o.geometry || o.isInstancedMesh || (b.hidden && b.hidden.indexOf(o) >= 0)) return; const g = o.geometry; if (!g.boundingBox) g.computeBoundingBox(); BX2.copy(g.boundingBox).applyMatrix4(o.matrixWorld); if (Number.isFinite(BX2.max.y) && Number.isFinite(BX2.min.y)) BX.union(BX2); });
+      h.visible = v; b._elH = BX.isEmpty() ? 1 : clamp((BX.max.y - h.position.y) / s, 0.3, 4); } return b._elH * b.holder.scale.x; }   // (an enemy's middle: the ants stand about this high)
 
   // ── LIGHTNING: one pool of segments (a quad each, turned to the camera), drawn in one go. Made once; a frame writes into it ──
   const BN = CAP.bolt || 420, bg = new T.BufferGeometry(), bpos = new Float32Array(BN * 12), bcol = new Float32Array(BN * 16), bv = new Float32Array(BN * 4), bidx = new Uint16Array(BN * 6);
@@ -79,12 +84,33 @@ function view3dElectricForms(K) {
     F.at.array[i * 4] = c[0]; F.at.array[i * 4 + 1] = c[1]; F.at.array[i * 4 + 2] = c[2]; F.at.array[i * 4 + 3] = Math.min(1, a); }
 
   // ── THE BAKERS' MODELS AN ATTACK STANDS IN THE WORLD (the Thunderhead's storm, the Skink's swirl): made once, behind the start screen; posed when shown ──
-  const PROPS = { staticvortex: [], skinkswirl: [] }, used = { staticvortex: 0, skinkswirl: 0 };
+  const PROPS = { staticvortex: [], skinkswirl: [] }, used = { staticvortex: 0, skinkswirl: 0 }, periodOf = job => job.period || TAU / 1.6;
   function prop(id) { const L = PROPS[id], i = used[id]; if (i >= 2) return null; if (!L[i]) { const b = env.formBody ? env.formBody(id) : null; if (!b) throw new Error('no model for ' + id); b.holder.userData.fx3d = true;
-      if (id === 'staticvortex') { b.mats = []; b.holder.traverse(o => { if (!o.isMesh) return; for (const m of [].concat(o.material)) if (m && b.mats.indexOf(m) < 0) { m.userData.o0 = m.opacity === undefined ? 1 : m.opacity; m.transparent = true; b.mats.push(m); } }); b.k = -1; }
+      b.holder.traverse(o => { if (o.isMesh) o.castShadow = false; });   // (no shadow: the 2D's had none, and the storm's from above is a dark blot)
+      if (id === 'staticvortex') { b.mats = []; b.holder.traverse(o => { if (!o.isMesh) return; for (const m of [].concat(o.material)) if (m && b.mats.indexOf(m) < 0) { m.userData.o0 = m.opacity === undefined ? 1 : m.opacity; m.transparent = true; b.mats.push(m); } }); b.k = -1; vortexCache(b); }
+      if (id === 'skinkswirl') swirlBake(b);
       L[i] = b; } used[id]++; const b = L[i]; b.holder.visible = true; return b; }
+  // THE STORM'S TURN, MADE ONCE: the model (design No. 930) winds its four spiral bands anew at every pose (a tube each, made again); the view poses it at VPH steps of its loop, so the bands of each
+  // step are made once, here, behind the start screen, and given back to it as it asks for them (the same shapes, none made in play)
+  const VPH = 16, noop = () => {};
+  function vortexCache(b) { const Real = T.TubeGeometry, P = periodOf(b.job); b.cache = [];
+    try { for (let p = 0; p < VPH; p++) { const rec = []; T.TubeGeometry = function (a, c, d, e, g) { const q = new Real(a, c, d, e, g); q.dispose = noop; rec.push(q); return q; }; b.B.update(p / VPH * P, 0); b.cache.push(rec); } }
+    finally { T.TubeGeometry = Real; } }
+  // THE SWIRL'S CELLS, MADE ONCE: the model (design No. 926: three copies of the Skink's body) is costly to pose (each body's shape is worked out anew), so its sheet's sixteen cells (the coil, 8, and the
+  // spin, 8: the game's own, js/evolution.js skinkSwirlCol) are posed once here, behind the start screen, and kept as still copies; the view shows the cell the game's timing names
+  function swirlBake(b) { const job = b.job, P = periodOf(job), act = i => job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8, cells = [], holder = b.holder, inv = new T.Matrix4();
+    const root = new T.Group(); root.userData.fx3d = true; root.userData.inkGroup = true; root.visible = false;
+    for (let c = 0; c < 16; c++) { if (c < 8) b.B.update(c * P / 8, job.idleAct); else b.B.update(1.0 + (c - 8) * 0.06, act(c - 8)); for (const q of b.hidden) q.visible = false;
+      holder.position.set(0, 0, 0); holder.rotation.set(0, 0, 0); holder.scale.setScalar(1); holder.visible = true; holder.updateMatrixWorld(true); inv.copy(holder.matrixWorld).invert();
+      const g = new T.Group(); g.visible = false;
+      holder.traverse(o => { if (!o.isMesh || !o.geometry) return; for (let p = o; p && p !== holder; p = p.parent) if (!p.visible) return;
+        const m = new T.Mesh(o.geometry.clone(), o.material); m.matrixAutoUpdate = false; m.matrix.multiplyMatrices(inv, o.matrixWorld); m.castShadow = false; m.receiveShadow = o.receiveShadow; m.layers.mask = o.layers.mask; m.renderOrder = o.renderOrder; m.frustumCulled = false; g.add(m); });
+      root.add(g); cells.push(g); }
+    holder.visible = false; if (holder.parent) holder.parent.remove(holder); env.scene.add(root); b.holder = root; b.cells = cells; b.cell = -1; }
+  function swirlCell(b, c) { if (b.cell === c) return; if (b.cell >= 0) b.cells[b.cell].visible = false; b.cells[c].visible = true; b.cell = c; }
+  function vortexPose(b, p) { const rec = b.cache && b.cache[p], P = periodOf(b.job); if (!rec) { b.B.update(p / VPH * P, 0); return; } const Real = T.TubeGeometry; let k = 0;
+    T.TubeGeometry = function (a, c, d, e, g) { return rec[k++] || new Real(a, c, d, e, g); }; try { b.B.update(p / VPH * P, 0); } finally { T.TubeGeometry = Real; } }
   try { prop('staticvortex'); prop('skinkswirl'); } catch (e) { /* drawn when first wanted; a form whose model cannot be made is drawn in 2D */ } used.staticvortex = used.skinkswirl = 0; for (const id in PROPS) for (const b of PROPS[id]) b.holder.visible = false;
-  const periodOf = job => job.period || TAU / 1.6;
 
   // ── THE FRAME: emptied before the bodies, sent after, put away when nothing is drawn ──
   K.hooks.push({
@@ -133,7 +159,7 @@ function view3dElectricForms(K) {
       for (let i = 0; i < D.D.length; i++) { const P = D.D[i]; zapHit(P.x, hitY(P.x, P.y), P.y, floorY(P.x, P.y), age - i, s + i * 3, 0.45 - 0.08 * i); } } };
   // where a form's lightning leaves it: its middle (the Hover Shell: its launcher's prongs, on top)
   const LP = { x: 0, y: 0, z: 0 };
-  function launch(b) { const h = b.holder, F = fwdOf(b), hb = bodyH(b); if (b.key === 'hovershell') { LP.x = h.position.x - F.x * 0.05; LP.z = h.position.z - F.z * 0.05; LP.y = h.position.y + hb * 0.9; }
+  function launch(b) { const h = b.holder, F = fwdOf(b), hb = heightOf(b); if (b.key === 'hovershell') { LP.x = h.position.x - F.x * 0.05; LP.z = h.position.z - F.z * 0.05; LP.y = h.position.y + hb * 0.9; }
     else { LP.x = h.position.x + F.x * 0.12 * h.scale.x; LP.z = h.position.z + F.z * 0.12 * h.scale.x; LP.y = h.position.y + hb * 0.55; } return LP; }
   // a hit of the game's on this unit's move, drawn when the move reaches it (delay: the frames until it does)
   function hitFx(delayOf) { return { find(e, f) { return isZap(e) && this.mine(e, f); }, mine: null, claim() { return true; }, span(m) { return 26 + (m.data ? m.data.d : 0); },
@@ -174,9 +200,9 @@ function view3dElectricForms(K) {
       staticVortex: {
         pre: true, claim(e, f) { return e.by === f; }, span(m) { return m.age + 1; },
         draw(m, age, f0, b) { const o = m.o, X = o.x, Z = o.y, Y = floorY(X, Z), k = Math.min(1, (age + 1) / 12, (o.life || 0) / 20); if (k <= 0) return;
-          const V = prop('staticvortex'); if (!V) return; const h = V.holder, sc = env.scale() * (0.4 + 0.6 * k), step = low() ? VFRAME : VFRAME / 2, ph = Math.floor(age / step);
+          const V = prop('staticvortex'); if (!V) return; const h = V.holder, sc = env.scale() * (0.4 + 0.6 * k), per = VPH / 8, step = low() ? VFRAME : VFRAME / per, ph = (Math.floor(age / step) * (low() ? per : 1)) % VPH;
           h.position.set(X, Y, Z); h.rotation.set(0, 0, 0); h.scale.setScalar(sc);
-          if (V.ph !== ph || V.m !== m) { V.ph = ph; V.m = m; V.B.update(ph * step / VFRAME * periodOf(V.job) / 8, V.job.idleAct || 0); for (const q of V.hidden) q.visible = false; }   // (its turn, as its sheet's cells step: twice as often, on LOW as often)
+          if (V.ph !== ph) { V.ph = ph; vortexPose(V, ph); for (const q of V.hidden) q.visible = false; }   // (its turn, as its sheet's cells step (a loop of 8 cells, VORTEX_FRAME each): twice as often, on LOW as often)
           const al = Math.round(k * 40) / 40; if (V.k !== al) { V.k = al; for (const q of V.mats) q.opacity = q.userData.o0 * VALPHA * al; }
           const fl = flashOf(age); if (fl > 0) { soft(X, Y, Z, VR * 0.95, YEL, 0.85 * fl * k); soft(X, Y + 0.002, Z, VR * 0.45, HOT, 0.6 * fl * k); flat(GLOWF, X, Y, Z, VR, YEL[0], YEL[1], YEL[2], 0.5 * fl * k); }
         } },
@@ -190,7 +216,7 @@ function view3dElectricForms(K) {
           soft(X, Y, Z, R, YEL, (0.12 + 0.18 * lit) * k);
           ribbon(49, (i, P) => { const an = i / 48 * TAU; P.x = X + Math.cos(an) * R; P.z = Z + Math.sin(an) * R; P.y = Y + 0.004; P.w = 0.03; P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.75 * k; });
           // the cloud: lumps on a wide flat disc over it, churning round, bobbing; a darker haze under it
-          const cy = b.holder.position.y + bodyH(b) + 1.25, cr = 1.5 * (0.6 + 0.4 * k), nl = low() ? 12 : 24;
+          const cy = b.holder.position.y + heightOf(b) + 1.25, cr = 1.5 * (0.6 + 0.4 * k), nl = low() ? 12 : 24;
           for (let i = 0; i < nl; i++) { const q = Math.sqrt(H(i, s, 1)), an = H(i, s, 2) * TAU + age * (0.012 + 0.01 * (1 - q)), rr = cr * q, y = cy + 0.18 * (1 - q * q) + 0.06 * Math.sin(age * 0.05 + i) + 0.12 * H(i, s, 3), c = H(i, s, 4) < 0.5 ? SLATE : SLATE2;
             put(SMOKE, X + Math.cos(an) * rr, y, Z + Math.sin(an) * rr, c[0], c[1], c[2], 0.92 * k, (0.5 + 0.35 * H(i, s, 5)) * (1 - 0.35 * q)); }
           for (let i = 0; i < (low() ? 3 : 6); i++) { const an = i / 6 * TAU + age * 0.01; put(SMOKE, X + Math.cos(an) * cr * 0.55, cy - 0.2, Z + Math.sin(an) * cr * 0.55, 0.16, 0.18, 0.24, 0.5 * k, -1.1); }
@@ -252,12 +278,9 @@ function view3dElectricForms(K) {
       skinkswirl: {
         bodyless: true, claim(e, f) { return e.by === f; }, span(m) { return (m.l0 || SWF) + 2; },
         draw(m, age, f0) { const o = m.o, X = o.x, Z = o.y, Y = floorY(X, Z), fade = Math.min(1, (o.life || 0) / 4, m.gone ? 0 : 1), grow = Math.min(1, (age + 1) / SW.coil); if (fade <= 0) return;
-          const S = prop('skinkswirl'); if (!S) return; const h = S.holder, job = S.job, P = periodOf(job); h.position.set(X, Y, Z); h.rotation.set(0, PI / 2, 0); h.scale.setScalar(env.scale());
-          const act = (x) => job.action[0] + (job.action[1] - job.action[0]) * (x + 0.5) / 8;
-          if (age < SW.coil) { const x = clamp(age / (SW.coil - 1), 0, 1) * 7; S.B.update(1.0 + x * 0.06, act(x)); }
-          else if (age < SW.coil + SW.spin) S.B.update(((age - SW.coil) % 8) * P / 8, job.idleAct);
-          else { const x = (1 - clamp((age - SW.coil - SW.spin) / (SW.release - 1), 0, 1)) * 7; S.B.update(1.0 + x * 0.06, act(x)); }
-          for (const q of S.hidden) q.visible = false;
+          const S = prop('skinkswirl'); if (!S) return; const h = S.holder; h.position.set(X, Y, Z); h.rotation.set(0, PI / 2, 0); h.scale.setScalar(env.scale());
+          // (the game's own cells: the coil's first to last, then the spin a cell a frame, then the coil backward)
+          swirlCell(S, age < SW.coil ? 8 + Math.round(age / (SW.coil - 1) * 7) : age < SW.coil + SW.spin ? (age - SW.coil) % 8 : 8 + Math.round((1 - Math.min(SW.release - 1, age - SW.coil - SW.spin) / (SW.release - 1)) * 7));
           soft(X, Y, Z, 0.85, YEL, 0.45 * fade * grow);
           if (age >= SW.coil && age < SW.coil + SW.spin) for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, m.seed + age, 1) * TAU, r = 0.45 + 0.35 * H(i, m.seed + age, 2); spark(X + Math.cos(an) * r, Y + 0.1 + 0.35 * H(i, m.seed + age, 3), Z + Math.sin(an) * r, 0.14, 0.9); }
           zapHit(X, Y + 0.3, Z, Y, age - SW.coil, m.seed, 0.55); } },
@@ -309,7 +332,7 @@ function view3dElectricForms(K) {
     // ITS BODY. Its everyday hit (the element's chain, attackAnim 0 to PI): a wind-back, a bump forward rolling onto its front, and back, its core flaring. SONIC ROLL (the game has it at the enemy
     // from the first frame): it rolls from where it stood to there in 5 to 10 frames, turning over and over, stretched, and bumps to a stop with a squash. CAPACITOR DISCHARGE: it swells up as it
     // lets go, shudders and settles. OVERDRIVE (the game has it where it lands): it overloads where it stood, swelling and shaking, rushes there rolling, slams down, squashed, and settles.
-    body(f, b, f0) { const h = b.holder, t = f0 / 60, ra = Math.max(0.1, bodyH(b) * 0.5); bmReset(); stood(f, f0); let act = 0;
+    body(f, b, f0) { const h = b.holder, t = f0 / 60, ra = Math.max(0.1, heightOf(b) * 0.5); bmReset(); stood(f, f0); let act = 0;
       const E = moveOf(f, f0, { 20: 'roll', 24: 'cap' }), od = curOf(f, 'ring'), Y0 = h.position.y - floorY(f.x, f.y);
       const at = (x, y) => { h.position.x = x; h.position.z = y; h.position.y = floorY(x, y) + Y0; };
       if (od && od.data && od.now < OD.hold + OD.rush + OD.slam + OD.settle) { const a = od.now, D = od.data, dx = D.to.x - D.from.x, dz = D.to.y - D.from.y, L = Math.hypot(dx, dz);
@@ -336,7 +359,7 @@ function view3dElectricForms(K) {
     fx: {
       chain: Object.assign({}, CHAIN),   // (its own copy: a fault in one form's turns off only that form's)
       // SONIC ROLL's and CAPACITOR DISCHARGE's hits, and OVERDRIVE's (the game's, no maker named): each where the game puts it, as the roll reaches it
-      impact: Object.assign(hitFx(m => { const E = EV.get(m.owner); return E && E.kind === 'roll' ? Math.max(0, rollF(E) - 1) : 0; }), {
+      impact: Object.assign(hitFx(m => { if (m.o.element === 'electric') return OD.hold + OD.rush; const E = EV.get(m.owner); return E && E.kind === 'roll' ? Math.max(0, rollF(E) - 1) : 0; }), {   // (OVERDRIVE's as it slams down; a roll's as it arrives)
         mine(e, f) { const E = EV.get(f), at = typeof GM.frame === 'number' ? GM.frame : 0; if (E && at - E.at < 6 && e.color === '#ffee33' && (nearAny(e, E.pts, 0.1) || Math.hypot(e.x - f.x, e.y - f.y) < 0.2)) return true;
           return e.color === '#fff27a' && e.element === 'electric' && Math.abs((e.radius || 0) - 1.2) < 1e-6 && Math.hypot(e.x - f.x, e.y - f.y) < 0.35; } }),
       // OVERDRIVE (the game's ring where it lands, ULT_OVERDRIVE.radius: everything in it struck and knocked back) and CAPACITOR DISCHARGE's (CAP_REACH round it, as it lets go). OVERDRIVE in 3D:
@@ -362,11 +385,10 @@ function view3dElectricForms(K) {
           if (a < 6) { glow(X, Y + 0.3, Z, 0.9 + 0.2 * a, HOT, 1 - a / 6); glow(X, Y + 0.3, Z, 1.4, YEL, 0.6 * (1 - a / 6)); }
           if (a < 18) { const u = outC(a / 14); ringBolt(X, Y + 0.05, Z, 0.3 + (R - 0.3) * u, 0.08, s + (a >> 1), 0.07, 1 - a / 18, low() ? 22 : 34); flat(RINGF, X, Y, Z, 0.3 + (R - 0.3) * u, AMBER[0], AMBER[1], AMBER[2], 0.75 * (1 - a / 18)); soft(X, Y, Z, R * u, YEL, 0.4 * (1 - a / 18)); }
           if (a < 14) { if (!D.foes) D.foes = foesNear(X, Z, R + 0.6, 6).map(q => q); for (let j = 0; j < D.foes.length; j++) { const q = D.foes[j]; if (!q || q.dead) continue; bolt(X, Y + 0.3, Z, q.x, hitY(q.x, q.y), q.y, 0.15, s + j * 5 + (a >> 1), 0.06, YEL, 1 - a / 14, 1); } }
-          zapHit(X, Y + 0.3, Z, Y, a, s, 1.1);
         } },
     },
     // its spark ring (the element's hit: the game's sparkSurround), and SONIC ROLL's streak and shocks (the game's arc through the enemies it struck: the stunned crackling while they are stunned)
-    on(f, b, f0) { const h = b.holder, ra = bodyH(b) * 0.5; if (f.sparkSurround > 0) { claimK('spark', f); const C = launch(b); sparkRing(h.position.x, C.y, h.position.z, ra * 0.9, f0, Math.min(1, f.sparkSurround / 5)); }
+    on(f, b, f0) { const h = b.holder, ra = heightOf(b) * 0.5; if (f.sparkSurround > 0) { claimK('spark', f); const C = launch(b); sparkRing(h.position.x, C.y, h.position.z, ra * 0.9, f0, Math.min(1, f.sparkSurround / 5)); }
       const E = EV.get(f); if (!E || E.kind !== 'roll') return; const a = f0 - E.at, n = rollF(E), s = E.at % 997;
       if (a < n + 10) { const u = clamp(a / n, 0, 1), hx = lerp(E.from.x, E.to.x, u), hz = lerp(E.from.y, E.to.y, u), k = a < n ? 1 : 1 - (a - n) / 10;
         ribbon(2, (i, P) => { P.x = i ? hx : E.from.x; P.z = i ? hz : E.from.y; P.y = floorY(P.x, P.z); P.w = 0.09; P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.55 * k; });
@@ -404,7 +426,7 @@ function view3dElectricForms(K) {
       // look (a tapering yellow sword trail behind it) made 3D: a blade of light trailing behind it at its height along the last of its oval, white at its edge, tapering away, sparks off it.
       hoverdrift: {
         pre: true, claim(e, f) { return e.on === f; }, find(e, f) { return e.on === f; }, span(m) { return m.age + 1; },
-        draw(m, age, f0, b) { const o = m.o, p = o.path; if (!p || (o.i || 0) < 2) return; const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = bodyH(b) * 0.45;
+        draw(m, age, f0, b) { const o = m.o, p = o.path; if (!p || (o.i || 0) < 2) return; const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = heightOf(b) * 0.45;
           pn = 0; for (let j = j0; j < i; j++) { const q = p[j]; padd(q[0], floorY(q[0], q[1]) + hb, q[1]); } stroke(0.005, 0.11, YEL, 0.15, 0.95);
           const q = p[i - 1]; for (let k = 0; k < (low() ? 2 : 4); k++) spark(q[0] + (H(k, age, 1) - 0.5) * 0.5, floorY(q[0], q[1]) + hb + (H(k, age, 2) - 0.5) * 0.3, q[1] + (H(k, age, 3) - 0.5) * 0.5, 0.15, 0.95);
           ribbon(i - j0, (jj, P) => { const r = p[j0 + jj]; P.x = r[0]; P.z = r[1]; P.y = floorY(r[0], r[1]); P.w = 0.05 * jj / Math.max(1, i - j0); P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.45 * jj / Math.max(1, i - j0); }); } },
