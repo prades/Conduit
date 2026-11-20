@@ -67,6 +67,16 @@ The toolkit is **the squad the player brings**, with limited environmental uses 
 - The main path to the Nest must not depend on one exact level.
 - How many levels, which areas each one affects, and how water is simulated are **open** (§11).
 
+### 2.5a Crossing the channel (the owner, 2026-11-20)
+"I like the idea of not being able to cross the river or the channel unless the water is raised and they use an ice bridge or move a box into the water to create a bridge." Asked, the owner chose:
+1. **No walk-across bridges** over the channel. (Today's Sewers have two steel bridges; in the dungeon they are gone or broken.)
+2. **Raise the water first, then bridge it.** At the normal level neither bridge works.
+3. **Two bridges:** the Ice Technician's **ice bridge**, or **a box pushed into the raised water**.
+4. **Who can push a box in:** the **Flux Technician** (FLUX MOVE may place an eligible box in the water: a change to `FLUX-MOVEMENT.md`, whose rule today is that objects go only onto supported floor and that Flux "does not create bridges") and the **Technomancer's mech** (from its charges).
+5. **The launcher is not a way across the channel.** It stays for smaller gaps and side spots (e.g. loot ledges).
+
+**Raised by the agent, to settle with the owner** (§11): the main path to the Nest and the purification chamber is on the far side of the channel, so every player must cross. As approved, crossing needs one of three helpers (Ice Technician, Flux Technician, Technomancer), and raising the water itself needs an obstacle moved; with one utility use per follower per dungeon, a crossing can cost two uses, and a way back is needed too. §2.4's rule that the main path is never impossible without one particular follower or class needs a fallback here.
+
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
 - **Distraction and disguise:** e.g. the Toxic Mage's decoy, smoke, the Mutator's ant clone that matching ants treat as non-hostile.
@@ -146,8 +156,10 @@ Nothing implemented.
 7. The top of the central channel: dead end with loot, or upstream branch.
 8. Where the Nest sits exactly: in the corridor as the dam itself, or beside it with only its dam in the corridor.
 9. The key-item zoom: tilt, speed, timing.
-10. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
+10. Crossing the channel (2.5a): what a player with none of the Ice Technician, Flux Technician or Technomancer does; how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
+11. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
 
 ## 12. History
 - 2026-11-19 (Notion): the sewer as a dungeon with keys, breachable doors, shortcuts and rewarding side areas; the map boundary kept; water from the south.
+- 2026-11-20: the channel is crossed only by raising the water and bridging it (ice, or a box pushed in by the Flux Technician or the mech); the launcher kept for side spots (2.5a).
 - 2026-11-20: the owner asked for a much larger dungeon from a reference map; approved the skeleton in §2 (entrance west, water dammed past the junction by the Nest, purification bottom right); added water level as a tool and the key-item zoom. The boundary and south-water notes are superseded.

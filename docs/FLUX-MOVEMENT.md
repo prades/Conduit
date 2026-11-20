@@ -1,5 +1,7 @@
 # The Flux Technician's object movement (replacing Telegrab)
 
+> **Designed 2026-11-20, not built** (`SEWER-DUNGEON.md` §2.5a): in the Sewer Dungeon, FLUX MOVE may place an eligible box **into raised water** to bridge the channel. This changes the rule below that a destination must be supported floor, for that case only.
+
 - **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE), **and in its test room, build `2026-11-06g`** (`game.html?fluxlab`, §9.1 Build 2); both on main at the owner's word. **Milestone Two's cover, walls and sight: implemented and tested in build `2026-11-06h`** (on main at the owner's word; the rules in `COMBAT.md` §8, the study and the answers in §13); **the moves that strike at once need sight too in build `2026-11-06i`** (on the branch; `COMBAT.md` §8.5). Stepping over objects: "Not yet" (the owner). Not playtested. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
   - This document holds the approved rules in brief, with the roadmap as their source, and **the study of the code** the owner asked for on 2026-11-06 ("do extensive work to understand the flux technician's new mechanic"): what the game already has for this tool, what it lacks, what would break, and what must be decided.
   - Nothing here is a decision unless it is quoted from the owner or the roadmap.

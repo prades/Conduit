@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The sewer channel is crossed only by raising the water and bridging it
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`, from main at build `2026-11-17aq`
+- **Status:** designed; nothing built.
+- **Decision:** the owner: "not being able to cross the river or the channel unless the water is raised and they use an ice bridge or move a box into the water to create a bridge". Asked: raise the water first, then bridge it; a box may be pushed in by the Flux Technician or the Technomancer's mech; the launcher only for side spots.
+- **Changes:** FLUX MOVE may place a box in raised water (`FLUX-MOVEMENT.md` note); the steel bridges go.
+- **Open:** a fallback for a player without those helpers, and the utility uses a crossing costs (`SEWER-DUNGEON.md` §11.10).
+- **Affects:** `SEWER-DUNGEON.md` §2.5a.
+
 ## DECISION: The sewers become a large exploration dungeon (skeleton)
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`, from main at build `2026-11-17aq`
