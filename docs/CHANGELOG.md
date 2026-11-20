@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17at` · branch `claude/start-game-project-HSh7Z` · card battles: the first three fields animated in 3D (drafts)
+- **The ask** (the owner, 2026-11-20): "Start with the Ultimates' lasting fields".
+- **What it does:** in a battle THUNDERSTORM, EVENT HORIZON and TOXIC PUDDLE are drawn in the 3D picture and animated while they last (`CARD-BATTLES.md` §2.66). Drafts: the shapes are the agent's, for the owner to judge. Seven fields and every other effect are still not drawn in a battle.
+- `view3d/fields.js` (new), `view3d/gameview.js`, `view3d/gamemap.js`, `tools/view3d.js`, `js/cardults.js` (`cardUltFields`), `tests/cardbattle.js` (1 new check).
+- **Verified:** tests/cardbattle.js, view3d, bundle; seen in a real browser (software rendering). **Not playtested; not seen on an iPad; frame rate on an iPad not measured.**
+
 ### Build `2026-11-17as` · branch `claude/start-game-project-HSh7Z` · card battles: a field's squares faintly lit; BLADE ROLL's picture
 - **The ask** (the owner, 2026-11-20): "The hammer slug is fine for now, and the fields in battle, we should honestly begin work putting those into the game, the full animation, and you can have the tiles faint right now."
 - **What it does:** while an Ultimate's field lasts in a battle its squares stay faintly lit in its follower's colour (REEF PILLAR's wall in pink). The Hammer Slug's BLADE ROLL card has its picture (him curled into a spiked ball; approved "fine for now").

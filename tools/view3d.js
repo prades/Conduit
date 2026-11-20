@@ -24,7 +24,7 @@ function jobs() {
 }
 function sources() {
   const S = LAB.sources();
-  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js'], view: ['view3d/gameview.js'] };
+  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js'], view: ['view3d/fields.js', 'view3d/gameview.js'] };
 }
 function build() {
   const S = sources(), ts = LAB.loadTs(), one = f => '/* ' + f + ' */\n' + LAB.strip(ts, rd(f), f) + '\n;\n';

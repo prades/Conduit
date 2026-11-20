@@ -257,6 +257,9 @@ function cardUltEnd() {
 }
 // THE FIELD'S SQUARES, FAINT (the owner, 2026-11-20: "you can have the tiles faint right now", till the fields' own animation is in the battle's view; §2.65): the squares of each
 // field an Ultimate left stay lit, faintly, in its follower's colour, while it lasts; a wall's too. One that moves with its follower is laid again when it has moved. The look the agent's.
+// the fields a battle's Ultimates left, for the 3D view to draw (view3d/gamemap.js battleFields, view3d/fields.js): the same list each frame, refilled
+const _cuFields = [];
+function cardUltFields() { _cuFields.length = 0; if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof elementEffects === "undefined") return _cuFields; for (const e of elementEffects) if (e._cbUlt === "win" && e.life > 0) _cuFields.push(e); return _cuFields; }
 function cardUltSquares(e) {
     if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }
     return e._cbSq || null;
