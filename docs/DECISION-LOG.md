@@ -14,6 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The Kinetic Launcher: straight up, one tile over, at select spots only, no Combat mode
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`
+- **Status:** designed; to be built with the Sewer Dungeon's rebuild (the owner: "All with the rebuild"). The code still has today's launcher.
+- **Decision:** the owner: the launcher "can only launch vertically and one cell over", everywhere, up to 2 stories, only at select spots on the map; its damage is "ridiculous": Combat mode is removed entirely.
+- **Open:** a new combat ability for the electric technician; the direction of "one cell over".
+- **Affects:** `TECHNICIANS.md` (Kinetic Launcher), `SEWER-DUNGEON.md` §2.5a.6; later `js/techabilities.js`, its tests and the Bible.
+
 ## DECISION: The bully way through the sewer: fight straight through, open to anyone, at the cost of loot
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/sewer-dungeon-spec`
