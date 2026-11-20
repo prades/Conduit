@@ -9629,7 +9629,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    if (actor.sparkSurround > 0) {
+    if (actor.sparkSurround > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "spark"))) {
         const _sAlpha = Math.min(1, actor.sparkSurround / 5);
         drawCtx.save();
         const _NS = 10;
