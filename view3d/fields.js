@@ -1,4 +1,4 @@
-// THE ULTIMATES' FIELDS IN A BATTLE, IN 3D (view3d/fields.js; docs/VIEW-3D.md stage 5, docs/CARD-BATTLES.md §2.66). The owner, 2026-11-20, told that an Ultimate's field is not
+// THE ULTIMATES' FIELDS IN A BATTLE, IN 3D (view3d/fields.js; docs/VIEW-3D.md stage 5, docs/CARD-BATTLES.md §2.67). The owner, 2026-11-20, told that an Ultimate's field is not
 // seen in a card battle (the game's 2D drawing waits while the battle's camera is up): "we should honestly begin work putting those into the game, the full animation", then "Start
 // with the Ultimates' lasting fields". Each field an Ultimate left (js/cardults.js cardUltFields) is a thing of the 3D picture while the battle's camera is up: made when first seen,
 // moved and animated by the game's own clock, taken away when the field is over. Its colours are its 2D drawing's (js/elements.js drawElementEffects); its shapes the agent's,

@@ -4,14 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17au` · branch `claude/start-game-project-HSh7Z` · card battles: a field is seen only in its caster's turn
+### Build `2026-11-17av` · branch `claude/start-game-project-HSh7Z` · card battles: a field is seen only in its caster's turn
 - **The ask** (the owner, 2026-11-20): "The battlefield should be clear, unless it's the creature who casts the ultimate's turn."
-- **What it does:** a field's animation and faint squares show as it is cast and when your round comes back to its caster; otherwise the floor is clear (`CARD-BATTLES.md` §2.67). The agent's: shown too while its turn's worth strikes; the wall's squares stay.
+- **What it does:** a field's animation and faint squares show as it is cast and when your round comes back to its caster; otherwise the floor is clear (`CARD-BATTLES.md` §2.68). The agent's: shown too while its turn's worth strikes; the wall's squares stay.
 - `js/cardults.js` (`cardUltShown`), `tests/cardbattle.js` (1 new check). **Verified:** tests/cardbattle.js. **Not playtested.**
 
-### Build `2026-11-17at` · branch `claude/start-game-project-HSh7Z` · card battles: the first three fields animated in 3D (drafts)
+### Build `2026-11-17av` (with the entry above) · branch `claude/start-game-project-HSh7Z` · card battles: the first three fields animated in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Start with the Ultimates' lasting fields".
-- **What it does:** in a battle THUNDERSTORM, EVENT HORIZON and TOXIC PUDDLE are drawn in the 3D picture and animated while they last (`CARD-BATTLES.md` §2.66). Drafts: the shapes are the agent's, for the owner to judge. Seven fields and every other effect are still not drawn in a battle.
+- **What it does:** in a battle THUNDERSTORM, EVENT HORIZON and TOXIC PUDDLE are drawn in the 3D picture and animated while they last (`CARD-BATTLES.md` §2.67). Drafts: the shapes are the agent's, for the owner to judge. Seven fields and every other effect are still not drawn in a battle.
 - `view3d/fields.js` (new), `view3d/gameview.js`, `view3d/gamemap.js`, `tools/view3d.js`, `js/cardults.js` (`cardUltFields`), `tests/cardbattle.js` (1 new check).
 - **Verified:** tests/cardbattle.js, view3d, bundle; seen in a real browser (software rendering). **Not playtested; not seen on an iPad; frame rate on an iPad not measured.**
 
