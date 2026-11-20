@@ -14,6 +14,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **The agent's, provisional:** the lock kept for every class; ammo packs still open to all; the station's and the terminal's words; the class picker's lines for the Technomancer and the Mutator; the cards' words. `OPEN-QUESTIONS.md`, "Open 2026-11-20".
 - `js/weapons.js`, `js/input.js`, `js/targeting.js`, `js/gunfire.js`, `js/draw.js`, `js/mixtool.js`, `js/classes.js`, `js/tutorial.js`, `js/technomancer.js`, `js/mutator.js`, `js/playercards.js`, `js/cards.js`, `js/damage.js`, `js/stations.js`, `js/inventory.js`, `js/chests.js`, `js/facilitymap.js`, `js/facilitytutorial.js`, `js/facilitysave.js`, `js/playergear.js`, `js/hdsprites.js`, `js/game.js`, `js/infodex.js`; `bible.html`; the suites below; `docs/TUTORIAL.md` (its last section), `TECHNOMANCER.md`, `MUTATOR.md`, `PLAYER-CLASSES.md`, `UNIVERSAL-AND-PLAYER-CARDS.md`, `COMBAT.md`, `CHESTS.md`, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`.
 - **Verified:** VERIFIED_LINE
+### Build `2026-11-17as` · branch `claude/start-game-project-HSh7Z` · card battles: a field's squares faintly lit; BLADE ROLL's picture
+- **The ask** (the owner, 2026-11-20): "The hammer slug is fine for now, and the fields in battle, we should honestly begin work putting those into the game, the full animation, and you can have the tiles faint right now."
+- **What it does:** while an Ultimate's field lasts in a battle its squares stay faintly lit in its follower's colour (REEF PILLAR's wall in pink). The Hammer Slug's BLADE ROLL card has its picture (him curled into a spiked ball; approved "fine for now").
+- **Not built:** the fields' own animation in the battle's view; that work begins next.
+- `js/cardults.js`, `js/cardbattle.js`, `img/cards/attack/hammerslug_blade_roll.png`, `tests/cardbattle.js` (1 new check, 1 changed), `docs/CARD-BATTLES.md` §2.65.
+- **Verified:** tests/cardbattle.js, images, bundle; seen in a real browser. **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17ar` · branch `claude/start-game-project-HSh7Z` · card battles: the 22 Ultimates on the squares and in turns
 - **The ask** (the owner, 2026-11-18, of the Ultimates' page): "Approve"; the Sundew "holds still" while it digests.

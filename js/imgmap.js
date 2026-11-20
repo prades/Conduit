@@ -8,6 +8,7 @@ const IMG_MAP = {
     "img/cards/attack/electroskink_zigzag_dash.png": "img/cards/attack/electroskink_zigzag_dash.webp?v=f384dbc6",
     "img/cards/attack/embercowl_hexfire.png": "img/cards/attack/embercowl_hexfire.webp?v=31526b0a",
     "img/cards/attack/gooproxy_phase_swap.png": "img/cards/attack/gooproxy_phase_swap.webp?v=09350174",
+    "img/cards/attack/hammerslug_blade_roll.png": "img/cards/attack/hammerslug_blade_roll.webp?v=684cbfcf",
     "img/cards/attack/hammerslug_shell_guard.png": "img/cards/attack/hammerslug_shell_guard.webp?v=a8f0a62e",
     "img/cards/attack/hornshell_echo_pulse.png": "img/cards/attack/hornshell_echo_pulse.webp?v=39b50867",
     "img/cards/attack/hovershell_shock_zap.png": "img/cards/attack/hovershell_shock_zap.webp?v=fafd1400",

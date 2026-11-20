@@ -481,8 +481,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             out[k] = cardBattleCards(f).filter(c => c.art).map(c => c.kind + ':' + c.id + ':' + String(c.art).replace(/^.*cards\\/attack\\//, '').replace(/\\.(webp|png).*$/, '')); } return { out, keys: Object.keys(CARD_BATTLE_ART).length }; })()`);
         const WANT = { embercowl: 'hexfire', maw: 'chomp', hammerslug: 'shell_guard', thunderhead: 'static_vortex', quillstone: 'ember_slash', coralcrab: 'stake_ring', voidstar: 'maelstrom', seeper: 'toxic_stomp', igloo: 'skate_charge', rimestar: 'icicle_volley', electroskink: 'zigzag_dash',
             thermite: 'magma_vent', mimic: 'rift_impale', hornshell: 'echo_pulse', staticorb: 'static_rush', gooproxy: 'phase_swap', shrub: 'briar_sweep', sundew: 'sweet_scent', rotshard: 'rotten_decoy', jellyram: 'wobble_slam', blightspider: 'venom_bite', hovershell: 'shock_zap' };
-        same(Object.keys(r.out).sort().join(), Object.keys(WANT).sort().join(), 'the evolved forms'); same(r.keys, 22, 'the pictures in the table');
-        for (const k of Object.keys(WANT)) same(JSON.stringify(r.out[k]), JSON.stringify(['move:' + WANT[k] + ':' + k + '_' + WANT[k]]), k + '\'s picture cards');
+        same(Object.keys(r.out).sort().join(), Object.keys(WANT).sort().join(), 'the evolved forms'); same(r.keys, 23, 'the pictures in the table (the Hammer Slug has two: BLADE ROLL\'s, approved "fine for now" 2026-11-20)');
+        for (const k of Object.keys(WANT)) same(JSON.stringify(r.out[k].filter(x => x !== 'move:blade_roll:hammerslug_blade_roll')), JSON.stringify(['move:' + WANT[k] + ':' + k + '_' + WANT[k]]), k + '\'s picture cards');
+        ok(r.out.hammerslug.indexOf('move:blade_roll:hammerslug_blade_roll') >= 0 && fs.existsSync(path.join(ROOT, 'img/cards/attack/hammerslug_blade_roll.webp')), 'BLADE ROLL\'s picture');
         const bad = []; for (const k of Object.keys(WANT)) { const b = path.join(ROOT, 'img/cards/attack/' + k + '_' + WANT[k]); if (!fs.existsSync(b + '.png')) bad.push(k + ': no picture'); else if (!fs.existsSync(b + '.webp')) bad.push(k + ': no light copy'); else if (fs.statSync(b + '.webp').size >= 60000) bad.push(k + ': ' + fs.statSync(b + '.webp').size + ' bytes'); }
         same(bad.join(' / '), '', 'pictures missing or heavy');
         const h = rd('game.html'); ok(/#cbScreen \.cb-card\.art \.cb-tag \{ margin-top: auto; \}/.test(h) && !/#cbScreen \.cb-card\.art \.cb-tag \{ bottom: 50px; \}/.test(h), 'a picture card\'s tag sits over its name, whatever the name\'s lines');
@@ -1046,6 +1047,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/function elementEffectStep\(e\) \{\s*if \(typeof cardUltGate === "function" && cardUltGate\(e\)\) return true;/.test(e) && /elementEffects\.filter\(elementEffectStep\)/.test(e) && /cardUltPoint\(actor\)/.test(e), 'the effects\' step');
         ok(/cardUltFire\(f, S, T\)/.test(c) && /cardUltDone\(T, el\)/.test(c) && /cardUltWindow\(\)\) \{ _cb\.turn\.field = _cbF\(\)/.test(c) && /cardUltTurnEnd\(\);/.test(c) && /cardUltWalls\(\)\) taken\.add/.test(c) && /cardUltStepOn\(/.test(c) && (c.match(/cardUltEnd\(\)/g) || []).length === 2, 'the battle\'s turns');
         ok(/cardUltDef\(f\)/.test(sh) && /cardUltShape\(/.test(sh) && /cardUltSays\(f\)/.test(sh) && /cardUltNow\(\)/.test(sh), 'the shapes');
+    });
+
+    check('a field\'s squares stay lit, faintly, while it lasts (the owner, 2026-11-20: "you can have the tiles faint right now"): a field on a tile keeps its card\'s squares; one that moves with its follower is laid again where it is; gone with the field; drawn under the reticles', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('voidstar', [[3, 0]], [[2, 0]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }); __live(3); const e = fx('eventhorizon'), sq = cardUltSquares(e), S = _cb.turn.shape;
+            const o = { n: sq && sq.length, same: sq === S.hit, has: !!sq && sq.some(c => c[0] === P[0] + 3 && c[1] === P[1]) };
+            const B = __shaped('thunderhead', [[2, 0]]); B.f.ultimateCharge = 100; cardBattlePlay(B.f, 'ult', null, null); __live(3); const t = fx('thunderstorm'), s1 = cardUltSquares(t).length, k1 = t._cbSqK; t.x += 1; const s2 = cardUltSquares(t); o.moved = [s1 > 20, k1 !== t._cbSqK, s2.every(c => Math.hypot(c[0] - Math.round(t.x), c[1] - Math.round(t.y)) <= t.radius + 0.01)]; return o; })()`);
+        ok(r && r.n > 10 && r.same && r.has, 'the black hole\'s squares are its card\'s: ' + JSON.stringify(r)); same(JSON.stringify(r.moved), '[true,true,true]', 'the storm\'s, laid again when it moved');
+        ok(/cardUltDraw\(V\);[^\n]*\n\s*if \(V && typeof cardShapeDraw/.test(rd('js/cardbattle.js')) && /e\._cbUlt !== "win" \|\| !\(e\.life > 0\)\) continue; const sq = cardUltSquares\(e\)/.test(rd('js/cardults.js')), 'drawn by the battle, only while the field lives');
     });
 
     group('PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, of three offered: "Its own distance")');

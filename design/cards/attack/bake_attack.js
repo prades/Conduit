@@ -335,6 +335,23 @@ const SAMPLES = {
     tone: { sky: '#010a09', hz: ['rgba(4,38,31,0)', 'rgba(6,60,50,0.85)', '#04261f'], hot: '215,255,246', halo: 'rgba(0,8,6,1)', chip: ['#3a6a60', '#14302a', '#020a08', 'rgba(25,230,193,0.35)'], vig: 'rgba(1,10,9,0.65)', foot: ['rgba(1,10,9,0)', 'rgba(1,10,9,0.7)'], dim: 0.55, glow: 0.2, edge: [2, 1.0, '#e0fff8'] },   // (the reactor dimmed hard, a white edge: its see-through glass and jelly on the teal reactor)
     rough: { scuffs: 10, scrapes: 2, singles: 10, longs: 1, grain: 6, specks: 0.0015, edgeSpecks: 0.008, dust: 25, chips: 14 },
   },
+  // ---------- FOLLOWERS, ROUND 6 (the owner, 2026-11-18: "We want spikes roll"; asked, of three choices, "Draw a new rolling picture": a new one for BLADE ROLL "showing him rolling with his
+  // spikes out"; his approved ring picture, hammerslug_ring_r3, stays where it is, on SHELL GUARD) ----------
+  // THE HAMMER SLUG (core Technician, No. 469) rolling with BLADE ROLL (docs/COMBAT.md: "it rolls up into a ball and rolls through them at a slow pace, slicing each as it reaches it"; while it
+  // rolls the game draws a ball of its scales with its back's spikes round its rim: design/effects/bake_fx.js slugball, a small piece made for a sprite). The card shows that ball as HIS OWN MODEL
+  // ROLLED UP (P.curl, in the page below: this render only): his hex tiles, his back's spikes out all round, his head in the middle of the curl. Still a Technician's card, as his round 3: inside the
+  // whole ring of 12 teal crystals, the reactor behind, the same camera aimed a little lower (he sits in the card's upper middle, for the battle's small card). The style's "raise their claws or
+  // whatever they have" is, in a roll, his spikes, out. New for this card, as it shows the attack: he is moving (ROLL_FX, below: where he has just been, his way on the floor, his spikes' sweep).
+  hammerslug_bladeroll: {
+    style: 'tech', form: 469, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 4696,
+    pose: { t: 0.4, act: 0.6 }, yaw: -1.0,   // (act: his action pose's flare of his spikes, part of the way; yaw: he rolls to the left and toward the lens, his near side and its eye to the camera)
+    curl: { R: 0.6, turn: 7.6, mid: 0.4, dive: [0.68, 0.5, 1.5], cy: 0.61, spin: -0.3, at: [0.3, -0.19], headColour: 0x0a1a48, headRot: 0.5, lamp: [1.0, 0.9, 0.2],   // (R: the rim, a little over his own girth's worth, so the ball is not all spikes; turn: once round and a fifth more, his head end turning in; at: a little back along his way from the ring's middle, so his spikes clear the card's left edge; headColour: his round 3 head's)
+      ghosts: [[0.3, 0.36], [0.65, 0.28], [1.05, 0.2], [1.5, 0.13]], way: [1.9, 0.3], sweep: [1.15, 0.7, 7], sparks: 26, shadow: 0.8 },   // (all inside the ring: the furthest back is 1.5 behind him, the ring's crystals 2 from its middle)
+    tone: { edge: [2, 0.8, '#9ff5e4'] },   // (a thin bright edge round him: his spikes are near-black on the dark floor)
+    ring: { n: 12, r: 2.0, h: [0.3, 1.25], w: 0.14 },
+    lights: { hemi: [0x8ad0c0, 0x02140f, 0.4], key: [0xf0fffa, 0.9], rim: 2.4, back: 1.4, low: [0x19e6c1, 0, 0, 0.4, 2.2] },
+    cam: { pos: [1.3, 1.5, 8.2], look: [0.35, 0.05, 0], fov: 38, roll: -0.18 },
+  },
 };
 
 // ---------- A BRAWLER'S PICTURE (the impact style): the follower's world behind it, the follower, the blow coming at the lens, and then the card itself HIT: its glass
@@ -658,6 +675,7 @@ function TECH(o) {
   { const pool = circ(P.ring.r); g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(14px)'; g.fillStyle = fxa(0.16); g.beginPath(); pool.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.fill(); g.restore();
     line(pool, 14, fxa(0.25), 8); line(pool, 3, fxa(0.7), 1); line(pool, 1, 'rgba(' + TN.white + ',0.8)');
     const inner = circ(P.ring.r * 0.72); g.save(); g.setLineDash([10, 9]); line(inner, 1.5, fxa(0.45)); g.restore(); }   // (an inner dashed ring, as the reactor's own)
+  if (o.roll) ROLL_FX(o, g, mask, 0);   // (followers round 6, BLADE ROLL: his shadow and his way on the floor, under him)
   // 3. THE FOLLOWER AND ITS RING: a dark halo behind them so they stand off the floor, the follower's teal glow, the 3-D render (the ring in it, whole), the ring's glow
   g.save(); g.globalAlpha = 0.75; g.drawImage(mask(bodyCv, 12, TN.halo), 0, 5); g.restore();
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.45; g.drawImage(mask(bodyCv, 16, P.fx), 0, 0); g.restore();
@@ -667,6 +685,7 @@ function TECH(o) {
     const ig = cv(), ic = ig.getContext('2d'); ic.drawImage(mask(bodyCv, 10, '#6fffe6'), 0, 0); ic.globalCompositeOperation = 'destination-in'; ic.drawImage(mask(bodyCv, 0, '#000'), 0, 0);
     g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.28; g.drawImage(ig, 0, 0); g.restore(); }
   g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = TN.ringGlow[0]; g.drawImage(mask(ringCv, 12, P.fx), 0, 0); g.globalAlpha = TN.ringGlow[1]; g.drawImage(mask(ringCv, 3, TN.ringWhite), 0, 0); g.restore();
+  if (o.roll) ROLL_FX(o, g, mask, 1);   // (followers round 6, BLADE ROLL: where he has just been, his spikes' sweep, the sparks, over him)
   // light rising off each crystal's point (the world's up), and a bright star at the tallest points
   g.save(); g.globalCompositeOperation = 'lighter';
   ringTips.forEach(([x, y]) => { const L = 50 + R() * 70, ex = x + up[0] * L, ey = y + up[1] * L, gr = g.createLinearGradient(x, y, ex, ey); gr.addColorStop(0, fxa(0.35)); gr.addColorStop(1, fxa(0));
@@ -678,6 +697,43 @@ function TECH(o) {
   g.save(); g.fillStyle = rad(g, W * 0.5, H * 0.42, H * 0.78, [[0.5, 'rgba(0,0,0,0)'], [1, TN.vig]]); g.fillRect(0, 0, W, H);
   lg = g.createLinearGradient(0, H * 0.62, 0, H); lg.addColorStop(0, TN.foot[0]); lg.addColorStop(1, TN.foot[1]); g.fillStyle = lg; g.fillRect(0, H * 0.62, W, H * 0.38); g.restore();
   return { png: out.toDataURL('image/png'), info };
+}
+
+// ---------- BLADE ROLL'S MOTION (followers round 6, the Hammer Slug rolling; the owner, 2026-11-18: "showing him rolling with his spikes out"): what a Technician's picture gains when it shows
+// a roll. Called by TECH twice, only for a picture with o.roll (the 3-D part's rollFx): under the follower (front 0), his shadow on the floor, the way he has come as a streak of his element's
+// light fading back along it, and a prick of light where each spike last bit the floor; over him (front 1), where he has just been (the 3-D renders of him further back along his way and turned
+// back with it, as light, fainter the further back, never over him), the sweep of light behind each big spike's point as it turns, and sparks where the next spike goes into the floor.
+// Clean, as the style is: light only, nothing broken or scratched.
+function ROLL_FX(o, g, mask, front) {
+  const { W, H, R, cv, P, bodyCv, roll, up } = o, Q = P.curl, TAU = 2 * Math.PI, WH = '225,255,248';
+  const rgb = (h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)])(P.fx), fxa = a => 'rgba(' + rgb.join(',') + ',' + a + ')';
+  const blob = (x, y, r, stops) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); stops.forEach(([q, c]) => gr.addColorStop(q, c)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
+  if (!front) {
+    g.save(); g.filter = 'blur(8px)'; g.fillStyle = 'rgba(0,8,6,0.55)'; g.beginPath(); roll.shadow.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fill(); g.restore();
+    const wy = cv(), wg = wy.getContext('2d');
+    for (let i = 1; i < roll.way.length; i++) { const [a0, b0, t0] = roll.way[i - 1], [a1, b1] = roll.way[i]; wg.fillStyle = fxa(0.55 * Math.pow(1 - t0, 1.5)); wg.beginPath(); wg.moveTo(a0[0], a0[1]); wg.lineTo(a1[0], a1[1]); wg.lineTo(b1[0], b1[1]); wg.lineTo(b0[0], b0[1]); wg.closePath(); wg.fill(); }
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(7px)'; g.drawImage(wy, 0, 0); g.filter = 'blur(2px)'; g.globalAlpha = 0.45; g.drawImage(wy, 0, 0); g.restore();
+    g.save(); g.globalCompositeOperation = 'lighter'; roll.marks.forEach(([x, y, t]) => { const k = 1 - 0.7 * t; blob(x, y, 13, [[0, 'rgba(' + WH + ',' + 0.95 * k + ')'], [0.25, fxa(0.6 * k)], [1, fxa(0)]]); }); g.restore();
+    return;
+  }
+  // where he has just been
+  if (roll.ghosts.length) { const gh = cv(), gc = gh.getContext('2d'); gc.globalCompositeOperation = 'lighter';
+    roll.ghosts.forEach(([c, a]) => { gc.globalAlpha = a; gc.drawImage(mask(c, 1.5, P.fx), 0, 0); });
+    gc.globalAlpha = 1; gc.globalCompositeOperation = 'destination-out'; gc.drawImage(bodyCv, 0, 0);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.drawImage(gh, 0, 0); g.restore(); }
+  // the sweep behind each big spike's point: a blade of light, bright at the point, thinning back round the turn
+  const sw = cv(), sg = sw.getContext('2d');
+  roll.trails.forEach(pts => { const n = pts.length - 1, L = [], Rr = [];
+    for (let i = 0; i <= n; i++) { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], dl = Math.hypot(dx, dy) || 1, hw = Q.sweep[2] * 0.5 * Math.pow(1 - i / n, 0.9); L.push([pts[i][0] - dy / dl * hw, pts[i][1] + dx / dl * hw]); Rr.unshift([pts[i][0] + dy / dl * hw, pts[i][1] - dx / dl * hw]); }
+    const gr = sg.createLinearGradient(pts[0][0], pts[0][1], pts[n][0], pts[n][1]); gr.addColorStop(0, 'rgba(' + WH + ',1)'); gr.addColorStop(0.35, fxa(0.85)); gr.addColorStop(1, fxa(0));
+    sg.fillStyle = gr; sg.beginPath(); L.concat(Rr).forEach(([x, y], i) => i ? sg.lineTo(x, y) : sg.moveTo(x, y)); sg.closePath(); sg.fill(); });
+  g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(6px)'; g.globalAlpha = 0.7; g.drawImage(sw, 0, 0); g.filter = 'blur(0.5px)'; g.globalAlpha = 1; g.drawImage(sw, 0, 0); g.restore();
+  // sparks where the next spike goes into the floor ahead of him
+  if (roll.bite) { const [bx, by] = roll.bite, ua = Math.atan2(up[1], up[0]); g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round';
+    blob(bx, by, 30, [[0, 'rgba(' + WH + ',0.95)'], [0.22, fxa(0.6)], [1, fxa(0)]]);
+    for (let k = 0; k < Q.sparks; k++) { const a = ua + (R() - 0.5) * 2.7, d0 = 3 + R() * 10, L = 8 + Math.pow(R(), 1.7) * 62, x0 = bx + Math.cos(a) * d0, y0 = by + Math.sin(a) * d0 * 0.7, x1 = x0 + Math.cos(a) * L, y1 = y0 + Math.sin(a) * L;
+      const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(' + WH + ',0.95)'); gr.addColorStop(0.4, fxa(0.8)); gr.addColorStop(1, fxa(0)); g.strokeStyle = gr; g.lineWidth = 0.8 + R() * 1.6; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); }
+    g.restore(); }
 }
 
 // ---------- AN ELECTRIC MAGE'S PICTURE (the Mage style, as approved on the Ember Hood, carried to the storm: followers round 1, 2026-11-17): the storm energy card's world behind,
@@ -1360,6 +1416,7 @@ ${worldSrc}
 ${BRAWLER.toString()}
 ${SHATTER_SLABS.toString()}
 ${TECH.toString()}
+${ROLL_FX.toString()}
 ${STORM_MAGE.toString()}
 ${FLAME_DASH.toString()}
 ${GOO_SPLASH.toString()}
@@ -1490,6 +1547,41 @@ window.__card = async function (P, W, H, modelOnly) {
     // Each wing is a group mirrored by its scale (x -1 for the left); both are turned up about the body's long axis at their root by P.wings.up radians, as a manta lifts its wings.
     B.g.traverse(m => { if (!m.isGroup || m.scale.x !== -1 || !m.parent) return; const twin = m.parent.children.find(k => k !== m && k.isGroup && k.scale.x === 1 && k.position.y === m.position.y && k.children.length === m.children.length);
       if (!twin) return; m.rotation.z = -P.wings.up; twin.rotation.z = P.wings.up; }); }
+  // BLADE ROLL: THE HAMMER SLUG ROLLED UP (followers round 6; the owner, 2026-11-18: "We want spikes roll", a picture "showing him rolling with his spikes out"). This render only: the game's
+  // model is not changed and nothing is added to him. His own body (forms20.js _slugReal: a tube of 30 rings of 18 sides, his hex tiles, his back's spikes, his head) is curled up as a pill bug
+  // curls: his back, with its spikes, on the outside all the way round (every ring of him set so that his back lies on one circle, P.curl.R, the rim he rolls on; +z, his front, is the way he
+  // rolls), his belly inside (his sole, the flat disc under him, is tucked into the curl: hidden), his tail wrapped round the outside, and his head end turning in under his tail (P.curl.dive) so
+  // that his head sits in the middle of the curl, across the axle he rolls about: a round bead of its end, which reads as his eye, looks out of the middle of the ball on each side. His head is
+  // lit matte, as living flesh (as his round 3: never a dark metal slab; the owner, 2026-11-17: "he does not have an actual iron hammer as his head"). His spikes are his own, flared as his
+  // action pose flares them (pose.act); they are not moved along him, so his tail's stretch, which has none, has none here (P.curl.spin turns that stretch to the floor).
+  let roll = null;
+  if (P.curl) {
+    const Q = P.curl, bb = B.g.children[0], tube = bb.children[0], v = new T.Vector3();
+    const foot = bb.children.find(c => c.isMesh && c.geometry.type === 'CylinderGeometry'); if (foot) foot.visible = false;
+    const keel = bb.children.find(c => c.isMesh && c.geometry.type === 'BoxGeometry'); if (keel) { const pr0 = keel.geometry.parameters; keel.geometry = new T.BoxGeometry(pr0.width, pr0.height, pr0.depth, 1, 1, 60); }   // (his keel, the thin ridge down his back: cut finer, so it bends with him)
+    const head = bb.children.find(c => c.isGroup && c.children.some(k => k.isMesh && k.geometry.type === 'BufferGeometry'));
+    if (head) head.traverse(m => { if (m.isMesh && m.geometry.type === 'BufferGeometry') { const fm = new T.MeshStandardMaterial({ color: new T.Color(Q.headColour), roughness: 0.95, metalness: 0, side: T.DoubleSide }); fm.envMapIntensity = 0; m.material = fm; } });
+    // along him: each ring's place (z, tail to head) and how high his back is there
+    tube.updateMatrix(); const pa0 = tube.geometry.attributes.position, S = 18, N = pa0.count / S, rz = [], rt = [];
+    for (let i = 0; i < N; i++) { let z = 0, top = -9; for (let j = 0; j < S; j++) { v.fromBufferAttribute(pa0, i * S + j).applyMatrix4(tube.matrix); z += v.z / S; top = Math.max(top, v.y); } rz.push(z); rt.push(top); }
+    const zT = rz[0], len = rz[N - 1] - zT, topAt = z => { const f = Math.max(0, Math.min(N - 1.001, (z - zT) / len * (N - 1))), i = Math.floor(f), k = f - i; return rt[i] * (1 - k) + rt[i + 1] * k; };
+    // THE CURL: a point of him (y up, z along him) goes to the wheel's plane, [up, forward] from its middle: turned round it by how far along him it is (P.curl.turn radians from tail to head, the
+    // part P.curl.mid along him at the top), as far from the middle as it is below his back (his back on the rim, R); past P.curl.dive[0] along him, sinking in toward the middle (his head end)
+    const curl = (y, z) => { const u = (z - zT) / len, ph = (u - Q.mid) * Q.turn, dv = Q.dive[1] * Math.pow(Math.max(0, Math.min(1, (u - Q.dive[0]) / (1 - Q.dive[0]))), Q.dive[2]), rr = Math.max(0.02, Q.R + y - topAt(z) - dv); return [rr * Math.cos(ph), rr * Math.sin(ph), ph]; };
+    for (const msh of [tube].concat(keel ? [keel] : [])) { msh.updateMatrix(); const pa = msh.geometry.attributes.position, Mt = msh.matrix, Mi = new T.Matrix4().copy(Mt).invert();
+      for (let i = 0; i < pa.count; i++) { v.fromBufferAttribute(pa, i).applyMatrix4(Mt); const [y2, z2] = curl(v.y, v.z); v.y = y2; v.z = z2; v.applyMatrix4(Mi); pa.setXYZ(i, v.x, v.y, v.z); }
+      pa.needsUpdate = true; msh.geometry.computeVertexNormals(); msh.geometry.computeBoundingSphere(); msh.frustumCulled = false; }
+    // his tiles, his spikes and the horn on his head ride the curl, each turned with it; his head lies across the middle, its beads on the axle, turned about it a little (P.curl.headRot) so
+    // its broad top shows over the near bead, as a brow over an eye; his own light (the model's, his element's colour) is set beside him on the camera's side (P.curl.lamp), to light his tiles
+    const wheel = new T.Group(), ax = new T.Vector3(1, 0, 0);
+    bb.children.slice().forEach(c => { if (c.isLight) { if (Q.lamp) c.position.set(...Q.lamp); return; }
+      if (c === head) { const bob = c.children.find(k => k.isMesh && k.geometry.type === 'SphereGeometry'); c.rotation.set(Q.headRot || 0, 0, 0); c.position.set(0, 0, bob ? -bob.position.z : 0).applyAxisAngle(ax, Q.headRot || 0); }
+      else if (c !== tube && c !== keel && c !== foot) { const [y2, z2, ph] = curl(c.position.y, c.position.z); c.position.y = y2; c.position.z = z2; c.quaternion.premultiply(new T.Quaternion().setFromAxisAngle(ax, ph)); }
+      wheel.add(c); });
+    wheel.position.y = Q.cy; wheel.rotation.x = Q.spin; bb.add(wheel);   // (cy: the middle's height, so the rim rests on the floor; spin: how far round he has turned)
+    if (Q.at) B.g.position.set(Q.at[0], 0, Q.at[1]);   // (where he is on the floor, inside the ring)
+    roll = { wheel, hubY: Q.cy * bb.scale.y };
+  }
   if (P.rear) { B.g.rotation.order = 'YXZ'; B.g.rotation.x = -P.rear; B.g.position.y = P.lift || 0; }   // (a Technician rearing its front up: the whole model tipped back about its middle, its tail sunk into the floor)
   // ROTTEN DECOY'S BLACK PIECES (followers round 5, the Rotshard): the decoy, the game's own black Rotshard (design/effects/bake_fx.js rotdecoy, approved in the game 2026-11-09: "Approve the black decoy"):
   // the Rotshard's own model (No. 101) all in its old shell's glassy black, its pool tar-black, its glows, washes and light off, only its shell shard's hairline green crack kept; rising out of the floor
@@ -1632,7 +1724,29 @@ window.__card = async function (P, W, H, modelOnly) {
   const up = [Math.sin(slope), -Math.cos(slope)];   // the world's up, on the picture (square to the horizon)
   const info = { heart: heart.map(Math.round), foot: foot.map(Math.round), horizonDeg: +(slope * 180 / PI).toFixed(1), horizonMid: Math.round(hzAt(W / 2)) };
   if (modelOnly) { const c = cv(), g = c.getContext('2d'); g.fillStyle = '#5a5f68'; g.fillRect(0, 0, W, H); g.drawImage(floorCv, 0, 0); g.drawImage(model, 0, 0); if (blackCv) g.drawImage(blackCv, 0, 0); return { png: c.toDataURL('image/png'), info }; }
-  if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr) });
+  // BLADE ROLL'S MOTION (followers round 6, the Hammer Slug rolling: P.curl), for ROLL_FX: he rolls without slipping, so a way back along his line he was turned back by that way over his
+  // middle's height. From that: where he has just been (P.curl.ghosts, [how far back, how strong]: he is drawn there alone, the ring's crystals hiding what they cover), his way on the floor
+  // (P.curl.way, [its length, its half width]) and where each spike last bit it (a spike now th round from the top pointed down th + pi ago), the sweep behind each big spike's point
+  // (P.curl.sweep, [the least reach that gets one, its arc in radians, its width]), the place the next spike is going into the floor ahead of him, and his shadow.
+  let rollFx = null; if (roll) { const Q = P.curl, hubY = roll.hubY, wheel = roll.wheel, dir = new T.Vector3(Math.sin(P.yaw), 0, Math.cos(P.yaw)), p0 = B.g.position.clone(), s0 = wheel.rotation.x;
+    const at = (r, th, back) => { const f = r * Math.sin(th) - (back || 0); return pr([p0.x + dir.x * f, hubY + r * Math.cos(th), p0.z + dir.z * f]); };   // (a point of the wheel's plane on the picture: r from his middle, th round from straight up toward the way he rolls)
+    const onFloor = (f, s) => pr([p0.x + dir.x * f + dir.z * s, 0.012, p0.z + dir.z * f - dir.x * s]);   // (a point of the floor: f ahead of where he touches it, s to the side)
+    scene.updateMatrixWorld(true); const tips = [], hub = new T.Vector3(p0.x, hubY, p0.z);
+    wheel.children.forEach(c => { if (!c.isGroup || c.children.length !== 2 || !c.children[0].isMesh || c.children[0].geometry.type !== 'ConeGeometry') return;   // (his back's spikes: each its mesh and its edges)
+      const w = c.localToWorld(new T.Vector3(0, c.children[0].geometry.parameters.height, 0)).sub(hub), f = w.x * dir.x + w.z * dir.z; tips.push([Math.hypot(w.y, f), Math.atan2(f, w.y)]); });
+    const trails = tips.filter(([r, th]) => r > Q.sweep[0] && hubY + r * Math.cos(th) > 0.15).map(([r, th]) => { const pts = []; for (let k = 0; k <= 18; k++) pts.push(at(r, th - Q.sweep[1] * k / 18)); return pts; });
+    const marks = tips.filter(([r]) => r > hubY).map(([r, th]) => (th + PI) * hubY).filter(d => d < Q.way[0]).map(d => onFloor(-d, 0).concat([d / Q.way[0]]));
+    const way = []; for (let k = 0; k <= 24; k++) { const t = k / 24; way.push([onFloor(-t * Q.way[0], Q.way[1]), onFloor(-t * Q.way[0], -Q.way[1]), t]); }
+    const biter = tips.filter(([r, th]) => th > 0 && r * Math.cos(th) < -hubY).sort((a, b) => b[0] - a[0])[0], bite = biter ? onFloor(-hubY * Math.tan(biter[1]), 0) : null;
+    const shadow = []; for (let k = 0; k < 40; k++) { const a = k / 40 * 2 * PI; shadow.push(onFloor(Math.sin(a) * Q.shadow, Math.cos(a) * Q.shadow)); }
+    // (the ring's block above leaves every material that several of his meshes share switched off, so its picture of the follower alone holds only part of him: the earlier Technicians were
+    // approved with it and bake as they did. Here he must be whole, for where he has been and for his glow and edge: his materials are switched back on and he is drawn alone again)
+    B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { x.colorWrite = true; }); }); ringG.visible = false; bodyCv = grab(); ringG.visible = true;
+    const rm = []; ringG.traverse(m => { if (m.material && rm.indexOf(m.material) < 0) rm.push(m.material); }); rm.forEach(x => { x.colorWrite = false; });
+    const ghosts = Q.ghosts.map(([d, a]) => { B.g.position.copy(p0).addScaledVector(dir, -d); wheel.rotation.x = s0 - d / hubY; return [grab(), a]; });
+    B.g.position.copy(p0); wheel.rotation.x = s0; rm.forEach(x => { x.colorWrite = true; });
+    rollFx = { ghosts, trails, marks, way, bite, shadow, hub: at(0, 0) }; info.roll = { hub: rollFx.hub.map(Math.round), tips: tips.map(([r, th]) => [+r.toFixed(2), Math.round(th * 180 / PI)]), bite: bite && bite.map(Math.round) }; }
+  if (P.style === 'tech') return TECH({ W, H, R, cv, model, ringCv, bodyCv, floorCv, pr, hzAt, slope, up, info, P, B, heart, ringTips: ringTips.map(pr), roll: rollFx });
   if (P.style === 'ice') { const k0 = Math.max(...iceAxes.map(q => q[2])); return ICE_MAGE({ W, H, R, cv, model, floorCv, iceCv, iceNearCv, pr, hzAt, slope, up, info, P, B, heart, iceTips: iceAxes.map(([a, b, sc]) => [pr([a.x, a.y, a.z]), pr([b.x, b.y, b.z]), sc / k0]) }); }
   if (P.style === 'void') return VOID_MAGE({ W, H, R, cv, model, floorCv, swirlCv, nearCv, pr, hzAt, slope, up, info, P, B, heart, swirlC: [swirlC.x, swirlC.y, swirlC.z] });
   if (P.style === 'core') return CORE_MAGE({ W, H, R, cv, model, floorCv, pr, hzAt, slope, up, info, P, B, heart, ahead: v => new T.Vector3(...v).project(cam).z < 1 });
