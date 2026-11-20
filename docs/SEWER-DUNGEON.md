@@ -26,6 +26,7 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 - **Water flows in from the entrance side** and runs freely along the west channel into the central channel. **It is not blocked there.**
 - The water runs **south down the central channel to the round junction**.
 - **Past the round junction it is dammed up because of the Nest**: a **separate Toxic Nest inside the Sewers**, along the corridor running east from the junction.
+- **Refined 2026-11-20:** the owner: "I figured the nest would be directly on top of the junction, or at least the queen area." **The Nest, or at least the Queen's area, sits on the round junction itself**: the Nest dams the water there, so it backs up into the central channel above it. The corridor east of the junction leads on to the purification chamber, so the Queen's area lies between the player and the purification chamber.
 - **The water purification chamber is in the bottom-right** of the map: where the purification module is installed and the Toxic Queen's encounter resolves.
 - **Supersedes** the Notion note that water enters from the south (2026-11-19).
 
@@ -188,7 +189,7 @@ Nothing implemented.
 5. Energy cards in the world: which elements, how many, and whether found cards are random or placed.
 6. "Other upgrades": what they are.
 7. The top of the central channel: dead end with loot, or upstream branch.
-8. Where the Nest sits exactly: in the corridor as the dam itself, or beside it with only its dam in the corridor.
+8. ~~Where the Nest sits exactly~~ (answered 2026-11-20: on the round junction, or at least the Queen's area; 2.2). Open: whether the rest of the Nest spreads into the corridors around it.
 9. The key-item zoom: tilt, speed, timing.
 10. Crossing the channel (2.5a): a player with none of the Ice Technician, Flux Technician or Technomancer can fight through the Nest (2.5b, to confirm); how the water is raised for the crossing without spending a use the crossing needs; the way back (one bridge both ways, or a second crossing); whether a box bridge lasts or sinks; whether creatures may cross a bridge.
 11a. The electric technician has no combat ability once the launcher's Combat mode is removed: whether it gets a new one.
