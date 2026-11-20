@@ -18,7 +18,9 @@
 //                 the Quillstone's, the Ember Hood's and the Thermite Burrower's attacks made by the game's own functions, each drawn and claimed (effects, shots, the orbiting fireballs), the Burrower's
 //                 body the view's under the floor, the budget held and halved on LOW, nothing written, a fault sending one form's back to 2D. The ice line's six (the Igloo Skater's and the Rimestar's):
 //                 each made by the game's own functions, drawn and claimed (the hit and its icicles, SKATE CHARGE's line, ICE RINK, the iceball, the three icicles, WHITEOUT), within the budget and halved
-//                 on LOW, nothing written, a fault sending one form's back to 2D
+//                 on LOW, nothing written, a fault sending one form's back to 2D. The electric line's thirteen (the Thunderhead's, the Electro Skink's, the Static Orb's, the Hover Shell's): each made by the
+//                 game's own functions, drawn and claimed (shots, hops, the storm and the swirl stood as models, rings, hits, the spark ring), within the budget and halved on LOW, nothing written, a fault
+//                 sending one form's back to 2D
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
