@@ -122,7 +122,7 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 
 6. **The player can never flood themselves** (the owner, 2026-11-20: "you can't move an object and bring the water back down upon yourself"): no move that would release the water is allowed while the player is down in a dry channel.
 
-**The west channel, by the entrance** (the owner, 2026-11-20: "the West Channel by the [entrance]'s fine"; the owner said "exit", read as the entrance, the only way in on the west). **Open:** which door the key opens; whether the water comes back when the player, standing safely out of the channel, moves the obstacle away.
+**The west channel, by the entrance** (the owner, 2026-11-20: "the West Channel by the [entrance]'s fine"; the owner said "exit", read as the entrance, the only way in on the west). **The key opens the subway door** (the owner, 2026-11-20: "The key is going to be to the subway"): the way out south-west of the junction (area 15). **Open:** whether the water comes back when the player, standing safely out of the channel, moves the obstacle away.
 
 ### 2.5e The dungeon resets on every return (the owner, 2026-11-20)
 "These dungeons completely reset other than the items every single time"; "The dungeon should reset every single time the player comes back to them."
@@ -165,6 +165,40 @@ Each room is **proposed** until the owner approves it; approved rooms say so.
 - The first water reading here reads normal: the trouble is further in.
 - A locked side door that cannot be opened yet: later opened from its far side as a shortcut back.
 - No enemies.
+
+### 2.11 Finds and utility checks across the map — proposed 2026-11-20 (not approved)
+Asked (the owner, 2026-11-20): "fill it out with some energy card pickups, maybe one or two attack cards, and also utility checks", from the Notion notes (the Sewer System environmental reference; the Mutator, Technomancer and Gunslinger pages: no obstacle exclusive to one class). Areas are numbered as on the traced map.
+
+| Find | Where | Behind |
+|---|---|---|
+| E1 energy card | area 4 | U1 |
+| E2 energy card | area 2, on a gantry | U3 |
+| E3 energy card | area 6 | — |
+| E4 energy card | area 11 | the secret door from corridor 12, or the tunnel from 10 |
+| E5 energy card | past the rubble, corridor 12's east end | U9 |
+| A1 attack card | area 1 | U2 |
+| A2 attack card | area 8 | U6 |
+| P1 module part | area 5 | U4 |
+| P2 module part | area 9 | — |
+| P3 module part | area 13 | — |
+| B1 battery pack | area 3 | — |
+| B2 battery pack | area 10 | U8 |
+| K key (the subway) | the west channel's bed | U5 (2.5d) |
+
+| Check | Ways through (at least two each) |
+|---|---|
+| U1 heavy debris | the mech moves it; the Mutator's Tank Ant clone pushes it |
+| U2 roots across the loop | a Fire Technician burns them; the secret door goes round |
+| U3 a gantry two stories up | the launcher (straight up, one tile over); the Stonepetal's REEF |
+| U4 piled crates | the Flux Technician moves them; the mech moves them |
+| U5 dam the west channel | the Flux Technician or the mech pushes an obstacle in; then down with REEF |
+| U6 cracked wall | the mech breaks it; the Tank Ant clone breaks it |
+| U7 a stuck sluice switch, high up | the Gunslinger shoots it, closing the sluice and raising the water (a way to start U10); the mech turns it if reached |
+| U8 webbing over a door | the Striker Ant clone cuts it; fire burns it |
+| U9 rubble | a Fire Technician drills it; the mech moves it |
+| U10 the crossing at the channel's top | raise the water, then an ice bridge or a box (2.5a) |
+
+**Open:** "attack cards" as pickups: the game's attack cards are a follower's own attacks in the card battles (`CARD-BATTLES.md`), and no attack card is found as an item yet, so what a found one gives is undecided; which elements the energy cards are; whether each check costs a utility use (2.4); the counts.
 
 ## 3. Must-have requirements
 - [ ] A connected sewer of the approved shape (2.2) and roughly the approved scale (2.1), entered from the west.
