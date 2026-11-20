@@ -1,4 +1,6 @@
-# The Mutator: the lash and the one clone
+# The Mutator: the one clone (its lash removed in build 2026-11-17as)
+
+> **THE LASH IS REMOVED, build `2026-11-17as`.** The owner, 2026-11-20: "No melee unless it's the gunslinger"; asked about the Mutator's lash: "Remove the lash too". The TENTACLE LASH (§2.4, and the lash lines of §2.8, §3 and §4) is no longer in the game, with its tutorial step (FIGHT BESIDE IT). The Mutator has **no weapon of its own** and none to take at the Armory: it fights through its one clone and mends its side with serum. Its class stage is GET YOUR GEAR, GROW YOUR CLONE, UPGRADE YOUR CLONE, SPLASH A SERUM. Its Player cards work on the clone's bites and the serum's pool. Everything else on this page (the clone, its upgrades, DNA, the bodies, the serum, the level) is as it was. Current rules: `TUTORIAL.md`, "The only weapon is the Gunslinger's machine gun"; the decision: `DECISION-LOG.md`.
 
 ASKED (the brief, "Player Classes" and "Mutator Clone System"):
 
@@ -62,7 +64,7 @@ A fresh clone beats its own kind and level in a fight you can read (several bite
 
 What the body is *for* is the next two steps: the DNA the player can recover from it (step 5) and the Ice Mage's preservation and the capsule (step 6). Until then it lies there (`MUTATOR.body.life` is 0: it stays until it is dealt with).
 
-### 2.4 The lash: the Mutator's melee
+### 2.4 The lash: the Mutator's melee (removed in build 2026-11-17as; kept as history)
 
 `WEAPONS.lash` (js/weapons.js), the **TENTACLE LASH**, is the Mutator's own weapon (`cls: "mutator"`). It goes in the Mutator's hand when the class is chosen (`CLASSES.mutator.weapon`). It is aimed exactly as the gun is, through the same targeting (no second input system):
 

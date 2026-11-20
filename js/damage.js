@@ -93,11 +93,10 @@ const DMG_HIT_SPECIAL = Object.freeze({ which: "special", stat: "sp" });     // 
 const DMG_HIT_SPECIAL_ATK = Object.freeze({ which: "special", stat: "atk" });// the fire forms' FIRE BOMBS move (it reads ATK)
 const DMG_HIT_LAUNCH = Object.freeze({ which: "alt", stat: "atk", type: "earthquake" });   // a follower thrown by the Kinetic Launcher, landing
 const DMG_HIT_BASH = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });      // BASH (js/evolution.js bash): Crushing, whatever the follower's form
-const DMG_HIT_GUN = Object.freeze({ type: "projectile", player: true });     // the player's guns, and the turrets
-const DMG_HIT_LASH = Object.freeze({ type: "slashing", player: true });      // the Mutator's lash
-const DMG_HIT_PUNCH = Object.freeze({ type: "crushing", player: true });     // the Technomancer's gauntlet
-const DMG_HIT_ARC = Object.freeze({ type: "elemental", element: "electric", player: true });   // the Technomancer's arc
-// the arc of a Technomancer's role (a Player card, js/playercards.js): the same hit in the role's element (rule 2: for the triangle), each made once
+const DMG_HIT_GUN = Object.freeze({ type: "projectile", player: true });     // the player's gun (the Gunslinger's machine gun), and the turrets
+// (the Mutator's lash, Slashing, and the Technomancer's punch, Crushing, had their own kinds of hit here, DMG_HIT_LASH and DMG_HIT_PUNCH, until they went: build 2026-11-17as)
+const DMG_HIT_ARC = Object.freeze({ type: "elemental", element: "electric", player: true });   // the zap of ARC WARDEN, a Technomancer's Player card (js/technomancer.js _tcZap; the Technomancer's arc, until it went)
+// the zap under another role's element (a Player card, js/playercards.js): the same hit in the role's element (rule 2: for the triangle), each made once
 const _DMG_HIT_ARC_OF = {};
 function dmgArcHit(el) { if (!el || el === "electric") return DMG_HIT_ARC; return _DMG_HIT_ARC_OF[el] || (_DMG_HIT_ARC_OF[el] = Object.freeze({ type: "elemental", element: el, player: true })); }
 const DMG_HIT_CLONE = Object.freeze({ type: "piercing" });                   // the Mutator's clone's bite
@@ -198,7 +197,7 @@ function dmgApply(target, amount, source, element, hit) {
     const bare = !el && !!source && source.element === "none";
     let em = 1, emBase = 1;   // (emBase: the same with no weakness or advantage in it, only what resists: dmgBaseShare)
     if (elem > 0 && !bare) { em = dmgRowMult(row, "elemental"); emBase = Math.min(em, 1); if (el && target.element && typeof getElementMultiplier === "function") { const g = getElementMultiplier(el, target.element); em *= g; emBase *= Math.min(g, 1); } }
-    // a player's weapon with an element (the laser on a selected element, an elemental lash) still sets the triangle on the whole hit, as it did
+    // a player's weapon with an element (the gun's round in the selected element, or a role's) still sets the triangle on the whole hit, as it did
     let whole = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function") whole = getElementMultiplier(el, target.element);
     const wholeBase = Math.min(whole, 1);

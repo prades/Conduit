@@ -272,7 +272,7 @@ function facilityShotStop(x0, y0, x1, y1, ox, oy, F) {
     }
     return null;
 }
-// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before a wall or cover stops it (tiles; the whole length when nothing does): the laser's beam (js/weapons.js)
+// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before a wall or cover stops it (tiles; the whole length when nothing does): whether a shot's line is clear (js/facilityplay.js facilityShotClear; the laser's beam went by it until the rifle went, build 2026-11-17as)
 function facilityShotReach(x0, y0, x1, y1, F) {
     F = F || facilityGet();
     const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L / 0.25));

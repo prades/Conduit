@@ -12,13 +12,14 @@ const CLASSES = {
         blurb: ["Finds weapons, ammunition and tactical equipment.", "Fights from the Security Room and the Armory.", "Cannot use the Technomancer's tech or the Mutator's samples."],
         rooms: ["armory", "security_room"], startKit: [["flare", 1]], skills: ["tactical"] },
     technomancer: { id: "technomancer", name: "TECHNOMANCER", colour: "#31e8ff", tagline: "Electrical infrastructure and technology.",
-        blurb: ["Punches with an arc gauntlet and throws electric arcs, charged from the powered rooms.", "Draws on the facility's power: each relay online makes the arc stronger.", "Cannot use the Gunslinger's gear or the Mutator's samples."],
-        rooms: ["experiment_lab", "teleport_room_1", "lab_passage"], startKit: [["power_cell", 1]], skills: ["repair", "tech"], weapon: "gauntlet" },
+        blurb: ["Works with the facility's power, its lamp and its machines.", "Builds a spider mech in the Warehouse and tunes its monitor lamp.", "Cannot use the Gunslinger's gear or the Mutator's samples."],
+        rooms: ["experiment_lab", "teleport_room_1", "lab_passage"], startKit: [["power_cell", 1]], skills: ["repair", "tech"] },
     mutator: { id: "mutator", name: "MUTATOR", colour: "#c06bff", tagline: "Biological samples, DNA and creature evolution.",
-        blurb: ["Fights up close with a tentacle lash, beside one clone it grows from DNA.", "Works with samples, DNA and experimentation.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
-        rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"], weapon: "lash" },
+        blurb: ["Fights beside one clone it grows from DNA, and mends its side with serum.", "Works with samples, DNA and experimentation.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
+        rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"] },
 };
-// weapon: the class's own weapon (js/weapons.js), put in its hand when the class is chosen (the Mutator's TENTACLE LASH: docs/MUTATOR.md). A class with none keeps the service gun.
+// NO CLASS STARTS WITH A WEAPON (build 2026-11-17as; the owner, 2026-11-20): the only personal weapon is the Gunslinger's MACHINE GUN, from the Armory's weapon locker (js/weapons.js, js/stations.js). The
+// Technomancer's ARC GAUNTLET and the Mutator's TENTACLE LASH (a class row's `weapon`) went, and so did the service gun a class with none kept.
 const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
 // relay: how a relay is repaired (js/stations.js). A class with the `skill` repairs with `skillCells` power cells in `skillFrames`, and the classes named in `auto` start the repair by themselves when they stand at a broken relay with the cells and keep still;
 // anyone else needs the `kit` (an item) and `kitCells` cells and takes `kitFrames`. The kit is the explicit rule that lets the other classes restore a relay at all: their cells are spent by the relay, not used by them.
@@ -31,7 +32,7 @@ const CLASS_RULES = { carryOthers: true, useOthers: false,   // (the relay rule,
 // PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
 //   cls        the class that can earn it    name / desc   what the pack shows     stat   { statName: { mul | add } }
 const CLASS_PERKS = {
-    machinegun: { id: "machinegun", cls: "gunslinger", name: "MACHINE GUN", desc: "A big machine gun in your tentacles: it fires four times as fast (each round hits a little softer). It is a weapon you can put away and take out again: the Armory's terminal equips it (js/weapons.js).", stat: {} },
+    machinegun: { id: "machinegun", cls: "gunslinger", name: "MACHINE GUN", desc: "A big machine gun in your tentacles: the only weapon there is, and the Gunslinger's alone. The Armory's terminal upgrades it (js/weapons.js).", stat: {} },
     cctv:      { id: "cctv", cls: "gunslinger", name: "CCTV SWEEPS", desc: "The Security Room's cameras mark every enemy in the facility for 25 seconds.", stat: {} },
     mech:      { id: "mech", cls: "technomancer", name: "SPIDER MECH", desc: "A four-legged spider mech you built in the warehouse: you ride it, 40% faster, and its headlamps light 30% further.", stat: { playerSpeed: { mul: 1.4 }, lampReach: { mul: 1.3 } } },
     tuned:     { id: "tuned", cls: "technomancer", name: "TUNED LAMP", desc: "Your monitor lamp reaches 25% further and an overcharge lasts 50% longer.", stat: { lampReach: { mul: 1.25 }, boostFrames: { mul: 1.5 } } },
@@ -81,21 +82,20 @@ function classSet(id) {
     const first = !classSeen.has(id); classSeen.add(id);
     if (first && typeof invAdd === "function") for (const [item, n] of CLASSES[id].startKit) invAdd(item, n);   // (once: switching back and forth is not a way to fill the pack)
     if (typeof tutClassResume === "function") tutClassResume(id);   // its stage, where it was (or not begun)
-    if (typeof weaponEquip === "function") weaponEquip(_classWeaponFor(id));   // the weapon it last had (its own the first time: the Mutator's lash, the Technomancer's gauntlet), or the service gun
+    if (typeof weaponEquip === "function") weaponEquip(_classWeaponFor(id));   // the weapon it has (a Gunslinger who has been to the locker: the machine gun), or none in hand
     if (id === "mutator" && classWaitingClone && typeof mutatorCloneReturn === "function") { mutatorCloneReturn(classWaitingClone); classWaitingClone = null; }   // its clone, back beside you
     return true;
 }
 function _classLeave(was) {
-    if (typeof mutatorCancel === "function") mutatorCancel();   // (a strike wound up is let go)
+    if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk to a fallen clone's body is let go)
     if (typeof playerWeapon !== "undefined") classWeapon[was] = playerWeapon;
     if (typeof tutClassStash === "function") tutClassStash(was);
     if (was === "mutator" && typeof mutatorCloneStash === "function") { const rec = mutatorCloneStash(); if (rec) classWaitingClone = rec; }
 }
-// what the class takes up: the weapon it last held, else its own, else the one in hand if it may hold it (the first class keeps what you had), else the service gun
+// what the class takes up: the weapon it last held, if it still has it, else the one it has (js/weapons.js weaponOwn), else none (null: no weapon in hand)
 function _classWeaponFor(id) {
-    const now = typeof playerWeapon !== "undefined" ? playerWeapon : null;
-    for (const w of [classWeapon[id], CLASSES[id].weapon, now]) if (w && typeof weaponHas === "function" && weaponHas(w)) return w;
-    return "service";
+    const w = classWeapon[id]; if (w && typeof weaponHas === "function" && weaponHas(w)) return w;
+    return typeof weaponOwn === "function" ? weaponOwn() : null;
 }
 // the class a thing is reserved for ([] or none = every class)
 function classAllows(classes, id) { return !classes || !classes.length || classes.includes(id || playerClassKey) || (CLASS_RULES.useOthers && !!(id || playerClassKey)); }

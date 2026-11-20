@@ -34,7 +34,7 @@ The owner, of the three looks (draft 9): "I like the sea chess", read as **the C
 
 - **Opening:** walk up to it and tap it (or press E), as at a station. It opens once: the lid lifts and a light comes up inside; its booster pack opens with the reveal you know from the CARDS screen, **free** (no shards); its items go into the PACK with the usual words over your head. The chest stays open and empty, drawn open.
 - **Once, and saved:** each chest by its id; a new game shuts them all again. (The other way: a chest that fills again after a while.)
-- **What is in one:** **one booster pack** (PACK 1; SERIES 2 as well once it is open to you, an even chance) and **two items** from: AMMO PACK, REPAIR KIT, SLEEPING POTION, SCRAP METAL (three), FUEL CELL, and your class's own (FLARE, POWER CELL, MUTAGEN SAMPLE, HEALING SERUM). What you cannot carry (a full stack) stays in the chest until you can.
+- **What is in one:** **one booster pack** (PACK 1; SERIES 2 as well once it is open to you, an even chance) and **two items** from: AMMO PACK, REPAIR KIT, SLEEPING POTION, SCRAP METAL (three), and your class's own (FUEL CELL was one of these until the laser rifle went, build `2026-11-17as`) (FLARE, POWER CELL, MUTAGEN SAMPLE, HEALING SERUM). What you cannot carry (a full stack) stays in the chest until you can.
 - **Where:** at the ends of side pockets behind the technicians' ways through, four in each of drafts 5 and 6 (`DOMAINS.md` §5): the further off the main way, the better the find.
 - **The look:** C chosen (§2, 2). Not chosen, of draft 9 (`design/props/drafts/chest.js`, baked for review only by `design/props/drafts/bake_draft.js`): A · SUPPLY CHEST (a domed lid on a box) and B · FIELD CASE (a rugged hard case).
 

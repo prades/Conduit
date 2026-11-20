@@ -358,7 +358,7 @@ function facilityFloorAt(x, y, F) { F = F || (_fp && _fp.F); return !!F && facil
 // destinations against the player's current room. Clicking outside the valid movement area should be ignored [...] Preserve legitimate movement through doorways and authorized room transitions."
 // A tap on the floor (js/input.js handleInput) may send you anywhere in the room you are in, and through a doorway of that room a little way into the next (within FP_MOVE.doorReach tiles of the doorway's
 // line); a tap anywhere else is ignored, and a small ✕ where it landed says so. A portal's doorway lies in its own room, so it is a tap in this room. What walks you for a reason of its own (a station, a
-// launcher's pad, a broken edge, a body, the lash) calls facilityWalkTo itself: none of this limits it.
+// launcher's pad, a broken edge, a body) calls facilityWalkTo itself: none of this limits it.
 // THE COMBAT STEP, a prototype (ASKED: "Limit movement commands to approximately five spaces per movement interval [...] Make enemies more threatening by requiring deliberate positioning [...] Treat this as
 // a gameplay prototype [...] Do not make exploration unnecessarily frustrating"; and then the owner, the same day: "I don't want to restrict the player from getting around when there's no enemies nearby. So if
 // there's no enemies nearby, there's no limit. But if they run into an enemy, they stop if they're on a run, and then they're limited to moving 5 spaces or something like that"):
@@ -489,7 +489,7 @@ function facilityResetState() {
     world = []; worldTileMap = new Map(); actors = []; followers = []; ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
     projectiles = []; fragments = []; smoke = []; shards = []; elementEffects = []; floatingTexts = []; followerProjectiles = []; respawnQueue = [];
     if (typeof clearDNA === "function") clearDNA();
-    if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
+    if (typeof mutatorReset === "function") mutatorReset();   // any fallen clone's body (js/mutator.js)
     if (typeof specimenReset === "function") specimenReset();   // the capsules carried, a preservation under way (js/specimen.js)
     if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
@@ -500,7 +500,7 @@ function facilityResetState() {
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(elementsFound()); lifetimeKills = 0;
     // (after the clock is back at 0: these count from it)
     if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
-    if (typeof technoReset === "function") technoReset();   // the gauntlet's charges, the arcs (js/technomancer.js)
+    if (typeof technoReset === "function") technoReset();   // the Player cards' bolts (js/technomancer.js)
     if (typeof techReset === "function") techReset();   // the technicians' shields and an aim under way (js/techabilities.js)
     playerUltimate = 0; armySurgeTimer = 0; _lastUltInt = -1; _lastUltState = "";
     siphonEnabled = true; siphonWisps = []; _lastSiphonOn = null; _siphonInRange = 0;

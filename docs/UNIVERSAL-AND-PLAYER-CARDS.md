@@ -17,9 +17,15 @@
   - **Implemented in build `2026-11-02j` (Part 1c; on main at the owner's word), and tested:** the Mutator's six roles, on the lash, the clone and the serum (tests/playercards.js, 42 checks; section 9, "Part 1c"). Not playtested.
   - **Implemented in build `2026-11-06c` (Part 1d; on main at the owner's word), and tested:** Series 2 deals the eighteen at Prototype (45 → 63 cards), and Side Quest sells the Sewers' three toxic roles once the water is purified, ◆1,000 each, kept for good (tests/sidequest.js, tests/playercards.js, tests/classcards.js, tests/series2.js; section 9, "Part 1d"). Not playtested. All of Part 1 is built.
   - **Implemented in build `2026-11-09a` (on the branch), and tested:** BLOOM's three Mage auras (THORN BAND, PETAL SIGIL, EVERBLOOM CROWN, its extra a MEND) and three Player roles (SEED GUNNER, GROVE ENGINEER, HERBALIST), dealt by Series 2 only once the purification module has run (67 → 73 cards), and the Side Quest selling the three from then (tests/bloomcards.js, 15 checks; `CONVERSION.md` §2 "BLOOM's cards", §9). Not playtested. Their names and numbers are the agent's drafts (approved as drafted, 2026-11-09), provisional until a playtest; picked when building: SEED GUNNER's SEEDFALL 1 tile round and its bite 0.2 × the gun's damage, GROVE ENGINEER's beat every 3 s ("every few seconds").
+  - **Changed in build `2026-11-17as` (the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun; `DECISION-LOG.md`), and tested** (tests/playercards.js, tests/bloomcards.js, tests/cards.js). Not playtested. The service gun, the laser rifle, the Technomancer's punch and arc and the Mutator's lash are gone, so of rule 1's attacks these are left:
+    - **the Gunslinger's rounds**, from the machine gun (there is no other gun);
+    - **the Mutator's clone and serum** (no lash);
+    - **the Technomancer has no attack of its own**: its roles are their kits (sentries, relays, the lamp, the swap, the shield). ARC WARDEN's lamp zap is kept as it was, with the arc's number (14 × 1.3, 10% more for each relay online), and is the one hit that takes a Technomancer role's element.
+    - **The cards' words** follow (made from the kits, js/cards.js `equipPlayerKitText`): a Gunslinger's still begin "YOUR ROUNDS ARE …"; a Technomancer's begin with their kit (no "YOUR PUNCH AND ARC ARE …"); a Mutator's read "YOUR CLONE'S BITES ARE …" (SPLICER's begins with its kit: no "YOUR LASH IS FLUX"); CRYO MARKSMAN's reads "YOUR GUN FIRES 20% SLOWER"; ARC WARDEN's "AN ELECTRIC ZAP ON EVERY ENEMY IN ITS LIGHT". The short texts: "FIRE ROUNDS · …", "FIRE · …" (a Technomancer's), "TOXIC CLONE · …" (a Mutator's). **The words are the agent's, provisional.**
+    - No kit's numbers changed. Where the sections below speak of the laser's beam, the punch, the arc as thrown, or the lash, they are history.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-09
+- **Last updated:** 2026-11-20
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards; the Technomancer's six since build `2026-11-02i` (on main), the Mutator's six since build `2026-11-02j` (on main). Series 2 deals them, and Side Quest sells the Sewers' three, since build `2026-11-06c` (Part 1d, on main at the owner's word).
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
@@ -142,7 +148,7 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three were drafted 
 - The gun's rounds take the element of the squad's element selector.
 - The player has no SP.ATK and no health points (3 hits).
 
-**Rules for all 18 (approved 2026-11-02):**
+**Rules for all 18 (approved 2026-11-02; since build `2026-11-17as` the attacks left are the Gunslinger's rounds from the machine gun and the Mutator's clone and serum: the Status list above):**
 1. **A role works on its class's own attacks:**
    - the Gunslinger's rounds, from any gun (service, machine gun, laser);
    - the Technomancer's punch and arc;

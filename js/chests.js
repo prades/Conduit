@@ -10,7 +10,7 @@
 //   SAVED: the chests opened, and what is left in each (`chests`, js/facilitysave.js); a new game has every chest shut and full.
 const CHESTS = {
     openFrames: 90,                                                                   // how long the lid hovers on its light before it settles: 1.5 s
-    items: [["ammo_pack", 1], ["repair_kit", 1], ["sleeping_potion", 1], ["scrap_metal", 3], ["fuel_cell", 1], ["class", 1]],   // the two are drawn from these ("class": your class's own item)
+    items: [["ammo_pack", 1], ["repair_kit", 1], ["sleeping_potion", 1], ["scrap_metal", 3], ["class", 1]],   // the two are drawn from these ("class": your class's own item; the laser rifle's fuel cell went with the rifle, build 2026-11-17as)
     classItem: { gunslinger: "flare", technomancer: "power_cell", mutator: "mutagen_sample" },
     packs: ["pack1", "series2"],                                                      // of these, the ones open to you (js/cards.js equipPacksOpen), an even chance
 };

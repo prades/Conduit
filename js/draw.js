@@ -87,14 +87,15 @@ function drawRadialMenu() {
     // by an ordinary tap.
     if (commandEnemyTarget && !commandEnemyTarget.dead) {
         const eUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
-        drawRadialButton(commandX, commandY-RADIAL_RADIUS,
+        const armable = typeof weaponInHand !== "function" || weaponInHand();   // (no weapon in hand: no ATTACK on the ring, INFO only: js/weapons.js)
+        if (armable) drawRadialButton(commandX, commandY-RADIAL_RADIUS,
                          playerAttackMode ? "STOW" : "ATTACK", eUp);
-        if (eUp) selectedRadialAction = playerAttackMode ? "stow_weapon" : "attack_mode";
+        if (armable && eUp) selectedRadialAction = playerAttackMode ? "stow_weapon" : "attack_mode";
         const eRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "INFO", eRight);
         if (eRight) selectedRadialAction = "info";
         // Ammo readout under the ring, so the cost of arming is visible here.
-        { const _h = typeof weaponHud === "function" ? weaponHud() : null; _radialCaption(_h ? _h.short : "AMMO " + playerAmmo, _h ? (_h.dry ? "#ff7766" : "#ffb070") : (playerAmmo > 0 ? "#ffb070" : "#ff7766")); }
+        { const _h = typeof weaponHud === "function" ? weaponHud() : null; if (_h) _radialCaption(_h.short, _h.dry ? "#ff7766" : "#ffb070"); }
         ctx.restore();
         return;
     }

@@ -25,6 +25,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run(`globalThis.__size = (w, h) => { innerWidth = w; canvas.width = w; canvas.height = h; };
         globalThis.__open = (() => { const offs = [[2, 1], [-2, 3], [5, 0]]; for (const c of _fp.cellsP.values()) if (offs.every(d => _fpLos(c[0], c[1], c[0] + d[0], c[1] + d[1]) && facilityWalkable(c[0] + d[0], c[1] + d[1], _fp.F))) return c; return null; })();
         globalThis.__foe = () => { actors = actors.filter(a => !(a instanceof Predator)); const a = spawnCreature({ species: 'beetle', className: 'tank' }); player.x = player.targetX = player.visualX = __open[0]; player.y = player.targetY = player.visualY = __open[1]; a.x = player.visualX + 2; a.y = player.visualY + 1; a.team = 'red'; a.dead = false; a.level = 4; a.element = 'fire'; a.maxHealth = a.health = 100; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.state = 'wander'; a.provoked = false; standDown = false; targetSet(a, true); return a; };
+        /* THE GUN (build 2026-11-17as): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js): the ammunition chip is that Gunslinger's; __nogun puts things back (no class, no weapon) */
+        globalThis.__gun = () => { playerClassKey = null; classPerks = new Set(); classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun'); }; globalThis.__nogun = () => { playerAttackMode = false; playerClassKey = null; classPerks = new Set(); weaponReset(); };
         globalThis.__slabs = []; globalThis.__spy = fn => { const keep = uiSlab; uiSlab = function () { __slabs.push([].slice.call(arguments, 0, 4)); return keep.apply(this, arguments); }; try { fn(); } finally { uiSlab = keep; } };`);
     ok(run('!!__open'), 'no open spot in the facility to test in');
 
@@ -35,16 +37,22 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             __size(390, 800); const D = _tgAnchor(); o.phone = [D.corner === undefined, D.narrow, D.left, D.R]; __size(1180, 820); return o; })()`);
         same(r.wide.slice(0, 6).join(), 'true,true,true,true,true,true', '1180x820: ' + r.wide.join()); same(r.big.join(), 'true,true,true', '1600x900'); same(r.portrait.join(), 'true,true,true,true', '820x1180'); same(r.phone.join(), 'true,true,78,40', 'a phone');
     });
-    check('with a creature locked the dial is drawn there (its tap areas too: the dial, INFO), and the ammunition chip, when the gun is armed, is to the right of it and its tap area is in the corner; its INFO card opens to the LEFT of the dial, on the screen', () => {
-        const r = J(`(function(){ const o = {}; __size(1180, 820); const foe = __foe(); frame += 40; frame = Math.ceil(frame / TARGET.every) * TARGET.every; targetTick(); playerAttackMode = true; infoOpen = false; _ATKCHIP.w = 0; drawTargetUI(); const d = _tgDial;
+    check('with a creature locked the dial is drawn there (its tap areas too: the dial, INFO), and the ammunition chip (a Gunslinger\'s, with the machine gun in hand), when the gun is armed, is to the right of it and its tap area is in the corner; its INFO card opens to the LEFT of the dial, on the screen', () => {
+        const r = J(`(function(){ const o = {}; __gun(); __size(1180, 820); const foe = __foe(); frame += 40; frame = Math.ceil(frame / TARGET.every) * TARGET.every; targetTick(); playerAttackMode = true; infoOpen = false; _ATKCHIP.w = 0; drawTargetUI(); const d = _tgDial;
             o.dial = d ? [d.x > canvas.width / 2, d.y > canvas.height / 2, d.x + d.r <= canvas.width - 10, d.ix > d.x, d.iy < d.y] : null; o.chip = [_ATKCHIP.w > 20, _ATKCHIP.x >= d.x + d.r, _ATKCHIP.x + _ATKCHIP.w <= canvas.width, _ATKCHIP.y > canvas.height / 2];
             o.press = [_tgOnDial(d.x, d.y), _tgOnInfo(d.ix, d.iy), _tgOnDial(40, 40)];
-            infoOpen = true; __slabs.length = 0; __spy(() => drawTargetUI()); const s = __slabs[0]; o.info = s ? [s[0] >= 0, s[0] + s[2] <= d.x - d.r, s[1] >= 0, s[1] + s[3] <= canvas.height, s[2] >= 200] : null; infoOpen = false; foe.dead = true; targetDrop(); playerAttackMode = false; return o; })()`);
+            infoOpen = true; __slabs.length = 0; __spy(() => drawTargetUI()); const s = __slabs[0]; o.info = s ? [s[0] >= 0, s[0] + s[2] <= d.x - d.r, s[1] >= 0, s[1] + s[3] <= canvas.height, s[2] >= 200] : null; infoOpen = false; foe.dead = true; targetDrop(); __nogun(); return o; })()`);
         same(r.dial.join(), 'true,true,true,true,true', 'the dial: ' + r.dial); same(r.chip.join(), 'true,true,true,true', 'the ammunition chip: ' + r.chip); same(r.press.join(), 'true,true,false', 'the tap areas'); ok(r.info, 'the INFO card was not drawn'); same(r.info.join(), 'true,true,true,true,true', 'the INFO card: ' + r.info);
     });
     check('with no creature locked the ammunition is in the corner too, where the dial would come up (armed or not); the dial itself is not drawn', () => {
-        const r = J(`(function(){ const o = {}; __size(1180, 820); actors = actors.filter(a => !(a instanceof Predator)); targetDrop(); standDown = false; _ixSubject = null; playerAttackMode = true; _ATKCHIP.w = 0; drawTargetUI(); o.chip = [_ATKCHIP.w > 20, _ATKCHIP.x > canvas.width / 2, _ATKCHIP.y > canvas.height / 2]; o.dial = _tgDial; playerAttackMode = false; return o; })()`);
+        const r = J(`(function(){ const o = {}; __gun(); __size(1180, 820); actors = actors.filter(a => !(a instanceof Predator)); targetDrop(); standDown = false; _ixSubject = null; playerAttackMode = true; _ATKCHIP.w = 0; drawTargetUI(); o.chip = [_ATKCHIP.w > 20, _ATKCHIP.x > canvas.width / 2, _ATKCHIP.y > canvas.height / 2]; o.dial = _tgDial; __nogun(); return o; })()`);
         same(r.chip.join(), 'true,true,true', 'the ammunition chip alone: ' + r.chip); same(r.dial, null, 'a dial with nothing locked');
+    });
+    check('WITH NO WEAPON IN HAND (every class but a Gunslinger with the machine gun, build 2026-11-17as) there is no ammunition chip, locked or not, and nothing is armed; the dial is still drawn for the creature locked, in its corner, with its INFO', () => {
+        const r = J(`(function(){ const o = {}; __nogun(); __size(1180, 820); const foe = __foe(); frame += 40; frame = Math.ceil(frame / TARGET.every) * TARGET.every; targetTick(); infoOpen = false; _ATKCHIP.w = 99; let guns = 0; const kg = _tgGun; _tgGun = function () { guns++; return kg.apply(this, arguments); };
+            try { drawTargetUI(); } finally { _tgGun = kg; } const d = _tgDial; o.locked = targetCurrent() === foe; o.armed = playerAttackMode; o.chip = _ATKCHIP.w; o.guns = guns; o.dial = d ? [d.x > canvas.width / 2, d.y > canvas.height / 2, _tgOnDial(d.x, d.y), _tgOnInfo(d.ix, d.iy)] : null;
+            foe.dead = true; targetDrop(); _ATKCHIP.w = 99; drawTargetUI(); o.alone = _ATKCHIP.w; return o; })()`);
+        same(r.locked, true, 'the creature is not locked'); same(r.armed, false, 'armed'); same(r.chip, 0, 'the ammunition chip\'s tap area'); same(r.guns, 0, 'a gun badge on the dial'); ok(r.dial, 'the dial was not drawn'); same(r.dial.join(), 'true,true,true,true', 'the dial: ' + r.dial); same(r.alone, 0, 'the chip with nothing locked');
     });
 
     group('THE PLACE\'S CORNER: the objective is no longer a plate under the network panel (the owner, 2026-11-01: "hide it"; js/tutorial.js objectiveCurrent, js/questbox.js)');
@@ -54,7 +62,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             _fnBottom = 0; o.tablet = drew(1180, 820); _fnBottom = 300; o.net = drew(1180, 820); o.big = drew(1600, 900); o.phone = drew(390, 800); __size(1180, 820); _fnBottom = 0;
             const c = objectiveCurrent(); o.cur = [c.key, c.title, /POWER IS OUT/.test(c.body), /AMMUNITION/.test(c.hint), c.col]; o.unread = objectiveUnread(); questBoxRead(); o.read = objectiveUnread(); S.step = 1; facilityDrawObjective(); o.next = [S.objKey, objectiveUnread()]; S.step = 0; return o; })()`);
         same(r.tablet.join(), '0,0,t0', 'a tablet'); same(r.net.join(), '0,0,t0', 'under a network panel'); same(r.big.join(), '0,0,t0', '1600 wide'); same(r.phone.join(), '0,0,t0', 'a phone');
-        same(r.cur.join('|'), 't0|OBJECTIVE 1/9  ·  FIND SUPPLIES|true|true|#19e6c1', 'the objective now'); same(r.unread, true, 'a new objective is not new'); same(r.read, false, 'opening the quest box did not read it'); same(r.next.join(), 't1,true', 'the next objective is not new');
+        same(r.cur.join('|'), 't0|OBJECTIVE 1/8  ·  FIND SUPPLIES|true|true|#19e6c1', 'the objective now'); same(r.unread, true, 'a new objective is not new'); same(r.read, false, 'opening the quest box did not read it'); same(r.next.join(), 't1,true', 'the next objective is not new');
     });
 
     group('THE REST OF THE CORNERS (game.html)');

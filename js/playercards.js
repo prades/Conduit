@@ -3,28 +3,28 @@
 // ─────────────────────────────────────────────────────────
 // A Player card (js/cards.js EQUIP_PLAYER_CARDS: its numbers and its words) is a ROLE for one of the player's classes. It is AWAKE while it is in one of the player's two slots and the player is its class (js/cards.js
 // equipPlayerRole); after a switch of class it sleeps in its slot and does nothing here. The rules for all eighteen (approved 2026-11-02):
-//   1. A ROLE WORKS ON ITS CLASS'S OWN ATTACKS: the Gunslinger's rounds, from any gun (the service gun, the machine gun, the laser rifle); the Technomancer's punch and arc; the Mutator's lash, clone and serum.
+//   1. A ROLE WORKS ON ITS CLASS'S OWN ATTACKS: the Gunslinger's rounds (the machine gun's: the only weapon there is since build 2026-11-17as, when the service gun, the laser rifle, the Technomancer's punch
+//      and arc and the Mutator's lash went: the owner, 2026-11-20); the Mutator's clone and serum. The Technomancer has no attack of its own: its roles are their kits.
 //   2. THE HIT'S ELEMENT (docs/COMBAT.md §7.9; the owner: "The role's element"): those hits take the role's element, for the element triangle only. No SP.ATK and no elemental share are added: they stay physical,
 //      as they were (a gun's round is Projectile: js/damage.js DMG_HIT_GUN, whose triangle falls on the whole hit).
 //   3. A STATUS a kit sets lands on EVERY hit, with Pack 1's Precision numbers (js/cards.js equipElementStatus): a status refreshes and never stacks, so every hit keeps it up without adding more.
-// BUILT (the following update's Part 1a, build 2026-11-02h): the rules and THE GUNSLINGER'S SIX, on every round that hits (js/input.js firePlayerShot: the round, as it lands; js/weapons.js fireLaserShot: the beam, on the
-// creature aimed at and on each it goes through). THE TECHNOMANCER'S SIX: Part 1b, build 2026-11-02i (below). THE MUTATOR'S SIX: Part 1c, build 2026-11-02j (at the end).
+// BUILT (the following update's Part 1a, build 2026-11-02h): the rules and THE GUNSLINGER'S SIX, on every round that hits (js/input.js firePlayerShot: the round, as it lands). THE TECHNOMANCER'S SIX: Part 1b, build 2026-11-02i (below). THE MUTATOR'S SIX: Part 1c, build 2026-11-02j (at the end).
 //   INCENDIARY GUNNER  fire rounds that BURN                BLIGHT SHOOTER   toxic rounds that WEAKEN (the game's POISON)        BREACH GUNNER  core rounds that KNOCK BACK
 //   ARC SLINGER        electric rounds: each shot jumps on to the nearest other creature within kit.jump.radius tiles of the first, for kit.jump.share of its damage (the Technomancer arc's jump); one jump a shot,
-//                      never to a creature the shot already hit (the laser's beam goes through some), and the jump sets nothing off
+//                      never to a creature the shot already hit, and the jump sets nothing off
 //   CRYO MARKSMAN      ice rounds that SLOW; a round that hits a creature ALREADY slowed (before this round: by anything) FREEZES it, a stun of kit.freeze.frames as the Frost Maw's bite, and that creature is not frozen
-//                      again for kit.freeze.again frames; and the guns fire kit.slower slower (js/weapons.js weaponCooldown)
+//                      again for kit.freeze.again frames; and the gun fires kit.slower slower (js/weapons.js weaponCooldown)
 //   RIFT RUNNER        flux rounds that PULL the creature hit toward you: the knockback reversed (kit.pull); a beetle or a boss is never pulled (js/helpers.js vortexPullImmune), as by every pull
 function _pcFrame() { return typeof frame !== "undefined" ? frame : 0; }
 // the role awake now (its card), or null
 function playerRole() { return typeof equipPlayerRole === "function" ? equipPlayerRole() : null; }
 // the Gunslinger's role, when it is the role awake: what a gun's round is (rule 1); null otherwise
 function playerGunRole() { const r = playerRole(); return r && r.match === "gunslinger" && r.kit ? r : null; }
-// the share of the guns' rate of fire a role takes off (CRYO MARKSMAN), for the weapon `id` (the one in hand when none is named): 0 for none, and for a weapon that is not a gun
+// the share of the gun's rate of fire a role takes off (CRYO MARKSMAN), for the weapon `id` (the one in hand when none is named): 0 for none, and for a weapon that is not a gun
 function playerGunSlower(id) {
     const r = playerGunRole(); if (!r || !(r.kit.slower > 0)) return 0;
     const w = typeof weaponDef === "function" ? weaponDef(id) : null;
-    return w && (w.kind === "ammo" || w.kind === "fuel") ? Math.min(0.9, r.kit.slower) : 0;
+    return w && w.kind === "ammo" ? Math.min(0.9, r.kit.slower) : 0;
 }
 // A ROUND OF THE GUNSLINGER'S HAS HIT `t` (after its damage): `role` is the role awake when it was fired, `src` the round's source (where it was fired from; its element is the role's). The freeze is asked first, so a
 // creature is frozen by a round only when it was slowed before that round; then the status; then the pull. (A creature the round killed takes none of them.)
@@ -39,7 +39,7 @@ function playerRoundHit(role, t, src) {
     if (k.pull > 0 && typeof applyKnockback === "function" && typeof player !== "undefined" && player && !(typeof vortexPullImmune === "function" && vortexPullImmune(t)))
         applyKnockback(t, { x: 2 * t.x - player.x, y: 2 * t.y - player.y }, k.pull);   // (a push away from the point beyond it: toward you)
     if (k.seedfall && typeof elementEffects !== "undefined" && src !== _pc.seedSrc) {   // SEED GUNNER (BLOOM, build 2026-11-09a): every `every`th SHOT that hits plants a small SEEDFALL where it first hit
-        _pc.seedSrc = src; _pc.seedHits = (_pc.seedHits || 0) + 1;   // (a shot counts once, however many it hits: the laser's beam through a line of them shares one source)
+        _pc.seedSrc = src; _pc.seedHits = (_pc.seedHits || 0) + 1;   // (a shot counts once, however many it hits: they share one source)
         if (_pc.seedHits % k.seedfall.every === 0) {
             const S = k.seedfall, dmg = typeof weaponDamage === "function" ? weaponDamage() : 10, e = { type: "seedfall", x: t.x, y: t.y, radius: S.radius, life: S.frames, maxLife: S.frames, by: src, bite: dmg * S.bite, element: "blossom" };
             elementEffects.push(e); if (typeof seedfallBeat === "function") seedfallBeat(e);   // (the first seeds land as it opens, as THORNWHIP's)
@@ -60,17 +60,18 @@ function playerRoundJump(role, from, src, dmg, skip) {
     }
     if (!best) return null;
     if (typeof applyDamage === "function") applyDamage(best, dmg * j.share, src, null, false, false, typeof DMG_HIT_GUN !== "undefined" ? DMG_HIT_GUN : null);
-    if (typeof technoBolt === "function") technoBolt(from, best);   // (the arc's look: js/technomancer.js)
+    if (typeof technoBolt === "function") technoBolt(from, best);   // (a bolt between them: js/technomancer.js)
     return best;
 }
 
 // ── THE TECHNOMANCER'S SIX (the following update's Part 1b, build 2026-11-02i) ──
-//   (rule 2)           its PUNCH (js/mutator.js _mxStrike, the gauntlet) and its ARC (js/technomancer.js _tcZap) take the role's element, for the triangle only (playerHitElement; the arc's hit: js/damage.js dmgArcHit)
+//   (rule 2)           the Technomancer has no hit of its own since build 2026-11-17as (its PUNCH and its ARC went): what takes the role's element is ARC WARDEN's zap alone (js/technomancer.js _tcZap,
+//                      playerHitElement; its hit: js/damage.js dmgArcHit)
 //   FORGEMASTER        fire: the facility's sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's (playerRepairShare; a relay's too until build 2026-11-07qq, when relay repairs went)
 //   SMOG ENGINEER      toxic: every ONLINE relay WEAKENS every creature within kit.relays.radius tiles of it, on every card tick while it stays (js/cards.js equipTick → playerRolesTick)
 //   CRYO TECH          ice: the same, and it SLOWS
-//   ARC WARDEN         electric: while your lamp is OVERCHARGED (a POWER CELL), every kit.lamp.every frames every creature in its light (js/facilitytutorial.js facilityLampReach), in sight, takes the arc's zap
-//                      (js/technomancer.js _tcZap: its damage, technoArcDamage, more with relays online) and GLITCHES; drawn as the arc's bolt from your hand. Light or dark.
+//   ARC WARDEN         electric: while your lamp is OVERCHARGED (a POWER CELL), every kit.lamp.every frames every creature in its light (js/facilitytutorial.js facilityLampReach), in sight, takes a zap
+//                      (js/technomancer.js _tcZap: its damage, technoArcDamage, more with relays online) and GLITCHES; drawn as a bolt from your hand. Light or dark.
 //   GRAVITY ENGINEER   flux: SWAP on a squad member's card (js/squadfly.js) trades places with it, once in kit.swap.every frames, on the same stretch of floor (not across a doorway into another part of the map)
 //   BULWARK ENGINEER   core: a POWER CELL also raises a PHOTONIC SHIELD in front of you (js/inventory.js → playerCellShield → js/techabilities.js techShieldRaise): toward the creature you have locked, if you can see
 //                      it, else the way you face; kit.shield.frames long
@@ -79,9 +80,9 @@ const _pc = { wardenAt: null, swapAt: 0 };
 function _pcSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text, color: col || "#fff", life: 90, vy: -0.25, size: 13 }); }
 // the Technomancer's role, when it is the role awake; null otherwise
 function playerTechRole() { const r = playerRole(); return r && r.match === "technomancer" && r.kit ? r : null; }
-// THE ELEMENT OF ONE OF THE CLASS'S OWN HITS (rule 2): "gun" (the Gunslinger's), "punch" and "arc" (the Technomancer's), "lash" (the Mutator's) take the role's element while a role of that class is awake;
-// `base` otherwise (the selector's for a gun, electric for the gauntlet, none for the lash). The clone's bites: playerCloneElement (below), for SPLICER's sake.
-const _PC_HIT_CLASS = { gun: "gunslinger", punch: "technomancer", arc: "technomancer", lash: "mutator" };
+// THE ELEMENT OF ONE OF THE CLASS'S OWN HITS (rule 2): "gun" (the Gunslinger's round) and "arc" (ARC WARDEN's zap, the Technomancer's) take the role's element while a role of that class is awake;
+// `base` otherwise (the selector's for a gun, electric for the zap). The clone's bites: playerCloneElement (below), for SPLICER's sake.
+const _PC_HIT_CLASS = { gun: "gunslinger", arc: "technomancer" };
 function playerHitElement(kind, base) { const r = playerRole(); return r && r.kit && r.kit.el && r.match === _PC_HIT_CLASS[kind] ? r.kit.el : base; }
 // FORGEMASTER: what a sentry's round does when it lands (js/stations.js), or null
 function playerSentryHit(src) { const r = playerTechRole(); return r && r.kit.sentries ? (t => { if (t && !t.dead && typeof equipElementStatus === "function") equipElementStatus(src, t, r.kit.el); }) : null; }
@@ -150,7 +151,7 @@ function playerSwapWhyNot(f) {
 function playerSwap(f) {
     const why = playerSwapWhyNot(f); if (why) return { ok: false, why };
     const r = playerTechRole(), px = player.x, py = player.y, fx = f.x, fy = f.y;
-    if (typeof mutatorCancel === "function") mutatorCancel();   // (a strike being walked to is let go)
+    if (typeof mutatorCancel === "function") mutatorCancel();   // (a fallen clone's body being walked to is let go)
     player.x = player.targetX = player.visualX = fx; player.y = player.targetY = player.visualY = fy; player.fpPath = null;
     if (typeof _fp !== "undefined" && _fp) _fp.stationGoal = null;
     f.x = px; f.y = py; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; f._fpPortalGoal = null;
@@ -169,8 +170,8 @@ function playerCellShield() {
 }
 
 // ── THE MUTATOR'S SIX (the following update's Part 1c, build 2026-11-02j) ──
-//   (rule 2)           its LASH (js/mutator.js _mxStrike, playerHitElement) and its CLONE'S BITES take the role's element, for the triangle only: they stay Slashing and Piercing, all physical (js/damage.js dmgBiteHit →
-//                      playerCloneElement → dmgCloneHit). The clone's bites are its bite (js/predator.js bite) and its POUNCE's bite as it lands (js/mutator.js clonePounceTick). Its special and a striker's shot are
+//   (rule 2)           its CLONE'S BITES take the role's element, for the triangle only: they stay Piercing, all physical (js/damage.js dmgBiteHit → playerCloneElement → dmgCloneHit). (Its LASH took
+//                      it too, until the lash went: build 2026-11-17as.) The clone's bites are its bite (js/predator.js bite) and its POUNCE's bite as it lands (js/mutator.js clonePounceTick). Its special and a striker's shot are
 //                      not bites: they keep no element and set nothing.
 //   ASH SURGEON        fire: on every heal beat of the serum's pool (js/serum.js serumTick → playerSerumBeat), every creature in the pool BURNS
 //   PLAGUE DOCTOR      toxic: the clone's bites WEAKEN (the game's POISON; playerCloneBit), and so does the pool, on its beats
@@ -178,7 +179,7 @@ function playerCellShield() {
 //   CRYO GENETICIST    ice: a fallen follower comes back at no cost to the Crystal (js/game.js's respawn queue → playerReviveFree); your clone, when it falls, is preserved at once with no Ice Mage, its upgrades
 //                      kept (js/mutator.js cloneFallen → playerClonePreserved: its body is a specimen capsule to take to the Crystal, js/specimen.js)
 //   SPLICER            flux: the clone's bites take the element of the last creature it killed (js/game.js's kill sweep → playerCloneKill), with that element's status, until its next kill; a creature with no element
-//                      leaves it as it was. This replaces rule 2 for the clone (the lash is flux). The element is the clone's (c._pcSplice), not saved: a load, or a clone that waited out a switch of class, starts
+//                      leaves it as it was. This replaces rule 2 for the clone. The element is the clone's (c._pcSplice), not saved: a load, or a clone that waited out a switch of class, starts
 //                      with none.
 //   CORE SHAPER        core: the clone's bites KNOCK BACK; the clone has kit.tank.health more health, added as two ranks of ARMOR PLATING add (js/levels.js _applyPredLevel → playerCloneHealth), and moves
 //                      kit.tank.slower slower (its paceMult: js/abilities.js tickSlowSpeed). Both follow the role on the card tick (_pcCloneTick), its share of health kept, so wearing it heals nothing.

@@ -187,7 +187,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
     // to be read in one job branch only, so it did nothing in ordinary combat.
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
-    // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's, the lash's and the gauntlet's copies carry isPlayer)
+    // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's copy carries isPlayer)
     if (source && (source.isPlayer || (typeof player !== "undefined" && source === player)) && typeof playerPoisoned === "function" && playerPoisoned()) amount *= 1 - PLAYER_POISON.cut;
     // BONDS (js/bonds.js): both sides of the hit count as being in combat, which is what builds one. (A bond changes no hit since build 2026-11-09b: it is for breeding: js/bonds.js.)
     if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }

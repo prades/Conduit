@@ -26,6 +26,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__ant = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'scout' }); e.x = x; e.y = y; e.update = () => {}; e.health = e.maxHealth = 5000; return e; };
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator)); followerProjectiles = []; elementEffects.length = 0; };
         globalThis.__fresh = () => { __clear(); hazardsReset(); for (const s of hazardSolids()) if (s.open) facilitySolidSet(s.id, false); };   // (every container back on its tile, no fuse, no pool)
+        // THE GUN (build 2026-11-17as): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js); a check that fires a round is that Gunslinger's
+        globalThis.__gun = () => { if (playerClassKey !== 'gunslinger') { playerClassKey = null; classSet('gunslinger'); } classGrant('machinegun'); weaponEquip('machinegun'); };
         globalThis.__S = id => _fp.F.solids.find(s => s.id === id);
         globalThis.__steps = (n) => { for (let i = 0; i < n; i++) { frame++; hazardsTick(); } };
         globalThis.__mapOk = (id) => { const s = __S(id), F = _fp.F; let bad = 0; for (let x = Math.floor(s.bb[0]) - 1; x <= Math.ceil(s.bb[2]) + 1; x++) for (let y = Math.floor(s.bb[1]) - 1; y <= Math.ceil(s.bb[3]) + 1; y++) { const k = x + ',' + y; if (facilityWalkable(x, y, F) !== _fp.cells.has(k)) bad++; if (_fp.cells.has(k) !== worldTileMap.has(k)) bad++; } return bad === 0 && world.length === _fp.cells.size; };`);
@@ -44,11 +46,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('A SHOT SETS ONE OFF; THE EXPLOSIVE ONE\'S BLAST');
-    check('the player\'s round at an ant behind an explosive container stops on it and sets it off: it is taken off its tile (floor now), the blast hurts those within 2 tiles (more near the middle), your side and you included, and nothing further off', () => {
+    check('the player\'s round (a Gunslinger\'s, from the machine gun) at an ant behind an explosive container stops on it and sets it off: it is taken off its tile (floor now), the blast hurts those within 2 tiles (more near the middle), your side and you included, and nothing further off', () => {
         const r = J(`(function(){ __fresh(); const s = __S('hazard_x1'), o = {};
             const behind = __ant(35, 45.2), near = __ant(36.2, 47.2), far = __ant(32, 49.6);   // the ant shot at (1.8 tiles beyond it), one beside it, one 3.9 tiles off (off the shot's line)
             spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.x = 34; f.y = 48; const fh = f.health;
-            __put(35, 51.5); player.invuln = 0; const hp0 = health; playerAmmo = 20; player.attackCooldown = 0; player.selectedElement = null;
+            __put(35, 51.5); __gun(); player.invuln = 0; const hp0 = health; playerAmmo = 20; player.attackCooldown = 0; player.selectedElement = null;
             // (the player 4.5 tiles from it: the round flies over no cover of the player's own)
             o.fired = firePlayerShot(behind); for (let i = 0; i < 120 && followerProjectiles.length; i++) render(); render();
             o.open = !!s.open; o.floor = _fp.cells.has('35,47'); o.map = __mapOk('hazard_x1');
@@ -104,14 +106,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('A FLASK AS A TARGET (the owner, build 2026-11-13r: "Whenever the player clicks on a flask, it should show up at the bottom right as a target and for the mini command as a card")');
     run(`globalThis.__scr = s => { const [x, y] = hazardCentre(s); return [(x - player.visualX - (y - player.visualY)) * TILE_W + canvas.width / 2, (x - player.visualX + (y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(x, y) - 30]; };`);
-    check('a press on a container locks it as a press on a creature does: the gun\'s target and the enemy card\'s are its stand-in, named for it, its blast (or its acid) as its bite, its words on INFO; a press on it again fires', () => {
-        const r = J(`(function(){ __fresh(); targetDrop(); const s = __S('hazard_x3'), [cx, cy] = hazardCentre(s); __put(cx - 3, cy - 1); const o = {}, p = __scr(s);
+    check('a press on a container locks it as a press on a creature does: the gun\'s target and the enemy card\'s are its stand-in, named for it, its blast (or its acid) as its bite, its words on INFO; a press on it again fires (with a gun in hand: a Gunslinger\'s machine gun; with no weapon it is locked and nothing fires)', () => {
+        const r = J(`(function(){ __fresh(); __gun(); targetDrop(); const s = __S('hazard_x3'), [cx, cy] = hazardCentre(s); __put(cx - 3, cy - 1); const o = {}, p = __scr(s);
             o.found = !!hazardTargetAtScreen(p[0], p[1]); o.took = targetPress(p[0], p[1]); targetTick(); const t = targetCurrent();
             o.locked = t ? targetName(t) : null; o.same = !!t && t === targetIndexSubject() && t === hazardTarget(s); const c = t ? targetCardInfo(t) : null; o.card = c ? [c.title, c.hp + '/' + c.max, c.biteLabel, c.bite, c.level].join() : null;
             o.info = t ? targetInfoLines(t).join(' | ') : ''; o.at = t ? [t.x, t.y].join() : ''; gunHold = null; o.again = targetPress(p[0], p[1]); o.fires = !!gunHold && gunHold.button === true;
-            const c2 = hazardTarget(__S('hazard_c2')); o.acid = [targetName(c2), targetCardInfo(c2).biteLabel].join(); gunHold = null; targetDrop(); return o; })()`);
+            const c2 = hazardTarget(__S('hazard_c2')); o.acid = [targetName(c2), targetCardInfo(c2).biteLabel].join(); gunHold = null; targetDrop();
+            weaponEquip(null); o.bare = [targetPress(p[0], p[1]), !!targetCurrent(), targetPress(p[0], p[1]), !!gunHold, playerAttackMode].join(); gunHold = null; targetDrop(); return o; })()`);
         same(r.found, true, 'the press does not find it'); same(r.took, true, 'the press is not the targeting\'s'); same(r.locked, 'EXPLOSIVE FLASK', 'the lock'); same(r.same, true, 'the card is not the same stand-in');
-        same(r.card, 'EXPLOSIVE FLASK,1/1,BLAST,30,', 'the card'); ok(/A SHOT SETS IT OFF/.test(r.info) && /CRACKED ROCK/.test(r.info), 'INFO: ' + r.info); same(r.at, '9,192', 'where it is'); same(r.again, true, 'the second press');
+        same(r.card, 'EXPLOSIVE FLASK,1/1,BLAST,30,', 'the card'); ok(/A SHOT SETS IT OFF/.test(r.info) && /CRACKED ROCK/.test(r.info), 'INFO: ' + r.info); same(r.at, '9,192', 'where it is'); same(r.again, true, 'the second press'); same(r.bare, 'true,true,true,false,false', 'with no weapon in hand: locked, the second press taken, nothing fired, nothing armed');
         same(r.fires, true, 'a press on the locked one does not fire'); same(r.acid, 'ACID FLASK,ACID', 'the acid flask');
     });
     check('whatever hits the stand-in sets the container off (a creature\'s hit, a round, an elemental hit); then it is dead, the lock lets it go, and it is not found under a press', () => {

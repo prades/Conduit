@@ -11,6 +11,10 @@
 // Levels: while the tutorial is being played, its followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower
 // to the evolution level. When the tutorial is finished that stops: a recruit comes at its own level (js/levels.js recruitLevel) and gains its levels from kills, and a game that is loaded is not lifted at all (its followers come back as they were saved).
 // A crystal that is about to fall is saved: the enemies are called off, the Crystal is mended and the assault comes again (the tutorial is not a loss).
+// NO GUN IN THE TUTORIAL (build 2026-11-17as; the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the
+// tutorial gun", and of its lesson: "Remove it altogether"): the FIRE YOUR GUN step, its training rounds and its stray ant are gone, and the assault's hint no longer says you can shoot. The only weapon is
+// the Gunslinger's machine gun, from the Armory's locker in its class's stage (js/weapons.js). The classes' own strikes went too, and their steps with them: the Technomancer's CHARGE YOUR GAUNTLET and
+// THROW THE ARC, the Mutator's FIGHT BESIDE IT (its lash).
 
 const TUT = {
     followerLevel: 7, enemyLevel: 6,   // one level under the evolution level (EVOLVE_LEVEL, js/evolution.js), the enemies one under that: 8 since energy cards (build 2026-11-09s; docs/ENERGY-CARDS.md), when these were 9 and 8 under level 10
@@ -29,7 +33,7 @@ const TUT = {
 
 const TUT_STEPS = [
     { id: "supplies", title: "FIND SUPPLIES", text: () => "THE POWER IS OUT. TAKE THE GLOWING SUPPLIES: WALK OVER ONE. PRESS I FOR YOUR PACK.",
-        hint: () => "AMMUNITION IS IN THE ARMORY (THE STEEL DOOR IN THE ARENA'S WEST WALL, OR THE STAIRS DOWN FROM THE OBSERVATION DECK) AND THE SECURITY ROOM; POWER CELLS IN THE LAB, THE SERVER ROOM AND THE CRYSTAL CHAMBER: USE ONE TO OVERCHARGE YOUR LAMP.", done: () => tutTaken() >= 2 },
+        hint: () => "SUPPLY CASES ARE IN THE ARMORY (THE STEEL DOOR IN THE ARENA'S WEST WALL, OR THE STAIRS DOWN FROM THE OBSERVATION DECK) AND THE SECURITY ROOM; POWER CELLS IN THE LAB, THE SERVER ROOM AND THE CRYSTAL CHAMBER: USE ONE TO OVERCHARGE YOUR LAMP.", done: () => tutTaken() >= 2 },
     { id: "junction", title: "FIND THE BROKEN JUNCTION", text: () => "THE FACILITY'S MAIN POWER JUNCTION IS BROKEN. IT IS IN THE SERVER ROOM, NORTH OF THE MAIN HALLWAY: GO AND LOOK AT IT.",
         hint: () => "THE SERVER ROOM STAYS DARK EVEN WITH POWER: FOLLOW THE BLINKING RACKS. THE JUNCTION STANDS IN ITS NORTH-EAST CORNER.", done: () => tutJunctionSeen() },
     { id: "module", title: "GET THE POWER MODULE", text: () => "THE JUNCTION'S MODULE IS MISSING. A SPARE IS UP ON THE CATWALKS OVER THE ARENA, OUT OF YOUR REACH.",
@@ -40,9 +44,7 @@ const TUT_STEPS = [
         hint: () => "EGGS WAIT ON GLOWING PADS (THE SERVER ROOM, THE WAREHOUSE, THE DECK, THE EXPERIMENT LAB, THE SECOND TELEPORT ROOM AND TWO IN THE ARENA): EACH ONE IS A BRAWLER, A MAGE OR A TECHNICIAN OF ONE ELEMENT, AND JOINS YOU AS EXACTLY THAT. EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD POSTS A FOLLOWER IN THE ROOM IT IS IN: IT PATROLS THE ROOM AND FIGHTS ANYTHING THAT COMES IN. COME CALLS IT BACK TO YOUR SQUAD (THREE AT A TIME).", done: () => tutHeld() >= TUT.holdNeeded },
-    { id: "gun", title: "FIRE YOUR GUN", text: () => tutGunText(),
-        hint: () => playerAttackMode ? "CLICK THE ROUND BUTTON AT THE TOP LEFT FOR A SHOT, OR HOLD IT TO KEEP FIRING. EACH SHOT COSTS A ROUND. TAP ANOTHER CREATURE TO SWITCH TARGETS." : "GET CLOSE TO THE ANT: YOUR GUN TAKES AIM BY ITSELF, AND A ROUND BUTTON WITH THE ANT'S PICTURE APPEARS AT THE TOP LEFT.", done: () => tutGunDone() },
-    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: THE GUN LOCKS ON TO THE NEAREST ENEMY; CLICK THE ROUND BUTTON OR HOLD IT. THE SENTRIES HELP: THEY RUN ON THE CRYSTAL'S POWER.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
+    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL " + EVOLVE_LEVEL + ": EVOLUTION). THE SENTRIES HELP: THEY RUN ON THE CRYSTAL'S POWER.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
     { id: "evolve", title: "EVOLVE A FOLLOWER", text: () => "A FOLLOWER EVOLVES AT LEVEL " + EVOLVE_LEVEL + ".", hint: () => "KEEP IT FIGHTING. THE BAR UNDER ITS HEALTH IS ITS XP.", done: () => followers.some(f => f && f.evolved) },
 ];
 
@@ -52,9 +54,10 @@ const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ guns
 
 // THE CLASS'S STAGE (the brief: "Each class should have its own tutorial stage after the initial tutorial"): once a class is chosen, a few objectives that teach what it does with what the game already has. The first is its
 // gear (TUT_CLASS_STEP); the rest are its loop. A step is done when its `done()` says so, and one already done when it comes up is passed, as in the tutorial. What the class does is COUNTED from the moment the
-// stage begins: tutTally (the class's own code says when a strike lands, an arc is thrown, a serum is splashed...), and the kills and relays online from what they were then (S.ck0, S.cr0). A step with `stray`
-// puts the gun lesson's training creature in view while it is up (TUT_STRAY: a big grazing ant near the player, replaced if it dies, taken away after, paying nothing). The plate counts "n/N".
-const TUT_STRAY = { level: 3, health: 400, size: 2.2, near: [4, 7], respawns: 6 };   // (TUT_GUN's stray; `respawns` a step)
+// stage begins: tutTally (the class's own code says when a flare is lit, a clone is grown, a serum is splashed...), and the kills and relays online from what they were then (S.ck0, S.cr0). A step with `stray`
+// puts a training creature in view while it is up (TUT_STRAY: a big grazing ant near the player, replaced if it dies, taken away after, paying nothing). The plate counts "n/N". NO STEP ASKS FOR ONE since
+// build 2026-11-17as (the three that did were the punch's, the arc's and the lash's); the rule is kept for a step that will.
+const TUT_STRAY = { level: 3, health: 400, size: 2.2, near: [4, 7], respawns: 6, room: "lab_hallway", far: [6, 14] };   // (`respawns` a step; `room`, `far`: where it comes in when there is no spot near the player: the main hallway, as the gun lesson's did)
 const TUT_CLASS_STAGES = {
     gunslinger: [TUT_CLASS_STEP,
         { id: "cctv", title: "SWEEP THE CAMERAS", text: () => "RUN A CCTV SWEEP AT THE SECURITY ROOM'S CONSOLE: EVERY ENEMY IS MARKED FOR 25 SECONDS.",
@@ -63,19 +66,13 @@ const TUT_CLASS_STAGES = {
             hint: () => "IT LIGHTS THE GROUND FOR HALF A MINUTE, POWER OR NOT. MORE ARE IN THE ARMORY.", done: () => tutCount("flare") >= 1 },
         { id: "hunt", title: "HUNT IN THE ARENA", text: () => "DEFEAT 3 CREATURES: " + Math.min(3, tutClassKills()) + "/3. YOUR SQUAD FIGHTS WITH YOU.",
             hint: () => "A KILL PAYS SHARDS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
-    technomancer: [TUT_CLASS_STEP,   // (its "RESTORE ANOTHER RELAY" step went with the relay repairs, build 2026-11-07qq: the junction turns every relay on)
-        { id: "punch", title: "CHARGE YOUR GAUNTLET", stray: true, text: () => "PUNCH THE STRAY ANT: " + Math.min(3, tutCount("gauntlet")) + "/3. EVERY PUNCH THAT LANDS STORES A CHARGE.",
-            hint: () => "TAP IT: YOUR GAUNTLET LOCKS ON. CLICK THE ROUND BUTTON TO PUNCH, OR HOLD IT.", done: () => tutCount("gauntlet") >= 3 },
-        { id: "arc", title: "THROW THE ARC", stray: true, text: () => "STEP AWAY FROM IT AND THROW THE ARC: " + Math.min(2, tutCount("arc")) + "/2. OUT OF REACH, A CHARGE THROWS AN ELECTRIC ARC.",
-            hint: () => "IT JUMPS TO CREATURES NEARBY. AN ARC ON A CREATURE REARING BACK (BITE) STOPS THE BITE.", done: () => tutCount("arc") >= 2 } ],
+    technomancer: [TUT_CLASS_STEP],   // (its "RESTORE ANOTHER RELAY" step went with the relay repairs, build 2026-11-07qq: the junction turns every relay on; its CHARGE YOUR GAUNTLET and THROW THE ARC with the gauntlet, build 2026-11-17as)
     mutator: [TUT_CLASS_STEP,
         { id: "clone", title: "GROW YOUR CLONE", text: () => "OPEN THE CLONE BAY (THE EXPERIMENT LAB) AND GROW A CLONE FROM THE DNA YOUR KILLS DROPPED.",
             hint: () => "ONE AT A TIME, AND IT DOES NOT COME BACK BY ITSELF. NO DNA? KILLS DROP IT (THE ARENA).",
             done: () => tutCount("clone") >= 1 || (typeof mutatorClone === "function" && !!mutatorClone()) },
         { id: "upgrade", title: "UPGRADE YOUR CLONE", text: () => "WITH YOUR CLONE OUT, THE CLONE BAY SELLS ITS UPGRADES: BUY ONE.",
             hint: () => "ARMOR, SERRATED ARMS, POUNCE OR REACH, FOR ANY DNA. THEY ARE LOST IF IT FALLS.", done: () => tutCount("upgrade") >= 1 },
-        { id: "lash", title: "FIGHT BESIDE IT", stray: true, text: () => "LASH THE STRAY ANT: " + Math.min(3, tutCount("lash")) + "/3. YOUR CLONE FIGHTS IT TOO.",
-            hint: () => "TAP IT: YOUR LASH LOCKS ON. CLICK THE ROUND BUTTON TO STRIKE, OR HOLD IT.", done: () => tutCount("lash") >= 3 },
         { id: "serum", title: "SPLASH A SERUM", text: () => "TAKE A SERUM FROM THE SERUM HOOD (THE EXPERIMENT LAB) AND SPLASH IT: Q OR THE PILL.",
             hint: () => "ITS POOL HEALS ALLIES IN IT. THE HOOD MAKES ONE A MINUTE, OR CRAFTS ONE FOR DNA.", done: () => tutCount("serum") >= 1 } ],
 };
@@ -124,7 +121,7 @@ function tutStrayTick(step) {
     if (!step || !step.stray) { if (s) { s.dead = true; s._xpGiven = true; s.deathProcessed = true; } return; }   // (the lesson is over: the stray goes, and pays nothing)
     if (S.cstrayFor !== step.id) { S.cstrayFor = step.id; S.cstrays = 0; }
     if (s || S.cstrays >= TUT_STRAY.respawns) return;
-    const spot = (typeof facilitySpotNear === "function" ? facilitySpotNear(player.visualX, player.visualY, TUT_STRAY.near[0], TUT_STRAY.near[1]) : null) || (typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_GUN.room, player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null);
+    const spot = (typeof facilitySpotNear === "function" ? facilitySpotNear(player.visualX, player.visualY, TUT_STRAY.near[0], TUT_STRAY.near[1]) : null) || (typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_STRAY.room, player.visualX, player.visualY, TUT_STRAY.far[0], TUT_STRAY.far[1]) : null);
     if (!spot) return;
     let p = null; try { p = spawnCreature({ species: "ant", className: "scout", x: spot[0], y: spot[1], level: TUT_STRAY.level, state: "wander" }); } catch (e) { p = null; }
     if (!p) return;
@@ -132,28 +129,6 @@ function tutStrayTick(step) {
     p.classStray = true; S.cstrays++; _tutSay("cstray:" + step.id + S.cstrays, "A BIG STRAY ANT WANDERS IN: YOUR TRAINING TARGET.", classColour(playerClassKey));
 }
 
-// THE GUN LESSON: a stray ant (level 3, plenty of health, grazing) is put in view; the objective is to shoot it three times with the player's own gun. The player is given the training rounds, and the ant is taken away when the lesson is done.
-const TUT_GUN = { shots: 3, rounds: 8, level: 3, health: 400, respawns: 4, room: "lab_hallway", near: [6, 14], size: 2.2 };   // (it wanders in the main hallway, and is big: easy to see and to hit)
-function tutStray() { return actors.find(a => a && a.tutStray && !a.dead) || null; }
-function tutGunShots() { const S = _fp.tut.script; return Math.max(0, playerShotsFired - (S.gunBase === undefined ? playerShotsFired : S.gunBase)); }
-function tutGunDone() { const S = _fp.tut.script; if (S.gunBase === undefined) { S.gunBase = playerShotsFired; S.strays = 0; } return tutGunShots() >= TUT_GUN.shots; }
-function tutGunText() {
-    const n = tutGunShots(), left = TUT_GUN.shots - n, st = tutStray();
-    if (!st) return "A BIG STRAY ANT IS COMING INTO THE MAIN HALLWAY\u2026";
-    return (playerAttackMode ? "YOUR GUN HAS TAKEN AIM. SHOOT THE STRAY ANT" : "GO CLOSE TO THE BIG STRAY ANT IN THE MAIN HALLWAY") + ": " + n + "/" + TUT_GUN.shots + " SHOTS.";
-}
-function tutGunTick() {
-    const S = _fp.tut.script, st = TUT_STEPS[S.step];
-    if (st && st.id === "gun") {
-        if (S.gunBase === undefined) tutGunDone();
-        if (playerAmmo < TUT_GUN.rounds) playerAmmo = TUT_GUN.rounds;   // (the training rounds)
-        if (!tutStray() && S.strays < TUT_GUN.respawns) {
-            const spot = typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_GUN.room, player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null;
-            if (spot) { let p = null; try { p = spawnCreature({ species: "ant", className: "scout", x: spot[0], y: spot[1], level: TUT_GUN.level, state: "wander" }); } catch (e) { p = null; }
-                if (p) { p.maxHealth = p.health = TUT_GUN.health; if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * TUT_GUN.size); p.dimensions.height = Math.round(p.dimensions.height * TUT_GUN.size); } p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A BIG STRAY ANT WANDERS INTO THE MAIN HALLWAY. THIS IS YOUR TARGET.", "#ffb347"); } }
-        }
-    } else if (S.gunBase !== undefined) { const s = tutStray(); if (s) { s.dead = true; s._xpGiven = true; } }   // (the lesson is over: the stray goes)
-}
 function tutTaken() { return _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.fetch).length; }   // (the power module's case is not one you take: Side Quest does)
 // THE JUNCTION (build 2026-11-07qq): seen once the player has stood at it (its station in range: S.jseen, set by the director); the module got once it is in the pack (or in the junction already)
 function tutJunctionSeen() { const S = _fp && _fp.tut && _fp.tut.script; return !!(S && S.jseen) || tutModuleGot(); }
@@ -202,7 +177,7 @@ function tutSaidOnce(key) { const S = _fp && _fp.tut && _fp.tut.script; if (!S) 
 // each frame
 function facilityDirectorTick() {
     const S = _fp && _fp.tut && _fp.tut.script; if (!S) return;
-    tutLevelFollowers(); tutGunTick();
+    tutLevelFollowers();
     if (!S.jseen && _fp.stationNear && _fp.stationNear.kind === "junction") S.jseen = 1;   // (the junction found: its station in range)
     while (S.step < TUT_STEPS.length && TUT_STEPS[S.step].id !== "assault" && TUT_STEPS[S.step].done()) S.step++;
     const st = TUT_STEPS[S.step];
@@ -232,7 +207,7 @@ function facilityDirectorTick() {
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
-// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's nine steps (seven until build 2026-11-07qq); then (once a class is chosen) the class's own; then
+// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's eight steps (seven until build 2026-11-07qq, nine until the gun lesson went, build 2026-11-17as); then (once a class is chosen) the class's own; then
 // a closing line; a quest under way (js/quests.js) between the tutorial and the class's stage. objectiveCurrent says which it is now ({ key, title, body, hint, col }); the QUEST BOX shows it (js/questbox.js: QUESTS on the dock,
 // a round button on a phone), and the Crystal says each as it comes up (facilityDirectorTick, through js/dialogue.js). The plate it used to be (top left; under the network panel in THE CORNERS; a mailbox on a phone, 2026-10)
 // is gone: facilityDrawObjective keeps its name (js/facilitytutorial.js calls it each frame) and keeps only the record: which objective is up (S.objKey, S.objNewAt) and whether it has been opened (S.objSeen: the quest box

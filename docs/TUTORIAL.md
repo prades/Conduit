@@ -12,10 +12,10 @@ The facility is the game (`js/facilityplay.js`; the map is docs/FACILITY.md). Th
 | The squad of three and the rooms the rest hold | js/party.js, js/squadfly.js |
 | The roster: the Command Center (a carousel on a tablet or a desktop), the phone's radial menu | js/commandcenter.js, js/radialmenu.js |
 | The Clone Bay, clones, DNA | js/clone.js, js/drops.js |
-| The Mutator's lash and its one clone (docs/MUTATOR.md) | js/mutator.js, js/clone.js (`cloneFight`, `cloneTick`, `CLASS_RULES.clone` in js/classes.js), js/weapons.js (`WEAPONS.lash`) |
+| The Mutator's one clone (docs/MUTATOR.md; its lash was removed in build `2026-11-17as`) | js/mutator.js, js/clone.js (`cloneFight`, `cloneTick`, `CLASS_RULES.clone` in js/classes.js) |
 | The Ice Mage's specimen recovery and the Resurrection Zone (docs/SPECIMENS.md) | js/specimen.js, js/mutator.js (the bodies), js/inventory.js (`specimen_capsule`) |
 | The Mutator's healing serum and its laboratory (docs/MUTATOR.md 2.6) | js/serum.js, js/stations.js (`serum_hood`), js/inventory.js (`healing_serum`) |
-| The Technomancer's arc gauntlet: the punch, the charge, the arc, the grid (docs/TECHNOMANCER.md) | js/technomancer.js, js/mutator.js (the shared melee), js/weapons.js (`WEAPONS.gauntlet`) |
+| What is left of the Technomancer's arc: the zap and the bolt two Player cards use (docs/TECHNOMANCER.md; the gauntlet was removed in build `2026-11-17as`) | js/technomancer.js |
 | The creatures: `spawnCreature`, the arena's spawner, species and classes | js/clone.js, js/facilityspawn.js, js/species.js, js/predator.js, js/abilities.js |
 | The Crystal, the alarm, the end | js/alarm.js, js/game.js |
 | Power: the relays, the network panel, the room tag | js/stations.js, js/facilitynet.js, js/facilitymap.js (`relays`) |
@@ -126,6 +126,8 @@ A scripted run through every step (collect, relay, recruit, hold, the gun, the a
 
 ## The class stages (the brief's step 9)
 
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
+
 ASKED: *"Each class should have its own tutorial stage after the initial tutorial."* *"Integrate each class into its tutorial progression and test the full loops."*
 
 Once a class is chosen, the Crystal gives **the class's stage** (`TUT_CLASS_STAGES`, js/tutorial.js; each step said in the dialogue box as it comes, and listed in the QUESTS box): its gear first (`TUT_CLASS_STEP`, as before), then the class's loop, each step with its words and a hint, counted in its title (*TECHNOMANCER · 3/4 · CHARGE YOUR GAUNTLET*). Every step uses what the game already has:
@@ -143,6 +145,8 @@ Once a class is chosen, the Crystal gives **the class's stage** (`TUT_CLASS_STAG
 
 ## The gun lesson (revision)
 
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
+
 The tutorial teaches the player's gun (js/gunfire.js): a seventh objective, **FIRE YOUR GUN**, comes after posting the followers and before the assault. A stray ant (level 3, plenty of health, grazing, made by `spawnCreature`) is put in view 4 to 6 tiles away in the main hallway and the player is given training rounds (the gun is topped up to 8). The objective counts the player's own shots (`playerShotsFired`) to three. The hints teach it in two steps: *get close to the ant: the gun takes aim by itself and a round button with the ant's picture appears* (see Targeting, below); then *click the button as often as you like, or hold it to keep firing; each shot costs a round*. A stray that dies is replaced (up to four times); when the lesson is done the stray is taken away. The assault's hint reminds the player that they can shoot too. The tutorial has seven objectives: supplies, relay, recruit, post, gun, defend, evolve.
 
 ## Class gear (revision)
@@ -156,6 +160,8 @@ Each class earns a **signature piece of gear** (`CLASS_SIGNATURE` in js/classes.
 **Known issues.** The gear sheets have no angry (red-eyed) variant: the plain cube's `player_angry` sheet is not used while gear is worn. Each sheet decodes to about 9–10 MB, loaded only when its gear is owned. The sheets are baked at 186 px cells over 4.4 units to hold the mech and the gun inside the cell at every facing.
 
 ## Saving (revision)
+
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
 
 **One game, one key.** The facility keeps **`conduit_fp_save`** (js/facilitysave.js); the settings keep `conduit_fp_gfx` and `conduit_fp_perf` (js/config.js); the equip cards' collection (the cards unlocked for good) keeps `conduit_fp_cards` (js/cards.js), apart from the run, so NEW GAME does not touch it. While the game runs, `Storage.setItem` / `removeItem` let through only `conduit_fp_*` keys (js/facilityplay.js `FP_STORE_OK`, installed before the page boots), and the website's background writes nothing at all.
 
@@ -172,6 +178,8 @@ Each class earns a **signature piece of gear** (`CLASS_SIGNATURE` in js/classes.
 An alarm is the state of a fight: while one is up the arena's creatures hunt instead of pottering about, the red triangle shows beside the room tag, and the tutorial's assault keeps it up until it is over. `triggerAlarm(type, x, y)` raises one: a PROXIMITY ALARM wakes the creatures within 6 tiles of its source, a FACILITY BREACH every creature there is; one lasts `ALERT_DURATION` (600 frames, 10 s) after the last thing that fed it, and `clearAlarm` sends a creature nobody is fighting back to its round. **The Crystal destroyed is the game over** (`showGameOver`): the overlay says CRYSTAL DESTROYED with the crystals you had, and its NEW GAME starts the facility again.
 
 ## The arena's creatures, what a kill pays, levels, and weapons (revision)
+
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
 
 **Every creature is made by `spawnCreature(opts)`** (js/clone.js): `species` and `className` (js/species.js `SPECIES`; a species or class the table does not have makes nothing), `x` and `y` (tiles; the Crystal's when none is given), `level` (js/levels.js `setPredatorLevel`; the arena's `creatureLevel()` when none) and `state` (`wander` or `hunt`; by default it hunts while an alarm is up). It is its class's numbers, its species' body, its charge-up special (js/abilities.js), and its class's `shardDrop` and `dnaDrops`. The arena's spawner, the tutorial's assault and its stray ant all come through it.
 
@@ -237,6 +245,8 @@ Measured with the real page in headless Chrome (software rendering, so absolute 
   - The Main Hallway went from 4,021 operations a frame to 2,110. The look is the same within 13 levels (of 255), the seams between tiles a hair lighter (`tests/floorpaint.js`). The look is unchanged: the same frames drawn by the old and new code matched pixel for pixel in 12 rooms. `tests/picmem.js` checks the budgets, the counts, the same picture after everything is let go, and a tour of every room.
 
 ## Targeting (revision)
+
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
 
 The gun finds its own target and a round button fires it (js/targeting.js; the long-press ring's ATTACK on a creature still locks on and fires too, js/commands.js):
 
@@ -341,6 +351,8 @@ ASKED: "remove the ability to change the crystal element modulation [...] it sho
 The Armory (the weapon locker, the terminal, the relay, its supply cases) is now under the Observation Deck, in a part of the map of its own (docs/FACILITY.md, "Interiors and portals"): the stairwell door in the alcove in the deck's west wall goes down to it (and its north wall's right-hand alcove goes back up), and the steel door in the alcove in the arena's west wall, just south of the garage doors, is the second way in (the left-hand alcove in its north wall leads back out to the arena). Nothing in it changed but its place (the crates moved out of the way of the stairs) and the way in: the supplies hint and the Gunslinger's gear objective say where it is, and the squad comes down with you. In the same round the arena got its large electrical generator (`main_generator.7x3`, the **power** sheet of the 3D props, `design/props/models/power.js`), standing against the arena's north service wall in a bay cut back from the rock: a prop only for now, solid, lit by its own glow, not part of the power network. (Since removed: the Cold Storage's door stands there now, below.)
 
 ## Switching class (revision)
+
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
 
 ASKED: "Make it to where whenever you're selecting a class, make it to where there's a confirmation." "Also make a way for the player to be able to switch classes whenever they want to. But their progression in it will be that the current progression of that class, and the progression saves throughout until the crystal is destroyed." Chosen with the user: the switch is in the pack; the Mutator's clone waits for it.
 
@@ -466,6 +478,8 @@ ASKED (2026-11-01): "I want the text in this game to be like an RPG or a JRPG, w
 
 ## The server room, the warehouse and the one repair (revision, build 2026-11-07qq)
 
+>*(Superseded in part by "The only weapon is the Gunslinger's machine gun", build `2026-11-17as`, at the end of this document: kept as history.)*
+
 Owner's request (2026-11-07): "make the computer lab ... a dark server room, and ... the showroom ... a little warehouse ... redo the tutorial where ... there's no relay stations that need to be repaired. It's just one spot on the map that needs to be repaired, and you need to obtain a module to repair it somewhere on the map. And you have to get the help of a NPC like side quest to retrieve the item ... in the catwalks, and side quest's ability is to fly." Answers: the repair spot is the **server room junction**; the relays become **smaller wall nodes**; the helper is **Side Quest himself** (back in the Sewers afterwards, shop and lines as before); he waits **under the catwalks**. Then, with an annotated screenshot: "a ledge that goes down that the player can only move to jump off of to get down", Side Quest uses it "as he gets down after retrieving the item to show the player how it works", and the launcher's way back goes (answer: "Only its way back").
 
 - **The rooms.** The Front Lobby is the **Server Room**: rows of server racks with blinking lights, a console, the junction in its north-east corner; it stays dim with the power on (`FP_ROOM_DIM`, js/facilitystyle.js). The Show Room is the **Warehouse**: pallet racks, crates, barrels, a cart, lockers, solid walls but for its pane onto the hallway. Both keep their eggs, cases and doors; the mech bay stays in the Warehouse.
@@ -478,3 +492,29 @@ Owner's request (2026-11-07): "make the computer lab ... a dark server room, and
 - Agent's choices (provisional): the Server Room's dimness (0.42), the racks' and the Warehouse's layouts, the nodes' places, Side Quest's lines and timings, his walk speed, the ledge's place and landing, the arrows' look.
 - Tests: tests/facilityplay.js (the junction, the nodes, the nine steps, the cases), tests/techabilities.js (the ledge for followers and for you), tests/classstage.js, tests/classswitch.js, tests/dialogue.js, tests/facility.js, tests/cover.js, tests/playercards.js, tests/infodex.js, tests/bible.js; a browser run of the whole trip (no page errors).
 
+## The only weapon is the Gunslinger's machine gun (revision, build 2026-11-17as)
+
+**The owner, 2026-11-20:** "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." Asked: of the Mutator's lash, "Remove the lash too"; how the Gunslinger gets its gun, "From the locker, as now"; of the tutorial's gun lesson, "Remove it altogether"; of a melee for the Gunslinger, "Add a Gunslinger melee". Decision record: `DECISION-LOG.md`.
+
+This section replaces, where they disagree: "The gun lesson"; "Weapons" and "The Armory terminal" (under "The arena's creatures, what a kill pays, levels, and weapons"); "Targeting"; the table in "The class stages"; the list of steps in "The server room, the warehouse and the one repair"; and the weapon lines of "Saving" and "Switching class". Those sections are kept as history.
+
+- **Weapons (js/weapons.js).** The table `WEAPONS` has one row: the **MACHINE GUN** (8 damage, a round every 11 frames, one round a shot; three levels, bought with scrap at the Armory terminal: 12, then 24). It is the Gunslinger's alone, taken from the Armory's weapon locker in the first step of its class's stage (GET YOUR GEAR): the locker gives the perk, 4 ammo packs and the gun in hand. **Removed:** the SERVICE GUN every class began with; the LASER RIFLE and its FUEL CELLS (the item, its three cases in the Server Room, its place in the chests' items); the Technomancer's ARC GAUNTLET (the punch, the thrown arc, its charges, the grid that filled them: `TECHNOMANCER.md`); the Mutator's TENTACLE LASH (`MUTATOR.md`).
+- **No weapon in hand** (`playerWeapon` is null): everyone during the tutorial, a Gunslinger who has not been to the locker, and the Technomancer and the Mutator always. Nothing is armed (`setPlayerAttackMode(true)` does nothing) and nothing is fired (`firePlayerShot` returns false, no round spent). The squad does the fighting.
+- **Targeting (js/targeting.js).** The lock is everyone's; the gun is only the Gunslinger's. With no weapon the nearest creature in sight is still locked: the dial (on a tablet, THE CORE's slab) shows it with its health and INFO, and the squad's ATTACK order, the potion's throw and a shield's facing go by it. But no red corners stay on it, the dial has no gun badge and a press on it fires nothing, and there is **no ammunition pill** (the serum, potion, kit and POISONED pills are where they were). The long-press ring on a creature shows INFO only: no ATTACK or STOW, no ammunition caption. With the machine gun in hand everything is as "Targeting" describes it, with one kind of pill (a cartridge and the count).
+- **The tutorial (js/tutorial.js)** has eight steps: FIND SUPPLIES, FIND THE BROKEN JUNCTION, GET THE POWER MODULE, REPAIR THE JUNCTION, RECRUIT A FOLLOWER, POST YOUR FOLLOWERS, DEFEND THE CRYSTAL, EVOLVE A FOLLOWER. **FIRE YOUR GUN is removed**, with its training rounds and its stray ant. The supplies hint says "SUPPLY CASES" where it said "AMMUNITION"; the assault's hint no longer says you can shoot (and it names the evolution level the game has, 8, where it said 10).
+- **The class stages.** No step teaches a strike any more:
+
+| Class | Steps |
+|---|---|
+| Gunslinger | 1. GET YOUR GEAR (the machine gun, the Armory's locker) · 2. SWEEP THE CAMERAS · 3. LIGHT A FLARE · 4. HUNT IN THE ARENA (unchanged) |
+| Technomancer | 1. GET YOUR GEAR (the spider mech, the mech bay). CHARGE YOUR GAUNTLET and THROW THE ARC are removed. |
+| Mutator | 1. GET YOUR GEAR (the lab coat) · 2. GROW YOUR CLONE · 3. UPGRADE YOUR CLONE · 4. SPLASH A SERUM. FIGHT BESIDE IT (three lashes) is removed. |
+
+  The training creature (`TUT_STRAY`) is kept as a rule (a step with `stray` gets one), but no step asks for one.
+- **Items and stations.** An AMMO PACK refuses with no gun in hand ("YOU CARRY NO GUN"); it is still found and carried by anyone. The Armory terminal turns scrap into ammunition for anyone, lists the machine gun to a Gunslinger (or with no class yet), and tells a Technomancer or a Mutator "YOUR CLASS CARRIES NO WEAPON. THE MACHINE GUN IS THE GUNSLINGER'S." The charging station fills a gun in hand and gives a Technomancer its power cell; with neither to give it refuses ("NOTHING OF YOURS TO CHARGE") and does not start its wait.
+- **Player cards** (`UNIVERSAL-AND-PLAYER-CARDS.md`): a Gunslinger's roles work on the machine gun's rounds; the Technomancer has no hit of its own, so its cards' words begin with their kit; a Mutator's read "YOUR CLONE'S BITES ARE …". ARC WARDEN's lamp zap and ARC SLINGER's jump are unchanged (the zap keeps the arc's number: 14 × 1.3, more for each relay online).
+- **Saving.** The save keeps the weapon in hand (the machine gun or none) and its level. A game saved before this build may name a removed weapon, hold a rifle's charge, the other weapons' levels, the gauntlet's charges and fuel cells: all are let go on load, and a Gunslinger who had been to the locker comes back with the machine gun at the level it had. A game saved in the gun lesson resumes at DEFEND THE CRYSTAL; a class's stage is read through the old lists of steps (a Mutator at its lash or its serum step is at the serum; a Technomancer past its gear has finished).
+- **Not changed:** GUARD and STUN DIVE (`PLAYER-COMBAT.md`: the dive stuns and does no damage), the sentries, the followers, the clone, the serum, the potion, card battles.
+- **Decided, not designed:** the Gunslinger is to have a melee attack ("Add a Gunslinger melee"). What it is, its damage and its reach have not been said; nothing of it is built (`OPEN-QUESTIONS.md`).
+- **The agent's choices, provisional:** the lock is kept for every class (only arming needs the gun); ammo packs and scrap-to-ammunition stay open to every class, though only a Gunslinger can load them; the charging station's refusal; the terminal's line for a class with no weapon; the fuel cells went with the rifle; the class picker's lines for the Technomancer and the Mutator were reworded to what each still does; the Player cards' words as above; the machine gun's own description no longer compares it with the service gun; the laser rifle's two player pictures stay in `img/hd/`, drawn by nothing.
+- Tests: tests/technomancer.js and tests/mutator.js (no weapon; what is kept), tests/weapon.js, tests/facilityplay.js, tests/classstage.js, tests/classswitch.js, tests/playercards.js, tests/bloomcards.js, tests/cards.js, tests/cover.js, tests/damage.js, tests/rolypoly.js, tests/reef.js, tests/bible.js.

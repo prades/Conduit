@@ -173,11 +173,12 @@ function facilityPickupsStart(F) {
     for (const p of (F.pickups || [])) if (!p.class && !p.needs) _fp.items.push(_fpPickupItem(p));   // (the cases for a class are not here until that class is chosen: facilityClassItemsEnter; a case that `needs` a relay not until it is online: facilityNeedsEnter)
 }
 function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, fetch: p.fetch || null, respawn: p.respawn || 0, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
-// a relay has come online: the cases that were waiting for it (a pickup with `needs`) arrive, each in a column of light (quiet: no message, no light: a saved game putting things back)
+// a relay has come online: the cases that were waiting for it (a pickup with `needs`) arrive, each in a column of light (quiet: no message, no light: a saved game putting things back).
+// (No case waits for a relay since build 2026-11-17as: the only ones were the laser rifle's fuel cells in the server room, which went with the rifle. The rule is kept for the next case that needs one.)
 function facilityNeedsEnter(relayId, quiet) {
     if (!_fp || !_fp.items) return 0;
     let n = 0; for (const p of (_fp.F.pickups || [])) { if (p.needs !== relayId || _fp.items.some(i => i.fp === "pickup" && i.id === p.id)) continue; const it = _fpPickupItem(p); if (!quiet) it.arrive = _fpFrame(); _fp.items.push(it); n++; }
-    if (n && !quiet && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "\u25c8 FUEL CELLS HAVE ARRIVED IN THE SERVER ROOM", color: "#5dffb0", life: 300, vy: -0.04, size: 15 });
+    if (n && !quiet && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "\u25c8 SUPPLIES HAVE ARRIVED", color: "#5dffb0", life: 300, vy: -0.04, size: 15 });
     return n;
 }
 // a class has been chosen: the cases for that class (and only that class) enter the facility, each arriving in a column of light
@@ -228,7 +229,7 @@ function facilityPickupTick() {
 // everything the tutorial paints over the scene, in screen space: the lamp's colour, the flares, a CCTV sweep's markers, the plate of the station in range
 function facilityDrawOverlay() {
     if (typeof attractOn === "function" && attractOn()) return;   // (nothing is written over the picture)
-    facilityDrawLampGlow(); facilityDrawFlares(); if (typeof facilityDrawBeams === "function") facilityDrawBeams();
+    facilityDrawLampGlow(); facilityDrawFlares();
     if (typeof facilityDrawCctv === "function") facilityDrawCctv();
     if (typeof facilityDrawRelays === "function") facilityDrawRelays();
     if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
