@@ -178,7 +178,7 @@ function coreTick() {
     _coreSet(E.ls, "textContent", S.rest > 0 ? S.restS + " S" : S.armed ? "PICK A TARGET" : "STUN"); _coreCls(E.ls, "core-lbl core-lst" + (S.armed ? " on" : S.rest > 0 ? " rest" : ""));
     _coreFoeTick(S, f);
     const ring = typeof commandMode !== "undefined" && !!commandMode;   // (the ring is up: it dims and lets taps through to it, game.html)
-    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "") + (S.foe ? " foe" : "") + (S.shot ? " shot" : "");
+    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "") + (S.foe ? " foe" : "") + (S.shot ? " shot" : "") + (S.foe && typeof weaponInHand === "function" && !weaponInHand() ? " bare" : "");   // (bare: no weapon in hand, js/weapons.js: the slab has no trigger, game.html #coreHud.bare)
     if (_core.txt.state !== state) { _core.txt.state = state; _core.root.className = state.trim(); }
     _corePlace(S);
     // where it is on the screen, for the dial above it and the pill row in it: read twice a second, not every frame, and at once when the page's classes change (a panel opening hides it)

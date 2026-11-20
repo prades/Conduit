@@ -189,8 +189,11 @@ function measure(w, h) {
             __tick(CORE_HUD.shot + 1); o.after = [_coreS.shot, _core.els.fdmg.textContent !== ''];
             _tgDial = { x: 1, y: 1, r: 1 }; drawTargetUI(); o.dial = _tgDial;
             gunHold = null; player.attackCooldown = 99; o.hold = [targetFireHold(), !!gunHold && gunHold.button]; gunHold = null;
+            /* (no weapon in hand: the slab stays, with no trigger, the root .bare, and a press fires nothing; build 2026-11-17at) */
+            o.armedCls = / bare/.test(' ' + _core.root.className); weaponEquip(null); targetSet(e, true); __tick(1); o.bare = [_coreS.foe === e, / foe/.test(' ' + _core.root.className), / bare/.test(' ' + _core.root.className), targetFireHold(), !!gunHold]; weaponEquip('machinegun'); targetSet(e, true); __tick(1); o.back = / bare/.test(' ' + _core.root.className);
             e.dead = true; targetDrop(); __tick(1); o.gone = [_coreS.foe, / foe/.test(' ' + _core.root.className)]; _core.root.getBoundingClientRect = keepR; _core.pills.x = 0; _core.topY = 0; playerAttackMode = false; return o; })()`);   // (unmeasured again, for the next check)
         same(r.on.join('|'), 'true|true|BEETLE TANK|LV 5|50%|y', 'shown'); same(r.at && r.at.join(), '868,696,22', 'where it is'); same(r.look, true, 'the cube does not look at it');
+        same(r.armedCls, false, 'the slab is bare with the gun in hand'); same(r.bare.join(), 'true,true,true,false,false', 'with no weapon in hand: the creature\'s, the slab shown, bare, the press\'s hold, a hold'); same(r.back, false, 'the trigger did not come back with the gun'); ok(/#coreHud\.bare \.core-foe-trig \{ display: none; \}/.test(rd('game.html')), 'game.html does not hide the trigger of a bare slab');
         same(r.shot.join('|'), 'true|true|set|12', 'a shot'); same(r.after.join(), 'false,true', 'after the shot'); same(r.dial, null, 'the dial is drawn with THE CORE shown');
         same(r.hold.join(), 'true,true', 'the FIRE press'); same(JSON.stringify(r.gone), '[null,false]', 'with the creature gone');
         const H = rd('game.html'), C = rd('js/corehud.js'); ok(/#coreHud\.foe \.core-foe, #coreHud\.foe \.core-foe-info \{ display: block; \}/.test(H), 'the slab is not shown by .foe');

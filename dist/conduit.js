@@ -29639,7 +29639,7 @@ function coreTick() {
     _coreCls(E.ls, "core-lbl core-lst" + (S.armed ? " on" : S.rest > 0 ? " rest" : ""));
     _coreFoeTick(S, f);
     const ring = typeof commandMode !== "undefined" && !!commandMode;
-    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "") + (S.foe ? " foe" : "") + (S.shot ? " shot" : "");
+    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "") + (S.foe ? " foe" : "") + (S.shot ? " shot" : "") + (S.foe && typeof weaponInHand === "function" && !weaponInHand() ? " bare" : "");
     if (_core.txt.state !== state) {
         _core.txt.state = state;
         _core.root.className = state.trim();
