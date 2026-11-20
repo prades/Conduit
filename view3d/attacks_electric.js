@@ -216,9 +216,9 @@ function view3dElectricForms(K) {
           soft(X, Y, Z, R, YEL, (0.12 + 0.18 * lit) * k);
           ribbon(49, (i, P) => { const an = i / 48 * TAU; P.x = X + Math.cos(an) * R; P.z = Z + Math.sin(an) * R; P.y = Y + 0.004; P.w = 0.03; P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.75 * k; });
           // the cloud: lumps on a wide flat disc over it, churning round, bobbing; a darker haze under it
-          const cy = b.holder.position.y + heightOf(b) + 1.25, cr = 1.5 * (0.6 + 0.4 * k), nl = low() ? 12 : 24;
+          const cy = b.holder.position.y + heightOf(b) + 0.75, cr = 1.25 * (0.6 + 0.4 * k), nl = low() ? 15 : 30;   // (low over it, so it stays in the picture)
           for (let i = 0; i < nl; i++) { const q = Math.sqrt(H(i, s, 1)), an = H(i, s, 2) * TAU + age * (0.012 + 0.01 * (1 - q)), rr = cr * q, y = cy + 0.18 * (1 - q * q) + 0.06 * Math.sin(age * 0.05 + i) + 0.12 * H(i, s, 3), c = H(i, s, 4) < 0.5 ? SLATE : SLATE2;
-            put(SMOKE, X + Math.cos(an) * rr, y, Z + Math.sin(an) * rr, c[0], c[1], c[2], 0.92 * k, (0.5 + 0.35 * H(i, s, 5)) * (1 - 0.35 * q)); }
+            put(SMOKE, X + Math.cos(an) * rr, y, Z + Math.sin(an) * rr, c[0], c[1], c[2], 0.92 * k, (0.36 + 0.28 * H(i, s, 5)) * (1 - 0.3 * q)); }
           for (let i = 0; i < (low() ? 3 : 6); i++) { const an = i / 6 * TAU + age * 0.01; put(SMOKE, X + Math.cos(an) * cr * 0.55, cy - 0.2, Z + Math.sin(an) * cr * 0.55, 0.16, 0.18, 0.24, 0.5 * k, -1.1); }
           // lit from inside: at each strike, and a flicker now and then
           const fl = Math.max(lit, (age + s) % 37 < 3 ? 0.5 : 0); if (fl > 0) for (let i = 0; i < 3; i++) glow(X + (H(i, s + age, 6) - 0.5) * cr, cy + 0.05, Z + (H(i, s + age, 7) - 0.5) * cr, 0.7, PALE, 0.55 * fl * k);
