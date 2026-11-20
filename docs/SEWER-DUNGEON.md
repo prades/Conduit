@@ -105,6 +105,16 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 
 **Open:** how many samples and parts, where each lies, how a sample is taken from a sleeping or frozen ant (and whether it wakes it), where the module is assembled (the analysis bench, or elsewhere), and whether the ◆300 purchase stays as a fallback.
 
+### 2.5d The key in the channel bed (the owner, 2026-11-20: "More than anything")
+"I want to have a key at the bottom of the [...] channel, and the player has to move obstacles into the water to stop the water somewhere, and then the water dries up and reveals a key." And: "a player needs to be able to go down and grab the key."
+1. **A key lies on the bed of a channel**, hidden under the flowing water.
+2. **The player moves obstacles into the water upstream** to stop the flow.
+3. **The channel below the blockage dries up** and the key is revealed.
+4. **The player can climb down into the dry channel and pick it up** (the agent's reading: steps or a ladder down from the walkway, and back up).
+5. The obstacles are moved by the same means as the box bridge (2.5a): the Flux Technician or the Technomancer's mech.
+
+**Open:** which channel (the owner's word was unclear; the agent suggests the west channel from the entrance, the one that flows freely, 2.2); which door the key opens; whether the water comes back when the obstacle is moved away, and so whether the player can be caught down there.
+
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
 - **Distraction and disguise:** e.g. the Toxic Mage's decoy, smoke, the Mutator's ant clone that matching ants treat as non-hostile.
