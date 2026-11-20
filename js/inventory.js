@@ -18,10 +18,11 @@ const INV_TYPES = { consumable: "CONSUMABLE", tool: "TOOL", component: "COMPONEN
 
 const ITEMS = {
     ammo_pack: { id: "ammo_pack", name: "AMMO PACK", cat: "gear", type: "consumable", stack: 9, col: "#ffb070", icon: "ammo", classes: null,
-        desc: "Rounds in a paper sleeve. Reloads your gun.",
+        desc: "Rounds in a paper sleeve. Reloads a machine gun: the Gunslinger's, the only gun there is.",
         lore: "Armoury stock, a few years past its date and still good. The sleeve is stamped with a rota nobody kept.",
         stats: ["EFFECT  +10 ROUNDS", "THE GUN HOLDS  60 ROUNDS"],
-        use: () => { if (playerAmmo >= PLAYER_AMMO_MAX) return { ok: false, why: "YOUR GUN IS FULL" }; const n = Math.min(10, PLAYER_AMMO_MAX - playerAmmo); playerAmmo += n; return { ok: true, msg: "+" + n + " ROUNDS — " + playerAmmo + " IN THE GUN" }; } },
+        use: () => { if (typeof weaponInHand === "function" && !weaponInHand()) return { ok: false, why: "YOU CARRY NO GUN" };   // (the only gun is the Gunslinger's machine gun: js/weapons.js)
+            if (playerAmmo >= PLAYER_AMMO_MAX) return { ok: false, why: "YOUR GUN IS FULL" }; const n = Math.min(10, PLAYER_AMMO_MAX - playerAmmo); playerAmmo += n; return { ok: true, msg: "+" + n + " ROUNDS — " + playerAmmo + " IN THE GUN" }; } },
     flare: { id: "flare", name: "FLARE", cat: "gear", type: "consumable", stack: 6, col: "#ff6a4a", icon: "flare", classes: ["gunslinger"],
         desc: "A tactical flare. Pop it to light the ground where you stand for half a minute.",
         lore: "Road-flare chemistry in a security-issue casing. Burns red and hot and does not care about the power being out.",
@@ -48,15 +49,10 @@ const ITEMS = {
         stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, THE WAREHOUSE", "USED UP BY THE BUILD"],
         use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE WAREHOUSE" }) },
     scrap_metal: { id: "scrap_metal", name: "SCRAP METAL", cat: "part", type: "component", stack: 30, col: "#9aa4b4", icon: "scrap", classes: null,
-        desc: "Bent plate and torn casing off the things that live in the arena. The Armory's terminal turns it into ammunition and upgrades.",
+        desc: "Bent plate and torn casing off the things that live in the arena. The Armory's terminal turns it into ammunition, and into the machine gun's upgrades.",
         lore: "Whatever the arena's creatures are made of, it is mostly good steel. Somebody in the Armory will pay for it in rounds.",
-        stats: ["2 SCRAP = 1 AMMO PACK", "UPGRADES AND ASSEMBLES WEAPONS", "AT  THE ARMORY TERMINAL (NEEDS ITS RELAY ONLINE)", "DROPPED BY THE ARENA'S CREATURES"],
+        stats: ["2 SCRAP = 1 AMMO PACK", "UPGRADES THE MACHINE GUN", "AT  THE ARMORY TERMINAL (NEEDS ITS RELAY ONLINE)", "DROPPED BY THE ARENA'S CREATURES"],
         use: () => ({ ok: false, why: "TAKE IT TO THE ARMORY TERMINAL" }) },
-    fuel_cell: { id: "fuel_cell", name: "FUEL CELL", cat: "part", type: "component", stack: 6, col: "#5dffb0", icon: "fuel", classes: null,
-        desc: "A sealed canister of reactor fuel. A laser rifle loads one by itself when it runs dry: 12 charges.",
-        lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
-        stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE SERVER ROOM, ONCE ITS POWER IS BACK"],
-        use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
     // THE REPAIR KIT (docs/PLAYER-COMBAT.md, step 1, build 2026-11-11e; the owner, 2026-11-11: "have the player use items to recharge the bars"): one of your bars back, mid-fight too (js/playercombat.js)
     repair_kit: { id: "repair_kit", name: "REPAIR KIT", cat: "gear", type: "consumable", stack: 3, col: "#7dffa8", icon: "repair", classes: null,
         desc: "A pocket repair kit for your shell. Use it to get one of your bars back, even in the middle of a fight.",
@@ -117,7 +113,7 @@ const ITEMS = {
         get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + (Math.round(P.sleep * P.copyFactor) / 60).toFixed(2).replace(/\.?0+$/, "") + " S (A QUARTER OF THE ORIGINAL), " + P.radius + " TILES", "SPARES  YOU AND YOURS: ENEMIES ONLY", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "MADE AT  THE ANALYSIS BENCH, ◆" + P.copyPrice + ", WITH THE ORIGINAL IN YOUR PACK"] : []; },
         verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion_copy") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion_copy") : { ok: false, why: "NO POTION HERE" } },
 };
-const ITEM_ORDER = ["ammo_pack", "repair_kit", "flare", "power_cell", "mutagen_sample", "power_module", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
+const ITEM_ORDER = ["ammo_pack", "repair_kit", "flare", "power_cell", "mutagen_sample", "power_module", "mech_leg", "mech_core", "scrap_metal", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
 
 // ── the pack ──
 let playerInv = {};

@@ -174,10 +174,10 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
         ok(J(`dmgAbilityHit({ speciesName: 'beetle', abilityDef: { name: 'CARAPACE SLAM' } }).type`) === 'earthquake', 'CARAPACE SLAM');
         ok(J(`dmgAbilityHit({ speciesName: 'ant', abilityDef: { name: 'MANDIBLE FRENZY' } }).type`) === 'slashing', 'MANDIBLE FRENZY');
     });
-    check('the player\'s hits are all of their type: a gun\'s Projectile on a moth ×1.3; the arc all Elemental (electric on a core scorpion ×1.3 × 1.3)', () => {
+    check('the player\'s hits are all of their type: the gun\'s Projectile on a moth ×1.3; ARC WARDEN\'s zap all Elemental (electric on a core scorpion ×1.3 × 1.3). The lash\'s Slashing and the punch\'s Crushing went with them (build 2026-11-17at)', () => {
         const r = J(`(function(){ const me = { isPlayer: true, team: 'green' };
-            return { gun: dmgApply({ speciesName: 'moth' }, 10, me, null, DMG_HIT_GUN), arc: dmgApply({ speciesName: 'scorpion', element: 'core' }, 10, me, 'electric', DMG_HIT_ARC), lash: dmgApply({ speciesName: 'mantis' }, 10, me, null, DMG_HIT_LASH), punch: dmgApply({ speciesName: 'ant' }, 10, me, null, DMG_HIT_PUNCH) }; })()`);
-        near(r.gun, 13, 'gun on a moth', 1e-9); near(r.arc, 16.9, 'arc', 1e-9); near(r.lash, 13, 'lash on a mantis', 1e-9); near(r.punch, 13, 'punch on an ant', 1e-9);
+            return { gun: dmgApply({ speciesName: 'moth' }, 10, me, null, DMG_HIT_GUN), arc: dmgApply({ speciesName: 'scorpion', element: 'core' }, 10, me, 'electric', DMG_HIT_ARC), gone: [typeof DMG_HIT_LASH, typeof DMG_HIT_PUNCH].join(), kinds: [DMG_HIT_GUN.type, DMG_HIT_GUN.player, DMG_HIT_ARC.type, DMG_HIT_ARC.player].join() }; })()`);
+        near(r.gun, 13, 'gun on a moth', 1e-9); near(r.arc, 16.9, 'the zap', 1e-9); sameJSON(r.gone, 'undefined,undefined', 'the lash\'s and the punch\'s kinds of hit'); sameJSON(r.kinds, 'projectile,true,elemental,true', 'the two kinds left');
     });
     check('a player\'s weapon with an element still sets the triangle on the whole hit, as before', () => {
         near(J(`dmgApply({ speciesName: 'ant', element: 'flux' }, 10, { isPlayer: true, element: 'fire' }, null, DMG_HIT_GUN)`), 13, 'fire laser on a flux ant', 1e-9);

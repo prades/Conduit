@@ -2,17 +2,17 @@
 //  THE CLASS GEAR, SEEN ON THE PLAYER (docs/TUTORIAL.md, "Class gear")
 // ─────────────────────────────────────────────────────────
 // Each class has one signature perk (CLASS_SIGNATURE, js/classes.js) and owning it changes how the player looks. The gear is modelled onto the same cube (design/evolutions/forms30.js, Nos. 840-843) and baked
-// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_laser.png, player_laser_aim.png (the laser rifle), player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames): the player is drawn from that sheet in place of
+// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames; the laser rifle's two, player_laser.png and player_laser_aim.png, are kept in the folder but nothing draws them since the rifle went, build 2026-11-17at): the player is drawn from that sheet in place of
 // the plain one (js/hdsprites.js drawHdPlayer asks playerGearSheet). The sheets are wider than the cube's (186 px cells over 4.4 units: the same pixels per unit), so each has its own box and anchor in HD_BOX.
-//   THE GUN IN HAND  (js/weapons.js) the machine gun (the Gunslinger's, from the Armory locker) or the laser rifle (assembled at the Armory terminal): whichever is equipped is what is drawn.
+//   THE GUN IN HAND  (js/weapons.js) the machine gun (the Gunslinger's, from the Armory locker): the only weapon there is. With none in hand the plain cube is drawn.
 //   GUNSLINGER   the armory's machine gun. The cube still floats; two of its tentacles carry the gun low at its left side, and when the weapon is ARMED (js/input.js setPlayerAttackMode) they pull it up level beside
 //                the screen, looking down the sights; the action frames are firing (recoil, muzzle flash), shown for a few frames after each shot. It turns to the enemy that is locked (js/gunfire.js).
 //   TECHNOMANCER the four-legged spider mech built in the show room: an armoured walker with the cube seated in it, walking when the player moves.
 //   MUTATOR      a lab coat and safety goggles, put on in the experiment lab on the way down from the teleport room (a trail of rooms: Teleport Room 1, then its staircase down into the lab, since build 2026-11-13a;
 //                it was Teleport Room 1, the passage, then the lab, when the lab was at the passage's end), and kept for good.
-const GEAR = { trail: ["teleport_room_1", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", laser: "player_laser", mech: "player_mech", labcoat: "player_coat" }, aimed: { machinegun: "player_gun_aim", laser: "player_laser_aim" } };
+const GEAR = { trail: ["teleport_room_1", "experiment_lab"], fireFrames: 14, sheets: { machinegun: "player_gun", mech: "player_mech", labcoat: "player_coat" }, aimed: { machinegun: "player_gun_aim" } };
 
-// what the player is seen with: the class's body gear (the mech, the coat) if it owns it, else the gun in hand if it has a sheet (the machine gun or the laser rifle: js/weapons.js), else nothing
+// what the player is seen with: the class's body gear (the mech, the coat) if it owns it, else the gun in hand (the machine gun: js/weapons.js), else nothing
 function playerGear() {
     const id = typeof playerClassKey !== "undefined" && playerClassKey ? CLASS_SIGNATURE[playerClassKey] : null;
     if (id && (id === "mech" || id === "labcoat") && classHas(id)) return id;

@@ -32,22 +32,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             player.x = player.targetX = player.visualX = __open[0] - 2; player.y = player.targetY = player.visualY = __open[1]; player.fpPath = null; player.attackCooldown = 0; health = PLAYER_HITS; player.invuln = 0; };
         globalThis.__ant = (dx, dy, state) => { const e = spawnCreature({ species: 'ant', className: 'scout', level: 4, x: player.x + dx, y: player.y + (dy || 0), state: state || 'wander' }); e.health = e.maxHealth = 1e6; e.element = null; return e; };
         // frames until the player loses a hit (or n): the frame, else null
-        globalThis.__bitAt = (n, each) => { const h = health; for (let i = 0; i < n; i++) { render(); if (each) each(i); if (health < h) return i; } return null; };`);
+        globalThis.__bitAt = (n, each) => { const h = health; for (let i = 0; i < n; i++) { render(); if (each) each(i); if (health < h) return i; } return null; };
+        /* THE GUN (build 2026-11-17at): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js); __nogun puts things back (no class, no weapon) */
+        globalThis.__gun = () => { invReset(); playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun'); }; globalThis.__nogun = () => { playerAttackMode = false; invReset(); playerClassKey = null; weaponReset(); };`);
     const PLAYER_HITS_N = J('PLAYER_HITS'), SPIDER_LURK_REST = J('SPIDER_LURK.rest[0]'), SPIDER_ALPHA = J('SPIDER_LURK.alpha');
 
     group('THE PLAYER IS PREY (it bit only by touch, and a hit turned it on the spot the player stood on)');
-    check('a creature the player shoots turns on the PLAYER (not on a copy of where the player stood), chases from 8 tiles and bites: one hit, after its wind-up', () => {
-        const r = J(`(function(){ __clear(); const e = __ant(8, 0); __frames(2); playerAttackMode = true; const fired = firePlayerShot(e); let hitAt = null; for (let i = 0; i < 120 && hitAt === null; i++) { render(); if (e.lastAttacker) hitAt = i; }
+    check('a creature the player shoots (a Gunslinger, with the machine gun) turns on the PLAYER (not on a copy of where the player stood), chases from 8 tiles and bites: one hit, after its wind-up', () => {
+        const r = J(`(function(){ __clear(); __gun(); const e = __ant(8, 0); __frames(2); playerAttackMode = true; const fired = firePlayerShot(e); let hitAt = null; for (let i = 0; i < 120 && hitAt === null; i++) { render(); if (e.lastAttacker) hitAt = i; }
             const o = { fired, isPlayer: e.lastAttacker === player, target: e.currentTarget === player, provoked: e.provoked }; let reared = false; const at = __bitAt(900, () => { if (e.attackWindup > 0 && e.biteTarget === player) reared = true; });
-            o.bitAt = at; o.reared = reared; o.hp = health; e.dead = true; __frames(1); return o; })()`);
+            o.bitAt = at; o.reared = reared; o.hp = health; e.dead = true; __frames(1); __nogun(); return o; })()`);
         same(r.fired, true, 'no shot'); same(r.isPlayer, true, 'its attacker is not the player'); same(r.target, true, 'it did not turn on the player'); same(r.provoked, true, 'provoked');
         ok(r.bitAt !== null, 'it never bit the player'); same(r.reared, true, 'it bit without the telegraph'); same(r.hp, PLAYER_HITS_N - 1, 'hits left');
     });
-    check('in melee the player is bitten now (it felt invulnerable): a Technomancer punching an ant scout takes a hit within a few seconds unless it steps away', () => {
-        const r = J(`(function(){ __clear(); invReset(); playerClassKey = null; weaponReset(); classSet('technomancer'); technoReset(); TECHNO.charge.gridEvery = 0; const e = __ant(1.2, 0, 'hunt'); e.provoked = true;
-            playerAttackMode = true; playerLockTarget = e; gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const at = __bitAt(400); gunHold = null; const o = { at, punched: e.health < e.maxHealth };
-            e.dead = true; __frames(1); invReset(); playerClassKey = null; weaponReset(); return o; })()`);
-        same(r.punched, true, 'no punch landed'); ok(r.at !== null && r.at < 300, 'not bitten in melee: ' + r.at);
+    check('up close the player is bitten (it felt invulnerable): a player beside an ant scout that hunts it takes a hit within a few seconds unless it steps away; with no weapon (the punch and the lash went, build 2026-11-17at) it has nothing to hit back with', () => {
+        const r = J(`(function(){ __clear(); invReset(); playerClassKey = null; weaponReset(); classSet('technomancer'); const e = __ant(1.2, 0, 'hunt'); e.lastAttacker = player; e.provoked = true;
+            playerLockTarget = e; setPlayerAttackMode(true, true); gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const at = __bitAt(400); const o = { at, armed: playerAttackMode, held: !!gunHold, unhurt: e.health === e.maxHealth }; gunHold = null;
+            e.dead = true; __frames(1); __nogun(); return o; })()`);
+        ok(r.at !== null && r.at < 300, 'not bitten up close: ' + r.at); same(r.armed, false, 'armed with no weapon'); same(r.held, false, 'a hold kept going'); same(r.unhurt, true, 'the creature was hit by a player with no weapon');
     });
     check('DODGE: stepping out of its reach while it rears back makes it miss (DODGED over the player); it comes on after you', () => {
         const r = J(`(function(){ __clear(); const e = __ant(1.2, 0, 'hunt'); e.lastAttacker = player; e.provoked = true; let n = 0; for (; n < 200 && !(e.attackWindup > 0 && e.biteTarget === player); n++) render();
@@ -84,10 +86,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const c0 = crystal.health; __frames(200); const o = { chewed: crystal.health < c0, target: e.currentTarget === f }; alertActive = false; alertTimer = 0; e.dead = true; __frames(1); crystal.health = crystal.maxHealth; return o; })()`);
         same(r.chewed, true, 'it never bit the Crystal'); same(r.target, false, 'it left the Crystal for a healthy follower 4 tiles off');
     });
-    check('the rules are data (COMBAT.prey), every number a knob; a shot of the player\'s says it is the player\'s (isPlayer: the gun, the laser, the melee, the arc)', () => {
+    check('the rules are data (COMBAT.prey), every number a knob; a hit of the player\'s says it is the player\'s (isPlayer: the gun\'s round, ARC WARDEN\'s zap)', () => {
         const P = J('COMBAT.prey'); for (const k of ['every', 'close', 'sense', 'weakAt', 'notice', 'calmWeakAt', 'revenge', 'leash', 'near', 'weak', 'weakPlayer', 'attacker', 'keep']) ok(Number.isFinite(P[k]), 'COMBAT.prey.' + k);
         ok(P.weakPlayer > P.weak, 'a weak player is not weighted above a weak unit');
-        for (const f of ['js/input.js', 'js/weapons.js', 'js/mutator.js', 'js/technomancer.js']) ok(/isPlayer: true/.test(rd(f)), f + ' does not say its hit is the player\'s');
+        for (const f of ['js/input.js', 'js/technomancer.js']) ok(/isPlayer: true/.test(rd(f)), f + ' does not say its hit is the player\'s');
     });
 
     group('SPIDERS LURK (no tag; idle behind a prop, only partly seen)');

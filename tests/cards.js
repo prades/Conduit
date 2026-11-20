@@ -267,7 +267,7 @@ function measure(w, h, query, seed) {
         const r = J('Object.values(equipCards()).map(function(c){ return [c.id, c.text, equipShortText(c)]; })'), by = Object.fromEntries(r.map(x => [x[0], x[2]]));
         same(r.length, 109, 'the cards'); for (const [id, t, sh] of r) { ok(sh && sh.length <= 42, id + '\'s short text: ' + JSON.stringify(sh)); if (t.length <= 30) same(sh, t, id + ' did not keep its text'); else ok(sh.length < t.length, id + '\'s short text is not shorter'); }
         same(by.impact_test, '+50% ATTACK DAMAGE', 'a short text kept'); same(by.cinderbrand, '15% PER HIT TO BURN', 'a status card of Pack 1'); same(by.hunter_optics, '+10% DAMAGE · +10% ATTACK SPEED', 'two stats'); same(by.tide_shell, 'BLOCKS A HIT, AGAIN AFTER 8 S', 'an ability');
-        same(by.pressure_spur, '+20% PER WEAKNESS EXPLOITED', 'an opportunity card'); same(by.inferno_crown, 'AURA: +10% ATTACK, 10% TO BURN', 'an aura'); same(by.cryo_marksman, 'ICE ROUNDS · SLOW, FREEZE, SLOWER GUNS', 'a Player card'); same(by.wraithfire, 'FIRE GHOST 4 S, THEN A BLAST · WAIT 15 S', 'a card attack');
+        same(by.pressure_spur, '+20% PER WEAKNESS EXPLOITED', 'an opportunity card'); same(by.inferno_crown, 'AURA: +10% ATTACK, 10% TO BURN', 'an aura'); same(by.cryo_marksman, 'ICE ROUNDS · SLOW, FREEZE, SLOWER GUN', 'a Player card'); same(by.wraithfire, 'FIRE GHOST 4 S, THEN A BLAST · WAIT 15 S', 'a card attack');
     });
     const Q = await boot('', {});
     await check('without ?cards: the registry is the real cards (100) and no test card, equipAny is true, and a test card cannot be unlocked, taken or worn', () => {

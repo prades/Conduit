@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
-// WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
+// WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand (the Gunslinger's machine gun, or none: js/weapons.js) and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
 // (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits, equip cards, the Ultimate's charge), your ULTIMATE bar, the run's hand of equip cards and the player's two slots (js/cards.js; the COLLECTION of unlocked cards is its own key, "conduit_fp_cards", which NEW GAME keeps), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
 // the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it; the objects FLUX MOVE has moved (js/fluxmove.js).
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
@@ -18,10 +18,18 @@ function facilitySaveLoad() {
 // the tutorial's step from a save: by its id (since build 2026-11-07qq, when the steps changed), else an older save's index read through the old list of steps (its relay step is the junction now)
 const FS_OLD_STEPS = ["supplies", "relay", "recruit", "position", "gun", "assault", "evolve"];
 function facilitySaveStep(sc) {
-    const N = TUT_STEPS.length, at = id => { const i = TUT_STEPS.findIndex(t => t.id === id); return i < 0 ? N : i; };
+    const N = TUT_STEPS.length, at = id => { if (id === "gun") id = "assault"; const i = TUT_STEPS.findIndex(t => t.id === id); return i < 0 ? N : i; };   // (the gun lesson went in build 2026-11-17at: a game saved in it is at the step after it)
     if (sc.sid) return sc.sid === "done" ? N : at(sc.sid);
     const i = Math.max(0, sc.step | 0); if (i >= FS_OLD_STEPS.length) return N;
     return at(FS_OLD_STEPS[i] === "relay" ? "junction" : FS_OLD_STEPS[i]);
+}
+// THE CLASS STAGES LOST STEPS in build 2026-11-17at (the Technomancer's punch and arc, the Mutator's lash: js/tutorial.js), and a stage is saved by its step's number. A game saved before then (no `cv`) is
+// read through the old lists: it is at the first step from where it was that is still a step (a Mutator at its lash or its serum: the serum; a Technomancer past its gear: finished).
+const FS_OLD_CSTAGES = { technomancer: ["perk", "punch", "arc"], mutator: ["perk", "clone", "upgrade", "lash", "serum"] };
+function facilitySaveCStep(cls, n, old) {
+    n = Math.max(0, n | 0); const was = old ? FS_OLD_CSTAGES[cls] : null, now = typeof TUT_CLASS_STAGES !== "undefined" ? TUT_CLASS_STAGES[cls] : null; if (!was || !now) return n;
+    for (let i = n; i < was.length; i++) { const j = now.findIndex(s => s.id === was[i]); if (j >= 0) return j; }
+    return now.length;
 }
 function facilitySaveCollect() {
     const S = _fp.tut && _fp.tut.script;
@@ -31,8 +39,8 @@ function facilitySaveCollect() {
         classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,   // the classes you have been, the weapon each last held, the Mutator's clone waiting (js/classes.js)
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp && !i.respawn).map(i => i.id),   // (a spot that fills again is not kept as taken: a reload finds it full)
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
-        script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
-            cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)
+        script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills,
+            cv: 2, cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away; cv: the stages' steps as they are since build 2026-11-17at, facilitySaveCStep)
         followers: followerRosterSnapshot(),
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
         energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,   // the run's ENERGY CARDS not in a slot (js/energy.js): NEW GAME clears them
@@ -42,7 +50,6 @@ function facilitySaveCollect() {
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
         serum: typeof serumSnapshot === "function" ? serumSnapshot() : null,           // the Mutator's laboratory: what it holds and how far through its round (js/serum.js)
         mxp: typeof mutatorXp !== "undefined" ? mutatorXp : 0,                          // the Mutator's experiment points: its level (js/mutator.js)
-        tc: typeof technoSnapshot === "function" ? technoSnapshot() : 0,                // the charges in the Technomancer's gauntlet (js/technomancer.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
@@ -98,7 +105,7 @@ function facilitySaveApply(d) {
     classWaitingClone = dc.clone && typeof dc.clone === "object" && dc.clone.sp ? dc.clone : null;
     if (Number.isFinite(d.ammo)) playerAmmo = d.ammo; if (Number.isFinite(d.shots)) playerShotsFired = d.shots;
     if (typeof invButtonShow === "function") invButtonShow(true);
-    if (typeof weaponRestore === "function") weaponRestore(d.weapon);   // the weapon in hand, the rifle if it was assembled, the levels and the charge
+    if (typeof weaponRestore === "function") weaponRestore(d.weapon);   // the weapon in hand and its level (a weapon that is gone since build 2026-11-17at is let go: js/weapons.js)
     // the relays that were online: their rooms have power (silently: no surge, no message), and what waited for them is there
     for (const id of (d.relays || [])) { const R = _fp.relays && _fp.relays[id], def = typeof _relayDef === "function" ? _relayDef(id) : null; if (!R || !def) continue; R.online = true; for (const room of def.powers) facilityPower(room, true); if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, true); }
     // the supply cases: a class's own are there once the class is, and the ones that were taken are gone
@@ -111,8 +118,9 @@ function facilitySaveApply(d) {
     if (S && d.script) {
         S.step = facilitySaveStep(d.script); S.jseen = d.script.jseen ? 1 : 0; S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
         if (!d.script.sid && (d.script.step | 0) >= 2 && typeof facilityJunctionRepair === "function") facilityJunctionRepair(true);   // (a save from before build 2026-11-07qq past its relay step: the junction counts as repaired, every relay on)
-        S.doneAt = d.script.done ? 1 : 0; S.said = d.script.said || {}; S.kills = d.script.kills || 0; S.gunBase = d.script.gunBase; S.strays = d.script.strays || 0; S.assault = null;
-        S.cstep = Math.max(0, d.script.cstep | 0); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined; S.cstages = d.script.cstages && typeof d.script.cstages === "object" ? d.script.cstages : {};   // the class's stage, as far as it had got
+        S.doneAt = d.script.done ? 1 : 0; S.said = d.script.said || {}; S.kills = d.script.kills || 0; S.assault = null;
+        const oldC = !d.script.cv; S.cstep = facilitySaveCStep(playerClassKey, d.script.cstep, oldC); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined; S.cstages = d.script.cstages && typeof d.script.cstages === "object" ? d.script.cstages : {};   // the class's stage, as far as it had got
+        if (oldC) for (const c of Object.keys(S.cstages)) if (S.cstages[c] && typeof S.cstages[c] === "object") S.cstages[c].cstep = facilitySaveCStep(c, S.cstages[c].cstep, true);   // (and the others', put away)
         S.levelled = new Set(followers);
         if (S.doneAt && !playerClassKey && typeof classPickerOpenNow === "function") classPickerOpenNow();   // (the picker was open when it was left)
     }
@@ -132,7 +140,6 @@ function facilitySaveApply(d) {
     if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)
     if (typeof serumApply === "function") serumApply(d.serum);
     if (Number.isFinite(d.mxp) && typeof mutatorXp !== "undefined") mutatorXp = Math.max(0, d.mxp);
-    if (typeof technoApply === "function") technoApply(d.tc);
     if (Number.isFinite(d.pult) && typeof playerUltimate !== "undefined") { playerUltimate = Math.max(0, Math.min(typeof PLAYER_ULT_MAX === "number" ? PLAYER_ULT_MAX : 100, d.pult)); if (typeof _lastUltInt !== "undefined") _lastUltInt = -1; }   // your ULTIMATE bar as it was (a game saved before has none: empty, as before)
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));

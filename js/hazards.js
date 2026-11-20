@@ -8,7 +8,7 @@
 // designs 8 and 10 combined, "4 Flask in hex armour" (design/props/models/hazard.js).
 //   ON THE MAP   solids of kind hazard_explosive (the arena's two) and hazard_corrosive (the sewer's), with a `flux` field (js/facilitymap.js): FLUX MOVE moves them as it moves a crate (js/fluxmove.js). They
 //                give cover and stop shots (js/facility.js FAC_COVER), and sight passes over them (FAC_LOW).
-//   SET OFF      by a shot that stops on one (js/game.js, where a travelling shot stops at cover; js/weapons.js, where the laser's beam does), whoever fired it, and by another container's blast (a moment
+//   SET OFF      by a shot that stops on one (js/game.js, where a travelling shot stops at cover), whoever fired it, and by another container's blast (a moment
 //                later, so a chain goes off one after another). FLUX MOVE never sets one off.
 //   GONE         the container is taken off its tile (js/facilityplay.js facilitySolidSet: its floor is floor, it stops nothing and is not drawn) until it COMES BACK, HAZARD.back frames later, on the same tile
 //                (it waits while anyone stands there). Nothing of this is saved: a loaded game has every container in place.
@@ -42,7 +42,7 @@ function hazardTrigger(s, delay) {
 }
 // a travelling shot stopped on a solid (js/game.js): a container goes off
 function hazardShot(solid) { return hazardKind(solid) ? hazardTrigger(solid, 0) : false; }
-// the laser's beam stopped short at (x, y) (js/weapons.js): a container there goes off
+// a beam stopped short at (x, y): a container there goes off (the laser rifle's beam asked this until the rifle went, build 2026-11-17at; nothing does now)
 function hazardShotNear(x, y) {
     for (const s of hazardSolids()) if (!s.open && Math.max(s.bb[0] - x, 0, x - s.bb[2]) <= 0.35 && Math.max(s.bb[1] - y, 0, y - s.bb[3]) <= 0.35) return hazardTrigger(s, 0);
     return false;

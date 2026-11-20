@@ -60,6 +60,7 @@ const CARD_BATTLE = {
     stepBeat: 12,               // frames after a walk before the next turn (0.2 s)
     tether: 0.8,                // tiles: on its attack's turn one may step this far off its square on its own legs (a leap, a dash or a charge carries it further: its new square)
     upFront: 2,                 // THE OPENING STANCE (§2.53): squares ahead of the line a TANK or a RECKLESS follower starts (the owner: "upfront maybe two spaces")
+    shoot: { shots: [4, 5] },   // THE GUNSLINGER'S SHOOT (§2.66; the owner, 2026-11-20: "it does four to five shots"): the rounds of one burst, the one number or the other, an even chance
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
@@ -768,14 +769,54 @@ _cb.acted = new Set();
 // attacks as a pop-up [...] whenever you select the attack, it rotates or does some sort of like switch in to the next follower"; asked, "Play right away" and no going back, the card dragged onto an
 // enemy, the pop-up at the bottom centre): your round goes through your squad in its order, the first still up that has not had its card; the pop-up shows that one's cards; a card played, it plays
 // out at once, and the pop-up switches in the next.
-function _cbCurrent() { if (!_cb.turn) return null; for (const f of _cbSquad()) if (!_cb.acted.has(f)) return f; return null; }
+function _cbCurrent() { if (!_cb.turn) return null; for (const f of _cbSquad()) if (!_cb.acted.has(f)) return f; return _cbYouTurn() ? player : null; }   // (your followers in the squad's order, then the Gunslinger: §2.66)
 function _cbAfterAct(f0) {
     if (!_cb.foes.some(_cbFoeIn)) { _cb.turn = { who: "you", t0: f0 }; return; }
-    if (_cbSquad().some(f => !_cb.acted.has(f))) { _cb.turn = { who: "you", t0: f0 }; _cbRefresh(); return; }   // (another of yours still to act)
+    if (_cbSquad().some(f => !_cb.acted.has(f)) || _cbYouTurn()) { _cb.turn = { who: "you", t0: f0 }; _cbRefresh(); return; }   // (another of yours still to act, or the Gunslinger: §2.66)
     _cbFoesTurn(false);
 }
+// THE GUNSLINGER'S TURN (§2.66; the owner, 2026-11-20: "the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot, I guess, and it
+// does four to five shots. [...] And shows the ammo [...] the bottom. [...] it has no wind up or anything"): superseding §2.10 (the cube commands only) for a Gunslinger with the machine gun in hand
+// (the only weapon there is: js/weapons.js). Each round, after your followers have had theirs, the cube has its own turn: the pop-up shows its card, SHOOT, with the ammunition on its foot.
+// Dragged onto an enemy, a burst of 4 or 5 rounds goes off at once (no charge, no cooldown), at the gun's own rate, each round the gun's own (its damage, a role's element and kit, a round spent);
+// fewer when the rounds run out or the enemy falls. With no round left it has no turn. THE AGENT'S, PROVISIONAL: its place (after the followers); the rounds are the gun's own (so a wall or cover
+// between stops them: a drop on an enemy with no clear shot says so and plays nothing); and HOLD FIRE, a second card (a tap or a drag), passes its turn and keeps the rounds.
+function _cbYouIn() { return typeof player !== "undefined" && !!player && !player.dead && typeof weaponInHand === "function" && weaponInHand(); }
+function _cbYouTurn() { return _cbYouIn() && !_cb.youActed && typeof playerAmmo === "number" && playerAmmo > 0 && _cb.foes.some(_cbFoeOk); }
+function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js firePlayerShot: the gun holds its fire in a battle but for its own burst)
+function _cbYouCards() {
+    const S = CARD_BATTLE.shoot, ammo = typeof playerAmmo === "number" ? Math.max(0, playerAmmo) : 0, dmg = typeof weaponDamage === "function" ? weaponDamage() : 0, col = typeof classColour === "function" && typeof playerClassKey !== "undefined" ? classColour(playerClassKey) : "#ffb347";
+    const out = [{ kind: "shoot", tag: "ATTACK", name: "SHOOT", fx: S.shots[0] + " to " + S.shots[1] + " rounds at one enemy, at once: " + dmg + " a round.", ready: ammo > 0, ammo, col },
+        { kind: "pass", tag: "HOLD", name: "HOLD FIRE", fx: "Keep your rounds: your turn passes.", ready: true, col }];
+    if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its turn this round)
+    return out;
+}
+function _cbYouPlay(kind, target) {
+    if (!_cbYouTurn() || _cbCurrent() !== player) return false;
+    const say = w => { _cb.say = { text: "YOU · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };
+    if (kind === "pass") { _cb.youActed = true; _cbAfterAct(_cbF()); _cbRefresh(); return true; }
+    if (kind !== "shoot") return false;
+    const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
+    if (live.indexOf(target) < 0) target = _cbNearest(player, live);
+    if (typeof facilityShotClear === "function" && !facilityShotClear(player.x, player.y, target.x, target.y)) return say("NO CLEAR SHOT");   // (the rounds are the gun's own: a wall or cover between stops them, docs/COMBAT.md §8)
+    const S = CARD_BATTLE.shoot, n = S.shots[0] + Math.floor(Math.random() * (S.shots[1] - S.shots[0] + 1));
+    _cb.turn = { who: "act", f: player, kind: "shoot", id: null, target, t0: _cbF(), hit: 0, fired: false, saved: null, shots: n, shot: 0, last: _cbF() };
+    _cb.youActed = true; player.attackCooldown = 0; _cbRefresh(); return true;
+}
+// its burst, each frame of its turn: a round as often as the gun fires, at its enemy while it stands, till the burst is spent or the rounds are; then, the last round landed and a beat on, the next turn
+function _cbShootTick(T, f0) {
+    const C = CARD_BATTLE, t = T.target, more = T.shot < T.shots && _cbFoeOk(t) && playerAmmo > 0;
+    if (more && (player.attackCooldown || 0) <= 0) {
+        let ok = false; _cb.shooting = true; try { ok = typeof firePlayerShot === "function" && firePlayerShot(t) === true; } finally { _cb.shooting = false; }
+        if (ok) { T.shot++; T.fired = true; T.last = f0; } else T.shots = T.shot;   // (a round that would not go off ends the burst)
+        return;
+    }
+    if (more && f0 - T.t0 < C.actMax) return;   // (the gun cycles)
+    const flying = typeof followerProjectiles !== "undefined" && followerProjectiles.some(p => p && p.source && p.source.isPlayer);
+    if ((!flying && f0 - T.last >= C.beat) || f0 - T.t0 >= C.actMax || !_cb.foes.some(_cbFoeIn)) _cbAfterAct(f0);
+}
 function _cbYourTurn() {
-    _cb.acted.clear();
+    _cb.acted.clear(); _cb.youActed = false;
     for (const [f, c] of _cb.charge) { if (!_cbAlive(f)) { _cb.charge.delete(f); continue; } c.left--; if (c.left > 0) _cb.acted.add(f); }   // (still charging: its turn passes; charged: it fires at its turn)
     _cb.round++;
     if (_cb.round > 1) for (const m of _cb.cd.values()) for (const id in m) if (m[id] > 0) m[id]--;
@@ -805,6 +846,7 @@ function _cbCools(f, kind) { return kind === "move" && !!f && (!CARD_BATTLE.byCl
 function _cbRole(f) { const d = f && f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null; return (d && d.role) || (f && f.role); }   // (its form's class: an evolved one's is fixed by its form)   // (a Brawler's and a Technician's second attack cool down; a Mage's does not)
 function cardBattlePlay(f, kind, id, target, fire) {
     const T0 = _cb.turn, dropped = target; if (!cardBattleActive() || !T0 || T0.who !== "you") return false;
+    if (typeof player !== "undefined" && f === player) return _cbYouPlay(kind, target);   // (THE GUNSLINGER'S TURN, §2.66: SHOOT or HOLD FIRE)
     if (!f || f.dead || !(f.health > 0) || _cbSquad().indexOf(f) < 0 || _cb.acted.has(f) || f !== _cbCurrent()) return false;   // (one card each a round, each in its turn: the squad's order)
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
     // THE SHAPE'S AIM (§2.48, js/cardshapes.js): let go on an enemy (`target`), on a floor square ({ x, y, tile: true }) or anywhere, as its shape takes it. A blast or the decoy let go on an
@@ -926,6 +968,7 @@ function _cbTurnTick() {
         return;
     }
     if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
+    if (T.who === "act" && T.kind === "shoot") { _cbShootTick(T, f0); return; }   // (the Gunslinger's burst, §2.66: the cube is on no walk and under no tether)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeIn);   // (held inside one of yours, they are still in it: an Ultimate that swallows them all has its turn out, §2.64)
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
@@ -1030,6 +1073,7 @@ for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "th
     "shrub:briar_sweep", "sundew:sweet_scent", "rotshard:rotten_decoy", "jellyram:wobble_slam", "blightspider:venom_bite", "hovershell:shock_zap"]) CARD_BATTLE_ART[k] = "img/cards/attack/" + k.replace(":", "_") + ".png";
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
 function cardBattleCards(f) {
+    if (typeof player !== "undefined" && f === player) return _cbYouCards();   // (the Gunslinger's own: SHOOT and HOLD FIRE, §2.66)
     const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);
     { const named = d && (d.shot || d.hit) ? (d.shot || d.hit) : null, rows = named && typeof SHOT_INFO !== "undefined" ? _cbInfoRows(SHOT_INFO, named) : null;
       out.push({ kind: "basic", tag: "BASIC ATTACK", name: named || "BASIC ATTACK", fx: _cbRow(rows, "EFFECT") || "Its everyday hit.", ready: true, turns: 0, col }); }
@@ -1056,7 +1100,7 @@ function cardBattleCards(f) {
 function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function _cbCardHTML(c) {
-    const st = c.done ? "DONE" : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");
+    const st = c.done ? "DONE" : c.kind === "shoot" ? (c.ready ? "AMMO " + c.ammo : "NO AMMO") : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");   // (SHOOT shows the ammunition on its foot: §2.66, the owner: "shows the ammo [...] the bottom")
     const tn = n => n + (n === 1 ? " TURN" : " TURNS"), rc = [c.chargeT > 0 ? "CHARGE " + tn(c.chargeT) : "", c.kind === "move" && c.recharge > 0 ? "RECHARGE " + tn(c.recharge) : ""].filter(Boolean).join(" · ");
     const meta = c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : c.kind === "walk" ? '<i class="cb-rc">UP TO ' + c.tiles + (c.tiles === 1 ? " SQUARE" : " SQUARES") + '</i>' : rc ? '<i class="cb-rc">' + rc + '</i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + (c.done ? " done" : "") + (c.art ? " art" : "") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '">' + (c.art ? '<i class="cb-art" style="background-image:url(\'' + _cbEsc(c.art) + '\')"></i>' : "") + '<i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
@@ -1064,23 +1108,27 @@ function _cbCardHTML(c) {
 // fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
 function cardBattleScreen() {
     const E = _cbEls; if (!E || !E.scr) return;
-    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), all = _cb.squad ? _cb.squad.slice() : _cbSquadNow(), cur = _cbCurrent(), T0 = _cb.turn;
+    const foes = _cb.foes.filter(a => a && !a.dead && a.health > 0), all = _cb.squad ? _cb.squad.slice() : _cbSquadNow(), cur = _cbCurrent(), T0 = _cb.turn, you = _cbYouIn() ? player : null;
+    if (you) all.push(you);   // (the Gunslinger has its turn after them, §2.66: its chip last, its cards in the pop-up at its turn)
     // (one at a time: the pop-up holds the follower whose turn it is; out of your turn it is away, still holding the last one, so it does not flicker)
     if (cur) E.popF = cur; const shown = E.popF && all.indexOf(E.popF) >= 0 ? E.popF : (all.find(_cbAlive) || null), squad = shown ? [shown] : [];
-    const chips = '<div class="cb-chips">' + all.map(f => '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
+    const chips = '<div class="cb-chips">' + all.map(f => f === you ? '<i class="cb-chip ' + (!(playerAmmo > 0) ? "down" : _cb.youActed && T0 ? "done" : f === shown ? "now" : "next") + '">YOU</i>' : '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
     const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
-    const cols = squad.map(f => { const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
+    const cols = squad.map(f => { if (f === you) {   // (the cube's own column: its bars as its health, its gun and its level, its two cards)
+            const mx = typeof PLAYER_HITS === "number" ? PLAYER_HITS : 3, hp = Math.max(0, Math.min(mx, typeof health === "number" ? health : mx)), W = typeof weaponDef === "function" ? weaponDef() : null, col = typeof classColour === "function" ? classColour(playerClassKey) : "#ffb347";
+            return { f, you: true, key: "you|" + (W ? W.id : ""), html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">YOU</b><i class="cb-sub">' + _cbEsc((typeof className === "function" ? className(playerClassKey) : "GUNSLINGER") + (W ? " · " + W.name + " LV " + (typeof weaponLevelOf === "function" ? weaponLevelOf(W.id) : 1) : "")) + '</i><i class="cb-hbar"><u style="width:' + Math.round(hp / mx * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cardBattleCards(f).map(_cbCardHTML).join("") + '</div>', col, down: false }; }
+        const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
         const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (_cbTank(f) ? " · TANK" : "") + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
       const mv = T && T.lost ? " · " + T.lostWord : T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39; a turn lost to a status: §2.52)
-      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length; return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
+      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length + (_cbYouTurn() ? 1 : 0); return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "shoot" ? "SHOOT" : T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }
     for (const c of cols) c.html = chips + c.html;
-    { const away = !(T0 && T0.who === "you" && cur), key = shown ? (shown.uid || "") + "|" + (_cb.round || 0) + "|" + _cb.acted.size : "";
+    { const away = !(T0 && T0.who === "you" && cur), key = shown ? (shown === you ? "you" : shown.uid || "") + "|" + (_cb.round || 0) + "|" + _cb.acted.size : "";
       if (E.band && E.band.classList) { E.band.classList.add("cb-pop"); E.band.classList.toggle("away", away);
         if (!away && E.popKey !== key) { E.popKey = key; E.band.classList.remove("swap"); void E.band.offsetWidth; E.band.classList.add("swap"); } } }   // (a new follower's turn: it switches in)
     const sig = cols.map(c => c.key + c.html).join("§");
@@ -1090,7 +1138,7 @@ function cardBattleScreen() {
         let el = old[i]; if (!el) { el = document.createElement("div"); el.className = "cb-col"; E.row.appendChild(el); }
         const keep = el._key === c.key ? el.querySelector(".cb-pt") : null;
         el.innerHTML = c.html; el._key = c.key; el._f = c.f; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", c.col); if (el.classList) el.classList.toggle("down", c.down);
-        const cv = el.querySelector(".cb-pt"); if (keep && cv && keep.width) { cv.getContext && cv.getContext("2d") && cv.getContext("2d").drawImage(keep, 0, 0); } else if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, c.f); } catch (e) {} }
+        const cv = el.querySelector(".cb-pt"); if (keep && cv && keep.width) { cv.getContext && cv.getContext("2d") && cv.getContext("2d").drawImage(keep, 0, 0); } else if (cv && c.you) { try { _cbYouThumb(cv, c.col); } catch (e) {} } else if (cv && typeof _ccThumb === "function") { try { _ccThumb(cv, c.f); } catch (e) {} }
     });
     for (let i = cols.length; i < old.length; i++) old[i].remove();
 }
@@ -1154,7 +1202,8 @@ function _cbFoeTileDraw(V) {
 function _cbDragAim(D, ev) {
     if (_cbOverBand(ev)) { D.foe = null; return null; }   // (back over the cards: nothing aimed, no square lit)
     const foe = _cbDragFoe(ev) || _cbFoeOnTileAt(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
-    D.foe = D.kind === "walk" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.56)
+    D.foe = D.kind === "walk" || D.kind === "pass" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.56; HOLD FIRE at none, §2.66)
+    if (D.kind === "pass") return true;
     if (k === "foe") return foe;
     if (k === "any") return true;
     if (foe) { const q = _cbSq(foe); return { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
@@ -1171,8 +1220,15 @@ function _cbDragEnd(ev) {
     const D = _cbDrag; if (!D || (D.pid !== undefined && ev.pointerId !== D.pid)) return; ev.preventDefault(); ev.stopPropagation();
     const aim = _cbDragAim(D, ev), off = !_cbOverBand(ev);
     _cbDragCancel();
-    if (off) cardBattlePlay(D.f, D.kind, D.id, aim === true ? null : aim);   // (let go over the fight: on what is under it, else the nearest enemy to the follower: §11.4)
+    if (off || D.kind === "pass") cardBattlePlay(D.f, D.kind, D.id, aim === true ? null : aim);   // (let go over the fight: on what is under it, else the nearest enemy to the follower: §11.4; HOLD FIRE, §2.66, is played by a tap too)
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
     if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
-function cardBattleReset() { _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+// the cube's picture in its column's head: its monitor face in its class's colour (a small glyph: the 3D cube itself stands in the fight)
+function _cbYouThumb(cv, col) {
+    const g = cv.getContext && cv.getContext("2d"); if (!g) return; const w = cv.width, h = cv.height; g.clearRect(0, 0, w, h);
+    g.fillStyle = "#0b1226"; g.strokeStyle = col || "#ffb347"; g.lineWidth = 3; g.beginPath(); if (g.roundRect) g.roundRect(w * 0.14, h * 0.16, w * 0.72, h * 0.6, 6); else g.rect(w * 0.14, h * 0.16, w * 0.72, h * 0.6); g.fill(); g.stroke();
+    g.fillStyle = "#3dffb0"; g.fillRect(w * 0.28, h * 0.42, w * 0.16, h * 0.07); g.fillRect(w * 0.56, h * 0.42, w * 0.16, h * 0.07);   // (its two eyes)
+    g.fillStyle = col || "#ffb347"; g.fillRect(w * 0.4, h * 0.78, w * 0.2, h * 0.08);   // (its neck)
+}
+function cardBattleReset() { _cb.youActed = false; _cb.shooting = false; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

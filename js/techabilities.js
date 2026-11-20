@@ -781,7 +781,7 @@ function _techReefKeep(a, px, py) {
 // A SHOT AT REEF'S ROCK AND CRYSTAL, as at a crate (the owner: "Stop shots too", 2026-11-08, build 2026-11-08n, enemy shots; then "Stops everyone's", 2026-11-09, build 2026-11-09a: "Like a crate: it stops
 // shots from both sides, except one fired from right behind it"): a shot's step from (x0,y0) to (x1,y1) that crosses an outcrop's body (a REEF PILLAR spike's too) stops where it enters it, whichever side
 // fired it (js/game.js asks with the cover check, so a lob flies over it, as over cover); one fired from right behind it, within FAC_SHOT.own tiles of its edge (ox, oy: where it was fired), passes over it,
-// as over the shooter's own cover. Bites still reach over it. Returns where it stops ({ x, y, reef }) or null; `quiet`: only asking (a turret's aim, the laser's reach), so the rock does not flash.
+// as over the shooter's own cover. Bites still reach over it. Returns where it stops ({ x, y, reef }) or null; `quiet`: only asking (a turret's aim), so the rock does not flash.
 function _techSegCircle(x0, y0, x1, y1, cx, cy, r) {   // where along the segment (0..1) it first enters the circle, or null
     const dx = x1 - x0, dy = y1 - y0, fx = x0 - cx, fy = y0 - cy, a = dx * dx + dy * dy, b = 2 * (fx * dx + fy * dy), c = fx * fx + fy * fy - r * r;
     if (c <= 0) return 0;   // (it starts inside)
@@ -804,7 +804,7 @@ function techReefShotStop(x0, y0, x1, y1, ox, oy, quiet) {
     if (best && !quiet) best.reef.pressedAt = f0;
     return best;
 }
-// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before REEF's rock stops it (the whole length when nothing does): the laser's beam (js/weapons.js), a turret's aim (js/facilityplay.js)
+// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before REEF's rock stops it (the whole length when nothing does): a turret's aim (js/facilityplay.js; the laser's beam too, until the rifle went, build 2026-11-17at)
 function techReefShotReach(x0, y0, x1, y1) { const s = techReefShotStop(x0, y0, x1, y1, x0, y0, true); return s ? Math.hypot(s.x - x0, s.y - y0) : Math.hypot(x1 - x0, y1 - y0); }
 function techOnReef(a) { if (!techReefs.length || !a) return null; const f0 = _techFrame(); for (const O of techReefs) if (_techReefOn(O, f0) && O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) < c.r)) return O; return null; }
 // the outcrops' clock: each grows when its shards land (what stands there is put out), then mends your followers beside it every `every` frames, until it crumbles

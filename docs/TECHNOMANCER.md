@@ -1,4 +1,12 @@
-# The Technomancer: the arc gauntlet, its charge, and the grid
+# The Technomancer: the arc gauntlet, its charge, and the grid (removed in build 2026-11-17at)
+
+> **REMOVED, build `2026-11-17at`.** The owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." The ARC GAUNTLET this page describes is no longer in the game: its punch, the arc it threw, its charges and the grid that filled them, and its two tutorial steps (CHARGE YOUR GAUNTLET, THROW THE ARC).
+>
+> **The Technomancer now** has no weapon of its own. It has what it had besides: the spider mech (the mech bay), the tuned lamp, its power cells, its six Player cards, and its squad, which does the fighting. Its class stage is GET YOUR GEAR alone. Current rules: `TUTORIAL.md`, "The only weapon is the Gunslinger's machine gun"; the decision: `DECISION-LOG.md`.
+>
+> **What is kept of this page** (js/technomancer.js), because two Player cards use it and nothing of theirs was asked to change: **the zap**, ARC WARDEN's (while your lamp is overcharged, every creature in its light takes it): electric damage, the arc's number as it was (`TECHNO.arc.base` 14 × `TECHNO.arc.mult` 1.3, and `TECHNO.arc.perRelay` 10% more for each relay online), and it still cuts short a bite being wound up (`TECHNO.arc.stagger`, §2.3 below); and **the bolt**, how that zap and ARC SLINGER's jump are drawn.
+>
+> Everything below is **history**: what the brief's step 8 built, and what was awaiting confirmation (§4), which is now moot.
 
 ASKED (the brief, "Player Classes"):
 

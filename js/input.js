@@ -90,14 +90,12 @@ function followerPickDistance(ex, ey) {
     return bestD;
 }
 
-let playerShotsFired = 0;   // shots the player has fired (the tutorial's gun lesson counts them: js/tutorial.js)
+let playerShotsFired = 0;   // shots the player has fired (saved; the tutorial's gun lesson counted them until it went, build 2026-11-17at)
 function firePlayerShot(foe) {
-    if (typeof cardBattleTurn === "function" && cardBattleTurn()) return;   // CARD BATTLES' turns: the cube commands only, its gun holds its fire (js/cardbattle.js, docs/CARD-BATTLES.md §2.10)
+    if (typeof cardBattleTurn === "function" && cardBattleTurn() && !(typeof cardBattleShooting === "function" && cardBattleShooting())) return;   // CARD BATTLES' turns: the gun holds its fire (js/cardbattle.js, docs/CARD-BATTLES.md §2.10) but for the Gunslinger's own burst, its SHOOT card (§2.66)
     if (typeof cardBattleNoFight === "function" && cardBattleNoFight()) return;   // and out of a battle it fires at nothing (§2.35: either a battle or none)
     if (!foe || foe.dead) return false;
-    if (typeof weaponDef === "function" && weaponDef().kind === "hybrid" && typeof technoAttack === "function") return technoAttack(foe);   // the Technomancer's gauntlet: a punch in reach, an arc out of it (js/technomancer.js)
-    if (typeof weaponMelee === "function" && weaponMelee() && typeof mutatorLash === "function") return mutatorLash(foe);   // a melee weapon in hand (the Mutator's lash): walk into reach, draw back, strike (js/mutator.js)
-    if (typeof playerWeapon !== "undefined" && playerWeapon === "laser" && typeof fireLaserShot === "function") return fireLaserShot(foe);   // the laser rifle: fuel cells, a beam (js/weapons.js)
+    if (typeof weaponInHand === "function" && !weaponInHand()) return false;   // NO WEAPON IN HAND (every class but a Gunslinger with the locker's machine gun: js/weapons.js): nothing is fired
     if (playerAmmo <= 0) {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60,
             text:"OUT OF AMMO", color:"#ff5555", life:90, vy:-0.25, size:13});
@@ -119,6 +117,7 @@ function firePlayerShot(foe) {
 }
 
 function setPlayerAttackMode(on, quiet) {
+    if (on && typeof weaponInHand === "function" && !weaponInHand()) return;   // NO WEAPON IN HAND (js/weapons.js): nothing is armed. The lock itself stays (js/targeting.js): the squad's orders, the potion and the creature's slab go by it
     playerAttackMode = !!on; if (!on && typeof gunStow === "function") gunStow();   // (putting the gun away ends the lock: js/gunfire.js)
     if (quiet) return;
     floatingTexts.push({x:canvas.width/2, y:canvas.height/2-80,
@@ -158,7 +157,7 @@ const handleInput=(ex,ey)=>{
     const gy=Math.round(_bk[1]+player.visualY);
     // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
-    if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off the Mutator's lash: it would walk the player back to the creature)
+    if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off a walk to a fallen clone's body: js/mutator.js)
     facilityWalkTo(gx, gy);
     if (typeof facilityTapCap === "function") facilityTapCap();   // (in a fight, five tiles at a time: the prototype, js/facilityplay.js FP_MOVE)
     player.selectedFollower=null;

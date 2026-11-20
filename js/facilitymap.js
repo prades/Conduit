@@ -586,11 +586,8 @@ const FACILITY_MAP = {
         { id: "pk_kit_arena_n", room: "arena", at: [520, 840], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena, by its door from the hallway: back three minutes after it is taken." },
         { id: "pk_kit_arena_s", room: "arena", at: [900, 1140], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena's south-east corner: back three minutes after it is taken." },
         { id: "pk_kit_sewers", room: "sewers", at: [460, 870], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit on the Sewers' north ledge, near the culvert: back three minutes after it is taken." },
-        // FUEL CELLS: the laser rifle's fuel, in the server room (it was the computer lab). A case with `needs` is not in the facility until that relay is online (since build 2026-11-07qq: when the junction is
-        // repaired, every relay comes on): then it arrives, in a column of light.
-        { id: "pk_lobby_fuel_1", room: "front_lobby", at: [460, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the west server racks (once the room has power)." },
-        { id: "pk_lobby_fuel_2", room: "front_lobby", at: [640, 300], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells in an aisle between the racks." },
-        { id: "pk_lobby_fuel_3", room: "front_lobby", at: [780, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the east server racks." },
+        // (The laser rifle's FUEL CELLS, three cases in the server room that arrived once its relay was online, went with the rifle: build 2026-11-17at. A case with `needs` is not in the facility until that
+        // relay is online, then it arrives in a column of light: js/facilitytutorial.js facilityNeedsEnter. None has one now.)
         { id: "pk_security_cell", room: "security_room", at: [900, 330], items: [["power_cell", 1]], note: "A spare cell in the Security Room's drawers." },
         { id: "pk_hall_cell", room: "lab_hallway", at: [650, 450], items: [["power_cell", 1]], note: "A cell on the hallway floor." },
         { id: "pk_show_cells", room: "show_room", at: [1010, 320], items: [["power_cell", 2]], note: "Two cells in the warehouse, by the racks." },

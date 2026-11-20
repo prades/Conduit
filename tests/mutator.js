@@ -1,10 +1,10 @@
-// THE MUTATOR: the lash and the one clone (docs/MUTATOR.md; js/mutator.js, js/clone.js, js/npc.js, js/weapons.js, js/classes.js, js/game.js).
+// THE MUTATOR: the one clone (docs/MUTATOR.md; its lash went in build 2026-11-17at, the owner, 2026-11-20: "Remove the lash too"; js/mutator.js, js/clone.js, js/npc.js, js/weapons.js, js/classes.js, js/game.js).
 // ASKED (the brief, step 4): "Implement the Mutator's basic melee combat and single-clone lifecycle." "Mutator: melee-focused summoner [...] Fights alongside a single primary cloned creature." "The Mutator normally has
 // only one active primary clone." "Clones should use the established designs and characteristics of their corresponding enemy species." "If the clone dies [...] a replacement must be created."
 //   THE CLONE FIGHTS AS ITS SPECIES   its bite (its power, in the creature's two beats), its special, a striker's abdomen shot (it struck with a follower's plain 1.25 swing before)
 //   CLONING IS THE MUTATOR'S          CLASS_RULES.clone: the class with the skill, one at a time; anyone else is told who can
 //   THE ONE CLONE                     it follows, takes the squad's orders, and when it falls it does not come back: its body stays; a dismissed clone never comes back
-//   THE LASH                          the Mutator's weapon: walk into reach, draw back, strike; a creature that slips away in the wind-up is missed; it spends no ammunition
+//   NO LASH                           the Mutator has no weapon: a creature is locked, not struck; only the Gunslinger's machine gun, from the locker, fires
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -146,64 +146,39 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/obj\.type==='body'/.test(rd('js/game.js')) && /cloneBodiesDrawItems\(drawList\)/.test(rd('js/game.js')), 'game.js does not draw bodies');
     });
 
-    group('THE LASH: the Mutator\'s weapon, in two beats, in reach');
-    check('choosing the Mutator puts the TENTACLE LASH in hand; no other class has it (EQUIP says whose it is); the HUD says MELEE and it is never dry', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const o = { w: playerWeapon, has: weaponHas('lash'), hud: weaponHud().kind, dry: weaponDry() }; __class('gunslinger'); o.gs = [playerWeapon, weaponHas('lash'), weaponEquip('lash').why]; return o; })()`);
-        same(r.w, 'lash', 'in hand'); same(r.has, true, 'the Mutator has it'); same(r.hud, 'melee', 'the HUD'); same(r.dry, false, 'dry');
-        same(r.gs[0], 'service', 'the Gunslinger\'s weapon'); same(r.gs[1], false, 'the Gunslinger has the lash'); ok(/MUTATOR'S OWN/.test(r.gs[2]), 'EQUIP said: ' + r.gs[2]);
+    group('NO LASH (build 2026-11-17at; the owner, 2026-11-20: "No melee unless it\'s the gunslinger", "Remove the lash too"): the Mutator has no weapon; only the Gunslinger\'s machine gun fires');
+    check('choosing the Mutator puts no weapon in hand: none to arm, no ammunition pill, nothing to fire; the TENTACLE LASH is no weapon any more, for any class', () => {
+        const r = J(`(function(){ __class('mutator'); const o = { w: playerWeapon, inHand: weaponInHand(), own: weaponOwn(), hud: weaponHud(), dry: weaponDry(), row: !!WEAPONS.lash, eq: weaponEquip('lash'), cls: CLASSES.mutator.weapon === undefined, cfg: MUTATOR.lash === undefined };
+            __class('gunslinger'); o.gs = [playerWeapon, weaponHas('lash')]; return o; })()`);
+        same(r.w, null, 'in hand'); same(r.inHand, false, 'a weapon in hand'); same(r.own, null, 'a weapon of its own'); same(r.hud, null, 'the HUD'); same(r.dry, true, 'nothing to fire'); same(r.row, false, 'WEAPONS still has the lash');
+        same(r.eq.why, 'NO SUCH WEAPON', 'equipping the lash'); same(r.cls, true, 'the class row still names a weapon'); same(r.cfg, true, 'MUTATOR.lash'); same(r.gs.join(), ',false', 'the Gunslinger');
     });
-    check('a click on a creature in reach: the tentacle draws back for MUTATOR.lash.windup frames, then lands for the weapon\'s damage (a number over it); no round is spent', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; const ammo = playerAmmo, h0 = e.health;
-            const began = firePlayerShot(e); const o = { began, winding: mutatorLashing() }; let land = null; for (let i = 0; i < 40 && land === null; i++) { render(); if (h0 - e.health > 1) land = i; }
-            o.land = land; o.dealt = h0 - e.health; o.dmg = weaponDamage('lash') * defenseMult(e, { x: player.x, y: player.y }); o.ammo = playerAmmo - ammo; o.windup = MUTATOR.lash.windup; o.num = floatingTexts.some(t => t.world && /^\\d+$/.test(t.text)); return o; })()`);
-        same(r.began, true, 'the strike did not begin'); same(r.winding, true, 'it did not draw back'); ok(r.land !== null && r.land >= r.windup - 2, 'it landed at frame ' + r.land + ' (wind-up ' + r.windup + ')');
-        ok(Math.abs(r.dealt - r.dmg) < 1.5, 'it took ' + r.dealt + ' (the lash ' + r.dmg.toFixed(1) + ')'); same(r.ammo, 0, 'rounds spent'); same(r.num, true, 'no number over it');
+    check('a creature in what was the lash\'s reach is LOCKED but not struck: a click, the dial held for two seconds, deal nothing; one out of reach is not walked to', () => {
+        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true), far = __creature('ant', 'scout', 4, 5, 0, true); e.health = e.maxHealth = far.health = far.maxHealth = 1e6; const x0 = player.x, y0 = player.y;
+            const o = { set: targetSet(e, true), locked: targetCurrent() === e, armed: playerAttackMode, shot: firePlayerShot(e), hold: targetFireHold() };
+            playerLockTarget = far; gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; __frames(120); o.dealt = [1e6 - e.health, 1e6 - far.health]; o.moved = Math.hypot(player.x - x0, player.y - y0); o.held = gunHold; o.rounds = followerProjectiles.length; return o; })()`);
+        same(r.set, true, 'the lock was refused'); same(r.locked, true, 'not locked'); same(r.armed, false, 'armed'); same(r.shot, false, 'a strike began'); same(r.hold, false, 'the dial\'s hold began');
+        ok(r.dealt[0] < 1 && r.dealt[1] < 1, 'the creatures took ' + r.dealt); ok(r.moved < 0.01, 'the Mutator walked ' + r.moved); same(r.held, null, 'a hold kept going'); same(r.rounds, 0, 'rounds in the air');
     });
-    check('a creature out of reach is walked to, and struck once it is in reach: one click, one strike', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 4.5, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; const h0 = e.health, d0 = Math.hypot(e.x - player.x, e.y - player.y);
-            const began = firePlayerShot(e); const hits = __hits(e, 260).length;
-            return { began, d0, d1: Math.hypot(e.x - player.x, e.y - player.y), reach: lashReach(), hits }; })()`);
-        same(r.began, false, 'a strike began out of reach'); ok(r.d1 <= r.reach + 0.05, 'the player is ' + r.d1.toFixed(2) + ' tiles away (reach ' + r.reach + ')'); same(r.hits, 1, 'strikes from one click');
+    check('ONLY THE GUNSLINGER SHOOTS, AND ONLY WITH THE LOCKER\'S MACHINE GUN: before the locker a Gunslinger fires nothing and cannot arm; with it a click fires a round as before', () => {
+        const r = J(`(function(){ __clear(); __class('gunslinger'); const e = __creature('ant', 'scout', 4, 3, 0, true); const a0 = playerAmmo, p0 = followerProjectiles.length; setPlayerAttackMode(true, true);
+            const o = { before: [playerWeapon, playerAttackMode, firePlayerShot(e), a0 - playerAmmo, followerProjectiles.length - p0] };
+            classGrant('machinegun'); weaponEquip('machinegun'); setPlayerAttackMode(true, true); o.armed = playerAttackMode; const fired = firePlayerShot(e); o.after = [playerWeapon, fired, a0 - playerAmmo, followerProjectiles.length - p0, player.attackCooldown === weaponCooldown()]; setPlayerAttackMode(false, true); return o; })()`);
+        same(r.before.join(), ',false,false,0,0', 'before the locker'); same(r.armed, true, 'with the gun it does not arm'); same(r.after.join(), 'machinegun,true,1,1,true', 'with the gun');
     });
-    check('holding keeps striking, one lash every windup + cooldown frames', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; playerLockTarget = e;
-            gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const at = __hits(e, 200); gunHold = null;
-            return { at, cycle: MUTATOR.lash.windup + weaponCooldown('lash') }; })()`);
-        ok(r.at.length >= 3, 'strikes: ' + r.at); const gap = r.at[2] - r.at[1]; ok(Math.abs(gap - r.cycle) <= 2, 'strikes ' + gap + ' frames apart (a cycle is ' + r.cycle + ')');
-    });
-    check('letting go of the hold stops it: no strike after the press ends (it struck once more, the attack was still going); let go while it rests after a strike (one already winding up still lands)', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; playerLockTarget = e;
-            gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const held = __hits(e, MUTATOR.lash.windup + 6).length; gunHold.released = true; gunHold.pending = false; const after = __hits(e, 120).length; gunHold = null;
-            return { held, after, goal: mutatorLashGoal() }; })()`);
-        same(r.held, 1, 'strikes while held'); same(r.after, 0, 'strikes after letting go'); same(r.goal, null, 'the attack goes on');
-    });
-    check('a creature that slips out of reach in the wind-up is missed: MISS, and no damage', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; const h0 = e.health; firePlayerShot(e); render(); e.x += 3;
-            __frames(MUTATOR.lash.windup + 2); return { dealt: h0 - e.health, said: floatingTexts.map(t => t.text).join('|') }; })()`);
-        ok(r.dealt < 1, 'it was hit for ' + r.dealt); ok(/MISS/.test(r.said), 'no MISS: ' + r.said);
-    });
-    check('a tap on the floor calls the attack off (the player walks there and strikes nothing); stowing the weapon does too', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 5, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; const h0 = e.health; firePlayerShot(e); __frames(4);
-            const sx = canvas.width / 2 - 2 * TILE_W, sy = canvas.height / 2 + TILE_H; handleInput(sx, sy); const goal = mutatorLashGoal(); __frames(200); const o = { goal, dealt: h0 - e.health };
-            firePlayerShot(e); setPlayerAttackMode(false, true); o.stowed = mutatorLashGoal(); return o; })()`);
-        same(r.goal, null, 'the attack was not called off'); ok(r.dealt < 3, 'it struck anyway: ' + r.dealt); same(r.stowed, null, 'stowing did not call it off');
-    });
-    check('every other class keeps its gun: a Gunslinger\'s click fires a round as before', () => {
-        const r = J(`(function(){ __clear(); __class('gunslinger'); const e = __creature('ant', 'scout', 4, 3, 0, true); playerAttackMode = true; const a0 = playerAmmo, p0 = followerProjectiles.length; const fired = firePlayerShot(e); return { fired, spent: a0 - playerAmmo, shots: followerProjectiles.length - p0 }; })()`);
-        same(r.fired, true, 'it did not fire'); same(r.spent, 1, 'rounds'); same(r.shots, 1, 'projectiles');
-    });
-    check('the Armory terminal lists each class its own: the Mutator the lash and not the machine gun, the Gunslinger the machine gun and not the lash, the Technomancer its arc gauntlet, no class as before', () => {
+    check('the Armory terminal lists the machine gun to the Gunslinger and to no class, and no weapon to the Technomancer or the Mutator', () => {
         const r = J(`(function(){ const o = {}; for (const id of [null, 'gunslinger', 'technomancer', 'mutator']) { __class(id); o[id || 'none'] = weaponRows().join(); } return o; })()`);
-        same(r.none, 'service,machinegun,laser', 'no class'); same(r.gunslinger, 'service,machinegun,laser', 'the Gunslinger'); same(r.technomancer, 'service,laser,gauntlet', 'the Technomancer'); same(r.mutator, 'service,laser,lash', 'the Mutator');
+        same(r.none, 'machinegun', 'no class'); same(r.gunslinger, 'machinegun', 'the Gunslinger'); same(r.technomancer, '', 'the Technomancer'); same(r.mutator, '', 'the Mutator');
     });
-    check('a Mutator\'s game saved before the lash comes back with the lash in hand; one saved with it keeps what was in hand', () => {
-        const r = J(`(function(){ __class('mutator'); weaponRestore({ w: 'service', owned: {}, lv: {}, charge: 0 }); const old = playerWeapon; weaponRestore({ w: 'service', owned: {}, lv: {}, charge: 0, cw: 1 }); return { old, kept: playerWeapon }; })()`);
-        same(r.old, 'lash', 'the old save'); same(r.kept, 'service', 'a new save that chose the gun');
+    check('a Mutator\'s game saved with the lash, or with the service gun, in hand comes back with no weapon', () => {
+        const r = J(`(function(){ __class('mutator'); weaponRestore({ w: 'lash', owned: {}, lv: { lash: 1 }, charge: 0, cw: 1 }); const lash = playerWeapon; weaponRestore({ w: 'service', owned: {}, lv: {}, charge: 0 }); return { lash, service: playerWeapon, inHand: weaponInHand() }; })()`);
+        same(r.lash, null, 'saved with the lash'); same(r.service, null, 'saved with the service gun'); same(r.inHand, false, 'a weapon in hand');
     });
-    check('the player turns to what it lashes, and the lash is drawn (drawing back, then the whip) without a throw; the dial and the small icon show a tentacle', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; firePlayerShot(e); const o = { face: mutatorFacing() === hdRow(e.x - player.x, e.y - player.y) }; let err = null;
-            try { drawMutatorFx(); __frames(MUTATOR.lash.windup + 1); drawMutatorFx(); } catch (x) { err = x.message; } o.err = err; let lash = 0; const keep = _tgLash; _tgLash = function () { lash++; return keep.apply(this, arguments); }; try { targetSet(e, true); drawTargetUI(); } finally { _tgLash = keep; } o.lash = lash; return o; })()`);
-        same(r.face, true, 'the player does not face the creature'); same(r.err, null, 'the lash drawing threw'); ok(r.lash >= 1, 'no tentacle glyph on the HUD');
+    check('nothing of the lash is left to draw or to turn the player; the dial draws for a Mutator with no badge', () => {
+        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); let guns = 0; const keep = _tgGun; _tgGun = function () { guns++; return keep.apply(this, arguments); }; let err = null;
+            try { targetSet(e, true); drawTargetUI(); __frames(3); } catch (x) { err = x.message; } finally { _tgGun = keep; }
+            return { err, guns, gone: ['mutatorLash', 'mutatorLashing', 'mutatorLashGoal', 'lashReach', 'mutatorFacing', 'drawMutatorFx', 'mutatorTick', '_tgLash'].filter(n => eval('typeof ' + n) !== 'undefined').join(), cancel: typeof mutatorCancel }; })()`);
+        same(r.err, null, 'the dial threw'); same(r.guns, 0, 'a gun badge'); same(r.gone, '', 'still in the code'); same(r.cancel, 'function', 'mutatorCancel (a walk to a body is still called off by it)');
     });
 
     group('STEP 5: DNA COSTS, UPGRADES (data), DEATH LOSES THEM, PART OF THE DNA COMES BACK');
