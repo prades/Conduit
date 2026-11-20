@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ax` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
+- **The ask** (the owner, 2026-11-20, of the Gunslinger's melee): "It's used as a close up smash with the gun." Asked: "Card battles only"; "It walks up, like followers"; "About a burst (36)"; "Free, every round".
+- **What it does** (behind `?cards` with `?engine=3d`): a second attack card in the Gunslinger's turn, SMASH. Next to an enemy the blow lands at once for 36, with no round spent and no wait. Out of reach, its turn is a walk towards that enemy (3 squares, round everyone), the card still ready, and the blow lands on a later turn; the cube is in the line then. With an empty gun the Gunslinger still has its turn.
+- **The agent's, provisional:** Crushing; 36 fixed (not by the gun's level, no role's kit on it); the cube's pace, 3 squares; its square now in everyone's way; a short lunge for the look. `CARD-BATTLES.md` §2.69, §11.32.
+- **Not done:** no card picture, no pose for the cube; nothing of it in the real-time game (by the owner's answer).
+- `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`, `tests/cardbattle.js` (2 new checks, 2 changed), `docs/CARD-BATTLES.md` §2.69, §9, §10, §11.32, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `TUTORIAL.md`, `bible.html`.
+- **Verified:** VERIFIED_LINE
+
 ### Build `2026-11-17aw` · branch `claude/start-game-project-HSh7Z` · card battles: the other seven fields animated in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Do the other seven fields".
 - **What it does:** WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK and METEOR RAIN are drawn and animated in a battle, seen in their caster's turn as the first three are (`CARD-BATTLES.md` §2.67, §2.68). Drafts: the shapes are the agent's. Holds, shields, walls and everyday attacks are still not drawn in a battle.

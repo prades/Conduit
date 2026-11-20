@@ -1024,7 +1024,7 @@
     <tr><td>Firing frames shown after a shot</td><td class="num"><span class="n" data-k="GEAR.fireFrames">14 frames</span></td><td><code>js/playergear.js:12</code></td></tr>
   </table></div>
   <p class="where">Where it lives: <code>js/stations.js</code> <code>weapon_locker</code>, <code>cctv</code> · <code>js/playergear.js</code> · <code>js/facilitytutorial.js</code> <code>facilityFlare</code></p>
-  <div class="open"><b>Open / not built</b><ul><li>Decided but not designed (the owner, 2026-11-20: “No melee unless it's the gunslinger.”): the Gunslinger will get a melee attack later. What it is has not been decided.</li></ul></div>
+  <div class="open"><b>Open / not built</b><ul><li>Its melee (the owner, 2026-11-20: “No melee unless it's the gunslinger.”; then “It's used as a close up smash with the gun.”) is SMASH, a card of its turn in a card battle, beside SHOOT: built behind <code>?cards</code> with <code>?engine=3d</code>, as the card battles are (<code>docs/CARD-BATTLES.md</code> §2.66, §2.69). The game as played without that switch has no melee.</li></ul></div>
 
   <h3 id="player-technomancer">Technomancer: the mech and the lamp</h3>
   <p><i>Electrical infrastructure and technology.</i> It carries <b>no weapon</b>: its squad fights. What it has is its gear and its roles.</p>
@@ -3604,7 +3604,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-17aw</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-17ax</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every picture's address carries <code>?v=</code> and a fingerprint of that picture (since build <code>2026-11-11c</code>: <code>imgSrc</code>, <code>js/imgmap.js</code>, made by <code>node tools/images.js</code>, which the stamp runs), so a new deploy fetches only the pictures that changed; the game loads each as its lossless WebP copy, the same pixels as the baked PNG, where that is smaller (all but BUNKER BLOOM's old sheet). The three are changed together; <code>tests/boot.js</code> checks that they agree. Players open <code>play.html</code> (since build <code>2026-11-11b</code>): the same page, its scripts as one file, <code>dist/conduit.js</code>, made by <code>node tools/bundle.js</code> (the stamp runs it); over the web <code>game.html</code> sends a visitor there, except with <code>?dev</code>.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3826,7 +3826,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-17aw (17 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-17ax (17 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

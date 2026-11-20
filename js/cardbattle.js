@@ -794,7 +794,7 @@ function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js fireP
 function _cbYouCards() {
     const S = CARD_BATTLE.shoot, ammo = typeof playerAmmo === "number" ? Math.max(0, playerAmmo) : 0, dmg = typeof weaponDamage === "function" ? weaponDamage() : 0, col = typeof classColour === "function" && typeof playerClassKey !== "undefined" ? classColour(playerClassKey) : "#ffb347";
     const out = [{ kind: "shoot", tag: "ATTACK", name: "SHOOT", fx: S.shots[0] + " to " + S.shots[1] + " rounds at one enemy, at once: " + dmg + " a round.", ready: ammo > 0, ammo, col },
-        { kind: "smash", tag: "ATTACK", name: "SMASH", fx: "A close-up blow with the gun on an enemy next to you: " + CARD_BATTLE.smash.damage + ", no round spent. Out of reach, you walk towards it first.", ready: true, col },
+        { kind: "smash", tag: "ATTACK", name: "SMASH", fx: "A blow with the gun on an enemy next to you: " + CARD_BATTLE.smash.damage + ", no ammo. Too far, you walk up.", ready: true, col },
         { kind: "pass", tag: "HOLD", name: "HOLD FIRE", fx: "Keep your rounds: your turn passes.", ready: true, col }];
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its turn this round)
     return out;

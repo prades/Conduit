@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The Gunslinger's melee is SMASH, a close-up blow with the gun, in card battles
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ax`
+- **Status:** implemented behind `?cards` with `?engine=3d`; verified by `tests/cardbattle.js` and the full run; seen in a real browser; not playtested, not seen on an iPad.
+- **Context:** with the guns' removal the owner kept one melee, the Gunslinger's ("No melee unless it's the gunslinger"; "Add a Gunslinger melee"), to be designed.
+- **Decision:** the owner: "It's used as a close up smash with the gun." Asked: **card battles only** (not the real-time game, not both); **it walks up, like followers** (not only when an enemy is next to it, not a dash in the same turn); **about a burst, 36** (not 48, not 20); **free, every round** (no ammunition, no wait, damage only; not a rest, a knock-back or a stun).
+- **Agent's choices, provisional:** Crushing; 36 fixed; the cube walks 3 squares a turn, by its own pace read as a follower's; its square stands in others' way. `CARD-BATTLES.md` §11.32.
+- **Resolves:** the open melee of "The only personal weapon is the Gunslinger's machine gun" (below) and `OPEN-QUESTIONS.md`, "Open 2026-11-20", item 1.
+- **Affects:** `CARD-BATTLES.md` §2.69, §9, §10, §11.32; `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17ax`.
+
 ## DECISION: In a card battle the Gunslinger has a turn of its own: SHOOT
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17au`
@@ -21,13 +31,13 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Decision:** the owner: "for the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot, I guess, and it does four to five shots. [...] And shows the ammo [...] the bottom. [...] and it has no wind up or anything". Each round a Gunslinger with the machine gun has its own turn and one card, SHOOT: a burst of 4 or 5 rounds at once, no charge and no cooldown, the ammunition shown on the card's foot.
 - **Supersedes:** `CARD-BATTLES.md` §2.10 ("the cube commands only") for the Gunslinger with its gun. The Technomancer, the Mutator and a Gunslinger with no gun still command only.
 - **Agent's choices, provisional:** its turn after its followers'; an even chance of 4 or 5; the burst at one enemy, cut short when it falls or the rounds run out; no turn with no rounds; real rounds, so NO CLEAR SHOT behind a wall or cover; a HOLD FIRE card to pass. `CARD-BATTLES.md` §11.31.
-- **Still open:** the Gunslinger's melee (decided, not designed); what the other two classes do in a battle.
+- **Still open:** what the other two classes do in a battle. *(The Gunslinger's melee, open here then, is SMASH: the decision above.)*
 - **Affects:** `CARD-BATTLES.md` §2.66, §9, §10, §11.31; `js/cardbattle.js`, `js/cardshapes.js`, `js/input.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17au`.
 
 ## DECISION: The only personal weapon is the Gunslinger's machine gun
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17at`
-- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17at` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee: **decided, not designed, not built**.
+- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17at` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee, then decided and not designed, is SMASH, built in `2026-11-17ax` (the decision above).
 - **Context:** the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."
 - **Decision** (asked):
   - the Mutator's TENTACLE LASH: "Remove the lash too";
