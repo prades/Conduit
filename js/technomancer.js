@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────
 //  THE ARC'S ZAP AND ITS BOLT: what two Player cards still use of the Technomancer's arc (docs/TECHNOMANCER.md)
 // ─────────────────────────────────────────────────────────
-// THE ARC GAUNTLET IS GONE (build 2026-11-17as; the owner, 2026-11-20: "I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."): the punch, the arc thrown at range,
+// THE ARC GAUNTLET IS GONE (build 2026-11-17at; the owner, 2026-11-20: "I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."): the punch, the arc thrown at range,
 // the gauntlet's charges and the grid that filled them. The Technomancer has no weapon of its own now (js/weapons.js); its mech, its lamp and its Player cards are as they were.
 // What stays here is what the PLAYER CARDS use (js/playercards.js; nothing of theirs was asked to change):
 //   THE ZAP     ARC WARDEN: while your lamp is overcharged, every creature in its light takes this (_tcZap): electric damage (technoArcDamage: the arc's number as it was, more with every relay online), and

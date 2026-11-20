@@ -5,7 +5,7 @@
 //   SERIES 2      THORN BAND (+5% ATTACK), PETAL SIGIL (+7.5%), EVERBLOOM CROWN (+10%, and on each hit of a unit in its reach a 10% chance of a MEND from the one that hit): for BLOOM Mages (THORNWHIP).
 //   PLAYER CARDS  SEED GUNNER (Gunslinger: every 5th round that hits plants a small SEEDFALL, 1 tile round, 2 s), GROVE ENGINEER (Technomancer: every online relay mends your followers within 3 tiles 1% every
 //                 3 s), HERBALIST (Mutator: the clone's bites MEND; the serum's pool heals 50% more). The player's own hits in their element MEND nothing by themselves: a round of the machine gun's (the
-//                 Gunslinger's, the only personal weapon since build 2026-11-17as: the owner, 2026-11-20) and the zap (js/technomancer.js; the Technomancer's punch and arc and the Mutator's lash went).
+//                 Gunslinger's, the only personal weapon since build 2026-11-17at: the owner, 2026-11-20) and the zap (js/technomancer.js; the Technomancer's punch and arc and the Mutator's lash went).
 //   DEALT         by no pack, shelf or shop until the purification module is installed and has run (js/cards.js equipBloomReady; the Side Quest's shop: tests/sidequest.js; the market's shelf: tests/market.js)
 // js/cards.js (the rows, their words, equipIsBloom, equipBloomReady, equipDewburst, bloomMendMult, the aura's MEND in equipOnHit), js/elements.js elementMend, js/playercards.js (the three kits), js/serum.js.
 const fs = require('fs');
@@ -102,7 +102,7 @@ async function boot(search, store) {
             ['AURA: +5% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES IN ITS ROOM, AND THE CLONE', 'CLASS · BLOOM MAGE'], ['AURA: +7.5% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES IN ITS ROOM, AND THE CLONE', 'CLASS · BLOOM MAGE'],
             ['AURA: +10% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES IN ITS ROOM, AND THE CLONE · EACH OF THEIR HITS: 10% TO MEND', 'CLASS · BLOOM MAGE'],
             ['YOUR ROUNDS ARE BLOOM · EVERY 5TH SHOT THAT HITS PLANTS A SMALL SEEDFALL WHERE IT HITS, 1 TILE ROUND FOR 2 SECONDS: ENEMIES IN IT BITTEN, YOUR FOLLOWERS IN IT MENDED', 'PLAYER · GUNSLINGER · BLOOM'],
-            ['EVERY ONLINE RELAY MENDS YOUR FOLLOWERS WITHIN 3 TILES OF IT 1% OF THEIR HEALTH EVERY 3 SECONDS', 'PLAYER · TECHNOMANCER · BLOOM'],   // (a Technomancer's card begins with its kit: it has no hit of its own since build 2026-11-17as)
+            ['EVERY ONLINE RELAY MENDS YOUR FOLLOWERS WITHIN 3 TILES OF IT 1% OF THEIR HEALTH EVERY 3 SECONDS', 'PLAYER · TECHNOMANCER · BLOOM'],   // (a Technomancer's card begins with its kit: it has no hit of its own since build 2026-11-17at)
             ["YOUR CLONE'S BITES ARE BLOOM · EVERY BITE OF YOUR CLONE MENDS: THE MOST HURT FOLLOWER WITHIN 4 TILES OF IT HEALS · YOUR SERUM'S POOL HEALS 50% MORE", 'PLAYER · MUTATOR · BLOOM'],
         ];
         W.forEach((w, i) => { same(r[i][0], w[0], NINE[i][1] + '\'s words'); same(r[i][1], w[1], NINE[i][1] + '\'s kind line'); });
@@ -155,7 +155,7 @@ async function boot(search, store) {
         same(r.role.hits, 10, 'the rounds that hit'); same(r.role.at.join(), '5,10', 'the shots that planted one'); same(r.role.said, true, 'SEEDFALL said');
         same(r.role.first.join(), '0,1,120,0.2,blossom,true', 'the SEEDFALL (where, how big, how long, its bite, its element, yours)'); same(r.none.hits, 10, 'the rounds that hit with no role'); same(r.none.at.length, 0, 'a SEEDFALL with no role');
     });
-    await check('SEED GUNNER counts SHOTS that hit, not creatures: a shot that hits two (they share one source: the laser\'s beam through a line did, until the rifle went in build 2026-11-17as; the rule is kept) counts once, so the 5th such shot plants one, on the first it hit', () => {
+    await check('SEED GUNNER counts SHOTS that hit, not creatures: a shot that hits two (they share one source: the laser\'s beam through a line did, until the rifle went in build 2026-11-17at; the rule is kept) counts once, so the 5th such shot plants one, on the first it hit', () => {
         const r = J(`(function(){ __role('gunslinger', 'seed_gunner'); _pc.seedHits = 0; _pc.seedSrc = null; const role = EQUIP_CARDS.seed_gunner, a = __dummy(2, 0), b = __dummy(2.6, 0), n = [];
             for (let i = 0; i < 5; i++) { const s = { x: player.x, y: player.y, element: 'blossom', isPlayer: true }; playerRoundHit(role, a, s); playerRoundHit(role, b, s); n.push(elementEffects.filter(z => z.type === 'seedfall').length); }
             const z = elementEffects.find(q => q.type === 'seedfall'), res = { n, at: z ? [z.x === a.x, z.y === a.y] : null, count: _pc.seedHits }; __gone(a, b); elementEffects.length = 0; return res; })()`);
@@ -182,7 +182,7 @@ async function boot(search, store) {
         same(r.herb.join(), 'true,0.02', 'a bite with HERBALIST (it bit, the follower mended)'); same(r.none.join(), 'true,0', 'a bite with no role'); same(r.nothing, 0, 'a bite that dealt nothing');
         near(r.pool[0], 0.09, 1e-6, 'the pool\'s beat with HERBALIST'); near(r.pool[1], 0.06, 1e-6, 'the pool\'s beat with no role'); same(r.mult.join(), '1.5,1', 'the pool\'s multiple');
     });
-    await check('the player\'s own hits in a BLOOM role\'s element MEND nothing by themselves (what a role mends is what its kit says): SEED GUNNER\'s rounds, and the zap under GROVE ENGINEER (js/technomancer.js _tcZap: the one hit of the Technomancer\'s left since its punch and arc, and the Mutator\'s lash, went in build 2026-11-17as; a role makes it its element; thrown by hand here, as only ARC WARDEN throws it in the game); a BLOOM hit from the same spot that is not the player\'s does MEND the follower staged here', () => {
+    await check('the player\'s own hits in a BLOOM role\'s element MEND nothing by themselves (what a role mends is what its kit says): SEED GUNNER\'s rounds, and the zap under GROVE ENGINEER (js/technomancer.js _tcZap: the one hit of the Technomancer\'s left since its punch and arc, and the Mutator\'s lash, went in build 2026-11-17at; a role makes it its element; thrown by hand here, as only ARC WARDEN throws it in the game); a BLOOM hit from the same spot that is not the player\'s does MEND the follower staged here', () => {
         const r = J(`(function(){ const o = {}; const go = (cls, role, dx, fn) => { __role(cls, role); _pc.groveAt = 1e9; _pc.seedHits = 1; const f = __ally(player.x - 1, player.y + 0.5), e = __dummy(dx, 0), lost = fn(e); const res = [lost > 0, __share(f)]; __gone(e); _pc.groveAt = 0; return res; };
             o.round = go('gunslinger', 'seed_gunner', 3, __shoot); o.roundEl = (__role('gunslinger', 'seed_gunner'), playerHitElement('gun', 'ice'));
             o.zap = go('technomancer', 'grove_engineer', 4, e => { const h = e.health; _tcZap(e, technoArcDamage()); return h - e.health; }); o.zapEl = (__role('technomancer', 'grove_engineer'), playerHitElement('arc', 'electric'));

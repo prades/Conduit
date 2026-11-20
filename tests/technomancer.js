@@ -1,6 +1,6 @@
 // THE TECHNOMANCER HAS NO WEAPON OF ITS OWN (docs/TECHNOMANCER.md; js/technomancer.js, js/weapons.js, js/input.js, js/targeting.js, js/game.js, js/facilitysave.js).
 // The owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. [...] I want to remove the Technomancer's arc shot and melee. No melee
-// unless it's the gunslinger." (build 2026-11-17as). The ARC GAUNTLET went: its punch, the arc it threw, its charges and the grid that filled them. This suite was the gauntlet's; it now checks that it is
+// unless it's the gunslinger." (build 2026-11-17at). The ARC GAUNTLET went: its punch, the arc it threw, its charges and the grid that filled them. This suite was the gauntlet's; it now checks that it is
 // gone, that a Technomancer fights with nothing in hand, and what is kept for the Player cards:
 //   THE ZAP     ARC WARDEN's (js/playercards.js): electric damage, more with every relay online, cutting short a bite being wound up
 //   THE BOLT    how the zap, and ARC SLINGER's jump, are drawn

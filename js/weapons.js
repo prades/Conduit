@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // THE ONLY PERSONAL WEAPON IS THE GUNSLINGER'S MACHINE GUN (the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means
 // removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."; and of the Mutator's lash: "Remove the lash too"). The SERVICE GUN every
-// class began with, the LASER RIFLE (and its fuel cells), the Technomancer's ARC GAUNTLET and the Mutator's TENTACLE LASH went in build 2026-11-17as (docs/DECISION-LOG.md). The player has ONE weapon in hand
+// class began with, the LASER RIFLE (and its fuel cells), the Technomancer's ARC GAUNTLET and the Mutator's TENTACLE LASH went in build 2026-11-17at (docs/DECISION-LOG.md). The player has ONE weapon in hand
 // or none, from a table (WEAPONS): the data says how hard it hits, how fast it fires and what it runs on, so another weapon is one more row.
 //   MACHINE GUN    the Gunslinger's, taken from the Armory's weapon locker (js/stations.js) once the tutorial is over and the class is chosen. Ammunition (the pack's ammo packs fill the gun: js/inventory.js).
 //   NO WEAPON      everyone else, and a Gunslinger who has not been to the locker: playerWeapon is null. Nothing is armed, nothing is fired, the dial has no fire button and there is no ammunition pill
@@ -21,7 +21,7 @@ const WEAPON_RULES = { levelDamage: 0.3, levelCooldown: 0.12, scrapPerAmmoPack: 
 let playerWeapon = null;                                        // the one in hand; null: none (every class but a Gunslinger who has been to the locker)
 let weaponLevel = { machinegun: 1 };
 function weaponReset() { playerWeapon = null; weaponLevel = { machinegun: 1 }; armoryClose(); }
-// the weapon `id` (the one in hand when none is named), or null: no such weapon (one a game saved before build 2026-11-17as names), or none in hand
+// the weapon `id` (the one in hand when none is named), or null: no such weapon (one a game saved before build 2026-11-17at names), or none in hand
 function weaponDef(id) { return WEAPONS[id || playerWeapon] || null; }
 // what is owned: a weapon comes with a class's perk (the machine gun with the Gunslinger's, from the locker), and is that class's only while you are it (js/classes.js classHas)
 function weaponHas(id) { const w = WEAPONS[id]; return !!w && !!w.perk && typeof classHas === "function" && classHas(w.perk); }
@@ -78,7 +78,7 @@ function weaponHud() {
 
 // ── what the facility's save keeps of it (js/facilitysave.js) ──
 function weaponSnapshot() { return { w: playerWeapon, lv: Object.assign({}, weaponLevel) }; }
-// A game saved before build 2026-11-17as may name a weapon that is gone (the service gun, the laser rifle, the lash, the gauntlet), and hold a rifle's charge and the others' levels: all of that is let
+// A game saved before build 2026-11-17at may name a weapon that is gone (the service gun, the laser rifle, the lash, the gauntlet), and hold a rifle's charge and the others' levels: all of that is let
 // go. It comes back with the weapon its class has (a Gunslinger who had been to the locker: the machine gun, at the level it had), or none.
 function weaponRestore(d) {
     weaponReset();

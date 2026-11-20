@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // ASKED (the brief): "Mutator: melee-focused summoner and biological specialist. Fights alongside a single primary cloned creature." "The Mutator normally has only one active primary clone." "If the clone
 // dies, its accumulated upgrades are lost and a replacement must be created."
-//   THE LASH       REMOVED (build 2026-11-17as; the owner, 2026-11-20: "Remove the lash too"): the Mutator's own melee weapon, a tentacle that struck in reach. The Mutator has no weapon of its own now.
+//   THE LASH       REMOVED (build 2026-11-17at; the owner, 2026-11-20: "Remove the lash too"): the Mutator's own melee weapon, a tentacle that struck in reach. The Mutator has no weapon of its own now.
 //   THE CLONE      cloning is the Mutator's (CLASS_RULES.clone, js/classes.js): one at a time, and that one is its PRIMARY clone (c.primary). The Clone Bay makes it as it makes every clone (js/clone.js makeClone); it
 //                  follows the Mutator, takes the battle tool's orders (HOLD, COME, RETREAT, the enemy card's ATTACK) and fights as the creature it is (js/clone.js cloneFight). It does NOT come back by itself:
 //                  when it falls it leaves its BODY where it fell (cloneBodies, below), and a new clone has to be grown.
@@ -143,7 +143,7 @@ function _mxRecover(sp, cls, invested, how) {
     return n;
 }
 
-// ── THE LASH IS GONE (build 2026-11-17as) ────────────────
+// ── THE LASH IS GONE (build 2026-11-17at) ────────────────
 // The Mutator's TENTACLE LASH (its own melee weapon: walked into reach, a wind-up, then the hit) went, and with it the Technomancer's punch, which struck the same way (the owner, 2026-11-20: "No melee
 // unless it's the gunslinger", and of the lash: "Remove the lash too"). The Mutator has no weapon of its own (js/weapons.js): it fights through its clone and its serum.
 function _mxFrame() { return typeof frame !== "undefined" ? frame : 0; }

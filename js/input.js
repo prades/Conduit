@@ -90,7 +90,7 @@ function followerPickDistance(ex, ey) {
     return bestD;
 }
 
-let playerShotsFired = 0;   // shots the player has fired (saved; the tutorial's gun lesson counted them until it went, build 2026-11-17as)
+let playerShotsFired = 0;   // shots the player has fired (saved; the tutorial's gun lesson counted them until it went, build 2026-11-17at)
 function firePlayerShot(foe) {
     if (typeof cardBattleTurn === "function" && cardBattleTurn()) return;   // CARD BATTLES' turns: the cube commands only, its gun holds its fire (js/cardbattle.js, docs/CARD-BATTLES.md §2.10)
     if (typeof cardBattleNoFight === "function" && cardBattleNoFight()) return;   // and out of a battle it fires at nothing (§2.35: either a battle or none)

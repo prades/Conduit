@@ -4,7 +4,7 @@
 // clone waits for it.
 //   THE CONFIRMATION   a card's SELECT asks first (BECOME A ...? / SWITCH TO ...?), CONFIRM or BACK; the first choice cannot be closed, a switch can
 //   SWITCHING          the pack's SWITCH CLASS; each class keeps its perks (and rank), its stage, the weapon it last held (the Gunslinger's machine gun, once the locker has given it: the only
-//                      personal weapon since build 2026-11-17as; the others hold none), its kit and cases given once; the Mutator's clone waits
+//                      personal weapon since build 2026-11-17at; the others hold none), its kit and cases given once; the Mutator's clone waits
 //   SAVED              the save keeps every class's progress; a new game (the Crystal destroyed) starts them all afresh
 const fs = require('fs');
 const vm = require('vm');
@@ -82,7 +82,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.g1[0] === 1 && r.g1[1] > 0, 'the Gunslinger\'s kit and cases: ' + r.g1); ok(r.m1[0] === 1 && r.m1[1] > 0, 'the Mutator\'s kit and cases: ' + r.m1);
         same(r.again.join(), [1, 1, r.g1[1], r.m1[1]].join(), 'switching back and forth gave the kit or the cases again');
     });
-    check('the weapon in hand is the class\'s, and only the Gunslinger has one (build 2026-11-17as): none until the weapon locker\'s perk is its, then the machine gun, and the machine gun again when you come back to it; a Mutator and a Technomancer hold none, cannot take the Gunslinger\'s, and what was armed is put away with it; another class\'s weapon is never left in hand', () => {
+    check('the weapon in hand is the class\'s, and only the Gunslinger has one (build 2026-11-17at): none until the weapon locker\'s perk is its, then the machine gun, and the machine gun again when you come back to it; a Mutator and a Technomancer hold none, cannot take the Gunslinger\'s, and what was armed is put away with it; another class\'s weapon is never left in hand', () => {
         const r = J(`(function(){ __fresh(); const o = {}; classChoose('gunslinger', true); o.g1 = playerWeapon; o.before = [weaponInHand(), weaponEquip('machinegun').ok, playerWeapon]; classGrant('machinegun'); o.take = weaponEquip('machinegun').ok; o.g = playerWeapon; setPlayerAttackMode(true, true); o.armed = playerAttackMode;
             classChoose('mutator', true); o.m = playerWeapon; o.mut = [playerAttackMode, weaponInHand(), weaponEquip('machinegun').ok, playerWeapon, weaponRows().length]; classChoose('technomancer', true); o.t = playerWeapon; o.tech = [weaponInHand(), weaponEquip('machinegun').ok, playerWeapon, weaponRows().length];
             classChoose('gunslinger', true); o.g2 = playerWeapon; o.mine = weaponInHand(); classChoose('mutator', true); o.m2 = playerWeapon; setPlayerAttackMode(false, true); return o; })()`);
@@ -96,7 +96,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             classChoose('gunslinger', true); __frames(2); o.back = [tutClassKills(), tutCount('flare'), tutClassProgress('gunslinger').join('/'), tutClassProgress('technomancer').join('/'), tutClassProgress('mutator').join('/')];
             o.said = Object.keys(S.said).filter(k => /^c:/.test(k)).sort().join(); return o; })()`);
         ok(r.g[0] >= 1 && r.g[1] === 2 && r.g[2] === 1, 'the Gunslinger\'s stage: ' + r.g); same(r.t.join(), '0,0', 'the Technomancer\'s stage began afresh'); same(r.tk, 5, 'the Technomancer\'s kills');
-        same(r.back[0], 2, 'the Gunslinger\'s kills counted the Technomancer\'s too'); same(r.back[1], 1, 'its tally'); same(r.back[2], '1/4', 'the Gunslinger\'s objectives (in order: its gear is done; the cameras are next, the flare already lit counts when they are)'); same(r.back[3], '0/1', 'the Technomancer\'s (one step, its gear: its relay step went with the relay repairs, build 2026-11-07qq, its punch and its arc with the gauntlet, build 2026-11-17as)'); same(r.back[4], '0/4', 'the Mutator\'s (never been: four steps, its lash went in build 2026-11-17as)');
+        same(r.back[0], 2, 'the Gunslinger\'s kills counted the Technomancer\'s too'); same(r.back[1], 1, 'its tally'); same(r.back[2], '1/4', 'the Gunslinger\'s objectives (in order: its gear is done; the cameras are next, the flare already lit counts when they are)'); same(r.back[3], '0/1', 'the Technomancer\'s (one step, its gear: its relay step went with the relay repairs, build 2026-11-07qq, its punch and its arc with the gauntlet, build 2026-11-17at)'); same(r.back[4], '0/4', 'the Mutator\'s (never been: four steps, its lash went in build 2026-11-17at)');
         ok(/c:gunslinger:perk/.test(r.said), 'each class says its own steps: ' + r.said);
     });
     check('the Mutator\'s clone waits for it: switching away takes it out of the fight with no body and nothing recovered; switching back puts it beside you with its kind, level, upgrades and hurt (not healed)', () => {

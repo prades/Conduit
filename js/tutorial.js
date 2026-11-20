@@ -11,7 +11,7 @@
 // Levels: while the tutorial is being played, its followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower
 // to the evolution level. When the tutorial is finished that stops: a recruit comes at its own level (js/levels.js recruitLevel) and gains its levels from kills, and a game that is loaded is not lifted at all (its followers come back as they were saved).
 // A crystal that is about to fall is saved: the enemies are called off, the Crystal is mended and the assault comes again (the tutorial is not a loss).
-// NO GUN IN THE TUTORIAL (build 2026-11-17as; the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the
+// NO GUN IN THE TUTORIAL (build 2026-11-17at; the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the
 // tutorial gun", and of its lesson: "Remove it altogether"): the FIRE YOUR GUN step, its training rounds and its stray ant are gone, and the assault's hint no longer says you can shoot. The only weapon is
 // the Gunslinger's machine gun, from the Armory's locker in its class's stage (js/weapons.js). The classes' own strikes went too, and their steps with them: the Technomancer's CHARGE YOUR GAUNTLET and
 // THROW THE ARC, the Mutator's FIGHT BESIDE IT (its lash).
@@ -56,7 +56,7 @@ const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ guns
 // gear (TUT_CLASS_STEP); the rest are its loop. A step is done when its `done()` says so, and one already done when it comes up is passed, as in the tutorial. What the class does is COUNTED from the moment the
 // stage begins: tutTally (the class's own code says when a flare is lit, a clone is grown, a serum is splashed...), and the kills and relays online from what they were then (S.ck0, S.cr0). A step with `stray`
 // puts a training creature in view while it is up (TUT_STRAY: a big grazing ant near the player, replaced if it dies, taken away after, paying nothing). The plate counts "n/N". NO STEP ASKS FOR ONE since
-// build 2026-11-17as (the three that did were the punch's, the arc's and the lash's); the rule is kept for a step that will.
+// build 2026-11-17at (the three that did were the punch's, the arc's and the lash's); the rule is kept for a step that will.
 const TUT_STRAY = { level: 3, health: 400, size: 2.2, near: [4, 7], respawns: 6, room: "lab_hallway", far: [6, 14] };   // (`respawns` a step; `room`, `far`: where it comes in when there is no spot near the player: the main hallway, as the gun lesson's did)
 const TUT_CLASS_STAGES = {
     gunslinger: [TUT_CLASS_STEP,
@@ -66,7 +66,7 @@ const TUT_CLASS_STAGES = {
             hint: () => "IT LIGHTS THE GROUND FOR HALF A MINUTE, POWER OR NOT. MORE ARE IN THE ARMORY.", done: () => tutCount("flare") >= 1 },
         { id: "hunt", title: "HUNT IN THE ARENA", text: () => "DEFEAT 3 CREATURES: " + Math.min(3, tutClassKills()) + "/3. YOUR SQUAD FIGHTS WITH YOU.",
             hint: () => "A KILL PAYS SHARDS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
-    technomancer: [TUT_CLASS_STEP],   // (its "RESTORE ANOTHER RELAY" step went with the relay repairs, build 2026-11-07qq: the junction turns every relay on; its CHARGE YOUR GAUNTLET and THROW THE ARC with the gauntlet, build 2026-11-17as)
+    technomancer: [TUT_CLASS_STEP],   // (its "RESTORE ANOTHER RELAY" step went with the relay repairs, build 2026-11-07qq: the junction turns every relay on; its CHARGE YOUR GAUNTLET and THROW THE ARC with the gauntlet, build 2026-11-17at)
     mutator: [TUT_CLASS_STEP,
         { id: "clone", title: "GROW YOUR CLONE", text: () => "OPEN THE CLONE BAY (THE EXPERIMENT LAB) AND GROW A CLONE FROM THE DNA YOUR KILLS DROPPED.",
             hint: () => "ONE AT A TIME, AND IT DOES NOT COME BACK BY ITSELF. NO DNA? KILLS DROP IT (THE ARENA).",
@@ -207,7 +207,7 @@ function facilityDirectorTick() {
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
-// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's eight steps (seven until build 2026-11-07qq, nine until the gun lesson went, build 2026-11-17as); then (once a class is chosen) the class's own; then
+// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's eight steps (seven until build 2026-11-07qq, nine until the gun lesson went, build 2026-11-17at); then (once a class is chosen) the class's own; then
 // a closing line; a quest under way (js/quests.js) between the tutorial and the class's stage. objectiveCurrent says which it is now ({ key, title, body, hint, col }); the QUEST BOX shows it (js/questbox.js: QUESTS on the dock,
 // a round button on a phone), and the Crystal says each as it comes up (facilityDirectorTick, through js/dialogue.js). The plate it used to be (top left; under the network panel in THE CORNERS; a mailbox on a phone, 2026-10)
 // is gone: facilityDrawObjective keeps its name (js/facilitytutorial.js calls it each frame) and keeps only the record: which objective is up (S.objKey, S.objNewAt) and whether it has been opened (S.objSeen: the quest box

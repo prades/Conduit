@@ -1,6 +1,6 @@
-# The Technomancer: the arc gauntlet, its charge, and the grid (removed in build 2026-11-17as)
+# The Technomancer: the arc gauntlet, its charge, and the grid (removed in build 2026-11-17at)
 
-> **REMOVED, build `2026-11-17as`.** The owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." The ARC GAUNTLET this page describes is no longer in the game: its punch, the arc it threw, its charges and the grid that filled them, and its two tutorial steps (CHARGE YOUR GAUNTLET, THROW THE ARC).
+> **REMOVED, build `2026-11-17at`.** The owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." The ARC GAUNTLET this page describes is no longer in the game: its punch, the arc it threw, its charges and the grid that filled them, and its two tutorial steps (CHARGE YOUR GAUNTLET, THROW THE ARC).
 >
 > **The Technomancer now** has no weapon of its own. It has what it had besides: the spider mech (the mech bay), the tuned lamp, its power cells, its six Player cards, and its squad, which does the fighting. Its class stage is GET YOUR GEAR alone. Current rules: `TUTORIAL.md`, "The only weapon is the Gunslinger's machine gun"; the decision: `DECISION-LOG.md`.
 >

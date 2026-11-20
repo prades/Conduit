@@ -53,6 +53,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var cr = $('#coreHud').getBoundingClientRect(), miss = 0, tot = 0, strip = 0, stripMap = 0; for (var yy = cr.top + 3; yy < cr.bottom; yy += 17) for (var xx = cr.left + 3; xx < cr.right; xx += 17) { var el = document.elementFromPoint(xx, yy), mine = !!(el && el.closest('#coreHud'));
       if (xx - cr.left < CORE_HUD.strip - 4 && yy - cr.top < CORE_HUD.padTop - 4) { strip++; if (!mine) stripMap++; } else if (xx - cr.left > CORE_HUD.strip + 2 || yy - cr.top > CORE_HUD.padTop + 2) { tot++; if (!mine) miss++; } }
     out.box = [tot, miss, strip, stripMap]; var dp = dialoguePlace(true); out.dlg = [Math.round(dp.x), Math.round(dp.top), Math.round(dp.x + dp.w), Math.round(dp.top + DIALOGUE.h + 2 * (DIALOGUE.choiceH + 10)), Math.round(cr.left), Math.round(cr.top)];   // (the dialogue's box at the top left since build 2026-11-12g, as tall as it gets)
+    // THE GUN (build 2026-11-17at): the ammunition pill and the slab's FIRE are a gun's, and the only one is the Gunslinger's machine gun, from the locker (js/weapons.js); with no weapon in hand there is no pill
+    setPlayerAttackMode(true, true); drawTargetUI(); out.bare = [playerAttackMode, _ATKCHIP.w, weaponHud()]; playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun'); steps(2);
     setPlayerAttackMode(true, true); drawTargetUI(); out.pills = { atk: [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w, _ATKCHIP.h], kit: [_KITCHIP.x, _KITCHIP.y, _KITCHIP.w, _KITCHIP.h], core: [cr.left, cr.top, cr.right, cr.bottom] };
     var ax = _ATKCHIP.x + _ATKCHIP.w / 2, ay = _ATKCHIP.y + _ATKCHIP.h / 2, under = document.elementFromPoint(ax, ay); out.pills.under = under ? !!under.closest('#coreHud') : null;
     if (under) under.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: ax, clientY: ay })); out.pills.stowed = !playerAttackMode; setPlayerAttackMode(false, true);
@@ -178,7 +180,7 @@ function measure(w, h) {
         same(J('[__fired, _core.react]').join(), '1,boop', 'a tap on the words');
     });
     check('the creature\'s slab (build 2026-11-11v): with one locked it is shown (its name, level, health; the root .foe), the cube looks down at it and sets its look as it shoots (.shot, a beam), a shot\'s damage pops; the dial is not drawn while THE CORE is shown (js/targeting.js coreFoe); a press is the dial\'s FIRE (targetFireHold)', () => {
-        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect; actors = actors.filter(a => !(a instanceof Predator)); _core.react = null; health = PLAYER_HITS; invPanelOpen = false;
+        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect; playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun');   /* (a Gunslinger with the machine gun: the slab's FIRE is a gun's, build 2026-11-17at) */ actors = actors.filter(a => !(a instanceof Predator)); _core.react = null; health = PLAYER_HITS; invPanelOpen = false;
             const e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y - 1; e.update = () => {}; e.level = 5; e.health = e.maxHealth * 0.5;
             playerAttackMode = true; targetSet(e, true); _core.root.getBoundingClientRect = () => ({ left: 834, top: 460, width: 340, height: 356 }); _core.topY = 0; __tick(1);
             o.on = [_coreS.foe === e, / foe/.test(' ' + _core.root.className), _core.els.fname.textContent, _core.els.flv.textContent, _core.els.fbar.style.width, _core.els.fbar.className];
@@ -195,7 +197,7 @@ function measure(w, h) {
         ok(/foe\.addEventListener\("pointerdown"[^\n]*targetFireHold\(\)/.test(C) && /gunRelease\(\)/.test(C) && /setPointerCapture/.test(C), 'a press on the slab is not the FIRE button\'s');
     });
     check('the pill row is in its box over the slab (js/targeting.js, from corePills: the ammunition with the weapon in hand, then the potion, the kits...), a pill that does not fit goes a row up, out to the left; hidden while it is hidden; by the dial while it is not shown', () => {
-        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect, keepTC = toCanvas; o.none = corePills();
+        const r = J(`(function(){ const o = {}, keepR = _core.root.getBoundingClientRect, keepTC = toCanvas; playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun');   /* (the ammunition is that gun's) */ o.none = corePills();
             _core.root.getBoundingClientRect = () => ({ left: 834, top: 460, width: 340, height: 356 }); _core.topY = 0; coreTick(); const C = corePills(); o.at = C ? [C.x, C.y, C.maxX] : null;
             playerInv = { repair_kit: 2 }; health = 1; actors = actors.filter(a => !(a instanceof Predator)); targetDrop(); playerAttackMode = true; ctx.measureText = () => ({ width: 40 });
             _ATKCHIP.w = 0; _KITCHIP.w = 0; drawTargetUI(); o.ammo = [_ATKCHIP.x, _ATKCHIP.y, _ATKCHIP.w > 0]; o.kit = [_KITCHIP.x >= _ATKCHIP.x + _ATKCHIP.w, _KITCHIP.y, _KITCHIP.w > 0];
@@ -249,6 +251,7 @@ function measure(w, h) {
             ok(t.box[0] > 300 && t.box[1] === 0, 'points of its pads that reach the map: ' + t.box); ok(t.box[2] > 20 && t.box[3] === t.box[2], 'the empty strip at its left does not let a tap through to the map: ' + t.box);
             ok(t.dlg[2] <= t.dlg[4] || t.dlg[3] <= t.dlg[5], 'the dialogue\'s box runs under it (it stands at the top left since build 2026-11-12g): ' + t.dlg);
             const P = t.pills, c = P.core, inBand = q => q[2] > 0 && q[0] >= c[0] && q[0] + q[2] <= c[2] && q[1] >= c[1] + 200 && q[1] + q[3] <= c[3] - 50;
+            same(JSON.stringify(t.bare), '[false,0,null]', 'with no weapon in hand (before the Gunslinger\'s gun): armed, the ammunition pill\'s width, the HUD');
             ok(inBand(P.atk), 'the ammunition is not in its box over the slab: ' + JSON.stringify(P)); ok(inBand(P.kit) && P.kit[0] > P.atk[0], 'the kits: ' + JSON.stringify(P));
             same(P.under, true, 'the pill is not under its box'); same(P.stowed, true, 'a tap on the ammunition did not put the gun away');
             ok(/\bring\b/.test(t.ring[0]) && t.ring[1] === true, 'the ring: ' + t.ring);

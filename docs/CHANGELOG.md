@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17as` · branch `claude/friendly-thompson-w581x0` · the only weapon is the Gunslinger's machine gun
+### Build `2026-11-17at` · branch `claude/friendly-thompson-w581x0` · the only weapon is the Gunslinger's machine gun
 - **The ask** (the owner, 2026-11-20): "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." Asked: the Mutator's lash, "Remove the lash too"; the Gunslinger's gun, "From the locker, as now"; the tutorial's gun lesson, "Remove it altogether"; "Add a Gunslinger melee" (**not designed, not built**: to be asked).
 - **Removed:** the SERVICE GUN; the LASER RIFLE and its fuel cells (the item, its three Server Room cases, its place in the chests); the Technomancer's ARC GAUNTLET (punch, thrown arc, charges, grid); the Mutator's TENTACLE LASH; the tutorial's FIRE YOUR GUN step; the class stages' CHARGE YOUR GAUNTLET, THROW THE ARC and FIGHT BESIDE IT.
 - **What a player sees:** nobody has a gun in the tutorial (eight steps). After it, a Gunslinger takes the MACHINE GUN from the Armory's locker and shoots as before; a Technomancer or a Mutator has no weapon: a creature near it is still locked (its slab and INFO, the squad's ATTACK order), but there is no fire button, no ATTACK on the ring and no ammunition pill. An ammo pack says YOU CARRY NO GUN; the charging station refuses when it has nothing to give; the Armory terminal says YOUR CLASS CARRIES NO WEAPON.

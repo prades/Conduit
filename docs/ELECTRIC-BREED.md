@@ -61,7 +61,7 @@ Nothing open here: the roly-poly's proposals (§2, 5 to 7) and the larva's (§2,
 
 ## 7. Edge cases
 
-- **Your own melee** *(the lash and the gauntlet were removed in build `2026-11-17as`: the player has no melee now; the gun and ARC WARDEN's zap land as said here)*: the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) do nothing to it; the gun (Projectile) and the arc (Elemental) work. **Confirmed by the owner, 2026-11-14**: "your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away".
+- **Your own melee** *(the lash and the gauntlet were removed in build `2026-11-17at`: the player has no melee now; the gun and ARC WARDEN's zap land as said here)*: the player's hits have no elemental part, so the Mutator's lash (Slashing) and the Technomancer's gauntlet (Crushing) do nothing to it; the gun (Projectile) and the arc (Elemental) work. **Confirmed by the owner, 2026-11-14**: "your own melee should not work against the roly-polies because it's a harder boss and it should keep the players away".
 - A follower with no element (no energy card): its hit's elemental part still lands, plain (×1).
 - The Mutator's clone bites with Piercing: resisted (×0.7).
 - A Brawler's OPPORTUNITY card counts no weakness on an immune part.

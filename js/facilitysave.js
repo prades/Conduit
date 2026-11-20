@@ -18,12 +18,12 @@ function facilitySaveLoad() {
 // the tutorial's step from a save: by its id (since build 2026-11-07qq, when the steps changed), else an older save's index read through the old list of steps (its relay step is the junction now)
 const FS_OLD_STEPS = ["supplies", "relay", "recruit", "position", "gun", "assault", "evolve"];
 function facilitySaveStep(sc) {
-    const N = TUT_STEPS.length, at = id => { if (id === "gun") id = "assault"; const i = TUT_STEPS.findIndex(t => t.id === id); return i < 0 ? N : i; };   // (the gun lesson went in build 2026-11-17as: a game saved in it is at the step after it)
+    const N = TUT_STEPS.length, at = id => { if (id === "gun") id = "assault"; const i = TUT_STEPS.findIndex(t => t.id === id); return i < 0 ? N : i; };   // (the gun lesson went in build 2026-11-17at: a game saved in it is at the step after it)
     if (sc.sid) return sc.sid === "done" ? N : at(sc.sid);
     const i = Math.max(0, sc.step | 0); if (i >= FS_OLD_STEPS.length) return N;
     return at(FS_OLD_STEPS[i] === "relay" ? "junction" : FS_OLD_STEPS[i]);
 }
-// THE CLASS STAGES LOST STEPS in build 2026-11-17as (the Technomancer's punch and arc, the Mutator's lash: js/tutorial.js), and a stage is saved by its step's number. A game saved before then (no `cv`) is
+// THE CLASS STAGES LOST STEPS in build 2026-11-17at (the Technomancer's punch and arc, the Mutator's lash: js/tutorial.js), and a stage is saved by its step's number. A game saved before then (no `cv`) is
 // read through the old lists: it is at the first step from where it was that is still a step (a Mutator at its lash or its serum: the serum; a Technomancer past its gear: finished).
 const FS_OLD_CSTAGES = { technomancer: ["perk", "punch", "arc"], mutator: ["perk", "clone", "upgrade", "lash", "serum"] };
 function facilitySaveCStep(cls, n, old) {
@@ -40,7 +40,7 @@ function facilitySaveCollect() {
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp && !i.respawn).map(i => i.id),   // (a spot that fills again is not kept as taken: a reload finds it full)
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
         script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills,
-            cv: 2, cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away; cv: the stages' steps as they are since build 2026-11-17as, facilitySaveCStep)
+            cv: 2, cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away; cv: the stages' steps as they are since build 2026-11-17at, facilitySaveCStep)
         followers: followerRosterSnapshot(),
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
         energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,   // the run's ENERGY CARDS not in a slot (js/energy.js): NEW GAME clears them
@@ -105,7 +105,7 @@ function facilitySaveApply(d) {
     classWaitingClone = dc.clone && typeof dc.clone === "object" && dc.clone.sp ? dc.clone : null;
     if (Number.isFinite(d.ammo)) playerAmmo = d.ammo; if (Number.isFinite(d.shots)) playerShotsFired = d.shots;
     if (typeof invButtonShow === "function") invButtonShow(true);
-    if (typeof weaponRestore === "function") weaponRestore(d.weapon);   // the weapon in hand and its level (a weapon that is gone since build 2026-11-17as is let go: js/weapons.js)
+    if (typeof weaponRestore === "function") weaponRestore(d.weapon);   // the weapon in hand and its level (a weapon that is gone since build 2026-11-17at is let go: js/weapons.js)
     // the relays that were online: their rooms have power (silently: no surge, no message), and what waited for them is there
     for (const id of (d.relays || [])) { const R = _fp.relays && _fp.relays[id], def = typeof _relayDef === "function" ? _relayDef(id) : null; if (!R || !def) continue; R.online = true; for (const room of def.powers) facilityPower(room, true); if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, true); }
     // the supply cases: a class's own are there once the class is, and the ones that were taken are gone

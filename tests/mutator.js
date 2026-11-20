@@ -1,4 +1,4 @@
-// THE MUTATOR: the one clone (docs/MUTATOR.md; its lash went in build 2026-11-17as, the owner, 2026-11-20: "Remove the lash too"; js/mutator.js, js/clone.js, js/npc.js, js/weapons.js, js/classes.js, js/game.js).
+// THE MUTATOR: the one clone (docs/MUTATOR.md; its lash went in build 2026-11-17at, the owner, 2026-11-20: "Remove the lash too"; js/mutator.js, js/clone.js, js/npc.js, js/weapons.js, js/classes.js, js/game.js).
 // ASKED (the brief, step 4): "Implement the Mutator's basic melee combat and single-clone lifecycle." "Mutator: melee-focused summoner [...] Fights alongside a single primary cloned creature." "The Mutator normally has
 // only one active primary clone." "Clones should use the established designs and characteristics of their corresponding enemy species." "If the clone dies [...] a replacement must be created."
 //   THE CLONE FIGHTS AS ITS SPECIES   its bite (its power, in the creature's two beats), its special, a striker's abdomen shot (it struck with a follower's plain 1.25 swing before)
@@ -146,7 +146,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/obj\.type==='body'/.test(rd('js/game.js')) && /cloneBodiesDrawItems\(drawList\)/.test(rd('js/game.js')), 'game.js does not draw bodies');
     });
 
-    group('NO LASH (build 2026-11-17as; the owner, 2026-11-20: "No melee unless it\'s the gunslinger", "Remove the lash too"): the Mutator has no weapon; only the Gunslinger\'s machine gun fires');
+    group('NO LASH (build 2026-11-17at; the owner, 2026-11-20: "No melee unless it\'s the gunslinger", "Remove the lash too"): the Mutator has no weapon; only the Gunslinger\'s machine gun fires');
     check('choosing the Mutator puts no weapon in hand: none to arm, no ammunition pill, nothing to fire; the TENTACLE LASH is no weapon any more, for any class', () => {
         const r = J(`(function(){ __class('mutator'); const o = { w: playerWeapon, inHand: weaponInHand(), own: weaponOwn(), hud: weaponHud(), dry: weaponDry(), row: !!WEAPONS.lash, eq: weaponEquip('lash'), cls: CLASSES.mutator.weapon === undefined, cfg: MUTATOR.lash === undefined };
             __class('gunslinger'); o.gs = [playerWeapon, weaponHas('lash')]; return o; })()`);

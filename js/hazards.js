@@ -42,7 +42,7 @@ function hazardTrigger(s, delay) {
 }
 // a travelling shot stopped on a solid (js/game.js): a container goes off
 function hazardShot(solid) { return hazardKind(solid) ? hazardTrigger(solid, 0) : false; }
-// a beam stopped short at (x, y): a container there goes off (the laser rifle's beam asked this until the rifle went, build 2026-11-17as; nothing does now)
+// a beam stopped short at (x, y): a container there goes off (the laser rifle's beam asked this until the rifle went, build 2026-11-17at; nothing does now)
 function hazardShotNear(x, y) {
     for (const s of hazardSolids()) if (!s.open && Math.max(s.bb[0] - x, 0, x - s.bb[2]) <= 0.35 && Math.max(s.bb[1] - y, 0, y - s.bb[3]) <= 0.35) return hazardTrigger(s, 0);
     return false;

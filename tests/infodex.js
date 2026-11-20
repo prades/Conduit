@@ -2,7 +2,7 @@
 // ASKED: "make the info tab work again with the new menu. Make it an actual index of everything and give it a description. And get rid of the long hold press options that don't make sense, like switch."
 // The panel opens on the READOUT of what was pressed (a follower, a clone or a creature: its live numbers, then a way into its entry), its INDEX has four tabs (ALLIES, ENEMIES, ELEMENTS, RULES), and
 // every entry's numbers are read off the game's own constants. The ring offers only what means something: POSITION and INFO on the ground, ROSTER CARD (and RE-ROLL) on a follower, INFO on a
-// creature, with ATTACK (or STOW) above it only while a weapon is in hand: the Gunslinger's machine gun, the one personal weapon since build 2026-11-17as (the entry is THE LOCK & THE GUN).
+// creature, with ATTACK (or STOW) above it only while a weapon is in hand: the Gunslinger's machine gun, the one personal weapon since build 2026-11-17at (the entry is THE LOCK & THE GUN).
 // (The strip game's pages — pylons, power, nests, the work crew, the pylon codex — and its ring options went with it.)
 const fs = require('fs');
 const vm = require('vm');
@@ -54,7 +54,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rows('evolution').some(r => r.includes('level ' + run('EVOLVE_LEVEL'))), 'the evolution level');
         ok(rows('clones').some(r => r === 'AT ONCE ' + run('cloneCap()')), 'the clone cap (the rule\'s: CLASS_RULES.clone)'); ok(rows('clones').some(r => r === 'WHO MUTATOR'), 'who grows them');
         ok(rows('gun').some(r => r.includes('within ' + run('TARGET.range') + ' tiles')), 'the lock\'s reach'); ok(rows('gun').some(r => r === 'THE GUN HOLDS ' + run('PLAYER_AMMO_MAX') + ' rounds'), 'what the gun holds');
-        same(run(`infoEntry('gun').name`), 'THE LOCK & THE GUN', 'the entry (everyone locks on; only the Gunslinger shoots, build 2026-11-17as)'); ok(rows('gun').some(r => r === 'THE GUN the Gunslinger\'s machine gun'), 'whose the gun is: ' + rows('gun').join(' | '));
+        same(run(`infoEntry('gun').name`), 'THE LOCK & THE GUN', 'the entry (everyone locks on; only the Gunslinger shoots, build 2026-11-17at)'); ok(rows('gun').some(r => r === 'THE GUN the Gunslinger\'s machine gun'), 'whose the gun is: ' + rows('gun').join(' | '));
         ok(rows('alarm').some(r => r.includes(run('ALERT_DURATION / 60') + ' s')), 'how long an alarm lasts');
         ok(rows('relays').some(r => r === 'RELAY NODES ' + run('_fp.F.relays.length')), 'the relay count');   // (relays are small wall nodes since build 2026-11-07qq: the junction turns them all on)
         ok(rows('crystal').some(r => r.includes(run('crystal.maxHealth') + ' HP')), 'the Crystal\'s health');
@@ -210,7 +210,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(!/"INFO"/.test(rd('js/draw.js').split('// ── YOUR FOLLOWER OR CLONE')[1].split('// ── THE GROUND')[0]), 'a follower ring still has INFO');
         run('__c.dead = true; actors.splice(actors.indexOf(__c), 1); commandFollowerTarget = null;');
     });
-    check('a creature, with no weapon in hand (everyone but a Gunslinger with the locker\'s machine gun, build 2026-11-17as): INFO on the right and nothing else, no ATTACK drawn, no ammunition under the ring; with the machine gun in hand: ATTACK (or STOW) above and INFO on the right, nothing below or on the left, the rounds under the ring', () => {
+    check('a creature, with no weapon in hand (everyone but a Gunslinger with the locker\'s machine gun, build 2026-11-17at): INFO on the right and nothing else, no ATTACK drawn, no ammunition under the ring; with the machine gun in hand: ATTACK (or STOW) above and INFO on the right, nothing below or on the left, the rounds under the ring', () => {
         run(`commandFollowerTarget = null; commandTarget = null; commandEnemyTarget = ${ENEMY}; playerAttackMode = false;
             globalThis.__ring = { b: drawRadialButton, c: _radialCaption, cls: playerClassKey, perks: new Set(classPerks), inv: JSON.stringify(playerInv), seen: new Set(classSeen), drawn: [], said: [] };
             drawRadialButton = function (x, y, label) { __ring.drawn.push(label); return __ring.b.apply(this, arguments); }; _radialCaption = function (text) { __ring.said.push(text); return __ring.c.apply(this, arguments); };`);

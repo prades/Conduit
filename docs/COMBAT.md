@@ -51,7 +51,7 @@ What the player sees, in order: the creature turns on a unit and **rears back** 
 
 Counterplay that already exists and now has the time to be used: COME and RETREAT (js/mixtool.js) pull the squad out during a wind-up, and the Mutator's clone with it (docs/MUTATOR.md); HOLD posts them out of reach; the Mutator's serum (docs/MUTATOR.md 2.6) heals the area; the Technomancer's arc cuts a bite short while it is being wound up (docs/TECHNOMANCER.md 2.3).
 
-A clone bites in the same two beats as a creature, with the same telegraph in your side's teal (js/clone.js `cloneFight`, docs/MUTATOR.md §2.1); the Mutator's lash had two beats too (a draw-back, then the lash), and so had the Technomancer's punch (a wind-up, then the jab): both removed in build `2026-11-17as` (the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun).
+A clone bites in the same two beats as a creature, with the same telegraph in your side's teal (js/clone.js `cloneFight`, docs/MUTATOR.md §2.1); the Mutator's lash had two beats too (a draw-back, then the lash), and so had the Technomancer's punch (a wind-up, then the jab): both removed in build `2026-11-17at` (the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun).
 
 ## 3. Tentative, not decided
 
@@ -65,7 +65,7 @@ ASKED: *"It feels like I'm invulnerable if I'm really trying, the different pred
 - **A creature hurt the player only by touch.** That meant within 0.9 tiles, and the bite landed on the instant of contact.
 - **A creature the player hit turned on a copy of where the player stood.** Its `lastAttacker` was the shot's snapshot of the position, not the player. If that spot was out of reach, it walked back to the Crystal.
 - **Nothing chased anything.** A creature turned only on a unit within 1.2 tiles.
-- **So melee was free.** *(The lash and the gauntlet were removed in build `2026-11-17as`; this finding is history.)* The lash (1.45 tiles) and the gauntlet (1.4) strike from outside the 0.9-tile touch. In every measured melee fight the player took no hits.
+- **So melee was free.** *(The lash and the gauntlet were removed in build `2026-11-17at`; this finding is history.)* The lash (1.45 tiles) and the gauntlet (1.4) strike from outside the 0.9-tile touch. In every measured melee fight the player took no hits.
 
 **What it is** (`COMBAT.prey`, js/combat.js; `predatorPickPrey`, js/predator.js). Every `every` frames (12) a creature looks at your followers, your clones and **the player**. It goes for:
 - **Whoever hit it last**, or the player if the player touched it, from up to `revenge` tiles (12), seen through walls. The player's hits now name the player itself: the gun, the laser, the melee and the arc all mark their hits as the player's (`isPlayer`), and `predatorSource` maps that to the player.
@@ -395,7 +395,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 
 **Your own attacks:**
 - Guns and turrets: Projectile.
-- ~~The Technomancer's gauntlet punch: Crushing. The arc: Elemental (electric).~~ **Removed, build `2026-11-17as`** (the owner, 2026-11-20; `DECISION-LOG.md`). What is left of the arc is ARC WARDEN's zap (a Player card): Elemental (electric).
+- ~~The Technomancer's gauntlet punch: Crushing. The arc: Elemental (electric).~~ **Removed, build `2026-11-17at`** (the owner, 2026-11-20; `DECISION-LOG.md`). What is left of the arc is ARC WARDEN's zap (a Player card): Elemental (electric).
 - ~~The Mutator's lash: Slashing.~~ Removed with it. The clone's bite: Piercing.
 - Since that build "guns" is one gun: the Gunslinger's machine gun.
 - The serum heals: no type.
@@ -456,8 +456,8 @@ PETAL BLAZE, the one move of their own, is Elemental.
 | Creature | MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE's first hit, BLADE FLURRY | its own (§7.8) | — |
 | Creature | the spider's shot; its charged extra | Projectile; Elemental | — |
 | Creature | the Toxic Queen's spit; her bomb | Projectile; Earthquake (toxic) | — |
-| You | the machine gun (the Gunslinger's: the only gun since build `2026-11-17as`; the service gun, the laser and its pierce before), the turrets | Projectile | — |
-| You | ARC WARDEN's zap (the Mutator's lash, Slashing, the gauntlet, Crushing, and the thrown arc were removed in build `2026-11-17as`) | Elemental (electric) | — |
+| You | the machine gun (the Gunslinger's: the only gun since build `2026-11-17at`; the service gun, the laser and its pierce before), the turrets | Projectile | — |
+| You | ARC WARDEN's zap (the Mutator's lash, Slashing, the gauntlet, Crushing, and the thrown arc were removed in build `2026-11-17at`) | Elemental (electric) | — |
 | You | the clone's pounce | Piercing | — |
 
 *Since then (the follower combat redesign, `FOLLOWER-COMBAT-REDESIGN.md`): build `2026-11-03a`'s PINBALL and STATIC VORTEX are signature moves (alternate, ATK), and the Ember Hood's FIREBALL and the Thunderhead's CHAIN LIGHTNING are the Mages' shot (main, SP.ATK). Build `2026-11-06a`'s BURROW STRIKE stands in the Thermite Burrower's plain hit (main, ATK), and its FAULTLINE's spikes are an ability's (alternate, ATK), as THERMITE DRILL's are.*
@@ -605,7 +605,7 @@ The owner, 2026-11-17: **"Shouldn't be able to see enemies in other rooms. Only 
 ### 8.4 Shots (`facilityShotStop`, `facilityShotReach`; the shots in flight, `js/game.js`)
 
 - **A shot that travels** is anything on the shared shot list:
-  - the player's machine gun (and the service gun, until it went in build `2026-11-17as`);
+  - the player's machine gun (and the service gun, until it went in build `2026-11-17at`);
   - a Mage's bolt (FIREBALL and CHAIN LIGHTNING too);
   - QUILL BURST's quills and HEXFIRE's shot;
   - a creature's rear shot;
@@ -627,7 +627,7 @@ The owner, 2026-11-17: **"Shouldn't be able to see enemies in other rooms. Only 
   - the fire bombs bounce off walls and props (`js/firebombs.js`);
   - the Photonic Shield stops enemy shots;
   - REEF's outcrops and REEF PILLAR (build `2026-11-08m`; REEF PILLAR's spikes only since build `2026-11-13t`, when REEF became a climb only) stop enemies' movement, and since build `2026-11-08n` their shots (the owner: "Stop shots too"; a lob flies over, your shots pass); bites and sight pass them (`TECHNICIANS.md`, "REEF"). *(Changed in build `2026-11-09a`, the owner: "Stops everyone's": REEF's rock is cover for every side, as a crate: every shot's step, the laser's beam and a sentry's aim stop at it, with the own-cover rule (a shot fired within `FAC_SHOT.own` of its edge passes over it); a lob flies over; bites and sight still pass it.)*
-  - melee (bites; the lash and the punch too, until they went in build `2026-11-17as`) tests distance only, so a bite still reaches over a one-tile object;
+  - melee (bites; the lash and the punch too, until they went in build `2026-11-17at`) tests distance only, so a bite still reaches over a one-tile object;
   - ~~the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were~~ *(superseded in build `2026-11-06i` by the owner's "Need sight": §8.5)*.
 
 ### 8.5 The shooters fire at what they can see

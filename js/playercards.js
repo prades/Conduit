@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // A Player card (js/cards.js EQUIP_PLAYER_CARDS: its numbers and its words) is a ROLE for one of the player's classes. It is AWAKE while it is in one of the player's two slots and the player is its class (js/cards.js
 // equipPlayerRole); after a switch of class it sleeps in its slot and does nothing here. The rules for all eighteen (approved 2026-11-02):
-//   1. A ROLE WORKS ON ITS CLASS'S OWN ATTACKS: the Gunslinger's rounds (the machine gun's: the only weapon there is since build 2026-11-17as, when the service gun, the laser rifle, the Technomancer's punch
+//   1. A ROLE WORKS ON ITS CLASS'S OWN ATTACKS: the Gunslinger's rounds (the machine gun's: the only weapon there is since build 2026-11-17at, when the service gun, the laser rifle, the Technomancer's punch
 //      and arc and the Mutator's lash went: the owner, 2026-11-20); the Mutator's clone and serum. The Technomancer has no attack of its own: its roles are their kits.
 //   2. THE HIT'S ELEMENT (docs/COMBAT.md §7.9; the owner: "The role's element"): those hits take the role's element, for the element triangle only. No SP.ATK and no elemental share are added: they stay physical,
 //      as they were (a gun's round is Projectile: js/damage.js DMG_HIT_GUN, whose triangle falls on the whole hit).
@@ -65,7 +65,7 @@ function playerRoundJump(role, from, src, dmg, skip) {
 }
 
 // ── THE TECHNOMANCER'S SIX (the following update's Part 1b, build 2026-11-02i) ──
-//   (rule 2)           the Technomancer has no hit of its own since build 2026-11-17as (its PUNCH and its ARC went): what takes the role's element is ARC WARDEN's zap alone (js/technomancer.js _tcZap,
+//   (rule 2)           the Technomancer has no hit of its own since build 2026-11-17at (its PUNCH and its ARC went): what takes the role's element is ARC WARDEN's zap alone (js/technomancer.js _tcZap,
 //                      playerHitElement; its hit: js/damage.js dmgArcHit)
 //   FORGEMASTER        fire: the facility's sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's (playerRepairShare; a relay's too until build 2026-11-07qq, when relay repairs went)
 //   SMOG ENGINEER      toxic: every ONLINE relay WEAKENS every creature within kit.relays.radius tiles of it, on every card tick while it stays (js/cards.js equipTick → playerRolesTick)
@@ -171,7 +171,7 @@ function playerCellShield() {
 
 // ── THE MUTATOR'S SIX (the following update's Part 1c, build 2026-11-02j) ──
 //   (rule 2)           its CLONE'S BITES take the role's element, for the triangle only: they stay Piercing, all physical (js/damage.js dmgBiteHit → playerCloneElement → dmgCloneHit). (Its LASH took
-//                      it too, until the lash went: build 2026-11-17as.) The clone's bites are its bite (js/predator.js bite) and its POUNCE's bite as it lands (js/mutator.js clonePounceTick). Its special and a striker's shot are
+//                      it too, until the lash went: build 2026-11-17at.) The clone's bites are its bite (js/predator.js bite) and its POUNCE's bite as it lands (js/mutator.js clonePounceTick). Its special and a striker's shot are
 //                      not bites: they keep no element and set nothing.
 //   ASH SURGEON        fire: on every heal beat of the serum's pool (js/serum.js serumTick → playerSerumBeat), every creature in the pool BURNS
 //   PLAGUE DOCTOR      toxic: the clone's bites WEAKEN (the game's POISON; playerCloneBit), and so does the pool, on its beats

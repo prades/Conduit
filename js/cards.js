@@ -239,7 +239,7 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 // SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them since all eighteen are in (Part 1d:
 // "All 18 together"), and Side Quest sells each quest line's three after its quest, ◆1,000 each, kept for good (js/sidequest.js). What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are
 // made from it (equipPlayerKitText). Built: all eighteen (Parts 1a to 1c).
-//   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share. Since build 2026-11-17as
+//   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share. Since build 2026-11-17at
 //                (the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun) those hits are the Gunslinger's ROUNDS and the Mutator's CLONE'S BITES; the Technomancer has no hit of
 //                its own (its punch and arc went: only ARC WARDEN's zap takes its element), and the Mutator's lash went
 //   status       true: EVERY hit sets the role element's own status with Pack 1's Precision numbers (_EQUIP_ATTUNED, as the Prototype auras use them): fire burns, toxic weakens (the game's POISON), ice slows, core knocks back
@@ -268,14 +268,14 @@ const EQUIP_PLAYER_CARDS = [
     ["cryo_marksman",     "CRYO MARKSMAN",     "gunslinger", "ice",      { status: true, freeze: { frames: 75, again: 300 }, slower: 0.2 }],
     ["rift_runner",       "RIFT RUNNER",       "gunslinger", "flux",     { pull: 0.22 }],
     ["breach_gunner",     "BREACH GUNNER",     "gunslinger", "core",     { status: true }],
-    // THE TECHNOMANCER'S SIX (the following update's Part 1b): the kit (its punch and its arc, which took the role's element, went in build 2026-11-17as)
+    // THE TECHNOMANCER'S SIX (the following update's Part 1b): the kit (its punch and its arc, which took the role's element, went in build 2026-11-17at)
     ["forgemaster",       "FORGEMASTER",       "technomancer", "fire",     { sentries: true, repair: 0.5 }],
     ["smog_engineer",     "SMOG ENGINEER",     "technomancer", "toxic",    { relays: { radius: 3 } }],
     ["arc_warden",        "ARC WARDEN",        "technomancer", "electric", { lamp: { every: 120 } }],
     ["cryo_tech",         "CRYO TECH",         "technomancer", "ice",      { relays: { radius: 3 } }],
     ["gravity_engineer",  "GRAVITY ENGINEER",  "technomancer", "flux",     { swap: { every: 3600 } }],
     ["bulwark_engineer",  "BULWARK ENGINEER",  "technomancer", "core",     { shield: { width: 3, frames: 1200 } }],
-    // THE MUTATOR'S SIX (the following update's Part 1c): its clone's bites take the role's element (SPLICER's clone: its last kill's); the rest is the kit (its lash went in build 2026-11-17as)
+    // THE MUTATOR'S SIX (the following update's Part 1c): its clone's bites take the role's element (SPLICER's clone: its last kill's); the rest is the kit (its lash went in build 2026-11-17at)
     ["ash_surgeon",       "ASH SURGEON",       "mutator",      "fire",     { pool: true }],
     ["plague_doctor",     "PLAGUE DOCTOR",     "mutator",      "toxic",    { bite: true, pool: true }],
     ["spark_geneticist",  "SPARK GENETICIST",  "mutator",      "electric", { bite: true }],
@@ -292,7 +292,7 @@ const EQUIP_PLAYER_CARDS = [
     ["herbalist",         "HERBALIST",         "mutator",      "blossom",  { biteMend: true, poolHeal: 0.5 }],
 ];
 // what a role does, in the card's words, made from its kit's numbers. The first words say whose hits take the role's element (rule 1): the Gunslinger's rounds, the Mutator's clone's bites (not SPLICER's,
-// whose clone takes its last kill's: its kit says so). The Technomancer has no hit of its own, so its cards begin with their kit (build 2026-11-17as: its punch and arc, and the Mutator's lash, went).
+// whose clone takes its last kill's: its kit says so). The Technomancer has no hit of its own, so its cards begin with their kit (build 2026-11-17at: its punch and arc, and the Mutator's lash, went).
 const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["", ""], mutator: ["YOUR CLONE'S BITES ARE ", "EVERY BITE OF YOUR CLONE"] };
 function equipPlayerKitText(cls, k) {
     const h = _EQUIP_KIT_HITS[cls]; if (!h || !k) return "";

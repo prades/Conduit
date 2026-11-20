@@ -586,7 +586,7 @@ const FACILITY_MAP = {
         { id: "pk_kit_arena_n", room: "arena", at: [520, 840], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena, by its door from the hallway: back three minutes after it is taken." },
         { id: "pk_kit_arena_s", room: "arena", at: [900, 1140], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit in the arena's south-east corner: back three minutes after it is taken." },
         { id: "pk_kit_sewers", room: "sewers", at: [460, 870], items: [["repair_kit", 1]], respawn: 10800, note: "A repair kit on the Sewers' north ledge, near the culvert: back three minutes after it is taken." },
-        // (The laser rifle's FUEL CELLS, three cases in the server room that arrived once its relay was online, went with the rifle: build 2026-11-17as. A case with `needs` is not in the facility until that
+        // (The laser rifle's FUEL CELLS, three cases in the server room that arrived once its relay was online, went with the rifle: build 2026-11-17at. A case with `needs` is not in the facility until that
         // relay is online, then it arrives in a column of light: js/facilitytutorial.js facilityNeedsEnter. None has one now.)
         { id: "pk_security_cell", room: "security_room", at: [900, 330], items: [["power_cell", 1]], note: "A spare cell in the Security Room's drawers." },
         { id: "pk_hall_cell", room: "lab_hallway", at: [650, 450], items: [["power_cell", 1]], note: "A cell on the hallway floor." },

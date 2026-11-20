@@ -174,7 +174,7 @@ function facilityPickupsStart(F) {
 }
 function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, fetch: p.fetch || null, respawn: p.respawn || 0, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
 // a relay has come online: the cases that were waiting for it (a pickup with `needs`) arrive, each in a column of light (quiet: no message, no light: a saved game putting things back).
-// (No case waits for a relay since build 2026-11-17as: the only ones were the laser rifle's fuel cells in the server room, which went with the rifle. The rule is kept for the next case that needs one.)
+// (No case waits for a relay since build 2026-11-17at: the only ones were the laser rifle's fuel cells in the server room, which went with the rifle. The rule is kept for the next case that needs one.)
 function facilityNeedsEnter(relayId, quiet) {
     if (!_fp || !_fp.items) return 0;
     let n = 0; for (const p of (_fp.F.pickups || [])) { if (p.needs !== relayId || _fp.items.some(i => i.fp === "pickup" && i.id === p.id)) continue; const it = _fpPickupItem(p); if (!quiet) it.arrive = _fpFrame(); _fp.items.push(it); n++; }

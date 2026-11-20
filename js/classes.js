@@ -18,7 +18,7 @@ const CLASSES = {
         blurb: ["Fights beside one clone it grows from DNA, and mends its side with serum.", "Works with samples, DNA and experimentation.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
         rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"] },
 };
-// NO CLASS STARTS WITH A WEAPON (build 2026-11-17as; the owner, 2026-11-20): the only personal weapon is the Gunslinger's MACHINE GUN, from the Armory's weapon locker (js/weapons.js, js/stations.js). The
+// NO CLASS STARTS WITH A WEAPON (build 2026-11-17at; the owner, 2026-11-20): the only personal weapon is the Gunslinger's MACHINE GUN, from the Armory's weapon locker (js/weapons.js, js/stations.js). The
 // Technomancer's ARC GAUNTLET and the Mutator's TENTACLE LASH (a class row's `weapon`) went, and so did the service gun a class with none kept.
 const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
 // relay: how a relay is repaired (js/stations.js). A class with the `skill` repairs with `skillCells` power cells in `skillFrames`, and the classes named in `auto` start the repair by themselves when they stand at a broken relay with the cells and keep still;

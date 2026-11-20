@@ -4,7 +4,7 @@
 // ASKED: "whenever you get close to an enemy, it automatically takes aim [...] a little circular menu that shows the creature that you're nearest, and it pops up, and you can hold it or click it to shoot. It also comes
 // with an info button and a little icon that shows a little gun that indicates that you're going to shoot it. [...] and how it automatically locks on to the nearest creature, have it so you can switch it by clicking on
 // another creature." The bottom-left tool keeps RETREAT, HOLD, COME and the element selector (js/mixtool.js).
-// THE LOCK IS EVERYONE'S, THE GUN ONLY THE GUNSLINGER'S (build 2026-11-17as; the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun, js/weapons.js). With no weapon in hand the
+// THE LOCK IS EVERYONE'S, THE GUN ONLY THE GUNSLINGER'S (build 2026-11-17at; the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun, js/weapons.js). With no weapon in hand the
 // nearest creature is still locked (the creature's slab and INFO, the squad's ATTACK order, the potion's throw, a shield's facing all go by it), but nothing is armed: no red corners stay on it, the dial has
 // no gun badge and fires nothing, and there is no ammunition pill.
 // In the facility:

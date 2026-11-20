@@ -1,7 +1,7 @@
 // EACH CLASS'S OWN STAGE AFTER THE TUTORIAL, AND ITS LOOP PLAYED THROUGH (docs/TUTORIAL.md, "The class stages"; js/tutorial.js TUT_CLASS_STAGES, and the class code that reports what the player did).
 // ASKED (the brief, step 9): "Integrate each class into its tutorial progression and test the full loops." "Each class should have its own tutorial stage after the initial tutorial."
 //   THE STAGES      the class's gear first (its station's perk, as before), then its loop: the Gunslinger's cameras, a flare and a hunt; the Technomancer's is its gear alone; the Mutator's clone, an upgrade and a serum
-//                   (build 2026-11-17as: every personal weapon but the Gunslinger's machine gun went, and with them the Technomancer's punches and arcs and the Mutator's lash; no step has a training creature now)
+//                   (build 2026-11-17at: every personal weapon but the Gunslinger's machine gun went, and with them the Technomancer's punches and arcs and the Mutator's lash; no step has a training creature now)
 //   THE FULL LOOPS  each stage played through with the game's own functions (the stations, the Clone Bay, the serum hood), from the class picker to the closing line
 //   THE SAVE        the stage is kept by its step's number; a game saved before the steps went is read through the old lists (facilitySaveCStep, js/facilitysave.js)
 const fs = require('fs');
@@ -36,7 +36,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__saidLine = (re) => dialogueLines().some(l => re.test(l.text));   // (the Crystal's lines in the dialogue box, js/dialogue.js)`);
 
     group('THE STAGES: after the tutorial, once a class is chosen, the class\'s own objectives (its gear first, then its loop)');
-    check('every class has a stage; its first step is its gear (TUT_CLASS_STEP, as before); every step says what to do and how; the Gunslinger\'s has 4 steps, the Technomancer\'s 1, its gear (its relay step went in build 2026-11-07qq: the junction turns every relay on; its punch and its arc with the gauntlet, build 2026-11-17as), the Mutator\'s 4 (its lash went in 2026-11-17as); no step asks for a training creature', () => {
+    check('every class has a stage; its first step is its gear (TUT_CLASS_STEP, as before); every step says what to do and how; the Gunslinger\'s has 4 steps, the Technomancer\'s 1, its gear (its relay step went in build 2026-11-07qq: the junction turns every relay on; its punch and its arc with the gauntlet, build 2026-11-17at), the Mutator\'s 4 (its lash went in 2026-11-17at); no step asks for a training creature', () => {
         const r = J(`(function(){ const o = {}; for (const c of CLASS_ORDER) { const st = TUT_CLASS_STAGES[c]; playerClassKey = c; o[c] = { n: st.length, first: st[0] === TUT_CLASS_STEP, ids: st.map(s => s.id).join(), stray: st.filter(s => s.stray).map(s => s.id).join(), words: st.every(s => s.title && s.text().length > 20 && s.hint().length > 20 && typeof s.done === 'function') }; } playerClassKey = null; return o; })()`);
         same(Object.keys(r).join(), 'gunslinger,technomancer,mutator', 'the stages'); for (const c of Object.keys(r)) { same(r[c].first, true, c + ': the gear first'); same(r[c].words, true, c + ': a step without its words'); same(r[c].stray, '', c + ': a step that asks for a training creature'); }
         same(r.gunslinger.ids, 'perk,cctv,flare,hunt', 'the Gunslinger\'s'); same(r.technomancer.ids, 'perk', 'the Technomancer\'s'); same(r.mutator.ids, 'perk,clone,upgrade,serum', 'the Mutator\'s');
@@ -88,7 +88,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE TRAINING CREATURE, THE COUNTS, THE SAVE');
-    check('the training creature (TUT_STRAY: kept as a rule, though no step asks for one since build 2026-11-17as, so a step that does is put on a stage for this check and taken off after) comes only for a step that wants it, near the player, with its own health; one that dies is replaced (TUT_STRAY.respawns a step) and a killed one pays as any kill; it is gone when the step is, and its going pays nothing', () => {
+    check('the training creature (TUT_STRAY: kept as a rule, though no step asks for one since build 2026-11-17at, so a step that does is put on a stage for this check and taken off after) comes only for a step that wants it, near the player, with its own health; one that dies is replaced (TUT_STRAY.respawns a step) and a killed one pays as any kill; it is gone when the step is, and its going pays nothing', () => {
         const r = J(`(function(){ const st = TUT_CLASS_STAGES.technomancer, n0 = st.length;
             st.push({ id: 'drill', title: 'RUN THE DRILL', stray: true, text: () => 'A STEP THAT WANTS A TRAINING CREATURE.', hint: () => 'IT IS ON THE STAGE ONLY FOR THIS CHECK.', done: () => tutCount('drill') >= 1 });
             try { const S = __stage('technomancer'); __frames(2); const o = { none: null };
@@ -103,7 +103,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.gone.join(), 'true,true,true,2,0,0', 'the step done: one was there, it went, the stage moved on, and its going paid no kill and no shards');
         same(run('TUT_CLASS_STAGES.technomancer.map(s => s.id).join()'), 'perk', 'the step put on for the check was left on the stage');
     });
-    check('what is counted: a flare lit, a clone grown, an upgrade bought, a serum splashed, each by the code that does it; no strike and no arc is (the lash and the gauntlet went in build 2026-11-17as), and a round from the machine gun counts nothing', () => {
+    check('what is counted: a flare lit, a clone grown, an upgrade bought, a serum splashed, each by the code that does it; no strike and no arc is (the lash and the gauntlet went in build 2026-11-17at), and a round from the machine gun counts nothing', () => {
         const r = J(`(function(){ const S = __stage('gunslinger'), o = {}; classGrant('machinegun'); weaponEquip('machinegun'); playerAmmo = PLAYER_AMMO_MAX; __frames(2);
             const e = spawnCreature({ species: 'ant', className: 'scout', level: 3, x: player.x + 2, y: player.y, state: 'wander' }); e.update = () => {}; e.health = e.maxHealth = 1e6; playerAttackMode = true;
             const t0 = JSON.stringify(S.tally), a0 = playerAmmo; o.shot = firePlayerShot(e); __frames(20); o.round = [a0 - playerAmmo, e.health < e.maxHealth, JSON.stringify(S.tally) === t0]; e.dead = true; __frames(1);

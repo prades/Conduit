@@ -94,7 +94,7 @@ const DMG_HIT_SPECIAL_ATK = Object.freeze({ which: "special", stat: "atk" });// 
 const DMG_HIT_LAUNCH = Object.freeze({ which: "alt", stat: "atk", type: "earthquake" });   // a follower thrown by the Kinetic Launcher, landing
 const DMG_HIT_BASH = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });      // BASH (js/evolution.js bash): Crushing, whatever the follower's form
 const DMG_HIT_GUN = Object.freeze({ type: "projectile", player: true });     // the player's gun (the Gunslinger's machine gun), and the turrets
-// (the Mutator's lash, Slashing, and the Technomancer's punch, Crushing, had their own kinds of hit here, DMG_HIT_LASH and DMG_HIT_PUNCH, until they went: build 2026-11-17as)
+// (the Mutator's lash, Slashing, and the Technomancer's punch, Crushing, had their own kinds of hit here, DMG_HIT_LASH and DMG_HIT_PUNCH, until they went: build 2026-11-17at)
 const DMG_HIT_ARC = Object.freeze({ type: "elemental", element: "electric", player: true });   // the zap of ARC WARDEN, a Technomancer's Player card (js/technomancer.js _tcZap; the Technomancer's arc, until it went)
 // the zap under another role's element (a Player card, js/playercards.js): the same hit in the role's element (rule 2: for the triangle), each made once
 const _DMG_HIT_ARC_OF = {};

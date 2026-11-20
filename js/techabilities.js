@@ -804,7 +804,7 @@ function techReefShotStop(x0, y0, x1, y1, ox, oy, quiet) {
     if (best && !quiet) best.reef.pressedAt = f0;
     return best;
 }
-// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before REEF's rock stops it (the whole length when nothing does): a turret's aim (js/facilityplay.js; the laser's beam too, until the rifle went, build 2026-11-17as)
+// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before REEF's rock stops it (the whole length when nothing does): a turret's aim (js/facilityplay.js; the laser's beam too, until the rifle went, build 2026-11-17at)
 function techReefShotReach(x0, y0, x1, y1) { const s = techReefShotStop(x0, y0, x1, y1, x0, y0, true); return s ? Math.hypot(s.x - x0, s.y - y0) : Math.hypot(x1 - x0, y1 - y0); }
 function techOnReef(a) { if (!techReefs.length || !a) return null; const f0 = _techFrame(); for (const O of techReefs) if (_techReefOn(O, f0) && O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) < c.r)) return O; return null; }
 // the outcrops' clock: each grows when its shards land (what stands there is put out), then mends your followers beside it every `every` frames, until it crumbles

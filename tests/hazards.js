@@ -26,7 +26,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__ant = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'scout' }); e.x = x; e.y = y; e.update = () => {}; e.health = e.maxHealth = 5000; return e; };
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator)); followerProjectiles = []; elementEffects.length = 0; };
         globalThis.__fresh = () => { __clear(); hazardsReset(); for (const s of hazardSolids()) if (s.open) facilitySolidSet(s.id, false); };   // (every container back on its tile, no fuse, no pool)
-        // THE GUN (build 2026-11-17as): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js); a check that fires a round is that Gunslinger's
+        // THE GUN (build 2026-11-17at): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js); a check that fires a round is that Gunslinger's
         globalThis.__gun = () => { if (playerClassKey !== 'gunslinger') { playerClassKey = null; classSet('gunslinger'); } classGrant('machinegun'); weaponEquip('machinegun'); };
         globalThis.__S = id => _fp.F.solids.find(s => s.id === id);
         globalThis.__steps = (n) => { for (let i = 0; i < n; i++) { frame++; hazardsTick(); } };

@@ -2,7 +2,7 @@
 //  THE CLASS GEAR, SEEN ON THE PLAYER (docs/TUTORIAL.md, "Class gear")
 // ─────────────────────────────────────────────────────────
 // Each class has one signature perk (CLASS_SIGNATURE, js/classes.js) and owning it changes how the player looks. The gear is modelled onto the same cube (design/evolutions/forms30.js, Nos. 840-843) and baked
-// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames; the laser rifle's two, player_laser.png and player_laser_aim.png, are kept in the folder but nothing draws them since the rifle went, build 2026-11-17as): the player is drawn from that sheet in place of
+// to a sheet of its own like the cube's (img/hd/player_gun.png, player_gun_aim.png, player_mech.png, player_coat.png: 8 facings x 8 idle + 8 action frames; the laser rifle's two, player_laser.png and player_laser_aim.png, are kept in the folder but nothing draws them since the rifle went, build 2026-11-17at): the player is drawn from that sheet in place of
 // the plain one (js/hdsprites.js drawHdPlayer asks playerGearSheet). The sheets are wider than the cube's (186 px cells over 4.4 units: the same pixels per unit), so each has its own box and anchor in HD_BOX.
 //   THE GUN IN HAND  (js/weapons.js) the machine gun (the Gunslinger's, from the Armory locker): the only weapon there is. With none in hand the plain cube is drawn.
 //   GUNSLINGER   the armory's machine gun. The cube still floats; two of its tentacles carry the gun low at its left side, and when the weapon is ARMED (js/input.js setPlayerAttackMode) they pull it up level beside

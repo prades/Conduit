@@ -2,7 +2,7 @@
 // ASKED (the owner, 2026-11-06, docs/DECISION-LOG.md): cover "Stops shots"; what gives it: "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the desks, the consoles, the lab benches);
 // "Walls stop shots"; "See over low ones"; "Shoot over own cover" (within about a tile of the shooter); stepping over cover: "Not yet"; tall objects: "Yes, they stop shots".
 // The code: js/facility.js (FAC_COVER, FAC_LOW: the traits; facilitySees: sight; facilityShotStop, facilityShotReach: a shot's step and a beam's reach), js/facilityplay.js (the same in play), js/game.js (a shot in
-// flight stops there, with a spark), js/weapons.js (the laser's beam); and the shooters, each firing only at what it can see or with a clear shot: js/npc.js (a Mage), js/evolution.js (QUILL BURST, HEXFIRE),
+// flight stops there, with a spark), (the laser rifle's beam went by a beam's reach until the rifle went, build 2026-11-17at); and the shooters, each firing only at what it can see or with a clear shot: js/npc.js (a Mage), js/evolution.js (QUILL BURST, HEXFIRE),
 // js/predator.js (a creature's rear shot), js/stations.js (a turret). Build 2026-11-06i: the moves that strike at once need sight too (the owner: "Need sight"; js/evolution.js _evoFoesSeen, fieldBite,
 // staticVortexTick; js/cards.js _equipFoesNear), and SONIC ROLL dashes only along floor it could walk. What is a reading (which kinds are low, glass, the spark, lobs and the attacks that strike at once, the shooters, the 1.0 tile, the middle
 // heights, a tall object nobody's own cover): docs/OPEN-QUESTIONS.md §1x.
@@ -31,8 +31,8 @@ function findChromium() {
     for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
     return null;
 }
-// THE REAL PAGE at game.html?fluxlab: an ant behind the test room's desk; the player's round from three tiles off (stopped at the desk, a spark drawn), from right behind the desk (it hits); the laser from three
-// tiles off (its beam stops at the desk); the frames drawn with the spark and the beam in them, and no errors.
+// THE REAL PAGE at game.html?fluxlab: an ant behind the test room's desk; the player's round (a Gunslinger's, from the machine gun: the only weapon since build 2026-11-17at) from three tiles off (stopped at
+// the desk, a spark drawn), from right behind the desk (it hits); the frames drawn with the spark in them, and no errors.
 const SCRIPT = `<script>window.__errs = []; window.addEventListener('error', function(e){ window.__errs.push(String(e.message)); });
 window.addEventListener('load', function(){ setTimeout(function(){
   var out = {}, step = function(n){ for (var i = 0; i < n; i++) render(); };
@@ -42,12 +42,11 @@ window.addEventListener('load', function(){ setTimeout(function(){
     actors = actors.filter(function(a){ return !(a instanceof Predator); }); followers.forEach(function(f){ f.stance = 'hold'; var t = T([1, 11]); f.x = t[0]; f.y = t[1]; });
     var at = T([11, 8]), ant = spawnCreature({ species: 'ant', className: 'scout', x: at[0], y: at[1], level: 3, state: 'wander' }); ant.x = at[0]; ant.y = at[1]; ant.update = function(){}; ant.health = ant.maxHealth = 5000;
     var edge = T([11, 5.5])[1], spark = function(){ return elementEffects.filter(function(e){ return e.type === 'impact' && Math.abs(e.y - edge) < 0.4; }).length; };
-    playerAmmo = 20; player.attackCooldown = 0; put([11, 3]); step(1); firePlayerShot(ant); var drawn = 0; for (var i = 0; i < 60 && followerProjectiles.length; i++) { step(1); if (spark()) drawn++; }
+    playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun');
+    playerAmmo = 20; player.attackCooldown = 0; put([11, 3]); step(1); out.fired = firePlayerShot(ant); var drawn = 0; for (var i = 0; i < 60 && followerProjectiles.length; i++) { step(1); if (spark()) drawn++; }
     out.far = { hp: ant.health, spark: drawn > 0, left: followerProjectiles.length };
     elementEffects.length = 0; put([11, 5]); step(1); player.attackCooldown = 0; firePlayerShot(ant); for (var j = 0; j < 60 && followerProjectiles.length; j++) step(1);
     out.near = { hp: ant.health };
-    ant.health = 5000; weaponOwned.laser = true; playerWeapon = 'laser'; laserCharge = 12; player.attackCooldown = 0; put([11, 3]); step(1); out.laserFired = fireLaserShot(ant); var b = _fp.beams[_fp.beams.length - 1]; step(3);
-    out.laser = { hp: ant.health, end: b ? Math.abs(b.y1 - edge) : null, spark: spark() > 0 };
   } catch (err) { out.err = String(err && err.stack || err); }
   out.errs = window.__errs.slice(0, 3);
   var pre = document.createElement('pre'); pre.id = '__cv'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -82,6 +81,8 @@ async function boot(search) {
         globalThis.__L = (a, b, o) => { const p = __T(a), q = __T(b), r = o ? __T(o) : p; return __line(p[0], p[1], q[0], q[1], r[0], r[1]); };
         globalThis.__fly = (n) => { for (let i = 0; i < (n || 120) && followerProjectiles.length; i++) render(); return followerProjectiles.length; };
         globalThis.__sparks = () => elementEffects.filter(e => e.type === 'impact');
+        /* THE GUN (build 2026-11-17at): the only weapon is the Gunslinger's machine gun, from the locker (js/weapons.js): the player's round is that Gunslinger's */
+        globalThis.__gun = () => { if (playerClassKey !== 'gunslinger') { playerClassKey = null; classSet('gunslinger'); } classGrant('machinegun'); weaponEquip('machinegun'); };
         // the two ends of a short line straight across a wall piece's middle, each a tile's floor a body can stand on, with nothing else on the line (k: how far out each end is)
         // (tried at points along the piece, its middle first: furniture stands against many walls)
         globalThis.__across = (w, ks) => { const L = Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), nx = -(w.b[1] - w.a[1]) / L, ny = (w.b[0] - w.a[0]) / L;
@@ -138,8 +139,8 @@ async function boot(search) {
     });
 
     group('SHOTS THAT TRAVEL (js/game.js; js/facility.js facilityShotStop)');
-    check('THE PLAYER\'S ROUND at an ant behind the desk, from three tiles off, stops at the desk: a small spark there, the ant unhurt, the round spent; from right behind the desk (half a tile: the player\'s own cover) it passes over and hits', () => {
-        const r = J(`(function(){ __wild(); const o = {}, T = __T, a = __ant(...T([11, 8])), edge = T([11, 5.5])[1]; playerWeapon = 'service'; playerAmmo = 20; player.attackCooldown = 0; __put(...T([11, 3]));
+    check('THE PLAYER\'S ROUND (a Gunslinger\'s, from the machine gun) at an ant behind the desk, from three tiles off, stops at the desk: a small spark there, the ant unhurt, the round spent; from right behind the desk (half a tile: the player\'s own cover) it passes over and hits', () => {
+        const r = J(`(function(){ __wild(); const o = {}, T = __T, a = __ant(...T([11, 8])), edge = T([11, 5.5])[1]; __gun(); playerAmmo = 20; player.attackCooldown = 0; __put(...T([11, 3]));
             o.fired = firePlayerShot(a); o.ammo = playerAmmo; o.left = __fly(); o.hp = a.health; o.spark = __sparks().map(e => +Math.abs(e.y - edge).toFixed(2));
             elementEffects.length = 0; __put(...T([11, 5])); player.attackCooldown = 0; firePlayerShot(a); __fly(); o.near = a.health < 5000; o.nearSpark = __sparks().length; __wild(); return o; })()`);
         same(r.fired, true, 'the round was not fired'); same(r.ammo, 19, 'the round was not spent'); same(r.left, 0, 'the round is still flying'); same(r.hp, 5000, 'the ant was hurt through the desk');
@@ -152,7 +153,7 @@ async function boot(search) {
         same(r.far, true, 'the follower was hurt through the crate'); same(r.spark, 1, 'no spark at the crate'); same(r.near, true, 'the shot from right behind the crate did not hit');
     });
     check('A WALL STOPS A SHOT: the player\'s round at a creature on the far side of the Lounge\'s divider (a thin wall; the old lab\'s glass until build 2026-11-13g) stops at it (a spark on it, the creature unhurt); through a doorway it hits', () => {
-        const r = J(`(function(){ __wild(); const o = {}, F = _fp.F, ws = F.walls.filter(w => w.divider && w.room === 'lounge'); let a = null; for (const w of ws) { a = __across(w, [1.5, 2, 2.5, 3]); if (a) { o.pane = w.window; break; } }
+        const r = J(`(function(){ __wild(); __gun(); const o = {}, F = _fp.F, ws = F.walls.filter(w => w.divider && w.room === 'lounge'); let a = null; for (const w of ws) { a = __across(w, [1.5, 2, 2.5, 3]); if (a) { o.pane = w.window; break; } }
             o.fixture = !!a; if (!a) return o; const ins = facilityRoomAt(a.p[0], a.p[1], F).id === 'lounge', lab = ins ? a.p : a.q, hall = ins ? a.q : a.p; o.rooms = facilityRoomAt(hall[0], hall[1], F).id + '>' + facilityRoomAt(lab[0], lab[1], F).id;
             const foe = __ant(lab[0], lab[1]); __put(hall[0], hall[1]); playerAmmo = 20; player.attackCooldown = 0; firePlayerShot(foe); __fly(); o.hp = foe.health;
             o.spark = __sparks().map(e => +Math.hypot(e.x - a.m[0], e.y - a.m[1]).toFixed(2));
@@ -193,17 +194,14 @@ async function boot(search) {
         same(r.quillSeen, true, 'QUILL BURST not fired at an ant it sees'); same(r.quills, 5, 'the quills');
     });
 
-    group('THE LASER (js/weapons.js fireLaserShot; js/facility.js facilityShotReach)');
-    check('its beam stops at the desk: the ant behind it unhurt, a spark where it stopped, the beam drawn to there; from right behind the desk it passes over and hits; a creature in the line behind the one it hits is hit only up to where the beam stops', () => {
-        const r = J(`(function(){ __wild(); const o = {}, T = __T, edge = T([11, 5.5])[1]; weaponOwned.laser = true; playerWeapon = 'laser'; laserCharge = 12; player.attackCooldown = 0; const a = __ant(...T([11, 8]));
-            __put(...T([11, 3])); o.fired = fireLaserShot(a); o.hp = a.health; const b = _fp.beams[_fp.beams.length - 1]; o.end = +Math.abs(b.y1 - edge).toFixed(2); o.spark = __sparks().map(e => +Math.abs(e.y - edge).toFixed(2)); o.charge = laserCharge;
-            elementEffects.length = 0; __put(...T([11, 5])); player.attackCooldown = 0; fireLaserShot(a); o.near = a.health < 5000; o.nearEnd = _fp.beams[_fp.beams.length - 1].y1 > a.y;
-            __wild(); const front = __ant(...T([11, 4])), back = __ant(...T([11, 7])); __put(...T([11, 1])); player.attackCooldown = 0; fireLaserShot(front); o.front = front.health < 5000; o.back = back.health;
-            __wild(); const f2 = __ant(...T([12, 4])), b2 = __ant(...T([12, 5])); __put(...T([12, 1])); player.attackCooldown = 0; fireLaserShot(f2); o.open = b2.health < 5000;
-            playerWeapon = 'service'; __wild(); return o; })()`);
-        same(r.fired, true, 'the laser did not fire'); same(r.hp, 5000, 'the ant was hurt through the desk'); ok(r.end < 0.3, 'the beam does not end at the desk: ' + r.end); same(r.spark.length, 1, 'the sparks'); ok(r.spark[0] < 0.3, 'the spark: ' + r.spark[0]);
-        same(r.charge, 11, 'the charge'); same(r.near, true, 'the beam from right behind the desk did not hit'); same(r.nearEnd, true, 'the beam from right behind the desk stops short of the ant');
-        same(r.front, true, 'the creature in front of the desk was not hit'); same(r.back, 5000, 'the creature behind the desk was hit through it'); same(r.open, true, 'fixture: with nothing in the way the one behind is not hit');
+    group('A LINE\'S REACH (js/facility.js facilityShotReach; js/facilityplay.js facilityShotClear, a turret\'s aim). The laser rifle, whose beam went by it, is gone (build 2026-11-17at)');
+    check('a line from three tiles off stops at the desk\'s near edge and is not a clear shot; from right behind the desk (the shooter\'s own cover) it runs its whole length and is clear; nothing of the laser rifle is left', () => {
+        const r = J(`(function(){ const T = __T, p = T([11, 3]), q = T([11, 8]), n = T([11, 5]), edge = T([11, 5.5])[1], o = {};
+            o.far = +Math.abs(p[1] + facilityShotReach(p[0], p[1], q[0], q[1], _fp.F) - edge).toFixed(2); o.farClear = facilityShotClear(p[0], p[1], q[0], q[1]);
+            o.near = +(Math.hypot(q[0] - n[0], q[1] - n[1]) - facilityShotReach(n[0], n[1], q[0], q[1], _fp.F)).toFixed(2); o.nearClear = facilityShotClear(n[0], n[1], q[0], q[1]);
+            o.gone = ['fireLaserShot', 'facilityDrawBeams', 'laserCharge', 'weaponOwned', 'weaponAssemble'].filter(k => eval('typeof ' + k) !== 'undefined').join(); o.row = !!WEAPONS.laser; o.item = !!ITEMS.fuel_cell; return o; })()`);
+        ok(r.far < 0.3, 'the line does not end at the desk: ' + r.far); same(r.farClear, false, 'a clear shot through the desk'); ok(Math.abs(r.near) < 0.05, 'from right behind the desk the line stops short by ' + r.near); same(r.nearClear, true, 'no clear shot over the shooter\'s own cover');
+        same(r.gone, '', 'still in the code'); same(r.row, false, 'WEAPONS still has the laser'); same(r.item, false, 'the fuel cell is still an item');
     });
 
     group('THE SHOOTERS FIRE AT WHAT THEY CAN SEE');
@@ -279,19 +277,16 @@ async function boot(search) {
         same(r.seen, true, 'fixture: the creature is not seen over the crate'); same(r.over, false, 'it dashed over the crate'); same(r.stayed, true, 'it moved'); same(r.hp, 5000, 'the creature was hit');
         same(r.open, true, 'it did not dash at the one in the open'); same(r.openHit, true, 'the one in the open was not hit');
     });
-    check('a creature\'s special and your own jumps need sight too (the owner, 2026-11-06: "Both need sight"): across the lab\'s glass a special neither aims at nor reaches a follower, and ARC SLINGER\'s jump and the Technomancer\'s arc do not jump; on the same side they do', () => {
+    check('a creature\'s special and your own jumps need sight too (the owner, 2026-11-06: "Both need sight"): across the lab\'s glass a special neither aims at nor reaches a follower, and ARC SLINGER\'s jump does not jump; on the same side they do (the Technomancer\'s thrown arc, which needed sight too, went in build 2026-11-17at)', () => {
         const r = J(`(function(){ const g = __glassLine(), f = __mover(), o = {}; if (!g) return o;
             const special = p => { __wild(); const c = __ant(...g.A); __at(f, p); frame++; const area = []; _abForEachFoeInRadius(c, 3, a => area.push(a)); return (_abNearestFoe(c, 3) === f) + '/' + area.includes(f); };
             o.special = [special(g.B), special(g.C)];
             const slinger = p => { __wild(); const A = __ant(...g.A), X = __ant(...p); frame++; return !!playerRoundJump({ kit: { jump: { radius: 2.6, share: 0.6 } } }, A, player, 50, []) + '/' + (X.health < 5000); };
             o.slinger = [slinger(g.B), slinger(g.C)];
-            const arc = p => { __wild(); const A = __ant(...g.A), X = __ant(...p); technoCharge = 1; frame++; technoArc(A); return X.health < 5000; };
-            o.arc = [arc(g.B), arc(g.C)];
             __wild(); __bench(); return o; })()`);
         ok(r.special, 'fixture: no line through the glass');
         same(r.special.join(), 'false/false,true/true', 'a creature\'s special (aimed / in its area): behind the glass, then on the same side');
         same(r.slinger.join(), 'false/false,true/true', 'ARC SLINGER\'s jump (jumped / hurt)');
-        same(r.arc.join(), 'false,true', 'the Technomancer\'s arc (the next creature hurt)');
     });
 
     group('FLUX MOVE MOVES COVER (js/fluxmove.js; js/facilityplay.js facilitySolidMove)');
@@ -317,11 +312,10 @@ async function boot(search) {
     {
         const m = measure(1180, 820);
         if (m === null) check('the real page on a tablet: no Chromium here (not run)', () => {});
-        else check('on a tablet (1180 × 820): the player\'s round at an ant behind the test room\'s desk stops at the desk with its spark drawn, the ant unhurt; from right behind the desk it hits; the laser\'s beam stops at the desk; no errors', () => {
+        else check('on a tablet (1180 × 820): the player\'s round at an ant behind the test room\'s desk stops at the desk with its spark drawn, the ant unhurt; from right behind the desk it hits; no errors', () => {
             ok(m, 'no result from the page'); same(m.err, undefined, 'the page threw: ' + m.err); same((m.errs || []).length, 0, 'errors: ' + (m.errs || []).join(' | '));
             same(m.far.hp, 5000, 'the ant was hurt through the desk'); same(m.far.spark, true, 'no spark at the desk'); same(m.far.left, 0, 'the round is still flying');
-            ok(m.near.hp < 5000, 'the round from right behind the desk did not hit'); same(m.laserFired, true, 'the laser did not fire'); same(m.laser.hp, 5000, 'the laser hurt the ant through the desk');
-            ok(m.laser.end !== null && m.laser.end < 0.3, 'the beam does not end at the desk: ' + m.laser.end); same(m.laser.spark, true, 'no spark where the beam stopped');
+            same(m.fired, true, 'the round was not fired'); ok(m.near.hp < 5000, 'the round from right behind the desk did not hit');
         });
     }
 

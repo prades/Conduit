@@ -16,8 +16,8 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: The only personal weapon is the Gunslinger's machine gun
 
-- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17as`
-- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17as` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee: **decided, not designed, not built**.
+- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17at`
+- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17at` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee: **decided, not designed, not built**.
 - **Context:** the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."
 - **Decision** (asked):
   - the Mutator's TENTACLE LASH: "Remove the lash too";
@@ -28,7 +28,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Supersedes:** `TECHNOMANCER.md` (the gauntlet: the whole page is history but for the zap and the bolt two Player cards use); `MUTATOR.md` §2.4 (the lash); in `TUTORIAL.md`, "The gun lesson", "Weapons", "The Armory terminal", "Targeting" and the class stages' table, where they disagree with its last section; rule 1's list of attacks in `UNIVERSAL-AND-PLAYER-CARDS.md`.
 - **Agent's choices, provisional** (not asked; `OPEN-QUESTIONS.md`, "Open 2026-11-20"): everyone still locks on to the nearest creature (the creature's slab and INFO, the squad's ATTACK order, the potion and a shield go by the lock), and only arming needs the gun; ammo packs stay open to every class but load only into a gun in hand; the charging station refuses when it has nothing to give; the Armory terminal tells a class with no weapon so; the fuel cells went with the rifle; the Player cards keep their kits and numbers (ARC WARDEN's zap keeps the arc's number), with their words changed to what is left; the class picker's lines for the Technomancer and the Mutator; old saves load with the removed things let go.
 - **Not changed:** GUARD and STUN DIVE (`PLAYER-COMBAT.md`; the dive does no damage), the sentries, the followers, the clone and the serum, card battles.
-- **Affects:** `TUTORIAL.md` (its last section: the current rules), `TECHNOMANCER.md`, `MUTATOR.md`, `PLAYER-CLASSES.md`, `UNIVERSAL-AND-PLAYER-CARDS.md`, `COMBAT.md` §7, `CHESTS.md`, `OPEN-QUESTIONS.md`; `js/weapons.js`, `js/input.js`, `js/targeting.js`, `js/gunfire.js`, `js/draw.js`, `js/classes.js`, `js/tutorial.js`, `js/technomancer.js`, `js/mutator.js`, `js/playercards.js`, `js/cards.js`, `js/damage.js`, `js/stations.js`, `js/inventory.js`, `js/chests.js`, `js/facilitymap.js`, `js/facilitysave.js`, `js/playergear.js`, `js/infodex.js`; `bible.html`; `CHANGELOG.md` `2026-11-17as`.
+- **Affects:** `TUTORIAL.md` (its last section: the current rules), `TECHNOMANCER.md`, `MUTATOR.md`, `PLAYER-CLASSES.md`, `UNIVERSAL-AND-PLAYER-CARDS.md`, `COMBAT.md` §7, `CHESTS.md`, `OPEN-QUESTIONS.md`; `js/weapons.js`, `js/input.js`, `js/targeting.js`, `js/gunfire.js`, `js/draw.js`, `js/classes.js`, `js/tutorial.js`, `js/technomancer.js`, `js/mutator.js`, `js/playercards.js`, `js/cards.js`, `js/damage.js`, `js/stations.js`, `js/inventory.js`, `js/chests.js`, `js/facilitymap.js`, `js/facilitysave.js`, `js/playergear.js`, `js/infodex.js`; `bible.html`; `CHANGELOG.md` `2026-11-17at`.
 
 ## DECISION: Only the room you are in shows its creatures
 
