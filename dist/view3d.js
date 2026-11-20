@@ -31308,6 +31308,20 @@ function view3dElectricForms(K) {
         },
     };
     const tShot = pr => 1 + (pr - 1 / 16) * 0.48;
+    function slash(X, Y, Z, age, s) {
+        if (age < 0 || age >= 14)
+            return;
+        const k = age < 4 ? age / 4 : 1 - (age - 4) / 10, len = 0.55;
+        for (let j = 0; j < 2; j++) {
+            const an = (j ? 0.7 : -0.7) + s, ca = Math.cos(an), sa = Math.sin(an);
+            pn = 0;
+            for (let i = 0; i <= 8; i++) {
+                const u = i / 8 - 0.5, bow = 0.12 * (1 - 4 * u * u);
+                padd(X + ca * u * len * 2 - sa * bow, Y + 0.18 * u * (j ? 1 : -1), Z + sa * u * len * 2 + ca * bow);
+            }
+            stroke(0.012, 0.05, HOT, 0.3 * k, k);
+        }
+    }
     const HOVER = {
         tilts: true,
         body(f, b, f0) {
@@ -31350,28 +31364,32 @@ function view3dElectricForms(K) {
                         return true;
                     return !!curOf(f, 'hoverdrift') && e.color === '#fff27a' && e.element === 'electric' && Math.hypot(e.x - f.x, e.y - f.y) <= (DR.cut || 1.8) + 0.4;
                 },
-                draw(m, age, f0, b) {
-                    const D = m.data, o = m.o, X = m.x, Z = m.y, Y = D.Yf + 0.3;
-                    zapHit(X, Y, Z, D.Yf, age, m.seed, Math.min(1.2, o.radius || 0.5));
-                    if (o.element === 'electric' && age < 14) {
-                        const k = age < 4 ? age / 4 : 1 - (age - 4) / 10, len = 0.55;
-                        for (let j = 0; j < 2; j++) {
-                            const an = (j ? 0.7 : -0.7) + m.seed, ca = Math.cos(an), sa = Math.sin(an);
-                            pn = 0;
-                            for (let i = 0; i <= 8; i++) {
-                                const u = i / 8 - 0.5, bow = 0.12 * (1 - 4 * u * u);
-                                padd(X + ca * u * len * 2 - sa * bow, Y + 0.18 * u * (j ? 1 : -1), Z + sa * u * len * 2 + ca * bow);
-                            }
-                            stroke(0.012, 0.05, HOT, 0.3 * k, k);
-                        }
-                    }
-                }
+                draw(m, age, f0, b) { const D = m.data, o = m.o; zapHit(m.x, D.Yf + 0.3, m.y, D.Yf, age, m.seed, Math.min(1.2, o.radius || 0.5)); if (o.element === 'electric')
+                    slash(m.x, D.Yf + 0.3, m.y, age, m.seed); }
             }),
             hoverdrift: {
-                pre: true, claim(e, f) { return e.on === f; }, find(e, f) { return e.on === f; }, span(m) { return m.age + 1; },
+                pre: true, claim(e, f) { return e.on === f; }, find(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
                 draw(m, age, f0, b) {
                     const o = m.o, p = o.path;
-                    if (!p || (o.i || 0) < 2)
+                    if (!m.data)
+                        m.data = { cuts: [] };
+                    const C = m.data.cuts;
+                    if (!m.gone && o.hit)
+                        for (let j = C.length; j < o.hit.length; j++) {
+                            const a = o.hit[j];
+                            C.push({ a, at: age, x: a.x, y: a.y });
+                        }
+                    for (let j = 0; j < C.length; j++) {
+                        const c = C[j], g = age - c.at;
+                        if (c.a && !c.a.dead && g < 2) {
+                            c.x = c.a.x;
+                            c.y = c.a.y;
+                        }
+                        const Yf = floorY(c.x, c.y);
+                        zapHit(c.x, Yf + 0.3, c.y, Yf, g, m.seed + j * 7, 0.9);
+                        slash(c.x, Yf + 0.3, c.y, g, m.seed + j);
+                    }
+                    if (m.gone || !p || (o.i || 0) < 2)
                         return;
                     const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = heightOf(b) * 0.45;
                     pn = 0;

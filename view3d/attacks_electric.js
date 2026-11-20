@@ -401,6 +401,10 @@ function view3dElectricForms(K) {
   // ════════ THE HOVER SHELL (id hovershell) ════════
   // (its sheet's action fires its launcher: an arc between its prongs, a ring of light out of its mouth, a kick back: design/evolutions/forms34.js No. 882; played here by the time its shot is at, pr)
   const tShot = pr => 1 + (pr - 1 / 16) * 0.48;
+  // a slash of DRIFT SLASH's: two curved blades of light crossing on the enemy at (X, Y, Z), age frames in
+  function slash(X, Y, Z, age, s) { if (age < 0 || age >= 14) return; const k = age < 4 ? age / 4 : 1 - (age - 4) / 10, len = 0.55;
+    for (let j = 0; j < 2; j++) { const an = (j ? 0.7 : -0.7) + s, ca = Math.cos(an), sa = Math.sin(an); pn = 0; for (let i = 0; i <= 8; i++) { const u = i / 8 - 0.5, bow = 0.12 * (1 - 4 * u * u); padd(X + ca * u * len * 2 - sa * bow, Y + 0.18 * u * (j ? 1 : -1), Z + sa * u * len * 2 + ca * bow); }
+      stroke(0.012, 0.05, HOT, 0.3 * k, k); } }
   const HOVER = {
     tilts: true,
     // ITS BODY. Its everyday hit (the element's chain, from its launcher) and SHOCK ZAP: its sheet's shot played smoothly (the arc between its prongs, the ring out of its mouth, its front kicked up),
@@ -418,15 +422,16 @@ function view3dElectricForms(K) {
       impact: Object.assign(hitFx(null), {
         mine(e, f) { const E = EV.get(f), at = typeof GM.frame === 'number' ? GM.frame : 0; if (E && E.kind === 'zap' && at - E.at < 4 && e.color === '#ffee33' && nearAny(e, E.pts, 0.1)) return true;
           return !!curOf(f, 'hoverdrift') && e.color === '#fff27a' && e.element === 'electric' && Math.hypot(e.x - f.x, e.y - f.y) <= (DR.cut || 1.8) + 0.4; },
-        draw(m, age, f0, b) { const D = m.data, o = m.o, X = m.x, Z = m.y, Y = D.Yf + 0.3; zapHit(X, Y, Z, D.Yf, age, m.seed, Math.min(1.2, o.radius || 0.5));
-          if (o.element === 'electric' && age < 14) { const k = age < 4 ? age / 4 : 1 - (age - 4) / 10, len = 0.55;   // (DRIFT SLASH's: the two blades)
-            for (let j = 0; j < 2; j++) { const an = (j ? 0.7 : -0.7) + m.seed, ca = Math.cos(an), sa = Math.sin(an); pn = 0; for (let i = 0; i <= 8; i++) { const u = i / 8 - 0.5, bow = 0.12 * (1 - 4 * u * u); padd(X + ca * u * len * 2 - sa * bow, Y + 0.18 * u * (j ? 1 : -1), Z + sa * u * len * 2 + ca * bow); }
-              stroke(0.012, 0.05, HOT, 0.3 * k, k); } } } }),
+        draw(m, age, f0, b) { const D = m.data, o = m.o; zapHit(m.x, D.Yf + 0.3, m.y, D.Yf, age, m.seed, Math.min(1.2, o.radius || 0.5)); if (o.element === 'electric') slash(m.x, D.Yf + 0.3, m.y, age, m.seed); } }),
       // DRIFT SLASH (the game's hoverdrift: out from its post round the biggest group in an oval and back, ULT_DRIFT.loop points, a frame each; every enemy within ULT_DRIFT.cut slashed once). The 2D's
       // look (a tapering yellow sword trail behind it) made 3D: a blade of light trailing behind it at its height along the last of its oval, white at its edge, tapering away, sparks off it.
       hoverdrift: {
-        pre: true, claim(e, f) { return e.on === f; }, find(e, f) { return e.on === f; }, span(m) { return m.age + 1; },
-        draw(m, age, f0, b) { const o = m.o, p = o.path; if (!p || (o.i || 0) < 2) return; const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = heightOf(b) * 0.45;
+        pre: true, claim(e, f) { return e.on === f; }, find(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
+        draw(m, age, f0, b) { const o = m.o, p = o.path;
+          // each slash, from the game's own list of the enemies it has slashed (its hit, pushed as it passes; the game's own hit effect for it is made while its effects' list is being rebuilt, so it is lost, in 2D too)
+          if (!m.data) m.data = { cuts: [] }; const C = m.data.cuts; if (!m.gone && o.hit) for (let j = C.length; j < o.hit.length; j++) { const a = o.hit[j]; C.push({ a, at: age, x: a.x, y: a.y }); }
+          for (let j = 0; j < C.length; j++) { const c = C[j], g = age - c.at; if (c.a && !c.a.dead && g < 2) { c.x = c.a.x; c.y = c.a.y; } const Yf = floorY(c.x, c.y); zapHit(c.x, Yf + 0.3, c.y, Yf, g, m.seed + j * 7, 0.9); slash(c.x, Yf + 0.3, c.y, g, m.seed + j); }
+          if (m.gone || !p || (o.i || 0) < 2) return; const i = Math.min(o.i, p.length), j0 = Math.max(0, i - 12), hb = heightOf(b) * 0.45;
           pn = 0; for (let j = j0; j < i; j++) { const q = p[j]; padd(q[0], floorY(q[0], q[1]) + hb, q[1]); } stroke(0.005, 0.11, YEL, 0.15, 0.95);
           const q = p[i - 1]; for (let k = 0; k < (low() ? 2 : 4); k++) spark(q[0] + (H(k, age, 1) - 0.5) * 0.5, floorY(q[0], q[1]) + hb + (H(k, age, 2) - 0.5) * 0.3, q[1] + (H(k, age, 3) - 0.5) * 0.5, 0.15, 0.95);
           ribbon(i - j0, (jj, P) => { const r = p[j0 + jj]; P.x = r[0]; P.z = r[1]; P.y = floorY(r[0], r[1]); P.w = 0.05 * jj / Math.max(1, i - j0); P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.45 * jj / Math.max(1, i - j0); }); } },
