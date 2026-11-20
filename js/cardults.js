@@ -186,7 +186,7 @@ function _cuNet(f, S) {
 // what an Ultimate has left since its card was played is put on the battle's clock: a field's first turn's worth runs now
 function _cuMark(T) {
     if (typeof elementEffects === "undefined" || !T.fx0) return;
-    for (const e of elementEffects) { if (e._cbUlt || T.fx0.has(e) || !_CU_LAST[e.type] || !(e.life > 0)) continue; e._cbUlt = _CU_LAST[e.type]; e._cbBy = T.f; if (e._cbUlt === "win") { e._cbLive = _cuTurn(); if (!T.ultAt) T.ultAt = _cbF(); } }
+    for (const e of elementEffects) { if (e._cbUlt || T.fx0.has(e) || !_CU_LAST[e.type] || !(e.life > 0)) continue; e._cbUlt = _CU_LAST[e.type]; e._cbBy = T.f; if (e._cbUlt === "win" && T.shape && !e.on) e._cbSq = T.shape.hit.length ? T.shape.hit : T.shape.eff; if (e._cbUlt === "win") { e._cbLive = _cuTurn(); if (!T.ultAt) T.ultAt = _cbF(); } }
 }
 // is the Ultimate's turn over? (js/cardbattle.js _cbTurnTick, each frame of it): not while it is still moving, nor while its field's first turn's worth runs
 function cardUltDone(T, el) {
@@ -254,6 +254,21 @@ function cardUltEnd() {
     if (typeof elementEffects !== "undefined") for (const e of elementEffects) { if (!e._cbUlt) continue; const win = e._cbUlt === "win"; e._cbUlt = null; e._cbLive = 0; e.life = Math.min(e.life, win ? 24 : 1); }
     if (typeof followers !== "undefined") for (const m of followers) if (m && m.jellyShield && m.jellyShield._cbTurns !== undefined) m.jellyShield.until = Math.min(m.jellyShield.until, f0);
     if (typeof techReefs !== "undefined") for (const O of techReefs) if (O._cbHeld) { O._cbTurns = 0; O._cbHeld = false; O.until = typeof _techFrame === "function" ? _techFrame() : 0; }
+}
+// THE FIELD'S SQUARES, FAINT (the owner, 2026-11-20: "you can have the tiles faint right now", till the fields' own animation is in the battle's view; §2.65): the squares of each
+// field an Ultimate left stay lit, faintly, in its follower's colour, while it lasts; a wall's too. One that moves with its follower is laid again when it has moved. The look the agent's.
+function cardUltSquares(e) {
+    if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }
+    return e._cbSq || null;
+}
+function cardUltDraw(V) {
+    if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined") return;
+    const quad = (x, y) => { const h = 0.44; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), 0); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = 1.5;
+    for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0)) continue; const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
+        ctx.fillStyle = col; ctx.strokeStyle = col; for (const c of sq) { quad(c[0], c[1]); ctx.globalAlpha = 0.14; ctx.fill(); ctx.globalAlpha = 0.4; ctx.stroke(); } }
+    const W = cardUltWalls(); if (W.length) { ctx.fillStyle = ctx.strokeStyle = "#ff8fc8"; for (const c of W) { quad(c[0], c[1]); ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 0.7; ctx.stroke(); } }
+    ctx.restore();
 }
 // METEOR RAIN's middle in a battle (js/elements.js asks): the tile its card was dropped on, while its card's turn is on
 function cardUltPoint(f) {

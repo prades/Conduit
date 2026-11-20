@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17as` · branch `claude/start-game-project-HSh7Z` · card battles: a field's squares faintly lit; BLADE ROLL's picture
+- **The ask** (the owner, 2026-11-20): "The hammer slug is fine for now, and the fields in battle, we should honestly begin work putting those into the game, the full animation, and you can have the tiles faint right now."
+- **What it does:** while an Ultimate's field lasts in a battle its squares stay faintly lit in its follower's colour (REEF PILLAR's wall in pink). The Hammer Slug's BLADE ROLL card has its picture (him curled into a spiked ball; approved "fine for now").
+- **Not built:** the fields' own animation in the battle's view; that work begins next.
+- `js/cardults.js`, `js/cardbattle.js`, `img/cards/attack/hammerslug_blade_roll.png`, `tests/cardbattle.js` (1 new check, 1 changed), `docs/CARD-BATTLES.md` §2.65.
+- **Verified:** tests/cardbattle.js, images, bundle; seen in a real browser. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ar` · branch `claude/start-game-project-HSh7Z` · card battles: the 22 Ultimates on the squares and in turns
 - **The ask** (the owner, 2026-11-18, of the Ultimates' page): "Approve"; the Sundew "holds still" while it digests.
 - **What it does:** each Ultimate's card is dropped on an enemy, a floor tile or anywhere, as its shape takes it, and strikes its own squares with its own numbers. A field (THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE and the rest) runs a turn's worth as played and as each enemy turn begins; a hold, shield, copy or wall counts down as each enemy turn ends. FAULTLINE is a line of squares; CONTAMINATION NETWORK lays its own three pods.

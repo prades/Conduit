@@ -641,6 +641,7 @@ function cardBattleReticles() {
     if (!cardBattleAiming()) return false;
     if (typeof ctx === "undefined" || typeof canvas === "undefined" || !cardBattleActive() || _cb.phase === "black") return true;
     const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenNow === "function" ? VIEW3D.view : null, pulse = 3 * Math.sin(_cbF() * 0.15);
+    if (V && typeof cardUltDraw === "function") cardUltDraw(V);   // (the squares of an Ultimate's field while it lasts, faint: §2.65)
     if (V && typeof cardShapeDraw === "function") cardShapeDraw(V);
     if (V) _cbFoeTileDraw(V);   // (the enemy a dragged card is over: its square lit)   // (a card being dragged: its squares lit on the floor, under the reticles, §2.48)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.strokeStyle = "#ff4a3a"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.globalAlpha = 0.9;
@@ -1024,7 +1025,7 @@ function _cbInfoRows(table, name) { try { const fn = table && table[name]; retur
 // form and the move it shows (img/cards/attack/<form>_<move>.png, each the approved draft as it is: ATTACK-CARD-ART.md §4). A form's other second attack keeps its plain face (no picture drawn).
 // The Hammer Slug's shows no attack of its own (the Technicians' style: rearing in its ring of crystals): on SHELL GUARD, its stance, the agent's reading. CHOMP's is round 3, his redesigned model.
 const CARD_BATTLE_ART = {};
-for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "thunderhead:static_vortex", "quillstone:ember_slash", "coralcrab:stake_ring", "voidstar:maelstrom", "seeper:toxic_stomp",
+for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "thunderhead:static_vortex", "quillstone:ember_slash", "hammerslug:blade_roll", "coralcrab:stake_ring", "voidstar:maelstrom", "seeper:toxic_stomp",
     "igloo:skate_charge", "rimestar:icicle_volley", "electroskink:zigzag_dash", "thermite:magma_vent", "mimic:rift_impale", "hornshell:echo_pulse", "staticorb:static_rush", "gooproxy:phase_swap",
     "shrub:briar_sweep", "sundew:sweet_scent", "rotshard:rotten_decoy", "jellyram:wobble_slam", "blightspider:venom_bite", "hovershell:shock_zap"]) CARD_BATTLE_ART[k] = "img/cards/attack/" + k.replace(":", "_") + ".png";
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
