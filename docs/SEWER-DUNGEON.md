@@ -28,6 +28,7 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 - **Past the round junction it is dammed up because of the Nest**: a **separate Toxic Nest inside the Sewers**, along the corridor running east from the junction.
 - **The central channel has a walkway along each side** (the owner, 2026-11-20), its whole length; the west channel has a walkway along each bank. The player starts on the west side; everything east of the central channel lies across the water (2.5a).
 - **The junction has a ring walkway around it** (the owner, 2026-11-20: "in the nest area, has walkways on it as well. It's around it that connects both walkways to the other sides of the junction"): it joins the central channel's two walkways and every way out of the junction (the corridor west, the tunnel south-west, the corridor east to the purification chamber). So the one walking crossing from west to east is round the Nest, through the Queen's area: the bully way (2.5b).
+- **Below the dam the water is very low** (the owner, 2026-11-20: "The water levels should be really low next to the nest after it. So the tunnel that goes right and the tunnel that goes left and then bends downwards, those should be full of low level water"): the corridor east from the junction (to the purification chamber) and the corridor west from it that bends south both carry only shallow water. Upstream of the Nest the water is backed up; downstream it is starved. Open: whether the south-west tunnel (15) is shallow too, and whether the shallow water can be walked through.
 - **Refined 2026-11-20:** the owner: "I figured the nest would be directly on top of the junction, or at least the queen area." **The Nest, or at least the Queen's area, sits on the round junction itself**: the Nest dams the water there, so it backs up into the central channel above it. The corridor east of the junction leads on to the purification chamber, so the Queen's area lies between the player and the purification chamber.
 - **The water purification chamber is in the bottom-right** of the map: where the purification module is installed and the Toxic Queen's encounter resolves.
 - **Supersedes** the Notion note that water enters from the south (2026-11-19).
@@ -197,7 +198,8 @@ Nothing implemented.
 11a. The electric technician has no combat ability once the launcher's Combat mode is removed: whether it gets a new one.
 11. The bully way (2.5b): ~~must the Queen die on it~~ (answered 2026-11-20: no, 2.5c); is the missed loot lost for good.
 11b. ~~Ant samples without killing; "create the module"~~ (answered 2026-11-20, 2.5c); counts, places, assembly: open.
-12. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
+12. Does every crossing from west to east involve the Queen (bridging only near the junction), or can a bridge further north skip her? The owner, 2026-11-20: "there's no way to get from the left side to the right side without interacting with the queen" (asked which; not yet answered).
+13. Build order (suggested: bare layout and water flow first, then keys and doors, then water level, then finds and charges).
 
 ## 12. History
 - 2026-11-19 (Notion): the sewer as a dungeon with keys, breachable doors, shortcuts and rewarding side areas; the map boundary kept; water from the south.
