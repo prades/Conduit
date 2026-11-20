@@ -1537,7 +1537,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── ELECTRIC — SPARK RING + CHAIN ARC LIGHTNING ─────────────────────────
-    if (actor.sparkSurround > 0) {
+    if (actor.sparkSurround > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "spark"))) {   // (the 3D view's own, view3d/attacks_electric.js: the Static Orb's and the Hover Shell's)
         const _sAlpha = Math.min(1, actor.sparkSurround / 5);
         drawCtx.save();
         // Radial zigzag sparks

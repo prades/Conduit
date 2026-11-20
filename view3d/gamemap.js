@@ -41,7 +41,12 @@ const VIEW3D_GAME = (0, eval)(`({
       haloR: v("HALO_RADIUS", 1.2), magmaR: v("MAGMA_RADIUS", 1.5), faultTrace: v("TECH_AB", null) ? TECH_AB.fault.trace : 90 }; },
   // the ice line's (view3d/attacks_ice.js): the measures its looks follow (read once: the game's own constants)
   get iceMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
-    return { skateBand: v("SKATE_BAND", 0.8), icicleFreeze: v("ICICLE_FREEZE", 90), quillArc: v("QUILL_ARC", 16), rink: v("ULT_RINK", null), whiteout: v("ULT_WHITEOUT", null) }; }
+    return { skateBand: v("SKATE_BAND", 0.8), icicleFreeze: v("ICICLE_FREEZE", 90), quillArc: v("QUILL_ARC", 16), rink: v("ULT_RINK", null), whiteout: v("ULT_WHITEOUT", null) }; },
+  // the electric line's (view3d/attacks_electric.js): the measures its looks follow, and two of the game's own drawing rules it keeps to (the STATIC VORTEX's flash, the swirl's cells), read once
+  get electricMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { snap: v("THUNDER_SNAP", 1.5), pull: v("THUNDER_PULL", 1.3), vortexR: v("VORTEX_RADIUS", 2.5), vortexFrame: v("VORTEX_FRAME", 6), vortexAlpha: v("VORTEX_ALPHA", 0.7), vortexFlash: v("staticVortexFlash", null),
+      swirl: v("SKINK_SWIRL", null), circuit: v("ULT_CIRCUIT", null), drift: v("ULT_DRIFT", null), storm: v("ULT_STORM", null), overdrive: v("ULT_OVERDRIVE", null), capReach: v("CAP_REACH", 2),
+      mantaStun: v("MANTA_STUN", 45), zapGlitch: v("ZAP_GLITCH", 30) }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)

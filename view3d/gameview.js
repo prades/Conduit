@@ -163,7 +163,8 @@ const GAMEVIEW = (function () {
   const free = new Map(), live = new Map(), shown = new Set(), bad = new Set(); let stamp = 0;   // (free: bodies not in use, by kind; live: each unit's; shown: the units whose bodies this frame's picture has)
   // THE ATTACKS IN 3D (view3d/attacks.js; docs/VIEW-3D.md stage 5): a form's attacks, its body's motion and its effects, drawn here in place of the game's 2D drawing of them (the Frost Maw first)
   const ATT = view3dAttacks({ scene, GM, camera: cam, renderer: CORE.renderer, grad: look.grad, UPX, ink: CORE.idCol(CORE.newInk()), JOBS,
-    lastAt: u => { const b = live.get(u); return b && b.holder.visible ? b.holder.position : null; }, bodyOf: u => live.get(u) || null });
+    lastAt: u => { const b = live.get(u); return b && b.holder.visible ? b.holder.position : null; }, bodyOf: u => live.get(u) || null,
+    formBody: id => formBody(id), scale: () => SC_EVO });   // (formBody, scale: a model of the bakers' that an attack stands in the world, the Thunderhead's storm, the Skink's swirl: view3d/attacks_electric.js)
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
     if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
     b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
