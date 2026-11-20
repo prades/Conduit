@@ -1054,7 +1054,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const o = { n: sq && sq.length, same: sq === S.hit, has: !!sq && sq.some(c => c[0] === P[0] + 3 && c[1] === P[1]) };
             const B = __shaped('thunderhead', [[2, 0]]); B.f.ultimateCharge = 100; cardBattlePlay(B.f, 'ult', null, null); __live(3); const t = fx('thunderstorm'), s1 = cardUltSquares(t).length, k1 = t._cbSqK; t.x += 1; const s2 = cardUltSquares(t); o.moved = [s1 > 20, k1 !== t._cbSqK, s2.every(c => Math.hypot(c[0] - Math.round(t.x), c[1] - Math.round(t.y)) <= t.radius + 0.01)]; return o; })()`);
         ok(r && r.n > 10 && r.same && r.has, 'the black hole\'s squares are its card\'s: ' + JSON.stringify(r)); same(JSON.stringify(r.moved), '[true,true,true]', 'the storm\'s, laid again when it moved');
-        ok(/cardUltDraw\(V\);[^\n]*\n\s*if \(V && typeof cardShapeDraw/.test(rd('js/cardbattle.js')) && /e\._cbUlt !== "win" \|\| !\(e\.life > 0\)\) continue; const sq = cardUltSquares\(e\)/.test(rd('js/cardults.js')), 'drawn by the battle, only while the field lives');
+        ok(/cardUltDraw\(V\);[^\n]*\n\s*if \(V && typeof cardShapeDraw/.test(rd('js/cardbattle.js')) && /e\._cbUlt !== "win" \|\| !\(e\.life > 0\) \|\| !cardUltShown\(e\)\) continue; const sq = cardUltSquares\(e\)/.test(rd('js/cardults.js')), 'drawn by the battle, only while the field lives');
     });
 
     check('the fields in 3D, begun (the owner, 2026-11-20: "the full animation"; "Start with the Ultimates\' lasting fields"): the battle hands the view its live fields, none out of a battle; the view draws them while the battle\'s camera is up (view3d/fields.js: THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first)', () => {
@@ -1063,6 +1063,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
         ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
         for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
+    });
+
+    check('a field is seen only in its caster\'s turn (the owner, 2026-11-20: "The battlefield should be clear, unless it\'s the creature who casts the ultimate\'s turn"): as it is cast; while its turn\'s worth strikes; not while an enemy acts nor in another follower\'s turn; again when your round comes to its caster', () => {
+        const r = J(`(function(){ ${ULT} const A = __shaped('thunderhead', [[2, 0]]); const f = A.f; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, null); __live(3); const e = fx('thunderstorm'), o = { cast: cardUltShown(e) && cardUltFields().length === 1 };
+            act(); o.strikes = !!_cb.turn.field && cardUltShown(e); const T = _cb.turn; _cb.turn = { who: 'foe', a: A.foes[0], t0: frame, queue: [] }; o.foe = cardUltShown(e) || cardUltFields().length > 0;
+            const other = { health: 1 }; _cb.turn = { who: 'act', f: other, t0: frame }; o.other = cardUltShown(e); _cb.turn = { who: 'you', t0: frame }; _cb.acted.clear(); o.yours = _cbCurrent() === f && cardUltShown(e); _cb.acted.add(f); o.done = cardUltShown(e); _cb.turn = T; return o; })()`);
+        same(JSON.stringify(r), '{"cast":true,"strikes":true,"foe":false,"other":false,"yours":true,"done":false}', 'when it is seen');
     });
 
     group('PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, of three offered: "Its own distance")');
