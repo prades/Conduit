@@ -113,7 +113,17 @@ This is the quest line already built (`SEWER-QUEST.md`); what changes is where i
 4. **The player can climb down into the dry channel and pick it up** (the agent's reading: steps or a ladder down from the walkway, and back up).
 5. The obstacles are moved by the same means as the box bridge (2.5a): the Flux Technician or the Technomancer's mech.
 
-**Open:** which channel (the owner's word was unclear; the agent suggests the west channel from the entrance, the one that flows freely, 2.2); which door the key opens; whether the water comes back when the obstacle is moved away, and so whether the player can be caught down there.
+6. **The player can never flood themselves** (the owner, 2026-11-20: "you can't move an object and bring the water back down upon yourself"): no move that would release the water is allowed while the player is down in a dry channel.
+
+**Open:** which channel (the owner's word was unclear; the agent suggests the west channel from the entrance, the one that flows freely, 2.2); which door the key opens; whether the water comes back when the player, standing safely out of the channel, moves the obstacle away.
+
+### 2.5e The dungeon resets on every return (the owner, 2026-11-20)
+"These dungeons completely reset other than the items every single time"; "The dungeon should reset every single time the player comes back to them."
+- Each time the player comes back, the dungeon is as it was at the start: water levels, moved obstacles, bridges, opened doors and creatures.
+- **Except the items** (the owner's words); what that covers is open (below).
+- **Supersedes** the Notion direction "Living ecosystem & persistent enemy population" (dungeons that remember kills and cleared rooms) for the Sewer Dungeon, unless the owner says otherwise.
+
+**Open:** "other than the items": whether items the player has taken stay taken (keys, spare parts, energy cards, chests do not come back) or items come back too; whether quest progress (the samples turned in, the module installed, the Queen calmed) carries over; whether the per-dungeon utility uses and mech charges refill on each return; what counts as coming back (leaving by a portal, the Crystal, a save and load).
 
 ### 2.6 Avoiding fights (the owner chose three, 2026-11-20)
 - **Alternate routes:** most areas have more than one way in (secret doors, pipes, cracked walls, water-level routes), so patrols can be gone around.
