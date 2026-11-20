@@ -176,8 +176,8 @@ Asked (the owner, 2026-11-20): "fill it out with some energy card pickups, maybe
 | E3 energy card | area 6 | — |
 | E4 energy card | area 11 | the secret door from corridor 12, or the tunnel from 10 |
 | E5 energy card | past the rubble, corridor 12's east end | U9 |
-| A1 attack card | area 1 | U2 |
-| A2 attack card | area 8 | U6 |
+| E6 energy card (was A1, an attack card) | area 1 | U2 |
+| E7 energy card (was A2, an attack card) | area 8 | U6 |
 | P1 module part | area 5 | U4 |
 | P2 module part | area 9 | — |
 | P3 module part | area 13 | — |
@@ -192,13 +192,13 @@ Asked (the owner, 2026-11-20): "fill it out with some energy card pickups, maybe
 | U3 a gantry two stories up | the launcher (straight up, one tile over); the Stonepetal's REEF |
 | U4 piled crates | the Flux Technician moves them; the mech moves them |
 | U5 dam the west channel | the Flux Technician or the mech pushes an obstacle in; then down with REEF |
-| U6 cracked wall | the mech breaks it; the Tank Ant clone breaks it |
+| U6 cracked wall (to E7) | the mech breaks it; the Tank Ant clone breaks it |
 | U7 a stuck sluice switch, high up | the Gunslinger shoots it, closing the sluice and raising the water (a way to start U10); the mech turns it if reached |
 | U8 webbing over a door | the Striker Ant clone cuts it; fire burns it |
 | U9 rubble | a Fire Technician drills it; the mech moves it |
 | U10 the crossing at the channel's top | raise the water, then an ice bridge or a box (2.5a) |
 
-**Attack cards found in the dungeon give a creature follower a new attack** (the owner, 2026-11-20: "There should be cards obtainable that give your creature followers a new attack, right?"). Not yet built: today a follower's attacks come from its form, and energy cards unlock its next attack and hybrid attacks (`ENERGY-CARDS.md` rules 5 and 8). Hybrid attacks are **not being done yet** (the owner, 2026-11-20). **Open:** how a found attack card differs from an energy card (an attack outside the follower's own set?), which followers can take which card, and whether it is used up; which elements the energy cards are; whether each check costs a utility use (2.4); the counts.
+**No attack cards in this dungeon** (the owner, 2026-11-20: "We'll remove the attack card spots on the map to put energy cards in"): A1 and A2 are energy cards E6 and E7. Kept as an idea for later: **attack cards found in the world give a creature follower a new attack** (the owner, 2026-11-20: "There should be cards obtainable that give your creature followers a new attack, right?"). Not yet built: today a follower's attacks come from its form, and energy cards unlock its next attack and hybrid attacks (`ENERGY-CARDS.md` rules 5 and 8). Hybrid attacks are **not being done yet** (the owner, 2026-11-20). **Open:** how a found attack card differs from an energy card (an attack outside the follower's own set?), which followers can take which card, and whether it is used up; which elements the energy cards are; whether each check costs a utility use (2.4); the counts.
 
 ## 3. Must-have requirements
 - [ ] A connected sewer of the approved shape (2.2) and roughly the approved scale (2.1), entered from the west.
