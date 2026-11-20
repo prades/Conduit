@@ -37,7 +37,8 @@ The feel: a large, connected sewer the player explores, not a corridor to the bo
 "Can we make it like sort of elevated? [...] Like you have to descend down some stairs every few tiles. So that the player gets an idea that it is a really deep sewer system."
 - The sewer **descends as the player goes in**: the walkways step down by flights of stairs every few tiles, so the player feels how deep it goes.
 - The agent's reading: the entrance is the highest point and the levels fall toward the junction, the way the water runs. (The channel-bed key's way down is REEF, not stairs, 2.5d.)
-- **Open:** how many tiles between flights and how deep each step is; whether the rooms off the walkways sit at their walkway's level; how the levels read in the 2D view (the 3D view, `VIEW-3D.md`, shows height directly).
+- **The west channel's tunnel** (entrance to the central channel) has **2 flights of stairs** along it (the owner, 2026-11-20: "maybe 2 flights of stairs on the whole little tunnel there"; read as that tunnel).
+- **Open:** where the flights fall elsewhere and how deep each one is; whether the rooms off the walkways sit at their walkway's level; how the levels read in the 2D view (the 3D view, `VIEW-3D.md`, shows height directly).
 
 ### 2.3 Skeleton zones (approved as a skeleton; contents are placeholders)
 
