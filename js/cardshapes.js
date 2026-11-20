@@ -81,7 +81,7 @@ function _csOn(list, tiles) {
 function _csNearest(list, q) { let best = null, bd = Infinity; for (const a of list) { const s = _csSq(a), d = Math.hypot(s[0] - q[0], s[1] - q[1]); if (d < bd - 1e-9) { bd = d; best = a; } } return best; }
 // a card's shape (null: an Ultimate's, or nothing to lay it on)
 function cardShapeDef(f, kind, id) {
-    if (!f || kind === "walk") return null;   // (MOVE has none: js/cardbattle.js §2.56)
+    if (!f || kind === "walk" || kind === "shoot" || kind === "pass") return null;   // (MOVE has none: js/cardbattle.js §2.56; nor have the Gunslinger's SHOOT and HOLD FIRE, §2.66)
     if (kind === "ult") return typeof cardUltDef === "function" ? cardUltDef(f) : null;   // (an Ultimate's: js/cardults.js §2.64)
     if (kind === "basic") { const d = f.evolved && typeof evolvedDef === "function" ? evolvedDef(f) : null, shot = d && d.shot; return shot === "CHAIN LIGHTNING" ? CARD_SHAPES._chainLightning : shot === "CORRODE SHOT" ? CARD_SHAPES._corrodeShot : CARD_SHAPES._basic; }
     return CARD_SHAPES[id] || CARD_SHAPES._basic;

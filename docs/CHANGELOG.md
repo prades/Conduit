@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17au` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger has a turn, SHOOT
+- **The ask** (the owner, 2026-11-20): "for the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot, I guess, and it does four to five shots. [...] And shows the ammo [...] the bottom. [...] and it has no wind up or anything".
+- **What it does** (behind `?cards` with `?engine=3d`): a Gunslinger with the machine gun has its own turn every round, after its followers. The pop-up shows its card, SHOOT, with the ammunition on its foot; dragged onto an enemy it fires 4 or 5 rounds at once, each the gun's own (its damage, a round spent, a role's kit). No charge, no cooldown. Every other class still commands only.
+- **The agent's, provisional:** its place after the followers; no turn with no rounds; NO CLEAR SHOT behind a wall or cover; a second card, HOLD FIRE, to pass and keep the rounds. `CARD-BATTLES.md` §2.66, §11.31.
+- **Not done:** no firing pose for the cube in the 3D view; no card picture; the Gunslinger's melee is still to be designed.
+- `js/cardbattle.js`, `js/cardshapes.js`, `js/input.js`, `tests/cardbattle.js` (6 new checks), `docs/CARD-BATTLES.md` §2.66, §9, §10, §11.31, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`.
+- **Verified:** VERIFIED_LINE
+
 ### Build `2026-11-17at` · branch `claude/friendly-thompson-w581x0` · the only weapon is the Gunslinger's machine gun
 - **The ask** (the owner, 2026-11-20): "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger." Asked: the Mutator's lash, "Remove the lash too"; the Gunslinger's gun, "From the locker, as now"; the tutorial's gun lesson, "Remove it altogether"; "Add a Gunslinger melee" (**not designed, not built**: to be asked).
 - **Removed:** the SERVICE GUN; the LASER RIFLE and its fuel cells (the item, its three Server Room cases, its place in the chests); the Technomancer's ARC GAUNTLET (punch, thrown arc, charges, grid); the Mutator's TENTACLE LASH; the tutorial's FIRE YOUR GUN step; the class stages' CHARGE YOUR GAUNTLET, THROW THE ARC and FIGHT BESIDE IT.

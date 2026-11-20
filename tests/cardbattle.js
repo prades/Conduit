@@ -215,7 +215,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(/data-kind="' \+ c\.kind/.test(c) && /addEventListener\("pointerdown", _cbDragStart\)/.test(c) && /findEnemyAtScreen\(p\[0\], p\[1\]\)/.test(c), true, 'the drag');
         same(/#cbScreen \.cb-card \{ pointer-events: auto; touch-action: none; \}/.test(h) && /#cbScreen:not\(\.yours\) \.cb-card/.test(h) && /#cbScreen \.cb-turn/.test(h), true, 'its look');
         same(/function updateNPC\(actor\) \{\n    if \(typeof cardBattleHolds === "function" && cardBattleHolds\(actor\)\) return;/.test(n), true, 'js/npc.js');
-        same(/if \(typeof cardBattleHolds === "function" && cardBattleHolds\(f\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\)\) return;/.test(i), true, 'the gun');
+        same(/if \(typeof cardBattleHolds === "function" && cardBattleHolds\(f\)\) continue;/.test(e), true, 'js/evolution.js'); same(/function firePlayerShot\(foe\) \{\n    if \(typeof cardBattleTurn === "function" && cardBattleTurn\(\) && !\(typeof cardBattleShooting === "function" && cardBattleShooting\(\)\)\) return;/.test(i), true, 'the gun (it holds its fire in the turns but for the Gunslinger\'s own burst, §2.66)');
     });
 
     group('EITHER A BATTLE OR NONE (§2.35; the owner: "no intermediary fighting with my squad. It\'s either battle or no battle")');
@@ -1110,6 +1110,54 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the cards say it in squares: BASH "pushed back 1 square", STAKE RING "2 squares out", GRAVITY SLAM "shoved 1 square", STATIC VORTEX "pulls them in"', () => {
         const r = J(`[CARD_SAYS.bash(), CARD_SAYS.stake_ring(), CARD_SAYS.briar_sweep(), CARD_SAYS.gravity_slam(), CARD_SAYS.static_vortex()]`);
         same(JSON.stringify(r), JSON.stringify(['pushed back 1 square, stunned 1 turn', 'each pushed 2 squares out', 'each pushed 1 square out', 'each shoved 1 square and slowed 1 turn', 'pulls them in; shocks as 2 enemy turns begin']), 'the words');
+    });
+
+    group('THE GUNSLINGER\'S TURN (§2.66; the owner, 2026-11-20: "the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot [...] four to five shots [...] shows the ammo [...] the bottom [...] it has no wind up or anything")');
+    run(`globalThis.__gs = (ammo, hp) => { __fresh(1); invReset(); playerClassKey = null; classSet('gunslinger'); classGrant('machinegun'); weaponEquip('machinegun'); playerAmmo = ammo === undefined ? 20 : ammo; player.selectedElement = null; player.attackCooldown = 0; health = PLAYER_HITS; player.invuln = 1e6;
+            const f = followers[0]; f.role = 'brawler'; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.element = null; a.health = a.maxHealth = hp || 9999; cardBattleChoose(a); __ticks(1); __nextTo(f, a); return { f, a }; };   /* (its follower beside the enemy, so the enemy has its bite to do in its turn) */
+        globalThis.__gsOff = () => { cardBattleReset(); followerProjectiles.length = 0; invReset(); playerClassKey = null; weaponReset(); playerAmmo = PLAYER_AMMO_START; player.invuln = 0; player.attackCooldown = 0; };
+        /* its follower's turn passed, so the cube's is up */
+        globalThis.__gsUp = (f) => { _cb.acted.add(f); _cbAfterAct(frame); return _cbCurrent() === player; };
+        /* the game's own frames till the turn is no longer the cube's burst (the rounds fly, the gun cycles) */
+        globalThis.__gsBurst = () => { let n = 0; for (; n < 600 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act' && cardBattleTurnInfo().kind === 'shoot'; n++) _simStep(false); return n; };`);
+    check('with no weapon in hand the cube has no turn (§2.10, as before): no class, a Technomancer, a Gunslinger before the locker; the round goes from your followers to the enemies', () => {
+        const r = J(`(function(){ const o = {}; for (const cls of [null, 'technomancer', 'gunslinger']) { __fresh(1); invReset(); playerClassKey = null; if (cls) classSet(cls); playerAmmo = 20; const f = followers[0]; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); __nextTo(f, a);
+                const row = [_cbYouIn(), _cbCurrent() === f, cardBattlePlay(player, 'shoot', null, a)]; _cb.acted.add(f); _cbAfterAct(frame); row.push(_cbCurrent() === player, cardBattleTurnInfo().who, playerAmmo); o[cls || 'none'] = row.join(); __gsOff(); } return o; })()`);
+        for (const k of ['none', 'technomancer', 'gunslinger']) same(r[k], 'false,true,false,false,foe,20', k + ' (in it, its follower first, a SHOOT played, its turn, whose turn after its follower, its rounds)');
+    });
+    check('a Gunslinger with the machine gun and rounds has its own turn every round, after its followers: not before them, then the pop-up is its; its cards are SHOOT (4 to 5 rounds, the gun\'s damage a round, the ammunition on its foot) and HOLD FIRE', () => {
+        const r = J(`(function(){ const { f, a } = __gs(20); const o = { in: _cbYouIn(), first: _cbCurrent() === f, early: cardBattlePlay(player, 'shoot', null, a), ammo0: playerAmmo };
+            o.up = __gsUp(f); o.who = cardBattleTurnInfo().who; const cs = cardBattleCards(player); o.kinds = cs.map(c => c.kind + ':' + c.ready).join(); o.fx = cs[0].fx; o.html = _cbCardHTML(cs[0]); o.round = _cb.round; __gsOff(); return o; })()`);
+        same(r.in, true, 'the cube is in the battle\'s turns'); same(r.first, true, 'its follower is not first'); same(r.early, false, 'SHOOT played before its turn'); same(r.ammo0, 20, 'rounds spent early'); same(r.up, true, 'its turn does not follow its followers\''); same(r.who, 'you', 'whose turn'); same(r.round, 1, 'the round');
+        same(r.kinds, 'shoot:true,pass:true', 'its cards'); same(r.fx, '4 to 5 rounds at one enemy, at once: 8 a round.', 'SHOOT\'s words'); ok(/class="cb-st">AMMO 20</.test(r.html) && /cb-shoot ready/.test(r.html) && />SHOOT</.test(r.html), 'the card (its foot says the ammunition): ' + r.html);
+    });
+    check('SHOOT goes off at once (no charge, no cooldown): a burst of 4 or of 5 rounds at the gun\'s own rate, each the gun\'s damage and a round spent, the enemy hurt by all of them; then the enemies\' turn; the next round the cube has its turn again, its card ready', () => {
+        const r = J(`(function(){ const o = {}, keep = Math.random; try { for (const [k, rnd] of [['four', 0], ['five', 0.99]]) { Math.random = () => rnd; const { f, a } = __gs(20); __gsUp(f); const s0 = playerShotsFired, h0 = a.health, r0 = _cb.round;
+                    const row = { played: cardBattlePlay(player, 'shoot', null, a) }; const T = cardBattleTurnInfo(); row.act = [T.who, T.actor === player, T.kind].join(); row.frames = __gsBurst(); row.shots = playerShotsFired - s0; row.ammo = playerAmmo; row.dealt = h0 - a.health;
+                    row.each = weaponDamage() * defenseMult(a, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(a), 'projectile'); row.after = cardBattleTurnInfo().who === 'foe' || _cb.round > r0;   /* (the enemies' turn: or already over, the test's enemy, which cannot walk, having none to bite: the one who hurt it most is the cube, §2.46) */ row.charge = _cb.charge.size;
+                    if (k === 'four') { __toYou(); row.round = _cb.round; row.again = __gsUp(f); row.ready = cardBattleCards(player)[0].ready; row.foot = /AMMO 16</.test(_cbCardHTML(cardBattleCards(player)[0])); } o[k] = row; __gsOff(); } } finally { Math.random = keep; } return o; })()`);
+        for (const [k, n] of [['four', 4], ['five', 5]]) { const x = r[k]; same(x.played, true, k + ': played'); same(x.act, 'act,true,shoot', k + ': its turn'); same(x.shots, n, k + ': rounds fired'); same(x.ammo, 20 - n, k + ': rounds left'); ok(Math.abs(x.dealt - n * x.each) < 0.5 * n + 1, k + ': the enemy took ' + x.dealt + ', not ' + n + ' × ' + x.each);
+            ok(x.frames >= (n - 1) * 11 && x.frames < 300, k + ': the burst took ' + x.frames + ' frames'); same(x.after, true, k + ': the enemies\' turn after it'); same(x.charge, 0, k + ': a charge'); }
+        same(r.four.round, 2, 'the next round'); same(r.four.again, true, 'its turn again the next round'); same(r.four.ready, true, 'SHOOT ready again (no cooldown)'); same(r.four.foot, true, 'the ammunition on its foot the next round');
+    });
+    check('fewer rounds than the burst: it fires what it has, and with none left the cube has no turn the next round; an enemy that falls ends the burst and the rounds not fired are kept', () => {
+        const r = J(`(function(){ const o = {}, keep = Math.random; try { Math.random = () => 0.99; let g = __gs(2); __gsUp(g.f); const s0 = playerShotsFired; const r0 = _cb.round; cardBattlePlay(player, 'shoot', null, g.a); __gsBurst(); o.few = [playerShotsFired - s0, playerAmmo, cardBattleTurnInfo().who === 'foe' || _cb.round > r0].join();
+                __toYou(); o.next = [_cbYouTurn(), __gsUp(g.f), cardBattleCards(player)[0].ready, /NO AMMO</.test(_cbCardHTML(cardBattleCards(player)[0]))].join(); __gsOff();
+                g = __gs(20, 3); const b = __ant(player.x + 2, player.y + 1); b.health = b.maxHealth = 9999; _cb.foes.push(b); __gsUp(g.f); const s1 = playerShotsFired; cardBattlePlay(player, 'shoot', null, g.a); __gsBurst(); o.kill = [g.a.dead || g.a.health <= 0, playerShotsFired - s1 < 5, playerAmmo === 20 - (playerShotsFired - s1), b.health].join(); __gsOff();
+            } finally { Math.random = keep; } return o; })()`);
+        same(r.few, '2,0,true', 'two rounds left (fired, left, the enemies\' turn after)'); same(r.next, 'false,false,false,true', 'the next round with none (its turn, up after its follower, SHOOT ready, NO AMMO on its foot)'); same(r.kill, 'true,true,true,9999', 'an enemy that falls (down, the burst cut short, only the rounds fired spent, the other enemy unhurt)');
+    });
+    check('HOLD FIRE passes its turn and keeps the rounds; a drop on an enemy with no clear shot says so and plays nothing; out of its own burst the gun still holds its fire in a battle (§2.10)', () => {
+        const r = J(`(function(){ const o = {}; let g = __gs(20); o.held = [firePlayerShot(g.a) === true, cardBattleShooting(), playerAmmo].join(); __gsUp(g.f); o.pass = [cardBattlePlay(player, 'pass', null, null), playerAmmo, cardBattleTurnInfo().who, _cb.youActed].join(); __gsOff();
+            g = __gs(20); __gsUp(g.f); const keep = facilityShotClear; facilityShotClear = () => false; try { o.blocked = [cardBattlePlay(player, 'shoot', null, g.a), _cb.say && _cb.say.text, cardBattleTurnInfo().who, playerAmmo, _cbCurrent() === player].join(); } finally { facilityShotClear = keep; }
+            o.then = cardBattlePlay(player, 'pass', null, null); __gsOff(); return o; })()`);
+        same(r.held, 'false,false,20', 'the gun outside its burst (fired, shooting, rounds)'); same(r.pass, 'true,20,foe,true', 'HOLD FIRE (played, rounds, whose turn after, its turn had)'); same(r.blocked, 'false,YOU · NO CLEAR SHOT,you,20,true', 'no clear shot'); same(r.then, true, 'HOLD FIRE after it');
+    });
+    check('the pieces of it: the shot is let through only for its burst (js/input.js); SHOOT and HOLD FIRE have no shape (js/cardshapes.js); the banner names it; a new battle starts it afresh', () => {
+        const inp = rd('js/input.js'), cb = rd('js/cardbattle.js');
+        ok(/cardBattleTurn\(\) && !\(typeof cardBattleShooting === "function" && cardBattleShooting\(\)\)\) return;/.test(inp), 'js/input.js firePlayerShot');
+        const r = J(`[cardShapeDef(player, 'shoot', null), cardShapeDef(player, 'pass', null), (() => { _cb.youActed = true; _cb.shooting = true; cardBattleReset(); return [_cb.youActed, _cb.shooting].join(); })()]`);
+        same(r[0], null, 'SHOOT\'s shape'); same(r[1], null, 'HOLD FIRE\'s shape'); same(r[2], 'false,false', 'after a reset'); ok(/T\.kind === "shoot" \? "SHOOT"/.test(cb), 'the banner'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'HOLD FIRE by a tap');
     });
 
     group('THE PIECES');

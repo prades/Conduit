@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: In a card battle the Gunslinger has a turn of its own: SHOOT
+
+- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17au`
+- **Status:** implemented behind `?cards` with `?engine=3d`; verified by `tests/cardbattle.js` (6 checks) and the full run; seen in a real browser; not playtested, not seen on an iPad.
+- **Decision:** the owner: "for the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot, I guess, and it does four to five shots. [...] And shows the ammo [...] the bottom. [...] and it has no wind up or anything". Each round a Gunslinger with the machine gun has its own turn and one card, SHOOT: a burst of 4 or 5 rounds at once, no charge and no cooldown, the ammunition shown on the card's foot.
+- **Supersedes:** `CARD-BATTLES.md` §2.10 ("the cube commands only") for the Gunslinger with its gun. The Technomancer, the Mutator and a Gunslinger with no gun still command only.
+- **Agent's choices, provisional:** its turn after its followers'; an even chance of 4 or 5; the burst at one enemy, cut short when it falls or the rounds run out; no turn with no rounds; real rounds, so NO CLEAR SHOT behind a wall or cover; a HOLD FIRE card to pass. `CARD-BATTLES.md` §11.31.
+- **Still open:** the Gunslinger's melee (decided, not designed); what the other two classes do in a battle.
+- **Affects:** `CARD-BATTLES.md` §2.66, §9, §10, §11.31; `js/cardbattle.js`, `js/cardshapes.js`, `js/input.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17au`.
+
 ## DECISION: The only personal weapon is the Gunslinger's machine gun
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17at`
