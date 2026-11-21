@@ -33420,8 +33420,9 @@ function view3dAttacks(env) {
         }
         for (const m of memos.values()) {
             const o = m.o;
-            if ((live.has(o) && m.seen === f0) || (live.has(o) && hid(o)))
+            if (live.has(o) && (m.seen === f0 || hid(o)))
                 continue;
+            const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
             const span = X ? (typeof X.span === 'function' ? X.span(m) : X.span || 0) : 0, age = m.age + (f0 - m.seen);
             if (!X || bad.has(m.owner.evolved) || age > span || m.owner.dead) {
                 memos.delete(o);

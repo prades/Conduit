@@ -343,8 +343,8 @@ function view3dAttacks(env) {
     for (const f of shown) { if (!f || !f.evolved || !f.icicleAttack) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved) || !E.fx.icicle) continue; try { if (E.fx.icicle.claim(f.icicleAttack, f)) claimed.add(f.icicleAttack); } catch (x) { fail(f.evolved, x); } }
     // what a form's own state carries (the Quillstone's orbiting fireballs, the Burrower's mound): its entry's `on`
     for (const f of shown) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || !E.on || bad.has(f.evolved)) continue; const b = env.bodyOf(f); if (!b) continue; try { E.on(f, b, f0); } catch (x) { fail(f.evolved, x); } }
-    // the effects and shots gone from the game this frame: played on to their end (their afterglow, a shot's burst where it struck), from their last age
-    for (const m of memos.values()) { const o = m.o; if ((live.has(o) && m.seen === f0) || (live.has(o) && hid(o))) continue;   // (a card battle's field outside its caster's turn: kept, not drawn) const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
+    // the effects and shots gone from the game this frame: played on to their end (their afterglow, a shot's burst where it struck), from their last age (a card battle's field outside its caster's turn is not gone: kept, not drawn)
+    for (const m of memos.values()) { const o = m.o; if (live.has(o) && (m.seen === f0 || hid(o))) continue; const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
       const span = X ? (typeof X.span === 'function' ? X.span(m) : X.span || 0) : 0, age = m.age + (f0 - m.seen);
       if (!X || bad.has(m.owner.evolved) || age > span || m.owner.dead) { memos.delete(o); continue; }
       const b = shown.has(m.owner) ? env.bodyOf(m.owner) || (X.bodyless ? NOBODY : null) : null; if (!b) { memos.delete(o); continue; }
