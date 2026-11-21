@@ -14,26 +14,30 @@ const ang = p => { const a = Math.atan2(p[1] - C[1], p[0] - C[0]); return a < 0 
 const side = k => [OUTER[(k + 15) % 16], OUTER[k % 16]];   // (side k: centred on angle k / 16 of a turn; 0 east, 4 south, 8 west, 12 north)
 const onSide = (k, t) => { const [a, b] = side(k); return [+(a[0] + (b[0] - a[0]) * t).toFixed(2), +(a[1] + (b[1] - a[1]) * t).toFixed(2)]; };
 const atX = (k, x) => { const [a, b] = side(k); return onSide(k, (x - a[0]) / (b[0] - a[0])); }, atY = (k, y) => { const [a, b] = side(k); return onSide(k, (y - a[1]) / (b[1] - a[1])); };
-const K = { wwA: atX(11, 37.2), wwB: atX(11, 40.4), top: [C[0], C[1] - RO], bot: [C[0], C[1] + RO], weA: atX(13, 46.2), weB: atX(13, 48.6), plA: atY(8, 44.8), plB: atY(8, 47.2), puA: atY(0, 44.8), puB: atY(0, 49.2), sdA: onSide(6, 0.14), sdB: onSide(6, 0.86) };   // (the Subway passage: nearly the whole of the ring's south-west side, so it is wide enough to walk)
+const K = { wwA: atX(11, 37.5), wwB: atX(11, 40.5), top: [C[0], C[1] - RO], bot: [C[0], C[1] + RO], weA: atX(13, 46.5), weB: atX(13, 48.5), plA: atY(8, 44.5), plB: atY(8, 47.5), puA: atY(0, 44.5), puB: atY(0, 49.5),   // (cut on the game's half-tile lines, as what meets it is)
+  sdA: onSide(6, 0.14), sdB: onSide(6, 0.86) };   // (the Subway passage: nearly the whole of the ring's south-west side, so it is wide enough to walk)
 // the outer edge from angle a0 to a1 (going round with the angle): its corners between, and the given points that lie on its sides, in order
 function outer(a0, a1, extra) { const span = a => { let d = a - a0; while (d < -1e-9) d += 2 * PI; return d; }, tot = span(a1) || 2 * PI;
   return OUTER.concat(extra).map(p => ({ p, d: span(ang(p)) })).filter(o => o.d > 1e-6 && o.d < tot - 1e-6).sort((x, y) => x.d - y.d).map(o => o.p); }
 const INNER = []; for (let i = 0; i < 16; i++) { const a = (i + 0.5) / 16 * 2 * PI; INNER.push([+(C[0] + Math.cos(a) * RI / Math.cos(PI / 16)).toFixed(2), +(C[1] + Math.sin(a) * RI / Math.cos(PI / 16)).toFixed(2)]); }   // (its flat sides touch the circle of radius RI)
 // the inner edge between two of the ring's cuts (north, at angle 1.5 PI, and south, at 0.5 PI), going from a0 to a1: the cut's point, the sixteen-gon's corners between, the other cut's point
 function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFixed(2)], dir = a1 < a0 ? -1 : 1, lo = Math.min(a0, a1), hi = Math.max(a0, a1); let pts = INNER.map((p, i) => ({ p, a: (i + 0.5) / 16 * 2 * PI })).flatMap(o => [o, { p: o.p, a: o.a - 2 * PI }]).filter(o => o.a > lo + 1e-6 && o.a < hi - 1e-6).sort((x, y) => dir * (x.a - y.a)).map(o => o.p); return [cut(a0)].concat(pts, [cut(a1)]); }
-// (the West Channel widened by a tile and more, the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
+// (the West Channel widened twice, to 5 tiles (\"Maybe make that channel a little bit wider as well\"), the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
 const SHAPES = [
-  { id: 'west_channel', lvl: -2, kind: 'water', p: [[0, 16.2], [37.2, 16.2], [37.2, 20.5], [0, 20.5]] },
-  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB] },
+  { id: 'west_channel', lvl: -2, kind: 'water', p: [[2.5, 16.2], [9.3, 16.2], [9.3, 18.6], [11.7, 18.6], [11.7, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [2.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
+  { id: 'channel_steps', lvl: 0, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
+  { id: 'west_entrance', lvl: 0, kind: 'floor', p: [[0, 14.4], [2.5, 14.4], [2.5, 23.4], [0, 23.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
+  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[48.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [48.6, 35.8]] },
-  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], K.wwB, K.wwA] },
+  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
+  { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], K.weB, K.weA] },
-  { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[0, 14.4], [37.2, 14.4], [37.2, 16.2], [0, 16.2]] },
-  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 20.5], [37.2, 20.5], [37.2, 22.2], [0, 22.2]] },
+  { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[2.5, 14.4], [37.2, 14.4], [37.2, 16.2], [2.5, 16.2]] },
+  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[2.5, 21.2], [37.2, 21.2], [37.2, 23.4], [2.5, 23.4]] },
   { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
   { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
-  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 23.2], [3.5, 22.2], [11.5, 22.2], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 25.5], [3.5, 25.5], [2.5, 24.5]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)
-  { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 22.2], [16.5, 22.2], [16.5, 29.5], [14.5, 29.5]] },
+  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 24.4], [3.5, 23.4], [11.5, 23.4], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 25.5], [3.5, 25.5], [2.5, 25]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)
+  { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 23.4], [16.5, 23.4], [16.5, 29.5], [14.5, 29.5]] },
   { id: 'west_hall', lvl: -1, kind: 'floor', p: [[14, 30.5], [15, 29.5], [27, 29.5], [27.5, 30], [27.5, 34], [26, 35.5], [15, 35.5], [14, 34.5]] },
   // (no passage from the West Hall's east side up to the Central Channel's walkway: the owner, 2026-11-21, circling it on the overlay: "No hallway here")
   { id: 'hall_south', lvl: -1, kind: 'walk', p: [[23.5, 35.5], [25, 35.5], [25, 41.5], [23.5, 41.5]] },
@@ -60,8 +64,9 @@ const SHAPES = [
 // THE STAIRS (the owner, 2026-11-21: "I see a lot of places where stairs are there, but you're not putting them in"): every flight the picture draws, found on a second pass over it enlarged.
 // p: its outline; from, to: the heights it joins (storeys); note: what it is. The agent's reading of the picture's hatching; where a flight goes is its guess from what lies at each end.
 const STAIRS = [
-  { id: 'st_channel_n', from: 1, to: -2, p: [[9.3, 14.3], [11.7, 14.3], [11.7, 18], [9.3, 18]], note: 'from the gallery down past the north walkway into the West Channel\'s bed' },
-  { id: 'st_hall', from: 0, to: -1, p: [[14.5, 22.2], [16.5, 22.2], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
+  { id: 'st_channel_n', from: 0, to: -2, p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]], note: 'the flooded staircase: from the north walkway down into the West Channel' },
+  { id: 'st_cell', from: 0, to: -1, p: [[4.5, 23.4], [7, 23.4], [7, 25], [4.5, 25]], note: 'from the south walkway by the entrance down into the room under it (the owner asked for this way in; where it stands is the agent\'s)' },
+  { id: 'st_hall', from: 0, to: -1, p: [[14.5, 23.4], [16.5, 23.4], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
   // (no flight between the south-west plaza and the ring: the owner, 2026-11-21, circling it on the overlay: "Not stairs")
   { id: 'st_subway', from: -1, to: -1, p: [[31, 58.3], [33.6, 54.6], [34.8, 56.2], [32.2, 59.8]], note: 'the diagonal flight between the Subway Exit\'s passage and the ring (both read as a storey down now: how far it rises is not clear)' },
   { id: 'st_offices', from: 0, to: 0, p: [[48.6, 6.5], [52.5, 6.5], [52.5, 9], [48.6, 9]], note: 'steps at the Offices\' locked door (how far they rise is not clear from the picture)' },
@@ -74,7 +79,14 @@ const STAIRS = [
   { id: 'st_ramp_e', from: 0, to: -1, p: [[46.2, 33], [48.6, 33], [48.6, 36.4], [46.2, 36.4]], note: 'the same on its east side' },
   { id: 'st_pur', from: -1, to: 0, p: [[54.3, 44.5], [55.6, 44.5], [55.6, 49.5], [54.3, 49.5]], note: 'steps up from the ring to the Purification Chamber\'s passage' },
 ];
-module.exports = { STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
+// ON THE GAME'S GRID: the game's tiles are the squares between the half-tile lines, and its playable map moves every wall onto those lines (a doorway traced a little off them was moved shut:
+// the south bank could not be reached). So every point of the trace is put on the nearest half-tile line here, once, for the map, the joins and the pictures alike; but not the ring's own
+// corners and cuts (OUTER, INNER, K), which are not square to the grid and are kept as they are so the ring stays one width.
+const RING_PTS = OUTER.concat(INNER, Object.values(K)), isRing = q => RING_PTS.some(r => Math.abs(r[0] - q[0]) < 0.011 && Math.abs(r[1] - q[1]) < 0.011) || Math.abs(q[0] - C[0]) < 0.011;
+const half = v => Math.floor(v) + 0.5, snap = q => isRing(q) ? q : [half(q[0]), half(q[1])];
+for (const s of SHAPES) s.p = s.p.map(snap).filter((q, i, a) => !i || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.01);
+for (const s of STAIRS) s.p = s.p.map(snap);
+module.exports = { snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {
   const S = +(process.argv[2] || 3), T = 995 / 80 * S, COL = { water: '0,220,255', drain: '0,255,160', walk: '255,230,0', floor: '255,255,255', upper: '255,150,0', ring: '255,230,0', nest: '255,0,255' };
   const mid = p => [p.reduce((a, q) => a + q[0], 0) / p.length * T, p.reduce((a, q) => a + q[1], 0) / p.length * T];
