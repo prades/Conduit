@@ -101,6 +101,8 @@ function view3dWorldEnd() {
     return true;
 }
 function view3dShowing() { return VIEW3D.showing; }
+// A PROP'S STATE has been set (js/propsprites.js facilityPropStateSet; the sewer kit: docs/SEWER-PROPS.md §10): the view shows that state's model. Before the view is made there is nothing to tell: it reads each prop's state as it builds
+function view3dPropState(id, state) { return !!VIEW3D.view && typeof VIEW3D.view.propState === "function" && VIEW3D.view.propState(id, state); }
 // The frame's 3D picture, from the game as this step left it. tiles: the floor's tiles on the screen (js/game.js visibleTilesForDraw), whose marks go on the view's floor.
 function view3dDraw(tiles) {
     if (!VIEW3D.showing) return;

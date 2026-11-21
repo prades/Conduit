@@ -273,6 +273,8 @@ const GAMEVIEW = (function () {
       if (it.fp === 'stairwell' && it.up) return false;   // (a flight of stairs up, the Cold Storage's to the Experiment Lab: the view builds it, design/style-evolution/live/floor.js; a stairwell down, a hole in the floor, is still the game's)
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
+    // A PROP'S STATE (the sewer kit's: js/propsprites.js facilityPropStateSet): show that state's model, hide its others. False for a prop the view has not built, or one with no such state
+    propState(id, st) { const p = world.props && world.props[id]; if (!p || !p.states || !p.states[st]) return false; for (const k of Object.keys(p.states)) p.states[k].visible = k === st; p.s.state = st; return true; },
     seeingThrough() { return faded.size + cut.size; },
     fainting() { return faints.length; },   // (how many bodies are fainting now: for the tests)
     seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },   // (for the tests)

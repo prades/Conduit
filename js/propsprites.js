@@ -160,13 +160,18 @@ const PS_FAMILY = {
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
     hazard_explosive: "hazard", hazard_corrosive: "hazard", chest: "chest",
     holding_tank: "holdtank", whiteboard_stand: "whiteboard",   // THE NEW EXPERIMENT LAB's giant holding tanks and THE LOUNGE's whiteboard on its stand (build 2026-11-13a)
+    // THE SEWER DUNGEON'S KIT (build 2026-11-17bj; docs/SEWER-PROPS.md §10; design/props/models/_sewer.js, sewer.js): kinds of its own, none of them in the map until the dungeon's builder puts
+    // them there (today's Sewers keep their flat rubble, valves and gates: their kinds are rubble, valve, gate). A one-tile kind that faces a way has a _turned kind, a quarter round; a two-tile
+    // kind is turned by its own size (2x1, 1x2). Each has its states (facilityPropState, below).
+    drain_valve: "sewer", drain_valve_turned: "sewer", sluice_gate: "sewer", sluice_switch: "sewer", sluice_switch_turned: "sewer", floor_drain: "sewer", subway_door: "sewer", shortcut_door: "sewer",
+    rubble_heap: "sewer", secret_door: "sewer", loose_slab: "sewer",
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }
     if (_psIndex[fam]) return _psIndex[fam];
     const out = {}, A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null;
     if (A) for (const name of Object.keys(A.cells)) {
-        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (x === "on" || x === "off" || x === "open" || x === "empty") e.state = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); }
+        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); else if (/^[a-z]+$/.test(x)) e.state = x; }   // (a state is any plain word: on, off, open, empty; the sewer kit's shut, thrown, locked, cleared ...: build 2026-11-17bj)
         (out[t[0]] = out[t[0]] || []).push(e);
     }
     return (_psIndex[fam] = out);
@@ -180,6 +185,23 @@ function _psResolve(fam, kind, dims, state, seed) {
 // is a cell of a multi-cell prop on its outline (where a shadow is seen)
 function _psEdgeCell(S, it) { if (S.round) return Math.hypot(it.x - S.c[0], it.y - S.c[1]) > S.round - 1.1; const b = S.bb; return it.x - 0.5 <= b[0] + 0.01 || it.x + 0.5 >= b[2] - 0.01 || it.y - 0.5 <= b[1] + 0.01 || it.y + 0.5 >= b[3] - 0.01; }
 function _psHash(str) { let h = 7; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
+// ── A PROP'S STATE, SET BY THE GAME (build 2026-11-17bj; docs/SEWER-PROPS.md §10: the sewer dungeon's kit, the owner, 2026-11-21: "create the framework so that my sewer AI can build this in 3D") ──
+// A prop of a kind that has states on its sheet (a drain valve: shut, open; a sluice gate: open, shut ...) is drawn in the one it was last given, in the 2D game and in the 3D view alike;
+// given none, in its kind's FIRST state on the sheet, which is how it is found. This is the LOOK only: what a state does (water, a way opened: facilitySolidOpen, js/facilityplay.js) is the
+// caller's. Kept with the facility's play state (_fp.propState) and not saved: a game loaded, or begun again, has every prop as it is found (the dungeon resets on every return).
+//   facilityPropStates(id)        the states a prop can be given, in its sheet's order ([] for a prop with none, or not of the sewer kit)
+//   facilityPropState(id)         the one it was given, or null (as it is found)
+//   facilityPropStateSet(id, st)  give it one (null: as it is found again); false, and nothing changed, for a prop that is not there or a state its kind has not
+function _psStates(fam, kind, dims) { const out = []; for (const e of _psNames(fam)[kind] || []) if (e.state !== null && (e.dims === null || !dims || e.dims === dims) && out.indexOf(e.state) < 0) out.push(e.state); return out; }
+function _psStateSolid(id) { const s = typeof _fp !== "undefined" && _fp && _fp.F ? _fp.F.solids.find(q => q.id === id) : null; return s && PS_FAMILY[s.kind] === "sewer" ? s : null; }
+function facilityPropStates(id) { const s = _psStateSolid(id), S = s ? _psSolid(id) : null; return s ? _psStates("sewer", s.kind, S ? S.dims : null) : []; }
+function facilityPropState(id) { const m = typeof _fp !== "undefined" && _fp ? _fp.propState : null; return (m && m[id]) || null; }
+function facilityPropStateSet(id, state) {
+    const all = facilityPropStates(id); if (!_psStateSolid(id) || (state != null && all.indexOf(state) < 0)) return false;
+    (_fp.propState = _fp.propState || {})[id] = state || null;
+    if (typeof view3dPropState === "function") view3dPropState(id, state || all[0] || null);   // (the 3D view shows that state's model: js/view3d.js)
+    return true;
+}
 function _psSolid(id) {
     if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0 }); } }
     return _fp._pss.get(id) || null;
@@ -216,7 +238,7 @@ function facilitySpriteDraw(it, whole) {
     if (!S) return false;
     if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
     if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], whole ? null : [it.x, it.y]);
-    const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : k === "chest" ? (typeof chestSpriteState === "function" ? chestSpriteState(it.id) : null) : null;   // (a chest: shut, opening, emptied: js/chests.js)   // (the main power junction: broken or repaired, js/stations.js)
+    const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : k === "chest" ? (typeof chestSpriteState === "function" ? chestSpriteState(it.id) : null) : fam === "sewer" ? facilityPropState(it.id) : null;   // (the sewer kit's: as the game last set it, facilityPropStateSet)   // (a chest: shut, opening, emptied: js/chests.js)   // (the main power junction: broken or repaired, js/stations.js)
     const name = _psResolve(fam, k, S.dims, state, seed); if (!name) return false;
     const ok = !!_psBlit(fam, name, S.c[0], S.c[1], S.multi && !whole ? [it.x, it.y] : null);
     if (ok && k === "server_rack") facilityRackLeds(it, S, seed);

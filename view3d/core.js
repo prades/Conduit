@@ -112,6 +112,7 @@ function view3dCore(opts) {
     built = countMeshes();
     for (const id of world.order) mergeStill(world.rooms[id].g, { chunk: CHUNK, from: world.rooms[id].rec.bb, copy: true }); for (const G of world.groups) mergeStill(G.g, { chunk: CHUNK * 2, copy: true }); for (const q of world.sentries) mergeStill(q.head); mergeStill(world.rest, { copy: true });
     for (const d of world.doors) if (d.leaves) for (const lf of d.leaves) mergeStill(lf.g);   // (a door's leaf slides: one mesh of its own)
+    for (const p of Object.values(world.props || {})) if (p.states) for (const k of Object.keys(p.states)) { const sg = p.states[k], v = sg.visible; sg.visible = true; mergeStill(sg); sg.visible = v; }   // (a prop with states, the sewer kit's: each state's model one mesh a material, the hidden ones too)
     return world;
   }
   // the walls in front of a room sink (the room that is opened), the others stand: eased over `dt` seconds of the wall's clock (0: at once)
