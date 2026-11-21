@@ -1267,6 +1267,8 @@ function rotSpikeDrawItems(list) {
     for (const e of elementEffects) {
         if (e.type !== "toxicpuddle" || !e.shards || !e.shards.length)
             continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e))
+            continue;
         const since = (e.maxLife - e.life) - e.shardAt;
         if (!(since >= 0 && since < 18))
             continue;
@@ -2425,7 +2427,10 @@ function drawElementEffects() {
         }
         ctx.restore();
     }
+    const v3 = typeof view3dOwnsFx === "function" && typeof view3dShowing === "function" && view3dShowing();
     elementEffects.forEach(e => {
+        if (v3 && view3dOwnsFx(e))
+            return;
         const px = isoSX(e.x, e.y) + canvas.width / 2;
         const py = isoSY(e.x, e.y) + canvas.height / 2;
         const alpha = Math.min(1, e.life / 20);
@@ -9686,7 +9691,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         drawCtx.fill();
         drawCtx.restore();
     }
-    if (actor.fireOrbitTimer > 0) {
+    if (actor.fireOrbitTimer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fireOrbit"))) {
         const _foAlpha = Math.min(1, actor.fireOrbitTimer / 8);
         const _orbitR = 22;
         const _oAngle = (frame || 0) * 0.09;
@@ -9708,7 +9713,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    if (actor.sparkSurround > 0) {
+    if (actor.sparkSurround > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "spark"))) {
         const _sAlpha = Math.min(1, actor.sparkSurround / 5);
         drawCtx.save();
         const _NS = 10;
@@ -9757,7 +9762,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
+    if (actor.icicleAttack && actor.icicleAttack.timer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor.icicleAttack))) {
         const _it = actor.icicleAttack;
         const _tpx = isoSX(_it.tx, _it.ty) + canvas.width / 2;
         const _tpy = isoSY(_it.tx, _it.ty) + canvas.height / 2 - 30;
@@ -59023,7 +59028,8 @@ function render() {
         }
         const sx = isoSX(p.x, p.y) + canvas.width / 2;
         const sy = isoSY(p.x, p.y) + canvas.height / 2 - 40;
-        _drawFollowerProjectile(ctx, p, sx, sy);
+        if (!(typeof view3dOwnsFx === "function" && view3dOwnsFx(p)))
+            _drawFollowerProjectile(ctx, p, sx, sy);
         if (p.life <= 0 && p.onLand)
             p.onLand();
         let hit = false;
@@ -59356,6 +59362,7 @@ function view3dFeet() { return VIEW3D.showing ? TILE_H : 0; }
 function view3dKeeps(it) { return VIEW3D.showing && VIEW3D.view.keeps(it); }
 function view3dBody(a) { return VIEW3D.showing && VIEW3D.view.has(a); }
 function view3dTop(a) { return VIEW3D.view.top(a); }
+function view3dOwnsFx(o, k) { return VIEW3D.showing && !!o && !!VIEW3D.view && typeof VIEW3D.view.owns === "function" && VIEW3D.view.owns(o, k); }
 const _V3BTN = { r: 17, y0: 80, y: 80, xs: [28, 70, 122, 164], acts: [() => view3dTurnBy(-1), () => view3dTurnBy(1), () => view3dZoomBy(-1), () => view3dZoomBy(1)], shown: false };
 function _v3panelUp() { return (typeof _lastPanelOpen !== "undefined" && _lastPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen) || (typeof settingsPanelOpen !== "undefined" && settingsPanelOpen); }
 function view3dDrawButtons() {

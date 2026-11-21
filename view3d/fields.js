@@ -3,8 +3,10 @@
 // with the Ultimates' lasting fields". Each field an Ultimate left (js/cardults.js cardUltFields) is a thing of the 3D picture while the battle's camera is up: made when first seen,
 // moved and animated by the game's own clock, taken away when the field is over. Its colours are its 2D drawing's (js/elements.js drawElementEffects); its shapes the agent's,
 // provisional. All ten fields (drafts for the owner): THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first (build 2026-11-17av), then WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK, METEOR RAIN. Nothing here touches what a field does.
-// In scope: T. liftAt(x, y): the floor's height there, in the view's units.
-function battleFieldsMake(scene, liftAt) {
+// APPROVED LOOKS WIN (the owner, 2026-11-21, asked about the Ultimates the attacks' registry, view3d/attacks.js, also draws): a field or burst the registry drew this frame (left(e) true) is
+// not drawn here too; these drafts stay for the forms the registry has not done (EVENT HORIZON, SHARD VORTEX, PINK THICKET, SHOCKWAVE SLAM, WAVE MAKER, CONSUME, JELLY SHIELDS, PROXY SWARM, REEF PILLAR).
+// In scope: T. liftAt(x, y): the floor's height there, in the view's units. left(e): whether another drawing has it this frame (or none).
+function battleFieldsMake(scene, liftAt, left) {
   const W0 = { x: 0, y: 0 };   // (a thing laid out in the world's own places stands at the world's corner: its parts carry where they are)
   const live = new Map(), UP = new T.Vector3(0, 1, 0), v = new T.Vector3();
   const mat = (hex, op, add) => { const m = new T.MeshBasicMaterial({ color: hex, transparent: true, opacity: op, depthWrite: false, side: T.DoubleSide, blending: add ? T.AdditiveBlending : T.NormalBlending }); m.userData.op = op; m.userData.noInk = true; return m; };
@@ -144,7 +146,7 @@ function battleFieldsMake(scene, liftAt) {
   const NONE = {};
   function step(list, f0, more) {
     for (const o of live.values()) o.seen = false;
-    if (list) for (const e of list) { const mk = MAKE[e.type || (e.parts ? 'reef' : e.kind === 'quill' ? 'quill' : '')]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
+    if (list) for (const e of list) { const mk = MAKE[e.type || (e.parts ? 'reef' : e.kind === 'quill' ? 'quill' : '')]; if (!mk || (left && left(e))) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
       o.seen = true; const p = o.at ? o.at(e) : e; o.g.position.set(p.x, p === W0 ? liftAt(e.x, e.y) : liftAt(p.x, p.y), p.y); o.step(e, f0, more || NONE);   /* (a hold or a shield stands still on the battle's clock between its turns: it does not fade in by its age) */ fade(o.g, e.maxLife > 0 && e._cbUlt !== 'sta' ? Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20)) : 1); }
     for (const [e, o] of live) if (!o.seen) { scene.remove(o.g); o.g.traverse(m => { if (m.isMesh) m.material.dispose(); }); live.delete(e); }
     return live.size;
