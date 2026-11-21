@@ -641,7 +641,7 @@ if (WON !== null) check('THUNDERSTORM (the Thunderhead\'s, the registry\'s appro
     same(JSON.stringify(R.hidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the storm in the Void Star\'s turn: drawn by neither');
     same(JSON.stringify(R.hole), JSON.stringify({ owned: false, shown: true, list: 'eventhorizon', fields: 1 }), 'the black hole: not the registry\'s, drawn by the fields');
     same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
-    ok(/battleFieldsMake\(scene, [^\n]*e => ATT\.owns\(e\)\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
+    ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
 
 group('A FAILURE never stops the game');

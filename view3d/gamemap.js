@@ -26,6 +26,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get battleFighters() { return typeof cardBattleFighters === "function" ? cardBattleFighters() : null; },   // CARD BATTLES: everyone in the battle, for the view to keep in sight (view3d/gameview.js seeThrough)
   get meteor() { return typeof cardUltNumbers === "function" ? cardUltNumbers() : null; },   // (METEOR RAIN's own timings, for its rocks in 3D: view3d/fields.js)
   get battleFields() { return typeof cardUltFields === "function" ? cardUltFields() : null; },   // CARD BATTLES: the fields the Ultimates left, for the view to draw (view3d/fields.js)
+  get battleActor() { return typeof _cb !== "undefined" && _cb.phase === "on" && _cb.turn && _cb.turn.who === "act" ? _cb.turn.f || null : null; },   // CARD BATTLES: the one whose card is playing out now (its Ultimate's bursts are its: view3d/fields.js)
   ultHidden(e) { return !!e && !!e._cbUlt && typeof cardUltShown === "function" && !cardUltShown(e); },   // CARD BATTLES: an Ultimate's field not seen now, outside its caster's turn (docs/CARD-BATTLES.md §2.68): the attacks' registry leaves it out then, as view3d/fields.js does
   get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },

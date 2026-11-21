@@ -24757,6 +24757,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get battleFighters() { return typeof cardBattleFighters === "function" ? cardBattleFighters() : null; },   // CARD BATTLES: everyone in the battle, for the view to keep in sight (view3d/gameview.js seeThrough)
   get meteor() { return typeof cardUltNumbers === "function" ? cardUltNumbers() : null; },   // (METEOR RAIN's own timings, for its rocks in 3D: view3d/fields.js)
   get battleFields() { return typeof cardUltFields === "function" ? cardUltFields() : null; },   // CARD BATTLES: the fields the Ultimates left, for the view to draw (view3d/fields.js)
+  get battleActor() { return typeof _cb !== "undefined" && _cb.phase === "on" && _cb.turn && _cb.turn.who === "act" ? _cb.turn.f || null : null; },   // CARD BATTLES: the one whose card is playing out now (its Ultimate's bursts are its: view3d/fields.js)
   ultHidden(e) { return !!e && !!e._cbUlt && typeof cardUltShown === "function" && !cardUltShown(e); },   // CARD BATTLES: an Ultimate's field not seen now, outside its caster's turn (docs/CARD-BATTLES.md §2.68): the attacks' registry leaves it out then, as view3d/fields.js does
   get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
@@ -33526,6 +33527,7 @@ function view3dAttacks(env) {
             const C = claimedK.get(k);
             return !!C && C.has(o);
         } return claimed.has(o); },
+        covers(id) { return !!id && !!FORMS[id] && !bad.has(id); },
         types() { const out = {}; for (const id of Object.keys(FORMS)) {
             const E = FORMS[id];
             out[id] = Object.keys(E.fx).concat(E.shots ? Object.keys(E.shots).map(k => 'shot:' + k) : []);
@@ -34325,7 +34327,9 @@ const GAMEVIEW = (function () {
         b.holder.userData.body = true;
         return b;
     }
-    const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX, e => ATT.owns(e));
+    const casterOf = e => e._cbBy || e.by || e.source || (e._cbUlt ? null : GM.battleActor);
+    const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX, e => { if (ATT.owns(e))
+        return true; const f = casterOf(e); return !!(f && ATT.covers(f.evolved)); });
     const FAINT = 62, faints = [];
     function faintStart(u, b, f0) {
         if (!u || !u.dead || !battling() || !b.holder.visible || faints.length >= 12)

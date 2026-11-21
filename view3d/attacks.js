@@ -369,6 +369,8 @@ function view3dAttacks(env) {
   return {
     stats, FORMS, CAP, begin, body, held, draw, clear, burrows, smokes,
     owns(o, k) { if (k) { const C = claimedK.get(k); return !!C && C.has(o); } return claimed.has(o); },
+    // whether a form has an entry here that works (its looks the owner's approved ones: view3d/fields.js leaves that form's Ultimates to it, "Approved looks win", the owner, 2026-11-21)
+    covers(id) { return !!id && !!FORMS[id] && !bad.has(id); },
     // what the registry draws: each form's effect types, and its shots by kind (for the tests and the docs)
     types() { const out = {}; for (const id of Object.keys(FORMS)) { const E = FORMS[id]; out[id] = Object.keys(E.fx).concat(E.shots ? Object.keys(E.shots).map(k => 'shot:' + k) : []); } return out; },
     bad() { return [...bad]; }, error() { return lastErr; }, memos() { return [...memos.values()].map(m => m.type + ':' + m.age + ':' + (m.o.life || 0)); },

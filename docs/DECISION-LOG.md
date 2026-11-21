@@ -20,7 +20,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Status:** implemented; verified by `tests/view3d.js` (APPROVED LOOKS WIN) and stills of THUNDERSTORM and EVENT HORIZON in a real card battle. Not seen on an iPad.
 - **Context:** two sessions drew the card battles' Ultimates in 3D: this branch's registry by form (`view3d/attacks*.js`, every look approved by the owner) and main's drafts (`view3d/fields.js`, not approved). Merged, both would draw the same storm, puddle or rink.
 - **Decision:** the owner, asked about exactly this overlap: **"Approved looks win"**. For every Ultimate (or effect) the registry draws, its look shows and the draft does not draw too; the drafts stay for the forms the registry has not done (EVENT HORIZON, SHARD VORTEX, PINK THICKET, SHOCKWAVE SLAM, WAVE MAKER, CONSUME, JELLY SHIELDS, PROXY SWARM, REEF PILLAR). The Frost Maw's ABSOLUTE ZERO is the registry's.
-- **How:** `view3d/fields.js` skips a field or burst the registry drew that frame (`ATT.owns`); the registry leaves out a battle's Ultimate outside its caster's turn (§2.68), as the drafts do. No game rule or number changed.
+- **How:** `view3d/fields.js` skips a field or burst the registry drew that frame (`ATT.owns`) or whose caster's form the registry draws (`ATT.covers`); the registry leaves out a battle's Ultimate outside its caster's turn (§2.68), as the drafts do. No game rule or number changed.
 - **Affects:** `view3d/fields.js`, `view3d/gameview.js`, `view3d/gamemap.js`, `view3d/attacks.js`; `VIEW-3D.md` §4.7, `CARD-BATTLES.md` §2.67.
 
 ## DECISION: The Sewer Dungeon's walls are brick and concrete; its props and key items are approved piece by piece

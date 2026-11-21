@@ -171,7 +171,8 @@ const GAMEVIEW = (function () {
   // A FAINT (the owner, 2026-11-18: "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation
   // is concluding"): one of a card battle that goes down (a creature, one of yours) is not gone at once: the view keeps its body for FAINT frames: it tips over onto its side (the first half), lies
   // a moment, then sinks into the floor and shrinks away; then the body goes back to the pool. It runs on the game's frames, on its own: the last one's goes on as the battle's camera eases back.
-  const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX, e => ATT.owns(e));   // (APPROVED LOOKS WIN, the owner, 2026-11-21: a field or burst the attacks' registry drew this frame, view3d/attacks.js, is not drawn again by the drafts)
+  const casterOf = e => e._cbBy || e.by || e.source || (e._cbUlt ? null : GM.battleActor);   // (whose Ultimate a field or burst is: a burst names none, it is the one whose turn plays out)
+  const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX, e => { if (ATT.owns(e)) return true; const f = casterOf(e); return !!(f && ATT.covers(f.evolved)); });   // (APPROVED LOOKS WIN, the owner, 2026-11-21: a field or burst the attacks' registry drew this frame, or of a form it draws, view3d/attacks.js, is not drawn again by the drafts)
   const FAINT = 62, faints = [];
   function faintStart(u, b, f0) { if (!u || !u.dead || !battling() || !b.holder.visible || faints.length >= 12) return false;
     const h = b.holder; faints.push({ b, t0: f0, y: h.position.y, sc: h.scale.x }); return true; }
