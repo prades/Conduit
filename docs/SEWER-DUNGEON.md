@@ -71,6 +71,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-21, circling the diagonal passage the agent had drawn from the West Hall's east side up to the Central Channel's west walkway): "No hallway here".** Removed from `SHAPES`: those diagonal lines in the picture are walls, not a way through.
 
+**Answered (the owner, 2026-11-21, of the south-west plaza and the ring): "Same height, you can cross it".** The plaza and the ring are one floor. *The agent's reading that follows, shown to the owner:* the plaza is joined flat to the West Hall and Southwest Storage, which the picture's stairs put a storey below the walkways; so the ring is a storey down too, reached from the Central Channel's walkways by the stepped curves the picture draws at its north (`st_ramp_w`, `st_ramp_e`), the nest a storey below the ring down its inner steps, and the Purification Chamber's passage up a flight from the ring.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
