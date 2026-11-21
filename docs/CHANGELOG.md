@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17be` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Subway passage and the west room's passage widened (work in progress)
+- **The ask** (the owner, 2026-11-21): "The bottom left tunnel connecting to that room from the circular junction is not right. I can't navigate through it."
+- **What it does** (only with `?sewerdungeon`): the passage between the ring and the Subway Exit is straight and 3.4 tiles wide; the small west room's passage to the West Hall 2.5. Every tile of every room is reached on foot from the West Entrance.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check in the sandbox; the short run (facility, facilityplay, sewers, sewerlook, bundle, ghost). The full suite was not run on this build (the owner's call for prototype-only changes). **Not playtested.**
+
 ### Build `2026-11-17bd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's ring made uniform (work in progress)
 - **The ask** (the owner, 2026-11-21, of the ring's walkway): "This tunnel is bad, make it uniform. Dont use reference make this area completely uniform".
 - **What it does** (only with `?sewerdungeon`): the Round Junction's ring is one even band, sixteen flat sides inside and out, 2.5 tiles wide all the way round.

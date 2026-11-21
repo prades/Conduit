@@ -14,7 +14,7 @@ const ang = p => { const a = Math.atan2(p[1] - C[1], p[0] - C[0]); return a < 0 
 const side = k => [OUTER[(k + 15) % 16], OUTER[k % 16]];   // (side k: centred on angle k / 16 of a turn; 0 east, 4 south, 8 west, 12 north)
 const onSide = (k, t) => { const [a, b] = side(k); return [+(a[0] + (b[0] - a[0]) * t).toFixed(2), +(a[1] + (b[1] - a[1]) * t).toFixed(2)]; };
 const atX = (k, x) => { const [a, b] = side(k); return onSide(k, (x - a[0]) / (b[0] - a[0])); }, atY = (k, y) => { const [a, b] = side(k); return onSide(k, (y - a[1]) / (b[1] - a[1])); };
-const K = { wwA: atX(11, 37.2), wwB: atX(11, 40.4), top: [C[0], C[1] - RO], bot: [C[0], C[1] + RO], weA: atX(13, 46.2), weB: atX(13, 48.6), plA: atY(8, 44.8), plB: atY(8, 47.2), puA: atY(0, 44.8), puB: atY(0, 49.2), sdA: onSide(6, 0.72), sdB: onSide(6, 0.28) };
+const K = { wwA: atX(11, 37.2), wwB: atX(11, 40.4), top: [C[0], C[1] - RO], bot: [C[0], C[1] + RO], weA: atX(13, 46.2), weB: atX(13, 48.6), plA: atY(8, 44.8), plB: atY(8, 47.2), puA: atY(0, 44.8), puB: atY(0, 49.2), sdA: onSide(6, 0.14), sdB: onSide(6, 0.86) };   // (the Subway passage: nearly the whole of the ring's south-west side, so it is wide enough to walk)
 // the outer edge from angle a0 to a1 (going round with the angle): its corners between, and the given points that lie on its sides, in order
 function outer(a0, a1, extra) { const span = a => { let d = a - a0; while (d < -1e-9) d += 2 * PI; return d; }, tot = span(a1) || 2 * PI;
   return OUTER.concat(extra).map(p => ({ p, d: span(ang(p)) })).filter(o => o.d > 1e-6 && o.d < tot - 1e-6).sort((x, y) => x.d - y.d).map(o => o.p); }
@@ -32,7 +32,7 @@ const SHAPES = [
   { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 20.5], [37.2, 20.5], [37.2, 22.2], [0, 22.2]] },
   { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
   { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
-  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 23.2], [3.5, 22.2], [7.5, 22.2], [8.5, 23.2], [10.5, 24.5], [11.5, 28], [14, 30.5], [14, 32.5], [12.5, 31], [9.5, 27], [8, 24.8], [3.5, 24.8], [2.5, 23.8]] },
+  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 23.2], [3.5, 22.2], [11.5, 22.2], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 25.5], [3.5, 25.5], [2.5, 24.5]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)
   { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 22.2], [16.5, 22.2], [16.5, 29.5], [14.5, 29.5]] },
   { id: 'west_hall', lvl: -1, kind: 'floor', p: [[14, 30.5], [15, 29.5], [27, 29.5], [27.5, 30], [27.5, 34], [26, 35.5], [15, 35.5], [14, 34.5]] },
   // (no passage from the West Hall's east side up to the Central Channel's walkway: the owner, 2026-11-21, circling it on the overlay: "No hallway here")
@@ -41,8 +41,8 @@ const SHAPES = [
   { id: 'sw_plaza', lvl: -1, kind: 'floor', p: [[22.5, 41.5], [26.5, 41.5], [26.5, 40.3], [29.6, 40.3], [29.6, 48], [22.5, 48]] },
   { id: 'plaza_ring', lvl: -1, kind: 'walk', p: [[29.6, 44.8], K.plA, K.plB, [29.6, 47.2]] },
   { id: 'south_loop', lvl: -1, kind: 'walk', p: [[24, 48], [26.5, 48], [26.5, 51.5], [28.5, 53.5], [28.5, 58], [26.5, 58], [26.5, 54.5], [24, 52]] },
-  { id: 'subway_exit', lvl: -1, kind: 'floor', p: [[15, 61], [17, 59], [24, 59], [25, 58], [28.5, 58], [28.5, 59.5], [23, 64], [15.5, 64], [14.5, 63]] },
-  { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, 58], K.sdB, K.sdA, [28.5, 59.5]] },
+  { id: 'subway_exit', lvl: -1, kind: 'floor', p: [[15, 61], [17, 59], [24, 59], [25, 58], [28.5, 58], [28.5, 64], [15.5, 64], [14.5, 63]] },
+  { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, +(K.sdB[1] + (K.sdB[0] - 28.5)).toFixed(2)], K.sdB, K.sdA, [28.5, +(K.sdA[1] + (K.sdA[0] - 28.5)).toFixed(2)]] },   // (straight south-west from the ring's side to the Subway Exit's east wall, one width all along: the owner, 2026-11-21, "I can't navigate through it")
   { id: 'junction_ring_w', lvl: -1, kind: 'ring', p: [K.bot].concat(outer(PI / 2, PI * 1.5, [K.sdA, K.sdB, K.plA, K.plB, K.wwA, K.wwB]), [K.top], inner(PI * 1.5, PI / 2)) },
   { id: 'junction_ring_e', lvl: -1, kind: 'ring', p: [K.top].concat(outer(PI * 1.5, PI / 2, [K.weA, K.weB, K.puA, K.puB]), [K.bot], inner(PI / 2, -PI / 2)) },
   { id: 'junction_nest', lvl: -2, kind: 'nest', p: INNER.slice() },
