@@ -597,7 +597,7 @@ if (TOX !== null) {
     check('THE SEEPER: its hit (stomp and smoke form), ERUPTION, TOXIC STOMP and TOXIC UNDERTOW: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
         const R = TOX.r; same(JSON.stringify([R.ehit.owned, R.ehit.body]), '[true,true]', 'the hit');
         same(JSON.stringify([R.erupt.fired, R.erupt.owned]), '[true,true]', 'ERUPTION'); ok(R.erupt.st.smoke >= 10, 'its goo: ' + JSON.stringify(R.erupt.st));
-        same(JSON.stringify([R.stomp.fired, R.stomp.owned]), '[true,true]', 'TOXIC STOMP'); ok(R.stomp.st.smoke > 0 && R.stomp.st.flats > 0, 'its goo: ' + JSON.stringify(R.stomp.st));
+        same(JSON.stringify([R.stomp.fired, R.stomp.owned]), '[true,true]', 'TOXIC STOMP'); ok(R.stomp.st.smoke > 0 && R.stomp.st.strands > 0, 'its goo and its shock line: ' + JSON.stringify(R.stomp.st));
         same(JSON.stringify([R.under.fired, R.under.owned]), '[true,true]', 'TOXIC UNDERTOW'); ok(R.under.low.smoke <= TOX.cap.smoke / 2 && R.under.low.smoke < R.under.st.smoke, 'LOW graphics: ' + JSON.stringify(R.under.low) + ' of ' + JSON.stringify(R.under.st));
     });
     check('THE ROTSHARD: CORRODE SHOT (the soul blob, its splat), ROTTEN DECOY (the lob, the black Rotshard, its shards) and TOXIC PUDDLE (its spikes): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
