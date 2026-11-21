@@ -376,7 +376,7 @@ function view3dCoreForms(K) {
       // aim, high at first and lower as it goes, its white crest curling over, foam and spray along it; a burst of water at its horn as it leaves; a splash up on each enemy as the crest reaches it (the
       // game throws them back)
       wavemaker: {
-        pre: true, claim(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
+        pre: true, find(e, f) { return e.on === f; }, claim(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
         draw(m, age, f0, b) { const o = m.o, s = m.seed, R = o.rings || [], len = WAVE.len || 4, an = Math.atan2(o.dy || 0, o.dx || 1), cone = Math.acos(clamp(WAVE.cos || 0.64, -1, 1));
           for (let i = 0; i < R.length; i++) { const w = R[i], t = (age - w.at) / 24; if (t < -0.01 || t > 1) continue; const tt = clamp(t, 0, 1), rad = 0.6 + tt * (len - 0.6), fa = 1 - tt * tt, Yf = floorY(w.x, w.y);
             wave(w.x, w.y, an - cone * 1.05, cone * 2.1, rad, 0.62 * (1 - 0.6 * tt) + 0.1, 0.3, [TEAL2, [0.1, 0.72, 0.64], DEEP, CREST], 0.92 * fa, true, s + i * 5, age);

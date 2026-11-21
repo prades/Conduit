@@ -34489,7 +34489,7 @@ function view3dCoreForms(K) {
                 }
             },
             wavemaker: {
-                pre: true, claim(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
+                pre: true, find(e, f) { return e.on === f; }, claim(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
                 draw(m, age, f0, b) {
                     const o = m.o, s = m.seed, R = o.rings || [], len = WAVE.len || 4, an = Math.atan2(o.dy || 0, o.dx || 1), cone = Math.acos(clamp(WAVE.cos || 0.64, -1, 1));
                     for (let i = 0; i < R.length; i++) {
