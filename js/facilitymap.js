@@ -17,6 +17,9 @@
 //   - the arena's perimeter is solid wall / rock and blocks movement;
 //   - nothing here is a ramp or a shortcut unless it is in `ramps` (also empty).
 // `status` says how sure the tracing is: "traced" (read straight off the sketch), "approximate" (drawn loosely), "unconfirmed" (a guess about what it is).
+// THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md; the owner, 2026-11-21: "build it"): its rooms are in the map only with ?sewerdungeon in the address, a builder's look at it.
+// The owner chose "Replace outright": when its first stage is whole the old Sewers go and this switch with them.
+const SEWER_DUNGEON_ON = typeof location !== "undefined" && /[?&]sewerdungeon\b/.test(location.search || "");
 const FACILITY_MAP = {
     id: "conduit_facility_01",
     // 20 px to a tile. The hallway round the lab is 120 px = SIX tiles wide, matching the strip's lane: the other rooms were pushed outward to make room for it (wide enough to fight in).
@@ -35,6 +38,7 @@ const FACILITY_MAP = {
     ],
 
     rooms: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.rooms : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "crystal_chamber", label: "Crystal Chamber", level: 0, status: "traced", wall_material: "solid",
           polygon: [[185, 262], [370, 262], [370, 500], [185, 500]],
           objects: [{ id: "crystal", type: "objective", at: [255, 335], radius: 40, status: "traced" }] },
@@ -235,6 +239,7 @@ const FACILITY_MAP = {
     // the map of its own, `offset` sketch pixels from there (64 tiles east), where nothing else is, and you reach it through a doorway (a PORTAL): walking into the doorway fades to black, loads you in the other room's
     // doorway and fades back (js/facilityportals.js). A room is a unit of the map; an interior is a room you have to go into.
     interiors: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.interiors : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
         { id: "cold_storage", under: "experiment_lab", offset: [-1920, 0] },   // (96 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen; out here
                                                                                 //  nothing is within sight of it. It was 64 tiles west until build 2026-11-13a, when the new Experiment Lab west of Teleport Room 1 came within sight of it)
@@ -310,6 +315,7 @@ const FACILITY_MAP = {
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
     props: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.props : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [70, 710], radius: 25, status: "placed", kind: "tank", note: "The old lab's own glass tank, at the east end of the new lab's south row of tanks (build 2026-11-13a)." },
 
         // ── THE SERVER ROOM (the owner, 2026-11-07: "make that a server room, a dark server room"; it was the Front Lobby's computer lab): four rows of racks across the floor, racks down the west wall and in the
@@ -720,6 +726,7 @@ const FACILITY_MAP = {
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
     floors: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.floors : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { room: "crystal_chamber", style: "plate", colour: "#2a4458" },
         { room: "teleport_room_1", style: "plate", colour: "#3a2f5a" },
         { room: "front_lobby", style: "plate" },
@@ -1324,6 +1331,7 @@ const FACILITY_MAP = {
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until the user has checked them in the game.
     openings: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.openings : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "door_chamber_teleport_1", a: [225, 500], b: [265, 500], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
           note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },
         { id: "door_teleport_1_deck", a: [250, 760], b: [290, 760], rooms: ["teleport_room_1", "observation_deck"], position_status: "approximate",
@@ -1377,6 +1385,7 @@ const FACILITY_MAP = {
           note: "THE SUBWAY: the steps down from the platform's east end to the track bed (three tiles across), an open mouth with no door." },
     ],
     connections: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.connections : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
         { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck", ramp: "r_deck_door_steps" },
         { id: "conn_lobby_hallway_west", rooms: ["front_lobby", "lab_hallway"], opening: "door_lobby_hallway_west" },
@@ -1419,6 +1428,7 @@ const FACILITY_MAP = {
         { id: "conn_nest_down", rooms: ["nest_down", "nest_down_low"], opening: "open_nest_down", ramp: "r_nest_down" },
     ],
     ramps: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.ramps : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
         { id: "r_arena_steps", rooms: ["lab_hallway", "arena"], shape: "steps", between_levels: [0, -1], descends_toward: "arena", position_status: "approximate",
           zone: { rect: [360, 715, 450, 835], axis: "y", c0: 725, c1: 825, steps: 5 },
