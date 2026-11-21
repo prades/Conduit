@@ -1062,6 +1062,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify(r), '{"on":"thunderstorm","off":0}', 'the fields handed over');
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
         ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0, GM\.meteor\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
+        for (const k of ['abszero', 'consume', 'jellyshield', 'gooproxy', 'reef']) ok(new RegExp('\\n    ' + k + '\\((e|O)\\) \\{').test(f), k + ' has its 3D thing');
+        const h = J(`(function(){ ${ULT} const o = {}; { const A = __shaped('coralcrab', [[4, 0]], [[1, 0], [2, 0], [3, 0], [3, 1], [3, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); act(); foesTurn(); _cb.acted.add(A.f); o.wall = cardUltFields().filter(x => x.parts).length; }
+            { const A = __shaped('gooproxy', [[3, 0]], [[1, 0], [0, 1], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); act(); foesTurn(); _cb.acted.add(A.f); o.copies = cardUltFields().filter(x => x.type === 'gooproxy').length; }
+            { const A = __shaped('jellyram', [[3, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(2); o.shieldCast = cardUltFields().filter(x => x.type === 'jellyshield').length; act(); foesTurn(); o.shieldTurn = cardUltFields().length; _cb.acted.add(A.f); o.shieldOff = cardUltFields().length; }
+            { const A = __shaped('sundew', [[1, 0], [4, 0]], [[1, 1], [0, 1], [2, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); __live(2); const e = fx('consume'); o.gulp = [cardUltShown(e)]; _cb.turn = { who: 'you', t0: frame }; o.gulp.push(cardUltShown(e)); _cb.turn = { who: 'foe', a: A.foes[1], t0: frame, queue: [] }; o.gulp.push(cardUltShown(e)); }
+            return o; })()`);
+        same(JSON.stringify(h), '{"wall":1,"copies":3,"shieldCast":1,"shieldTurn":1,"shieldOff":0,"gulp":[true,true,false]}', 'the wall and the copies always there; a shield in its caster\'s turn; the Sundew\'s hold through your round, not an enemy\'s turn');
         same(J(`Object.keys(_CU_LAST).filter(k => _CU_LAST[k] === 'win').sort().join()`), 'circuit,eventhorizon,icerink,meteorrain,shardvortex,thicket,thunderstorm,toxicnet,toxicpuddle,whiteout', 'the fields that last');
         for (const k of ['thunderstorm', 'eventhorizon', 'toxicpuddle', 'whiteout', 'icerink', 'shardvortex', 'thicket', 'circuit', 'toxicnet', 'meteorrain']) ok(new RegExp('\\n    ' + k + '\\(e\\) \\{').test(f), k + ' has its 3D field');
     });
@@ -1202,6 +1209,44 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(J(`cardShapeDef(player, 'smash', null)`), null, 'SMASH\'s shape'); ok(/T\.kind === "smash" \? "SMASH"/.test(cb), 'the banner names SMASH');
         const r = J(`[cardShapeDef(player, 'shoot', null), cardShapeDef(player, 'pass', null), (() => { _cb.youActed = true; _cb.shooting = true; cardBattleReset(); return [_cb.youActed, _cb.shooting].join(); })()]`);
         same(r[0], null, 'SHOOT\'s shape'); same(r[1], null, 'HOLD FIRE\'s shape'); same(r[2], 'false,false', 'after a reset'); ok(/T\.kind === "shoot" \? "SHOOT"/.test(cb), 'the banner'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'HOLD FIRE by a tap');
+    });
+
+    group('THE MUTATOR\'S TURN (§2.70; the owner, 2026-11-21: "you could make it to where the mutator can use his healing serum to affect the team whenever it\'s available in the card battles"; asked: "The whole squad", "Over 3 turns: 24%, 24%, 12%", "On its own turn each round")');
+    run(`globalThis.__mu = (serums) => { __fresh(2); invReset(); playerClassKey = null; classSet('mutator'); playerInv = {}; if (serums) invAdd('healing_serum', serums); player.invuln = 1e6; health = PLAYER_HITS;
+            for (const f of followers) { f.role = 'brawler'; f.maxHealth = 1000; f.health = 100; } const a = __ant(player.x + 2, player.y); a.element = null; a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); return { fs: followers.slice(), a }; };   /* (the enemy cannot walk and stands next to nobody: its turns pass with no bite, so the healing is all that moves its squad's health) */
+        globalThis.__muOff = () => { cardBattleReset(); invReset(); playerClassKey = null; weaponReset(); player.invuln = 0; };
+        globalThis.__muUp = (fs) => { for (const f of fs) _cb.acted.add(f); _cbAfterAct(frame); return _cbCurrent() === player; };
+        /* the cube's serum turn played out (the battle's own frames), to the next turn of yours */
+        globalThis.__muOn = () => { for (let i = 0; i < 400 && cardBattleTurnInfo() && cardBattleTurnInfo().kind === 'serum'; i++) { frame++; cardBattleTick(); } __toYou(); };`);
+    check('a Mutator with no serum has no turn (and no other class has this one); carrying one, its turn follows its followers\': its cards are HEALING SERUM (the serums it carries on its foot, its turns\' worth in its words) and HOLD; the turns\' worth come from the pool\'s own numbers: 24%, 24%, 12%', () => {
+        const r = J(`(function(){ const o = {}; let g = __mu(0); o.none = [_cbYouKind(), _cbYouTurn(), __muUp(g.fs), cardBattlePlay(player, 'serum', null, null)].join(); __muOff();
+            g = __mu(2); o.first = _cbCurrent() === g.fs[0]; o.early = cardBattlePlay(player, 'serum', null, null); o.up = __muUp(g.fs); const cs = cardBattleCards(player); o.kinds = cs.map(c => c.kind + ':' + c.ready).join(); o.fx = cs[0].fx; o.html = _cbCardHTML(cs[0]); o.hold = cs[1].name + '|' + cs[1].fx;
+            o.doses = _cbSerumDoses().map(v => Math.round(v * 100)).join(); o.gun = [cardBattlePlay(player, 'shoot', null, g.a), cardBattlePlay(player, 'smash', null, g.a)].join(); __muOff();
+            __fresh(1); invReset(); playerClassKey = null; classSet('technomancer'); playerInv = {}; invAdd('healing_serum', 1); o.tech = [_cbYouKind(), _cbYouIn()].join(); __muOff(); return o; })()`);
+        same(r.none, 'serum,false,false,false', 'with no serum (its kind of turn, a turn, up after its followers, a serum played)'); same(r.first, true, 'its follower is not first'); same(r.early, false, 'a serum played before its turn'); same(r.up, true, 'its turn does not follow its followers\'');
+        same(r.kinds, 'serum:true,pass:true', 'its cards'); same(r.fx, 'Heals your whole squad: 24% now, then 24% and 12% as the enemy turns begin.', 'the serum\'s words'); ok(/class="cb-st">SERUM 2</.test(r.html) && /cb-serum ready/.test(r.html) && />HEALING SERUM</.test(r.html), 'the card (its foot says the serums carried): ' + r.html); same(r.hold, 'HOLD|Keep your serum: your turn passes.', 'HOLD');
+        same(r.doses, '24,24,12', 'the turns\' worth (js/serum.js SERUM.splash: 10 beats of 6%, 4 a turn)'); same(r.gun, 'false,false', 'a Mutator played the Gunslinger\'s cards'); same(r.tech, ',false', 'a Technomancer carrying a serum');
+    });
+    check('HEALING SERUM played: one serum spent; every one of the squad still up is healed 24% of its own health at once, wherever it stands; then 24% and 12% as the next two enemy turns begin (60% in all), and no more after; one at full health gains nothing; one that is down is not raised', () => {
+        const r = J(`(function(){ const o = {}; const g = __mu(2), [f1, f2] = g.fs; f2.health = 990; const far = partyRoomCells(_cb.lay.room).slice().sort((p, q) => Math.hypot(q[0] - player.x, q[1] - player.y) - Math.hypot(p[0] - player.x, p[1] - player.y))[0]; f1.x = far[0]; f1.y = far[1]; _cb.slots.set(f1, { x: far[0], y: far[1] });
+            __muUp(g.fs); const r0 = _cb.round; o.played = cardBattlePlay(player, 'serum', null, null); const T = cardBattleTurnInfo(); o.act = [T.who, T.actor === player, T.kind].join(); o.now = [f1.health, f2.health, invCount('healing_serum'), _cb.serums.length, _cb.serums[0].left.length].join();
+            __muOn(); o.second = [f1.health, _cb.round - r0, _cb.serums.length ? _cb.serums[0].left.length : 0].join();
+            __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); o.third = [f1.health, _cb.serums.length, invCount('healing_serum')].join();
+            __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); o.after = f1.health; o.said = floatingTexts.some(t => t.world && /^\\+\\d+$/.test(t.text));
+            __muOff(); return o; })()`);
+        same(r.played, true, 'played'); same(r.act, 'act,true,serum', 'its turn'); same(r.now, '340,1000,1,1,2', 'at once (the far one 100 + 24% of 1000; the one near full capped; serums left; a serum at work, its turns\' worth left)');
+        same(r.second, '580,1,1', 'as the next enemy turn begins (its health, the round on, turns\' worth left)'); same(r.third, '700,0,1', 'as the one after begins (its health, serums at work, serums carried: HOLD kept it)'); same(r.after, 700, 'a turn later'); same(r.said, true, 'no green +n over the healed');
+    });
+    check('HOLD keeps the serum; two serums at work add up; HERBALIST\'s stronger pool heals half as much again here; one of the squad that is down is not raised; a new battle starts with none at work', () => {
+        const r = J(`(function(){ const o = {}; let g = __mu(2); __muUp(g.fs); o.hold = [cardBattlePlay(player, 'pass', null, null), invCount('healing_serum'), g.fs[0].health].join(); __muOff();
+            g = __mu(2); g.fs[1].health = 0; g.fs[1].dead = true; __ticks(2); __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.down = [g.fs[0].health, g.fs[1].health, g.fs[1].dead].join(); __muOn();
+            __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.two = [g.fs[0].health, _cb.serums.length, invCount('healing_serum')].join(); __muOff(); o.reset = _cb.serums.length;
+            g = __mu(1); const keep = playerSerumHealMult; playerSerumHealMult = () => 1.5; try { __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.herb = g.fs[0].health; } finally { playerSerumHealMult = keep; } __muOff(); return o; })()`);
+        same(r.hold, 'true,2,100', 'HOLD (played, serums, its follower\'s health)'); same(r.down, '340,0,true', 'one of the squad down (the other healed, it not)'); same(r.two, '820,2,0', 'a second serum the next round (100 + 24% + 24% of the first + 24% of the second; two at work; none carried)'); same(r.reset, 0, 'serums at work after the battle'); same(r.herb, 460, 'with HERBALIST (24% × 1.5)');
+    });
+    check('the pieces of it: the serum has no shape and is let go anywhere over the fight (not by a tap); the enemies\' turn begins with the serums\' next turn\'s worth; the banner names it', () => {
+        const cb = rd('js/cardbattle.js'); same(J(`cardShapeDef(player, 'serum', null)`), null, 'its shape');
+        ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
     });
 
     group('THE PIECES');

@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: In a card battle the Mutator has a turn of its own: its HEALING SERUM heals the whole squad
+
+- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17az`
+- **Status:** implemented behind `?cards` with `?engine=3d`; verified by `tests/cardbattle.js` (4 checks) and the full run; seen in a real browser; not playtested, not seen on an iPad.
+- **Decision:** the owner: "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: it heals **the whole squad** (not a pool on the squares, not one follower); **over 3 turns: 24%, 24%, 12%** (not 60% at once, not 30%); **on its own turn each round**, with none carried no turn (not a free tap any time, not once a battle).
+- **Supersedes:** `CARD-BATTLES.md` §2.10 ("the cube commands only") for a Mutator carrying a serum. The Technomancer still commands only.
+- **Agent's choices, provisional:** a HOLD card; drag only; serums add up; turns left end with the battle; HERBALIST applies, the pool statuses of ASH SURGEON and PLAGUE DOCTOR do not. `CARD-BATTLES.md` §11.33.
+- **Affects:** `CARD-BATTLES.md` §2.70, §9, §10, §11.33; `MUTATOR.md` §2.6; `js/cardbattle.js`, `js/cardshapes.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17az`.
+
 ## DECISION: The Gunslinger's melee is SMASH, a close-up blow with the gun, in card battles
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ay`

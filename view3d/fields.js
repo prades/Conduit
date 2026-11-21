@@ -88,13 +88,39 @@ function battleFieldsMake(scene, liftAt) {
           const coming = t < fall, w = Math.min(1, (t + warn) / (warn + fall)); k.spot.visible = k.ring.visible = coming; if (coming) { k.spot.scale.setScalar(Math.max(0.05, w)); k.ring.scale.setScalar(1.5 - 0.5 * w); }
           k.rock.visible = t >= 0 && coming; if (k.rock.visible) { const u = t / fall, d = 1 - u * u; k.rock.position.set(3.2 * d, 7.6 * d + 0.2, 0); }
           const b = t - fall; k.boom.visible = k.wave.visible = b >= 0 && b < 16; if (k.boom.visible) { k.boom.scale.setScalar(0.6 + b * 0.12); k.boom.userData.k = 1 - b / 16; k.wave.scale.setScalar(0.4 + b * 0.11); k.wave.userData.k = 1 - b / 16; } } } }; },
+    // ── THE HOLDS, SHIELDS, COPIES AND WALLS (the owner, 2026-11-20: "Next batch") ──
+    // ABSOLUTE ZERO: the Frost Maw holding what it swallowed: a frosted ring on the floor round it, ice crystals standing up round the ring, rising and sinking, a pale wash inside
+    abszero(e) { const g = new T.Group(), R = 1.2, cr = [], ice = mat('#e6f8ff', 0.9), cg = new T.ConeGeometry(0.1, 0.5, 5);
+      add(g, flat(new T.Mesh(new T.CircleGeometry(R, 32), mat('#bfefff', 0.3))), 0, 0.02, 0); add(g, flat(new T.Mesh(new T.RingGeometry(R - 0.06, R, 36), mat('#ffffff', 0.85))), 0, 0.03, 0);
+      for (let i = 0; i < 6; i++) cr.push(add(g, new T.Mesh(cg, ice)));
+      return { g, at: e => e.by || e, step(e, f0) { cr.forEach((c, i) => { const an = i / 6 * Math.PI * 2 + f0 * 0.02, h = 0.8 + 0.4 * Math.sin(f0 * 0.2 + i); c.position.set(Math.cos(an) * R * 0.8, 0.25 * h, Math.sin(an) * R * 0.8); c.scale.set(1, h, 1); }); } }; },
+    // CONSUME: the Sundew digesting: a pink ring on the floor round it that swells and sinks as it gulps, and a bead of nectar going round it for each bite still to come
+    consume(e) { const g = new T.Group(), beads = [], bg = new T.SphereGeometry(0.1, 8, 6), bm = mat('#ffd0ee', 0.95, true);
+      const ring = add(g, flat(new T.Mesh(new T.RingGeometry(0.72, 0.8, 32), mat('#ff7ac8', 0.85))), 0, 0.03, 0), wash = add(g, flat(new T.Mesh(new T.CircleGeometry(0.8, 28), mat('#ff8fd0', 0.2))), 0, 0.02, 0);
+      for (let i = 0; i < 5; i++) beads.push(add(g, new T.Mesh(bg, bm)));
+      return { g, at: e => e.by || e, step(e, f0, M) { const p = 1 + 0.12 * Math.sin(f0 * 0.18); ring.scale.setScalar(p); wash.scale.setScalar(p); const left = Math.ceil(e.life / ((M.consume && M.consume.tick) || 60));
+        beads.forEach((b, i) => { b.visible = i < left; const an = i / 5 * Math.PI * 2 + f0 * 0.05; b.position.set(Math.cos(an) * 0.62, 0.7 + 0.12 * Math.sin(f0 * 0.1 + i), Math.sin(an) * 0.62); }); } }; },
+    // JELLY SHIELDS: a wobbling bubble of pale jelly round each one that wears it, thinner as it soaks up blows, a bright band round its middle
+    jellyshield(e) { const g = new T.Group(), bub = add(g, new T.Mesh(new T.SphereGeometry(0.62, 18, 14), mat('#9ff0ff', 0.26)), 0, 0.55, 0), band = add(g, new T.Mesh(new T.TorusGeometry(0.62, 0.025, 5, 30), mat('#e6ffff', 0.8, true)), 0, 0.55, 0); band.rotation.x = Math.PI / 2;
+      return { g, at: e => e.on || e, step(e, f0, M) { const w = e.on, S = w && w.jellyShield, soak = (M.jelly && M.jelly.soak) || 0.4, left = S ? Math.max(0.25, Math.min(1, S.hp / ((w.maxHealth || 20) * soak))) : 0, wob = 1 + 0.05 * Math.sin(f0 * 0.2); bub.scale.set(wob, 1.12 / wob, wob); band.scale.setScalar(wob); band.position.y = 0.55 + 0.12 * Math.sin(f0 * 0.08); bub.userData.k = band.userData.k = left; } }; },
+    // PROXY SWARM: each copy a blob of violet goo with two pale eyes, risen out of the floor, breathing, each a little out of step
+    gooproxy(e) { const g = new T.Group(), body = add(g, new T.Mesh(new T.SphereGeometry(0.34, 14, 10), solid('#b66cf5')), 0, 0.3, 0), eye = solid('#ffffff'), pup = solid('#2a0b46');
+      add(g, flat(new T.Mesh(new T.CircleGeometry(0.42, 20), mat('#9a3ae0', 0.3))), 0, 0.02, 0);
+      for (const [x, r] of [[-0.13, 0.11], [0.13, 0.08]]) { add(body, new T.Mesh(new T.SphereGeometry(r, 8, 6), eye), x, 0.26, 0.2); add(body, new T.Mesh(new T.SphereGeometry(r * 0.45, 6, 5), pup), x, 0.27, 0.2 + r * 0.75); }
+      return { g, at: e => e.on || e, step(e, f0) { const rise = Math.min(1, (e.maxLife - e.life) / 8), wob = Math.sin(f0 * 0.15 + e.x * 3) * 0.07; body.scale.set(1 + wob, (1 - wob * 0.6) * (0.2 + 0.8 * rise), 1 + wob); body.position.y = 0.3 * (0.2 + 0.8 * rise); body.rotation.y = -0.6; } }; },
+    // REEF PILLAR: its wall: a tall coral spike on each of its squares, the middle one the tallest, knobs of pale coral up its side, a pink glow at its foot
+    reef(O) { const g = new T.Group(), coral = solid('#e86aa8'), pale = solid('#ffd0e4'), kg = new T.SphereGeometry(0.08, 6, 5);
+      (O.parts || []).forEach((c, i) => { const h = i ? 1.3 : 1.9, r = Math.min(0.42, (c.r || 0.6) * 0.5), sp = new T.Group(); add(sp, new T.Mesh(new T.ConeGeometry(r, h, 6), coral), 0, h / 2, 0);
+        for (let j = 0; j < 5; j++) add(sp, new T.Mesh(kg, pale), Math.cos(j * 2.3 + i) * r * (0.75 - j * 0.12), 0.2 + j * h * 0.15, Math.sin(j * 2.3 + i) * r * (0.75 - j * 0.12));
+        add(sp, flat(new T.Mesh(new T.CircleGeometry(0.5, 20), mat('#ff8fc8', 0.3))), 0, 0.02, 0); sp.position.set(c.x - O.x, 0, c.y - O.y); g.add(sp); });
+      return { g, step(O, f0) { g.children.forEach((sp, i) => { sp.scale.y = 1 + 0.02 * Math.sin(f0 * 0.06 + i); }); } }; },
   };
   // ONE FRAME: `list` the battle's fields (or null: none are shown), f0 the game's frame
   const NONE = {};
   function step(list, f0, more) {
     for (const o of live.values()) o.seen = false;
-    if (list) for (const e of list) { const mk = MAKE[e.type]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
-      o.seen = true; o.g.position.set(e.x, liftAt(e.x, e.y), e.y); o.step(e, f0, more || NONE); fade(o.g, Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20))); }
+    if (list) for (const e of list) { const mk = MAKE[e.type || (e.parts ? 'reef' : '')]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
+      o.seen = true; const p = o.at ? o.at(e) : e; o.g.position.set(p.x, liftAt(p.x, p.y), p.y); o.step(e, f0, more || NONE);   /* (a hold or a shield stands still on the battle's clock between its turns: it does not fade in by its age) */ fade(o.g, e.maxLife > 0 && e._cbUlt !== 'sta' ? Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20)) : 1); }
     for (const [e, o] of live) if (!o.seen) { scene.remove(o.g); o.g.traverse(m => { if (m.isMesh) m.material.dispose(); }); live.delete(e); }
     return live.size;
   }

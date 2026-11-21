@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17az` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
+- **The ask** (the owner, 2026-11-21): "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: "The whole squad"; "Over 3 turns: 24%, 24%, 12%"; "On its own turn each round".
+- **What it does** (behind `?cards` with `?engine=3d`): a Mutator carrying a serum has its own turn each round, after its followers, with a HEALING SERUM card showing the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up is healed 24% of its health at once, then 24% and 12% as the next two enemy turns begin. With no serum it has no turn.
+- **The agent's, provisional:** a HOLD card to pass; drag only (no tap); two serums add up; a serum's turns left end with the battle; HERBALIST's bonus applies, ASH SURGEON's and PLAGUE DOCTOR's pool statuses do not (no pool). `CARD-BATTLES.md` §2.70, §11.33.
+- **Fixed while building it:** nothing of the game's; one mistake of this build's own (a second serum hurried the first one's next turn's worth), caught by its check.
+- `js/cardbattle.js`, `js/cardshapes.js`, `tests/cardbattle.js` (4 new checks), `docs/CARD-BATTLES.md` §2.70, §9, §10, §11.33, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `MUTATOR.md`.
+- **Verified:** VERIFIED_LINE
+
 ### Build `2026-11-17ay` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
 - **The ask** (the owner, 2026-11-20, of the Gunslinger's melee): "It's used as a close up smash with the gun." Asked: "Card battles only"; "It walks up, like followers"; "About a burst (36)"; "Free, every round".
 - **What it does** (behind `?cards` with `?engine=3d`): a second attack card in the Gunslinger's turn, SMASH. Next to an enemy the blow lands at once for 36, with no round spent and no wait. Out of reach, its turn is a walk towards that enemy (3 squares, round everyone), the card still ready, and the blow lands on a later turn; the cube is in the line then. With an empty gun the Gunslinger still has its turn.
@@ -11,6 +19,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Not done:** no card picture, no pose for the cube; nothing of it in the real-time game (by the owner's answer).
 - `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`, `tests/cardbattle.js` (2 new checks, 2 changed), `docs/CARD-BATTLES.md` §2.69, §9, §10, §11.32, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `TUTORIAL.md`, `bible.html`.
 - **Verified:** `node tests/run.js`: all 132 suites pass (tests/cardbattle.js THE GUNSLINGER'S TURN, 8 checks). In a real browser at 1180 × 820 (`play.html?engine=3d&cards`), with an empty gun: the cube's cards SHOOT (NO AMMO), SMASH (READY) and HOLD FIRE; SMASH on an ant 7 squares off walked it 3, 3 and 1 squares over three turns (YOU · MOVES 3 TILES), then YOU · SMASH took the ant from 300 to 253 (36, an ant being weak to Crushing); no page errors. **Not playtested; not seen on an iPad.**
+### Build `2026-11-17ax` · branch `claude/start-game-project-HSh7Z` · card battles: the holds, shields, copies and wall in 3D (drafts)
+- **The ask** (the owner, 2026-11-20): "Next batch".
+- **What it does:** ABSOLUTE ZERO, CONSUME, JELLY SHIELDS, PROXY SWARM's copies and REEF PILLAR's wall are drawn in a battle (`CARD-BATTLES.md` §2.67). The wall and the copies are always there; the rest follow the caster's-turn rule (the Sundew's hold through your round). Drafts: the shapes are the agent's.
+- **Not built:** everyday attacks and the seven Ultimates that are over in their own turn.
+- `view3d/fields.js`, `view3d/gamemap.js`, `js/cardults.js`, `tests/cardbattle.js`.
+- **Verified:** tests/cardbattle.js, view3d, bundle; each seen in a real browser (software rendering). **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17aw` · branch `claude/start-game-project-HSh7Z` · card battles: the other seven fields animated in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Do the other seven fields".

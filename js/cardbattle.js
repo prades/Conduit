@@ -805,11 +805,11 @@ function _cbSerumDoses() {
     while (beats > 0) { const n = Math.min(per, beats); out.push(n * S.pct); beats -= n; }
     return out;
 }
-// a turn's worth of every serum at work: each of the squad still up healed by it (a green +n over it), HERBALIST's share more (js/playercards.js)
-function _cbSerumDose() {
+// a turn's worth of every serum at work (`one`: of that serum alone, the one just played): each of the squad still up healed by it (a green +n over it), HERBALIST's share more (js/playercards.js)
+function _cbSerumDose(one) {
     const L = _cb.serums; if (!L || !L.length) return 0; let n = 0;
     const k = typeof playerSerumHealMult === "function" ? playerSerumHealMult() : 1, f0 = _cbF();
-    for (const s of L) { const share = s.left.shift(); if (!(share > 0)) continue; for (const a of _cbSquad()) { if (!a || a.dead || !(a.maxHealth > 0)) continue; a._serumAt = f0; if (typeof healUnit === "function") healUnit(a, a.maxHealth * share * k, player); n++; } }
+    for (const s of L) { if (one && s !== one) continue; const share = s.left.shift(); if (!(share > 0)) continue; for (const a of _cbSquad()) { if (!a || a.dead || !(a.maxHealth > 0)) continue; a._serumAt = f0; if (typeof healUnit === "function") healUnit(a, a.maxHealth * share * k, player); n++; } }
     _cb.serums = L.filter(s => s.left.length); return n;
 }
 function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js firePlayerShot: the gun holds its fire in a battle but for its own burst)
@@ -835,7 +835,7 @@ function _cbYouPlay(kind, target) {
     if (kind === "serum") {   // (the Mutator's HEALING SERUM, §2.70: one serum spent, the first turn's worth at once, the rest as the enemy turns begin)
         if (_cbYouKind() !== "serum") return false;
         if (!(_cbSerums() > 0) || typeof invRemove !== "function" || !invRemove(SERUM.item, 1)) return say("NO SERUM");
-        (_cb.serums || (_cb.serums = [])).push({ left: _cbSerumDoses() }); _cbSerumDose();
+        const dose = { left: _cbSerumDoses() }; (_cb.serums || (_cb.serums = [])).push(dose); _cbSerumDose(dose);   // (its own first turn's worth: one already at work keeps to the enemies' turns)
         if (typeof tutTally === "function") tutTally("serum");   // (the class's stage counts a serum used: js/tutorial.js)
         _cb.turn = { who: "act", f: player, kind: "serum", id: null, target: null, t0: _cbF(), hit: 0, fired: true, saved: null, last: _cbF() };
         _cb.youActed = true; _cbRefresh(); return true;
