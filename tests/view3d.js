@@ -617,6 +617,33 @@ if (TOX !== null) {
         ok(/toxicpuddle[\s\S]{0,200}view3dOwnsFx\(e\)/.test(rd('js/elements.js')), 'js/elements.js'); ok(/ATT\.smokes\(/.test(rd('view3d/gameview.js')), 'view3d/gameview.js'); });
 }
 
+group('APPROVED LOOKS WIN (the owner, 2026-11-21): in a card battle an Ultimate the attacks\' registry draws is not drawn again by the battle\'s fields (view3d/fields.js); one it does not draw still is');
+const WON = realPage('dev&cards&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; window.requestAnimationFrame = function () { return 0; }; gfxLow = false; _fp.gfxSaved = 'high'; classPickerOpen = false; crystalMenuOpen = false; selectedUnits.clear();
+  actors = actors.filter(function (a) { return !(a instanceof Predator) && !a.isClone && !a.isFollower; }); followers.length = 0; for (var k in followerByElement) followerByElement[k].length = 0;
+  var cells = partyRoomCells('crystal_chamber'), c0 = cells[Math.floor(cells.length * 0.5)]; put(c0[0], c0[1]);
+  var mk = function (ev, dx) { var D = EVOLUTIONS[ev]; spawnFollowerAtCrystal(D.element); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + dx; f.y = player.y + 0.6;
+    f.element = D.element; f.role = D.role; f.evolved = ev; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f); f.health = f.maxHealth = 1e6; f.currentWill = 999; return f; };
+  var th = mk('thunderhead', 0.5), vs = mk('voidstar', 1.0); partyTick();
+  var foe = function (x, y) { var e = spawnCreature({ species: 'ant', className: 'scout' }), q = _fpNearestCellOpen(x, y); e.x = q[0]; e.y = q[1]; e.health = e.maxHealth = 1e6; e.provoked = false; e.state = 'wander'; return e; };
+  var foes = [foe(player.x + 3, player.y + 0.2), foe(player.x + 3.6, player.y + 1.3), foe(player.x + 3.4, player.y - 1)];
+  var tick = function (n) { for (var i = 0; i < n; i++) { foes.forEach(function (a) { a.health = a.maxHealth; }); th.health = th.maxHealth; vs.health = vs.maxHealth; player.health = player.maxHealth; render(); } };
+  tick(4); out.chose = cardBattleChoose(foes[0]); var R = out.won = {}, storm = null, hole = null;
+  var of = function (t) { return elementEffects.filter(function (e) { return e.type === t && e._cbUlt; })[0] || null; };
+  var see = function (e) { return { owned: A.owns(e), shown: cardUltShown(e), list: cardUltFields().map(function (q) { return q.type || q.kind; }).join(), fields: V.stats.fields }; };
+  for (var g = 0; g < 900 && !(hole && R.hole); g++) { tick(1); if (cardBattlePhase() !== 'on' || cardBattleTurn() !== 'you') continue; var cur = _cbCurrent();
+    if (cur === th && !storm) { th.ultimateCharge = 100; R.thPlayed = cardBattlePlay(th, 'ult', null, foes[0]); tick(20); storm = of('thunderstorm'); if (storm) R.storm = see(storm); }
+    else if (cur === vs && storm && !hole) { R.hidden = see(storm); vs.ultimateCharge = 100; R.vsPlayed = cardBattlePlay(vs, 'ult', null, foes[0]); tick(20); hole = of('eventhorizon'); if (hole) { R.hole = see(hole); R.stormThen = see(storm); } }
+    else if (cur && cur !== player) { _cb.acted.add(cur); _cbAfterAct(_cbF()); } }`));
+if (WON !== null) check('THUNDERSTORM (the Thunderhead\'s, the registry\'s approved look): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; EVENT HORIZON (the Void Star\'s, not in the registry) drawn by the fields', () => {
+    ok(!WON.none, 'the page left no result'); ok(!WON.threw, WON.threw); same(WON.errs.join(' | '), '', 'errors'); same(WON.state, 'ready', 'the view'); same(WON.chose, true, 'the battle');
+    const R = WON.won; same(JSON.stringify([R.thPlayed, R.vsPlayed]), '[true,true]', 'both Ultimates played');
+    same(JSON.stringify(R.storm), JSON.stringify({ owned: true, shown: true, list: 'thunderstorm', fields: 0 }), 'the storm in its turn: the registry\'s, handed to the fields, none of theirs drawn');
+    same(JSON.stringify(R.hidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the storm in the Void Star\'s turn: drawn by neither');
+    same(JSON.stringify(R.hole), JSON.stringify({ owned: false, shown: true, list: 'eventhorizon', fields: 1 }), 'the black hole: not the registry\'s, drawn by the fields');
+    same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
+    ok(/battleFieldsMake\(scene, [^\n]*e => ATT\.owns\(e\)\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
+});
+
 group('A FAILURE never stops the game');
 const BAD = realPage('dev&engine=3d', RUN(SETUP + `put(13, 19); step(3); out.showing = VIEW3D.showing; out.feet = view3dFeet(); var d = ctx.getImageData(40, 300, 1, 1).data; out.px = d[3];`), `VIEW3D_FILES[1] = 'dist/no-such-view.js';`);
 if (BAD !== null) check('its script missing: the game starts and runs in 2D, and VIEW3D.error says why', () => {
