@@ -25,19 +25,25 @@ function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFi
 // (the West Channel widened twice, to 5 tiles (\"Maybe make that channel a little bit wider as well\"), the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
 const SHAPES = [
   { id: 'west_channel', lvl: -2, kind: 'water', p: [[2.5, 16.2], [9.3, 16.2], [9.3, 18.6], [11.7, 18.6], [11.7, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [2.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
-  { id: 'channel_steps', lvl: 0, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
-  { id: 'west_entrance', lvl: 0, kind: 'floor', p: [[0, 14.4], [2.5, 14.4], [2.5, 23.4], [0, 23.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
+  { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
+  { id: 'west_entrance', lvl: 2, kind: 'floor', p: [[0, 14.4], [2.5, 14.4], [2.5, 23.4], [0, 23.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[48.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [48.6, 35.8]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
   { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], K.weB, K.weA] },
-  { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[2.5, 14.4], [37.2, 14.4], [37.2, 16.2], [2.5, 16.2]] },
-  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[2.5, 21.2], [37.2, 21.2], [37.2, 23.4], [2.5, 23.4]] },
-  { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
-  { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
+  // THE ENTRANCE TUNNEL COMES DOWN TWO FLIGHTS (the owner, 2026-11-21: "I want the entrance tunnel to have two sets of stairs before it reaches the main tunnel and channel"): each bank's walkway is
+  // three stretches, the entrance's two flights up from the main tunnel's, a flight between each; where the flights stand along it is the agent's
+  { id: 'west_walk_n', lvl: 2, kind: 'walk', p: [[2.5, 14.4], [18.5, 14.4], [18.5, 16.2], [2.5, 16.2]] },
+  { id: 'west_walk_n2', lvl: 1, kind: 'walk', p: [[18.5, 14.4], [28.5, 14.4], [28.5, 16.2], [18.5, 16.2]] },
+  { id: 'west_walk_n3', lvl: 0, kind: 'walk', p: [[28.5, 14.4], [37.2, 14.4], [37.2, 16.2], [28.5, 16.2]] },
+  { id: 'west_walk_s', lvl: 2, kind: 'walk', p: [[2.5, 21.2], [18.5, 21.2], [18.5, 23.4], [2.5, 23.4]] },
+  { id: 'west_walk_s2', lvl: 1, kind: 'walk', p: [[18.5, 21.2], [28.5, 21.2], [28.5, 23.4], [18.5, 23.4]] },
+  { id: 'west_walk_s3', lvl: 0, kind: 'walk', p: [[28.5, 21.2], [37.2, 21.2], [37.2, 23.4], [28.5, 23.4]] },
+  { id: 'nw_gallery', lvl: 3, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
+  { id: 'nw_wing', lvl: 3, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
   { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 24.4], [3.5, 23.4], [11.5, 23.4], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 25.5], [3.5, 25.5], [2.5, 25]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)
-  { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 23.4], [16.5, 23.4], [16.5, 29.5], [14.5, 29.5]] },
+  { id: 'hall_stair', lvl: 2, kind: 'walk', p: [[14.5, 23.4], [16.5, 23.4], [16.5, 29.5], [14.5, 29.5]] },
   { id: 'west_hall', lvl: -1, kind: 'floor', p: [[14, 30.5], [15, 29.5], [27, 29.5], [27.5, 30], [27.5, 34], [26, 35.5], [15, 35.5], [14, 34.5]] },
   // (no passage from the West Hall's east side up to the Central Channel's walkway: the owner, 2026-11-21, circling it on the overlay: "No hallway here")
   { id: 'hall_south', lvl: -1, kind: 'walk', p: [[23.5, 35.5], [25, 35.5], [25, 41.5], [23.5, 41.5]] },
@@ -65,6 +71,8 @@ const SHAPES = [
 // p: its outline; from, to: the heights it joins (storeys); note: what it is. The agent's reading of the picture's hatching; where a flight goes is its guess from what lies at each end.
 const STAIRS = [
   { id: 'st_channel_n', from: 0, to: -2, p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]], note: 'the flooded staircase: from the north walkway down into the West Channel' },
+  { id: 'st_entrance_1', from: 2, to: 1, p: [[18.5, 14.4], [20.5, 14.4], [20.5, 23.4], [18.5, 23.4]], note: 'the entrance tunnel\'s first flight down, on both banks' },
+  { id: 'st_entrance_2', from: 1, to: 0, p: [[28.5, 14.4], [30.5, 14.4], [30.5, 23.4], [28.5, 23.4]], note: 'its second flight down, to the main tunnel\'s height' },
   { id: 'st_cell', from: 0, to: -1, p: [[4.5, 23.4], [7, 23.4], [7, 25], [4.5, 25]], note: 'from the south walkway by the entrance down into the room under it (the owner asked for this way in; where it stands is the agent\'s)' },
   { id: 'st_hall', from: 0, to: -1, p: [[14.5, 23.4], [16.5, 23.4], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
   // (no flight between the south-west plaza and the ring: the owner, 2026-11-21, circling it on the overlay: "Not stairs")
