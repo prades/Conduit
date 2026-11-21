@@ -29,7 +29,7 @@ const SHAPES = [
   { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, 58], [33.6, 54.6], [34.8, 56.2], [28.5, 60.5]] },
   { id: 'junction_ring_w', lvl: 0, kind: 'ring', p: disc(RO, 20, PI / 2, PI * 1.5).concat(disc(RI, 20, PI * 1.5, PI / 2)) },
   { id: 'junction_ring_e', lvl: 0, kind: 'ring', p: disc(RO, 20, -PI / 2, PI / 2).concat(disc(RI, 20, PI / 2, -PI / 2)) },
-  { id: 'junction_nest', lvl: 0, kind: 'nest', p: disc(RI, 40, 0, PI * 2) },
+  { id: 'junction_nest', lvl: -1, kind: 'nest', p: disc(RI, 40, 0, PI * 2) },
   { id: 'pur_pass', lvl: 0, kind: 'walk', p: [[54.8, 44.5], [60.5, 44.5], [61.5, 45.5], [64.5, 45.5], [64.5, 48.5], [61.5, 48.5], [60.5, 49.5], [54.5, 49.5]] },
   { id: 'purification', lvl: 0, kind: 'floor', p: [[64.5, 42.5], [65.5, 41.5], [66.5, 40.5], [70, 40.5], [71, 41.5], [76.5, 41.5], [77.5, 42.5], [77.5, 50.5], [76.5, 51.5], [66, 51.5], [64.5, 50]] },
   { id: 'ne_door', lvl: 0, kind: 'walk', p: [[48.6, 6.5], [52.5, 6.5], [52.5, 9], [48.6, 9]] },
@@ -41,10 +41,26 @@ const SHAPES = [
   { id: 'er_approach', lvl: 0, kind: 'walk', p: [[48.6, 28], [54, 28], [54, 30.5], [48.6, 30.5]] },
   { id: 'east_rubble', lvl: 0, kind: 'floor', p: [[54, 26], [55, 25], [58.5, 25], [59, 25.6], [60, 25.6], [60.8, 24.5], [63, 24.5], [63.5, 23.5], [66, 23.5], [66.5, 24.5], [66.5, 30.5], [65.5, 31.2], [61, 31.2], [60, 30.5], [55.5, 30.5], [54, 29]] },
 ];
-module.exports = { SHAPES, W: 80, H: 72, C, RO, RI };
+// THE STAIRS (the owner, 2026-11-21: "I see a lot of places where stairs are there, but you're not putting them in"): every flight the picture draws, found on a second pass over it enlarged.
+// p: its outline; from, to: the heights it joins (storeys); note: what it is. The agent's reading of the picture's hatching; where a flight goes is its guess from what lies at each end.
+const STAIRS = [
+  { id: 'st_channel_n', from: 1, to: -2, p: [[9.3, 14.3], [11.7, 14.3], [11.7, 18], [9.3, 18]], note: 'from the gallery down past the north walkway into the West Channel\'s bed' },
+  { id: 'st_hall', from: 0, to: -1, p: [[14.5, 21], [16.5, 21], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
+  { id: 'st_plaza', from: -1, to: 0, p: [[27, 40.3], [30, 40.3], [30, 42], [27, 42]], note: 'from the south-west plaza up to the ring' },
+  { id: 'st_subway', from: -1, to: 0, p: [[31, 58.3], [33.6, 54.6], [34.8, 56.2], [32.2, 59.8]], note: 'the diagonal flight from the Subway Exit\'s passage up to the ring' },
+  { id: 'st_offices', from: 0, to: 0, p: [[48.6, 6.5], [52.5, 6.5], [52.5, 9], [48.6, 9]], note: 'steps at the Offices\' locked door (how far they rise is not clear from the picture)' },
+  { id: 'st_ledge', from: 2, to: 0, p: [[55, 21], [57.5, 21], [57.5, 23.6], [55, 23.6]], note: 'inside the High Ledge Room, down to its foot' },
+  { id: 'st_rubble', from: 0, to: 0, p: [[49, 29.2], [53.8, 29.2], [53.8, 31], [49, 31]], note: 'steps on the approach to the East Rubble (how far they rise is not clear)' },
+  { id: 'st_bank_w', from: 0, to: -2, p: [[39.3, 0], [40.4, 0], [40.4, 36], [39.3, 36]], note: 'the stepped bank along the Central Channel\'s west side, down to the water' },
+  { id: 'st_bank_e', from: 0, to: -2, p: [[46.2, 0], [47.4, 0], [47.4, 36], [46.2, 36]], note: 'the stepped bank along its east side' },
+  { id: 'st_ring', from: 0, to: -1, p: disc(RI + 1.3, 40, 0, PI * 2).concat(disc(RI, 40, PI * 2, 0)), note: 'the ring\'s inner steps, all the way round, down to the nest' },
+  { id: 'st_pur', from: 0, to: 0, p: [[54.3, 44.5], [55.6, 44.5], [55.6, 49.5], [54.3, 49.5]], note: 'steps where the Purification Chamber\'s passage leaves the ring' },
+];
+module.exports = { STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {
   const S = +(process.argv[2] || 3), T = 995 / 80 * S, COL = { water: '0,220,255', drain: '0,255,160', walk: '255,230,0', floor: '255,255,255', upper: '255,150,0', ring: '255,230,0', nest: '255,0,255' };
   const mid = p => [p.reduce((a, q) => a + q[0], 0) / p.length * T, p.reduce((a, q) => a + q[1], 0) / p.length * T];
+  if (process.argv[3] === 'stairs') { console.log(STAIRS.map(s => `fill rgba(255,40,40,0.45) stroke rgba(255,60,60,1) stroke-width 3 polygon ${s.p.map(q => (q[0] * T).toFixed(1) + ',' + (q[1] * T).toFixed(1)).join(' ')}`).join(' ')); return; }
   if (process.argv[3] === 'levels') { console.log(SHAPES.filter(s => !/ring_e/.test(s.id)).map(s => { const m = mid(s.p); return `fill black stroke black stroke-width 4 text ${m[0] - 14},${m[1] + 8} '${s.lvl > 0 ? '+' + s.lvl : s.lvl}' fill white stroke none text ${m[0] - 14},${m[1] + 8} '${s.lvl > 0 ? '+' + s.lvl : s.lvl}'`; }).join(' ')); return; }
   console.log(SHAPES.map(s => `fill rgba(${COL[s.kind]},0.28) stroke rgba(${COL[s.kind]},1) stroke-width 3 polygon ${s.p.map(q => (q[0] * T).toFixed(1) + ',' + (q[1] * T).toFixed(1)).join(' ')}`).join(' '));
 }
