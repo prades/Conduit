@@ -487,6 +487,7 @@ function rotSpikeDrawItems(list) {
     if (typeof fx3dOn !== "function" || !fx3dOn("rotspike") || !fx3dReady("rotspike") || typeof elementEffects === "undefined") return;
     for (const e of elementEffects) {
         if (e.type !== "toxicpuddle" || !e.shards || !e.shards.length) continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (the 3D view draws this puddle's spikes itself: view3d/attacks_toxic.js)
         const since = (e.maxLife - e.life) - e.shardAt; if (!(since >= 0 && since < 18)) continue;
         const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), rise = since < 3 ? since / 3 : since > 12 ? Math.max(0, (18 - since) / 6) : 1;
         for (const s of e.shards) { const c0 = Math.floor(Math.abs(s[0] * 3.1 + s[1] * 1.7) * 7919) % 8;
@@ -1346,7 +1347,9 @@ function drawElementEffects() {
         ctx.restore();
     }
 
+    const v3 = typeof view3dOwnsFx === "function" && typeof view3dShowing === "function" && view3dShowing();   // THE 3D VIEW draws some attacks' effects itself (view3d/attacks.js): those it drew this frame are left out here
     elementEffects.forEach(e => {
+        if (v3 && view3dOwnsFx(e)) return;
         const px = isoSX(e.x, e.y) + canvas.width/2;
         const py = isoSY(e.x, e.y) + canvas.height/2;
         const alpha = Math.min(1, e.life / 20);

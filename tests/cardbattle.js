@@ -303,7 +303,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const v = rd('view3d/gameview.js'), m = rd('view3d/gamemap.js'), c = rd('view3d/core.js'), ta = rd('js/techabilities.js'), h = rd('game.html'), cb = rd('js/cardbattle.js');
         same(/place\(dt\); seeThrough\(f0\);/.test(v), true, 'called each frame after the camera is placed');
         same(/RC\.layers\.enableAll\(\);/.test(v), true, 'every layer (the world is on 1 to 3)');
-        same(/b\.holder\.userData\.body = true;/.test(v) && /if \(p\.userData && p\.userData\.body\) return false;/.test(v), true, 'bodies never');
+        same(/b\.holder\.userData\.body = true;/.test(v) && /if \(p\.userData && \(p\.userData\.body \|\| p\.userData\.fx3d\)\) return false;/.test(v), true, 'bodies never');
         same(/!B\.box\.containsPoint\(seeFeet\)/.test(v), true, 'never the floor round a fighter');
         same(/try \{ seeThroughStep\(f0\); \} catch \(e\) \{ seeBroke = true;/.test(v), true, 'a failure turns it off');
         same(/get battleFighters\(\) \{ return typeof cardBattleFighters === "function"/.test(m) && /function cardBattleFighters\(\)/.test(cb), true, 'the fighters reach the view');

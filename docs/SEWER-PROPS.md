@@ -4,7 +4,7 @@
 - **Owner:** User (creative direction); agent (the designs, to be approved piece by piece)
 - **Last updated:** 2026-11-21
 - **Branch/build context:** written on branch `claude/friendly-thompson-w581x0` from main at build `2026-11-17ba`. No game code changed; no picture baked into the game.
-- **Related docs:** `SEWER-DUNGEON.md` (the dungeon's design; **on branch `claude/sewer-dungeon-spec`, not on main** when this was written), `SEWER-QUEST.md` (the quest line, the Nest, the Toxic Queen, Side Quest, as built today), `ART-PROCESS.md`, `../design/props/BRIEF.md` (how the game's props are modelled), `CHESTS.md`, `ENERGY-CARDS.md`, `FLUX-MOVEMENT.md`, `TECHNICIANS.md`, `VIEW-3D.md`.
+- **Related docs:** `SEWER-DUNGEON.md` (the dungeon's design. **Two versions:** this page was written from the long one on branch `claude/sewer-dungeon-spec` at `f999ce0`, and its section numbers, §2.x, and its checks, U1 to U10, are that version's; main has since had a shorter one, "the redesign", and a prototype of the bare rooms behind `?sewerdungeon`, builds `2026-11-17bb` to `be`, which does not carry those numbers), `SEWER-QUEST.md` (the quest line, the Nest, the Toxic Queen, Side Quest, as built today), `ART-PROCESS.md`, `../design/props/BRIEF.md` (how the game's props are modelled), `CHESTS.md`, `ENERGY-CARDS.md`, `FLUX-MOVEMENT.md`, `TECHNICIANS.md`, `VIEW-3D.md`.
 
 ## 1. Intent
 
@@ -14,7 +14,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 ## 2. What was read
 
-- **GitHub:** `SEWER-DUNGEON.md` (branch `claude/sewer-dungeon-spec`, at `f999ce0`: the skeleton approved 2026-11-20, its §2.11 finds and utility checks **proposed, not approved**); `SEWER-QUEST.md`; `CHESTS.md`; `ENERGY-CARDS.md`; `FLUX-MOVEMENT.md`; `ART-PROCESS.md`; `design/props/BRIEF.md`; `design/sewer-looks/README.md`.
+- **GitHub:** `SEWER-DUNGEON.md` (branch `claude/sewer-dungeon-spec`, at `f999ce0`: the skeleton approved 2026-11-20, its §2.11 finds and utility checks **proposed, not approved**; main's shorter version of 2026-11-21 names the same pieces in its layout table: the channel-bed key and the Subway Exit, crates, a battery pack, spare parts, the locked door and cracked wall, a secret door); `SEWER-QUEST.md`; `CHESTS.md`; `ENERGY-CARDS.md`; `FLUX-MOVEMENT.md`; `ART-PROCESS.md`; `design/props/BRIEF.md`; `design/sewer-looks/README.md`.
 - **Notion** (the Game Design Archive): "Sewer Quest — Current Layout & Environmental Puzzle Design" (edited 2026-11-20), "Sewer System — Environmental Design Reference" (2026-11-19), "3D Dungeon & Environmental Interaction Framework" (2026-11-20: proposed, with its key-item presentation approved).
 - **The game today:** the Sewers' own things have **no 3D model**: rubble, grates, the barred arch, the trash dam, eggs, brood holes, resin, pipes, valves and pumps are flat drawings in code (`js/facilitysewers.js` and the map's decor). The items a player carries do have 3D models (`design/props/models/_items.js`): the WATER SAMPLE, the TOXIC ANT SAMPLE, the PURIFICATION MODULE and the two potions among them. The chest has one (`chest.js`, the hex cache).
 

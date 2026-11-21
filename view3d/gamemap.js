@@ -26,13 +26,35 @@ const VIEW3D_GAME = (0, eval)(`({
   get battleFighters() { return typeof cardBattleFighters === "function" ? cardBattleFighters() : null; },   // CARD BATTLES: everyone in the battle, for the view to keep in sight (view3d/gameview.js seeThrough)
   get meteor() { return typeof cardUltNumbers === "function" ? cardUltNumbers() : null; },   // (METEOR RAIN's own timings, for its rocks in 3D: view3d/fields.js)
   get battleFields() { return typeof cardUltFields === "function" ? cardUltFields() : null; },   // CARD BATTLES: the fields the Ultimates left, for the view to draw (view3d/fields.js)
+  get battleActor() { return typeof _cb !== "undefined" && _cb.phase === "on" && _cb.turn && _cb.turn.who === "act" ? _cb.turn.f || null : null; },   // CARD BATTLES: the one whose card is playing out now (its Ultimate's bursts are its: view3d/fields.js)
+  ultHidden(e) { return !!e && !!e._cbUlt && typeof cardUltShown === "function" && !cardUltShown(e); },   // CARD BATTLES: an Ultimate's field not seen now, outside its caster's turn (docs/CARD-BATTLES.md §2.68): the attacks' registry leaves it out then, as view3d/fields.js does
   get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
   // the sewers (js/facilitysewers.js): their water's colours as the 2D has them, the toxic green clearing as the purification runs; the Nest's state; its eggs, junk and rim where the
   // 2D puts them; the dam's pools
   sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
   sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
-  flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; }
+  flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
+  // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
+  get fx() { return typeof elementEffects !== "undefined" ? elementEffects : null; }, get gfxLow() { return typeof gfxLow !== "undefined" && !!gfxLow; },
+  get mawChomp() { return typeof MAW_CHOMP !== "undefined" ? MAW_CHOMP : { snap: 16, total: 32 }; }, get mawSlowR() { return typeof MAW_SLOW_R !== "undefined" ? MAW_SLOW_R : 1.6; },
+  // the fire line's (view3d/attacks_fire.js): the shots in flight (QUILL BURST's and QUILLSTORM's quills, the Ember Hood's FIREBALL), and the measures its looks follow (read once: the game's own constants)
+  get shots() { return typeof followerProjectiles !== "undefined" ? followerProjectiles : null; },
+  get fireMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { emberDash: v("EMBER_DASH", 10), emberBand: v("EMBER_BAND", 0.8), quillAnim: v("QUILL_ANIM_FRAMES", 95), quillFire: v("QUILL_FIRE", 12), quillArc: v("QUILL_ARC", 16), meteor: v("ULT_METEOR", null), meteorCool: v("METEOR_COOL", 156),
+      haloR: v("HALO_RADIUS", 1.2), magmaR: v("MAGMA_RADIUS", 1.5), faultTrace: v("TECH_AB", null) ? TECH_AB.fault.trace : 90 }; },
+  // the ice line's (view3d/attacks_ice.js): the measures its looks follow (read once: the game's own constants)
+  get iceMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { skateBand: v("SKATE_BAND", 0.8), icicleFreeze: v("ICICLE_FREEZE", 90), quillArc: v("QUILL_ARC", 16), rink: v("ULT_RINK", null), whiteout: v("ULT_WHITEOUT", null) }; },
+  // the electric line's (view3d/attacks_electric.js): the measures its looks follow, and two of the game's own drawing rules it keeps to (the STATIC VORTEX's flash, the swirl's cells), read once
+  get electricMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { snap: v("THUNDER_SNAP", 1.5), pull: v("THUNDER_PULL", 1.3), vortexR: v("VORTEX_RADIUS", 2.5), vortexFrame: v("VORTEX_FRAME", 6), vortexAlpha: v("VORTEX_ALPHA", 0.7), vortexFlash: v("staticVortexFlash", null),
+      swirl: v("SKINK_SWIRL", null), circuit: v("ULT_CIRCUIT", null), drift: v("ULT_DRIFT", null), storm: v("ULT_STORM", null), overdrive: v("ULT_OVERDRIVE", null), capReach: v("CAP_REACH", 2),
+      mantaStun: v("MANTA_STUN", 45), zapGlitch: v("ZAP_GLITCH", 30) }; },
+  // the toxic line's (view3d/attacks_toxic.js): the measures its looks follow (read once: the game's own constants)
+  get toxicMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { stompSlam: v("STOMP_SLAM", 12), stompR: v("STOMP_RADIUS", 1.5), calderaR: v("CALDERA_RADIUS", 2.4), undertow: v("ULT_UNDERTOW", null), network: v("ULT_NETWORK", null), puddle: v("ULT_PUDDLE", null),
+      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
