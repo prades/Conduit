@@ -68,19 +68,20 @@ function view3dToxicForms(K) {
   const lin = h => new T.Color(h).convertSRGBToLinear();
   function inked(g) { const n = g.attributes.position.count, c = env.ink, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = c[0]; a[i * 3 + 1] = c[1]; a[i * 3 + 2] = c[2]; } g.setAttribute('idc', new T.BufferAttribute(a, 3)); g.userData.ink = true; return g; }
   const V2 = (x, y) => new T.Vector2(x, y);
-  const POD_SHELL = inked(new T.LatheGeometry([V2(0, 0), V2(0.17, 0), V2(0.18, 0.05), V2(0.16, 0.1), V2(0.12, 0.11), V2(0.12, 0.13), V2(0.135, 0.36), V2(0.15, 0.37), V2(0.15, 0.43), V2(0.08, 0.45), V2(0.07, 0.48), V2(0, 0.49)], 12));
+  const POD_SHELL = inked(new T.LatheGeometry([V2(0, 0), V2(0.17, 0), V2(0.18, 0.05), V2(0.16, 0.1), V2(0.12, 0.12), V2(0, 0.12)], 12)), POD_CAP = inked(new T.LatheGeometry([V2(0, 0.36), V2(0.15, 0.37), V2(0.15, 0.43), V2(0.08, 0.45), V2(0.07, 0.48), V2(0, 0.49)], 12));   // (its base and its cap: the glass between them shows the toxin)
   const POD_TOXIN = new T.CylinderGeometry(0.105, 0.105, 0.24, 12, 1).translate(0, 0.24, 0);
   const POD_GLASS = new T.CylinderGeometry(0.125, 0.125, 0.25, 12, 1, true).translate(0, 0.245, 0);
-  POD_SHELL.computeVertexNormals();
+  POD_SHELL.computeVertexNormals(); POD_CAP.computeVertexNormals();
   const podSet = (geo, mat, ink) => { const m = new T.InstancedMesh(geo, mat, 4); m.count = 0; m.frustumCulled = false; m.castShadow = false; m.receiveShadow = false; m.userData.fx3d = true; if (!ink) { m.layers.set(2); m.userData.noInk = true; } env.scene.add(m); return m; };
-  const PODS = { shell: podSet(POD_SHELL, new T.MeshToonMaterial({ color: lin('#15181f'), gradientMap: env.grad || null }), true),
+  const PODBLACK = new T.MeshToonMaterial({ color: lin('#15181f'), gradientMap: env.grad || null });
+  const PODS = { shell: podSet(POD_SHELL, PODBLACK, true), cap: podSet(POD_CAP, PODBLACK, true),
     toxin: podSet(POD_TOXIN, new T.MeshToonMaterial({ color: lin('#5be52e'), emissive: lin('#3fbf1c'), emissiveIntensity: 0.9, gradientMap: env.grad || null }), false),
     glass: podSet(POD_GLASS, new T.MeshBasicMaterial({ color: lin('#c8ffb8'), transparent: true, opacity: 0.22, depthWrite: false }), false), n: 0 };
   PODS.glass.renderOrder = 18;
   const M4 = new T.Matrix4(), QI = new T.Quaternion(), V0 = new T.Vector3(), S0 = new T.Vector3();
   // a pod at (x, z), s its size (0 to 1: rising as the network opens), lv its toxin's level (0 to 1)
   function pod(x, z, s, lv) { if (PODS.n >= 4 || s <= 0.01) return; const i = PODS.n++, y = floorY(x, z);
-    V0.set(x, y, z); S0.set(s, s, s); M4.compose(V0, QI, S0); PODS.shell.setMatrixAt(i, M4); PODS.glass.setMatrixAt(i, M4);
+    V0.set(x, y, z); S0.set(s, s, s); M4.compose(V0, QI, S0); PODS.shell.setMatrixAt(i, M4); PODS.cap.setMatrixAt(i, M4); PODS.glass.setMatrixAt(i, M4);
     V0.set(x, y + 0.12 * s * (1 - lv), z); S0.set(s, s * Math.max(0.05, lv), s); M4.compose(V0, QI, S0); PODS.toxin.setMatrixAt(i, M4); }
 
   // ── THE BLACK ROTSHARD (ROTTEN DECOY's: the Rotshard's own model, all black, its glows off; approved 2026-11-09, "Make the decoy a black Rotshard"), made once behind the start screen: two at most ──
@@ -103,7 +104,7 @@ function view3dToxicForms(K) {
   K.hooks.push({
     begin() { sn = 0; PODS.n = 0; decUsed.n = 0; ghostNow.clear(); const e = env.camera.matrixWorld.elements; VD.set(-e[8], -e[9], -e[10]).normalize(); },
     finish() { sg.setDrawRange(0, sn * 6); if (sn || sWas) { sg.attributes.position.needsUpdate = true; sg.attributes.aC.needsUpdate = true; sg.attributes.aK.needsUpdate = true; } sWas = sn; STRAND.visible = sn > 0;
-      for (const k of ['shell', 'toxin', 'glass']) { const m = PODS[k]; m.count = PODS.n; m.visible = PODS.n > 0; if (PODS.n) m.instanceMatrix.needsUpdate = true; }
+      for (const k of ['shell', 'cap', 'toxin', 'glass']) { const m = PODS[k]; m.count = PODS.n; m.visible = PODS.n > 0; if (PODS.n) m.instanceMatrix.needsUpdate = true; }
       for (let i = decUsed.n; i < DEC.length; i++) DEC[i].holder.visible = false;
       for (const L of GHOST.values()) if (L.k > 0 && !ghostNow.has(L.b)) ghost(L.b, 0);
       stats.strands = sn; stats.models = PODS.n + decUsed.n; },
@@ -230,11 +231,13 @@ function view3dToxicForms(K) {
   function spew(C, Yf, a, s, n, r1, r2, fly, size, c) { if (a < 0) return; const nn = low() ? n >> 1 : n;
     for (let i = 0; i < nn; i++) { const an = (i + 0.4 * H(i, s, 91)) / nn * TAU, r = lerp(r1, r2, H(i, s, 92)), tx = C.x + Math.cos(an) * r, tz = C.z + Math.sin(an) * r, ty = floorY(tx, tz), fl = fly * (0.85 + 0.3 * H(i, s, 93)), u = a / fl;
       if (u < 1) { const x = lerp(C.x, tx, u), z = lerp(C.z, tz, u), y = lerp(C.y, ty, u) + Math.sin(PI * u) * (0.35 + 0.25 * H(i, s, 94)) * (r2 > 2 ? 1.6 : 1); goo(x, y, z, size * (0.8 + 0.4 * H(i, s, 95)), i % 3 ? c : GOO, 0.95); }
-      else { const g = a - fl, sp = clamp(g / 5, 0, 1), k = clamp(1 - (g - 10) / 22, 0, 1); if (k <= 0) continue; flat(DISCF, tx, ty, tz, size * (1 + 1.6 * sp), GOO[0], GOO[1], GOO[2], 0.75 * k); flat(RINGF, tx, ty, tz, size * (1.1 + 1.7 * sp), DEEP[0], DEEP[1], DEEP[2], 0.6 * k);
+      else { const g = a - fl, sp = clamp(g / 5, 0, 1), k = clamp(1 - (g - 10) / 22, 0, 1); if (k <= 0) continue; flat(DISCF, tx, ty, tz, size * 0.65 * (1 + 1.6 * sp), GOO[0], GOO[1], GOO[2], 0.75 * k); flat(RINGF, tx, ty, tz, size * 0.65 * (1.1 + 1.7 * sp), DEEP[0], DEEP[1], DEEP[2], 0.6 * k);
         if (g < 6) goo(tx, ty + 0.03, tz, size * (1 - g / 6) * 0.9, c, 0.9); } } }
   // a shock ring racing out along the floor to R over `span` frames, a frames in
   function shock(X, Yf, Z, R, a, span, c, w) { if (a < 0 || a > span + 6) return; const u = clamp(a / span, 0, 1), r = 0.2 + (R - 0.2) * outC(u), k = 1 - u * u;
-    flat(RINGF, X, Yf, Z, r, c[0], c[1], c[2], 0.85 * k); flat(RINGF, X, Yf + 0.003, Z, r * 0.93, DEEP[0], DEEP[1], DEEP[2], 0.6 * k * (w || 1)); }
+    ringLine(X, Yf + 0.04, Z, r, 0.07 * (w || 1), c, 0.9 * k, 0.6); ringLine(X, Yf + 0.03, Z, r * 0.94, 0.03, DEEP, 0.7 * k, 0); }
+  // a ring laid round (X, Z) at height Y, r out, as a strand (one width all round, however big)
+  function ringLine(X, Y, Z, r, w, c, a, k) { const n = low() ? 18 : 36; pn = 0; for (let j = 0; j <= n && j < PN; j++) { const an = j / n * TAU; padd(X + Math.cos(an) * r, Y, Z + Math.sin(an) * r); } stroke(w, w, c, a, a, k); }
   const SEEP = {
     tilts: true, smoke: true,
     // ITS BODY. Its everyday hit (its sheet's LEG STOMP, design No. 936, attackAnim 0 to PI; the hit lands as it begins): played smoothly, rearing its leg up and stamping down with a squash; then its
@@ -270,7 +273,7 @@ function view3dToxicForms(K) {
       toxicstomp: {
         pre: true, claim(e, f) { return e.by === f; }, span(m) { return SLAM + 44; },
         draw(m, age, f0, b) { const a = age - SLAM, s = m.seed; if (a < 0) return; const h = b.holder, X = h.position.x, Z = h.position.z, Yf = floorY(X, Z), R = m.o.radius || STOMP_R, C = coneOf(b);
-          shock(X, Yf, Z, R, a, 12, PALE, 1); spew(C, Yf, a, s, 12, R * 0.5, R * 1.0, 12, 0.09, TOX);
+          shock(X, Yf, Z, R, a, 12, PALE, 1); spew(C, Yf, a, s, 12, R * 0.5, R * 1.0, 12, 0.15, TOX);
           if (a < 6) glint(C.x, C.y, C.z, 0.5, 1 - a / 6); fumes(C.x, C.y, C.z, 0.2, a, 40, s, 6, clamp(1 - a / 40, 0, 1)); } },
       // ERUPTION (the game's ring and hit round it: CALDERA_RADIUS, every enemy in it hurt and its armour eaten) and TOXIC UNDERTOW (the game's ring and hit round it: ULT_UNDERTOW.radius, every enemy in it
       // hurt, thrown outward and poisoned). ERUPTION in 3D: its cone bursts: a column of goo and fumes shooting up out of it, lumps of goo raining down all over its reach as splats, a green shock ring
@@ -284,9 +287,9 @@ function view3dToxicForms(K) {
           if (!D.foes) { D.foes = []; for (const a of foesNear(X, Z, (D.kind === 'under' ? UND.radius : CAL_R) + 0.3, 6)) D.foes.push({ a, x: a.x, y: a.y, d: Math.hypot(a.x - X, a.y - Z) }); }
           if (D.kind === 'erupt') { const a = age - ER.crouch, C = coneOf(b); if (a < 0) { if (age > 1) for (let i = 0; i < 3; i++) bubble(C.x + (H(i, s, 1) - 0.5) * 0.2, C.y + 0.04 * age, C.z + (H(i, s, 2) - 0.5) * 0.2, 0.05, 0.8); return; }
             // the column: goo and fumes shooting up out of the cone
-            if (a < 16) { const k = 1 - a / 16; for (let i = 0; i < (low() ? 5 : 10); i++) { const u = ((a * 0.09 + H(i, s, 3)) % 1), w = 0.08 + 0.12 * u; goo(C.x + (H(i, s, 4) - 0.5) * w, C.y + 1.6 * u * (0.7 + 0.3 * k), C.z + (H(i, s, 5) - 0.5) * w, (0.1 + 0.06 * H(i, s, 6)) * (1 - 0.4 * u), i % 3 ? TOX : GOO, 0.95 * k); } }
+            if (a < 16) { const k = 1 - a / 16; for (let i = 0; i < (low() ? 5 : 10); i++) { const u = ((a * 0.09 + H(i, s, 3)) % 1), w = 0.08 + 0.12 * u; goo(C.x + (H(i, s, 4) - 0.5) * w, C.y + 1.6 * u * (0.7 + 0.3 * k), C.z + (H(i, s, 5) - 0.5) * w, (0.17 + 0.08 * H(i, s, 6)) * (1 - 0.4 * u), i % 3 ? TOX : GOO, 0.95 * k); } }
             if (a < 6) glint(C.x, C.y + 0.1, C.z, 0.9, 1 - a / 6);
-            spew(C, Yf, a, s, 16, 0.5, CAL_R * 0.95, 22, 0.1, TOX); shock(X, Yf, Z, CAL_R, a, 16, LIME, 1);
+            spew(C, Yf, a, s, 16, 0.5, CAL_R * 0.95, 22, 0.16, TOX); shock(X, Yf, Z, CAL_R, a, 16, LIME, 1);
             fumes(C.x, C.y + 0.3, C.z, 0.5, a, 60, s, 10, clamp(1 - a / 60, 0, 1));
             for (let j = 0; j < D.foes.length; j++) { const F = D.foes[j], g = a - 4 - Math.round(F.d * 5), A = F.a, ax = A.dead ? F.x : A.x, az = A.dead ? F.y : A.y, Ya = floorY(ax, az); splash(ax, Ya + 0.32, az, Ya, g, s + j * 5, 0.45, TOX);
               if (g > 6 && g < 40) for (let i = 0; i < (low() ? 2 : 3); i++) { const ph = ((g * 0.05 + H(i, s + j, 7)) % 1); bubble(ax + (H(i, s + j, 8) - 0.5) * 0.3, Ya + 0.2 + 0.35 * ph, az + (H(i, s + j, 9) - 0.5) * 0.3, 0.05, 0.85 * Math.sin(ph * PI) * (1 - g / 40)); } }
@@ -294,11 +297,11 @@ function view3dToxicForms(K) {
           // TOXIC UNDERTOW
           const a = age - UT.sink + 2, R = UND.radius || 3; if (a < 0) { for (let i = 0; i < 5; i++) { const an = i / 5 * TAU + age * 0.2; bubble(X + Math.cos(an) * 0.4, Yf + 0.05, Z + Math.sin(an) * 0.4, 0.06, 0.7 * age / UT.sink); } return; }
           const span = 22, u = clamp(a / span, 0, 1), r = 0.3 + (R - 0.3) * outC(u), k = a < span ? 1 : clamp(1 - (a - span) / 16, 0, 1), fade = clamp(1 - (a - 20) / 40, 0, 1);
-          flat(DISCF, X, Yf, Z, r, GOO[0], GOO[1], GOO[2], 0.42 * fade); flat(RINGF, X, Yf, Z, r, DEEP[0], DEEP[1], DEEP[2], 0.75 * k);
-          if (k > 0) { const n = low() ? 14 : 28; for (let i = 0; i < n; i++) { const an = (i + 0.5 * H(i, s, 11)) / n * TAU, rr = r * (0.97 + 0.06 * H(i, s, 12)), hy = (0.08 + 0.12 * H(i, s, 13)) * (1 - 0.6 * u) * (1 + 0.4 * Math.sin(a * 0.5 + i)), x = X + Math.cos(an) * rr, z = Z + Math.sin(an) * rr;
-              goo(x, floorY(x, z) + hy, z, (0.1 + 0.05 * H(i, s, 14)) * (1 - 0.35 * u), i % 4 ? LIME : GOO, 0.95 * k); if (i % 3 === 0) goo(x - Math.cos(an) * 0.18, floorY(x, z) + hy * 0.5, z - Math.sin(an) * 0.18, 0.07, GOO, 0.8 * k); } }
+          flat(DISCF, X, Yf, Z, r, GOO[0], GOO[1], GOO[2], 0.18 * fade); ringLine(X, Yf + 0.03, Z, r, 0.035, DEEP, 0.8 * k, 0);
+          if (k > 0) { const n = low() ? 10 : 20; for (let i = 0; i < n; i++) { const an = (i + 0.5 * H(i, s, 11)) / n * TAU, rr = r * (0.97 + 0.06 * H(i, s, 12)), hy = (0.08 + 0.12 * H(i, s, 13)) * (1 - 0.6 * u) * (1 + 0.4 * Math.sin(a * 0.5 + i)), x = X + Math.cos(an) * rr, z = Z + Math.sin(an) * rr;
+              goo(x, floorY(x, z) + hy, z, (0.18 + 0.08 * H(i, s, 14)) * (1 - 0.3 * u), i % 4 ? LIME : GOO, 0.95 * k); if (i % 3 === 0) goo(x - Math.cos(an) * 0.22, floorY(x, z) + hy * 0.5, z - Math.sin(an) * 0.22, 0.12, GOO, 0.8 * k); } }
           if (a < 8) glint(X, Yf + 0.4, Z, 1.1, 1 - a / 8);
-          fumes(X, Yf + 0.1, Z, r * 0.8, a, 70, s, 12, fade);
+          fumes(X, Yf + 0.1, Z, r * 0.8, a, 70, s, 8, fade);
           for (let j = 0; j < D.foes.length; j++) { const F = D.foes[j], g = a - Math.round(outC(clamp(F.d / R, 0, 1)) * span * 0.6), A = F.a, ax = A.dead ? F.x : A.x, az = A.dead ? F.y : A.y, Ya = floorY(ax, az); splash(ax, Ya + 0.35, az, Ya, g, s + j * 5, 0.6, LIME); } } },
       // the hit the game makes with each (the same place, the same kinds): drawn by the ring's own look
       impact: { find(e, f) { return (isErupt(e) || isUnder(e)) && Math.hypot(e.x - f.x, e.y - f.y) < 0.4; }, claim() { return true; }, span: 1, draw() {} },
@@ -336,7 +339,7 @@ function view3dToxicForms(K) {
       soulsplat: {
         find(e, f) { const L = SHOTS.get(f); return !!L && Math.hypot(e.x - L.x, e.y - L.y) < 1.5 && GM.frame - L.at < 6; }, claim() { return true; }, span: 26,
         draw(m, age, f0, b) { const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), Y = Yf + 0.32, sp = clamp(age / 6, 0, 1), k = clamp(1 - (age - 14) / 10, 0, 1); if (k <= 0) return;
-          solid(BLOBS, X, Y - 0.06 * sp, Z, 0, 1, 0, 0, 0.16 * (1 - 0.55 * sp) * k + 0.02, 0.17 * (1 + 0.7 * sp) * k, BLOB_C[0], BLOB_C[1], BLOB_C[2], BLOB_E[0], BLOB_E[1], BLOB_E[2]);
+          solid(BLOBS, X, Y - 0.06 * sp, Z, 0, 1, 0, 0, 0.16 * (1 - 0.55 * sp) * k + 0.02, 0.14 * (1 + 0.5 * sp) * k, BLOB_C[0], BLOB_C[1], BLOB_C[2], BLOB_E[0], BLOB_E[1], BLOB_E[2]);
           if (age < 8) put(SMOKE, X, Y + 0.02, Z, SOUL_LIT[0], SOUL_LIT[1], SOUL_LIT[2], 0.9 * (1 - age / 8), 0.18 * sp + 0.05);
           for (let i = 0; i < (low() ? 4 : 8); i++) { const an = i * 0.785 + 0.3, d = 0.1 + 0.28 * outC(sp) + 0.004 * age, y = Y + 0.12 * Math.sin(PI * clamp(age / 14, 0, 1)) - 0.002 * age * age * 0.5;
             if (y < Yf) continue; goo(X + Math.cos(an) * d, y, Z + Math.sin(an) * d, (0.06 - age * 0.0018) * (1 + 0.3 * (i % 2)), i % 2 ? SOUL : SOUL_TAIL, 0.95 * k); }
@@ -351,10 +354,10 @@ function view3dToxicForms(K) {
         begin(m) { if (!m.data) m.data = { x0: m.o.x0, y0: m.o.y0, Y0: floorY(m.o.x0, m.o.y0) + 0.5 }; },
         draw(m, age, f0, b) { const D = m.data, s = m.seed, X = m.o.x, Z = m.o.y, Yf = floorY(X, Z), u = clamp(age / LOB, 0, 1), L = Math.hypot(X - D.x0, Z - D.y0);
           if (u < 1) { const x = lerp(D.x0, X, u), z = lerp(D.y0, Z, u), y = lerp(D.Y0, Yf + 0.05, u) + Math.sin(PI * u) * (0.6 + 0.15 * L), an = u * 9;
-            solid(QUILLS, x, y - 0.15, z, Math.sin(an) * 0.7, Math.cos(an), Math.cos(an * 0.7) * 0.5, an, 0.34, 0.16, BLACK[0], BLACK[1], BLACK[2], 0.1, 0.55, 0.15);
+            solid(QUILLS, x, y - 0.15, z, Math.sin(an) * 0.7, Math.cos(an), Math.cos(an * 0.7) * 0.5, an, 0.5, 0.24, BLACK[0], BLACK[1], BLACK[2], 0.1, 0.55, 0.15);
             for (let i = 1; i <= (low() ? 2 : 4); i++) { const v = Math.max(0, u - i * 0.06), xx = lerp(D.x0, X, v), zz = lerp(D.y0, Z, v), yy = lerp(D.Y0, Yf + 0.05, v) + Math.sin(PI * v) * (0.6 + 0.15 * L); haze(xx, yy, zz, 0.12 + 0.03 * i, SOUL_SMOKE, 0.3 - i * 0.06); }
             return; }
-          const g = age - LOB; flat(DISCF, X, Yf, Z, 0.2 + 0.3 * outC(clamp(g / 6, 0, 1)), BLACK[0], BLACK[1], BLACK[2], 0.6 * clamp(1 - g / 14, 0, 1));
+          const g = age - LOB; flat(DISCF, X, Yf, Z, 0.15 + 0.18 * outC(clamp(g / 6, 0, 1)), BLACK[0], BLACK[1], BLACK[2], 0.4 * clamp(1 - g / 12, 0, 1));
           for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 1) * TAU, t = Math.min(g, 10), y = Yf + 0.04 + 0.03 * t - 0.0035 * t * t; if (y > Yf) goo(X + Math.cos(an) * 0.03 * t, y, Z + Math.sin(an) * 0.03 * t, 0.04, BLACK, 0.9 * (1 - g / 14)); } } },
       // ROTTEN DECOY itself (the game's rotdecoy, while the decoy stands; drawn from DECOY_LOB frames in, as the 2D). The approved black Rotshard (2026-11-09: "Make the decoy a black Rotshard", "Approve
       // the black decoy": the Rotshard's own model all in black, its glows off, no aura, no green circle, rising out of the floor over 8 frames as it is set and breathing with the Rotshard's idle) made 3D:
