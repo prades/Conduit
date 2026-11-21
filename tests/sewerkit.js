@@ -1,4 +1,4 @@
-// THE SEWER DUNGEON'S KIT (build 2026-11-17bj; docs/SEWER-PROPS.md §10; design/props/models/_sewer.js, sewer.js, sewerfinds.js; js/propsprites.js PS_FAMILY, facilityPropState;
+// THE SEWER DUNGEON'S KIT (build 2026-11-17bk; docs/SEWER-PROPS.md §10; design/props/models/_sewer.js, sewer.js, sewerfinds.js; js/propsprites.js PS_FAMILY, facilityPropState;
 // view3d/gamemap.js, design/style-evolution/round2/chamber.js, view3d/core.js, view3d/gameview.js propState; js/view3d.js view3dPropState).
 // ASKED (the owner, 2026-11-21, of the props and key items approved one by one that day): "Let's go ahead and create the framework so that my sewer AI can build this in 3D."
 // So the approved pieces are the game's own models, on two sheets of their own; a prop of the map with one of the kit's kinds is drawn like any other, in the 2D game and in the 3D view;

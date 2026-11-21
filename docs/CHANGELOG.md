@@ -33,7 +33,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17bj` · branch `claude/friendly-thompson-w581x0` · the sewer dungeon's kit: its approved props and key items are the game's own models, to build with
+### Build `2026-11-17bk` · branch `claude/friendly-thompson-w581x0` · the sewer dungeon's kit: its approved props and key items are the game's own models, to build with
 - **The ask** (the owner, 2026-11-21, of the props and key items approved one by one that day): "Let's go ahead and create the framework so that my sewer AI can build this in 3D."
 - **What it does:** the sixteen approved pieces are models of the game (`design/props/models/_sewer.js`), baked to two sheets (`img/props/sewer.png`, 33 variants; `img/props/sewerfinds.png`, 13). Nine props have kinds on the game's prop table: a prop of the map with one is drawn like any other, its sprite in the 2D game and its model in the 3D view, turned by its own size or by its `_turned` kind. A prop with states (a valve shut or open, a gate, a switch, a door, rubble) is drawn in the one the game last set (`facilityPropStateSet`), in both views; given none, as it is found.
 - **Nothing a player sees changes:** no prop of the map is one of these yet. The dungeon's builder puts them there (`SEWER-PROPS.md` §10, the guide). Two small sheets more are loaded with the rest.
