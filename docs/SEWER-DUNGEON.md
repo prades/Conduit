@@ -53,4 +53,12 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 - Changing the water level: **"A Technomancer charge"**: the mech spends one of its 3 environmental charges at a water control.
 - First stage: **"Layout + water together"**.
 
+**Answered (the owner, 2026-11-21, of four more):**
+- Where the mech spends a charge on the water: **"At water control panels"** (fixed panels; where and how many is the agent's, provisional).
+- A player with no mech: **"Flux can block water flow by pushing into the water heavy objects or rubble falling could increase water level"**. So the water also rises when the flow is blocked: a heavy object pushed into it by Flux, or rubble falling into it. (Where the flow can be blocked, and what lowers it again, is open.)
+- The level on entering: **"LOW (drained)"**.
+- The old Sewers' pieces with no place on the picture (Side Quest's platform, the pumps and valves, the drain-pipe shortcut, the sample bank puzzle): **"Remove all, re-add later"**.
+
+*Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
+
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
