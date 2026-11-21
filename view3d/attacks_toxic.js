@@ -354,7 +354,7 @@ function view3dToxicForms(K) {
         begin(m) { if (!m.data) m.data = { x0: m.o.x0, y0: m.o.y0, Y0: floorY(m.o.x0, m.o.y0) + 0.5 }; },
         draw(m, age, f0, b) { const D = m.data, s = m.seed, X = m.o.x, Z = m.o.y, Yf = floorY(X, Z), u = clamp(age / LOB, 0, 1), L = Math.hypot(X - D.x0, Z - D.y0);
           if (u < 1) { const x = lerp(D.x0, X, u), z = lerp(D.y0, Z, u), y = lerp(D.Y0, Yf + 0.05, u) + Math.sin(PI * u) * (0.6 + 0.15 * L), an = u * 9;
-            solid(QUILLS, x, y - 0.15, z, Math.sin(an) * 0.7, Math.cos(an), Math.cos(an * 0.7) * 0.5, an, 0.5, 0.24, BLACK[0], BLACK[1], BLACK[2], 0.1, 0.55, 0.15);
+            solid(QUILLS, x, y - 0.15, z, Math.sin(an) * 0.7, Math.cos(an), Math.cos(an * 0.7) * 0.5, an, 0.55, 1.1, BLACK[0], BLACK[1], BLACK[2], 0.1, 0.55, 0.15);
             for (let i = 1; i <= (low() ? 2 : 4); i++) { const v = Math.max(0, u - i * 0.06), xx = lerp(D.x0, X, v), zz = lerp(D.y0, Z, v), yy = lerp(D.Y0, Yf + 0.05, v) + Math.sin(PI * v) * (0.6 + 0.15 * L); haze(xx, yy, zz, 0.12 + 0.03 * i, SOUL_SMOKE, 0.3 - i * 0.06); }
             return; }
           const g = age - LOB; flat(DISCF, X, Yf, Z, 0.15 + 0.18 * outC(clamp(g / 6, 0, 1)), BLACK[0], BLACK[1], BLACK[2], 0.4 * clamp(1 - g / 12, 0, 1));
@@ -376,7 +376,7 @@ function view3dToxicForms(K) {
         find(e, f) { for (const [d, R] of DECOYS) { if (R.f === f && Math.hypot(e.x - R.x, e.y - R.y) < 0.2) return true; } return false; }, claim() { return true; }, span: 48,
         draw(m, age, f0, b) { const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), k = clamp(1 - (age - 25) / 20, 0, 1);
           for (let i = 0; i < (low() ? 4 : 8); i++) { const an = i * 0.8 + H(i, s, 1), v = 0.03 + 0.02 * H(i, s, 2), t = Math.min(age, 12), r = 0.08 + v * t, y = Yf - 0.05 - (1 - k) * 0.12 + Math.max(0, 0.05 * t - 0.004 * t * t);
-            solid(SPIKES, X + Math.cos(an) * r, y, Z + Math.sin(an) * r, Math.cos(an) * 0.6 * (1 - Math.min(1, t / 12)) + Math.cos(an) * 0.4, 1, Math.sin(an) * 0.5, an, (0.16 + 0.1 * H(i, s, 3)) * k, 0.07 * k, BLACK[0], BLACK[1], BLACK[2], 0.06, 0.3, 0.1); }
+            solid(SPIKES, X + Math.cos(an) * r, y, Z + Math.sin(an) * r, Math.cos(an) * 0.6 * (1 - Math.min(1, t / 12)) + Math.cos(an) * 0.4, 1, Math.sin(an) * 0.5, an, (0.18 + 0.12 * H(i, s, 3)) * k, 0.15 * k, BLACK[0], BLACK[1], BLACK[2], 0.06, 0.3, 0.1); }
           for (let i = 0; i < (low() ? 2 : 4); i++) { const an = H(i, s, 4) * TAU; haze(X + Math.cos(an) * 0.25, Yf + 0.12 + 0.004 * age, Z + Math.sin(an) * 0.25, 0.35, TOX, 0.14 * k); } } },
       // TOXIC PUDDLE (the game's toxicpuddle: under the biggest group it can see, growing from ULT_PUDDLE.from to ULT_PUDDLE.radius over ULT_PUDDLE.grow frames, for ULT_PUDDLE.frames; every ULT_PUDDLE.tick
       // frames shards erupt under each enemy in it, which is hurt and poisoned). The 2D's look (a green puddle growing on the floor with bubbles in it; black crystal spikes bursting up round each bitten
