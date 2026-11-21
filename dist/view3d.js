@@ -31443,8 +31443,8 @@ function view3dToxicForms(K) {
     const UND = M.undertow || { radius: 3, thrown: 2.5 }, NET = M.network || { tick: 30, touch: 0.5 }, PUD = M.puddle || { from: 0.5, radius: 2, grow: 120, tick: 30 };
     const AROUND = M.spikeAround || [[-0.28, 0.05, 0.75], [0.05, -0.28, 0.8], [0.2, 0.22, 1]], SPIKE_H = (M.spikeH || 26) / UPX;
     const pxU = px => px / UPX, SHOT_UP = pxU(40), PI = Math.PI;
-    const TOX = [0.4, 1.0, 0.4], LIME = [0.49, 1.0, 0.29], VEN = [0.53, 1.0, 0.27], GOO = [0.31, 0.76, 0.16], DEEP = [0.12, 0.42, 0.08], PALE = [0.78, 1.0, 0.6], FUME = [0.5, 0.66, 0.42];
-    const SOUL = [0.6, 0.87, 0.68], SOUL_LIT = [0.77, 0.93, 0.82], SOUL_SMOKE = [0.44, 0.56, 0.49], SOUL_ARC = [0.66, 0.77, 0.7], SOUL_TAIL = [0.41, 0.77, 0.54], BLACK = [0.07, 0.08, 0.09];
+    const TOX = [0.4, 1.0, 0.4], LIME = [0.49, 1.0, 0.29], VEN = [0.53, 1.0, 0.27], GOO = [0.31, 0.76, 0.16], DEEP = [0.12, 0.42, 0.08], PALE = [0.78, 1.0, 0.6], FUME = [0.42, 0.72, 0.36];
+    const SOUL = [0.6, 0.87, 0.68], SOUL_LIT = [0.77, 0.93, 0.82], SOUL_SMOKE = [0.44, 0.56, 0.49], SOUL_ARC = [0.66, 0.77, 0.7], SOUL_TAIL = [0.41, 0.77, 0.54], BLACK = [0.07, 0.08, 0.09], BLOB_C = [0.3, 0.72, 0.44], BLOB_E = [0.08, 0.2, 0.12];
     const goo = (x, y, z, s, c, a) => put(SMOKE, x, Math.max(y, floorY(x, z) + s * 0.4), z, c[0], c[1], c[2], a, s);
     const haze = (x, y, z, s, c, a) => put(SMOKE, x, y, z, c[0], c[1], c[2], a, -s);
     const bubble = (x, y, z, s, a) => put(PUFF, x, y, z, PALE[0], PALE[1], PALE[2], a, s);
@@ -31612,7 +31612,7 @@ function view3dToxicForms(K) {
                 throw new Error('no model for the rotshard');
             const H0 = b.holder;
             H0.userData.fx3d = true;
-            const black = lin('#16181d'), crack = lin('#3fbf55');
+            const black = lin('#16181d');
             H0.traverse(o => {
                 if (!o.isMesh)
                     return;
@@ -31620,12 +31620,11 @@ function view3dToxicForms(K) {
                 for (const m of [].concat(o.material)) {
                     if (!m)
                         continue;
-                    const glow = m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.6 && m.emissive.g > m.emissive.r * 1.5;
                     if (m.color)
                         m.color.copy(black);
                     if (m.emissive) {
-                        m.emissive.copy(glow ? crack : black);
-                        m.emissiveIntensity = glow ? 0.12 : 0;
+                        m.emissive.copy(black);
+                        m.emissiveIntensity = 0;
                     }
                 }
             });
@@ -31941,7 +31940,7 @@ function view3dToxicForms(K) {
                     for (let i = 0; i < segs.length; i++) {
                         const A = segs[i][0], B = segs[i][1], ya = floorY(A[0], A[1]) + 0.36, yb = floorY(B[0], B[1]) + 0.36, L = Math.hypot(B[0] - A[0], B[1] - A[1]), mx = (A[0] + B[0]) / 2, mz = (A[1] + B[1]) / 2;
                         const g = grow, ex = lerp(A[0], B[0], 0.5 * g), ez = lerp(A[1], B[1], 0.5 * g), fx = lerp(B[0], A[0], 0.5 * g), fz = lerp(B[1], A[1], 0.5 * g), sag = 0.1 + 0.03 * L;
-                        const n = clamp(Math.round(L / 0.25), 6, 24), lw = 0.05 + 0.025 * surge, al = k * (0.85 + 0.15 * surge);
+                        const n = low() ? clamp(Math.round(L / 0.5), 3, 12) : clamp(Math.round(L / 0.25), 6, 24), lw = 0.05 + 0.025 * surge, al = k * (0.85 + 0.15 * surge);
                         if (g < 1) {
                             cable(A[0], ya, A[1], ex, lerp(ya, yb, 0.5 * g), ez, sag * g * 0.5, Math.max(3, Math.round(n * g * 0.5)));
                             stroke(lw, lw * 0.8, LIME, al, al, 0.5 + 0.5 * surge);
@@ -32275,7 +32274,7 @@ function view3dToxicForms(K) {
                     const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), Y = Yf + 0.32, sp = clamp(age / 6, 0, 1), k = clamp(1 - (age - 14) / 10, 0, 1);
                     if (k <= 0)
                         return;
-                    solid(BLOBS, X, Y - 0.06 * sp, Z, 0, 1, 0, 0, 0.16 * (1 - 0.55 * sp) * k + 0.02, 0.17 * (1 + 0.7 * sp) * k, SOUL[0], SOUL[1], SOUL[2], SOUL[0] * 0.55, SOUL[1] * 0.55, SOUL[2] * 0.55);
+                    solid(BLOBS, X, Y - 0.06 * sp, Z, 0, 1, 0, 0, 0.16 * (1 - 0.55 * sp) * k + 0.02, 0.17 * (1 + 0.7 * sp) * k, BLOB_C[0], BLOB_C[1], BLOB_C[2], BLOB_E[0], BLOB_E[1], BLOB_E[2]);
                     if (age < 8)
                         put(SMOKE, X, Y + 0.02, Z, SOUL_LIT[0], SOUL_LIT[1], SOUL_LIT[2], 0.9 * (1 - age / 8), 0.18 * sp + 0.05);
                     for (let i = 0; i < (low() ? 4 : 8); i++) {
@@ -32420,8 +32419,9 @@ function view3dToxicForms(K) {
                     const p = m.o, s = m.seed, Yf = floorY(m.x, m.y), Y = Yf + SHOT_UP, R = 0.15, vx = p.vx || 0, vz = p.vy || 0, sp = Math.hypot(vx, vz) || 1, ux = vx / sp, uz = vz / sp, nx = -uz, nz = ux;
                     SHOTS.set(m.owner, { x: m.x, y: m.y, at: GM.frame });
                     const w1 = 1 + 0.14 * Math.sin(age * 0.4), w2 = 1 + 0.12 * Math.sin(age * 0.27 + 1);
-                    solid(BLOBS, m.x - ux * R * 0.4, Y, m.y - uz * R * 0.4, ux, 0, uz, age * 0.1, R * 2.9 * w1, R * 1.05 * w2, SOUL[0], SOUL[1], SOUL[2], SOUL[0] * 0.55, SOUL[1] * 0.55, SOUL[2] * 0.55);
-                    solid(BLOBS, m.x - ux * R * 0.05 - nx * 0.03, Y + R * 0.42, m.y - uz * R * 0.05 - nz * 0.03, ux, 0, uz, 0, R * 1.3, R * 0.45, SOUL_LIT[0], SOUL_LIT[1], SOUL_LIT[2], SOUL_LIT[0] * 0.6, SOUL_LIT[1] * 0.6, SOUL_LIT[2] * 0.6);
+                    solid(BLOBS, m.x - ux * R * 1.0, Y, m.y - uz * R * 1.0, ux, 0, uz, age * 0.1, R * 2.1 * w1, R * 0.95 * w2, BLOB_C[0], BLOB_C[1], BLOB_C[2], BLOB_E[0], BLOB_E[1], BLOB_E[2]);
+                    solid(BLOBS, m.x - ux * R * 0.15 - nx * 0.02, Y + R * 0.36, m.y - uz * R * 0.15 - nz * 0.02, ux, 0, uz, 0, R * 1.0, R * 0.4, SOUL[0], SOUL[1], SOUL[2], 0.12, 0.22, 0.15);
+                    put(SMOKE, m.x, Y, m.y, SOUL_TAIL[0], SOUL_TAIL[1], SOUL_TAIL[2], 0.9, R * 2.6);
                     for (let i = 0; i < 4; i++) {
                         const off = (i - 1.5) * R * 0.42, len = R * (3.4 + 1.0 * ((Math.floor(age / 2) + i * 2) % 3)), x0 = m.x + nx * off - ux * R * 0.9, z0 = m.y + nz * off - uz * R * 0.9, y0 = Y + (i % 2 ? 0.03 : -0.03);
                         seg(x0, y0, z0, x0 - ux * len, y0, z0 - uz * len, R * (0.3 - 0.06 * (i % 2)), 0.004, SOUL_TAIL, 0.6 - (i % 2) * 0.18, 0.05, 0);
@@ -32447,6 +32447,7 @@ function view3dToxicForms(K) {
             },
         },
     };
+    ROT.decoys = () => DEC;
     return { blightspider: SPIDER, seeper: SEEP, rotshard: ROT };
 }
 ;
