@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17az` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
+### Build `2026-11-17ba` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
 - **The ask** (the owner, 2026-11-21): "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: "The whole squad"; "Over 3 turns: 24%, 24%, 12%"; "On its own turn each round".
 - **What it does** (behind `?cards` with `?engine=3d`): a Mutator carrying a serum has its own turn each round, after its followers, with a HEALING SERUM card showing the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up is healed 24% of its health at once, then 24% and 12% as the next two enemy turns begin. With no serum it has no turn.
 - **ASH SURGEON and PLAGUE DOCTOR** (the owner, the same day, of their pool statuses, a battle having no pool: "Yeah, just make them do moderate damage"): with either worn, each turn's worth of the serum also hits every enemy of the battle in the role's element: 10, 10 and 5 (the number is the agent's).
@@ -13,7 +13,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `js/cardbattle.js`, `js/cardshapes.js`, `tests/cardbattle.js` (5 new checks), `docs/CARD-BATTLES.md` §2.70, §9, §10, §11.33, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `MUTATOR.md`.
 - **Verified:** `node tests/run.js`: all 132 suites pass (tests/cardbattle.js THE MUTATOR'S TURN, 5 checks). In a real browser at 1180 × 820 (`play.html?engine=3d&cards`), a Mutator with two serums and three followers at 200 of 1000: its turn came after theirs (the chip YOU, MUTATOR · 2 SERUMS, the cards HEALING SERUM with SERUM 2 on its foot, and HOLD); the serum dragged onto the fight took the three to 440 at once, 680 as the next enemy turn began and 800 as the one after did, one serum left; HOLD by a tap kept the other. With ASH SURGEON worn, two ants at 300 went to 293, 286 and 282.5 on those same turns (7, 7 and 3.5: an ant resists Elemental, `COMBAT.md` §7.3, so 10, 10 and 5 land as that on it); no page errors. **Not playtested; not seen on an iPad.**
 
-### Build `2026-11-17ay` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
+### Build `2026-11-17az` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
 - **The ask** (the owner, 2026-11-20, of the Gunslinger's melee): "It's used as a close up smash with the gun." Asked: "Card battles only"; "It walks up, like followers"; "About a burst (36)"; "Free, every round".
 - **What it does** (behind `?cards` with `?engine=3d`): a second attack card in the Gunslinger's turn, SMASH. Next to an enemy the blow lands at once for 36, with no round spent and no wait. Out of reach, its turn is a walk towards that enemy (3 squares, round everyone), the card still ready, and the blow lands on a later turn; the cube is in the line then. With an empty gun the Gunslinger still has its turn.
 - **The agent's, provisional:** Crushing; 36 fixed (not by the gun's level, no role's kit on it); the cube's pace, 3 squares; its square now in everyone's way; a short lunge for the look. `CARD-BATTLES.md` §2.69, §11.32.

@@ -16,23 +16,23 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: In a card battle the Mutator has a turn of its own: its HEALING SERUM heals the whole squad
 
-- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17az`
+- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ba`
 - **Status:** implemented behind `?cards` with `?engine=3d`; verified by `tests/cardbattle.js` (5 checks) and the full run; seen in a real browser; not playtested, not seen on an iPad.
 - **Decision:** the owner: "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: it heals **the whole squad** (not a pool on the squares, not one follower); **over 3 turns: 24%, 24%, 12%** (not 60% at once, not 30%); **on its own turn each round**, with none carried no turn (not a free tap any time, not once a battle).
 - **Supersedes:** `CARD-BATTLES.md` §2.10 ("the cube commands only") for a Mutator carrying a serum. The Technomancer still commands only.
 - **And of ASH SURGEON and PLAGUE DOCTOR** (their kits work on the serum's pool, which a battle has not), the owner, the same day: "Yeah, just make them do moderate damage": with either worn the serum also hits every enemy, turn by turn. The number, 10, 10 and 5, is the agent's.
 - **Agent's choices, provisional:** a HOLD card; drag only; serums add up; turns left end with the battle; HERBALIST applies. `CARD-BATTLES.md` §11.33.
-- **Affects:** `CARD-BATTLES.md` §2.70, §9, §10, §11.33; `MUTATOR.md` §2.6; `js/cardbattle.js`, `js/cardshapes.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17az`.
+- **Affects:** `CARD-BATTLES.md` §2.70, §9, §10, §11.33; `MUTATOR.md` §2.6; `js/cardbattle.js`, `js/cardshapes.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17ba`.
 
 ## DECISION: The Gunslinger's melee is SMASH, a close-up blow with the gun, in card battles
 
-- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ay`
+- **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17az`
 - **Status:** implemented behind `?cards` with `?engine=3d`; verified by `tests/cardbattle.js` and the full run; seen in a real browser; not playtested, not seen on an iPad.
 - **Context:** with the guns' removal the owner kept one melee, the Gunslinger's ("No melee unless it's the gunslinger"; "Add a Gunslinger melee"), to be designed.
 - **Decision:** the owner: "It's used as a close up smash with the gun." Asked: **card battles only** (not the real-time game, not both); **it walks up, like followers** (not only when an enemy is next to it, not a dash in the same turn); **about a burst, 36** (not 48, not 20); **free, every round** (no ammunition, no wait, damage only; not a rest, a knock-back or a stun).
 - **Agent's choices, provisional:** Crushing; 36 fixed; the cube walks 3 squares a turn, by its own pace read as a follower's; its square stands in others' way. `CARD-BATTLES.md` §11.32.
 - **Resolves:** the open melee of "The only personal weapon is the Gunslinger's machine gun" (below) and `OPEN-QUESTIONS.md`, "Open 2026-11-20", item 1.
-- **Affects:** `CARD-BATTLES.md` §2.69, §9, §10, §11.32; `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17ay`.
+- **Affects:** `CARD-BATTLES.md` §2.69, §9, §10, §11.32; `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`; `tests/cardbattle.js`; `CHANGELOG.md` `2026-11-17az`.
 
 ## DECISION: In a card battle the Gunslinger has a turn of its own: SHOOT
 
@@ -47,7 +47,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 ## DECISION: The only personal weapon is the Gunslinger's machine gun
 
 - **Date:** 2026-11-20 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17at`
-- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17at` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee, then decided and not designed, is SMASH, built in `2026-11-17ay` (the decision above).
+- **Status:** implemented; verified by the suites named in `CHANGELOG.md` `2026-11-17at` and the full run; not playtested, not seen on an iPad. The Gunslinger's melee, then decided and not designed, is SMASH, built in `2026-11-17az` (the decision above).
 - **Context:** the owner, 2026-11-20: "I want to get rid of all guns except for the gun given to the gunslinger whenever the tutorial is finished. That means removing the tutorial gun, and also I want to remove the Technomancer's arc shot and melee. No melee unless it's the gunslinger."
 - **Decision** (asked):
   - the Mutator's TENTACLE LASH: "Remove the lash too";
