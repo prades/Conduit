@@ -69,6 +69,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-21, circling the flight the agent had drawn between the south-west plaza and the ring): "Not stairs".** Removed from `STAIRS` (ten flights now). Open: how the plaza (read as a storey down) and the ring meet there.
 
+**Corrected (the owner, 2026-11-21, circling the diagonal passage the agent had drawn from the West Hall's east side up to the Central Channel's west walkway): "No hallway here".** Removed from `SHAPES`: those diagonal lines in the picture are walls, not a way through.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
