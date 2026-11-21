@@ -1628,7 +1628,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── CORE — PULSATING RINGS EMANATING FROM THE CRYSTAL ───────────────────
-    if (actor.corePulse > 0) {
+    if (actor.corePulse > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "corePulse"))) {   // (the 3D view's own, view3d/attacks_core.js: the Hammer Slug's and the Jelly Ram's)
         const _cpAlpha = Math.min(1, actor.corePulse / 10) * 0.75;
         drawCtx.save();
         drawCtx.strokeStyle = "#00ccaa";

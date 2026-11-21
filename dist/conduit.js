@@ -9805,7 +9805,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         }
         drawCtx.restore();
     }
-    if (actor.corePulse > 0) {
+    if (actor.corePulse > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "corePulse"))) {
         const _cpAlpha = Math.min(1, actor.corePulse / 10) * 0.75;
         drawCtx.save();
         drawCtx.strokeStyle = "#00ccaa";

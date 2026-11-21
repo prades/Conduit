@@ -58,7 +58,10 @@ const VIEW3D_GAME = (0, eval)(`({
   // the flux line's (view3d/attacks_flux.js): the measures its looks follow (read once: the game's own constants)
   get fluxMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { maelR: v("MAEL_RADIUS", 1.8), maelTick: v("MAEL_TICK", 30), riftOut: v("RIFT_OUT", 10), mimicShot: v("MIMIC_SHOT", null), mimicR: v("MIMIC_RADIUS", 2.2), swapBurst: v("SWAP_BURST", 1),
-      vortex: v("ULT_VORTEX", null), horizon: v("ULT_HORIZON", null), proxy: v("ULT_PROXY", null), whirl: v("SHARD_WHIRL", null) }; }
+      vortex: v("ULT_VORTEX", null), horizon: v("ULT_HORIZON", null), proxy: v("ULT_PROXY", null), whirl: v("SHARD_WHIRL", null) }; },
+  // the core line's (view3d/attacks_core.js): the measures its looks follow (read once: the game's own constants)
+  get coreMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { rollStep: v("ROLL_STEP", 0.08), rollBand: v("ROLL_BAND", 0.8), guardLure: v("GUARD_LURE", 3), wobbleR: v("WOBBLE_RADIUS", 1.5), echoR: v("ECHO_RADIUS", 4), slam: v("ULT_SLAM", null), wave: v("ULT_WAVE", null), jelly: v("ULT_JELLY", null) }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)

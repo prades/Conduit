@@ -127,6 +127,8 @@ function view3dFluxForms(K) {
       stats.beams = bn; stats.fluxModels = tentN + copUsed.n; },
     clear() { bn = 0; tentN = 0; copUsed.n = 0; },
   });
+  // (its strands of light, for the core line, view3d/attacks_core.js: a segment, a path laid and stroked, a circle of light; the camera's axes this frame)
+  K.beam = { seg, stroke, arc3, padd, path() { pn = 0; }, CR, CU, CB, CF, PX, PY, PZ, n: () => pn };
 
   // ── THE STROKES THE FORMS SHARE ──
   // a burst of violet goo at (X, Y, Z) over the floor at Yf, g frames in, `size` its strength: a flash, lumps thrown up and out and falling, a splat on the floor, a shimmer of glints
