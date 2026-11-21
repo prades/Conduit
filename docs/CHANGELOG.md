@@ -7,9 +7,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 ### Build `2026-11-17az` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
 - **The ask** (the owner, 2026-11-21): "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: "The whole squad"; "Over 3 turns: 24%, 24%, 12%"; "On its own turn each round".
 - **What it does** (behind `?cards` with `?engine=3d`): a Mutator carrying a serum has its own turn each round, after its followers, with a HEALING SERUM card showing the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up is healed 24% of its health at once, then 24% and 12% as the next two enemy turns begin. With no serum it has no turn.
-- **The agent's, provisional:** a HOLD card to pass; drag only (no tap); two serums add up; a serum's turns left end with the battle; HERBALIST's bonus applies, ASH SURGEON's and PLAGUE DOCTOR's pool statuses do not (no pool). `CARD-BATTLES.md` §2.70, §11.33.
+- **ASH SURGEON and PLAGUE DOCTOR** (the owner, the same day, of their pool statuses, a battle having no pool: "Yeah, just make them do moderate damage"): with either worn, each turn's worth of the serum also hits every enemy of the battle in the role's element: 10, 10 and 5 (the number is the agent's).
+- **The agent's, provisional:** a HOLD card to pass; drag only (no tap); two serums add up; a serum's turns left end with the battle; HERBALIST's bonus applies. `CARD-BATTLES.md` §2.70, §11.33.
 - **Fixed while building it:** nothing of the game's; one mistake of this build's own (a second serum hurried the first one's next turn's worth), caught by its check.
-- `js/cardbattle.js`, `js/cardshapes.js`, `tests/cardbattle.js` (4 new checks), `docs/CARD-BATTLES.md` §2.70, §9, §10, §11.33, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `MUTATOR.md`.
+- `js/cardbattle.js`, `js/cardshapes.js`, `tests/cardbattle.js` (5 new checks), `docs/CARD-BATTLES.md` §2.70, §9, §10, §11.33, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `MUTATOR.md`.
 - **Verified:** VERIFIED_LINE
 
 ### Build `2026-11-17ay` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH

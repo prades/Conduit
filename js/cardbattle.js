@@ -61,6 +61,7 @@ const CARD_BATTLE = {
     tether: 0.8,                // tiles: on its attack's turn one may step this far off its square on its own legs (a leap, a dash or a charge carries it further: its new square)
     upFront: 2,                 // THE OPENING STANCE (§2.53): squares ahead of the line a TANK or a RECKLESS follower starts (the owner: "upfront maybe two spaces")
     shoot: { shots: [4, 5] },   // THE GUNSLINGER'S SHOOT (§2.66; the owner, 2026-11-20: "it does four to five shots"): the rounds of one burst, the one number or the other, an even chance
+    serum: { bite: 10 },        // THE MUTATOR'S SERUM WITH ASH SURGEON OR PLAGUE DOCTOR WORN (§2.70; the owner, 2026-11-21: "just make them do moderate damage"): what every enemy of the battle takes from a full turn's worth of a serum (the number is the agent's, provisional: 10, 10 and 5 over its three turns)
     smash: { damage: 36, lunge: 0.5 },   // THE GUNSLINGER'S SMASH (§2.69; the owner, 2026-11-20: "a close up smash with the gun", "About a burst (36)"): its damage; how far (tiles) the cube lunges at its enemy as the blow lands, eased back to its square (the agent's, a look only)
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
@@ -793,7 +794,10 @@ function _cbAfterAct(f0) {
 // one card: HEALING SERUM, its foot the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up in the battle (followers and its clone, wherever they
 // stand) is healed a turn's worth of the serum's pool at once (2 s of it: 4 beats of 6%, 24% of its own health), then the next as each of the next enemy turns begins (24%, then 12%: the pool's
 // 5 s, as an Ultimate's lasting effect counts, §2.60). With no serum it has no turn. THE AGENT'S, PROVISIONAL: a second card, HOLD, passes and keeps the serum; two serums' turns add up; what is
-// left of one when the battle ends is lost with it; HERBALIST's stronger pool heals more here too, and ASH SURGEON's and PLAGUE DOCTOR's pool statuses, there being no pool, do nothing in a battle.
+// left of one when the battle ends is lost with it; HERBALIST's stronger pool heals more here too.
+// ASH SURGEON AND PLAGUE DOCTOR (their kits set a status on the creatures in the serum's pool, js/playercards.js; a battle has no pool. The owner, 2026-11-21, asked whether the serum should put
+// those effects on the enemies instead: "Yeah, just make them do moderate damage"): with either worn and awake, each turn's worth of a serum also hits EVERY ENEMY of the battle, in the role's
+// element (fire, toxic: Elemental, the triangle on it), for CARD_BATTLE.serum.bite a full turn's worth (10, 10, 5). No status is set. The number is the agent's, provisional.
 function _cbYouKind() { if (typeof player === "undefined" || !player || player.dead) return null; if (typeof weaponInHand === "function" && weaponInHand()) return "gun"; return typeof playerClassKey !== "undefined" && playerClassKey === "mutator" && typeof SERUM !== "undefined" ? "serum" : null; }
 function _cbYouIn() { return !!_cbYouKind(); }
 function _cbSerums() { return typeof invCount === "function" && typeof SERUM !== "undefined" ? invCount(SERUM.item) : 0; }
@@ -809,14 +813,18 @@ function _cbSerumDoses() {
 function _cbSerumDose(one) {
     const L = _cb.serums; if (!L || !L.length) return 0; let n = 0;
     const k = typeof playerSerumHealMult === "function" ? playerSerumHealMult() : 1, f0 = _cbF();
-    for (const s of L) { if (one && s !== one) continue; const share = s.left.shift(); if (!(share > 0)) continue; for (const a of _cbSquad()) { if (!a || a.dead || !(a.maxHealth > 0)) continue; a._serumAt = f0; if (typeof healUnit === "function") healUnit(a, a.maxHealth * share * k, player); n++; } }
+    const R = typeof playerMutRole === "function" ? playerMutRole() : null, bite = R && R.kit && R.kit.pool ? CARD_BATTLE.serum.bite : 0, full = bite ? _cbSerumDoses()[0] || 1 : 1;   // (ASH SURGEON, PLAGUE DOCTOR: the enemies take its bite too)
+    for (const s of L) { if (one && s !== one) continue; const share = s.left.shift(); if (!(share > 0)) continue; for (const a of _cbSquad()) { if (!a || a.dead || !(a.maxHealth > 0)) continue; a._serumAt = f0; if (typeof healUnit === "function") healUnit(a, a.maxHealth * share * k, player); n++; }
+        if (bite > 0) { const el = R.kit.el, src = { x: player.x, y: player.y, team: "green", element: el, isPlayer: true }, hit = typeof dmgArcHit === "function" ? dmgArcHit(el) : null;
+            for (const a of _cb.foes.filter(_cbFoeOk)) { if (typeof applyElementalDamage === "function") applyElementalDamage(a, bite * share / full, src, el, hit); else if (typeof applyDamage === "function") applyDamage(a, bite * share / full, src, el, false, false, hit); } } }
     _cb.serums = L.filter(s => s.left.length); return n;
 }
 function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js firePlayerShot: the gun holds its fire in a battle but for its own burst)
 function _cbYouCards() {
     if (_cbYouKind() === "serum") {   // (the Mutator's: HEALING SERUM and HOLD, §2.70)
-        const n = _cbSerums(), D = _cbSerumDoses().map(v => Math.round(v * 100) + "%"), col = typeof classColour === "function" ? classColour(playerClassKey) : "#c06bff";
-        const out = [{ kind: "serum", tag: "HEAL", name: "HEALING SERUM", fx: "Heals your whole squad: " + D[0] + " now" + (D.length > 1 ? ", then " + D.slice(1).join(" and ") + " as the enemy turns begin." : "."), ready: n > 0, serums: n, col },
+        const n = _cbSerums(), DS = _cbSerumDoses(), D = DS.map(v => Math.round(v * 100) + "%"), col = typeof classColour === "function" ? classColour(playerClassKey) : "#c06bff";
+        const R = typeof playerMutRole === "function" ? playerMutRole() : null, B = R && R.kit && R.kit.pool ? DS.map(v => Math.round(CARD_BATTLE.serum.bite * v / (DS[0] || 1) * 10) / 10) : null;   // (ASH SURGEON, PLAGUE DOCTOR: what every enemy takes, turn by turn)
+        const out = [{ kind: "serum", tag: "HEAL", name: "HEALING SERUM", fx: B ? "Heals your squad " + D.join(", ") + " and hits every enemy " + B.join(", ") + ", turn by turn." : "Heals your whole squad: " + D[0] + " now" + (D.length > 1 ? ", then " + D.slice(1).join(" and ") + " as the enemy turns begin." : "."), ready: n > 0, serums: n, col },
             { kind: "pass", tag: "HOLD", name: "HOLD", fx: "Keep your serum: your turn passes.", ready: true, col }];
         if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed) for (const c of out) { c.ready = false; c.done = true; }
         return out;

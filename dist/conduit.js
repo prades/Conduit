@@ -25939,6 +25939,7 @@ const CARD_BATTLE = {
     tether: 0.8,
     upFront: 2,
     shoot: { shots: [4, 5] },
+    serum: { bite: 10 },
     smash: { damage: 36, lunge: 0.5 },
 };
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };
@@ -27307,6 +27308,7 @@ function _cbSerumDose(one) {
         return 0;
     let n = 0;
     const k = typeof playerSerumHealMult === "function" ? playerSerumHealMult() : 1, f0 = _cbF();
+    const R = typeof playerMutRole === "function" ? playerMutRole() : null, bite = R && R.kit && R.kit.pool ? CARD_BATTLE.serum.bite : 0, full = bite ? _cbSerumDoses()[0] || 1 : 1;
     for (const s of L) {
         if (one && s !== one)
             continue;
@@ -27321,6 +27323,15 @@ function _cbSerumDose(one) {
                 healUnit(a, a.maxHealth * share * k, player);
             n++;
         }
+        if (bite > 0) {
+            const el = R.kit.el, src = { x: player.x, y: player.y, team: "green", element: el, isPlayer: true }, hit = typeof dmgArcHit === "function" ? dmgArcHit(el) : null;
+            for (const a of _cb.foes.filter(_cbFoeOk)) {
+                if (typeof applyElementalDamage === "function")
+                    applyElementalDamage(a, bite * share / full, src, el, hit);
+                else if (typeof applyDamage === "function")
+                    applyDamage(a, bite * share / full, src, el, false, false, hit);
+            }
+        }
     }
     _cb.serums = L.filter(s => s.left.length);
     return n;
@@ -27328,8 +27339,9 @@ function _cbSerumDose(one) {
 function cardBattleShooting() { return !!_cb.shooting; }
 function _cbYouCards() {
     if (_cbYouKind() === "serum") {
-        const n = _cbSerums(), D = _cbSerumDoses().map(v => Math.round(v * 100) + "%"), col = typeof classColour === "function" ? classColour(playerClassKey) : "#c06bff";
-        const out = [{ kind: "serum", tag: "HEAL", name: "HEALING SERUM", fx: "Heals your whole squad: " + D[0] + " now" + (D.length > 1 ? ", then " + D.slice(1).join(" and ") + " as the enemy turns begin." : "."), ready: n > 0, serums: n, col },
+        const n = _cbSerums(), DS = _cbSerumDoses(), D = DS.map(v => Math.round(v * 100) + "%"), col = typeof classColour === "function" ? classColour(playerClassKey) : "#c06bff";
+        const R = typeof playerMutRole === "function" ? playerMutRole() : null, B = R && R.kit && R.kit.pool ? DS.map(v => Math.round(CARD_BATTLE.serum.bite * v / (DS[0] || 1) * 10) / 10) : null;
+        const out = [{ kind: "serum", tag: "HEAL", name: "HEALING SERUM", fx: B ? "Heals your squad " + D.join(", ") + " and hits every enemy " + B.join(", ") + ", turn by turn." : "Heals your whole squad: " + D[0] + " now" + (D.length > 1 ? ", then " + D.slice(1).join(" and ") + " as the enemy turns begin." : "."), ready: n > 0, serums: n, col },
             { kind: "pass", tag: "HOLD", name: "HOLD", fx: "Keep your serum: your turn passes.", ready: true, col }];
         if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed)
             for (const c of out) {
