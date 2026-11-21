@@ -35184,6 +35184,9 @@ const GAMEVIEW = (function () {
         propState(id, st) { const p = world.props && world.props[id]; if (!p || !p.states || !p.states[st])
             return false; for (const k of Object.keys(p.states))
             p.states[k].visible = k === st; p.s.state = st; return true; },
+        props(id) { const p = world.props && world.props[id]; if (!p || !p.states)
+            return null; const o = {}; for (const k of Object.keys(p.states))
+            o[k] = p.states[k].visible; return o; },
         seeingThrough() { return faded.size + cut.size; },
         fainting() { return faints.length; },
         seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },
