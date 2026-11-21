@@ -6,7 +6,8 @@
 //   CLICK   a press on an enemy fires at it, at once if the gun is ready; a click while it is still cycling is kept and fires the moment it is ready (any number of clicks: each one is a shot, within the gun's rate)
 //   HOLD    keep the press down and the gun keeps firing at the cooldown rate, aiming at whatever enemy is under the finger (or at the locked one when the finger drifts a little: the locked enemy is easier to hit)
 // No ring opens and no move order starts under a press that began on an enemy while armed. Out of ammunition the hold stops (one "OUT OF AMMO"). STOW (the ammo chip) puts the gun away and ends the lock.
-// The shot itself is firePlayerShot (js/input.js): 10 damage, the class's rate (classStat), one round.
+// The shot itself is firePlayerShot (js/input.js): the weapon's damage and rate (js/weapons.js), one round. THE GUN IS THE GUNSLINGER'S MACHINE GUN, the only weapon there is (build 2026-11-17at): with no
+// weapon in hand nothing is armed, so none of this starts (js/input.js setPlayerAttackMode).
 
 const GUN = { lockPick: 90, buffer: 30 };   // how far (px) from a locked enemy still counts as on it; the least time (frames) a click made while the gun cycles is kept (it is kept until the gun is ready)
 let playerLockTarget = null;                // the enemy the player locked on (the ring's ATTACK), or null
@@ -21,7 +22,7 @@ function gunTargetAt(ex, ey) {
     return null;
 }
 function gunLock(enemy) { playerLockTarget = _gunLive(enemy) ? enemy : null; }
-function gunStow() { playerLockTarget = null; gunHold = null; if (typeof mutatorCancel === "function") mutatorCancel(); }   // (the Mutator's lash is called off with it: js/mutator.js)
+function gunStow() { playerLockTarget = null; gunHold = null; if (typeof mutatorCancel === "function") mutatorCancel(); }   // (a walk to a fallen clone's body is called off with it: js/mutator.js)
 // a press: true when it is the gun's (the caller then starts nothing else)
 function gunPress(ex, ey) {
     if (!playerAttackMode) return false;

@@ -156,6 +156,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 const BLIND_MISS = 0.5;
 function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {
     if (typeof cardShapeSpared === "function" && cardShapeSpared(target, source)) return;   // CARD BATTLES: a card's blow on an enemy off its shape does not land (js/cardshapes.js §2.48)
+    if (typeof cardBattleOutside === "function" && cardBattleOutside(target, source)) return;   // CARD BATTLES: nor one of yours on a creature outside the battle (js/cardbattle.js §2.52)
     if (typeof cardBattleHit === "function" && cardBattleHit(target, source)) return;   // CARD BATTLES: a creature hitting you or yours starts a battle where you stand, and that blow does not land (js/cardbattle.js §2.35)   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     if (target.isHazardTarget) { if (typeof hazardTargetHit === "function") hazardTargetHit(target); return; }   // a flask locked as a target (js/hazards.js): whatever hits it sets it off
@@ -186,7 +187,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
     // to be read in one job branch only, so it did nothing in ordinary combat.
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
-    // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's, the lash's and the gauntlet's copies carry isPlayer)
+    // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's copy carries isPlayer)
     if (source && (source.isPlayer || (typeof player !== "undefined" && source === player)) && typeof playerPoisoned === "function" && playerPoisoned()) amount *= 1 - PLAYER_POISON.cut;
     // BONDS (js/bonds.js): both sides of the hit count as being in combat, which is what builds one. (A bond changes no hit since build 2026-11-09b: it is for breeding: js/bonds.js.)
     if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }
@@ -281,7 +282,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
                     : element === "toxic"    ? "#88ff44"
                     : "#ffcc88";
         floatingTexts.push({ world: true, x: target.x + (Math.random() - 0.5) * 0.3, y: target.y + (Math.random() - 0.5) * 0.3, text: (_foe ? "" : "\u2212") + Math.round(dmg), color: _dcol, size: _foe ? 14 : 13, life: 36, vy: -0.03 - Math.random() * 0.012 });
-        if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
+        if (typeof battleNumberTag === "function") battleNumberTag(floatingTexts[floatingTexts.length - 1], target, source, hit, _share);
+        if (typeof cardBattleNumberTag === "function") cardBattleNumberTag(floatingTexts[floatingTexts.length - 1], target, dmg);   // CARD BATTLES: its number pops, flies into its health bar and cuts it (js/cardbattle.js)   // the battle view: whom it hit, its face, the blow's way, the bonus in it (js/battleview.js)
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
     if (source && !isReflected && !fixed && dmg > 0 && hit && hit.which === "main" && source.isFollower && typeof primaryStatusOnHit === "function") primaryStatusOnHit(source, target);   // (a primary attack's status, js/combat.js)

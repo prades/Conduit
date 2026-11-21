@@ -238,7 +238,7 @@ class Predator {
 
         // ── BLIND ──
         // It still sees, chases and attacks; each hit it deals misses with the chance BLIND_MISS (js/helpers.js applyDamage). The timer only runs down (the grey haze over its head is drawn while it lasts).
-        if (this.blinded > 0) this.blinded--;
+        if (this.blinded > 0 && !(typeof cardBattleStatusHeld === "function" && cardBattleStatusHeld(this))) this.blinded--;   // (in a card battle its turns count it: js/cardbattle.js)
 
         // ── THE PLAYER, UP CLOSE ──
         // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,
@@ -495,6 +495,7 @@ class Predator {
                 // full and this ran every step, over every actor.)
                 _predNear(this.x, 6).forEach(a => {
                     if (a.dead || a.team !== abdomenHitTeam || isNeutralBystander(a) || a.untargetable) return;
+                    if (typeof cardBattleTouches === "function" && !cardBattleTouches(this, a)) return;   // (a creature of a card battle shoots only at its side of the battle)
                     const dx = a.x - this.x, dy = a.y - this.y;
                     const d  = Math.hypot(dx, dy);
                     let   diff = Math.atan2(dy, dx) - bodyAngle;

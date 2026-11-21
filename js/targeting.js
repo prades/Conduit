@@ -4,6 +4,9 @@
 // ASKED: "whenever you get close to an enemy, it automatically takes aim [...] a little circular menu that shows the creature that you're nearest, and it pops up, and you can hold it or click it to shoot. It also comes
 // with an info button and a little icon that shows a little gun that indicates that you're going to shoot it. [...] and how it automatically locks on to the nearest creature, have it so you can switch it by clicking on
 // another creature." The bottom-left tool keeps RETREAT, HOLD, COME and the element selector (js/mixtool.js).
+// THE LOCK IS EVERYONE'S, THE GUN ONLY THE GUNSLINGER'S (build 2026-11-17at; the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun, js/weapons.js). With no weapon in hand the
+// nearest creature is still locked (the creature's slab and INFO, the squad's ATTACK order, the potion's throw, a shield's facing all go by it), but nothing is armed: no red corners stay on it, the dial has
+// no gun badge and fires nothing, and there is no ammunition pill.
 // In the facility:
 //   AUTO-LOCK   every few frames the nearest creature within TARGET.range tiles that the player can see (no wall between) becomes the TARGET: the gun is armed (js/input.js setPlayerAttackMode), the red corners close in on
 //               it and stay (js/gunfire.js drawLockReticle). A creature that is much nearer takes the lock over; with none in range the gun is put away.
@@ -101,6 +104,7 @@ function targetPress(ex, ey) {
 }
 // the FIRE button pressed (the dial's, or THE CORE's slab: js/corehud.js): a click is a shot, holding keeps firing at the locked creature until js/gunfire.js gunRelease. False with none locked.
 function targetFireHold() {
+    if (typeof weaponInHand === "function" && !weaponInHand()) return false;   // (no weapon in hand: the button fires nothing, js/weapons.js)
     const foe = targetCurrent(); if (!foe) return false;
     const p = typeof _gunScreen === "function" ? _gunScreen(foe) : { x: 0, y: 0 };
     gunHold = { x: p.x, y: p.y, pending: true, released: false, until: 0, button: true }; if (typeof gunTick === "function") gunTick(); return true;
@@ -191,22 +195,6 @@ function _tgGun(x, y, col) {
     ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(1.5, 2.2, 3.6, 0.1, Math.PI - 0.1); ctx.stroke();   // the trigger guard
     ctx.restore();
 }
-// a tentacle curling to a point, centred on (x, y), about 22 px: the badge (and the small icon) when the weapon in hand is the Mutator's lash (js/weapons.js, a melee weapon)
-function _tgLash(x, y, col) {
-    ctx.save(); ctx.translate(x, y); ctx.strokeStyle = col; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(-9, 8); ctx.bezierCurveTo(-10, -2, -2, -9, 5, -6); ctx.stroke();
-    ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(5, -6); ctx.quadraticCurveTo(10, -3, 7, 1); ctx.stroke();
-    ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(7, 1); ctx.quadraticCurveTo(5, 3, 3, 1); ctx.stroke();
-    ctx.restore();
-}
-// a lightning bolt, centred on (x, y), about 20 px tall: the badge (and the small icon) when the weapon in hand is the Technomancer's arc gauntlet (js/weapons.js, a hybrid weapon)
-function _tgBolt(x, y, col, s) {
-    ctx.save(); ctx.translate(x, y); if (s) ctx.scale(s, s); ctx.fillStyle = col; ctx.beginPath();
-    ctx.moveTo(2, -10); ctx.lineTo(-6, 1); ctx.lineTo(-1, 1); ctx.lineTo(-3, 10); ctx.lineTo(6, -2); ctx.lineTo(1, -2); ctx.lineTo(3, -10); ctx.closePath(); ctx.fill();
-    ctx.restore();
-}
-function _tgMelee() { return typeof weaponMelee === "function" && weaponMelee(); }
-function _tgHybrid() { return typeof weaponDef === "function" && weaponDef().kind === "hybrid"; }
 // a panel over the corner (or no play) hides the pills by the dial and the two round buttons: their tap areas go with them, so a tap there is the panel's (js/input.js asks them before the panels)
 function _tgChipsOff() {
     _ATKCHIP.w = 0;
@@ -243,31 +231,29 @@ function _tgAnchor() {
     return { W, narrow, R, left, top, x: left + R, y: Math.min(top + R + 4, canvas.height - R - 130) };
 }
 // THE AMMUNITION, subtle (ASKED: "move the information where it says ammo or armed up where the old little index UI shows up for the predators [...] make it subtle, like an icon with ammo and have a number on it"):
-// a small cartridge (the laser's fuel: a cell) with the count beside it, in a faint pill, where the round button comes up: under the button's name with a creature locked, in the button's place with none. It is a quiet
+// a small cartridge with the count beside it, in a faint pill, where the round button comes up: under the button's name with a creature locked, in the button's place with none. It is a quiet
 // blue-grey, amber and breathing a little while the gun is armed, red when it is empty. It was a big chip, AMMO / ARMED, at the bottom of the screen; like it, a tap on it while armed puts the gun away.
 function _tgCartridge(cx, cy, col) {
     ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx - 3, cy + 1); ctx.lineTo(cx - 3, cy - 3); ctx.quadraticCurveTo(cx - 3, cy - 7, cx, cy - 8); ctx.quadraticCurveTo(cx + 3, cy - 7, cx + 3, cy - 3); ctx.lineTo(cx + 3, cy + 1); ctx.closePath(); ctx.fill();   // the bullet
     ctx.fillRect(cx - 3.5, cy + 2, 7, 6); ctx.fillStyle = "rgba(6,10,24,0.45)"; ctx.fillRect(cx - 3.5, cy + 1, 7, 1.2);                                                                                                       // the case, and where it joins the bullet
 }
-function _tgFuelCell(cx, cy, col) {
-    ctx.fillStyle = col; ctx.fillRect(cx - 2, cy - 8, 4, 2); ctx.fillRect(cx - 4, cy - 6, 8, 14);                                  // the nub and the body
-    ctx.fillStyle = "rgba(6,10,24,0.75)"; ctx.beginPath(); ctx.moveTo(cx + 1, cy - 4); ctx.lineTo(cx - 2, cy + 1); ctx.lineTo(cx, cy + 1); ctx.lineTo(cx - 1, cy + 6); ctx.lineTo(cx + 2, cy); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();   // a bolt on it
-}
 // x: the pill's left edge, y: its middle. Sets the tap area (_ATKCHIP) while the gun is armed. maxX: how far right the row may run (THE CORE's box, js/corehud.js corePills): a pill that would run past it
 // goes a row up, out to the left of the box (clear of its words and of the dock below), and any after it beside that one, leftwards.
 function _tgAmmoIcon(x, y, alpha, maxX) {
-    const h = typeof weaponHud === "function" ? weaponHud() : null; if (!h) { _ATKCHIP.w = 0; return; }
-    const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, dry = !!h.dry, f = typeof frame !== "undefined" ? frame : 0, col = dry ? "#ff7766" : armed ? "#ffb070" : "#b8c8e8";
-    const txt = h.kind === "melee" ? "MELEE" : h.kind === "hybrid" ? String(h.n) + (h.grid && !h.full ? " · GRID" : "") : String(h.n) + (h.cells ? " +" + h.cells : ""), hh = 22;   // (the gauntlet: its charges, and GRID while a powered room is charging it)
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = alpha * (armed && !dry ? 0.82 + 0.18 * Math.sin(f * 0.09) : 0.9); ctx.font = uiMono(13);
-    const w = 29 + ctx.measureText(txt).width;
-    ctx.fillStyle = "rgba(6,10,24,0.6)"; ctx.strokeStyle = armed || dry ? col : "rgba(138,160,200,0.4)"; ctx.lineWidth = 1;
-    ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y - hh / 2, w, hh, 11); else ctx.rect(x, y - hh / 2, w, hh); ctx.fill(); ctx.stroke();
-    if (h.kind === "fuel") _tgFuelCell(x + 12, y, col); else if (h.kind === "melee") _tgLash(x + 12, y, col); else if (h.kind === "hybrid") _tgBolt(x + 12, y, typeof _tc !== "undefined" && f - _tc.gainAt < 20 ? "#eaffff" : col, 0.8); else _tgCartridge(x + 12, y, col);   // (the bolt flashes white as a charge is stored)
-    ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
-    ctx.restore();
-    if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
-    let px = x + w + 8, qx = x;   // (qx: where a pill that does not fit goes, leftwards from the row's start)
+    const h = typeof weaponHud === "function" ? weaponHud() : null, hh = 22; let px = x, qx = x;   // (px: where the next pill goes; qx: where a pill that does not fit goes, leftwards from the row's start)
+    if (!h) _ATKCHIP.w = 0;   // NO WEAPON IN HAND (js/weapons.js: every class but a Gunslinger with the machine gun): no ammunition pill, and the pills beside it begin the row
+    else {
+        const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, dry = !!h.dry, f = typeof frame !== "undefined" ? frame : 0, col = dry ? "#ff7766" : armed ? "#ffb070" : "#b8c8e8", txt = String(h.n);
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = alpha * (armed && !dry ? 0.82 + 0.18 * Math.sin(f * 0.09) : 0.9); ctx.font = uiMono(13);
+        const w = 29 + ctx.measureText(txt).width;
+        ctx.fillStyle = "rgba(6,10,24,0.6)"; ctx.strokeStyle = armed || dry ? col : "rgba(138,160,200,0.4)"; ctx.lineWidth = 1;
+        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y - hh / 2, w, hh, 11); else ctx.rect(x, y - hh / 2, w, hh); ctx.fill(); ctx.stroke();
+        _tgCartridge(x + 12, y, col);
+        ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
+        ctx.restore();
+        if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
+        px = x + w + 8;
+    }
     for (let i = 0; i < 4; i++) {   // the pills beside it (_tgPill); in THE CORE each is measured first (drawn under an empty clip: nothing shows) to see whether it fits
         if (maxX) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 0, 0); ctx.clip(); const cw = _tgPill(i, px, y, alpha); ctx.restore();
             if (cw && (qx < x || px + cw - 8 > maxX)) { qx -= cw; _tgPill(i, qx, y - 30, alpha); continue; } }
@@ -309,9 +295,9 @@ function _tgDialDraw(a, f) {
     // its level, on the disc's upper left
     const lv = "LV " + (Number.isFinite(a.level) ? a.level : "?"); ctx.font = uiMono(11); const lw = ctx.measureText(lv).width + 10; ctx.fillStyle = "rgba(6,10,24,0.92)"; ctx.fillRect(x - R * 0.82, y - R * 0.86, lw, 16); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.strokeRect(x - R * 0.82 + 0.5, y - R * 0.86 + 0.5, lw - 1, 15);
     ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(lv, x - R * 0.82 + 5, y - R * 0.86 + 8.5);
-    // the gun badge (it fires at what is locked) and the INFO badge
+    // the gun badge (it fires at what is locked; none with no weapon in hand: js/weapons.js) and the INFO badge
     const gx = x + R * 0.74, gy = y + R * 0.74, gr = narrow ? 15 : 18, ix = x + R * 0.78, iy = y - R * 0.78, ir = narrow ? 11 : 13, gcol = dry ? "#6d7fa6" : held ? "#ffffff" : cool ? "#ffb347" : "#ff4a3a";
-    ctx.fillStyle = held ? "#ff4a3a" : "#0b1226"; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = dry ? "#6d7fa6" : "#ff4a3a"; ctx.stroke(); if (_tgHybrid()) _tgBolt(gx, gy, gcol); else if (_tgMelee()) _tgLash(gx, gy, gcol); else _tgGun(gx, gy - 2, gcol);
+    if (typeof weaponInHand !== "function" || weaponInHand()) { ctx.fillStyle = held ? "#ff4a3a" : "#0b1226"; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = dry ? "#6d7fa6" : "#ff4a3a"; ctx.stroke(); _tgGun(gx, gy - 2, gcol); }
     ctx.fillStyle = infoOpen ? "#8fe3ff" : "#0b1226"; ctx.beginPath(); ctx.arc(ix, iy, ir, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#8fe3ff"; ctx.stroke();
     ctx.fillStyle = infoOpen ? "#05070f" : "#8fe3ff"; ctx.font = uiFont(narrow ? 13 : 15); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("i", ix, iy + 1);
     ctx.restore();

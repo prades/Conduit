@@ -60,9 +60,9 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             const on = dmgApply(ant, 40, f, 'fire', hit); return { all, on, el: dmgRowMult(DMG_RACE.ant, 'elemental'), phys: dmgRowMult(DMG_RACE.ant, 'slashing') }; })()`);
         ok(r.all > 0, 'its elemental part lands: ' + r.all); ok(r.all < r.on, 'less than the same hit on an ant (' + r.on + ')');
     });
-    check('the player\'s lash (Slashing) and gauntlet (Crushing) do nothing to it; the gun lands ×1.3 (Projectile); the arc lands (Elemental)', () => {
-        const r = J(`(function(){ const t = __rp('tank'); return { lash: dmgApply(t, 50, player, null, DMG_HIT_LASH), punch: dmgApply(t, 50, player, null, DMG_HIT_PUNCH), gun: dmgApply(t, 50, player, null, DMG_HIT_GUN), arc: dmgApply(t, 50, player, null, DMG_HIT_ARC) }; })()`);
-        near(r.lash, 0, 'the lash'); near(r.punch, 0, 'the gauntlet'); near(r.gun, 65, 'the gun'); ok(r.arc > 0, 'the arc: ' + r.arc);
+    check('the player\'s own hits: the gun lands ×1.3 (Projectile) and ARC WARDEN\'s zap lands (Elemental); a Slashing or a Crushing hit of the player\'s, as the lash and the gauntlet were until they went (build 2026-11-17at), does nothing to it', () => {
+        const r = J(`(function(){ const t = __rp('tank'); return { slash: dmgApply(t, 50, player, null, { type: 'slashing', player: true }), crush: dmgApply(t, 50, player, null, { type: 'crushing', player: true }), gun: dmgApply(t, 50, player, null, DMG_HIT_GUN), arc: dmgApply(t, 50, player, null, DMG_HIT_ARC) }; })()`);
+        near(r.slash, 0, 'a Slashing hit of the player\'s'); near(r.crush, 0, 'a Crushing hit of the player\'s'); near(r.gun, 65, 'the gun'); ok(r.arc > 0, 'the zap: ' + r.arc);
     });
 
     group('THE CURL (js/rolypoly.js; the owner: "Curls up to defend")');

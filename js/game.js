@@ -837,12 +837,11 @@ function render() {
     // ── PLAYER ATTACK COOLDOWN ──
     if (player.attackCooldown > 0) player.attackCooldown--;
     if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
-    if (typeof mutatorTick === "function") mutatorTick();   // the Mutator's lash: walk into reach, draw back, strike (js/mutator.js)
     if (typeof mutatorBodiesTick === "function") mutatorBodiesTick();   // a fallen clone's body (js/mutator.js)
     if (typeof specimenTick === "function") specimenTick();   // the Ice Mage preserving a body; the capsule taken (js/specimen.js)
     if (typeof techAbilityTick === "function") techAbilityTick();   // the technicians' abilities: throws, launchers, broken sections (js/techabilities.js)
     if (typeof serumTick === "function") serumTick();   // the serum's pools heal; the Mutator's laboratory makes serum (js/serum.js)
-    if (typeof technoTick === "function") technoTick();   // the grid charges the Technomancer's gauntlet; its arcs fade (js/technomancer.js)
+    if (typeof technoTick === "function") technoTick();   // the Player cards' bolts fade (ARC WARDEN, ARC SLINGER: js/technomancer.js)
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
@@ -1368,7 +1367,7 @@ function render() {
                 if (hit || a.dead) return;
                 const isTarget = p.targetsGreen
                     ? a.team === "green" && !(typeof techShieldBetween === "function" && techShieldBetween(p.x, p.y, a.x, a.y))   // (an enemy's shot hits nothing on the far side of a Photonic Shield: js/techabilities.js)
-                    : isHostileTarget(a) && !(p._cbOnly && !p._cbOnly.has(a));   // (_cbOnly: a card's shot in a battle hits only its own target, js/cardshapes.js)
+                    : isHostileTarget(a) && !(p._cbOnly && !p._cbOnly.has(a)) && (typeof cardBattleTouches !== "function" || cardBattleTouches(p.source, a));   // (_cbOnly: a card's shot in a battle hits only its own target, js/cardshapes.js; a sentry's none of a battle's fighters, js/cardbattle.js)
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30 + (a.bodyR || 0) * TILE_W) {   // (bodyR: a huge body, THE ANT QUEEN's, is hit anywhere on it: js/bosses.js)
@@ -1397,8 +1396,7 @@ function render() {
     if (typeof drawBonds === "function") drawBonds();
     if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
     if (typeof drawPlayerCombatFx === "function") drawPlayerCombatFx();   // your guard's reach, your stun dive's streak (js/playercombat.js)
-    if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash, the Technomancer's punch (js/mutator.js)
-    if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Technomancer's arc (js/technomancer.js)
+    if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Player cards' bolts (ARC WARDEN's zap, ARC SLINGER's jump: js/technomancer.js)
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
     if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)

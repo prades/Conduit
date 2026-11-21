@@ -239,17 +239,19 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 // SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them since all eighteen are in (Part 1d:
 // "All 18 together"), and Side Quest sells each quest line's three after its quest, ◆1,000 each, kept for good (js/sidequest.js). What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are
 // made from it (equipPlayerKitText). Built: all eighteen (Parts 1a to 1c).
-//   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share
+//   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share. Since build 2026-11-17at
+//                (the owner, 2026-11-20: the only personal weapon is the Gunslinger's machine gun) those hits are the Gunslinger's ROUNDS and the Mutator's CLONE'S BITES; the Technomancer has no hit of
+//                its own (its punch and arc went: only ARC WARDEN's zap takes its element), and the Mutator's lash went
 //   status       true: EVERY hit sets the role element's own status with Pack 1's Precision numbers (_EQUIP_ATTUNED, as the Prototype auras use them): fire burns, toxic weakens (the game's POISON), ice slows, core knocks back
-//   jump         { radius, share }: each shot jumps on to the nearest other creature within `radius` tiles, for `share` of its damage (the Technomancer arc's jump: js/technomancer.js TECHNO.arc chainRange, chainPct)
+//   jump         { radius, share }: each shot jumps on to the nearest other creature within `radius` tiles, for `share` of its damage (the numbers of the Technomancer arc's jump, when there was an arc)
 //   freeze       { frames, again }: a hit on a creature ALREADY slowed freezes it, a stun of `frames` (the Frost Maw's bite: js/evolution.js MAW_STUN), and not again on that creature for `again` frames (new, approved)
-//   slower       the share of the guns' rate of fire taken off (new, approved): their wait between shots is divided by (1 − slower)
+//   slower       the share of the gun's rate of fire taken off (new, approved): its wait between shots is divided by (1 − slower)
 //   pull         the push of a knockback, reversed: the creature hit is pulled toward you (js/helpers.js vortexPullImmune: a beetle or a boss is not)
 //   sentries     true: the facility's sentries' rounds set the role element's status (the Technomancer places no sentries of its own: the kits' reading, approved)
 //   repair       the share of the time your repairs take: a sentry's (js/antraids.js SENTRY.repair). (A relay's too, until build 2026-11-07qq: no relay is repaired now.)
 //   relays       { radius }: every ONLINE relay sets the role element's status on every creature within `radius` tiles of it, on every card tick while it stays (the sleeping potion's area: js/potion.js POTION.radius)
-//   lamp         { every }: while your lamp is overcharged (a POWER CELL), every `every` frames (the grid's charge beat: js/technomancer.js TECHNO.charge.gridEvery) every creature in its light, in sight, takes the
-//                arc's zap and the role element's status
+//   lamp         { every }: while your lamp is overcharged (a POWER CELL), every `every` frames every creature in its light, in sight, takes an electric zap (js/technomancer.js _tcZap: the arc's, kept
+//                for this card when the arc itself went) and the role element's status
 //   swap         { every }: SWAP on a squad member's card trades places with it, once in `every` frames (the technicians' ability wait: js/techabilities.js TECH_AB)
 //   shield       { width, frames }: a POWER CELL also raises a PHOTONIC SHIELD in front of you (the core technician's wall: TECH_AB.shield width and life)
 //   bite         true: EVERY BITE of your clone (its bite, and its POUNCE's bite as it lands) sets the role element's status, with Pack 1's numbers
@@ -266,14 +268,14 @@ const EQUIP_PLAYER_CARDS = [
     ["cryo_marksman",     "CRYO MARKSMAN",     "gunslinger", "ice",      { status: true, freeze: { frames: 75, again: 300 }, slower: 0.2 }],
     ["rift_runner",       "RIFT RUNNER",       "gunslinger", "flux",     { pull: 0.22 }],
     ["breach_gunner",     "BREACH GUNNER",     "gunslinger", "core",     { status: true }],
-    // THE TECHNOMANCER'S SIX (the following update's Part 1b): its punch and its arc take the role's element; the rest is the kit
+    // THE TECHNOMANCER'S SIX (the following update's Part 1b): the kit (its punch and its arc, which took the role's element, went in build 2026-11-17at)
     ["forgemaster",       "FORGEMASTER",       "technomancer", "fire",     { sentries: true, repair: 0.5 }],
     ["smog_engineer",     "SMOG ENGINEER",     "technomancer", "toxic",    { relays: { radius: 3 } }],
     ["arc_warden",        "ARC WARDEN",        "technomancer", "electric", { lamp: { every: 120 } }],
     ["cryo_tech",         "CRYO TECH",         "technomancer", "ice",      { relays: { radius: 3 } }],
     ["gravity_engineer",  "GRAVITY ENGINEER",  "technomancer", "flux",     { swap: { every: 3600 } }],
     ["bulwark_engineer",  "BULWARK ENGINEER",  "technomancer", "core",     { shield: { width: 3, frames: 1200 } }],
-    // THE MUTATOR'S SIX (the following update's Part 1c): its lash and its clone's bites take the role's element (SPLICER's clone: its last kill's); the rest is the kit
+    // THE MUTATOR'S SIX (the following update's Part 1c): its clone's bites take the role's element (SPLICER's clone: its last kill's); the rest is the kit (its lash went in build 2026-11-17at)
     ["ash_surgeon",       "ASH SURGEON",       "mutator",      "fire",     { pool: true }],
     ["plague_doctor",     "PLAGUE DOCTOR",     "mutator",      "toxic",    { bite: true, pool: true }],
     ["spark_geneticist",  "SPARK GENETICIST",  "mutator",      "electric", { bite: true }],
@@ -289,20 +291,21 @@ const EQUIP_PLAYER_CARDS = [
     ["grove_engineer",    "GROVE ENGINEER",    "technomancer", "blossom",  { grove: { radius: 3, share: 0.01, every: 180 } }],
     ["herbalist",         "HERBALIST",         "mutator",      "blossom",  { biteMend: true, poolHeal: 0.5 }],
 ];
-// what a role does, in the card's words, made from its kit's numbers
-const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["YOUR PUNCH AND ARC ARE ", "EACH ARC"], mutator: ["YOUR LASH AND YOUR CLONE'S BITES ARE ", "EVERY BITE OF YOUR CLONE"] };   // (whose hits a class's role works on: rule 1)
+// what a role does, in the card's words, made from its kit's numbers. The first words say whose hits take the role's element (rule 1): the Gunslinger's rounds, the Mutator's clone's bites (not SPLICER's,
+// whose clone takes its last kill's: its kit says so). The Technomancer has no hit of its own, so its cards begin with their kit (build 2026-11-17at: its punch and arc, and the Mutator's lash, went).
+const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["", ""], mutator: ["YOUR CLONE'S BITES ARE ", "EVERY BITE OF YOUR CLONE"] };
 function equipPlayerKitText(cls, k) {
     const h = _EQUIP_KIT_HITS[cls]; if (!h || !k) return "";
-    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], st = tpl && tpl.proc ? _equipStatusText(tpl.proc) : "", out = [(k.splice ? "YOUR LASH IS " : h[0]) + _equipElementLabel(k.el)];
+    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], st = tpl && tpl.proc ? _equipStatusText(tpl.proc) : "", out = h[0] && !k.splice ? [h[0] + _equipElementLabel(k.el)] : [];
     if (k.status && st) out.push("EVERY HIT TO " + st);
     if (k.jump) out.push(h[1] + " JUMPS TO ONE MORE ENEMY WITHIN " + k.jump.radius + " TILES FOR " + _equipPct(k.jump.share));
     if (k.freeze) out.push("A HIT ON AN ENEMY ALREADY SLOWED FREEZES IT FOR " + sec2(k.freeze.frames / EQUIP_FPS) + ", ONCE IN " + sec2(k.freeze.again / EQUIP_FPS));
     if (k.pull > 0) out.push("EVERY HIT PULLS THE TARGET TOWARD YOU (NOT A BEETLE OR A BOSS)");
-    if (k.slower > 0) out.push("YOUR GUNS FIRE " + _equipPct(k.slower) + " SLOWER");
+    if (k.slower > 0) out.push("YOUR GUN FIRES " + _equipPct(k.slower) + " SLOWER");
     if (k.sentries && st) out.push("EVERY SENTRY HIT TO " + st);
     if (k.repair > 0 && k.repair < 1) out.push(k.repair === 0.5 ? "YOUR REPAIRS ARE TWICE AS FAST" : "YOUR REPAIRS TAKE " + _equipPct(k.repair) + " OF THE TIME");
     if (k.relays && st) out.push("ENEMIES WITHIN " + k.relays.radius + " TILES OF AN ONLINE RELAY, WHILE THEY STAY, TO " + st);
-    if (k.lamp && st) out.push("WHILE YOUR LAMP IS OVERCHARGED, EVERY " + sec2(k.lamp.every / EQUIP_FPS) + ": YOUR ARC'S ZAP ON EVERY ENEMY IN ITS LIGHT, AND " + st);
+    if (k.lamp && st) out.push("WHILE YOUR LAMP IS OVERCHARGED, EVERY " + sec2(k.lamp.every / EQUIP_FPS) + ": AN ELECTRIC ZAP ON EVERY ENEMY IN ITS LIGHT, AND " + st);
     if (k.swap) out.push("SWAP: TRADE PLACES WITH A SQUAD MEMBER FROM ITS CARD, ONCE IN " + sec2(k.swap.every / EQUIP_FPS));
     if (k.shield) out.push("A POWER CELL ALSO RAISES A PHOTONIC SHIELD IN FRONT OF YOU: " + k.shield.width + " TILES WIDE, " + sec2(k.shield.frames / EQUIP_FPS));
     if (k.bite && st) out.push(h[1] + " TO " + st);
@@ -359,16 +362,17 @@ function _equipShort(c) {
     if (p) { if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS ELEMENT'S STATUS"; const w = _EQUIP_STATUS_WORDS[p.kind]; return w ? _equipPct(p.chance) + " PER HIT TO " + w : ""; }
     return "";
 }
-// a role's short text: whose hits take its element (ROUNDS, PUNCH, LASH), then what its kit does, a few words for each part (equipPlayerKitText's parts, in its order)
-const _EQUIP_KIT_SHORT_HITS = { gunslinger: "ROUNDS", technomancer: "PUNCH", mutator: "LASH" };
+// a role's short text: its element and whose hits take it (ROUNDS; a Mutator's CLONE, for its bites; a Technomancer's and SPLICER's: the element alone), then what its kit does, a few words for each part
+// (equipPlayerKitText's parts, in its order)
+const _EQUIP_KIT_SHORT_HITS = { gunslinger: "ROUNDS", technomancer: "", mutator: "CLONE" };
 function _equipKitShort(cls, k) {
-    const hits = _EQUIP_KIT_SHORT_HITS[cls]; if (!hits || !k) return "";
+    const hits0 = _EQUIP_KIT_SHORT_HITS[cls]; if (hits0 === undefined || !k) return ""; const hits = k.splice ? "" : hits0;
     const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], kind = tpl && tpl.proc ? tpl.proc.kind : "", w = _EQUIP_STATUS_WORDS[kind] || "", v = _EQUIP_STATUS_VERBS[kind] || "", out = [];
     if (k.status && w) out.push(w);
     if (k.jump) out.push("SHOTS JUMP");
     if (k.freeze) out.push("FREEZE");
     if (k.pull > 0) out.push("PULL");
-    if (k.slower > 0) out.push("SLOWER GUNS");
+    if (k.slower > 0) out.push("SLOWER GUN");
     if (k.sentries && w) out.push("SENTRIES " + w);
     if (k.repair > 0 && k.repair < 1) out.push("FAST REPAIRS");
     if (k.relays && w) out.push("RELAYS " + w);
@@ -385,7 +389,7 @@ function _equipKitShort(cls, k) {
     if (k.grove) out.push("RELAYS MEND");
     if (k.biteMend) out.push("BITES MEND");
     if (k.poolHeal > 0) out.push("STRONGER POOL");
-    return _equipElementLabel(k.el) + " " + hits + (out.length ? " · " + out.join(", ") : "");
+    return _equipElementLabel(k.el) + (hits ? " " + hits : "") + (out.length ? " · " + out.join(", ") : "");
 }
 // THE CUT CARDS (the owner, 2026-11-02: Series 2 reshaped): its eight Brawler and Mage class cards are no longer cards. The registry does not know them, so every place that reads a saved id already drops them (the hand, the cards
 // found, the shelf, the player's slots: equipSaveApply; a follower's slots: equipValid on the tick, and the bonuses skip them before that). The COLLECTION keeps ids it does not know (?cards on and off loses nothing), so it drops these

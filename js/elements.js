@@ -61,7 +61,7 @@ const ELEMENT_ATTACKS = {
             // Hits all enemies within ring radius
             let hits = 0;
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 2.25) { // 1.5²=2.25, no sqrt needed
                         const dmg = (actor.stats?.attack||10) * 0.4;
@@ -106,7 +106,7 @@ const ELEMENT_ATTACKS = {
                 // Find next nearest unchained enemy (squared distance — no sqrt)
                 let next = null, bd2 = 9; // 3²=9
                 actors.forEach(a => {
-                    if (isHostileTarget(a) && !chainTargets.includes(a)) {
+                    if (isHostileTarget(a) && !chainTargets.includes(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                         const dx=a.x-current.x, dy=a.y-current.y, d2=dx*dx+dy*dy;
                         if (d2 < bd2) { bd2=d2; next=a; }
                     }
@@ -137,7 +137,7 @@ const ELEMENT_ATTACKS = {
                 element: "electric"
             });
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.7, actor, "electric", DMG_HIT_SPECIAL);
@@ -173,7 +173,7 @@ const ELEMENT_ATTACKS = {
             // Ice burst — radius slow
             spawnElementEffect({ type:"ring", x:actor.x, y:actor.y, color:"#99ddff", radius:2.5, life:50, element:"ice" });
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 6.25) { // 2.5²=6.25, no sqrt needed
                         applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice", DMG_HIT_SPECIAL);
@@ -204,13 +204,13 @@ const ELEMENT_ATTACKS = {
             spawnElementEffect({ type:"singularity", x:target.x, y:target.y, color:"#9933ff", radius:2.5, life:60, element:"flux" });
             // Pull phase — move enemies toward point
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                     const dx=target.x-a.x, dy=target.y-a.y, d2=dx*dx+dy*dy;
                     if (d2 < 9 && d2 > 0.0001) { // 3²=9, avoid sqrt until we need direction
                         const dist=Math.sqrt(d2);
                         // Velocity-based pull so the motion animates over several frames
                         // (not on what is too heavy to drag — vortexPullImmune).
-                        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
+                        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a)) && !(typeof cardBattlePull === "function" && cardBattlePull(a, target.x, target.y, 0.12 / KNOCK_PER_TILE))) {   // (a fighter of a card battle: on its squares, js/cardbattle.js)
                             a.kbVX = (dx/dist) * 0.12;
                             a.kbVY = (dy/dist) * 0.12;
                         }
@@ -239,8 +239,10 @@ const ELEMENT_ATTACKS = {
             if (Math.random() < ELEMENT_PROC_CHANCE.core) {
                 const dx=target.x-actor.x, dy=target.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy)||1;
-                target.kbVX = (dx/dist) * 0.22;
-                target.kbVY = (dy/dist) * 0.22;
+                if (!(typeof cardBattlePush === "function" && cardBattlePush(target, dx, dy, 0.22 / KNOCK_PER_TILE))) {   // (a fighter of a card battle: on its squares, js/cardbattle.js)
+                    target.kbVX = (dx/dist) * 0.22;
+                    target.kbVY = (dy/dist) * 0.22;
+                }
                 floatingTexts.push({ world:true, x:target.x, y:target.y, text:"BASH!", color:"#00ffcc", life:30, vy:-0.06 });
                 spawnElementEffect({ type:"ring", x:target.x, y:target.y, color:"#00ccaa", radius:0.8, life:18, element:"core" });
             }
@@ -293,7 +295,7 @@ const ELEMENT_ATTACKS = {
                     spawnElementEffect({ type:"impact", x:lx, y:ly, color:"#88ff44", radius:2.0, life:30, element:"toxic" });
                     const r2 = 2.25; // 1.5 tile radius
                     actors.forEach(a => {
-                        if (isHostileTarget(a)) {
+                        if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(actor, a))) {
                             const ddx=a.x-lx, ddy=a.y-ly;
                             if (ddx*ddx+ddy*ddy <= r2) {
                                 applyDamage(a, dmg, caster, "toxic", false, false, DMG_HIT_SPECIAL);
@@ -394,12 +396,12 @@ const ULT_METEOR_RAIN = {
     name: "Meteor Rain",
     execute(actor) {
         if (actor.dead || elementEffects.some(e => e.type === "meteorrain" && e.by === actor && e.life > 0)) return;
-        const target = ultBiggestFoe(actor);
+        const aimed = typeof cardUltPoint === "function" ? cardUltPoint(actor) : null, target = aimed || ultBiggestFoe(actor);   // (a battle of turns: the tile it was aimed at, js/cardults.js)
         if (!target) return;
         const M = ULT_METEOR, cx = target.x, cy = target.y, rocks = [], sees = (x, y) => typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y);
         for (let i = 0; i < M.count; i++) {
             let x = 0, y = 0, ok = false;
-            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r;
+            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r; if (aimed) { x = Math.round(x); y = Math.round(y); }   /* (there, each rock on a square) */
                 ok = sees(x, y) && !rocks.some(q => Math.hypot(q.x - x, q.y - y) < M.apart); }
             if (!ok) continue;   // (no room left for it: a rain in a small room has fewer rocks)
             rocks.push({ x, y, at: M.cast + M.fall + Math.round(i * (M.rain - M.fall) / M.count + Math.random() * 6), s: 0.75 + Math.random() * 0.6, spin: Math.floor(Math.random() * 12), hit: false });
@@ -790,7 +792,7 @@ const FORM_ULTIMATES = {
 const ELEMENT_MEND = { radius: 4, share: 0.02 };
 // BLOOM's Pack 1 picks (build 2026-11-09a): SAP VEIN and NECTAR HEART make each MEND of the one wearing them heal more, and DEWBURST gives each its chance to heal three times as much, with a burst of pink
 // dew (their numbers: bloomMendMult). `opts`: { any } a MEND from one that is not BLOOM (EVERBLOOM CROWN's extra, HERBALIST's clone), { mult } a MEND made bigger (DEWBURST set by ATTUNED CORE).
-// The player's own strikes in a BLOOM role's element (a punch, an arc, a lash: their source is BLOOM and yours) MEND nothing by themselves: what a role mends is what its kit says (the roles' own code).
+// The player's own hits in a BLOOM role's element (a round, ARC WARDEN's zap: their source is BLOOM and yours) MEND nothing by themselves: what a role mends is what its kit says (the roles' own code).
 function elementMend(src, opts) {
     const any = !!(opts && opts.any);
     if (!src || src.dead || (!any && (src.element !== "blossom" || src.isPlayer)) || src.team !== "green" || typeof followers === "undefined") return 0;
@@ -901,7 +903,7 @@ function updateElementEffects() {
             const dmg = (caster.stats?.specialAttack||10) * 3.5;
             shake = Math.max(shake, 24);
             actors.forEach(a=>{
-                if(isHostileTarget(a)){
+                if(isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches(caster, a))){
                     const d=Math.hypot(a.x-tx, a.y-ty);
                     if(d<=5.5){
                         applyElementalDamage(a, dmg*(1-d*0.1), caster, "fire", DMG_HIT_SPECIAL);
@@ -919,14 +921,22 @@ function updateElementEffects() {
         }
     }
 
-    elementEffects = elementEffects.filter(e => {
+    elementEffects = elementEffects.filter(elementEffectStep);
+    if (typeof cardUltGate === "function") cardUltGate(null);
+    if (_fxLater.length) { for (const e of _fxLater) elementEffects.push(e); _fxLater = []; }   // (made during the update: fxLater)
+    fxTidy();
+}
+// a frame of one effect: false when it is over. (Its own function so that a battle of turns can count what an Ultimate leaves by its turns: js/cardults.js; in such a battle an effect of an
+// Ultimate stands still between its turns.)
+function elementEffectStep(e) {
+        if (typeof cardUltGate === "function" && cardUltGate(e)) return true;
         e.life--;
 
         // Toxic cloud deals tick damage
         if (e.type === "toxicCloud" && e.life % 20 === 0) {
             const _er2 = e.radius * e.radius;
             actors.forEach(a => {
-                if (isHostileTarget(a)) {
+                if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) {
                     const dx=a.x-e.x, dy=a.y-e.y;
                     if (dx*dx+dy*dy <= _er2) {
                         applyDamage(a, e.tickDamage || 1, null);
@@ -939,7 +949,7 @@ function updateElementEffects() {
         if (e.type === "flameCrater" && e.life % 30 === 0) {
             const _er2 = e.radius * e.radius;
             actors.forEach(a=>{
-                if(isHostileTarget(a)){
+                if(isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))){
                     const dx=a.x-e.x,dy=a.y-e.y;
                     if(dx*dx+dy*dy<=_er2) applyDamage(a,e.tickDamage||3,null,"fire");
                 }
@@ -960,7 +970,7 @@ function updateElementEffects() {
         if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && !e._cbHeld && typeof staticVortexTick === "function") staticVortexTick(e);   // (_cbHeld: held in a battle of turns, it bites at the start of the enemies' turns instead)
-        if (e.type === "buds") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
+        if (e.type === "buds" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % BUD_TICK === 0 && typeof budsBeat === "function") budsBeat(e); }   // (the Thornwhip's SEEDFALL buds: js/evolution.js)
         if (e.type === "maelstrom" && !e._cbHeld) { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAEL_TICK === 0 && typeof maelstromBeat === "function") maelstromBeat(e); }   // (the Voidstar's MAELSTROM: js/evolution.js)
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
@@ -996,19 +1006,19 @@ function updateElementEffects() {
         if (e.type === "shardvortex") {
             const V = ULT_VORTEX, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % V.tick === 0;
             for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
-                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (typeof cardBattlePull === "function" && cardBattlePull(a, e.x, e.y, v)) { /* (a battle of turns: drawn in on its squares) */ } else if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) { const h0 = a.health; applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH); const by = e.by; if (by && !by.dead && h0 > a.health) by.health = Math.min(by.maxHealth || by.health, by.health + (h0 - a.health) * V.heal); }
             }
         }
         if (e.type === "toxicpuddle") {
             const P = ULT_PUDDLE, age = e.maxLife - e.life;
-            e.radius = P.from + (P.radius - P.from) * Math.min(1, age / P.grow);
+            e.radius = e._cbFull ? P.radius : P.from + (P.radius - P.from) * Math.min(1, age / P.grow);   // (_cbFull: a battle of turns, at its full size from the start, js/cardults.js)
             if (age > 0 && e.life > 0 && age % P.tick === 0) {
                 e.shards = []; e.shardAt = age;
                 for (const a of actors) {
-                    if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+                    if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
                     applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, P.poison);
                     e.shards.push([a.x, a.y]);
                 }
@@ -1017,14 +1027,14 @@ function updateElementEffects() {
         if (e.type === "whiteout") {   // (the Rime Star's Ultimate: moves with it; slows and bites the enemies in it)
             const o = e.on; if (!o || o.dead) e.life = 0;
             else { e.x = o.x; e.y = o.y; const W = ULT_WHITEOUT, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % W.tick === 0;
-                for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
+                for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
         }
         if (e.type === "icerink") {   // (the Igloo Skater's Ultimate: stays put; slows and bites the enemies on it, speeds the squad on it)
             const R = ULT_RINK, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % R.tick === 0, f0 = typeof frame !== "undefined" ? frame : 0;
             for (const a of actors) {
                 if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
                 if (a.isFollower === true && a.team === "green") { if (!(a._voltUntil > f0 && (a._voltMove || 1) >= R.fast)) { a._voltUntil = f0 + 2; a._voltMove = R.fast; a._voltAtk = 1; } }   // (a voltage field as fast or faster is left as it is)
-                else if (isHostileTarget(a)) { if (typeof applySlow === "function") applySlow(a, 20, R.slow); if (bite) applyDamage(a, e.bite, e.by, "ice", false, false, DMG_HIT_SPECIAL); }
+                else if (isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) { if (typeof applySlow === "function") applySlow(a, 20, R.slow); if (bite) applyDamage(a, e.bite, e.by, "ice", false, false, DMG_HIT_SPECIAL); }
             }
         }
         if (e.type === "wavemaker") {   // (the Hornshell's Ultimate: a wave every ULT_WAVE.every frames; between them it moves up after the enemies it threw, onto floor only)
@@ -1075,9 +1085,9 @@ function updateElementEffects() {
         if (e.type === "eventhorizon") {   // (the Void Star's Ultimate: drags in, crushes)
             const H = ULT_HORIZON, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % H.tick === 0;
             for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
-                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (typeof cardBattlePull === "function" && cardBattlePull(a, e.x, e.y, v)) { /* (a battle of turns: drawn in on its squares) */ } else if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH);
             }
         }
@@ -1090,7 +1100,7 @@ function updateElementEffects() {
                 for (const a of actors) {
                     if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
                     if (a.isFollower === true && a.team === "green") { a._voltUntil = f0 + 2; a._voltMove = e.move; a._voltAtk = e.atk; }
-                    else if (bite && isHostileTarget(a) && (typeof _evoSees !== "function" || _evoSees(e.x, e.y, a))) applyDamage(a, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL);
+                    else if (bite && isHostileTarget(a) && (typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a)) && (typeof _evoSees !== "function" || _evoSees(e.x, e.y, a))) applyDamage(a, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL);
                 }
             }
         }
@@ -1101,15 +1111,12 @@ function updateElementEffects() {
         if (e.type === "toxicnet") {
             const age = e.maxLife - e.life;
             if (age > 0 && e.life > 0 && age % ULT_NETWORK.tick === 0) for (const a of actors) {
-                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (!a || a.dead || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches((e.by || e.on), a))) continue;
                 if (e.segs.some(s => _ultSegDist(a, s[0], s[1]) <= ULT_NETWORK.touch)) { applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, ULT_NETWORK.poison); }
             }
         }
 
         return e.life > 0;
-    });
-    if (_fxLater.length) { for (const e of _fxLater) elementEffects.push(e); _fxLater = []; }   // (made during the update: fxLater)
-    fxTidy();
 }
 
 function drawElementEffects() {
@@ -1516,6 +1523,7 @@ function drawElementEffects() {
                     ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#d6ff9a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
                     const t = (frame % 40) / 40; ctx.fillStyle = "#ffffff"; ctx.globalAlpha = k; ctx.beginPath(); ctx.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 3, 0, Math.PI * 2); ctx.fill();
                 }
+                if (e.pods) for (const q of e.pods) { const a = S(q[0], q[1]); ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#10261a"; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(a[0], a[1] - 5, 10, 8, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }   // (its own pods, the strands' ends: a battle of turns, js/cardults.js; their look the agent's, provisional)
                 break;
             }
             // SHARD VORTEX (FORM_ULTIMATES): a violet swirl with four crystal shards spinning round its middle
@@ -1989,7 +1997,7 @@ function thicketBeat(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return 0;
     const T = ULT_THICKET, by = e.by, r2 = e.radius * e.radius; let dealt = 0;
     for (const a of actors) {
-        if (!a || !isHostileTarget(a)) continue;
+        if (!a || !isHostileTarget(a) || !(typeof cardBattleTouches !== "function" || cardBattleTouches(e.by || e.on, a))) continue;
         const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy > r2 || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
         if (typeof applySlow === "function") applySlow(a, T.tick + 2, 0);   // (bound: it cannot move till the next beat)
         const h0 = a.health; applyDamage(a, ((by && by.power) || 10) * T.mult, by || null, "blossom", false, false, DMG_HIT_SPECIAL);

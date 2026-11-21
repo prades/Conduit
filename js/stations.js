@@ -3,19 +3,19 @@
 // ─────────────────────────────────────────────────────────
 // A station is a prop in the facility (F.stations in js/facilitymap.js names the prop) with a KIND, a row of STATION_KINDS below. The kind says who may use it, what it costs and what it does. Every class has one in the
 // rooms it works in, and each one earns the class a PERK (CLASS_PERKS in js/classes.js) that the rest of the game reads through classStat():
-//   the Armory's weapon locker       Gunslinger     the service rifle: shots hit harder and come faster
+//   the Armory's weapon locker       Gunslinger     the MACHINE GUN: the only weapon there is (js/weapons.js); until the locker a Gunslinger has none
 //   the Security Room's console      Gunslinger     CCTV sweeps: every enemy in the facility is marked for a while (and again after a cooldown)
 //   the console in Teleport Room 1   Technomancer   a tuned monitor lamp: it reaches further, and an overcharge lasts longer
 //   a test chamber in the lab        Mutator        a sequenced sample: a mutagen sample raises a follower two levels, not one
-//   the hallway's charging station   anyone         once its relay is online: refills the gun (and gives a Technomancer a cell)
+//   the hallway's charging station   anyone         once its relay is online: refills a gun in hand (and gives a Technomancer a cell); with neither to give it refuses
 //   the main power junction           anyone         the tutorial's one repair (the server room): the power module goes in, and every relay comes on (the electrical network, at the end of this file)
 // A station can be used by walking up and pressing E, by tapping the plate that appears, or by tapping the station (the player walks to it first). Another class's station shows its ring dimmed and refuses, saying who it is for.
 //   STATION_KINDS[kind] = { name, verb, classes, perk, once, cost, cooldown, use }
 
 const STATION_KINDS = {
     weapon_locker: { name: "WEAPON LOCKER", verb: "TAKE THE MACHINE GUN", classes: ["gunslinger"], perk: "machinegun", once: true,
-        use: () => { invAdd("ammo_pack", 4); return { ok: true, msg: "MACHINE GUN \u2014 IN YOUR TENTACLES: FOUR TIMES THE FIRE", equip: "machinegun" }; } },
-    // the armory terminal (js/weapons.js): scrap into ammunition, equip, upgrade and assemble weapons. It needs the Armory's relay online.
+        use: () => { invAdd("ammo_pack", 4); return { ok: true, msg: "MACHINE GUN \u2014 IN YOUR TENTACLES", equip: "machinegun" }; } },
+    // the armory terminal (js/weapons.js): scrap into ammunition, and the machine gun's upgrades. It needs the Armory's relay online.
     armory_terminal: { name: "ARMORY TERMINAL", verb: "OPEN THE WEAPON BENCH", classes: null, panel: true, needsRelay: "relay_armory" },
     cctv: { name: "SECURITY CONSOLE", verb: "RUN A CCTV SWEEP", classes: ["gunslinger"], perk: "cctv", cooldown: 3600,
         use: () => { _fp.cctvUntil = frame + 1500; return { ok: true, msg: "CCTV SWEEP — ENEMIES MARKED FOR 25 SECONDS" }; } },
@@ -63,7 +63,11 @@ const STATION_KINDS = {
     clone_bay: { name: "CLONE BAY", verb: "OPEN THE CLONE BAY", classes: null,
         use: () => { if (typeof crystalMenuOpen !== "undefined") crystalMenuOpen = false; if (typeof cloneMenuOpen !== "undefined") cloneMenuOpen = true; return { ok: true, msg: "", quiet: true }; } },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
-        use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
+        use: () => {   // (the rounds go into a gun in hand: with none, js/weapons.js, there is nothing to fill; a Technomancer still gets its cell)
+            const gun = typeof weaponInHand !== "function" || weaponInHand(), was = playerAmmo; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1);
+            if (!gun && !cell) return { ok: false, why: "NOTHING OF YOURS TO CHARGE" };
+            if (gun) playerAmmo = PLAYER_AMMO_MAX; _fp.chargerReady = frame + 5400;
+            return { ok: true, msg: "CHARGED \u2014 " + [gun ? (PLAYER_AMMO_MAX - was) + " ROUNDS" : "", cell ? "+1 POWER CELL" : ""].filter(Boolean).join(", ") }; } },
 };
 const STATION_RANGE = 1.8;
 

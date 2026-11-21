@@ -14,7 +14,7 @@ const INFO_CATS = [
     { id: "allies",   label: "ALLIES",   col: "#7dffb5", blurb: "Your squad of three, the rooms the rest hold, and the clones you grow from DNA." },
     { id: "foes",     label: "ENEMIES",  col: "#ff7766", blurb: "The arena's creatures, six kinds of them, and the alarm that sets them on you." },
     { id: "elements", label: "ELEMENTS", col: "#19e6c1", blurb: "Six elements in two triangles. Each one colours a follower and decides what its attacks do." },
-    { id: "rules",    label: "RULES",    col: "#8fe3ff", blurb: "How the facility fits together: the Crystal, the relays, your gun and your pack, what a kill pays." },
+    { id: "rules",    label: "RULES",    col: "#8fe3ff", blurb: "How the facility fits together: the Crystal, the relays, the target lock and your pack, what a kill pays." },
 ];
 
 // What each element's follower attacks are called (the attacks themselves are js/elements.js; their names were only ever written down in the GAME INDEX, so they are written down here too). Since
@@ -91,7 +91,7 @@ function infoEntries() {
     add("species", "foes", "THE CREATURES", "#ff7766", "Seven kinds, in four classes",
         ["The facility's wild things come in seven kinds, each in a class of its own: a WORKER, a SCOUT, a STRIKER or a TANK, bigger and tougher down that list. Each has a level, and its stats scale with it the way your units' do.",
          "ANTS are the weakest and simply walk up and bite. BEETLES are armoured. SCORPIONS, SPIDERS, MANTISES and MOTHS from the striker class up also strike from range: a sting, a venom shot, a foreleg lunge, a cloud of wing-dust. ROLY-POLIES live in the electrical domain: Crushing and Slashing do nothing to their plates, and hurt, they curl up into a wheel.",
-         "Tap one to lock your gun on it; tap the enemy card at the bottom of the screen (or long-press the creature and pick ATTACK) to send the squad at it."],
+         "Tap one to lock on to it; tap the enemy card at the bottom of the screen (or long-press the creature and pick ATTACK) to send the squad at it."],
         Object.keys(SPECIES).filter(k => SP(k)).map(k => [typeof speciesLabel === "function" ? speciesLabel(k) : k.toUpperCase(), "scout " + SP(k).health + " HP · " + SP(k).power + " pwr", SPECIES[k].color]));
     add("arena", "foes", "THE ARENA", "#ff9a6a", "Where the creatures live",
         ["The arena is where the facility's creatures are. A few are there when the game opens, and every so often another comes out of the dark at a spot you cannot see, always the kind there are fewest of, so they are all different.",
@@ -138,12 +138,12 @@ function infoEntries() {
         [["HEALTH", crystalHp + " HP", "#7dffb5"], ["LOST", "game over", UI_RED]]);
     add("relays", "rules", "THE BLACKOUT & THE JUNCTION", "#ffe733", "One repair powers the facility",
         ["The facility starts in a blackout: every room dark, your monitor lamp and the emergency lights the only light. Its power runs through " + relays + " relay nodes, small boxes on the walls, and every one is dead because the MAIN POWER JUNCTION in the server room is broken: its module is missing.",
-         "A spare POWER MODULE sits on the catwalks over the arena, out of your reach. SIDE QUEST, waiting under the catwalks, can fly: talk to him and he brings it down. Install it at the junction (stay at it while it goes in) and every relay comes on at once: the rooms have power, their doors throw light, the sentries and the charging station work, and the server room's fuel cells arrive. The NETWORK panel at the top right counts the relays online and the rooms powered."],
+         "A spare POWER MODULE sits on the catwalks over the arena, out of your reach. SIDE QUEST, waiting under the catwalks, can fly: talk to him and he brings it down. Install it at the junction (stay at it while it goes in) and every relay comes on at once: the rooms have power, their doors throw light, the sentries and the charging station work. The NETWORK panel at the top right counts the relays online and the rooms powered."],
         [["RELAY NODES", relays], ["THE REPAIR", "the junction, once"], ["THE MODULE", "the catwalks: Side Quest flies up"]]);
-    add("gun", "rules", "YOUR GUN", "#ffb070", "Lock on, then the round dial fires",
-        ["Near a creature the gun takes aim by itself: the nearest one within " + target.range + " tiles that you can see is locked, red corners close on it, and a round DIAL with its picture appears: its health as a ring, its level, an INFO button and the ammunition under it. CLICK the dial for a shot, HOLD it to keep firing at the gun's own rate.",
-         "Tap another creature to lock that one instead; a tap on the locked creature is a shot too. The ammunition chip stands the gun down. Rounds come from AMMO PACKS lying about the facility and from scrap at the Armory's terminal, where weapons are equipped and upgraded as well."],
-        [["LOCKS", "within " + target.range + " tiles, in sight"], ["THE GUN HOLDS", ammoMax + " rounds"], ["YOU", hits + " hits, then back to the Crystal", "#ff8a7a"]]);
+    add("gun", "rules", "THE LOCK & THE GUN", "#ffb070", "Everyone locks on; only the Gunslinger shoots",
+        ["Near a creature you lock on by yourself: the nearest one within " + target.range + " tiles that you can see is locked, corners close on it, and a round DIAL with its picture appears: its health as a ring, its level and an INFO button. Tap another creature to lock that one instead. Your squad's ATTACK order goes by the lock.",
+         "THE ONLY WEAPON IS THE GUNSLINGER'S MACHINE GUN, taken from the Armory's weapon locker once the tutorial is over and the class is chosen. With it in hand the dial is the trigger: CLICK it for a shot, HOLD it to keep firing; a tap on the locked creature is a shot too, and the ammunition chip stands the gun down. Rounds come from AMMO PACKS lying about the facility and from scrap at the Armory's terminal, where the gun is upgraded as well. No other class carries a weapon: its squad fights."],
+        [["LOCKS", "within " + target.range + " tiles, in sight"], ["THE GUN", "the Gunslinger's machine gun"], ["THE GUN HOLDS", ammoMax + " rounds"], ["YOU", hits + " hits, then back to the Crystal", "#ff8a7a"]]);
     add("pack", "rules", "THE PACK & THE CLASSES", "#31e8ff", "Press I; a class after the tutorial",
         ["Press I (or PACK on the dock) for your pack: everything you carry, in tabs, with an INSPECT page and USE for each item. Supply cases glow in the dark; walk over one to take what is in it. Any class may carry another class's gear, but only the right class may use it.",
          "When the tutorial is finished you choose a class, and its cases arrive in the facility. Each class has a station in the rooms it works in, and earns a perk there."],

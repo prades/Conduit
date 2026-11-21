@@ -168,6 +168,17 @@ const GAMEVIEW = (function () {
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
     if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
     b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
+  // A FAINT (the owner, 2026-11-18: "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation
+  // is concluding"): one of a card battle that goes down (a creature, one of yours) is not gone at once: the view keeps its body for FAINT frames: it tips over onto its side (the first half), lies
+  // a moment, then sinks into the floor and shrinks away; then the body goes back to the pool. It runs on the game's frames, on its own: the last one's goes on as the battle's camera eases back.
+  const FIELDS = battleFieldsMake(scene, (x, y) => GM.liftPx(x, y) / UPX, e => ATT.owns(e));   // (APPROVED LOOKS WIN, the owner, 2026-11-21: a field or burst the attacks' registry drew this frame, view3d/attacks.js, is not drawn again by the drafts)
+  const FAINT = 62, faints = [];
+  function faintStart(u, b, f0) { if (!u || !u.dead || !battling() || !b.holder.visible || faints.length >= 12) return false;
+    const h = b.holder; faints.push({ b, t0: f0, y: h.position.y, sc: h.scale.x }); return true; }
+  function faintStep(f0) { for (let i = faints.length - 1; i >= 0; i--) { const F = faints[i], h = F.b.holder, e = (f0 - F.t0) / FAINT;
+      if (!(e >= 0) || e >= 1) { h.rotation.z = 0; h.scale.setScalar(F.sc); give(F.b); faints.splice(i, 1); continue; }
+      const tip = Math.min(1, e / 0.42), tt = tip * tip * (3 - 2 * tip), down = Math.max(0, (e - 0.62) / 0.38);
+      h.rotation.z = tt * Math.PI / 2 * 0.94; h.position.y = F.y - down * down * 0.35; h.scale.setScalar(F.sc * (1 - 0.85 * down * down)); h.visible = true; } }
   function give(b) { b.holder.visible = false; let l = free.get(b.key); if (!l) free.set(b.key, l = []); l.push(b); }
   const turn = (b, tgt, dt) => { if (b.ang === null || !dt) { b.ang = tgt; return; } let d = tgt - b.ang; d -= TAU * Math.round(d / TAU); b.ang += d * Math.min(1, dt * 14); };
   const faceOf = row => Math.PI / 2 - row * Math.PI / 4;   // (a sheet's row, as the bakers turn the model for it)
@@ -236,7 +247,9 @@ const GAMEVIEW = (function () {
     for (const a of GM.actors) { if (a._swallowedBy) { const hp = GM.isCreature(a) ? ATT.held(a) : null; if (hp) ant(a, hp); continue; }   // (swallowed: drawn only while it is pulled in)
       if (!GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
     ATT.draw(f0, shown);   // (the attacks' effects of the forms drawn here: before the bodies not used this frame are put away, so their places are still known)
-    for (const [u, b] of live) if (b.used !== stamp) { give(b); live.delete(u); }
+    for (const [u, b] of live) if (b.used !== stamp) { if (!faintStart(u, b, f0)) give(b); live.delete(u); }
+    faintStep(f0);
+    stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js; after ATT.draw, so a field the registry drew this frame is left to it)
     const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
@@ -244,6 +257,7 @@ const GAMEVIEW = (function () {
     owns(o, k) { return ATT.owns(o, k); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx; k: a unit's own, by kind)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
+    fieldKinds: FIELDS.kinds,   // (the fields this view draws in a battle: js/cardults.js keeps the faint squares for the rest)
     swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
     // for tests (tests/view3d.js): a form or an egg built as a follower's body is, and put in every pose the game can ask of it (its sheet's idle, action and block columns), without
     // drawing: why it fails, or null
@@ -259,6 +273,7 @@ const GAMEVIEW = (function () {
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
     seeingThrough() { return faded.size + cut.size; },
+    fainting() { return faints.length; },   // (how many bodies are fainting now: for the tests)
     seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },   // (for the tests)
     screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
     // the same by the camera as the last frame drew it, not placed again (a card battle's reticles ask it every frame, js/cardbattle.js: placing it would cut a turn's swing short)

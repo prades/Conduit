@@ -147,6 +147,8 @@ function view3dAttacks(env) {
   const memos = new Map(); let seq = 0;
   function memo(o, type, owner, f0) { let m = memos.get(o); if (!m) { m = { o, type, owner, seed: (seq++ % 997) + 1, born: f0, l0: o.maxLife || o.life || 0, age: 0, seen: f0, x: o.x || 0, y: o.y || 0, gone: false, data: null }; memos.set(o, m); } return m; }
   const claimed = new Set(), bad = new Set(); let drew = 0, errs = 0, lastErr = null;
+  // a card battle's Ultimate not seen now (outside its caster's turn: docs/CARD-BATTLES.md §2.68, view3d/gamemap.js ultHidden): not drawn here then, as the battle's own fields are not (view3d/fields.js)
+  const hid = o => !!o._cbUlt && typeof GM.ultHidden === 'function' && GM.ultHidden(o);
   const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, strands: 0, models: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js; strands, models: the toxic line's, view3d/attacks_toxic.js)   // (held: the swallowed drawn this frame, being pulled in)
   // ── THE REGISTRY ──
   const FORMS = {};
@@ -306,11 +308,11 @@ function view3dAttacks(env) {
   // before the bodies: the pools emptied; the effects of this frame read, the new ones remembered (ABSOLUTE ZERO's swallowed, where they stood), each form's effects that its body follows found
   function begin(f0) { live.clear(); for (const M of CUR.values()) M.clear(); frostNow.clear(); stats.held = 0; PUFF.n = 0; GLINT.n = 0; FIRE.n = 0; SMOKE.n = 0; iceN = 0; RINGS.n = 0; DISCS.n = 0; ribN = 0; claimed.clear();
     for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; for (const C of claimedK.values()) C.clear(); hook('begin');
-    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0)) continue; const f = e.by && e.by.evolved ? e.by : makerOf(e, lastShown); if (!f || !f.evolved) continue;
+    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0) || hid(e)) continue; const f = e.by && e.by.evolved ? e.by : makerOf(e, lastShown); if (!f || !f.evolved) continue;
       const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || !(X.held || X.pre)) continue;
       try { if (typeof X.pre === 'function' && !X.pre(e, f)) continue; if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = (e.maxLife || m.l0) - e.life; m.now = m.age; m.seen = f0; m.gone = false; if (X.begin) X.begin(m, f0); curMap(e.type).set(f, m); } catch (x) { fail(f.evolved, x); } }
     // (an effect the game has ended that a body still follows, played on to its own end: its age now)
-    for (const m of memos.values()) { if (m.shot || m.seen === f0 || !m.owner || !m.owner.evolved) continue; const E = FORMS[m.owner.evolved], X = E && E.fx[m.type]; if (!X || !X.pre || bad.has(m.owner.evolved)) continue;
+    for (const m of memos.values()) { if (m.shot || m.seen === f0 || !m.owner || !m.owner.evolved || hid(m.o)) continue; const E = FORMS[m.owner.evolved], X = E && E.fx[m.type]; if (!X || !X.pre || bad.has(m.owner.evolved)) continue;
       const M = curMap(m.type); if (M.has(m.owner)) continue; const age = m.age + (f0 - m.seen), span = typeof X.span === 'function' ? X.span(m) : X.span || 0; if (age > span) continue;
       try { if (typeof X.pre === 'function' && !X.pre(m.o, m.owner)) continue; } catch (x) { continue; } m.now = age; M.set(m.owner, m); } }
   function fail(id, x) { bad.add(id); errs++; lastErr = String((x && x.message) || x); stats.bad = [...bad]; if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + id + '\'s attacks in 2D: ' + ((x && x.stack) || x)); }
@@ -327,7 +329,7 @@ function view3dAttacks(env) {
   function draw(f0, shown) { const t0 = (typeof performance !== 'undefined' ? performance.now() : 0);
     const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (e && e.life > 0) live.add(e); }
     // the forms with an entry whose bodies are the view's: their effects found (an effect with no maker named is matched by its entry: the Maw's ice hit, the Burrower's spikes), drawn and claimed
-    if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0)) continue;
+    if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0) || hid(e)) continue;
       const f = e.by && e.by.evolved ? e.by : makerOf(e, shown);
       if (!f || !shown.has(f)) continue; const id = f.evolved, E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X) continue;
       const b = env.bodyOf(f) || (X.bodyless ? NOBODY : null); if (!b) continue;   // (bodyless: an effect drawn while its maker's body is not, the Skink's swirl: it is in the swirl)
@@ -342,7 +344,7 @@ function view3dAttacks(env) {
     // what a form's own state carries (the Quillstone's orbiting fireballs, the Burrower's mound): its entry's `on`
     for (const f of shown) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || !E.on || bad.has(f.evolved)) continue; const b = env.bodyOf(f); if (!b) continue; try { E.on(f, b, f0); } catch (x) { fail(f.evolved, x); } }
     // the effects and shots gone from the game this frame: played on to their end (their afterglow, a shot's burst where it struck), from their last age
-    for (const m of memos.values()) { const o = m.o; if (live.has(o) && m.seen === f0) continue; const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
+    for (const m of memos.values()) { const o = m.o; if ((live.has(o) && m.seen === f0) || (live.has(o) && hid(o))) continue;   // (a card battle's field outside its caster's turn: kept, not drawn) const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
       const span = X ? (typeof X.span === 'function' ? X.span(m) : X.span || 0) : 0, age = m.age + (f0 - m.seen);
       if (!X || bad.has(m.owner.evolved) || age > span || m.owner.dead) { memos.delete(o); continue; }
       const b = shown.has(m.owner) ? env.bodyOf(m.owner) || (X.bodyless ? NOBODY : null) : null; if (!b) { memos.delete(o); continue; }
