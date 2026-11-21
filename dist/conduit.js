@@ -1240,6 +1240,8 @@ function rotSpikeDrawItems(list) {
     for (const e of elementEffects) {
         if (e.type !== "toxicpuddle" || !e.shards || !e.shards.length)
             continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e))
+            continue;
         const since = (e.maxLife - e.life) - e.shardAt;
         if (!(since >= 0 && since < 18))
             continue;

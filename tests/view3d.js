@@ -20,7 +20,9 @@
 //                 each made by the game's own functions, drawn and claimed (the hit and its icicles, SKATE CHARGE's line, ICE RINK, the iceball, the three icicles, WHITEOUT), within the budget and halved
 //                 on LOW, nothing written, a fault sending one form's back to 2D. The electric line's thirteen (the Thunderhead's, the Electro Skink's, the Static Orb's, the Hover Shell's): each made by the
 //                 game's own functions, drawn and claimed (shots, hops, the storm and the swirl stood as models, rings, hits, the spark ring), within the budget and halved on LOW, nothing written, a fault
-//                 sending one form's back to 2D
+//                 sending one form's back to 2D. The toxic line's ten (the Blight Spider's, the Seeper's, the Rotshard's): each made by the game's own functions, drawn and claimed (the smoke form with the
+//                 body still the view's, the venom, the network's strands and pods, the eruption, the stomp, the undertow, the soul blob and its splat, the black decoy, its lob and shards, the puddle and its
+//                 spikes), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -537,6 +539,82 @@ if (ELEC !== null) {
         const F = ELEC.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['thunderhead'], false, 'ready', true, true, true]), 'after the fault');
     });
     check('the game\'s side: the spark ring round a unit on its electric hit asks the view first (js/draw.js)', () => { ok(/view3dOwnsFx\(actor, "spark"\)/.test(rd('js/draw.js')), 'js/draw.js'); });
+}
+
+group('STAGE 5, THE TOXIC LINE IN 3D (the electric line approved; the owner, 2026-11-20: "Next batch"): the Blight Spider, the Seeper and the Rotshard');
+// The three toxic forms beside three ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const TOX = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x, y) { spawnFollowerAtCrystal('toxic'); var f = followers[followers.length - 1]; f.element = 'toxic'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = y; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; f.attackCooldown = 1e6; return f; };
+  var sp = mk('blightspider', 'camper', 12.6, 19.4), se = mk('seeper', 'brawler', 13.4, 19.5), ro = mk('rotshard', 'sniper', 12.0, 18.6);
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 14.5; ant.y = 19.5; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.x = 15.5; ant2.y = 19.0; ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  var ant3 = spawnCreature({ species: 'ant', className: 'scout' }); ant3.x = 15.3; ant3.y = 20.2; ant3.health = ant3.maxHealth = 1e6; ant3.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; }); step(3);
+  var ants = function () { ant.x = 14.5; ant.y = 19.5; ant2.x = 15.5; ant2.y = 19.0; ant3.x = 15.3; ant3.y = 20.2; [ant, ant2, ant3].forEach(function (a) { a.kbVX = a.kbVY = 0; a.stunned = 0; }); [sp, se, ro].forEach(function (f) { f.attackCooldown = 1e6; f.smokeForm = 0; }); };
+  out.types = A.types(); out.bodies = [V.has(sp), V.has(se), V.has(ro)];
+  var snap = function () { var keep = function (q) { var r = {}; Object.keys(q).forEach(function (k) { var v = q[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { strands: 0, smoke: 0, puff: 0, glint: 0, solids: 0, flats: 0, models: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, k, v) { return elementEffects.filter(function (e) { return e.type === type && (!k || e[k] === v); })[0]; }, R = out.r = {};
+  var home = function (u, x, y) { u.x = x; u.y = y; u.state = 'idle'; u._fpPath = null; };
+  // THE BLIGHT SPIDER: its everyday hit (the toxic element's smoke form), VENOM BITE, CONTAMINATION NETWORK (on two pods it laid)
+  ants(); step(1); var r0 = Math.random; Math.random = function () { return 0.9; }; sp.state = 'attack'; sp.attackAnim = 0; ELEMENT_ATTACKS.toxic.physical(sp, ant); Math.random = r0; var sm = of('smoke'); step(6);
+  R.shit = { made: !!sm, owned: !!sm && view3dOwnsFx(sm), body: V.has(sp), smoke: sp.smokeForm > 0, st: st(), same: same() }; pk(); step(44); elementEffects.length = 0; ants(); step(2);
+  var vx = sp.x, vy = sp.y; R.venom = { fired: venomBite(sp) }; var vi = elementEffects.filter(function (e) { return e.type === 'impact' && e.color === '#88ff44'; })[0]; step(12); R.venom.moved = +Math.hypot(sp.x - vx, sp.y - vy).toFixed(2); R.venom.owned = !!vi && view3dOwnsFx(vi); R.venom.st = st(); R.venom.same = same(); pk(); step(30); elementEffects.length = 0; home(sp, 12.6, 19.4); step(2);
+  ants(); step(1); _techPoolLay(sp, 14.5, 18.5); _techPoolLay(sp, 15.5, 20.5); _techPoolLay(sp, 13.5, 20.5); elementEffects.length = 0; sp.ultimateCharge = 100; R.net = { fired: followerUltFire(sp) }; var tn = of('toxicnet', 'by', sp); step(30); R.net.owned = !!tn && view3dOwnsFx(tn); R.net.st = st(); pk();
+  gfxLow = true; V.draw(null); R.net.low = st(); gfxLow = false; R.net.same = same(); if (tn) tn.life = 1; step(3); techPools.length = 0; elementEffects.length = 0; step(2);
+  // THE SEEPER: its everyday hit (its stomp and smoke form), ERUPTION, TOXIC STOMP, TOXIC UNDERTOW
+  ants(); step(1); Math.random = function () { return 0.9; }; se.state = 'attack'; se.attackAnim = 0; ELEMENT_ATTACKS.toxic.physical(se, ant); Math.random = r0; var ss = of('smoke'); step(6);
+  R.ehit = { owned: !!ss && view3dOwnsFx(ss), body: V.has(se), same: same() }; pk(); step(44); elementEffects.length = 0; ants(); step(2);
+  R.erupt = { fired: eruption(se) }; var er = of('ring'), ei = of('impact'); step(10); R.erupt.owned = !!er && view3dOwnsFx(er) && !!ei && view3dOwnsFx(ei); R.erupt.st = st(); R.erupt.same = same(); pk(); step(50); elementEffects.length = 0; ants(); step(2);
+  R.stomp = { fired: toxicStomp(se) }; var ts = of('toxicstomp', 'by', se); step(16); R.stomp.owned = !!ts && view3dOwnsFx(ts); R.stomp.st = st(); R.stomp.same = same(); pk(); step(30); elementEffects.length = 0; ants(); step(2);
+  se.ultimateCharge = 100; R.under = { fired: followerUltFire(se) }; var ur = of('ring'); step(14); R.under.owned = !!ur && view3dOwnsFx(ur); R.under.st = st(); pk(); gfxLow = true; V.draw(null); R.under.low = st(); gfxLow = false; R.under.same = same(); step(50); elementEffects.length = 0; home(se, 13.4, 19.5); ants(); step(2);
+  // THE ROTSHARD: CORRODE SHOT (its shot, kind soulblob, and its splat), ROTTEN DECOY (the lob, the black decoy, its shards when broken), TOXIC PUDDLE
+  var sb = spawnFollowerProjectile(ro, ant, '#66ff66', 1, 5, function (a) { corrodeTouch(a); }, null, { kind: 'soulblob' }); step(3); R.shot = { owned: !!sb && view3dOwnsFx(sb), strands: A.stats.strands, solids: A.stats.solids, same: same() }; pk();
+  var spl = null; for (var i = 0; i < 80 && !spl; i++) { step(1); spl = of('soulsplat'); } step(1); R.shot.splat = !!spl && view3dOwnsFx(spl); step(30); elementEffects.length = 0; ants(); step(2);
+  R.decoy = { fired: rottenDecoy(ro) }; var dl = of('decoylob'), rd = of('rotdecoy'); step(4); R.decoy.lob = !!dl && view3dOwnsFx(dl); step(16); R.decoy.owned = !!rd && view3dOwnsFx(rd); R.decoy.st = st(); R.decoy.same = same(); pk();
+  if (rd && rd.on) rd.on.until = frame; for (var i = 0; i < 6 && !of('rotshards'); i++) step(1); var rs = of('rotshards'); step(2); R.decoy.shards = !!rs && view3dOwnsFx(rs); step(50); elementEffects.length = 0; ants(); step(2);
+  ro.ultimateCharge = 100; R.pud = { fired: followerUltFire(ro) }; var tp = of('toxicpuddle', 'by', ro); for (var i = 0; i < 64; i++) { step(1); if (tp && tp.shardAt > 0 && (tp.maxLife - tp.life) - tp.shardAt === 4) break; } R.pud.owned = !!tp && view3dOwnsFx(tp); R.pud.st = st(); R.pud.bit = tp ? tp.shards.length : 0; pk();
+  gfxLow = true; V.draw(null); R.pud.low = st(); gfxLow = false; R.pud.same = same(); if (tp) tp.life = 1; step(3);
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Seeper's entry made to fail: its stomp is the game's 2D drawing again, the view and the other forms go on
+  elementEffects.length = 0; ants(); step(2); toxicStomp(se); var ts2 = of('toxicstomp', 'by', se); step(2); A.breakFor('seeper'); step(2);
+  out.fault = { bad: A.bad(), owned: !!ts2 && view3dOwnsFx(ts2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(se), others: V.has(ro) }; A.mend('seeper'); step(2);`));
+if (TOX !== null) {
+    check('the registry: the toxic line\'s entries (the Blight Spider, the Seeper, the Rotshard), their effects and shots; their bodies the view\'s', () => {
+        ok(!TOX.none, 'the page left no result'); ok(!TOX.threw, TOX.threw); same(TOX.errs.join(' | '), '', 'errors'); same(TOX.state, 'ready', 'the view');
+        same(JSON.stringify([TOX.types.blightspider, TOX.types.seeper, TOX.types.rotshard]), JSON.stringify([['smoke', 'impact', 'toxicnet'], ['smoke', 'toxicstomp', 'ring', 'impact'], ['soulsplat', 'decoylob', 'rotdecoy', 'rotshards', 'toxicpuddle', 'shot:soulblob']]), 'what each draws');
+        same(JSON.stringify(TOX.bodies), '[true,true,true]', 'their bodies the view\'s');
+    });
+    check('THE BLIGHT SPIDER: its hit (its smoke form, its body still the view\'s, see-through), VENOM BITE and CONTAMINATION NETWORK (strands, pods): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = TOX.r; same(JSON.stringify([R.shit.made, R.shit.owned, R.shit.body, R.shit.smoke]), '[true,true,true,true]', 'the hit: its smoke, its body in smoke form'); ok(R.shit.st.smoke > 0, 'its smoke: ' + JSON.stringify(R.shit.st));
+        same(JSON.stringify([R.venom.fired, R.venom.owned]), '[true,true]', 'VENOM BITE'); ok(R.venom.moved > 0.1, 'its step in: ' + JSON.stringify(R.venom));
+        same(JSON.stringify([R.net.fired, R.net.owned]), '[true,true]', 'CONTAMINATION NETWORK'); ok(R.net.st.strands >= 6 && R.net.st.models >= 2, 'its strands and pods: ' + JSON.stringify(R.net.st));
+        ok(R.net.low.strands <= TOX.cap.strand / 2 && R.net.low.strands < R.net.st.strands, 'LOW graphics: ' + JSON.stringify(R.net.low) + ' of ' + JSON.stringify(R.net.st));
+    });
+    check('THE SEEPER: its hit (stomp and smoke form), ERUPTION, TOXIC STOMP and TOXIC UNDERTOW: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = TOX.r; same(JSON.stringify([R.ehit.owned, R.ehit.body]), '[true,true]', 'the hit');
+        same(JSON.stringify([R.erupt.fired, R.erupt.owned]), '[true,true]', 'ERUPTION'); ok(R.erupt.st.smoke >= 10, 'its goo: ' + JSON.stringify(R.erupt.st));
+        same(JSON.stringify([R.stomp.fired, R.stomp.owned]), '[true,true]', 'TOXIC STOMP'); ok(R.stomp.st.smoke > 0 && R.stomp.st.flats > 0, 'its goo: ' + JSON.stringify(R.stomp.st));
+        same(JSON.stringify([R.under.fired, R.under.owned]), '[true,true]', 'TOXIC UNDERTOW'); ok(R.under.low.smoke <= TOX.cap.smoke / 2 && R.under.low.smoke < R.under.st.smoke, 'LOW graphics: ' + JSON.stringify(R.under.low) + ' of ' + JSON.stringify(R.under.st));
+    });
+    check('THE ROTSHARD: CORRODE SHOT (the soul blob, its splat), ROTTEN DECOY (the lob, the black Rotshard, its shards) and TOXIC PUDDLE (its spikes): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = TOX.r; same(JSON.stringify([R.shot.owned, R.shot.strands > 0, R.shot.solids > 0, R.shot.splat]), '[true,true,true,true]', 'the shot and its splat');
+        same(JSON.stringify([R.decoy.fired, R.decoy.lob, R.decoy.owned, R.decoy.st.models >= 1, R.decoy.shards]), '[true,true,true,true,true]', 'ROTTEN DECOY');
+        same(JSON.stringify([R.pud.fired, R.pud.owned]), '[true,true]', 'TOXIC PUDDLE'); ok(R.pud.bit >= 1 && R.pud.st.solids >= 3, 'its spikes: ' + JSON.stringify(R.pud));
+        ok(R.pud.low.solids <= TOX.cap.solid / 2 + 20 && R.pud.low.puff < R.pud.st.puff, 'LOW graphics: ' + JSON.stringify(R.pud.low) + ' of ' + JSON.stringify(R.pud.st));
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect and shot as it was)', () => {
+        const P = TOX.peak, C = TOX.cap; ok(P.strands <= C.strand && P.smoke <= C.smoke && P.puff <= C.puff && P.glint <= C.glint && P.models <= 6, 'over the budget: ' + JSON.stringify(P));
+        const R = TOX.r; same(JSON.stringify([R.shit.same, R.venom.same, R.net.same, R.ehit.same, R.erupt.same, R.stomp.same, R.under.same, R.shot.same, R.decoy.same, R.pud.same]), JSON.stringify(new Array(10).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one toxic form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = TOX.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['seeper'], false, 'ready', true, true, true]), 'after the fault');
+    });
+    check('the game\'s side: TOXIC PUDDLE\'s modelled spikes ask the view first (js/elements.js); a body in smoke form is the view\'s for a form that draws it (view3d/gameview.js)', () => {
+        ok(/toxicpuddle[\s\S]{0,200}view3dOwnsFx\(e\)/.test(rd('js/elements.js')), 'js/elements.js'); ok(/ATT\.smokes\(/.test(rd('view3d/gameview.js')), 'view3d/gameview.js'); });
 }
 
 group('A FAILURE never stops the game');
