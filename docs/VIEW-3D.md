@@ -126,6 +126,7 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 - The stairs' floor marks follow the room's floor, not each tread.
 - A relay's or charger's look as it powers up (built as "on").
 - Props that move or are taken away in play: none in the lab's eight rooms.
+- **A prop with states** (build `2026-11-17bj`; the sewer dungeon's kit, `SEWER-PROPS.md` §10): the view builds every state's model of such a prop under one holder and shows the one the game last set (`facilityPropStateSet` → `view3dPropState` → the view's `propState`); each state is one mesh a material, left out of the room's merge. Only the kit's kinds have states so; a chest, a relay and a charger are built once, as before.
 
 ## 5. How it works
 

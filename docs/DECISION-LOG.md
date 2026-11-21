@@ -14,6 +14,15 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The sewer dungeon's approved props and key items are the game's own models, placed by kind and switched by state
+
+- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17bj`
+- **Status:** implemented; verified by `tests/sewerkit.js` (11 checks, one in a real browser with the 3D view) and by eye in the 2D game and the 3D view. No prop of the map is one of them yet. Not seen on an iPad.
+- **Decision:** the owner: "Let's go ahead and create the framework so that my sewer AI can build this in 3D." The sixteen approved pieces (`SEWER-PROPS.md` §5) left the drafts' folder and became models of the game, on the game's own prop system: a kind on the prop table, a variant on a sheet, a model in the 3D view. Nothing parallel was made.
+- **A prop's state** (new): `facilityPropStateSet(id, state)` sets how a kit prop looks, in both views. It is the look only: walking is still `facilitySolidOpen`, what a state does is the dungeon's, and nothing of it is saved (the owner, 2026-11-20: "The dungeon should reset every single time the player comes back").
+- **Also approved that day:** a found energy card ("The energy cards are cool"), the secret door and the concrete wall ("yes"), a loose slab ("yes"). **Rejected:** the Nest's three finds, a dead ant, shed chitin and eggs ("I don't really like the nest stuff. It's kind of too surreal").
+- **Agent's choices, provisional:** the kinds' names; a `_turned` kind for a one-tile prop that faces a way; a key item's float (0.2 of a tile) and slant (15 degrees). `SEWER-PROPS.md` §10.
+
 ## DECISION: Approved looks win: where the attacks' registry draws an Ultimate, main's 3D drafts step aside
 
 - **Date:** 2026-11-21 · **Branch/build:** `claude/battle-anims` with main merged in (main at build `2026-11-17ba`); no build of its own
@@ -29,7 +38,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Status:** designed in part; nothing built. The list of every piece and where it stands is `SEWER-PROPS.md`; the drafts are in `design/sewer-props/`.
 - **Decision:** the owner: "take charge of designing all of the props and all of the key items that are discussed in the Notion notes or the framework on GitHub." Asked, the same day: the dungeon's walls are **concrete** (first "Brick concrete", not the facility's panels; then, shown a sample with brick over a concrete foot, **"It should be concrete"**) and its floor **checker plate** ("Checker plate dungeon floors"); the bridge box is **one of the facility's ordinary crates**; a movable thing wears **no amber edge** ("No"); **one key "for now"**, the subway key; the purification module's three parts are **the canister, the membranes and the pump** ("that sounds correct. 3 parts is okay"); **a battery pack is carried** ("can be held, carried").
 - **Supersedes:** for the Sewer Dungeon, the walls of build `2026-11-15g` (the facility's panels: "I like 1 but the floor tiles of 4"); its floor, the checker plate, stays. Today's Sewers keep their walls until the dungeon is built. The dungeon spec's Key 1 and Key 2 (`SEWER-DUNGEON.md` §2.3, on branch `claude/sewer-dungeon-spec`) are dropped for now.
-- **Approved looks** ("The valve is good enough. It should work"; "Looks good"; "Yes drafts good"): the subway key (plain: the first draft was "kind of overdrawn"), the module's three parts, the battery pack, the drain valve, the sluice gate, the sluice switch, a drain, the subway door, a shortcut door, rubble. With them, four signals: fixed ironwork is green, what a hand or a shot works is red, brass is the key's, what is cleared is pale broken concrete.
+- **Approved looks** ("The valve is good enough. It should work"; "Looks good"; "Yes drafts good"): the subway key (plain: the first draft was "kind of overdrawn"), the module's three parts, the battery pack, the drain valve, the sluice gate, the sluice switch, a drain, the subway door, a shortcut door, rubble. (Four more the same day, and what was done with all sixteen: the decision above.) With them, four signals: fixed ironwork is green, what a hand or a shot works is red, brass is the key's, what is cleared is pale broken concrete.
 - **Agent's choices, provisional:** every colour, shape and word on a piece not yet approved. `SEWER-PROPS.md` §7.
 
 ## DECISION: In a card battle the Mutator has a turn of its own: its HEALING SERUM heals the whole squad

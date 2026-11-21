@@ -33,6 +33,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bj` · branch `claude/friendly-thompson-w581x0` · the sewer dungeon's kit: its approved props and key items are the game's own models, to build with
+- **The ask** (the owner, 2026-11-21, of the props and key items approved one by one that day): "Let's go ahead and create the framework so that my sewer AI can build this in 3D."
+- **What it does:** the sixteen approved pieces are models of the game (`design/props/models/_sewer.js`), baked to two sheets (`img/props/sewer.png`, 33 variants; `img/props/sewerfinds.png`, 13). Nine props have kinds on the game's prop table: a prop of the map with one is drawn like any other, its sprite in the 2D game and its model in the 3D view, turned by its own size or by its `_turned` kind. A prop with states (a valve shut or open, a gate, a switch, a door, rubble) is drawn in the one the game last set (`facilityPropStateSet`), in both views; given none, as it is found.
+- **Nothing a player sees changes:** no prop of the map is one of these yet. The dungeon's builder puts them there (`SEWER-PROPS.md` §10, the guide). Two small sheets more are loaded with the rest.
+- **Not built:** the key items as items of the PACK, the camera's zoom on finding one, a key item floating in the 3D view; the dungeon's rooms in the 3D view; what any state does (water, a way opened): the dungeon's own.
+- **Rejected on the way** (the owner): the Nest's three finds ("kind of too surreal"), a float box for the bridge box, an amber edge on what is moved.
+- `design/props/models/_sewer.js`, `sewer.js`, `sewerfinds.js`; `js/propsprites.js`; `js/view3d.js`; `view3d/gamemap.js`, `view3d/core.js`, `view3d/gameview.js`; `design/style-evolution/round2/chamber.js`; `tests/sewerkit.js` (new, 11 checks); `docs/SEWER-PROPS.md` §10.
+- **Verified:** VERIFIED_LINE
+
 ### Build `2026-11-17bi` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the rail back along the West Channel (work in progress)
 - **The ask** (the owner, 2026-11-21): "U added a wall lining the entire channel".
 - **What it does** (only with `?sewerdungeon`): the wall that build `bh` put along the West Channel's north walkway is the rail again.

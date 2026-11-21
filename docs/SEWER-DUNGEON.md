@@ -2,6 +2,8 @@
 
 > **Status: Designed in part** (the owner, 2026-11-21, of the skeleton picture `design/sewer-dungeon/skeleton-2026-11-20.png`: "This is our sewer now, make it happen"; then "new mechanics I'll answer the questions in prompt form"). **Nothing of it is built.** The Sewers in the game are still the ones in `SEWER-QUEST.md`, which this replaces as its stages are built. Everything below is read off the picture; what the picture marks TBD, and what it does not say, is in §6, not filled in.
 
+> **Its props and key items** (the looks the owner approved, and how a builder places one and changes its state, in the 2D game and the 3D view): `SEWER-PROPS.md`, its §10 the guide.
+
 ## 1. Intent
 A dungeon to explore, not a corridor: a dynamic water level that changes the routes, a boss you do not have to kill, more than one way through.
 
