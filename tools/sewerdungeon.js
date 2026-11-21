@@ -18,7 +18,7 @@ const FLIGHTS = [
   { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 24.5, 16.5, 29.5], axis: 'y', steps: 3 },
   { id: 'ring_w', rooms: ['central_walk_w', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
   { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 48.6, 36.4], axis: 'y', steps: 3 },
-  { id: 'pur', rooms: ['pur_pass', 'junction_ring_e'], on: null, zone: [54.74, 44.5, 57.2, 49.5], axis: 'x', steps: 3, down: 'low' },
+  { id: 'pur', rooms: ['pur_pass', 'junction_ring_e'], on: null, zone: [55, 44.8, 57.2, 49.2], axis: 'x', steps: 3, down: 'low' },
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23, 23] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },

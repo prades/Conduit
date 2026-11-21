@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's ring made uniform (work in progress)
+- **The ask** (the owner, 2026-11-21, of the ring's walkway): "This tunnel is bad, make it uniform. Dont use reference make this area completely uniform".
+- **What it does** (only with `?sewerdungeon`): the Round Junction's ring is one even band, sixteen flat sides inside and out, 2.5 tiles wide all the way round.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser; the full suite. **Not playtested.**
+
 ### Build `2026-11-17bc` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms: short flights, one rail, a wider West Channel (work in progress)
 - **The ask** (the owner, 2026-11-21, having walked `?sewerdungeon`): not actual storeys, stairs that make it feel underground; one set of railing, never four; a really deep channel that is not all the way full; wider at the entrance.
 - **What it does** (only with `?sewerdungeon`): heights are short flights; one rail along each side of the water; the West Channel a tile and more wider; the channels lie deep below the walkways. Still bare: no sewer look, the water plain and dark.
