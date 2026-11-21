@@ -23,13 +23,15 @@ const INNER = []; for (let i = 0; i < 16; i++) { const a = (i + 0.5) / 16 * 2 * 
 function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFixed(2)], dir = a1 < a0 ? -1 : 1, lo = Math.min(a0, a1), hi = Math.max(a0, a1); let pts = INNER.map((p, i) => ({ p, a: (i + 0.5) / 16 * 2 * PI })).flatMap(o => [o, { p: o.p, a: o.a - 2 * PI }]).filter(o => o.a > lo + 1e-6 && o.a < hi - 1e-6).sort((x, y) => dir * (x.a - y.a)).map(o => o.p); return [cut(a0)].concat(pts, [cut(a1)]); }
 // (the West Channel widened by a tile and more, the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
 const SHAPES = [
-  { id: 'west_channel', lvl: -2, kind: 'water', p: [[0, 16.2], [37.2, 16.2], [37.2, 20.5], [0, 20.5]] },
-  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB] },
+  { id: 'west_channel', lvl: -2, kind: 'water', p: [[2, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 20.5], [37.2, 20.5], [2, 20.5]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
+  { id: 'west_entrance', lvl: 0, kind: 'floor', p: [[0, 14.4], [2, 14.4], [2, 22.2], [0, 22.2]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
+  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 20.5], [40.4, 16.2]] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[48.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [48.6, 35.8]] },
-  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], K.wwB, K.wwA] },
+  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
+  { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 20.5], [40.4, 20.5], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], K.weB, K.weA] },
-  { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[0, 14.4], [37.2, 14.4], [37.2, 16.2], [0, 16.2]] },
-  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 20.5], [37.2, 20.5], [37.2, 22.2], [0, 22.2]] },
+  { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[2, 14.4], [37.2, 14.4], [37.2, 16.2], [2, 16.2]] },
+  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[2, 20.5], [37.2, 20.5], [37.2, 22.2], [2, 22.2]] },
   { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
   { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
   { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 23.2], [3.5, 22.2], [11.5, 22.2], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 25.5], [3.5, 25.5], [2.5, 24.5]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)

@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path'), ROOT = path.resolve(__dirname, '..');
 const { SHAPES } = require(path.join(ROOT, 'design/sewer-dungeon/trace.js')), { joins } = require(path.join(ROOT, 'design/sewer-dungeon/joins.js'));
 const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G), Math.round(p[1] * G)];
-const LABEL = { west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
+const LABEL = { west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
@@ -16,7 +16,7 @@ const BASE = -1.8, STEP = 0.45, DEEP = 0.9, LV = l => 50 + l, WATER_LV = 47;
 const FLIGHTS = [
   { id: 'gallery', rooms: ['nw_gallery', 'west_walk_n'], on: { x: [9.3, 11.7] }, zone: [9.3, 12.9, 11.7, 14.4], axis: 'y', steps: 3 },
   { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 24.5, 16.5, 29.5], axis: 'y', steps: 3 },
-  { id: 'ring_w', rooms: ['central_walk_w', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
+  { id: 'ring_w', rooms: ['central_walk_w_s', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
   { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 48.6, 36.4], axis: 'y', steps: 3 },
   { id: 'pur', rooms: ['pur_pass', 'junction_ring_e'], on: null, zone: [55, 44.8, 57.2, 49.2], axis: 'x', steps: 3, down: 'low' },
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
@@ -31,7 +31,7 @@ function build() {
   for (const s of S) {
     const n = s.p.length, kinds = [];
     for (let i = 0; i < n; i++) { const seg = [s.p[i], s.p[(i + 1) % n]];   // (a wall shared with water, or water's with a walkway: an open edge with a rail, the water in sight)
-      const j = J.find(j => j.rooms.includes(s.id) && along(seg, j) && Math.hypot(seg[1][0] - seg[0][0], seg[1][1] - seg[0][1]) - j.len < 0.3 && (wet(j.rooms[0]) !== wet(j.rooms[1]) || (j.rooms.includes('junction_nest') && j.lv[0] !== j.lv[1])));
+      const j = J.find(j => j.rooms.includes(s.id) && along(seg, j) && Math.hypot(seg[1][0] - seg[0][0], seg[1][1] - seg[0][1]) - j.len < 0.3 && (wet(j.rooms[0]) || wet(j.rooms[1]) || (j.rooms.includes('junction_nest') && j.lv[0] !== j.lv[1])));   // (water against water too: one channel running into another, nothing drawn between)
       kinds.push(!j ? 'wall' : wet(s.id) || s.id === 'junction_nest' ? 'open' : 'deck_rail'); }   // (ONE rail, the walkway's: the owner, "you don't need to have 2 or 4 sets of railings. It's one set of railing"; the water's own side of that edge draws nothing)
     rooms.push({ id: P + s.id, label: LABEL[s.id] || 'Sewers', level: wet(s.id) ? WATER_LV : LV(s.lvl), status: 'placed', wall_material: 'solid', interior: true, sewer_dungeon: s.kind, polygon: s.p.map(px), edge_kinds: kinds });
     interiors.push({ id: P + s.id, under: 'arena', offset: OFFSET });
