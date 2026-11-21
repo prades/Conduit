@@ -617,30 +617,106 @@ if (TOX !== null) {
         ok(/toxicpuddle[\s\S]{0,200}view3dOwnsFx\(e\)/.test(rd('js/elements.js')), 'js/elements.js'); ok(/ATT\.smokes\(/.test(rd('view3d/gameview.js')), 'view3d/gameview.js'); });
 }
 
+group('STAGE 5, THE FLUX LINE IN 3D (the owner, 2026-11-21: "Next batch"; the line the agent chose): the Voidstar, the Goo Proxy and the Rift Mimic');
+// The three flux forms beside three ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const FLX = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x, y) { spawnFollowerAtCrystal('flux'); var f = followers[followers.length - 1]; f.element = 'flux'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = y; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; f.attackCooldown = 1e6; return f; };
+  var vs = mk('voidstar', 'sniper', 12.0, 18.6), gp = mk('gooproxy', 'camper', 12.6, 19.4), mi = mk('mimic', 'brawler', 13.4, 19.5);
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.x = 14.5; ant.y = 19.5; ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.x = 15.5; ant2.y = 19.0; ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  var ant3 = spawnCreature({ species: 'ant', className: 'scout' }); ant3.x = 15.3; ant3.y = 20.2; ant3.health = ant3.maxHealth = 1e6; ant3.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; }); step(3);
+  var ants = function () { ant.x = 14.5; ant.y = 19.5; ant2.x = 15.5; ant2.y = 19.0; ant3.x = 15.3; ant3.y = 20.2; [ant, ant2, ant3].forEach(function (a) { a.kbVX = a.kbVY = 0; a.stunned = 0; }); [vs, gp, mi].forEach(function (f) { f.attackCooldown = 1e6; f.fluxAura = 0; }); };
+  var home = function (u, x, y) { u.x = x; u.y = y; u.state = 'idle'; u._fpPath = null; u._fxHideUntil = 0; };
+  out.types = A.types(); out.bodies = [V.has(vs), V.has(gp), V.has(mi)];
+  var snap = function () { var keep = function (q) { var r = {}; Object.keys(q).forEach(function (k) { var v = q[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep), d: rotDecoys.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { beams: 0, smoke: 0, puff: 0, glint: 0, fire: 0, solids: 0, flats: 0, fluxModels: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, k, v) { return elementEffects.filter(function (e) { return e.type === type && (!k || e[k] === v); })[0]; }, col = function (type, c) { return elementEffects.filter(function (e) { return e.type === type && e.color === c; })[0]; }, R = out.r = {};
+  // THE VOIDSTAR: its everyday shot (kind tendril) and its slap, MAELSTROM, EVENT HORIZON
+  ants(); step(1); var ts = spawnFollowerProjectile(vs, ant, '#bb66ff', 1, 5, function (a) { voidSlap(a); }, null, { kind: 'tendril' }); step(3); R.shot = { owned: !!ts && view3dOwnsFx(ts), glows: A.stats.fire, same: same() }; pk();
+  var sl = null; for (var i = 0; i < 80 && !sl; i++) { step(1); sl = of('tendrilslap'); } step(3); R.shot.slap = !!sl && view3dOwnsFx(sl); R.shot.tent = A.stats.fluxModels; pk(); step(20); elementEffects.length = 0; ants(); step(2);
+  R.mael = { fired: maelstrom(vs) }; var ml = of('maelstrom', 'by', vs); step(14); R.mael.owned = !!ml && view3dOwnsFx(ml); R.mael.st = st(); pk(); gfxLow = true; V.draw(null); R.mael.low = st(); gfxLow = false; R.mael.same = same(); if (ml) ml.life = 1; step(3); elementEffects.length = 0; ants(); step(2);
+  vs.ultimateCharge = 100; R.hz = { fired: followerUltFire(vs) }; var hz = of('eventhorizon', 'by', vs); step(20); R.hz.owned = !!hz && view3dOwnsFx(hz); R.hz.st = st(); pk(); gfxLow = true; V.draw(null); R.hz.low = st(); gfxLow = false; R.hz.same = same(); if (hz) hz.life = 1; step(3); elementEffects.length = 0; ants(); step(2);
+  // THE GOO PROXY: its everyday hit (the flux impact and its aura), PHASE SWAP, PROXY SWARM (its copies and their bursts)
+  gp.state = 'attack'; gp.attackAnim = 0; ELEMENT_ATTACKS.flux.physical(gp, ant); var gi = col('impact', '#9933ff'); step(4); R.ghit = { owned: !!gi && view3dOwnsFx(gi), aura: view3dOwnsFx(gp, 'fluxAura'), body: V.has(gp), same: same() }; pk(); step(40); elementEffects.length = 0; ants(); step(2);
+  var gx = gp.x, gy = gp.y; R.swap = { fired: phaseSwap(gp) }; var s1 = col('impact', '#cc66ff'), s2 = col('ring', '#9933ff'), s3 = col('impact', '#e0a8ff'); step(4); R.swap.moved = +Math.hypot(gp.x - gx, gp.y - gy).toFixed(2);
+  R.swap.owned = [s1, s2, s3].map(function (e) { return !!e && view3dOwnsFx(e); }); R.swap.st = st(); R.swap.same = same(); pk(); step(30); elementEffects.length = 0; home(gp, 12.6, 19.4); ants(); step(2);
+  gp.ultimateCharge = 100; R.prx = { fired: followerUltFire(gp) }; var cps = elementEffects.filter(function (e) { return e.type === 'gooproxy'; }); step(24); R.prx.n = cps.length; R.prx.owned = cps.every(function (e) { return view3dOwnsFx(e); }); R.prx.st = st(); pk();
+  gfxLow = true; V.draw(null); R.prx.low = st(); gfxLow = false; R.prx.same = same(); rotDecoys.forEach(function (d) { if (d.goo) d.until = frame; }); step(2); var br = col('ring', '#d9b0ff'), bi = col('impact', '#b66cf5'); step(2); R.prx.burst = !!br && view3dOwnsFx(br) && !!bi && view3dOwnsFx(bi); pk(); step(40); elementEffects.length = 0; ants(); step(2);
+  // THE RIFT MIMIC: its everyday hit (the shard shot, its impact and its aura), GRAVITY SLAM, RIFT IMPALE, SHARD VORTEX
+  mimicShotStrike(mi, ant); var ms = of('mimicshot', 'by', mi); step(12); R.mhit = { owned: !!ms && view3dOwnsFx(ms), solids: A.stats.solids, beams: A.stats.beams, same: same() }; pk();
+  step(8); R.mhit.strike = !!ms && ms.life > 0 && view3dOwnsFx(ms) && A.stats.solids > 1; R.mhit.lost = !col('impact', '#9933ff'); R.mhit.aura = view3dOwnsFx(mi, 'fluxAura'); pk(); step(30); elementEffects.length = 0; ants(); step(2);
+  R.slam = { fired: gravitySlam(mi) }; var gr = col('ring', '#bb66ff'), gi2 = col('impact', '#bb66ff'); step(4); R.slam.owned = !!gr && view3dOwnsFx(gr) && !!gi2 && view3dOwnsFx(gi2); R.slam.st = st(); R.slam.same = same(); pk(); gfxLow = true; V.draw(null); R.slam.low = st(); gfxLow = false; step(40); elementEffects.length = 0; ants(); step(2);
+  R.rift = { fired: riftImpale(mi) }; var rg = of('riftglitch', 'by', mi); step(4); R.rift.out = !!rg && view3dOwnsFx(rg); R.rift.bars = A.stats.solids; step(10); R.rift.up = !!rg && view3dOwnsFx(rg); R.rift.st = st(); R.rift.same = same(); pk(); step(30); elementEffects.length = 0; home(mi, 13.4, 19.5); ants(); step(2);
+  mi.ultimateCharge = 100; R.vx = { fired: followerUltFire(mi) }; var vx = of('shardvortex', 'by', mi); step(24); R.vx.owned = !!vx && view3dOwnsFx(vx); R.vx.st = st(); pk(); gfxLow = true; V.draw(null); R.vx.low = st(); gfxLow = false; R.vx.same = same(); if (vx) vx.life = 1; step(3);
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Rift Mimic's entry made to fail: its slam is the game's 2D drawing again, the view and the other forms go on
+  elementEffects.length = 0; ants(); step(2); gravitySlam(mi); var gr2 = col('ring', '#bb66ff'); step(2); A.breakFor('mimic'); step(2);
+  out.fault = { bad: A.bad(), owned: !!gr2 && view3dOwnsFx(gr2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(mi), others: V.has(vs) }; A.mend('mimic'); step(2);`));
+if (FLX !== null) {
+    check('the registry: the flux line\'s entries (the Voidstar, the Goo Proxy, the Rift Mimic), their effects and shots; their bodies the view\'s', () => {
+        ok(!FLX.none, 'the page left no result'); ok(!FLX.threw, FLX.threw); same(FLX.errs.join(' | '), '', 'errors'); same(FLX.state, 'ready', 'the view');
+        same(JSON.stringify([FLX.types.voidstar, FLX.types.gooproxy, FLX.types.mimic]), JSON.stringify([['tendrilslap', 'maelstrom', 'eventhorizon', 'shot:tendril'], ['impact', 'ring', 'gooproxy'], ['mimicshot', 'impact', 'ring', 'riftglitch', 'shardvortex']]), 'what each draws');
+        same(JSON.stringify(FLX.bodies), '[true,true,true]', 'their bodies the view\'s');
+    });
+    check('THE VOIDSTAR: its shot and its slap (the approved tentacles), MAELSTROM (its crystals) and EVENT HORIZON: each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = FLX.r; same(JSON.stringify([R.shot.owned, R.shot.glows > 0, R.shot.slap, R.shot.tent >= 1]), '[true,true,true,true]', 'the shot and its slap: ' + JSON.stringify(R.shot));
+        same(JSON.stringify([R.mael.fired, R.mael.owned]), '[true,true]', 'MAELSTROM'); ok(R.mael.st.solids >= 25, 'its crystals: ' + JSON.stringify(R.mael.st));
+        ok(R.mael.low.solids < R.mael.st.solids && R.mael.low.solids <= FLX.cap.gem / 2 + 4, 'LOW graphics: ' + JSON.stringify(R.mael.low) + ' of ' + JSON.stringify(R.mael.st));
+        same(JSON.stringify([R.hz.fired, R.hz.owned]), '[true,true]', 'EVENT HORIZON'); ok(R.hz.st.beams >= 40 && R.hz.st.solids >= 1 && R.hz.st.ribbons >= 3, 'its ball, its rings and arcs: ' + JSON.stringify(R.hz.st));
+        ok(R.hz.low.beams <= FLX.cap.beam / 2 && R.hz.low.glint < R.hz.st.glint, 'LOW graphics: ' + JSON.stringify(R.hz.low) + ' of ' + JSON.stringify(R.hz.st));
+    });
+    check('THE GOO PROXY: its hit (its goo and its aura), PHASE SWAP (both spots) and PROXY SWARM (the goo copies as models, their bursts): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = FLX.r; same(JSON.stringify([R.ghit.owned, R.ghit.aura, R.ghit.body]), '[true,true,true]', 'the hit and its aura');
+        same(JSON.stringify([R.swap.fired, R.swap.owned]), '[true,[true,true,true]]', 'PHASE SWAP'); ok(R.swap.moved > 0.5 && R.swap.st.beams > 0, 'the swap: ' + JSON.stringify(R.swap));
+        same(JSON.stringify([R.prx.fired, R.prx.n, R.prx.owned, R.prx.st.fluxModels >= 3, R.prx.burst]), '[true,3,true,true,true]', 'PROXY SWARM: ' + JSON.stringify(R.prx.st));
+    });
+    check('THE RIFT MIMIC: its shard shot (its blade, its hit, its aura), GRAVITY SLAM, RIFT IMPALE (gone and back) and SHARD VORTEX (its blades): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = FLX.r; same(JSON.stringify([R.mhit.owned, R.mhit.solids > 0, R.mhit.beams > 0, R.mhit.strike, R.mhit.aura]), '[true,true,true,true,true]', 'the shard shot and its strike (drawn by the shot: the game\'s own impact for it is lost, made inside the effects\' update): ' + JSON.stringify(R.mhit));
+        same(JSON.stringify([R.slam.fired, R.slam.owned]), '[true,true]', 'GRAVITY SLAM'); ok(R.slam.st.solids >= 6 && R.slam.low.smoke < R.slam.st.smoke, 'its blades and dust, and LOW: ' + JSON.stringify(R.slam.st) + ' / ' + JSON.stringify(R.slam.low));
+        same(JSON.stringify([R.rift.fired, R.rift.out, R.rift.up]), '[true,true,true]', 'RIFT IMPALE'); ok(R.rift.bars >= 6 && R.rift.st.solids >= 1, 'its bars and its spike: ' + JSON.stringify(R.rift));
+        same(JSON.stringify([R.vx.fired, R.vx.owned]), '[true,true]', 'SHARD VORTEX'); ok(R.vx.st.solids >= 4 && R.vx.low.smoke < R.vx.st.smoke, 'its blades and wind, and LOW: ' + JSON.stringify(R.vx.st) + ' / ' + JSON.stringify(R.vx.low));
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect, shot and copy as it was)', () => {
+        const P = FLX.peak, C = FLX.cap; ok(P.beams <= C.beam && P.smoke <= C.smoke && P.puff <= C.puff && P.glint <= C.glint && P.fire <= C.fire && P.fluxModels <= 7, 'over the budget: ' + JSON.stringify(P));
+        const R = FLX.r; same(JSON.stringify([R.shot.same, R.mael.same, R.hz.same, R.ghit.same, R.swap.same, R.prx.same, R.mhit.same, R.slam.same, R.rift.same, R.vx.same]), JSON.stringify(new Array(10).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one flux form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = FLX.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['mimic'], false, 'ready', true, true, true]), 'after the fault');
+    });
+    check('the game\'s side: the flux aura round a unit on its hit asks the view first (js/draw.js)', () => { ok(/view3dOwnsFx\(actor, "fluxAura"\)/.test(rd('js/draw.js')), 'js/draw.js'); });
+}
+
 group('APPROVED LOOKS WIN (the owner, 2026-11-21): in a card battle an Ultimate the attacks\' registry draws is not drawn again by the battle\'s fields (view3d/fields.js); one it does not draw still is');
 const WON = realPage('dev&cards&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; window.requestAnimationFrame = function () { return 0; }; gfxLow = false; _fp.gfxSaved = 'high'; classPickerOpen = false; crystalMenuOpen = false; selectedUnits.clear();
   actors = actors.filter(function (a) { return !(a instanceof Predator) && !a.isClone && !a.isFollower; }); followers.length = 0; for (var k in followerByElement) followerByElement[k].length = 0;
   var cells = partyRoomCells('crystal_chamber'), c0 = cells[Math.floor(cells.length * 0.5)]; put(c0[0], c0[1]);
   var mk = function (ev, dx) { var D = EVOLUTIONS[ev]; spawnFollowerAtCrystal(D.element); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + dx; f.y = player.y + 0.6;
     f.element = D.element; f.role = D.role; f.evolved = ev; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f); f.health = f.maxHealth = 1e6; f.currentWill = 999; return f; };
-  var th = mk('thunderhead', 0.5), vs = mk('voidstar', 1.0); partyTick();
+  var th = mk('thunderhead', 0.5), vs = mk('voidstar', 1.0), jr = mk('jellyram', 1.5); partyTick();
   var foe = function (x, y) { var e = spawnCreature({ species: 'ant', className: 'scout' }), q = _fpNearestCellOpen(x, y); e.x = q[0]; e.y = q[1]; e.health = e.maxHealth = 1e6; e.provoked = false; e.state = 'wander'; return e; };
   var foes = [foe(player.x + 3, player.y + 0.2), foe(player.x + 3.6, player.y + 1.3), foe(player.x + 3.4, player.y - 1)];
-  var tick = function (n) { for (var i = 0; i < n; i++) { foes.forEach(function (a) { a.health = a.maxHealth; }); th.health = th.maxHealth; vs.health = vs.maxHealth; player.health = player.maxHealth; render(); } };
-  tick(4); out.chose = cardBattleChoose(foes[0]); var R = out.won = {}, storm = null, hole = null;
+  var tick = function (n) { for (var i = 0; i < n; i++) { foes.forEach(function (a) { a.health = a.maxHealth; }); th.health = th.maxHealth; vs.health = vs.maxHealth; jr.health = jr.maxHealth; player.health = player.maxHealth; render(); } };
+  tick(4); out.chose = cardBattleChoose(foes[0]); var R = out.won = {}, storm = null, hole = null, jelly = null;
   var of = function (t) { return elementEffects.filter(function (e) { return e.type === t && e._cbUlt; })[0] || null; };
   var see = function (e) { return { owned: A.owns(e), shown: cardUltShown(e), list: cardUltFields().map(function (q) { return q.type || q.kind; }).join(), fields: V.stats.fields }; };
-  for (var g = 0; g < 900 && !(hole && R.hole); g++) { tick(1); if (cardBattlePhase() !== 'on' || cardBattleTurn() !== 'you') continue; var cur = _cbCurrent();
+  for (var g = 0; g < 1400 && !(jelly && R.jelly); g++) { tick(1); if (cardBattlePhase() !== 'on' || cardBattleTurn() !== 'you') continue; var cur = _cbCurrent();
     if (cur === th && !storm) { th.ultimateCharge = 100; R.thPlayed = cardBattlePlay(th, 'ult', null, foes[0]); tick(20); storm = of('thunderstorm'); if (storm) R.storm = see(storm); }
     else if (cur === vs && storm && !hole) { R.hidden = see(storm); vs.ultimateCharge = 100; R.vsPlayed = cardBattlePlay(vs, 'ult', null, foes[0]); tick(20); hole = of('eventhorizon'); if (hole) { R.hole = see(hole); R.stormThen = see(storm); } }
+    else if (cur === jr && hole && !jelly) { R.holeHidden = see(hole); jr.ultimateCharge = 100; R.jrPlayed = cardBattlePlay(jr, 'ult', null, foes[0]); tick(20); jelly = of('jellyshield'); if (jelly) R.jelly = see(jelly); }
     else if (cur && cur !== player) { _cb.acted.add(cur); _cbAfterAct(_cbF()); } }`));
-if (WON !== null) check('THUNDERSTORM (the Thunderhead\'s, the registry\'s approved look): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; EVENT HORIZON (the Void Star\'s, not in the registry) drawn by the fields', () => {
+if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and the Void Star\'s, the registry\'s): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; JELLY SHIELDS (the Jelly Ram\'s, not in the registry) drawn by the fields', () => {
     ok(!WON.none, 'the page left no result'); ok(!WON.threw, WON.threw); same(WON.errs.join(' | '), '', 'errors'); same(WON.state, 'ready', 'the view'); same(WON.chose, true, 'the battle');
-    const R = WON.won; same(JSON.stringify([R.thPlayed, R.vsPlayed]), '[true,true]', 'both Ultimates played');
+    const R = WON.won; same(JSON.stringify([R.thPlayed, R.vsPlayed, R.jrPlayed]), '[true,true,true]', 'the three Ultimates played');
     same(JSON.stringify(R.storm), JSON.stringify({ owned: true, shown: true, list: 'thunderstorm', fields: 0 }), 'the storm in its turn: the registry\'s, handed to the fields, none of theirs drawn');
     same(JSON.stringify(R.hidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the storm in the Void Star\'s turn: drawn by neither');
-    same(JSON.stringify(R.hole), JSON.stringify({ owned: false, shown: true, list: 'eventhorizon', fields: 1 }), 'the black hole: not the registry\'s, drawn by the fields');
+    same(JSON.stringify(R.hole), JSON.stringify({ owned: true, shown: true, list: 'eventhorizon', fields: 0 }), 'the black hole in its turn: the registry\'s (the flux line), none of the fields\' drawn');
     same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
+    same(JSON.stringify(R.holeHidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the black hole in the Jelly Ram\'s turn: drawn by neither');
+    same(JSON.stringify([R.jelly.owned, R.jelly.shown, R.jelly.fields >= 1, /jellyshield/.test(R.jelly.list)]), '[false,true,true,true]', 'the jelly shields: not the registry\'s, drawn by the fields: ' + JSON.stringify(R.jelly));
     ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
 

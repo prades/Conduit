@@ -32789,10 +32789,10 @@ function view3dFluxForms(K) {
             const an = (i + H(i, s, 41)) / n * TAU, v = (0.4 + 0.6 * H(i, s, 42)) * R / 18, y = Y + (0.035 + 0.03 * H(i, s, 43)) * t * (0.6 + 0.5 * size) - 0.0032 * t * t;
             if (y < Yf)
                 continue;
-            goo(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, (0.07 + 0.05 * H(i, s, 44)) * (0.6 + 0.7 * size) * k, i % 3 ? GOO : GOO2, Math.min(0.95, 2 * k));
+            goo(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, (0.1 + 0.07 * H(i, s, 44)) * (0.6 + 0.7 * size) * k, i % 3 ? GOO : GOO2, Math.min(0.95, 2 * k));
         }
         const u = clamp(g / 8, 0, 1);
-        flat(DISCF, X, Yf, Z, (0.18 + 0.3 * size) * outC(u), GOO2[0], GOO2[1], GOO2[2], 0.5 * k);
+        flat(DISCF, X, Yf, Z, (0.18 + 0.3 * size) * outC(u), GOO2[0], GOO2[1], GOO2[2], 0.45 * clamp(1 - g / 22, 0, 1));
         flat(RINGF, X, Yf, Z, (0.25 + R) * outC(clamp(g / 12, 0, 1)), GOO[0], GOO[1], GOO[2], 0.7 * (1 - clamp(g / 16, 0, 1)));
         if (g < 22)
             for (let i = 0; i < (low() ? 3 : 6); i++) {
@@ -32838,7 +32838,7 @@ function view3dFluxForms(K) {
         flat(GLOWF, X, Yf, Z, 0.55 + 0.25 * bh, VIO[0], VIO[1], VIO[2], 0.6 * k);
         for (let i = 0; i < (low() ? 3 : 6); i++) {
             const an = i / 6 * TAU + f0 * 0.05, r = 0.22 + 0.12 * bh;
-            haze(X + Math.cos(an) * r, Yf + bh * (0.35 + 0.25 * Math.sin(f0 * 0.07 + i)), Z + Math.sin(an) * r, 0.28 + 0.12 * bh, i % 2 ? VIO : VIO2, 0.32 * k);
+            haze(X + Math.cos(an) * r, Yf + bh * (0.35 + 0.25 * Math.sin(f0 * 0.07 + i)), Z + Math.sin(an) * r, 0.3 + 0.14 * bh, i % 2 ? VIO : VIO2, 0.45 * k);
         }
         for (let i = 0; i < (low() ? 4 : 8); i++) {
             const u = ((f0 * 0.02 + H(i, s, 1)) % 1), an = H(i, s, 2) * TAU + f0 * 0.09, r = (0.3 + 0.12 * bh) * (1 - 0.4 * u);
@@ -32909,14 +32909,14 @@ function view3dFluxForms(K) {
                 begin(m) { if (!m.data)
                     m.data = { cx: CR.x, cz: CR.z }; },
                 draw(m, age, f0, b) {
-                    const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), Y = Yf + pxU(26), D = m.data, sc = 0.62 * (env.scale ? env.scale() / 0.66 : 1);
+                    const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), Y = Yf + pxU(26), D = m.data, sc = 0.66;
                     for (let k = 0; k < 2; k++) {
                         const a = age - k * 6;
                         if (a < 0 || a > 10)
                             continue;
                         const u = clamp(a / 8, 0, 1), side = k ? 1 : -1, fa = Math.min(1, a / 1.5, (9 - a) / 2.5);
                         if (a <= 8)
-                            tentacle(X + D.cx * side * 0.42, Y + 0.18, Z + D.cz * side * 0.42, u, sc, k === 1, fa);
+                            tentacle(X + D.cx * side * 0.5, Y + 0.3, Z + D.cz * side * 0.5, u, sc, k === 1, fa);
                         if (a >= 5) {
                             const ia = (a - 5) / 4, hx = X + D.cx * side * 0.08, hy = Yf + pxU(18);
                             if (ia < 1) {
@@ -32945,8 +32945,8 @@ function view3dFluxForms(K) {
                     const k = fade;
                     for (let arm = 0; arm < 3; arm++)
                         for (let j = 0; j < 6; j++) {
-                            const an = arm * TAU / 3 + j * 0.62 + age * 0.17, rd = R * (0.14 + 0.13 * j), C = GEMC[(arm + j) % 3], x = X + Math.cos(an) * rd, z = Z + Math.sin(an) * rd, y = Yf + 0.08 + pxU(2 + j * 0.7) + 0.03 * Math.sin(age * 0.2 + j);
-                            const L = (0.11 + 0.022 * j) * k * (0.5 + 0.5 * grow);
+                            const an = arm * TAU / 3 + j * 0.62 + age * 0.17, rd = R * (0.14 + 0.13 * j), C = GEMC[(arm + j) % 3], x = X + Math.cos(an) * rd, z = Z + Math.sin(an) * rd, y = Yf + 0.1 + pxU(4 + j * 2.5) + 0.03 * Math.sin(age * 0.2 + j);
+                            const L = (0.15 + 0.03 * j) * k * (0.5 + 0.5 * grow);
                             solid(GEMS, x, y, z, Math.cos(an + 1.2) * 0.5, 1, Math.sin(an + 1.2) * 0.5, an, L, L * 0.62, C[0][0], C[0][1], C[0][2], C[1][0] * 0.55, C[1][1] * 0.55, C[1][2] * 0.55);
                         }
                     const N = 12, P = 34;
@@ -32972,9 +32972,9 @@ function view3dFluxForms(K) {
                     const o = m.o, s = m.seed, X = o.x, Z = o.y, Yf = floorY(X, Z), R = o.radius || HZ.radius || 4, life = o.life || 0, k = Math.min(1, age / 10, life / 20);
                     if (k <= 0)
                         return;
-                    const open = outC(clamp(age / 14, 0, 1)) * (life < 16 ? clamp(life / 16, 0, 1) : 1), Yc = Yf + 0.62, rB = 0.42 * open, spin = age * 0.12, tick = HZ.tick || 30, since = age % tick, crush = age > 0 && since < 12 ? 1 - since / 12 : 0;
-                    flat(DISCF, X, Yf, Z, R, 0.48, 0.29, 0.87, 0.12 * k);
-                    flat(DISCF, X, Yf, Z, 0.85 * open, 0.08, 0.03, 0.16, 0.45 * k);
+                    const open = outC(clamp(age / 14, 0, 1)) * (life < 16 ? clamp(life / 16, 0, 1) : 1), Yc = Yf + 1.05, rB = 0.24 * open, spin = age * 0.12, tick = HZ.tick || 30, since = age % tick, crush = age > 0 && since < 12 ? 1 - since / 12 : 0;
+                    flat(DISCF, X, Yf, Z, R * 0.9, 0.48, 0.29, 0.87, 0.05 * k);
+                    flat(DISCF, X, Yf, Z, 0.4 * open, 0.08, 0.03, 0.16, 0.35 * k);
                     for (let i = 0; i < 3; i++) {
                         const r0 = R * (0.3 + i * 0.25) + 0.25, a0 = -spin * (1 + i * 0.2) + i * 2.1;
                         ribbon(26, (j, P) => { const u = j / 25, an = a0 + u * 2.2, rr = r0 * (1 - 0.35 * u); P.x = X + Math.cos(an) * rr; P.z = Z + Math.sin(an) * rr; P.y = Yf + 0.004; P.w = 0.03 + 0.03 * Math.sin(u * PI); P.r = LILAC[0]; P.g = LILAC[1]; P.b = LILAC[2]; P.a = 0.6 * k * Math.sin(u * PI); });
@@ -33021,13 +33021,13 @@ function view3dFluxForms(K) {
                         return;
                     const p = m.o, X = m.x, Z = m.y, Y = floorY(X, Z) + SHOT_UP, vx = p.vx || 0, vz = p.vy || 0, sp = Math.hypot(vx, vz) || 1, ux = vx / sp, uz = vz / sp;
                     SHOTS.set(m.owner, { x: X, y: Z, at: GM.frame });
-                    haze(X, Y, Z, 0.32, VIO, 0.35);
-                    glow(X, Y, Z, 0.17 + 0.02 * Math.sin(age * 0.6), VIO2, 0.95);
-                    glow(X, Y, Z, 0.07, PALE, 1);
-                    glint(X, Y, Z, 0.22, 0.8);
+                    haze(X, Y, Z, 0.45, VIO, 0.4);
+                    glow(X, Y, Z, 0.26 + 0.03 * Math.sin(age * 0.6), VIO2, 0.95);
+                    glow(X, Y, Z, 0.1, PALE, 1);
+                    glint(X, Y, Z, 0.32, 0.8);
                     for (let i = 1; i <= 3; i++) {
                         const d = i * 0.17;
-                        glow(X - ux * d + Math.sin(age * 0.5 + i) * 0.04, Y + Math.cos(age * 0.5 + i) * 0.04, Z - uz * d, 0.085 - i * 0.017, VIO2, 0.62 - i * 0.12);
+                        glow(X - ux * d * 1.4 + Math.sin(age * 0.5 + i) * 0.05, Y + Math.cos(age * 0.5 + i) * 0.05, Z - uz * d * 1.4, 0.13 - i * 0.025, VIO2, 0.7 - i * 0.14);
                     }
                 }
             },
@@ -33140,7 +33140,7 @@ function view3dFluxForms(K) {
                         return;
                     const X = D.tx, Z = D.ty, Yf = floorY(X, Z);
                     if (D.kind === 'hit') {
-                        gooBurst(X, Yf + 0.32, Z, Yf, age - 2, s, 0.55, 0.4);
+                        gooBurst(X, Yf + 0.32, Z, Yf, age - 2, s, 0.75, 0.5);
                         return;
                     }
                     if (age < 12) {
@@ -33263,10 +33263,10 @@ function view3dFluxForms(K) {
             let act = null;
             const shot = curOf(f, 'mimicshot'), slam = curOf(f, 'ring'), rift = curOf(f, 'riftglitch'), vort = curOf(f, 'shardvortex');
             if (rift && rift.now >= RIFT_OUT && rift.now < RIFT_OUT + 20) {
-                const a = rift.now - RIFT_OUT, k = outC(clamp(a / 6, 0, 1)), hb = heightOf(b);
+                const a = rift.now - RIFT_OUT, k = outC(clamp((a - 3) / 9, 0, 1)), hb = heightOf(b);
                 BM.up = -hb * (1 - k) * 0.85;
                 BM.sx = BM.sz = lerp(0.55, 1, k);
-                BM.sq = a < 6 ? -0.9 * (1 - k) : 0.5 * Math.cos((a - 6) / 14 * PI * 2.5) * (1 - (a - 6) / 14);
+                BM.sq = a < 12 ? -0.9 * (1 - k) : 0.5 * Math.cos((a - 12) / 8 * PI * 2.5) * (1 - (a - 12) / 8);
                 BM.roll = a < 8 && a % 2 ? 0.1 * (1 - a / 8) : 0;
                 act = 0;
             }
@@ -33342,7 +33342,7 @@ function view3dFluxForms(K) {
         on(f, b, f0) { aura(f, b, f0); },
         fx: {
             mimicshot: {
-                pre: true, claim(e, f) { return e.by === f; }, span: (MS.total || 32) + 4,
+                pre: true, claim(e, f) { return e.by === f; }, span: (MS.fire || 8) + (MS.fly || 10) + 30,
                 begin(m) { if (m.data)
                     return; const e = m.o, t = e.target; m.data = { sx: e.sx, sy: e.sy, tx: t ? t.x : e.x, ty: t ? t.y : e.y, t }; MSHOT.set(m.owner, { at: GM.frame, d: m.data }); },
                 draw(m, age, f0, b) {
@@ -33351,7 +33351,12 @@ function view3dFluxForms(K) {
                         D.tx = D.t.x;
                         D.ty = D.t.y;
                     }
-                    if (age < F || age > F + Y)
+                    if (age > F + Y) {
+                        const Yt = floorY(D.tx, D.ty);
+                        fluxHit(D.tx, Yt + 0.32, D.ty, Yt, age - F - Y, m.seed, 0.8, 7);
+                        return;
+                    }
+                    if (age < F)
                         return;
                     const u = clamp((age - F) / Y, 0, 1), x = lerp(D.sx, D.tx, u), z = lerp(D.sy, D.ty, u), Y0 = floorY(D.sx, D.sy) + heightOf(b) * 0.85, Y1 = floorY(D.tx, D.ty) + 0.3, y = lerp(Y0, Y1, u) + Math.sin(PI * u) * pxU(26);
                     const dx = D.tx - D.sx, dz = D.ty - D.sy, L = Math.hypot(dx, dz) || 1, dy = (Y1 - Y0) / L + Math.cos(PI * u) * PI * pxU(26) / L, ln = 0.5;
@@ -33428,7 +33433,7 @@ function view3dFluxForms(K) {
                     const bars = (cx, cz, k, a) => {
                         const Yf = floorY(cx, cz);
                         for (let i = 0; i < 9; i++) {
-                            const yy = Yf + Hh * (i + 0.5) / 9, off = pxU((i * 37 + age * 13) % 23 - 11) * k, wd = pxU(20 - Math.abs(i - 4) * 2.5) * (1 - 0.6 * k) * 1.2, th = pxU(5 - 3 * k) * 0.9, C = i % 3 === 0 ? SWP2 : i % 3 === 1 ? VIO : DEEP;
+                            const yy = Yf + Hh * (i + 0.5) / 9, off = pxU((i * 37 + age * 13) % 23 - 11) * k, wd = pxU(20 - Math.abs(i - 4) * 2.5) * (1 - 0.6 * k) * 1.9, th = pxU(5 - 3 * k) * 1.3, C = i % 3 === 0 ? SWP2 : i % 3 === 1 ? VIO : DEEP;
                             const x0 = cx + D.cx * (off - wd / 2), z0 = cz + D.cz * (off - wd / 2);
                             if ((age + i) % 7 === 0 && k > 0.3)
                                 continue;
@@ -33442,7 +33447,7 @@ function view3dFluxForms(K) {
                             glow(D.x0, floorY(D.x0, D.y0) + Hh * 0.5, D.y0, 0.5, VIO2, 0.6 * (1 - age / 3));
                         return;
                     }
-                    const a2 = age - RIFT_OUT, Yf = floorY(X, Z), k = Math.max(0, 1 - a2 / 6), up = Math.min(1, a2 / 4), down = Math.max(0, (a2 - 10) / 8), hh = pxU(58) * 1.25 * up * (1 - down);
+                    const a2 = age - RIFT_OUT, Yf = floorY(X, Z), k = Math.max(0, 1 - a2 / 6), up = Math.min(1, a2 / 4), down = Math.max(0, (a2 - 10) / 8), hh = pxU(58) * 1.9 * up * (1 - down);
                     if (k > 0)
                         bars(X, Z, k, 0.9);
                     if (hh > 0.01) {
@@ -33460,7 +33465,7 @@ function view3dFluxForms(K) {
                         for (let i = 0; i < (low() ? 3 : 5); i++) {
                             const an = i * 1.26 + 0.4, t = Math.min(a2, 14), d = 0.12 + t * 0.045, y = Yf + 0.05 + 0.035 * t - 0.0028 * t * t;
                             if (y > Yf)
-                                solid(GEMS, X + Math.cos(an) * d, y, Z + Math.sin(an) * d, Math.cos(an + t * 0.5), 1, Math.sin(an), t, 0.09, 0.6, DEEP[0], DEEP[1], DEEP[2], 0.4, 0.15, 0.7);
+                                solid(GEMS, X + Math.cos(an) * d, y, Z + Math.sin(an) * d, Math.cos(an + t * 0.5), 1, Math.sin(an), t, 0.11, 0.3, DEEP[0], DEEP[1], DEEP[2], 0.4, 0.15, 0.7);
                         }
                     if (a2 < 14)
                         for (let i = 0; i < (low() ? 3 : 6); i++) {
@@ -33476,7 +33481,7 @@ function view3dFluxForms(K) {
                     if (k <= 0)
                         return;
                     const spin = f0 * 0.14, out = outC(clamp(age / 16, 0, 1)), tick = VX.tick || 30, since = age % tick, bite = age > 0 && since < 10 ? 1 - since / 10 : 0;
-                    flat(DISCF, X, Yf, Z, R, 0.63, 0.44, 1, 0.14 * k);
+                    flat(DISCF, X, Yf, Z, R, 0.63, 0.44, 1, 0.06 * k);
                     for (let i = 0; i < 3; i++) {
                         const r0 = R * (0.4 + i * 0.25), a0 = spin + i;
                         ribbon(24, (j, P) => { const u = j / 23, an = a0 + u * 2.4; P.x = X + Math.cos(an) * r0; P.z = Z + Math.sin(an) * r0; P.y = Yf + 0.004; P.w = 0.025 + 0.02 * Math.sin(u * PI); P.r = LILAC[0]; P.g = LILAC[1]; P.b = LILAC[2]; P.a = 0.5 * k * Math.sin(u * PI); });

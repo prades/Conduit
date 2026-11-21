@@ -9676,7 +9676,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (actor.evolved && typeof drawEvolvedOverlay === "function")
         drawEvolvedOverlay(actor, px, py, drawCtx);
     const _attBodyY = (DOME_CY + glassBot) * 0.5;
-    if (actor.fluxAura > 0) {
+    if (actor.fluxAura > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fluxAura"))) {
         const _fa = Math.min(1, actor.fluxAura / 10) * 0.88;
         const _aR = DOME_R * 2.6;
         drawCtx.save();
