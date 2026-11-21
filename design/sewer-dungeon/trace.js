@@ -6,15 +6,23 @@
 // kind: water (a channel), drain (floor at LOW, under water at HIGH), walk (a walkway or passage), floor (a room), upper (a floor a storey up), ring (the junction's walkway), nest (its dam)
 const C = [43, 47], disc = (r, n, a0, a1) => { const p = []; for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; p.push([+(C[0] + Math.cos(a) * r).toFixed(2), +(C[1] + Math.sin(a) * r).toFixed(2)]); } return p; };
 const RO = 12, RI = 9.5, PI = Math.PI;
+// where something meets the ring's outer edge: a chord between two points of the circle, an edge of the ring exactly (so a doorway can lie on it). on(x) / at(y): the circle's point at that x (north half) or y
+const cN = x => [x, +(C[1] - Math.sqrt(RO * RO - (x - C[0]) ** 2)).toFixed(2)], cW = y => [+(C[0] - Math.sqrt(RO * RO - (y - C[1]) ** 2)).toFixed(2), y], cE = y => [+(C[0] + Math.sqrt(RO * RO - (y - C[1]) ** 2)).toFixed(2), y];
+const ang = p => Math.atan2(p[1] - C[1], p[0] - C[0]), onC = a => [+(C[0] + Math.cos(a) * RO).toFixed(2), +(C[1] + Math.sin(a) * RO).toFixed(2)];
+const K = { wwA: cN(37.2), wwB: cN(40.4), top: [C[0], C[1] - RO], weA: cN(46.2), weB: cN(48.6), plA: cW(42.5), plB: cW(45), puA: cE(44.5), puB: cE(49.5), sdA: onC(Math.atan2(7.6, -9.4)), sdB: onC(Math.atan2(9.2, -8.2)) };
+// the ring's outer edge from angle a0 to a1 (a0 < a1), its arc in steps with every chord's ends among its points and no arc point between a chord's two ends
+function outer(a0, a1, chords) { const pts = []; for (let i = 0; i <= 28; i++) pts.push(a0 + (a1 - a0) * i / 28); const norm = a => { while (a < a0 - 1e-9) a += 2 * PI; return a; };
+  const cs = chords.map(([p, q]) => [norm(ang(p)), norm(ang(q))].sort((x, y) => x - y)); let as = pts.filter(a => !cs.some(c => a > c[0] - 0.02 && a < c[1] + 0.02)); for (const c of cs) as.push(c[0], c[1]);
+  return as.sort((x, y) => x - y).map(a => onC(a)); }
 const SHAPES = [
   { id: 'west_channel', lvl: -2, kind: 'water', p: [[0, 16.2], [37.2, 16.2], [37.2, 19.3], [0, 19.3]] },
-  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], [46.2, 36], [40.4, 36]] },
+  { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, K.top, K.wwB] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[48.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [48.6, 35.8]] },
-  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 36.4], [37.2, 36.4]] },
-  { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], [48.6, 36.4], [46.2, 36.4]] },
+  { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], K.wwB, K.wwA] },
+  { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], K.weB, K.weA] },
   { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[0, 14.4], [37.2, 14.4], [37.2, 16.2], [0, 16.2]] },
   { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 19.3], [37.2, 19.3], [37.2, 21], [0, 21]] },
-  { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [25, 12.6], [25, 14.4], [1.5, 14.4]] },
+  { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
   { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [38, 5.9], [38, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
   { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 22], [3.5, 21], [7.5, 21], [8.5, 22.5], [10.5, 24.5], [11.5, 28], [14, 30.5], [12.5, 31], [9.5, 27], [8, 24.8], [3.5, 24.8], [2.5, 23.8]] },
   { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 21], [16.5, 21], [16.5, 29.5], [14.5, 29.5]] },
@@ -23,14 +31,14 @@ const SHAPES = [
   { id: 'hall_south', lvl: -1, kind: 'walk', p: [[23.5, 35.5], [25, 35.5], [25, 41.5], [23.5, 41.5]] },
   { id: 'sw_storage', lvl: -1, kind: 'floor', p: [[14.5, 43.5], [16, 42], [16, 40.5], [17, 39.5], [20, 39.5], [20.5, 41.5], [22.5, 41.5], [22.5, 48], [15.5, 48], [14.5, 47]] },
   { id: 'sw_plaza', lvl: -1, kind: 'floor', p: [[22.5, 41.5], [26.5, 41.5], [26.5, 40.3], [29.6, 40.3], [29.6, 45], [27, 45], [27, 48], [22.5, 48]] },
-  { id: 'plaza_ring', lvl: -1, kind: 'walk', p: [[29.6, 42.5], [31.4, 42.5], [31.4, 45], [29.6, 45]] },
+  { id: 'plaza_ring', lvl: -1, kind: 'walk', p: [[29.6, 42.5], K.plA, K.plB, [29.6, 45]] },
   { id: 'south_loop', lvl: -1, kind: 'walk', p: [[24, 48], [26.5, 48], [26.5, 51.5], [28.5, 53.5], [28.5, 58], [26.5, 58], [26.5, 54.5], [24, 52]] },
   { id: 'subway_exit', lvl: -1, kind: 'floor', p: [[15, 61], [17, 59], [24, 59], [25, 58], [28.5, 58], [28.5, 59.5], [23, 64], [15.5, 64], [14.5, 63]] },
-  { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, 58], [33.6, 54.6], [34.8, 56.2], [28.5, 60.5]] },
-  { id: 'junction_ring_w', lvl: -1, kind: 'ring', p: disc(RO, 20, PI / 2, PI * 1.5).concat(disc(RI, 20, PI * 1.5, PI / 2)) },
-  { id: 'junction_ring_e', lvl: -1, kind: 'ring', p: disc(RO, 20, -PI / 2, PI / 2).concat(disc(RI, 20, PI / 2, -PI / 2)) },
+  { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, 58], K.sdA, K.sdB, [28.5, 59.5]] },
+  { id: 'junction_ring_w', lvl: -1, kind: 'ring', p: outer(PI / 2, PI * 1.5, [[K.sdB, K.sdA], [K.plB, K.plA], [K.wwA, K.wwB], [K.wwB, K.top]]).concat(disc(RI, 20, PI * 1.5, PI / 2)) },
+  { id: 'junction_ring_e', lvl: -1, kind: 'ring', p: outer(-PI / 2, PI / 2, [[K.top, K.weA], [K.weA, K.weB], [K.puA, K.puB]]).concat(disc(RI, 20, PI / 2, -PI / 2)) },
   { id: 'junction_nest', lvl: -2, kind: 'nest', p: disc(RI, 40, 0, PI * 2) },
-  { id: 'pur_pass', lvl: 0, kind: 'walk', p: [[54.8, 44.5], [60.5, 44.5], [61.5, 45.5], [64.5, 45.5], [64.5, 48.5], [61.5, 48.5], [60.5, 49.5], [54.5, 49.5]] },
+  { id: 'pur_pass', lvl: 0, kind: 'walk', p: [K.puA, [60.5, 44.5], [61.5, 45.5], [64.5, 45.5], [64.5, 48.5], [61.5, 48.5], [60.5, 49.5], K.puB] },
   { id: 'purification', lvl: 0, kind: 'floor', p: [[64.5, 42.5], [65.5, 41.5], [66.5, 40.5], [70, 40.5], [71, 41.5], [76.5, 41.5], [77.5, 42.5], [77.5, 50.5], [76.5, 51.5], [66, 51.5], [64.5, 50]] },
   { id: 'ne_door', lvl: 0, kind: 'walk', p: [[48.6, 6.5], [52.5, 6.5], [52.5, 9], [48.6, 9]] },
   { id: 'ne_offices', lvl: 0, kind: 'floor', p: [[52.5, 3.8], [54, 2.6], [64, 2.6], [64.8, 3.4], [64.8, 10.6], [58, 10.6], [56.5, 9], [52.5, 9]] },
