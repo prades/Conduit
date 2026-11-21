@@ -10,7 +10,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **The agent's, provisional:** Crushing; 36 fixed (not by the gun's level, no role's kit on it); the cube's pace, 3 squares; its square now in everyone's way; a short lunge for the look. `CARD-BATTLES.md` §2.69, §11.32.
 - **Not done:** no card picture, no pose for the cube; nothing of it in the real-time game (by the owner's answer).
 - `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`, `tests/cardbattle.js` (2 new checks, 2 changed), `docs/CARD-BATTLES.md` §2.69, §9, §10, §11.32, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `TUTORIAL.md`, `bible.html`.
-- **Verified:** VERIFIED_LINE
+- **Verified:** `node tests/run.js`: all 132 suites pass (tests/cardbattle.js THE GUNSLINGER'S TURN, 8 checks). In a real browser at 1180 × 820 (`play.html?engine=3d&cards`), with an empty gun: the cube's cards SHOOT (NO AMMO), SMASH (READY) and HOLD FIRE; SMASH on an ant 7 squares off walked it 3, 3 and 1 squares over three turns (YOU · MOVES 3 TILES), then YOU · SMASH took the ant from 300 to 253 (36, an ant being weak to Crushing); no page errors. **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17aw` · branch `claude/start-game-project-HSh7Z` · card battles: the other seven fields animated in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Do the other seven fields".
