@@ -485,6 +485,7 @@ function rotSpikeDrawItems(list) {
     if (typeof fx3dOn !== "function" || !fx3dOn("rotspike") || !fx3dReady("rotspike") || typeof elementEffects === "undefined") return;
     for (const e of elementEffects) {
         if (e.type !== "toxicpuddle" || !e.shards || !e.shards.length) continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (the 3D view draws this puddle's spikes itself: view3d/attacks_toxic.js)
         const since = (e.maxLife - e.life) - e.shardAt; if (!(since >= 0 && since < 18)) continue;
         const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), rise = since < 3 ? since / 3 : since > 12 ? Math.max(0, (18 - since) / 6) : 1;
         for (const s of e.shards) { const c0 = Math.floor(Math.abs(s[0] * 3.1 + s[1] * 1.7) * 7919) % 8;

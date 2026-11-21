@@ -18,7 +18,7 @@ function view3dAttacks(env) {
   const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };   // (a fixed number in [0, 1) for a particle i of an effect s)
   const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
   // the agent's budget (provisional): points a frame, crystals a frame; halved on LOW graphics
-  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments)
+  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments; strand: the toxic line's strands of goo and smoke, view3d/attacks_toxic.js, their segments)
 
   // ── THE POOLS ──
   const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';   // (a size below 0: a puff with no rim)
@@ -147,7 +147,7 @@ function view3dAttacks(env) {
   const memos = new Map(); let seq = 0;
   function memo(o, type, owner, f0) { let m = memos.get(o); if (!m) { m = { o, type, owner, seed: (seq++ % 997) + 1, born: f0, l0: o.maxLife || o.life || 0, age: 0, seen: f0, x: o.x || 0, y: o.y || 0, gone: false, data: null }; memos.set(o, m); } return m; }
   const claimed = new Set(), bad = new Set(); let drew = 0, errs = 0, lastErr = null;
-  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js)   // (held: the swallowed drawn this frame, being pulled in)
+  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, strands: 0, models: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js; strands, models: the toxic line's, view3d/attacks_toxic.js)   // (held: the swallowed drawn this frame, being pulled in)
   // ── THE REGISTRY ──
   const FORMS = {};
 
@@ -281,7 +281,7 @@ function view3dAttacks(env) {
   const KIT = { T, GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, PUFF, GLINT, FIRE, SMOKE, solid, QUILLS, ROCKS, SPIKES, CRATERS, HEXC, MOUNDS, VENTS, BLOBS, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf,
     curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null,
     crystal, flatK, RINGS, DISCS, SNOW, FROST, COLD, GLOW, iceHit: FORMS.maw.fx.impact.draw, ice: null,   // (the ice line's: the Maw's crystals, rings, discs and colours, and his bite's burst)
-    CAP, stats, hooks: [], elec: null };   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
+    CAP, stats, hooks: [], elec: null, toxic: null };   // (toxic: the toxic line's measures, view3d/attacks_toxic.js)   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
   try { KIT.measures = GM.fireMeasures; } catch (e) { KIT.measures = {}; }
   if (typeof view3dFireForms === 'function') Object.assign(FORMS, view3dFireForms(KIT));
   // THE ICE LINE (view3d/attacks_ice.js): the Igloo Skater and the Rimestar, from the same kit (and the fire line's body helpers). Made apart: a fault in making them leaves them to the 2D, the rest going on
@@ -290,6 +290,9 @@ function view3dAttacks(env) {
   // THE ELECTRIC LINE (view3d/attacks_electric.js): the Thunderhead, the Electro Skink, the Static Orb and the Hover Shell, from the same kit and its own lightning. Made apart, as the ice line
   try { KIT.elec = GM.electricMeasures; } catch (e) { KIT.elec = {}; }
   if (typeof view3dElectricForms === 'function') { try { Object.assign(FORMS, view3dElectricForms(KIT)); } catch (x) { KIT.hooks.length = 0; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the electric line\'s attacks in 2D: ' + lastErr); } }
+  // THE TOXIC LINE (view3d/attacks_toxic.js): the Blight Spider, the Seeper and the Rotshard, from the same kit and its own strands. Made apart, as the ice line
+  try { KIT.toxic = GM.toxicMeasures; } catch (e) { KIT.toxic = {}; }
+  if (typeof view3dToxicForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dToxicForms(KIT)); } catch (x) { KIT.hooks.length = nh; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the toxic line\'s attacks in 2D: ' + lastErr); } }
   const hook = k => { for (const h of KIT.hooks) if (h[k]) h[k](); };
 
   // ── EACH FRAME ──
@@ -315,6 +318,8 @@ function view3dAttacks(env) {
   function body(f, id, b, f0) { const E = FORMS[id]; if (!E) return; const h = b.holder; if (E.tilts) { h.rotation.order = 'YXZ'; h.rotation.x = 0; h.rotation.z = 0; } if (!E.body || bad.has(id)) return; try { E.body(f, b, f0); } catch (x) { fail(id, x); } }
   // a form whose body goes under the floor and is still the view's there (BURROW STRIKE, FAULTLINE: its mound is the view's)
   function burrows(id) { const E = FORMS[id]; return !!(E && E.burrows && !bad.has(id)); }
+  // a form whose body the view still draws while the game has it in SMOKE FORM (the toxic element's hit: see-through for its 45 frames; view3d/attacks_toxic.js): the rest are left to the 2D then
+  function smokes(id) { const E = FORMS[id]; return !!(E && E.smoke && !bad.has(id)); }
   // where one swallowed is drawn this frame (or null)
   function held(a) { const by = a._swallowedBy; if (!by || !by.evolved) return null; const m = zeroOf.get(by), E = FORMS[by.evolved]; if (!m || !E || bad.has(by.evolved)) return null; const b = env.bodyOf(by); if (!b) return null;
     try { const P = E.fx[m.type].held(m, a, b, HP); if (P) stats.held++; return P; } catch (x) { fail(by.evolved, x); return null; } }
@@ -360,7 +365,7 @@ function view3dAttacks(env) {
   // nothing drawn (the view hidden, a frame with no picture): all put away
   function clear() { PUFF.n = GLINT.n = FIRE.n = SMOKE.n = iceN = RINGS.n = DISCS.n = ribN = 0; for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; claimed.clear(); for (const C of claimedK.values()) C.clear(); for (const L of tint.values()) if (L.k > 0) frostBody(L.b, 0); hook('clear'); finish(); }
   return {
-    stats, FORMS, CAP, begin, body, held, draw, clear, burrows,
+    stats, FORMS, CAP, begin, body, held, draw, clear, burrows, smokes,
     owns(o, k) { if (k) { const C = claimedK.get(k); return !!C && C.has(o); } return claimed.has(o); },
     // what the registry draws: each form's effect types, and its shots by kind (for the tests and the docs)
     types() { const out = {}; for (const id of Object.keys(FORMS)) { const E = FORMS[id]; out[id] = Object.keys(E.fx).concat(E.shots ? Object.keys(E.shots).map(k => 'shot:' + k) : []); } return out; },

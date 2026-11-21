@@ -186,8 +186,7 @@ const GAMEVIEW = (function () {
   function follower(f, f0, dt) { try { return followerIn(f, f0, dt); } catch (e) {
       const d = f.evolved ? GM.evolvedDef(f) : null, key = d ? d.id : GM.eggSheet(f), b = live.get(f); if (key) bad.add(key); if (b) { b.holder.visible = false; live.delete(f); }
       if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + key + ' in 2D: ' + ((e && e.message) || e)); return false; } }
-  function followerIn(f, f0, dt) { if (f.ghostphageLife || f.smokeForm > 0) return false;
-    const d = f.evolved ? GM.evolvedDef(f) : null;
+  function followerIn(f, f0, dt) { const d = f.evolved ? GM.evolvedDef(f) : null; if (f.ghostphageLife || (f.smokeForm > 0 && !(d && ATT.smokes(d.id)))) return false;   // (in smoke form: the game's 2D, but a form whose see-through body the view draws, view3d/attacks.js smokes)
     if (d) { if (!JOBS[d.id] || bad.has(d.id)) return false;
       if (f0 - (f._moltAt === undefined ? -1e9 : f._moltAt) < GM.EVO_MOLT * 0.3 || (GM.burrowDepth(f) !== null && !ATT.burrows(d.id))) return false;   // (under the floor: the game's 2D, but a form whose dive and mound the view draws, view3d/attacks.js burrows)
       if ((f._fxHideUntil || 0) > f0 || (f.evolved === 'electroskink' && GM.swirling(f))) { shown.add(f); return true; }   // (out of sight for a moment: drawn by no one)

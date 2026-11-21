@@ -46,7 +46,11 @@ const VIEW3D_GAME = (0, eval)(`({
   get electricMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { snap: v("THUNDER_SNAP", 1.5), pull: v("THUNDER_PULL", 1.3), vortexR: v("VORTEX_RADIUS", 2.5), vortexFrame: v("VORTEX_FRAME", 6), vortexAlpha: v("VORTEX_ALPHA", 0.7), vortexFlash: v("staticVortexFlash", null),
       swirl: v("SKINK_SWIRL", null), circuit: v("ULT_CIRCUIT", null), drift: v("ULT_DRIFT", null), storm: v("ULT_STORM", null), overdrive: v("ULT_OVERDRIVE", null), capReach: v("CAP_REACH", 2),
-      mantaStun: v("MANTA_STUN", 45), zapGlitch: v("ZAP_GLITCH", 30) }; }
+      mantaStun: v("MANTA_STUN", 45), zapGlitch: v("ZAP_GLITCH", 30) }; },
+  // the toxic line's (view3d/attacks_toxic.js): the measures its looks follow (read once: the game's own constants)
+  get toxicMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { stompSlam: v("STOMP_SLAM", 12), stompR: v("STOMP_RADIUS", 1.5), calderaR: v("CALDERA_RADIUS", 2.4), undertow: v("ULT_UNDERTOW", null), network: v("ULT_NETWORK", null), puddle: v("ULT_PUDDLE", null),
+      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
