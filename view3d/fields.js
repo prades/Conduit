@@ -5,6 +5,7 @@
 // provisional. All ten fields (drafts for the owner): THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first (build 2026-11-17av), then WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK, METEOR RAIN. Nothing here touches what a field does.
 // In scope: T. liftAt(x, y): the floor's height there, in the view's units.
 function battleFieldsMake(scene, liftAt) {
+  const W0 = { x: 0, y: 0 };   // (a thing laid out in the world's own places stands at the world's corner: its parts carry where they are)
   const live = new Map(), UP = new T.Vector3(0, 1, 0), v = new T.Vector3();
   const mat = (hex, op, add) => { const m = new T.MeshBasicMaterial({ color: hex, transparent: true, opacity: op, depthWrite: false, side: T.DoubleSide, blending: add ? T.AdditiveBlending : T.NormalBlending }); m.userData.op = op; m.userData.noInk = true; return m; };
   const solid = hex => { const m = new T.MeshBasicMaterial({ color: hex, transparent: true, opacity: 1 }); m.userData.op = 1; return m; };
@@ -114,13 +115,37 @@ function battleFieldsMake(scene, liftAt) {
         for (let j = 0; j < 5; j++) add(sp, new T.Mesh(kg, pale), Math.cos(j * 2.3 + i) * r * (0.75 - j * 0.12), 0.2 + j * h * 0.15, Math.sin(j * 2.3 + i) * r * (0.75 - j * 0.12));
         add(sp, flat(new T.Mesh(new T.CircleGeometry(0.5, 20), mat('#ff8fc8', 0.3))), 0, 0.02, 0); sp.position.set(c.x - O.x, 0, c.y - O.y); g.add(sp); });
       return { g, step(O, f0) { g.children.forEach((sp, i) => { sp.scale.y = 1 + 0.02 * Math.sin(f0 * 0.06 + i); }); } }; },
+    // ── THE ULTIMATES THAT ARE OVER IN THEIR OWN TURN (the owner, 2026-11-21: "Next batch"): seen as they are cast ──
+    // a shockwave (OVERDRIVE, SHOCKWAVE SLAM, TOXIC UNDERTOW, QUILLSTORM's burst): a ring of its colour racing out over the floor to its full reach, a low wall of light on it, fading as it goes
+    ring(e) { const g = new T.Group(), c = e.color || '#ffffff', flatR = add(g, flat(new T.Mesh(new T.RingGeometry(0.86, 1, 44), mat(c, 0.9, true))), 0, 0.04, 0), wall = add(g, new T.Mesh(new T.CylinderGeometry(1, 1, 0.5, 44, 1, true), mat(c, 0.35, true)), 0, 0.25, 0), l0 = Math.max(1, e.life);
+      return { g, step(e) { const t = Math.max(0, Math.min(1, 1 - e.life / l0)), r = Math.max(0.05, (e.radius || 1) * (0.15 + 0.85 * t)); flatR.scale.setScalar(r); wall.scale.set(r, 1 - 0.6 * t, r); flatR.userData.k = wall.userData.k = 1 - t * t; } }; },
+    // a blow landing: a burst of light of its colour swelling and gone, a spark ring round it
+    impact(e) { const g = new T.Group(), c = e.color || '#ffffff', ball = add(g, new T.Mesh(new T.SphereGeometry(0.3, 10, 8), mat(c, 0.9, true)), 0, 0.4, 0), rg = add(g, flat(new T.Mesh(new T.RingGeometry(0.8, 1, 24), mat('#ffffff', 0.9, true))), 0, 0.05, 0), l0 = Math.max(1, e.life), R = Math.max(0.5, Math.min(1.4, e.radius || 0.6));
+      return { g, step(e) { const t = Math.max(0, Math.min(1, 1 - e.life / l0)); ball.scale.setScalar(0.5 + t * 1.6); rg.scale.setScalar(R * (0.2 + 0.8 * t)); ball.userData.k = rg.userData.k = 1 - t; } }; },
+    // QUILLSTORM's quills: each a dark burning quill flying point first, an orange light on it
+    quill(p) { const g = new T.Group(), q = new T.Group(); add(q, new T.Mesh(new T.ConeGeometry(0.06, 0.7, 5), solid('#2a1408'))).rotation.z = -Math.PI / 2; add(q, new T.Mesh(new T.ConeGeometry(0.11, 0.9, 5), mat(p.color || '#ff7a2e', 0.5, true)), -0.12, 0, 0).rotation.z = -Math.PI / 2; q.position.y = 0.45; g.add(q);
+      return { g, step(p) { q.rotation.y = -Math.atan2(p.vy || 0, p.vx || 1); } }; },
+    // WAVE MAKER: each wave a teal arc rolling out ahead of the Hornshell, a wall of water with a white crest, lower and fainter as it goes
+    wavemaker(e) { const g = new T.Group(), W = [0, 1, 2, 3].map(() => { const o = new T.Group(); add(o, new T.Mesh(new T.CylinderGeometry(1, 1, 0.7, 22, 1, true, -0.87, 1.74), mat('#33e6c4', 0.55)), 0, 0.35, 0); add(o, new T.Mesh(new T.CylinderGeometry(1, 1, 0.07, 22, 1, true, -0.87, 1.74), mat('#e9fffb', 0.95, true)), 0, 0.72, 0);   /* (its white crest: a band along the wave's top) */ o.visible = false; g.add(o); return o; });
+      return { g, at: e => W0, step(e, f0, M) { const age = e.maxLife - e.life, len = (M.wave && M.wave.len) || 4, yaw = Math.PI / 2 - Math.atan2(e.dy || 0, e.dx || 1);
+        W.forEach((o, i) => { const r = (e.rings || [])[i], t = r ? (age - r.at) / 24 : -1; o.visible = t >= 0 && t <= 1; if (!o.visible) return; const rad = 0.6 + t * (len - 0.6); o.position.set(r.x, 0, r.y); o.rotation.y = yaw; o.scale.set(rad, 1 - 0.5 * t, rad); o.traverse(m => { if (m.isMesh) m.userData.k = 1 - t; }); }); } }; },
+    // DRIFT SLASH: the Hover Shell's blade leaving a ribbon of yellow light along the oval it flies, bright at its head
+    hoverdrift(e) { const g = new T.Group(), N = 12, segs = [], out = mat('#ffee33', 0.4, true), core = mat('#ffffff', 0.95, true), og = new T.BoxGeometry(0.2, 1, 0.05), cg = new T.BoxGeometry(0.06, 1, 0.06), a = new T.Vector3(), b = new T.Vector3();
+      for (let i = 0; i < N; i++) { const x = new T.Mesh(og, out), y = new T.Mesh(cg, core); g.add(x); g.add(y); segs.push([x, y]); }
+      return { g, at: e => W0, step(e) { const P = e.path || [], n0 = Math.max(0, (e.i || 0) - N);
+        for (let k = 0; k < N; k++) { const i = n0 + k, on = i + 1 < (e.i || 0) && !!P[i + 1]; for (const m of segs[k]) m.visible = on; if (!on) continue; a.set(P[i][0], 0.4, P[i][1]); b.set(P[i + 1][0], 0.4, P[i + 1][1]); v.subVectors(b, a); const L = v.length() || 1e-3; v.divideScalar(L);
+          for (const m of segs[k]) { m.position.set((a.x + b.x) / 2, 0.4, (a.z + b.z) / 2); m.scale.set(1, L, 1); m.quaternion.setFromUnitVectors(UP, v); m.userData.k = (k + 1) / N; } } } }; },
+    // FAULTLINE: a molten spike bursting up through the floor where the Thermite runs under: dark rock, an orange core, a glow at its foot; up fast, then sinking
+    faultSpike(e) { const g = new T.Group(), sp = new T.Group(); add(sp, new T.Mesh(new T.ConeGeometry(0.2, 1.1, 5), solid('#3a1a0c')), 0, 0.55, 0); add(sp, new T.Mesh(new T.ConeGeometry(0.1, 1.2, 5), mat('#ff8a3a', 0.9, true)), 0, 0.6, 0); add(sp, new T.Mesh(new T.ConeGeometry(0.11, 0.6, 4), solid('#3a1a0c')), 0.2, 0.3, 0.08).rotation.z = -0.4; g.add(sp);
+      const glow = add(g, flat(new T.Mesh(new T.CircleGeometry(0.5, 20), mat('#ff5a1a', 0.5, true))), 0, 0.03, 0);
+      return { g, step(e) { const age = (e.maxLife || 26) - e.life, up = Math.min(1, age / 5) * Math.min(1, e.life / 8); sp.scale.set(1, Math.max(0.02, up), 1); glow.userData.k = up; } }; },
   };
   // ONE FRAME: `list` the battle's fields (or null: none are shown), f0 the game's frame
   const NONE = {};
   function step(list, f0, more) {
     for (const o of live.values()) o.seen = false;
-    if (list) for (const e of list) { const mk = MAKE[e.type || (e.parts ? 'reef' : '')]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
-      o.seen = true; const p = o.at ? o.at(e) : e; o.g.position.set(p.x, liftAt(p.x, p.y), p.y); o.step(e, f0, more || NONE);   /* (a hold or a shield stands still on the battle's clock between its turns: it does not fade in by its age) */ fade(o.g, e.maxLife > 0 && e._cbUlt !== 'sta' ? Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20)) : 1); }
+    if (list) for (const e of list) { const mk = MAKE[e.type || (e.parts ? 'reef' : e.kind === 'quill' ? 'quill' : '')]; if (!mk) continue; let o = live.get(e); if (!o) { o = mk(e); o.g.traverse(m => { if (m.isMesh && m.material.userData.noInk) m.layers.set(2); }); scene.add(o.g);   /* (light and washes: off the ink line's pass, as the view's lines are) */ live.set(e, o); }
+      o.seen = true; const p = o.at ? o.at(e) : e; o.g.position.set(p.x, p === W0 ? liftAt(e.x, e.y) : liftAt(p.x, p.y), p.y); o.step(e, f0, more || NONE);   /* (a hold or a shield stands still on the battle's clock between its turns: it does not fade in by its age) */ fade(o.g, e.maxLife > 0 && e._cbUlt !== 'sta' ? Math.max(0, Math.min(1, (e.maxLife - e.life) / 10, e.life / 20)) : 1); }
     for (const [e, o] of live) if (!o.seen) { scene.remove(o.g); o.g.traverse(m => { if (m.isMesh) m.material.dispose(); }); live.delete(e); }
     return live.size;
   }

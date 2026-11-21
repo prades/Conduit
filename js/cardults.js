@@ -258,13 +258,17 @@ function cardUltEnd() {
 // THE FIELD'S SQUARES, FAINT (the owner, 2026-11-20: "you can have the tiles faint right now", till the fields' own animation is in the battle's view; §2.65): the squares of each
 // field an Ultimate left stay lit, faintly, in its follower's colour, while it lasts; a wall's too. One that moves with its follower is laid again when it has moved. The look the agent's.
 // the fields a battle's Ultimates left, for the 3D view to draw (view3d/gamemap.js battleFields, view3d/fields.js): the same list each frame, refilled
-const _cuFields = [];
+const _cuFields = [], _CU_BURST = { ring: 1, impact: 1, wavemaker: 1, hoverdrift: 1, faultSpike: 1 };
 function cardUltFields() { _cuFields.length = 0; if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof elementEffects === "undefined") return _cuFields; for (const e of elementEffects) { if (!(e.life > 0)) continue; if (e._cbUlt ? cardUltShown(e) : e.type === "gooproxy" && e._cbHeld) _cuFields.push(e); }   // (a copy is a body on its square, enemies go for it: always there, the agent's reading of §2.68)
+    const T = _cb.turn; if (T && T.who === "act" && T.kind === "ult") {   // (the Ultimates that are over in their own turn: their shockwaves, blows, waves, slashes, spikes and quills, as they are cast)
+        for (const e of elementEffects) if (_CU_BURST[e.type] && e.life > 0 && !(T.fx0 && T.fx0.has(e))) _cuFields.push(e);
+        if (typeof followerProjectiles !== "undefined") for (const q of followerProjectiles) if (q && q.kind === "quill" && q.source === T.f) _cuFields.push(q);
+    }
     if (typeof techReefs !== "undefined") for (const O of techReefs) if (O._cbTurns > 0) _cuFields.push(O);   // (a wall blocks a walk: always there, the same)
     return _cuFields; }
 // the Ultimates' own numbers the 3D drawings ask for (view3d/gamemap.js): METEOR RAIN's fall and warning, CONSUME's bite, JELLY SHIELDS' soak
 let _cuNums = null;
-function cardUltNumbers() { return _cuNums || (_cuNums = { fall: ULT_METEOR.fall, warn: ULT_METEOR.warn, consume: ULT_CONSUME, jelly: ULT_JELLY }); }
+function cardUltNumbers() { return _cuNums || (_cuNums = { fall: ULT_METEOR.fall, warn: ULT_METEOR.warn, consume: ULT_CONSUME, jelly: ULT_JELLY, wave: ULT_WAVE }); }
 // WHEN A FIELD IS SEEN (the owner, 2026-11-20: "The ultimate animations should only appear when they're cast, and then they should go away for the next creature's turn [...] The battlefield
 // should be clear, unless it's the creature who casts the ultimate's turn"): in its caster's turn (as it is cast; your round come to that follower again); and, the agent's reading, while its
 // own turn's worth strikes as the enemies' turn begins (its numbers would rise from nothing). At every other time the floor is clear of it, its faint squares too.

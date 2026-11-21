@@ -1062,6 +1062,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify(r), '{"on":"thunderstorm","off":0}', 'the fields handed over');
         const f = rd('view3d/fields.js'), v = rd('view3d/gameview.js');
         ok(/FIELDS\.step\(battling\(\) \? GM\.battleFields : null, f0, GM\.meteor\)/.test(v) && /cardUltFields\(\)/.test(rd('view3d/gamemap.js')) && /'view3d\/fields\.js', 'view3d\/gameview\.js'/.test(rd('tools/view3d.js')), 'wired into the view and its build');
+        for (const k of ['ring', 'impact', 'quill', 'wavemaker', 'hoverdrift', 'faultSpike']) ok(new RegExp('\\n    ' + k + '\\((e|p)\\) \\{').test(f), k + ' has its 3D burst');
+        const b = J(`(function(){ ${ULT} const o = {}, kinds = () => [...new Set(cardUltFields().map(x => x.type || x.kind))].sort().join();
+            { const A = __shaped('quillstone', [[2, 0], [0, 2]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(2); o.quills = kinds(); }
+            { const A = __shaped('hammerslug', [[1, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); __live(2); o.slam = kinds(); act(); foesTurn(); o.after = cardUltFields().length; }
+            { const A = __shaped('hornshell', [[3, 0]], [[1, 0], [2, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); __live(4); o.wave = kinds(); }
+            { const A = __shaped('hovershell', [[2, 0]], [[1, 0], [3, 0], [2, 1], [2, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); __live(6); o.drift = /hoverdrift/.test(kinds()); }
+            { const A = __shaped('thermite', [[2, 0]], [[1, 0], [3, 0], [4, 0]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); let sp = false; for (let i = 0; i < 80 && !sp; i++) { __live(1); sp = /faultSpike/.test(kinds()); } o.fault = sp; }
+            return o; })()`);
+        same(JSON.stringify(b), '{"quills":"quill,ring","slam":"impact,ring","after":0,"wave":"wavemaker","drift":true,"fault":true}', 'the Ultimates over in their own turn hand their bursts to the view as they are cast, nothing after');
         for (const k of ['abszero', 'consume', 'jellyshield', 'gooproxy', 'reef']) ok(new RegExp('\\n    ' + k + '\\((e|O)\\) \\{').test(f), k + ' has its 3D thing');
         const h = J(`(function(){ ${ULT} const o = {}; { const A = __shaped('coralcrab', [[4, 0]], [[1, 0], [2, 0], [3, 0], [3, 1], [3, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, A.foes[0]); act(); foesTurn(); _cb.acted.add(A.f); o.wall = cardUltFields().filter(x => x.parts).length; }
             { const A = __shaped('gooproxy', [[3, 0]], [[1, 0], [0, 1], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]); A.f.ultimateCharge = 100; cardBattlePlay(A.f, 'ult', null, null); act(); foesTurn(); _cb.acted.add(A.f); o.copies = cardUltFields().filter(x => x.type === 'gooproxy').length; }

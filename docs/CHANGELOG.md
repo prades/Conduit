@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ay` · branch `claude/start-game-project-HSh7Z` · card battles: the seven Ultimates that are over in their own turn, in 3D (drafts)
+- **The ask** (the owner, 2026-11-21): "Next batch".
+- **What it does:** QUILLSTORM, OVERDRIVE, SHOCKWAVE SLAM, TOXIC UNDERTOW, WAVE MAKER, DRIFT SLASH and FAULTLINE are drawn in a battle as they are cast (`CARD-BATTLES.md` §2.67). With them all 22 Ultimates have a 3D drawing in a battle. Drafts: the shapes are the agent's. Everyday attacks are still not drawn in a battle.
+- `view3d/fields.js`, `js/cardults.js`, `tests/cardbattle.js`.
+- **Verified:** tests/cardbattle.js, view3d, bundle; each seen in a real browser (software rendering). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ax` · branch `claude/start-game-project-HSh7Z` · card battles: the holds, shields, copies and wall in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Next batch".
 - **What it does:** ABSOLUTE ZERO, CONSUME, JELLY SHIELDS, PROXY SWARM's copies and REEF PILLAR's wall are drawn in a battle (`CARD-BATTLES.md` §2.67). The wall and the copies are always there; the rest follow the caster's-turn rule (the Sundew's hold through your round). Drafts: the shapes are the agent's.
