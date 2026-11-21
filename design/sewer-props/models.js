@@ -222,61 +222,41 @@ const SEWER_DRAFTS = (function () {
       return g; } };
 
   // ── THE DUNGEON'S WALL, A SAMPLE, AND B3 · THE SECRET DOOR IN IT ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  // (the owner, 2026-11-21, asked which the dungeon's walls are, the facility's panels of build 2026-11-15g or Notion's "Brick and concrete tunnel walls": "Brick concrete".) The dungeon's walls are
-  // the layout's work, drawn by the game's wall code, not props; this SAMPLE is only the agent's reading of those two words, so the secret door has a wall to hide in, and so the owner sees one: a
-  // poured CONCRETE foot a third of the way up (board marks, tie holes, a dark tide line, slime at the floor), red-brown BRICK above it in running bond, a concrete cap. 74 px tall, two tiles.
+  // (the owner, 2026-11-21, asked which the dungeon's walls are: "Brick concrete"; then, shown a sample with a concrete foot and brick above it: "It should be concrete".) So the wall is POURED
+  // CONCRETE, top to floor. The dungeon's walls are the layout's work, drawn by the game's wall code, not props; this SAMPLE is only so the secret door has a wall to hide in, and so the owner sees
+  // one: board marks, a joint between pours at each tile, tie holes, soot under its top, a dark tide line a third of the way up with its runs, slime at the floor. 74 px tall, two tiles.
   // THE SECRET DOOR ("a secret door", the northwest wing; another from corridor 12 to area 11) is that wall with two tells for an eye that looks: a hairline seam round a door one tile wide, and
-  // scrape marks on the floor where it has dragged. OPEN, that tile of wall is gone and the way is dark behind it. How plain the tells are is the owner's to set.
+  // scrape marks on the floor where it has dragged (the owner, 2026-11-21, of how plain they are: "about right"). OPEN, that tile of wall is gone and the way is dark behind it.
   const rnd = seed => () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-  const brickTex = (seam) => tex(1024, 320, (c, w, h) => { const r = rnd(5), cols = 11, rows = 10, bw = w / cols, bh = h / rows, tones = ['#7e4434', '#8a4c3a', '#74402f', '#925240', '#6a3a2c', '#845040'];
-    c.fillStyle = '#8f9493'; c.fillRect(0, 0, w, h);
-    for (let row = 0; row < rows; row++) for (let col = -1; col <= cols; col++) { const x = col * bw + (row % 2 ? bw / 2 : 0), y = row * bh; c.fillStyle = tones[Math.floor(r() * tones.length)]; c.fillRect(x + 2.5, y + 2.5, bw - 5, bh - 5); if (r() < 0.12) { c.fillStyle = 'rgba(20,16,14,0.35)'; c.fillRect(x + 2.5, y + 2.5, bw - 5, bh - 5); } }
-    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(10,12,14,0.28)'); g.addColorStop(0.3, 'rgba(10,12,14,0)'); g.addColorStop(0.8, 'rgba(10,14,12,0.1)'); g.addColorStop(1, 'rgba(10,20,14,0.4)'); c.fillStyle = g; c.fillRect(0, 0, w, h);   /* soot under the cap, damp over the foot */
-    if (seam) { c.strokeStyle = 'rgba(12,10,9,0.9)'; c.lineWidth = 3; c.strokeRect(w * 0.25, bh * 1 + 1, w * 0.5, h); } });
-  const concTex = (seam) => tex(1024, 176, (c, w, h) => { const r = rnd(9); c.fillStyle = '#7d8388'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 29) { c.fillStyle = 'rgba(30,34,38,0.28)'; c.fillRect(0, y, w, 2); }
-    for (let i = 0; i < 60; i++) { c.fillStyle = 'rgba(' + (r() < 0.5 ? '255,255,255,0.05' : '0,0,0,0.07') + ')'; c.fillRect(r() * w, r() * h, 30 + r() * 90, 4 + r() * 10); }
-    for (let x = 64; x < w; x += 128) for (const y of [44, 102]) { c.fillStyle = '#2a2e32'; c.beginPath(); c.arc(x, y, 5, 0, TAU); c.fill(); }   /* tie holes */
-    c.fillStyle = 'rgba(18,22,22,0.55)'; c.fillRect(0, h * 0.5, w, 9); for (let i = 0; i < 26; i++) { const x = r() * w; c.fillStyle = 'rgba(18,22,22,0.3)'; c.fillRect(x, h * 0.5, 3 + r() * 4, 20 + r() * 60); }   /* the tide line and its runs */
-    const g = c.createLinearGradient(0, h * 0.62, 0, h); g.addColorStop(0, 'rgba(34,62,40,0)'); g.addColorStop(1, 'rgba(34,62,40,0.85)'); c.fillStyle = g; c.fillRect(0, h * 0.62, w, h * 0.38);   /* slime at the floor */
-    if (seam) { c.fillStyle = 'rgba(12,10,9,0.9)'; c.fillRect(w * 0.25 - 1.5, 0, 3, h); c.fillRect(w * 0.75 - 1.5, 0, 3, h); } });
-  const wallSeg = (g, x0, x1, bT, cT) => { const H = WH(), PH = 0.34, CAP = 0.05, BH = H - PH - CAP, W = x1 - x0, cx = (x0 + x1) / 2, u0 = (x0 + 1) / 2, u1 = (x1 + 1) / 2;
-    const face = (wd, ht, t) => { const pg = new T.PlaneGeometry(wd, ht), uv = pg.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * (u1 - u0)); return new T.Mesh(pg, new T.MeshStandardMaterial({ map: t, metalness: 0, roughness: 0.92 })); };
-    g.add(at(cbox(W, PH, 0.26, 0.004, STY.std('#70767b', 0.03, 0.94)), cx, PH / 2, ZB)); g.add(at(face(W, PH, cT), cx, PH / 2, ZB + 0.1305));
-    g.add(at(cbox(W, BH, 0.22, 0.003, STY.std('#74402f', 0.02, 0.94)), cx, PH + BH / 2, ZB)); g.add(at(face(W, BH, bT), cx, PH + BH / 2, ZB + 0.1105));
-    g.add(at(cbox(W, CAP, 0.27, 0.006, STY.std('#868c91', 0.03, 0.92)), cx, H - CAP / 2, ZB)); };
-  D.wall_sample = { no: 'W', title: 'THE WALL, A SAMPLE', sub: 'not a prop: the agent\'s reading of "Brick concrete", for the secret door to hide in', keyItem: false, foot: [2, 1],
-    build() { const g = G(); wallSeg(g, -1, 1, brickTex(false), concTex(false)); return g; } };
+  const concTex = (seam) => tex(1024, 512, (c, w, h) => { const r = rnd(9); c.fillStyle = '#7b8186'; c.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 30) { c.fillStyle = 'rgba(30,34,38,0.26)'; c.fillRect(0, y, w, 2); }   /* board marks */
+    for (let i = 0; i < 150; i++) { c.fillStyle = 'rgba(' + (r() < 0.5 ? '255,255,255,0.045' : '0,0,0,0.07') + ')'; c.fillRect(r() * w, r() * h, 30 + r() * 100, 4 + r() * 12); }
+    for (const x of [0, w / 2 - 1, w - 2]) { c.fillStyle = 'rgba(26,30,34,0.42)'; c.fillRect(x, 0, 2, h); }   /* a joint between pours, each tile */
+    for (let x = 64; x < w; x += 128) for (const y of [70, 190, 310, 430]) { c.fillStyle = '#2a2e32'; c.beginPath(); c.arc(x, y, 5, 0, TAU); c.fill(); }   /* tie holes */
+    let g = c.createLinearGradient(0, 0, 0, h * 0.3); g.addColorStop(0, 'rgba(10,12,14,0.38)'); g.addColorStop(1, 'rgba(10,12,14,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h * 0.3);   /* soot under the top */
+    const ty = h * 0.66; c.fillStyle = 'rgba(18,22,22,0.55)'; c.fillRect(0, ty, w, 9); for (let i = 0; i < 30; i++) { const x = r() * w; c.fillStyle = 'rgba(18,22,22,0.3)'; c.fillRect(x, ty, 3 + r() * 4, 20 + r() * 80); }   /* the tide line and its runs */
+    c.fillStyle = 'rgba(20,26,24,0.16)'; c.fillRect(0, ty, w, h - ty);
+    g = c.createLinearGradient(0, h * 0.86, 0, h); g.addColorStop(0, 'rgba(34,62,40,0)'); g.addColorStop(1, 'rgba(34,62,40,0.85)'); c.fillStyle = g; c.fillRect(0, h * 0.86, w, h * 0.14);   /* slime at the floor */
+    if (seam) { c.fillStyle = 'rgba(12,10,9,0.9)'; c.fillRect(w * 0.25 - 1.5, 44, 3, h); c.fillRect(w * 0.75 - 1.5, 44, 3, h); c.fillRect(w * 0.25, 44, w * 0.5, 3); } });
+  const wallSeg = (g, x0, x1, cT) => { const H = WH(), W = x1 - x0, cx = (x0 + x1) / 2, u0 = (x0 + 1) / 2, u1 = (x1 + 1) / 2, pg = new T.PlaneGeometry(W, H), uv = pg.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setX(i, u0 + uv.getX(i) * (u1 - u0));
+    g.add(at(cbox(W, H, 0.24, 0.004, STY.std('#70767b', 0.03, 0.94)), cx, H / 2, ZB)); g.add(at(new T.Mesh(pg, new T.MeshStandardMaterial({ map: cT, metalness: 0, roughness: 0.93 })), cx, H / 2, ZB + 0.1205)); };
+  D.wall_sample = { no: 'W', title: 'THE WALL, A SAMPLE', sub: 'not a prop: poured concrete (the owner: "It should be concrete"), for the secret door to hide in', keyItem: false, foot: [2, 1],
+    build() { const g = G(); wallSeg(g, -1, 1, concTex(false)); return g; } };
   D.secret_door = { no: 'B3', title: 'THE SECRET DOOR', sub: 'door · one tile of the wall itself · two tells: a seam, and scrapes on the floor', keyItem: false, states: ['hidden', 'open'], foot: [2, 1],
-    build(state) { const open = state === 'open', g = G(), bT = brickTex(true), cT = concTex(true);
-      if (open) { wallSeg(g, -1, -0.5, bT, cT); wallSeg(g, 0.5, 1, bT, cT); g.add(at(new T.Mesh(new T.PlaneGeometry(1.0, WH()), new T.MeshBasicMaterial({ color: 0x020304 })), 0, WH() / 2, ZB - 0.1));
-        for (const s of [1, -1]) g.add(at(cbox(0.02, WH(), 0.22, 0.003, STY.std('#3a2a24', 0.02, 0.95)), s * 0.49, WH() / 2, ZB)); }   /* the door's two jambs, bare */
-      else wallSeg(g, -1, 1, bT, cT);
+    build(state) { const open = state === 'open', g = G(), cT = concTex(true);
+      if (open) { wallSeg(g, -1, -0.5, cT); wallSeg(g, 0.5, 1, cT); g.add(at(new T.Mesh(new T.PlaneGeometry(1.0, WH()), new T.MeshBasicMaterial({ color: 0x020304 })), 0, WH() / 2, ZB - 0.1));
+        for (const s of [1, -1]) g.add(at(cbox(0.02, WH(), 0.22, 0.003, STY.std('#3c4044', 0.02, 0.95)), s * 0.49, WH() / 2, ZB)); }   /* the door's two jambs, bare */
+      else wallSeg(g, -1, 1, cT);
       const scr = tex(256, 128, (c, w, h) => { c.strokeStyle = 'rgba(8,10,12,0.55)'; c.lineWidth = 5; for (const y of [30, 52, 96]) { c.beginPath(); c.moveTo(18, y); c.quadraticCurveTo(w / 2, y + 10, w - 22, y - 4); c.stroke(); } c.lineWidth = 2; for (const y of [42, 70, 84]) { c.beginPath(); c.moveTo(40, y); c.lineTo(w - 50, y + 3); c.stroke(); } });
       const m = new T.Mesh(new T.PlaneGeometry(0.96, 0.42), new T.MeshBasicMaterial({ map: scr, transparent: true, depthWrite: false })); m.rotation.x = -PI / 2; m.position.set(0, 0.002, ZB + 0.36); g.add(m);
       return g; } };
 
   // ── D · THINGS THAT MOVE ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  // One more signal, the agent's, provisional: what is MOVED (by the Flux Technician, the mech, a Tank Ant clone) is edged in AMBER (the battery pack, which is carried, is amber too). So: green is
-  // fixed, red is worked, brass is the key's, amber is moved, pale concrete is cleared.
-  // ── D1 · THE BRIDGE BOX ──
-  // (the owner, 2026-11-20: "move a box into the water to create a bridge"; and "floating crates or debris rise to reach upper ledges".) A sealed float box, to be told at a glance from the facility's
-  // cargo crates: a slate hull with ribbed sides, amber guards down its four corners and round its top, a plated top to walk on, a steel grab on each face seen, and a white load line a third of the
-  // way up with FLOAT over it: it says what it does. One tile, about 32 px high. Whether it is this box or one of the facility's crates is the owner's to say (Q7).
-  D.bridge_box = { no: 'D1', title: 'THE BRIDGE BOX', sub: 'movable · one tile · pushed into raised water, it floats: a bridge', keyItem: false, foot: [1, 1],
-    build() { const g = G(), hull = STY.std('#3c4a55', 0.25, 0.6), hullDk = STY.std('#2a343d', 0.3, 0.65), amber = STY.std('#f2b13a', 0.25, 0.5), steel = STY.std('#aab4c2', 0.88, 0.32), HH = px(30), S = 0.84;
-      g.add(at(cbox(S, HH, S, 0.03, hull), 0, HH / 2 + px(1), 0)); g.add(at(cbox(S + 0.02, px(2), S + 0.02, 0.008, hullDk), 0, px(1), 0));
-      for (const sx of [1, -1]) for (const sz of [1, -1]) g.add(at(cbox(0.12, HH + px(1), 0.12, 0.02, amber), sx * (S / 2 - 0.04), HH / 2 + px(1.5), sz * (S / 2 - 0.04)));   /* the corner guards */
-      for (const s of [1, -1]) { g.add(at(cbox(S - 0.1, 0.05, 0.06, 0.012, amber), 0, HH + px(1) - 0.02, s * (S / 2 - 0.01))); g.add(at(cbox(0.06, 0.05, S - 0.1, 0.012, amber), s * (S / 2 - 0.01), HH + px(1) - 0.02, 0)); }   /* the top's rim */
-      g.add(at(cbox(S - 0.16, 0.012, S - 0.16, 0.004, hullDk), 0, HH + px(1) + 0.004, 0)); for (let i = -2; i <= 2; i++) g.add(at(cbox(S - 0.22, 0.008, 0.03, 0.003, steel), 0, HH + px(1) + 0.012, i * 0.13));   /* the top to walk on */
-      for (let i = -2; i <= 2; i++) { g.add(at(cbox(0.03, HH * 0.5, 0.012, 0.004, hullDk), i * 0.12, HH * 0.68 + px(1), S / 2 + 0.002)); g.add(at(cbox(0.012, HH * 0.5, 0.03, 0.004, hullDk), S / 2 + 0.002, HH * 0.68 + px(1), i * 0.12)); }   /* ribs */
-      const line = tex(512, 96, (c, w, h) => { c.fillStyle = '#e8eef0'; c.fillRect(0, h - 16, w, 10); c.font = 'bold 54px DejaVu Sans Condensed, DejaVu Sans, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.fillText('FLOAT', w / 2, h - 26); });
-      g.add(at(decal(0.56, 0.105, line), 0, HH * 0.3 + px(1), S / 2 + 0.0045)); g.add(at(rot(decal(0.56, 0.105, line), 0, PI / 2, 0), S / 2 + 0.0045, HH * 0.3 + px(1), 0));
-      for (const [x, z, ry] of [[0, S / 2 + 0.02, 0], [S / 2 + 0.02, 0, PI / 2]]) { const h = new T.Mesh(new T.TorusGeometry(0.07, 0.012, 8, 16, PI), steel); h.position.set(x, HH * 0.84 + px(1), z); h.rotation.set(PI, ry, 0); g.add(h); }   /* a grab on each face seen */
-      return g; } };
+  // D1, THE BRIDGE BOX, is one of the facility's ordinary crates (design/props/models/cargo.js), nothing new: the owner, 2026-11-21, shown a sealed float box drafted for it: "The bridge box should be
+  // facilities ordinary crates." The same day, of an amber edge on whatever is moved: "No." So a movable thing wears no mark of its own.
   // ── D5 · A LOOSE SLAB ──
   // (Notion, of the Queen's lair: "suitable loose masonry, stone slabs, movable sewer machinery, or discarded chitin plates can be repositioned to create cover".) A thick slab of the wall's own
-  // concrete fallen flat, two tiles by one, about 20 px high: low cover. A corner broken off and lying by it, a crack across it, two bar ends in its broken edge. It is the wall's stuff, so it wears
-  // no amber: a thing of the place, not equipment.
+  // concrete fallen flat, two tiles by one, about 20 px high: low cover. A corner broken off and lying by it, a crack across it, two bar ends in its broken edge.
   D.loose_slab = { no: 'D5', title: 'A LOOSE SLAB', sub: 'movable · two tiles by one · low cover', keyItem: false, foot: [2, 1],
     build() { const g = G(), conc = STY.std('#5d6369', 0.03, 0.95), concDk = STY.std('#464c52', 0.03, 0.96), rust = STY.std('#8a5230', 0.35, 0.8), HH = px(19);
       const sh = new T.Shape(); [[-0.88, 0.4], [0.9, 0.4], [0.9, -0.16], [0.62, -0.4], [-0.88, -0.4]].forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y)); sh.closePath();
@@ -285,6 +265,52 @@ const SEWER_DRAFTS = (function () {
       const crack = tex(512, 256, (c, w, h) => { c.strokeStyle = 'rgba(14,16,18,0.8)'; c.lineWidth = 5; c.beginPath(); c.moveTo(150, 0); c.lineTo(170, 60); c.lineTo(140, 120); c.lineTo(190, 180); c.lineTo(176, h); c.stroke(); c.lineWidth = 3; c.beginPath(); c.moveTo(140, 120); c.lineTo(80, 150); c.lineTo(50, 210); c.stroke(); });
       const cm = new T.Mesh(new T.PlaneGeometry(1.7, 0.76), new T.MeshBasicMaterial({ map: crack, transparent: true, depthWrite: false })); cm.rotation.x = -PI / 2; cm.position.set(0, HH + 0.002, 0); g.add(cm);
       for (const [x, z] of [[0.8, 0.24], [0.72, 0.31]]) { const b = cyl(0.012, 0.012, 0.16, rust, 6); b.rotation.set(PI / 2 - 0.25, 0.86, 0); b.position.set(x, HH * 0.5, z); g.add(b); }
+      return g; } };
+
+  // ── F · THE NEST'S FINDS: WHERE A SAMPLE COMES FROM WITHOUT A KILL ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // (the owner, 2026-11-20: samples "found as shed chitin, eggs, or a dead ant in the dungeon".) Each is the game's own toxic ant (its body in the 3D view: design/style-evolution/round2/chamber.js
+  // buildAnt: a near-black shell tinted with its element's green, pale jaw tips, black legs, at the game's size) or its egg (today's flat egg: pale, green at its edge, glowing while the Nest is
+  // infested). Kept plain. One tile each, low: walked round, not over. The looks are the agent's, provisional.
+  const antMat = () => { const c = new T.Color('#17171c').lerp(new T.Color('#66ff66'), 0.07), m = new T.MeshStandardMaterial({ roughness: 0.5, metalness: 0.25 }); m.envMapIntensity = 0.45; m.color = c.convertSRGBToLinear(); return m; };
+  const ell = (rx, ry, rz, m) => { const e = sphere(1, m, 22); e.scale.set(rx, ry, rz); return e; };
+  const rod = (a, b, r, m) => { const A = new T.Vector3(a[0], a[1], a[2]), B = new T.Vector3(b[0], b[1], b[2]), c = cyl(r, r, A.distanceTo(B), m, 8); c.position.copy(A).add(B).multiplyScalar(0.5); c.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), B.clone().sub(A).normalize()); return c; };
+  // ── F3 · A DEAD ANT ── on its back, its six legs drawn in over it, its eyes and the rim of its gaster dark
+  D.dead_ant = { no: 'F3', title: 'A DEAD ANT', sub: 'the Nest · a sample is taken from it', keyItem: false, foot: [1, 1],
+    build() { const g = G(), a = G(), ch = antMat(), leg = STY.std('#141416', 0.3, 0.45), tip = STY.std('#8a8296', 0.5, 0.35), dull = STY.std('#1f3320', 0.1, 0.75); a.rotation.y = 0.55; g.add(a);
+      a.add(at(ell(0.11, 0.07, 0.084, ch), -0.184, 0.072, 0)); const rim = torus(1, 0.016, dull, 32); rim.rotation.x = PI / 2; rim.scale.set(0.111, 0.085, 0.4); rim.position.set(-0.184, 0.072, 0); a.add(rim);   /* the gaster, its rim */
+      a.add(at(ell(0.024, 0.02, 0.02, ch), -0.068, 0.05, 0)); a.add(at(ell(0.068, 0.046, 0.042, ch), 0.006, 0.05, 0)); a.add(at(ell(0.05, 0.046, 0.054, ch), 0.118, 0.05, 0));   /* the waist, the thorax, the head */
+      for (const s of [1, -1]) { const j = new T.Mesh(new T.ConeGeometry(0.013, 0.08, 8), ch); j.rotation.set(0, s * -0.4, -PI / 2); j.position.set(0.19, 0.046, s * 0.03); a.add(j); a.add(at(sphere(0.006, tip, 8), 0.226, 0.046, s * 0.016));   /* a jaw, its tip */
+        a.add(rod([0.14, 0.07, s * 0.03], [0.2, 0.11, s * 0.09], 0.005, leg)); a.add(rod([0.2, 0.11, s * 0.09], [0.26, 0.012, s * 0.12], 0.004, leg));   /* an antenna, fallen */
+        [[0.04, 0.03, 0.02], [0.008, 0.0, -0.015], [-0.024, -0.035, -0.05]].forEach(([x, k1, k2]) => { a.add(rod([x, 0.075, s * 0.03], [x + k1, 0.17, s * 0.105], 0.01, leg)); a.add(rod([x + k1, 0.17, s * 0.105], [x + k2, 0.125, s * 0.02], 0.0075, leg)); a.add(at(sphere(0.011, leg, 8), x + k1, 0.17, s * 0.105)); }); }   /* three legs a side, drawn in */
+      return g; } };
+  // ── F1 · SHED CHITIN ── a moulted skin: the same three shapes, pale, thin and hollow, split open along the back, its leg sheaths crumpled beside it
+  D.shed_chitin = { no: 'F1', title: 'SHED CHITIN', sub: 'the Nest · a sample is taken from it', keyItem: false, foot: [1, 1],
+    build() { const g = G(), a = G(); a.rotation.y = -0.4; g.add(a); const husk = new T.MeshStandardMaterial({ color: STY.col('#a89f84'), roughness: 0.5, metalness: 0.08, transparent: true, opacity: 0.92, side: T.DoubleSide }), sheath = STY.std('#8f876f', 0.05, 0.6);
+      const shell = (rx, ry, rz, gap) => { const m = new T.Mesh(new T.SphereGeometry(1, 22, 14, PI / 2 + gap / 2, TAU - gap), husk); m.rotation.z = PI / 2; m.scale.set(ry, rx, rz); return m; };   /* a hollow shape, its gap along the top */
+      a.add(at(shell(0.11, 0.06, 0.084, 1.5), -0.184, 0.058, 0)); a.add(at(shell(0.068, 0.04, 0.042, 1.3), 0.006, 0.04, 0)); a.add(at(shell(0.05, 0.04, 0.054, 1.1), 0.118, 0.04, 0));
+      for (const [p, q] of [[[0.02, 0.01, 0.07], [0.09, 0.012, 0.16]], [[0.09, 0.012, 0.16], [0.03, 0.01, 0.22]], [[-0.03, 0.01, -0.06], [-0.1, 0.012, -0.15]], [[-0.1, 0.012, -0.15], [-0.02, 0.01, -0.2]], [[-0.06, 0.01, 0.08], [-0.13, 0.012, 0.17]]]) a.add(rod(p, q, 0.008, sheath));
+      return g; } };
+  // ── F2 · EGGS ── three, of three sizes, pale with the Nest's green light in them, a little resin at their feet
+  D.egg_cluster = { no: 'F2', title: 'EGGS', sub: 'the Nest · a sample is taken from them', keyItem: false, foot: [1, 1],
+    build() { const g = G(), egg = new T.MeshStandardMaterial({ color: STY.col('#c3d29c'), roughness: 0.34, metalness: 0.05, emissive: STY.col('#3f8a26'), emissiveIntensity: 0.4 }), resin = STY.std('#33421a', 0.2, 0.45);
+      for (const [x, z, h, tz] of [[-0.09, -0.05, px(27), 0.1], [0.15, 0.02, px(21), -0.14], [-0.01, 0.18, px(15), 0.2]]) { const e = sphere(1, egg, 26); e.scale.set(h * 0.37, h / 2, h * 0.37); e.position.set(x, h / 2 * 0.95, z); e.rotation.z = tz; g.add(e); }
+      for (const [x, z, r] of [[0.03, 0.03, 0.07], [-0.16, 0.06, 0.045], [0.2, 0.12, 0.04], [0.08, -0.1, 0.05], [-0.05, 0.25, 0.035]]) g.add(at(blob(r, resin, 1, 0.3, 1), x, r * 0.12, z));
+      const glowT = tex(128, 128, (c) => { const r = c.createRadialGradient(64, 64, 2, 64, 64, 64); r.addColorStop(0, 'rgba(140,255,90,0.45)'); r.addColorStop(1, 'rgba(140,255,90,0)'); c.fillStyle = r; c.fillRect(0, 0, 128, 128); });
+      const gl = new T.Mesh(new T.PlaneGeometry(0.9, 0.9), new T.MeshBasicMaterial({ map: glowT, transparent: true, depthWrite: false, toneMapped: false, blending: T.AdditiveBlending })); gl.rotation.x = -PI / 2; gl.position.set(0.02, 0.003, 0.05); gl.userData.noFrame = true; g.add(gl);
+      return g; } };
+
+  // ── A8 · AN ENERGY CARD, FOUND ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // (the owner, 2026-11-20: "Definitely energy cards and other upgrades scattered throughout the level".) On the CARDS screen an energy card's face is its element's gem (js/energygem.js); here it
+  // is the thing itself: a dark card with a thin lit edge in its element's colour and that gem set THROUGH it, so it is a gem from the front and still one edge-on as it turns. Plain. FIRE, ICE and
+  // TOXIC are three of the seven, for the look; UNKNOWN is the same card with the game's clear, unlit crystal (an egg with no element has one), should the owner want its element kept until it is
+  // taken (Q4). The look is the agent's, provisional.
+  D.energy_card = { no: 'A8', title: 'AN ENERGY CARD, FOUND', sub: 'key item · its element\'s gem set through a card', keyItem: true, states: ['fire', 'ice', 'toxic', 'unknown'],
+    build(state) { const hex = { fire: '#ff3300', ice: '#99ddff', toxic: '#66ff66', unknown: '#b4bcc8' }[state] || '#b4bcc8', known = state !== 'unknown', g = G(), CW = 0.2, CT = 0.28, TH = 0.014, Y0 = 0.01, R = 0.022;
+      const sh = new T.Shape(), x0 = -CW / 2, x1 = CW / 2, y0 = Y0, y1 = Y0 + CT; sh.moveTo(x0 + R, y0); sh.lineTo(x1 - R, y0); sh.quadraticCurveTo(x1, y0, x1, y0 + R); sh.lineTo(x1, y1 - R); sh.quadraticCurveTo(x1, y1, x1 - R, y1); sh.lineTo(x0 + R, y1); sh.quadraticCurveTo(x0, y1, x0, y1 - R); sh.lineTo(x0, y0 + R); sh.quadraticCurveTo(x0, y0, x0 + R, y0);
+      const geo = new T.ExtrudeGeometry(sh, { depth: TH - 0.004, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 1, steps: 1, curveSegments: 8 }); geo.translate(0, 0, -(TH - 0.004) / 2); g.add(new T.Mesh(geo, STY.std('#10202a', 0.3, 0.35)));
+      const edge = STY.glow(hex, known ? 0.95 : 0.35);
+      for (const s of [1, -1]) { const z = s * (TH / 2 + 0.0008); g.add(at(cbox(CW - 0.05, 0.006, 0.0016, 0.0005, edge), 0, y0 + 0.018, z)); g.add(at(cbox(CW - 0.05, 0.006, 0.0016, 0.0005, edge), 0, y1 - 0.018, z)); g.add(at(cbox(0.006, CT - 0.05, 0.0016, 0.0005, edge), x0 + 0.018, (y0 + y1) / 2, z)); g.add(at(cbox(0.006, CT - 0.05, 0.0016, 0.0005, edge), x1 - 0.018, (y0 + y1) / 2, z)); }
+      const gem = new T.Mesh(new T.OctahedronGeometry(1, 0), new T.MeshStandardMaterial({ color: STY.col(hex), roughness: 0.12, metalness: 0.15, flatShading: true, emissive: STY.col(hex), emissiveIntensity: known ? 0.55 : 0.0 })); gem.scale.set(0.056, 0.088, 0.034); gem.position.set(0, (y0 + y1) / 2, 0); g.add(gem);
       return g; } };
 
   return D;
