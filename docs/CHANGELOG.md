@@ -36,7 +36,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 ### Build `2026-11-17bb` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms, behind `?sewerdungeon` (work in progress)
 - **The ask** (the owner, 2026-11-21, of the skeleton picture and its hand trace): "This is our sewer now, make it happen"; "The ring is a storey down, build it".
 - **What it does:** with `?sewerdungeon` in the address the game starts you at the new dungeon's West Entrance: 32 rooms, 33 doorways and 9 flights of stairs made from the trace (`SEWER-DUNGEON.md`). Bare rooms only: no sewer look, no water, no way in or out, nothing to do, not in the 3D view. Without the switch the game is as it was; the old Sewers are untouched.
-- `tools/sewerdungeon.js` (new), `js/sewerdungeonmap.js` (generated), `design/sewer-dungeon/`, `js/facilitymap.js`, `js/facilityplay.js`, `js/facilitysewers.js` (`sewerDungeonStart`), `game.html`.
+- `tools/sewerdungeon.js` (new), `js/sewerdungeonmap.js` (generated), `design/sewer-dungeon/`, `js/facilitymap.js`, `js/facilityplay.js` (`sewerDungeonStart`), `game.html`.
 - **Verified:** the game loads it and starts in it in a real browser (both pages), no page error; facility, facilityplay, sewers, bundle suites. **Not playtested.**
 ### Build `2026-11-17ba` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
 - **The ask** (the owner, 2026-11-21): "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: "The whole squad"; "Over 3 turns: 24%, 24%, 12%"; "On its own turn each round".

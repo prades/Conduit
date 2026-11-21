@@ -38028,6 +38028,33 @@ try {
     initFacilityPlay();
 }
 catch (e) { }
+function sewerDungeonStart(F) {
+    if (typeof SEWER_DUNGEON_ON === "undefined" || !SEWER_DUNGEON_ON || !_fp || !F || !F.byId || !F.byId.has("sd_west_walk_n") || typeof partyRoomCells !== "function")
+        return false;
+    if (typeof facilityBlackoutSet === "function")
+        facilityBlackoutSet(false);
+    const S = _fp.tut && _fp.tut.script;
+    if (S && typeof TUT_STEPS !== "undefined") {
+        S.step = TUT_STEPS.length;
+        S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1);
+    }
+    const cs = partyRoomCells("sd_west_walk_n");
+    if (!cs.length)
+        return false;
+    let s = cs[0];
+    for (const c of cs)
+        if (c[0] < s[0])
+            s = c;
+    s = [s[0] + 2, s[1]];
+    if (!facilityWalkable(s[0], s[1], F))
+        s = [s[0] - 2, s[1]];
+    player.x = player.targetX = player.visualX = s[0];
+    player.y = player.targetY = player.visualY = s[1];
+    player.fpPath = null;
+    followers.forEach((f, i) => { f.x = s[0] + 1 + i; f.y = s[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
+    _fp.zoneRoom = "sd_west_walk_n";
+    return true;
+}
 ;
 /* js/facilitydecor.js */
 function _fpRgba(hex, a) { const n = parseInt(hex.slice(1), 16); return "rgba(" + (n >>> 16) + "," + ((n >>> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
@@ -45716,33 +45743,6 @@ function _fpSewerPlate(o, x, y) {
         if (E.has(x + "," + y + ",W"))
             o.push({ t: "P", c: C.foot, p: [-0.5, -0.6, -0.4, -0.6, -0.4, 0.6, -0.5, 0.6] });
     }
-}
-function sewerDungeonStart(F) {
-    if (typeof SEWER_DUNGEON_ON === "undefined" || !SEWER_DUNGEON_ON || !_fp || !F || !F.byId || !F.byId.has("sd_west_walk_n") || typeof partyRoomCells !== "function")
-        return false;
-    if (typeof facilityBlackoutSet === "function")
-        facilityBlackoutSet(false);
-    const S = _fp.tut && _fp.tut.script;
-    if (S && typeof TUT_STEPS !== "undefined") {
-        S.step = TUT_STEPS.length;
-        S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1);
-    }
-    const cs = partyRoomCells("sd_west_walk_n");
-    if (!cs.length)
-        return false;
-    let s = cs[0];
-    for (const c of cs)
-        if (c[0] < s[0])
-            s = c;
-    s = [s[0] + 2, s[1]];
-    if (!facilityWalkable(s[0], s[1], F))
-        s = [s[0] - 2, s[1]];
-    player.x = player.targetX = player.visualX = s[0];
-    player.y = player.targetY = player.visualY = s[1];
-    player.fpPath = null;
-    followers.forEach((f, i) => { f.x = s[0] + 1 + i; f.y = s[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
-    _fp.zoneRoom = "sd_west_walk_n";
-    return true;
 }
 ;
 /* js/facilitynet.js */

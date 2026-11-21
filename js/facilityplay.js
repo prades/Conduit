@@ -549,7 +549,7 @@ function facilityPlayStart() {
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     if (lab && typeof fluxLabStart === "function") fluxLabStart(F);   // the test room: the tutorial over, the player and the squad in the room, its creatures (js/fluxlab.js)
-    if (typeof sewerDungeonStart === "function") sewerDungeonStart(F);   // the sewer dungeon while it is built (?sewerdungeon): you start at its West Entrance (js/facilitysewers.js)
+    if (typeof sewerDungeonStart === "function") sewerDungeonStart(F);   // the sewer dungeon while it is built (?sewerdungeon): you start at its West Entrance (sewerDungeonStart, below)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
     else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
     document.body.classList && document.body.classList.add("facility-play");
@@ -884,3 +884,17 @@ function initFacilityPlay() {
     facilityPlayChip();
 }
 try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }
+
+// THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md): with ?sewerdungeon in the address its rooms are in the map (js/facilitymap.js SEWER_DUNGEON_ON) and the game starts you at its West
+// Entrance, the tutorial over, your squad beside you: a builder's look, with no way in or out yet and nothing to do in it. Gone when the dungeon takes the old Sewers' place. False when not in the mode.
+function sewerDungeonStart(F) {
+    if (typeof SEWER_DUNGEON_ON === "undefined" || !SEWER_DUNGEON_ON || !_fp || !F || !F.byId || !F.byId.has("sd_west_walk_n") || typeof partyRoomCells !== "function") return false;
+    if (typeof facilityBlackoutSet === "function") facilityBlackoutSet(false);
+    const S = _fp.tut && _fp.tut.script; if (S && typeof TUT_STEPS !== "undefined") { S.step = TUT_STEPS.length; S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1); }
+    const cs = partyRoomCells("sd_west_walk_n"); if (!cs.length) return false; let s = cs[0]; for (const c of cs) if (c[0] < s[0]) s = c;   // (its west end: where the way in from the Arena will be)
+    s = [s[0] + 2, s[1]]; if (!facilityWalkable(s[0], s[1], F)) s = [s[0] - 2, s[1]];
+    player.x = player.targetX = player.visualX = s[0]; player.y = player.targetY = player.visualY = s[1]; player.fpPath = null;
+    followers.forEach((f, i) => { f.x = s[0] + 1 + i; f.y = s[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
+    _fp.zoneRoom = "sd_west_walk_n";
+    return true;
+}

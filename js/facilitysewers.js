@@ -738,17 +738,3 @@ function _fpSewerPlate(o, x, y) {
     }
     if (E) { if (E.has(x + "," + y + ",N")) o.push({ t: "P", c: C.foot, p: [-0.6, -0.5, 0.6, -0.5, 0.6, -0.4, -0.6, -0.4] }); if (E.has(x + "," + y + ",W")) o.push({ t: "P", c: C.foot, p: [-0.5, -0.6, -0.4, -0.6, -0.4, 0.6, -0.5, 0.6] }); }
 }
-
-// THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md): with ?sewerdungeon in the address its rooms are in the map (js/facilitymap.js SEWER_DUNGEON_ON) and the game starts you at its West
-// Entrance, the tutorial over, your squad beside you: a builder's look, with no way in or out yet and nothing to do in it. Gone when the dungeon takes the old Sewers' place. False when not in the mode.
-function sewerDungeonStart(F) {
-    if (typeof SEWER_DUNGEON_ON === "undefined" || !SEWER_DUNGEON_ON || !_fp || !F || !F.byId || !F.byId.has("sd_west_walk_n") || typeof partyRoomCells !== "function") return false;
-    if (typeof facilityBlackoutSet === "function") facilityBlackoutSet(false);
-    const S = _fp.tut && _fp.tut.script; if (S && typeof TUT_STEPS !== "undefined") { S.step = TUT_STEPS.length; S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1); }
-    const cs = partyRoomCells("sd_west_walk_n"); if (!cs.length) return false; let s = cs[0]; for (const c of cs) if (c[0] < s[0]) s = c;   // (its west end: where the way in from the Arena will be)
-    s = [s[0] + 2, s[1]]; if (!facilityWalkable(s[0], s[1], F)) s = [s[0] - 2, s[1]];
-    player.x = player.targetX = player.visualX = s[0]; player.y = player.targetY = player.visualY = s[1]; player.fpPath = null;
-    followers.forEach((f, i) => { f.x = s[0] + 1 + i; f.y = s[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
-    _fp.zoneRoom = "sd_west_walk_n";
-    return true;
-}
