@@ -20,6 +20,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Not done:** no card picture, no pose for the cube; nothing of it in the real-time game (by the owner's answer).
 - `js/cardbattle.js`, `js/cardshapes.js`, `js/damage.js`, `tests/cardbattle.js` (2 new checks, 2 changed), `docs/CARD-BATTLES.md` §2.69, §9, §10, §11.32, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `TUTORIAL.md`, `bible.html`.
 - **Verified:** `node tests/run.js`: all 132 suites pass (tests/cardbattle.js THE GUNSLINGER'S TURN, 8 checks). In a real browser at 1180 × 820 (`play.html?engine=3d&cards`), with an empty gun: the cube's cards SHOOT (NO AMMO), SMASH (READY) and HOLD FIRE; SMASH on an ant 7 squares off walked it 3, 3 and 1 squares over three turns (YOU · MOVES 3 TILES), then YOU · SMASH took the ant from 300 to 253 (36, an ant being weak to Crushing); no page errors. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ay` · branch `claude/start-game-project-HSh7Z` · card battles: the seven Ultimates that are over in their own turn, in 3D (drafts)
+- **The ask** (the owner, 2026-11-21): "Next batch".
+- **What it does:** QUILLSTORM, OVERDRIVE, SHOCKWAVE SLAM, TOXIC UNDERTOW, WAVE MAKER, DRIFT SLASH and FAULTLINE are drawn in a battle as they are cast (`CARD-BATTLES.md` §2.67). With them all 22 Ultimates have a 3D drawing in a battle. Drafts: the shapes are the agent's. Everyday attacks are still not drawn in a battle.
+- `view3d/fields.js`, `js/cardults.js`, `tests/cardbattle.js`.
+- **Verified:** tests/cardbattle.js, view3d, bundle; each seen in a real browser (software rendering). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ax` · branch `claude/start-game-project-HSh7Z` · card battles: the holds, shields, copies and wall in 3D (drafts)
 - **The ask** (the owner, 2026-11-20): "Next batch".
 - **What it does:** ABSOLUTE ZERO, CONSUME, JELLY SHIELDS, PROXY SWARM's copies and REEF PILLAR's wall are drawn in a battle (`CARD-BATTLES.md` §2.67). The wall and the copies are always there; the rest follow the caster's-turn rule (the Sundew's hold through your round). Drafts: the shapes are the agent's.
