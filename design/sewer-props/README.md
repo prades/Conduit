@@ -16,10 +16,13 @@ Pictures go to a scratch folder, never the repository.
 
 | Draft | No | State |
 |---|---|---|
-| `subway_key` | A1 | draft 2 (plain), 2026-11-21, not approved (draft 1: "overdrawn") |
-| `module_canister`, `module_membranes`, `module_pump` | A3 | drafted 2026-11-21, not approved |
-| `battery_pack` | A7 | drafted 2026-11-21, not approved |
+| `subway_key` | A1 | **approved 2026-11-21** (draft 2, plain; draft 1: "overdrawn") |
+| `module_canister`, `module_membranes`, `module_pump` | A3 | **approved 2026-11-21** |
+| `battery_pack` | A7 | **approved 2026-11-21** |
 | `drain_valve` (shut, open) | C1 | **approved 2026-11-21** |
-| `sluice_gate` (open, shut) | C2 | drafted 2026-11-21, not approved |
-| `sluice_switch` (up, thrown) | C3 | drafted 2026-11-21, not approved |
-| `drain` | C4 | drafted 2026-11-21, not approved |
+| `sluice_gate` (open, shut) | C2 | **approved 2026-11-21** |
+| `sluice_switch` (up, thrown) | C3 | **approved 2026-11-21** |
+| `drain` | C4 | **approved 2026-11-21** |
+| `subway_door` (locked, open) | B4 | drafted 2026-11-21, not approved |
+| `shortcut_door` (far, near, open) | B2 | drafted 2026-11-21, not approved |
+| `rubble` (whole, cleared) | B5 | drafted 2026-11-21, not approved |

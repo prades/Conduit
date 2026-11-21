@@ -14,11 +14,11 @@ const SEWER_DRAFTS = (function () {
   const alongX = m => { m.rotation.z = PI / 2; return m; }, alongZ = m => { m.rotation.x = PI / 2; return m; };   // a cylinder (made along y) laid along x, or along z
   const D = {};
 
-  // ── A1 · THE SUBWAY KEY (draft 2) ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // ── A1 · THE SUBWAY KEY (draft 2; APPROVED 2026-11-21, the owner: "Looks good", of it, the module's parts, the battery pack, the sluice gate, the sluice switch and the drain) ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   // (the owner, 2026-11-20: "I want to have a key at the bottom of the [...] channel"; "The key is going to be to the subway".) Draft 1 had an enamel disc with a lit tunnel on its bow, three collars, a
   // ward groove, a steel ring with the beads of a snapped chain, and green patina: the owner, 2026-11-21: "The key is kind of overdrawn." So draft 2 is a plain brass key and nothing else: a six-sided
   // bow (the game's hex language) with a round hole through it, a round shank with one collar, a square bit with one notch. About 27 px tall at the game's size. The look is the agent's, provisional.
-  D.subway_key = { no: 'A1', title: 'THE SUBWAY KEY', sub: 'key item · lies on the west channel\'s bed · opens the subway door · draft 2, plainer', keyItem: true,
+  D.subway_key = { no: 'A1', title: 'THE SUBWAY KEY', sub: 'key item · lies on the west channel\'s bed · opens the subway door · APPROVED', keyItem: true,
     build() {
       const g = G(), brass = STY.std('#f0c05a', 0.8, 0.28), brassDk = STY.std('#b68632', 0.78, 0.36), TH = 0.02, BY = 0.30, R = 0.068;
       g.add(plate([[0.006, 0.020], [0.078, 0.020], [0.078, 0.046], [0.056, 0.046], [0.056, 0.066], [0.078, 0.066], [0.078, 0.094], [0.006, 0.094]], TH, 0.003, brass));   // the bit
@@ -36,19 +36,19 @@ const SEWER_DRAFTS = (function () {
   // that model's size and in its colours, so the three are seen to make the one: the teal CANISTER, its window empty and its top open; the MEMBRANES, a dark core with five lit bands round it between two caps; the
   // PUMP, its dark block, its motor with a teal band, two pipe stubs. Kept plain (the owner on the key: "overdrawn"). The looks are the agent's, provisional.
   const MOD = () => ({ shell: STY.std('#2f6a73', 0.5, 0.42), steel: STY.std('#9aa4b4', 0.85, 0.35), steelDk: STY.std('#4a525e', 0.8, 0.42), dark: STY.std('#0b1a1f', 0.4, 0.5), lit: STY.glow('#5ff7e0', 1.05) });
-  D.module_canister = { no: 'A3', title: 'MODULE PART · THE CANISTER', sub: 'key item · one of the purification module\'s three parts', keyItem: true,
+  D.module_canister = { no: 'A3', title: 'MODULE PART · THE CANISTER', sub: 'key item · one of the purification module\'s three parts · APPROVED', keyItem: true,
     build() { const g = G(), m = MOD(), R = 0.1, H = px(19);
       g.add(at(cyl(R, R, H, m.shell, 28), 0, H / 2 + px(1.2), 0)); g.add(at(cyl(R * 1.06, R * 1.06, px(1.6), m.steelDk, 28), 0, px(0.8), 0)); g.add(at(cyl(R * 1.06, R * 1.06, px(1.6), m.steelDk, 28), 0, H + px(1.8), 0));
       g.add(at(cyl(R * 0.8, R * 0.8, px(0.5), m.dark, 28), 0, H + px(2.65), 0));   // its open top
       g.add(at(cbox(0.062, px(10.5), 0.012, 0.004, m.dark), 0, px(8.75), R - 0.002));   // the window, empty
       g.add(at(new T.Mesh(new T.TorusGeometry(0.045, 0.008, 8, 16, PI), m.steel), 0, H + px(2.6), 0));   // the handle
       return g; } };
-  D.module_membranes = { no: 'A3', title: 'MODULE PART · THE MEMBRANES', sub: 'key item · one of the purification module\'s three parts', keyItem: true,
+  D.module_membranes = { no: 'A3', title: 'MODULE PART · THE MEMBRANES', sub: 'key item · one of the purification module\'s three parts · APPROVED', keyItem: true,
     build() { const g = G(), m = MOD();   // a dark core between two caps, five lit bands round it (the five lit bars of the module's window)
       g.add(at(cyl(0.062, 0.062, px(15.6), m.dark, 28), 0, px(8.5), 0)); for (const y of [0.7, 16.3]) g.add(at(cyl(0.076, 0.076, px(1.4), m.steelDk, 24), 0, px(y), 0));
       for (let i = 0; i < 5; i++) g.add(at(cyl(0.0635, 0.0635, px(1.15), m.lit, 28), 0, px(3.3 + i * 2.6), 0));
       return g; } };
-  D.module_pump = { no: 'A3', title: 'MODULE PART · THE PUMP', sub: 'key item · one of the purification module\'s three parts', keyItem: true,
+  D.module_pump = { no: 'A3', title: 'MODULE PART · THE PUMP', sub: 'key item · one of the purification module\'s three parts · APPROVED', keyItem: true,
     build() { const g = G(), m = MOD(), BH = px(7);
       g.add(at(cbox(0.12, BH, 0.11, 0.012, m.steelDk), 0, BH / 2, 0));   // its block
       g.add(at(alongX(cyl(0.043, 0.043, 0.13, m.steel, 20)), 0, BH + 0.038, 0)); g.add(at(alongX(cyl(0.0445, 0.0445, 0.036, m.shell, 20)), 0, BH + 0.038, 0));   // the motor, its teal band
@@ -61,7 +61,7 @@ const SEWER_DRAFTS = (function () {
   // ("Battery packs, found in the dungeon, restore the mech's charges and every spent follower utility"; the owner, 2026-11-21: "I guess a battery pack can be held, carried".) A block, to be nothing
   // like the Technomancer's POWER CELL (an upright glass capsule with a cyan core): an amber shell between two dark caps, two terminals on top, and a bar of four green cells lit on its front and its
   // back, full. The look is the agent's, provisional.
-  D.battery_pack = { no: 'A7', title: 'THE BATTERY PACK', sub: 'key item · carried · refills the mech\'s charges and every follower\'s utility', keyItem: true,
+  D.battery_pack = { no: 'A7', title: 'THE BATTERY PACK', sub: 'key item · carried · refills the mech\'s charges and every follower\'s utility · APPROVED', keyItem: true,
     build() { const g = G(), shell = STY.std('#f2b13a', 0.25, 0.5), cap = STY.mat.graphite, steel = STY.std('#9aa4b4', 0.85, 0.35), full = STY.glow('#43e0a8', 1.1), W = 0.26, H = px(12), DP = 0.15;
       g.add(at(cbox(W, H, DP, 0.014, shell), 0, H / 2 + px(1), 0)); g.add(at(cbox(W + 0.012, px(1.8), DP + 0.012, 0.005, cap), 0, px(0.9), 0)); g.add(at(cbox(W + 0.012, px(2.2), DP + 0.012, 0.006, cap), 0, H + px(1.9), 0));
       for (const s of [1, -1]) { g.add(at(cyl(0.022, 0.022, px(2.6), steel, 14), s * 0.075, H + px(4.2), 0));
@@ -122,7 +122,7 @@ const SEWER_DRAFTS = (function () {
   // channel's width is not set yet: the model is to be re-cut to it): two green posts and a beam, a dark ribbed gate between them with a hazard stripe along its foot, two stems, a gearbox on the beam
   // with the lamp. No red on it: nothing here is worked by hand (its switch is, C3). OPEN, the gate hangs up under the beam, the stems stand high over it, the lamp green; SHUT, the gate is down on the
   // bed, the stems are down, the lamp amber. The frame is about 92 px tall. The look, and which state is which, are the agent's, provisional.
-  D.sluice_gate = { no: 'C2', title: 'THE SLUICE GATE', sub: 'fixture · two tiles across a channel · shut, it raises the water', keyItem: false, states: ['open', 'shut'], foot: [2, 1],
+  D.sluice_gate = { no: 'C2', title: 'THE SLUICE GATE', sub: 'fixture · two tiles across a channel · shut, it raises the water · APPROVED', keyItem: false, states: ['open', 'shut'], foot: [2, 1],
     build(state) { const shut = state === 'shut', g = G(), m = IRON(), FH = 1.25, PH = 0.6, lift = shut ? 0 : 0.52;
       for (const s of [1, -1]) {
         g.add(at(cbox(0.14, FH, 0.2, 0.02, m.iron), s * 0.9, FH / 2, 0)); g.add(at(cbox(0.2, 0.03, 0.3, 0.008, m.bare), s * 0.89, 0.015, 0)); g.add(at(cbox(0.146, 0.07, 0.206, 0.01, m.slime), s * 0.9, 0.065, 0));   // a post, its foot, its tide mark
@@ -143,7 +143,7 @@ const SEWER_DRAFTS = (function () {
   // A green switch box high on a wall (about 115 px up: over the player's head), a conduit down the wall to the floor, and a long lever out of its front with a red ball on its end: the part to hit.
   // UP, as it is found, the lamp green (the sluice open); THROWN, the lever down, the lamp amber (the sluice shut), as the gate's own lamp. Rust at its pivot (it is stuck). It stands at the back of
   // its tile, against the wall behind it. The look, its height and the two states' signals are the agent's, provisional.
-  D.sluice_switch = { no: 'C3', title: 'THE SLUICE SWITCH', sub: 'fixture · high on a wall · a shot, or the mech, throws it', keyItem: false, states: ['up', 'thrown'], foot: [1, 1],
+  D.sluice_switch = { no: 'C3', title: 'THE SLUICE SWITCH', sub: 'fixture · high on a wall · a shot, or the mech, throws it · APPROVED', keyItem: false, states: ['up', 'thrown'], foot: [1, 1],
     build(state) { const thrown = state === 'thrown', g = G(), m = IRON(), ZB = -0.4, BY = 1.55;
       g.add(at(cyl(0.028, 0.028, BY - 0.2, m.ironDk, 12), 0.1, (BY - 0.2) / 2, ZB)); for (const y of [0.35, 0.95]) g.add(at(cbox(0.09, 0.03, 0.06, 0.006, m.bare), 0.1, y, ZB));   // the conduit and its clips
       g.add(at(cbox(0.36, 0.42, 0.16, 0.022, m.iron), 0, BY, ZB)); g.add(at(cbox(0.42, 0.03, 0.22, 0.008, m.ironDk), 0, BY + 0.225, ZB + 0.01));   // the box, its hood
@@ -156,13 +156,69 @@ const SEWER_DRAFTS = (function () {
   // ── C4 · A DRAIN ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
   // ("moving obstacles into drains or the sluice raises it", the water.) The mouth an obstacle is moved onto: an iron frame set in the floor, one tile, six bars over a black pit, bolts at its
   // corners, moss at one. A hand's breadth high (about 3 px): it is walked over. The look is the agent's, provisional.
-  D.drain = { no: 'C4', title: 'A DRAIN', sub: 'fixture · one tile, set in the floor · an obstacle moved onto it stops it', keyItem: false, foot: [1, 1],
+  D.drain = { no: 'C4', title: 'A DRAIN', sub: 'fixture · one tile, set in the floor · an obstacle moved onto it stops it · APPROVED', keyItem: false, foot: [1, 1],
     build() { const g = G(), m = IRON(), FH = px(3);
       for (const s of [1, -1]) { g.add(at(cbox(0.92, FH, 0.1, 0.01, m.ironDk), 0, FH / 2, s * 0.41)); g.add(at(cbox(0.1, FH, 0.72, 0.01, m.ironDk), s * 0.41, FH / 2, 0)); }
       g.add(at(rot(new T.Mesh(new T.PlaneGeometry(0.74, 0.74), new T.MeshBasicMaterial({ color: 0x020304 })), -PI / 2, 0, 0), 0, px(0.5), 0));
       for (let i = 0; i < 6; i++) g.add(at(cbox(0.055, FH * 0.9, 0.74, 0.008, m.iron), -0.3 + i * 0.12, FH / 2, 0));
       for (const sx of [1, -1]) for (const sz of [1, -1]) g.add(at(cyl(0.02, 0.02, FH + 0.008, m.bare, 6), sx * 0.41, FH / 2 + 0.004, sz * 0.41));
       for (const [x, z, r, mm] of [[0.36, 0.44, 0.03, m.moss], [0.42, 0.37, 0.022, m.mossDk], [0.3, 0.46, 0.018, m.mossDk]]) g.add(at(blob(r, mm, 1, 0.4, 1), x, FH, z));
+      return g; } };
+
+  // ── B · DOORS AND BARRIERS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // A door is two tiles wide, as the game's doorways are, and stands at the BACK of its tile row (on the wall's line), its face to the room; the wall is 74 px tall (FP_WALL_H), so the frame is. Its
+  // frame is the water works' ironwork (approved). Two more signals, both the agent's, provisional: BRASS is the key's (the key is brass: what it opens wears a brass plate with the key's six-sided
+  // shape); and what is cleared away, not worked, is pale broken CONCRETE, nothing green or red on it.
+  const WH = () => px(74), ZB = -0.38;
+  const frame = (g, m) => { const H = WH(); for (const s of [1, -1]) { g.add(at(cbox(0.14, H, 0.24, 0.02, m.iron), s * 0.93, H / 2, ZB)); g.add(at(cbox(0.146, 0.06, 0.246, 0.01, m.slime), s * 0.93, 0.05, ZB)); }
+    g.add(at(cbox(2.0, 0.12, 0.26, 0.02, m.ironDk), 0, H - 0.06, ZB)); };
+  const way = (g) => g.add(at(new T.Mesh(new T.PlaneGeometry(1.72, WH() - 0.12), new T.MeshBasicMaterial({ color: 0x020304 })), 0, (WH() - 0.12) / 2, ZB - 0.06));   // the dark way through
+
+  // ── B4 · THE SUBWAY DOOR ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // ("The key is going to be to the subway": the way on to the subway, south-west of the junction. With "Just 1 for now", the owner, 2026-11-21, it is the dungeon's one keyed door.) A steel roller
+  // shutter in an iron frame: slats, a hazard stripe along its foot, its drum's housing across the top with the plate SUBWAY, and on the right post a key switch: a brass plate with a six-sided
+  // keyhole, the key's own shape, a lamp over it. LOCKED, the shutter down, the lamp amber; OPEN, the shutter rolled up under the housing, the way dark behind it, the lamp green.
+  D.subway_door = { no: 'B4', title: 'THE SUBWAY DOOR', sub: 'door · two tiles, in a wall · the subway key opens it', keyItem: false, states: ['locked', 'open'], foot: [2, 1],
+    build(state) { const open = state === 'open', g = G(), m = IRON(), H = WH(), brass = STY.std('#f0c05a', 0.8, 0.28), brassDk = STY.std('#b68632', 0.78, 0.36);
+      way(g); frame(g, m);
+      g.add(at(cbox(1.9, 0.2, 0.3, 0.025, m.iron), 0, H - 0.02, ZB + 0.03)); g.add(at(decal(0.36, 0.1, sign('SUBWAY')), 0, H - 0.02, ZB + 0.1825));   // the drum's housing and its plate
+      const top = H - 0.12, bot = open ? top - 0.14 : 0.0, CH = top - bot;   // the shutter: from under the housing down to its foot
+      g.add(at(cbox(1.72, CH, 0.05, 0.008, STY.mat.steelDk), 0, bot + CH / 2, ZB + 0.02)); for (let y = bot + 0.13; y < top - 0.02; y += 0.075) g.add(at(cbox(1.72, 0.014, 0.064, 0.004, m.bare), 0, y, ZB + 0.02));
+      g.add(at(cbox(1.72, 0.09, 0.07, 0.006, STY.hazard(7, 7)), 0, bot + 0.045, ZB + 0.02));
+      // the key switch on the right post: brass, six-sided, a keyhole; the lamp over it
+      const KY = px(34), sw = G(); sw.position.set(0.93, KY, ZB + 0.125); g.add(sw);
+      sw.add(cbox(0.13, 0.2, 0.03, 0.008, STY.mat.graphite)); const hx = alongZ(cyl(0.048, 0.048, 0.014, brass, 6)); hx.position.set(0, -0.03, 0.018); sw.add(hx);
+      sw.add(at(alongZ(cyl(0.014, 0.014, 0.004, m.pit, 12)), 0, -0.022, 0.026)); sw.add(at(cbox(0.009, 0.026, 0.004, 0.001, m.pit), 0, -0.042, 0.026)); sw.add(at(alongZ(cyl(0.02, 0.02, 0.012, lamp(open), 14)), 0, 0.06, 0.02));
+      return g; } };
+
+  // ── B2 · A SHORTCUT DOOR ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // ("Some doors open from the far side to make shortcuts"; today's drain pipe has a grate that "opens only from inside".) A barred iron door of two leaves, so the way beyond is SEEN before it can be
+  // taken; its latch, a dark box with a red lever, is on one face only. FAR: the latch is on the other side, seen through the bars and out of reach, the lamp on the frame amber. NEAR: the latch is on
+  // this side, the red lever to hand, the lamp amber. OPEN: both leaves swung out into the room, the lamp green.
+  D.shortcut_door = { no: 'B2', title: 'A SHORTCUT DOOR', sub: 'door · two tiles, in a wall · opens only from the side its latch is on', keyItem: false, states: ['far', 'near', 'open'], foot: [2, 1],
+    build(state) { const open = state === 'open', near = state !== 'far', g = G(), m = IRON(), H = WH(), GH = H - 0.14;
+      frame(g, m); g.add(at(cbox(0.07, 0.07, 0.03, 0.008, STY.mat.graphite), 0, H - 0.06, ZB + 0.135)); g.add(at(alongZ(cyl(0.022, 0.022, 0.014, lamp(open), 14)), 0, H - 0.06, ZB + 0.155));
+      for (const s of [1, -1]) { const leaf = G(); leaf.position.set(s * 0.86, 0, ZB); leaf.rotation.y = open ? s * PI * 0.47 : 0; g.add(leaf); const cx = -s * 0.43;
+        for (const x of [0.025, 0.835]) leaf.add(at(cbox(0.05, GH, 0.05, 0.008, m.ironDk), -s * x, GH / 2, 0)); for (const y of [0.03, GH / 2, GH - 0.03]) leaf.add(at(cbox(0.86, 0.05, 0.05, 0.008, m.ironDk), cx, y, 0));
+        for (let i = 1; i <= 4; i++) leaf.add(at(cyl(0.018, 0.018, GH, m.iron, 10), -s * i * 0.172, GH / 2, 0));
+        if (s > 0) { const zf = (near ? 1 : -1) * 0.055; leaf.add(at(cbox(0.2, 0.16, 0.06, 0.012, STY.mat.graphite), -0.8, GH / 2, zf)); const lv = cbox(0.034, 0.17, 0.03, 0.006, m.red); lv.position.set(-0.8, GH / 2 + 0.03, zf + (near ? 1 : -1) * 0.04); lv.rotation.z = open ? 1.2 : 0.35; leaf.add(lv);
+          leaf.add(at(alongX(cyl(0.014, 0.014, 0.2, m.steel, 8)), -0.9, GH / 2 - 0.04, zf)); }   /* the latch: its box, its red lever, its bolt across to the other leaf */
+      }
+      return g; } };
+
+  // ── B5 · RUBBLE ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  // ("East rubble: a chest behind it; several ways through"; proposed check U9: "a Fire Technician drills it; the mech moves it". Today's is a flat pile drawn over and over.) A heap of broken
+  // concrete two tiles wide (laid end to end along a wider block), a slab leaning in it, a few bricks, three bent bars of rusted steel. WHOLE, about 45 px high: it shuts the way. CLEARED: a few
+  // blocks shoved to each side and grit between them: walked through. The heap is the same every time (its chance is seeded).
+  D.rubble = { no: 'B5', title: 'RUBBLE', sub: 'barrier · two tiles · drilled or moved, it is cleared', keyItem: false, states: ['whole', 'cleared'], foot: [2, 1],
+    build(state) { const whole = state !== 'cleared', g = G(); let sd = 11; const r = () => { sd = sd + 0x6D2B79F5 | 0; let t = Math.imul(sd ^ sd >>> 15, 1 | sd); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+      const conc = STY.std('#6f757d', 0.04, 0.94), concDk = STY.std('#4c525a', 0.04, 0.96), brick = STY.std('#7c4232', 0.03, 0.92), rust = STY.std('#8a5230', 0.35, 0.8), grit = STY.std('#555b63', 0.03, 0.96);
+      const chunk = (x, y, z, w, h, d) => { const c = cbox(w, h, d, Math.min(w, h, d) * 0.2, r() < 0.16 ? brick : r() < 0.45 ? concDk : conc); c.position.set(x, y, z); c.rotation.set((r() - 0.5) * 0.8, (r() - 0.5) * 3, (r() - 0.5) * 0.8); g.add(c); };
+      if (whole) { for (const [n, y, xr, zr, a, b] of [[11, 0.11, 0.7, 0.27, 0.22, 0.36], [8, 0.29, 0.52, 0.2, 0.2, 0.3], [5, 0.46, 0.3, 0.12, 0.16, 0.24]]) for (let i = 0; i < n; i++) chunk((r() * 2 - 1) * xr, y + (r() - 0.5) * 0.05, (r() * 2 - 1) * zr, a + r() * (b - a), (a + r() * (b - a)) * 0.75, a + r() * (b - a));
+        const slab = cbox(0.56, 0.07, 0.36, 0.012, conc); slab.position.set(-0.32, 0.36, 0.14); slab.rotation.set(0.25, 0.4, 0.55); g.add(slab);
+        for (const [x, y, z, rx, rz] of [[0.3, 0.46, 0.05, 0.5, -0.8], [-0.05, 0.5, -0.08, -0.5, 0.6], [0.52, 0.3, 0.12, 0.7, -1.1]]) { const b = cyl(0.008, 0.008, 0.34, rust, 6); b.position.set(x, y, z); b.rotation.set(rx, 0, rz); g.add(b); }
+      } else for (const s of [1, -1]) for (let i = 0; i < 4; i++) chunk(s * (0.74 + r() * 0.12), 0.08 + r() * 0.12, (r() * 2 - 1) * 0.3, 0.16 + r() * 0.14, 0.14 + r() * 0.08, 0.16 + r() * 0.14);
+      for (let i = 0; i < 18; i++) { const b = blob(0.02 + r() * 0.03, grit, 1, 0.45, 1); b.position.set((r() * 2 - 1) * 0.9, 0.008, (r() * 2 - 1) * 0.44); g.add(b); }
       return g; } };
 
   return D;
