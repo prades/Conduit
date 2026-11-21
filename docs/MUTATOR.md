@@ -127,6 +127,8 @@ Seen while measuring, and not changed: a creature on its way to the Crystal turn
 
 ### 2.6 The healing serum, the laboratory, and the Mutator's level (the brief's step 7)
 
+> **In a card battle** (the owner, 2026-11-21; built in `2026-11-17ba` behind `?cards` with `?engine=3d`: `CARD-BATTLES.md` §2.70): there is no pool. A Mutator carrying a serum has a turn of its own each round, and its HEALING SERUM card heals every one of its squad still up, wherever they stand: 24% of its health at once, then 24% and 12% as the next two enemy turns begin (this section's 60%, a turn's worth at a time). With ASH SURGEON or PLAGUE DOCTOR worn (§2.8's pool statuses, which a battle has no pool for; the owner, 2026-11-21: "Yeah, just make them do moderate damage") each of those turns also hits every enemy of the battle in the role's element: 10, 10 and 5, the number the agent's. What follows is the serum in the real-time game.
+
 ASKED: *"The Mutator can craft healing serums that are splashed onto the ground. Each serum creates an area-of-effect healing zone. Eligible allies within the splash zone receive healing. Healing should be visually readable and clearly communicate which units are being affected."* *"The Mutator has a laboratory where serum becomes available over time. Serum replenishes at configurable 60-second intervals. Higher Mutator levels increase the amount of serum generated automatically. DNA can also be spent whenever the player crafts a serum. The automatic supply and DNA crafting systems should work together."* Code: js/serum.js; tests: tests/serum.js.
 
 **The serum** is an item of the pack, HEALING SERUM (stack 5). Only the Mutator uses it; anyone may carry it.

@@ -1516,7 +1516,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── FIRE — 3 ORBITING FIREBALLS ─────────────────────────────────────────
-    if (actor.fireOrbitTimer > 0) {
+    if (actor.fireOrbitTimer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fireOrbit"))) {   // (the 3D view's own, view3d/attacks_fire.js: the Quillstone's)
         const _foAlpha = Math.min(1, actor.fireOrbitTimer / 8);
         const _orbitR  = 22;
         const _oAngle  = (frame||0) * 0.09;
@@ -1538,7 +1538,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── ELECTRIC — SPARK RING + CHAIN ARC LIGHTNING ─────────────────────────
-    if (actor.sparkSurround > 0) {
+    if (actor.sparkSurround > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "spark"))) {   // (the 3D view's own, view3d/attacks_electric.js: the Static Orb's and the Hover Shell's)
         const _sAlpha = Math.min(1, actor.sparkSurround / 5);
         drawCtx.save();
         // Radial zigzag sparks
@@ -1583,7 +1583,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── ICE — GIANT ICICLES PROJECTING TOWARD TARGET ────────────────────────
-    if (actor.icicleAttack && actor.icicleAttack.timer > 0) {
+    if (actor.icicleAttack && actor.icicleAttack.timer > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor.icicleAttack))) {   // (the 3D view's own bite, view3d/attacks.js: the Frost Maw's)
         const _it       = actor.icicleAttack;
         const _tpx      = isoSX(_it.tx, _it.ty) + canvas.width  / 2;
         const _tpy      = isoSY(_it.tx, _it.ty) + canvas.height / 2 - 30;

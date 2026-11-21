@@ -303,7 +303,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const v = rd('view3d/gameview.js'), m = rd('view3d/gamemap.js'), c = rd('view3d/core.js'), ta = rd('js/techabilities.js'), h = rd('game.html'), cb = rd('js/cardbattle.js');
         same(/place\(dt\); seeThrough\(f0\);/.test(v), true, 'called each frame after the camera is placed');
         same(/RC\.layers\.enableAll\(\);/.test(v), true, 'every layer (the world is on 1 to 3)');
-        same(/b\.holder\.userData\.body = true;/.test(v) && /if \(p\.userData && p\.userData\.body\) return false;/.test(v), true, 'bodies never');
+        same(/b\.holder\.userData\.body = true;/.test(v) && /if \(p\.userData && \(p\.userData\.body \|\| p\.userData\.fx3d\)\) return false;/.test(v), true, 'bodies never');
         same(/!B\.box\.containsPoint\(seeFeet\)/.test(v), true, 'never the floor round a fighter');
         same(/try \{ seeThroughStep\(f0\); \} catch \(e\) \{ seeBroke = true;/.test(v), true, 'a failure turns it off');
         same(/get battleFighters\(\) \{ return typeof cardBattleFighters === "function"/.test(m) && /function cardBattleFighters\(\)/.test(cb), true, 'the fighters reach the view');
@@ -1157,11 +1157,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const row = [_cbYouIn(), _cbCurrent() === f, cardBattlePlay(player, 'shoot', null, a)]; _cb.acted.add(f); _cbAfterAct(frame); row.push(_cbCurrent() === player, cardBattleTurnInfo().who, playerAmmo); o[cls || 'none'] = row.join(); __gsOff(); } return o; })()`);
         for (const k of ['none', 'technomancer', 'gunslinger']) same(r[k], 'false,true,false,false,foe,20', k + ' (in it, its follower first, a SHOOT played, its turn, whose turn after its follower, its rounds)');
     });
-    check('a Gunslinger with the machine gun and rounds has its own turn every round, after its followers: not before them, then the pop-up is its; its cards are SHOOT (4 to 5 rounds, the gun\'s damage a round, the ammunition on its foot) and HOLD FIRE', () => {
+    check('a Gunslinger with the machine gun and rounds has its own turn every round, after its followers: not before them, then the pop-up is its; its cards are SHOOT (4 to 5 rounds, the gun\'s damage a round, the ammunition on its foot), SMASH (§2.69) and HOLD FIRE', () => {
         const r = J(`(function(){ const { f, a } = __gs(20); const o = { in: _cbYouIn(), first: _cbCurrent() === f, early: cardBattlePlay(player, 'shoot', null, a), ammo0: playerAmmo };
             o.up = __gsUp(f); o.who = cardBattleTurnInfo().who; const cs = cardBattleCards(player); o.kinds = cs.map(c => c.kind + ':' + c.ready).join(); o.fx = cs[0].fx; o.html = _cbCardHTML(cs[0]); o.round = _cb.round; __gsOff(); return o; })()`);
         same(r.in, true, 'the cube is in the battle\'s turns'); same(r.first, true, 'its follower is not first'); same(r.early, false, 'SHOOT played before its turn'); same(r.ammo0, 20, 'rounds spent early'); same(r.up, true, 'its turn does not follow its followers\''); same(r.who, 'you', 'whose turn'); same(r.round, 1, 'the round');
-        same(r.kinds, 'shoot:true,pass:true', 'its cards'); same(r.fx, '4 to 5 rounds at one enemy, at once: 8 a round.', 'SHOOT\'s words'); ok(/class="cb-st">AMMO 20</.test(r.html) && /cb-shoot ready/.test(r.html) && />SHOOT</.test(r.html), 'the card (its foot says the ammunition): ' + r.html);
+        same(r.kinds, 'shoot:true,smash:true,pass:true', 'its cards'); same(r.fx, '4 to 5 rounds at one enemy, at once: 8 a round.', 'SHOOT\'s words'); ok(/class="cb-st">AMMO 20</.test(r.html) && /cb-shoot ready/.test(r.html) && />SHOOT</.test(r.html), 'the card (its foot says the ammunition): ' + r.html);
     });
     check('SHOOT goes off at once (no charge, no cooldown): a burst of 4 or of 5 rounds at the gun\'s own rate, each the gun\'s damage and a round spent, the enemy hurt by all of them; then the enemies\' turn; the next round the cube has its turn again, its card ready', () => {
         const r = J(`(function(){ const o = {}, keep = Math.random; try { for (const [k, rnd] of [['four', 0], ['five', 0.99]]) { Math.random = () => rnd; const { f, a } = __gs(20); __gsUp(f); const s0 = playerShotsFired, h0 = a.health, r0 = _cb.round;
@@ -1172,12 +1172,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             ok(x.frames >= (n - 1) * 11 && x.frames < 300, k + ': the burst took ' + x.frames + ' frames'); same(x.after, true, k + ': the enemies\' turn after it'); same(x.charge, 0, k + ': a charge'); }
         same(r.four.round, 2, 'the next round'); same(r.four.again, true, 'its turn again the next round'); same(r.four.ready, true, 'SHOOT ready again (no cooldown)'); same(r.four.foot, true, 'the ammunition on its foot the next round');
     });
-    check('fewer rounds than the burst: it fires what it has, and with none left the cube has no turn the next round; an enemy that falls ends the burst and the rounds not fired are kept', () => {
+    check('fewer rounds than the burst: it fires what it has; with none left SHOOT is not ready (NO AMMO on its foot) and a drop of it plays nothing, though the cube still has its turn, for SMASH (§2.69); an enemy that falls ends the burst and the rounds not fired are kept', () => {
         const r = J(`(function(){ const o = {}, keep = Math.random; try { Math.random = () => 0.99; let g = __gs(2); __gsUp(g.f); const s0 = playerShotsFired; const r0 = _cb.round; cardBattlePlay(player, 'shoot', null, g.a); __gsBurst(); o.few = [playerShotsFired - s0, playerAmmo, cardBattleTurnInfo().who === 'foe' || _cb.round > r0].join();
-                __toYou(); o.next = [_cbYouTurn(), __gsUp(g.f), cardBattleCards(player)[0].ready, /NO AMMO</.test(_cbCardHTML(cardBattleCards(player)[0]))].join(); __gsOff();
+                __toYou(); o.next = [_cbYouTurn(), __gsUp(g.f), cardBattleCards(player)[0].ready, /NO AMMO</.test(_cbCardHTML(cardBattleCards(player)[0])), cardBattlePlay(player, 'shoot', null, g.a), _cb.say && _cb.say.text, cardBattleCards(player)[1].ready].join(); __gsOff();
                 g = __gs(20, 3); const b = __ant(player.x + 2, player.y + 1); b.health = b.maxHealth = 9999; _cb.foes.push(b); __gsUp(g.f); const s1 = playerShotsFired; cardBattlePlay(player, 'shoot', null, g.a); __gsBurst(); o.kill = [g.a.dead || g.a.health <= 0, playerShotsFired - s1 < 5, playerAmmo === 20 - (playerShotsFired - s1), b.health].join(); __gsOff();
             } finally { Math.random = keep; } return o; })()`);
-        same(r.few, '2,0,true', 'two rounds left (fired, left, the enemies\' turn after)'); same(r.next, 'false,false,false,true', 'the next round with none (its turn, up after its follower, SHOOT ready, NO AMMO on its foot)'); same(r.kill, 'true,true,true,9999', 'an enemy that falls (down, the burst cut short, only the rounds fired spent, the other enemy unhurt)');
+        same(r.few, '2,0,true', 'two rounds left (fired, left, the enemies\' turn after)'); same(r.next, 'true,true,false,true,false,YOU · NO AMMO,true', 'the next round with none (its turn, up after its follower, SHOOT ready, NO AMMO on its foot, SHOOT played, what the banner says, SMASH ready)'); same(r.kill, 'true,true,true,9999', 'an enemy that falls (down, the burst cut short, only the rounds fired spent, the other enemy unhurt)');
     });
     check('HOLD FIRE passes its turn and keeps the rounds; a drop on an enemy with no clear shot says so and plays nothing; out of its own burst the gun still holds its fire in a battle (§2.10)', () => {
         const r = J(`(function(){ const o = {}; let g = __gs(20); o.held = [firePlayerShot(g.a) === true, cardBattleShooting(), playerAmmo].join(); __gsUp(g.f); o.pass = [cardBattlePlay(player, 'pass', null, null), playerAmmo, cardBattleTurnInfo().who, _cb.youActed].join(); __gsOff();
@@ -1185,11 +1185,87 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.then = cardBattlePlay(player, 'pass', null, null); __gsOff(); return o; })()`);
         same(r.held, 'false,false,20', 'the gun outside its burst (fired, shooting, rounds)'); same(r.pass, 'true,20,foe,true', 'HOLD FIRE (played, rounds, whose turn after, its turn had)'); same(r.blocked, 'false,YOU · NO CLEAR SHOT,you,20,true', 'no clear shot'); same(r.then, true, 'HOLD FIRE after it');
     });
+    check('SMASH (§2.69; the owner: "a close up smash with the gun", "About a burst (36)", "Free, every round"): on an enemy next to the cube the blow lands at once for 36, Crushing, with no round spent; then the enemies\' turn; ready again the next round, with or without rounds', () => {
+        const r = J(`(function(){ const o = {}; const { f, a } = __gs(0); o.next = __nextTo(player, a); __gsUp(f); const c = cardBattleCards(player).find(c => c.kind === 'smash'); o.card = [c.ready, c.fx, /cb-smash ready/.test(_cbCardHTML(c)), />READY</.test(_cbCardHTML(c))].join('|');
+            const h0 = a.health, r0 = _cb.round, s0 = playerShotsFired; o.reach = _cbCanHit(player, a, 'smash'); o.played = cardBattlePlay(player, 'smash', null, a); const T = cardBattleTurnInfo(); o.act = [T.who, T.actor === player, T.kind, !!_cb.turn.walk].join();
+            let n = 0; for (; n < 300 && cardBattleTurnInfo().kind === 'smash'; n++) _simStep(false); o.frames = n; o.dealt = h0 - a.health; o.want = CARD_BATTLE.smash.damage * defenseMult(a, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(a), 'crushing');
+            o.free = [playerAmmo, playerShotsFired - s0].join(); o.after = cardBattleTurnInfo().who === 'foe' || _cb.round > r0; o.hit = [DMG_HIT_SMASH.type, DMG_HIT_SMASH.player, CARD_BATTLE.smash.damage].join();
+            __toYou(); o.again = [__gsUp(f), cardBattleCards(player).find(c => c.kind === 'smash').ready].join(); __gsOff(); return o; })()`);
+        same(r.next, true, 'fixture: the cube next to the enemy'); same(r.card, 'true|A blow with the gun on an enemy next to you: 36, no ammo. Too far, you walk up.|true|true', 'its card'); same(r.reach, true, 'in reach'); same(r.played, true, 'played'); same(r.act, 'act,true,smash,false', 'its turn (no walk)');
+        ok(Math.abs(r.dealt - r.want) < 1.5, 'the blow took ' + r.dealt + ', not ' + r.want); ok(r.frames >= 20 && r.frames < 120, 'its turn took ' + r.frames + ' frames'); same(r.free, '0,0', 'rounds (left, fired)'); same(r.after, true, 'the enemies\' turn after it'); same(r.hit, 'crushing,true,36', 'its kind of hit and its damage');
+        same(r.again, 'true,true', 'the next round (its turn, SMASH ready)');
+    });
+    check('SMASH on an enemy out of reach: the cube\'s turn is a walk towards it, by its own pace on the squares, round everyone, as a follower\'s (§2.39); nothing is hit, no round spent, where it stops is its square, nearer the enemy; the card is ready the next round and, next to it then, the blow lands', () => {
+        const r = J(`(function(){ const o = {}; const { f, a } = __gs(20); const far = __ant(player.x, player.y); far.element = null; far.health = far.maxHealth = 9999; _cb.foes.push(far);
+            /* an enemy put on a free square of the room 4 to 6 squares from the cube's, in its sight */
+            const p0 = _cbSq(player), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)); let spot = null; for (const c of partyRoomCells(_cb.lay.room)) { const d = Math.hypot(c[0] - p0[0], c[1] - p0[1]); if (d >= 4 && d <= 6 && !taken.has(c[0] + ',' + c[1]) && facilitySeesFrom(p0[0], p0[1], c[0], c[1])) { spot = c; break; } }
+            o.spot = !!spot; if (!spot) { __gsOff(); return o; } far.x = spot[0]; far.y = spot[1]; _cb.slots.set(far, { x: spot[0], y: spot[1] });
+            __gsUp(f); o.tiles = _cbTiles(player); o.reach = _cbCanHit(player, far, 'smash'); const d0 = Math.hypot(p0[0] - spot[0], p0[1] - spot[1]), h0 = far.health;
+            o.played = cardBattlePlay(player, 'smash', null, far); o.walk = _cb.turn.walk ? _cb.turn.walk.length : 0; o.walking = cardBattleWalking(player);
+            let n = 0; for (; n < 600 && cardBattleTurnInfo().kind === 'smash'; n++) _simStep(false); const p1 = _cbSq(player), d1 = Math.hypot(p1[0] - spot[0], p1[1] - spot[1]);
+            o.moved = [d1 < d0 - 0.9, Math.abs(player.x - p1[0]) < 0.6 && Math.abs(player.y - p1[1]) < 0.6, far.health === h0, playerAmmo].join(); o.steps = Math.max(Math.abs(p1[0] - p0[0]), Math.abs(p1[1] - p0[1])) <= o.tiles;
+            o.mine = _cbGrid(f).taken.has(Math.round(p1[0]) + ',' + Math.round(p1[1]));
+            /* the rounds after: SMASH again each of its turns, till it is next to it and the blow lands */
+            let landed = false; for (let k = 0; k < 4 && !landed; k++) { __toYou(); if (!__gsUp(f)) break; cardBattlePlay(player, 'smash', null, far); for (let m = 0; m < 600 && cardBattleTurnInfo().kind === 'smash'; m++) _simStep(false); landed = far.health < h0; }
+            o.landed = landed; o.dealt = h0 - far.health; __gsOff(); return o; })()`);
+        same(r.spot, true, 'fixture: a far square in sight'); same(r.tiles, 3, 'the cube\'s pace on the squares (the walker\'s own pace, as a follower\'s: 3)'); same(r.reach, false, 'in reach at the start'); same(r.played, true, 'played'); ok(r.walk >= 1 && r.walk <= 3, 'its walk: ' + r.walk + ' squares'); same(r.walking, true, 'the battle is not walking it');
+        same(r.moved, 'true,true,true,20', 'after its walk (nearer the enemy, on its new square, the enemy unhurt, its rounds)'); same(r.steps, true, 'it walked further than its pace'); same(r.mine, true, 'its square does not stand in a follower\'s way');
+        same(r.landed, true, 'the blow never landed on a later turn'); ok(r.dealt > 0, 'the blow took ' + r.dealt);
+    });
     check('the pieces of it: the shot is let through only for its burst (js/input.js); SHOOT and HOLD FIRE have no shape (js/cardshapes.js); the banner names it; a new battle starts it afresh', () => {
         const inp = rd('js/input.js'), cb = rd('js/cardbattle.js');
         ok(/cardBattleTurn\(\) && !\(typeof cardBattleShooting === "function" && cardBattleShooting\(\)\)\) return;/.test(inp), 'js/input.js firePlayerShot');
+        same(J(`cardShapeDef(player, 'smash', null)`), null, 'SMASH\'s shape'); ok(/T\.kind === "smash" \? "SMASH"/.test(cb), 'the banner names SMASH');
         const r = J(`[cardShapeDef(player, 'shoot', null), cardShapeDef(player, 'pass', null), (() => { _cb.youActed = true; _cb.shooting = true; cardBattleReset(); return [_cb.youActed, _cb.shooting].join(); })()]`);
         same(r[0], null, 'SHOOT\'s shape'); same(r[1], null, 'HOLD FIRE\'s shape'); same(r[2], 'false,false', 'after a reset'); ok(/T\.kind === "shoot" \? "SHOOT"/.test(cb), 'the banner'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'HOLD FIRE by a tap');
+    });
+
+    group('THE MUTATOR\'S TURN (§2.70; the owner, 2026-11-21: "you could make it to where the mutator can use his healing serum to affect the team whenever it\'s available in the card battles"; asked: "The whole squad", "Over 3 turns: 24%, 24%, 12%", "On its own turn each round")');
+    run(`globalThis.__mu = (serums) => { __fresh(2); invReset(); playerClassKey = null; classSet('mutator'); playerInv = {}; if (serums) invAdd('healing_serum', serums); player.invuln = 1e6; health = PLAYER_HITS;
+            for (const f of followers) { f.role = 'brawler'; f.maxHealth = 1000; f.health = 100; } const a = __ant(player.x + 2, player.y); a.element = null; a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1); return { fs: followers.slice(), a }; };   /* (the enemy cannot walk and stands next to nobody: its turns pass with no bite, so the healing is all that moves its squad's health) */
+        globalThis.__muOff = () => { cardBattleReset(); invReset(); playerClassKey = null; weaponReset(); player.invuln = 0; };
+        globalThis.__muUp = (fs) => { for (const f of fs) _cb.acted.add(f); _cbAfterAct(frame); return _cbCurrent() === player; };
+        /* the cube's serum turn played out (the battle's own frames), to the next turn of yours */
+        globalThis.__muOn = () => { for (let i = 0; i < 400 && cardBattleTurnInfo() && cardBattleTurnInfo().kind === 'serum'; i++) { frame++; cardBattleTick(); } __toYou(); };`);
+    check('a Mutator with no serum has no turn (and no other class has this one); carrying one, its turn follows its followers\': its cards are HEALING SERUM (the serums it carries on its foot, its turns\' worth in its words) and HOLD; the turns\' worth come from the pool\'s own numbers: 24%, 24%, 12%', () => {
+        const r = J(`(function(){ const o = {}; let g = __mu(0); o.none = [_cbYouKind(), _cbYouTurn(), __muUp(g.fs), cardBattlePlay(player, 'serum', null, null)].join(); __muOff();
+            g = __mu(2); o.first = _cbCurrent() === g.fs[0]; o.early = cardBattlePlay(player, 'serum', null, null); o.up = __muUp(g.fs); const cs = cardBattleCards(player); o.kinds = cs.map(c => c.kind + ':' + c.ready).join(); o.fx = cs[0].fx; o.html = _cbCardHTML(cs[0]); o.hold = cs[1].name + '|' + cs[1].fx;
+            o.doses = _cbSerumDoses().map(v => Math.round(v * 100)).join(); o.gun = [cardBattlePlay(player, 'shoot', null, g.a), cardBattlePlay(player, 'smash', null, g.a)].join(); __muOff();
+            __fresh(1); invReset(); playerClassKey = null; classSet('technomancer'); playerInv = {}; invAdd('healing_serum', 1); o.tech = [_cbYouKind(), _cbYouIn()].join(); __muOff(); return o; })()`);
+        same(r.none, 'serum,false,false,false', 'with no serum (its kind of turn, a turn, up after its followers, a serum played)'); same(r.first, true, 'its follower is not first'); same(r.early, false, 'a serum played before its turn'); same(r.up, true, 'its turn does not follow its followers\'');
+        same(r.kinds, 'serum:true,pass:true', 'its cards'); same(r.fx, 'Heals your whole squad: 24% now, then 24% and 12% as the enemy turns begin.', 'the serum\'s words'); ok(/class="cb-st">SERUM 2</.test(r.html) && /cb-serum ready/.test(r.html) && />HEALING SERUM</.test(r.html), 'the card (its foot says the serums carried): ' + r.html); same(r.hold, 'HOLD|Keep your serum: your turn passes.', 'HOLD');
+        same(r.doses, '24,24,12', 'the turns\' worth (js/serum.js SERUM.splash: 10 beats of 6%, 4 a turn)'); same(r.gun, 'false,false', 'a Mutator played the Gunslinger\'s cards'); same(r.tech, ',false', 'a Technomancer carrying a serum');
+    });
+    check('HEALING SERUM played: one serum spent; every one of the squad still up is healed 24% of its own health at once, wherever it stands; then 24% and 12% as the next two enemy turns begin (60% in all), and no more after; one at full health gains nothing; one that is down is not raised', () => {
+        const r = J(`(function(){ const o = {}; const g = __mu(2), [f1, f2] = g.fs; f2.health = 990; const far = partyRoomCells(_cb.lay.room).slice().sort((p, q) => Math.hypot(q[0] - player.x, q[1] - player.y) - Math.hypot(p[0] - player.x, p[1] - player.y))[0]; f1.x = far[0]; f1.y = far[1]; _cb.slots.set(f1, { x: far[0], y: far[1] });
+            __muUp(g.fs); const r0 = _cb.round; o.played = cardBattlePlay(player, 'serum', null, null); const T = cardBattleTurnInfo(); o.act = [T.who, T.actor === player, T.kind].join(); o.now = [f1.health, f2.health, invCount('healing_serum'), _cb.serums.length, _cb.serums[0].left.length].join();
+            __muOn(); o.second = [f1.health, _cb.round - r0, _cb.serums.length ? _cb.serums[0].left.length : 0].join();
+            __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); o.third = [f1.health, _cb.serums.length, invCount('healing_serum')].join();
+            __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); o.after = f1.health; o.said = floatingTexts.some(t => t.world && /^\\+\\d+$/.test(t.text));
+            __muOff(); return o; })()`);
+        same(r.played, true, 'played'); same(r.act, 'act,true,serum', 'its turn'); same(r.now, '340,1000,1,1,2', 'at once (the far one 100 + 24% of 1000; the one near full capped; serums left; a serum at work, its turns\' worth left)');
+        same(r.second, '580,1,1', 'as the next enemy turn begins (its health, the round on, turns\' worth left)'); same(r.third, '700,0,1', 'as the one after begins (its health, serums at work, serums carried: HOLD kept it)'); same(r.after, 700, 'a turn later'); same(r.said, true, 'no green +n over the healed');
+    });
+    check('HOLD keeps the serum; two serums at work add up; HERBALIST\'s stronger pool heals half as much again here; one of the squad that is down is not raised; a new battle starts with none at work', () => {
+        const r = J(`(function(){ const o = {}; let g = __mu(2); __muUp(g.fs); o.hold = [cardBattlePlay(player, 'pass', null, null), invCount('healing_serum'), g.fs[0].health].join(); __muOff();
+            g = __mu(2); g.fs[1].health = 0; g.fs[1].dead = true; __ticks(2); __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.down = [g.fs[0].health, g.fs[1].health, g.fs[1].dead].join(); __muOn();
+            __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.two = [g.fs[0].health, _cb.serums.length, invCount('healing_serum')].join(); __muOff(); o.reset = _cb.serums.length;
+            g = __mu(1); const keep = playerSerumHealMult; playerSerumHealMult = () => 1.5; try { __muUp(g.fs); cardBattlePlay(player, 'serum', null, null); o.herb = g.fs[0].health; } finally { playerSerumHealMult = keep; } __muOff(); return o; })()`);
+        same(r.hold, 'true,2,100', 'HOLD (played, serums, its follower\'s health)'); same(r.down, '340,0,true', 'one of the squad down (the other healed, it not)'); same(r.two, '820,2,0', 'a second serum the next round (100 + 24% + 24% of the first + 24% of the second; two at work; none carried)'); same(r.reset, 0, 'serums at work after the battle'); same(r.herb, 460, 'with HERBALIST (24% × 1.5)');
+    });
+    check('ASH SURGEON or PLAGUE DOCTOR worn (the owner, 2026-11-21, of their pool statuses in a battle, where there is no pool: "just make them do moderate damage"): each turn\'s worth of a serum also hits every enemy of the battle in the role\'s element, 10, 10 and 5; the card says so; with no such role, and with HERBALIST, the enemies are not touched', () => {
+        const r = J(`(function(){ const o = {}, keep = playerMutRole; const run = (role) => { const g = __mu(1), b = __ant(player.x + 2, player.y + 1); b.element = null; b.health = b.maxHealth = 9999; _cb.foes.push(b); playerMutRole = () => role;
+                __muUp(g.fs); const fx = cardBattleCards(player)[0].fx, h = () => [g.a.health, b.health]; cardBattlePlay(player, 'serum', null, null); const h1 = h(); __muOn(); const h2 = h(); __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); const h3 = h();
+                const per = dmgRowMult(dmgRow(g.a), 'elemental') * defenseMult(g.a, { x: player.x, y: player.y }); const row = { fx, d: [9999 - h1[0], h1[0] - h2[0], h2[0] - h3[0]].map(v => Math.round(v / per * 10) / 10).join(), both: Math.abs((9999 - h3[0]) - (9999 - h3[1])) < 0.01, healed: g.fs[0].health }; __muOff(); return row; };
+            try { o.ash = run({ match: 'mutator', kit: { el: 'fire', pool: true } }); o.herb = run({ match: 'mutator', kit: { el: 'blossom', biteMend: true, poolHeal: 0.5 } }); o.none = run(null); } finally { playerMutRole = keep; }
+            o.bite = CARD_BATTLE.serum.bite; o.roles = ['ash_surgeon', 'plague_doctor', 'herbalist'].map(id => !!EQUIP_CARDS[id].kit.pool).join(); return o; })()`);
+        same(r.bite, 10, 'a full turn\'s worth on an enemy'); same(r.roles, 'true,true,false', 'the roles whose kit is the pool\'s (ASH SURGEON, PLAGUE DOCTOR; not HERBALIST)');
+        same(r.ash.d, '10,10,5', 'with ASH SURGEON: what the enemy takes, turn by turn (before its own resistances)'); same(r.ash.both, true, 'every enemy the same'); same(r.ash.healed, 700, 'the healing is as it was'); same(r.ash.fx, 'Heals your squad 24%, 24%, 12% and hits every enemy 10, 10, 5, turn by turn.', 'the card\'s words');
+        same(r.herb.d, '0,0,0', 'with HERBALIST'); same(r.none.d, '0,0,0', 'with no role'); same(r.none.fx, 'Heals your whole squad: 24% now, then 24% and 12% as the enemy turns begin.', 'the card\'s words with no role');
+    });
+    check('the pieces of it: the serum has no shape and is let go anywhere over the fight (not by a tap); the enemies\' turn begins with the serums\' next turn\'s worth; the banner names it', () => {
+        const cb = rd('js/cardbattle.js'); same(J(`cardShapeDef(player, 'serum', null)`), null, 'its shape');
+        ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
     });
 
     group('THE PIECES');
