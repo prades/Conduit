@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bh` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a flooded staircase into the West Channel, the channel 5 tiles wide, the trace on the game's grid (work in progress)
+- **The ask** (the owner, 2026-11-21): "There should also be a flooded staircase that leads into the channel in the entrance tunnel. Maybe make that channel a little bit wider as well."
+- **What it does** (only with `?sewerdungeon`): steps from the north walkway down into the West Channel; the channel 5 tiles wide. **Fixed with it:** the game moves walls onto its half-tile lines, which had moved a doorway shut; the whole trace is on those lines now.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check (35 rooms, every tile); the short run; seen in a real browser. **Not playtested.**
+
 ### Build `2026-11-17bg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a way down into the room under the entrance (work in progress)
 - **The ask** (the owner, 2026-11-21): "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance."
 - **What it does** (only with `?sewerdungeon`): a short flight from the south walkway by the entrance down into the small room below it.

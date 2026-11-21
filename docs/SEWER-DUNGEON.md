@@ -87,6 +87,10 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-21): "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance."** A short flight from the West Channel's south walkway, near the entrance, down into the small room below it (it was reached only through the West Hall). Where the flight stands along that wall is the agent's. Build `2026-11-17bg`.
 
+**Added (the owner, 2026-11-21): "There should also be a flooded staircase that leads into the channel in the entrance tunnel. Maybe make that channel a little bit wider as well."** THE FLOODED STAIRCASE: steps from the north walkway down into the West Channel, where the picture hatches them beside the key (two tiles wide; nothing walks off its foot, the water is there). The West Channel is 5 tiles wide now (it was 4.3). Build `2026-11-17bh`.
+
+**Found with it: the trace must lie on the game's grid.** The game's playable map moves every wall onto its half-tile lines; a doorway traced a little off them was moved shut (the south bank could not be reached at all). `trace.js` now puts every point on the nearest half-tile line itself, once, for the map and the pictures alike (the ring's own corners excepted, so it stays one width), and the ring is cut on those lines where things meet it. Walkways are whole tiles wide: 2 along both channels. Every tile of all 35 rooms is reached on foot from the West Entrance.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
