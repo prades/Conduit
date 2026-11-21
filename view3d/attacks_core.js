@@ -81,7 +81,7 @@ function view3dCoreForms(K) {
 
   // THE WAVES OF WATER: a strip of a wave's cross-section swept round its arc (ECHO PULSE's ring, WAVE MAKER's three), its colour and strength at each point. Four of it.
   const WN = 56, WP = 7, WAVES = [];
-  const PROF = [[-1.0, 0.0], [-0.55, 0.5], [-0.15, 0.9], [0.0, 1.0], [0.2, 0.84], [0.12, 0.42], [0.22, 0.0]];   // (its cross-section: back foot, back slope, near the top, crest, lip curling ahead, front face, front foot)
+  const PROF = [[-1.8, 0.0], [-0.9, 0.35], [-0.3, 0.8], [0.0, 1.0], [0.22, 0.86], [0.14, 0.45], [0.25, 0.0]], PA = [0, 0.55, 0.85, 0.95, 0.95, 0.85, 0.5];   // (its cross-section: back foot, back slope, near the top, crest, lip curling ahead, front face, front foot)
   for (let k = 0; k < 4; k++) { const g = new T.BufferGeometry(), nv = (WN + 1) * WP, pos = new Float32Array(nv * 3), col = new Float32Array(nv * 4), idx = [];
     for (let i = 0; i < WN; i++) for (let j = 0; j < WP - 1; j++) { const a = i * WP + j, b = a + WP; idx.push(a, b, a + 1, a + 1, b, b + 1); }
     g.setAttribute('position', new T.BufferAttribute(pos, 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aC', new T.BufferAttribute(col, 4).setUsage(T.DynamicDrawUsage)); g.setIndex(idx);
@@ -93,7 +93,7 @@ function view3dCoreForms(K) {
   function wave(cx, cz, a0, span, r, h, w, C, a, taper, s, t) { if (wvN >= WAVES.length || a <= 0.01 || r <= 0.05) return; const W = WAVES[wvN++], P = W.pos, Cl = W.col, n = low() ? WN >> 1 : WN;
     for (let i = 0; i <= WN; i++) { const ii = Math.min(i, n), an = a0 + span * ii / n, ca = Math.cos(an), sa = Math.sin(an), u = ii / n, tp = taper ? Math.pow(Math.sin(PI * u), 0.6) : 1, hh = h * tp * (1 + 0.14 * Math.sin(an * 7 + s + t * 0.3) + 0.08 * Math.sin(an * 13 - t * 0.5)), fy = floorY(cx + ca * r, cz + sa * r);
       for (let j = 0; j < WP; j++) { const o = (i * WP + j) * 3, q = (i * WP + j) * 4, rr = Math.max(0.02, r + PROF[j][0] * w * (0.5 + 0.5 * tp)), y = fy + 0.02 + PROF[j][1] * hh;
-        P[o] = cx + ca * rr; P[o + 1] = y; P[o + 2] = cz + sa * rr; const c = j === 0 || j === 1 ? C[0] : j === 2 ? C[1] : j === 3 || j === 4 ? C[3] : C[2], al = (j === 0 || j === 6 ? 0 : j === 1 ? 0.45 : j === 5 ? 0.75 : 0.92) * a * tp;
+        P[o] = cx + ca * rr; P[o + 1] = y; P[o + 2] = cz + sa * rr; const c = j === 0 || j === 1 ? C[0] : j === 2 ? C[1] : j === 3 || j === 4 ? C[3] : C[2], al = PA[j] * a * tp;
         Cl[q] = c[0]; Cl[q + 1] = c[1]; Cl[q + 2] = c[2]; Cl[q + 3] = al; } }
     W.geo.setDrawRange(0, n * (WP - 1) * 6); W.geo.attributes.position.needsUpdate = true; W.geo.attributes.aC.needsUpdate = true; W.g.visible = true; }
 
@@ -119,7 +119,7 @@ function view3dCoreForms(K) {
     for (let i = 0; i < (low() ? 4 : 8); i++) { const an = Math.atan2(dz, dx) + (H(i, s, 1) - 0.5) * 2.6, up = (H(i, s, 2) - 0.2) * 1.1, d = (0.05 + 0.045 * H(i, s, 3)) * Math.min(g, 12) * (0.7 + size), ex = X + Math.cos(an) * d, ey = Y + up * d * 0.6, ez = Z + Math.sin(an) * d;
       if (g < 12) seg(ex, ey, ez, ex - Math.cos(an) * 0.12, ey - up * 0.07, ez - Math.sin(an) * 0.12, 0.022, 0.005, MINT, 0.9 * (1 - g / 12), 0.1); }
     for (let i = 0; i < (low() ? 3 : 6); i++) { const an = Math.atan2(dz, dx) + (H(i, s, 4) - 0.5) * 2.2, v = 0.03 + 0.03 * H(i, s, 5), t = Math.min(g, 22), y = Y + (0.035 + 0.03 * H(i, s, 6)) * t - 0.0034 * t * t, sp = H(i, s, 7) * TAU + g * 0.4;
-      if (y > Yf + 0.02) gem(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, Math.cos(sp), Math.sin(sp) + 0.3, Math.sin(sp * 0.7), sp, 0.11 * k + 0.03, 0.4 * k + 0.08, k); }
+      if (y > Yf + 0.02) gem(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, Math.cos(sp), Math.sin(sp) + 0.3, Math.sin(sp * 0.7), sp, 0.22 * k + 0.05, 0.09 * k + 0.03, k); }
     if (g < 4) flat(GLOWF, X, Yf, Z, 0.5 + 0.3 * size, TEAL[0], TEAL[1], TEAL[2], 0.5 * (1 - g / 4));
     flat(RINGF, X, Yf, Z, 0.15 + 0.55 * size * outC(clamp(g / 12, 0, 1)), TEAL2[0], TEAL2[1], TEAL2[2], 0.75 * (1 - clamp(g / 14, 0, 1)));
     for (let i = 0; i < (low() ? 2 : 4); i++) { const an = H(i, s, 8) * TAU; haze(X + Math.cos(an) * 0.12 * (1 + g * 0.05), Y + 0.01 * g, Z + Math.sin(an) * 0.12 * (1 + g * 0.05), 0.2 + 0.02 * g, PALE, 0.22 * k); } }
@@ -134,7 +134,7 @@ function view3dCoreForms(K) {
   const JELC = [JEL, JEL2], WATC = [WAT2, GOOW], GOOC2 = [GOOB, GOOC], TEALC = [TEAL2, CREST];
   // a blow on a jelly shield round (x, z), its wearer bh tall, a frames since it landed: the bubble flashing up and bulging, a ripple out over it, drops of jelly flicked off
   function blowOn(x, z, bh, a, s, fade) { const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 16, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
-    if (fade > 0) bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.5 * k * fade, 0.9 * k * k, 0.4 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);   // (fade 0: the lasting bubble is there and flashes itself)
+    if (fade > 0) bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.85 * k * fade, 1.2 * k, 0.6 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);   // (fade 0: the lasting bubble is there and flashes itself)
     if (a < 12) { const u = a / 12; arc3(x, Yf + hh * 0.45, z, r * (0.4 + 0.75 * u), CR, CU, 0, TAU, 20); stroke(0.03 * (1 - u) + 0.008, 0.03 * (1 - u) + 0.008, JEL2, 0.8 * (1 - u), 0.8 * (1 - u)); }
     for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 51) * TAU, t = Math.min(a, 16), d = r * 1.05 + 0.02 * t, y = Yf + hh * (0.5 + 0.3 * H(i, s, 52)) + 0.03 * t - 0.003 * t * t; drop(x + Math.cos(an) * d, y, z + Math.sin(an) * d, 0.06, JEL, 0.85 * k); } }
 
@@ -164,14 +164,22 @@ function view3dCoreForms(K) {
       arc3(X, Yf + bh * (0.45 - 0.2 * ph), Z, r, HX, HZ, 0, TAU, 26); stroke(0.035 - 0.022 * ph, 0.035 - 0.022 * ph, i % 2 ? TEAL : TEAL2, a, a); } }
   // the ring of twelve teal crystals round the Hammer Slug while he braces (SHELL GUARD's 4 s; the Technicians' approved card: "surrounded by a very intact ring of crystals"); GUARDS: when each began
   const GUARDS = new Map();
-  function brace(f, b, f0) { const until = f._guardUntil || 0, G = GUARDS.get(f);
-    if (!(until > f0)) { if (G && f0 - G.end < 12) G.out = f0 - G.end; else { if (G) GUARDS.delete(f); return; } } else if (!G || G.end !== until) GUARDS.set(f, { from: G && G.end === until ? G.from : f0, end: until, out: -1 });
-    const Q = GUARDS.get(f); if (!Q) return; const a = f0 - Q.from, left = Q.out >= 0 ? -Q.out : until - f0, k = Math.min(outC(clamp(a / 12, 0, 1)), clamp((left + 12) / 12, 0, 1)); if (k <= 0.01) return;
-    const h = b.holder, X = h.position.x, Z = h.position.z, Yf = floorY(X, Z), bh = heightOf(b), R = 0.55 + 0.3 * bh, s = 5;
+  // (a battle holds its clock between turns, so its end moves on with the frame: what is kept is when it began, and when it was over)
+  function guardOf(f, f0) { const on = (f._guardUntil || 0) > f0; let G = GUARDS.get(f);
+    if (on) { if (!G || G.end >= 0) GUARDS.set(f, G = { from: f0, end: -1 }); } else if (G) { if (G.end < 0) G.end = f0; if (f0 - G.end >= 12) { GUARDS.delete(f); G = null; } }
+    if (!G) return 0; const a = f0 - G.from; return Math.min(outC(clamp(a / 12, 0, 1)), G.end < 0 ? 1 : clamp(1 - (f0 - G.end) / 12, 0, 1)); }
+  function brace(f, b, f0) { const k = guardOf(f, f0); if (k <= 0.01) return;
+    const h = b.holder, X = h.position.x, Z = h.position.z, Yf = floorY(X, Z), bh = heightOf(b), R = 0.8 + 0.2 * bh, s = 5;
     for (let i = 0; i < 12; i++) { const an = i / 12 * TAU + 0.13, rise = clamp(k * 1.25 - (i % 3) * 0.08, 0, 1), L = (0.34 + 0.12 * (i % 2) + 0.03 * Math.sin(f0 * 0.08 + i)) * rise, hot = 0.55 + 0.45 * Math.max(0, Math.sin(f0 * 0.12 - i * 0.52));
       gem(X + Math.cos(an) * R, Yf - 0.05 * (1 - rise), Z + Math.sin(an) * R, Math.cos(an) * 0.12, 1, Math.sin(an) * 0.12, an, L, 0.14 * Math.min(1, rise + 0.2), hot * k); }
     flat(GLOWF, X, Yf, Z, R * 1.15, TEAL[0], TEAL[1], TEAL[2], 0.22 * k); flat(RINGF, X, Yf, Z, R * 1.08, TEAL2[0], TEAL2[1], TEAL2[2], 0.35 * k);
     for (let i = 0; i < (low() ? 3 : 6); i++) { const u = ((f0 * 0.015 + i / 6) % 1), an = i / 6 * TAU + f0 * 0.02; glint(X + Math.cos(an) * R, Yf + 0.1 + 0.4 * u, Z + Math.sin(an) * R, 0.12, 0.8 * k * Math.sin(u * PI)); } }
+  // a slice on an enemy at (X, Z) as the ball reaches it, the roll along (ux, uz), g frames in: two crossed blades of light drawn across it, a flash, sparks and hex shards thrown along the roll
+  let slices = 0;
+  function slice(X, Z, ux, uz, g, s) { if (g < 0 || g > 24) return; const Yf = floorY(X, Z), Y = Yf + 0.32, k = 1 - g / 24, nx = -uz, nz = ux;
+    for (let q = 0; q < 2; q++) { const sg = q ? 1 : -1, ax = X - ux * 0.32 + nx * 0.2 * sg, az = Z - uz * 0.32 + nz * 0.2 * sg, bx = X + ux * 0.32 - nx * 0.2 * sg, bz = Z + uz * 0.32 - nz * 0.2 * sg, u = clamp((g - q * 2) / 5, 0, 1); if (u <= 0) continue;
+      BEAM.path(); for (let j = 0; j <= 8; j++) { const v = j / 8 * u; padd(lerp(ax, bx, v), Y + 0.22 * Math.sin(PI * v) * sg + 0.1 * (q - 0.5), lerp(az, bz, v)); } stroke(0.012, 0.055, q ? CREST : MINT, 0.3 * k, 0.95 * k); }
+    if (g < 5) glow(X, Y, Z, 0.32, PALE, 1 - g / 5); coreHit(X, Y, Z, Yf, ux, uz, g, s, 0.4); }
   const SLUG = {
     tilts: true,
     // HIS BODY. His everyday hit (the core element's; attackAnim 0 to PI, the hit landing as it begins): a short wind-back, his head drawn in, then a lunge forward head first, his fin up and his scutes
@@ -179,13 +187,13 @@ function view3dCoreForms(K) {
     // slowly; then rises. BLADE ROLL: rolled up (the game hides him; the ball is drawn in his place), and as he unrolls at its end he springs up out of a squash and wobbles. SHOCKWAVE SLAM (its damage
     // at once): thrown down flat from a rear, his scutes flared, held, then up with a bounce.
     body(f, b, f0) { const B = b.B, t = f0 / 60; bmReset(); let act = null;
-      const hit = curOf(f, 'impact'), ring = curOf(f, 'ring'), slam = ring && ring.data && ring.data.kind === 'slam' ? ring : null, roll = curOf(f, 'bladeroll'), guard = (f._guardUntil || 0) > f0, G = GUARDS.get(f);
+      const hit = curOf(f, 'impact'), ring = curOf(f, 'ring'), slam = ring && ring.data && ring.data.kind === 'slam' ? ring : null, roll = curOf(f, 'bladeroll'), gk = guardOf(f, f0);
       if (slam && slam.now < 34) { const a = slam.now;
         if (a < 3) { const k = a / 3; BM.up = 0.12 * (1 - k); BM.pitch = lerp(-0.3, 0.12, k); BM.sq = lerp(-0.5, 1.2, k); act = 1; }
         else if (a < 9) { BM.sq = 1.2 - 0.1 * (a - 3) / 6; BM.sx = BM.sz = 1.1; BM.pitch = 0.12; act = 1; }
         else { const u = (a - 9) / 25; BM.sq = 1.1 * Math.cos(u * PI * 2.5) * (1 - u); BM.sx = BM.sz = 1 + 0.1 * (1 - u); BM.pitch = 0.12 * (1 - u); act = 1 - ease(u); } }
       else if (roll && roll.now >= roll.l0 && roll.now < roll.l0 + 16) { const a = roll.now - roll.l0, u = a / 16; BM.sq = a < 3 ? 1.3 : 1.3 * Math.cos((a - 3) / 13 * PI * 2) * (1 - u); BM.sx = BM.sz = 1 + 0.15 * (1 - u); act = 0.6 * (1 - u); }
-      else if (guard || (G && G.out >= 0)) { const a = G ? f0 - G.from : 0, left = G && G.out >= 0 ? -G.out : (f._guardUntil || 0) - f0, k = Math.min(outC(clamp(a / 10, 0, 1)), clamp((left + 12) / 12, 0, 1));
+      else if (gk > 0) { const k = gk;
         BM.sq = 0.55 * k + 0.05 * Math.sin(f0 * 0.06) * k; BM.sx = BM.sz = 1 + 0.06 * k; BM.up = -0.02 * k; act = 0.85 * k; }
       else if (f.state === 'attack' && hit && hit.data && hit.data.kind === 'hit') { const u = clamp(((f.attackAnim || 0) + 0.18) / PI, 0, 1);
         if (u < 0.15) { const k = ease(u / 0.15); BM.push = -0.07 * k; BM.pitch = -0.14 * k; BM.sq = -0.2 * k; act = 0.2 * k; }
@@ -206,10 +214,7 @@ function view3dCoreForms(K) {
         span(m) { return m.data && m.data.kind === 'slice' ? 30 : 34; },
         begin(m) { if (m.data) return; if (isRollHit(m.o)) { const R = ROLLS.get(m.owner); m.data = { kind: 'slice', tx: m.o.x, ty: m.o.y, ux: R ? R.ux : 1, uz: R ? R.uz : 0 }; } else if (isSlamHit(m.o)) m.data = { kind: 'slam' }; else HIT.begin(m); },
         draw(m, age, f0, b) { const D = m.data, s = m.seed; if (!D || D.kind === 'slam') return;
-          if (D.kind === 'slice') { const X = D.tx, Z = D.ty, Yf = floorY(X, Z), Y = Yf + 0.32; if (age > 24) return; const k = 1 - age / 24, nx = -D.uz, nz = D.ux;
-            for (let q = 0; q < 2; q++) { const sg = q ? 1 : -1, ax = X - D.ux * 0.32 + nx * 0.2 * sg, az = Z - D.uz * 0.32 + nz * 0.2 * sg, bx = X + D.ux * 0.32 - nx * 0.2 * sg, bz = Z + D.uz * 0.32 - nz * 0.2 * sg, u = clamp((age - q * 2) / 5, 0, 1); if (u <= 0) continue;
-              BEAM.path(); for (let j = 0; j <= 8; j++) { const v = j / 8 * u; padd(lerp(ax, bx, v), Y + 0.22 * Math.sin(PI * v) * sg + 0.1 * (q - 0.5), lerp(az, bz, v)); } stroke(0.012, 0.055, q ? CREST : MINT, 0.3 * k, 0.95 * k); }
-            if (age < 5) glow(X, Y, Z, 0.32, PALE, 1 - age / 5); coreHit(X, Y, Z, Yf, D.ux, D.uz, age, s, 0.4); return; }
+          if (D.kind === 'slice') { slice(D.tx, D.ty, D.ux, D.uz, age, s); return; }
           HIT.draw(m, age, f0, b, false); } },
       // the core hit's knock (a ring at the enemy), SHELL GUARD's ring (round him, out to GUARD_LURE: the enemies in it go for him) and SHOCKWAVE SLAM's ring (round him, out to ULT_SLAM.radius).
       // SHELL GUARD: a ring of teal light racing out over the floor to its reach with a low wall of light on it; as it passes each enemy it lures, a mark of light over it and a thread of teal light
@@ -240,7 +245,7 @@ function view3dCoreForms(K) {
           for (let j = 0; j < 2; j++) { const aj = age - j * 6; if (aj < 0) continue; const uj = clamp(aj / 20, 0, 1), rj = 0.3 + (R - 0.3) * outC(uj); flat(RINGF, X, Yf, Z, rj, j ? TEAL[0] : PALE[0], j ? TEAL[1] : PALE[1], j ? TEAL[2] : PALE[2], (j ? 0.6 : 0.95) * (1 - uj * uj)); }
           if (age < 22) { const kk = 1 - u; arc3(X, Yf + 0.12, Z, r, HX, HZ, 0, TAU, 48); stroke(0.07 * kk + 0.02, 0.07 * kk + 0.02, MINT, 0.75 * kk, 0.75 * kk); arc3(X, Yf + 0.3 * kk + 0.1, Z, r * 0.98, HX, HZ, 0, TAU, 48); stroke(0.03, 0.03, CREST, 0.5 * kk, 0.5 * kk); }
           const nr = low() ? 8 : 16; for (let i = 0; i < nr; i++) { const an = (i + H(i, s, 4)) / nr * TAU, d0 = r * (0.85 + 0.2 * H(i, s, 5)), th = age - 20 * H(i, s, 6) * 0.6, t = clamp(th, 0, 22), y = Yf + 0.05 + (0.05 + 0.04 * H(i, s, 7)) * t - 0.0042 * t * t;
-            const x = X + Math.cos(an) * Math.min(R, d0 + 0.02 * t), z = Z + Math.sin(an) * Math.min(R, d0 + 0.02 * t); if (th > 0 && y > floorY(x, z)) { if (i % 2) gem(x, y, z, Math.cos(an + t * 0.3), 1, Math.sin(an), an + t * 0.3, 0.16 * k + 0.04, 0.12 * k + 0.04, k); else lump(x, y, z, 0.1 + 0.05 * H(i, s, 8), DUST, 0.55 * k); } }
+            const x = X + Math.cos(an) * Math.min(R, d0 + 0.02 * t), z = Z + Math.sin(an) * Math.min(R, d0 + 0.02 * t); if (th > 0 && y > floorY(x, z)) { if (i % 2) gem(x, y, z, Math.cos(an + t * 0.3), 1, Math.sin(an), an + t * 0.3, 0.2 * k + 0.05, 0.08 * k + 0.03, k); else lump(x, y, z, 0.1 + 0.05 * H(i, s, 8), DUST, 0.55 * k); } }
           for (let i = 0; i < (low() ? 6 : 12); i++) { const an = H(i, s, 9) * TAU, rr = r * (0.7 + 0.3 * H(i, s, 10)); if (age < 26) haze(X + Math.cos(an) * rr, Yf + 0.12 + 0.2 * H(i, s, 11), Z + Math.sin(an) * rr, 0.3 + 0.2 * u, DUST, 0.3 * (1 - u)); }
           const F = foesNear(X, Z, R + 0.3, 6); for (let j = 0; j < F.length; j++) { const A = F[j], d = Math.hypot(A.x - X, A.y - Z), at = 20 * clamp(1 - Math.cbrt(1 - clamp((d - 0.3) / (R - 0.3), 0, 0.999)), 0, 1), q = age - at; if (q < 0 || q > 16) continue;
             const ay = floorY(A.x, A.y), v = 1 - q / 16; glow(A.x, ay + 0.35, A.y, 0.35 * v + 0.1, PALE, 0.9 * v); for (let i = 0; i < 4; i++) { const an = i * 1.57 + 0.4 + j, d0 = 0.15 + 0.1 * (q / 16); seg(A.x + Math.cos(an) * d0, ay + 0.4 + Math.sin(an) * d0 * 0.6, A.y, A.x + Math.cos(an) * (d0 + 0.2), ay + 0.4 + Math.sin(an) * (d0 + 0.2) * 0.6, A.y, 0.03, 0.008, MINT, 0.9 * v, 0.2 * v); } } } },
@@ -250,8 +255,12 @@ function view3dCoreForms(K) {
         bodyless: true, pre: true, claim(e, f) { return e.by === f; },
         span(m) { return m.l0 + 16; },
         begin(m) { if (!m.data) { const e = m.o; m.data = { x0: e.x0 === undefined ? e.x : e.x0, y0: e.y0 === undefined ? e.y : e.y0, ux: e.ux || 0, uy: e.uy || 0, len: e.len || 0 }; } },
-        draw(m, age, f0, b) { const D = m.data, s = m.seed; if (!D) return; const L = m.l0, d = Math.min(D.len, age * ROLL_STEP), X = D.x0 + D.ux * d, Z = D.y0 + D.uy * d, Yf = floorY(X, Z), sc = env.scale(), Rb = (BALL_R + 0.15) * sc;
+        draw(m, age, f0, b) { const D = m.data, s = m.seed; if (!D) return; const L = m.l0, d = Math.min(D.len, age * ROLL_STEP), X = D.x0 + D.ux * d, Z = D.y0 + D.uy * d, Yf = floorY(X, Z), sc = env.scale() * 1.25, Rb = (BALL_R + 0.15) * sc;
           if (!m.gone && age <= L) ROLLS.set(m.owner, { x: X, y: Z, ux: D.ux, uz: D.uy, at: GM.frame });
+          // its slices: each enemy the game has it slice (its own list, e.hit), from the frame the view first saw it there (the game's impact for a slice is made inside the effects' update and
+          // lost, so the slice is drawn from the list)
+          const HL = m.o.hit || []; if (!D.cut) D.cut = []; for (let i = D.cut.length; i < HL.length; i++) { D.cut.push({ a: HL[i], at: age, x: HL[i].x, y: HL[i].y }); slices++; }
+          for (let i = 0; i < D.cut.length; i++) { const C = D.cut[i], q = age - C.at; if (q >= 0 && q < 26) slice(C.a && !C.a.dead ? C.a.x : C.x, C.a && !C.a.dead ? C.a.y : C.y, D.ux, D.uy, q, s + i * 13); }
           if (age < L) { const curl = outC(clamp(age / 4, 0, 1)); rollBall(X, Yf, Z, D.ux, D.uy, d / Rb, sc * (0.6 + 0.4 * curl));
             for (let i = 0; i < (low() ? 3 : 6); i++) { const tt = ((age * 0.15 + i / 6) % 1), x = X - D.ux * (0.25 + 0.5 * tt) + (H(i, s, 1) - 0.5) * 0.3, z = Z - D.uy * (0.25 + 0.5 * tt) + (H(i, s, 2) - 0.5) * 0.3; lump(x, floorY(x, z) + 0.05 + 0.2 * tt, z, 0.09 + 0.08 * tt, DUST, 0.4 * (1 - tt)); }
             if ((age + s) % 4 === 0) glint(X + D.ux * Rb * 0.3, Yf + 0.03, Z + D.uy * Rb * 0.3, 0.35, 0.9);
@@ -279,7 +288,8 @@ function view3dCoreForms(K) {
         else if (a < 6) { const k = (a - 2) / 4; BM.up = hb * 0.5 * Math.sin(k * PI * 0.5); BM.sq = lerp(0.5, -0.6, outC(k)); BM.pitch = 0.2 * k; if (bl) { blockAt(bl, 4 * k, VL, LK, LR); V = VL; } }
         else if (a < LAND) { const k = (a - 6) / (LAND - 6); BM.up = hb * 0.5 * Math.cos(k * PI * 0.5); BM.sq = -0.6 + 0.3 * k; BM.pitch = 0.2; if (bl) { blockAt(bl, 4, VL, LK, LR); V = VL; } }
         else { const u = (a - LAND) / 36; BM.sq = 1.4 * Math.cos(u * PI * 4) * Math.pow(1 - u, 1.6); BM.sx = BM.sz = 1 + 0.18 * Math.pow(1 - u, 2); BM.pitch = 0.2 * (1 - ease(Math.min(1, u * 3))); if (bl) { blockAt(bl, 4 + 3.9 * clamp(u * 2.5, 0, 1), VL, LK, LR); V = VL; } } }
-      else if (sh && sh.now < 30) { const a = sh.now; if (a < 7) { const k = ease(a / 7); BM.sx = BM.sz = 1 + 0.16 * k; BM.sq = -0.4 * k; } else { const u = (a - 7) / 23; BM.sx = BM.sz = 1 + 0.16 * (1 - ease(u)); BM.sq = -0.4 * Math.cos(u * PI * 2) * (1 - u); }
+      else if (sh && Math.max(sh.now, f0 - sh.born) < 30) { const a = Math.max(sh.now, f0 - sh.born);   // (a battle holds a shield's clock: its age from when the view first saw it)
+ if (a < 7) { const k = ease(a / 7); BM.sx = BM.sz = 1 + 0.16 * k; BM.sq = -0.4 * k; } else { const u = (a - 7) / 23; BM.sx = BM.sz = 1 + 0.16 * (1 - ease(u)); BM.sq = -0.4 * Math.cos(u * PI * 2) * (1 - u); }
         if (bl) { blockAt(bl, clamp(a / 22, 0, 1) * 7.9, VL, LK, LR); V = VL; } }
       else if (f.state === 'attack' && hit && hit.data && hit.data.kind === 'hit') { const u = clamp(((f.attackAnim || 0) + 0.18) / PI, 0, 1);
         if (bl) { blockAt(bl, u * 7.99, VL, LK, LR); V = VL; } BM.pitch = 0.16 * Math.sin(u * PI); BM.push = 0.08 * Math.sin(u * PI); BM.sq = u < 0.3 ? -0.3 * Math.sin(u / 0.3 * PI) : 0.3 * Math.sin((u - 0.3) / 0.7 * PI) * (1 - u); }
@@ -318,12 +328,12 @@ function view3dCoreForms(K) {
         pre: true, find(e, f) { return !!e.on && !!e.on.jellyShield && e.on.jellyShield.by === f; }, claim() { return true; }, span(m) { return m.age + 18; },
         begin(m) { if (!m.data) { const f = m.owner, w = m.o.on; m.data = { fx: f.x, fz: f.y, self: w === f, w }; } },
         draw(m, age, f0, b) { const o = m.o, D = m.data, s = m.seed, w = D.w, S = w && w.jellyShield, wb = env.bodyOf(w), X = w && !w.dead ? w.x : m.x, Z = w && !w.dead ? w.y : m.y, Yf = floorY(X, Z), bh = heightOf(wb && wb.holder && wb.holder.visible ? wb : null);
-          const r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, FL = D.self ? 0 : 10;
+          const r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, FL = D.self ? 0 : 10, a0 = m.gone ? age : Math.max(age, f0 - m.born);   // (a0: a battle holds a shield's clock, so its age is from when the view first saw it)
           if (m.gone) { const g = age - m.age; for (let i = 0; i < (low() ? 6 : 12); i++) { const an = (i + H(i, s, 1)) / 12 * TAU, t = Math.min(g, 16), d = r + 0.035 * t, y = Yf + hh * (0.3 + 0.5 * H(i, s, 2)) + 0.03 * t - 0.004 * t * t; drop(X + Math.cos(an) * d, y, Z + Math.sin(an) * d, 0.07, JEL, 0.9 * (1 - g / 18)); }
             if (g < 5) bubble(X, Yf + hh * 0.45, Z, r * (1 + 0.1 * g), hh * (1 + 0.1 * g), 0.4 * (1 - g / 5), 0.6 * (1 - g / 5), 0, 1); return; }
           // the throw: a blob of jelly from the Ram to the wearer
-          if (age < FL) { const u = age / FL, x = lerp(D.fx, X, u), z = lerp(D.fz, Z, u), y = lerp(floorY(D.fx, D.fz) + 0.5, Yf + 0.5, u) + Math.sin(PI * u) * 0.8; drop(x, y, z, 0.15, JEL, 0.95); glint(x, y + 0.05, z, 0.25, 0.8); drop(x - (X - D.fx) * 0.05, y + 0.05, z - (Z - D.fz) * 0.05, 0.09, JEL2, 0.8); return; }
-          const a = age - FL, grow = a < 10 ? outC(a / 10) * (1 + 0.15 * Math.sin(a / 10 * PI)) : 1, soak = (JELLY.soak || 0.4) * ((w && w.maxHealth) || 20), left = S ? clamp(S.hp / soak, 0.25, 1) : 0.25;
+          if (a0 < FL) { const u = a0 / FL, x = lerp(D.fx, X, u), z = lerp(D.fz, Z, u), y = lerp(floorY(D.fx, D.fz) + 0.5, Yf + 0.5, u) + Math.sin(PI * u) * 0.8; drop(x, y, z, 0.15, JEL, 0.95); glint(x, y + 0.05, z, 0.25, 0.8); drop(x - (X - D.fx) * 0.05, y + 0.05, z - (Z - D.fz) * 0.05, 0.09, JEL2, 0.8); return; }
+          const a = a0 - FL, grow = a < 10 ? outC(a / 10) * (1 + 0.15 * Math.sin(a / 10 * PI)) : 1, soak = (JELLY.soak || 0.4) * ((w && w.maxHealth) || 20), left = S ? clamp(S.hp / soak, 0.25, 1) : 0.25;
           // a blow: its soak fell since the view last saw it
           const P = HPS.get(o), hp = S ? S.hp : 0; if (P && hp < P.hp - 1e-6) P.hit = f0; const hitA = P && P.hit !== undefined ? f0 - P.hit : 99; HPS.set(o, { hp, at: f0, hit: P ? P.hit : undefined });
           const wob = 1 + 0.05 * Math.sin(f0 * 0.2 + s) + (hitA < 14 ? 0.08 * Math.sin(hitA * 1.2) * (1 - hitA / 14) : 0), bump = hitA < 10 ? 1 + 0.1 * Math.sin(hitA / 10 * PI) : 1, fl = hitA < 14 ? 0.8 * (1 - hitA / 14) : 0;
@@ -366,7 +376,7 @@ function view3dCoreForms(K) {
         find(e, f) { return f._echoAt !== undefined && GM.frame - f._echoAt < 4 && Math.hypot(e.x - f.x, e.y - f.y) < 0.4; }, claim() { return true; }, span: 40,
         begin(m) { if (!m.data) { const F = foesNear(m.o.x, m.o.y, (m.o.radius || ECHO_R) + 0.3, 6), hit = []; for (let i = 0; i < F.length; i++) hit.push(F[i]); m.data = { R: m.o.radius || ECHO_R, L: m.o.maxLife || 34, hit }; } },
         draw(m, age, f0, b) { const D = m.data, s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), ep = clamp(age / D.L, 0, 1), ee = 1 - (1 - ep) * (1 - ep), r = Math.max(0.2, D.R * ee), fa = 1 - ep * ep; if (ep >= 1) return;
-          const hh = 0.5 * (1 - ep) + 0.08; wave(X, Z, 0, TAU, r, hh, 0.22 + 0.15 * (1 - ep), [WAT3, WAT2, WAT, GOOW], 0.9 * fa, false, s, age);
+          const hh = 0.6 * (1 - ep) + 0.1; wave(X, Z, 0, TAU, r, hh, 0.25 + 0.15 * (1 - ep), [WAT3, WAT2, WAT, GOOW], Math.min(1, 1.1 * (1 - ep * ep * ep)), false, s, age);
           flat(RINGF, X, Yf, Z, r * 0.72, WAT3[0], WAT3[1], WAT3[2], 0.4 * fa); if (age < 10) flat(DISCF, X, Yf, Z, 0.5 + r * 0.3, WAT[0], WAT[1], WAT[2], 0.35 * (1 - age / 10));
           const nf = low() ? 10 : 20; for (let i = 0; i < nf; i++) { const an = i / nf * TAU + ep * 0.7 + H(i, s, 1) * 0.2, x = X + Math.cos(an) * (r + 0.03), z = Z + Math.sin(an) * (r + 0.03); drop(x, floorY(x, z) + hh * (1.02 + 0.25 * H(i, s, 2)) + 0.05 * Math.abs(Math.sin(i * 2.3 + ep * 6)), z, (0.06 + 0.04 * H(i, s, 3)) * (0.6 + 0.6 * fa), GOOW, 0.9 * fa); }
           for (let i = 0; i < (low() ? 4 : 8); i++) { const an = H(i, s, 4) * TAU + age * 0.05, x = X + Math.cos(an) * r, z = Z + Math.sin(an) * r; glint(x, floorY(x, z) + hh * 1.1, z, 0.18, 0.8 * fa * (0.5 + 0.5 * Math.sin(age * 0.9 + i))); }
@@ -379,8 +389,8 @@ function view3dCoreForms(K) {
         pre: true, find(e, f) { return e.on === f; }, claim(e, f) { return e.on === f; }, span(m) { return m.age + 26; },
         draw(m, age, f0, b) { const o = m.o, s = m.seed, R = o.rings || [], len = WAVE.len || 4, an = Math.atan2(o.dy || 0, o.dx || 1), cone = Math.acos(clamp(WAVE.cos || 0.64, -1, 1));
           for (let i = 0; i < R.length; i++) { const w = R[i], t = (age - w.at) / 24; if (t < -0.01 || t > 1) continue; const tt = clamp(t, 0, 1), rad = 0.6 + tt * (len - 0.6), fa = 1 - tt * tt, Yf = floorY(w.x, w.y);
-            wave(w.x, w.y, an - cone * 1.05, cone * 2.1, rad, 0.62 * (1 - 0.6 * tt) + 0.1, 0.3, [TEAL2, [0.1, 0.72, 0.64], DEEP, CREST], 0.92 * fa, true, s + i * 5, age);
-            const nf = low() ? 7 : 14; for (let j = 0; j < nf; j++) { const th = an + (j / (nf - 1) - 0.5) * cone * 1.8, x = w.x + Math.cos(th) * (rad + 0.05), z = w.y + Math.sin(th) * (rad + 0.05); drop(x, floorY(x, z) + (0.62 * (1 - 0.6 * tt) + 0.1) * (0.95 + 0.3 * H(j, s + i, 1)), z, 0.07 * (0.6 + 0.6 * fa), CREST, 0.9 * fa); }
+            wave(w.x, w.y, an - cone * 1.05, cone * 2.1, rad, 0.85 * (1 - 0.55 * tt) + 0.12, 0.42, [TEAL2, [0.1, 0.72, 0.64], DEEP, CREST], Math.min(1, 1.1 * (1 - tt * tt * tt)), true, s + i * 5, age);
+            const nf = low() ? 7 : 14; for (let j = 0; j < nf; j++) { const th = an + (j / (nf - 1) - 0.5) * cone * 1.8, x = w.x + Math.cos(th) * (rad + 0.05), z = w.y + Math.sin(th) * (rad + 0.05); drop(x, floorY(x, z) + (0.85 * (1 - 0.55 * tt) + 0.12) * (0.95 + 0.3 * H(j, s + i, 1)), z, 0.08 * (0.6 + 0.6 * fa), CREST, 0.9 * fa); }
             const ag = age - w.at; if (ag < 8) { const hx = w.x + Math.cos(an) * 0.45, hz = w.y + Math.sin(an) * 0.45; glow(hx, Yf + 0.35, hz, 0.4 * (1 - ag / 8) + 0.15, CREST, 0.85 * (1 - ag / 8)); splash(hx, Yf + 0.3, hz, Yf, ag, s + i * 3, 0.5, 0.35, TEALC); }
             const F = foesNear(w.x, w.y, len + 0.4, 6); for (let j = 0; j < F.length; j++) { const A = F[j], ax = A.x - w.x, az = A.y - w.y, d = Math.hypot(ax, az) || 1; if ((ax * Math.cos(an) + az * Math.sin(an)) / d < (WAVE.cos || 0.64) - 0.05) continue;
               const at = clamp((d - 0.6) / (len - 0.6), 0, 1) * 24, q = (age - w.at) - at; if (q >= 0 && q < 28) splash(A.x, floorY(A.x, A.y) + 0.2, A.y, floorY(A.x, A.y), q, s + j * 11 + i, 0.8, 0.45, TEALC); } } } },
@@ -403,6 +413,6 @@ function view3dCoreForms(K) {
           const u = clamp(g / 14, 0, 1); flat(RINGF, m.x, Yf, m.y, 0.2 + 0.5 * outC(u), GOOB[0], GOOB[1], GOOB[2], 0.75 * (1 - u)); if (g < 12) { arc3(m.x, Y2, m.y, 0.2 + 0.35 * outC(g / 12), CR, CU, 0, TAU, 18); stroke(0.05 * (1 - g / 12) + 0.01, 0.05 * (1 - g / 12) + 0.01, GOOC, 0.85 * (1 - g / 12), 0.85 * (1 - g / 12)); } } },
     },
   };
-  HORN.waves = () => wvN; SLUG.balls = () => ballN; RAM.shields = () => shN;   // (for the tests and checks: the waves, balls and shields shown this frame)
+  HORN.waves = () => wvN; SLUG.balls = () => ballN; SLUG.slices = () => slices; RAM.shields = () => shN;   // (for the tests and checks: the waves, balls and shields shown this frame)
   return { hammerslug: SLUG, jellyram: RAM, hornshell: HORN };
 }

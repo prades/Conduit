@@ -33660,7 +33660,7 @@ function view3dCoreForms(K) {
     function bubble(x, y, z, r, h, a, fl, bd, w) { if (shN >= SHIELDS.length || a + fl <= 0.01)
         return; const S = SHIELDS[shN++]; S.g.position.set(x, y, z); S.g.scale.set(r * w, h / w, r * w); S.mat.uniforms.uA.value = a; S.mat.uniforms.uF.value = fl; S.mat.uniforms.uB.value = bd; S.g.visible = true; }
     const WN = 56, WP = 7, WAVES = [];
-    const PROF = [[-1.0, 0.0], [-0.55, 0.5], [-0.15, 0.9], [0.0, 1.0], [0.2, 0.84], [0.12, 0.42], [0.22, 0.0]];
+    const PROF = [[-1.8, 0.0], [-0.9, 0.35], [-0.3, 0.8], [0.0, 1.0], [0.22, 0.86], [0.14, 0.45], [0.25, 0.0]], PA = [0, 0.55, 0.85, 0.95, 0.95, 0.85, 0.5];
     for (let k = 0; k < 4; k++) {
         const g = new T.BufferGeometry(), nv = (WN + 1) * WP, pos = new Float32Array(nv * 3), col = new Float32Array(nv * 4), idx = [];
         for (let i = 0; i < WN; i++)
@@ -33696,7 +33696,7 @@ function view3dCoreForms(K) {
                 P[o] = cx + ca * rr;
                 P[o + 1] = y;
                 P[o + 2] = cz + sa * rr;
-                const c = j === 0 || j === 1 ? C[0] : j === 2 ? C[1] : j === 3 || j === 4 ? C[3] : C[2], al = (j === 0 || j === 6 ? 0 : j === 1 ? 0.45 : j === 5 ? 0.75 : 0.92) * a * tp;
+                const c = j === 0 || j === 1 ? C[0] : j === 2 ? C[1] : j === 3 || j === 4 ? C[3] : C[2], al = PA[j] * a * tp;
                 Cl[q] = c[0];
                 Cl[q + 1] = c[1];
                 Cl[q + 2] = c[2];
@@ -33765,7 +33765,7 @@ function view3dCoreForms(K) {
         for (let i = 0; i < (low() ? 3 : 6); i++) {
             const an = Math.atan2(dz, dx) + (H(i, s, 4) - 0.5) * 2.2, v = 0.03 + 0.03 * H(i, s, 5), t = Math.min(g, 22), y = Y + (0.035 + 0.03 * H(i, s, 6)) * t - 0.0034 * t * t, sp = H(i, s, 7) * TAU + g * 0.4;
             if (y > Yf + 0.02)
-                gem(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, Math.cos(sp), Math.sin(sp) + 0.3, Math.sin(sp * 0.7), sp, 0.11 * k + 0.03, 0.4 * k + 0.08, k);
+                gem(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, Math.cos(sp), Math.sin(sp) + 0.3, Math.sin(sp * 0.7), sp, 0.22 * k + 0.05, 0.09 * k + 0.03, k);
         }
         if (g < 4)
             flat(GLOWF, X, Yf, Z, 0.5 + 0.3 * size, TEAL[0], TEAL[1], TEAL[2], 0.5 * (1 - g / 4));
@@ -33800,7 +33800,7 @@ function view3dCoreForms(K) {
     function blowOn(x, z, bh, a, s, fade) {
         const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 16, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
         if (fade > 0)
-            bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.5 * k * fade, 0.9 * k * k, 0.4 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);
+            bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.85 * k * fade, 1.2 * k, 0.6 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);
         if (a < 12) {
             const u = a / 12;
             arc3(x, Yf + hh * 0.45, z, r * (0.4 + 0.75 * u), CR, CU, 0, TAU, 20);
@@ -33868,26 +33868,31 @@ function view3dCoreForms(K) {
         }
     }
     const GUARDS = new Map();
-    function brace(f, b, f0) {
-        const until = f._guardUntil || 0, G = GUARDS.get(f);
-        if (!(until > f0)) {
-            if (G && f0 - G.end < 12)
-                G.out = f0 - G.end;
-            else {
-                if (G)
-                    GUARDS.delete(f);
-                return;
+    function guardOf(f, f0) {
+        const on = (f._guardUntil || 0) > f0;
+        let G = GUARDS.get(f);
+        if (on) {
+            if (!G || G.end >= 0)
+                GUARDS.set(f, G = { from: f0, end: -1 });
+        }
+        else if (G) {
+            if (G.end < 0)
+                G.end = f0;
+            if (f0 - G.end >= 12) {
+                GUARDS.delete(f);
+                G = null;
             }
         }
-        else if (!G || G.end !== until)
-            GUARDS.set(f, { from: G && G.end === until ? G.from : f0, end: until, out: -1 });
-        const Q = GUARDS.get(f);
-        if (!Q)
-            return;
-        const a = f0 - Q.from, left = Q.out >= 0 ? -Q.out : until - f0, k = Math.min(outC(clamp(a / 12, 0, 1)), clamp((left + 12) / 12, 0, 1));
+        if (!G)
+            return 0;
+        const a = f0 - G.from;
+        return Math.min(outC(clamp(a / 12, 0, 1)), G.end < 0 ? 1 : clamp(1 - (f0 - G.end) / 12, 0, 1));
+    }
+    function brace(f, b, f0) {
+        const k = guardOf(f, f0);
         if (k <= 0.01)
             return;
-        const h = b.holder, X = h.position.x, Z = h.position.z, Yf = floorY(X, Z), bh = heightOf(b), R = 0.55 + 0.3 * bh, s = 5;
+        const h = b.holder, X = h.position.x, Z = h.position.z, Yf = floorY(X, Z), bh = heightOf(b), R = 0.8 + 0.2 * bh, s = 5;
         for (let i = 0; i < 12; i++) {
             const an = i / 12 * TAU + 0.13, rise = clamp(k * 1.25 - (i % 3) * 0.08, 0, 1), L = (0.34 + 0.12 * (i % 2) + 0.03 * Math.sin(f0 * 0.08 + i)) * rise, hot = 0.55 + 0.45 * Math.max(0, Math.sin(f0 * 0.12 - i * 0.52));
             gem(X + Math.cos(an) * R, Yf - 0.05 * (1 - rise), Z + Math.sin(an) * R, Math.cos(an) * 0.12, 1, Math.sin(an) * 0.12, an, L, 0.14 * Math.min(1, rise + 0.2), hot * k);
@@ -33899,13 +33904,33 @@ function view3dCoreForms(K) {
             glint(X + Math.cos(an) * R, Yf + 0.1 + 0.4 * u, Z + Math.sin(an) * R, 0.12, 0.8 * k * Math.sin(u * PI));
         }
     }
+    let slices = 0;
+    function slice(X, Z, ux, uz, g, s) {
+        if (g < 0 || g > 24)
+            return;
+        const Yf = floorY(X, Z), Y = Yf + 0.32, k = 1 - g / 24, nx = -uz, nz = ux;
+        for (let q = 0; q < 2; q++) {
+            const sg = q ? 1 : -1, ax = X - ux * 0.32 + nx * 0.2 * sg, az = Z - uz * 0.32 + nz * 0.2 * sg, bx = X + ux * 0.32 - nx * 0.2 * sg, bz = Z + uz * 0.32 - nz * 0.2 * sg, u = clamp((g - q * 2) / 5, 0, 1);
+            if (u <= 0)
+                continue;
+            BEAM.path();
+            for (let j = 0; j <= 8; j++) {
+                const v = j / 8 * u;
+                padd(lerp(ax, bx, v), Y + 0.22 * Math.sin(PI * v) * sg + 0.1 * (q - 0.5), lerp(az, bz, v));
+            }
+            stroke(0.012, 0.055, q ? CREST : MINT, 0.3 * k, 0.95 * k);
+        }
+        if (g < 5)
+            glow(X, Y, Z, 0.32, PALE, 1 - g / 5);
+        coreHit(X, Y, Z, Yf, ux, uz, g, s, 0.4);
+    }
     const SLUG = {
         tilts: true,
         body(f, b, f0) {
             const B = b.B, t = f0 / 60;
             bmReset();
             let act = null;
-            const hit = curOf(f, 'impact'), ring = curOf(f, 'ring'), slam = ring && ring.data && ring.data.kind === 'slam' ? ring : null, roll = curOf(f, 'bladeroll'), guard = (f._guardUntil || 0) > f0, G = GUARDS.get(f);
+            const hit = curOf(f, 'impact'), ring = curOf(f, 'ring'), slam = ring && ring.data && ring.data.kind === 'slam' ? ring : null, roll = curOf(f, 'bladeroll'), gk = guardOf(f, f0);
             if (slam && slam.now < 34) {
                 const a = slam.now;
                 if (a < 3) {
@@ -33935,8 +33960,8 @@ function view3dCoreForms(K) {
                 BM.sx = BM.sz = 1 + 0.15 * (1 - u);
                 act = 0.6 * (1 - u);
             }
-            else if (guard || (G && G.out >= 0)) {
-                const a = G ? f0 - G.from : 0, left = G && G.out >= 0 ? -G.out : (f._guardUntil || 0) - f0, k = Math.min(outC(clamp(a / 10, 0, 1)), clamp((left + 12) / 12, 0, 1));
+            else if (gk > 0) {
+                const k = gk;
                 BM.sq = 0.55 * k + 0.05 * Math.sin(f0 * 0.06) * k;
                 BM.sx = BM.sz = 1 + 0.06 * k;
                 BM.up = -0.02 * k;
@@ -34002,24 +34027,7 @@ function view3dCoreForms(K) {
                     if (!D || D.kind === 'slam')
                         return;
                     if (D.kind === 'slice') {
-                        const X = D.tx, Z = D.ty, Yf = floorY(X, Z), Y = Yf + 0.32;
-                        if (age > 24)
-                            return;
-                        const k = 1 - age / 24, nx = -D.uz, nz = D.ux;
-                        for (let q = 0; q < 2; q++) {
-                            const sg = q ? 1 : -1, ax = X - D.ux * 0.32 + nx * 0.2 * sg, az = Z - D.uz * 0.32 + nz * 0.2 * sg, bx = X + D.ux * 0.32 - nx * 0.2 * sg, bz = Z + D.uz * 0.32 - nz * 0.2 * sg, u = clamp((age - q * 2) / 5, 0, 1);
-                            if (u <= 0)
-                                continue;
-                            BEAM.path();
-                            for (let j = 0; j <= 8; j++) {
-                                const v = j / 8 * u;
-                                padd(lerp(ax, bx, v), Y + 0.22 * Math.sin(PI * v) * sg + 0.1 * (q - 0.5), lerp(az, bz, v));
-                            }
-                            stroke(0.012, 0.055, q ? CREST : MINT, 0.3 * k, 0.95 * k);
-                        }
-                        if (age < 5)
-                            glow(X, Y, Z, 0.32, PALE, 1 - age / 5);
-                        coreHit(X, Y, Z, Yf, D.ux, D.uz, age, s, 0.4);
+                        slice(D.tx, D.ty, D.ux, D.uz, age, s);
                         return;
                     }
                     HIT.draw(m, age, f0, b, false);
@@ -34114,7 +34122,7 @@ function view3dCoreForms(K) {
                         const x = X + Math.cos(an) * Math.min(R, d0 + 0.02 * t), z = Z + Math.sin(an) * Math.min(R, d0 + 0.02 * t);
                         if (th > 0 && y > floorY(x, z)) {
                             if (i % 2)
-                                gem(x, y, z, Math.cos(an + t * 0.3), 1, Math.sin(an), an + t * 0.3, 0.16 * k + 0.04, 0.12 * k + 0.04, k);
+                                gem(x, y, z, Math.cos(an + t * 0.3), 1, Math.sin(an), an + t * 0.3, 0.2 * k + 0.05, 0.08 * k + 0.03, k);
                             else
                                 lump(x, y, z, 0.1 + 0.05 * H(i, s, 8), DUST, 0.55 * k);
                         }
@@ -34149,9 +34157,21 @@ function view3dCoreForms(K) {
                     const D = m.data, s = m.seed;
                     if (!D)
                         return;
-                    const L = m.l0, d = Math.min(D.len, age * ROLL_STEP), X = D.x0 + D.ux * d, Z = D.y0 + D.uy * d, Yf = floorY(X, Z), sc = env.scale(), Rb = (BALL_R + 0.15) * sc;
+                    const L = m.l0, d = Math.min(D.len, age * ROLL_STEP), X = D.x0 + D.ux * d, Z = D.y0 + D.uy * d, Yf = floorY(X, Z), sc = env.scale() * 1.25, Rb = (BALL_R + 0.15) * sc;
                     if (!m.gone && age <= L)
                         ROLLS.set(m.owner, { x: X, y: Z, ux: D.ux, uz: D.uy, at: GM.frame });
+                    const HL = m.o.hit || [];
+                    if (!D.cut)
+                        D.cut = [];
+                    for (let i = D.cut.length; i < HL.length; i++) {
+                        D.cut.push({ a: HL[i], at: age, x: HL[i].x, y: HL[i].y });
+                        slices++;
+                    }
+                    for (let i = 0; i < D.cut.length; i++) {
+                        const C = D.cut[i], q = age - C.at;
+                        if (q >= 0 && q < 26)
+                            slice(C.a && !C.a.dead ? C.a.x : C.x, C.a && !C.a.dead ? C.a.y : C.y, D.ux, D.uy, q, s + i * 13);
+                    }
                     if (age < L) {
                         const curl = outC(clamp(age / 4, 0, 1));
                         rollBall(X, Yf, Z, D.ux, D.uy, d / Rb, sc * (0.6 + 0.4 * curl));
@@ -34233,8 +34253,8 @@ function view3dCoreForms(K) {
                     }
                 }
             }
-            else if (sh && sh.now < 30) {
-                const a = sh.now;
+            else if (sh && Math.max(sh.now, f0 - sh.born) < 30) {
+                const a = Math.max(sh.now, f0 - sh.born);
                 if (a < 7) {
                     const k = ease(a / 7);
                     BM.sx = BM.sz = 1 + 0.16 * k;
@@ -34348,7 +34368,7 @@ function view3dCoreForms(K) {
                 } },
                 draw(m, age, f0, b) {
                     const o = m.o, D = m.data, s = m.seed, w = D.w, S = w && w.jellyShield, wb = env.bodyOf(w), X = w && !w.dead ? w.x : m.x, Z = w && !w.dead ? w.y : m.y, Yf = floorY(X, Z), bh = heightOf(wb && wb.holder && wb.holder.visible ? wb : null);
-                    const r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, FL = D.self ? 0 : 10;
+                    const r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, FL = D.self ? 0 : 10, a0 = m.gone ? age : Math.max(age, f0 - m.born);
                     if (m.gone) {
                         const g = age - m.age;
                         for (let i = 0; i < (low() ? 6 : 12); i++) {
@@ -34359,14 +34379,14 @@ function view3dCoreForms(K) {
                             bubble(X, Yf + hh * 0.45, Z, r * (1 + 0.1 * g), hh * (1 + 0.1 * g), 0.4 * (1 - g / 5), 0.6 * (1 - g / 5), 0, 1);
                         return;
                     }
-                    if (age < FL) {
-                        const u = age / FL, x = lerp(D.fx, X, u), z = lerp(D.fz, Z, u), y = lerp(floorY(D.fx, D.fz) + 0.5, Yf + 0.5, u) + Math.sin(PI * u) * 0.8;
+                    if (a0 < FL) {
+                        const u = a0 / FL, x = lerp(D.fx, X, u), z = lerp(D.fz, Z, u), y = lerp(floorY(D.fx, D.fz) + 0.5, Yf + 0.5, u) + Math.sin(PI * u) * 0.8;
                         drop(x, y, z, 0.15, JEL, 0.95);
                         glint(x, y + 0.05, z, 0.25, 0.8);
                         drop(x - (X - D.fx) * 0.05, y + 0.05, z - (Z - D.fz) * 0.05, 0.09, JEL2, 0.8);
                         return;
                     }
-                    const a = age - FL, grow = a < 10 ? outC(a / 10) * (1 + 0.15 * Math.sin(a / 10 * PI)) : 1, soak = (JELLY.soak || 0.4) * ((w && w.maxHealth) || 20), left = S ? clamp(S.hp / soak, 0.25, 1) : 0.25;
+                    const a = a0 - FL, grow = a < 10 ? outC(a / 10) * (1 + 0.15 * Math.sin(a / 10 * PI)) : 1, soak = (JELLY.soak || 0.4) * ((w && w.maxHealth) || 20), left = S ? clamp(S.hp / soak, 0.25, 1) : 0.25;
                     const P = HPS.get(o), hp = S ? S.hp : 0;
                     if (P && hp < P.hp - 1e-6)
                         P.hit = f0;
@@ -34464,8 +34484,8 @@ function view3dCoreForms(K) {
                     const D = m.data, s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), ep = clamp(age / D.L, 0, 1), ee = 1 - (1 - ep) * (1 - ep), r = Math.max(0.2, D.R * ee), fa = 1 - ep * ep;
                     if (ep >= 1)
                         return;
-                    const hh = 0.5 * (1 - ep) + 0.08;
-                    wave(X, Z, 0, TAU, r, hh, 0.22 + 0.15 * (1 - ep), [WAT3, WAT2, WAT, GOOW], 0.9 * fa, false, s, age);
+                    const hh = 0.6 * (1 - ep) + 0.1;
+                    wave(X, Z, 0, TAU, r, hh, 0.25 + 0.15 * (1 - ep), [WAT3, WAT2, WAT, GOOW], Math.min(1, 1.1 * (1 - ep * ep * ep)), false, s, age);
                     flat(RINGF, X, Yf, Z, r * 0.72, WAT3[0], WAT3[1], WAT3[2], 0.4 * fa);
                     if (age < 10)
                         flat(DISCF, X, Yf, Z, 0.5 + r * 0.3, WAT[0], WAT[1], WAT[2], 0.35 * (1 - age / 10));
@@ -34497,11 +34517,11 @@ function view3dCoreForms(K) {
                         if (t < -0.01 || t > 1)
                             continue;
                         const tt = clamp(t, 0, 1), rad = 0.6 + tt * (len - 0.6), fa = 1 - tt * tt, Yf = floorY(w.x, w.y);
-                        wave(w.x, w.y, an - cone * 1.05, cone * 2.1, rad, 0.62 * (1 - 0.6 * tt) + 0.1, 0.3, [TEAL2, [0.1, 0.72, 0.64], DEEP, CREST], 0.92 * fa, true, s + i * 5, age);
+                        wave(w.x, w.y, an - cone * 1.05, cone * 2.1, rad, 0.85 * (1 - 0.55 * tt) + 0.12, 0.42, [TEAL2, [0.1, 0.72, 0.64], DEEP, CREST], Math.min(1, 1.1 * (1 - tt * tt * tt)), true, s + i * 5, age);
                         const nf = low() ? 7 : 14;
                         for (let j = 0; j < nf; j++) {
                             const th = an + (j / (nf - 1) - 0.5) * cone * 1.8, x = w.x + Math.cos(th) * (rad + 0.05), z = w.y + Math.sin(th) * (rad + 0.05);
-                            drop(x, floorY(x, z) + (0.62 * (1 - 0.6 * tt) + 0.1) * (0.95 + 0.3 * H(j, s + i, 1)), z, 0.07 * (0.6 + 0.6 * fa), CREST, 0.9 * fa);
+                            drop(x, floorY(x, z) + (0.85 * (1 - 0.55 * tt) + 0.12) * (0.95 + 0.3 * H(j, s + i, 1)), z, 0.08 * (0.6 + 0.6 * fa), CREST, 0.9 * fa);
                         }
                         const ag = age - w.at;
                         if (ag < 8) {
@@ -34560,6 +34580,7 @@ function view3dCoreForms(K) {
     };
     HORN.waves = () => wvN;
     SLUG.balls = () => ballN;
+    SLUG.slices = () => slices;
     RAM.shields = () => shN;
     return { hammerslug: SLUG, jellyram: RAM, hornshell: HORN };
 }
