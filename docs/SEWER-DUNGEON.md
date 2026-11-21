@@ -85,6 +85,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-21, of a screenshot taken on the Central Channel's west walkway where it crossed the West Channel's mouth): "This platform shouldn't exist, it should be cut off here".** The walkway is cut there: it ends at the West Channel's north bank and starts again at its south bank, and the West Channel runs on into the Central Channel, nothing drawn between the two waters. *The agent's, with it:* a landing at the channel's head, the WEST ENTRANCE (two tiles deep, across both banks), since with that walkway gone nothing else joined the north bank to the south; every tile is still reached on foot from it. Build `2026-11-17bf`.
 
+**Corrected (the owner, 2026-11-21): "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance."** A short flight from the West Channel's south walkway, near the entrance, down into the small room below it (it was reached only through the West Hall). Where the flight stands along that wall is the agent's. Build `2026-11-17bg`.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.

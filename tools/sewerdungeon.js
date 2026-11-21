@@ -15,6 +15,7 @@ const BASE = -1.8, STEP = 0.45, DEEP = 0.9, LV = l => 50 + l, WATER_LV = 47;
 // THE FLIGHTS: [upper piece, lower piece, where on their shared wall (a tile range along x or y, or null: all of it), the flight's zone (a rectangle, in tiles) and the way it runs]
 const FLIGHTS = [
   { id: 'gallery', rooms: ['nw_gallery', 'west_walk_n'], on: { x: [9.3, 11.7] }, zone: [9.3, 12.9, 11.7, 14.4], axis: 'y', steps: 3 },
+  { id: 'cell', rooms: ['west_walk_s', 'west_cell'], on: { x: [4.5, 7] }, zone: [4.5, 22.2, 7, 23.7], axis: 'y', steps: 2 },   // (the owner, 2026-11-21: "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance.")
   { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 24.5, 16.5, 29.5], axis: 'y', steps: 3 },
   { id: 'ring_w', rooms: ['central_walk_w_s', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
   { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 48.6, 36.4], axis: 'y', steps: 3 },

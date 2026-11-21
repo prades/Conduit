@@ -63,6 +63,7 @@ const SHAPES = [
 // p: its outline; from, to: the heights it joins (storeys); note: what it is. The agent's reading of the picture's hatching; where a flight goes is its guess from what lies at each end.
 const STAIRS = [
   { id: 'st_channel_n', from: 1, to: -2, p: [[9.3, 14.3], [11.7, 14.3], [11.7, 18], [9.3, 18]], note: 'from the gallery down past the north walkway into the West Channel\'s bed' },
+  { id: 'st_cell', from: 0, to: -1, p: [[4.5, 22.2], [7, 22.2], [7, 23.7], [4.5, 23.7]], note: 'from the south walkway by the entrance down into the room under it (the owner asked for this way in; where it stands is the agent\'s)' },
   { id: 'st_hall', from: 0, to: -1, p: [[14.5, 22.2], [16.5, 22.2], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
   // (no flight between the south-west plaza and the ring: the owner, 2026-11-21, circling it on the overlay: "Not stairs")
   { id: 'st_subway', from: -1, to: -1, p: [[31, 58.3], [33.6, 54.6], [34.8, 56.2], [32.2, 59.8]], note: 'the diagonal flight between the Subway Exit\'s passage and the ring (both read as a storey down now: how far it rises is not clear)' },

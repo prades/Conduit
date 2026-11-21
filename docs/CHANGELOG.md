@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a way down into the room under the entrance (work in progress)
+- **The ask** (the owner, 2026-11-21): "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance."
+- **What it does** (only with `?sewerdungeon`): a short flight from the south walkway by the entrance down into the small room below it.
+- `tools/sewerdungeon.js`, `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
 ### Build `2026-11-17bf` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway across the West Channel's mouth (work in progress)
 - **The ask** (the owner, 2026-11-21): "This platform shouldn't exist, it should be cut off here".
 - **What it does** (only with `?sewerdungeon`): the Central Channel's west walkway stops at the West Channel and starts again beyond it; the West Channel runs into the Central Channel. A landing at the channel's head, the West Entrance, joins the two banks (the agent's).

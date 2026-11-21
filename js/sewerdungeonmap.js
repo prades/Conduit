@@ -108,6 +108,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"open_sd_hl_approach__hl_foot","a":[1020,440],"b":[1020,480],"rooms":["sd_hl_approach","sd_hl_foot"],"door":null,"position_status":"placed"},
         {"id":"open_sd_er_approach__east_rubble","a":[1080,530],"b":[1080,580],"rooms":["sd_er_approach","sd_east_rubble"],"door":null,"position_status":"placed"},
         {"id":"open_sd_flight_gallery","a":[186,288],"b":[234,288],"rooms":["sd_nw_gallery","sd_west_walk_n"],"door":null,"position_status":"placed"},
+        {"id":"open_sd_flight_cell","a":[90,444],"b":[140,444],"rooms":["sd_west_walk_s","sd_west_cell"],"door":null,"position_status":"placed"},
         {"id":"open_sd_flight_hall","a":[330,590],"b":[300,590],"rooms":["sd_hall_stair","sd_west_hall"],"door":null,"position_status":"placed"},
         {"id":"open_sd_flight_ring_w","a":[808,702],"b":[744,728],"rooms":["sd_central_walk_w_s","sd_junction_ring_w"],"door":null,"position_status":"placed"},
         {"id":"open_sd_flight_ring_e","a":[972,727],"b":[924,707],"rooms":["sd_central_walk_e","sd_junction_ring_e"],"door":null,"position_status":"placed"},
@@ -145,6 +146,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"conn_sd_hl_approach__hl_foot","rooms":["sd_hl_approach","sd_hl_foot"],"opening":"open_sd_hl_approach__hl_foot"},
         {"id":"conn_sd_er_approach__east_rubble","rooms":["sd_er_approach","sd_east_rubble"],"opening":"open_sd_er_approach__east_rubble"},
         {"id":"conn_sd_flight_gallery","rooms":["sd_nw_gallery","sd_west_walk_n"],"opening":"open_sd_flight_gallery","ramp":"r_sd_gallery"},
+        {"id":"conn_sd_flight_cell","rooms":["sd_west_walk_s","sd_west_cell"],"opening":"open_sd_flight_cell","ramp":"r_sd_cell"},
         {"id":"conn_sd_flight_hall","rooms":["sd_hall_stair","sd_west_hall"],"opening":"open_sd_flight_hall","ramp":"r_sd_hall"},
         {"id":"conn_sd_flight_ring_w","rooms":["sd_central_walk_w_s","sd_junction_ring_w"],"opening":"open_sd_flight_ring_w","ramp":"r_sd_ring_w"},
         {"id":"conn_sd_flight_ring_e","rooms":["sd_central_walk_e","sd_junction_ring_e"],"opening":"open_sd_flight_ring_e","ramp":"r_sd_ring_e"},
@@ -156,6 +158,7 @@ const SEWER_DUNGEON_MAP = {
     ],
     ramps: [
         {"id":"r_sd_gallery","rooms":["sd_nw_gallery","sd_west_walk_n"],"shape":"steps","between_levels":[51,50],"descends_toward":"sd_west_walk_n","position_status":"placed","zone":{"rect":[186,258,234,288],"axis":"y","c0":258,"c1":288,"steps":3}},
+        {"id":"r_sd_cell","rooms":["sd_west_walk_s","sd_west_cell"],"shape":"steps","between_levels":[50,49],"descends_toward":"sd_west_cell","position_status":"placed","zone":{"rect":[90,444,140,474],"axis":"y","c0":444,"c1":474,"steps":2}},
         {"id":"r_sd_hall","rooms":["sd_hall_stair","sd_west_hall"],"shape":"steps","between_levels":[50,49],"descends_toward":"sd_west_hall","position_status":"placed","zone":{"rect":[290,490,330,590],"axis":"y","c0":490,"c1":590,"steps":3}},
         {"id":"r_sd_ring_w","rooms":["sd_central_walk_w_s","sd_junction_ring_w"],"shape":"steps","between_levels":[50,49],"descends_toward":"sd_junction_ring_w","position_status":"placed","zone":{"rect":[744,684,808,730],"axis":"y","c0":684,"c1":730,"steps":3}},
         {"id":"r_sd_ring_e","rooms":["sd_central_walk_e","sd_junction_ring_e"],"shape":"steps","between_levels":[50,49],"descends_toward":"sd_junction_ring_e","position_status":"placed","zone":{"rect":[924,684,972,728],"axis":"y","c0":684,"c1":728,"steps":3}},
