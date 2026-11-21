@@ -30,6 +30,7 @@ const FACILITY_MAP = {
     // `height` is in tiles above the ground floor (the hallway). The arena is sunk a little below it; the observation deck and the catwalks stand well above the arena. Heights are for DRAWING
     // (the floor, walls and units rise and fall with them); movement is still flat, and the only way between two heights is a ramp below.
     levels: [
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.levels : []),   // THE SEWER DUNGEON's own heights: short flights, not storeys (tools/sewerdungeon.js)
         { id: -2, label: "deep", height: -3.0 },     // (the electrical domain's circuitry, below its deep server room: docs/DOMAINS.md)
         { id: -1, label: "sunken", height: -1.8 },
         { id: 0, label: "ground", height: 0 },

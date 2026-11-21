@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bc` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms: short flights, one rail, a wider West Channel (work in progress)
+- **The ask** (the owner, 2026-11-21, having walked `?sewerdungeon`): not actual storeys, stairs that make it feel underground; one set of railing, never four; a really deep channel that is not all the way full; wider at the entrance.
+- **What it does** (only with `?sewerdungeon`): heights are short flights; one rail along each side of the water; the West Channel a tile and more wider; the channels lie deep below the walkways. Still bare: no sewer look, the water plain and dark.
+- `tools/sewerdungeon.js`, `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js`, `docs/SEWER-DUNGEON.md`.
+- **Verified:** seen in a real browser; facility, facilityplay, sewers, bundle suites. **Not playtested.**
+
 ### Build `2026-11-17bb` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms, behind `?sewerdungeon` (work in progress)
 - **The ask** (the owner, 2026-11-21, of the skeleton picture and its hand trace): "This is our sewer now, make it happen"; "The ring is a storey down, build it".
 - **What it does:** with `?sewerdungeon` in the address the game starts you at the new dungeon's West Entrance: 32 rooms, 33 doorways and 9 flights of stairs made from the trace (`SEWER-DUNGEON.md`). Bare rooms only: no sewer look, no water, no way in or out, nothing to do, not in the 3D view. Without the switch the game is as it was; the old Sewers are untouched.

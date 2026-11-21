@@ -17,18 +17,19 @@ function outer(a0, a1, chords) { const pts = []; for (let i = 0; i <= 28; i++) p
 const INNER = []; for (let i = 0; i < 16; i++) { const a = (i + 0.5) / 16 * 2 * PI; INNER.push([+(C[0] + Math.cos(a) * RI / Math.cos(PI / 16)).toFixed(2), +(C[1] + Math.sin(a) * RI / Math.cos(PI / 16)).toFixed(2)]); }   // (its flat sides touch the circle of radius RI)
 // the inner edge between two of the ring's cuts (north, at angle 1.5 PI, and south, at 0.5 PI), going from a0 to a1: the cut's point, the sixteen-gon's corners between, the other cut's point
 function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFixed(2)], dir = a1 < a0 ? -1 : 1, lo = Math.min(a0, a1), hi = Math.max(a0, a1); let pts = INNER.map((p, i) => ({ p, a: (i + 0.5) / 16 * 2 * PI })).flatMap(o => [o, { p: o.p, a: o.a - 2 * PI }]).filter(o => o.a > lo + 1e-6 && o.a < hi - 1e-6).sort((x, y) => dir * (x.a - y.a)).map(o => o.p); return [cut(a0)].concat(pts, [cut(a1)]); }
+// (the West Channel widened by a tile and more, the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
 const SHAPES = [
-  { id: 'west_channel', lvl: -2, kind: 'water', p: [[0, 16.2], [37.2, 16.2], [37.2, 19.3], [0, 19.3]] },
+  { id: 'west_channel', lvl: -2, kind: 'water', p: [[0, 16.2], [37.2, 16.2], [37.2, 20.5], [0, 20.5]] },
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, K.top, K.wwB] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[48.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [48.6, 35.8]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], K.wwB, K.wwA] },
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [48.6, 0], K.weB, K.weA] },
   { id: 'west_walk_n', lvl: 0, kind: 'walk', p: [[0, 14.4], [37.2, 14.4], [37.2, 16.2], [0, 16.2]] },
-  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 19.3], [37.2, 19.3], [37.2, 21], [0, 21]] },
+  { id: 'west_walk_s', lvl: 0, kind: 'walk', p: [[0, 20.5], [37.2, 20.5], [37.2, 22.2], [0, 22.2]] },
   { id: 'nw_gallery', lvl: 1, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 14.4], [1.5, 14.4]] },
   { id: 'nw_wing', lvl: 1, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
-  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 22], [3.5, 21], [7.5, 21], [8.5, 22.5], [10.5, 24.5], [11.5, 28], [14, 30.5], [14, 32.5], [12.5, 31], [9.5, 27], [8, 24.8], [3.5, 24.8], [2.5, 23.8]] },
-  { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 21], [16.5, 21], [16.5, 29.5], [14.5, 29.5]] },
+  { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 23.2], [3.5, 22.2], [7.5, 22.2], [8.5, 23.2], [10.5, 24.5], [11.5, 28], [14, 30.5], [14, 32.5], [12.5, 31], [9.5, 27], [8, 24.8], [3.5, 24.8], [2.5, 23.8]] },
+  { id: 'hall_stair', lvl: 0, kind: 'walk', p: [[14.5, 22.2], [16.5, 22.2], [16.5, 29.5], [14.5, 29.5]] },
   { id: 'west_hall', lvl: -1, kind: 'floor', p: [[14, 30.5], [15, 29.5], [27, 29.5], [27.5, 30], [27.5, 34], [26, 35.5], [15, 35.5], [14, 34.5]] },
   // (no passage from the West Hall's east side up to the Central Channel's walkway: the owner, 2026-11-21, circling it on the overlay: "No hallway here")
   { id: 'hall_south', lvl: -1, kind: 'walk', p: [[23.5, 35.5], [25, 35.5], [25, 41.5], [23.5, 41.5]] },
@@ -56,7 +57,7 @@ const SHAPES = [
 // p: its outline; from, to: the heights it joins (storeys); note: what it is. The agent's reading of the picture's hatching; where a flight goes is its guess from what lies at each end.
 const STAIRS = [
   { id: 'st_channel_n', from: 1, to: -2, p: [[9.3, 14.3], [11.7, 14.3], [11.7, 18], [9.3, 18]], note: 'from the gallery down past the north walkway into the West Channel\'s bed' },
-  { id: 'st_hall', from: 0, to: -1, p: [[14.5, 21], [16.5, 21], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
+  { id: 'st_hall', from: 0, to: -1, p: [[14.5, 22.2], [16.5, 22.2], [16.5, 27.5], [14.5, 27.5]], note: 'from the south walkway down to the West Hall' },
   // (no flight between the south-west plaza and the ring: the owner, 2026-11-21, circling it on the overlay: "Not stairs")
   { id: 'st_subway', from: -1, to: -1, p: [[31, 58.3], [33.6, 54.6], [34.8, 56.2], [32.2, 59.8]], note: 'the diagonal flight between the Subway Exit\'s passage and the ring (both read as a storey down now: how far it rises is not clear)' },
   { id: 'st_offices', from: 0, to: 0, p: [[48.6, 6.5], [52.5, 6.5], [52.5, 9], [48.6, 9]], note: 'steps at the Offices\' locked door (how far they rise is not clear from the picture)' },
