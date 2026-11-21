@@ -6,7 +6,7 @@
 A dungeon to explore, not a corridor: a dynamic water level that changes the routes, a boss you do not have to kill, more than one way through.
 
 ## 2. The layout (the picture; "rough skeleton, not final room-by-room")
-About 60 × 90 tiles, north up. A **Central Channel** runs north to south down the middle (walkways both sides) into the **Round Junction**; a **West Channel** (walkways both sides) runs from the **West Entrance (from the Arena)** to the Central Channel.
+About 90 × 60 tiles, wider than tall as the picture is drawn (the owner's choice; the picture's note says 60 × 90), north up. A **Central Channel** runs north to south down the middle (walkways both sides) into the **Round Junction**; a **West Channel** (walkways both sides) runs from the **West Entrance (from the Arena)** to the Central Channel.
 
 | Place | What the picture says |
 |---|---|
@@ -58,6 +58,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 - A player with no mech: **"Flux can block water flow by pushing into the water heavy objects or rubble falling could increase water level"**. So the water also rises when the flow is blocked: a heavy object pushed into it by Flux, or rubble falling into it. (Where the flow can be blocked, and what lowers it again, is open.)
 - The level on entering: **"LOW (drained)"**.
 - The old Sewers' pieces with no place on the picture (Side Quest's platform, the pumps and valves, the drain-pipe shortcut, the sample bank puzzle): **"Remove all, re-add later"**.
+
+**Answered (the owner, 2026-11-21, of the first tile plan, 60 across by 90 down):** "Yes resize it": **"Wider than tall, like the picture"** (now about 90 across by 60 down, `design/sewer-dungeon/layout.js`). Blocking the flow to raise the water: **"Anywhere along a channel"**; pulling the object back out lowers it ("yes").
 
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
