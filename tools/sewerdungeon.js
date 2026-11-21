@@ -28,6 +28,13 @@ const FLIGHTS = [
 ];
 function build() {
   const S = SHAPES.map(s => Object.assign({}, s, { p: s.p.filter((q, i, a) => i === 0 || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.02) })), by = Object.fromEntries(S.map(s => [s.id, s])), J = joins();
+  // every end of a shared wall is a corner of both rooms (an edge half shared with water and half with a room would be all wall: the owner, 2026-11-21, of the rail along the channel turned to a wall
+  // when the steps were cut into it: "U added a wall lining the entire channel")
+  for (const sh of S) { const pts = J.filter(j => j.rooms.includes(sh.id)).flatMap(j => [j.a, j.b]); let out = [];
+    for (let i = 0; i < sh.p.length; i++) { const a0 = sh.p[i], a1 = sh.p[(i + 1) % sh.p.length], L = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]); out.push(a0); if (L < 1e-6) continue;
+      const mid = pts.map(q => ({ q, t: ((q[0] - a0[0]) * (a1[0] - a0[0]) + (q[1] - a0[1]) * (a1[1] - a0[1])) / (L * L), d: Math.abs((q[0] - a0[0]) * (a1[1] - a0[1]) - (q[1] - a0[1]) * (a1[0] - a0[0])) / L })).filter(o => o.d < 0.05 && o.t > 0.01 && o.t < 0.99).sort((x, y) => x.t - y.t);
+      let last = -1; for (const o of mid) { if (o.t - last > 0.005) out.push(o.q); last = o.t; } }
+    sh.p = out; }
   const wet = id => WATER.has(by[id].kind), rooms = [], interiors = [], openings = [], connections = [], ramps = [], props = [], floors = [];
   const along = (seg, j) => { const dx = seg[1][0] - seg[0][0], dy = seg[1][1] - seg[0][1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; return [j.a, j.b].every(q => Math.abs((q[0] - seg[0][0]) * uy - (q[1] - seg[0][1]) * ux) < 0.09 && (q[0] - seg[0][0]) * ux + (q[1] - seg[0][1]) * uy > -0.09 && (q[0] - seg[0][0]) * ux + (q[1] - seg[0][1]) * uy < L + 0.09); };
   for (const s of S) {

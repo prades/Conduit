@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bi` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the rail back along the West Channel (work in progress)
+- **The ask** (the owner, 2026-11-21): "U added a wall lining the entire channel".
+- **What it does** (only with `?sewerdungeon`): the wall that build `bh` put along the West Channel's north walkway is the rail again.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
 ### Build `2026-11-17bh` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a flooded staircase into the West Channel, the channel 5 tiles wide, the trace on the game's grid (work in progress)
 - **The ask** (the owner, 2026-11-21): "There should also be a flooded staircase that leads into the channel in the entrance tunnel. Maybe make that channel a little bit wider as well."
 - **What it does** (only with `?sewerdungeon`): steps from the north walkway down into the West Channel; the channel 5 tiles wide. **Fixed with it:** the game moves walls onto its half-tile lines, which had moved a doorway shut; the whole trace is on those lines now.

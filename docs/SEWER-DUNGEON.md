@@ -91,6 +91,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Found with it: the trace must lie on the game's grid.** The game's playable map moves every wall onto its half-tile lines; a doorway traced a little off them was moved shut (the south bank could not be reached at all). `trace.js` now puts every point on the nearest half-tile line itself, once, for the map and the pictures alike (the ring's own corners excepted, so it stays one width), and the ring is cut on those lines where things meet it. Walkways are whole tiles wide: 2 along both channels. Every tile of all 35 rooms is reached on foot from the West Entrance.
 
+**Corrected (the owner, 2026-11-21, of a screenshot at the flooded staircase): "U added a wall lining the entire channel".** Cutting the steps into the channel had turned the north walkway's rail into a wall all along it (an edge only partly shared with the water was drawn as wall). The tool now makes every end of a shared wall a corner of both rooms, so the rail is back along the water and only along it; the entrance landing's water edge has its rail too. Build `2026-11-17bi`.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
