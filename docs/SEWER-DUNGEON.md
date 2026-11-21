@@ -47,4 +47,10 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 5. Charges, battery packs, the reset, loot.
 
 ## 6. Open questions
-See `OPEN-QUESTIONS.md` (the sewer dungeon). Asked of the owner 2026-11-21; their answers are recorded here as they come.
+**Answered (the owner, 2026-11-21, of four questions):**
+- The old Sewers: **"Replace outright"**. The new layout takes the old one's place when stage 1 is built.
+- The old Queen sequence (the ambush at the install, the scripted knock-out, the return): **"Drop the ambush and defeat"**. She sits in the Round Junction; you get past her by a non-lethal approach or fight her; Side Quest and the potion stay as one approach.
+- Changing the water level: **"A Technomancer charge"**: the mech spends one of its 3 environmental charges at a water control.
+- First stage: **"Layout + water together"**.
+
+**Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
