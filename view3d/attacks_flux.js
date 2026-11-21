@@ -266,7 +266,7 @@ function view3dFluxForms(K) {
       impact: {
         pre(e) { return isHit(e) || e.color === '#cc66ff'; },
         find(e, f) { if (isHit(e)) return Math.hypot(e.x - f.x, e.y - f.y) < 2.4;
-          if (e.color === '#cc66ff' && Math.hypot(e.x - f.x, e.y - f.y) < 0.25) { const S = SWAPS.get(f); if (!S || S.e !== e) SWAPS.set(f, { e, at: GM.frame, x: e.x, y: e.y, ox: null, oy: null }); return true; }
+          if (e.color === '#cc66ff' && Math.hypot(e.x - f.x, e.y - f.y) < 1.2 && GM.frame - (f._sigAt === undefined ? -99 : f._sigAt) < 6) {   /* (where it came to: the game's own record of its move, its cast a moment ago; it may have been nudged since) */ const S = SWAPS.get(f); if (!S || S.e !== e) SWAPS.set(f, { e, at: GM.frame, x: e.x, y: e.y, ox: null, oy: null }); return true; }
           if (e.color === '#e0a8ff') { const S = SWAPS.get(f); return !!S && GM.frame - S.at < 3 && Math.hypot(e.x - f.x, e.y - f.y) < 7; }
           if (e.color === '#b66cf5') { for (const [d, C] of COPIES) if (C.f === f && Math.hypot(e.x - C.x, e.y - C.y) < 0.3) return true; }
           return false; },

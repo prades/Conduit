@@ -4,7 +4,7 @@
 // moved and animated by the game's own clock, taken away when the field is over. Its colours are its 2D drawing's (js/elements.js drawElementEffects); its shapes the agent's,
 // provisional. All ten fields (drafts for the owner): THUNDERSTORM, EVENT HORIZON, TOXIC PUDDLE first (build 2026-11-17av), then WHITEOUT, ICE RINK, SHARD VORTEX, PINK THICKET, LIGHTNING CIRCUIT, CONTAMINATION NETWORK, METEOR RAIN. Nothing here touches what a field does.
 // APPROVED LOOKS WIN (the owner, 2026-11-21, asked about the Ultimates the attacks' registry, view3d/attacks.js, also draws): a field or burst the registry drew this frame (left(e) true) is
-// not drawn here too; these drafts stay for the forms the registry has not done (EVENT HORIZON, SHARD VORTEX, PINK THICKET, SHOCKWAVE SLAM, WAVE MAKER, CONSUME, JELLY SHIELDS, PROXY SWARM, REEF PILLAR).
+// not drawn here too; these drafts stay for the forms the registry has not done (PINK THICKET, SHOCKWAVE SLAM, WAVE MAKER, CONSUME, JELLY SHIELDS, REEF PILLAR; EVENT HORIZON, SHARD VORTEX and PROXY SWARM are the flux line's since 2026-11-21).
 // In scope: T. liftAt(x, y): the floor's height there, in the view's units. left(e): whether another drawing has it this frame (or none).
 function battleFieldsMake(scene, liftAt, left) {
   const W0 = { x: 0, y: 0 };   // (a thing laid out in the world's own places stands at the world's corner: its parts carry where they are)

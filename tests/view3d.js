@@ -23,6 +23,9 @@
 //                 sending one form's back to 2D. The toxic line's ten (the Blight Spider's, the Seeper's, the Rotshard's): each made by the game's own functions, drawn and claimed (the smoke form with the
 //                 body still the view's, the venom, the network's strands and pods, the eruption, the stomp, the undertow, the soul blob and its splat, the black decoy, its lob and shards, the puddle and its
 //                 spikes), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D
+//                 The flux line's ten (the Voidstar's, the Goo Proxy's, the Rift Mimic's): each made by the game's own functions, drawn and claimed (the shot and its tentacles, MAELSTROM's crystals,
+//                 the black hole, the goo hit and its aura, both spots of PHASE SWAP, the goo copies and their bursts, the shard shot and its strike, the slam, the glitch and its spike, the
+//                 hurricane of blades), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D; in a card battle EVENT HORIZON the registry's alone
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');

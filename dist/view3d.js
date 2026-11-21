@@ -33113,7 +33113,7 @@ function view3dFluxForms(K) {
                 find(e, f) {
                     if (isHit(e))
                         return Math.hypot(e.x - f.x, e.y - f.y) < 2.4;
-                    if (e.color === '#cc66ff' && Math.hypot(e.x - f.x, e.y - f.y) < 0.25) {
+                    if (e.color === '#cc66ff' && Math.hypot(e.x - f.x, e.y - f.y) < 1.2 && GM.frame - (f._sigAt === undefined ? -99 : f._sigAt) < 6) {
                         const S = SWAPS.get(f);
                         if (!S || S.e !== e)
                             SWAPS.set(f, { e, at: GM.frame, x: e.x, y: e.y, ox: null, oy: null });
