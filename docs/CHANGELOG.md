@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17az` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms, behind `?sewerdungeon` (work in progress)
+- **The ask** (the owner, 2026-11-21, of the skeleton picture and its hand trace): "This is our sewer now, make it happen"; "The ring is a storey down, build it".
+- **What it does:** with `?sewerdungeon` in the address the game starts you at the new dungeon's West Entrance: 32 rooms, 33 doorways and 9 flights of stairs made from the trace (`SEWER-DUNGEON.md`). Bare rooms only: no sewer look, no water, no way in or out, nothing to do, not in the 3D view. Without the switch the game is as it was; the old Sewers are untouched.
+- `tools/sewerdungeon.js` (new), `js/sewerdungeonmap.js` (generated), `design/sewer-dungeon/`, `js/facilitymap.js`, `js/facilityplay.js`, `js/facilitysewers.js` (`sewerDungeonStart`), `game.html`.
+- **Verified:** the game loads it and starts in it in a real browser (both pages), no page error; facility, facilityplay, sewers, bundle suites. **Not playtested.**
+
 ### Build `2026-11-17ay` · branch `claude/start-game-project-HSh7Z` · card battles: the seven Ultimates that are over in their own turn, in 3D (drafts)
 - **The ask** (the owner, 2026-11-21): "Next batch".
 - **What it does:** QUILLSTORM, OVERDRIVE, SHOCKWAVE SLAM, TOXIC UNDERTOW, WAVE MAKER, DRIFT SLASH and FAULTLINE are drawn in a battle as they are cast (`CARD-BATTLES.md` §2.67). With them all 22 Ultimates have a 3D drawing in a battle. Drafts: the shapes are the agent's. Everyday attacks are still not drawn in a battle.

@@ -549,6 +549,7 @@ function facilityPlayStart() {
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     if (lab && typeof fluxLabStart === "function") fluxLabStart(F);   // the test room: the tutorial over, the player and the squad in the room, its creatures (js/fluxlab.js)
+    if (typeof sewerDungeonStart === "function") sewerDungeonStart(F);   // the sewer dungeon while it is built (?sewerdungeon): you start at its West Entrance (js/facilitysewers.js)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
     else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
     document.body.classList && document.body.classList.add("facility-play");
