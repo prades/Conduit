@@ -1,6 +1,6 @@
 # The Sewer Dungeon's props and key items
 
-- **Status:** In progress. The list (§5) is **proposed**, for the owner to correct. **Approved (2026-11-21), twelve pieces:** the subway key, the module's three parts, the battery pack, the drain valve, the sluice gate, the sluice switch, a drain, the subway door, a shortcut door, rubble. **The dungeon's walls are brick and concrete** (the owner, 2026-11-21). **Drafted, waiting for the owner's eye:** a sample of that wall, the secret door in it, the bridge box, a loose slab. **Nothing is in the game.**
+- **Status:** In progress. The list (§5) is **proposed**, for the owner to correct. **Approved (2026-11-21), twelve pieces:** the subway key, the module's three parts, the battery pack, the drain valve, the sluice gate, the sluice switch, a drain, the subway door, a shortcut door, rubble. **The dungeon's walls are concrete, its floor checker plate** (the owner, 2026-11-21). **Drafted, waiting for the owner's eye:** a sample of that wall and the secret door in it (its tells approved: "about right"), a loose slab, the Nest's three finds (shed chitin, eggs, a dead ant), a found energy card. **Rejected:** a float box for the bridge box (it is one of the facility's ordinary crates); an amber edge on what is moved. **Nothing is in the game.**
 - **Owner:** User (creative direction); agent (the designs, to be approved piece by piece)
 - **Last updated:** 2026-11-21
 - **Branch/build context:** written on branch `claude/friendly-thompson-w581x0` from main at build `2026-11-17ba`. No game code changed; no picture baked into the game.
@@ -29,7 +29,8 @@ So this page is the one list of every prop and key item the sewer notes call for
 ## 4. The look
 
 **Decided already:**
-- **The dungeon's walls are brick and concrete** (the owner, 2026-11-21, asked which, the facility's panels of build `2026-11-15g` or Notion's "Brick and concrete tunnel walls": **"Brick concrete"**). For the Sewer Dungeon this **supersedes** the walls of build `2026-11-15g`; today's Sewers keep theirs until the dungeon is built. The floor was not asked (Q10). The walls themselves are the layout's work, drawn by the game's wall code, not props: `design/sewer-props/models.js` holds only a **sample** of them (the agent's reading: a poured concrete foot a third of the way up, red-brown brick above, a concrete cap), for the secret door to hide in.
+- **The dungeon's walls are concrete** (the owner, 2026-11-21). Asked which, the facility's panels of build `2026-11-15g` or Notion's "Brick and concrete tunnel walls": "Brick concrete"; then, shown a sample with a concrete foot and brick above it: **"It should be concrete."** So poured concrete, top to floor, no brick. For the Sewer Dungeon this **supersedes** the walls of build `2026-11-15g`; today's Sewers keep theirs until the dungeon is built. The walls themselves are the layout's work, drawn by the game's wall code, not props: `design/sewer-props/models.js` holds only a **sample** of them (board marks, a joint between pours at each tile, tie holes, a dark tide line a third of the way up, slime at the floor), for the secret door to hide in.
+- **The dungeon's floor is checker plate** (the owner, 2026-11-21: "Checker plate dungeon floors"): the floor of build `2026-11-15g` stays.
 - The props' style (`design/props/BRIEF.md`, the shared kit `_style.js`): hard-surface, bevelled, panel lines and bolts, no outlines; lit details, because a dark room dims a sprite to a silhouette.
 - The Sewers' walls and floor (build `2026-11-15g`; the owner: "I like 1 but the floor tiles of 4"): the facility's panels with a green light strip, a checker-plate floor.
 - Notion's reference (2026-11-19): "A believable, slightly neglected municipal sewer system in near-future San Francisco [...] This is not a completely destroyed sewer"; "Keep fixed infrastructure distinct from loose, movable, destructible, or ability-compatible objects"; "Make obstacles legible through geometry and material cues rather than relying entirely on markers"; "Do not turn every environmental prop into an interactable puzzle object."
@@ -47,9 +48,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 - **What is cleared away, not worked, is pale broken concrete**, with nothing green or red on it.
 - **A door that opens from one side only is barred, not solid**, so the way beyond is seen before it can be taken, and its latch (red) is on one face only.
 
-**Proposed by the agent with the bridge box, for the owner to approve or change:**
-- **What is moved is edged in amber** (by the Flux Technician, the mech, a Tank Ant clone): equipment made to be shifted wears amber guards, as the battery pack, which is carried, is amber. A thing of the place that happens to be loose (a fallen slab) wears none.
-- So the five signals: **green** is fixed, **red** is worked by a hand or a shot, **brass** is the key's, **amber** is moved, **pale broken concrete** is cleared.
+**Rejected** (the owner, 2026-11-21: "Amber for things that can be moved. No."): an amber edge on whatever is moved. A movable thing wears no mark of its own. So the four signals stand: **green** is fixed, **red** is worked by a hand or a shot, **brass** is the key's, **pale broken concrete** is cleared.
 
 ## 5. The list
 
@@ -66,7 +65,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 | A5 | The water sample | "you have to get the water sample". | Exists: 3D model | No change asked |
 | A6 | The ant samples ("DNA samples") | "found as shed chitin, eggs, or a dead ant [...] or taken from a sleeping or frozen ant". | Exists: 3D model (TOXIC ANT SAMPLE) | No change asked; its sources are F1 to F3 |
 | A7 | **The battery pack** | "Battery packs, found in the dungeon, restore the mech's charges and every spent follower utility." Proposed: two, in areas 3 and 10. **It is carried** (the owner, 2026-11-21: "I guess a battery pack can be held, carried"). | None (a POWER CELL exists: a different item) | **Approved** (2026-11-21: "Looks good"): an amber block, two terminals, a lit bar of four cells |
-| A8 | **An energy card, found** (E1 to E7) | "Definitely energy cards and other upgrades scattered throughout the level" (the owner, 2026-11-20). Today cards come only from packs. | None in the world | Not started (Q4) |
+| A8 | **An energy card, found** (E1 to E7) | "Definitely energy cards and other upgrades scattered throughout the level" (the owner, 2026-11-20). Today cards come only from packs. | None in the world | **Drafted**: a dark card with a thin lit edge in its element's colour and that element's gem set through it (fire, ice and toxic shown; and one with the clear, unlit crystal, should its element be kept until it is taken: Q4) |
 | A9 | "Other upgrades" | The owner's words; what they are is open (the spec's §11.6). | None | Waits (Q5) |
 | A10 | The chest | `CHESTS.md`: the hex cache, approved 2026-11-12. | Exists: 3D model | No change asked |
 
@@ -76,7 +75,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 |---|---|---|---|---|
 | B1 | A locked door | Opened by its key, "or by breaching some of them another way". | The facility's doors | **None for now**: with one key (A2), the one keyed door is the subway's (B4) |
 | B2 | **A shortcut door** | "Some doors open from the far side to make shortcuts." | None (the drain pipe's grate "opens only from inside") | **Approved** (far, near, open; 2026-11-21: "Yes drafts good"): a barred iron door of two leaves, its red latch on one face only |
-| B3 | A secret door | "a secret door" (northwest wing; from corridor 12 to area 11). | None | **Drafted** (hidden, open): one tile of the brick and concrete wall itself, with two tells, a hairline seam and scrape marks on the floor |
+| B3 | A secret door | "a secret door" (northwest wing; from corridor 12 to area 11). | None | **Drafted in concrete** (hidden, open): one tile of the wall itself, with two tells, a hairline seam and scrape marks on the floor. **The tells are approved** (the owner, 2026-11-21: "The secret doors should be about right"); the door was then redrawn in the concrete wall |
 | B4 | **The subway door** | Opened by the subway key; "the way on to the subway". | A portal door (flat) | **Approved** (locked, open; 2026-11-21: "Yes drafts good"): a steel roller shutter, SUBWAY on its housing, a brass six-sided key switch on its post |
 | B5 | **Rubble** | "East rubble [...] a chest behind it; several ways through"; proposed U9: "a Fire Technician drills it; the mech moves it". | A flat pile, drawn over and over | **Approved** (whole, cleared; 2026-11-21: "Yes drafts good"): a heap of broken concrete, two tiles |
 | B6 | Heavy debris | Proposed U1: "the mech moves it; the Mutator's Tank Ant clone pushes it". | None | Not started |
@@ -100,9 +99,9 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 | No | Piece | What the notes say | Today | Status |
 |---|---|---|---|---|
-| D1 | **The bridge box** | "move a box into the water to create a bridge" (the owner, 2026-11-20); pushed in by the Flux Technician or the mech, into raised water. | The facility's crates (3D), none in the Sewers | **Drafted**: a sealed float box, slate with amber guards, a load line and FLOAT on its sides, a plated top to walk on (Q7 still asks whether it is this or a facility crate) |
-| D2 | Floating crates and debris | "floating crates or debris rise to reach upper ledges and doorways". | None | Not started |
-| D3 | The damming obstacle | "the player has to move obstacles into the water to stop the water somewhere" (for the key, A1). What the obstacle is, is not said. | None | Waits (Q7) |
+| D1 | **The bridge box** | "move a box into the water to create a bridge" (the owner, 2026-11-20); pushed in by the Flux Technician or the mech, into raised water. | **Exists**: the facility's crates (3D: `design/props/models/cargo.js`) | **It is one of the facility's ordinary crates** (the owner, 2026-11-21: "The bridge box should be facilities ordinary crates"). A sealed float box drafted for it was rejected; nothing to draw |
+| D2 | Floating crates and debris | "floating crates or debris rise to reach upper ledges and doorways". | The facility's crates (3D) | The crates are the facility's (as D1); debris not started |
+| D3 | The damming obstacle | "the player has to move obstacles into the water to stop the water somewhere" (for the key, A1). What the obstacle is, is not said. | None | Waits (Q7): a facility crate too? |
 | D4 | Piled crates, a crate stash | Proposed U4; "a stash reached by moving crates". | The facility's crates | Not started |
 | D5 | The Queen's lair's loose things | Notion: "loose masonry, stone slabs, movable sewer machinery, or discarded chitin plates can be repositioned". | None | **A loose slab drafted** (two tiles by one, low cover); the machinery and the chitin plates not started |
 
@@ -120,9 +119,9 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 | No | Piece | What the notes say | Today | Status |
 |---|---|---|---|---|
-| F1 | Shed chitin | A sample's source; and the lair's "discarded chitin plates" (D5). | None | Not started |
-| F2 | Eggs | A sample's source. | Flat egg clusters | Not started |
-| F3 | A dead ant | A sample's source. | None | Not started |
+| F1 | **Shed chitin** | A sample's source; and the lair's "discarded chitin plates" (D5). | None | **Drafted**: a moulted skin, pale, hollow, split along the back, its leg sheaths beside it |
+| F2 | **Eggs** | A sample's source. | Flat egg clusters | **Drafted**: three eggs of three sizes, the Nest's green light in them, resin at their feet |
+| F3 | **A dead ant** | A sample's source. | None | **Drafted**: the game's own ant on its back, its legs drawn in, its eyes and rim dark |
 | F4 | The trash dam, its rim, junk, resin, brood holes | The Nest dams the water at the round junction. | All flat (`SEWER-QUEST.md`, "The Nest") | Not started |
 
 ### G. The purification chamber
@@ -137,10 +136,10 @@ Lamps, cables, signs, moss, silt, stains, puddles, railings: Notion's "sediment,
 
 ## 6. The order of work (proposed)
 
-1. **Key items** (A1, A3, A7 approved; A8 when Q4 is answered): the smallest set, and the one the owner spoke of most ("More than anything", of the key in the channel bed).
+1. **Key items** (A1, A3, A7 approved; A8 drafted): the smallest set, and the one the owner spoke of most ("More than anything", of the key in the channel bed).
 2. **Water works** (C1 to C4 approved; C5 and C6 with the layout): the dungeon's own tool.
-3. **Doors and barriers** (B2, B4, B5 approved; B3 drafted; B6 to B9 once the spec's §2.11 is approved).
-4. **Things that move** (D1 and a slab of D5 drafted; the rest of D), then **the Nest's finds** (F1 to F3).
+3. **Doors and barriers** (B2, B4, B5 approved; B3 drafted in concrete, its tells approved; B6 to B9 once the spec's §2.11 is approved).
+4. **Things that move** (D1 is the facility's crates; a slab of D5 drafted; the rest of D5), and **the Nest's finds** (F1 to F3 drafted).
 5. **Height** (E2, E4), **the chamber** (G1), then **dressing** (H) and the Nest's own pieces (F4).
 
 Each kind waits on a yes to its first piece.
@@ -153,19 +152,19 @@ Each kind waits on a yes to its first piece.
 - **Q4. A found energy card.** Does the player see its element before taking it?
 - **Q5. "Other upgrades".** What are they?
 - **Q6. The cracked wall.** The spec's proposed check U6 is a cracked wall; the owner also said of the layout "There shouldn't be any broken walls". Which stands?
-- **Q7. The box.** Is the bridge box a new sewer box, or one of the facility's crates? Is the thing that dams the channel for the key the same box?
+- **Q7. The box.** ~~Is the bridge box a new sewer box, or one of the facility's crates?~~ *Answered 2026-11-21: "The bridge box should be facilities ordinary crates."* Still open: is the thing that dams the channel for the key a crate too?
 - **Q8. The slant.** A key item turns about its own leaning axis, about 15 degrees off upright: right?
 - ~~**Q9. Materials.**~~ *Answered 2026-11-21: "Brick concrete"* (§4).
-- **Q10. The floor.** The dungeon's walls are brick and concrete; is its floor still the checker plate of 2026-11-15, or concrete too?
-- **Q11. The secret door's tells.** A hairline seam and scrape marks on the floor: plain enough, too plain, or not plain enough?
+- ~~**Q10. The floor.**~~ *Answered 2026-11-21: "Checker plate dungeon floors."*
+- ~~**Q11. The secret door's tells.**~~ *Answered 2026-11-21: "about right".*
 
 ## 8. Verification record
 
 | Check | Result | Notes |
 |---|---|---|
-| The sixteen pieces build and render | Passed, 2026-11-21 | `node design/sewer-props/review.js <three-dir> <out-dir> <ids> --sheet <name>`: the key items on one sheet, the water works on another, the doors and rubble on a third, the wall, its secret door and the movers on a fourth, in the baker's light and camera, at game size beside the player's cube |
+| The nineteen pieces build and render | Passed, 2026-11-21 | `node design/sewer-props/review.js <three-dir> <out-dir> <ids> --sheet <name>`: the key items on one sheet, the water works on another, the doors and rubble on a third, the concrete wall, its secret door and the Nest's finds on a fourth, the found energy card on a fifth, in the baker's light and camera, at game size beside the player's cube |
 | In the game | Not done | Nothing is baked; the game reads nothing of this |
-| The owner's eye | In part | Twelve approved (the valve: "good enough. It should work"; eight: "Looks good"; the two doors and the rubble: "Yes drafts good"); the key's first draft corrected ("overdrawn"); the wall sample, the secret door, the bridge box and the slab wait for a yes or a correction |
+| The owner's eye | In part | Twelve approved (the valve: "good enough. It should work"; eight: "Looks good"; the two doors and the rubble: "Yes drafts good"); the key's first draft corrected ("overdrawn"); the wall sample corrected ("It should be concrete"), the float box and the amber edge rejected; the concrete wall and its secret door, the slab, the Nest's three finds and the found energy card wait for a yes or a correction |
 
 ## 9. History
 
@@ -173,3 +172,4 @@ Each kind waits on a yes to its first piece.
 - 2026-11-21, the owner's answers: "I guess a battery pack can be held, carried. The key is kind of overdrawn. The valve is good enough. It should work. The modules parts, that sounds correct. 3 parts is okay. How many keys? Just 1 for now." So: the valve approved, and the ironwork with it; the key redrawn plain (draft 2); the module's three parts and the battery pack drafted, plain; the rest of the water works drafted in the valve's ironwork (the sluice gate, the sluice switch, a drain); door keys dropped for now.
 - 2026-11-21, the owner, of that round's two sheets: "Looks good". So the key (draft 2), the module's three parts, the battery pack, the sluice gate, the sluice switch and the drain are approved. Drafted next, in the same ironwork: the subway door (a roller shutter with a brass key switch), a shortcut door (barred, its latch on one face), rubble (whole, cleared). The secret door waits for the dungeon's wall (Q9).
 - 2026-11-21, the owner: "Yes drafts good. Brick concrete." So the subway door, the shortcut door and the rubble are approved, with their three signals (brass, pale concrete, a barred one-way door); and the dungeon's walls are brick and concrete. Drafted next: a sample of that wall, the secret door in it, the bridge box (with a fifth signal proposed: amber is moved), a loose slab.
+- 2026-11-21, the owner, of those: "It should be concrete. The secret doors should be about right. The bridge box should be facilities ordinary crates. Amber for things that can be moved. No. Checker plate dungeon floors. And yes, make the other make the found energy card." So: the wall is concrete, no brick (the sample and the secret door redrawn in it); the secret door's tells stand; the float box is rejected, the bridge box being one of the facility's crates (its model taken out of the drafts); the amber edge is rejected; the floor is checker plate. Drafted next: the Nest's three finds (shed chitin, eggs, a dead ant) and a found energy card.

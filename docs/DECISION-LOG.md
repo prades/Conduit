@@ -14,14 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
-## DECISION: The Sewer Dungeon's walls are brick and concrete; its props and key items are approved piece by piece
+## DECISION: The Sewer Dungeon's walls are concrete and its floor checker plate; its props and key items are approved piece by piece
 
 - **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ba` (documents and drafts only: nothing in the game)
 - **Status:** designed in part; nothing built. The list of every piece and where it stands is `SEWER-PROPS.md`; the drafts are in `design/sewer-props/`.
-- **Decision:** the owner: "take charge of designing all of the props and all of the key items that are discussed in the Notion notes or the framework on GitHub." Asked, the same day: the dungeon's walls are **"Brick concrete"** (not the facility's panels); **one key "for now"**, the subway key; the purification module's three parts are **the canister, the membranes and the pump** ("that sounds correct. 3 parts is okay"); **a battery pack is carried** ("can be held, carried").
-- **Supersedes:** for the Sewer Dungeon, the walls of build `2026-11-15g` (the facility's panels: "I like 1 but the floor tiles of 4"). Today's Sewers keep them until the dungeon is built. The floor was not asked. The dungeon spec's Key 1 and Key 2 (`SEWER-DUNGEON.md` §2.3, on branch `claude/sewer-dungeon-spec`) are dropped for now.
+- **Decision:** the owner: "take charge of designing all of the props and all of the key items that are discussed in the Notion notes or the framework on GitHub." Asked, the same day: the dungeon's walls are **concrete** (first "Brick concrete", not the facility's panels; then, shown a sample with brick over a concrete foot, **"It should be concrete"**) and its floor **checker plate** ("Checker plate dungeon floors"); the bridge box is **one of the facility's ordinary crates**; a movable thing wears **no amber edge** ("No"); **one key "for now"**, the subway key; the purification module's three parts are **the canister, the membranes and the pump** ("that sounds correct. 3 parts is okay"); **a battery pack is carried** ("can be held, carried").
+- **Supersedes:** for the Sewer Dungeon, the walls of build `2026-11-15g` (the facility's panels: "I like 1 but the floor tiles of 4"); its floor, the checker plate, stays. Today's Sewers keep their walls until the dungeon is built. The dungeon spec's Key 1 and Key 2 (`SEWER-DUNGEON.md` §2.3, on branch `claude/sewer-dungeon-spec`) are dropped for now.
 - **Approved looks** ("The valve is good enough. It should work"; "Looks good"; "Yes drafts good"): the subway key (plain: the first draft was "kind of overdrawn"), the module's three parts, the battery pack, the drain valve, the sluice gate, the sluice switch, a drain, the subway door, a shortcut door, rubble. With them, four signals: fixed ironwork is green, what a hand or a shot works is red, brass is the key's, what is cleared is pale broken concrete.
-- **Agent's choices, provisional:** every colour, shape and word on a piece not yet approved; a fifth signal (amber is moved); the wall sample's reading of "Brick concrete". `SEWER-PROPS.md` §7.
+- **Agent's choices, provisional:** every colour, shape and word on a piece not yet approved. `SEWER-PROPS.md` §7.
 
 ## DECISION: In a card battle the Mutator has a turn of its own: its HEALING SERUM heals the whole squad
 

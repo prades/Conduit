@@ -26,7 +26,12 @@ Pictures go to a scratch folder, never the repository.
 | `subway_door` (locked, open) | B4 | **approved 2026-11-21** |
 | `shortcut_door` (far, near, open) | B2 | **approved 2026-11-21** |
 | `rubble` (whole, cleared) | B5 | **approved 2026-11-21** |
-| `wall_sample` | (not a prop) | a sample of the dungeon's brick and concrete wall, drafted 2026-11-21, not approved |
-| `secret_door` (hidden, open) | B3 | drafted 2026-11-21, not approved |
-| `bridge_box` | D1 | drafted 2026-11-21, not approved |
+| `wall_sample` | (not a prop) | a sample of the dungeon's concrete wall (the owner: "It should be concrete"), redrawn 2026-11-21, not approved |
+| `secret_door` (hidden, open) | B3 | redrawn in concrete 2026-11-21; its tells approved ("about right") |
 | `loose_slab` | D5 | drafted 2026-11-21, not approved |
+| `dead_ant` | F3 | drafted 2026-11-21, not approved |
+| `shed_chitin` | F1 | drafted 2026-11-21, not approved |
+| `egg_cluster` | F2 | drafted 2026-11-21, not approved |
+| `energy_card` (fire, ice, toxic, unknown) | A8 | drafted 2026-11-21, not approved |
+
+Taken out: `bridge_box` (D1), a float box, rejected 2026-11-21 (the owner: "The bridge box should be facilities ordinary crates"); it is in the repository's history.
