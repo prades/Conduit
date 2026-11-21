@@ -11,7 +11,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **The agent's, provisional:** a HOLD card to pass; drag only (no tap); two serums add up; a serum's turns left end with the battle; HERBALIST's bonus applies. `CARD-BATTLES.md` §2.70, §11.33.
 - **Fixed while building it:** nothing of the game's; one mistake of this build's own (a second serum hurried the first one's next turn's worth), caught by its check.
 - `js/cardbattle.js`, `js/cardshapes.js`, `tests/cardbattle.js` (5 new checks), `docs/CARD-BATTLES.md` §2.70, §9, §10, §11.33, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`, `MUTATOR.md`.
-- **Verified:** VERIFIED_LINE
+- **Verified:** `node tests/run.js`: all 132 suites pass (tests/cardbattle.js THE MUTATOR'S TURN, 5 checks). In a real browser at 1180 × 820 (`play.html?engine=3d&cards`), a Mutator with two serums and three followers at 200 of 1000: its turn came after theirs (the chip YOU, MUTATOR · 2 SERUMS, the cards HEALING SERUM with SERUM 2 on its foot, and HOLD); the serum dragged onto the fight took the three to 440 at once, 680 as the next enemy turn began and 800 as the one after did, one serum left; HOLD by a tap kept the other. With ASH SURGEON worn, two ants at 300 went to 293, 286 and 282.5 on those same turns (7, 7 and 3.5: an ant resists Elemental, `COMBAT.md` §7.3, so 10, 10 and 5 land as that on it); no page errors. **Not playtested; not seen on an iPad.**
 
 ### Build `2026-11-17ay` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
 - **The ask** (the owner, 2026-11-20, of the Gunslinger's melee): "It's used as a close up smash with the gun." Asked: "Card battles only"; "It walks up, like followers"; "About a burst (36)"; "Free, every round".
