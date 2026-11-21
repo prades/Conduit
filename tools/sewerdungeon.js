@@ -11,13 +11,17 @@ const WATER = new Set(['water']);
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
 // feel like it's underground"): a step of the trace's `lvl` is a short flight, STEP tiles, not a storey; the walkways lie where the old Sewers did (BASE). A channel's room lies DEEP below its
 // walkways: its water is drawn below that again (js/facilitysewers.js), so the channel reads deep and not full. Levels of the dungeon's own (ids 47 to 52), so no other room's height moves.
-const BASE = -1.8, STEP = 0.45, DEEP = 0.9, LV = l => 50 + l, WATER_LV = 47;
+const BASE = -1.8, STEP = 0.4, DEEP = 0.9, LV = l => 50 + l, WATER_LV = 47;
 // THE FLIGHTS: [upper piece, lower piece, where on their shared wall (a tile range along x or y, or null: all of it), the flight's zone (a rectangle, in tiles) and the way it runs]
 const FLIGHTS = [
-  { id: 'channel_steps', rooms: ['channel_steps', 'west_channel'], on: { y: [18.5, 18.5] }, zone: [9.3, 16.4, 11.7, 18.6], axis: 'y', steps: 5, wet: true },   // (THE FLOODED STAIRCASE: it runs down into the channel; nothing walks off its foot)
+  { id: 'channel_steps', rooms: ['channel_steps', 'west_channel'], on: { y: [18.5, 18.5] }, zone: [9.3, 16.4, 11.7, 18.6], axis: 'y', steps: 6, wet: true },   // (THE FLOODED STAIRCASE: it runs down into the channel; nothing walks off its foot)
+  { id: 'ent_n1', rooms: ['west_walk_n', 'west_walk_n2'], on: null, zone: [18.5, 14.5, 20.5, 16.5], axis: 'x', steps: 3 },   // (THE ENTRANCE TUNNEL'S TWO FLIGHTS, on each bank)
+  { id: 'ent_n2', rooms: ['west_walk_n2', 'west_walk_n3'], on: null, zone: [28.5, 14.5, 30.5, 16.5], axis: 'x', steps: 3 },
+  { id: 'ent_s1', rooms: ['west_walk_s', 'west_walk_s2'], on: null, zone: [18.5, 21.5, 20.5, 23.5], axis: 'x', steps: 3 },
+  { id: 'ent_s2', rooms: ['west_walk_s2', 'west_walk_s3'], on: null, zone: [28.5, 21.5, 30.5, 23.5], axis: 'x', steps: 3 },
   { id: 'gallery', rooms: ['nw_gallery', 'west_walk_n'], on: { x: [9.5, 11.5] }, zone: [9.5, 12.5, 11.5, 14.5], axis: 'y', steps: 3 },
-  { id: 'cell', rooms: ['west_walk_s', 'west_cell'], on: { x: [4.5, 7.5] }, zone: [4.5, 23.4, 7, 25.4], axis: 'y', steps: 2 },   // (the owner, 2026-11-21: "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance.")
-  { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 25, 16.5, 29.5], axis: 'y', steps: 3 },
+  { id: 'cell', rooms: ['west_walk_s', 'west_cell'], on: { x: [4.5, 7.5] }, zone: [4.5, 23.4, 7, 25.4], axis: 'y', steps: 5 },   // (the owner, 2026-11-21: "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance.")
+  { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 24.5, 16.5, 29.5], axis: 'y', steps: 7 },
   { id: 'ring_w', rooms: ['central_walk_w_s', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
   { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 48.6, 36.4], axis: 'y', steps: 3 },
   { id: 'pur', rooms: ['pur_pass', 'junction_ring_e'], on: null, zone: [55, 44.8, 57.2, 49.2], axis: 'x', steps: 3, down: 'low' },
@@ -60,7 +64,7 @@ function build() {
     const upFirst = f.down !== 'low', c0 = (upFirst ? c[0] : c[1]) * G, c1 = (upFirst ? c[1] : c[0]) * G;
     ramps.push({ id: 'r_' + P + f.id, rooms: f.rooms.map(x => P + x), shape: 'steps', between_levels: [hi, lo], descends_toward: P + f.rooms[1], position_status: 'placed', zone: { rect: [z[0] * G, z[1] * G, z[2] * G, z[3] * G].map(Math.round), axis: f.axis, c0: Math.round(c0), c1: Math.round(c1), steps: f.steps } });
     if (!f.wet) connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
-  const levels = [{ id: WATER_LV, label: 'sewer channel', height: +(BASE - DEEP).toFixed(2) }].concat([-2, -1, 0, 1, 2].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
+  const levels = [{ id: WATER_LV, label: 'sewer channel', height: +(BASE - DEEP).toFixed(2) }].concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
   return { levels, rooms, interiors, openings, connections, ramps, props, floors };
 }
 function text() { const M = build(), line = o => '        ' + JSON.stringify(o);
