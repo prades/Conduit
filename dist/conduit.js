@@ -27487,6 +27487,7 @@ function _cbYourTurn() {
     _cb.turn = { who: "you", t0: _cbF() };
 }
 _cb.charge = new Map();
+_cb.serums = [];
 function _cbChargeTurns(f, kind, id) {
     if (!f || kind === "ult" || !CARD_BATTLE.byClass)
         return 0;

@@ -901,6 +901,7 @@ function _cbYourTurn() {
 // turn); no cooldown. A BRAWLER's attacks fire at once; its second attack then COOLS DOWN (its RECHARGE). A TECHNICIAN's second attack charges, fires, then cools down; its basic fires at once. An
 // ULTIMATE fires at once. The lengths: a move's wait time at 2 s a turn (a part counts whole, at least 1); a Mage's basic, 1 turn.
 _cb.charge = new Map();   // follower → { kind, id, target, aim, left: turns still to charge }
+_cb.serums = [];   // the Mutator's serums at work (§2.70): each { left: the turns' worth still to come }
 function _cbChargeTurns(f, kind, id) {
     if (!f || kind === "ult" || !CARD_BATTLE.byClass) return 0;
     const m = kind === "move" && typeof MOVES !== "undefined" ? MOVES[id] : null, t = m ? _cbTurns(m.windup) : 1;
