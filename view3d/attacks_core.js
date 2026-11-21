@@ -73,7 +73,7 @@ function view3dCoreForms(K) {
   const SH_VS = 'varying vec3 vN; varying float vY; void main() { vN = normalize(normalMatrix * normal); vY = position.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
   const SH_FS = 'uniform vec3 uC; uniform vec3 uR; uniform float uA; uniform float uF; uniform float uB; varying vec3 vN; varying float vY; void main() { float fr = 1.0 - abs(normalize(vN).z); fr = fr * fr; float band = uB * (1.0 - smoothstep(0.0, 0.07, abs(vY - 0.08))); float a = uA * (0.1 + 0.7 * fr + 0.6 * band) + uF * (0.25 + 0.6 * fr); vec3 c = mix(uC, uR, clamp(fr * 1.2 + band + uF, 0.0, 1.0)); if (a < 0.01) discard; gl_FragColor = vec4(c * min(a, 1.0), min(a, 1.0)); }';
   const SHIELDS = [], SH_GEO = new T.SphereGeometry(1, 28, 18);
-  for (let i = 0; i < 4; i++) { const mat = new T.ShaderMaterial({ uniforms: { uC: { value: new T.Color(0.42, 0.86, 0.95) }, uR: { value: new T.Color(0.92, 1, 1) }, uA: { value: 0 }, uF: { value: 0 }, uB: { value: 0 } }, vertexShader: SH_VS, fragmentShader: SH_FS, transparent: true, depthWrite: false, blending: T.CustomBlending });
+  for (let i = 0; i < 4; i++) { const mat = new T.ShaderMaterial({ uniforms: { uC: { value: new T.Color(0.3, 0.85, 1.0) }, uR: { value: new T.Color(0.92, 1, 1) }, uA: { value: 0 }, uF: { value: 0 }, uB: { value: 0 } }, vertexShader: SH_VS, fragmentShader: SH_FS, transparent: true, depthWrite: false, blending: T.CustomBlending });
     mat.blendSrc = T.OneFactor; mat.blendDst = T.OneMinusSrcAlphaFactor; const m = new T.Mesh(SH_GEO, mat); m.layers.set(2); m.renderOrder = 22; m.userData.noInk = true; const g = new T.Group(); g.add(m); model(g); SHIELDS.push({ g, m, mat }); }
   let shN = 0;
   // a bubble round (x, y, z) (y its middle), r across, h tall, its strength a, its flash fl, its band's strength bd, wobbling by w
@@ -105,7 +105,7 @@ function view3dCoreForms(K) {
       // gone (the agent's reading: a blow is a moment of the enemy's turn, not the field lasting)
       const L = GM.fx, f0 = GM.frame; if (L) for (let i = 0; i < L.length; i++) { const e = L[i]; if (!e || e.type !== 'jellyshield' || !(e.life > 0) || !K.hid(e)) continue; const w = e.on, S = w && w.jellyShield, hp = S ? S.hp : 0, P = HPS.get(e);
         if (P && hp < P.hp - 1e-6) BLOWS.push({ w, at: f0, x: w.x, y: w.y, s: (w.x * 13 | 0) + 7 }); HPS.set(e, { hp, at: f0 }); }
-      for (let i = BLOWS.length - 1; i >= 0; i--) { const B = BLOWS[i], a = f0 - B.at; if (a > 18 || a < 0) { BLOWS.splice(i, 1); continue; } const w = B.w, x = w && !w.dead ? w.x : B.x, z = w && !w.dead ? w.y : B.y, bh = heightOf(env.bodyOf(w)); blowOn(x, z, bh, a, B.s, 1); }
+      for (let i = BLOWS.length - 1; i >= 0; i--) { const B = BLOWS[i], a = f0 - B.at; if (a > 22 || a < 0) { BLOWS.splice(i, 1); continue; } const w = B.w, x = w && !w.dead ? w.x : B.x, z = w && !w.dead ? w.y : B.y, bh = heightOf(env.bodyOf(w)); blowOn(x, z, bh, a, B.s, 1); }
       for (const [e, P] of HPS) if (f0 - P.at > 600 || !(e.life > 0) && f0 - P.at > 30) HPS.delete(e); },
     finish() { for (let i = ballN; i < BALLS.length; i++) BALLS[i].g.visible = false; for (let i = shN; i < SHIELDS.length; i++) SHIELDS[i].g.visible = false; for (let i = wvN; i < WAVES.length; i++) WAVES[i].g.visible = false; stats.coreModels = ballN + shN + wvN; },
     clear() { ballN = 0; shN = 0; wvN = 0; },
@@ -133,7 +133,7 @@ function view3dCoreForms(K) {
     if (g < 20) for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 46) * TAU + g * 0.1, r = 0.15 + 0.03 * g; glint(X + Math.cos(an) * r, Y + 0.012 * g + 0.15 * H(i, s, 47), Z + Math.sin(an) * r, 0.13, 0.75 * (1 - g / 20) * (0.5 + 0.5 * Math.sin(g * 0.8 + i))); } }
   const JELC = [JEL, JEL2], WATC = [WAT2, GOOW], GOOC2 = [GOOB, GOOC], TEALC = [TEAL2, CREST];
   // a blow on a jelly shield round (x, z), its wearer bh tall, a frames since it landed: the bubble flashing up and bulging, a ripple out over it, drops of jelly flicked off
-  function blowOn(x, z, bh, a, s, fade) { const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 16, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
+  function blowOn(x, z, bh, a, s, fade) { const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 20, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
     if (fade > 0) bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.85 * k * fade, 1.2 * k, 0.6 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);   // (fade 0: the lasting bubble is there and flashes itself)
     if (a < 12) { const u = a / 12; arc3(x, Yf + hh * 0.45, z, r * (0.4 + 0.75 * u), CR, CU, 0, TAU, 20); stroke(0.03 * (1 - u) + 0.008, 0.03 * (1 - u) + 0.008, JEL2, 0.8 * (1 - u), 0.8 * (1 - u)); }
     for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 51) * TAU, t = Math.min(a, 16), d = r * 1.05 + 0.02 * t, y = Yf + hh * (0.5 + 0.3 * H(i, s, 52)) + 0.03 * t - 0.003 * t * t; drop(x + Math.cos(an) * d, y, z + Math.sin(an) * d, 0.06, JEL, 0.85 * k); } }
@@ -337,7 +337,7 @@ function view3dCoreForms(K) {
           // a blow: its soak fell since the view last saw it
           const P = HPS.get(o), hp = S ? S.hp : 0; if (P && hp < P.hp - 1e-6) P.hit = f0; const hitA = P && P.hit !== undefined ? f0 - P.hit : 99; HPS.set(o, { hp, at: f0, hit: P ? P.hit : undefined });
           const wob = 1 + 0.05 * Math.sin(f0 * 0.2 + s) + (hitA < 14 ? 0.08 * Math.sin(hitA * 1.2) * (1 - hitA / 14) : 0), bump = hitA < 10 ? 1 + 0.1 * Math.sin(hitA / 10 * PI) : 1, fl = hitA < 14 ? 0.8 * (1 - hitA / 14) : 0;
-          bubble(X, Yf + hh * 0.45, Z, r * grow * bump, hh * grow * bump, (0.45 + 0.4 * left) * Math.min(1, a / 4 + 0.2), fl, 0.5 * left, wob);
+          bubble(X, Yf + hh * 0.45, Z, r * grow * bump, hh * grow * bump, (0.7 + 0.35 * left) * Math.min(1, a / 4 + 0.2), fl, 0.6 * left, wob);
           if (a < 8) splash(X, Yf + 0.3, Z, Yf, a, s, 0.4, 0.3, JELC);
           if (hitA < 12) blowOn(X, Z, bh, hitA, s, 0);
           flat(GLOWF, X, Yf, Z, r * 1.2, JEL[0], JEL[1], JEL[2], 0.18 * left);

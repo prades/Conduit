@@ -33644,7 +33644,7 @@ function view3dCoreForms(K) {
     const SH_FS = 'uniform vec3 uC; uniform vec3 uR; uniform float uA; uniform float uF; uniform float uB; varying vec3 vN; varying float vY; void main() { float fr = 1.0 - abs(normalize(vN).z); fr = fr * fr; float band = uB * (1.0 - smoothstep(0.0, 0.07, abs(vY - 0.08))); float a = uA * (0.1 + 0.7 * fr + 0.6 * band) + uF * (0.25 + 0.6 * fr); vec3 c = mix(uC, uR, clamp(fr * 1.2 + band + uF, 0.0, 1.0)); if (a < 0.01) discard; gl_FragColor = vec4(c * min(a, 1.0), min(a, 1.0)); }';
     const SHIELDS = [], SH_GEO = new T.SphereGeometry(1, 28, 18);
     for (let i = 0; i < 4; i++) {
-        const mat = new T.ShaderMaterial({ uniforms: { uC: { value: new T.Color(0.42, 0.86, 0.95) }, uR: { value: new T.Color(0.92, 1, 1) }, uA: { value: 0 }, uF: { value: 0 }, uB: { value: 0 } }, vertexShader: SH_VS, fragmentShader: SH_FS, transparent: true, depthWrite: false, blending: T.CustomBlending });
+        const mat = new T.ShaderMaterial({ uniforms: { uC: { value: new T.Color(0.3, 0.85, 1.0) }, uR: { value: new T.Color(0.92, 1, 1) }, uA: { value: 0 }, uF: { value: 0 }, uB: { value: 0 } }, vertexShader: SH_VS, fragmentShader: SH_FS, transparent: true, depthWrite: false, blending: T.CustomBlending });
         mat.blendSrc = T.OneFactor;
         mat.blendDst = T.OneMinusSrcAlphaFactor;
         const m = new T.Mesh(SH_GEO, mat);
@@ -33727,7 +33727,7 @@ function view3dCoreForms(K) {
                 }
             for (let i = BLOWS.length - 1; i >= 0; i--) {
                 const B = BLOWS[i], a = f0 - B.at;
-                if (a > 18 || a < 0) {
+                if (a > 22 || a < 0) {
                     BLOWS.splice(i, 1);
                     continue;
                 }
@@ -33798,7 +33798,7 @@ function view3dCoreForms(K) {
     }
     const JELC = [JEL, JEL2], WATC = [WAT2, GOOW], GOOC2 = [GOOB, GOOC], TEALC = [TEAL2, CREST];
     function blowOn(x, z, bh, a, s, fade) {
-        const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 16, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
+        const Yf = floorY(x, z), r = 0.42 + 0.26 * bh, hh = 0.5 + 0.55 * bh, k = clamp(1 - a / 20, 0, 1), bump = 1 + 0.12 * Math.sin(clamp(a / 10, 0, 1) * PI) * k;
         if (fade > 0)
             bubble(x, Yf + hh * 0.45, z, r * bump, hh * bump, 0.85 * k * fade, 1.2 * k, 0.6 * k, 1 + 0.06 * Math.sin(a * 1.3) * k);
         if (a < 12) {
@@ -34393,7 +34393,7 @@ function view3dCoreForms(K) {
                     const hitA = P && P.hit !== undefined ? f0 - P.hit : 99;
                     HPS.set(o, { hp, at: f0, hit: P ? P.hit : undefined });
                     const wob = 1 + 0.05 * Math.sin(f0 * 0.2 + s) + (hitA < 14 ? 0.08 * Math.sin(hitA * 1.2) * (1 - hitA / 14) : 0), bump = hitA < 10 ? 1 + 0.1 * Math.sin(hitA / 10 * PI) : 1, fl = hitA < 14 ? 0.8 * (1 - hitA / 14) : 0;
-                    bubble(X, Yf + hh * 0.45, Z, r * grow * bump, hh * grow * bump, (0.45 + 0.4 * left) * Math.min(1, a / 4 + 0.2), fl, 0.5 * left, wob);
+                    bubble(X, Yf + hh * 0.45, Z, r * grow * bump, hh * grow * bump, (0.7 + 0.35 * left) * Math.min(1, a / 4 + 0.2), fl, 0.6 * left, wob);
                     if (a < 8)
                         splash(X, Yf + 0.3, Z, Yf, a, s, 0.4, 0.3, JELC);
                     if (hitA < 12)
@@ -34590,7 +34590,7 @@ function view3dAttacks(env) {
     const { scene, GM, UPX } = env, TAU = Math.PI * 2, clamp = (v, a, b) => v < a ? a : v > b ? b : v, ease = k => k * k * (3 - 2 * k), outC = k => 1 - (1 - k) * (1 - k) * (1 - k);
     const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };
     const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
-    const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260, beam: 300, gem: 48, blade: 24, slab: 40, coregem: 40, coremodel: 9 };
+    const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260, beam: 300, gem: 48, blade: 24, slab: 40, coregem: 40, coremodel: 10 };
     const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';
     const FS_PUFF = 'varying vec4 vCol; varying float vRim; void main() { float d = length(gl_PointCoord - 0.5) * 2.0; float body = 1.0 - smoothstep(mix(0.3, 0.88, vRim), mix(1.0, 0.96, vRim), d); float rim = vRim * smoothstep(0.7, 0.86, d) * body; float a = vCol.a * body; if (a < 0.01) discard; gl_FragColor = vec4(mix(vCol.rgb, vCol.rgb * vec3(0.5, 0.7, 0.9), rim), a); }';
     const FS_GLINT = 'varying vec4 vCol; void main() { vec2 p = abs(gl_PointCoord - 0.5) * 2.0; float s = max(0.0, 1.0 - p.x * 7.0 - p.y * 0.9) + max(0.0, 1.0 - p.y * 7.0 - p.x * 0.9) + (1.0 - smoothstep(0.0, 0.45, length(p))); float a = vCol.a * clamp(s, 0.0, 1.0); if (a < 0.01) discard; gl_FragColor = vec4(vCol.rgb * a, a); }';
