@@ -9,11 +9,17 @@ Draft 3D models for the owner's eye (`docs/SEWER-PROPS.md` is the list of every 
 mkdir -p T/package/build && cp vendor/three.min.js T/package/build/      # three r128, the game's own copy (T: any scratch folder)
 node design/sewer-props/review.js T OUT                                  # OUT/<id>.png, one sheet a draft
 node design/sewer-props/review.js T OUT subway_key --spin 36             # a key item's turn, as 36 frames
+node design/sewer-props/review.js T OUT a,b,c --sheet name "A title"     # several drafts on one sheet: OUT/name.png
 ```
 
 Pictures go to a scratch folder, never the repository.
 
 | Draft | No | State |
 |---|---|---|
-| `subway_key` | A1 | drafted 2026-11-21, not approved |
-| `drain_valve` (shut, open) | C1 | drafted 2026-11-21, not approved |
+| `subway_key` | A1 | draft 2 (plain), 2026-11-21, not approved (draft 1: "overdrawn") |
+| `module_canister`, `module_membranes`, `module_pump` | A3 | drafted 2026-11-21, not approved |
+| `battery_pack` | A7 | drafted 2026-11-21, not approved |
+| `drain_valve` (shut, open) | C1 | **approved 2026-11-21** |
+| `sluice_gate` (open, shut) | C2 | drafted 2026-11-21, not approved |
+| `sluice_switch` (up, thrown) | C3 | drafted 2026-11-21, not approved |
+| `drain` | C4 | drafted 2026-11-21, not approved |

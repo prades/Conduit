@@ -1,6 +1,6 @@
 # The Sewer Dungeon's props and key items
 
-- **Status:** In progress. The list (§5) is **proposed**, for the owner to correct. Two pieces are **drafted** (the subway key, the drain valve: one piece first of each kind, `ART-PROCESS.md`); **none is approved, and nothing is in the game**.
+- **Status:** In progress. The list (§5) is **proposed**, for the owner to correct. **Approved:** the drain valve, and with it the water works' ironwork (2026-11-21). **Drafted, waiting for the owner's eye:** the subway key (draft 2), the module's three parts, the battery pack, the sluice gate, the sluice switch, a drain. **Nothing is in the game.**
 - **Owner:** User (creative direction); agent (the designs, to be approved piece by piece)
 - **Last updated:** 2026-11-21
 - **Branch/build context:** written on branch `claude/friendly-thompson-w581x0` from main at build `2026-11-17ba`. No game code changed; no picture baked into the game.
@@ -22,7 +22,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 1. **One piece first** (`ART-PROCESS.md`): one piece of a kind, large, one version; the owner says yes or corrects it; only then the rest of its kind.
 2. **Built as the game's props are** (`design/props/BRIEF.md`): a real 3D model from the shared style kit, in the game's own camera and light. The same model serves the 2D game (baked to a sprite) and the 3D view (`VIEW-3D.md`).
-3. **Drafts live in `design/sewer-props/`** (`models.js`, the models; `review.js`, the tool that draws a review sheet of each). The game reads nothing there. An approved key item moves to `design/props/models/_items.js`; an approved prop to a family in `design/props/models/`. The old flat drawing stays until then.
+3. **Drafts live in `design/sewer-props/`** (`models.js`, the models; `review.js`, the tool that draws a review sheet of each). The game reads nothing there. **An approved piece stays there, marked approved, until the dungeon is built**; then a key item moves to `design/props/models/_items.js` and a prop to a family in `design/props/models/`, and is baked into the game. (So no half-used picture ships.) The old flat drawing stays until then.
 4. **A key item is shown as the owner asked** (2026-11-20, `SEWER-DUNGEON.md` §2.9): "it will zoom in on it and the item will be floating and rotating vertically, a little bit of a slant." So a key item is modelled to be seen from every side, standing on its own axis; the review sheet floats it over a pool of light, leans its axis about 15 degrees and turns it about that axis. **The reading of "rotating vertically" (it turns about its own upright axis, which leans), the 15 degrees and the height it floats at are the agent's**; the spec lists them as open.
 5. **Every colour, shape, word and symbol on a draft is the agent's, provisional**, until the owner approves the piece.
 
@@ -33,11 +33,13 @@ So this page is the one list of every prop and key item the sewer notes call for
 - The Sewers' walls and floor (build `2026-11-15g`; the owner: "I like 1 but the floor tiles of 4"): the facility's panels with a green light strip, a checker-plate floor.
 - Notion's reference (2026-11-19): "A believable, slightly neglected municipal sewer system in near-future San Francisco [...] This is not a completely destroyed sewer"; "Keep fixed infrastructure distinct from loose, movable, destructible, or ability-compatible objects"; "Make obstacles legible through geometry and material cues rather than relying entirely on markers"; "Do not turn every environmental prop into an interactable puzzle object."
 
-**Proposed by the agent, with the first fixture (the drain valve), for the owner to approve or change:**
+**The water works' ironwork: approved with the drain valve** (the owner, 2026-11-21: "The valve is good enough. It should work"):
 - **Fixed ironwork is a worn utility green**, bare iron and rust at its joints, a slimy tide mark at its foot.
-- **The part a hand works is signal red** (a handwheel, a lever).
-- **A fixture's state shows twice**: by a small lamp (amber, green) and by its shape (the valve's stem risen), so it reads in the dark and without colour.
+- **The part a hand (or a shot) works is signal red** (a handwheel, a lever's ball).
+- **A fixture's state shows twice**: by a small lamp (amber shut, green open) and by its shape (a stem risen, a gate up, a lever down), so it reads in the dark and without colour.
 - Not yet proposed: how a *movable* thing and a *breakable* thing are told apart from fixed ones (with the first of each).
+
+**Key items are kept plain** (the owner, 2026-11-21, of the key's first draft, which had a lit symbol, a ring and chain, three collars and patina: "The key is kind of overdrawn"): one clear shape, few parts, no ornament, no wear.
 
 ## 5. The list
 
@@ -47,13 +49,13 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 | No | Piece | What the notes say | Today | Status |
 |---|---|---|---|---|
-| A1 | **The subway key** | "I want to have a key at the bottom of the [...] channel"; "The key is going to be to the subway" (the owner, 2026-11-20). On the west channel's bed; opens the subway door. | None | **Drafted** |
-| A2 | Door keys | "Locked doors, opened by a matching key found in the dungeon". The skeleton named Key 1 (west hall) and Key 2 (southwest storage); the later finds table lists only the subway key. | None | Waits (Q1) |
-| A3 | **The module's parts** (P1, P2, P3) | "The purification module is made from spare parts found in the sewer" (the owner, 2026-11-20). Proposed: three, in areas 5, 9 and 13. | None | Not started (Q2) |
+| A1 | **The subway key** | "I want to have a key at the bottom of the [...] channel"; "The key is going to be to the subway" (the owner, 2026-11-20). On the west channel's bed; opens the subway door. | None | **Drafted, draft 2**: a plain brass key, a six-sided bow with a hole. (Draft 1: "kind of overdrawn", the owner, 2026-11-21.) |
+| A2 | Door keys | "Locked doors, opened by a matching key found in the dungeon". The skeleton named Key 1 (west hall) and Key 2 (southwest storage); the later finds table lists only the subway key. | None | **None for now** (the owner, 2026-11-21: "How many keys? Just 1 for now": the subway key is the only key) |
+| A3 | **The module's parts** (P1, P2, P3) | "The purification module is made from spare parts found in the sewer" (the owner, 2026-11-20). Proposed: three, in areas 5, 9 and 13. **They are the canister, the membranes and the pump** (the owner, 2026-11-21, asked: "that sounds correct. 3 parts is okay"). | None | **Drafted**, all three, each the piece of the module's own model it becomes |
 | A4 | The purification module | "create the module [...] then install it". | Exists: 3D model ("a canister of membranes and a pump") | No change asked |
 | A5 | The water sample | "you have to get the water sample". | Exists: 3D model | No change asked |
 | A6 | The ant samples ("DNA samples") | "found as shed chitin, eggs, or a dead ant [...] or taken from a sleeping or frozen ant". | Exists: 3D model (TOXIC ANT SAMPLE) | No change asked; its sources are F1 to F3 |
-| A7 | **The battery pack** | "Battery packs, found in the dungeon, restore the mech's charges and every spent follower utility." Proposed: two, in areas 3 and 10. | None (a POWER CELL exists: a different item) | Not started (Q3) |
+| A7 | **The battery pack** | "Battery packs, found in the dungeon, restore the mech's charges and every spent follower utility." Proposed: two, in areas 3 and 10. **It is carried** (the owner, 2026-11-21: "I guess a battery pack can be held, carried"). | None (a POWER CELL exists: a different item) | **Drafted**: an amber block, two terminals, a lit bar of four cells |
 | A8 | **An energy card, found** (E1 to E7) | "Definitely energy cards and other upgrades scattered throughout the level" (the owner, 2026-11-20). Today cards come only from packs. | None in the world | Not started (Q4) |
 | A9 | "Other upgrades" | The owner's words; what they are is open (the spec's §11.6). | None | Waits (Q5) |
 | A10 | The chest | `CHESTS.md`: the hex cache, approved 2026-11-12. | Exists: 3D model | No change asked |
@@ -77,10 +79,10 @@ So this page is the one list of every prop and key item the sewer notes call for
 
 | No | Piece | What the notes say | Today | Status |
 |---|---|---|---|---|
-| C1 | **The drain valve** | "opening a drain valve **lowers** it". | A flat `valve` decoration, no use | **Drafted** (shut, open) |
-| C2 | The sluice gate | "moving obstacles into drains or the sluice **raises** it"; an idea not approved: the sluice on the junction's east side as a control. | None | Not started |
-| C3 | The sluice switch, high up | Proposed U7: "the Gunslinger shoots it, closing the sluice and raising the water [...] the mech turns it if reached". | None | Not started |
-| C4 | A drain | The opening an obstacle is moved into. | None | Not started |
+| C1 | **The drain valve** | "opening a drain valve **lowers** it". | A flat `valve` decoration, no use | **Approved** (shut, open; the owner, 2026-11-21: "The valve is good enough. It should work") |
+| C2 | **The sluice gate** | "moving obstacles into drains or the sluice **raises** it"; an idea not approved: the sluice on the junction's east side as a control. | None | **Drafted** (open, shut): two tiles wide, to be re-cut to the channel's width when the layout sets it |
+| C3 | **The sluice switch**, high up | Proposed U7: "the Gunslinger shoots it, closing the sluice and raising the water [...] the mech turns it if reached". | None | **Drafted** (up, thrown): a box high on a wall, a lever with a red ball |
+| C4 | **A drain** | The opening an obstacle is moved into. | None | **Drafted**: a barred iron frame set in the floor |
 | C5 | Mains, pumps, machinery | Notion: "Large utility pipes, valves, pumps, pressure equipment, and service machinery." | Flat `pipe` and `pump` decorations | Not started |
 | C6 | The inflow | "Water flows in from the entrance side". | The outfall (flat) | Not started |
 
@@ -125,8 +127,8 @@ Lamps, cables, signs, moss, silt, stains, puddles, railings: Notion's "sediment,
 
 ## 6. The order of work (proposed)
 
-1. **Key items** (A1, then A3, A7, A8; A2 when Q1 is answered): the smallest set, and the one the owner spoke of most ("More than anything", of the key in the channel bed).
-2. **Water works** (C1 to C4): the dungeon's own tool.
+1. **Key items** (A1, A3, A7 drafted; A8 when Q4 is answered): the smallest set, and the one the owner spoke of most ("More than anything", of the key in the channel bed).
+2. **Water works** (C1 approved; C2 to C4 drafted; C5 and C6 with the layout): the dungeon's own tool.
 3. **Doors and barriers** (B1 to B5 first; B6 to B9 once the spec's §2.11 is approved).
 4. **Things that move** (D), then **the Nest's finds** (F1 to F3).
 5. **Height** (E2, E4), **the chamber** (G1), then **dressing** (H) and the Nest's own pieces (F4).
@@ -135,9 +137,9 @@ Each kind waits on a yes to its first piece.
 
 ## 7. Open questions (the owner's to answer)
 
-- **Q1. Keys.** How many keys besides the subway key, and which door does each open? (They would be the same key in another colour and symbol.)
-- **Q2. The module's parts.** Are they the three things the module's own description names, a **canister**, its **membranes** and a **pump**? Is it three?
-- **Q3. The battery pack.** A new item, plainly unlike the Technomancer's POWER CELL: is it picked up and carried, or used where it stands?
+- ~~**Q1. Keys.**~~ *Answered 2026-11-21: "Just 1 for now": the subway key only.* So the dungeon's locked doors other than the subway's have no key for now: whether they stay, are breached only, or go, is the dungeon spec's to settle.
+- ~~**Q2. The module's parts.**~~ *Answered 2026-11-21: the canister, the membranes and the pump; three.*
+- ~~**Q3. The battery pack.**~~ *Answered 2026-11-21: carried.* Open still: whether it works when picked up or when the player chooses (the Notion page leaves it open).
 - **Q4. A found energy card.** Does the player see its element before taking it?
 - **Q5. "Other upgrades".** What are they?
 - **Q6. The cracked wall.** The spec's proposed check U6 is a cracked wall; the owner also said of the layout "There shouldn't be any broken walls". Which stands?
@@ -149,10 +151,11 @@ Each kind waits on a yes to its first piece.
 
 | Check | Result | Notes |
 |---|---|---|
-| The two drafts build and render | Passed, 2026-11-21 | `node design/sewer-props/review.js <three-dir> <out-dir>`: a sheet each, in the baker's light and camera, at game size beside the player's cube |
+| The nine drafts build and render | Passed, 2026-11-21 | `node design/sewer-props/review.js <three-dir> <out-dir> <ids> --sheet <name>`: the key items on one sheet, the water works on another, in the baker's light and camera, at game size beside the player's cube |
 | In the game | Not done | Nothing is baked; the game reads nothing of this |
-| The owner's eye | Not yet | Both drafts wait for a yes or a correction |
+| The owner's eye | In part | The drain valve approved; the key's first draft corrected ("overdrawn"); the rest wait for a yes or a correction |
 
 ## 9. History
 
 - 2026-11-21: the owner asked the agent to take charge of the sewer's props and key items. The list written from the dungeon spec, the quest page and three Notion pages; the first key item (A1, the subway key) and the first fixture (C1, the drain valve) drafted.
+- 2026-11-21, the owner's answers: "I guess a battery pack can be held, carried. The key is kind of overdrawn. The valve is good enough. It should work. The modules parts, that sounds correct. 3 parts is okay. How many keys? Just 1 for now." So: the valve approved, and the ironwork with it; the key redrawn plain (draft 2); the module's three parts and the battery pack drafted, plain; the rest of the water works drafted in the valve's ironwork (the sluice gate, the sluice switch, a drain); door keys dropped for now.

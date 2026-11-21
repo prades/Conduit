@@ -1,20 +1,21 @@
 // REVIEW PICTURES of the sewer dungeon's draft props and key items (design/sewer-props/models.js; docs/SEWER-PROPS.md), for the owner's eye. Nothing in the game reads them.
 //   node design/sewer-props/review.js <three-dir> <out-dir> [id,id,...]          one sheet a draft: <out-dir>/<id>.png
 //   node design/sewer-props/review.js <three-dir> <out-dir> <id> --spin [n]      a key item's turn as n frames (36): <out-dir>/<id>_spin_00.png ... (to make a moving picture of)
+//   node design/sewer-props/review.js <three-dir> <out-dir> <id,id,...> --sheet <name> [title]      several drafts on one sheet, a cell each (and one a state): <out-dir>/<name>.png
 // <three-dir>: an unpacked three@0.128.0 (its package/build/three.min.js), as for design/props/bake_props.js; the game's own copy will do: mkdir -p T/package/build && cp vendor/three.min.js T/package/build/
 // The models are lit and seen as the game's props are baked (design/props/bake_props.js: its lights, its 2:1 iso camera, its scale: a tile step is 60 x 30 px, a unit of height 73.5 px).
 // A KEY ITEM is shown as the owner asked of key items (docs/SEWER-PROPS.md §3): floating over a pool of light, its own axis at a slant, turning about it: large, then eight steps of the turn, then at the
 // game's size beside the player's cube. A PROP is shown in each of its states, large, then at the game's size and three times it, on floor tiles, beside the cube.
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
 const fs = require('fs'), path = require('path');
-const [THREE_DIR, OUTDIR, IDS, MODE, NARG] = process.argv.slice(2);
+const [THREE_DIR, OUTDIR, IDS, MODE, NARG, TITLE] = process.argv.slice(2);
 if (!THREE_DIR || !OUTDIR) { console.error('usage: node design/sewer-props/review.js <three-dir> <out-dir> [id,id,...] [--spin [n]]'); process.exit(1); }
 const ROOT = path.join(__dirname, '..', '..'), rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const PX = 60 / Math.sin(Math.PI / 4), UH = PX * Math.cos(Math.asin(0.5));
 const SLANT = 0.26, FLOAT = 0.2;   // a key item's slant (radians: about 15 degrees) and how far off the floor it floats (tiles). Both the agent's, provisional (the owner: "a little bit of a slant")
 
 const page = `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
-window.__review = async function (PX, UH, SLANT, FLOAT, ids, spin) {
+window.__review = async function (PX, UH, SLANT, FLOAT, ids, spin, sheetName, sheetTitle) {
   ${rd('design/evolutions/forms-core.js')}
   ${rd('design/evolutions/forms2.js')}
   ${rd('design/evolutions/forms29.js')}
@@ -57,6 +58,19 @@ window.__review = async function (PX, UH, SLANT, FLOAT, ids, spin) {
     g.fillStyle = '#3f5270'; g.beginPath(); g.moveTo(ax + w, ay); g.lineTo(ax, ay + d); g.lineTo(ax, ay + d - h); g.lineTo(ax + w, ay - h); g.closePath(); g.fill(); g.fillStyle = '#7d92b0'; g.beginPath(); g.moveTo(ax - w, ay - h); g.lineTo(ax, ay - d - h); g.lineTo(ax + w, ay - h); g.lineTo(ax, ay + d - h); g.closePath(); g.fill(); g.restore(); };
   const label = (g, t, x, y, size, col, align) => { g.fillStyle = col || '#ffffff'; g.font = (size >= 18 ? 'bold ' : '') + size + 'px DejaVu Sans, sans-serif'; g.textAlign = align || 'left'; g.textBaseline = 'alphabetic'; g.fillText(t, x, y); };
   const out = {};
+  if (sheetName) {   // SEVERAL ON ONE SHEET: a cell a draft (and one a state): large, and at the game's size beside the player's cube. Key items are all at one scale, so their sizes compare
+    const cells = []; for (const id of ids || Object.keys(SEWER_DRAFTS)) { const d = SEWER_DRAFTS[id]; if (!d) throw new Error('no draft called ' + id); for (const st of d.states || [null]) cells.push([d, st]); }
+    const COLS = Math.min(3, cells.length), CW = 480, CH = 580, W = 60 + COLS * CW, H = 100 + Math.ceil(cells.length / COLS) * CH + 20, sheet = document.createElement('canvas'); sheet.width = W; sheet.height = H; const g = sheet.getContext('2d');
+    g.fillStyle = '#0b0f16'; g.fillRect(0, 0, W, H); label(g, sheetTitle || sheetName, 30, 44, 28); label(g, 'DRAFTS, not in the game   ·   each: large, then at the game\\'s size (a tile is 60 px wide) beside the player\\'s cube', 30, 72, 16, '#8fa6bd');
+    cells.forEach(([d, st], i) => { const x = 30 + (i % COLS) * CW, y = 96 + Math.floor(i / COLS) * CH, w = CW - 10;
+      backdrop(g, x, y, w, 360); g.fillStyle = '#0e141e'; g.fillRect(x, y + 366, w, 200);
+      if (d.keyItem) g.drawImage(shoot(present(d.build(st), 0.5), w, 360, { k: 5.2, ox: w / 2 - 20, oy: 322 }), x, y);
+      else g.drawImage(shoot(withShadow(d.build(st), d.foot[0], d.foot[1]), w, 360, { fit: 286, down: -12 }), x, y);
+      label(g, d.no + ' · ' + d.title + (st ? ' · ' + st.toUpperCase() : ''), x + 14, y + 28, 18, '#ffffff'); if (/APPROVED/.test(d.sub)) label(g, 'APPROVED', x + w - 14, y + 28, 15, '#43e0a8', 'right');
+      g.save(); g.beginPath(); g.rect(x, y + 366, w, 200); g.clip(); const fx = x + w / 2 + 40, fy = y + 366 + 168; floor(g, fx, fy, 1, 3); cube(g, fx - 120, fy + 2, 1);
+      g.drawImage(shoot(d.keyItem ? present(d.build(st), 0.5) : withShadow(d.build(st), d.foot[0], d.foot[1]), 260, 220, { k: 1, ox: 130, oy: 170 }), fx - 130, fy - 170); g.restore(); });
+    out[sheetName] = sheet.toDataURL('image/png'); renderer.dispose(); return out;
+  }
   for (const id of ids || Object.keys(SEWER_DRAFTS)) {
     const d = SEWER_DRAFTS[id]; if (!d) throw new Error('no draft called ' + id);
     if (spin) { out[id] = []; for (let i = 0; i < spin; i++) { const cv = document.createElement('canvas'); cv.width = cv.height = 420; const g = cv.getContext('2d'); backdrop(g, 0, 0, 420, 420); g.drawImage(shoot(present(d.build(), i * TAU / spin), 420, 420, { k: 7.4, ox: 196, oy: 352 }), 0, 0); out[id].push(cv.toDataURL('image/png')); } continue; }
@@ -90,8 +104,8 @@ window.__review = async function (PX, UH, SLANT, FLOAT, ids, spin) {
   await p.route('**/three.min.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(THREE_DIR, 'package/build/three.min.js'), 'utf8') }));
   await p.route('http://review.local/', r => r.fulfill({ contentType: 'text/html; charset=utf-8', body: page }));
   await p.goto('http://review.local/');
-  const ids = IDS && IDS !== 'all' ? IDS.split(',') : null, spin = MODE === '--spin' ? (parseInt(NARG, 10) || 36) : 0;
-  let res; try { res = await p.evaluate(([a, c, s, f, i, n]) => window.__review(a, c, s, f, i, n), [PX, UH, SLANT, FLOAT, ids, spin]); }
+  const ids = IDS && IDS !== 'all' ? IDS.split(',') : null, spin = MODE === '--spin' ? (parseInt(NARG, 10) || 36) : 0, sheetName = MODE === '--sheet' ? (NARG || 'sheet') : null;
+  let res; try { res = await p.evaluate(([a, c, s, f, i, n, sn, st]) => window.__review(a, c, s, f, i, n, sn, st), [PX, UH, SLANT, FLOAT, ids, spin, sheetName, TITLE || null]); }
   catch (e) { console.log('ERRORS', errs.slice(0, 5), e.message); await b.close(); process.exit(1); }
   fs.mkdirSync(OUTDIR, { recursive: true });
   for (const [id, r] of Object.entries(res)) {
