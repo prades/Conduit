@@ -788,10 +788,39 @@ function _cbAfterAct(f0) {
 // round"): its second attack card. On an enemy next to it (the 8 squares round its own, in sight) the blow lands at once for CARD_BATTLE.smash.damage, Crushing (js/damage.js DMG_HIT_SMASH: the
 // agent's reading of a smash), with no round spent, no charge and no cooldown. On one out of reach its turn is a walk towards it, by its own pace on the squares as a follower's (MOVE NOW, ATTACK
 // LATER, §2.39: the card stays ready), and where it stops is its square: the cube is in the line then, and its enemies come for it as for anyone in front (§2.40). So the cube always has a turn.
-function _cbYouIn() { return typeof player !== "undefined" && !!player && !player.dead && typeof weaponInHand === "function" && weaponInHand(); }
-function _cbYouTurn() { return _cbYouIn() && !_cb.youActed && _cb.foes.some(_cbFoeOk); }   // (with no round left it still has SMASH: §2.69)
+// THE MUTATOR'S TURN (§2.70; the owner, 2026-11-21: "you could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles"; asked: "The
+// whole squad", "Over 3 turns: 24%, 24%, 12%", "On its own turn each round"): a Mutator carrying a serum (ITEMS.healing_serum, js/serum.js) has its own turn each round, after its followers, with
+// one card: HEALING SERUM, its foot the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up in the battle (followers and its clone, wherever they
+// stand) is healed a turn's worth of the serum's pool at once (2 s of it: 4 beats of 6%, 24% of its own health), then the next as each of the next enemy turns begins (24%, then 12%: the pool's
+// 5 s, as an Ultimate's lasting effect counts, §2.60). With no serum it has no turn. THE AGENT'S, PROVISIONAL: a second card, HOLD, passes and keeps the serum; two serums' turns add up; what is
+// left of one when the battle ends is lost with it; HERBALIST's stronger pool heals more here too, and ASH SURGEON's and PLAGUE DOCTOR's pool statuses, there being no pool, do nothing in a battle.
+function _cbYouKind() { if (typeof player === "undefined" || !player || player.dead) return null; if (typeof weaponInHand === "function" && weaponInHand()) return "gun"; return typeof playerClassKey !== "undefined" && playerClassKey === "mutator" && typeof SERUM !== "undefined" ? "serum" : null; }
+function _cbYouIn() { return !!_cbYouKind(); }
+function _cbSerums() { return typeof invCount === "function" && typeof SERUM !== "undefined" ? invCount(SERUM.item) : 0; }
+function _cbYouTurn() { const k = _cbYouKind(); return !!k && !_cb.youActed && _cb.foes.some(_cbFoeOk) && (k === "gun" || _cbSerums() > 0); }   // (the Gunslinger: with no round left it still has SMASH, §2.69; the Mutator: with no serum, no turn, §2.70)
+// a serum's turns' worth, from its pool's own numbers (js/serum.js SERUM.splash): the share of its health each ally is healed, turn by turn
+function _cbSerumDoses() {
+    const S = typeof SERUM !== "undefined" ? SERUM.splash : null; if (!S) return [];
+    let beats = Math.max(1, Math.round(S.frames / S.every)); const per = Math.max(1, Math.round(CARD_BATTLE.turnSec * 60 / S.every)), out = [];
+    while (beats > 0) { const n = Math.min(per, beats); out.push(n * S.pct); beats -= n; }
+    return out;
+}
+// a turn's worth of every serum at work: each of the squad still up healed by it (a green +n over it), HERBALIST's share more (js/playercards.js)
+function _cbSerumDose() {
+    const L = _cb.serums; if (!L || !L.length) return 0; let n = 0;
+    const k = typeof playerSerumHealMult === "function" ? playerSerumHealMult() : 1, f0 = _cbF();
+    for (const s of L) { const share = s.left.shift(); if (!(share > 0)) continue; for (const a of _cbSquad()) { if (!a || a.dead || !(a.maxHealth > 0)) continue; a._serumAt = f0; if (typeof healUnit === "function") healUnit(a, a.maxHealth * share * k, player); n++; } }
+    _cb.serums = L.filter(s => s.left.length); return n;
+}
 function cardBattleShooting() { return !!_cb.shooting; }   // (js/input.js firePlayerShot: the gun holds its fire in a battle but for its own burst)
 function _cbYouCards() {
+    if (_cbYouKind() === "serum") {   // (the Mutator's: HEALING SERUM and HOLD, §2.70)
+        const n = _cbSerums(), D = _cbSerumDoses().map(v => Math.round(v * 100) + "%"), col = typeof classColour === "function" ? classColour(playerClassKey) : "#c06bff";
+        const out = [{ kind: "serum", tag: "HEAL", name: "HEALING SERUM", fx: "Heals your whole squad: " + D[0] + " now" + (D.length > 1 ? ", then " + D.slice(1).join(" and ") + " as the enemy turns begin." : "."), ready: n > 0, serums: n, col },
+            { kind: "pass", tag: "HOLD", name: "HOLD", fx: "Keep your serum: your turn passes.", ready: true, col }];
+        if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.youActed) for (const c of out) { c.ready = false; c.done = true; }
+        return out;
+    }
     const S = CARD_BATTLE.shoot, ammo = typeof playerAmmo === "number" ? Math.max(0, playerAmmo) : 0, dmg = typeof weaponDamage === "function" ? weaponDamage() : 0, col = typeof classColour === "function" && typeof playerClassKey !== "undefined" ? classColour(playerClassKey) : "#ffb347";
     const out = [{ kind: "shoot", tag: "ATTACK", name: "SHOOT", fx: S.shots[0] + " to " + S.shots[1] + " rounds at one enemy, at once: " + dmg + " a round.", ready: ammo > 0, ammo, col },
         { kind: "smash", tag: "ATTACK", name: "SMASH", fx: "A blow with the gun on an enemy next to you: " + CARD_BATTLE.smash.damage + ", no ammo. Too far, you walk up.", ready: true, col },
@@ -803,7 +832,15 @@ function _cbYouPlay(kind, target) {
     if (!_cbYouTurn() || _cbCurrent() !== player) return false;
     const say = w => { _cb.say = { text: "YOU · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };
     if (kind === "pass") { _cb.youActed = true; _cbAfterAct(_cbF()); _cbRefresh(); return true; }
-    if (kind !== "shoot" && kind !== "smash") return false;
+    if (kind === "serum") {   // (the Mutator's HEALING SERUM, §2.70: one serum spent, the first turn's worth at once, the rest as the enemy turns begin)
+        if (_cbYouKind() !== "serum") return false;
+        if (!(_cbSerums() > 0) || typeof invRemove !== "function" || !invRemove(SERUM.item, 1)) return say("NO SERUM");
+        (_cb.serums || (_cb.serums = [])).push({ left: _cbSerumDoses() }); _cbSerumDose();
+        if (typeof tutTally === "function") tutTally("serum");   // (the class's stage counts a serum used: js/tutorial.js)
+        _cb.turn = { who: "act", f: player, kind: "serum", id: null, target: null, t0: _cbF(), hit: 0, fired: true, saved: null, last: _cbF() };
+        _cb.youActed = true; _cbRefresh(); return true;
+    }
+    if (_cbYouKind() !== "gun" || (kind !== "shoot" && kind !== "smash")) return false;
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return false;
     if (live.indexOf(target) < 0) target = _cbNearest(player, live);
     if (kind === "smash") {   // (close up: next to it, the blow at once; else its turn is the walk towards it, the card still ready: §2.39, as a follower's)
@@ -946,6 +983,7 @@ function _cbFoesTurn(run) {
     const queue = _cb.foes.filter(_cbFoeOk).sort((p, q) => (q.baseMoveSpeed || q.moveSpeed || 0) - (p.baseMoveSpeed || p.moveSpeed || 0));   // fastest first (§2.20)
     _cb.turn = { who: "foe", a: null, t0: _cbF(), hit: 0, queue, run: !!run };
     if (!run) _cbStatusTurn("you");   // (your round over: a turn on the statuses, §2.52)
+    if (!run) _cbSerumDose();   // (a serum at work heals its next turn's worth as the enemies' turn begins: §2.70)
     if (!run && typeof cardShapeStays === "function") cardShapeStays("foes");   // (each area that stays bites what stands in it, the card's turn over: §2.48)
     if (!run && typeof cardUltWindow === "function" && cardUltWindow()) { _cb.turn.field = _cbF(); _cbRefresh(); return; }   // (an Ultimate's field runs its next turn's worth first, the enemies waiting: §2.64)
     _cbNextFoe();
@@ -1000,6 +1038,7 @@ function _cbTurnTick() {
     if (T.who === "you" && !_cbCurrent() && _cb.foes.some(_cbFoeOk)) { _cbFoesTurn(false); return; }   // (none of yours left to play this round, all charging: the enemies' turn; it waited for ever, §2.55)
     if (T.who === "act" && T.kind === "shoot") { _cbShootTick(T, f0); return; }   // (the Gunslinger's burst, §2.66: the cube is on no walk and under no tether)
     if (T.who === "act" && T.kind === "smash") { _cbSmashTick(T, f0); return; }   // (its SMASH, §2.69: the blow, or the walk towards it)
+    if (T.who === "act" && T.kind === "serum") { if (f0 - T.last >= CARD_BATTLE.beat * 2 || !_cb.foes.some(_cbFoeIn)) _cbAfterAct(f0); return; }   // (the Mutator's serum, §2.70: its healing seen a moment, then the next turn)
     if (T.who === "act") {
         const f = T.f, el = f0 - T.t0, live = _cb.foes.some(_cbFoeIn);   // (held inside one of yours, they are still in it: an Ultimate that swallows them all has its turn out, §2.64)
         if (T.walk) { if (_cbWalkTick(T, f) || !live) _cbAfterAct(f0); return; }   // (its walk, §2.39: then the enemies, as after a card)
@@ -1131,7 +1170,7 @@ function cardBattleCards(f) {
 function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function _cbCardHTML(c) {
-    const st = c.done ? "DONE" : c.kind === "shoot" ? (c.ready ? "AMMO " + c.ammo : "NO AMMO") : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");   // (SHOOT shows the ammunition on its foot: §2.66, the owner: "shows the ammo [...] the bottom")
+    const st = c.done ? "DONE" : c.kind === "serum" ? (c.ready ? "SERUM " + c.serums : "NO SERUM") : c.kind === "shoot" ? (c.ready ? "AMMO " + c.ammo : "NO AMMO") : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");   // (SHOOT shows the ammunition on its foot: §2.66, the owner: "shows the ammo [...] the bottom")
     const tn = n => n + (n === 1 ? " TURN" : " TURNS"), rc = [c.chargeT > 0 ? "CHARGE " + tn(c.chargeT) : "", c.kind === "move" && c.recharge > 0 ? "RECHARGE " + tn(c.recharge) : ""].filter(Boolean).join(" · ");
     const meta = c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : c.kind === "walk" ? '<i class="cb-rc">UP TO ' + c.tiles + (c.tiles === 1 ? " SQUARE" : " SQUARES") + '</i>' : rc ? '<i class="cb-rc">' + rc + '</i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + (c.done ? " done" : "") + (c.art ? " art" : "") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '">' + (c.art ? '<i class="cb-art" style="background-image:url(\'' + _cbEsc(c.art) + '\')"></i>' : "") + '<i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
@@ -1143,18 +1182,18 @@ function cardBattleScreen() {
     if (you) all.push(you);   // (the Gunslinger has its turn after them, §2.66: its chip last, its cards in the pop-up at its turn)
     // (one at a time: the pop-up holds the follower whose turn it is; out of your turn it is away, still holding the last one, so it does not flicker)
     if (cur) E.popF = cur; const shown = E.popF && all.indexOf(E.popF) >= 0 ? E.popF : (all.find(_cbAlive) || null), squad = shown ? [shown] : [];
-    const chips = '<div class="cb-chips">' + all.map(f => f === you ? '<i class="cb-chip ' + (_cb.youActed && T0 ? "done" : f === shown ? "now" : "next") + '">YOU</i>' : '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
+    const chips = '<div class="cb-chips">' + all.map(f => f === you ? '<i class="cb-chip ' + (_cbYouKind() === "serum" && !(_cbSerums() > 0) ? "down" : _cb.youActed && T0 ? "done" : f === shown ? "now" : "next") + '">YOU</i>' : '<i class="cb-chip ' + (!_cbAlive(f) ? "down" : _cb.charge.has(f) ? "charge" : _cb.acted.has(f) && T0 ? "done" : f === shown ? "now" : "next") + '">' + _cbEsc(typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "") + '</i>').join("") + '</div>';
     const fh = foes.map(a => { const k = Math.max(0, Math.min(1, a.health / (a.maxHealth || 1))); return '<div class="cb-foe"><b>' + _cbEsc(typeof targetName === "function" ? targetName(a) : "ENEMY") + '</b><span class="cb-hp">' + Math.max(0, Math.round(a.health)) + "/" + Math.round(a.maxHealth || 0) + '</span><i class="cb-bar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div>'; }).join("");
     if (E.foes._h !== fh) { E.foes._h = fh; E.foes.innerHTML = fh; }
     const cols = squad.map(f => { if (f === you) {   // (the cube's own column: its bars as its health, its gun and its level, its two cards)
             const mx = typeof PLAYER_HITS === "number" ? PLAYER_HITS : 3, hp = Math.max(0, Math.min(mx, typeof health === "number" ? health : mx)), W = typeof weaponDef === "function" ? weaponDef() : null, col = typeof classColour === "function" ? classColour(playerClassKey) : "#ffb347";
-            return { f, you: true, key: "you|" + (W ? W.id : ""), html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">YOU</b><i class="cb-sub">' + _cbEsc((typeof className === "function" ? className(playerClassKey) : "GUNSLINGER") + (W ? " · " + W.name + " LV " + (typeof weaponLevelOf === "function" ? weaponLevelOf(W.id) : 1) : "")) + '</i><i class="cb-hbar"><u style="width:' + Math.round(hp / mx * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cardBattleCards(f).map(_cbCardHTML).join("") + '</div>', col, down: false }; }
+            return { f, you: true, key: "you|" + (W ? W.id : ""), html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">YOU</b><i class="cb-sub">' + _cbEsc((typeof className === "function" ? className(playerClassKey) : "GUNSLINGER") + (W ? " · " + W.name + " LV " + (typeof weaponLevelOf === "function" ? weaponLevelOf(W.id) : 1) : _cbYouKind() === "serum" ? " · " + _cbSerums() + (_cbSerums() === 1 ? " SERUM" : " SERUMS") : "")) + '</i><i class="cb-hbar"><u style="width:' + Math.round(hp / mx * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cardBattleCards(f).map(_cbCardHTML).join("") + '</div>', col, down: false }; }
         const down = !_cbAlive(f), hp = Math.max(0, Math.round(f.health || 0)), mx = Math.round(f.maxHealth || 0), k = mx ? Math.max(0, Math.min(1, hp / mx)) : 0;
         const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", cards = down ? [] : cardBattleCards(f);
         return { f, key: (f.uid || nm) + "|" + f.evolved + "|" + f.element, html: '<div class="cb-head"><canvas class="cb-pt" width="52" height="52"></canvas><div class="cb-hw"><b class="cb-name">' + _cbEsc(nm) + '</b><i class="cb-sub">LV ' + (f.level || 1) + (_cbTank(f) ? " · TANK" : "") + (down ? " · DOWN" : "") + '</i><i class="cb-hbar"><u style="width:' + Math.round(k * 100) + '%"></u></i></div><span class="cb-hpn">' + hp + "/" + mx + '</span></div><div class="cb-cards">' + cards.map(_cbCardHTML).join("") + '</div>', col: _cbCol(f), down }; });
     { const T = _cb.turn, nm = a => a ? (a === player ? "YOU" : typeof unitTypeLabel === "function" && _cbMine(a) ? unitTypeLabel(a) : typeof targetName === "function" ? targetName(a) : "") : "";
       const mv = T && T.lost ? " · " + T.lostWord : T && T.walk ? " · MOVES " + T.walk.length + (T.walk.length === 1 ? " TILE" : " TILES") : "";   // (a walk instead of its card or its bite: §2.39; a turn lost to a status: §2.52)
-      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length + (_cbYouTurn() ? 1 : 0); return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "shoot" ? "SHOOT" : T.kind === "smash" ? "SMASH" : T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
+      const txt = !T ? "" : T.who === "you" ? (_cb.say && _cbF() < _cb.say.until ? _cb.say.text : "YOUR TURN · " + (() => { const n = _cbSquad().filter(f => !_cb.acted.has(f)).length + (_cbYouTurn() ? 1 : 0); return n > 1 ? n + " TO PLAY" : "DRAG A CARD ONTO THE FIGHT"; })()) : T.who === "act" ? nm(T.f) + (mv || " · " + (T.kind === "shoot" ? "SHOOT" : T.kind === "smash" ? "SMASH" : T.kind === "serum" ? "HEALING SERUM" : T.kind === "ult" ? "ULTIMATE" : T.kind === "move" && typeof MOVES !== "undefined" && MOVES[T.id] ? MOVES[T.id].name : "BASIC ATTACK")) : T.run ? "RUNNING · " + nm(T.a) + "'S LAST HIT" : T.field && typeof cardUltBanner === "function" ? cardUltBanner() : "ENEMY TURN · " + nm(T.a) + mv;
       if (E.turn && E.turn._t !== txt) { E.turn._t = txt; E.turn.textContent = txt; if (E.turn.classList) E.turn.classList.toggle("yours", !!T && T.who === "you"); }
       if (E.scr.classList) E.scr.classList.toggle("yours", !!T && T.who === "you");
       if (E.run) E.run.disabled = !!T && T.who !== "you"; }
@@ -1233,8 +1272,8 @@ function _cbFoeTileDraw(V) {
 function _cbDragAim(D, ev) {
     if (_cbOverBand(ev)) { D.foe = null; return null; }   // (back over the cards: nothing aimed, no square lit)
     const foe = _cbDragFoe(ev) || _cbFoeOnTileAt(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
-    D.foe = D.kind === "walk" || D.kind === "pass" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.56; HOLD FIRE at none, §2.66)
-    if (D.kind === "pass") return true;
+    D.foe = D.kind === "walk" || D.kind === "pass" || D.kind === "serum" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.56; HOLD FIRE at none, §2.66, nor the Mutator's serum, §2.70)
+    if (D.kind === "pass" || D.kind === "serum") return true;
     if (k === "foe") return foe;
     if (k === "any") return true;
     if (foe) { const q = _cbSq(foe); return { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
@@ -1262,4 +1301,4 @@ function _cbYouThumb(cv, col) {
     g.fillStyle = "#3dffb0"; g.fillRect(w * 0.28, h * 0.42, w * 0.16, h * 0.07); g.fillRect(w * 0.56, h * 0.42, w * 0.16, h * 0.07);   // (its two eyes)
     g.fillStyle = col || "#ffb347"; g.fillRect(w * 0.4, h * 0.78, w * 0.2, h * 0.08);   // (its neck)
 }
-function cardBattleReset() { _cb.youActed = false; _cb.shooting = false; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.youActed = false; _cb.shooting = false; _cb.serums = []; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

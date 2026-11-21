@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17ax` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
+### Build `2026-11-17ay` · branch `claude/friendly-thompson-w581x0` · card battles: the Gunslinger's melee, SMASH
 - **The ask** (the owner, 2026-11-20, of the Gunslinger's melee): "It's used as a close up smash with the gun." Asked: "Card battles only"; "It walks up, like followers"; "About a burst (36)"; "Free, every round".
 - **What it does** (behind `?cards` with `?engine=3d`): a second attack card in the Gunslinger's turn, SMASH. Next to an enemy the blow lands at once for 36, with no round spent and no wait. Out of reach, its turn is a walk towards that enemy (3 squares, round everyone), the card still ready, and the blow lands on a later turn; the cube is in the line then. With an empty gun the Gunslinger still has its turn.
 - **The agent's, provisional:** Crushing; 36 fixed (not by the gun's level, no role's kit on it); the cube's pace, 3 squares; its square now in everyone's way; a short lunge for the look. `CARD-BATTLES.md` §2.69, §11.32.
