@@ -64,6 +64,15 @@ function build() {
     const upFirst = f.down !== 'low', c0 = (upFirst ? c[0] : c[1]) * G, c1 = (upFirst ? c[1] : c[0]) * G;
     ramps.push({ id: 'r_' + P + f.id, rooms: f.rooms.map(x => P + x), shape: 'steps', between_levels: [hi, lo], descends_toward: P + f.rooms[1], position_status: 'placed', zone: { rect: [z[0] * G, z[1] * G, z[2] * G, z[3] * G].map(Math.round), axis: f.axis, c0: Math.round(c0), c1: Math.round(c1), steps: f.steps } });
     if (!f.wet) connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
+  // THE CHANNEL'S SHAPE: AN INVERTED TRAPEZOID (the owner, 2026-11-22: "The shape of the channel should be like a inverted trapezoid"): each side of a channel slopes in from its walkway's edge down to the
+  // bed, BANK tiles across (the bed between them narrower than the top). A slope along every straight edge a walkway shares with its water, the ring's and the landing's too; not at the flooded steps.
+  const BANK = 1.5; let nb = 0;
+  for (const j of J) { const w = wet(j.rooms[0]) ? j.rooms[0] : wet(j.rooms[1]) ? j.rooms[1] : null, d = w === j.rooms[0] ? j.rooms[1] : j.rooms[0]; if (!w || wet(d) || by[d].kind === 'steps' || j.len < 2) continue;
+    const horiz = Math.abs(j.a[1] - j.b[1]) < 0.01, vert = Math.abs(j.a[0] - j.b[0]) < 0.01; if (!horiz && !vert) continue;
+    const cx = by[w].p.reduce((t, q) => t + q[0], 0) / by[w].p.length, cy = by[w].p.reduce((t, q) => t + q[1], 0) / by[w].p.length, hi = LV(by[d].lvl), lo = WATER_LV(by[w].wl); if (hi === lo) continue;
+    let rect, c0, c1; if (horiz) { const y = j.a[1], sg = cy > y ? 1 : -1; rect = [Math.min(j.a[0], j.b[0]), Math.min(y, y + sg * BANK), Math.max(j.a[0], j.b[0]), Math.max(y, y + sg * BANK)]; c0 = y; c1 = y + sg * BANK; }
+    else { const x = j.a[0], sg = cx > x ? 1 : -1; rect = [Math.min(x, x + sg * BANK), Math.min(j.a[1], j.b[1]), Math.max(x, x + sg * BANK), Math.max(j.a[1], j.b[1])]; c0 = x; c1 = x + sg * BANK; }
+    ramps.push({ id: 'r_' + P + 'bank_' + (++nb), rooms: [P + d, P + w], shape: 'slope', between_levels: [hi, lo], descends_toward: P + w, position_status: 'placed', zone: { rect: rect.map(v => Math.round(v * G)), axis: horiz ? 'y' : 'x', c0: Math.round(c0 * G), c1: Math.round(c1 * G) } }); }
   for (const v of VALVES) props.push({ id: P + v.id, room: P + v.room, shape: 'rect', rect: [(v.at[0] - 0.5) * G, (v.at[1] - 0.5) * G, (v.at[0] + 0.5) * G, (v.at[1] + 0.5) * G], status: 'placed', kind: 'valve', note: v.note });   // (the game's own valve housing, till the approved drain valve's model is in: docs/SEWER-PROPS.md)
   const levels = [0, 1, 2].map(l => ({ id: WATER_LV(l), label: 'sewer channel ' + l, height: +(BASE + l * STEP - DEEP).toFixed(2) })).concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
   return { levels, rooms, interiors, openings, connections, ramps, props, floors };
