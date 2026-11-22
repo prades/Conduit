@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon lit: lamps along its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Add the lights at least please".
+- **What it does** (only with `?sewerdungeon`): 72 lights in the dungeon's map, along the walls of its walked rooms; in 3D the Sewers' look hangs a lamp at each with its warm pool on the floor, in 2D each is a glow (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js` (the dungeon's decor joined to the map's, with the switch only).
+- **Verified:** seen in a real browser (software rendering) at four spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad; the frame rate with the lamps not measured.**
+
 ### Build `2026-11-17ck` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: wall tops even; the Sewers' new 3D look merged in (work in progress)
 - **The ask** (the owner, 2026-11-22): "the rooftops of these little walls and everything are not even [...] And also we've updated the sewers look. Can you switch over to the new skin?"
 - **What it does** (only with `?engine=3d&sewerdungeon`): every wall of the dungeon tops out at one height; main's sewer look (`view3d/sewerdress.js`) is merged, so the dungeon wears it (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
