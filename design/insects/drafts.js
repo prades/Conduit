@@ -18,9 +18,9 @@ const DRAFTS = {};   // (each look: DRAFTS.X = (P, o, base) => a THREE.Group, as
 // (2026-11-13, "Very right direction"), elbowed antennae, a thorax, a waist node and a banded gaster. Its front pair of legs is what becomes the sickles.
 // Three variations of it (V): A measured, B full, C in today's colours. Every number here is the agent's, provisional.
 const STALKER_V = {
-  A: { lift: 4.5, knee: 10, ankle: 6, reach: 1.12, scythe: 0.85, jaw: 1.15, spines: 0.6, pal: ['#3b2b1d', '#86643a', '#16100b'], tip: '#d9c39a', leg: '#21180f', mottle: 0.55 },
-  B: { lift: 7, knee: 15, ankle: 8, reach: 1.3, scythe: 1.2, jaw: 1.3, spines: 1, pal: ['#4e3219', '#b08848', '#170f08'], tip: '#ead6a8', leg: '#2a1b0e', mottle: 0.7 },
-  C: { lift: 4.5, knee: 10, ankle: 6, reach: 1.12, scythe: 0.85, jaw: 1.15, spines: 0.6, pal: ['#1c1824', '#4a3466', '#0c0a10'], tip: '#b9aed0', leg: '#141218', mottle: 0.6 },
+  A: { lift: 4.5, knee: 10, ankle: 6, reach: 1.12, scythe: 0.85, jaw: 1.15, spines: 0.6, pal: ['#3b2b1d', '#86643a', '#16100b'], tip: '#d9c39a', leg: '#21180f', mottle: 0.8 },
+  B: { lift: 7, knee: 15, ankle: 8, reach: 1.3, scythe: 1.2, jaw: 1.3, spines: 1, pal: ['#4e3219', '#b08848', '#170f08'], tip: '#ead6a8', leg: '#2a1b0e', mottle: 0.95 },
+  C: { lift: 4.5, knee: 10, ankle: 6, reach: 1.12, scythe: 0.85, jaw: 1.15, spines: 0.6, pal: ['#1c1824', '#4a3466', '#0c0a10'], tip: '#b9aed0', leg: '#141218', mottle: 0.85 },
 };
 function stalkerAnt(P, o, V) {
   const cls = o.cls || 'scout', queen = cls === 'boss', soldier = cls === 'tank' || queen, s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, zk = o.zk || ANT_ZK, Z = z => z / UH * s * zk;
@@ -65,8 +65,9 @@ function stalkerAnt(P, o, V) {
     const outer = [], inner = [], tipO = [], tipI = []; for (let i = 0; i <= 10; i++) { const u = i / 10, p = bez(u), q = bez(Math.min(1, u + 0.01)), r = bez(Math.max(0, u - 0.01)); let nx = r[1] - q[1], ny = q[0] - r[0]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; if (ny * side < 0) { nx = -nx; ny = -ny; }
       const w = 0.09 * hsz * Math.pow(1 - u, 0.8) * (u < 0.15 ? 0.7 + 2 * u : 1), oo = [p[0] + nx * w, p[1] + ny * w], ii = [p[0] - nx * w, p[1] - ny * w]; outer.push(oo); inner.push(ii); if (u >= 0.6) { tipO.push(oo); tipI.push(ii); }
       if (i === 3 || i === 6) inner.push([p[0] - nx * (w + 0.07 * ml) + 0.03 * ml, p[1] - ny * (w + 0.07 * ml)]); }
-    const blade = (pts, mat, lift) => { const sh = new T.Shape(pts.map(p => new T.Vector2(p[0] * U, p[1] * U))), m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: Z(1.8), bevelEnabled: false }), mat); m.rotation.x = Math.PI / 2; m.position.y = Z(hz - 0.8) + (lift || 0); if (mat === armour) paint(m); return m; };
-    g.add(blade(outer.concat(inner.slice().reverse()), armour)); g.add(blade(tipO.concat(tipI.slice().reverse()), tipM, 0.002)); }
+    const blade = (pts, mat, lift, th) => { const sh = new T.Shape(pts.map(p => new T.Vector2(p[0] * U, p[1] * U))), m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: Z(th || 1.8), bevelEnabled: false }), mat); m.rotation.x = Math.PI / 2; m.position.y = Z(hz - 0.8) + (lift || 0); if (mat === armour) paint(m); return m; };
+    const tipPts = tipO.map(p => [p[0] + 0.004, p[1] + side * 0.004]).concat(tipI.slice().reverse().map(p => [p[0] + 0.004, p[1] - side * 0.004]));   // (the pale point a hair proud of the blade, all round: no two faces in one place)
+    g.add(blade(outer.concat(inner.slice().reverse()), armour)); g.add(blade(tipPts, tipM, Z(0.15), 2.1)); }
   // THE SICKLES (its front legs): a thick arm up from the thorax's front to an elbow over the head, the blade hanging forward and down from it, serrated, its point
   // pale. At rest held high and folded (ready); on a bite (`open`) swung forward and down at what is in front
   const sc = V.scythe * (queen ? 1.15 : 1);
@@ -78,8 +79,8 @@ function stalkerAnt(P, o, V) {
     const len = 0.9 * sc, pts = [], N = 9; for (let i = 0; i <= N; i++) { const u = i / N, w = 0.075 * sc * (1 - u * 0.85); pts.push([u * len, 0.12 * sc * Math.sin(u * Math.PI) + w]); }
     const inn = []; for (let i = N; i >= 0; i--) { const u = i / N, w = 0.075 * sc * (1 - u * 0.85), bump = i > 0 && i < N && i % 2 === 0 ? 0.05 * sc : 0; inn.push([u * len, 0.12 * sc * Math.sin(u * Math.PI) - w - bump]); }
     const shp = new T.Shape(pts.concat(inn).map(p => new T.Vector2(p[0] * U, p[1] * U))), bm = new T.Mesh(new T.ExtrudeGeometry(shp, { depth: Z(1.2), bevelEnabled: false }), armour); paint(bm);
-    const tipShp = new T.Shape([[len * 0.72, 0.12 * sc * Math.sin(0.72 * Math.PI) + 0.075 * sc * 0.39], [len, 0.075 * sc * 0.15], [len, -0.075 * sc * 0.15], [len * 0.72, 0.12 * sc * Math.sin(0.72 * Math.PI) - 0.075 * sc * 0.39]].map(p => new T.Vector2(p[0] * U, p[1] * U))), tm = new T.Mesh(new T.ExtrudeGeometry(tipShp, { depth: Z(1.3), bevelEnabled: false }), tipM);
-    const pivot = new T.Group(); pivot.position.set(elbow[0], elbow[1], elbow[2] - Z(0.6)); bm.position.z = -Z(0.0); tm.position.z = -Z(0.05); pivot.add(bm); pivot.add(tm);
+    const tipShp = new T.Shape([[len * 0.72, 0.12 * sc * Math.sin(0.72 * Math.PI) + 0.075 * sc * 0.39], [len, 0.075 * sc * 0.15], [len, -0.075 * sc * 0.15], [len * 0.72, 0.12 * sc * Math.sin(0.72 * Math.PI) - 0.075 * sc * 0.39]].map(p => new T.Vector2(p[0] * U, p[1] * U))), tm = new T.Mesh(new T.ExtrudeGeometry(tipShp, { depth: Z(1.6), bevelEnabled: false }), tipM);
+    const pivot = new T.Group(); pivot.position.set(elbow[0], elbow[1], elbow[2] - Z(0.6)); bm.position.z = 0; tm.position.z = -Z(0.2); pivot.add(bm); pivot.add(tm);
     pivot.rotation.z = -0.3 - 0.75 * strike; pivot.rotation.y = -side * (0.32 - 0.22 * strike); pivot.updateMatrixWorld(true);
     for (const q of [bm, tm]) { q.geometry.applyMatrix4(q.matrixWorld); q.position.set(0, 0, 0); q.rotation.set(0, 0, 0); q.updateMatrix(); g.add(q); } }   // (baked in place: a body's poses are meshes only, view3d/core.js antBody)
   // THE STILTS: the middle and hind legs, long, each knee far up over the body and out to the side, an ankle, a hooked foot; a thorn on each knee
@@ -87,7 +88,7 @@ function stalkerAnt(P, o, V) {
   LEGS.forEach((Lg, i) => { for (const side of [-1, 1]) { const ph = walk * Math.PI * 2 + ((i % 2 === 0) === (side > 0) ? 0 : Math.PI), sw = o.stand ? 0 : Math.sin(ph) * 0.42, up = o.stand ? 0 : Math.pow(Math.max(0, Math.cos(ph)), 0.5) * 5;
     const R = V.reach * (queen ? 1.1 : 1), hip = [Lg.f * U, Z(zb + 0.6), side * Lg.hs * U], knee = [(Lg.f + Lg.kf * R + sw * 0.4) * U, Z(zb + V.knee * (queen ? 0.75 : 1) + up * 0.6), side * Lg.ks * R * U], ank = [(Lg.f + Lg.af * R + sw * 0.75) * U, Z(V.ankle + up), side * Lg.as * R * U], foot = [(Lg.f + Lg.tf * R + sw) * U, Z(up * 0.4) + 0.012, side * Lg.ts * R * U];
     g.add(rodBetween(hip, knee, 0.024 * s, legM, 7)); g.add(rodBetween(knee, ank, 0.017 * s, legM, 7)); g.add(rodBetween(ank, foot, 0.011 * s, legM, 6));
-    g.add(at3(new T.Mesh(new T.SphereGeometry(0.026 * s, 8, 6), legM), knee[0], knee[1], knee[2])); g.add(cone(knee, [knee[0] - 0.02 * U, knee[1] + Z(3.5 * V.spines + 1), knee[2] + side * 0.05 * U], 0.022 * s, legM)); } });
+    g.add(at3(new T.Mesh(new T.SphereGeometry(0.026 * s, 8, 6), legM), knee[0], knee[1], knee[2])); g.add(cone(knee, [knee[0] - 0.02 * U, knee[1] + Z(1.2 + 1.6 * V.spines), knee[2] + side * 0.05 * U], 0.022 * s, legM)); } });
   // A QUEEN: the scars of her shed wings on the thorax, and a crown of short thorns along her head's back
   if (queen) { for (const side of [-1, 1]) g.add(cone([-0.05 * U, Z(zb + 4.2), side * 0.12 * U], [-0.45 * U, Z(zb + 6.5), side * 0.32 * U], 0.06 * U, tipM));
     for (let k = -2; k <= 2; k++) g.add(cone([(hf - hL * 0.6) * U, Z(hz + hr * 0.85), k * 0.06 * U], [(hf - hL * 1.1) * U, Z(hz + hr * 1.35 + (2 - Math.abs(k))), k * 0.09 * U], 0.03 * U)); }

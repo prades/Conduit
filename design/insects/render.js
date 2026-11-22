@@ -71,7 +71,7 @@ const srv = http.createServer((q, r) => {
   if (process.env.CLIP) {
     const dir = path.join(OUT, PRE + '-clip'); fs.mkdirSync(dir, { recursive: true });
     const n = await p.evaluate(() => { const V = VIEW3D.view, T = window.THREE, K = window.__antKit, a = __S.foes[0], sc = V.core.scene;
-      __solo(null); const body = __holderOf(a);
+      __solo(null); const body = __holderOf(a); __solo({});   // (every body of the battle hidden: the clip's scout alone)
       const y0 = body ? body.position.y : 0; if (body) body.visible = false;
       const mk = o => { const g = K.build(Object.assign({ cls: 'scout', size: 0.5, zk: 2, accent: a.color }, o)); K.toonify(g, V.core.ctx.grad); const h = new T.Group(); h.add(g); h.visible = false; V.core.tagInk(h); sc.add(h); return h; };
       const walk = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875].map(w => mk({ walk: w })), stand = mk({ walk: 0, stand: true }), hit = [0.05, 0.12, 0.2, 0.3].map(op => mk({ walk: 0.3, open: op }));
