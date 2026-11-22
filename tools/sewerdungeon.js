@@ -82,6 +82,9 @@ function build() {
   const BANK = 1.5; let nb = 0;
   for (const j of J) { const w = wet(j.rooms[0]) ? j.rooms[0] : wet(j.rooms[1]) ? j.rooms[1] : null, d = w === j.rooms[0] ? j.rooms[1] : j.rooms[0]; if (!w || wet(d) || by[d].kind === 'steps' || j.len < 2) continue;
     const horiz = Math.abs(j.a[1] - j.b[1]) < 0.01, vert = Math.abs(j.a[0] - j.b[0]) < 0.01; if (!horiz && !vert) continue;
+    // (no slope where a culvert stands: the channel's head under the entrance landing is a plain wall with the culvert in it. With a slope there the bed rose over the culvert's mouth and hid it:
+    // the owner, 2026-11-22, circling that head: "I don't see the water pipe here")
+    if (VALVES.some(v => v.kind === 'culvert' && v.room === w && (vert ? Math.abs(v.r[0] - j.a[0]) < 0.3 && Math.abs(v.r[2] - j.a[0]) < 0.3 : Math.abs(v.r[1] - j.a[1]) < 0.3 && Math.abs(v.r[3] - j.a[1]) < 0.3))) continue;
     const cx = by[w].p.reduce((t, q) => t + q[0], 0) / by[w].p.length, cy = by[w].p.reduce((t, q) => t + q[1], 0) / by[w].p.length, hi = LV(by[d].lvl), lo = WATER_LV(by[w].wl); if (hi === lo) continue;
     let rect, c0, c1; if (horiz) { const y = j.a[1], sg = cy > y ? 1 : -1; rect = [Math.min(j.a[0], j.b[0]), Math.min(y, y + sg * BANK), Math.max(j.a[0], j.b[0]), Math.max(y, y + sg * BANK)]; c0 = y; c1 = y + sg * BANK; }
     else { const x = j.a[0], sg = cx > x ? 1 : -1; rect = [Math.min(x, x + sg * BANK), Math.min(j.a[1], j.b[1]), Math.max(x, x + sg * BANK), Math.max(j.a[1], j.b[1])]; c0 = x; c1 = x + sg * BANK; }

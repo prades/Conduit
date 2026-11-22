@@ -51,6 +51,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's west culvert no longer buried (work in progress)
+- **The ask** (the owner, 2026-11-22, circling the West Channel's head): "I don't see the water pipe here".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the bed no longer slopes up over the culvert under the entrance landing; that end is a plain wall with the arch in it (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cf` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's flooded staircase turned to run along the bank (work in progress)
 - **The ask** (the owner, 2026-11-22, on a marked picture): "Rotate the stairs like this".
 - **What it does** (only with `?sewerdungeon`): the West Channel's staircase no longer sticks out into the channel: from a landing on the north walkway's edge one flight runs down along the bank, eastwards, to the bed ("The other way 180") (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
