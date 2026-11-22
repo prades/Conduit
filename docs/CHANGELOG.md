@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's channels flat, an inverted trapezoid (work in progress)
+- **The ask** (the owner, 2026-11-22): "the channels don't need to look like they have stairs under them, under the water. It needs to be flat looking. It needs to have like an inverted trapezoid look."
+- **What it does** (only with `?engine=3d&sewerdungeon`): each body of the dungeon's water is one flat sheet, and its bed one smooth surface with a flat bottom and sloped sides, with the water in or gone (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone, no page error; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.** Whoever walks a bank stands on the tile's own height, up to a few pixels off the smooth slope.
+
 ### Build `2026-11-17cc` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: culverts at the channel ends, each with a button that shuts its door; the sluice gates gone; three corners squared (work in progress)
 - **The ask** (the owner, 2026-11-22): "Square those corners"; "I want giant openings", culverts, at "Every channel end", an "Arch"; "Just forget about the thing that sits in the water [...] let's just make a button that closes the pipe or the door from inside".
 - **What it does** (only with `?sewerdungeon`; the culverts only with `?engine=3d` too): a giant arched culvert where each of the three channels comes in; by its switch the button CLOSE THE CULVERT shuts a steel door in its mouth, OPEN THE CULVERT opens it; while a culvert is shut the water it feeds is gone and its bed is walked (the owner: "They should lower the water level", "Empty: walk the bed"; culverts are found "Open, water up"), so the Central Channel can be crossed with its culvert shut; the two sluice gates and the mouth cutoff's switch are removed; the Northeast Offices' south-west corner and the High Ledge Room's two north corners are square (`SEWER-DUNGEON.md`).

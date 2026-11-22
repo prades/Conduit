@@ -419,12 +419,21 @@ function buildLabFloor(lab, P0, how) {
     // the water: a mesh a body, its streaks (world-scaled: a picture three tiles across) drifting the way it flows
     const streaks = () => canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#b8b8b8'; g.fillRect(0, 0, w, h); for (let i = 0; i < 18; i++) { const x = rnd(i, 1, 21) * w, y = rnd(i, 2, 22) * h, L = 8 + rnd(i, 3, 23) * 16; g.fillStyle = 'rgba(255,255,255,' + (0.3 + rnd(i, 4, 24) * 0.5).toFixed(2) + ')'; g.fillRect(x, y, L, 1.6); g.fillRect(x - w, y, L, 1.6); } }, { repeat: true });
     const bodies = new Map(); for (const [k, v] of wet) { const [x, y] = k.split(',').map(Number); let b = bodies.get(v.body); if (!b) bodies.set(v.body, b = { cells: [], room: v.room }); b.cells.push([x, y, v.h]); }
+    const sdLo = new Map(), SD_FILL = 15 / UH;   // (sdLo: a dungeon water tile's key -> its body's lowest height; SD_FILL: how far over that its water stands)
     for (const [id, b] of bodies) { const q = quads(), tex = streaks(), mat = new T.MeshBasicMaterial({ map: tex, color: 0x2e7a1e }), f = id !== 'river' && typeof FP_POOL_FLOW !== 'undefined' && FP_POOL_FLOW[id] ? FP_POOL_FLOW[id] : [1, 0], fL = Math.hypot(f[0], f[1]) || 1;
-      for (const [x, y, h] of b.cells) { const y0 = h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
-      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); let bed = null; if (isSd(b.room)) { const bt = quads(), bs = quads();   // (THE SEWER DUNGEON: the bed under this water, its floor and the risers between its heights, seen when the water is gone: the owner, 2026-11-22, "Empty: walk the bed")
-        for (const [x, y, h] of b.cells) { topQuad(bt, x, y, h, WHITE); for (const [dx, dy] of DIRS) { const nw = wet.get(K(x + dx, y + dy)); if (nw && nw.h < h - 1e-4) sideQuad(bs, x, y, dx, dy, nw.h, h, WHITE, 0, 1); } }
-        bed = quadMesh([{ q: bt, mat: P0.sdBed || (P0.sdBed = std('#46555b', { roughness: 0.9 })) }, { q: bs, mat: P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 })) }]); bed.receiveShadow = true; bed.userData.dynamic = true; bed.visible = false; rooms[b.room].g.add(bed); }
-      waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id, bed }); }   // (dynamic: left out of the view's merging, so its colour can change)
+      // (THE SEWER DUNGEON: one flat sheet of water a body, part way up its sloped sides, not a step a tile following the bank's heights. The owner, 2026-11-22: "the channels don't need to look like
+      // they have stairs under them, under the water. It needs to be flat looking. It needs to have like an inverted trapezoid look". How full it stands, SD_FILL, is the agent's, provisional.)
+      const sdB = isSd(b.room), lo = sdB ? Math.min(...b.cells.map(c => c[2])) : 0; if (sdB) for (const c of b.cells) sdLo.set(K(c[0], c[1]), lo);
+      for (const [x, y, h] of b.cells) { const y0 = sdB ? lo + SD_FILL : h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
+      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id, sd: sdB }); }
+   // (dynamic: left out of the view's merging, so its colour can change)
+    // THE SEWER DUNGEON'S BEDS: under every body of its water one smooth concrete surface, a flat bottom and sloped sides (the inverted trapezoid), always there: seen above the water's
+    // line, and whole when the water is gone ("Empty: walk the bed"). A tile's corner is as high as the tiles round it: the mean of the water tiles there; at a bank's lip, the walkway's own height.
+    { const bt = quads(), by2 = new Map(), cornerH = (cx, cy) => { let sum = 0, n = 0, fl = -1e9, bank = true; for (const [ox, oy] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) { const k = K(cx + ox, cy + oy), w = wet.get(k);
+          if (w && sdLo.has(k)) { sum += w.h; n++; if (w.h < sdLo.get(k) + 1e-3) bank = false; } else if (roomAt.has(k) && !w) fl = Math.max(fl, hAt(cx + ox, cy + oy)); } return fl > -1e8 && bank ? fl : n ? sum / n : 0; };
+      for (const [k, lo] of sdLo) { const [x, y] = k.split(',').map(Number), room = wet.get(k).room; let q = by2.get(room); if (!q) by2.set(room, q = quads());
+        putQuad(q, [x - 0.5, cornerH(x - 0.5, y + 0.5), y + 0.5], [x + 0.5, cornerH(x + 0.5, y + 0.5), y + 0.5], [x + 0.5, cornerH(x + 0.5, y - 0.5), y - 0.5], [x - 0.5, cornerH(x - 0.5, y - 0.5), y - 0.5], [0, 1, 0], WHITE); }
+      for (const [room, q] of by2) { const bed = quadMesh([{ q, mat: P0.sdBed || (P0.sdBed = std('#46555b', { roughness: 0.9 })) }]); bed.receiveShadow = true; bed.userData.inkKey = 'floor'; rooms[room].g.add(bed); } }
     // the banks down to it, and the hazard stripe along their lips (yellow and black, four a tile)
     const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#141414' : '#f2c11a'; g.beginPath(); g.moveTo(i * 8, h); g.lineTo(i * 8 + 8, h); g.lineTo(i * 8 + 12, 0); g.lineTo(i * 8 + 4, 0); g.fill(); } g.fillStyle = '#f2c11a'; g.beginPath(); g.moveTo(-4, h); g.lineTo(4, h); g.lineTo(8, 0); g.lineTo(0, 0); g.fill(); }, { repeat: true });
     const bankMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, vertexColors: true }), lipMat = new T.MeshStandardMaterial({ map: stripes, roughness: 0.7 }), BANK = lin3('#1d2422');
@@ -524,7 +533,7 @@ function buildLabFloor(lab, P0, how) {
       (bk && bk.G ? bk.G.g : rooms[rec.id].g).add(gp); culverts.push({ id: s2.id, door, gp }); }
     sewer.culverts = culverts;
     sewer.tick = (f0, gm) => { for (const c of culverts) c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id));
-      if (gm && gm.waterLow) for (const w of waters) if (w.bed) { const low = !!gm.waterLow(w.id); if (w.bed.visible !== low) { w.bed.visible = low; w.m.visible = !low; } }   /* (THE SEWER DUNGEON: a body of water whose culvert is shut, or that is drained, is gone and its bed shows; it is back when the culvert is opened) */
+      if (gm && gm.waterLow) for (const w of waters) if (w.sd) { const low = !!gm.waterLow(w.id); if (w.m.visible === low) w.m.visible = !low; }   /* (THE SEWER DUNGEON: a body of water whose culvert is shut, or that is drained, is gone, its bed bare; it is back when the culvert is opened) */
       for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
       const T0 = gm && gm.nest ? gm.nest(f0) : null; if (T0) { const ph = Math.sin(f0 * T0.p * 2);
         for (const gl of glows) gl.m.material.opacity = T0.g * gl.k * (0.7 + 0.3 * Math.sin(f0 * T0.p * 2 + gl.ph));
