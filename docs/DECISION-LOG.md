@@ -14,6 +14,14 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: An energy card found in the world hides its element, which is rolled when it is found
+
+- **Date:** 2026-11-22 · **Branch/build:** `claude/friendly-thompson-w581x0`; documents only (main at build `2026-11-17by`)
+- **Status:** designed; not built (no energy card lies in the world yet).
+- **Decision:** the owner, asked whether a found energy card shows its element before it is taken: "No, the energy card should hide its element and roll whenever it's found." So in the world it is the card with the clear, unlit crystal (`energy_card.unknown` of the sewer dungeon's kit), whatever it will be; its element is chosen at the moment it is found, not placed in the map.
+- **Bears on:** `SEWER-DUNGEON.md`'s finds (which element each found card is: none is fixed); `ENERGY-CARDS.md` rule 6, by which energy cards came only from packs.
+- **Open:** what the roll draws from (a pack's energy card is "each of an element found, at random", `ENERGY-CARDS.md` rule 9); whether the card is seen to light in its element as it is found. `SEWER-PROPS.md` Q4.
+
 ## DECISION: The sewer dungeon's approved props and key items are the game's own models, placed by kind and switched by state
 
 - **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17bp`

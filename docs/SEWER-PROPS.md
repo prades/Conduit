@@ -65,7 +65,7 @@ So this page is the one list of every prop and key item the sewer notes call for
 | A5 | The water sample | "you have to get the water sample". | Exists: 3D model | No change asked |
 | A6 | The ant samples ("DNA samples") | "found as shed chitin, eggs, or a dead ant [...] or taken from a sleeping or frozen ant". | Exists: 3D model (TOXIC ANT SAMPLE) | No change asked; its sources are F1 to F3 |
 | A7 | **The battery pack** | "Battery packs, found in the dungeon, restore the mech's charges and every spent follower utility." Proposed: two, in areas 3 and 10. **It is carried** (the owner, 2026-11-21: "I guess a battery pack can be held, carried"). | None (a POWER CELL exists: a different item) | **Approved** (2026-11-21: "Looks good"): an amber block, two terminals, a lit bar of four cells |
-| A8 | **An energy card, found** (E1 to E7) | "Definitely energy cards and other upgrades scattered throughout the level" (the owner, 2026-11-20). Today cards come only from packs. | None in the world | **Approved** (the owner, 2026-11-21: "The energy cards are cool"): a dark card with a thin lit edge in its element's colour and that element's gem set through it; one for each of the seven elements, and one with the clear, unlit crystal (whether the element is seen before the card is taken is still Q4) |
+| A8 | **An energy card, found** (E1 to E7) | "Definitely energy cards and other upgrades scattered throughout the level" (the owner, 2026-11-20). Today cards come only from packs. | None in the world | **Approved** (the owner, 2026-11-21: "The energy cards are cool"): a dark card with a thin lit edge and a gem set through it. **In the world it hides its element** (the owner, 2026-11-22: "the energy card should hide its element and roll whenever it's found"): it lies as the card with the clear, unlit crystal, and its element is rolled when it is found. The seven lit cards are that roll's seven results |
 | A9 | "Other upgrades" | The owner's words; what they are is open (the spec's §11.6). | None | Waits (Q5) |
 | A10 | The chest | `CHESTS.md`: the hex cache, approved 2026-11-12. | Exists: 3D model | No change asked |
 
@@ -149,7 +149,7 @@ Each kind waits on a yes to its first piece.
 - ~~**Q1. Keys.**~~ *Answered 2026-11-21: "Just 1 for now": the subway key only.* So the dungeon's locked doors other than the subway's have no key for now: whether they stay, are breached only, or go, is the dungeon spec's to settle.
 - ~~**Q2. The module's parts.**~~ *Answered 2026-11-21: the canister, the membranes and the pump; three.*
 - ~~**Q3. The battery pack.**~~ *Answered 2026-11-21: carried.* Open still: whether it works when picked up or when the player chooses (the Notion page leaves it open).
-- **Q4. A found energy card.** Does the player see its element before taking it? (Its look is approved; both are made: a card for each element, and one with the clear, unlit crystal. With no element given, the kit draws the unlit one.)
+- ~~**Q4. A found energy card.**~~ *Answered 2026-11-22: "No, the energy card should hide its element and roll whenever it's found."* It is found unlit; its element is rolled then. Still open: what the roll draws from (a pack deals "each of an element found, at random", `ENERGY-CARDS.md` rule 9: the same?), and whether the card is seen to light in its element as it is found.
 - **Q5. "Other upgrades".** What are they?
 - **Q6. The cracked wall.** The spec's proposed check U6 is a cracked wall; the owner also said of the layout "There shouldn't be any broken walls". Which stands?
 - **Q7. The box.** ~~Is the bridge box a new sewer box, or one of the facility's crates?~~ *Answered 2026-11-21: "The bridge box should be facilities ordinary crates."* Still open: is the thing that dams the channel for the key a crate too?
@@ -176,6 +176,7 @@ Each kind waits on a yes to its first piece.
 - 2026-11-21, the owner, of those: "It should be concrete. The secret doors should be about right. The bridge box should be facilities ordinary crates. Amber for things that can be moved. No. Checker plate dungeon floors. And yes, make the other make the found energy card." So: the wall is concrete, no brick (the sample and the secret door redrawn in it); the secret door's tells stand; the float box is rejected, the bridge box being one of the facility's crates (its model taken out of the drafts); the amber edge is rejected; the floor is checker plate. Drafted next: the Nest's three finds (shed chitin, eggs, a dead ant) and a found energy card.
 - 2026-11-21, the owner, of that round: "I don't really like the nest stuff. It's kind of too surreal. The energy cards are cool. And the concrete walls and secret doors, yes. The loose slab, yes. Let's go ahead and create the framework so that my sewer AI can build this in 3D." So the energy card, the secret door (and the concrete wall it hides in) and the loose slab are approved; the Nest's three finds are rejected and taken out. **Build `2026-11-17bp`:** the sixteen approved pieces made the game's own models (`design/props/models/_sewer.js`), baked to two sheets, their kinds on the game's prop table, a prop's state set by the game and drawn in the 2D game and the 3D view (§10).
 - 2026-11-22: build `2026-11-17bp` on main at the owner's "Push". The owner, of the Nest: "It should look like eggs that take up a wall and are adhered together by a black substance and the eggs have big irregular patterns." Drafted as one piece, an egg wall (F2); not in the kit until it is approved.
+- 2026-11-22, the owner, asked whether a found energy card shows its element before it is taken: "No, the energy card should hide its element and roll whenever it's found." Written into the list (A8) and the builder's guide (§10.5): no model changed, the kit already draws the unlit card when no element is given.
 
 ## 10. Building with the kit (for the dungeon's builder)
 
@@ -241,7 +242,9 @@ facilityPropStateSet("sd_subway_door", "open"); facilitySolidOpen("sd_subway_doo
 
 ### 10.5 The key items
 
-`subway_key`, `module_canister`, `module_membranes`, `module_pump`, `battery_pack`, and `energy_card` (`energy_card.fire`, `.electric`, `.ice`, `.flux`, `.core`, `.toxic`, `.blossom`; `energy_card.unknown`, the unlit one, is drawn when no element is given: Q4).
+`subway_key`, `module_canister`, `module_membranes`, `module_pump`, `battery_pack`, and `energy_card` (`energy_card.unknown`, the unlit one, drawn when no element is given; and `energy_card.fire`, `.electric`, `.ice`, `.flux`, `.core`, `.toxic`, `.blossom`).
+
+**A found energy card hides its element** (the owner, 2026-11-22: "the energy card should hide its element and roll whenever it's found"): in the world it is always `energy_card.unknown`, and its element is rolled at the moment it is found, not when the map is made. The seven lit cards are for what it turns out to be. What the roll draws from is not said (Q4).
 
 - **In 3D:** `SEWER3D.find(id, element)` gives the model, standing on its own axis.
 - **In 2D:** each is a cell of the `sewerfinds` sheet, already at its slant.
