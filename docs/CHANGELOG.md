@@ -70,6 +70,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Round Junction's middle a pool in a bowl (work in progress)
+- **The ask** (the owner, 2026-11-22): "make the actual circular junction pool [...] have a large you know, bowl area"; "Water, drains to walk".
+- **What it does** (only with `?sewerdungeon`): the junction's middle is a round pool with a bowl-shaped bed; shutting the north culvert empties it with the Central Channel and the bowl is walked (`SEWER-DUNGEON.md`). Outside the switch nothing changes: the game's height rule gained a bowl-shaped slope that only the dungeon's map uses.
+- `js/facility.js` (`facilityHeightAt`: a zone with `round`), `js/facilitygrow.js` (it moves with its interior room), `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js`.
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check (emptied, the whole bowl is reached); the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's Round Junction drawn round (work in progress)
 - **The ask** (the owner, 2026-11-22, on a marked picture): "Can you make this area actually look circular".
 - **What it does** (only with `?engine=3d&sewerdungeon`): the ring's outer wall and the rail round the nest are true circles in the 3D view (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated). The map and the 2D game are unchanged.

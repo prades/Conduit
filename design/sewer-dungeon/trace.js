@@ -90,7 +90,9 @@ const SHAPES = [
   { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, +(K.sdB[1] + (K.sdB[0] - 28.5)).toFixed(2)], K.sdB, K.sdA, [28.5, +(K.sdA[1] + (K.sdA[0] - 28.5)).toFixed(2)]] },   // (straight south-west from the ring's side to the Subway Exit's east wall, one width all along: the owner, 2026-11-21, "I can't navigate through it")
   { id: 'junction_ring_w', lvl: -1, kind: 'ring', p: [K.bot].concat(outer(PI / 2, PI * 1.5, [K.sdA, K.sdB, K.plA, K.plB, K.wwA, K.wwB]), [K.top], inner(PI * 1.5, PI / 2)) },
   { id: 'junction_ring_e', lvl: -1, kind: 'ring', p: [K.top].concat(outer(PI * 1.5, PI / 2, [K.weA, K.weB, K.puA, K.puB]), [K.bot], inner(PI / 2, -PI / 2)) },
-  { id: 'junction_nest', lvl: -2, kind: 'nest', p: INNER.slice() },
+  // (A POOL, A BOWL: the owner, 2026-11-22: "can you make the actual circular junction pool, like actually make it have a large you know, bowl area?"; asked, "Water, drains to walk". The middle of the
+  // Round Junction is a round pool, its bed a bowl; its water goes with the Central Channel's when the north culvert is shut, and the bowl is walked. It was the dry floor called the Toxic Nest.)
+  { id: 'junction_nest', lvl: -2, wl: 0, kind: 'water', bowl: { r0: RI, r1: 3 }, p: INNER.slice() },
   { id: 'pur_pass', lvl: 0, kind: 'walk', p: [K.puA, [60.5, 44.8], [61.5, 45.5], [64.5, 45.5], [64.5, 48.5], [61.5, 48.5], [60.5, 49.2], K.puB] },
   { id: 'purification', lvl: 0, kind: 'floor', p: [[64.5, 42.5], [65.5, 41.5], [66.5, 40.5], [70, 40.5], [71, 41.5], [76.5, 41.5], [77.5, 42.5], [77.5, 50.5], [76.5, 51.5], [66, 51.5], [64.5, 50]] },
   { id: 'ne_door', lvl: 0, kind: 'walk', p: [[49.6, 6.5], [52.5, 6.5], [52.5, 9], [49.6, 9]] },
