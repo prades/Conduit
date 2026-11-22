@@ -51,6 +51,133 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17by` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room's west end cut off (work in progress)
+- **The ask** (the owner, 2026-11-22, on the plan): "Cut this out".
+- **What it does** (only with `?sewerdungeon`): the small channel and its walkways start 7 tiles further east; they no longer meet the main channel. The drain at the channel's head.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bx` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room an L (work in progress)
+- **The ask** (the owner, 2026-11-22): an L, its base a bulky rectangle, the pool; a slimmer channel leading to it with a walkway on either side.
+- **What it does** (only with `?sewerdungeon`): that shape; the pool 8 by 10.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bw` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room redone, reached only through the Purification Chamber; grey steps (work in progress)
+- **The ask** (the owner, 2026-11-22): "really confusing looking with the different color stairs"; the pool room "only accessible through the purification module room", a small channel to the pool, a walkway both sides of it and round the pool, "a drain on the west side there on the wall".
+- **What it does** (only with `?sewerdungeon`): that room, as asked; every flight of the dungeon drawn in the walkways' grey.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyleall.js` (`_fpStyleStair`).
+- **Verified:** the reach check; the drain driven in a real browser; the short run with sewerlook and the props suite. **Not playtested.**
+
+### Build `2026-11-17bv` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain hall and its pool bigger (work in progress)
+- **The ask** (the owner, 2026-11-22): "Make it bigger".
+- **What it does** (only with `?sewerdungeon`): the pool is an L of 127 tiles, the hall round it out to the map's east edge.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bu` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: one open hall round the drain tunnel and its pool (work in progress)
+- **The ask** (the owner, 2026-11-22): "open up the wall, or that area above the purification module, and make that whole area opened up with the pool and the new other channel".
+- **What it does** (only with `?sewerdungeon`): floor all round the tunnel and the pool, open to the Purification Chamber below.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bt` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's prototype made readable (work in progress)
+- **The ask** (the owner, 2026-11-22): "I don't understand what you've done in that look. Can you fix it up a little bit more?"
+- **What it does** (only with `?sewerdungeon`): the whole dungeon lit; clear blue-green water; paler floors by kind. Fixed with it: an outlined pool's water had no clean colour and stayed foul green when purified.
+- `js/facilitystyle.js` (`_fpLightKey`), `js/facilitysewers.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the short run with sewerlook, sewerquest and the props suite; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bs` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain tunnel and pool opened up (work in progress)
+- **The ask** (the owner, 2026-11-22): "open up this entire area so that the player can [...] see what's going on in that room before they know how to interact with it".
+- **What it does** (only with `?sewerdungeon`): a railed walkway beside the tunnel and along the pool; no walls round either.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17br` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a pool you can drain and walk in (work in progress)
+- **The ask** (the owner, 2026-11-22): another channel above the Purification Chamber into a room like a pool; "the player can drain that pool and then walk around on the bottom part of it".
+- **What it does** (only with `?sewerdungeon`): the drain tunnel and its pool are water you cannot enter; standing by the drain valve a DRAIN THE POOL button (a builder's stand-in) empties them, and their beds are floor for the rest of the visit.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js` (`sewerDungeonDrain`, `sewerDungeonButton`).
+- **Verified:** in the sandbox (shut when full, every tile reached when drained, a second drain does nothing); driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: walkways along the channels 3 tiles wide (work in progress)
+- **The ask** (the owner, 2026-11-22): "more walking space on these sidewalks [...] alongside the channels".
+- **What it does** (only with `?sewerdungeon`): the walkways beside both channels are 3 tiles wide.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+### Build `2026-11-17bp` · branch `claude/friendly-thompson-w581x0` · the sewer dungeon's kit: its approved props and key items are the game's own models, to build with
+- **The ask** (the owner, 2026-11-21, of the props and key items approved one by one that day): "Let's go ahead and create the framework so that my sewer AI can build this in 3D."
+- **What it does:** the sixteen approved pieces are models of the game (`design/props/models/_sewer.js`), baked to two sheets (`img/props/sewer.png`, 33 variants; `img/props/sewerfinds.png`, 13). Nine props have kinds on the game's prop table: a prop of the map with one is drawn like any other, its sprite in the 2D game and its model in the 3D view, turned by its own size or by its `_turned` kind. A prop with states (a valve shut or open, a gate, a switch, a door, rubble) is drawn in the one the game last set (`facilityPropStateSet`), in both views; given none, as it is found.
+- **Nothing a player sees changes:** no prop of the map is one of these yet. The dungeon's builder puts them there (`SEWER-PROPS.md` §10, the guide). Two small sheets more are loaded with the rest.
+- **Not built:** the key items as items of the PACK, the camera's zoom on finding one, a key item floating in the 3D view; the dungeon's rooms in the 3D view; what any state does (water, a way opened): the dungeon's own.
+- **Rejected on the way** (the owner): the Nest's three finds ("kind of too surreal"), a float box for the bridge box, an amber edge on what is moved.
+- `design/props/models/_sewer.js`, `sewer.js`, `sewerfinds.js`; `js/propsprites.js`; `js/view3d.js`; `view3d/gamemap.js`, `view3d/core.js`, `view3d/gameview.js`; `design/style-evolution/round2/chamber.js`; `tests/sewerkit.js` (new, 11 checks); `docs/SEWER-PROPS.md` §10.
+- **Verified:** `tests/sewerkit.js` (11 checks; one runs the game in a real browser with the 3D view: four props of the kit put in the Sewers, built and switched). By eye in a real browser at 1180 × 820, ten props of the kit on the Sewers' north ledge, in the 3D view (`?engine=3d`) and the 2D game, as found and then each in its last state; a door opened with `facilitySolidOpen` stops blocking and is still drawn; no page error. `node tests/run.js`, twice: the first run (before this build's last two fixes) 131 of 133 suites, the two failures this build's own and fixed (its two sheets were not preloaded with the page, `tests/startup.js`; `tests/facilityplay.js` pins the list of sheets); the second, on this build as merged with main's `bj` (it was `bk` then), 132 of 133: `tests/lab3d.js` failed once ("the page left nothing", the test page's real browser under the full run's load) and passes run alone, its files untouched by this build. Then merged with main's `bk` to `bo` (the dungeon's prototype only: its trace, its tool, its generated map) and renamed `bp`: 13 suites pass on it (`foundation bible startup facility facilityplay sewers sewerlook ghost sewerkit itemicons images bundle balance`: the dungeon's short run and the kit's own); **the full run was not repeated after that last merge.** **Not seen on an iPad; no prop of the map is one of these yet.**
+
+### Build `2026-11-17bo` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no door frames where its pieces join (work in progress)
+- **The ask** (the owner, 2026-11-22): "Remove this dumb arc doorway".
+- **What it does** (only with `?sewerdungeon`): the frames that stood across walkways and passages are gone; the pieces run into one another.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the channels' sides slope in (work in progress)
+- **The ask** (the owner, 2026-11-22): "The shape of the channel should be like a inverted trapezoid."
+- **What it does** (only with `?sewerdungeon`): each channel's sides slope from the walkway's edge down to a narrower bed. Faint until the sewer look is in.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the cutoff valves are the water panels, stood against the wall (work in progress)
+- **The ask** (the owner, 2026-11-22): "that's the panels that we're talking about. The eventual design will be on the walls."
+- **What it does** (only with `?sewerdungeon`): the two valve housings stand against their walkway's wall, not by the water. Still stand-ins that do nothing.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
+### Build `2026-11-17bl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: two cutoff valves placed (work in progress)
+- **The ask** (the owner, 2026-11-22): cutoff valves at the very north of the main channel and where the West Channel meets it.
+- **What it does** (only with `?sewerdungeon`): a valve housing stands at each of those two places. They do nothing yet: the water's rules are not built.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bk` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the West Channel's water steps down with its tunnel (work in progress)
+- **The ask** (the owner, 2026-11-21): "it should affect the water level. It should slope down too."
+- **What it does** (only with `?sewerdungeon`): the West Channel's water lies in three stretches, each a flight lower, falling where the walkways' flights stand. Steps, not yet a slope.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
+### Build `2026-11-17bj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the entrance tunnel comes down two flights (work in progress)
+- **The ask** (the owner, 2026-11-21): "I want the entrance tunnel to have two sets of stairs before it reaches the main tunnel and channel."
+- **What it does** (only with `?sewerdungeon`): both banks of the West Channel step down twice between the West Entrance and the Central Channel.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check (39 rooms, every tile); the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bi` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the rail back along the West Channel (work in progress)
+- **The ask** (the owner, 2026-11-21): "U added a wall lining the entire channel".
+- **What it does** (only with `?sewerdungeon`): the wall that build `bh` put along the West Channel's north walkway is the rail again.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bh` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a flooded staircase into the West Channel, the channel 5 tiles wide, the trace on the game's grid (work in progress)
+- **The ask** (the owner, 2026-11-21): "There should also be a flooded staircase that leads into the channel in the entrance tunnel. Maybe make that channel a little bit wider as well."
+- **What it does** (only with `?sewerdungeon`): steps from the north walkway down into the West Channel; the channel 5 tiles wide. **Fixed with it:** the game moves walls onto its half-tile lines, which had moved a doorway shut; the whole trace is on those lines now.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check (35 rooms, every tile); the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a way down into the room under the entrance (work in progress)
+- **The ask** (the owner, 2026-11-21): "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance."
+- **What it does** (only with `?sewerdungeon`): a short flight from the south walkway by the entrance down into the small room below it.
+- `tools/sewerdungeon.js`, `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
+### Build `2026-11-17bf` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway across the West Channel's mouth (work in progress)
+- **The ask** (the owner, 2026-11-21): "This platform shouldn't exist, it should be cut off here".
+- **What it does** (only with `?sewerdungeon`): the Central Channel's west walkway stops at the West Channel and starts again beyond it; the West Channel runs into the Central Channel. A landing at the channel's head, the West Entrance, joins the two banks (the agent's).
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17be` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Subway passage and the west room's passage widened (work in progress)
+- **The ask** (the owner, 2026-11-21): "The bottom left tunnel connecting to that room from the circular junction is not right. I can't navigate through it."
+- **What it does** (only with `?sewerdungeon`): the passage between the ring and the Subway Exit is straight and 3.4 tiles wide; the small west room's passage to the West Hall 2.5. Every tile of every room is reached on foot from the West Entrance.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check in the sandbox; the short run (facility, facilityplay, sewers, sewerlook, bundle, ghost). The full suite was not run on this build (the owner's call for prototype-only changes). **Not playtested.**
+
+### Build `2026-11-17bd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's ring made uniform (work in progress)
+- **The ask** (the owner, 2026-11-21, of the ring's walkway): "This tunnel is bad, make it uniform. Dont use reference make this area completely uniform".
+- **What it does** (only with `?sewerdungeon`): the Round Junction's ring is one even band, sixteen flat sides inside and out, 2.5 tiles wide all the way round.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser; the full suite. **Not playtested.**
+
+### Build `2026-11-17bc` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms: short flights, one rail, a wider West Channel (work in progress)
+- **The ask** (the owner, 2026-11-21, having walked `?sewerdungeon`): not actual storeys, stairs that make it feel underground; one set of railing, never four; a really deep channel that is not all the way full; wider at the entrance.
+- **What it does** (only with `?sewerdungeon`): heights are short flights; one rail along each side of the water; the West Channel a tile and more wider; the channels lie deep below the walkways. Still bare: no sewer look, the water plain and dark.
+- `tools/sewerdungeon.js`, `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js`, `docs/SEWER-DUNGEON.md`.
+- **Verified:** seen in a real browser; facility, facilityplay, sewers, bundle suites. **Not playtested.**
+
+### Build `2026-11-17bb` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bare rooms, behind `?sewerdungeon` (work in progress)
+- **The ask** (the owner, 2026-11-21, of the skeleton picture and its hand trace): "This is our sewer now, make it happen"; "The ring is a storey down, build it".
+- **What it does:** with `?sewerdungeon` in the address the game starts you at the new dungeon's West Entrance: 32 rooms, 33 doorways and 9 flights of stairs made from the trace (`SEWER-DUNGEON.md`). Bare rooms only: no sewer look, no water, no way in or out, nothing to do, not in the 3D view. Without the switch the game is as it was; the old Sewers are untouched.
+- `tools/sewerdungeon.js` (new), `js/sewerdungeonmap.js` (generated), `design/sewer-dungeon/`, `js/facilitymap.js`, `js/facilityplay.js` (`sewerDungeonStart`), `game.html`.
+- **Verified:** the game loads it and starts in it in a real browser (both pages), no page error; facility, facilityplay, sewers, bundle suites. **Not playtested.**
 ### Build `2026-11-17ba` · branch `claude/friendly-thompson-w581x0` · card battles: the Mutator has a turn, its HEALING SERUM
 - **The ask** (the owner, 2026-11-21): "You could make it to where the mutator can use his healing serum to affect the team whenever it's available in the card battles." Asked: "The whole squad"; "Over 3 turns: 24%, 24%, 12%"; "On its own turn each round".
 - **What it does** (behind `?cards` with `?engine=3d`): a Mutator carrying a serum has its own turn each round, after its followers, with a HEALING SERUM card showing the serums it carries. Dragged onto the fight, one serum is spent and every one of its squad still up is healed 24% of its health at once, then 24% and 12% as the next two enemy turns begin. With no serum it has no turn.

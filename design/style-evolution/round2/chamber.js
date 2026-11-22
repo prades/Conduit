@@ -141,6 +141,9 @@ function buildRoom(R, P, opt) {
   const props = new T.Group(); g.add(props); parts.propsGroup = props;
   for (const s of CH.solids) { const fam = PROPS[s.fam]; if (!fam) continue; let v = s.variant;
     if (s.kind === 'sentry' && opt.sentryAim) { const a = Math.atan2(opt.sentryAim[1] - s.c[1], opt.sentryAim[0] - s.c[0]); v = 'a' + String(((Math.round(a / (Math.PI / 8)) % 16) + 16) % 16).padStart(2, '0'); }
+    if (s.states) {   // A PROP WITH STATES (the sewer kit's: view3d/gamemap.js): every state's model under one holder, the one it is in shown; each is a thing of its own (dynamic), so the room's merge leaves them and the view shows another at a call (view3d/gameview.js propState)
+      const H = new T.Group(), by = {}; H.position.set(s.c[0], 0, s.c[1]); H.userData.inkGroup = true; for (const [st, vn] of s.states) { const Bs = fam.build(vn); Bs.g.traverse(o => { if (o.isSprite) o.visible = false; }); setShadows(Bs.g); Bs.g.userData.dynamic = true; Bs.g.visible = st === s.state; H.add(Bs.g); by[st] = Bs.g; }
+      props.add(H); parts.props[s.id] = { g: H, marks: {}, s, states: by }; continue; }
     const B = fam.build(v); B.g.traverse(o => { if (o.isSprite) o.visible = false; }); setShadows(B.g); B.g.userData.inkGroup = true; B.g.position.set(s.c[0], 0, s.c[1]); props.add(B.g); parts.props[s.id] = { g: B.g, marks: B.marks || {}, s }; }
   // the Crystal: the pad on the floor, the glass tank standing in its well, and in it the liquid, the bubbles and the crystal
   if (CRYSTAL && PROPS.crystalpad) { const rig = new T.Group(); rig.position.set(CRYSTAL[0], 0, CRYSTAL[1]); g.add(rig); parts.rig = rig;

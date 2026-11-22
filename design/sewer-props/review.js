@@ -1,4 +1,4 @@
-// REVIEW PICTURES of the sewer dungeon's draft props and key items (design/sewer-props/models.js; docs/SEWER-PROPS.md), for the owner's eye. Nothing in the game reads them.
+// REVIEW PICTURES of the sewer dungeon's props and key items, the approved ones (design/props/models/_sewer.js) and any draft (design/sewer-props/models.js; docs/SEWER-PROPS.md), for the owner's eye. Nothing in the game reads them.
 //   node design/sewer-props/review.js <three-dir> <out-dir> [id,id,...]          one sheet a draft: <out-dir>/<id>.png
 //   node design/sewer-props/review.js <three-dir> <out-dir> <id> --spin [n]      a key item's turn as n frames (36): <out-dir>/<id>_spin_00.png ... (to make a moving picture of)
 //   node design/sewer-props/review.js <three-dir> <out-dir> <id,id,...> --sheet <name> [title]      several drafts on one sheet, a cell each (and one a state): <out-dir>/<name>.png
@@ -20,6 +20,7 @@ window.__review = async function (PX, UH, SLANT, FLOAT, ids, spin, sheetName, sh
   ${rd('design/evolutions/forms2.js')}
   ${rd('design/evolutions/forms29.js')}
   const px = h => h / UH;
+  ${rd('design/props/models/_sewer.js')}
   ${rd('design/props/models/_style.js')}
   ${rd('design/sewer-props/models.js')}
   // one renderer, the baker's light

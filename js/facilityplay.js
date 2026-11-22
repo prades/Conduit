@@ -549,6 +549,7 @@ function facilityPlayStart() {
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     if (lab && typeof fluxLabStart === "function") fluxLabStart(F);   // the test room: the tutorial over, the player and the squad in the room, its creatures (js/fluxlab.js)
+    if (typeof sewerDungeonStart === "function") sewerDungeonStart(F);   // the sewer dungeon while it is built (?sewerdungeon): you start at its West Entrance (sewerDungeonStart, below)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
     else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
     document.body.classList && document.body.classList.add("facility-play");
@@ -883,3 +884,39 @@ function initFacilityPlay() {
     facilityPlayChip();
 }
 try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }
+
+// THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md): with ?sewerdungeon in the address its rooms are in the map (js/facilitymap.js SEWER_DUNGEON_ON) and the game starts you at its West
+// Entrance, the tutorial over, your squad beside you: a builder's look, with no way in or out yet and nothing to do in it. Gone when the dungeon takes the old Sewers' place. False when not in the mode.
+function sewerDungeonStart(F) {
+    if (typeof SEWER_DUNGEON_ON === "undefined" || !SEWER_DUNGEON_ON || !_fp || !F || !F.byId || !F.byId.has("sd_west_walk_n") || typeof partyRoomCells !== "function") return false;
+    if (typeof facilityBlackoutSet === "function") facilityBlackoutSet(false);
+    const S = _fp.tut && _fp.tut.script; if (S && typeof TUT_STEPS !== "undefined") { S.step = TUT_STEPS.length; S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1); }
+    const cs = partyRoomCells("sd_west_walk_n"); if (!cs.length) return false; let s = cs[0]; for (const c of cs) if (c[0] < s[0]) s = c;   // (its west end: where the way in from the Arena will be)
+    s = [s[0] + 2, s[1]]; if (!facilityWalkable(s[0], s[1], F)) s = [s[0] - 2, s[1]];
+    player.x = player.targetX = player.visualX = s[0]; player.y = player.targetY = player.visualY = s[1]; player.fpPath = null;
+    followers.forEach((f, i) => { f.x = s[0] + 1 + i; f.y = s[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
+    _fp.zoneRoom = "sd_west_walk_n"; _fp.sdDrained = false; sewerDungeonButton();
+    return true;
+}
+// THE DRAIN POOL (docs/SEWER-DUNGEON.md; the owner, 2026-11-22: "the player can drain that pool and then walk around on the bottom part of it"): the drain tunnel and its pool are water until they are
+// drained; then their beds are floor, for the rest of the visit. sewerDungeonDrain() drains them (true when it did); sewerDungeonDrained() says so. WHO drains it and HOW is not decided: for now,
+// while the dungeon is behind its switch, a builder's button on the page does it when you stand by the drain valve (sewerDungeonButton).
+const SEWER_DRAIN = { solids: ["sd_low_drain_water", "sd_drain_pool_water"], rooms: ["sd_low_drain", "sd_drain_pool"], valve: "sd_valve_drain", reach: 3 };
+function sewerDungeonDrained() { return !!(_fp && _fp.sdDrained); }
+function sewerDungeonDrain() {
+    if (!_fp || !_fp.F || _fp.sdDrained) return false;
+    let any = false; for (const id of SEWER_DRAIN.solids) if (facilitySolidOpen(id)) any = true;
+    if (!any) return false;
+    _fp.sdDrained = true;
+    if (_fp.items) _fp.items = _fp.items.filter(it => !(it.fp === "sewer" && it.what === "water" && SEWER_DRAIN.rooms.indexOf(it.room) >= 0));   // (their water is gone from the picture)
+    return true;
+}
+function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q => q.id === SEWER_DRAIN.valve) : null; return !!s && typeof player !== "undefined" && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach; }
+function sewerDungeonButton() {
+    if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function" || document.getElementById("sdDrainBtn")) return;
+    const b = document.createElement("button"); b.id = "sdDrainBtn"; b.textContent = "DRAIN THE POOL";
+    b.style.cssText = "position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:50;display:none;padding:12px 22px;font:italic 900 16px system-ui,sans-serif;letter-spacing:.06em;color:#04121a;background:#19e6c1;border:2px solid #0b6b5c;border-radius:6px;";
+    b.addEventListener("click", ev => { ev.preventDefault(); if (sewerDungeonNearValve() && sewerDungeonDrain()) b.style.display = "none"; });
+    document.body.appendChild(b);
+    setInterval(() => { b.style.display = !sewerDungeonDrained() && sewerDungeonNearValve() ? "block" : "none"; }, 250);
+}
