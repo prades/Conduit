@@ -783,7 +783,7 @@ const WON = realPage('dev&cards&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A 
   for (var g = 0; g < 1400 && !(thicket && R.thicket); g++) { tick(1); if (cardBattlePhase() !== 'on' || cardBattleTurn() !== 'you') continue; var cur = _cbCurrent();
     if (cur === th && !storm) { th.ultimateCharge = 100; R.thPlayed = cardBattlePlay(th, 'ult', null, foes[0]); tick(20); storm = of('thunderstorm'); if (storm) R.storm = see(storm); }
     else if (cur === vs && storm && !hole) { R.hidden = see(storm); vs.ultimateCharge = 100; R.vsPlayed = cardBattlePlay(vs, 'ult', null, foes[0]); tick(20); hole = of('eventhorizon'); if (hole) { R.hole = see(hole); R.stormThen = see(storm); } }
-    else if (cur === tw && hole && !thicket) { R.holeHidden = see(hole); tw.ultimateCharge = 100; R.twPlayed = cardBattlePlay(tw, 'ult', null, foes[0]); tick(20); thicket = of('thicket'); if (thicket) R.thicket = see(thicket); }
+    else if (cur === tw && hole && !thicket) { if (!R.holeHidden) { R.holeHidden = see(hole); tw.ultimateCharge = 100; R.twPlayed = cardBattlePlay(tw, 'ult', null, foes[0]); } tick(20); thicket = of('thicket'); if (thicket) R.thicket = see(thicket); }
     else if (cur && cur !== player) { _cb.acted.add(cur); _cbAfterAct(_cbF()); } }`));
 if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and the Void Star\'s, the registry\'s): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; PINK THICKET (the Thornwhip\'s, not in the registry) drawn by the fields', () => {
     ok(!WON.none, 'the page left no result'); ok(!WON.threw, WON.threw); same(WON.errs.join(' | '), '', 'errors'); same(WON.state, 'ready', 'the view'); same(WON.chose, true, 'the battle');
@@ -792,7 +792,7 @@ if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and 
     same(JSON.stringify(R.hidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the storm in the Void Star\'s turn: drawn by neither');
     same(JSON.stringify(R.hole), JSON.stringify({ owned: true, shown: true, list: 'eventhorizon', fields: 0 }), 'the black hole in its turn: the registry\'s (the flux line), none of the fields\' drawn');
     same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
-    same(JSON.stringify([R.holeHidden.owned, R.holeHidden.shown, /eventhorizon/.test(R.holeHidden.list)]), '[false,false,false]', 'the black hole in the Thornwhip\'s turn: drawn by neither: ' + JSON.stringify(R.holeHidden));
+    same(JSON.stringify(R.holeHidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the black hole in the Thornwhip\'s turn: drawn by neither');
     same(JSON.stringify([R.thicket.owned, R.thicket.shown, R.thicket.fields >= 1, /thicket/.test(R.thicket.list)]), '[false,true,true,true]', 'the thicket: not the registry\'s, drawn by the fields: ' + JSON.stringify(R.thicket));
     ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
