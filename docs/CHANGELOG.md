@@ -51,6 +51,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ch` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway behind the west pipe; stairs on both banks (work in progress)
+- **The ask** (the owner, 2026-11-22): "get rid of the walkway behind it and make this a proper pipe, water pipe"; asked how the banks are crossed without it: "Stairs on both banks".
+- **What it does** (only with `?sewerdungeon`): the entrance landing at the West Channel's head is gone and its culvert is a tall pipe mouth in the wall; a second staircase stands on the south bank. To go on from the north walkway you shut the west culvert, cross the empty bed and climb the other staircase (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyle.js` (the dungeon's light key named another of its rooms).
+- **Verified:** seen in a real browser (software rendering); the reach check: culverts open, only the north walkway and the gallery; all shut, every room but the three shut on purpose; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's west culvert no longer buried (work in progress)
 - **The ask** (the owner, 2026-11-22, circling the West Channel's head): "I don't see the water pipe here".
 - **What it does** (only with `?engine=3d&sewerdungeon`): the bed no longer slopes up over the culvert under the entrance landing; that end is a plain wall with the arch in it (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).

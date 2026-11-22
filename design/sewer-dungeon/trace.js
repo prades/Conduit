@@ -27,14 +27,19 @@ function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFi
 const SHAPES = [
   // (the water comes down with the tunnel: the owner, 2026-11-21, of the entrance tunnel's two flights: "it should affect the water level. It should slope down too". Three stretches of water, `wl` flights
   // above the main channel's, a fall between each where the walkways' flights stand)
-  { id: 'west_channel', lvl: -2, wl: 2, kind: 'water', p: [[2.5, 16.5], [5.5, 16.5], [5.5, 18.5], [11.5, 18.5], [11.5, 16.5], [18.5, 16.5], [18.5, 21.5], [2.5, 21.5]] },
+  { id: 'west_channel', lvl: -2, wl: 2, kind: 'water', p: [[2.5, 16.5], [5.5, 16.5], [5.5, 18.5], [11.5, 18.5], [11.5, 16.5], [18.5, 16.5], [18.5, 19.5], [12.5, 19.5], [12.5, 21.5], [2.5, 21.5]] },
   { id: 'west_channel2', lvl: -2, wl: 1, kind: 'water', p: [[18.5, 16.2], [28.5, 16.2], [28.5, 21.2], [18.5, 21.2]] },
   { id: 'west_channel3', lvl: -2, wl: 0, kind: 'water', p: [[28.5, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [28.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
   // (TURNED TO RUN ALONG THE CHANNEL: the owner, 2026-11-22, circling the staircase where it stuck out into the channel and drawing its treads along the bank: "Rotate the stairs like this". A landing
   // on the walkway's edge, then one flight two tiles wide down the north bank westwards to the bed (a doorway a tile wide is not walked through: the game's own rule); how long it is is the agent's.)
   { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[5.5, 16.5], [7.5, 16.5], [7.5, 18.5], [5.5, 18.5]] },   // (and turned end for end: the owner, of the flight going down westwards: "The other way 180". The landing is its west end, the flight goes down eastwards)
-  { id: 'channel_stair', lvl: -2, wl: 2, kind: 'steps', p: [[7.5, 16.5], [11.5, 16.5], [11.5, 18.5], [7.5, 18.5]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
-  { id: 'west_entrance', lvl: 2, kind: 'floor', p: [[0, 13.4], [2.5, 13.4], [2.5, 24.4], [0, 24.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
+  { id: 'channel_stair', lvl: -2, wl: 2, kind: 'steps', p: [[7.5, 16.5], [11.5, 16.5], [11.5, 18.5], [7.5, 18.5]] },
+  // (A SECOND STAIRCASE, on the south bank: the owner, 2026-11-22, asked how the banks are crossed with the landing at the channel's head gone: "Stairs on both banks". So the way across is the bed:
+  // shut the west culvert, go down one staircase, cross, and up the other. The same staircase, further east so the two do not pinch the channel between them; where it stands is the agent's.)
+  { id: 'channel_steps_s', lvl: 2, kind: 'steps', p: [[12.5, 19.5], [14.5, 19.5], [14.5, 21.5], [12.5, 21.5]] },
+  { id: 'channel_stair_s', lvl: -2, wl: 2, kind: 'steps', p: [[14.5, 19.5], [18.5, 19.5], [18.5, 21.5], [14.5, 21.5]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
+  // (NO LANDING at the West Channel's head: the owner, 2026-11-22, of the culvert under it: "get rid of the walkway behind it and make this a proper pipe, water pipe". The channel ends against a
+  // wall with its culvert in it; the two banks no longer meet there.)
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
   // THE DRAIN TUNNEL AND ITS POOL (the owner, 2026-11-22: "the area right above the purification chamber is a another channel that goes into another room that's like a pool. And the player can drain
   // that pool and then walk around on the bottom part of it"): a side channel off the main one's east walkway into a pool room, both under water till they are drained, then floor (kind `drain`).
