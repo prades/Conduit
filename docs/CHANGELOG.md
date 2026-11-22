@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bz` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon in 3D, with the approved kit's pieces (work in progress)
+- **The ask** (the owner, 2026-11-22): "begin to create the 3D world", using the newly made assets; "Rooms and props together".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the dungeon built in the 3D view in the Sewers' look; the sluice switches and gates, the drain valve, a rubble heap, the secret door and two floor drains placed (`SEWER-DUNGEON.md`). In 2D the same pieces show as the kit's sprites. Fixed: diagonal railings in 3D.
+- `view3d/gamemap.js`, `design/style-evolution/live/floor.js`, `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), no page error; the reach check; the short run with view3d and the props suite. **Not playtested; not seen on an iPad; frame rate not measured.**
+
 ### Build `2026-11-17by` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room's west end cut off (work in progress)
 - **The ask** (the owner, 2026-11-22, on the plan): "Cut this out".
 - **What it does** (only with `?sewerdungeon`): the small channel and its walkways start 7 tiles further east; they no longer meet the main channel. The drain at the channel's head.

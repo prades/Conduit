@@ -6,5 +6,5 @@ const inV = q => q[0] >= ox - 2 && q[0] <= ox + n + 2 && q[1] >= oy - 2 && q[1] 
 let d = t.SHAPES.filter(s => s.p.some(inV)).map(s => 'fill ' + col[s.kind] + ' stroke #0b0f16 stroke-width 2 polygon ' + s.p.map(q => ((q[0] - ox) * T).toFixed(0) + ',' + ((q[1] - oy) * T).toFixed(0)).join(' ')).join(' ');
 const lab = JSON.parse(process.argv[6] || '[]');
 d += ' ' + lab.map(l => 'fill white stroke none text ' + ((l[1] - ox) * T - 40).toFixed(0) + ',' + ((l[2] - oy) * T).toFixed(0) + ' "' + l[0] + '"').join(' ');
-for (const v of t.VALVES) if (inV(v.at)) d += ' fill #ffd34a stroke none circle ' + ((v.at[0] - ox) * T) + ',' + ((v.at[1] - oy) * T) + ' ' + ((v.at[0] - ox) * T + 7) + ',' + ((v.at[1] - oy) * T);
+for (const v of t.VALVES) if (v.at = [(v.r[0] + v.r[2]) / 2, (v.r[1] + v.r[3]) / 2], inV(v.at)) d += ' fill #ffd34a stroke none circle ' + ((v.at[0] - ox) * T) + ',' + ((v.at[1] - oy) * T) + ' ' + ((v.at[0] - ox) * T + 7) + ',' + ((v.at[1] - oy) * T);
 execFileSync('convert', ['-size', '760x760', 'xc:#0b0f16', '-font', 'DejaVu-Sans-Bold', '-pointsize', '15', '-draw', d, out]);

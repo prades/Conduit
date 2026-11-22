@@ -906,6 +906,7 @@ function sewerDungeonDrained() { return !!(_fp && _fp.sdDrained); }
 function sewerDungeonDrain() {
     if (!_fp || !_fp.F || _fp.sdDrained) return false;
     let any = false; for (const id of SEWER_DRAIN.solids) if (facilitySolidOpen(id)) any = true;
+    if (any) for (const id of ["sd_floor_drain_1", "sd_floor_drain_2"]) facilitySolidOpen(id);   // (the floor drains in its bed are walked over once it is dry)
     if (!any) return false;
     _fp.sdDrained = true;
     if (_fp.items) _fp.items = _fp.items.filter(it => !(it.fp === "sewer" && it.what === "water" && SEWER_DRAIN.rooms.indexOf(it.room) >= 0));   // (their water is gone from the picture)

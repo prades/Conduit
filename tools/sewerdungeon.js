@@ -76,7 +76,7 @@ function build() {
     let rect, c0, c1; if (horiz) { const y = j.a[1], sg = cy > y ? 1 : -1; rect = [Math.min(j.a[0], j.b[0]), Math.min(y, y + sg * BANK), Math.max(j.a[0], j.b[0]), Math.max(y, y + sg * BANK)]; c0 = y; c1 = y + sg * BANK; }
     else { const x = j.a[0], sg = cx > x ? 1 : -1; rect = [Math.min(x, x + sg * BANK), Math.min(j.a[1], j.b[1]), Math.max(x, x + sg * BANK), Math.max(j.a[1], j.b[1])]; c0 = x; c1 = x + sg * BANK; }
     ramps.push({ id: 'r_' + P + 'bank_' + (++nb), rooms: [P + d, P + w], shape: 'slope', between_levels: [hi, lo], descends_toward: P + w, position_status: 'placed', zone: { rect: rect.map(v => Math.round(v * G)), axis: horiz ? 'y' : 'x', c0: Math.round(c0 * G), c1: Math.round(c1 * G) } }); }
-  for (const v of VALVES) props.push({ id: P + v.id, room: P + v.room, shape: 'rect', rect: [(v.at[0] - 0.5) * G, (v.at[1] - 0.5) * G, (v.at[0] + 0.5) * G, (v.at[1] + 0.5) * G], status: 'placed', kind: 'valve', note: v.note });   // (the game's own valve housing, till the approved drain valve's model is in: docs/SEWER-PROPS.md)
+  for (const v of VALVES) props.push({ id: P + v.id, room: P + v.room, shape: 'rect', rect: v.r.map(t => Math.round(t * G)), status: 'placed', kind: v.kind, note: v.note });   // (a piece of the approved kit: js/propsprites.js PS_FAMILY, docs/SEWER-PROPS.md §10)
   const levels = [0, 1, 2].map(l => ({ id: WATER_LV(l), label: 'sewer channel ' + l, height: +(BASE + l * STEP - DEEP).toFixed(2) })).concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
   return { levels, rooms, interiors, openings, connections, ramps, props, floors };
 }
