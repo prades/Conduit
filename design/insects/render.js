@@ -21,7 +21,7 @@ const srv = http.createServer((q, r) => {
   const b = await chromium.launch({ args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
   const p = await b.newPage({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 });
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.text()); });
-  await p.goto(`http://127.0.0.1:${port}/game.html?dev&cards&engine=3d&sharp=2&queen3d=1&draft=${DRAFT}`, { waitUntil: 'load' });
+  await p.goto(`http://127.0.0.1:${port}/game.html?dev&cards&engine=3d&sharp=2&queen3d=1&draft=${DRAFT}`, { waitUntil: 'load', timeout: 300000 });
   await p.waitForFunction(() => typeof STARTUP !== 'undefined' && (STARTUP.state === 'done' || STARTUP.state === 'failed') && typeof VIEW3D !== 'undefined' && (VIEW3D.state === 'ready' || VIEW3D.state === 'failed'), null, { timeout: 240000 });
   const info = await p.evaluate(() => { try {
     facilityBlackoutSet(false); gameState.running = true; if (_fp.tut && _fp.tut.script) { _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; } if (typeof dialogueClear === 'function') dialogueClear();
@@ -43,11 +43,14 @@ const srv = http.createServer((q, r) => {
   } catch (e) { return { ok: false, err: String(e && e.stack || e) }; } });
   console.log('setup', JSON.stringify(info));
   if (!info.ok) { console.log(errs.slice(0, 5).join('\n')); await b.close(); srv.close(); process.exit(1); }
-  await p.evaluate(() => { for (const a of __S.foes) { a.dirX = -1; a.dirY = 0; } __S.tick(6); });
+  // THE QUEEN a step back from the line, clear of the scouts in front of her (her squares are the battle's; she is three times their size)
+  await p.evaluate(() => { const q = __S.foes[3], c = _fpNearestCellOpen(q.x + 1.3, q.y - 0.5); q.x = c[0]; q.y = c[1]; for (const a of __S.foes) { a.dirX = -1; a.dirY = 0; } __S.tick(6); });
   await p.screenshot({ path: path.join(OUT, PRE + '-battle.png') });
   // close views: a camera of our own on the 3D view's own drawing (its look, its ink line, its shadows), the game's frame stopped
-  const shots = [['scout', 0, 1.25, 0.55, 0.75], ['tank', 2, 1.5, 0.7, 0.75], ['queen', 3, 3.0, 1.35, 0.75], ['side', 0, 1.35, 0.32, 1.57]];
-  await p.evaluate(() => { canvas.style.visibility = 'hidden'; const V = VIEW3D.view, sc = V.core.scene;
+  const shots = [['scout', 0, 1.25, 0.55, 0.75], ['tank', 2, 1.5, 0.7, 0.75], ['queen', 3, 4.6, 2.1, 0.75], ['side', 0, 1.35, 0.32, 1.57]];
+  await p.evaluate(() => { canvas.style.visibility = 'hidden'; const V = VIEW3D.view, sc = V.core.scene, cv0 = document.getElementById('view3dCanvas');
+    for (const el of document.querySelectorAll('body *')) if (el !== cv0 && !el.contains(cv0)) el.style.visibility = 'hidden';   // (the HUD's panels: the close views show the 3D drawing alone)
+    window.__solo = keep => sc.traverse(o => { if (o.userData && o.userData.body) { if (o.userData._was === undefined) o.userData._was = o.visible; o.visible = keep ? (o === keep) : o.userData._was; } });
     window.__holderOf = a => { let best = null, bd = 0.6; sc.traverse(o => { if (o.userData && o.userData.body && o.visible) { const d = Math.hypot(o.position.x - a.x, o.position.z - a.y); if (d < bd) { bd = d; best = o; } } }); return best; };
     const cv = document.getElementById('view3dCanvas'); window.__cam = new THREE.PerspectiveCamera(30, cv.clientWidth / cv.clientHeight, 0.05, 200);
     // a camera before the body, `yaw` round from straight ahead, `dist` away, `hgt` up, looking at its middle
@@ -55,7 +58,7 @@ const srv = http.createServer((q, r) => {
       cam.aspect = cv.clientWidth / cv.clientHeight; cam.updateProjectionMatrix(); cam.position.set(h.position.x + Math.cos(a) * dist, h.position.y + hgt, h.position.z + Math.sin(a) * dist);
       cam.lookAt(new T.Vector3(h.position.x, h.position.y + look, h.position.z)); cam.updateMatrixWorld(); V.core.aimLight(h.position.x, h.position.z, 14); V.core.draw(cam); }; });
   for (const [name, idx, dist, hgt, yaw] of shots) {
-    const ok = await p.evaluate(([idx, dist, hgt, yaw]) => { const a = __S.foes[idx], h = __holderOf(a); if (!h) return false; __aim(h, dist, hgt, yaw, idx === 3 ? 0.3 : 0.12); return true; }, [idx, dist, hgt, yaw]);
+    const ok = await p.evaluate(([idx, dist, hgt, yaw]) => { __solo(null); const a = __S.foes[idx], h = __holderOf(a); if (!h) return false; if (idx !== 3) __solo(h); __aim(h, dist, hgt, yaw, idx === 3 ? 0.3 : 0.12); return true; }, [idx, dist, hgt, yaw]);
     if (!ok) { console.log('no body for', name); continue; }
     await (await p.$('#view3dCanvas')).screenshot({ path: path.join(OUT, PRE + '-' + name + '.png') });
   }
@@ -68,7 +71,7 @@ const srv = http.createServer((q, r) => {
   if (process.env.CLIP) {
     const dir = path.join(OUT, PRE + '-clip'); fs.mkdirSync(dir, { recursive: true });
     const n = await p.evaluate(() => { const V = VIEW3D.view, T = window.THREE, K = window.__antKit, a = __S.foes[0], sc = V.core.scene;
-      const body = __holderOf(a);
+      __solo(null); const body = __holderOf(a);
       const y0 = body ? body.position.y : 0; if (body) body.visible = false;
       const mk = o => { const g = K.build(Object.assign({ cls: 'scout', size: 0.5, zk: 2, accent: a.color }, o)); K.toonify(g, V.core.ctx.grad); const h = new T.Group(); h.add(g); h.visible = false; V.core.tagInk(h); sc.add(h); return h; };
       const walk = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875].map(w => mk({ walk: w })), stand = mk({ walk: 0, stand: true }), hit = [0.05, 0.12, 0.2, 0.3].map(op => mk({ walk: 0.3, open: op }));
