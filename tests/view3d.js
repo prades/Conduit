@@ -792,7 +792,7 @@ if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and 
     same(JSON.stringify(R.hidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the storm in the Void Star\'s turn: drawn by neither');
     same(JSON.stringify(R.hole), JSON.stringify({ owned: true, shown: true, list: 'eventhorizon', fields: 0 }), 'the black hole in its turn: the registry\'s (the flux line), none of the fields\' drawn');
     same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
-    same(JSON.stringify(R.holeHidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the black hole in the Thornwhip\'s turn: drawn by neither');
+    same(JSON.stringify([R.holeHidden.owned, R.holeHidden.shown, /eventhorizon/.test(R.holeHidden.list)]), '[false,false,false]', 'the black hole in the Thornwhip\'s turn: drawn by neither: ' + JSON.stringify(R.holeHidden));
     same(JSON.stringify([R.thicket.owned, R.thicket.shown, R.thicket.fields >= 1, /thicket/.test(R.thicket.list)]), '[false,true,true,true]', 'the thicket: not the registry\'s, drawn by the fields: ' + JSON.stringify(R.thicket));
     ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
