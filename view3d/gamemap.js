@@ -57,7 +57,14 @@ const VIEW3D_GAME = (0, eval)(`({
   // the toxic line's (view3d/attacks_toxic.js): the measures its looks follow (read once: the game's own constants)
   get toxicMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { stompSlam: v("STOMP_SLAM", 12), stompR: v("STOMP_RADIUS", 1.5), calderaR: v("CALDERA_RADIUS", 2.4), undertow: v("ULT_UNDERTOW", null), network: v("ULT_NETWORK", null), puddle: v("ULT_PUDDLE", null),
-      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; }
+      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; },
+  // the flux line's (view3d/attacks_flux.js): the measures its looks follow (read once: the game's own constants)
+  get fluxMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { maelR: v("MAEL_RADIUS", 1.8), maelTick: v("MAEL_TICK", 30), riftOut: v("RIFT_OUT", 10), mimicShot: v("MIMIC_SHOT", null), mimicR: v("MIMIC_RADIUS", 2.2), swapBurst: v("SWAP_BURST", 1),
+      vortex: v("ULT_VORTEX", null), horizon: v("ULT_HORIZON", null), proxy: v("ULT_PROXY", null), whirl: v("SHARD_WHIRL", null) }; },
+  // the core line's (view3d/attacks_core.js): the measures its looks follow (read once: the game's own constants)
+  get coreMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { rollStep: v("ROLL_STEP", 0.08), rollBand: v("ROLL_BAND", 0.8), guardLure: v("GUARD_LURE", 3), wobbleR: v("WOBBLE_RADIUS", 1.5), echoR: v("ECHO_RADIUS", 4), slam: v("ULT_SLAM", null), wave: v("ULT_WAVE", null), jelly: v("ULT_JELLY", null) }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
