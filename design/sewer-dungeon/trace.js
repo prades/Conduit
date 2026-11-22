@@ -98,7 +98,14 @@ const RING_PTS = OUTER.concat(INNER, Object.values(K)), isRing = q => RING_PTS.s
 const half = v => Math.floor(v) + 0.5, snap = q => isRing(q) ? q : [half(q[0]), half(q[1])];
 for (const s of SHAPES) s.p = s.p.map(snap).filter((q, i, a) => !i || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.01);
 for (const s of STAIRS) s.p = s.p.map(snap);
-module.exports = { snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
+// THE CUTOFF VALVES (the owner, 2026-11-21: the water "should have cutoff valves at the end of each channel, or at the beginning of the top of the map, or the very north, and then where the west channel meets
+// the main channel"): one at the Central Channel's north end, one where the West Channel runs into it. room: the walkway it stands on; at: its tile. Where each stands on its walkway is the agent's; what
+// turning one does waits for the water's rules (docs/SEWER-DUNGEON.md).
+const VALVES = [
+  { id: 'valve_north', room: 'central_walk_w', at: [39, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
+  { id: 'valve_mouth', room: 'central_walk_w', at: [39, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
+];
+module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {
   const S = +(process.argv[2] || 3), T = 995 / 80 * S, COL = { water: '0,220,255', drain: '0,255,160', walk: '255,230,0', floor: '255,255,255', upper: '255,150,0', ring: '255,230,0', nest: '255,0,255' };
   const mid = p => [p.reduce((a, q) => a + q[0], 0) / p.length * T, p.reduce((a, q) => a + q[1], 0) / p.length * T];

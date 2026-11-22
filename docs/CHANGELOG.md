@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: two cutoff valves placed (work in progress)
+- **The ask** (the owner, 2026-11-22): cutoff valves at the very north of the main channel and where the West Channel meets it.
+- **What it does** (only with `?sewerdungeon`): a valve housing stands at each of those two places. They do nothing yet: the water's rules are not built.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
 ### Build `2026-11-17bk` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the West Channel's water steps down with its tunnel (work in progress)
 - **The ask** (the owner, 2026-11-21): "it should affect the water level. It should slope down too."
 - **What it does** (only with `?sewerdungeon`): the West Channel's water lies in three stretches, each a flight lower, falling where the walkways' flights stand. Steps, not yet a slope.
