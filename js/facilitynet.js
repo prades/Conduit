@@ -36,7 +36,9 @@ function _netTextFit(text, x, y, size, col, align, maxW, mono) {
 function _netZoneRect() {
     try { const e = document.getElementById("zoneInfo"); if (!e) return null; const r = e.getBoundingClientRect(); return r.height > 0 && isFinite(r.bottom) && r.bottom < canvas.height * 0.5 ? r : null; } catch (err) { return null; }
 }
-function facilityRoomName(id) { return FP_ROOM_TAG[id] || String(id || "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }
+// (a room of THE SEWER DUNGEON, id sd_: the name its map gives it, not one made from its id, "Sd West Walk N": js/facilityplay.js sewerDungeonRoomName, docs/SEWER-DUNGEON.md)
+function facilityRoomName(id) { if (typeof id === "string" && id.slice(0, 3) === "sd_" && typeof sewerDungeonRoomName === "function") return sewerDungeonRoomName(id);
+    return FP_ROOM_TAG[id] || String(id || "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()); }
 // the room the player is in now (a doorway keeps the last), as the tag says it
 function facilityZoneName() {
     if (typeof facilityPlay === "undefined" || !facilityPlay || !_fp || !_fp.F) return null;

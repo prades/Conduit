@@ -69,7 +69,9 @@ const VIEW3D_GAME = (0, eval)(`({
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
 // the rooms the game's 3D view builds: the lab's ground floor and its other floors, up and down its stairs (stage 2: the Experiment Lab, the Stair Room, Teleport Room 2, the Observation Deck),
 // and the arena with its catwalks and spur, its rock in the look the owner shaped (docs/VIEW-3D.md stage 2; a draft behind ?draft=arena until build 2026-11-17e)
-const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex', 'sewers']);
+const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex', 'sewers'])
+  // THE SEWER DUNGEON's rooms, when the game has them (?sewerdungeon: docs/SEWER-DUNGEON.md; the owner, 2026-11-22: "we're going to begin to create the 3D world")
+  .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id.slice(0, 3) === 'sd_').map(r => r.id));
 
 // a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile carries its height if it has one, in the
 // game's px ([x, y, h]: a floor off the ground floor's level, a staircase's tread), and the room its floor's (base)
@@ -93,7 +95,7 @@ function view3dRoomRecord(F, R, lab, live) {
   const obj = (room.objects || []).find(o => o.type === 'objective');
   const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
     fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
-    solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || null };
+    solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || (R.slice(0, 3) === 'sd_' ? G.roomStyle.sewers || null : null) };   // (THE SEWER DUNGEON's rooms: the Sewers' own look in 3D, the damp concrete and the checker plate)
   if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx;
   if (live && (rec.solids.some(s => s.kind === 'river' || s.kind === 'pool') || rec.decor.some(d => d.kind === 'egg_cluster' || d.kind === 'junk'))) {   // (the Nest's eggs, the dam's junk and its rim, where the 2D puts them: js/facilitysewers.js)
     rec.nest = G.sewerItems(F).filter(it => it.room === R && (it.what === 'egg' || it.what === 'junk' || it.what === 'rim')).map(it => ({ what: it.what, x: it.x, y: it.y, s: it.s, seed: it.seed, u: it.u, w: it.w, half: it.half }));
