@@ -8,6 +8,8 @@ const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G)
 const LABEL = { drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
+// (so the prototype reads: walkways pale, rooms a little darker, a drain's bed and the nest their own colours; stand-ins till the approved concrete and checker plate are in: docs/SEWER-PROPS.md)
+const FLOOR = { walk: '#7b858c', steps: '#7b858c', ring: '#7b858c', floor: '#5a646c', upper: '#6e6450', drain: '#3f6672', nest: '#5a3a70' };
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
 // feel like it's underground"): a step of the trace's `lvl` is a short flight, STEP tiles, not a storey; the walkways lie where the old Sewers did (BASE). A channel's room lies DEEP below its
 // walkways: its water is drawn below that again (js/facilitysewers.js), so the channel reads deep and not full. Levels of the dungeon's own (ids 47 to 52), so no other room's height moves.
@@ -49,7 +51,7 @@ function build() {
       kinds.push(s.kind === 'drain' ? 'open' : !j ? 'wall' : wet(s.id) || s.id === 'junction_nest' || s.kind === 'steps' ? 'open' : 'deck_rail'); }   /* (a drain room has no wall drawn at all: it is looked into from every side) */   // (ONE rail, the walkway's: the owner, "you don't need to have 2 or 4 sets of railings. It's one set of railing"; the water's own side of that edge draws nothing)
     rooms.push({ id: P + s.id, label: LABEL[s.id] || 'Sewers', level: wet(s.id) ? WATER_LV(s.wl) : LV(s.lvl), status: 'placed', wall_material: 'solid', interior: true, sewer_dungeon: s.kind, polygon: s.p.map(px), edge_kinds: kinds });
     interiors.push({ id: P + s.id, under: 'arena', offset: OFFSET });
-    floors.push({ room: P + s.id, style: 'concrete', colour: s.kind === 'nest' ? '#2a1d33' : '#272d2c' });
+    floors.push({ room: P + s.id, style: 'concrete', colour: FLOOR[s.kind] || '#59626a' });
     if (wet(s.id) || s.kind === 'drain') props.push({ id: P + s.id + '_water', room: P + s.id, shape: 'poly', poly: s.p.map(px), status: 'placed', kind: wet(s.id) ? 'river' : 'pool', sewer_dungeon: s.kind });
   }
   const open = (id, a, b, r) => { openings.push({ id: 'open_' + P + id, a: px(a), b: px(b), rooms: r.map(x => P + x), door: null, open: true, position_status: 'placed' }); };   // (open: a plain gap, no door frame drawn in it. The owner, 2026-11-22, circling a frame standing across a walkway: "Remove this dumb arc doorway")

@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bt` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's prototype made readable (work in progress)
+- **The ask** (the owner, 2026-11-22): "I don't understand what you've done in that look. Can you fix it up a little bit more?"
+- **What it does** (only with `?sewerdungeon`): the whole dungeon lit; clear blue-green water; paler floors by kind. Fixed with it: an outlined pool's water had no clean colour and stayed foul green when purified.
+- `js/facilitystyle.js` (`_fpLightKey`), `js/facilitysewers.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the short run with sewerlook, sewerquest and the props suite; seen in a real browser. **Not playtested.**
+
 ### Build `2026-11-17bs` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain tunnel and pool opened up (work in progress)
 - **The ask** (the owner, 2026-11-22): "open up this entire area so that the player can [...] see what's going on in that room before they know how to interact with it".
 - **What it does** (only with `?sewerdungeon`): a railed walkway beside the tunnel and along the pool; no walls round either.
