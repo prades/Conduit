@@ -160,7 +160,7 @@ const PS_FAMILY = {
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
     hazard_explosive: "hazard", hazard_corrosive: "hazard", chest: "chest",
     holding_tank: "holdtank", whiteboard_stand: "whiteboard",   // THE NEW EXPERIMENT LAB's giant holding tanks and THE LOUNGE's whiteboard on its stand (build 2026-11-13a)
-    // THE SEWER DUNGEON'S KIT (build 2026-11-17bk; docs/SEWER-PROPS.md §10; design/props/models/_sewer.js, sewer.js): kinds of its own, none of them in the map until the dungeon's builder puts
+    // THE SEWER DUNGEON'S KIT (build 2026-11-17bp; docs/SEWER-PROPS.md §10; design/props/models/_sewer.js, sewer.js): kinds of its own, none of them in the map until the dungeon's builder puts
     // them there (today's Sewers keep their flat rubble, valves and gates: their kinds are rubble, valve, gate). A one-tile kind that faces a way has a _turned kind, a quarter round; a two-tile
     // kind is turned by its own size (2x1, 1x2). Each has its states (facilityPropState, below).
     drain_valve: "sewer", drain_valve_turned: "sewer", sluice_gate: "sewer", sluice_switch: "sewer", sluice_switch_turned: "sewer", floor_drain: "sewer", subway_door: "sewer", shortcut_door: "sewer",
@@ -171,7 +171,7 @@ function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, 
     if (_psIndex[fam]) return _psIndex[fam];
     const out = {}, A = typeof PROP_ATLAS !== "undefined" ? PROP_ATLAS[fam] : null;
     if (A) for (const name of Object.keys(A.cells)) {
-        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); else if (/^[a-z]+$/.test(x)) e.state = x; }   // (a state is any plain word: on, off, open, empty; the sewer kit's shut, thrown, locked, cleared ...: build 2026-11-17bk)
+        const t = name.split("."), e = { name, dims: null, state: null, style: null }; for (const x of t.slice(1)) { if (/^(\d+x\d+|r\d+)$/.test(x)) e.dims = x; else if (/^s\d+$/.test(x)) e.style = +x.slice(1); else if (/^[a-z]+$/.test(x)) e.state = x; }   // (a state is any plain word: on, off, open, empty; the sewer kit's shut, thrown, locked, cleared ...: build 2026-11-17bp)
         (out[t[0]] = out[t[0]] || []).push(e);
     }
     return (_psIndex[fam] = out);
@@ -185,7 +185,7 @@ function _psResolve(fam, kind, dims, state, seed) {
 // is a cell of a multi-cell prop on its outline (where a shadow is seen)
 function _psEdgeCell(S, it) { if (S.round) return Math.hypot(it.x - S.c[0], it.y - S.c[1]) > S.round - 1.1; const b = S.bb; return it.x - 0.5 <= b[0] + 0.01 || it.x + 0.5 >= b[2] - 0.01 || it.y - 0.5 <= b[1] + 0.01 || it.y + 0.5 >= b[3] - 0.01; }
 function _psHash(str) { let h = 7; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
-// ── A PROP'S STATE, SET BY THE GAME (build 2026-11-17bk; docs/SEWER-PROPS.md §10: the sewer dungeon's kit, the owner, 2026-11-21: "create the framework so that my sewer AI can build this in 3D") ──
+// ── A PROP'S STATE, SET BY THE GAME (build 2026-11-17bp; docs/SEWER-PROPS.md §10: the sewer dungeon's kit, the owner, 2026-11-21: "create the framework so that my sewer AI can build this in 3D") ──
 // A prop of a kind that has states on its sheet (a drain valve: shut, open; a sluice gate: open, shut ...) is drawn in the one it was last given, in the 2D game and in the 3D view alike;
 // given none, in its kind's FIRST state on the sheet, which is how it is found. This is the LOOK only: what a state does (water, a way opened: facilitySolidOpen, js/facilityplay.js) is the
 // caller's. Kept with the facility's play state (_fp.propState) and not saved: a game loaded, or begun again, has every prop as it is found (the dungeon resets on every return).

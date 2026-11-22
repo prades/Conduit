@@ -16,7 +16,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 
 ## DECISION: The sewer dungeon's approved props and key items are the game's own models, placed by kind and switched by state
 
-- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17bk`
+- **Date:** 2026-11-21 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17bp`
 - **Status:** implemented; verified by `tests/sewerkit.js` (11 checks, one in a real browser with the 3D view) and by eye in the 2D game and the 3D view. No prop of the map is one of them yet. Not seen on an iPad.
 - **Decision:** the owner: "Let's go ahead and create the framework so that my sewer AI can build this in 3D." The sixteen approved pieces (`SEWER-PROPS.md` §5) left the drafts' folder and became models of the game, on the game's own prop system: a kind on the prop table, a variant on a sheet, a model in the 3D view. Nothing parallel was made.
 - **A prop's state** (new): `facilityPropStateSet(id, state)` sets how a kit prop looks, in both views. It is the look only: walking is still `facilitySolidOpen`, what a state does is the dungeon's, and nothing of it is saved (the owner, 2026-11-20: "The dungeon should reset every single time the player comes back").

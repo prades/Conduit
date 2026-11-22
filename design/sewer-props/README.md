@@ -2,7 +2,7 @@
 
 `docs/SEWER-PROPS.md` is the list of every piece, the owner's words on each, and (its §10) how a builder uses the kit.
 
-- **The approved pieces are not here.** Since build `2026-11-17bk` they are the game's own models: `design/props/models/_sewer.js` (`SEWER3D`, `SEWER_KIT`), baked as the families `sewer` and `sewerfinds`.
+- **The approved pieces are not here.** Since build `2026-11-17bp` they are the game's own models: `design/props/models/_sewer.js` (`SEWER3D`, `SEWER_KIT`), baked as the families `sewer` and `sewerfinds`.
 - `models.js`: what is still a draft (none now), and the names of the approved pieces for the review tool. The game reads nothing here.
 - `review.js`: draws a review sheet of any piece, approved or draft, in the prop baker's light and camera.
 
