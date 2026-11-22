@@ -104,6 +104,22 @@ function buildLabFloor(lab, P0, how) {
   const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
   const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
   g.add(rest);   // (what belongs to no one room: the stubs, the aprons, the ground)
+  // THE SEWER DUNGEON'S ROUND JUNCTION, ROUND (the owner, 2026-11-22, circling it in the 3D view: "Can you make this area actually look circular"). The game walks it on tiles and its map's outline
+  // is put on half-tile lines, so the ring came out a lumpy many-sided shape. Here, for the drawing only: the corners of the ring's and the nest's outlines that lie on its outer or its inner
+  // circle are put on that circle, and every edge between two of them is an arc of short pieces (its walls and rails the same). A corner another room shares (where a walkway, a passage or
+  // the channel meets the ring) stays where it is, so nothing gapes there. Nothing of the map or of where one walks changes.
+  if (live) { const RING = recs.filter(r => /^sd_junction_(ring_[we]|nest)$/.test(r.id) && r.poly), nest = RING.find(r => /nest$/.test(r.id));
+    if (nest && RING.length > 1) { const bb = nest.poly.reduce((q, p) => [Math.min(q[0], p[0]), Math.min(q[1], p[1]), Math.max(q[2], p[0]), Math.max(q[3], p[1])], [1e9, 1e9, -1e9, -1e9]), C = [(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2];
+      const dist = p => Math.hypot(p[0] - C[0], p[1] - C[1]), med = a => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)], RI = med(nest.poly.map(dist)), RO = med(RING.filter(r => r !== nest).flatMap(r => r.poly.map(dist)).filter(d => d > RI + 1.2));
+      const pk = p => p[0].toFixed(2) + ',' + p[1].toFixed(2), shared = new Set(); for (const r of recs) if (RING.indexOf(r) < 0 && r.poly && typeof r.id === 'string' && r.id.slice(0, 3) === 'sd_') for (const p of r.poly) shared.add(pk(p));
+      const cls = p => Math.abs(dist(p) - RO) < 0.95 ? RO : Math.abs(dist(p) - RI) < 0.95 ? RI : 0, moved = new Map();   // (which circle a corner lies on, or 0; where each corner goes)
+      const put = p => { const k = pk(p); if (moved.has(k)) return moved.get(k); const R = cls(p), d = dist(p), q = !R || shared.has(k) || d < 1e-6 ? p : [C[0] + (p[0] - C[0]) * R / d, C[1] + (p[1] - C[1]) * R / d]; moved.set(k, q); return q; };
+      const arc = (a, b) => { if (!cls(a) || cls(a) !== cls(b)) return [put(a), put(b)]; const A = put(a), B = put(b), a0 = Math.atan2(A[1] - C[1], A[0] - C[0]); let da = Math.atan2(B[1] - C[1], B[0] - C[0]) - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+        const r0 = dist(A), r1 = dist(B), n = Math.max(1, Math.ceil(Math.abs(da) * cls(a) / 1.0)), out = []; for (let i = 0; i <= n; i++) { const t = i / n, r = r0 + (r1 - r0) * t; out.push(i === 0 ? A : i === n ? B : [C[0] + Math.cos(a0 + da * t) * r, C[1] + Math.sin(a0 + da * t) * r]); } return out; };
+      for (const r of RING) { const P = [], src = r.poly.filter((p, i, a) => Math.hypot(p[0] - a[(i + a.length - 1) % a.length][0], p[1] - a[(i + a.length - 1) % a.length][1]) > 1e-6);
+        for (let i = 0; i < src.length; i++) { const seg = arc(src[i], src[(i + 1) % src.length]); for (let j = 0; j < seg.length - 1; j++) P.push(seg[j]); }
+        const W = []; for (const w0 of r.walls) { if (Math.hypot(w0.b[0] - w0.a[0], w0.b[1] - w0.a[1]) < 1e-6) continue; const seg = arc(w0.a, w0.b); for (let j = 0; j < seg.length - 1; j++) W.push(Object.assign({}, w0, { a: seg[j], b: seg[j + 1] })); }
+        r.poly = P; r.walls = W; } } }
   for (const rec of recs) { rooms[rec.id] = { id: rec.id, rec, R: roomOf(rec), g: new T.Group(), label: rec.label || rec.id, style: rec.style || { acc: PAL.cyan, wain: PAL.wallBase, fa: PAL.floorA, fb: PAL.floorB } }; g.add(rooms[rec.id].g); for (const c of rec.cells) { roomAt.set(K(c[0], c[1]), rec.id); if (live && c[2]) cellH.set(K(c[0], c[1]), c[2] / UH); } }
   const hAt = (x, y) => cellH.get(K(x, y)) || 0, baseOf = id => live && rooms[id] ? (rooms[id].rec.base || 0) / UH : 0;
   let minH = 0; for (const v of cellH.values()) minH = Math.min(minH, v);   // (the lowest floor: what stands over the void goes down past it)

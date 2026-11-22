@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's Round Junction drawn round (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Can you make this area actually look circular".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the ring's outer wall and the rail round the nest are true circles in the 3D view (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated). The map and the 2D game are unchanged.
+- **Verified:** seen in a real browser (software rendering) from four sides; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon lit: lamps along its walls (work in progress)
 - **The ask** (the owner, 2026-11-22): "Add the lights at least please".
 - **What it does** (only with `?sewerdungeon`): 72 lights in the dungeon's map, along the walls of its walked rooms; in 3D the Sewers' look hangs a lamp at each with its warm pool on the floor, in 2D each is a glow (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js` (the dungeon's decor joined to the map's, with the switch only).
