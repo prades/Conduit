@@ -902,10 +902,14 @@ function sewerDungeonStart(F) {
 // drained; then their beds are floor, for the rest of the visit. sewerDungeonDrain() drains them (true when it did); sewerDungeonDrained() says so. WHO drains it and HOW is not decided: for now,
 // while the dungeon is behind its switch, a builder's button on the page does it when you stand by the drain valve (sewerDungeonButton).
 const SEWER_DRAIN = { solids: ["sd_low_drain_water", "sd_drain_pool_water"], rooms: ["sd_low_drain", "sd_drain_pool"], valve: "sd_valve_drain", reach: 3 };
+// a dungeon room's name: its map's label (js/sewerdungeonmap.js; a room with none is "Sewers"). Here, not with the other room names (js/facilitynet.js): only the facility's own files read the map.
+const _fpSdNames = {};
+function sewerDungeonRoomName(id) { if (!(id in _fpSdNames)) { const r = FACILITY_MAP.rooms.find(q => q.id === id); _fpSdNames[id] = (r && r.label) || "Sewers"; } return _fpSdNames[id]; }
 function sewerDungeonDrained() { return !!(_fp && _fp.sdDrained); }
 function sewerDungeonDrain() {
     if (!_fp || !_fp.F || _fp.sdDrained) return false;
     let any = false; for (const id of SEWER_DRAIN.solids) if (facilitySolidOpen(id)) any = true;
+    if (any) for (const id of ["sd_floor_drain_1", "sd_floor_drain_2"]) facilitySolidOpen(id);   // (the floor drains in its bed are walked over once it is dry)
     if (!any) return false;
     _fp.sdDrained = true;
     if (_fp.items) _fp.items = _fp.items.filter(it => !(it.fp === "sewer" && it.what === "water" && SEWER_DRAIN.rooms.indexOf(it.room) >= 0));   // (their water is gone from the picture)

@@ -74,7 +74,9 @@ check('game.html loads js/view3d.js before the boot check, and the boot check na
 });
 
 // the game's page in a real browser (software WebGL), a copy with `script` before init.js (pre) and at the end (post); its result is a hidden block
-function realPage(query, post, pre) {
+// (a page that leaves no result is run once more: under a full run's load the browser's clock, --virtual-time-budget, can run out before the view is made; "the page left no result" failed a full run on 2026-11-20 and passed alone)
+function realPage(query, post, pre) { const r = onePage(query, post, pre); return r && r.none ? onePage(query, post, pre) : r; }
+function onePage(query, post, pre) {
     const bin = findChromium(); if (!bin) return null;
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'v3-')), file = path.join(dir, 'game.html'), prof = path.join(dir, 'profile');
     let html = rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => '<script>' + post + '</script></body>');

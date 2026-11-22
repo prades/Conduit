@@ -68,7 +68,7 @@ const SHAPES = [
   { id: 'west_walk_s2', lvl: 1, kind: 'walk', p: [[18.5, 21.2], [28.5, 21.2], [28.5, 24.4], [18.5, 24.4]] },
   { id: 'west_walk_s3', lvl: 0, kind: 'walk', p: [[28.5, 21.2], [37.2, 21.2], [37.2, 24.4], [28.5, 24.4]] },
   { id: 'nw_gallery', lvl: 3, kind: 'floor', p: [[1.5, 12.2], [3, 10.8], [13.5, 10.8], [16.2, 12.6], [29.5, 12.6], [29.5, 13.4], [1.5, 13.4]] },
-  { id: 'nw_wing', lvl: 3, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 12.6], [25, 12.6], [23.6, 11]] },
+  { id: 'nw_wing', lvl: 3, kind: 'floor', p: [[23.6, 4], [25.2, 2.5], [34.6, 2.5], [36.2, 4], [36.2, 5.4], [36.9, 5.9], [36.9, 7.9], [36.4, 9.6], [36.4, 13], [31, 13], [31, 11], [29.5, 11], [29.5, 11.5], [28.5, 11.5], [28.5, 12.6], [26.5, 12.6], [26.5, 11.5], [25, 11.5], [23.6, 11]] },
   { id: 'west_cell', lvl: -1, kind: 'floor', p: [[2.5, 25.4], [3.5, 24.4], [11.5, 24.4], [11.5, 30.5], [14, 30.5], [14, 33], [9, 33], [9, 26.5], [3.5, 26.5], [2.5, 26]] },   // (its passage to the West Hall one width, 2.5 tiles, square-cornered: as traced it was too thin to walk)
   { id: 'hall_stair', lvl: 2, kind: 'walk', p: [[14.5, 24.4], [16.5, 24.4], [16.5, 29.5], [14.5, 29.5]] },
   { id: 'west_hall', lvl: -1, kind: 'floor', p: [[14, 30.5], [15, 29.5], [27, 29.5], [27.5, 30], [27.5, 34], [26, 35.5], [15, 35.5], [14, 34.5]] },
@@ -91,7 +91,7 @@ const SHAPES = [
   { id: 'high_ledge', lvl: 2, kind: 'upper', p: [[52, 14], [53, 13], [57.5, 13], [58, 13.8], [61.5, 13.8], [62.5, 15], [64.8, 15], [64.8, 18.5], [63.5, 20], [63.5, 21], [57.5, 21], [57.5, 23], [55, 23], [53.5, 21.5], [51, 21.5], [51, 16]] },
   { id: 'hl_approach', lvl: 0, kind: 'walk', p: [[49.6, 22], [51, 22], [51, 24], [49.6, 24]] },
   { id: 'hl_foot', lvl: 0, kind: 'floor', p: [[51, 21.5], [53.5, 21.5], [55, 23], [57.5, 23], [57.5, 24], [51, 24]], note: 'the launcher stands here and throws you up to the ledge' },
-  { id: 'er_approach', lvl: 0, kind: 'walk', p: [[49.6, 26.5], [54, 26.5], [54, 29], [49.6, 29]] },
+  { id: 'er_approach', lvl: 0, kind: 'walk', p: [[49.6, 26.5], [54, 26.5], [54, 28.5], [49.6, 28.5]] },
   { id: 'east_rubble', lvl: 0, kind: 'floor', p: [[54, 26], [55, 25], [58.5, 25], [59, 25.6], [60, 25.6], [60.8, 24.5], [63, 24.5], [63.5, 23.5], [66, 23.5], [66.5, 24.5], [66.5, 30.5], [65.5, 31.2], [61, 31.2], [60, 30.5], [55.5, 30.5], [54, 29]] },
 ];
 // THE STAIRS (the owner, 2026-11-21: "I see a lot of places where stairs are there, but you're not putting them in"): every flight the picture draws, found on a second pass over it enlarged.
@@ -124,10 +124,17 @@ for (const s of STAIRS) s.p = s.p.map(snap);
 // THE CUTOFF VALVES (the owner, 2026-11-21: the water "should have cutoff valves at the end of each channel, or at the beginning of the top of the map, or the very north, and then where the west channel meets
 // the main channel"): one at the Central Channel's north end, one where the West Channel runs into it. room: the walkway it stands on; at: its tile. THESE ARE THE WATER PANELS (the owner, 2026-11-22: "that's the panels that we're talking about. The eventual design will be on the walls. There's already 3D
 // designs for it"): each stands against its walkway's wall for now, a stand-in till the approved model is mounted on the wall (docs/SEWER-PROPS.md).
-const VALVES = [
-  { id: 'valve_north', room: 'central_walk_w', at: [38, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
-  { id: 'valve_drain', room: 'drain_walk', at: [58, 33], note: 'the drain, on the pool room\'s west wall: it empties the small channel and the pool' },
-  { id: 'valve_mouth', room: 'central_walk_w', at: [38, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
+const VALVES = [   // (THE KIT'S PIECES, placed: the owner, 2026-11-22, of the first 3D pass: "Rooms and props together"; the cutoff valves "Sluice switch + gate", and "Rubble heap, Secret door, Floor
+  // drains". kind: a kind of the approved kit (docs/SEWER-PROPS.md §10); r: its tiles [x0, y0, x1, y1]. Where each stands is the agent's.)
+  { id: 'valve_north', room: 'central_walk_w', kind: 'sluice_switch_turned', r: [37.5, 0.5, 38.5, 1.5], note: 'the north cutoff: its switch on the walkway\'s wall' },
+  { id: 'gate_north', room: 'central_channel', kind: 'sluice_gate', r: [42.5, 1.5, 44.5, 2.5], note: 'the north cutoff: its gate across the main channel' },
+  { id: 'valve_mouth', room: 'central_walk_w', kind: 'sluice_switch_turned', r: [37.5, 12.5, 38.5, 13.5],   /* (two tiles north, against the walkway's west wall: where it stood, the West Channel's walkway comes in and there is no wall behind it) */ note: 'the mouth cutoff: its switch on the walkway\'s wall' },
+  { id: 'gate_mouth', room: 'west_channel3', kind: 'sluice_gate', r: [35.5, 17.5, 36.5, 19.5], note: 'the mouth cutoff: its gate across the West Channel' },
+  { id: 'valve_drain', room: 'drain_walk', kind: 'drain_valve_turned', r: [57.5, 32.5, 58.5, 33.5], note: 'the drain, on the pool room\'s west wall' },
+  { id: 'rubble_east', room: 'er_approach', kind: 'rubble_heap', r: [52.5, 26.5, 53.5, 28.5], note: 'the rubble in the way to East Rubble' },
+  { id: 'secret_nw', room: 'nw_wing', kind: 'secret_door', r: [26.5, 11.5, 28.5, 12.5], note: 'the secret door into the Northwest Wing, from its gallery' },
+  { id: 'floor_drain_1', room: 'drain_pool', kind: 'floor_drain', r: [71.5, 29.5, 72.5, 30.5], note: 'a floor drain in the pool\'s bed' },
+  { id: 'floor_drain_2', room: 'drain_pool', kind: 'floor_drain', r: [74.5, 32.5, 75.5, 33.5], note: 'a floor drain in the pool\'s bed' },
 ];
 module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {
