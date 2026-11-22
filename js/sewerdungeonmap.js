@@ -249,7 +249,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_drain_pool_water","room":"sd_drain_pool","shape":"poly","poly":[[1390,530],[1550,530],[1550,730],[1390,730],[1390,690]],"status":"placed","kind":"pool","sewer_dungeon":"drain"},
         {"id":"sd_valve_north","room":"sd_central_walk_w","shape":"rect","rect":[750,10,770,30],"status":"placed","kind":"sluice_switch_turned","note":"the north cutoff: its switch on the walkway's wall"},
         {"id":"sd_gate_north","room":"sd_central_channel","shape":"rect","rect":[850,30,890,50],"status":"placed","kind":"sluice_gate","note":"the north cutoff: its gate across the main channel"},
-        {"id":"sd_valve_mouth","room":"sd_central_walk_w","shape":"rect","rect":[750,290,770,310],"status":"placed","kind":"sluice_switch_turned","note":"the mouth cutoff: its switch on the walkway's wall"},
+        {"id":"sd_valve_mouth","room":"sd_central_walk_w","shape":"rect","rect":[750,250,770,270],"status":"placed","kind":"sluice_switch_turned","note":"the mouth cutoff: its switch on the walkway's wall"},
         {"id":"sd_gate_mouth","room":"sd_west_channel3","shape":"rect","rect":[710,350,730,390],"status":"placed","kind":"sluice_gate","note":"the mouth cutoff: its gate across the West Channel"},
         {"id":"sd_valve_drain","room":"sd_drain_walk","shape":"rect","rect":[1150,650,1170,670],"status":"placed","kind":"drain_valve_turned","note":"the drain, on the pool room's west wall"},
         {"id":"sd_rubble_east","room":"sd_er_approach","shape":"rect","rect":[1050,530,1070,570],"status":"placed","kind":"rubble_heap","note":"the rubble in the way to East Rubble"},
