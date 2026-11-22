@@ -28746,7 +28746,24 @@ function buildLabFloor(lab, P0, how) {
             m.userData.dynamic = true;
             m.userData.water = true;
             rooms[b.room].g.add(m);
-            waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id });
+            let bed = null;
+            if (isSd(b.room)) {
+                const bt = quads(), bs = quads();
+                for (const [x, y, h] of b.cells) {
+                    topQuad(bt, x, y, h, WHITE);
+                    for (const [dx, dy] of DIRS) {
+                        const nw = wet.get(K(x + dx, y + dy));
+                        if (nw && nw.h < h - 1e-4)
+                            sideQuad(bs, x, y, dx, dy, nw.h, h, WHITE, 0, 1);
+                    }
+                }
+                bed = quadMesh([{ q: bt, mat: P0.sdBed || (P0.sdBed = std('#46555b', { roughness: 0.9 })) }, { q: bs, mat: P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 })) }]);
+                bed.receiveShadow = true;
+                bed.userData.dynamic = true;
+                bed.visible = false;
+                rooms[b.room].g.add(bed);
+            }
+            waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id, bed });
         }
         const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) {
             g.fillStyle = i % 2 ? '#141414' : '#f2c11a';
@@ -29003,7 +29020,6 @@ function buildLabFloor(lab, P0, how) {
         }
         const cc = new T.Color();
         let was = null, nestWas = null;
-        const LOW_DROP = 20 / UH;
         const culverts = [];
         for (const rec of recs)
             for (const s2 of rec.solids.filter(s => s.kind === 'culvert')) {
@@ -29053,11 +29069,14 @@ function buildLabFloor(lab, P0, how) {
             for (const c of culverts)
                 c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id));
             if (gm && gm.waterLow)
-                for (const w of waters) {
-                    const want = gm.waterLow(w.id) ? -LOW_DROP : 0, y = w.m.position.y;
-                    if (Math.abs(want - y) > 1e-4)
-                        w.m.position.y = y + Math.sign(want - y) * Math.min(Math.abs(want - y), 0.006);
-                }
+                for (const w of waters)
+                    if (w.bed) {
+                        const low = !!gm.waterLow(w.id);
+                        if (w.bed.visible !== low) {
+                            w.bed.visible = low;
+                            w.m.visible = !low;
+                        }
+                    }
             for (const w of waters)
                 w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004);
             for (const fl of flows)

@@ -110,6 +110,9 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_east_rubble","under":"arena","offset":[-5000,5000]}
     ],
     openings: [
+        {"id":"open_sd_bed_west_channel__west_channel2","a":[370,330],"b":[370,430],"rooms":["sd_west_channel","sd_west_channel2"],"door":null,"open":true,"position_status":"placed"},
+        {"id":"open_sd_bed_west_channel2__west_channel3","a":[570,330],"b":[570,430],"rooms":["sd_west_channel2","sd_west_channel3"],"door":null,"open":true,"position_status":"placed"},
+        {"id":"open_sd_bed_west_channel3__central_channel","a":[810,330],"b":[810,430],"rooms":["sd_west_channel3","sd_central_channel"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_channel_steps__west_walk_n","a":[190,330],"b":[230,330],"rooms":["sd_channel_steps","sd_west_walk_n"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_west_entrance__west_walk_n","a":[50,270],"b":[50,330],"rooms":["sd_west_entrance","sd_west_walk_n"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_west_entrance__west_walk_s","a":[50,430],"b":[50,490],"rooms":["sd_west_entrance","sd_west_walk_s"],"door":null,"open":true,"position_status":"placed"},
@@ -142,6 +145,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"open_sd_ne_offices__ne_crack","a":[1250,210],"b":[1210,210],"rooms":["sd_ne_offices","sd_ne_crack"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_hl_approach__hl_foot","a":[1030,450],"b":[1030,490],"rooms":["sd_hl_approach","sd_hl_foot"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_er_approach__east_rubble","a":[1090,530],"b":[1090,570],"rooms":["sd_er_approach","sd_east_rubble"],"door":null,"open":true,"position_status":"placed"},
+        {"id":"open_sd_flight_channel_steps","a":[190,370],"b":[230,370],"rooms":["sd_channel_steps","sd_west_channel"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_ent_n1","a":[370,270],"b":[370,330],"rooms":["sd_west_walk_n","sd_west_walk_n2"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_ent_n2","a":[570,270],"b":[570,330],"rooms":["sd_west_walk_n2","sd_west_walk_n3"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_ent_s1","a":[370,430],"b":[370,490],"rooms":["sd_west_walk_s","sd_west_walk_s2"],"door":null,"open":true,"position_status":"placed"},
@@ -159,6 +163,9 @@ const SEWER_DUNGEON_MAP = {
         {"id":"open_sd_flight_pool_s","a":[1150,730],"b":[1190,730],"rooms":["sd_drain_south","sd_low_drain"],"door":null,"open":true,"position_status":"placed"}
     ],
     connections: [
+        {"id":"conn_sd_bed_west_channel__west_channel2","rooms":["sd_west_channel","sd_west_channel2"],"opening":"open_sd_bed_west_channel__west_channel2","ramp":"r_sd_bed_west_channel__west_channel2"},
+        {"id":"conn_sd_bed_west_channel2__west_channel3","rooms":["sd_west_channel2","sd_west_channel3"],"opening":"open_sd_bed_west_channel2__west_channel3","ramp":"r_sd_bed_west_channel2__west_channel3"},
+        {"id":"conn_sd_bed_west_channel3__central_channel","rooms":["sd_west_channel3","sd_central_channel"],"opening":"open_sd_bed_west_channel3__central_channel"},
         {"id":"conn_sd_channel_steps__west_walk_n","rooms":["sd_channel_steps","sd_west_walk_n"],"opening":"open_sd_channel_steps__west_walk_n"},
         {"id":"conn_sd_west_entrance__west_walk_n","rooms":["sd_west_entrance","sd_west_walk_n"],"opening":"open_sd_west_entrance__west_walk_n"},
         {"id":"conn_sd_west_entrance__west_walk_s","rooms":["sd_west_entrance","sd_west_walk_s"],"opening":"open_sd_west_entrance__west_walk_s"},
@@ -191,6 +198,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"conn_sd_ne_offices__ne_crack","rooms":["sd_ne_offices","sd_ne_crack"],"opening":"open_sd_ne_offices__ne_crack"},
         {"id":"conn_sd_hl_approach__hl_foot","rooms":["sd_hl_approach","sd_hl_foot"],"opening":"open_sd_hl_approach__hl_foot"},
         {"id":"conn_sd_er_approach__east_rubble","rooms":["sd_er_approach","sd_east_rubble"],"opening":"open_sd_er_approach__east_rubble"},
+        {"id":"conn_sd_flight_channel_steps","rooms":["sd_channel_steps","sd_west_channel"],"opening":"open_sd_flight_channel_steps","ramp":"r_sd_channel_steps"},
         {"id":"conn_sd_flight_ent_n1","rooms":["sd_west_walk_n","sd_west_walk_n2"],"opening":"open_sd_flight_ent_n1","ramp":"r_sd_ent_n1"},
         {"id":"conn_sd_flight_ent_n2","rooms":["sd_west_walk_n2","sd_west_walk_n3"],"opening":"open_sd_flight_ent_n2","ramp":"r_sd_ent_n2"},
         {"id":"conn_sd_flight_ent_s1","rooms":["sd_west_walk_s","sd_west_walk_s2"],"opening":"open_sd_flight_ent_s1","ramp":"r_sd_ent_s1"},
@@ -208,6 +216,8 @@ const SEWER_DUNGEON_MAP = {
         {"id":"conn_sd_flight_pool_s","rooms":["sd_drain_south","sd_low_drain"],"opening":"open_sd_flight_pool_s","ramp":"r_sd_pool_s"}
     ],
     ramps: [
+        {"id":"r_sd_bed_west_channel__west_channel2","rooms":["sd_west_channel","sd_west_channel2"],"shape":"steps","between_levels":[42,41],"descends_toward":"sd_west_channel2","position_status":"placed","zone":{"rect":[370,330,410,430],"axis":"x","c0":370,"c1":410,"steps":3}},
+        {"id":"r_sd_bed_west_channel2__west_channel3","rooms":["sd_west_channel2","sd_west_channel3"],"shape":"steps","between_levels":[41,40],"descends_toward":"sd_west_channel3","position_status":"placed","zone":{"rect":[570,330,610,430],"axis":"x","c0":570,"c1":610,"steps":3}},
         {"id":"r_sd_channel_steps","rooms":["sd_channel_steps","sd_west_channel"],"shape":"steps","between_levels":[52,42],"descends_toward":"sd_west_channel","position_status":"placed","zone":{"rect":[190,330,230,370],"axis":"y","c0":330,"c1":370,"steps":6}},
         {"id":"r_sd_ent_n1","rooms":["sd_west_walk_n","sd_west_walk_n2"],"shape":"steps","between_levels":[52,51],"descends_toward":"sd_west_walk_n2","position_status":"placed","zone":{"rect":[370,270,410,330],"axis":"x","c0":370,"c1":410,"steps":3}},
         {"id":"r_sd_ent_n2","rooms":["sd_west_walk_n2","sd_west_walk_n3"],"shape":"steps","between_levels":[51,50],"descends_toward":"sd_west_walk_n3","position_status":"placed","zone":{"rect":[570,270,610,330],"axis":"x","c0":570,"c1":610,"steps":3}},

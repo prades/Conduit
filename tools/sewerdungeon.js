@@ -56,6 +56,14 @@ function build() {
     if (wet(s.id) || s.kind === 'drain') props.push({ id: P + s.id + '_water', room: P + s.id, shape: 'poly', poly: s.p.map(px), status: 'placed', kind: wet(s.id) ? 'river' : 'pool', sewer_dungeon: s.kind });
   }
   const open = (id, a, b, r) => { openings.push({ id: 'open_' + P + id, a: px(a), b: px(b), rooms: r.map(x => P + x), door: null, open: true, position_status: 'placed' }); };   // (open: a plain gap, no door frame drawn in it. The owner, 2026-11-22, circling a frame standing across a walkway: "Remove this dumb arc doorway")
+  // (WATER TO WATER: when a channel is emptied its bed is walked, so two stretches of water that meet are joined like floors: on one level a plain doorway; at a fall, steps two tiles long in the
+  // lower stretch. The owner, 2026-11-22, of what low water is: "Empty: walk the bed". While the water stands, nothing walks there and none of it shows.)
+  for (const j of J) { if (!(wet(j.rooms[0]) && wet(j.rooms[1]))) continue; const [ra, rb] = j.rooms, la = by[ra].wl || 0, lb = by[rb].wl || 0, id = 'bed_' + ra + '__' + rb; open(id, j.a, j.b, j.rooms);
+    if (la === lb) { connections.push({ id: 'conn_' + P + id, rooms: j.rooms.map(x => P + x), opening: 'open_' + P + id }); continue; }
+    const up = la > lb ? ra : rb, dn = la > lb ? rb : ra, vert = Math.abs(j.a[0] - j.b[0]) < 0.01, cdn = by[dn].p.reduce((t, q) => t + q[vert ? 0 : 1], 0) / by[dn].p.length, at = vert ? j.a[0] : j.a[1], sg = cdn > at ? 1 : -1, lo2 = Math.min(j.a[vert ? 1 : 0], j.b[vert ? 1 : 0]), hi2 = Math.max(j.a[vert ? 1 : 0], j.b[vert ? 1 : 0]);
+    const rect = vert ? [Math.min(at, at + sg * 2), lo2, Math.max(at, at + sg * 2), hi2] : [lo2, Math.min(at, at + sg * 2), hi2, Math.max(at, at + sg * 2)];
+    ramps.push({ id: 'r_' + P + id, rooms: [P + up, P + dn], shape: 'steps', between_levels: [WATER_LV(Math.max(la, lb)), WATER_LV(Math.min(la, lb))], descends_toward: P + dn, position_status: 'placed', zone: { rect: rect.map(v => Math.round(v * G)), axis: vert ? 'x' : 'y', c0: Math.round(at * G), c1: Math.round((at + sg * 2) * G), steps: 3 } });
+    connections.push({ id: 'conn_' + P + id, rooms: [P + up, P + dn], opening: 'open_' + P + id, ramp: 'r_' + P + id }); }
   for (const j of J) { if (wet(j.rooms[0]) || wet(j.rooms[1]) || j.lv[0] !== j.lv[1]) continue; const id = j.rooms.join('__') + (openings.some(o => o.id === 'open_' + P + j.rooms.join('__')) ? '_2' : '');
     open(id, j.a, j.b, j.rooms); connections.push({ id: 'conn_' + P + id, rooms: j.rooms.map(x => P + x), opening: 'open_' + P + id }); }
   for (const f of FLIGHTS) { const cand = J.filter(j => f.rooms.every(r => j.rooms.includes(r)));
@@ -63,11 +71,11 @@ function build() {
     if (!j) throw new Error('the flight ' + f.id + ' has no shared wall to stand on');
     let a = j.a, b = j.b; if (f.on && f.on.x && f.on.x[0] !== f.on.x[1]) { a = [f.on.x[0], j.a[1]]; b = [f.on.x[1], j.a[1]]; } if (f.id === 'ledge') { a = [55.5, 23.5]; b = [57.5, 23.5]; }
     const hi = LV(by[f.rooms[0]].lvl), lo = f.wet ? WATER_LV(by[f.rooms[1]].wl) : LV(by[f.rooms[1]].lvl), zA = snap([f.zone[0], f.zone[1]]), zB = snap([f.zone[2], f.zone[3]]), z = [zA[0], zA[1], zB[0], zB[1]], c = f.axis === 'x' ? [z[0], z[2]] : [z[1], z[3]];
-    a = snap(a); b = snap(b); if (!f.wet) open('flight_' + f.id, a, b, f.rooms);   // (on the game's grid, as the trace is)
+    a = snap(a); b = snap(b); open('flight_' + f.id, a, b, f.rooms);   // (the flooded staircase too: it is the way down into the West Channel once that is emptied)   // (on the game's grid, as the trace is)
     // (c0 is the upper floor's end of the flight, c1 the lower's: the game reads the height from the first room to the second along the axis)
     const upFirst = f.down !== 'low', c0 = (upFirst ? c[0] : c[1]) * G, c1 = (upFirst ? c[1] : c[0]) * G;
     ramps.push({ id: 'r_' + P + f.id, rooms: f.rooms.map(x => P + x), shape: 'steps', between_levels: [hi, lo], descends_toward: P + f.rooms[1], position_status: 'placed', zone: { rect: [z[0] * G, z[1] * G, z[2] * G, z[3] * G].map(Math.round), axis: f.axis, c0: Math.round(c0), c1: Math.round(c1), steps: f.steps } });
-    if (!f.wet) connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
+    connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
   // THE CHANNEL'S SHAPE: AN INVERTED TRAPEZOID (the owner, 2026-11-22: "The shape of the channel should be like a inverted trapezoid"): each side of a channel slopes in from its walkway's edge down to the
   // bed, BANK tiles across (the bed between them narrower than the top). A slope along every straight edge a walkway shares with its water, the ring's and the landing's too; not at the flooded steps.
   const BANK = 1.5; let nb = 0;

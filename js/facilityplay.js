@@ -918,16 +918,21 @@ function sewerDungeonDrain() {
 function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q => q.id === SEWER_DRAIN.valve) : null; return !!s && typeof player !== "undefined" && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach; }
 // THE CULVERTS' DOORS (the owner, 2026-11-22: "let's just make a button that closes the pipe or the door from inside"): each culvert has a door inside its mouth, shut and opened at its button,
 // the sluice switch near it. A stand-in: the door shows shut or open (the 3D view), the switch is thrown or up.
-// SHUT, A CULVERT LOWERS ITS WATER (the owner, 2026-11-22, asked what shutting one should do: "They should lower the water level"): the water it feeds (`waters`: the map's bodies of water) is low
-// while it is shut and comes back when it is opened. Which water each feeds is the agent's reading (each its own channel). So far the low water is only SEEN, lower, in the 3D view: how far it
-// falls, and what the low water lets you do (walk a bed, reach a route), is not designed.
+// SHUT, A CULVERT EMPTIES ITS WATER (the owner, 2026-11-22, asked what shutting one should do: "They should lower the water level"; how far: "Empty: walk the bed"; and how they are found on
+// entering: "Open, water up"): the water it feeds (`waters`: the map's bodies of water) is gone while it is shut, its bed floor to walk on, and comes back when it is opened (whoever stands in
+// it is put on the nearest floor). Which water each feeds is the agent's reading (each its own channel). The pool room's water can also be let out for good at its drain valve.
 const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north", waters: ["sd_central_channel_water"] }, { id: "sd_culvert_west", sw: "sd_valve_west", waters: ["sd_west_channel_water", "sd_west_channel2_water", "sd_west_channel3_water"] },
-    { id: "sd_culvert_drain", sw: "sd_valve_pool", waters: ["sd_low_drain_water", "sd_drain_pool_water"] }];
-function sewerDungeonWaterLow(waterId) { return SEWER_CULVERTS.some(c => c.waters.indexOf(waterId) >= 0 && sewerDungeonCulvertShut(c.id)); }
+    { id: "sd_culvert_drain", sw: "sd_valve_pool", waters: ["sd_low_drain_water", "sd_drain_pool_water"], also: ["sd_floor_drain_1", "sd_floor_drain_2"] }];
+function sewerDungeonWaterLow(waterId) { return (sewerDungeonDrained() && SEWER_DRAIN.solids.indexOf(waterId) >= 0) || SEWER_CULVERTS.some(c => c.waters.indexOf(waterId) >= 0 && sewerDungeonCulvertShut(c.id)); }
+function _sdWaterSet(c, low) { if (!_fp || !_fp.F || (sewerDungeonDrained() && c.waters.some(w => SEWER_DRAIN.solids.indexOf(w) >= 0))) return;   // (a pool drained at its valve stays dry)
+    for (const id of c.waters.concat(c.also || [])) facilitySolidSet(id, low);
+    const rooms = c.waters.map(w => w.replace(/_water$/, "")); if (!_fp.sdWet) _fp.sdWet = {};   // (the 2D's picture of the water: taken out while it is gone, put back with it)
+    if (low && _fp.items) { _fp.sdWet[c.id] = _fp.items.filter(it => it.fp === "sewer" && it.what === "water" && rooms.indexOf(it.room) >= 0); _fp.items = _fp.items.filter(it => _fp.sdWet[c.id].indexOf(it) < 0); }
+    else if (!low && _fp.items && _fp.sdWet[c.id]) { _fp.items = _fp.items.concat(_fp.sdWet[c.id]); _fp.sdWet[c.id] = null; } }
 function sewerDungeonCulvertShut(id) { return !!(_fp && _fp.sdShut && _fp.sdShut[id]); }
 function sewerDungeonCulvertNear() { if (!_fp || !_fp.F || typeof player === "undefined") return null; for (const c of SEWER_CULVERTS) { const s = _fp.F.solids.find(q => q.id === c.sw); if (s && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach) return c; } return null; }
 function sewerDungeonCulvertToggle(id) { const c = SEWER_CULVERTS.find(q => q.id === id); if (!c || !_fp) return false; if (!_fp.sdShut) _fp.sdShut = {}; _fp.sdShut[id] = !_fp.sdShut[id];
-    if (typeof facilityPropStateSet === "function") facilityPropStateSet(c.sw, _fp.sdShut[id] ? "thrown" : "up"); return true; }
+    if (typeof facilityPropStateSet === "function") facilityPropStateSet(c.sw, _fp.sdShut[id] ? "thrown" : "up"); _sdWaterSet(c, _fp.sdShut[id]); return true; }
 function sewerDungeonButton() {
     if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function" || document.getElementById("sdDrainBtn")) return;
     const b = document.createElement("button"); b.id = "sdDrainBtn"; b.textContent = "DRAIN THE POOL";
