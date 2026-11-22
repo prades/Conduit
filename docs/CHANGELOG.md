@@ -42,6 +42,31 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - `design/props/models/_sewer.js`, `sewer.js`, `sewerfinds.js`; `js/propsprites.js`; `js/view3d.js`; `view3d/gamemap.js`, `view3d/core.js`, `view3d/gameview.js`; `design/style-evolution/round2/chamber.js`; `tests/sewerkit.js` (new, 11 checks); `docs/SEWER-PROPS.md` §10.
 - **Verified:** `tests/sewerkit.js` (11 checks; one runs the game in a real browser with the 3D view: four props of the kit put in the Sewers, built and switched). By eye in a real browser at 1180 × 820, ten props of the kit on the Sewers' north ledge, in the 3D view (`?engine=3d`) and the 2D game, as found and then each in its last state; a door opened with `facilitySolidOpen` stops blocking and is still drawn; no page error. `node tests/run.js`, twice: the first run (before this build's last two fixes) 131 of 133 suites, the two failures this build's own and fixed (its two sheets were not preloaded with the page, `tests/startup.js`; `tests/facilityplay.js` pins the list of sheets); the second, on this build as merged with main's `bj`, 132 of 133: `tests/lab3d.js` failed once ("the page left nothing", the test page's real browser under the full run's load) and passes run alone, its files untouched by this build. **Not seen on an iPad; no prop of the map is one of these yet.**
 
+### Build `2026-11-17bo` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no door frames where its pieces join (work in progress)
+- **The ask** (the owner, 2026-11-22): "Remove this dumb arc doorway".
+- **What it does** (only with `?sewerdungeon`): the frames that stood across walkways and passages are gone; the pieces run into one another.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the channels' sides slope in (work in progress)
+- **The ask** (the owner, 2026-11-22): "The shape of the channel should be like a inverted trapezoid."
+- **What it does** (only with `?sewerdungeon`): each channel's sides slope from the walkway's edge down to a narrower bed. Faint until the sewer look is in.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the cutoff valves are the water panels, stood against the wall (work in progress)
+- **The ask** (the owner, 2026-11-22): "that's the panels that we're talking about. The eventual design will be on the walls."
+- **What it does** (only with `?sewerdungeon`): the two valve housings stand against their walkway's wall, not by the water. Still stand-ins that do nothing.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
+### Build `2026-11-17bl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: two cutoff valves placed (work in progress)
+- **The ask** (the owner, 2026-11-22): cutoff valves at the very north of the main channel and where the West Channel meets it.
+- **What it does** (only with `?sewerdungeon`): a valve housing stands at each of those two places. They do nothing yet: the water's rules are not built.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bk` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the West Channel's water steps down with its tunnel (work in progress)
+- **The ask** (the owner, 2026-11-21): "it should affect the water level. It should slope down too."
+- **What it does** (only with `?sewerdungeon`): the West Channel's water lies in three stretches, each a flight lower, falling where the walkways' flights stand. Steps, not yet a slope.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
 ### Build `2026-11-17bj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the entrance tunnel comes down two flights (work in progress)
 - **The ask** (the owner, 2026-11-21): "I want the entrance tunnel to have two sets of stairs before it reaches the main tunnel and channel."
 - **What it does** (only with `?sewerdungeon`): both banks of the West Channel step down twice between the West Entrance and the Central Channel.

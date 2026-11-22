@@ -24,7 +24,11 @@ const INNER = []; for (let i = 0; i < 16; i++) { const a = (i + 0.5) / 16 * 2 * 
 function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFixed(2)], dir = a1 < a0 ? -1 : 1, lo = Math.min(a0, a1), hi = Math.max(a0, a1); let pts = INNER.map((p, i) => ({ p, a: (i + 0.5) / 16 * 2 * PI })).flatMap(o => [o, { p: o.p, a: o.a - 2 * PI }]).filter(o => o.a > lo + 1e-6 && o.a < hi - 1e-6).sort((x, y) => dir * (x.a - y.a)).map(o => o.p); return [cut(a0)].concat(pts, [cut(a1)]); }
 // (the West Channel widened twice, to 5 tiles (\"Maybe make that channel a little bit wider as well\"), the south walkway and what hangs off it moved south with it: the owner, 2026-11-21, walking the bare rooms: "This channel needs to be wider at the entrance")
 const SHAPES = [
-  { id: 'west_channel', lvl: -2, kind: 'water', p: [[2.5, 16.2], [9.3, 16.2], [9.3, 18.6], [11.7, 18.6], [11.7, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [2.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
+  // (the water comes down with the tunnel: the owner, 2026-11-21, of the entrance tunnel's two flights: "it should affect the water level. It should slope down too". Three stretches of water, `wl` flights
+  // above the main channel's, a fall between each where the walkways' flights stand)
+  { id: 'west_channel', lvl: -2, wl: 2, kind: 'water', p: [[2.5, 16.2], [9.3, 16.2], [9.3, 18.6], [11.7, 18.6], [11.7, 16.2], [18.5, 16.2], [18.5, 21.2], [2.5, 21.2]] },
+  { id: 'west_channel2', lvl: -2, wl: 1, kind: 'water', p: [[18.5, 16.2], [28.5, 16.2], [28.5, 21.2], [18.5, 21.2]] },
+  { id: 'west_channel3', lvl: -2, wl: 0, kind: 'water', p: [[28.5, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [28.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
   { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
   { id: 'west_entrance', lvl: 2, kind: 'floor', p: [[0, 14.4], [2.5, 14.4], [2.5, 23.4], [0, 23.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
@@ -94,7 +98,14 @@ const RING_PTS = OUTER.concat(INNER, Object.values(K)), isRing = q => RING_PTS.s
 const half = v => Math.floor(v) + 0.5, snap = q => isRing(q) ? q : [half(q[0]), half(q[1])];
 for (const s of SHAPES) s.p = s.p.map(snap).filter((q, i, a) => !i || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.01);
 for (const s of STAIRS) s.p = s.p.map(snap);
-module.exports = { snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
+// THE CUTOFF VALVES (the owner, 2026-11-21: the water "should have cutoff valves at the end of each channel, or at the beginning of the top of the map, or the very north, and then where the west channel meets
+// the main channel"): one at the Central Channel's north end, one where the West Channel runs into it. room: the walkway it stands on; at: its tile. THESE ARE THE WATER PANELS (the owner, 2026-11-22: "that's the panels that we're talking about. The eventual design will be on the walls. There's already 3D
+// designs for it"): each stands against its walkway's wall for now, a stand-in till the approved model is mounted on the wall (docs/SEWER-PROPS.md).
+const VALVES = [
+  { id: 'valve_north', room: 'central_walk_w', at: [38, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
+  { id: 'valve_mouth', room: 'central_walk_w', at: [38, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
+];
+module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {
   const S = +(process.argv[2] || 3), T = 995 / 80 * S, COL = { water: '0,220,255', drain: '0,255,160', walk: '255,230,0', floor: '255,255,255', upper: '255,150,0', ring: '255,230,0', nest: '255,0,255' };
   const mid = p => [p.reduce((a, q) => a + q[0], 0) / p.length * T, p.reduce((a, q) => a + q[1], 0) / p.length * T];
