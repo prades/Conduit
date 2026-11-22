@@ -175,7 +175,7 @@ const ROOMS = 'arena,armory,catwalk_spur,catwalks,cold_annex,cold_storage,cold_t
     });
     check('NOTHING IS KEPT: a player\'s own save in storage is not read (the squad is not the saved one) nor written over: after a minute of play and a save asked for, storage is exactly as it was; the save is off', () => {
         ok(saved && /"followers":\[\{/.test(saved), 'no save was made to start from');
-        const r = J(`(function(){ const o = { ready: !!_fp.saveReady, load: facilitySaveLoad(), squad: followers.map(f => f.element).join() }; for (let i = 0; i < 3600; i++) render(); o.wrote = facilitySaveWrite(); facilitySaveTick(); o.writes = __writes.slice(); return o; })()`);
+        const r = J(`(function(){ const o = { ready: !!_fp.saveReady, load: facilitySaveLoad(), squad: followers.map(f => f.element).join() }; for (let i = 0; i < 3600; i++) _simStep(false); /* (a minute of play with no picture: js/game.js; tests/ghost.js holds such steps to drawn ones) */ o.wrote = facilitySaveWrite(); facilitySaveTick(); o.writes = __writes.slice(); return o; })()`);
         same(r.ready, false, 'the save is on'); same(r.load, null, 'the save was read'); same(r.squad, 'flux', 'the squad (the saved one was three)'); same(r.wrote, false, 'the save was written');
         same(r.writes.join(), '', 'storage was written to'); same(store.conduit_fp_save, saved, 'the save changed'); same(JSON.stringify(store), before, 'storage changed');
         ok(/fluxLabOn\(\)/.test(rd('js/facilityplay.js').match(/const ok = k => [^\n]*/)[0]), 'the storage filter does not refuse the test room\'s writes');
@@ -185,7 +185,7 @@ const ROOMS = 'arena,armory,catwalk_spur,catwalks,cold_annex,cold_storage,cold_t
         const r = J(`(function(){ const o = {}, mine = () => actors.filter(a => a.fpCreature && a.homeRoom === 'flux_lab' && !a.dead); o.n = mine().length; o.what = [...new Set(mine().map(a => a.speciesName + ':' + a.level))].join(); o.cls = mine().every(a => a.className === 'worker' || a.className === 'scout');
             o.state = mine().map(a => a.state).join(); o.arena = facilityCreatures('arena').some(a => a.homeRoom === 'flux_lab'); const p0 = mine().map(a => [a.x, a.y]);
             __put(...__lt([4, 1])); followers.forEach(f => { f.stance = 'hold'; f.x = player.x; f.y = player.y; });
-            for (let i = 0; i < 3600; i++) { render(); if (i % 60 === 0 && mine().some(a => __room(a.x, a.y) !== 'flux_lab')) { o.left = frame; break; } }
+            for (let i = 0; i < 3600; i++) { _simStep(false); if (i % 60 === 0 && mine().some(a => __room(a.x, a.y) !== 'flux_lab')) { o.left = frame; break; } }   /* (a minute of play with no picture, as above) */
             o.moved = mine().some((a, i) => p0[i] && Math.hypot(a.x - p0[i][0], a.y - p0[i][1]) > 1); o.alive = mine().length; return o; })()`);
         same(r.n, 3, 'the creatures'); same(r.what, 'ant:2', 'what they are'); same(r.cls, true, 'their classes'); same(r.state, 'wander,wander,wander', 'calm'); same(r.arena, false, 'the arena\'s spawner counts them');
         same(r.left, undefined, 'one left the room'); same(r.moved, true, 'they do not wander');

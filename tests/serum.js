@@ -24,7 +24,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__clear = (cls) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; respawnQueue.length = 0; floatingTexts.length = 0;
             mutatorReset(); specimenReset(); serumReset(); invReset(); playerClassKey = null; classPerks = new Set(); weaponReset(); if (cls) classSet(cls); player.x = player.targetX = player.visualX = crystal.x - 2; player.y = player.targetY = player.visualY = crystal.y + 5; player.fpPath = null; };
         globalThis.__fol = (el, type, dx, dy) => { spawnFollowerAtCrystal(el, type); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + (dx || 0); f.y = player.y + (dy || 0); f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; f.attackCooldown = 1e6; return f; };
-        globalThis.__frames = n => { for (let i = 0; i < n; i++) render(); };`);
+        globalThis.__frames = n => { for (let i = 0; i < n; i++) render(); };
+        // a long wait on the game's clock alone (the laboratory's rounds: 3600 frames each): steps with no picture (js/game.js _simStep(false), which tests/ghost.js holds to the same state as a drawn step), a fifth of a drawn step's cost
+        globalThis.__wait = n => { for (let i = 0; i < n; i++) _simStep(false); };`);
 
     group('THE SERUM: SPLASHED ON THE GROUND, A POOL THAT HEALS THE ALLIES IN IT');
     check('it is an item of the pack (the Mutator\'s to use; anyone may carry it); another class cannot use it', () => {
@@ -50,12 +52,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('THE LABORATORY: SERUM OVER TIME, MORE AT A HIGHER MUTATOR LEVEL, AND CRAFTED FOR DNA');
     check('as a Mutator, every SERUM.lab.every frames (60 s) the laboratory makes SERUM.lab.base serum, up to SERUM.lab.cap waiting; for any other class it makes none', () => {
-        const r = J(`(function(){ __clear('gunslinger'); __frames(SERUM.lab.every + 5); const other = serumLab.stock; __clear('mutator'); serumLab.nextAt = frame + SERUM.lab.every; const s = []; for (let k = 0; k < 7; k++) { __frames(SERUM.lab.every); s.push(serumLab.stock); }
+        const r = J(`(function(){ __clear('gunslinger'); __wait(SERUM.lab.every + 5); const other = serumLab.stock; __clear('mutator'); serumLab.nextAt = frame + SERUM.lab.every; const s = []; for (let k = 0; k < 7; k++) { __wait(SERUM.lab.every); s.push(serumLab.stock); }
             return { other, s, every: SERUM.lab.every, cap: SERUM.lab.cap, base: SERUM.lab.base }; })()`);
         same(r.every, 3600, 'the round is 60 seconds'); same(r.other, 0, 'another class\'s lab made serum'); same(r.s[0], r.base, 'after one round'); same(r.s[1], 2 * r.base, 'after two'); same(r.s[r.s.length - 1], r.cap, 'it does not stop at the cap');
     });
     check('HIGHER MUTATOR LEVELS MAKE MORE: the yield is base + perLevel × (level − 1), its fractions carried to the next round', () => {
-        const r = J(`(function(){ __clear('mutator'); const y1 = serumLabYield(1), y5 = serumLabYield(5), y9 = serumLabYield(9); mutatorXp = MUTATOR.level.thresholds[4]; serumLab.stock = 0; serumLab.frac = 0; serumLab.nextAt = frame + 1; const got = []; for (let k = 0; k < 2; k++) { __frames(k ? SERUM.lab.every : 2); got.push(serumLab.stock); }
+        const r = J(`(function(){ __clear('mutator'); const y1 = serumLabYield(1), y5 = serumLabYield(5), y9 = serumLabYield(9); mutatorXp = MUTATOR.level.thresholds[4]; serumLab.stock = 0; serumLab.frac = 0; serumLab.nextAt = frame + 1; const got = []; for (let k = 0; k < 2; k++) { k ? __wait(SERUM.lab.every) : __frames(2); got.push(serumLab.stock); }
             return { y1, y5, y9, lv: mutatorLevel(), got, base: SERUM.lab.base, per: SERUM.lab.perLevel }; })()`);
         same(r.y1, r.base, 'level 1'); same(r.y5, r.base + 4 * r.per, 'level 5'); ok(r.y9 > r.y5 && r.y5 > r.y1, 'the yields do not rise: ' + [r.y1, r.y5, r.y9]); same(r.lv, 5, 'fixture: the level');
         same(r.got.join(), [Math.floor(r.y5), Math.floor(2 * r.y5)].join(), 'what two rounds made at level 5');
