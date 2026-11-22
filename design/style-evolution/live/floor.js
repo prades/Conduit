@@ -168,7 +168,10 @@ function buildLabFloor(lab, P0, how) {
   const groups = new Map(), groupOf = hides => { const k = hides.map(h => h.join('|')).join('/'); let G = groups.get(k); if (!G) { G = { key: k, hide: hides[0], hides, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };   // (hide: the game's own angle's; hides: each turn's)
   for (const b of band.values()) {
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
-    see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi; }   // (a corner piece: its diagonal neighbours)
+    see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi;
+    // (THE SEWER DUNGEON: a wall beside a flight of stairs keeps one height, its room's own floor's, and does not step down with the treads. The owner, 2026-11-22, circling the stepped stubs beside
+    // a flight: "Looks junk here the walls dont need to descend too")
+    if (live && isSd(b.own)) { let top = -1e9; for (const [dx, dy] of DIRS.concat([[1, 1], [-1, -1], [1, -1], [-1, 1]])) { const r = roomAt.get(K(b.x + dx, b.y + dy)); if (r) top = Math.max(top, baseOf(r)); } if (top > -1e8) b.hi = Math.max(b.hi, top); } }   // (a corner piece: its diagonal neighbours)
   // (live: a block that could hide someone standing in a room sinks with that room too: the owner, 2026-11-16, "the rock that is obscuring the player should sink in". The camera sees a block over
   // the tiles behind it on the screen (smaller x + y, its x - y within one), as far back as its top, from that tile's floor, climbs on the screen: TILE_H 30 px of screen a step of x + y, UH px a
   // unit of height. Its top: a wall's height over its highest floor, a rock's skyline at its tallest. Measured from the feet of whoever stands there, a little over the floor.)

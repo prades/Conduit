@@ -51,6 +51,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ci` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's walls level beside stairs (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Looks junk here the walls dont need to descend too".
+- **What it does** (only with `?engine=3d&sewerdungeon`): a wall of the dungeon beside a flight of stairs keeps one height and does not step down with the treads (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ch` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway behind the west pipe; stairs on both banks (work in progress)
 - **The ask** (the owner, 2026-11-22): "get rid of the walkway behind it and make this a proper pipe, water pipe"; asked how the banks are crossed without it: "Stairs on both banks".
 - **What it does** (only with `?sewerdungeon`): the entrance landing at the West Channel's head is gone and its culvert is a tall pipe mouth in the wall; a second staircase stands on the south bank. To go on from the north walkway you shut the west culvert, cross the empty bed and climb the other staircase (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyle.js` (the dungeon's light key named another of its rooms).
