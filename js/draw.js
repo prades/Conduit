@@ -1499,7 +1499,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     const _attBodyY = (DOME_CY + glassBot) * 0.5; // vertical centre of entire glass body
 
     // ── FLUX — OPAQUE ELEMENT-COLOR AURA ────────────────────────────────────
-    if (actor.fluxAura > 0) {
+    if (actor.fluxAura > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "fluxAura"))) {   // (the 3D view's own, view3d/attacks_flux.js: the Goo Proxy's and the Rift Mimic's)
         const _fa  = Math.min(1, actor.fluxAura / 10) * 0.88;
         const _aR  = DOME_R * 2.6;
         drawCtx.save();
@@ -1628,7 +1628,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     }
 
     // ── CORE — PULSATING RINGS EMANATING FROM THE CRYSTAL ───────────────────
-    if (actor.corePulse > 0) {
+    if (actor.corePulse > 0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(actor, "corePulse"))) {   // (the 3D view's own, view3d/attacks_core.js: the Hammer Slug's and the Jelly Ram's)
         const _cpAlpha = Math.min(1, actor.corePulse / 10) * 0.75;
         drawCtx.save();
         drawCtx.strokeStyle = "#00ccaa";

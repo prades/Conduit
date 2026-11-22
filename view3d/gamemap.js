@@ -35,6 +35,8 @@ const VIEW3D_GAME = (0, eval)(`({
   // 2D puts them; the dam's pools
   sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
   sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
+  waterLow(id) { return typeof sewerDungeonWaterLow === "function" && sewerDungeonWaterLow(id); },
+  culvertShut(id) { return typeof sewerDungeonCulvertShut === "function" && sewerDungeonCulvertShut(id); },   // (THE SEWER DUNGEON's culverts: is its door shut: js/facilityplay.js)
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
   // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
   get fx() { return typeof elementEffects !== "undefined" ? elementEffects : null; }, get gfxLow() { return typeof gfxLow !== "undefined" && !!gfxLow; },
@@ -55,7 +57,14 @@ const VIEW3D_GAME = (0, eval)(`({
   // the toxic line's (view3d/attacks_toxic.js): the measures its looks follow (read once: the game's own constants)
   get toxicMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { stompSlam: v("STOMP_SLAM", 12), stompR: v("STOMP_RADIUS", 1.5), calderaR: v("CALDERA_RADIUS", 2.4), undertow: v("ULT_UNDERTOW", null), network: v("ULT_NETWORK", null), puddle: v("ULT_PUDDLE", null),
-      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; }
+      decoyLob: v("DECOY_LOB", 14), spikeAround: v("ROT_SPIKE_AROUND", null), spikeH: v("ROT_SPIKE_H", 26), venomR: v("VENOM_RANGE", 1.8), podSize: v("TECH_AB", null) ? TECH_AB.blight.size : 2 }; },
+  // the flux line's (view3d/attacks_flux.js): the measures its looks follow (read once: the game's own constants)
+  get fluxMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { maelR: v("MAEL_RADIUS", 1.8), maelTick: v("MAEL_TICK", 30), riftOut: v("RIFT_OUT", 10), mimicShot: v("MIMIC_SHOT", null), mimicR: v("MIMIC_RADIUS", 2.2), swapBurst: v("SWAP_BURST", 1),
+      vortex: v("ULT_VORTEX", null), horizon: v("ULT_HORIZON", null), proxy: v("ULT_PROXY", null), whirl: v("SHARD_WHIRL", null) }; },
+  // the core line's (view3d/attacks_core.js): the measures its looks follow (read once: the game's own constants)
+  get coreMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { rollStep: v("ROLL_STEP", 0.08), rollBand: v("ROLL_BAND", 0.8), guardLure: v("GUARD_LURE", 3), wobbleR: v("WOBBLE_RADIUS", 1.5), echoR: v("ECHO_RADIUS", 4), slam: v("ULT_SLAM", null), wave: v("ULT_WAVE", null), jelly: v("ULT_JELLY", null) }; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
