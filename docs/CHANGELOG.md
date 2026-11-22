@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ck` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: wall tops even; the Sewers' new 3D look merged in (work in progress)
+- **The ask** (the owner, 2026-11-22): "the rooftops of these little walls and everything are not even [...] And also we've updated the sewers look. Can you switch over to the new skin?"
+- **What it does** (only with `?engine=3d&sewerdungeon`): every wall of the dungeon tops out at one height; main's sewer look (`view3d/sewerdress.js`) is merged, so the dungeon wears it (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at six spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's floors told from its walls (work in progress)
 - **The ask** (the owner, 2026-11-22): "Those don't even look like rooms or tunnels anymore."
 - **What it does** (only with `?engine=3d&sewerdungeon`): floors in their map's colours (pale walkways, darker rooms), wall tops near black, so rooms and passages read (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).

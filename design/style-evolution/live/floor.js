@@ -166,12 +166,16 @@ function buildLabFloor(lab, P0, how) {
     if (live) for (const [dx, dy] of aw) if (roomAt.has(K(x - dx, y - dy))) for (let k = 1; k <= 3 && band.has(K(x + dx * k, y + dy * k)); k++) { const r = roomAt.get(K(x + dx * (k + 1), y + dy * (k + 1))); if (r) { if (!s.includes(r)) s.push(r); break; } }
     return s; };
   const groups = new Map(), groupOf = hides => { const k = hides.map(h => h.join('|')).join('/'); let G = groups.get(k); if (!G) { G = { key: k, hide: hides[0], hides, g: new T.Group(), face: quads(), cap: quads(), rface: quads(), rcap: quads(), down: 0, want: 0 }; G.g.userData.dynamic = true; groups.set(k, G); g.add(G.g); } return G; };   // (hide: the game's own angle's; hides: each turn's)
+  let SD_HI = -1e9; const SD_CUT = 0.03, cutT = b => b.cutTop !== undefined ? b.cutTop : b.hi + CUT_H; for (const rec of recs) if (isSd(rec.id)) SD_HI = Math.max(SD_HI, baseOf(rec.id));   // (the dungeon's highest floor; how far over its floor a cut wall of the dungeon stands)
   for (const b of band.values()) {
     let lo = 1e9, hi = -1e9; const see = list => { for (const [dx, dy] of list) if (roomAt.has(K(b.x + dx, b.y + dy))) { const h = hAt(b.x + dx, b.y + dy); lo = Math.min(lo, h); hi = Math.max(hi, h); } };
     see(DIRS); if (lo > hi) see([[1, 1], [-1, -1], [1, -1], [-1, 1]]); if (lo > hi) lo = hi = 0; b.lo = lo; b.hi = hi;
     // (THE SEWER DUNGEON: a wall beside a flight of stairs keeps one height, its room's own floor's, and does not step down with the treads. The owner, 2026-11-22, circling the stepped stubs beside
     // a flight: "Looks junk here the walls dont need to descend too")
-    if (live && isSd(b.own)) { let top = -1e9; for (const [dx, dy] of DIRS.concat([[1, 1], [-1, -1], [1, -1], [-1, 1]])) { const r = roomAt.get(K(b.x + dx, b.y + dy)); if (r) top = Math.max(top, baseOf(r)); } if (top > -1e8) b.hi = Math.max(b.hi, top); } }   // (a corner piece: its diagonal neighbours)
+    if (live && isSd(b.own)) { let top = -1e9; for (const [dx, dy] of DIRS.concat([[1, 1], [-1, -1], [1, -1], [-1, 1]])) { const r = roomAt.get(K(b.x + dx, b.y + dy)); if (r) top = Math.max(top, baseOf(r)); } if (top > -1e8) b.hi = Math.max(b.hi, top);
+      // (EVEN TOPS: the owner, 2026-11-22: "the rooftops of these little walls and everything are not even. They're jagged and all over the place and uneven". Every wall of the dungeon stands to ONE
+      // height, a wall's height over its highest floor; and a wall cut down in front of the camera is cut flush with the floor beside it, so no row of stubs of different heights is left standing.)
+      b.cutTop = b.hi + SD_CUT; b.hi = SD_HI; } }   // (a corner piece: its diagonal neighbours)
   // (live: a block that could hide someone standing in a room sinks with that room too: the owner, 2026-11-16, "the rock that is obscuring the player should sink in". The camera sees a block over
   // the tiles behind it on the screen (smaller x + y, its x - y within one), as far back as its top, from that tile's floor, climbs on the screen: TILE_H 30 px of screen a step of x + y, UH px a
   // unit of height. Its top: a wall's height over its highest floor, a rock's skyline at its tallest. Measured from the feet of whoever stands there, a little over the floor.)
@@ -255,9 +259,9 @@ function buildLabFloor(lab, P0, how) {
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
   // (THE SEWER DUNGEON's stubs: the dark concrete of its walls, not the lab's pale cut. The owner, 2026-11-22, of the first 3D pass: "some spots look really messed up. I really want to have like a smooth looking game")
   const labFace = quads(), labTop = quads(), sdFace = quads(), sdTop = quads(); let sFace = labFace, sTop = labTop;
-  for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; sFace = isSd(b.own) ? sdFace : labFace; sTop = isSd(b.own) ? sdTop : labTop; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
-      if (nb && !nb.header) { if (live && nb.hides.some(h => h.length) && nb.hi < b.hi - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, nb.hi + CUT_H, b.hi + CUT_H, WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
-      sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, b.hi + CUT_H, WHITE, 0, 1); } }   // (over the highest floor beside it)
+  for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; sFace = isSd(b.own) ? sdFace : labFace; sTop = isSd(b.own) ? sdTop : labTop; topQuad(sTop, b.x, b.y, cutT(b), WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
+      if (nb && !nb.header) { if (live && nb.hides.some(h => h.length) && cutT(nb) < cutT(b) - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, cutT(nb), cutT(b), WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
+      sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, cutT(b), WHITE, 0, 1); } }   // (over the highest floor beside it)
 
   // THE SEWER DUNGEON'S SLANTED WALLS: each a straight wall a tile thick outside its line, in pieces a tile long (each sinks with the rooms it stands in front of, as a block does, and leaves
   // its stub). Its ends: where the room's next wall is a wall too, the two meet on the mitre (and, that one being of blocks, a wedge fills up to its last block's end); else square.
@@ -271,11 +275,11 @@ function buildLabFloor(lab, P0, how) {
     const eA = endAt(w.a, w.b), eB = endAt(w.b, w.a), N = Math.max(1, Math.round(w.L)), lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], c = wain(rec.id), body = bodyOf(rec.id), m1 = [-n[0], -n[1]], ua = [(w.a[0] - w.b[0]) / w.L, (w.a[1] - w.b[1]) / w.L], ub = [-ua[0], -ua[1]];
     const pcs = []; for (let i = 0; i < N; i++) { const a = lerp(w.a, w.b, i / N), b = lerp(w.a, w.b, (i + 1) / N), oa = lerp(eA.o, eB.o, i / N), ob = lerp(eA.o, eB.o, (i + 1) / N), pm = lerp(a, b, 0.5);
       const ci = [Math.round(pm[0] - n[0] * 0.5), Math.round(pm[1] - n[1] * 0.5)], z = roomAt.get(K(ci[0], ci[1])) === rec.id ? hAt(ci[0], ci[1]) : baseOf(rec.id);
-      const pb = { x: Math.round(pm[0] + n[0] * 0.5), y: Math.round(pm[1] + n[1] * 0.5), hi: z, rock: false }, hides = TURNS.map(t => hideMore(pb, t, hideOf(pb.x, pb.y, t)).sort()), G = groupOf(hides); G.sink = Math.max(G.sink || 0, WALL_H - B0 + 0.16);
+      const pb = { x: Math.round(pm[0] + n[0] * 0.5), y: Math.round(pm[1] + n[1] * 0.5), hi: SD_HI, rock: false }, hides = TURNS.map(t => hideMore(pb, t, hideOf(pb.x, pb.y, t)).sort()), G = groupOf(hides); G.sink = Math.max(G.sink || 0, WALL_H - B0 + 0.16);
       pcs.push({ a, b, oa, ob, pm, z, G, stub: hides.some(h => h.length) }); }
     // (a piece is a closed solid: its two long faces, its top, and an end wherever what stands beside it can sink apart from it: the wall's own end, or a piece of another group or floor)
     const away = (p, q, from) => { const dx = q[0] - p[0], dy = q[1] - p[1], L2 = Math.hypot(dx, dy) || 1; let nn = [dy / L2, -dx / L2]; if (nn[0] * ((p[0] + q[0]) / 2 - from[0]) + nn[1] * ((p[1] + q[1]) / 2 - from[1]) < 0) nn = [-nn[0], -nn[1]]; return nn; };
-    pcs.forEach((pc, i) => { const { a, b, oa, ob, pm, z, G } = pc, top = z + WALL_H, zc = z + CUT_H, mid = [(a[0] + b[0] + oa[0] + ob[0]) / 4, (a[1] + b[1] + oa[1] + ob[1]) / 4], plans = [[a, b, ob, oa]], outs = [[oa, ob, n]];   // (plans: the outlines of its top; outs: its faces over the outside, each [from, to, its normal])
+    pcs.forEach((pc, i) => { const { a, b, oa, ob, pm, z, G } = pc, top = SD_HI + WALL_H, zc = z + SD_CUT, mid = [(a[0] + b[0] + oa[0] + ob[0]) / 4, (a[1] + b[1] + oa[1] + ob[1]) / 4], plans = [[a, b, ob, oa]], outs = [[oa, ob, n]];   // (plans: the outlines of its top; outs: its faces over the outside, each [from, to, its normal])
       for (const [e, E, O, end, nbr, ue] of [[eA, a, oa, i === 0, pcs[i - 1], ua], [eB, b, ob, i === N - 1, pcs[i + 1], ub]]) {
         if (!end) { if (nbr.G !== G || Math.abs(nbr.z - z) > 1e-4) outs.push([E, O, ue]); continue; }
         if (e.wedge) { plans.push([E, e.o, e.wedge]); outs.push([e.o, e.wedge, away(e.o, e.wedge, mid)], [e.wedge, E, away(e.wedge, E, mid)]); } else outs.push([E, e.o, away(E, e.o, mid)]); }
