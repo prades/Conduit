@@ -18,7 +18,7 @@ function view3dAttacks(env) {
   const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };   // (a fixed number in [0, 1) for a particle i of an effect s)
   const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
   // the agent's budget (provisional): points a frame, crystals a frame; halved on LOW graphics
-  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments; strand: the toxic line's strands of goo and smoke, view3d/attacks_toxic.js, their segments)
+  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260, beam: 300, gem: 48, blade: 24, slab: 40, coregem: 40, coremodel: 10 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments; strand: the toxic line's strands of goo and smoke, view3d/attacks_toxic.js, their segments; beam, gem, blade, slab: the flux line's strands of light, crystals, black blades and glitch bars, view3d/attacks_flux.js)
 
   // ── THE POOLS ──
   const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';   // (a size below 0: a puff with no rim)
@@ -149,7 +149,7 @@ function view3dAttacks(env) {
   const claimed = new Set(), bad = new Set(); let drew = 0, errs = 0, lastErr = null;
   // a card battle's Ultimate not seen now (outside its caster's turn: docs/CARD-BATTLES.md §2.68, view3d/gamemap.js ultHidden): not drawn here then, as the battle's own fields are not (view3d/fields.js)
   const hid = o => !!o._cbUlt && typeof GM.ultHidden === 'function' && GM.ultHidden(o);
-  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, strands: 0, models: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js; strands, models: the toxic line's, view3d/attacks_toxic.js)   // (held: the swallowed drawn this frame, being pulled in)
+  const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, strands: 0, models: 0, beams: 0, fluxModels: 0, coreModels: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js; strands, models: the toxic line's, view3d/attacks_toxic.js)   // (held: the swallowed drawn this frame, being pulled in)
   // ── THE REGISTRY ──
   const FORMS = {};
 
@@ -283,7 +283,7 @@ function view3dAttacks(env) {
   const KIT = { T, GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, PUFF, GLINT, FIRE, SMOKE, solid, QUILLS, ROCKS, SPIKES, CRATERS, HEXC, MOUNDS, VENTS, BLOBS, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf,
     curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null,
     crystal, flatK, RINGS, DISCS, SNOW, FROST, COLD, GLOW, iceHit: FORMS.maw.fx.impact.draw, ice: null,   // (the ice line's: the Maw's crystals, rings, discs and colours, and his bite's burst)
-    CAP, stats, hooks: [], elec: null, toxic: null };   // (toxic: the toxic line's measures, view3d/attacks_toxic.js)   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
+    CAP, stats, hooks: [], elec: null, toxic: null, flux: null, core: null, solidKind, hid: o => hid(o) };   // (core: the core line's measures, view3d/attacks_core.js; hid: whether a card battle's Ultimate is out of sight now)   // (flux: the flux line's measures, view3d/attacks_flux.js; solidKind: a kind of solid of its own, made with the rest)   // (toxic: the toxic line's measures, view3d/attacks_toxic.js)   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
   try { KIT.measures = GM.fireMeasures; } catch (e) { KIT.measures = {}; }
   if (typeof view3dFireForms === 'function') Object.assign(FORMS, view3dFireForms(KIT));
   // THE ICE LINE (view3d/attacks_ice.js): the Igloo Skater and the Rimestar, from the same kit (and the fire line's body helpers). Made apart: a fault in making them leaves them to the 2D, the rest going on
@@ -295,6 +295,12 @@ function view3dAttacks(env) {
   // THE TOXIC LINE (view3d/attacks_toxic.js): the Blight Spider, the Seeper and the Rotshard, from the same kit and its own strands. Made apart, as the ice line
   try { KIT.toxic = GM.toxicMeasures; } catch (e) { KIT.toxic = {}; }
   if (typeof view3dToxicForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dToxicForms(KIT)); } catch (x) { KIT.hooks.length = nh; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the toxic line\'s attacks in 2D: ' + lastErr); } }
+  // THE FLUX LINE (view3d/attacks_flux.js): the Voidstar, the Goo Proxy and the Rift Mimic, from the same kit and its own strands of light, crystals, blades and models. Made apart, as the ice line
+  try { KIT.flux = GM.fluxMeasures; } catch (e) { KIT.flux = {}; }
+  if (typeof view3dFluxForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dFluxForms(KIT)); } catch (x) { KIT.hooks.length = nh; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the flux line\'s attacks in 2D: ' + lastErr); } }
+  // THE CORE LINE (view3d/attacks_core.js): the Hammer Slug, the Jelly Ram and the Hornshell, from the same kit and the flux line's strands of light (K.beam). Made apart, as the ice line
+  try { KIT.core = GM.coreMeasures; } catch (e) { KIT.core = {}; }
+  if (typeof view3dCoreForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dCoreForms(KIT)); } catch (x) { KIT.hooks.length = nh; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the core line\'s attacks in 2D: ' + lastErr); } }
   const hook = k => { for (const h of KIT.hooks) if (h[k]) h[k](); };
 
   // ── EACH FRAME ──

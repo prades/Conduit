@@ -19,6 +19,7 @@ const SUITES = [
     ['the players\' page: play.html and its one script (dist/conduit.js) fresh, the boot check kept, the way in from game.html, and the same names as file by file in a real browser', 'bundle.js'],
     ['the live 3D test room (lab3d/, a test page apart from the game): its page, bundle and three.js r128 (vendor/); in a real browser it starts, draws and moves, with WebGL 1 too; its switches; a finger turns it', 'lab3d.js'],
     ['the game\'s 3D view (?engine=3d, docs/VIEW-3D.md): dist/view3d.js fresh; off, nothing of it; on, in a real browser, the lab floor drawn by the game\'s own camera, its bodies, doors, light and floor marks; away in 2D; a failure in 2D', 'view3d.js'],
+    ['A frame with no picture in the 3D view (the view goes on, nothing is drawn; the first frame drawn after is the picture a drawn frame of that state gives): what the 3D view\'s suite steps by', 'view3ddry.js'],
     ['the balance page: balance.html fresh from the code, every form on it, no history, the measured table named by build', 'balance.js'],
     ['the pictures for players: js/imgmap.js and the WebP copies fresh, each WebP exact and smaller, every loader asking at the map\'s address, and each WebP as its PNG in a real browser', 'images.js'],
     ['the electrical domain (step 1): the little door beside the junction, shut until it is repaired; the deep server room and down four steps the circuitry; one interior of two rooms', 'elecdomain.js'],

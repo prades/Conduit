@@ -108,10 +108,29 @@ function buildLabFloor(lab, P0, how) {
   const hAt = (x, y) => cellH.get(K(x, y)) || 0, baseOf = id => live && rooms[id] ? (rooms[id].rec.base || 0) / UH : 0;
   let minH = 0; for (const v of cellH.values()) minH = Math.min(minH, v);   // (the lowest floor: what stands over the void goes down past it)
   const at = (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null;
+  // THE SEWER DUNGEON'S SLANTED EDGES (the owner, 2026-11-22, of its first 3D pass: "some spots look really messed up. I really want to have like a smooth looking game"). Its rooms have walls and
+  // edges that run on a slant (the ring, the chamfered corners, the Subway passage); the builder made every wall of tile blocks, so a slanted one came out as a staircase of blocks, loose panels
+  // and posts, and the floor under it as a zigzag. For a room of the dungeon (id sd_), live: a slanted wall is one straight wall along its line, a tile thick, mitred into the walls beside it;
+  // the floor is cut along the room's own outline, tile by tile. Nothing of any other room changes.
+  const isSd = id => typeof id === 'string' && id.slice(0, 3) === 'sd_', diag = [];
+  const inP = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+  // a wall's face on any line: from p0 to p1, seen from nrm's side
+  const segQuad = (q, p0, p1, nrm, y0, y1, col, v0, v1) => { if ((p1[0] - p0[0]) * nrm[1] - (p1[1] - p0[1]) * nrm[0] < 0) { const t = p0; p0 = p1; p1 = t; }
+    putQuad(q, [p0[0], y0, p0[1]], [p1[0], y0, p1[1]], [p1[0], y1, p1[1]], [p0[0], y1, p0[1]], [nrm[0], 0, nrm[1]], col, [[0, v0], [1, v0], [1, v1], [0, v1]]); };
+  // a flat top of any (convex) outline at height h; uv: each point's place in the picture, or none
+  const polyTop = (q, pts, h, col, uv) => { let S = 0; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; S += a[0] * b[1] - b[0] * a[1]; } if (S > 0) pts = pts.slice().reverse();
+    const U = uv || (() => [0.5, 0.5]); for (let i = 1; i + 1 < pts.length; i++) { const A = pts[0], B = pts[i], C = pts[i + 1]; putQuad(q, [A[0], h, A[1]], [B[0], h, B[1]], [C[0], h, C[1]], [C[0], h, C[1]], [0, 1, 0], col, [U(A), U(B), U(C), U(C)]); } };
+  // a room's outline inside one tile (the tile's square cut out of it), or null
+  const clipCell = (P, x, y) => { let pts = P; for (const [ax, sg, v] of [[0, 1, x - 0.5], [0, -1, x + 0.5], [1, 1, y - 0.5], [1, -1, y + 0.5]]) { const out = [], ins = p => sg * (p[ax] - v) >= -1e-9;
+      for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length], ia = ins(a), ib = ins(b); if (ia) out.push(a); if (ia !== ib) { const t = (v - a[ax]) / (b[ax] - a[ax]); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } }
+      pts = out; if (pts.length < 3) return null; }
+    pts = pts.filter((p, i) => { const o = pts[(i + pts.length - 1) % pts.length]; return Math.hypot(p[0] - o[0], p[1] - o[1]) > 1e-6; }); if (pts.length < 3) return null;
+    let S = 0; for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; S += a[0] * b[1] - b[0] * a[1]; } return Math.abs(S) / 2 > 0.003 ? pts : null; };
 
   // the walls: a block a tile of the gap between rooms (band), or a thin wall on the line where two rooms touch (thin)
   const band = new Map(), thin = [], thinSeen = new Set(), rails = [], spills = [];
   for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && w0.kind === 'spill') { spills.push({ w, room: rec.id }); return; }   /* (a spill lip: the sewers' own, below) */ if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) { rails.push({ w, room: rec.id }); return; }
+    if (live && isSd(rec.id)) { if (!(w.L > 1e-6)) return; if (Math.abs(w.u[0]) > 1e-6 && Math.abs(w.u[1]) > 1e-6) { diag.push({ w, rec, wi }); return; } }   /* (a slanted wall: one straight wall, below) */
     for (let i = 0, n = Math.round(w.L); i < n; i++) { const m = [w.a[0] + w.u[0] * (i + 0.5), w.a[1] + w.u[1] * (i + 0.5)], bx = Math.round(m[0] + w.n[0] * 0.5), by = Math.round(m[1] + w.n[1] * 0.5);
       if (roomAt.has(K(bx, by))) { const k = m[0] + ',' + m[1]; if (!thinSeen.has(k)) { thinSeen.add(k); thin.push({ m, u: [Math.abs(w.u[0]), Math.abs(w.u[1])], glass: !!w0.window && !w0.divider }); } }
       else if (!band.has(K(bx, by))) band.set(K(bx, by), { x: bx, y: by, own: rec.id, rock: live && w0.kind === 'rock' }); } }); }
@@ -172,6 +191,8 @@ function buildLabFloor(lab, P0, how) {
   const wain = id => { const c = lin((rooms[id] && rooms[id].style.wain) || PAL.wallBase); return [c.r, c.g, c.b]; };
   const face = (q, b, dx, dy, y0, y1, c, z, body) => { z = z || 0; body = body || WHITE; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) sideQuad(q, b.x, b.y, dx, dy, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);
     if (y1 > yb && y0 < yt) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) sideQuad(q, b.x, b.y, dx, dy, Math.max(y0, yt), y1, body, 0.45, 0.85); };
+  const face2 = (q, p0, p1, nrm, y0, y1, c, z, body) => { body = body || WHITE; const yb = z + WALL_H * 0.2, yt = z + WALL_H; if (y0 < yb) segQuad(q, p0, p1, nrm, y0, Math.min(y1, yb), c, 0, (Math.min(y1, yb) - z) / WALL_H);   // (face, on any line: a slanted wall's)
+    if (y1 > yb && y0 < yt) segQuad(q, p0, p1, nrm, Math.max(y0, yb), Math.min(y1, yt), body, (Math.max(y0, yb) - z) / WALL_H, (Math.min(y1, yt) - z) / WALL_H); if (y1 > yt + 1e-4) segQuad(q, p0, p1, nrm, Math.max(y0, yt), y1, body, 0.45, 0.85); };
   const bodyOf = id => { const st = live && rooms[id] && rooms[id].style; if (!st || !st.dark) return WHITE; const k = lin(hexMix(st.wain || '#3a3532', '#ffffff', 0.25)); return [k.r, k.g, k.b]; };   // (a face looking into a dark room, the arena's: the game draws its walls dark)   // (z: the floor it rises from; over a storey's height, between two floors, it goes on plain)
   // ROCK (the arena's rock walls; in the game's 3D view since build 2026-11-17e, a draft behind ?draft=arena before: docs/VIEW-3D.md). The owner's reference, 2026-11-16, a picture of layered cave walls: "These are nice walls"
   // (the first draft, faceted blocks, was not liked). From it, our own rock: wavy horizontal strata in lighter and darker stone, speckled with small pits, big low-poly faces pushed in
@@ -221,7 +242,7 @@ function buildLabFloor(lab, P0, how) {
   // the top: the skyline's four corners, in the top stratum's colour
   const rockCap = (G, b, top) => { const x = b.x, z = b.y, h = (px, pz) => top + jag(px, pz), C = [[x - 0.5, z + 0.5], [x + 0.5, z + 0.5], [x + 0.5, z - 0.5], [x - 0.5, z - 0.5]].map(c => [c[0], h(c[0], c[1]), c[1]]), pal = STRATA(b.own), col = iceOf(b.own) ? FROST : pal[ROWS % pal.length];
     putQuad(G.rcap, C[0], C[1], C[2], C[3], [0, 1, 0], [col.r, col.g, col.b], C.map(c => [c[0] / 0.9, c[2] / 0.9])); };
-  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) { rockCap(G, b, top); if (iceOf(b.own)) { G.ice = true; rooms[b.own].iceRock = (rooms[b.own].iceRock || 0) + 1; } } else topQuad(G.cap, b.x, b.y, top, WHITE);
+  for (const b of band.values()) { const G = b.G, top = b.rock ? b.hi + RH : b.hi + WALL_H; if (b.rock) { rockCap(G, b, top); if (iceOf(b.own)) { G.ice = true; rooms[b.own].iceRock = (rooms[b.own].iceRock || 0) + 1; } } else if (typeof b.own === 'string' && b.own.slice(0, 3) === 'sd_') topQuad(G.sdCap || (G.sdCap = quads()), b.x, b.y, top, WHITE); else topQuad(G.cap, b.x, b.y, top, WHITE);   // (THE SEWER DUNGEON's wall tops: dark concrete, not the lab's white cap)
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
@@ -229,14 +250,40 @@ function buildLabFloor(lab, P0, how) {
       if (!nb && rid && (live || dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
 
   // the cut stubs the sunk walls leave (under every block that can sink): their sides lie in the walls' own faces, so they are one solid with the walls for the ink line
-  const sFace = quads(), sTop = quads();
-  for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
+  // (THE SEWER DUNGEON's stubs: the dark concrete of its walls, not the lab's pale cut. The owner, 2026-11-22, of the first 3D pass: "some spots look really messed up. I really want to have like a smooth looking game")
+  const labFace = quads(), labTop = quads(), sdFace = quads(), sdTop = quads(); let sFace = labFace, sTop = labTop;
+  for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; sFace = isSd(b.own) ? sdFace : labFace; sTop = isSd(b.own) ? sdTop : labTop; topQuad(sTop, b.x, b.y, b.hi + CUT_H, WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
       if (nb && !nb.header) { if (live && nb.hides.some(h => h.length) && nb.hi < b.hi - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, nb.hi + CUT_H, b.hi + CUT_H, WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
       sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, b.hi + CUT_H, WHITE, 0, 1); } }   // (over the highest floor beside it)
 
+  // THE SEWER DUNGEON'S SLANTED WALLS: each a straight wall a tile thick outside its line, in pieces a tile long (each sinks with the rooms it stands in front of, as a block does, and leaves
+  // its stub). Its ends: where the room's next wall is a wall too, the two meet on the mitre (and, that one being of blocks, a wedge fills up to its last block's end); else square.
+  for (const { w, rec, wi } of diag) { const P = rec.poly; let n = w.n.slice(); if (inP(w.mid[0] + n[0] * 0.3, w.mid[1] + n[1] * 0.3, P)) n = [-n[0], -n[1]];
+    const endAt = (E, other) => { const sq = { o: [E[0] + n[0], E[1] + n[1]] }, e1 = [(other[0] - E[0]) / w.L, (other[1] - E[1]) / w.L];
+      const k = rec.walls.findIndex((w2, j) => j !== wi && w2.kind !== 'open' && w2.kind !== 'deck_rail' && w2.kind !== 'railing_wall' && w2.kind !== 'spill' && Math.hypot(w2.b[0] - w2.a[0], w2.b[1] - w2.a[1]) > 1e-6 && (Math.hypot(w2.a[0] - E[0], w2.a[1] - E[1]) < 0.02 || Math.hypot(w2.b[0] - E[0], w2.b[1] - E[1]) < 0.02));
+      if (k < 0) return sq; const w2 = rec.walls[k], V = Math.hypot(w2.a[0] - E[0], w2.a[1] - E[1]) < 0.02 ? w2.b : w2.a, dl = Math.hypot(V[0] - E[0], V[1] - E[1]), d = [(V[0] - E[0]) / dl, (V[1] - E[1]) / dl], nd = n[0] * d[0] + n[1] * d[1];
+      if (Math.abs(nd) < 1e-3) return sq; let nO = [d[1], -d[0]]; if (Math.sign(nO[0] * e1[0] + nO[1] * e1[1]) !== Math.sign(nd)) nO = [-nO[0], -nO[1]];
+      const kk = 1 + n[0] * nO[0] + n[1] * nO[1]; if (kk < 0.3) return sq; const o = [E[0] + (n[0] + nO[0]) / kk, E[1] + (n[1] + nO[1]) / kk], axis = Math.abs(d[0]) < 1e-6 || Math.abs(d[1]) < 1e-6;
+      return { o, mitred: true, wedge: nd < 0 && axis && band.has(K(Math.round(E[0] + d[0] * 0.5 + nO[0] * 0.5), Math.round(E[1] + d[1] * 0.5 + nO[1] * 0.5))) ? [E[0] + nO[0], E[1] + nO[1]] : null }; };
+    const eA = endAt(w.a, w.b), eB = endAt(w.b, w.a), N = Math.max(1, Math.round(w.L)), lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], c = wain(rec.id), body = bodyOf(rec.id), m1 = [-n[0], -n[1]], ua = [(w.a[0] - w.b[0]) / w.L, (w.a[1] - w.b[1]) / w.L], ub = [-ua[0], -ua[1]];
+    const pcs = []; for (let i = 0; i < N; i++) { const a = lerp(w.a, w.b, i / N), b = lerp(w.a, w.b, (i + 1) / N), oa = lerp(eA.o, eB.o, i / N), ob = lerp(eA.o, eB.o, (i + 1) / N), pm = lerp(a, b, 0.5);
+      const ci = [Math.round(pm[0] - n[0] * 0.5), Math.round(pm[1] - n[1] * 0.5)], z = roomAt.get(K(ci[0], ci[1])) === rec.id ? hAt(ci[0], ci[1]) : baseOf(rec.id);
+      const pb = { x: Math.round(pm[0] + n[0] * 0.5), y: Math.round(pm[1] + n[1] * 0.5), hi: z, rock: false }, hides = TURNS.map(t => hideMore(pb, t, hideOf(pb.x, pb.y, t)).sort()), G = groupOf(hides); G.sink = Math.max(G.sink || 0, WALL_H - B0 + 0.16);
+      pcs.push({ a, b, oa, ob, pm, z, G, stub: hides.some(h => h.length) }); }
+    // (a piece is a closed solid: its two long faces, its top, and an end wherever what stands beside it can sink apart from it: the wall's own end, or a piece of another group or floor)
+    const away = (p, q, from) => { const dx = q[0] - p[0], dy = q[1] - p[1], L2 = Math.hypot(dx, dy) || 1; let nn = [dy / L2, -dx / L2]; if (nn[0] * ((p[0] + q[0]) / 2 - from[0]) + nn[1] * ((p[1] + q[1]) / 2 - from[1]) < 0) nn = [-nn[0], -nn[1]]; return nn; };
+    pcs.forEach((pc, i) => { const { a, b, oa, ob, pm, z, G } = pc, top = z + WALL_H, zc = z + CUT_H, mid = [(a[0] + b[0] + oa[0] + ob[0]) / 4, (a[1] + b[1] + oa[1] + ob[1]) / 4], plans = [[a, b, ob, oa]], outs = [[oa, ob, n]];   // (plans: the outlines of its top; outs: its faces over the outside, each [from, to, its normal])
+      for (const [e, E, O, end, nbr, ue] of [[eA, a, oa, i === 0, pcs[i - 1], ua], [eB, b, ob, i === N - 1, pcs[i + 1], ub]]) {
+        if (!end) { if (nbr.G !== G || Math.abs(nbr.z - z) > 1e-4) outs.push([E, O, ue]); continue; }
+        if (e.wedge) { plans.push([E, e.o, e.wedge]); outs.push([e.o, e.wedge, away(e.o, e.wedge, mid)], [e.wedge, E, away(e.wedge, E, mid)]); } else outs.push([E, e.o, away(E, e.o, mid)]); }
+      face2(G.face, a, b, m1, z + B0, top, c, z, body); for (const [p, q, nn] of outs) face2(G.face, p, q, nn, minH + B0, top, c, minH, body);
+      for (const pl of plans) { polyTop(G.sdCap || (G.sdCap = quads()), pl, top, WHITE); if (pc.stub) polyTop(sdTop, pl, zc, WHITE); }
+      if (pc.stub) { segQuad(sdFace, a, b, m1, z + B0, zc, WHITE, 0, 1); for (const [p, q, nn] of outs) segQuad(sdFace, p, q, nn, minH + B0, zc, WHITE, 0, 1); }
+      const L1 = Math.hypot(b[0] - a[0], b[1] - a[1]), sm = new T.Mesh(new T.BoxGeometry(L1, 0.028, 0.03), seamOf(rec.id)); sm.rotation.y = -Math.atan2(w.u[1], w.u[0]); sm.position.set(pm[0] - n[0] * 0.012, z + WALL_H * 0.2 + 0.012, pm[1] - n[1] * 0.012); sm.userData.noInk = true; G.g.add(sm); }); }
+
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
   const edges = new Set(), glassMat = new T.MeshStandardMaterial({ color: lin('#96e6f2'), transparent: true, opacity: 0.2, roughness: 0.1, depthWrite: false, side: T.DoubleSide });
-  for (const t of thin) { const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), ax = t.u[0] ? 1 : 0;
+  for (const t of thin) { const nr = [t.u[1], t.u[0]], back = at(t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5), front = at(t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5), ax = t.u[0] ? 1 : 0; sFace = isSd(front || back) ? sdFace : labFace; sTop = isSd(front || back) ? sdTop : labTop;
     const z0 = live ? Math.max(front ? hAt(Math.round(t.m[0] + nr[0] * 0.5), Math.round(t.m[1] + nr[1] * 0.5)) : -1e9, back ? hAt(Math.round(t.m[0] - nr[0] * 0.5), Math.round(t.m[1] - nr[1] * 0.5)) : -1e9) : 0;   // (its floor)
     const behindT = tt => { const pa = [t.m[0] - nr[0] * 0.5, t.m[1] - nr[1] * 0.5], pb = [t.m[0] + nr[0] * 0.5, t.m[1] + nr[1] * 0.5]; return tu(tt, pa[0], pa[1]) + tv(tt, pa[0], pa[1]) < tu(tt, pb[0], pb[1]) + tv(tt, pb[0], pb[1]) ? at(pa[0], pa[1]) : at(pb[0], pb[1]); };   // (the side away from the camera, turned)
     const G = groupOf(TURNS.map(tt => { const bk = live ? behindT(tt) : back; return live ? hideThin(t.m, z0 + WALL_H, bk ? [bk] : [], tt) : bk ? [bk] : []; }));   // (live: and with the rooms it could hide someone in, each turn)
@@ -249,14 +296,14 @@ function buildLabFloor(lab, P0, how) {
       const r = put(G.g, box(1, rail, 0.14, P0.frame), WALL_H - rail / 2); r.castShadow = true; r.userData.inkKey = 'rail';
       if (Math.round(t.m[0] * t.u[0] + t.m[1] * t.u[1] - 0.5) % 2 === 0) { const p = new T.Mesh(new T.BoxGeometry(ax ? 0.07 : 0.18, WALL_H - sill, ax ? 0.18 : 0.07), P0.frame); p.position.set(t.m[0] - t.u[0] * 0.5, z0 + sill + (WALL_H - sill) / 2, t.m[1] - t.u[1] * 0.5); p.castShadow = true; p.userData.inkKey = 'rail'; G.g.add(p); }
       if (front) { const a = put(rooms[front].g, box(1, 0.028, 0.02, seamOf(front)), sill - 0.03, 0.085); a.userData.noInk = true; } }
-    else { const c = wain(front || back), hw = 0.08, x = t.m[0], y = t.m[1]; topQuad(G.cap, x, y, z0 + WALL_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5); topQuad(sTop, x, y, z0 + CUT_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5);
-      for (const s of [1, -1]) { face(G.face, { x: x + nr[0] * s * (hw - 0.5), y: y + nr[1] * s * (hw - 0.5) }, nr[0] * s, nr[1] * s, z0 + B0, z0 + WALL_H, c, z0); sideQuad(sFace, x + nr[0] * s * (hw - 0.5), y + nr[1] * s * (hw - 0.5), nr[0] * s, nr[1] * s, z0 + B0, z0 + CUT_H, WHITE, 0, 1);
+    else { const c = wain(front || back), hw = 0.08, x = t.m[0], y = t.m[1], sdT = isSd(front || back), tBody = sdT ? bodyOf(front || back) : undefined; topQuad(sdT ? G.sdCap || (G.sdCap = quads()) : G.cap, x, y, z0 + WALL_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5);   /* (the dungeon's: dark, as its walls are) */ topQuad(sTop, x, y, z0 + CUT_H, WHITE, ax ? 0.5 : hw, ax ? hw : 0.5);
+      for (const s of [1, -1]) { face(G.face, { x: x + nr[0] * s * (hw - 0.5), y: y + nr[1] * s * (hw - 0.5) }, nr[0] * s, nr[1] * s, z0 + B0, z0 + WALL_H, c, z0, tBody); sideQuad(sFace, x + nr[0] * s * (hw - 0.5), y + nr[1] * s * (hw - 0.5), nr[0] * s, nr[1] * s, z0 + B0, z0 + CUT_H, WHITE, 0, 1);
         if (!thin.some(q => !q.glass && Math.abs(q.m[0] - x - t.u[0] * s) < 0.01 && Math.abs(q.m[1] - y - t.u[1] * s) < 0.01)) for (const [q, h] of [[G.face, z0 + WALL_H], [sFace, z0 + CUT_H]]) {   // (its end, where it does not go on)
-          const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw; putQuad(q, [ex - rx, z0 + B0, ez - rz], [ex + rx, z0 + B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]); } } } }
+          const ex = x + t.u[0] * s * 0.5, ez = y + t.u[1] * s * 0.5, rx = t.u[1] * s * hw, rz = -t.u[0] * s * hw; putQuad(q, [ex - rx, z0 + B0, ez - rz], [ex + rx, z0 + B0, ez + rz], [ex + rx, h, ez + rz], [ex - rx, h, ez - rz], [t.u[0] * s, 0, t.u[1] * s], q === G.face && tBody ? tBody : WHITE, [[0.4, 0.3], [0.6, 0.3], [0.6, 0.9], [0.4, 0.9]]); } } } }
   const rockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, vertexColors: true, map: speck, flatShading: true });
   const iceRockMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.55, metalness: 0.05, vertexColors: true, map: speckIce, flatShading: true });   // (glazed: a little sheen)
-  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.rface, mat: G.ice ? iceRockMat : rockMat }, { q: G.rcap, mat: G.ice ? iceRockMat : rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
-  const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: sFace, mat: cutFace }, { q: sTop, mat: P0.cutTop }]); stubs.receiveShadow = true; stubs.userData.inkKey = 'wall'; stubs.userData.inkIds = [0, 1]; rest.add(stubs);
+  for (const G of groups.values()) { const m = quadMesh([{ q: G.face, mat: faceMat }, { q: G.cap, mat: P0.wallCap }, { q: G.sdCap || quads(), mat: P0.sdCap || (P0.sdCap = std('#2c3336', { roughness: 0.85 })) }, { q: G.rface, mat: G.ice ? iceRockMat : rockMat }, { q: G.rcap, mat: G.ice ? iceRockMat : rockMat }]); m.castShadow = m.receiveShadow = true; m.userData.inkKey = 'wall'; m.userData.inkIds = [0, 1, 2, 2]; G.g.add(m); G.mesh = m; }   // (rock its own solid for the ink line)
+  const cutFace = P0.cutFace.clone(), stubs = quadMesh([{ q: labFace, mat: cutFace }, { q: labTop, mat: P0.cutTop }, { q: sdFace, mat: P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 })) }, { q: sdTop, mat: P0.sdCap || (P0.sdCap = std('#2c3336', { roughness: 0.85 })) }]); stubs.receiveShadow = true; stubs.userData.inkKey = 'wall'; stubs.userData.inkIds = [0, 1, 0, 1]; rest.add(stubs);
 
   // the floors, each room in its own colours; the dark aprons beyond the ways out; the ground outside
   const plate = new T.MeshStandardMaterial({ map: floorTexture(), roughness: 0.42, metalness: 0.08, vertexColors: true }), F0 = lin('#c9dce1'), floorMats = {};
@@ -276,10 +323,20 @@ function buildLabFloor(lab, P0, how) {
     fallsAt.push({ room: rec.id, A, B, L, u, n }); }
   for (const rec of recs) { const rm = rooms[rec.id], st = rm.style, kind = (rec.floor && rec.floor.style) || 'plate', own = kind === 'wood' || kind === 'grate', top = quads(), side = quads(), base = lin(hexMix(st.fa, st.fb, 0.4)), cliff = { rface: quads() };
     const mat = own ? (floorMats[rec.id] = new T.MeshStandardMaterial({ map: kind === 'wood' ? plankTexture(st.fa, st.fb) : grateTexture(st.fa, st.fb), roughness: 0.5, metalness: 0.05, vertexColors: true })) : plate, k = own ? [1, 1, 1] : [base.r / F0.r, base.g / F0.g, base.b / F0.b];
-    for (const c of rec.cells) { if (wet.has(K(c[0], c[1]))) continue; const v = ((c[0] * 7 + c[1] * 13) % 5) / 5, h = hAt(c[0], c[1]); topQuad(top, c[0], c[1], h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
+    // (THE SEWER DUNGEON: the tiles a slanted edge of the room's outline crosses are cut along it, the floor and its sides; a room that is all water has none)
+    const cut = new Map(); if (live && isSd(rec.id) && rec.poly && !(rec.cells.length && rec.cells.every(c => wet.has(K(c[0], c[1]))))) { const P = rec.poly; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; if (Math.abs(a[0] - b[0]) < 1e-6 || Math.abs(a[1] - b[1]) < 1e-6) continue;
+        for (let x = Math.round(Math.min(a[0], b[0]) + 0.5); x <= Math.round(Math.max(a[0], b[0]) - 0.5); x++) for (let y = Math.round(Math.min(a[1], b[1]) + 0.5); y <= Math.round(Math.max(a[1], b[1]) - 0.5); y++) cut.set(K(x, y), [x, y]); } }
+    for (const [x, y] of cut.values()) { const kk = K(x, y), own = roomAt.get(kk) === rec.id; if (wet.has(kk) && own) continue; const pts = clipCell(rec.poly, x, y); if (!pts) continue;
+      let h = own ? hAt(x, y) : null; if (h === null) { for (const [dx, dy] of DIRS.concat([[1, 1], [-1, -1], [1, -1], [-1, 1]])) if (roomAt.get(K(x + dx, y + dy)) === rec.id && !wet.has(K(x + dx, y + dy))) { h = hAt(x + dx, y + dy); break; } if (h === null) h = baseOf(rec.id); }
+      const v = ((x * 7 + y * 13) % 5) / 5; polyTop(top, pts, h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)], p => [p[0] - x + 0.5, y + 0.5 - p[1]]);
+      for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[(i + 1) % pts.length], mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = Math.abs(mx - x - 0.5) < 1e-6 ? 1 : Math.abs(mx - x + 0.5) < 1e-6 ? -1 : 0, dy = dx ? 0 : Math.abs(my - y - 0.5) < 1e-6 ? 1 : Math.abs(my - y + 0.5) < 1e-6 ? -1 : 0;
+        if (!dx && !dy) { const L2 = Math.hypot(q[0] - p[0], q[1] - p[1]); let nn = [(q[1] - p[1]) / L2, -(q[0] - p[0]) / L2]; if (inP(mx + nn[0] * 0.02, my + nn[1] * 0.02, rec.poly)) nn = [-nn[0], -nn[1]]; segQuad(side, p, q, nn, minH + B0, h, WHITE, 0, 1); continue; }   // (along the slanted edge: down past the lowest floor; what lies beyond hides it or not)
+        const qk = K(x + dx, y + dy), nb = band.get(qk); if (roomAt.get(qk) === rec.id) continue; if (roomAt.has(qk) || aprons.has(qk)) { const h2 = roomAt.has(qk) ? hAt(x + dx, y + dy) : 0; if (h2 < h - 1e-4 || wet.has(qk)) segQuad(side, p, q, [dx, dy], wet.has(qk) ? minH + B0 : h2, h, WHITE, 0, 1); continue; }
+        if (nb && !nb.header) continue; segQuad(side, p, q, [dx, dy], minH + B0, h, WHITE, 0, 1); } }
+    for (const c of rec.cells) { if (wet.has(K(c[0], c[1])) || cut.has(K(c[0], c[1]))) continue; const v = ((c[0] * 7 + c[1] * 13) % 5) / 5, h = hAt(c[0], c[1]); topQuad(top, c[0], c[1], h, [k[0] * (1 - v * 0.035), k[1] * (1 - v * 0.03), k[2] * (1 - v * 0.025)]);
       for (const [dx, dy] of DIRS) { const q = K(c[0] + dx, c[1] + dy), nb = band.get(q); if (wet.has(q)) { banks.push([c[0], c[1], dx, dy, h, rec.id]); continue; } if (roomAt.has(q) || aprons.has(q)) { const h2 = roomAt.has(q) ? hAt(c[0] + dx, c[1] + dy) : 0, low = roomAt.get(q);
           if (h2 < h - 0.6 && low && low !== rec.id && rocky.has(low) && rec.structure !== 'scaffold') rockFace(cliff, { x: c[0], y: c[1], hi: h, own: low }, dx, dy, h2 + B0, h2, h); else if (h2 < h - 1e-4) sideQuad(side, c[0], c[1], dx, dy, h2, h, WHITE, 0, 1); continue; } if (nb && !nb.header) continue; sideQuad(side, c[0], c[1], dx, dy, minH + B0, h, WHITE, 0, 1); } }   // (a riser down to a lower tread; an edge over the void, down past the lowest floor)
-    const fm = quadMesh([{ q: top, mat }, { q: side, mat: P0.floorSide }]); fm.receiveShadow = true; fm.userData.inkKey = 'floor'; rm.g.add(fm); rm.floor = fm;
+    const fm = quadMesh([{ q: top, mat }, { q: side, mat: rec.id.slice(0, 3) === 'sd_' ? (P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 }))) : P0.floorSide }]);   /* (THE SEWER DUNGEON's risers, the sides of its steps and ledges: the dark concrete, not the lab's pale) */ fm.receiveShadow = true; fm.userData.inkKey = 'floor'; rm.g.add(fm); rm.floor = fm;
     if (cliff.rface.pos.length) { const cm = quadMesh([{ q: cliff.rface, mat: rockMat }]); cm.castShadow = cm.receiveShadow = true; cm.userData.inkKey = 'wall'; rm.g.add(cm); } }
   if (aprons.size && P0.outside) { const top = quads(), side = quads(); for (const a of aprons.values()) { const ah = live ? a.h : 0; topQuad(top, a.x, a.y, ah - 0.004, WHITE); for (const [dx, dy] of DIRS) { const q = K(a.x + dx, a.y + dy), nb = band.get(q); if (roomAt.has(q) || aprons.has(q) || (nb && !nb.header)) continue; sideQuad(side, a.x, a.y, dx, dy, minH + B0, ah - 0.004, WHITE, 0, 1); } }
     const am = quadMesh([{ q: top, mat: P0.outside }, { q: side, mat: P0.outside }]); am.receiveShadow = true; am.userData.inkKey = 'apron'; rest.add(am); }
@@ -318,7 +375,7 @@ function buildLabFloor(lab, P0, how) {
       if (roomAt.has(K(ci[0], ci[1]))) zIn = Math.max(zIn, hAt(ci[0], ci[1])); if (roomAt.has(K(co[0], co[1]))) zOut = Math.max(zOut, hAt(co[0], co[1])); }
     const z = Math.max(zIn, zOut, -1e8) > -1e8 ? Math.max(zIn, zOut) : baseOf(r.room), sd = zOut > zIn + 0.05 ? 1 : -1;   // (on the higher floor beside it, on that floor's side of the line)
     for (let i = 0; i <= n; i++) { const p = new T.Mesh(new T.BoxGeometry(0.06, RH, 0.06), P0.steelDk); p.position.set(w.a[0] + w.u[0] * w.L * i / n + sd * w.n[0] * 0.08, z + RH / 2, w.a[1] + w.u[1] * w.L * i / n + sd * w.n[1] * 0.08); gp.add(p); }
-    for (const [y, th] of [[RH, 0.05], [RH * 0.5, 0.03]]) { const b = new T.Mesh(new T.BoxGeometry(w.u[0] ? w.L : th, th, w.u[1] ? w.L : th), P0.frame); b.position.set(w.mid[0] + sd * w.n[0] * 0.08, z + y, w.mid[1] + sd * w.n[1] * 0.08); gp.add(b); }
+    for (const [y, th] of [[RH, 0.05], [RH * 0.5, 0.03]]) { const b = new T.Mesh(new T.BoxGeometry(w.L, th, th), P0.frame); b.rotation.y = -Math.atan2(w.u[1], w.u[0]); b.position.set(w.mid[0] + sd * w.n[0] * 0.08, z + y, w.mid[1] + sd * w.n[1] * 0.08); gp.add(b); }   // (along the edge, whichever way it runs: a diagonal one, the sewer dungeon's ring, had been a flat slab L by L)
     gp.userData.inkKey = 'rail'; setShadows(gp); rooms[r.room].g.add(gp); }
 
   // each room's own things: its floor marks, wall fittings (which go with the wall they hang on) and props
@@ -364,7 +421,10 @@ function buildLabFloor(lab, P0, how) {
     const bodies = new Map(); for (const [k, v] of wet) { const [x, y] = k.split(',').map(Number); let b = bodies.get(v.body); if (!b) bodies.set(v.body, b = { cells: [], room: v.room }); b.cells.push([x, y, v.h]); }
     for (const [id, b] of bodies) { const q = quads(), tex = streaks(), mat = new T.MeshBasicMaterial({ map: tex, color: 0x2e7a1e }), f = id !== 'river' && typeof FP_POOL_FLOW !== 'undefined' && FP_POOL_FLOW[id] ? FP_POOL_FLOW[id] : [1, 0], fL = Math.hypot(f[0], f[1]) || 1;
       for (const [x, y, h] of b.cells) { const y0 = h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
-      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL] }); }   // (dynamic: left out of the view's merging, so its colour can change)
+      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); let bed = null; if (isSd(b.room)) { const bt = quads(), bs = quads();   // (THE SEWER DUNGEON: the bed under this water, its floor and the risers between its heights, seen when the water is gone: the owner, 2026-11-22, "Empty: walk the bed")
+        for (const [x, y, h] of b.cells) { topQuad(bt, x, y, h, WHITE); for (const [dx, dy] of DIRS) { const nw = wet.get(K(x + dx, y + dy)); if (nw && nw.h < h - 1e-4) sideQuad(bs, x, y, dx, dy, nw.h, h, WHITE, 0, 1); } }
+        bed = quadMesh([{ q: bt, mat: P0.sdBed || (P0.sdBed = std('#46555b', { roughness: 0.9 })) }, { q: bs, mat: P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 })) }]); bed.receiveShadow = true; bed.userData.dynamic = true; bed.visible = false; rooms[b.room].g.add(bed); }
+      waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id, bed }); }   // (dynamic: left out of the view's merging, so its colour can change)
     // the banks down to it, and the hazard stripe along their lips (yellow and black, four a tile)
     const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#141414' : '#f2c11a'; g.beginPath(); g.moveTo(i * 8, h); g.lineTo(i * 8 + 8, h); g.lineTo(i * 8 + 12, 0); g.lineTo(i * 8 + 4, 0); g.fill(); } g.fillStyle = '#f2c11a'; g.beginPath(); g.moveTo(-4, h); g.lineTo(4, h); g.lineTo(8, 0); g.lineTo(0, 0); g.fill(); }, { repeat: true });
     const bankMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, vertexColors: true }), lipMat = new T.MeshStandardMaterial({ map: stripes, roughness: 0.7 }), BANK = lin3('#1d2422');
@@ -444,7 +504,28 @@ function buildLabFloor(lab, P0, how) {
     // A FRAME: the water's current and the streams' and falls' streaks run; their colours only when the purification has moved them on (the 2D's: colOf, toneOf); the eggs' and the brood
     // holes' green as the Nest stands (nestOf: infested, stirred, calmed, cleared)
     const cc = new T.Color(); let was = null, nestWas = null;
-    sewer.tick = (f0, gm) => { for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
+    // THE SEWER DUNGEON'S CULVERTS (the owner, 2026-11-22: "I want giant openings", culverts, an "Arch", at "Every channel end"; "a button that closes the pipe or the door from inside"): a solid of
+    // kind culvert is a thin slab on the wall line a channel ends against. On that line, facing the water: a concrete arch as wide as the channel, from under the water's surface up to just under
+    // the wall's top (or the floor's, where the channel comes in under a floor), dark inside; a ribbed steel door in the mouth, seen when the game says it is shut. It sinks with its wall.
+    // Its proportions and colours are the agent's, provisional.
+    const culverts = []; for (const rec of recs) for (const s2 of rec.solids.filter(s => s.kind === 'culvert')) { const b = s2.bb, along = (b[2] - b[0]) >= (b[3] - b[1]), L = along ? b[2] - b[0] : b[3] - b[1], mx = (b[0] + b[2]) / 2, mz = (b[1] + b[3]) / 2;
+      const line = Math.round((along ? mz : mx) - 0.5) + 0.5, cellAt = sg => along ? [Math.round(mx), Math.round(line + sg * 0.5)] : [Math.round(line + sg * 0.5), Math.round(mz)], sg = wet.has(K(...cellAt(1))) ? 1 : wet.has(K(...cellAt(-1))) ? -1 : 0; if (!sg) continue;
+      const ci = cellAt(sg), co = cellAt(-sg), bed = wet.get(K(ci[0], ci[1])).h - S - 0.3, bk = band.get(K(co[0], co[1])), top = bk ? bk.hi + WALL_H : roomAt.has(K(co[0], co[1])) ? hAt(co[0], co[1]) : bed + 2.2;
+      const W = L - 0.6, H = bk ? Math.max(top - bed - 0.16, W * 0.55) : Math.max(0.5, Math.min(top - bed - 0.16, W * 0.8)),   /* (GIANT: against a wall it rises past the wall's top, a concrete headwall round it; under a floor, as tall as fits) */ arch = (w, h) => { const sh = new T.Shape(), sp = h * 0.5; sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(w / 2, sp); sh.absellipse(0, sp, w / 2, h - sp, 0, Math.PI, false, 0); sh.lineTo(-w / 2, 0); return sh; };
+      const gp = new T.Group(), ring = arch(W + 0.5, H + 0.25); if (bk) { const hw = new T.Mesh(new T.BoxGeometry(W + 1.3, H + 0.55, 0.6), std('#3b4448', { roughness: 0.85 })); hw.position.set(0, (H + 0.55) / 2, -0.3); hw.castShadow = hw.receiveShadow = true; gp.add(hw); } ring.holes.push(arch(W, H));
+      const frame = new T.Mesh(new T.ExtrudeGeometry(ring, { depth: 0.34, bevelEnabled: false, curveSegments: 20 }), std('#8b979d', { roughness: 0.9 })); frame.castShadow = frame.receiveShadow = true; gp.add(frame);
+      const dark = new T.Mesh(new T.ShapeGeometry(arch(W, H), 20), new T.MeshBasicMaterial({ color: 0x020506 })); dark.position.z = 0.16; dark.userData.noInk = true; gp.add(dark);
+      const door = new T.Group(), plate = new T.Mesh(new T.ShapeGeometry(arch(W, H), 20), std('#7d8a90', { roughness: 0.55, metalness: 0.35 })); plate.position.z = 0.2; door.add(plate);
+      const wAt = y => y <= H * 0.5 ? W : W * Math.sqrt(Math.max(0, 1 - Math.pow((y - H * 0.5) / (H * 0.5), 2)));   // (the mouth's width at a height)
+      for (let y = 0.75; y < H - 0.15; y += 0.36) { const rib = new T.Mesh(new T.BoxGeometry(Math.max(0.1, wAt(y) - 0.08), 0.06, 0.05), std('#39444a', { roughness: 0.6, metalness: 0.4 })); rib.position.set(0, y, 0.22); door.add(rib); }
+      const hz = new T.Mesh(new T.BoxGeometry(W - 0.08, 0.16, 0.05), std('#e0a81e', { roughness: 0.6 })); hz.position.set(0, 0.5, 0.22); door.add(hz);
+      door.visible = false; gp.add(door);
+      gp.position.set(along ? mx : line, bed, along ? line : mz); gp.rotation.y = along ? (sg > 0 ? 0 : Math.PI) : (sg > 0 ? Math.PI / 2 : -Math.PI / 2); gp.userData.dynamic = true;   /* (its own piece: its door shows and hides, so it is not merged with the still things) */
+      (bk && bk.G ? bk.G.g : rooms[rec.id].g).add(gp); culverts.push({ id: s2.id, door, gp }); }
+    sewer.culverts = culverts;
+    sewer.tick = (f0, gm) => { for (const c of culverts) c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id));
+      if (gm && gm.waterLow) for (const w of waters) if (w.bed) { const low = !!gm.waterLow(w.id); if (w.bed.visible !== low) { w.bed.visible = low; w.m.visible = !low; } }   /* (THE SEWER DUNGEON: a body of water whose culvert is shut, or that is drained, is gone and its bed shows; it is back when the culvert is opened) */
+      for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
       const T0 = gm && gm.nest ? gm.nest(f0) : null; if (T0) { const ph = Math.sin(f0 * T0.p * 2);
         for (const gl of glows) gl.m.material.opacity = T0.g * gl.k * (0.7 + 0.3 * Math.sin(f0 * T0.p * 2 + gl.ph));
         if (T0.s !== nestWas || T0.g > 0.05) { nestWas = T0.s; for (const em of eggMeshes) { const M = em.material; if (T0.s === 'cleared') { M.color.set('#5e6356').convertSRGBToLinear(); M.emissive.setRGB(0, 0, 0); } else { M.color.set('#d3e6ae').convertSRGBToLinear(); M.emissive.set('#8cff5a').convertSRGBToLinear().multiplyScalar(T0.g * (0.3 + 0.1 * ph)); } } } }

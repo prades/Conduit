@@ -5,7 +5,8 @@
 const fs = require('fs'), path = require('path'), ROOT = path.resolve(__dirname, '..');
 const { SHAPES, snap, VALVES } = require(path.join(ROOT, 'design/sewer-dungeon/trace.js')), { joins } = require(path.join(ROOT, 'design/sewer-dungeon/joins.js'));
 const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G), Math.round(p[1] * G)];
-const LABEL = { drain_west: 'Drain Hall', drain_north: 'Drain Hall', drain_walk: 'Drain Hall', drain_east: 'Drain Hall', drain_south: 'Drain Hall', drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
+const LABEL = { west_channel2: 'West Channel', west_channel3: 'West Channel', channel_steps: 'West Channel', west_walk_n: 'West Channel', west_walk_n2: 'West Channel', west_walk_n3: 'West Channel', west_walk_s: 'West Channel', west_walk_s2: 'West Channel', west_walk_s3: 'West Channel', central_walk_w: 'Central Channel', central_walk_w_s: 'Central Channel', central_walk_e: 'Central Channel', hall_stair: 'West Hall', hall_south: 'West Hall', pur_pass: 'Purification Chamber', hl_approach: 'High Ledge Room', er_approach: 'East Rubble', ne_door: 'Northeast Offices', ne_crack: 'Northeast Offices', subway_diag: 'Subway Exit',   /* (a walkway or a way in takes the name of the channel it runs along or the room it leads to: the agent's; the rest are 'Sewers') */
+  drain_west: 'Drain Hall', drain_north: 'Drain Hall', drain_walk: 'Drain Hall', drain_east: 'Drain Hall', drain_south: 'Drain Hall', drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
 // (so the prototype reads: walkways pale, rooms a little darker, a drain's bed and the nest their own colours; stand-ins till the approved concrete and checker plate are in: docs/SEWER-PROPS.md)
@@ -55,6 +56,14 @@ function build() {
     if (wet(s.id) || s.kind === 'drain') props.push({ id: P + s.id + '_water', room: P + s.id, shape: 'poly', poly: s.p.map(px), status: 'placed', kind: wet(s.id) ? 'river' : 'pool', sewer_dungeon: s.kind });
   }
   const open = (id, a, b, r) => { openings.push({ id: 'open_' + P + id, a: px(a), b: px(b), rooms: r.map(x => P + x), door: null, open: true, position_status: 'placed' }); };   // (open: a plain gap, no door frame drawn in it. The owner, 2026-11-22, circling a frame standing across a walkway: "Remove this dumb arc doorway")
+  // (WATER TO WATER: when a channel is emptied its bed is walked, so two stretches of water that meet are joined like floors: on one level a plain doorway; at a fall, steps two tiles long in the
+  // lower stretch. The owner, 2026-11-22, of what low water is: "Empty: walk the bed". While the water stands, nothing walks there and none of it shows.)
+  for (const j of J) { if (!(wet(j.rooms[0]) && wet(j.rooms[1]))) continue; const [ra, rb] = j.rooms, la = by[ra].wl || 0, lb = by[rb].wl || 0, id = 'bed_' + ra + '__' + rb; open(id, j.a, j.b, j.rooms);
+    if (la === lb) { connections.push({ id: 'conn_' + P + id, rooms: j.rooms.map(x => P + x), opening: 'open_' + P + id }); continue; }
+    const up = la > lb ? ra : rb, dn = la > lb ? rb : ra, vert = Math.abs(j.a[0] - j.b[0]) < 0.01, cdn = by[dn].p.reduce((t, q) => t + q[vert ? 0 : 1], 0) / by[dn].p.length, at = vert ? j.a[0] : j.a[1], sg = cdn > at ? 1 : -1, lo2 = Math.min(j.a[vert ? 1 : 0], j.b[vert ? 1 : 0]), hi2 = Math.max(j.a[vert ? 1 : 0], j.b[vert ? 1 : 0]);
+    const rect = vert ? [Math.min(at, at + sg * 2), lo2, Math.max(at, at + sg * 2), hi2] : [lo2, Math.min(at, at + sg * 2), hi2, Math.max(at, at + sg * 2)];
+    ramps.push({ id: 'r_' + P + id, rooms: [P + up, P + dn], shape: 'steps', between_levels: [WATER_LV(Math.max(la, lb)), WATER_LV(Math.min(la, lb))], descends_toward: P + dn, position_status: 'placed', zone: { rect: rect.map(v => Math.round(v * G)), axis: vert ? 'x' : 'y', c0: Math.round(at * G), c1: Math.round((at + sg * 2) * G), steps: 3 } });
+    connections.push({ id: 'conn_' + P + id, rooms: [P + up, P + dn], opening: 'open_' + P + id, ramp: 'r_' + P + id }); }
   for (const j of J) { if (wet(j.rooms[0]) || wet(j.rooms[1]) || j.lv[0] !== j.lv[1]) continue; const id = j.rooms.join('__') + (openings.some(o => o.id === 'open_' + P + j.rooms.join('__')) ? '_2' : '');
     open(id, j.a, j.b, j.rooms); connections.push({ id: 'conn_' + P + id, rooms: j.rooms.map(x => P + x), opening: 'open_' + P + id }); }
   for (const f of FLIGHTS) { const cand = J.filter(j => f.rooms.every(r => j.rooms.includes(r)));
@@ -62,11 +71,11 @@ function build() {
     if (!j) throw new Error('the flight ' + f.id + ' has no shared wall to stand on');
     let a = j.a, b = j.b; if (f.on && f.on.x && f.on.x[0] !== f.on.x[1]) { a = [f.on.x[0], j.a[1]]; b = [f.on.x[1], j.a[1]]; } if (f.id === 'ledge') { a = [55.5, 23.5]; b = [57.5, 23.5]; }
     const hi = LV(by[f.rooms[0]].lvl), lo = f.wet ? WATER_LV(by[f.rooms[1]].wl) : LV(by[f.rooms[1]].lvl), zA = snap([f.zone[0], f.zone[1]]), zB = snap([f.zone[2], f.zone[3]]), z = [zA[0], zA[1], zB[0], zB[1]], c = f.axis === 'x' ? [z[0], z[2]] : [z[1], z[3]];
-    a = snap(a); b = snap(b); if (!f.wet) open('flight_' + f.id, a, b, f.rooms);   // (on the game's grid, as the trace is)
+    a = snap(a); b = snap(b); open('flight_' + f.id, a, b, f.rooms);   // (the flooded staircase too: it is the way down into the West Channel once that is emptied)   // (on the game's grid, as the trace is)
     // (c0 is the upper floor's end of the flight, c1 the lower's: the game reads the height from the first room to the second along the axis)
     const upFirst = f.down !== 'low', c0 = (upFirst ? c[0] : c[1]) * G, c1 = (upFirst ? c[1] : c[0]) * G;
     ramps.push({ id: 'r_' + P + f.id, rooms: f.rooms.map(x => P + x), shape: 'steps', between_levels: [hi, lo], descends_toward: P + f.rooms[1], position_status: 'placed', zone: { rect: [z[0] * G, z[1] * G, z[2] * G, z[3] * G].map(Math.round), axis: f.axis, c0: Math.round(c0), c1: Math.round(c1), steps: f.steps } });
-    if (!f.wet) connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
+    connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
   // THE CHANNEL'S SHAPE: AN INVERTED TRAPEZOID (the owner, 2026-11-22: "The shape of the channel should be like a inverted trapezoid"): each side of a channel slopes in from its walkway's edge down to the
   // bed, BANK tiles across (the bed between them narrower than the top). A slope along every straight edge a walkway shares with its water, the ring's and the landing's too; not at the flooded steps.
   const BANK = 1.5; let nb = 0;
@@ -76,7 +85,7 @@ function build() {
     let rect, c0, c1; if (horiz) { const y = j.a[1], sg = cy > y ? 1 : -1; rect = [Math.min(j.a[0], j.b[0]), Math.min(y, y + sg * BANK), Math.max(j.a[0], j.b[0]), Math.max(y, y + sg * BANK)]; c0 = y; c1 = y + sg * BANK; }
     else { const x = j.a[0], sg = cx > x ? 1 : -1; rect = [Math.min(x, x + sg * BANK), Math.min(j.a[1], j.b[1]), Math.max(x, x + sg * BANK), Math.max(j.a[1], j.b[1])]; c0 = x; c1 = x + sg * BANK; }
     ramps.push({ id: 'r_' + P + 'bank_' + (++nb), rooms: [P + d, P + w], shape: 'slope', between_levels: [hi, lo], descends_toward: P + w, position_status: 'placed', zone: { rect: rect.map(v => Math.round(v * G)), axis: horiz ? 'y' : 'x', c0: Math.round(c0 * G), c1: Math.round(c1 * G) } }); }
-  for (const v of VALVES) props.push({ id: P + v.id, room: P + v.room, shape: 'rect', rect: [(v.at[0] - 0.5) * G, (v.at[1] - 0.5) * G, (v.at[0] + 0.5) * G, (v.at[1] + 0.5) * G], status: 'placed', kind: 'valve', note: v.note });   // (the game's own valve housing, till the approved drain valve's model is in: docs/SEWER-PROPS.md)
+  for (const v of VALVES) props.push({ id: P + v.id, room: P + v.room, shape: 'rect', rect: v.r.map(t => Math.round(t * G)), status: 'placed', kind: v.kind, note: v.note });   // (a piece of the approved kit: js/propsprites.js PS_FAMILY, docs/SEWER-PROPS.md §10)
   const levels = [0, 1, 2].map(l => ({ id: WATER_LV(l), label: 'sewer channel ' + l, height: +(BASE + l * STEP - DEEP).toFixed(2) })).concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
   return { levels, rooms, interiors, openings, connections, ramps, props, floors };
 }

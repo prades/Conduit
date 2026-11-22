@@ -238,8 +238,12 @@ const GAMEVIEW = (function () {
   // ── everything made: the still and the moving given their colours for the ink line; the bodies first seen made now ──
   tagInk(scene); warm();
   let lastF = null, snap = true, roomWas = null;
+  // A FRAME WITH NO PICTURE (for the tests: tests/view3d.js steps through an attack's frames and looks at few of them; tests/view3ddry.js holds this to a drawn frame): with noPic on, a frame
+  // does everything a frame does (the camera, the walls, the bodies, the attacks' effects, the fields: all of the view's own state moves on) but the drawing itself, which in a browser with no
+  // graphics card is nearly all of a frame's cost. The next frame that is drawn brings the shadows up to date whatever their turn (stale), so its picture is the one it would have been.
+  let noPic = false, stale = false;
   const stats = { frames: 0, draws: 0, tris: 0, bodies: 0, ms: 0, fx: false, built: CORE.built(), webgl: CORE.gl2 ? 2 : 1 };   // (fx: this frame's floor marks were laid on)
-  const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
+  const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f), culvert: id => GM.culvertShut(id), waterLow: id => GM.waterLow(id) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
@@ -251,7 +255,8 @@ const GAMEVIEW = (function () {
     for (const [u, b] of live) if (b.used !== stamp) { if (!faintStart(u, b, f0)) give(b); live.delete(u); }
     faintStep(f0);
     stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js; after ATT.draw, so a field the registry drew this frame is left to it)
-    const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx });   // (the floor's marks are laid out for a quarter turn: none while it swings)
+    if (noPic) { stale = true; snap = false; stats.frames++; stats.dry = (stats.dry || 0) + 1; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.ms = performance.now() - t0; return; }   // (a frame with no picture: above)
+    const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx, fresh: stale }); stale = false;   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
   return {
     stats, state, world, camera: cam, core: CORE, attacks: ATT,
@@ -265,6 +270,7 @@ const GAMEVIEW = (function () {
     checkBody(id) { let b = null; try { if (!JOBS[id]) return 'no model'; b = formBody(id); if (!b) return 'not built';
         const n = 16 + 8 * (b.job.blocks ? b.job.blocks.length : b.job.consume ? 1 : 0); for (let c = 0; c < n; c++) pose(b, c); return null; }
       catch (e) { return String((e && e.message) || e); } finally { if (b) scene.remove(b.holder); } },
+    dry(on) { noPic = !!on; return noPic; },   // (for the tests: frames with no picture, above)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
