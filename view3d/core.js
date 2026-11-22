@@ -149,7 +149,7 @@ function view3dCore(opts) {
   // more.fx (the game's view; with the ink line only): a picture the size of the screen (a canvas, its alpha as it is) laid on the FLOOR alone, where the floor shows: under
   // everything that stands on it ──
   const SEE = c => { c.layers.set(0); c.layers.enable(1); c.layers.enable(2); };   // (layers: 0 what moves, 1 what stands still, 2 what carries no ink line; 3 is the still things' plain copies, for the line's drawing and the shadows')
-  function draw(camera, over, more) { cam = camera; renderer.info.reset(); if (key && key.castShadow !== state.shadows) key.castShadow = state.shadows; renderer.shadowMap.needsUpdate = !!key && state.shadows && (drawn++ % 2 === 0 || !!opts.test);
+  function draw(camera, over, more) { cam = camera; renderer.info.reset(); if (key && key.castShadow !== state.shadows) key.castShadow = state.shadows; renderer.shadowMap.needsUpdate = !!key && state.shadows && (drawn++ % 2 === 0 || !!opts.test || !!(more && more.fresh));   // (fresh: the frames before this one were not drawn, view3d/gameview.js noPic: the shadows are a frame's own whatever their turn)
     if (state.ink) { SEE(cam); renderer.setRenderTarget(rtMain); renderer.render(scene, cam);
       const bg = scene.background; scene.background = null; scene.overrideMaterial = idMat; cam.layers.set(0); cam.layers.enable(3); renderer.setRenderTarget(rtId); renderer.setClearColor(0x000000, 1); renderer.clear(); renderer.render(scene, cam); scene.overrideMaterial = null; scene.background = bg;
       const fx = more && more.fx && keyIds.floor ? more.fx : null; comp.uniforms.tFx.value = fx; comp.uniforms.useFx.value = fx ? 1 : 0; if (fx) { const c = idCol(keyIds.floor); comp.uniforms.floorId.value.set(c[0], c[1], c[2]); }
