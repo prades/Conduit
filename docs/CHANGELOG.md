@@ -33,7 +33,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
-### Build `2026-11-17bp` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: walkways along the channels 3 tiles wide (work in progress)
+### Build `2026-11-17bq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: walkways along the channels 3 tiles wide (work in progress)
 - **The ask** (the owner, 2026-11-22): "more walking space on these sidewalks [...] alongside the channels".
 - **What it does** (only with `?sewerdungeon`): the walkways beside both channels are 3 tiles wide.
 - `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
