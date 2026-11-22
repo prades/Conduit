@@ -40,7 +40,7 @@ Both still stood after the owner's pick: direction 1 kept real time (it slowed t
   - The squad and the player: the forms' own models (`design/evolutions/`).
   - The Crystal's pad and tank: the game's models.
 - **Modelled for the pictures** (stand-ins):
-  - The ant, after the game's drawing of it (`js/bugs3d.js`: the same parts and measures, its heights raised by half).
+  - The ant, after the game's drawing of it (`js/bugs3d.js`: the same parts and measures, its heights raised by half). *(Superseded 2026-11-22 as the ant's 3D look: THE STALKER, variation D (earthy), the owner: **"Earthy and the sewers look good"**; its builder, `buildAnt` in `design/style-evolution/round2/chamber.js`, is now the Stalker's, and the game's 3D view draws it: `VIEW-3D.md` §4.4. These pictures and the test page `lab3d/`, a snapshot made before, keep the old ant until they are made again.)*
   - The crystal, its liquid and its bubbles, the doors and the wall fittings (the game paints these flat, in code).
   - The walls nearest the camera are cut down so it can see in.
 - **The screens drawn over them** (bars, menus, cards, numbers, timings) are the agent's, for the picture. The move names are the game's; what they cost and do on these screens is not a proposal.
@@ -244,7 +244,7 @@ Any look can take any fight, for example CRYSTAL LAB 3D's look with THE CRYSTAL'
 
 - **Not the game, and not a design of the game's fight.** It is a place to see the look move, to feel a pace, and to read a frame rate.
 - **Not the whole facility**: one level, eight rooms. No deck, arena, Nest, sewers or domains.
-- Its ant, crystal, doors, glass and wall fittings are modelled for the pictures after the game's drawings (§3.2); the game draws those in code.
+- Its ant, crystal, doors, glass and wall fittings are modelled for the pictures after the game's drawings (§3.2); the game draws those in code. *(The page's ant is the one of its making, 2026-11-16; since 2026-11-22 its builder makes THE STALKER, D (`VIEW-3D.md` §4.4), which the page shows only once `node tools/lab3d.js` makes it again.)*
 - The ways it finds (`live/walk.js`, a grid) are its own, not the game's (`js/facility.js`).
 
 ### 8.9 Readings

@@ -919,3 +919,8 @@ Designed by the owner the same day (§2.1 to §2.25: each follower's own basic a
 3. **In a card battle**, should a scout's backup join the battle? Today it comes up outside it and leaves you and your squad alone (`CARD-BATTLES.md` §2.6): for the card battles' work.
 4. **Your clones** keep their species' specials (an ant scout clone still leaps, an ant striker or tank clone still has MANDIBLE FRENZY): should an ant clone of yours get the new ones instead?
 
+
+## The sewers' look in 3D, 1 FAITHFUL (built on branch `claude/sewer-look`, 2026-11-22; `VIEW-3D.md` stage 3)
+1. **Lamps in the sewer dungeon.** Its map has no `light` or `wall_light` entries, so the look puts no lamps there and the rooms are drawn at its dark ambient. Should the dungeon get lights, and where? (Not invented: the owner's.)
+2. **The falls and the arch's stream** keep the 2D's toxic green beside the olive water. Should they follow the look?
+3. **The clean water** is the agent's: the game's clean `#2a8aa8` a quarter of the way to the olive (`#327e85`). To judge on an iPad.
