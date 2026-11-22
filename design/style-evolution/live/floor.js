@@ -421,7 +421,7 @@ function buildLabFloor(lab, P0, how) {
     const bodies = new Map(); for (const [k, v] of wet) { const [x, y] = k.split(',').map(Number); let b = bodies.get(v.body); if (!b) bodies.set(v.body, b = { cells: [], room: v.room }); b.cells.push([x, y, v.h]); }
     for (const [id, b] of bodies) { const q = quads(), tex = streaks(), mat = new T.MeshBasicMaterial({ map: tex, color: 0x2e7a1e }), f = id !== 'river' && typeof FP_POOL_FLOW !== 'undefined' && FP_POOL_FLOW[id] ? FP_POOL_FLOW[id] : [1, 0], fL = Math.hypot(f[0], f[1]) || 1;
       for (const [x, y, h] of b.cells) { const y0 = h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
-      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL] }); }   // (dynamic: left out of the view's merging, so its colour can change)
+      const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id }); }   // (dynamic: left out of the view's merging, so its colour can change)
     // the banks down to it, and the hazard stripe along their lips (yellow and black, four a tile)
     const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#141414' : '#f2c11a'; g.beginPath(); g.moveTo(i * 8, h); g.lineTo(i * 8 + 8, h); g.lineTo(i * 8 + 12, 0); g.lineTo(i * 8 + 4, 0); g.fill(); } g.fillStyle = '#f2c11a'; g.beginPath(); g.moveTo(-4, h); g.lineTo(4, h); g.lineTo(8, 0); g.lineTo(0, 0); g.fill(); }, { repeat: true });
     const bankMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, vertexColors: true }), lipMat = new T.MeshStandardMaterial({ map: stripes, roughness: 0.7 }), BANK = lin3('#1d2422');
@@ -505,6 +505,7 @@ function buildLabFloor(lab, P0, how) {
     // kind culvert is a thin slab on the wall line a channel ends against. On that line, facing the water: a concrete arch as wide as the channel, from under the water's surface up to just under
     // the wall's top (or the floor's, where the channel comes in under a floor), dark inside; a ribbed steel door in the mouth, seen when the game says it is shut. It sinks with its wall.
     // Its proportions and colours are the agent's, provisional.
+    const LOW_DROP = 20 / UH;   // (how far the water falls when its culvert is shut, 20 px of the game: the agent's, provisional)
     const culverts = []; for (const rec of recs) for (const s2 of rec.solids.filter(s => s.kind === 'culvert')) { const b = s2.bb, along = (b[2] - b[0]) >= (b[3] - b[1]), L = along ? b[2] - b[0] : b[3] - b[1], mx = (b[0] + b[2]) / 2, mz = (b[1] + b[3]) / 2;
       const line = Math.round((along ? mz : mx) - 0.5) + 0.5, cellAt = sg => along ? [Math.round(mx), Math.round(line + sg * 0.5)] : [Math.round(line + sg * 0.5), Math.round(mz)], sg = wet.has(K(...cellAt(1))) ? 1 : wet.has(K(...cellAt(-1))) ? -1 : 0; if (!sg) continue;
       const ci = cellAt(sg), co = cellAt(-sg), bed = wet.get(K(ci[0], ci[1])).h - S - 0.3, bk = band.get(K(co[0], co[1])), top = bk ? bk.hi + WALL_H : roomAt.has(K(co[0], co[1])) ? hAt(co[0], co[1]) : bed + 2.2;
@@ -520,7 +521,9 @@ function buildLabFloor(lab, P0, how) {
       gp.position.set(along ? mx : line, bed, along ? line : mz); gp.rotation.y = along ? (sg > 0 ? 0 : Math.PI) : (sg > 0 ? Math.PI / 2 : -Math.PI / 2); gp.userData.dynamic = true;   /* (its own piece: its door shows and hides, so it is not merged with the still things) */
       (bk && bk.G ? bk.G.g : rooms[rec.id].g).add(gp); culverts.push({ id: s2.id, door, gp }); }
     sewer.culverts = culverts;
-    sewer.tick = (f0, gm) => { for (const c of culverts) c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id)); for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
+    sewer.tick = (f0, gm) => { for (const c of culverts) c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id));
+      if (gm && gm.waterLow) for (const w of waters) { const want = gm.waterLow(w.id) ? -LOW_DROP : 0, y = w.m.position.y; if (Math.abs(want - y) > 1e-4) w.m.position.y = y + Math.sign(want - y) * Math.min(Math.abs(want - y), 0.006); }   /* (THE SEWER DUNGEON: a body of water whose culvert is shut sinks to its low level, and rises again when it is opened; a second or so each way) */
+      for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
       const T0 = gm && gm.nest ? gm.nest(f0) : null; if (T0) { const ph = Math.sin(f0 * T0.p * 2);
         for (const gl of glows) gl.m.material.opacity = T0.g * gl.k * (0.7 + 0.3 * Math.sin(f0 * T0.p * 2 + gl.ph));
         if (T0.s !== nestWas || T0.g > 0.05) { nestWas = T0.s; for (const em of eggMeshes) { const M = em.material; if (T0.s === 'cleared') { M.color.set('#5e6356').convertSRGBToLinear(); M.emissive.setRGB(0, 0, 0); } else { M.color.set('#d3e6ae').convertSRGBToLinear(); M.emissive.set('#8cff5a').convertSRGBToLinear().multiplyScalar(T0.g * (0.3 + 0.1 * ph)); } } } }

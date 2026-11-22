@@ -38205,7 +38205,9 @@ function sewerDungeonDrain() {
     return true;
 }
 function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q => q.id === SEWER_DRAIN.valve) : null; return !!s && typeof player !== "undefined" && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach; }
-const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north" }, { id: "sd_culvert_west", sw: "sd_valve_west" }, { id: "sd_culvert_drain", sw: "sd_valve_pool" }];
+const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north", waters: ["sd_central_channel_water"] }, { id: "sd_culvert_west", sw: "sd_valve_west", waters: ["sd_west_channel_water", "sd_west_channel2_water", "sd_west_channel3_water"] },
+    { id: "sd_culvert_drain", sw: "sd_valve_pool", waters: ["sd_low_drain_water", "sd_drain_pool_water"] }];
+function sewerDungeonWaterLow(waterId) { return SEWER_CULVERTS.some(c => c.waters.indexOf(waterId) >= 0 && sewerDungeonCulvertShut(c.id)); }
 function sewerDungeonCulvertShut(id) { return !!(_fp && _fp.sdShut && _fp.sdShut[id]); }
 function sewerDungeonCulvertNear() { if (!_fp || !_fp.F || typeof player === "undefined")
     return null; for (const c of SEWER_CULVERTS) {

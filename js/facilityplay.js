@@ -917,8 +917,13 @@ function sewerDungeonDrain() {
 }
 function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q => q.id === SEWER_DRAIN.valve) : null; return !!s && typeof player !== "undefined" && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach; }
 // THE CULVERTS' DOORS (the owner, 2026-11-22: "let's just make a button that closes the pipe or the door from inside"): each culvert has a door inside its mouth, shut and opened at its button,
-// the sluice switch near it. A stand-in: the door shows shut or open (the 3D view), the switch is thrown or up; WHAT SHUTTING ONE DOES TO THE WATER IS NOT DESIGNED, and nothing changes yet.
-const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north" }, { id: "sd_culvert_west", sw: "sd_valve_west" }, { id: "sd_culvert_drain", sw: "sd_valve_pool" }];
+// the sluice switch near it. A stand-in: the door shows shut or open (the 3D view), the switch is thrown or up.
+// SHUT, A CULVERT LOWERS ITS WATER (the owner, 2026-11-22, asked what shutting one should do: "They should lower the water level"): the water it feeds (`waters`: the map's bodies of water) is low
+// while it is shut and comes back when it is opened. Which water each feeds is the agent's reading (each its own channel). So far the low water is only SEEN, lower, in the 3D view: how far it
+// falls, and what the low water lets you do (walk a bed, reach a route), is not designed.
+const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north", waters: ["sd_central_channel_water"] }, { id: "sd_culvert_west", sw: "sd_valve_west", waters: ["sd_west_channel_water", "sd_west_channel2_water", "sd_west_channel3_water"] },
+    { id: "sd_culvert_drain", sw: "sd_valve_pool", waters: ["sd_low_drain_water", "sd_drain_pool_water"] }];
+function sewerDungeonWaterLow(waterId) { return SEWER_CULVERTS.some(c => c.waters.indexOf(waterId) >= 0 && sewerDungeonCulvertShut(c.id)); }
 function sewerDungeonCulvertShut(id) { return !!(_fp && _fp.sdShut && _fp.sdShut[id]); }
 function sewerDungeonCulvertNear() { if (!_fp || !_fp.F || typeof player === "undefined") return null; for (const c of SEWER_CULVERTS) { const s = _fp.F.solids.find(q => q.id === c.sw); if (s && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach) return c; } return null; }
 function sewerDungeonCulvertToggle(id) { const c = SEWER_CULVERTS.find(q => q.id === id); if (!c || !_fp) return false; if (!_fp.sdShut) _fp.sdShut = {}; _fp.sdShut[id] = !_fp.sdShut[id];

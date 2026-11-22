@@ -25294,6 +25294,7 @@ const VIEW3D_GAME = (0, eval)(`({
   // 2D puts them; the dam's pools
   sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
   sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
+  waterLow(id) { return typeof sewerDungeonWaterLow === "function" && sewerDungeonWaterLow(id); },
   culvertShut(id) { return typeof sewerDungeonCulvertShut === "function" && sewerDungeonCulvertShut(id); },   // (THE SEWER DUNGEON's culverts: is its door shut: js/facilityplay.js)
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
   // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
@@ -28745,7 +28746,7 @@ function buildLabFloor(lab, P0, how) {
             m.userData.dynamic = true;
             m.userData.water = true;
             rooms[b.room].g.add(m);
-            waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL] });
+            waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id });
         }
         const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) {
             g.fillStyle = i % 2 ? '#141414' : '#f2c11a';
@@ -29002,6 +29003,7 @@ function buildLabFloor(lab, P0, how) {
         }
         const cc = new T.Color();
         let was = null, nestWas = null;
+        const LOW_DROP = 20 / UH;
         const culverts = [];
         for (const rec of recs)
             for (const s2 of rec.solids.filter(s => s.kind === 'culvert')) {
@@ -29050,6 +29052,12 @@ function buildLabFloor(lab, P0, how) {
         sewer.tick = (f0, gm) => {
             for (const c of culverts)
                 c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id));
+            if (gm && gm.waterLow)
+                for (const w of waters) {
+                    const want = gm.waterLow(w.id) ? -LOW_DROP : 0, y = w.m.position.y;
+                    if (Math.abs(want - y) > 1e-4)
+                        w.m.position.y = y + Math.sign(want - y) * Math.min(Math.abs(want - y), 0.006);
+                }
             for (const w of waters)
                 w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004);
             for (const fl of flows)
@@ -35332,7 +35340,7 @@ const GAMEVIEW = (function () {
     warm();
     let lastF = null, snap = true, roomWas = null;
     const stats = { frames: 0, draws: 0, tris: 0, bodies: 0, ms: 0, fx: false, built: CORE.built(), webgl: CORE.gl2 ? 2 : 1 };
-    const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f), culvert: id => GM.culvertShut(id) };
+    const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f), culvert: id => GM.culvertShut(id), waterLow: id => GM.waterLow(id) };
     function draw(floorMarks) {
         const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60));
         lastF = f0;
