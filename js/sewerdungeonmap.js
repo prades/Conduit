@@ -18,7 +18,8 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_channel_steps","label":"Sewers","level":52,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"steps","polygon":[[190,330],[230,330],[230,370],[190,370]],"edge_kinds":["wall","open","open","open"]},
         {"id":"sd_west_entrance","label":"West Entrance","level":52,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"floor","polygon":[[10,270],[30,270],[50,270],[50,330],[50,430],[50,490],[10,490]],"edge_kinds":["wall","wall","wall","deck_rail","wall","wall","wall"]},
         {"id":"sd_central_channel","label":"Central Channel","level":40,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"water","polygon":[[810,10],[930,10],[930,709],[908,700],[860,700],[812,700],[810,701],[810,430],[810,330]],"edge_kinds":["wall","open","open","open","open","wall","open","open","open"]},
-        {"id":"sd_low_drain","label":"Low Drain Tunnel","level":49,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"drain","polygon":[[990,670],[1110,670],[1150,710],[1250,710],[1290,730],[1290,770],[1210,770],[1170,750],[1110,750],[1070,710],[990,710]],"edge_kinds":["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall"]},
+        {"id":"sd_low_drain","label":"Low Drain Tunnel","level":49,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"drain","polygon":[[990,670],[1210,670],[1210,710],[990,710]],"edge_kinds":["wall","wall","wall","wall"]},
+        {"id":"sd_drain_pool","label":"Drain Pool","level":48,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"drain","polygon":[[1210,670],[1230,650],[1410,650],[1430,670],[1430,770],[1410,790],[1230,790],[1210,770],[1210,710]],"edge_kinds":["wall","wall","wall","wall","wall","wall","wall","wall","wall"]},
         {"id":"sd_central_walk_w","label":"Sewers","level":50,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"walk","polygon":[[750,10],[810,10],[810,330],[750,330],[750,270]],"edge_kinds":["wall","deck_rail","deck_rail","wall","wall"]},
         {"id":"sd_central_walk_w_s","label":"Sewers","level":50,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"walk","polygon":[[750,430],[810,430],[810,701],[750,726],[750,490]],"edge_kinds":["deck_rail","deck_rail","wall","wall","wall"]},
         {"id":"sd_central_walk_e","label":"Sewers","level":50,"status":"placed","wall_material":"solid","interior":true,"sewer_dungeon":"walk","polygon":[[930,10],[990,10],[990,130],[990,190],[990,450],[990,490],[990,530],[990,590],[990,670],[990,710],[990,734],[930,709]],"edge_kinds":["wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","wall","deck_rail"]},
@@ -62,6 +63,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_west_entrance","under":"arena","offset":[-5000,5000]},
         {"id":"sd_central_channel","under":"arena","offset":[-5000,5000]},
         {"id":"sd_low_drain","under":"arena","offset":[-5000,5000]},
+        {"id":"sd_drain_pool","under":"arena","offset":[-5000,5000]},
         {"id":"sd_central_walk_w","under":"arena","offset":[-5000,5000]},
         {"id":"sd_central_walk_w_s","under":"arena","offset":[-5000,5000]},
         {"id":"sd_central_walk_e","under":"arena","offset":[-5000,5000]},
@@ -138,6 +140,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"open_sd_flight_nest_w","a":[670,902],"b":[670,978],"rooms":["sd_junction_ring_w","sd_junction_nest"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_nest_e","a":[1050,978],"b":[1050,902],"rooms":["sd_junction_ring_e","sd_junction_nest"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_ledge","a":[1110,470],"b":[1150,470],"rooms":["sd_high_ledge","sd_hl_foot"],"door":null,"open":true,"position_status":"placed"},
+        {"id":"open_sd_flight_pool","a":[1210,670],"b":[1210,710],"rooms":["sd_low_drain","sd_drain_pool"],"door":null,"open":true,"position_status":"placed"},
         {"id":"open_sd_flight_drain","a":[990,710],"b":[990,670],"rooms":["sd_central_walk_e","sd_low_drain"],"door":null,"open":true,"position_status":"placed"}
     ],
     connections: [
@@ -181,6 +184,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"conn_sd_flight_nest_w","rooms":["sd_junction_ring_w","sd_junction_nest"],"opening":"open_sd_flight_nest_w","ramp":"r_sd_nest_w"},
         {"id":"conn_sd_flight_nest_e","rooms":["sd_junction_ring_e","sd_junction_nest"],"opening":"open_sd_flight_nest_e","ramp":"r_sd_nest_e"},
         {"id":"conn_sd_flight_ledge","rooms":["sd_high_ledge","sd_hl_foot"],"opening":"open_sd_flight_ledge","ramp":"r_sd_ledge"},
+        {"id":"conn_sd_flight_pool","rooms":["sd_low_drain","sd_drain_pool"],"opening":"open_sd_flight_pool","ramp":"r_sd_pool"},
         {"id":"conn_sd_flight_drain","rooms":["sd_central_walk_e","sd_low_drain"],"opening":"open_sd_flight_drain","ramp":"r_sd_drain"}
     ],
     ramps: [
@@ -198,6 +202,7 @@ const SEWER_DUNGEON_MAP = {
         {"id":"r_sd_nest_w","rooms":["sd_junction_ring_w","sd_junction_nest"],"shape":"steps","between_levels":[49,48],"descends_toward":"sd_junction_nest","position_status":"placed","zone":{"rect":[670,902,710,970],"axis":"x","c0":670,"c1":710,"steps":3}},
         {"id":"r_sd_nest_e","rooms":["sd_junction_ring_e","sd_junction_nest"],"shape":"steps","between_levels":[49,48],"descends_toward":"sd_junction_nest","position_status":"placed","zone":{"rect":[1010,910,1050,978],"axis":"x","c0":1050,"c1":1010,"steps":3}},
         {"id":"r_sd_ledge","rooms":["sd_high_ledge","sd_hl_foot"],"shape":"steps","between_levels":[52,50],"descends_toward":"sd_hl_foot","position_status":"placed","zone":{"rect":[1110,410,1150,470],"axis":"y","c0":410,"c1":470,"steps":5}},
+        {"id":"r_sd_pool","rooms":["sd_low_drain","sd_drain_pool"],"shape":"steps","between_levels":[49,48],"descends_toward":"sd_drain_pool","position_status":"placed","zone":{"rect":[1210,670,1250,710],"axis":"x","c0":1210,"c1":1250,"steps":3}},
         {"id":"r_sd_drain","rooms":["sd_central_walk_e","sd_low_drain"],"shape":"steps","between_levels":[50,49],"descends_toward":"sd_low_drain","position_status":"placed","zone":{"rect":[990,670,1030,710],"axis":"x","c0":990,"c1":1030,"steps":3}},
         {"id":"r_sd_bank_1","rooms":["sd_west_entrance","sd_west_channel"],"shape":"slope","between_levels":[52,42],"descends_toward":"sd_west_channel","position_status":"placed","zone":{"rect":[50,330,80,430],"axis":"x","c0":50,"c1":80}},
         {"id":"r_sd_bank_2","rooms":["sd_west_walk_n","sd_west_channel"],"shape":"slope","between_levels":[52,42],"descends_toward":"sd_west_channel","position_status":"placed","zone":{"rect":[50,330,190,360],"axis":"y","c0":330,"c1":360}},
@@ -220,8 +225,10 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_west_channel2_water","room":"sd_west_channel2","shape":"poly","poly":[[370,330],[570,330],[570,430],[370,430]],"status":"placed","kind":"river","sewer_dungeon":"water"},
         {"id":"sd_west_channel3_water","room":"sd_west_channel3","shape":"poly","poly":[[570,330],[750,330],[810,330],[810,430],[750,430],[570,430]],"status":"placed","kind":"river","sewer_dungeon":"water"},
         {"id":"sd_central_channel_water","room":"sd_central_channel","shape":"poly","poly":[[810,10],[930,10],[930,709],[908,700],[860,700],[812,700],[810,701],[810,430],[810,330]],"status":"placed","kind":"river","sewer_dungeon":"water"},
-        {"id":"sd_low_drain_water","room":"sd_low_drain","shape":"poly","poly":[[990,670],[1110,670],[1150,710],[1250,710],[1290,730],[1290,770],[1210,770],[1170,750],[1110,750],[1070,710],[990,710]],"status":"placed","kind":"pool","sewer_dungeon":"drain"},
+        {"id":"sd_low_drain_water","room":"sd_low_drain","shape":"poly","poly":[[990,670],[1210,670],[1210,710],[990,710]],"status":"placed","kind":"pool","sewer_dungeon":"drain"},
+        {"id":"sd_drain_pool_water","room":"sd_drain_pool","shape":"poly","poly":[[1210,670],[1230,650],[1410,650],[1430,670],[1430,770],[1410,790],[1230,790],[1210,770],[1210,710]],"status":"placed","kind":"pool","sewer_dungeon":"drain"},
         {"id":"sd_valve_north","room":"sd_central_walk_w","shape":"rect","rect":[750,10,770,30],"status":"placed","kind":"valve","note":"the cutoff valve at the Central Channel's north end"},
+        {"id":"sd_valve_drain","room":"sd_central_walk_e","shape":"rect","rect":[970,630,990,650],"status":"placed","kind":"valve","note":"the drain valve by the drain tunnel's mouth: it empties the tunnel and its pool"},
         {"id":"sd_valve_mouth","room":"sd_central_walk_w","shape":"rect","rect":[750,290,770,310],"status":"placed","kind":"valve","note":"the cutoff valve where the West Channel meets the Central Channel"}
     ],
     floors: [
@@ -232,6 +239,7 @@ const SEWER_DUNGEON_MAP = {
         {"room":"sd_west_entrance","style":"concrete","colour":"#272d2c"},
         {"room":"sd_central_channel","style":"concrete","colour":"#272d2c"},
         {"room":"sd_low_drain","style":"concrete","colour":"#272d2c"},
+        {"room":"sd_drain_pool","style":"concrete","colour":"#272d2c"},
         {"room":"sd_central_walk_w","style":"concrete","colour":"#272d2c"},
         {"room":"sd_central_walk_w_s","style":"concrete","colour":"#272d2c"},
         {"room":"sd_central_walk_e","style":"concrete","colour":"#272d2c"},

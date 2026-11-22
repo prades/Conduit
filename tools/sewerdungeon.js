@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path'), ROOT = path.resolve(__dirname, '..');
 const { SHAPES, snap, VALVES } = require(path.join(ROOT, 'design/sewer-dungeon/trace.js')), { joins } = require(path.join(ROOT, 'design/sewer-dungeon/joins.js'));
 const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G), Math.round(p[1] * G)];
-const LABEL = { west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
+const LABEL = { drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
@@ -28,6 +28,7 @@ const FLIGHTS = [
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23.5, 23.5] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },
+  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [60.5, 33.5, 62.5, 35.5], axis: 'x', steps: 3 },   // (down onto the pool's bed)
   { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [49.6, 33.4, 51.6, 35.8], axis: 'x', steps: 3 },
 ];
 function build() {

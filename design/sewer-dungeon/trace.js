@@ -33,7 +33,11 @@ const SHAPES = [
   { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
   { id: 'west_entrance', lvl: 2, kind: 'floor', p: [[0, 13.4], [2.5, 13.4], [2.5, 24.4], [0, 24.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
-  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.6, 33.4], [55, 33.4], [57, 35], [62, 35], [64, 36.5], [64, 38.6], [60.5, 38.6], [58.5, 37], [55, 37], [53.5, 35.8], [49.6, 35.8]] },
+  // THE DRAIN TUNNEL AND ITS POOL (the owner, 2026-11-22: "the area right above the purification chamber is a another channel that goes into another room that's like a pool. And the player can drain
+  // that pool and then walk around on the bottom part of it"): a side channel off the main one's east walkway into a pool room, both under water till they are drained, then floor (kind `drain`).
+  // The pool's shape and size are the agent's; the picture's winding tunnel is a straight one now.
+  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.6, 33.4], [60.5, 33.4], [60.5, 35.8], [49.6, 35.8]] },
+  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[60.5, 33.5], [61.5, 32.5], [70.5, 32.5], [71.5, 33.5], [71.5, 38.5], [70.5, 39.5], [61.5, 39.5], [60.5, 38.5]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
   { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [49.6, 0], K.weB, K.weA] },
@@ -104,6 +108,7 @@ for (const s of STAIRS) s.p = s.p.map(snap);
 // designs for it"): each stands against its walkway's wall for now, a stand-in till the approved model is mounted on the wall (docs/SEWER-PROPS.md).
 const VALVES = [
   { id: 'valve_north', room: 'central_walk_w', at: [38, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
+  { id: 'valve_drain', room: 'central_walk_e', at: [49, 32], note: 'the drain valve by the drain tunnel\'s mouth: it empties the tunnel and its pool' },
   { id: 'valve_mouth', room: 'central_walk_w', at: [38, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
 ];
 module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };

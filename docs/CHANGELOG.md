@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17br` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a pool you can drain and walk in (work in progress)
+- **The ask** (the owner, 2026-11-22): another channel above the Purification Chamber into a room like a pool; "the player can drain that pool and then walk around on the bottom part of it".
+- **What it does** (only with `?sewerdungeon`): the drain tunnel and its pool are water you cannot enter; standing by the drain valve a DRAIN THE POOL button (a builder's stand-in) empties them, and their beds are floor for the rest of the visit.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js` (`sewerDungeonDrain`, `sewerDungeonButton`).
+- **Verified:** in the sandbox (shut when full, every tile reached when drained, a second drain does nothing); driven in a real browser; the short run. **Not playtested.**
+
 ### Build `2026-11-17bq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: walkways along the channels 3 tiles wide (work in progress)
 - **The ask** (the owner, 2026-11-22): "more walking space on these sidewalks [...] alongside the channels".
 - **What it does** (only with `?sewerdungeon`): the walkways beside both channels are 3 tiles wide.
