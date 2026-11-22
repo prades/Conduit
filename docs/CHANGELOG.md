@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cp` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl sunk deep, its bed stone (work in progress)
+- **The ask** (the owner, 2026-11-22): "It does not look like it's really sunken in there at all. Looks like the player is standing on water."
+- **What it does** (only with `?sewerdungeon`): the Round Junction's bowl is 3.5 tiles deep in its middle (1.6 before); in the 3D view its bed is pale ringed stone, told from the water (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17co` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl smooth and spherical (work in progress)
 - **The ask** (the owner, 2026-11-22): "It looks like a inverted pyramid [...] I want a more smooth look for the middle. Round, spherical edge".
 - **What it does** (only with `?sewerdungeon`): the Round Junction pool's bed is a cap of a sphere in the game's heights, and in the 3D view one round smooth surface (`SEWER-DUNGEON.md`). `js/facility.js`, `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
