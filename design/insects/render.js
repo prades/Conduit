@@ -33,8 +33,8 @@ const srv = http.createServer((q, r) => {
       f.element = D.element; f.role = D.role; f.evolved = ev; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f); f.health = f.maxHealth = 1e6; return f; };
     const fs3 = [mk('maw', 0.4, 0.8), mk('embercowl', 0.9, -0.3), mk('thunderhead', 0.2, -0.9)]; partyTick();
     const foe = (cls, x, y) => { const e = spawnCreature({ species: 'ant', className: cls }), q = _fpNearestCellOpen(x, y); e.x = q[0]; e.y = q[1]; e.health = e.maxHealth = 1e6; e.provoked = false; e.state = 'wander'; e.moveSpeed = e.baseMoveSpeed = 0; return e; };
-    const foes = [foe('scout', player.x + 3, player.y + 0.2), foe('scout', player.x + 3.4, player.y + 1.4), foe('scout', player.x + 3.3, player.y - 1.1), foe('tank', player.x + 4.4, player.y + 0.4)];
-    const q = foe('boss', player.x + 6, player.y - 0.4); q.dimensions.width *= 3; q.dimensions.height *= 3; foes.push(q);
+    const foes = [foe('scout', player.x + 3, player.y + 0.2), foe('scout', player.x + 3.4, player.y + 1.4), foe('tank', player.x + 3.3, player.y - 1.1)];
+    const q = foe('boss', player.x + 4.6, player.y + 0.2); q.dimensions.width *= 3; q.dimensions.height *= 3; foes.push(q);
     const keep = () => { for (const a of foes) { a.health = a.maxHealth; a.state = 'wander'; a.dirX = -1; a.dirY = 0; a.attackAnim = 0; } for (const f of fs3) f.health = f.maxHealth; player.health = player.maxHealth; };
     const tick = n => { for (let i = 0; i < n; i++) { keep(); render(); } };
     tick(4); const chose = cardBattleChoose(foes[0]); tick(140);
@@ -46,19 +46,46 @@ const srv = http.createServer((q, r) => {
   await p.evaluate(() => { for (const a of __S.foes) { a.dirX = -1; a.dirY = 0; } __S.tick(6); });
   await p.screenshot({ path: path.join(OUT, PRE + '-battle.png') });
   // close views: a camera of our own on the 3D view's own drawing (its look, its ink line, its shadows), the game's frame stopped
-  const shots = [['scout', 0, 2.2, 0.9, -0.7], ['queen', 4, 4.6, 1.6, -0.75], ['line', null, 6.5, 2.2, -0.62]];
+  const shots = [['scout', 0, 1.25, 0.55, 0.75], ['tank', 2, 1.5, 0.7, 0.75], ['queen', 3, 3.0, 1.35, 0.75], ['side', 0, 1.35, 0.32, 1.57]];
+  await p.evaluate(() => { canvas.style.visibility = 'hidden'; const V = VIEW3D.view, sc = V.core.scene;
+    window.__holderOf = a => { let best = null, bd = 0.6; sc.traverse(o => { if (o.userData && o.userData.body && o.visible) { const d = Math.hypot(o.position.x - a.x, o.position.z - a.y); if (d < bd) { bd = d; best = o; } } }); return best; };
+    const cv = document.getElementById('view3dCanvas'); window.__cam = new THREE.PerspectiveCamera(30, cv.clientWidth / cv.clientHeight, 0.05, 200);
+    // a camera before the body, `yaw` round from straight ahead, `dist` away, `hgt` up, looking at its middle
+    window.__aim = (h, dist, hgt, yaw, look) => { const T = THREE, cam = __cam, ry = h.rotation.y, fx = Math.cos(ry), fz = -Math.sin(ry), a = Math.atan2(fz, fx) + yaw;
+      cam.aspect = cv.clientWidth / cv.clientHeight; cam.updateProjectionMatrix(); cam.position.set(h.position.x + Math.cos(a) * dist, h.position.y + hgt, h.position.z + Math.sin(a) * dist);
+      cam.lookAt(new T.Vector3(h.position.x, h.position.y + look, h.position.z)); cam.updateMatrixWorld(); V.core.aimLight(h.position.x, h.position.z, 14); V.core.draw(cam); }; });
   for (const [name, idx, dist, hgt, yaw] of shots) {
-    await p.evaluate(([idx, dist, hgt, yaw]) => { const V = VIEW3D.view, T = window.THREE; __S.tick(1);
-      const foes = __S.foes, a = idx === null ? null : foes[idx];
-      const tx = a ? a.x : (foes[0].x + player.x) / 2, ty = a ? a.y : player.y; const lift = 0; const cv = document.getElementById('view3dCanvas');
-      const cam = window.__cam || (window.__cam = new T.PerspectiveCamera(30, cv.clientWidth / cv.clientHeight, 0.1, 200)); cam.aspect = cv.clientWidth / cv.clientHeight; cam.updateProjectionMatrix();
-      const aim = new T.Vector3(tx, (idx === 4 ? 0.45 : idx === null ? 0.3 : 0.16), ty); const ang = Math.PI + yaw;
-      cam.position.set(tx + Math.cos(ang) * dist, hgt, ty + Math.sin(ang) * dist); cam.lookAt(aim); cam.updateMatrixWorld();
-      V.core.aimLight(tx, ty, 14); V.core.draw(cam); }, [idx, dist, hgt, yaw]);
-    await p.screenshot({ path: path.join(OUT, PRE + '-' + name + '.png') });
+    const ok = await p.evaluate(([idx, dist, hgt, yaw]) => { const a = __S.foes[idx], h = __holderOf(a); if (!h) return false; __aim(h, dist, hgt, yaw, idx === 3 ? 0.3 : 0.12); return true; }, [idx, dist, hgt, yaw]);
+    if (!ok) { console.log('no body for', name); continue; }
+    await (await p.$('#view3dCanvas')).screenshot({ path: path.join(OUT, PRE + '-' + name + '.png') });
   }
-  const tri = await p.evaluate(() => { const V = VIEW3D.view; let out = {}; V.core.scene.traverse(o => { if (!o.isMesh || !o.parent || !o.parent.parent || !o.parent.parent.userData.body) return; });
-    return out; });
+  // triangles in one body (one pose: the view shows one of its poses at a time), today's builder or the draft's
+  const tri = await p.evaluate(() => { const count = g => { let n = 0; g.traverse(o => { if (o.isMesh && o.geometry) { const gg = o.geometry; n += (gg.index ? gg.index.count : gg.attributes.position.count) / 3; } }); return Math.round(n); };
+    const K = window.__antKit; return { scout: count(K.build({ cls: 'scout', size: 0.5, zk: 2, walk: 0, stand: true })), tank: count(K.build({ cls: 'tank', size: 0.5, zk: 2, walk: 0, stand: true })), queen: count(K.build({ cls: 'boss', size: 1.5, zk: 2, walk: 0, stand: true })) }; });
+  console.log('triangles', JSON.stringify(tri));
+  // THE CLIP (with CLIP=1): the scout's skittering walk and its strike, posed by this script (bursts of quick steps, a twitch of the head-on turn, a pause; then the
+  // strike: sickles and jaws), drawn by the view's own drawing at the close camera
+  if (process.env.CLIP) {
+    const dir = path.join(OUT, PRE + '-clip'); fs.mkdirSync(dir, { recursive: true });
+    const n = await p.evaluate(() => { const V = VIEW3D.view, T = window.THREE, K = window.__antKit, a = __S.foes[0], sc = V.core.scene;
+      const body = __holderOf(a);
+      const y0 = body ? body.position.y : 0; if (body) body.visible = false;
+      const mk = o => { const g = K.build(Object.assign({ cls: 'scout', size: 0.5, zk: 2, accent: a.color }, o)); K.toonify(g, V.core.ctx.grad); const h = new T.Group(); h.add(g); h.visible = false; V.core.tagInk(h); sc.add(h); return h; };
+      const walk = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875].map(w => mk({ walk: w })), stand = mk({ walk: 0, stand: true }), hit = [0.05, 0.12, 0.2, 0.3].map(op => mk({ walk: 0.3, open: op }));
+      // the script: [pose, dx, yaw twitch] a frame
+      const F = []; let x = 0.9, wi = 0;
+      for (const burst of [6, 7, 5]) { for (let i = 0; i < burst; i++) { F.push([walk[wi++ % 8], x, 0]); x -= 0.055; } const tw = (F.length % 2 ? 1 : -1) * 0.28; F.push([stand, x, tw]); F.push([stand, x, tw]); F.push([stand, x, tw * 0.4]); F.push([stand, x, 0]); F.push([stand, x, 0]); }
+      for (const k of [0, 0, 1, 2, 3, 3, 3, 3, 2, 1, 0]) F.push([hit[k], x - (k === 3 ? 0.06 : 0), 0]);
+      for (let i = 0; i < 6; i++) F.push([stand, x, 0]);
+      window.__clip = { F, x0: body ? body.position.x : a.x, y: body ? body.position.z : a.y, y0, all: walk.concat([stand], hit) }; return F.length; });
+    for (let i = 0; i < n; i++) {
+      await p.evaluate(i => { const V = VIEW3D.view, T = window.THREE, C = window.__clip, [h, dx, tw] = C.F[i]; for (const q of C.all) q.visible = false;
+        h.visible = true; h.position.set(C.x0 + dx, C.y0, C.y); h.rotation.y = Math.PI + tw; h.updateMatrixWorld(true);
+        const fake = { position: new T.Vector3(C.x0 - 0.25, C.y0, C.y), rotation: { y: Math.PI } }; __aim(fake, 2.0, 0.75, 0.75, 0.1); }, i);
+      await (await p.$('#view3dCanvas')).screenshot({ path: path.join(dir, String(i).padStart(3, '0') + '.png') });
+    }
+    console.log('clip frames', n);
+  }
   console.log('errors', JSON.stringify(errs.slice(0, 6)));
   await b.close(); srv.close();
 })().catch(e => { console.error(e); process.exit(1); });
