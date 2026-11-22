@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cb` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: culverts at the channel ends, each with a button that shuts its door; the sluice gates gone; three corners squared (work in progress)
+- **The ask** (the owner, 2026-11-22): "Square those corners"; "I want giant openings", culverts, at "Every channel end", an "Arch"; "Just forget about the thing that sits in the water [...] let's just make a button that closes the pipe or the door from inside".
+- **What it does** (only with `?sewerdungeon`; the culverts only with `?engine=3d` too): a giant arched culvert where each of the three channels comes in; by its switch the button CLOSE THE CULVERT shuts a steel door in its mouth, OPEN THE CULVERT opens it (nothing happens to the water yet: not designed); the two sluice gates and the mouth cutoff's switch are removed; the Northeast Offices' south-west corner and the High Ledge Room's two north corners are square (`SEWER-DUNGEON.md`).
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js`, `design/style-evolution/live/floor.js`, `view3d/gamemap.js`, `view3d/gameview.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), each culvert open and shut, no page error; the reach check; the short run with view3d and the props suite (see the handoff). **Not playtested; not seen on an iPad; the 2D game draws no culvert.**
+
 ### Build `2026-11-17ca` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's 3D pass tidied (work in progress)
 - **The ask** (the owner, 2026-11-22): "some spots look really messed up. I really want to have like a smooth looking game. Can you go through and fix up each unruly piece".
 - **What it does** (only with `?engine=3d&sewerdungeon`, but for the names, which the 2D shows too): slanted walls are straight walls and the floor is cut along the room's outline, no staircases of blocks, loose panels or zigzags; walls cut down in front of the camera are dark concrete, not the lab's pale blue; rooms carry their names, not "Sd West Walk N"; the mouth cutoff's switch stands on a wall (`SEWER-DUNGEON.md`). No other room of the game is built differently.

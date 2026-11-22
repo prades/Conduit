@@ -501,7 +501,26 @@ function buildLabFloor(lab, P0, how) {
     // A FRAME: the water's current and the streams' and falls' streaks run; their colours only when the purification has moved them on (the 2D's: colOf, toneOf); the eggs' and the brood
     // holes' green as the Nest stands (nestOf: infested, stirred, calmed, cleared)
     const cc = new T.Color(); let was = null, nestWas = null;
-    sewer.tick = (f0, gm) => { for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
+    // THE SEWER DUNGEON'S CULVERTS (the owner, 2026-11-22: "I want giant openings", culverts, an "Arch", at "Every channel end"; "a button that closes the pipe or the door from inside"): a solid of
+    // kind culvert is a thin slab on the wall line a channel ends against. On that line, facing the water: a concrete arch as wide as the channel, from under the water's surface up to just under
+    // the wall's top (or the floor's, where the channel comes in under a floor), dark inside; a ribbed steel door in the mouth, seen when the game says it is shut. It sinks with its wall.
+    // Its proportions and colours are the agent's, provisional.
+    const culverts = []; for (const rec of recs) for (const s2 of rec.solids.filter(s => s.kind === 'culvert')) { const b = s2.bb, along = (b[2] - b[0]) >= (b[3] - b[1]), L = along ? b[2] - b[0] : b[3] - b[1], mx = (b[0] + b[2]) / 2, mz = (b[1] + b[3]) / 2;
+      const line = Math.round((along ? mz : mx) - 0.5) + 0.5, cellAt = sg => along ? [Math.round(mx), Math.round(line + sg * 0.5)] : [Math.round(line + sg * 0.5), Math.round(mz)], sg = wet.has(K(...cellAt(1))) ? 1 : wet.has(K(...cellAt(-1))) ? -1 : 0; if (!sg) continue;
+      const ci = cellAt(sg), co = cellAt(-sg), bed = wet.get(K(ci[0], ci[1])).h - S - 0.3, bk = band.get(K(co[0], co[1])), top = bk ? bk.hi + WALL_H : roomAt.has(K(co[0], co[1])) ? hAt(co[0], co[1]) : bed + 2.2;
+      const W = L - 0.6, H = bk ? Math.max(top - bed - 0.16, W * 0.55) : Math.max(0.5, Math.min(top - bed - 0.16, W * 0.8)),   /* (GIANT: against a wall it rises past the wall's top, a concrete headwall round it; under a floor, as tall as fits) */ arch = (w, h) => { const sh = new T.Shape(), sp = h * 0.5; sh.moveTo(-w / 2, 0); sh.lineTo(w / 2, 0); sh.lineTo(w / 2, sp); sh.absellipse(0, sp, w / 2, h - sp, 0, Math.PI, false, 0); sh.lineTo(-w / 2, 0); return sh; };
+      const gp = new T.Group(), ring = arch(W + 0.5, H + 0.25); if (bk) { const hw = new T.Mesh(new T.BoxGeometry(W + 1.3, H + 0.55, 0.6), std('#3b4448', { roughness: 0.85 })); hw.position.set(0, (H + 0.55) / 2, -0.3); hw.castShadow = hw.receiveShadow = true; gp.add(hw); } ring.holes.push(arch(W, H));
+      const frame = new T.Mesh(new T.ExtrudeGeometry(ring, { depth: 0.34, bevelEnabled: false, curveSegments: 20 }), std('#8b979d', { roughness: 0.9 })); frame.castShadow = frame.receiveShadow = true; gp.add(frame);
+      const dark = new T.Mesh(new T.ShapeGeometry(arch(W, H), 20), new T.MeshBasicMaterial({ color: 0x020506 })); dark.position.z = 0.16; dark.userData.noInk = true; gp.add(dark);
+      const door = new T.Group(), plate = new T.Mesh(new T.ShapeGeometry(arch(W, H), 20), std('#7d8a90', { roughness: 0.55, metalness: 0.35 })); plate.position.z = 0.2; door.add(plate);
+      const wAt = y => y <= H * 0.5 ? W : W * Math.sqrt(Math.max(0, 1 - Math.pow((y - H * 0.5) / (H * 0.5), 2)));   // (the mouth's width at a height)
+      for (let y = 0.75; y < H - 0.15; y += 0.36) { const rib = new T.Mesh(new T.BoxGeometry(Math.max(0.1, wAt(y) - 0.08), 0.06, 0.05), std('#39444a', { roughness: 0.6, metalness: 0.4 })); rib.position.set(0, y, 0.22); door.add(rib); }
+      const hz = new T.Mesh(new T.BoxGeometry(W - 0.08, 0.16, 0.05), std('#e0a81e', { roughness: 0.6 })); hz.position.set(0, 0.5, 0.22); door.add(hz);
+      door.visible = false; gp.add(door);
+      gp.position.set(along ? mx : line, bed, along ? line : mz); gp.rotation.y = along ? (sg > 0 ? 0 : Math.PI) : (sg > 0 ? Math.PI / 2 : -Math.PI / 2); gp.userData.dynamic = true;   /* (its own piece: its door shows and hides, so it is not merged with the still things) */
+      (bk && bk.G ? bk.G.g : rooms[rec.id].g).add(gp); culverts.push({ id: s2.id, door, gp }); }
+    sewer.culverts = culverts;
+    sewer.tick = (f0, gm) => { for (const c of culverts) c.door.visible = !!(gm && gm.culvert && gm.culvert(c.id)); for (const w of waters) w.tex.offset.set(-w.fl[0] * f0 * 0.004, w.fl[1] * f0 * 0.004); for (const fl of flows) fl.tex.offset.y = f0 * fl.speed;
       const T0 = gm && gm.nest ? gm.nest(f0) : null; if (T0) { const ph = Math.sin(f0 * T0.p * 2);
         for (const gl of glows) gl.m.material.opacity = T0.g * gl.k * (0.7 + 0.3 * Math.sin(f0 * T0.p * 2 + gl.ph));
         if (T0.s !== nestWas || T0.g > 0.05) { nestWas = T0.s; for (const em of eggMeshes) { const M = em.material; if (T0.s === 'cleared') { M.color.set('#5e6356').convertSRGBToLinear(); M.emissive.setRGB(0, 0, 0); } else { M.color.set('#d3e6ae').convertSRGBToLinear(); M.emissive.set('#8cff5a').convertSRGBToLinear().multiplyScalar(T0.g * (0.3 + 0.1 * ph)); } } } }

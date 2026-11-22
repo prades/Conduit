@@ -35,6 +35,7 @@ const VIEW3D_GAME = (0, eval)(`({
   // 2D puts them; the dam's pools
   sewerCol(h) { return typeof _fpSwCol === "function" ? _fpSwCol(h) : h; }, sewerTone(a, b) { return typeof _fpSwRgba === "function" ? _fpSwRgba(a, b, 1) : "rgb(" + a.join() + ")"; }, nestTone(f) { return typeof _fpNestTone === "function" ? _fpNestTone(f) : null; },
   sewerItems(F) { return typeof facilitySewerItems === "function" ? facilitySewerItems(F) : []; }, get damPools() { return typeof FP_DAM_POOLS !== "undefined" ? [...FP_DAM_POOLS] : []; },
+  culvertShut(id) { return typeof sewerDungeonCulvertShut === "function" && sewerDungeonCulvertShut(id); },   // (THE SEWER DUNGEON's culverts: is its door shut: js/facilityplay.js)
   flightLift(a) { return a && a._flight && typeof techFlightLift === "function" ? techFlightLift(a) : 0; },
   // THE ATTACKS IN 3D (view3d/attacks.js): the effects the game is drawing, LOW graphics, and the Frost Maw's own measures (CHOMP's frames, the bite's slowing reach)
   get fx() { return typeof elementEffects !== "undefined" ? elementEffects : null; }, get gfxLow() { return typeof gfxLow !== "undefined" && !!gfxLow; },

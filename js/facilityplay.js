@@ -916,11 +916,18 @@ function sewerDungeonDrain() {
     return true;
 }
 function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q => q.id === SEWER_DRAIN.valve) : null; return !!s && typeof player !== "undefined" && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach; }
+// THE CULVERTS' DOORS (the owner, 2026-11-22: "let's just make a button that closes the pipe or the door from inside"): each culvert has a door inside its mouth, shut and opened at its button,
+// the sluice switch near it. A stand-in: the door shows shut or open (the 3D view), the switch is thrown or up; WHAT SHUTTING ONE DOES TO THE WATER IS NOT DESIGNED, and nothing changes yet.
+const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north" }, { id: "sd_culvert_west", sw: "sd_valve_west" }, { id: "sd_culvert_drain", sw: "sd_valve_pool" }];
+function sewerDungeonCulvertShut(id) { return !!(_fp && _fp.sdShut && _fp.sdShut[id]); }
+function sewerDungeonCulvertNear() { if (!_fp || !_fp.F || typeof player === "undefined") return null; for (const c of SEWER_CULVERTS) { const s = _fp.F.solids.find(q => q.id === c.sw); if (s && Math.hypot(player.x - (s.bb[0] + s.bb[2]) / 2, player.y - (s.bb[1] + s.bb[3]) / 2) <= SEWER_DRAIN.reach) return c; } return null; }
+function sewerDungeonCulvertToggle(id) { const c = SEWER_CULVERTS.find(q => q.id === id); if (!c || !_fp) return false; if (!_fp.sdShut) _fp.sdShut = {}; _fp.sdShut[id] = !_fp.sdShut[id];
+    if (typeof facilityPropStateSet === "function") facilityPropStateSet(c.sw, _fp.sdShut[id] ? "thrown" : "up"); return true; }
 function sewerDungeonButton() {
     if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function" || document.getElementById("sdDrainBtn")) return;
     const b = document.createElement("button"); b.id = "sdDrainBtn"; b.textContent = "DRAIN THE POOL";
     b.style.cssText = "position:fixed;left:50%;top:64px;transform:translateX(-50%);z-index:50;display:none;padding:12px 22px;font:italic 900 16px system-ui,sans-serif;letter-spacing:.06em;color:#04121a;background:#19e6c1;border:2px solid #0b6b5c;border-radius:6px;";
-    b.addEventListener("click", ev => { ev.preventDefault(); if (sewerDungeonNearValve() && sewerDungeonDrain()) b.style.display = "none"; });
+    b.addEventListener("click", ev => { ev.preventDefault(); const c = sewerDungeonCulvertNear(); if (c) { sewerDungeonCulvertToggle(c.id); return; } if (sewerDungeonNearValve() && sewerDungeonDrain()) b.style.display = "none"; });
     document.body.appendChild(b);
-    setInterval(() => { b.style.display = !sewerDungeonDrained() && sewerDungeonNearValve() ? "block" : "none"; }, 250);
+    setInterval(() => { const c = sewerDungeonCulvertNear(), drain = !c && !sewerDungeonDrained() && sewerDungeonNearValve(); b.textContent = c ? (sewerDungeonCulvertShut(c.id) ? "OPEN THE CULVERT" : "CLOSE THE CULVERT") : "DRAIN THE POOL"; b.style.display = c || drain ? "block" : "none"; }, 250);
 }
