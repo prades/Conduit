@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bv` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain hall and its pool bigger (work in progress)
+- **The ask** (the owner, 2026-11-22): "Make it bigger".
+- **What it does** (only with `?sewerdungeon`): the pool is an L of 127 tiles, the hall round it out to the map's east edge.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
 ### Build `2026-11-17bu` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: one open hall round the drain tunnel and its pool (work in progress)
 - **The ask** (the owner, 2026-11-22): "open up the wall, or that area above the purification module, and make that whole area opened up with the pool and the new other channel".
 - **What it does** (only with `?sewerdungeon`): floor all round the tunnel and the pool, open to the Purification Chamber below.
