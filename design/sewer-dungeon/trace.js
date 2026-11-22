@@ -99,11 +99,11 @@ const half = v => Math.floor(v) + 0.5, snap = q => isRing(q) ? q : [half(q[0]), 
 for (const s of SHAPES) s.p = s.p.map(snap).filter((q, i, a) => !i || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.01);
 for (const s of STAIRS) s.p = s.p.map(snap);
 // THE CUTOFF VALVES (the owner, 2026-11-21: the water "should have cutoff valves at the end of each channel, or at the beginning of the top of the map, or the very north, and then where the west channel meets
-// the main channel"): one at the Central Channel's north end, one where the West Channel runs into it. room: the walkway it stands on; at: its tile. Where each stands on its walkway is the agent's; what
-// turning one does waits for the water's rules (docs/SEWER-DUNGEON.md).
+// the main channel"): one at the Central Channel's north end, one where the West Channel runs into it. room: the walkway it stands on; at: its tile. THESE ARE THE WATER PANELS (the owner, 2026-11-22: "that's the panels that we're talking about. The eventual design will be on the walls. There's already 3D
+// designs for it"): each stands against its walkway's wall for now, a stand-in till the approved model is mounted on the wall (docs/SEWER-PROPS.md).
 const VALVES = [
-  { id: 'valve_north', room: 'central_walk_w', at: [39, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
-  { id: 'valve_mouth', room: 'central_walk_w', at: [39, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
+  { id: 'valve_north', room: 'central_walk_w', at: [38, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
+  { id: 'valve_mouth', room: 'central_walk_w', at: [38, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
 ];
 module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };
 if (require.main === module) {

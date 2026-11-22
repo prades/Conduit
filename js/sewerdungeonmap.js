@@ -206,8 +206,8 @@ const SEWER_DUNGEON_MAP = {
         {"id":"sd_west_channel3_water","room":"sd_west_channel3","shape":"poly","poly":[[570,330],[750,330],[810,330],[810,430],[750,430],[570,430]],"status":"placed","kind":"river","sewer_dungeon":"water"},
         {"id":"sd_central_channel_water","room":"sd_central_channel","shape":"poly","poly":[[810,10],[930,10],[930,709],[908,700],[860,700],[812,700],[810,701],[810,430],[810,330]],"status":"placed","kind":"river","sewer_dungeon":"water"},
         {"id":"sd_low_drain_water","room":"sd_low_drain","shape":"poly","poly":[[970,670],[1110,670],[1150,710],[1250,710],[1290,730],[1290,770],[1210,770],[1170,750],[1110,750],[1070,710],[970,710]],"status":"placed","kind":"pool","sewer_dungeon":"drain"},
-        {"id":"sd_valve_north","room":"sd_central_walk_w","shape":"rect","rect":[770,10,790,30],"status":"placed","kind":"valve","note":"the cutoff valve at the Central Channel's north end"},
-        {"id":"sd_valve_mouth","room":"sd_central_walk_w","shape":"rect","rect":[770,290,790,310],"status":"placed","kind":"valve","note":"the cutoff valve where the West Channel meets the Central Channel"}
+        {"id":"sd_valve_north","room":"sd_central_walk_w","shape":"rect","rect":[750,10,770,30],"status":"placed","kind":"valve","note":"the cutoff valve at the Central Channel's north end"},
+        {"id":"sd_valve_mouth","room":"sd_central_walk_w","shape":"rect","rect":[750,290,770,310],"status":"placed","kind":"valve","note":"the cutoff valve where the West Channel meets the Central Channel"}
     ],
     floors: [
         {"room":"sd_west_channel","style":"concrete","colour":"#272d2c"},

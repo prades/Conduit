@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the cutoff valves are the water panels, stood against the wall (work in progress)
+- **The ask** (the owner, 2026-11-22): "that's the panels that we're talking about. The eventual design will be on the walls."
+- **What it does** (only with `?sewerdungeon`): the two valve housings stand against their walkway's wall, not by the water. Still stand-ins that do nothing.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
 ### Build `2026-11-17bl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: two cutoff valves placed (work in progress)
 - **The ask** (the owner, 2026-11-22): cutoff valves at the very north of the main channel and where the West Channel meets it.
 - **What it does** (only with `?sewerdungeon`): a valve housing stands at each of those two places. They do nothing yet: the water's rules are not built.
