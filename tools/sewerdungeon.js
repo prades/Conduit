@@ -28,8 +28,8 @@ const FLIGHTS = [
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23.5, 23.5] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },
-  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [60.5, 33.5, 62.5, 35.5], axis: 'x', steps: 3 },   // (down onto the pool's bed)
-  { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [49.6, 33.4, 51.6, 35.8], axis: 'x', steps: 3 },
+  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [60.5, 34.5, 62.5, 36.5], axis: 'x', steps: 3 },   // (down onto the pool's bed)
+  { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [49.5, 34.5, 51.5, 36.5], axis: 'x', steps: 3 },
 ];
 function build() {
   const S = SHAPES.map(s => Object.assign({}, s, { p: s.p.filter((q, i, a) => i === 0 || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.02) })), by = Object.fromEntries(S.map(s => [s.id, s])), J = joins();
@@ -40,13 +40,13 @@ function build() {
       const mid = pts.map(q => ({ q, t: ((q[0] - a0[0]) * (a1[0] - a0[0]) + (q[1] - a0[1]) * (a1[1] - a0[1])) / (L * L), d: Math.abs((q[0] - a0[0]) * (a1[1] - a0[1]) - (q[1] - a0[1]) * (a1[0] - a0[0])) / L })).filter(o => o.d < 0.05 && o.t > 0.01 && o.t < 0.99).sort((x, y) => x.t - y.t);
       let last = -1; for (const o of mid) { if (o.t - last > 0.005) out.push(o.q); last = o.t; } }
     sh.p = out; }
-  const wet = id => WATER.has(by[id].kind), rooms = [], interiors = [], openings = [], connections = [], ramps = [], props = [], floors = [];
+  const wet = id => WATER.has(by[id].kind), sunk = id => wet(id) || by[id].kind === 'drain', rooms = [], interiors = [], openings = [], connections = [], ramps = [], props = [], floors = [];
   const along = (seg, j) => { const dx = seg[1][0] - seg[0][0], dy = seg[1][1] - seg[0][1], L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L; return [j.a, j.b].every(q => Math.abs((q[0] - seg[0][0]) * uy - (q[1] - seg[0][1]) * ux) < 0.09 && (q[0] - seg[0][0]) * ux + (q[1] - seg[0][1]) * uy > -0.09 && (q[0] - seg[0][0]) * ux + (q[1] - seg[0][1]) * uy < L + 0.09); };
   for (const s of S) {
     const n = s.p.length, kinds = [];
     for (let i = 0; i < n; i++) { const seg = [s.p[i], s.p[(i + 1) % n]];   // (a wall shared with water, or water's with a walkway: an open edge with a rail, the water in sight)
-      const j = J.find(j => j.rooms.includes(s.id) && along(seg, j) && Math.hypot(seg[1][0] - seg[0][0], seg[1][1] - seg[0][1]) - j.len < 0.3 && (wet(j.rooms[0]) || wet(j.rooms[1]) || (j.rooms.includes('junction_nest') && j.lv[0] !== j.lv[1])));   // (water against water too: one channel running into another, nothing drawn between)
-      kinds.push(!j ? 'wall' : wet(s.id) || s.id === 'junction_nest' || s.kind === 'steps' ? 'open' : 'deck_rail'); }   // (ONE rail, the walkway's: the owner, "you don't need to have 2 or 4 sets of railings. It's one set of railing"; the water's own side of that edge draws nothing)
+      const j = J.find(j => j.rooms.includes(s.id) && along(seg, j) && Math.hypot(seg[1][0] - seg[0][0], seg[1][1] - seg[0][1]) - j.len < 0.3 && (sunk(j.rooms[0]) || sunk(j.rooms[1]) || (j.rooms.includes('junction_nest') && j.lv[0] !== j.lv[1])));   // (water against water too: one channel running into another, nothing drawn between)
+      kinds.push(s.kind === 'drain' ? 'open' : !j ? 'wall' : wet(s.id) || s.id === 'junction_nest' || s.kind === 'steps' ? 'open' : 'deck_rail'); }   /* (a drain room has no wall drawn at all: it is looked into from every side) */   // (ONE rail, the walkway's: the owner, "you don't need to have 2 or 4 sets of railings. It's one set of railing"; the water's own side of that edge draws nothing)
     rooms.push({ id: P + s.id, label: LABEL[s.id] || 'Sewers', level: wet(s.id) ? WATER_LV(s.wl) : LV(s.lvl), status: 'placed', wall_material: 'solid', interior: true, sewer_dungeon: s.kind, polygon: s.p.map(px), edge_kinds: kinds });
     interiors.push({ id: P + s.id, under: 'arena', offset: OFFSET });
     floors.push({ room: P + s.id, style: 'concrete', colour: s.kind === 'nest' ? '#2a1d33' : '#272d2c' });

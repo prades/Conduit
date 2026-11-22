@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bs` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain tunnel and pool opened up (work in progress)
+- **The ask** (the owner, 2026-11-22): "open up this entire area so that the player can [...] see what's going on in that room before they know how to interact with it".
+- **What it does** (only with `?sewerdungeon`): a railed walkway beside the tunnel and along the pool; no walls round either.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
 ### Build `2026-11-17br` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a pool you can drain and walk in (work in progress)
 - **The ask** (the owner, 2026-11-22): another channel above the Purification Chamber into a room like a pool; "the player can drain that pool and then walk around on the bottom part of it".
 - **What it does** (only with `?sewerdungeon`): the drain tunnel and its pool are water you cannot enter; standing by the drain valve a DRAIN THE POOL button (a builder's stand-in) empties them, and their beds are floor for the rest of the visit.
