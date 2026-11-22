@@ -47,7 +47,7 @@ const srv = http.createServer((q, r) => {
   await p.evaluate(() => { const q = __S.foes[3], c = _fpNearestCellOpen(q.x + 1.3, q.y - 0.5); q.x = c[0]; q.y = c[1]; for (const a of __S.foes) { a.dirX = -1; a.dirY = 0; } __S.tick(6); });
   await p.screenshot({ path: path.join(OUT, PRE + '-battle.png') });
   // close views: a camera of our own on the 3D view's own drawing (its look, its ink line, its shadows), the game's frame stopped
-  const shots = [['scout', 0, 1.25, 0.55, 0.75], ['tank', 2, 1.5, 0.7, 0.75], ['queen', 3, 4.6, 2.1, 0.75], ['side', 0, 1.35, 0.32, 1.57]];
+  const shots = [['scout', 0, 1.45, 0.6, 0.75], ['tank', 2, 1.95, 0.8, +(process.env.TANKYAW || 0.75)], ['queen', 3, 4.6, 2.1, 0.75], ['side', 0, 1.35, 0.32, 1.57]];
   await p.evaluate(() => { canvas.style.visibility = 'hidden'; const V = VIEW3D.view, sc = V.core.scene, cv0 = document.getElementById('view3dCanvas');
     for (const el of document.querySelectorAll('body *')) if (el !== cv0 && !el.contains(cv0)) el.style.visibility = 'hidden';   // (the HUD's panels: the close views show the 3D drawing alone)
     window.__solo = keep => sc.traverse(o => { if (o.userData && o.userData.body) { if (o.userData._was === undefined) o.userData._was = o.visible; o.visible = keep ? (o === keep) : o.userData._was; } });
