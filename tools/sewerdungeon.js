@@ -14,7 +14,7 @@ const FLOOR = { walk: '#7b858c', steps: '#7b858c', ring: '#7b858c', floor: '#5a6
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
 // feel like it's underground"): a step of the trace's `lvl` is a short flight, STEP tiles, not a storey; the walkways lie where the old Sewers did (BASE). A channel's room lies DEEP below its
 // walkways: its water is drawn below that again (js/facilitysewers.js), so the channel reads deep and not full. Levels of the dungeon's own (ids 47 to 52), so no other room's height moves.
-const BASE = -1.8, STEP = 0.4, DEEP = 0.9, LV = l => 50 + l, WATER_LV = l => 40 + (l || 0);   // (a stretch of water `wl` flights up lies that much higher: the West Channel comes down with its tunnel)
+const BASE = -1.8, STEP = 0.4, DEEP = 2.0,   /* (DEEP: 0.9 till build 2026-11-17ce; the owner, 2026-11-22, of the channels in 3D: "Make the channels deeper". How deep is the agent's, provisional) */ LV = l => 50 + l, WATER_LV = l => 40 + (l || 0);   // (a stretch of water `wl` flights up lies that much higher: the West Channel comes down with its tunnel)
 // THE FLIGHTS: [upper piece, lower piece, where on their shared wall (a tile range along x or y, or null: all of it), the flight's zone (a rectangle, in tiles) and the way it runs]
 const FLIGHTS = [
   { id: 'channel_steps', rooms: ['channel_steps', 'west_channel'], on: { y: [18.5, 18.5] }, zone: [9.3, 16.4, 11.7, 18.6], axis: 'y', steps: 6, wet: true },   // (THE FLOODED STAIRCASE: it runs down into the channel; nothing walks off its foot)

@@ -424,7 +424,8 @@ function buildLabFloor(lab, P0, how) {
       // (THE SEWER DUNGEON: one flat sheet of water a body, part way up its sloped sides, not a step a tile following the bank's heights. The owner, 2026-11-22: "the channels don't need to look like
       // they have stairs under them, under the water. It needs to be flat looking. It needs to have like an inverted trapezoid look". How full it stands, SD_FILL, is the agent's, provisional.)
       const sdB = isSd(b.room), lo = sdB ? Math.min(...b.cells.map(c => c[2])) : 0; if (sdB) for (const c of b.cells) sdLo.set(K(c[0], c[1]), lo);
-      for (const [x, y, h] of b.cells) { const y0 = sdB ? lo + SD_FILL : h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
+      const fill = sdB ? Math.max(SD_FILL, (Math.max(...b.cells.map(c => c[2])) - lo) * 0.45) : 0;   /* (a channel with banks stands a little under half full, however deep it is: "a really deep channel that is not all the way full") */
+      for (const [x, y, h] of b.cells) { const y0 = sdB ? lo + fill : h - S, C = [[x - 0.5, y0, y + 0.5], [x + 0.5, y0, y + 0.5], [x + 0.5, y0, y - 0.5], [x - 0.5, y0, y - 0.5]]; putQuad(q, C[0], C[1], C[2], C[3], [0, 1, 0], WHITE, C.map(c => [c[0] / 3, -c[2] / 3])); }
       const m = quadMesh([{ q, mat }]); m.userData.noInk = true; m.userData.dynamic = true; m.userData.water = true; rooms[b.room].g.add(m); waters.push({ mat, tex, fl: [f[0] / fL, f[1] / fL], m, id, sd: sdB }); }
    // (dynamic: left out of the view's merging, so its colour can change)
     // THE SEWER DUNGEON'S BEDS: under every body of its water one smooth concrete surface, a flat bottom and sloped sides (the inverted trapezoid), always there: seen above the water's

@@ -51,6 +51,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17ce` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's channels deeper (work in progress)
+- **The ask** (the owner, 2026-11-22): "Make the channels deeper".
+- **What it does** (only with `?sewerdungeon`): the West and Central Channels' beds lie 2 tiles under their walkways (0.9 before; provisional), the water a little under half way up their sloped sides (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the reach check with the culverts shut (every bed reached); the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's channels flat, an inverted trapezoid (work in progress)
 - **The ask** (the owner, 2026-11-22): "the channels don't need to look like they have stairs under them, under the water. It needs to be flat looking. It needs to have like an inverted trapezoid look."
 - **What it does** (only with `?engine=3d&sewerdungeon`): each body of the dungeon's water is one flat sheet, and its bed one smooth surface with a flat bottom and sloped sides, with the water in or gone (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
