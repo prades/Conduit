@@ -51,6 +51,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's floors told from its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Those don't even look like rooms or tunnels anymore."
+- **What it does** (only with `?engine=3d&sewerdungeon`): floors in their map's colours (pale walkways, darker rooms), wall tops near black, so rooms and passages read (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ci` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's walls level beside stairs (work in progress)
 - **The ask** (the owner, 2026-11-22, on a marked picture): "Looks junk here the walls dont need to descend too".
 - **What it does** (only with `?engine=3d&sewerdungeon`): a wall of the dungeon beside a flight of stairs keeps one height and does not step down with the treads (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
