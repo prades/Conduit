@@ -22,8 +22,8 @@ const STALKER_V = {
   B: { lift: 7, knee: 15, ankle: 8, reach: 1.3, scythe: 1.2, jaw: 1.3, spines: 1, pal: ['#4e3219', '#b08848', '#170f08'], tip: '#ead6a8', leg: '#2a1b0e', mottle: 0.95 },
   // ROUND 2 (the owner: "a little bit confusing. I like it all"): every feature kept, the shape made clear: a heavier, bigger, plated body (bk), short thick legs
   // with the knees still high and the hooks, the sickles bigger, thicker and in a shade of their own so they read first; antennae thicker. D earthy, E today's colours
-  D: { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.15, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.55, antW: 1.6, tipAt: 0.6, pal: ['#5a3418', '#b8874a', '#1a0f07'], tip: '#f2e2bd', leg: '#2b1a0d', sick: '#c99c5e', mottle: 0.9 },
-  E: { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.15, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.55, antW: 1.6, tipAt: 0.6, pal: ['#1c1824', '#4a3466', '#0c0a10'], tip: '#ddd4ef', leg: '#141218', sick: '#7a6a9c', mottle: 0.85 },
+  D: { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.05, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.4, antW: 1.6, spread: 0.45, antH: 5, tipAt: 0.6, pal: ['#5a3418', '#b8874a', '#1a0f07'], tip: '#f2e2bd', leg: '#2b1a0d', sick: '#c99c5e', mottle: 0.9 },
+  E: { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.05, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.4, antW: 1.6, spread: 0.45, antH: 5, tipAt: 0.6, pal: ['#1c1824', '#4a3466', '#0c0a10'], tip: '#ddd4ef', leg: '#141218', sick: '#7a6a9c', mottle: 0.85 },
   C: { lift: 4.5, knee: 10, ankle: 6, reach: 1.12, scythe: 0.85, jaw: 1.15, spines: 0.6, pal: ['#1c1824', '#4a3466', '#0c0a10'], tip: '#b9aed0', leg: '#141218', mottle: 0.85 },
 };
 function stalkerAnt(P, o, V) {
@@ -62,7 +62,7 @@ function stalkerAnt(P, o, V) {
     g.add(cone([(hf - hL * 0.55) * UB, Z(hz + hr * 0.6), side * hW * 0.7 * UB], [(hf - hL * 1.45) * UB, Z(hz + hr * (0.9 + 0.5 * V.spines)), side * hW * 0.95 * UB], 0.05 * UB * hsz));
     const a = [(hf + hL * 0.02) * UB, Z(hz + hr * 0.5), side * hW * 0.9 * UB], b = [(hf + hL * 0.5) * UB, Z(hz + hr * 0.32), side * hW * 0.62 * UB], e = rodBetween(a, b, Z(1.05) * hsz, eye, 8); e.userData.noInk = true; g.add(e);
     g.add(rodBetween([(hf - hL * 0.1) * UB, Z(hz + hr * 0.82), side * hW * 0.95 * UB], [(hf + hL * 0.6) * UB, Z(hz + hr * 0.6), side * hW * 0.28 * UB], Z(1.0), legM, 6));
-    const p0 = [(hf + hL * 0.6) * UB, Z(hz + hr * 0.6), side * 0.09 * UB], p1 = [(hf + hL * 0.5 + 0.1) * UB, Z(hz + 8), side * 0.3 * UB], p2 = [(hf + hL + 0.42) * UB, Z(hz + 3), side * 0.32 * UB]; g.add(rodBetween(p0, p1, 0.009 * s * (V.antW || 1), legM, 6)); g.add(rodBetween(p1, p2, 0.007 * s * (V.antW || 1), legM, 6)); }
+    const p0 = [(hf + hL * 0.6) * UB, Z(hz + hr * 0.6), side * 0.09 * UB], p1 = [(hf + hL * 0.5 + 0.1) * UB, Z(hz + (V.antH || 8)), side * 0.3 * UB], p2 = [(hf + hL + 0.42) * UB, Z(hz + 3), side * 0.32 * UB]; g.add(rodBetween(p0, p1, 0.009 * s * (V.antW || 1), legM, 6)); g.add(rodBetween(p1, p2, 0.007 * s * (V.antW || 1), legM, 6)); }
   // THE JAWS: the approved sickles, longer, two teeth on the inner edge; `open` spreads them for the bite
   for (const side of [-1, 1]) { const op = open * 1.2, b0 = hf + hL * 0.7, b1 = side * 0.12 * hsz, c0 = hf + hL + 0.12 * ml, c1 = side * (0.24 * hsz + op), d0 = hf + hL + 0.38 * ml, d1 = side * (0.22 * hsz + op), t0 = hf + hL + 0.5 * ml, t1 = side * (0.03 + op * 1.1);
     const bez = u => { const v = 1 - u, A = v * v * v, B = 3 * v * v * u, C = 3 * v * u * u, D = u * u * u; return [A * b0 + B * c0 + C * d0 + D * t0, A * b1 + B * c1 + C * d1 + D * t1]; };
@@ -85,7 +85,7 @@ function stalkerAnt(P, o, V) {
     const shp = new T.Shape(pts.concat(inn).map(p => new T.Vector2(p[0] * UB, p[1] * UB))), bm = new T.Mesh(new T.ExtrudeGeometry(shp, { depth: Z(1.2 * SW), bevelEnabled: false }), sickM || armour); if (!sickM) paint(bm);
     const tipShp = new T.Shape([[len * TA, 0.12 * sc * Math.sin(TA * Math.PI) + 0.075 * sc * SW * (1 - TA * 0.85) * 1.08], [len, 0.075 * sc * SW * 0.17], [len, -0.075 * sc * SW * 0.17], [len * TA, 0.12 * sc * Math.sin(TA * Math.PI) - 0.075 * sc * SW * (1 - TA * 0.85) * 1.08]].map(p => new T.Vector2(p[0] * UB, p[1] * UB))), tm = new T.Mesh(new T.ExtrudeGeometry(tipShp, { depth: Z(1.2 * SW + 0.4), bevelEnabled: false }), tipM);
     const pivot = new T.Group(); pivot.position.set(elbow[0], elbow[1], elbow[2] - Z(0.6)); bm.position.z = 0; tm.position.z = -Z(0.2); pivot.add(bm); pivot.add(tm);
-    pivot.rotation.z = -0.3 - 0.75 * strike; pivot.rotation.y = -side * (0.32 - 0.22 * strike); pivot.updateMatrixWorld(true);
+    pivot.rotation.z = -0.3 - 0.75 * strike; pivot.rotation.y = -side * ((V.spread || 0.32) - 0.22 * strike); pivot.updateMatrixWorld(true);
     for (const q of [bm, tm]) { q.geometry.applyMatrix4(q.matrixWorld); q.position.set(0, 0, 0); q.rotation.set(0, 0, 0); q.updateMatrix(); g.add(q); } }   // (baked in place: a body's poses are meshes only, view3d/core.js antBody)
   // THE STILTS: the middle and hind legs, long, each knee far up over the body and out to the side, an ankle, a hooked foot; a thorn on each knee
   const LEGS = [{ f: 0.06, hs: 0.15, kf: 0.18, ks: 0.66, af: 0.3, as: 1.1, tf: 0.42, ts: 1.28 }, { f: -0.14, hs: 0.14, kf: -0.36, ks: 0.66, af: -0.7, as: 1.06, tf: -0.92, ts: 1.22 }];
