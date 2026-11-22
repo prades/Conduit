@@ -95,7 +95,7 @@ const RUN = body => `window.__errs = []; window.addEventListener('error', functi
 })(0);`;
 // in the page: the game in play, no tutorial in the way, the player set down at (x, y)
 const SETUP = `facilityBlackoutSet(false); gameState.running = true; if (_fp.tut && _fp.tut.script) { _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; } if (typeof dialogueClear === 'function') dialogueClear();
-  var put = function (x, y) { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; }, step = function (n) { for (var i = 0; i < n; i++) render(); };`;
+  var put = function (x, y) { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; }, step = function (n) { var W = typeof VIEW3D !== 'undefined' && VIEW3D.view && VIEW3D.view.dry ? VIEW3D.view : null; for (var i = 0; i < n; i++) { if (W) W.dry(i < n - 1); render(); } };`;   // (of a step of n frames only the last is drawn: the frames before it are the view's frames with no picture, view3d/gameview.js noPic, which tests/view3ddry.js holds to drawn frames. A page drew some 250 frames at about half a second each in a browser with no graphics card)
 
 group('SWITCH OFF: nothing of it is fetched or made');
 const OFF = realPage('dev', RUN(SETUP + `put(13, 19); step(3);
