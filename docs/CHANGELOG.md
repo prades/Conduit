@@ -2,6 +2,16 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-22
+
+### No build yet · branch `claude/menacing-insects` (main at `fb4a97bc`, build `2026-11-17cc`, merged in) · the ants in 3D are THE STALKER, variation D (earthy) (behind `?engine=3d`)
+- **The ask** (the owner, 2026-11-22: "I want to make the insects look a bit more menacing"; then "OK Starship Troopers thing looks cool. Let's implement that, please"): drafts A to E of THE STALKER (`design/insects/README.md`). Of round 2: **"Earthy and the sewers look good"**: variation D approved.
+- **What it does:** with the 3D view showing, every ant it draws (worker, scout, striker, tank, at today's sizes) is the Stalker in rust and sand: a heavier plated body mottled by vertex colour, a four-plate gaster with a sting, thorns on the thorax, waist and knees, horns on the heart-shaped head, the approved sickle jaws longer with two teeth, short thick legs with hooked feet, and its front legs made sand-coloured sickles with pale points held up beside the jaws. The eyes keep the ant's colour.
+- **Look only** (the owner: **"Look only for now"**): the game's six poses and their timing as they were; the sickles held up while it walks or stands, swung forward and down in the bite pose. No skittering walk, no wind-up.
+- **Unchanged:** THE ANT QUEEN (the owner: **"Need clones to be drawn first"**), ant clones, allies and nymphs stay the 2D drawing; the 2D game's ant (`js/bugs3d.js`) keeps the look of 2026-11-13. The 3D ant after that look is superseded (`DECISION-LOG.md`).
+- **Cost:** about 4,326 triangles a pose as built, 4,262 as the view holds it (it was 4,592); the poses made once at load, nothing added each frame, no pictures.
+- `design/style-evolution/round2/chamber.js` (`buildAnt`, `ANT_LOOK`), `dist/view3d.js` (made by `node tools/view3d.js`). Docs: `VIEW-3D.md` §4.4, `STYLE-EVOLUTION.md`, `DECISION-LOG.md`. The test page `lab3d/` is a snapshot and was not made again: it shows the old ant.
+
 ## 2026-11-21
 
 ### No build yet · branch `claude/battle-anims` · the attacks in 3D: the core line's ten (behind `?engine=3d`; looks proposed, not yet approved)

@@ -2,6 +2,7 @@
 // Let me draw inspiration from other titles and give our predators a overall better and more intimidating, less generic look."
 // Injected by design/insects/render.js into the game's 3D view (dist/view3d.js, served changed, never written) inside the view's own scope, after the
 // round 2 chamber (design/style-evolution/round2/chamber.js buildAnt): with ?draft=X on the page it replaces buildAnt for that look. Without it, nothing.
+// D APPROVED (the owner, 2026-11-22: "Earthy and the sewers look good"; look only): built into buildAnt (round2/chamber.js), so ?draft=0 now draws D as built; the 2026-11-13 ant is in git history.
 // It also lets the view draw THE ANT QUEEN (class boss) as an ant body, for the pictures (the game today leaves her to its 2D drawing).
 const DRAFTS = {};   // (each look: DRAFTS.X = (P, o, base) => a THREE.Group, as buildAnt makes; below)
 (function () {
