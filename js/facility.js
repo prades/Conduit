@@ -294,7 +294,7 @@ function facilityHeightAt(x, y, F) {
     F = F || facilityGet();
     for (const r of F.ramps) {
         const z = r.zone; if (!z || x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) continue;
-        if (z.round) { const d = Math.hypot(x - z.round.cx, y - z.round.cy); if (d >= z.round.r0) continue; const u = 1 - Math.max(0, Math.min(1, (z.round.r0 - d) / ((z.round.r0 - z.round.r1) || 1))); return z.hA + (z.hB - z.hA) * (1 - u * u); }   // (a bowl: steep at its rim, flat in its middle)
+        if (z.round) { const d = Math.hypot(x - z.round.cx, y - z.round.cy), r0 = z.round.r0; if (d >= r0) continue; const D = Math.max(1e-6, z.hA - z.hB), R = (r0 * r0 + D * D) / (2 * D); return z.hB + R - Math.sqrt(R * R - d * d); }   // (a bowl: a cap of a sphere, as deep in its middle as the two levels are apart, up to the higher level at its rim)
         const v = z.axis === "x" ? x : y; let t = Math.max(0, Math.min(1, (v - z.c0) / ((z.c1 - z.c0) || 1)));
         if (z.steps) t = Math.round(t * z.steps) / z.steps;   // a staircase: flat treads, not a slope
         return z.hA + (z.hB - z.hA) * t;

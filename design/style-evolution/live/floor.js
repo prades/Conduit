@@ -108,6 +108,7 @@ function buildLabFloor(lab, P0, how) {
   // is put on half-tile lines, so the ring came out a lumpy many-sided shape. Here, for the drawing only: the corners of the ring's and the nest's outlines that lie on its outer or its inner
   // circle are put on that circle, and every edge between two of them is an arc of short pieces (its walls and rails the same). A corner another room shares (where a walkway, a passage or
   // the channel meets the ring) stays where it is, so nothing gapes there. Nothing of the map or of where one walks changes.
+  let ROUND = null;   // (the Round Junction's centre, its inner circle and its pool's room, for the pool's bowl: below)
   if (live) { const RING = recs.filter(r => /^sd_junction_(ring_[we]|nest)$/.test(r.id) && r.poly), nest = RING.find(r => /nest$/.test(r.id));
     if (nest && RING.length > 1) { const bb = nest.poly.reduce((q, p) => [Math.min(q[0], p[0]), Math.min(q[1], p[1]), Math.max(q[2], p[0]), Math.max(q[3], p[1])], [1e9, 1e9, -1e9, -1e9]), C = [(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2];
       const dist = p => Math.hypot(p[0] - C[0], p[1] - C[1]), med = a => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)], RI = med(nest.poly.map(dist)), RO = med(RING.filter(r => r !== nest).flatMap(r => r.poly.map(dist)).filter(d => d > RI + 1.2));
@@ -119,7 +120,7 @@ function buildLabFloor(lab, P0, how) {
       for (const r of RING) { const P = [], src = r.poly.filter((p, i, a) => Math.hypot(p[0] - a[(i + a.length - 1) % a.length][0], p[1] - a[(i + a.length - 1) % a.length][1]) > 1e-6);
         for (let i = 0; i < src.length; i++) { const seg = arc(src[i], src[(i + 1) % src.length]); for (let j = 0; j < seg.length - 1; j++) P.push(seg[j]); }
         const W = []; for (const w0 of r.walls) { if (Math.hypot(w0.b[0] - w0.a[0], w0.b[1] - w0.a[1]) < 1e-6) continue; const seg = arc(w0.a, w0.b); for (let j = 0; j < seg.length - 1; j++) W.push(Object.assign({}, w0, { a: seg[j], b: seg[j + 1] })); }
-        r.poly = P; r.walls = W; } } }
+        r.poly = P; r.walls = W; } ROUND = { C, RI, nest: nest.id, ring: RING.find(r => r !== nest).id }; } }
   for (const rec of recs) { rooms[rec.id] = { id: rec.id, rec, R: roomOf(rec), g: new T.Group(), label: rec.label || rec.id, style: rec.style || { acc: PAL.cyan, wain: PAL.wallBase, fa: PAL.floorA, fb: PAL.floorB } }; g.add(rooms[rec.id].g); for (const c of rec.cells) { roomAt.set(K(c[0], c[1]), rec.id); if (live && c[2]) cellH.set(K(c[0], c[1]), c[2] / UH); } }
   const hAt = (x, y) => cellH.get(K(x, y)) || 0, baseOf = id => live && rooms[id] ? (rooms[id].rec.base || 0) / UH : 0;
   let minH = 0; for (const v of cellH.values()) minH = Math.min(minH, v);   // (the lowest floor: what stands over the void goes down past it)
@@ -455,8 +456,17 @@ function buildLabFloor(lab, P0, how) {
     // line, and whole when the water is gone ("Empty: walk the bed"). A tile's corner is as high as the tiles round it: the mean of the water tiles there; at a bank's lip, the walkway's own height.
     { const bt = quads(), by2 = new Map(), cornerH = (cx, cy) => { let sum = 0, n = 0, fl = -1e9, bank = true; for (const [ox, oy] of [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]]) { const k = K(cx + ox, cy + oy), w = wet.get(k);
           if (w && sdLo.has(k)) { sum += w.h; n++; if (w.h < sdLo.get(k) + 1e-3) bank = false; } else if (roomAt.has(k) && !w) fl = Math.max(fl, hAt(cx + ox, cy + oy)); } return fl > -1e8 && bank ? fl : n ? sum / n : 0; };
-      for (const [k, lo] of sdLo) { const [x, y] = k.split(',').map(Number), room = wet.get(k).room; let q = by2.get(room); if (!q) by2.set(room, q = quads());
+      for (const [k, lo] of sdLo) { const [x, y] = k.split(',').map(Number), room = wet.get(k).room; if (ROUND && room === ROUND.nest) continue; let q = by2.get(room); if (!q) by2.set(room, q = quads());
         putQuad(q, [x - 0.5, cornerH(x - 0.5, y + 0.5), y + 0.5], [x + 0.5, cornerH(x + 0.5, y + 0.5), y + 0.5], [x + 0.5, cornerH(x + 0.5, y - 0.5), y - 0.5], [x - 0.5, cornerH(x - 0.5, y - 0.5), y - 0.5], [0, 1, 0], WHITE); }
+      // THE BOWL (the owner, 2026-11-22, of the pool's bed drawn a tile at a time: "It looks like a inverted pyramid, sort of stacked, sort of stepped [...] I want a more smooth look for the middle. Round,
+      // spherical edge"): the Round Junction's pool has one smooth bed, a cap of a sphere from the ring's floor at its rim down to its depth in the middle, as the game's own heights have it
+      // (js/facility.js facilityHeightAt), drawn as rings of a round mesh with smooth shading, not as tiles.
+      if (ROUND && rooms[ROUND.nest]) { const nc = [...sdLo].filter(([k]) => wet.get(k).room === ROUND.nest); if (nc.length) { const lo = nc[0][1], rim = baseOf(ROUND.ring), r0 = ROUND.RI, D = Math.max(1e-6, (rim - lo) * UH / 34), Rs = (r0 * r0 + D * D) / (2 * D), SEG = 64, RNG = 16;
+          const yAt = d => lo + (rim - lo) * (Rs - Math.sqrt(Math.max(0, Rs * Rs - d * d))) / D, pos = [], uv = [], col = [], idx = [];
+          for (let i = 0; i <= RNG; i++) for (let j = 0; j <= SEG; j++) { const d = r0 * i / RNG, a = j / SEG * Math.PI * 2, x = ROUND.C[0] + Math.cos(a) * d, z = ROUND.C[1] + Math.sin(a) * d; pos.push(x, yAt(d), z); uv.push(x / 3, z / 3); col.push(1, 1, 1); }
+          for (let i = 0; i < RNG; i++) for (let j = 0; j < SEG; j++) { const a = i * (SEG + 1) + j, b = a + 1, c = a + SEG + 1, d2 = c + 1; idx.push(a, d2, c, a, b, d2); }
+          const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+          const bowl = new T.Mesh(geo, new T.MeshStandardMaterial({ color: lin('#5d6c72'), roughness: 0.9, side: T.DoubleSide })); bowl.receiveShadow = true; bowl.userData.inkKey = 'floor'; rooms[ROUND.nest].g.add(bowl); sewer.bowl = bowl; } }
       for (const [room, q] of by2) { const bed = quadMesh([{ q, mat: P0.sdBed || (P0.sdBed = std('#46555b', { roughness: 0.9 })) }]); bed.receiveShadow = true; bed.userData.inkKey = 'floor'; rooms[room].g.add(bed); } }
     // the banks down to it, and the hazard stripe along their lips (yellow and black, four a tile)
     const stripes = canvasTex(64, 8, (g, w, h) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#141414' : '#f2c11a'; g.beginPath(); g.moveTo(i * 8, h); g.lineTo(i * 8 + 8, h); g.lineTo(i * 8 + 12, 0); g.lineTo(i * 8 + 4, 0); g.fill(); } g.fillStyle = '#f2c11a'; g.beginPath(); g.moveTo(-4, h); g.lineTo(4, h); g.lineTo(8, 0); g.lineTo(0, 0); g.fill(); }, { repeat: true });

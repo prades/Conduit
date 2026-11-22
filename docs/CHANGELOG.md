@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17co` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl smooth and spherical (work in progress)
+- **The ask** (the owner, 2026-11-22): "It looks like a inverted pyramid [...] I want a more smooth look for the middle. Round, spherical edge".
+- **What it does** (only with `?sewerdungeon`): the Round Junction pool's bed is a cap of a sphere in the game's heights, and in the 3D view one round smooth surface (`SEWER-DUNGEON.md`). `js/facility.js`, `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Round Junction's middle a pool in a bowl (work in progress)
 - **The ask** (the owner, 2026-11-22): "make the actual circular junction pool [...] have a large you know, bowl area"; "Water, drains to walk".
 - **What it does** (only with `?sewerdungeon`): the junction's middle is a round pool with a bowl-shaped bed; shutting the north culvert empties it with the Central Channel and the bowl is walked (`SEWER-DUNGEON.md`). Outside the switch nothing changes: the game's height rule gained a bowl-shaped slope that only the dungeon's map uses.
