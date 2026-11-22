@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bk` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the West Channel's water steps down with its tunnel (work in progress)
+- **The ask** (the owner, 2026-11-21): "it should affect the water level. It should slope down too."
+- **What it does** (only with `?sewerdungeon`): the West Channel's water lies in three stretches, each a flight lower, falling where the walkways' flights stand. Steps, not yet a slope.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run. **Not playtested.**
+
 ### Build `2026-11-17bj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the entrance tunnel comes down two flights (work in progress)
 - **The ask** (the owner, 2026-11-21): "I want the entrance tunnel to have two sets of stairs before it reaches the main tunnel and channel."
 - **What it does** (only with `?sewerdungeon`): both banks of the West Channel step down twice between the West Entrance and the Central Channel.

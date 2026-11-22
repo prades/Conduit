@@ -11,7 +11,7 @@ const WATER = new Set(['water']);
 // THE HEIGHTS (the owner, 2026-11-21, walking the bare rooms: "when I say it needs to be multiple stories, I'm not talking about actual stories. I'm talking about how it has stairs and whatnot to make it
 // feel like it's underground"): a step of the trace's `lvl` is a short flight, STEP tiles, not a storey; the walkways lie where the old Sewers did (BASE). A channel's room lies DEEP below its
 // walkways: its water is drawn below that again (js/facilitysewers.js), so the channel reads deep and not full. Levels of the dungeon's own (ids 47 to 52), so no other room's height moves.
-const BASE = -1.8, STEP = 0.4, DEEP = 0.9, LV = l => 50 + l, WATER_LV = 47;
+const BASE = -1.8, STEP = 0.4, DEEP = 0.9, LV = l => 50 + l, WATER_LV = l => 40 + (l || 0);   // (a stretch of water `wl` flights up lies that much higher: the West Channel comes down with its tunnel)
 // THE FLIGHTS: [upper piece, lower piece, where on their shared wall (a tile range along x or y, or null: all of it), the flight's zone (a rectangle, in tiles) and the way it runs]
 const FLIGHTS = [
   { id: 'channel_steps', rooms: ['channel_steps', 'west_channel'], on: { y: [18.5, 18.5] }, zone: [9.3, 16.4, 11.7, 18.6], axis: 'y', steps: 6, wet: true },   // (THE FLOODED STAIRCASE: it runs down into the channel; nothing walks off its foot)
@@ -46,7 +46,7 @@ function build() {
     for (let i = 0; i < n; i++) { const seg = [s.p[i], s.p[(i + 1) % n]];   // (a wall shared with water, or water's with a walkway: an open edge with a rail, the water in sight)
       const j = J.find(j => j.rooms.includes(s.id) && along(seg, j) && Math.hypot(seg[1][0] - seg[0][0], seg[1][1] - seg[0][1]) - j.len < 0.3 && (wet(j.rooms[0]) || wet(j.rooms[1]) || (j.rooms.includes('junction_nest') && j.lv[0] !== j.lv[1])));   // (water against water too: one channel running into another, nothing drawn between)
       kinds.push(!j ? 'wall' : wet(s.id) || s.id === 'junction_nest' || s.kind === 'steps' ? 'open' : 'deck_rail'); }   // (ONE rail, the walkway's: the owner, "you don't need to have 2 or 4 sets of railings. It's one set of railing"; the water's own side of that edge draws nothing)
-    rooms.push({ id: P + s.id, label: LABEL[s.id] || 'Sewers', level: wet(s.id) ? WATER_LV : LV(s.lvl), status: 'placed', wall_material: 'solid', interior: true, sewer_dungeon: s.kind, polygon: s.p.map(px), edge_kinds: kinds });
+    rooms.push({ id: P + s.id, label: LABEL[s.id] || 'Sewers', level: wet(s.id) ? WATER_LV(s.wl) : LV(s.lvl), status: 'placed', wall_material: 'solid', interior: true, sewer_dungeon: s.kind, polygon: s.p.map(px), edge_kinds: kinds });
     interiors.push({ id: P + s.id, under: 'arena', offset: OFFSET });
     floors.push({ room: P + s.id, style: 'concrete', colour: s.kind === 'nest' ? '#2a1d33' : '#272d2c' });
     if (wet(s.id) || s.kind === 'drain') props.push({ id: P + s.id + '_water', room: P + s.id, shape: 'poly', poly: s.p.map(px), status: 'placed', kind: wet(s.id) ? 'river' : 'pool', sewer_dungeon: s.kind });
@@ -58,13 +58,13 @@ function build() {
     const j = cand.find(j => !f.on || (f.on.x ? Math.min(j.a[0], j.b[0]) <= f.on.x[0] + 0.01 && Math.max(j.a[0], j.b[0]) >= f.on.x[1] - 0.01 && (f.on.x[0] !== f.on.x[1] || Math.abs(j.a[0] - j.b[0]) < 0.01) : Math.min(j.a[1], j.b[1]) <= f.on.y[0] + 0.01 && Math.max(j.a[1], j.b[1]) >= f.on.y[1] - 0.01 && Math.abs(j.a[1] - j.b[1]) < 0.01 && (f.id !== 'ledge' || Math.min(j.a[0], j.b[0]) <= 55.51)));
     if (!j) throw new Error('the flight ' + f.id + ' has no shared wall to stand on');
     let a = j.a, b = j.b; if (f.on && f.on.x && f.on.x[0] !== f.on.x[1]) { a = [f.on.x[0], j.a[1]]; b = [f.on.x[1], j.a[1]]; } if (f.id === 'ledge') { a = [55.5, 23.5]; b = [57.5, 23.5]; }
-    const hi = LV(by[f.rooms[0]].lvl), lo = f.wet ? WATER_LV : LV(by[f.rooms[1]].lvl), zA = snap([f.zone[0], f.zone[1]]), zB = snap([f.zone[2], f.zone[3]]), z = [zA[0], zA[1], zB[0], zB[1]], c = f.axis === 'x' ? [z[0], z[2]] : [z[1], z[3]];
+    const hi = LV(by[f.rooms[0]].lvl), lo = f.wet ? WATER_LV(by[f.rooms[1]].wl) : LV(by[f.rooms[1]].lvl), zA = snap([f.zone[0], f.zone[1]]), zB = snap([f.zone[2], f.zone[3]]), z = [zA[0], zA[1], zB[0], zB[1]], c = f.axis === 'x' ? [z[0], z[2]] : [z[1], z[3]];
     a = snap(a); b = snap(b); if (!f.wet) open('flight_' + f.id, a, b, f.rooms);   // (on the game's grid, as the trace is)
     // (c0 is the upper floor's end of the flight, c1 the lower's: the game reads the height from the first room to the second along the axis)
     const upFirst = f.down !== 'low', c0 = (upFirst ? c[0] : c[1]) * G, c1 = (upFirst ? c[1] : c[0]) * G;
     ramps.push({ id: 'r_' + P + f.id, rooms: f.rooms.map(x => P + x), shape: 'steps', between_levels: [hi, lo], descends_toward: P + f.rooms[1], position_status: 'placed', zone: { rect: [z[0] * G, z[1] * G, z[2] * G, z[3] * G].map(Math.round), axis: f.axis, c0: Math.round(c0), c1: Math.round(c1), steps: f.steps } });
     if (!f.wet) connections.push({ id: 'conn_' + P + 'flight_' + f.id, rooms: f.rooms.map(x => P + x), opening: 'open_' + P + 'flight_' + f.id, ramp: 'r_' + P + f.id }); }
-  const levels = [{ id: WATER_LV, label: 'sewer channel', height: +(BASE - DEEP).toFixed(2) }].concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
+  const levels = [0, 1, 2].map(l => ({ id: WATER_LV(l), label: 'sewer channel ' + l, height: +(BASE + l * STEP - DEEP).toFixed(2) })).concat([-2, -1, 0, 1, 2, 3].map(l => ({ id: LV(l), label: 'sewer ' + l, height: +(BASE + l * STEP).toFixed(2) })));
   return { levels, rooms, interiors, openings, connections, ramps, props, floors };
 }
 function text() { const M = build(), line = o => '        ' + JSON.stringify(o);
