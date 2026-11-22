@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bx` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room an L (work in progress)
+- **The ask** (the owner, 2026-11-22): an L, its base a bulky rectangle, the pool; a slimmer channel leading to it with a walkway on either side.
+- **What it does** (only with `?sewerdungeon`): that shape; the pool 8 by 10.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
 ### Build `2026-11-17bw` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room redone, reached only through the Purification Chamber; grey steps (work in progress)
 - **The ask** (the owner, 2026-11-22): "really confusing looking with the different color stairs"; the pool room "only accessible through the purification module room", a small channel to the pool, a walkway both sides of it and round the pool, "a drain on the west side there on the wall".
 - **What it does** (only with `?sewerdungeon`): that room, as asked; every flight of the dungeon drawn in the walkways' grey.

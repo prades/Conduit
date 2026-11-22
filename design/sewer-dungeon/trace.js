@@ -46,11 +46,16 @@ const SHAPES = [
   // water that leads to the pool, and a walkway on the other side or both sides of the channel, and then along around the pool, and then it would have a drain on the west side there on the wall".
   // One room north of the Purification Chamber, entered only from it: a small channel in from the main one (looked down from the main walkway over a rail, no way across), a walkway each side of it and
   // all round a plain rectangular pool; the drain on the west wall.)
-  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[50.5, 32.5], [79.5, 32.5], [79.5, 34.5], [50.5, 34.5]] },
-  { id: 'drain_east', lvl: 0, kind: 'walk', p: [[77.5, 34.5], [79.5, 34.5], [79.5, 40.5], [77.5, 40.5]] },
-  { id: 'drain_south', lvl: 0, kind: 'walk', p: [[52.5, 36.5], [62.5, 36.5], [62.5, 38.5], [77.5, 38.5], [77.5, 40.5], [56.5, 40.5], [56.5, 38.5], [52.5, 38.5]] },
-  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.5, 34.5], [62.5, 34.5], [62.5, 36.5], [49.5, 36.5]] },
-  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[62.5, 34.5], [77.5, 34.5], [77.5, 38.5], [62.5, 38.5]] },
+  // (AN L: the owner, 2026-11-22: "You need to make the room look like an L shaped, but the base is a large rectangle, bulky rectangle. That should be the pool, and then leading up to it is a slimmer
+  // channel with two walkways on either side, not necessarily connected to each other". The slim channel runs east with a walkway each side; at its end the pool, a bulky rectangle 8 by 10, stands
+  // north of it, a walkway round it: the two channel walkways meet only by going round the pool.)
+  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[50.5, 32.5], [67.5, 32.5], [67.5, 34.5], [50.5, 34.5]] },
+  { id: 'drain_west', lvl: 0, kind: 'walk', p: [[67.5, 24.5], [69.5, 24.5], [69.5, 34.5], [67.5, 34.5]] },
+  { id: 'drain_north', lvl: 0, kind: 'walk', p: [[69.5, 24.5], [79.5, 24.5], [79.5, 26.5], [69.5, 26.5]] },
+  { id: 'drain_east', lvl: 0, kind: 'walk', p: [[77.5, 26.5], [79.5, 26.5], [79.5, 36.5], [77.5, 36.5]] },
+  { id: 'drain_south', lvl: 0, kind: 'walk', p: [[52.5, 36.5], [79.5, 36.5], [79.5, 40.5], [56.5, 40.5], [56.5, 38.5], [52.5, 38.5]] },
+  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.5, 34.5], [69.5, 34.5], [69.5, 36.5], [49.5, 36.5]] },
+  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[69.5, 26.5], [77.5, 26.5], [77.5, 36.5], [69.5, 36.5]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
   { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [49.6, 0], K.weB, K.weA] },

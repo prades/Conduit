@@ -128,6 +128,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 - **The steps of the whole dungeon** are its walkways' grey now, no teal and no lit edge.
 *The agent's:* the room's measures; where the steps down stand.
 
+**Reshaped (the owner, 2026-11-22, of the pool room in a line): "You need to make the room look like an L shaped, but the base is a large rectangle, bulky rectangle. That should be the pool, and then leading up to it is a slimmer channel with two walkways on either side, not necessarily connected to each other."** Build `2026-11-17bx`: the slim channel (2 wide, 20 long) runs east from the main channel with a walkway each side; at its end the pool, a bulky rectangle 8 by 10, stands north of it (the L), a walkway round it. The two channel walkways meet only by going round the pool. Still entered only through the Purification Chamber, off the south walkway; the drain on the west wall. Which way the L turns (north) and its measures are the agent's: the free ground was there.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.

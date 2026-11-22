@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path'), ROOT = path.resolve(__dirname, '..');
 const { SHAPES, snap, VALVES } = require(path.join(ROOT, 'design/sewer-dungeon/trace.js')), { joins } = require(path.join(ROOT, 'design/sewer-dungeon/joins.js'));
 const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G), Math.round(p[1] * G)];
-const LABEL = { drain_north: 'Drain Hall', drain_walk: 'Drain Hall', drain_east: 'Drain Hall', drain_south: 'Drain Hall', drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
+const LABEL = { drain_west: 'Drain Hall', drain_north: 'Drain Hall', drain_walk: 'Drain Hall', drain_east: 'Drain Hall', drain_south: 'Drain Hall', drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
 // (so the prototype reads: walkways pale, rooms a little darker, a drain's bed and the nest their own colours; stand-ins till the approved concrete and checker plate are in: docs/SEWER-PROPS.md)
@@ -30,7 +30,7 @@ const FLIGHTS = [
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23.5, 23.5] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },
-  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [62.5, 34.5, 64.5, 36.5], axis: 'x', steps: 3 },   // (from the small channel's bed down onto the pool's)
+  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [69.5, 34.5, 71.5, 36.5], axis: 'x', steps: 3 },   // (from the small channel's bed down onto the pool's)
   { id: 'pool_s', rooms: ['drain_south', 'low_drain'], on: { x: [57.5, 59.5] }, zone: [57.5, 34.5, 59.5, 36.5], axis: 'y', steps: 3, down: 'low' },   // (the way down once it is drained: from the south walkway into the small channel)
 ];
 function build() {
