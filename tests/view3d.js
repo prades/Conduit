@@ -209,6 +209,9 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   put(13, 19); step(3); out.back = { showing: VIEW3D.showing, display: gl.style.display };`));
 if (ON === null) console.log('  (no Chromium here: skipped)');
 else {
+    check('every room\'s floor is put in the scene (builds 2026-11-17bz to cb left it out: a comment begun in the middle of the line took the code after it, and every 3D floor was black)', () => {
+        ok(/rm\.g\.add\(fm\)[\s\S]{0,40}rm\.floor\s*=\s*fm/.test(rd('dist/view3d.js')), 'dist/view3d.js does not add a room\'s floor to its room (design/style-evolution/live/floor.js: rm.g.add(fm))');
+    });
     check('it is made behind the start screen with no error: three.js r128, the view ready, the game started', () => {
         ok(!ON.none, 'the page left no result'); same(ON.start, 'done', 'the start'); same(ON.on, true, 'the switch'); same(ON.state, 'ready', 'the view (' + ON.error + ')'); same(ON.errs.join(' | '), '', 'errors'); ok(!ON.threw, ON.threw); same(ON.three, '128', 'three.js');
     });

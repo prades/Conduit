@@ -28492,6 +28492,10 @@ function buildLabFloor(lab, P0, how) {
             }
         }
         const fm = quadMesh([{ q: top, mat }, { q: side, mat: rec.id.slice(0, 3) === 'sd_' ? (P0.sdSide || (P0.sdSide = std('#3b4448', { roughness: 0.8 }))) : P0.floorSide }]);
+        fm.receiveShadow = true;
+        fm.userData.inkKey = 'floor';
+        rm.g.add(fm);
+        rm.floor = fm;
         if (cliff.rface.pos.length) {
             const cm = quadMesh([{ q: cliff.rface, mat: rockMat }]);
             cm.castShadow = cm.receiveShadow = true;
