@@ -38,9 +38,13 @@ const SHAPES = [
   // The pool's shape and size are the agent's; the picture's winding tunnel is a straight one now.
   // (OPENED UP: the owner, 2026-11-22, circling the walled-in tunnel: "we need to like open up this entire area so that the player can interact with the pool area or see what's going on in that room
   // before they know how to interact with it". A walkway runs along the tunnel's north side and on along the pool's, a rail over the water; the tunnel and the pool have no wall on their near sides.)
-  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[49.5, 32.5], [71.5, 32.5], [71.5, 34.5], [49.5, 34.5]] },
+  // (ONE OPEN HALL: the owner, 2026-11-22, of the walkway alone: "No, I'm saying you need to open up the wall, or that area above the purification module, and make that whole area opened up with
+  // the pool and the new other channel". Floor all round the tunnel and the pool, the whole space above the Purification Chamber, and that chamber's north wall open onto it.)
+  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[49.5, 32.5], [77.5, 32.5], [77.5, 34.5], [49.5, 34.5]] },
+  { id: 'drain_east', lvl: 0, kind: 'walk', p: [[71.5, 34.5], [77.5, 34.5], [77.5, 40.5], [71.5, 40.5]] },
+  { id: 'drain_south', lvl: 0, kind: 'walk', p: [[54.5, 36.5], [60.5, 36.5], [60.5, 38.5], [71.5, 38.5], [71.5, 40.5], [54.5, 40.5]] },
   { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.5, 34.5], [60.5, 34.5], [60.5, 36.5], [49.5, 36.5]] },
-  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[60.5, 34.5], [71.5, 34.5], [71.5, 38.5], [70.5, 39.5], [61.5, 39.5], [60.5, 38.5]] },
+  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[60.5, 34.5], [71.5, 34.5], [71.5, 38.5], [60.5, 38.5]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
   { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [49.6, 0], K.weB, K.weA] },

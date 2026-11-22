@@ -5,7 +5,7 @@
 const fs = require('fs'), path = require('path'), ROOT = path.resolve(__dirname, '..');
 const { SHAPES, snap, VALVES } = require(path.join(ROOT, 'design/sewer-dungeon/trace.js')), { joins } = require(path.join(ROOT, 'design/sewer-dungeon/joins.js'));
 const G = 20, OFFSET = [-5000, 5000], P = 'sd_', px = p => [Math.round(p[0] * G), Math.round(p[1] * G)];
-const LABEL = { drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
+const LABEL = { drain_walk: 'Drain Hall', drain_east: 'Drain Hall', drain_south: 'Drain Hall', drain_pool: 'Drain Pool', west_entrance: 'West Entrance', west_channel: 'West Channel', central_channel: 'Central Channel', low_drain: 'Low Drain Tunnel', nw_gallery: 'Northwest Wing', nw_wing: 'Northwest Wing', west_cell: 'West Hall', west_hall: 'West Hall', sw_storage: 'Southwest Storage',
   subway_exit: 'Subway Exit', junction_ring_w: 'Round Junction', junction_ring_e: 'Round Junction', junction_nest: 'Toxic Nest', purification: 'Purification Chamber', ne_offices: 'Northeast Offices', high_ledge: 'High Ledge Room', hl_foot: 'High Ledge Room', east_rubble: 'East Rubble' };
 const WATER = new Set(['water']);
 // (so the prototype reads: walkways pale, rooms a little darker, a drain's bed and the nest their own colours; stand-ins till the approved concrete and checker plate are in: docs/SEWER-PROPS.md)
