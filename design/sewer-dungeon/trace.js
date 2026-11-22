@@ -128,7 +128,7 @@ const VALVES = [   // (THE KIT'S PIECES, placed: the owner, 2026-11-22, of the f
   // drains". kind: a kind of the approved kit (docs/SEWER-PROPS.md §10); r: its tiles [x0, y0, x1, y1]. Where each stands is the agent's.)
   { id: 'valve_north', room: 'central_walk_w', kind: 'sluice_switch_turned', r: [37.5, 0.5, 38.5, 1.5], note: 'the north cutoff: its switch on the walkway\'s wall' },
   { id: 'gate_north', room: 'central_channel', kind: 'sluice_gate', r: [42.5, 1.5, 44.5, 2.5], note: 'the north cutoff: its gate across the main channel' },
-  { id: 'valve_mouth', room: 'central_walk_w', kind: 'sluice_switch_turned', r: [37.5, 14.5, 38.5, 15.5], note: 'the mouth cutoff: its switch on the walkway\'s wall' },
+  { id: 'valve_mouth', room: 'central_walk_w', kind: 'sluice_switch_turned', r: [37.5, 12.5, 38.5, 13.5],   /* (two tiles north, against the walkway's west wall: where it stood, the West Channel's walkway comes in and there is no wall behind it) */ note: 'the mouth cutoff: its switch on the walkway\'s wall' },
   { id: 'gate_mouth', room: 'west_channel3', kind: 'sluice_gate', r: [35.5, 17.5, 36.5, 19.5], note: 'the mouth cutoff: its gate across the West Channel' },
   { id: 'valve_drain', room: 'drain_walk', kind: 'drain_valve_turned', r: [57.5, 32.5, 58.5, 33.5], note: 'the drain, on the pool room\'s west wall' },
   { id: 'rubble_east', room: 'er_approach', kind: 'rubble_heap', r: [52.5, 26.5, 53.5, 28.5], note: 'the rubble in the way to East Rubble' },
