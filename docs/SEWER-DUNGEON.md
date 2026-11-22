@@ -105,6 +105,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-22, circling a door frame standing across the West Channel's walkway where it meets the main one): "Remove this dumb arc doorway".** Where two of the dungeon's pieces join on one floor there is a plain gap now, no frame: every such doorway (26 of them), not only that one. Build `2026-11-17bo`.
 
+**Added (the owner, 2026-11-22): "I would like to see more walking space on these sidewalks in the sewer, I guess, alongside the channels."** Every walkway along a channel is 3 tiles wide (they were 2, the main channel's west one already 3): the West Channel's widened outward, into the gallery to the north and over the rooms to the south; the main channel's east one outward, the east passages a tile shorter. How much is the agent's. Build `2026-11-17bp`.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.

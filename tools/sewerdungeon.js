@@ -15,20 +15,20 @@ const BASE = -1.8, STEP = 0.4, DEEP = 0.9, LV = l => 50 + l, WATER_LV = l => 40 
 // THE FLIGHTS: [upper piece, lower piece, where on their shared wall (a tile range along x or y, or null: all of it), the flight's zone (a rectangle, in tiles) and the way it runs]
 const FLIGHTS = [
   { id: 'channel_steps', rooms: ['channel_steps', 'west_channel'], on: { y: [18.5, 18.5] }, zone: [9.3, 16.4, 11.7, 18.6], axis: 'y', steps: 6, wet: true },   // (THE FLOODED STAIRCASE: it runs down into the channel; nothing walks off its foot)
-  { id: 'ent_n1', rooms: ['west_walk_n', 'west_walk_n2'], on: null, zone: [18.5, 14.5, 20.5, 16.5], axis: 'x', steps: 3 },   // (THE ENTRANCE TUNNEL'S TWO FLIGHTS, on each bank)
-  { id: 'ent_n2', rooms: ['west_walk_n2', 'west_walk_n3'], on: null, zone: [28.5, 14.5, 30.5, 16.5], axis: 'x', steps: 3 },
-  { id: 'ent_s1', rooms: ['west_walk_s', 'west_walk_s2'], on: null, zone: [18.5, 21.5, 20.5, 23.5], axis: 'x', steps: 3 },
-  { id: 'ent_s2', rooms: ['west_walk_s2', 'west_walk_s3'], on: null, zone: [28.5, 21.5, 30.5, 23.5], axis: 'x', steps: 3 },
-  { id: 'gallery', rooms: ['nw_gallery', 'west_walk_n'], on: { x: [9.5, 11.5] }, zone: [9.5, 12.5, 11.5, 14.5], axis: 'y', steps: 3 },
-  { id: 'cell', rooms: ['west_walk_s', 'west_cell'], on: { x: [4.5, 7.5] }, zone: [4.5, 23.4, 7, 25.4], axis: 'y', steps: 5 },   // (the owner, 2026-11-21: "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance.")
-  { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 24.5, 16.5, 29.5], axis: 'y', steps: 7 },
+  { id: 'ent_n1', rooms: ['west_walk_n', 'west_walk_n2'], on: null, zone: [18.5, 13.5, 20.5, 16.5], axis: 'x', steps: 3 },   // (THE ENTRANCE TUNNEL'S TWO FLIGHTS, on each bank)
+  { id: 'ent_n2', rooms: ['west_walk_n2', 'west_walk_n3'], on: null, zone: [28.5, 13.5, 30.5, 16.5], axis: 'x', steps: 3 },
+  { id: 'ent_s1', rooms: ['west_walk_s', 'west_walk_s2'], on: null, zone: [18.5, 21.5, 20.5, 24.5], axis: 'x', steps: 3 },
+  { id: 'ent_s2', rooms: ['west_walk_s2', 'west_walk_s3'], on: null, zone: [28.5, 21.5, 30.5, 24.5], axis: 'x', steps: 3 },
+  { id: 'gallery', rooms: ['nw_gallery', 'west_walk_n'], on: { x: [9.5, 11.5] }, zone: [9.5, 11.5, 11.5, 13.5], axis: 'y', steps: 3 },
+  { id: 'cell', rooms: ['west_walk_s', 'west_cell'], on: { x: [4.5, 7.5] }, zone: [4.5, 24.4, 7, 26.4], axis: 'y', steps: 5 },   // (the owner, 2026-11-21: "The room right under the main entrance tunnel is inaccessible from it. It should have access from the main entrance.")
+  { id: 'hall', rooms: ['hall_stair', 'west_hall'], on: null, zone: [14.5, 25.5, 16.5, 29.5], axis: 'y', steps: 7 },
   { id: 'ring_w', rooms: ['central_walk_w_s', 'junction_ring_w'], on: null, zone: [37.2, 34.2, 40.4, 36.5], axis: 'y', steps: 3 },
-  { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 48.6, 36.4], axis: 'y', steps: 3 },
+  { id: 'ring_e', rooms: ['central_walk_e', 'junction_ring_e'], on: null, zone: [46.2, 34.2, 49.6, 36.4], axis: 'y', steps: 3 },
   { id: 'pur', rooms: ['pur_pass', 'junction_ring_e'], on: null, zone: [55, 44.8, 57.2, 49.2], axis: 'x', steps: 3, down: 'low' },
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23.5, 23.5] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },
-  { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [48.6, 33.4, 50.6, 35.8], axis: 'x', steps: 3 },
+  { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [49.6, 33.4, 51.6, 35.8], axis: 'x', steps: 3 },
 ];
 function build() {
   const S = SHAPES.map(s => Object.assign({}, s, { p: s.p.filter((q, i, a) => i === 0 || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.02) })), by = Object.fromEntries(S.map(s => [s.id, s])), J = joins();
