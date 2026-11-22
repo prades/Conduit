@@ -4,7 +4,7 @@
 // What goes into it, as one function (window.__view3d(opts) gives the view), in this order:
 //   the followers' forms (design/evolutions/forms-core.js, forms*.js) and the props' models (design/props/models/*.js): the game's own 3D models, as its bakers load them
 //   the reader of the game's map (view3d/gamemap.js), and the map it reads from the running game: the rooms the view builds (VIEW3D_ROOMS)
-//   the round 2 kit, chamber and styles (design/style-evolution/round2/), the lab floor's builder (design/style-evolution/live/floor.js) and the 3D core (view3d/core.js): the look, as the
+//   the round 2 kit, chamber and styles (design/style-evolution/round2/), the lab floor's builder (design/style-evolution/live/floor.js), the sewer look (view3d/sewerdress.js: the Sewers' and the sewer dungeon's rooms dressed, 1 FAITHFUL) and the 3D core (view3d/core.js): the look, as the
 //   test page has it (lab3d/, tools/lab3d.js)
 //   the bakers' table of jobs (design/evolutions/bake.js JOBS: which model, in which colour, posed how, each sprite sheet is baked from), as VIEW3D_JOBS
 //   the attacks in 3D (view3d/attacks.js: their registry, the Frost Maw's first; view3d/attacks_fire.js: the fire line's; view3d/attacks_ice.js: the ice line's; view3d/attacks_electric.js: the electric line's; view3d/attacks_toxic.js: the toxic line's; view3d/attacks_flux.js: the flux line's; view3d/attacks_core.js: the core line's), the card battles' Ultimates' fields (view3d/fields.js: drafts, drawn only where the registry draws none: "Approved looks win", the owner, 2026-11-21) and the view (view3d/gameview.js)
@@ -24,7 +24,7 @@ function jobs() {
 }
 function sources() {
   const S = LAB.sources();
-  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/core.js'], view: ['view3d/attacks_fire.js', 'view3d/attacks_ice.js', 'view3d/attacks_electric.js', 'view3d/attacks_toxic.js', 'view3d/attacks_flux.js', 'view3d/attacks_core.js', 'view3d/attacks.js', 'view3d/fields.js', 'view3d/gameview.js'] };
+  return { forms: S.forms, models: S.models, map: ['view3d/gamemap.js'], look: [R2 + '/kit.js', R2 + '/chamber.js', R2 + '/styles.js', LIVE + '/floor.js', 'view3d/sewerdress.js', 'view3d/core.js'], view: ['view3d/attacks_fire.js', 'view3d/attacks_ice.js', 'view3d/attacks_electric.js', 'view3d/attacks_toxic.js', 'view3d/attacks_flux.js', 'view3d/attacks_core.js', 'view3d/attacks.js', 'view3d/fields.js', 'view3d/gameview.js'] };
 }
 function build() {
   const S = sources(), ts = LAB.loadTs(), one = f => '/* ' + f + ' */\n' + LAB.strip(ts, rd(f), f) + '\n;\n';

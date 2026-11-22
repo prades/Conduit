@@ -101,7 +101,8 @@ function view3dCore(opts) {
 
   // ── THE WORLD: rooms' records (round2/export.js's, or the game's own made the same way) built in the look, lit, and merged ──
   function buildWorld(lab, how) {
-    const world = buildLabFloor(lab, P, how); ctx.world = world; scene.add(world.g); S.world(world, scene, ctx); world.settle(); S.lights(scene, ctx);
+    const world = buildLabFloor(lab, P, how); if (how && how.live && typeof sewerDress === 'function') try { sewerDress(world, lab); } catch (e) { world.sewerLookError = String((e && e.stack) || e); if (typeof console !== 'undefined') console.error('the sewer look: ' + world.sewerLookError); }   // (THE SEWER LOOK, 1 FAITHFUL: the Sewers' and the sewer dungeon's rooms dressed, view3d/sewerdress.js; the test page has none)
+    ctx.world = world; scene.add(world.g); S.world(world, scene, ctx); world.settle(); S.lights(scene, ctx);
     scene.traverse(o => { if (o.isDirectionalLight && o.castShadow) key = o; });
     // the glow round the Crystal: its soft disc from numbers, not from a canvas's gradient (an iPad's canvas dithers a gradient, and the glow drew as a ring of dots)
       scene.traverse(o => { if (!o.isSprite) return; const N = 64, d = new Uint8Array(N * N * 4); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const r = Math.hypot((x + 0.5) / N - 0.5, (y + 0.5) / N - 0.5) * 2, a = r < 0.35 ? 1 - 0.55 * r / 0.35 : 0.45 * Math.max(0, 1 - (r - 0.35) / 0.65), i = (y * N + x) * 4; d[i] = d[i + 1] = d[i + 2] = 255; d[i + 3] = Math.round(a * 255); }
