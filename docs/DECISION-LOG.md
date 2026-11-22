@@ -25,6 +25,18 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Not invented:** no deeper channels, stairs, arches or tanks the map does not have; the dungeon has no `light` entries, so it has no lamps and reads at the dark ambient (open: whether it should have lamps, and where).
 - **Docs/code:** `VIEW-3D.md` stage 3; `SEWER-DUNGEON.md`; `CHANGELOG.md` 2026-11-22; `view3d/sewerdress.js` (new), `view3d/core.js` (one hook), `tools/view3d.js`.
 
+## DECISION: The ants in 3D are THE STALKER, variation D (earthy); look only; THE ANT QUEEN waits for the clones
+
+- **Date:** 2026-11-22 · **Branch/build:** `claude/menacing-insects` (main at `fb4a97bc` merged in, build `2026-11-17cc`); no build of its own, not pushed
+- **Status:** implemented in the 3D view (`?engine=3d`); verified by `tests/view3d.js`, `tests/view3ddry.js`, `tests/lab3d.js`, `tests/bundle.js` and pictures of the real game (the battle camera and every class in each of its six poses, close). Not seen on an iPad; not playtested.
+- **Context:** the owner: "I want to make the insects look a bit more menacing", then, of the references, "OK Starship Troopers thing looks cool. Let's implement that, please." One direction, THE STALKER (the Warrior Bug's principles, not its creature), in round 1's A, B and C; then, the owner: "I think it looks a little bit better, but it also looks a little confusing. I like I like it all", round 2's D (earthy) and E (today's colours): a heavier plated body, short thick legs, the sickles standing out (`design/insects/README.md`, `design/insects/drafts.js`).
+- **Decision:** the owner: **"Earthy and the sewers look good"**: variation D, the earthy rust-and-sand Stalker, approved as the 3D view's ant body, for every ant class the view draws (worker, scout, striker, tank) at today's sizes. A, B, C and E are not approved.
+- **Look only:** asked whether to build the clip's skittering walk and sickle wind-up: **"Look only for now"**. The body uses the game's existing six poses and their timing (four walk steps, the bite, standing); the sickles are held up in each and swung forward and down in the bite. No new poses, no change to when a pose shows.
+- **Not THE ANT QUEEN yet:** asked whether she should be drawn in 3D now: **"Need clones to be drawn first"**. A boss stays the game's 2D drawing, as do an ant clone, an ally and a nymph (`VIEW-3D.md` §4.4).
+- **Supersedes, for the 3D view:** the 3D ant built after the look approved 2026-11-13 ("Very right direction", below). The 2D drawing (`js/bugs3d.js`), what players get, keeps that look.
+- **Agent's choices, provisional:** every number of the Stalker (`ANT_LOOK` in `design/style-evolution/round2/chamber.js`, the draft's D as drafted); the mottle a colour on each vertex (no picture). About 4,326 triangles a pose as built (4,262 as the view holds it, measured in the real page) against 4,592; the poses made once at load.
+- **Code and docs:** `design/style-evolution/round2/chamber.js` (`buildAnt`), `dist/view3d.js` (made). `VIEW-3D.md` §4.4, `STYLE-EVOLUTION.md` §3 and §8, `CHANGELOG.md`.
+
 ## DECISION: An energy card found in the world hides its element, which is rolled when it is found
 
 - **Date:** 2026-11-22 · **Branch/build:** `claude/friendly-thompson-w581x0`; documents only (main at build `2026-11-17by`)
@@ -3718,6 +3730,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner, of the sharp violet gel tentacle piece (`slap`) that had shown only on the `?fx=3d` preview since build `2026-11-13b`: **"Approve it."** It is added to `FX3D.approved` and shows for everyone. Status: Implemented and tested; not playtested on an iPad. `CHANGELOG.md`.
 
 ## DECISION: The ants a little edgier: sickle jaws, a heart-shaped head, slanted eyes (2026-11-13, build `2026-11-13q`, branch `claude/start-game-project-HSh7Z`)
+- *(Superseded for the 3D view, 2026-11-22: its ant is THE STALKER, variation D, the owner: "Earthy and the sewers look good"; see that entry. The 2D drawing keeps this look.)*
 - The owner: **"what can be done to make the ants look better? I kind of want to make them look a little bit more edgy, but not too much. What do you think we should do? Like, I'm thinking like their forceps should have like..."** The agent proposed one piece, drawn with the game's own kit (`design/ants/edgy-draft.js`): **"Very right direction good jawb."**
 - Built as drafted: sickle jaws (about 40% longer, a tooth each, sharpened pale tips; almost meeting at rest, wide and snapping on a bite), a heart-shaped head (stronger on a tank or a boss) with a brow ridge over slanted eyes, a short point on the gaster. The colours, sizes, body, legs and walk are unchanged.
 - Tried and dropped (agent's): spines on the thorax and the waist; at the game's size they read as stray lines.

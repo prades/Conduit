@@ -160,41 +160,81 @@ function buildRoom(R, P, opt) {
   return { g, parts };
 }
 
-// ── THE ANT (after js/bugs3d.js _drawAnt3D): it faces +x; cls: worker, scout, striker, tank (a soldier: a bigger head and jaws) ──
+// ── THE ANT: THE STALKER, variation D (earthy). The owner, 2026-11-22: "Earthy and the sewers look good" (docs/VIEW-3D.md, docs/DECISION-LOG.md). Drafted in design/insects/drafts.js
+// (STALKER_V.D); it supersedes the look of 2026-11-13 ("Very right direction"), whose heart-shaped head, sickle jaws and slanted eyes it keeps. It faces +x; cls: worker, scout, striker,
+// tank (a soldier: a bigger head and jaws). A heavy plated body in rust and sand, mottled (a colour on each vertex: no picture), short thick legs with high knees, thorns and hooked feet,
+// and its front pair of legs made sickles held up, swung forward and down on a bite (`open`). Look only ("Look only for now"): the poses are the game's own (walk, open, stand).
 // (size 0.5 with zk 2 is the game's own ant, measure for measure: the game's 3D view, view3d/gameview.js. As the pictures and the test page have it, it is twice as long and half as tall again.)
 const ANT_W = { worker: 20, scout: 22, striker: 28, tank: 36 }, ANT_JAW_LEN = { worker: 0.9, scout: 1.05, striker: 1.15, tank: 1.3 }, ANT_ZK = 1.5;
-const ANT_LEGS_3D = [{ f: 0.2, hs: 0.13, hz: 6, kf: 0.2, ks: 0.62, kz: 12, tf: 0.62, ts: 0.92 }, { f: 0.05, hs: 0.15, hz: 6, kf: 0, ks: 0.7, kz: 12, tf: 0.02, ts: 1.02 }, { f: -0.1, hs: 0.13, hz: 6, kf: -0.25, ks: 0.66, kz: 12, tf: -0.72, ts: 0.95 }];
+const ANT_LOOK = { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.05, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.4, antW: 1.6, spread: 0.45, antH: 5, tipAt: 0.6,
+  pal: ['#5a3418', '#b8874a', '#1a0f07'], tip: '#f2e2bd', leg: '#2b1a0d', sick: '#c99c5e', mottle: 0.9 };   // (pal: the armour's rust, its sand blotches, its dark plate edges and underside)
+const ANT_LEGS_3D = [{ f: 0.06, hs: 0.15, kf: 0.18, ks: 0.66, af: 0.3, as: 1.1, tf: 0.42, ts: 1.28 }, { f: -0.14, hs: 0.14, kf: -0.36, ks: 0.66, af: -0.7, as: 1.06, tf: -0.92, ts: 1.22 }];
 function buildAnt(P, o) {
-  o = o || {}; const cls = o.cls || 'scout', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, Z = z => z / UH * s * (o.zk || ANT_ZK), soldier = cls === 'tank', hsz = soldier ? 1.3 : 1, ml = ANT_JAW_LEN[cls] || 1.05;
-  const accent = o.accent || ANT_COLOUR, chitin = P.chitin(accent), eye = glowMat(accent, 1.0), rim = glowMat(accent, 0.7), g = new T.Group(), open = o.open === undefined ? 0.01 : o.open, walk = o.walk === undefined ? 0.6 : o.walk;
-  const NR = 24, ring = (f0, L, W, z, K) => { const r = []; for (let i = 0; i < NR; i++) { const t = i / NR * Math.PI * 2, k = K ? K[i] : 1; r.push([(f0 + L * Math.cos(t) * k) * U, Z(z), W * Math.sin(t) * k * U]); } return r; };
-  const blob = (f0, L, W, z0, rz, K) => { const rings = []; for (let i = 0; i <= 10; i++) { const ph = -Math.PI / 2 + Math.PI * (i + 0.5) / 11, k = Math.sin(ph), sc = Math.cos(ph); rings.push(ring(f0, L * sc, W * sc, z0 + rz * k, K)); } return loft(rings, chitin); };
-  // the gaster with its rim, its two bands and its point; the waist; the thorax
-  g.add(blob(-0.92, 0.55, 0.42, 8, 5.5));
-  const rimM = new T.Mesh(new T.TorusGeometry(1, 0.022, 6, 40), rim); rimM.rotation.x = Math.PI / 2; rimM.scale.set(0.555 * U, 0.425 * U, 1); rimM.position.set(-0.92 * U, Z(8), 0); rimM.userData.noInk = true; g.add(rimM);
-  for (const fa of [-0.72, -1.02]) { const u = (fa + 0.92) / 0.55, k = Math.sqrt(Math.max(0, 1 - u * u)), b = new T.Mesh(new T.TorusGeometry(1, 0.03, 6, 28), P.leg); b.rotation.y = Math.PI / 2; b.scale.set(0.42 * U * k * 1.01, (Z(5.5) * k) * 1.01, 1); b.position.set(fa * U, Z(8), 0); g.add(b); }
-  const spike = new T.Mesh(new T.ConeGeometry(0.1 * U, 0.3 * U, 8), chitin); spike.rotation.z = Math.PI / 2; spike.position.set(-1.5 * U, Z(8.1), 0); g.add(spike);
-  g.add(blob(-0.36, 0.1, 0.09, 7, 3)); g.add(blob(0.02, 0.34, 0.2, 8, 3.5));
-  // the head: heart-shaped (two lobes behind, a notch between, narrower in front), a soldier's more so
-  const hf = 0.36 + 0.22 * hsz, hL = 0.22 * hsz, hW = 0.25 * hsz, hz = 9, hr = 3.5 * hsz, lobe = soldier ? 0.18 : 0.1, notch = soldier ? 0.26 : 0.16;
-  const K = []; for (let i = 0; i < NR; i++) { const t = i / NR * Math.PI * 2, c = Math.cos(t), a = Math.abs(Math.atan2(Math.sin(t), c)); K.push((c > 0 ? 1 - 0.14 * c : 1) + lobe * Math.exp(-(a - 2.3) * (a - 2.3) / 0.12) - notch * Math.exp(-(a - Math.PI) * (a - Math.PI) / 0.05)); }
-  g.add(blob(hf, hL, hW, hz, hr, K));
-  // the jaws: sickles from the head's front corners, a tooth on each inner edge, the tips sharpened lighter; `open` spreads them
-  for (const side of [-1, 1]) { const b0 = hf + hL * 0.7, b1 = side * 0.12 * hsz, c0 = hf + hL + 0.12 * ml, c1 = side * (0.23 * hsz + open), d0 = hf + hL + 0.38 * ml, d1 = side * (0.21 * hsz + open), t0 = hf + hL + 0.47 * ml, t1 = side * (0.035 + open * 1.1);
+  o = o || {}; const V = ANT_LOOK, cls = o.cls || 'scout', soldier = cls === 'tank', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, BK = V.bk, UB = U * BK, zk = o.zk || ANT_ZK, Z = z => z / UH * s * zk;
+  const hsz = (soldier ? 1.3 : 1) * V.head, ml = (ANT_JAW_LEN[cls] || 1.05) * V.jaw, open = o.open === undefined ? 0.01 : o.open, strike = Math.min(1, open / 0.3), walk = o.walk === undefined ? 0.6 : o.walk;
+  const accent = o.accent || ANT_COLOUR, eye = glowMat(accent, 1.0), g = new T.Group();
+  const C0 = lin(V.pal[0]), C1 = lin(V.pal[1]), C2 = lin(V.pal[2]);
+  const armour = std('#ffffff', { roughness: 0.42, metalness: 0.25 }); armour.vertexColors = true;
+  const legM = std(V.leg, { roughness: 0.45, metalness: 0.3 }), tipM = std(V.tip, { roughness: 0.3, metalness: 0.45 }), sickM = std(V.sick, { roughness: 0.35, metalness: 0.35 }), LW = V.legW, SW = V.sw, TA = V.tipAt;
+  // the mottle: blotches from a few sines over the body's own space (a colour a vertex), plate edges and the underside darker
+  const mot = (x, y, z) => { const n = Math.sin(x * 23.1 + z * 7.3) * Math.sin(z * 19.7 - x * 5.1 + 1.3) + 0.6 * Math.sin(x * 41 + y * 37 + z * 29) + 0.35 * Math.sin((x - z) * 61 + y * 13); return Math.max(0, Math.min(1, (n - 0.15) * 1.4)); };
+  const paint = (mesh, edge) => { const geo = mesh.geometry, p = geo.attributes.position, n = p.count, c = new Float32Array(n * 3), box = (geo.computeBoundingBox(), geo.boundingBox), tc = new T.Color();
+    for (let i = 0; i < n; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), k = mot(x / s, y / s, z / s) * V.mottle, h = (y - box.min.y) / Math.max(1e-6, box.max.y - box.min.y);
+      tc.copy(C0).lerp(C1, k); if (edge) tc.lerp(C2, edge(x, y, z, h)); tc.lerp(C2, Math.max(0, 0.45 - h) * 0.9); c[i * 3] = tc.r; c[i * 3 + 1] = tc.g; c[i * 3 + 2] = tc.b; }
+    geo.setAttribute('color', new T.BufferAttribute(c, 3)); return mesh; };
+  const NR = 20, ring = (f0, L, W, z, K, tilt) => { const r = []; for (let i = 0; i < NR; i++) { const t = i / NR * Math.PI * 2, k = K ? K[i] : 1, f = L * Math.cos(t) * k; r.push([(f0 + f) * UB, Z(z + (tilt || 0) * f * 10), W * Math.sin(t) * k * UB]); } return r; };
+  const blob = (f0, L, W, z0, rz, o2) => { o2 = o2 || {}; const rings = [], nr = o2.rings || 9; for (let i = 0; i <= nr; i++) { const ph = -Math.PI / 2 + Math.PI * (i + 0.5) / (nr + 1), k = Math.sin(ph), sc = Math.cos(ph);
+      const top = k > 0 && o2.ridge ? 1 + o2.ridge * k * k : 1; rings.push(ring(f0, L * sc, W * sc / top, z0 + rz * BK * k * top, o2.K, o2.tilt)); } return paint(loft(rings, armour), o2.edge); };
+  const cone = (a, b, r, mat) => { const m = rodBetween(a, b, 1, mat || armour, 6), d = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]); m.geometry.dispose(); m.geometry = new T.ConeGeometry(r, d, 6); if (!mat) paint(m); return m; };
+  const zb = 8 + V.lift;   // the body's height: low, on short thick legs
+  // THE GASTER: four armour plates, overlapping, front to back, tipped up a little, their edges dark; a sting
+  for (const [f, l, k] of [[-0.6, 0.17, 0.78], [-0.78, 0.2, 1], [-0.97, 0.19, 0.94], [-1.14, 0.15, 0.72]]) { const zz = zb + 1.2 + (-0.6 - f) * 3.2;
+    g.add(blob(f, l * 1.15, 0.36 * k, zz, 5 * k, { ridge: 0.12, edge: x => Math.pow(Math.abs(Math.cos(((x / U) - f) / (l * 1.15) * Math.PI / 2)), 0.3) < 0.6 ? 0.7 : 0 })); }
+  const tipF = -1.14 - 0.17, tipZ = zb + 1.2 + 0.54 * 3.2;
+  g.add(cone([tipF * UB, Z(tipZ), 0], [(tipF - 0.25) * UB, Z(tipZ - 1.5), 0], 0.05 * UB, tipM));
+  // THE WAIST: a node with a thorn
+  g.add(blob(-0.38, 0.09, 0.08, zb, 2.6, { rings: 5 })); g.add(cone([-0.38 * UB, Z(zb + 2.2), 0], [-0.44 * UB, Z(zb + 2.2 + 4 * V.spines), 0], 0.035 * UB));
+  // THE THORAX: long, its front raised (the lean stance), a plated back with three thorns along the ridge
+  g.add(blob(0.0, 0.34, 0.17, zb + 1.2, 3.2, { tilt: 0.25, ridge: 0.25 }));
+  for (const [f, h] of [[-0.18, 3], [0.02, 4.2], [0.2, 3.4]]) g.add(cone([f * UB, Z(zb + 1.2 + 3.2 + f * 2.5 - 0.4), 0], [(f - 0.08) * UB, Z(zb + 1.2 + 3.2 + f * 2.5 + h * V.spines), 0], 0.045 * UB));
+  // THE HEAD: the approved heart shape (a soldier's more so), raised, two back-swept horns over the lobes, the eyes under a heavy brow, elbowed antennae held low
+  const hf = 0.4 + 0.22 * hsz, hL = 0.22 * hsz, hW = 0.25 * hsz, hz = zb + 3.2 * BK, hr = 3.4 * hsz * BK, lobe = soldier ? 0.18 : 0.12, notch = soldier ? 0.26 : 0.18;
+  const K = []; for (let i = 0; i < NR; i++) { const t = i / NR * Math.PI * 2, c = Math.cos(t), a = Math.abs(Math.atan2(Math.sin(t), c)); K.push((c > 0 ? 1 - 0.18 * c : 1) + lobe * Math.exp(-(a - 2.3) * (a - 2.3) / 0.12) - notch * Math.exp(-(a - Math.PI) * (a - Math.PI) / 0.05)); }
+  g.add(blob(hf, hL, hW, hz, hr, { K, ridge: 0.1 }));
+  for (const side of [-1, 1]) {
+    g.add(cone([(hf - hL * 0.55) * UB, Z(hz + hr * 0.6), side * hW * 0.7 * UB], [(hf - hL * 1.45) * UB, Z(hz + hr * (0.9 + 0.5 * V.spines)), side * hW * 0.95 * UB], 0.05 * UB * hsz));
+    const a = [(hf + hL * 0.02) * UB, Z(hz + hr * 0.5), side * hW * 0.9 * UB], b = [(hf + hL * 0.5) * UB, Z(hz + hr * 0.32), side * hW * 0.62 * UB], e = rodBetween(a, b, Z(1.05) * hsz, eye, 8); e.userData.noInk = true; g.add(e);
+    g.add(rodBetween([(hf - hL * 0.1) * UB, Z(hz + hr * 0.82), side * hW * 0.95 * UB], [(hf + hL * 0.6) * UB, Z(hz + hr * 0.6), side * hW * 0.28 * UB], Z(1.0), legM, 6));
+    const p0 = [(hf + hL * 0.6) * UB, Z(hz + hr * 0.6), side * 0.09 * UB], p1 = [(hf + hL * 0.5 + 0.1) * UB, Z(hz + V.antH), side * 0.3 * UB], p2 = [(hf + hL + 0.42) * UB, Z(hz + 3), side * 0.32 * UB]; g.add(rodBetween(p0, p1, 0.009 * s * V.antW, legM, 6)); g.add(rodBetween(p1, p2, 0.007 * s * V.antW, legM, 6)); }
+  // THE JAWS: the approved sickles, longer, two teeth on the inner edge, a pale point; `open` spreads them for the bite
+  for (const side of [-1, 1]) { const op = open * 1.2, b0 = hf + hL * 0.7, b1 = side * 0.12 * hsz, c0 = hf + hL + 0.12 * ml, c1 = side * (0.24 * hsz + op), d0 = hf + hL + 0.38 * ml, d1 = side * (0.22 * hsz + op), t0 = hf + hL + 0.5 * ml, t1 = side * (0.03 + op * 1.1);
     const bez = u => { const v = 1 - u, A = v * v * v, B = 3 * v * v * u, C = 3 * v * u * u, D = u * u * u; return [A * b0 + B * c0 + C * d0 + D * t0, A * b1 + B * c1 + C * d1 + D * t1]; };
     const outer = [], inner = [], tipO = [], tipI = []; for (let i = 0; i <= 10; i++) { const u = i / 10, p = bez(u), q = bez(Math.min(1, u + 0.01)), r = bez(Math.max(0, u - 0.01)); let nx = r[1] - q[1], ny = q[0] - r[0]; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl; if (ny * side < 0) { nx = -nx; ny = -ny; }
-      const w = 0.08 * hsz * Math.pow(1 - u, 0.8) * (u < 0.15 ? 0.7 + 2 * u : 1), oo = [p[0] + nx * w, p[1] + ny * w], ii = [p[0] - nx * w, p[1] - ny * w]; outer.push(oo); inner.push(ii); if (u >= 0.6) { tipO.push(oo); tipI.push(ii); } if (i === 5) inner.push([p[0] - nx * (w + 0.08 * ml) + 0.03 * ml, p[1] - ny * (w + 0.08 * ml)]); }
-    const blade = (pts, mat, lift) => { const sh = new T.Shape(pts.map(p => new T.Vector2(p[0] * U, p[1] * U))), m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: Z(1.6), bevelEnabled: false }), mat); m.rotation.x = Math.PI / 2; m.position.y = Z(8.2) + (lift || 0); m.castShadow = true; return m; };
-    g.add(blade(outer.concat(inner.slice().reverse()), chitin)); g.add(blade(tipO.concat(tipI.slice().reverse()), P.jawTip, 0.002)); }
-  // slanted eyes in its colour, under a brow; elbowed antennae
-  for (const side of [-1, 1]) { const a = [(hf + hL * 0.05) * U, Z(hz + hr * 0.52), side * hW * 0.9 * U], b = [(hf + hL * 0.5) * U, Z(hz + hr * 0.36), side * hW * 0.63 * U], e = rodBetween(a, b, Z(1.05) * hsz, eye, 8); e.userData.noInk = true; g.add(e);
-    g.add(rodBetween([(hf - hL * 0.05) * U, Z(hz + hr * 0.78), side * hW * 0.9 * U], [(hf + hL * 0.55) * U, Z(hz + hr * 0.66), side * hW * 0.3 * U], Z(0.7), P.leg, 6));
-    const p0 = [(hf + hL * 0.6) * U, Z(hz + hr * 0.6), side * 0.09 * U], p1 = [(hf + hL * 0.6 + 0.12) * U, Z(17), side * 0.34 * U], p2 = [(hf + hL + 0.45) * U, Z(11), side * 0.3 * U]; g.add(rodBetween(p0, p1, 0.009 * s, P.leg, 6)); g.add(rodBetween(p1, p2, 0.007 * s, P.leg, 6)); }
-  // six legs: hip, knee, foot on the floor, in a tripod gait
-  ANT_LEGS_3D.forEach((L, i) => { for (const side of [-1, 1]) { const ph = walk * Math.PI * 2 + ((i % 2 === 0) === (side > 0) ? 0 : Math.PI), sw = o.stand ? 0 : Math.sin(ph) * 0.36, up = o.stand ? 0 : Math.max(0, Math.cos(ph)) * 4;   // (stand: every foot down, as the game draws one that is not walking)
-    const hip = [L.f * U, Z(L.hz), side * L.hs * U], knee = [(L.f + L.kf + sw * 0.5) * U, Z(L.kz + up), side * L.ks * U], foot = [(L.f + L.tf + sw) * U, Z(up * 0.5) + 0.012, side * L.ts * U];
-    g.add(rodBetween(hip, knee, 0.02 * s, P.leg, 8)); g.add(rodBetween(knee, foot, 0.015 * s, P.leg, 8)); g.add(at3(new T.Mesh(new T.SphereGeometry(0.022 * s, 8, 6), P.leg), knee[0], knee[1], knee[2])); } });
-  setShadows(g); g.userData.ant = { cls, s, len: 2.95 * U, top: Z(soldier ? 16 : 13), headAt: [hf * U, Z(hz), 0], jawTip: [(hf + hL + 0.47 * ml) * U, Z(8), 0] };
+      const w = 0.09 * hsz * Math.pow(1 - u, 0.8) * (u < 0.15 ? 0.7 + 2 * u : 1), oo = [p[0] + nx * w, p[1] + ny * w], ii = [p[0] - nx * w, p[1] - ny * w]; outer.push(oo); inner.push(ii); if (u >= 0.6) { tipO.push(oo); tipI.push(ii); }
+      if (i === 3 || i === 6) inner.push([p[0] - nx * (w + 0.07 * ml) + 0.03 * ml, p[1] - ny * (w + 0.07 * ml)]); }
+    const blade = (pts, mat, lift, th) => { const sh = new T.Shape(pts.map(p => new T.Vector2(p[0] * UB, p[1] * UB))), m = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: Z(th || 1.8), bevelEnabled: false }), mat); m.rotation.x = Math.PI / 2; m.position.y = Z(hz - 0.8) + (lift || 0); if (mat === armour) paint(m); return m; };
+    const tipPts = tipO.map(p => [p[0] + 0.004, p[1] + side * 0.004]).concat(tipI.slice().reverse().map(p => [p[0] + 0.004, p[1] - side * 0.004]));   // (the pale point a hair proud of the blade, all round: no two faces in one place)
+    g.add(blade(outer.concat(inner.slice().reverse()), armour)); g.add(blade(tipPts, tipM, Z(0.15), 2.1)); }
+  // THE SICKLES (its front legs), in a sand shade of their own: a thick arm up from the thorax's front to an elbow over the head, the blade hanging forward and down from it,
+  // serrated, its point pale. At rest (walking, standing) held high and folded, ready; on the bite (open 0.3, the game's bite pose) swung forward and down at what is in front
+  const sc = V.scythe;
+  for (const side of [-1, 1]) {
+    const sh = [0.24 * UB, Z(zb + 2.6), side * 0.13 * UB], ex = (0.3 + 0.18 * strike) * sc, ey = zb + (5.5 * sc + 1.5) * BK - 2.5 * strike * sc, elbow = [(0.24 + ex) * UB, Z(ey), side * 0.3 * UB];
+    g.add(paint(rodBetween(sh, elbow, 0.026 * s * Math.max(1, sc) * SW, armour, 7))); g.add(at3(new T.Mesh(new T.SphereGeometry(0.028 * s * Math.max(1, sc) * SW, 8, 6), legM), elbow[0], elbow[1], elbow[2]));
+    // the blade, a flat curved shape in its own plane (u along it, v across), turned to hang from the elbow
+    const len = 0.9 * sc, pts = [], N = 9, wAt = u => 0.075 * sc * SW * (1 - u * 0.85), cAt = u => 0.12 * sc * Math.sin(u * Math.PI); for (let i = 0; i <= N; i++) { const u = i / N; pts.push([u * len, cAt(u) + wAt(u)]); }
+    const inn = []; for (let i = N; i >= 0; i--) { const u = i / N, bump = i > 0 && i < N && i % 2 === 0 ? 0.05 * sc : 0; inn.push([u * len, cAt(u) - wAt(u) - bump]); }
+    const bm = new T.Mesh(new T.ExtrudeGeometry(new T.Shape(pts.concat(inn).map(p => new T.Vector2(p[0] * UB, p[1] * UB))), { depth: Z(1.2 * SW), bevelEnabled: false }), sickM);
+    const tipShp = new T.Shape([[len * TA, cAt(TA) + wAt(TA) * 1.08], [len, wAt(0) * 0.17], [len, -wAt(0) * 0.17], [len * TA, cAt(TA) - wAt(TA) * 1.08]].map(p => new T.Vector2(p[0] * UB, p[1] * UB))), tm = new T.Mesh(new T.ExtrudeGeometry(tipShp, { depth: Z(1.2 * SW + 0.4), bevelEnabled: false }), tipM);
+    const pivot = new T.Group(); pivot.position.set(elbow[0], elbow[1], elbow[2] - Z(0.6)); tm.position.z = -Z(0.2); pivot.add(bm); pivot.add(tm);
+    pivot.rotation.z = -0.3 - 0.75 * strike; pivot.rotation.y = -side * (V.spread - 0.22 * strike); pivot.updateMatrixWorld(true);
+    for (const q of [bm, tm]) { q.geometry.applyMatrix4(q.matrixWorld); q.position.set(0, 0, 0); q.rotation.set(0, 0, 0); q.updateMatrix(); g.add(q); } }   // (baked in place: a body's poses are meshes only, view3d/core.js antBody)
+  // THE LEGS: the middle and hind pairs, short and thick, each knee up over the body and out to the side, an ankle, a hooked foot, a thorn on each knee; a tripod gait
+  ANT_LEGS_3D.forEach((Lg, i) => { for (const side of [-1, 1]) { const ph = walk * Math.PI * 2 + ((i % 2 === 0) === (side > 0) ? 0 : Math.PI), sw = o.stand ? 0 : Math.sin(ph) * 0.42, up = o.stand ? 0 : Math.pow(Math.max(0, Math.cos(ph)), 0.5) * 5;   // (stand: every foot down, as the game draws one that is not walking)
+    const R = V.reach, hip = [Lg.f * UB, Z(zb + 0.6), side * Lg.hs * UB], knee = [(Lg.f + Lg.kf * R + sw * 0.4) * U, Z(zb + V.knee + up * 0.6), side * Lg.ks * R * U], ank = [(Lg.f + Lg.af * R + sw * 0.75) * U, Z(V.ankle + up), side * Lg.as * R * U], foot = [(Lg.f + Lg.tf * R + sw) * U, Z(up * 0.4) + 0.012, side * Lg.ts * R * U];
+    g.add(rodBetween(hip, knee, 0.024 * s * LW, legM, 7)); g.add(rodBetween(knee, ank, 0.017 * s * LW, legM, 7)); g.add(rodBetween(ank, foot, 0.011 * s * LW, legM, 6));
+    g.add(at3(new T.Mesh(new T.SphereGeometry(0.026 * s * LW, 8, 6), legM), knee[0], knee[1], knee[2])); g.add(cone(knee, [knee[0] - 0.02 * U, knee[1] + Z(1.2 + 1.6 * V.spines), knee[2] + side * 0.05 * U], 0.022 * s * LW, legM)); } });
+  setShadows(g); g.userData.ant = { cls, s, len: 2.95 * UB, top: Z(Math.max(hz + hr + 3, zb + 5.5 * sc + 4)), headAt: [hf * UB, Z(hz), 0], jawTip: [(hf + hL + 0.5 * ml) * UB, Z(hz - 0.8), 0] };
   return g;
 }
 
