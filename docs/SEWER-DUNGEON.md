@@ -119,6 +119,15 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Corrected (the owner, 2026-11-22, of the open hall): "Make it bigger".** The pool is an L of 127 tiles (it was 44): 16 tiles along its south side, an arm 9 wide running 7 north beside the East Rubble's room; the hall round it runs to the map's east edge, floor on its north, east and south. Its shape is the agent's. Build `2026-11-17bv`.
 
+**Redone (the owner, 2026-11-22, of the open hall): "It honestly is really confusing looking with the different color stairs and everything. So let's just make it to where the new room with a pool is only accessible [...] through the purification module room, and you could still see a small channel of water that leads to the pool, and a walkway on the other side or both sides of the channel, and then along around the pool, and then it would have a drain on the west side there on the wall."** Build `2026-11-17bw`, superseding the hall and its L-shaped pool:
+- **The pool room** lies north of the Purification Chamber and is entered ONLY from it (the chamber's north wall, 4 tiles). Nothing joins it to the main channel's walkway.
+- **A small channel** (2 tiles wide) runs in from the main channel to the pool; from the main channel's east walkway you look down it over a rail and cannot cross.
+- **A walkway** on both sides of that channel and all round the pool (2 tiles wide, railed over the water).
+- **The pool** is a plain rectangle, 15 by 4.
+- **The drain** stands on the room's west wall, at the west end of the north walkway (the stand-in valve and the builder's DRAIN THE POOL button, as before). Drained, steps go down from the south walkway into the channel and on onto the pool's bed.
+- **The steps of the whole dungeon** are its walkways' grey now, no teal and no lit edge.
+*The agent's:* the room's measures; where the steps down stand.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.

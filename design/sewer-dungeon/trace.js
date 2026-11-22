@@ -42,12 +42,15 @@ const SHAPES = [
   // the pool and the new other channel". Floor all round the tunnel and the pool, the whole space above the Purification Chamber, and that chamber's north wall open onto it.)
   // (BIGGER: the owner, 2026-11-22, of the hall as first opened: "Make it bigger". The pool is an L, 16 tiles along its south and an arm 9 wide running 7 north; the hall runs to the map's east
   // edge and up beside the East Rubble's room. Its shape is the agent's.)
-  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[49.5, 32.5], [67.5, 32.5], [67.5, 34.5], [49.5, 34.5]] },
-  { id: 'drain_north', lvl: 0, kind: 'walk', p: [[67.5, 24.5], [79.5, 24.5], [79.5, 27.5], [67.5, 27.5]] },
-  { id: 'drain_east', lvl: 0, kind: 'walk', p: [[76.5, 27.5], [79.5, 27.5], [79.5, 40.5], [76.5, 40.5]] },
-  { id: 'drain_south', lvl: 0, kind: 'walk', p: [[54.5, 36.5], [60.5, 36.5], [60.5, 38.5], [76.5, 38.5], [76.5, 40.5], [54.5, 40.5]] },
-  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.5, 34.5], [60.5, 34.5], [60.5, 36.5], [49.5, 36.5]] },
-  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[60.5, 34.5], [67.5, 34.5], [67.5, 27.5], [76.5, 27.5], [76.5, 38.5], [60.5, 38.5]] },
+  // (REDONE, SIMPLER: the owner, 2026-11-22: "let's just make it to where the new room with a pool is only accessible [...] through the purification module room, and you could still see a small channel of
+  // water that leads to the pool, and a walkway on the other side or both sides of the channel, and then along around the pool, and then it would have a drain on the west side there on the wall".
+  // One room north of the Purification Chamber, entered only from it: a small channel in from the main one (looked down from the main walkway over a rail, no way across), a walkway each side of it and
+  // all round a plain rectangular pool; the drain on the west wall.)
+  { id: 'drain_walk', lvl: 0, kind: 'walk', p: [[50.5, 32.5], [79.5, 32.5], [79.5, 34.5], [50.5, 34.5]] },
+  { id: 'drain_east', lvl: 0, kind: 'walk', p: [[77.5, 34.5], [79.5, 34.5], [79.5, 40.5], [77.5, 40.5]] },
+  { id: 'drain_south', lvl: 0, kind: 'walk', p: [[52.5, 36.5], [62.5, 36.5], [62.5, 38.5], [77.5, 38.5], [77.5, 40.5], [56.5, 40.5], [56.5, 38.5], [52.5, 38.5]] },
+  { id: 'low_drain', lvl: -1, kind: 'drain', p: [[49.5, 34.5], [62.5, 34.5], [62.5, 36.5], [49.5, 36.5]] },
+  { id: 'drain_pool', lvl: -2, kind: 'drain', p: [[62.5, 34.5], [77.5, 34.5], [77.5, 38.5], [62.5, 38.5]] },
   { id: 'central_walk_w', lvl: 0, kind: 'walk', p: [[37.2, 0], [40.4, 0], [40.4, 16.2], [37.2, 16.2]] },   // (north of the West Channel's mouth)
   { id: 'central_walk_w_s', lvl: 0, kind: 'walk', p: [[37.2, 21.2], [40.4, 21.2], K.wwB, K.wwA] },   // (south of it)
   { id: 'central_walk_e', lvl: 0, kind: 'walk', p: [[46.2, 0], [49.6, 0], K.weB, K.weA] },
@@ -118,7 +121,7 @@ for (const s of STAIRS) s.p = s.p.map(snap);
 // designs for it"): each stands against its walkway's wall for now, a stand-in till the approved model is mounted on the wall (docs/SEWER-PROPS.md).
 const VALVES = [
   { id: 'valve_north', room: 'central_walk_w', at: [38, 1], note: 'the cutoff valve at the Central Channel\'s north end' },
-  { id: 'valve_drain', room: 'central_walk_e', at: [49, 33], note: 'the drain valve by the drain tunnel\'s mouth: it empties the tunnel and its pool' },
+  { id: 'valve_drain', room: 'drain_walk', at: [51, 33], note: 'the drain, on the pool room\'s west wall: it empties the small channel and the pool' },
   { id: 'valve_mouth', room: 'central_walk_w', at: [38, 15], note: 'the cutoff valve where the West Channel meets the Central Channel' },
 ];
 module.exports = { VALVES, snap, STAIRS, SHAPES, W: 80, H: 72, C, RO, RI };

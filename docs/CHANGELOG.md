@@ -33,6 +33,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bw` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room redone, reached only through the Purification Chamber; grey steps (work in progress)
+- **The ask** (the owner, 2026-11-22): "really confusing looking with the different color stairs"; the pool room "only accessible through the purification module room", a small channel to the pool, a walkway both sides of it and round the pool, "a drain on the west side there on the wall".
+- **What it does** (only with `?sewerdungeon`): that room, as asked; every flight of the dungeon drawn in the walkways' grey.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyleall.js` (`_fpStyleStair`).
+- **Verified:** the reach check; the drain driven in a real browser; the short run with sewerlook and the props suite. **Not playtested.**
+
 ### Build `2026-11-17bv` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain hall and its pool bigger (work in progress)
 - **The ask** (the owner, 2026-11-22): "Make it bigger".
 - **What it does** (only with `?sewerdungeon`): the pool is an L of 127 tiles, the hall round it out to the map's east edge.

@@ -30,8 +30,8 @@ const FLIGHTS = [
   { id: 'nest_w', rooms: ['junction_ring_w', 'junction_nest'], on: { x: [33.5, 33.5] }, zone: [33.5, 45.11, 35.6, 48.89], axis: 'x', steps: 3 },
   { id: 'nest_e', rooms: ['junction_ring_e', 'junction_nest'], on: { x: [52.5, 52.5] }, zone: [50.4, 45.11, 52.5, 48.89], axis: 'x', steps: 3, down: 'low' },
   { id: 'ledge', rooms: ['high_ledge', 'hl_foot'], on: { y: [23.5, 23.5] }, zone: [55, 20.6, 57.5, 23], axis: 'y', steps: 5 },
-  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [60.5, 34.5, 62.5, 36.5], axis: 'x', steps: 3 },   // (down onto the pool's bed)
-  { id: 'drain', rooms: ['central_walk_e', 'low_drain'], on: null, zone: [49.5, 34.5, 51.5, 36.5], axis: 'x', steps: 3 },
+  { id: 'pool', rooms: ['low_drain', 'drain_pool'], on: null, zone: [62.5, 34.5, 64.5, 36.5], axis: 'x', steps: 3 },   // (from the small channel's bed down onto the pool's)
+  { id: 'pool_s', rooms: ['drain_south', 'low_drain'], on: { x: [57.5, 59.5] }, zone: [57.5, 34.5, 59.5, 36.5], axis: 'y', steps: 3, down: 'low' },   // (the way down once it is drained: from the south walkway into the small channel)
 ];
 function build() {
   const S = SHAPES.map(s => Object.assign({}, s, { p: s.p.filter((q, i, a) => i === 0 || Math.hypot(q[0] - a[i - 1][0], q[1] - a[i - 1][1]) > 0.02) })), by = Object.fromEntries(S.map(s => [s.id, s])), J = joins();
