@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17by` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room's west end cut off (work in progress)
+- **The ask** (the owner, 2026-11-22, on the plan): "Cut this out".
+- **What it does** (only with `?sewerdungeon`): the small channel and its walkways start 7 tiles further east; they no longer meet the main channel. The drain at the channel's head.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
 ### Build `2026-11-17bx` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room an L (work in progress)
 - **The ask** (the owner, 2026-11-22): an L, its base a bulky rectangle, the pool; a slimmer channel leading to it with a walkway on either side.
 - **What it does** (only with `?sewerdungeon`): that shape; the pool 8 by 10.
