@@ -33,6 +33,52 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17by` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room's west end cut off (work in progress)
+- **The ask** (the owner, 2026-11-22, on the plan): "Cut this out".
+- **What it does** (only with `?sewerdungeon`): the small channel and its walkways start 7 tiles further east; they no longer meet the main channel. The drain at the channel's head.
+- `design/sewer-dungeon/trace.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bx` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room an L (work in progress)
+- **The ask** (the owner, 2026-11-22): an L, its base a bulky rectangle, the pool; a slimmer channel leading to it with a walkway on either side.
+- **What it does** (only with `?sewerdungeon`): that shape; the pool 8 by 10.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bw` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the pool room redone, reached only through the Purification Chamber; grey steps (work in progress)
+- **The ask** (the owner, 2026-11-22): "really confusing looking with the different color stairs"; the pool room "only accessible through the purification module room", a small channel to the pool, a walkway both sides of it and round the pool, "a drain on the west side there on the wall".
+- **What it does** (only with `?sewerdungeon`): that room, as asked; every flight of the dungeon drawn in the walkways' grey.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyleall.js` (`_fpStyleStair`).
+- **Verified:** the reach check; the drain driven in a real browser; the short run with sewerlook and the props suite. **Not playtested.**
+
+### Build `2026-11-17bv` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain hall and its pool bigger (work in progress)
+- **The ask** (the owner, 2026-11-22): "Make it bigger".
+- **What it does** (only with `?sewerdungeon`): the pool is an L of 127 tiles, the hall round it out to the map's east edge.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bu` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: one open hall round the drain tunnel and its pool (work in progress)
+- **The ask** (the owner, 2026-11-22): "open up the wall, or that area above the purification module, and make that whole area opened up with the pool and the new other channel".
+- **What it does** (only with `?sewerdungeon`): floor all round the tunnel and the pool, open to the Purification Chamber below.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bt` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's prototype made readable (work in progress)
+- **The ask** (the owner, 2026-11-22): "I don't understand what you've done in that look. Can you fix it up a little bit more?"
+- **What it does** (only with `?sewerdungeon`): the whole dungeon lit; clear blue-green water; paler floors by kind. Fixed with it: an outlined pool's water had no clean colour and stayed foul green when purified.
+- `js/facilitystyle.js` (`_fpLightKey`), `js/facilitysewers.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the short run with sewerlook, sewerquest and the props suite; seen in a real browser. **Not playtested.**
+
+### Build `2026-11-17bs` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the drain tunnel and pool opened up (work in progress)
+- **The ask** (the owner, 2026-11-22): "open up this entire area so that the player can [...] see what's going on in that room before they know how to interact with it".
+- **What it does** (only with `?sewerdungeon`): a railed walkway beside the tunnel and along the pool; no walls round either.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the drain driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17br` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: a pool you can drain and walk in (work in progress)
+- **The ask** (the owner, 2026-11-22): another channel above the Purification Chamber into a room like a pool; "the player can drain that pool and then walk around on the bottom part of it".
+- **What it does** (only with `?sewerdungeon`): the drain tunnel and its pool are water you cannot enter; standing by the drain valve a DRAIN THE POOL button (a builder's stand-in) empties them, and their beds are floor for the rest of the visit.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js` (`sewerDungeonDrain`, `sewerDungeonButton`).
+- **Verified:** in the sandbox (shut when full, every tile reached when drained, a second drain does nothing); driven in a real browser; the short run. **Not playtested.**
+
+### Build `2026-11-17bq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: walkways along the channels 3 tiles wide (work in progress)
+- **The ask** (the owner, 2026-11-22): "more walking space on these sidewalks [...] alongside the channels".
+- **What it does** (only with `?sewerdungeon`): the walkways beside both channels are 3 tiles wide.
+- `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
 ### Build `2026-11-17bp` · branch `claude/friendly-thompson-w581x0` · the sewer dungeon's kit: its approved props and key items are the game's own models, to build with
 - **The ask** (the owner, 2026-11-21, of the props and key items approved one by one that day): "Let's go ahead and create the framework so that my sewer AI can build this in 3D."
 - **What it does:** the sixteen approved pieces are models of the game (`design/props/models/_sewer.js`), baked to two sheets (`img/props/sewer.png`, 33 variants; `img/props/sewerfinds.png`, 13). Nine props have kinds on the game's prop table: a prop of the map with one is drawn like any other, its sprite in the 2D game and its model in the 3D view, turned by its own size or by its `_turned` kind. A prop with states (a valve shut or open, a gate, a switch, a door, rubble) is drawn in the one the game last set (`facilityPropStateSet`), in both views; given none, as it is found.

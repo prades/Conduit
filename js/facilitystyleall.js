@@ -295,6 +295,8 @@ function _fpStyleGlass(it, H) {
 // ── the steps at a door: treads with a lit nosing, soft-shaded faces and a dark crease where they meet the floor ──
 function _fpStyleStair(it) {
     const x = it.x, y = it.y, h = it.h, P = _fpP, A = FP_PAL, acc = _fpAcc(it.room || "lab_hallway"), t = [P(x - 0.5, y - 0.5, h), P(x + 0.5, y - 0.5, h), P(x + 0.5, y + 0.5, h), P(x - 0.5, y + 0.5, h)], b2 = [P(x - 0.5, y + 0.5, 0), P(x + 0.5, y + 0.5, 0), P(x + 0.5, y - 0.5, 0)];
+    // (THE SEWER DUNGEON's steps are its walkways' own grey, no teal and no lit nosing: the owner, 2026-11-22, of the prototype: "really confusing looking with the different color stairs")
+    if (typeof it.room === "string" && it.room.slice(0, 3) === "sd_") { _fpFlat([t[3], t[2], b2[1], b2[0]], "#565f66"); _fpFlat([t[2], t[1], b2[2], b2[1]], "#677178"); _fpFlat(t, "#7b858c"); ctx.strokeStyle = "rgba(20,26,32,0.55)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(t[3][0], t[3][1]); ctx.lineTo(t[2][0], t[2][1]); ctx.lineTo(t[1][0], t[1][1]); ctx.stroke(); return; }
     _fpFlat([t[3], t[2], b2[1], b2[0]], A.teal); _fpFlat([t[2], t[1], b2[2], b2[1]], A.tealLit); _fpFlat(t, A.caseLit);
     if (h > 6) { const f = Math.min(0.5, 14 / h), q = (p0, p1, q0, q1) => [[p0[0] + (q0[0] - p0[0]) * (1 - f), p0[1] + (q0[1] - p0[1]) * (1 - f)], [p1[0] + (q1[0] - p1[0]) * (1 - f), p1[1] + (q1[1] - p1[1]) * (1 - f)], q1, q0]; _fpFlat(q(t[3], t[2], b2[0], b2[1]), "rgba(8,26,34,0.24)"); _fpFlat(q(t[2], t[1], b2[1], b2[2]), "rgba(8,26,34,0.24)"); }   // each riser darker towards the floor (the lower part of the face)
     ctx.lineCap = "round";
