@@ -51,7 +51,7 @@ function build() {
     floors.push({ room: P + s.id, style: 'concrete', colour: s.kind === 'nest' ? '#2a1d33' : '#272d2c' });
     if (wet(s.id) || s.kind === 'drain') props.push({ id: P + s.id + '_water', room: P + s.id, shape: 'poly', poly: s.p.map(px), status: 'placed', kind: wet(s.id) ? 'river' : 'pool', sewer_dungeon: s.kind });
   }
-  const open = (id, a, b, r) => { openings.push({ id: 'open_' + P + id, a: px(a), b: px(b), rooms: r.map(x => P + x), door: null, position_status: 'placed' }); };
+  const open = (id, a, b, r) => { openings.push({ id: 'open_' + P + id, a: px(a), b: px(b), rooms: r.map(x => P + x), door: null, open: true, position_status: 'placed' }); };   // (open: a plain gap, no door frame drawn in it. The owner, 2026-11-22, circling a frame standing across a walkway: "Remove this dumb arc doorway")
   for (const j of J) { if (wet(j.rooms[0]) || wet(j.rooms[1]) || j.lv[0] !== j.lv[1]) continue; const id = j.rooms.join('__') + (openings.some(o => o.id === 'open_' + P + j.rooms.join('__')) ? '_2' : '');
     open(id, j.a, j.b, j.rooms); connections.push({ id: 'conn_' + P + id, rooms: j.rooms.map(x => P + x), opening: 'open_' + P + id }); }
   for (const f of FLIGHTS) { const cand = J.filter(j => f.rooms.every(r => j.rooms.includes(r)));

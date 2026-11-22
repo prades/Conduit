@@ -33,6 +33,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17bo` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no door frames where its pieces join (work in progress)
+- **The ask** (the owner, 2026-11-22): "Remove this dumb arc doorway".
+- **What it does** (only with `?sewerdungeon`): the frames that stood across walkways and passages are gone; the pieces run into one another.
+- `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated). **Verified:** the reach check; the short run; seen in a real browser. **Not playtested.**
+
 ### Build `2026-11-17bn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the channels' sides slope in (work in progress)
 - **The ask** (the owner, 2026-11-22): "The shape of the channel should be like a inverted trapezoid."
 - **What it does** (only with `?sewerdungeon`): each channel's sides slope from the walkway's edge down to a narrower bed. Faint until the sewer look is in.

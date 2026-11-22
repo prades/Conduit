@@ -103,6 +103,8 @@ Not approved by the picture: any number (costs, charges beyond those written, ti
 
 **Added (the owner, 2026-11-22): "The shape of the channel should be like a inverted trapezoid."** Each side of a channel slopes in from its walkway's edge down to the bed, 1.5 tiles across (the agent's measure), so the channel is wide at the top and narrow at the bed (build `2026-11-17bn`): a slope along every straight edge a walkway shares with its water (15 of them). *Not yet:* the slope reads only faintly while the channel is drawn plain and dark; the ring's angled edges and the ends of the channels are still sheer; the water's own look.
 
+**Corrected (the owner, 2026-11-22, circling a door frame standing across the West Channel's walkway where it meets the main one): "Remove this dumb arc doorway".** Where two of the dungeon's pieces join on one floor there is a plain gap now, no frame: every such doorway (26 of them), not only that one. Build `2026-11-17bo`.
+
 *Found in the code (2026-11-21):* the Technomancer's mech has no abilities and no charges today (it makes you faster and widens the lamp); its 3 environmental charges per dungeon are new with this dungeon. A room has one floor height, so an upper floor (the High Ledge Room) is a room of its own joined by a ramp, a ledge or a launcher.
 
 **Still open:** everything the picture marks TBD (§2); where the water controls stand and how many; what "washes ants out" does to them; the mini-boss; the keys' caches; what the tests and the module's build are at the Experiment Lab; what persists across the reset; every number.
