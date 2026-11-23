@@ -150,6 +150,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The update after it (proposed, for approval) | `FOLLOWING-UPDATE.md` |
 | Next development phase roadmap (Flux movement, follower abilities and Ultimates, Series 2 combat cards → sewer redesign; plan, not implemented) | `NEXT-PHASE-ROADMAP.md` |
 | The Flux Technician's object movement, FLUX MOVE (replacing Telegrab; built in the arena in `2026-11-06f` and its test room, `?fluxlab`, in `2026-11-06g`; the code audit; Milestone Two's study and answers, §13) | `FLUX-MOVEMENT.md` |
+| The test chamber (the owner, 2026-11-23: "a test chamber where I can create any type of squad and create any type of enemy and level, and a room that has 3D and card battles, and maybe all sorts of energy cards unlocked"): a plain room and a panel, only with `?testchamber` in the address, nothing kept; a tool, not part of the game (built in `2026-11-17da`) | `TEST-CHAMBER.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Balancing the followers (every evolved form side by side: stats, everyday type and status, moves, ability, Ultimate, and measured damage, healing, blocking and control; made from the code by `node tools/balance.js`, so it is never stale; the trial that measures it is `node tools/balance-trial.js`) | `../balance.html` |

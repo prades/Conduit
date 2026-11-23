@@ -341,7 +341,7 @@ function cardShapeDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null; if (!D || !D.aim || !V || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
     if (D.kind === "walk") return _csDrawWalk(V, D);
     const S = cardShapeFor(D.f, D.kind, D.id, D.aim === true ? null : D.aim); if (!S) return;
-    const col = D.col || "#19e6c1", quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
+    const col = D.col || "#19e6c1", quad = (x, y, k) => { const h = 0.5 - k, L = _csLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
     ctx.globalAlpha = S.ok ? 0.42 : 0.18; ctx.fillStyle = col; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.fill(); }
     ctx.globalAlpha = S.ok ? 0.95 : 0.4; ctx.strokeStyle = col; ctx.lineWidth = 2; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.stroke(); }
@@ -352,18 +352,20 @@ function cardShapeDraw(V) {
 // THE MOVE CARD dragged (js/cardbattle.js §2.56): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
 function _csDrawWalk(V, D) {
     const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
-    const quad = (x, y, k) => { const h = 0.5 - k, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
+    const quad = (x, y, k) => { const h = 0.5 - k, L = _csLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
     for (const c of sq) { quad(c[0], c[1], 0.08); ctx.globalAlpha = 0.18; ctx.fill(); ctx.globalAlpha = 0.6; ctx.stroke(); }
     if (T) { const ok = sq.some(c => c[0] === T[0] && c[1] === T[1]); ctx.globalAlpha = ok ? 1 : 0.55; ctx.strokeStyle = ok ? "#ffe733" : "#ff4a3a"; ctx.lineWidth = 3; quad(T[0], T[1], 0.02); ctx.stroke(); if (ok) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#ffe733"; ctx.fill(); } }
     ctx.restore();
 }
-// the floor square of the battle's room under a point of the canvas (the 3D view's drawing), or null
+// a square's floor height, for where the 3D view draws it (js/cardbattle.js cardBattleLift: the view's screenOf and screenNow take a height from the lab's ground floor)
+function _csLift(x, y) { return typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0; }
+// the floor square of the battle's room under a point of the canvas (the 3D view's drawing), or null: each square where its own floor is drawn
 function cardShapeTileAt(px, py, V) {
     const R = _csRoom(); if (!R || !R.cells.length || !V || typeof V.screenOf !== "function") return null;
     let best = null, bd = Infinity;
-    for (const c of R.cells) { let s; try { s = V.screenOf(c[0], c[1], 0); } catch (e) { continue; } const d = Math.hypot(s[0] - px, s[1] - py); if (d < bd) { bd = d; best = c; } }
+    for (const c of R.cells) { let s; try { s = V.screenOf(c[0], c[1], _csLift(c[0], c[1])); } catch (e) { continue; } const d = Math.hypot(s[0] - px, s[1] - py); if (d < bd) { bd = d; best = c; } }
     if (!best) return null;
-    let w = 40; try { const a = V.screenOf(best[0], best[1], 0), b = V.screenOf(best[0] + 1, best[1], 0); w = Math.max(8, Math.hypot(b[0] - a[0], b[1] - a[1])); } catch (e) {}
+    let w = 40; try { const L = _csLift(best[0], best[1]), a = V.screenOf(best[0], best[1], L), b = V.screenOf(best[0] + 1, best[1], L); w = Math.max(8, Math.hypot(b[0] - a[0], b[1] - a[1])); } catch (e) {}
     return bd <= w * 0.75 ? { x: best[0], y: best[1], tile: true } : null;
 }

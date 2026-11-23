@@ -73,7 +73,9 @@ const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'securi
 // and the arena with its catwalks and spur, its rock in the look the owner shaped (docs/VIEW-3D.md stage 2; a draft behind ?draft=arena until build 2026-11-17e)
 const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex', 'sewers'])
   // THE SEWER DUNGEON's rooms, when the game has them (?sewerdungeon: docs/SEWER-DUNGEON.md; the owner, 2026-11-22: "we're going to begin to create the 3D world")
-  .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id.slice(0, 3) === 'sd_').map(r => r.id));
+  .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id.slice(0, 3) === 'sd_').map(r => r.id))
+  // THE TEST CHAMBER, when the game has it (?testchamber: js/testchamber.js; the owner, 2026-11-23: "a room that has 3D and card battles")
+  .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id === 'test_chamber').map(r => r.id));
 
 // a room in full. lab: with what a floor of many rooms needs besides (a round prop's radius, a window's name, the room's label). live: a tile carries its height if it has one, in the
 // game's px ([x, y, h]: a floor off the ground floor's level, a staircase's tread), and the room its floor's (base)

@@ -21,6 +21,13 @@
         for (const k of ["portals", "connections", "props", "pickups", "floors", "decor"]) for (const e of L[k]) M[k].push(e);
         M._fluxLab = true;
     }
+    // THE TEST CHAMBER (js/facilitymap.js TEST_CHAMBER_MAP; js/testchamber.js is the mode): put in the map only when the address carries ?testchamber, and not with the Flux test room (the two are
+    // drawn in the same place). Without the flag the map is exactly as it was.
+    if (typeof TEST_CHAMBER_MAP !== "undefined" && !M._fluxLab && typeof window !== "undefined" && window.location && /[?&]testchamber\b/.test(window.location.search || "")) {
+        const L = TEST_CHAMBER_MAP; M.rooms.push(L.room); M.interiors.push(L.interior);
+        for (const k of ["portals", "connections", "props", "pickups", "floors", "decor"]) for (const e of L[k]) M[k].push(e);
+        M._testChamber = true;
+    }
 
     // how far each room slides, in tiles: [x, y]. The hallway, the Lounge (the old lab's room) and the passage hold their ground (the hub); the others move away from them. The Experiment Lab (build 2026-11-13a),
     // drawn touching Teleport Room 1's west wall, slides two tiles west: one with Teleport Room 1, one for the band of wall between them.

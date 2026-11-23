@@ -834,6 +834,38 @@ if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and 
     ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
 
+group('EVERYONE IN A CARD BATTLE IS SEEN (the owner, 2026-11-23: "I don\'t see the ants in the card battle viewer", then "I\'m talking about the clones"): the 2D over the battle\'s picture is wiped, so a fighter the view has no body for is drawn there by the game\'s 2D (js/view3d.js _view3dBattle2D)');
+// The players' game (?engine=3d&battles=cards, as the plain address is over the web). Your clone grown at the Clone Bay as its menu grows one (getCloneOptions, executeClone: a Mutator's ant scout),
+// then the code gift (redeemTry: the level 20 mantis tank, Emotional Support), each in a card battle with a nymph, a worker and a scout. Each frame records whom the game's 2D drew after the wipe.
+const SEEN = realPage('dev&engine=3d&battles=cards', RUN(SETUP + `var V = VIEW3D.view; window.requestAnimationFrame = function () { return 0; }; classPickerOpen = false; crystalMenuOpen = false; selectedUnits.clear(); playerClassKey = 'mutator';
+  actors = actors.filter(function (a) { return !(a instanceof Predator) && !a.isClone; });
+  var cells = partyRoomCells('crystal_chamber'), c0 = cells[Math.floor(cells.length * 0.5)]; put(c0[0], c0[1]);
+  var drawn = new Set(), after = false, keepEnd = view3dWorldEnd, keepNPC = drawNPC;
+  view3dWorldEnd = function () { after = true; try { return keepEnd.apply(this, arguments); } finally { after = false; } };
+  drawNPC = function (a) { if (after) drawn.add(a); return keepNPC.apply(this, arguments); };
+  var frames = function (n) { for (var i = 0; i < n; i++) { drawn.clear(); render(); } };
+  var foe = function (cls, dx, dy) { var e = spawnCreature({ species: 'ant', className: cls, level: 2 }), q = _fpNearestCellOpen(player.x + dx, player.y + dy); e.x = q[0]; e.y = q[1]; e.moveSpeed = e.baseMoveSpeed = 0; e.health = e.maxHealth = 1e6; e.provoked = false; e.state = 'wander'; return e; };
+  var name = function (u) { return u === player ? 'you' : u.isClone ? 'clone ' + u.speciesName : u.isFollower ? 'follower ' + (u.evolved || u.element) : (u.isNymph ? 'nymph' : u.className); };
+  var battle = function (c) { var foes = [foe('worker', 2.6, 0), foe('nymph', 3.2, 1.1), foe('scout', 3.2, -1.1)], o = { chose: cardBattleChoose(foes[0]) }; frames(70);
+    o.phase = cardBattlePhase(); o.cloneIn = cardBattleFighters().indexOf(c) >= 0; o.band = _cbEls && _cbEls.scr ? String(_cbEls.scr.textContent || '').replace(/\\s+/g, ' ').slice(0, 400) : ''; o.tab = /CLONE|EMOTIONAL/i.test(o.band);
+    o.fighters = cardBattleFighters().filter(function (u) { return u !== player; }).map(function (u) { return name(u) + ':' + (V.has(u) ? '3d' : drawn.has(u) && view3dDrawn2D(u) ? '2d' : 'unseen'); });
+    o.cloneKey = V.bodyKey(c); cardBattleEnd(); frames(50); foes.forEach(function (a) { a.dead = true; a.deathProcessed = true; }); actors = actors.filter(function (a) { return !a.dead; }); frames(2); return o; };
+  dnaInventory.ant_scout = CLONE_COSTS.ant.splicesNeeded; shardCount = 999; var opt = getCloneOptions().filter(function (q) { return q.key === 'ant_scout'; })[0]; out.bayReady = !!(opt && opt.ready); executeClone(opt);
+  var ant = partyClone(); out.ant = ant ? battle(ant) : null; if (ant) { ant.dead = true; actors = actors.filter(function (a) { return a !== ant; }); }
+  out.gift = redeemTry('frommatt'); var man = partyClone(); out.mantis = man ? battle(man) : null; out.mantisSp = man && [man.speciesName, man.className, man.level];
+  view3dWorldEnd = keepEnd; drawNPC = keepNPC;`));
+if (SEEN !== null) check('your ant clone from the Clone Bay is in the battle as the view\'s body (mark C); the code\'s mantis clone (no 3D body) is drawn in 2D over the picture; a nymph (no 3D body) is drawn in 2D, a worker and a scout are the view\'s: no fighter unseen', () => {
+    ok(!SEEN.none, 'the page left no result'); ok(!SEEN.threw, SEEN.threw); same(SEEN.errs.join(' | '), '', 'errors'); same(SEEN.state, 'ready', 'the view'); same(SEEN.bayReady, true, 'the Clone Bay could not grow the ant');
+    ok(SEEN.ant && SEEN.mantis, 'no clone in the squad: ' + JSON.stringify([SEEN.ant, SEEN.gift])); same(JSON.stringify(SEEN.mantisSp), '["mantis","tank",20]', 'the code\'s gift');
+    for (const [k, B] of [['the ant clone', SEEN.ant], ['the mantis clone', SEEN.mantis]]) {
+        same(B.chose && B.phase, 'on', k + ': the battle'); same(B.cloneIn, true, k + ' is not in the battle'); same(B.tab, true, k + ': no tab of its own in the battle\'s band: ' + B.band);
+        ok(!B.fighters.some(f => /unseen$/.test(f)), k + ': fighters drawn by no one: ' + B.fighters.join(', '));
+        for (const w of ['worker:3d', 'scout:3d', 'nymph:2d']) ok(B.fighters.indexOf(w) >= 0, k + ': ' + w + ' not in ' + B.fighters.join(', '));
+    }
+    ok(SEEN.ant.fighters.indexOf('clone ant:3d') >= 0 && SEEN.ant.cloneKey === 'ant:scout:0.5:C', 'the ant clone is not the view\'s mark C body: ' + SEEN.ant.fighters.join(', ') + ' ' + SEEN.ant.cloneKey);
+    ok(SEEN.mantis.fighters.indexOf('clone mantis:2d') >= 0, 'the mantis clone is not drawn in 2D: ' + SEEN.mantis.fighters.join(', '));
+});
+
 group('A FAILURE never stops the game');
 const BAD = realPage('dev&engine=3d', RUN(SETUP + `put(13, 19); step(3); out.showing = VIEW3D.showing; out.feet = view3dFeet(); var d = ctx.getImageData(40, 300, 1, 1).data; out.px = d[3];`), `VIEW3D_FILES[1] = 'dist/no-such-view.js';`);
 if (BAD !== null) check('its script missing: the game starts and runs in 2D, and VIEW3D.error says why', () => {

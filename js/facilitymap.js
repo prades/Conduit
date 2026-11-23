@@ -1547,3 +1547,37 @@ const FLUX_LAB_MAP = {
         { id: "lab_light_2", room: "flux_lab", kind: "light", at: [420, 470], radius: 120, colour: "#e0c8ff", a: 0.2 },
     ],
 };
+
+// ─────────────────────────────────────────────────────────
+//  THE TEST CHAMBER (the owner, 2026-11-23: "Can we create a test chamber where I can create any type of squad and create any type of enemy and level, and a room that has 3D and card battles,
+//  and maybe all sorts of energy cards unlocked"): a plain room of its own, in the map ONLY when the address carries ?testchamber
+// ─────────────────────────────────────────────────────────
+// Not part of FACILITY_MAP: js/facilitygrow.js adds it, before the building pass, when the address says ?testchamber (and not ?fluxlab: it is drawn where the Flux test room is, under the Crystal
+// Chamber, and carried to the same part of the map), so the normal game's map is exactly as it was. js/testchamber.js is the mode (the start in the room, nothing kept, the squad, the enemies
+// and the energy cards its panel makes). The room is an open floor, eighteen tiles across and thirteen deep, with nothing standing on it: a place for a fight, not a room of the facility's
+// story. THE DOORWAY BACK: an alcove in its north wall (x 2-3), stairs up to a stairwell in the Crystal Chamber's floor (its north-east corner), as the Flux test room has. The 3D view builds it
+// (view3d/gamemap.js VIEW3D_ROOMS). Its size, its look and the stairwell's place are the agent's, for the owner to change.
+const TEST_CHAMBER_MAP = {
+    room: { id: "test_chamber", label: "Test Chamber", level: -1, status: "placed", wall_material: "solid", interior: true,
+            note: "The test chamber (?testchamber only): an open floor for trying any squad against any enemy, in the 3D view with card battles. Reached only with the flag, through the stairwell in the Crystal Chamber's floor; nothing in it is saved.",
+            polygon: [[190, 270], [230, 270], [230, 250], [270, 250], [270, 270], [550, 270], [550, 530], [190, 530]] },
+    interior: { id: "test_chamber", under: "crystal_chamber", offset: [1280, 1920] },   // (the Flux test room's place: 64 tiles east and 96 south, out of sight of every room; the two are never in the map together)
+    portals: [
+        { id: "portal_chamber_crystal", room: "test_chamber", rect: [230, 250, 270, 270], arrive: [250, 300], to: "portal_crystal_chamber", label: "CRYSTAL CHAMBER", kind: "stairs_up",
+          note: "The stairs up to the Crystal Chamber, in an alcove in the test chamber's north wall." },
+        { id: "portal_crystal_chamber", room: "crystal_chamber", rect: [330, 270, 370, 310], arrive: [350, 340], to: "portal_chamber_crystal", label: "TEST CHAMBER", kind: "stairs_down", well: true,
+          note: "A stairwell in the Crystal Chamber's floor, in its north-east corner beside the relay (?testchamber only): steps going down to the north, to the test chamber." },
+    ],
+    connections: [{ id: "conn_crystal_chamber_test", rooms: ["crystal_chamber", "test_chamber"], portal: "portal_crystal_chamber" }],
+    props: [],
+    pickups: [],
+    floors: [{ room: "test_chamber", style: "plate", colour: "#2a4458" }],
+    decor: [
+        { id: "chamber_crystal_door", room: "test_chamber", kind: "portal_door", a: [230, 250], b: [270, 250], colour: "#6adfff", up: true },
+        { id: "crystal_chamber_stairwell", room: "crystal_chamber", kind: "stairwell", rect: [330, 270, 370, 310], dir: "n", colour: "#6adfff", note: "The stairwell down to the test chamber (?testchamber only)." },
+        { id: "chamber_wall_light_1", room: "test_chamber", kind: "wall_light", a: [330, 270], b: [410, 270], colour: "#c8f0ff" },
+        { id: "chamber_wall_light_2", room: "test_chamber", kind: "wall_light", a: [190, 370], b: [190, 430], colour: "#c8f0ff" },
+        { id: "chamber_light_1", room: "test_chamber", kind: "light", at: [300, 340], radius: 140, colour: "#c8f0ff", a: 0.22 },
+        { id: "chamber_light_2", room: "test_chamber", kind: "light", at: [440, 460], radius: 140, colour: "#c8f0ff", a: 0.2 },
+    ],
+};
