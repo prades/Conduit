@@ -27,11 +27,19 @@ function inner(a0, a1) { const cut = a => [C[0], +(C[1] + Math.sin(a) * RI).toFi
 const SHAPES = [
   // (the water comes down with the tunnel: the owner, 2026-11-21, of the entrance tunnel's two flights: "it should affect the water level. It should slope down too". Three stretches of water, `wl` flights
   // above the main channel's, a fall between each where the walkways' flights stand)
-  { id: 'west_channel', lvl: -2, wl: 2, kind: 'water', p: [[2.5, 16.2], [9.3, 16.2], [9.3, 18.6], [11.7, 18.6], [11.7, 16.2], [18.5, 16.2], [18.5, 21.2], [2.5, 21.2]] },
+  { id: 'west_channel', lvl: -2, wl: 2, kind: 'water', p: [[2.5, 16.5], [5.5, 16.5], [5.5, 18.5], [11.5, 18.5], [11.5, 16.5], [18.5, 16.5], [18.5, 19.5], [12.5, 19.5], [12.5, 21.5], [2.5, 21.5]] },
   { id: 'west_channel2', lvl: -2, wl: 1, kind: 'water', p: [[18.5, 16.2], [28.5, 16.2], [28.5, 21.2], [18.5, 21.2]] },
   { id: 'west_channel3', lvl: -2, wl: 0, kind: 'water', p: [[28.5, 16.2], [37.2, 16.2], [40.4, 16.2], [40.4, 21.2], [37.2, 21.2], [28.5, 21.2]] },   // (it runs on into the Central Channel: no walkway crosses its mouth. The owner, 2026-11-21, standing on the walkway that did: "This platform shouldn't exist, it should be cut off here")
-  { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[9.3, 16.2], [11.7, 16.2], [11.7, 18.6], [9.3, 18.6]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
-  { id: 'west_entrance', lvl: 2, kind: 'floor', p: [[0, 13.4], [2.5, 13.4], [2.5, 24.4], [0, 24.4]] },   // (the landing you arrive on from the Arena, at the channel's head: both banks start from it. The agent's: with the mouth's walkway gone, nothing else joined the two banks)
+  // (TURNED TO RUN ALONG THE CHANNEL: the owner, 2026-11-22, circling the staircase where it stuck out into the channel and drawing its treads along the bank: "Rotate the stairs like this". A landing
+  // on the walkway's edge, then one flight two tiles wide down the north bank westwards to the bed (a doorway a tile wide is not walked through: the game's own rule); how long it is is the agent's.)
+  { id: 'channel_steps', lvl: 2, kind: 'steps', p: [[5.5, 16.5], [7.5, 16.5], [7.5, 18.5], [5.5, 18.5]] },   // (and turned end for end: the owner, of the flight going down westwards: "The other way 180". The landing is its west end, the flight goes down eastwards)
+  { id: 'channel_stair', lvl: -2, wl: 2, kind: 'steps', p: [[7.5, 16.5], [11.5, 16.5], [11.5, 18.5], [7.5, 18.5]] },
+  // (A SECOND STAIRCASE, on the south bank: the owner, 2026-11-22, asked how the banks are crossed with the landing at the channel's head gone: "Stairs on both banks". So the way across is the bed:
+  // shut the west culvert, go down one staircase, cross, and up the other. The same staircase, further east so the two do not pinch the channel between them; where it stands is the agent's.)
+  { id: 'channel_steps_s', lvl: 2, kind: 'steps', p: [[12.5, 19.5], [14.5, 19.5], [14.5, 21.5], [12.5, 21.5]] },
+  { id: 'channel_stair_s', lvl: -2, wl: 2, kind: 'steps', p: [[14.5, 19.5], [18.5, 19.5], [18.5, 21.5], [14.5, 21.5]] },   // (THE FLOODED STAIRCASE: steps from the north walkway down into the channel. The owner, 2026-11-21: "There should also be a flooded staircase that leads into the channel in the entrance tunnel"; where it stands is the picture's, the hatched block by the key)
+  // (NO LANDING at the West Channel's head: the owner, 2026-11-22, of the culvert under it: "get rid of the walkway behind it and make this a proper pipe, water pipe". The channel ends against a
+  // wall with its culvert in it; the two banks no longer meet there.)
   { id: 'central_channel', lvl: -2, kind: 'water', p: [[40.4, 0], [46.2, 0], K.weA, OUTER[12], K.top, OUTER[11], K.wwB, [40.4, 21.2], [40.4, 16.2]] },
   // THE DRAIN TUNNEL AND ITS POOL (the owner, 2026-11-22: "the area right above the purification chamber is a another channel that goes into another room that's like a pool. And the player can drain
   // that pool and then walk around on the bottom part of it"): a side channel off the main one's east walkway into a pool room, both under water till they are drained, then floor (kind `drain`).
@@ -82,7 +90,9 @@ const SHAPES = [
   { id: 'subway_diag', lvl: -1, kind: 'walk', p: [[28.5, +(K.sdB[1] + (K.sdB[0] - 28.5)).toFixed(2)], K.sdB, K.sdA, [28.5, +(K.sdA[1] + (K.sdA[0] - 28.5)).toFixed(2)]] },   // (straight south-west from the ring's side to the Subway Exit's east wall, one width all along: the owner, 2026-11-21, "I can't navigate through it")
   { id: 'junction_ring_w', lvl: -1, kind: 'ring', p: [K.bot].concat(outer(PI / 2, PI * 1.5, [K.sdA, K.sdB, K.plA, K.plB, K.wwA, K.wwB]), [K.top], inner(PI * 1.5, PI / 2)) },
   { id: 'junction_ring_e', lvl: -1, kind: 'ring', p: [K.top].concat(outer(PI * 1.5, PI / 2, [K.weA, K.weB, K.puA, K.puB]), [K.bot], inner(PI / 2, -PI / 2)) },
-  { id: 'junction_nest', lvl: -2, kind: 'nest', p: INNER.slice() },
+  // (A POOL, A BOWL: the owner, 2026-11-22: "can you make the actual circular junction pool, like actually make it have a large you know, bowl area?"; asked, "Water, drains to walk". The middle of the
+  // Round Junction is a round pool, its bed a bowl; its water goes with the Central Channel's when the north culvert is shut, and the bowl is walked. It was the dry floor called the Toxic Nest.)
+  { id: 'junction_nest', lvl: -2, wl: 0, kind: 'water', bowl: { r0: RI, r1: 3 }, p: INNER.slice() },
   { id: 'pur_pass', lvl: 0, kind: 'walk', p: [K.puA, [60.5, 44.8], [61.5, 45.5], [64.5, 45.5], [64.5, 48.5], [61.5, 48.5], [60.5, 49.2], K.puB] },
   { id: 'purification', lvl: 0, kind: 'floor', p: [[64.5, 42.5], [65.5, 41.5], [66.5, 40.5], [70, 40.5], [71, 41.5], [76.5, 41.5], [77.5, 42.5], [77.5, 50.5], [76.5, 51.5], [66, 51.5], [64.5, 50]] },
   { id: 'ne_door', lvl: 0, kind: 'walk', p: [[49.6, 6.5], [52.5, 6.5], [52.5, 9], [49.6, 9]] },

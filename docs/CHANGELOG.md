@@ -2,6 +2,25 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-22
+
+### No build yet · branch `claude/sewer-look` (main `fb4a97bc`, build `2026-11-17cc`, merged in) · the sewers' look in 3D: 1 FAITHFUL, on the Sewers and the sewer dungeon's rooms (behind `?engine=3d`)
+- **The ask** (the owner, 2026-11-22, sending a painting of a sewer): "This is the direction of the sewer... can it happen?" Two drafts were drawn on the game (`design/sewer-look/`). **The decision:** "Earthy and the sewers look good"; of which: **"1 Faithful"**; of where: **"Both"** (today's Sewers, and the sewer dungeon's rooms, id `sd_`, as they are built).
+- **Built as the approved pictures show** (the draft's own choices, kept): stone flags, timber boards within three tiles of the water; stone bank faces and a stone curb for the hazard stripe; posts and a sagging chain along the banks (none where a railing stands); rusty outlet pipes; the bridges boards on girders; the steel rusted iron and wood; stone block walls, about one in five broken back to brick, dark stone tops and cut stubs; rusty pipes along the back walls that sink with them; the pumps as rusty tanks; floor grates (not in clusters, the agent's); murky olive water with one oily sheen layer; lamps at the map's `light` and `wall_light` entries (sconce, wall glow, warm floor pool as additive decals); light baked once into the vertices, no real-time lights.
+- **The agent's:** the water still clears with the purification, from the olive `#4d5a1c` to `#327e85` (the game's clean `#2a8aa8` a quarter of the way to the olive), following the 2D's own clearing; posts 0.36 of a tile (the draft's 0.42) and a guard that leaves out a post, or lowers a tank, that would hide a body behind it; the chain and wall pipes open tubes of three and six sides; only the Sewers' and the dungeon's cut stubs change (the draft's recoloured the lab's: not kept). Left alone: the sewer dungeon's kit (`SEWER-PROPS.md`), the falls' and streams' colours, every other room. Nothing of the map changes; drawing changes no game state.
+- **Confirmed:** the floor bug the draft found (`floor.js`, the floors missing since `2026-11-17bz`) is fixed on main (`26408a0d`), and in this branch.
+- **Cost** (headless Chromium, software WebGL, the draft's four spots; draws, shadow frame and plain frame): the bridge 129/93 → 152/110, the bank 122/81 → 152/105, the arch 153/111 → 187/139, the wide shot 156/109 → 185/132 (+23 to +34 draws; triangles +12k to +19k). The sewer dungeon (`?sewerdungeon`): about −8 to +14 draws at three spots.
+- `view3d/sewerdress.js` (new), `view3d/core.js` (one hook after the floor's builder), `tools/view3d.js` (the source), `dist/view3d.js` (made), `tests/view3d.js` (the water's colour checked against the look's foul and clean, and a new check: the look built with no error, its stubs, and nothing it stands hides a body in any quarter turn), docs (`VIEW-3D.md` stage 3 and §7, `SEWER-DUNGEON.md`, `DECISION-LOG.md`, `OPEN-QUESTIONS.md`).
+- **Verified:** `node tests/run.js view3d view3ddry bundle sewers sewerlook sewerkit sewerquest lab3d`: seven passing; view3d had one failure, a card battle's page that left no result under the load of four suites at once (APPROVED LOOKS WIN), and passed in full run alone (`node tests/run.js view3d`, 71 checks, its new SEWER LOOK check among them). Pictures of the real game at the draft's four spots, all four quarter turns at the bank, the water clean, and three of the dungeon's rooms. **Not verified:** on an iPad (frame rate, the baked light's look on its screen).
+
+### No build yet · branch `claude/menacing-insects` (main at `fb4a97bc`, build `2026-11-17cc`, merged in) · the ants in 3D are THE STALKER, variation D (earthy) (behind `?engine=3d`)
+- **The ask** (the owner, 2026-11-22: "I want to make the insects look a bit more menacing"; then "OK Starship Troopers thing looks cool. Let's implement that, please"): drafts A to E of THE STALKER (`design/insects/README.md`). Of round 2: **"Earthy and the sewers look good"**: variation D approved.
+- **What it does:** with the 3D view showing, every ant it draws (worker, scout, striker, tank, at today's sizes) is the Stalker in rust and sand: a heavier plated body mottled by vertex colour, a four-plate gaster with a sting, thorns on the thorax, waist and knees, horns on the heart-shaped head, the approved sickle jaws longer with two teeth, short thick legs with hooked feet, and its front legs made sand-coloured sickles with pale points held up beside the jaws. The eyes keep the ant's colour.
+- **Look only** (the owner: **"Look only for now"**): the game's six poses and their timing as they were; the sickles held up while it walks or stands, swung forward and down in the bite pose. No skittering walk, no wind-up.
+- **Unchanged:** THE ANT QUEEN (the owner: **"Need clones to be drawn first"**), ant clones, allies and nymphs stay the 2D drawing; the 2D game's ant (`js/bugs3d.js`) keeps the look of 2026-11-13. The 3D ant after that look is superseded (`DECISION-LOG.md`).
+- **Cost:** about 4,326 triangles a pose as built, 4,262 as the view holds it (it was 4,592); the poses made once at load, nothing added each frame, no pictures.
+- `design/style-evolution/round2/chamber.js` (`buildAnt`, `ANT_LOOK`), `dist/view3d.js` (made by `node tools/view3d.js`). Docs: `VIEW-3D.md` §4.4, `STYLE-EVOLUTION.md`, `DECISION-LOG.md`. The test page `lab3d/` is a snapshot and was not made again: it shows the old ant.
+
 ## 2026-11-21
 
 ### No build yet · branch `claude/battle-anims` · the attacks in 3D: the core line's ten (behind `?engine=3d`; looks proposed, not yet approved)
@@ -50,6 +69,77 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Verified (the toxic line):** tests/view3d.js (7 new checks); the full suite, `node tests/run.js`: 132 suites, 131 passing and tests/view3d.js failing on TOXIC STOMP's check (it looked for floor splats 16 frames in, before any land; its shock line had become a strand from the frames), the check fixed to read the shock line, then `node tests/run.js view3d bundle` run again, both passing (25.7 min and 15.0 min; tests/ghost.js prints its old "state differs" line and passes); videos of each of the ten in a real card battle (headless, software WebGL), their frames looked at and fixed from them (the Seeper had vanished in its smoke form; the soul blob was near white on the pale floor; the decoy kept a dark green glow; the pods' shell hid their toxin; the shock rings were thick bands and the undertow's stain covered everything; the black crystal and its shards were specks). **Not seen on an iPad.** Approved by the owner on the videos ("All good").
 
 ## 2026-11-17
+
+### Build `2026-11-17cq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl one solid colour (work in progress)
+- **The ask** (the owner, 2026-11-22): "that looks really weird. Make it a solid color, please."
+- **What it does** (only with `?engine=3d&sewerdungeon`): the Round Junction bowl's bed is one flat stone colour, no rings or bands (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied. **The tests have not finished on any build since `cg`; not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cp` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl sunk deep, its bed stone (work in progress)
+- **The ask** (the owner, 2026-11-22): "It does not look like it's really sunken in there at all. Looks like the player is standing on water."
+- **What it does** (only with `?sewerdungeon`): the Round Junction's bowl is 3.5 tiles deep in its middle (1.6 before); in the 3D view its bed is pale ringed stone, told from the water (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17co` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl smooth and spherical (work in progress)
+- **The ask** (the owner, 2026-11-22): "It looks like a inverted pyramid [...] I want a more smooth look for the middle. Round, spherical edge".
+- **What it does** (only with `?sewerdungeon`): the Round Junction pool's bed is a cap of a sphere in the game's heights, and in the 3D view one round smooth surface (`SEWER-DUNGEON.md`). `js/facility.js`, `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Round Junction's middle a pool in a bowl (work in progress)
+- **The ask** (the owner, 2026-11-22): "make the actual circular junction pool [...] have a large you know, bowl area"; "Water, drains to walk".
+- **What it does** (only with `?sewerdungeon`): the junction's middle is a round pool with a bowl-shaped bed; shutting the north culvert empties it with the Central Channel and the bowl is walked (`SEWER-DUNGEON.md`). Outside the switch nothing changes: the game's height rule gained a bowl-shaped slope that only the dungeon's map uses.
+- `js/facility.js` (`facilityHeightAt`: a zone with `round`), `js/facilitygrow.js` (it moves with its interior room), `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js`.
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check (emptied, the whole bowl is reached); the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's Round Junction drawn round (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Can you make this area actually look circular".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the ring's outer wall and the rail round the nest are true circles in the 3D view (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated). The map and the 2D game are unchanged.
+- **Verified:** seen in a real browser (software rendering) from four sides; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon lit: lamps along its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Add the lights at least please".
+- **What it does** (only with `?sewerdungeon`): 72 lights in the dungeon's map, along the walls of its walked rooms; in 3D the Sewers' look hangs a lamp at each with its warm pool on the floor, in 2D each is a glow (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js` (the dungeon's decor joined to the map's, with the switch only).
+- **Verified:** seen in a real browser (software rendering) at four spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad; the frame rate with the lamps not measured.**
+
+### Build `2026-11-17ck` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: wall tops even; the Sewers' new 3D look merged in (work in progress)
+- **The ask** (the owner, 2026-11-22): "the rooftops of these little walls and everything are not even [...] And also we've updated the sewers look. Can you switch over to the new skin?"
+- **What it does** (only with `?engine=3d&sewerdungeon`): every wall of the dungeon tops out at one height; main's sewer look (`view3d/sewerdress.js`) is merged, so the dungeon wears it (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at six spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's floors told from its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Those don't even look like rooms or tunnels anymore."
+- **What it does** (only with `?engine=3d&sewerdungeon`): floors in their map's colours (pale walkways, darker rooms), wall tops near black, so rooms and passages read (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ci` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's walls level beside stairs (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Looks junk here the walls dont need to descend too".
+- **What it does** (only with `?engine=3d&sewerdungeon`): a wall of the dungeon beside a flight of stairs keeps one height and does not step down with the treads (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ch` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway behind the west pipe; stairs on both banks (work in progress)
+- **The ask** (the owner, 2026-11-22): "get rid of the walkway behind it and make this a proper pipe, water pipe"; asked how the banks are crossed without it: "Stairs on both banks".
+- **What it does** (only with `?sewerdungeon`): the entrance landing at the West Channel's head is gone and its culvert is a tall pipe mouth in the wall; a second staircase stands on the south bank. To go on from the north walkway you shut the west culvert, cross the empty bed and climb the other staircase (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyle.js` (the dungeon's light key named another of its rooms).
+- **Verified:** seen in a real browser (software rendering); the reach check: culverts open, only the north walkway and the gallery; all shut, every room but the three shut on purpose; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's west culvert no longer buried (work in progress)
+- **The ask** (the owner, 2026-11-22, circling the West Channel's head): "I don't see the water pipe here".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the bed no longer slopes up over the culvert under the entrance landing; that end is a plain wall with the arch in it (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cf` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's flooded staircase turned to run along the bank (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Rotate the stairs like this".
+- **What it does** (only with `?sewerdungeon`): the West Channel's staircase no longer sticks out into the channel: from a landing on the north walkway's edge one flight runs down along the bank, eastwards, to the bed ("The other way 180") (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the reach check, the culverts open (the flight walked) and shut (every bed reached by it); the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ce` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's channels deeper (work in progress)
+- **The ask** (the owner, 2026-11-22): "Make the channels deeper".
+- **What it does** (only with `?sewerdungeon`): the West and Central Channels' beds lie 2 tiles under their walkways (0.9 before; provisional), the water a little under half way up their sloped sides (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the reach check with the culverts shut (every bed reached); the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cd` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's channels flat, an inverted trapezoid (work in progress)
+- **The ask** (the owner, 2026-11-22): "the channels don't need to look like they have stairs under them, under the water. It needs to be flat looking. It needs to have like an inverted trapezoid look."
+- **What it does** (only with `?engine=3d&sewerdungeon`): each body of the dungeon's water is one flat sheet, and its bed one smooth surface with a flat bottom and sloped sides, with the water in or gone (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone, no page error; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.** Whoever walks a bank stands on the tile's own height, up to a few pixels off the smooth slope.
 
 ### Build `2026-11-17cc` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: culverts at the channel ends, each with a button that shuts its door; the sluice gates gone; three corners squared (work in progress)
 - **The ask** (the owner, 2026-11-22): "Square those corners"; "I want giant openings", culverts, at "Every channel end", an "Arch"; "Just forget about the thing that sits in the water [...] let's just make a button that closes the pipe or the door from inside".

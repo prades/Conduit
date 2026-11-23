@@ -130,7 +130,7 @@
     // a door or a flight of steps BETWEEN two rooms of one interior (the same offset: the electrical domain's, docs/DOMAINS.md) is carried with them, as their outlines are
     const oneInterior = ids => !!(ids && ids.length > 1 && ids.every(id => INTERIOR[id] && INTERIOR[id][0] === INTERIOR[ids[0]][0] && INTERIOR[id][1] === INTERIOR[ids[0]][1]));
     for (const o of M.openings) if (!DOORS[o.id] && oneInterior(o.rooms)) { const t = INTERIOR[o.rooms[0]]; o.a = mv(o.a, t); o.b = mv(o.b, t); }
-    for (const r of M.ramps) if (r.zone && oneInterior(r.rooms)) { const t = INTERIOR[r.rooms[0]], z = r.zone, k = z.axis === "x" ? 0 : 1; r.zone = Object.assign({}, z, { rect: [z.rect[0] + t[0] * G, z.rect[1] + t[1] * G, z.rect[2] + t[0] * G, z.rect[3] + t[1] * G], c0: z.c0 + t[k] * G, c1: z.c1 + t[k] * G }); }
+    for (const r of M.ramps) if (r.zone && oneInterior(r.rooms)) { const t = INTERIOR[r.rooms[0]], z = r.zone, k = z.axis === "x" ? 0 : 1; r.zone = Object.assign({}, z, { rect: [z.rect[0] + t[0] * G, z.rect[1] + t[1] * G, z.rect[2] + t[0] * G, z.rect[3] + t[1] * G], c0: z.c0 + t[k] * G, c1: z.c1 + t[k] * G, ...(z.round ? { round: Object.assign({}, z.round, { c: [z.round.c[0] + t[0] * G, z.round.c[1] + t[1] * G] }) } : {}) }); }
 
     // RAMPS: the two flights of steps cross the new tunnels; the curved stair moves with the stair room
     for (const r of M.ramps) {
