@@ -243,14 +243,19 @@ const EVOLUTIONS = {
     // bubbles and the legs trot, so the sheet carries its own light.
     blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", move: "VENOM BITE", moves: ["venom_bite"], sheet: "img/evo/blightspider.png",
               cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
-    // The ELECTRIC TECHNICIAN, design No. 882 (the user's pencil sketch of 2026-11-01, "sleek redesign of the electric technician", then on No. 880: "the hover shell
+    // The ELECTRIC TECHNICIAN, the MANTA RAY, design No. 948 (design/evolutions/forms42.js; the owner, 2026-11-23, with a concept sheet: "I want to switch out the electric technician for this
+    // creature, which is a manta ray [...] those are tails that should be more towards the back of the creature", and on the draft: "Hell yes"): a smooth mound of jet black gel with two wide
+    // wings, their tips turned up, its edges see-through violet and glowing; a cluster of electric yellow crystal tucked under each wing; three wavy tails out of the point at its rear, violet
+    // going to yellow at their tips. It glides, its wings beating slowly; its action frames lift its wings and beat them down, the crystals flaring, an arc between them. ITS ID IS STILL
+    // `hovershell` (its moves, its Ultimate, its card and every saved follower go by it: a follower that was a Hover Shell is the Manta Ray). A 192 px cell: room for its tails.
+    // What it replaced, the HOVER SHELL, design No. 882 (the user's pencil sketch of 2026-11-01, "sleek redesign of the electric technician", then on No. 880: "the hover shell
     // should have wings trapezoidal and a manta ray like mouth open and long and straight", and on No. 882: "Yes to all"): a manta of a hover craft, a long low black
     // dome, square at its front; two long straight trapezoid wings out of its sides, flat and ribbed, their edges lit yellow from underneath; a manta's mouth open across
     // its whole front, a long straight slot with a jutting jaw and gill plates lit yellow inside; two tall launcher prongs on top. Its action frames fire the launcher:
     // an arc between the prongs and a ring of light out of its mouth. It was No. 877 (the "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet's horseshoe-crab shell over a
     // six-legged shuttle, whose action frames lifted the shell off). It glows, so the sheet carries its own light.
-    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", move: "SHOCK ZAP", moves: ["shock_zap"], sheet: "img/evo/hovershell.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: "#ffee33" },
+    hovershell:{ id: "hovershell", name: "MANTA RAY", element: "electric", role: "camper", move: "SHOCK ZAP", moves: ["shock_zap"], sheet: "img/evo/hovershell.png",
+              cell: 192, anchor: [96, 138.2], core: [96, 107.4], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
     // "only 4 legs", "fitted bricks on the body", "the diamonds are nested under the body", "bigger bricks 2 layers", "moves like a train cart, so that the smaller side is
     // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.

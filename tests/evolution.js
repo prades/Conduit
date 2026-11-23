@@ -111,7 +111,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('EVOLVE_LEVEL'), 8, 'THE ASK (the owner, 2026-11-09: "when they reach level 8 and they have an energy card"): they evolve at level 8');
     });
     check('THE ASK ("add the new technician forms now"): a FLUX TECHNICIAN becomes the GOO PROXY, a FIRE one the THERMITE BURROWER, an ICE one the IGLOO SKATER; each stays a technician', () => {
-        for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER'], ['toxic', 'blightspider', 'BLIGHT SPIDER'], ['electric', 'hovershell', 'HOVER SHELL']]) {
+        for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER'], ['toxic', 'blightspider', 'BLIGHT SPIDER'], ['electric', 'hovershell', 'MANTA RAY']]) {
             mk(el, 'camper', 20); run(lvlUp);
             const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, molt: __f._moltAt === frame })');
             same(r.evo, id, el + ' technician'); same(r.tag, name, el + ' tag'); same(r.role, 'camper', el + ' role'); ok(r.molt, el + ': no molt');
@@ -567,7 +567,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
             else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
         }
-        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'quillstone,maw,electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k; the QUILLSTONE's: room for its dive and its turn, build 2026-11-11n)
+        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'quillstone,maw,electroskink,hovershell,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the MANTA RAY's, id hovershell: room for its tails, build 2026-11-17de); (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k; the QUILLSTONE's: room for its dive and its turn, build 2026-11-11n)
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {

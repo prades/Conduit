@@ -25,6 +25,16 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Alternatives:** A (no curve); C (B with a cozy feel): not chosen.
 - **Docs/code:** `VIEW-3D.md` §8 (the feature specification; stages 1 to 4 built: the camera and the curve, the 2D through it, the walls judged from it, horizon culling); `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `view3d/core.js`, `js/config.js`, `js/view3d.js`, `js/game.js`, `js/input.js`, `js/drops.js`, `js/facilityplay.js`, `js/techabilities.js`; `tests/view3d.js`, `tests/engineplan.js`.
 
+## DECISION: The electric technician is the MANTA RAY (design No. 948), in place of the Hover Shell
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17de`
+- **Status:** implemented: its sprites (`img/evo/hovershell.png`), its 3D body, its name; checked by `tests/evolution.js`, `tests/followercombat.js`, `tests/cards.js`, the full run, and by playing it in the real game (2D and 3D, a card battle with SHOCK ZAP and DRIFT SLASH). Not seen on an iPad; not playtested.
+- **Context:** the owner sent a concept sheet (MANTA RAY, Electric Technician): "I want to switch out the electric technician for this creature, which is a manta ray. I don't know why but the AI agent I was using made it look like he has ears on its back, but those are tails that should be more towards the back of the creature". The agent modelled it in 3D with the tails moved to its rear and showed one draft (No. 948), with questions on the name, the Hover Shells already in play, its attack looks and smooth or faceted.
+- **Decision (the owner's word):** **"Hell yes"**, then **"Push"**.
+- **Rules:** the electric technician's body is the Manta Ray: a smooth mound of jet black gel, two wide wings with turned-up tips, see-through violet glowing edges, a cluster of yellow crystal under each wing, three wavy tails out of the point at its rear, violet going to yellow. Its name is MANTA RAY. It keeps the Hover Shell's id (`hovershell`), moves (SHOCK ZAP), Ultimate (DRIFT SLASH), numbers and card kind, so a follower that was a Hover Shell is a Manta Ray. Its sprite cell is 192 px (room for its tails).
+- **Supersedes:** the Hover Shell, No. 882 (approved 2026-11-01: "Yes to all"); its model stays in `design/evolutions/forms34.js` as history.
+- **Docs/code:** `CHANGELOG.md` 2026-11-23; `OPEN-QUESTIONS.md` (the agent's choices to confirm); `VIEW-3D.md`; `ATTACK-CARD-ART.md` (its card not yet redone); `design/evolutions/forms42.js`, `design/evolutions/bake.js`, `js/evolution.js`, `view3d/attacks_electric.js`.
+
 ## DECISION: The sewers' walkways are long grate panels (round 4)
 
 - **Date:** 2026-11-23 · **Branch/build:** `claude/sewer-variety` (main `046ab7a2`, build `2026-11-17cs`, merged in); no build of its own, not pushed by the agent
