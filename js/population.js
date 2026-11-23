@@ -8,7 +8,7 @@
 // A RACE (ENEMY_RACES) is a family of creatures: its species (js/species.js SPECIES, each with its classes from nymph to boss) and the Nest it comes from. A SPAWN TABLE (SPAWN_TABLES) is WHAT a place's spawner
 // makes: the races it draws on, the classes by weight, the level band, an element, and whether they are a Nest's brood (a toxic ant of the Sewers drops samples and counts for Side Quest: js/quests.js). A table is a
 // list of STAGES; the one in force is the first whose `until` (an event of SPAWN_WHEN) has not happened. The Sewers' brood has two (toxic until the purification, then plain ants: the owner's answer of 2026-11-01);
-// the arena and the queen's call are in their first, "initially" ants, and a later one is a line of data here. THE SPAWNERS keep their own rules — when, how many, where, what is spared — and ask the table only what to make: the arena's (js/facilityspawn.js FP_SPAWN), the Sewers' brood (FP_SPAWN_SEWERS) and
+// the arena has four, weak first (the owner's answer of 2026-11-23, below); the queen's call is in its first, and a later one is a line of data here. THE SPAWNERS keep their own rules — when, how many, where, what is spared — and ask the table only what to make: the arena's (js/facilityspawn.js FP_SPAWN), the Sewers' brood (FP_SPAWN_SEWERS) and
 // the queen's call (js/bosses.js, an encounter's `waves`). One more race is a row in ENEMY_RACES and its name in a table's `races`.
 const ENEMY_RACES = {
     ant:      { label: "THE ANTS", species: ["ant"], nest: "sewer_nest" },   // the Toxic Ant Queen's colony: the Nest at the Sewers' east end (NESTS); the arena's ants come up from it through the overflow grates
@@ -22,17 +22,41 @@ const ENEMY_RACES = {
     rolypoly: { label: "THE ROLY-POLIES", species: ["rolypoly"], nest: null },
 };
 const SPAWN_TABLES = {
-    arena:  [{ id: "ants", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4] }],   // THE ARENA: ants, in the classes and the level band the arena always had
-    sewers: [{ id: "brood", until: "purified", races: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: "toxic", brood: true },   // THE SEWERS' BROOD: the Nest's toxic workers and scouts, until the water is clean
-             { id: "brood_clean", races: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: null, brood: true }],   // then the same ants with no element: TOXIC ANTS BACK TO NORMAL (the owner, 2026-11-01: "lose the element")
+    // THE ARENA: ants, WEAK FIRST (the owner, 2026-11-23: "We need to make it to where the enemies at the very beginning are very weak, maybe the worker class or anything weaker than that, and then
+    // we scale up to the strikers and tanks and the sewers"; asked what makes them step up, of three offered: "Your progress": "Workers only at the start. Scouts join when you win the Crystal's
+    // defence, strikers when your first follower evolves (the tutorial's end), tanks when your class's first stage is done"). Four stages, each waiting for the game's own milestone (SPAWN_WHEN,
+    // spawnProgress); the last is the mix the arena always had. A kind joins at the weight it has in that mix (no new number), and the level band is the arena's own throughout. What is alive when
+    // a milestone comes stays as it is: the next to come out of the dark are the new stage's.
+    arena:  [{ id: "ants_first", until: "defended", races: ["ant"], classes: { worker: 3 }, levels: [2, 4] },
+             { id: "ants_scouts", until: "evolved", races: ["ant"], classes: { scout: 3, worker: 3 }, levels: [2, 4] },
+             { id: "ants_strikers", until: "classed", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2 }, levels: [2, 4] },
+             { id: "ants", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4] }],
+    // THE SEWERS' BROOD: the Nest's toxic ants, until the water is clean. THE STRONG PLACE (the owner, 2026-11-23, asked whether the sewers, which had only workers and scouts and so were weaker
+    // than the arena, should become it: "Yes, add strikers and tanks"): all four classes. The mix is the arena's own full one (the agent's, PROVISIONAL, for the owner to correct); the levels as
+    // they were.
+    sewers: [{ id: "brood", until: "purified", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [3, 5], element: "toxic", brood: true },
+             { id: "brood_clean", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [3, 5], element: null, brood: true }],   // then the same ants with no element: TOXIC ANTS BACK TO NORMAL (the owner, 2026-11-01: "lose the element")
     queen:  [{ id: "infantry", races: ["ant"], classes: { nymph: 1 }, levels: [2, 3], element: "toxic", brood: true }],   // THE QUEEN'S CALL: her toxic nymphs, the infantry of her waves (PROVISIONAL levels, js/bosses.js)
     electrical: [{ id: "rolypolies", races: ["rolypoly"], classes: { scout: 3, striker: 2, tank: 1 }, levels: [4, 6], element: "electric" }],   // THE ELECTRICAL DOMAIN: its roly-polies, always electric (PROVISIONAL classes and levels, the agent's: build 2026-11-13aa)
 };
-// the world's events a stage may wait for (`until`): the Sewers purified, the Toxic Ant Queen's fate decided
+// the world's events a stage may wait for (`until`): the Sewers purified, the Toxic Ant Queen's fate decided; and how far the game has got (spawnProgress): the Crystal's defence won, the
+// tutorial over (your first follower evolved), a class's first stage done
 const SPAWN_WHEN = {
     purified: () => typeof questDone === "function" && questDone("purify"),
     queen:    () => { const S = typeof bossState === "function" ? bossState("sewer_cistern") : null; return !!(S && S.state === "resolved"); },
+    defended: () => spawnProgress() >= 1,
+    evolved:  () => spawnProgress() >= 2,
+    classed:  () => spawnProgress() >= 3,
 };
+// HOW FAR THE GAME HAS GOT, by the tutorial director's own record (js/tutorial.js; saved, so a loaded game is where it was): 0 the beginning; 1 the Crystal's defence won (the assault's step
+// passed); 2 the tutorial over (its last step is EVOLVE A FOLLOWER); 3 a class's first stage done (any class you have been: tutClassStageDone, so changing class takes nothing back). A game with
+// no tutorial (the website's background, a bare test room) is as far as it goes, 3: the arena as it always was. A milestone is never unreached.
+function spawnProgress() {
+    const S = typeof _fp !== "undefined" && _fp && _fp.tut ? _fp.tut.script : null;
+    if (!S || typeof TUT_STEPS === "undefined") return 3;
+    if ((S.step | 0) < TUT_STEPS.length) { const a = TUT_STEPS.findIndex(st => st.id === "assault"); return a >= 0 && (S.step | 0) > a ? 1 : 0; }
+    return typeof tutClassStageDone === "function" && tutClassStageDone() ? 3 : 2;
+}
 // the stage of a table in force now (null: no such table)
 function spawnStage(id) {
     const T = SPAWN_TABLES[id]; if (!T || !T.length) return null;

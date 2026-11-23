@@ -168,11 +168,21 @@ function buildRoom(R, P, opt) {
 const ANT_W = { worker: 20, scout: 22, striker: 28, tank: 36 }, ANT_JAW_LEN = { worker: 0.9, scout: 1.05, striker: 1.15, tank: 1.3 }, ANT_ZK = 1.5;
 const ANT_LOOK = { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.05, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.4, antW: 1.6, spread: 0.45, antH: 5, tipAt: 0.6,
   pal: ['#5a3418', '#b8874a', '#1a0f07'], tip: '#f2e2bd', leg: '#2b1a0d', sick: '#c99c5e', mottle: 0.9 };   // (pal: the armour's rust, its sand blotches, its dark plate edges and underside)
+// YOUR CLONE (o.clone): MARK C, TEAL-TINTED ARMOUR. The owner, 2026-11-23, asked which of three marks a clone should wear (design/clones/drafts.js: A teal eyes and a stripe, B a ring at
+// its feet, C teal-tinted armour): "C teal mint". Its whole body tinted teal as if grown in the lab (each colour's hue made the teal's, its saturation and lightness kept in part: the
+// mottle, the plate edges and the sand sickles still read), its eyes teal (#19e6c1, your side's colour in the game's UI: js/draw.js drawHealthBar). Done once to each pose as it is built.
+// The draft's C read a deep sea green on the lab's pale floor: its hue moved a little toward mint (169 to 161 degrees) and its lightness raised (x1.1 to x1.3), the agent's reading of "mint".
+const ANT_CLONE = { eye: '#19e6c1', hue: '#3ee6b0', sat: [0.55, 0.25], light: 1.3 };   // (hue and light: the draft's C, #19e6c1 at 1.1, nudged a little toward mint: "teal mint")
+function antCloneTint(g) { const V = ANT_CLONE, th = {}, hsl = {}, tc = new T.Color(), done = new Set(); lin(V.hue).getHSL(th);
+  const tint = c => { c.getHSL(hsl); c.setHSL(th.h, Math.min(1, hsl.s * V.sat[0] + V.sat[1]), Math.min(1, hsl.l * V.light)); };
+  g.traverse(m => { if (!m.isMesh) return; const mat = m.material; if (!mat || mat.isMeshBasicMaterial) return;   // (the eyes: already teal)
+    const col = m.geometry.attributes.color; if (mat.vertexColors && col) { if (done.has(col)) return; done.add(col); for (let i = 0; i < col.count; i++) { tc.setRGB(col.getX(i), col.getY(i), col.getZ(i)); tint(tc); col.setXYZ(i, tc.r, tc.g, tc.b); } col.needsUpdate = true; }
+    else if (!done.has(mat)) { done.add(mat); tint(mat.color); } }); }
 const ANT_LEGS_3D = [{ f: 0.06, hs: 0.15, kf: 0.18, ks: 0.66, af: 0.3, as: 1.1, tf: 0.42, ts: 1.28 }, { f: -0.14, hs: 0.14, kf: -0.36, ks: 0.66, af: -0.7, as: 1.06, tf: -0.92, ts: 1.22 }];
 function buildAnt(P, o) {
   o = o || {}; const V = ANT_LOOK, cls = o.cls || 'scout', soldier = cls === 'tank', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, BK = V.bk, UB = U * BK, zk = o.zk || ANT_ZK, Z = z => z / UH * s * zk;
   const hsz = (soldier ? 1.3 : 1) * V.head, ml = (ANT_JAW_LEN[cls] || 1.05) * V.jaw, open = o.open === undefined ? 0.01 : o.open, strike = Math.min(1, open / 0.3), walk = o.walk === undefined ? 0.6 : o.walk;
-  const accent = o.accent || ANT_COLOUR, eye = glowMat(accent, 1.0), g = new T.Group();
+  const accent = o.clone ? ANT_CLONE.eye : o.accent || ANT_COLOUR, eye = glowMat(accent, 1.0), g = new T.Group();   // (a clone's eyes teal: ANT_CLONE)
   const C0 = lin(V.pal[0]), C1 = lin(V.pal[1]), C2 = lin(V.pal[2]);
   const armour = std('#ffffff', { roughness: 0.42, metalness: 0.25 }); armour.vertexColors = true;
   const legM = std(V.leg, { roughness: 0.45, metalness: 0.3 }), tipM = std(V.tip, { roughness: 0.3, metalness: 0.45 }), sickM = std(V.sick, { roughness: 0.35, metalness: 0.35 }), LW = V.legW, SW = V.sw, TA = V.tipAt;
@@ -234,6 +244,7 @@ function buildAnt(P, o) {
     const R = V.reach, hip = [Lg.f * UB, Z(zb + 0.6), side * Lg.hs * UB], knee = [(Lg.f + Lg.kf * R + sw * 0.4) * U, Z(zb + V.knee + up * 0.6), side * Lg.ks * R * U], ank = [(Lg.f + Lg.af * R + sw * 0.75) * U, Z(V.ankle + up), side * Lg.as * R * U], foot = [(Lg.f + Lg.tf * R + sw) * U, Z(up * 0.4) + 0.012, side * Lg.ts * R * U];
     g.add(rodBetween(hip, knee, 0.024 * s * LW, legM, 7)); g.add(rodBetween(knee, ank, 0.017 * s * LW, legM, 7)); g.add(rodBetween(ank, foot, 0.011 * s * LW, legM, 6));
     g.add(at3(new T.Mesh(new T.SphereGeometry(0.026 * s * LW, 8, 6), legM), knee[0], knee[1], knee[2])); g.add(cone(knee, [knee[0] - 0.02 * U, knee[1] + Z(1.2 + 1.6 * V.spines), knee[2] + side * 0.05 * U], 0.022 * s * LW, legM)); } });
+  if (o.clone) antCloneTint(g);
   setShadows(g); g.userData.ant = { cls, s, len: 2.95 * UB, top: Z(Math.max(hz + hr + 3, zb + 5.5 * sc + 4)), headAt: [hf * UB, Z(hz), 0], jawTip: [(hf + hL + 0.5 * ml) * UB, Z(hz - 0.8), 0] };
   return g;
 }

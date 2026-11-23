@@ -158,7 +158,8 @@ const GAMEVIEW = (function () {
       if (bl) b.B.update(bl.t != null ? bl.t : i * P / 8, bl.act != null ? bl.act : job.idleAct, bl); else if (cs) b.B.update(i < 4 ? i * 0.1 : (i - 4) * P / 4, 0, cs); else b.B.update(0, job.idleAct); }
     for (const o of b.hidden) o.visible = false; }
   // an ant: a body of its class, at the game's own measures (its scale is its width over its class's), every foot down while it stands
-  function antKitBody(key, cls, size, accent) { const a = antBody(cls, { size, zk: 2, stand: true, accent }); return { key, holder: a.holder, poses: a.poses, ang: null }; }
+  // (mine: one of yours, a clone, in mark C: chamber.js ANT_CLONE; its kit and its key its own, so an enemy of the same class is never tinted)
+  function antKitBody(key, cls, size, accent, mine) { const a = antBody(cls, mine ? { size, zk: 2, stand: true, accent, clone: 'C' } : { size, zk: 2, stand: true, accent }); return { key, holder: a.holder, poses: a.poses, ang: null, mine: !!mine }; }
 
   const free = new Map(), live = new Map(), shown = new Set(), bad = new Set(); let stamp = 0;   // (free: bodies not in use, by kind; live: each unit's; shown: the units whose bodies this frame's picture has)
   // THE ATTACKS IN 3D (view3d/attacks.js; docs/VIEW-3D.md stage 5): a form's attacks, its body's motion and its effects, drawn here in place of the game's 2D drawing of them (the Frost Maw first)
@@ -209,11 +210,13 @@ const GAMEVIEW = (function () {
     const wc = f.walkCycle || 0; if (f._hdWc !== undefined && Math.abs(wc - f._hdWc) > 1e-4) f._hdMoveAt = f0; f._hdWc = wc;   // (the drawing's own memory, as drawHdEgg keeps it: walking while its walk cycle moved in the last 6 frames)
     const walking = f._hdMoveAt !== undefined && f0 - f._hdMoveAt < 6, row = f.dirX || f.dirY ? hdRowOf(f.dirX || 0, f.dirY || 0) : 1, t0 = f0 + ((f.x || 0) * 13 | 0), b = bodyFor(f, key, () => formBody(key)); if (!b) return false;
     turn(b, faceOf(row), dt); pose(b, walking ? 8 + (t0 / 4) % 8 : 0, (t0 / 7) % 8); stand(b, f.x, f.y, GM.flightLift(f), SC_EGG); shown.add(f); return true; }
-  // AN ANT (js/bugs3d.js _drawAnt3D): turned at once to its heading, lunging forward on a bite with its jaws wide, its legs in step while it walks. Not a clone, an ally, a nymph or a boss
+  // AN ANT (js/bugs3d.js _drawAnt3D): turned at once to its heading, lunging forward on a bite with its jaws wide, its legs in step while it walks. Not a nymph or a boss.
+  // ONE OF YOURS (the owner, 2026-11-23, of the clone's mark: "C teal mint"): an ant that is your clone (the Clone Bay's scout, striker or tank) is drawn too, its body tinted teal and its eyes
+  // teal (chamber.js ANT_CLONE). Yours by the 2D drawing's own rule (js/bugs3d.js isAlly: on your side, or a clone); its key carries the mark, so it is a body of its own
   // hp: where one swallowed (ABSOLUTE ZERO) is drawn while it is pulled in (view3d/attacks.js held): its place, its height (px), its size and its turn
-  function ant(a, hp) { if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph || a.isClone || a.team === 'green') return false;
-    const w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR, key = 'ant:' + a.className + ':' + size + ':' + accent;
-    const b = bodyFor(a, key, () => antKitBody(key, a.className, size, accent)); if (!b) return false;
+  function ant(a, hp) { if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph) return false;
+    const mine = a.team === 'green' || !!a.isClone, w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR, key = 'ant:' + a.className + ':' + size + ':' + (mine ? 'C' : accent);
+    const b = bodyFor(a, key, () => antKitBody(key, a.className, size, accent, mine)); if (!b) return false;
     let fx = Number.isFinite(a.dirX) ? a.dirX : 1, fy = Number.isFinite(a.dirY) ? a.dirY : 0; const fl = Math.hypot(fx, fy); if (fl < 1e-6) { fx = 1; fy = 0; } else { fx /= fl; fy /= fl; }
     const lunge = (a.state === 'attack' ? Math.sin(a.attackAnim || 0) : 0) * 0.16 * 0.2 * w / 22, moving = GM.walking(a);   // (forward by its lunge: in its own ground units, a fifth of a tile at its scale)
     const pi = a.state === 'attack' ? 4 : !moving ? 5 : Math.round((((a.walkCycle || 0) * 0.9 / TAU) % 1 + 1) % 1 * 4) % 4; for (let i = 0; i < b.poses.length; i++) b.poses[i].visible = i === pi;
@@ -221,8 +224,8 @@ const GAMEVIEW = (function () {
     b.ang = -Math.atan2(fy, fx); stand(b, a.x + fx * lunge, a.y + fy * lunge, (a.leapLift || 0) + GM.flightLift(a), 1); b.top = w; shown.add(a); return true; }   // (top: how high its bars go, as the game's drawing has it: 22 px at its scale)
   // where a unit stands on the world this view has built (a room's floor, a way out's dark apron, a door's tunnel): elsewhere it is the game's own drawing
   const onWorld = (x, y) => { const k = K(Math.round(x), Math.round(y)), b = world.band.get(k); return !!world.roomAt(x, y) || world.aprons.has(k) || !!(b && b.header); };
-  // made now, behind the start screen: the cube, the squad as it is, an ant of each class (the next of a kind is built when it is first seen)
-  function warm() { stamp++; const f0 = GM.frame; cube(f0, 0); for (const a of GM.actors || []) if (!GM.isCreature(a)) follower(a, f0, 0); for (const c of Object.keys(ANT_W)) { const key = 'ant:' + c + ':0.5:' + ANT_COLOUR; give(antKitBody(key, c, 0.5, ANT_COLOUR)); }
+  // made now, behind the start screen: the cube, the squad as it is (a clone of yours too), an ant of each class (the next of a kind is built when it is first seen)
+  function warm() { stamp++; const f0 = GM.frame; cube(f0, 0); for (const a of GM.actors || []) if (!GM.isCreature(a)) follower(a, f0, 0); else if (a.isClone && !a.dead) ant(a); for (const c of Object.keys(ANT_W)) { const key = 'ant:' + c + ':0.5:' + ANT_COLOUR; give(antKitBody(key, c, 0.5, ANT_COLOUR)); }
     for (const [u, b] of live) { give(b); live.delete(u); } shown.clear(); }
 
   // ── THE FLOOR'S MARKS: the game draws them into a canvas of their own (js/view3d.js), laid on the floor where it shows ──
@@ -271,6 +274,7 @@ const GAMEVIEW = (function () {
         const n = 16 + 8 * (b.job.blocks ? b.job.blocks.length : b.job.consume ? 1 : 0); for (let c = 0; c < n; c++) pose(b, c); return null; }
       catch (e) { return String((e && e.message) || e); } finally { if (b) scene.remove(b.holder); } },
     dry(on) { noPic = !!on; return noPic; },   // (for the tests: frames with no picture, above)
+    bodyKey(a) { const b = live.get(a); return b ? b.key : null; }, bodyOf(a) { const b = live.get(a); return b ? b.holder : null; },   // (whose body a unit has, and the body: for the tests)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)

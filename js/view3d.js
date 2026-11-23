@@ -5,7 +5,9 @@
 // chose "The real game in 3D": the actual game drawn in that look, built area by area; its rules, squad, creatures, cards and saves as they are; behind a switch while it grows, the 2D game what
 // players get until the owner says otherwise.
 //
-// THE SWITCH is ?engine=3d in the address (js/config.js VIEW3D_ON). Off: nothing here runs, and nothing of the 3D view is fetched. On:
+// THE OWNER SAID OTHERWISE, 2026-11-23: "I'd like to make the cards and the 3D the actual game now." So the view is on at the plain address over the web (js/config.js enginePlan); ?engine=2d
+// is the 2D game as it was, and off the web (the tests, a file on disk) the address decides, as before.
+// THE SWITCH is js/config.js VIEW3D_ON (enginePlan: the plain address over the web, or ?engine=3d; never with ?engine=2d). Off: nothing here runs, and nothing of the 3D view is fetched. On:
 //   - three.js (vendor/three.min.js) and the view (dist/view3d.js, made by tools/view3d.js from view3d/ and the models) are fetched in the start screen's last wait, and the view builds its rooms
 //     there (js/init.js _suAssets -> view3dPrepare). A failure never stops the game: it is drawn in 2D as ever, and VIEW3D.error says why.
 //   - Every drawn frame, as the frame is cleared (js/game.js clearFrame -> view3dBegin), the game asks whether the room you are in is one the view has built (view.covers). If it is, that frame's
