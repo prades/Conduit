@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17cw` · branch `claude/start-game-project-HSh7Z` · the basic attack cards have pictures
+- **The ask** (the owner, 2026-11-23): "make the other cards for the attacks just have graphics"; asked: "Give them pictures".
+- **What it does** (in a card battle): a follower's basic attack card shows its attack type's stroke (The Sweep family, approved 2026-11-18) over its element's world, made by the game from two layer pictures a type, as the owner agreed then. All 22 evolved forms. No rule, cost or number changes. Begun by the card artist, finished and checked here.
+- `js/cardbattle.js`, `img/cards/attack/basic_*` (ten pictures and their WebP copies), `js/imgmap.js`, `dist/conduit.js`, `play.html` (generated), `design/cards/attack/basic_check.js`, `design/cards/attack/inventory.js`.
+- **Verified:** all 22 forms' cards seen in the battle's pop-up in a real browser at iPad size; the suites named in the handoff. **Not seen on an iPad; not playtested.** The other moves with no picture are not done (drafts first).
+
 ### Build `2026-11-17cv` · branch `claude/friendly-thompson-w581x0` · in the 3D view a form's pool lies under its body (and the serum's pool under those in it)
 - **The ask** (the owner, 2026-11-23, playing the 3D game): "I noticed that some of the creatures that have effects on the ground, it's not positioned correctly. For instance, the frost maw and the rot shard."
 - **What was wrong** (seen in pictures of the real game before anything was changed): the four forms with a pool of their own on the floor (the Frost Maw's ring of frost, the Rotshard's slurry, the Seeper's pool, the Rift Mimic's skirt) had it half a tile up the screen from the body, in every turn of the camera. The 3D view stands a body in the middle of its tile, where the 2D drawing puts its feet at the tile's top corner; everything the game draws over a unit was moved down with the body (`view3dFeet`, `js/game.js`), but the pool, painted by the floor's tiles, was left at the corner.
