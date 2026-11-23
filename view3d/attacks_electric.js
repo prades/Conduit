@@ -9,7 +9,7 @@
 //   THUNDERHEAD   CHAIN LIGHTNING (its shot, kind "bolt", and the game's chainBolt hops), STATIC VORTEX (the game's staticVortex), THUNDERSTORM (the game's thunderstorm)
 //   ELECTRO SKINK its everyday hit (the game's skinkswirl), ZIGZAG DASH (its route and the game's hits), LIGHTNING CIRCUIT (the game's skinkloop, then its circuit)
 //   STATIC ORB    its everyday hit (the electric element's chain), SONIC ROLL, CAPACITOR DISCHARGE (a full release in a battle), OVERDRIVE (the game's ring where it lands)
-//   HOVER SHELL   its everyday hit (the element's chain, from its launcher), SHOCK ZAP, DRIFT SLASH (the game's hoverdrift)
+//   MANTA RAY     (id hovershell; the Hover Shell until build 2026-11-17de) its everyday hit (the element's chain, from between its crystals), SHOCK ZAP, DRIFT SLASH (the game's hoverdrift)
 // In scope (dist/view3d.js): T. Called once by view3dAttacks (view3d/attacks.js) with its kit K (after the fire and ice lines); returns the four forms' entries, and hooks its own pools into the kit's frame.
 function view3dElectricForms(K) {
   const { GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, GLINT, FIRE, SMOKE, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf, curOf, claimK, UPX, bmReset, bmApply, BM, CAP, stats } = K;
@@ -157,9 +157,10 @@ function view3dElectricForms(K) {
       for (let i = 0; i < D.T.length; i++) { const a = D.T[i], P = D.D[i]; if (a && !a.dead) { P.x = a.x; P.y = a.y; } const y = hitY(P.x, P.y); jag(px, py, pz, P.x, y, P.y, 0.16, sd + i * 5, 0); px = P.x; py = y; pz = P.y; }
       stroke(0.075, 0.04, YEL, k, k * 0.8);
       for (let i = 0; i < D.D.length; i++) { const P = D.D[i]; zapHit(P.x, hitY(P.x, P.y), P.y, floorY(P.x, P.y), age - i, s + i * 3, 0.45 - 0.08 * i); } } };
-  // where a form's lightning leaves it: its middle (the Hover Shell: its launcher's prongs, on top)
+  // where a form's lightning leaves it: its middle (the Manta Ray, id hovershell: between the crystals under its wings, low at its front, where its sheet's arc jumps: design/evolutions/forms42.js.
+  //  Until build 2026-11-17de the Hover Shell's launcher prongs, on top)
   const LP = { x: 0, y: 0, z: 0 };
-  function launch(b) { const h = b.holder, F = fwdOf(b), hb = heightOf(b); if (b.key === 'hovershell') { LP.x = h.position.x - F.x * 0.05; LP.z = h.position.z - F.z * 0.05; LP.y = h.position.y + hb * 0.9; }
+  function launch(b) { const h = b.holder, F = fwdOf(b), hb = heightOf(b); if (b.key === 'hovershell') { const s = h.scale.x || 1; LP.x = h.position.x + F.x * 0.45 * s; LP.z = h.position.z + F.z * 0.45 * s; LP.y = h.position.y + hb * 0.34; }
     else { LP.x = h.position.x + F.x * 0.12 * h.scale.x; LP.z = h.position.z + F.z * 0.12 * h.scale.x; LP.y = h.position.y + hb * 0.55; } return LP; }
   // a hit of the game's on this unit's move, drawn when the move reaches it (delay: the frames until it does)
   function hitFx(delayOf) { return { find(e, f) { return isZap(e) && this.mine(e, f); }, mine: null, claim() { return true; }, span(m) { return 26 + (m.data ? m.data.d : 0); },
@@ -398,8 +399,9 @@ function view3dElectricForms(K) {
       if (g >= 0 && g < STUN) for (let i = 0; i < E.pts.length; i++) { const q = E.pts[i]; if ((g + i * 5) % 9 < 3) crackle(q.x, hitY(q.x, q.y) + 0.05, q.y, 2, 0.16, s + i * 7 + (g >> 1), 0.018, 0.8 * (1 - g / STUN)); } },
   };
 
-  // ════════ THE HOVER SHELL (id hovershell) ════════
-  // (its sheet's action fires its launcher: an arc between its prongs, a ring of light out of its mouth, a kick back: design/evolutions/forms34.js No. 882; played here by the time its shot is at, pr)
+  // ════════ THE MANTA RAY (id hovershell: the Hover Shell until build 2026-11-17de, the owner, 2026-11-23: "I want to switch out the electric technician for this creature") ════════
+  // (its sheet's action lifts its wings and beats them down, its crystals flaring, an arc between them: design/evolutions/forms42.js No. 948; played here by the time its shot is at, pr.
+  //  The effects below were made for the Hover Shell and are kept as they were approved: only where its lightning leaves it has moved, from the old launcher's prongs to between its crystals)
   const tShot = pr => 1 + (pr - 1 / 16) * 0.48;
   // a slash of DRIFT SLASH's: two curved blades of light crossing on the enemy at (X, Y, Z), age frames in
   function slash(X, Y, Z, age, s) { if (age < 0 || age >= 14) return; const k = age < 4 ? age / 4 : 1 - (age - 4) / 10, len = 0.55;
@@ -407,7 +409,7 @@ function view3dElectricForms(K) {
       stroke(0.012, 0.05, HOT, 0.3 * k, k); } }
   const HOVER = {
     tilts: true,
-    // ITS BODY. Its everyday hit (the element's chain, from its launcher) and SHOCK ZAP: its sheet's shot played smoothly (the arc between its prongs, the ring out of its mouth, its front kicked up),
+    // ITS BODY. Its everyday hit (the element's chain, from between its crystals) and SHOCK ZAP: its sheet's shot played smoothly (its wings lifted and beaten down, the arc between its crystals),
     // with a lift as it fires and a settle. DRIFT SLASH (the game swings it round its oval, a point a frame): banked into the turn, nose down, its glow up.
     body(f, b, f0) { const B = b.B, t = f0 / 60; bmReset(); stood(f, f0); const E = moveOf(f, f0, { 16: 'zap' }), dr = curOf(f, 'hoverdrift');
       if (dr && dr.o.path && dr.o.i > 1) { const p = dr.o.path, i = Math.min(dr.o.i, p.length - 1), A = p[Math.max(0, i - 2)], Bq = p[i - 1], C = p[i], cr = (Bq[0] - A[0]) * (C[1] - Bq[1]) - (Bq[1] - A[1]) * (C[0] - Bq[0]);
@@ -436,7 +438,7 @@ function view3dElectricForms(K) {
           const q = p[i - 1]; for (let k = 0; k < (low() ? 2 : 4); k++) spark(q[0] + (H(k, age, 1) - 0.5) * 0.5, floorY(q[0], q[1]) + hb + (H(k, age, 2) - 0.5) * 0.3, q[1] + (H(k, age, 3) - 0.5) * 0.5, 0.15, 0.95);
           ribbon(i - j0, (jj, P) => { const r = p[j0 + jj]; P.x = r[0]; P.z = r[1]; P.y = floorY(r[0], r[1]); P.w = 0.05 * jj / Math.max(1, i - j0); P.r = AMBER[0]; P.g = AMBER[1]; P.b = AMBER[2]; P.a = 0.45 * jj / Math.max(1, i - j0); }); } },
     },
-    // its spark ring (the element's hit), and SHOCK ZAP's bolt (the game's arc, 16 frames: from its launcher to the enemy, and on, thinner, to the one beside it, which is only glitched)
+    // its spark ring (the element's hit), and SHOCK ZAP's bolt (the game's arc, 16 frames: from between its crystals to the enemy, and on, thinner, to the one beside it, which is only glitched)
     on(f, b, f0) { if (f.sparkSurround > 0) { claimK('spark', f); const C = launch(b); sparkRing(C.x, C.y - 0.05, C.z, 0.16, f0, Math.min(1, f.sparkSurround / 5)); }
       const E = EV.get(f); if (!E || E.kind !== 'zap') return; const a = f0 - E.at; if (a < 0 || a > 18) return; const C = launch(b), k = a < 8 ? 1 : 1 - (a - 8) / 10, sd = E.at * 5 + (a >> 1), A = E.pts[0];
       if (a < 6) glow(C.x, C.y, C.z, 0.35, PALE, 1 - a / 6);
