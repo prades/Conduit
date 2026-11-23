@@ -1081,7 +1081,7 @@ function bladeRoll(f) {
     if (!t) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
     let len = Math.max(L, ROLL_RANGE);
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - 0.8);
+    if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - (ROLL_BAND - 0.1));   // (it stops inside its slicing reach of the enemy it rolled at: it stopped 0.8 short, exactly ROLL_BAND, and by a hair of arithmetic sliced nobody. The owner, 2026-11-23: "Fix the blade roll so it always reaches its target")
     const life = Math.ceil(len / ROLL_STEP) + 1;
     f.dirX = ux; f.dirY = uy; f._fpPath = null;
     f._sigAt = f0; f._sigCd = moveWindupFrames("blade_roll"); f.state = "attack"; f.attackAnim = 0;

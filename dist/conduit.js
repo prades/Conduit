@@ -13665,7 +13665,7 @@ function bladeRoll(f) {
     const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
     let len = Math.max(L, ROLL_RANGE);
     if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len))
-        len = Math.max(0, L - 0.8);
+        len = Math.max(0, L - (ROLL_BAND - 0.1));
     const life = Math.ceil(len / ROLL_STEP) + 1;
     f.dirX = ux;
     f.dirY = uy;
