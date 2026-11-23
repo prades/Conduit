@@ -49,6 +49,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(!r.err, 'drawing threw: ' + r.err); same(r.tile, true, 'the pool was not painted on its tile'); same(r.far, 0, 'it was painted on a tile it does not cover'); same(r.ring, true, 'no ring under the ally'); same(r.marked, true, 'the ally was not marked as healed');
         ok(/drawSerumOnTile\(obj\.x, obj\.y, px, py\)/.test(rd('js/game.js')) && /drawSerumOverlay\(\)/.test(rd('js/game.js')), 'game.js does not draw the pool or the rings');
     });
+    check('IN THE 3D VIEW the pool is centred where those standing in it are drawn: half a tile down the screen from the 2D drawing\'s point (js/view3d.js view3dFeet), as a form\'s own pool is (tests/evolution.js); in the 2D game it is where it was', () => {
+        const r = J(`(function(){ __clear('mutator'); serumSplash(player.x, player.y); __frames(2); const keep = ctx.translate, showing = VIEW3D.showing, at = []; ctx.translate = function (x, y) { at.push([x, y]); return keep.apply(this, arguments); };
+            try { const tx = Math.round(player.x), ty = Math.round(player.y), px = isoSX(tx, ty) + canvas.width / 2, py = isoSY(tx, ty) + canvas.height / 2, z = serumZones[serumZones.length - 1];
+                VIEW3D.showing = false; drawSerumOnTile(tx, ty, px, py); VIEW3D.showing = true; drawSerumOnTile(tx, ty, px, py);
+                return { zones: serumZones.length, n: at.length, flat: [at[0][0] - (isoSX(z.x, z.y) + canvas.width / 2), at[0][1] - (isoSY(z.x, z.y) + canvas.height / 2 - facilityLiftRel(z.x, z.y))], dx: at[1][0] - at[0][0], dy: at[1][1] - at[0][1], tileH: TILE_H }; } catch (e) { return { err: e.message }; } finally { ctx.translate = keep; VIEW3D.showing = showing; } })()`);
+        ok(!r.err, 'drawing threw: ' + r.err); same(r.zones + ',' + r.n, '1,2', 'one pool, drawn twice'); same(r.flat.map(v => Math.round(v * 100) / 100).join(), '0,0', 'in the 2D game the pool moved'); same(Math.round(r.dx * 100) / 100, 0, 'in the 3D view it moved across'); same(Math.round(r.dy * 100) / 100, r.tileH, 'in the 3D view the pool is not half a tile down the screen, with those in it');
+    });
 
     group('THE LABORATORY: SERUM OVER TIME, MORE AT A HIGHER MUTATOR LEVEL, AND CRAFTED FOR DNA');
     check('as a Mutator, every SERUM.lab.every frames (60 s) the laboratory makes SERUM.lab.base serum, up to SERUM.lab.cap waiting; for any other class it makes none', () => {

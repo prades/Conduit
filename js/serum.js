@@ -91,7 +91,7 @@ function drawSerumOnTile(tx, ty, px, py) {
     const f = _srFrame(), R = SERUM.splash.radius;
     for (const z of serumZones) {
         if (Math.abs(z.x - tx) > R + 1 || Math.abs(z.y - ty) > R + 1) continue;
-        const life = Math.min(1, (z.until - f) / 60, (f - z.t0 + 1) / 8), zx = isoSX(z.x, z.y) + canvas.width / 2, zy = isoSY(z.x, z.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(z.x, z.y) : 0);
+        const life = Math.min(1, (z.until - f) / 60, (f - z.t0 + 1) / 8), zx = isoSX(z.x, z.y) + canvas.width / 2, zy = isoSY(z.x, z.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(z.x, z.y) : 0) + (typeof view3dFeet === "function" ? view3dFeet() : 0);   // (THE 3D VIEW stands a body half a tile down the screen from the 2D drawing's feet, js/view3d.js view3dFeet: the pool goes with those standing in it, as a form's own pool does, js/evolution.js drawEvoGroundOnTile; build 2026-11-17cv)
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
         ctx.translate(zx, zy); ctx.scale(1, TILE_H / TILE_W);
