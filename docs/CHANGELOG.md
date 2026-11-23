@@ -70,6 +70,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cr` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's empty spaces one solid colour (work in progress)
+- **The ask** (the owner, 2026-11-23): "all the empty spaces, like behind walls that don't have any rooms to it. You should make that completely solid color."
+- **What it does** (only with `?engine=3d&sewerdungeon`): a wall's side over empty space is the wall tops' dark colour, so the space between rooms reads as one solid mass (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at three spots, before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl one solid colour (work in progress)
 - **The ask** (the owner, 2026-11-22): "that looks really weird. Make it a solid color, please."
 - **What it does** (only with `?engine=3d&sewerdungeon`): the Round Junction bowl's bed is one flat stone colour, no rings or bands (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).

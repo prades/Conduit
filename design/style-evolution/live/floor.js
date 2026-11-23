@@ -270,6 +270,9 @@ function buildLabFloor(lab, P0, how) {
     for (const [dx, dy] of DIRS) { const k = K(b.x + dx, b.y + dy), nb = band.get(k), rid = roomAt.get(k), c = wain(rid || b.own), same = !!nb && nb.G === G, z = rid ? hAt(b.x + dx, b.y + dy) : nb ? b.lo : minH;   // (z: the floor this face rises from; over the void, the lowest)
       if (b.header) { if (!same) face(G.face, b, dx, dy, b.lo + DOOR_H, top, c, b.lo); continue; }
       if (nb && nb.header) { face(G.face, b, dx, dy, nb.lo + B0, nb.lo + DOOR_H, c, nb.lo); if (!same) face(G.face, b, dx, dy, nb.lo + DOOR_H, top, c, nb.lo); continue; }   // (the tunnel's side, under the wall that goes on over the door)
+      // (THE SEWER DUNGEON: a wall's side over empty space, where no room is, is the one dark colour of its top and of the ground, not stone: so the space behind the walls reads as one solid mass.
+      // The owner, 2026-11-23: "all the empty spaces, like behind walls that don't have any rooms to it. You should make that completely solid color")
+      if (!same && !rid && !nb && !b.rock && isSd(b.own)) { sideQuad(G.sdCap || (G.sdCap = quads()), b.x, b.y, dx, dy, z + B0, top, WHITE, 0, 1); continue; }
       if (same) continue; if (b.rock) { if (!(nb && nb.rock && nb.G === G)) rockFace(G, b, dx, dy, z + B0, z); continue; } face(G.face, b, dx, dy, z + B0, top, c, z, bodyOf(rid || b.own));
       if (!nb && rid && (live || dx === 1 || dy === 1)) { const s = new T.Mesh(new T.BoxGeometry(dx ? 0.03 : 1, 0.028, dy ? 0.03 : 1), seamOf(rid)); s.position.set(b.x + dx * 0.512, z + WALL_H * 0.2 + 0.012, b.y + dy * 0.512); s.userData.noInk = true; G.g.add(s); } } }   // (the neon seam, on the faces the camera sees)
 
@@ -278,7 +281,7 @@ function buildLabFloor(lab, P0, how) {
   const labFace = quads(), labTop = quads(), sdFace = quads(), sdTop = quads(); let sFace = labFace, sTop = labTop;
   for (const b of band.values()) { if (!b.hides.some(h => h.length) || b.header) continue; sFace = isSd(b.own) ? sdFace : labFace; sTop = isSd(b.own) ? sdTop : labTop; topQuad(sTop, b.x, b.y, cutT(b), WHITE); for (const [dx, dy] of DIRS) { const nb = band.get(K(b.x + dx, b.y + dy)), rid = roomAt.get(K(b.x + dx, b.y + dy));
       if (nb && !nb.header) { if (live && nb.hides.some(h => h.length) && cutT(nb) < cutT(b) - 0.01) sideQuad(sFace, b.x, b.y, dx, dy, cutT(nb), cutT(b), WHITE, 0, 1); continue; }   // (live: down to a lower stub beside it, a thick wall's between two floors)
-      sideQuad(sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, cutT(b), WHITE, 0, 1); } }   // (over the highest floor beside it)
+      sideQuad(!rid && sFace === sdFace ? sdTop : sFace, b.x, b.y, dx, dy, (rid ? hAt(b.x + dx, b.y + dy) : minH) + B0, cutT(b), WHITE, 0, 1); } }   // (over the highest floor beside it)
 
   // THE SEWER DUNGEON'S SLANTED WALLS: each a straight wall a tile thick outside its line, in pieces a tile long (each sinks with the rooms it stands in front of, as a block does, and leaves
   // its stub). Its ends: where the room's next wall is a wall too, the two meet on the mitre (and, that one being of blocks, a wedge fills up to its last block's end); else square.
@@ -300,9 +303,9 @@ function buildLabFloor(lab, P0, how) {
       for (const [e, E, O, end, nbr, ue] of [[eA, a, oa, i === 0, pcs[i - 1], ua], [eB, b, ob, i === N - 1, pcs[i + 1], ub]]) {
         if (!end) { if (nbr.G !== G || Math.abs(nbr.z - z) > 1e-4) outs.push([E, O, ue]); continue; }
         if (e.wedge) { plans.push([E, e.o, e.wedge]); outs.push([e.o, e.wedge, away(e.o, e.wedge, mid)], [e.wedge, E, away(e.wedge, E, mid)]); } else outs.push([E, e.o, away(E, e.o, mid)]); }
-      face2(G.face, a, b, m1, z + B0, top, c, z, body); for (const [p, q, nn] of outs) face2(G.face, p, q, nn, minH + B0, top, c, minH, body);
+      face2(G.face, a, b, m1, z + B0, top, c, z, body); for (const [p, q, nn] of outs) segQuad(G.sdCap || (G.sdCap = quads()), p, q, nn, minH + B0, top, WHITE, 0, 1);
       for (const pl of plans) { polyTop(G.sdCap || (G.sdCap = quads()), pl, top, WHITE); if (pc.stub) polyTop(sdTop, pl, zc, WHITE); }
-      if (pc.stub) { segQuad(sdFace, a, b, m1, z + B0, zc, WHITE, 0, 1); for (const [p, q, nn] of outs) segQuad(sdFace, p, q, nn, minH + B0, zc, WHITE, 0, 1); }
+      if (pc.stub) { segQuad(sdFace, a, b, m1, z + B0, zc, WHITE, 0, 1); for (const [p, q, nn] of outs) segQuad(sdTop, p, q, nn, minH + B0, zc, WHITE, 0, 1); }
       const L1 = Math.hypot(b[0] - a[0], b[1] - a[1]), sm = new T.Mesh(new T.BoxGeometry(L1, 0.028, 0.03), seamOf(rec.id)); sm.rotation.y = -Math.atan2(w.u[1], w.u[0]); sm.position.set(pm[0] - n[0] * 0.012, z + WALL_H * 0.2 + 0.012, pm[1] - n[1] * 0.012); sm.userData.noInk = true; G.g.add(sm); }); }
 
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
