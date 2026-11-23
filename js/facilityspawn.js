@@ -11,8 +11,11 @@
 // Each is made by spawnCreature (js/clone.js); js/predator.js asks facilityWanderTarget for its next spot.
 // A creature that dies drops SCRAP METAL where it fell (js/drops.js calls facilityScrapDrop): a case that lies there for a minute, which the Armory's terminal turns into ammunition (js/weapons.js).
 // `species`, `classes` and `levels` are the table's (read through, so the numbers live in one place: js/population.js); the rest are the arena's own rules.
+function _fpSpawnCount(P, k) { const st = typeof spawnStage === "function" ? spawnStage(P.table) : null; return st && st.count && st.count[k] !== undefined ? st.count[k] : P.full[k]; }
 const FP_SPAWN = {
-    room: "arena", table: "arena", every: 1200, first: 480, start: 4, cap: 7, minFromPlayer: 11, spacing: 4,
+    room: "arena", table: "arena", first: 480, minFromPlayer: 11, spacing: 4,
+    full: { start: 4, cap: 7, every: 1200 },   /* (how many the arena holds when its table's stage does not say: the numbers it always had. A stage's own `count` is fewer: js/population.js) */
+    get start() { return _fpSpawnCount(this, "start"); }, get cap() { return _fpSpawnCount(this, "cap"); }, get every() { return _fpSpawnCount(this, "every"); },
     from: ["overflow_grate_1", "overflow_grate_2"],   // where one comes up when that spot will do (decor ids: the tanks' overflow grates, down to the Sewers)
     get species() { return spawnWhat(this).species; }, get classes() { return spawnWhat(this).classes; }, get levels() { return spawnWhat(this).levels; },
     wander: [3, 9],

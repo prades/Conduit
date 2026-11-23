@@ -32,6 +32,7 @@ const CARD_BATTLE = {
     pitch: 50,                  // degrees down (the game's own camera is 30): nearly top down, the tiles nearly square to lay the cards on (the owner, 2026-11-17: "still top down so I can lay the cards down on the almost completed tiles")
     yaw: 0.6,                   // radians turned to the side
     zoom: 1.55,                 // nearer than the game's own camera
+    intro: { frames: 110, pitch: 9, zoom: 3.4, bars: 0.11 },   /* THE ATTACK'S MOMENT (the owner, 2026-11-23: "a dramatic cutscene or whatever whenever a creature or predator attacks the player"; of four offered: "Battle intro"): when an enemy's blow starts the battle, before the first turn: frames it lasts, how low the camera looks at the attacker (degrees down: from the ground), how near, the dark bars' height (of the screen's). Its first try, a white flash and a red edge, was not it: the owner, the same day: "I was not imagining a red flash at all. I was more imagining a 3D view of the predator as a camera would be like on the ground looking at the predator itself". The agent's numbers, provisional */
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
     turnSec: 2,                 // seconds of today's wait times a turn (§2.21, the owner's: "2 seconds = 1 turn"); a part of a turn counts as a whole one (the agent's, open: §11.6)
@@ -146,7 +147,7 @@ function cardBattleHit(target, source) {
     if (cardBattleActive()) return !!(ours && _cb.startHit && src === _cb.target && _cb.t === _cbF());
     if (!ours || !_cbFoeOk(src)) return false;
     if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return false;   // (the battle just ended: its creatures' last blows start nothing)
-    _cbBegin(src, false); _cb.startHit = true;
+    _cbBegin(src, false); _cb.startHit = true; _cb.intro = { foe: src, t0: _cbF(), name: typeof targetName === "function" ? String(targetName(src) || "") : "" };   /* (the attack's moment: cardBattleIntro) */
     return true;
 }
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
@@ -253,7 +254,7 @@ function _cbKillText() {
     for (const a of _cb.foes) { if (!a || !a.dead || a._cbXpSaid) continue; a._cbXpSaid = true; if (a.noReward) continue;
         const n = killXp(a); if (n > 0) floatingTexts.push({ world: true, x: a.x, y: a.y, text: "+" + n + " XP", color: "#ffe733", size: CARD_BATTLE.killText.size, life: CARD_BATTLE.killText.life, vy: -0.02, _cbBig: true }); }
 }
-function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false;
+function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false; _cb.intro = null;
     _cbKillText();   // (the last kill's experience, as the battle ends)
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
     if (typeof cardUltEnd === "function") cardUltEnd();   // (and what the Ultimates left: §2.64)
@@ -719,6 +720,19 @@ function cardBattleNumberTag(t, unit, dmg) {
     _cbNums.set(t, { unit, val: dmg, t0: _cbF(), foe, landed: false, x: unit.x, y: unit.y, jit: (Math.random() - 0.5) * 18 });
     if (foe) { let S = _cbHp.get(unit); if (!S) { S = { v: Math.max(0, unit.health) + dmg, want: Math.max(0, unit.health) + dmg, chipT: 0, chipFrom: 0 }; _cbHp.set(unit, S); } }
 }
+// THE ATTACK'S MOMENT, drawn (js/drops.js drawFloatingTexts, over the picture; the camera is cardBattleCam's): dark bars closing in at the top and the foot, and the attacker's name
+// with ATTACKS! under it, swelling as it comes; in its last quarter all of it fades. True while it is on.
+function cardBattleIntro() {
+    const I = _cb.intro; if (!I || typeof ctx === "undefined" || typeof canvas === "undefined") return false;
+    const C = CARD_BATTLE.intro, age = _cbF() - I.t0; if (age >= C.frames) return false;
+    const W = canvas.width, H = canvas.height, out = Math.max(0, Math.min(1, (C.frames - age) / (C.frames * 0.25))), inn = Math.min(1, age / 8), r = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? W / r.width : 1;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const bar = H * C.bars * inn * out; ctx.fillStyle = "#05070c"; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+    const sw = age < 8 ? 0.5 + age * 0.09 : age < 14 ? 1.22 - (age - 8) * 0.037 : 1; ctx.globalAlpha = out; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+    if (I.name) _cbText(I.name.toUpperCase(), W / 2, H * 0.78, 46 * k * sw, "#ffffff", k);
+    _cbText("ATTACKS!", W / 2, H * 0.78 + 46 * k, 28 * k * sw, "#ffffff", k);
+    ctx.restore(); return true;
+}
 function cardBattleNumbers() {
     if (!cardBattleAiming()) { if (_cbNums.size) _cbNums.clear(); if (_cbHp.size) _cbHp.clear(); return false; }
     if (typeof ctx === "undefined" || typeof floatingTexts === "undefined") return true;
@@ -1033,6 +1047,7 @@ function _cbChargeFire() {   // the follower whose turn it is has its charge don
 }
 function _cbTurnTick() {
     if (_cb.phase !== "on") return;
+    if (_cb.intro) { if (_cbF() - _cb.intro.t0 < CARD_BATTLE.intro.frames) return; _cb.intro = null; }   /* (the attack's moment first: no turn begins and nobody is lined up till it is over) */
     const T = _cb.turn, f0 = _cbF(), C = CARD_BATTLE;
     for (const f of (_cb.squad || [])) if (f && (f.dead || !(f.health > 0))) _cb.out.add(f);   // (down once: out of this battle)
     if (!T) {
@@ -1081,6 +1096,7 @@ function cardBattleFighters() { if (_cb.phase === "off") return []; const out = 
 // THE CAMERA, for the 3D view (view3d/gameview.js): null out of a battle; else how far in (k, eased), where it looks, how low, how turned, how near
 function cardBattleCam() {
     if (_cb.k <= 0.0001) return null;
+    if (_cb.intro && _cb.intro.foe && !_cb.lay) { const a = _cb.intro.foe; const P = typeof player !== "undefined" && player ? player : a; return { k: _cbSmooth(_cb.k), x: a.x, y: a.y, pitch: CARD_BATTLE.intro.pitch * Math.PI / 180, yaw: CARD_BATTLE.yaw, zoom: CARD_BATTLE.intro.zoom, dir: Math.atan2(P.y - a.y, P.x - a.x) + 0.35, side: true }; }   /* (the attack's moment: a camera down on the ground, near, on the side the attacker came at you from, looking up at it) */
     const L = _cb.lay;   // (lined up: it looks across the line, from one side or the other, whichever is the nearer turn: view3d/gameview.js)
     let x = _cb.cx, y = _cb.cy;
     if (L) {   // (the fight in the middle of the screen above the cards: the camera's aim moved towards it by half the band's height, on the floor)
@@ -1363,4 +1379,4 @@ function _cbYouThumb(cv, col) {
     g.fillStyle = "#3dffb0"; g.fillRect(w * 0.28, h * 0.42, w * 0.16, h * 0.07); g.fillRect(w * 0.56, h * 0.42, w * 0.16, h * 0.07);   // (its two eyes)
     g.fillStyle = col || "#ffb347"; g.fillRect(w * 0.4, h * 0.78, w * 0.2, h * 0.08);   // (its neck)
 }
-function cardBattleReset() { _cb.youActed = false; _cb.shooting = false; _cb.serums = []; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cb.intro = null; _cb.youActed = false; _cb.shooting = false; _cb.serums = []; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

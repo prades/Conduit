@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17cy` · branch `claude/start-game-project-HSh7Z` · the arena fewer and weaker for longer; the attack's moment (a first draft)
+- **The ask** (the owner, 2026-11-23): "The arena still has a bunch of tanks, and I haven't even really done much in the game yet. The arena has become way too populated. And I also want to make it to where there's like a dramatic cutscene or whatever whenever a creature or predator attacks the player." Asked: tanks "Much later"; the count "Grow with progress"; the moment "Battle intro", then "a 3D view of the predator as a camera would be like on the ground looking at the predator itself".
+- **The arena** (`js/population.js`, `js/facilityspawn.js`): tank ants wait for the Sewers' purification (a fifth stage; the agent's reading of "much later", provisional), and each stage says how many the arena holds: 2 at the start and 3 alive at once, one every 40 s; then 4, 5, 6 alive; today's 4, 7 and 20 s only at the last. A game with no tutorial (the website's background) is as it was. Found: on a new game the arena already had only workers; a saved game past its class's first stage had tanks.
+- **The attack's moment** (card battles in the 3D view; `CARD-BATTLES.md`): when an enemy's blow starts a battle, the camera drops to the ground and looks up at the attacker, bars close in, its name is written; 110 frames, then the first turn. A first draft, to be seen.
+- **Verified:** `tests/population.js`, `tests/facilityplay.js` (their numbers updated), `tests/cardbattle.js` and the others in the handoff; the moment seen in a real browser. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cx` · branch `claude/start-game-project-HSh7Z` · card battles: bigger numbers and words; MISS large
 - **The ask** (the owner, 2026-11-23): "if the player or the creatures miss in a fight it shows up miss and if it does that already need to make these numbers or words bigger".
 - **What it does** (in a card battle): MISS was already written (only a BLINDED attacker misses; no new chance to miss is added) but small and brief: it is 30 points, white, for 70 frames. A hit's number is 30 points on an enemy, 26 on one of yours (20, 17); status words are 1.7 times larger and no longer lie under the health bar. Sizes provisional. `js/cardbattle.js`, `js/helpers.js`, generated files.
