@@ -655,7 +655,7 @@ function cardBattleReticles() {
     for (const a of _cb.foes) {
         if (!_cbFoeOk(a)) continue;
         let x, y, r = 26;
-        if (V) { if (typeof V.has === "function" && !V.has(a)) continue;
+        if (V) { if (typeof V.has === "function" && !V.has(a) && !(typeof view3dDrawn2D === "function" && view3dDrawn2D(a))) continue;   // (a body the view draws, or one drawn in 2D over the picture: js/view3d.js _view3dBattle2D)
             const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, 0), q = V.screenNow(a.x, a.y, top), e = V.screenNow(a.x + 1, a.y, 0); x = (p[0] + q[0]) / 2; y = (p[1] + q[1]) / 2;
             r = Math.max(22, Math.min(80, 0.8 * top * Math.hypot(e[0] - p[0], e[1] - p[1]) / ((typeof TILE_W !== "undefined" ? TILE_W : 64) * Math.SQRT2) + 8)); }   // (round its body as the picture draws it, a tank's as a scout's: its width, px of the game's drawing, at the floor's scale there; the agent's)
         else if (typeof _gunScreen === "function") { const p = _gunScreen(a); x = p.x; y = p.y; }

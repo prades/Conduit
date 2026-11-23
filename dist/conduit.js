@@ -27030,7 +27030,7 @@ function cardBattleReticles() {
             continue;
         let x, y, r = 26;
         if (V) {
-            if (typeof V.has === "function" && !V.has(a))
+            if (typeof V.has === "function" && !V.has(a) && !(typeof view3dDrawn2D === "function" && view3dDrawn2D(a)))
                 continue;
             const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, 0), q = V.screenNow(a.x, a.y, top), e = V.screenNow(a.x + 1, a.y, 0);
             x = (p[0] + q[0]) / 2;
@@ -59885,8 +59885,9 @@ function view3dZoomTo(z) { if (!VIEW3D.showing || !Number.isFinite(z))
     return false; VIEW3D.zoom = Math.max(VIEW3D_CAM.zoomMin, Math.min(VIEW3D_CAM.zoomMax, z)); return true; }
 function view3dZoomBy(steps) { return view3dZoomTo(VIEW3D.zoom * Math.pow(VIEW3D_CAM.zoomStep, steps)); }
 function view3dSwinging() { return VIEW3D.showing && !!VIEW3D.view && typeof VIEW3D.view.swinging === "function" && VIEW3D.view.swinging(); }
-function _view3dZoomOn(g, k) {
-    const own = n => Object.prototype.hasOwnProperty.call(g, n) ? g[n] : undefined, set = g.setTransform, cx = canvas.width / 2, cy = canvas.height / 2, ox = cx * (1 - k), oy = cy * (1 - k);
+function _view3dZoomOn(g, k) { _view3dScaleOn(g, k, canvas.width / 2, canvas.height / 2); }
+function _view3dScaleOn(g, k, cx, cy) {
+    const own = n => Object.prototype.hasOwnProperty.call(g, n) ? g[n] : undefined, set = g.setTransform, ox = cx * (1 - k), oy = cy * (1 - k);
     g.__v3z = { set: own("setTransform"), reset: own("resetTransform") };
     g.setTransform = function (a, b, c, d, e, f) { if (a && typeof a === "object") {
         b = a.b;
@@ -59924,10 +59925,50 @@ function view3dWorldEnd() {
     }
     if (!VIEW3D.showing)
         return false;
-    if (view3dSwinging())
+    _v3b2d.clear();
+    if (view3dSwinging()) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        _view3dBattle2D();
+    }
     return true;
 }
+const _v3b2d = new Set();
+function _view3dBattle2D() {
+    const V = VIEW3D.view;
+    if (typeof cardBattleFighters !== "function" || !V || typeof V.screenNow !== "function" || typeof drawNPC !== "function")
+        return;
+    for (const u of cardBattleFighters()) {
+        if (!u || u === player || u.dead || u._swallowedBy || V.has(u) || _v3b2d.has(u))
+            continue;
+        const p = V.screenNow(u.x, u.y, 0), e = V.screenNow(u.x + 1, u.y, 0), f = V.screenNow(u.x, u.y + 1, 0);
+        const l3 = (Math.hypot(e[0] - p[0], e[1] - p[1]) + Math.hypot(f[0] - p[0], f[1] - p[1])) / 2;
+        const l2 = (Math.hypot(isoSX(u.x + 1, u.y) - isoSX(u.x, u.y), isoSY(u.x + 1, u.y) - isoSY(u.x, u.y)) + Math.hypot(isoSX(u.x, u.y + 1) - isoSX(u.x, u.y), isoSY(u.x, u.y + 1) - isoSY(u.x, u.y))) / 2;
+        const k = l2 > 0 ? l3 / l2 : 1;
+        if (![p[0], p[1], k].every(Number.isFinite) || !(k > 0))
+            continue;
+        const turn = VIEW_TURN && typeof u.dirX === "number" && typeof u.dirY === "number", dx = u.dirX, dy = u.dirY;
+        if (turn) {
+            u.dirX = viewTU(dx, dy);
+            u.dirY = viewTV(dx, dy);
+        }
+        ctx.save();
+        _view3dScaleOn(ctx, k, p[0], p[1]);
+        try {
+            drawNPC(u, p[0], u._flight && typeof techFlightLift === "function" ? p[1] - techFlightLift(u) : p[1]);
+            _v3b2d.add(u);
+        }
+        catch (x) { }
+        finally {
+            _view3dZoomOff(ctx);
+            ctx.restore();
+            if (turn) {
+                u.dirX = dx;
+                u.dirY = dy;
+            }
+        }
+    }
+}
+function view3dDrawn2D(a) { return _v3b2d.has(a); }
 function view3dShowing() { return VIEW3D.showing; }
 function view3dPropState(id, state) { return !!VIEW3D.view && typeof VIEW3D.view.propState === "function" && VIEW3D.view.propState(id, state); }
 function view3dDraw(tiles) {
