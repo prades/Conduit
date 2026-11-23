@@ -284,7 +284,8 @@ function cardUltSquares(e) {
 }
 function cardUltDraw(V) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined") return;
-    const quad = (x, y) => { const h = 0.44; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), 0); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
+    const quad = (x, y) => { const h = 0.44, L = typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), L);   // (L: the square's floor height, js/cardbattle.js cardBattleLift)
+        if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = 1.5;
     for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e)) continue; const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
         ctx.fillStyle = col; ctx.strokeStyle = col; for (const c of sq) { quad(c[0], c[1]); ctx.globalAlpha = 0.14; ctx.fill(); ctx.globalAlpha = 0.4; ctx.stroke(); } }

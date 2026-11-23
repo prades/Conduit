@@ -642,6 +642,13 @@ function cardBattleOverLow(ox, oy) {
 // A RETICLE ON EVERY ENEMY (§2.37; the owner, 2026-11-17: "The red blinking square like reticule thing is not locked on to anything. So we need to fix that to where it shows each enemy with one of
 // those"): while a battle is on, the gun's corners (js/gunfire.js drawLockReticle: red, turning in and out) go round each of its enemies, where the 3D view draws it (the battle's camera is lower
 // and turned: the 2D's own reckoning had put the gun's one set off its creature). The gun's own, and its locking-on corners (js/targeting.js), are not drawn while the battle or its camera is up.
+// ON THE FLOOR THEY STAND ON (the owner, 2026-11-23: "In some card battles, the hit marker or the reticule is not correctly on top of the target whenever it's dragged over it"). The 3D view
+// stands a body on its floor's own height (view3d/gameview.js `stand`: js/facilityplay.js facilityLiftPx, the lab's ground floor 0, the arena and the Sewers 61 px under it, the decks over
+// it), and the view's screenOf and screenNow take a height from the lab's ground floor. Everything a battle lays on the picture asked them for height 0, or a body's own height: right in the
+// lab's ground rooms, and in the arena 57 points up the screen from the creature it was for (its reticle, its bar's dot, its numbers, its lit square, a card's squares), and which
+// enemy a dragged card was over was reckoned from that same wrong point, so over one creature it could light the one standing behind. cardBattleLift is the floor's height at a point, and every such place adds it (here; js/cardshapes.js; js/cardults.js). A square's four corners take its
+// middle's (a square is flat); a scale is measured at one height. Build 2026-11-17cw.
+function cardBattleLift(x, y) { return typeof facilityLiftPx === "function" && Number.isFinite(x) && Number.isFinite(y) ? facilityLiftPx(x, y) || 0 : 0; }
 const _CB_CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
 function cardBattleAiming() { return cardBattleActive() || _cb.k > 0.0001; }
 function cardBattleReticles() {
@@ -656,7 +663,7 @@ function cardBattleReticles() {
         if (!_cbFoeOk(a)) continue;
         let x, y, r = 26;
         if (V) { if (typeof V.has === "function" && !V.has(a)) continue;
-            const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, 0), q = V.screenNow(a.x, a.y, top), e = V.screenNow(a.x + 1, a.y, 0); x = (p[0] + q[0]) / 2; y = (p[1] + q[1]) / 2;
+            const top = typeof V.top === "function" ? V.top(a) : 22, L = cardBattleLift(a.x, a.y), p = V.screenNow(a.x, a.y, L), q = V.screenNow(a.x, a.y, L + top), e = V.screenNow(a.x + 1, a.y, L); x = (p[0] + q[0]) / 2; y = (p[1] + q[1]) / 2;   // (L: its floor's height, cardBattleLift)
             r = Math.max(22, Math.min(80, 0.8 * top * Math.hypot(e[0] - p[0], e[1] - p[1]) / ((typeof TILE_W !== "undefined" ? TILE_W : 64) * Math.SQRT2) + 8)); }   // (round its body as the picture draws it, a tank's as a scout's: its width, px of the game's drawing, at the floor's scale there; the agent's)
         else if (typeof _gunScreen === "function") { const p = _gunScreen(a); x = p.x; y = p.y; }
         else continue;
@@ -673,7 +680,7 @@ function cardBattleReticles() {
 // to it and runs along under it. It goes where the creature goes. Sizes the agent's (CARD_BATTLE.hpBar, screen points).
 function _cbBarGeom(V, a) {
     const B = CARD_BATTLE.hpBar, r = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? canvas.width / r.width : 1;
-    const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, top * 0.55); if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return null;
+    const top = typeof V.top === "function" ? V.top(a) : 22, p = V.screenNow(a.x, a.y, cardBattleLift(a.x, a.y) + top * 0.55); if (!Number.isFinite(p[0]) || !Number.isFinite(p[1])) return null;
     const side = p[0] < canvas.width / 2 ? -1 : 1, w = B.w * k, h = B.h * k, ex = p[0] + side * B.out * k, ey = p[1] - B.up * k;
     return { B, k, p, side, w, h, d: B.depth * k, sk: B.slant * k, ex, ey, x0: side > 0 ? ex : ex - w, y0: ey - h };
 }
@@ -731,7 +738,7 @@ function cardBattleNumbers() {
         const n = _cbNums.get(t);
         if (!t.world) { ctx.globalAlpha = Math.min(1, t.life / 30); ctx.font = t.size ? "bold " + t.size + "px monospace" : "bold 13px monospace"; ctx.fillStyle = "#000"; ctx.fillText(t.text, t.x + 1, t.y + 1); ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y); continue; }
         if (!V) continue;
-        const u = n ? n.unit : null, top = u && typeof V.top === "function" ? V.top(u) : 22, ux = u ? u.x : t.x, uy = u ? u.y : t.y, base = V.screenNow(ux, uy, top * 0.8);
+        const u = n ? n.unit : null, top = u && typeof V.top === "function" ? V.top(u) : 22, ux = u ? u.x : t.x, uy = u ? u.y : t.y, base = V.screenNow(ux, uy, cardBattleLift(ux, uy) + top * 0.8);
         if (!Number.isFinite(base[0]) || !Number.isFinite(base[1])) continue;
         if (!n) {   // a word: it rises from where it was said and fades
             const age = (t._cbAge = (t._cbAge || 0) + 1); ctx.globalAlpha = Math.min(1, t.life / 30);
@@ -1243,7 +1250,7 @@ function _cbDragStart(ev) {
 function _cbTilePx() {
     const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenOf === "function" ? VIEW3D.view : null;
     if (!V || typeof canvas === "undefined" || !canvas.getBoundingClientRect) return CARD_BATTLE.tileCard;
-    try { const r = canvas.getBoundingClientRect(), k = r.width / (canvas.width || 1), a = V.screenOf(_cb.cx, _cb.cy, 0), b = V.screenOf(_cb.cx + 1, _cb.cy, 0), c = V.screenOf(_cb.cx, _cb.cy + 1, 0);
+    try { const r = canvas.getBoundingClientRect(), k = r.width / (canvas.width || 1), L = cardBattleLift(_cb.cx, _cb.cy), a = V.screenOf(_cb.cx, _cb.cy, L), b = V.screenOf(_cb.cx + 1, _cb.cy, L), c = V.screenOf(_cb.cx, _cb.cy + 1, L);
         const px = Math.max(Math.hypot(b[0] - a[0], b[1] - a[1]), Math.hypot(c[0] - a[0], c[1] - a[1])) * k; return Number.isFinite(px) ? Math.max(44, Math.min(72, Math.round(px * 0.8))) : CARD_BATTLE.tileCard; } catch (e) { return CARD_BATTLE.tileCard; }
 }
 function _cbDragFoe(ev) {
@@ -1252,7 +1259,7 @@ function _cbDragFoe(ev) {
     if (V) {
         const r = typeof canvas !== "undefined" && canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null, k = r && r.width ? canvas.width / r.width : 1, R = CARD_BATTLE.pick * k;
         let best = null, bd = Infinity;
-        for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; let q; try { q = V.screenOf(a.x, a.y, CARD_BATTLE.pickH); } catch (e) { continue; } const d = Math.hypot(q[0] - p[0], q[1] - p[1]) - (a.bodyR || 0) * 40 * k; if (d < R && d < bd) { bd = d; best = a; } }
+        for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; let q; try { q = V.screenOf(a.x, a.y, cardBattleLift(a.x, a.y) + CARD_BATTLE.pickH); } catch (e) { continue; } const d = Math.hypot(q[0] - p[0], q[1] - p[1]) - (a.bodyR || 0) * 40 * k; if (d < R && d < bd) { bd = d; best = a; } }
         return best;
     }
     if (typeof findEnemyAtScreen !== "function") return null;
@@ -1272,7 +1279,7 @@ function _cbFoeOnTileAt(ev) {
 }
 function _cbFoeTileDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null, a = D && D.foe; if (!a || !_cbFoeOk(a) || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
-    const q = _cbSq(a), x = Math.round(q[0]), y = Math.round(q[1]), h = 0.48, P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], 0));
+    const q = _cbSq(a), x = Math.round(q[0]), y = Math.round(q[1]), h = 0.48, L = cardBattleLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L));
     if (!P.every(c => Number.isFinite(c[0]) && Number.isFinite(c[1]))) return;
     const path = () => { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); }, pulse = 0.5 + 0.5 * Math.sin(_cbF() * 0.2);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
