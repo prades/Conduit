@@ -22,21 +22,25 @@ function sewerDressVariety(w, lab) {
   const C = { amb: [0.40, 0.41, 0.36], lamp: [1.0, 0.78, 0.48], lampI: 1.7, lampR: 5.4, bounce: [0.03, 0.07, 0.0], water: '#4d5a1c', clean: '#327e85', stub: '#2c2c27',
     stone: ['#6a6a5e', '#5c5d52', '#74725f', '#545649'], mortar: '#2a2b24', plank: ['#94724a', '#82623e', '#a07c52', '#76583a'], gap: '#1c140c', wall: ['#7c7b6e', '#6e6d61', '#86846f', '#626255'],
     plaster: '#9a9a86', brick: ['#7a4a34', '#6a3e2c', '#83503a'], cap: '#4a4a42', curb: '#6e6c5e', iron: '#3a3430', rust: '#5e3420', rustLt: '#7e4a2a', wood: '#5a4028', glow: 0.75 };
+  // ROUND 3 (SEWER_VARIETY 3; the owner, of round 2: "Now it looks too dingy, and I don't like the tiles look on the grates ... I want it to be smoother, less intrusive"): lighter and cleaner
+  const R3 = typeof SEWER_VARIETY !== 'undefined' && SEWER_VARIETY === 3, GK = R3 ? 0.3 : 1;
+  if (R3) Object.assign(C, { amb: [0.58, 0.59, 0.55], lampI: 1.15, glow: 0.45, stone: ['#7e7d71', '#76766b', '#86847a', '#727368'], mortar: '#45463e', wall: ['#8e8d80', '#848376', '#96947f', '#7c7b6e'],
+    plaster: '#aaa996', cap: '#66665c', curb: '#86847a' });
   // ── the pictures (small: 128 px a tile at most) ──
   const pick = (arr, r) => arr[Math.floor(r * arr.length) % arr.length];
-  const grime = (g, x, y, ww, hh, n, seed) => { for (let i = 0; i < n; i++) { const r = hsh(i, seed, 3); g.fillStyle = 'rgba(' + (r < 0.5 ? '0,0,0' : '255,255,230') + ',' + (0.04 + hsh(i, seed, 4) * 0.08).toFixed(3) + ')'; g.fillRect(x + hsh(i, seed, 1) * ww, y + hsh(i, seed, 2) * hh, 1 + hsh(i, seed, 5) * 3, 1 + hsh(i, seed, 6) * 2); } };
+  const grime = (g, x, y, ww, hh, n, seed) => { n = Math.round(n * GK); for (let i = 0; i < n; i++) { const r = hsh(i, seed, 3); g.fillStyle = 'rgba(' + (r < 0.5 ? '0,0,0' : '255,255,230') + ',' + (0.04 + hsh(i, seed, 4) * 0.08).toFixed(3) + ')'; g.fillRect(x + hsh(i, seed, 1) * ww, y + hsh(i, seed, 2) * hh, 1 + hsh(i, seed, 5) * 3, 1 + hsh(i, seed, 6) * 2); } };
   // ── VARIETY: the floor's atlas, 4 x 4 pictures of 256 px (a tile each): 0-5 concrete, 6-7 concrete damp at its edge u = 1, 8-15 grating panels in concrete frames (the bars run along u,
   // across the walkway; the side at u = 1 is the water's). The dark below the bars is painted: the pit, a trickle of foul water glinting in it ──
-  const CON = ['#6c6b62', '#605f57', '#76746a', '#58594f', '#67655b', '#6f6a5c'], STEEL = '#5e5b53', STEEL_HI = '#948e7e', RUST = ['#6a3a22', '#7e4a2a', '#5a301c', '#8c5630'];
+  const CON = R3 ? ['#7f7e74', '#79786e', '#85837a', '#76776c', '#7d7b71', '#827e73'] : ['#6c6b62', '#605f57', '#76746a', '#58594f', '#67655b', '#6f6a5c'], STEEL = '#5e5b53', STEEL_HI = '#948e7e', RUST = ['#6a3a22', '#7e4a2a', '#5a301c', '#8c5630'];
   const AT = 4, ATR = 5, CELL = 256;   // (4 across, 5 down: 1024 x 1280 px)
   const mottle = (g, seed, base, n) => { g.fillStyle = base; g.fillRect(0, 0, CELL, CELL); for (let i = 0; i < n; i++) { const x = hsh(i, seed, 51) * CELL, y = hsh(i, seed, 52) * CELL, r = 20 + hsh(i, seed, 53) * 70, gr = g.createRadialGradient(x, y, 0, x, y, r), lt = hsh(i, seed, 54) > 0.5;
-    gr.addColorStop(0, lt ? 'rgba(255,250,230,0.07)' : 'rgba(0,0,0,0.10)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } grime(g, 0, 0, CELL, CELL, 700, seed); };
-  const crack = (g, seed, x, y, n, len) => { g.strokeStyle = 'rgba(18,18,12,0.7)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); let a = hsh(seed, 1, 61) * 6.28; for (let i = 0; i < n; i++) { a += (hsh(seed, i, 62) - 0.5) * 1.4; x += Math.cos(a) * len; y += Math.sin(a) * len; g.lineTo(x, y);
+    gr.addColorStop(0, lt ? 'rgba(255,250,230,' + (R3 ? 0.04 : 0.07) + ')' : 'rgba(0,0,0,' + (R3 ? 0.04 : 0.10) + ')'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } grime(g, 0, 0, CELL, CELL, 700, seed); };
+  const crack = (g, seed, x, y, n, len) => { if (R3 && hsh(seed, 9, 66) > 0.35) return; g.strokeStyle = R3 ? 'rgba(30,30,22,0.35)' : 'rgba(18,18,12,0.7)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); let a = hsh(seed, 1, 61) * 6.28; for (let i = 0; i < n; i++) { a += (hsh(seed, i, 62) - 0.5) * 1.4; x += Math.cos(a) * len; y += Math.sin(a) * len; g.lineTo(x, y);
     if (hsh(seed, i, 63) < 0.25) { const b = a + (hsh(seed, i, 64) > 0.5 ? 1 : -1) * (0.8 + hsh(seed, i, 65)); g.moveTo(x, y); g.lineTo(x + Math.cos(b) * len * 0.8, y + Math.sin(b) * len * 0.8); g.moveTo(x, y); } } g.stroke(); };
-  const puddle = (g, seed, x, y, rx, ry) => { g.save(); g.translate(x, y); g.rotate(hsh(seed, 2, 71) * 3); const gr = g.createRadialGradient(0, 0, 0, 0, 0, rx); gr.addColorStop(0, 'rgba(14,18,10,0.62)'); gr.addColorStop(0.75, 'rgba(18,22,12,0.5)'); gr.addColorStop(1, 'rgba(18,22,12,0)');
+  const puddle = (g, seed, x, y, rx, ry) => { g.save(); if (R3) g.globalAlpha = 0.45; g.translate(x, y); g.rotate(hsh(seed, 2, 71) * 3); const gr = g.createRadialGradient(0, 0, 0, 0, 0, rx); gr.addColorStop(0, 'rgba(14,18,10,0.62)'); gr.addColorStop(0.75, 'rgba(18,22,12,0.5)'); gr.addColorStop(1, 'rgba(18,22,12,0)');
     g.scale(1, ry / rx); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, rx, 0, 6.28); g.fill(); g.strokeStyle = 'rgba(200,210,170,0.10)'; g.lineWidth = 2; g.beginPath(); g.arc(-rx * 0.2, -rx * 0.2, rx * 0.55, 3.6, 4.6); g.stroke(); g.restore(); };
-  const damp = (g, seed, from) => { const gr = g.createLinearGradient(CELL, 0, from, 0); gr.addColorStop(0, 'rgba(18,24,8,0.62)'); gr.addColorStop(1, 'rgba(18,24,8,0)'); g.fillStyle = gr; g.fillRect(from, 0, CELL - from, CELL);
-    for (let i = 0; i < 26; i++) { const y = hsh(i, seed, 81) * CELL, x = CELL - 4 - Math.pow(hsh(i, seed, 82), 2) * (CELL - from), r = 5 + hsh(i, seed, 83) * 16; g.fillStyle = 'rgba(' + (52 + hsh(i, seed, 84) * 30 | 0) + ',' + (70 + hsh(i, seed, 85) * 30 | 0) + ',22,' + (0.25 + hsh(i, seed, 86) * 0.35).toFixed(2) + ')'; g.beginPath(); g.ellipse(x, y, r, r * 0.7, hsh(i, seed, 87) * 3, 0, 6.28); g.fill(); } };   // (moss, wet)
+  const damp = (g, seed, from) => { if (R3) { g.save(); g.globalAlpha = 0.4; } const gr = g.createLinearGradient(CELL, 0, from, 0); gr.addColorStop(0, 'rgba(18,24,8,0.62)'); gr.addColorStop(1, 'rgba(18,24,8,0)'); g.fillStyle = gr; g.fillRect(from, 0, CELL - from, CELL);
+    for (let i = 0; i < 26; i++) { const y = hsh(i, seed, 81) * CELL, x = CELL - 4 - Math.pow(hsh(i, seed, 82), 2) * (CELL - from), r = 5 + hsh(i, seed, 83) * 16; g.fillStyle = 'rgba(' + (52 + hsh(i, seed, 84) * 30 | 0) + ',' + (70 + hsh(i, seed, 85) * 30 | 0) + ',22,' + (0.25 + hsh(i, seed, 86) * 0.35).toFixed(2) + ')'; g.beginPath(); g.ellipse(x, y, r, r * 0.7, hsh(i, seed, 87) * 3, 0, 6.28); g.fill(); } if (R3) g.restore(); };   // (moss, wet)
   const flags = (g, seed) => { g.fillStyle = C.mortar; g.fillRect(0, 0, CELL, CELL); const L = hsh(seed, 3, 91) > 0.5 ? [[3, 3, 122, 88], [129, 3, 124, 122], [3, 95, 122, 158], [129, 129, 124, 124]] : [[3, 3, 250, 100], [3, 107, 100, 146], [107, 107, 146, 146]];
     L.forEach((f, i) => { g.fillStyle = pick(CON, hsh(i, seed, 92)); g.fillRect(f[0], f[1], f[2], f[3]); g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(f[0], f[1] + f[3] - 6, f[2], 6); g.fillStyle = 'rgba(255,255,240,0.07)'; g.fillRect(f[0], f[1], f[2], 4); });
     grime(g, 0, 0, CELL, CELL, 600, seed); };
@@ -85,11 +89,17 @@ function sewerDressVariety(w, lab) {
     g => { poured(g, 219); panel(g, 27, 22, -12, 234, 268, 'bar', 1); damp(g, 28, 170); },                         // 18 its middle, rusted, wet
     g => { poured(g, 220); panel(g, 29, 22, -12, 234, 234, 'bar', 1); damp(g, 30, 190); },                         // 19 an end, rusted, wet
   ];
+  // ROUND 3: the walkway one smooth run of grating: fine bars along the walkway (the picture's v), low contrast, no frame, no seam between tiles; a quiet concrete strip only on its
+  // long edges (8: none, 9: the water's side, u = 1; 10: the inner side, u = 0; 11: both)
+  const run = (g, water, inner) => { g.fillStyle = '#4d4d46'; g.fillRect(0, 0, CELL, CELL); for (let x = 0; x < CELL; x += 8) { g.fillStyle = '#737167'; g.fillRect(x + 2, 0, 4, CELL); g.fillStyle = 'rgba(255,250,235,0.08)'; g.fillRect(x + 2, 0, 1, CELL); }
+    const strip = x0 => { g.fillStyle = '#8b897f'; g.fillRect(x0, 0, 16, CELL); g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x0 === 0 ? 15 : x0, 0, 1, CELL); grime(g, x0, 0, 16, CELL, 60, 400 + x0); };
+    if (water) strip(CELL - 16); if (inner) strip(0); };
+  if (R3) { CELLS[8] = g => run(g, false, false); CELLS[9] = g => run(g, true, false); CELLS[10] = g => run(g, false, true); CELLS[11] = g => run(g, true, true); }
   const floorTex = canvasTex(AT * CELL, ATR * CELL, (g) => { CELLS.forEach((f, i) => { g.save(); g.translate((i % AT) * CELL, (i / AT | 0) * CELL); g.beginPath(); g.rect(0, 0, CELL, CELL); g.clip(); f(g); g.restore(); }); }, { repeat: false });
   floorTex.generateMipmaps = false; floorTex.minFilter = T.LinearFilter;
   const cellUV = (c, u, v) => { const col = c % AT, row = c / AT | 0, e = 0.006; u = e + u * (1 - 2 * e); v = e + v * (1 - 2 * e); return [(col + u) / AT, 1 - (row + 1) / ATR + v / ATR]; };
   // the bridges' decks: a bar grating one sees through (alpha-tested, as the game's own), rusty steel
-  const deckTex = canvasTex(128, 128, (g) => { g.clearRect(0, 0, 128, 128); for (let y = 2; y < 128; y += 11) { g.fillStyle = STEEL; g.fillRect(0, y, 128, 4); g.fillStyle = STEEL_HI; g.fillRect(0, y, 128, 1); }
+  const deckTex = R3 ? canvasTex(128, 128, (g) => { g.clearRect(0, 0, 128, 128); for (let y = 0; y < 128; y += 8) { g.fillStyle = '#74726a'; g.fillRect(0, y, 128, 3); } g.fillStyle = '#6a685f'; g.fillRect(0, 0, 3, 128); g.fillRect(125, 0, 3, 128); }, { repeat: true }) : canvasTex(128, 128, (g) => { g.clearRect(0, 0, 128, 128); for (let y = 2; y < 128; y += 11) { g.fillStyle = STEEL; g.fillRect(0, y, 128, 4); g.fillStyle = STEEL_HI; g.fillRect(0, y, 128, 1); }
     g.fillStyle = '#3c3a35'; for (let x = 20; x < 128; x += 42) g.fillRect(x, 0, 3, 128); g.fillStyle = STEEL; g.fillRect(0, 0, 4, 128); g.fillRect(124, 0, 4, 128);
     for (let k = 0; k < 18; k++) { const x = hsh(k, 7, 121) * 128, y = hsh(k, 7, 122) * 128, r = 4 + hsh(k, 7, 123) * 10, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, pick(RUST, hsh(k, 7, 124))); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.7; g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }, { repeat: true });
@@ -98,12 +108,12 @@ function sewerDressVariety(w, lab) {
     for (let r = 0; r < 3; r++) { const y = r * 43, off = r % 2 ? -32 : 0; for (let k = 0; k < 3; k++) { const x = off + k * 64; g.fillStyle = pick(C.wall, hsh(r, k, seed)); g.fillRect(x0 + x + 2, y + 2, 60, 39); if (x < 0) g.fillRect(x0 + x + 130, y + 2, 60, 39);
       g.fillStyle = 'rgba(0,0,0,0.16)'; g.fillRect(x0 + x + 2, y + 37, 60, 4); if (x < 0) g.fillRect(x0 + x + 130, y + 37, 60, 4); } }
     grime(g, x0, 0, 128, 128, 320, 7 + seed);
-    for (let i = 0; i < 6; i++) { const x = x0 + hsh(i, 8, seed) * 124, len = 20 + hsh(i, 9, seed) * 70, gr = g.createLinearGradient(0, 128 - len, 0, 128); gr.addColorStop(0, 'rgba(30,34,18,0)'); gr.addColorStop(1, 'rgba(30,34,18,0.45)'); g.fillStyle = gr; g.fillRect(x, 128 - len, 3 + hsh(i, 3, seed) * 5, len); } };
+    for (let i = 0; i < 6; i++) { const x = x0 + hsh(i, 8, seed) * 124, len = 20 + hsh(i, 9, seed) * 70, gr = g.createLinearGradient(0, 128 - len, 0, 128); gr.addColorStop(0, 'rgba(30,34,18,0)'); gr.addColorStop(1, 'rgba(30,34,18,' + (R3 ? 0.18 : 0.45) + ')'); g.fillStyle = gr; g.fillRect(x, 128 - len, 3 + hsh(i, 3, seed) * 5, len); } };
   const brickIn = (g, clip, x0) => { g.save(); clip(); g.clip(); g.fillStyle = C.mortar; g.fillRect(x0, 0, 128, 128); for (let r = 0; r < 11; r++) for (let k = 0; k < 7; k++) { g.fillStyle = pick(C.brick, hsh(r, k, 4 + x0)); g.fillRect(x0 + k * 24 + (r % 2) * 12 - 12 + 1, r * 12 + 1, 22, 10); } grime(g, x0, 0, 128, 128, 160, 30 + x0); g.restore(); };
   const wallTex = canvasTex(512, 128, (g) => {
     stoneCell(g, 0, 0);
     stoneCell(g, 128, 3); for (let i = 0; i < 7; i++) { const x = 128 + 6 + hsh(i, 3, 131) * 112, y0 = 14 + hsh(i, 4, 131) * 22, len = 40 + hsh(i, 5, 131) * 70, wd = 3 + hsh(i, 6, 131) * 8, gr = g.createLinearGradient(0, y0, 0, y0 + len);   // (from the pipes' height down)
-      gr.addColorStop(0, 'rgba(126,68,30,0.85)'); gr.addColorStop(0.4, 'rgba(110,58,28,0.5)'); gr.addColorStop(1, 'rgba(90,48,24,0)'); g.fillStyle = gr; g.fillRect(x, y0, wd, len); g.fillRect(x + wd * 0.3, y0 + len * 0.6, wd * 0.4, len * 0.5); }
+      gr.addColorStop(0, 'rgba(126,68,30,' + (R3 ? 0.45 : 0.85) + ')'); gr.addColorStop(0.4, 'rgba(110,58,28,' + (R3 ? 0.25 : 0.5) + ')'); gr.addColorStop(1, 'rgba(90,48,24,0)'); g.fillStyle = gr; g.fillRect(x, y0, wd, len); g.fillRect(x + wd * 0.3, y0 + len * 0.6, wd * 0.4, len * 0.5); }
     g.fillStyle = C.plaster; g.fillRect(256, 0, 128, 128); grime(g, 256, 0, 128, 128, 300, 11);
     const hole = () => { g.beginPath(); g.moveTo(278, 40); g.lineTo(318, 28); g.lineTo(350, 46); g.lineTo(358, 80); g.lineTo(334, 104); g.lineTo(296, 98); g.lineTo(274, 72); g.closePath(); };
     brickIn(g, hole, 256); g.strokeStyle = 'rgba(60,58,48,0.9)'; g.lineWidth = 2; hole(); g.stroke(); g.lineWidth = 1; g.beginPath(); g.moveTo(350, 46); g.lineTo(368, 30); g.lineTo(378, 8); g.moveTo(296, 98); g.lineTo(288, 116); g.stroke();
@@ -119,7 +129,7 @@ function sewerDressVariety(w, lab) {
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const x0 = i * 128, y0 = j * 128, sd = 300 + i * 2 + j; g.fillStyle = pick(C.wall, hsh(i, j, 301)); g.fillRect(x0 + 2, y0 + 2, 124, 124);
       for (let k = 0; k < 10; k++) { const x = x0 + hsh(k, sd, 51) * 128, y = y0 + hsh(k, sd, 52) * 128, r = 12 + hsh(k, sd, 53) * 34, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, hsh(k, sd, 54) > 0.5 ? 'rgba(255,250,230,0.07)' : 'rgba(0,0,0,0.12)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
       grime(g, x0 + 2, y0 + 2, 124, 124, 260, sd); if (hsh(i, j, 302) > 0.4) crack(g, sd, x0 + 20 + hsh(i, j, 303) * 80, y0 + 20 + hsh(j, i, 304) * 80, 6, 11);
-      for (let k = 0; k < 5; k++) { if (hsh(k, sd, 305) > 0.5) continue; g.fillStyle = 'rgba(60,78,26,0.35)'; g.beginPath(); g.ellipse(x0 + hsh(k, sd, 306) * 128, y0 + hsh(k, sd, 307) * 128, 4 + hsh(k, sd, 308) * 9, 3 + hsh(k, sd, 309) * 6, 0, 0, 6.28); g.fill(); }
+      for (let k = 0; k < 5; k++) { if (R3 || hsh(k, sd, 305) > 0.5) continue; g.fillStyle = 'rgba(60,78,26,0.35)'; g.beginPath(); g.ellipse(x0 + hsh(k, sd, 306) * 128, y0 + hsh(k, sd, 307) * 128, 4 + hsh(k, sd, 308) * 9, 3 + hsh(k, sd, 309) * 6, 0, 0, 6.28); g.fill(); }
       g.fillStyle = 'rgba(255,250,235,0.09)'; g.fillRect(x0 + 2, y0 + 2, 124, 3); g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(x0 + 2, y0 + 123, 124, 3); } }, { repeat: true });
   // a stub's cut side: the wall's own stone blocks, the picture laid along the wall by where it is and up it by height, so its rows go on from the face above
   const stubSideTex = canvasTex(128, 128, (g) => stoneCell(g, 0, 0), { repeat: true });
@@ -219,7 +229,7 @@ function sewerDressVariety(w, lab) {
   // ROUND 2: where a ledge stands high over the water, the game's bank face is a short strip and the dark shows under it: the ledge's side carried on down past the water, in the walls' stone
   const waterY = new Map(); w.g.updateMatrixWorld(true); for (const rec of recs) w.rooms[rec.id].g.traverse(o => { if (!o.isMesh || !o.userData.water) return; const p = o.geometry.attributes.position, v3 = new T.Vector3();
     for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); for (const [ax, az] of [[0, 0], [-0.49, -0.49], [0.49, 0.49], [-0.49, 0.49], [0.49, -0.49]]) { const k = K(Math.round(v3.x + ax), Math.round(v3.z + az)), was = waterY.get(k); if (was === undefined || v3.y < was) waterY.set(k, v3.y); } } });   // (the water's own surface, a tile each: lower than the tile's floor where the channel is deep)
-  const deepQ = new Map(), RISER_K = (window.__RK || 1.5); let deepN = 0;
+  const deepQ = new Map(), RISER_K = (window.__RK || (R3 ? 1.7 : 1.5)); let deepN = 0;
   const lowAt = n => Math.min(floorY.get(n), waterY.has(n) ? waterY.get(n) : Infinity);
   for (const k of cellAt.keys()) { if (!dry(k) && !deck.has(k)) continue; const [x, y] = k.split(',').map(Number), h = floorY.get(k);
     for (const [dx, dy] of DIRS) { const n = K(x + dx, y + dy); if (!cellAt.has(n)) continue; const wy = lowAt(n), top = deck.has(k) ? h - 0.06 : h - 0.005; if (top - wy < (deck.has(k) ? 0.8 : 0.3)) continue;   // (a ledge's side over a lower floor or the water, where the game draws none: down past it)
@@ -334,11 +344,14 @@ function sewerDressVariety(w, lab) {
     if (i === 1) return { cell: rusty ? 18 : 17, tf: TF[to(nw[0], nw[1], hsh(tx, tz, 38) > 0.5)] };
     const want = i === 0 ? along : [-along[0], -along[1]]; for (const mir of [false, true]) { const tf = TF[to(nw[0], nw[1], mir)], o = openDir(tf); if (o[0] === want[0] && o[1] === want[1]) return { cell: rusty ? 19 : 16, tf }; } return null; };
   const picks = new Map(), tilePick = (tx, tz) => { const k = K(tx, tz); let p = picks.get(k); if (p) return p; const r = hsh(tx, tz, 37), mir = hsh(tx, tz, 38) > 0.5, nw = cellAt.has(k) ? nearW(tx, tz, 3) : null;
-    if (nw) p = { cell: r < 1 / 30 ? 9 : r < 2 / 30 ? 13 : nw[2] === 1 && hsh(tx, tz, 46) < 0.3 ? 15 : 8, tf: TF[to(nw[0], nw[1], false)] };   // (ROUND 2, the owner: "The grating needs almost uniformity": one kind, the same size, aligned, the bars the same way along each walkway (across it), no mirror; about 1 in 15 rusted or patched; now and then damp on its frame by the water)
+    if (nw && R3) { let vx = 0, vz = 0; for (let ddx = -3; ddx <= 3; ddx++) for (let ddz = -3; ddz <= 3; ddz++) if ((ddx || ddz) && water(K(tx + ddx, tz + ddz))) { const d2 = ddx * ddx + ddz * ddz; vx += ddx / d2; vz += ddz / d2; }   // (the way to the water, from all of it near: so a whole walkway turns its bars one way, not tile by tile)
+      const ax = Math.abs(vx) >= Math.abs(vz), sx = ax ? Math.sign(vx) || 1 : 0, sz = ax ? 0 : Math.sign(vz) || 1, bk = K(tx - sx, tz - sz), wet1 = water(K(tx + sx, tz + sz)), inner = !wet1 && !(cellAt.has(bk) && (dry(bk) || deck.has(bk)) && nearW(tx - sx, tz - sz, 3)) && !!w.band.get(bk);
+      p = { cell: wet1 ? (inner ? 11 : 9) : (inner ? 10 : 8), tf: TF[to(sx, sz, false)], run: true }; }   // (ROUND 3: one run of grating; the strips on its long edges only)
+    else if (nw) p = { cell: r < 1 / 30 ? 9 : r < 2 / 30 ? 13 : nw[2] === 1 && hsh(tx, tz, 46) < 0.3 ? 15 : 8, tf: TF[to(nw[0], nw[1], false)] };   // (ROUND 2, the owner: "The grating needs almost uniformity": one kind, the same size, aligned, the bars the same way along each walkway (across it), no mirror; about 1 in 15 rusted or patched; now and then damp on its frame by the water)
     else { const wl = DIRS.find(([dx, dy]) => !cellAt.has(K(tx + dx, tz + dy)) && w.band.get(K(tx + dx, tz + dy)));
-      if (wl && hsh(tx, tz, 39) < 0.4) p = { cell: hsh(tx, tz, 40) < 0.5 ? 6 : 7, tf: TF[to(wl[0], wl[1], mir)] };   // (damp at the wall's foot)
-      else p = { cell: wpick([[0, 2], [1, 2], [2, 1.6], [3, 0.7], [4, 0.6], [5, 0.6]], r), tf: TF[Math.floor(hsh(tx, tz, 41) * 8) % 8] }; }
-    p.tone = 0.78 + 0.3 * vnoise(tx / 5, tz / 5, 43) + 0.1 * hsh(tx, tz, 44); p.warm = (vnoise(tx / 7, tz / 7, 45) - 0.5) * 0.12; picks.set(k, p); return p; };
+      if (wl && hsh(tx, tz, 39) < (R3 ? 0.15 : 0.4)) p = { cell: hsh(tx, tz, 40) < 0.5 ? 6 : 7, tf: TF[to(wl[0], wl[1], mir)] };   // (damp at the wall's foot)
+      else p = { cell: wpick(R3 ? [[0, 2], [1, 2], [2, 1.5]] : [[0, 2], [1, 2], [2, 1.6], [3, 0.7], [4, 0.6], [5, 0.6]], r), tf: TF[Math.floor(hsh(tx, tz, 41) * 8) % 8] }; }
+    p.tone = R3 ? (p.run ? 1 : 0.95 + 0.08 * vnoise(tx / 6, tz / 6, 43) + 0.02 * hsh(tx, tz, 44)) : 0.78 + 0.3 * vnoise(tx / 5, tz / 5, 43) + 0.1 * hsh(tx, tz, 44); p.warm = R3 ? (p.run ? 0 : (vnoise(tx / 7, tz / 7, 45) - 0.5) * 0.04) : (vnoise(tx / 7, tz / 7, 45) - 0.5) * 0.12; picks.set(k, p); return p; };
   // ── the rooms' own records, dressed ──
   const swap = new Map(), vc = m => { if (m.vertexColors) return m; let c = swap.get(m); if (!c) { c = m.clone(); c.vertexColors = true; swap.set(m, c); } return c; };
   const mine = o => { for (let q = o.parent; q; q = q.parent) if (q.userData.swAdded) return true; return false; };
@@ -422,11 +435,11 @@ function sewerDressVariety(w, lab) {
     n3.getNormalMatrix(o.matrixWorld);
     for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); if (nor) nv.fromBufferAttribute(nor, i).applyMatrix3(n3).normalize(); else nv.set(0, 1, 0); const c = light(v.x, v.y, v.z, nv.x, nv.y, nv.z);
       a[i * 3] = c[0] * (old ? old.getX(i) : 1); a[i * 3 + 1] = c[1] * (old ? old.getY(i) : 1); a[i * 3 + 2] = c[2] * (old ? old.getZ(i) : 1); }
-    if (ms.some(m => m === M.riser)) { const gs = geo.groups.length && Array.isArray(o.material) ? geo.groups.filter(g => o.material[g.materialIndex] === M.riser) : [{ start: 0, count: pos.count }]; for (const g of gs) for (let i = g.start; i < g.start + g.count; i++) for (let c = 0; c < 3; c++) a[i * 3 + c] *= RISER_K; }   // (ROUND 2: a ledge's side: lighter, as the walls' faces read, not the shade's flat dark)
+    if (ms.some(m => m === M.riser)) { const gs = geo.groups.length && Array.isArray(o.material) ? geo.groups.filter(g => o.material[g.materialIndex] === M.riser) : [{ start: 0, count: pos.count }]; for (const g of gs) for (let q = g.start; q + 2 < g.start + g.count; q += 3) { const ys = [pos.getY(q), pos.getY(q + 1), pos.getY(q + 2)], low = Math.max(...ys) - Math.min(...ys) < 0.35, k = R3 && low ? 0.85 : RISER_K; for (let i = q; i < q + 3; i++) for (let c = 0; c < 3; c++) a[i * 3 + c] *= k; } }   // (ROUND 3: a low step between two floors stays quiet, not a light seam across the walkway)   // (ROUND 2: a ledge's side: lighter, as the walls' faces read, not the shade's flat dark)
     geo.setAttribute('color', new T.Float32BufferAttribute(a, 3)); o.geometry = geo; o.material = Array.isArray(o.material) ? o.material.map(m => m && !m.isMeshBasicMaterial ? vc(m) : m) : vc(o.material); baked++; };
   for (const rec of recs) w.rooms[rec.id].g.traverse(bake); for (const G of Gs) G.g.traverse(bake); stubEdges.traverse(bake);
   // ROUND 2: the stubs' own (the dressed rooms', groups 2 and 3): the light baked as for the rest, and the wall's tone, a block each
-  const blockTone = (x, z) => 0.84 + 0.24 * vnoise(x / 4, z / 4, 48) + 0.08 * hsh(Math.round(x * 2), Math.round(z * 2), 49);
+  const blockTone = (x, z) => R3 ? 0.94 + 0.1 * vnoise(x / 4, z / 4, 48) + 0.03 * hsh(Math.round(x * 2), Math.round(z * 2), 49) : 0.84 + 0.24 * vnoise(x / 4, z / 4, 48) + 0.08 * hsh(Math.round(x * 2), Math.round(z * 2), 49);
   if (w.stubs && w.stubs.geometry.attributes.color) { const geo = w.stubs.geometry, col = geo.attributes.color, pos = geo.attributes.position, nor = geo.attributes.normal;
     for (const gc of geo.groups) { if (gc.materialIndex < 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const cx = (pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3, cz = (pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3, nx = nor ? nor.getX(q) : 0, nz = nor ? nor.getZ(q) : 0, k = blockTone(Math.round(cx - nx * 0.3), Math.round(cz - nz * 0.3));
       for (let i = q; i < q + 3; i++) { const c = light(pos.getX(i), pos.getY(i), pos.getZ(i), nor ? nor.getX(i) : 0, nor ? nor.getY(i) : 1, nor ? nor.getZ(i) : 0); col.setXYZ(i, c[0] * k, c[1] * k, c[2] * k); } } } col.needsUpdate = true; }
@@ -437,7 +450,7 @@ function sewerDressVariety(w, lab) {
     col.needsUpdate = true; }
   for (const G of Gs) { const o = G.mesh; if (!o || !o.geometry.attributes.color) continue; const geo = o.geometry, col = geo.attributes.color, pos = geo.attributes.position, g0 = geo.groups.find(g => g.materialIndex === 0); if (!g0) continue;
     for (const gc of geo.groups) { if (gc.materialIndex !== 1 && gc.materialIndex !== 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const k = blockTone(Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3)); for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); } }   // (ROUND 2: the caps, a tile each)
-    for (let q = g0.start; q + 5 < g0.start + g0.count; q += 6) { let cx = 0, cz = 0; for (let i = 0; i < 6; i++) { cx += pos.getX(q + i); cz += pos.getZ(q + i); } cx /= 6; cz /= 6; const k = 0.84 + 0.24 * vnoise(cx / 4, cz / 4, 48) + 0.08 * hsh(Math.round(cx * 2), Math.round(cz * 2), 49);
+    for (let q = g0.start; q + 5 < g0.start + g0.count; q += 6) { let cx = 0, cz = 0; for (let i = 0; i < 6; i++) { cx += pos.getX(q + i); cz += pos.getZ(q + i); } cx /= 6; cz /= 6; const k = blockTone(cx, cz);
       for (let i = q; i < q + 6; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); }
     col.needsUpdate = true; }
   window.__swVariety = { clutter: cl, standing: standing.length, deep: deepN, edges: edgeN };

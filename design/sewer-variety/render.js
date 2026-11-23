@@ -1,5 +1,5 @@
 // THE SEWER LOOK, VARIETY: the pictures (design/sewer-variety/variety.js; Proposed, drafts for the owner, nothing in the game).
-//   [SD=1] node design/sewer-variety/render.js <out dir> <variation: 0 today's (as merged), 1 grating, 2 grating + clutter> [spots, comma separated]
+//   [SD=1] node design/sewer-variety/render.js <out dir> <variation: 0 today's (as merged), 1 grating, 2 grating + clutter, 3 round 3: smooth grating, cleaner> [spots, comma separated]
 // The game's own page in headless Chromium (software WebGL), ?dev&engine=3d&sewerdungeon, the player put at each spot and the game's own frame drawn; dist/view3d.js is made in memory from
 // its sources (tools/view3d.js) and served with variety.js put inside it after the merged sewerdress.js, which it takes the place of (nothing on disk is changed). Prints each picture's
 // draws and triangles, and the posts', tanks' and clutter's guard (does anything standing hide a body on a tile one can stand on, in any of the four quarter turns: tests/view3d.js's check).
