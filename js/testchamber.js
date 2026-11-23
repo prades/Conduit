@@ -136,9 +136,11 @@ function testChamberSquadSet(list) {
 
 // THE ENEMIES of the chamber alive now
 function testChamberEnemies() { return typeof actors === "undefined" ? [] : actors.filter(a => a && a.testChamberFoe && !a.dead); }
-// the classes a species has, of the game's six (js/species.js; a worker where it has a scout: js/clone.js getClassDef)
-function testChamberClasses(species) { const def = typeof SPECIES !== "undefined" ? SPECIES[species] : null; return def ? TEST_CHAMBER.classes.filter(c => (def[c] && def[c].width) || (c === "worker" && def.scout && def.scout.width)) : []; }
-function testChamberSpecies() { return typeof SPECIES === "undefined" ? [] : Object.keys(SPECIES).filter(k => testChamberClasses(k).length > 0); }
+// the classes a species has of its own, of the game's six (js/species.js: a roly-poly has no nymph, worker or boss; the facility's spawner makes only a class the species has, _fsPickClass)
+function testChamberClasses(species) { const def = typeof SPECIES !== "undefined" ? SPECIES[species] : null; return def ? TEST_CHAMBER.classes.filter(c => def[c] && def[c].width) : []; }
+// the species the chamber makes: every one the game has with a class that is not only its boss (the diving beetle larva is a boss and nothing else: its fight is its encounter's, js/bosses.js,
+// and a plain copy of its body would not be that fight)
+function testChamberSpecies() { return typeof SPECIES === "undefined" ? [] : Object.keys(SPECIES).filter(k => testChamberClasses(k).some(c => c !== "boss")); }
 // free tiles of the room, nearest the enemies' spot first: on its floor, with nobody on them or beside them
 function _tcSpots(F, n) {
     const at = testChamberTile(F, TEST_CHAMBER.foes), out = []; if (!at || typeof _fp === "undefined" || !_fp.cellsP) return out;
@@ -152,7 +154,7 @@ function _tcSpots(F, n) {
 // facilitySpawnCreature), of the chamber: it wanders in it, calm until provoked, and never leaves. At most TEST_CHAMBER.most at a press and TEST_CHAMBER.cap alive. The creatures made.
 function testChamberEnemy(spec) {
     const F = _tcF(), out = []; if (!testChamberOn() || !F || !spec || typeof facilitySpawnCreature !== "function") return out;
-    const species = spec.species, cls = spec.cls; if (testChamberClasses(species).indexOf(cls) < 0) return out;
+    const species = spec.species, cls = spec.cls; if (testChamberSpecies().indexOf(species) < 0 || testChamberClasses(species).indexOf(cls) < 0) return out;
     const lv = _tcLevel(spec.level, testChamberEnemyLevel()), el = _tcElementOk(spec.element) ? spec.element : null;
     const want = Math.max(0, Math.min(TEST_CHAMBER.most, Math.round(Number(spec.n)) || 1, TEST_CHAMBER.cap - testChamberEnemies().length));
     for (const at of _tcSpots(F, want)) {
@@ -216,7 +218,7 @@ function _tcHtml() {
         '<div class="tc-row"><button class="go" data-act="squad">MAKE THIS SQUAD</button><span class="tc-say" data-say="squad"></span></div>' +
         "<h3>YOUR CLASS</h3>" + '<div class="tc-row" data-classes>' + (typeof CLASSES !== "undefined" ? Object.keys(CLASSES).map(k => '<button data-class="' + k + '">' + (typeof className === "function" ? className(k) : k) + "</button>").join("") : "") + "</div>" +
         "<p>Its own gear is still fetched where the game hands it out (the Gunslinger's gun at the Armory's locker, a serum at the hood): up the chamber's stairs.</p>" +
-        "<h3>ENEMIES</h3><p>They come in at the far end, calm until you choose one. Only ants have a 3D body yet: another species is drawn flat over the picture.</p>" +
+        "<h3>ENEMIES</h3><p>They come in at the far end, calm until you choose one. Only ants have a 3D body yet: another species is drawn flat over the picture. BOSS is a species' plain boss class, not a boss fight (THE ANT QUEEN, the larva): those are their own encounters.</p>" +
         '<div class="tc-row" data-enemy><select data-k="species">' + sp.map(k => _tcOpt(k, k, E.species === k)).join("") + '</select><select data-k="cls"></select>' +
         '<select data-k="element">' + _tcOpt("", "NO ELEMENT", !E.element) + _tcElements().map(e => _tcOpt(e.id, e.label || e.id, E.element === e.id)).join("") + "</select>" +
         '<span class="tc-l">LV</span><button data-step="-1">−</button><input type="number" data-k="level" min="1" max="' + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100) + '" value="' + elv + '"><button data-step="1">+</button>' +
