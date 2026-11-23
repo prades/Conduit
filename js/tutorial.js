@@ -20,8 +20,10 @@ const TUT = {
     followerLevel: 7, enemyLevel: 6,   // one level under the evolution level (EVOLVE_LEVEL, js/evolution.js), the enemies one under that: 8 since energy cards (build 2026-11-09s; docs/ENERGY-CARDS.md), when these were 9 and 8 under level 10
     countdown: 1200,                 // frames between the objective coming up and the first wave (20 s)
     waves: [                          // the assault: each wave is a list of [class, spawn x, spawn y] (tiles; the east end of the hallway, in rows with no floodlight in the way: the lab's ring comes round to the Crystal)
-        { at: 0, who: [["scout", 44, 23], ["scout", 45, 24], ["scout", 46, 23], ["scout", 46, 24]] },
-        { at: 1500, who: [["striker", 45, 23], ["striker", 46, 24], ["striker", 44, 24]] },
+        // THE WEAKEST FIRST (the owner, 2026-11-23: "the enemies at the very beginning are very weak, maybe the worker class or anything weaker than that"; asked what the assault should be, of
+        // three offered: "Nymphs, then workers": "4 nymphs, then 3 workers: the two weakest kinds of ant. Same counts and levels as now"). It was four scouts, then three strikers.
+        { at: 0, who: [["nymph", 44, 23], ["nymph", 45, 24], ["nymph", 46, 23], ["nymph", 46, 24]] },
+        { at: 1500, who: [["worker", 45, 23], ["worker", 46, 24], ["worker", 44, 24]] },
     ],
     mercy: 0.15,                     // below this share of its health the Crystal is saved (the enemies are called off and it is mended to `mend`)
     mend: 0.6,
@@ -77,6 +79,8 @@ const TUT_CLASS_STAGES = {
             hint: () => "ITS POOL HEALS ALLIES IN IT. THE HOOD MAKES ONE A MINUTE, OR CRAFTS ONE FOR DNA.", done: () => tutCount("serum") >= 1 } ],
 };
 function tutClassStage() { return typeof playerClassKey !== "undefined" && playerClassKey ? TUT_CLASS_STAGES[playerClassKey] || null : null; }
+// has a class's stage been finished: the one you are, or one put away when you changed class? (js/population.js spawnProgress: the arena's tanks come then; never taken back)
+function tutClassStageDone() { return Object.keys(TUT_CLASS_STAGES).some(c => { const p = tutClassProgress(c); return !!p && p[0] >= p[1]; }); }
 // the class's code says what the player did (counted only once the tutorial is over and a class is chosen)
 function tutTally(key, n) { const S = _fp && _fp.tut && _fp.tut.script; if (!S || S.step < TUT_STEPS.length || typeof playerClassKey === "undefined" || !playerClassKey) return; S.tally = S.tally || {}; S.tally[key] = (S.tally[key] || 0) + (n || 1); }
 function tutCount(key) { const S = _fp && _fp.tut && _fp.tut.script; return S && S.tally ? S.tally[key] || 0 : 0; }
@@ -186,7 +190,7 @@ function facilityDirectorTick() {
         if (!S.assault) tutAssaultStart();
         const A = S.assault;
         if (!A.over) {
-            if (frame >= A.t0 + (TUT.waves[A.wave] ? TUT.waves[A.wave].at : 0) && A.wave < TUT.waves.length && A.spawned === tutSpawnedBefore(A)) { tutSpawnWave(A.wave); A.wave++; _tutSay("wave" + A.wave, A.wave === 1 ? "⚠ THEY ARE COMING DOWN THE HALLWAY" : "⚠ A SECOND WAVE: STRIKERS", "#ff6a4a"); }
+            if (frame >= A.t0 + (TUT.waves[A.wave] ? TUT.waves[A.wave].at : 0) && A.wave < TUT.waves.length && A.spawned === tutSpawnedBefore(A)) { tutSpawnWave(A.wave); A.wave++; _tutSay("wave" + A.wave, A.wave === 1 ? "⚠ THEY ARE COMING DOWN THE HALLWAY" : "⚠ A SECOND WAVE: " + String(TUT.waves[A.wave - 1].who[0][0]).toUpperCase() + "S", "#ff6a4a"); }
             const alive = tutEnemies().length;
             if (A.wave > 0 || alive) { alertActive = true; alertTimer = ALERT_DURATION; }
             const lastAt = A.t0 + TUT.waves[TUT.waves.length - 1].at;

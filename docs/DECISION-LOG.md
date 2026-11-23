@@ -25,6 +25,28 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Not answered (not built):** whether the other species' draft bodies read well and which to build first (the beetle, scorpion, spider, mantis and moth stay 2D, their clones too); the roly-poly's look in 3D (its approved look B has painted hazard stripes; the draft's checks are not approved): it stays 2D. THE ANT QUEEN stays 2D, a later step.
 - **Docs/code:** `VIEW-3D.md` §3 stage 4, §4.4, §6, §7; `CHANGELOG.md` 2026-11-23; `design/style-evolution/round2/chamber.js` (`ANT_CLONE`, `antCloneTint`), `view3d/gameview.js` (`ant()`), `tests/view3d.js`.
 
+## DECISION: The 3D view with card battles is the game
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ct`
+- **Status:** implemented; verified by `tests/engineplan.js` (the rule's table; the players' game and the old one each in a real browser) and the full run. **Not playtested; not seen on an iPad; frame rate there not measured.**
+- **Context:** both sat behind switches (`?engine=3d` since 2026-11-16; `?cards` with it since 2026-11-17) "while it grows, the 2D game what players get until the owner says otherwise".
+- **Decision (the owner's words):** "I'd like to make the cards and the 3D the actual game now."
+- **The rule** (the agent's reading, one place: `js/config.js` `enginePlan`): the plain address over the web (https) is the 3D view with card battles; `?engine=2d` is the game as it was; what is spelled out means what it meant; the website's background (`?attract`) and anything off the web (the tests, a file on disk) with no word in the address stay 2D, and `?engine=3d&battles=cards` is the players' game there.
+- **Kept:** the 2D game, whole. It is still what a room the view has not built is drawn as (19 of 38 at this build: the Armory, the Ant Nest, the electrical domain, the subway), what a device with no WebGL gets, and what `?engine=2d` gives.
+- **Alternatives not taken:** 3D everywhere whatever the address (every test of the 2D game, 49 real-browser suites and the node ones, would have to opt out, and each would draw 3D frames with no graphics card); holding back until every room is built (the owner said now).
+- **Open:** `OPEN-QUESTIONS.md` (2026-11-23): the rooms not built, the iPad's frame rate, the website's background, teaching a battle in the tutorial.
+- **Docs/code:** `VIEW-3D.md` §2, §3.7; `CARD-BATTLES.md` §2.71; `AGENTS.md`; `js/config.js`, `js/cardbattle.js`, `js/view3d.js`; `tests/engineplan.js`.
+
+## DECISION: The enemies come weak first: the arena by your progress, the assault nymphs then workers, the Sewers the strong place
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17ct`
+- **Status:** implemented; verified by `tests/population.js` and `tests/facilityplay.js`. Not playtested.
+- **Context:** the arena, the first place with enemies, made scouts, workers, strikers and tanks from the first minute; the tutorial's assault was four scouts, then three strikers; the Sewers' brood was workers and scouts only, so weaker than the arena.
+- **Decision (the owner's words):** "We need to make it to where the enemies at the very beginning are very weak, maybe the worker class or anything weaker than that, and then we scale up to the strikers and tanks and the sewers." Asked three things, each of options offered: what makes the arena step up, **"Your progress"** ("Workers only at the start. Scouts join when you win the Crystal's defence, strikers when your first follower evolves (the tutorial's end), tanks when your class's first stage is done"); the assault, **"Nymphs, then workers"** ("4 nymphs, then 3 workers ... Same counts and levels as now"); the Sewers, **"Yes, add strikers and tanks"**.
+- **Not chosen:** the place only (the arena workers and scouts for good); the squad's level; the assault as workers then scouts, or left; the Sewers left until the new dungeon's creatures are designed.
+- **The agent's, provisional:** the record that stands for each milestone (`spawnProgress`: the assault's step passed; the tutorial over; any class's stage finished, never taken back); each kind at its weight in the full mix; the Sewers' mix (the arena's full one). **No number is new; no level was changed.**
+- **Docs/code:** `FACILITY.md` ("Creatures"), `TUTORIAL.md`, `SEWER-QUEST.md`; `js/population.js` (`SPAWN_TABLES`, `SPAWN_WHEN`, `spawnProgress`), `js/tutorial.js` (`TUT.waves`, `tutClassStageDone`); `bible.html`.
+
 ## DECISION: The sewers' look in 3D is the painting's, "1 FAITHFUL", on today's Sewers and on the sewer dungeon's rooms
 
 - **Date:** 2026-11-22 · **Branch/build:** `claude/sewer-look` (main `fb4a97bc`, build `2026-11-17cc`, merged in); no build yet
