@@ -22,7 +22,8 @@ function enginePlan(protocol, search) {
     const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
     const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);
     const view3d = eng === "3d" || plain;
-    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain };
+    const cam = view3d && /[?&]cam=low(?:&|$)/.test(s) ? "low" : null;
+    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain, cam };
 }
 const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
 const VIEW3D_ON = ENGINE_PLAN.view3d;
@@ -60452,7 +60453,7 @@ function drawPerfReadout() {
 }
 ;
 /* js/view3d.js */
-const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0 };
+const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0, cam: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN && ENGINE_PLAN.cam === "low" && VIEW3D_ON === true ? "low" : null };
 const VIEW3D_FILES = ["vendor/three.min.js", "dist/view3d.js"];
 function _view3dLoad(src) {
     return new Promise((ok, no) => { const s = document.createElement("script"); s.src = src; s.onload = () => ok(); s.onerror = () => no(new Error("did not load: " + src)); document.head.appendChild(s); });

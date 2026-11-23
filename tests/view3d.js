@@ -866,6 +866,52 @@ if (SEEN !== null) check('your ant clone from the Clone Bay is in the battle as 
     ok(SEEN.mantis.fighters.indexOf('clone mantis:2d') >= 0, 'the mantis clone is not drawn in 2D: ' + SEEN.mantis.fighters.join(', '));
 });
 
+group('THE LOW CAMERA, behind its switch ?cam=low (the owner, 2026-11-23: "B", the low follow camera and the rolling-world curve; view3d/lowcam.js, docs/VIEW-3D.md §8)');
+// (its pictures and costs: node design/cozy-camera/built.js. Without the switch every check above is the game's own camera, unchanged)
+const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D.view, L = function () { return V.lowInfo(); }; window.requestAnimationFrame = function () { return 0; }; out.cam = VIEW3D.cam;
+  put(13, 19); V.show(true); step(3); var i0 = L(); out.persp = !!V.camera.isPerspectiveCamera; out.fov0 = i0.fov; out.knobs = i0.knobs; out.missed = i0.missed;
+  // THE CAMERA FOLLOWS THE PLAYER: settled, its aim is ahead of them by LOWCAM.ahead along its level forward and LOWCAM.lift over their floor; moved 3 tiles, a frame later the aim is part of the way, a second later there
+  var aimErr = function (i) { return Math.hypot(i.aim[0] - (player.visualX + i.fwd[0] * i.knobs.ahead), i.aim[2] - (player.visualY + i.fwd[1] * i.knobs.ahead)); };
+  out.settled = +aimErr(i0).toFixed(4); out.aimY = +(i0.aim[1] - _fpCam / 73.48469228349533).toFixed(4);
+  put(16, 19); render(); var i1 = L(); out.partway = +aimErr(i1).toFixed(3); step(60); var i2 = L(); out.after = +aimErr(i2).toFixed(4); out.camBehind = +(Math.hypot(i2.pos[0] - i2.aim[0], i2.pos[1] - i2.aim[1], i2.pos[2] - i2.aim[2])).toFixed(3);
+  out.pitch = +(Math.asin((i2.pos[1] - i2.aim[1]) / out.camBehind) * 180 / Math.PI).toFixed(3);
+  // QUARTER TURNS: the camera's level forward turns a quarter a turn, as the game's camera does; ZOOM: its distance divided by the zoom
+  out.turns = [0, 1, 2, 3].map(function (t) { VIEW3D.turn = t; V.show(true); step(40); var i = L(), a = Math.PI / 4 - t * Math.PI / 2; return [VIEW_TURN, +Math.hypot(i.fwd[0] + Math.cos(a), i.fwd[1] + Math.sin(a)).toFixed(4), +aimErr(i).toFixed(4)]; });
+  VIEW3D.turn = 0; VIEW3D.zoom = 1.8; V.show(true); step(30); out.zoomD = +L().focusD.toFixed(4); VIEW3D.zoom = 1; V.show(true); step(30); out.zoom1 = +L().focusD.toFixed(4);
+  // THE CARD BATTLE'S CAMERA, today's (OPEN-QUESTIONS.md: its angle is not decided): in a battle the camera eases to it (the curve gone, a long lens looking as the battle's camera looks), and back after
+  put(13, 19); step(3); var foe = function (cls, x, y) { var e = spawnCreature({ species: 'ant', className: cls }), q = _fpNearestCellOpen(x, y); e.x = q[0]; e.y = q[1]; e.provoked = false; e.state = 'wander'; e.moveSpeed = e.baseMoveSpeed = 0; return e; };
+  var foes = [foe('scout', 16, 19.2), foe('striker', 16.4, 20.4)]; out.chose = cardBattleChoose(foes[0]); V.dry(true); for (var j = 0; j < 150; j++) render(); V.dry(false); render();
+  var B = cardBattleCam(), ib = L(); out.inBattle = { phase: cardBattlePhase(), bk: B ? +B.k.toFixed(3) : null, k: ib.k, fov: +ib.fov.toFixed(3) };
+  var dv = new THREE.Vector3(); V.camera.getWorldDirection(dv); out.inBattle.pitch = +(Math.asin(-dv.y) - B.pitch).toFixed(4);
+  // today's battle camera at its full ease, as an orthographic camera: the same points of the floor land on the same pixels
+  var oc = new THREE.OrthographicCamera(), H = canvas.height, W = canvas.width, U = 60 * Math.SQRT2, kz = VIEW3D.zoom * B.zoom; oc.left = -W / 2 / U / kz; oc.right = W / 2 / U / kz; oc.top = H / 2 / U / kz; oc.bottom = -H / 2 / U / kz; oc.near = 1; oc.far = 1e5;
+  var fwd = new THREE.Vector3(); V.camera.getWorldDirection(fwd); var tgt = V.camera.userData.focus.clone(); oc.position.copy(tgt).addScaledVector(fwd, -60); oc.lookAt(tgt); oc.updateProjectionMatrix(); oc.updateMatrixWorld();
+  var bw = 0; [[13, 19], [16, 19], [14, 22], [11, 17]].forEach(function (c) { var h = facilityLiftPx(c[0], c[1]), a = V.screenNow(c[0], c[1], h), v = new THREE.Vector3(c[0], h / 73.48469228349533, c[1]).project(oc); bw = Math.max(bw, Math.abs(a[0] - (v.x + 1) / 2 * W), Math.abs(a[1] - (1 - v.y) / 2 * H)); }); out.inBattle.orthoPx = +bw.toFixed(2);
+  cardBattleEnd(); foes.forEach(function (a) { a.dead = true; a.deathProcessed = true; }); actors = actors.filter(function (a) { return !a.dead; }); V.dry(true); for (var j = 0; j < 150; j++) render(); V.dry(false); render();
+  var ia = L(); out.afterBattle = { cam: cardBattleCam(), k: ia.k, fov: ia.fov, aim: +aimErr(ia).toFixed(4) };
+  put(13, 19); step(3); var d = ctx.getImageData(40, 300, 1, 1).data; out.clear = d[3]; out.showing = VIEW3D.showing;
+  out.errsLow = (window.__errs || []).slice(0, 4);`));
+if (LOWP !== null) {
+    check('the switch: ?cam=low with the view is the low camera, a perspective one at the drafts\' knobs (provisional: OPEN-QUESTIONS.md), every shader of the view bent; made with no error', () => {
+        ok(!LOWP.none, 'the page left no result'); ok(!LOWP.threw, LOWP.threw); same(LOWP.errs.join(' | '), '', 'errors'); same(LOWP.state, 'ready', 'the view (' + LOWP.error + ')'); same(LOWP.cam, 'low', 'VIEW3D.cam');
+        same(LOWP.persp, true, 'a perspective camera'); same(LOWP.fov0, 40, 'its view'); same(JSON.stringify([LOWP.knobs.fov, LOWP.knobs.pitch, LOWP.knobs.dist, LOWP.knobs.ahead, LOWP.knobs.follow, LOWP.knobs.k]), JSON.stringify([40, 30, 9.5, 2.2, 6, 0.013]), 'the knobs');
+        same(LOWP.missed, 0, 'shaders the bend could not reach'); same(LOWP.showing, true, 'showing'); same(LOWP.clear, 0, 'the game\'s canvas where the world is');
+    });
+    check('THE CAMERA FOLLOWS THE PLAYER: its aim LOWCAM.ahead ahead of them and LOWCAM.lift over their floor; moved, part of the way a frame later and there a second later; 9.5 tiles back, 30 degrees down', () => {
+        ok(LOWP.settled < 1e-3, 'settled, off by ' + LOWP.settled); ok(Math.abs(LOWP.aimY - 0.55) < 1e-3, 'its height ' + LOWP.aimY); ok(LOWP.partway > 0.05 && LOWP.partway < 2.9, 'a frame after a 3 tile move, off by ' + LOWP.partway);
+        ok(LOWP.after < 0.01, 'a second later, off by ' + LOWP.after); ok(Math.abs(LOWP.camBehind - 9.5) < 1e-3, 'its distance ' + LOWP.camBehind); ok(Math.abs(LOWP.pitch - 30) < 0.01, 'its pitch ' + LOWP.pitch);
+    });
+    check('QUARTER TURNS: in each of the four the camera looks along the turned forward, still on the player; ZOOM divides its distance', () => {
+        same(JSON.stringify(LOWP.turns.map(t => t[0])), '[0,1,2,3]', 'the turns'); ok(LOWP.turns.every(t => t[1] < 1e-3 && t[2] < 1e-3), 'off: ' + JSON.stringify(LOWP.turns));
+        ok(Math.abs(LOWP.zoomD - 9.5 / 1.8) < 1e-3 && Math.abs(LOWP.zoom1 - 9.5) < 1e-3, 'the distance zoomed ' + LOWP.zoomD + ', back ' + LOWP.zoom1);
+    });
+    check('A CARD BATTLE: the camera eases to today\'s battle camera (the curve gone; the floor where today\'s orthographic battle camera has it, within a pixel), and back to the follow camera after', () => {
+        same(LOWP.chose, true, 'the battle'); same(LOWP.inBattle.phase, 'on', 'its phase'); same(LOWP.inBattle.bk, 1, 'eased in'); same(LOWP.inBattle.k, 0, 'the curve'); ok(LOWP.inBattle.fov < 0.1, 'its view ' + LOWP.inBattle.fov);
+        ok(Math.abs(LOWP.inBattle.pitch) < 1e-3, 'its pitch, off the battle\'s by ' + LOWP.inBattle.pitch); ok(LOWP.inBattle.orthoPx < 1, 'off today\'s battle picture by ' + LOWP.inBattle.orthoPx + ' px');
+        same(LOWP.afterBattle.cam, null, 'the battle\'s camera after'); same(LOWP.afterBattle.k, 0.013, 'the curve back'); same(LOWP.afterBattle.fov, 40, 'the view back'); ok(LOWP.afterBattle.aim < 0.01, 'back on the player: ' + LOWP.afterBattle.aim);
+    });
+}
+
 group('A FAILURE never stops the game');
 const BAD = realPage('dev&engine=3d', RUN(SETUP + `put(13, 19); step(3); out.showing = VIEW3D.showing; out.feet = view3dFeet(); var d = ctx.getImageData(40, 300, 1, 1).data; out.px = d[3];`), `VIEW3D_FILES[1] = 'dist/no-such-view.js';`);
 if (BAD !== null) check('its script missing: the game starts and runs in 2D, and VIEW3D.error says why', () => {

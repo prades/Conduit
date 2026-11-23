@@ -130,14 +130,14 @@ function view3dCore(opts) {
   // (not in linear light, turned at the end): eight bits of linear light are too few in the dark, and an iPad showed the glow round the Crystal as a ring of dots ──
   const target = () => { const r = new T.WebGLRenderTarget(4, 4, { minFilter: T.NearestFilter, magFilter: T.NearestFilter }); if (depthOK) { r.depthTexture = new T.DepthTexture(4, 4); r.depthTexture.type = T.UnsignedIntType; } return r; };
   const rtMain = target(), rtId = target(); rtMain.texture.minFilter = rtMain.texture.magFilter = T.LinearFilter; rtMain.texture.encoding = T.sRGBEncoding;
-  const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: opts.dK || 0.02 }, useDepth: { value: depthOK ? 1 : 0 }, isOrtho: { value: 0 }, tFx: { value: null }, useFx: { value: 0 }, floorId: { value: new T.Vector3() } },
+  const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: opts.dK || 0.02 }, useDepth: { value: depthOK ? 1 : 0 }, isOrtho: { value: 0 }, tFx: { value: null }, useFx: { value: 0 }, floorId: { value: new T.Vector3() }, dOff: { value: 0 } },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: `uniform sampler2D tMain, tId, tDepth, tFx; uniform vec2 res; uniform vec3 ink, floorId; uniform float thick, near, far, dK, useDepth, isOrtho, useFx; varying vec2 vUv;
+    fragmentShader: `uniform sampler2D tMain, tId, tDepth, tFx; uniform vec2 res; uniform vec3 ink, floorId; uniform float thick, near, far, dK, useDepth, isOrtho, useFx, dOff; varying vec2 vUv;
     float lin(vec2 uv) { float z = texture2D(tDepth, uv).x; return isOrtho > 0.5 ? near + z * (far - near) : (2.0 * near * far) / (far + near - (z * 2.0 - 1.0) * (far - near)); }
     void main() { vec2 e = thick / res, uA = vUv + e, uB = vUv - e, uC = vUv + e * vec2(1.0, -1.0), uD = vUv - e * vec2(1.0, -1.0); vec3 c = texture2D(tMain, vUv).rgb;
       if (useFx > 0.5) { vec4 f = texture2D(tFx, vUv); float on = 1.0 - step(0.02, length(texture2D(tId, vUv).rgb - floorId)); c = mix(c, f.rgb, f.a * on); }
       float k = step(0.004, length(texture2D(tId, uA).rgb - texture2D(tId, uB).rgb) + length(texture2D(tId, uC).rgb - texture2D(tId, uD).rgb));
-      if (useDepth > 0.5) { float dA = lin(uA), dB = lin(uB), dC = lin(uC), dD = lin(uD); k = max(k, smoothstep(dK, dK * 2.2, (abs(dA - dB) + abs(dC - dD)) / min(min(dA, dB), min(dC, dD)))); }
+      if (useDepth > 0.5) { float dA = lin(uA) - dOff, dB = lin(uB) - dOff, dC = lin(uC) - dOff, dD = lin(uD) - dOff; k = max(k, smoothstep(dK, dK * 2.2, (abs(dA - dB) + abs(dC - dD)) / min(min(dA, dB), min(dC, dD)))); }
       gl_FragColor = vec4(mix(c, ink, k), 1.0); }` });
   const quadScene = new T.Scene(), quadCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), quad = new T.Mesh(new T.PlaneGeometry(2, 2), comp); quad.frustumCulled = false; quadScene.add(quad);
   let pxW = 4, pxH = 4, cssW = 4, cssH = 4, sized = '';
@@ -159,5 +159,6 @@ function view3dCore(opts) {
     if (over) { cam.layers.set(0); renderer.autoClear = false; renderer.render(over, cam); renderer.autoClear = true; } SEE(cam); }
   const size = () => ({ w: cssW, h: cssH, pxW, pxH });
   return { opts, state, renderer, scene, P, ctx, gl2, depthOK, SEE, mergeStill, tagInk, mergeRigid, Batch, antBody, idCol, newInk: () => ++idCount * 3, countMeshes, buildWorld, openRoom, aimLight, resize, size, draw,
-    built: () => built, solids: () => idCount, key: () => key, resized() { sized = ''; } };
+    built: () => built, solids: () => idCount, key: () => key, resized() { sized = ''; },
+    idMat, inkU: comp.uniforms };   // (THE LOW CAMERA's, view3d/lowcam.js: the ink line's drawing bent too; its edges by depth told the floor is seen at a slant; dOff: depth counted from there, a long lens's)
 }

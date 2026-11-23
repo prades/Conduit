@@ -27,11 +27,14 @@ const GAMEVIEW = (function () {
   const state = { ink: arg('ink', 1) !== 0, shadows: arg('shadows', 1) !== 0, sharp: Math.max(1, Math.min(2, arg('sharp', 1))) };   // (?ink=0 ?shadows=0 ?sharp=1.5, as the test page; the game's own canvas is drawn at one pixel a point)
   const CORE = view3dCore({ canvas, state, map, dK: 0.008 }), { scene, ctx: look, tagInk, mergeRigid, antBody } = CORE;
   const world = CORE.buildWorld(map.lab, { live: true });
+  // THE LOW CAMERA (view3d/lowcam.js; docs/VIEW-3D.md §8; the owner, 2026-11-23: "B"): with its switch (?cam=low), the camera is a perspective one behind and above the player and the ground bends
+  // away; without it, null, and everything here is as it was
+  const LOW = GM.camLow ? view3dLowCam() : null; if (LOW) { CORE.inkU.dK.value = LOWCAM.dK; LOW.wrapMat(CORE.idMat); }
 
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
   const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
-  const cam = new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3(); CORE.SEE(cam);   // (SCR: screenNow's point, kept)
+  const cam = LOW ? new T.PerspectiveCamera(LOWCAM.fov, 1, LOWCAM.near, LOWCAM.far) : new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3(); CORE.SEE(cam);   // (SCR: screenNow's point, kept)
   // TURNED AND ZOOMED (js/view3d.js VIEW3D.turn, VIEW3D.zoom; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"): it swings round
   // the vertical to the quarter turn chosen, a quarter in SWING s (js/config.js turns the game's own drawing over it the same way, and while it swings that drawing waits); its picture is scaled
   // about the screen's middle, as the game's drawing over it is (js/view3d.js view3dWorldBegin). SWIPED (a finger, js/view3d.js VIEW3D.twist): it goes round with the finger, at once,
@@ -47,7 +50,7 @@ const GAMEVIEW = (function () {
   // out; both until it is out of the way or the battle is over. Each material's see-through copy is made once; the sets' tiles' boxes are found once a battle.
   const RC = new T.Raycaster(), seeFrom = new T.Vector3(), faded = new Map(), fadeOf = new Map(), cut = new Map(); let seeAt = -1e9, seeList = null, seeSets = null, seeBoxes = null;
   RC.layers.enableAll();   // (the built world is on layers 1 to 3, its ink and its shadows' copies: view3d/core.js; a line on layer 0 alone passed through all of it)
-  const SEE_UP = [0.15, 0.55, 0.95], SEE_ALPHA = 0.2, seeFeet = new T.Vector3(), seeRay = new T.Ray(), seeM = new T.Matrix4(), ZERO = new T.Matrix4().makeScale(0, 0, 0);
+  const SEE_UP = [0.15, 0.55, 0.95], SEE_ALPHA = 0.2, seeFeet = new T.Vector3(), seeDir = new T.Vector3(), seeRay = new T.Ray(), seeM = new T.Matrix4(), ZERO = new T.Matrix4().makeScale(0, 0, 0);
   function seeable(o) { if (!o.layers.test(cam.layers)) return false; for (let p = o; p && p !== scene; p = p.parent) { if (!p.visible) return false; if (p.userData && (p.userData.body || p.userData.fx3d)) return false; } return true; }   // (fx3d: an attack's effect, view3d/attacks.js)
   function fadedMat(m) { let f = fadeOf.get(m); if (!f) { f = m.clone(); f.onBeforeCompile = m.onBeforeCompile; if (m.customProgramCacheKey) f.customProgramCacheKey = m.customProgramCacheKey; f.transparent = true; f.opacity = SEE_ALPHA * (m.opacity === undefined ? 1 : m.opacity); f.depthWrite = false; fadeOf.set(m, f); } return f; }
   function seeFind() {   // once a battle: what may stand in the way (what the camera draws, but the bodies), and each instanced set's tiles' boxes
@@ -69,7 +72,7 @@ const GAMEVIEW = (function () {
     if (f0 - seeAt < 15) return; seeAt = f0; if (!seeList) seeFind();
     const hit = new Set(), tiles = new Map(); RC.far = BACK + 20;
     for (const a of list) { if (!a || a.dead || !Number.isFinite(a.x)) continue; const y0 = GM.liftPx(a.x, a.y) / UPX; seeFeet.set(a.x, y0 + 0.02, a.y);
-      for (const up of SEE_UP) { seeFrom.set(a.x, y0 + up, a.y); RC.set(seeFrom, DIR); seeRay.set(seeFrom, DIR);
+      for (const up of SEE_UP) { seeFrom.set(a.x, y0 + up, a.y); const sd = LOW ? seeDir.copy(cam.position).sub(seeFrom) : DIR; if (LOW) { RC.far = sd.length(); sd.normalize(); } RC.set(seeFrom, sd); seeRay.set(seeFrom, sd);   // (THE LOW CAMERA has perspective: each line its own way, to the camera)
         for (const h of RC.intersectObjects(seeList, false)) hit.add(h.object);
         for (const B of seeBoxes) if (seeRay.intersectsBox(B.box) && !B.box.containsPoint(seeFeet)) hit.add(B.o);   // (one round the fighter's feet is the room's floor and walls as one: never)
         for (const S of seeSets) for (let i = 0; i < S.boxes.length; i++) if (seeRay.intersectsBox(S.boxes[i]) && !S.boxes[i].containsPoint(seeFrom)) tiles.set(S.o.uuid + ':' + i, { o: S.o, i }); } }
@@ -88,7 +91,15 @@ const GAMEVIEW = (function () {
     const B = GM.battleCam, bk = B ? B.k : 0, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * (bk ? 1 + (B.zoom - 1) * bk : 1);
     const a0 = Math.PI / 4 - yaw, a = !bk ? a0 : B.dir === undefined ? a0 - B.yaw * bk : a0 + bk * (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa); UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);   // (lined up, B.dir: it looks across the line, from the side the battle chose or the nearer one)
     cam.left = -W / 2 / UNIT / kz; cam.right = W / 2 / UNIT / kz; cam.top = H / 2 / UNIT / kz; cam.bottom = -H / 2 / UNIT / kz;
-    at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT); cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
+    at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT);
+    if (LOW) { placeLow(dt, a0, a, k, B, bk, W, H); return; }
+    cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
+  // THE LOW CAMERA's place (view3d/lowcam.js): following the player; in a card battle easing to the battle's own camera, today's (where `at` and DIR have it at the battle's full ease)
+  const bAt = new T.Vector3(), bUp = new T.Vector3();
+  function placeLow(dt, a0, a, k, B, bk, W, H) { let bHalf = 1, bPitch = ELV;
+    if (bk) { const a1 = B.dir === undefined ? a0 - B.yaw : a0 + (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), e1 = B.pitch; bUp.set(-Math.sin(e1) * Math.cos(a1), Math.cos(e1), -Math.sin(e1) * Math.sin(a1));
+      bAt.set(B.x, GM.camLift / UPX, B.y).addScaledVector(bUp, TH / UNIT); bHalf = H / 2 / UNIT / (k * B.zoom); bPitch = e1; }
+    LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, W, H, dt, B, bk, bPitch, bAt, bHalf }); }
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
   let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0; if (typeof window !== 'undefined') window.addEventListener('resize', () => { fitAt = -1e9; });
   function fit(f0) { if (f0 - fitAt < 60 && game.width === gw && game.height === gh) return; fitAt = f0; gw = game.width; gh = game.height; const w = game.clientWidth || gw, h = game.clientHeight || gh;
@@ -167,7 +178,7 @@ const GAMEVIEW = (function () {
     lastAt: u => { const b = live.get(u); return b && b.holder.visible ? b.holder.position : null; }, bodyOf: u => live.get(u) || null,
     formBody: id => formBody(id), scale: () => SC_EVO });   // (formBody, scale: a model of the bakers' that an attack stands in the world, the Thunderhead's storm, the Skink's swirl: view3d/attacks_electric.js)
   function bodyFor(u, key, make) { let b = live.get(u); if (b && b.key !== key) { give(b); live.delete(u); b = null; }
-    if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } } b.ang = null; live.set(u, b); }
+    if (!b) { const l = free.get(key); b = l && l.length ? l.pop() : null; if (!b) { if (bad.has(key)) return null; b = make(); if (!b) { bad.add(key); return null; } if (LOW) LOW.wrap(b.holder); } b.ang = null; live.set(u, b); }
     b.used = stamp; b.holder.userData.body = true; return b; }   // (a body: never made see-through, seeThrough)
   // A FAINT (the owner, 2026-11-18: "a fainting animation that happens during the fight, and whenever it's the final kill, it will transition to the other camera angle while the fainting animation
   // is concluding"): one of a card battle that goes down (a creature, one of yours) is not gone at once: the view keeps its body for FAINT frames: it tips over onto its side (the first half), lies
@@ -226,7 +237,7 @@ const GAMEVIEW = (function () {
   const onWorld = (x, y) => { const k = K(Math.round(x), Math.round(y)), b = world.band.get(k); return !!world.roomAt(x, y) || world.aprons.has(k) || !!(b && b.header); };
   // made now, behind the start screen: the cube, the squad as it is (a clone of yours too), an ant of each class (the next of a kind is built when it is first seen)
   function warm() { stamp++; const f0 = GM.frame; cube(f0, 0); for (const a of GM.actors || []) if (!GM.isCreature(a)) follower(a, f0, 0); else if (a.isClone && !a.dead) ant(a); for (const c of Object.keys(ANT_W)) { const key = 'ant:' + c + ':0.5:' + ANT_COLOUR; give(antKitBody(key, c, 0.5, ANT_COLOUR)); }
-    for (const [u, b] of live) { give(b); live.delete(u); } shown.clear(); }
+    for (const [u, b] of live) { give(b); live.delete(u); } shown.clear(); if (LOW) LOW.wrap(scene); }
 
   // ── THE FLOOR'S MARKS: the game draws them into a canvas of their own (js/view3d.js), laid on the floor where it shows ──
   const fxCv = document.createElement('canvas'), fxG = fxCv.getContext('2d'), fxTex = new T.CanvasTexture(fxCv); let fxDrew = false;
@@ -259,10 +270,15 @@ const GAMEVIEW = (function () {
     faintStep(f0);
     stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js; after ATT.draw, so a field the registry drew this frame is left to it)
     if (noPic) { stale = true; snap = false; stats.frames++; stats.dry = (stats.dry || 0) + 1; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.ms = performance.now() - t0; return; }   // (a frame with no picture: above)
-    const fx = turning() || battling() ? null : marks(floorMarks); CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx, fresh: stale }); stale = false;   // (the floor's marks are laid out for a quarter turn: none while it swings)
+    if (LOW && stats.frames % 30 === 0) LOW.wrap(scene);   // (THE LOW CAMERA: whatever was made since, an attack's effect, bent too)
+    const fx = turning() || battling() || LOW ? null : marks(floorMarks); if (LOW) lowLight(); else CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx, fresh: stale }); stale = false;   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
+  // THE LOW CAMERA's light: the shadows' square on the floor it sees, ahead of the player (a battle: on the battle, as ever); the ink line's depth counted from near the camera's aim (a long lens's)
+  function lowLight() { const P = LOW.pivot(), Fw = LOW.fwd(), e = battling() ? Math.min(1, GM.battleCam.k) : 0, z = GM.viewZoom || 1;
+    CORE.aimLight(P.x + Fw.x * 5 * (1 - e) + (at.x - P.x) * e, P.z + Fw.y * 5 * (1 - e) + (at.z - P.z) * e, e > 0.99 ? Math.max(game.width, game.height) / UNIT / z : 26 / Math.min(1, z));
+    CORE.inkU.dOff.value = Math.max(0, (cam.userData.focusD || 0) - BACK); CORE.inkU.dK.value = LOWCAM.dK + (0.008 - LOWCAM.dK) * e; }
   return {
-    stats, state, world, camera: cam, core: CORE, attacks: ATT,
+    stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW,
     owns(o, k) { return ATT.owns(o, k); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx; k: a unit's own, by kind)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
@@ -289,8 +305,11 @@ const GAMEVIEW = (function () {
     seeingThrough() { return faded.size + cut.size; },
     fainting() { return faints.length; },   // (how many bodies are fainting now: for the tests)
     seeDebug() { return { broke: seeBroke, faded: faded.size, cut: cut.size, list: seeList ? seeList.length : 0, boxes: seeBoxes ? seeBoxes.length : 0, sets: seeSets ? seeSets.map(S => S.boxes.length) : [] }; },   // (for the tests)
-    screenOf(x, y, hPx) { place(); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+    screenOf(x, y, hPx) { place(); if (LOW) return LOW.toScreen(cam, x, (hPx || 0) / UPX, y, game.width, game.height).slice(0, 2); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
     // the same by the camera as the last frame drew it, not placed again (a card battle's reticles ask it every frame, js/cardbattle.js: placing it would cut a turn's swing short)
-    screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; }
+    screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y); if (LOW) return LOW.toScreen(cam, x, v.y, y, game.width, game.height).slice(0, 2); v.project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+    // THE LOW CAMERA (view3d/lowcam.js): the floor under a point of the game's canvas, by the camera as the last frame drew it ({ x, y } of the world, tiles; null: no floor there), and its state, for the tests
+    floorAt(sx, sy) { if (!LOW) return null; const q = LOW.toFloor(cam, sx, sy, game.width, game.height, (x, z) => GM.liftPx(x, z) / UPX); return q ? { x: q.x, y: q.z } : null; },
+    lowInfo() { if (!LOW) return null; const P = LOW.pivot(), A = LOW.aim, Hz = LOW.horizon(); return { aim: [A.x, A.y, A.z], pivot: [P.x, P.z], fwd: [LOW.fwd().x, LOW.fwd().y], k: LOW.k(), fov: cam.fov, pos: [cam.position.x, cam.position.y, cam.position.z], focusD: cam.userData.focusD, horizon: Hz.on ? Hz.st : null, culled: LOW.culled(), missed: LOW.missed().length, knobs: Object.assign({}, LOWCAM) }; }
   };
 })();

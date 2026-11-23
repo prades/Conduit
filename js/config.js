@@ -59,7 +59,9 @@ function enginePlan(protocol, search) {
     const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
     const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);   // (no engine named, over the web, not the website's background: the game as players get it)
     const view3d = eng === "3d" || plain;
-    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain };
+    // THE LOW CAMERA (the owner, 2026-11-23: "B", the low follow camera and the rolling-world curve; docs/VIEW-3D.md §8): ?cam=low, with the 3D view only. Without it the view's camera is the game's own.
+    const cam = view3d && /[?&]cam=low(?:&|$)/.test(s) ? "low" : null;
+    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain, cam };
 }
 const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
 const VIEW3D_ON = ENGINE_PLAN.view3d;

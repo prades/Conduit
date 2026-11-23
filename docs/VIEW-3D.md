@@ -202,3 +202,76 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - ~~When the 3D view becomes the default.~~ *(answered 2026-11-23: "I'd like to make the cards and the 3D the actual game now": on at the plain address over the web since `2026-11-17ct`, §2.)* Open with it: the order to build the rooms it has not built (the Armory first? it is in the lab, and the Gunslinger's first stop); whether the website's background (`?attract`) should be the 3D picture too; whether `?engine=2d` should be offered to players somewhere, or stay a word in the address.
 - The attacks in 3D (§4.7): the Frost Maw's three looks approved (the owner, 2026-11-18: "Wow yes! Push"); the fire line's ten ("Through the fire line.") built and their looks approved ("They're good enough"); the ice line's six (the Igloo Skater's, the Rimestar's) built and their looks approved ("Yes"); the electric line's thirteen ("Electric") built and their looks approved ("Looks good"); the toxic line's ten ("Next batch"; the line the agent's choice) built and their looks approved ("All good"); **the flux line's ten** ("Next batch"; the line the agent's choice) built, **their looks proposed, for the owner's eye** ("Push", not an approval); **the core line's ten** ("Next batch"; the line the agent's choice) built, **their looks proposed, for the owner's eye**; whether a blow on a jelly shield should be seen in the enemies' turn (the agent's reading of §2.68) and whether SHELL GUARD's ring of crystals should stay through the turns while the battle holds it; whether BLADE ROLL's lost slice impact should be made with `fxLater` (a game fix, not a drawing one); whether the goo copies' health bars should be drawn in 3D; whether the Rift Mimic's lost shard-shot impact should be made with `fxLater` (a game fix, not a drawing one); whether TOXIC DEPLOY's pods should be drawn in 3D outside the network (in a battle they are not seen); whether the decoy's health bar should be drawn in 3D; whether the storm (STATIC VORTEX), seen from the battle's high camera mostly as its cloud's top, should be drawn more see-through there; whether DRIFT SLASH's speed for the squad should show; whether ICE RINK and WHITEOUT should stop at the room's walls in 3D (the game's reach does not, so they are drawn past them, as the 2D's were); whether his effects should also hide the game's floating CHOMP word and numbers (they are 2D, and wiped in a battle); the order of the next forms and the enemies; the budget's numbers on an old iPad.
+
+## 8. The low camera (`?cam=low`): the low follow camera and the rolling-world curve
+
+- **Status:** **In progress, behind its own switch** (`?cam=low`, with the 3D view only). Without the switch nothing of it is made or run and the view's camera is the game's own 2:1 one (§4.1): what players get is unchanged. Stages built: see §8.9. **Not seen on an iPad; not playtested.**
+- **Owner:** the owner (creative direction); agent (implementation support)
+- **Last updated:** 2026-11-23
+- **Branch/build context:** `claude/cozy-camera-drafts` over main's build `2026-11-17db`; no build of its own (not stamped), not pushed by the agent
+- **Related docs:** `DECISION-LOG.md` (DECISION: the low follow camera and the rolling world, draft B), `OPEN-QUESTIONS.md` (Open 2026-11-23, the low camera), `CHANGELOG.md` 2026-11-23, `CARD-BATTLES.md` (the battle's camera), the drafts in `design/cozy-camera/`
+
+### 8.1 Intent and the decision
+
+The owner, 2026-11-23: **"I really think that I want to try like a Animal Crossing type camera angle and world feel"**. Three drafts were drawn over the real game (`design/cozy-camera/cozy.js`, `render.js`, `sheet.sh`; pictures only): A a low follow camera, B A plus the rolling-world curve, C B plus a cozy light, sky and palette. The owner answered **"B"**.
+
+- B is the low follow camera plus the rolling-world curve.
+- It is **not** C's cozy light, sky and palette: the look, its light and its colours are today's.
+- That genre's **camera principles only**: never its characters, art, UI or exact look.
+
+### 8.2 Approved design
+
+- A perspective camera behind and above the player, looking down at a point a little ahead of them and following that point smoothly as they move.
+- The ground bends away from the camera like a small round world ("rolling world"): the farther ahead along the view, the lower it is drawn; the sides stay level.
+- It is built behind a switch, in stages; without the switch the game is exactly as today.
+
+### 8.3 Must-haves (the brief of 2026-11-23)
+
+- [x] `?cam=low` turns it on (with the 3D view: `js/config.js` `enginePlan` gives `ENGINE_PLAN.cam`; `js/view3d.js` `VIEW3D.cam`); without it everything is as today and every existing test passes unchanged.
+- [x] Turning is still a quarter at a time (and the swipe as today); the zoom scales the camera's distance.
+- [x] What the camera leaves out is judged after the bend; the shadows are not bent; the ink line's depth edges and the sprites are right under it (the drafts' three fixes).
+- [x] A card battle: the camera eases to today's battle camera, as now, and back to the follow camera after (§8.5).
+- One function maps the world to the screen and one the screen to the floor, both from the active camera; the 2D things players see or touch go through them under the switch (§8.6).
+- The walls that sink judged from the active camera (§8.7).
+- The cost measured with and without it; cheap horizon culling (§8.8).
+
+### 8.4 Non-goals
+
+C's light, sky and palette; any change of the battle's angle, the walls' heights or the void's colour (open questions, below); the phone; anything of any other game's look.
+
+### 8.5 How it works (`view3d/lowcam.js`, `view3d/gameview.js`)
+
+- **The knobs** are `LOWCAM` in `view3d/lowcam.js`, all in one place, the drafts' values, **provisional** (open question 3): view 40° (perspective, vertical), pitch 30° down, 9.5 tiles from the aim, the aim 2.2 tiles ahead of the player and 0.55 over their floor, the aim following at 6/s (the share of the way closed in a frame is 1 − e^(−6·dt)), curve k = 0.013 (a vertex d tiles ahead of the player along the camera's level forward is drawn k·d² lower).
+- **The camera:** `place()` works out the game's turn and the battle's ease as before; with the switch, `placeLow()` gives them to `LOW.place()`. The zoom divides the distance.
+- **The battle's camera is today's** (open question 1): as a battle eases in (`cardBattleCam().k`), the view narrows (40° to 0.05°, geometrically) while the camera pulls back so the picture's height at the aim goes from the follow camera's to today's battle camera's; the pitch, the turn and the aim go to the battle's; the curve goes to nothing. At the full ease it is today's orthographic battle picture to within a pixel (checked). Easing out, the same back.
+- **The curve** is in the vertex shaders: every material the view draws is wrapped once (`wrapMat`: the materials three writes, the sprites, and the view's own shaders: the attacks', the fields', the water), new ones as they are made (a body when built, the rest every 30 frames). The shadows' map is drawn from the world unbent and each surface reads it from its unbent place, so a shadow lands on what it falls on.
+- **Culling after the bend:** the camera's own frustum test moves each thing's bounding sphere where the bend puts it (three's `Frustum`, patched only with the switch on; the light's frustum is as it was).
+- **The ink line:** its depth edges at a slant (`dK` 0.03 instead of 0.008); in a battle's long lens its depth is counted from near the aim (`dOff`), so the line is as today's.
+- **The light's shadow square** is laid ahead of the player on the floor the camera sees (on the battle in a battle, as today).
+- **The void beyond the map** is today's background colour (`#0d1d26`): B has no sky (open question 4).
+
+### 8.6 The 2D under the low camera
+
+Everything 2D the game draws over the picture was laid out for today's 2:1 orthographic projection (`_fpP`, about 290 uses in 16 files; `isoSX`/`isoSY` in 27 files; `isoDX`/`isoDY`; `isoBack` for taps; `isoDepth`; `view3dFeet`). Under the switch it is moved onto the camera one thing at a time, in the brief's order (§8.9 says what is done); the rest still uses the old maths and is wrong under the new camera. Without the switch the old 2:1 maths is the path, unchanged.
+
+### 8.7 Edge cases
+
+A battle begun or ended mid-ease (the ease is the battle's own, both ways); a swipe or a quarter turn (the aim stays on the player, the camera swings round it); zoom 0.6 to 1.8 (the distance 15.8 to 5.3 tiles); stairs and other floors (the aim rides the camera's floor, as the game's camera does); a frame with no picture (the camera and the aim still move on).
+
+### 8.8 Acceptance criteria and tests
+
+`tests/view3d.js` THE LOW CAMERA (a page with `?cam=low`): the switch and the knobs, every shader bent; the camera follows the player; the four quarter turns; the zoom; a card battle's camera and back. `tests/engineplan.js`: `?cam=low` only with the view. Every check without the switch is the one it was. Pictures and costs: `node design/cozy-camera/built.js <dir> [low|today]`.
+
+### 8.9 Stages and verification record
+
+| Stage | What | Status |
+|---|---|---|
+| 1 | The camera and the curve, behind the switch; the battle's camera and back | Implemented; verified by `tests/view3d.js` THE LOW CAMERA and pictures |
+
+### 8.10 Open questions
+
+In `OPEN-QUESTIONS.md` (Open 2026-11-23, the low camera): the card battle's angle (kept today's near top-down: the owner earlier, "still top down so I can lay the cards down"); the walls' heights (kept today's); the curve's strength and the camera's distance (the drafts' values kept as provisional knobs); what fills the void beyond the map (today's background colour kept: B has no sky).
+
+### 8.11 History
+
+- 2026-11-23: the drafts A, B, C (`design/cozy-camera/`, pictures only); the owner chose **"B"**; stage 1 built behind `?cam=low`.

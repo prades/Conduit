@@ -22,7 +22,7 @@
 //   - In a room the view has not built, the frame is drawn in 2D exactly as with the switch off.
 // The view itself, and what it does and does not draw yet, is view3d/gameview.js.
 
-const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0 };
+const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0, cam: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN && ENGINE_PLAN.cam === "low" && VIEW3D_ON === true ? "low" : null };   // (cam: "low", THE LOW CAMERA's switch, ?cam=low: js/config.js enginePlan, view3d/lowcam.js; null, the game's own)
 const VIEW3D_FILES = ["vendor/three.min.js", "dist/view3d.js"];
 
 function _view3dLoad(src) {

@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The low follow camera and the rolling world (draft B of the cozy camera)
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/cozy-camera-drafts` (over main's build `2026-11-17db`); no build of its own, not pushed by the agent
+- **Status:** approved; **in progress** behind its own switch, `?cam=low` (`VIEW-3D.md` §8). Without the switch the game is exactly as it was. Not seen on an iPad; not playtested.
+- **Context:** the owner, 2026-11-23: **"I really think that I want to try like a Animal Crossing type camera angle and world feel"**. Three drafts were drawn over the real game (`design/cozy-camera/`): A a low follow camera; B A plus the rolling-world curve; C B plus a cozy light, sky and palette.
+- **Decision (the owner's word):** **"B"**.
+- **Rules:** B is the low follow camera plus the rolling-world curve. It is not C's cozy light, sky and palette. That genre's camera principles only, never its characters, art, UI or exact look. Built behind a switch, in stages, without changing what players get today.
+- **Not decided** (`OPEN-QUESTIONS.md`, Open 2026-11-23, the low camera): the card battle's angle (today's near top-down kept: the owner earlier, "still top down so I can lay the cards down"); the walls' heights (today's kept); the curve's strength and the camera's distance (the drafts' values kept as provisional knobs: view 40°, pitch 30° down, 9.5 tiles, the aim 2.2 tiles ahead, following at 6/s, k = 0.013); what fills the void beyond the map (B has no sky: today's background colour kept).
+- **Alternatives:** A (no curve); C (B with a cozy feel): not chosen.
+- **Docs/code:** `VIEW-3D.md` §8 (the feature specification); `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `view3d/core.js`, `js/config.js`, `js/view3d.js`; `tests/view3d.js`, `tests/engineplan.js`.
+
 ## DECISION: The sewers' walkways are long grate panels (round 4)
 
 - **Date:** 2026-11-23 · **Branch/build:** `claude/sewer-variety` (main `046ab7a2`, build `2026-11-17cs`, merged in); no build of its own, not pushed by the agent
