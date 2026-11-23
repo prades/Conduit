@@ -175,7 +175,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // chokepoint that catches the path nobody has thought of yet.
     if (isNeutralBystander(target)) return;
     if (source && source.blinded > 0 && !isReflected && source !== target && Math.random() < BLIND_MISS) {   // BLIND: this one misses
-        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: target.x, y: target.y, text: "MISS", color: "#cfd8e3", life: 40, vy: -0.05, size: 11 });
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: target.x, y: target.y, text: "MISS", color: "#cfd8e3", life: 70, vy: -0.05, size: 11 });   /* (life 70: 40 till build 2026-11-17cx, gone before it was read) */
         return;
     }
     // Ghostphage ghost — immune to hazards; instantly killed by any direct attack

@@ -947,8 +947,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const fake = { save(){}, restore(){}, setTransform(){}, strokeText(){}, fillText(s){ drawn.push(String(s)); sizes[String(s)] = parseInt((this.font.match(/(\\d+)px/) || [0, 0])[1], 10); }, beginPath(){}, moveTo(){}, lineTo(){}, closePath(){}, fill(){}, stroke(){}, arc(){}, createLinearGradient(){ return { addColorStop(){} }; } };
             VIEW3D.view = { screenNow: (x, y, h) => [x * 40, y * 30 - (h || 0)], top: () => 20 }; VIEW3D.showing = true; ctx = fake;
             try { for (let i = 0; i < 12; i++) cardBattleNumbers(); } catch (e) { err = String(e && e.message || e); } finally { ctx = saved; VIEW3D.view = V0; VIEW3D.showing = S0; }
-            return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] > sizes['MISS'] * 2 }; })()`);
-        same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: more than twice a word\'s size');
+            return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] >= sizes['MISS'] && sizes['MISS'] > 11 }; })()`);
+        same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: MISS drawn larger than its written 11 points, and a kill\'s experience no smaller than it (build 2026-11-17cx: MISS is large too; before, the experience was to be more than twice a word)');
     });
 
     group('THE ULTIMATES IN A BATTLE (§2.64, §13; the owner, of the page that drew each one: "Approve")');

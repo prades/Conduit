@@ -43,7 +43,7 @@ const CARD_BATTLE = {
     raise: 0.75,                // lined up: the camera's aim moved to put the fight above the cards (1: by half the band), a little less so the far side clears the panels at the top    // lined up: the line takes at most this much of the screen's width; the camera never further out than this
     killText: { size: 30, life: 110 },   // a kill's +N XP rising from where the creature fell: its size (screen points) and how long it lasts (frames)
     hpBar: { w: 84, h: 11, depth: 5, slant: 6, out: 34, up: 50, run: 10, font: 13 },
-    num: { pop: 32, glide: 28, rise: 34, chip: 26 },   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
+    num: { pop: 32, glide: 28, rise: 34, chip: 26, foe: 30, mine: 26, word: 1.7, miss: 30, edge: 5 },   /* (foe, mine: a hit's number on an enemy and on one of yours, screen points, 20 and 17 till build 2026-11-17cx; word: how much larger a word, a status or WEAK!, is than it was written; miss: MISS's own size; edge: the dark line round them. The owner, 2026-11-23: "need to make these numbers or words bigger". The agent's sizes, provisional) */   // frames: a hit's number popping at the creature, flying into its bar, rising off one of yours; the piece lost flashing   // screen points: an enemy's health callout (the bar's width, height, underside, slant; how far out and up from the creature; the line's run under it; its numbers)
     byClass: true,              // the charge and the cooldown by class (the owner, 2026-11-18); off, every attack at once and every second attack cooling (the tests of other things turn it off)
     tileCard: 56,
     dragUp: 14,                 // screen points between a dragged card's foot and the finger               // screen points: a dragged card's width without the 3D view to measure a tile by
@@ -743,10 +743,11 @@ function cardBattleNumbers() {
         if (!n) {   // a word: it rises from where it was said and fades
             const age = (t._cbAge = (t._cbAge || 0) + 1); ctx.globalAlpha = Math.min(1, t.life / 30);
             if (t._cbBig) { const sw = age < 8 ? 0.5 + age * 0.09 : age < 14 ? 1.22 - (age - 8) * 0.037 : 1; _cbText(t.text, base[0], base[1] - 20 * k - age * 0.45 * k, t.size * k * sw, t.color, k); continue; }   /* (a kill's experience: large, swelling as it comes out of the fallen one) */
-            _cbText(t.text, base[0], base[1] - 34 * k - age * 0.6 * k, (t.size || 12) * k, t.color || "#fff", k); continue;   // (above where a number pops, so the two do not overlap)
+            if (t.text === "MISS") { const sw = age < 8 ? 0.5 + age * 0.09 : age < 14 ? 1.22 - (age - 8) * 0.037 : 1; _cbText(t.text, base[0], base[1] + 2 * k - age * 0.3 * k, N.miss * k * sw, "#ffffff", k); continue; }   /* (a miss: large and white, swelling as it comes, so it is not lost among the numbers) */
+            _cbText(t.text, base[0], base[1] + 22 * k - age * 0.3 * k, (t.size || 12) * N.word * k, t.color || "#fff", k); continue;   /* (over the creature's feet, under where a number pops: higher up it lay under an enemy's health bar and was not read) */   // (above where a number pops, so the two do not overlap)
         }
         const age = f0 - n.t0, sw = age < 6 ? 0.6 + age * 0.17 : age < 10 ? 1.62 - (age - 6) * 0.155 : 1;   // (swells, then settles)
-        const px = base[0] + n.jit * k, py = base[1] - 6 * k - Math.min(age, N.pop) * 0.5 * k, size = (n.foe ? 20 : 17) * k * sw, col = n.foe ? "#fff1c8" : "#ff6a5a";
+        const px = base[0] + n.jit * k, py = base[1] - 6 * k - Math.min(age, N.pop) * 0.5 * k, size = (n.foe ? N.foe : N.mine) * k * sw, col = n.foe ? "#fff1c8" : "#ff6a5a";
         if (!n.foe) { ctx.globalAlpha = Math.max(0, Math.min(1, (N.pop + N.rise - age) / 12)); _cbText("-" + Math.round(n.val), px, py - Math.max(0, age - N.pop) * 0.4 * k, size, col, k); continue; }
         if (age < N.pop) { ctx.globalAlpha = 1; _cbText(Math.round(n.val), px, py, size, col, k); continue; }
         // into the bar: to where it will be cut
@@ -762,7 +763,7 @@ function _cbNumLand(n) {   // a number arrives: its creature's bar is cut by it,
     n.landed = true; const S = _cbHp.get(n.unit); if (!S) return;
     S.chipFrom = Math.max(S.chipFrom && S.chipT > 0 ? S.chipFrom : 0, S.v); S.chipT = CARD_BATTLE.num.chip; S.want = Math.max(Math.max(0, n.unit.health), S.want - n.val);
 }
-function _cbText(txt, x, y, size, col, k) { ctx.font = "italic 900 " + Math.round(size) + "px system-ui, sans-serif"; ctx.lineWidth = 4 * k; ctx.strokeStyle = "rgba(5,8,16,0.9)"; ctx.strokeText(String(txt), x, y); ctx.fillStyle = col; ctx.fillText(String(txt), x, y); }
+function _cbText(txt, x, y, size, col, k) { ctx.font = "italic 900 " + Math.round(size) + "px system-ui, sans-serif"; ctx.lineWidth = CARD_BATTLE.num.edge * k; ctx.strokeStyle = "rgba(5,8,16,0.9)"; ctx.strokeText(String(txt), x, y); ctx.fillStyle = col; ctx.fillText(String(txt), x, y); }
 function cardBattleTurn() { return _cb.turn ? _cb.turn.who : null; }
 function cardBattleTurnInfo() { const T = _cb.turn; return T ? { who: T.who, actor: T.who === "act" ? T.f : T.who === "foe" ? T.a : null, kind: T.kind || null, id: T.id || null, target: T.target || null, run: !!T.run, walk: T.walk ? T.walk.length : 0 } : null; }   // (walk: the tiles of a walk, §2.39; 0 for an attack)
 // does this one hold still now? (js/npc.js updateNPC, js/evolution.js: everyone in the battle but the one whose turn it is; and that one too while it walks: the battle walks it, §2.39)
