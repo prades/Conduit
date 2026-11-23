@@ -99,7 +99,12 @@ const GAMEVIEW = (function () {
   function placeLow(dt, a0, a, k, B, bk, W, H) { let bHalf = 1, bPitch = ELV;
     if (bk) { const a1 = B.dir === undefined ? a0 - B.yaw : a0 + (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), e1 = B.pitch; bUp.set(-Math.sin(e1) * Math.cos(a1), Math.cos(e1), -Math.sin(e1) * Math.sin(a1));
       bAt.set(B.x, GM.camLift / UPX, B.y).addScaledVector(bUp, TH / UNIT); bHalf = H / 2 / UNIT / (k * B.zoom); bPitch = e1; }
-    LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, W, H, dt, B, bk, bPitch, bAt, bHalf }); }
+    if (!lowBox) { lowBox = { min: { y: Infinity }, max: { y: -Infinity } }; const bb = new T.Box3(); scene.updateMatrixWorld(true);   // (how low and how high the built world goes, once: the horizon is the lowest floor's, and nothing stands over the top)
+      scene.traverse(o => { const g = o.isMesh && o.geometry; if (!g || !g.attributes || !g.attributes.position) return; if (g.boundingBox === null) g.computeBoundingBox(); bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
+        if (Number.isFinite(bb.min.y) && Number.isFinite(bb.max.y) && bb.max.y - bb.min.y < 1e4) lowBox.max.y = Math.max(lowBox.max.y, bb.max.y); });
+      for (const id in world.rooms) for (const c of world.rooms[id].rec.cells) lowBox.min.y = Math.min(lowBox.min.y, (c[2] || 0) / UPX); lowBox.min.y -= LOW_UNDER; }   // (the lowest floor, and what lies in it: a channel, a pit)
+    LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf }); }
+  let lowBox = null; const LOW_UNDER = 1, LOW_OVER = 3;   // (tiles: under the lowest room's floor, a channel's or a pit's bed; over the highest thing built, what a body in the air or an effect may reach)
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
   let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0; if (typeof window !== 'undefined') window.addEventListener('resize', () => { fitAt = -1e9; });
   function fit(f0) { if (f0 - fitAt < 60 && game.width === gw && game.height === gh) return; fitAt = f0; gw = game.width; gh = game.height; const w = game.clientWidth || gw, h = game.clientHeight || gh;
@@ -261,7 +266,7 @@ const GAMEVIEW = (function () {
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
-    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
+    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     ATT.begin(f0); shown.clear(); cube(f0, dt);
     for (const a of GM.actors) { if (a._swallowedBy) { const hp = GM.isCreature(a) ? ATT.held(a) : null; if (hp) ant(a, hp); continue; }   // (swallowed: drawn only while it is pulled in)
       if (!GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
@@ -271,14 +276,43 @@ const GAMEVIEW = (function () {
     stats.fields = FIELDS.step(battling() ? GM.battleFields : null, f0, GM.meteor);   // (the Ultimates' fields in a battle, in 3D: view3d/fields.js; after ATT.draw, so a field the registry drew this frame is left to it)
     if (noPic) { stale = true; snap = false; stats.frames++; stats.dry = (stats.dry || 0) + 1; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.ms = performance.now() - t0; return; }   // (a frame with no picture: above)
     if (LOW && stats.frames % 30 === 0) LOW.wrap(scene);   // (THE LOW CAMERA: whatever was made since, an attack's effect, bent too)
-    const fx = turning() || battling() || LOW ? null : marks(floorMarks); if (LOW) lowLight(); else CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx, fresh: stale }); stale = false;   // (the floor's marks are laid out for a quarter turn: none while it swings)
+    const fx = turning() || battling() || (LOW && !CORE.depthOK) ? null : marks(floorMarks); if (LOW) { lowLight(); if (fx) lowMarks(); } else CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1)); CORE.draw(cam, null, { fx, fresh: stale }); stale = false;   // (the floor's marks are laid out for a quarter turn: none while it swings)
     snap = false; stats.frames++; stats.bodies = shown.size; stats.fx3d = ATT.stats; stats.fx = !!fx; stats.draws = CORE.renderer.info.render.calls; stats.tris = CORE.renderer.info.render.triangles; stats.ms = performance.now() - t0; }
+  // THE LOW CAMERA's walls that sink (stage 3): besides the walls in front of the room you are in (the game's camera's rule, by its quarter turn, as ever), any wall that covers a body there
+  // from where this camera is: a line from the body (its feet and its middle: 0.15 and 0.6 of a tile up) to the camera, bent as the picture is, that passes through one of the wall's faces or tops.
+  // The bodies: you and the squad in your room. Judged every LOW_SINK_EVERY frames (and on a new room); each group's faces kept once, by a grid of their boxes
+  const LOW_SINK_EVERY = 4, SINK_UP = [0.15, 0.6], sinkSet = new Set(); let sinkAt = -1e9, sinkRoom = null, sinkGrid = null;
+  function sinkPrep() { sinkGrid = new Map(); for (const G of world.groups) { const tri = []; for (const q of [G.face, G.cap, G.rface, G.rcap]) if (q && q.pos) for (let i = 0; i + 8 < q.pos.length; i += 9) tri.push(q.pos.slice(i, i + 9));
+      if (!tri.length) continue; let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9; for (const t of tri) for (let j = 0; j < 9; j += 3) { x0 = Math.min(x0, t[j]); x1 = Math.max(x1, t[j]); z0 = Math.min(z0, t[j + 2]); z1 = Math.max(z1, t[j + 2]); }
+      const E = { G, tri }; for (let gx = Math.floor(x0 / 4); gx <= Math.floor(x1 / 4); gx++) for (let gz = Math.floor(z0 / 4); gz <= Math.floor(z1 / 4); gz++) { const k = gx + ',' + gz; let L = sinkGrid.get(k); if (!L) sinkGrid.set(k, L = []); L.push(E); } } }
+  // the groups that cover any of the points (each [x, y, z] of the world, unbent) from a camera at C, the bend's pivot P ([x, z]), forward Fw ([x, z]) and k; into out (a Set)
+  function coverGroups(pts, C, P, Fw, k, out) { if (!sinkGrid) sinkPrep(); const bend = (x, y, z) => { const d = (x - P[0]) * Fw[0] + (z - P[1]) * Fw[1]; return y - k * d * d; };
+    for (const p of pts) { const ox = p[0], oy = bend(p[0], p[1], p[2]), oz = p[2], dx = C[0] - ox, dy = C[1] - oy, dz = C[2] - oz, seen = new Set();
+      const n = Math.ceil(Math.hypot(dx, dz) / 2) + 1; for (let s = 0; s <= n; s++) { const gx = Math.floor((ox + dx * s / n) / 4), gz = Math.floor((oz + dz * s / n) / 4);
+        for (let ix = gx - 1; ix <= gx + 1; ix++) for (let iz = gz - 1; iz <= gz + 1; iz++) { const L = sinkGrid.get(ix + ',' + iz); if (L) for (const E of L) seen.add(E); } }
+      for (const E of seen) { if (out.has(E.G)) continue; for (const t of E.tri) { if (segTri(ox, oy, oz, dx, dy, dz, t, bend)) { out.add(E.G); break; } } } }
+    return out; }
+  // does the segment o + s d (0 < s < 1) pass through the triangle t (bent)? (Moller-Trumbore)
+  function segTri(ox, oy, oz, dx, dy, dz, t, bend) { const ax = t[0], ay = bend(t[0], t[1], t[2]), az = t[2], e1x = t[3] - ax, e1y = bend(t[3], t[4], t[5]) - ay, e1z = t[5] - az, e2x = t[6] - ax, e2y = bend(t[6], t[7], t[8]) - ay, e2z = t[8] - az;
+    const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x, det = e1x * px + e1y * py + e1z * pz; if (Math.abs(det) < 1e-12) return false; const inv = 1 / det, tx = ox - ax, ty = oy - ay, tz = oz - az;
+    const u = (tx * px + ty * py + tz * pz) * inv; if (u < 0 || u > 1) return false; const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x, v = (dx * qx + dy * qy + dz * qz) * inv; if (v < 0 || u + v > 1) return false;
+    const s = (e2x * qx + e2y * qy + e2z * qz) * inv; return s > 1e-4 && s < 1 - 1e-4; }
+  function lowBodies(room) { const pts = [], add = (x, y) => { const h = GM.liftPx(x, y) / UPX; for (const up of SINK_UP) pts.push([x, h + up, y]); }; add(GM.player.visualX, GM.player.visualY);
+    for (const a of GM.actors || []) if (a && !a.dead && a.isFollower && Number.isFinite(a.x)) { const r = GM.roomAt(a.x, a.y, GM.fp.F); if (r && r.id === room) add(a.x, a.y); } return pts; }
+  function lowSinks(f0, room) { if (room === sinkRoom && f0 - sinkAt < LOW_SINK_EVERY && f0 >= sinkAt) return sinkSet; sinkAt = f0; sinkRoom = room; sinkSet.clear();
+    if (battling() && GM.battleCam.k > 0.5) return sinkSet;   // (today's battle camera: today's rule)
+    const P = LOW.pivot(), Fw = LOW.fwd(); return coverGroups(lowBodies(room), [cam.position.x, cam.position.y, cam.position.z], [P.x, P.z], [Fw.x, Fw.y], LOW.k(), sinkSet); }
   // THE LOW CAMERA's light: the shadows' square on the floor it sees, ahead of the player (a battle: on the battle, as ever); the ink line's depth counted from near the camera's aim (a long lens's)
   function lowLight() { const P = LOW.pivot(), Fw = LOW.fwd(), e = battling() ? Math.min(1, GM.battleCam.k) : 0, z = GM.viewZoom || 1;
     CORE.aimLight(P.x + Fw.x * 5 * (1 - e) + (at.x - P.x) * e, P.z + Fw.y * 5 * (1 - e) + (at.z - P.z) * e, e > 0.99 ? Math.max(game.width, game.height) / UNIT / z : 26 / Math.min(1, z));
     CORE.inkU.dOff.value = Math.max(0, (cam.userData.focusD || 0) - BACK); CORE.inkU.dK.value = LOWCAM.dK + (0.008 - LOWCAM.dK) * e; }
+  // THE LOW CAMERA's floor marks: the game draws them flat, as at its own angle unturned and at MARKS_K of its scale about the screen's middle (js/view3d.js _view3dFloorMarks), a picture
+  // of the floor; the ink line's pass finds each pixel's place on the floor from its depth (the bend moves nothing across the floor) and reads the marks there: a decal on the floor
+  const MARKS_K = 0.5, PVm = new T.Matrix4(), LOW_TALL = 1.5;   // (LOW_TALL: tiles; a body and what the 2D draws over it)
+  function lowMarks() { const u = CORE.inkU, W = game.width, H = game.height; u.fxWorld.value = 1; u.invPV.value.copy(PVm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)).invert();
+    u.fxP.value.set(GM.player.visualX, GM.player.visualY); u.fxS.value.set(TW * MARKS_K / W, TH * MARKS_K / H); u.fxC.value.set(0.5, 0.5 - TH * MARKS_K / H); }
   return {
-    stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW,
+    stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1,
     owns(o, k) { return ATT.owns(o, k); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx; k: a unit's own, by kind)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
@@ -308,8 +342,14 @@ const GAMEVIEW = (function () {
     screenOf(x, y, hPx) { place(); if (LOW) return LOW.toScreen(cam, x, (hPx || 0) / UPX, y, game.width, game.height).slice(0, 2); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
     // the same by the camera as the last frame drew it, not placed again (a card battle's reticles ask it every frame, js/cardbattle.js: placing it would cut a turn's swing short)
     screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y); if (LOW) return LOW.toScreen(cam, x, v.y, y, game.width, game.height).slice(0, 2); v.project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+    screenLow(x, y, hPx, out) { if (!LOW) return null; const h = (hPx || 0) / UPX, o = LOW.toScreen(cam, x, h, y, game.width, game.height, out); if (LOW.below(x, h, y, LOW_TALL)) o[2] = 0; return o; },   // (THE LOW CAMERA's, with how far in front of the camera the point is, tiles, into out; 0: behind it, or under the horizon with all that stands LOW_TALL over it: js/view3d.js isoSX and isoSY through the camera)
     // THE LOW CAMERA (view3d/lowcam.js): the floor under a point of the game's canvas, by the camera as the last frame drew it ({ x, y } of the world, tiles; null: no floor there), and its state, for the tests
     floorAt(sx, sy) { if (!LOW) return null; const q = LOW.toFloor(cam, sx, sy, game.width, game.height, (x, z) => GM.liftPx(x, z) / UPX); return q ? { x: q.x, y: q.z } : null; },
-    lowInfo() { if (!LOW) return null; const P = LOW.pivot(), A = LOW.aim, Hz = LOW.horizon(); return { aim: [A.x, A.y, A.z], pivot: [P.x, P.z], fwd: [LOW.fwd().x, LOW.fwd().y], k: LOW.k(), fov: cam.fov, pos: [cam.position.x, cam.position.y, cam.position.z], focusD: cam.userData.focusD, horizon: Hz.on ? Hz.st : null, culled: LOW.culled(), missed: LOW.missed().length, knobs: Object.assign({}, LOWCAM) }; }
+    // THE LOW CAMERA's walls that sink, for the tests: with the player at (x, y) in the room, the camera's quarter turn t, settled: the camera, the bend, and the keys of the groups that sink
+    lowSinks(x, y, t, room, more) { if (!LOW) return null; const Q = LOW.pose(x, y, GM.liftPx(x, y) / UPX, Math.PI / 4 - t * Math.PI / 2, 1), out = new Set(), pts = [];   // (more: other bodies there, each [x, y])
+      for (const b of [[x, y]].concat(more || [])) { const h = GM.liftPx(b[0], b[1]) / UPX; for (const u of SINK_UP) pts.push([b[0], h + u, b[1]]); }
+      coverGroups(pts, Q.pos, Q.pivot, Q.fwd, Q.k, out); const keys = []; for (const G of world.groups) if ((t && G.hides ? G.hides[t] : G.hide).includes(room) || out.has(G)) keys.push(G.key); return { pose: Q, keys }; },
+    lowSinking() { return LOW ? [...sinkSet].map(G => G.key) : null; },
+    lowInfo() { if (!LOW) return null; const P = LOW.pivot(), A = LOW.aim, Hz = LOW.horizon(); return { aim: [A.x, A.y, A.z], pivot: [P.x, P.z], fwd: [LOW.fwd().x, LOW.fwd().y], k: LOW.k(), fov: cam.fov, pos: [cam.position.x, cam.position.y, cam.position.z], focusD: cam.userData.focusD, horizon: Hz.on ? Hz.st : null, horizonFar: Hz.on ? Hz.far : null, horizonFloor: Hz.on ? Hz.yF : null, culled: LOW.culled(), missed: LOW.missed().length, knobs: Object.assign({}, LOWCAM) }; }
   };
 })();

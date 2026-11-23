@@ -47,7 +47,7 @@ function view3dLowCam() {
 
   // ── CULLING after the bend: only the camera's own frustum (known by its matrix: the light's, for the shadows, is as it was). A thing's bounding sphere is moved where the bend puts its
   //    middle and grown by what the bend can do across it; then, below the horizon (the line from the camera that just grazes the bent floor, past where it grazes it): left out ──
-  const PS = new T.Matrix4(), sph = new T.Sphere(), H = { on: false, st: 0, sc: 0, yc: 0, m: 0, yF: 0, cos: 1 }; let psOn = false, culled = 0;
+  const PS = new T.Matrix4(), sph = new T.Sphere(), H = { on: false, st: 0, sc: 0, yc: 0, m: 0, yF: 0, cos: 1, far: Infinity }; let psOn = false, culled = 0;
   const F = T.Frustum.prototype;
   if (!F.__lowCam) { F.__lowCam = true; const setFrom = F.setFromProjectionMatrix, inter = F.intersectsObject;
     F.setFromProjectionMatrix = function (m) { const r = setFrom.call(this, m); const L = F.__low; let same = !!(L && L.psOn()); if (same) { const a = m.elements, b = L.PS.elements; for (let i = 0; i < 16; i++) if (Math.abs(a[i] - b[i]) > 1e-6 * (1 + Math.abs(b[i]))) { same = false; break; } } this._low = same; return r; };
@@ -55,7 +55,7 @@ function view3dLowCam() {
   F.__low = { PS, psOn: () => psOn, test(fr, o, inter) { const k = U.lowK.value; if (!k) return inter.call(fr, o);
     const g = o.geometry; if (g.boundingSphere === null) g.computeBoundingSphere(); sph.copy(g.boundingSphere).applyMatrix4(o.matrixWorld);
     const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (sph.center.x - P.x) * Fw.x + (sph.center.z - P.z) * Fw.y, r = sph.radius; sph.center.y -= k * d * d; sph.radius = r + k * (2 * Math.abs(d) * r + r * r);
-    if (H.on && d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius) { culled++; return false; }   // (below the horizon)
+    if (H.on && (d - r > H.far || (d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius))) { culled++; return false; }   // (past the visible distance; below the horizon)
     return fr.intersectsSphere(sph); } };
 
   // ── THE CAMERA: placed once a frame by the view (view3d/gameview.js place) ──
@@ -77,14 +77,24 @@ function view3dLowCam() {
     U.lowPivot.value.set(aim.x - fx * K.ahead, o.floorY, aim.z - fz * K.ahead); U.lowFwd.value.set(fx, fz); U.lowK.value = K.k * (1 - e);
     PS.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); psOn = true; U.lowView.value.copy(cam.matrixWorldInverse);
     // the horizon: in the camera's upright plane, from the pivot along the forward (s) and up (y). The camera at (sc, yc); the bent floor y = yF - k s²; the line from the camera grazing it at st
-    const k = U.lowK.value, sc = (cam.position.x - U.lowPivot.value.x) * fx + (cam.position.z - U.lowPivot.value.z) * fz, hc = cam.position.y - o.floorY;
-    H.on = K.horizon !== false && k > 1e-6 && hc > 0; if (H.on) { H.sc = sc; H.yc = cam.position.y; H.yF = o.floorY; H.st = sc + Math.sqrt(sc * sc + hc / k); H.m = -2 * k * H.st; H.cos = 1 / Math.sqrt(1 + H.m * H.m); }
+    // The floor: the lowest the built world has (o.floorMin; a floor there would hide what is under the line, and no higher floor hides less), not the one you stand on: from a deck the
+    // floors below are in plain sight. THE VISIBLE DISTANCE (H.far): nothing stands higher than o.top, and past st + sqrt((top - floor) / k) ahead even that is under the line
+    const k = U.lowK.value, sc = (cam.position.x - U.lowPivot.value.x) * fx + (cam.position.z - U.lowPivot.value.z) * fz, yF = Number.isFinite(o.floorMin) ? Math.min(o.floorMin, o.floorY) : o.floorY, hc = cam.position.y - yF;
+    H.on = K.horizon !== false && k > 1e-6 && hc > 0; if (H.on) { H.sc = sc; H.yc = cam.position.y; H.yF = yF; H.st = sc + Math.sqrt(sc * sc + hc / k); H.m = -2 * k * H.st; H.cos = 1 / Math.sqrt(1 + H.m * H.m);
+      H.far = Number.isFinite(o.top) && o.top > yF ? H.st + Math.sqrt((o.top - yF) / k) : Infinity; }
   }
+  // THE SETTLED POSE for the player at (px, py) on a floor at floorY, the camera's way round a, zoom z (no battle): where the camera is, the pivot and forward of the bend, k
+  function pose(px, py, floorY, a, z) { const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, ax = px + fx * K.ahead, ay = floorY + K.lift, az = py + fz * K.ahead;
+    return { pos: [ax + Math.cos(p) * ca * D, ay + Math.sin(p) * D, az + Math.cos(p) * sa * D], aim: [ax, ay, az], pivot: [px, py], fwd: [fx, fz], k: K.k, fov: K.fov }; }
   // the bend at a point of the world (tiles): how far down it is drawn
   const drop = (x, z) => { const k = U.lowK.value; if (!k) return 0; const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (x - P.x) * Fw.x + (z - P.z) * Fw.y; return k * d * d; };
   // WORLD TO SCREEN: (x, y, z) of the world (tiles; y up) where the camera as last placed draws it, in the picture's px (W, H): [sx, sy, depth (tiles from the camera, 0 or less: behind)]
   const PV = new T.Vector3();
-  function toScreen(cam, x, y, z, W, Hh) { PV.set(x, y - drop(x, z), z); const dz = -PV.clone().applyMatrix4(cam.matrixWorldInverse).z; PV.project(cam); return [(PV.x + 1) / 2 * W, (1 - PV.y) / 2 * Hh, dz]; }
+  function toScreen(cam, x, y, z, W, Hh, out) { const yb = y - drop(x, z), e = cam.matrixWorldInverse.elements, dz = -(e[2] * x + e[6] * yb + e[10] * z + e[14]); PV.set(x, yb, z).project(cam);   // (out: an array to fill, for the many a frame: js/view3d.js)
+    if (!out) out = [0, 0, 0]; out[0] = (PV.x + 1) / 2 * W; out[1] = (1 - PV.y) / 2 * Hh; out[2] = dz; return out; }
+  // BELOW THE HORIZON: is a thing at (x, y, z) of the world, r tiles tall, wholly under the line from the camera that grazes the bent floor, past where it grazes it? (hidden by the floor:
+  // nothing 2D is drawn over it, js/view3d.js)
+  function below(x, y, z, r) { if (!H.on) return false; const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (x - P.x) * Fw.x + (z - P.z) * Fw.y; return d > H.far || (d > H.st && H.yc + (d - H.sc) * H.m > y + r - U.lowK.value * d * d); }
   // SCREEN TO WORLD: the floor under a point of the picture: the camera's ray through it met with the bent floor at the height the floor has there (floorAt(x, z), tiles), found in a few rounds.
   // null where the ray meets no floor (over the horizon)
   const RO = new T.Vector3(), RD = new T.Vector3();
@@ -97,5 +107,5 @@ function view3dLowCam() {
       if (qa < 1e-12) { if (Math.abs(qb) < 1e-12) return null; t = -qc / qb; } else { const disc = qb * qb - 4 * qa * qc; if (disc < 0) return null; const s = Math.sqrt(disc), t1 = (-qb - s) / (2 * qa), t2 = (-qb + s) / (2 * qa); t = t1 > 0 ? t1 : t2; }
       if (!(t > 0)) return null; x = RO.x + RD.x * t; z = RO.z + RD.z * t; const h2 = floorAt(x, z); if (Math.abs(h2 - h) < 1e-4) break; h = h2; }
     return { x, z }; }
-  return { U, K, wrap, wrapMat, place, drop, toScreen, toFloor, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
+  return { U, K, wrap, wrapMat, place, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
 }

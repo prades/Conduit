@@ -714,7 +714,8 @@ function facilityPickLift(ex, ey) {
 
 // ── drawing ──
 // A point at height z above the current item's floor (_fpBase, in px of height), on screen.
-function _fpP(x, y, z) { return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (_fpBase - _fpCam)]; }
+function _fpP(x, y, z) { const lo = typeof view3dToScreen === "function" && ISO_CAM !== null && ISO_CAM.on() ? view3dToScreen(x, y, (z || 0) + _fpBase) : null; if (lo) return lo;   // (THE LOW CAMERA: the point at its own height, through its projection: js/view3d.js)
+    return [isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - (z || 0) - (_fpBase - _fpCam)]; }
 function _fpQuad(pts, fill, stroke, lw) {
     ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
     if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.lineWidth = lw || 1; ctx.strokeStyle = stroke; ctx.stroke(); }

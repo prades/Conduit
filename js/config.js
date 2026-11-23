@@ -151,8 +151,11 @@ let VIEW_TURN = 0;
 function viewTU(dx, dy) { return VIEW_TURN === 0 ? dx : VIEW_TURN === 1 ? -dy : VIEW_TURN === 2 ? -dx : dy; }
 function viewTV(dx, dy) { return VIEW_TURN === 0 ? dy : VIEW_TURN === 1 ? dx : VIEW_TURN === 2 ? -dy : -dx; }
 // where (x, y) of the world is on the screen from the player, px: across (isoSX) and down (isoSY); add the screen's middle (and the rest of the game's own offsets) as before
-function isoSX(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) - viewTV(dx, dy)) * TILE_W; }
-function isoSY(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) + viewTV(dx, dy)) * TILE_H; }
+// (THE LOW CAMERA, ?cam=low, js/view3d.js: while it is the frame's camera ISO_CAM answers instead, the point's floor where that camera draws it, so that with the game's own offsets added the
+// 2D lands on the 3D picture. Without that switch ISO_CAM is null for good and these two are the 2:1 maths they always were)
+let ISO_CAM = null;
+function isoSX(x, y) { if (ISO_CAM !== null && ISO_CAM.on()) return ISO_CAM.sx(x, y); const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) - viewTV(dx, dy)) * TILE_W; }
+function isoSY(x, y) { if (ISO_CAM !== null && ISO_CAM.on()) return ISO_CAM.sy(x, y); const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) + viewTV(dx, dy)) * TILE_H; }
 // a way (vx, vy) of the world on the screen, px: across and down
 function isoDX(vx, vy) { return (viewTU(vx, vy) - viewTV(vx, vy)) * TILE_W; }
 function isoDY(vx, vy) { return (viewTU(vx, vy) + viewTV(vx, vy)) * TILE_H; }

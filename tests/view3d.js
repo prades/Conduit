@@ -221,7 +221,7 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   // away, and back
   var A = _fp.F.byId.get('armory').bb; put(Math.round((A[0] + A[2]) / 2), Math.round((A[1] + A[3]) / 2)); step(3); var d2 = ctx.getImageData(40, 300, 1, 1).data;
   out.away = { showing: VIEW3D.showing, display: gl.style.display, px: d2[3], feet: view3dFeet(), body: view3dBody(player) };
-  put(13, 19); step(3); out.back = { showing: VIEW3D.showing, display: gl.style.display };`));
+  put(13, 19); step(3); out.back = { showing: VIEW3D.showing, display: gl.style.display }; out.isoCam = ISO_CAM === null;`));
 if (ON === null) console.log('  (no Chromium here: skipped)');
 else {
     check('every room\'s floor is put in the scene (builds 2026-11-17bz to cb left it out: a comment begun in the middle of the line took the code after it, and every 3D floor was black)', () => {
@@ -889,6 +889,66 @@ const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D
   var bw = 0; [[13, 19], [16, 19], [14, 22], [11, 17]].forEach(function (c) { var h = facilityLiftPx(c[0], c[1]), a = V.screenNow(c[0], c[1], h), v = new THREE.Vector3(c[0], h / 73.48469228349533, c[1]).project(oc); bw = Math.max(bw, Math.abs(a[0] - (v.x + 1) / 2 * W), Math.abs(a[1] - (1 - v.y) / 2 * H)); }); out.inBattle.orthoPx = +bw.toFixed(2);
   cardBattleEnd(); foes.forEach(function (a) { a.dead = true; a.deathProcessed = true; }); actors = actors.filter(function (a) { return !a.dead; }); V.dry(true); for (var j = 0; j < 150; j++) render(); V.dry(false); render();
   var ia = L(); out.afterBattle = { cam: cardBattleCam(), k: ia.k, fov: ia.fov, aim: +aimErr(ia).toFixed(4) };
+  // STAGE 2, THE 2D THROUGH THE CAMERA: world to screen and back (js/view3d.js view3dToScreen, view3dToWorld); a tap on a tile walks to that tile; a unit's bars and plate drawn over its body;
+  // a floating number over its unit; the floor's marks laid on (a long-press ring)
+  put(13, 19); V.dry(true); for (var j = 0; j < 90; j++) render(); V.dry(false); render();
+  var rt = 0; [[13, 19], [15, 21], [11, 17], [14, 23], [16, 18]].forEach(function (c) { var h = facilityLiftPx(c[0], c[1]), s = view3dToScreen(c[0], c[1], h), q = view3dToWorld(s[0], s[1]); rt = Math.max(rt, q ? Math.hypot(q.x - c[0], q.y - c[1]) : 99); }); out.roundTrip = +rt.toFixed(5);
+  out.offScreen = [view3dToScreen === undefined, typeof view3dLow === 'function' && view3dLow()];
+  out.taps = [[15, 21], [11, 18], [14, 17]].map(function (c) { put(13, 19); V.dry(true); for (var j = 0; j < 90; j++) render(); V.dry(false); render(); var s = view3dToScreen(c[0], c[1], facilityLiftPx(c[0], c[1]));
+    isPressing = false; commandMode = false; handleInput(s[0], s[1]); var P = player.fpPath, end = P && P.length ? P[P.length - 1] : null; return end ? [Math.round(end[0] !== undefined ? end[0] : end.x), Math.round(end[1] !== undefined ? end[1] : end.y)].join() === c.join() : [player.targetX, player.targetY].join() === c.join(); });
+  put(13, 19); V.dry(true); for (var j = 0; j < 90; j++) render(); V.dry(false); render();
+  var ff = followers[0]; if (ff) { ff.x = 14; ff.y = 20; } var seenAt = null, keepN = drawNPC; drawNPC = function (a, px, py) { if (a === ff && !seenAt) { var m = ctx.getTransform(); seenAt = [m.a * px + m.c * py + m.e, m.b * px + m.d * py + m.f, m.a]; } return keepN.apply(this, arguments); };
+  render(); drawNPC = keepN; if (ff && seenAt) { var hf = facilityLiftPx(ff.x, ff.y), want = view3dToScreen(ff.x, ff.y, hf), top = view3dToScreen(ff.x, ff.y, hf + 60); out.bar = { off: +Math.hypot(seenAt[0] - want[0], seenAt[1] - want[1]).toFixed(2), k: +seenAt[2].toFixed(4), want: +view3dScaleAt(ff.x, ff.y, hf).toFixed(4), up: top[1] < want[1] }; }
+  var ft = { world: true, x: 14, y: 20, text: '9', life: 30 }, fs = floatingTextScreen(ft), fw = view3dToScreen(14, 20, facilityLiftPx(14, 20) + 60); out.numberOff = +Math.hypot(fs[0] - fw[0], fs[1] - fw[1]).toFixed(2);
+  commandMode = true; commandTarget = world.filter(function (t) { return t.x === 13 && t.y === 22; })[0]; render(); out.fxRing = V.stats.fx; commandMode = false; commandTarget = null; render(); out.fxNone = V.stats.fx;
+  // the game's own projection (js/config.js isoSX, isoSY; js/facilityplay.js _fpP) is the camera's while it is the frame's, and the old 2:1 maths again inside view3dFlat
+  var settle = function (n) { V.dry(true); for (var j = 0; j < (n || 90); j++) render(); V.dry(false); render(); }; put(13, 19); settle();
+  var io = 0; [[13, 19], [15, 21], [11, 17], [16, 18]].forEach(function (c) { var L0 = facilityLiftPx(c[0], c[1]), w = view3dToScreen(c[0], c[1], L0), w2 = view3dToScreen(c[0], c[1], L0 + 20), a = isoSX(c[0], c[1]) + canvas.width / 2, b = isoSY(c[0], c[1]) + canvas.height / 2 + TILE_H - facilityLiftRel(c[0], c[1]), p = _fpP(c[0], c[1], 20 + L0 - _fpBase);
+    io = Math.max(io, Math.abs(a - w[0]), Math.abs(b - w[1]), Math.abs(p[0] - w2[0]), Math.abs(p[1] - w2[1])); }); out.isoOff = +io.toFixed(4); out.isoCam = ISO_CAM !== null && ISO_CAM.on();
+  view3dFlat(true); var dxo = 15 - player.visualX, dyo = 21 - player.visualY; out.flat = [+(isoSX(15, 21) - (dxo - dyo) * TILE_W).toFixed(6), +(isoSY(15, 21) - (dxo + dyo) * TILE_H).toFixed(6), ISO_CAM.on()]; view3dFlat(false);
+  // a pickup, a station and the stairwell: each drawn by the game's 2D about its own place, moved to where the camera has that place and scaled as the camera is there (js/view3d.js view3dItemBegin)
+  var rec = [], keepIB = view3dItemBegin; view3dItemBegin = function (x, y, ax, ay) { var r = keepIB.apply(this, arguments), m = ctx.getTransform(), w = view3dToScreen(x, y, facilityLiftPx(x, y)); rec.push([x, y, Math.hypot(m.a * ax + m.c * ay + m.e - w[0], m.b * ax + m.d * ay + m.f - w[1]), m.a]); return r; };
+  out.items = {}; ['pickup', 'station', 'stairwell'].forEach(function (fp) { var it = _fp.items.filter(function (i) { return i.fp === fp && V.covers(i.room) && V.keeps(i) && !i.taken; })[0]; if (!it) { out.items[fp] = null; return; }
+    var q = _fpNearestCellOpen(it.x + 1, it.y + 1); put(q[0], q[1]); settle(40); rec.length = 0; render(); var r = rec.filter(function (e) { return e[0] === it.x && e[1] === it.y; })[0];
+    out.items[fp] = r ? { off: +r[2].toFixed(2), k: +r[3].toFixed(3), want: +view3dScaleAt(it.x, it.y, facilityLiftPx(it.x, it.y)).toFixed(3) } : { missing: [it.x, it.y, it.room] }; });
+  view3dItemBegin = keepIB;
+  // IN A CARD BATTLE a fighter the view has no body for (a nymph) is drawn by the game's 2D where the camera has it, at the size a tile is there: at the battle's camera, and on the way back out
+  put(13, 19); settle(); var nym = foe('nymph', 16.2, 20.4), foes2 = [foe('worker', 16, 19.2), nym], seen2 = null, keepN2 = drawNPC;
+  drawNPC = function (a, px, py) { if (a === nym) { var m = ctx.getTransform(); seen2 = [m.a * px + m.c * py + m.e, m.b * px + m.d * py + m.f, m.a]; } return keepN2.apply(this, arguments); };
+  var b2d = function () { seen2 = null; render(); if (!seen2) return { drawn: false }; var p = V.screenNow(nym.x, nym.y, 0), e = V.screenNow(nym.x + 1, nym.y, 0), f = V.screenNow(nym.x, nym.y + 1, 0), Bc = cardBattleCam();
+    return { drawn: view3dDrawn2D(nym), bk: Bc ? +Bc.k.toFixed(2) : 0, off: +Math.hypot(seen2[0] - p[0], seen2[1] - p[1]).toFixed(2), k: +seen2[2].toFixed(3), want: +((Math.hypot(e[0] - p[0], e[1] - p[1]) + Math.hypot(f[0] - p[0], f[1] - p[1])) / 2 / Math.hypot(TILE_W, TILE_H)).toFixed(3), fov: +L().fov.toFixed(2) }; };
+  out.chose2 = cardBattleChoose(foes2[0]); V.dry(true); for (var j = 0; j < 150; j++) render(); V.dry(false); out.b2d = b2d();
+  cardBattleEnd(); out.b2dEase = null; for (var j = 0; j < 200 && !out.b2dEase; j++) { var Bq = cardBattleCam(); if (Bq && Bq.k < 0.75 && Bq.k > 0.15) out.b2dEase = b2d(); else { V.dry(true); render(); V.dry(false); } }
+  drawNPC = keepN2; foes2.forEach(function (a) { a.dead = true; a.deathProcessed = true; }); actors = actors.filter(function (a) { return !a.dead; }); settle(150);
+  // STAGE 3, THE WALLS THAT SINK UNDER THE LOW CAMERA: for every floor tile of every room built, you standing there and the camera settled behind you, in each of its four quarter turns: no wall or
+  // rock left standing covers your body (its feet and its middle) from the camera, the picture bent as it is drawn. The view says which groups sink (lowSinks: the game's camera's rule by
+  // the turn, and any wall that covers a body from where this camera is); the lines from the body to the camera are tried here against every standing wall's faces, by this test's own maths
+  out.lowHides = (function () { var Wd = V.world, UHh = 73.48469228349533, n = 0, cells = 0, where = [], strips = {}, tris = 0;
+    Wd.groups.forEach(function (G) { [G.face, G.cap, G.rface, G.rcap].forEach(function (q) { if (!q || !q.pos) return; for (var i = 0; i + 8 < q.pos.length; i += 9) { var P = q.pos, T = { G: G, p: [P[i], P[i + 1], P[i + 2], P[i + 3], P[i + 4], P[i + 5], P[i + 6], P[i + 7], P[i + 8]] };
+      T.x0 = Math.min(P[i], P[i + 3], P[i + 6]); T.x1 = Math.max(P[i], P[i + 3], P[i + 6]); T.z0 = Math.min(P[i + 2], P[i + 5], P[i + 8]); T.z1 = Math.max(P[i + 2], P[i + 5], P[i + 8]); tris++;
+      for (var k = Math.floor(T.x0 / 4); k <= Math.floor(T.x1 / 4); k++) (strips[k] = strips[k] || []).push(T); } }); });
+    var through = function (o, c, T, Q) { var bd = function (x, y, z) { var d = (x - Q.pivot[0]) * Q.fwd[0] + (z - Q.pivot[1]) * Q.fwd[1]; return y - Q.k * d * d; }, p = T.p, A = [p[0], bd(p[0], p[1], p[2]), p[2]], Bv = [p[3], bd(p[3], p[4], p[5]), p[5]], C = [p[6], bd(p[6], p[7], p[8]), p[8]];
+      var O = [o[0], bd(o[0], o[1], o[2]), o[2]], D = [c[0] - O[0], c[1] - O[1], c[2] - O[2]], e1 = [Bv[0] - A[0], Bv[1] - A[1], Bv[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+      var nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0], den = nx * D[0] + ny * D[1] + nz * D[2]; if (Math.abs(den) < 1e-12) return false;
+      var s = (nx * (A[0] - O[0]) + ny * (A[1] - O[1]) + nz * (A[2] - O[2])) / den; if (s < 1e-3 || s > 1 - 1e-3) return false; var X = [O[0] + D[0] * s - A[0], O[1] + D[1] * s - A[1], O[2] + D[2] * s - A[2]];
+      var d11 = e1[0] * e1[0] + e1[1] * e1[1] + e1[2] * e1[2], d12 = e1[0] * e2[0] + e1[1] * e2[1] + e1[2] * e2[2], d22 = e2[0] * e2[0] + e2[1] * e2[1] + e2[2] * e2[2], x1 = X[0] * e1[0] + X[1] * e1[1] + X[2] * e1[2], x2 = X[0] * e2[0] + X[1] * e2[1] + X[2] * e2[2], dd = d11 * d22 - d12 * d12; if (Math.abs(dd) < 1e-14) return false;
+      var u = (d22 * x1 - d12 * x2) / dd, v = (d11 * x2 - d12 * x1) / dd; return u > 1e-6 && v > 1e-6 && u + v < 1 - 1e-6; };   /* (the plane's crossing, then inside the triangle by its own two edges) */
+    var covered = function (pts, Q, sunk) { for (var i = 0; i < pts.length; i++) { var o = pts[i], c = Q.pos, xa = Math.min(o[0], c[0]), xb = Math.max(o[0], c[0]), za = Math.min(o[2], c[2]), zb = Math.max(o[2], c[2]);
+      for (var k = Math.floor(xa / 4); k <= Math.floor(xb / 4); k++) { var Ls = strips[k] || []; for (var j = 0; j < Ls.length; j++) { var T = Ls[j]; if (T.x1 < xa || T.x0 > xb || T.z1 < za || T.z0 > zb || sunk[T.G.key]) continue; if (through(o, c, T, Q)) return T.G.key; } } } return null; };
+    for (var t = 0; t < 4; t++) Object.keys(Wd.rooms).forEach(function (id) { Wd.rooms[id].rec.cells.forEach(function (c) { var h = (c[2] || 0) / UHh, r = V.lowSinks(c[0], c[1], t, id), sunk = {}; r.keys.forEach(function (k) { sunk[k] = 1; }); cells++;
+      var hit = covered([[c[0], h + 0.15, c[1]], [c[0], h + 0.6, c[1]]], r.pose, sunk); if (hit !== null) { n++; if (where.length < 6) where.push('turn ' + t + ': ' + id + ' ' + c[0] + ',' + c[1]); } }); });
+    // and as it runs: you and the squad in the Crystal Chamber, the camera settled: no group left standing covers any of you from where the camera is now
+    put(13, 19); followers.slice(0, 3).forEach(function (f, i) { var q = _fpNearestCellOpen(13 + [-3, 3, 2][i], 19 + [1, -2, 3][i]); f.x = q[0]; f.y = q[1]; }); settle(120);
+    var I = L(), Qn = { pos: I.pos, pivot: I.pivot, fwd: I.fwd, k: I.k }, sunkNow = {}, pts = [[player.visualX, player.visualY]].concat(followers.slice(0, 3).map(function (f) { return [f.x, f.y]; })), P3 = [];
+    Wd.groups.forEach(function (G) { if (G.want) sunkNow[G.key] = 1; }); pts.forEach(function (b) { var h = facilityLiftPx(b[0], b[1]) / UHh; P3.push([b[0], h + 0.15, b[1]], [b[0], h + 0.6, b[1]]); });
+    return { n: n, where: where, cells: cells, tris: tris, rooms: Object.keys(Wd.rooms).length, live: covered(P3, Qn, sunkNow), liveSunk: Object.keys(sunkNow).length, liveBodies: pts.length, more: V.lowSinking().length }; })();
+  // STAGE 4, THE HORIZON: what the curve has put under the horizon is not drawn, and the picture is the one it was with all of it drawn; nothing 2D is laid over a place under the horizon
+  out.horizon = (function () { put(13, 19); followers.slice(0, 3).forEach(function (f, i) { f.x = 12 + i; f.y = 20.5; }); VIEW3D.turn = 1; V.show(true); settle(120); var glc = document.getElementById('view3dCanvas'), c2 = document.createElement('canvas'), g2 = c2.getContext('2d'); c2.width = glc.width; c2.height = glc.height;
+    var shot = function () { var n = [0, 0]; for (var i = 0; i < 2; i++) { V.draw(null); n[0] += V.stats.draws; n[1] += V.stats.tris; } g2.clearRect(0, 0, c2.width, c2.height); g2.drawImage(glc, 0, 0); return { n: n, px: g2.getImageData(0, 0, c2.width, c2.height).data }; };
+    V.low.K.horizon = false; shot(); var off = shot(); L(); V.low.K.horizon = true; shot(); var on = shot(), culled = L().culled, diff = 0, lit = 0; for (var i = 0; i < on.px.length; i += 4) { if (on.px[i] + on.px[i + 1] + on.px[i + 2] > 120) lit++; if (Math.abs(on.px[i] - off.px[i]) + Math.abs(on.px[i + 1] - off.px[i + 1]) + Math.abs(on.px[i + 2] - off.px[i + 2]) > 24) diff++; }
+    var I = L(), far = [13 + I.fwd[0] * 60, 19 + I.fwd[1] * 60], near = [13 + I.fwd[0] * 4, 19 + I.fwd[1] * 4];
+    var o = { off: off.n, on: on.n, culled: culled, diff: diff, lit: lit, px: on.px.length / 4, st: +I.horizon.toFixed(2), far: +I.horizonFar.toFixed(2), floor: +I.horizonFloor.toFixed(3), farIso: isoSX(far[0], far[1]), nearIso: Math.abs(isoSX(near[0], near[1])) < 2000 };
+    VIEW3D.turn = 0; V.show(true); settle(60); return o; })();
   put(13, 19); step(3); var d = ctx.getImageData(40, 300, 1, 1).data; out.clear = d[3]; out.showing = VIEW3D.showing;
   out.errsLow = (window.__errs || []).slice(0, 4);`));
 if (LOWP !== null) {
@@ -909,6 +969,32 @@ if (LOWP !== null) {
         same(LOWP.chose, true, 'the battle'); same(LOWP.inBattle.phase, 'on', 'its phase'); same(LOWP.inBattle.bk, 1, 'eased in'); same(LOWP.inBattle.k, 0, 'the curve'); ok(LOWP.inBattle.fov < 0.1, 'its view ' + LOWP.inBattle.fov);
         ok(Math.abs(LOWP.inBattle.pitch) < 1e-3, 'its pitch, off the battle\'s by ' + LOWP.inBattle.pitch); ok(LOWP.inBattle.orthoPx < 1, 'off today\'s battle picture by ' + LOWP.inBattle.orthoPx + ' px');
         same(LOWP.afterBattle.cam, null, 'the battle\'s camera after'); same(LOWP.afterBattle.k, 0.013, 'the curve back'); same(LOWP.afterBattle.fov, 40, 'the view back'); ok(LOWP.afterBattle.aim < 0.01, 'back on the player: ' + LOWP.afterBattle.aim);
+    });
+    check('STAGE 2, THE 2D THROUGH THE CAMERA: a point of the world to the screen and back to its place; a tap on a tile walks to that tile; a unit\'s bars and plate drawn on its body, scaled as the camera is there; a floating number over its unit; the floor\'s marks laid on its floor', () => {
+        ok(LOWP.roundTrip < 1e-3, 'world to screen and back, off by ' + LOWP.roundTrip + ' tiles'); same(LOWP.offScreen[1], true, 'the low camera is the frame\'s');
+        same(JSON.stringify(LOWP.taps), '[true,true,true]', 'a tap on each tile walks there');
+        ok(LOWP.bar && LOWP.bar.off < 1, 'a unit\'s 2D (its bars, its plate) drawn off its body by ' + JSON.stringify(LOWP.bar)); ok(Math.abs(LOWP.bar.k - LOWP.bar.want) < 1e-3 && LOWP.bar.up, 'not scaled as the camera is there: ' + JSON.stringify(LOWP.bar));
+        ok(LOWP.numberOff < 1, 'a floating number off its unit by ' + LOWP.numberOff); same(LOWP.fxRing, true, 'the long-press ring laid on the floor'); same(LOWP.fxNone, false, 'marks laid with none');
+    });
+    check('STAGE 2: the game\'s own projection (isoSX, isoSY, _fpP) answers through the camera while it is the frame\'s, and by the old 2:1 maths inside view3dFlat; without the switch there is no camera to ask (ISO_CAM null)', () => {
+        same(LOWP.isoCam, true, 'ISO_CAM on'); ok(LOWP.isoOff < 0.01, 'isoSX, isoSY and _fpP off the camera\'s point by ' + LOWP.isoOff + ' px'); same(JSON.stringify(LOWP.flat), '[0,0,false]', 'inside view3dFlat, off the old maths');
+        ok(ON && ON.isoCam === true, 'without ?cam=low ISO_CAM is not null'); ok(/function isoSX\(x, y\) \{ if \(ISO_CAM !== null && ISO_CAM\.on\(\)\) return ISO_CAM\.sx\(x, y\); const dx = x - player\.visualX, dy = y - player\.visualY; return \(viewTU\(dx, dy\) - viewTV\(dx, dy\)\) \* TILE_W; \}/.test(rd('js/config.js')), 'js/config.js isoSX is not the old maths behind the camera\'s hook');
+        ok(/if \(VIEW3D\.cam === "low"\) ISO_CAM = /.test(rd('js/view3d.js')), 'js/view3d.js sets ISO_CAM other than with the low camera');
+    });
+    check('STAGE 2: a pickup, a station and the stairwell are drawn where the camera has them, at its scale there; in a card battle a fighter with no 3D body (a nymph) is drawn in 2D where the camera has it and at a tile\'s size there, at the battle\'s camera and on the way out', () => {
+        for (const k of ['pickup', 'station', 'stairwell']) { const I = LOWP.items && LOWP.items[k]; ok(I && !I.missing, k + ': not drawn through the camera: ' + JSON.stringify(I)); ok(I.off < 1, k + ' off its place by ' + I.off + ' px'); ok(Math.abs(I.k - I.want) < 0.01 && I.k > 0.2, k + ' scaled ' + I.k + ', the camera\'s ' + I.want); }
+        same(LOWP.chose2, true, 'the battle'); for (const [n, B] of [['at the battle\'s camera', LOWP.b2d], ['easing out', LOWP.b2dEase]]) { ok(B && B.drawn === true, n + ': the nymph not drawn in 2D: ' + JSON.stringify(B)); ok(B.off < 1.5, n + ': off its place by ' + B.off + ' px'); ok(Math.abs(B.k - B.want) < 0.02 * B.want, n + ': scaled ' + B.k + ', a tile there is ' + B.want); }
+        ok(LOWP.b2dEase.bk > 0.15 && LOWP.b2dEase.bk < 0.75 && LOWP.b2dEase.fov > 0.05 && LOWP.b2dEase.fov < 40, 'not caught on the way out: ' + JSON.stringify(LOWP.b2dEase));
+    });
+    check('STAGE 3, THE WALLS THAT SINK, both cameras (the game\'s own: "nothing standing hides anyone", above): under the low camera, in each of its four turns, on every floor tile of every room no wall or rock left standing covers your body from the camera; nor you or the squad as it runs', () => {
+        const H = LOWP.lowHides; ok(H && H.rooms >= 12 && H.cells > 4000 && H.tris > 10000, 'not measured: ' + JSON.stringify(H)); same(H.n, 0, 'tiles where something standing covers a body (' + H.where.join(' | ') + ')');
+        same(H.live, null, 'as it runs, a group left standing covers one of ' + H.liveBodies + ' bodies'); ok(H.liveSunk > 0, 'no wall sunk in the Crystal Chamber');
+        ok(ON && ON.hides && ON.hides.n === 0, 'the game\'s own camera\'s guard');
+    });
+    check('STAGE 4, THE HORIZON: what the curve puts under the horizon is left out (fewer draws and triangles) and the picture is the one with all of it drawn; nothing 2D is laid over a place under the horizon', () => {
+        const Z = LOWP.horizon; ok(Z && Z.culled > 0, 'nothing left out: ' + JSON.stringify(Z && [Z.off, Z.on, Z.culled])); ok(Z.on[0] < Z.off[0] && Z.on[1] < Z.off[1], 'draws and triangles with it ' + Z.on + ', without ' + Z.off);
+        ok(Z.lit > Z.px * 0.2, 'the picture is blank: ' + Z.lit + ' of ' + Z.px); ok(Z.diff <= Z.px * 0.0005, Z.diff + ' of ' + Z.px + ' px differ from the picture with everything drawn');
+        ok(Z.st > 5 && Z.st < 40 && Z.far > Z.st && Z.far < 80 && Z.floor < -0.5, 'the horizon ' + Z.st + ' tiles ahead, the visible distance ' + Z.far + ', over a floor at ' + Z.floor); ok(Z.farIso < -1e5 && Z.nearIso, 'a place 60 tiles ahead is not put off the screen (isoSX ' + Z.farIso + '), or one 4 ahead is');
     });
 }
 

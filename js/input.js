@@ -32,6 +32,7 @@ const PICK_RADIUS = 45;
 function followerPickPoint(f) {
     const px = isoSX(f.x, f.y) + canvas.width/2;
     const py = isoSY(f.x, f.y) + canvas.height/2 - facilityLiftRel(f.x, f.y) + (typeof view3dFeet === "function" ? view3dFeet() : 0);   // (THE 3D VIEW stands it half a tile lower: js/view3d.js)
+    const _lp = typeof view3dPick === "function" ? view3dPick(f.x, f.y, f.isClone ? 22 : 55) : null; if (_lp) return { x: _lp[0], y: _lp[1] };   // (THE LOW CAMERA: through its projection, js/view3d.js)
     const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py - (f.isClone ? 22 : 55)) : [px, py - (f.isClone ? 22 : 55)];   // (where it is on the screen, the battle view's zoom too: js/battleview.js)
     return { x: q[0], y: q[1] };
 }
@@ -44,7 +45,7 @@ function findEnemyAtScreen(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone || (typeof facilityShowsActor === "function" && !facilityShowsActor(a))) continue;   // (one in another room is not shown: js/facilityplay.js facilityShowsActor)
         const apx = isoSX(a.x, a.y) + canvas.width/2;
         const apy = isoSY(a.x, a.y) + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
+        const _q = (typeof view3dPick === "function" && view3dPick(a.x, a.y, 55)) || (typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55]), d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) { bestD = d; best = a; }
     }
     return best;
@@ -55,7 +56,7 @@ function enemyPickDistance(ex, ey) {
         if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone) continue;
         const apx = isoSX(a.x, a.y) + canvas.width/2;
         const apy = isoSY(a.x, a.y) + canvas.height/2 + TILE_H - facilityLiftRel(a.x, a.y);
-        const _q = typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55], d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
+        const _q = (typeof view3dPick === "function" && view3dPick(a.x, a.y, 55)) || (typeof bvZoomPt === "function" ? bvZoomPt(apx, apy - 55) : [apx, apy - 55]), d = Math.max(0, Math.hypot(ex - _q[0], ey - _q[1]) - (a.bodyR || 0) * TILE_W);   // (the battle view's zoom: js/battleview.js; a huge body, a boss's bodyR, is tapped anywhere on it: js/bosses.js)
         if (d < bestD) bestD = d;
     }
     return bestD;
@@ -153,8 +154,9 @@ const handleInput=(ex,ey)=>{
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
-    const gx=Math.round(_bk[0]+player.visualX);
-    const gy=Math.round(_bk[1]+player.visualY);
+    const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;   // (THE LOW CAMERA: the floor under the tap, through its projection: js/view3d.js)
+    const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
+    const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
     // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off a walk to a fallen clone's body: js/mutator.js)
@@ -166,7 +168,7 @@ const handleInput=(ex,ey)=>{
 function isTapNearCrystal(ex, ey) {
     const px = isoSX(crystal.x, crystal.y) + canvas.width/2;
     const py = isoSY(crystal.x, crystal.y) + canvas.height/2 + TILE_H;
-    const q = typeof bvZoomPt === "function" ? bvZoomPt(px, py) : [px, py];   // (where it shows: the battle view's zoom, js/battleview.js)
+    const q = (typeof view3dPick === "function" && view3dPick(crystal.x, crystal.y, 0)) || (typeof bvZoomPt === "function" ? bvZoomPt(px, py) : [px, py]);   // (where it shows: the battle view's zoom, js/battleview.js; THE LOW CAMERA's projection, js/view3d.js)
     return Math.hypot(ex - q[0], ey - q[1]) < 60;
 }
 
@@ -199,8 +201,9 @@ function handleLongHold(ex,ey) {
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
-    const gx=Math.round(_bk[0]+player.visualX);
-    const gy=Math.round(_bk[1]+player.visualY);
+    const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;   // (THE LOW CAMERA: the floor under the tap, through its projection: js/view3d.js)
+    const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
+    const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
     const t=getTile(gx,gy);
     commandTarget=(t&&!t.type.includes("wall"))?t:null;
     // Whichever is CLOSER to the finger wins, rather than the enemy always
@@ -271,8 +274,9 @@ canvas.addEventListener('pointerdown', e=>{
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(pressX, pressY) : [pressX, pressY];   // (the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
-    const gx=Math.round(_bk[0]+player.visualX);
-    const gy=Math.round(_bk[1]+player.visualY);
+    const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;   // (THE LOW CAMERA: the floor under the tap, through its projection: js/view3d.js)
+    const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
+    const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
     const t=getTile(gx,gy);
     if (t&&!t.type.includes("wall")) commandTarget=t;
 });
@@ -354,7 +358,8 @@ canvas.addEventListener('pointerup', e=>{
             if (f.dead) continue;
             const _fpx = isoSX(f.x, f.y) + canvas.width/2;
             const _fpy = isoSY(f.x, f.y) + canvas.height/2;
-            if (Math.hypot(upX - _fpx, upY - (_fpy - 55)) < 40) {
+            const _flp = typeof view3dPick === "function" ? view3dPick(f.x, f.y, 55) : null;   // (THE LOW CAMERA: js/view3d.js)
+            if (_flp ? Math.hypot(upX - _flp[0], upY - _flp[1]) < 40 : Math.hypot(upX - _fpx, upY - (_fpy - 55)) < 40) {
                 _tappedFollower = f;
                 break;
             }

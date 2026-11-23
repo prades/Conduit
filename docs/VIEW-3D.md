@@ -233,9 +233,9 @@ The owner, 2026-11-23: **"I really think that I want to try like a Animal Crossi
 - [x] Turning is still a quarter at a time (and the swipe as today); the zoom scales the camera's distance.
 - [x] What the camera leaves out is judged after the bend; the shadows are not bent; the ink line's depth edges and the sprites are right under it (the drafts' three fixes).
 - [x] A card battle: the camera eases to today's battle camera, as now, and back to the follow camera after (§8.5).
-- One function maps the world to the screen and one the screen to the floor, both from the active camera; the 2D things players see or touch go through them under the switch (§8.6).
-- The walls that sink judged from the active camera (§8.7).
-- The cost measured with and without it; cheap horizon culling (§8.8).
+- [x] One function maps the world to the screen and one the screen to the floor, both from the active camera; the 2D things players see or touch go through them under the switch (§8.6, with what is left).
+- [x] The walls that sink judged from the active camera (§8.12).
+- [x] The cost measured with and without it; cheap horizon culling (§8.13). Measured in headless Chromium only: not an iPad's.
 
 ### 8.4 Non-goals
 
@@ -252,9 +252,36 @@ C's light, sky and palette; any change of the battle's angle, the walls' heights
 - **The light's shadow square** is laid ahead of the player on the floor the camera sees (on the battle in a battle, as today).
 - **The void beyond the map** is today's background colour (`#0d1d26`): B has no sky (open question 4).
 
-### 8.6 The 2D under the low camera
+### 8.6 The 2D under the low camera (stage 2)
 
-Everything 2D the game draws over the picture was laid out for today's 2:1 orthographic projection (`_fpP`, about 290 uses in 16 files; `isoSX`/`isoSY` in 27 files; `isoDX`/`isoDY`; `isoBack` for taps; `isoDepth`; `view3dFeet`). Under the switch it is moved onto the camera one thing at a time, in the brief's order (§8.9 says what is done); the rest still uses the old maths and is wrong under the new camera. Without the switch the old 2:1 maths is the path, unchanged.
+Everything 2D the game draws over the picture was laid out for today's 2:1 orthographic projection (`_fpP`, about 290 uses in 16 files; `isoSX`/`isoSY` in 27 files; `isoDX`/`isoDY`; `isoBack` for taps; `isoDepth`; `view3dFeet`). Without the switch that maths is the path, unchanged (`ISO_CAM` in `js/config.js` is null for good).
+
+**The two functions** (`view3d/lowcam.js`; asked through `js/view3d.js`):
+- **World to screen:** `view3dToScreen(x, y, h)`: where the frame's camera draws the point (x, y) of the world h px of height up, the bend included (`LOW.toScreen`).
+- **Screen to world:** `view3dToWorld(sx, sy)`: the camera's ray through that point of the screen met with the bent floor at the height the floor has there (`LOW.toFloor`, a few rounds); null over the horizon.
+- `view3dScaleAt(x, y, h)`: the camera's px for one of the 2D's px there (1 at today's camera).
+
+**What goes through them under the switch:**
+
+| What | How | Status |
+|---|---|---|
+| The game's own projection, `isoSX`/`isoSY` (and so every drawing that starts from them) and `_fpP` | `ISO_CAM` (`js/config.js`, set by `js/view3d.js` only with the low camera): they answer so that, with the game's usual offsets added, the point is where the camera draws its floor | Implemented; verified (`tests/view3d.js`) |
+| Taps and long-press (a) | `view3dTapWorld` in `js/input.js` (the tap, the long press, the press) and `techScreenToWorld`; a unit's, an enemy's and the Crystal's pick points by `view3dPick` | Implemented; verified (a tap on a tile walks there) |
+| Bars, nameplates, everything the frame's list draws over a unit (b); pickups, stations, the stairwell and the other items the view leaves to the 2D (c) | Each thing of the frame's list is laid out flat by the old maths (`view3dFlat`) about its own place, then moved to where the camera has that place and scaled as the camera is there (`view3dItemBegin`, `js/game.js`) | Implemented; verified (a unit, a pickup, a station, the stairwell: on their place, at the camera's scale) |
+| Floating numbers (b) | `floatingTextScreen` (`js/drops.js`) | Implemented; verified |
+| A shot in the air | `view3dAtBegin`/`view3dAtEnd` about the shot (`js/game.js`) | Implemented; not tested |
+| The floor's marks (d) | A decal: the game draws them flat, unturned, at half scale into the view's layer (`_view3dFloorMarksLow`); the ink line's pass finds each pixel's place on the floor from its depth and reads the marks there (`view3d/core.js` `fxWorld`, `view3d/gameview.js` `lowMarks`) | Implemented; verified (the long-press ring is laid; a picture) |
+| A battle's fighter with no 3D body (e) | `_view3dBattle2D` already asks the frame's camera; under the switch it lays the fighter out flat and scales it to a tile's size there | Implemented; verified (a nymph, at the battle's camera and easing out) |
+
+**What still uses the old maths under the switch** (known, not fixed):
+- **Sizes outside the frame's list.** The overlays drawn after the list (the effects' rings and impacts the view does not draw itself, the selected units' rings, the bonds' hearts, the auras' glints, a bite's warning, the technicians' overlay, the smoke, the stations' tags) are now on their place through the camera, but at the 2D's own px size, not the camera's: too small near the camera (it is about 1.4 to 1.7 times today's scale at the player), too big far off.
+- **Floor shapes drawn by px offsets** (an ellipse, a diamond round a point) keep the 2:1 shape: right in the middle of the picture (the camera's pitch is the 2:1 view's 30°), without the perspective toward the sides and the distance.
+- **Directions,** `isoDX`/`isoDY` (a way of the world on the screen): the old maths; right in the picture's middle, off toward the sides.
+- **Inside one thing of the list:** what it draws about another place (a line to its target) is the old maths within that thing's own move and scale.
+- **Debris** (`fragments`) lives in screen px.
+- **The floor's marks:** none where the graphics card gives no depth texture; none farther than the layer reaches round the player (about 19 tiles); drawn at half the 2D's sharpness; as today, none while the camera swings or in a battle.
+- **A tap is not stopped by a wall:** it finds the floor on its ray, behind a standing wall too (as the 2D's did).
+- `isoDepth` (the 2D's drawing order) is unchanged: the camera looks the same way round as the game's.
 
 ### 8.7 Edge cases
 
@@ -262,13 +289,14 @@ A battle begun or ended mid-ease (the ease is the battle's own, both ways); a sw
 
 ### 8.8 Acceptance criteria and tests
 
-`tests/view3d.js` THE LOW CAMERA (a page with `?cam=low`): the switch and the knobs, every shader bent; the camera follows the player; the four quarter turns; the zoom; a card battle's camera and back. `tests/engineplan.js`: `?cam=low` only with the view. Every check without the switch is the one it was. Pictures and costs: `node design/cozy-camera/built.js <dir> [low|today]`.
+`tests/view3d.js` THE LOW CAMERA (a page with `?cam=low`): the switch and the knobs, every shader bent; the camera follows the player; the four quarter turns; the zoom; a card battle's camera and back. STAGE 2: a world point to the screen and back; a tap on a tile walks to that tile; a unit's bars on its body at the camera's scale; a floating number over its unit; the long-press ring laid on the floor; `isoSX`, `isoSY` and `_fpP` through the camera, the old maths inside `view3dFlat`, `ISO_CAM` null without the switch; a pickup, a station and the stairwell on their place at the camera's scale; a battle's 2D fighter at the battle's camera and easing out. STAGE 3: the walls' guard under the low camera in all four turns, and as it runs. STAGE 4: the horizon leaves things out and the picture is unchanged; nothing 2D over a place under the horizon. `tests/engineplan.js`: `?cam=low` only with the view. Every check without the switch is the one it was. Pictures and costs: `node design/cozy-camera/built.js <dir> [low|today]`.
 
 ### 8.9 Stages and verification record
 
 | Stage | What | Status |
 |---|---|---|
 | 1 | The camera and the curve, behind the switch; the battle's camera and back | Implemented; verified by `tests/view3d.js` THE LOW CAMERA and pictures |
+| 2 | The 2D through the camera: taps, the bars and plates, pickups and stations, the floor's marks, a battle's 2D fighters; the game's own projection (`isoSX`, `isoSY`, `_fpP`) answered by the camera | Implemented; verified by `tests/view3d.js` STAGE 2 (three checks) and pictures; what is left in §8.6 |
 
 ### 8.10 Open questions
 

@@ -31000,9 +31000,9 @@ function view3dCore(opts) {
                 }
         return world;
     }
-    function openRoom(world, room, dt, turn) {
+    function openRoom(world, room, dt, turn, more) {
         for (const G of world.groups) {
-            G.want = (turn && G.hides ? G.hides[turn] : G.hide).includes(room) ? 1 : 0;
+            G.want = (turn && G.hides ? G.hides[turn] : G.hide).includes(room) || (more && more.has(G)) ? 1 : 0;
             if (G.down !== G.want) {
                 G.down = dt ? clamp(G.down + (G.want ? 1 : -1) * dt / 0.4, 0, 1) : G.want;
                 G.g.position.y = -ease(G.down) * (G.sink || WALL_H + 0.16);
@@ -31040,12 +31040,13 @@ function view3dCore(opts) {
     const rtMain = target(), rtId = target();
     rtMain.texture.minFilter = rtMain.texture.magFilter = T.LinearFilter;
     rtMain.texture.encoding = T.sRGBEncoding;
-    const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: opts.dK || 0.02 }, useDepth: { value: depthOK ? 1 : 0 }, isOrtho: { value: 0 }, tFx: { value: null }, useFx: { value: 0 }, floorId: { value: new T.Vector3() }, dOff: { value: 0 } },
+    const comp = new T.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tMain: { value: rtMain.texture }, tId: { value: rtId.texture }, tDepth: { value: depthOK ? rtId.depthTexture : null }, res: { value: new T.Vector2(4, 4) }, ink: { value: new T.Color('#16303a') }, thick: { value: 1.6 }, near: { value: 1 }, far: { value: 100 }, dK: { value: opts.dK || 0.02 }, useDepth: { value: depthOK ? 1 : 0 }, isOrtho: { value: 0 }, tFx: { value: null }, useFx: { value: 0 }, floorId: { value: new T.Vector3() }, dOff: { value: 0 }, fxWorld: { value: 0 }, invPV: { value: new T.Matrix4() }, fxP: { value: new T.Vector2() }, fxS: { value: new T.Vector2() }, fxC: { value: new T.Vector2() } },
         vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-        fragmentShader: `uniform sampler2D tMain, tId, tDepth, tFx; uniform vec2 res; uniform vec3 ink, floorId; uniform float thick, near, far, dK, useDepth, isOrtho, useFx, dOff; varying vec2 vUv;
+        fragmentShader: `uniform sampler2D tMain, tId, tDepth, tFx; uniform vec2 res; uniform vec3 ink, floorId; uniform float thick, near, far, dK, useDepth, isOrtho, useFx, dOff, fxWorld; uniform mat4 invPV; uniform vec2 fxP, fxS, fxC; varying vec2 vUv;
     float lin(vec2 uv) { float z = texture2D(tDepth, uv).x; return isOrtho > 0.5 ? near + z * (far - near) : (2.0 * near * far) / (far + near - (z * 2.0 - 1.0) * (far - near)); }
     void main() { vec2 e = thick / res, uA = vUv + e, uB = vUv - e, uC = vUv + e * vec2(1.0, -1.0), uD = vUv - e * vec2(1.0, -1.0); vec3 c = texture2D(tMain, vUv).rgb;
-      if (useFx > 0.5) { vec4 f = texture2D(tFx, vUv); float on = 1.0 - step(0.02, length(texture2D(tId, vUv).rgb - floorId)); c = mix(c, f.rgb, f.a * on); }
+      if (useFx > 0.5) { vec2 fu = vUv; if (fxWorld > 0.5) { vec4 wp = invPV * vec4(vUv * 2.0 - 1.0, texture2D(tDepth, vUv).x * 2.0 - 1.0, 1.0); vec2 dd = wp.xz / wp.w - fxP; fu = vec2(fxC.x + (dd.x - dd.y) * fxS.x, fxC.y - (dd.x + dd.y) * fxS.y); }
+        vec4 f = texture2D(tFx, fu); float on = 1.0 - step(0.02, length(texture2D(tId, vUv).rgb - floorId)); c = mix(c, f.rgb, f.a * on); }
       float k = step(0.004, length(texture2D(tId, uA).rgb - texture2D(tId, uB).rgb) + length(texture2D(tId, uC).rgb - texture2D(tId, uD).rgb));
       if (useDepth > 0.5) { float dA = lin(uA) - dOff, dB = lin(uB) - dOff, dC = lin(uC) - dOff, dD = lin(uD) - dOff; k = max(k, smoothstep(dK, dK * 2.2, (abs(dA - dB) + abs(dC - dD)) / min(min(dA, dB), min(dC, dD)))); }
       gl_FragColor = vec4(mix(c, ink, k), 1.0); }` });
@@ -38131,7 +38132,7 @@ function view3dLowCam() {
             if (wrapMat(m))
                 n++; }); if (root.overrideMaterial && wrapMat(root.overrideMaterial))
         n++; return n; }
-    const PS = new T.Matrix4(), sph = new T.Sphere(), H = { on: false, st: 0, sc: 0, yc: 0, m: 0, yF: 0, cos: 1 };
+    const PS = new T.Matrix4(), sph = new T.Sphere(), H = { on: false, st: 0, sc: 0, yc: 0, m: 0, yF: 0, cos: 1, far: Infinity };
     let psOn = false, culled = 0;
     const F = T.Frustum.prototype;
     if (!F.__lowCam) {
@@ -38158,7 +38159,7 @@ function view3dLowCam() {
             const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (sph.center.x - P.x) * Fw.x + (sph.center.z - P.z) * Fw.y, r = sph.radius;
             sph.center.y -= k * d * d;
             sph.radius = r + k * (2 * Math.abs(d) * r + r * r);
-            if (H.on && d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius) {
+            if (H.on && (d - r > H.far || (d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius))) {
                 culled++;
                 return false;
             }
@@ -38206,21 +38207,37 @@ function view3dLowCam() {
         PS.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         psOn = true;
         U.lowView.value.copy(cam.matrixWorldInverse);
-        const k = U.lowK.value, sc = (cam.position.x - U.lowPivot.value.x) * fx + (cam.position.z - U.lowPivot.value.z) * fz, hc = cam.position.y - o.floorY;
+        const k = U.lowK.value, sc = (cam.position.x - U.lowPivot.value.x) * fx + (cam.position.z - U.lowPivot.value.z) * fz, yF = Number.isFinite(o.floorMin) ? Math.min(o.floorMin, o.floorY) : o.floorY, hc = cam.position.y - yF;
         H.on = K.horizon !== false && k > 1e-6 && hc > 0;
         if (H.on) {
             H.sc = sc;
             H.yc = cam.position.y;
-            H.yF = o.floorY;
+            H.yF = yF;
             H.st = sc + Math.sqrt(sc * sc + hc / k);
             H.m = -2 * k * H.st;
             H.cos = 1 / Math.sqrt(1 + H.m * H.m);
+            H.far = Number.isFinite(o.top) && o.top > yF ? H.st + Math.sqrt((o.top - yF) / k) : Infinity;
         }
+    }
+    function pose(px, py, floorY, a, z) {
+        const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, ax = px + fx * K.ahead, ay = floorY + K.lift, az = py + fz * K.ahead;
+        return { pos: [ax + Math.cos(p) * ca * D, ay + Math.sin(p) * D, az + Math.cos(p) * sa * D], aim: [ax, ay, az], pivot: [px, py], fwd: [fx, fz], k: K.k, fov: K.fov };
     }
     const drop = (x, z) => { const k = U.lowK.value; if (!k)
         return 0; const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (x - P.x) * Fw.x + (z - P.z) * Fw.y; return k * d * d; };
     const PV = new T.Vector3();
-    function toScreen(cam, x, y, z, W, Hh) { PV.set(x, y - drop(x, z), z); const dz = -PV.clone().applyMatrix4(cam.matrixWorldInverse).z; PV.project(cam); return [(PV.x + 1) / 2 * W, (1 - PV.y) / 2 * Hh, dz]; }
+    function toScreen(cam, x, y, z, W, Hh, out) {
+        const yb = y - drop(x, z), e = cam.matrixWorldInverse.elements, dz = -(e[2] * x + e[6] * yb + e[10] * z + e[14]);
+        PV.set(x, yb, z).project(cam);
+        if (!out)
+            out = [0, 0, 0];
+        out[0] = (PV.x + 1) / 2 * W;
+        out[1] = (1 - PV.y) / 2 * Hh;
+        out[2] = dz;
+        return out;
+    }
+    function below(x, y, z, r) { if (!H.on)
+        return false; const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (x - P.x) * Fw.x + (z - P.z) * Fw.y; return d > H.far || (d > H.st && H.yc + (d - H.sc) * H.m > y + r - U.lowK.value * d * d); }
     const RO = new T.Vector3(), RD = new T.Vector3();
     function toFloor(cam, sx, sy, W, Hh, floorAt) {
         RO.copy(cam.position);
@@ -38254,7 +38271,7 @@ function view3dLowCam() {
         }
         return { x, z };
     }
-    return { U, K, wrap, wrapMat, place, drop, toScreen, toFloor, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
+    return { U, K, wrap, wrapMat, place, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
 }
 ;
 /* view3d/fields.js */
@@ -38834,8 +38851,29 @@ const GAMEVIEW = (function () {
             bHalf = H / 2 / UNIT / (k * B.zoom);
             bPitch = e1;
         }
-        LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, W, H, dt, B, bk, bPitch, bAt, bHalf });
+        if (!lowBox) {
+            lowBox = { min: { y: Infinity }, max: { y: -Infinity } };
+            const bb = new T.Box3();
+            scene.updateMatrixWorld(true);
+            scene.traverse(o => {
+                const g = o.isMesh && o.geometry;
+                if (!g || !g.attributes || !g.attributes.position)
+                    return;
+                if (g.boundingBox === null)
+                    g.computeBoundingBox();
+                bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
+                if (Number.isFinite(bb.min.y) && Number.isFinite(bb.max.y) && bb.max.y - bb.min.y < 1e4)
+                    lowBox.max.y = Math.max(lowBox.max.y, bb.max.y);
+            });
+            for (const id in world.rooms)
+                for (const c of world.rooms[id].rec.cells)
+                    lowBox.min.y = Math.min(lowBox.min.y, (c[2] || 0) / UPX);
+            lowBox.min.y -= LOW_UNDER;
+        }
+        LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf });
     }
+    let lowBox = null;
+    const LOW_UNDER = 1, LOW_OVER = 3;
     let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0;
     if (typeof window !== 'undefined')
         window.addEventListener('resize', () => { fitAt = -1e9; });
@@ -39277,7 +39315,7 @@ const GAMEVIEW = (function () {
             world.sewer.tick(f0, SEWER_GM);
         const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas;
         if (room) {
-            CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4);
+            CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined);
             roomWas = room;
         }
         ATT.begin(f0);
@@ -39318,9 +39356,12 @@ const GAMEVIEW = (function () {
         }
         if (LOW && stats.frames % 30 === 0)
             LOW.wrap(scene);
-        const fx = turning() || battling() || LOW ? null : marks(floorMarks);
-        if (LOW)
+        const fx = turning() || battling() || (LOW && !CORE.depthOK) ? null : marks(floorMarks);
+        if (LOW) {
             lowLight();
+            if (fx)
+                lowMarks();
+        }
         else
             CORE.aimLight(at.x, at.z, Math.max(game.width, game.height) / UNIT / (GM.viewZoom || 1));
         CORE.draw(cam, null, { fx, fresh: stale });
@@ -39334,14 +39375,122 @@ const GAMEVIEW = (function () {
         stats.tris = CORE.renderer.info.render.triangles;
         stats.ms = performance.now() - t0;
     }
+    const LOW_SINK_EVERY = 4, SINK_UP = [0.15, 0.6], sinkSet = new Set();
+    let sinkAt = -1e9, sinkRoom = null, sinkGrid = null;
+    function sinkPrep() {
+        sinkGrid = new Map();
+        for (const G of world.groups) {
+            const tri = [];
+            for (const q of [G.face, G.cap, G.rface, G.rcap])
+                if (q && q.pos)
+                    for (let i = 0; i + 8 < q.pos.length; i += 9)
+                        tri.push(q.pos.slice(i, i + 9));
+            if (!tri.length)
+                continue;
+            let x0 = 1e9, z0 = 1e9, x1 = -1e9, z1 = -1e9;
+            for (const t of tri)
+                for (let j = 0; j < 9; j += 3) {
+                    x0 = Math.min(x0, t[j]);
+                    x1 = Math.max(x1, t[j]);
+                    z0 = Math.min(z0, t[j + 2]);
+                    z1 = Math.max(z1, t[j + 2]);
+                }
+            const E = { G, tri };
+            for (let gx = Math.floor(x0 / 4); gx <= Math.floor(x1 / 4); gx++)
+                for (let gz = Math.floor(z0 / 4); gz <= Math.floor(z1 / 4); gz++) {
+                    const k = gx + ',' + gz;
+                    let L = sinkGrid.get(k);
+                    if (!L)
+                        sinkGrid.set(k, L = []);
+                    L.push(E);
+                }
+        }
+    }
+    function coverGroups(pts, C, P, Fw, k, out) {
+        if (!sinkGrid)
+            sinkPrep();
+        const bend = (x, y, z) => { const d = (x - P[0]) * Fw[0] + (z - P[1]) * Fw[1]; return y - k * d * d; };
+        for (const p of pts) {
+            const ox = p[0], oy = bend(p[0], p[1], p[2]), oz = p[2], dx = C[0] - ox, dy = C[1] - oy, dz = C[2] - oz, seen = new Set();
+            const n = Math.ceil(Math.hypot(dx, dz) / 2) + 1;
+            for (let s = 0; s <= n; s++) {
+                const gx = Math.floor((ox + dx * s / n) / 4), gz = Math.floor((oz + dz * s / n) / 4);
+                for (let ix = gx - 1; ix <= gx + 1; ix++)
+                    for (let iz = gz - 1; iz <= gz + 1; iz++) {
+                        const L = sinkGrid.get(ix + ',' + iz);
+                        if (L)
+                            for (const E of L)
+                                seen.add(E);
+                    }
+            }
+            for (const E of seen) {
+                if (out.has(E.G))
+                    continue;
+                for (const t of E.tri) {
+                    if (segTri(ox, oy, oz, dx, dy, dz, t, bend)) {
+                        out.add(E.G);
+                        break;
+                    }
+                }
+            }
+        }
+        return out;
+    }
+    function segTri(ox, oy, oz, dx, dy, dz, t, bend) {
+        const ax = t[0], ay = bend(t[0], t[1], t[2]), az = t[2], e1x = t[3] - ax, e1y = bend(t[3], t[4], t[5]) - ay, e1z = t[5] - az, e2x = t[6] - ax, e2y = bend(t[6], t[7], t[8]) - ay, e2z = t[8] - az;
+        const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x, det = e1x * px + e1y * py + e1z * pz;
+        if (Math.abs(det) < 1e-12)
+            return false;
+        const inv = 1 / det, tx = ox - ax, ty = oy - ay, tz = oz - az;
+        const u = (tx * px + ty * py + tz * pz) * inv;
+        if (u < 0 || u > 1)
+            return false;
+        const qx = ty * e1z - tz * e1y, qy = tz * e1x - tx * e1z, qz = tx * e1y - ty * e1x, v = (dx * qx + dy * qy + dz * qz) * inv;
+        if (v < 0 || u + v > 1)
+            return false;
+        const s = (e2x * qx + e2y * qy + e2z * qz) * inv;
+        return s > 1e-4 && s < 1 - 1e-4;
+    }
+    function lowBodies(room) {
+        const pts = [], add = (x, y) => { const h = GM.liftPx(x, y) / UPX; for (const up of SINK_UP)
+            pts.push([x, h + up, y]); };
+        add(GM.player.visualX, GM.player.visualY);
+        for (const a of GM.actors || [])
+            if (a && !a.dead && a.isFollower && Number.isFinite(a.x)) {
+                const r = GM.roomAt(a.x, a.y, GM.fp.F);
+                if (r && r.id === room)
+                    add(a.x, a.y);
+            }
+        return pts;
+    }
+    function lowSinks(f0, room) {
+        if (room === sinkRoom && f0 - sinkAt < LOW_SINK_EVERY && f0 >= sinkAt)
+            return sinkSet;
+        sinkAt = f0;
+        sinkRoom = room;
+        sinkSet.clear();
+        if (battling() && GM.battleCam.k > 0.5)
+            return sinkSet;
+        const P = LOW.pivot(), Fw = LOW.fwd();
+        return coverGroups(lowBodies(room), [cam.position.x, cam.position.y, cam.position.z], [P.x, P.z], [Fw.x, Fw.y], LOW.k(), sinkSet);
+    }
     function lowLight() {
         const P = LOW.pivot(), Fw = LOW.fwd(), e = battling() ? Math.min(1, GM.battleCam.k) : 0, z = GM.viewZoom || 1;
         CORE.aimLight(P.x + Fw.x * 5 * (1 - e) + (at.x - P.x) * e, P.z + Fw.y * 5 * (1 - e) + (at.z - P.z) * e, e > 0.99 ? Math.max(game.width, game.height) / UNIT / z : 26 / Math.min(1, z));
         CORE.inkU.dOff.value = Math.max(0, (cam.userData.focusD || 0) - BACK);
         CORE.inkU.dK.value = LOWCAM.dK + (0.008 - LOWCAM.dK) * e;
     }
+    const MARKS_K = 0.5, PVm = new T.Matrix4(), LOW_TALL = 1.5;
+    function lowMarks() {
+        const u = CORE.inkU, W = game.width, H = game.height;
+        u.fxWorld.value = 1;
+        u.invPV.value.copy(PVm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)).invert();
+        u.fxP.value.set(GM.player.visualX, GM.player.visualY);
+        u.fxS.value.set(TW * MARKS_K / W, TH * MARKS_K / H);
+        u.fxC.value.set(0.5, 0.5 - TH * MARKS_K / H);
+    }
     return {
-        stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW,
+        stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1,
         owns(o, k) { return ATT.owns(o, k); },
         covers(id) { return !!world.rooms[id]; },
         show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) {
@@ -39397,10 +39546,30 @@ const GAMEVIEW = (function () {
             return LOW.toScreen(cam, x, (hPx || 0) / UPX, y, game.width, game.height).slice(0, 2); const v = new T.Vector3(x, (hPx || 0) / UPX, y).project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
         screenNow(x, y, hPx) { const v = SCR.set(x, (hPx || 0) / UPX, y); if (LOW)
             return LOW.toScreen(cam, x, v.y, y, game.width, game.height).slice(0, 2); v.project(cam); return [(v.x + 1) / 2 * game.width, (1 - v.y) / 2 * game.height]; },
+        screenLow(x, y, hPx, out) { if (!LOW)
+            return null; const h = (hPx || 0) / UPX, o = LOW.toScreen(cam, x, h, y, game.width, game.height, out); if (LOW.below(x, h, y, LOW_TALL))
+            o[2] = 0; return o; },
         floorAt(sx, sy) { if (!LOW)
             return null; const q = LOW.toFloor(cam, sx, sy, game.width, game.height, (x, z) => GM.liftPx(x, z) / UPX); return q ? { x: q.x, y: q.z } : null; },
+        lowSinks(x, y, t, room, more) {
+            if (!LOW)
+                return null;
+            const Q = LOW.pose(x, y, GM.liftPx(x, y) / UPX, Math.PI / 4 - t * Math.PI / 2, 1), out = new Set(), pts = [];
+            for (const b of [[x, y]].concat(more || [])) {
+                const h = GM.liftPx(b[0], b[1]) / UPX;
+                for (const u of SINK_UP)
+                    pts.push([b[0], h + u, b[1]]);
+            }
+            coverGroups(pts, Q.pos, Q.pivot, Q.fwd, Q.k, out);
+            const keys = [];
+            for (const G of world.groups)
+                if ((t && G.hides ? G.hides[t] : G.hide).includes(room) || out.has(G))
+                    keys.push(G.key);
+            return { pose: Q, keys };
+        },
+        lowSinking() { return LOW ? [...sinkSet].map(G => G.key) : null; },
         lowInfo() { if (!LOW)
-            return null; const P = LOW.pivot(), A = LOW.aim, Hz = LOW.horizon(); return { aim: [A.x, A.y, A.z], pivot: [P.x, P.z], fwd: [LOW.fwd().x, LOW.fwd().y], k: LOW.k(), fov: cam.fov, pos: [cam.position.x, cam.position.y, cam.position.z], focusD: cam.userData.focusD, horizon: Hz.on ? Hz.st : null, culled: LOW.culled(), missed: LOW.missed().length, knobs: Object.assign({}, LOWCAM) }; }
+            return null; const P = LOW.pivot(), A = LOW.aim, Hz = LOW.horizon(); return { aim: [A.x, A.y, A.z], pivot: [P.x, P.z], fwd: [LOW.fwd().x, LOW.fwd().y], k: LOW.k(), fov: cam.fov, pos: [cam.position.x, cam.position.y, cam.position.z], focusD: cam.userData.focusD, horizon: Hz.on ? Hz.st : null, horizonFar: Hz.on ? Hz.far : null, horizonFloor: Hz.on ? Hz.yF : null, culled: LOW.culled(), missed: LOW.missed().length, knobs: Object.assign({}, LOWCAM) }; }
     };
 })();
 ;

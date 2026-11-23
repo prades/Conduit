@@ -1037,7 +1037,7 @@ function render() {
     // THE 3D VIEW (js/view3d.js; its switch on, and the room you are in one it has built): it draws the floor, the walls, the props and the bodies it has models for, under this canvas. This frame
     // then lays out no floor tile and no wall or prop, and what is drawn below is what the 3D view does not draw: the bars and plates over everyone, the effects, the panels.
     const _v3 = !_simGhost && typeof view3dShowing === "function" && view3dShowing();
-    let drawList=_simGhost?[]:visibleTilesForDraw();
+    let drawList=_simGhost || (_v3 && typeof view3dLow === "function" && view3dLow()) ? [] : visibleTilesForDraw();   // (THE LOW CAMERA lays the floor's marks from its own list of tiles: js/view3d.js _view3dFloorMarksLow)
     const _v3tiles = _v3 ? drawList : null; if (_v3) drawList = [];   // (the tiles on the screen: the 3D view's floor has their marks laid on it)
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
     // A catch-up step (gameLoop) draws nothing, and drawing a unit changes
@@ -1059,10 +1059,14 @@ function render() {
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
+        const _v3lo = _v3 && typeof view3dLow === "function" && view3dLow() && obj.type !== 'crystal';   // THE LOW CAMERA (js/view3d.js): each thing drawn by its own 2D drawing about its place (laid out flat, by the old maths: view3dFlat), moved to where the camera has it and scaled as the camera's px are there
+        if (_v3lo) view3dFlat(true);
         const px=isoSX(obj.x, obj.y)+canvas.width/2;
         let py=isoSY(obj.x, obj.y)+canvas.height/2;
         if (obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
         if (_v3 && obj.type !== 'fp' && obj.type !== 'crystal') py += view3dFeet();   // (THE 3D VIEW stands a body where the game has it, half a tile down the screen from where this drawing put its feet: what is drawn over it goes with it, js/view3d.js)
+        if (_v3lo) view3dItemBegin(obj.x, obj.y, obj.type === 'fp' ? isoSX(obj.x, obj.y) + canvas.width / 2 : px, obj.type === 'fp' ? isoSY(obj.x, obj.y) + canvas.height / 2 + TILE_H - facilityLiftRel(obj.x, obj.y) : py);
+        try {
 
         if (obj.type==='player') {
             if (player._flight && typeof techFlightLift === "function") py -= techFlightLift(player);   // (carried by a Kinetic Launcher you are drawn up in the air: js/techabilities.js)
@@ -1233,6 +1237,7 @@ function render() {
             else _drawFloorTile(ctx, px, py, dist);
             drawFloorTileMarks(obj, px, py, false);
         }
+        } finally { if (_v3lo) { view3dItemEnd(); view3dFlat(false); } }
     });
 
     // ── THE NETWORK PANEL: the relays and the rooms with power (js/facilitynet.js) ──
@@ -1357,7 +1362,10 @@ function render() {
         const sx=isoSX(p.x, p.y)+canvas.width/2;
         const sy=isoSY(p.x, p.y)+canvas.height/2 - 40;
         // Draw element-specific projectile
-        if (!(typeof view3dOwnsFx === "function" && view3dOwnsFx(p))) _drawFollowerProjectile(ctx, p, sx, sy);   // (a shot the 3D view draws itself, view3d/attacks_fire.js: the fire line's quills and fireballs)
+        const _lo = typeof view3dAtBegin === "function" && view3dAtBegin(p.x, p.y), _sx = _lo ? isoSX(p.x, p.y) + canvas.width / 2 : sx, _sy = _lo ? isoSY(p.x, p.y) + canvas.height / 2 - 40 : sy;   // (THE LOW CAMERA: laid out flat about the shot, drawn where the camera has it, at its scale there: js/view3d.js)
+        try {
+        if (!(typeof view3dOwnsFx === "function" && view3dOwnsFx(p))) _drawFollowerProjectile(ctx, p, _sx, _sy);   // (a shot the 3D view draws itself, view3d/attacks_fire.js: the fire line's quills and fireballs)
+        } finally { if (_lo) view3dAtEnd(); }   // (a shot the 3D view draws itself, view3d/attacks_fire.js: the fire line's quills and fireballs)
         // Landing callback for arc bombs when they expire
         if (p.life <= 0 && p.onLand) p.onLand();
         // Hit detection (skipped for bombs that trigger onLand instead)

@@ -24,6 +24,13 @@ const SPOTS = [
   ['chamber-t3', { room: 'crystal_chamber', frac: 0.5 }, 1, 3],
   ['chamber-z06', { room: 'crystal_chamber', frac: 0.5 }, 0.6, 0],
   ['chamber-z18', { room: 'crystal_chamber', frac: 0.5 }, 1.8, 0],
+  // the walls from the side (stage 3): at a room's edges, and the hallway turned; a deck over the arena (the horizon is the lowest floor's)
+  ['chamber-edge', { room: 'crystal_chamber', frac: 0.03 }, 1, 0],
+  ['chamber-edge2', { room: 'crystal_chamber', frac: 0.97 }, 1, 0],
+  ['hallway-t1', { room: 'lab_hallway', frac: 0.5 }, 1, 1],
+  ['hallway-edge', { room: 'lab_hallway', frac: 0.1 }, 1, 0],
+  ['deck', { room: 'observation_deck', frac: 0.5 }, 1, 0],
+  ['lobby-t1', { xy: [30, 11] }, 1, 1],
 ];
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
@@ -67,7 +74,7 @@ const SPOTS = [
   await p.evaluate(() => { VIEW3D.turn = 0; VIEW_TURN = 0; VIEW3D.zoom = 1; });
   // ── a tap on a tile: the tile three to the right and two ahead of the player, through the game's own tap (js/input.js handleInput), and where it sends the player ──
   if (!ONLY || ONLY.includes('tap')) {
-    const t = await p.evaluate(() => { try { const cells = partyRoomCells('crystal_chamber'), c0 = cells[Math.floor(cells.length * 0.5)]; __put(c0[0], c0[1]); __near(); __step(4);
+    const t = await p.evaluate(() => { try { const cells = partyRoomCells('crystal_chamber'), c0 = cells[Math.floor(cells.length * 0.5)]; __put(c0[0], c0[1]); __near(); VIEW3D.view.dry(true); __step(90); VIEW3D.view.dry(false); __step(2);   /* (the camera settled on the player first) */
       const V = VIEW3D.view, tgt = [Math.round(player.x) + 2, Math.round(player.y) - 2], h = facilityLiftPx(tgt[0], tgt[1]), s = V.screenNow(tgt[0], tgt[1], h);
       const back = typeof techScreenToWorld === 'function' ? techScreenToWorld(s[0], s[1]) : null; window.__tapAt = s;
       let went = null; if (typeof handleInput === 'function') { handleInput(s[0], s[1]); went = player.fpPath && player.fpPath.length ? player.fpPath[player.fpPath.length - 1] : [player.targetX, player.targetY]; }
@@ -76,6 +83,12 @@ const SPOTS = [
     await hide(); await p.evaluate(() => { const c = document.createElement('div'), s = window.__tapAt, r = document.getElementById('cavernCanvas').getBoundingClientRect(), k = r.width / canvas.width;
       c.id = '__tapMark'; c.style.cssText = 'position:fixed;z-index:99;width:22px;height:22px;margin:-11px 0 0 -11px;border:3px solid #ff3b7f;border-radius:50%;pointer-events:none;visibility:visible;left:' + (r.left + s[0] * k) + 'px;top:' + (r.top + s[1] * k) + 'px'; document.body.appendChild(c); });
     await p.screenshot({ path: path.join(OUT, NAME + '-tap.png'), timeout: 180000 }); await p.evaluate(() => { const c = document.getElementById('__tapMark'); if (c) c.remove(); });
+  }
+  // ── the floor's marks: the long-press ring on a tile two ahead of the player (laid on the 3D floor) ──
+  if (!ONLY || ONLY.includes('marks')) {
+    const m = await p.evaluate(() => { const t = world.filter(q => q.x === Math.round(player.x) - 2 && q.y === Math.round(player.y) - 2)[0]; commandMode = true; commandTarget = t || null; __step(2); return { tile: t && [t.x, t.y], fx: VIEW3D.view.stats.fx }; });
+    console.log('marks', JSON.stringify(m)); results.marks = m; await hide(); await p.screenshot({ path: path.join(OUT, NAME + '-marks.png'), timeout: 180000 });
+    await p.evaluate(() => { commandMode = false; commandTarget = null; __step(1); });
   }
   // ── a card battle in the Crystal Chamber: three ants against the squad; in it, then eased back out ──
   if (!ONLY || ONLY.includes('battle')) {
