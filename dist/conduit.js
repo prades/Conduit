@@ -4503,7 +4503,7 @@ function dmgApply(target, amount, source, element, hit) {
             emBase *= Math.min(g, 1);
         }
     }
-    let whole = 1;
+    let whole = 1, opp = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function")
         whole = getElementMultiplier(el, target.element);
     const wholeBase = Math.min(whole, 1);
@@ -4520,11 +4520,11 @@ function dmgApply(target, amount, source, element, hit) {
             if (target.stunned > 0 || target.asleep > 0)
                 n++;
             if (n)
-                whole *= 1 + op * n;
+                opp = 1 + op * n;
         }
     }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
-    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP), base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
+    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP) * opp, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
     dmgBaseShare = total > 1e-9 && base < total - 1e-9 ? Math.max(0, base / total) : 1;
     return total;
 }

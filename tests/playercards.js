@@ -225,7 +225,7 @@ function page(w, h, query) {
         const r = J(`(function(){ __gs(); const a = __dummy(3, 0), sa = __shoot(a); a.dead = true; actors = actors.filter(x => x !== a);
             __gs('incendiary_gunner'); const b = __dummy(3, 0), sb = __shoot(b); b.dead = true; actors = actors.filter(x => x !== b);
             const c = __dummy(3, 0); c.element = 'flux'; const sc = __shoot(c); return { plain: sa.lost, role: sb.lost, flux: sc.lost, el: [sb.el, sc.el], mult: getElementMultiplier('fire', 'flux') }; })()`);
-        same(r.el.join(), 'fire,fire', 'the rounds\' element'); near(r.role, r.plain, 1e-9, 'a role\'s round on a creature with no element against a plain one'); near(r.flux / r.role, r.mult, 1e-9, 'the triangle on a flux creature'); same(r.mult, 1.3, 'fire on flux');
+        same(r.el.join(), 'fire,fire', 'the rounds\' element'); near(r.role, r.plain, 1e-9, 'a role\'s round on a creature with no element against a plain one'); near(r.flux / r.role, r.mult, 1e-9, 'the triangle on a flux creature'); same(r.mult, 1.75, 'fire on flux');
     });
     await check('INCENDIARY GUNNER: every round that hits sets BURN (3 a second for 3 s: 1 a tick, 180 frames); a second round refreshes it, never stacks', () => {
         const r = J(`(function(){ __gs('incendiary_gunner'); const e = __dummy(3, 0); __shoot(e); const o = { a: [e.burning, e.burnDamage, __said('BURN')] }; __frames(30); __shoot(e); o.b = [e.burning, e.burnDamage]; return o; })()`);
@@ -309,8 +309,8 @@ function page(w, h, query) {
             o.kinds = Object.keys(_PC_HIT_CLASS).sort().join(); o.m = [getElementMultiplier('fire', 'flux'), getElementMultiplier('electric', 'flux')];
             __tm('forgemaster'); const e = __dummy(1, 0), a0 = playerAmmo = 99, p0 = followerProjectiles.length; setPlayerAttackMode(true, true); const s = __shoot(e); o.own = [playerWeapon, playerAttackMode, s.fired, followerProjectiles.length - p0, a0 - playerAmmo, s.lost]; return o; })()`);
         same(r.el.join(), 'fire,ice,elemental', 'the elements under FORGEMASTER (the zap the role\'s, still Elemental; a gun\'s round is not the Technomancer\'s hit)'); same(r.warden + ',' + r.none, 'electric,electric', 'the zap with ARC WARDEN, and with no role');
-        same(r.kinds, 'arc,gun', 'the hits a role\'s element goes on (the Technomancer\'s zap, the Gunslinger\'s round: no punch, no lash)'); same(r.m.join(), '1.3,1', 'the triangle');
-        ok(r.zap[0] > 0 && r.zap[2] > 0, 'a zap took nothing: ' + JSON.stringify(r)); near(r.zap[1] / r.zap[0], 1.3, 1e-6, 'the zap on a flux creature, under a fire role'); near(r.zap[3], r.zap[2], 1e-6, 'the zap on a creature with no element');
+        same(r.kinds, 'arc,gun', 'the hits a role\'s element goes on (the Technomancer\'s zap, the Gunslinger\'s round: no punch, no lash)'); same(r.m.join(), '1.75,1', 'the triangle');
+        ok(r.zap[0] > 0 && r.zap[2] > 0, 'a zap took nothing: ' + JSON.stringify(r)); near(r.zap[1] / r.zap[0], 1.75, 1e-6, 'the zap on a flux creature, under a fire role'); near(r.zap[3], r.zap[2], 1e-6, 'the zap on a creature with no element');
         near(r.zap[4], r.zap[0], 1e-6, 'ARC WARDEN\'s zap on a flux creature (electric, as with no role)'); near(r.zap[5], r.zap[2], 1e-6, 'ARC WARDEN\'s zap on a creature with no element');
         same(r.own.join('|'), '|false|false|0|0|0', 'the Technomancer\'s own shot at a creature a tile away (no weapon in hand; nothing armed, fired, flown, spent or lost)');
     });
@@ -384,7 +384,7 @@ function page(w, h, query) {
             __mx(); const c0 = __mclone(); o.none = dmgBiteHit(c0) === DMG_HIT_CLONE;
             __mx('ash_surgeon'); const e = __dummy(1, 0), a0 = playerAmmo = 99, p0 = followerProjectiles.length; setPlayerAttackMode(true, true); const s = __shoot(e); o.own = [playerWeapon, playerAttackMode, s.fired, followerProjectiles.length - p0, a0 - playerAmmo, s.lost]; return o; })()`);
         same(r.hit.join(), 'piercing,fire,true,true', 'the bite\'s hit, the clone\'s special (no element)'); same(r.none, true, 'the bite with no role'); same(r.notMine, true, 'a clone that is not the Mutator\'s own');
-        ok(r.bite[0] > 0, 'a bite took nothing: ' + JSON.stringify(r)); near(r.bite[1] / r.bite[0], 1.3, 1e-6, 'the bite on a flux creature'); near(r.bite[3], r.bite[2], 1e-6, 'the bite on a creature with no element');
+        ok(r.bite[0] > 0, 'a bite took nothing: ' + JSON.stringify(r)); near(r.bite[1] / r.bite[0], 1.75, 1e-6, 'the bite on a flux creature'); near(r.bite[3], r.bite[2], 1e-6, 'the bite on a creature with no element');
         same(r.own.join('|'), '|false|false|0|0|0', 'the Mutator\'s own strike at a creature a tile away (no weapon in hand; nothing armed, fired, flown, spent or lost)');
     });
     await check('the clone\'s bites: PLAGUE DOCTOR\'s WEAKEN (40% for 4 s), SPARK GENETICIST\'s GLITCH (0.5 s), CORE SHAPER\'s KNOCK the creature BACK, away from the clone (0.22); ASH SURGEON\'s and CRYO GENETICIST\'s set nothing (their element only); no role, nothing; a bite that kills sets nothing', () => {

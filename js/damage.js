@@ -203,7 +203,7 @@ function dmgApply(target, amount, source, element, hit) {
     let em = 1, emBase = 1;   // (emBase: the same with no weakness or advantage in it, only what resists: dmgBaseShare)
     if (elem > 0 && !bare) { em = dmgRowMult(row, "elemental"); emBase = Math.min(em, 1); if (el && target.element && typeof getElementMultiplier === "function") { const g = getElementMultiplier(el, target.element); em *= g; emBase *= Math.min(g, 1); } }
     // a player's weapon with an element (the gun's round in the selected element, or a role's) still sets the triangle on the whole hit, as it did
-    let whole = 1;
+    let whole = 1, opp = 1;   /* (opp: an Opportunity card's share, on top of the cap: the cap is on the advantages themselves) */
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function") whole = getElementMultiplier(el, target.element);
     const wholeBase = Math.min(whole, 1);
     // OPPORTUNITY (a Brawler's cards, js/cards.js equipOpportunity; docs/UNIVERSAL-AND-PLAYER-CARDS.md): each weakness the hit exploits adds the card's share to the whole hit, the openings adding up (the owner, 2026-11-02).
@@ -217,11 +217,11 @@ function dmgApply(target, amount, source, element, hit) {
             if (elem > 0 && !bare && dmgRowMult(row, "elemental") > 1) n++;
             if (elem > 0 && el && target.element && typeof getElementMultiplier === "function" && getElementMultiplier(el, target.element) > 1) n++;
             if (target.stunned > 0 || target.asleep > 0) n++;
-            if (n) whole *= 1 + op * n;
+            if (n) opp = 1 + op * n;
         }
     }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
-    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP), base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
+    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP) * opp, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
     dmgBaseShare = total > 1e-9 && base < total - 1e-9 ? Math.max(0, base / total) : 1;
     return total;
 }
