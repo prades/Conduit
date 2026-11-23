@@ -1382,10 +1382,44 @@ function _cbDragAim(D, ev) {
     if (!V || typeof toCanvas !== "function" || typeof cardShapeTileAt !== "function") return null;
     const p = toCanvas(ev.clientX, ev.clientY); return cardShapeTileAt(p[0], p[1], V);
 }
+// WHAT THE CARD WILL DO, SHOWN BEFORE IT IS LET GO (the owner, 2026-11-23: "wind up or you're not in position and the game still accepts that attack"; asked, "Show it before you drop"): while a card
+// is dragged over the fight, a word over it says what letting go there does, by the same rules cardBattlePlay follows, and nothing is played or changed: HITS NOW; CHARGES, LANDS IN n TURNS (a Mage's
+// cards, a Technician's second attack); MOVES IN FIRST (it cannot hit from its square: its turn is the walk, the card stays ready); or why nothing would be played (OUT OF ITS REACH, NO WAY THROUGH, the
+// shape's own reason). It is still played the same as before. { text, ok: "now" | "later" | "walk" | "no" }, or null where nothing is said.
+function cardBattlePreview(f, kind, id, target) {
+    if (!cardBattleActive() || !f || kind === "pass" || kind === "serum") return null;
+    if (typeof player !== "undefined" && f === player) return null;
+    const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return null;
+    const def = typeof cardShapeDef === "function" ? cardShapeDef(f, kind, id) : null, aimK = kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
+    const sq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? [Math.round(t.x), Math.round(t.y)] : null;
+    if (kind === "walk") { const t = sq(target); if (!t) return null; return _cb.lay && _cbStepPath(f, t[0], t[1]) ? { text: "MOVE HERE", ok: "now" } : { text: "OUT OF ITS REACH", ok: "no" }; }
+    let foe = live.indexOf(target) >= 0 ? target : null, aim = null;
+    if (aimK === "tile") aim = sq(target) ? { x: Math.round(target.x), y: Math.round(target.y), tile: true } : null;
+    if (aimK === "foe" && !foe) return null;   /* (over no enemy: nothing said; let go there, it takes the nearest, as before) */
+    if (aimK === "tile" && !aim) { if (!foe) return null; const q = _cbSq(foe); aim = { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
+    if (aimK === "foe") aim = foe;
+    const reachT = aimK === "tile" ? aim : foe;
+    if (kind !== "ult" && _cb.lay && aimK !== "any" && !_cbCanHit(f, reachT, kind, id)) return _cbWalkPath(f, reachT, kind, id) ? { text: "MOVES IN FIRST", ok: "walk" } : { text: "NO WAY THROUGH", ok: "no" };
+    const S = def && _cb.lay && typeof cardShapeFor === "function" ? cardShapeFor(f, kind, id, aimK === "any" ? null : aim) : null;
+    if (S && !S.ok) return { text: S.why || "NOTHING TO HIT", ok: "no" };
+    const ct = _cbChargeTurns(f, kind, id);
+    if (ct > 0) return { text: "CHARGES \u00b7 LANDS IN " + ct + (ct === 1 ? " TURN" : " TURNS"), ok: "later" };
+    return { text: "HITS NOW", ok: "now" };
+}
+const CARD_BATTLE_TELL = { now: "#3dffb0", later: "#ffe733", walk: "#7fd4ff", no: "#ff5a5a" };   // the word's colour for each (agent's choice, provisional)
+function _cbTellShow(D, ev) {
+    let P = null; try { P = D.aim ? cardBattlePreview(D.f, D.kind, D.id, D.aim === true ? null : D.aim) : null; } catch (e) { P = null; }
+    let el = D.tell; if (!P) { if (el) el.style.display = "none"; D.tellP = null; return; }
+    if (!el && typeof document !== "undefined") { el = D.tell = document.createElement("div"); el.className = "cb-tell"; (_cbEls.scr || document.body).appendChild(el); }
+    if (!el) return; D.tellP = P;
+    if (el.textContent !== P.text) el.textContent = P.text; el.style.display = ""; el.style.setProperty && el.style.setProperty("--t", CARD_BATTLE_TELL[P.ok] || "#fff");
+    el.style.left = ev.clientX + "px"; el.style.top = (ev.clientY - D.dy * 2 - (CARD_BATTLE.dragUp || 0) - 8) + "px";
+}
 function _cbDragMove(ev) {
     const D = _cbDrag; if (!D || (D.pid !== undefined && ev.pointerId !== D.pid)) return; ev.preventDefault(); ev.stopPropagation();
     D.g.style.left = (ev.clientX - D.dx) + "px"; D.g.style.top = (ev.clientY - D.dy - (D.up || 0)) + "px";   /* (it rides just above the finger: the enemy and its lit square under the finger stay in sight) */ D.g.style.width = (D.dx * 2) + "px"; D.g.style.height = (D.dy * 2) + "px";
     D.aim = _cbDragAim(D, ev); D.g.classList.toggle("on", !!D.aim);   // (its squares are lit while it is over the fight: js/cardshapes.js cardShapeDraw)
+    _cbTellShow(D, ev);   // (what letting go here does, said over the card)
 }
 function _cbDragEnd(ev) {
     const D = _cbDrag; if (!D || (D.pid !== undefined && ev.pointerId !== D.pid)) return; ev.preventDefault(); ev.stopPropagation();
@@ -1394,7 +1428,7 @@ function _cbDragEnd(ev) {
     if (off || D.kind === "pass") cardBattlePlay(D.f, D.kind, D.id, aim === true ? null : aim);   // (let go over the fight: on what is under it, else the nearest enemy to the follower: §11.4; HOLD FIRE, §2.66, is played by a tap too)
 }
 function _cbDragCancel() { const D = _cbDrag; if (!D) return; _cbDrag = null;
-    if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
+    if (typeof window !== "undefined" && window.removeEventListener) { window.removeEventListener("pointermove", _cbDragMove, true); window.removeEventListener("pointerup", _cbDragEnd, true); window.removeEventListener("pointercancel", _cbDragCancel, true); } if (D.g && D.g.remove) D.g.remove(); if (D.tell && D.tell.remove) D.tell.remove(); if (D.card && D.card.classList) D.card.classList.remove("lifted"); }
 // the cube's picture in its column's head: its monitor face in its class's colour (a small glyph: the 3D cube itself stands in the fight)
 function _cbYouThumb(cv, col) {
     const g = cv.getContext && cv.getContext("2d"); if (!g) return; const w = cv.width, h = cv.height; g.clearRect(0, 0, w, h);

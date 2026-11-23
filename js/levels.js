@@ -259,6 +259,11 @@ function drawUnitTag(a, cx, y, drawCtx) {
     const col = myEl ? myEl.color : ally ? "#19e6c1" : elDef ? elDef.color : "#ff8a6a";
     const role = ally && !a.isClone && a.isFollower ? (a.role === "sniper" || a.role === "camper" ? a.role : "brawler") : null;
     const label = "Lv " + a.level + " " + unitTypeLabel(a);
+    const k = typeof view3dTagScale === "function" ? view3dTagScale() : 1;   /* (up close with the low camera: no bigger than the cap, js/view3d.js) */
+    if (k !== 1) { ctx.save(); ctx.translate(cx, y); ctx.scale(k, k); ctx.translate(-cx, -y); }
+    try { _drawUnitTagIn(a, ally, col, role, label, cx, y); } finally { if (k !== 1) ctx.restore(); }
+}
+function _drawUnitTagIn(a, ally, col, role, label, cx, y) {
     if (typeof drawPlate === "function" && drawPlate(label, col, cx, y, false, role)) {
         const st = ally && typeof unitStatus === "function" ? unitStatus(a) : null;
         if (st && st.text !== "FOLLOWING") drawPlate(st.text, st.col, cx, y - 15, true);   // plain following is the usual state: no chip

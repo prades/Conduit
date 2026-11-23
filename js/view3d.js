@@ -224,8 +224,12 @@ function view3dHidesItem(o) { if (!o || o.type === "player" || o.type === "cryst
 function view3dTapWorld(sx, sy) { if (!view3dLow()) return null; const q = VIEW3D.view.floorAt(sx, sy); return q || { x: NaN, y: NaN }; }
 // THE LOW CAMERA's drawing of one thing of the frame's list (js/game.js): drawn by its own 2D drawing about its own place (ax, ay: where the 2D's maths has it), moved to where the camera
 // has it and scaled as the camera's px are there. Returns the place, [px, py], with the transform on the context till view3dItemEnd
-function view3dItemBegin(x, y, ax, ay) { const h = facilityLiftPx(x, y), p = VIEW3D.view.screenNow(x, y, h), k = view3dScaleAt(x, y, h); ctx.save(); ctx.translate(p[0] - ax * k, p[1] - ay * k); ctx.scale(k, k); return k; }
-function view3dItemEnd() { ctx.restore(); }
+function view3dItemBegin(x, y, ax, ay) { const h = facilityLiftPx(x, y), p = VIEW3D.view.screenNow(x, y, h), k = view3dScaleAt(x, y, h); ctx.save(); ctx.translate(p[0] - ax * k, p[1] - ay * k); ctx.scale(k, k); _v3itemK = k; return k; }
+function view3dItemEnd() { ctx.restore(); _v3itemK = 1; }
+// THE NAME PLATE UP CLOSE (the owner's close-up, 2026-11-23: with the low camera a follower's name plate grew with the camera's nearness and filled the screen): the plate over a unit
+// (js/levels.js drawUnitTag) is drawn no bigger than VIEW3D_TAG_MAX times its size; it stays where it was over the unit. (The agent's number, provisional.)
+const VIEW3D_TAG_MAX = 1.3; let _v3itemK = 1;
+function view3dTagScale() { return _v3itemK > VIEW3D_TAG_MAX ? VIEW3D_TAG_MAX / _v3itemK : 1; }
 // the same about a thing drawn outside the frame's list (a shot, an effect): from here to view3dAtEnd it is laid out flat about (x, y) of the world, and drawn where the camera has that
 // place's floor, at the camera's scale there. False without the low camera (nothing done: the caller draws as ever)
 function view3dAtBegin(x, y) { if (!view3dLow() || _v3flat) return false; view3dFlat(true); view3dItemBegin(x, y, isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - facilityLiftRel(x, y)); return true; }
