@@ -853,9 +853,9 @@ function getElementMultiplier(attackerElement, defenderElement) {
     if (!attackerElement || !defenderElement)
         return 1;
     if (attackerElement === "ice" && defenderElement === "core")
-        return 0;
+        return 0.5;
     if (ELEMENT_STRONG_AGAINST[attackerElement] === defenderElement)
-        return 1.3;
+        return 1.75;
     if (ELEMENT_WEAK_TO[attackerElement] === defenderElement)
         return 0.7;
     return 1;
@@ -4330,7 +4330,7 @@ function drawHexfireOnTile(tx, ty, px, py) {
 const DMG_TYPES = ["slashing", "piercing", "projectile", "crushing", "earthquake", "elemental"];
 const DMG_LABEL = { slashing: "SLASHING", piercing: "PIERCING", projectile: "PROJECTILE", crushing: "CRUSHING", earthquake: "EARTHQUAKE", elemental: "ELEMENTAL" };
 const DMG_SHORT = { slashing: "SLASH", piercing: "PIERCE", projectile: "SHOT", crushing: "CRUSH", earthquake: "QUAKE", elemental: "ELEM" };
-const DMG_WEAK = 1.3, DMG_RESIST = 0.7;
+const DMG_WEAK = 1.75, DMG_RESIST = 0.7, DMG_IMMUNE = 0.5, DMG_ADV_CAP = 3;
 const DMG_PHYSICAL_W = 0.5, DMG_ELEMENTAL_W = 0.75;
 const DMG_LEAN_STEP = 0.1;
 const DMG_RACE = {
@@ -4425,7 +4425,7 @@ function dmgRow(t) {
         return DMG_RACE[t.speciesName];
     return null;
 }
-function dmgRowMult(row, type) { return !row || !type ? 1 : row.immune && row.immune.indexOf(type) >= 0 ? 0 : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }
+function dmgRowMult(row, type) { return !row || !type ? 1 : row.immune && row.immune.indexOf(type) >= 0 ? DMG_IMMUNE : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }
 function dmgLean(f) {
     const id = dmgFormId(f);
     if (!id)
@@ -4507,7 +4507,7 @@ function dmgApply(target, amount, source, element, hit) {
             emBase *= Math.min(g, 1);
         }
     }
-    let whole = 1;
+    let whole = 1, opp = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function")
         whole = getElementMultiplier(el, target.element);
     const wholeBase = Math.min(whole, 1);
@@ -4524,11 +4524,11 @@ function dmgApply(target, amount, source, element, hit) {
             if (target.stunned > 0 || target.asleep > 0)
                 n++;
             if (n)
-                whole *= 1 + op * n;
+                opp = 1 + op * n;
         }
     }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
-    const total = (phys * pm + elem * em) * whole, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
+    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP) * opp, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
     dmgBaseShare = total > 1e-9 && base < total - 1e-9 ? Math.max(0, base / total) : 1;
     return total;
 }
