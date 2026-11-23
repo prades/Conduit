@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dh` · branch `claude/start-game-project-HSh7Z` · two modes: a card-battles button; with them off, a tap on a follower opens its card and the camera holds on it
+- **The ask** (the owner, 2026-11-23): two modes, card battles or followers fighting in real time; with them off, "if you click on them, you can pull up the index and watch them fight, and you can switch which attacks they'd be using, or choose a new location for them to move to". Asked: "HUD button"; the squad's card at the bottom; "Hold there"; "Real-time only".
+- **What it does:** a CARD BATTLES · ON/OFF button at the top left (kept on the device). With them off, in the 3D view: a tap on a squad member opens its card at the bottom, the camera eases in and follows it; MOVE TO on the card sends it to a tapped spot to hold (`CARD-BATTLES.md` §2.80). Card-battle mode is unchanged.
+- `js/cardbattle.js`, `js/squadfly.js`, `js/input.js`, `js/view3d.js`, `view3d/gamemap.js`, `view3d/gameview.js`, `game.html`, `tests/squadfly.js`, generated files.
+- **Verified:** in a real browser with both cameras (the low one and the game's own): the tap, the card, the camera in and back, MOVE TO and HOLDING, the button; `tests/squadfly.js` (a new check), and the full run (see the handoff). **Not seen on an iPad; not playtested.**
+
 ### Build `2026-11-17df` · branch `claude/friendly-thompson-w581x0` · the Manta Ray is a mollusk
 - **The ask** (the owner, 2026-11-23): "This creature is mollusk type".
 - **What it does:** the Manta Ray's species (its subclass on its card, `js/cards.js` `EQUIP_FORM_SUBCLASS.hovershell`) is Mollusk; the Hover Shell before it was a Drone. With it, by the game's existing rules: it is weak to Slashing and Piercing and resists Crushing and Earthquake (a Drone: weak to Crushing and Elemental, resisting Piercing and Projectile; `js/damage.js` `DMG_SUBCLASS`); its lean is −1, so its main attack is 40% elemental (44% as a Drone; `COMBAT.md` §7.7); Mollusk species cards fit it and Drone ones do not (a Drone card already on one comes off by the game's own check and stays in the collection); its card shows the Mollusk texture. Drones are now 3, Mollusks 5.

@@ -72,6 +72,21 @@ const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, bl
 function _cbF() { return typeof frame !== "undefined" ? frame : 0; }
 function _cbSmooth(k) { return k * k * (3 - 2 * k); }
 // is the switch on, with the 3D view drawing the room?
+// THE MODE BUTTON (the owner, 2026-11-23: "two different modes. One where you can use the card battles and it's turn-based, or if it's too slow for you, you can turn off the card battles and followers
+// will just battle and use their attacks normally"; asked where to switch: "HUD button"). A button on the screen, under the camera's buttons at the top left, says CARD BATTLES ON or OFF and flips
+// them, outside a battle (not in one: it is greyed). Shown only where the 3D view draws the frame (card battles need it). The choice is kept on this device (localStorage) and wins over the address,
+// unless the address names the fights itself (?battles=, ?cards). Where it stands and how it looks are the agent's, PROVISIONAL.
+const CARD_BATTLE_MODE_KEY = "conduit_card_battles";
+try { if (typeof location !== "undefined" && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) { const v = localStorage.getItem(CARD_BATTLE_MODE_KEY); if (v === "on" || v === "off") CARD_BATTLE.on = v === "on"; } } catch (e) {}
+function cardBattleModeSet(on) { if (cardBattleActive()) return false; CARD_BATTLE.on = !!on; try { localStorage.setItem(CARD_BATTLE_MODE_KEY, on ? "on" : "off"); } catch (e) {} _cbModeButton(true); return true; }
+let _cbModeEl = null, _cbModeSig = "";
+function _cbModeButton(force) {
+    if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function") return;
+    const show = typeof view3dShowing === "function" && view3dShowing() && !(typeof attractOn === "function" && attractOn()), busy = cardBattleActive();
+    if (!_cbModeEl) { if (!show) return; const b = document.createElement("button"); b.id = "cbMode"; b.type = "button"; b.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); cardBattleModeSet(!CARD_BATTLE.on); }); document.body.appendChild(b); _cbModeEl = b; }
+    const sig = (show ? 1 : 0) + "|" + (CARD_BATTLE.on ? 1 : 0) + "|" + (busy ? 1 : 0); if (!force && sig === _cbModeSig) return; _cbModeSig = sig;
+    const b = _cbModeEl; b.style.display = show ? "block" : "none"; b.disabled = busy; b.textContent = "CARD BATTLES · " + (CARD_BATTLE.on ? "ON" : "OFF"); b.classList.toggle("on", !!CARD_BATTLE.on);
+}
 function cardBattleOn() { return CARD_BATTLE.on && (CARD_BATTLE.force3d || (typeof view3dShowing === "function" && view3dShowing())) && !(typeof attractOn === "function" && attractOn()); }
 function cardBattleActive() { return _cb.phase !== "off" && _cb.phase !== "end"; }
 function cardBattlePhase() { return _cb.phase; }
@@ -201,6 +216,7 @@ function _cbLand() {
 // THE STEP (js/game.js render, beside the battle view's)
 function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
+    if (f % 15 === 0) _cbModeButton();   /* (THE MODE BUTTON: shown, its word) */
     if (_cb.phase !== "off") {
         _cbKillText();   // (a creature of the battle down: its +N XP rises from it)
         const live = _cb.foes.some(_cbFoeIn);   // (one held inside one of yours is still in it: §2.64)

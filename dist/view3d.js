@@ -25564,6 +25564,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get battleFields() { return typeof cardUltFields === "function" ? cardUltFields() : null; },   // CARD BATTLES: the fields the Ultimates left, for the view to draw (view3d/fields.js)
   get battleActor() { return typeof _cb !== "undefined" && _cb.phase === "on" && _cb.turn && _cb.turn.who === "act" ? _cb.turn.f || null : null; },   // CARD BATTLES: the one whose card is playing out now (its Ultimate's bursts are its: view3d/fields.js)
   ultHidden(e) { return !!e && !!e._cbUlt && typeof cardUltShown === "function" && !cardUltShown(e); },   // CARD BATTLES: an Ultimate's field not seen now, outside its caster's turn (docs/CARD-BATTLES.md §2.68): the attacks' registry leaves it out then, as view3d/fields.js does
+  get focusCam() { return typeof view3dFocusCam === "function" ? view3dFocusCam() : null; },   // THE FOLLOWER'S CLOSE-UP (js/view3d.js): the camera on a squad member, or null
   get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
   // the sewers (js/facilitysewers.js): their water's colours as the 2D has them, the toxic green clearing as the purification runs; the Nest's state; its eggs, junk and rim where the
@@ -39101,7 +39102,7 @@ const GAMEVIEW = (function () {
     function place(dt) {
         const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
         yaw = !dt || twist() || Math.abs(d) <= step ? yawWant() : yaw + Math.sign(d) * step;
-        const B = GM.battleCam, bk = B ? B.k : 0, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * (bk ? 1 + (B.zoom - 1) * bk : 1);
+        const B = GM.battleCam, bk = B ? B.k : 0, Fc = bk ? null : GM.focusCam, fk = Fc ? Fc.k : 0, fz = fk ? 1 + (Fc.zoom - 1) * fk : 1, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * fz * (bk ? 1 + (B.zoom - 1) * bk : 1);
         const a0 = Math.PI / 4 - yaw, a = !bk ? a0 : B.dir === undefined ? a0 - B.yaw * bk : a0 + bk * (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), ca = Math.cos(a), sa = Math.sin(a);
         DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa);
         UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);
@@ -39109,9 +39110,9 @@ const GAMEVIEW = (function () {
         cam.right = W / 2 / UNIT / kz;
         cam.top = H / 2 / UNIT / kz;
         cam.bottom = -H / 2 / UNIT / kz;
-        at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT);
+        at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0) + (fk ? (Fc.x - pl.visualX) * fk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0) + (fk ? (Fc.y - pl.visualY) * fk : 0)).addScaledVector(UPV, TH / UNIT);
         if (LOW) {
-            placeLow(dt, a0, a, k, B, bk, W, H);
+            placeLow(dt, a0, a, k * fz, B, bk, W, H, Fc, fk);
             return;
         }
         cam.position.copy(at).addScaledVector(DIR, BACK);
@@ -39120,7 +39121,7 @@ const GAMEVIEW = (function () {
         cam.updateMatrixWorld();
     }
     const bAt = new T.Vector3(), bUp = new T.Vector3();
-    function placeLow(dt, a0, a, k, B, bk, W, H) {
+    function placeLow(dt, a0, a, k, B, bk, W, H, Fc, fk) {
         let bHalf = 1, bPitch = ELV;
         if (bk) {
             const a1 = B.dir === undefined ? a0 - B.yaw : a0 + (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), e1 = B.pitch;
@@ -39148,7 +39149,7 @@ const GAMEVIEW = (function () {
                     lowBox.min.y = Math.min(lowBox.min.y, (c[2] || 0) / UPX);
             lowBox.min.y -= LOW_UNDER;
         }
-        LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf });
+        LOW.place(cam, { a, z: k, px: GM.player.visualX + (fk ? (Fc.x - GM.player.visualX) * fk : 0), py: GM.player.visualY + (fk ? (Fc.y - GM.player.visualY) * fk : 0), floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf });
     }
     let lowBox = null;
     const LOW_UNDER = 1, LOW_OVER = 3;
@@ -39776,7 +39777,7 @@ const GAMEVIEW = (function () {
             fitAt = -1e9;
         } },
         fieldKinds: FIELDS.kinds,
-        swinging() { return turning() || battling(); },
+        swinging() { return turning() || battling() || (!LOW && !!GM.focusCam); },
         checkBody(id) {
             let b = null;
             try {

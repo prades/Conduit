@@ -96,7 +96,21 @@ function _view3dZoomOff(g) {
 }
 let _view3dZoomed = null;
 // the world's drawing begins (js/game.js render, after the frame is cleared): zoomed, if the camera is
-function view3dWorldBegin() { const k = view3dZoom(); if (k === 1 || _view3dZoomed) return; _view3dZoomed = ctx; _view3dZoomOn(ctx, k); }
+// THE FOLLOWER'S CLOSE-UP (js/squadfly.js partyFlyTapUnit; the owner, 2026-11-23): while a squad member's card is open at the bottom, with card battles off and no battle on, the camera eases to that
+// member, nearer, and holds on it as it moves and fights; when the card is put away it eases back to you. With the game's own camera the 2D over the picture is wiped meanwhile (it is laid out
+// round you, not round the camera); with the low camera (?cam=low) it is laid out through the camera and stays. How near and how fast are the agent's, PROVISIONAL.
+const VIEW3D_FOCUS = { zoom: 1.9, ease: 22 };   // (how much nearer at the full ease; frames to ease in or out)
+let _v3fk = 0, _v3fx = 0, _v3fy = 0;
+function view3dFocusUnit() {
+    if (!VIEW3D.showing || (typeof cardBattleOn === "function" && cardBattleOn()) || (typeof cardBattleActive === "function" && cardBattleActive())) return null;
+    const f = typeof partyFlySubject === "function" ? partyFlySubject() : null; return f && !f.dead ? f : null;
+}
+function _view3dFocusStep() {
+    const f = view3dFocusUnit(); if (f) { _v3fx = Number.isFinite(f.visualX) ? f.visualX : f.x; _v3fy = Number.isFinite(f.visualY) ? f.visualY : f.y; }
+    _v3fk = f ? Math.min(1, _v3fk + 1 / VIEW3D_FOCUS.ease) : Math.max(0, _v3fk - 1 / VIEW3D_FOCUS.ease);
+}
+function view3dFocusCam() { if (!(_v3fk > 1e-4) || !VIEW3D.showing) return null; const k = _v3fk * _v3fk * (3 - 2 * _v3fk); return { k, x: _v3fx, y: _v3fy, zoom: VIEW3D_FOCUS.zoom }; }
+function view3dWorldBegin() { _view3dFocusStep(); const k = view3dZoom(); if (k === 1 || _view3dZoomed) return; _view3dZoomed = ctx; _view3dZoomOn(ctx, k); }
 // the world's drawing done (before the panels): the zoom off, the 2D over the picture wiped while the camera swings round; true while the view shows (then the network panel, which the
 // world's drawing held back so that it is neither zoomed nor wiped, is drawn now)
 function view3dWorldEnd() {

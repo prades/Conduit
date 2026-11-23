@@ -1061,6 +1061,11 @@
     #overlay .ovr-btn:hover, #overlay .ovr-btn:active { background: var(--neo-teal); color: #05070f; }
     /* ── THE UNIT INFO (js/unitinfo.js): the INFO tab on every card ── */
     #ccRoot .cc-tags { padding-right: 64px; } #ccRoot .cc-info { position: absolute; right: 8px; bottom: 6px; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 12px; letter-spacing: 0.5px; color: #05070f; background: var(--neo-ice); border: none; padding: 4px 12px; cursor: pointer; touch-action: manipulation; transform: skewX(-10deg); } #ccRoot .cc-info:hover { background: #fff; }
+    /* THE MODE BUTTON (js/cardbattle.js _cbModeButton): card battles on or off, under the camera's buttons */
+    #cbMode { position: fixed; left: 12px; top: 96px; z-index: 40; display: none; font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 13px; letter-spacing: 0.04em; color: #9fb4c8; background: rgba(6,10,22,0.85); border: 2px solid #3a4a66; border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+    #cbMode.on { color: #04121a; background: #ffe733; border-color: #b09a10; }
+    #cbMode:disabled { opacity: 0.45; cursor: default; }
+    .sf-moveto.on { background: #ffe733 !important; color: #04121a !important; }
     #unitInfo { position: fixed; inset: 0; z-index: 92; display: flex; align-items: center; justify-content: center; background: rgba(2,4,12,0.8); font-family: var(--neo-font); color: #fff; padding: 10px; box-sizing: border-box; }
     #unitInfo .ui-card { --c: #19e6c1; width: min(96vw, 680px); max-height: calc(var(--vvh, 100vh) - 24px); display: flex; flex-direction: column; box-sizing: border-box; padding: 18px 20px 16px; background: linear-gradient(180deg, #0f1730, #060914); border: 3px solid var(--c); box-shadow: 0 0 24px var(--c); }
     #unitInfo .ui-head { display: flex; align-items: center; gap: 14px; flex: none; } #unitInfo .ui-art { width: 84px; height: 84px; flex: none; filter: drop-shadow(0 0 10px var(--c)); background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%); }

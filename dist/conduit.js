@@ -25996,6 +25996,45 @@ const CARD_BATTLE = {
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };
 function _cbF() { return typeof frame !== "undefined" ? frame : 0; }
 function _cbSmooth(k) { return k * k * (3 - 2 * k); }
+const CARD_BATTLE_MODE_KEY = "conduit_card_battles";
+try {
+    if (typeof location !== "undefined" && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) {
+        const v = localStorage.getItem(CARD_BATTLE_MODE_KEY);
+        if (v === "on" || v === "off")
+            CARD_BATTLE.on = v === "on";
+    }
+}
+catch (e) { }
+function cardBattleModeSet(on) { if (cardBattleActive())
+    return false; CARD_BATTLE.on = !!on; try {
+    localStorage.setItem(CARD_BATTLE_MODE_KEY, on ? "on" : "off");
+}
+catch (e) { } _cbModeButton(true); return true; }
+let _cbModeEl = null, _cbModeSig = "";
+function _cbModeButton(force) {
+    if (typeof document === "undefined" || !document.body || typeof document.createElement !== "function")
+        return;
+    const show = typeof view3dShowing === "function" && view3dShowing() && !(typeof attractOn === "function" && attractOn()), busy = cardBattleActive();
+    if (!_cbModeEl) {
+        if (!show)
+            return;
+        const b = document.createElement("button");
+        b.id = "cbMode";
+        b.type = "button";
+        b.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); cardBattleModeSet(!CARD_BATTLE.on); });
+        document.body.appendChild(b);
+        _cbModeEl = b;
+    }
+    const sig = (show ? 1 : 0) + "|" + (CARD_BATTLE.on ? 1 : 0) + "|" + (busy ? 1 : 0);
+    if (!force && sig === _cbModeSig)
+        return;
+    _cbModeSig = sig;
+    const b = _cbModeEl;
+    b.style.display = show ? "block" : "none";
+    b.disabled = busy;
+    b.textContent = "CARD BATTLES · " + (CARD_BATTLE.on ? "ON" : "OFF");
+    b.classList.toggle("on", !!CARD_BATTLE.on);
+}
 function cardBattleOn() { return CARD_BATTLE.on && (CARD_BATTLE.force3d || (typeof view3dShowing === "function" && view3dShowing())) && !(typeof attractOn === "function" && attractOn()); }
 function cardBattleActive() { return _cb.phase !== "off" && _cb.phase !== "end"; }
 function cardBattlePhase() { return _cb.phase; }
@@ -26216,6 +26255,8 @@ function _cbLand() {
 }
 function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
+    if (f % 15 === 0)
+        _cbModeButton();
     if (_cb.phase !== "off") {
         _cbKillText();
         const live = _cb.foes.some(_cbFoeIn);
@@ -48712,6 +48753,7 @@ function partyFlyBuild(root) {
         + '<div class="sf-head"><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span><button class="sf-btn sf-index" data-act="index">INDEX ▸</button></div>'
         + '<div class="sf-mid"><div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div><div class="sf-en-unl"></div>'
         + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'
+        + '<div class="sf-btns"><button class="sf-btn sf-moveto" data-act="moveto">MOVE TO ▸<small class="sf-movew">Tap a spot: it holds there</small></button></div>'
         + '<div class="sf-btns"><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>'
         + '<div class="sf-body"><div class="sf-moves"></div><div class="sf-cards"></div></div>'
         + '<div class="sf-trayw"></div></div>';
@@ -48799,6 +48841,11 @@ function partyFlyClick(ev) {
             unitInfoOpen(f);
         return;
     }
+    if (act === "moveto") {
+        _sfMoveTo = _sfMoveTo === f ? null : f;
+        partyFlyRender(true);
+        return;
+    }
     if (act === "swap") {
         if (typeof playerSwap === "function") {
             const r = playerSwap(f);
@@ -48828,9 +48875,50 @@ function partyFlyPressAway(ev) {
     const t = ev && ev.target && ev.target.closest ? ev.target : null;
     if (t && (t.closest(".sf-card") || t.closest("#squadBar") || t.closest("#unitInfo")))
         return;
+    if (_sfMoveTo && E.subject === _sfMoveTo && !_sfMoveTo.dead)
+        return;
     _sfAway = true;
     partyFlyRender(true);
 }
+let _sfMoveTo = null;
+function partyFlyTapUnit(f) {
+    if (!f || f.dead || typeof hudCorners !== "function" || !hudCorners() || typeof selectedUnits === "undefined")
+        return false;
+    if (typeof partySquadHas === "function" ? !partySquadHas(f) : !(typeof partyIsMember === "function" && partyIsMember(f)))
+        return false;
+    selectedUnits.clear();
+    selectedUnits.add(f);
+    _sfLast = f;
+    _sfAway = false;
+    _sfDD = null;
+    _sfMoveTo = null;
+    if (typeof _sbPeek !== "undefined")
+        _sbPeek = null;
+    if (typeof partyBarRender === "function")
+        partyBarRender(true);
+    if (typeof mixToolRender === "function")
+        mixToolRender(true);
+    partyFlyRender(true);
+    return true;
+}
+function partyFlyMoveTap(tile) {
+    const f = _sfMoveTo;
+    if (!f)
+        return false;
+    _sfMoveTo = null;
+    if (f.dead || !tile) {
+        partyFlyRender(true);
+        return !!tile;
+    }
+    f.job = { type: "move", target: tile };
+    f.stance = "hold";
+    f._fpPath = null;
+    if (typeof floatingTexts !== "undefined")
+        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HOLDING THERE", color: "#8fe3ff", size: 12, life: 50, vy: -0.03 });
+    partyFlyRender(true);
+    return true;
+}
+function partyFlyMoveArmed() { return !!_sfMoveTo && !_sfMoveTo.dead; }
 function _sfSet(el, prop, v) { if (el && el[prop] !== v)
     el[prop] = v; }
 function _sfSwapDraw(E, f) {
@@ -49146,6 +49234,16 @@ function partyFlyRender(force) {
     _sfSet(E.hpn, "textContent", hp + " / " + mx);
     _sfSet(E.pw, "textContent", String(Math.round(f.power || 0)));
     _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
+    {
+        const mv = E.root.querySelector ? E.root.querySelector(".sf-moveto") : null, armed = _sfMoveTo === f;
+        if (mv) {
+            if (mv.classList)
+                mv.classList.toggle("on", armed);
+            const sm = mv.querySelector(".sf-movew");
+            if (sm)
+                _sfSet(sm, "textContent", armed ? "Now tap where it goes" : "Tap a spot: it holds there");
+        }
+    }
     _sfEnergyDraw(E, f);
     _sfMovesDraw(E, f);
     _sfCardsDraw(E, f);
@@ -58300,12 +58398,22 @@ const handleInput = (ex, ey) => {
             return;
         }
     }
+    if (typeof view3dShowing === "function" && view3dShowing() && !(typeof cardBattleOn === "function" && cardBattleOn()) && typeof partyFlyTapUnit === "function") {
+        const _ff = findFollowerAtScreen(ex, ey);
+        if (_ff && partyFlyTapUnit(_ff))
+            return;
+    }
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];
     const dx = _ux - canvas.width / 2, dy = _uy + facilityPickLift(_ux, _uy) - canvas.height / 2 - TILE_H;
     const _bk = isoBack(dx / TILE_W, dy / TILE_H);
     const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;
     const gx = Math.round(_lw ? _lw.x : _bk[0] + player.visualX);
     const gy = Math.round(_lw ? _lw.y : _bk[1] + player.visualY);
+    if (typeof partyFlyMoveArmed === "function" && partyFlyMoveArmed()) {
+        const _mt = getTile(gx, gy);
+        if (_mt && !_mt.type.includes("wall") && partyFlyMoveTap(_mt))
+            return;
+    }
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) {
         if (typeof facilityTapRefused === "function")
             facilityTapRefused(ex, ey);
@@ -60604,7 +60712,25 @@ function _view3dZoomOff(g) {
     g.setTransform(1, 0, 0, 1, 0, 0);
 }
 let _view3dZoomed = null;
-function view3dWorldBegin() { const k = view3dZoom(); if (k === 1 || _view3dZoomed)
+const VIEW3D_FOCUS = { zoom: 1.9, ease: 22 };
+let _v3fk = 0, _v3fx = 0, _v3fy = 0;
+function view3dFocusUnit() {
+    if (!VIEW3D.showing || (typeof cardBattleOn === "function" && cardBattleOn()) || (typeof cardBattleActive === "function" && cardBattleActive()))
+        return null;
+    const f = typeof partyFlySubject === "function" ? partyFlySubject() : null;
+    return f && !f.dead ? f : null;
+}
+function _view3dFocusStep() {
+    const f = view3dFocusUnit();
+    if (f) {
+        _v3fx = Number.isFinite(f.visualX) ? f.visualX : f.x;
+        _v3fy = Number.isFinite(f.visualY) ? f.visualY : f.y;
+    }
+    _v3fk = f ? Math.min(1, _v3fk + 1 / VIEW3D_FOCUS.ease) : Math.max(0, _v3fk - 1 / VIEW3D_FOCUS.ease);
+}
+function view3dFocusCam() { if (!(_v3fk > 1e-4) || !VIEW3D.showing)
+    return null; const k = _v3fk * _v3fk * (3 - 2 * _v3fk); return { k, x: _v3fx, y: _v3fy, zoom: VIEW3D_FOCUS.zoom }; }
+function view3dWorldBegin() { _view3dFocusStep(); const k = view3dZoom(); if (k === 1 || _view3dZoomed)
     return; _view3dZoomed = ctx; _view3dZoomOn(ctx, k); }
 function view3dWorldEnd() {
     if (_view3dZoomed) {
