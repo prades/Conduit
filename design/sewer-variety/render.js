@@ -13,7 +13,7 @@ const srv = http.createServer((q, r) => {
   const u = decodeURIComponent(q.url.split('?')[0]), f = path.join(ROOT, u === '/' ? 'game.html' : u);
   if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); r.end(); return; }
   if (u === '/dist/view3d.js' && !(process.env.DIST && VAR === '0')) { const s = viewJs(), i = s.indexOf(MARK); if (i < 0) throw new Error('no ' + MARK);
-    const d = VAR === '0' ? '' : 'const SEWER_VARIETY = ' + VAR + ';\n' + fs.readFileSync(path.join(__dirname, 'variety.js'), 'utf8');
+    const d = VAR === '0' ? '' : VAR === '4' ? fs.readFileSync(path.join(__dirname, 'round4.js'), 'utf8') : 'const SEWER_VARIETY = ' + VAR + ';\n' + fs.readFileSync(path.join(__dirname, 'variety.js'), 'utf8');   // (4: round 4, over the built look)
     r.writeHead(200, { 'content-type': MIME['.js'] }); r.end(s.slice(0, i) + '\n' + d + '\n' + s.slice(i)); return; }
   r.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r);
 });
