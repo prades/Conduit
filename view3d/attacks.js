@@ -361,7 +361,7 @@ function view3dAttacks(env) {
     finish(); drew++; stats.memos = memos.size; stats.claimed = claimed.size; stats.ms = (typeof performance !== 'undefined' ? performance.now() : 0) - t0; }
   const BUF = new T.Vector2(), NOBODY = { none: true };   // (NOBODY: the body given to a bodyless effect's drawing)
   function finish() {
-    env.renderer.getDrawingBufferSize(BUF); const cam = env.camera, sc = BUF.y / Math.max(1e-6, (cam.top - cam.bottom) / (cam.zoom || 1));
+    env.renderer.getDrawingBufferSize(BUF); const cam = env.camera, sc = BUF.y / Math.max(1e-6, cam.isPerspectiveCamera ? 2 * Math.tan(cam.fov * Math.PI / 360) * (cam.userData.focusD || 10) : (cam.top - cam.bottom) / (cam.zoom || 1));   // (THE LOW CAMERA, view3d/lowcam.js: the size a point has at the camera's aim)
     for (const P of POOLS) { P.o.material.uniforms.uScale.value = sc; P.g.setDrawRange(0, P.n); if (P.n || P.was) { P.g.attributes.position.needsUpdate = true; P.g.attributes.aCol.needsUpdate = true; P.g.attributes.aSize.needsUpdate = true; } P.was = P.n; P.o.visible = P.n > 0; }
     ICE.count = iceN; ICE.visible = iceN > 0; if (iceN) { ICE.instanceMatrix.needsUpdate = true; if (ICE.instanceColor) ICE.instanceColor.needsUpdate = true; }
     let ns = 0; for (const S of SOLIDS) { S.m.count = S.n; S.m.visible = S.n > 0; ns += S.n; if (S.n) { S.m.instanceMatrix.needsUpdate = true; if (S.m.instanceColor) S.m.instanceColor.needsUpdate = true; S.em.needsUpdate = true; } }

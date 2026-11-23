@@ -204,3 +204,154 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 - How fast it runs on the owner's iPads, the old one too (WebGL 1 is tested on the test page, not here).
 - ~~When the 3D view becomes the default.~~ *(answered 2026-11-23: "I'd like to make the cards and the 3D the actual game now": on at the plain address over the web since `2026-11-17ct`, §2.)* Open with it: the order to build the rooms it has not built (the Armory first? it is in the lab, and the Gunslinger's first stop); whether the website's background (`?attract`) should be the 3D picture too; whether `?engine=2d` should be offered to players somewhere, or stay a word in the address.
 - The attacks in 3D (§4.7): the Frost Maw's three looks approved (the owner, 2026-11-18: "Wow yes! Push"); the fire line's ten ("Through the fire line.") built and their looks approved ("They're good enough"); the ice line's six (the Igloo Skater's, the Rimestar's) built and their looks approved ("Yes"); the electric line's thirteen ("Electric") built and their looks approved ("Looks good"); the toxic line's ten ("Next batch"; the line the agent's choice) built and their looks approved ("All good"); **the flux line's ten** ("Next batch"; the line the agent's choice) built, **their looks proposed, for the owner's eye** ("Push", not an approval); **the core line's ten** ("Next batch"; the line the agent's choice) built, **their looks proposed, for the owner's eye**; whether a blow on a jelly shield should be seen in the enemies' turn (the agent's reading of §2.68) and whether SHELL GUARD's ring of crystals should stay through the turns while the battle holds it; whether BLADE ROLL's lost slice impact should be made with `fxLater` (a game fix, not a drawing one); whether the goo copies' health bars should be drawn in 3D; whether the Rift Mimic's lost shard-shot impact should be made with `fxLater` (a game fix, not a drawing one); whether TOXIC DEPLOY's pods should be drawn in 3D outside the network (in a battle they are not seen); whether the decoy's health bar should be drawn in 3D; whether the storm (STATIC VORTEX), seen from the battle's high camera mostly as its cloud's top, should be drawn more see-through there; whether DRIFT SLASH's speed for the squad should show; whether ICE RINK and WHITEOUT should stop at the room's walls in 3D (the game's reach does not, so they are drawn past them, as the 2D's were); whether his effects should also hide the game's floating CHOMP word and numbers (they are 2D, and wiped in a battle); the order of the next forms and the enemies; the budget's numbers on an old iPad.
+
+## 8. The low camera (`?cam=low`): the low follow camera and the rolling-world curve
+
+- **Status:** **In progress, behind its own switch** (`?cam=low`, with the 3D view only). Without the switch nothing of it is made or run and the view's camera is the game's own 2:1 one (§4.1): what players get is unchanged. Stages built: see §8.9. **Not seen on an iPad; not playtested.**
+- **Owner:** the owner (creative direction); agent (implementation support)
+- **Last updated:** 2026-11-23
+- **Branch/build context:** `claude/cozy-camera-drafts` over main's build `2026-11-17db`, main's `2026-11-17dd` merged in; no build of its own (not stamped), not pushed by the agent
+- **Related docs:** `DECISION-LOG.md` (DECISION: the low follow camera and the rolling world, draft B), `OPEN-QUESTIONS.md` (Open 2026-11-23, the low camera), `CHANGELOG.md` 2026-11-23, `CARD-BATTLES.md` (the battle's camera), the drafts in `design/cozy-camera/`
+
+### 8.1 Intent and the decision
+
+The owner, 2026-11-23: **"I really think that I want to try like a Animal Crossing type camera angle and world feel"**. Three drafts were drawn over the real game (`design/cozy-camera/cozy.js`, `render.js`, `sheet.sh`; pictures only): A a low follow camera, B A plus the rolling-world curve, C B plus a cozy light, sky and palette. The owner answered **"B"**.
+
+- B is the low follow camera plus the rolling-world curve.
+- It is **not** C's cozy light, sky and palette: the look, its light and its colours are today's.
+- That genre's **camera principles only**: never its characters, art, UI or exact look.
+
+### 8.2 Approved design
+
+- A perspective camera behind and above the player, looking down at a point a little ahead of them and following that point smoothly as they move.
+- The ground bends away from the camera like a small round world ("rolling world"): the farther ahead along the view, the lower it is drawn; the sides stay level.
+- It is built behind a switch, in stages; without the switch the game is exactly as today.
+
+### 8.3 Must-haves (the brief of 2026-11-23)
+
+- [x] `?cam=low` turns it on (with the 3D view: `js/config.js` `enginePlan` gives `ENGINE_PLAN.cam`; `js/view3d.js` `VIEW3D.cam`); without it everything is as today and every existing test passes unchanged.
+- [x] Turning is still a quarter at a time (and the swipe as today); the zoom scales the camera's distance.
+- [x] What the camera leaves out is judged after the bend; the shadows are not bent; the ink line's depth edges and the sprites are right under it (the drafts' three fixes).
+- [x] A card battle: the camera eases to today's battle camera, as now, and back to the follow camera after (§8.5).
+- [x] One function maps the world to the screen and one the screen to the floor, both from the active camera; the 2D things players see or touch go through them under the switch (§8.6, with what is left).
+- [x] The walls that sink judged from the active camera (§8.10).
+- [x] The cost measured with and without it; cheap horizon culling (§8.11). Measured in headless Chromium only: not an iPad's.
+
+### 8.4 Non-goals
+
+C's light, sky and palette; any change of the battle's angle, the walls' heights or the void's colour (open questions, below); the phone; anything of any other game's look.
+
+### 8.5 How it works (`view3d/lowcam.js`, `view3d/gameview.js`)
+
+- **The knobs** are `LOWCAM` in `view3d/lowcam.js`, all in one place, the drafts' values, **provisional** (open question 3): view 40° (perspective, vertical), pitch 30° down, 9.5 tiles from the aim, the aim 2.2 tiles ahead of the player and 0.55 over their floor (zoomed in, both shrink with the distance, ×1/zoom: at the drafts' 2.2 tiles, zoom 1.8 put the player half off the foot of the picture; zoomed out they stay as they are), the aim following at 6/s (the share of the way closed in a frame is 1 − e^(−6·dt)), curve k = 0.013 (a vertex d tiles ahead of the player along the camera's level forward is drawn k·d² lower).
+- **The camera:** `place()` works out the game's turn and the battle's ease as before; with the switch, `placeLow()` gives them to `LOW.place()`. The zoom divides the distance (and, zoomed in, the aim's lead and height: above).
+- **The battle's camera is today's** (open question 1): as a battle eases in (`cardBattleCam().k`), the view narrows (40° to 0.05°, geometrically) while the camera pulls back so the picture's height at the aim goes from the follow camera's to today's battle camera's; the pitch, the turn and the aim go to the battle's; the curve goes to nothing. At the full ease it is today's orthographic battle picture to within a pixel (checked). Easing out, the same back.
+- **The curve** is in the vertex shaders: every material the view draws is wrapped once (`wrapMat`: the materials three writes, the sprites, and the view's own shaders: the attacks', the fields', the water), new ones as they are made (a body when built, the rest every 30 frames). The shadows' map is drawn from the world unbent and each surface reads it from its unbent place, so a shadow lands on what it falls on.
+- **Culling after the bend:** the camera's own frustum test moves each thing's bounding sphere where the bend puts it (three's `Frustum`, patched only with the switch on; the light's frustum is as it was).
+- **The ink line:** its depth edges at a slant (`dK` 0.03 instead of 0.008); in a battle's long lens its depth is counted from near the aim (`dOff`), so the line is as today's.
+- **The light's shadow square** is laid ahead of the player on the floor the camera sees (on the battle in a battle, as today).
+- **The void beyond the map** is today's background colour (`#0d1d26`): B has no sky (open question 4).
+
+### 8.6 The 2D under the low camera (stage 2)
+
+Everything 2D the game draws over the picture was laid out for today's 2:1 orthographic projection (`_fpP`, about 290 uses in 16 files; `isoSX`/`isoSY` in 27 files; `isoDX`/`isoDY`; `isoBack` for taps; `isoDepth`; `view3dFeet`). Without the switch that maths is the path, unchanged (`ISO_CAM` in `js/config.js` is null for good).
+
+**The two functions** (`view3d/lowcam.js`; asked through `js/view3d.js`):
+- **World to screen:** `view3dToScreen(x, y, h)`: where the frame's camera draws the point (x, y) of the world h px of height up, the bend included (`LOW.toScreen`).
+- **Screen to world:** `view3dToWorld(sx, sy)`: the camera's ray through that point of the screen met with the bent floor at the height the floor has there (`LOW.toFloor`, a few rounds); null over the horizon.
+- `view3dScaleAt(x, y, h)`: the camera's px for one of the 2D's px there (1 at today's camera).
+
+**What goes through them under the switch:**
+
+| What | How | Status |
+|---|---|---|
+| The game's own projection, `isoSX`/`isoSY` (and so every drawing that starts from them) and `_fpP` | `ISO_CAM` (`js/config.js`, set by `js/view3d.js` only with the low camera): they answer so that, with the game's usual offsets added, the point is where the camera draws its floor | Implemented; verified (`tests/view3d.js`) |
+| Taps and long-press (a) | `view3dTapWorld` in `js/input.js` (the tap, the long press, the press) and `techScreenToWorld`; a unit's, an enemy's and the Crystal's pick points by `view3dPick` | Implemented; verified (a tap on a tile walks there) |
+| Bars, nameplates, everything the frame's list draws over a unit (b); pickups, stations, the stairwell and the other items the view leaves to the 2D (c) | Each thing of the frame's list is laid out flat by the old maths (`view3dFlat`) about its own place, then moved to where the camera has that place and scaled as the camera is there (`view3dItemBegin`, `js/game.js`) | Implemented; verified (a unit, a pickup, a station, the stairwell: on their place, at the camera's scale) |
+| Floating numbers (b) | `floatingTextScreen` (`js/drops.js`) | Implemented; verified |
+| A shot in the air | `view3dAtBegin`/`view3dAtEnd` about the shot (`js/game.js`) | Implemented; not tested |
+| The floor's marks (d) | A decal: the game draws them flat, unturned, at half scale into the view's layer (`_view3dFloorMarksLow`); the ink line's pass finds each pixel's place on the floor from its depth and reads the marks there (`view3d/core.js` `fxWorld`, `view3d/gameview.js` `lowMarks`) | Implemented; verified (the long-press ring is laid; a picture) |
+| A battle's fighter with no 3D body (e) | `_view3dBattle2D` already asks the frame's camera; under the switch it lays the fighter out flat and scales it to a tile's size there | Implemented; verified (a nymph, at the battle's camera and easing out) |
+
+**What still uses the old maths under the switch** (known, not fixed):
+- **Sizes outside the frame's list.** The overlays drawn after the list (the effects' rings and impacts the view does not draw itself, the selected units' rings, the bonds' hearts, the auras' glints, a bite's warning, the technicians' overlay, the smoke, the stations' tags) are now on their place through the camera, but at the 2D's own px size, not the camera's: too small near the camera (it is about 1.4 to 1.7 times today's scale at the player), too big far off.
+- **Floor shapes drawn by px offsets** (an ellipse, a diamond round a point) keep the 2:1 shape: right in the middle of the picture (the camera's pitch is the 2:1 view's 30°), without the perspective toward the sides and the distance.
+- **Directions,** `isoDX`/`isoDY` (a way of the world on the screen): the old maths; right in the picture's middle, off toward the sides.
+- **Inside one thing of the list:** what it draws about another place (a line to its target) is the old maths within that thing's own move and scale.
+- **Debris** (`fragments`) lives in screen px.
+- **The floor's marks:** none where the graphics card gives no depth texture; none farther than the layer reaches round the player (about 19 tiles); drawn at half the 2D's sharpness; as today, none while the camera swings or in a battle.
+- **A tap is not stopped by a wall:** it finds the floor on its ray, behind a standing wall too (as the 2D's did).
+- `isoDepth` (the 2D's drawing order) is unchanged: the camera looks the same way round as the game's.
+- **Seen in the pictures:** the 2D is drawn over the whole 3D picture, so nothing 3D in front of a place hides what the 2D draws there (in the arena a station's floor diamond shows on the rubble in front of it; in the sewers a door's label stands over the wall's top; in the Crystal Chamber turned once, a dark railed platform the 2D draws stands over the top of the wall in front of it). And the camera being lower, bodies stand closer together up the screen: a unit's plate can lie over the body of the one in front (the arena: the Thunderhead's over the Frost Maw). Zoomed in to 1.8 the plates and bars, scaled as the camera is there, are large (about twice today's). Nothing changed for any of these.
+
+### 8.7 Edge cases
+
+A battle begun or ended mid-ease (the ease is the battle's own, both ways); a swipe or a quarter turn (the aim stays on the player, the camera swings round it); zoom 0.6 to 1.8 (the distance 15.8 to 5.3 tiles); stairs and other floors (the aim rides the camera's floor, as the game's camera does); a frame with no picture (the camera and the aim still move on).
+
+### 8.8 Acceptance criteria and tests
+
+`tests/view3d.js` THE LOW CAMERA (a page with `?cam=low`): the switch and the knobs, every shader bent; the camera follows the player; the four quarter turns, in each a world point to the screen and back; the zoom, the player well in the picture at 0.6, 1 and 1.8; a card battle's camera and back. STAGE 2: a world point to the screen and back; a tap on a tile walks to that tile; a unit's bars on its body at the camera's scale; a floating number over its unit; the long-press ring laid on the floor; `isoSX`, `isoSY` and `_fpP` through the camera, the old maths inside `view3dFlat`, `ISO_CAM` null without the switch; a pickup, a station and the stairwell on their place at the camera's scale; a battle's 2D fighter at the battle's camera and easing out. STAGE 3: the walls' guard under the low camera in all four turns, and as it runs. STAGE 4: the horizon leaves things out and the picture is unchanged; nothing 2D over a place under the horizon. `tests/engineplan.js`: `?cam=low` only with the view. Every check without the switch is the one it was. Pictures and costs: `node design/cozy-camera/built.js <dir> [low|today]`.
+
+### 8.9 Stages and verification record
+
+| Stage | What | Status |
+|---|---|---|
+| 1 | The camera and the curve, behind the switch; the battle's camera and back | Implemented; verified by `tests/view3d.js` THE LOW CAMERA and pictures |
+| 2 | The 2D through the camera: taps, the bars and plates, pickups and stations, the floor's marks, a battle's 2D fighters; the game's own projection (`isoSX`, `isoSY`, `_fpP`) answered by the camera | Implemented; verified by `tests/view3d.js` STAGE 2 (three checks) and pictures; what is left in §8.6 |
+| 3 | The walls that sink, judged from the active camera as well (§8.10) | Implemented; verified by `tests/view3d.js` STAGE 3 (all four turns, every floor tile of every room built, and as it runs) and pictures |
+| 4 | The cost measured; horizon culling and the visible distance (§8.11) | Implemented; verified by `tests/view3d.js` STAGE 4 (fewer draws and triangles, the same picture) and measured (headless Chromium only) |
+
+Not seen on an iPad; not playtested. The pictures (`node design/cozy-camera/built.js`) were looked at in every place it renders; what they show that is not fixed is in §8.6 (the 2D), §8.10 (the walls) and §8.11 (the picture's edges).
+
+### 8.10 The walls that sink under the low camera (stage 3)
+
+- **The rule kept.** The walls in front of the room you are in sink and leave their stubs, by the camera's quarter turn, as ever (`design/style-evolution/live/floor.js` `hides`, worked out for the game's own camera). The low camera looks the same way round and at the same 30° down, with you in the middle of its view, so that rule still names every wall that covers you: measured with you on every floor tile of the 19 rooms built, in the four turns (13,480 places), no other wall covers your body.
+- **Added, from the active camera** (`view3d/gameview.js` `lowSinks`, `coverGroups`): a line from each body in your room (you and the squad; its feet and its middle, 0.15 and 0.6 of a tile up) to where the camera is, bent as the picture is, tried against the standing walls' faces and tops; a wall it passes through sinks too. Judged every 4 frames; the wall eases down in 0.4 s as the others do. With squad bodies two and three tiles to your sides (4,520 places) it found nothing the rule had not already sunk: it is a net under the rule, for the perspective at the picture's sides. A wall it sinks that the rule never sinks in any turn has no stub built for it (it would go wholly; not seen to happen).
+- **In a card battle** (the battle's camera at more than half its ease): today's rule alone.
+- **The guard** (`tests/view3d.js`): the game's own camera's ("nothing standing hides anyone") is as it was; the low camera's is its own check, by the test's own maths (the body-to-camera line against every standing wall's triangles), in all four turns, and once as it runs with the squad.
+- **What still reads badly from the side** (seen in the pictures; nothing changed for it, the walls' heights being an open question):
+  - **Walls between the camera and your room that are not "in front of your room".** The camera stands about 8 tiles behind you, often over or behind a neighbouring room; that room's standing walls fill a bottom corner of the picture as large blank faces (the Crystal Chamber turned once, the hallway's end). They cover no body in your room, but they cover floor and props.
+  - **Stubs near the camera are big.** A sunk wall's stub in the foreground is drawn large by the perspective, as a dark slab across the bottom of the picture.
+  - **Side walls show a long blank inner face,** slanting away; today's camera showed only their tops and a thin face.
+  - **A body not judged can be covered:** a creature, or a squad member in another room, behind a standing side wall. Only you and the squad in your room are judged.
+  - **At a room's far wall** the camera's aim is past the wall: the top half of the picture is the void.
+
+### 8.11 The cost, and the horizon (stage 4)
+
+**Horizon culling** (`view3d/lowcam.js`; `LOWCAM.horizon`, on). The curve bends the floor down and away, so past a point every floor ahead is under the line from the camera that just grazes the bent floor: hidden by the floor in front. Each frame, in the camera's upright plane:
+- **The floor it grazes is the lowest the built world has** (the lowest room's floor, less 1 tile for a channel's or a pit's bed: `gameview.js` `lowBox`, worked out once), not the floor you stand on: from a deck the floors below are in plain sight, and no higher floor hides less.
+- **The horizon** is where that line touches the bent floor, `st = sc + √(sc² + hc/k)` ahead of the pivot (the camera `sc` along and `hc` over that floor). A thing wholly under the line past `st` (its bounding sphere, moved and grown as the bend moves it) is left out.
+- **The visible distance:** nothing built stands higher than the tallest thing in the world plus 3 tiles (a body in the air, an effect); past `st + √((top − floor)/k)` even that is under the line, so anything farther ahead is left out whole (`H.far`).
+- **The 2D follows it:** a place under the horizon with all that stands 1.5 tiles over it is put far off the screen by `isoSX`/`isoSY` (`screenLow`), so no bar, plate or tag is drawn over a place the floor hides.
+- Checked in the Crystal Chamber turned once (the test): fewer draws and triangles with it, and the picture differs from the one with everything drawn in no more than 0.05% of its pixels; the horizon and the visible distance within the test's bounds (5 to 40 tiles ahead; under 80).
+
+**The cost** (`node design/cozy-camera/built.js <dir> low|today [--nohorizon]`; the pictures in this branch's work, not committed). The game's own page with `?dev&cards&engine=3d` (and `&cam=low`), 1180×820 at a device scale of 2, the player and a squad of three, the median of six frames. **Headless Chromium with software WebGL (SwiftShader): the draw calls and triangles are the view's own and carry over; the times do not, and say nothing of an iPad.**
+
+| Place | Today (draws / triangles) | Low, horizon culling on | Low, horizon culling off |
+|---|---|---|---|
+| Crystal Chamber | 743 / 810k | 610 / 835k | 610 / 835k |
+| Crystal Chamber, turned once | 769 / 816k | 883 / 1,224k | 1,220 / 1,446k |
+| Lab hallway | 516 / 779k | 1,131 / 1,425k | 1,166 / 1,463k |
+| Arena | 531 / 742k | 1,210 / 1,593k | 1,504 / 1,775k |
+| Observation deck | 571 / 608k | 889 / 1,347k | 991 / 1,419k |
+| Front lobby, turned once | (not measured) | 1,284 / 1,591k | 1,679 / 1,813k |
+| Sewers | 390 / 121k | 385 / 130k | 512 / 284k |
+| Sewers, farther in | 390 / 136k | 409 / 140k | 593 / 302k |
+| A card battle (alternate frames) | 517 / 674k, 358 / 339k | 357 / 339k, 516 / 674k | (same: no curve in a battle) |
+
+- **What it means:** the low camera sees farther than today's (ahead, to the horizon), so in the big rooms it draws up to about 2.3 times today's draw calls and 2.1 times its triangles (the arena); in the small ones about the same. Horizon culling takes off up to a quarter of the draws in the lab (the lobby turned once: 1,679 to 1,284) and about half the triangles in the sewers (284k to 130k); in the Crystal Chamber facing its long way it leaves out a few small things and changes nothing measurable. A card battle costs what it does today.
+- The view's own time a frame on this machine was 17 to 27 ms in every place, both cameras (SwiftShader, on the processor); the whole frame 0.5 to 1.1 s (SwiftShader draws the pixels on the processor). Neither is an iPad's.
+- **Not measured:** an iPad (old or new); the low graphics setting; a long walk or a fight under the low camera.
+
+**Seen at the picture's edges** (not fixed; the knobs are provisional, open question 3):
+- **At a room's far wall** the aim is past the wall and the top half of the picture is the void (today's background colour: open question 4).
+- **Zoomed out (0.6)** the curve shows the world's edge as a rim with the void over it, as the drafts did.
+
+### 8.12 Open questions
+
+In `OPEN-QUESTIONS.md` (Open 2026-11-23, the low camera): the card battle's angle (kept today's near top-down: the owner earlier, "still top down so I can lay the cards down"); the walls' heights (kept today's); the curve's strength and the camera's distance (the drafts' values kept as provisional knobs); what fills the void beyond the map (today's background colour kept: B has no sky).
+
+### 8.13 History
+
+- 2026-11-23: the drafts A, B, C (`design/cozy-camera/`, pictures only); the owner chose **"B"**; stage 1 built behind `?cam=low`.
+- 2026-11-23: stages 2 to 4 (the 2D through the camera, the walls judged from it, horizon culling and the cost). From the pictures: zoomed in, the aim's lead and height shrink with the distance (the player was half off the picture at 1.8).

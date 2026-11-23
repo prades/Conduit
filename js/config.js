@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-17df";
+const BUILD_VERSION = "2026-11-17dg";
 // The address a picture is loaded from, by its .png path (build 2026-11-11c; tools/images.js): the one js/imgmap.js names (the picture's lossless WebP copy where that is smaller) with a
 // fingerprint of the picture, so a new build does not make a player download every picture again; a picture the map does not have yet: its path and the build.
 function imgSrc(p) { const m = typeof IMG_MAP !== "undefined" ? IMG_MAP[p] : undefined; return m || p + "?v=" + BUILD_VERSION; }
@@ -59,7 +59,9 @@ function enginePlan(protocol, search) {
     const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
     const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);   // (no engine named, over the web, not the website's background: the game as players get it)
     const view3d = eng === "3d" || plain;
-    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain };
+    // THE LOW CAMERA (the owner, 2026-11-23: "B", the low follow camera and the rolling-world curve; docs/VIEW-3D.md §8): ?cam=low, with the 3D view only. Without it the view's camera is the game's own.
+    const cam = view3d && /[?&]cam=low(?:&|$)/.test(s) ? "low" : null;
+    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain, cam };
 }
 const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
 const VIEW3D_ON = ENGINE_PLAN.view3d;
@@ -149,8 +151,11 @@ let VIEW_TURN = 0;
 function viewTU(dx, dy) { return VIEW_TURN === 0 ? dx : VIEW_TURN === 1 ? -dy : VIEW_TURN === 2 ? -dx : dy; }
 function viewTV(dx, dy) { return VIEW_TURN === 0 ? dy : VIEW_TURN === 1 ? dx : VIEW_TURN === 2 ? -dy : -dx; }
 // where (x, y) of the world is on the screen from the player, px: across (isoSX) and down (isoSY); add the screen's middle (and the rest of the game's own offsets) as before
-function isoSX(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) - viewTV(dx, dy)) * TILE_W; }
-function isoSY(x, y) { const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) + viewTV(dx, dy)) * TILE_H; }
+// (THE LOW CAMERA, ?cam=low, js/view3d.js: while it is the frame's camera ISO_CAM answers instead, the point's floor where that camera draws it, so that with the game's own offsets added the
+// 2D lands on the 3D picture. Without that switch ISO_CAM is null for good and these two are the 2:1 maths they always were)
+let ISO_CAM = null;
+function isoSX(x, y) { if (ISO_CAM !== null && ISO_CAM.on()) return ISO_CAM.sx(x, y); const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) - viewTV(dx, dy)) * TILE_W; }
+function isoSY(x, y) { if (ISO_CAM !== null && ISO_CAM.on()) return ISO_CAM.sy(x, y); const dx = x - player.visualX, dy = y - player.visualY; return (viewTU(dx, dy) + viewTV(dx, dy)) * TILE_H; }
 // a way (vx, vy) of the world on the screen, px: across and down
 function isoDX(vx, vy) { return (viewTU(vx, vy) - viewTV(vx, vy)) * TILE_W; }
 function isoDY(vx, vy) { return (viewTU(vx, vy) + viewTV(vx, vy)) * TILE_H; }

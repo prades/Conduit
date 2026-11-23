@@ -34,6 +34,7 @@ function onPredatorDeath(predator) {
 // put every one of them in the top-left corner.
 function floatingTextScreen(t) {
     if (!t.world) return [t.x, t.y];
+    if (typeof view3dLow === "function" && view3dLow()) { const h = (typeof facilityLiftPx === "function" ? facilityLiftPx(t.x, t.y) : 0), k = view3dScaleAt(t.x, t.y, h), p = view3dToScreen(t.x, t.y, h + 60); return [p[0] + (t.dx || 0) * k, p[1] + (t.dy || 0) * k]; }   // (THE LOW CAMERA: through its projection, js/view3d.js)
     const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
     const p = [isoSX(t.x, t.y) + W + (t.dx || 0), isoSY(t.x, t.y) + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
     return typeof bvZoomPt === "function" ? bvZoomPt(p[0], p[1]) : p;   // (drawn after the battle view's copy: where the copy puts the unit: js/battleview.js)

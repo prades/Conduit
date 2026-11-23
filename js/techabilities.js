@@ -1405,6 +1405,7 @@ function techAimPickSpot(p) { return _techAimLast("spot", p); }
 // the floor under a point on the screen (as a tap walks the player there: js/input.js handleInput), not rounded to a tile
 function techScreenToWorld(ex, ey) {
     if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
+    const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(ex, ey) : null; if (_lw) return _lw;   // (THE LOW CAMERA: the floor under the point, through its projection: js/view3d.js)
     const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPickLift === "function" ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
     const bk = isoBack(dx / TILE_W, dy / TILE_H); return { x: bk[0] + player.visualX, y: bk[1] + player.visualY };   // (through the view's turn: js/config.js)
 }
@@ -1414,7 +1415,7 @@ function techScreenToWorld(ex, ey) {
 // is drawn over every lower one behind it); none (a ramp): the pick above.
 function techReefScreenToWorld(ex, ey) {
     const base = techScreenToWorld(ex, ey), F = typeof _fp !== "undefined" && _fp ? _fp.F : null;
-    if (!F || !F.levelH || typeof facilityLiftRel !== "function" || typeof facilityRoomAt !== "function") return base;
+    if (!F || !F.levelH || typeof facilityLiftRel !== "function" || typeof facilityRoomAt !== "function" || (typeof view3dLow === "function" && view3dLow())) return base;   // (THE LOW CAMERA: its ray meets the front floor already)
     if (typeof bvUnzoom === "function") [ex, ey] = bvUnzoom(ex, ey);   // (the battle view's zoom: js/battleview.js)
     const dx = ex - canvas.width / 2, cam = typeof _fpCam === "number" ? _fpCam : 0, el = typeof FP_ELEV_PX === "number" ? FP_ELEV_PX : 34; let best = null, top = -Infinity;
     for (const h of F.levelH.values()) {

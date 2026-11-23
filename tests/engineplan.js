@@ -55,6 +55,11 @@ check('the website\'s background (?attract) keeps the 2D picture, over the web t
     for (const p of ['file:', 'http:', '', undefined]) for (const s of ['', '?dev', '?cards', '?cards=all', '?fluxlab', '?battles=cards']) same(T(p, s), '2d+live', String(p) + ' ' + (s || '(plain)'));
     ok(/engine=3d(?!\w)/.test('?engine=3d') && T('https:', '?engine=3dx') === '3d+cards', 'a word that is not the engine\'s is not read as one');
 });
+check('THE LOW CAMERA (the owner, 2026-11-23: "B"; docs/VIEW-3D.md §8) is ?cam=low, and only with the 3D view: without the word, or with ?engine=2d, no address has it', () => {
+    for (const p of ['https:', 'file:', 'http:']) { same(plan(p, '?engine=3d&cam=low').cam, 'low', p + ' ?engine=3d&cam=low'); same(plan(p, '?engine=3d').cam, null, p + ' ?engine=3d'); same(plan(p, '?engine=2d&cam=low').cam, null, p + ' ?engine=2d&cam=low'); }
+    same(plan('https:', '?cam=low').cam, 'low', 'https ?cam=low'); same(plan('https:', '').cam, null, 'the plain address'); same(plan('file:', '?cam=low').cam, null, 'a file with no view'); same(plan('https:', '?cam=lowest').cam, null, 'a word that is not the switch');
+    ok(/cam: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN && ENGINE_PLAN\.cam === "low"/.test(rd('js/view3d.js')), 'js/view3d.js does not read the rule');
+});
 check('one place decides: the view\'s switch and the card battles\' are the rule\'s two answers, read from the page\'s own address; "the web" is https, as the page\'s send-on to play.html has it', () => {
     ok(/const ENGINE_PLAN = enginePlan\(typeof location !== "undefined" && location \? location\.protocol : "", typeof location !== "undefined" && location \? location\.search : ""\);/.test(cfg), 'ENGINE_PLAN is not made from the address');
     ok(/const VIEW3D_ON = ENGINE_PLAN\.view3d;/.test(cfg), 'VIEW3D_ON is not the rule\'s');

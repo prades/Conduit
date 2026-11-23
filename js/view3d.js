@@ -22,7 +22,7 @@
 //   - In a room the view has not built, the frame is drawn in 2D exactly as with the switch off.
 // The view itself, and what it does and does not draw yet, is view3d/gameview.js.
 
-const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0 };
+const VIEW3D = { on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true, state: "off", error: null, view: null, showing: false, shown: 0, turn: 0, zoom: 1, twist: 0, cam: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN && ENGINE_PLAN.cam === "low" && VIEW3D_ON === true ? "low" : null };   // (cam: "low", THE LOW CAMERA's switch, ?cam=low: js/config.js enginePlan, view3d/lowcam.js; null, the game's own)
 const VIEW3D_FILES = ["vendor/three.min.js", "dist/view3d.js"];
 
 function _view3dLoad(src) {
@@ -54,6 +54,7 @@ function view3dPrepare() {
 }
 // Is this frame's world the 3D view's? Decided once a drawn frame (a step with no picture keeps the last answer).
 function view3dBegin() {
+    _v3flat = 0; _v3iso.x = NaN;   // (THE LOW CAMERA: a frame begins with the camera's maths the path, whatever the last one left)
     if (!VIEW3D.on || VIEW3D.state !== "ready") return false;
     if (typeof _simGhost !== "undefined" && _simGhost) return VIEW3D.showing;
     let want = false;
@@ -70,7 +71,7 @@ function view3dBegin() {
 // picture lines up in each of the four views); VIEW3D.zoom how near (1 the game's own), its camera and the world's 2D drawing scaled about the screen's middle together; VIEW3D.twist (radians)
 // how far a swiping finger has the camera round from its quarter turn (0 the rest of the time: the controls below).
 const VIEW3D_CAM = { zoomMin: 0.6, zoomMax: 1.8, zoomStep: 1.2, swipeStart: 22, swipeDeg: 0.25, settle: 20, flick: 0.5 };   // (the agent's, provisional: px, degrees a px, degrees, px a ms)
-function view3dZoom() { return VIEW3D.showing ? VIEW3D.zoom : 1; }
+function view3dZoom() { return VIEW3D.showing && VIEW3D.cam !== "low" ? VIEW3D.zoom : 1; }   // (THE LOW CAMERA zooms by its distance: the 2D over it is laid out through its projection, below, not scaled)
 // n quarter turns (to the right, the world clockwise; less than 0, to the left)
 function view3dTurnBy(n) { const q = Math.round(n); if (!VIEW3D.showing || !q) return false; VIEW3D.turn = ((VIEW3D.turn + q) % 4 + 4) % 4; VIEW_TURN = VIEW3D.turn; return true; }
 function view3dZoomTo(z) { if (!VIEW3D.showing || !Number.isFinite(z)) return false; VIEW3D.zoom = Math.max(VIEW3D_CAM.zoomMin, Math.min(VIEW3D_CAM.zoomMax, z)); return true; }
@@ -116,6 +117,8 @@ function _view3dBattle2D() {
         if (!u || u === player || u.dead || u._swallowedBy || V.has(u) || _v3b2d.has(u)) continue;
         const p = V.screenNow(u.x, u.y, 0), e = V.screenNow(u.x + 1, u.y, 0), f = V.screenNow(u.x, u.y + 1, 0);
         const l3 = (Math.hypot(e[0] - p[0], e[1] - p[1]) + Math.hypot(f[0] - p[0], f[1] - p[1])) / 2;
+        view3dFlat(true);   // (THE LOW CAMERA: the 2D's own size is the old maths', and the fighter is laid out flat, then scaled to the camera's size there)
+        try {
         const l2 = (Math.hypot(isoSX(u.x + 1, u.y) - isoSX(u.x, u.y), isoSY(u.x + 1, u.y) - isoSY(u.x, u.y)) + Math.hypot(isoSX(u.x, u.y + 1) - isoSX(u.x, u.y), isoSY(u.x, u.y + 1) - isoSY(u.x, u.y))) / 2;
         const k = l2 > 0 ? l3 / l2 : 1; if (![p[0], p[1], k].every(Number.isFinite) || !(k > 0)) continue;
         const turn = VIEW_TURN && typeof u.dirX === "number" && typeof u.dirY === "number", dx = u.dirX, dy = u.dirY;   // (faced as the turned view sees it, as js/game.js has it)
@@ -124,6 +127,7 @@ function _view3dBattle2D() {
         try { drawNPC(u, p[0], u._flight && typeof techFlightLift === "function" ? p[1] - techFlightLift(u) : p[1]); _v3b2d.add(u); }
         catch (x) { /* one unit's drawing never stops the frame */ }
         finally { _view3dZoomOff(ctx); ctx.restore(); if (turn) { u.dirX = dx; u.dirY = dy; } }
+        } finally { view3dFlat(false); }
     }
 }
 // Was this one drawn in 2D over the battle's picture this frame (above)? (js/cardbattle.js: its reticle and its health go round it as round a body the view draws)
@@ -135,9 +139,11 @@ function view3dPropState(id, state) { return !!VIEW3D.view && typeof VIEW3D.view
 function view3dDraw(tiles) {
     if (!VIEW3D.showing) return;
     try { VIEW3D.view.draw(g => _view3dFloorMarks(g, tiles || visibleTilesForDraw())); VIEW3D.shown++; } catch (e) { _view3dFail(e); }
+    _v3iso.x = NaN;   // (THE LOW CAMERA has moved: the last point asked of it is asked again)
 }
 // The floor's marks on those tiles, as js/game.js draws them on its own floor (drawFloorTileMarks), drawn into the view's layer g: the game's drawing context is g meanwhile.
 function _view3dFloorMarks(g, tiles) {
+    if (view3dLow()) return _view3dFloorMarksLow(g);
     const keep = ctx; ctx = g;
     try {
         tiles = tiles.slice().sort((a, b) => isoDepth(a.x, a.y) - isoDepth(b.x, b.y));   // (back to front, as the game's own list draws them, in the view's turn)
@@ -149,9 +155,57 @@ function _view3dFloorMarks(g, tiles) {
         }
     } finally { ctx = keep; _view3dZoomOff(g); }
 }
+// THE LOW CAMERA's floor marks: drawn as at the game's own angle unturned, no floor's lift, at the view's scale (VIEW3D.view.marksK) about the screen's middle: a flat picture of the floor
+// round the player, which the view lays on its floor where each pixel is (view3d/gameview.js lowMarks). The tiles: every one within reach of the player that the game would draw
+function _view3dFloorMarksLow(g) {
+    const keep = ctx, turn = VIEW_TURN, K = VIEW3D.view.marksK || 0.5, W = canvas.width / 2, H = canvas.height / 2, R = Math.ceil(Math.min(W / TILE_W, H / TILE_H) / K) + 1, cols = tileColumns(), tiles = [];
+    for (let x = Math.floor(player.visualX - R); x <= Math.ceil(player.visualX + R); x++) { const col = cols.get(x); if (col) for (const t of col) if (Math.abs(t.y - player.visualY) <= R) tiles.push(t); }
+    ctx = g; VIEW_TURN = 0; view3dFlat(true);
+    try {
+        tiles.sort((a, b) => isoDepth(a.x, a.y) - isoDepth(b.x, b.y));
+        g.setTransform(K, 0, 0, K, W * (1 - K), H * (1 - K));
+        for (const t of tiles) { if (t.deck) continue; const px = isoSX(t.x, t.y), py = isoSY(t.x, t.y); if (Math.abs(px) > W / K + DRAW_CULL_SIDE || Math.abs(py) > H / K + DRAW_CULL_BOTTOM) continue;   // (the layer's own edges)
+            drawFloorTileMarks(t, px + W, py + H, true); }
+    } finally { ctx = keep; VIEW_TURN = turn; view3dFlat(false); g.setTransform(1, 0, 0, 1, 0, 0); }
+}
 // How far down the screen a unit's body is in the 3D view from where the 2D drawing puts its feet (px): the view stands it where the game has it, the middle of its tile; the 2D drawing put
 // its feet at the tile's top corner. What the game draws over a unit (its bars, its plate, the marks round it) goes down with it.
 function view3dFeet() { return VIEW3D.showing ? TILE_H : 0; }
+// ── THE LOW CAMERA (?cam=low: view3d/lowcam.js; docs/VIEW-3D.md §8): the 2D over the picture laid out through the camera. Each function answers null without it (or while the view does not
+// show), and the caller then does what it always did, the game's own 2:1 maths, unchanged.
+//   view3dLow()               is the low camera the frame's camera?
+//   view3dToScreen(x, y, h)   WORLD TO SCREEN: where the camera, as this frame placed it, draws the point (x, y) of the world h px of height up (the game's px of height: FP_ELEV_PX a floor's
+//                             step, a unit's body measured as the 2D measures it), on the game's canvas: [sx, sy]
+//   view3dToWorld(sx, sy)     SCREEN TO WORLD: the floor under a point of the game's canvas (the camera's ray met with the bent floor at its own height): { x, y } of the world, or null
+//   view3dScaleAt(x, y, h)    how big the 2D's px are there: the camera's px for one of the 2D's px of height at that point (1 at today's camera)
+//   view3dPick(x, y, up)      the screen point a unit is tapped at: up px of height over its floor
+function view3dLow() { return VIEW3D.showing && VIEW3D.cam === "low" && !!VIEW3D.view && !!VIEW3D.view.low; }
+// THE GAME'S OWN PROJECTION THROUGH THE CAMERA (js/config.js isoSX, isoSY, ISO_CAM): everything 2D the game lays over the picture starts from those two (a point's place from the player, to
+// which each drawing adds the screen's middle, half a tile down and the floor's lift). With the low camera the frame's, they answer so that the sum is where the camera draws that point's
+// floor: the 2D is then on the picture, at the size it always had (only what is drawn through view3dItemBegin is also scaled). The camera is the last frame's (a frame's 2D list is made
+// before its picture). A point behind the camera is put far off the screen.
+//   view3dFlat(true) ... view3dFlat(false)   between the two the old 2:1 maths answers: a drawing laid out flat about one place and then moved there whole (view3dItemBegin, the floor's marks)
+let _v3flat = 0; const _v3iso = { x: NaN, y: NaN, sx: 0, sy: 0, lift: 0 }, _v3isoP = [0, 0, 0];
+function view3dFlat(on) { _v3flat = Math.max(0, _v3flat + (on ? 1 : -1)); }
+function _view3dIso(x, y) { const c = _v3iso; if (c.x === x && c.y === y) return c;
+    c.x = x; c.y = y; c.lift = facilityLiftPx(x, y); const p = VIEW3D.view.screenLow(x, y, c.lift, _v3isoP);
+    if (p[2] > 0 && Number.isFinite(p[0]) && Number.isFinite(p[1])) { c.sx = p[0]; c.sy = p[1]; } else { c.sx = -1e6; c.sy = -1e6; }
+    return c; }
+if (VIEW3D.cam === "low") ISO_CAM = { on: () => _v3flat === 0 && view3dLow(), sx: (x, y) => _view3dIso(x, y).sx - canvas.width / 2, sy: (x, y) => { const c = _view3dIso(x, y); return c.sy - canvas.height / 2 - TILE_H + c.lift - _fpCam; } };
+function view3dToScreen(x, y, h) { return view3dLow() ? VIEW3D.view.screenNow(x, y, h || 0) : null; }
+function view3dToWorld(sx, sy) { return view3dLow() ? VIEW3D.view.floorAt(sx, sy) : null; }
+function view3dScaleAt(x, y, h) { if (!view3dLow()) return 1; const a = VIEW3D.view.screenNow(x, y, h || 0), b = VIEW3D.view.screenNow(x, y, (h || 0) + 60), k = Math.hypot(b[0] - a[0], b[1] - a[1]) / 60; return Number.isFinite(k) && k > 0 ? k : 1; }
+function view3dPick(x, y, up) { return view3dLow() ? VIEW3D.view.screenNow(x, y, facilityLiftPx(x, y) + (up || 0)) : null; }
+// a tap's tile: the floor under it (null: the game's own maths)
+function view3dTapWorld(sx, sy) { if (!view3dLow()) return null; const q = VIEW3D.view.floorAt(sx, sy); return q || { x: NaN, y: NaN }; }
+// THE LOW CAMERA's drawing of one thing of the frame's list (js/game.js): drawn by its own 2D drawing about its own place (ax, ay: where the 2D's maths has it), moved to where the camera
+// has it and scaled as the camera's px are there. Returns the place, [px, py], with the transform on the context till view3dItemEnd
+function view3dItemBegin(x, y, ax, ay) { const h = facilityLiftPx(x, y), p = VIEW3D.view.screenNow(x, y, h), k = view3dScaleAt(x, y, h); ctx.save(); ctx.translate(p[0] - ax * k, p[1] - ay * k); ctx.scale(k, k); return k; }
+function view3dItemEnd() { ctx.restore(); }
+// the same about a thing drawn outside the frame's list (a shot, an effect): from here to view3dAtEnd it is laid out flat about (x, y) of the world, and drawn where the camera has that
+// place's floor, at the camera's scale there. False without the low camera (nothing done: the caller draws as ever)
+function view3dAtBegin(x, y) { if (!view3dLow() || _v3flat) return false; view3dFlat(true); view3dItemBegin(x, y, isoSX(x, y) + canvas.width / 2, isoSY(x, y) + canvas.height / 2 + TILE_H - facilityLiftRel(x, y)); return true; }
+function view3dAtEnd() { view3dItemEnd(); view3dFlat(false); }
 // Is this facility item (js/facilityplay.js _fp.items) still the game's to draw while the 3D view shows? One the view does not build, in a room it has built.
 function view3dKeeps(it) { return VIEW3D.showing && VIEW3D.view.keeps(it); }
 // Does the 3D view draw this one's body this frame (the player, a follower, a creature)? Then the 2D drawing leaves the body out and draws only what stands over it.
