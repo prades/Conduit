@@ -328,6 +328,30 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify([r.taken, r.inStrokes].concat(r.round)), '[true,8,4,4]', 'in it: four corners round each of its two enemies');
         same(JSON.stringify([r.gunStrokes, r.allOnThem, r.placed, r.aiming, r.after]), '[8,true,0,true,false]', 'the gun\'s draw: the battle\'s corners only, all on its enemies; the camera not placed again; aiming in it, not after');
     });
+    check('ON THE FLOOR IT STANDS ON (the owner, 2026-11-23: "In some card battles, the hit marker or the reticule is not correctly on top of the target whenever it\'s dragged over it"): the 3D view stands a body on its floor\'s own height (the arena\'s is 61 px under the lab\'s), and all a battle lays on the picture asks the view for that height too: an enemy\'s corners, its bar\'s dot, the point a dragged card is measured from, its lit square (flat: its middle\'s height at all four corners), the floor square under a finger (each square at its own height); on the lab\'s ground floor (0) all as before', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y);
+            const keep = { lift: facilityLiftPx, bar: _cbGroundBar, drag: _cbDrag, to: typeof toCanvas === 'function' ? toCanvas : undefined }, V0 = VIEW3D.view, S0 = VIEW3D.showing; let asked = [];
+            const fake = { screenNow: (x, y, h) => { asked.push([x, y, h, 'now']); return [x * 100, y * 100 - (h || 0)]; }, screenOf: (x, y, h) => { asked.push([x, y, h, 'of']); return [x * 100, y * 100 - (h || 0)]; }, has: () => true, top: () => 20 };
+            const hs = () => [...new Set(asked.map(c => c[2]))].sort((p, q) => p - q).join(), o = {};
+            try { cardBattleChoose(a); __ticks(1); VIEW3D.view = fake; VIEW3D.showing = true; toCanvas = (x, y) => [x, y];
+                for (const L of [0, -61]) { const k = L ? 'low' : 'flat'; facilityLiftPx = () => L; _cbGroundBar = function () {};
+                    asked = []; cardBattleReticles(); o[k + 'Corners'] = hs();
+                    asked = []; _cbBarGeom(fake, a); o[k + 'Bar'] = hs();
+                    asked = []; _cbDrag = { foe: a }; _cbFoeTileDraw(fake); o[k + 'Square'] = asked.length + ':' + hs(); _cbDrag = keep.drag;
+                    asked = []; const at = fake.screenOf(a.x, a.y, L + CARD_BATTLE.pickH); asked = []; const got = _cbDragFoe({ clientX: at[0], clientY: at[1] }); o[k + 'Pick'] = (got === a) + ':' + hs(); }
+                // a room whose floor is not all one height: each square of it where its own floor is, and a square's corners all at its middle's
+                const sq = _cbSq(a), sx = Math.round(sq[0]), sy = Math.round(sq[1]); facilityLiftPx = (x, y) => (x > sx + 0.2 ? -37 : -61);
+                asked = []; _cbDrag = { foe: a }; _cbFoeTileDraw(fake); o.slopeSquare = hs(); _cbDrag = keep.drag;
+                asked = []; const t = cardShapeTileAt(sx * 100, sy * 100 + 61, fake); o.tile = t ? [t.x - sx, t.y - sy].join() : null; o.tileAsked = asked.filter(c => c[3] === 'of').every(c => c[2] === facilityLiftPx(c[0], c[1]) || c[2] === facilityLiftPx(Math.round(c[0] - 0.5), c[1]) || c[2] === facilityLiftPx(c[0] - 1, c[1])) && asked.length > 4;
+                o.lift = [cardBattleLift(sx, sy), cardBattleLift(NaN, 1), cardBattleLift(sx + 1, sy)].join();
+            } finally { facilityLiftPx = keep.lift; _cbGroundBar = keep.bar; _cbDrag = keep.drag; VIEW3D.view = V0; VIEW3D.showing = S0; if (keep.to) toCanvas = keep.to; }
+            cardBattleReset(); return o; })()`);
+        same([r.flatCorners, r.flatBar, r.flatSquare, r.flatPick].join(' | '), '0,20 | 11 | 4:0 | true:30', 'on the lab\'s ground floor: the corners (its feet, its top), the bar\'s dot, the square\'s four corners, the pick (its own height over its feet)');
+        same([r.lowCorners, r.lowBar, r.lowSquare, r.lowPick].join(' | '), '-61,-41 | -50 | 4:-61 | true:-31', 'on a floor 61 px lower each is asked 61 px lower: the corners, the bar\'s dot, the square, the pick');
+        same(r.slopeSquare, '-61', 'a square on a slope is not flat (its corners were asked at more than one height)'); same(r.tile, '0,0', 'the floor square under a finger, on a floor not all one height'); same(r.tileAsked, true, 'a square of the room was asked at another\'s height'); same(r.lift, '-61,0,-37', 'the floor\'s height at a point (none for no point)');
+        const files = ['js/cardbattle.js', 'js/cardshapes.js', 'js/cardults.js'].map(f => [f, rd(f).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n')]);
+        for (const [f, src] of files) { const calls = src.match(/V\.screen(?:Now|Of)\((?:[^()]|\([^()]*\))*\)/g) || []; ok(calls.length > 0, f + ' asks the view nothing'); for (const c of calls) ok(/, (?:L|L \+ [^,]+|_csLift\([^)]*\)|cardBattleLift\([^)]*\)(?: \+ [^,]+)?)\)$/.test(c), f + ' asks the view for a height with no floor in it: ' + c); }
+    });
 
     group('OVER LOW OBJECTS (§2.38; the owner: "ranged attacks can go over objects if, you know, they don\'t exceed a certain height"; "Card battles only")');
     check('in a battle\'s room a shot passes over a low object that gives cover (a crate, a barrel, a desk); a tall one still stops it; out of the battle, or fired from another room, the cover rule as ever', () => {
@@ -923,8 +947,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const fake = { save(){}, restore(){}, setTransform(){}, strokeText(){}, fillText(s){ drawn.push(String(s)); sizes[String(s)] = parseInt((this.font.match(/(\\d+)px/) || [0, 0])[1], 10); }, beginPath(){}, moveTo(){}, lineTo(){}, closePath(){}, fill(){}, stroke(){}, arc(){}, createLinearGradient(){ return { addColorStop(){} }; } };
             VIEW3D.view = { screenNow: (x, y, h) => [x * 40, y * 30 - (h || 0)], top: () => 20 }; VIEW3D.showing = true; ctx = fake;
             try { for (let i = 0; i < 12; i++) cardBattleNumbers(); } catch (e) { err = String(e && e.message || e); } finally { ctx = saved; VIEW3D.view = V0; VIEW3D.showing = S0; }
-            return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] > sizes['MISS'] * 2 }; })()`);
-        same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: more than twice a word\'s size');
+            return { err, num: drawn.indexOf('7') >= 0, word: drawn.indexOf('MISS') >= 0, big: drawn.indexOf('+40 XP') >= 0, bigger: sizes['+40 XP'] >= sizes['MISS'] && sizes['MISS'] > 11 }; })()`);
+        same(r.err, '', 'it threw'); same(r.num, true, 'the hit\'s number'); same(r.word, true, 'the word'); same(r.big, true, 'the kill\'s experience'); same(r.bigger, true, 'large: MISS drawn larger than its written 11 points, and a kill\'s experience no smaller than it (build 2026-11-17cx: MISS is large too; before, the experience was to be more than twice a word)');
     });
 
     group('THE ULTIMATES IN A BATTLE (§2.64, §13; the owner, of the page that drew each one: "Approve")');
