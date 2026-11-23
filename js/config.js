@@ -64,6 +64,8 @@ function enginePlan(protocol, search) {
     return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain, cam };
 }
 const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
+// THE MODE BUTTON's choice (js/cardbattle.js cardBattleModeSet; the owner, 2026-11-23: "HUD button"), kept on this device: it wins over the plain address, not over one that names the fights (?battles=, ?cards)
+try { if (ENGINE_PLAN.view3d && typeof location !== "undefined" && location && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) { const v = localStorage.getItem("conduit_fp_card_battles"); if (v === "on" || v === "off") ENGINE_PLAN.cards = v === "on"; } } catch (e) {}
 const VIEW3D_ON = ENGINE_PLAN.view3d;
 // Opaque: every frame paints the whole canvas, so the browser need not blend
 // it with the page behind (a cheaper composite on every frame). (With the 3D view's switch on it is see-through: the 3D view's own canvas lies under this one and shows where a frame leaves it clear.)

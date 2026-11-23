@@ -26,6 +26,14 @@ function enginePlan(protocol, search) {
     return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain, cam };
 }
 const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
+try {
+    if (ENGINE_PLAN.view3d && typeof location !== "undefined" && location && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) {
+        const v = localStorage.getItem("conduit_fp_card_battles");
+        if (v === "on" || v === "off")
+            ENGINE_PLAN.cards = v === "on";
+    }
+}
+catch (e) { }
 const VIEW3D_ON = ENGINE_PLAN.view3d;
 let ctx = canvas.getContext('2d', { alpha: VIEW3D_ON }) || canvas.getContext('2d');
 const hpBar = document.getElementById('hp');
@@ -25996,15 +26004,7 @@ const CARD_BATTLE = {
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };
 function _cbF() { return typeof frame !== "undefined" ? frame : 0; }
 function _cbSmooth(k) { return k * k * (3 - 2 * k); }
-const CARD_BATTLE_MODE_KEY = "conduit_card_battles";
-try {
-    if (typeof location !== "undefined" && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) {
-        const v = localStorage.getItem(CARD_BATTLE_MODE_KEY);
-        if (v === "on" || v === "off")
-            CARD_BATTLE.on = v === "on";
-    }
-}
-catch (e) { }
+const CARD_BATTLE_MODE_KEY = "conduit_fp_card_battles";
 function cardBattleModeSet(on) { if (cardBattleActive())
     return false; CARD_BATTLE.on = !!on; try {
     localStorage.setItem(CARD_BATTLE_MODE_KEY, on ? "on" : "off");

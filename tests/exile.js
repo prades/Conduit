@@ -126,7 +126,7 @@ function measure(w, h) {
             same(W.ccLabel0 && W.ccLabel0.replace(/\s+/g, ' ').trim(), 'EXILE', 'the row\'s button'); same(W.ccLabel1 && W.ccLabel1.replace(/\s+/g, ' ').trim(), 'TAP AGAIN TO EXILE', 'the row\'s button asks'); same(W.ccStill, true, 'the first tap exiled it');
             same(W.ccGone.join(), 'true,true,4,true', 'the row\'s exile');
             same(W.fly.on, true, 'no card on the fly'); same(W.fly.exile, false, 'EXILE on the card on the fly'); same(W.fly.said, false, 'the card on the fly says EXILE');
-            same(W.fly.btns.length, 2, 'the card\'s buttons'); ok(/^INDEX/.test(W.fly.btns[0]) && /^DISMISS FROM SQUAD/.test(W.fly.btns[1]), 'the card\'s buttons: ' + W.fly.btns);
+            same(W.fly.btns.length, 3, 'the card\'s buttons (MOVE TO since build 2026-11-17dh)'); ok(/^INDEX/.test(W.fly.btns[0]) && /^MOVE TO/.test(W.fly.btns[1]) && /^DISMISS FROM SQUAD/.test(W.fly.btns[2]), 'the card\'s buttons: ' + W.fly.btns);
             same(W.saved, W.alive, 'the save keeps the exiled');
         });
     }

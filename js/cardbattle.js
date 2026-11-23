@@ -76,8 +76,8 @@ function _cbSmooth(k) { return k * k * (3 - 2 * k); }
 // will just battle and use their attacks normally"; asked where to switch: "HUD button"). A button on the screen, under the camera's buttons at the top left, says CARD BATTLES ON or OFF and flips
 // them, outside a battle (not in one: it is greyed). Shown only where the 3D view draws the frame (card battles need it). The choice is kept on this device (localStorage) and wins over the address,
 // unless the address names the fights itself (?battles=, ?cards). Where it stands and how it looks are the agent's, PROVISIONAL.
-const CARD_BATTLE_MODE_KEY = "conduit_card_battles";
-try { if (typeof location !== "undefined" && !/[?&](battles=|cards(?:&|$))/.test(location.search || "")) { const v = localStorage.getItem(CARD_BATTLE_MODE_KEY); if (v === "on" || v === "off") CARD_BATTLE.on = v === "on"; } } catch (e) {}
+const CARD_BATTLE_MODE_KEY = "conduit_fp_card_battles";
+/* (the kept choice is read where the address is: js/config.js, ENGINE_PLAN.cards) */
 function cardBattleModeSet(on) { if (cardBattleActive()) return false; CARD_BATTLE.on = !!on; try { localStorage.setItem(CARD_BATTLE_MODE_KEY, on ? "on" : "off"); } catch (e) {} _cbModeButton(true); return true; }
 let _cbModeEl = null, _cbModeSig = "";
 function _cbModeButton(force) {
