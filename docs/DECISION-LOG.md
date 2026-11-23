@@ -23,7 +23,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Rules:** B is the low follow camera plus the rolling-world curve. It is not C's cozy light, sky and palette. That genre's camera principles only, never its characters, art, UI or exact look. Built behind a switch, in stages, without changing what players get today.
 - **Not decided** (`OPEN-QUESTIONS.md`, Open 2026-11-23, the low camera): the card battle's angle (today's near top-down kept: the owner earlier, "still top down so I can lay the cards down"); the walls' heights (today's kept); the curve's strength and the camera's distance (the drafts' values kept as provisional knobs: view 40°, pitch 30° down, 9.5 tiles, the aim 2.2 tiles ahead, following at 6/s, k = 0.013); what fills the void beyond the map (B has no sky: today's background colour kept).
 - **Alternatives:** A (no curve); C (B with a cozy feel): not chosen.
-- **Docs/code:** `VIEW-3D.md` §8 (the feature specification); `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `view3d/core.js`, `js/config.js`, `js/view3d.js`; `tests/view3d.js`, `tests/engineplan.js`.
+- **Docs/code:** `VIEW-3D.md` §8 (the feature specification; stages 1 to 4 built: the camera and the curve, the 2D through it, the walls judged from it, horizon culling); `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `view3d/core.js`, `js/config.js`, `js/view3d.js`, `js/game.js`, `js/input.js`, `js/drops.js`, `js/facilityplay.js`, `js/techabilities.js`; `tests/view3d.js`, `tests/engineplan.js`.
 
 ## DECISION: The sewers' walkways are long grate panels (round 4)
 

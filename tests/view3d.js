@@ -876,8 +876,11 @@ const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D
   put(16, 19); render(); var i1 = L(); out.partway = +aimErr(i1).toFixed(3); step(60); var i2 = L(); out.after = +aimErr(i2).toFixed(4); out.camBehind = +(Math.hypot(i2.pos[0] - i2.aim[0], i2.pos[1] - i2.aim[1], i2.pos[2] - i2.aim[2])).toFixed(3);
   out.pitch = +(Math.asin((i2.pos[1] - i2.aim[1]) / out.camBehind) * 180 / Math.PI).toFixed(3);
   // QUARTER TURNS: the camera's level forward turns a quarter a turn, as the game's camera does; ZOOM: its distance divided by the zoom
-  out.turns = [0, 1, 2, 3].map(function (t) { VIEW3D.turn = t; V.show(true); step(40); var i = L(), a = Math.PI / 4 - t * Math.PI / 2; return [VIEW_TURN, +Math.hypot(i.fwd[0] + Math.cos(a), i.fwd[1] + Math.sin(a)).toFixed(4), +aimErr(i).toFixed(4)]; });
-  VIEW3D.turn = 0; VIEW3D.zoom = 1.8; V.show(true); step(30); out.zoomD = +L().focusD.toFixed(4); VIEW3D.zoom = 1; V.show(true); step(30); out.zoom1 = +L().focusD.toFixed(4);
+  out.turns = [0, 1, 2, 3].map(function (t) { VIEW3D.turn = t; V.show(true); step(40); var i = L(), a = Math.PI / 4 - t * Math.PI / 2; var rt = 0; [[13, 19], [15, 21], [11, 17], [16, 18]].forEach(function (c) { var h = facilityLiftPx(c[0], c[1]), s = view3dToScreen(c[0], c[1], h), q = view3dToWorld(s[0], s[1]); rt = Math.max(rt, q ? Math.hypot(q.x - c[0], q.y - c[1]) : 99); });
+    return [VIEW_TURN, +Math.hypot(i.fwd[0] + Math.cos(a), i.fwd[1] + Math.sin(a)).toFixed(4), +aimErr(i).toFixed(4), +rt.toFixed(5)]; });
+  // (zoomed in, the player stays in the picture: their body's middle and feet well inside it)
+  var inPic = function () { var h = facilityLiftPx(player.visualX, player.visualY), f = view3dToScreen(player.visualX, player.visualY, h), m = view3dToScreen(player.visualX, player.visualY, h + 44); return [+(f[1] / canvas.height).toFixed(3), +(m[1] / canvas.height).toFixed(3), +(f[0] / canvas.width).toFixed(3)]; };
+  VIEW3D.turn = 0; VIEW3D.zoom = 1.8; V.show(true); step(30); out.zoomD = +L().focusD.toFixed(4); out.zoomIn = inPic(); VIEW3D.zoom = 0.6; V.show(true); step(30); out.zoomOut = inPic(); VIEW3D.zoom = 1; V.show(true); step(30); out.zoom1 = +L().focusD.toFixed(4); out.zoom1Pic = inPic();
   // THE CARD BATTLE'S CAMERA, today's (OPEN-QUESTIONS.md: its angle is not decided): in a battle the camera eases to it (the curve gone, a long lens looking as the battle's camera looks), and back after
   put(13, 19); step(3); var foe = function (cls, x, y) { var e = spawnCreature({ species: 'ant', className: cls }), q = _fpNearestCellOpen(x, y); e.x = q[0]; e.y = q[1]; e.provoked = false; e.state = 'wander'; e.moveSpeed = e.baseMoveSpeed = 0; return e; };
   var foes = [foe('scout', 16, 19.2), foe('striker', 16.4, 20.4)]; out.chose = cardBattleChoose(foes[0]); V.dry(true); for (var j = 0; j < 150; j++) render(); V.dry(false); render();
@@ -961,9 +964,11 @@ if (LOWP !== null) {
         ok(LOWP.settled < 1e-3, 'settled, off by ' + LOWP.settled); ok(Math.abs(LOWP.aimY - 0.55) < 1e-3, 'its height ' + LOWP.aimY); ok(LOWP.partway > 0.05 && LOWP.partway < 2.9, 'a frame after a 3 tile move, off by ' + LOWP.partway);
         ok(LOWP.after < 0.01, 'a second later, off by ' + LOWP.after); ok(Math.abs(LOWP.camBehind - 9.5) < 1e-3, 'its distance ' + LOWP.camBehind); ok(Math.abs(LOWP.pitch - 30) < 0.01, 'its pitch ' + LOWP.pitch);
     });
-    check('QUARTER TURNS: in each of the four the camera looks along the turned forward, still on the player; ZOOM divides its distance', () => {
+    check('QUARTER TURNS: in each of the four the camera looks along the turned forward, still on the player, a point of the world to the screen and back to its place; ZOOM divides its distance, the player well in the picture zoomed in and out', () => {
         same(JSON.stringify(LOWP.turns.map(t => t[0])), '[0,1,2,3]', 'the turns'); ok(LOWP.turns.every(t => t[1] < 1e-3 && t[2] < 1e-3), 'off: ' + JSON.stringify(LOWP.turns));
+        ok(LOWP.turns.every(t => t[3] < 1e-3), 'in a turn, world to screen and back off by ' + JSON.stringify(LOWP.turns.map(t => t[3])) + ' tiles');
         ok(Math.abs(LOWP.zoomD - 9.5 / 1.8) < 1e-3 && Math.abs(LOWP.zoom1 - 9.5) < 1e-3, 'the distance zoomed ' + LOWP.zoomD + ', back ' + LOWP.zoom1);
+        for (const [n, P] of [['zoomed in', LOWP.zoomIn], ['zoomed out', LOWP.zoomOut], ['at 1', LOWP.zoom1Pic]]) ok(P && P[0] < 0.85 && P[1] > 0.15 && P[2] > 0.3 && P[2] < 0.7, n + ', the player not well in the picture (feet, middle down it; across): ' + JSON.stringify(P));
     });
     check('A CARD BATTLE: the camera eases to today\'s battle camera (the curve gone; the floor where today\'s orthographic battle camera has it, within a pixel), and back to the follow camera after', () => {
         same(LOWP.chose, true, 'the battle'); same(LOWP.inBattle.phase, 'on', 'its phase'); same(LOWP.inBattle.bk, 1, 'eased in'); same(LOWP.inBattle.k, 0, 'the curve'); ok(LOWP.inBattle.fov < 0.1, 'its view ' + LOWP.inBattle.fov);

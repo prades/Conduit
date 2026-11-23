@@ -38170,7 +38170,8 @@ function view3dLowCam() {
     const lerp = (a, b, e) => a + (b - a) * e, glerp = (a, b, e) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * e);
     function place(cam, o) {
         const e = Math.max(0, Math.min(1, o.bk || 0)), ca = Math.cos(o.a), sa = Math.sin(o.a), fx = -ca, fz = -sa;
-        want.set(o.px + fx * K.ahead, o.floorY + K.lift, o.py + fz * K.ahead);
+        const zn = Math.min(1, 1 / (o.z || 1)), ah = K.ahead * zn;
+        want.set(o.px + fx * ah, o.floorY + K.lift * zn, o.py + fz * ah);
         if (!hasAim || !o.dt) {
             aim.copy(want);
             hasAim = true;
@@ -38201,7 +38202,7 @@ function view3dLowCam() {
         if (!cam.userData.focus)
             cam.userData.focus = new T.Vector3();
         cam.userData.focus.copy(at);
-        U.lowPivot.value.set(aim.x - fx * K.ahead, o.floorY, aim.z - fz * K.ahead);
+        U.lowPivot.value.set(aim.x - fx * ah, o.floorY, aim.z - fz * ah);
         U.lowFwd.value.set(fx, fz);
         U.lowK.value = K.k * (1 - e);
         PS.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
@@ -38220,7 +38221,7 @@ function view3dLowCam() {
         }
     }
     function pose(px, py, floorY, a, z) {
-        const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, ax = px + fx * K.ahead, ay = floorY + K.lift, az = py + fz * K.ahead;
+        const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, zn = Math.min(1, 1 / (z || 1)), ax = px + fx * K.ahead * zn, ay = floorY + K.lift * zn, az = py + fz * K.ahead * zn;
         return { pos: [ax + Math.cos(p) * ca * D, ay + Math.sin(p) * D, az + Math.cos(p) * sa * D], aim: [ax, ay, az], pivot: [px, py], fwd: [fx, fz], k: K.k, fov: K.fov };
     }
     const drop = (x, z) => { const k = U.lowK.value; if (!k)

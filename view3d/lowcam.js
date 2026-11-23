@@ -15,7 +15,7 @@ const LOWCAM = {
   fov: 40,        // degrees of view, up and down
   pitch: 30,      // degrees down
   dist: 9.5,      // tiles from the camera to the point it looks at (at zoom 1: a zoom divides it)
-  ahead: 2.2,     // tiles that point is ahead of the player, along the camera's level forward
+  ahead: 2.2,     // tiles that point is ahead of the player, along the camera's level forward (zoomed in, this and lift shrink with the distance: the player stays in the picture)
   lift: 0.55,     // tiles that point is over the player's floor
   follow: 6,      // how fast the point follows (1/s: the share of the way left that is closed is 1 - e^(-follow dt))
   k: 0.013,       // the curve: a vertex d tiles ahead of the player is lowered by k d² tiles
@@ -64,7 +64,8 @@ function view3dLowCam() {
   // o: { a (the camera's way round, radians: as the view's DIR), z (the zoom), px, py (the player, tiles), floorY (the player's floor, tiles), W, H (the picture, px), dt (s; 0: at once),
   //      B: a card battle's camera or null, bk (its ease, 0 to 1), bPitch (radians), bAt (a Vector3: today's battle camera's aim), bHalf (today's battle camera's half height, tiles) }
   function place(cam, o) { const e = Math.max(0, Math.min(1, o.bk || 0)), ca = Math.cos(o.a), sa = Math.sin(o.a), fx = -ca, fz = -sa;   // (fx, fz: the level forward, away from the camera)
-    want.set(o.px + fx * K.ahead, o.floorY + K.lift, o.py + fz * K.ahead);
+    const zn = Math.min(1, 1 / (o.z || 1)), ah = K.ahead * zn;   // (zoomed in, the aim comes nearer the player with the distance, so the player stays in the picture: at 1.8 the drafts' 2.2 tiles put them half off its foot)
+    want.set(o.px + fx * ah, o.floorY + K.lift * zn, o.py + fz * ah);
     if (!hasAim || !o.dt) { aim.copy(want); hasAim = true; } else aim.lerp(want, 1 - Math.exp(-o.dt * K.follow));
     const Df = K.dist / (o.z || 1), hf = Df * Math.tan(K.fov * RAD / 2);
     let pitch = K.pitch * RAD, fov = K.fov, D = Df;
@@ -74,7 +75,7 @@ function view3dLowCam() {
     cam.fov = fov; cam.aspect = o.W / o.H; cam.near = Math.max(K.near, D - 60); cam.far = D + K.far; cam.position.copy(at).addScaledVector(dirV, D); cam.up.set(0, 1, 0); cam.lookAt(at);
     cam.updateProjectionMatrix(); cam.updateMatrixWorld(); cam.userData.focusD = D; if (!cam.userData.focus) cam.userData.focus = new T.Vector3(); cam.userData.focus.copy(at);
     // the curve, from the player (eased away in a battle: the battle's camera is today's, flat)
-    U.lowPivot.value.set(aim.x - fx * K.ahead, o.floorY, aim.z - fz * K.ahead); U.lowFwd.value.set(fx, fz); U.lowK.value = K.k * (1 - e);
+    U.lowPivot.value.set(aim.x - fx * ah, o.floorY, aim.z - fz * ah); U.lowFwd.value.set(fx, fz); U.lowK.value = K.k * (1 - e);
     PS.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); psOn = true; U.lowView.value.copy(cam.matrixWorldInverse);
     // the horizon: in the camera's upright plane, from the pivot along the forward (s) and up (y). The camera at (sc, yc); the bent floor y = yF - k s²; the line from the camera grazing it at st
     // The floor: the lowest the built world has (o.floorMin; a floor there would hide what is under the line, and no higher floor hides less), not the one you stand on: from a deck the
@@ -84,7 +85,7 @@ function view3dLowCam() {
       H.far = Number.isFinite(o.top) && o.top > yF ? H.st + Math.sqrt((o.top - yF) / k) : Infinity; }
   }
   // THE SETTLED POSE for the player at (px, py) on a floor at floorY, the camera's way round a, zoom z (no battle): where the camera is, the pivot and forward of the bend, k
-  function pose(px, py, floorY, a, z) { const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, ax = px + fx * K.ahead, ay = floorY + K.lift, az = py + fz * K.ahead;
+  function pose(px, py, floorY, a, z) { const ca = Math.cos(a), sa = Math.sin(a), fx = -ca, fz = -sa, D = K.dist / (z || 1), p = K.pitch * RAD, zn = Math.min(1, 1 / (z || 1)), ax = px + fx * K.ahead * zn, ay = floorY + K.lift * zn, az = py + fz * K.ahead * zn;
     return { pos: [ax + Math.cos(p) * ca * D, ay + Math.sin(p) * D, az + Math.cos(p) * sa * D], aim: [ax, ay, az], pivot: [px, py], fwd: [fx, fz], k: K.k, fov: K.fov }; }
   // the bend at a point of the world (tiles): how far down it is drawn
   const drop = (x, z) => { const k = U.lowK.value; if (!k) return 0; const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (x - P.x) * Fw.x + (z - P.z) * Fw.y; return k * d * d; };
