@@ -1066,6 +1066,9 @@
     #cbMode.on { color: #04121a; background: #ffe733; border-color: #b09a10; }
     #cbMode:disabled { opacity: 0.45; cursor: default; }
     .sf-moveto.on { background: #ffe733 !important; color: #04121a !important; }
+    #squadFly .sf-strow { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    #squadFly .sf-st { min-width: 0; min-height: 28px; padding: 4px 2px; border: 1px solid #2a3a66; background: #0a1022; color: #c9d6f0; font: italic 900 11px/1 var(--neo-font); letter-spacing: 0.02em; cursor: pointer; touch-action: manipulation; }
+    #squadFly .sf-st.on { background: var(--c, #19e6c1); border-color: var(--c, #19e6c1); color: #04121a; }
     #unitInfo { position: fixed; inset: 0; z-index: 92; display: flex; align-items: center; justify-content: center; background: rgba(2,4,12,0.8); font-family: var(--neo-font); color: #fff; padding: 10px; box-sizing: border-box; }
     #unitInfo .ui-card { --c: #19e6c1; width: min(96vw, 680px); max-height: calc(var(--vvh, 100vh) - 24px); display: flex; flex-direction: column; box-sizing: border-box; padding: 18px 20px 16px; background: linear-gradient(180deg, #0f1730, #060914); border: 3px solid var(--c); box-shadow: 0 0 24px var(--c); }
     #unitInfo .ui-head { display: flex; align-items: center; gap: 14px; flex: none; } #unitInfo .ui-art { width: 84px; height: 84px; flex: none; filter: drop-shadow(0 0 10px var(--c)); background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%); }
@@ -2659,7 +2662,7 @@ function _showError(msg) {
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree): `node tools/stamp.js <build>`.
-window.__PAGE_BUILD = "2026-11-17dh";
+window.__PAGE_BUILD = "2026-11-17di";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2695,117 +2698,117 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-17dh"></script>
-<script src="js/imgmap.js?v=2026-11-17dh"></script>
-<script src="js/icons.js?v=2026-11-17dh"></script>
-<script src="js/uikit.js?v=2026-11-17dh"></script>
-<script src="js/traits.js?v=2026-11-17dh"></script>
-<script src="js/elements.js?v=2026-11-17dh"></script>
-<script src="js/damage.js?v=2026-11-17dh"></script>
-<script src="js/combat.js?v=2026-11-17dh"></script>
-<script src="js/species.js?v=2026-11-17dh"></script>
-<script src="js/levels.js?v=2026-11-17dh"></script>
-<script src="js/status.js?v=2026-11-17dh"></script>
-<script src="js/helpers.js?v=2026-11-17dh"></script>
-<script src="js/predator.js?v=2026-11-17dh"></script>
-<script src="js/abilities.js?v=2026-11-17dh"></script>
-<script src="js/commands.js?v=2026-11-17dh"></script>
-<script src="js/npc.js?v=2026-11-17dh"></script>
-<script src="js/formation.js?v=2026-11-17dh"></script>
-<script src="js/draw.js?v=2026-11-17dh"></script>
-<script src="js/beetle3d.js?v=2026-11-17dh"></script>
-<script src="js/bugs3d.js?v=2026-11-17dh"></script>
-<script src="js/rolypoly.js?v=2026-11-17dh"></script>
-<script src="js/larva.js?v=2026-11-17dh"></script>
-<script src="js/settings.js?v=2026-11-17dh"></script>
-<script src="js/alarm.js?v=2026-11-17dh"></script>
-<script src="js/drops.js?v=2026-11-17dh"></script>
-<script src="js/clone.js?v=2026-11-17dh"></script>
-<script src="js/bonds.js?v=2026-11-17dh"></script>
-<script src="js/evopack.js?v=2026-11-17dh"></script>
-<script src="js/evolution.js?v=2026-11-17dh"></script>
-<script src="js/cards.js?v=2026-11-17dh"></script>
-<script src="js/energy.js?v=2026-11-17dh"></script>
-<script src="js/cardart.js?v=2026-11-17dh"></script>
-<script src="js/hdsprites.js?v=2026-11-17dh"></script>
-<script src="js/fx3d.js?v=2026-11-17dh"></script>
-<script src="js/firebombs.js?v=2026-11-17dh"></script>
-<script src="js/hazards.js?v=2026-11-17dh"></script>
-<script src="js/moves.js?v=2026-11-17dh"></script>
-<script src="js/hudgems.js?v=2026-11-17dh"></script>
-<script src="js/commandcenter.js?v=2026-11-17dh"></script>
-<script src="js/energygem.js?v=2026-11-17dh"></script>
-<script src="js/cardsui.js?v=2026-11-17dh"></script>
-<script src="js/unitinfo.js?v=2026-11-17dh"></script>
-<script src="js/infodex.js?v=2026-11-17dh"></script>
-<script src="js/classes.js?v=2026-11-17dh"></script>
-<script src="js/playergear.js?v=2026-11-17dh"></script>
-<script src="js/inventory.js?v=2026-11-17dh"></script>
-<script src="js/weapons.js?v=2026-11-17dh"></script>
-<script src="js/mutator.js?v=2026-11-17dh"></script>
-<script src="js/redeem.js?v=2026-11-17dh"></script>
-<script src="js/specimen.js?v=2026-11-17dh"></script>
-<script src="js/serum.js?v=2026-11-17dh"></script>
-<script src="js/potion.js?v=2026-11-17dh"></script>
-<script src="js/playercombat.js?v=2026-11-17dh"></script>
-<script src="js/battleview.js?v=2026-11-17dh"></script>
-<script src="js/cardbattle.js?v=2026-11-17dh"></script>
-<script src="js/cardshapes.js?v=2026-11-17dh"></script>
-<script src="js/cardults.js?v=2026-11-17dh"></script>
-<script src="js/coreframes.js?v=2026-11-17dh"></script>
-<script src="js/corehud.js?v=2026-11-17dh"></script>
-<script src="js/technomancer.js?v=2026-11-17dh"></script>
-<script src="js/playercards.js?v=2026-11-17dh"></script>
-<script src="js/stations.js?v=2026-11-17dh"></script>
-<script src="js/facilityportals.js?v=2026-11-17dh"></script>
-<script src="js/tutorial.js?v=2026-11-17dh"></script>
-<script src="js/dialogue.js?v=2026-11-17dh"></script>
-<script src="js/questbox.js?v=2026-11-17dh"></script>
-<script src="js/sewerdungeonmap.js?v=2026-11-17dh"></script>
-<script src="js/facilitymap.js?v=2026-11-17dh"></script>
-<script src="js/facilitygrow.js?v=2026-11-17dh"></script>
-<script src="js/facility.js?v=2026-11-17dh"></script>
-<script src="js/attract.js?v=2026-11-17dh"></script>
-<script src="js/facilitysave.js?v=2026-11-17dh"></script>
-<script src="js/facilityplay.js?v=2026-11-17dh"></script>
-<script src="js/facilitydecor.js?v=2026-11-17dh"></script>
-<script src="js/nestways.js?v=2026-11-17dh"></script>
-<script src="js/chests.js?v=2026-11-17dh"></script>
-<script src="js/propatlas.js?v=2026-11-17dh"></script>
-<script src="js/propsprites.js?v=2026-11-17dh"></script>
-<script src="js/caveatlas.js?v=2026-11-17dh"></script>
-<script src="js/caverubble.js?v=2026-11-17dh"></script>
-<script src="js/cavewalls.js?v=2026-11-17dh"></script>
-<script src="js/facilitystyle.js?v=2026-11-17dh"></script>
-<script src="js/facilitystyleall.js?v=2026-11-17dh"></script>
-<script src="js/facilitysewers.js?v=2026-11-17dh"></script>
-<script src="js/facilitynet.js?v=2026-11-17dh"></script>
-<script src="js/population.js?v=2026-11-17dh"></script>
-<script src="js/facilityspawn.js?v=2026-11-17dh"></script>
-<script src="js/crystalpower.js?v=2026-11-17dh"></script>
-<script src="js/antraids.js?v=2026-11-17dh"></script>
-<script src="js/followerspots.js?v=2026-11-17dh"></script>
-<script src="js/breeding.js?v=2026-11-17dh"></script>
-<script src="js/party.js?v=2026-11-17dh"></script>
-<script src="js/squadfly.js?v=2026-11-17dh"></script>
-<script src="js/techabilities.js?v=2026-11-17dh"></script>
-<script src="js/fluxmove.js?v=2026-11-17dh"></script>
-<script src="js/fluxlab.js?v=2026-11-17dh"></script>
-<script src="js/testchamber.js?v=2026-11-17dh"></script>
-<script src="js/puzzles.js?v=2026-11-17dh"></script>
-<script src="js/quests.js?v=2026-11-17dh"></script>
-<script src="js/bosses.js?v=2026-11-17dh"></script>
-<script src="js/conversion.js?v=2026-11-17dh"></script>
-<script src="js/sidequest.js?v=2026-11-17dh"></script>
-<script src="js/facilitytutorial.js?v=2026-11-17dh"></script>
-<script src="js/gunfire.js?v=2026-11-17dh"></script>
-<script src="js/targeting.js?v=2026-11-17dh"></script>
-<script src="js/toolbox.js?v=2026-11-17dh"></script>
-<script src="js/mixtool.js?v=2026-11-17dh"></script>
-<script src="js/radialmenu.js?v=2026-11-17dh"></script>
-<script src="js/input.js?v=2026-11-17dh"></script>
-<script src="js/game.js?v=2026-11-17dh"></script>
-<script src="js/view3d.js?v=2026-11-17dh"></script>
+<script src="js/config.js?v=2026-11-17di"></script>
+<script src="js/imgmap.js?v=2026-11-17di"></script>
+<script src="js/icons.js?v=2026-11-17di"></script>
+<script src="js/uikit.js?v=2026-11-17di"></script>
+<script src="js/traits.js?v=2026-11-17di"></script>
+<script src="js/elements.js?v=2026-11-17di"></script>
+<script src="js/damage.js?v=2026-11-17di"></script>
+<script src="js/combat.js?v=2026-11-17di"></script>
+<script src="js/species.js?v=2026-11-17di"></script>
+<script src="js/levels.js?v=2026-11-17di"></script>
+<script src="js/status.js?v=2026-11-17di"></script>
+<script src="js/helpers.js?v=2026-11-17di"></script>
+<script src="js/predator.js?v=2026-11-17di"></script>
+<script src="js/abilities.js?v=2026-11-17di"></script>
+<script src="js/commands.js?v=2026-11-17di"></script>
+<script src="js/npc.js?v=2026-11-17di"></script>
+<script src="js/formation.js?v=2026-11-17di"></script>
+<script src="js/draw.js?v=2026-11-17di"></script>
+<script src="js/beetle3d.js?v=2026-11-17di"></script>
+<script src="js/bugs3d.js?v=2026-11-17di"></script>
+<script src="js/rolypoly.js?v=2026-11-17di"></script>
+<script src="js/larva.js?v=2026-11-17di"></script>
+<script src="js/settings.js?v=2026-11-17di"></script>
+<script src="js/alarm.js?v=2026-11-17di"></script>
+<script src="js/drops.js?v=2026-11-17di"></script>
+<script src="js/clone.js?v=2026-11-17di"></script>
+<script src="js/bonds.js?v=2026-11-17di"></script>
+<script src="js/evopack.js?v=2026-11-17di"></script>
+<script src="js/evolution.js?v=2026-11-17di"></script>
+<script src="js/cards.js?v=2026-11-17di"></script>
+<script src="js/energy.js?v=2026-11-17di"></script>
+<script src="js/cardart.js?v=2026-11-17di"></script>
+<script src="js/hdsprites.js?v=2026-11-17di"></script>
+<script src="js/fx3d.js?v=2026-11-17di"></script>
+<script src="js/firebombs.js?v=2026-11-17di"></script>
+<script src="js/hazards.js?v=2026-11-17di"></script>
+<script src="js/moves.js?v=2026-11-17di"></script>
+<script src="js/hudgems.js?v=2026-11-17di"></script>
+<script src="js/commandcenter.js?v=2026-11-17di"></script>
+<script src="js/energygem.js?v=2026-11-17di"></script>
+<script src="js/cardsui.js?v=2026-11-17di"></script>
+<script src="js/unitinfo.js?v=2026-11-17di"></script>
+<script src="js/infodex.js?v=2026-11-17di"></script>
+<script src="js/classes.js?v=2026-11-17di"></script>
+<script src="js/playergear.js?v=2026-11-17di"></script>
+<script src="js/inventory.js?v=2026-11-17di"></script>
+<script src="js/weapons.js?v=2026-11-17di"></script>
+<script src="js/mutator.js?v=2026-11-17di"></script>
+<script src="js/redeem.js?v=2026-11-17di"></script>
+<script src="js/specimen.js?v=2026-11-17di"></script>
+<script src="js/serum.js?v=2026-11-17di"></script>
+<script src="js/potion.js?v=2026-11-17di"></script>
+<script src="js/playercombat.js?v=2026-11-17di"></script>
+<script src="js/battleview.js?v=2026-11-17di"></script>
+<script src="js/cardbattle.js?v=2026-11-17di"></script>
+<script src="js/cardshapes.js?v=2026-11-17di"></script>
+<script src="js/cardults.js?v=2026-11-17di"></script>
+<script src="js/coreframes.js?v=2026-11-17di"></script>
+<script src="js/corehud.js?v=2026-11-17di"></script>
+<script src="js/technomancer.js?v=2026-11-17di"></script>
+<script src="js/playercards.js?v=2026-11-17di"></script>
+<script src="js/stations.js?v=2026-11-17di"></script>
+<script src="js/facilityportals.js?v=2026-11-17di"></script>
+<script src="js/tutorial.js?v=2026-11-17di"></script>
+<script src="js/dialogue.js?v=2026-11-17di"></script>
+<script src="js/questbox.js?v=2026-11-17di"></script>
+<script src="js/sewerdungeonmap.js?v=2026-11-17di"></script>
+<script src="js/facilitymap.js?v=2026-11-17di"></script>
+<script src="js/facilitygrow.js?v=2026-11-17di"></script>
+<script src="js/facility.js?v=2026-11-17di"></script>
+<script src="js/attract.js?v=2026-11-17di"></script>
+<script src="js/facilitysave.js?v=2026-11-17di"></script>
+<script src="js/facilityplay.js?v=2026-11-17di"></script>
+<script src="js/facilitydecor.js?v=2026-11-17di"></script>
+<script src="js/nestways.js?v=2026-11-17di"></script>
+<script src="js/chests.js?v=2026-11-17di"></script>
+<script src="js/propatlas.js?v=2026-11-17di"></script>
+<script src="js/propsprites.js?v=2026-11-17di"></script>
+<script src="js/caveatlas.js?v=2026-11-17di"></script>
+<script src="js/caverubble.js?v=2026-11-17di"></script>
+<script src="js/cavewalls.js?v=2026-11-17di"></script>
+<script src="js/facilitystyle.js?v=2026-11-17di"></script>
+<script src="js/facilitystyleall.js?v=2026-11-17di"></script>
+<script src="js/facilitysewers.js?v=2026-11-17di"></script>
+<script src="js/facilitynet.js?v=2026-11-17di"></script>
+<script src="js/population.js?v=2026-11-17di"></script>
+<script src="js/facilityspawn.js?v=2026-11-17di"></script>
+<script src="js/crystalpower.js?v=2026-11-17di"></script>
+<script src="js/antraids.js?v=2026-11-17di"></script>
+<script src="js/followerspots.js?v=2026-11-17di"></script>
+<script src="js/breeding.js?v=2026-11-17di"></script>
+<script src="js/party.js?v=2026-11-17di"></script>
+<script src="js/squadfly.js?v=2026-11-17di"></script>
+<script src="js/techabilities.js?v=2026-11-17di"></script>
+<script src="js/fluxmove.js?v=2026-11-17di"></script>
+<script src="js/fluxlab.js?v=2026-11-17di"></script>
+<script src="js/testchamber.js?v=2026-11-17di"></script>
+<script src="js/puzzles.js?v=2026-11-17di"></script>
+<script src="js/quests.js?v=2026-11-17di"></script>
+<script src="js/bosses.js?v=2026-11-17di"></script>
+<script src="js/conversion.js?v=2026-11-17di"></script>
+<script src="js/sidequest.js?v=2026-11-17di"></script>
+<script src="js/facilitytutorial.js?v=2026-11-17di"></script>
+<script src="js/gunfire.js?v=2026-11-17di"></script>
+<script src="js/targeting.js?v=2026-11-17di"></script>
+<script src="js/toolbox.js?v=2026-11-17di"></script>
+<script src="js/mixtool.js?v=2026-11-17di"></script>
+<script src="js/radialmenu.js?v=2026-11-17di"></script>
+<script src="js/input.js?v=2026-11-17di"></script>
+<script src="js/game.js?v=2026-11-17di"></script>
+<script src="js/view3d.js?v=2026-11-17di"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2860,7 +2863,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-17dh"></script>
+<script src="js/init.js?v=2026-11-17di"></script>
 
 </body>
 </html>

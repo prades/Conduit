@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17di` · branch `claude/start-game-project-HSh7Z` · the follower's close-up framed clear of its card; STANCE on the card
+- **The ask** (the owner, 2026-11-23): the camera covered the selected creature; "make it to where the camera shifts where the middle is to somewhere more towards the top right middle ... so that you can see the creature selected"; and the stance, "Are they aggressive? Are they defensive? Are they balanced?", adjustable on the card at the bottom.
+- **What it does:** with the close-up on, the member stands up and to the right of the middle, clear of its card, in both cameras; the card has a STANCE row (CAUTIOUS, BALANCED, RECKLESS, TANK: the roster's play styles). `CARD-BATTLES.md` §2.80. `js/view3d.js`, `view3d/gameview.js`, `js/squadfly.js`, `game.html`, `tests/squadfly.js`, generated files.
+- **Verified:** in a real browser with both cameras, the member's place on the screen and the stance set; the suites in the handoff. **Not seen on an iPad; not playtested.**
+
 ### Build `2026-11-17dh` · branch `claude/start-game-project-HSh7Z` · two modes: a card-battles button; with them off, a tap on a follower opens its card and the camera holds on it
 - **The ask** (the owner, 2026-11-23): two modes, card battles or followers fighting in real time; with them off, "if you click on them, you can pull up the index and watch them fight, and you can switch which attacks they'd be using, or choose a new location for them to move to". Asked: "HUD button"; the squad's card at the bottom; "Hold there"; "Real-time only".
 - **What it does:** a CARD BATTLES · ON/OFF button at the top left (kept on the device). With them off, in the 3D view: a tap on a squad member opens its card at the bottom, the camera eases in and follows it; MOVE TO on the card sends it to a tapped spot to hold (`CARD-BATTLES.md` §2.80). Card-battle mode is unchanged.
