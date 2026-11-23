@@ -290,6 +290,16 @@ function minimizeControlsMenu() {
 const IMG_MAP = {
     "img/cards/amorphous_body.png": "img/cards/amorphous_body.webp?v=32b78058",
     "img/cards/arc_capacitor.png": "img/cards/arc_capacitor.webp?v=e03a6d7e",
+    "img/cards/attack/basic_crushing_core.png": "img/cards/attack/basic_crushing_core.webp?v=d4af8dcf",
+    "img/cards/attack/basic_crushing_glow.png": "img/cards/attack/basic_crushing_glow.webp?v=04cbe251",
+    "img/cards/attack/basic_elemental_core.png": "img/cards/attack/basic_elemental_core.webp?v=d3ab6d15",
+    "img/cards/attack/basic_elemental_glow.png": "img/cards/attack/basic_elemental_glow.webp?v=6ce7ab80",
+    "img/cards/attack/basic_piercing_core.png": "img/cards/attack/basic_piercing_core.webp?v=935f95a0",
+    "img/cards/attack/basic_piercing_glow.png": "img/cards/attack/basic_piercing_glow.webp?v=ed69013a",
+    "img/cards/attack/basic_projectile_core.png": "img/cards/attack/basic_projectile_core.webp?v=d86c38eb",
+    "img/cards/attack/basic_projectile_glow.png": "img/cards/attack/basic_projectile_glow.webp?v=ca92f99c",
+    "img/cards/attack/basic_slashing_core.png": "img/cards/attack/basic_slashing_core.webp?v=42856b3e",
+    "img/cards/attack/basic_slashing_glow.png": "img/cards/attack/basic_slashing_glow.webp?v=9a4e1611",
     "img/cards/attack/blightspider_venom_bite.png": "img/cards/attack/blightspider_venom_bite.webp?v=b1b80e41",
     "img/cards/attack/coralcrab_stake_ring.png": "img/cards/attack/coralcrab_stake_ring.webp?v=564c0844",
     "img/cards/attack/electroskink_zigzag_dash.png": "img/cards/attack/electroskink_zigzag_dash.webp?v=f384dbc6",
@@ -27984,6 +27994,103 @@ for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "th
     "shrub:briar_sweep", "sundew:sweet_scent", "rotshard:rotten_decoy", "jellyram:wobble_slam", "blightspider:venom_bite", "hovershell:shock_zap"])
     CARD_BATTLE_ART[k] = "img/cards/attack/" + k.replace(":", "_") + ".png";
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
+const CARD_BATTLE_BASIC = { types: ["slashing", "piercing", "crushing", "projectile", "elemental"], w: 450, h: 630, tilt: -0.19, dim: 0.35, motes: 0.7, made: {}, wait: {} };
+function _cbBasicKey(f) {
+    if (!f || typeof dmgFormType !== "function" || typeof ENERGY_WORLD === "undefined" || typeof ELEMENTS === "undefined")
+        return null;
+    const type = dmgFormType(f, "main"), el = f.element;
+    return CARD_BATTLE_BASIC.types.indexOf(type) >= 0 && el && ENERGY_WORLD[el] && ELEMENTS.some(e => e.id === el) ? type + ":" + el : null;
+}
+function _cbBasicPaint(key, pics) {
+    const B = CARD_BATTLE_BASIC, W = B.w, H = B.h, el = key.split(":")[1], colour = ELEMENTS.find(e => e.id === el).color, [scene, motes, bolts, glow, core] = pics;
+    const mk = () => { const k = document.createElement("canvas"); k.width = W; k.height = H; return k; }, out = mk(), g = out.getContext("2d");
+    g.fillStyle = "#000";
+    g.fillRect(0, 0, W, H);
+    g.save();
+    g.translate(W / 2, H / 2);
+    g.rotate(B.tilt);
+    g.drawImage(scene, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24);
+    g.globalAlpha = B.motes;
+    g.drawImage(motes, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24);
+    if (bolts)
+        g.drawImage(bolts, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24);
+    g.restore();
+    g.fillStyle = "rgba(0,0,0," + B.dim + ")";
+    g.fillRect(0, 0, W, H);
+    const tint = mk(), t = tint.getContext("2d");
+    t.drawImage(glow, 0, 0, W, H);
+    t.globalCompositeOperation = "source-in";
+    t.fillStyle = colour;
+    t.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = "lighter";
+    g.drawImage(tint, 0, 0);
+    g.drawImage(core, 0, 0, W, H);
+    g.globalCompositeOperation = "source-over";
+    let gr = g.createRadialGradient(W * 0.5, H * 0.38, 0, W * 0.5, H * 0.38, H * 0.8);
+    gr.addColorStop(0.45, "rgba(0,0,0,0)");
+    gr.addColorStop(1, "rgba(0,0,0,0.7)");
+    g.fillStyle = gr;
+    g.fillRect(0, 0, W, H);
+    gr = g.createLinearGradient(0, H * 0.6, 0, H);
+    gr.addColorStop(0, "rgba(0,0,0,0)");
+    gr.addColorStop(1, "rgba(0,0,0,0.65)");
+    g.fillStyle = gr;
+    g.fillRect(0, H * 0.6, W, H * 0.4);
+    return out;
+}
+function _cbBasicMake(key) {
+    const B = CARD_BATTLE_BASIC;
+    if (B.wait[key])
+        return B.wait[key];
+    const fail = () => { B.made[key] = ""; return null; };
+    return (B.wait[key] = new Promise(done => {
+        try {
+            const [type, el] = key.split(":"), w = typeof energyWorld === "function" ? energyWorld(el) : null;
+            if (!w || typeof Image === "undefined")
+                return done(fail());
+            const src = n => { const p = "img/cards/attack/basic_" + type + "_" + n + ".png"; return typeof imgSrc === "function" ? imgSrc(p) : p; };
+            const load = u => new Promise((ok, no) => { if (!u)
+                return ok(null); const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(u)); i.src = u; });
+            Promise.all([load(w.scene), load(w.motes), load(w.bolts), load(src("glow")), load(src("core"))]).then(pics => {
+                const c = _cbBasicPaint(key, pics), keep = u => { B.made[key] = u || ""; done(u || null); };
+                if (typeof c.toBlob === "function" && typeof URL !== "undefined" && URL.createObjectURL)
+                    c.toBlob(b => { try {
+                        keep(b ? URL.createObjectURL(b) : c.toDataURL("image/jpeg", 0.9));
+                    }
+                    catch (e) {
+                        done(fail());
+                    } }, "image/jpeg", 0.9);
+                else
+                    keep(c.toDataURL("image/jpeg", 0.9));
+            }).catch(() => done(fail()));
+        }
+        catch (e) {
+            done(fail());
+        }
+    }));
+}
+function _cbBasicArt(f) {
+    let key = null;
+    try {
+        key = _cbBasicKey(f);
+    }
+    catch (e) {
+        key = null;
+    }
+    if (!key || typeof document === "undefined" || !document.createElement)
+        return null;
+    const B = CARD_BATTLE_BASIC;
+    if (Object.prototype.hasOwnProperty.call(B.made, key))
+        return B.made[key] || null;
+    _cbBasicMake(key);
+    return null;
+}
+function cardBattleArtReady(f) { let key = null; try {
+    key = _cbBasicKey(f);
+}
+catch (e) {
+    key = null;
+} return key && typeof document !== "undefined" && document.createElement ? _cbBasicMake(key) : Promise.resolve(null); }
 function cardBattleCards(f) {
     if (typeof player !== "undefined" && f === player)
         return _cbYouCards();
@@ -28021,6 +28128,11 @@ function cardBattleCards(f) {
     for (const c of out)
         if (c.kind === "move") {
             const a = _cbArt(f, c.id);
+            if (a)
+                c.art = a;
+        }
+        else if (c.kind === "basic") {
+            const a = _cbBasicArt(f);
             if (a)
                 c.art = a;
         }
