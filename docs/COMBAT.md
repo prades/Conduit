@@ -159,7 +159,7 @@ Slashing, Piercing and Projectile (the owner's category 1); Crushing and Earthqu
 
 ### 7.3 What each race is weak to and resists
 
-Weak: ×1.3. Resists: ×0.7. Immune: ×0 (the roly-poly's only). Anything else: ×1. Every form of a race, nymph to boss, uses its race's row.
+Weak: ×1.75. Resists: ×0.7. What was immune (the roly-poly's Crushing and Slashing): ×0.5. Anything else: ×1. **(Build `2026-11-17dd`; the owner, 2026-11-23: "if the player has an advantage it can go all the way up to 3 times that, but I don't like it how the player seemingly attacks creatures at the low level game and does no damage because of the resistances"; asked: advantages "Stack up to x3", resistances "Mild, never zero". Till then: weak ×1.3, immune ×0, and the element triangle ×1.3 with ice on core ×0. Now the triangle's strong side is ×1.75 too, ice on core ×0.5, the advantages multiply, and a hit is never more than 3 times what it would be with none; an Opportunity card's share is on top of that. This supersedes the roly-poly's immunity, approved 2026-11-13. 1.75 and 0.5 are the agent's, provisional.)** Every form of a race, nymph to boss, uses its race's row.
 
 | Race | Weak to | Resists | Immune to |
 |---|---|---|---|

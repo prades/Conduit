@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dd` · branch `claude/start-game-project-HSh7Z` · advantages count for more, and nothing does nothing
+- **The ask** (the owner, 2026-11-23): "most attacks do about a quarter HP damage, and if the player has an advantage it can go all the way up to 3 times that, but I don't like it how the player seemingly attacks creatures at the low level game and does no damage because of the resistances". Asked: "Retune the numbers" (not in this build), "Stack up to x3", "Mild, never zero".
+- **What it does:** a weakness and an element's match-up are ×1.75 (1.3); they multiply, capped at 3 times a plain hit (an Opportunity card's share on top). A resistance is ×0.7 as before. Nothing is ×0: the roly-poly's immunity to Crushing and Slashing and ice against core are ×0.5 (this supersedes the roly-poly's immunity, approved 2026-11-13). The words by a creature say RESIST where they said IMMUNE. 1.75 and 0.5 provisional. `js/damage.js`, `js/elements.js`, `docs/COMBAT.md` §7.3, the bible, tests.
+- **Not in it:** the retune so a fair hit is about a quarter of the target's health (numbers to be proposed first); showing what a card will do before it is dropped. `balance.html`'s measured table is not re-measured.
+- **Also:** `tests/sewerquest.js` counted four ants in the arena; since `2026-11-17db` there are three at that stage. It failed on main from `db` to this build.
+- **Verified:** the full run (see the handoff). **Not playtested.**
+
 ### Build `2026-11-17dc` · branch `claude/friendly-thompson-w581x0` · EVENT HORIZON in 3D: a shroud of violet cloud drawn into a dark eye, and it no longer stands frozen in a battle
 - **The ask** (the owner, 2026-11-23): "I noticed that the event horizon ultimate is lacking a animation partway through in the card battles, so let's check that out ... And honestly, I don't really like the look. Maybe you can make it more of a animated cloud shroud purple vortex." Of the drafts: "They're not cartoony enough. They look like just blobs"; then "Now these look like 2D. You need to make them look like 3D clouds that are close to the ground and sucked into the middle"; then, of the third: "Push".
 - **The missing animation** (watched in a real battle before anything was changed): the black hole runs a turn's worth as it is cast and as each enemy turn begins, and stands still between. When the round came back to the Void Star's own turn it was shown, standing still: everything in its drawing went by the field's own clock. Now its turning goes by the game's frames and never stops while it is seen; only its gathering, each crush and its end go by its clock.

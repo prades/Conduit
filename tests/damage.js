@@ -148,7 +148,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
     check('ice on core: the elemental part does nothing, the physical part lands', () => {
         const r = J(`(function(){ const s = __src({ element: 'ice', evolved: 'maw' }), kk = 10 / 20 * dmgNorm(s, 'atk', 0.5); return { got: dmgApply(__tgt({ element: 'core' }), 10, s, 'ice', DMG_HIT_MAIN), want: kk * 0.5 * 20 + kk * 0.5 * 10 * 0.5 }; })()`);
-        near(r.got, r.want, 'the physical part whole and the elemental part halved (build 2026-11-17dc: nothing does nothing; it was the physical part alone)', 1e-9);
+        near(r.got, r.want, 'the physical part whole and the elemental part halved (build 2026-11-17dd: nothing does nothing; it was the physical part alone)', 1e-9);
         ok(r.got > 0, 'the hit lands');
     });
     check('an Elemental attack\'s physical quarter has no type: no row moves it', () => {
@@ -177,7 +177,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     check('the player\'s hits are all of their type: the gun\'s Projectile on a moth ×1.3; ARC WARDEN\'s zap all Elemental (electric on a core scorpion ×1.3 × 1.3). The lash\'s Slashing and the punch\'s Crushing went with them (build 2026-11-17at)', () => {
         const r = J(`(function(){ const me = { isPlayer: true, team: 'green' };
             return { gun: dmgApply({ speciesName: 'moth' }, 10, me, null, DMG_HIT_GUN), arc: dmgApply({ speciesName: 'scorpion', element: 'core' }, 10, me, 'electric', DMG_HIT_ARC), gone: [typeof DMG_HIT_LASH, typeof DMG_HIT_PUNCH].join(), kinds: [DMG_HIT_GUN.type, DMG_HIT_GUN.player, DMG_HIT_ARC.type, DMG_HIT_ARC.player].join() }; })()`);
-        near(r.gun, 17.5, 'gun on a moth', 1e-9); near(r.arc, 30, 'the zap (1.75 × 1.75 is past three times: it is capped there, build 2026-11-17dc)', 1e-9); sameJSON(r.gone, 'undefined,undefined', 'the lash\'s and the punch\'s kinds of hit'); sameJSON(r.kinds, 'projectile,true,elemental,true', 'the two kinds left');
+        near(r.gun, 17.5, 'gun on a moth', 1e-9); near(r.arc, 30, 'the zap (1.75 × 1.75 is past three times: it is capped there, build 2026-11-17dd)', 1e-9); sameJSON(r.gone, 'undefined,undefined', 'the lash\'s and the punch\'s kinds of hit'); sameJSON(r.kinds, 'projectile,true,elemental,true', 'the two kinds left');
     });
     check('a player\'s weapon with an element still sets the triangle on the whole hit, as before', () => {
         near(J(`dmgApply({ speciesName: 'ant', element: 'flux' }, 10, { isPlayer: true, element: 'fire' }, null, DMG_HIT_GUN)`), 17.5, 'fire laser on a flux ant', 1e-9);
@@ -206,7 +206,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             dmgApply(t, 10, s, 'fire', DMG_HIT_MAIN); const again = floatingTexts.length;
             __noWords(); frame = 2000; dmgApply(__tgt({ element: 'core' }), 10, __src({ element: 'ice', evolved: 'maw' }), 'ice', DMG_HIT_MAIN);
             return { first, place, again, ice: floatingTexts.map(x => x.text) }; })()`);
-        sameJSON(r.first, ['PIERCING RESIST', 'FIRE WEAK!'], 'QUILLSTONE on a toxic scorpion: Piercing resisted; fire on toxic ×0.7 × Elemental weak ×1.75 = 1.225, more than a plain hit now (0.91 and FIRE RESIST till build 2026-11-17dc)');
+        sameJSON(r.first, ['PIERCING RESIST', 'FIRE WEAK!'], 'QUILLSTONE on a toxic scorpion: Piercing resisted; fire on toxic ×0.7 × Elemental weak ×1.75 = 1.225, more than a plain hit now (0.91 and FIRE RESIST till build 2026-11-17dd)');
         // beside it: to its right, each word's left edge (its centre less half its width, about 3.3 px a letter) past the creature's side; the elemental part's word under the physical part's
         ok(r.place.every(p => p[0] - p[2] * 3.3 >= 24), 'a word reaches over the creature: ' + JSON.stringify(r.place));
         ok(r.place[1][1] > r.place[0][1], 'the elemental part\'s word is not under the physical part\'s: ' + JSON.stringify(r.place));

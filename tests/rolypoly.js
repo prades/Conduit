@@ -41,7 +41,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     check('its row: IMMUNE to Crushing and Slashing, resists Piercing, weak to Earthquake and Projectile; it bites with Crushing', () => {
         const r = J(`({ row: DMG_RACE.rolypoly, bite: DMG_RACE_BITE.rolypoly, m: ['slashing', 'piercing', 'projectile', 'crushing', 'earthquake', 'elemental'].map(t => dmgRowMult(DMG_RACE.rolypoly, t)) })`);
         sameJSON(r.row.immune, ['crushing', 'slashing'], 'immune'); sameJSON(r.row.resist, ['piercing'], 'resists'); sameJSON(r.row.weak, ['earthquake', 'projectile'], 'weak');
-        sameJSON(r.m, [0.5, 0.7, 1.75, 0.5, 1.75, 1], 'slashing 0.5, piercing 0.7, projectile 1.75, crushing 0.5, earthquake 1.75, elemental 1 (build 2026-11-17dc: what was immune is a strong resistance, nothing does nothing; a weakness 1.75)'); ok(r.bite === 'crushing', 'a Crushing bite');
+        sameJSON(r.m, [0.5, 0.7, 1.75, 0.5, 1.75, 1], 'slashing 0.5, piercing 0.7, projectile 1.75, crushing 0.5, earthquake 1.75, elemental 1 (build 2026-11-17dd: what was immune is a strong resistance, nothing does nothing; a weakness 1.75)'); ok(r.bite === 'crushing', 'a Crushing bite');
     });
     check('no other race is immune to anything (the new list is the roly-poly\'s)', () => {
         const r = J(`Object.keys(DMG_RACE).filter(k => k !== 'rolypoly' && DMG_RACE[k].immune)`); sameJSON(r, [], 'others with an immune list');
