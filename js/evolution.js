@@ -1582,7 +1582,7 @@ function evoGroundBegin() {
 // pool near it, clipped to the tile.
 // THE POOL LIES UNDER ITS OWNER (the owner, 2026-11-23, of the 3D view: "some of the creatures that have effects on the ground, it's not positioned correctly. For instance, the frost maw and
 // the rot shard"). It is put where the body's feet are, as js/game.js puts the body: on its own floor's height (facilityLiftRel), and in THE 3D VIEW half a tile down the screen (view3dFeet:
-// the view stands a body in the middle of its tile, where the 2D drawing puts its feet at the tile's top corner; until build 2026-11-17cu the pool was left at the corner, half a tile behind
+// the view stands a body in the middle of its tile, where the 2D drawing puts its feet at the tile's top corner; until build 2026-11-17cv the pool was left at the corner, half a tile behind
 // its body). In a turned view it is the pool as that turn sees it (its facing row, as js/game.js turns a body the 2D draws). Which tiles are near it is asked on the screen, from where it is
 // drawn (the tile's middle is TILE_H under its top corner), so it holds in any turn.
 function drawEvoGroundOnTile(tx, ty, px, py, g) {
