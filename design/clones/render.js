@@ -10,9 +10,10 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = process.argv[2], WANT = (pr
 const SPECIES_MARK = process.env.MARK || 'A';   // the clone's mark on the species' pictures
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.json': 'application/json', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff' };
 const MARK = '/* design/style-evolution/live/floor.js */';
-const PATCHES = [
-  ["GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph || a.isClone || a.team === 'green')", "!window.__CD.ok(a) || a.isNymph)"],
-  ["const w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR,", "const w = window.__CD.w(a), size = window.__CD.size(a), accent = window.__CD.accent(a),"],
+const PATCHES = [   // (the view's ant() as built since the clone's mark C, 2026-11-23: a clone is drawn, tinted; here every species drafts.js builds, the mark its own)
+  ["GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph)", "!window.__CD.ok(a) || a.isNymph)"],
+  ["const mine = a.team === 'green' || !!a.isClone, w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR,", "const mine = false, w = window.__CD.w(a), size = window.__CD.size(a), accent = window.__CD.accent(a),"],
+  ["key = 'ant:' + a.className + ':' + size + ':' + (mine ? 'C' : accent);", "key = 'ant:' + a.className + ':' + size + ':' + accent;"],
 ];
 const srv = http.createServer((q, r) => {
   const u = decodeURIComponent(q.url.split('?')[0]), f = path.join(ROOT, u === '/' ? 'game.html' : u);

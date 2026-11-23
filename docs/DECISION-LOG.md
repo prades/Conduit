@@ -14,6 +14,17 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: Your clone in 3D wears mark C, teal-tinted armour ("C teal mint"); the ant's first
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/clone-drafts` (main `edf4d978`, build `2026-11-17cq`, merged in); no build of its own, not pushed
+- **Status:** implemented in the 3D view (`?engine=3d`) for the ant; checked by `tests/view3d.js` (YOUR CLONE) and by pictures of the real game at the battle camera and close up. Not seen on an iPad.
+- **Context:** asked whether THE ANT QUEEN should be drawn in 3D, the owner (2026-11-22): "Need clones to be drawn first". Drafts were drawn (`design/clones/`, pictures only): three ways a clone shows it is yours (A teal eyes and a teal stripe, B a teal ring at its feet, C teal-tinted armour), and first 3D bodies for the other cloneable species.
+- **Decision (the owner's words):** asked which mark a clone should wear: **"C teal mint"**. Mark C: the whole body tinted teal as if grown in the lab, its eyes teal.
+- **The agent's reading:** "mint" read as a lean toward a mint teal: the draft's tint nudged a little toward mint (its hue from 169° to 161°, the colour `#3ee6b0`'s; lightness × 1.3 for the draft's × 1.1), since the draft's C read a deep sea green on the pale floor. For the owner to judge.
+- **Built:** an ant that is yours (the 2D's rule: on your side or a clone) is the approved Stalker D body at its class, tinted, with its own body key; enemy ants unchanged. A, B and the draft bodies are not approved.
+- **Not answered (not built):** whether the other species' draft bodies read well and which to build first (the beetle, scorpion, spider, mantis and moth stay 2D, their clones too); the roly-poly's look in 3D (its approved look B has painted hazard stripes; the draft's checks are not approved): it stays 2D. THE ANT QUEEN stays 2D, a later step.
+- **Docs/code:** `VIEW-3D.md` §3 stage 4, §4.4, §6, §7; `CHANGELOG.md` 2026-11-23; `design/style-evolution/round2/chamber.js` (`ANT_CLONE`, `antCloneTint`), `view3d/gameview.js` (`ant()`), `tests/view3d.js`.
+
 ## DECISION: The sewers' look in 3D is the painting's, "1 FAITHFUL", on today's Sewers and on the sewer dungeon's rooms
 
 - **Date:** 2026-11-22 · **Branch/build:** `claude/sewer-look` (main `fb4a97bc`, build `2026-11-17cc`, merged in); no build yet

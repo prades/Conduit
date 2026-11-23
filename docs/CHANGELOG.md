@@ -2,6 +2,17 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-23
+
+### No build yet · branch `claude/clone-drafts` (main `edf4d978`, build `2026-11-17cq`, merged in) · your ant clone drawn in 3D in mark C (behind `?engine=3d`)
+- **The decision** (the owner, 2026-11-23, asked which mark a clone should wear in 3D, of the drafts A, B and C in `design/clones/`): **"C teal mint"**: the whole body tinted teal as if grown in the lab, its eyes teal.
+- **What it does:** with the 3D view showing, an ant that is yours (a clone of the Clone Bay's, scout, striker or tank; the 2D's own rule, on your side or a clone) is drawn by the view: the approved Stalker D body at its class, every colour of it given the teal's hue (its mottle, plate edges and sand sickles still read), its eyes `#19e6c1`. Before, the view left it to the 2D drawing. Its body is its own (key `ant:<class>:<size>:C`), built at load for a clone in the squad or when first seen, nothing more each frame; the same triangles as an enemy ant. Enemy ants are unchanged.
+- **The tint, the agent's reading of "mint":** the draft's C (hue 169°, lightness × 1.1) read a deep sea green on the lab's floor; nudged a little toward mint (hue 161°, `#3ee6b0`; lightness × 1.3).
+- **Unchanged:** the other species and their clones (their 3D bodies are drafts, not approved), the roly-poly (its approved look B's painted stripes were checks in the draft: not approved; it stays 2D), nymphs, THE ANT QUEEN ("Need clones to be drawn first": a later step), the 2D game.
+- **Also (pictures only, nothing in the game):** a second pass on the mantis's draft body (`design/clones/drafts.js` `cdMantis2`): forelegs with depth (triangular cross-sections, the raptorial fold, two rows of spines), a triangular head with bulging eyes, a keeled prothorax; `design/clones/render.js` follows the view's new `ant()`.
+- `design/style-evolution/round2/chamber.js` (`ANT_CLONE`, `antCloneTint`; `buildAnt`'s `clone`), `view3d/gameview.js` (`ant()`'s gate and key, `warm()`, test hooks `bodyKey`, `bodyOf`), `dist/view3d.js` and `play.html`/`dist/conduit.js` (made), `tests/view3d.js` (YOUR CLONE), docs (`VIEW-3D.md`, `DECISION-LOG.md`).
+- **Verified:** `node tools/view3d.js`, `node tools/bundle.js` (no change to the players' page), then `node tests/run.js view3d view3ddry bundle cardbattle antmoves`: four passing, view3d failing only the new check's eye test (its colour read from the material, not the merged body's vertex colours: a fault of the test); fixed, `node tests/run.js view3d` passes in full (YOUR CLONE among its checks). Pictures of the real game at the battle camera (an ant scout clone, three enemy ants) and close up, looked at. **Not verified:** on an iPad; a striker or tank clone in a picture (the test and pictures use a scout); in play over time.
+
 ## 2026-11-22
 
 ### No build yet · branch `claude/sewer-look` (main `fb4a97bc`, build `2026-11-17cc`, merged in) · the sewers' look in 3D: 1 FAITHFUL, on the Sewers and the sewer dungeon's rooms (behind `?engine=3d`)

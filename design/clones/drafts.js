@@ -239,6 +239,59 @@ function cdMantis(o) { const K = cdKit(o, 'mantis', CD_LOOK.mantis), { U, Z, pt,
     leg(g, [pt(f, side * hs, 10), pt(f + kf + sw * 0.12, side * ks, 19 + up * 3), pt(f + tf2 * 0.9 + sw * 0.25, side * ts * 0.96, 3 + up * 2), pt(f + tf2 + sw * 0.28, side * ts * 1.05, up * 1.5 + 0.3)], 0.042 * U, { side, thorn: 0.8 }); } });
   setShadows(g); g.userData.ant = { cls: K.cls, s: K.s, len: 2.8 * U, top: Z(42) }; return g; }
 
+// ── THE MANTIS, SECOND PASS (2026-11-23; Proposed, pictures only). Asked for after the first drafts: their forelegs read as flat boards from 3/4. Here the raptorial forelegs are
+// solid: coxa, femur and tibia each a tapered prism with a triangular cross-section (its flat, grasping face toward the part it closes on), two rows of spines along that face's edges,
+// long and short by turns, pale at their points; the tibia folded back against the femur's underside (the raptorial fold) and ending in a hooked claw; on the strike the femur swings up
+// and forward and the tibia opens out ahead of it. The head a true mantis triangle seen from the front (wide at the top, narrow at the mouth, thin front to back), big bulging eyes on
+// its top corners, palps at the mouth, long antennae; the prothorax a long keeled neck flaring at the shoulders, a thorn on the keel; the wings leaf-shaped with a raised vein. The
+// Stalker D's family: earthy olive mottle, dark plate edges, the weapons in sand with pale points. (design/clones/render.js: ?mantis=1 draws the first pass.)
+function cdMantis2(o) { const K = cdKit(o, 'mantis', CD_LOOK.mantis), { U, Z, pt, blob, cone, eye, leg, step } = K, g = new T.Group(), k = Math.min(1, K.open / 0.3), ht = 25;
+  const V = (a) => new T.Vector3(a[0], a[1], a[2]), lerp = (a, b) => a + (b - a) * k, sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+  // a tapered prism from A to B: its cross-section a rounded triangle, the flat face (two edges, `e`) toward `toward` (a point it faces), the apex away; r(u): its size along it
+  const prism = (A, B, toward, r, mat, w) => { const d = V(sub(B, A)).normalize(), t = V(sub(toward, mid(A, B))), gd = t.sub(d.clone().multiplyScalar(t.dot(d))); if (gd.lengthSq() < 1e-9) gd.set(0, -1, 0); gd.normalize();
+    const sd = new T.Vector3().crossVectors(d, gd).normalize(), N = 7, rings = [], edges = [[], []];
+    const sec = [[0.55, -1], [0.62, -0.35], [0.62, 0.35], [0.55, 1], [-0.1, 0.62], [-0.85, 0.12], [-0.85, -0.12], [-0.1, -0.62]];   // (gd, side) in units of r: the flat face at +gd
+    for (let i = 0; i <= N; i++) { const u = i / N, rr = r(u), c = V(A).lerp(V(B), u), ring = [];
+      for (const [a, b] of sec) { const q = c.clone().addScaledVector(gd, a * rr).addScaledVector(sd, b * rr * (w || 1)); ring.push([q.x, q.y, q.z]); }
+      rings.push(ring); edges[0].push(c.clone().addScaledVector(gd, 0.55 * rr).addScaledVector(sd, -rr * (w || 1))); edges[1].push(c.clone().addScaledVector(gd, 0.55 * rr).addScaledVector(sd, rr * (w || 1))); }
+    const m = loft(rings, mat); if (mat === K.armour) K.paint(m); g.add(m); return { gd, sd, d, edges, N }; };
+  // the spines along a prism's two grasping edges, from u0 to u1, pointing out of its flat face (and a little out and on), long and short by turns; pale points
+  const spines = (P, u0, u1, n, len, r) => { for (let e = 0; e < 2; e++) for (let i = 0; i < n; i++) { const u = u0 + (u1 - u0) * (i + 0.5 * e) / Math.max(1, n - 1), j = Math.min(P.N, u * P.N), j0 = Math.floor(j), j1 = Math.min(P.N, j0 + 1), base = P.edges[e][j0].clone().lerp(P.edges[e][j1], j - j0);
+      const L = len * (i % 2 ? 0.55 : 1), dir = P.gd.clone().addScaledVector(P.sd, (e ? 0.35 : -0.35)).addScaledVector(P.d, 0.45).normalize(), tip = base.clone().addScaledVector(dir, L);
+      g.add(cone([base.x, base.y, base.z], [tip.x, tip.y, tip.z], r * (i % 2 ? 0.75 : 1), i % 2 ? K.weap : K.tipM)); } };
+  // THE ABDOMEN, long, plated in bands, its tip; THE WINGS folded over it, leaf-shaped, a raised vein each
+  g.add(blob(-0.74, 0.62, 0.22, 11, 3.6, { edge: (f) => { const b = ((-f - 0.25) / 0.3) % 1; return b > 0.85 ? 0.8 : 0; } })); g.add(blob(-1.3, 0.22, 0.13, 12, 2.4, { rings: 5 }));
+  for (const side of [-1, 1]) { const pts = []; for (let i = 0; i <= 10; i++) { const u = i / 10; pts.push([-0.05 - 1.3 * u, side * (0.04 + 0.24 * Math.sin(Math.PI * Math.pow(u, 0.8)))]); } pts.push([-1.36, 0]);
+    const sh = new T.Shape(pts.map(p => new T.Vector2(p[0] * U, p[1] * U))), geo = new T.ExtrudeGeometry(sh, { depth: Z(0.9), bevelEnabled: false, curveSegments: 1 });
+    geo.rotateX(Math.PI / 2); geo.rotateZ(-0.05); geo.translate(0, Z(16.4), 0); const w = new T.Mesh(geo, K.armour); K.paint(w, (f, y, sd) => Math.abs(sd) > 0.2 ? 0.65 : 0, 0.25); g.add(w);
+    g.add(K.rod(pt(-0.12, side * 0.08, 16.9), pt(-1.15, side * 0.1, 17.6), 0.016 * U, K.legM, 5)); }
+  // THE THORAX low; THE PROTHORAX a long keeled neck, raised, flaring at the shoulders where the forelegs hang; a thorn on its keel
+  g.add(blob(0.04, 0.2, 0.15, 11, 3.0, { rings: 5 }));
+  const nk0 = pt(0.1, 0, 13.5), nk1 = pt(0.64, 0, ht - 1.5);
+  prism(nk0, nk1, [nk0[0] + 0.3 * U, nk0[1] - 10, 0], u => U * (0.07 - 0.03 * Math.sin(u * Math.PI * 0.9) + 0.035 * Math.max(0, (u - 0.7) / 0.3)), K.armour, 1.15);
+  g.add(cone(pt(0.36, 0, 21.2), pt(0.3, 0, 25), 0.035 * U)); g.add(cone(pt(0.5, 0, 23.2), pt(0.46, 0, 25.8), 0.025 * U));
+  // THE HEAD: the triangle, seen from the front: rings up from the mouth, each wider (thin front to back), rounded over the top; the face tipped forward and down
+  const hr = []; for (let i = 0; i <= 9; i++) { const u = i / 9, z = ht - 1.8 + u * 5.2, W0 = 0.07 + 0.22 * Math.pow(u, 0.6) * (u > 0.8 ? Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.8) / 0.22, 2))) : 1), D0 = 0.08 + 0.05 * Math.sin(u * Math.PI * 0.9), f0 = 0.82 - 0.06 * u, ring = [];
+    for (let j = 0; j < 14; j++) { const t = j / 14 * Math.PI * 2; ring.push(pt(f0 + D0 * Math.cos(t), W0 * Math.sin(t) * (Math.abs(Math.sin(t)) > 0.7 ? 1 : 0.92), z)); } hr.push(ring); }
+  g.add(K.paint(loft(hr, K.armour), (f, y, sd, h) => h > 0.9 ? 0.4 : 0, 0.5));
+  for (const side of [-1, 1]) { const e = eye(pt(0.77, side * 0.29, ht + 2.4), 0.1 * U); e.scale.set(1.0, 1.25, 0.9); g.add(e);
+    g.add(K.rod(pt(0.86, side * 0.03, ht - 1.6), pt(0.92, side * 0.06, ht - 4.5), 0.016 * U, K.weap)); g.add(K.rod(pt(0.8, side * 0.07, ht + 3.2), pt(0.97, side * 0.2, ht + 10), 0.011 * U)); g.add(K.rod(pt(0.97, side * 0.2, ht + 10), pt(1.2, side * 0.36, ht + 12.5), 0.008 * U)); }
+  g.add(cone(pt(0.77, 0, ht + 3.2), pt(0.74, 0, ht + 5.2), 0.03 * U));   // (a short crest on the vertex)
+  // THE RAPTORIAL FORELEGS: the coxa down and forward from the shoulder; the femur up from it, beside the head, its spiny face down; the tibia folded back up under it, its spines
+  // meeting the femur's, ending in a hooked claw. The strike: the coxa swings forward, the femur up and out ahead, the tibia opened out in front
+  for (const side of [-1, 1]) { const shl = pt(0.58, side * 0.12, 21.5), cx = pt(lerp(0.74, 0.88), side * lerp(0.18, 0.15), lerp(15, 17)), kn = pt(lerp(0.9, 1.35), side * lerp(0.25, 0.17), lerp(25.5, 21.5)), tb = pt(lerp(0.96, 1.75), side * lerp(0.23, 0.13), lerp(15.5, 14));
+    const femTo = mid(cx, tb), tibTo = mid(cx, kn), awayFem = k > 0.5 ? pt(lerp(0.8, 1.4), side * 0.2, 6) : femTo;
+    prism(shl, cx, pt(0.9, side * 0.4, 18), u => U * (0.07 - 0.025 * u), K.armour, 0.9); g.add(K.ball(0.052 * U, cx));
+    const F = prism(cx, kn, k > 0.5 ? awayFem : femTo, u => U * (0.06 + 0.06 * Math.sin(Math.PI * Math.min(1, u * 1.4 + 0.05)) - 0.02 * u), K.weap, 0.85); spines(F, 0.2, 0.92, 5, 0.14 * U, 0.024 * U); g.add(K.ball(0.045 * U, kn, K.weap));
+    const Tb = prism(kn, tb, k > 0.5 ? pt(lerp(0.8, 1.6), side * 0.2, 4) : tibTo, u => U * (0.05 - 0.02 * u), K.weap, 0.8); spines(Tb, 0.15, 0.85, 4, 0.09 * U, 0.017 * U);
+    const hk = V(tb).addScaledVector(Tb.d, 0.07 * U), hk2 = hk.clone().addScaledVector(Tb.gd, 0.06 * U).addScaledVector(Tb.d, -0.02 * U);
+    g.add(cone(tb, [hk.x, hk.y, hk.z], 0.02 * U, K.tipM)); g.add(cone([hk.x, hk.y, hk.z], [hk2.x, hk2.y, hk2.z], 0.012 * U, K.tipM)); }
+  // four walking legs, thin but jointed, knee thorns, hooked feet
+  const LG = [[0.12, 0.12, 0.2, 0.62, 0.55, 0.85], [-0.04, 0.12, -0.3, 0.68, -0.95, 0.9]];
+  LG.forEach(([f, hs, kf, ks, tf2, ts], i) => { for (const side of [-1, 1]) { const [sw, up] = step(K.walk, (i % 2 === 0) !== (side > 0), K.stand);
+    leg(g, [pt(f, side * hs, 10), pt(f + kf + sw * 0.12, side * ks, 19 + up * 3), pt(f + tf2 * 0.9 + sw * 0.25, side * ts * 0.96, 3 + up * 2), pt(f + tf2 + sw * 0.28, side * ts * 1.05, up * 1.5 + 0.3)], 0.042 * U, { side, thorn: 0.8 }); } });
+  setShadows(g); g.userData.ant = { cls: K.cls, s: K.s, len: 2.8 * U, top: Z(42) }; return g; }
+
 // ── THE MOTH (js/bugs3d.js: it flies: the body hovers over its shadow, four wings beating with eyespots in its colour, feathered antennae, legs dangling). In the family: an
 // armoured thorax with thorns, stiff wings in a mottled earthy pattern with a serrated back edge, hooked feet. Its wings beat with the walk's steps (the 2D beats them all the
 // time; the view's poses are the walk's four, the bite and the stand: a moth standing still holds its wings half up). ──
@@ -314,6 +367,7 @@ function cdRoly(o) { const cls = o.cls || 'scout', W0 = CD_W.rolypoly[cls] || 26
 //   B  A TEAL RING AT ITS FEET: its body the enemy's but its eyes teal, a ring of teal light on the floor round it
 //   C  TEAL-TINTED ARMOUR: its whole body tinted teal (as if grown in the lab), its eyes teal
 function cdMark(g, mark) { if (!mark) return g; const teal = new T.Color(CD_TEAL).convertSRGBToLinear(), tc = new T.Color(), hsl = {}, th = {}; teal.getHSL(th);
+  if (mark === 'C' && typeof antCloneTint === 'function') { antCloneTint(g); g.traverse(m => { if (m.isMesh && m.userData.eye) m.material = glowMat(CD_TEAL, 1.0); }); return g; }   // (C as built, 2026-11-23: the game's own tint, chamber.js ANT_CLONE)
   const box = new T.Box3().setFromObject(g), cx = (box.min.z + box.max.z) / 2, halfW = (box.max.z - box.min.z) / 2, H = box.max.y - box.min.y;
   g.traverse(m => { if (!m.isMesh) return; const mat = m.material;
     if (m.userData.eye) { m.material = glowMat(CD_TEAL, 1.0); if (mat.side === T.DoubleSide) m.material.side = T.DoubleSide; return; }
@@ -332,7 +386,7 @@ function cdMark(g, mark) { if (!mark) return g; const teal = new T.Color(CD_TEAL
 // ── THE HOOK: the view's buildAnt, for every species this file builds. The served view hands a creature's species and whether it is a clone in `accent` as
 // "species|colour|mark" (render.js PATCHES); a plain colour is an ant, as before. ──
 const CD_MARK = (/[?&]mark=([ABC])/.exec(String(location.search || '')) || [])[1] || null;
-const CD_BUILD = { ant: (P, o) => stalkerAnt(P, o, STALKER_D), beetle: (P, o) => cdBeetle(o), scorpion: (P, o) => cdScorpion(o), spider: (P, o) => cdSpider(o), mantis: (P, o) => cdMantis(o), moth: (P, o) => cdMoth(o), rolypoly: (P, o) => cdRoly(o) };
+const CD_BUILD = { ant: (P, o) => stalkerAnt(P, o, STALKER_D), beetle: (P, o) => cdBeetle(o), scorpion: (P, o) => cdScorpion(o), spider: (P, o) => cdSpider(o), mantis: (P, o) => (/[?&]mantis=1/.test(String(location.search || '')) ? cdMantis(o) : cdMantis2(o)), moth: (P, o) => cdMoth(o), rolypoly: (P, o) => cdRoly(o) };
 buildAnt = function (P, o) { o = Object.assign({}, o || {}); let sp = 'ant', mark = null; window.__antP = P;
   if (typeof o.accent === 'string' && o.accent.indexOf('|') >= 0) { const q = o.accent.split('|'); sp = q[0]; o.accent = q[1]; mark = q[2] || null; }
   const f = CD_BUILD[sp] || CD_BUILD.ant; return cdMark(f(P, o), mark); };

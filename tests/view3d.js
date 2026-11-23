@@ -176,9 +176,18 @@ const ON = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, gl = docu
   put(13, 19); step(2); actors = actors.filter(function (a) { return !(a instanceof Predator); });
   var ant = spawnCreature({ species: 'ant', className: 'striker', x: 11, y: 18, level: 4 }); ant.x = 11; ant.y = 18; ant.update = function () {}; ant.spawnProtection = 0;
   var bee = spawnCreature({ species: 'beetle', x: 11, y: 21, level: 4 }); bee.x = 11; bee.y = 21; bee.update = function () {}; bee.spawnProtection = 0;
+  // YOUR CLONE (the owner, 2026-11-23: "C teal mint"): an ant scout clone, beside an enemy ant scout; its body the view's, tinted teal with teal eyes, the enemy's not
+  var cln = makeClone('ant', 'scout', 12, 19, 'wander', { level: 4, xp: 0 }); cln.update = function () {}; cln.spawnProtection = 0;
+  var foeS = spawnCreature({ species: 'ant', className: 'scout', x: 12, y: 20, level: 4 }); foeS.x = 12; foeS.y = 20; foeS.update = function () {}; foeS.spawnProtection = 0;
+  // a body's look: its armour's colours (each vertex's, averaged over the pose shown) and its eyes' colour (its glowing parts)
+  var lookOf = function (u) { var h = V.bodyOf(u); if (!h) return null; var r = 0, g = 0, b = 0, n = 0, eyes = [];
+    h.traverse(function (o) { if (!o.isMesh || !o.visible) return; for (var q = o; q && q !== h; q = q.parent) if (!q.visible) return; var m = [].concat(o.material)[0], c = o.geometry.attributes.color;
+      if (m && m.isMeshBasicMaterial) { var e = m.color.clone(); if (m.vertexColors && c && c.count) { var er = 0, eg = 0, eb = 0; for (var j = 0; j < c.count; j++) { er += c.getX(j); eg += c.getY(j); eb += c.getZ(j); } e.multiply(new THREE.Color(er / c.count, eg / c.count, eb / c.count)); } eyes.push('#' + e.getHexString()); return; }   /* (the eyes: merged with the body's other still parts, their colour a colour a vertex) */ if (m && m.vertexColors && c) for (var i = 0; i < c.count; i++) { r += c.getX(i); g += c.getY(i); b += c.getZ(i); n++; } });
+    return { key: V.bodyKey(u), armour: n ? [r / n, g / n, b / n] : null, eyes: eyes.filter(function (e, i, a) { return a.indexOf(e) === i; }) }; };
   var evo = followers[1]; if (evo) { evo.evolved = 'jellyram'; evo._moltAt = -9999; }
   var seen2 = []; var keepDraw = drawNPC; drawNPC = function (a, px, py) { if (a === ant || a === followers[0]) seen2.push([a === ant ? 'ant' : 'egg', Math.round(py - ((a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2))]); return keepDraw.apply(this, arguments); };
   step(2); drawNPC = keepDraw;
+  out.clone = { has: V.has(cln), foeHas: V.has(foeS), mine: lookOf(cln), foe: lookOf(foeS), teal: '#' + new THREE.Color('#19e6c1').convertSRGBToLinear().getHexString() }; actors = actors.filter(function (a) { return a !== cln && a !== foeS; });
   out.has = { cube: V.has(player), egg: V.has(followers[0]), evolved: evo ? V.has(evo) : null, ant: V.has(ant), beetle: V.has(bee) }; out.antTop = V.top(ant); out.drawnAt = seen2.slice(0, 2); out.feet = view3dFeet(); out.bodies = V.stats.bodies;
   // the doors, the light, the floor's marks, the items kept
   var door = V.world.doors.filter(function (q) { return q.id === 'door_crystal_hallway'; })[0], st = _fp.items.filter(function (i) { return i.fp === 'door' && i.id === 'door_crystal_hallway'; })[0].st;
@@ -263,6 +272,13 @@ else {
     check('THE BODIES: the cube, an egg, an evolved form and an ant are the view\'s; a beetle is the game\'s; what is drawn over a unit goes down with its body', () => {
         same(JSON.stringify(ON.has), JSON.stringify({ cube: true, egg: true, evolved: true, ant: true, beetle: false }), 'whose bodies'); same(ON.antTop, 28, 'a striker\'s bars, as the game\'s drawing has them (its width)');
         same(ON.feet, 30, 'the bodies\' offset'); ok(ON.drawnAt.length === 2 && ON.drawnAt.every(q => q[1] === 30), 'units drawn at ' + JSON.stringify(ON.drawnAt)); ok(ON.bodies >= 5, 'bodies in the picture: ' + ON.bodies);
+    });
+    check('YOUR CLONE (the owner, 2026-11-23, of the clone\'s mark: "C teal mint"): an ant scout clone is the view\'s body, a body of its own, its armour tinted teal and its eyes teal; an enemy ant scout beside it is the view\'s too, untinted, its eyes its own colour', () => {
+        const C = ON.clone; same(JSON.stringify([C.has, C.foeHas]), '[true,true]', 'both drawn by the view'); ok(C.mine && C.foe, 'bodies: ' + JSON.stringify(C));
+        same(C.mine.key, 'ant:scout:0.5:C', 'the clone\'s body, by its own key'); ok(C.foe.key && !/:C$/.test(C.foe.key), 'the enemy\'s body: ' + C.foe.key);
+        const [r, g, b] = C.mine.armour, [fr, fg, fb] = C.foe.armour; ok(g > r * 1.5 && b > r * 1.2, 'the clone\'s armour teal (green and blue over red): ' + JSON.stringify(C.mine.armour)); ok(fr > fg && fg > fb, 'the enemy\'s armour rust and sand (red over green over blue): ' + JSON.stringify(C.foe.armour));
+        const near = (a, b) => { const p = h => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16)); const x = p(a), y = p(b); return x.every((v, i) => Math.abs(v - y[i]) <= 3); };
+        ok(C.mine.eyes.length === 1 && near(C.mine.eyes[0], C.teal), 'the clone\'s eyes teal (' + C.teal + '): ' + C.mine.eyes); ok(C.foe.eyes.length === 1 && !near(C.foe.eyes[0], C.teal), 'the enemy\'s eyes its own: ' + C.foe.eyes);
     });
     check('THE WORLD: a door as open as the game\'s; the room you are in at full light, one you are not in as dark as the game\'s lit room (the owner: "the facilities should be more lit up"; before, "Definitely liking the dark mode more"); a blackout darkens it; the floor\'s marks laid on; the items it does not build left to the game, in its rooms, but for the wall\'s things with no 3D model yet', () => {
         same(ON.doorShut, 0, 'the door shut'); same(ON.doorOpen, 1, 'the door open'); ok(Math.abs(ON.lightHere - ON.wantHere) < 0.006, 'the room you are in, at full light (' + ON.wantHere + '): ' + ON.lightHere); ok(Math.abs(ON.lightAway - ON.wantAway) < 0.006, 'a room you are not in, as dark as the game\'s lit room (' + ON.wantAway + '): ' + ON.lightAway); ok(ON.lightBlack > 0.3, 'the blackout, the chamber\'s darkest tile: ' + ON.lightBlack);

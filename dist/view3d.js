@@ -26415,12 +26415,41 @@ function buildRoom(R, P, opt) {
 const ANT_W = { worker: 20, scout: 22, striker: 28, tank: 36 }, ANT_JAW_LEN = { worker: 0.9, scout: 1.05, striker: 1.15, tank: 1.3 }, ANT_ZK = 1.5;
 const ANT_LOOK = { lift: 1.5, knee: 6, ankle: 3.5, reach: 0.82, scythe: 1.05, jaw: 1.25, spines: 0.8, bk: 1.38, head: 1.08, legW: 1.75, sw: 1.4, antW: 1.6, spread: 0.45, antH: 5, tipAt: 0.6,
     pal: ['#5a3418', '#b8874a', '#1a0f07'], tip: '#f2e2bd', leg: '#2b1a0d', sick: '#c99c5e', mottle: 0.9 };
+const ANT_CLONE = { eye: '#19e6c1', hue: '#3ee6b0', sat: [0.55, 0.25], light: 1.3 };
+function antCloneTint(g) {
+    const V = ANT_CLONE, th = {}, hsl = {}, tc = new T.Color(), done = new Set();
+    lin(V.hue).getHSL(th);
+    const tint = c => { c.getHSL(hsl); c.setHSL(th.h, Math.min(1, hsl.s * V.sat[0] + V.sat[1]), Math.min(1, hsl.l * V.light)); };
+    g.traverse(m => {
+        if (!m.isMesh)
+            return;
+        const mat = m.material;
+        if (!mat || mat.isMeshBasicMaterial)
+            return;
+        const col = m.geometry.attributes.color;
+        if (mat.vertexColors && col) {
+            if (done.has(col))
+                return;
+            done.add(col);
+            for (let i = 0; i < col.count; i++) {
+                tc.setRGB(col.getX(i), col.getY(i), col.getZ(i));
+                tint(tc);
+                col.setXYZ(i, tc.r, tc.g, tc.b);
+            }
+            col.needsUpdate = true;
+        }
+        else if (!done.has(mat)) {
+            done.add(mat);
+            tint(mat.color);
+        }
+    });
+}
 const ANT_LEGS_3D = [{ f: 0.06, hs: 0.15, kf: 0.18, ks: 0.66, af: 0.3, as: 1.1, tf: 0.42, ts: 1.28 }, { f: -0.14, hs: 0.14, kf: -0.36, ks: 0.66, af: -0.7, as: 1.06, tf: -0.92, ts: 1.22 }];
 function buildAnt(P, o) {
     o = o || {};
     const V = ANT_LOOK, cls = o.cls || 'scout', soldier = cls === 'tank', s = (ANT_W[cls] || 22) / 22 * (o.size || 1), U = 0.4 * s, BK = V.bk, UB = U * BK, zk = o.zk || ANT_ZK, Z = z => z / UH * s * zk;
     const hsz = (soldier ? 1.3 : 1) * V.head, ml = (ANT_JAW_LEN[cls] || 1.05) * V.jaw, open = o.open === undefined ? 0.01 : o.open, strike = Math.min(1, open / 0.3), walk = o.walk === undefined ? 0.6 : o.walk;
-    const accent = o.accent || ANT_COLOUR, eye = glowMat(accent, 1.0), g = new T.Group();
+    const accent = o.clone ? ANT_CLONE.eye : o.accent || ANT_COLOUR, eye = glowMat(accent, 1.0), g = new T.Group();
     const C0 = lin(V.pal[0]), C1 = lin(V.pal[1]), C2 = lin(V.pal[2]);
     const armour = std('#ffffff', { roughness: 0.42, metalness: 0.25 });
     armour.vertexColors = true;
@@ -26560,6 +26589,8 @@ function buildAnt(P, o) {
             g.add(cone(knee, [knee[0] - 0.02 * U, knee[1] + Z(1.2 + 1.6 * V.spines), knee[2] + side * 0.05 * U], 0.022 * s * LW, legM));
         }
     });
+    if (o.clone)
+        antCloneTint(g);
     setShadows(g);
     g.userData.ant = { cls, s, len: 2.95 * UB, top: Z(Math.max(hz + hr + 3, zb + 5.5 * sc + 4)), headAt: [hf * UB, Z(hz), 0], jawTip: [(hf + hL + 0.5 * ml) * UB, Z(hz - 0.8), 0] };
     return g;
@@ -38247,7 +38278,7 @@ const GAMEVIEW = (function () {
         for (const o of b.hidden)
             o.visible = false;
     }
-    function antKitBody(key, cls, size, accent) { const a = antBody(cls, { size, zk: 2, stand: true, accent }); return { key, holder: a.holder, poses: a.poses, ang: null }; }
+    function antKitBody(key, cls, size, accent, mine) { const a = antBody(cls, mine ? { size, zk: 2, stand: true, accent, clone: 'C' } : { size, zk: 2, stand: true, accent }); return { key, holder: a.holder, poses: a.poses, ang: null, mine: !!mine }; }
     const free = new Map(), live = new Map(), shown = new Set(), bad = new Set();
     let stamp = 0;
     const ATT = view3dAttacks({ scene, GM, camera: cam, renderer: CORE.renderer, grad: look.grad, UPX, ink: CORE.idCol(CORE.newInk()), JOBS,
@@ -38384,10 +38415,10 @@ const GAMEVIEW = (function () {
         return true;
     }
     function ant(a, hp) {
-        if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph || a.isClone || a.team === 'green')
+        if ((a.untargetable && a._burrow) || GM.bugStyle(a) !== 'ant' || !ANT_W[a.className] || a.isNymph)
             return false;
-        const w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR, key = 'ant:' + a.className + ':' + size + ':' + accent;
-        const b = bodyFor(a, key, () => antKitBody(key, a.className, size, accent));
+        const mine = a.team === 'green' || !!a.isClone, w = a.dimensions && a.dimensions.width > 0 ? a.dimensions.width : ANT_W[a.className], size = Math.round(50 * w / ANT_W[a.className]) / 100, accent = a.color || ANT_COLOUR, key = 'ant:' + a.className + ':' + size + ':' + (mine ? 'C' : accent);
+        const b = bodyFor(a, key, () => antKitBody(key, a.className, size, accent, mine));
         if (!b)
             return false;
         let fx = Number.isFinite(a.dirX) ? a.dirX : 1, fy = Number.isFinite(a.dirY) ? a.dirY : 0;
@@ -38423,6 +38454,8 @@ const GAMEVIEW = (function () {
         for (const a of GM.actors || [])
             if (!GM.isCreature(a))
                 follower(a, f0, 0);
+            else if (a.isClone && !a.dead)
+                ant(a);
         for (const c of Object.keys(ANT_W)) {
             const key = 'ant:' + c + ':0.5:' + ANT_COLOUR;
             give(antKitBody(key, c, 0.5, ANT_COLOUR));
@@ -38573,6 +38606,7 @@ const GAMEVIEW = (function () {
             }
         },
         dry(on) { noPic = !!on; return noPic; },
+        bodyKey(a) { const b = live.get(a); return b ? b.key : null; }, bodyOf(a) { const b = live.get(a); return b ? b.holder : null; },
         draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
         lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },
         keeps(it) {
