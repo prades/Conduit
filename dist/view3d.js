@@ -38360,7 +38360,10 @@ const LOWCAM = {
     ahead: 2.2,
     lift: 0.55,
     follow: 6,
-    k: 0.013,
+    k: 0.0065,
+    see: 22,
+    seeRoom: 12,
+    seg: 1.5,
     near: 0.3, far: 140,
     dK: 0.03,
     horizon: true,
@@ -38440,8 +38443,14 @@ function view3dLowCam() {
                 culled++;
                 return false;
             }
+            const far = Math.hypot(sph.center.x - P.x, sph.center.z - P.z) - r, lr = o.userData.lowRoom;
+            if (far > K.see || (lr && lr !== inRoom.room && far > K.seeRoom)) {
+                culled++;
+                return false;
+            }
             return fr.intersectsSphere(sph);
         } };
+    const inRoom = { room: null };
     const aim = new T.Vector3(), want = new T.Vector3(), atB = new T.Vector3(), dirV = new T.Vector3(), tmp = new T.Vector3();
     let hasAim = false;
     const lerp = (a, b, e) => a + (b - a) * e, glerp = (a, b, e) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * e);
@@ -38549,7 +38558,155 @@ function view3dLowCam() {
         }
         return { x, z };
     }
-    return { U, K, wrap, wrapMat, place, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
+    function far(x, z, rm) { if (!U.lowK.value)
+        return false; const P = U.lowPivot.value, d = Math.hypot(x - P.x, z - P.z); return d > K.see || (!!rm && !!inRoom.room && rm !== inRoom.room && d > K.seeRoom); }
+    function tessellate(root, maxLen) {
+        const L = maxLen || K.seg, L2 = L * L, done = new Map(), out = { geos: 0, before: 0, after: 0 };
+        if (!root)
+            return out;
+        root.updateMatrixWorld(true);
+        const M = new T.Matrix4(), v = new T.Vector3();
+        root.traverse(o => {
+            if (!o.isMesh || !o.geometry || o.isSkinnedMesh)
+                return;
+            const g0 = o.geometry;
+            if (done.has(g0)) {
+                const n = done.get(g0);
+                if (n)
+                    o.geometry = n;
+                return;
+            }
+            const g = g0;
+            if (!g.attributes || !g.attributes.position || !g.attributes.position.array || (g.morphAttributes && Object.keys(g.morphAttributes).length)) {
+                done.set(g0, null);
+                return;
+            }
+            M.copy(o.matrixWorld);
+            let sc = Math.max(Math.hypot(M.elements[0], M.elements[2]), Math.hypot(M.elements[8], M.elements[10]), Math.hypot(M.elements[4], M.elements[6]));
+            if (o.isInstancedMesh) {
+                const im = new T.Matrix4();
+                let s2 = 0;
+                for (let i = 0; i < o.count; i++) {
+                    o.getMatrixAt(i, im);
+                    const e = im.elements;
+                    s2 = Math.max(s2, Math.hypot(e[0], e[2]), Math.hypot(e[8], e[10]), Math.hypot(e[4], e[6]));
+                }
+                sc *= s2 || 1;
+            }
+            const pos = g.attributes.position, idx = g.index, nT = (idx ? idx.count : pos.count) / 3 | 0;
+            if (!nT) {
+                done.set(g0, null);
+                return;
+            }
+            const wp = new Float32Array(pos.count * 3);
+            for (let i = 0; i < pos.count; i++) {
+                v.fromBufferAttribute(pos, i);
+                if (!o.isInstancedMesh)
+                    v.applyMatrix4(M);
+                else
+                    v.multiplyScalar(sc);
+                wp[i * 3] = v.x;
+                wp[i * 3 + 1] = v.y;
+                wp[i * 3 + 2] = v.z;
+            }
+            const vi = t => idx ? idx.getX(t) : t;
+            let need = false;
+            for (let t = 0; t < nT && !need; t++) {
+                const a = vi(t * 3), b = vi(t * 3 + 1), c = vi(t * 3 + 2);
+                for (const [p, q] of [[a, b], [b, c], [c, a]]) {
+                    const dx = wp[p * 3] - wp[q * 3], dz = wp[p * 3 + 2] - wp[q * 3 + 2];
+                    if (dx * dx + dz * dz > L2) {
+                        need = true;
+                        break;
+                    }
+                }
+            }
+            if (!need) {
+                done.set(g0, null);
+                return;
+            }
+            const names = Object.keys(g.attributes).filter(n => g.attributes[n].itemSize && !g.attributes[n].isInterleavedBufferAttribute), src = names.map(n => g.attributes[n]), vals = names.map(() => []), W = [];
+            for (let i = 0; i < pos.count; i++) {
+                src.forEach((A, j) => { for (let c = 0; c < A.itemSize; c++)
+                    vals[j].push(A.array[i * A.itemSize + c]); });
+                W.push(wp[i * 3], wp[i * 3 + 1], wp[i * 3 + 2]);
+            }
+            const mids = new Map();
+            let n = pos.count;
+            const mid = (p, q) => {
+                const k = p < q ? p + ',' + q : q + ',' + p;
+                let m = mids.get(k);
+                if (m !== undefined)
+                    return m;
+                m = n++;
+                mids.set(k, m);
+                src.forEach((A, j) => { const s = A.itemSize, V = vals[j]; for (let c = 0; c < s; c++)
+                    V.push((V[p * s + c] + V[q * s + c]) / 2); if (names[j] === 'normal') {
+                    const b0 = m * 3, l = Math.hypot(V[b0], V[b0 + 1], V[b0 + 2]) || 1;
+                    V[b0] /= l;
+                    V[b0 + 1] /= l;
+                    V[b0 + 2] /= l;
+                } });
+                W.push((W[p * 3] + W[q * 3]) / 2, (W[p * 3 + 1] + W[q * 3 + 1]) / 2, (W[p * 3 + 2] + W[q * 3 + 2]) / 2);
+                return m;
+            };
+            const len2 = (p, q) => { const dx = W[p * 3] - W[q * 3], dz = W[p * 3 + 2] - W[q * 3 + 2]; return dx * dx + dz * dz; };
+            const tri = [], cut = (a, b, c, depth) => {
+                const ab = len2(a, b), bc = len2(b, c), ca = len2(c, a), mx = Math.max(ab, bc, ca);
+                if (mx <= L2 || depth > 12) {
+                    tri.push(a, b, c);
+                    return;
+                }
+                if (ab === mx) {
+                    const m = mid(a, b);
+                    cut(a, m, c, depth + 1);
+                    cut(m, b, c, depth + 1);
+                }
+                else if (bc === mx) {
+                    const m = mid(b, c);
+                    cut(a, b, m, depth + 1);
+                    cut(a, m, c, depth + 1);
+                }
+                else {
+                    const m = mid(c, a);
+                    cut(a, b, m, depth + 1);
+                    cut(m, b, c, depth + 1);
+                }
+            };
+            const groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: nT * 3, materialIndex: 0 }], ng = [];
+            for (const gr of groups) {
+                const s0 = tri.length;
+                for (let i = gr.start; i + 2 < gr.start + gr.count; i += 3)
+                    cut(vi(i), vi(i + 1), vi(i + 2), 0);
+                ng.push({ start: s0, count: tri.length - s0, materialIndex: gr.materialIndex });
+            }
+            const g2 = new T.BufferGeometry();
+            src.forEach((A, j) => {
+                const Ctor = A.array.constructor, a2 = new T.BufferAttribute(new Ctor(vals[j].length), A.itemSize, A.normalized);
+                const isInt = !(A.array instanceof Float32Array || A.array instanceof Float64Array);
+                for (let i = 0; i < vals[j].length; i++)
+                    a2.array[i] = isInt ? Math.round(vals[j][i]) : vals[j][i];
+                if (A.onUploadCallback && A.onUploadCallback !== T.BufferAttribute.prototype.onUploadCallback)
+                    a2.onUploadCallback = A.onUploadCallback;
+                g2.setAttribute(names[j], a2);
+            });
+            g2.setIndex(n > 65535 ? new T.Uint32BufferAttribute(tri, 1) : new T.Uint16BufferAttribute(tri, 1));
+            if (g.groups && g.groups.length)
+                for (const gr of ng)
+                    g2.addGroup(gr.start, gr.count, gr.materialIndex);
+            g2.computeBoundingSphere();
+            if (g.boundingBox)
+                g2.computeBoundingBox();
+            g2.userData = Object.assign({}, g.userData, { lowCut: true });
+            done.set(g0, g2);
+            o.geometry = g2;
+            out.geos++;
+            out.before += nT;
+            out.after += tri.length / 3;
+        });
+        return out;
+    }
+    return { U, K, wrap, wrapMat, place, far, tessellate, room(id) { inRoom.room = id || null; }, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
 }
 ;
 /* view3d/fields.js */
@@ -38949,6 +39106,10 @@ const GAMEVIEW = (function () {
         CORE.inkU.dK.value = LOWCAM.dK;
         LOW.wrapMat(CORE.idMat);
     }
+    const LOW_CUT = LOW ? LOW.tessellate(scene) : null;
+    if (LOW)
+        for (const id of world.order)
+            world.rooms[id].g.traverse(o => { o.userData.lowRoom = id; });
     const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);
     const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
     const cam = LOW ? new T.PerspectiveCamera(LOWCAM.fov, 1, LOWCAM.near, LOWCAM.far) : new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3();
@@ -39592,6 +39753,8 @@ const GAMEVIEW = (function () {
         if (world.sewer && world.sewer.tick)
             world.sewer.tick(f0, SEWER_GM);
         const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas;
+        if (LOW)
+            LOW.room(room);
         if (room) {
             CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined);
             roomWas = room;
@@ -39767,8 +39930,56 @@ const GAMEVIEW = (function () {
         u.fxS.value.set(TW * MARKS_K / W, TH * MARKS_K / H);
         u.fxC.value.set(0.5, 0.5 - TH * MARKS_K / H);
     }
+    let occ = null;
+    const OCC_STEP = 0.25, OCC_SKIP = 0.35;
+    function occPrep() {
+        occ = new Map();
+        for (const G of world.groups)
+            for (const q of [G.face, G.cap, G.rface, G.rcap])
+                if (q && q.pos)
+                    for (let i = 0; i + 8 < q.pos.length; i += 9) {
+                        const P = q.pos;
+                        const x0 = Math.min(P[i], P[i + 3], P[i + 6]) + 0.01, x1 = Math.max(P[i], P[i + 3], P[i + 6]) - 0.01, z0 = Math.min(P[i + 2], P[i + 5], P[i + 8]) + 0.01, z1 = Math.max(P[i + 2], P[i + 5], P[i + 8]) - 0.01, top = Math.max(P[i + 1], P[i + 4], P[i + 7]);
+                        for (let cx = Math.round(x0); cx <= Math.round(x1); cx++)
+                            for (let cz = Math.round(z0); cz <= Math.round(z1); cz++) {
+                                const k = K(cx, cz), b = world.band.get(k);
+                                if (!b || b.header)
+                                    continue;
+                                let L = occ.get(k);
+                                if (!L)
+                                    occ.set(k, L = []);
+                                const e = L.find(e => e.G === G);
+                                if (e)
+                                    e.top = Math.max(e.top, top);
+                                else
+                                    L.push({ G, top });
+                            }
+                    }
+    }
+    function lowOccluded(x, z, y) {
+        if (!occ)
+            occPrep();
+        const C = cam.position, yb = y - LOW.drop(x, z), dx = C.x - x, dz = C.z - z, len = Math.hypot(dx, dz);
+        if (len < 1e-6)
+            return false;
+        for (let s = OCC_SKIP; s < len; s += OCC_STEP) {
+            const t = s / len, X = x + dx * t, Z = z + dz * t, L = occ.get(K(Math.round(X), Math.round(Z)));
+            if (!L)
+                continue;
+            const ry = yb + (C.y - yb) * t, dr = LOW.drop(X, Z);
+            for (const e of L) {
+                if (!e.G.g.visible)
+                    continue;
+                if (ry < e.top + e.G.g.position.y - dr - 0.02)
+                    return true;
+            }
+        }
+        return false;
+    }
     return {
-        stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1,
+        stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1, lowCut: LOW_CUT,
+        hides(x, y, up, rm) { if (!LOW || !LOW.k())
+            return false; const h = GM.liftPx(x, y) / UPX; return LOW.below(x, h, y, up || 0) || LOW.far(x, y, rm) || lowOccluded(x, y, h + (up || 0)); },
         owns(o, k) { return ATT.owns(o, k); },
         covers(id) { return !!world.rooms[id]; },
         show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) {

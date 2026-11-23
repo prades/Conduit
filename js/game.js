@@ -1037,6 +1037,7 @@ function render() {
     // THE 3D VIEW (js/view3d.js; its switch on, and the room you are in one it has built): it draws the floor, the walls, the props and the bodies it has models for, under this canvas. This frame
     // then lays out no floor tile and no wall or prop, and what is drawn below is what the 3D view does not draw: the bars and plates over everyone, the effects, the panels.
     const _v3 = !_simGhost && typeof view3dShowing === "function" && view3dShowing();
+    const _v3low = _v3 && typeof view3dLow === "function" && view3dLow();
     let drawList=_simGhost?[]:visibleTilesForDraw();   // (THE LOW CAMERA lays the floor's marks from its own list of tiles, js/view3d.js _view3dFloorMarksLow: this one goes unused then, as below)
     const _v3tiles = _v3 ? drawList : null; if (_v3) drawList = [];   // (the tiles on the screen: the 3D view's floor has their marks laid on it)
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
@@ -1052,6 +1053,7 @@ function render() {
     // Each item's depth once, not twice per comparison (n log n calls).
     for (let i = 0; i < drawList.length; i++) drawList[i]._dd = drawDepthOf(drawList[i]);
     drawList.sort((a,b)=>a._dd-b._dd);
+    if (_v3low) drawList = drawList.filter(o => !view3dHidesItem(o));   // THE LOW CAMERA (js/view3d.js): nothing drawn over the picture where a wall hides it, or past the visible distance
 
     // The pools of material evolved followers stand in (js/evolution.js GROUND): painted by the floor tiles below.
     if (!_simGhost && typeof evoGroundBegin === "function") evoGroundBegin();

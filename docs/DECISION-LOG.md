@@ -25,6 +25,15 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Alternatives:** A (no curve); C (B with a cozy feel): not chosen.
 - **Docs/code:** `VIEW-3D.md` §8 (the feature specification; stages 1 to 4 built: the camera and the curve, the 2D through it, the walls judged from it, horizon culling); `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `view3d/core.js`, `js/config.js`, `js/view3d.js`, `js/game.js`, `js/input.js`, `js/drops.js`, `js/facilityplay.js`, `js/techabilities.js`; `tests/view3d.js`, `tests/engineplan.js`.
 
+## DECISION: The low camera after the owner tried it: less loaded in, no 2D through walls, half the curve, long pieces bent
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/low-camera-fixes` (over main's build `2026-11-17dg`); no build of its own (not stamped), not pushed by the agent
+- **Status:** approved (the owner's feedback); **implemented** behind `?cam=low` (`VIEW-3D.md` §8.14). Without the switch the game is as it was. Not seen on an iPad; not playtested.
+- **Context:** the owner, 2026-11-23, after trying `?cam=low` (build `2026-11-17dg`): "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
+- **Decision:** (1) the low camera draws less: nothing 3D or 2D past 22 tiles from the player (`LOWCAM.see`), another room's things past 12 (`seeRoom`); (2) nothing 2D drawn over the picture where a standing wall hides its place from the camera; (3) the curve halved, k 0.013 to 0.0065 (`LOWCAM.k`), as the owner's "too much"; (4) long pieces (the hallway's yellow pipe and every other) cut so they bend with the world (`LOWCAM.seg` 1.5 tiles). The distances and the cut length are the agent's, provisional knobs; the halving is the brief's.
+- **Not decided:** removing the staircases and the follower posts' pads (the owner is "thinking about removing" them: `OPEN-QUESTIONS.md`); they stay.
+- **Docs/code:** `VIEW-3D.md` §8.14; `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `js/view3d.js`, `js/game.js`, `js/commandcenter.js`, `js/facilityportals.js`, `js/facilitytutorial.js`, `js/stations.js`, `js/techabilities.js`; `tests/view3d.js`.
+
 ## DECISION: The electric technician is the MANTA RAY (design No. 948), in place of the Hover Shell
 
 - **Date:** 2026-11-23 · **Branch/build:** `claude/friendly-thompson-w581x0`, build `2026-11-17de`

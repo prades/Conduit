@@ -192,6 +192,7 @@ function drawSelectedUnitRings() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of selectedUnits) {
         if (!a || a.dead) continue;
+        if (typeof view3dHides === "function" && view3dHides(a.x, a.y, 0.05)) continue;   // (THE LOW CAMERA: not where a wall hides it, js/view3d.js)
         const px = isoSX(a.x, a.y) + W, py = isoSY(a.x, a.y) + H + ccGroundOffset(a), rx = a.evolved ? 34 : 26, ry = a.evolved ? 15 : 12;
         if (px < -60 || px > canvas.width + 60 || py < -60 || py > canvas.height + 60) continue;
         // (no shadowBlur: the game keeps it off the canvas for speed. A wider, fainter ring under the sharp one gives the glow.)

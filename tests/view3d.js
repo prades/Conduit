@@ -948,16 +948,47 @@ const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D
   // STAGE 4, THE HORIZON: what the curve has put under the horizon is not drawn, and the picture is the one it was with all of it drawn; nothing 2D is laid over a place under the horizon
   out.horizon = (function () { put(13, 19); followers.slice(0, 3).forEach(function (f, i) { f.x = 12 + i; f.y = 20.5; }); VIEW3D.turn = 1; V.show(true); settle(120); var glc = document.getElementById('view3dCanvas'), c2 = document.createElement('canvas'), g2 = c2.getContext('2d'); c2.width = glc.width; c2.height = glc.height;
     var shot = function () { var n = [0, 0]; for (var i = 0; i < 2; i++) { V.draw(null); n[0] += V.stats.draws; n[1] += V.stats.tris; } g2.clearRect(0, 0, c2.width, c2.height); g2.drawImage(glc, 0, 0); return { n: n, px: g2.getImageData(0, 0, c2.width, c2.height).data }; };
-    V.low.K.horizon = false; shot(); var off = shot(); L(); V.low.K.horizon = true; shot(); var on = shot(), culled = L().culled, diff = 0, lit = 0; for (var i = 0; i < on.px.length; i += 4) { if (on.px[i] + on.px[i + 1] + on.px[i + 2] > 120) lit++; if (Math.abs(on.px[i] - off.px[i]) + Math.abs(on.px[i + 1] - off.px[i + 1]) + Math.abs(on.px[i + 2] - off.px[i + 2]) > 24) diff++; }
-    var I = L(), far = [13 + I.fwd[0] * 60, 19 + I.fwd[1] * 60], near = [13 + I.fwd[0] * 4, 19 + I.fwd[1] * 4];
-    var o = { off: off.n, on: on.n, culled: culled, diff: diff, lit: lit, px: on.px.length / 4, st: +I.horizon.toFixed(2), far: +I.horizonFar.toFixed(2), floor: +I.horizonFloor.toFixed(3), farIso: isoSX(far[0], far[1]), nearIso: Math.abs(isoSX(near[0], near[1])) < 2000 };
+    var KS = [V.low.K.see, V.low.K.seeRoom]; V.low.K.see = V.low.K.seeRoom = 1e9;   /* (the horizon alone: the visible distance, the owner's 2026-11-23, is its own check) */
+    V.low.K.horizon = false; shot(); var off = shot(); L(); V.low.K.horizon = true; shot(); var on = shot(), culled = L().culled; V.low.K.see = KS[0]; V.low.K.seeRoom = KS[1]; shot(); var dist = shot(); L(); var diff = 0, lit = 0; for (var i = 0; i < on.px.length; i += 4) { if (on.px[i] + on.px[i + 1] + on.px[i + 2] > 120) lit++; if (Math.abs(on.px[i] - off.px[i]) + Math.abs(on.px[i + 1] - off.px[i + 1]) + Math.abs(on.px[i + 2] - off.px[i + 2]) > 24) diff++; }
+    var I = L(), far = [13 + I.fwd[0] * 85, 19 + I.fwd[1] * 85], near = [13 + I.fwd[0] * 4, 19 + I.fwd[1] * 4];
+    var o = { off: off.n, on: on.n, dist: dist.n, culled: culled, diff: diff, lit: lit, px: on.px.length / 4, st: +I.horizon.toFixed(2), far: +I.horizonFar.toFixed(2), floor: +I.horizonFloor.toFixed(3), farIso: isoSX(far[0], far[1]), nearIso: Math.abs(isoSX(near[0], near[1])) < 2000 };
     VIEW3D.turn = 0; V.show(true); settle(60); return o; })();
+  // THE OWNER'S FEEDBACK (2026-11-23): "it needs to load less in"; "these highlighted tiles being visible through the walls"; "the roundness is too much"; the pipeline "doesn't bend properly"
+  out.fb = (function () { var Wd = V.world, K = V.low.K, res = { poses: [], behind: 0, behindDrawn: [], farDrawn: [], drawn: 0, far3d: [], rooms3d: 0 };
+    // (the test's own maths: does the line from (x, y, z) of the world to the camera, both bent, pass through a standing wall's face? the walls as they stand now)
+    var I0 = null, bd = function (x, y, z) { var d = (x - I0.pivot[0]) * I0.fwd[0] + (z - I0.pivot[1]) * I0.fwd[1]; return y - I0.k * d * d; };
+    var crosses = function (o) { var C = I0.pos, O = [o[0], bd(o[0], o[1], o[2]), o[2]], D = [C[0] - O[0], C[1] - O[1], C[2] - O[2]], hit = false;
+      Wd.groups.forEach(function (G) { if (hit || !G.g.visible) return; var dy = G.g.position.y; [G.face, G.cap, G.rface, G.rcap].forEach(function (q) { if (hit || !q || !q.pos) return; for (var i = 0; i + 8 < q.pos.length && !hit; i += 9) { var P = q.pos;
+        var xs = [P[i], P[i + 3], P[i + 6]], zs = [P[i + 2], P[i + 5], P[i + 8]]; if (Math.max.apply(null, xs) < Math.min(O[0], C[0]) - 0.5 || Math.min.apply(null, xs) > Math.max(O[0], C[0]) + 0.5 || Math.max.apply(null, zs) < Math.min(O[2], C[2]) - 0.5 || Math.min.apply(null, zs) > Math.max(O[2], C[2]) + 0.5) continue;
+        var A = [P[i], bd(P[i], P[i + 1] + dy, P[i + 2]), P[i + 2]], B = [P[i + 3], bd(P[i + 3], P[i + 4] + dy, P[i + 5]), P[i + 5]], Cc = [P[i + 6], bd(P[i + 6], P[i + 7] + dy, P[i + 8]), P[i + 8]];
+        var e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [Cc[0] - A[0], Cc[1] - A[1], Cc[2] - A[2]], px = D[1] * e2[2] - D[2] * e2[1], py = D[2] * e2[0] - D[0] * e2[2], pz = D[0] * e2[1] - D[1] * e2[0], det = e1[0] * px + e1[1] * py + e1[2] * pz; if (Math.abs(det) < 1e-12) continue;
+        var inv = 1 / det, tx = O[0] - A[0], ty = O[1] - A[1], tz = O[2] - A[2], u = (tx * px + ty * py + tz * pz) * inv; if (u < 0 || u > 1) continue; var qx = ty * e1[2] - tz * e1[1], qy = tz * e1[0] - tx * e1[2], qz = tx * e1[1] - ty * e1[0], v = (D[0] * qx + D[1] * qy + D[2] * qz) * inv; if (v < 0 || u + v > 1) continue;
+        var sp = (e2[0] * qx + e2[1] * qy + e2[2] * qz) * inv; if (sp > 0.02 && sp < 0.999) hit = true; } }); }); return hit; };
+    var UH = 73.48469228349533, seen = [], keepD = drawFacilityItem; drawFacilityItem = function (it) { seen.push(it); return keepD.apply(this, arguments); };
+    var rec3 = [], tagged = []; V.core.scene.traverse(function (o) { if (o.isMesh && o.userData.lowRoom && o.frustumCulled !== false) tagged.push(o); });   /* (one never culled, a set of marks written again each frame, the sewers' water's: its bounds say nothing) */ res.rooms3d = tagged.length;
+    tagged.forEach(function (o) { o.__lowWas = o.onBeforeRender; o.onBeforeRender = function (r, sc, c) { if (c === V.camera) rec3.push(o); };   /* (the camera's own drawing: the shadows' is drawn by the light) */ });
+    [[13, 48, 0], [34, 48, 0], [27, 25, 3], [31, 25, 1], [13, 23, 1], [21, 33, 2]].forEach(function (Q) { put(Q[0], Q[1]); VIEW3D.turn = Q[2]; V.show(true); settle(60); I0 = L(); seen.length = 0; rec3.length = 0; render();
+      var room = (facilityRoomAt(Math.round(player.x), Math.round(player.y), _fp.F) || {}).id, n = 0, hidden = 0;
+      // every item the view leaves to the 2D in a room it has built, near enough to be on the screen: behind a standing wall from the camera (the test's maths), never drawn; drawn, never past the distance
+      _fp.items.forEach(function (it) { if (!V.keeps(it) || it.taken) return; var d = Math.hypot(it.x - player.x, it.y - player.y); if (d > 30) return; var drawn = seen.indexOf(it) >= 0, h = facilityLiftPx(it.x, it.y) / UH;
+        if (drawn) { n++; if (d > K.see + 0.01 || (it.room && it.room !== room && d > K.seeRoom + 0.01)) res.farDrawn.push(it.fp + ' ' + it.room + ' at ' + d.toFixed(1)); }
+        if (d < K.seeRoom && crosses([it.x, h + 0.05, it.y])) { hidden++; if (drawn) res.behindDrawn.push(it.fp + ' ' + (it.id || it.kind) + ' ' + it.room + ' from ' + room + ' turn ' + Q[2]); } });
+      res.drawn += n; res.behind += hidden; res.poses.push([room, Q[2], n, hidden]);
+      rec3.forEach(function (o) { if (o.userData.lowRoom === room) return; o.geometry.boundingSphere || o.geometry.computeBoundingSphere(); var c = o.geometry.boundingSphere.center.clone().applyMatrix4(o.matrixWorld), r = o.geometry.boundingSphere.radius * o.matrixWorld.getMaxScaleOnAxis(), dd = Math.hypot(c.x - I0.pivot[0], c.z - I0.pivot[1]) - r;
+        if (dd > K.seeRoom + 0.01 && res.far3d.length < 5) res.far3d.push(o.userData.lowRoom + ' at ' + dd.toFixed(1)); }); });
+    drawFacilityItem = keepD; tagged.forEach(function (o) { o.onBeforeRender = o.__lowWas; delete o.__lowWas; }); VIEW3D.turn = 0; V.show(true);
+    // LONG PIECES TAKE THE CURVE: what the view cut when it was made, and a pipe twelve tiles long cut by the same hand: no edge across the floor longer than LOWCAM.seg, and its middle drawn as low as the floor under it
+    res.cut = V.lowCut; var pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 12, 10), new THREE.MeshBasicMaterial()); pipe.rotation.z = Math.PI / 2; pipe.position.set(20, 1, 30); var gp = new THREE.Group(); gp.add(pipe);
+    var c2 = V.low.tessellate(gp), pa = pipe.geometry.attributes.position, idx = pipe.geometry.index, mx = 0, wv = function (i) { return new THREE.Vector3().fromBufferAttribute(pa, i).applyMatrix4(pipe.matrixWorld); };
+    for (var t = 0; t + 2 < idx.count; t += 3) for (var e = 0; e < 3; e++) { var a = wv(idx.getX(t + e)), b = wv(idx.getX(t + (e + 1) % 3)); mx = Math.max(mx, Math.hypot(a.x - b.x, a.z - b.z)); }
+    var xs = {}; for (var i = 0; i < pa.count; i++) xs[wv(i).x.toFixed(2)] = 1; res.pipe = { cut: c2.geos, maxEdge: +mx.toFixed(3), points: Object.keys(xs).length, seg: K.seg };
+    return res; })();
   put(13, 19); step(3); var d = ctx.getImageData(40, 300, 1, 1).data; out.clear = d[3]; out.showing = VIEW3D.showing;
   out.errsLow = (window.__errs || []).slice(0, 4);`));
 if (LOWP !== null) {
     check('the switch: ?cam=low with the view is the low camera, a perspective one at the drafts\' knobs (provisional: OPEN-QUESTIONS.md), every shader of the view bent; made with no error', () => {
         ok(!LOWP.none, 'the page left no result'); ok(!LOWP.threw, LOWP.threw); same(LOWP.errs.join(' | '), '', 'errors'); same(LOWP.state, 'ready', 'the view (' + LOWP.error + ')'); same(LOWP.cam, 'low', 'VIEW3D.cam');
-        same(LOWP.persp, true, 'a perspective camera'); same(LOWP.fov0, 40, 'its view'); same(JSON.stringify([LOWP.knobs.fov, LOWP.knobs.pitch, LOWP.knobs.dist, LOWP.knobs.ahead, LOWP.knobs.follow, LOWP.knobs.k]), JSON.stringify([40, 30, 9.5, 2.2, 6, 0.013]), 'the knobs');
+        same(LOWP.persp, true, 'a perspective camera'); same(LOWP.fov0, 40, 'its view'); same(JSON.stringify([LOWP.knobs.fov, LOWP.knobs.pitch, LOWP.knobs.dist, LOWP.knobs.ahead, LOWP.knobs.follow, LOWP.knobs.k, LOWP.knobs.see, LOWP.knobs.seeRoom, LOWP.knobs.seg]), JSON.stringify([40, 30, 9.5, 2.2, 6, 0.0065, 22, 12, 1.5]), 'the knobs (the curve halved, the owner 2026-11-23: "the roundness is too much"; the visible distance)');
         same(LOWP.missed, 0, 'shaders the bend could not reach'); same(LOWP.showing, true, 'showing'); same(LOWP.clear, 0, 'the game\'s canvas where the world is');
     });
     check('THE CAMERA FOLLOWS THE PLAYER: its aim LOWCAM.ahead ahead of them and LOWCAM.lift over their floor; moved, part of the way a frame later and there a second later; 9.5 tiles back, 30 degrees down', () => {
@@ -973,7 +1004,7 @@ if (LOWP !== null) {
     check('A CARD BATTLE: the camera eases to today\'s battle camera (the curve gone; the floor where today\'s orthographic battle camera has it, within a pixel), and back to the follow camera after', () => {
         same(LOWP.chose, true, 'the battle'); same(LOWP.inBattle.phase, 'on', 'its phase'); same(LOWP.inBattle.bk, 1, 'eased in'); same(LOWP.inBattle.k, 0, 'the curve'); ok(LOWP.inBattle.fov < 0.1, 'its view ' + LOWP.inBattle.fov);
         ok(Math.abs(LOWP.inBattle.pitch) < 1e-3, 'its pitch, off the battle\'s by ' + LOWP.inBattle.pitch); ok(LOWP.inBattle.orthoPx < 1, 'off today\'s battle picture by ' + LOWP.inBattle.orthoPx + ' px');
-        same(LOWP.afterBattle.cam, null, 'the battle\'s camera after'); same(LOWP.afterBattle.k, 0.013, 'the curve back'); same(LOWP.afterBattle.fov, 40, 'the view back'); ok(LOWP.afterBattle.aim < 0.01, 'back on the player: ' + LOWP.afterBattle.aim);
+        same(LOWP.afterBattle.cam, null, 'the battle\'s camera after'); same(LOWP.afterBattle.k, 0.0065, 'the curve back'); same(LOWP.afterBattle.fov, 40, 'the view back'); ok(LOWP.afterBattle.aim < 0.01, 'back on the player: ' + LOWP.afterBattle.aim);
     });
     check('STAGE 2, THE 2D THROUGH THE CAMERA: a point of the world to the screen and back to its place; a tap on a tile walks to that tile; a unit\'s bars and plate drawn on its body, scaled as the camera is there; a floating number over its unit; the floor\'s marks laid on its floor', () => {
         ok(LOWP.roundTrip < 1e-3, 'world to screen and back, off by ' + LOWP.roundTrip + ' tiles'); same(LOWP.offScreen[1], true, 'the low camera is the frame\'s');
@@ -998,8 +1029,15 @@ if (LOWP !== null) {
     });
     check('STAGE 4, THE HORIZON: what the curve puts under the horizon is left out (fewer draws and triangles) and the picture is the one with all of it drawn; nothing 2D is laid over a place under the horizon', () => {
         const Z = LOWP.horizon; ok(Z && Z.culled > 0, 'nothing left out: ' + JSON.stringify(Z && [Z.off, Z.on, Z.culled])); ok(Z.on[0] < Z.off[0] && Z.on[1] < Z.off[1], 'draws and triangles with it ' + Z.on + ', without ' + Z.off);
-        ok(Z.lit > Z.px * 0.2, 'the picture is blank: ' + Z.lit + ' of ' + Z.px); ok(Z.diff <= Z.px * 0.0005, Z.diff + ' of ' + Z.px + ' px differ from the picture with everything drawn');
-        ok(Z.st > 5 && Z.st < 40 && Z.far > Z.st && Z.far < 80 && Z.floor < -0.5, 'the horizon ' + Z.st + ' tiles ahead, the visible distance ' + Z.far + ', over a floor at ' + Z.floor); ok(Z.farIso < -1e5 && Z.nearIso, 'a place 60 tiles ahead is not put off the screen (isoSX ' + Z.farIso + '), or one 4 ahead is');
+        ok(Z.dist[0] <= Z.on[0] && Z.dist[1] <= Z.on[1], 'the visible distance draws more: ' + Z.dist + ' against ' + Z.on); ok(Z.lit > Z.px * 0.2, 'the picture is blank: ' + Z.lit + ' of ' + Z.px); ok(Z.diff <= Z.px * 0.0005, Z.diff + ' of ' + Z.px + ' px differ from the picture with everything drawn');
+        ok(Z.st > 5 && Z.st < 40 && Z.far > Z.st && Z.far < 80 && Z.floor < -0.5, 'the horizon ' + Z.st + ' tiles ahead, the visible distance ' + Z.far + ', over a floor at ' + Z.floor); ok(Z.farIso < -1e5 && Z.nearIso, 'a place 85 tiles ahead (past the horizon\'s reach) is not put off the screen (isoSX ' + Z.farIso + '), or one 4 ahead is');
+    });
+    check('THE OWNER\'S FEEDBACK, 2026-11-23: nothing 2D drawn where a standing wall hides it from the camera (a pad, a stairwell, a station\'s diamond: "these highlighted tiles being visible through the walls"); nothing 2D or 3D of another room past LOWCAM.seeRoom, nothing past LOWCAM.see ("it needs to load less in")', () => {
+        const F = LOWP.fb; ok(F && F.poses.length === 6, 'not measured: ' + JSON.stringify(F)); ok(F.behind >= 3, 'too few items behind a wall to tell (' + F.behind + '): ' + JSON.stringify(F.poses)); ok(F.drawn >= 3, 'too few drawn: ' + JSON.stringify(F.poses));
+        same(F.behindDrawn.join(' | '), '', 'drawn though a wall hides it'); same(F.farDrawn.join(' | '), '', 'drawn past the distance'); ok(F.rooms3d > 50, 'rooms\' things not tagged: ' + F.rooms3d); same(F.far3d.join(' | '), '', 'another room\'s 3D drawn past LOWCAM.seeRoom');
+    });
+    check('THE OWNER\'S FEEDBACK, 2026-11-23: long pieces take the curve ("this pipeline [...] doesn\'t bend properly"): the world\'s long pieces were cut when the view was made, and a pipe twelve tiles long is cut to no edge longer than LOWCAM.seg across the floor', () => {
+        const F = LOWP.fb; ok(F.cut && F.cut.geos > 0 && F.cut.after > F.cut.before, 'nothing of the world cut: ' + JSON.stringify(F.cut)); same(F.pipe.cut, 1, 'the pipe cut'); ok(F.pipe.maxEdge <= F.pipe.seg + 1e-3, 'an edge ' + F.pipe.maxEdge + ' long'); ok(F.pipe.points >= 9, 'points along it: ' + F.pipe.points);
     });
 }
 

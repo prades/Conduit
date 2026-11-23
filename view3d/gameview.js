@@ -30,6 +30,10 @@ const GAMEVIEW = (function () {
   // THE LOW CAMERA (view3d/lowcam.js; docs/VIEW-3D.md §8; the owner, 2026-11-23: "B"): with its switch (?cam=low), the camera is a perspective one behind and above the player and the ground bends
   // away; without it, null, and everything here is as it was
   const LOW = GM.camLow ? view3dLowCam() : null; if (LOW) { CORE.inkU.dK.value = LOWCAM.dK; LOW.wrapMat(CORE.idMat); }
+  // (THE LOW CAMERA, the owner, 2026-11-23, after trying it: a long piece bends with the world, cut finer once (lowcam.js tessellate: "this pipeline ... doesn't bend properly"); each room's
+  // things tagged with their room, so another room's are not drawn past LOWCAM.seeRoom ("it needs to load less in"))
+  const LOW_CUT = LOW ? LOW.tessellate(scene) : null;
+  if (LOW) for (const id of world.order) world.rooms[id].g.traverse(o => { o.userData.lowRoom = id; });
 
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
@@ -266,7 +270,7 @@ const GAMEVIEW = (function () {
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
-    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
+    const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (LOW) LOW.room(room); if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     ATT.begin(f0); shown.clear(); cube(f0, dt);
     for (const a of GM.actors) { if (a._swallowedBy) { const hp = GM.isCreature(a) ? ATT.held(a) : null; if (hp) ant(a, hp); continue; }   // (swallowed: drawn only while it is pulled in)
       if (!GM.visible(a.x, a.y) || !onWorld(a.x, a.y) || !GM.shows(a)) continue; if (GM.isCreature(a)) ant(a); else follower(a, f0, dt); }
@@ -311,8 +315,25 @@ const GAMEVIEW = (function () {
   const MARKS_K = 0.5, PVm = new T.Matrix4(), LOW_TALL = 1.5;   // (LOW_TALL: tiles; a body and what the 2D draws over it)
   function lowMarks() { const u = CORE.inkU, W = game.width, H = game.height; u.fxWorld.value = 1; u.invPV.value.copy(PVm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)).invert();
     u.fxP.value.set(GM.player.visualX, GM.player.visualY); u.fxS.value.set(TW * MARKS_K / W, TH * MARKS_K / H); u.fxC.value.set(0.5, 0.5 - TH * MARKS_K / H); }
+  // THE LOW CAMERA's 2D, HIDDEN BEHIND A WALL (the owner, 2026-11-23: "you definitely have to remove the instances of all these highlighted tiles being visible through the walls"): the game draws
+  // its 2D over the whole picture, so a station's diamond, a pad, a stairwell, a unit's bars in the room behind a wall showed through it. Before the 2D draws a thing (js/view3d.js view3dHides),
+  // a line from its place (up tiles over its floor) to the camera, bent as the picture is, is walked across the floor a quarter tile at a time; where it crosses a wall's block (world.band, a door's
+  // header aside) lower than that block's top as it stands now (sinking or sunk: lower), the thing is hidden. The tops: from the walls' own faces, once. No reading back from the graphics card
+  // (a stall on an old iPad): a few dozen lookups a thing. Not tried: a prop, a door's leaf or a thin wall (glass between two rooms) in the way
+  let occ = null; const OCC_STEP = 0.25, OCC_SKIP = 0.35;
+  function occPrep() { occ = new Map(); for (const G of world.groups) for (const q of [G.face, G.cap, G.rface, G.rcap]) if (q && q.pos) for (let i = 0; i + 8 < q.pos.length; i += 9) { const P = q.pos;
+      const x0 = Math.min(P[i], P[i + 3], P[i + 6]) + 0.01, x1 = Math.max(P[i], P[i + 3], P[i + 6]) - 0.01, z0 = Math.min(P[i + 2], P[i + 5], P[i + 8]) + 0.01, z1 = Math.max(P[i + 2], P[i + 5], P[i + 8]) - 0.01, top = Math.max(P[i + 1], P[i + 4], P[i + 7]);
+      for (let cx = Math.round(x0); cx <= Math.round(x1); cx++) for (let cz = Math.round(z0); cz <= Math.round(z1); cz++) { const k = K(cx, cz), b = world.band.get(k); if (!b || b.header) continue;
+        let L = occ.get(k); if (!L) occ.set(k, L = []); const e = L.find(e => e.G === G); if (e) e.top = Math.max(e.top, top); else L.push({ G, top }); } } }
+  function lowOccluded(x, z, y) { if (!occ) occPrep(); const C = cam.position, yb = y - LOW.drop(x, z), dx = C.x - x, dz = C.z - z, len = Math.hypot(dx, dz); if (len < 1e-6) return false;
+    for (let s = OCC_SKIP; s < len; s += OCC_STEP) { const t = s / len, X = x + dx * t, Z = z + dz * t, L = occ.get(K(Math.round(X), Math.round(Z))); if (!L) continue; const ry = yb + (C.y - yb) * t, dr = LOW.drop(X, Z);
+      for (const e of L) { if (!e.G.g.visible) continue; if (ry < e.top + e.G.g.position.y - dr - 0.02) return true; } }
+    return false; }
   return {
-    stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1,
+    stats, state, world, camera: cam, core: CORE, attacks: ATT, low: LOW, marksK: LOW ? MARKS_K : 1, lowCut: LOW_CUT,
+    // THE LOW CAMERA: is a thing at (x, y) of the world, up tiles over its floor, of room rm (or null), not to be drawn in 2D? Under the horizon, past the visible distance (another room's sooner),
+    // or behind a standing wall from the camera as the last frame placed it. False without the low camera or in a card battle (today's camera: the 2D as ever)
+    hides(x, y, up, rm) { if (!LOW || !LOW.k()) return false; const h = GM.liftPx(x, y) / UPX; return LOW.below(x, h, y, up || 0) || LOW.far(x, y, rm) || lowOccluded(x, y, h + (up || 0)); },
     owns(o, k) { return ATT.owns(o, k); },   // (an effect of the game's this frame's picture draws in 3D: the game leaves out its 2D drawing of it, js/view3d.js view3dOwnsFx; k: a unit's own, by kind)
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },

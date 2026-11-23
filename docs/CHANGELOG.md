@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Branch `claude/low-camera-fixes` (over main's `2026-11-17dg`; not stamped) · the low camera after the owner tried it
+- **The ask** (the owner, 2026-11-23, after trying `?cam=low`): "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
+- **What players get is unchanged:** all of it is under `?cam=low`.
+- **Less loaded in** (`view3d/lowcam.js`, `view3d/gameview.js`): nothing 3D wholly farther than `LOWCAM.see` = 22 tiles from the player is drawn; another room's floor, fittings and props past `seeRoom` = 12 tiles are not drawn either; the same for the 2D (the stairwells, the follower posts' pads, the stations' diamonds).
+- **No 2D through walls** (`js/view3d.js` `view3dHides`, `view3dHidesItem`; `js/game.js`; `view3d/gameview.js` `hides`): before the 2D draws a thing of the frame's list, or a selected unit's ring, a launcher site's outline, a flare, a CCTV mark or a door's tag, a line from its place to the camera is walked across the walls' blocks; behind a standing wall it is not drawn. On the processor, no read-back from the graphics card.
+- **Half the curve:** `LOWCAM.k` 0.013 to 0.0065.
+- **The pipe bends** (`view3d/lowcam.js` `tessellate`): every long piece of the built world (the hallway's yellow pipe over the snack machines, a straight chord before, and every other pipe, rail, cable, rug and line) is cut so no edge runs more than `LOWCAM.seg` = 1.5 tiles across the floor, once, when the view is made.
+- **Not removed:** the staircases and the follower posts' pads (the owner is thinking about it: `OPEN-QUESTIONS.md`).
+- `view3d/lowcam.js`, `view3d/gameview.js`, `js/view3d.js`, `js/game.js`, `js/commandcenter.js`, `js/facilityportals.js`, `js/facilitytutorial.js`, `js/stations.js`, `js/techabilities.js`; `tests/view3d.js`; `docs/VIEW-3D.md` §8.14, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`; generated: `dist/view3d.js`, `play.html`, `dist/conduit.js`.
+- **Verified:** `tests/view3d.js` THE OWNER'S FEEDBACK (two checks) and the suites named in the handoff; pictures before and after. **Not seen on an iPad; not playtested.** What the 2D still shows through: `VIEW-3D.md` §8.14.
+
 ### Build `2026-11-17df` · branch `claude/friendly-thompson-w581x0` · the Manta Ray is a mollusk
 - **The ask** (the owner, 2026-11-23): "This creature is mollusk type".
 - **What it does:** the Manta Ray's species (its subclass on its card, `js/cards.js` `EQUIP_FORM_SUBCLASS.hovershell`) is Mollusk; the Hover Shell before it was a Drone. With it, by the game's existing rules: it is weak to Slashing and Piercing and resists Crushing and Earthquake (a Drone: weak to Crushing and Elemental, resisting Piercing and Projectile; `js/damage.js` `DMG_SUBCLASS`); its lean is −1, so its main attack is 40% elemental (44% as a Drone; `COMBAT.md` §7.7); Mollusk species cards fit it and Drone ones do not (a Drone card already on one comes off by the game's own check and stays in the collection); its card shows the Mollusk texture. Drones are now 3, Mollusks 5.

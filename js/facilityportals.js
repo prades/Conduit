@@ -133,6 +133,7 @@ function facilityDrawPortals() {
         for (const p of _fp.portals.slice().sort((a, b) => Math.hypot(a.x - player.visualX, a.y - player.visualY) - Math.hypot(b.x - player.visualX, b.y - player.visualY))) {
             const d = Math.hypot(p.x - player.visualX, p.y - player.visualY); if (d > 9 || (typeof invPanelOpen !== "undefined" && invPanelOpen)) continue;
             if (p.rubble && facilityPortalShut(p)) continue;   // (rubble not drilled yet: the rubble's own tag says what it is)
+            if (typeof view3dHides === "function" && view3dHides(p.x, p.y, 1.2)) continue;   // (THE LOW CAMERA: a door's tag not over a wall that hides its doorway, js/view3d.js)
             if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 3.5)) continue; shown.push(p);
             const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up || p.kind === "door" ? "#ffb347" : "#8fe3ff", txt = facilityPortalShut(p) ? "▣ " + String(p.label || "").toUpperCase() + (p.needs === "junction" ? " · NO POWER: REPAIR THE JUNCTION" : " · ITS GRATE OPENS FROM INSIDE") : (p.kind === "door" ? "▶ " : p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
             ctx.globalAlpha = a; ctx.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); ctx.textAlign = "center"; ctx.textBaseline = "middle";

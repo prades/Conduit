@@ -1907,6 +1907,7 @@ function techDrawOverlay() {
     for (const s of _techSites()) {
         const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY);
         if (d > T.near) continue;
+        if (typeof view3dHides === "function" && view3dHides(s.at[0], s.at[1], 0.05)) continue;   // (THE LOW CAMERA: a site's highlight not through a wall, js/view3d.js)
         const p = _techScr(s.at[0], s.at[1]), a = Math.min(1, (T.near - d) / 2), on = techLauncherAt(s.id);
         if (!on) {   // the spot it can stand on: a faint dashed outline (subtle: no fill, no pulse)
             g.globalAlpha = a * 0.45; g.strokeStyle = "#ffe733"; g.lineWidth = 1.5; g.setLineDash([5, 6]); g.beginPath(); g.moveTo(p.x, p.y - TILE_H); g.lineTo(p.x + TILE_W, p.y); g.lineTo(p.x, p.y + TILE_H); g.lineTo(p.x - TILE_W, p.y); g.closePath(); g.stroke(); g.setLineDash([]);
