@@ -70,6 +70,72 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-17
 
+### Build `2026-11-17cs` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's empty spaces filled in solid (work in progress)
+- **The ask** (the owner, 2026-11-23): "Nope it looks incomplete"; "It should be filled in like a mold or like filled in."
+- **What it does** (only with `?engine=3d&sewerdungeon`): the space between rooms is solid, level with the wall tops, sinking with the walls in front of the camera; no pits (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at four spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad; frame rate not measured (149 more sinking pieces).**
+
+### Build `2026-11-17cr` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's empty spaces one solid colour (work in progress)
+- **The ask** (the owner, 2026-11-23): "all the empty spaces, like behind walls that don't have any rooms to it. You should make that completely solid color."
+- **What it does** (only with `?engine=3d&sewerdungeon`): a wall's side over empty space is the wall tops' dark colour, so the space between rooms reads as one solid mass (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at three spots, before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cq` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl one solid colour (work in progress)
+- **The ask** (the owner, 2026-11-22): "that looks really weird. Make it a solid color, please."
+- **What it does** (only with `?engine=3d&sewerdungeon`): the Round Junction bowl's bed is one flat stone colour, no rings or bands (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied. **The tests have not finished on any build since `cg`; not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cp` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl sunk deep, its bed stone (work in progress)
+- **The ask** (the owner, 2026-11-22): "It does not look like it's really sunken in there at all. Looks like the player is standing on water."
+- **What it does** (only with `?sewerdungeon`): the Round Junction's bowl is 3.5 tiles deep in its middle (1.6 before); in the 3D view its bed is pale ringed stone, told from the water (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17co` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's bowl smooth and spherical (work in progress)
+- **The ask** (the owner, 2026-11-22): "It looks like a inverted pyramid [...] I want a more smooth look for the middle. Round, spherical edge".
+- **What it does** (only with `?sewerdungeon`): the Round Junction pool's bed is a cap of a sphere in the game's heights, and in the 3D view one round smooth surface (`SEWER-DUNGEON.md`). `js/facility.js`, `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), full and emptied; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cn` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: the Round Junction's middle a pool in a bowl (work in progress)
+- **The ask** (the owner, 2026-11-22): "make the actual circular junction pool [...] have a large you know, bowl area"; "Water, drains to walk".
+- **What it does** (only with `?sewerdungeon`): the junction's middle is a round pool with a bowl-shaped bed; shutting the north culvert empties it with the Central Channel and the bowl is walked (`SEWER-DUNGEON.md`). Outside the switch nothing changes: the game's height rule gained a bowl-shaped slope that only the dungeon's map uses.
+- `js/facility.js` (`facilityHeightAt`: a zone with `round`), `js/facilitygrow.js` (it moves with its interior room), `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilityplay.js`.
+- **Verified:** seen in a real browser (software rendering), full and emptied; the reach check (emptied, the whole bowl is reached); the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cm` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's Round Junction drawn round (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Can you make this area actually look circular".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the ring's outer wall and the rail round the nest are true circles in the 3D view (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated). The map and the 2D game are unchanged.
+- **Verified:** seen in a real browser (software rendering) from four sides; the full run (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cl` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon lit: lamps along its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Add the lights at least please".
+- **What it does** (only with `?sewerdungeon`): 72 lights in the dungeon's map, along the walls of its walked rooms; in 3D the Sewers' look hangs a lamp at each with its warm pool on the floor, in 2D each is a glow (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitymap.js` (the dungeon's decor joined to the map's, with the switch only).
+- **Verified:** seen in a real browser (software rendering) at four spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad; the frame rate with the lamps not measured.**
+
+### Build `2026-11-17ck` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: wall tops even; the Sewers' new 3D look merged in (work in progress)
+- **The ask** (the owner, 2026-11-22): "the rooftops of these little walls and everything are not even [...] And also we've updated the sewers look. Can you switch over to the new skin?"
+- **What it does** (only with `?engine=3d&sewerdungeon`): every wall of the dungeon tops out at one height; main's sewer look (`view3d/sewerdress.js`) is merged, so the dungeon wears it (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering) at six spots; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cj` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's floors told from its walls (work in progress)
+- **The ask** (the owner, 2026-11-22): "Those don't even look like rooms or tunnels anymore."
+- **What it does** (only with `?engine=3d&sewerdungeon`): floors in their map's colours (pale walkways, darker rooms), wall tops near black, so rooms and passages read (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ci` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's walls level beside stairs (work in progress)
+- **The ask** (the owner, 2026-11-22, on a marked picture): "Looks junk here the walls dont need to descend too".
+- **What it does** (only with `?engine=3d&sewerdungeon`): a wall of the dungeon beside a flight of stairs keeps one height and does not step down with the treads (`SEWER-DUNGEON.md`). `design/style-evolution/live/floor.js`, `dist/view3d.js` (generated).
+- **Verified:** seen in a real browser (software rendering), before and after; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ch` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon: no walkway behind the west pipe; stairs on both banks (work in progress)
+- **The ask** (the owner, 2026-11-22): "get rid of the walkway behind it and make this a proper pipe, water pipe"; asked how the banks are crossed without it: "Stairs on both banks".
+- **What it does** (only with `?sewerdungeon`): the entrance landing at the West Channel's head is gone and its culvert is a tall pipe mouth in the wall; a second staircase stands on the south bank. To go on from the north walkway you shut the west culvert, cross the empty bed and climb the other staircase (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated), `js/facilitystyle.js` (the dungeon's light key named another of its rooms).
+- **Verified:** seen in a real browser (software rendering); the reach check: culverts open, only the north walkway and the gallery; all shut, every room but the three shut on purpose; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17cg` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's west culvert no longer buried (work in progress)
+- **The ask** (the owner, 2026-11-22, circling the West Channel's head): "I don't see the water pipe here".
+- **What it does** (only with `?engine=3d&sewerdungeon`): the bed no longer slopes up over the culvert under the entrance landing; that end is a plain wall with the arch in it (`SEWER-DUNGEON.md`). `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).
+- **Verified:** seen in a real browser (software rendering), water in and gone; the short run with view3d (see the handoff). **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17cf` · branch `claude/start-game-project-HSh7Z` · the sewer dungeon's flooded staircase turned to run along the bank (work in progress)
 - **The ask** (the owner, 2026-11-22, on a marked picture): "Rotate the stairs like this".
 - **What it does** (only with `?sewerdungeon`): the West Channel's staircase no longer sticks out into the channel: from a landing on the north walkway's edge one flight runs down along the bank, eastwards, to the bed ("The other way 180") (`SEWER-DUNGEON.md`). `design/sewer-dungeon/trace.js`, `tools/sewerdungeon.js`, `js/sewerdungeonmap.js` (generated).

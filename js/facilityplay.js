@@ -921,7 +921,7 @@ function sewerDungeonNearValve() { const s = _fp && _fp.F ? _fp.F.solids.find(q 
 // SHUT, A CULVERT EMPTIES ITS WATER (the owner, 2026-11-22, asked what shutting one should do: "They should lower the water level"; how far: "Empty: walk the bed"; and how they are found on
 // entering: "Open, water up"): the water it feeds (`waters`: the map's bodies of water) is gone while it is shut, its bed floor to walk on, and comes back when it is opened (whoever stands in
 // it is put on the nearest floor). Which water each feeds is the agent's reading (each its own channel). The pool room's water can also be let out for good at its drain valve.
-const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north", waters: ["sd_central_channel_water"] }, { id: "sd_culvert_west", sw: "sd_valve_west", waters: ["sd_west_channel_water", "sd_west_channel2_water", "sd_west_channel3_water"] },
+const SEWER_CULVERTS = [{ id: "sd_culvert_north", sw: "sd_valve_north", waters: ["sd_central_channel_water", "sd_junction_nest_water"] }, { id: "sd_culvert_west", sw: "sd_valve_west", waters: ["sd_west_channel_water", "sd_west_channel2_water", "sd_west_channel3_water"] },
     { id: "sd_culvert_drain", sw: "sd_valve_pool", waters: ["sd_low_drain_water", "sd_drain_pool_water"], also: ["sd_floor_drain_1", "sd_floor_drain_2"] }];
 function sewerDungeonWaterLow(waterId) { return (sewerDungeonDrained() && SEWER_DRAIN.solids.indexOf(waterId) >= 0) || SEWER_CULVERTS.some(c => c.waters.indexOf(waterId) >= 0 && sewerDungeonCulvertShut(c.id)); }
 function _sdWaterSet(c, low) { if (!_fp || !_fp.F || (sewerDungeonDrained() && c.waters.some(w => SEWER_DRAIN.solids.indexOf(w) >= 0))) return;   // (a pool drained at its valve stays dry)

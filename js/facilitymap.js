@@ -1304,6 +1304,7 @@ const FACILITY_MAP = {
         { id: "armory_hazard_door", room: "armory", kind: "hazard", rect: [200, 950, 240, 970] },
         { id: "armory_stain", room: "armory", kind: "stain", at: [250, 1110], radius: 14, colour: "#1a1008" },
         { id: "armory_debris", room: "armory", kind: "debris", at: [230, 990], radius: 14, n: 4 },
+        ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON && SEWER_DUNGEON_MAP.decor ? SEWER_DUNGEON_MAP.decor : []),   // THE SEWER DUNGEON's lamps (docs/SEWER-DUNGEON.md): made with its map, js/sewerdungeonmap.js
     ],
 
     // (There is no separate outer path: the long lines round the nest area are that room's outside edges, drawn as its walls. Anything outside every room is not walkable.)

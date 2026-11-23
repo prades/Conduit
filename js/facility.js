@@ -137,7 +137,8 @@ function _facilityBuild(ex) {
     const ramps = (M.ramps || []).concat(ex.ramps || []).map(r => {
         const o = r.centre ? Object.assign({}, r, { centre: _facP(r.centre), r_inner: r.r_inner / s, r_outer: r.r_outer / s }) : Object.assign({}, r);
         if (r.zone) { const a = _facP([r.zone.rect[0], r.zone.rect[1]]), b = _facP([r.zone.rect[2], r.zone.rect[3]]); const bl = r.between_levels || [0, 0];
-            o.zone = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]), axis: r.zone.axis, c0: one(r.zone.c0), c1: one(r.zone.c1), steps: r.zone.steps | 0, hA: levelH.get(bl[0]) || 0, hB: levelH.get(bl[1]) || 0 }; }
+            o.zone = { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), x1: Math.max(a[0], b[0]), y1: Math.max(a[1], b[1]), axis: r.zone.axis, c0: one(r.zone.c0), c1: one(r.zone.c1), steps: r.zone.steps | 0, hA: levelH.get(bl[0]) || 0, hB: levelH.get(bl[1]) || 0 };
+            if (r.zone.round) { const c = _facP(r.zone.round.c); o.zone.round = { cx: c[0], cy: c[1], r0: r.zone.round.r0, r1: r.zone.round.r1 }; } }   // (a BOWL: the height goes by how far from a centre, not along an axis: the sewer dungeon's round pool, docs/SEWER-DUNGEON.md)
         return o; });
     const candRamps = ((M.candidates && M.candidates.ramps) || []).map(r => Object.assign({}, r, { at: _facP(r.at) }));
     // bounding boxes, so a query only looks at the walls and rooms near it (the validator walks thousands of steps)
@@ -293,6 +294,7 @@ function facilityHeightAt(x, y, F) {
     F = F || facilityGet();
     for (const r of F.ramps) {
         const z = r.zone; if (!z || x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) continue;
+        if (z.round) { const d = Math.hypot(x - z.round.cx, y - z.round.cy), r0 = z.round.r0; if (d >= r0) continue; const D = Math.max(1e-6, z.hA - z.hB), R = (r0 * r0 + D * D) / (2 * D); return z.hB + R - Math.sqrt(R * R - d * d); }   // (a bowl: a cap of a sphere, as deep in its middle as the two levels are apart, up to the higher level at its rim)
         const v = z.axis === "x" ? x : y; let t = Math.max(0, Math.min(1, (v - z.c0) / ((z.c1 - z.c0) || 1)));
         if (z.steps) t = Math.round(t * z.steps) / z.steps;   // a staircase: flat treads, not a slope
         return z.hA + (z.hB - z.hA) * t;
