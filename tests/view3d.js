@@ -709,8 +709,8 @@ if (FLX !== null) {
         const R = FLX.r; same(JSON.stringify([R.shot.owned, R.shot.glows > 0, R.shot.slap, R.shot.tent >= 1]), '[true,true,true,true]', 'the shot and its slap: ' + JSON.stringify(R.shot));
         same(JSON.stringify([R.mael.fired, R.mael.owned]), '[true,true]', 'MAELSTROM'); ok(R.mael.st.solids >= 25, 'its crystals: ' + JSON.stringify(R.mael.st));
         ok(R.mael.low.solids < R.mael.st.solids && R.mael.low.solids <= FLX.cap.gem / 2 + 4, 'LOW graphics: ' + JSON.stringify(R.mael.low) + ' of ' + JSON.stringify(R.mael.st));
-        same(JSON.stringify([R.hz.fired, R.hz.owned]), '[true,true]', 'EVENT HORIZON'); ok(R.hz.st.beams >= 40 && R.hz.st.solids >= 1 && R.hz.st.ribbons >= 3, 'its ball, its rings and arcs: ' + JSON.stringify(R.hz.st));
-        ok(R.hz.low.beams <= FLX.cap.beam / 2 && R.hz.low.glint < R.hz.st.glint, 'LOW graphics: ' + JSON.stringify(R.hz.low) + ' of ' + JSON.stringify(R.hz.st));
+        same(JSON.stringify([R.hz.fired, R.hz.owned]), '[true,true]', 'EVENT HORIZON'); ok(R.hz.st.solids >= 12 && R.hz.st.ribbons >= 4 && R.hz.st.flats >= 10 && R.hz.st.beams === 0, 'its clouds (real shapes: the kit\'s solids) and its eye, its bands of light on the floor, its stains and the patches under its clouds; no ring or arc of the look it had (build 2026-11-17dc): ' + JSON.stringify(R.hz.st));
+        ok(R.hz.low.solids < R.hz.st.solids && R.hz.low.ribbons < R.hz.st.ribbons && R.hz.low.solids >= 4, 'LOW graphics (fewer clouds, fewer bands): ' + JSON.stringify(R.hz.low) + ' of ' + JSON.stringify(R.hz.st));
     });
     check('THE GOO PROXY: its hit (its goo and its aura), PHASE SWAP (both spots) and PROXY SWARM (the goo copies as models, their bursts): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
         const R = FLX.r; same(JSON.stringify([R.ghit.owned, R.ghit.aura, R.ghit.body]), '[true,true,true]', 'the hit and its aura');

@@ -282,12 +282,17 @@ function cardUltSquares(e) {
     if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }
     return e._cbSq || null;
 }
+// A FIELD WHOSE OWN LOOK FILLS ITS SQUARES is not washed over with the faint ones (the faint squares were for "right now", till the fields' own animation was in the battle's view: the owner,
+// 2026-11-20, §2.65; they are painted over the 3D picture, and over EVENT HORIZON's shroud of cloud they turned it into a flat lilac stain: 2026-11-23). Only while the 3D view draws that
+// field itself (js/view3d.js view3dOwnsFx); anywhere else its faint squares are as before. The fields named here: the agent's, with each look the owner approves.
+const _CU_OWN_LOOK = { eventhorizon: 1 };
 function cardUltDraw(V) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined") return;
     const quad = (x, y) => { const h = 0.44, L = typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), L);   // (L: the square's floor height, js/cardbattle.js cardBattleLift)
         if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = 1.5;
-    for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e)) continue; const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
+    for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e)) continue; if (_CU_OWN_LOOK[e.type] && typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (its own look fills its squares: below)
+        const sq = cardUltSquares(e); if (!sq) continue; const col = typeof _cbCol === "function" && e._cbBy ? _cbCol(e._cbBy) : "#19e6c1";
         ctx.fillStyle = col; ctx.strokeStyle = col; for (const c of sq) { quad(c[0], c[1]); ctx.globalAlpha = 0.14; ctx.fill(); ctx.globalAlpha = 0.4; ctx.stroke(); } }
     const W = cardUltWalls(); if (W.length) { ctx.fillStyle = ctx.strokeStyle = "#ff8fc8"; for (const c of W) { quad(c[0], c[1]); ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 0.7; ctx.stroke(); } }
     ctx.restore();
