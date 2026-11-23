@@ -18,7 +18,14 @@ function elementsOwned() { return ELEMENTS.filter(e => (!e.converted && !e.none)
 let unlockedElements = new Set(elementsFound());
 let lifetimeKills = 0;
 const canvas = document.getElementById('cavernCanvas');
-const VIEW3D_ON = typeof location !== "undefined" && /[?&]engine=3d(?:&|$)/.test(String(location.search || ""));
+function enginePlan(protocol, search) {
+    const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
+    const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);
+    const view3d = eng === "3d" || plain;
+    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain };
+}
+const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
+const VIEW3D_ON = ENGINE_PLAN.view3d;
 let ctx = canvas.getContext('2d', { alpha: VIEW3D_ON }) || canvas.getContext('2d');
 const hpBar = document.getElementById('hp');
 const ultBar = document.getElementById('ult');
@@ -25905,7 +25912,7 @@ catch (err) { }
 ;
 /* js/cardbattle.js */
 const CARD_BATTLE = {
-    on: typeof location !== "undefined" && /[?&]cards\b/.test(location.search || "") && typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true,
+    on: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN.cards === true,
     force3d: false,
     far: 6,
     group: 3.5,

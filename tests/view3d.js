@@ -67,10 +67,10 @@ check('three.js r128 as published is vendor/three.min.js, with its licence', () 
     const three = rd('vendor/three.min.js'); ok(/Three\.js Authors/.test(three.slice(0, 200)) && /SPDX-License-Identifier: MIT/.test(three.slice(0, 200)), 'three.min.js has lost its licence line'); ok(/REVISION\s*=\s*"128"|="128"/.test(three.slice(0, 4000)), 'it is not r128');
     ok(/MIT License/.test(rd('vendor/three.LICENSE.txt')), 'the licence file is not the MIT licence');
 });
-check('the game fetches three.js and the view only through js/view3d.js, and only with the switch on (?engine=3d); nothing in the game names the test page', () => {
+check('the game fetches three.js and the view only through js/view3d.js, and only with the switch on (the plain address over the web, or ?engine=3d: js/config.js enginePlan); nothing in the game names the test page', () => {
     const v = rd('js/view3d.js'); ok(/VIEW3D_FILES = \["vendor\/three\.min\.js", "dist\/view3d\.js"\]/.test(v), 'js/view3d.js fetches something else');
     ok(/on: typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true/.test(v) && /if \(!VIEW3D\.on \|\| VIEW3D\.state !== "off"/.test(v), 'the view is not behind the switch');
-    ok(/const VIEW3D_ON = typeof location !== "undefined" && \/\[\?&\]engine=3d\(\?:&\|\$\)\/\.test/.test(rd('js/config.js')), 'js/config.js has no switch, or another');
+    ok(/const VIEW3D_ON = ENGINE_PLAN\.view3d;/.test(rd('js/config.js')) && /const view3d = eng === "3d" \|\| plain;/.test(rd('js/config.js')), 'js/config.js has no switch, or another');   // (what an address gets: tests/engineplan.js)
     const files = ['game.html', 'index.html'].concat(fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js') && f !== 'view3d.js').map(f => 'js/' + f));
     for (const f of files) { const s = rd(f); ok(!/three\.min\.js|dist\/view3d\.js/.test(s), f + ' names three.js or the view'); ok(!/lab3d/i.test(s), f + ' names lab3d'); }
 });

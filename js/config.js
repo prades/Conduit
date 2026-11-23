@@ -45,8 +45,24 @@ let lifetimeKills = 0;
 
 // ── CANVAS / CTX ──────────────────────────────────────────
 const canvas  = document.getElementById('cavernCanvas');
-// THE 3D VIEW's switch (js/view3d.js, docs/VIEW-3D.md; the owner, 2026-11-16: "The real game in 3D"): ?engine=3d in the address. Without it nothing of the 3D view is loaded or run.
-const VIEW3D_ON = typeof location !== "undefined" && /[?&]engine=3d(?:&|$)/.test(String(location.search || ""));
+// THE GAME IS THE 3D VIEW WITH CARD BATTLES (the owner, 2026-11-23: "I'd like to make the cards and the 3D the actual game now"). Until then both sat behind switches (?engine=3d, the
+// owner, 2026-11-16: "The real game in 3D", js/view3d.js, docs/VIEW-3D.md; ?cards with it, js/cardbattle.js, docs/CARD-BATTLES.md) and the plain address was the 2D game with its fights
+// in real time. WHAT AN ADDRESS GETS is decided here, once (enginePlan), and the two read its answers (VIEW3D_ON; ENGINE_PLAN.cards):
+//   - the plain address OVER THE WEB (https, as game.html's own send-on to play.html has "the web"): the 3D view and card battles. That is the game players get.
+//   - ?engine=2d: the game as it was, drawn in 2D, its fights in real time (the way back, to compare or if a device cannot run the view).
+//   - ?engine=3d: the 3D view; its fights card battles only with ?cards (which also brings the test cards, js/cards.js) or ?battles=cards. What is spelled out is what you get, as before.
+//   - ?battles=cards, ?battles=live: the fights, said outright. Card battles need the 3D view: with ?engine=2d there are none.
+//   - the website's background (?attract) and anything OFF THE WEB (the tests, a file on disk, a local server) with no word in the address: 2D, as before. (?engine=3d&battles=cards is the
+//     players' game there.)
+// Without the 3D view nothing of it is loaded or run. Where the view fails (no WebGL), or in a room it has not built, the frame is the 2D game's and the fights are in real time (js/view3d.js).
+function enginePlan(protocol, search) {
+    const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
+    const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);   // (no engine named, over the web, not the website's background: the game as players get it)
+    const view3d = eng === "3d" || plain;
+    return { view3d, cards: view3d && (bat ? bat === "cards" : plain || /[?&]cards\b/.test(s)), plain };
+}
+const ENGINE_PLAN = enginePlan(typeof location !== "undefined" && location ? location.protocol : "", typeof location !== "undefined" && location ? location.search : "");
+const VIEW3D_ON = ENGINE_PLAN.view3d;
 // Opaque: every frame paints the whole canvas, so the browser need not blend
 // it with the page behind (a cheaper composite on every frame). (With the 3D view's switch on it is see-through: the 3D view's own canvas lies under this one and shows where a frame leaves it clear.)
 let ctx       = canvas.getContext('2d', { alpha: VIEW3D_ON }) || canvas.getContext('2d');
