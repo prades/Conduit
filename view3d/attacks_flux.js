@@ -17,6 +17,7 @@ function view3dFluxForms(K) {
   if (!bmApply || !blockAt || !CAP || !K.hooks || !solidKind) throw new Error('the flux line needs the fire line\'s body helpers, the kit\'s hooks and its solids');
   const M = K.flux || {}, RIFT_OUT = M.riftOut || 10, MS = M.mimicShot || { fire: 8, fly: 10, total: 32 }, MIMIC_R = M.mimicR || 2.2, SWAP_B = M.swapBurst || 1;
   const VX = M.vortex || { radius: 3, frames: 480, tick: 30 }, HZ = M.horizon || { radius: 4, frames: 300, tick: 30 }, PRX = M.proxy || { burst: 1.5, frames: 360 };
+  const W0 = { x: 0, z: 0, w: 0, r: 0 }, W1 = { x: 0, z: 0, w: 0, r: 0 };   // (EVENT HORIZON: a cloud's place on its way in, and a step on, kept)
   const WHIRL = M.whirl || [{ r: 0.35, w: 0.19, a0: 0, h: 30, tw: 0.62 }, { r: 0.62, w: 0.14, a0: 2.2, h: 14, tw: 0.47 }, { r: 0.86, w: 0.105, a0: 4, h: 38, tw: 0.55 }, { r: 0.5, w: 0.16, a0: 5.3, h: 22, tw: 0.7 }];
   const pxU = px => px / UPX, SHOT_UP = pxU(40), PI = Math.PI;
   // ── THE COLOURS (as the screen shows them): flux's violet #9933ff and its #bb66ff, the pale #ead6ff and lilac #c9a6ff of its light, the deep #5a1fa8, the dark of MAELSTROM's middle #2a0f55;
@@ -78,6 +79,16 @@ function view3dFluxForms(K) {
     return solidKind('fluxblade', g, CAP.blade || 24, (x, y, z, f) => FN[f] > 0.8 ? 0.02 : 0.85, true); })();
   // a glitch bar (RIFT IMPALE's strips): a box of light, its foot at one end, along +y
   const SLABS = solidKind('fluxslab', new T.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), CAP.slab || 40, () => 1, false);
+  // A CLOUD (EVENT HORIZON's shroud; the owner, 2026-11-23, of clouds drawn as flat lumps facing the camera: "Now these look like 2D. You need to make them look like 3D clouds that are close to
+  // the ground and sucked into the middle"): a real shape, a bunch of five round lumps in a row, long one way (its length 1, along x), low, flat underfoot (cut at the floor), shaded by the
+  // look's own light and carrying its ink line, as every solid of the look does, and lit in three flat tones by its own height (a light top, a middle tone, a base in shadow: seen from above,
+  // as a battle is, the look's one light would paint it all one tone). Its lumps keep their own round normals (the kit makes a kind's faces flat). One shape for every cloud: each is turned along its way, sized, and leaned as it is drawn in.
+  const CLOUDS = (() => { const LUMPS = [[-0.34, 0.12, 0.03, 0.2], [-0.12, 0.19, -0.05, 0.27], [0.13, 0.17, 0.05, 0.25], [0.36, 0.11, -0.02, 0.16], [0.01, 0.3, 0.01, 0.19]], pos = [], nor = [];
+    for (const [cx, cy, cz, r] of LUMPS) { const g0 = new T.IcosahedronGeometry(r, 1), g = g0.index ? g0.toNonIndexed() : g0, P = g.attributes.position;
+      for (let i = 0; i < P.count; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i), n = Math.hypot(x, y, z) || 1; nor.push(x / n, y / n, z / n); pos.push(cx + x, Math.max(0, cy + y), cz + z); } }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3));
+    const S = solidKind('fluxcloud', g, CAP.cloud || 44, (x, y) => y > 0.27 ? 1 : y > 0.13 ? 0.42 : 0, true);   // (its light in three bands by height: the look's flat tones, seen from above as the battle's camera is)
+    S.m.geometry.setAttribute('normal', new T.Float32BufferAttribute(nor, 3)); return S; })();
 
   // ── THE VOIDSTAR'S TENTACLE (its approved slap, design/effects/bake_fx.js slap: "glossy violet gel, sharp", hooked at its tip, faint ridges along it, a brighter core, small suckers): its twelve
   // steps of the swing posed once here, each a tube made from the bakers' own curve; four of it to show (two slaps at once), the second of a slap mirrored ──
@@ -207,26 +218,51 @@ function view3dFluxForms(K) {
           const sp = age * 0.2; solid(GEMS, X, Yf + 0.04 + 0.03 * Math.sin(age * 0.3), Z, 0, 1, 0, sp, (0.3 + 0.02 * Math.sin(age * 0.3)) * k * (0.6 + 0.4 * grow), 0.16 * k, DARK[0], DARK[1], DARK[2], 0.3, 0.15, 0.55);
           for (let i = 0; i < (low() ? 4 : 8); i++) { const an = H(i, s, 1) * TAU + age * 0.12, r = R * (0.3 + 0.6 * H(i, s, 2)); glint(X + Math.cos(an) * r, Yf + 0.15 + 0.3 * H(i, s, 3), Z + Math.sin(an) * r, 0.13, 0.7 * k * (0.5 + 0.5 * Math.sin(age * 0.3 + i * 1.7))); } } },
       // EVENT HORIZON (the game's eventhorizon on the biggest group it could see: ULT_HORIZON.frames, dragging every enemy within its radius to its middle and crushing them every ULT_HORIZON.tick frames).
-      // The 2D's look (a faint violet disc, three swirl arcs of light turning in, a small black core ringed in pale light) made real: a black ball hanging low over the middle, a bright rim round it
-      // and a tilted ring of violet light turning round it; the arcs of light spiralling in over a faint violet floor; streams of violet motes drawn in from its edge and swallowed; at each crush a ring
-      // of light closing in over the floor and the rim flaring; it opens from a point with a flash and closes the same way.
+      // THE LOOK (the owner, 2026-11-23: "honestly, I don't really like the look. Maybe you can make it more of a animated cloud shroud purple vortex"; it was the 2D's made real: a small black ball
+      // with a thin ring, three thin arcs on a faint disc, motes): A SHROUD OF VIOLET CLOUD DRAWN INTO A DARK EYE. Arms of clouds wind in from its edge over bands of violet light turning on the
+      // floor; the clouds are real shapes low on the floor (CLOUDS, above), in the look's own shading and ink, sucked in faster and smaller the nearer the eye; the eye is black, low, with a pale
+      // rim of light; the floor under it all is stained dark violet, darkest in the middle. At each crush the shroud draws in a little and its tops flare, a ring of light closing over the
+      // floor. It gathers from nothing with a flash and at its end is drawn into its own eye and bursts. DRAFT (the third: soft hazes and flat lumps were sent back): for the owner's eye.
+      // IT TURNS BY THE GAME'S OWN FRAMES (f0), NOT THE FIELD'S CLOCK (the same day: "the event horizon ultimate is lacking a animation partway through in the card battles"). In a card battle
+      // the field's clock runs only its turn's worth at a time and stands still between (js/cardults.js cardUltPaused), and it is shown standing still in its caster's own turn (cardUltShown):
+      // everything here went by that clock, so it froze there. Now only what belongs to its life goes by its clock (its gathering, each crush, its end); the turning never stops while it is seen.
       eventhorizon: {
         pre: true, claim(e, f) { return e.by === f; }, span(m) { return m.age + 1; },
         draw(m, age, f0, b) { const o = m.o, s = m.seed, X = o.x, Z = o.y, Yf = floorY(X, Z), R = o.radius || HZ.radius || 4, life = o.life || 0, k = Math.min(1, age / 10, life / 20); if (k <= 0) return;
-          const open = outC(clamp(age / 14, 0, 1)) * (life < 16 ? clamp(life / 16, 0, 1) : 1), Yc = Yf + 1.05, rB = 0.24 * open, spin = age * 0.12, tick = HZ.tick || 30, since = age % tick, crush = age > 0 && since < 12 ? 1 - since / 12 : 0;
-          flat(DISCF, X, Yf, Z, R * 0.9, 0.48, 0.29, 0.87, 0.05 * k); flat(DISCF, X, Yf, Z, 0.4 * open, 0.08, 0.03, 0.16, 0.35 * k);
-          for (let i = 0; i < 3; i++) { const r0 = R * (0.3 + i * 0.25) + 0.25, a0 = -spin * (1 + i * 0.2) + i * 2.1; ribbon(26, (j, P) => { const u = j / 25, an = a0 + u * 2.2, rr = r0 * (1 - 0.35 * u); P.x = X + Math.cos(an) * rr; P.z = Z + Math.sin(an) * rr; P.y = Yf + 0.004; P.w = 0.03 + 0.03 * Math.sin(u * PI); P.r = LILAC[0]; P.g = LILAC[1]; P.b = LILAC[2]; P.a = 0.6 * k * Math.sin(u * PI); }); }
-          if (crush > 0) flat(RINGF, X, Yf, Z, 0.5 + (R - 0.5) * crush, PALE[0], PALE[1], PALE[2], 0.55 * crush * k);
-          // the streams drawn in: motes spiralling from its edge to the ball
-          for (let j = 0; j < 5; j++) for (let i = 0; i < (low() ? 4 : 8); i++) { const u = ((age * 0.012 + i / 8 + H(j, s, 1)) % 1), an = j / 5 * TAU + H(j, s, 2) + u * 3.2 - age * 0.02, r = 0.45 + (R * 0.92 - 0.45) * (1 - u) * (1 - u), x = X + Math.cos(an) * r, z = Z + Math.sin(an) * r, y = lerp(Yf + 0.05, Yc, u * u);
-            (i % 2 ? glint : (xx, yy, zz, ss, aa) => glow(xx, yy, zz, ss, VIO2, aa))(x, y, z, i % 2 ? 0.1 + 0.06 * u : 0.07 + 0.05 * u, 0.9 * k * Math.sin(u * PI) * open); }
-          // the ball: black, its bright rim turned to the camera, its tilted ring turning round it
-          if (rB > 0.02) { solid(BLOBS, X, Yc, Z, 0, 1, 0, 0, rB, rB, 0.01, 0.005, 0.02, 0, 0, 0);
-            arc3(X, Yc, Z, rB * 1.1, CR, CU, 0, TAU, 28); stroke(0.04 + 0.03 * crush, 0.04 + 0.03 * crush, PALE, (0.85 + 0.15 * crush) * k, (0.85 + 0.15 * crush) * k);
-            AX.x = CR.x; AX.y = 0; AX.z = CR.z; const tl = 0.32; BXv.x = CF.x * Math.cos(tl); BXv.y = Math.sin(tl); BXv.z = CF.z * Math.cos(tl);
-            for (let q = 0; q < 2; q++) { const rr = rB * (1.7 + 0.5 * q), a0 = spin * (1.3 - 0.4 * q) + q; arc3(X, Yc, Z, rr, AX, BXv, a0, TAU * 0.86, 30); stroke(0.035 - 0.012 * q, 0.012, q ? VIO : VIO2, 0.95 * k, 0.15 * k); }
-            if (age < 8) glow(X, Yc, Z, 0.9 * (1 - age / 8) + 0.2, PALE, 1 - age / 8); }
-          if (life < 12) for (let i = 0; i < (low() ? 6 : 12); i++) { const an = i / 12 * TAU + s, u = 1 - life / 12, r = 0.3 + 1.6 * outC(u); glint(X + Math.cos(an) * r, Yc - 0.3 * u, Z + Math.sin(an) * r, 0.16, 1 - u); } } },
+          const t = f0, lw = low(), open = outC(clamp(age / 22, 0, 1)), shut = life < 26 ? clamp(life / 26, 0, 1) : 1, tick = HZ.tick || 30, since = age % tick, crush = age > 0 && life > 0 && since < 12 ? 1 - since / 12 : 0;
+          const Rk = R * (0.25 + 0.75 * open) * (0.3 + 0.7 * shut) * (1 - 0.1 * crush), Yc = Yf + 0.5, grown = 0.6 + 0.4 * open;
+          // the floor under it: stained dark violet, darkest in the middle
+          flat(DISCF, X, Yf, Z, Rk * 0.98, DEEP[0], DEEP[1], DEEP[2], 0.2 * k); flat(DISCF, X, Yf, Z, Rk * 0.56, DARK[0], DARK[1], DARK[2], 0.32 * k); flat(DISCF, X, Yf, Z, Rk * 0.22, 0.03, 0.01, 0.07, 0.55 * k);
+          if (crush > 0) flat(RINGF, X, Yf, Z, 0.5 + (Rk - 0.5) * crush, PALE[0], PALE[1], PALE[2], 0.5 * crush * k);
+          // the turning on the floor: bands of violet light winding in under the cloud (so it reads as a vortex from above)
+          const BANDS = lw ? 2 : 4; for (let q = 0; q < BANDS; q++) { const a0 = q / BANDS * TAU + t * 0.035 + s; ribbon(30, (j, P) => { const u = j / 29, an = a0 + u * 4.2, rr = Rk * (0.96 - 0.8 * u); P.x = X + Math.cos(an) * rr; P.z = Z + Math.sin(an) * rr; P.y = Yf + 0.006;
+            P.w = (0.16 + 0.3 * Math.sin(u * PI)) * grown; const c = q % 2 ? VIO : VIO2; P.r = c[0]; P.g = c[1]; P.b = c[2]; P.a = (0.3 + 0.3 * crush) * k * Math.sin(u * PI); }); }
+          // THE SHROUD, IN 3D CLOUDS LOW ON THE FLOOR, DRAWN INTO THE EYE (the owner, 2026-11-23, of the drafts before: of soft hazes, "They're not cartoony enough. They look like just blobs"; of
+          // crisp flat lumps, "Now these look like 2D. You need to make them look like 3D clouds that are close to the ground and sucked into the middle"). Arms of clouds wind in to the eye. Each
+          // cloud is the solid above, sitting on the floor with a dark patch under it, long along its way, a smaller one torn off behind it. It swells into being at the vortex's edge and drifts
+          // slowly at first; the nearer the eye, the faster it goes round and in, the smaller it is, and the more it leans over and lifts toward the eye, into which it is swallowed. Its base
+          // dark, its top lit, brighter toward the eye; its top flares at each crush.
+          const ARMS = lw ? 3 : 4, PER = lw ? 3 : 5, spin = t * 0.03, flow = t * 0.006;
+          // (ITS LIGHT MUST REACH THE SHAPE THAT IS DRAWN. The view, giving every solid its ink colour once all are made, puts a copy of an inked kind's shape in its place (view3d/core.js tagInk),
+          // and the kit goes on writing each one's glow to the shape it made (view3d/attacks.js solid, S.em): so the glow of an inked kind has never reached the screen, the kit's own included.
+          // The clouds' is written to the copy that is drawn. The other kinds are left as they are: their looks were approved as they show; `docs/VIEW-3D.md` has the finding.)
+          { const E = CLOUDS.m.geometry.attributes.iEmis; if (E && E !== CLOUDS.em) CLOUDS.em = E; }
+          const way = (a, u, O) => { const w = 0.3 * u + 0.7 * u * u * u, r = Rk * (0.95 - 0.88 * w), an = a / ARMS * TAU + spin + 4.4 * w + H(a, s, 2) * 0.4; O.x = X + Math.cos(an) * r; O.z = Z + Math.sin(an) * r; O.w = w; O.r = r; };   // (where a cloud of arm a is, a share u of its way in: slow at the edge, fast at the eye)
+          const cloud = (a, u, big, ph) => { if (u <= 0 || u >= 1) return 0; way(a, u, W0); way(a, Math.min(1, u + 0.02), W1); const w = W0.w, mx = W1.x - W0.x, mz = W1.z - W0.z, ml = Math.hypot(mx, mz) || 1, ix = (X - W0.x) / (W0.r || 1), iz = (Z - W0.z) / (W0.r || 1);
+            const p = clamp(u / 0.12, 0, 1), born = outC(p) * (1 + 0.15 * Math.sin(p * PI)), gone = clamp((1 - u) / 0.1, 0, 1), sz = big * (1.0 - 0.6 * w) * grown * born * gone * (1 + 0.1 * crush); if (sz < 0.07) return 0;
+            const lean = 1.2 * w * w, y = Yf + 0.02 + 0.32 * w * w * w, v = 0.2 + 0.6 * w, lit = (0.6 + 0.12 * w + 0.3 * crush) * k;
+            flat(DISCF, W0.x, Yf, W0.z, sz * 0.5, 0.05, 0.02, 0.12, 0.3 * k * (1 - 0.6 * w));                                              // the dark patch under it: it sits on the floor
+            solid(CLOUDS, W0.x, y, W0.z, ix * lean, 1, iz * lean, Math.atan2(-mz / ml, mx / ml), sz * (0.62 + 0.05 * Math.sin(t * 0.09 + ph)), sz,
+              lerp(DARK[0], DEEP[0], v), lerp(DARK[1], DEEP[1], v), lerp(DARK[2], DEEP[2], v), lerp(VIO2[0], LILAC[0], v) * lit, lerp(VIO2[1], LILAC[1], v) * lit, lerp(VIO2[2], LILAC[2], v) * lit);   // (dark below, its bands of light above)
+            return sz; };
+          for (let a = 0; a < ARMS; a++) for (let i = 0; i < PER; i++) {
+            const u = (i / PER + flow + H(a, s, 1)) % 1, big = 0.82 + 0.36 * H(i + a * 16, s, 3), sz = cloud(a, u, big, i * 2.1 + a);
+            cloud(a, u - 0.05 - 0.03 * (1 - u), big * 0.56, i * 1.3 + a + 2);                                                              // a smaller one torn off behind it: it is being dragged
+            if (sz && i % 2 === 0) glint(W0.x, Yf + sz * 0.6, W0.z, 0.13, 0.85 * k * (0.5 + 0.5 * Math.sin(t * 0.3 + i * 1.7 + a))); }   // a twinkle over it
+          // the eye: black, a pale rim of light behind it, flaring at each crush
+          const rB = 0.27 * open * shut; if (rB > 0.02) { glow(X, Yc, Z, rB * 3.4 + 0.3 * crush, PALE, (0.6 + 0.4 * crush) * k); glow(X, Yc, Z, rB * 5.5, VIO2, 0.3 * k); solid(BLOBS, X, Yc, Z, 0, 1, 0, 0, rB, rB, 0.01, 0.005, 0.02, 0, 0, 0); }
+          if (age < 10) glow(X, Yc, Z, 1.1 * (1 - age / 10) + 0.2, PALE, 1 - age / 10);   // it gathers with a flash
+          if (life < 12) for (let i = 0; i < (lw ? 6 : 12); i++) { const an = i / 12 * TAU + s, u = 1 - life / 12, r = 0.3 + 1.6 * outC(u); glint(X + Math.cos(an) * r, Yc - 0.3 * u, Z + Math.sin(an) * r, 0.16, 1 - u); } } },
     },
     shots: {
       // ITS EVERYDAY SHOT in flight (the game's shot, kind "tendril", 40 px up). The 2D's look (2026-11-13: only a small mote of ghostly violet with a few specks trailing it) made real: a glowing
