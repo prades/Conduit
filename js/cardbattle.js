@@ -4,7 +4,9 @@
 // The owner, 2026-11-17: fights become turn-based card battles (CARD-BATTLES.md §2). This file is the FIRST PLAYABLE STEP (§2.24: "In the 3D game, behind a switch"): a battle STARTS and
 // LOOKS like one; it has no cards and no turns yet (the fight inside it is still the real-time one, until step 2 and 3 replace it).
 //
-// THE SWITCH: ?cards with ?engine=3d (both in the address), and only while the 3D view is drawing the room (js/view3d.js view3dShowing). Off, nothing here does anything.
+// THE SWITCH (js/config.js enginePlan, ENGINE_PLAN.cards): card battles are the game's fights since the owner's word of 2026-11-23 ("I'd like to make the cards and the 3D the actual game now"):
+// on at the plain address over the web; elsewhere with ?cards or ?battles=cards beside the 3D view (?engine=3d); never with ?engine=2d or ?battles=live. And only while the 3D view is
+// drawing the room (js/view3d.js view3dShowing): in a room it has not built, or where it failed, the fights are in real time as before. Off, nothing here does anything.
 // A BATTLE STARTS (§2.5) when you choose an enemy (a tap on a creature: js/targeting.js targetPress asks cardBattleTap first) or when a creature hits you or your squad
 // (js/helpers.js applyDamage tells cardBattleHit). It takes in that creature and the creatures right round it (CARD_BATTLE.group, at most CARD_BATTLE.most).
 // A FAR ENEMY (§2.27: "the player should move towards it, and the game should black screen and teleport the player right in front of the creature in the new battle screen"): you walk
@@ -18,7 +20,7 @@
 // last hit, §2.16, comes with the turns). The camera eases back.
 // Every number here is the agent's, provisional, for the owner to judge on the iPad (CARD-BATTLES.md §11.11).
 const CARD_BATTLE = {
-    on: typeof location !== "undefined" && /[?&]cards\b/.test(location.search || "") && typeof VIEW3D_ON !== "undefined" && VIEW3D_ON === true,
+    on: typeof ENGINE_PLAN !== "undefined" && ENGINE_PLAN.cards === true,   // (js/config.js enginePlan: the players' game over the web; else ?cards or ?battles=cards with the 3D view)
     force3d: false,             // (the tests: as if the 3D view were drawing the room)
     far: 6,                     // tiles: an enemy chosen farther than this is walked to, then the black (§2.27)
     group: 3.5,                 // tiles round the creature: the others in the battle with it

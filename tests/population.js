@@ -34,15 +34,31 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.ids, 'ant,beetle,spider,scorpion,mantis,moth,rolypoly', 'the races'); same(r.rp, 'electrical', 'the roly-polies\' table'); same(r.known, true, 'a race of a species the game does not have'); same(r.ant, 'sewer_nest', 'the ants\' Nest');
         same(r.nest.join(), 'sewers,sewer_cistern,THE NEST', 'the Nest: in the Sewers, the Toxic Ant Queen\'s'); same(r.others, 0, 'another race on a table'); same(r.species, '', 'a species of no race (a boss and nothing else, the diving beetle larva, is its encounter\'s: js/bosses.js)');
     });
-    check('the arena\'s table: ants only, in the classes and the level band the arena had (scout 3, worker 3, striker 2, tank 1; level 2 to 4); the spawner reads them through (FP_SPAWN.species, .classes, .levels)', () => {
-        const r = J(`(function(){ const st = spawnStage('arena'); return { id: st.id, races: st.races.join(), species: FP_SPAWN.species.join(), classes: JSON.stringify(FP_SPAWN.classes), same: FP_SPAWN.classes === st.classes && FP_SPAWN.levels === st.levels, levels: FP_SPAWN.levels.join(), table: FP_SPAWN.table, element: spawnWhat(FP_SPAWN).element }; })()`);
-        same(r.races, 'ant', 'the arena\'s races'); same(r.species, 'ant', 'the arena\'s species'); same(r.classes, '{"scout":3,"worker":3,"striker":2,"tank":1}', 'the classes'); same(r.levels, '2,4', 'the levels');
-        same(r.same, true, 'the spawner keeps a copy of its own'); same(r.table, 'arena', 'the table'); same(r.element, null, 'an element on the arena\'s ants');
+    check('the arena\'s table: ants only, WEAK FIRST (the owner, 2026-11-23): four stages by how far the game has got, workers / + scouts (the Crystal\'s defence won) / + strikers (the tutorial over) / + tanks (a class\'s first stage done), each kind at the weight it has in the full mix (scout 3, worker 3, striker 2, tank 1), level 2 to 4 throughout; the spawner reads the stage in force (FP_SPAWN.species, .classes, .levels)', () => {
+        const r = J(`(function(){ __fresh(); const S = _fp.tut.script, AI = TUT_STEPS.findIndex(s => s.id === 'assault'), keepClass = playerClassKey, o = {};
+            const at = () => { const st = spawnStage('arena'); return [spawnProgress(), st.id, JSON.stringify(FP_SPAWN.classes), FP_SPAWN.levels.join(), FP_SPAWN.classes === st.classes && FP_SPAWN.levels === st.levels, FP_SPAWN.species.join(), spawnWhat(FP_SPAWN).element].join(' '); };
+            const picks = () => { const seen = {}; for (let i = 0; i < 400; i++) seen[_fsPickClass('ant')] = 1; return Object.keys(seen).sort().join(); };
+            S.cstages = {}; S.cstep = 0; playerClassKey = null;
+            S.step = 0; o.p0 = at(); o.k0 = picks(); S.step = AI; o.pa = at();                       // the beginning; the assault's own step is still the beginning
+            S.step = AI + 1; o.p1 = at(); o.k1 = picks();                                              // the Crystal's defence won
+            S.step = TUT_STEPS.length; o.p2 = at(); o.k2 = picks();                                    // the tutorial over, no class yet
+            playerClassKey = 'gunslinger'; S.cstep = 1; o.p2c = at();                                  // a class chosen, its stage under way
+            S.cstep = TUT_CLASS_STAGES.gunslinger.length; o.p3 = at(); o.k3 = picks();                 // its stage done
+            S.cstages = { gunslinger: { cstep: TUT_CLASS_STAGES.gunslinger.length } }; playerClassKey = 'mutator'; S.cstep = 0; o.kept = at();   // changed class: nothing is taken back
+            _fp.tut.script = null; o.none = at(); _fp.tut.script = S;                                  // a game with no tutorial: as far as it goes
+            o.ids = SPAWN_TABLES.arena.map(st => st.id + ':' + (st.until || '') + ':' + st.races.join() + ':' + st.levels.join('-')).join(' '); o.table = FP_SPAWN.table;
+            playerClassKey = keepClass; __fresh(); return o; })()`);
+        same(r.ids, 'ants_first:defended:ant:2-4 ants_scouts:evolved:ant:2-4 ants_strikers:classed:ant:2-4 ants::ant:2-4', 'the stages, their events, races and levels'); same(r.table, 'arena', 'the table');
+        same(r.p0, '0 ants_first {"worker":3} 2,4 true ant ', 'the beginning'); same(r.pa, r.p0, 'the assault\'s own step is not still the beginning'); same(r.k0, 'worker', 'what comes at the beginning');
+        same(r.p1, '1 ants_scouts {"scout":3,"worker":3} 2,4 true ant ', 'the Crystal\'s defence won'); same(r.k1, 'scout,worker', 'what comes then');
+        same(r.p2, '2 ants_strikers {"scout":3,"worker":3,"striker":2} 2,4 true ant ', 'the tutorial over'); same(r.k2, 'scout,striker,worker', 'what comes then'); same(r.p2c, r.p2, 'a class\'s stage under way is not its stage done');
+        same(r.p3, '3 ants {"scout":3,"worker":3,"striker":2,"tank":1} 2,4 true ant ', 'a class\'s first stage done: the full mix, the one the arena always had'); same(r.k3, 'scout,striker,tank,worker', 'what comes then');
+        same(r.kept, r.p3, 'changing class took a milestone back'); same(r.none, r.p3, 'a game with no tutorial is not as far as it goes');
     });
-    check('the Sewers\' table: the Nest\'s toxic ant workers and scouts (level 3 to 5), its brood; the queen\'s: her toxic nymphs (level 2 to 3), brood too; the encounter keeps only its own rules (how many, when, where)', () => {
+    check('the Sewers\' table: the Nest\'s toxic ants in all four classes, the strong place (the owner, 2026-11-23: "Yes, add strikers and tanks"; they were workers and scouts; the mix the arena\'s full one, the agent\'s, provisional) (level 3 to 5), its brood; the queen\'s: her toxic nymphs (level 2 to 3), brood too; the encounter keeps only its own rules (how many, when, where)', () => {
         const r = J(`(function(){ const s = spawnWhat(FP_SPAWN_SEWERS), q = spawnWhat(BOSS_ENCOUNTERS.sewer_cistern.waves), W = BOSS_ENCOUNTERS.sewer_cistern.waves; return { s: [s.species.join(), JSON.stringify(s.classes), s.levels.join(), s.element, s.brood], via: [FP_SPAWN_SEWERS.species.join(), FP_SPAWN_SEWERS.element, FP_SPAWN_SEWERS.brood],
             q: [q.species.join(), JSON.stringify(q.classes), q.levels.join(), q.element, q.brood], rules: Object.keys(W).sort().join() }; })()`);
-        same(r.s.join(), 'ant,{"worker":3,"scout":3},3,5,toxic,true', 'the brood'); same(r.via.join(), 'ant,toxic,true', 'the brood as the spawner reads it');
+        same(r.s.join(), 'ant,{"scout":3,"worker":3,"striker":2,"tank":1},3,5,toxic,true', 'the brood'); same(r.via.join(), 'ant,toxic,true', 'the brood as the spawner reads it');
         same(r.q.join(), 'ant,{"nymph":1},2,3,toxic,true', 'the queen\'s infantry'); same(r.rules, 'every,first,n,near,table', 'the waves\' own rules');
     });
     check('one spawner\'s code for all three: the arena\'s, the brood\'s and the queen\'s call each go through facilitySpawnCreature with what the table says (the source: no species list left in the spawners)', () => {
@@ -54,10 +70,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('A LATER STAGE, ANOTHER RACE (the architecture: "make future expansion to additional races possible without rewriting the system")');
     check('a stage waits for its event: with a stage that holds `until` the purification, it is in force until the water is clean, then the next one is (a line of data; restored after)', () => {
-        const r = J(`(function(){ __fresh(); const T = SPAWN_TABLES.arena, keep = T.slice(); T.unshift({ id: 'test_first', races: ['ant'], classes: { tank: 1 }, levels: [7, 7], until: 'purified' });
+        const r = J(`(function(){ __fresh(); const T = SPAWN_TABLES.arena, keep = T.slice(), was = spawnStage('arena').id; T.unshift({ id: 'test_first', races: ['ant'], classes: { tank: 1 }, levels: [7, 7], until: 'purified' });
             const before = spawnStage('arena').id, cls = FP_SPAWN.classes.tank; questState('purify').purifiedAt = 5; const after = spawnStage('arena').id; questState('purify').purifiedAt = 0;
-            const q = spawnStage('arena').id; T.length = 0; for (const s of keep) T.push(s); return { before, cls, after, q, back: spawnStage('arena').id }; })()`);
-        same(r.before, 'test_first', 'the first stage before the purification'); same(r.cls, 1, 'the spawner reads the stage in force'); same(r.after, 'ants', 'the next stage after it'); same(r.back, 'ants', 'restored');
+            const q = spawnStage('arena').id; T.length = 0; for (const s of keep) T.push(s); return { before, cls, after, q, was, back: spawnStage('arena').id }; })()`);
+        same(r.before, 'test_first', 'the first stage before the purification'); same(r.cls, 1, 'the spawner reads the stage in force'); same(r.after, r.was, 'the next stage after it (the one that was in force)'); same(r.back, r.was, 'restored');
     });
     check('a second race is its name on a table: with the beetles added to the arena\'s, the spawner makes both, the kind there are fewer of first (restored after)', () => {
         const r = J(`(function(){ __fresh(); __wild(); __put(crystal.x + 2, crystal.y); const st = spawnStage('arena'); st.races.push('beetle'); const made = []; for (let i = 0; i < 6; i++) { const p = facilitySpawnCreature(); if (p) made.push(p.speciesName + ':' + p.race); }
