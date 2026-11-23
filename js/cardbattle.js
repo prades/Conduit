@@ -647,7 +647,7 @@ function cardBattleOverLow(ox, oy) {
 // it), and the view's screenOf and screenNow take a height from the lab's ground floor. Everything a battle lays on the picture asked them for height 0, or a body's own height: right in the
 // lab's ground rooms, and in the arena 57 points up the screen from the creature it was for (its reticle, its bar's dot, its numbers, its lit square, a card's squares), and which
 // enemy a dragged card was over was reckoned from that same wrong point, so over one creature it could light the one standing behind. cardBattleLift is the floor's height at a point, and every such place adds it (here; js/cardshapes.js; js/cardults.js). A square's four corners take its
-// middle's (a square is flat); a scale is measured at one height. Build 2026-11-17cx.
+// middle's (a square is flat); a scale is measured at one height. Build 2026-11-17cy.
 function cardBattleLift(x, y) { return typeof facilityLiftPx === "function" && Number.isFinite(x) && Number.isFinite(y) ? facilityLiftPx(x, y) || 0 : 0; }
 const _CB_CORNERS = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
 function cardBattleAiming() { return cardBattleActive() || _cb.k > 0.0001; }
