@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
-### Build `2026-11-17cw` · branch `claude/friendly-thompson-w581x0` · in a card battle the reticle, the lit square and the health bar are on their creature in every room
+### Build `2026-11-17cx` · branch `claude/friendly-thompson-w581x0` · in a card battle the reticle, the lit square and the health bar are on their creature in every room
 - **The ask** (the owner, 2026-11-23): "In some card battles, the hit marker or the reticule is not correctly on top of the target whenever it's dragged over it."
 - **What was wrong** (measured in a real battle before anything was changed): in the arena each enemy's red corners, the dot of its health bar and the square lit under a dragged card were 57 points up the screen from its body. "Some" battles: the ones on a floor that is not at the lab's ground level. The 3D view stands a body on its floor's own height (the arena, the Sewers and the Cold Storage are 61 px under the lab; the decks are over it), and the battle asked the view where a point is as if every floor were the lab's. Which enemy a dragged card is over was reckoned from the same wrong point, so over one creature it could light the one standing behind it.
 - **What it does** (card battles only; no rule, card or number changed): all a battle lays on the 3D picture is put at its floor's height: an enemy's corners, its health bar, the numbers and words over a unit, the point a dragged card is measured from, the enemy's lit square, a card's squares and the floor square under a finger, an Ultimate's field squares (`cardBattleLift`). On the lab's ground floor nothing moves.
