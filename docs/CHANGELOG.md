@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17cx` · branch `claude/start-game-project-HSh7Z` · card battles: bigger numbers and words; MISS large
+- **The ask** (the owner, 2026-11-23): "if the player or the creatures miss in a fight it shows up miss and if it does that already need to make these numbers or words bigger".
+- **What it does** (in a card battle): MISS was already written (only a BLINDED attacker misses; no new chance to miss is added) but small and brief: it is 30 points, white, for 70 frames. A hit's number is 30 points on an enemy, 26 on one of yours (20, 17); status words are 1.7 times larger and no longer lie under the health bar. Sizes provisional. `js/cardbattle.js`, `js/helpers.js`, generated files.
+- **Verified:** seen in a real browser at iPad size, before and after; the suites in the handoff. **Not seen on an iPad; not playtested.**
+
 ### Build `2026-11-17cw` · branch `claude/start-game-project-HSh7Z` · the basic attack cards have pictures
 - **The ask** (the owner, 2026-11-23): "make the other cards for the attacks just have graphics"; asked: "Give them pictures".
 - **What it does** (in a card battle): a follower's basic attack card shows its attack type's stroke (The Sweep family, approved 2026-11-18) over its element's world, made by the game from two layer pictures a type, as the owner agreed then. All 22 evolved forms. No rule, cost or number changes. Begun by the card artist, finished and checked here.
