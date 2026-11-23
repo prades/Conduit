@@ -4,7 +4,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
-### Branch `claude/low-camera-fixes` (over main's `2026-11-17dg`; not stamped) · the low camera after the owner tried it
+### Build `2026-11-17dj` · branch `claude/low-camera-fixes` (over main's `2026-11-17di`) · the low camera after the owner tried it
 - **The ask** (the owner, 2026-11-23, after trying `?cam=low`): "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
 - **What players get is unchanged:** all of it is under `?cam=low`.
 - **Less loaded in** (`view3d/lowcam.js`, `view3d/gameview.js`): nothing 3D wholly farther than `LOWCAM.see` = 22 tiles from the player is drawn; another room's floor, fittings and props past `seeRoom` = 12 tiles are not drawn either; the same for the 2D (the stairwells, the follower posts' pads, the stations' diamonds).
@@ -14,6 +14,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 - **Not removed:** the staircases and the follower posts' pads (the owner is thinking about it: `OPEN-QUESTIONS.md`).
 - `view3d/lowcam.js`, `view3d/gameview.js`, `js/view3d.js`, `js/game.js`, `js/commandcenter.js`, `js/facilityportals.js`, `js/facilitytutorial.js`, `js/stations.js`, `js/techabilities.js`; `tests/view3d.js`; `docs/VIEW-3D.md` §8.14, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`; generated: `dist/view3d.js`, `play.html`, `dist/conduit.js`.
 - **Verified:** `tests/view3d.js` THE OWNER'S FEEDBACK (two checks) and the suites named in the handoff; pictures before and after. **Not seen on an iPad; not playtested.** What the 2D still shows through: `VIEW-3D.md` §8.14.
+
+### Build `2026-11-17di` · branch `claude/start-game-project-HSh7Z` · the follower's close-up framed clear of its card; STANCE on the card
+- **The ask** (the owner, 2026-11-23): the camera covered the selected creature; "make it to where the camera shifts where the middle is to somewhere more towards the top right middle ... so that you can see the creature selected"; and the stance, "Are they aggressive? Are they defensive? Are they balanced?", adjustable on the card at the bottom.
+- **What it does:** with the close-up on, the member stands up and to the right of the middle, clear of its card, in both cameras; the card has a STANCE row (CAUTIOUS, BALANCED, RECKLESS, TANK: the roster's play styles). `CARD-BATTLES.md` §2.80. `js/view3d.js`, `view3d/gameview.js`, `js/squadfly.js`, `game.html`, `tests/squadfly.js`, generated files.
+- **Verified:** in a real browser with both cameras, the member's place on the screen and the stance set; the suites in the handoff. **Not seen on an iPad; not playtested.**
+
+### Build `2026-11-17dh` · branch `claude/start-game-project-HSh7Z` · two modes: a card-battles button; with them off, a tap on a follower opens its card and the camera holds on it
+- **The ask** (the owner, 2026-11-23): two modes, card battles or followers fighting in real time; with them off, "if you click on them, you can pull up the index and watch them fight, and you can switch which attacks they'd be using, or choose a new location for them to move to". Asked: "HUD button"; the squad's card at the bottom; "Hold there"; "Real-time only".
+- **What it does:** a CARD BATTLES · ON/OFF button at the top left (kept on the device). With them off, in the 3D view: a tap on a squad member opens its card at the bottom, the camera eases in and follows it; MOVE TO on the card sends it to a tapped spot to hold (`CARD-BATTLES.md` §2.80). Card-battle mode is unchanged.
+- `js/cardbattle.js`, `js/squadfly.js`, `js/input.js`, `js/view3d.js`, `view3d/gamemap.js`, `view3d/gameview.js`, `game.html`, `tests/squadfly.js`, generated files.
+- **Verified:** in a real browser with both cameras (the low one and the game's own): the tap, the card, the camera in and back, MOVE TO and HOLDING, the button; `tests/squadfly.js` (a new check), and the full run (see the handoff). **Not seen on an iPad; not playtested.**
 
 ### Build `2026-11-17df` · branch `claude/friendly-thompson-w581x0` · the Manta Ray is a mollusk
 - **The ask** (the owner, 2026-11-23): "This creature is mollusk type".

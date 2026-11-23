@@ -150,6 +150,8 @@ const handleInput=(ex,ey)=>{
         if (foe) { firePlayerShot(foe); return; }
     }
 
+    // THE FOLLOWER'S CLOSE-UP (js/squadfly.js partyFlyTapUnit, js/view3d.js view3dFocusCam): with card battles off, in the 3D view, a tap on one of your squad opens its card and the camera holds on it
+    if (typeof view3dShowing === "function" && view3dShowing() && !(typeof cardBattleOn === "function" && cardBattleOn()) && typeof partyFlyTapUnit === "function") { const _ff = findFollowerAtScreen(ex, ey); if (_ff && partyFlyTapUnit(_ff)) return; }
     // Movement is never locked — there is no stun any more. A path through the facility's doors (js/facilityplay.js).
     const [_ux, _uy] = typeof bvUnzoom === "function" ? bvUnzoom(ex, ey) : [ex, ey];   // (the tile under the tap, back through the battle view's zoom: js/battleview.js)
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
@@ -158,6 +160,7 @@ const handleInput=(ex,ey)=>{
     const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
     const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
     // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
+    if (typeof partyFlyMoveArmed === "function" && partyFlyMoveArmed()) { const _mt = getTile(gx, gy); if (_mt && !_mt.type.includes("wall") && partyFlyMoveTap(_mt)) return; }   /* (THE FOLLOWER'S CLOSE-UP: MOVE TO's spot, js/squadfly.js) */
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off a walk to a fallen clone's body: js/mutator.js)
     facilityWalkTo(gx, gy);

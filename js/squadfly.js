@@ -37,8 +37,9 @@ function partyFlyBuild(root) {
         + '<div class="sf-head"><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span><button class="sf-btn sf-index" data-act="index">INDEX ▸</button></div>'
         + '<div class="sf-mid"><div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div><div class="sf-en-unl"></div>'   // (what its energy opens: _sfEnergyDraw)
         + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'   // (GRAVITY ENGINEER's SWAP: shown only while that role is awake, js/playercards.js)
+        + '<div class="sf-btns"><button class="sf-btn sf-moveto" data-act="moveto">MOVE TO ▸<small class="sf-movew">Tap a spot: it holds there</small></button></div>'   /* (THE FOLLOWER'S CLOSE-UP: js/view3d.js view3dFocusCam) */
         + '<div class="sf-btns"><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>'
-        + '<div class="sf-body"><div class="sf-moves"></div><div class="sf-cards"></div></div>'   // (the right: what scrolls when the card is taller than its room)
+        + '<div class="sf-body"><div class="sf-stance"></div><div class="sf-moves"></div><div class="sf-cards"></div></div>'   /* (sf-stance: how it fights, CAUTIOUS to TANK, _sfStanceDraw) */   // (the right: what scrolls when the card is taller than its room)
         + '<div class="sf-trayw"></div></div>';   // (an energy token's tray, over the middle and the right: _sfEnergyTray)
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
@@ -65,6 +66,8 @@ function partyFlyClick(ev) {
     const act = b.getAttribute("data-act");
     if (act === "back") { _sfAway = true; _sfDD = null; partyFlyRender(true); return; }   // ◂ SQUAD & ORDERS: put away as a press elsewhere puts it, the member still picked; the stack and the tool are back
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
+    if (act === "stance") { if (typeof ccApplyPlayStyle === "function") ccApplyPlayStyle([f], b.getAttribute("data-style")); partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }   /* (its STANCE: the roster's PLAY STYLE, js/commandcenter.js) */
+    if (act === "moveto") { _sfMoveTo = _sfMoveTo === f ? null : f; partyFlyRender(true); return; }   /* (MOVE TO: the next tap on the floor sends it there to hold, partyFlyMoveTap; a second press calls it off) */
     if (act === "swap") { if (typeof playerSwap === "function") { const r = playerSwap(f); if (!r.ok && typeof _pcSay === "function") _pcSay(r.why, "#ff9c8a"); } partyFlyRender(true); return; }   // (GRAVITY ENGINEER: js/playercards.js)
     if (act === "dismiss") {
         if (typeof partyRemove === "function") partyRemove([f]);
@@ -78,8 +81,41 @@ function partyFlyPressAway(ev) {
     const E = _sfEls; if (!E || !E.subject || (typeof E.root.getClientRects === "function" && !E.root.getClientRects().length)) return;
     const t = ev && ev.target && ev.target.closest ? ev.target : null;
     if (t && (t.closest(".sf-card") || t.closest("#squadBar") || t.closest("#unitInfo"))) return;
+    if (_sfMoveTo && E.subject === _sfMoveTo && !_sfMoveTo.dead) return;   /* (MOVE TO is waiting for its spot: the press is that spot, partyFlyMoveTap; the card stays) */
     _sfAway = true; partyFlyRender(true);
 }
+// THE FOLLOWER'S CLOSE-UP (the owner, 2026-11-23: with card battles off, "if you click on them, you can pull up the index and watch them fight, and you can switch which attacks they'd be using, or
+// choose a new location for them to move to, and these will all be options available in that new on-screen index pop-out card"; asked: the card is this one at the bottom ("Today the followers index
+// card is at the squad menu at the bottom and it doesn't hide the entire screen"), MOVE TO "Hold there", only with card battles off ("Real-time only")). A tap on one of your squad in the world (the
+// 3D view, card battles off, no battle on) picks it alone and opens its card, and the camera holds on it (js/view3d.js view3dFocusCam) while the card is open. Its ATTACK choices were on the card
+// already; MOVE TO arms the next tap on the floor: it walks there and holds (as POSITION does, js/commands.js issueMoveCommand).
+let _sfMoveTo = null;
+function partyFlyTapUnit(f) {
+    if (!f || f.dead || typeof hudCorners !== "function" || !hudCorners() || typeof selectedUnits === "undefined") return false;
+    if (typeof partySquadHas === "function" ? !partySquadHas(f) : !(typeof partyIsMember === "function" && partyIsMember(f))) return false;
+    selectedUnits.clear(); selectedUnits.add(f); _sfLast = f; _sfAway = false; _sfDD = null; _sfMoveTo = null; if (typeof _sbPeek !== "undefined") _sbPeek = null;
+    if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true); partyFlyRender(true); return true;
+}
+// a tap on the floor while MOVE TO waits: the member walks to that tile and holds it. True when the tap was taken.
+function partyFlyMoveTap(tile) {
+    const f = _sfMoveTo; if (!f) return false; _sfMoveTo = null;
+    if (f.dead || !tile) { partyFlyRender(true); return !!tile; }
+    f.job = { type: "move", target: tile }; f.stance = "hold"; f._fpPath = null;
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HOLDING THERE", color: "#8fe3ff", size: 12, life: 50, vy: -0.03 });
+    partyFlyRender(true); return true;
+}
+// ITS STANCE (the owner, 2026-11-23: "you also need to be able to change their positioning on this little index at the bottom, like how they stand. Are they aggressive? Are they defensive? Are they
+// balanced? That type of setting that needs to be adjustable on the card there at the bottom pop out"): the roster's PLAY STYLE (js/commandcenter.js PLAY_STYLES, ccApplyPlayStyle), one button each,
+// the one it has lit. A clone has none (as in the roster).
+function _sfStanceDraw(E, f) {
+    const box = E.root.querySelector ? E.root.querySelector(".sf-stance") : null; if (!box) return;
+    const list = typeof PLAY_STYLES !== "undefined" && !f.isClone ? PLAY_STYLES : [], cur = f.playStyle || "balanced", sig = list.map(p => p.id).join() + "|" + cur;
+    if (box._sig === sig) return; box._sig = sig; box.textContent = ""; if (box.style) box.style.display = list.length ? "" : "none"; if (!list.length) return;
+    const hd = document.createElement("div"); hd.className = "sf-mv-hd"; hd.textContent = "STANCE"; box.appendChild(hd);
+    const row = document.createElement("div"); row.className = "sf-strow"; box.appendChild(row);
+    for (const p of list) { const b = document.createElement("button"); b.type = "button"; b.className = "sf-st" + (p.id === cur ? " on" : ""); b.setAttribute("data-act", "stance"); b.setAttribute("data-style", p.id); b.textContent = p.label; b.title = p.blurb || ""; row.appendChild(b); }
+}
+function partyFlyMoveArmed() { return !!_sfMoveTo && !_sfMoveTo.dead; }
 function _sfSet(el, prop, v) { if (el && el[prop] !== v) el[prop] = v; }
 // GRAVITY ENGINEER's SWAP (a Player card: js/playercards.js): its row is on the card only while that role is awake; it says when it is ready, or why it cannot be used with this member, and is off until it can
 function _sfSwapDraw(E, f) {
@@ -238,6 +274,8 @@ function partyFlyRender(force) {
       if (E.xpn) _sfSet(E.xpn, "textContent", p ? (p.max ? "MAX" : Math.round(p.into) + " / " + Math.round(p.ask)) : "");
       if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
+    { const mv = E.root.querySelector ? E.root.querySelector(".sf-moveto") : null, armed = _sfMoveTo === f; if (mv) { if (mv.classList) mv.classList.toggle("on", armed); const sm = mv.querySelector(".sf-movew"); if (sm) _sfSet(sm, "textContent", armed ? "Now tap where it goes" : "Tap a spot: it holds there"); } }   /* (MOVE TO, waiting for its spot: lit) */
+    _sfStanceDraw(E, f);  // how it fights
     _sfEnergyDraw(E, f);  // its ENERGY panel, under its name
     _sfMovesDraw(E, f);   // its ATTACK, every choice a button
     _sfCardsDraw(E, f);   // its two equip card slots

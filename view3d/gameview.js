@@ -92,23 +92,29 @@ const GAMEVIEW = (function () {
   function place(dt) { const W = game.width, H = game.height, pl = GM.player, k = GM.viewZoom || 1, d = yawLeft(), step = (Math.PI / 2) * (dt || 0) / SWING;
     yaw = !dt || twist() || Math.abs(d) <= step ? yawWant() : yaw + Math.sign(d) * step;
     // A CARD BATTLE's camera (js/cardbattle.js cardBattleCam): eased (B.k) to the middle of the fight, lower, turned to the side and nearer
-    const B = GM.battleCam, bk = B ? B.k : 0, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * (bk ? 1 + (B.zoom - 1) * bk : 1);
+    const B = GM.battleCam, bk = B ? B.k : 0, Fc = bk ? null : GM.focusCam, fk = Fc ? Fc.k : 0, fz = fk ? 1 + (Fc.zoom - 1) * fk : 1, elv = ELV + (bk ? (B.pitch - ELV) * bk : 0), kz = k * fz * (bk ? 1 + (B.zoom - 1) * bk : 1);   // (Fc: THE FOLLOWER'S CLOSE-UP, js/view3d.js view3dFocusCam: on a squad member, nearer)
     const a0 = Math.PI / 4 - yaw, a = !bk ? a0 : B.dir === undefined ? a0 - B.yaw * bk : a0 + bk * (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), ca = Math.cos(a), sa = Math.sin(a); DIR.set(Math.cos(elv) * ca, Math.sin(elv), Math.cos(elv) * sa); UPV.set(-Math.sin(elv) * ca, Math.cos(elv), -Math.sin(elv) * sa);   // (lined up, B.dir: it looks across the line, from the side the battle chose or the nearer one)
     cam.left = -W / 2 / UNIT / kz; cam.right = W / 2 / UNIT / kz; cam.top = H / 2 / UNIT / kz; cam.bottom = -H / 2 / UNIT / kz;
-    at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0)).addScaledVector(UPV, TH / UNIT);
-    if (LOW) { placeLow(dt, a0, a, k, B, bk, W, H); return; }
+    const FA = fk ? focusAim(Fc, a, W / 2 / UNIT / kz, 0.6 * H / 2 / UNIT / kz / Math.max(0.25, Math.sin(elv))) : null;   // (THE FOLLOWER'S CLOSE-UP: the point the camera looks at, so the member stands up and to the right of the middle)
+    at.set(pl.visualX + (bk ? (B.x - pl.visualX) * bk : 0) + (fk ? (FA[0] - pl.visualX) * fk : 0), GM.camLift / UPX, pl.visualY + (bk ? (B.y - pl.visualY) * bk : 0) + (fk ? (FA[1] - pl.visualY) * fk : 0)).addScaledVector(UPV, TH / UNIT);
+    if (LOW) { placeLow(dt, a0, a, k * fz, B, bk, W, H, Fc, fk); return; }
     cam.position.copy(at).addScaledVector(DIR, BACK); cam.lookAt(at); cam.updateProjectionMatrix(); cam.updateMatrixWorld(); }
+  // THE FOLLOWER'S CLOSE-UP (js/view3d.js view3dFocusCam): where to look so the member stands Fc.right of the screen's half width to the right of the middle and Fc.up of its half height above it.
+  // a: the camera's turn (its floor direction toward the camera is (cos a, sin a); the screen's right on the floor (sin a, -cos a)); hw, hh: half the screen's width, and half its height as floor
+  // toward the camera, in tiles. The look point is the member moved left and toward the camera by those.
+  function focusAim(Fc, a, hw, hh) { const R = 2 * Fc.right * hw, U = 2 * Fc.up * hh; return [Fc.x - Math.sin(a) * R + Math.cos(a) * U, Fc.y + Math.cos(a) * R + Math.sin(a) * U]; }
   // THE LOW CAMERA's place (view3d/lowcam.js): following the player; in a card battle easing to the battle's own camera, today's (where `at` and DIR have it at the battle's full ease)
   const bAt = new T.Vector3(), bUp = new T.Vector3();
-  function placeLow(dt, a0, a, k, B, bk, W, H) { let bHalf = 1, bPitch = ELV;
+  function placeLow(dt, a0, a, k, B, bk, W, H, Fc, fk) { let bHalf = 1, bPitch = ELV;
     if (bk) { const a1 = B.dir === undefined ? a0 - B.yaw : a0 + (B.side ? wrapA(B.dir - a0) : acrossTurn(B.dir, a0)), e1 = B.pitch; bUp.set(-Math.sin(e1) * Math.cos(a1), Math.cos(e1), -Math.sin(e1) * Math.sin(a1));
       bAt.set(B.x, GM.camLift / UPX, B.y).addScaledVector(bUp, TH / UNIT); bHalf = H / 2 / UNIT / (k * B.zoom); bPitch = e1; }
     if (!lowBox) { lowBox = { min: { y: Infinity }, max: { y: -Infinity } }; const bb = new T.Box3(); scene.updateMatrixWorld(true);   // (how low and how high the built world goes, once: the horizon is the lowest floor's, and nothing stands over the top)
       scene.traverse(o => { const g = o.isMesh && o.geometry; if (!g || !g.attributes || !g.attributes.position) return; if (g.boundingBox === null) g.computeBoundingBox(); bb.copy(g.boundingBox).applyMatrix4(o.matrixWorld);
         if (Number.isFinite(bb.min.y) && Number.isFinite(bb.max.y) && bb.max.y - bb.min.y < 1e4) lowBox.max.y = Math.max(lowBox.max.y, bb.max.y); });
       for (const id in world.rooms) for (const c of world.rooms[id].rec.cells) lowBox.min.y = Math.min(lowBox.min.y, (c[2] || 0) / UPX); lowBox.min.y -= LOW_UNDER; }   // (the lowest floor, and what lies in it: a channel, a pit)
-    LOW.place(cam, { a, z: k, px: GM.player.visualX, py: GM.player.visualY, floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf }); }
-  let lowBox = null; const LOW_UNDER = 1, LOW_OVER = 3;   // (tiles: under the lowest room's floor, a channel's or a pit's bed; over the highest thing built, what a body in the air or an effect may reach)
+    const FA = fk ? focusAim(Fc, a, LOW_FOCUS_W / k, LOW_FOCUS_H / k) : null;   // (THE FOLLOWER'S CLOSE-UP: so the member stands up and to the right of the middle; the low camera's half screen in tiles, about, at its distance: LOW_FOCUS_W, _H)
+    LOW.place(cam, { a, z: k, px: GM.player.visualX + (fk ? (FA[0] - GM.player.visualX) * fk : 0), py: GM.player.visualY + (fk ? (FA[1] - GM.player.visualY) * fk : 0), floorY: GM.camLift / UPX, floorMin: lowBox.min.y, top: lowBox.max.y + LOW_OVER, W, H, dt, B, bk, bPitch, bAt, bHalf }); }
+  let lowBox = null; const LOW_UNDER = 1, LOW_OVER = 3, LOW_FOCUS_W = 11, LOW_FOCUS_H = 16;   // (LOW_FOCUS_W, _H: half the low camera's picture, across and up the floor, in tiles at zoom 1: the agent's, tuned by eye)   // (tiles: under the lowest room's floor, a channel's or a pit's bed; over the highest thing built, what a body in the air or an effect may reach)
   // the view's canvas is the game's canvas's size on the page; the picture is the game's canvas's size in its own pixels
   let cssW = 0, cssH = 0, fitAt = -1e9, gw = 0, gh = 0; if (typeof window !== 'undefined') window.addEventListener('resize', () => { fitAt = -1e9; });
   function fit(f0) { if (f0 - fitAt < 60 && game.width === gw && game.height === gh) return; fitAt = f0; gw = game.width; gh = game.height; const w = game.clientWidth || gw, h = game.clientHeight || gh;
@@ -338,7 +344,7 @@ const GAMEVIEW = (function () {
     covers(id) { return !!world.rooms[id]; },
     show(on) { canvas.style.display = on ? 'block' : 'none'; if (on) { snap = true; fitAt = -1e9; } },
     fieldKinds: FIELDS.kinds,   // (the fields this view draws in a battle: js/cardults.js keeps the faint squares for the rest)
-    swinging() { return turning() || battling(); },   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
+    swinging() { return turning() || battling() || (!LOW && !!GM.focusCam); },   // (THE FOLLOWER'S CLOSE-UP with the game's own camera too: the 2D is laid out round you, js/view3d.js)   // (swinging round to a quarter turn, or swiped off one: js/view3d.js view3dSwinging)
     // for tests (tests/view3d.js): a form or an egg built as a follower's body is, and put in every pose the game can ask of it (its sheet's idle, action and block columns), without
     // drawing: why it fails, or null
     checkBody(id) { let b = null; try { if (!JOBS[id]) return 'no model'; b = formBody(id); if (!b) return 'not built';
