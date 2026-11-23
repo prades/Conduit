@@ -24,7 +24,11 @@
 const DMG_TYPES = ["slashing", "piercing", "projectile", "crushing", "earthquake", "elemental"];
 const DMG_LABEL = { slashing: "SLASHING", piercing: "PIERCING", projectile: "PROJECTILE", crushing: "CRUSHING", earthquake: "EARTHQUAKE", elemental: "ELEMENTAL" };
 const DMG_SHORT = { slashing: "SLASH", piercing: "PIERCE", projectile: "SHOT", crushing: "CRUSH", earthquake: "QUAKE", elemental: "ELEM" };   // the enemy card's row (js/mixtool.js; the owner approved "Short words", 2026-11-06)
-const DMG_WEAK = 1.3, DMG_RESIST = 0.7;
+// ADVANTAGES COUNT FOR MORE, AND NOTHING DOES NOTHING (the owner, 2026-11-23: "if the player has an advantage it can go all the way up to 3 times that, but I don't like it how the player seemingly
+// attacks creatures at the low level game and does no damage because of the resistances"; asked: advantages "Stack up to x3", resistances "Mild, never zero"). A weakness is ×1.75 (1.3 till build
+// 2026-11-17dc), as an element's match-up is (js/elements.js); they multiply, and a hit is never more than DMG_ADV_CAP times what it would be with none. A resistance is ×0.7 as it was. What was
+// IMMUNE (the roly-poly to Crushing and Slashing; ice against core) is a strong resistance, DMG_IMMUNE, and never nothing. 1.75 and 0.5 are the agent's, PROVISIONAL.
+const DMG_WEAK = 1.75, DMG_RESIST = 0.7, DMG_IMMUNE = 0.5, DMG_ADV_CAP = 3;
 const DMG_PHYSICAL_W = 0.5, DMG_ELEMENTAL_W = 0.75;   // the elemental share of a follower's attack: half and half; an Elemental attack a quarter and three quarters
 const DMG_LEAN_STEP = 0.1;                           // a form's lean: each step moves 10% between ATK and SP.ATK (docs/COMBAT.md §7.7)
 
@@ -134,7 +138,7 @@ function dmgRow(t) {
     if (t.speciesName && DMG_RACE[t.speciesName]) return DMG_RACE[t.speciesName];
     return null;
 }
-function dmgRowMult(row, type) { return !row || !type ? 1 : row.immune && row.immune.indexOf(type) >= 0 ? 0 : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }   // (an immune type: ×0, the roly-poly's)
+function dmgRowMult(row, type) { return !row || !type ? 1 : row.immune && row.immune.indexOf(type) >= 0 ? DMG_IMMUNE : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }   // (an immune type: ×0, the roly-poly's)
 // A form's lean (docs/COMBAT.md §7.7): Elemental species +1, spine-legged (the Crustacean's, renamed) and mollusk −1, a main attack typed Elemental +1 more; an egg none
 function dmgLean(f) {
     const id = dmgFormId(f); if (!id) return 0;
@@ -217,7 +221,7 @@ function dmgApply(target, amount, source, element, hit) {
         }
     }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
-    const total = (phys * pm + elem * em) * whole, base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
+    const total = Math.min((phys * pm + elem * em) * whole, (phys + elem) * DMG_ADV_CAP), base = (phys * Math.min(pm, 1) + elem * emBase) * wholeBase;
     dmgBaseShare = total > 1e-9 && base < total - 1e-9 ? Math.max(0, base / total) : 1;
     return total;
 }

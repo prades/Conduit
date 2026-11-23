@@ -14,9 +14,9 @@ const ELEMENT_WEAK_TO = {
 
 function getElementMultiplier(attackerElement, defenderElement) {
     if (!attackerElement || !defenderElement) return 1;
-    // Ice is fully ineffective against core — zero damage
-    if (attackerElement === "ice" && defenderElement === "core") return 0;
-    if (ELEMENT_STRONG_AGAINST[attackerElement] === defenderElement) return 1.3;
+    // Ice is weak against core: half (it was nothing)
+    if (attackerElement === "ice" && defenderElement === "core") return 0.5;   /* (0 till build 2026-11-17dc: nothing does nothing now, js/damage.js DMG_IMMUNE) */
+    if (ELEMENT_STRONG_AGAINST[attackerElement] === defenderElement) return 1.75;   /* (1.3 till build 2026-11-17dc: an advantage counts for more, js/damage.js DMG_WEAK) */
     if (ELEMENT_WEAK_TO[attackerElement]         === defenderElement) return 0.7;
     return 1;
 }
