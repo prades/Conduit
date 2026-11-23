@@ -4,13 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
-### Build `2026-11-17cw` · branch `claude/battle-ants-visible` (over main's `2026-11-17cv`) · everyone in a card battle is seen: what the 3D view has no body for is drawn in 2D
+### Build `2026-11-17cx` · branch `claude/battle-ants-visible` (over main's `2026-11-17cw`) · everyone in a card battle is seen: what the 3D view has no body for is drawn in 2D
 - **The report** (the owner, 2026-11-23): "I don't see the ants in the card battle viewer", then "I'm talking about the clones, actually"; the missing one was a Clone Bay ant.
 - **What was wrong:** in a card battle the game's 2D drawing over the 3D picture is wiped every frame (`js/view3d.js` `view3dWorldEnd`: the battle's camera is not the game's), so any fighter whose body the view does not draw was drawn by no one, its health bar with it: a nymph (the tutorial's first assault), a mantis clone (the code's gift), a roly-poly clone, any species with no 3D body, a form whose 3D body failed (`view3d/gameview.js` `ant()` refuses nymphs, bosses and other species). **Your ant clone** is the view's since mark C (`view3d/gameview.js` `ant()`), and it shows in a battle on today's files; but builds `2026-11-17ct`'s first `dist/view3d.js` (main `ee99388b`) still refused clones and mark C reached main under the same build stamp, so a browser that had fetched `dist/view3d.js?v=2026-11-17ct` before could keep that file: with it the ant clone was invisible in every battle (reproduced by serving that file; the owner's browser itself not inspected). Build `2026-11-17cu` fetches it afresh.
 - **What it does:** after the wipe, each fighter of the battle (not you: the cube is always the view's) that the view did not draw this frame is drawn by the game's own 2D drawing (`drawNPC`: its body, its bars), where the battle's camera has it and at the size a tile is there; an enemy so drawn gets its reticle and its health callout too (`view3dDrawn2D`, `js/cardbattle.js` `cardBattleReticles`). Nothing new is drawn in 3D; no 3D body for the nymph, the mantis or the Queen (their looks are the owner's to approve). Outside battles nothing changes.
 - `js/view3d.js` (`_view3dBattle2D`, `view3dDrawn2D`, `_view3dScaleOn`), `js/cardbattle.js`, `dist/conduit.js`, `play.html` (made), `tests/view3d.js` (EVERYONE IN A CARD BATTLE IS SEEN: an ant clone grown through the Clone Bay's own `getCloneOptions`/`executeClone` and the code's mantis, each in a card battle with a nymph, a worker and a scout), `docs/VIEW-3D.md`.
 - **Verified:** see the handoff; pictures of the players' page (`play.html?engine=3d&battles=cards`) before and after. **Not seen on an iPad; not playtested by hand.**
 
+
+### Build `2026-11-17cw` · branch `claude/start-game-project-HSh7Z` · the basic attack cards have pictures
+- **The ask** (the owner, 2026-11-23): "make the other cards for the attacks just have graphics"; asked: "Give them pictures".
+- **What it does** (in a card battle): a follower's basic attack card shows its attack type's stroke (The Sweep family, approved 2026-11-18) over its element's world, made by the game from two layer pictures a type, as the owner agreed then. All 22 evolved forms. No rule, cost or number changes. Begun by the card artist, finished and checked here.
+- `js/cardbattle.js`, `img/cards/attack/basic_*` (ten pictures and their WebP copies), `js/imgmap.js`, `dist/conduit.js`, `play.html` (generated), `design/cards/attack/basic_check.js`, `design/cards/attack/inventory.js`.
+- **Verified:** all 22 forms' cards seen in the battle's pop-up in a real browser at iPad size; the suites named in the handoff. **Not seen on an iPad; not playtested.** The other moves with no picture are not done (drafts first).
 
 ### Build `2026-11-17cv` · branch `claude/friendly-thompson-w581x0` · in the 3D view a form's pool lies under its body (and the serum's pool under those in it)
 - **The ask** (the owner, 2026-11-23, playing the 3D game): "I noticed that some of the creatures that have effects on the ground, it's not positioned correctly. For instance, the frost maw and the rot shard."
