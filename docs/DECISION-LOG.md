@@ -14,10 +14,20 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The sewers' walkways are long grate panels (round 4)
+
+- **Date:** 2026-11-23 · **Branch/build:** `claude/sewer-variety` (main `046ab7a2`, build `2026-11-17cs`, merged in); no build of its own, not pushed by the agent
+- **Status:** implemented in the 3D view (`?engine=3d`), `view3d/sewerdress.js`; checked by `tests/view3d.js` and by pictures of the real built game (sd-central, the bridge). Not seen on an iPad; not playtested.
+- **Context:** round 3 (the entry below) was built; the owner marked up its picture of the dungeon's central walkway, drawing two long rectangles end to end along the walkway with a short gap near the player: **"Should have long style grates"**. Round 4 was drawn (`design/sewer-variety/round4.js`, `start-here-4.png`).
+- **Decision (the owner's word, of round 4):** **"Push"**.
+- **Rules:** each walkway (the dry tiles within three of the water) is long steel grate panels, five tiles each along the walkway and its full width, set in the concrete with a thin border round each and a short concrete gap between them; the bars run across each panel (the agent's pick: at the game's camera they read as a grate and show the panel's length; bars along it read as plain pavement in round 3); moderate contrast; all panels alike and lined up; no per-tile frames, no rust or patched panels. Everything else as round 3 built it (the brightness, the cleanliness, the Sewers' caps, the dungeon's solid dark: "Keep solid dark").
+- **Supersedes:** round 3's smooth continuous grating on the walkways (the entry below, kept as history).
+- **Docs/code:** `VIEW-3D.md` stage 3; `SEWER-DUNGEON.md`; `CHANGELOG.md` 2026-11-23; `view3d/sewerdress.js`, `dist/view3d.js` (made), `tests/view3d.js`.
+
 ## DECISION: The sewers' walkways are steel grating in concrete, smooth and calm; the sewers lighter and cleaner; no wood (round 3 of the variety drafts)
 
 - **Date:** 2026-11-23 · **Branch/build:** `claude/sewer-variety` (main `046ab7a2`, build `2026-11-17cs`, merged in); no build of its own, not pushed by the agent
-- **Status:** implemented in the 3D view (`?engine=3d`), in `view3d/sewerdress.js`; checked by `tests/view3d.js` and by pictures of the real built game. Not seen on an iPad; not playtested.
+- **Status:** implemented in the 3D view (`?engine=3d`), in `view3d/sewerdress.js`; checked by `tests/view3d.js` and by pictures of the real built game. Not seen on an iPad; not playtested. **Superseded in part, 2026-11-23** (the entry above: the walkways' smooth continuous grating replaced by long grate panels; the rest kept).
 - **Context:** after 1 FAITHFUL was merged (the entry below), the owner asked for more variety and no wood. Three rounds of drafts were drawn on the game (`design/sewer-variety/`, pictures only), each changed by the owner's words:
   - "Can you make it look less uniform, I guess? The sewer system?"
   - "I don't like the wood. ... It's concrete, but it has like a cage under the feet so that stuff can liquid can go under the feet. Just have like those as the walkways." (round 1: grating panels in concrete frames, of many kinds; a second variation with clutter)

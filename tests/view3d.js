@@ -263,6 +263,9 @@ else {
         ok(C.capsDressed > 0 && C.capMap, 'the wall tops dressed: ' + C.capsDressed); same(JSON.stringify(C.stubSewers), JSON.stringify([true, true]), 'the Sewers\' stubs, side and top, dressed');
         same(C.plainSideLeft, 0, 'plain dark floor sides left (the channels\' sloped sides: ' + C.chan + ' dressed)');
     });
+    check('THE SEWER LOOK, ROUND 4 (the owner, 2026-11-23, of the walkway: "Should have long style grates"; of the drafts: "Push"): every walkway tile drawn as part of a long grate panel, five tiles along the walkway', () => {
+        const C = ON.sewers.look.checks; ok(C.runTiles > 50, 'the walkway\'s tiles: ' + C.runTiles); same(C.longPanels, true, 'every walkway tile a long panel\'s'); same(C.panelLen, 5, 'a panel\'s length in tiles');
+    });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');
         for (const f of ON.floors) { same(f.showing, true, f.id + ': showing'); ok(f.err < 1, f.id + ': off by ' + f.err + ' px'); ok(Math.abs(f.cam - f.h) < 1e-6 && Math.abs(f.h) > 50, f.id + ': the camera does not ride its floor (' + f.cam + ', ' + f.h + ')'); same(f.cube, 1, f.id + ': the cube on its floor'); }

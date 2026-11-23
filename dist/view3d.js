@@ -29385,7 +29385,7 @@ function sewerDress(w, lab) {
         g.fillRect(x + hsh(i, seed, 1) * ww, y + hsh(i, seed, 2) * hh, 1 + hsh(i, seed, 5) * 3, 1 + hsh(i, seed, 6) * 2);
     } };
     const CON = ['#7f7e74', '#79786e', '#85837a', '#76776c', '#7d7b71', '#827e73'];
-    const AT = 4, ATR = 3, CELL = 256;
+    const AT = 4, ATR = 5, CELL = 256;
     const mottle = (g, seed, base, n) => {
         g.fillStyle = base;
         g.fillRect(0, 0, CELL, CELL);
@@ -29492,7 +29492,45 @@ function sewerDress(w, lab) {
         if (inner)
             strip(0);
     };
-    CELLS.push(g => run(g, false, false), g => run(g, true, false), g => run(g, false, true), g => run(g, true, true));
+    const BW = 22, GSLOT = [3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+    const longCell = (g, wb, ib, b0, b1) => {
+        g.fillStyle = '#7f7e74';
+        g.fillRect(0, 0, CELL, CELL);
+        grime(g, 0, 0, CELL, CELL, 300, 500 + (wb ? 1 : 0) + (ib ? 2 : 0) + (b0 ? 4 : 0) + (b1 ? 8 : 0));
+        const x0 = ib ? BW : 0, x1 = wb ? CELL - BW : CELL, y0 = b1 ? BW : 0, y1 = b0 ? CELL - BW : CELL;
+        g.fillStyle = '#2b2b25';
+        g.fillRect(x0, y0, x1 - x0, y1 - y0);
+        for (let y = 0; y < CELL; y += 8) {
+            if (y + 6 <= y0 || y + 2 >= y1)
+                continue;
+            const a = Math.max(y + 2, y0), b = Math.min(y + 6, y1);
+            g.fillStyle = '#838176';
+            g.fillRect(x0, a, x1 - x0, b - a);
+            g.fillStyle = 'rgba(255,250,235,0.16)';
+            g.fillRect(x0, a, x1 - x0, 1);
+        }
+        g.fillStyle = '#4a4943';
+        if (ib)
+            g.fillRect(x0, y0, 3, y1 - y0);
+        if (wb)
+            g.fillRect(x1 - 3, y0, 3, y1 - y0);
+        if (b1)
+            g.fillRect(x0, y0, x1 - x0, 3);
+        if (b0)
+            g.fillRect(x0, y1 - 3, x1 - x0, 3);
+        g.fillStyle = 'rgba(0,0,0,0.10)';
+        if (ib)
+            g.fillRect(x0 - 2, y0, 2, y1 - y0);
+        if (b1)
+            g.fillRect(x0, y0 - 2, x1 - x0, 2);
+    };
+    {
+        const at = [];
+        for (let ac = 0; ac < 4; ac++)
+            for (let al = 0; al < 3; al++)
+                at.push(g => longCell(g, ac === 1 || ac === 3, ac === 2 || ac === 3, al === 1, al === 2));
+        at.forEach((f, i) => { CELLS[GSLOT[i]] = f; });
+    }
     const floorTex = canvasTex(AT * CELL, ATR * CELL, (g) => { CELLS.forEach((f, i) => { g.save(); g.translate((i % AT) * CELL, (i / AT | 0) * CELL); g.beginPath(); g.rect(0, 0, CELL, CELL); g.clip(); f(g); g.restore(); }); }, { repeat: false });
     floorTex.generateMipmaps = false;
     floorTex.minFilter = T.LinearFilter;
@@ -30121,7 +30159,11 @@ function sewerDress(w, lab) {
                         vz += ddz / d2;
                     }
             const ax = Math.abs(vx) >= Math.abs(vz), sx = ax ? Math.sign(vx) || 1 : 0, sz = ax ? 0 : Math.sign(vz) || 1, bk = K(tx - sx, tz - sz), wet1 = water(K(tx + sx, tz + sz)), inner = !wet1 && !(cellAt.has(bk) && (dry(bk) || deck.has(bk)) && nearW(tx - sx, tz - sz, 3)) && !!w.band.get(bk);
-            p = { cell: wet1 ? (inner ? 11 : 9) : (inner ? 10 : 8), tf: TF[to(sx, sz, false)], run: true };
+            const tf = TF[to(sx, sz, false)], al = ax ? [0, 1] : [1, 0], pos = ax ? tz : tx, ii = ((pos % 5) + 5) % 5, isRun = (x, z) => { const k2 = K(x, z); return cellAt.has(k2) && dry(k2) && !!nearW(x, z, 3); };
+            const v0 = [[1, 0, 1, 0.5], [-1, 0, 0, 0.5], [0, -1, 0.5, 1], [0, 1, 0.5, 0]].find(q => tf(q[2], q[3])[1] < 0.01), v0minus = v0 && v0[0] === -al[0] && v0[1] === -al[1];
+            const st = ii === 0 || !isRun(tx - al[0], tz - al[1]), en = ii === 4 || !isRun(tx + al[0], tz + al[1]), bV0 = (st && v0minus) || (en && !v0minus), bV1 = (st && !v0minus) || (en && v0minus);
+            const wb = !isRun(tx + sx, tz + sz), ib = !isRun(tx - sx, tz - sz), acr = wb && ib ? 3 : wb ? 1 : ib ? 2 : 0;
+            p = { cell: GSLOT[acr * 3 + (bV0 ? 1 : bV1 ? 2 : 0)], tf, run: true };
         }
         else {
             const wl = DIRS.find(([dx, dy]) => !cellAt.has(K(tx + dx, tz + dy)) && w.band.get(K(tx + dx, tz + dy)));
@@ -30424,7 +30466,7 @@ function sewerDress(w, lab) {
             (w.rest || w.g).add(stubEdges);
         }
     }
-    const checks = { posts: standing.filter(m => m.material === M.post).length, postMetal: M.post.metalness, amberLeft: 0, decks: 0, deckAlpha: M.deck.alphaTest, deckMap: !!M.deck.map, capsDressed: 0, capMap: !!M.capT.map,
+    const runCells = [...picks.values()].filter(p => p.run), checks = { longPanels: runCells.length && runCells.every(p => GSLOT.includes(p.cell)), runTiles: runCells.length, panelLen: 5, posts: standing.filter(m => m.material === M.post).length, postMetal: M.post.metalness, amberLeft: 0, decks: 0, deckAlpha: M.deck.alphaTest, deckMap: !!M.deck.map, capsDressed: 0, capMap: !!M.capT.map,
         stubSewers: w.stubs && w.stubs.material.length > 5 ? [!!w.stubs.material[4].map, !!w.stubs.material[5].map] : null, chan: chanN, plainSideLeft: 0 };
     for (const rec of recs)
         w.rooms[rec.id].g.traverse(o => {

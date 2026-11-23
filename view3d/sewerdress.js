@@ -6,8 +6,8 @@
 // Run once, after the floor's builder and before the look and the merging (view3d/core.js buildWorld: sewerDress(world, lab), guarded: on a failure the world is drawn without it). It dresses every
 // room drawn in the Sewers' own style (the game's FP_ROOM_STYLE.sewers: the Sewers, and each sewer dungeon room, view3d/gamemap.js), as the map has it: nothing is added to play, nothing moved, no
 // game state read but the map and the water's colour. What it draws:
-//   the walkways (the dry tiles within three tiles of the water): one smooth run of steel grating each, fine bars along the walkway, low contrast, no frame or seam between tiles, a quiet concrete
-//   strip only on its long edges; no wood anywhere. The rest of the floor concrete (flags and poured), a few kinds, each tile turned by its own seed, its tone from a slow noise, a little damp at
+//   the walkways (the dry tiles within three tiles of the water): long steel grate panels (round 4, approved 2026-11-23: "Should have long style grates"; "Push"), five tiles each along the
+//   walkway and its full width, set in the concrete with a thin border and a short gap between them, the bars across each panel, moderate contrast, all alike and lined up; no wood anywhere. The rest of the floor concrete (flags and poured), a few kinds, each tile turned by its own seed, its tone from a slow noise, a little damp at
 //   some walls' feet; the banks' faces stone, a stone curb in place of the hazard stripe
 //   the bridges' decks a calm steel grating one sees the water through (alpha-tested, as the game's own); the floor builder's steel rusted iron, its amber rails rusted steel
 //   steel posts with a sagging chain along the banks' edges (none where the map has a railing; now and then a break, its ends hanging), rusty outlet pipes in the banks' faces now and then
@@ -22,7 +22,7 @@
 //   lamps where the game has its lights (decor light, wall_light): an iron sconce on the nearest wall, a glow on the wall, a soft warm pool on the floor (additive decals); the light baked once
 //   into the vertices' colours (an ambient and the lamps), no real-time light
 // Left as they are: the sewer dungeon's kit (docs/SEWER-PROPS.md, a prop of the family 'sewer': its approved looks), its Round Junction's bowl, the water's falls and streams, every other room.
-// Cost: the chain and the wall pipes are open tubes of few sides; the rest merges with the room (view3d/core.js mergeStill) into a few more draws. The floor's picture 1024 x 768 px.
+// Cost: the chain and the wall pipes are open tubes of few sides; the rest merges with the room (view3d/core.js mergeStill) into a few more draws. The floor's picture 1024 x 1280 px.
 function sewerDress(w, lab) {
   const SW = typeof VIEW3D_GAME !== 'undefined' && VIEW3D_GAME.roomStyle ? VIEW3D_GAME.roomStyle.sewers : null;
   const recs = SW ? lab.rooms.filter(r => r.style === SW && w.rooms[r.id]) : []; if (!recs.length) return null;
@@ -40,7 +40,7 @@ function sewerDress(w, lab) {
   const grime = (g, x, y, ww, hh, n, seed) => { n = Math.round(n * GK); for (let i = 0; i < n; i++) { const r = hsh(i, seed, 3); g.fillStyle = 'rgba(' + (r < 0.5 ? '0,0,0' : '255,255,230') + ',' + (0.04 + hsh(i, seed, 4) * 0.08).toFixed(3) + ')'; g.fillRect(x + hsh(i, seed, 1) * ww, y + hsh(i, seed, 2) * hh, 1 + hsh(i, seed, 5) * 3, 1 + hsh(i, seed, 6) * 2); } };
   // ── the floor's atlas, 4 x 3 pictures of 256 px (a tile each): 0-5 concrete (0-2 drawn), 6-7 concrete damp at its edge u = 1, 8-11 the walkway's grating (below) ──
   const CON = ['#7f7e74', '#79786e', '#85837a', '#76776c', '#7d7b71', '#827e73'];
-  const AT = 4, ATR = 3, CELL = 256;   // (4 across, 3 down: 1024 x 768 px)
+  const AT = 4, ATR = 5, CELL = 256;   // (4 across, 5 down: 1024 x 1280 px)
   const mottle = (g, seed, base, n) => { g.fillStyle = base; g.fillRect(0, 0, CELL, CELL); for (let i = 0; i < n; i++) { const x = hsh(i, seed, 51) * CELL, y = hsh(i, seed, 52) * CELL, r = 20 + hsh(i, seed, 53) * 70, gr = g.createRadialGradient(x, y, 0, x, y, r), lt = hsh(i, seed, 54) > 0.5;
     gr.addColorStop(0, lt ? 'rgba(255,250,230,0.04)' : 'rgba(0,0,0,0.04)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } grime(g, 0, 0, CELL, CELL, 700, seed); };
   const crack = (g, seed, x, y, n, len) => { if (hsh(seed, 9, 66) > 0.35) return; g.strokeStyle = 'rgba(30,30,22,0.35)'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x, y); let a = hsh(seed, 1, 61) * 6.28; for (let i = 0; i < n; i++) { a += (hsh(seed, i, 62) - 0.5) * 1.4; x += Math.cos(a) * len; y += Math.sin(a) * len; g.lineTo(x, y);
@@ -68,7 +68,15 @@ function sewerDress(w, lab) {
   const run = (g, water, inner) => { g.fillStyle = '#4d4d46'; g.fillRect(0, 0, CELL, CELL); for (let x = 0; x < CELL; x += 8) { g.fillStyle = '#737167'; g.fillRect(x + 2, 0, 4, CELL); g.fillStyle = 'rgba(255,250,235,0.08)'; g.fillRect(x + 2, 0, 1, CELL); }
     const strip = x0 => { g.fillStyle = '#8b897f'; g.fillRect(x0, 0, 16, CELL); g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x0 === 0 ? 15 : x0, 0, 1, CELL); grime(g, x0, 0, 16, CELL, 60, 400 + x0); };
     if (water) strip(CELL - 16); if (inner) strip(0); };
-  CELLS.push(g => run(g, false, false), g => run(g, true, false), g => run(g, false, true), g => run(g, true, true));
+  // the long grate panels. A tile of one: across the walkway (u, the water at u = 1) a border on the water's side, the inner side, both or none; along it (v) a border at v = 0, at v = 1 or none
+  const BW = 22, GSLOT = [3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  const longCell = (g, wb, ib, b0, b1) => { g.fillStyle = '#7f7e74'; g.fillRect(0, 0, CELL, CELL); grime(g, 0, 0, CELL, CELL, 300, 500 + (wb ? 1 : 0) + (ib ? 2 : 0) + (b0 ? 4 : 0) + (b1 ? 8 : 0));
+    const x0 = ib ? BW : 0, x1 = wb ? CELL - BW : CELL, y0 = b1 ? BW : 0, y1 = b0 ? CELL - BW : CELL;   // (the canvas's top is v = 1)
+    g.fillStyle = '#2b2b25'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    for (let y = 0; y < CELL; y += 8) { if (y + 6 <= y0 || y + 2 >= y1) continue; const a = Math.max(y + 2, y0), b = Math.min(y + 6, y1); g.fillStyle = '#838176'; g.fillRect(x0, a, x1 - x0, b - a); g.fillStyle = 'rgba(255,250,235,0.16)'; g.fillRect(x0, a, x1 - x0, 1); }
+    g.fillStyle = '#4a4943'; if (ib) g.fillRect(x0, y0, 3, y1 - y0); if (wb) g.fillRect(x1 - 3, y0, 3, y1 - y0); if (b1) g.fillRect(x0, y0, x1 - x0, 3); if (b0) g.fillRect(x0, y1 - 3, x1 - x0, 3);   // (its steel frame, on its own edges)
+    g.fillStyle = 'rgba(0,0,0,0.10)'; if (ib) g.fillRect(x0 - 2, y0, 2, y1 - y0); if (b1) g.fillRect(x0, y0 - 2, x1 - x0, 2); };
+  { const at = []; for (let ac = 0; ac < 4; ac++) for (let al = 0; al < 3; al++) at.push(g => longCell(g, ac === 1 || ac === 3, ac === 2 || ac === 3, al === 1, al === 2)); at.forEach((f, i) => { CELLS[GSLOT[i]] = f; }); }
   const floorTex = canvasTex(AT * CELL, ATR * CELL, (g) => { CELLS.forEach((f, i) => { g.save(); g.translate((i % AT) * CELL, (i / AT | 0) * CELL); g.beginPath(); g.rect(0, 0, CELL, CELL); g.clip(); f(g); g.restore(); }); }, { repeat: false });
   floorTex.generateMipmaps = false; floorTex.minFilter = T.LinearFilter;
   const cellUV = (c, u, v) => { const col = c % AT, row = c / AT | 0, e = 0.006; u = e + u * (1 - 2 * e); v = e + v * (1 - 2 * e); return [(col + u) / AT, 1 - (row + 1) / ATR + v / ATR]; };
@@ -261,7 +269,11 @@ function sewerDress(w, lab) {
   const picks = new Map(), tilePick = (tx, tz) => { const k = K(tx, tz); let p = picks.get(k); if (p) return p; const r = hsh(tx, tz, 37), mir = hsh(tx, tz, 38) > 0.5, nw = cellAt.has(k) ? nearW(tx, tz, 3) : null;
     if (nw) { let vx = 0, vz = 0; for (let ddx = -3; ddx <= 3; ddx++) for (let ddz = -3; ddz <= 3; ddz++) if ((ddx || ddz) && water(K(tx + ddx, tz + ddz))) { const d2 = ddx * ddx + ddz * ddz; vx += ddx / d2; vz += ddz / d2; }   // (the way to the water, from all of it near: so a whole walkway turns its bars one way, not tile by tile)
       const ax = Math.abs(vx) >= Math.abs(vz), sx = ax ? Math.sign(vx) || 1 : 0, sz = ax ? 0 : Math.sign(vz) || 1, bk = K(tx - sx, tz - sz), wet1 = water(K(tx + sx, tz + sz)), inner = !wet1 && !(cellAt.has(bk) && (dry(bk) || deck.has(bk)) && nearW(tx - sx, tz - sz, 3)) && !!w.band.get(bk);
-      p = { cell: wet1 ? (inner ? 11 : 9) : (inner ? 10 : 8), tf: TF[to(sx, sz, false)], run: true }; }   // (one run of grating; the strips on its long edges only)
+      const tf = TF[to(sx, sz, false)], al = ax ? [0, 1] : [1, 0], pos = ax ? tz : tx, ii = ((pos % 5) + 5) % 5, isRun = (x, z) => { const k2 = K(x, z); return cellAt.has(k2) && dry(k2) && !!nearW(x, z, 3); };
+      const v0 = [[1, 0, 1, 0.5], [-1, 0, 0, 0.5], [0, -1, 0.5, 1], [0, 1, 0.5, 0]].find(q => tf(q[2], q[3])[1] < 0.01), v0minus = v0 && v0[0] === -al[0] && v0[1] === -al[1];
+      const st = ii === 0 || !isRun(tx - al[0], tz - al[1]), en = ii === 4 || !isRun(tx + al[0], tz + al[1]), bV0 = (st && v0minus) || (en && !v0minus), bV1 = (st && !v0minus) || (en && v0minus);
+      const wb = !isRun(tx + sx, tz + sz), ib = !isRun(tx - sx, tz - sz), acr = wb && ib ? 3 : wb ? 1 : ib ? 2 : 0;
+      p = { cell: GSLOT[acr * 3 + (bV0 ? 1 : bV1 ? 2 : 0)], tf, run: true }; }   // (a long panel, five tiles along the walkway, its border where the walkway ends or the panel does)
     else { const wl = DIRS.find(([dx, dy]) => !cellAt.has(K(tx + dx, tz + dy)) && w.band.get(K(tx + dx, tz + dy)));
       if (wl && hsh(tx, tz, 39) < 0.15) p = { cell: hsh(tx, tz, 40) < 0.5 ? 6 : 7, tf: TF[to(wl[0], wl[1], mir)] };   // (damp at the wall's foot)
       else p = { cell: wpick([[0, 2], [1, 2], [2, 1.5]], r), tf: TF[Math.floor(hsh(tx, tz, 41) * 8) % 8] }; }
@@ -342,7 +354,7 @@ function sewerDress(w, lab) {
     for (const [G, q] of capQ) if (q.pos.length) { const m = quadMesh([{ q, mat: M.capEdge }]); m.material = M.capEdge; m.userData.swAdded = true; G.g.add(m); }
     if (stubQ.pos.length) { const m = quadMesh([{ q: stubQ, mat: M.capEdge }]); m.material = M.capEdge; m.receiveShadow = true; stubEdges.add(m); (w.rest || w.g).add(stubEdges); } }
   // (for the tests (a lamp's amber glow is light, not wood): no wood (the posts steel, the bridges' decks the alpha-tested grating, nothing left in the builder's amber); the Sewers' caps and stubs and the channels' sides dressed, no plain dark floor side left)
-  const checks = { posts: standing.filter(m => m.material === M.post).length, postMetal: M.post.metalness, amberLeft: 0, decks: 0, deckAlpha: M.deck.alphaTest, deckMap: !!M.deck.map, capsDressed: 0, capMap: !!M.capT.map,
+  const runCells = [...picks.values()].filter(p => p.run), checks = { longPanels: runCells.length && runCells.every(p => GSLOT.includes(p.cell)), runTiles: runCells.length, panelLen: 5, posts: standing.filter(m => m.material === M.post).length, postMetal: M.post.metalness, amberLeft: 0, decks: 0, deckAlpha: M.deck.alphaTest, deckMap: !!M.deck.map, capsDressed: 0, capMap: !!M.capT.map,
     stubSewers: w.stubs && w.stubs.material.length > 5 ? [!!w.stubs.material[4].map, !!w.stubs.material[5].map] : null, chan: chanN, plainSideLeft: 0 };
   for (const rec of recs) w.rooms[rec.id].g.traverse(o => { if (!o.isMesh || inKit(o)) return; const ms = [].concat(o.material); if (ms.some(m => m && !m.isMeshBasicMaterial && hex(m) === 'e2700a')) checks.amberLeft++; if (ms.some(m => m === M.deck || (m && m.map === deckTex))) checks.decks++;
     if (o.userData.inkKey === 'floor' && o !== w.rooms[rec.id].floor && !o.userData.water && ms.length === 1 && ms[0] && !ms[0].map && !ms[0].vertexColors && !ms[0].isMeshBasicMaterial) checks.plainSideLeft++; });
@@ -375,4 +387,5 @@ function sewerDress(w, lab) {
     col.needsUpdate = true; }
   return (w.sewerLook = { checks, rooms: [...ids], lamps: lamps.length, edges: edges.length, baked, groups: Gs.size, stubs: stubsMoved, standing, walk: (x, y) => walk(K(x, y)) });
 }
+
 
