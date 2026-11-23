@@ -29723,6 +29723,7 @@ function cardUltSquares(e) {
     }
     return e._cbSq || null;
 }
+const _CU_OWN_LOOK = { eventhorizon: 1 };
 function cardUltDraw(V) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined")
         return;
@@ -29743,6 +29744,8 @@ function cardUltDraw(V) {
     ctx.lineWidth = 1.5;
     for (const e of elementEffects) {
         if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e))
+            continue;
+        if (_CU_OWN_LOOK[e.type] && typeof view3dOwnsFx === "function" && view3dOwnsFx(e))
             continue;
         const sq = cardUltSquares(e);
         if (!sq)
