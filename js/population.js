@@ -27,9 +27,14 @@ const SPAWN_TABLES = {
     // defence, strikers when your first follower evolves (the tutorial's end), tanks when your class's first stage is done"). Four stages, each waiting for the game's own milestone (SPAWN_WHEN,
     // spawnProgress); the last is the mix the arena always had. A kind joins at the weight it has in that mix (no new number), and the level band is the arena's own throughout. What is alive when
     // a milestone comes stays as it is: the next to come out of the dark are the new stage's.
-    arena:  [{ id: "ants_first", until: "defended", races: ["ant"], classes: { worker: 3 }, levels: [2, 4] },
-             { id: "ants_scouts", until: "evolved", races: ["ant"], classes: { scout: 3, worker: 3 }, levels: [2, 4] },
-             { id: "ants_strikers", until: "classed", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2 }, levels: [2, 4] },
+    // FEWER, AND TANKS MUCH LATER (the owner, 2026-11-23: "The arena still has a bunch of tanks, and I haven't even really done much in the game yet. The arena has become way too populated";
+    // asked where tanks come in: "Much later"; asked how crowded: "Grow with progress"). So tanks wait for the Sewers' purification (the agent's reading of "much later", PROVISIONAL: the example
+    // offered and not corrected), a fifth stage; and each stage says how many the arena holds (`count`: how many it starts with, how many alive at once, frames between two; js/facilityspawn.js
+    // reads them), few at first and today's numbers only at the last. The counts are the agent's, PROVISIONAL.
+    arena:  [{ id: "ants_first", until: "defended", races: ["ant"], classes: { worker: 3 }, levels: [2, 4], count: { start: 2, cap: 3, every: 2400 } },
+             { id: "ants_scouts", until: "evolved", races: ["ant"], classes: { scout: 3, worker: 3 }, levels: [2, 4], count: { start: 2, cap: 4, every: 1800 } },
+             { id: "ants_strikers", until: "classed", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2 }, levels: [2, 4], count: { start: 3, cap: 5, every: 1500 } },
+             { id: "ants_classed", until: "tanks", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2 }, levels: [2, 4], count: { start: 3, cap: 6, every: 1500 } },
              { id: "ants", races: ["ant"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4] }],
     // THE SEWERS' BROOD: the Nest's toxic ants, until the water is clean. THE STRONG PLACE (the owner, 2026-11-23, asked whether the sewers, which had only workers and scouts and so were weaker
     // than the arena, should become it: "Yes, add strikers and tanks"): all four classes. The mix is the arena's own full one (the agent's, PROVISIONAL, for the owner to correct); the levels as
@@ -47,6 +52,7 @@ const SPAWN_WHEN = {
     defended: () => spawnProgress() >= 1,
     evolved:  () => spawnProgress() >= 2,
     classed:  () => spawnProgress() >= 3,
+    tanks:    () => !(typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script) || (typeof questDone === "function" && questDone("purify")),   /* (the arena's tanks: the Sewers purified; a game with no tutorial, the website's background or a bare test room, is as far as it goes) */
 };
 // HOW FAR THE GAME HAS GOT, by the tutorial director's own record (js/tutorial.js; saved, so a loaded game is where it was): 0 the beginning; 1 the Crystal's defence won (the assault's step
 // passed); 2 the tutorial over (its last step is EVOLVE A FOLLOWER); 3 a class's first stage done (any class you have been: tutClassStageDone, so changing class takes nothing back). A game with
