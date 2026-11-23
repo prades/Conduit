@@ -59936,7 +59936,7 @@ function render() {
     });
     perfDrawStart();
     const _v3 = !_simGhost && typeof view3dShowing === "function" && view3dShowing();
-    let drawList = _simGhost || (_v3 && typeof view3dLow === "function" && view3dLow()) ? [] : visibleTilesForDraw();
+    let drawList = _simGhost ? [] : visibleTilesForDraw();
     const _v3tiles = _v3 ? drawList : null;
     if (_v3)
         drawList = [];
