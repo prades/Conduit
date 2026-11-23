@@ -155,7 +155,7 @@ function sewerDressVariety(w, lab) {
     decal: new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, vertexColors: true, toneMapped: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }),
     bulb: glowMat('#fff1cc', 1),
     capT: new T.MeshStandardMaterial({ map: capTex, roughness: 0.9, vertexColors: true }), stubSide: new T.MeshStandardMaterial({ map: stubSideTex, roughness: 0.85, vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
-    stubTop: new T.MeshStandardMaterial({ map: capTex, roughness: 0.9, vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }), capEdge: std('#aaa798', { roughness: 0.85 }), riser: new T.MeshStandardMaterial({ map: stubSideTex, roughness: 0.85, vertexColors: true }),
+    stubTop: new T.MeshStandardMaterial({ map: capTex, roughness: 0.9, vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }), capEdge: std('#aaa798', { roughness: 0.85 }), sdMass: std('#33332d', { roughness: 0.9 }), riser: new T.MeshStandardMaterial({ map: stubSideTex, roughness: 0.85, vertexColors: true }),
   };
   M.decal.userData.noInk = true;
   const hex = m => m && m.color ? m.color.getHexString() : '';
@@ -386,19 +386,19 @@ function sewerDressVariety(w, lab) {
         const hx = Math.round(cx * 2), hz = Math.round(cz * 2), clus = vnoise(cx / 3.5, cz / 3.5, 47) > 0.62, r = hsh(hx, hz, 5);
         const cell = clus ? (r < 0.62 ? 3 : 0) : piped.has(K(hx, hz)) && r < 0.7 ? 1 : r < 0.06 ? 2 : 0, mir = hsh(hx, hz, 6) > 0.5;
         for (let i = q; i < q + 6; i++) { const u = uv.getX(i); uv.setX(i, (cell + 0.01 + (mir ? 1 - u : u) * 0.98) / 4); } }
-      for (const gc of geo.groups) if ((gc.materialIndex === 1 || gc.materialIndex === 2) && uv) for (let i = gc.start; i < gc.start + gc.count; i++) uv.setXY(i, (pos.getX(i) + 0.5) * 0.5, -(pos.getZ(i) + 0.5) * 0.5);   // (ROUND 2: the caps' picture laid by where it is)
-      if (uv) uv.needsUpdate = true; o.material = o.material.map((m, i) => i === 0 ? M.wall : i === 1 || i === 2 ? M.capT : m); return; }
+      for (const gc of geo.groups) if (gc.materialIndex === 1 && uv) for (let i = gc.start; i < gc.start + gc.count; i++) uv.setXY(i, (pos.getX(i) + 0.5) * 0.5, -(pos.getZ(i) + 0.5) * 0.5);   // (ROUND 2: the caps' picture laid by where it is)
+      if (uv) uv.needsUpdate = true; o.material = o.material.map((m, i) => i === 0 ? M.wall : i === 1 ? M.capT : i === 2 ? M.sdMass : m); return; }   // (the sewer dungeon's tops, its walls' sides over no room and its filled space: one solid colour, as the owner asked of it, 2026-11-23)
     const ms = [].concat(o.material).map(m => (m && !m.isMeshBasicMaterial && RECOL[hex(m)]) || m); o.material = Array.isArray(o.material) ? ms : ms[0]; });
   // the cut stubs the sunk walls leave: the dressed rooms' moved out of the lab's (one mesh for the whole floor, in w.rest) into the dungeon's own, and those dark stone (the lab's stay as they are)
   let stubsMoved = 0; if (w.stubs && Array.isArray(w.stubs.material) && w.stubs.material.length >= 4) { const geo = w.stubs.geometry, gs = geo.groups.slice().sort((a, b) => a.start - b.start), names = Object.keys(geo.attributes), A = {};
     const ownerOf = (s) => { const P = geo.attributes.position, N = geo.attributes.normal; let x = 0, y = 0, z = 0; for (let i = s; i < s + 3; i++) { x += P.getX(i) / 3; y += P.getY(i) / 3; z += P.getZ(i) / 3; } const nx = N ? N.getX(s) : 0, nz = N ? N.getZ(s) : 0, b = w.band.get(K(Math.round(x - nx * 0.25), Math.round(z - nz * 0.25))); return b ? b.own : null; };
-    const into = [[], [], [], []]; for (const g of gs) for (let s = g.start; s + 2 < g.start + g.count; s += 3) { let m = g.materialIndex; if (m < 2 && ids.has(ownerOf(s))) { m += 2; stubsMoved++; } if (into[m]) into[m].push(s); }
+    const into = [[], [], [], [], [], []]; for (const g of gs) for (let s = g.start; s + 2 < g.start + g.count; s += 3) { let m = g.materialIndex; if (m < 2 && ids.has(ownerOf(s))) { m += 4; stubsMoved++; } if (into[m]) into[m].push(s); }
     const ng = new T.BufferGeometry(); let at = 0; for (const n of names) A[n] = []; ng.clearGroups();
     into.forEach((list, mi) => { for (const s of list) for (let i = s; i < s + 3; i++) for (const n of names) { const a = geo.attributes[n]; for (let c = 0; c < a.itemSize; c++) A[n].push(a.array[i * a.itemSize + c]); } if (list.length) ng.addGroup(at, list.length * 3, mi); at += list.length * 3; });
     for (const n of names) ng.setAttribute(n, new T.Float32BufferAttribute(A[n], geo.attributes[n].itemSize)); ng.computeBoundingSphere(); w.stubs.geometry = ng;
-    w.stubs.material = w.stubs.material.map((m, i) => i === 2 ? M.stubSide : i === 3 ? M.stubTop : m);
-    { const uv = ng.attributes.uv, pos = ng.attributes.position, nor = ng.attributes.normal; if (uv) { for (const gc of ng.groups) { if (gc.materialIndex < 2) continue; for (let i = gc.start; i < gc.start + gc.count; i++) { const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-      if (gc.materialIndex === 3) uv.setXY(i, (x + 0.5) * 0.5, -(z + 0.5) * 0.5); else { const nx = nor ? nor.getX(i) : 0, nz = nor ? nor.getZ(i) : 1; uv.setXY(i, x * nz - z * nx, y / WALL_H); } } } uv.needsUpdate = true; } } }
+    w.stubs.material = w.stubs.material.slice(0, 4).map((m, i) => i === 2 || i === 3 ? M.stub : m).concat([M.stubSide, M.stubTop]); w.stubs.userData.inkIds = [0, 1, 0, 1, 0, 1];   // (the Sewers' own stubs, 4 and 5, dressed as their walls; the dungeon's, 2 and 3, its solid colour)
+    { const uv = ng.attributes.uv, pos = ng.attributes.position, nor = ng.attributes.normal; if (uv) { for (const gc of ng.groups) { if (gc.materialIndex < 4) continue; for (let i = gc.start; i < gc.start + gc.count; i++) { const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (gc.materialIndex === 5) uv.setXY(i, (x + 0.5) * 0.5, -(z + 0.5) * 0.5); else { const nx = nor ? nor.getX(i) : 0, nz = nor ? nor.getZ(i) : 1; uv.setXY(i, x * nz - z * nx, y / WALL_H); } } } uv.needsUpdate = true; } } }
   // the water: its own picture redrawn as the sheen, its colour the olive (clearing as the purification runs, below), darker along its banks; an oily rainbow drifting over it
   const waterMats = [], sheenM = new T.MeshBasicMaterial({ map: rainbow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false, opacity: 0.55 });
   for (const rec of recs) w.rooms[rec.id].g.traverse(o => { if (!o.userData.water || !o.isMesh || o.userData.swSheen) return; const m = [].concat(o.material)[0]; if (waterMats.indexOf(m) < 0) waterMats.push(m);
@@ -422,7 +422,7 @@ function sewerDressVariety(w, lab) {
   const stubEdges = new T.Group(); stubEdges.userData.swAdded = true; let edgeN = 0;
   { const capQ = new Map(), stubQ = quads(), EW = 0.07;
     const strip = (q, b, dx, dy, y) => { const ex = b.x + dx * 0.5, ez = b.y + dy * 0.5, ix = ex - dx * EW, iz = ez - dy * EW, rx = dy / 2, rz = -dx / 2; putQuad(q, [ix - rx, y, iz - rz], [ix + rx, y, iz + rz], [ex + rx, y, ez + rz], [ex - rx, y, ez - rz], [0, 1, 0], [1, 1, 1]); };
-    for (const b of w.band.values()) { if (!Gs.has(b.G) || b.rock || !ids.has(b.own)) continue; let q = capQ.get(b.G); if (!q) capQ.set(b.G, q = quads());
+    for (const b of w.band.values()) { if (!Gs.has(b.G) || b.rock || !ids.has(b.own) || b.own.slice(0, 3) === 'sd_') continue; let q = capQ.get(b.G); if (!q) capQ.set(b.G, q = quads());
       const top = b.hi + WALL_H + 0.004, stub = !b.header && b.hides && b.hides.some(h => h.length);
       for (const [dx, dy] of DIRS) { const nb = w.band.get(K(b.x + dx, b.y + dy)); if (!nb || Math.abs(nb.hi - b.hi) > 0.01) { strip(q, b, dx, dy, top); edgeN++; } if (stub && (!nb || nb.header || Math.abs(nb.hi - b.hi) > 0.01)) strip(stubQ, b, dx, dy, b.hi + CUT_H + 0.004); } }
     for (const [G, q] of capQ) if (q.pos.length) { const m = quadMesh([{ q, mat: M.capEdge }]); m.material = M.capEdge; m.userData.swAdded = true; G.g.add(m); }
@@ -441,7 +441,7 @@ function sewerDressVariety(w, lab) {
   // ROUND 2: the stubs' own (the dressed rooms', groups 2 and 3): the light baked as for the rest, and the wall's tone, a block each
   const blockTone = (x, z) => R3 ? 0.94 + 0.1 * vnoise(x / 4, z / 4, 48) + 0.03 * hsh(Math.round(x * 2), Math.round(z * 2), 49) : 0.84 + 0.24 * vnoise(x / 4, z / 4, 48) + 0.08 * hsh(Math.round(x * 2), Math.round(z * 2), 49);
   if (w.stubs && w.stubs.geometry.attributes.color) { const geo = w.stubs.geometry, col = geo.attributes.color, pos = geo.attributes.position, nor = geo.attributes.normal;
-    for (const gc of geo.groups) { if (gc.materialIndex < 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const cx = (pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3, cz = (pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3, nx = nor ? nor.getX(q) : 0, nz = nor ? nor.getZ(q) : 0, k = blockTone(Math.round(cx - nx * 0.3), Math.round(cz - nz * 0.3));
+    for (const gc of geo.groups) { if (gc.materialIndex < 4) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const cx = (pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3, cz = (pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3, nx = nor ? nor.getX(q) : 0, nz = nor ? nor.getZ(q) : 0, k = blockTone(Math.round(cx - nx * 0.3), Math.round(cz - nz * 0.3));
       for (let i = q; i < q + 3; i++) { const c = light(pos.getX(i), pos.getY(i), pos.getZ(i), nor ? nor.getX(i) : 0, nor ? nor.getY(i) : 1, nor ? nor.getZ(i) : 0); col.setXYZ(i, c[0] * k, c[1] * k, c[2] * k); } } } col.needsUpdate = true; }
   // VARIETY: the tones, over the baked light: each floor tile its own (a slow noise and its seed, a little warmer or cooler), each wall block its own
   for (const rec of recs) { const f = w.rooms[rec.id].floor; if (!f) continue; const geo = f.geometry, col = geo.attributes.color, pos = geo.attributes.position, gr = geo.groups[0]; if (!col || !gr) continue;
@@ -449,7 +449,7 @@ function sewerDressVariety(w, lab) {
       for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k * (1 + pk.warm), col.getY(i) * k, col.getZ(i) * k * (1 - pk.warm)); }
     col.needsUpdate = true; }
   for (const G of Gs) { const o = G.mesh; if (!o || !o.geometry.attributes.color) continue; const geo = o.geometry, col = geo.attributes.color, pos = geo.attributes.position, g0 = geo.groups.find(g => g.materialIndex === 0); if (!g0) continue;
-    for (const gc of geo.groups) { if (gc.materialIndex !== 1 && gc.materialIndex !== 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const k = blockTone(Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3)); for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); } }   // (ROUND 2: the caps, a tile each)
+    for (const gc of geo.groups) { if (gc.materialIndex !== 1) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const k = blockTone(Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3)); for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); } }   // (ROUND 2: the caps, a tile each)
     for (let q = g0.start; q + 5 < g0.start + g0.count; q += 6) { let cx = 0, cz = 0; for (let i = 0; i < 6; i++) { cx += pos.getX(q + i); cz += pos.getZ(q + i); } cx /= 6; cz /= 6; const k = blockTone(cx, cz);
       for (let i = q; i < q + 6; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); }
     col.needsUpdate = true; }
