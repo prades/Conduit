@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17cu` · branch `claude/start-game-project-HSh7Z` · BLADE ROLL always reaches the enemy it rolls at
+- **The ask** (the owner, 2026-11-23): "Fix the blade roll so it always reaches its target".
+- **What was wrong:** when the Hammer Slug could not roll its whole length (a wall or a prop in its line past the enemy), the roll stopped 0.8 tiles short of that enemy, which is exactly its slicing reach, so now and then it sliced nobody (found while mending the 3D suite's BLADE ROLL check, which failed on it about one run in five).
+- **What it does:** it stops 0.7 short, inside its reach, so the enemy it rolled at is always sliced. No damage, range, pace or cost changes. `js/evolution.js` (`bladeRoll`), `dist/conduit.js`, `play.html` (generated). Two other moves in that file stop 0.8 short the same way and are not changed (not asked; their reach is not checked).
+- **Verified:** `tests/evolution.js`, `tests/cardbattle.js`, `tests/fx3d.js`, `tests/bundle.js` (see the handoff). **No new test stages the blocked roll; not playtested.**
+
 ### No build yet · branch `claude/sewer-variety` (main `046ab7a2`, build `2026-11-17cs`, merged in) · the sewers' walkways: long grate panels (behind `?engine=3d`)
 - **The ask** (the owner, 2026-11-23, drawing two long rectangles along the walkway on a picture of the built round 3): "Should have long style grates". **The decision**, of round 4's drafts: **"Push"** (`DECISION-LOG.md` 2026-11-23).
 - **What it does** (the 3D view only, `view3d/sewerdress.js`, the Sewers and the sewer dungeon's rooms): each walkway is long steel grate panels, five tiles along it and its full width, a thin concrete border round each and a short gap between them, the bars across, moderate contrast, all alike and lined up. Replaces round 3's smooth grating; everything else as built.
