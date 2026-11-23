@@ -13,6 +13,7 @@ const FS = { key: "conduit_fp_save", version: 1, every: 180 };
 function facilitySaveLoad() {
     if (typeof attractOn === "function" && attractOn()) return null;   // (the background starts a fresh facility and keeps nothing)
     if (typeof fluxLabOn === "function" && fluxLabOn()) return null;   // (nor does the Flux test room, js/fluxlab.js: a player's own save is not read, nor written over)
+    if (typeof testChamberOn === "function" && testChamberOn()) return null;   // (nor the test chamber, js/testchamber.js)
     try { const d = JSON.parse(localStorage.getItem(FS.key) || "null"); return d && d.v === FS.version ? d : null; } catch (e) { return null; }
 }
 // the tutorial's step from a save: by its id (since build 2026-11-07qq, when the steps changed), else an older save's index read through the old list of steps (its relay step is the junction now)

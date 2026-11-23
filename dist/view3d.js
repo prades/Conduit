@@ -25327,7 +25327,8 @@ const VIEW3D_GAME = (0, eval)(`({
 })`);
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
 const VIEW3D_ROOMS = VIEW3D_LAB.concat(['experiment_lab', 'teleport_stair_room', 'teleport_room_2', 'observation_deck', 'arena', 'catwalks', 'catwalk_spur', 'cold_storage', 'cold_tunnel', 'cold_annex', 'sewers'])
-    .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id.slice(0, 3) === 'sd_').map(r => r.id));
+    .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id.slice(0, 3) === 'sd_').map(r => r.id))
+    .concat((VIEW3D_GAME.fp && VIEW3D_GAME.fp.F ? VIEW3D_GAME.fp.F.rooms : []).filter(r => r.id === 'test_chamber').map(r => r.id));
 function view3dRoomRecord(F, R, lab, live) {
     const G = VIEW3D_GAME, room = F.rooms.find(r => r.id === R);
     const strip = o => JSON.parse(JSON.stringify(o, (k, v) => k === 'raw' || k === 'note' ? undefined : v));
