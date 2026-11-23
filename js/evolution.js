@@ -1580,15 +1580,24 @@ function evoGroundBegin() {
 }
 // Called as the floor tile at (tx, ty), whose top corner is at (px, py), is drawn: paint this tile's share of every
 // pool near it, clipped to the tile.
+// THE POOL LIES UNDER ITS OWNER (the owner, 2026-11-23, of the 3D view: "some of the creatures that have effects on the ground, it's not positioned correctly. For instance, the frost maw and
+// the rot shard"). It is put where the body's feet are, as js/game.js puts the body: on its own floor's height (facilityLiftRel), and in THE 3D VIEW half a tile down the screen (view3dFeet:
+// the view stands a body in the middle of its tile, where the 2D drawing puts its feet at the tile's top corner; until build 2026-11-17cu the pool was left at the corner, half a tile behind
+// its body). In a turned view it is the pool as that turn sees it (its facing row, as js/game.js turns a body the 2D draws). Which tiles are near it is asked on the screen, from where it is
+// drawn (the tile's middle is TILE_H under its top corner), so it holds in any turn.
 function drawEvoGroundOnTile(tx, ty, px, py, g) {
     if (!_evoGround.length || typeof player === "undefined") return;
     g = g || ctx;
-    const f0 = typeof frame !== "undefined" ? frame : 0;
+    const f0 = typeof frame !== "undefined" ? frame : 0, feet = typeof view3dFeet === "function" ? view3dFeet() : 0;
     for (const f of _evoGround) {
-        if (Math.abs(f.x - tx - 0.5) > 1.4 || Math.abs(f.y - ty - 0.5) > 1.4) continue;
+        const fx = isoSX(f.x, f.y) + canvas.width / 2, fy = isoSY(f.x, f.y) + canvas.height / 2 - (typeof facilityLiftRel === "function" ? facilityLiftRel(f.x, f.y) : 0) + feet;
+        const a = (fx - px) / TILE_W, b = (fy - py) / TILE_H - 1;   // (from the tile's middle to the pool's, in half tiles across and down)
+        if (Math.abs(a + b) > 2.8 || Math.abs(b - a) > 2.8) continue;   // (more than 1.4 tiles off along either of the floor's own ways)
         const d = evolvedDef(f), img = d && _evoGroundImg(d); if (!img || !_evoImg(d)) continue;
-        const fr = _evoFrame(f, d, f0), C = d.cell, s = fr.s;
-        const fx = isoSX(f.x, f.y) + canvas.width / 2, fy = isoSY(f.x, f.y) + canvas.height / 2;
+        const turned = typeof VIEW_TURN !== "undefined" && VIEW_TURN && typeof f.dirX === "number" && typeof f.dirY === "number", dx0 = f.dirX, dy0 = f.dirY; let fr;
+        if (turned) { f.dirX = viewTU(dx0, dy0); f.dirY = viewTV(dx0, dy0); }
+        try { fr = _evoFrame(f, d, f0); } finally { if (turned) { f.dirX = dx0; f.dirY = dy0; } }
+        const C = d.cell, s = fr.s;
         g.save();
         g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + 2 * TILE_H); g.lineTo(px - TILE_W, py + TILE_H); g.closePath(); g.clip();
         g.globalAlpha *= fr.rise;

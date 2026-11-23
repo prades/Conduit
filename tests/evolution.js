@@ -605,6 +605,28 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/_drawFloorTile\(ctx, px, py[^\n]*\n\s*drawFloorTileMarks\(obj, px, py, false\);/.test(GAME) && /function drawFloorTileMarks\(obj, px, py, threeD\) \{\n\s*if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile\(obj\.x, obj\.y, px, py\)/.test(GAME), 'the floor tile does not paint the pools');   // (build 2026-11-16a: the floor's play marks are one function, drawFloorTileMarks, which the 3D view's floor uses too)
         ok(GAME.indexOf('evoGroundBegin()') > 0 && GAME.indexOf('evoGroundBegin()') < GAME.indexOf('drawList.forEach(obj=>{'), 'the ground list is not built before the world is drawn');
     });
+    check('IN THE 3D VIEW the pool lies under its body (the owner, 2026-11-23: "some of the creatures that have effects on the ground, it\'s not positioned correctly. For instance, the frost maw and the rot shard"): the view stands a body half a tile down the screen from the 2D drawing\'s feet, and the pool goes with it (it stayed at the tile\'s top corner, half a tile behind); it is on its owner\'s own floor height; in a turned view it is the pool as that turn sees it; the tiles that paint a share are the ones near where it is drawn', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            const fake = { complete: true, naturalWidth: 2304 }; EVOLUTIONS.rotshard._img = fake; EVOLUTIONS.rotshard._gimg = fake;
+            canvas.width = 800; canvas.height = 600; player.visualX = 20; player.visualY = 2;
+            spawnFollowerAtCrystal('toxic'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = 'sniper'; f.evolved = 'rotshard'; f._moltAt = -1e9; f.x = 20; f.y = 2; f.dirX = 1; f.dirY = 0;
+            const rec = () => { const c = { at: [], globalAlpha: 1 }; for (const m of ['save', 'restore', 'beginPath', 'moveTo', 'lineTo', 'closePath', 'clip']) c[m] = () => {}; c.drawImage = function () { const a = arguments; c.at.push(a.length > 5 ? [a[5], a[6], a[1], a[2]] : [a[1], a[2], 0, 0]); }; return c; };
+            const on = (tx, ty) => { const g = rec(); drawEvoGroundOnTile(tx, ty, isoSX(tx, ty) + canvas.width / 2, isoSY(tx, ty) + canvas.height / 2, g); return g.at; };
+            const showing = VIEW3D.showing, turn = VIEW_TURN, lift = facilityLiftRel, facing = _evoFacing, out = { tileH: TILE_H }; let seen = []; _evoFacing = function (u) { seen.push(u.dirX + ',' + u.dirY); return facing(u); }; evoGroundBegin();
+            try {
+                VIEW3D.showing = false; VIEW_TURN = 0; out.feet2d = view3dFeet(); out.flat = on(20, 2)[0]; out.flatFront = on(21, 3).length; out.flatBack = on(19, 1).length;
+                VIEW3D.showing = true; out.feet3d = view3dFeet(); out.view = on(20, 2)[0]; out.viewFront = on(21, 3).length; out.viewBack = on(19, 1).length; out.viewFar = on(22, 4).length + on(17, -1).length;
+                facilityLiftRel = () => 12; out.raised = on(20, 2)[0]; facilityLiftRel = lift;
+                seen = []; on(20, 2); out.faced0 = seen.join(' ');                                                                              // (not turned: its facing as it is)
+                VIEW_TURN = 1; out.want = viewTU(1, 0) + ',' + viewTV(1, 0); seen = []; out.turnedN = on(20, 2).length; out.faced1 = seen.join(' '); out.dirKept = [f.dirX, f.dirY];
+            } finally { VIEW3D.showing = showing; VIEW_TURN = turn; facilityLiftRel = lift; _evoFacing = facing; }
+            return out; })()`);
+        same(r.feet2d, 0, 'the 2D game shifts nothing'); same(r.feet3d, r.tileH, 'the 3D view stands a body half a tile (TILE_H px) down');
+        same(Math.round((r.view[1] - r.flat[1]) * 100) / 100, r.tileH, 'the pool is not half a tile down the screen with its body in the 3D view'); same(Math.round((r.view[0] - r.flat[0]) * 100) / 100, 0, 'it moved across');
+        same(Math.round((r.raised[1] - r.view[1]) * 100) / 100, -12, 'the pool is not on its owner\'s floor height');
+        same(r.flatFront + ',' + r.flatBack, '0,1', 'in the 2D game: the tile a tile and a half in front paints none, the one behind a share'); same(r.viewFront + ',' + r.viewBack, '1,1', 'in the 3D view the tile in front, now a tile off, does not paint its share'); same(r.viewFar, 0, 'tiles two off paint a share');
+        same(r.faced0, '1,0', 'not turned, the pool\'s facing is not its owner\'s own'); same(r.want, '0,1', 'a quarter turn of its facing'); same(r.faced1, r.want, 'turned, the pool is not the one that turn sees (the facing its cell was chosen by)'); same(r.dirKept.join(), '1,0', 'the follower\'s own facing was changed'); same(r.turnedN, 1, 'turned, its own tile paints it');
+    });
     check('THE ASK: a bundle of followers stands a little further apart (FOLLOWER_SEP), so every unit shows', () => {
         ok(run('FOLLOWER_SEP') >= 0.7 && run('FOLLOWER_SEP') <= 1.0, 'FOLLOWER_SEP = ' + run('FOLLOWER_SEP'));
         const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
