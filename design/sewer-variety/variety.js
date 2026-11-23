@@ -7,6 +7,13 @@
 //     (alpha-tested, the water below); the posts steel; the walls four kinds (stone, rust streaks under the pipes, brick patches in clusters); breaks in the chain
 //   SEWER_VARIETY 2 GRATING + CLUTTER: 1, and sparse low clutter on the floor by the walls (rubble, a drum, a steel crate, trash), away from the doors and the water; pipe offshoots with valves,
 //     cables hanging along the back walls
+// ROUND 2 (the owner, 2026-11-22, of 2-sd-central.png, circling the long flat dark slabs: "What is this area, it looks awful. The grating needs almost uniformity"):
+//   the walkways: one grating kind, every panel the same size, aligned, the bars across each walkway the same way, no mirror; about 1 in 15 rusted or patched; damp on the frame by the
+//     water now and then (the long panels, mesh, twin and plate mix dropped); the bridges' grating as it was
+//   the walls' tops (caps) and the stubs a sunk wall leaves: concrete coping laid by where it is (a slab a tile, cracks, grime, moss), the walls' tone a tile, a lighter edge strip where a
+//     wall ends; the stubs' cut sides the walls' own stone blocks; heights and the sinking unchanged
+//   the flat dark faces: the channels' sloped sides (a plain dark in the game's 3D) and the floors' sides (the ledges' risers) in the walls' stone; where a ledge stands high over the water
+//     or a lower floor and the game draws no side, its side carried down past it
 function sewerDressVariety(w, lab) {
   const SW = typeof VIEW3D_GAME !== 'undefined' && VIEW3D_GAME.roomStyle ? VIEW3D_GAME.roomStyle.sewers : null;
   const recs = SW ? lab.rooms.filter(r => r.style === SW && w.rooms[r.id]) : []; if (!recs.length) return null;
@@ -106,6 +113,16 @@ function sewerDressVariety(w, lab) {
     gr = g.createLinearGradient(0, 70, 0, 128); gr.addColorStop(0, 'rgba(30,40,16,0)'); gr.addColorStop(1, 'rgba(30,40,16,0.6)'); g.fillStyle = gr; g.fillRect(384, 70, 128, 58);
   }, { repeat: false });
   wallTex.generateMipmaps = false; wallTex.minFilter = T.LinearFilter;
+  // ROUND 2 (the owner, of the dungeon's flat dark slabs: "What is this area, it looks awful"): the walls' tops and the stubs a sunk wall leaves, dressed as the wall they are cut from.
+  // The cap: concrete coping, a slab a tile (its joints on the tiles' edges: the picture laid by where it is, two tiles a repeat), cracks, grime, a little moss; a lighter edge strip where it ends
+  const capTex = canvasTex(256, 256, (g) => { g.fillStyle = C.mortar; g.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const x0 = i * 128, y0 = j * 128, sd = 300 + i * 2 + j; g.fillStyle = pick(C.wall, hsh(i, j, 301)); g.fillRect(x0 + 2, y0 + 2, 124, 124);
+      for (let k = 0; k < 10; k++) { const x = x0 + hsh(k, sd, 51) * 128, y = y0 + hsh(k, sd, 52) * 128, r = 12 + hsh(k, sd, 53) * 34, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, hsh(k, sd, 54) > 0.5 ? 'rgba(255,250,230,0.07)' : 'rgba(0,0,0,0.12)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+      grime(g, x0 + 2, y0 + 2, 124, 124, 260, sd); if (hsh(i, j, 302) > 0.4) crack(g, sd, x0 + 20 + hsh(i, j, 303) * 80, y0 + 20 + hsh(j, i, 304) * 80, 6, 11);
+      for (let k = 0; k < 5; k++) { if (hsh(k, sd, 305) > 0.5) continue; g.fillStyle = 'rgba(60,78,26,0.35)'; g.beginPath(); g.ellipse(x0 + hsh(k, sd, 306) * 128, y0 + hsh(k, sd, 307) * 128, 4 + hsh(k, sd, 308) * 9, 3 + hsh(k, sd, 309) * 6, 0, 0, 6.28); g.fill(); }
+      g.fillStyle = 'rgba(255,250,235,0.09)'; g.fillRect(x0 + 2, y0 + 2, 124, 3); g.fillStyle = 'rgba(0,0,0,0.2)'; g.fillRect(x0 + 2, y0 + 123, 124, 3); } }, { repeat: true });
+  // a stub's cut side: the wall's own stone blocks, the picture laid along the wall by where it is and up it by height, so its rows go on from the face above
+  const stubSideTex = canvasTex(128, 128, (g) => stoneCell(g, 0, 0), { repeat: true });
   // a bank's face: one row of blocks, wet and dark at the waterline
   const bankTex = canvasTex(128, 32, (g) => { g.fillStyle = C.mortar; g.fillRect(0, 0, 128, 32); for (let k = 0; k < 4; k++) { g.fillStyle = pick(C.wall, hsh(k, 21)); g.fillRect(k * 32 + 1, 1, 30, 30); }
     const gr = g.createLinearGradient(0, 0, 0, 32); gr.addColorStop(0, 'rgba(20,26,8,0.75)'); gr.addColorStop(0.45, 'rgba(20,26,8,0.2)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 32); grime(g, 0, 0, 128, 32, 90, 23); }, { repeat: true });
@@ -127,6 +144,8 @@ function sewerDressVariety(w, lab) {
     stub: std(C.stub, { roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
     decal: new T.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, vertexColors: true, toneMapped: false, side: T.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 }),
     bulb: glowMat('#fff1cc', 1),
+    capT: new T.MeshStandardMaterial({ map: capTex, roughness: 0.9, vertexColors: true }), stubSide: new T.MeshStandardMaterial({ map: stubSideTex, roughness: 0.85, vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }),
+    stubTop: new T.MeshStandardMaterial({ map: capTex, roughness: 0.9, vertexColors: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }), capEdge: std('#aaa798', { roughness: 0.85 }), riser: new T.MeshStandardMaterial({ map: stubSideTex, roughness: 0.85, vertexColors: true }),
   };
   M.decal.userData.noInk = true;
   const hex = m => m && m.color ? m.color.getHexString() : '';
@@ -197,6 +216,16 @@ function sewerDressVariety(w, lab) {
     quadAt(addTo(cellAt.get(K(L.cx, L.cy))), M.decal, [[px - R, y, pz + R], [px + R, y, pz + R], [px + R, y, pz - R], [px - R, y, pz - R]], wc.map(v => v * 0.6)).userData.noInk = true; }
   // the banks' edges: [x, y, dx, dy] of each dry tile's side onto the water (not a bridge's)
   const edges = []; for (const k of cellAt.keys()) { if (!dry(k)) continue; const [x, y] = k.split(',').map(Number); for (const [dx, dy] of DIRS) if (water(K(x + dx, y + dy))) edges.push([x, y, dx, dy]); }
+  // ROUND 2: where a ledge stands high over the water, the game's bank face is a short strip and the dark shows under it: the ledge's side carried on down past the water, in the walls' stone
+  const waterY = new Map(); w.g.updateMatrixWorld(true); for (const rec of recs) w.rooms[rec.id].g.traverse(o => { if (!o.isMesh || !o.userData.water) return; const p = o.geometry.attributes.position, v3 = new T.Vector3();
+    for (let i = 0; i < p.count; i++) { v3.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); for (const [ax, az] of [[0, 0], [-0.49, -0.49], [0.49, 0.49], [-0.49, 0.49], [0.49, -0.49]]) { const k = K(Math.round(v3.x + ax), Math.round(v3.z + az)), was = waterY.get(k); if (was === undefined || v3.y < was) waterY.set(k, v3.y); } } });   // (the water's own surface, a tile each: lower than the tile's floor where the channel is deep)
+  const deepQ = new Map(), RISER_K = (window.__RK || 1.5); let deepN = 0;
+  const lowAt = n => Math.min(floorY.get(n), waterY.has(n) ? waterY.get(n) : Infinity);
+  for (const k of cellAt.keys()) { if (!dry(k) && !deck.has(k)) continue; const [x, y] = k.split(',').map(Number), h = floorY.get(k);
+    for (const [dx, dy] of DIRS) { const n = K(x + dx, y + dy); if (!cellAt.has(n)) continue; const wy = lowAt(n), top = deck.has(k) ? h - 0.06 : h - 0.005; if (top - wy < (deck.has(k) ? 0.8 : 0.3)) continue;   // (a ledge's side over a lower floor or the water, where the game draws none: down past it)
+      const room = cellAt.get(k); let q = deepQ.get(room); if (!q) deepQ.set(room, q = quads()); const cx = x + dx * 0.5, cz = y + dy * 0.5, rx = dy / 2, rz = -dx / 2, y0 = wy - 0.6, U = t => (cx + rx * t) * dy - (cz + rz * t) * dx;
+      putQuad(q, [cx - rx, y0, cz - rz], [cx + rx, y0, cz + rz], [cx + rx, top, cz + rz], [cx - rx, top, cz - rz], [dx, 0, dy], [1, 1, 1], [[U(-1), y0 / WALL_H], [U(1), y0 / WALL_H], [U(1), top / WALL_H], [U(-1), top / WALL_H]]); deepN++; } }
+  for (const [room, q] of deepQ) { const m = quadMesh([{ q, mat: M.riser }]); m.material = M.riser; m.receiveShadow = true; addTo(room).add(m); }
   // posts and a sagging chain along them: the edges in runs along each line, a post about every two tiles; none where the map has a railing already
   const runs = new Map(); for (const [x, y, dx, dy] of edges) { if (railed(x, y, dx, dy)) continue; const along = dy !== 0, line = along ? y + dy * 0.5 : x + dx * 0.5, s = along ? dy : dx, h = floorY.get(K(x, y)), key = (along ? 'h' : 'v') + line + ':' + s + ':' + h.toFixed(3);
     let r = runs.get(key); if (!r) runs.set(key, r = { along, line, s, us: [], h, room: cellAt.get(K(x, y)) }); r.us.push(along ? x : y); }
@@ -305,7 +334,7 @@ function sewerDressVariety(w, lab) {
     if (i === 1) return { cell: rusty ? 18 : 17, tf: TF[to(nw[0], nw[1], hsh(tx, tz, 38) > 0.5)] };
     const want = i === 0 ? along : [-along[0], -along[1]]; for (const mir of [false, true]) { const tf = TF[to(nw[0], nw[1], mir)], o = openDir(tf); if (o[0] === want[0] && o[1] === want[1]) return { cell: rusty ? 19 : 16, tf }; } return null; };
   const picks = new Map(), tilePick = (tx, tz) => { const k = K(tx, tz); let p = picks.get(k); if (p) return p; const r = hsh(tx, tz, 37), mir = hsh(tx, tz, 38) > 0.5, nw = cellAt.has(k) ? nearW(tx, tz, 3) : null;
-    if (nw) { const lg = longAt(tx, tz, nw); p = lg || { cell: wpick(nw[2] === 1 ? GRATE_WET : GRATE, r), tf: TF[to(nw[0], nw[1], mir)] }; }   // (the walkway: grating, across it; its wet side to the water; or a long panel)
+    if (nw) p = { cell: r < 1 / 30 ? 9 : r < 2 / 30 ? 13 : nw[2] === 1 && hsh(tx, tz, 46) < 0.3 ? 15 : 8, tf: TF[to(nw[0], nw[1], false)] };   // (ROUND 2, the owner: "The grating needs almost uniformity": one kind, the same size, aligned, the bars the same way along each walkway (across it), no mirror; about 1 in 15 rusted or patched; now and then damp on its frame by the water)
     else { const wl = DIRS.find(([dx, dy]) => !cellAt.has(K(tx + dx, tz + dy)) && w.band.get(K(tx + dx, tz + dy)));
       if (wl && hsh(tx, tz, 39) < 0.4) p = { cell: hsh(tx, tz, 40) < 0.5 ? 6 : 7, tf: TF[to(wl[0], wl[1], mir)] };   // (damp at the wall's foot)
       else p = { cell: wpick([[0, 2], [1, 2], [2, 1.6], [3, 0.7], [4, 0.6], [5, 0.6]], r), tf: TF[Math.floor(hsh(tx, tz, 41) * 8) % 8] }; }
@@ -318,9 +347,16 @@ function sewerDressVariety(w, lab) {
     if (rm.floor) { const f = rm.floor, geo = f.geometry, uv = geo.attributes.uv, pos = geo.attributes.position, gr = geo.groups[0];
       if (uv && gr) for (let q = gr.start; q + 2 < gr.start + gr.count; q += 3) { const tx = Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), tz = Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3), pk = tilePick(tx, tz);
         for (let i = q; i < q + 3; i++) { const a0 = Math.min(1, Math.max(0, pos.getX(i) - tx + 0.5)), b0 = Math.min(1, Math.max(0, tz + 0.5 - pos.getZ(i))), t = pk.tf(a0, b0), c = cellUV(pk.cell, t[0], t[1]); uv.setXY(i, c[0], c[1]); } }
-      if (uv) uv.needsUpdate = true; f.material = [M.floor, M.bank]; }
+      const g1 = geo.groups[1], nor = geo.attributes.normal; if (uv && g1) for (let i = g1.start; i < g1.start + g1.count; i++) { const nx = nor ? nor.getX(i) : 0, nz = nor ? nor.getZ(i) : 1; uv.setXY(i, pos.getX(i) * nz - pos.getZ(i) * nx, pos.getY(i) / WALL_H); }   // (ROUND 2: the floor's sides, the risers of its steps and ledges, down to the water: the walls' stone blocks laid by where they are, not one block row stretched over the whole height)
+      if (uv) uv.needsUpdate = true; f.material = [M.floor, M.riser]; }
     // the rest of the room's meshes: the banks (their side, their lip), the bridges' gratings, the steel (not the kit's props, not what is added)
     rm.g.traverse(o => { if (!o.isMesh || o.userData.water || o === rm.floor || mine(o) || inKit(o)) return;
+      const plainM = m => m && !m.map && !m.vertexColors && !m.isMeshBasicMaterial;
+      if (o.userData.inkKey === 'floor' && [].concat(o.material).length === 1 && plainM([].concat(o.material)[0])) {   // (ROUND 2: a channel's sloped sides and bed, a plain dark: the walls' stone, laid by where it is)
+        const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(), pos = geo.attributes.position, nor = geo.attributes.normal, uvA = new Float32Array(pos.count * 2); o.updateMatrixWorld(true); const v3 = new T.Vector3();
+        for (let i = 0; i < pos.count; i++) { v3.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); const nx = nor ? nor.getX(i) : 0, ny = nor ? nor.getY(i) : 1, nz = nor ? nor.getZ(i) : 0;
+          if (Math.abs(ny) > 0.75) { uvA[i * 2] = v3.x; uvA[i * 2 + 1] = -v3.z; } else { const L = Math.hypot(nx, nz) || 1; uvA[i * 2] = (v3.x * nz - v3.z * nx) / L * 2; uvA[i * 2 + 1] = v3.y / WALL_H * 2; } }
+        geo.setAttribute('uv', new T.BufferAttribute(uvA, 2)); o.geometry = geo; o.material = Array.isArray(o.material) ? [M.riser] : M.riser; return; }
       const out = [].concat(o.material).map(m => { if (!m) return m; if (m.map && m.alphaTest > 0) return M.deck;   // (a bridge's grating: boards)
         if (o.userData.inkKey === 'floor' && m.vertexColors && !m.map) return M.bank; if (o.userData.inkKey === 'floor' && m.map) return M.curb;   // (a bank's side; its hazard stripe: a stone curb)
         return (!m.isMeshBasicMaterial && RECOL[hex(m)]) || m; });
@@ -337,7 +373,8 @@ function sewerDressVariety(w, lab) {
         const hx = Math.round(cx * 2), hz = Math.round(cz * 2), clus = vnoise(cx / 3.5, cz / 3.5, 47) > 0.62, r = hsh(hx, hz, 5);
         const cell = clus ? (r < 0.62 ? 3 : 0) : piped.has(K(hx, hz)) && r < 0.7 ? 1 : r < 0.06 ? 2 : 0, mir = hsh(hx, hz, 6) > 0.5;
         for (let i = q; i < q + 6; i++) { const u = uv.getX(i); uv.setX(i, (cell + 0.01 + (mir ? 1 - u : u) * 0.98) / 4); } }
-      if (uv) uv.needsUpdate = true; o.material = o.material.map((m, i) => i === 0 ? M.wall : i === 1 || i === 2 ? M.cap : m); return; }
+      for (const gc of geo.groups) if ((gc.materialIndex === 1 || gc.materialIndex === 2) && uv) for (let i = gc.start; i < gc.start + gc.count; i++) uv.setXY(i, (pos.getX(i) + 0.5) * 0.5, -(pos.getZ(i) + 0.5) * 0.5);   // (ROUND 2: the caps' picture laid by where it is)
+      if (uv) uv.needsUpdate = true; o.material = o.material.map((m, i) => i === 0 ? M.wall : i === 1 || i === 2 ? M.capT : m); return; }
     const ms = [].concat(o.material).map(m => (m && !m.isMeshBasicMaterial && RECOL[hex(m)]) || m); o.material = Array.isArray(o.material) ? ms : ms[0]; });
   // the cut stubs the sunk walls leave: the dressed rooms' moved out of the lab's (one mesh for the whole floor, in w.rest) into the dungeon's own, and those dark stone (the lab's stay as they are)
   let stubsMoved = 0; if (w.stubs && Array.isArray(w.stubs.material) && w.stubs.material.length >= 4) { const geo = w.stubs.geometry, gs = geo.groups.slice().sort((a, b) => a.start - b.start), names = Object.keys(geo.attributes), A = {};
@@ -346,7 +383,9 @@ function sewerDressVariety(w, lab) {
     const ng = new T.BufferGeometry(); let at = 0; for (const n of names) A[n] = []; ng.clearGroups();
     into.forEach((list, mi) => { for (const s of list) for (let i = s; i < s + 3; i++) for (const n of names) { const a = geo.attributes[n]; for (let c = 0; c < a.itemSize; c++) A[n].push(a.array[i * a.itemSize + c]); } if (list.length) ng.addGroup(at, list.length * 3, mi); at += list.length * 3; });
     for (const n of names) ng.setAttribute(n, new T.Float32BufferAttribute(A[n], geo.attributes[n].itemSize)); ng.computeBoundingSphere(); w.stubs.geometry = ng;
-    w.stubs.material = w.stubs.material.map((m, i) => i === 2 || i === 3 ? M.stub : m); }
+    w.stubs.material = w.stubs.material.map((m, i) => i === 2 ? M.stubSide : i === 3 ? M.stubTop : m);
+    { const uv = ng.attributes.uv, pos = ng.attributes.position, nor = ng.attributes.normal; if (uv) { for (const gc of ng.groups) { if (gc.materialIndex < 2) continue; for (let i = gc.start; i < gc.start + gc.count; i++) { const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (gc.materialIndex === 3) uv.setXY(i, (x + 0.5) * 0.5, -(z + 0.5) * 0.5); else { const nx = nor ? nor.getX(i) : 0, nz = nor ? nor.getZ(i) : 1; uv.setXY(i, x * nz - z * nx, y / WALL_H); } } } uv.needsUpdate = true; } } }
   // the water: its own picture redrawn as the sheen, its colour the olive (clearing as the purification runs, below), darker along its banks; an oily rainbow drifting over it
   const waterMats = [], sheenM = new T.MeshBasicMaterial({ map: rainbow, transparent: true, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false, opacity: 0.55 });
   for (const rec of recs) w.rooms[rec.id].g.traverse(o => { if (!o.userData.water || !o.isMesh || o.userData.swSheen) return; const m = [].concat(o.material)[0]; if (waterMats.indexOf(m) < 0) waterMats.push(m);
@@ -366,26 +405,42 @@ function sewerDressVariety(w, lab) {
     const c = gm && gm.col ? gm.col('#6b2cc4') : null; if (c === was) return; was = c; lookAt(cleanOf(c)); for (const m of waterMats) m.color.copy(wcol); };
   w.sewer.look = t => '#' + lookAt(t).clone().convertLinearToSRGB().getHexString();   // (for the tests: the water's colour as the screen shows it, foul (0) to clean (1))
 
+  // ROUND 2: a lighter edge along each cap where the wall ends (on the wall's own group: it sinks with it), and along each stub's top where it ends (with the stubs)
+  const stubEdges = new T.Group(); stubEdges.userData.swAdded = true; let edgeN = 0;
+  { const capQ = new Map(), stubQ = quads(), EW = 0.07;
+    const strip = (q, b, dx, dy, y) => { const ex = b.x + dx * 0.5, ez = b.y + dy * 0.5, ix = ex - dx * EW, iz = ez - dy * EW, rx = dy / 2, rz = -dx / 2; putQuad(q, [ix - rx, y, iz - rz], [ix + rx, y, iz + rz], [ex + rx, y, ez + rz], [ex - rx, y, ez - rz], [0, 1, 0], [1, 1, 1]); };
+    for (const b of w.band.values()) { if (!Gs.has(b.G) || b.rock || !ids.has(b.own)) continue; let q = capQ.get(b.G); if (!q) capQ.set(b.G, q = quads());
+      const top = b.hi + WALL_H + 0.004, stub = !b.header && b.hides && b.hides.some(h => h.length);
+      for (const [dx, dy] of DIRS) { const nb = w.band.get(K(b.x + dx, b.y + dy)); if (!nb || Math.abs(nb.hi - b.hi) > 0.01) { strip(q, b, dx, dy, top); edgeN++; } if (stub && (!nb || nb.header || Math.abs(nb.hi - b.hi) > 0.01)) strip(stubQ, b, dx, dy, b.hi + CUT_H + 0.004); } }
+    for (const [G, q] of capQ) if (q.pos.length) { const m = quadMesh([{ q, mat: M.capEdge }]); m.material = M.capEdge; m.userData.swAdded = true; G.g.add(m); }
+    if (stubQ.pos.length) { const m = quadMesh([{ q: stubQ, mat: M.capEdge }]); m.material = M.capEdge; m.receiveShadow = true; stubEdges.add(m); (w.rest || w.g).add(stubEdges); } }
   // ── the light, baked into every vertex of the rooms' still things and their walls (nothing a frame) ──
   w.g.updateMatrixWorld(true);
   const n3 = new T.Matrix3(), v = new T.Vector3(), nv = new T.Vector3(); let baked = 0;
   const bake = o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || o.userData.water || o.userData.swSheen || inKit(o)) return; const ms = [].concat(o.material); if (ms.every(m => !m || m.isMeshBasicMaterial || m.isShaderMaterial)) return;
-    const own = ms.some(m => m === M.floor || m === M.wall || m === M.bank), geo = o.geometry.clone(), pos = geo.attributes.position, nor = geo.attributes.normal, old = !own && geo.attributes.color && ms.some(m => m && m.vertexColors) ? geo.attributes.color : null, a = new Float32Array(pos.count * 3);
+    const own = ms.some(m => m === M.floor || m === M.wall || m === M.bank || m === M.riser), geo = o.geometry.clone(), pos = geo.attributes.position, nor = geo.attributes.normal, old = !own && geo.attributes.color && ms.some(m => m && m.vertexColors) ? geo.attributes.color : null, a = new Float32Array(pos.count * 3);
     n3.getNormalMatrix(o.matrixWorld);
     for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); if (nor) nv.fromBufferAttribute(nor, i).applyMatrix3(n3).normalize(); else nv.set(0, 1, 0); const c = light(v.x, v.y, v.z, nv.x, nv.y, nv.z);
       a[i * 3] = c[0] * (old ? old.getX(i) : 1); a[i * 3 + 1] = c[1] * (old ? old.getY(i) : 1); a[i * 3 + 2] = c[2] * (old ? old.getZ(i) : 1); }
+    if (ms.some(m => m === M.riser)) { const gs = geo.groups.length && Array.isArray(o.material) ? geo.groups.filter(g => o.material[g.materialIndex] === M.riser) : [{ start: 0, count: pos.count }]; for (const g of gs) for (let i = g.start; i < g.start + g.count; i++) for (let c = 0; c < 3; c++) a[i * 3 + c] *= RISER_K; }   // (ROUND 2: a ledge's side: lighter, as the walls' faces read, not the shade's flat dark)
     geo.setAttribute('color', new T.Float32BufferAttribute(a, 3)); o.geometry = geo; o.material = Array.isArray(o.material) ? o.material.map(m => m && !m.isMeshBasicMaterial ? vc(m) : m) : vc(o.material); baked++; };
-  for (const rec of recs) w.rooms[rec.id].g.traverse(bake); for (const G of Gs) G.g.traverse(bake);
+  for (const rec of recs) w.rooms[rec.id].g.traverse(bake); for (const G of Gs) G.g.traverse(bake); stubEdges.traverse(bake);
+  // ROUND 2: the stubs' own (the dressed rooms', groups 2 and 3): the light baked as for the rest, and the wall's tone, a block each
+  const blockTone = (x, z) => 0.84 + 0.24 * vnoise(x / 4, z / 4, 48) + 0.08 * hsh(Math.round(x * 2), Math.round(z * 2), 49);
+  if (w.stubs && w.stubs.geometry.attributes.color) { const geo = w.stubs.geometry, col = geo.attributes.color, pos = geo.attributes.position, nor = geo.attributes.normal;
+    for (const gc of geo.groups) { if (gc.materialIndex < 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const cx = (pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3, cz = (pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3, nx = nor ? nor.getX(q) : 0, nz = nor ? nor.getZ(q) : 0, k = blockTone(Math.round(cx - nx * 0.3), Math.round(cz - nz * 0.3));
+      for (let i = q; i < q + 3; i++) { const c = light(pos.getX(i), pos.getY(i), pos.getZ(i), nor ? nor.getX(i) : 0, nor ? nor.getY(i) : 1, nor ? nor.getZ(i) : 0); col.setXYZ(i, c[0] * k, c[1] * k, c[2] * k); } } } col.needsUpdate = true; }
   // VARIETY: the tones, over the baked light: each floor tile its own (a slow noise and its seed, a little warmer or cooler), each wall block its own
   for (const rec of recs) { const f = w.rooms[rec.id].floor; if (!f) continue; const geo = f.geometry, col = geo.attributes.color, pos = geo.attributes.position, gr = geo.groups[0]; if (!col || !gr) continue;
     for (let q = gr.start; q + 2 < gr.start + gr.count; q += 3) { const tx = Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), tz = Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3), pk = tilePick(tx, tz), k = pk.tone;
       for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k * (1 + pk.warm), col.getY(i) * k, col.getZ(i) * k * (1 - pk.warm)); }
     col.needsUpdate = true; }
   for (const G of Gs) { const o = G.mesh; if (!o || !o.geometry.attributes.color) continue; const geo = o.geometry, col = geo.attributes.color, pos = geo.attributes.position, g0 = geo.groups.find(g => g.materialIndex === 0); if (!g0) continue;
+    for (const gc of geo.groups) { if (gc.materialIndex !== 1 && gc.materialIndex !== 2) continue; for (let q = gc.start; q + 2 < gc.start + gc.count; q += 3) { const k = blockTone(Math.round((pos.getX(q) + pos.getX(q + 1) + pos.getX(q + 2)) / 3), Math.round((pos.getZ(q) + pos.getZ(q + 1) + pos.getZ(q + 2)) / 3)); for (let i = q; i < q + 3; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); } }   // (ROUND 2: the caps, a tile each)
     for (let q = g0.start; q + 5 < g0.start + g0.count; q += 6) { let cx = 0, cz = 0; for (let i = 0; i < 6; i++) { cx += pos.getX(q + i); cz += pos.getZ(q + i); } cx /= 6; cz /= 6; const k = 0.84 + 0.24 * vnoise(cx / 4, cz / 4, 48) + 0.08 * hsh(Math.round(cx * 2), Math.round(cz * 2), 49);
       for (let i = q; i < q + 6; i++) col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k); }
     col.needsUpdate = true; }
-  window.__swVariety = { clutter: cl, standing: standing.length };
+  window.__swVariety = { clutter: cl, standing: standing.length, deep: deepN, edges: edgeN };
   return (w.sewerLook = { rooms: [...ids], lamps: lamps.length, edges: edges.length, baked, groups: Gs.size, stubs: stubsMoved, standing, walk: (x, y) => walk(K(x, y)) });
 }
 

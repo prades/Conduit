@@ -33,7 +33,7 @@ const SPOTS = [
   fs.mkdirSync(OUT, { recursive: true });
   await new Promise(r => srv.listen(0, r)); const port = srv.address().port;
   const b = await chromium.launch({ args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-  const p = await b.newPage({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 });
+  const p = await b.newPage({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2 }); if (process.env.RK) await p.addInitScript(k => { window.__RK = k; }, +process.env.RK);
   const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') errs.push(m.text()); });
   await p.goto(`http://127.0.0.1:${port}/game.html?dev&engine=3d&sharp=2${SD ? '&sewerdungeon' : ''}`, { waitUntil: 'load', timeout: 300000 });
   await p.waitForFunction(() => typeof STARTUP !== 'undefined' && (STARTUP.state === 'done' || STARTUP.state === 'failed') && typeof VIEW3D !== 'undefined' && (VIEW3D.state === 'ready' || VIEW3D.state === 'failed'), null, { timeout: 300000 });
@@ -54,7 +54,7 @@ const SPOTS = [
         const l1 = ((q.b[1] - q.c[1]) * (P[0] - q.c[0]) + (q.c[0] - q.b[0]) * (P[1] - q.c[1])) / den, l2 = ((q.c[1] - q.a[1]) * (P[0] - q.c[0]) + (q.a[0] - q.c[0]) * (P[1] - q.c[1])) / den, l3 = 1 - l1 - l2; if (l1 < -1e-6 || l2 < -1e-6 || l3 < -1e-6) return false; return l1 * q.a[2] + l2 * q.b[2] + l3 * q.c[2] > P[2] + 0.05; };
       L.rooms.forEach(id => W.rooms[id].rec.cells.forEach(c => { if (!L.walk(c[0], c[1])) return; const h = (c[2] || 0) / UHh; if ([0.15, 0.6].some(lift => { const P = scr(c[0], h + lift, c[1]); return T2.some(q => covers(q, P)); })) { n++; if (where.length < 6) where.push('turn ' + t + ': ' + id + ' ' + c[0] + ',' + c[1]); } })); }
     return { hidden: n, where, standing: L.standing.length, rooms: L.rooms.length, lamps: L.lamps, variety: window.__swVariety || null, err: W.sewerLookError || null }; });
-  console.log('setup', JSON.stringify(info), 'guard', JSON.stringify(guard));
+  console.log('setup', JSON.stringify(info), 'guard', JSON.stringify(guard)); if (process.env.EVAL) console.log('eval', JSON.stringify(await p.evaluate(process.env.EVAL)));
   if (!info.ok || info.view !== 'ready') { console.log(errs.slice(0, 8).join('\n')); await b.close(); srv.close(); process.exit(1); }
   const cost = [];
   for (const [name, x, y, zoom, turn] of SPOTS) {
@@ -65,6 +65,10 @@ const SPOTS = [
       return { showing: VIEW3D.showing, calls: fr.map(f => f[0]).join('/'), tris: fr.map(f => f[1]).join('/'), room: (facilityRoomAt(Math.round(player.x), Math.round(player.y), _fp.F) || {}).id };
     }, [x, y, zoom, turn]);
     cost.push([name, r]); console.log(name, JSON.stringify(r));
+    if (process.env.PROBE) console.log('probe', JSON.stringify(await p.evaluate(pts => pts.map(([px, py]) => { try { const V = VIEW3D.view, cv = document.getElementById('view3dCanvas'), R = cv.getBoundingClientRect(), ray = new THREE.Raycaster(), cam = V.core.camera || V.camera;
+      if (!cam) return 'no camera: ' + Object.keys(V.core).join(','); ray.setFromCamera({ x: (px - R.left) / R.width * 2 - 1, y: -((py - R.top) / R.height) * 2 + 1 }, cam); const L = []; V.core.scene.traverse(o => { if (o.isMesh && o.visible) { const m2 = o.layers.mask; o.userData._lm = m2; o.layers.mask = 0xffffffff; L.push(o); } }); const hit0 = []; for (const o of L) { try { o.raycast(ray, hit0); } catch (e) {} } hit0.sort((a, b) => a.distance - b.distance); L.forEach(o => o.layers.mask = o.userData._lm); const hit = hit0.filter(h => h.object.visible)[0];
+      if (!hit) { const W = V.world, out = []; for (const yy of [-2.5, -1.44, -0.5, 0, 0.5]) { const t = (yy - ray.ray.origin.y) / ray.ray.direction.y, x = ray.ray.origin.x + ray.ray.direction.x * t, z = ray.ray.origin.z + ray.ray.direction.z * t, b = W.band.get(Math.round(x) + ',' + Math.round(z)), r = W.roomAt(x, z); out.push([yy, +x.toFixed(1), +z.toFixed(1), r && (r.id || r), b ? { own: b.own, hi: +b.hi.toFixed(2), lo: +b.lo.toFixed(2), hides: b.hides && b.hides.map(h => h.length).join('') } : null]); } return { none: out }; } const o = hit.object, m = [].concat(o.material)[hit.face && o.geometry.groups.length ? (o.geometry.groups.find(g => hit.faceIndex * 3 >= g.start && hit.faceIndex * 3 < g.start + g.count) || {}).materialIndex || 0 : 0];
+      let path = []; for (let q = o; q; q = q.parent) path.push(q.name || q.type + (q.userData.merged ? '(m)' : '')); return { p: hit.point.toArray().map(v => +v.toFixed(2)), n: hit.face && hit.face.normal.toArray().map(v => +v.toFixed(2)), mat: m && m.type, col: m && m.color && m.color.getHexString(), map: !!(m && m.map), vc: m && m.vertexColors, path: path.slice(0, 5).join('<') }; } catch (e) { return String(e.stack).slice(0, 300); } }), JSON.parse(process.env.PROBE))));
     await p.screenshot({ path: path.join(OUT, VAR + '-' + name + '.png'), timeout: 180000 });
   }
   fs.writeFileSync(path.join(OUT, VAR + (SD ? '-sd' : '') + '-cost.json'), JSON.stringify({ guard, cost }));
