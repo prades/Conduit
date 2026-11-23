@@ -29,7 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 const CHART = {
     'QUILLSTONE': 'spinelegged', 'STATIC ORB': 'drone', 'ELECTRO SKINK': 'spinelegged', 'RIFT MIMIC': 'jelly', 'JELLY RAM': 'jelly', 'SEEPER': 'spinelegged', 'FROST MAW': 'elemental',
     'EMBER HOOD': 'elemental', 'THUNDERHEAD': 'elemental', 'VOIDSTAR': 'mollusk', 'HORNSHELL': 'mollusk', 'ROTSHARD': 'elemental', 'RIMESTAR': 'drone',
-    'THERMITE BURROWER': 'drone', 'MANTA RAY': 'drone', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'spinelegged', 'IGLOO SKATER': 'elemental',
+    'THERMITE BURROWER': 'drone', 'MANTA RAY': 'mollusk', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'spinelegged', 'IGLOO SKATER': 'elemental',
     'THORNWHIP': 'elemental', 'SUNDEW': 'mollusk', 'STONEPETAL': 'spinelegged',   // (and SUNDEW, BLOOM's Brawler, build 2026-11-08k: a mollusk)   // (BLOOM's Mage, build 2026-11-08j: not on the chart; it keeps the lotus lantern's Elemental, docs/CONVERSION.md §2)
 };
 
@@ -232,9 +232,9 @@ function measure(w, h, query, seed) {
         same(Object.keys(CHART).length, 22, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 22, 'the table');
         const ids = J('Object.keys(EQUIP_FORM_SUBCLASS)'); for (const id of ids) ok(live.concat(aside).some(f => f.id === id), id + ' is in the table and is not a form in play');
     });
-    await check('the counts: spine-legged 5 (the Crustacean renamed, with the Electro Skink, the Blight Spider and BLOOM\'s coral crab), mollusk 4 (with BLOOM\'s SUNDEW, build 2026-11-08k), elemental 6 (with BLOOM\'s THORNWHIP, build 2026-11-08j), drone 4, jelly 3', () => {
+    await check('the counts: spine-legged 5 (the Crustacean renamed, with the Electro Skink, the Blight Spider and BLOOM\'s coral crab), mollusk 5 (with BLOOM\'s SUNDEW, build 2026-11-08k, and the MANTA RAY, build 2026-11-17df), elemental 6 (with BLOOM\'s THORNWHIP, build 2026-11-08j), drone 3 (the Hover Shell was one), jelly 3', () => {
         const n = {}; for (const v of Object.values(CHART)) n[v] = (n[v] || 0) + 1;
-        same(JSON.stringify(n), JSON.stringify({ spinelegged: 5, drone: 4, jelly: 3, elemental: 6, mollusk: 4 }), 'the chart\'s counts');
+        same(JSON.stringify(n), JSON.stringify({ spinelegged: 5, drone: 3, jelly: 3, elemental: 6, mollusk: 5 }), 'the chart\'s counts');
     });
     await check('an egg has no subclass until it evolves; a follower evolved into a retired form has none; a clone, and nobody, have none', () => {
         const r = J(`(function(){ __fresh(0); const egg = __mk('fire', 'brawler'), old = __mk('fire', 'brawler'); old.evolved = 'bloom'; const q = __form(__mk('fire', 'brawler'), 'quillstone');

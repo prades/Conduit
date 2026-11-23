@@ -344,7 +344,7 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | GOO PROXY | Technician · flux | Jelly | 0 | 44% |
 | THERMITE BURROWER | Technician · fire | Drone | 0 | 44% |
 | BLIGHT SPIDER | Technician · toxic | Spine-legged (a Drone until build `2026-11-08h`) | −1 | 40% |
-| HOVER SHELL | Technician · electric | Drone | 0 | 44% |
+| MANTA RAY (the Hover Shell until build `2026-11-17de`) | Technician · electric | Mollusk (the Hover Shell was a Drone; build `2026-11-17df`) | −1 | 40% |
 | HAMMER SLUG | Technician · core | Mollusk | −1 | 40% |
 | FROST MAW | Brawler · ice | Elemental | +1 | 29–38% |
 | STATIC ORB | Brawler · electric | Drone | 0 | 25–33% |

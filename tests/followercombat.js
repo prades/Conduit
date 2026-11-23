@@ -431,10 +431,10 @@ function measure(w, h) {
         same(JSON.stringify(r.ab), JSON.stringify({ id: 'kinetic_launcher', name: 'KINETIC LAUNCHER', short: 'LAUNCH', icon: '⚡', col: '#ffe733', aim: ['follower', 'enemy'], use: 'fn', ask: 'fn' }), 'the ability');
         same(JSON.stringify(r.launch), JSON.stringify({ cooldown: 3600, selfDamage: 10, powerMult: 3, siteXp: 100, hitReach: 1.6, loadReach: 1.3, loadWait: 480, flight: 40, peak: 70, siteFlight: 64, sitePeak: 120, dropFlight: 28, near: 6, setupWalk: 1200, setup: 120 }), 'its numbers');
     });
-    check('the electric technician (the MANTA RAY since build 2026-11-17de, the Hover Shell before: a new body under the same id) is otherwise as it was: SHOCK ZAP its only move (BASH until build 2026-11-09c, the owner\'s pick in its place; the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
+    check('the electric technician (the MANTA RAY since build 2026-11-17de, the Hover Shell before: a new body under the same id) is otherwise as it was: SHOCK ZAP its only move (BASH until build 2026-11-09c, the owner\'s pick in its place; the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Mollusk since build 2026-11-17df, the owner: "This creature is mollusk type"; the Hover Shell was a Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
         const r = J(`({ form: EVOLUTIONS.hovershell, dmg: DMG_FORM.hovershell, sub: EQUIP_FORM_SUBCLASS.hovershell })`);
         same(JSON.stringify(r.form), JSON.stringify({ id: 'hovershell', name: 'MANTA RAY', element: 'electric', role: 'camper', move: 'SHOCK ZAP', moves: ['shock_zap'], sheet: 'img/evo/hovershell.png', cell: 192, anchor: [96, 138.2], core: [96, 107.4], noGlow: true, color: '#ffee33' }), 'its form');
-        same(JSON.stringify(r.dmg), JSON.stringify({ main: 'crushing', alt: 'earthquake' }), 'its damage types'); same(r.sub, 'drone', 'its subclass');
+        same(JSON.stringify(r.dmg), JSON.stringify({ main: 'crushing', alt: 'earthquake' }), 'its damage types'); same(r.sub, 'mollusk', 'its subclass');
         const N = rd('js/npc.js'); ok(/const CAMPER_ENGAGE_RADIUS = 4;/.test(N) && /\} else \{\s*followerAttack\(actor, nearestEnemy\);\s*\}/.test(N.slice(N.indexOf('CAMPER (the technician)'))), 'the Technicians\' plain hit changed');
     });
 
