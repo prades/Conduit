@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dj` · branch `claude/start-game-project-HSh7Z` · about a quarter a hit (ant health); what a card will do, before it is let go; the name plate up close
+- **The ask** (the owner, 2026-11-23, "All that stuff"): the three open items: the "about a quarter" health retune with the agent's proposed numbers, showing what a card will do while it is dragged, and the name plate that grew huge up close with the low camera.
+- **What it does:** the ant scout, striker and tank have 51, 65 and 92 health (were 60, 100 and 180; worker and every bite unchanged; ant clones of those classes have less too), so a starting follower's hit takes about a quarter off a scout, a fifth off a striker and an eighth off a tank (`COMBAT.md` §7.3). In card battles a word over the dragged card says HITS NOW, CHARGES · LANDS IN n TURNS, MOVES IN FIRST, or why nothing would be played (`CARD-BATTLES.md` §2.81). With the low camera a unit's name plate is drawn no bigger than 1.3 times its size (§2.80). `js/species.js`, `js/cardbattle.js`, `game.html`, `js/levels.js`, `js/view3d.js`, `tests/cardbattle.js`, `bible.html`, generated files.
+- **Verified:** the hit shares measured in a real browser; the preview's check in `tests/cardbattle.js`; the close-up seen in a real browser with the low camera; the suites in the handoff. **Numbers provisional; not seen on an iPad; not playtested.**
+
 ### Build `2026-11-17di` · branch `claude/start-game-project-HSh7Z` · the follower's close-up framed clear of its card; STANCE on the card
 - **The ask** (the owner, 2026-11-23): the camera covered the selected creature; "make it to where the camera shifts where the middle is to somewhere more towards the top right middle ... so that you can see the creature selected"; and the stance, "Are they aggressive? Are they defensive? Are they balanced?", adjustable on the card at the bottom.
 - **What it does:** with the close-up on, the member stands up and to the right of the middle, clear of its card, in both cameras; the card has a STANCE row (CAUTIOUS, BALANCED, RECKLESS, TANK: the roster's play styles). `CARD-BATTLES.md` §2.80. `js/view3d.js`, `view3d/gameview.js`, `js/squadfly.js`, `game.html`, `tests/squadfly.js`, generated files.

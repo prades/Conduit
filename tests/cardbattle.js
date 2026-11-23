@@ -161,6 +161,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { who: T && T.who, foe: cardBattleHolds(a), member: cardBattleHolds(followers[0]), me: cardBattleHolds(player), gun: a.health === h0, banner: _cbEls && _cbEls.turn ? _cbEls.turn.textContent : '' }; })()`);
         same(r.who, 'you', 'first'); same(r.foe, true, 'the enemy holds'); same(r.member, true, 'a member holds'); same(r.me, false, 'the cube holds'); same(r.gun, true, 'the gun fired'); same(/YOUR TURN/.test(r.banner), true, 'the banner: ' + r.banner);
     });
+    check('WHAT A CARD WILL DO, said while it is dragged (the owner, 2026-11-23: "Show it before you drop"): HITS NOW next to it; a Mage\'s CHARGES · LANDS IN 1 TURN; nothing said over no enemy; nothing played or changed; let go, it plays as before', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
+            const f = followers[0]; __nextTo(f, a); const P = (k, t) => { const p = cardBattlePreview(f, k, null, t); return p ? p.text + '/' + p.ok : 'none'; };
+            const o = { now: P('basic', a), none: P('basic', null) }; CARD_BATTLE.byClass = true; const role = f.role; f.role = 'sniper'; o.mage = P('basic', a);
+            o.who = cardBattleTurnInfo().who; o.acted = _cb.acted.size; o.charging = _cb.charge.size; o.played = cardBattlePlay(f, 'basic', null, a); o.charged = _cb.charge.has(f); f.role = role; CARD_BATTLE.byClass = false; return o; })()`);
+        same(r.now, 'HITS NOW/now', 'next to it'); same(r.none, 'none', 'over no enemy'); same(r.mage, 'CHARGES \u00b7 LANDS IN 1 TURN/later', 'a Mage');
+        same(JSON.stringify([r.who, r.acted, r.charging]), JSON.stringify(['you', 0, 0]), 'the preview changed nothing'); same(r.played, true, 'played'); same(r.charged, true, 'and it charges, as it said');
+    });
     check('a basic card dragged onto an enemy: that follower alone does its attack on it (the game\'s own damage); then your other follower its card (the owner, 2026-11-17: each follower attacks); then each enemy its turn; then yours again', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __walker(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
             const f = followers[0]; __nextTo(f, a);   /* (next to it: whatever its role, it can hit it from its square, §2.39) */

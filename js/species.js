@@ -89,9 +89,9 @@ const SPECIES = {
         color: "#aa55ff",
         nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
         worker:  { width:20, height:9,  moveSpeed:0.024, health:45,  power:7,  dnaDrops:1, shardDrop:8,  reactionSpeed:25 },
-        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:9,  reactionSpeed:5  },
-        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:14, reactionSpeed:10 },
-        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:22, reactionSpeed:22 },
+        scout:   { width:22, height:10, moveSpeed:0.022, health:51,  power:18, dnaDrops:1, shardDrop:9,  reactionSpeed:5  },
+        striker: { width:28, height:12, moveSpeed:0.018, health:65,  power:27, dnaDrops:1, shardDrop:14, reactionSpeed:10 },
+        tank:    { width:36, height:16, moveSpeed:0.012, health:92,  power:38, dnaDrops:2, shardDrop:22, reactionSpeed:22 },
         boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
     // THE BEETLE: three times an ant's health and about two thirds of its bite.
