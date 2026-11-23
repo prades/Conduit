@@ -282,7 +282,7 @@ Everything 2D the game draws over the picture was laid out for today's 2:1 ortho
 - **The floor's marks:** none where the graphics card gives no depth texture; none farther than the layer reaches round the player (about 19 tiles); drawn at half the 2D's sharpness; as today, none while the camera swings or in a battle.
 - **A tap is not stopped by a wall:** it finds the floor on its ray, behind a standing wall too (as the 2D's did).
 - `isoDepth` (the 2D's drawing order) is unchanged: the camera looks the same way round as the game's.
-- **Seen in the pictures:** the 2D is drawn over the whole 3D picture, so nothing 3D in front of a place hides what the 2D draws there (in the arena a station's floor diamond shows on the rubble in front of it; in the sewers a door's label stands over the wall's top). And the camera being lower, bodies stand closer together up the screen: a unit's plate can lie over the body of the one in front (the arena: the Thunderhead's over the Frost Maw). Nothing changed for either.
+- **Seen in the pictures:** the 2D is drawn over the whole 3D picture, so nothing 3D in front of a place hides what the 2D draws there (in the arena a station's floor diamond shows on the rubble in front of it; in the sewers a door's label stands over the wall's top; in the Crystal Chamber turned once, a dark railed platform the 2D draws stands over the top of the wall in front of it). And the camera being lower, bodies stand closer together up the screen: a unit's plate can lie over the body of the one in front (the arena: the Thunderhead's over the Frost Maw). Zoomed in to 1.8 the plates and bars, scaled as the camera is there, are large (about twice today's). Nothing changed for any of these.
 
 ### 8.7 Edge cases
 
