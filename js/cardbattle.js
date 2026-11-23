@@ -1160,6 +1160,56 @@ for (const k of ["embercowl:hexfire", "maw:chomp", "hammerslug:shell_guard", "th
     "igloo:skate_charge", "rimestar:icicle_volley", "electroskink:zigzag_dash", "thermite:magma_vent", "mimic:rift_impale", "hornshell:echo_pulse", "staticorb:static_rush", "gooproxy:phase_swap",
     "shrub:briar_sweep", "sundew:sweet_scent", "rotshard:rotten_decoy", "jellyram:wobble_slam", "blightspider:venom_bite", "hovershell:shock_zap"]) CARD_BATTLE_ART[k] = "img/cards/attack/" + k.replace(":", "_") + ".png";
 function _cbArt(f, id) { const p = f && id ? CARD_BATTLE_ART[f.evolved + ":" + id] : null; return p ? (typeof imgSrc === "function" ? imgSrc(p) : p) : null; }
+// THE BASIC ATTACK CARDS' PICTURES (ATTACK-CARD-ART.md §2b and §4, 2026-11-18 and 2026-11-23; CARD-BATTLES.md §2.42). The owner, 2026-11-17: "Have one for each attack type in each element and we
+// should eventually just combine those because we have basic attacks that are elementally infused"; of The Sweep family, 2026-11-18: "Those look good, but wouldn't it be better to have two files
+// and just mash them together whenever the time comes?"; 2026-11-23: "make the other cards for the attacks just have graphics". So a basic attack's picture is no file of its own: it is put
+// together here, once for each attack type in each element, from the element's world as the energy cards paint it (js/energygem.js energyWorld) and its attack type's approved stroke in two
+// layers (img/cards/attack/basic_<type>_glow.png, white with its strength in its alpha, tinted to the element's colour; basic_<type>_core.png, the white-hot head, left white). The recipe is the
+// approved proof's (design/cards/attack/compose_basic.js COMPOSE), in plain canvas steps (no ctx.filter: old iPads' Safari has none): the world tilted and dimmed, the tinted glow added, the
+// core added, the vignette and the darkened foot. It is made off the frame (when its five pictures have loaded) and kept; until then, and wherever it cannot be made, the card has its plain face.
+const CARD_BATTLE_BASIC = { types: ["slashing", "piercing", "crushing", "projectile", "elemental"], w: 450, h: 630, tilt: -0.19, dim: 0.35, motes: 0.7, made: {}, wait: {} };
+function _cbBasicKey(f) {
+    if (!f || typeof dmgFormType !== "function" || typeof ENERGY_WORLD === "undefined" || typeof ELEMENTS === "undefined") return null;
+    const type = dmgFormType(f, "main"), el = f.element;
+    return CARD_BATTLE_BASIC.types.indexOf(type) >= 0 && el && ENERGY_WORLD[el] && ELEMENTS.some(e => e.id === el) ? type + ":" + el : null;
+}
+function _cbBasicPaint(key, pics) {
+    const B = CARD_BATTLE_BASIC, W = B.w, H = B.h, el = key.split(":")[1], colour = ELEMENTS.find(e => e.id === el).color, [scene, motes, bolts, glow, core] = pics;
+    const mk = () => { const k = document.createElement("canvas"); k.width = W; k.height = H; return k; }, out = mk(), g = out.getContext("2d");
+    g.fillStyle = "#000"; g.fillRect(0, 0, W, H);
+    g.save(); g.translate(W / 2, H / 2); g.rotate(B.tilt);   /* (the world, tilted and a little larger, so the tilt leaves no corner bare) */
+    g.drawImage(scene, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); g.globalAlpha = B.motes; g.drawImage(motes, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); if (bolts) g.drawImage(bolts, -W * 0.66, -H * 0.62, W * 1.32, H * 1.24); g.restore();
+    g.fillStyle = "rgba(0,0,0," + B.dim + ")"; g.fillRect(0, 0, W, H);
+    const tint = mk(), t = tint.getContext("2d"); t.drawImage(glow, 0, 0, W, H); t.globalCompositeOperation = "source-in"; t.fillStyle = colour; t.fillRect(0, 0, W, H);   /* (the glow in the element's colour) */
+    g.globalCompositeOperation = "lighter"; g.drawImage(tint, 0, 0); g.drawImage(core, 0, 0, W, H); g.globalCompositeOperation = "source-over";
+    let gr = g.createRadialGradient(W * 0.5, H * 0.38, 0, W * 0.5, H * 0.38, H * 0.8); gr.addColorStop(0.45, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.7)"); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    gr = g.createLinearGradient(0, H * 0.6, 0, H); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,0.65)"); g.fillStyle = gr; g.fillRect(0, H * 0.6, W, H * 0.4);
+    return out;
+}
+function _cbBasicMake(key) {
+    const B = CARD_BATTLE_BASIC; if (B.wait[key]) return B.wait[key];
+    const fail = () => { B.made[key] = ""; return null; };   /* (it cannot be made here: the plain face, and it is not tried again) */
+    return (B.wait[key] = new Promise(done => {
+        try {
+            const [type, el] = key.split(":"), w = typeof energyWorld === "function" ? energyWorld(el) : null; if (!w || typeof Image === "undefined") return done(fail());
+            const src = n => { const p = "img/cards/attack/basic_" + type + "_" + n + ".png"; return typeof imgSrc === "function" ? imgSrc(p) : p; };
+            const load = u => new Promise((ok, no) => { if (!u) return ok(null); const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(u)); i.src = u; });
+            Promise.all([load(w.scene), load(w.motes), load(w.bolts), load(src("glow")), load(src("core"))]).then(pics => {
+                const c = _cbBasicPaint(key, pics), keep = u => { B.made[key] = u || ""; done(u || null); };
+                if (typeof c.toBlob === "function" && typeof URL !== "undefined" && URL.createObjectURL) c.toBlob(b => { try { keep(b ? URL.createObjectURL(b) : c.toDataURL("image/jpeg", 0.9)); } catch (e) { done(fail()); } }, "image/jpeg", 0.9);
+                else keep(c.toDataURL("image/jpeg", 0.9));
+            }).catch(() => done(fail()));
+        } catch (e) { done(fail()); }
+    }));
+}
+/* a follower's basic attack card's picture: its address once it is made; null until then (it is started here) and for one with no attack type or no element's world */
+function _cbBasicArt(f) {
+    let key = null; try { key = _cbBasicKey(f); } catch (e) { key = null; } if (!key || typeof document === "undefined" || !document.createElement) return null;
+    const B = CARD_BATTLE_BASIC; if (Object.prototype.hasOwnProperty.call(B.made, key)) return B.made[key] || null;
+    _cbBasicMake(key); return null;
+}
+/* (for a check: resolved when the follower's basic attack picture is made, or cannot be) */
+function cardBattleArtReady(f) { let key = null; try { key = _cbBasicKey(f); } catch (e) { key = null; } return key && typeof document !== "undefined" && document.createElement ? _cbBasicMake(key) : Promise.resolve(null); }
 function cardBattleCards(f) {
     if (typeof player !== "undefined" && f === player) return _cbYouCards();   // (the Gunslinger's own: SHOOT and HOLD FIRE, §2.66)
     const out = [], d = typeof evolvedDef === "function" ? evolvedDef(f) : null, col = _cbCol(f);
@@ -1178,7 +1228,7 @@ function cardBattleCards(f) {
     if (u) { const pct = Math.max(0, Math.min(100, Math.round(f.ultimateCharge || 0)));
         let fx = ""; try { const I = typeof unitInfo === "function" ? unitInfo(f) : null, a = I && (I.attacks || []).find(x => x && typeof x.h === "string" && x.h.indexOf("ULTIMATE") === 0); fx = a && a.note ? a.note : ""; } catch (e) {}
         out.push({ kind: "ult", tag: "ULTIMATE", name: String(u.name || "").toUpperCase(), fx, ready: pct >= 100, charge: pct, col }); }
-    for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; }
+    for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; } else if (c.kind === "basic") { const a = _cbBasicArt(f); if (a) c.art = a; }
     for (const c of out) { c.chargeT = _cbChargeTurns(f, c.kind, c.id); if (c.kind === "move" && !_cbCools(f, "move")) c.recharge = 0; }   // (by class: a Mage's charge, a Brawler's cooldown, a Technician's both)
     for (const c of out) { const say = typeof cardShapeSays === "function" ? cardShapeSays(f, c.kind, c.id) : null; if (say) c.fx = say; else if (c.kind === "ult") c.fx = String(c.fx || "").replace(/\s*When it is fully charged[^]*$/, ""); }   // (A CARD'S WORDS IN A BATTLE, §2.58: its squares and its effects in turns, js/cardshapes.js; an Ultimate's without the real time's tap)
     { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.56: always ready while it has a pace)
