@@ -171,6 +171,7 @@ function facilityDrawCctv() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of actors) {
         if (!a || a.dead || a.team !== "red") continue;
+        if (typeof view3dHides === "function" && view3dHides(a.x, a.y, 0.6)) continue;   // (THE LOW CAMERA: not where a wall hides it, js/view3d.js)
         const p = _stScreen({ x: a.x, y: a.y }), inside = p.x > 14 && p.x < W - 14 && p.y > 14 && p.y < H - 14;
         ctx.globalAlpha = fade * (0.55 + 0.45 * pul); ctx.fillStyle = "#ff4a3a"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2;
         if (inside) { const y = p.y - 52; ctx.beginPath(); ctx.moveTo(p.x, y - 9); ctx.lineTo(p.x + 8, y); ctx.lineTo(p.x, y + 9); ctx.lineTo(p.x - 8, y); ctx.closePath(); ctx.fill(); ctx.stroke(); }

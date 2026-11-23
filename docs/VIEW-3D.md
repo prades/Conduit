@@ -243,7 +243,7 @@ C's light, sky and palette; any change of the battle's angle, the walls' heights
 
 ### 8.5 How it works (`view3d/lowcam.js`, `view3d/gameview.js`)
 
-- **The knobs** are `LOWCAM` in `view3d/lowcam.js`, all in one place, the drafts' values, **provisional** (open question 3): view 40° (perspective, vertical), pitch 30° down, 9.5 tiles from the aim, the aim 2.2 tiles ahead of the player and 0.55 over their floor (zoomed in, both shrink with the distance, ×1/zoom: at the drafts' 2.2 tiles, zoom 1.8 put the player half off the foot of the picture; zoomed out they stay as they are), the aim following at 6/s (the share of the way closed in a frame is 1 − e^(−6·dt)), curve k = 0.013 (a vertex d tiles ahead of the player along the camera's level forward is drawn k·d² lower).
+- **The knobs** are `LOWCAM` in `view3d/lowcam.js`, all in one place, the drafts' values, **provisional** (open question 3): view 40° (perspective, vertical), pitch 30° down, 9.5 tiles from the aim, the aim 2.2 tiles ahead of the player and 0.55 over their floor (zoomed in, both shrink with the distance, ×1/zoom: at the drafts' 2.2 tiles, zoom 1.8 put the player half off the foot of the picture; zoomed out they stay as they are), the aim following at 6/s (the share of the way closed in a frame is 1 − e^(−6·dt)), curve k = 0.0065 (a vertex d tiles ahead of the player along the camera's level forward is drawn k·d² lower; the drafts' 0.013 until the owner's feedback, §8.14), the visible distance `see` 22 tiles and another room's `seeRoom` 12, long pieces cut to `seg` 1.5 tiles (§8.14).
 - **The camera:** `place()` works out the game's turn and the battle's ease as before; with the switch, `placeLow()` gives them to `LOW.place()`. The zoom divides the distance (and, zoomed in, the aim's lead and height: above).
 - **The battle's camera is today's** (open question 1): as a battle eases in (`cardBattleCam().k`), the view narrows (40° to 0.05°, geometrically) while the camera pulls back so the picture's height at the aim goes from the follow camera's to today's battle camera's; the pitch, the turn and the aim go to the battle's; the curve goes to nothing. At the full ease it is today's orthographic battle picture to within a pixel (checked). Easing out, the same back.
 - **The curve** is in the vertex shaders: every material the view draws is wrapped once (`wrapMat`: the materials three writes, the sprites, and the view's own shaders: the attacks', the fields', the water), new ones as they are made (a body when built, the rest every 30 frames). The shadows' map is drawn from the world unbent and each surface reads it from its unbent place, so a shadow lands on what it falls on.
@@ -300,6 +300,7 @@ A battle begun or ended mid-ease (the ease is the battle's own, both ways); a sw
 | 2 | The 2D through the camera: taps, the bars and plates, pickups and stations, the floor's marks, a battle's 2D fighters; the game's own projection (`isoSX`, `isoSY`, `_fpP`) answered by the camera | Implemented; verified by `tests/view3d.js` STAGE 2 (three checks) and pictures; what is left in §8.6 |
 | 3 | The walls that sink, judged from the active camera as well (§8.10) | Implemented; verified by `tests/view3d.js` STAGE 3 (all four turns, every floor tile of every room built, and as it runs) and pictures |
 | 4 | The cost measured; horizon culling and the visible distance (§8.11) | Implemented; verified by `tests/view3d.js` STAGE 4 (fewer draws and triangles, the same picture) and measured (headless Chromium only) |
+| 5 | The owner's feedback after trying it (§8.14): less loaded in, no 2D through walls, the curve halved, long pieces bent | Implemented; verified by `tests/view3d.js` THE OWNER'S FEEDBACK (two checks) and pictures; what is left in §8.14 |
 
 Not seen on an iPad; not playtested. The pictures (`node design/cozy-camera/built.js`) were looked at in every place it renders; what they show that is not fixed is in §8.6 (the 2D), §8.10 (the walls) and §8.11 (the picture's edges).
 
@@ -354,4 +355,43 @@ In `OPEN-QUESTIONS.md` (Open 2026-11-23, the low camera): the card battle's angl
 ### 8.13 History
 
 - 2026-11-23: the drafts A, B, C (`design/cozy-camera/`, pictures only); the owner chose **"B"**; stage 1 built behind `?cam=low`.
-- 2026-11-23: stages 2 to 4 (the 2D through the camera, the walls judged from it, horizon culling and the cost). From the pictures: zoomed in, the aim's lead and height shrink with the distance (the player was half off the picture at 1.8).
+- 2026-11-23: stages 2 to 4 (the 2D through the camera, the walls judged from it, horizon culling and the cost).
+- 2026-11-23: the owner's feedback after trying it (§8.14): the visible distance and another room's, no 2D through walls, the curve halved (k 0.0065), long pieces cut so they bend. From the pictures: zoomed in, the aim's lead and height shrink with the distance (the player was half off the picture at 1.8).
+
+### 8.14 The owner's feedback after trying it (stage 5, 2026-11-23)
+
+The owner, 2026-11-23, after trying `?cam=low`:
+
+> "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
+
+All of it under the switch; without it nothing changed. The staircases and the follower posts' pads stay in the game: the owner is only thinking about removing them (`OPEN-QUESTIONS.md`).
+
+| What the owner saw | The cause | What was done (`LOWCAM` knob) | Status |
+|---|---|---|---|
+| "it needs to load less in"; staircases and spawn pads shown | The 3D was drawn to the horizon (about 18 tiles ahead, everything to 45); the 2D of every room on the screen (a stairwell down, a post's pad, a station's diamond) was drawn wherever the camera put it, other rooms included, whatever stood in front | **The visible distance** `see` **22 tiles**: nothing 3D whose bounding sphere is wholly farther from the player is drawn (`lowcam.js`, the frustum test), and no 2D. **Another room's** things (its floor, fittings and props: tagged by room when the view is made) and 2D **past** `seeRoom` **12 tiles**: not drawn. The room you are in reaches to 22. | Implemented; verified (the test: nothing 2D or 3D of another room past 12 in six places) |
+| "highlighted tiles being visible through the walls" | The 2D is drawn over the whole 3D picture: a station's floor diamond, a post's pad, a stairwell, a launcher site's outline, a unit's plate in the room behind a wall showed through it | Before the 2D draws a thing of the frame's list (`js/game.js`, `js/view3d.js` `view3dHidesItem`, `view3dHides`), a line from its place to the camera, bent as the picture is, is walked across the floor a quarter tile at a time (`gameview.js` `hides`, `lowOccluded`); crossing a wall's block lower than its top as it stands now, the thing is not drawn. A floor's item is looked at 0.05 tiles up, a unit at its middle (0.6). Also: the selected units' rings, a launcher site's outline, a flare, the CCTV marks, a door's tag. No read-back from the graphics card (a stall on an old iPad); a few dozen lookups a thing. The floor's own marks (the long-press ring, pools, auras) were already laid on the 3D floor by depth (§8.6), so a wall hides them | Implemented; verified (the test: in six places, every item whose line to the camera passes through a standing wall's face, by the test's own maths, is not drawn) |
+| "the roundness is too much" | The drafts' curve | **k 0.013 → 0.0065** (halved, as asked; one knob). The horizon is farther (about 27 tiles ahead instead of 18), which the visible distance above covers | Implemented; seen in the pictures |
+| the yellow pipeline over the snack machines "doesn't bend properly" | The hallway's wall pipe (`pipe_6` in `js/facilitymap.js`, 21 tiles along the hallway's north wall, built by `round2/chamber.js` as one `CylinderGeometry` with one segment along it) has points only at its two ends: the curve moves points, so it stayed a straight chord while the wall under it bent | **Long pieces cut** (`lowcam.js` `tessellate`, once when the view is made): every triangle with an edge longer than `seg` **1.5 tiles** across the floor is halved at that edge until none is (the floor's tiles, about 1.41 across, are not cut). It catches every long piece alike: the pipes, cable runs, rails, the rugs' and hazard zones' planes, the arena's lines, the sewers' long pieces | Implemented; verified (the test: the world's long pieces cut; a 12-tile pipe cut to no edge over 1.5); the pipe seen bent in the pictures |
+
+**What the 2D still shows through walls or past the distance** (not done):
+- A wall's **door leaf**, a **thin wall** between two rooms that touch (glass, a divider) and a **prop** in front of a thing do not hide it (only the walls' blocks are walked).
+- The overlays drawn after the frame's list that were not given the test: the effects' rings and impacts, the bonds' hearts, the auras' glints, a bite's warning, the technicians' arcs and aims, the smoke, the floating numbers, a ledge's or a reef climb's tag (those two only show near you, on your floor).
+- **Partly hidden** things are all or nothing: by one point (a pad by its middle, a unit by its middle).
+- The floor's marks reach about 19 tiles round you, not limited to 12 in another room.
+- **3D never culled by distance:** what three is told never to cull (the sewers' instanced sets, the attacks' effects) is drawn wherever it is; and the shadows' pass is the light's, as it was.
+
+**The cost** (measured as §8.11's were, `design/cozy-camera/built.js`'s set-up, at the places the owner named: the game's page with `?dev&cards&engine=3d&cam=low`, 1180×820 at a device scale of 2, the player and a squad of three, settled; the median of five frames; **headless Chromium with SwiftShader: draw calls and triangles carry over, the times do not; not an iPad**):
+
+| Place | Before (draws / triangles: a frame without the shadows; one with them) | After |
+|---|---|---|
+| Main hallway at the snack machines, turned 3 | 614 / 542k; 889 / 1269k | 464 / 348k; 739 / 1158k |
+| Main hallway at the snack machines | 545 / 462k; 823 / 1199k | 439 / 398k; 717 / 1219k |
+| Crystal Chamber | 381 / 311k; 610 / 835k | 366 / 366k; 595 / 963k |
+| Crystal Chamber, turned once | 634 / 646k; 883 / 1224k | 482 / 408k; 731 / 1059k |
+| Arena | 918 / 981k; 1210 / 1593k | 377 / 377k; 669 / 1071k |
+| Observation deck (the stairwell and stations below showed through) | 645 / 747k; 889 / 1347k | 414 / 346k; 658 / 1026k |
+| Server Room toward the posts' pads, turned 2 | 875 / 809k; 1160 / 1322k | 513 / 309k; 798 / 885k |
+| Observation deck, turned once | 325 / 227k; 515 / 786k | 292 / 229k; 505 / 865k |
+
+- **What it means:** without the shadows' pass the draw calls fall by up to 59% (the arena, 918 to 377) and the triangles by up to 62% (the Server Room, 809k to 309k), and by a fifth to a third in the hallway; in the Crystal Chamber facing its long way they are about the same (the flatter curve shows a little more of the room, 311k to 366k triangles). The shadows are drawn every other frame from the light, whose square is as it was: those frames fall less (the arena 1,210 to 669 draws), and their triangles are about the same or up to 15% more (the Crystal Chamber 835k to 963k; the deck turned once 786k to 865k): the light's square is as it was (what casts a shadow into it is drawn there, culled or not), and the flatter curve shows more. Cutting the long pieces added triangles only where an edge was longer than 1.5 tiles (`VIEW3D.view.lowCut`: 314 geometries cut, their triangles 1,211k to 1,400k, about 16% more in those; the 51 lines the view draws have no segment longer than a quarter tile and are not cut).
+- **Not measured:** an iPad (old or new); a frame's time on a graphics card; the low graphics setting.

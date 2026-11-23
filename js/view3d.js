@@ -210,6 +210,16 @@ function view3dToScreen(x, y, h) { return view3dLow() ? VIEW3D.view.screenNow(x,
 function view3dToWorld(sx, sy) { return view3dLow() ? VIEW3D.view.floorAt(sx, sy) : null; }
 function view3dScaleAt(x, y, h) { if (!view3dLow()) return 1; const a = VIEW3D.view.screenNow(x, y, h || 0), b = VIEW3D.view.screenNow(x, y, (h || 0) + 60), k = Math.hypot(b[0] - a[0], b[1] - a[1]) / 60; return Number.isFinite(k) && k > 0 ? k : 1; }
 function view3dPick(x, y, up) { return view3dLow() ? VIEW3D.view.screenNow(x, y, facilityLiftPx(x, y) + (up || 0)) : null; }
+// THE LOW CAMERA's 2D, LEFT OUT WHERE THE PICTURE HIDES IT (the owner, 2026-11-23: "you definitely have to remove the instances of all these highlighted tiles being visible through the walls"; "it needs
+// to load less in. It's showing me staircases and spawn pads"): is a thing at (x, y) of the world not to be drawn over the picture? Behind a standing wall from the camera, past the visible distance
+// (another room's sooner: LOWCAM.see, seeRoom), or under the horizon. up: tiles over its floor that are looked at (a floor's mark a little, a body its middle); room: its room's id, else found.
+// False without the low camera (and in a card battle): the caller draws as ever
+function view3dHides(x, y, up, room) { if (!view3dLow() || !Number.isFinite(x) || !Number.isFinite(y)) return false; const V = VIEW3D.view; if (typeof V.hides !== "function") return false;
+    let rm = room; if (rm === undefined) { const r = typeof facilityRoomAt === "function" && _fp && _fp.F ? facilityRoomAt(Math.round(x), Math.round(y), _fp.F) : null; rm = r ? r.id : null; }
+    return V.hides(x, y, up || 0, rm); }
+// the same for a thing of the frame's list (js/game.js): a facility item by its floor (a pad, a stairwell, a station's diamond, a pickup), a unit by its body's middle; the player never
+const VIEW3D_HIDE_UP = { fp: 0.05, npc: 0.6 };
+function view3dHidesItem(o) { if (!o || o.type === "player" || o.type === "crystal") return false; const up = VIEW3D_HIDE_UP[o.type]; return view3dHides(o.x, o.y, up === undefined ? 0.3 : up, o.type === "fp" && o.room ? o.room : undefined); }
 // a tap's tile: the floor under it (null: the game's own maths)
 function view3dTapWorld(sx, sy) { if (!view3dLow()) return null; const q = VIEW3D.view.floorAt(sx, sy); return q || { x: NaN, y: NaN }; }
 // THE LOW CAMERA's drawing of one thing of the frame's list (js/game.js): drawn by its own 2D drawing about its own place (ax, ay: where the 2D's maths has it), moved to where the camera

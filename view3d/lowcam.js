@@ -18,7 +18,10 @@ const LOWCAM = {
   ahead: 2.2,     // tiles that point is ahead of the player, along the camera's level forward (zoomed in, this and lift shrink with the distance: the player stays in the picture)
   lift: 0.55,     // tiles that point is over the player's floor
   follow: 6,      // how fast the point follows (1/s: the share of the way left that is closed is 1 - e^(-follow dt))
-  k: 0.013,       // the curve: a vertex d tiles ahead of the player is lowered by k d² tiles
+  k: 0.0065,      // the curve: a vertex d tiles ahead of the player is lowered by k d² tiles (the owner, 2026-11-23, of the drafts' 0.013: "the roundness is too much": halved)
+  see: 22,        // tiles: THE VISIBLE DISTANCE. Nothing 3D wholly farther from the player than this is drawn, nor anything 2D (the owner, 2026-11-23: "it needs to load less in")
+  seeRoom: 12,    // tiles: another room's things (its floor, walls' fittings and props; its 2D: pads, stairwells, stations, tags) wholly farther than this are not drawn: only the room you are in reaches to `see`
+  seg: 1.5,       // tiles: a long piece (a pipe, a rail, a cable, a long floor or line) is cut so no edge runs farther than this across the floor, so it bends with the world (tessellate)
   near: 0.3, far: 140,   // tiles
   dK: 0.03,       // the ink line's edges by depth (view3d/core.js): the floor is seen at a slant, more so with the bend (the drafts' fix)
   horizon: true,  // what the bend puts below the horizon is left out (false: drawn, to measure what it saves)
@@ -55,8 +58,12 @@ function view3dLowCam() {
   F.__low = { PS, psOn: () => psOn, test(fr, o, inter) { const k = U.lowK.value; if (!k) return inter.call(fr, o);
     const g = o.geometry; if (g.boundingSphere === null) g.computeBoundingSphere(); sph.copy(g.boundingSphere).applyMatrix4(o.matrixWorld);
     const P = U.lowPivot.value, Fw = U.lowFwd.value, d = (sph.center.x - P.x) * Fw.x + (sph.center.z - P.z) * Fw.y, r = sph.radius; sph.center.y -= k * d * d; sph.radius = r + k * (2 * Math.abs(d) * r + r * r);
-    if (H.on && (d - r > H.far || (d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius))) { culled++; return false; }   // (past the visible distance; below the horizon)
+    if (H.on && (d - r > H.far || (d - sph.radius > H.st && (H.yc + (d - H.sc) * H.m - sph.center.y) * H.cos > sph.radius))) { culled++; return false; }   // (past the horizon's reach; below the horizon)
+    // THE VISIBLE DISTANCE (LOWCAM.see, seeRoom): wholly farther from the player than that, across the floor, it is not drawn; another room's things sooner (tagged by the view: o.userData.lowRoom)
+    const far = Math.hypot(sph.center.x - P.x, sph.center.z - P.z) - r, lr = o.userData.lowRoom;
+    if (far > K.see || (lr && lr !== inRoom.room && far > K.seeRoom)) { culled++; return false; }
     return fr.intersectsSphere(sph); } };
+  const inRoom = { room: null };   // (the room the player is in: the view tells it each frame, room())
 
   // ── THE CAMERA: placed once a frame by the view (view3d/gameview.js place) ──
   const aim = new T.Vector3(), want = new T.Vector3(), atB = new T.Vector3(), dirV = new T.Vector3(), tmp = new T.Vector3(); let hasAim = false;
@@ -108,5 +115,45 @@ function view3dLowCam() {
       if (qa < 1e-12) { if (Math.abs(qb) < 1e-12) return null; t = -qc / qb; } else { const disc = qb * qb - 4 * qa * qc; if (disc < 0) return null; const s = Math.sqrt(disc), t1 = (-qb - s) / (2 * qa), t2 = (-qb + s) / (2 * qa); t = t1 > 0 ? t1 : t2; }
       if (!(t > 0)) return null; x = RO.x + RD.x * t; z = RO.z + RD.z * t; const h2 = floorAt(x, z); if (Math.abs(h2 - h) < 1e-4) break; h = h2; }
     return { x, z }; }
-  return { U, K, wrap, wrapMat, place, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
+  // FAR (the visible distance, LOWCAM.see; another room's, seeRoom): is a point of the world (x, z) of room `rm` past it? (the 2D over the picture, js/view3d.js)
+  function far(x, z, rm) { if (!U.lowK.value) return false; const P = U.lowPivot.value, d = Math.hypot(x - P.x, z - P.z); return d > K.see || (!!rm && !!inRoom.room && rm !== inRoom.room && d > K.seeRoom); }
+  // LONG PIECES BENT (the owner, 2026-11-23: a pipe "doesn't bend properly with the map's aesthetic"): the curve moves each vertex, so a piece drawn with a vertex only at each end (a pipe's
+  // cylinder down a hallway, a rail, a cable, a long rug or a hazard plane) stays straight while the floor and the wall under it bend. Once, over everything built: each triangle with an edge
+  // longer than LOWCAM.seg across the floor (x, z: the bend is by distance along the floor) is halved at that edge's middle until none is; every attribute is carried to the new points. The
+  // halving depends only on the points, so a merged room's mesh and its plain copy for the ink line are cut alike, and two triangles that share an edge cut it at the same places (no cracks).
+  // A body (skinned, morphing) is left as it is: none is long. Returns how many geometries were cut and the triangles before and after.
+  function tessellate(root, maxLen) { const L = maxLen || K.seg, L2 = L * L, done = new Map(), out = { geos: 0, before: 0, after: 0 }; if (!root) return out; root.updateMatrixWorld(true);
+    const M = new T.Matrix4(), v = new T.Vector3();
+    root.traverse(o => { if (!o.isMesh || !o.geometry || o.isSkinnedMesh) return; const g0 = o.geometry; if (done.has(g0)) { const n = done.get(g0); if (n) o.geometry = n; return; }
+      const g = g0; if (!g.attributes || !g.attributes.position || !g.attributes.position.array || (g.morphAttributes && Object.keys(g.morphAttributes).length)) { done.set(g0, null); return; }
+      // the scale the piece is drawn at, across the floor (an instanced set's tiles: each instance's own as well)
+      M.copy(o.matrixWorld); let sc = Math.max(Math.hypot(M.elements[0], M.elements[2]), Math.hypot(M.elements[8], M.elements[10]), Math.hypot(M.elements[4], M.elements[6]));
+      if (o.isInstancedMesh) { const im = new T.Matrix4(); let s2 = 0; for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, im); const e = im.elements; s2 = Math.max(s2, Math.hypot(e[0], e[2]), Math.hypot(e[8], e[10]), Math.hypot(e[4], e[6])); } sc *= s2 || 1; }
+      const pos = g.attributes.position, idx = g.index, nT = (idx ? idx.count : pos.count) / 3 | 0; if (!nT) { done.set(g0, null); return; }
+      // a world-ish place of each point (rotation and scale as drawn; the bend is by x and z)
+      const wp = new Float32Array(pos.count * 3); for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); if (!o.isInstancedMesh) v.applyMatrix4(M); else v.multiplyScalar(sc); wp[i * 3] = v.x; wp[i * 3 + 1] = v.y; wp[i * 3 + 2] = v.z; }
+      const vi = t => idx ? idx.getX(t) : t; let need = false;
+      for (let t = 0; t < nT && !need; t++) { const a = vi(t * 3), b = vi(t * 3 + 1), c = vi(t * 3 + 2); for (const [p, q] of [[a, b], [b, c], [c, a]]) { const dx = wp[p * 3] - wp[q * 3], dz = wp[p * 3 + 2] - wp[q * 3 + 2]; if (dx * dx + dz * dz > L2) { need = true; break; } } }
+      if (!need) { done.set(g0, null); return; }
+      // the points: each attribute's values, the originals then the new middles (found once an edge: by its two ends)
+      const names = Object.keys(g.attributes).filter(n => g.attributes[n].itemSize && !g.attributes[n].isInterleavedBufferAttribute), src = names.map(n => g.attributes[n]), vals = names.map(() => []), W = [];
+      for (let i = 0; i < pos.count; i++) { src.forEach((A, j) => { for (let c = 0; c < A.itemSize; c++) vals[j].push(A.array[i * A.itemSize + c]); }); W.push(wp[i * 3], wp[i * 3 + 1], wp[i * 3 + 2]); }
+      const mids = new Map(); let n = pos.count;
+      const mid = (p, q) => { const k = p < q ? p + ',' + q : q + ',' + p; let m = mids.get(k); if (m !== undefined) return m; m = n++; mids.set(k, m);
+        src.forEach((A, j) => { const s = A.itemSize, V = vals[j]; for (let c = 0; c < s; c++) V.push((V[p * s + c] + V[q * s + c]) / 2); if (names[j] === 'normal') { const b0 = m * 3, l = Math.hypot(V[b0], V[b0 + 1], V[b0 + 2]) || 1; V[b0] /= l; V[b0 + 1] /= l; V[b0 + 2] /= l; } });
+        W.push((W[p * 3] + W[q * 3]) / 2, (W[p * 3 + 1] + W[q * 3 + 1]) / 2, (W[p * 3 + 2] + W[q * 3 + 2]) / 2); return m; };
+      const len2 = (p, q) => { const dx = W[p * 3] - W[q * 3], dz = W[p * 3 + 2] - W[q * 3 + 2]; return dx * dx + dz * dz; };
+      const tri = [], cut = (a, b, c, depth) => { const ab = len2(a, b), bc = len2(b, c), ca = len2(c, a), mx = Math.max(ab, bc, ca);
+        if (mx <= L2 || depth > 12) { tri.push(a, b, c); return; }
+        if (ab === mx) { const m = mid(a, b); cut(a, m, c, depth + 1); cut(m, b, c, depth + 1); } else if (bc === mx) { const m = mid(b, c); cut(a, b, m, depth + 1); cut(a, m, c, depth + 1); } else { const m = mid(c, a); cut(a, b, m, depth + 1); cut(m, b, c, depth + 1); } };
+      const groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: nT * 3, materialIndex: 0 }], ng = [];
+      for (const gr of groups) { const s0 = tri.length; for (let i = gr.start; i + 2 < gr.start + gr.count; i += 3) cut(vi(i), vi(i + 1), vi(i + 2), 0); ng.push({ start: s0, count: tri.length - s0, materialIndex: gr.materialIndex }); }
+      const g2 = new T.BufferGeometry(); src.forEach((A, j) => { const Ctor = A.array.constructor, a2 = new T.BufferAttribute(new Ctor(vals[j].length), A.itemSize, A.normalized);
+        const isInt = !(A.array instanceof Float32Array || A.array instanceof Float64Array); for (let i = 0; i < vals[j].length; i++) a2.array[i] = isInt ? Math.round(vals[j][i]) : vals[j][i];
+        if (A.onUploadCallback && A.onUploadCallback !== T.BufferAttribute.prototype.onUploadCallback) a2.onUploadCallback = A.onUploadCallback; g2.setAttribute(names[j], a2); });
+      g2.setIndex(n > 65535 ? new T.Uint32BufferAttribute(tri, 1) : new T.Uint16BufferAttribute(tri, 1)); if (g.groups && g.groups.length) for (const gr of ng) g2.addGroup(gr.start, gr.count, gr.materialIndex);
+      g2.computeBoundingSphere(); if (g.boundingBox) g2.computeBoundingBox(); g2.userData = Object.assign({}, g.userData, { lowCut: true });
+      done.set(g0, g2); o.geometry = g2; out.geos++; out.before += nT; out.after += tri.length / 3; });
+    return out; }
+  return { U, K, wrap, wrapMat, place, far, tessellate, room(id) { inRoom.room = id || null; }, pose, drop, toScreen, toFloor, below, aim, pivot: () => U.lowPivot.value, fwd: () => U.lowFwd.value, k: () => U.lowK.value, horizon: () => H, culled: () => { const n = culled; culled = 0; return n; }, missed: () => missed.slice() };
 }

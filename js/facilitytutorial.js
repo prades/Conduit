@@ -156,6 +156,7 @@ function facilityDrawFlares() {
     const T = _fp && _fp.tut; if (!T || typeof ctx === "undefined") return; const now = typeof frame !== "undefined" ? frame : 0;
     for (const s of T.sources) {
         if (s.what !== "flare" || s.until < now) continue;
+        if (typeof view3dHides === "function" && view3dHides(s.x, s.y, 0.05)) continue;   // (THE LOW CAMERA: not through a wall, js/view3d.js)
         const fade = Math.min(1, (s.until - now) / 120, (now - s.born) / 12 + 0.2), fl = 0.8 + 0.2 * Math.sin(now * 0.31 + s.x), px = isoSX(s.x, s.y) + canvas.width / 2, py = isoSY(s.x, s.y) + canvas.height / 2 + TILE_H;
         ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.translate(px, py); ctx.scale(1, TILE_H / TILE_W);
         const R = s.r * TILE_W * 1.4142 * 0.8, g = ctx.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, "rgba(" + FP_TUT.flareRgb + "," + (0.3 * fade * fl).toFixed(3) + ")"); g.addColorStop(0.35, "rgba(" + FP_TUT.flareRgb + "," + (0.12 * fade).toFixed(3) + ")"); g.addColorStop(1, "rgba(" + FP_TUT.flareRgb + ",0)");
