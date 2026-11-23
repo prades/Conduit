@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17df` · branch `claude/friendly-thompson-w581x0` · the Manta Ray is a mollusk
+- **The ask** (the owner, 2026-11-23): "This creature is mollusk type".
+- **What it does:** the Manta Ray's species (its subclass on its card, `js/cards.js` `EQUIP_FORM_SUBCLASS.hovershell`) is Mollusk; the Hover Shell before it was a Drone. With it, by the game's existing rules: it is weak to Slashing and Piercing and resists Crushing and Earthquake (a Drone: weak to Crushing and Elemental, resisting Piercing and Projectile; `js/damage.js` `DMG_SUBCLASS`); its lean is −1, so its main attack is 40% elemental (44% as a Drone; `COMBAT.md` §7.7); Mollusk species cards fit it and Drone ones do not (a Drone card already on one comes off by the game's own check and stays in the collection); its card shows the Mollusk texture. Drones are now 3, Mollusks 5.
+- `js/cards.js`; `tests/cards.js`, `tests/damage.js`, `tests/followercombat.js`; `docs/COMBAT.md` §7.7's table, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`; `bible.html`; generated: `play.html`, `dist/conduit.js`, `balance.html`. `balance.html`'s measured table is not re-measured.
+- **Verified:** the suites that touch a form's species (see the handoff). **Not playtested.**
+
 ### Build `2026-11-17de` · branch `claude/friendly-thompson-w581x0` · the electric technician is the MANTA RAY
 - **The ask** (the owner, 2026-11-23, with a concept sheet): "I want to switch out the electric technician for this creature, which is a manta ray [...] those are tails that should be more towards the back of the creature". On the draft: "Hell yes".
 - **What it is:** design No. 948 (`design/evolutions/forms42.js`), a real 3D model of the sheet's creature: a smooth mound of jet black gel, two wide wings with turned-up tips, see-through violet glowing edges, yellow crystals tucked under its wings, three wavy tails that leave the point at its rear and trail low behind it (the sheet had them rising from mid-back, read as ears). It glides with a slow beat of its wings; its attack lifts its wings and beats them down, the crystals flaring, an arc between them (the agent's).
