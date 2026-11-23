@@ -206,6 +206,15 @@ function buildLabFloor(lab, P0, how) {
     for (let D = 0.5; D <= (top - minH) * SEE + 0.5; D += 1) for (const sd of [-0.5, 0.5]) { const [cx, cy] = fromT(t, (s0 - D + d0 + sd) / 2, (s0 - D - d0 - sd) / 2); if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6) continue;
       const r = roomAt.get(K(cx, cy)); if (r && !list.includes(r) && D <= (top - hAt(cx, cy) - FEET) * SEE + 0.5) list.push(r); }
     return list.sort(); };
+  // THE SEWER DUNGEON'S EMPTY SPACE, FILLED (the owner, 2026-11-23: "all the empty spaces, like behind walls that don't have any rooms to it. You should make that completely solid color"; of the
+  // spaces only darkened, still pits: "Nope it looks incomplete"). Every tile of the dungeon's area that is no room and no wall is a block of wall too, as tall as the walls and cut down as low as
+  // the wall it lies behind, so the space between rooms is one solid mass, level with the wall tops. Not a tile a slanted wall crosses (the slanted wall stands there, and part of it is floor).
+  if (live && SD_HI > -1e8) { const sdR = recs.filter(r => isSd(r.id)), skip = new Set(); let bx = [1e9, 1e9, -1e9, -1e9];
+    for (const r of sdR) { for (const c of r.cells) bx = [Math.min(bx[0], c[0]), Math.min(bx[1], c[1]), Math.max(bx[2], c[0]), Math.max(bx[3], c[1])];
+      const P = r.poly || []; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; if (Math.abs(a[0] - b[0]) < 1e-6 || Math.abs(a[1] - b[1]) < 1e-6) continue; for (let x = Math.round(Math.min(a[0], b[0]) + 0.5); x <= Math.round(Math.max(a[0], b[0]) - 0.5); x++) for (let y = Math.round(Math.min(a[1], b[1]) + 0.5); y <= Math.round(Math.max(a[1], b[1]) - 0.5); y++) skip.add(K(x, y)); } }
+    bx = [bx[0] - 3, bx[1] - 3, bx[2] + 3, bx[3] + 3]; let front = [...band.values()].filter(b => isSd(b.own) && !b.header);
+    while (front.length) { const next = []; for (const s0 of front) for (const [dx, dy] of DIRS) { const x = s0.x + dx, y = s0.y + dy, k = K(x, y); if (x < bx[0] || y < bx[1] || x > bx[2] || y > bx[3] || band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k)) continue;
+        const b = { x, y, own: s0.own, rock: false, fill: true, lo: s0.lo, hi: s0.hi, cutTop: s0.cutTop }; band.set(k, b); next.push(b); } front = next; } }
   for (const b of band.values()) { b.hides = TURNS.map(t => { const s = hideOf(b.x, b.y, t); if (live) hideMore(b, t, s); return s.sort(); }); b.hide = b.hides[0]; b.G = groupOf(b.hides); }
   for (const G of groups.values()) G.sink = WALL_H + 0.16;
   if (live) for (const b of band.values()) b.G.sink = Math.max(b.G.sink, b.hi + WALL_H - (b.lo + B0) + 0.16);   // (how far a group sinks: past its lowest floor)
