@@ -41,7 +41,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     check('its row: IMMUNE to Crushing and Slashing, resists Piercing, weak to Earthquake and Projectile; it bites with Crushing', () => {
         const r = J(`({ row: DMG_RACE.rolypoly, bite: DMG_RACE_BITE.rolypoly, m: ['slashing', 'piercing', 'projectile', 'crushing', 'earthquake', 'elemental'].map(t => dmgRowMult(DMG_RACE.rolypoly, t)) })`);
         sameJSON(r.row.immune, ['crushing', 'slashing'], 'immune'); sameJSON(r.row.resist, ['piercing'], 'resists'); sameJSON(r.row.weak, ['earthquake', 'projectile'], 'weak');
-        sameJSON(r.m, [0, 0.7, 1.3, 0, 1.3, 1], 'slashing 0, piercing 0.7, projectile 1.3, crushing 0, earthquake 1.3, elemental 1'); ok(r.bite === 'crushing', 'a Crushing bite');
+        sameJSON(r.m, [0.5, 0.7, 1.75, 0.5, 1.75, 1], 'slashing 0.5, piercing 0.7, projectile 1.75, crushing 0.5, earthquake 1.75, elemental 1 (build 2026-11-17dd: what was immune is a strong resistance, nothing does nothing; a weakness 1.75)'); ok(r.bite === 'crushing', 'a Crushing bite');
     });
     check('no other race is immune to anything (the new list is the roly-poly\'s)', () => {
         const r = J(`Object.keys(DMG_RACE).filter(k => k !== 'rolypoly' && DMG_RACE[k].immune)`); sameJSON(r, [], 'others with an immune list');
@@ -50,8 +50,8 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     group('THE IMMUNITY (js/damage.js dmgApply; the owner: "Physical half does 0")');
     check('an enemy-style Slashing or Crushing hit with no element does 0, with SLASHING IMMUNE / CRUSHING IMMUNE beside it; Piercing lands ×0.7, Earthquake and Projectile ×1.3', () => {
         const r = J(`(function(){ const t = __rp('tank'), o = {}; for (const ty of ['slashing', 'crushing', 'piercing', 'earthquake', 'projectile']) { __noWords(); t._dmgWordAt = undefined; o[ty] = { v: dmgApply(t, 100, null, null, DMG_HIT_ENEMY[ty]), w: __words() }; } return o; })()`);
-        near(r.slashing.v, 0, 'slashing'); near(r.crushing.v, 0, 'crushing'); near(r.piercing.v, 70, 'piercing'); near(r.earthquake.v, 130, 'earthquake'); near(r.projectile.v, 130, 'projectile');
-        ok(r.slashing.w.indexOf('SLASHING IMMUNE') >= 0, 'SLASHING IMMUNE: ' + r.slashing.w); ok(r.crushing.w.indexOf('CRUSHING IMMUNE') >= 0, 'CRUSHING IMMUNE: ' + r.crushing.w);
+        near(r.slashing.v, 50, 'slashing'); near(r.crushing.v, 50, 'crushing'); near(r.piercing.v, 70, 'piercing'); near(r.earthquake.v, 175, 'earthquake'); near(r.projectile.v, 175, 'projectile');
+        ok(r.slashing.w.indexOf('SLASHING RESIST') >= 0, 'SLASHING RESIST: ' + r.slashing.w); ok(r.crushing.w.indexOf('CRUSHING RESIST') >= 0, 'CRUSHING RESIST: ' + r.crushing.w);
     });
     check('a follower\'s Slashing hit lands only its elemental part (the physical part does 0)', () => {
         const r = J(`(function(){ spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.evolved = 'quillstone'; f.level = 20; _applyFollowerLevel(f, true); f.energy = ['fire', null, null];
@@ -62,7 +62,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
     check('the player\'s own hits: the gun lands ×1.3 (Projectile) and ARC WARDEN\'s zap lands (Elemental); a Slashing or a Crushing hit of the player\'s, as the lash and the gauntlet were until they went (build 2026-11-17at), does nothing to it', () => {
         const r = J(`(function(){ const t = __rp('tank'); return { slash: dmgApply(t, 50, player, null, { type: 'slashing', player: true }), crush: dmgApply(t, 50, player, null, { type: 'crushing', player: true }), gun: dmgApply(t, 50, player, null, DMG_HIT_GUN), arc: dmgApply(t, 50, player, null, DMG_HIT_ARC) }; })()`);
-        near(r.slash, 0, 'a Slashing hit of the player\'s'); near(r.crush, 0, 'a Crushing hit of the player\'s'); near(r.gun, 65, 'the gun'); ok(r.arc > 0, 'the zap: ' + r.arc);
+        near(r.slash, 25, 'a Slashing hit of the player\'s (halved, not nothing)'); near(r.crush, 25, 'a Crushing hit of the player\'s'); near(r.gun, 87.5, 'the gun'); ok(r.arc > 0, 'the zap: ' + r.arc);
     });
 
     group('THE CURL (js/rolypoly.js; the owner: "Curls up to defend")');
@@ -127,7 +127,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
         const r = J(`(function(){ const c = makeClone('rolypoly', 'scout', 5, 5, 'idle', 3); const o = { made: !!c, row: c && dmgRow(c) === DMG_RACE.rolypoly, bite: c ? dmgApply(c, 100, null, null, DMG_HIT_ENEMY.slashing) : -1 };
             if (c) { c.health = c.maxHealth * 0.4; o.curl = rolyAfterHit(c); }
             addDNA('rolypoly_scout', 5); const row = getCloneOptions().find(x => x.speciesName === 'rolypoly' && x.className === 'scout'); o.opt = row ? [row.have, row.needed, row.shardCost] : null; return o; })()`);
-        ok(r.made, 'no clone'); ok(r.row, 'its row'); near(r.bite, 0, 'a Slashing bite on it'); ok(r.curl, 'it did not curl');
+        ok(r.made, 'no clone'); ok(r.row, 'its row'); near(r.bite, 50, 'a Slashing bite on it (halved, not nothing)'); ok(r.curl, 'it did not curl');
         sameJSON(r.opt, [5, 5, 7], 'the Clone Bay\'s row: 5 splices of 5, 7 shards');
     });
     check('it lives in the electrical domain only: the domain\'s spawner makes roly-polies, electric, of their race, up from its floor while you are there; the arena\'s and the Sewers\' tables make ants', () => {
