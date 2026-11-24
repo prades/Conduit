@@ -83,10 +83,12 @@ function _mantaRay(o) {
   const fl = _glowPool(o.pool, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(_c31(EL.color)); fl.m.material.opacity = o.poolA; b.add(fl.g);   // its light on the floor
   const Lt0 = new T.PointLight(0xffffff, 0.8, 3, 2); Lt0.color.copy(_c31(EL.color)); Lt0.position.set(0, -0.2, 0.05); unit.add(Lt0); LIGHTS.push(Lt0);
   const pa = V(0, 0, 0), pb = V(0, 0, 0), s0 = V(0, 0, 0), s1 = V(0, 0, 0);
-  return { g, core: (o.hover + 0.05) * (o.S || 1), update(t, act) {
+  // (v, optional, for a picture held in one pose (its SHOCK ZAP card: design/cards/attack/bake_attack.js mantaray_shockzap): { up, zap, whip } in place of the action's own; the game never passes it)
+  return { g, core: (o.hover + 0.05) * (o.S || 1), update(t, act, v) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
     // the action, by how far through it is: the wings lift, beat down hard and come back; the zap between; (at its two ends it is the glide again)
-    const up = sm(0, 0.32, pr) - 1.7 * sm(0.36, 0.5, pr) + 0.7 * sm(0.55, 1, pr), zap = pr > 0.38 && pr < 0.92 ? Math.sin(PI * (pr - 0.38) / 0.54) : 0, whip = pr > 0 ? sm(0.34, 0.52, pr) * (1 - sm(0.62, 1, pr)) : 0;
+    let up = sm(0, 0.32, pr) - 1.7 * sm(0.36, 0.5, pr) + 0.7 * sm(0.55, 1, pr), zap = pr > 0.38 && pr < 0.92 ? Math.sin(PI * (pr - 0.38) / 0.54) : 0, whip = pr > 0 ? sm(0.34, 0.52, pr) * (1 - sm(0.62, 1, pr)) : 0;
+    if (v) { if (v.up != null) up = v.up; if (v.zap != null) zap = v.zap; if (v.whip != null) whip = v.whip; }
     P.ph = ph; P.amp = o.flap * (1 - 0.8 * a); P.lift = o.lift * up;
     for (let i = 0; i < n; i++) pos[i * 3 + 1] = y0[i] + P.amp * wB[i] * Math.sin(ph - off[i]) + P.lift * wL[i];
     aPos.needsUpdate = true; geo.computeVertexNormals();

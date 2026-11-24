@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
+- **The ask** (the owner, 2026-11-24): "Make the pictures and cards".
+- **What it is:** SHOCK ZAP's card in the card battles shows the Manta Ray (it showed the Hover Shell): its own 3-D model in the approved Technician style, inside a whole ring of yellow crystals, raising its wings, its crystals flaring and its tails spread behind it, the storm's world behind (`docs/ATTACK-CARD-ART.md` §4, 2026-11-24; the agent's picture, provisional, for the owner's look). It was the last picture of the Hover Shell in the game: its sprites, its 3-D body and the Bible's picture changed in `2026-11-17de`; the basic attack cards are by attack type and no Ultimate card has a picture.
+- `img/cards/attack/hovershell_shock_zap.png` (its light copy 15 KB); `design/cards/attack/bake_attack.js` (`mantaray_shockzap`, and `whole`: a picture's glow round every part); `design/cards/attack/drafts/followers7/`; `design/evolutions/forms42.js` (an optional pose for a picture, `update(t, act, v)`, which the game never passes); `docs/ATTACK-CARD-ART.md`, `docs/OPEN-QUESTIONS.md`; generated: `js/imgmap.js`, `play.html`, `dist/conduit.js`, `dist/view3d.js`.
+- **Verified:** seen in the real card frame at iPad size and in a real card battle in the 3D game; the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dk` · branch `claude/low-camera-fixes` (over main's `2026-11-17dj`) · the low camera after the owner tried it
 - **The ask** (the owner, 2026-11-23, after trying `?cam=low`): "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
 - **What players get is unchanged:** all of it is under `?cam=low`.

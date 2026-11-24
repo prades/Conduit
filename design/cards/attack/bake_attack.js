@@ -326,6 +326,19 @@ const SAMPLES = {
     lights: { hemi: [0x8a84b0, 0x0a0618, 0.5], key: [0xfff6d8, 1.1], rim: 2.6, back: 1.4, low: [0xffe040, 1.2, 0, 0.6, 2.0] },
     cam: { pos: [0.8, 1.7, 6.4], look: [0, -0.05, 0], fov: 38, roll: -0.18 },
   },
+  // THE MANTA RAY for SHOCK ZAP (the electric Technician since build 2026-11-17de, design No. 948: design/evolutions/forms42.js; the owner, 2026-11-24: "Make the pictures and cards").
+  // In the Technician style as the Hover Shell's card above (approved; it still bakes as it was): inside the whole ring of crystals, in the storm's world. It has no claws or legs, so it
+  // RAISES ITS WINGS (its own action's lift, held: pose.v.up), its crystals flaring and an arc jumping between them (pose.v.zap), its tails spread behind it. The ring wider than the Hover
+  // Shell's: the manta is wider. whole: its picture alone (for its glow and edge) taken with every material on, as BLADE ROLL's (the ring's block leaves shared ones off).
+  mantaray_shockzap: {
+    style: 'tech', form: 948, color: '#ffe033', rim: '#fff27a', fx: '#ffee33', world: 'electric', seed: 948, whole: true,
+    pose: { t: 1.15, act: 1, v: { up: 1.1, zap: 1, whip: 0.35 } }, yaw: 1.15,
+    ring: { n: 14, r: 1.65, h: [0.3, 1.0], w: 0.12, dim: [0.35, 0.15] },
+    tone: { sky: '#0a0814', hz: ['rgba(26,22,48,0)', 'rgba(40,34,64,0.85)', '#1a1630'], halo: 'rgba(4,2,10,1)', white: '255,250,210', ringWhite: '#fff8d0', star: '255,250,220', vig: 'rgba(6,4,14,0.6)', foot: ['rgba(6,4,14,0)', 'rgba(6,4,14,0.65)'], worldK: 0.6, ringGlow: [0.45, 0.2],
+      dim: 0.3, floorDim: 0.4, edge: [3, 0.9, '#c9b8ff'] },
+    lights: { hemi: [0x8a84b0, 0x0a0618, 0.5], key: [0xfff6d8, 1.1], rim: 2.6, back: 1.4, low: [0xffe040, 1.2, 0, 0.6, 2.0] },
+    cam: { pos: [1.0, 5.2, 7.0], look: [-0.3, -0.25, -0.3], fov: 38, roll: -0.18 },
+  },
   jellyram_wobbleslam: {
     style: 'brawler', form: 935, color: '#00ccaa', rim: '#19e6c1', fx: '#19e6c1', world: 'core', seed: 935,
     pose: { t: 0.3, act: 0 }, yaw: 0, rear: -0.4, lift: 0.7, hit: [0.47, 0.37], glass: 'slabs', pieces: 'clear', powder: 0, through: 40,
@@ -1713,7 +1726,8 @@ window.__card = async function (P, W, H, modelOnly) {
     blackCv = grab(); rim.color.copy(rc); back.color.copy(bc); lava.color.copy(lc); floor.visible = fv; floor.material.colorWrite = fcw; cw.forEach(([x, v]) => { x.colorWrite = v; }); }
   let ringCv = null, bodyCv = null; if (P.ring) {   // (the ring where it shows (the follower drawn depth-only, hiding what is behind it) and the follower alone, for their glows)
     const cw = []; B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { cw.push([x, x.colorWrite]); x.colorWrite = false; }); });
-    ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; }
+    ringCv = grab(); cw.forEach(([x, v]) => { x.colorWrite = v; }); ringG.visible = false; bodyCv = grab(); ringG.visible = true;
+    if (P.whole) { B.g.traverse(m => { if (m.material) [].concat(m.material).forEach(x => { x.colorWrite = true; }); }); ringG.visible = false; bodyCv = grab(); ringG.visible = true; } }   // (P.whole, the Manta Ray's: the follower whole in its picture alone, as BLADE ROLL's below)
   // where things land on the picture: the heart (its diamond), its foot, the horizon (eye-level points far off, projected)
   const pr = v => { const p = new T.Vector3(...v).project(cam); return [(p.x * 0.5 + 0.5) * W, (1 - (p.y * 0.5 + 0.5)) * H]; };
   const heart = pr([0, B.core, 0]), foot = pr([0, 0, 0]);
