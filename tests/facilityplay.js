@@ -147,7 +147,7 @@ function measure() {
     group('THE NAVIGATION LAYER: followers walk the route, not a straight line into a wall');
     // (The first three checks of this group fail at the time of writing, at HEAD as well: js/facilityplay.js _fpGoals counts the egg waiting on the experiment lab's follower spot (spot_lab: team "red", isNeutralRecruit) as
     //  "the nearest of the other side", and facilityReroute re-points a follower's step along the egg's route whenever its route to you points near the egg; the next frame followPlayer plans the route to you again, so
-    //  the follower dithers on the spot in the hallway where the egg comes within twelve tiles. Without the eggs the three reach you. Reported, not fixed here.)
+    //  the follower dithers on the spot in the hallway where the egg comes within twelve tiles. Without the eggs the three reach you. Reported, not fixed here. The posts and their eggs were removed, 2026-11-24.)
     const squad = (roles, traits) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower && !a.isFacilityTest); const roles = ${JSON.stringify(roles)}, traits = ${JSON.stringify(traits || [])};
         roles.forEach((r, i) => { spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.stance = 'follow'; f.role = r; f.job = null; f.naturalTrait = traits[i] || f.naturalTrait; f.wanderRadius = undefined; f.x = __PT.chamber[0] + i * 0.7; f.y = __PT.chamber[1] + (i % 2); f._fpPath = null; f._fpStuck = 0; });
         player.x = player.targetX = player.visualX = __PT.arena[0]; player.y = player.targetY = player.visualY = __PT.arena[1]; player.fpPath = null; frame = 100; })()`);

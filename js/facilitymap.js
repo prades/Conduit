@@ -394,23 +394,23 @@ const FACILITY_MAP = {
         // THE LOUNGE (build 2026-11-13a, the old lab's room; mirrored: the whiteboard at the west end facing the camera, the couches at the east end). The south two rows are behind its divider wall from the camera, so
         //   nothing stands in them; the couches are the game's own (the east one the same couch turned), the whiteboard on its stand a new 3D model (design/props/models/whiteboard.js)
         { id: "lounge_whiteboard", room: "lounge", shape: "rect", rect: [450, 530, 490, 570], status: "placed", kind: "whiteboard_stand", note: "The whiteboard on its own rolling stand, equations on it, turned to face the camera at a slant, toward the beanbags." },
-        { id: "lounge_beanbag_1", room: "lounge", shape: "rect", rect: [510, 550, 530, 570], status: "placed", kind: "beanbag" },
-        { id: "lounge_beanbag_2", room: "lounge", shape: "rect", rect: [550, 550, 570, 570], status: "placed", kind: "beanbag" },
-        { id: "lounge_beanbag_3", room: "lounge", shape: "rect", rect: [510, 590, 530, 610], status: "placed", kind: "beanbag" },
-        { id: "lounge_beanbag_4", room: "lounge", shape: "rect", rect: [550, 590, 570, 610], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_1", room: "lounge", shape: "rect", rect: [510, 544.26, 530, 564.26], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_2", room: "lounge", shape: "rect", rect: [550, 544.26, 570, 564.26], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_3", room: "lounge", shape: "rect", rect: [510, 578.9, 530, 598.9], status: "placed", kind: "beanbag" },
+        { id: "lounge_beanbag_4", room: "lounge", shape: "rect", rect: [550, 578.9, 570, 598.9], status: "placed", kind: "beanbag" },
         { id: "lounge_couch_1", room: "lounge", shape: "rect", rect: [610, 550, 670, 570], status: "placed", kind: "couch", note: "A row in from the open north side, facing the room (build 2026-11-13g: nothing stands at the open sides)." },
         { id: "lounge_couch_2", room: "lounge", shape: "rect", rect: [690, 550, 710, 610], status: "placed", kind: "couch", note: "Two rows in from the open east side, facing west across the table." },
         { id: "lounge_table", room: "lounge", shape: "rect", rect: [630, 590, 670, 610], status: "placed", kind: "table", note: "A low glass-topped table between the two couches." },
         { id: "lounge_plant_1", room: "lounge", shape: "rect", rect: [590, 550, 610, 570], status: "placed", kind: "plant" },
-        { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [590, 590, 610, 610], status: "placed", kind: "plant" },
+        { id: "lounge_plant_2", room: "lounge", shape: "rect", rect: [590, 578.9, 610, 598.9], status: "placed", kind: "plant" },
         { id: "console_3", room: "teleport_room_2", shape: "rect", rect: [990, 610, 1070, 630], status: "placed", kind: "console" },
         { id: "teleporter_5", room: "teleport_room_2", shape: "rect", rect: [1070, 650, 1090, 670], status: "placed", kind: "teleporter" },
-        { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 690, 1010, 710], status: "placed", kind: "teleporter" },
+        { id: "teleporter_6", room: "teleport_room_2", shape: "rect", rect: [990, 697.46, 1010, 717.46], status: "placed", kind: "teleporter" },
         { id: "teleporter_7", room: "teleport_room_2", shape: "rect", rect: [1050, 690, 1070, 710], status: "placed", kind: "teleporter" },
         { id: "teleporter_8", room: "teleport_room_2", shape: "rect", rect: [1070, 710, 1090, 730], status: "placed", kind: "teleporter" },
         { id: "crate_3", room: "teleport_room_2", shape: "rect", rect: [1070, 610, 1090, 630], status: "placed", kind: "crate" },
         { id: "couch_2", room: "observation_deck", shape: "rect", rect: [210, 910, 270, 930], status: "placed", kind: "couch" },
-        { id: "beanbag_4", room: "observation_deck", shape: "rect", rect: [290, 850, 310, 870], status: "placed", kind: "beanbag" },
+        { id: "beanbag_4", room: "observation_deck", shape: "rect", rect: [280, 853.35, 300, 873.35], status: "placed", kind: "beanbag" },
         { id: "telescope_1", room: "observation_deck", shape: "rect", rect: [330, 850, 350, 870], status: "placed", kind: "telescope" },
         { id: "telescope_2", room: "observation_deck", shape: "rect", rect: [330, 930, 350, 950], status: "placed", kind: "telescope" },
         { id: "plant_11", room: "observation_deck", shape: "rect", rect: [190, 810, 210, 830], status: "placed", kind: "plant" },
@@ -419,9 +419,9 @@ const FACILITY_MAP = {
         { id: "cooler_4", room: "observation_deck", shape: "rect", rect: [190, 930, 210, 950], status: "placed", kind: "cooler" },
         // THE FLUX TECHNICIAN'S OBJECTS (FLUX MOVE, js/fluxmove.js; docs/FLUX-MOVEMENT.md): `flux` marks a prop the tool can move: `range` tiles a move (the owner: 2, diagonals counting as one), `turn` when it can be
         // turned (a two-tile object with art for both ways round). The arena's loose crates, barrels and barriers (the owner, 2026-11-06: "Test room + arena"); nothing else moves.
-        { id: "floodlight_1", room: "arena", shape: "rect", rect: [530, 810, 550, 830], status: "placed", kind: "floodlight" },
-        { id: "floodlight_3", room: "arena", shape: "rect", rect: [910, 1150, 930, 1170], status: "placed", kind: "floodlight" },
-        { id: "floodlight_4", room: "arena", shape: "rect", rect: [530, 1150, 550, 1170], status: "placed", kind: "floodlight" },
+        { id: "floodlight_1", room: "arena", shape: "rect", rect: [530, 801.38, 550, 821.38], status: "placed", kind: "floodlight" },
+        { id: "floodlight_3", room: "arena", shape: "rect", rect: [910, 1147.79, 930, 1167.79], status: "placed", kind: "floodlight" },
+        { id: "floodlight_4", room: "arena", shape: "rect", rect: [530, 1147.79, 550, 1167.79], status: "placed", kind: "floodlight" },
         { id: "barrier_1", room: "arena", shape: "rect", rect: [590, 910, 630, 930], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
         { id: "barrier_2", room: "arena", shape: "rect", rect: [670, 1050, 710, 1070], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
         { id: "barrel_5", room: "arena", shape: "rect", rect: [490, 1090, 510, 1110], status: "placed", kind: "barrel", flux: { range: 2 } },   // (the three FLUX drums stood in the north-east corner until build 2026-11-12v: the Catwalk Spur is there now; they stand south of the truck, west of the Nest's rubble)
@@ -430,10 +430,10 @@ const FACILITY_MAP = {
         { id: "crate_4", room: "arena", shape: "rect", rect: [950, 1110, 970, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
         { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1110, 990, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
         { id: "crate_6", room: "arena", shape: "rect", rect: [970, 1130, 990, 1150], status: "placed", kind: "crate", flux: { range: 2 } },
-        { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 970, 990, 990], status: "placed", kind: "crate_stack", flux: { range: 2 } },
+        { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 974.59, 990, 994.59], status: "placed", kind: "crate_stack", flux: { range: 2 } },
         // THE HAZARD CONTAINERS (build 2026-11-09yy; the owner, 2026-11-10: "two explosive ones in the arena"; js/hazards.js): flasks in hex armour that FLUX MOVE carries like a crate; a shot sets one off
-        { id: "hazard_x1", room: "arena", shape: "rect", rect: [690, 910, 710, 930], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the north barrier and the north reserve." },
-        { id: "hazard_x2", room: "arena", shape: "rect", rect: [750, 1050, 770, 1070], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the south barrier and the south reserve." },
+        { id: "hazard_x1", room: "arena", shape: "rect", rect: [690, 905.31, 710, 925.31], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the north barrier and the north reserve." },
+        { id: "hazard_x2", room: "arena", shape: "rect", rect: [750, 1043.87, 770, 1063.87], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the south barrier and the south reserve." },
         { id: "console_4", room: "catwalks", shape: "rect", rect: [1030, 810, 1090, 830], status: "placed", kind: "console" },
         { id: "chair_1", room: "catwalks", shape: "rect", rect: [1050, 830, 1070, 850], status: "placed", kind: "chair" },
         { id: "toolbox_1", room: "catwalks", shape: "rect", rect: [1090, 810, 1110, 830], status: "placed", kind: "toolbox" },
@@ -449,19 +449,19 @@ const FACILITY_MAP = {
         { id: "crate_7", room: "catwalks", shape: "rect", rect: [1070, 1170, 1090, 1190], status: "placed", kind: "crate" },
         { id: "barrel_9", room: "catwalks", shape: "rect", rect: [1070, 1150, 1090, 1170], status: "placed", kind: "barrel" },
         // ── FLOODLIGHTS along the hallway and across the arena (the tutorial blackout's emergency lights stay on: js/facilitytutorial.js). Placed where they leave every path open, a tile or two off the walls, clear of the doors and the steps ──
-        { id: "floodlight_hall_1", room: "lab_hallway", shape: "rect", rect: [830, 570, 850, 590], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_2", room: "lab_hallway", shape: "rect", rect: [490, 670, 510, 690], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_3", room: "lab_hallway", shape: "rect", rect: [470, 490, 490, 510], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_4", room: "lab_hallway", shape: "rect", rect: [690, 490, 710, 510], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_5", room: "lab_hallway", shape: "rect", rect: [710, 670, 730, 690], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_6", room: "lab_hallway", shape: "rect", rect: [350, 650, 370, 670], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_7", room: "lab_hallway", shape: "rect", rect: [830, 430, 850, 450], status: "placed", kind: "floodlight" },
-        { id: "floodlight_hall_8", room: "lab_hallway", shape: "rect", rect: [810, 730, 830, 750], status: "placed", kind: "floodlight" },
-        { id: "floodlight_arena_1", room: "arena", shape: "rect", rect: [690, 1090, 710, 1110], status: "placed", kind: "floodlight" },
-        { id: "floodlight_arena_2", room: "arena", shape: "rect", rect: [650, 850, 670, 870], status: "placed", kind: "floodlight" },
-        { id: "floodlight_arena_3", room: "arena", shape: "rect", rect: [370, 970, 390, 990], status: "placed", kind: "floodlight" },
-        { id: "floodlight_arena_4", room: "arena", shape: "rect", rect: [970, 1010, 990, 1030], status: "placed", kind: "floodlight" },
-        { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870, 390, 890], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_1", room: "lab_hallway", shape: "rect", rect: [830, 578.9, 850, 598.9], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_2", room: "lab_hallway", shape: "rect", rect: [480, 665.5, 500, 685.5], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_3", room: "lab_hallway", shape: "rect", rect: [460, 492.29, 480, 512.29], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_4", room: "lab_hallway", shape: "rect", rect: [680, 492.29, 700, 512.29], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_5", room: "lab_hallway", shape: "rect", rect: [700, 665.5, 720, 685.5], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_6", room: "lab_hallway", shape: "rect", rect: [350, 648.18, 370, 668.18], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_7", room: "lab_hallway", shape: "rect", rect: [830, 440.33, 850, 460.33], status: "placed", kind: "floodlight" },
+        { id: "floodlight_hall_8", room: "lab_hallway", shape: "rect", rect: [800, 734.78, 820, 754.78], status: "placed", kind: "floodlight" },
+        { id: "floodlight_arena_1", room: "arena", shape: "rect", rect: [690, 1078.51, 710, 1098.51], status: "placed", kind: "floodlight" },
+        { id: "floodlight_arena_2", room: "arena", shape: "rect", rect: [640, 853.35, 660, 873.35], status: "placed", kind: "floodlight" },
+        { id: "floodlight_arena_3", room: "arena", shape: "rect", rect: [370, 974.59, 390, 994.59], status: "placed", kind: "floodlight" },
+        { id: "floodlight_arena_4", room: "arena", shape: "rect", rect: [970, 1009.23, 990, 1029.23], status: "placed", kind: "floodlight" },
+        { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870.67, 390, 890.67], status: "placed", kind: "floodlight" },
         // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): the sentries and the charging station. (The relays are small nodes on the walls since build 2026-11-07qq: decor `relay_node`, below.) ──
         { id: "mech_bay", room: "show_room", shape: "rect", rect: [970, 390, 1010, 430], status: "placed", kind: "mech_bay", note: "The mech bay: a build pad in the warehouse where the Technomancer assembles the four-legged spider mech." },
         // ── THE WAREHOUSE (the owner, 2026-11-07: "convert that into a little warehouse"; it was the show room): pallet racks along the walls and down the middle, crate stacks, barrels, a cart and a run of lockers.
@@ -478,9 +478,9 @@ const FACILITY_MAP = {
         { id: "wh_lockers", room: "show_room", shape: "rect", rect: [970, 580, 1050, 600], status: "placed", kind: "locker" },
         { id: "wh_barrel_1", room: "show_room", shape: "rect", rect: [1050, 580, 1070, 600], status: "placed", kind: "barrel" },
         { id: "wh_barrel_2", room: "show_room", shape: "rect", rect: [1070, 560, 1090, 580], status: "placed", kind: "barrel" },
-        { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
+        { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 425.69, 350, 445.69], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
         // (sentry_chamber_2, by the chamber's south wall, is gone: the owner, 2026-11-10, "I don't like how there's two inside of the crystal room. So maybe we can make one of those disappear"; build 2026-11-09ww)
-        { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [750, 490, 770, 510], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
+        { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [740, 492.29, 760, 512.29], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
         { id: "charger_hall", room: "lab_hallway", shape: "rect", rect: [390, 630, 410, 650], status: "placed", kind: "charger", note: "A charging station: it refills your ammunition once the hallway has power." },
         // ── THE ARMORY (x 190-350, y 950-1150): a terminal and a workbench in the middle, crates in the corners, lockers and barrels along the south wall; the door's landing (x 310-350, y 1070-1110) stays clear ──
         { id: "armory_terminal", room: "armory", shape: "rect", rect: [190, 1030, 210, 1070], status: "placed", kind: "computer_desk", note: "The inventory terminal." },
@@ -539,13 +539,13 @@ const FACILITY_MAP = {
         { id: "hazard_x3", room: "nest_t3", shape: "rect", rect: [170, 1590, 190, 1610], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "THE FLASK THE ANTS DRAGGED DOWN, in a hollow beside the cracked wall: shoot it and its blast breaks the wall (stand back: it hurts everyone within 2 tiles)." },
         { id: "nest_stream_water", room: "nest_t4", shape: "poly", poly: [[220, 1480], [280, 1480], [280, 1540], [220, 1540]], status: "placed", kind: "pool", note: "THE UNDERGROUND STREAM across the tunnel to the stream cave: three tiles of water an ice technician's ICE BRIDGE crosses." },
         { id: "nest_boulder", room: "nest_t6", shape: "rect", rect: [510, 1470, 550, 1490], status: "placed", kind: "boulder", flux: { range: 2 }, note: "A BOULDER filling the tunnel's narrow middle row south of the queen's cavern: FLUX MOVE it two tiles east into the hollow beside it, and the way to the old burrow is open (it cannot go back: FLUX MOVE never shuts a way)." },
-        { id: "hazard_c2", room: "nest_t7", shape: "rect", rect: [450, 1790, 470, 1810], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "AN ACID FLASK right in front of the resin seal: shoot it and its pool eats the seal away (the owner approved it with the Nest's layout, 2026-11-12; the idea was the agent's)." },
+        { id: "hazard_c2", room: "nest_t7", shape: "rect", rect: [440, 1785.68, 460, 1805.68], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "AN ACID FLASK right in front of the resin seal: shoot it and its pool eats the seal away (the owner approved it with the Nest's layout, 2026-11-12; the idea was the agent's)." },
         { id: "nest_resin_seal", room: "nest_t7", shape: "poly", poly: [[461, 1760], [467, 1760], [467, 1820], [461, 1820]], status: "placed", kind: "resin_seal", note: "A RESIN SEAL across the tunnel to the larder: an acid pool that touches it eats it away, for good (js/hazards.js; saved)." },
         { id: "chest_nest_a", room: "nest_shelf", shape: "rect", rect: [70, 1110, 90, 1130], status: "placed", kind: "chest", note: "A CHEST on the shelf (A: a REEF climb up its cliff)." },
-        { id: "chest_nest_b", room: "nest_stream", shape: "rect", rect: [410, 1510, 430, 1530], status: "placed", kind: "chest", note: "A CHEST in the stream cave (B: an ice bridge over the stream)." },
-        { id: "chest_nest_c", room: "nest_burrow", shape: "rect", rect: [570, 1610, 590, 1630], status: "placed", kind: "chest", note: "A CHEST in the old burrow (C: FLUX MOVE the boulder)." },
-        { id: "chest_nest_d", room: "nest_larder", shape: "rect", rect: [590, 1770, 610, 1790], status: "placed", kind: "chest", note: "A CHEST in the larder (D: the acid flask eats the resin seal)." },
-        { id: "chest_spur", room: "catwalk_spur", shape: "rect", rect: [950, 800, 970, 820], status: "placed", kind: "chest", note: "A CHEST on the Catwalk Spur (a REEF climb up its face)." },
+        { id: "chest_nest_b", room: "nest_stream", shape: "rect", rect: [400, 1508.55, 420, 1528.55], status: "placed", kind: "chest", note: "A CHEST in the stream cave (B: an ice bridge over the stream)." },
+        { id: "chest_nest_c", room: "nest_burrow", shape: "rect", rect: [560, 1612.47, 580, 1632.47], status: "placed", kind: "chest", note: "A CHEST in the old burrow (C: FLUX MOVE the boulder)." },
+        { id: "chest_nest_d", room: "nest_larder", shape: "rect", rect: [590, 1768.36, 610, 1788.36], status: "placed", kind: "chest", note: "A CHEST in the larder (D: the acid flask eats the resin seal)." },
+        { id: "chest_spur", room: "catwalk_spur", shape: "rect", rect: [950, 801.38, 970, 821.38], status: "placed", kind: "chest", note: "A CHEST on the Catwalk Spur (a REEF climb up its face)." },
         { id: "elec_rack_1", room: "elec_servers", shape: "rect", rect: [400, 280, 420, 380], status: "placed", kind: "server_rack", note: "THE ELECTRICAL DOMAIN's racks still standing, in rows near the door (docs/DOMAINS.md); the ones further in lie toppled (step 2)." },
         { id: "elec_rack_2", room: "elec_servers", shape: "rect", rect: [460, 280, 480, 380], status: "placed", kind: "server_rack" },
         { id: "elec_rack_3", room: "elec_servers", shape: "rect", rect: [520, 280, 540, 380], status: "placed", kind: "server_rack" },
@@ -570,7 +570,7 @@ const FACILITY_MAP = {
         { id: "sewer_pump_2", room: "sewers", shape: "rect", rect: [1180, 1000, 1200, 1040], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A second pump housing, turned the other way, further south on the dam." },
         { id: "sewer_valve_1", room: "sewers", shape: "rect", rect: [1240, 980, 1260, 1000], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the first pump (the owner, 2026-11-07: \"add valves\")." },
         { id: "sewer_valve_2", room: "sewers", shape: "rect", rect: [1200, 1020, 1220, 1040], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the second pump." },
-        { id: "hazard_c1", room: "sewers", shape: "rect", rect: [1200, 940, 1220, 960], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "A corrosive flask on the open floor north of the dam's pumps (the owner, 2026-11-10: \"we're going to put one in the sewer\"; js/hazards.js)." },
+        { id: "hazard_c1", room: "sewers", shape: "rect", rect: [1200, 944.35, 1220, 964.35], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "A corrosive flask on the open floor north of the dam's pumps (the owner, 2026-11-10: \"we're going to put one in the sewer\"; js/hazards.js)." },
         // THE PUMP ROOM (the owner, 2026-11-07: "Machinery elsewhere", then "Widen a section"): a chamber opened off the north walkway (x 440 to 560, y 780 to 860) with machinery to move for cover
         { id: "sewer_pump_3", room: "sewers", shape: "rect", rect: [440, 780, 480, 800], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing against the pump room's back wall." },
         { id: "sewer_valve_3", room: "sewers", shape: "rect", rect: [520, 780, 540, 800], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing against the pump room's back wall." },
@@ -619,21 +619,8 @@ const FACILITY_MAP = {
         // (The five hidden VITAL items, a Fleck, a Prism and a Core, were removed 2026-11-01 with the HP a death cost: the owner, "Remove them".)
     ],
 
-    // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
-    // and so is where it is. Walk up to it and it joins, there, as that type and that element, free, and the post is claimed for good (it does not fill again: the archive's follow-up scope, 2026-10-31; free: the owner).
-    // `at` is the middle of a tile (sketch pixels: 20 to a tile).
-    // Seven spots, in the places the player marked on the facility's outline view: the server room's north-east corner (it was the computer lab), the warehouse's north end (it was the show room), the observation deck, the experiment lab, the second teleport
-    // room, and two in the arena (its west end by the Armory's steel door, and its middle). Every element has one; core has two.
-    followerSpots: [
-        { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the server room's north-east corner." },
-        { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the warehouse's north end." },
-        { id: "spot_deck",    room: "observation_deck", at: [250, 850],  type: "camper",  element: "core",     note: "A core technician on the observation deck." },
-        { id: "spot_lab",     room: "experiment_lab",   at: [-100, 660], type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab, between its two benches." },
-        { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
-        { id: "spot_arena_w", room: "arena",            at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
-        { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
-        { id: "spot_cold",    room: "cold_storage",     at: [660, 800],  type: "camper",  element: "ice",      note: "An ice technician out on the ice in the Cold Storage's cave." },
-    ],
+    // (FOLLOWER SPOTS, the recruitment posts: eight pads, spot_lobby to spot_cold, each with a follower of a fixed type and element waiting in its egg, free, once. Removed, the owner, 2026-11-24: "The respawn pads,
+    // remove them", and "Remove posts entirely"; recruiting is the roster's + RECRUIT, js/clone.js RECRUIT_COST. docs/FOLLOWER-PROGRESSION.md §1 keeps their history.)
 
     // KINETIC LAUNCHER SITES (the electric technician's ability, js/techabilities.js; docs/TECHNICIANS.md): a place where its launcher can be set up for good, to send followers where nobody can walk. ASKED: "you need to have some sort
     // of check for a spot where it can be deployed [...] whenever you enter a spot where it can be deployed, have a little notification or highlighted area near the catwalk, or in the future any sort of secret area".

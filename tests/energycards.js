@@ -98,11 +98,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { a: [a.element, energySlots(a).join(), (followerByElement.ice || []).includes(a)], stock: energyTotal(), b: [b.element, energySlots(b).join(), (followerByElement.none || []).includes(b), unitTypeLabel(b), hdEggSheet(b)] }; })()`);
         same(r.a.join('|'), 'ice|ice|true', 'made of ICE'); same(r.stock, 0, 'your stock'); same(r.b.join('|'), 'none||true|MAGE|egg_neutral', 'made of NO ELEMENT');
     });
-    check('the roster\'s RECRUIT gives a follower of NO ELEMENT; a recruitment post, one of its own element with that element\'s card, free (the owner, 2026-11-09: "With the post\'s card"); a scripted recruit that asks for an element gets it with its card', () => {
+    check('the roster\'s RECRUIT gives a follower of NO ELEMENT; a scripted recruit that asks for an element gets it with its card (a recruitment post gave one of its own element with that element\'s card until the posts were removed, 2026-11-24)', () => {
         const r = J(`(function(){ __clear(); shardCount = 5000; recruitFollower(); const a = followers[followers.length - 1]; recruitFollower('sniper', 'fire'); const b = followers[followers.length - 1];
-            const s = { id: 'energytest', room: (_fp.spots[0] || {}).room, x: player.x, y: player.y, type: 'camper', element: 'toxic', egg: { dead: false }, used: false, taken: 0 }; const c = facilityFollowerSpotTake(s);
-            return { a: [a.element, energySlots(a).join()], b: [b.element, energySlots(b).join()], c: c ? [c.element, energySlots(c).join(), _fpSpotLabel(s)] : null, stock: energyTotal() }; })()`);
-        same(r.a.join('|'), 'none|', 'a RECRUIT'); same(r.b.join('|'), 'fire|fire', 'a scripted FIRE recruit'); ok(r.c, 'the post gave nothing'); same(r.c.join('|'), 'toxic|toxic|TECHNICIAN · TOXIC', 'a post\'s recruit'); same(r.stock, 0, 'your stock (the post\'s card is free)');
+            return { a: [a.element, energySlots(a).join()], b: [b.element, energySlots(b).join()], stock: energyTotal() }; })()`);
+        same(r.a.join('|'), 'none|', 'a RECRUIT'); same(r.b.join('|'), 'fire|fire', 'a scripted FIRE recruit'); same(r.stock, 0, 'your stock');
     });
     check('breeding: a parent of NO ELEMENT gives none (the other\'s element; two of none, none); its egg holds the card of the element picked', () => {
         const r = J(`[breedElement({ element: 'none' }, { element: 'fire' }, () => 0.1), breedElement({ element: 'none' }, { element: 'fire' }, () => 0.9), breedElement({ element: 'none' }, { element: 'none' }, () => 0.3)]`);

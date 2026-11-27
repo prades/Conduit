@@ -119,8 +119,7 @@ function _facilityBuild(ex) {
     for (const so of solids) { so.cover = FAC_COVER.has(so.kind); so.low = FAC_LOW.has(so.kind); so.water = so.kind === "river" || so.kind === "pool"; }   // (what it does besides blocking walking: FAC_COVER, FAC_LOW below; water can freeze: facilityIced)
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, respawn: p.respawn || 0, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there; `respawn`: frames until a taken one is back)
-    const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
-    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, rider: !!s.rider, only: s.only || null, note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js; a pocket site may have no broken section; `rider`: the launcher carries the player too)
+    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, rider: !!s.rider, only: s.only || null, note: s.note }));   // (tiles' middles, like a pickup: js/techabilities.js; a pocket site may have no broken section; `rider`: the launcher carries the player too)
     const ledges = (M.ledges || []).map(l => ({ id: l.id, room: l.room, toRoom: l.toRoom, label: l.label || "", at: rawP(l.at), to: rawP(l.to), w: l.w || 2, note: l.note }));   // (the one way down from a raised floor, build 2026-11-07qq: js/techabilities.js)
     const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), solid: r.solid || null, inside: !!r.inside, tag: r.tag || null, say: r.say || null, opened: r.opened || null, note: r.note }; });   // (tag, say, opened: a choke's own words, when it is not a tunnel's)   // (on the room's edge, or a CHOKE across a passage's mouth (`solid`): js/techabilities.js, the Thermite Drill)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, node: r.node, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));   // (node: its wall node, since build 2026-11-07qq)
@@ -149,7 +148,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, launchSites, ledges, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, launchSites, ledges, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -339,15 +338,6 @@ function facilityValidateDressing(F) {
         if (p.class && typeof CLASSES !== "undefined" && !CLASSES[p.class]) errors.push("pickup " + p.id + " is for " + p.class + ", which is not a class");
         if (p.needs && !(F.relays || []).some(r => r.id === p.needs)) errors.push("pickup " + p.id + " waits for " + p.needs + ", which is not a relay");
         if (typeof ITEMS !== "undefined") for (const it of p.items) if (!ITEMS[it[0]] || !(it[1] > 0)) errors.push("pickup " + p.id + " holds " + it[0] + ", which is not an item");
-    }
-    // the follower spots: a known room, a tile of that room's floor a body can stand on with room round it, a type and an element a follower can be, and none within three tiles of another
-    for (const p of (F.followerSpots || [])) {
-        const rm = F.byId.get(p.room); if (!rm) { errors.push("follower spot " + p.id + " names a room that does not exist"); continue; }
-        const r = facilityRoomAt(p.at[0], p.at[1], F); if (!r || r.id !== p.room) errors.push("follower spot " + p.id + " is not in " + p.room);
-        else if (F.snapped && !facilityWalkable(p.at[0], p.at[1], F)) errors.push("follower spot " + p.id + " is not on a tile a body can stand on");
-        if (typeof FOLLOWER_TYPES !== "undefined" && !FOLLOWER_TYPES[p.type]) errors.push("follower spot " + p.id + " is a " + p.type + ", which is not a follower type");
-        if (typeof ELEMENTS !== "undefined" && !ELEMENTS.some(e => e.id === p.element)) errors.push("follower spot " + p.id + " is " + p.element + ", which is not an element");
-        if ((F.followerSpots || []).some(q => q !== p && Math.hypot(q.at[0] - p.at[0], q.at[1] - p.at[1]) < 3)) errors.push("follower spot " + p.id + " is within three tiles of another");
     }
     // the launcher sites: each point on the floor of its room a body can stand on (the launcher's and the landing under the broken section on the site's room, the landing and the broken section on the room it reaches), and two different rooms
     for (const s of (F.launchSites || [])) {

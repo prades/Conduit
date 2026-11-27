@@ -20,7 +20,7 @@ const LOWCAM = {
   follow: 6,      // how fast the point follows (1/s: the share of the way left that is closed is 1 - e^(-follow dt))
   k: 0.0065,      // the curve: a vertex d tiles ahead of the player is lowered by k d² tiles (the owner, 2026-11-23, of the drafts' 0.013: "the roundness is too much": halved)
   see: 22,        // tiles: THE VISIBLE DISTANCE. Nothing 3D wholly farther from the player than this is drawn, nor anything 2D (the owner, 2026-11-23: "it needs to load less in")
-  seeRoom: 12,    // tiles: another room's things (its floor, walls' fittings and props; its 2D: pads, stairwells, stations, tags) wholly farther than this are not drawn: only the room you are in reaches to `see`
+  seeRoom: 12,    // tiles: another room's things (its floor, walls' fittings and props; its 2D: stairwells, stations, tags) wholly farther than this are not drawn: only the room you are in reaches to `see`
   seg: 1.5,       // tiles: a long piece (a pipe, a rail, a cable, a long floor or line) is cut so no edge runs farther than this across the floor, so it bends with the world (tessellate)
   near: 0.3, far: 140,   // tiles
   dK: 0.03,       // the ink line's edges by depth (view3d/core.js): the floor is seen at a slant, more so with the bend (the drafts' fix)

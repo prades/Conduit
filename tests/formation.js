@@ -1,7 +1,8 @@
 // THE FORMATION (js/formation.js, js/npc.js followPlayer and the Mage's branch; build 2026-11-10b).
 // The owner, 2026-11-10: "a formation function ... put the brawlers in front of the player and whatever they're looking at, ... the mage behind the player where there's some distance, ... the
 // technician constantly patrolling the area around the player"; "Always while following", "Fight from their places", "Locked enemy, else your way".
-//   THE PLACES     walking one way: a Brawler ends ahead of you, a Mage behind you, a Technician on its round; two Brawlers side by side; the Technician keeps going round
+//   THE PLACES     walking one way: a Brawler ends ahead of you, a Mage behind you, a Technician beside you; two Brawlers side by side; the Technician stays beside you (it no longer goes
+//                  round you: the owner, 2026-11-27); two Technicians one on each side
 //   AHEAD          an enemy you have locked is ahead (the Brawler between you and it); with none, the way you last walked, kept while you stand
 //   THE FIGHT      a Mage with its place shoots from behind you at an enemy ahead, and does not walk up to it; one beyond its reach it leaves to the Brawlers
 //   WALLS          a place in a wall, or out of your sight, comes in toward you
@@ -45,26 +46,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__rel = (f) => { const F = formationFront(); const ox = f.x - player.x, oy = f.y - player.y; return { ahead: ox * F.x + oy * F.y, across: -ox * F.y + oy * F.x, dist: Math.hypot(ox, oy) }; };`);
 
     group('THE PLACES (walking east, then standing)');
-    check('a Brawler ends ahead of you, a Mage behind you at a distance, a Technician on its round about you', () => {
+    check('a Brawler ends ahead of you, a Mage behind you at a distance, a Technician beside you', () => {
         const r = J(`(function(){ const [b, m, t] = __squad(['brawler', 'sniper', 'camper']); __walk(1, 0, 80); __tick(300); const o = { b: __rel(b), m: __rel(m), t: __rel(t), front: [formationFront().x, formationFront().y] };
             for (const k of ['b', 'm', 't']) for (const q of ['ahead', 'across', 'dist']) o[k][q] = Math.round(o[k][q] * 100) / 100; return o; })()`);
         ok(r.front[0] > 0.99, 'ahead is not the way you walked: ' + r.front);
         ok(r.b.ahead > 1.2 && Math.abs(r.b.across) < 0.6, 'the Brawler is not ahead of you: ' + JSON.stringify(r.b));
         ok(r.m.ahead < -2.3 && Math.abs(r.m.across) < 0.6, 'the Mage is not behind you at a distance: ' + JSON.stringify(r.m));
-        ok(Math.abs(r.t.dist - J('FORMATION.ring')) < 0.6, 'the Technician is not on its round: ' + JSON.stringify(r.t));
+        ok(Math.abs(Math.abs(r.t.across) - J('FORMATION.side')) < 0.6 && Math.abs(r.t.ahead) < 0.6, 'the Technician is not beside you: ' + JSON.stringify(r.t));
     });
-    check('the Technician keeps going round you, on its round, at its own pace', () => {
-        const r = J(`(function(){ const [t] = __squad(['camper']); __tick(240); const a0 = Math.atan2(t.y - player.y, t.x - player.x), d0 = Math.hypot(t.x - player.x, t.y - player.y); __tick(240);
-            const a1 = Math.atan2(t.y - player.y, t.x - player.x), d1 = Math.hypot(t.x - player.x, t.y - player.y); let da = Math.abs(a1 - a0); if (da > Math.PI) da = 2 * Math.PI - da; return { da, d0, d1 }; })()`);
-        ok(r.da > 0.9, 'it did not go round: ' + r.da.toFixed(2) + ' rad in 4 s'); ok(Math.abs(r.d1 - J('FORMATION.ring')) < 0.6, 'it left the round: ' + r.d1.toFixed(2));
+    check('the Technician stays beside you: it does not go round you (the owner, 2026-11-27: "You can just have them sit to the side of the player and protect them")', () => {
+        const r = J(`(function(){ const [t] = __squad(['camper']); __walk(1, 0, 40); __tick(240); const a0 = Math.atan2(t.y - player.y, t.x - player.x); __tick(240);
+            const a1 = Math.atan2(t.y - player.y, t.x - player.x), d1 = Math.hypot(t.x - player.x, t.y - player.y); let da = Math.abs(a1 - a0); if (da > Math.PI) da = 2 * Math.PI - da; return { da, d1 }; })()`);
+        ok(r.da < 0.3, 'it went round you: ' + r.da.toFixed(2) + ' rad in 4 s'); ok(Math.abs(r.d1 - J('FORMATION.side')) < 0.6, 'it is not beside you: ' + r.d1.toFixed(2));
     });
-    check('two Brawlers stand side by side across the front; two Technicians both keep to the round, going round opposite ways', () => {
+    check('two Brawlers stand side by side across the front; two Technicians one on each side of you', () => {
         const r = J(`(function(){ const [b1, b2] = __squad(['brawler', 'brawler']); __walk(1, 0, 60); __tick(300); const o = { b1: __rel(b1), b2: __rel(b2) };
-            const [t1, t2] = __squad(['camper', 'camper']); __tick(240); const ang = t => Math.atan2(t.y - player.y, t.x - player.x), a1 = ang(t1), a2 = ang(t2); __tick(60);
-            const turn = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
-            o.w = [turn(a1, ang(t1)), turn(a2, ang(t2))]; o.d = [Math.hypot(t1.x - player.x, t1.y - player.y), Math.hypot(t2.x - player.x, t2.y - player.y)]; return o; })()`);
+            const [t1, t2] = __squad(['camper', 'camper']); __walk(1, 0, 40); __tick(300); o.t1 = __rel(t1); o.t2 = __rel(t2); return o; })()`);
         ok(r.b1.ahead > 1.2 && r.b2.ahead > 1.2, 'a Brawler is not ahead: ' + JSON.stringify(r)); ok(Math.abs(r.b1.across - r.b2.across) > 0.8, 'the Brawlers stand on top of each other: ' + JSON.stringify(r));
-        ok(r.w[0] * r.w[1] < 0, 'the Technicians go round the same way: ' + r.w.map(v => v.toFixed(2))); ok(r.d.every(d => Math.abs(d - J('FORMATION.ring')) < 0.6), 'a Technician left the round: ' + r.d.map(v => v.toFixed(2)));
+        ok(r.t1.across * r.t2.across < 0, 'the Technicians stand on the same side: ' + JSON.stringify([r.t1, r.t2])); ok([r.t1, r.t2].every(t => Math.abs(Math.abs(t.across) - J('FORMATION.side')) < 0.6 && Math.abs(t.ahead) < 0.6), 'a Technician is not beside you: ' + JSON.stringify([r.t1, r.t2]));
     });
     check('no trait moves a place (the traits are gone: build 2026-11-14f, the owner: "Remove all four"): a follower still carrying LONE WOLF or EMPATHETIC stands where a plain one does', () => {
         const at = (trait) => J(`(function(){ const [b] = __squad(['brawler']); b.naturalTrait = ${JSON.stringify(trait)}; __walk(1, 0, 40); __tick(400); return __rel(b); })()`);
@@ -133,7 +132,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the module is loaded with the page, after the followers\' own (js/npc.js), and its numbers are named in one place', () => {
         const H = rd('game.html'); ok(/js\/npc\.js[^\n]*\n<script src="js\/formation\.js/.test(H), 'js/formation.js is not loaded after js/npc.js');
-        const F = J('FORMATION'); for (const k of ['front', 'back', 'ring', 'spread', 'lead', 'mageRange', 'stop', 'loneWolf', 'empathetic']) ok(typeof F[k] === 'number' && F[k] > 0, k + ' is missing');
+        const F = J('FORMATION'); for (const k of ['front', 'back', 'side', 'spread', 'mageRange', 'stop', 'loneWolf', 'empathetic']) ok(typeof F[k] === 'number' && F[k] > 0, k + ' is missing');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

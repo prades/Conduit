@@ -279,6 +279,13 @@ else {
     check('THE SEWER LOOK, ROUND 4 (the owner, 2026-11-23, of the walkway: "Should have long style grates"; of the drafts: "Push"): every walkway tile drawn as part of a long grate panel, five tiles along the walkway', () => {
         const C = ON.sewers.look.checks; ok(C.runTiles > 50, 'the walkway\'s tiles: ' + C.runTiles); same(C.longPanels, true, 'every walkway tile a long panel\'s'); same(C.panelLen, 5, 'a panel\'s length in tiles');
     });
+    check('THE SEWER KIT (build 2026-11-17dt; the owner, 2026-11-27: "I want to upgrade the sewer [...] fully rendered objects and pipes that go along the walls"; of draft 1: "add plants to pipes and add cracks with plants too, plants near water under sidewalk"; of the red brick: "Just no patchy looks"): the services along the walls, the equipment on them, the plants, and no wall face a patch', () => {
+        const C = ON.sewers.look.checks, K = C && C.kit; ok(K, 'the kit\'s counts: none');
+        ok(K.runs > 0 && K.mains + K.waters > 0 && K.conds > 0, 'the services on the walls (runs, mains, water lines, cables): ' + JSON.stringify([K.runs, K.mains, K.waters, K.conds]));
+        ok(K.jboxes + K.panels + K.vents + K.boxes + K.valves + K.gauges + (K.bigValves || 0) > 0, 'the equipment on them: ' + JSON.stringify([K.jboxes, K.panels, K.vents, K.boxes, K.valves, K.gauges, K.bigValves]));
+        ok((K.pipePlants || 0) + (K.wallCracks || 0) + (K.bankPlants || 0) > 0, 'the plants (on the pipes, in the cracks, by the water): ' + JSON.stringify([K.pipePlants, K.wallCracks, K.bankPlants]));
+        same(K.cabinets, 0, 'cabinets standing on the floor (none: they hang on the walls)'); same(C.patches, 0, 'wall faces drawn as a patch (brick or broken plaster)');
+    });
     check('STAGE 2, THE LAB\'S OTHER FLOORS: the Experiment Lab, the Stair Room, Teleport Room 2 and the Observation Deck are built; a floor up and a floor down it shows, its camera the game\'s to the pixel, the cube on that floor', () => {
         same(ON.covers.join(' '), 'true true true true', 'built');
         for (const f of ON.floors) { same(f.showing, true, f.id + ': showing'); ok(f.err < 1, f.id + ': off by ' + f.err + ' px'); ok(Math.abs(f.cam - f.h) < 1e-6 && Math.abs(f.h) > 50, f.id + ': the camera does not ride its floor (' + f.cam + ', ' + f.h + ')'); same(f.cube, 1, f.id + ': the cube on its floor'); }

@@ -54,23 +54,23 @@ const CARD_SHAPES = {   // kind: one | chain | line | zigzag | fan | swap | blas
 };
 const _CS_STAYS = { maelstrom: e => maelstromBeat(e), hexfire: e => fieldBite(e, "fire"), magmavent: e => fieldBite(e, "fire"), staticVortex: e => { _csVortexPull(e); fieldBite(e, "electric"); }, rotdecoy: e => { if (e.on && !e.on.dead) rotDecoyMist(e.on); }, gooproxy: () => {} };   // (each area's own bite)
 const _cs = { of: null, keys: null, cells: [] };
-const _csK = (x, y) => x + "," + y;
+const _csK = (x, y) => cardHexKey(x, y);   // (a hex's key: js/cardbattle.js THE HEXES)
 function _csV(v, f) { return typeof v === "function" ? v(f) : v; }
-// the battle room's floor squares (made once a line-up)
+// the battle room's hexes (made once a line-up: js/cardbattle.js cardHexRoom)
 function _csRoom() {
     const L = typeof _cb !== "undefined" ? _cb.lay : null; if (!L) return null;
-    if (_cs.of !== L) { _cs.of = L; _cs.cells = L.room && typeof partyRoomCells === "function" ? partyRoomCells(L.room) || [] : []; _cs.keys = _cs.cells.length ? new Set(_cs.cells.map(c => _csK(c[0], c[1]))) : null; }
+    if (_cs.of !== L) { _cs.of = L; const H = L.room && typeof cardHexRoom === "function" ? cardHexRoom() : null; _cs.cells = H ? H.cells : []; _cs.keys = _cs.cells.length ? H.keys : null; }
     return _cs;
 }
 function _csFloor(x, y) { const R = _csRoom(); return R && R.keys ? R.keys.has(_csK(x, y)) : true; }
 function _csSees(x0, y0, x1, y1) { return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x0, y0, x1, y1); }
 function _csWalks(x0, y0, x1, y1) { return typeof facilityLosFrom !== "function" || facilityLosFrom(x0, y0, x1, y1); }
-function _csSq(a) { const s = _cbSq(a); return [Math.round(s[0]), Math.round(s[1])]; }
-function _csDisc(cx, cy, r, skip) { const out = [], R = Math.ceil(r); for (let dx = -R; dx <= R; dx++) for (let dy = -R; dy <= R; dy++) { if (skip && !dx && !dy) continue; if (Math.hypot(dx, dy) <= r + 1e-6) out.push([cx + dx, cy + dy]); } return out; }
+function _csSq(a) { const s = _cbSq(a); return cardHex(s[0], s[1]); }
+function _csDisc(cx, cy, r, skip) { return cardHexDisc(cx, cy, r, skip); }   // (the hexes whose middles are within r of the hex (cx, cy) is in: js/cardbattle.js)
 // the squares along a line from a square, `len` tiles, while `ok` holds (its own square left out)
 function _csRay(ax, ay, ang, len, ok) {
     const out = [], seen = new Set();
-    for (let s = 0.5; s <= len + 0.01; s += 0.25) { const x = Math.round(ax + Math.cos(ang) * s), y = Math.round(ay + Math.sin(ang) * s), k = _csK(x, y); if ((x === ax && y === ay) || seen.has(k)) continue; if (ok && !ok(x, y)) break; seen.add(k); out.push([x, y]); }
+    const k0 = _csK(ax, ay); for (let s = 0.5; s <= len + 0.01; s += 0.25) { const h = cardHex(ax + Math.cos(ang) * s, ay + Math.sin(ang) * s), x = h[0], y = h[1], k = _csK(x, y); if (k === k0 || seen.has(k)) continue; if (ok && !ok(x, y)) break; seen.add(k); out.push([x, y]); }
     return out;
 }
 // of `list`, the enemies standing on these squares (a huge body: on any square it covers)
@@ -98,9 +98,9 @@ function cardShapeFor(f, kind, id, aim) {
     const S = { def, kind, id, A, hit: [], eff: [], links: [], rays: null, main: null, mask: [], aim: [], tile: null, ok: true, why: "", stage: "area" };
     const bad = why => { S.ok = false; S.why = why; S.maskSet = new Set(S.mask); return S; };
     const E = aimK === "foe" && aim && foes.indexOf(aim) >= 0 ? aim : null;
-    const T = aimK === "tile" && aim && Number.isFinite(aim.x) && Number.isFinite(aim.y) ? [Math.round(aim.x), Math.round(aim.y)] : null;
+    const T = aimK === "tile" && aim && Number.isFinite(aim.x) && Number.isFinite(aim.y) ? cardHex(aim.x, aim.y) : null;
     if (aimK === "foe" && !E) return bad("NO TARGET");
-    if (aimK === "tile" && !T) return bad("NO SQUARE");
+    if (aimK === "tile" && !T) return bad("NO HEX");
     const q = E ? _csSq(E) : null;
     if (def.ult && def.reach && (q || T)) { const P = q || T; if (Math.hypot(P[0] - A[0], P[1] - A[1]) > V(def.reach) + 0.05) return bad("OUT OF ITS REACH"); if (!_csSees(A[0], A[1], P[0], P[1])) return bad("IT CANNOT SEE THERE"); }   // (an Ultimate goes off from where it stands: no walk first, §11.17)
     if (def.noBoss && E && (E.bossName || E.bossId || E.isBoss)) return bad("NOT A BOSS");
@@ -126,7 +126,7 @@ function cardShapeFor(f, kind, id, aim) {
     case "zigzag": {   // (along the way to the target, every other square one to the side, the target's own square on it; up to `len` squares, stopping at a wall)
         const dx = q[0] - A[0], dy = q[1] - A[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = uy, ny = -ux, p = Math.max(1, Math.round(L)) % 2;
         let prev = A;
-        for (let k = 1; k <= def.len; k++) { const o = (k + p) % 2, x = Math.round(A[0] + ux * k + nx * o), y = Math.round(A[1] + uy * k + ny * o); if (!_csFloor(x, y) || !_csWalks(prev[0], prev[1], x, y)) break; S.hit.push([x, y]); prev = [x, y]; }
+        for (let k = 1; k <= def.len; k++) { const o = (k + p) % 2, h = cardHex(A[0] + ux * (k - 0.5 * o) + nx * o * CB_HEX_H, A[1] + uy * (k - 0.5 * o) + ny * o * CB_HEX_H), x = h[0], y = h[1];   /* (on the hexes: every other one the neighbour to the side, half a hex back, so it steps hex to hex) */ if (_csK(x, y) === _csK(prev[0], prev[1])) continue; if (!_csFloor(x, y) || !_csWalks(prev[0], prev[1], x, y)) break; S.hit.push([x, y]); prev = [x, y]; }
         if (!S.hit.some(c => c[0] === q[0] && c[1] === q[1])) S.hit.push(q);
         S.main = E; S.mask = _csOn(foes, S.hit); if (S.mask.indexOf(E) < 0) S.mask.push(E); S.aim = [E];
         break; }
@@ -156,7 +156,7 @@ function cardShapeFor(f, kind, id, aim) {
         const tiles = _csDisc(A[0], A[1], r, true).filter(c => _csFloor(c[0], c[1]) && _csSees(A[0], A[1], c[0], c[1]));
         if (heal || eff) S.eff = tiles; else S.hit = tiles;
         S.mask = heal ? [] : _csOn(foes, tiles); S.aim = heal ? foes.slice() : S.mask.slice();
-        if (!heal && !S.mask.length) return bad("NO ENEMY IN ITS SQUARES");
+        if (!heal && !S.mask.length) return bad("NO ENEMY IN ITS HEXES");
         break; }
     default: return def.ult && typeof cardUltShape === "function" ? cardUltShape(def, S, { f, A, foes, E, T, q, V, bad }) : null;
     }
@@ -168,15 +168,15 @@ function cardShapeFor(f, kind, id, aim) {
 // the enemies on them in turns (a status's time at 2 s a turn, at least one: §2.52), from the attacks' own numbers. Nothing here changes what a card does.
 function _csTurns(frames) { const n = Math.max(1, Math.ceil((frames || 0) / (60 * (typeof CARD_BATTLE !== "undefined" ? CARD_BATTLE.turnSec : 2)) - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
 function _csSquares(r, skip) { return _csDisc(0, 0, r, skip).length; }
-function _csPushed(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " square" : " squares"); }   // (a push's own tiles as squares, a part counting whole: js/cardbattle.js §2.63)
+function _csPushed(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " hex" : " hexes"); }   // (a push's own tiles as squares, a part counting whole: js/cardbattle.js §2.63)
 const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the shape's words come before: cardShapeSays)
     bash:            () => "pushed back " + _csPushed(BASH_PUSH) + ", stunned " + _csTurns(BASH_STUN),
     venom_bite:      () => "weakened " + _csTurns(VENOM_POISON) + "; marked: your next " + VENOM_MARK + " hits on it land harder",
     rift_impale:     () => "glitched " + _csTurns(RIFT_GLITCH) + "; it pops up beside it",
-    chomp:           () => "frozen " + _csTurns(MAW_STUN) + "; the squares round it slowed " + _csTurns(MAW_SLOW_FRAMES),
+    chomp:           () => "frozen " + _csTurns(MAW_STUN) + "; the hexes round it slowed " + _csTurns(MAW_SLOW_FRAMES),
     static_rush:     () => "each stunned " + _csTurns(MANTA_STUN),
     shock_zap:       () => "both glitched " + _csTurns(ZAP_GLITCH) + ", only its target hurt",
-    zigzag_dash:     () => "each glitched " + _csTurns(ZIG_GLITCH) + "; it ends on a new square",
+    zigzag_dash:     () => "each glitched " + _csTurns(ZIG_GLITCH) + "; it ends on a new hex",
     ember_slash:     () => "each burning " + _csTurns(EMBER_BURN) + "; it ends past them",
     skate_charge:    () => "each slowed " + _csTurns(SKATE_SLOW) + "; it ends past them",
     blade_roll:      () => "each sliced; it ends past them",
@@ -187,7 +187,7 @@ const CARD_SAYS = {   // what it does to those its shape takes in, in turns (the
     hexfire:         () => "burns as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
     magma_vent:      () => "bursts as it opens and as " + CARD_SHAPE_STAY + " enemy turns begin",
     static_vortex:   () => "pulls them in; shocks as " + CARD_SHAPE_STAY + " enemy turns begin",
-    rotten_decoy:    () => "enemies within " + DECOY_DRAW + " squares go for it; its mist weakens the " + _csSquares(DECOY_MIST, true) + " round it",
+    rotten_decoy:    () => "enemies within " + DECOY_DRAW + " hexes go for it; its mist weakens the " + _csSquares(DECOY_MIST, true) + " round it",
     stake_ring:      () => "each pushed " + _csPushed(STAKE_PUSH) + " out",
     toxic_stomp:     () => "each crushed",
     wobble_slam:     () => "each staggered " + _csTurns(WOBBLE_STUN) + " (not a boss)",
@@ -209,15 +209,15 @@ function cardShapeSays(f, kind, id) {
     const V = v => _csV(v, f), up = t => t.charAt(0).toUpperCase() + t.slice(1);
     let where;
     switch (def.kind) {
-    case "one": where = def.r ? "its target; the " + _csSquares(V(def.r), true) + " squares round it" : "its target"; break;
-    case "chain": where = def.self ? "the nearest within " + V(def.reach) + " squares, then up to " + V(def.n) + " more, each within " + V(def.hop) + " of the last" : V(def.n) === Infinity ? "its target, then on through every enemy within " + V(def.hop) + " squares of the last" : V(def.n) === 1 ? "its target, then 1 more within " + V(def.hop) + " squares of it" : "its target, then " + V(def.n) + " more each within " + V(def.hop) + " squares of the last"; break;
-    case "line": where = "a line of " + Math.round(V(def.len)) + " squares through its target"; break;
-    case "zigzag": where = "a zigzag of " + def.len + " squares to its target"; break;
+    case "one": where = def.r ? "its target; the " + _csSquares(V(def.r), true) + " hexes round it" : "its target"; break;
+    case "chain": where = def.self ? "the nearest within " + V(def.reach) + " hexes, then up to " + V(def.n) + " more, each within " + V(def.hop) + " of the last" : V(def.n) === Infinity ? "its target, then on through every enemy within " + V(def.hop) + " hexes of the last" : V(def.n) === 1 ? "its target, then 1 more within " + V(def.hop) + " hexes of it" : "its target, then " + V(def.n) + " more each within " + V(def.hop) + " hexes of the last"; break;
+    case "line": where = "a line of " + Math.round(V(def.len)) + " hexes through its target"; break;
+    case "zigzag": where = "a zigzag of " + def.len + " hexes to its target"; break;
     case "fan": where = def.angles.length + " shots fanned at its target"; break;
-    case "swap": where = "it and its target swap squares"; break;
-    case "blast": { const n = _csSquares(V(def.r), false); where = n === 5 ? "a cross of 5 squares on a square in reach" : n === 9 ? "a 3×3 on a square in reach" : "the " + n + " squares round a square in reach"; break; }
-    case "decoy": where = "a decoy on a square in reach"; break;
-    case "ring": { const o = def.alt ? def.alt(f) : null, r = o ? _csV(o.r, f) : V(def.r), n = _csSquares(r, true); where = n > 24 ? "every square within " + r + " of it" : "the " + n + " squares round it"; break; }
+    case "swap": where = "it and its target swap hexes"; break;
+    case "blast": { const n = _csSquares(V(def.r), false); where = n === 7 ? "a hex and the 6 round it, in reach" : "the " + n + " hexes round a hex in reach"; break; }
+    case "decoy": where = "a decoy on a hex in reach"; break;
+    case "ring": { const o = def.alt ? def.alt(f) : null, r = o ? _csV(o.r, f) : V(def.r), n = _csSquares(r, true); where = n > 24 ? "every hex within " + r + " of it" : "the " + n + " hexes round it"; break; }
     default: return null;
     }
     const key = kind === "basic" ? (def === CARD_SHAPES._corrodeShot ? "_corrodeShot" : null) : id, what = key && CARD_SAYS[key] ? CARD_SAYS[key](f) : kind === "basic" ? _csEveryday(f) : "";
@@ -297,7 +297,7 @@ function cardShapeFire(f, id, S) {
 // of its zigzag (its own, the floor's, none of the battle's taken), else on the free square of the room nearest the last enemy it struck; never on the square it started from. That square is its own.
 // (The move's own end, 0.8 short of the last it struck, could be inside an object, and the game then put it back on open floor wherever that was.)
 function _csDashEnd(f, S) {
-    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== f && !a.dead && !_cb.out.has(a)) taken.add(_csK(Math.round(q.x), Math.round(q.y)));
+    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== f && !a.dead && !_cb.out.has(a)) taken.add(_csK(q.x, q.y));
     const start = _csK(S.A[0], S.A[1]), free = c => !taken.has(_csK(c[0], c[1])) && _csK(c[0], c[1]) !== start && _csFloor(c[0], c[1]);
     let end = null; for (let i = S.hit.length - 1; i >= 0 && !end; i--) if (free(S.hit[i])) end = S.hit[i];
     if (!end) { const R = _csRoom(), on = S.mask.length ? _csSq(S.mask[S.mask.length - 1]) : S.A; let bd = Infinity; for (const c of (R ? R.cells : [])) { if (!free(c)) continue; const d = Math.hypot(c[0] - on[0], c[1] - on[1]); if (d < bd) { bd = d; end = c; } } }
@@ -341,8 +341,8 @@ function cardShapeDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null; if (!D || !D.aim || !V || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
     if (D.kind === "walk") return _csDrawWalk(V, D);
     const S = cardShapeFor(D.f, D.kind, D.id, D.aim === true ? null : D.aim); if (!S) return;
-    const col = D.col || "#19e6c1", quad = (x, y, k) => { const h = 0.5 - k, L = _csLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
+    const col = D.col || "#19e6c1", quad = _csHexPath(V);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; _csGrid(V, quad);
     ctx.globalAlpha = S.ok ? 0.42 : 0.18; ctx.fillStyle = col; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.fill(); }
     ctx.globalAlpha = S.ok ? 0.95 : 0.4; ctx.strokeStyle = col; ctx.lineWidth = 2; for (const c of S.hit) { quad(c[0], c[1], 0.05); ctx.stroke(); }
     if (ctx.setLineDash) ctx.setLineDash([6, 4]); for (const c of S.eff) { quad(c[0], c[1], 0.12); ctx.stroke(); } if (ctx.setLineDash) ctx.setLineDash([]);
@@ -352,13 +352,24 @@ function cardShapeDraw(V) {
 // THE MOVE CARD dragged (js/cardbattle.js §2.56): every square the follower can walk to this turn lit faintly, the one under the finger in gold (in red, faint, when it cannot go there)
 function _csDrawWalk(V, D) {
     const sq = typeof cardBattleWalkSquares === "function" ? cardBattleWalkSquares(D.f) : [], col = D.col || "#19e6c1", T = D.aim && D.aim.tile ? [D.aim.x, D.aim.y] : null;
-    const quad = (x, y, k) => { const h = 0.5 - k, L = _csLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); };
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+    const quad = _csHexPath(V);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round"; _csGrid(V, quad); ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
     for (const c of sq) { quad(c[0], c[1], 0.08); ctx.globalAlpha = 0.18; ctx.fill(); ctx.globalAlpha = 0.6; ctx.stroke(); }
-    if (T) { const ok = sq.some(c => c[0] === T[0] && c[1] === T[1]); ctx.globalAlpha = ok ? 1 : 0.55; ctx.strokeStyle = ok ? "#ffe733" : "#ff4a3a"; ctx.lineWidth = 3; quad(T[0], T[1], 0.02); ctx.stroke(); if (ok) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#ffe733"; ctx.fill(); } }
+    if (T) { const ok = sq.some(c => _csK(c[0], c[1]) === _csK(T[0], T[1])); ctx.globalAlpha = ok ? 1 : 0.55; ctx.strokeStyle = ok ? "#ffe733" : "#ff4a3a"; ctx.lineWidth = 3; quad(T[0], T[1], 0.02); ctx.stroke(); if (ok) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#ffe733"; ctx.fill(); } }
     ctx.restore();
 }
-// a square's floor height, for where the 3D view draws it (js/cardbattle.js cardBattleLift: the view's screenOf and screenNow take a height from the lab's ground floor)
+// a hex's outline on the floor, as the 3D view draws it: a path on ctx (k: that much smaller)
+function _csHexPath(V) { return (x, y, k) => { const L = _csLift(x, y), P = cardHexCorners(x, y, k).map(c => V.screenNow(c[0], c[1], L)); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); }; }
+// THE HEXES' OUTLINE, ONLY WHILE A CARD IS DRAGGED (the owner, 2026-11-27: "outline only while dragging"): the battle room's hexes near the fight, faint, under what the card lights. Out of a drag
+// the floor is bare. The look the agent's.
+const CARD_HEX_GRID = { reach: 9, alpha: 0.4, col: "#2f6f8c", width: 1.2 };
+function _csGrid(V, quad) {
+    const R = _csRoom(), L = typeof _cb !== "undefined" ? _cb.lay : null; if (!R || !R.cells.length || !L) return;
+    ctx.save(); ctx.globalAlpha = CARD_HEX_GRID.alpha; ctx.strokeStyle = CARD_HEX_GRID.col; ctx.lineWidth = CARD_HEX_GRID.width;
+    for (const c of R.cells) { if (Math.hypot(c[0] - L.mx, c[1] - L.my) > CARD_HEX_GRID.reach) continue; quad(c[0], c[1], 0.04); ctx.stroke(); }
+    ctx.restore();
+}
+// a hex's floor height, for where the 3D view draws it (js/cardbattle.js cardBattleLift: the view's screenOf and screenNow take a height from the lab's ground floor)
 function _csLift(x, y) { return typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0; }
 // the floor square of the battle's room under a point of the canvas (the 3D view's drawing), or null: each square where its own floor is drawn
 function cardShapeTileAt(px, py, V) {

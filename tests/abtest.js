@@ -295,7 +295,7 @@ check('but the special still lands on what it IS aimed at', () => {
 
 check('a special spares a recruit waiting in its egg', () => {
     // A clone's specials reach team "red", which is an egg's team until it is
-    // hatched (js/followerspots.js). Without the bystander rule your own
+    // hatched (js/followerspots.js, until the posts were removed 2026-11-24). Without the bystander rule your own
     // converted predators would cut down the followers waiting on the pads.
     reset();
     sandbox.player.x = 99; sandbox.player.y = 99;
