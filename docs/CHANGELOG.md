@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dp` · branch `claude/start-game-project-HSh7Z` · props on the hexes' middles; hazard zones as hexes
+- **The ask** (the owner, 2026-11-27): "reposition some of the props to make them where they rest on the middle of the tiles, and make it to where the things like the turret's highlighted tile zone are correct on the low camera view".
+- **What it does:** 34 free-standing one-tile props (lounge beanbags (4), a lounge plant, a teleporter, a beanbag, floodlights (16), a crate stack, hazard containers (4), the two turrets, chests (4)) are moved, up to half a tile, onto the middle of a hex of the floor's grid, in the map itself, so where they block and where they are drawn agree; props against walls, beside doors or among others stay put. The striped hazard zones (the one the Crystal Chamber's turret stands in, the doorways') are drawn as the whole hexes they cover, edged along the hexes, so they sit on the hex floor in every camera. `VIEW-3D.md`. `js/facilitymap.js`, `design/style-evolution/round2/chamber.js`, `design/style-evolution/live/floor.js`, generated files.
+- **Verified:** seen in a real browser with the low camera; the full test run in the handoff. **Not seen on an iPad; the 2D game draws the moved props where they now are (up to half a tile off its squares).**
+
 ### Build `2026-11-17do` · branch `claude/start-game-project-HSh7Z` · a hex grid on the floor
 - **The ask** (the owner, 2026-11-27): after the mock-ups of hex-edged and hexagon rooms, "What about just a hex grid, and then we keep the current layout just with the straight walls?"
 - **What it does:** in the 3D view the plate floor of every room is drawn as hex tiles a tile across, on the same world-fixed grid as the card battles, so a battle's hexes sit on the floor's. Rooms, walls and walking are unchanged; wood and grate floors and the sewer skin keep their own pictures. `VIEW-3D.md`. `design/style-evolution/live/floor.js`, generated files.
