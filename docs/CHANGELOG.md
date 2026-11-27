@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dx` · branch `claude/start-game-project-HSh7Z` · the low camera trimmed for the iPad
+- **The ask** (the owner, 2026-11-27): optimize the game for the low camera; of the ways offered, "Trim what's far".
+- **What it does:** the low camera draws nothing past 16 tiles (was 22) and nothing of another room past 8 (was 12), and cuts long pieces for its curve every 2.2 tiles (was 1.5). Draw calls about a quarter fewer in the arena and the hallway, a little fewer elsewhere; triangles 5% to 19% fewer. Up close the picture is the same; far things in the next room show a little later. `VIEW-3D.md` §8. `view3d/lowcam.js`, generated files.
+- **Verified:** measured in a headless browser (20 frames a room, four rooms, before and after) and the pictures compared; the suites in the handoff. **Not measured on an iPad.**
+
 ### Build `2026-11-17dw` · branch `claude/start-game-project-HSh7Z` · the low camera is the game's camera
 - **The ask** (the owner, 2026-11-27): "I'm ready to make the low cam version of the game the full game. It looks good enough, and I also like to make the game optimized for that specific build."
 - **What it does:** the plain address over the web opens the game with the low follow camera and the rolling-world curve; `?cam=iso` gives the camera as it was. Off the web, `?cam=low` as before. The optimizing for it is the next step (measured, not yet changed). `VIEW-3D.md` §8. `js/config.js`, `tests/engineplan.js`, generated files.
