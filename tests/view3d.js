@@ -1043,6 +1043,7 @@ const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D
     VIEW3D.turn = 0; V.show(true); settle(60); return o; })();
   // THE OWNER'S FEEDBACK (2026-11-23): "it needs to load less in"; "these highlighted tiles being visible through the walls"; "the roundness is too much"; the pipeline "doesn't bend properly"
   out.fb = (function () { var Wd = V.world, K = V.low.K, res = { poses: [], behind: 0, behindDrawn: [], farDrawn: [], drawn: 0, far3d: [], rooms3d: 0 };
+    var keepSee = [K.see, K.seeRoom]; K.see = 22; K.seeRoom = 12;   /* (measured at the distances it was written for, 22 and 12: the game's own are shorter since 2026-11-17dx, and its poses then see too few things behind a wall to tell; the rule is the same at any distance) */
     // (the test's own maths: does the line from (x, y, z) of the world to the camera, both bent, pass through a standing wall's face? the walls as they stand now)
     var I0 = null, bd = function (x, y, z) { var d = (x - I0.pivot[0]) * I0.fwd[0] + (z - I0.pivot[1]) * I0.fwd[1]; return y - I0.k * d * d; };
     var crosses = function (o) { var C = I0.pos, O = [o[0], bd(o[0], o[1], o[2]), o[2]], D = [C[0] - O[0], C[1] - O[1], C[2] - O[2]], hit = false;
@@ -1070,13 +1071,13 @@ const LOWP = realPage('dev&cards&engine=3d&cam=low', RUN(SETUP + `var V = VIEW3D
     var c2 = V.low.tessellate(gp), pa = pipe.geometry.attributes.position, idx = pipe.geometry.index, mx = 0, wv = function (i) { return new THREE.Vector3().fromBufferAttribute(pa, i).applyMatrix4(pipe.matrixWorld); };
     for (var t = 0; t + 2 < idx.count; t += 3) for (var e = 0; e < 3; e++) { var a = wv(idx.getX(t + e)), b = wv(idx.getX(t + (e + 1) % 3)); mx = Math.max(mx, Math.hypot(a.x - b.x, a.z - b.z)); }
     var xs = {}; for (var i = 0; i < pa.count; i++) xs[wv(i).x.toFixed(2)] = 1; res.pipe = { cut: c2.geos, maxEdge: +mx.toFixed(3), points: Object.keys(xs).length, seg: K.seg };
-    return res; })();
+    K.see = keepSee[0]; K.seeRoom = keepSee[1]; return res; })();
   put(13, 19); step(3); var d = ctx.getImageData(40, 300, 1, 1).data; out.clear = d[3]; out.showing = VIEW3D.showing;
   out.errsLow = (window.__errs || []).slice(0, 4);`));
 if (LOWP !== null) {
     check('the switch: ?cam=low with the view is the low camera, a perspective one at the drafts\' knobs (provisional: OPEN-QUESTIONS.md), every shader of the view bent; made with no error', () => {
         ok(!LOWP.none, 'the page left no result'); ok(!LOWP.threw, LOWP.threw); same(LOWP.errs.join(' | '), '', 'errors'); same(LOWP.state, 'ready', 'the view (' + LOWP.error + ')'); same(LOWP.cam, 'low', 'VIEW3D.cam');
-        same(LOWP.persp, true, 'a perspective camera'); same(LOWP.fov0, 40, 'its view'); same(JSON.stringify([LOWP.knobs.fov, LOWP.knobs.pitch, LOWP.knobs.dist, LOWP.knobs.ahead, LOWP.knobs.follow, LOWP.knobs.k, LOWP.knobs.see, LOWP.knobs.seeRoom, LOWP.knobs.seg]), JSON.stringify([40, 30, 9.5, 2.2, 6, 0.0065, 22, 12, 1.5]), 'the knobs (the curve halved, the owner 2026-11-23: "the roundness is too much"; the visible distance)');
+        same(LOWP.persp, true, 'a perspective camera'); same(LOWP.fov0, 40, 'its view'); same(JSON.stringify([LOWP.knobs.fov, LOWP.knobs.pitch, LOWP.knobs.dist, LOWP.knobs.ahead, LOWP.knobs.follow, LOWP.knobs.k, LOWP.knobs.see, LOWP.knobs.seeRoom, LOWP.knobs.seg]), JSON.stringify([40, 30, 9.5, 2.2, 6, 0.0065, 16, 8, 2.2]), 'the knobs (the curve halved, the owner 2026-11-23: "the roundness is too much"; the visible distance)');
         same(LOWP.missed, 0, 'shaders the bend could not reach'); same(LOWP.showing, true, 'showing'); same(LOWP.clear, 0, 'the game\'s canvas where the world is');
     });
     check('THE CAMERA FOLLOWS THE PLAYER: its aim LOWCAM.ahead ahead of them and LOWCAM.lift over their floor; moved, part of the way a frame later and there a second later; 9.5 tiles back, 30 degrees down', () => {
