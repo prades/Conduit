@@ -3868,3 +3868,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Chosen of what was offered: **"Merge into TANK"** (no fifth style; passed over: a new DEFENSIVE style, replacing CAUTIOUS); **"Some escape some block"**, then **"CAUTIOUS steps back"** (passed over: nobody escapes for now; any hurt follower escapes); BLOCK **"Always ready"** (passed over: a turn's recharge); in real time **"2 s, then a gap"** (passed over: held while an enemy is close).
 - Agent's choices (provisional): "next to it" 1.6 tiles; the step back 3 tiles, 3 s between; BLOCK and MOVE stacked in one card slot; a blocker not pushed; not on top of SHELL GUARD; an attack order wins over both tactics.
 - Status: Implemented (build `2026-11-17do`); verified by `tests/cardbattle.js` and the real page's cards at iPad sizes; not playtested. `CARD-BATTLES.md` §2.83 and §11.35, `CHANGELOG.md`. Keeps §2.45's "no play style changes damage" (BLOCK is an action, not a style's).
+
+## DECISION: A tap walks you into the rooms next door (2026-11-27, build `2026-11-17dp`, branch `claude/zen-cerf-3m8mq5`)
+- The owner: "You need to make it to where you can walk into other rooms, because right now it blocks you from walking into other rooms."
+- Chosen of three: **"Next-door rooms"** (a tap anywhere in a room sharing a doorway with yours); passed over: anywhere you can walk; rooms you have been in.
+- Supersedes 2026-11-01's "through a doorway of that room a little way into the next" (`FP_MOVE.doorReach`, 2.6 tiles). Kept: the ✕ for a room farther off, locked doors, the combat step.
+- Status: Implemented (build `2026-11-17dp`); verified by `tests/movement.js`; not playtested. `FACILITY.md`, `CHANGELOG.md`.

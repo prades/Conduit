@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dp` · branch `claude/zen-cerf-3m8mq5` · a tap walks you into the rooms next door
+- **The ask** (the owner, 2026-11-27): "You need to make it to where you can walk into other rooms, because right now it blocks you from walking into other rooms." Asked how far a tap should reach: **"Next-door rooms"** (passed over: anywhere you can walk; rooms you have been in).
+- **What it does:** a tap anywhere in a room that shares a doorway with yours walks you there (it reached only 2.6 tiles past the doorway, and a tap beyond showed a ✕). A room two or more doors away still shows the ✕; a locked door still refuses the walk; the combat step (3 tiles a tap with an enemy near) is unchanged. The 2D game and the 3D view alike (`js/input.js` handleInput).
+- `js/facilityplay.js` (`facilityTapAllowed`, `facilityNextDoor`), `js/input.js` (its comment), `tests/movement.js`, `docs/FACILITY.md`.
+- **Verified:** `tests/movement.js` (the far side of the Crystal Chamber from the hallway walks you there; a room not next door is refused) and the full run in the handoff. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17do` · branch `claude/zen-cerf-3m8mq5` (over main's `2026-11-17dn`, the hexes) · BLOCK in card battles; in real time a TANK blocks and a CAUTIOUS follower steps back
 - **The ask** (the owner, 2026-11-27): a block action beside the attacks and MOVE: no moving, half damage until the next turn; "this sort of tactic would also apply to real battles". Asked: "Merge into TANK", "Some escape some block", "CAUTIOUS steps back", "Always ready", "2 s, then a gap" (`CARD-BATTLES.md` §2.83).
 - **Card battles:** every follower has a BLOCK card, always ready; played, its turn is over and until its next turn it takes half damage and holds its square (no push moves it). BLOCK and MOVE share one slot, stacked.
