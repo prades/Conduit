@@ -3913,3 +3913,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's choices (provisional): the spots are the game's own healing areas and BLOOM followers; "nearby" its room within 12 tiles; it holds still in the spot; not in a card battle; an attack order wins.
 - Status: Implemented (build `2026-11-17dx`); verified by `tests/cardbattle.js`; not playtested. `COMBAT.md` §10, `CHANGELOG.md`.
 
+## DECISION: The ants' limit in card battles: twice, then they leave you be (2026-11-27, build `2026-11-17dy`, branch `claude/friendly-thompson-w581x0`)
+- The owner: "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes." "Only attacked twice this is just to keep from the player, endlessly being attacked."
+- Decided by the owner: ants may start a battle by attacking at most **twice**; it resets on going **into another room** or after **5 minutes**.
+- Agent's choices (provisional, not asked): a battle counts when an ant's blow on you **or your squad** starts it; after the limit ants do not go for you or your squad and a stray blow does not land; a battle you start yourself does not count and is always allowed; THE ANT QUEEN (any boss) is not limited; the Ant Nest's chambers one place, the sewer dungeon's rooms one place, the Sewers' Nest its own; the 5 minutes from the end of the last counted battle; not saved; nothing said on screen.
+- Status: Implemented (build `2026-11-17dy`); verified by `tests/cardbattle.js` THE ANTS' LIMIT; not playtested. `CARD-BATTLES.md` §2.84 and §11.36, `CHANGELOG.md`, `OPEN-QUESTIONS.md`.

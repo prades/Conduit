@@ -1313,6 +1313,59 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"( \|\| D\.kind === "block")?\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
     });
 
+    group('THE ANTS\' LIMIT (§2.84; the owner, 2026-11-27: "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes", "Only attacked twice")');
+    check('two ants\' blows start two battles; then an ant\'s blow on you or a follower starts none and does not land, and the ants go for neither; another creature still starts one; you may still choose a fight with an ant, and it counts for nothing', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = { most: CARD_BATTLE.ants.most, reset: CARD_BATTLE.ants.reset, blows: [] };
+            for (let i = 0; i < 3; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); const hp = health, ret = hurtPlayer(1, 4, a); o.blows.push([cardBattleActive(), hp - health, ret, cardBattleAnts().n].join()); cardBattleEnd(); if (i < 2) a.dead = true; else o.a3 = a; }
+            const a3 = o.a3; delete o.a3; const f = followers[0], fh = f.health; applyDamage(f, 5, a3); o.onF = [cardBattleActive(), fh - f.health].join();
+            o.prey = [predatorPreyOk(a3, player), predatorPreyOk(a3, f), cardBattleBars(a3, player), cardBattleAnts().capped].join();
+            const sp = Object.keys(SPECIES).find(s => s !== 'ant' && SPECIES[s].scout), b = spawnCreature({ species: sp, className: 'scout' }); { const c = _fpNearestCellOpen(player.x + 1.5, player.y - 1); b.x = c[0]; b.y = c[1]; } b.moveSpeed = b.baseMoveSpeed = 0;
+            o.other = [sp, cardBattleBars(b, player), (player.invuln = 0, hurtPlayer(1, 4, b)), cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd(); b.dead = true;
+            _cb.calmUntil = -1e9; o.chose = [cardBattleChoose(a3), cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd();
+            _cb.calmUntil = -1e9; CARD_BATTLE.on = false; o.off = cardBattleBars(a3, player); CARD_BATTLE.on = true; return o; })()`);
+        same(r.most + ',' + r.reset, '2,18000', 'the limit: 2 battles, 5 minutes (18000 frames)');
+        same(r.blows.join(' | '), 'true,0,false,1 | true,0,false,2 | false,0,false,2', 'each ant\'s blow on you: a battle on, your health lost, what the blow did, the count');
+        same(r.onF, 'false,0', 'the third ant\'s blow on a follower: no battle, no health lost');
+        same(r.prey, 'false,false,true,true', 'the third ant goes for you, for a follower; barred; the limit reached');
+        ok(/,false,false,true,2$/.test(r.other), 'another creature (' + r.other.split(',')[0] + '): not barred, its blow starts a battle, the count unchanged: ' + r.other);
+        same(r.chose, 'true,true,2', 'you choose a fight with that ant: started, on, the count unchanged');
+        same(r.off, false, 'with card battles off, nothing is barred (they fight in real time)');
+    });
+    check('the world running: after two ants\' battles a hunting ant beside you and your squad for 10 seconds starts no battle and hurts no one; once you are in another room, one does', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = {};
+            for (let i = 0; i < 2; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); cardBattleEnd(); a.dead = true; } _cb.calmUntil = -1e9;
+            const hunt = () => { const a = __ant(player.x + 1.2, player.y + 0.4); a.moveSpeed = a.baseMoveSpeed = 0.02; a.spawnProtection = 0; a.provoked = true; a.state = 'hunt'; a.health = a.maxHealth = 1e6; return a; };
+            const a = hunt(), hp = health, fh = followers.map(f => f.health); let on = 0; for (let i = 0; i < 600; i++) { _simStep(false); if (cardBattleActive()) on++; }
+            o.capped = [on, hp - health, followers.every((f, i) => !f.dead && f.health >= fh[i]), cardBattleAnts().n].join(); a.dead = true;
+            const other = _fp.F.rooms.map(q => q.id).find(id => id !== 'crystal_chamber' && !FP_NEST_ROOMS.has(id) && !/^sd_/.test(id) && partyRoomCells(id).length >= 30);
+            const c = __cell(other); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null; for (const f of followers) { f.x = player.x + 0.5; f.y = player.y + 0.5; }
+            for (let i = 0; i < 30; i++) _simStep(false); o.reset = cardBattleAnts().n;
+            const b = hunt(); let at = -1; for (let i = 0; i < 600 && at < 0; i++) { _simStep(false); if (cardBattleActive()) at = i; } o.after = [at >= 0, cardBattleAnts().n].join(); cardBattleReset(); b.dead = true; return o; })()`);
+        ok(/^0,0,true,2$/.test(r.capped), 'frames a battle was on, your health lost, your squad unhurt, the count: ' + r.capped);
+        same(r.reset, 0, 'in another room the count is none'); same(r.after, 'true,1', 'there a hunting ant starts a battle, the first of two');
+    });
+    check('the count starts again at none once you go into another place, or 5 minutes after the last of those battles ended; the Ant Nest\'s chambers are one place; staying put keeps it', () => {
+        const r = J(`(function(){ __fresh(0); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = {};
+            const at = (room) => { const c = __cell(room); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; };
+            const two = () => { for (let i = 0; i < 2; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); cardBattleEnd(); a.dead = true; } _cb.calmUntil = -1e9; return cardBattleAnts().n; };
+            o.place = _cbAntPlace(); o.two = two(); __ticks(600); o.stay = cardBattleAnts().n;
+            const other = _fp.F.rooms.map(q => q.id).find(id => id !== 'crystal_chamber' && !FP_NEST_ROOMS.has(id) && !/^sd_/.test(id) && partyRoomCells(id).length);
+            at(other); __ticks(30); o.moved = [other, cardBattleAnts().n].join();
+            player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); o.again = [cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd(); a.dead = true; _cb.calmUntil = -1e9;
+            two(); frame += CARD_BATTLE.ants.reset - 100; __ticks(30); o.early = cardBattleAnts().n; __ticks(120); o.late = cardBattleAnts().n;
+            const nest = [...FP_NEST_ROOMS].filter(id => partyRoomCells(id).length); o.nestN = nest.length; at(nest[0]); o.nestPlace = _cbAntPlace(); two(); at(nest[1]); __ticks(60); o.inNest = cardBattleAnts().n; at('sewers'); __ticks(30); o.toSewers = cardBattleAnts().n;
+            const sw = _fp.F.decor.find(d => d.kind === 'area' && d.room === 'sewers'); o.area = sw ? (() => { const x0 = player.x, y0 = player.y; player.x = (sw.rect[0] + sw.rect[2]) / 2; player.y = (sw.rect[1] + sw.rect[3]) / 2; const p = _cbAntPlace(); player.x = x0; player.y = y0; return p; })() : 'none';
+            cardBattleReset(); o.reset = cardBattleAnts().n; return o; })()`);
+        same(r.place, 'crystal_chamber', 'the place: the room you are in');
+        same(r.two + ',' + r.stay, '2,2', 'two ants\' battles; 10 seconds later in the same room');
+        ok(/,0$/.test(r.moved), 'into another room (' + r.moved.split(',')[0] + '): none');
+        same(r.again, 'true,1', 'there an ant\'s blow starts a battle again, the first of two');
+        same(r.early + ',' + r.late, '2,0', 'just short of 5 minutes after the second ended; just past');
+        ok(r.nestN >= 2, 'the Ant Nest has chambers: ' + r.nestN); same(r.nestPlace, 'nest', 'a Nest chamber\'s place');
+        same(r.inNest + ',' + r.toSewers, '2,0', 'from one Nest chamber to another: kept; into the Sewers: none');
+        same(r.area, 'sewers:nest_area', 'the Sewers\' Nest, a place of its own'); same(r.reset, 0, 'cardBattleReset clears it');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dy` · branch `claude/friendly-thompson-w581x0` · the ants' limit in card battles: twice, then they leave you be
+- **The ask** (the owner, 2026-11-27): "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes." "Only attacked twice this is just to keep from the player, endlessly being attacked" (`CARD-BATTLES.md` §2.84).
+- **What it does:** an ant's blow on you or your squad starts a card battle at most twice. After that ants walk past you and your squad (they still go for the Crystal and for followers holding rooms), and a stray ant blow on you or yours starts nothing and does not land. The count starts again when you go into another place (another room; the Ant Nest's chambers count as one place, the sewer dungeon's rooms as one, the Sewers' Nest as its own) or 5 minutes after the last of those battles ended. A fight you pick yourself with an ant is always allowed and does not count; other creatures, THE ANT QUEEN and the real-time mode are unchanged.
+- **The agent's, provisional:** the places, the 5 minutes from the battle's end, your squad counting as you, the count not saved, nothing on screen saying the ants hold back (`CARD-BATTLES.md` §11.36).
+- `js/cardbattle.js` (`CARD_BATTLE.ants`, `_cbAnts`, `_cbAntPlace`, `cardBattleHit`, `cardBattleBars`), `tests/cardbattle.js`.
+- **Verified:** `tests/cardbattle.js` (new: THE ANTS' LIMIT, 3 checks, one with the world running) and the suites in the handoff. **Not seen in a real browser; not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · the follower's close-up: a see-through card, nothing in the way
 - **The ask** (the owner, 2026-11-27): "whenever you observe a creature after clicking its mini roster and equipment page, the background should be sort of transparent on the card, and also all sorts of objects on the map should disappear if they're obstructing the creature" (`CARD-BATTLES.md` §2.80).
 - **What it does:** while the 3D camera holds on a member (card battles off, its card open), the card's ground is half see-through, and what stands between the member and the camera is made see-through as in a card battle.
