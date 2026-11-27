@@ -34,7 +34,7 @@ The owner's second round of answers, 2026-11-09:
 The owner's third round of answers, 2026-11-09 (on the agent's readings, build `2026-11-09t`):
 
 15. **The starting squad** ("Keep as built"): the three starters hold free cards of their elements. The tutorial lifts followers to level 7 and its ants to 6, one under evolution, so the first assault still evolves them.
-16. **The recruitment posts** ("With the post's card"): a post's follower comes with a free energy card of the post's element, as a bred egg does. Each post keeps its fixed element and colour. This narrows rule 12: the roster's RECRUIT starts elementless, a post's follower does not.
+16. *(Superseded 2026-11-24: the recruitment posts were removed, "Remove posts entirely"; docs/FOLLOWER-PROGRESSION.md §1.)* **The recruitment posts** ("With the post's card"): a post's follower comes with a free energy card of the post's element, as a bred egg does. Each post keeps its fixed element and colour. This narrows rule 12: the roster's RECRUIT starts elementless, a post's follower does not.
 17. **Exile** ("They come back to you"): the energy cards in an exiled follower's slots come back to your stock.
 18. **The conversion** ("Only an egg's card"): only an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's toxic cards stay toxic. On its BLOOM form they are another element's, so its second attack and Ultimate lock until it holds BLOOM cards. Its preview marks them LOCKED, and the conversion says so.
 
@@ -69,7 +69,7 @@ None approved beyond the above.
 - **Evolution:** js/evolution.js (`EVOLVE_LEVEL` 10, `evoCheck`, `evolutionTick`).
 - **Cards:** js/cards.js (`EQUIP`, the kinds, `f.cards`, the packs `EQUIP_PACKS`), js/cardsui.js (the sheet, the shop), js/commandcenter.js and js/radialmenu.js (a follower's slots on its card).
 - **The look:** the unevolved egg's element colour (js/draw.js and the eggs' sheets in img/hd).
-- **New followers:** the recruitment posts (js/followerspots.js), breeding (js/breeding.js: an offspring's element, and toxic + fire → 50% BLOOM), the conversion (js/conversion.js: a toxic follower → BLOOM).
+- **New followers:** the roster's RECRUIT (js/clone.js), breeding (js/breeding.js: an offspring's element, and toxic + fire → 50% BLOOM), the conversion (js/conversion.js: a toxic follower → BLOOM).
 - **Combat:** an elementless follower's hits (since build `2026-11-09b` an unevolved follower's hit is plain; the element multipliers, js/elements.js).
 - **Saves:** js/facilitysave.js (a follower's record; the run's cards).
 - **Texts:** js/infodex.js (EVOLUTION: "At level 10..."), the Bible.
@@ -87,7 +87,7 @@ What the code does (build `2026-11-09s`). Items marked *(reading)* are the agent
 - **Its hits:** an elementless hit is plain, ×1 against everything. Its elemental part meets no race's Elemental row and no triangle, and puts up no word *(reading)*.
 - **New followers:**
   - The roster's RECRUIT gives NO ELEMENT followers (rule 12).
-  - A follower made of an element gets that element's card free, not from your stock: a recruitment post's (rule 16), a bred egg (rule 12), the starting squad (rule 15), the Flux Lab's flux technician, and a scripted recruit.
+  - A follower made of an element gets that element's card free, not from your stock: a recruitment post's (rule 16, until the posts were removed 2026-11-24), a bred egg (rule 12), the starting squad (rule 15), the Flux Lab's flux technician, and a scripted recruit.
   - Two NO ELEMENT parents breed a NO ELEMENT egg.
 - **The title crowd and the Ant Nest's evolved test forms:** their slots are full of their own element, so their attacks are whole.
 - **The conversion (rules 13, 18):** an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's stay toxic, and its attacks lock until it holds BLOOM cards. A BLOOM card comes from a pack once the module has run (rule 19), from taking an egg's converted card out, or from a bred BLOOM egg.

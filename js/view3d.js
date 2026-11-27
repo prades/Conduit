@@ -14,7 +14,7 @@
 //     world is the view's: the game's canvas is cleared to nothing (the view's own canvas lies under it), no floor tile, wall or prop is laid out in 2D, and the view draws them, with the bodies it
 //     has models for (view3dBody: the cube, the eggs and the evolved forms, the ants), from the game's own state, after the step's logic (render -> view3dDraw).
 //   - Everything else is the game's own drawing, over it: the bars and plates over everyone, the effects, the panels, and the facility's items it does not build (a pickup, a station's
-//     ring, a spot: view3dKeeps). The view's camera is the game's own (the same angle, the same scale, on the player), so all of it lies where it always did. One thing moves: the view
+//     ring: view3dKeeps). The view's camera is the game's own (the same angle, the same scale, on the player), so all of it lies where it always did. One thing moves: the view
 //     stands a body where the game has the unit, which is half a tile down the screen from where the 2D drawing put its feet, so what is drawn over a unit goes down with it (view3dFeet).
 //   - The floor's marks that are play (pools, fire, acid, auras, the long-press ring: js/game.js drawFloorTileMarks) are drawn by the game into a layer of the view's, which lays it on
 //     its floor under all that stands there (view3dDraw).
@@ -217,7 +217,7 @@ function view3dPick(x, y, up) { return view3dLow() ? VIEW3D.view.screenNow(x, y,
 function view3dHides(x, y, up, room) { if (!view3dLow() || !Number.isFinite(x) || !Number.isFinite(y)) return false; const V = VIEW3D.view; if (typeof V.hides !== "function") return false;
     let rm = room; if (rm === undefined) { const r = typeof facilityRoomAt === "function" && _fp && _fp.F ? facilityRoomAt(Math.round(x), Math.round(y), _fp.F) : null; rm = r ? r.id : null; }
     return V.hides(x, y, up || 0, rm); }
-// the same for a thing of the frame's list (js/game.js): a facility item by its floor (a pad, a stairwell, a station's diamond, a pickup), a unit by its body's middle; the player never
+// the same for a thing of the frame's list (js/game.js): a facility item by its floor (a stairwell, a station's diamond, a pickup), a unit by its body's middle; the player never
 const VIEW3D_HIDE_UP = { fp: 0.05, npc: 0.6 };
 function view3dHidesItem(o) { if (!o || o.type === "player" || o.type === "crystal") return false; const up = VIEW3D_HIDE_UP[o.type]; return view3dHides(o.x, o.y, up === undefined ? 0.3 : up, o.type === "fp" && o.room ? o.room : undefined); }
 // a tap's tile: the floor under it (null: the game's own maths)

@@ -353,7 +353,7 @@ const GAMEVIEW = (function () {
     dry(on) { noPic = !!on; return noPic; },   // (for the tests: frames with no picture, above)
     bodyKey(a) { const b = live.get(a); return b ? b.key : null; }, bodyOf(a) { const b = live.get(a); return b ? b.holder : null; },   // (whose body a unit has, and the body: for the tests)
     draw, has(a) { return shown.has(a); }, top(a) { const b = live.get(a); return (b && b.top) || 22; },
-    // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
+    // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
     keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false;
       if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play; the sewers' own things, fp sewer, the view builds or does not draw yet: design/style-evolution/live/floor.js)

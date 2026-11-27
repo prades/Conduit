@@ -14,6 +14,18 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The follower recruitment posts are removed entirely; recruiting is the roster's + RECRUIT
+
+- **Date:** 2026-11-24 · **Branch/build:** `claude/remove-recruit-posts` (from main `e480e741`, build `2026-11-17dl`); no build of its own (not stamped), not pushed by the agent
+- **Status:** approved; **implemented** and checked by tests (`tests/followerspots.js` and the suites that set up posts, the full `node tests/run.js`), and by pictures of the 3D view and the low camera before and after. Not seen on an iPad; not playtested.
+- **Context:** the owner, of the low camera, 2026-11-23: **"It's showing me staircases and spawn pads for followers, which I'm thinking about removing"** (`OPEN-QUESTIONS.md`, the low camera, question 5).
+- **Decision (the owner's words, 2026-11-24):** **"The respawn pads, remove them"**. Asked how far to go: **"Remove posts entirely"**.
+- **Rules:** the eight recruitment posts (`spot_lobby` … `spot_cold`) and their eggs are gone, in the 2D game and the 3D view: no pads, eggs or labels, and no claiming. Recruiting is only the roster's + RECRUIT (`RECRUIT_COST`, 200 shards, unchanged); breeding stays. The tutorial's RECRUIT step drops the egg part of its text (its hint the sentence on the eggs and pads); no number changed. A saved game's claimed-posts list is ignored on load; followers already recruited from posts stay as they are.
+- **Alternatives:** the pads only, keeping the posts in another form (not chosen: "Remove posts entirely").
+- **Supersedes:** the posts as built (2026-10-31: claimed once; "Free, once", `OPEN-QUESTIONS.md` §1f), kept as history in `FOLLOWER-PROGRESSION.md` §1. The staircases in the same remark are not decided and stay.
+- **Found on the way, open:** a new player reaches the RECRUIT step with 100 shards and + RECRUIT costs 200 (`OPEN-QUESTIONS.md`, Open 2026-11-24); a post's free egg had finished that step. Prices and rewards unchanged.
+- **Docs/code:** `FOLLOWER-PROGRESSION.md` §1; `TUTORIAL.md`; `FACILITY.md`; `VIEW-3D.md`; `ENERGY-CARDS.md`; `OPEN-QUESTIONS.md`; `CHANGELOG.md` 2026-11-24; `bible.html`; `js/followerspots.js` (removed), `js/facilitymap.js`, `js/facility.js`, `js/facilitysave.js`, `js/facilityplay.js`, `js/facilitystyle.js`, `js/facilitytutorial.js`, `js/facilitygrow.js`, `js/fluxmove.js`, `js/draw.js`, `js/tutorial.js`, `js/infodex.js`, `game.html`; `tests/followerspots.js` and the suites that used the posts.
+
 ## DECISION: The low follow camera and the rolling world (draft B of the cozy camera)
 
 - **Date:** 2026-11-23 · **Branch/build:** `claude/cozy-camera-drafts` (over main's build `2026-11-17db`); no build of its own, not pushed by the agent
@@ -31,7 +43,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Status:** approved (the owner's feedback); **implemented** behind `?cam=low` (`VIEW-3D.md` §8.14). Without the switch the game is as it was. Not seen on an iPad; not playtested.
 - **Context:** the owner, 2026-11-23, after trying `?cam=low` (build `2026-11-17dg`): "All right, so I'm looking at it, and one thing's for sure, I think that it needs to load less in. It's showing me staircases and spawn pads for followers, which I'm thinking about removing, by the way. Well, you definitely have to remove the instances of all these highlighted tiles being visible through the walls. I think that the roundness is too much, and I see this pipeline that goes down the main hallway above the snack machines. It's yellow, and it doesn't bend properly with the map's aesthetic."
 - **Decision:** (1) the low camera draws less: nothing 3D or 2D past 22 tiles from the player (`LOWCAM.see`), another room's things past 12 (`seeRoom`); (2) nothing 2D drawn over the picture where a standing wall hides its place from the camera; (3) the curve halved, k 0.013 to 0.0065 (`LOWCAM.k`), as the owner's "too much"; (4) long pieces (the hallway's yellow pipe and every other) cut so they bend with the world (`LOWCAM.seg` 1.5 tiles). The distances and the cut length are the agent's, provisional knobs; the halving is the brief's.
-- **Not decided:** removing the staircases and the follower posts' pads (the owner is "thinking about removing" them: `OPEN-QUESTIONS.md`); they stay.
+- **Not decided:** removing the staircases and the follower posts' pads (the owner is "thinking about removing" them: `OPEN-QUESTIONS.md`); they stay. *(The pads: decided 2026-11-24, "Remove posts entirely": the entry above. The staircases stay.)*
 - **Docs/code:** `VIEW-3D.md` §8.14; `CHANGELOG.md` 2026-11-23; `view3d/lowcam.js`, `view3d/gameview.js`, `js/view3d.js`, `js/game.js`, `js/commandcenter.js`, `js/facilityportals.js`, `js/facilitytutorial.js`, `js/stations.js`, `js/techabilities.js`; `tests/view3d.js`.
 
 ## DECISION: The electric technician is the MANTA RAY (design No. 948), in place of the Hover Shell

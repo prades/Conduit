@@ -79,12 +79,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const newest = followers[followers.length - 1]; o.recruit = [partyIsMember(newest), newest.partySlot === slot]; partyVacancy = __keepVac; return o; })()`);
         same(r.stage, 'exile', 'exiling was not asked'); same(r.back, 'pick', 'BACK'); same(r.exiled.join(), 'true,true,true', 'exiled'); ok(!/RETIRE/.test(r.asked), 'the question still says RETIRE'); same(r.gone, true, 'still on the roster'); same(r.recruit.join(), 'true,true', 'the recruit');
     });
-    check('an egg with the squad full: walking up to it asks; it is taken once a choice is made, and asked again only after walking away and back', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; const s = _fp.spots.find(x => x.id === 'spot_lobby'); if (!s.egg) { s.readyAt = 0; player.x = s.x + 10; player.y = s.y; facilityFollowerSpotsTick(); }
-            player.x = s.x; player.y = s.y; facilityFollowerSpotsTick(); o.asked = partyPickBusy(); o.egg = !!s.egg; partyPickChoose('cancel'); facilityFollowerSpotsTick(); o.again = partyPickBusy();
-            player.x = s.x + 4; facilityFollowerSpotsTick(); player.x = s.x; facilityFollowerSpotsTick(); o.reasked = partyPickBusy(); partyPickChoose(partyOrdered()[2]); o.taken = !s.egg; o.members = partyMembers().length; return o; })()`);
-        same(r.asked, true, 'not asked'); same(r.egg, true, 'taken before the choice'); same(r.again, false, 'asked again without walking away'); same(r.reasked, true, 'not asked again after walking away'); same(r.taken, true, 'not taken after the choice'); same(r.members, 3, 'the squad');
-    });
+    // (an egg on a recruitment post with the squad full was asked about here too: the posts were removed, the owner, 2026-11-24)
 
     group('THE ARENA OVER ITS SIX');
     check('a seventh in the arena: the weakest by the roster\'s order (not evolved before evolved, then the lowest level, then the lowest power) goes to the nearest room with a place; with none it is exiled; it says so', () => {
@@ -134,10 +129,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.why = techSiteLaunch(s, fs[2]).why; techLaunchersApply([]); return o; })()`);
         same(r.why, 'THE ARENA CATWALK IS FULL · 2 OF 2', 'a third up');
     });
-    check('the code: every way of posting asks partyPlace (HOLD, REMOVE, DISBAND, the squad over-full, an egg); + RECRUIT and an egg ask who makes room; the picker is in the page', () => {
-        const P = rd('js/party.js'), C = rd('js/clone.js'), S = rd('js/followerspots.js'), H = rd('game.html');
+    check('the code: every way of posting asks partyPlace (HOLD, REMOVE, DISBAND, the squad over-full); + RECRUIT asks who makes room; the picker is in the page (the recruitment posts\' eggs asked too until they were removed, 2026-11-24)', () => {
+        const P = rd('js/party.js'), C = rd('js/clone.js'), H = rd('game.html');
         ok(/partyPlace\(a, room, true\)/.test(P) && /partyPlace\(f, partyRoomOf\(f\), true\)/.test(P) && /const at = partyPlace\(f, room, true\);/.test(P), 'party.js');
-        ok(/partyPickOpen\("A RECRUIT"/.test(C), 'the recruit'); ok(/partyPickOpen\(_fpSpotLabel\(s\)/.test(S) && /partyPlace\(f, s\.room, true\)/.test(S), 'the egg'); ok(/<div id="partyPick"/.test(H) && /body\.party-pick #partyPick/.test(H), 'the page');
+        ok(/partyPickOpen\("A RECRUIT"/.test(C), 'the recruit'); ok(/<div id="partyPick"/.test(H) && /body\.party-pick #partyPick/.test(H), 'the page');
     });
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);

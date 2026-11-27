@@ -1,7 +1,7 @@
-// FOLLOWER SPOTS, now RECRUITMENT POSTS (js/followerspots.js), and the two small changes that came with them: every element is online from the first frame of the facility, and a follower has a little extra health.
-// ASKED: "give the followers a little bit extra health. Make the crystal have access to all the colors from the beginning, and we're going to put a few spots where the followers exist and will respawn there,
-// and they'll have a fixed type and a fixed element." ("Respawn": the spot refills after a delay.) Then the archive's follow-up scope (2026-10-31): each post is claimed ONCE and never refills; the brief's
-// price of ◆200 was built and asked about, and the owner's answer is FREE (the claim, the price machinery, the squad-full question and the save in depth: tests/followerprog.js).
+// THE RECRUITMENT POSTS ARE GONE (the owner, 2026-11-24: "The respawn pads, remove them", then "Remove posts entirely"; docs/FOLLOWER-PROGRESSION.md §1), and the two small changes that came with
+// them, which stay: every element is online from the first frame of the facility, and a follower has a little extra health.
+// The posts were eight pads (FACILITY_MAP.followerSpots, js/followerspots.js), each with a follower of a fixed type and element waiting in its egg, free, once. Recruiting is the roster's + RECRUIT
+// (js/clone.js RECRUIT_COST) alone. A game saved with posts in it (its `spots`, the posts claimed) loads: the list is read past, and a follower recruited from a post is an ordinary follower.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -11,34 +11,53 @@ const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 let failures = 0;
 function group(n) { console.log('\n' + n); }
 function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
+async function checkA(name, fn) { try { await fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
 function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
-(async () => {
-    const context = vm.createContext(makeBrowserSandbox({}));
-    for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
+// A game saved at build 2026-11-17dl (the last with the posts), made by that build's own code: the squad of three, spot_show claimed (its MAGE · ICE recruit holding the Warehouse), the squad-full question
+// open for spot_deck's egg (a pending recruit from a post: not part of a save), seven eggs out on their pads (not part of a save either), 123 shards. Its `spots` is { spot_show: 1 }.
+const OLD_SAVE = "{\"v\":1,\"cls\":null,\"perks\":[],\"inv\":{},\"seen\":[],\"ammo\":12,\"shots\":0,\"classes\":{\"seen\":[],\"weapon\":{},\"clone\":null},\"taken\":[],\"relays\":[],\"script\":{\"step\":0,\"sid\":\"supplies\",\"jseen\":0,\"baseFollowers\":3,\"done\":0,\"said\":{},\"kills\":0,\"cv\":2,\"cstages\":{}},\"followers\":[{\"element\":\"electric\",\"personality\":\"stoic\",\"combatTrait\":null,\"naturalTrait\":null,\"perk\":null,\"stats\":{\"hp\":28,\"defense\":15,\"attack\":11,\"speed\":8,\"specialAttack\":9,\"accuracy\":11,\"will\":28,\"resonance\":0},\"role\":\"camper\",\"uid\":1,\"partnerUid\":null,\"base\":{\"hp\":25,\"defense\":13,\"attack\":10,\"speed\":8,\"specialAttack\":8,\"accuracy\":10,\"will\":25,\"resonance\":0},\"level\":7,\"xp\":343,\"energy\":[\"electric\"]},{\"element\":\"core\",\"personality\":\"stoic\",\"combatTrait\":null,\"naturalTrait\":null,\"perk\":null,\"stats\":{\"hp\":28,\"defense\":15,\"attack\":11,\"speed\":8,\"specialAttack\":9,\"accuracy\":11,\"will\":28,\"resonance\":0},\"role\":\"camper\",\"uid\":2,\"partnerUid\":null,\"base\":{\"hp\":25,\"defense\":13,\"attack\":10,\"speed\":8,\"specialAttack\":8,\"accuracy\":10,\"will\":25,\"resonance\":0},\"level\":7,\"xp\":343,\"energy\":[\"core\"]},{\"element\":\"fire\",\"personality\":\"cautious\",\"combatTrait\":null,\"naturalTrait\":null,\"perk\":null,\"stats\":{\"hp\":28,\"defense\":15,\"attack\":9,\"speed\":8,\"specialAttack\":9,\"accuracy\":14,\"will\":27,\"resonance\":0},\"role\":\"sniper\",\"uid\":3,\"partnerUid\":null,\"base\":{\"hp\":25,\"defense\":13,\"attack\":8,\"speed\":8,\"specialAttack\":8,\"accuracy\":12,\"will\":24,\"resonance\":0},\"level\":7,\"xp\":343,\"energy\":[\"fire\"]},{\"element\":\"ice\",\"personality\":\"cautious\",\"combatTrait\":null,\"naturalTrait\":null,\"perk\":null,\"stats\":{\"hp\":25,\"defense\":13,\"attack\":8,\"speed\":8,\"specialAttack\":8,\"accuracy\":12,\"will\":24,\"resonance\":0},\"role\":\"sniper\",\"uid\":4,\"partnerUid\":null,\"base\":{\"hp\":25,\"defense\":13,\"attack\":8,\"speed\":8,\"specialAttack\":8,\"accuracy\":12,\"will\":24,\"resonance\":0},\"level\":5,\"xp\":125,\"post\":\"show_room\",\"energy\":[\"ice\"]}],\"cards\":{\"hand\":[],\"found\":[],\"player\":[null,null],\"credits\":0,\"shelf\":{\"ids\":[\"venom_gland\",\"ember_plating\",\"charged_wiring\",\"frost_lining\",\"furnace_heart\",\"flux_cell\"],\"left\":17987}},\"energy\":{},\"dna\":{},\"clones\":[],\"bodies\":[],\"capsules\":[],\"serum\":{\"stock\":0,\"frac\":0,\"left\":3588},\"mxp\":0,\"spots\":{\"spot_show\":1},\"launchers\":[],\"pipes\":[],\"bridges\":[],\"climbs\":[],\"reefTip\":0,\"rubble\":{},\"nestWays\":[],\"chests\":[],\"blight\":{\"clock\":1,\"pools\":[]},\"quests\":{\"purify\":{\"discoveredAt\":0,\"puzzleAt\":0,\"puzzleHow\":\"\",\"samplesAt\":0,\"turnedInAt\":0,\"moduleAt\":0,\"gateAt\":0,\"installedAt\":0,\"purifiedAt\":0,\"bossStartedAt\":0,\"bossResolvedAt\":0,\"bossOutcome\":\"\",\"bossDefeated\":0,\"cycleLeft\":0,\"closeLeft\":0,\"drops\":0,\"antKills\":0,\"nestSeenAt\":0,\"trioAt\":0,\"trioKills\":0,\"trioDeadAt\":0,\"queenOutAt\":0}},\"bosses\":{\"sewer_cistern\":{\"state\":\"idle\",\"outcome\":null,\"started\":0,\"defeated\":0}},\"puzzles\":{\"sewer_sample\":{\"solvedAt\":0,\"how\":\"\"}},\"potion\":{\"eq\":null,\"bought\":0,\"copies\":0,\"thrown\":0,\"boss\":0,\"disc\":0},\"sidequest\":{\"at\":0,\"talk\":0,\"promised\":0,\"pAt\":0,\"called\":0,\"met\":0,\"w\":\"\",\"lt\":0,\"gift\":0,\"lcall\":0},\"weapon\":{\"w\":null,\"lv\":{\"machinegun\":1}},\"shards\":123,\"kills\":0,\"crystal\":300,\"at\":[13,16],\"sentries\":{},\"moved\":[]}";
+
+async function boot(store) {
+    const errors = []; const sb = makeBrowserSandbox(store || {}); sb.console = Object.assign({}, console, { error: (...a) => errors.push(a.map(String).join(' ')) });
+    const context = vm.createContext(sb);
+    for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) { errors.push(rel + ': ' + e.message); } }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true;');
+    return { run, J, errors };
+}
 
-    group('THE DATA: a few posts, each a fixed type and a fixed element');
-    check('eight posts (the eighth the ice technician in the Cold Storage), every element on at least one and every type on at least two, each in a room with floor under it, two of them in the arena, none within three tiles of another; the map passes every rule', () => {
-        const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), v = facilityValidate(F); return { errors: v.errors, spots: F.followerSpots.map(p => [p.id, p.room, p.type, p.element, !!facilityRoomAt(p.at[0], p.at[1], F) && facilityRoomAt(p.at[0], p.at[1], F).id === p.room, facilityWalkable(p.at[0], p.at[1], F)]) }; })()`);
-        same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots.length, 8, 'spots'); ok(r.spots.some(s => s[0] === 'spot_cold' && s[1] === 'cold_storage' && s[2] === 'camper' && s[3] === 'ice'), 'no ice technician in the Cold Storage'); same([...new Set(r.spots.map(s => s[3]))].sort().join(), 'core,electric,fire,flux,ice,toxic', 'every element');
-        for (const t of ['brawler', 'sniper', 'camper']) ok(r.spots.filter(s => s[2] === t).length >= 2, 'spots of type ' + t);
-        for (const s of r.spots) ok(s[4] && s[5], s[0] + ' is not on floor of ' + s[1]);
-        same(r.spots.filter(s => s[1] === 'arena').length, 2, 'two in the arena'); same(new Set(r.spots.map(s => s[1])).size, 7, 'spread over seven rooms');
+(async () => {
+    const { run, J, errors } = await boot({});
+    run('gameState.running = true; facilityBlackoutSet(false);');   // (the page boots the facility; only the tutorial's blackout is lifted)
+
+    group('NO POSTS: not in the map, the code or the page');
+    check('the map has no follower spots, the built facility has none and passes every rule; the posts\' code is gone (js/followerspots.js, its table, its start, tick, claim and save) and so is its script tag', () => {
+        same(run('FACILITY_MAP.followerSpots === undefined'), true, 'FACILITY_MAP.followerSpots');
+        const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), v = facilityValidate(F); return { errors: v.errors, spots: F.followerSpots === undefined }; })()`); same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots, true, 'the built facility\'s followerSpots');
+        same(['FP_SPOT', 'facilityFollowerSpotsStart', 'facilityFollowerSpotsTick', 'facilityFollowerSpotTake', 'facilityFollowerSpotCan', 'followerSpotsSnapshot', 'followerSpotsApply', '_fpDrawSpot', '_fpSpotEgg', '_fpSpotLabel'].filter(k => run('typeof ' + k) !== 'undefined').join(), '', 'still defined');
+        ok(!fs.existsSync(path.join(ROOT, 'js', 'followerspots.js')), 'js/followerspots.js is still there'); ok(!scriptOrder().some(s => /followerspots/.test(s)), 'its script tag is still on the page');
+        for (const f of ['js/facilityplay.js', 'js/facilitystyle.js', 'js/facilitytutorial.js', 'js/facilitysave.js', 'js/fluxmove.js', 'js/facilitygrow.js', 'js/draw.js']) ok(!/followerSpot|FollowerSpot|_fpDrawSpot|fpSpot|it\.fp === "spot"/.test(rd(f)), f + ' still names the posts');
     });
-    check('the validator refuses a spot with a type or element that does not exist, in no room, or beside another (and lets one stand in the arena)', () => {
-        const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), a = F.followerSpots[0], keep = F.followerSpots.slice(), out = [];
-            const errs = (spots) => { F.followerSpots = spots; return facilityValidate(F).errors.join(' | '); };
-            out.push(errs([Object.assign({}, a, { type: 'tank' })])); out.push(errs([Object.assign({}, a, { element: 'mud' })])); out.push(errs([Object.assign({}, a, { room: 'nowhere' })])); out.push(errs([keep.find(q => q.room === 'arena')]));
-            out.push(errs([a, Object.assign({}, a, { id: 'dup' })])); out.push(errs(keep)); return out; })()`);
-        ok(/not a follower type/.test(r[0]), 'a type that is not one'); ok(/not an element/.test(r[1]), 'an element that is not one'); ok(/does not exist/.test(r[2]), 'a room that is not one'); same(r[3], '', 'the arena is allowed'); ok(/within three tiles/.test(r[4]), 'two on one tile'); same(r[5], '', 'the real ones pass');
+    check('in play: no pad among the floor\'s items, no egg waiting anywhere, and the facility\'s tick runs; the tutorial\'s RECRUIT step names only the roster\'s + RECRUIT and its price (RECRUIT_COST), with no egg and no pad', () => {
+        const r = J(`(function(){ for (let i = 0; i < 30; i++) { frame++; facilityTutorialTick(); } return { pads: _fp.items.filter(i => i.fp === 'spot').length, spots: _fp.spots === undefined, eggs: actors.filter(a => a && (a.fpSpot || (a.isNeutralRecruit && !a.dead))).length,
+            text: TUT_STEPS.find(s => s.id === 'recruit').text(), hint: TUT_STEPS.find(s => s.id === 'recruit').hint(), cost: RECRUIT_COST }; })()`);
+        same(r.pads, 0, 'pads'); same(r.spots, true, '_fp.spots'); same(r.eggs, 0, 'eggs waiting');
+        same(r.text, 'OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: ' + r.cost + ' SHARDS.', 'the step'); ok(!/EGG|PAD/.test(r.text + ' ' + r.hint), 'the step or its hint still speaks of eggs or pads: ' + r.text + ' / ' + r.hint); ok(/EVERY ELEMENT IS ONLINE FROM THE START/.test(r.hint), 'the hint');
+        ok(!/EGGS ON THE PADS/.test(rd('js/infodex.js')) && !/recruitment post/.test(rd('js/infodex.js')), 'the INFO index still has the posts');
+    });
+    check('a new game reaches the RECRUIT step with STARTING_SHARDS: nothing before it pays shards (a kill pays, js/drops.js, and no step asks for one), so + RECRUIT (RECRUIT_COST) is out of reach there until the squad has killed enough in the arena; measured, not changed (docs/OPEN-QUESTIONS.md)', () => {
+        const r = J(`(function(){ const o = {}; facilityResetState(); facilityTutorialStart(_fp.F); const S = _fp.tut.script, tick = () => { facilityDirectorTick(); return S.step; }; o.start = shardCount;
+            for (const it of _fp.items.filter(i => i.fp === 'pickup')) it.taken = true; tick(); S.jseen = 1; tick(); invAdd('power_module', 1); tick(); facilityJunctionRepair(true); invRemove('power_module', 1); tick();
+            o.step = TUT_STEPS[S.step] && TUT_STEPS[S.step].id; o.shards = shardCount; o.cost = RECRUIT_COST; o.start0 = STARTING_SHARDS; const n = followers.length; o.bought = recruitFollower(); o.n = followers.length - n; o.after = shardCount;
+            shardCount = RECRUIT_COST; o.bought2 = recruitFollower(); o.step2 = (tick(), TUT_STEPS[S.step] && TUT_STEPS[S.step].id); o.left = shardCount; invReset(); return o; })()`);
+        console.log('       (measured: ' + r.shards + ' shards at the RECRUIT step; + RECRUIT costs ' + r.cost + ')');
+        same(r.step, 'recruit', 'the step reached'); same(r.start, r.start0, 'a new game\'s shards'); same(r.shards, r.start0, 'the shards at the RECRUIT step'); ok(r.shards < r.cost, 'there are enough for + RECRUIT: the open question can be closed');
+        same(r.bought, false, 'a recruit bought short of the price'); same(r.n, 0, 'a follower made'); same(r.after, r.shards, 'shards taken'); same(r.bought2, true, 'a recruit with the price in hand'); same(r.step2, 'position', 'RECRUIT finished by + RECRUIT'); same(r.left, 0, 'the price taken');
     });
 
     group('THE CRYSTAL: every element online from the start, and followers a little sturdier');
-    run('facilityPlayStart(); facilityBlackoutSet(false);');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     check('entering the facility brings every element online (the Crystal can make a follower of any of the six, and the roster\'s element row has all of them)', () => {
         same(J('[...unlockedElements].sort()').join(), 'core,electric,fire,flux,ice,toxic', 'online'); same(J('recruitElementPool().slice().sort()').join(), 'core,electric,fire,flux,ice,toxic', 'the pool a recruit is drawn from');
         const seen = J(`(function(){ const s = new Set(); for (let i = 0; i < 400; i++) s.add(recruitElementPool()[Math.floor(Math.random() * recruitElementPool().length)]); return [...s].sort(); })()`); same(seen.length, 6, 'a draw reaches all six');
@@ -52,55 +71,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('followers.length = 0; actors = actors.filter(a => !a.isFollower);');
     });
 
-    group('THE POSTS IN PLAY: eggs, the claim, once');
-    check('the posts start full: an egg of each type and element on each, neutral, still, nobody\'s target, with its pad as an item of the floor', () => {
-        run('player.x = crystal.x; player.y = crystal.y; frame = 10; facilityFollowerSpotsTick();');
-        const r = J(`(function(){ return { spots: _fp.spots.map(s => [s.id, !!s.egg, s.egg && s.egg.element === s.element, s.egg && s.egg.role === s.type, s.egg && s.egg.isNeutralRecruit, s.egg && s.egg.team, s.egg && s.egg.x === s.x && s.egg.y === s.y, s.egg && actors.includes(s.egg), s.used]), items: _fp.items.filter(i => i.fp === 'spot').length, hostile: actors.filter(a => isHostileTarget(a) && a.fpSpot).length }; })()`);
-        same(r.items, 8, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7] && !s[8], s[0] + ' is not a full, unclaimed post: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
-    });
-    check('eggs stay where they are and are not walked home: the player beside one (outside the post\'s reach) converts nothing and takes it only by the post\'s rule', () => {
-        const r = J(`(function(){ const s = _fp.spots[1], e = s.egg, n = followers.length; shardCount = 1000; player.x = s.x + 1.8; player.y = s.y; for (let i = 0; i < 30; i++) { frame++; facilityFollowerSpotsTick(); const nn = followers.length; if (nn !== n) return { early: true }; }
-            return { moved: e.x !== s.x || e.y !== s.y, team: e.team, home: !!e.returningToCrystal, followers: followers.length - n, still: s.egg === e, shards: shardCount }; })()`);
-        same(r.early, undefined, 'taken from outside its reach'); same(r.moved, false, 'it moved'); same(r.team, 'red', 'its team'); same(r.home, false, 'walking home'); same(r.followers, 0, 'followers'); same(r.still, true, 'still there'); same(r.shards, 1000, 'nothing taken');
-    });
-    check('walking up to an egg claims it, free: a follower THERE, of exactly the post\'s type and element, at full health, with the squad one bigger, nothing taken, and the post claimed for good (no delay, no refill)', () => {
-        const r = J(`(function(){ const s = _fp.spots[2], n = followers.length, e = s.egg; shardCount = 1000; player.x = s.x + 0.6; player.y = s.y; frame += 1; facilityFollowerSpotsTick(); const f = followers[followers.length - 1];
-            return { n: followers.length - n, role: f.role, element: f.element, card: energySlots(f)[0], at: [f.x, f.y, s.x, s.y], home: !!f.returningToCrystal, team: f.team, isF: f.isFollower, health: f.health === f.maxHealth, level: f.level, gone: !actors.includes(e), empty: s.egg === null, used: s.used, type: s.type, el: s.element, from: f.fromSpot, shards: shardCount, delay: s.readyAt }; })()`);
-        same(r.n, 1, 'one follower'); same(r.role, r.type, 'its type'); same(r.element, r.el, 'its element'); same(r.card, r.el, 'its energy card: the post\'s element\'s, free (the owner, 2026-11-09: "With the post\'s card")'); same(r.at[0], r.at[2], 'x'); same(r.at[1], r.at[3], 'y'); same(r.home, false, 'walks home first'); same(r.team, 'green', 'team'); same(r.isF, true, 'a follower'); same(r.health, true, 'full health'); same(r.gone, true, 'the egg is gone'); same(r.empty, true, 'the post is empty');
-        same(r.used, true, 'claimed'); same(r.shards, 1000, 'nothing taken'); same(r.from, 'spot_deck', 'it remembers where it is from'); same(r.delay, undefined, 'a refill delay');
-    });
-    check('a claimed post never fills again: not after any wait, not with the player away, not with the roster small; the others are untouched', () => {
-        const r = J(`(function(){ const s = _fp.spots[2], o = {}; const step = () => { frame++; facilityFollowerSpotsTick(); };
-            player.x = s.x + 20; player.y = s.y; for (let i = 0; i < 6000; i++) step(); o.after = !!s.egg; o.used = s.used; o.others = _fp.spots.filter(q => q !== s && q.egg && !q.used).length; return o; })()`);
-        same(r.after, false, 'an egg came back'); same(r.used, true, 'still claimed'); same(r.others, 7, 'the other posts');
-    });
-    check('the price machinery is kept: with FP_SPOT.price set (200 for this check), short of it nothing moves: the egg stays, nothing is taken, no follower is made, and the pad says what it needs', () => {
-        const r = J(`(function(){ const s = _fp.spots[0], o = {}; FP_SPOT.price = 200; shardCount = 199; floatingTexts.length = 0; const n = followers.length; player.x = s.x + 0.5; player.y = s.y; for (let i = 0; i < 5; i++) { frame++; facilityFollowerSpotsTick(); } o.n = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = floatingTexts.some(t => /NEED \\u25c6200/.test(t.text)); FP_SPOT.price = 0; player.x = s.x + 30; return o; })()`);
-        same(r.n, 0, 'a follower'); same(r.shards, 199, 'shards'); same(r.egg, true, 'the egg'); same(r.used, false, 'claimed'); same(r.said, true, 'said');
-    });
-    check('an egg that goes some other way (destroyed) on an unclaimed post is put back once the player is away (nothing was paid, nothing is owed)', () => {
-        const r = J(`(function(){ const s = _fp.spots[0], e = s.egg; e.dead = true; frame++; facilityFollowerSpotsTick(); const o = { empty: s.egg === null || s.egg !== e }; player.x = s.x + 30; frame++; facilityFollowerSpotsTick(); o.back = !!s.egg && s.egg !== e; o.used = s.used; return o; })()`);
-        same(r.empty, true, 'the post lets it go'); same(r.back, true, 'put back'); same(r.used, false, 'not claimed by it');
+    group('AN OLD SAVE: a game saved with posts in it');
+    await checkA('a game saved at build 2026-11-17dl (spot_show claimed, its recruit holding the Warehouse, a squad-full question open for an egg, eggs out) loads without an error: its four followers come back as they were, the claimed-posts list is read past and is not written again, no pad or egg comes back, and its shards are its own', async () => {
+        const old = JSON.parse(OLD_SAVE); same(JSON.stringify(old.spots), '{"spot_show":1}', 'the fixture');
+        const store = { conduit_fp_save: OLD_SAVE }, B = await boot(store);
+        const r = B.J(`(function(){ gameState.running = true; for (let i = 0; i < 30; i++) { frame++; facilityTutorialTick(); } const d = facilitySaveCollect();
+            return { n: followers.length, f: followers.map(f => [f.role, f.element, f.post || null, f.dead ? 1 : 0]), shards: shardCount, pads: _fp.items.filter(i => i.fp === 'spot').length, eggs: actors.filter(a => a && (a.fpSpot || (a.isNeutralRecruit && !a.dead))).length,
+                busy: typeof partyPickBusy === 'function' ? partyPickBusy() : null, saved: 'spots' in d }; })()`);
+        same(B.errors.join(' | '), '', 'errors while loading');
+        same(r.n, 4, 'followers'); same(JSON.stringify(r.f), JSON.stringify(old.followers.map(e => [e.role, e.element, e.post || null, 0])), 'the followers as they were saved');
+        same(r.shards, 123, 'shards'); same(r.pads, 0, 'pads'); same(r.eggs, 0, 'eggs'); same(r.busy, false, 'a question open'); same(r.saved, false, 'the claimed posts written again');
+        const odd = JSON.parse(OLD_SAVE); odd.spots = { spot_cold: 777, spot_lobby: 1, nonsense: 'x' }; const C = await boot({ conduit_fp_save: JSON.stringify(odd) }); same(C.errors.join(' | '), '', 'errors with an older save\'s refill delays'); same(C.J('followers.length'), 4, 'its followers');
+        const bad = JSON.parse(OLD_SAVE); bad.spots = 'broken'; const D = await boot({ conduit_fp_save: JSON.stringify(bad) }); same(D.errors.join(' | '), '', 'errors with a malformed list'); same(D.J('followers.length'), 4, 'its followers');
     });
 
-    group('SAVED: a reload does not open a claimed post again');
-    check('the claimed posts are saved by id (a 1 each), nothing for the open ones; a save puts them back claimed and takes their eggs; an older save\'s refill delay reads as claimed; nonsense is ignored', () => {
-        const r = J(`(function(){ frame = 20000; const s = _fp.spots[3]; shardCount = 1000; player.x = s.x + 0.5; player.y = s.y; frame++; facilityFollowerSpotsTick(); const snap = followerSpotsSnapshot(), saved = facilitySaveCollect();
-            const o = { snap: JSON.stringify(snap), collected: JSON.stringify(saved.spots) };
-            facilityFollowerSpotsStart(_fp.F); player.x = crystal.x; player.y = crystal.y; frame++; facilityFollowerSpotsTick(); o.fresh = _fp.spots.filter(q => q.egg && !q.used).length; followerSpotsApply({ [s.id]: 1, nonsense: 5, spot_lobby: 777 }); o.applied = [_fp.spots[3].used, !!_fp.spots[3].egg, _fp.spots[0].used, !!_fp.spots[0].egg, _fp.spots[1].used, !!_fp.spots[1].egg]; followerSpotsApply(null); return o; })()`);
-        same(r.snap, '{"spot_deck":1,"spot_lab":1}', 'the snapshot'); same(r.collected, r.snap, 'in the save'); same(r.fresh, 8, 'a fresh start'); same(r.applied.join(), 'true,false,true,false,false,true', 'put back');
-        ok(/followerSpotsApply\(d\.spots\)/.test(rd('js/facilitysave.js')), 'a loaded game applies it');
-    });
-
-    group('THE PAGE: the pad, the label and the tutorial\'s words');
-    check('the pad is drawn as a floor item lit by itself, the egg wears no bar, and no egg is a hostile glow in a blackout; the pad says the price, and CLAIMED', () => {
-        ok(/else if \(it\.fp === "spot"\) _fpDrawSpot\(it\)/.test(rd('js/facilityplay.js')), 'the draw dispatch'); ok(/it\.fp === "spot"\) return 0\.8/.test(rd('js/facilitystyle.js')), 'lit by itself');
-        ok(/const _bare = actor\.fpSpot \|\|/.test(rd('js/draw.js')), 'no bar'); ok(/a\.isNeutralRecruit \|\| typeof ctx === "undefined"/.test(rd('js/facilitytutorial.js')), 'no hostile glow');
-        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FREE . ONCE/.test(src), 'the pad\'s words');
-        const order = require('./domstub.js').scriptOrder(); ok(order.indexOf('js/followerspots.js') > 0, 'the script is on the page');
-        ok(/WALK UP TO A FOLLOWER'S EGG/.test(rd('js/tutorial.js')) && /EVERY ELEMENT IS ONLINE FROM THE START/.test(rd('js/tutorial.js')), 'the recruit step says so');
-    });
-
+    same(errors.join(' | '), '', 'errors while booting');
     console.log(failures ? '\n' + failures + ' FAILED' : '\nall passed');
     process.exit(failures ? 1 : 0);
 })();

@@ -1,4 +1,4 @@
-// FOLLOWER PROGRESSION (js/followerspots.js, js/breeding.js, js/vital.js; docs/FOLLOWER-PROGRESSION.md): the recruitment posts claimed once for ◆200, breeding a bonded pair's offspring for ◆50 with a base that is
+// FOLLOWER PROGRESSION (js/clone.js, js/breeding.js, js/vital.js; docs/FOLLOWER-PROGRESSION.md): the roster's RECRUIT for ◆200 (the recruitment posts were removed, the owner, 2026-11-24: tests/followerspots.js), breeding a bonded pair's offspring for ◆50 with a base that is
 // better than a recruit's, the Vital items that put back the hp stat deaths took, and the five hidden cases.
 // ASKED (the archive's Next Major Update Framework, the follow-up scope of 2026-10-31): "Each recruit post/location in the facility can yield its available follower only once ... preserve that state through revisits,
 // transitions, and save/load"; "Directly purchasing a recruit costs exactly 200 shards. Sanctuary breeding costs exactly 50 shards per offspring"; "Prevent duplicate followers, repeated post claims, and duplicate charges
@@ -27,64 +27,15 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`gameState.running = true; facilityPlayStart(); facilityBlackoutSet(false); if (typeof classPickerOpen !== 'undefined') classPickerOpen = false; playerClassKey = playerClassKey || 'gunslinger'; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3;
         globalThis.__put = (x, y) => { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; };
-        globalThis.__clearF = () => { if (typeof partyPickBusy === 'function' && partyPickBusy()) partyPickChoose('cancel'); actors = actors.filter(a => !a.isFollower && !a.isClone && !(a instanceof Predator) && !(a.team === 'green' && !a.fpSpot)); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; respawnQueue.length = 0; selectedUnits.clear(); if (typeof cloneBodies !== 'undefined') cloneBodies.length = 0; floatingTexts.length = 0; if (typeof breedDisarm === 'function') breedDisarm(); };
+        globalThis.__clearF = () => { if (typeof partyPickBusy === 'function' && partyPickBusy()) partyPickChoose('cancel'); actors = actors.filter(a => !a.isFollower && !a.isClone && !(a instanceof Predator) && a.team !== 'green'); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; respawnQueue.length = 0; selectedUnits.clear(); if (typeof cloneBodies !== 'undefined') cloneBodies.length = 0; floatingTexts.length = 0; if (typeof breedDisarm === 'function') breedDisarm(); };
         globalThis.__rec = (el, type) => { shardCount += RECRUIT_COST; recruitFollower(type, el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; return f; };
         globalThis.__bond = (a, b) => { a.partnerUid = followerUid(b); b.partnerUid = followerUid(a); return bondPartner(a) === b; };
-        globalThis.__spot = i => _fp.spots[i];
-        globalThis.__tickSpots = n => { for (let i = 0; i < (n || 1); i++) { frame++; facilityFollowerSpotsTick(); } };
         globalThis.__said = re => floatingTexts.filter(t => re.test(t.text)).length;
         globalThis.__step = () => { frame++; if (typeof _simStep === 'function') _simStep(false); else update(); };`);
 
-    group('1. THE RECRUITMENT POSTS: each claimed once, free (the owner, 2026-10-31); the roster\'s RECRUIT ◆200');
-    check('the table: a post is free (FP_SPOT.price is kept at 0: a price set there is asked for again) and the quick recruit RECRUIT_COST = 200 (the archive: "Directly purchasing a recruit costs exactly 200 shards"); nothing refills (no refill, no cap)', () => {
-        same(J('FP_SPOT.price'), 0, 'the price'); same(J('RECRUIT_COST'), 200, 'the recruit'); same(run('FP_SPOT.refill === undefined && FP_SPOT.cap === undefined'), true, 'a refill or a cap');
-    });
-    check('the eight posts start with their eggs (the player at the Crystal), none claimed, each of its own type and element, each with a stable id', () => {
-        run('__clearF(); __put(crystal.x, crystal.y); frame = 10; facilityFollowerSpotsTick();');
-        const r = J('_fp.spots.map(s => [s.id, !!s.egg, s.used, s.egg && s.egg.element === s.element && s.egg.role === s.type])');
-        same(r.length, 8, 'posts'); for (const s of r) ok(s[1] && !s[2] && s[3], s[0] + ': ' + JSON.stringify(s)); same(r.map(s => s[0]).join(), 'spot_lobby,spot_show,spot_deck,spot_lab,spot_tele_2,spot_arena_w,spot_arena_c,spot_cold', 'the ids');
-    });
-    check('the price machinery, kept: with a price set (200, for this check only), standing on the egg short of it takes nothing, spends nothing, makes nothing; the egg stays; it says what it needs once, and again only after walking off and back', () => {
-        const r = J(`(function(){ const s = __spot(0), o = {}; FP_SPOT.price = 200; shardCount = 150; floatingTexts.length = 0; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(5);
-            o.followers = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = __said(/NEED \\u25c6200/); __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(3); o.saidAgain = __said(/NEED \\u25c6200/); FP_SPOT.price = 0; __put(s.x + 30, s.y); return o; })()`);
-        same(r.followers, 0, 'a follower'); same(r.shards, 150, 'shards'); same(r.egg, true, 'the egg'); same(r.used, false, 'claimed'); same(r.said, 1, 'said'); same(r.saidAgain, 2, 'said again');
-    });
-    check('free: one step onto the egg claims it: nothing taken, one follower of the post\'s type and element made there (not walked home), with the post\'s energy card, the egg gone, the post claimed', () => {
-        const r = J(`(function(){ const s = __spot(1), o = {}; shardCount = 450; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); const f = followers[followers.length - 1];
-            o.n = followers.length - n; o.shards = shardCount; o.used = s.used; o.egg = !!s.egg; o.f = f && [f.role === s.type, f.element === s.element && energySlots(f)[0] === s.element, f.fromSpot, !!f.returningToCrystal, Math.abs(f.x - s.x) < 0.01, f.team]; o.taken = s.taken; o.toast = floatingTexts.filter(t => /JOINED|HOLDS THE/.test(t.text)).map(t => t.text).join('|'); return o; })()`);
-        same(r.n, 1, 'one follower'); same(r.shards, 450, 'nothing taken'); same(r.used, true, 'claimed'); same(r.egg, false, 'the egg'); same(JSON.stringify(r.f), JSON.stringify([true, true, 'spot_show', false, true, 'green']), 'the follower'); same(r.taken, 1, 'taken once'); ok(/MAGE · ICE/.test(r.toast) && !/\u25c6/.test(r.toast), 'the toast names no price: ' + r.toast);
-    });
-    check('claimed is claimed: fifty more steps on it, walking off and back, make nothing and take nothing, and no egg comes back', () => {
-        const r = J(`(function(){ const s = __spot(1), o = {}; const n = followers.length, sh = shardCount; __tickSpots(50); __put(s.x + 30, s.y); __tickSpots(10); __put(s.x + 0.5, s.y); __tickSpots(10); o.n = followers.length - n; o.shards = shardCount - sh; o.egg = !!s.egg; o.used = s.used; return o; })()`);
-        same(r.n, 0, 'a follower'); same(r.shards, 0, 'shards'); same(r.egg, false, 'an egg came back'); same(r.used, true, 'still claimed');
-    });
-    check('the posts are each their own: the next is claimed the same way, with no shards at all (no limit on how many you claim); with a price set, a third short by one is not', () => {
-        const r = J(`(function(){ const o = {}; const s = __spot(2); shardCount = 0; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); o.second = [followers.length - n, shardCount, s.used];
-            const t = __spot(3); FP_SPOT.price = 200; shardCount = 199; __put(t.x + 0.5, t.y); __tickSpots(3); o.third = [followers.length - n, shardCount, t.used, !!t.egg]; FP_SPOT.price = 0; __put(t.x + 30, t.y); return o; })()`);
-        same(r.second.join(), '1,0,true', 'the second post, with nothing'); same(r.third.join(), '1,199,false,true', 'the third, short by one with a price set');
-    });
-    check('the squad full: the egg asks first who makes room; CANCEL leaves the post with its egg; walk off and back, it asks again; NOBODY claims it, and the newcomer holds a room; the shards never move', () => {
-        const r = J(`(function(){ const o = {}; while (partyMembers().length < PARTY.max) __rec(); const s = __spot(4); shardCount = 500; s.asked = false; __put(s.x + 0.5, s.y); __tickSpots(2);
-            o.asked = [partyPickBusy(), shardCount, s.used, !!s.egg]; partyPickChoose('cancel'); __tickSpots(2); o.cancel = [partyPickBusy(), shardCount, s.used, !!s.egg];
-            __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(2); o.again = partyPickBusy(); const n = followers.length; partyPickChoose('nobody'); const f = followers[followers.length - 1];
-            o.done = [followers.length - n, shardCount, s.used, !!s.egg, !!f.post, partyIsMember(f)]; return o; })()`);
-        same(r.asked.join(), 'true,500,false,true', 'asked'); same(r.cancel.join(), 'false,500,false,true', 'CANCEL'); same(r.again, true, 'asked again'); same(r.done.join(), '1,500,true,false,true,false', 'NOBODY');
-    });
-    check('a double claim is impossible: the claim called twice in one frame makes one follower; a post with no egg claims nothing; an unclaimed post whose egg went some other way gets it back', () => {
-        const r = J(`(function(){ const s = __spot(5), o = {}; shardCount = 1000; const n = followers.length; const a = facilityFollowerSpotTake(s), b = facilityFollowerSpotTake(s); o.made = [!!a, !!b, followers.length - n, shardCount];
-            const t = __spot(6); const e = t.egg; actors.splice(actors.indexOf(e), 1); t.egg = null; const c = facilityFollowerSpotTake(t); o.noEgg = [!!c, shardCount, t.used]; __put(t.x + 30, t.y); __tickSpots(1); o.back = !!t.egg && t.egg !== e; return o; })()`);
-        same(r.made.join(), 'true,false,1,1000', 'twice'); same(r.noEgg.join(), 'false,1000,false', 'no egg'); same(r.back, true, 'the egg back');
-    });
-    check('saved: the claimed posts are in the save by id and nothing else; a fresh start has every egg; the save puts the claimed ones back claimed, with no egg; an old save\'s refill delay on an empty spot reads as claimed; an unclaimed post keeps its egg', () => {
-        const r = J(`(function(){ const o = {}; const snap = followerSpotsSnapshot(); o.snap = Object.keys(snap).sort().join(); o.saved = Object.keys(facilitySaveCollect().spots).sort().join(); o.vals = Object.values(snap).every(v => v === 1);
-            facilityFollowerSpotsStart(_fp.F); __put(crystal.x, crystal.y); __tickSpots(1); o.fresh = _fp.spots.filter(s => s.egg && !s.used).length; followerSpotsApply(snap); o.after = _fp.spots.filter(s => s.used).map(s => s.id).sort().join(); o.eggs = _fp.spots.filter(s => s.used && s.egg).length;
-            followerSpotsApply({ spot_cold: 777 }); o.old = [_fp.spots[7].used, !!_fp.spots[7].egg]; followerSpotsApply({}); followerSpotsApply(null); o.kept = _fp.spots.filter(s => s.used).length; o.lobby = [_fp.spots[0].used, !!_fp.spots[0].egg]; return o; })()`);
-        same(r.snap, 'spot_arena_w,spot_deck,spot_show,spot_tele_2', 'the snapshot'); same(r.saved, r.snap, 'in the save'); same(r.vals, true, 'as 1'); same(r.fresh, 8, 'a fresh start'); same(r.after, r.snap, 'put back'); same(r.eggs, 0, 'an egg on a claimed post');
-        same(r.old.join(), 'true,false', 'an old delay'); same(r.kept, 5, 'kept'); same(r.lobby.join(), 'false,true', 'the lobby post, unclaimed');
-        ok(/followerSpotsApply\(d\.spots\)/.test(rd('js/facilitysave.js')), 'a loaded game applies it');
-    });
-    check('the pad says it: FREE · ONCE on an open post (the price, and what you have when short, if a price is set), CLAIMED on one that is spent (the draw code); the draw dispatch is the floor item\'s', () => {
-        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FREE . ONCE/.test(src) && /FP_SPOT\.price > 0/.test(src) && /YOU HAVE/.test(src) && /RECRUIT IS YOURS ALREADY/.test(src), 'the pad\'s words'); ok(/else if \(it\.fp === "spot"\) _fpDrawSpot\(it\)/.test(rd('js/facilityplay.js')), 'the draw dispatch');
+    group('1. RECRUITING: the roster\'s RECRUIT ◆200 (the recruitment posts were removed: the owner, 2026-11-24, "Remove posts entirely")');
+    check('the table: the quick recruit RECRUIT_COST = 200 (the archive: "Directly purchasing a recruit costs exactly 200 shards"); the posts\' price, FP_SPOT, is gone with them', () => {
+        same(J('RECRUIT_COST'), 200, 'the recruit'); same(run('typeof FP_SPOT'), 'undefined', 'the posts\' table');
     });
 
     group('2. BREEDING: a bonded pair\'s offspring, ◆50, better raised');

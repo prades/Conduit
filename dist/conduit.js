@@ -9608,7 +9608,7 @@ function _drawVirus(actor, px, py, drawCtx) {
         _virusCountFrame = frame;
     }
     _virusesCounting++;
-    const _bare = actor.fpSpot || (typeof attractOn === "function" && attractOn());
+    const _bare = typeof attractOn === "function" && attractOn();
     const _bvHud = typeof battleHidesUnitHud === "function" && battleHidesUnitHud(actor);
     if (!_bare && !_bvHud)
         drawHealthBar(px - 14, py - 76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
@@ -21693,7 +21693,6 @@ function infoEntries() {
     const E = [];
     const add = (id, cat, name, col, sub, text, rows) => E.push({ id, cat, name, col, sub, text, rows: rows || [] });
     const party = typeof PARTY !== "undefined" ? PARTY : { max: 3 };
-    const spot = typeof FP_SPOT !== "undefined" ? FP_SPOT : { take: 1.5, refill: 5400, cap: 12 };
     const spawn = typeof FP_SPAWN !== "undefined" ? FP_SPAWN : { every: 1200, start: 4, cap: 7, levels: [2, 4], species: ["ant", "beetle", "spider", "scorpion", "mantis", "moth"], scrap: { chance: 0.75, life: 3600 } };
     const relays = typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.relays ? _fp.F.relays.length : 6;
     const recruitCost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30;
@@ -21707,14 +21706,12 @@ function infoEntries() {
         "Long-press a follower on the floor, or tap its card, for its card: its numbers, INDEX (its attacks, move and stats) and DISMISS, which leaves it holding the room it is in. A follower that joins when the squad is full holds the room it was found in. Double-tap one to fire its ultimate once the bar under its health is full."], [["WITH YOU", party.max + " at once"], ["HOLD", "patrols its room until called"], ["COME", "back to the squad, if there is room"], ["RUN", "breaks off for 6 s"]]);
     add("recruit", "allies", "THE CRYSTAL'S RECRUITS", "#19e6c1", "A new follower for shards", ["The roster's + RECRUIT (open ROSTER: the long card at the bottom left) buys a follower at the Crystal for " + recruitCost + " ◆. What comes out is a draw: a BRAWLER, a MAGE or a TECHNICIAN, of one of the six elements, with a personality to match its type. You do not choose it, and cannot change it afterwards: you level it and evolve it.",
         "A follower that falls comes back at the Crystal after a while, as it was. The Crystal pays for it: 5% of its power, up to 10% for one with three energy cards. It waits there: come back to the Crystal Chamber and the ones from your squad rejoin it, and the rest hold the Crystal Chamber, which takes any number. Nothing calls it from afar."], [["PRICE", recruitCost + " ◆", UI_GOLD], ["TYPE", "brawler, mage or technician"], ["ELEMENT", "one of the six"]]);
-    add("eggs", "allies", "EGGS ON THE PADS", "#c8d4f0", "Followers found around the facility", ["A pad on the floor in an element's colour holds a grey egg, with a label over it saying what hatches: its type and its element, fixed. Walk up to it and it hatches there and then and joins you (or holds the pad's room, if the squad is full).",
-        "The pad fills again with the same egg a while after you have walked away from it, as long as the roster is under its cap, and the wait is part of the saved game."], [["TAKE", "walk within " + spot.take + " tiles"], ["FILLS AGAIN", "after " + sec(spot.refill)], ["ROSTER CAP", spot.cap + " followers"]]);
     add("evolution", "allies", "EVOLUTION", UI_GOLD, "At level " + evolveAt + ", with an energy card, a follower sheds its egg", ["A follower that reaches level " + evolveAt + " with an ENERGY CARD in its slot evolves on the spot into its element's form for its role: it molts, the egg cracks and the machine rises out of it. The card is used up, and the element is its own for good. It keeps that form for good, through death and a reload, and its role is fixed from then on.",
         "An evolved form fights with its NORMAL ATTACK until you choose one of its ALTERNATES, on the INDEX tab of its card, on its squad card or in the roster. A chosen alternate is then its only attack until you switch it back. A Mage or a Technician stands still to wind it up, fires, and winds up again once the effect has ended; a Brawler fires the moment an enemy is in reach, then cools down once the effect has ended, free to move. Its health, attack and special attack are multiplied too, and its form leans it toward attack or special attack."], [["AT", "level " + evolveAt, UI_GOLD], ["HEALTH & POWER", "×" + evolveMult], ["ATTACK", "normal, or a chosen alternate (locked on)"]]);
     if (typeof ENERGY !== "undefined")
         add("energy", "allies", "ENERGY CARDS", UI_GOLD, "A follower's element comes from a card", ["An unevolved follower has one ENERGY slot. With no energy card in it, it has no element: its egg's crystal is clear and its hits are plain. An energy card in it gives it that card's element; taken out, the card comes back to you.",
             "At level " + ENERGY.evolveLevel + ", with an energy card in its slot, it evolves into its element's form; the card is used up and the element is its own for good. An evolved follower has three ENERGY slots: " + ENERGY.altNeeds + " card unlocks its second attack, " + ENERGY.alt2Needs + " its extra attack if its form has one, " + ENERGY.ultNeeds + " its Ultimate: cards of any element count. Its cards of its OWN element set the elemental part of its hits: none " + Math.round(ENERGY.power[0] * 100) + "%, one " + Math.round(ENERGY.power[1] * 100) + "%, two " + Math.round(ENERGY.power[2] * 100) + "%, three " + Math.round(ENERGY.power[3] * 100) + "%. A card of another element opens attacks and adds no power.",
-            "Energy cards come in Pack 1 and Series 2: " + (typeof EQUIP_PACK !== "undefined" ? EQUIP_PACK.energy : 2) + " in every pack, guaranteed, each of an element found (never BLOOM). They are counted, and they belong to the run (NEW GAME clears them). The roster's RECRUIT comes with none; a recruitment post's follower comes with one of the post's element, and a bred egg with one of the element breeding picked; the purification module turns an egg's toxic one into BLOOM."], [["SLOTS", ENERGY.unevolvedSlots + " unevolved · " + ENERGY.evolvedSlots + " evolved", UI_GOLD], ["EVOLVES", "level " + ENERGY.evolveLevel + " with a card"], ["UNLOCKS", ENERGY.altNeeds + ": second attack · " + ENERGY.alt2Needs + ": extra attack · " + ENERGY.ultNeeds + ": Ultimate"]]);
+            "Energy cards come in Pack 1 and Series 2: " + (typeof EQUIP_PACK !== "undefined" ? EQUIP_PACK.energy : 2) + " in every pack, guaranteed, each of an element found (never BLOOM). They are counted, and they belong to the run (NEW GAME clears them). The roster's RECRUIT comes with none, and a bred egg with one of the element breeding picked; the purification module turns an egg's toxic one into BLOOM."], [["SLOTS", ENERGY.unevolvedSlots + " unevolved · " + ENERGY.evolvedSlots + " evolved", UI_GOLD], ["EVOLVES", "level " + ENERGY.evolveLevel + " with a card"], ["UNLOCKS", ENERGY.altNeeds + ": second attack · " + ENERGY.alt2Needs + ": extra attack · " + ENERGY.ultNeeds + ": Ultimate"]]);
     add("levels", "allies", "LEVELS & XP", "#9ca8ff", "Every unit levels the same way", ["Every unit has a level and a set of base stats; its real stats are the base scaled by its level (×1 at level " + (typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) + ", ×2 at 20, ×4 at 50, ×" + (typeof levelFactor === "function" ? +levelFactor(typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100).toFixed(1) : 7.3) + " at " + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100) + "). The level and type show over the health bar, and the card's INDEX has the full sheet. A thin bar under a follower's health bar, in the world and on its cards, is how far it is through its level; its member card and its roster card say how far it is from evolving.",
         "XP comes from kills: the follower that lands the kill takes " + Math.round((typeof XP_KILLER_SHARE !== "undefined" ? XP_KILLER_SHARE : 0.6) * 100) + "% and the rest of its squad, wherever they stand, and any unit within " + (typeof XP_SHARE_RANGE !== "undefined" ? XP_SHARE_RANGE : 4) + " tiles share the rest. A kill by your own gun, or by a burn, goes to the squad and the units near it at half the worth. A follower that is not in the squad only gets XP from what it kills or fights beside. The XP for a level is its cube (level 10 is 1,000: a follower that starts at level " + (typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) + " needs " + (typeof xpForLevel === "function" ? xpForLevel(evolveAt) - xpForLevel(typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) : 875) + " more to evolve). A unit that dies keeps its level but loses part of its progress to the next."], [["CAP", "level " + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100)], ["ON A DEATH", "nothing lost (back at the Crystal)", "#9fe8c0"], ["EVOLVES", "at level " + evolveAt, UI_GOLD]]);
     add("bonds", "allies", "BONDS", typeof BOND_COLOUR !== "undefined" ? BOND_COLOUR : "#ff7ab8", "Two who fight side by side", ["Two followers who fight side by side for about " + sec(typeof BOND_TICK !== "undefined" && typeof BOND_POINTS !== "undefined" ? BOND_TICK * BOND_POINTS : 1200) + " bond, one partner each. A bonded pair can breed (in the roster); that, and the hearts, is all a bond does: it gives no bonus in a fight.",
@@ -32089,8 +32086,8 @@ const TUT_STEPS = [
         hint: () => "SIDE QUEST WAITS IN THE ARENA, UNDER THE CATWALKS ON ITS EAST SIDE: HE CAN FLY. TALK TO HIM.", done: () => tutModuleGot() },
     { id: "repair", title: "REPAIR THE JUNCTION", text: () => "TAKE THE POWER MODULE TO THE JUNCTION IN THE SERVER ROOM AND INSTALL IT.",
         hint: () => "STAND AT THE JUNCTION AND PRESS E (OR TAP IT), AND STAY AT IT WHILE THE MODULE GOES IN: EVERY RELAY COMES ON.", done: () => typeof junctionRepaired === "function" && junctionRepaired() },
-    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "WALK UP TO A FOLLOWER'S EGG, OR OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS.",
-        hint: () => "EGGS WAIT ON GLOWING PADS (THE SERVER ROOM, THE WAREHOUSE, THE DECK, THE EXPERIMENT LAB, THE SECOND TELEPORT ROOM AND TWO IN THE ARENA): EACH ONE IS A BRAWLER, A MAGE OR A TECHNICIAN OF ONE ELEMENT, AND JOINS YOU AS EXACTLY THAT. EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
+    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS.",
+        hint: () => "EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD POSTS A FOLLOWER IN THE ROOM IT IS IN: IT PATROLS THE ROOM AND FIGHTS ANYTHING THAT COMES IN. COME CALLS IT BACK TO YOUR SQUAD (THREE AT A TIME).", done: () => tutHeld() >= TUT.holdNeeded },
     { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL " + EVOLVE_LEVEL + ": EVOLUTION). THE SENTRIES HELP: THEY RUN ON THE CRYSTAL'S POWER.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
@@ -33788,16 +33785,6 @@ const FACILITY_MAP = {
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
         { id: "pk_sewer_sample", room: "sewers", at: [356, 1064], items: [["sewer_sample", 1]], note: "A water sample on the SAMPLE BANK (the owner, 2026-11-07: \"a little water sample is on the other side of the bank of the river\"): the west end of the south bank, walled off by the rock fall; reached by an ice bridge, the drill, or the launcher (and back through the drain pipe)." },
     ],
-    followerSpots: [
-        { id: "spot_lobby", room: "front_lobby", at: [770, 330], type: "brawler", element: "fire", note: "A fire brawler in the server room's north-east corner." },
-        { id: "spot_show", room: "show_room", at: [1030, 310], type: "sniper", element: "ice", note: "An ice mage at the warehouse's north end." },
-        { id: "spot_deck", room: "observation_deck", at: [250, 850], type: "camper", element: "core", note: "A core technician on the observation deck." },
-        { id: "spot_lab", room: "experiment_lab", at: [-100, 660], type: "sniper", element: "toxic", note: "A toxic mage in the experiment lab, between its two benches." },
-        { id: "spot_tele_2", room: "teleport_room_2", at: [1030, 710], type: "camper", element: "flux", note: "A flux technician in the second teleport room." },
-        { id: "spot_arena_w", room: "arena", at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
-        { id: "spot_arena_c", room: "arena", at: [750, 850], type: "brawler", element: "core", note: "A core brawler in the middle of the arena." },
-        { id: "spot_cold", room: "cold_storage", at: [660, 800], type: "camper", element: "ice", note: "An ice technician out on the ice in the Cold Storage's cave." },
-    ],
     launchSites: [
         { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000],
             note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' LEDGE (ledge_catwalks) is the way back down into the arena. (Its broken section, the old way down, went in build 2026-11-07qq: the owner chose \"Only its way back\".)" },
@@ -34727,8 +34714,6 @@ const TEST_CHAMBER_MAP = {
     }
     for (const p of (M.pickups || []))
         p.at = mv(p.at, sh(p.room));
-    for (const p of (M.followerSpots || []))
-        p.at = mv(p.at, sh(p.room));
     for (const s of (M.launchSites || [])) {
         s.at = mv(s.at, sh(s.room));
         s.land = mv(s.land, sh(s.to));
@@ -34997,7 +34982,6 @@ function _facilityBuild(ex) {
     }
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, respawn: p.respawn || 0, note: p.note }));
-    const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));
     const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, rider: !!s.rider, only: s.only || null, note: s.note }));
     const ledges = (M.ledges || []).map(l => ({ id: l.id, room: l.room, toRoom: l.toRoom, label: l.label || "", at: rawP(l.at), to: rawP(l.to), w: l.w || 2, note: l.note }));
     const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), solid: r.solid || null, inside: !!r.inside, tag: r.tag || null, say: r.say || null, opened: r.opened || null, note: r.note }; });
@@ -35047,7 +35031,7 @@ function _facilityBuild(ex) {
             b.maxX = Math.max(b.maxX, q[0]);
             b.maxY = Math.max(b.maxY, q[1]);
         }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, launchSites, ledges, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, launchSites, ledges, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 function facilityGet() {
     const sig = JSON.stringify([FACILITY_MAP.scale, FACILITY_MAP.openings, FACILITY_MAP.connections, FACILITY_MAP.rooms.length]);
@@ -35364,24 +35348,6 @@ function facilityValidateDressing(F) {
             for (const it of p.items)
                 if (!ITEMS[it[0]] || !(it[1] > 0))
                     errors.push("pickup " + p.id + " holds " + it[0] + ", which is not an item");
-    }
-    for (const p of (F.followerSpots || [])) {
-        const rm = F.byId.get(p.room);
-        if (!rm) {
-            errors.push("follower spot " + p.id + " names a room that does not exist");
-            continue;
-        }
-        const r = facilityRoomAt(p.at[0], p.at[1], F);
-        if (!r || r.id !== p.room)
-            errors.push("follower spot " + p.id + " is not in " + p.room);
-        else if (F.snapped && !facilityWalkable(p.at[0], p.at[1], F))
-            errors.push("follower spot " + p.id + " is not on a tile a body can stand on");
-        if (typeof FOLLOWER_TYPES !== "undefined" && !FOLLOWER_TYPES[p.type])
-            errors.push("follower spot " + p.id + " is a " + p.type + ", which is not a follower type");
-        if (typeof ELEMENTS !== "undefined" && !ELEMENTS.some(e => e.id === p.element))
-            errors.push("follower spot " + p.id + " is " + p.element + ", which is not an element");
-        if ((F.followerSpots || []).some(q => q !== p && Math.hypot(q.at[0] - p.at[0], q.at[1] - p.at[1]) < 3))
-            errors.push("follower spot " + p.id + " is within three tiles of another");
     }
     for (const s of (F.launchSites || [])) {
         if (!F.byId.get(s.room) || !F.byId.get(s.to)) {
@@ -36434,7 +36400,6 @@ function facilitySaveCollect() {
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],
         serum: typeof serumSnapshot === "function" ? serumSnapshot() : null,
         mxp: typeof mutatorXp !== "undefined" ? mutatorXp : 0,
-        spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],
@@ -36586,8 +36551,6 @@ function facilitySaveApply(d) {
         if (S.doneAt && !playerClassKey && typeof classPickerOpenNow === "function")
             classPickerOpenNow();
     }
-    if (d.spots && typeof followerSpotsApply === "function")
-        followerSpotsApply(d.spots);
     if (typeof techLaunchersApply === "function")
         techLaunchersApply(d.launchers);
     if (typeof techBlightApply === "function")
@@ -37929,8 +37892,6 @@ function facilityPlayStart() {
         facilityPortalsStart(F);
     if (typeof facilityTutorialStart === "function")
         facilityTutorialStart(F, !!(saved && saved.followers && saved.followers.length));
-    if (!away && typeof facilityFollowerSpotsStart === "function")
-        facilityFollowerSpotsStart(F);
     if (away)
         facilityBlackoutSet(false);
     else if (typeof facilityTutorialClass === "function")
@@ -38297,8 +38258,6 @@ function drawFacilityItem(it) {
             _fpDrawPickup(it);
         else if (it.fp === "station")
             _fpDrawStation(it);
-        else if (it.fp === "spot")
-            _fpDrawSpot(it);
         else if (it.fp === "pillar")
             _fpStylePillar(it);
         else if (it.fp === "rigpad")
@@ -43580,7 +43539,7 @@ function _fpDimCtx(real, k) {
     return _fpDimW;
 }
 function _fpItemLight(it) {
-    if (it.fp === "pickup" || it.fp === "station" || it.fp === "sidequest" || it.fp === "spot")
+    if (it.fp === "pickup" || it.fp === "station" || it.fp === "sidequest")
         return 0.8;
     const lv = _fpItemRoomLight(it);
     if (lv > 0.98 || it.fp === "rigpad" || it.fp === "tank" || it.fp === "fill")
@@ -47376,186 +47335,6 @@ function drawSentryWear(it, hx, hy) {
     ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
     ctx.fillStyle = k > 0.5 ? "#5fe0c8" : k > 0.25 ? "#ffd34d" : "#ff6a4a";
     ctx.fillRect(x, y, w * k, h);
-}
-;
-/* js/followerspots.js */
-const FP_SPOT = { take: 1.5, price: 0, near: 4, label: 8 };
-function facilityFollowerSpotsStart(F) {
-    if (!_fp || !_fp.items)
-        return;
-    _fp.items = _fp.items.filter(i => i.fp !== "spot");
-    _fp.spots = [];
-    for (const p of (F.followerSpots || [])) {
-        const s = { id: p.id, room: p.room, x: p.at[0], y: p.at[1], type: p.type, element: p.element, egg: null, used: false, arrive: undefined, taken: 0 };
-        _fp.spots.push(s);
-        _fp.items.push({ type: "fp", fp: "spot", id: p.id, room: p.room, x: s.x, y: s.y, depth: s.x + s.y - 0.25, base: facilityRoomHeight(p.room, F) * FP_ELEV_PX, seed: _fpHash(Math.round(s.x * 3), Math.round(s.y * 5)), spot: s });
-    }
-}
-function _fpSpotElement(s) { return s.element; }
-function _fpSpotEgg(s) {
-    const def = NPC_TYPES["virus"], personality = personalityForType(s.type), stats = applyPersonality(personality), role = assignRole(stats);
-    return { type: "virus", element: _fpSpotElement(s), x: s.x, y: s.y, team: "red", convertFlash: 0, isNeutralRecruit: true, health: stats.hp, maxHealth: stats.hp, moveSpeed: def.moveSpeed, power: stats.attack,
-        stats, personality, role, currentResonance: 0, currentWill: stats.will, targetX: s.x, targetY: s.y, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: false, isHealing: false,
-        hitFlash: 0, spawnProtection: 0, dead: false, fpSpot: s.id };
-}
-function _fpSpotLabel(s) { const el = _fpSpotElement(s), def = ELEMENTS.find(e => e.id === el); return def && def.none ? roleLabel(s.type) : roleLabel(s.type) + " · " + (def ? def.label.toUpperCase() : String(el).toUpperCase()); }
-function _fpSpotSay(text, good) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined")
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: good ? "#9dffb6" : "#ff8a6a", life: 110, vy: -0.2, size: 13 }); }
-function facilityFollowerSpotCan(s) {
-    if (!s)
-        return { ok: false, why: "NO POST" };
-    if (s.used)
-        return { ok: false, why: "THIS POST'S RECRUIT HAS BEEN CLAIMED" };
-    if (!s.egg)
-        return { ok: false, why: "NOTHING WAITS HERE YET" };
-    const have = typeof shardCount === "number" ? shardCount : 0;
-    if (FP_SPOT.price > 0 && have < FP_SPOT.price)
-        return { ok: false, why: "NEED ◆" + FP_SPOT.price + " FOR THIS POST · YOU HAVE ◆" + have };
-    return { ok: true };
-}
-function facilityFollowerSpotTake(s) {
-    const can = facilityFollowerSpotCan(s);
-    if (!can.ok) {
-        if (!s || !s.said)
-            _fpSpotSay(can.why);
-        if (s)
-            s.said = true;
-        return null;
-    }
-    if (typeof spawnFollowerAtCrystal !== "function")
-        return null;
-    const egg = s.egg, k = egg ? actors.indexOf(egg) : -1;
-    if (k >= 0)
-        actors.splice(k, 1);
-    s.egg = null;
-    s.used = true;
-    s.taken++;
-    shardCount -= FP_SPOT.price;
-    spawnFollowerAtCrystal(_fpSpotElement(s), s.type);
-    const f = followers[followers.length - 1];
-    if (!f)
-        return null;
-    f.x = s.x;
-    f.y = s.y;
-    f.returningToCrystal = false;
-    f.convertFlash = 30;
-    f.fromSpot = s.id;
-    if (f.post) {
-        if (typeof partyPlace === "function")
-            partyPlace(f, s.room, true);
-        else
-            f.post = s.room;
-    }
-    else
-        f.stance = "follow";
-    const def = ELEMENTS.find(e => e.id === f.element);
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined")
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: _fpSpotLabel(s) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!") + (def && def.none ? " · NO ELEMENT YET" : "") + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
-    return f;
-}
-function facilityFollowerSpotsTick() {
-    const S = _fp && _fp.spots;
-    if (!S || !S.length)
-        return;
-    for (const s of S) {
-        if (s.egg && (s.egg.dead || !actors.includes(s.egg)))
-            s.egg = null;
-        const near = Math.hypot(player.x - s.x, player.y - s.y);
-        if (s.used)
-            continue;
-        if (s.egg) {
-            if (near < FP_SPOT.take) {
-                if (!facilityFollowerSpotCan(s).ok) {
-                    if (!s.said) {
-                        facilityFollowerSpotTake(s);
-                    }
-                }
-                else if (typeof partyFull === "function" && typeof partyOn === "function" && partyOn() && partyFull() && typeof partyPickOpen === "function") {
-                    if (!s.asked && !partyPickBusy()) {
-                        s.asked = true;
-                        partyPickOpen(_fpSpotLabel(s) + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), [s.x, s.y], () => { if (s.egg && !s.used)
-                            facilityFollowerSpotTake(s); }, null);
-                    }
-                }
-                else
-                    facilityFollowerSpotTake(s);
-            }
-            else if (near > FP_SPOT.take + 1) {
-                s.asked = false;
-                s.said = false;
-            }
-        }
-        else if (near > FP_SPOT.near) {
-            s.egg = _fpSpotEgg(s);
-            actors.push(s.egg);
-            s.arrive = _fpFrame();
-        }
-    }
-}
-function followerSpotsSnapshot() {
-    const out = {};
-    for (const s of ((_fp && _fp.spots) || []))
-        if (s.used)
-            out[s.id] = 1;
-    return out;
-}
-function followerSpotsApply(d) {
-    if (!d || typeof d !== "object" || !_fp || !_fp.spots)
-        return;
-    for (const s of _fp.spots)
-        if (d[s.id] !== undefined && d[s.id] !== null && d[s.id] !== false) {
-            if (s.egg) {
-                const k = actors.indexOf(s.egg);
-                if (k >= 0)
-                    actors.splice(k, 1);
-                s.egg = null;
-            }
-            s.used = true;
-        }
-}
-function _fpDrawSpot(it) {
-    const s = it.spot, f = _fpFrame(), el = _fpSpotElement(s), def = ELEMENTS.find(e => e.id === el), col = def ? def.color : "#9fe8ff", full = !!s.egg && !s.used, pul = 0.7 + 0.3 * Math.sin(f * 0.07 + it.seed);
-    const c = _fpP(it.x, it.y, 0), rx = 0.82 * TILE_W * 1.4142, ry = 0.82 * TILE_H * 1.4142;
-    _fpDisc(it.x, it.y, 0, 0.95, s.used ? "rgba(6,9,14,0.85)" : "rgba(10,18,30,0.8)", null);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = _fpRgba(col, full ? 0.55 + 0.35 * pul : s.used ? 0.14 : 0.22);
-    ctx.beginPath();
-    ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 6.2832);
-    ctx.stroke();
-    if (full) {
-        _fpGlow(c[0], c[1] - 10, 42, col, 0.26 * pul);
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = _fpRgba(col, 0.5);
-        ctx.beginPath();
-        ctx.ellipse(c[0], c[1], rx * 0.6, ry * 0.6, 0, 0, 6.2832);
-        ctx.stroke();
-    }
-    else if (s.used) {
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(120,130,150,0.35)";
-        ctx.beginPath();
-        ctx.moveTo(c[0] - rx * 0.3, c[1] - ry * 0.3);
-        ctx.lineTo(c[0] + rx * 0.3, c[1] + ry * 0.3);
-        ctx.moveTo(c[0] + rx * 0.3, c[1] - ry * 0.3);
-        ctx.lineTo(c[0] - rx * 0.3, c[1] + ry * 0.3);
-        ctx.stroke();
-    }
-    if ((full || s.used) && Math.hypot(it.x - player.visualX, it.y - player.visualY) < FP_SPOT.label) {
-        const p = _fpP(it.x, it.y, 92), text = s.used ? "CLAIMED" : _fpSpotLabel(s), have = typeof shardCount === "number" ? shardCount : 0, short = !s.used && FP_SPOT.price > 0 && have < FP_SPOT.price;
-        ctx.font = "bold 11px monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = "rgba(4,8,16,0.9)";
-        ctx.strokeText(text, p[0], p[1]);
-        ctx.fillStyle = s.used ? "rgba(150,160,180,0.8)" : col;
-        ctx.fillText(text, p[0], p[1]);
-        const sub = s.used ? "ITS RECRUIT IS YOURS ALREADY" : FP_SPOT.price > 0 ? "◆" + FP_SPOT.price + (short ? " · YOU HAVE ◆" + have : " · WALK UP TO IT") : "FREE · ONCE · WALK UP TO IT";
-        ctx.font = "bold 9px monospace";
-        ctx.strokeText(sub, p[0], p[1] + 13);
-        ctx.fillStyle = s.used ? "rgba(150,160,180,0.7)" : short ? "#ff8a6a" : "#ffe733";
-        ctx.fillText(sub, p[0], p[1] + 13);
-    }
 }
 ;
 /* js/breeding.js */
@@ -53060,9 +52839,6 @@ function fluxKept() {
     for (const r of (F.rubble || []))
         if (r.work)
             put(r.work[0], r.work[1], "NOT ON THE RUBBLE'S WORK SPOT");
-    for (const p of (F.followerSpots || []))
-        if (p.at)
-            put(p.at[0], p.at[1], "NOT ON A FOLLOWER SPOT");
     for (const it of ((_fp && _fp.items) || []))
         if (it.fp === "pickup" && !it.taken)
             put(it.x, it.y, "NOT ON AN ITEM");
@@ -56432,8 +56208,6 @@ function facilityTutorialTick() {
         playerCombatTick();
     if (typeof facilityStationTick === "function")
         facilityStationTick();
-    if (typeof facilityFollowerSpotsTick === "function")
-        facilityFollowerSpotsTick();
     if (typeof facilityPortalTick === "function")
         facilityPortalTick();
     if (typeof facilityRelayTick === "function")

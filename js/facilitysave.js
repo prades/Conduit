@@ -51,7 +51,6 @@ function facilitySaveCollect() {
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
         serum: typeof serumSnapshot === "function" ? serumSnapshot() : null,           // the Mutator's laboratory: what it holds and how far through its round (js/serum.js)
         mxp: typeof mutatorXp !== "undefined" ? mutatorXp : 0,                          // the Mutator's experiment points: its level (js/mutator.js)
-        spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],     // the ice bridges standing, each with its technician (js/techabilities.js)
@@ -125,7 +124,7 @@ function facilitySaveApply(d) {
         S.levelled = new Set(followers);
         if (S.doneAt && !playerClassKey && typeof classPickerOpenNow === "function") classPickerOpenNow();   // (the picker was open when it was left)
     }
-    if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
+    // (d.spots, the recruitment posts claimed, in a save from before 2026-11-24: the posts were removed, so it is read past and dropped at the next save; a follower recruited from one is an ordinary follower)
     if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);
     if (typeof techBlightApply === "function") techBlightApply(d.blight);   // the play clock as it was, and the pools on it
     if (typeof puzzleApply === "function") puzzleApply(d.puzzles);   // the puzzles' records (the choke itself is put back by the rubble's hits above)

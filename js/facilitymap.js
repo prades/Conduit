@@ -619,21 +619,8 @@ const FACILITY_MAP = {
         // (The five hidden VITAL items, a Fleck, a Prism and a Core, were removed 2026-11-01 with the HP a death cost: the owner, "Remove them".)
     ],
 
-    // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
-    // and so is where it is. Walk up to it and it joins, there, as that type and that element, free, and the post is claimed for good (it does not fill again: the archive's follow-up scope, 2026-10-31; free: the owner).
-    // `at` is the middle of a tile (sketch pixels: 20 to a tile).
-    // Seven spots, in the places the player marked on the facility's outline view: the server room's north-east corner (it was the computer lab), the warehouse's north end (it was the show room), the observation deck, the experiment lab, the second teleport
-    // room, and two in the arena (its west end by the Armory's steel door, and its middle). Every element has one; core has two.
-    followerSpots: [
-        { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the server room's north-east corner." },
-        { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the warehouse's north end." },
-        { id: "spot_deck",    room: "observation_deck", at: [250, 850],  type: "camper",  element: "core",     note: "A core technician on the observation deck." },
-        { id: "spot_lab",     room: "experiment_lab",   at: [-100, 660], type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab, between its two benches." },
-        { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
-        { id: "spot_arena_w", room: "arena",            at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
-        { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
-        { id: "spot_cold",    room: "cold_storage",     at: [660, 800],  type: "camper",  element: "ice",      note: "An ice technician out on the ice in the Cold Storage's cave." },
-    ],
+    // (FOLLOWER SPOTS, the recruitment posts: eight pads, spot_lobby to spot_cold, each with a follower of a fixed type and element waiting in its egg, free, once. Removed, the owner, 2026-11-24: "The respawn pads,
+    // remove them", and "Remove posts entirely"; recruiting is the roster's + RECRUIT, js/clone.js RECRUIT_COST. docs/FOLLOWER-PROGRESSION.md §1 keeps their history.)
 
     // KINETIC LAUNCHER SITES (the electric technician's ability, js/techabilities.js; docs/TECHNICIANS.md): a place where its launcher can be set up for good, to send followers where nobody can walk. ASKED: "you need to have some sort
     // of check for a spot where it can be deployed [...] whenever you enter a spot where it can be deployed, have a little notification or highlighted area near the catwalk, or in the future any sort of secret area".

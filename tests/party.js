@@ -176,12 +176,10 @@ function measure(w, h) {
         const cc = rd('js/commandcenter.js'); ok(/r\.status\.room \? " \\u00b7 " \+ r\.status\.room/.test(cc) && /want\.push\("POST"\)/.test(cc), 'the card does not show the room');
     });
 
-    group('NEW FOLLOWERS (a recruit, an egg, a follower made again, one back from the dead)');
-    check('a recruit with room joins the squad; with the squad full it holds the Crystal Chamber; an egg taken with the squad full holds the room the egg was in (and says so); with room it follows', () => {
-        const r = J(`(function(){ const fs = __fresh(2), o = {}; shardCount = 500; recruitFollower('brawler', 'fire'); o.join = [partyMembers().length, partyPosted().length]; recruitFollower('brawler', 'ice'); o.full = [partyMembers().length, partyPosted().length, followers[followers.length - 1].post];
-            const s = _fp.spots[0]; const g = __fresh(3); s.used = false; s.egg = _fpSpotEgg(s); actors.push(s.egg); floatingTexts.length = 0; shardCount = 1000; const f = facilityFollowerSpotTake(s); o.egg = [f.post, s.room, f.stance, floatingTexts.map(t => t.text).join('|')];
-            const g2 = __fresh(2); const s2 = _fp.spots[1]; s2.used = false; s2.egg = _fpSpotEgg(s2); actors.push(s2.egg); shardCount = 1000; const f2 = facilityFollowerSpotTake(s2); o.eggRoom = [f2.post || null, f2.stance, partyMembers().length]; return o; })()`);
-        same(r.join.join(), '3,0', 'a recruit with room'); same(r.full.join(), '3,1,crystal_chamber', 'a recruit with the squad full'); same(r.egg[0], r.egg[1], 'the egg holds ITS room'); same(r.egg[2], 'hold', 'stance'); ok(/HOLDS THE/.test(r.egg[3]), 'said ' + r.egg[3]); same(r.eggRoom.join(), ',follow,3', 'an egg with room follows');
+    group('NEW FOLLOWERS (a recruit, a follower made again, one back from the dead; an egg on a recruitment post until the posts were removed, 2026-11-24)');
+    check('a recruit with room joins the squad; with the squad full it holds the Crystal Chamber', () => {
+        const r = J(`(function(){ const fs = __fresh(2), o = {}; shardCount = 500; recruitFollower('brawler', 'fire'); o.join = [partyMembers().length, partyPosted().length]; recruitFollower('brawler', 'ice'); o.full = [partyMembers().length, partyPosted().length, followers[followers.length - 1].post]; return o; })()`);
+        same(r.join.join(), '3,0', 'a recruit with room'); same(r.full.join(), '3,1,crystal_chamber', 'a recruit with the squad full');
     });
     check('a follower made again (RE-ROLL) leaves the squad and is admitted again when it is back', () => {
         const r = J(`(function(){ const o = {}; const g = __fresh(2); const f = g[0]; startFollowerReroll(f, true); o.gone = [followers.includes(f), partyMembers().length]; f.x = crystal.x + 0.2; f.y = crystal.y; for (let i = 0; i < 200 && !followers.includes(f); i++) render(); o.again = [followers.includes(f), partyMembers().length, f.post || null]; return o; })()`);
