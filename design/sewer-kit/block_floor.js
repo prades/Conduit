@@ -14,11 +14,24 @@
       const y = floorY.get(k) + 0.005, R = 0.42, g = new T.CircleGeometry(R * 60 / 64, 20); g.rotateX(-Math.PI / 2); g.translate(cx, y, cy);   // (a round disc, not a square: the look's ink line goes round its own edge)
       const gg = g.index ? g.toNonIndexed() : g; gg.setAttribute('color', new T.Float32BufferAttribute(new Array(gg.attributes.position.count * 3).fill(1), 3));
       const m = new T.Mesh(gg, M.kitCover); m.userData.swAdded = true; addTo(cellAt.get(k)).add(m); kitN.covers++; } }
+  // CRACKS IN THE ROOMS' FLOORS WITH LOW GRASS IN THEM (the owner of draft 1: "add cracks with plants too"): away from the water's walkways, the grates and the covers; the grass too low to hide anything,
+  // and handed to the guard all the same (standing)
+  { const cr = [], grass = new Map(); for (const k of cellAt.keys()) { const [cx, cy] = k.split(',').map(Number); if (!dry(k) || hsh(cx, cy, 494) > 0.05 || nearW(cx, cy, 3) || cr.some(q => Math.abs(q[0] - cx) + Math.abs(q[1] - cy) < 4) || grates.some(q => Math.abs(q[0] - cx) + Math.abs(q[1] - cy) < 2)) continue;
+      cr.push([cx, cy]); const y = floorY.get(k) + 0.004, ang = hsh(cx, cy, 495) * Math.PI, ca = Math.cos(ang), sa = Math.sin(ang), L = 0.42, W = 0.17, room = cellAt.get(k), S2 = stainOf(addTo(room)), uv = hsh(cx, cy, 496) < 0.5 ? SU.crack : SU.crackF;
+      const q = [[cx - ca * L - sa * W, y, cy - sa * L + ca * W], [cx - ca * L + sa * W, y, cy - sa * L - ca * W], [cx + ca * L + sa * W, y, cy + sa * L - ca * W], [cx + ca * L - sa * W, y, cy + sa * L + ca * W]];
+      for (const i of [0, 1, 2, 0, 2, 3]) { S2.pos.push(...q[i]); S2.uv.push(i === 0 || i === 3 ? uv[0] + 0.004 : uv[1] - 0.004, i < 2 ? 0 : 1); S2.col.push(KC.blk.r, KC.blk.g, KC.blk.b); }
+      let G2 = grass.get(room); if (!G2) grass.set(room, G2 = { pos: [], nor: [], col: [] }); const nt = 1 + Math.floor(hsh(cx, cy, 497) * 2);
+      for (let i = 0; i < nt; i++) { const f = (i + 0.5) / nt * 1.6 - 0.8; kfern(G2, V3(cx + ca * L * f, y, cy + sa * L * f), V3(Math.cos(ang + 1.6 + i), 0, Math.sin(ang + 1.6 + i)), 7, 0.12 + 0.03 * hsh(i, cx + cy, 498), cx * 13 + cy + i, 0.45, 3.1); }
+      kitN.floorCracks = (kitN.floorCracks || 0) + 1; }
+    for (const [room, G2] of grass) { if (!G2.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(G2.pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(G2.nor, 3)); g.setAttribute('color', new T.Float32BufferAttribute(G2.col, 3));
+      g.setAttribute('uv', new T.Float32BufferAttribute(new Array(G2.pos.length / 3 * 2).fill(0), 2)); const m = new T.Mesh(g, M.kit); m.userData.swAdded = true; m.userData.noInk = true; addTo(room).add(m); standing.push(m); } }
   // (no cabinet stands on the floor: a box standing by a wall hid a body behind it in a quarter turn the guard checks, where the wall sinks but a thing on the floor does not. The big cabinets
   //  hang on the walls instead, with the walls' own: block_walls.js)
   // each group's pieces into its one painted mesh and its one stain mesh
   for (const [par, A] of accs) { if (!A.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(A.pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(A.nor, 3));
     g.setAttribute('color', new T.Float32BufferAttribute(A.col, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(new Array(A.pos.length / 3 * 2).fill(0), 2)); const m = new T.Mesh(g, M.kit); m.userData.swAdded = true; par.add(m); }
+  for (const [par, A] of plants) { if (!A.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(A.pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(A.nor, 3));
+    g.setAttribute('color', new T.Float32BufferAttribute(A.col, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(new Array(A.pos.length / 3 * 2).fill(0), 2)); const m = new T.Mesh(g, M.kit); m.userData.swAdded = true; m.userData.noInk = true; par.add(m); }   // (the plants: soft, no ink line)
   for (const [par, S2] of stains) { if (!S2.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(S2.pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(S2.uv, 2));
     g.setAttribute('color', new T.Float32BufferAttribute(S2.col, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(new Array(S2.pos.length).fill(0).map((v, i) => i % 3 === 1 ? 1 : 0), 3));
     const m = new T.Mesh(g, M.kitStain); m.userData.swAdded = true; m.userData.noInk = true; m.renderOrder = 1; par.add(m); }
