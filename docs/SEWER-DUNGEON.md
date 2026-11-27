@@ -2,6 +2,8 @@
 
 > **Status: Designed in part** (the owner, 2026-11-21, of the skeleton picture `design/sewer-dungeon/skeleton-2026-11-20.png`: "This is our sewer now, make it happen"; then "new mechanics I'll answer the questions in prompt form"). **Nothing of it is built.** The Sewers in the game are still the ones in `SEWER-QUEST.md`, which this replaces as its stages are built. Everything below is read off the picture; what the picture marks TBD, and what it does not say, is in §6, not filled in.
 
+> **The map on one sheet** (the owner, 2026-11-24: "I would like to look at a sewer map right now"): `node design/sewer-dungeon/mapsheet.js <out.png>` draws the whole dungeon from above as the game has it (`js/sewerdungeonmap.js`), every piece in its kind's colour, the walls, the ways through (the game's openings), the stairs, the railings and the placed props, each named place labelled, with a lettered grid (a square every 5 tiles) to name a spot by ("F3"); `--marks marks.json` adds numbered pins with notes. Note: the rooms' own edge flags say "wall" on 84 sides that hold a way through; the sheet draws the openings over them.
+
 > **Its props and key items** (the looks the owner approved, and how a builder places one and changes its state, in the 2D game and the 3D view): `SEWER-PROPS.md`, its §10 the guide.
 
 ## 1. Intent

@@ -361,7 +361,7 @@ function ccRender() {
     if (car) _ccFocusEnsure();
     const rec = document.getElementById("ccRecruit");
     const shp = document.getElementById("ccShards"); if (shp) ccShardsUpdate(shp, car);
-    if (rec) { rec.style.display = ccOpenTab === "roster" && !car ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }   // (the carousel has no recruit button at the top: its RECRUIT is the last tile of the strip)
+    if (rec) { rec.style.display = ccOpenTab === "roster" && !car ? "" : "none"; const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = cost ? "\u25c6" + cost : "FREE"; }   // (FREE: the tutorial's first recruit, js/clone.js recruitFreeNow)   // (the carousel has no recruit button at the top: its RECRUIT is the last tile of the strip)
     const sum = document.getElementById("ccSummary");
     if (sum) sum.textContent = "SQUAD " + partyMembers().length + "/" + PARTY.max + " \u00b7 " + partyPosted().length + " POSTED \u00b7 " + radialSquadStats().total + " UNITS";   // (how full the squad is, who holds rooms, how many followers there are)
     const sqBtn = document.getElementById("ccSquadsBtn"); if (sqBtn) sqBtn.classList.toggle("on", ccSquadsOpen);
@@ -444,9 +444,9 @@ function _ccRecruitTile(grid) {
         t = _ccEl("div", "cc-card cc-rtile"); t.appendChild(_ccEl("div", "cc-rt-p", "+")); t.appendChild(_ccEl("div", "cc-rt-t")); t.appendChild(_ccEl("div", "cc-rt-s"));
         _ccClick(t, () => { const had = new Set(ccUnits({})); if (typeof recruitDo === "function") recruitDo(); const fresh = ccUnits({}).filter(u => !had.has(u)); if (fresh.length === 1) ccFocusSet(fresh[0]); });
     }
-    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, can = have >= cost;
+    const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, can = have >= cost;
     t.classList.toggle("dim", !can);
-    const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = "RECRUIT ◆" + cost, tb = can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";
+    const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = cost ? "RECRUIT ◆" + cost : "RECRUIT FREE", tb = !cost ? "YOUR FIRST IS FREE" : can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";   // (the tutorial's first recruit: js/clone.js recruitFreeNow)
     if (a.textContent !== ta) a.textContent = ta; if (b.textContent !== tb) b.textContent = tb;
     return t;
 }
@@ -775,11 +775,11 @@ function _ccDrawYourSquad(body) {
 
 // The shard readout beside RECRUIT: "◆ 200" and "30 PER RECRUIT · 6 AFFORDABLE" (or "NEED 10 MORE" in red).
 function ccShardsUpdate(el, car) {
-    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = Math.floor(have / cost);
+    const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = cost ? Math.floor(have / cost) : 0;   // (cost 0: the tutorial's first recruit, js/clone.js recruitFreeNow)
     const sig = have + "|" + cost + "|" + !!car; if (el._sig === sig) return; el._sig = sig;
     el.classList.toggle("short", have < cost && !car);   // (the carousel's total is only what you have: the RECRUIT tile says what a follower costs, and how many you can afford)
     el.querySelector(".cc-sh-n").textContent = "\u25c6 " + have;
-    el.querySelector(".cc-sh-c").textContent = car ? "YOUR SHARDS" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
+    el.querySelector(".cc-sh-c").textContent = car ? "YOUR SHARDS" : !cost ? "YOUR FIRST RECRUIT IS FREE" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
 }
 // What the squad window shows: the squad in its slots (each one's level, health, form, element and state), and whether each is selected.
 function _ccSqSig() {

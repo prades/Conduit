@@ -84,7 +84,7 @@ const SUITES = [
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],
-    ['follower spots, all elements, sturdier followers', 'followerspots.js'],
+    ['no follower posts, all elements, sturdier followers', 'followerspots.js'],
     ['clone cost',               'clones.js'],
     ['clone card strip',         'clonecards.js'],
     ['unit status + hold fix',   'status.js'],

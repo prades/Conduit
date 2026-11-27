@@ -169,7 +169,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('typeof CTABS'), 'undefined', 'the Crystal has no tabs');
     });
     check('a recruit costs RECRUIT_COST shards and a follower comes out at the Crystal', () => {
-        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 1000; floatingTexts.length = 0;');
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 1000; floatingTexts.length = 0; if (typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script) _fp.tut.script.freeUsed = true;');   // (the paid price: the tutorial\'s free first recruit used, js/clone.js recruitFreeNow)
         same(run('RECRUIT_COST'), 200, 'the price is the archive\'s (the follow-up scope of 2026-10-31: "Directly purchasing a recruit costs exactly 200 shards")');
         same(run('recruitFollower()'), true, 'recruited'); same(run('shardCount'), 1000 - run('RECRUIT_COST'), 'the price'); same(run('followers.filter(f => !f.dead).length'), 1, 'a new follower');
         ok(run('followers[0].x !== undefined && Math.hypot(followers[0].x - crystal.x, followers[0].y - crystal.y) < 4'), 'it did not come out at the Crystal');

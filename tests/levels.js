@@ -214,12 +214,12 @@ async function boot(store) {
         same(r.half.join(), '#05070f,' + r.col[0], 'the dark slab, then the fill'); ok(near(r.edge[0], 100 + 2 + 26 * 84.5 / 169, 1e-6), 'the fill\'s edge is half way (115): ' + r.edge); same(r.empty.join(), '#05070f', 'an empty bar has no fill'); same(r.nobody, 0, 'nobody: nothing');
         ok(new Set([r.soon0[1], r.soon1[1]]).size === 2 && [r.soon0[1], r.soon1[1]].includes(r.col[1]), 'a follower one level from evolving breathes: ' + r.soon0 + ' / ' + r.soon1);
     });
-    check('…it is drawn over every follower that is on show, and over nothing else: not an enemy, not a clone, not an egg waiting on its pad', () => {
+    check('…it is drawn over every follower that is on show, and over nothing else: not an enemy, not a clone (nor an egg waiting on its pad, until the recruitment posts were removed, 2026-11-24)', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); canvas.width = 1280; canvas.height = 860; const fs = [${FOL('', 3, 1)}, ${FOL('', 4, 1)}]; fs.forEach((f, i) => { f.x = player.x + 1 + i; f.y = player.y + 1; });
-            const egg = ${FOL('', 5, 2)}; egg.fpSpot = true; egg.x = player.x + 2; egg.y = player.y - 1; const foe = spawnCreature({ species: 'ant', className: 'scout' }); foe.x = player.x - 1; foe.y = player.y - 1; foe.update = () => {};
+            const foe = spawnCreature({ species: 'ant', className: 'scout' }); foe.x = player.x - 1; foe.y = player.y - 1; foe.update = () => {};
             const seen = []; const was = drawXpBar; drawXpBar = (x, y, w, h, u) => seen.push(u); try { render(); } finally { drawXpBar = was; }
-            const o = { mine: fs.every(f => seen.includes(f)), egg: seen.includes(egg), foe: seen.includes(foe), only: seen.every(u => u.isFollower && u.team === 'green') }; fs.forEach(f => f.dead = true); egg.dead = true; foe.dead = true; return o; })()`);
-        same(r.mine, true, 'a follower has its bar'); same(r.egg, false, 'an egg on a pad has none'); same(r.foe, false, 'an enemy has none'); same(r.only, true, 'only followers');
+            const o = { mine: fs.every(f => seen.includes(f)), foe: seen.includes(foe), only: seen.every(u => u.isFollower && u.team === 'green') }; fs.forEach(f => f.dead = true); foe.dead = true; return o; })()`);
+        same(r.mine, true, 'a follower has its bar'); same(r.foe, false, 'an enemy has none'); same(r.only, true, 'only followers');
     });
 
     console.log('\nCLONES');

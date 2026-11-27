@@ -247,7 +247,7 @@ function facilityRelayTick() {
 }
 // a TURRET (an automatic sentry) runs on the CRYSTAL'S POWER alone (the owner, 2026-11-01: "Crystal only"; it ran off its relay): whole, and the Crystal above its reserve, it fires at the nearest enemy in
 // range, each shot paid from the Crystal (js/crystalpower.js, js/antraids.js sentryOn); wrecked by a raid it does nothing until it is repaired.
-// It aims only at what its shot can hit (js/helpers.js isHostileTarget, the shot's own test in js/game.js): never at a RECRUIT WAITING AT ITS POST (js/followerspots.js), whom the shot passes through. (The
+// It aims only at what its shot can hit (js/helpers.js isHostileTarget, the shot's own test in js/game.js): never at a neutral recruit (as a RECRUIT WAITING AT ITS POST was, js/followerspots.js, until the posts were removed 2026-11-24), whom the shot passes through. (The
 // hallway turret is 7 tiles from the Experiment Lab's post, through the wall: it fired at that recruit every 50 frames for as long as it waited, and since every shot is paid that drained the Crystal and kept
 // its idle refill from ever starting; found measuring build 2026-11-01h.)
 const SENTRY_RANGE = 9, SENTRY_CD = 50, SENTRY_DAMAGE = 8;
