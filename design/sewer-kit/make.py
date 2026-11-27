@@ -1,4 +1,4 @@
-# DONE (build 2026-11-17dr): the kit, with no patches, became the game's own view3d/sewerdress.js, so this builder no longer finds its markers there; it made the drafts from the earlier base
+# DONE (build 2026-11-17dt): the kit, with no patches, became the game's own view3d/sewerdress.js, so this builder no longer finds its markers there; it made the drafts from the earlier base
 # (git history before that build). As it was: makes design/sewer-kit/kit.js, the sewer kit's draft, from the built look (view3d/sewerdress.js) and the kit's two parts (block_walls.js, block_floor.js):
 #   python3 design/sewer-kit/make.py        (from the repository's root)
 # The kit's walls' part takes the place of FAITHFUL's two plain back-wall pipes; its floor part goes in before the floor tiles' pictures (it needs the grates' places). The function is renamed

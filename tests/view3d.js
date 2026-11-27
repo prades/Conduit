@@ -275,7 +275,7 @@ else {
     check('THE SEWER LOOK, ROUND 4 (the owner, 2026-11-23, of the walkway: "Should have long style grates"; of the drafts: "Push"): every walkway tile drawn as part of a long grate panel, five tiles along the walkway', () => {
         const C = ON.sewers.look.checks; ok(C.runTiles > 50, 'the walkway\'s tiles: ' + C.runTiles); same(C.longPanels, true, 'every walkway tile a long panel\'s'); same(C.panelLen, 5, 'a panel\'s length in tiles');
     });
-    check('THE SEWER KIT (build 2026-11-17dr; the owner, 2026-11-27: "I want to upgrade the sewer [...] fully rendered objects and pipes that go along the walls"; of draft 1: "add plants to pipes and add cracks with plants too, plants near water under sidewalk"; of the red brick: "Just no patchy looks"): the services along the walls, the equipment on them, the plants, and no wall face a patch', () => {
+    check('THE SEWER KIT (build 2026-11-17dt; the owner, 2026-11-27: "I want to upgrade the sewer [...] fully rendered objects and pipes that go along the walls"; of draft 1: "add plants to pipes and add cracks with plants too, plants near water under sidewalk"; of the red brick: "Just no patchy looks"): the services along the walls, the equipment on them, the plants, and no wall face a patch', () => {
         const C = ON.sewers.look.checks, K = C && C.kit; ok(K, 'the kit\'s counts: none');
         ok(K.runs > 0 && K.mains + K.waters > 0 && K.conds > 0, 'the services on the walls (runs, mains, water lines, cables): ' + JSON.stringify([K.runs, K.mains, K.waters, K.conds]));
         ok(K.jboxes + K.panels + K.vents + K.boxes + K.valves + K.gauges + (K.bigValves || 0) > 0, 'the equipment on them: ' + JSON.stringify([K.jboxes, K.panels, K.vents, K.boxes, K.valves, K.gauges, K.bigValves]));

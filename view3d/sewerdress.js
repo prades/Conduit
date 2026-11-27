@@ -17,7 +17,7 @@
 //   filled space stay one solid colour, as the owner asked of the dungeon on its own branch (2026-11-23: "completely solid color"; "filled in like a mold"), its stubs as FAITHFUL had them
 //   the floors' sides (the ledges' risers), the channels' sloped sides and, where a ledge stands high over the water or a lower floor and the game draws no side, its side carried down past it:
 //   the walls' stone (a low step between two floors kept quiet)
-//   THE SEWER KIT (build 2026-11-17dr; the owner, 2026-11-27: "I want to upgrade the sewer and make it look better with more textures and better equipment around the map, fully rendered
+//   THE SEWER KIT (build 2026-11-17dt; the owner, 2026-11-27: "I want to upgrade the sewer and make it look better with more textures and better equipment around the map, fully rendered
 //   objects and pipes that go along the walls, just stuff you'd find in a sewer"; of draft 1: "Yes right direction, add plants to pipes and add cracks with plants too, plants near water
 //   under sidewalk"; of draft 2: "Looks really good"): the services along every wall face, the equipment hung on the walls, stains and tide lines, plants on the pipes, in cracks and on the
 //   banks by the water (only by the lamps' light: "The greenery needs to be near the lighting"), access covers and grassy cracks on the rooms' floors (its two parts below, each with its own account; drafted in design/sewer-kit/); the pumps' housings as rusty tanks
