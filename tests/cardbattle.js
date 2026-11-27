@@ -151,8 +151,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE TURNS (step 3): one card, then the enemies one by one, fastest first; recharge by turns; RUN with a last hit; the cube commands only');
     run(`globalThis.__live = (n) => { for (let i = 0; i < n; i++) _simStep(false); };
         globalThis.__walker = (x, y) => { const e = __ant(x, y); e.moveSpeed = e.baseMoveSpeed = 0.04; return e; };
-        globalThis.__nextTo = (u, t) => { const s = _cb.slots.get(t), o = _cbSq(u), taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== u).map(e => e[1].x + ',' + e[1].y)), c = [];   /* (u onto a free square next to t's, the nearest to u's own: §2.39's "next to") */
-            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const x = s.x + dx, y = s.y + dy; if ((dx || dy) && !taken.has(x + ',' + y) && _fp.cellsP.has(x + ',' + y) && facilityRoomIdAt(x, y) === _cb.lay.room && facilitySeesFrom(x, y, s.x, s.y)) c.push([Math.hypot(x - o[0], y - o[1]), x, y]); }
+        globalThis.__nextTo = (u, t) => { const s = _cb.slots.get(t), o = _cbSq(u), H = cardHexRoom(), taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== u).map(e => cardHexKey(e[1].x, e[1].y))), c = [];   /* (u onto a free hex next to t's, the nearest to u's own: §2.39's "next to", one of the 6 round it) */
+            for (const [x, y] of cardHexNb(s.x, s.y)) { const k = cardHexKey(x, y); if (!taken.has(k) && H && H.keys.has(k) && facilitySeesFrom(x, y, s.x, s.y)) c.push([Math.hypot(x - o[0], y - o[1]), x, y]); }
             c.sort((p, q) => p[0] - q[0]); if (!c.length) return false; const [, x, y] = c[0]; _cb.slots.set(u, { x, y }); u.x = x; u.y = y; if (Number.isFinite(u.visualX)) { u.visualX = x; u.visualY = y; } return true; };`);
     const CARD_BATTLE_TETHER = J('CARD_BATTLE.tether');
     check('a battle on: your turn first; everyone in it holds still but the cube; the gun holds its fire; the screen says it is your turn', () => {
@@ -348,14 +348,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                     asked = []; _cbDrag = { foe: a }; _cbFoeTileDraw(fake); o[k + 'Square'] = asked.length + ':' + hs(); _cbDrag = keep.drag;
                     asked = []; const at = fake.screenOf(a.x, a.y, L + CARD_BATTLE.pickH); asked = []; const got = _cbDragFoe({ clientX: at[0], clientY: at[1] }); o[k + 'Pick'] = (got === a) + ':' + hs(); }
                 // a room whose floor is not all one height: each square of it where its own floor is, and a square's corners all at its middle's
-                const sq = _cbSq(a), sx = Math.round(sq[0]), sy = Math.round(sq[1]); facilityLiftPx = (x, y) => (x > sx + 0.2 ? -37 : -61);
+                const sq = _cbSq(a), sx = sq[0], sy = sq[1]; facilityLiftPx = (x, y) => (x > sx + 0.2 ? -37 : -61);
                 asked = []; _cbDrag = { foe: a }; _cbFoeTileDraw(fake); o.slopeSquare = hs(); _cbDrag = keep.drag;
                 asked = []; const t = cardShapeTileAt(sx * 100, sy * 100 + 61, fake); o.tile = t ? [t.x - sx, t.y - sy].join() : null; o.tileAsked = asked.filter(c => c[3] === 'of').every(c => c[2] === facilityLiftPx(c[0], c[1]) || c[2] === facilityLiftPx(Math.round(c[0] - 0.5), c[1]) || c[2] === facilityLiftPx(c[0] - 1, c[1])) && asked.length > 4;
                 o.lift = [cardBattleLift(sx, sy), cardBattleLift(NaN, 1), cardBattleLift(sx + 1, sy)].join();
             } finally { facilityLiftPx = keep.lift; _cbGroundBar = keep.bar; _cbDrag = keep.drag; VIEW3D.view = V0; VIEW3D.showing = S0; if (keep.to) toCanvas = keep.to; }
             cardBattleReset(); return o; })()`);
-        same([r.flatCorners, r.flatBar, r.flatSquare, r.flatPick].join(' | '), '0,20 | 11 | 4:0 | true:30', 'on the lab\'s ground floor: the corners (its feet, its top), the bar\'s dot, the square\'s four corners, the pick (its own height over its feet)');
-        same([r.lowCorners, r.lowBar, r.lowSquare, r.lowPick].join(' | '), '-61,-41 | -50 | 4:-61 | true:-31', 'on a floor 61 px lower each is asked 61 px lower: the corners, the bar\'s dot, the square, the pick');
+        same([r.flatCorners, r.flatBar, r.flatSquare, r.flatPick].join(' | '), '0,20 | 11 | 6:0 | true:30', 'on the lab\'s ground floor: the corners (its feet, its top), the bar\'s dot, the square\'s four corners, the pick (its own height over its feet)');
+        same([r.lowCorners, r.lowBar, r.lowSquare, r.lowPick].join(' | '), '-61,-41 | -50 | 6:-61 | true:-31', 'on a floor 61 px lower each is asked 61 px lower: the corners, the bar\'s dot, the square, the pick');
         same(r.slopeSquare, '-61', 'a square on a slope is not flat (its corners were asked at more than one height)'); same(r.tile, '0,0', 'the floor square under a finger, on a floor not all one height'); same(r.tileAsked, true, 'a square of the room was asked at another\'s height'); same(r.lift, '-61,0,-37', 'the floor\'s height at a point (none for no point)');
         const files = ['js/cardbattle.js', 'js/cardshapes.js', 'js/cardults.js'].map(f => [f, rd(f).split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n')]);
         for (const [f, src] of files) { const calls = src.match(/V\.screen(?:Now|Of)\((?:[^()]|\([^()]*\))*\)/g) || []; ok(calls.length > 0, f + ' asks the view nothing'); for (const c of calls) ok(/, (?:L|L \+ [^,]+|_csLift\([^)]*\)|cardBattleLift\([^)]*\)(?: \+ [^,]+)?)\)$/.test(c), f + ' asks the view for a height with no floor in it: ' + c); }
@@ -404,7 +404,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('a Mage hits from its square, near or far, when it sees the enemy: from next to it (no backing off) and from six tiles (no walking in), and is on its square after', () => {
         const r = J(`(function(){ const one = far => { __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
-                if (far) { const s = _cbSq(a), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 6) < 0.6 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0]; if (!c) return null; _cb.slots.set(f, { x: c[0], y: c[1] }); f.x = c[0]; f.y = c[1]; }
+                if (far) { const s = _cbSq(a), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = cardHexRoom().cells.filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 6) < 0.6 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0]; if (!c) return null; _cb.slots.set(f, { x: c[0], y: c[1] }); f.x = c[0]; f.y = c[1]; }
                 else __nextTo(f, a);
                 const s = _cb.slots.get(f), d = Math.hypot(s.x - _cbSq(a)[0], s.y - _cbSq(a)[1]), h0 = a.health, played = cardBattlePlay(f, 'basic', null, a), walk = cardBattleTurnInfo().walk; let left = 0;
                 for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); left = Math.max(left, Math.hypot(f.x - s.x, f.y - s.y)); }
@@ -414,7 +414,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('one that cannot see the enemy from its square (a wall or a tall object in the way) walks to the nearest square it can, the fewest steps', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
-            const s = _cbSq(f), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.round(x0) === s[0] && Math.round(y0) === s[1]) && keep(x0, y0, x1, y1); };   /* (as if a tall object stood between its square and the enemy) */
+            const s = _cbSq(f), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.abs(x0 - s[0]) < 0.01 && Math.abs(y0 - s[1]) < 0.01) && keep(x0, y0, x1, y1); };   /* (as if a tall object stood between its square and the enemy) */
             let o; try { o = { can: _cbCanHit(f, a, 'basic'), played: cardBattlePlay(f, 'basic', null, a), walk: cardBattleTurnInfo().walk }; } finally { facilitySeesFrom = keep; } return o; })()`);
         same(JSON.stringify([r.can, r.played, r.walk]), '[false,true,1]', 'out of sight from its square; played: a walk of one square');
     });
@@ -427,10 +427,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the walk keeps to the battle\'s room and the floor, never onto or through a taken square (its own side\'s too: the owner, 2026-11-18, "Make sure that they avoid interactions with their teammates"), no further than its tiles; boxed in by its own side it has no way', () => {
         const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
             const room = _cb.lay.room, bad = [];
-            for (const f of followers) { f.role = 'brawler'; const all = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y)); for (const t of [a, b, c]) { const w = _cbWalkPath(f, t, 'basic'); if (!w) continue; let p = _cbSq(f);
-                if (w.length > _cbTiles(f)) bad.push('too long'); if (all.has(w[w.length - 1].join())) bad.push('ends on a square');
-                for (const q of w) { if (all.has(q.join())) bad.push('through a taken square'); if (facilityRoomIdAt(q[0], q[1]) !== room) bad.push('off the room'); if (Math.max(Math.abs(q[0] - p[0]), Math.abs(q[1] - p[1])) !== 1 || !_fpEdgeOk(p[0], p[1], q[0], q[1])) bad.push('not a step'); p = q; } } }
-            const f = followers[0], s = _cbSq(f); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (dx || dy) { _cb.slots.set({ dead: false, health: 1 }, { x: s[0] + dx, y: s[1] + dy }); }   /* (boxed in by its own side: no way round, none through) */
+            for (const f of followers) { f.role = 'brawler'; const all = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => cardHexKey(e[1].x, e[1].y))); for (const t of [a, b, c]) { const w = _cbWalkPath(f, t, 'basic'); if (!w) continue; let p = _cbSq(f);
+                if (w.length > _cbTiles(f)) bad.push('too long'); if (all.has(cardHexKey(...w[w.length - 1]))) bad.push('ends on a hex');
+                for (const q of w) { if (all.has(cardHexKey(q[0], q[1]))) bad.push('through a taken hex'); if (facilityRoomIdAt(q[0], q[1]) !== room) bad.push('off the room'); if (Math.abs(Math.hypot(q[0] - p[0], q[1] - p[1]) - 1) > 1e-6 || !_cbHexEdgeOk(p[0], p[1], q[0], q[1])) bad.push('not a step'); p = q; } } }
+            const f = followers[0], s = _cbSq(f); for (const [x, y] of cardHexNb(s[0], s[1])) { _cb.slots.set({ dead: false, health: 1 }, { x, y }); }   /* (boxed in by its own side: no way round, none through) */
             return { bad: [...new Set(bad)], boxed: !!_cbWalkPath(f, a, 'basic') }; })()`);
         same(r.bad.join('; '), '', 'the walks'); same(r.boxed, false, 'boxed in by its own side, it walked through');
     });
@@ -444,7 +444,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a striker\'s LEAP STRIKE ready, one of yours 2 to 4 tiles off: its turn is the leap, not a walk; where it lands is its square ("They jump and create new positioning")', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5;
             const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
-            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
+            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = cardHexRoom().cells.filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
             if (!c) return { none: true }; _cb.slots.set(f, { x: c[0], y: c[1] }); f.x = c[0]; f.y = c[1];
             initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; f.alt = null;
             cardBattlePlay(f, 'basic', null, st); let sp = false, walk = 0, flew = false;
@@ -489,7 +489,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a pounce still goes over the front line (the owner: "unless they have some sort of ranged attack or pounce attack"): a striker with its LEAP STRIKE ready, a Brawler next to it and a Mage 3 tiles off, leaps at the Mage', () => {
         const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [m, b] = followers; m.role = 'sniper'; b.role = 'brawler'; m.health = m.maxHealth = b.health = b.maxHealth = 5000;
             const st = spawnCreature({ species: 'ant', className: 'striker', level: 5 }); { const c = _fpNearestCellOpen(player.x + 2, player.y); st.x = c[0]; st.y = c[1]; } st.spawnProtection = 0; st.health = st.maxHealth = 9999; cardBattleChoose(st); __ticks(1);
-            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = partyRoomCells(_cb.lay.room).filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
+            const s = _cbSq(st), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)), c = cardHexRoom().cells.filter(c => !taken.has(c[0] + ',' + c[1]) && Math.abs(Math.hypot(c[0] - s[0], c[1] - s[1]) - 3) < 0.45 && facilitySeesFrom(c[0], c[1], s[0], s[1]))[0];
             if (!c) return { none: true }; _cb.slots.set(m, { x: c[0], y: c[1] }); m.x = c[0]; m.y = c[1]; __nextTo(b, st);
             initAbility(st); st.abilityPhase = 'ready'; st.abilityCharge = 100; const front = _cbFront(st, [m, b, player]) === b;
             _cbFoesTurn(false); let picked = null, flew = false; for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().actor === st; i++) { if (st.abilityPhase === 'winding' && !picked) picked = st.strikeTarget === m ? 'the Mage' : st.strikeTarget === b ? 'the Brawler' : 'another'; if ((st.leapLift || 0) > 5) flew = true; __live(1); }
@@ -559,7 +559,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const L = _cb.lay, along = u => { const s = _cbSq(u); return (s[0] - L.mx) * L.ux + (s[1] - L.my) * L.uy; }, o = { tank: along(t), reckless: along(m), cautious: along(b), you: along(player), gap: CARD_BATTLE.lineGap, up: CARD_BATTLE.upFront, order: _cbFrontFirst([b, m, t]).map(f => f === t ? 'tank' : f === m ? 'reckless' : 'cautious').join() };
             for (const f of [t, m, b]) f.playStyle = undefined; __fresh(3); const B = __tanks(); B.b.playStyle = 'defensive'; const a2 = __ant(player.x + 2.4, player.y); cardBattleChoose(a2); __ticks(1); const L2 = _cb.lay, al = u => { const s = _cbSq(u); return (s[0] - L2.mx) * L2.ux + (s[1] - L2.my) * L2.uy; };
             o.second = { cautiousBrawler: al(B.b), balancedTech: al(B.t), balancedMage: al(B.m), you: al(player) }; B.b.playStyle = undefined; return o; })()`);
-        same(JSON.stringify([r.tank, r.reckless]), JSON.stringify([-(r.gap - r.up), -(r.gap - r.up)].map(x => x || 0)), 'the TANK and the RECKLESS Mage, from the middle of the line (side by side, ' + r.up + ' squares ahead of its front at ' + (-r.gap) + ')');
+        ok([r.tank, r.reckless].every(x => Math.abs(x + (r.gap - r.up)) <= 0.5 + 1e-9), 'the TANK and the RECKLESS Mage, from the middle of the line (side by side, ' + r.up + ' ahead of its front at ' + (-r.gap) + '; on the hexes the one beside half a hex over): ' + JSON.stringify([r.tank, r.reckless]));
         ok(r.cautious < r.tank && r.you < r.cautious, 'the CAUTIOUS Brawler behind them, you last: ' + JSON.stringify(r)); same(r.order, 'tank,reckless,cautious', 'the order');
         const q = r.second; ok(q.balancedTech > q.balancedMage && q.balancedMage > q.cautiousBrawler && q.cautiousBrawler > q.you, 'a CAUTIOUS Brawler behind the BALANCED technician and Mage, before you: ' + JSON.stringify(q));
     });
@@ -579,7 +579,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('CAUTIOUS walks to the farthest square it can hit from (a Mage that cannot see from its own square); BALANCED, the fewest steps', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
-            const s = _cbSq(f), q = _cbSq(a), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.round(x0) === s[0] && Math.round(y0) === s[1]) && keep(x0, y0, x1, y1); };   /* (it cannot see the ant from its own square: it must walk) */
+            const s = _cbSq(f), q = _cbSq(a), keep = facilitySeesFrom; facilitySeesFrom = function (x0, y0, x1, y1) { return !(Math.abs(x0 - s[0]) < 0.01 && Math.abs(y0 - s[1]) < 0.01) && keep(x0, y0, x1, y1); };   /* (it cannot see the ant from its own square: it must walk) */
             const end = () => { const w = _cbWalkPath(f, a, 'basic'), e = w[w.length - 1]; return { steps: w.length, d: +Math.hypot(e[0] - q[0], e[1] - q[1]).toFixed(2), sees: _cbHitsFrom(e[0], e[1], f, a, 'basic') }; };
             let o; try { f.playStyle = undefined; const bal = end(); f.playStyle = 'defensive'; const cau = end(); o = { bal, cau }; } finally { facilitySeesFrom = keep; f.playStyle = undefined; } return o; })()`);
         same(JSON.stringify([r.bal.steps, r.bal.sees, r.cau.sees]), '[1,true,true]', 'BALANCED one step; both can hit from where they stop');
@@ -589,7 +589,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'brawler'; f.moveSpeed = f.baseMoveSpeed = 0.028;
             const a = __ant(player.x + 2.4, player.y - 0.6), b = __ant(player.x + 3, player.y + 0.7), c = __ant(player.x + 2.2, player.y + 1.4); cardBattleChoose(a); __ticks(1);
             const q = _cbSq(a), taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y)), tries = [];
-            for (const cell of partyRoomCells(_cb.lay.room)) { const dd = Math.max(Math.abs(cell[0] - q[0]), Math.abs(cell[1] - q[1])); if (dd < 2 || dd > 3 || taken.has(cell[0] + ',' + cell[1])) continue;
+            for (const cell of cardHexRoom().cells) { const dd = Math.max(Math.abs(cell[0] - q[0]), Math.abs(cell[1] - q[1])); if (dd < 2 || dd > 3 || taken.has(cell[0] + ',' + cell[1])) continue;
                 _cb.slots.set(f, { x: cell[0], y: cell[1] }); f.x = cell[0]; f.y = cell[1]; if (_cbCanHit(f, a, 'basic')) continue;
                 f.playStyle = undefined; const w0 = _cbWalkPath(f, a, 'basic'); f.playStyle = 'aggressive'; const w1 = _cbWalkPath(f, a, 'basic'); f.playStyle = undefined; if (!w0 || !w1) continue;
                 const e0 = w0[w0.length - 1], e1 = w1[w1.length - 1]; if (!_cbHitsFrom(e0[0], e0[1], f, a, 'basic') || !_cbHitsFrom(e1[0], e1[1], f, a, 'basic')) continue;
@@ -617,10 +617,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run(`/* two of yours on the line to the enemy, f four squares from it and g two, in front of f: a battle of brawlers (f quick) */
         globalThis.__behind = () => { __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const [f, g] = followers; f.role = g.role = 'brawler'; f.health = f.maxHealth = g.health = g.maxHealth = 1e5;
             f.moveSpeed = f.baseMoveSpeed = 0.028; const a = __ant(player.x + 2, player.y); a.health = a.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
-            const qa = _cbSq(a), L = _cb.lay, sq = k => [qa[0] - L.ux * k, qa[1] - L.uy * k], room = new Set(partyRoomCells(L.room).map(c => c.join())), fs = sq(4), gs = sq(2);
+            const qa = _cbSq(a), L = _cb.lay, sq = k => cardHex(qa[0] - L.ux * k, qa[1] - L.uy * k * CB_HEX_H), room = new Set(cardHexRoom().cells.map(c => c.join())), fs = sq(4), gs = sq(2);
             if (![1, 2, 3, 4].every(k => room.has(sq(k).join()))) return null;
             for (const [u, q] of [[f, fs], [g, gs]]) { _cb.slots.set(u, { x: q[0], y: q[1] }); u.x = q[0]; u.y = q[1]; }
-            for (const [u, s] of [..._cb.slots]) if (u !== f && u !== g && u !== a && [1, 2, 3, 4].some(k => sq(k)[0] === s.x && sq(k)[1] === s.y)) { const c = partyRoomCells(L.room).find(c => ![..._cb.slots.values()].some(t => t.x === c[0] && t.y === c[1]) && ![1, 2, 3, 4].some(k => sq(k).join() === c.join())); if (c) { _cb.slots.set(u, { x: c[0], y: c[1] }); u.x = c[0]; u.y = c[1]; } }
+            for (const [u, s] of [..._cb.slots]) if (u !== f && u !== g && u !== a && [1, 2, 3, 4].some(k => sq(k)[0] === s.x && sq(k)[1] === s.y)) { const c = cardHexRoom().cells.find(c => ![..._cb.slots.values()].some(t => t.x === c[0] && t.y === c[1]) && ![1, 2, 3, 4].some(k => sq(k).join() === c.join())); if (c) { _cb.slots.set(u, { x: c[0], y: c[1] }); u.x = c[0]; u.y = c[1]; } }
             while (_cbCurrent() && _cbCurrent() !== f) _cb.acted.add(_cbCurrent());
             return { f, g, a, sq, gs }; };`);
     check('a follower behind a teammate on its way to the enemy walks round it: no square of its walk is taken, and its turn is over in moments, on its new square (it froze 10 s, held 0.75 tiles short of the square it shared)', () => {
@@ -639,7 +639,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('an enemy behind another on its way walks round it too', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0]; f.role = 'sniper'; f.health = f.maxHealth = 1e5; const a = __walker(player.x + 2, player.y), b = __walker(player.x + 3, player.y); a.health = a.maxHealth = b.health = b.maxHealth = 9999; cardBattleChoose(a); __ticks(1);
-            const qf = _cbSq(f), L = _cb.lay, sq = k => [qf[0] + L.ux * k, qf[1] + L.uy * k], room = new Set(partyRoomCells(L.room).map(c => c.join()));
+            const qf = _cbSq(f), L = _cb.lay, sq = k => cardHex(qf[0] + L.ux * k, qf[1] + L.uy * k * CB_HEX_H), room = new Set(cardHexRoom().cells.map(c => c.join()));
             if (![1, 2, 3, 4].every(k => room.has(sq(k).join()))) return null;
             for (const [u, q] of [[b, sq(2)], [a, sq(4)]]) { _cb.slots.set(u, { x: q[0], y: q[1] }); u.x = q[0]; u.y = q[1]; }
             const taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== a).map(e => e[1].x + ',' + e[1].y)), w = _cbWalkPath(a, f, 'basic');
@@ -648,18 +648,22 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE TILE ATTACKS (§2.48; the owner: "The shape decides who\'s hit", "From what each attack does now"; of the page of every card\'s shape: "Approve and push the new tile attack")');
-    run(`/* a battle of one follower of form 'form' (none: an egg) and enemies at offsets [dx, dy] from its square, every one on a floor square it sees; { f, foes, P } */
+    run(`/* a battle of one follower of form 'form' (none: an egg) and enemies at offsets [dx, dy] from its hex, every one on a hex of the floor it sees; { f, foes, P }. AN OFFSET ON THE HEXES: dy rows
+           down (y, √3/2 apart), dx hexes along (x, 1 apart), half a hex more along on an odd row: [1, 0] and [0, 1] are both next to it, [1, 1] and [2, 0] two out */
+        globalThis.__onHex = (x, y) => { const h = cardHex(x, y); return Math.hypot(h[0] - x, h[1] - y) < 1e-6; };
+        globalThis.__off = (c, o) => [c[0] + o[0] + (Math.abs(o[1]) % 2) * 0.5, c[1] + o[1] * CB_HEX_H];
+        globalThis.__rel = (u, P) => { const s = _cbSq(u), r = Math.round((s[1] - P[1]) / CB_HEX_H); return [+(s[0] - P[0] - (Math.abs(r) % 2) * 0.5).toFixed(3), r]; };   /* (an offset back) */
         globalThis.__shaped = (form, offs, free) => { __fresh(1); elementEffects.length = 0; followerProjectiles.length = 0; rotDecoys.length = 0; CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const f = followers[0];
             if (form) { f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); }
             f.health = f.maxHealth = 1e6;
             const foes = offs.map((o, i) => { const e = __ant(player.x + 2 + i * 0.4, player.y + (i % 2)); e.health = e.maxHealth = 9999; return e; });
             cardBattleChoose(foes[0]); __ticks(1); if (!_cb.lay) return null;
-            const room = new Set(partyRoomCells(_cb.lay.room).map(c => c.join())), mid = [_cb.lay.mx, _cb.lay.my], want = offs.concat([[0, 0]], free || []);   /* (free: squares of the floor, in sight, that nobody is put on) */
-            const cells = partyRoomCells(_cb.lay.room).slice().sort((p, q) => Math.hypot(p[0] - mid[0], p[1] - mid[1]) - Math.hypot(q[0] - mid[0], q[1] - mid[1]));
-            const P = cells.find(c => want.every(o => room.has((c[0] + o[0]) + ',' + (c[1] + o[1])) && facilitySeesFrom(c[0], c[1], c[0] + o[0], c[1] + o[1]))); if (!P) return null;
-            const put = (a, x, y) => { _cb.slots.set(a, { x, y }); a.x = x; a.y = y; if (Number.isFinite(a.visualX)) { a.visualX = x; a.visualY = y; } }, used = new Set(want.map(o => (P[0] + o[0]) + ',' + (P[1] + o[1])));
-            for (const [a] of [..._cb.slots]) { if (a === f || foes.indexOf(a) >= 0) continue; const c = cells.slice().reverse().find(c => !used.has(c.join())); if (c) { used.add(c.join()); put(a, c[0], c[1]); } }
-            put(f, P[0], P[1]); foes.forEach((a, i) => put(a, P[0] + offs[i][0], P[1] + offs[i][1]));
+            const H = cardHexRoom(), room = H.keys, mid = [_cb.lay.mx, _cb.lay.my], want = offs.concat([[0, 0]], free || []);   /* (free: hexes of the floor, in sight, that nobody is put on) */
+            const cells = H.cells.slice().sort((p, q) => Math.hypot(p[0] - mid[0], p[1] - mid[1]) - Math.hypot(q[0] - mid[0], q[1] - mid[1]));
+            const P = cells.find(c => want.every(o => { const q = __off(c, o); return room.has(cardHexKey(q[0], q[1])) && facilitySeesFrom(c[0], c[1], q[0], q[1]); })); if (!P) return null;
+            const put = (a, x, y) => { _cb.slots.set(a, { x, y }); a.x = x; a.y = y; if (Number.isFinite(a.visualX)) { a.visualX = x; a.visualY = y; } }, used = new Set(want.map(o => cardHexKey(...__off(P, o))));
+            for (const [a] of [..._cb.slots]) { if (a === f || foes.indexOf(a) >= 0) continue; const c = cells.slice().reverse().find(c => !used.has(cardHexKey(c[0], c[1]))); if (c) { used.add(cardHexKey(c[0], c[1])); put(a, c[0], c[1]); } }
+            put(f, P[0], P[1]); foes.forEach((a, i) => { const q = __off(P, offs[i]); put(a, q[0], q[1]); });
             return { f, foes, P }; };
         /* play a card and run its turn: the damage each enemy took in it */
         globalThis.__card = (f, kind, id, target, foes) => { const h0 = foes.map(a => a.health), played = cardBattlePlay(f, kind, id, target), T = _cb.turn, S = T && T.shape; let n = 0;
@@ -677,7 +681,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the sizes are the attacks\' own (the page\'s): STAKE RING 8 squares, BRIAR SWEEP and GRAVITY SLAM 12, ERUPTION 20, ECHO PULSE 48; MAELSTROM and MAGMA VENT 3×3, HEXFIRE a cross of 5, STATIC VORTEX 21', () => {
         const r = J(`[STAKE_RADIUS, BRIAR_RADIUS, MIMIC_RADIUS, CALDERA_RADIUS, ECHO_RADIUS].map(x => _csDisc(0, 0, x, true).length).concat([MAEL_RADIUS, MAGMA_RADIUS, HALO_RADIUS, VORTEX_RADIUS].map(x => _csDisc(0, 0, x, false).length))`);
-        same(r.join(), '8,12,12,20,48,9,9,5,21', 'the squares');
+        same(r.join(), '12,18,18,18,60,13,7,7,19', 'the squares');
     });
     check('one target: a Brawler\'s everyday hit hurts only the enemy it is dropped on, not the one beside it; a Mage\'s shot only the one it is dropped on, not one in front of it', () => {
         const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0], [1, 1]]), B = A && __card(A.f, 'basic', null, A.foes[0], A.foes), C = __shaped('rimestar', [[2, 0], [4, 0]]), D = C && __card(C.f, 'basic', null, C.foes[1], C.foes); return [B, D]; })()`);
@@ -686,15 +690,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a ring round itself (WOBBLE SLAM, played anywhere): the enemies on its squares are hurt, one a square beyond it is not; with none on them it is not played, the card still ready', () => {
         const r = J(`(function(){ const A = __shaped('jellyram', [[1, 0], [-1, 1], [2, 0]]); if (!A) return null; const o = __card(A.f, 'move', 'wobble_slam', null, A.foes);
             const B = __shaped('jellyram', [[3, 0]]), p = cardBattlePlay(B.f, 'move', 'wobble_slam', null); return { o, empty: [p, _cb.say && _cb.say.text, cardBattleCards(B.f).find(c => c.id === 'wobble_slam').ready] }; })()`);
-        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hit, r.o.hurt]), '[true,8,"110"]', 'played, its 8 squares, who was hurt'); same(r.empty[0], false, 'played with nobody in it'); ok(/NO ENEMY IN ITS SQUARES/.test(r.empty[1]) && r.empty[2] === true, 'the banner and the card: ' + JSON.stringify(r.empty));
+        ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hit, r.o.hurt]), '[true,6,"110"]', 'played, its 8 squares, who was hurt'); same(r.empty[0], false, 'played with nobody in it'); ok(/NO ENEMY IN ITS HEXES/.test(r.empty[1]) && r.empty[2] === true, 'the banner and the card: ' + JSON.stringify(r.empty));
     });
     check('a chain (SONIC ROLL): its target and the next two each within its hop of the last; one farther off is not hurt', () => {
         const r = J(`(function(){ const A = __shaped('staticorb', [[2, 0], [3, 1], [4, 2], [2, -3]]); return A && __card(A.f, 'move', 'static_rush', A.foes[0], A.foes); })()`);
         ok(r, 'no room'); same(JSON.stringify([r.played, r.mask, r.hurt]), '[true,"0,1,2","1110"]', 'played, its chain, who was hurt');
     });
     check('paths: EMBER SLASH along the line through its target, not the one beside it; ZIGZAG DASH every enemy on its zigzag, not one off it', () => {
-        const r = J(`(function(){ const A = __shaped('quillstone', [[1, 0], [3, 0], [2, 1]]), a = A && __card(A.f, 'move', 'ember_slash', A.foes[0], A.foes), B = __shaped('electroskink', [[1, -1], [2, 0], [3, -1], [2, 2]]), b = B && __card(B.f, 'move', 'zigzag_dash', B.foes[1], B.foes); return [a, b]; })()`);
-        ok(r[0] && r[1], 'no room'); same(r[0].hurt, '110', 'EMBER SLASH'); same(JSON.stringify([r[1].hit, r[1].hurt]), '[3,"1110"]', 'ZIGZAG DASH (its zigzag stops at a wall)');
+        const r = J(`(function(){ const A = __shaped('quillstone', [[1, 0], [3, 0], [2, 1]]), a = A && __card(A.f, 'move', 'ember_slash', A.foes[0], A.foes), B = __shaped('electroskink', [[0, -1], [2, 0], [2, -1], [2, 2]], [[1, 0], [1, -1], [3, 0], [3, -1], [4, 0]]), b = B && __card(B.f, 'move', 'zigzag_dash', B.foes[1], B.foes); return [a, b]; })()`);
+        ok(r[0] && r[1], 'no room'); same(r[0].hurt, '110', 'EMBER SLASH'); ok(r[1].hit >= 3, 'ZIGZAG DASH: its zigzag ' + r[1].hit); same(r[1].hurt, '1110', 'ZIGZAG DASH: every enemy on its zigzag (side to side hex by hex), not the one off it');
     });
     check('ZIGZAG DASH ends on a new square (§2.57; the owner: "they should end up in a different location than when they started it"): the farthest free square of its zigzag; its zigzag all taken, the free square nearest the last it struck; on the floor, and it stays there', () => {
         const r = J(`(function(){ const one = (offs, at) => { const A = __shaped('electroskink', offs); if (!A) return null; const f = A.f, s0 = _cbSq(f).join();
@@ -702,13 +706,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const want = S.hit.slice().reverse().find(c => !taken.has(c.join()) && c.join() !== s0), last = S.hit[S.hit.length - 1]; cardBattlePlay(f, 'move', 'zigzag_dash', A.foes[at]);
                 for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); __live(30); const s1 = _cbSq(f);   /* (a moment after its turn: settled on its square) */
                 return { s0, s1: s1.join(), want: want ? want.join() : null, fromLast: +Math.hypot(s1[0] - last[0], s1[1] - last[1]).toFixed(2), floor: facilityWalkable(s1[0], s1[1], _fp.F), at: +Math.hypot(f.x - s1[0], f.y - s1[1]).toFixed(3) }; };
-            return { open: one([[1, -1], [2, 0]], 1), full: one([[1, -1], [2, 0], [3, -1], [4, 0]], 1) }; })()`);
+            return { open: one([[0, -1], [2, 0]], 1), full: one([[0, -1], [2, 0], [2, -1], [4, 0]], 1) }; })()`);
         for (const k of ['open', 'full']) { const o = r[k]; ok(o, 'no room (' + k + ')'); ok(o.s1 !== o.s0, k + ': it ended where it started, ' + o.s0); same(JSON.stringify([o.floor, o.at < 0.05]), '[true,true]', k + ': on the floor, on its square'); }
         ok(r.open.want, 'the setup: no free square on its zigzag'); same(r.open.s1, r.open.want, 'its new square (the farthest free one of its zigzag)');
         same(r.full.want, null, 'the setup: a free square on its zigzag'); ok(r.full.fromLast <= 2.3, 'its zigzag all taken: by the last it struck (' + r.full.fromLast + ' from its zigzag\'s end)');
     });
     check('a move that carries its follower leaves it where it was carried (SKATE CHARGE: its new square by its dash\'s end, not eased back by its start)', () => {
-        const r = J(`(function(){ const A = __shaped('igloo', [[2, 0], [3, 0]]); if (!A) return null; const f = A.f, s0 = _cbSq(f); cardBattlePlay(f, 'move', 'skate_charge', A.foes[0]); const end = [f.x, f.y];
+        const r = J(`(function(){ const A = __shaped('igloo', [[2, 0], [3, 0]], [[1, 0], [4, 0], [5, 0]]); if (!A) return null; const f = A.f, s0 = _cbSq(f); cardBattlePlay(f, 'move', 'skate_charge', A.foes[0]); const end = [f.x, f.y];
             for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); const s1 = _cbSq(f);
             return { moved: +Math.hypot(end[0] - s0[0], end[1] - s0[1]).toFixed(2), fromEnd: +Math.hypot(s1[0] - end[0], s1[1] - end[1]).toFixed(2), fromStart: +Math.hypot(s1[0] - s0[0], s1[1] - s0[1]).toFixed(2) }; })()`);
         ok(r, 'no room'); ok(r.moved >= 3, 'the dash carried it ' + r.moved); ok(r.fromEnd <= 1.5 && r.fromStart >= 2, 'its new square: ' + r.fromEnd + ' from where the dash ended, ' + r.fromStart + ' from where it started');
@@ -718,7 +722,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r, 'no room'); same(JSON.stringify([r.played, r.hurt]), '[true,"101"]', 'played; who was hurt');
     });
     check('a blast on a floor square (MAELSTROM): it opens on the square it is let go on and hurts only the enemies in its area; it stays 2 enemy turns, biting at the start of each and never between, and closes as your next turn comes', () => {
-        const r = J(`(function(){ const A = __shaped('voidstar', [[4, 0], [5, 1], [4, -2]]); if (!A) return null; const bites = () => A.foes.map(a => Math.round((9999 - a.health) * 10));
+        const r = J(`(function(){ const A = __shaped('voidstar', [[4, 0], [5, 1], [4, -3]]); if (!A) return null; const bites = () => A.foes.map(a => Math.round((9999 - a.health) * 10));
             cardBattlePlay(A.f, 'move', 'maelstrom', { x: A.P[0] + 4, y: A.P[1], tile: true }); const e = elementEffects.find(e => e.type === 'maelstrom'), o = { at: e ? [e.x - A.P[0], e.y - A.P[1]] : null, cast: bites(), log: [] };
             for (let k = 0; k < 3; k++) { for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you'); i++) __live(1); const t0 = bites(); __live(240); o.log.push([t0, JSON.stringify(bites()) === JSON.stringify(t0), elementEffects.indexOf(e) >= 0]); cardBattlePlay(A.f, 'basic', null, A.foes[2]); for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); }
             return o; })()`);
@@ -730,9 +734,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const A = __shaped('hammerslug', [[1, 0], [2, 2], [0, 4]]); if (!A) return null; A.foes[0].moveSpeed = A.foes[0].baseMoveSpeed = 0.04;
             cardBattleHurt(A.foes[0], player, 500); const o = __card(A.f, 'move', 'shell_guard', null, A.foes), prey = []; o.drawn = A.foes.map(a => a._scentBy === A.f ? 1 : 0).join(''); o.braced = A.f._guardUntil > frame;
             for (let i = 0; i < 3000 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'foe'; i++) { const t = _cb.turn; if (t.a === A.foes[0] && !prey.length) prey.push(t.a.currentTarget === A.f ? 'it' : 'another'); __live(1); }
-            const B = __shaped('rotshard', [[4, 0], [5, 1]]); for (const a of B.foes) a.moveSpeed = a.baseMoveSpeed = 0.04; cardBattlePlay(B.f, 'move', 'rotten_decoy', { x: B.P[0] + 2, y: B.P[1] + 1, tile: true }); const d = rotDecoys[0], went = [];
+            const B = __shaped('rotshard', [[4, 0], [5, 1]]); for (const a of B.foes) a.moveSpeed = a.baseMoveSpeed = 0.04; const dq = __off(B.P, [2, 1]); cardBattlePlay(B.f, 'move', 'rotten_decoy', { x: dq[0], y: dq[1], tile: true }); const d = rotDecoys[0], went = [];
             for (let i = 0; i < 3000; i++) { const t = _cb.turn; if (t && t.who === 'foe' && t.a && went.indexOf(t.a) < 0 && t.a.currentTarget === d) went.push(t.a); if (t && t.who === 'you' && i > 30) break; __live(1); }
-            return { o, prey: prey[0], decoy: d ? [d.x - B.P[0], d.y - B.P[1]] : null, went: went.length }; })()`);
+            return { o, prey: prey[0], decoy: d ? __rel(d, B.P) : null, went: went.length }; })()`);
         ok(r, 'no room'); same(JSON.stringify([r.o.played, r.o.hurt, r.o.drawn, r.o.braced]), '[true,"000","110",true]', 'played, nobody hurt, who was drawn (the third 4 squares off), braced');
         same(r.prey, 'it', 'the one it drew, hurt more by you, went for'); same(JSON.stringify(r.decoy), '[2,1]', 'the decoy set at'); same(r.went, 2, 'the enemies that went for the decoy');
     });
@@ -758,7 +762,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const B = __shaped('voidstar', [[4, 0]]), T = { x: B.P[0] + 4, y: B.P[1], tile: true }; _cbDrag = { f: B.f, kind: 'move', id: 'maelstrom', aim: T, col: '#cc88ff' }; cardShapeDraw(V); const blast = fills, area = cardShapeFor(B.f, 'move', 'maelstrom', T).hit.length; fills = 0;
                 _cbDrag = { f: B.f, kind: 'move', id: 'maelstrom', aim: null }; cardShapeDraw(V); return { ring, blast, area, gold, none: fills }; }
             finally { ctx.fill = kf; ctx.stroke = ks; _cbDrag = null; } })()`);
-        ok(r, 'no room'); same(r.ring, 8, 'WOBBLE SLAM\'s squares lit'); ok(r.blast >= 1 && r.blast === r.area, 'MAELSTROM\'s squares lit: ' + r.blast + ' of its ' + r.area); same(r.gold, 1, 'its square in gold'); same(r.none, 0, 'with nothing under the finger');
+        ok(r, 'no room'); same(r.ring, 6, 'WOBBLE SLAM\'s hexes lit'); ok(r.blast >= 1 && r.blast === r.area, 'MAELSTROM\'s squares lit: ' + r.blast + ' of its ' + r.area); same(r.gold, 1, 'its square in gold'); same(r.none, 0, 'with nothing under the finger');
     });
 
     check('the numbers (the owner, 2026-11-18): a hit on an enemy in a battle is tagged; its bar shows the health before it until the number lands, then the health after; a hit on one of yours is tagged and cuts no bar; out of a battle nothing is tagged', () => {
@@ -832,8 +836,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const a = __ant(player.x + 2, player.y); cardBattleChoose(a); __ticks(1);
             const q = _cbSq(a), fills = []; let path = []; const saved = ctx; const fake = { save(){}, restore(){}, setTransform(){}, beginPath(){ path = []; }, closePath(){}, moveTo(x, y){ path.push([x, y]); }, lineTo(x, y){ path.push([x, y]); }, fill(){ fills.push({ s: this.fillStyle, p: path.slice() }); }, stroke(){} };
             const V = { screenNow: (x, y) => [x * 50, y * 50] }; _cbDrag = { foe: a }; ctx = fake; try { _cbFoeTileDraw(V); } finally { ctx = saved; }
-            const sq = fills.find(f => f.s === '#ffe733'), cx = sq ? sq.p.reduce((s, c) => s + c[0], 0) / 4 / 50 : null, cy = sq ? sq.p.reduce((s, c) => s + c[1], 0) / 4 / 50 : null;
-            _cbDrag = null; return { lit: !!sq, on: sq && Math.abs(cx - Math.round(q[0])) < 1e-6 && Math.abs(cy - Math.round(q[1])) < 1e-6 }; })()`);
+            const sq = fills.find(f => f.s === '#ffe733'), cx = sq ? sq.p.reduce((s, c) => s + c[0], 0) / sq.p.length / 50 : null, cy = sq ? sq.p.reduce((s, c) => s + c[1], 0) / sq.p.length / 50 : null;
+            _cbDrag = null; return { lit: !!sq, on: sq && sq.p.length === 6 && Math.abs(cx - q[0]) < 1e-6 && Math.abs(cy - q[1]) < 1e-6 }; })()`);
         same(r.lit, true, 'its square lit'); same(r.on, true, 'the square it stands on');
         const c = rd('js/cardbattle.js');
         same(/const foe = _cbDragFoe\(ev\) \|\| _cbFoeOnTileAt\(ev\),/.test(c) && /if \(_cbOverBand\(ev\)\) \{ D\.foe = null; return null; \}/.test(c) && /if \(V\) _cbFoeTileDraw\(V\);/.test(c), true, 'wired: over its square counts; back over the cards nothing; drawn with the battle\'s marks');
@@ -842,21 +846,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE MOVE CARD (§2.56; the owner: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card")');
     check('every follower has a MOVE card, always ready like its basic attack, its reach its tiles by its pace; one with no pace cannot use it', () => {
         const r = J(`(function(){ __fresh(2); const [f, g] = followers; f.moveSpeed = f.baseMoveSpeed = 0.028; g.moveSpeed = g.baseMoveSpeed = 0; const c = cardBattleCards(f).find(x => x.kind === 'walk'), d = cardBattleCards(g).find(x => x.kind === 'walk');
-            return { c: c && [c.tag, c.name, c.ready, c.tiles, /3 squares/.test(c.fx)], html: c && /UP TO 3 SQUARES/.test(_cbCardHTML(c)) && /data-kind="walk"/.test(_cbCardHTML(c)), d: d && [d.ready, /NO PACE/.test(_cbCardHTML(d))] }; })()`);
+            return { c: c && [c.tag, c.name, c.ready, c.tiles, /3 hexes/.test(c.fx)], html: c && /UP TO 3 HEXES/.test(_cbCardHTML(c)) && /data-kind="walk"/.test(_cbCardHTML(c)), d: d && [d.ready, /NO PACE/.test(_cbCardHTML(d))] }; })()`);
         same(JSON.stringify(r.c), '["MOVE","MOVE",true,3,true]', 'its card (tag, name, ready, tiles, words)'); same(r.html, true, 'drawn with its reach'); same(JSON.stringify(r.d), '[false,true]', 'one with no pace');
     });
     check('let go on a free square in its reach, it walks there round everyone, that is its square and its turn is over; on a taken square or one out of reach nothing is played, the banner says why, the card still ready', () => {
         const r = J(`(function(){ const A = __shaped(null, [[4, 0]]); if (!A) return null; const f = A.f; f.moveSpeed = f.baseMoveSpeed = 0.028; const n = _cbTiles(f), sq = cardBattleWalkSquares(f), P = A.P, o = { n, count: sq.length };
             const say = () => (_cb.say && _cb.say.text || '').replace(/^.* · /, '');
             o.taken = [cardBattlePlay(f, 'walk', null, { x: P[0] + 4, y: P[1], tile: true }), say()];
-            const far = partyRoomCells(_cb.lay.room).find(c => Math.max(Math.abs(c[0] - P[0]), Math.abs(c[1] - P[1])) > n + 1 && ![..._cb.slots.values()].some(s => s.x === c[0] && s.y === c[1]));
+            const far = cardHexRoom().cells.find(c => Math.max(Math.abs(c[0] - P[0]), Math.abs(c[1] - P[1])) > n + 1 && ![..._cb.slots.values()].some(s => s.x === c[0] && s.y === c[1]));
             o.far = far ? [cardBattlePlay(f, 'walk', null, { x: far[0], y: far[1], tile: true }), say()] : null; o.ready = cardBattleCards(f).find(c => c.kind === 'walk').ready;
             const to = sq.slice().sort((p, q) => Math.hypot(q[0] - P[0], q[1] - P[1]) - Math.hypot(p[0] - P[0], p[1] - P[1]))[0], taken = new Set([..._cb.slots.entries()].filter(e => e[0] !== f).map(e => e[1].x + ',' + e[1].y));
             const round0 = _cb.round; o.played = cardBattlePlay(f, 'walk', null, { x: to[0], y: to[1], tile: true }); const w = _cb.turn.walk || []; o.steps = w.length; o.through = w.some(q => taken.has(q.join())); let k = 0;
             for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) { __live(1); k++; }
             const s = _cbSq(f); o.on = s[0] === to[0] && s[1] === to[1]; o.at = +Math.hypot(f.x - s[0], f.y - s[1]).toFixed(3); o.frames = k; o.acted = _cb.acted.has(f) || _cb.round > round0;   /* (its turn had: marked, or the round over already) */ o.next = cardBattleTurnInfo() && cardBattleTurnInfo().who; return o; })()`);
         ok(r, 'no room'); ok(r.n === 3 && r.count > 8, 'its reach: ' + r.n + ' tiles, ' + r.count + ' squares');
-        same(JSON.stringify(r.taken), '[false,"THAT SQUARE IS TAKEN"]', 'on the enemy\'s square'); ok(r.far, 'no square out of reach to try'); same(JSON.stringify(r.far), '[false,"OUT OF ITS REACH"]', 'out of its reach'); same(r.ready, true, 'the card after the refusals');
+        same(JSON.stringify(r.taken), '[false,"THAT HEX IS TAKEN"]', 'on the enemy\'s square'); ok(r.far, 'no square out of reach to try'); same(JSON.stringify(r.far), '[false,"OUT OF ITS REACH"]', 'out of its reach'); same(r.ready, true, 'the card after the refusals');
         same(JSON.stringify([r.played, r.through, r.on, r.acted]), '[true,false,true,true]', 'played; through a taken square; on its new square; its turn had'); ok(r.steps >= 1 && r.steps <= r.n && r.at < 0.01 && r.frames < 150, 'the walk: ' + JSON.stringify(r));
     });
     check('dragged, it lights every square the follower can reach and the one under the finger in gold; in red when it cannot go there', () => {
@@ -934,7 +938,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const one = (form, offs) => { const A = __shaped(form, offs); if (!A) return null; const f = A.f; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, A.foes[0]);
                 const o = { played, turn: _cb.turn && _cb.turn.who, mine: _cbCurrent() === f, acted: _cb.acted.has(f), charge: f.ultimateCharge, say: _cb.say && _cb.say.text }; for (let i = 0; i < 60; i++) __live(1); o.still = !!_cb.turn && _cb.turn.who === 'you' && _cbCurrent() === f; return o; };
             return { slam: one('hammerslug', [[5, 0]]), eat: one('sundew', [[4, 0]]) }; })()`);
-        for (const [k, why] of [['slam', /NO ENEMY IN ITS SQUARES/], ['eat', /OUT OF ITS REACH/]]) { const o = r[k]; ok(o, 'no room (' + k + ')'); same(JSON.stringify([o.played, o.turn, o.mine, o.acted, o.charge, o.still]), '[false,"you",true,false,100,true]', k + ': not played (played, turn, its turn, acted, charge, still its turn after)'); ok(why.test(o.say || ''), k + ': the banner: ' + o.say); }
+        for (const [k, why] of [['slam', /NO ENEMY IN ITS HEXES/], ['eat', /OUT OF ITS REACH/]]) { const o = r[k]; ok(o, 'no room (' + k + ')'); same(JSON.stringify([o.played, o.turn, o.mine, o.acted, o.charge, o.still]), '[false,"you",true,false,100,true]', k + ': not played (played, turn, its turn, acted, charge, still its turn after)'); ok(why.test(o.say || ''), k + ': the banner: ' + o.say); }
     });
     check('every card speaks the battle\'s words, an Ultimate\'s too (js/cardults.js): its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
         const r = J(`(function(){ const bad = [], seen = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { __fresh(1); const f = followers[0]; f.evolved = k; f.element = EVOLUTIONS[k].element; f.role = EVOLUTIONS[k].role; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;
@@ -943,8 +947,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const say = (form, kind, id) => { __fresh(1); const f = followers[0]; f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); return cardBattleCards(f).find(c => c.kind === kind && (!id || c.id === id)).fx; };
                 return { bad, chomp: say('maw', 'move', 'chomp'), hex: say('embercowl', 'move', 'hexfire'), wob: say('jellyram', 'move', 'wobble_slam'), stun: _csTurns(MAW_STUN), base: say('thunderhead', 'basic') }; })()`);
         same(r.bad.join(' / '), '', 'cards not in the battle\'s words');
-        same(r.chomp, 'Its target; the 8 squares round it · frozen ' + r.stun + '; the squares round it slowed 1 turn', 'CHOMP'); ok(/^A cross of 5 squares on a square in reach · burns as it opens and as 2 enemy turns begin$/.test(r.hex), 'HEXFIRE: ' + r.hex);
-        same(r.wob, 'The 8 squares round it · each staggered 1 turn (not a boss)', 'WOBBLE SLAM'); ok(/every enemy within 2\.5 squares of the last · 1 hit in 4: stunned 1 turn$/.test(r.base), 'CHAIN LIGHTNING: ' + r.base);
+        same(r.chomp, 'Its target; the 6 hexes round it · frozen ' + r.stun + '; the hexes round it slowed 1 turn', 'CHOMP'); ok(/^A hex and the 6 round it, in reach · burns as it opens and as 2 enemy turns begin$/.test(r.hex), 'HEXFIRE: ' + r.hex);
+        same(r.wob, 'The 6 hexes round it · each staggered 1 turn (not a boss)', 'WOBBLE SLAM'); ok(/every enemy within 2\.5 hexes of the last · 1 hit in 4: stunned 1 turn$/.test(r.base), 'CHAIN LIGHTNING: ' + r.base);
     });
 
     check('the battle draws its own words where the 3D view puts the fight: a hit\'s number, a word and a kill\'s large +N XP all drawn, none throwing', () => {
@@ -960,7 +964,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE ULTIMATES IN A BATTLE (§2.64, §13; the owner, of the page that drew each one: "Approve")');
-    const ULT = `const rel = (A, a) => { const s = _cb.slots.get(a); return s ? [s.x - A.P[0], s.y - A.P[1]].join() : (a._swallowedBy ? 'IN' : 'none'); }, act = () => { let n = 0; for (; n < 900 && _cb.turn && _cb.turn.who === 'act'; n++) __live(1); return n; },
+    const ULT = `const rel = (A, a) => { const s = _cb.slots.get(a); return s ? __rel({ x: s.x, y: s.y }, A.P).join() : (a._swallowedBy ? 'IN' : 'none'); }, act = () => { let n = 0; for (; n < 900 && _cb.turn && _cb.turn.who === 'act'; n++) __live(1); return n; },
         foesTurn = () => { for (let i = 0; i < 1200 && _cb.turn && _cb.turn.who === 'foe'; i++) __live(1); }, pass = () => { const f = _cbCurrent(); if (f) { _cb.acted.add(f); _cbAfterAct(frame); } else __live(2); foesTurn(); },
         fx = t => elementEffects.find(e => e.type === t), blows = (by, n) => { const ad = applyDamage; applyDamage = function (t, amt, src) { const h = t && t.health, r = ad.apply(this, arguments); if (t && t.health < h && (src === by || (src && src.by === by))) n.push(t); return r; }; return () => { applyDamage = ad; }; };`;   /* (pass: your squad's cards left unplayed, the enemies' turn had, yours again; blows: the hits of `by` that landed) */
     check('every evolved form\'s Ultimate has its shape and the place its card is dropped (22): 7 on an enemy, 5 on a floor tile, 10 anywhere', () => {
@@ -1033,19 +1037,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             { const A = __shaped('jellyram', [[3, 0]]); if (!A) return null; const f = A.f, left = () => f.jellyShield && f.jellyShield.until > frame ? f.jellyShield._cbTurns : 0; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, null); o.shield = [_cb.round, left()]; act(); o.shield.push(_cb.round, left());
               for (let i = 0; i < 3; i++) pass(); o.shield.push(_cb.round, left()); pass(); __live(3); o.shield.push(_cb.round, left()); }
             { const A = __shaped('gooproxy', [[3, 0]], [[1, 0], [0, 1], [0, -1], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]]); if (!A) return null; const f = A.f, taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)); f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, null);
-              const sq = rotDecoys.map(d => [d.x - A.P[0], d.y - A.P[1]]); o.copies = sq.length; o.next = sq.every(c => Math.max(Math.abs(c[0]), Math.abs(c[1])) === 1 && Number.isInteger(c[0]) && Number.isInteger(c[1])); o.apart = new Set(sq.map(c => c.join())).size === 3 && rotDecoys.every(d => !taken.has(d.x + ',' + d.y));
+              const sq = rotDecoys.map(d => [d.x - A.P[0], d.y - A.P[1]]); o.copies = sq.length; o.next = sq.every(c => Math.abs(Math.hypot(c[0], c[1]) - 1) < 1e-6);   /* (on one of the 6 hexes round it) */ o.apart = new Set(sq.map(c => c.join())).size === 3 && rotDecoys.every(d => !taken.has(d.x + ',' + d.y));
               act(); __live(40); o.swarm = [_cb.round, rotDecoys.length]; pass(); __live(40); o.swarm.push(_cb.round, rotDecoys.length); pass(); __live(40); o.swarm.push(_cb.round, rotDecoys.length); }
             { const A = __shaped('coralcrab', [[4, 0]], [[1, 0], [2, 0], [3, 0], [3, 1], [3, -1]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, A.foes[0]);
-              o.wall = cardUltWalls().map(c => [c[0] - P[0], c[1] - P[1]].join()).sort().join(' '); const G = _cbGrid(A.foes[0]); o.blocked = cardUltWalls().every(c => G.taken.has(c[0] + ',' + c[1])); act(); o.reef = [_cb.round, cardUltWalls().length];
+              o.wall = cardUltWalls().map(c => __rel({ x: c[0], y: c[1] }, P).join()).sort().join(' '); const G = _cbGrid(A.foes[0]); o.blocked = cardUltWalls().every(c => G.taken.has(cardHexKey(c[0], c[1]))); act(); o.reef = [_cb.round, cardUltWalls().length];
               _cb.slots.set(f, { x: P[0] + 2, y: P[1] }); f.x = P[0] + 2; f.y = P[1]; f.health = 5e5; pass(); o.mend = +((f.health - 5e5) / f.maxHealth).toFixed(3); pass(); pass(); o.reef.push(_cb.round, cardUltWalls().length); pass(); o.reef.push(_cb.round, cardUltWalls().length); }
             return o; })()`);
         ok(r, 'no room'); same(JSON.stringify(r.shield), '[1,5,2,4,5,1,6,0]', 'the jelly shield, round by round and its turns left: 5 as it is put on, 4 after the first enemy turn, 1 after the fourth, gone after the fifth');
         same(JSON.stringify([r.copies, r.next, r.apart]), '[3,true,true]', 'the copies: three, each on a square next to it, apart and on no taken square'); same(JSON.stringify(r.swarm), '[2,3,3,3,4,0]', 'round by round: standing after the first and the second enemy turn, burst after the third');
-        same(JSON.stringify([r.wall, r.blocked, r.mend]), '["3,-1 3,0 3,1",true,0.08]', 'the wall: its squares, closed to a walk, a turn\'s mending of one by it'); same(JSON.stringify(r.reef), '[2,3,5,3,6,0]', 'round by round: standing through its fourth enemy turn, gone after its fifth');
+        same(JSON.stringify([r.wall, r.blocked, r.mend]), '["2,-1 2,1 3,0",true,0.08]', 'the wall: its squares, closed to a walk, a turn\'s mending of one by it'); same(JSON.stringify(r.reef), '[2,3,5,3,6,0]', 'round by round: standing through its fourth enemy turn, gone after its fifth');
     });
     check('METEOR RAIN falls on squares round the tile it is dropped on, over 2 turns: some rocks as it is played, the rest as the enemy turn begins; its last rock down, the enemies wait for it no more', () => {
         const r = J(`(function(){ ${ULT} const A = __shaped('embercowl', [[3, 0], [4, 1]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; const played = cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }), e = fx('meteorrain'); act();
-            const o = { played, mid: e && [e.x - P[0], e.y - P[1]].join(), rocks: e && e.rocks.length, onSq: e && e.rocks.every(q => Number.isInteger(q.x) && Number.isInteger(q.y)), down1: e && e.rocks.filter(q => q.hit).length };
+            const o = { played, mid: e && [e.x - P[0], e.y - P[1]].join(), rocks: e && e.rocks.length, onSq: e && e.rocks.every(q => __onHex(q.x, q.y)), down1: e && e.rocks.filter(q => q.hit).length };
             _cb.acted.add(f); _cbAfterAct(frame); o.field = !!(_cb.turn && _cb.turn.field); foesTurn(); o.down2 = e.rocks.filter(q => q.hit).length; o.off = !e._cbUlt; pass(); o.field2 = cardUltLive(); return o; })()`);
         ok(r, 'no room'); same(JSON.stringify([r.played, r.mid, r.onSq, r.field, r.off, r.field2]), '[true,"3,0",true,true,true,false]', 'played on the tile; each rock on a square; the enemies wait for its second turn\'s worth; then it is off the battle\'s clock');
         ok(r.rocks >= 8 && r.down1 >= 4 && r.down1 < r.rocks && r.down2 === r.rocks, 'its rocks: ' + r.down1 + ' of ' + r.rocks + ' in its turn, ' + r.down2 + ' by the end of the next turn\'s worth');
@@ -1063,7 +1067,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                     const left = () => elementEffects.some(e => e._cbUlt && e.life > 0) || _cbSquad().some(m => m.jellyShield && m.jellyShield._cbTurns > 0) || cardUltWalls().length > 0 || rotDecoys.length > 0 || A.foes.some(a => a._swallowedBy);
                     for (let n = 0; n < 12 && left() && cardBattleActive(); n++) { pass(); __live(40); } o.clear = left() ? -1 : _cb.round; foesTurn(); o.back = !!_cb.turn && _cb.turn.who === 'you';
                 } catch (e) { o.err = String(e && e.message || e); }
-                const q = _cb.slots.get(f); o.on = cardBattleActive(); o.sq = !!q && Number.isInteger(q.x) && Number.isInteger(q.y) && !!_cb.lay && facilityRoomIdAt(q.x, q.y) === _cb.lay.room; o.did = A.foes.some((a, i) => a.health < h0[i]) || k === 'jellyram' || k === 'gooproxy' || k === 'coralcrab' || k === 'maw';
+                const q = _cb.slots.get(f); o.on = cardBattleActive(); o.sq = !!q && __onHex(q.x, q.y) && !!_cb.lay && facilityRoomIdAt(q.x, q.y) === _cb.lay.room; o.did = A.foes.some((a, i) => a.health < h0[i]) || k === 'jellyram' || k === 'gooproxy' || k === 'coralcrab' || k === 'maw';
             }
             return out; })()`);
         const bad = [], CLEAR = { thunderhead: 3, rimestar: 3, igloo: 3, mimic: 4, voidstar: 3, rotshard: 3, shrub: 3, electroskink: 3, blightspider: 5, embercowl: 2, maw: 4, sundew: 4, jellyram: 6, gooproxy: 4, coralcrab: 6 };   // (the round by which what it left is gone: a field of n turns has its last turn's worth as round n's enemy turn begins; a hold, a shield, a copy or a wall of n turns goes as its nth enemy turn ends, round n + 1)
@@ -1084,7 +1088,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('a field\'s squares stay lit, faintly, while it lasts (the owner, 2026-11-20: "you can have the tiles faint right now"): a field on a tile keeps its card\'s squares; one that moves with its follower is laid again where it is; gone with the field; drawn under the reticles', () => {
         const r = J(`(function(){ ${ULT} const A = __shaped('voidstar', [[3, 0]], [[2, 0]]); if (!A) return null; const f = A.f, P = A.P; f.ultimateCharge = 100; cardBattlePlay(f, 'ult', null, { x: P[0] + 3, y: P[1], tile: true }); __live(3); const e = fx('eventhorizon'), sq = cardUltSquares(e), S = _cb.turn.shape;
             const o = { n: sq && sq.length, same: sq === S.hit, has: !!sq && sq.some(c => c[0] === P[0] + 3 && c[1] === P[1]) };
-            const B = __shaped('thunderhead', [[2, 0]]); B.f.ultimateCharge = 100; cardBattlePlay(B.f, 'ult', null, null); __live(3); const t = fx('thunderstorm'), s1 = cardUltSquares(t).length, k1 = t._cbSqK; t.x += 1; const s2 = cardUltSquares(t); o.moved = [s1 > 20, k1 !== t._cbSqK, s2.every(c => Math.hypot(c[0] - Math.round(t.x), c[1] - Math.round(t.y)) <= t.radius + 0.01)]; return o; })()`);
+            const B = __shaped('thunderhead', [[2, 0]]); B.f.ultimateCharge = 100; cardBattlePlay(B.f, 'ult', null, null); __live(3); const t = fx('thunderstorm'), s1 = cardUltSquares(t).length, k1 = t._cbSqK; t.x += 1; const s2 = cardUltSquares(t); o.moved = [s1 > 20, k1 !== t._cbSqK, s2.every(c => Math.hypot(c[0] - cardHex(t.x, t.y)[0], c[1] - cardHex(t.x, t.y)[1]) <= t.radius + 0.01)]; return o; })()`);
         ok(r && r.n > 10 && r.same && r.has, 'the black hole\'s squares are its card\'s: ' + JSON.stringify(r)); same(JSON.stringify(r.moved), '[true,true,true]', 'the storm\'s, laid again when it moved');
         ok(/cardUltDraw\(V\);[^\n]*\n\s*if \(V && typeof cardShapeDraw/.test(rd('js/cardbattle.js')) && /e\._cbUlt !== "win" \|\| !\(e\.life > 0\) \|\| !cardUltShown\(e\)\) continue; if \(_CU_OWN_LOOK\[e\.type\] && typeof view3dOwnsFx === "function" && view3dOwnsFx\(e\)\) continue;[^\n]*\n\s*const sq = cardUltSquares\(e\)/.test(rd('js/cardults.js')), 'drawn by the battle, only while the field lives');
     });
@@ -1131,12 +1135,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, of three offered: "Its own distance")');
-    const REL = `const rel = (A, a) => { const s = _cbSq(a); return [s[0] - A.P[0], s[1] - A.P[1]].join(); }, act = () => { for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); };`;
+    const REL = `const rel = (A, a) => __rel(a, A.P).join(), act = () => { for (let i = 0; i < 900 && cardBattleTurnInfo() && cardBattleTurnInfo().who === 'act'; i++) __live(1); };`;
     check('BASH pushes its target its 1 tile: 1 square straight back, and that is its square (it eases there and stays); to the side as well as straight on', () => {
         const r = J(`(function(){ ${REL} const A = __shaped(null, [[1, 0]], [[2, 0]]); if (!A) return null; const a = A.foes[0], played = cardBattlePlay(A.f, 'move', 'bash', a); __live(1); const sq = rel(A, a); act(); for (let i = 0; i < 40; i++) __live(1);
             const s = _cbSq(a), o = { played, sq, after: rel(A, a), off: +Math.hypot(a.x - s[0], a.y - s[1]).toFixed(2), kb: (a.kbVX || 0) + (a.kbVY || 0) };
-            const B = __shaped(null, [[1, 1]], [[2, 2], [1, 2], [2, 1]]); if (!B) return o; cardBattlePlay(B.f, 'move', 'bash', B.foes[0]); __live(1); o.diag = rel(B, B.foes[0]); return o; })()`);
-        ok(r, 'no room'); same(JSON.stringify([r.played, r.sq, r.after, r.kb]), '[true,"2,0","2,0",0]', 'played, its square a frame after, its square after the turn, no knock of the game\'s own'); ok(r.off < 0.1, 'not on its new square: ' + r.off + ' off'); same(r.diag, '2,2', 'one to the side: its square');
+            const B = __shaped(null, [[0, 1]], [[1, 2], [0, 2], [1, 1]]); if (!B) return o; cardBattlePlay(B.f, 'move', 'bash', B.foes[0]); __live(1); o.diag = rel(B, B.foes[0]); return o; })()`);
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.sq, r.after, r.kb]), '[true,"2,0","2,0",0]', 'played, its square a frame after, its square after the turn, no knock of the game\'s own'); ok(r.off < 0.1, 'not on its new square: ' + r.off + ' off'); same(r.diag, '1,2', 'one to the side: its square (a hex straight back along its line, of the 6)');
     });
     check('each push its own distance, a part of a tile counting whole: STAKE RING (1.5 tiles) 2 squares, GRAVITY SLAM (half a tile) 1, BRIAR SWEEP (1) 1', () => {
         const r = J(`(function(){ ${REL} const one = (form, id, free) => { const A = __shaped(form, [[1, 0]], free); if (!A) return null; cardBattlePlay(A.f, 'move', id, null); __live(1); return rel(A, A.foes[0]); };
@@ -1144,12 +1148,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(JSON.stringify([r.stake, r.slam, r.briar]), '["3,0","2,0","2,0"]', 'STAKE RING, GRAVITY SLAM, BRIAR SWEEP (their tiles: ' + r.n + ')');
     });
     check('those pushed in one go move together (two in a line, neither stopped by the other); a push stops at a taken square (the one behind it not pushed)', () => {
-        const r = J(`(function(){ ${REL} const A = __shaped('shrub', [[1, 0], [2, 0], [0, -2], [0, -3]], [[3, 0], [0, -1]]); if (!A) return null; cardBattlePlay(A.f, 'move', 'briar_sweep', null); __live(1); return A.foes.map(a => rel(A, a)); })()`);
-        ok(r, 'no room'); same(JSON.stringify(r), '["2,0","3,0","0,-2","0,-3"]', 'the two in a line a square on each; the one with a creature behind it (out of the sweep\'s reach) where it was');
+        const r = J(`(function(){ ${REL} const A = __shaped('shrub', [[1, 0], [2, 0], [-2, 0], [-3, 0]], [[3, 0], [-1, 0]]); if (!A) return null; cardBattlePlay(A.f, 'move', 'briar_sweep', null); __live(1); return A.foes.map(a => rel(A, a)); })()`);
+        ok(r, 'no room'); same(JSON.stringify(r), '["2,0","3,0","-2,0","-3,0"]', 'the two in a line a square on each; the one with a creature behind it (out of the sweep\'s reach) where it was');
     });
     check('a push stops at a wall (one with no floor behind it stays, and is still pushed the other way); a boss is not moved; a pull goes no further than the square it is drawn to', () => {
-        const r = J(`(function(){ ${REL} const A = __shaped(null, [[2, 0]]); if (!A) return null; const a = A.foes[0], room = new Set(partyRoomCells(_cb.lay.room).map(c => c.join())), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y));
-            const c = partyRoomCells(_cb.lay.room).find(c => !room.has((c[0] + 1) + ',' + c[1]) && room.has((c[0] - 1) + ',' + c[1]) && room.has((c[0] - 2) + ',' + c[1]) && room.has((c[0] - 3) + ',' + c[1]) && [0, -1, -2, -3].every(d => !taken.has((c[0] + d) + ',' + c[1])) && _fpEdgeOk(c[0], c[1], c[0] - 1, c[1]) && _fpEdgeOk(c[0] - 1, c[1], c[0] - 2, c[1]) && _fpEdgeOk(c[0] - 2, c[1], c[0] - 3, c[1])); if (!c) return { none: true };
+        const r = J(`(function(){ ${REL} const A = __shaped(null, [[2, 0]]); if (!A) return null; const a = A.foes[0], room = new Set(cardHexRoom().cells.map(c => c.join())), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y));
+            const c = cardHexRoom().cells.find(c => !room.has((c[0] + 1) + ',' + c[1]) && room.has((c[0] - 1) + ',' + c[1]) && room.has((c[0] - 2) + ',' + c[1]) && room.has((c[0] - 3) + ',' + c[1]) && [0, -1, -2, -3].every(d => !taken.has((c[0] + d) + ',' + c[1])) && _cbHexEdgeOk(c[0], c[1], c[0] - 1, c[1]) && _cbHexEdgeOk(c[0] - 1, c[1], c[0] - 2, c[1]) && _cbHexEdgeOk(c[0] - 2, c[1], c[0] - 3, c[1])); if (!c) return { none: true };
             const at = () => { const s = _cbSq(a); return [s[0] - c[0], s[1] - c[1]].join(); }; _cb.slots.set(a, { x: c[0], y: c[1] }); a.x = c[0]; a.y = c[1];
             const o = { wall: cardBattlePush(a, 1, 0, 2) }; __live(1); o.atWall = at(); cardBattlePush(a, -1, 0, 1); __live(1); o.back = at();
             a.isBoss = true; o.boss = cardBattlePush(a, -1, 0, 1); __live(1); o.atBoss = at(); a.isBoss = false;
@@ -1163,26 +1167,26 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r, 'no room'); same(JSON.stringify([r.took, r.sq, r.kb]), '[true,"-2,0",0]', 'one of yours knocked 2 tiles: 2 squares away from the creature'); same(JSON.stringify([r.out, r.outKb, r.phase]), '[true,0.28,"off"]', 'out of a battle: the knock\'s own motion');
     });
     check('a biter thrown off a jelly shield in its own turn (JELLY SHIELDS: its 1 tile) ends its turn a square back, and that is its square from then on', () => {
-        const r = J(`(function(){ ${REL} const A = __shaped('jellyram', [[1, 0]], [[2, 0], [3, 0]]); if (!A) return null; const f = A.f, a = A.foes[0]; f.jellyShield = { hp: 1e6, until: frame + 1e6, by: f };
-            const h = f.health; cardBattlePlay(f, 'walk', null, { x: A.P[0], y: A.P[1] - 1, tile: true }); let bit = false, mine = 0;
+        const r = J(`(function(){ ${REL} const A = __shaped('jellyram', [[1, 0]], [[2, 0], [3, 0], [0, -1]]); if (!A) return null; const f = A.f, a = A.foes[0]; f.jellyShield = { hp: 1e6, until: frame + 1e6, by: f };
+            const h = f.health; const wq = __off(A.P, [0, -1]); cardBattlePlay(f, 'walk', null, { x: wq[0], y: wq[1], tile: true }); let bit = false, mine = 0;
             for (let i = 0; i < 1500; i++) { __live(1); const T = _cb.turn; if (T && T.who === 'foe' && T.a === a) bit = true; if (bit && T && T.who === 'you') { mine = i; break; } }
             for (let i = 0; i < 30; i++) __live(1); const s = _cbSq(a);
-            return { bit, mine: mine > 0, hurt: h - f.health, sq: [s[0] - A.P[0], s[1] - (A.P[1])].join(), f: rel(A, f), off: +Math.hypot(a.x - s[0], a.y - s[1]).toFixed(2), knock: ULT_JELLY.knock }; })()`);
+            return { bit, mine: mine > 0, hurt: h - f.health, sq: [s[0] - A.P[0], s[1] - (A.P[1])].join(), f: rel(A, f), off: +Math.hypot(a.x - s[0], a.y - s[1]).toFixed(2), knock: ULT_JELLY.knock, dist: +Math.hypot(s[0] - _cbSq(f)[0], s[1] - _cbSq(f)[1]).toFixed(2) }; })()`);
         ok(r, 'no room'); ok(r.bit && r.mine, 'the creature had no turn: ' + JSON.stringify(r)); same(r.hurt, 0, 'the shield did not take the bite');
         ok(r.off < 0.1, 'the biter is not on its square after its turn: ' + r.off + ' off (' + JSON.stringify(r) + ')');
-        const d = r.sq.split(',').map(Number), g = r.f.split(',').map(Number); ok(Math.max(Math.abs(d[0] - g[0]), Math.abs(d[1] - g[1])) === 2, 'the biter did not end a square back from the one it bit (it bites from next to it): it at ' + r.sq + ', the Jelly Ram at ' + r.f);
+        ok(r.dist > 1.5 && r.dist < 2.05, 'the biter did not end a square back from the one it bit (it bites from next to it): it at ' + r.sq + ', the Jelly Ram at ' + r.f);
     });
     check('STATIC VORTEX draws the enemies in it in as it opens, towards its gathering square and no further (not a beetle), and again before its shock as the enemies\' turn begins', () => {
         const r = J(`(function(){ ${REL} const A = __shaped('thunderhead', [[2, 0], [5, 0], [3, -2]], [[3, 0], [3, 1], [4, 1], [4, 0], [2, 1], [5, 1], [3, -1]]); if (!A) return null; const f = A.f, P = A.P; A.foes[2].speciesName = 'beetle';
             const played = cardBattlePlay(f, 'move', 'static_vortex', { x: P[0] + 3, y: P[1], tile: true }); __live(1); const e = elementEffects.find(e => e.type === 'staticVortex'), g = e && staticVortexGather(e);
-            const o = { played, gather: g && [Math.round(g.x) - P[0], Math.round(g.y) - P[1]].join(), open: A.foes.map(a => rel(A, a)) };
+            const o = { played, gather: g && __rel({ x: cardHex(g.x, g.y)[0], y: cardHex(g.x, g.y)[1] }, P).join(), open: A.foes.map(a => rel(A, a)) };
             _cb.slots.set(A.foes[0], { x: P[0] + 2, y: P[1] }); A.foes[0].x = P[0] + 2; A.foes[0].y = P[1]; const h = A.foes[0].health; cardShapeStays('foes'); __live(1); o.again = rel(A, A.foes[0]); o.shock = A.foes[0].health < h; return o; })()`);
-        ok(r, 'no room'); same(JSON.stringify([r.played, r.gather]), '[true,"4,1"]', 'played; its gathering square'); same(JSON.stringify(r.open), '["3,1","4,1","3,-2"]', 'as it opens: one a square in (the gathering square taken by then), one onto the gathering square, the beetle where it was');
-        same(JSON.stringify([r.again, r.shock]), '["3,1",true]', 'as the enemies\' turn begins: one that had got out drawn in again, and shocked');
+        ok(r, 'no room'); same(JSON.stringify([r.played, r.gather]), '[true,"3,1"]', 'played; its gathering hex (its point a little down and along, on the hexes)'); same(JSON.stringify(r.open), '["3,1","4,1","3,-2"]', 'as it opens: one a square in (the gathering square taken by then), one onto the gathering square, the beetle where it was');
+        same(JSON.stringify([r.again, r.shock]), '["3,0",true]', 'as the enemies\' turn begins: one that had got out drawn in again, and shocked');
     });
     check('the cards say it in squares: BASH "pushed back 1 square", STAKE RING "2 squares out", GRAVITY SLAM "shoved 1 square", STATIC VORTEX "pulls them in"', () => {
         const r = J(`[CARD_SAYS.bash(), CARD_SAYS.stake_ring(), CARD_SAYS.briar_sweep(), CARD_SAYS.gravity_slam(), CARD_SAYS.static_vortex()]`);
-        same(JSON.stringify(r), JSON.stringify(['pushed back 1 square, stunned 1 turn', 'each pushed 2 squares out', 'each pushed 1 square out', 'each shoved 1 square and slowed 1 turn', 'pulls them in; shocks as 2 enemy turns begin']), 'the words');
+        same(JSON.stringify(r), JSON.stringify(['pushed back 1 hex, stunned 1 turn', 'each pushed 2 hexes out', 'each pushed 1 hex out', 'each shoved 1 hex and slowed 1 turn', 'pulls them in; shocks as 2 enemy turns begin']), 'the words');
     });
 
     group('THE GUNSLINGER\'S TURN (§2.66; the owner, 2026-11-20: "the gunslinger gets a turn in the battle phases. So every rotation he gets a turn, and he has one attack so far, which is shoot [...] four to five shots [...] shows the ammo [...] the bottom [...] it has no wind up or anything")');
@@ -1239,13 +1243,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('SMASH on an enemy out of reach: the cube\'s turn is a walk towards it, by its own pace on the squares, round everyone, as a follower\'s (§2.39); nothing is hit, no round spent, where it stops is its square, nearer the enemy; the card is ready the next round and, next to it then, the blow lands', () => {
         const r = J(`(function(){ const o = {}; const { f, a } = __gs(20); const far = __ant(player.x, player.y); far.element = null; far.health = far.maxHealth = 9999; _cb.foes.push(far);
             /* an enemy put on a free square of the room 4 to 6 squares from the cube's, in its sight */
-            const p0 = _cbSq(player), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)); let spot = null; for (const c of partyRoomCells(_cb.lay.room)) { const d = Math.hypot(c[0] - p0[0], c[1] - p0[1]); if (d >= 4 && d <= 6 && !taken.has(c[0] + ',' + c[1]) && facilitySeesFrom(p0[0], p0[1], c[0], c[1])) { spot = c; break; } }
+            const p0 = _cbSq(player), taken = new Set([..._cb.slots.values()].map(q => q.x + ',' + q.y)); let spot = null; for (const c of cardHexRoom().cells) { const d = Math.hypot(c[0] - p0[0], c[1] - p0[1]); if (d >= 4 && d <= 6 && !taken.has(c[0] + ',' + c[1]) && facilitySeesFrom(p0[0], p0[1], c[0], c[1])) { spot = c; break; } }
             o.spot = !!spot; if (!spot) { __gsOff(); return o; } far.x = spot[0]; far.y = spot[1]; _cb.slots.set(far, { x: spot[0], y: spot[1] });
             __gsUp(f); o.tiles = _cbTiles(player); o.reach = _cbCanHit(player, far, 'smash'); const d0 = Math.hypot(p0[0] - spot[0], p0[1] - spot[1]), h0 = far.health;
             o.played = cardBattlePlay(player, 'smash', null, far); o.walk = _cb.turn.walk ? _cb.turn.walk.length : 0; o.walking = cardBattleWalking(player);
             let n = 0; for (; n < 600 && cardBattleTurnInfo().kind === 'smash'; n++) _simStep(false); const p1 = _cbSq(player), d1 = Math.hypot(p1[0] - spot[0], p1[1] - spot[1]);
             o.moved = [d1 < d0 - 0.9, Math.abs(player.x - p1[0]) < 0.6 && Math.abs(player.y - p1[1]) < 0.6, far.health === h0, playerAmmo].join(); o.steps = Math.max(Math.abs(p1[0] - p0[0]), Math.abs(p1[1] - p0[1])) <= o.tiles;
-            o.mine = _cbGrid(f).taken.has(Math.round(p1[0]) + ',' + Math.round(p1[1]));
+            o.mine = _cbGrid(f).taken.has(cardHexKey(p1[0], p1[1]));
             /* the rounds after: SMASH again each of its turns, till it is next to it and the blow lands */
             let landed = false; for (let k = 0; k < 4 && !landed; k++) { __toYou(); if (!__gsUp(f)) break; cardBattlePlay(player, 'smash', null, far); for (let m = 0; m < 600 && cardBattleTurnInfo().kind === 'smash'; m++) _simStep(false); landed = far.health < h0; }
             o.landed = landed; o.dealt = h0 - far.health; __gsOff(); return o; })()`);
@@ -1278,7 +1282,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.doses, '24,24,12', 'the turns\' worth (js/serum.js SERUM.splash: 10 beats of 6%, 4 a turn)'); same(r.gun, 'false,false', 'a Mutator played the Gunslinger\'s cards'); same(r.tech, ',false', 'a Technomancer carrying a serum');
     });
     check('HEALING SERUM played: one serum spent; every one of the squad still up is healed 24% of its own health at once, wherever it stands; then 24% and 12% as the next two enemy turns begin (60% in all), and no more after; one at full health gains nothing; one that is down is not raised', () => {
-        const r = J(`(function(){ const o = {}; const g = __mu(2), [f1, f2] = g.fs; f2.health = 990; const far = partyRoomCells(_cb.lay.room).slice().sort((p, q) => Math.hypot(q[0] - player.x, q[1] - player.y) - Math.hypot(p[0] - player.x, p[1] - player.y))[0]; f1.x = far[0]; f1.y = far[1]; _cb.slots.set(f1, { x: far[0], y: far[1] });
+        const r = J(`(function(){ const o = {}; const g = __mu(2), [f1, f2] = g.fs; f2.health = 990; const far = cardHexRoom().cells.slice().sort((p, q) => Math.hypot(q[0] - player.x, q[1] - player.y) - Math.hypot(p[0] - player.x, p[1] - player.y))[0]; f1.x = far[0]; f1.y = far[1]; _cb.slots.set(f1, { x: far[0], y: far[1] });
             __muUp(g.fs); const r0 = _cb.round; o.played = cardBattlePlay(player, 'serum', null, null); const T = cardBattleTurnInfo(); o.act = [T.who, T.actor === player, T.kind].join(); o.now = [f1.health, f2.health, invCount('healing_serum'), _cb.serums.length, _cb.serums[0].left.length].join();
             __muOn(); o.second = [f1.health, _cb.round - r0, _cb.serums.length ? _cb.serums[0].left.length : 0].join();
             __muUp(g.fs); cardBattlePlay(player, 'pass', null, null); __toYou(); o.third = [f1.health, _cb.serums.length, invCount('healing_serum')].join();
@@ -1327,7 +1331,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
     });
 
-    group('BLOCK (§2.82; the owner, 2026-11-27: "the block option would put them in a withdrawal state [...] they wouldn\'t move, but they would take half damage until next turn")');
+    group('BLOCK (§2.83; the owner, 2026-11-27: "the block option would put them in a withdrawal state [...] they wouldn\'t move, but they would take half damage until next turn")');
     check('every follower has a BLOCK card, always ready, just before MOVE; dragged, it says BLOCKS · HALF DAMAGE', () => {
         const r = J(`(function(){ const { f, a } = __one('brawler'); CARD_BATTLE.byClass = false; const cs = cardBattleCards(f), k = cs.map(c => c.kind), b = cs.find(c => c.kind === 'block'); const p = cardBattlePreview(f, 'block', null, null);
             return { last2: k.slice(-2).join(), ready: !!b && b.ready, fx: b && b.fx, say: p && p.text + '/' + p.ok, html: !!b && /BLOCK/.test(_cbCardHTML(b)) }; })()`);
@@ -1351,14 +1355,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     group('BLOCK AND STEP BACK IN REAL TIME (the owner, 2026-11-27: "Merge into TANK", "Some escape some block", "2 s, then a gap", "CAUTIOUS steps back")');
     run(`globalThis.__rt = (style) => { __fresh(1); CARD_BATTLE.on = false; const f = followers[0]; f.playStyle = style; f.role = 'brawler'; f.health = f.maxHealth = 1e5; f.stance = 'follow'; f.post = null;
-        const a = __ant(f.x + 1.0, f.y); a.provoked = true; a.state = 'hunt'; a.health = a.maxHealth = 1e5; f._enemyCacheFrame = 0; f._nearestEnemy = null; return { f, a }; };
+        const a = __ant(f.x + 1.0, f.y), nb = cardHexNb(f.x, f.y).find(c => facilityStandOk(c[0], c[1])); a.x = nb[0]; a.y = nb[1]; a.provoked = true;   /* (on a hex touching its own: "next to", §2.83) */ a.state = 'hunt'; a.health = a.maxHealth = 1e5; f._enemyCacheFrame = 0; f._nearestEnemy = null; return { f, a }; };
         globalThis.__rtStep = (f, n) => { for (let i = 0; i < n; i++) { frame++; updateRTSNPC(f); } };`);
     check('a TANK next to an enemy blocks: 2 s rooted at half damage, then fights at least 2 s before it blocks again', () => {
         const r = J(`(function(){ const { f, a } = __rt('tank'); const d0 = +Math.hypot(a.x - f.x, a.y - f.y).toFixed(2); __rtStep(f, 1); const x0 = f.x, y0 = f.y;
             const o = { d0, on: followerBlocking(f), left: f._blockUntil - frame }; __rtStep(f, 60); o.moved = Math.hypot(f.x - x0, f.y - y0); o.still = followerBlocking(f);
             const h = f.health; applyDamage(f, 40, null, null, false, true); o.took = h - f.health; f.health = f.maxHealth;
             __rtStep(f, 61); o.over = followerBlocking(f); __rtStep(f, 100); o.gap = followerBlocking(f); __rtStep(f, 30); o.again = followerBlocking(f); return o; })()`);
-        ok(r.d0 <= 1.6, 'next to it: ' + r.d0); same(r.on, true, 'it blocks'); same(r.left, 120, 'for 2 s'); same(r.moved, 0, 'rooted'); same(r.still, true, 'still blocking at 1 s');
+        ok(r.d0 <= 1.01, 'on a touching hex: ' + r.d0); same(r.on, true, 'it blocks'); same(r.left, 120, 'for 2 s'); same(r.moved, 0, 'rooted'); same(r.still, true, 'still blocking at 1 s');
         ok(Math.abs(r.took - 20) < 0.01, 'half: ' + r.took); same(r.over, false, 'over after 2 s'); same(r.gap, false, 'not again within 2 s'); same(r.again, true, 'again after the gap');
     });
     check('a CAUTIOUS follower next to an enemy steps back, up to 3 tiles away from it, then waits before it steps back again; BALANCED and RECKLESS do neither', () => {
@@ -1367,6 +1371,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const others = ['balanced', 'aggressive'].map(s => { const { f: g } = __rt(s); __rtStep(g, 30); return !!(g._backUntil || g._blockUntil); }); o.others = others.join(); return o; })()`);
         same(r.backing, true, 'it steps back'); same(r.blocking, false, 'no block'); ok(r.gained > 0.5 && r.gained <= 3.2, 'farther from it: +' + r.gained); same(r.done, true, 'then stops'); same(r.cd, true, 'and waits');
         same(r.others, 'false,false', 'the others as before');
+    });
+    check('"next to" is the 6 hexes touching its own (the owner: "right next to them", "6 around"): two hexes off, a TANK does not block', () => {
+        const r = J(`(function(){ const { f, a } = __rt('tank'); const c = cardHex(f.x, f.y), two = cardHexDisc(c[0], c[1], 2.2).find(p => { const k = cardHexKey(p[0], p[1]); return k !== cardHexKey(f.x, f.y) && !cardHexNb(f.x, f.y).some(n => cardHexKey(n[0], n[1]) === k) && facilityStandOk(p[0], p[1]); });
+            return { one: followerNextTo(f, a, Math.hypot(a.x - f.x, a.y - f.y)), two: two ? followerNextTo(f, { x: two[0], y: two[1] }, Math.hypot(two[0] - f.x, two[1] - f.y)) : null, d2: two ? +Math.hypot(two[0] - f.x, two[1] - f.y).toFixed(2) : null }; })()`);
+        same(r.one, true, 'a touching hex'); same(r.two, false, 'two hexes off (' + r.d2 + ' tiles)');
     });
     check('one of yours in the card battle that is on is left to its cards (no real-time block or step back)', () => {
         const r = J(`(function(){ CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const { f, a } = __one('brawler'); f.playStyle = 'tank'; const t = followerTactic(f, a, 1); f.playStyle = 'defensive'; const c = followerTactic(f, a, 1); return { t, c, held: cardBattleSquadHeld(f) }; })()`);

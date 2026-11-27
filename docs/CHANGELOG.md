@@ -4,14 +4,25 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
-### Build `2026-11-17dm` · branch `claude/zen-cerf-3m8mq5` · BLOCK in card battles; in real time a TANK blocks and a CAUTIOUS follower steps back
-- **The ask** (the owner, 2026-11-27): a block action beside the attacks and MOVE: no moving, half damage until the next turn; "this sort of tactic would also apply to real battles". Asked: "Merge into TANK", "Some escape some block", "CAUTIOUS steps back", "Always ready", "2 s, then a gap" (`CARD-BATTLES.md` §2.82).
+### Build `2026-11-17do` · branch `claude/zen-cerf-3m8mq5` (over main's `2026-11-17dn`, the hexes) · BLOCK in card battles; in real time a TANK blocks and a CAUTIOUS follower steps back
+- **The ask** (the owner, 2026-11-27): a block action beside the attacks and MOVE: no moving, half damage until the next turn; "this sort of tactic would also apply to real battles". Asked: "Merge into TANK", "Some escape some block", "CAUTIOUS steps back", "Always ready", "2 s, then a gap" (`CARD-BATTLES.md` §2.83).
 - **Card battles:** every follower has a BLOCK card, always ready; played, its turn is over and until its next turn it takes half damage and holds its square (no push moves it). BLOCK and MOVE share one slot, stacked.
-- **Real time:** a TANK next to an enemy blocks for 2 s (rooted, half damage), then fights at least 2 s; a CAUTIOUS one next to an enemy steps back up to 3 tiles, then 3 s before the next. Blocking is not on top of SHELL GUARD.
+- **Real time** ("next to" an enemy: on a hex touching its own, the battles' hexes, "6 around"): a TANK next to an enemy blocks for 2 s (rooted, half damage), then fights at least 2 s; a CAUTIOUS one next to an enemy steps back up to 3 tiles, then 3 s before the next. Blocking is not on top of SHELL GUARD.
 - `js/cardbattle.js`, `js/npc.js`, `js/helpers.js`, `game.html` (the stacked slot), `tests/cardbattle.js`; the stamp's own files.
 - **Verified:** `tests/cardbattle.js` (new: BLOCK, BLOCK AND STEP BACK IN REAL TIME; four older checks now expect the BLOCK card) and the full run in the handoff; the battle's cards seen in a real browser at 1024 × 768 and 768 × 1024. **Not playtested; not seen on an iPad.**
 
 ## 2026-11-23
+
+### Build `2026-11-17dn` · branch `claude/start-game-project-HSh7Z` · battles on hexes
+- **The ask** (the owner, 2026-11-27): a hexagon tile system for all battles; of the approval page, "Approve all, outline only while dragging, keep the ground".
+- **What it does:** card battles are fought on hexes a tile across instead of squares: standing, walking (6 neighbours), "next to", every card's and Ultimate's area, lines, zigzags, pushes and pulls, the lit cells and the words. Sizes are the attacks' own, so areas cover the same ground. The hexes are outlined faintly only while a card is dragged. `CARD-BATTLES.md` §2.82. `js/cardbattle.js`, `js/cardshapes.js`, `js/cardults.js`, `js/elements.js`, `tests/cardbattle.js`, generated files.
+- **Verified:** `tests/cardbattle.js` passing on hexes; a battle seen in a real browser with a card and MOVE dragged; the suites in the handoff. **The outline's look provisional; not seen on an iPad; not playtested.**
+
+### Build `2026-11-17dm` · branch `claude/start-game-project-HSh7Z` · no tile lines on the floor; hex battles proposed
+- **The ask** (the owner, 2026-11-27): "Can we remove this visible floor tiles on the map and make a hexagon tile system for all battles?"; asked, "Everywhere", "About one tile", "Approval page first".
+- **What it does:** in the 3D view every room's floor is one smooth surface in its own colour: no line or shine round each tile, no border on the grate, no tile shaded apart from its neighbours (`design/style-evolution/live/floor.js`; `VIEW-3D.md`). The sewer skin's own floor pictures (`view3d/sewerdress.js`) are unchanged. The 2D game is unchanged.
+- **Proposed, not built:** a hex grid for card battles, one hex a tile across; every card and Ultimate drawn on squares and on hexes for approval in `design/battle/hex/shapes.html` (`CARD-BATTLES.md` §2.82).
+- **Verified:** seen in a real browser (the arena); the suites in the handoff. **Not seen on an iPad.**
 
 ### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
 - **The ask** (the owner, 2026-11-24): "Make the pictures and cards".

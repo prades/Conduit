@@ -47,13 +47,22 @@ function _moveToward(actor, tx, ty, speedMult) {
 
 // BLOCK AND STEP BACK (the owner, 2026-11-27: "the block option would put them in a withdrawal state, and they [...] wouldn't move, but they would take half damage until next turn. And then this
 // sort of tactic would also apply to real battles"; asked: "Merge into TANK", "Some escape some block", "2 s, then a gap", "CAUTIOUS steps back"). In a turn-based battle every follower may play BLOCK
-// (js/cardbattle.js §2.82: `_cbBlock`, till its next turn). In real time, by play style:
-//   TANK      an enemy next to it (within FOLLOWER_BLOCK.near of its edge), it BLOCKS: FOLLOWER_BLOCK.frames (2 s, a battle's turn) rooted, doing nothing else, every blow on it half; then at
+// (js/cardbattle.js §2.83: `_cbBlock`, till its next turn). In real time, by play style:
+//   TANK      an enemy next to it (followerNextTo: on a hex touching its own), it BLOCKS: FOLLOWER_BLOCK.frames (2 s, a battle's turn) rooted, doing nothing else, every blow on it half; then at
 //             least FOLLOWER_BLOCK.gap (2 s) before it blocks again, so it fights in between.
 //   CAUTIOUS  (id "defensive") an enemy next to it, it STEPS BACK: up to FOLLOWER_BLOCK.back tiles straight away from it, round the walls, for at most backFrames; then backGap before it steps back again.
 //   the rest  as before.
 // Not for a clone, nor for one of yours in the card battle that is on (the battle plays its turns). The numbers are the agent's, provisional, except the half and the 2 s.
 const FOLLOWER_BLOCK = { cut: 0.5, frames: 120, gap: 120, near: 1.6, back: 3, backFrames: 90, backGap: 180, col: "#8fe3ff" };
+// NEXT TO IT (the owner, 2026-11-27: "tile range should be right next to them", on hexes, "6 around"): the enemy on its own hex or one of the 6 touching it (the battles' hexes, fixed to
+// the world: js/cardbattle.js cardHexKey, cardHexNb); a huge body (bodyR) within a hex of its edge. Without the hexes, within FOLLOWER_BLOCK.near.
+function followerNextTo(a, e, d) {
+    if (e.bodyR > 0) return d <= 1 + e.bodyR;
+    if (typeof cardHexKey !== "function" || typeof cardHexNb !== "function") return d <= FOLLOWER_BLOCK.near;
+    const k = cardHexKey(e.x, e.y); if (cardHexKey(a.x, a.y) === k) return true;
+    for (const c of cardHexNb(a.x, a.y)) if (cardHexKey(c[0], c[1]) === k) return true;
+    return false;
+}
 function followerBlocking(a) { return !!a && (!!a._cbBlock || a._blockUntil > (typeof frame !== "undefined" ? frame : 0)); }
 function followerBlockCut(t, amount) { return followerBlocking(t) ? amount * (1 - FOLLOWER_BLOCK.cut) : amount; }
 function _tacticOk(a) { return !!a && a.isFollower === true && !a.isClone && a.team === "green" && !a.dead && !(typeof cardBattleSquadHeld === "function" && cardBattleSquadHeld(a)); }
@@ -62,7 +71,7 @@ function followerTactic(actor, foe, d) {
     if (!_tacticOk(actor)) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, B = FOLLOWER_BLOCK, s = actor.playStyle;
     if (actor._backUntil > f0) return _stepBackTick(actor, f0);
-    const close = !!foe && !foe.dead && d <= B.near + (foe.bodyR || 0);
+    const close = !!foe && !foe.dead && followerNextTo(actor, foe, d);
     if (s === "tank" && close && f0 >= (actor._blockReadyAt || 0)) {
         actor._blockUntil = f0 + B.frames; actor._blockReadyAt = f0 + B.frames + B.gap; actor._blockFoe = foe;
         actor._shotWind = 0; actor._shotTarget = null; actor.state = "idle"; actor.attackAnim = 0;

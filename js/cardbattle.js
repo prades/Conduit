@@ -298,15 +298,15 @@ _cb.turn = null; _cb.cd = new Map(); _cb.round = 0; _cb.squad = null; _cb.out = 
 // across the line (cardBattleCam `dir`), so your side is on one half of the screen and theirs on the other. Numbers the agent's. ──
 function _cbLayout() {
     const foes = _cb.foes.filter(_cbFoeOk), squad = _cbFrontFirst(_cbSquad()); _cb.slots = new Map(); _cb.lay = null;
-    if (!foes.length || typeof player === "undefined" || typeof _fpNearestCellOpen !== "function") return;
+    if (!foes.length || typeof player === "undefined" || typeof _fpNearestCellOpen !== "function" || typeof _fp === "undefined" || !_fp || !_fp.cellsP) return;
     let fx = 0, fy = 0; for (const a of foes) { fx += a.x; fy += a.y; } fx /= foes.length; fy /= foes.length;
     const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(fx, fy) : null, wx = fx - player.x, wy = fy - player.y, L = Math.hypot(wx, wy) || 1;
     // ONE ROOM (the owner, 2026-11-17: "if a battle would take place near the doorway, make the battle happen in one room rather than take place in separate rooms"): the battle's room is its
     // enemies' (the battle takes in only the creatures of that room, _cbGroup); the middle of the line and every square are in it, and any of yours outside it is brought in (cardBattleTick, the black)
-    let mc = _fpNearestCellOpen((fx + player.x) / 2, (fy + player.y) / 2);
-    if (room && (!mc || facilityRoomIdAt(mc[0], mc[1]) !== room) && typeof partyRoomCells === "function") { let bd = Infinity; for (const c of partyRoomCells(room)) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd) { bd = d; mc = c; } } }   // (a room's cells are its walkable tiles: js/party.js partyRoomCells)
+    let mc = _cbHexNear(room, (fx + player.x) / 2, (fy + player.y) / 2);   // (on a hex of the room: every place in the line is a hex's middle)
+    if (room && !mc) { let bd = Infinity; for (const c of (_cbHexesOf(room, fx, fy) || { cells: [] }).cells) { const d = Math.hypot(c[0] - (fx + player.x) / 2, c[1] - (fy + player.y) / 2); if (d < bd) { bd = d; mc = c; } } }   // (a room's cells are its walkable tiles: js/party.js partyRoomCells)
     if (!mc) return;
-    const cx = mc[0], cy = mc[1];   // (the middle on a tile, so every square is a tile's middle)
+    const cx = mc[0], cy = mc[1];   // (the middle on a hex)
     let best = null;
     for (const gap of [CARD_BATTLE.lineGap, 1]) {   // (a room too narrow for the line: the two sides closer to the middle)
     if (best && best.cost < 99) break;
@@ -321,13 +321,13 @@ function _cbLayout() {
         for (const [a, side, du0, dv0, row] of want) {
             let got = null;
             for (let t = 0; t < 5 && !got; t++) for (const dv of [dv0, dv0 + 1, dv0 - 1, dv0 + 2, dv0 - 2]) {   // (a square in a column of its own: outwards, then to the sides; those up front share their row)
-                const du = side * (du0 + t), ix = cx + ux * du + vx * dv, iy = cy + uy * du + vy * dv, c = _fpNearestCellOpen(ix, iy);
-                if (!c || Math.hypot(c[0] - ix, c[1] - iy) > 0.35 || used.has(c[0] + "," + c[1]) || (cols.has(du) && !(row && t === 0))) continue;
+                const du = side * (du0 + t), ix = cx + ux * du + vx * dv, iy = cy + (uy * du + vy * dv) * CB_HEX_H, c = _cbHexNear(room, ix, iy);   /* (along y a step is a row of hexes) */
+                if (!c || Math.hypot(c[0] - ix, c[1] - iy) > 0.6 || used.has(cardHexKey(c[0], c[1])) || (cols.has(du) && !(row && t === 0))) continue;
                 if (room && typeof facilityRoomIdAt === "function" && facilityRoomIdAt(c[0], c[1]) !== room) continue;
                 got = [c, du, t + Math.abs(dv - dv0)]; break;
             }
             if (!got) { cost += 99; continue; }
-            used.add(got[0][0] + "," + got[0][1]); cols.add(got[1]); cost += got[2]; out.push([a, got[0][0], got[0][1]]);
+            used.add(cardHexKey(got[0][0], got[0][1])); cols.add(got[1]); cost += got[2]; out.push([a, got[0][0], got[0][1]]);
         }
         cost += (1 - (ux * wx + uy * wy) / L) * 2;   // (the way you face the enemies, other things equal)
         if (!best || cost < best.cost) best = { cost, ux, uy, out, gap };
@@ -336,8 +336,8 @@ function _cbLayout() {
     if (!best) return;
     for (const [a, x, y] of best.out) _cb.slots.set(a, { x, y });
     // the room too small for the whole line: the rest on the nearest free tiles of the room (one each)
-    if (room && typeof partyRoomCells === "function") {
-        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => o[1] + "," + o[2])), free = partyRoomCells(room).filter(c => !taken.has(c[0] + "," + c[1]));
+    if (room) {
+        const all = squad.concat([player], foes), taken = new Set(best.out.map(o => cardHexKey(o[1], o[2]))), free = ((_cbHexesOf(room, cx, cy) || { cells: [] }).cells).filter(c => !taken.has(cardHexKey(c[0], c[1])));
         for (const a of all) { if (_cb.slots.has(a)) continue; let bi = -1, bd = Infinity; free.forEach((c, i) => { const d = Math.hypot(c[0] - cx, c[1] - cy); if (d < bd) { bd = d; bi = i; } }); if (bi < 0) break; const c = free.splice(bi, 1)[0]; _cb.slots.set(a, { x: c[0], y: c[1] }); }
     }
     const gap = best.gap; _cb.lay = { room, ux: best.ux, uy: best.uy, mx: cx, my: cy, sx: cx - best.ux * gap, sy: cy - best.uy * gap, ex: cx + best.ux * gap, ey: cy + best.uy * gap, dir: undefined };
@@ -421,6 +421,43 @@ function _cbHitsFrom(x, y, u, t, kind, id) {
     return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, q[0], q[1]);
 }
 function _cbCanHit(u, t, kind, id) { if (!u || !t) return false; const s = _cbSq(u); return _cbHitsFrom(s[0], s[1], u, t, kind, id); }
+// THE HEXES (the owner, 2026-11-27: "make a hexagon tile system for all battles"; asked: "About one tile", then of the page that drew every card on both, "Approve all", the outline "only
+// while dragging", "keep the ground"; docs/CARD-BATTLES.md §2.83). A battle's cells are hexes a tile across, fixed to the world: rows along the world's x, a row's hexes 1 apart, the rows
+// √3/2 apart, every other row half a hex over. A hex is the battle's when the floor under its middle (and 0.2 to either side, so none stands on a wall's line) is its room's walkable floor, and a body can stand there (the floor's own test). A fighter stands on the middle of one;
+// a step is to one of the 6 round it (no wall between); every reach, radius and hop is the number it was, measured middle to middle, so an area covers the same ground as before.
+const CB_HEX_H = Math.sqrt(3) / 2;
+function _cbHexOdd(r) { return ((r % 2) + 2) % 2; }
+function cardHexQR(x, y) { const r0 = Math.round(y / CB_HEX_H); let bq = 0, br = r0, bd = Infinity; for (let r = r0 - 1; r <= r0 + 1; r++) { const o = _cbHexOdd(r) * 0.5, q0 = Math.round(x - o); for (let q = q0 - 1; q <= q0 + 1; q++) { const d = (q + o - x) * (q + o - x) + (r * CB_HEX_H - y) * (r * CB_HEX_H - y); if (d < bd - 1e-9) { bd = d; bq = q; br = r; } } } return [bq, br]; }
+function cardHexAt(q, r) { return [q + _cbHexOdd(r) * 0.5, r * CB_HEX_H]; }
+// the middle of the hex a point is in; its key
+function cardHex(x, y) { const k = cardHexQR(x, y); return cardHexAt(k[0], k[1]); }
+function cardHexKey(x, y) { const k = cardHexQR(x, y); return k[0] + "," + k[1]; }
+const _CB_HEX_DIRS = [0, 1, 2, 3, 4, 5].map(i => [Math.cos(i * Math.PI / 3), Math.sin(i * Math.PI / 3)]);
+// the 6 round a hex (their middles)
+function cardHexNb(x, y) { const c = cardHex(x, y); return _CB_HEX_DIRS.map(d => cardHex(c[0] + d[0], c[1] + d[1])); }
+// the hexes whose middles are within r of a hex's middle (skip: not its own)
+function cardHexDisc(cx, cy, r, skip) { const qr = cardHexQR(cx, cy), c = cardHexAt(qr[0], qr[1]), out = [], R = Math.ceil(r / CB_HEX_H) + 1; for (let dr = -R; dr <= R; dr++) for (let dq = -R - 1; dq <= R + 1; dq++) { const p = cardHexAt(qr[0] + dq + (dr ? 0 : 0), qr[1] + dr), d = Math.hypot(p[0] - c[0], p[1] - c[1]); if (d <= r + 1e-6 && !(skip && d < 1e-6)) out.push(p); } return out; }
+// a hex's 6 corners on the floor (k: drawn that much smaller)
+function cardHexCorners(x, y, k) { const R = (1 - (k || 0) * 2) / Math.sqrt(3), out = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; out.push([x + Math.cos(a) * R, y + Math.sin(a) * R]); } return out; }
+// the battle's hexes in a room (made once a room): their middles and keys; without a room, those of the walkable floor near (x, y)
+const _cbHexRooms = new Map();
+function _cbHexesOf(room, x, y) {
+    if (typeof _fp === "undefined" || !_fp || !_fp.cellsP) return null;
+    const key = room || ("@" + Math.round(x) + "," + Math.round(y)); let H = _cbHexRooms.get(key); if (H && H.cp === _fp.cellsP) return H;
+    const tiles = room && typeof partyRoomCells === "function" ? partyRoomCells(room) || [] : null, T = tiles ? new Set(tiles.map(c => Math.round(c[0]) + "," + Math.round(c[1]))) : null, P = _fp.cellsP;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity; if (tiles && tiles.length) for (const c of tiles) { x0 = Math.min(x0, c[0]); x1 = Math.max(x1, c[0]); y0 = Math.min(y0, c[1]); y1 = Math.max(y1, c[1]); } else { x0 = x - 12; x1 = x + 12; y0 = y - 12; y1 = y + 12; }
+    const ok = (a, b) => { const k = Math.round(a) + "," + Math.round(b); return P.has(k) && (!T || T.has(k)); }, cells = [], keys = new Set();
+    for (let r = Math.floor(y0 / CB_HEX_H) - 1; r <= Math.ceil(y1 / CB_HEX_H) + 1; r++) for (let q = Math.floor(x0) - 1; q <= Math.ceil(x1) + 1; q++) { const c = cardHexAt(q, r); if (ok(c[0], c[1]) && ok(c[0] - 0.2, c[1]) && ok(c[0] + 0.2, c[1]) && (typeof facilityLosFrom !== "function" || facilityLosFrom(c[0], c[1], c[0], c[1]))) { cells.push(c); keys.add(q + "," + r); } }
+    for (let pass = 0; pass < 3; pass++) { let cut = false; for (let i = cells.length - 1; i >= 0; i--) { const c = cells[i]; let n = 0; for (const d of cardHexNb(c[0], c[1])) if (keys.has(cardHexKey(d[0], d[1]))) n++; if (n < 2) { keys.delete(cardHexKey(c[0], c[1])); cells.splice(i, 1); cut = true; } } if (!cut) break; }   // (no pocket of one hex at a ragged edge: one with fewer than 2 of the room's round it is not the battle's)
+    H = { cp: P, cells, keys }; _cbHexRooms.set(key, H); if (_cbHexRooms.size > 40) _cbHexRooms.delete(_cbHexRooms.keys().next().value); return H;
+}
+// the battle's hexes (its room's), once it is lined up
+function cardHexRoom() { const L = _cb.lay; return L ? _cbHexesOf(L.room, L.mx, L.my) : null; }
+// the nearest of a room's hexes to a point (null: none)
+function _cbHexNear(room, x, y) { const H = _cbHexesOf(room, x, y); if (!H) return null; let b = null, bd = Infinity; for (const c of H.cells) { const d = Math.hypot(c[0] - x, c[1] - y); if (d < bd) { bd = d; b = c; } } return b; }
+// a step from one hex to the next: nothing in the way (a wall, a tall object: the floor's own line)
+const _cbHexEdges = new Map();
+function _cbHexEdgeOk(x, y, nx, ny) { const k = cardHexKey(x, y) + ">" + cardHexKey(nx, ny); let v = _cbHexEdges.get(k); if (v === undefined) { v = typeof facilityLosFrom !== "function" || !!facilityLosFrom(x, y, nx, ny); _cbHexEdges.set(k, v); if (_cbHexEdges.size > 20000) _cbHexEdges.clear(); } return v; }
 // THE FLOOR for `u`, in the battle's room: the squares' keys, which are taken (anyone's square, a ROTTEN DECOY's too), its own square, and a step to any of the 8 round (no wall, no corner cut,
 // js/facilityplay.js _fpEdgeOk; in the room; never onto a taken square). Null without the facility's floor.
 // ROUND EVERYONE, NEVER THROUGH (the owner, 2026-11-18: "Whenever creatures have to pass through other creatures for their attack, the game freezes up. Make sure that they avoid interactions with
@@ -428,15 +465,15 @@ function _cbCanHit(u, t, kind, id) { if (!u || !t) return false; const s = _cbSq
 // walk never got there and the battle stood still until its time ran out (600 frames). Every taken square stands in the way now, its own side's as the other's (and one the battle walks is not
 // jostled: cardBattleWalking).
 function _cbGrid(u) {
-    if (typeof _fp === "undefined" || !_fp || !_fp.cellsP || typeof _fpEdgeOk !== "function") return null;
-    const L = _cb.lay, K = (x, y) => Math.round(x) + "," + Math.round(y), cells = L && L.room && typeof partyRoomCells === "function" ? partyRoomCells(L.room) : null, room = cells ? new Set(cells.map(c => K(c[0], c[1]))) : null;
+    if (typeof _fp === "undefined" || !_fp || !_fp.cellsP) return null;
+    const L = _cb.lay, K = cardHexKey, H = L ? _cbHexesOf(L.room, L.mx, L.my) : null, cells = H && L.room ? H.cells : null, room = H ? H.keys : null;
     const taken = new Set();
     for (const [a, s] of _cb.slots) { if (!a || a === u || a.dead || (!(a.health > 0) && !(typeof player !== "undefined" && a === player)) || _cb.out.has(a)) continue; taken.add(K(s.x, s.y)); }   // (the cube has no health of a fighter's kind, its bars are the game's: its square is taken all the same, now that it walks among them, §2.69)
     if (typeof rotDecoys !== "undefined") for (const d of rotDecoys) if (d && !d.dead && d !== u) taken.add(K(d.x, d.y));
     if (typeof cardUltWalls === "function") for (const c of cardUltWalls()) taken.add(K(c[0], c[1]));   // (REEF PILLAR's spikes: js/cardults.js)
-    const s0 = _cbSq(u), c0 = [Math.round(s0[0]), Math.round(s0[1])], k0 = c0[0] + "," + c0[1];
-    const open = (x, y, nx, ny) => { const nk = nx + "," + ny; return !taken.has(nk) && (!room || room.has(nk)) && _fpEdgeOk(x, y, nx, ny); };
-    return { K, cells, taken, s0, c0, k0, open };
+    const s0 = _cbSq(u), c0 = cardHex(s0[0], s0[1]), k0 = K(c0[0], c0[1]);
+    const open = (x, y, nx, ny) => { const nk = K(nx, ny); return !taken.has(nk) && (!room || room.has(nk)) && _cbHexEdgeOk(x, y, nx, ny); };
+    return { K, cells, taken, s0, c0, k0, open, nb: cardHexNb };
 }
 // is the battle walking `a` now (its turn's walk, not yet there)? (js/game.js: the squad's spacing leaves it and the ones it passes alone)
 function cardBattleWalking(a) { const T = _cb.turn; return !!T && !!a && _cb.phase === "on" && !!T.walk && !T.arrived && ((T.who === "act" && T.f === a) || (T.who === "foe" && T.a === a)); }
@@ -447,7 +484,7 @@ function _cbReachable(u) {
     const n = _cbTiles(u), G = n ? _cbGrid(u) : null; if (!G) return null;
     const { taken, k0, open } = G, at = new Map([[k0, G.c0]]), steps = new Map([[k0, 0]]), prev = new Map(), order = [k0];
     for (let i = 0; i < order.length; i++) { const k = order[i], [x, y] = at.get(k), st = steps.get(k); if (st >= n) continue;
-        for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
+        for (const [nx, ny] of cardHexNb(x, y)) { const nk = G.K(nx, ny); if (steps.has(nk) || !open(x, y, nx, ny)) continue; steps.set(nk, st + 1); prev.set(nk, k); at.set(nk, [nx, ny]); order.push(nk); } }
     return { G, n, at, steps, prev, order, ends: order.filter(k => k !== k0 && !taken.has(k)) };   // (ends: the free squares it can stop on)
 }
 function _cbPathTo(R, k) { const path = []; for (let q = k; q && q !== R.G.k0; q = R.prev.get(q)) path.unshift(R.at.get(q)); return path.length ? path : null; }
@@ -457,8 +494,8 @@ function _cbWalkPath(u, t, kind, id) {
     let best = _cbPickSquare(u, ends.filter(k => { const c = at.get(k); return _cbHitsFrom(c[0], c[1], u, t, kind, id); }), at, t);
     if (!best && cells) {   // none in reach this turn: towards the nearest square it could hit from, by the floor the same way
         const qt = _cbSq(t), R = _cbReach(u, t, kind, id), far = new Map(), q = [];
-        for (const c of cells) { const k = K(c[0], c[1]); if ((taken.has(k) && k !== k0) || (R !== Infinity && Math.hypot(c[0] - qt[0], c[1] - qt[1]) > R + 0.05) || !_cbHitsFrom(c[0], c[1], u, t, kind, id)) continue; if (!far.has(k)) { far.set(k, 0); q.push([Math.round(c[0]), Math.round(c[1])]); } }
-        for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = far.get(x + "," + y); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (far.has(nk) || !open(x, y, nx, ny)) continue; far.set(nk, d + 1); q.push([nx, ny]); } }
+        for (const c of cells) { const k = K(c[0], c[1]); if ((taken.has(k) && k !== k0) || (R !== Infinity && Math.hypot(c[0] - qt[0], c[1] - qt[1]) > R + 0.05) || !_cbHitsFrom(c[0], c[1], u, t, kind, id)) continue; if (!far.has(k)) { far.set(k, 0); q.push([c[0], c[1]]); } }
+        for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = far.get(K(x, y)); for (const [nx, ny] of cardHexNb(x, y)) { const nk = K(nx, ny); if (far.has(nk) || !open(x, y, nx, ny)) continue; far.set(nk, d + 1); q.push([nx, ny]); } }
         let bd = far.has(k0) ? far.get(k0) : Infinity; for (const k of ends) { const d = far.has(k) ? far.get(k) : Infinity; if (d < bd) { bd = d; best = k; } }
     }
     if (!best) { const qt = _cbSq(t); let be = Math.hypot(s0[0] - qt[0], s0[1] - qt[1]) - 0.5; for (const k of ends) { const c = at.get(k), e = Math.hypot(c[0] - qt[0], c[1] - qt[1]); if (e < be) { be = e; best = k; } } }   // (no square to hit it from at all: nearer it)
@@ -468,7 +505,7 @@ function _cbWalkPath(u, t, kind, id) {
 // THE MOVE CARD (§2.56; the owner, 2026-11-18: "should have a move option, and you select a tile that you want to move to ... but you drag it just like every other card"): the free squares `f` can
 // walk to this turn (its tiles by its pace, round everyone: §2.39, §2.49), and the way to one of them (null: out of its reach, taken or not floor)
 function cardBattleWalkSquares(f) { const R = _cbReachable(f); return R ? R.ends.map(k => R.at.get(k)) : []; }
-function _cbStepPath(f, x, y) { const R = _cbReachable(f), k = Math.round(x) + "," + Math.round(y); return R && R.ends.indexOf(k) >= 0 ? _cbPathTo(R, k) : null; }
+function _cbStepPath(f, x, y) { const R = _cbReachable(f), k = cardHexKey(x, y); return R && R.ends.indexOf(k) >= 0 ? _cbPathTo(R, k) : null; }
 // THE FRONT LINE (§2.40; the owner, 2026-11-17: "make it to where the predators typically attack who's in front of them, unless they have some sort of ranged attack or pounce attack that allows
 // them to move ... a few spaces over for their attack ... I guess certain types can do those range attacks, and we'll keep it that way. But I want to make it to where we can have tanks in the game.
 // We can have characters absorb damage in front lines"): of yours (`list`), the one a creature reaches first over the floor (every taken square stands in its way, its own side's too), so the
@@ -479,7 +516,7 @@ const _CB_TIE = 1e-6;   // (two distances this close are a tie)
 function _cbDistFrom(a) {
     const G = _cbGrid(a); if (!G) return null;
     const dist = new Map([[G.k0, 0]]), q = [G.c0];
-    for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = dist.get(x + "," + y); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nx = x + dx, ny = y + dy, nk = nx + "," + ny; if (dist.has(nk) || !G.open(x, y, nx, ny)) continue; dist.set(nk, d + 1); q.push([nx, ny]); } }
+    for (let i = 0; i < q.length; i++) { const [x, y] = q[i], d = dist.get(G.K(x, y)); for (const [nx, ny] of cardHexNb(x, y)) { const nk = G.K(nx, ny); if (dist.has(nk) || !G.open(x, y, nx, ny)) continue; dist.set(nk, d + 1); q.push([nx, ny]); } }
     return { G, dist };
 }
 // its steps to the nearest free square it could bite `t` from (0: from its own square); Infinity when it can reach none (D: _cbDistFrom(a))
@@ -487,8 +524,8 @@ function _cbStepsTo(a, t, D) {
     if (_cbCanHit(a, t, "basic")) return 0;
     if (!D) return Infinity;
     const st = _cbSq(t), w = Math.ceil(_cbReach(a, t, "basic")); let d = Infinity;
-    for (let gx = Math.round(st[0]) - w; gx <= Math.round(st[0]) + w; gx++) for (let gy = Math.round(st[1]) - w; gy <= Math.round(st[1]) + w; gy++) {
-        const k = gx + "," + gy, s = D.dist.get(k); if (s === undefined || s >= d || (D.G.taken.has(k) && k !== D.G.k0) || !_cbHitsFrom(gx, gy, a, t, "basic")) continue; d = s; }
+    for (const [gx, gy] of cardHexDisc(st[0], st[1], w, false)) {
+        const k = D.G.K(gx, gy), s = D.dist.get(k); if (s === undefined || s >= d || (D.G.taken.has(k) && k !== D.G.k0) || !_cbHitsFrom(gx, gy, a, t, "basic")) continue; d = s; }
     return d;
 }
 function _cbFront(a, list) {
@@ -512,7 +549,7 @@ function _cbFront(a, list) {
 //   THE TANK: a follower whose PLAY STYLE is TANK (js/commandcenter.js) no longer draws them; no play style changes damage (the owner: "Don't change the damage numbers on any of the roles"). A
 //   technician's one hit on a creature can top that creature's tally where a Brawler's blows spread over many: that is the player's to play. RUN's last hits pick as before.
 function _cbTank(f) { return !!f && !f.isClone && f.playStyle === "tank"; }
-// BLOCK (§2.82; the owner, 2026-11-27: "a block action alongside their attacks and their moves move option, and the block option would put them in a withdrawal state, and they can't [...] move,
+// BLOCK (§2.83; the owner, 2026-11-27: "a block action alongside their attacks and their moves move option, and the block option would put them in a withdrawal state, and they can't [...] move,
 // but they would take half damage until next turn"; asked: "Always ready"): every follower's card, beside MOVE. Played, its turn is over; it stays on its square (a push or pull does not move it)
 // and every blow on it does half (js/npc.js followerBlockCut, asked by js/helpers.js applyDamage; not on top of SHELL GUARD's half) until its next turn begins (_cbYourTurn). The battle over, it ends.
 const CARD_BATTLE_BLOCK = { col: "#8fe3ff" };
@@ -589,8 +626,8 @@ function _cbPickSquare(u, keys, at, t) {
     for (const k of keys) { const c = at.get(k), v = ps === "defensive" ? Math.hypot(c[0] - q[0], c[1] - q[1]) : _cbFoesNextTo(c); if (v > bv + _CB_TIE) { bv = v; best = k; } }
     return best;
 }
-// the enemies of the battle on the 8 squares round a square (a RECKLESS one's crowd)
-function _cbFoesNextTo(c) { let n = 0; for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const s = _cbSq(a); if (Math.max(Math.abs(Math.round(s[0]) - c[0]), Math.abs(Math.round(s[1]) - c[1])) === 1) n++; } return n; }
+// the enemies of the battle on the 6 hexes round a hex (a RECKLESS one's crowd)
+function _cbFoesNextTo(c) { let n = 0; for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const s = _cbSq(a); const d = Math.hypot(s[0] - c[0], s[1] - c[1]); if (d > 0.5 && d < 1.2) n++; } return n; }   // (one of the 6 round it)
 // a frame of a walk: along its squares at CARD_BATTLE.stepPace, its legs going; at the last, that is its square. True when its turn is over (there and the beat after it, or it went down).
 function _cbWalkTick(T, u) {
     const f0 = _cbF(), me = !!u && typeof player !== "undefined" && u === player; if (!u || u.dead || (!me && !(u.health > 0))) return true;   // (me: the cube's walk, §2.69)
@@ -613,9 +650,9 @@ function _cbTether(T, u) {
 }
 // after its attack: one carried a tile or more off its square (the owner, of the striker's leap: "They jump and create new positioning") takes the free square of the room nearest where it stands
 function _cbResquare(u) {
-    const s = u && _cb.slots.get(u), L = _cb.lay; if (!s || u.dead || Math.hypot(u.x - s.x, u.y - s.y) < 1 || !L || !L.room || typeof partyRoomCells !== "function") return;
-    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== u && !a.dead && !_cb.out.has(a)) taken.add(Math.round(q.x) + "," + Math.round(q.y));
-    let best = null, bd = 1.5; for (const c of partyRoomCells(L.room)) { if (taken.has(c[0] + "," + c[1])) continue; const d = Math.hypot(c[0] - u.x, c[1] - u.y); if (d < bd) { bd = d; best = c; } }
+    const s = u && _cb.slots.get(u), L = _cb.lay, H = cardHexRoom(); if (!s || u.dead || Math.hypot(u.x - s.x, u.y - s.y) < 1 || !L || !L.room || !H) return;
+    const taken = new Set(); for (const [a, q] of _cb.slots) if (a && a !== u && !a.dead && !_cb.out.has(a)) taken.add(cardHexKey(q.x, q.y));
+    let best = null, bd = 1.5; for (const c of H.cells) { if (taken.has(cardHexKey(c[0], c[1]))) continue; const d = Math.hypot(c[0] - u.x, c[1] - u.y); if (d < bd) { bd = d; best = c; } }
     if (best) _cb.slots.set(u, { x: best[0], y: best[1] });
 }
 // PUSHES AND PULLS ON THE SQUARES (§2.63; the owner, 2026-11-18, of three offered: "Its own distance"): in a battle a push or a pull moves a fighter by its own tiles as squares, a part of a
@@ -626,24 +663,25 @@ function _cbResquare(u) {
 // one in front of another is not stopped by the square the other is leaving.
 function cardBattlePush(t, dx, dy, tiles, to) {
     if (_cb.phase !== "on" || !t || t.dead || !_cb.slots || !_cb.slots.has(t) || _cb.out.has(t) || !(tiles > 0)) return false;
-    if (t._cbBlock) return false;   // (BLOCKING, it holds its square: §2.82)
-    if (!t.isBoss && !(t.bodyR > 0) && (to || dx || dy)) (_cb.pushQ || (_cb.pushQ = [])).push({ t, dx, dy, n: Math.max(1, Math.ceil(tiles - 1e-6)), to: to ? [Math.round(to[0]), Math.round(to[1])] : null, k: 0 });
+    if (t._cbBlock) return false;   // (BLOCKING, it holds its hex: §2.83)
+    if (!t.isBoss && !(t.bodyR > 0) && (to || dx || dy)) (_cb.pushQ || (_cb.pushQ = [])).push({ t, dx, dy, n: Math.max(1, Math.ceil(tiles - 1e-6)), to: to ? cardHex(to[0], to[1]) : null, k: 0 });
     t.kbVX = 0; t.kbVY = 0; return true;
 }
 function cardBattlePull(t, x, y, tiles) { return cardBattlePush(t, 0, 0, tiles, [x, y]); }
 function _cbPushes() {
     const Q = _cb.pushQ; if (!Q || !Q.length) return; _cb.pushQ = [];
     for (const q of Q) {   // (each one's line, from its square)
-        const s = _cb.slots.get(q.t); if (!s) { q.n = 0; continue; } q.x0 = Math.round(s.x); q.y0 = Math.round(s.y); q.x = q.x0; q.y = q.y0;
-        if (q.to) { q.dx = q.to[0] - q.x0; q.dy = q.to[1] - q.y0; q.n = Math.min(q.n, Math.max(Math.abs(q.dx), Math.abs(q.dy))); }
-        const L = Math.max(Math.abs(q.dx), Math.abs(q.dy)); if (!(L > 0)) { q.n = 0; continue; } q.sx = q.dx / L; q.sy = q.dy / L;
+        const s = _cb.slots.get(q.t); if (!s) { q.n = 0; continue; } const c0 = cardHex(s.x, s.y); q.x0 = c0[0]; q.y0 = c0[1]; q.x = q.x0; q.y = q.y0;
+        if (q.to) { q.dx = q.to[0] - q.x0; q.dy = q.to[1] - q.y0; q.n = Math.min(q.n, Math.round(Math.hypot(q.dx, q.dy))); }
+        const L = Math.hypot(q.dx, q.dy); if (!(L > 1e-6) || !(q.n > 0)) { q.n = 0; continue; } q.sx = q.dx / L; q.sy = q.dy / L;
     }
     for (let moved = true, pass = 0; moved && pass < 16; pass++) {
         moved = false;
         for (const q of Q) {
             const t = q.t; if (q.k >= q.n || !t || t.dead || _cb.out.has(t)) continue;
             const G = _cbGrid(t); if (!G) continue;
-            const nx = Math.round(q.x0 + q.sx * (q.k + 1)), ny = Math.round(q.y0 + q.sy * (q.k + 1)); if (!G.open(q.x, q.y, nx, ny)) continue;
+            let nx = q.x, ny = q.y, bd = -Infinity; if (q.to && cardHexKey(q.x, q.y) === cardHexKey(q.to[0], q.to[1])) { q.k = q.n; continue; }
+            for (const c of cardHexNb(q.x, q.y)) { const v = q.to ? -Math.hypot(c[0] - q.to[0], c[1] - q.to[1]) : (c[0] - q.x) * q.sx + (c[1] - q.y) * q.sy; if (v > bd + 1e-9) { bd = v; nx = c[0]; ny = c[1]; } }   /* (a hex at a time: of the 6 round it, a push the one most along its line, a pull the one nearest the hex it is drawn to) */ if (!G.open(q.x, q.y, nx, ny)) continue;
             q.x = nx; q.y = ny; q.k++; moved = true; _cb.slots.set(t, { x: nx, y: ny });
             const T = _cb.turn; if (T && (T.f === t || T.a === t) && T.anc) T.anc = [nx, ny];   // (in its own turn, a biter thrown off a jelly shield: held by its new square from now)
         }
@@ -939,7 +977,7 @@ function _cbSmashTick(T, f0) {
     if (f0 - T.last >= C.beat || !live) _cbAfterAct(f0);
 }
 function _cbYourTurn() {
-    _cb.acted.clear(); _cb.youActed = false; _cbBlockClear();   // (BLOCK lasts until that follower's next turn: §2.82)
+    _cb.acted.clear(); _cb.youActed = false; _cbBlockClear();   // (BLOCK lasts until that follower's next turn: §2.83)
     for (const [f, c] of _cb.charge) { if (!_cbAlive(f)) { _cb.charge.delete(f); continue; } c.left--; if (c.left > 0) _cb.acted.add(f); }   // (still charging: its turn passes; charged: it fires at its turn)
     _cb.round++;
     if (_cb.round > 1) for (const m of _cb.cd.values()) for (const id in m) if (m[id] > 0) m[id]--;
@@ -977,15 +1015,15 @@ function cardBattlePlay(f, kind, id, target, fire) {
     // enemy takes that enemy's square; let go nowhere, a card takes the nearest enemy (or its square), as before (§11.4)
     const def = typeof cardShapeDef === "function" ? cardShapeDef(f, kind, id) : null, aimK = def ? cardShapeAim(def) : "foe";   // (an Ultimate's shape too: js/cardults.js §2.64)
     let aim = null;
-    if (aimK === "tile" && target && target.tile && Number.isFinite(target.x) && Number.isFinite(target.y)) aim = { x: Math.round(target.x), y: Math.round(target.y), tile: true };
+    if (aimK === "tile" && target && target.tile && Number.isFinite(target.x) && Number.isFinite(target.y)) { const h = cardHex(target.x, target.y); aim = { x: h[0], y: h[1], tile: true }; }
     if (live.indexOf(target) < 0) target = _cbNearest(f, live);
-    if (aimK === "tile" && !aim) { const q = _cbSq(target); aim = { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
+    if (aimK === "tile" && !aim) { const q = _cbSq(target), h = cardHex(q[0], q[1]); aim = { x: h[0], y: h[1], tile: true }; }
     if (aimK === "foe") aim = target;
     const card = cardBattleCards(f).find(c => c.kind === kind && (kind !== "move" || c.id === id));
     if (!card || (!card.ready && !fire)) return false;
-    const aimSq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? [Math.round(t.x), Math.round(t.y)] : null;
+    const aimSq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? cardHex(t.x, t.y) : null;
     const say = w => { _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · " + w, until: _cbF() + 120 }; _cbRefresh(); return false; };   // (said in the banner for 2 s: words over the world wait while the battle's camera is up, js/drops.js)
-    // BLOCK (§2.82): let go anywhere over the fight, it braces where it stands: its turn is over, and until its next turn it takes half damage and is not moved
+    // BLOCK (§2.83): let go anywhere over the fight, it braces where it stands: its turn is over, and until its next turn it takes half damage and is not moved
     if (kind === "block") {
         f._cbBlock = true; f._blockUntil = 0; _cb.acted.add(f);
         _cb.say = { text: (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "IT") + " · BLOCKING · HALF DAMAGE TILL ITS NEXT TURN", until: _cbF() + 120 };
@@ -995,7 +1033,7 @@ function cardBattlePlay(f, kind, id, target, fire) {
     // THE MOVE CARD (§2.56): let go on a free square in its reach, its turn is the walk there (round everyone); anywhere else, nothing is played
     if (kind === "walk") {
         const t = aimSq(dropped), walk = t && _cb.lay ? _cbStepPath(f, t[0], t[1]) : null, G = t && !walk ? _cbGrid(f) : null;
-        if (!walk) return say(!t ? "DROP IT ON A SQUARE" : G && (G.taken.has(t[0] + "," + t[1]) || G.k0 === t[0] + "," + t[1]) ? "THAT SQUARE IS TAKEN" : "OUT OF ITS REACH");
+        if (!walk) return say(!t ? "DROP IT ON A HEX" : G && (G.taken.has(G.K(t[0], t[1])) || G.k0 === G.K(t[0], t[1])) ? "THAT HEX IS TAKEN" : "OUT OF ITS REACH");
         _cb.turn = { who: "act", f, kind, id: null, target: null, t0: _cbF(), hit: 0, fired: false, saved: null, walk, wi: 0, arrived: 0 }; _cb.acted.add(f);
         _cbRefresh(); return true;
     }
@@ -1279,14 +1317,14 @@ function cardBattleCards(f) {
     for (const c of out) if (c.kind === "move") { const a = _cbArt(f, c.id); if (a) c.art = a; } else if (c.kind === "basic") { const a = _cbBasicArt(f); if (a) c.art = a; }
     for (const c of out) { c.chargeT = _cbChargeTurns(f, c.kind, c.id); if (c.kind === "move" && !_cbCools(f, "move")) c.recharge = 0; }   // (by class: a Mage's charge, a Brawler's cooldown, a Technician's both)
     for (const c of out) { const say = typeof cardShapeSays === "function" ? cardShapeSays(f, c.kind, c.id) : null; if (say) c.fx = say; else if (c.kind === "ult") c.fx = String(c.fx || "").replace(/\s*When it is fully charged[^]*$/, ""); }   // (A CARD'S WORDS IN A BATTLE, §2.58: its squares and its effects in turns, js/cardshapes.js; an Ultimate's without the real time's tap)
-    out.push({ kind: "block", tag: "BLOCK", name: "BLOCK", fx: "Drop it on the fight: it braces where it stands, taking half damage until its next turn.", ready: true, col });   // (BLOCK, §2.82: always ready)
-    { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a square: it walks there, up to " + n + (n === 1 ? " square" : " squares") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.56: always ready while it has a pace)
+    out.push({ kind: "block", tag: "BLOCK", name: "BLOCK", fx: "Drop it on the fight: it braces where it stands, taking half damage until its next turn.", ready: true, col });   // (BLOCK, §2.83: always ready)
+    { const n = _cbTiles(f); out.push({ kind: "walk", tag: "MOVE", name: "MOVE", fx: "Drop it on a hex: it walks there, up to " + n + (n === 1 ? " hex" : " hexes") + ", round everyone.", ready: n > 0, tiles: n, col }); }   // (THE MOVE CARD, §2.56: always ready while it has a pace)
     if (_cb.turn && (_cb.turn.who === "you" || _cb.turn.who === "act") && _cb.acted && _cb.acted.has(f)) for (const c of out) { c.ready = false; c.done = true; }   // (it has had its card this round)
     return out;
 }
 function _cbCol(f) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === f.element) : null; return f.isClone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : e ? e.color : "#19e6c1"; }
 const _cbEsc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-// A FOLLOWER'S CARDS IN A ROW: its BLOCK and MOVE cards share one slot, stacked, each half as tall, their words left out (§2.82: the agent's, so a follower's attack cards keep their size with
+// A FOLLOWER'S CARDS IN A ROW: its BLOCK and MOVE cards share one slot, stacked, each half as tall, their words left out (§2.83: the agent's, so a follower's attack cards keep their size with
 // a sixth card; what each does is said as it is dragged, cardBattlePreview)
 function _cbCardsHTML(cards) {
     const b = cards.findIndex(c => c.kind === "block"), w = cards.findIndex(c => c.kind === "walk");
@@ -1296,7 +1334,7 @@ function _cbCardsHTML(cards) {
 function _cbCardHTML(c) {
     const st = c.done ? "DONE" : c.kind === "serum" ? (c.ready ? "SERUM " + c.serums : "NO SERUM") : c.kind === "shoot" ? (c.ready ? "AMMO " + c.ammo : "NO AMMO") : c.kind === "ult" ? (c.ready ? "READY" : c.charge + "%") : c.ready ? "READY" : c.kind === "walk" ? "NO PACE" : c.turns + (c.turns === 1 ? " TURN" : " TURNS");   // (SHOOT shows the ammunition on its foot: §2.66, the owner: "shows the ammo [...] the bottom")
     const tn = n => n + (n === 1 ? " TURN" : " TURNS"), rc = [c.chargeT > 0 ? "CHARGE " + tn(c.chargeT) : "", c.kind === "move" && c.recharge > 0 ? "RECHARGE " + tn(c.recharge) : ""].filter(Boolean).join(" · ");
-    const meta = c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : c.kind === "walk" ? '<i class="cb-rc">UP TO ' + c.tiles + (c.tiles === 1 ? " SQUARE" : " SQUARES") + '</i>' : rc ? '<i class="cb-rc">' + rc + '</i>' : "";
+    const meta = c.kind === "ult" ? '<i class="cb-meter"><u style="width:' + c.charge + '%"></u></i>' : c.kind === "walk" ? '<i class="cb-rc">UP TO ' + c.tiles + (c.tiles === 1 ? " HEX" : " HEXES") + '</i>' : rc ? '<i class="cb-rc">' + rc + '</i>' : "";
     return '<div class="cb-card cb-' + c.kind + (c.ready ? " ready" : " wait") + (c.done ? " done" : "") + (c.art ? " art" : "") + '" data-kind="' + c.kind + '" data-id="' + _cbEsc(c.id || "") + '" style="--k:' + (c.kind === "ult" ? "#ffcc44" : c.col) + '">' + (c.art ? '<i class="cb-art" style="background-image:url(\'' + _cbEsc(c.art) + '\')"></i>' : "") + '<i class="cb-tag">' + _cbEsc(c.tag) + '</i><b class="cb-nm">' + _cbEsc(c.name) + '</b><span class="cb-fx">' + _cbEsc(c.fx) + '</span>' + meta + '<span class="cb-st">' + _cbEsc(st) + '</span></div>';
 }
 // fills the screen: the enemy list and the band's columns, rebuilt when what they show has changed (a signature), the portraits drawn once a column
@@ -1380,14 +1418,14 @@ function _cbFoeOnTileAt(ev) {
     const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view ? VIEW3D.view : null;
     if (!V || typeof toCanvas !== "function" || typeof cardShapeTileAt !== "function") return null;
     const p = toCanvas(ev.clientX, ev.clientY), t = cardShapeTileAt(p[0], p[1], V); if (!t) return null;
-    for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const q = _cbSq(a); if (Math.round(q[0]) === t.x && Math.round(q[1]) === t.y) return a; }
+    for (const a of _cb.foes) { if (!_cbFoeOk(a)) continue; const q = _cbSq(a); if (cardHexKey(q[0], q[1]) === cardHexKey(t.x, t.y)) return a; }
     return null;
 }
 function _cbFoeTileDraw(V) {
     const D = typeof _cbDrag !== "undefined" ? _cbDrag : null, a = D && D.foe; if (!a || !_cbFoeOk(a) || typeof V.screenNow !== "function" || typeof ctx === "undefined") return;
-    const q = _cbSq(a), x = Math.round(q[0]), y = Math.round(q[1]), h = 0.48, L = cardBattleLift(x, y), P = [[x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]].map(c => V.screenNow(c[0], c[1], L));
+    const q = _cbSq(a), hc = cardHex(q[0], q[1]), x = hc[0], y = hc[1], L = cardBattleLift(x, y), P = cardHexCorners(x, y, 0.02).map(c => V.screenNow(c[0], c[1], L));
     if (!P.every(c => Number.isFinite(c[0]) && Number.isFinite(c[1]))) return;
-    const path = () => { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); }, pulse = 0.5 + 0.5 * Math.sin(_cbF() * 0.2);
+    const path = () => { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath(); }, pulse = 0.5 + 0.5 * Math.sin(_cbF() * 0.2);
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineJoin = "round";
     path(); ctx.globalAlpha = 0.38 + 0.22 * pulse; ctx.fillStyle = "#ffe733"; ctx.fill();
     path(); ctx.globalAlpha = 1; ctx.strokeStyle = "rgba(5,8,16,0.8)"; ctx.lineWidth = 6; ctx.stroke(); ctx.strokeStyle = "#fff6b0"; ctx.lineWidth = 3; ctx.stroke();
@@ -1397,10 +1435,10 @@ function _cbDragAim(D, ev) {
     if (_cbOverBand(ev)) { D.foe = null; return null; }   // (back over the cards: nothing aimed, no square lit)
     const foe = _cbDragFoe(ev) || _cbFoeOnTileAt(ev), def = D.kind !== "walk" && typeof cardShapeDef === "function" ? cardShapeDef(D.f, D.kind, D.id) : null, k = D.kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
     D.foe = D.kind === "walk" || D.kind === "pass" || D.kind === "serum" || D.kind === "block" ? null : foe;   // (a MOVE card aims at no enemy: its square is taken, shown red, not lit gold: §2.56; HOLD FIRE at none, §2.66, nor the Mutator's serum, §2.70)
-    if (D.kind === "pass" || D.kind === "serum" || D.kind === "block") return true;   // (BLOCK at none: §2.82)
+    if (D.kind === "pass" || D.kind === "serum" || D.kind === "block") return true;   // (BLOCK at none: §2.83)
     if (k === "foe") return foe;
     if (k === "any") return true;
-    if (foe) { const q = _cbSq(foe); return { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
+    if (foe) { const q = _cbSq(foe), h = cardHex(q[0], q[1]); return { x: h[0], y: h[1], tile: true }; }
     const V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view ? VIEW3D.view : null;
     if (!V || typeof toCanvas !== "function" || typeof cardShapeTileAt !== "function") return null;
     const p = toCanvas(ev.clientX, ev.clientY); return cardShapeTileAt(p[0], p[1], V);
@@ -1412,15 +1450,15 @@ function _cbDragAim(D, ev) {
 function cardBattlePreview(f, kind, id, target) {
     if (!cardBattleActive() || !f || kind === "pass" || kind === "serum") return null;
     if (typeof player !== "undefined" && f === player) return null;
-    if (kind === "block") return { text: "BLOCKS \u00b7 HALF DAMAGE", ok: "now" };   // (§2.82)
+    if (kind === "block") return { text: "BLOCKS \u00b7 HALF DAMAGE", ok: "now" };   // (§2.83)
     const live = _cb.foes.filter(_cbFoeOk); if (!live.length) return null;
     const def = typeof cardShapeDef === "function" ? cardShapeDef(f, kind, id) : null, aimK = kind === "walk" ? "tile" : def ? cardShapeAim(def) : "foe";
-    const sq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? [Math.round(t.x), Math.round(t.y)] : null;
+    const sq = t => t && t.tile && Number.isFinite(t.x) && Number.isFinite(t.y) ? cardHex(t.x, t.y) : null;
     if (kind === "walk") { const t = sq(target); if (!t) return null; return _cb.lay && _cbStepPath(f, t[0], t[1]) ? { text: "MOVE HERE", ok: "now" } : { text: "OUT OF ITS REACH", ok: "no" }; }
     let foe = live.indexOf(target) >= 0 ? target : null, aim = null;
-    if (aimK === "tile") aim = sq(target) ? { x: Math.round(target.x), y: Math.round(target.y), tile: true } : null;
+    if (aimK === "tile") { const h = sq(target); aim = h ? { x: h[0], y: h[1], tile: true } : null; }
     if (aimK === "foe" && !foe) return null;   /* (over no enemy: nothing said; let go there, it takes the nearest, as before) */
-    if (aimK === "tile" && !aim) { if (!foe) return null; const q = _cbSq(foe); aim = { x: Math.round(q[0]), y: Math.round(q[1]), tile: true }; }
+    if (aimK === "tile" && !aim) { if (!foe) return null; const q = _cbSq(foe), h = cardHex(q[0], q[1]); aim = { x: h[0], y: h[1], tile: true }; }
     if (aimK === "foe") aim = foe;
     const reachT = aimK === "tile" ? aim : foe;
     if (kind !== "ult" && _cb.lay && aimK !== "any" && !_cbCanHit(f, reachT, kind, id)) return _cbWalkPath(f, reachT, kind, id) ? { text: "MOVES IN FIRST", ok: "walk" } : { text: "NO WAY THROUGH", ok: "no" };
