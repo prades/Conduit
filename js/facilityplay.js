@@ -369,7 +369,7 @@ function facilityFloorAt(x, y, F) { F = F || (_fp && _fp.F); return !!F && facil
 // AN ENEMY NEAR (facilityEnemyNear): a creature not of yours, within FP_MOVE.near tiles and in sight; or one that has turned on you or your squad, within FP_MOVE.chase; or a hit on you within FP_MOVE.hitWindow
 // frames. A sleeping or calm boss and a spider lurking at its cover are not (they are not after you). The walks the game makes for its own reasons (facilityWalkTo: a station, a launcher's pad, a body) are never
 // stopped or cut. The Settings' COMBAT STEP turns all of it off (FP_MOVE.cap, kept per browser).
-const FP_MOVE = { doorReach: 2.6, cap: true, capTiles: 3, near: 6, chase: 10, hitWindow: 180, key: "conduit_move_cap" };
+const FP_MOVE = { doorReach: 2.6,   /* (no longer used by the tap: facilityNextDoor, 2026-11-27) */ cap: true, capTiles: 3, near: 6, chase: 10, hitWindow: 180, key: "conduit_move_cap" };
 try { if (typeof localStorage !== "undefined" && localStorage.getItem(FP_MOVE.key) === "off") FP_MOVE.cap = false; } catch (e) {}
 // the room a point is in (the room of the nearest floor cell, for a point on a wall's margin)
 function facilityRoomIdAt(x, y) {
@@ -392,6 +392,13 @@ function facilityShowsActor(a) {
     const there = facilityRoomIdAt(a.x, a.y); if (!there || there === here) return true;
     return typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(here) && FP_NEST_ROOMS.has(there);
 }
+// NEXT-DOOR ROOMS (the owner, 2026-11-27: "You need to make it to where you can walk into other rooms [...] right now it blocks you from walking into other rooms"; asked how far a tap should reach:
+// "Next-door rooms"; superseding 2026-11-01's "a little way into the next", FP_MOVE.doorReach): a tap anywhere in a room that shares a doorway with the room you are in walks you there; a room farther off
+// is still refused with the ✕, so a stray tap never sends you across the map. A locked door is the path's to refuse (facilityWalkTo), as before.
+function facilityNextDoor(here, there) {
+    for (const o of (_fp && _fp.F && _fp.F.openings) || []) if (o && o.rooms && o.rooms.indexOf(here) >= 0 && o.rooms.indexOf(there) >= 0) return true;
+    return false;
+}
 // may a tap at the tile (gx, gy) send the player there? (a tap that is not on the floor at all is facilityWalkTo's to refuse)
 function facilityTapAllowed(gx, gy) {
     if (!_fp || !_fp.F || !_fp.cellsP) return true;
@@ -399,12 +406,7 @@ function facilityTapAllowed(gx, gy) {
     const here = facilityRoomIdAt(player.x, player.y), there = facilityRoomIdAt(c[0], c[1]);
     if (!here || !there || here === there) return true;
     if (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(here) && FP_NEST_ROOMS.has(there)) return true;   // (the Nest grown out, build 2026-11-12a: its tunnels and caves are one place, a tap reaches across them)
-    for (const o of _fp.F.openings || []) {   // through a doorway of the room you are in, a little way into the next
-        if (!o || !o.rooms || o.rooms.indexOf(here) < 0 || o.rooms.indexOf(there) < 0 || !o.a || !o.b) continue;
-        const ax = o.a[0], ay = o.a[1], bx = o.b[0], by = o.b[1], L2 = (bx - ax) ** 2 + (by - ay) ** 2, t = L2 > 0 ? Math.max(0, Math.min(1, ((c[0] - ax) * (bx - ax) + (c[1] - ay) * (by - ay)) / L2)) : 0;
-        if (Math.hypot(c[0] - (ax + (bx - ax) * t), c[1] - (ay + (by - ay) * t)) <= FP_MOVE.doorReach) return true;
-    }
-    return false;
+    return facilityNextDoor(here, there);   // (anywhere in a room next door: 2026-11-27)
 }
 // a refused tap: a small ✕ where it landed (now and then, not for every tap of a flurry)
 function facilityTapRefused(ex, ey) {

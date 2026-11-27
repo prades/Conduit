@@ -219,7 +219,9 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target.untargetable) return;   // underground: nothing reaches it
     if (target._consume && typeof consumeGuard === "function") amount = consumeGuard(target, amount);   // (SUNDEW holding a catch: 75% less, js/elements.js)
     if (target.curled > 0 && typeof rolyTaken === "function") amount = rolyTaken(target, amount);   // (a roly-poly curled into its wheel: x0.3, js/rolypoly.js; build 2026-11-13aa)
-    if (target._guardUntil > 0 && typeof shellGuardCut === "function") amount = shellGuardCut(target, amount);   // (the Hammer Slug's SHELL GUARD: less while it braces, js/evolution.js; build 2026-11-09c)
+    { const _a0 = amount;
+      if (target._guardUntil > 0 && typeof shellGuardCut === "function") amount = shellGuardCut(target, amount);   // (the Hammer Slug's SHELL GUARD: less while it braces, js/evolution.js; build 2026-11-09c)
+      if (amount === _a0 && typeof followerBlockCut === "function") amount = followerBlockCut(target, amount); }   // (BLOCK: half while it blocks, js/npc.js; not on top of SHELL GUARD's half)
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;

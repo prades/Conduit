@@ -154,7 +154,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Balancing the followers (every evolved form side by side: stats, everyday type and status, moves, ability, Ultimate, and measured damage, healing, blocking and control; made from the code by `node tools/balance.js`, so it is never stale; the trial that measures it is `node tools/balance-trial.js`) | `../balance.html` |
-| Combat (and walls, cover and sight: §8, built in `2026-11-06h`; the wild ants' own specials, the scout's CALL FOR BACKUP, the striker's LEAP STRIKE, the tank's GROUND SLAM: §9, built in `2026-11-17r`) | `COMBAT.md` |
+| Combat (and walls, cover and sight: §8, built in `2026-11-06h`; the wild ants' own specials, the scout's CALL FOR BACKUP, the striker's LEAP STRIKE, the tank's GROUND SLAM: §9, built in `2026-11-17r`; followers that are not RECKLESS seek healing when under half: §10, built in `2026-11-17dx`) | `COMBAT.md` |
 | The player's part in a fight: the bars come back, the repair kit, GUARD and STUN DIVE (designed 2026-11-11) | `PLAYER-COMBAT.md` |
 | Card battles: turn-based fights, one card a turn from the whole squad, charged by turns (the owner's direction 2026-11-17; built step by step since `2026-11-17d`; **the game's fights since `2026-11-17ct`**, the owner, 2026-11-23, wherever the 3D view draws the room) | `CARD-BATTLES.md` |
 | The battle look, the JRPG feel: the battle view (zoom, soft edges), bigger numbers in a face per damage type, attack frames per form (designed 2026-11-11; nothing built) | `BATTLE-LOOK.md` |
