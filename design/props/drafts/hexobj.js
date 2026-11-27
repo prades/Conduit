@@ -142,21 +142,47 @@
     }
     return { g };
   }
+  // THE CRUMBLING WALL (draft 2; the owner, of draft 1's cracked hex blocks: "I don't like the weak wall. Some of this stuff can partly intersect with the straight geometry. So the broken wall could look
+  // like it's kind of crumbling part of the straight wall"): a stretch of the facility's own straight wall (its white face, its teal base, its cap), 2 tiles long, whose skin has broken away in a jagged hole
+  // and at its top corner, showing a HEX HONEYCOMB core behind (the hexes inside the straight wall), some cells fallen out to a dark void; the chunks lie at its foot on the floor; amber cracks round the break.
   function weakwall() {
-    const g = G(), conc = S.std('#a7adb4', 0.05, 0.85), concDk = S.std('#8d939a', 0.05, 0.85), H = px(54), r = 0.5;
-    for (const x of [-0.5, 0.5]) {
-      const b = G();
-      for (let j = 0; j < 3; j++) { const blk = hexP(r * (j === 2 ? 0.94 : 0.98), H / 3 - px(2), j % 2 ? concDk : conc); blk.rotation.y = (j % 2) * 0.04 * (x > 0 ? 1 : -1); b.add(at(blk, 0, H / 6 + j * H / 3, 0));
-        if (j < 2) b.add(at(hexP(r * 0.9, px(2), mt.graphite), 0, (j + 1) * H / 3 - px(1), 0)); }      // the mortar seams
-      seed = x > 0 ? 3 : 9; crack(b, 0, r * 0.98, H * 0.55, 0.4, 0.16); crack(b, 1, r * 0.98, H * 0.3, 0.36, 0.14); crack(b, 5, r * 0.98, H * 0.72, 0.3, 0.1);
-      at(b, x, 0, 0); g.add(b);
+    const g = G(), L = 2.0, TK = 0.6, H = px(122), skin = S.std('#e8eef0', 0.04, 0.55), base = S.std('#3f8f96', 0.3, 0.45), cap = S.std('#cfd8dc', 0.05, 0.5), core = S.std('#9aa1a9', 0.05, 0.9), coreDk = S.std('#7d848c', 0.05, 0.9);
+    seed = 101; const nz = []; for (let i = 0; i < 24; i++) nz.push(0.78 + rnd() * 0.42);
+    const blob = (x, y, cx, cy, rx, ry) => { const dx = (x - cx) / rx, dy = (y - cy) / ry, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx); const k = nz[Math.floor(((a + PI) / (2 * PI)) * 24) % 24]; return d / k; };
+    const holeD = (x, y) => Math.min(blob(x, y, 0.12, H * 0.42, 0.42, H * 0.3), blob(x, y, 0.62, H * 1.02, 0.36, H * 0.26));   // the break: a hole low in the middle, and its top corner bitten off; < 1 inside
+    // the honeycomb core, its cells' axes along z (into the wall), only where the skin is gone (and a margin)
+    const rc = 0.07, dxc = 2 * rc * Math.cos(PI / 6), dyc = 1.5 * rc;
+    for (let row = 0; row * dyc < H + rc; row++) for (let i = 0; i * dxc < L + dxc; i++) {
+      const x = -L / 2 + i * dxc + (row % 2) * dxc / 2, y = row * dyc; if (x > L / 2 || y > H) continue;
+      const d = holeD(x, y); if (d > 1.05) continue;
+      if (d < 0.55 && rnd() < 0.45) continue;                                                            // fallen out: the void behind shows
+      const c = hexP(rc * 0.9, 0.16, (row + i) % 3 ? core : coreDk); c.rotation.set(PI / 2, PI / 6, 0);   // (spun a sixth about its own axis, then tipped so the axis runs into the wall)
+      g.add(at(c, x, y, TK / 2 - 0.1 - (d < 0.7 ? 0.08 : 0)));   // (a shallow honeycomb just behind the skin, sunk a little deeper in the middle of the break)
     }
-    seed = 17; for (let i = 0; i < 7; i++) { const c = new T.Mesh(new T.DodecahedronGeometry(0.05 + rnd() * 0.04, 0), concDk); c.position.set((rnd() - 0.2) * 1.1, px(2), 0.36 + rnd() * 0.1); c.scale.y = 0.6; g.add(c); }   // spalled bits at its foot
+    g.add(at(cbox(L * 0.84, H * 0.98, 0.02, 0.002, mt.graphite), 0.1, H * 0.49, TK / 2 - 0.3));          // the dark behind the void
+    // the skin: the front (+z) and the cap in small plates, none inside the break; the end (+x) whole
+    const st = 0.08;
+    for (let x = -L / 2 + st / 2; x < L / 2; x += st) for (let y = st / 2; y < H; y += st) {
+      if (holeD(x, y) < 1) continue; const base0 = y < px(12);
+      g.add(at(new T.Mesh(new T.BoxGeometry(st + 0.002, Math.min(st, H - y + st / 2) + 0.002, 0.03), base0 ? base : skin), x, y, TK / 2 - 0.015));
+    }
+    for (let x = -L / 2 + st / 2; x < L / 2; x += st) for (let z = -TK / 2 + st / 2; z < TK / 2; z += st) { if (holeD(x, H - 0.01) < 1) continue; g.add(at(new T.Mesh(new T.BoxGeometry(st + 0.002, px(3), st + 0.002), cap), x, H + px(1.5) - 0.03, z)); }
+    g.add(at(cbox(0.03, H, TK, 0.004, skin), L / 2 - 0.015, H / 2, 0)); g.add(at(cbox(0.032, px(12), TK, 0.004, base), L / 2 - 0.014, px(6), 0));
+    // the chunks at its foot: bits of skin and concrete, a few hex cells, on the floor in front
+    for (let i = 0; i < 16; i++) {
+      const pick = rnd(), x = 0.12 + (rnd() - 0.5) * 0.9, z = TK / 2 + 0.06 + rnd() * 0.32;
+      const m = pick < 0.35 ? cbox(0.06 + rnd() * 0.08, 0.02, 0.05 + rnd() * 0.06, 0.004, skin) : pick < 0.7 ? new T.Mesh(new T.DodecahedronGeometry(0.04 + rnd() * 0.04, 0), core) : hexP(rc * 0.9, 0.08, coreDk);
+      m.position.set(x, px(2) + rnd() * px(3), z); m.rotation.set(rnd() * 2, rnd() * 3, rnd() * 2); g.add(m);
+    }
+    // amber cracks out from the break, on the skin
+    for (let i = 0; i < 9; i++) { const a = rnd() * PI * 2, r0 = 0.42 + rnd() * 0.05; const len = 0.12 + rnd() * 0.16; const c = cbox(len, 0.018, 0.012, 0.003, AMBER);
+      const cx = 0.12 + Math.cos(a) * (r0 + len / 2), cy = H * 0.42 + Math.sin(a) * (H * 0.3 * 1.05 + len / 2); if (cy < px(14) || cy > H - 0.05 || Math.abs(cx) > L / 2 - 0.05) continue;
+      c.position.set(cx, cy, TK / 2 + 0.004); c.rotation.z = a + (rnd() - 0.5) * 0.6; g.add(c); }
     return { g };
   }
   const BUILD = {
     'hexcrate.s0': () => hexcrate(CR.s0, 0.44, 36), 'hexcrate.s1': () => hexcrate(CR.s1, 0.44, 34), hexdrum, hexstack, hexbarrier,
     rubble, vines, breachdoor, machine: () => machine(false), machine_frozen: () => machine(true), weakwall,
   };
-  PROPS.hexobj = { variants: Object.keys(BUILD), canvas: [300, 320], exposure: 1.0, build(name) { const o = BUILD[name](); return { g: o.g, marks: {} }; } };
+  PROPS.hexobj = { variants: Object.keys(BUILD), canvas: [360, 440], exposure: 1.0, build(name) { const o = BUILD[name](); return { g: o.g, marks: {} }; } };
 }
