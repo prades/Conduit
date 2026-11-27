@@ -74,7 +74,12 @@ const VIEW3D_GAME = (0, eval)(`({
   get bloomMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
     return { budR: v("BUD_RADIUS", 1.5), budTick: v("BUD_TICK", 30), briarR: v("BRIAR_RADIUS", 2), scentR: v("SCENT_RADIUS", 5), scentHealR: v("SCENT_HEAL_R", 3), scentStun: v("SCENT_STUN", 60), stakeR: v("STAKE_RADIUS", 1.8),
       thicket: v("ULT_THICKET", null), consume: v("ULT_CONSUME", null), pillar: v("TECH_AB", null) ? TECH_AB.pillar : null, reefShards: v("TECH_AB", null) ? TECH_AB.reef.shards : 16, quillArc: v("QUILL_ARC", 16) }; },
-  get spikes() { return typeof techSpikes !== "undefined" ? techSpikes : null; }, get reefs() { return typeof techReefs !== "undefined" ? techReefs : null; }
+  get spikes() { return typeof techSpikes !== "undefined" ? techSpikes : null; }, get reefs() { return typeof techReefs !== "undefined" ? techReefs : null; },
+  // the enemy line's (view3d/attacks_enemy.js): the measures its looks follow (read once: the game's own constants: a creature's bite, the wild ants' specials, js/combat.js COMBAT.bite and
+  // js/abilities.js ABILITY_DEFS), and where a striker's LEAP STRIKE will land (js/abilities.js _abStrikeLanding, read: the game's own rule, as its 2D mark has it)
+  get enemyMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } }, A = v("ABILITY_DEFS", null) || {}, C = v("COMBAT", null);
+    return { bite: C && C.bite ? C.bite : null, backup: A.BACKUP_CALL || null, leap: A.LEAP_STRIKE || null, slam: A.GROUND_SLAM || null }; },
+  strikeLanding(a) { if (!a || typeof _abStrikeLanding !== "function" || typeof ABILITY_DEFS === "undefined") return null; const t = a.strikeTarget; if (!t || t.dead) return null; return _abStrikeLanding(a, t, ABILITY_DEFS.LEAP_STRIKE); }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)
