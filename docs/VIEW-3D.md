@@ -219,6 +219,8 @@ The game's own light (`js/facilitystyle.js`): the room you are in is lit, the ot
 
 ## 8. The low camera (`?cam=low`): the low follow camera and the rolling-world curve
 
+**The game's camera** since build `2026-11-17dw` (the owner, 2026-11-27: "I'm ready to make the low cam version of the game the full game. It looks good enough"): the plain address over the web gets the low camera; `?cam=low` names it with the 3D view anywhere (the tests, a file on disk); `?cam=iso` is the camera as it was, from above, the way back (`js/config.js` `enginePlan`, `tests/engineplan.js`).
+
 - **Status:** **In progress, behind its own switch** (`?cam=low`, with the 3D view only). Without the switch nothing of it is made or run and the view's camera is the game's own 2:1 one (§4.1): what players get is unchanged. Stages built: see §8.9. **Not seen on an iPad; not playtested.**
 - **Owner:** the owner (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-23

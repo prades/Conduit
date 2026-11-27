@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dw` · branch `claude/start-game-project-HSh7Z` · the low camera is the game's camera
+- **The ask** (the owner, 2026-11-27): "I'm ready to make the low cam version of the game the full game. It looks good enough, and I also like to make the game optimized for that specific build."
+- **What it does:** the plain address over the web opens the game with the low follow camera and the rolling-world curve; `?cam=iso` gives the camera as it was. Off the web, `?cam=low` as before. The optimizing for it is the next step (measured, not yet changed). `VIEW-3D.md` §8. `js/config.js`, `tests/engineplan.js`, generated files.
+- **Verified:** `tests/engineplan.js` (the plain address, `?cam=iso`, `?cam=low`, a file, the website's background); the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dv` · branch `claude/battle-anims-bloom` (from main `e480e741`, build `2026-11-17dl`; main's `2026-11-17du` merged in) · the attacks in 3D: the bloom line's ten (looks proposed, not yet approved)
 - **The ask** (the owner, 2026-11-27): "Create the bloom, followers, attacks in 3D." The last follower line: the Thornwhip's (SEED SHOT, SEEDFALL, BRIAR SWEEP, PINK THICKET), the Sundew's (NECTAR STING, SWEET SCENT, CONSUME) and the Stonepetal's (its hit, STAKE RING, REEF PILLAR) ten attacks drawn in 3D: each body's wind-up, strike and follow-through from its sheet's poses (the Thornwhip's fling, the Sundew's sting and its model's own CONSUME, the Stonepetal's head driving down) and each effect rebuilt in 3D. Where a look was approved it is carried into 3D (PINK THICKET's big seed as the pink crystal; the black thorny vines; the Sundew's sting and closing bud; the Stonepetal's stone and square pink crystals; REEF PILLAR's giant spike); every other look and every number the agent's (`VIEW-3D.md` §4.7, `EFFECTS.md`, `DECISION-LOG.md`; the agent's choices in `OPEN-QUESTIONS.md`).
 - **Approved looks win, carried on:** PINK THICKET, CONSUME and REEF PILLAR, drawn in a battle by main's drafts until now (`view3d/fields.js`), are the registry's: every follower's Ultimate is, and a draft is drawn only for a form whose 3D entry has failed.
