@@ -7,13 +7,13 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const ROOT = path.resolve(__dirname, '../..'), OUT = process.argv[2], VAR = process.argv[3] || '0', ONLY = process.argv[4] ? process.argv[4].split(',') : null, SD = !!process.env.SD;   // (SD=1: the sewer dungeon's spots, with ?sewerdungeon; else the Sewers', without: with it the Sewers' water shows as cleaned)
 const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.webp': 'image/webp', '.json': 'application/json', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff' };
-const MARK = '/* view3d/core.js */';
+const MARK = '/* view3d/core.js */', TAG = /\.js$/.test(VAR) ? path.basename(VAR, '.js') : VAR;   // (TAG: the pictures' names)
 let VIEWJS = null; const viewJs = () => VIEWJS || (VIEWJS = process.env.DIST ? fs.readFileSync(path.join(ROOT, 'dist/view3d.js'), 'utf8') : require(path.join(ROOT, 'tools/view3d.js')).build().js);   // (DIST=1: the built dist/view3d.js as it is on disk)
 const srv = http.createServer((q, r) => {
   const u = decodeURIComponent(q.url.split('?')[0]), f = path.join(ROOT, u === '/' ? 'game.html' : u);
   if (!f.startsWith(ROOT) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); r.end(); return; }
   if (u === '/dist/view3d.js' && !(process.env.DIST && VAR === '0')) { const s = viewJs(), i = s.indexOf(MARK); if (i < 0) throw new Error('no ' + MARK);
-    const d = VAR === '0' ? '' : VAR === '4' ? fs.readFileSync(path.join(__dirname, 'round4.js'), 'utf8') : 'const SEWER_VARIETY = ' + VAR + ';\n' + fs.readFileSync(path.join(__dirname, 'variety.js'), 'utf8');   // (4: round 4, over the built look)
+    const d = VAR === '0' ? '' : VAR === '4' ? fs.readFileSync(path.join(__dirname, 'round4.js'), 'utf8') : /\.js$/.test(VAR) ? fs.readFileSync(path.resolve(VAR), 'utf8') : 'const SEWER_VARIETY = ' + VAR + ';\n' + fs.readFileSync(path.join(__dirname, 'variety.js'), 'utf8');   // (4: round 4, over the built look; a .js file: a draft of its own that takes sewerDress's place, the sewer kit's: design/sewer-kit/kit.js)
     r.writeHead(200, { 'content-type': MIME['.js'] }); r.end(s.slice(0, i) + '\n' + d + '\n' + s.slice(i)); return; }
   r.writeHead(200, { 'content-type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r);
 });
@@ -26,6 +26,11 @@ const SPOTS = [
   ['sd-west', -226, 265.5, 1, 0],        // THE SEWER DUNGEON (?sewerdungeon): the west walkway
   ['sd-central', -201.5, 268, 1, 0],     // its central walkway
   ['sd-ring', -216.5, 298, 1, 0],        // the ring by the junction nest
+  ['sd-entrance', -244, 265.5, 1, 0],    // the West Entrance's north walkway, where you come in (the sewer kit's spots, 2026-11-27)
+  ['sd-hall', -229.3, 282.8, 1, 0],      // the West Hall
+  ['sd-storage', -231.9, 293.3, 1, 0],   // the Southwest Storage
+  ['sd-pur', -180.3, 295.3, 1, 0],       // the Purification Chamber
+  ['sd-close', -226, 265.5, 1.8, 0],     // the west walkway, close (zoomed in all the way the game lets)
   ['close', -41.5, 107, 1.8, 0],         // a grate close, by a lamp on the north ledge (zoomed in all the way the game lets)
   ['bank-t1', -26.5, 117, 1, 1], ['bank-t2', -26.5, 117, 1, 2], ['bank-t3', -26.5, 117, 1, 3],   // the four quarter turns
 ];
@@ -69,9 +74,9 @@ const SPOTS = [
       if (!cam) return 'no camera: ' + Object.keys(V.core).join(','); ray.setFromCamera({ x: (px - R.left) / R.width * 2 - 1, y: -((py - R.top) / R.height) * 2 + 1 }, cam); const L = []; V.core.scene.traverse(o => { if (o.isMesh && o.visible) { const m2 = o.layers.mask; o.userData._lm = m2; o.layers.mask = 0xffffffff; L.push(o); } }); const hit0 = []; for (const o of L) { try { o.raycast(ray, hit0); } catch (e) {} } hit0.sort((a, b) => a.distance - b.distance); L.forEach(o => o.layers.mask = o.userData._lm); const hit = hit0.filter(h => h.object.visible)[0];
       if (!hit) { const W = V.world, out = []; for (const yy of [-2.5, -1.44, -0.5, 0, 0.5]) { const t = (yy - ray.ray.origin.y) / ray.ray.direction.y, x = ray.ray.origin.x + ray.ray.direction.x * t, z = ray.ray.origin.z + ray.ray.direction.z * t, b = W.band.get(Math.round(x) + ',' + Math.round(z)), r = W.roomAt(x, z); out.push([yy, +x.toFixed(1), +z.toFixed(1), r && (r.id || r), b ? { own: b.own, hi: +b.hi.toFixed(2), lo: +b.lo.toFixed(2), hides: b.hides && b.hides.map(h => h.length).join('') } : null]); } return { none: out }; } const o = hit.object, m = [].concat(o.material)[hit.face && o.geometry.groups.length ? (o.geometry.groups.find(g => hit.faceIndex * 3 >= g.start && hit.faceIndex * 3 < g.start + g.count) || {}).materialIndex || 0 : 0];
       let path = []; for (let q = o; q; q = q.parent) path.push(q.name || q.type + (q.userData.merged ? '(m)' : '')); return { p: hit.point.toArray().map(v => +v.toFixed(2)), n: hit.face && hit.face.normal.toArray().map(v => +v.toFixed(2)), mat: m && m.type, col: m && m.color && m.color.getHexString(), map: !!(m && m.map), vc: m && m.vertexColors, path: path.slice(0, 5).join('<') }; } catch (e) { return String(e.stack).slice(0, 300); } }), JSON.parse(process.env.PROBE))));
-    await p.screenshot({ path: path.join(OUT, VAR + '-' + name + '.png'), timeout: 180000 });
+    await p.screenshot({ path: path.join(OUT, TAG + '-' + name + '.png'), timeout: 180000 });
   }
-  fs.writeFileSync(path.join(OUT, VAR + (SD ? '-sd' : '') + '-cost.json'), JSON.stringify({ guard, cost }));
+  fs.writeFileSync(path.join(OUT, TAG + (SD ? '-sd' : '') + '-cost.json'), JSON.stringify({ guard, cost }));
   console.log('errors', JSON.stringify(errs.slice(0, 8)));
   await b.close(); srv.close();
 })().catch(e => { console.error(e); process.exit(1); });

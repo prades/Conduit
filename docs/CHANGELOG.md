@@ -2,16 +2,26 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-27
+
+### Build `2026-11-17dt` · branch `claude/friendly-thompson-w581x0` · the sewer kit: pipes along the walls, equipment, plants; no patches on the walls
+- **The ask** (the owner, 2026-11-27): "I want to upgrade the sewer and make it look better with more textures and better equipment around the map, fully rendered objects and pipes that go along the walls, just stuff you'd find in a sewer." Then, of the drafts: "Yes right direction, add plants to pipes and add cracks with plants too, plants near water under sidewalk"; "Looks really good"; of the red brick: "How about no different look? Just no patchy looks."
+- **What it does** (the 3D view, the sewers' dressing, `view3d/sewerdress.js`; today's Sewers and the sewer dungeon both): every wall face a run of services (a main with flanged joints, gate valves and risers over the wall top; a green water line with marker bands, valves, gauges and drops; a cable tray or conduits with junction boxes), electrical panels, big cabinets, vents and switch boxes hung on the walls; rust, grime and damp stains and a tide line on the banks; plants on the big pipes, ferns at cracks up the walls, grass in cracks in the rooms' floors, ferns, reeds and moss on the banks by the water; round access covers. The walls are the stone blocks only: no brick or broken-plaster patches. No signal red, no loose objects, nothing standing on the floor but low grass (the guard: no body hidden in any quarter turn). FAITHFUL's two plain back-wall pipes are gone.
+- **The plants grow by the light** (the owner, of the built kit: "The greenery needs to be near the lighting"): a plant only within 3.5 tiles of a lamp, likeliest under it and thinning to that reach; none past it (a crack far from a lamp stays bare). So a bank with no lamp near it has no plants (the West Entrance's channel, for one).
+- **Cost** (headless Chromium, software WebGL, the West Hall): draws 514 → 580 (+13 %), triangles 417 k → 465 k (+12 %). Not measured on an iPad.
+- `view3d/sewerdress.js`, `tests/view3d.js` ("THE SEWER KIT"), `design/sewer-kit/` (the drafts, their builder and pictures), `design/sewer-variety/render.js` (a draft by its path; five more spots); `docs/VIEW-3D.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`; generated: `dist/view3d.js`, `play.html`, `dist/conduit.js`. main's builds `2026-11-17dm` to `do` merged first.
+- **Verified:** see the handoff. **Not seen on an iPad; not playtested.**
+
 ## 2026-11-24
 
-### No build of its own (not stamped) · branch `claude/remove-recruit-posts` · the tutorial's first recruit is free
+### Build `2026-11-17du` · branch `claude/remove-recruit-posts` · the tutorial's first recruit is free
 - **The ask** (the owner, 2026-11-24, to the question of a new player at the RECRUIT step with ◆100 and + RECRUIT at ◆200): "First recruit free".
 - **What players get:** while the tutorial is in progress and its RECRUIT step is not done, + RECRUIT costs nothing; once one recruit has been made in the tutorial it is ◆200 again. A full squad is asked who makes room first, as before. The step reads `OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: YOUR FIRST IS FREE.`; the roster's button says FREE in place of the price, the carousel's tile RECRUIT FREE, the shard readout YOUR FIRST RECRUIT IS FREE. After the tutorial, past its RECRUIT step, and in a game without one, nothing changed.
 - **Saved:** `script.fr` (used or not); a save without it loads as before, not used.
 - `js/clone.js` (`recruitFreeNow`, `recruitPrice`), `js/facilitysave.js`, `js/commandcenter.js`, `js/tutorial.js`; `tests/followerspots.js`; docs: `DECISION-LOG.md`, `TUTORIAL.md`, `FOLLOWER-PROGRESSION.md`, `OPEN-QUESTIONS.md` (closed); generated: `play.html`, `dist/conduit.js`.
 - **Verified:** the full `node tests/run.js`. **Not seen on an iPad; not playtested.**
 
-### No build of its own (not stamped) · branch `claude/remove-recruit-posts` (from main `e480e741`, build `2026-11-17dl`) · the recruitment posts removed
+### Build `2026-11-17du` · branch `claude/remove-recruit-posts` (from main `e480e741`, build `2026-11-17dl`) · the recruitment posts removed
 - **The ask** (the owner, 2026-11-24): "The respawn pads, remove them"; asked how far to go, "Remove posts entirely" (earlier, of the low camera: "It's showing me staircases and spawn pads for followers, which I'm thinking about removing"). `DECISION-LOG.md`.
 - **What players get:** no follower posts anywhere: the eight pads (`spot_lobby` … `spot_cold`), their eggs and labels are gone from the 2D game and the 3D view (with and without the low camera), and nothing can be claimed. Recruiting is the roster's + RECRUIT (`RECRUIT_COST`, ◆200, unchanged) and breeding. The tutorial's RECRUIT step says `OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: 200 SHARDS.`, its hint without the sentence on the eggs and pads; the INFO index's EGGS ON THE PADS entry and the energy-cards entry's line on a post's card are gone. No number changed.
 - **Old saves:** a save's `spots` (the posts claimed) is read past and not written again; followers recruited from a post load as they were saved. Tested with a save made by build `2026-11-17dl` (a post claimed, a squad-full question open for an egg, eggs out), one with an older save's refill delays and one with a malformed list.
