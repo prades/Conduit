@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dn` · branch `claude/start-game-project-HSh7Z` · battles on hexes
+- **The ask** (the owner, 2026-11-27): a hexagon tile system for all battles; of the approval page, "Approve all, outline only while dragging, keep the ground".
+- **What it does:** card battles are fought on hexes a tile across instead of squares: standing, walking (6 neighbours), "next to", every card's and Ultimate's area, lines, zigzags, pushes and pulls, the lit cells and the words. Sizes are the attacks' own, so areas cover the same ground. The hexes are outlined faintly only while a card is dragged. `CARD-BATTLES.md` §2.82. `js/cardbattle.js`, `js/cardshapes.js`, `js/cardults.js`, `js/elements.js`, `tests/cardbattle.js`, generated files.
+- **Verified:** `tests/cardbattle.js` passing on hexes; a battle seen in a real browser with a card and MOVE dragged; the suites in the handoff. **The outline's look provisional; not seen on an iPad; not playtested.**
+
 ### Build `2026-11-17dm` · branch `claude/start-game-project-HSh7Z` · no tile lines on the floor; hex battles proposed
 - **The ask** (the owner, 2026-11-27): "Can we remove this visible floor tiles on the map and make a hexagon tile system for all battles?"; asked, "Everywhere", "About one tile", "Approval page first".
 - **What it does:** in the 3D view every room's floor is one smooth surface in its own colour: no line or shine round each tile, no border on the grate, no tile shaded apart from its neighbours (`design/style-evolution/live/floor.js`; `VIEW-3D.md`). The sewer skin's own floor pictures (`view3d/sewerdress.js`) are unchanged. The 2D game is unchanged.

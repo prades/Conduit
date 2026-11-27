@@ -401,7 +401,7 @@ const ULT_METEOR_RAIN = {
         const M = ULT_METEOR, cx = target.x, cy = target.y, rocks = [], sees = (x, y) => typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y);
         for (let i = 0; i < M.count; i++) {
             let x = 0, y = 0, ok = false;
-            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r; if (aimed) { x = Math.round(x); y = Math.round(y); }   /* (there, each rock on a square) */
+            for (let tr = 0; tr < 30 && !ok; tr++) { const an = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * M.radius; x = cx + Math.cos(an) * r; y = cy + Math.sin(an) * r; if (aimed && typeof cardHex === "function") { const h = cardHex(x, y); x = h[0]; y = h[1]; }   /* (there, each rock on a hex: js/cardbattle.js) */
                 ok = sees(x, y) && !rocks.some(q => Math.hypot(q.x - x, q.y - y) < M.apart); }
             if (!ok) continue;   // (no room left for it: a rain in a small room has fewer rocks)
             rocks.push({ x, y, at: M.cast + M.fall + Math.round(i * (M.rain - M.fall) / M.count + Math.random() * 6), s: 0.75 + Math.random() * 0.6, spin: Math.floor(Math.random() * 12), hit: false });
