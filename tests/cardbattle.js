@@ -1382,6 +1382,33 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.held, true, 'held'); same(r.t, false, 'a TANK does not block on its own'); same(r.c, false, 'a CAUTIOUS one does not step back');
     });
 
+    group('SEEKING HEALING IN REAL TIME (the owner, 2026-11-27: "if they have anything but reckless behavior, they will seek healing from nearby sources"; asked: "Below half", "Mostly healed")');
+    run(`globalThis.__pool = (f, dist) => { const cs = partyRoomCells(facilityRoomIdAt(f.x, f.y)).filter(c => Math.abs(Math.hypot(c[0] - f.x, c[1] - f.y) - dist) < 0.8 && facilityPath(f.x, f.y, c[0], c[1])); const c = cs[0]; serumZones.length = 0; serumZones.push({ x: c[0], y: c[1], t0: frame, until: frame + 1e6, next: frame + 1e6 }); return c; };`);
+    check('a BALANCED follower under half goes to a serum pool in its room, holds still in it, and goes back to fighting at 80%', () => {
+        const r = J(`(function(){ const { f, a } = __rt('balanced'); a.x = f.x + 9; a.y = f.y; a.dead = true; f.health = f.maxHealth * 0.4; const c = __pool(f, 5); const d0 = Math.hypot(c[0] - f.x, c[1] - f.y);
+            const o = { d0: +d0.toFixed(1) }; __rtStep(f, 400); o.d1 = +Math.hypot(c[0] - f.x, c[1] - f.y).toFixed(2); o.seeking = !!f._healSeek; const x1 = f.x, y1 = f.y; __rtStep(f, 30); o.held = Math.hypot(f.x - x1, f.y - y1) < 1e-6;
+            f.health = f.maxHealth * 0.7; __rtStep(f, 20); o.at70 = !!f._healSeek; f.health = f.maxHealth * 0.81; __rtStep(f, 2); o.at81 = !!f._healSeek; serumZones.length = 0; return o; })()`);
+        ok(r.d0 > 3, 'the pool some way off: ' + r.d0); ok(r.d1 <= 2.6 * 0.6 + 0.05, 'in the pool: ' + r.d1); same(r.seeking, true, 'seeking'); same(r.held, true, 'holds still in it');
+        same(r.at70, true, 'still there at 70%'); same(r.at81, false, 'back to the fight at 80%');
+    });
+    check('RECKLESS does not go; above half nobody goes; no spot in its room, it fights on; CAUTIOUS and TANK go too', () => {
+        const r = J(`(function(){ const o = {};
+            for (const st of ['aggressive', 'defensive', 'tank']) { const { f, a } = __rt(st); a.dead = true; f.health = f.maxHealth * 0.4; __pool(f, 5); __rtStep(f, 3); o[st] = !!(f._healSeek && f._healSeek.spot); }
+            { const { f, a } = __rt('balanced'); a.dead = true; f.health = f.maxHealth * 0.6; __pool(f, 5); __rtStep(f, 3); o.above = !!f._healSeek; }
+            { const { f, a } = __rt('balanced'); a.dead = true; f.health = f.maxHealth * 0.4; serumZones.length = 0; __rtStep(f, 3); o.none = followerSeekHeal(f, null); }
+            serumZones.length = 0; return o; })()`);
+        same(r.aggressive, false, 'RECKLESS went'); same(r.defensive, true, 'CAUTIOUS did not go'); same(r.tank, true, 'TANK did not go'); same(r.above, false, 'went above half'); same(r.none, false, 'held up with no spot');
+    });
+    check('a spot in another room is not "nearby"; a BLOOM follower is a spot (not for itself); in a card battle it is the cards\' to say', () => {
+        const r = J(`(function(){ const { f, a } = __rt('balanced'); a.dead = true; f.health = f.maxHealth * 0.4; serumZones.length = 0;
+            const other = _fp.F.openings.find(q => q.rooms.indexOf(facilityRoomIdAt(f.x, f.y)) >= 0); const oid = other.rooms.find(id => id !== facilityRoomIdAt(f.x, f.y)); const oc = partyRoomCells(oid).sort((p, q) => Math.hypot(p[0] - f.x, p[1] - f.y) - Math.hypot(q[0] - f.x, q[1] - f.y))[0];
+            serumZones.push({ x: oc[0], y: oc[1], t0: frame, until: frame + 1e6, next: frame + 1e6 }); const near = Math.hypot(oc[0] - f.x, oc[1] - f.y); const o = { near: +near.toFixed(1), other: !!_healSpotFor(f) }; serumZones.length = 0;
+            f.element = 'blossom'; o.self = !!_healSpotFor(f); spawnFollowerAtCrystal('fire'); const g = followers[followers.length - 1]; g.returningToCrystal = false; g.element = 'blossom'; const c = partyRoomCells(facilityRoomIdAt(f.x, f.y)).find(q => Math.hypot(q[0] - f.x, q[1] - f.y) > 2.5 && Math.hypot(q[0] - f.x, q[1] - f.y) < 4); g.x = c[0]; g.y = c[1]; f.element = 'fire';
+            const s = _healSpotFor(f); o.mender = !!s && s.by === g; g.dead = true; followers.splice(followers.indexOf(g), 1); actors = actors.filter(x => x !== g);
+            CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const B = __one('brawler'); B.f.playStyle = 'balanced'; B.f.health = B.f.maxHealth * 0.4; __pool(B.f, 3); o.battle = followerSeekHeal(B.f, B.a); serumZones.length = 0; cardBattleReset(); return o; })()`);
+        same(r.other, false, 'a pool next door (' + r.near + ' tiles) taken for nearby'); same(r.self, false, 'a BLOOM follower went to itself'); same(r.mender, true, 'a BLOOM follower near is a spot'); same(r.battle, false, 'in a card battle');
+    });
+
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
 })();

@@ -104,6 +104,53 @@ function _blockTick(actor) {
     return true;
 }
 
+// SEEKING HEALING (the owner, 2026-11-27: "the followers, if they have anything but reckless behavior, they will seek healing from nearby sources"; asked: "Below half", "Mostly healed"). In real time
+// a follower whose play style is not RECKLESS (CAUTIOUS, BALANCED or TANK), under FOLLOWER_HEAL.start of its health, goes to the nearest healing spot in its room (within FOLLOWER_HEAL.reach tiles) and
+// stays in it, holding still and turned to its enemy, until it is back to FOLLOWER_HEAL.stop or the spot is gone; then it fights as before. Not a clone, not one of yours in the card battle that is on, not
+// against an attack order. The spots are those the game already has (followerHealSpots): the Mutator's serum pools, SEEDFALL and its buds, the thicket's aura, REEF's outcrops, the relays when GROVE
+// ENGINEER is worn, and a BLOOM follower (it mends the most hurt within its reach). Half and 80% the owner's; the reach, the look-again time and "in it" (FOLLOWER_HEAL.inside of its radius) the agent's.
+const FOLLOWER_HEAL = { start: 0.5, stop: 0.8, reach: 12, every: 15, inside: 0.6, col: "#7dffb0" };
+function followerHealSpots() {   // { x, y, r, by } each (by: the follower a BLOOM mender is, so it does not go to itself); asked only by a hurt follower, every FOLLOWER_HEAL.every frames
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    const out = [];
+    if (typeof serumZones !== "undefined" && typeof SERUM !== "undefined") for (const z of serumZones) if (f0 < z.until) out.push({ x: z.x, y: z.y, r: SERUM.splash.radius });
+    if (typeof elementEffects !== "undefined") for (const e of elementEffects) if (e && e.life > 0 && (e.type === "seedfall" || e.type === "buds" || e.type === "thicket") && e.radius > 0) out.push({ x: e.x, y: e.y, r: e.radius });
+    if (typeof techReefs !== "undefined") for (const O of techReefs) if (f0 >= O.t0 && f0 < O.until) for (const c of O.parts) out.push({ x: c.x, y: c.y, r: c.r + (O.mendReach || 0) });
+    if (typeof _fp !== "undefined" && _fp && _fp.F && typeof playerTechRole === "function" && typeof relayOnline === "function" && typeof facilityRelayAt === "function") {
+        const role = playerTechRole(), k = role && role.kit && role.kit.grove;
+        if (k) for (const R of (_fp.F.relays || [])) { if (!relayOnline(R.id)) continue; const s = facilityRelayAt(R.id); if (s) out.push({ x: s.x, y: s.y, r: k.radius }); }
+    }
+    if (typeof followers !== "undefined" && typeof ELEMENT_MEND !== "undefined") for (const m of followers) if (m && !m.dead && m.team === "green" && m.element === "blossom" && !m.returningToCrystal) out.push({ x: m.x, y: m.y, r: ELEMENT_MEND.radius, by: m });
+    return out;
+}
+// the nearest spot for `a`: in its room (its place, for the Nest or a domain), within FOLLOWER_HEAL.reach; null when none
+function _healSpotFor(a) {
+    const roomOf = (x, y) => { const r = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(x, y) : null; return r && typeof partyPlaceOf === "function" ? partyPlaceOf(r) : r; };
+    const here = roomOf(a.x, a.y); let best = null, bd = FOLLOWER_HEAL.reach;
+    for (const s of followerHealSpots()) { if (s.by === a) continue; const d = Math.hypot(s.x - a.x, s.y - a.y); if (d > bd) continue; if (here && roomOf(s.x, s.y) !== here) continue; bd = d; best = s; }
+    return best;
+}
+// each frame its enemy is known (updateRTSNPC's follow branch): true when this frame is taken (walking to a spot, or healing in one)
+function followerSeekHeal(actor, foe) {
+    if (!_tacticOk(actor) || actor.playStyle === "aggressive" || !(actor.maxHealth > 0)) { actor._healSeek = null; return false; }
+    const f0 = typeof frame !== "undefined" ? frame : 0, H = FOLLOWER_HEAL, k = actor.health / actor.maxHealth;
+    if (!actor._healSeek) { if (k >= H.start) return false; actor._healSeek = { at: -1e9, spot: null }; }
+    const S = actor._healSeek;
+    if (k >= H.stop) { actor._healSeek = null; return false; }   // (mostly healed: back to the fight)
+    if (f0 - S.at >= H.every) { S.at = f0; const was = !!S.spot; S.spot = _healSpotFor(actor); if (S.spot && !was && typeof _evoSay === "function") _evoSay(actor, "TO HEAL", H.col); }
+    const sp = S.spot;
+    if (!sp) { if (k >= H.start) actor._healSeek = null; return false; }   // (no spot near: it fights on; it looks again while it is still hurt)
+    const at = sp.by ? [sp.by.x, sp.by.y] : [sp.x, sp.y], dx = at[0] - actor.x, dy = at[1] - actor.y, d = Math.hypot(dx, dy);
+    actor._shotWind = 0; actor._shotTarget = null;
+    if (d > sp.r * H.inside) {   // (on its way: round the walls)
+        const x0 = actor.x, y0 = actor.y; _walkStep(actor, dx, dy, d);
+        if (Math.hypot(actor.x - x0, actor.y - y0) < 1e-4 && d <= sp.r) return false;   // (held at a rock's edge, already in its reach: it fights from there)
+        return true;
+    }
+    if (foe && !foe.dead) { const ex = foe.x - actor.x, ey = foe.y - actor.y, L = Math.hypot(ex, ey); if (L > 1e-6) { actor.dirX = ex / L; actor.dirY = ey / L; } }
+    return true;   // (in it: it holds still while it mends)
+}
+
 function updateRTSNPC(actor) {
     if (actor.spawnProtection===undefined) actor.spawnProtection=0;
     if (actor.dead) return;
@@ -297,6 +344,7 @@ function updateRTSNPC(actor) {
         const nearestEnemy = actor._nearestEnemy;
         const nearestEnemyDist = nearestEnemy
             ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
+        if (actor.isFollower && !_ord && followerSeekHeal(actor, nearestEnemy)) return;   // SEEKING HEALING (above): hurt and not RECKLESS, to the nearest healing spot in its room
         if (actor.isFollower && !_ord && followerTactic(actor, nearestEnemy, nearestEnemyDist)) return;   // BLOCK AND STEP BACK by play style (above): a TANK blocks, a CAUTIOUS one steps back (an attack order wins)
         const _reach = _ord ? 1e3 : (typeof playReach === "function" ? playReach(actor) : 1);   // PLAY STYLE scales how far a unit goes after an enemy (js/commandcenter.js); one sent at a creature goes the whole way
 

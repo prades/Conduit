@@ -3874,3 +3874,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Chosen of three: **"Next-door rooms"** (a tap anywhere in a room sharing a doorway with yours); passed over: anywhere you can walk; rooms you have been in.
 - Supersedes 2026-11-01's "through a doorway of that room a little way into the next" (`FP_MOVE.doorReach`, 2.6 tiles). Kept: the ✕ for a room farther off, locked doors, the combat step.
 - Status: Implemented (build `2026-11-17dp`); verified by `tests/movement.js`; not playtested. `FACILITY.md`, `CHANGELOG.md`.
+
+## DECISION: Followers that are not RECKLESS seek healing (2026-11-27, build `2026-11-17dq`, branch `claude/zen-cerf-3m8mq5`)
+- The owner: "the followers, if they have anything but reckless behavior, they will seek healing from nearby sources."
+- Chosen: under **half** its health (passed over: by play style; below a third); it stays until **80%** (passed over: full; back over the line).
+- Agent's choices (provisional): the spots are the game's own healing areas and BLOOM followers; "nearby" its room within 12 tiles; it holds still in the spot; not in a card battle; an attack order wins.
+- Status: Implemented (build `2026-11-17dq`); verified by `tests/cardbattle.js`; not playtested. `COMBAT.md` §10, `CHANGELOG.md`.
+

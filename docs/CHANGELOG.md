@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dq` · branch `claude/zen-cerf-3m8mq5` · followers that are not RECKLESS seek healing
+- **The ask** (the owner, 2026-11-27): "if they have anything but reckless behavior, they will seek healing from nearby sources". Asked: **"Below half"**, **"Mostly healed"** (`COMBAT.md` §10).
+- **What it does (real time):** a CAUTIOUS, BALANCED or TANK follower under half its health goes to the nearest healing spot in its room (a serum pool, SEEDFALL or its buds, the thicket's aura, REEF, a GROVE ENGINEER relay, a BLOOM follower) and holds still in it until 80%, or until the spot is gone. RECKLESS fights on as before. Not in a card battle.
+- `js/npc.js` (`FOLLOWER_HEAL`, `followerHealSpots`, `followerSeekHeal`), `tests/cardbattle.js`, `docs/COMBAT.md`.
+- **Verified:** `tests/cardbattle.js` (new: SEEKING HEALING IN REAL TIME) and the full run in the handoff. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17dp` · branch `claude/zen-cerf-3m8mq5` · a tap walks you into the rooms next door
 - **The ask** (the owner, 2026-11-27): "You need to make it to where you can walk into other rooms, because right now it blocks you from walking into other rooms." Asked how far a tap should reach: **"Next-door rooms"** (passed over: anywhere you can walk; rooms you have been in).
 - **What it does:** a tap anywhere in a room that shares a doorway with yours walks you there (it reached only 2.6 tiles past the doorway, and a tap beyond showed a ✕). A room two or more doors away still shows the ✕; a locked door still refuses the walk; the combat step (3 tiles a tap with an enemy near) is unchanged. The 2D game and the 3D view alike (`js/input.js` handleInput).
