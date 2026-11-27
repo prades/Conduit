@@ -20,7 +20,7 @@
 //   THE SEWER KIT (build 2026-11-17dp; the owner, 2026-11-27: "I want to upgrade the sewer and make it look better with more textures and better equipment around the map, fully rendered
 //   objects and pipes that go along the walls, just stuff you'd find in a sewer"; of draft 1: "Yes right direction, add plants to pipes and add cracks with plants too, plants near water
 //   under sidewalk"; of draft 2: "Looks really good"): the services along every wall face, the equipment hung on the walls, stains and tide lines, plants on the pipes, in cracks and on the
-//   banks by the water, access covers and grassy cracks on the rooms' floors (its two parts below, each with its own account; drafted in design/sewer-kit/); the pumps' housings as rusty tanks
+//   banks by the water (only by the lamps' light: "The greenery needs to be near the lighting"), access covers and grassy cracks on the rooms' floors (its two parts below, each with its own account; drafted in design/sewer-kit/); the pumps' housings as rusty tanks
 //   on their own footprints; floor grates now and then
 //   the water: murky olive with one oily sheen layer, darker along its banks; clearing as the purification runs (sewer.tick): the clean end is the game's own clean colour (FP_SEWER_CLEAN,
 //   #2a8aa8) taken a quarter of the way towards the olive (#327e85)
@@ -316,6 +316,9 @@ function sewerDress(w, lab) {
     for (const i of [0, 1, 2, 0, 2, 3]) { S2.pos.push(...q[i]); S2.uv.push(i === 0 || i === 3 ? uv[0] + 0.004 : uv[1] - 0.004, i < 2 ? 0 : 1); S2.col.push(col.r, col.g, col.b); } kitN.stains++; };
   const kitN = { runs: 0, mains: 0, waters: 0, conds: 0, panels: 0, vents: 0, boxes: 0, valves: 0, gauges: 0, jboxes: 0, drops: 0, stains: 0, tides: 0, covers: 0, cabinets: 0, cabinetsSkipped: 0 };
   const lampNear = (x, y) => lamps.some(L => Math.abs(L.cx - x) + Math.abs(L.cy - y) < 2);
+  // THE PLANTS GROW BY THE LIGHT (the owner, 2026-11-27, of the kit: "The greenery needs to be near the lighting"): a plant only within LIT_R tiles of a lamp, likeliest under it, thinning to
+  // its reach's edge; none past it (a bare crack may still be there: a crack needs no light). LIT_R and the fall-off are the agent's
+  const LIT_R = 3.5, lampD = (x, y) => { let d = 1e9; for (const L of lamps) d = Math.min(d, Math.hypot(L.cx - x, L.cy - y)); return d; }, litK = (x, y) => { const d = lampD(x, y); return d <= 1.5 ? 1 : d <= LIT_R ? 1 - 0.6 * (d - 1.5) / (LIT_R - 1.5) : 0; };
   // the wall faces: every dry tile's side onto a wall (a block of the band that is not a room's), in runs along each line at one floor height
   const faces = new Map();
   for (const k of cellAt.keys()) { if (!dry(k)) continue; const [cx, cy] = k.split(',').map(Number), fy = floorY.get(k);
@@ -392,16 +395,16 @@ function sewerDress(w, lab) {
       if (t.damp) stain(t, 0, fy, fy + 0.22 + 0.25 * hsh(t.c[0], t.c[1], 421), 1.02, hsh(t.c[0], t.c[1], 422) < 0.5 ? SU.band : SU.bandF, KC.sDamp);
       piped.add(K(Math.round((t.c[0] + t.dx * 0.5) * 2), Math.round((t.c[1] + t.dy * 0.5) * 2))); }
     // PLANTS ON THE PIPES: moss sitting on the big ones, a vine or two hanging from them (more of it by the water)
-    for (const p of pipes.filter(q => q.k !== 'cond')) for (let i = 0; i < n; i++) { const t = run[i], A = plantOf(t.b.G.g), r0 = hsh(t.c[0] * 3 + p.h, t.c[1], 461); if (r0 > (t.damp ? 0.5 : 0.2)) continue;
+    for (const p of pipes.filter(q => q.k !== 'cond')) for (let i = 0; i < n; i++) { const t = run[i], A = plantOf(t.b.G.g), r0 = hsh(t.c[0] * 3 + p.h, t.c[1], 461), lk = litK(t.c[0], t.c[1]); if (!lk || r0 > 0.8 * lk) continue;
       const nm = 1 + Math.floor(hsh(t.c[0], t.c[1] + p.h, 462) * 2); for (let m = 0; m < nm; m++) { const a = (hsh(m, t.c[0] + t.c[1], 463) - 0.5) * 0.8, top = vec(KP(t, a, p.h + p.r * 0.85, p.o + (hsh(m, t.c[1], 464) - 0.5) * p.r * 0.5));
         kfern(A, top, V3(t.nx, 0, t.nz), 7, 0.17 + 0.1 * hsh(m, t.c[0], 465), t.u * 7 + i + m, 0.55, 2.6); kmoss(A, [top.x, top.y - 0.01, top.z], p.r * 0.55, gPick(KM, hsh(m, t.u, 466))); }   // (a leafy tuft on the pipe, a little moss at its root)
       for (let v = 0; v < 2; v++) if (hsh(t.c[1] + v, t.c[0] + p.h, 467) < (v ? 0.35 : 0.75)) { const a = (hsh(t.c[0] + v, t.c[1], 468) - 0.5) * 0.8, top = vec(KP(t, a, p.h - p.r * 0.6, p.o)), len = Math.min(p.h - fy - 0.12, 0.35 + 0.5 * hsh(t.u + v, t.c[1], 469)); if (len > 0.15) kvine(A, top, V3(t.nx, 0, t.nz), len, t.u + i + v * 13); }
       kitN.pipePlants = (kitN.pipePlants || 0) + 1; }
     // CRACKS WITH PLANTS: a crack up the wall from its foot, a fern at its root on the floor, a tuft out of the wall part way up a tall one
-    for (const t of run) { const r0 = hsh(t.c[0], t.c[1], 471); if (r0 > (t.damp ? 0.3 : 0.14)) continue; const A = plantOf(t.b.G.g), a = (hsh(t.c[1], t.c[0], 472) - 0.5) * 0.6, ht = 0.45 + 0.65 * hsh(t.c[0], t.u, 473), sd = t.c[0] * 31 + t.c[1];
+    for (const t of run) { const r0 = hsh(t.c[0], t.c[1], 471), lk = litK(t.c[0], t.c[1]); if (r0 > Math.max(t.damp ? 0.3 : 0.14, 0.55 * lk)) continue; const A = plantOf(t.b.G.g), a = (hsh(t.c[1], t.c[0], 472) - 0.5) * 0.6, ht = 0.45 + 0.65 * hsh(t.c[0], t.u, 473), sd = t.c[0] * 31 + t.c[1];
       stain(t, a, fy, fy + ht, 0.5, hsh(t.c[0], t.c[1], 474) < 0.5 ? SU.crack : SU.crackF, KC.blk);
-      kfern(A, vec(KP(t, a, fy + 0.004, 0.035)), V3(t.nx, 0, t.nz), 7 + Math.floor(hsh(sd, 1, 475) * 3), 0.26 + 0.12 * hsh(sd, 2, 476), sd, 0.45, 1.35);
-      if (ht > 0.75) kfern(A, vec(KP(t, a + (hsh(sd, 3, 477) - 0.5) * 0.1, fy + ht * 0.62, 0.01)), V3(t.nx, 0, t.nz), 5, 0.16, sd + 5, 0.2, 1.1);
+      if (lk) kfern(A, vec(KP(t, a, fy + 0.004, 0.035)), V3(t.nx, 0, t.nz), 7 + Math.floor(hsh(sd, 1, 475) * 3), 0.26 + 0.12 * hsh(sd, 2, 476), sd, 0.45, 1.35);
+      if (lk && ht > 0.75) kfern(A, vec(KP(t, a + (hsh(sd, 3, 477) - 0.5) * 0.1, fy + ht * 0.62, 0.01)), V3(t.nx, 0, t.nz), 5, 0.16, sd + 5, 0.2, 1.1);
       kitN.wallCracks = (kitN.wallCracks || 0) + 1; } };
   for (const list of faces.values()) { list.sort((p, q) => p.u - q.u); let run = []; const flush = () => { if (run.length >= 3) kitRun(run); run = []; }; for (const t of list) { if (run.length && t.u !== run[run.length - 1].u + 1) flush(); run.push(t); } flush(); }
   // the bank's surface under a point (a ray straight down onto the two rooms' own meshes, not the water nor anything added): for the plants on the slope
@@ -415,7 +418,7 @@ function sewerDress(w, lab) {
     for (const i of [0, 1, 2, 0, 2, 3]) { S2.pos.push(...q[i]); S2.uv.push(i === 0 || i === 3 ? uv[0] + 0.004 : uv[1] - 0.004, i < 2 ? 0 : 1); S2.col.push(KC.sTide.r, KC.sTide.g, KC.sTide.b); } kitN.tides++;
     // PLANTS UNDER THE WALKWAY, BY THE WATER: on the bank itself (a slope down to the water, found by rays down onto the room's own meshes, not the water): ferns on the slope, reeds where it
     // meets the water, a vine draped down it from the walkway's edge; on a bank with no slope, on its face as a wall
-    if (fyB - wy < 0.3 || hsh(x, y, 481) > 0.5) continue; const A = plantOf(addTo(cellAt.get(K(x, y)))), out = V3(dx, 0, dy), sd = x * 17 + y * 5;
+    const lkB = litK(x, y); if (fyB - wy < 0.3 || !lkB || hsh(x, y, 481) > 0.9 * lkB) continue; const A = plantOf(addTo(cellAt.get(K(x, y)))), out = V3(dx, 0, dy), sd = x * 17 + y * 5;
     const prof = s => { const pts = []; for (let k = 0; k <= 12; k++) { const f = 0.02 + k * 0.09, px = ex + rx * s + dx * f, pz = ez + rz * s + dy * f, hit = slopeAt(px, pz, fyB, cellAt.get(K(x, y)), cellAt.get(K(x + dx, y + dy))); if (hit && hit.y < fyB - 0.005 && hit.y > wy - 0.02) pts.push(hit); } return pts; };
     const nf = 1 + Math.floor(hsh(sd, 1, 482) * 2);
     for (let f = 0; f < nf; f++) { const s = (hsh(f, sd, 483) - 0.5) * 0.8, P2 = prof(s);
@@ -466,7 +469,7 @@ function sewerDress(w, lab) {
       cr.push([cx, cy]); const y = floorY.get(k) + 0.004, ang = hsh(cx, cy, 495) * Math.PI, ca = Math.cos(ang), sa = Math.sin(ang), L = 0.42, W = 0.17, room = cellAt.get(k), S2 = stainOf(addTo(room)), uv = hsh(cx, cy, 496) < 0.5 ? SU.crack : SU.crackF;
       const q = [[cx - ca * L - sa * W, y, cy - sa * L + ca * W], [cx - ca * L + sa * W, y, cy - sa * L - ca * W], [cx + ca * L + sa * W, y, cy + sa * L - ca * W], [cx + ca * L - sa * W, y, cy + sa * L + ca * W]];
       for (const i of [0, 1, 2, 0, 2, 3]) { S2.pos.push(...q[i]); S2.uv.push(i === 0 || i === 3 ? uv[0] + 0.004 : uv[1] - 0.004, i < 2 ? 0 : 1); S2.col.push(KC.blk.r, KC.blk.g, KC.blk.b); }
-      let G2 = grass.get(room); if (!G2) grass.set(room, G2 = { pos: [], nor: [], col: [] }); const nt = 1 + Math.floor(hsh(cx, cy, 497) * 2);
+      let G2 = grass.get(room); if (!G2) grass.set(room, G2 = { pos: [], nor: [], col: [] }); const nt = litK(cx, cy) ? 1 + Math.floor(hsh(cx, cy, 497) * 2) : 0;   // (grass only by the light)
       for (let i = 0; i < nt; i++) { const f = (i + 0.5) / nt * 1.6 - 0.8; kfern(G2, V3(cx + ca * L * f, y, cy + sa * L * f), V3(Math.cos(ang + 1.6 + i), 0, Math.sin(ang + 1.6 + i)), 7, 0.12 + 0.03 * hsh(i, cx + cy, 498), cx * 13 + cy + i, 0.45, 3.1); }
       kitN.floorCracks = (kitN.floorCracks || 0) + 1; }
     for (const [room, G2] of grass) { if (!G2.pos.length) continue; const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(G2.pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(G2.nor, 3)); g.setAttribute('color', new T.Float32BufferAttribute(G2.col, 3));

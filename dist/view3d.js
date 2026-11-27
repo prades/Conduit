@@ -30542,6 +30542,8 @@ function sewerDress(w, lab) {
     };
     const kitN = { runs: 0, mains: 0, waters: 0, conds: 0, panels: 0, vents: 0, boxes: 0, valves: 0, gauges: 0, jboxes: 0, drops: 0, stains: 0, tides: 0, covers: 0, cabinets: 0, cabinetsSkipped: 0 };
     const lampNear = (x, y) => lamps.some(L => Math.abs(L.cx - x) + Math.abs(L.cy - y) < 2);
+    const LIT_R = 3.5, lampD = (x, y) => { let d = 1e9; for (const L of lamps)
+        d = Math.min(d, Math.hypot(L.cx - x, L.cy - y)); return d; }, litK = (x, y) => { const d = lampD(x, y); return d <= 1.5 ? 1 : d <= LIT_R ? 1 - 0.6 * (d - 1.5) / (LIT_R - 1.5) : 0; };
     const faces = new Map();
     for (const k of cellAt.keys()) {
         if (!dry(k))
@@ -30767,8 +30769,8 @@ function sewerDress(w, lab) {
         }
         for (const p of pipes.filter(q => q.k !== 'cond'))
             for (let i = 0; i < n; i++) {
-                const t = run[i], A = plantOf(t.b.G.g), r0 = hsh(t.c[0] * 3 + p.h, t.c[1], 461);
-                if (r0 > (t.damp ? 0.5 : 0.2))
+                const t = run[i], A = plantOf(t.b.G.g), r0 = hsh(t.c[0] * 3 + p.h, t.c[1], 461), lk = litK(t.c[0], t.c[1]);
+                if (!lk || r0 > 0.8 * lk)
                     continue;
                 const nm = 1 + Math.floor(hsh(t.c[0], t.c[1] + p.h, 462) * 2);
                 for (let m = 0; m < nm; m++) {
@@ -30785,13 +30787,14 @@ function sewerDress(w, lab) {
                 kitN.pipePlants = (kitN.pipePlants || 0) + 1;
             }
         for (const t of run) {
-            const r0 = hsh(t.c[0], t.c[1], 471);
-            if (r0 > (t.damp ? 0.3 : 0.14))
+            const r0 = hsh(t.c[0], t.c[1], 471), lk = litK(t.c[0], t.c[1]);
+            if (r0 > Math.max(t.damp ? 0.3 : 0.14, 0.55 * lk))
                 continue;
             const A = plantOf(t.b.G.g), a = (hsh(t.c[1], t.c[0], 472) - 0.5) * 0.6, ht = 0.45 + 0.65 * hsh(t.c[0], t.u, 473), sd = t.c[0] * 31 + t.c[1];
             stain(t, a, fy, fy + ht, 0.5, hsh(t.c[0], t.c[1], 474) < 0.5 ? SU.crack : SU.crackF, KC.blk);
-            kfern(A, vec(KP(t, a, fy + 0.004, 0.035)), V3(t.nx, 0, t.nz), 7 + Math.floor(hsh(sd, 1, 475) * 3), 0.26 + 0.12 * hsh(sd, 2, 476), sd, 0.45, 1.35);
-            if (ht > 0.75)
+            if (lk)
+                kfern(A, vec(KP(t, a, fy + 0.004, 0.035)), V3(t.nx, 0, t.nz), 7 + Math.floor(hsh(sd, 1, 475) * 3), 0.26 + 0.12 * hsh(sd, 2, 476), sd, 0.45, 1.35);
+            if (lk && ht > 0.75)
                 kfern(A, vec(KP(t, a + (hsh(sd, 3, 477) - 0.5) * 0.1, fy + ht * 0.62, 0.01)), V3(t.nx, 0, t.nz), 5, 0.16, sd + 5, 0.2, 1.1);
             kitN.wallCracks = (kitN.wallCracks || 0) + 1;
         }
@@ -30830,7 +30833,8 @@ function sewerDress(w, lab) {
             S2.col.push(KC.sTide.r, KC.sTide.g, KC.sTide.b);
         }
         kitN.tides++;
-        if (fyB - wy < 0.3 || hsh(x, y, 481) > 0.5)
+        const lkB = litK(x, y);
+        if (fyB - wy < 0.3 || !lkB || hsh(x, y, 481) > 0.9 * lkB)
             continue;
         const A = plantOf(addTo(cellAt.get(K(x, y)))), out = V3(dx, 0, dy), sd = x * 17 + y * 5;
         const prof = s => { const pts = []; for (let k = 0; k <= 12; k++) {
@@ -30994,7 +30998,7 @@ function sewerDress(w, lab) {
             let G2 = grass.get(room);
             if (!G2)
                 grass.set(room, G2 = { pos: [], nor: [], col: [] });
-            const nt = 1 + Math.floor(hsh(cx, cy, 497) * 2);
+            const nt = litK(cx, cy) ? 1 + Math.floor(hsh(cx, cy, 497) * 2) : 0;
             for (let i = 0; i < nt; i++) {
                 const f = (i + 0.5) / nt * 1.6 - 0.8;
                 kfern(G2, V3(cx + ca * L * f, y, cy + sa * L * f), V3(Math.cos(ang + 1.6 + i), 0, Math.sin(ang + 1.6 + i)), 7, 0.12 + 0.03 * hsh(i, cx + cy, 498), cx * 13 + cy + i, 0.45, 3.1);
