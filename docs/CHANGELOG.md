@@ -4,15 +4,45 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
-### Build `2026-11-17dx` · branch `claude/start-game-project-HSh7Z` · the low camera trimmed for the iPad
+### Build `2026-11-17dy` · branch `claude/start-game-project-HSh7Z` · the low camera trimmed for the iPad
 - **The ask** (the owner, 2026-11-27): optimize the game for the low camera; of the ways offered, "Trim what's far".
 - **What it does:** the low camera draws nothing past 16 tiles (was 22) and nothing of another room past 8 (was 12), and cuts long pieces for its curve every 2.2 tiles (was 1.5). Draw calls about a quarter fewer in the arena and the hallway, a little fewer elsewhere; triangles 5% to 19% fewer. Up close the picture is the same; far things in the next room show a little later. `VIEW-3D.md` §8. `view3d/lowcam.js`, generated files.
 - **Verified:** measured in a headless browser (20 frames a room, four rooms, before and after) and the pictures compared; the suites in the handoff. **Not measured on an iPad.**
 
-### Build `2026-11-17dw` · branch `claude/start-game-project-HSh7Z` · the low camera is the game's camera
+### Build `2026-11-17dx` · branch `claude/start-game-project-HSh7Z` · the low camera is the game's camera
 - **The ask** (the owner, 2026-11-27): "I'm ready to make the low cam version of the game the full game. It looks good enough, and I also like to make the game optimized for that specific build."
 - **What it does:** the plain address over the web opens the game with the low follow camera and the rolling-world curve; `?cam=iso` gives the camera as it was. Off the web, `?cam=low` as before. The optimizing for it is the next step (measured, not yet changed). `VIEW-3D.md` §8. `js/config.js`, `tests/engineplan.js`, generated files.
 - **Verified:** `tests/engineplan.js` (the plain address, `?cam=iso`, `?cam=low`, a file, the website's background); the suites in the handoff. **Not seen on an iPad.**
+### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · the follower's close-up: a see-through card, nothing in the way
+- **The ask** (the owner, 2026-11-27): "whenever you observe a creature after clicking its mini roster and equipment page, the background should be sort of transparent on the card, and also all sorts of objects on the map should disappear if they're obstructing the creature" (`CARD-BATTLES.md` §2.80).
+- **What it does:** while the 3D camera holds on a member (card battles off, its card open), the card's ground is half see-through, and what stands between the member and the camera is made see-through as in a card battle.
+- **A fix with it:** the see-through threw on a room's merged things once their points were let go, and then stayed off for the session, battles included; those are now tested by their box.
+- `view3d/gameview.js`, `view3d/gamemap.js`, `js/view3d.js`, `game.html`, `tests/squadfly.js`; `dist/view3d.js` remade.
+- **Verified:** a real browser (three rooms) and the suites in the handoff. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · followers that are not RECKLESS seek healing
+- **The ask** (the owner, 2026-11-27): "if they have anything but reckless behavior, they will seek healing from nearby sources". Asked: **"Below half"**, **"Mostly healed"** (`COMBAT.md` §10).
+- **What it does (real time):** a CAUTIOUS, BALANCED or TANK follower under half its health goes to the nearest healing spot in its room (a serum pool, SEEDFALL or its buds, the thicket's aura, REEF, a GROVE ENGINEER relay, a BLOOM follower) and holds still in it until 80%, or until the spot is gone. RECKLESS fights on as before. Not in a card battle.
+- `js/npc.js` (`FOLLOWER_HEAL`, `followerHealSpots`, `followerSeekHeal`), `tests/cardbattle.js`, `docs/COMBAT.md`.
+- **Verified:** `tests/cardbattle.js` (new: SEEKING HEALING IN REAL TIME) and the full run in the handoff. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · a tap walks you into the rooms next door
+- **The ask** (the owner, 2026-11-27): "You need to make it to where you can walk into other rooms, because right now it blocks you from walking into other rooms." Asked how far a tap should reach: **"Next-door rooms"** (passed over: anywhere you can walk; rooms you have been in).
+- **What it does:** a tap anywhere in a room that shares a doorway with yours walks you there (it reached only 2.6 tiles past the doorway, and a tap beyond showed a ✕). A room two or more doors away still shows the ✕; a locked door still refuses the walk; the combat step (3 tiles a tap with an enemy near) is unchanged. The 2D game and the 3D view alike (`js/input.js` handleInput).
+- `js/facilityplay.js` (`facilityTapAllowed`, `facilityNextDoor`), `js/input.js` (its comment), `tests/movement.js`, `docs/FACILITY.md`.
+- **Verified:** `tests/movement.js` (the far side of the Crystal Chamber from the hallway walks you there; a room not next door is refused) and the full run in the handoff. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · BLOCK in card battles; in real time a TANK blocks and a CAUTIOUS follower steps back
+- **The ask** (the owner, 2026-11-27): a block action beside the attacks and MOVE: no moving, half damage until the next turn; "this sort of tactic would also apply to real battles". Asked: "Merge into TANK", "Some escape some block", "CAUTIOUS steps back", "Always ready", "2 s, then a gap" (`CARD-BATTLES.md` §2.83).
+- **Card battles:** every follower has a BLOCK card, always ready; played, its turn is over and until its next turn it takes half damage and holds its square (no push moves it). BLOCK and MOVE share one slot, stacked.
+- **Real time** ("next to" an enemy: on a hex touching its own, the battles' hexes, "6 around"): a TANK next to an enemy blocks for 2 s (rooted, half damage), then fights at least 2 s; a CAUTIOUS one next to an enemy steps back up to 3 tiles, then 3 s before the next. Blocking is not on top of SHELL GUARD.
+- `js/cardbattle.js`, `js/npc.js`, `js/helpers.js`, `game.html` (the stacked slot), `tests/cardbattle.js`; the stamp's own files.
+- **Verified:** `tests/cardbattle.js` (new: BLOCK, BLOCK AND STEP BACK IN REAL TIME; four older checks now expect the BLOCK card) and the full run in the handoff; the battle's cards seen in a real browser at 1024 × 768 and 768 × 1024. **Not playtested; not seen on an iPad.**
+### Build `2026-11-17dw` · branch `claude/friendly-thompson-w581x0` · equip from THE LAST PACK; the shard count opens the SHOP
+- **The ask** (the owner, 2026-11-27): "whenever I am in the shop and I buy a pack, sometimes after I see the cards, I'll click something and it'll go away. It'll go back to the shop menu and it'll show the pack, but it'll be under the last pack menu. And all of those options, you can't equip them. So make it to where you can equip those energy cards and you can equip those item cards from that screen." And: "I want to make it to where you click the shard total box and it'll pull up the shop menu."
+- **What it does:** the cause: a pack's reveal closes at a tap anywhere once its cards are out (as built), and THE LAST PACK had no buttons. Now each card under THE LAST PACK on the SHOP (its item cards and its energy cards) has EQUIP NOW, the reveal's own (the pop-out of who wears it, or why not; under an energy card EQUIP NOW alone). And a tap on the shard count, THE CORE's at the bottom right or the top HUD's, opens the CARDS screen on SHOP (or turns it there); a second tap closes it (`cardsOpenShop`). The reveal's tap-anywhere close is unchanged (not asked).
+- `js/cardsui.js` (THE LAST PACK's buttons, `cardsOpenShop`, an energy card's EQUIP NOW without the hand's words), `js/corehud.js` (the count taps), `game.html` (`#shards` a button, its taps and THE CORE's count's taken); `tests/equipnow.js` (THE LAST PACK; THE SHARD COUNT OPENS THE SHOP); `docs/UI-STYLE.md`; generated: `play.html`, `dist/conduit.js`.
+- **Verified:** `tests/equipnow.js` and the suites in the handoff; in the real game at an iPad's size: THE CORE's shard count tapped opens the SHOP, a pack opened and its reveal closed by a tap, THE LAST PACK's four cards each with EQUIP NOW, one opening its pop-out. **Not seen on an iPad.**
 
 ### Build `2026-11-17dv` · branch `claude/battle-anims-bloom` (from main `e480e741`, build `2026-11-17dl`; main's `2026-11-17du` merged in) · the attacks in 3D: the bloom line's ten (looks proposed, not yet approved)
 - **The ask** (the owner, 2026-11-27): "Create the bloom, followers, attacks in 3D." The last follower line: the Thornwhip's (SEED SHOT, SEEDFALL, BRIAR SWEEP, PINK THICKET), the Sundew's (NECTAR STING, SWEET SCENT, CONSUME) and the Stonepetal's (its hit, STAKE RING, REEF PILLAR) ten attacks drawn in 3D: each body's wind-up, strike and follow-through from its sheet's poses (the Thornwhip's fling, the Sundew's sting and its model's own CONSUME, the Stonepetal's head driving down) and each effect rebuilt in 3D. Where a look was approved it is carried into 3D (PINK THICKET's big seed as the pink crystal; the black thorny vines; the Sundew's sting and closing bud; the Stonepetal's stone and square pink crystals; REEF PILLAR's giant spike); every other look and every number the agent's (`VIEW-3D.md` §4.7, `EFFECTS.md`, `DECISION-LOG.md`; the agent's choices in `OPEN-QUESTIONS.md`).

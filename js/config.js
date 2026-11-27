@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-17dx";
+const BUILD_VERSION = "2026-11-17dy";
 // The address a picture is loaded from, by its .png path (build 2026-11-11c; tools/images.js): the one js/imgmap.js names (the picture's lossless WebP copy where that is smaller) with a
 // fingerprint of the picture, so a new build does not make a player download every picture again; a picture the map does not have yet: its path and the build.
 function imgSrc(p) { const m = typeof IMG_MAP !== "undefined" ? IMG_MAP[p] : undefined; return m || p + "?v=" + BUILD_VERSION; }
@@ -59,7 +59,7 @@ function enginePlan(protocol, search) {
     const s = String(search || ""), eng = (/[?&]engine=(2d|3d)(?:&|$)/.exec(s) || [])[1] || null, bat = (/[?&]battles=(cards|live)(?:&|$)/.exec(s) || [])[1] || null;
     const plain = eng === null && protocol === "https:" && !/[?&]attract\b/.test(s);   // (no engine named, over the web, not the website's background: the game as players get it)
     const view3d = eng === "3d" || plain;
-    // THE LOW CAMERA (the owner, 2026-11-23: "B", the low follow camera and the rolling-world curve; docs/VIEW-3D.md §8), with the 3D view only. THE GAME'S CAMERA since build 2026-11-17dw (the
+    // THE LOW CAMERA (the owner, 2026-11-23: "B", the low follow camera and the rolling-world curve; docs/VIEW-3D.md §8), with the 3D view only. THE GAME'S CAMERA since build 2026-11-17dx (the
     // owner, 2026-11-27: "I'm ready to make the low cam version of the game the full game"): the plain address over the web gets it, and ?cam=low names it anywhere; ?cam=iso is the camera as
     // it was (the game's own, from above), the way back.
     const cam = view3d && !/[?&]cam=iso(?:&|$)/.test(s) && (plain || /[?&]cam=low(?:&|$)/.test(s)) ? "low" : null;

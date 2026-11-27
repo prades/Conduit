@@ -61,6 +61,10 @@ function _coreBuild() {
     const cellEls = [0, 1, 2].map(() => _coreEl("i", "", null, cells)), count = _coreEl("div", "core-count", null, slab), gem = _coreEl("span", "core-gem", null, count), kit = _coreEl("div", "core-kit", null, slab);   // (cells[0] the lowest: game.html stands them bottom up)
     if (typeof SHARD_ICON_SVG === "string") gem.innerHTML = SHARD_ICON_SVG.replace('id="shardGemsSvg"', "");
     const num = _coreEl("b", "", "0", count), plus = _coreEl("em", "", "", count);
+    // a tap on the shards opens the SHOP (the owner, 2026-11-27: "you click the shard total box and it'll pull up the shop menu": js/cardsui.js cardsOpenShop)
+    count.setAttribute("role", "button"); count.setAttribute("tabindex", "0"); count.setAttribute("aria-label", "SHARDS · OPEN THE SHOP");
+    const shop = e => { e.stopPropagation(); if (typeof cardsOpenShop === "function") cardsOpenShop(); };
+    count.addEventListener("click", shop); count.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); shop(e); } });
     const hit = (cls, label, fn) => { const b = _coreEl("button", "core-hit " + cls, null, root); b.type = "button"; b.setAttribute("aria-label", label); b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
     const els = { cells: cellEls, num, plus, kit, hp: hpBar,
         hitGuard: hit("core-hg", "GUARD", () => { if (typeof playerGuardToggle === "function") playerGuardToggle(); }),

@@ -95,17 +95,26 @@ const GAMEVIEW = (function () {
       for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, seeM); seeM.premultiply(o.matrixWorld); boxes.push(o.geometry.boundingBox.clone().applyMatrix4(seeM)); }
       seeSets.push({ o, boxes }); });
   }
+  // a mesh whose points were let go after it was listed (a room's things merged once drawn, view3d/core.js) is tested by its box from then on: a line through freed points threw, and turned the
+  // see-through off for good (2026-11-27, seen with the close-up walking into a room)
+  function seeKeep() { if (!seeList.some(o => !(o.geometry.attributes.position && o.geometry.attributes.position.array))) return;
+    seeList = seeList.filter(o => { if (o.geometry.attributes.position && o.geometry.attributes.position.array) return true; if (o.geometry.boundingBox) { o.updateMatrixWorld(); seeBoxes.push({ o, box: o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld) }); } return false; }); }
   function seeRestore() { for (const [o, m] of faded) o.material = m; faded.clear(); for (const [k, v] of cut) { v.o.setMatrixAt(v.i, v.m); v.o.instanceMatrix.needsUpdate = true; } cut.clear(); seeList = seeSets = seeBoxes = null; }
   let seeBroke = false;   // (a failure here turns it off and puts everything back: it never stops the view)
   function seeThrough(f0) { if (seeBroke) return; try { seeThroughStep(f0); } catch (e) { seeBroke = true; try { seeRestore(); } catch (x) {} if (typeof console !== 'undefined' && console.warn) console.warn('the battle\'s see-through is off: ' + ((e && e.stack) || e)); } }
+  // THE FOLLOWER'S CLOSE-UP (the owner, 2026-11-27: "all sorts of objects on the map should disappear if they're obstructing the creature"): out of a battle, while the camera holds on a member
+  // (js/view3d.js view3dFocusCam), that member is kept in sight the same way; what may stand in the way is found again when it walks into another room (seeRoom).
+  let seeRoom = null;
   function seeThroughStep(f0) {
-    const list = battling() ? GM.battleFighters : null;
-    if (!list || !list.length) { if (faded.size || cut.size || seeList) seeRestore(); return; }
-    if (f0 - seeAt < 15) return; seeAt = f0; if (!seeList) seeFind();
+    const list = battling() ? GM.battleFighters : GM.focusSeen;
+    if (!list || !list.length) { if (faded.size || cut.size || seeList) seeRestore(); seeRoom = null; return; }
+    if (f0 - seeAt < 15) return; seeAt = f0;
+    if (!battling()) { const r = list[0] ? GM.roomOf(list[0].x, list[0].y) : null; if (r !== seeRoom) { seeRoom = r; seeList = null; } }
+    if (!seeList) seeFind(); seeKeep();
     const hit = new Set(), tiles = new Map(); RC.far = BACK + 20;
     for (const a of list) { if (!a || a.dead || !Number.isFinite(a.x)) continue; const y0 = GM.liftPx(a.x, a.y) / UPX; seeFeet.set(a.x, y0 + 0.02, a.y);
       for (const up of SEE_UP) { seeFrom.set(a.x, y0 + up, a.y); const sd = LOW ? seeDir.copy(cam.position).sub(seeFrom) : DIR; if (LOW) { RC.far = sd.length(); sd.normalize(); } RC.set(seeFrom, sd); seeRay.set(seeFrom, sd);   // (THE LOW CAMERA has perspective: each line its own way, to the camera)
-        for (const h of RC.intersectObjects(seeList, false)) hit.add(h.object);
+        for (const h of RC.intersectObjects(seeList, false)) hit.add(h.object);   // (seeList holds only meshes whose points are still here: seeKeep)
         for (const B of seeBoxes) if (seeRay.intersectsBox(B.box) && !B.box.containsPoint(seeFeet)) hit.add(B.o);   // (one round the fighter's feet is the room's floor and walls as one: never)
         for (const S of seeSets) for (let i = 0; i < S.boxes.length; i++) if (seeRay.intersectsBox(S.boxes[i]) && !S.boxes[i].containsPoint(seeFrom)) tiles.set(S.o.uuid + ':' + i, { o: S.o, i }); } }
     for (const [o, m] of faded) if (!hit.has(o)) { o.material = m; faded.delete(o); }
