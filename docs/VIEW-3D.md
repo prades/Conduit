@@ -36,6 +36,8 @@ This answers the open question "Real 3D or 2.5D?" with real 3D, and supersedes "
 
 ## 4. Stage 1: what it draws
 
+**No tiles on the floor** (build `2026-11-17dm`; the owner, 2026-11-27: "remove this visible floor tiles on the map"; asked, "Everywhere"): each room's floor is one smooth surface in its own colour; the plate has no line or shine round each tile, the grate no border, and no tile is shaded apart from its neighbours (`design/style-evolution/live/floor.js`). The sewer skin's floor pictures are its own (`view3d/sewerdress.js`), unchanged.
+
 ### 4.1 The camera
 *(A card battle, `?cards`, build `2026-11-17d`: the camera eases to the fight, lower, turned and nearer, while the 2D over the picture waits: `CARD-BATTLES.md` §9.)*
 

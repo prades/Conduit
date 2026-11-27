@@ -1,0 +1,152 @@
+<title>Hex Battle Shapes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,700;1,700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a lab-console sheet: the rules up top, then a grid of cards, each drawn twice (squares / hexes) side by side. Single dark look, as the game's own. */
+:root {
+  --bg: #070b16; --panel: #0e1528; --line: #24324f; --fg: #e8f1ff; --dim: #8fa3c4;
+  --teal: #19e6c1; --gold: #ffe733; --red: #ff5a5a; --pale: #7fd4ff; --heal: #6dff9a;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 60px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font: italic 700 clamp(28px, 5vw, 44px)/1.05 var(--display); letter-spacing: 0.02em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--teal); }
+h2 { font: italic 700 22px/1.2 var(--display); letter-spacing: 0.04em; margin: 0; color: var(--gold); text-transform: uppercase; }
+p { margin: 0; max-width: 72ch; color: var(--dim); }
+p b { color: var(--fg); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.rule { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--teal); padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.rule h3 { margin: 0; font: 700 15px/1.3 var(--display); letter-spacing: 0.05em; text-transform: uppercase; }
+.rule .k { font: 500 12px var(--mono); color: var(--teal); letter-spacing: 0.08em; }
+.rule p { font-size: 14px; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 500 12px var(--mono); color: var(--dim); align-items: center; }
+.key i { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; border: 1px solid #0006; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; min-width: 0; }
+.card header { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.card h4 { margin: 0; font: italic 700 17px/1.2 var(--display); letter-spacing: 0.04em; }
+.card .who { font: 500 11px var(--mono); color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pair figure { margin: 0; display: grid; gap: 3px; min-width: 0; }
+.pair figcaption { font: 500 11px var(--mono); color: var(--dim); letter-spacing: 0.06em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.pair figcaption b { color: var(--fg); font-weight: 500; }
+svg { width: 100%; height: auto; display: block; background: #0a1120; border: 1px solid var(--line); }
+.note { font-size: 13px; color: var(--dim); }
+.ask { background: var(--panel); border: 1px solid var(--gold); padding: 16px; display: grid; gap: 8px; }
+.ask ol { margin: 0; padding-left: 20px; color: var(--fg); display: grid; gap: 4px; }
+@media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
+</style>
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <div class="key" style="color:var(--teal)">CONDUIT · CARD BATTLES · FOR APPROVAL · BUILD 2026-11-17dl</div>
+    <h1>Battles on <span>hexes</span></h1>
+    <p>You asked for the floor tiles gone and a hexagon grid for every battle, about one tile wide, with this page before anything changes. Each card below is drawn twice from the game's own rule and its own size: <b>today on squares</b>, and <b>proposed on hexes</b>. No damage, reach or radius changes; only what the cells are.</p>
+  </header>
+  <section style="display:grid;gap:12px">
+    <h2>The hex rules (proposed)</h2>
+    <div class="rules" id="rules"></div>
+  </section>
+  <div class="key"><span><i style="background:var(--teal)"></i>your follower</span><span><i style="background:var(--red)"></i>enemy</span><span><i style="background:var(--gold)"></i>struck</span><span><i style="background:var(--pale)"></i>effect only</span><span><i style="background:var(--heal)"></i>heals your side</span><span><i style="background:#ffffff"></i>where it is let go</span></div>
+  <section style="display:grid;gap:12px"><h2>Moving and pushing</h2><div class="grid" id="moves"></div></section>
+  <section style="display:grid;gap:12px"><h2>Attack cards (<span id="nc"></span>)</h2><div class="grid" id="cards"></div></section>
+  <section style="display:grid;gap:12px"><h2>Ultimates (<span id="nu"></span>)</h2><div class="grid" id="ults"></div></section>
+  <section class="ask"><h2>To decide</h2><ol id="asks"></ol></section>
+</div>
+<script>
+const DATA = {"cards": [{"id": "_basic", "name": "BASIC ATTACK", "who": "every follower", "def": {"kind": "one"}}, {"id": "_chainLightning", "name": "CHAIN LIGHTNING", "who": "THUNDERHEAD", "def": {"kind": "chain", "hop": 2.5, "n": "all"}}, {"id": "_corrodeShot", "name": "CORRODE SHOT (everyday)", "who": "ROTSHARD", "def": {"kind": "one", "r": 1.6}}, {"id": "bash", "name": "BASH", "who": "", "def": {"kind": "one"}}, {"id": "venom_bite", "name": "VENOM BITE", "who": "BLIGHT SPIDER", "def": {"kind": "one"}}, {"id": "rift_impale", "name": "RIFT IMPALE", "who": "RIFT MIMIC", "def": {"kind": "one"}}, {"id": "corrode_shot", "name": "CORRODE SHOT", "who": "", "def": {"kind": "one", "r": 1.6}}, {"id": "chomp", "name": "CHOMP", "who": "", "def": {"kind": "one", "r": 1.6}}, {"id": "static_rush", "name": "SONIC ROLL", "who": "STATIC ORB", "def": {"kind": "chain", "hop": 2.2, "n": 2}}, {"id": "shock_zap", "name": "SHOCK ZAP", "who": "MANTA RAY", "def": {"kind": "chain", "hop": 2.5, "n": 1, "restEff": true}}, {"id": "capacitor_discharge", "name": "CAPACITOR DISCHARGE", "who": "STATIC ORB", "def": {"kind": "chain", "self": true, "reach": 2, "hop": 2.5, "n": 4}}, {"id": "zigzag_dash", "name": "ZIGZAG DASH", "who": "ELECTRO SKINK", "def": {"kind": "zigzag", "len": 4}}, {"id": "ember_slash", "name": "EMBER SLASH", "who": "QUILLSTONE", "def": {"kind": "line", "len": 4}}, {"id": "skate_charge", "name": "SKATE CHARGE", "who": "IGLOO SKATER", "def": {"kind": "line", "len": 4}}, {"id": "blade_roll", "name": "BLADE ROLL", "who": "HAMMER SLUG", "def": {"kind": "line", "len": 4}}, {"id": "icicle_volley", "name": "ICICLE VOLLEY", "who": "RIMESTAR", "def": {"kind": "fan", "angles": [-15, 0, 15], "len": 7}}, {"id": "quill_burst", "name": "QUILL BURST", "who": "QUILLSTONE", "def": {"kind": "fan", "angles": [-20, -10, 0, 10, 20], "len": 4}}, {"id": "phase_swap", "name": "PHASE SWAP", "who": "GOO PROXY", "def": {"kind": "swap"}}, {"id": "maelstrom", "name": "MAELSTROM", "who": "", "def": {"kind": "blast", "r": 1.8, "stays": true}}, {"id": "hexfire", "name": "HEXFIRE", "who": "CINDER HALO, EMBER HOOD", "def": {"kind": "blast", "r": 1.2, "stays": true}}, {"id": "magma_vent", "name": "MAGMA VENT", "who": "", "def": {"kind": "blast", "r": 1.5, "stays": true}}, {"id": "static_vortex", "name": "STATIC VORTEX", "who": "", "def": {"kind": "blast", "r": 2.5, "stays": true}}, {"id": "rotten_decoy", "name": "ROTTEN DECOY", "who": "ROTSHARD", "def": {"kind": "decoy", "r": 1.5, "stays": true}}, {"id": "stake_ring", "name": "STAKE RING", "who": "STONEPETAL", "def": {"kind": "ring", "r": 1.8}}, {"id": "toxic_stomp", "name": "TOXIC STOMP", "who": "SEEPER", "def": {"kind": "ring", "r": 1.5}}, {"id": "wobble_slam", "name": "WOBBLE SLAM", "who": "JELLY RAM", "def": {"kind": "ring", "r": 1.5}}, {"id": "briar_sweep", "name": "BRIAR SWEEP", "who": "THORNWHIP", "def": {"kind": "ring", "r": 2}}, {"id": "gravity_slam", "name": "GRAVITY SLAM", "who": "RIFT MIMIC", "def": {"kind": "ring", "r": 2.2}}, {"id": "eruption", "name": "ERUPTION", "who": "SEEPER", "def": {"kind": "ring", "r": 2.4}}, {"id": "echo_pulse", "name": "ECHO PULSE", "who": "HORNSHELL", "def": {"kind": "ring", "r": 4}}, {"id": "seedfall", "name": "SEEDFALL", "who": "THORNWHIP", "def": {"kind": "ring", "r": 1.5, "heal": true}}, {"id": "sweet_scent", "name": "SWEET SCENT", "who": "SUNDEW", "def": {"kind": "ring", "r": 5, "eff": true}}, {"id": "shell_guard", "name": "SHELL GUARD", "who": "HAMMER SLUG", "def": {"kind": "ring", "r": 3, "eff": true}}], "ults": [{"id": "thunderhead", "name": "THUNDERSTORM", "who": "THUNDERHEAD", "def": {"kind": "ring", "r": 4, "lasts": "win", "ult": true}}, {"id": "voidstar", "name": "EVENT HORIZON", "who": "VOIDSTAR", "def": {"kind": "blast", "reach": 6, "r": 4, "lasts": "win", "ult": true}}, {"id": "quillstone", "name": "QUILLSTORM", "who": "QUILLSTONE", "def": {"kind": "fan", "all": 16, "len": 6, "ult": true}}, {"id": "maw", "name": "ABSOLUTE ZERO", "who": "FROST MAW", "def": {"kind": "swallow", "r": 3, "lasts": "sta", "ult": true}}, {"id": "electroskink", "name": "LIGHTNING CIRCUIT", "who": "ELECTRO SKINK", "def": {"kind": "blast", "reach": 6, "r": 2.5, "lasts": "win", "ult": true}}, {"id": "staticorb", "name": "OVERDRIVE", "who": "STATIC ORB", "def": {"kind": "rush", "reach": 6, "r": 2, "ult": true}}, {"id": "embercowl", "name": "METEOR RAIN", "who": "EMBER HOOD", "def": {"kind": "rain", "reach": 12, "r": 3.2, "lasts": "win", "ult": true}}, {"id": "hammerslug", "name": "SHOCKWAVE SLAM", "who": "HAMMER SLUG", "def": {"kind": "ring", "r": 3.5, "ult": true}}, {"id": "gooproxy", "name": "PROXY SWARM", "who": "GOO PROXY", "def": {"kind": "copies", "reach": 6, "lasts": "sta", "ult": true}}, {"id": "thermite", "name": "FAULTLINE", "who": "THERMITE BURROWER", "def": {"kind": "line", "len": 8, "toWall": true, "fault": true, "ult": true}}, {"id": "blightspider", "name": "CONTAMINATION NETWORK", "who": "BLIGHT SPIDER", "def": {"kind": "net", "reach": 6, "lasts": "win", "ult": true}}, {"id": "hovershell", "name": "DRIFT SLASH", "who": "MANTA RAY", "def": {"kind": "drift", "reach": 6, "near": true, "ult": true}}, {"id": "igloo", "name": "ICE RINK", "who": "IGLOO SKATER", "def": {"kind": "ring", "r": 4, "lasts": "win", "ult": true}}, {"id": "jellyram", "name": "JELLY SHIELDS", "who": "JELLY RAM", "def": {"kind": "self", "lasts": "sta", "ult": true}}, {"id": "rimestar", "name": "WHITEOUT", "who": "RIMESTAR", "def": {"kind": "ring", "r": 4, "lasts": "win", "ult": true}}, {"id": "hornshell", "name": "WAVE MAKER", "who": "HORNSHELL", "def": {"kind": "cone", "reach": 6, "ult": true}}, {"id": "seeper", "name": "TOXIC UNDERTOW", "who": "SEEPER", "def": {"kind": "ring", "r": 3, "ult": true}}, {"id": "mimic", "name": "SHARD VORTEX", "who": "RIFT MIMIC", "def": {"kind": "ring", "r": 3, "lasts": "win", "ult": true}}, {"id": "rotshard", "name": "TOXIC PUDDLE", "who": "ROTSHARD", "def": {"kind": "blast", "reach": 7, "r": 2, "lasts": "win", "ult": true}}, {"id": "shrub", "name": "PINK THICKET", "who": "THORNWHIP", "def": {"kind": "seed", "reach": 7, "r": 2, "lasts": "win", "ult": true}}, {"id": "sundew", "name": "CONSUME", "who": "SUNDEW", "def": {"kind": "one", "reach": 2, "noBoss": true, "lasts": "sta", "ult": true}}, {"id": "coralcrab", "name": "REEF PILLAR", "who": "STONEPETAL", "def": {"kind": "wall", "reach": 7, "lasts": "sta", "ult": true}}], "X": {"WAVE": {"reach": 6, "waves": 3, "every": 45, "len": 4, "cos": 0.64, "mult": 0.8, "knock": 1.5, "step": 1.5}, "DRIFT": {"reach": 6, "loop": 36, "width": 1.6, "beyond": 1.5, "cut": 1.8, "mult": 1.5, "glitch": 30, "fast": 1.3, "frames": 360}, "NET": {"frames": 600, "tick": 30, "mult": 0.5, "poison": 180, "touch": 0.5}, "CU": {"netReach": 6, "netPods": [[0, -2], [-2, 1], [2, 1]]}, "PROXY": {"count": 3, "frames": 360, "reach": 6, "burst": 1.5, "mult": 1.5, "hp": 0.5}, "PILLAR": {"reach": 7, "gap": 1.2, "life": 600, "core": 0.9, "flank": 0.6, "spread": 1.1, "mend": 0.02, "every": 30, "mendReach": 2}, "METEOR": {"count": 14, "radius": 3.2, "hit": 1.5, "apart": 0.9, "cast": 40, "rain": 164, "warn": 34, "fall": 26, "mult": 6.5, "burn": 180, "burnTick": 0.05, "mark": 230}, "ZERO": {"reach": 3, "max": 3, "frames": 360}, "FAULT": {"cooldown": 3600, "maxLen": 8, "minLen": 1, "step": 0.25, "spacing": 0.75, "hitR": 0.7, "speed": 0.12, "mult": 2, "dive": 20, "trace": 90}, "QS": {"count": 16, "mult": 1, "reach": 6}, "CB": {}}};
+const H = Math.sqrt(3) / 2, X = DATA.X;
+// a lattice: cells with centres; of(x, y) the cell a point is in; all(): every cell of the window
+function lattice(hex) {
+  const cells = [];
+  if (!hex) { for (let x = 0; x <= 13; x++) for (let y = 0; y <= 9; y++) cells.push({ k: x + ',' + y, x, y }); }
+  else { for (let r = 0; r <= Math.round(9 / H); r++) for (let q = -1; q <= 14; q++) { const x = q + (r & 1) * 0.5, y = r * H; if (x >= -0.01 && x <= 13.01) cells.push({ k: q + ',' + r, x, y }); } }
+  const of = (x, y) => { let b = null, bd = Infinity; for (const c of cells) { const d = (c.x - x) ** 2 + (c.y - y) ** 2; if (d < bd) { bd = d; b = c; } } return b; };
+  const disc = (c, r, skip) => cells.filter(o => Math.hypot(o.x - c.x, o.y - c.y) <= r + 1e-6 && !(skip && o === c));
+  const ray = (a, ang, len) => { const out = [], seen = new Set([a.k]); for (let s = 0.5; s <= len + 0.01; s += 0.25) { const c = of(a.x + Math.cos(ang) * s, a.y + Math.sin(ang) * s); if (!seen.has(c.k)) { seen.add(c.k); out.push(c); } } return out; };
+  const nb = c => cells.filter(o => { const d = Math.hypot(o.x - c.x, o.y - c.y); return d > 0.01 && d <= (hex ? 1.01 : 1.42); });
+  return { hex, cells, of, disc, ray, nb };
+}
+const SQ = lattice(false), HX = lattice(true);
+const v = n => typeof n === 'number' ? n : 0;
+// a scene: where the follower and the enemies stand, where it is let go; a shape function gives { hit, eff, heal, links, land }
+function lay(L, sc, fn) { const A = L.of(...sc.A), foes = sc.foes.map(p => L.of(...p)), E = foes[0], T = sc.T ? L.of(...sc.T) : null; const S = { hit: [], eff: [], heal: [], links: [], marks: [] }; fn(L, A, E, foes, T, S); return { A, foes, T, S }; }
+const near = (L, list, c, r, not) => list.filter(o => !not.includes(o) && Math.hypot(o.x - c.x, o.y - c.y) <= r + 0.05).sort((p, q) => Math.hypot(p.x - c.x, p.y - c.y) - Math.hypot(q.x - c.x, q.y - c.y))[0];
+const K = {
+  one: (d) => (L, A, E, foes, T, S) => { S.hit = [E]; if (d.r) S.eff = L.disc(E, d.r, true).filter(c => c !== A); },
+  chain: (d) => (L, A, E, foes, T, S) => { let first = d.self ? near(L, foes, A, d.reach, []) : E; if (!first) return; const ch = [first], n = d.n === 'all' ? 99 : d.n; for (let last = first; ch.length - 1 < n;) { const nx = near(L, foes, last, d.hop, ch); if (!nx) break; ch.push(nx); last = nx; } S.hit = d.restEff ? [ch[0]] : ch; S.eff = d.restEff ? ch.slice(1) : []; S.links = ch.map((c, i) => [i ? ch[i - 1] : A, c]); },
+  line: (d) => (L, A, E, foes, T, S) => { const ang = Math.atan2(E.y - A.y, E.x - A.x), len = Math.max(Math.hypot(E.x - A.x, E.y - A.y), d.len); S.hit = L.ray(A, ang, len); if (!S.hit.includes(E)) S.hit.push(E); },
+  zigzag: (d) => (L, A, E, foes, T, S) => { const dx = E.x - A.x, dy = E.y - A.y, Ln = Math.hypot(dx, dy) || 1, ux = dx / Ln, uy = dy / Ln, nx = uy, ny = -ux, p = Math.max(1, Math.round(Ln)) % 2; for (let k = 1; k <= d.len; k++) { const o = (k + p) % 2, c = L.of(A.x + ux * k + nx * o, A.y + uy * k + ny * o); if (!S.hit.includes(c)) S.hit.push(c); } if (!S.hit.includes(E)) S.hit.push(E); },
+  fan: (d) => (L, A, E, foes, T, S) => { const n = d.all || 0, a0 = n ? 0 : Math.atan2(E.y - A.y, E.x - A.x), angs = n ? Array.from({ length: n }, (_, i) => i * 360 / n) : d.angles; for (const g of angs) { const t = L.ray(A, a0 + g * Math.PI / 180, d.len); let upto = t.length; for (let i = 0; i < t.length; i++) if (foes.includes(t[i])) { upto = i + 1; break; } for (let i = 0; i < upto; i++) if (!S.hit.includes(t[i])) S.hit.push(t[i]); } },
+  swap: () => (L, A, E, foes, T, S) => { S.hit = [E]; S.links = [[A, E]]; },
+  blast: (d) => (L, A, E, foes, T, S) => { S.hit = L.disc(T, d.r, false); S.marks = [T]; },
+  decoy: (d) => (L, A, E, foes, T, S) => { S.eff = L.disc(T, d.r, true); S.marks = [T]; },
+  ring: (d) => (L, A, E, foes, T, S) => { const t = L.disc(A, d.r, true); if (d.heal) S.heal = t; else if (d.eff) S.eff = t; else S.hit = t; },
+  rush: (d) => (L, A, E, foes, T, S) => { const Ln = Math.hypot(E.x - A.x, E.y - A.y) || 1, s = Math.max(0, Ln - 0.8), land = L.of(A.x + (E.x - A.x) / Ln * s, A.y + (E.y - A.y) / Ln * s); S.hit = L.disc(land, d.r, true).filter(c => c !== A); if (!S.hit.includes(E)) S.hit.push(E); S.links = [[A, land]]; S.marks = [land]; },
+  cone: () => (L, A, E, foes, T, S) => { const W = X.WAVE, Ln = Math.hypot(E.x - A.x, E.y - A.y) || 1, ux = (E.x - A.x) / Ln, uy = (E.y - A.y) / Ln; for (let k = 0; k < W.waves; k++) { const P = L.of(A.x + ux * W.step * k, A.y + uy * W.step * k); for (const c of L.disc(P, W.len, true)) { const dx = c.x - P.x, dy = c.y - P.y, dd = Math.hypot(dx, dy); if ((dx * ux + dy * uy) / dd < W.cos - 1e-6 || c === A || S.hit.includes(c)) continue; S.hit.push(c); } } },
+  drift: () => (L, A, E, foes, T, S) => { const D = X.DRIFT, dx = E.x - A.x, dy = E.y - A.y, Ln = Math.hypot(dx, dy) || 1, ux = dx / Ln, uy = dy / Ln, vx = -uy, vy = ux, a = (Ln + D.beyond) / 2, b = D.width, mx = A.x + ux * a, my = A.y + uy * a; for (let n = 1; n <= D.loop; n++) { const t = Math.PI + n / D.loop * Math.PI * 2, ex = Math.cos(t) * a, ey = Math.sin(t) * b, px = mx + ux * ex + vx * ey, py = my + uy * ex + vy * ey; for (const c of L.cells) if (Math.hypot(c.x - px, c.y - py) <= D.cut && c !== A && !S.hit.includes(c)) S.hit.push(c); } },
+  seed: (d) => (L, A, E, foes, T, S) => { S.hit = L.disc(E, d.r, false); S.links = [[A, E]]; },
+  rain: (d) => (L, A, E, foes, T, S) => { S.eff = L.disc(T, d.r, false); S.marks = [T]; },
+  net: () => (L, A, E, foes, T, S) => { const pods = X.CU.netPods.map(o => L.of(T.x + o[0], T.y + o[1])), sd = (c, p, q) => { const vx = q.x - p.x, vy = q.y - p.y, l2 = vx * vx + vy * vy, t = Math.max(0, Math.min(1, ((c.x - p.x) * vx + (c.y - p.y) * vy) / l2)); return Math.hypot(c.x - p.x - vx * t, c.y - p.y - vy * t); }; for (let i = 0; i < pods.length; i++) for (let j = i + 1; j < pods.length; j++) for (const c of L.cells) if (sd(c, pods[i], pods[j]) <= X.NET.touch + 1e-6 && !S.hit.includes(c)) S.hit.push(c); S.marks = pods; },
+  swallow: (d) => (L, A, E, foes, T, S) => { S.eff = L.disc(A, d.r, true); S.hit = foes.filter(o => S.eff.includes(o)).sort((p, q) => Math.hypot(p.x - A.x, p.y - A.y) - Math.hypot(q.x - A.x, q.y - A.y)).slice(0, X.ZERO.max); },
+  self: () => (L, A, E, foes, T, S) => { S.heal = [A]; },
+  copies: () => (L, A, E, foes, T, S) => { for (let k = 0; k < X.PROXY.count; k++) { const an = k * Math.PI * 2 / X.PROXY.count + 0.5, c = L.of(A.x + Math.cos(an) * 1.2, A.y + Math.sin(an) * 1.2); if (c !== A) S.heal.push(c); } for (const c of S.heal) S.eff.push(...L.disc(c, X.PROXY.burst, true).filter(o => o !== A && !S.heal.includes(o) && !S.eff.includes(o))); },
+  wall: () => (L, A, E, foes, T, S) => { const P = X.PILLAR, Dd = Math.hypot(E.x - A.x, E.y - A.y) || 1, ux = (E.x - A.x) / Dd, uy = (E.y - A.y) / Dd, k = Dd >= 2 * P.gap ? Dd - P.gap : Dd / 2, mid = L.of(A.x + ux * k, A.y + uy * k); S.hit = [mid]; for (const s of [-1, 1]) { const c = L.of(mid.x - uy * P.spread * s, mid.y + ux * P.spread * s); if (c !== mid && !S.hit.includes(c)) S.hit.push(c); } },
+};
+K.ult_line = (d) => (L, A, E, foes, T, S) => { const ang = Math.atan2(E.y - A.y, E.x - A.x); S.hit = L.ray(A, ang, d.len); if (!S.hit.includes(E)) S.hit.push(E); };
+// the scenes, by kind (world tiles; the window is 13 x 9)
+const SCENE = { A: [2, 4.5], foes: [[6, 3.5], [8.2, 4.8], [9.6, 2.9], [11.2, 4.6], [5.2, 6.6]] };
+const SC = {
+  one: SCENE, chain: SCENE, line: SCENE, zigzag: SCENE, swap: SCENE, seed: SCENE, rush: SCENE, wall: SCENE, cone: SCENE, drift: SCENE, ult_line: SCENE,
+  chainSelf: { A: [5, 4.5], foes: [[6.4, 4.2], [8.2, 4.8], [9.6, 2.9], [11.2, 4.6], [4.2, 6.6]] },
+  fan: { A: [2, 4.5], foes: [[6.8, 4.5], [5.6, 2.6], [9.5, 6.2], [11, 3]] },
+  fanAll: { A: [6.5, 4.5], foes: [[9.5, 4.5], [5, 2], [3, 6.6], [10.5, 1.5]] },
+  blast: { A: [2, 4.5], foes: [[7, 4.2], [8.3, 5.3], [6.2, 2.9]], T: [7.2, 4.4] },
+  decoy: { A: [2, 4.5], foes: [[7, 4.2], [8.3, 5.3], [6.2, 2.9]], T: [7.2, 4.4] },
+  rain: { A: [2, 4.5], foes: [[7, 4.2], [8.3, 5.3], [6.2, 2.9]], T: [7.5, 4.4] },
+  net: { A: [2, 4.5], foes: [[7, 4.2], [8.3, 5.3], [6.2, 2.9]], T: [7.5, 4.6] },
+  ring: { A: [6.5, 4.5], foes: [[8, 4], [5, 6.2], [9.5, 2.5], [3, 3]] },
+  swallow: { A: [6.5, 4.5], foes: [[8, 4], [5, 6.2], [9.5, 2.5], [4.6, 3.3]] },
+  self: { A: [6.5, 4.5], foes: [[9, 4]] }, copies: { A: [6.5, 4.5], foes: [[10, 4]] },
+};
+function svgOf(L, sc, fn) {
+  const R = lay(L, sc, fn), S = R.S, s = 26, W = 14 * s, Hh = 10 * s, P = c => [(c.x + 0.5) * s, (c.y + 0.5) * s];
+  const shape = c => { const [x, y] = P(c); if (!L.hex) return `M${x - s / 2 + 1},${y - s / 2 + 1}h${s - 2}v${s - 2}h${-(s - 2)}z`; const r = s / Math.sqrt(3) - 0.8; let d = ''; for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; d += (i ? 'L' : 'M') + (x + Math.cos(a) * r).toFixed(1) + ',' + (y + Math.sin(a) * r).toFixed(1); } return d + 'z'; };
+  const fill = c => S.hit.includes(c) ? '#ffe733' : S.heal.includes(c) ? '#6dff9a' : S.eff.includes(c) ? '#7fd4ff' : null;
+  let g = `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${L.hex ? 'hexes' : 'squares'}">`;
+  for (const c of L.cells) { const f = fill(c); g += `<path d="${shape(c)}" fill="${f || '#121b31'}" fill-opacity="${f ? (S.hit.includes(c) ? 0.85 : 0.6) : 1}" stroke="#2a3a5c" stroke-width="1"/>`; }
+  for (const [a, b] of S.links) { const [x1, y1] = P(a), [x2, y2] = P(b); g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 3" opacity="0.8"/>`; }
+  for (const c of S.marks) { const [x, y] = P(c); g += `<circle cx="${x}" cy="${y}" r="${s * 0.42}" fill="none" stroke="#ffffff" stroke-width="2.5"/>`; }
+  for (const c of R.foes) { const [x, y] = P(c); g += `<circle cx="${x}" cy="${y}" r="${s * 0.3}" fill="#ff5a5a" stroke="#05070f" stroke-width="2"/>`; }
+  { const [x, y] = P(R.A); g += `<circle cx="${x}" cy="${y}" r="${s * 0.34}" fill="#19e6c1" stroke="#05070f" stroke-width="2"/>`; }
+  return { svg: g + '</svg>', n: new Set([...S.hit, ...S.eff, ...S.heal].map(c => c.k)).size };
+}
+function cardEl(name, who, sceneKey, fn, note) {
+  const a = svgOf(SQ, SC[sceneKey], fn), b = svgOf(HX, SC[sceneKey], fn), el = document.createElement('article'); el.className = 'card';
+  el.innerHTML = `<header><h4>${name}</h4><span class="who">${who || ''}</span></header><div class="pair"><figure>${a.svg}<figcaption>Today · squares <b>${a.n}</b></figcaption></figure><figure>${b.svg}<figcaption>Hexes <b>${b.n}</b></figcaption></figure></div>` + (note ? `<p class="note">${note}</p>` : '');
+  return el;
+}
+const sz = d => [d.r ? 'radius ' + d.r : '', d.len ? 'length ' + d.len : '', d.hop ? 'hop ' + d.hop : '', d.n !== undefined ? 'up to ' + (d.n === 'all' ? 'every' : d.n) + ' more' : '', d.reach ? 'reach ' + d.reach : ''].filter(Boolean).join(' · ');
+// moving and pushing
+{ const M = document.getElementById('moves');
+  for (const n of [1, 2, 3]) M.appendChild(cardEl('MOVE · speed ' + n, 'every follower', 'self', (L, A, E, foes, T, S) => { let front = [A]; const seen = new Set([A.k]); for (let i = 0; i < n; i++) { const nx = []; for (const c of front) for (const o of L.nb(c)) if (!seen.has(o.k)) { seen.add(o.k); nx.push(o); S.heal.push(o); } front = nx; } }, n === 1 ? 'Squares step 8 ways (diagonals too); hexes step 6 ways. A Brawler "next to" an enemy is on one of these first cells.' : ''));
+  M.appendChild(cardEl('PUSH · one cell', 'knock-backs', 'one', (L, A, E, foes, T, S) => { const ang = Math.atan2(E.y - A.y, E.x - A.x), c = L.of(E.x + Math.cos(ang), E.y + Math.sin(ang)); S.hit = [E]; S.eff = [c]; S.links = [[E, c]]; }, 'Pushed one cell straight away from who hit it: on squares the nearest of 8 ways, on hexes the nearest of 6.'));
+}
+{ const C = document.getElementById('cards'); document.getElementById('nc').textContent = DATA.cards.length;
+  for (const c of DATA.cards) { const d = c.def, k = d.kind, sc = k === 'chain' && d.self ? 'chainSelf' : k; C.appendChild(cardEl(c.name, (c.who || '') , sc, K[k](d), [k.toUpperCase(), sz(d)].filter(Boolean).join(' · '))); } }
+{ const U = document.getElementById('ults'); document.getElementById('nu').textContent = DATA.ults.length;
+  for (const u of DATA.ults) { const d = u.def; let k = d.kind, sc = k; if (k === 'line') { k = 'ult_line'; sc = 'ult_line'; } if (k === 'fan' && d.all) sc = 'fanAll'; if (k === 'one') sc = 'one'; if (k === 'blast') sc = 'blast';
+    U.appendChild(cardEl(u.name, u.who, sc, K[k](d), [d.kind.toUpperCase(), sz(d), d.lasts === 'win' ? 'lasts' : ''].filter(Boolean).join(' · '))); } }
+document.getElementById('rules').innerHTML = [
+  ['The grid', 'Rows of hexes, each one tile across, laid over the battle room. A hex is in the battle when the floor under its middle is that room\'s floor; walls and props stay where they are.'],
+  ['Distance', 'Every reach, radius and hop stays the number it is today, measured middle to middle. A hex is in an area when its middle is within the radius, as a square is today.'],
+  ['Standing', 'Each fighter stands in one hex, never two on one. Big bodies still cover every hex under them.'],
+  ['Moving', 'MOVE walks 1 to 3 hexes by speed, through the 6 neighbours (squares had 8). "Next to" means one of the 6.'],
+  ['Lines and fans', 'Still aimed any way you drag: the hexes the line passes through, the same lengths. Zigzags step side to side along it.'],
+  ['Pushes', 'One hex straight away, the nearest of the 6 ways.'],
+  ['On the floor', 'While a battle is on, the battle\'s hexes are outlined faintly on the smooth floor; a dragged card lights its hexes, as squares light today. Out of a battle, no grid at all.'],
+].map((r, i) => `<div class="rule"><span class="k">RULE ${String.fromCharCode(65 + i)}</span><h3>${r[0]}</h3><p>${r[1]}</p></div>`).join('');
+document.getElementById('asks').innerHTML = ['Approve the rules A to G, or say which to change.', 'Approve the shapes as drawn: every card keeps its own size, only the cells change. Name any card that should look different.', 'The faint hex outline in a battle (rule G): keep it, or show the hexes only while a card is dragged.', 'One side effect: hexes one tile across pack about 15% more cells into the same floor, so a big area counts more cells (RING radius 4: 48 squares, 60 hexes) though it covers the same ground. Keep the sizes as they are (the same ground), or shrink the big areas to the same count of cells?'].map(t => `<li>${t}</li>`).join('');
+</script>

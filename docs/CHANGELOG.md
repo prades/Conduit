@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dm` · branch `claude/start-game-project-HSh7Z` · no tile lines on the floor; hex battles proposed
+- **The ask** (the owner, 2026-11-27): "Can we remove this visible floor tiles on the map and make a hexagon tile system for all battles?"; asked, "Everywhere", "About one tile", "Approval page first".
+- **What it does:** in the 3D view every room's floor is one smooth surface in its own colour: no line or shine round each tile, no border on the grate, no tile shaded apart from its neighbours (`design/style-evolution/live/floor.js`; `VIEW-3D.md`). The sewer skin's own floor pictures (`view3d/sewerdress.js`) are unchanged. The 2D game is unchanged.
+- **Proposed, not built:** a hex grid for card battles, one hex a tile across; every card and Ultimate drawn on squares and on hexes for approval in `design/battle/hex/shapes.html` (`CARD-BATTLES.md` §2.82).
+- **Verified:** seen in a real browser (the arena); the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
 - **The ask** (the owner, 2026-11-24): "Make the pictures and cards".
 - **What it is:** SHOCK ZAP's card in the card battles shows the Manta Ray (it showed the Hover Shell): its own 3-D model in the approved Technician style, inside a whole ring of yellow crystals, raising its wings, its crystals flaring and its tails spread behind it, the storm's world behind (`docs/ATTACK-CARD-ART.md` §4, 2026-11-24; the agent's picture, provisional, for the owner's look). It was the last picture of the Hover Shell in the game: its sprites, its 3-D body and the Bible's picture changed in `2026-11-17de`; the basic attack cards are by attack type and no Ultimate card has a picture.

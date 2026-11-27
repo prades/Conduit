@@ -163,6 +163,11 @@ The experience: fights slow down into deliberate choices. Every turn you read th
 - **Built:** while a card is dragged over the fight, a word over it says what letting go there does, by the same rules a played card follows (`js/cardbattle.js` `cardBattlePreview`; nothing is played or changed by it): **HITS NOW** (green); **CHARGES · LANDS IN n TURNS** (yellow: a Mage's cards, a Technician's second attack); **MOVES IN FIRST** (blue: it cannot hit from its square, so its turn is the walk and the card stays ready); or why nothing would be played, in red (OUT OF ITS REACH, NO WAY THROUGH, or the card's shape's own reason). A MOVE card says MOVE HERE or OUT OF ITS REACH. Over no enemy nothing is said (let go there, the card takes the nearest enemy, as before). HOLD FIRE and the Mutator's serum say nothing. The colours and the label's look are the agent's, provisional.
 - **Tests:** `tests/cardbattle.js`, "WHAT A CARD WILL DO": HITS NOW beside an enemy, a Mage's charge, nothing over no enemy, the preview changes nothing, and the card then plays as it said.
 
+### 2.82 Hexes for every battle (the owner, 2026-11-27; proposed, nothing built)
+- **The ask:** "make a hexagon tile system for all battles"; asked: hexes "About one tile" across, and "Approval page first" for the cards' shapes.
+- **Proposed** (`design/battle/hex/shapes.html`, every card and Ultimate drawn on today's squares and on hexes from the game's own rules and sizes): rows of hexes a tile across over the battle room, a hex in the battle when the floor under its middle is that room's; every reach, radius and hop the number it is, measured middle to middle; one fighter a hex; MOVE 1 to 3 hexes through 6 neighbours, "next to" one of the 6; lines and fans aimed any way, the hexes they pass through; a push one hex, the nearest of 6 ways; the battle's hexes outlined faintly on the floor while it is on.
+- **Open:** the rules as a whole; whether the outline shows the whole battle or only while a card is dragged; the big areas count about 15% more hexes than squares over the same ground (keep the ground, or the count).
+
 ## 3. Must-have requirements
 - Choosing a card is the player's only required decision each turn; it must be quick to read on an iPad (big cards, one tap).
 - Every card shows whose it is, what it does, and whether it is ready (and if not, in how many turns).
