@@ -1,10 +1,12 @@
-# Follower progression: the recruitment posts and breeding (the Vital items were removed 2026-11-01)
+# Follower progression: recruiting and breeding (the recruitment posts were removed 2026-11-24; the Vital items 2026-11-01)
+
+**2026-11-24, the owner: the recruitment posts are removed** ("The respawn pads, remove them"; asked how far to go: "Remove posts entirely"; docs/DECISION-LOG.md). The pads and their eggs are gone from the 2D game and the 3D view, nothing can be claimed, and recruiting is the roster's + RECRUIT alone (`RECRUIT_COST`, ◆200). §1 below keeps the posts' record, marked **Removed**.
 
 **2026-11-01, the owner's playtest:** a death no longer costs a follower anything: it comes back with its HP stat and all its XP ("They need to be revived with the same amount of HP"; on its XP: "Remove it"), its return paid from the Crystal's power (docs/FACILITY.md "The Crystal's power"). So a follower never falls for good, and the **Vital items are gone** ("Remove them"): `js/vital.js`, the three item rows and the five hidden cases. A follower saved with HP stat lost to earlier deaths gets it back on load, up to its born hp (`followerHp0`, now in js/breeding.js). The sections below are the record of what was built on 2026-10-31; where they say otherwise, this note wins.
 
 Built 2026-10-31 (build `2026-10-31g`) from the Game Design Archive's *Next Major Update Framework*, section "Follow-up patch scope — follower scarcity, breeding quality, and Vital Prisms (2026-10-31)", and the brief that went with it. Three systems, each on the paths the game already had. Everything numeric is provisional and listed in docs/OPEN-QUESTIONS.md §1f.
 
-The code: `js/followerspots.js` (the posts), `js/breeding.js` (breeding), `js/vital.js` (the Vital items), `js/inventory.js` (the three item rows), `js/facilitymap.js` (the five hidden cases), `js/clone.js` (`RECRUIT_COST`), and the record of a follower's birth through `js/facilitysave.js`, `js/game.js` (the respawn queue) and `js/specimen.js` (a preserved body). The tests: `tests/followerprog.js` (the suite of these three), `tests/followerspots.js`.
+The code: `js/followerspots.js` (the posts; removed 2026-11-24), `js/breeding.js` (breeding), `js/vital.js` (the Vital items), `js/inventory.js` (the three item rows), `js/facilitymap.js` (the five hidden cases), `js/clone.js` (`RECRUIT_COST`), and the record of a follower's birth through `js/facilitysave.js`, `js/game.js` (the respawn queue) and `js/specimen.js` (a preserved body). The tests: `tests/followerprog.js` (the suite of these three), `tests/followerspots.js` (since 2026-11-24: that the posts are gone, and that a game saved with them still loads).
 
 ## What a follower's numbers are (the audit, unchanged)
 
@@ -12,7 +14,18 @@ The code: `js/followerspots.js` (the posts), `js/breeding.js` (breeding), `js/vi
 - **Every death took 1 off the base hp** (until 2026-11-01: now it takes nothing, and the respawn queue carries the base as it was). At 0 the follower **fell for good**: its body lies where it fell, an Ice Mage preserves it in a capsule, and the capsule used at the Crystal (the Resurrection Zone) brings it back from its record (js/specimen.js, `spawnFollowerFromSave(rec)`).
 - Shards: `shardCount`; a new game starts with 100; kills pay on the spot.
 
-## 1. The recruitment posts (`js/followerspots.js`)
+## 1. The recruitment posts (`js/followerspots.js`): **Removed** 2026-11-24
+
+**Status: Removed** (the owner, 2026-11-24: "The respawn pads, remove them", then "Remove posts entirely"). What is in the code now:
+
+- **No posts.** `FACILITY_MAP.followerSpots` (the eight spots, `spot_lobby … spot_cold`), `js/followerspots.js` (its table `FP_SPOT`, the start, the tick, the claim, the pad's drawing, the save) and its script tag are gone, and so are their uses: the map's builder and validator (js/facility.js), the facility's growth (js/facilitygrow.js), FLUX MOVE's kept-clear spots (js/fluxmove.js), the floor's draw dispatch and its own light (js/facilityplay.js, js/facilitystyle.js), the egg's bare plate (js/draw.js), the tick (js/facilitytutorial.js) and the INFO index's EGGS ON THE PADS entry (js/infodex.js). The 3D view never built the pads (the game drew them over its picture), so it has nothing of them now either.
+- **Recruiting** is the roster's + RECRUIT (js/clone.js, `RECRUIT_COST` ◆200, unchanged), and breeding (§2).
+- **The tutorial's RECRUIT step** says only `OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: 200 SHARDS.`; its hint lost the sentence on the eggs and pads (docs/TUTORIAL.md).
+- **Old saves**: a save's `spots` (the posts claimed) is read past and not written again; a follower recruited from a post is an ordinary follower and loads as it was saved; an egg out on its pad and a squad-full question open for one were never part of a save. `tests/followerspots.js` loads a save made by build `2026-11-17dl` with a post claimed, an egg's question open and eggs out.
+- **The tutorial's first recruit is free** (the owner, 2026-11-24: "First recruit free"): while the tutorial is in progress and its RECRUIT step is not done, + RECRUIT costs nothing; after one recruit in the tutorial it is ◆200 again (`recruitFreeNow`, `recruitPrice`, js/clone.js; saved as `script.fr`). Everywhere else ◆200, unchanged (docs/TUTORIAL.md).
+- **Measured**: a new game reaches the RECRUIT step with **100 shards** (`STARTING_SHARDS`): no step before it pays any, so + RECRUIT's ◆200 needs 100 more from kills first: thirteen ant workers (8 each) or fifty nymphs (2 each), the early arena's kinds (docs/OPEN-QUESTIONS.md).
+
+The record of the posts as they were built (2026-10-31 to 2026-11-24):
 
 The eight pads of the map (`FACILITY_MAP.followerSpots`, stable ids `spot_lobby … spot_cold`) are **posts**, each with its egg of a fixed type and element.
 
