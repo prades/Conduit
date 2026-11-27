@@ -1,4 +1,5 @@
-# Makes design/sewer-kit/kit.js, the sewer kit's draft, from the built look (view3d/sewerdress.js) and the kit's two parts (block_walls.js, block_floor.js):
+# DONE (build 2026-11-17dp): the kit, with no patches, became the game's own view3d/sewerdress.js, so this builder no longer finds its markers there; it made the drafts from the earlier base
+# (git history before that build). As it was: makes design/sewer-kit/kit.js, the sewer kit's draft, from the built look (view3d/sewerdress.js) and the kit's two parts (block_walls.js, block_floor.js):
 #   python3 design/sewer-kit/make.py        (from the repository's root)
 # The kit's walls' part takes the place of FAITHFUL's two plain back-wall pipes; its floor part goes in before the floor tiles' pictures (it needs the grates' places). The function is renamed
 # sewerDressKit and made the game's sewerDress at the file's end: served after the built script (design/sewer-variety/render.js, its variation this file's path) it takes the built one's place.
@@ -32,6 +33,12 @@ src = open('view3d/sewerdress.js').read()
 if V:
     i = src.index("  const brickIn = (g, clip, x0) =>"); j = src.index("\n", i) + 1
     src = src[:i] + WALLS[V] + src[j:]
+# NO PATCHES (the owner, 2026-11-27, shown three materials in place of the red brick: "How about no different look? Just no patchy looks."): every wall face the stone blocks; only the
+# rust run down under the pipes (the same stone, stained) is left of the four pictures' mix. The brick and the broken plaster pictures stay in the picture, unused.
+NOPATCH_A = "const cell = clus ? (r < 0.62 ? 3 : 0) : piped.has(K(hx, hz)) && r < 0.7 ? 1 : r < 0.06 ? 2 : 0, mir"
+NOPATCH_B = "const cell = piped.has(K(hx, hz)) && r < 0.7 ? 1 : 0, mir"
+assert src.count(NOPATCH_A) == 1
+src = src.replace(NOPATCH_A, NOPATCH_B)
 W = open('design/sewer-kit/block_walls.js').read()
 F = open('design/sewer-kit/block_floor.js').read()
 a = src.index("  // rusty pipes along the back walls")

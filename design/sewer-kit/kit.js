@@ -533,7 +533,7 @@ function sewerDressKit(w, lab) {
     if (o === G.mesh && Array.isArray(o.material)) { const geo = o.geometry, uv = geo.attributes.uv, pos = geo.attributes.position, g0 = geo.groups.find(g => g.materialIndex === 0);
       if (g0 && uv) for (let q = g0.start; q + 5 < g0.start + g0.count; q += 6) { let cx = 0, cz = 0; for (let i = 0; i < 6; i++) { cx += pos.getX(q + i); cz += pos.getZ(q + i); } cx /= 6; cz /= 6;   // (four pictures; the brick in clusters, the rust under the pipes)
         const hx = Math.round(cx * 2), hz = Math.round(cz * 2), clus = vnoise(cx / 3.5, cz / 3.5, 47) > 0.62, r = hsh(hx, hz, 5);
-        const cell = clus ? (r < 0.62 ? 3 : 0) : piped.has(K(hx, hz)) && r < 0.7 ? 1 : r < 0.06 ? 2 : 0, mir = hsh(hx, hz, 6) > 0.5;
+        const cell = piped.has(K(hx, hz)) && r < 0.7 ? 1 : 0, mir = hsh(hx, hz, 6) > 0.5;
         for (let i = q; i < q + 6; i++) { const u = uv.getX(i); uv.setX(i, (cell + 0.01 + (mir ? 1 - u : u) * 0.98) / 4); } }
       for (const gc of geo.groups) if (gc.materialIndex === 1 && uv) for (let i = gc.start; i < gc.start + gc.count; i++) uv.setXY(i, (pos.getX(i) + 0.5) * 0.5, -(pos.getZ(i) + 0.5) * 0.5);   // (the caps' picture laid by where it is)
       if (uv) uv.needsUpdate = true; o.material = o.material.map((m, i) => i === 0 ? M.wall : i === 1 ? M.capT : i === 2 ? M.sdMass : m); return; }   // (the sewer dungeon's tops, its walls' sides over no room and its filled space: one solid colour, as the owner asked of it, 2026-11-23)

@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-27
+
+### Build `2026-11-17dp` · branch `claude/friendly-thompson-w581x0` · the sewer kit: pipes along the walls, equipment, plants; no patches on the walls
+- **The ask** (the owner, 2026-11-27): "I want to upgrade the sewer and make it look better with more textures and better equipment around the map, fully rendered objects and pipes that go along the walls, just stuff you'd find in a sewer." Then, of the drafts: "Yes right direction, add plants to pipes and add cracks with plants too, plants near water under sidewalk"; "Looks really good"; of the red brick: "How about no different look? Just no patchy looks."
+- **What it does** (the 3D view, the sewers' dressing, `view3d/sewerdress.js`; today's Sewers and the sewer dungeon both): every wall face a run of services (a main with flanged joints, gate valves and risers over the wall top; a green water line with marker bands, valves, gauges and drops; a cable tray or conduits with junction boxes), electrical panels, big cabinets, vents and switch boxes hung on the walls; rust, grime and damp stains and a tide line on the banks; plants on the big pipes, ferns at cracks up the walls, grass in cracks in the rooms' floors, ferns, reeds and moss on the banks by the water; round access covers. The walls are the stone blocks only: no brick or broken-plaster patches. No signal red, no loose objects, nothing standing on the floor but low grass (the guard: no body hidden in any quarter turn). FAITHFUL's two plain back-wall pipes are gone.
+- **Cost** (headless Chromium, software WebGL, the West Hall): draws 514 → 582 (+13 %), triangles 417 k → 464 k (+11 %). Not measured on an iPad.
+- `view3d/sewerdress.js`, `tests/view3d.js` ("THE SEWER KIT"), `design/sewer-kit/` (the drafts, their builder and pictures), `design/sewer-variety/render.js` (a draft by its path; five more spots); `docs/VIEW-3D.md`, `docs/DECISION-LOG.md`, `docs/OPEN-QUESTIONS.md`; generated: `dist/view3d.js`, `play.html`, `dist/conduit.js`. main's builds `2026-11-17dm` to `do` merged first.
+- **Verified:** see the handoff. **Not seen on an iPad; not playtested.**
+
 ## 2026-11-23
 
 ### Build `2026-11-17do` · branch `claude/start-game-project-HSh7Z` · a hex grid on the floor
