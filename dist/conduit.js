@@ -7476,7 +7476,7 @@ function drawAbilityCharge(actor, px, py, drawCtx) {
         }
     }
     drawCtx.restore();
-    if (phase === 'winding' && drawCtx === (typeof ctx !== 'undefined' ? ctx : null) && typeof _bossRing === 'function') {
+    if (phase === 'winding' && drawCtx === (typeof ctx !== 'undefined' ? ctx : null) && typeof _bossRing === 'function' && !(typeof view3dOwnsFx === 'function' && view3dOwnsFx(actor, 'abilityMark'))) {
         const k = Math.max(0, Math.min(1, 1 - actor.abilityTimer / Math.max(1, def.windup)));
         if (actor.abilityKey === 'GROUND_SLAM')
             _bossRing(actor.x, actor.y, def.radius, k, def.color);

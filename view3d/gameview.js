@@ -275,7 +275,8 @@ const GAMEVIEW = (function () {
     const lunge = (a.state === 'attack' ? Math.sin(a.attackAnim || 0) : 0) * 0.16 * 0.2 * w / 22, moving = GM.walking(a);   // (forward by its lunge: in its own ground units, a fifth of a tile at its scale)
     const pi = a.state === 'attack' ? 4 : !moving ? 5 : Math.round((((a.walkCycle || 0) * 0.9 / TAU) % 1 + 1) % 1 * 4) % 4; for (let i = 0; i < b.poses.length; i++) b.poses[i].visible = i === pi;
     if (hp) { b.ang = -Math.atan2(fy, fx) + hp.spin; stand(b, hp.x, hp.y, hp.up, hp.k); return true; }   // (pulled in: not shown as a unit, nothing is drawn over it)
-    b.ang = -Math.atan2(fy, fx); stand(b, a.x + fx * lunge, a.y + fy * lunge, (a.leapLift || 0) + GM.flightLift(a), 1); b.top = w; shown.add(a); return true; }   // (top: how high its bars go, as the game's drawing has it: 22 px at its scale)
+    b.ang = -Math.atan2(fy, fx); stand(b, a.x + fx * lunge, a.y + fy * lunge, (a.leapLift || 0) + GM.flightLift(a), 1); b.top = w; shown.add(a);   // (top: how high its bars go, as the game's drawing has it: 22 px at its scale)
+    const id = ATT.kid(a); if (id) ATT.body(a, id, b, GM.frame); return true; }   // (an enemy ant's attacks' own motion: view3d/attacks.js, view3d/attacks_enemy.js)
   // where a unit stands on the world this view has built (a room's floor, a way out's dark apron, a door's tunnel): elsewhere it is the game's own drawing
   const onWorld = (x, y) => { const k = K(Math.round(x), Math.round(y)), b = world.band.get(k); return !!world.roomAt(x, y) || world.aprons.has(k) || !!(b && b.header); };
   // made now, behind the start screen: the cube, the squad as it is (a clone of yours too), an ant of each class (the next of a kind is built when it is first seen)
