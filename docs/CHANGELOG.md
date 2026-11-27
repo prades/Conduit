@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### No build · branch `claude/zen-cerf-3m8mq5` · follower utilities and the hex grid: the plan, the Notion notes, draft 1 of the hex objects
+- **The ask** (the owner, 2026-11-27): the map's interactions (moving objects, jumping to higher places) through the hex grid, with objects that already look hexagonal and highlighted hexes when a utility is activated; most followers to get a utility; drafts of hex objects for today's movables and new destructibles.
+- **What it is:** `docs/FOLLOWER-UTILITIES.md` (the owner's decisions and the Notion notes translated: charges, energy costs, the Brawlers' utilities, the launcher's rules); `design/props/drafts/hexobj.js` and its sheet `design/hex-objects/draft1.png`. **Nothing in the game changes.**
+
 ### Build `2026-11-17dx` · branch `claude/zen-cerf-3m8mq5` · the follower's close-up: a see-through card, nothing in the way
 - **The ask** (the owner, 2026-11-27): "whenever you observe a creature after clicking its mini roster and equipment page, the background should be sort of transparent on the card, and also all sorts of objects on the map should disappear if they're obstructing the creature" (`CARD-BATTLES.md` §2.80).
 - **What it does:** while the 3D camera holds on a member (card battles off, its card open), the card's ground is half see-through, and what stands between the member and the camera is made see-through as in a card battle.
