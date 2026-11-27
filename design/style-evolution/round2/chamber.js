@@ -63,6 +63,22 @@ function loft(rings, mat) {
 function setShadows(root, cast, recv) { root.traverse(o => { if (o.isMesh) { o.castShadow = cast !== false; o.receiveShadow = recv !== false; } }); return root; }
 
 // ── THE ROOM ──
+// HAZARD ZONES ON THE HEX FLOOR (the owner, 2026-11-27: "make it to where the things like the turret's highlighted tile zone are correct"): with the floor drawn as hexes (the live game,
+// design/style-evolution/live/floor.js sets HEX_ZONES while it builds), a striped zone is the hexes whose middles lie in its rectangle, on the same world-fixed grid (js/cardbattle.js THE HEXES),
+// its amber edge along their outer edges; the pictures of the style rounds keep the plain rectangle.
+let HEX_ZONES = false;
+function hexHazard(marks, r, P) {
+  const H = Math.sqrt(3) / 2, odd = q => ((q % 2) + 2) % 2, at = (q, w) => [q + odd(w) * 0.5, w * H], cells = new Map();
+  for (let w = Math.floor(r[1] / H) - 1; w <= Math.ceil(r[3] / H) + 1; w++) for (let q = Math.floor(r[0]) - 1; q <= Math.ceil(r[2]) + 1; q++) { const c = at(q, w); if (c[0] >= r[0] - 1e-6 && c[0] <= r[2] + 1e-6 && c[1] >= r[1] - 1e-6 && c[1] <= r[3] + 1e-6) cells.set(q + ',' + w, c); }
+  if (!cells.size) { const c = [(r[0] + r[2]) / 2, (r[1] + r[3]) / 2], w = Math.round(c[1] / H), q = Math.round(c[0] - odd(w) * 0.5); cells.set(q + ',' + w, at(q, w)); }
+  const R = 1 / Math.sqrt(3), corner = (c, i) => { const a = Math.PI / 6 + i * Math.PI / 3; return [c[0] + Math.cos(a) * R, c[1] + Math.sin(a) * R]; }, pos = [], uv = [];
+  for (const c of cells.values()) for (let i = 0; i < 6; i++) { const a = corner(c, i), b = corner(c, (i + 1) % 6); for (const p of [c, b, a]) { pos.push(p[0], 0.006, p[1]); uv.push(p[0], -p[1]); } }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals();
+  const mat = P.hazard.clone(); if (mat.map) { mat.map = mat.map.clone(); mat.map.needsUpdate = true; mat.map.repeat.set(1, 1); mat.map.wrapS = mat.map.wrapT = T.RepeatWrapping; } mat.transparent = true; mat.opacity = P.hazardFloor === undefined ? 0.22 : P.hazardFloor; mat.depthWrite = false; mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.side = T.DoubleSide;
+  const m = new T.Mesh(geo, mat); m.userData.noInk = true; m.receiveShadow = true; marks.add(m);
+  const dirs = [0, 1, 2, 3, 4, 5].map(i => [Math.cos(i * Math.PI / 3), Math.sin(i * Math.PI / 3)]), key = (x, y) => { const w = Math.round(y / H); let b = null, bd = 1e9; for (let ww = w - 1; ww <= w + 1; ww++) { const q0 = Math.round(x - odd(ww) * 0.5); for (let q = q0 - 1; q <= q0 + 1; q++) { const c = at(q, ww), dd = (c[0] - x) ** 2 + (c[1] - y) ** 2; if (dd < bd) { bd = dd; b = q + ',' + ww; } } } return b; };
+  for (const c of cells.values()) for (let i = 0; i < 6; i++) { if (cells.has(key(c[0] + dirs[i][0], c[1] + dirs[i][1]))) continue; decalLine(marks, [corner(c, (i + 5) % 6), corner(c, i)], 0.07, PAL.amber, 0.8); }
+}
 function buildChamber(P, opt) { return buildRoom(ROOM0, P, opt); }
 // a room (roomOf) built: R's tiles, walls and doors, its floor marks, wall fittings and props. opt.shell === false leaves out the ground, the floor, the walls and the doors, and puts
 // fittings on every far wall (the live page's lab floor builds one shell for all its rooms: design/style-evolution/live/floor.js)
@@ -106,6 +122,7 @@ function buildRoom(R, P, opt) {
   for (const d of CH.decor) {
     if (d.kind === 'ring') { const st = d.glow ? P.ringGlow : (d.colour === '#ffd34d' ? P.ringAmber : P.ringDash); if (!st) continue; if (d.dashed) { const n = Math.round(d.radius * 9); for (let i = 0; i < n; i++) decalRing(marks, d.at, d.radius, 0.035, st[0], st[1], i / n, (i + 0.55) / n); } else decalRing(marks, d.at, d.radius, 0.06, st[0], st[1]); }
     else if (d.kind === 'cables' && P.cable !== null) { const mat = std(d.colour, { roughness: 0.6 }); for (let i = 0; i + 1 < d.path.length; i++) { const a = d.path[i], b = d.path[i + 1], r = rodBetween([a[0], 0.03, a[1]], [b[0], 0.03, b[1]], 0.03, mat, 8); r.castShadow = true; marks.add(r); marks.add(at3(new T.Mesh(new T.SphereGeometry(0.03, 8, 6), mat), b[0], 0.03, b[1])); } }
+    else if (d.kind === 'hazard' && P.hazard && HEX_ZONES) hexHazard(marks, d.rect, P);   /* (on the hex floor: the hexes it covers, below) */
     else if (d.kind === 'hazard' && P.hazard) { const w = d.rect[2] - d.rect[0], h = d.rect[3] - d.rect[1], mat = P.hazard.clone(); if (mat.map) { mat.map = mat.map.clone(); mat.map.needsUpdate = true; mat.map.repeat.set(w, h); } mat.transparent = true; mat.opacity = P.hazardFloor === undefined ? 0.22 : P.hazardFloor; mat.depthWrite = false; mat.polygonOffset = true; mat.polygonOffsetFactor = -1;
       const q = new T.Mesh(new T.PlaneGeometry(w, h), mat); q.rotation.x = -Math.PI / 2; q.position.set((d.rect[0] + d.rect[2]) / 2, 0.006, (d.rect[1] + d.rect[3]) / 2); q.userData.noInk = true; q.receiveShadow = true; marks.add(q);
       const edge = [[d.rect[0], d.rect[1]], [d.rect[2], d.rect[1]], [d.rect[2], d.rect[3]], [d.rect[0], d.rect[3]], [d.rect[0], d.rect[1]]]; decalLine(marks, edge, 0.07, PAL.amber, 0.8); }

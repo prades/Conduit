@@ -40,7 +40,7 @@ function fluxRegion(s) {
     return out;
 }
 
-// ── the spots kept clear: doorways and the spot in front of each, launcher sites, rubble work spots, follower spots, items and capsules on the floor, the Crystal ──
+// ── the spots kept clear: doorways and the spot in front of each, launcher sites, rubble work spots, items and capsules on the floor, the Crystal ──
 function fluxKept() {
     const F = _fluxF(), out = new Map(); if (!F) return out;
     const put = (x, y, why) => { if (Number.isFinite(x) && Number.isFinite(y)) { const k = Math.round(x) + "," + Math.round(y); if (!out.has(k)) out.set(k, why); } };
@@ -48,7 +48,6 @@ function fluxKept() {
     for (const s of (F.launchSites || [])) for (const q of [s.at, s.land, s.drop, s.dropTo]) if (q) put(q[0], q[1], "NOT ON A LAUNCHER SITE");
     for (const l of (F.ledges || [])) for (const q of [l.at, l.to]) put(q[0], q[1], "NOT ON THE LEDGE");
     for (const r of (F.rubble || [])) if (r.work) put(r.work[0], r.work[1], "NOT ON THE RUBBLE'S WORK SPOT");
-    for (const p of (F.followerSpots || [])) if (p.at) put(p.at[0], p.at[1], "NOT ON A FOLLOWER SPOT");
     for (const it of ((_fp && _fp.items) || [])) if (it.fp === "pickup" && !it.taken) put(it.x, it.y, "NOT ON AN ITEM");
     if (typeof cloneBodies !== "undefined") for (const b of cloneBodies) if (b) put(b.x, b.y, "NOT ON A BODY OR A CAPSULE");
     if (typeof crystal !== "undefined" && crystal) for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) put(crystal.x + dx, crystal.y + dy, "NOT ON THE CRYSTAL");

@@ -112,10 +112,10 @@ function measure() {
         ok(/if \(!\(typeof attractOn === "function" && attractOn\(\)\)\) drawPlayer\(\{x:px,y:py\}\)/.test(rd('js/game.js')), 'the hidden player'); ok(/attractSkip\(now\)\) return;/.test(rd('js/game.js')), 'the pace');
         const fp = rd('js/facilityplay.js');
         ok(/if \(away\) attractStart\(F\)/.test(fp) && /_fp\.saveReady = !away/.test(fp), 'the start and the save');
-        ok(/else if \(!away\) for \(const el of \["electric", "core", "fire"\]\)/.test(fp) && /if \(away\) facilityBlackoutSet\(false\);/.test(fp) && /else facilitySpawnInitial\(\);/.test(fp) && /if \(!away && typeof facilityFollowerSpotsStart === "function"\)/.test(fp), 'no squad, no blackout, no creatures, no eggs');
+        ok(/else if \(!away\) for \(const el of \["electric", "core", "fire"\]\)/.test(fp) && /if \(away\) facilityBlackoutSet\(false\);/.test(fp) && /else facilitySpawnInitial\(\);/.test(fp), 'no squad, no blackout, no creatures (no eggs either: the recruitment posts were removed, 2026-11-24)');
         ok(/FP_STORE_OK\.test\(String\(k\)\) && !\(typeof attractOn === "function" && attractOn\(\)\)/.test(fp), 'storage is written in ?attract');
         ok(/!\(typeof attractOn === "function" && attractOn\(\)\)/.test(rd('js/party.js')), 'the squad of three is on in ?attract');
-        ok(/const _bare = actor\.fpSpot \|\| \(typeof attractOn === "function" && attractOn\(\)\)/.test(rd('js/draw.js')), 'no bar or name over a searcher');
+        ok(/const _bare = typeof attractOn === "function" && attractOn\(\);/.test(rd('js/draw.js')), 'no bar or name over a searcher');
         const order = scriptOrder(); ok(order.indexOf('js/attract.js') > 0 && order.indexOf('js/attract.js') < order.indexOf('js/facilitysave.js'), 'attract.js comes before facilitysave.js');
     });
     check('game.html shows nothing but the picture in ?attract, from the first paint', () => {

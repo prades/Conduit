@@ -556,7 +556,7 @@ function spawnFollowerAtCrystal(element, type) {
     actors.push(npc);
     followers.push(npc);
     // ITS ENERGY SLOT (docs/ENERGY-CARDS.md; js/energy.js): made of an element, it comes with that element's energy card in its slot, free (not from your stock): a bred egg, the starting squad, a test squad;
-    // made as "none" (a recruit: js/clone.js, js/followerspots.js), its slot is empty and it has no element until you give it a card
+    // made as "none" (a recruit: js/clone.js), its slot is empty and it has no element until you give it a card
     if (typeof energyStart === "function") energyStart(npc, element);
     followerByElement[npc.element] = followerByElement[npc.element]||[];
     followerByElement[npc.element].push(npc);

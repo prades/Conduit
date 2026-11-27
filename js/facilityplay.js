@@ -288,7 +288,7 @@ function _fpGoals(a) {
     if (a._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(a); if (g) gs.push(g); }   // (the doorway it is on its way through: js/facilityportals.js)
     if (a._fpWalkGoal) gs.push(a._fpWalkGoal);   // (where a technician's ability is walking it: js/techabilities.js techStepOverride)
     const foes = a.team === "green" ? actors : followers;   // the nearest of the other side, within a chase
-    let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? (o.team === "green" || (typeof isNeutralBystander === "function" && isNeutralBystander(o))) : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }   // (an egg waiting on its pad is nobody's enemy: a follower whose route passed one dithered between it and you)
+    let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? (o.team === "green" || (typeof isNeutralBystander === "function" && isNeutralBystander(o))) : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }   // (a neutral bystander is nobody's enemy: a follower whose route passed an egg waiting on a recruitment post, since removed, dithered between it and you)
     if (nb) gs.push(nb);
     return gs;
 }
@@ -548,7 +548,6 @@ function facilityPlayStart() {
     _fpPlaceStatics(F);
     if (typeof facilityPortalsStart === "function") facilityPortalsStart(F);   // the doorways into the interiors (js/facilityportals.js)
     if (typeof facilityTutorialStart === "function") facilityTutorialStart(F, !!(saved && saved.followers && saved.followers.length));   // the tutorial opens in a blackout (js/facilitytutorial.js); a saved game's followers are left as they were
-    if (!away && typeof facilityFollowerSpotsStart === "function") facilityFollowerSpotsStart(F);   // the eggs that wait where they are (js/followerspots.js)
     if (away) facilityBlackoutSet(false);
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
@@ -734,7 +733,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "rockbend") { if (!(typeof _fpRockBendStamp === "function" && _fpRockBendStamp(it))) _fpDrawRockBend(it); } else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "tank") _fpStyleTankFront(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "rockbend") { if (!(typeof _fpRockBendStamp === "function" && _fpRockBendStamp(it))) _fpDrawRockBend(it); } else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "tank") _fpStyleTankFront(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A WALL'S TOP OVER ANOTHER ROOM'S BAND: a wall across a band that a wall of another room already roofs (the sides of the Stair Room's doorway to Teleport Room 2, a short wall each across the band between the

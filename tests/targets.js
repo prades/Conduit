@@ -7,8 +7,8 @@
 // THE RECRUITS. Not the predators, as it turned out. A hostile predator's
 // melee strikes team "green", and recruits are "red" — so enemies never
 // touched them. What did was everything on YOUR side, because a recruit stays
-// on team "red" until it joins (in the facility: the egg waiting on its pad,
-// js/followerspots.js):
+// on team "red" until it joins (in the facility it was the egg waiting on its pad,
+// js/followerspots.js, until the posts were removed, 2026-11-24; this suite now puts its own recruits down):
 //
 //   - your CLONES, whose melee and threat scan both strike team "red" (and a
 //     clone looks exactly like a predator, so it read as the enemy doing it)
@@ -61,8 +61,9 @@ async function ready(store) {
     return { run, sandbox };
 }
 
-// A fight with everything in it: the eggs waiting on their pads (the recruits), followers, clones of our
-// own, a hostile creature on top of the squad at the Crystal, and the player standing beside an egg.
+// A fight with everything in it: recruits waiting in their eggs (eight, put down round the Crystal as the posts' eggs were
+// on their pads before the posts were removed, 2026-11-24), followers, clones of our own, a hostile creature on top of the
+// squad at the Crystal, and the player standing beside an egg.
 // Damage is tallied by victim kind from inside applyDamage.
 const SCENE = `(function(){
     globalThis.__tally = {};
@@ -84,7 +85,10 @@ const SCENE = `(function(){
 
     for (let k = 0; k < 6; k++) spawnFollowerAtCrystal('fire');
     for (const sp of ['ant', 'spider']) { const c = makeClone(sp, 'striker', crystal.x + 2, crystal.y + 2, 'wander'); c.entryDelay = 0; }
-    // beside an egg, not on it: walking onto one hatches it (js/followerspots.js FP_SPOT.take)
+    // the recruits: still eggs of the virus type, team "red", as js/followerspots.js's _fpSpotEgg made them (a tile or more apart, 4 to 7 tiles from the Crystal)
+    for (let k = 0; k < 8; k++) { const ang = k * Math.PI / 4, d = 4 + (k % 4), c = _fpNearestCell(crystal.x + Math.cos(ang) * d, crystal.y + Math.sin(ang) * d); if (!c || actors.some(a => a.isNeutralRecruit && Math.hypot(a.x - c[0], a.y - c[1]) < 1)) continue;
+        actors.push({ x: c[0], y: c[1], type: 'virus', team: 'red', isNeutralRecruit: true, dead: false, health: 60, maxHealth: 60, moveSpeed: 0, stance: 'follow', isFollower: false, update: () => {} }); }
+    // beside an egg, not on it
     const r = actors.filter(a => a.isNeutralRecruit && !a.dead)[0];
     if (r) { const c = _fpNearestCell(r.x + 2.5, r.y + 2.5); if (c) { player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null; } }
     triggerAlarm('facility', crystal.x, crystal.y);

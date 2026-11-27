@@ -97,6 +97,24 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.en.put = { slots: energySlots(f2).join(), el: f2.element, stock: energyCount('ice'), s2: slotsOf(et(f2)), s1: slotsOf(et(f1)), note: $('#cardEquip .cp-note').textContent, tag: esl.querySelector('.cr-tag') ? esl.querySelector('.cr-tag').textContent : '',
       btn: [esl.querySelector('.cr-eq').disabled, (esl.querySelector('.cr-eq .cd-bs') || {}).textContent || ''], same: $('#cardsRoot .cr-overlay') === eov && eov.__mark === 2 };
     esc(); await wait(60); esc(); await wait(60);
+    // THE LAST PACK (the owner, 2026-11-27: "after I see the cards, I'll click something and it'll go away ... it'll show the pack, but it'll be under the last pack menu. And all of those options, you
+    // can't equip them"): the reveal closed, the SHOP's THE LAST PACK shows the pack's cards, each with EQUIP NOW (an item card's and an energy card's), which opens the pop-out
+    energyAdd('ice', 1); equipPackLast = { pack: EQUIP_PACK.id, ids: ['test_fire', 'test_ice'], fresh: ['test_ice'], energy: ['ice'] }; _cdReveal = null; _cdTab = 'shop'; cardsRender(true); await wait(80);
+    var lpBtns = function(){ return $$('#cardsRoot .cd-pack .cd-row .cd-btn').filter(function(b){ return b.querySelector('.cd-bl') && b.querySelector('.cd-bl').textContent === 'EQUIP NOW'; }); };
+    out.lp = { note: $$('#cardsRoot .cd-pack .cd-note').map(function(e){ return e.textContent; }).indexOf('THE LAST PACK') >= 0, n: $$('#cardsRoot .cd-pack .cd-row > *').length, eq: lpBtns().map(function(b){ return b.disabled; }), reveal: cardsRevealOpen() };
+    click(lpBtns()[0]); await wait(80); out.lp.popItem = $('#cardEquip').classList.contains('open') ? $('#cardEquip .cp-title').textContent : ''; esc(); await wait(60);
+    click(lpBtns()[lpBtns().length - 1]); await wait(80); out.lp.popEnergy = $('#cardEquip').classList.contains('open') ? $('#cardEquip .cp-title').textContent : '';
+    var ice2 = energyCardOf('ice'), et2 = function(f){ return tiles()[_ceWho(ice2).indexOf(f)]; }; f1.energy = [null, null, null];
+    var open1 = et2(f1) ? Array.prototype.slice.call(et2(f1).querySelectorAll('.ce-slot')).filter(function(b){ return !b.disabled; })[0] : null; if (open1) { click(open1); await wait(60); }
+    out.lp.put = { stock: energyCount('ice'), f1: energySlots(f1).join() }; esc(); await wait(60); cardsRender(true); await wait(60);
+    out.lp.after = $$('#cardsRoot .cd-pack .cd-row .cd-worn').map(function(e){ return e.textContent; });
+    cardsClose(); await wait(60);
+    // THE SHARD COUNT OPENS THE SHOP (the owner, 2026-11-27: "you click the shard total box and it'll pull up the shop menu"): cardsOpenShop opens the sheet on SHOP, turns an open sheet to it, and a
+    // second tap closes it; the top HUD's #shards and THE CORE's count both call it
+    _cdTab = 'cards'; cardsOpenShop(); out.shop = { open: [cardsPanelOpen, _cdTab] }; cardsOpenShop(); out.shop.again = cardsPanelOpen;
+    _cdTab = 'cards'; cardsOpen(); cardsOpenShop(); out.shop.turned = [cardsPanelOpen, _cdTab]; cardsClose(); await wait(40);
+    _cdTab = 'cards'; click($('#shards')); await wait(60); out.shop.top = [cardsPanelOpen, _cdTab, $('#shards').getAttribute('role'), getComputedStyle($('#shards')).pointerEvents]; cardsClose(); await wait(40);
+    var cc = $('#coreHud .core-count'); _cdTab = 'cards'; if (cc) { click(cc); await wait(60); out.shop.core = [cardsPanelOpen, _cdTab, cc.getAttribute('aria-label'), getComputedStyle(cc).pointerEvents]; cardsClose(); } else out.shop.core = 'no core hud';
     cardsClose();
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__en'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -191,6 +209,17 @@ function measure(w, h, query, seed) {
                 same([T.en.put.slots, T.en.put.el, T.en.put.stock].join(), 'ice,ice,0', 'it went in from the stock, and the egg is ICE'); same(JSON.stringify(T.en.put.s2), JSON.stringify([['ENERGY', 'IN IT ✓', true, 'worn']]), 'its slot after');
                 ok(T.en.put.s1.every(s => s[1] === 'NO ICE ENERGY CARD' && s[2] === true), 'the others after: ' + JSON.stringify(T.en.put.s1)); ok(/ICE ENERGY IN · .* · ENERGY · ITS ELEMENT/.test(T.en.put.note), 'it says what changed: ' + T.en.put.note);
                 same(T.en.put.tag, '', 'no count under it (build 2026-11-13o)'); same(T.en.put.btn.join(), 'true,NONE LEFT · ALL IN SLOTS', 'the reveal\'s button'); same(T.en.put.same, true, 'the reveal was drawn again');
+            });
+            await check('THE LAST PACK (the owner, 2026-11-27: "it\'ll show the pack, but it\'ll be under the last pack menu. And all of those options, you can\'t equip them"): after the reveal, each of its cards on the SHOP has EQUIP NOW (an item card\'s and an energy card\'s), which opens the pop-out; an energy card goes in from there', () => {
+                same(T.lp.note, true, 'THE LAST PACK on the SHOP'); same(T.lp.reveal, false, 'the reveal is closed'); same(T.lp.n, 3, 'its three cards (two cards and an energy card)');
+                same(T.lp.eq.length, 3, 'EQUIP NOW under each'); same(T.lp.popItem, 'EQUIP NOW · TEST · FIRE', 'the item card\'s pop-out'); same(T.lp.popEnergy, 'EQUIP NOW · ICE ENERGY', 'the energy card\'s pop-out');
+                same(T.lp.put.stock, 0, 'the energy card went in from the stock'); ok(/ice/.test(T.lp.put.f1), 'in the follower\'s energy slot: ' + T.lp.put.f1);
+                ok(T.lp.after.some(t => /YOU HOLD 0/.test(t)), 'the count under it brought up to date: ' + JSON.stringify(T.lp.after));
+            });
+            await check('THE SHARD COUNT OPENS THE SHOP (the owner, 2026-11-27: "you click the shard total box and it\'ll pull up the shop menu"): on SHOP; an open sheet turned to it; a second tap closes it; the top HUD\'s count and THE CORE\'s both, each taking a tap', () => {
+                same(T.shop.open.join(), 'true,shop', 'opened on SHOP'); same(T.shop.again, false, 'a second tap closes it'); same(T.shop.turned.join(), 'true,shop', 'an open sheet turned to SHOP');
+                same(T.shop.top.join(), 'true,shop,button,auto', 'the top HUD\'s #shards (open, on SHOP, a button, taking taps)');
+                ok(T.shop.core === 'no core hud' || T.shop.core.join() === 'true,shop,SHARDS · OPEN THE SHOP,auto', 'THE CORE\'s count: ' + JSON.stringify(T.shop.core));
             });
         }
     }
