@@ -1667,7 +1667,7 @@ function techDrawOnTile(tx, ty, px, py) {
         g.restore();
     }
     for (const O of techReefs) {   // REEF's mending, on the floor round an outcrop (a REEF PILLAR's spikes): a faint pink haze out to where your followers are mended, its rim a dashed ring (under the walls and units in front)
-        if (!_techReefOn(O, f0)) continue;
+        if (!_techReefOn(O, f0) || (typeof view3dOwnsFx === "function" && view3dOwnsFx(O, "reef"))) continue;   // (the 3D view draws its mending's reach itself)
         const a = Math.min(1, (f0 - O.t0) / 12, (O.until - f0) / 60);
         for (const c of O.parts) {
             const R0 = c.r + O.mendReach; if (Math.hypot(tx - c.x, ty - c.y) > R0 + 1.25) continue;
@@ -1796,6 +1796,7 @@ function _techDrawClimb(g, o, px, py, f0) {
     }
 }
 function techDrawItem(o, px, py) {
+    if (typeof view3dOwnsFx === "function" && ((o.kind === "spike" && view3dOwnsFx(o.S, "stakespike")) || (o.kind === "reef" && view3dOwnsFx(o.O, "reef")))) return;   // (THE 3D VIEW draws STAKE RING's spikes and REEF PILLAR's outcrop itself: view3d/attacks_bloom.js)
     const g = ctx, f0 = _techFrame();
     g.save();
     if (o.kind === "reef") _techDrawReef(g, o, px, py, f0);
@@ -1900,7 +1901,7 @@ function techDrawOverlay() {
                 }
             });
         };
-        for (const O of techReefs) if (f0 < O.t0) shards(O.from, O.parts.map(c => [c.x, c.y]), O.t0, O.id);
+        for (const O of techReefs) if (f0 < O.t0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(O, "reef"))) shards(O.from, O.parts.map(c => [c.x, c.y]), O.t0, O.id);   // (its shards the 3D view's while it draws the outcrop)
         for (const C of techClimbs) if (f0 < C.t0) shards(C.from, [C.foot, [C.edge[0], C.edge[1], lift(C.top[0], C.top[1])]], C.t0, C.id);
         g.lineCap = "butt";
     }
