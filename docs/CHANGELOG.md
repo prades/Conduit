@@ -14,6 +14,16 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17ds` · branch `claude/start-game-project-HSh7Z` · the Sewers' rubble: bigger, one pile, in the Sewers' own stone
+- **The ask** (the owner, 2026-11-27, of `2026-11-17dr`'s heaps): "The rubble should match the color of the walls and walking area, and it should be larger and should piece together with other clumps."
+- **What it does:** each of the three rubble patches in the Sewers is one pile of broken stones heaped end to end along the line it chokes, about 1.15 tiles high and 1.7 through, in the tan-grey of the Sewers' walls and walkways; drilled through, a few low stones are left at its foot. One mesh a state. `VIEW-3D.md`. `view3d/gameview.js`, generated files.
+- **Verified:** in a real browser with the low camera at two patches; the suites in the handoff. **Sizes and colours provisional; not seen on an iPad.**
+
+### Build `2026-11-17dr` · branch `claude/start-game-project-HSh7Z` · the Sewers' rubble as real 3D heaps
+- **The ask** (the owner, 2026-11-27, with a screenshot): "The rubble patches in the sewers are messed up. We need to go ahead and fix that pattern before we update the sewers"; "It's not drilled through, it's the low cam view".
+- **What it does:** the three rubble patches of the Sewers (the choked tunnel, the rock fall by the bank, the rubble on the way to the dam) are drawn in the 3D view as the kit's approved RUBBLE heaps, one to two tiles along each, whole until drilled through and cleared after. They were a flat 2D pile, painted for one camera angle, that stood up as arches seen from another side or through the low camera. The drilling's glowing seams are no longer shown on them. `VIEW-3D.md`. `view3d/gameview.js`, `view3d/gamemap.js`, generated files.
+- **Verified:** in a real browser with the low camera from all four quarter turns at two patches; the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dq` · branch `claude/start-game-project-HSh7Z` · technicians stand beside you
 - **The ask** (the owner, 2026-11-27): "The technicians are still in this thing where they rotate around the player. You don't need to do that. You can just have them sit to the side of the player and protect them."
 - **What it does:** a following Technician no longer circles you; it stands beside you, 1.6 tiles out across the way ahead (the first on your right, a second on your left, more farther out), hits what comes within reach and goes back to its place. `COMBAT.md`, `bible.html`. `js/formation.js`, `tests/formation.js`, generated files.
