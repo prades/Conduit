@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-27
 
+### Build `2026-11-17dr` · branch `claude/zen-cerf-3m8mq5` · the follower's close-up: a see-through card, nothing in the way
+- **The ask** (the owner, 2026-11-27): "whenever you observe a creature after clicking its mini roster and equipment page, the background should be sort of transparent on the card, and also all sorts of objects on the map should disappear if they're obstructing the creature" (`CARD-BATTLES.md` §2.80).
+- **What it does:** while the 3D camera holds on a member (card battles off, its card open), the card's ground is half see-through, and what stands between the member and the camera is made see-through as in a card battle.
+- **A fix with it:** the see-through threw on a room's merged things once their points were let go, and then stayed off for the session, battles included; those are now tested by their box.
+- `view3d/gameview.js`, `view3d/gamemap.js`, `js/view3d.js`, `game.html`, `tests/squadfly.js`; `dist/view3d.js` remade.
+- **Verified:** a real browser (three rooms) and the suites in the handoff. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17dq` · branch `claude/zen-cerf-3m8mq5` · followers that are not RECKLESS seek healing
 - **The ask** (the owner, 2026-11-27): "if they have anything but reckless behavior, they will seek healing from nearby sources". Asked: **"Below half"**, **"Mostly healed"** (`COMBAT.md` §10).
 - **What it does (real time):** a CAUTIOUS, BALANCED or TANK follower under half its health goes to the nearest healing spot in its room (a serum pool, SEEDFALL or its buds, the thicket's aura, REEF, a GROVE ENGINEER relay, a BLOOM follower) and holds still in it until 80%, or until the spot is gone. RECKLESS fights on as before. Not in a card battle.
