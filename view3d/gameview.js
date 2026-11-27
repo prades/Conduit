@@ -37,6 +37,18 @@ const GAMEVIEW = (function () {
 
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
+  // THE SEWERS' RUBBLE IN 3D (the owner, 2026-11-27: "The rubble patches in the sewers are messed up", then "it's the low cam view"): a patch of rubble was the game's 2D drawing, a pile painted
+  // in the plane of the line it chokes, its picture made for the first quarter turn; seen from the other side, or through the low camera, its flat stones stood up as arches. In the Sewers it is
+  // now the kit's own RUBBLE (design/props/models/_sewer.js rubble_heap, through PROPS.sewer, approved 2026-11-21: two tiles, whole or cleared), one heap to two tiles along its line, stretched to fit, standing on the
+  // floor; whole till it is drilled through, then cleared (GM.rubble, each frame in draw). The game no longer draws these patches over the picture (keeps). The Nest's rubble is as it was.
+  const RUBBLE3D = new Map();
+  try { if (typeof PROPS !== 'undefined' && PROPS.sewer) for (const it of ((GM.fp && GM.fp.items) || [])) { if (it.fp !== 'wdecor' || it.kind !== 'rubble' || !it.rubble || !it.a || !it.b) continue; const R = GM.rubble(it.rubble); if (!R || !/^sewers/.test(R.room || '')) continue;
+      const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1, n = Math.max(1, Math.round(L / 2)), holder = new T.Group(), states = { whole: new T.Group(), cleared: new T.Group() };
+      for (let k = 0; k < n; k++) { const t = (k + 0.5) / n, x = it.a[0] + dx * t, y = it.a[1] + dy * t;
+        for (const st of ['whole', 'cleared']) { const m = PROPS.sewer.build('rubble_heap.2x1.' + st).g; m.position.set(x, GM.liftPx(x, y) / UPX, y); m.rotation.y = -Math.atan2(dy, dx); m.scale.x = (L / n) / 2; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); states[st].add(m); } }
+      for (const st of ['whole', 'cleared']) holder.add(states[st]); states.cleared.visible = false; world.g.add(holder); if (!world.props) world.props = {};
+      world.props['rubble:' + it.id] = { g: holder, s: { kind: 'rubble_heap', state: 'whole' }, states }; RUBBLE3D.set(it.id, { rubble: it.rubble, states, open: null }); } } catch (e) { RUBBLE3D.clear(); world.rubbleError = String((e && e.stack) || e); if (typeof console !== 'undefined') console.error('the sewer rubble: ' + world.rubbleError); }
+  function rubbleTick() { for (const r of RUBBLE3D.values()) { const R = GM.rubble(r.rubble), open = !!(R && R.open); if (open === r.open) continue; r.open = open; r.states.whole.visible = !open; r.states.cleared.visible = open; } }
   const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
   const cam = LOW ? new T.PerspectiveCamera(LOWCAM.fov, 1, LOWCAM.near, LOWCAM.far) : new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3(); CORE.SEE(cam);   // (SCR: screenNow's point, kept)
   // TURNED AND ZOOMED (js/view3d.js VIEW3D.turn, VIEW3D.zoom; the owner, 2026-11-17, of the demo: "I could rotate the camera and zoom in zoom out"; asked how: "90° steps"): it swings round
@@ -274,7 +286,7 @@ const GAMEVIEW = (function () {
   const stats = { frames: 0, draws: 0, tris: 0, bodies: 0, ms: 0, fx: false, built: CORE.built(), webgl: CORE.gl2 ? 2 : 1 };   // (fx: this frame's floor marks were laid on)
   const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f), culvert: id => GM.culvertShut(id), waterLow: id => GM.waterLow(id) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
-  function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++;   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
+  function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++; rubbleTick();   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
     fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (LOW) LOW.room(room); if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     ATT.begin(f0); shown.clear(); cube(f0, dt);
@@ -356,7 +368,8 @@ const GAMEVIEW = (function () {
     // a facility item the game still draws over the picture (js/facilityplay.js facilityDrawItems): one this view does not build (a pickup, a station's ring, a follower's spot), in a room it has built
     lightAt(x, y) { return ldata[at4(Math.round(x), Math.round(y))] / 255; },   // (how dark the light map has a tile: for the tests)
     keeps(it) { if (OWN.has(it.fp) && !(it.fp === 'wdecor' && !WDECOR.has(it.kind))) return false;
-      if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play; the sewers' own things, fp sewer, the view builds or does not draw yet: design/style-evolution/live/floor.js)
+      if ((it.fp === 'wdecor' && it.kind !== 'rubble') || it.fp === 'sewer') return false;
+      if (it.fp === 'wdecor' && it.kind === 'rubble' && RUBBLE3D.has(it.id)) return false;   // (the Sewers' rubble: the view's own heaps, above)   // (the owner, 2026-11-16: the wall's things with no 3D model yet, a sign, a banner, a shelf, a ladder, and the arena's runoff grates, are not drawn in 3D: "remove those little bits of texture, and then we'll work on 3D versions after"; the rubble a fire technician drills stays, it is play; the sewers' own things, fp sewer, the view builds or does not draw yet: design/style-evolution/live/floor.js)
       if (it.fp === 'stairwell' && it.up) return false;   // (a flight of stairs up, the Cold Storage's to the Experiment Lab: the view builds it, design/style-evolution/live/floor.js; a stairwell down, a hole in the floor, is still the game's)
       return it.room ? !!world.rooms[it.room] : !!world.roomAt(it.x, it.y); },
     // where a point of the world is on the game's canvas (for the tests: the game's _fpP has it in the same place)
