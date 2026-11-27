@@ -34,6 +34,14 @@ function _cdNow() { return typeof performance !== "undefined" && performance.now
 
 // ── the dock's button (game.html): always there; with no card to show, the sheet says so ──
 function cardsToggle() { if (cardsPanelOpen) cardsClose(); else cardsOpen(); }
+// THE SHOP FROM THE SHARD COUNT (the owner, 2026-11-27: "when you're looking at the game and you see at the bottom it shows your shard total, cards, and pack. I want to make it to where you click the shard
+// total box and it'll pull up the shop menu"): the sheet opened on its SHOP menu, or turned to it if it is open on CARDS; a tap while the shop is up closes it, as the CARDS button closes the sheet.
+// Both shard counts call it: THE CORE's at the bottom right (js/corehud.js) and the top HUD's (game.html #shards)
+function cardsOpenShop() {
+    if (cardsPanelOpen && _cdTab === "shop" && !_cdReveal) { cardsClose(); return true; }
+    _cdTab = "shop"; _cdArm = null; if (cardsPanelOpen) { cardsRender(true); return true; }
+    return cardsOpen();
+}
 function cardsOpen(opts) {
     const root = document.getElementById("cardsRoot"); if (!root) return false;
     equipShelfTick();   // (a shelf that is due comes first: while the sheet is open the shelf's clock waits)
@@ -130,7 +138,8 @@ function _cdEquipNowWhy(c) {
 }
 function _cdEquipNowBtn(c) {
     const why = _cdEquipNowWhy(c), worn = equipWearers(c.id);
-    return _cdBtn("EQUIP NOW", why || (equipUsable(c.id) ? (worn ? "WORN BY " + worn + " · PUT IT ON ANOTHER" : "PICK WHO WEARS IT") : "PICK WHO WEARS IT · IT GOES INTO YOUR HAND"), "#19e6c1", () => equipNowOpen(c.id), !!why);
+    const sub = why || (c.kind === "energy" ? "" : equipUsable(c.id) ? (worn ? "WORN BY " + worn + " · PUT IT ON ANOTHER" : "PICK WHO WEARS IT") : "PICK WHO WEARS IT · IT GOES INTO YOUR HAND");   // (an energy card: EQUIP NOW alone, as under it in a pack's reveal; it goes into no hand)
+    return _cdBtn("EQUIP NOW", sub, "#19e6c1", () => equipNowOpen(c.id), !!why);
 }
 function _cdStateOf(c) { return equipOwns(c.id) ? (equipInHand(c.id) ? "hand" : "") : equipIsFound(c.id) ? "found" : "locked"; }
 // the player's own cards (THE COLLECTION's OWNED view): those kept for good and those found this run; the hand is among them
@@ -153,8 +162,11 @@ function _cdPackBox(pack) {
     if (equipPackLast && (equipPackLast.pack || EQUIP_PACK.id) === pack.id) {
         box.appendChild(_cdEl("div", "cd-note", "THE LAST PACK"));
         const row = _cdEl("div", "cd-row");
-        equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS")); row.appendChild(s); });
-        for (const el of equipPackLast.energy || []) { const c = typeof energyCardOf === "function" ? energyCardOf(el) : null; if (!c) continue; const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", "ENERGY CARD · YOU HOLD " + energyCount(el))); row.appendChild(s); }   // (its ENERGY CARDS: js/energy.js)
+        // EQUIP NOW under each of them too (the owner, 2026-11-27: "after I see the cards, I'll click something and it'll go away. It'll go back to the shop menu and it'll show the pack, but it'll be under
+        // the last pack menu. And all of those options, you can't equip them. So make it to where you can equip those energy cards and you can equip those item cards from that screen"): the reveal's own
+        // button (_cdEquipNowBtn: the EQUIP NOW pop-out, or why not), so a card can still go on after the reveal is closed
+        equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS")); s.appendChild(_cdEquipNowBtn(c)); row.appendChild(s); });
+        for (const el of equipPackLast.energy || []) { const c = typeof energyCardOf === "function" ? energyCardOf(el) : null; if (!c) continue; const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", "ENERGY CARD · YOU HOLD " + energyCount(el))); s.appendChild(_cdEquipNowBtn(c)); row.appendChild(s); }   // (its ENERGY CARDS: js/energy.js)
         box.appendChild(row);
     }
     return box;

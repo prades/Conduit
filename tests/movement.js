@@ -40,19 +40,21 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const hallDoor = near(H, mid, 1.2, 2.2)[0], chamberDoor = near(C, mid, 1.2, 2.2)[0], chamberFar = C.slice().sort((a, b) => Math.hypot(b[0] - mid[0], b[1] - mid[1]) - Math.hypot(a[0] - mid[0], a[1] - mid[1]))[0];
         const hallFar = H.slice().sort((a, b) => Math.hypot(b[0] - mid[0], b[1] - mid[1]) - Math.hypot(a[0] - mid[0], a[1] - mid[1]))[0];
         const lab = __cells('experiment_lab')[0];
-        return { mid, hallDoor, chamberDoor, chamberFar, hallFar, lab, door: o.id }; })()`);
+        const nd = id => _fp.F.openings.some(q => q && q.rooms && q.rooms.indexOf('lab_hallway') >= 0 && q.rooms.indexOf(id) >= 0);   /* (a room that shares a doorway with the hallway) */
+        const farId = _fp.F.rooms.map(r => r.id).find(id => id !== 'lab_hallway' && !nd(id) && __cells(id).length && facilityPath(hallDoor[0], hallDoor[1], __cells(id)[0][0], __cells(id)[0][1]));
+        return { mid, hallDoor, chamberDoor, chamberFar, hallFar, lab, labNext: nd('experiment_lab'), farId, far: __cells(farId)[Math.floor(__cells(farId).length / 2)], door: o.id }; })()`);
 
     group('THE ROOM YOU ARE IN');
     check('a tap in the room you are in walks you there (the far end of the hallway: one room, all the way round)', () => {
         const r = J(`(function(){ __noFoes(); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); __tap(${P.hallFar[0]}, ${P.hallFar[1]}); return { path: !!(player.fpPath && player.fpPath.length), to: [player.targetX, player.targetY], room: __room(player.targetX, player.targetY), x: floatingTexts.some(t => t.text === '\\u2715') }; })()`);
         same(r.path, true, 'no route'); same(r.room, 'lab_hallway', 'the room of the destination'); same(r.to.join(), P.hallFar.join(), 'the destination'); same(r.x, false, 'a ✕ for a tap that was allowed');
     });
-    check('a tap in a room you are not in (the Experiment Lab from the hallway, the far side of the Crystal Chamber from the hallway) is ignored: no route, nothing called off, a small ✕ where it landed', () => {
-        const r = J(`(function(){ __noFoes(); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); player.fpPath = null; player._launchLoad = { keep: 1 };
-            __tap(${P.lab[0]}, ${P.lab[1]}); const lab = { path: !!(player.fpPath && player.fpPath.length), x: floatingTexts.some(t => t.text === '\\u2715'), load: !!player._launchLoad };
-            __tap(${P.chamberFar[0]}, ${P.chamberFar[1]}); const far = { path: !!(player.fpPath && player.fpPath.length), x: floatingTexts.some(t => t.text === '\\u2715') }; player._launchLoad = null; return { lab, far }; })()`);
-        same(r.lab.path, false, 'a route into the lab'); same(r.lab.x, true, 'no ✕ for the lab tap'); same(r.lab.load, true, 'a refused tap called off a walk to a launcher\'s pad');
-        same(r.far.path, false, 'a route to the far side of the chamber'); same(r.far.x, true, 'no ✕ for the chamber tap');
+    check('NEXT-DOOR ROOMS (the owner, 2026-11-27: "Next-door rooms"): a tap anywhere in a room that shares a doorway with yours walks you there (the far side of the Crystal Chamber from the hallway); a room farther off is ignored: no route, nothing called off, a small ✕ where it landed', () => {
+        const r = J(`(function(){ __noFoes(); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); __tap(${P.chamberFar[0]}, ${P.chamberFar[1]}); const next = { path: !!(player.fpPath && player.fpPath.length), room: __room(player.targetX, player.targetY), x: floatingTexts.some(t => t.text === '\\u2715') };
+            __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); player.fpPath = null; player._launchLoad = { keep: 1 };
+            __tap(${P.far[0]}, ${P.far[1]}); const far = { path: !!(player.fpPath && player.fpPath.length), x: floatingTexts.some(t => t.text === '\\u2715'), load: !!player._launchLoad }; player._launchLoad = null; return { next, far }; })()`);
+        same(r.next.path, true, 'no route into the chamber next door'); same(r.next.room, 'crystal_chamber', 'the destination'); same(r.next.x, false, 'a ✕ for a tap next door');
+        ok(!!P.farId, 'a room not next to the hallway'); same(r.far.path, false, 'a route into ' + P.farId + ', two doors off'); same(r.far.x, true, 'no ✕ for the far tap'); same(r.far.load, true, 'a refused tap called off a walk to a launcher\'s pad');
     });
     check('a flurry of refused taps shows one ✕, not one for every tap; a moment later the next one shows again', () => {
         const r = J(`(function(){ floatingTexts.length = 0; _fp.tapNoAt = 0; const f0 = frame; facilityTapRefused(100, 100); facilityTapRefused(120, 100); facilityTapRefused(140, 100); const flurry = floatingTexts.filter(t => t.text === '\\u2715').length;

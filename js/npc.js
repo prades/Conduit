@@ -45,6 +45,112 @@ function _moveToward(actor, tx, ty, speedMult) {
     return d;
 }
 
+// BLOCK AND STEP BACK (the owner, 2026-11-27: "the block option would put them in a withdrawal state, and they [...] wouldn't move, but they would take half damage until next turn. And then this
+// sort of tactic would also apply to real battles"; asked: "Merge into TANK", "Some escape some block", "2 s, then a gap", "CAUTIOUS steps back"). In a turn-based battle every follower may play BLOCK
+// (js/cardbattle.js §2.83: `_cbBlock`, till its next turn). In real time, by play style:
+//   TANK      an enemy next to it (followerNextTo: on a hex touching its own), it BLOCKS: FOLLOWER_BLOCK.frames (2 s, a battle's turn) rooted, doing nothing else, every blow on it half; then at
+//             least FOLLOWER_BLOCK.gap (2 s) before it blocks again, so it fights in between.
+//   CAUTIOUS  (id "defensive") an enemy next to it, it STEPS BACK: up to FOLLOWER_BLOCK.back tiles straight away from it, round the walls, for at most backFrames; then backGap before it steps back again.
+//   the rest  as before.
+// Not for a clone, nor for one of yours in the card battle that is on (the battle plays its turns). The numbers are the agent's, provisional, except the half and the 2 s.
+const FOLLOWER_BLOCK = { cut: 0.5, frames: 120, gap: 120, near: 1.6, back: 3, backFrames: 90, backGap: 180, col: "#8fe3ff" };
+// NEXT TO IT (the owner, 2026-11-27: "tile range should be right next to them", on hexes, "6 around"): the enemy on its own hex or one of the 6 touching it (the battles' hexes, fixed to
+// the world: js/cardbattle.js cardHexKey, cardHexNb); a huge body (bodyR) within a hex of its edge. Without the hexes, within FOLLOWER_BLOCK.near.
+function followerNextTo(a, e, d) {
+    if (e.bodyR > 0) return d <= 1 + e.bodyR;
+    if (typeof cardHexKey !== "function" || typeof cardHexNb !== "function") return d <= FOLLOWER_BLOCK.near;
+    const k = cardHexKey(e.x, e.y); if (cardHexKey(a.x, a.y) === k) return true;
+    for (const c of cardHexNb(a.x, a.y)) if (cardHexKey(c[0], c[1]) === k) return true;
+    return false;
+}
+function followerBlocking(a) { return !!a && (!!a._cbBlock || a._blockUntil > (typeof frame !== "undefined" ? frame : 0)); }
+function followerBlockCut(t, amount) { return followerBlocking(t) ? amount * (1 - FOLLOWER_BLOCK.cut) : amount; }
+function _tacticOk(a) { return !!a && a.isFollower === true && !a.isClone && a.team === "green" && !a.dead && !(typeof cardBattleSquadHeld === "function" && cardBattleSquadHeld(a)); }
+// THE CHOICE, each frame its enemy is known (updateRTSNPC's follow branch): true when this frame is taken (a block begun, a step back under way)
+function followerTactic(actor, foe, d) {
+    if (!_tacticOk(actor)) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, B = FOLLOWER_BLOCK, s = actor.playStyle;
+    if (actor._backUntil > f0) return _stepBackTick(actor, f0);
+    const close = !!foe && !foe.dead && followerNextTo(actor, foe, d);
+    if (s === "tank" && close && f0 >= (actor._blockReadyAt || 0)) {
+        actor._blockUntil = f0 + B.frames; actor._blockReadyAt = f0 + B.frames + B.gap; actor._blockFoe = foe;
+        actor._shotWind = 0; actor._shotTarget = null; actor.state = "idle"; actor.attackAnim = 0;
+        if (typeof _evoSay === "function") _evoSay(actor, "BLOCK", B.col);
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: actor.x, y: actor.y, radius: 0.8, color: B.col, life: 30 });
+        return true;
+    }
+    if (s === "defensive" && close && f0 >= (actor._backReadyAt || 0)) {
+        const dx = actor.x - foe.x, dy = actor.y - foe.y, L = Math.hypot(dx, dy) || 1;
+        actor._backUntil = f0 + B.backFrames; actor._backReadyAt = f0 + B.backFrames + B.backGap; actor._backDir = [dx / L, dy / L]; actor._backFrom = [actor.x, actor.y];
+        actor._shotWind = 0; actor._shotTarget = null;
+        if (typeof _evoSay === "function") _evoSay(actor, "STEP BACK", B.col);
+        return _stepBackTick(actor, f0);
+    }
+    return false;
+}
+function _stepBackTick(actor, f0) {
+    const B = FOLLOWER_BLOCK, o = actor._backFrom || [actor.x, actor.y], u = actor._backDir || [0, 0];
+    if (Math.hypot(actor.x - o[0], actor.y - o[1]) >= B.back) { actor._backUntil = f0; return false; }
+    const x0 = actor.x, y0 = actor.y; _walkStep(actor, u[0], u[1], 1);
+    if (Math.hypot(actor.x - x0, actor.y - y0) < 1e-4) { actor._backUntil = f0; return false; }   // (against a wall: it stops there and fights)
+    return true;
+}
+// WHILE IT BLOCKS (real time): rooted, turned to the enemy, nothing else; true while it does
+function _blockTick(actor) {
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (!(actor._blockUntil > f0)) return false;
+    if (!_tacticOk(actor)) { actor._blockUntil = 0; return false; }
+    const e = actor._blockFoe; if (e && !e.dead) { const dx = e.x - actor.x, dy = e.y - actor.y, L = Math.hypot(dx, dy); if (L > 1e-6) { actor.dirX = dx / L; actor.dirY = dy / L; } }
+    return true;
+}
+
+// SEEKING HEALING (the owner, 2026-11-27: "the followers, if they have anything but reckless behavior, they will seek healing from nearby sources"; asked: "Below half", "Mostly healed"). In real time
+// a follower whose play style is not RECKLESS (CAUTIOUS, BALANCED or TANK), under FOLLOWER_HEAL.start of its health, goes to the nearest healing spot in its room (within FOLLOWER_HEAL.reach tiles) and
+// stays in it, holding still and turned to its enemy, until it is back to FOLLOWER_HEAL.stop or the spot is gone; then it fights as before. Not a clone, not one of yours in the card battle that is on, not
+// against an attack order. The spots are those the game already has (followerHealSpots): the Mutator's serum pools, SEEDFALL and its buds, the thicket's aura, REEF's outcrops, the relays when GROVE
+// ENGINEER is worn, and a BLOOM follower (it mends the most hurt within its reach). Half and 80% the owner's; the reach, the look-again time and "in it" (FOLLOWER_HEAL.inside of its radius) the agent's.
+const FOLLOWER_HEAL = { start: 0.5, stop: 0.8, reach: 12, every: 15, inside: 0.6, col: "#7dffb0" };
+function followerHealSpots() {   // { x, y, r, by } each (by: the follower a BLOOM mender is, so it does not go to itself); asked only by a hurt follower, every FOLLOWER_HEAL.every frames
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    const out = [];
+    if (typeof serumZones !== "undefined" && typeof SERUM !== "undefined") for (const z of serumZones) if (f0 < z.until) out.push({ x: z.x, y: z.y, r: SERUM.splash.radius });
+    if (typeof elementEffects !== "undefined") for (const e of elementEffects) if (e && e.life > 0 && (e.type === "seedfall" || e.type === "buds" || e.type === "thicket") && e.radius > 0) out.push({ x: e.x, y: e.y, r: e.radius });
+    if (typeof techReefs !== "undefined") for (const O of techReefs) if (f0 >= O.t0 && f0 < O.until) for (const c of O.parts) out.push({ x: c.x, y: c.y, r: c.r + (O.mendReach || 0) });
+    if (typeof _fp !== "undefined" && _fp && _fp.F && typeof playerTechRole === "function" && typeof relayOnline === "function" && typeof facilityRelayAt === "function") {
+        const role = playerTechRole(), k = role && role.kit && role.kit.grove;
+        if (k) for (const R of (_fp.F.relays || [])) { if (!relayOnline(R.id)) continue; const s = facilityRelayAt(R.id); if (s) out.push({ x: s.x, y: s.y, r: k.radius }); }
+    }
+    if (typeof followers !== "undefined" && typeof ELEMENT_MEND !== "undefined") for (const m of followers) if (m && !m.dead && m.team === "green" && m.element === "blossom" && !m.returningToCrystal) out.push({ x: m.x, y: m.y, r: ELEMENT_MEND.radius, by: m });
+    return out;
+}
+// the nearest spot for `a`: in its room (its place, for the Nest or a domain), within FOLLOWER_HEAL.reach; null when none
+function _healSpotFor(a) {
+    const roomOf = (x, y) => { const r = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(x, y) : null; return r && typeof partyPlaceOf === "function" ? partyPlaceOf(r) : r; };
+    const here = roomOf(a.x, a.y); let best = null, bd = FOLLOWER_HEAL.reach;
+    for (const s of followerHealSpots()) { if (s.by === a) continue; const d = Math.hypot(s.x - a.x, s.y - a.y); if (d > bd) continue; if (here && roomOf(s.x, s.y) !== here) continue; bd = d; best = s; }
+    return best;
+}
+// each frame its enemy is known (updateRTSNPC's follow branch): true when this frame is taken (walking to a spot, or healing in one)
+function followerSeekHeal(actor, foe) {
+    if (!_tacticOk(actor) || actor.playStyle === "aggressive" || !(actor.maxHealth > 0)) { actor._healSeek = null; return false; }
+    const f0 = typeof frame !== "undefined" ? frame : 0, H = FOLLOWER_HEAL, k = actor.health / actor.maxHealth;
+    if (!actor._healSeek) { if (k >= H.start) return false; actor._healSeek = { at: -1e9, spot: null }; }
+    const S = actor._healSeek;
+    if (k >= H.stop) { actor._healSeek = null; return false; }   // (mostly healed: back to the fight)
+    if (f0 - S.at >= H.every) { S.at = f0; const was = !!S.spot; S.spot = _healSpotFor(actor); if (S.spot && !was && typeof _evoSay === "function") _evoSay(actor, "TO HEAL", H.col); }
+    const sp = S.spot;
+    if (!sp) { if (k >= H.start) actor._healSeek = null; return false; }   // (no spot near: it fights on; it looks again while it is still hurt)
+    const at = sp.by ? [sp.by.x, sp.by.y] : [sp.x, sp.y], dx = at[0] - actor.x, dy = at[1] - actor.y, d = Math.hypot(dx, dy);
+    actor._shotWind = 0; actor._shotTarget = null;
+    if (d > sp.r * H.inside) {   // (on its way: round the walls)
+        const x0 = actor.x, y0 = actor.y; _walkStep(actor, dx, dy, d);
+        if (Math.hypot(actor.x - x0, actor.y - y0) < 1e-4 && d <= sp.r) return false;   // (held at a rock's edge, already in its reach: it fights from there)
+        return true;
+    }
+    if (foe && !foe.dead) { const ex = foe.x - actor.x, ey = foe.y - actor.y, L = Math.hypot(ex, ey); if (L > 1e-6) { actor.dirX = ex / L; actor.dirY = ey / L; } }
+    return true;   // (in it: it holds still while it mends)
+}
+
 function updateRTSNPC(actor) {
     if (actor.spawnProtection===undefined) actor.spawnProtection=0;
     if (actor.dead) return;
@@ -56,6 +162,7 @@ function updateRTSNPC(actor) {
         else { if (--actor._shotWind <= 0) _mageShotFire(actor); return; }
     }
     if (actor.curled > 0) return;   // CURLED UP (a roly-poly clone, js/rolypoly.js): in its wheel it does nothing until its timer is out
+    if (actor.isFollower && actor._blockUntil > 0 && _blockTick(actor)) return;   // BLOCKING (followerTactic above): rooted, half damage, nothing else till its time is out
     if (actor.asleep > 0) return;   // ASLEEP (the Sleeping Potion's original takes your followers and clones too: js/combat.js applySleep): it does nothing until the sleep's timer, which updateStatusEffects runs down, is out
     if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {
@@ -237,6 +344,8 @@ function updateRTSNPC(actor) {
         const nearestEnemy = actor._nearestEnemy;
         const nearestEnemyDist = nearestEnemy
             ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
+        if (actor.isFollower && !_ord && followerSeekHeal(actor, nearestEnemy)) return;   // SEEKING HEALING (above): hurt and not RECKLESS, to the nearest healing spot in its room
+        if (actor.isFollower && !_ord && followerTactic(actor, nearestEnemy, nearestEnemyDist)) return;   // BLOCK AND STEP BACK by play style (above): a TANK blocks, a CAUTIOUS one steps back (an attack order wins)
         const _reach = _ord ? 1e3 : (typeof playReach === "function" ? playReach(actor) : 1);   // PLAY STYLE scales how far a unit goes after an enemy (js/commandcenter.js); one sent at a creature goes the whole way
 
         // ── BRAWLER: chase nearest enemy aggressively, stand and strike when in range ──

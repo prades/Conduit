@@ -159,7 +159,7 @@ const handleInput=(ex,ey)=>{
     const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;   // (THE LOW CAMERA: the floor under the tap, through its projection: js/view3d.js)
     const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
     const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
-    // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
+    // Only the room you are in and the rooms next door, sharing a doorway with it (js/facilityplay.js facilityTapAllowed, facilityNextDoor: 2026-11-27): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
     if (typeof partyFlyMoveArmed === "function" && partyFlyMoveArmed()) { const _mt = getTile(gx, gy); if (_mt && !_mt.type.includes("wall") && partyFlyMoveTap(_mt)) return; }   /* (THE FOLLOWER'S CLOSE-UP: MOVE TO's spot, js/squadfly.js) */
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off a walk to a fallen clone's body: js/mutator.js)

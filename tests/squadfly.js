@@ -194,6 +194,13 @@ function measure(w, h) {
         ok(/function view3dFocusCam/.test(v) && /partyFlySubject\(\)/.test(v), 'the camera holds on the card\'s member (js/view3d.js)'); ok(/right: 0\.\d+, up: 0\.\d+/.test(v) && /function focusAim/.test(rd('view3d/gameview.js')), 'it stands the member up and to the right of the middle, clear of the card');
         const sq = rd('js/squadfly.js'); ok(/class=\"sf-stance\"/.test(sq) && /data-act", "stance"/.test(sq) && /ccApplyPlayStyle\(\[f\]/.test(sq), 'its STANCE row: the roster\'s play styles, set on the member'); ok(/get focusCam\(\)/.test(rd('view3d/gamemap.js')) && /GM\.focusCam/.test(rd('view3d/gameview.js')), 'the view reads it');
     });
+    check('THE CLOSE-UP SEEN (the owner, 2026-11-27): its card\'s ground half see-through while the camera holds (body.sf-focus); what stands between the member and the camera see-through, as in a battle, found again in each room; a mesh whose points were let go is tested by its box, never a throw', () => {
+        const v = rd('view3d/gameview.js'), m = rd('view3d/gamemap.js'), w = rd('js/view3d.js'), h = rd('game.html');
+        ok(/document\.body\.classList\.toggle\("sf-focus", on\)/.test(w), 'js/view3d.js marks the close-up'); ok(/body\.sf-focus #squadFly \.sf-card::before \{ background: linear-gradient\(180deg, rgba\(10,16,34,0\.18\)/.test(h), 'the card\'s ground half see-through');
+        ok(/get focusSeen\(\) \{ const f = typeof view3dFocusCam === "function"/.test(m) && /roomOf\(x, y\)/.test(m), 'the member reaches the view');
+        ok(/const list = battling\(\) \? GM\.battleFighters : GM\.focusSeen;/.test(v) && /if \(r !== seeRoom\) \{ seeRoom = r; seeList = null; \}/.test(v), 'kept in sight, found again by room');
+        ok(/if \(!seeList\) seeFind\(\); seeKeep\(\);/.test(v) && /function seeKeep\(\)/.test(v), 'freed points by their box');
+    });
     check('the card\'s code: INDEX opens the unit info, DISMISS is the roster\'s REMOVE (the member holds the room it is in); it follows the card it is for and is hidden with the bar', () => {
         const t = rd('js/squadfly.js'); ok(/unitInfoOpen\(f\)/.test(t) && /partyRemove\(\[f\]\)/.test(t), 'the buttons'); ok(/data-act="index"/.test(t) && /data-act="dismiss"/.test(t), 'the markup'); ok(/getBoundingClientRect\(\)/.test(t) && /_sfCorner\(true\)/.test(t) && /_sfCorner\(false\)/.test(t), 'it is not placed in the squad\'s corner, or the corner does not give way to it and come back');
         ok(/body\.corners\.flyOpen #squadBar, body\.corners\.flyOpen #mixTool \.mt-main, body\.corners\.flyOpen #topToggles \{ visibility: hidden; \}/.test(rd('game.html')), 'game.html does not hide the stack and the orders while the card is open (visibility, so they keep their places)');
