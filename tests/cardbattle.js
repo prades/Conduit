@@ -132,9 +132,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const cooler = F.find(f => altCools(f)) || (F[2].role = 'brawler', F[2]); cooler._altReadyAt = frame + 150; const cooling = cardBattleCards(cooler).find(c => c.kind === 'move');   // (one that cools down after its move: a Brawler, js/moves.js altCools)
             const pick = cs => cs.map(c => c.kind + ':' + c.name + ':' + (c.ready ? 'R' : 'W') + (c.recharge ? ':' + c.recharge : '') + (c.kind === 'ult' ? ':' + c.charge : ''));
             return { a: pick(a), b: pick(b), egg: pick(egg), cooling: [cooling.ready, cooling.turns], wob: Math.max(1, Math.ceil(MOVES.wobble_slam.windup / 2)), icy: Math.max(1, Math.ceil(MOVES[b[1].name === MOVES.icicle_volley.name ? 'icicle_volley' : 'icicle_volley'].windup / 2)), fx: a[1].fx.length > 10 && b[2].fx.length > 10 }; })()`);
-        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.56)');
-        same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40,walk:MOVE:R', 'the Rimestar\'s');
-        same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1,walk:MOVE:R', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
+        same(r.a.join(), 'basic:BASIC ATTACK:R,move:WOBBLE SLAM:R:' + r.wob + ',ult:JELLY SHIELDS:R:100,block:BLOCK:R,walk:MOVE:R', 'the Jelly Ram\'s (its MOVE card last, §2.56)');
+        same(r.b.join(), 'basic:BASIC ATTACK:R,move:ICICLE VOLLEY:R:' + r.icy + ',ult:WHITEOUT:W:40,block:BLOCK:R,walk:MOVE:R', 'the Rimestar\'s');
+        same(r.egg.join(), 'basic:BASIC ATTACK:R,move:BASH:R:1,block:BLOCK:R,walk:MOVE:R', 'an egg\'s (BASH before it evolves)'); same(r.cooling.join(), 'false,2', 'a second attack cooling 2.5 s: 2 turns'); same(r.fx, true, 'the effect lines (the game\'s own)');
     });
     check('a named everyday attack is the basic card\'s name (a Mage\'s shot), with the game\'s own effect line', () => {
         const r = J(`(function(){ __fresh(1); const f = partyMembers()[0]; f.evolved = 'thunderhead'; f.element = 'electric'; energyFill(f); const c = cardBattleCards(f)[0]; return [c.kind, c.name, c.fx.length > 10]; })()`);
@@ -939,7 +939,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('every card speaks the battle\'s words, an Ultimate\'s too (js/cardults.js): its squares and its effects in turns, no seconds, short enough for the card\'s four lines; an Ultimate without the real time\'s "tap"; none without words', () => {
         const r = J(`(function(){ const bad = [], seen = []; for (const k of Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].legacy)) { __fresh(1); const f = followers[0]; f.evolved = k; f.element = EVOLUTIONS[k].element; f.role = EVOLUTIONS[k].role; f._moltAt = -9999; energyFill(f); f.ultimateCharge = 100;
                 const cs = cardBattleCards(f); for (const c of cs) { const t = String(c.fx || ''); if (!t.trim()) bad.push(k + ' ' + c.kind + ' empty'); if (c.kind === 'ult' && /tap ULTIMATE/.test(t)) bad.push(k + ' ult tap'); if (/\\d(\\.\\d+)? ?s\\b|second/.test(t)) bad.push(k + ' ' + (c.id || c.kind) + ': ' + t);
-                    if (t.length > (cs.length >= 5 ? 82 : 100)) bad.push(k + ' ' + (c.id || c.kind) + ' too long for its card (' + t.length + ' letters): ' + t); seen.push(c.kind + ':' + (c.id || '')); } }   /* (game.html .cb-fx: 4 lines; measured in a real browser, 82 letters fit a card of a follower with five, 100 one with four) */
+                    if (c.kind !== 'block' && c.kind !== 'walk' && t.length > (cs.length - (cs.some(x => x.kind === 'block') ? 1 : 0) >= 5 ? 82 : 100)) bad.push(k + ' ' + (c.id || c.kind) + ' too long for its card (' + t.length + ' letters): ' + t); seen.push(c.kind + ':' + (c.id || '')); } }   /* (game.html .cb-fx: 4 lines; measured in a real browser, 82 letters fit a card of a follower with five, 100 one with four) */
                 const say = (form, kind, id) => { __fresh(1); const f = followers[0]; f.evolved = form; f.element = EVOLUTIONS[form].element; f.role = EVOLUTIONS[form].role; f._moltAt = -9999; energyFill(f); return cardBattleCards(f).find(c => c.kind === kind && (!id || c.id === id)).fx; };
                 return { bad, chomp: say('maw', 'move', 'chomp'), hex: say('embercowl', 'move', 'hexfire'), wob: say('jellyram', 'move', 'wobble_slam'), stun: _csTurns(MAW_STUN), base: say('thunderhead', 'basic') }; })()`);
         same(r.bad.join(' / '), '', 'cards not in the battle\'s words');
@@ -1306,7 +1306,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('the pieces of it: the serum has no shape and is let go anywhere over the fight (not by a tap); the enemies\' turn begins with the serums\' next turn\'s worth; the banner names it', () => {
         const cb = rd('js/cardbattle.js'); same(J(`cardShapeDef(player, 'serum', null)`), null, 'its shape');
-        ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
+        ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"( \|\| D\.kind === "block")?\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
     });
 
     group('THE PIECES');
@@ -1325,6 +1325,52 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/cardBattleHurt\(target, source, dmg\);/.test(rd('js/helpers.js')) && !/cardBattleDamageMult|tankHit/.test(rd('js/helpers.js') + rd('js/cardbattle.js')) && !/cardBattleTaunted/.test(rd('js/abilities.js')), 'the focus (§2.46): js/helpers.js tells the battle each blow; no damage share for a play style; no taunt left in js/abilities.js');
         ok(/cardBattleStands\(actor\)/.test(rd('js/npc.js')) && /cardBattleOverLow\(ox, oy\)/.test(rd('js/facility.js')) && /cardBattleReticles\(\)\) return;/.test(rd('js/gunfire.js')) && /cardBattleAiming\(\)\)\) \{ const k = age/.test(rd('js/targeting.js')) && /screenNow\(x, y, hPx\) \{ const v = SCR\.set/.test(rd('view3d/gameview.js')), 'the reticles, the shots over low objects, the moves (§2.37 to §2.39): the gun\'s corners and its locking-on, the 3D view\'s point, the cover rule, the Mage\'s stand');
         ok(/cardBattleClock\(\)/.test(rd('js/antraids.js')) && (rd('js/facilityspawn.js').match(/cardBattleClock\(\)/g) || []).length === 3 && /cardBattleClock\(\)/.test(rd('js/crystalpower.js')) && /cardBattleClock\(\)/.test(rd('js/stations.js')) && /cardBattleRest\(this\)/.test(rd('js/predator.js')), 'the countdowns ask the clock (§2.30): the raids, the three spawns, the refill, the turrets, the bites');
+    });
+
+    group('BLOCK (§2.82; the owner, 2026-11-27: "the block option would put them in a withdrawal state [...] they wouldn\'t move, but they would take half damage until next turn")');
+    check('every follower has a BLOCK card, always ready, just before MOVE; dragged, it says BLOCKS · HALF DAMAGE', () => {
+        const r = J(`(function(){ const { f, a } = __one('brawler'); CARD_BATTLE.byClass = false; const cs = cardBattleCards(f), k = cs.map(c => c.kind), b = cs.find(c => c.kind === 'block'); const p = cardBattlePreview(f, 'block', null, null);
+            return { last2: k.slice(-2).join(), ready: !!b && b.ready, fx: b && b.fx, say: p && p.text + '/' + p.ok, html: !!b && /BLOCK/.test(_cbCardHTML(b)) }; })()`);
+        same(r.last2, 'block,walk', 'BLOCK then MOVE, last'); same(r.ready, true, 'ready'); ok(/half damage/i.test(r.fx || ''), 'its words: ' + r.fx); same(r.say, 'BLOCKS · HALF DAMAGE/now', 'the word over it'); same(r.html, true, 'drawn');
+    });
+    check('played: its turn is over; every blow on it is half until its next turn; a push does not move it; at its next turn it ends; the battle over, it ends', () => {
+        const r = J(`(function(){ const { f, a } = __one('brawler'); CARD_BATTLE.byClass = false; const hit = () => { const h = f.health; applyDamage(f, 40, null, null, false, true); const d = h - f.health; f.health = f.maxHealth; return +d.toFixed(2); };
+            const o = { full: hit(), played: cardBattlePlay(f, 'block', null, null), acted: _cb.acted.has(f), on: !!f._cbBlock, say: _cb.say && _cb.say.text };
+            o.half = hit(); const s0 = _cb.slots.get(f); o.pushed = cardBattlePush(f, 1, 0, 2); o.square = JSON.stringify(_cb.slots.get(f)) === JSON.stringify(s0);
+            for (let i = 0; i < 3000 && !(cardBattleTurnInfo() && cardBattleTurnInfo().who === 'you' && _cb.round > 1); i++) { frame++; cardBattleTick(); }
+            o.round = _cb.round; o.after = !!f._cbBlock; o.back = hit();
+            cardBattlePlay(f, 'block', null, null); o.again = !!f._cbBlock; cardBattleEnd(); for (let i = 0; i < 200 && cardBattlePhase() !== 'off'; i++) { frame++; cardBattleTick(); } o.ended = !!f._cbBlock; return o; })()`);
+        same(r.played, true, 'played'); same(r.acted, true, 'its turn is over'); same(r.on, true, 'blocking'); ok(/BLOCKING/.test(r.say || ''), 'said in the banner: ' + r.say);
+        ok(r.full > 0 && Math.abs(r.half - r.full / 2) < 0.01, 'half: ' + r.full + ' then ' + r.half); same(r.pushed, false, 'a push refused'); same(r.square, true, 'its square kept');
+        ok(r.round >= 2, 'the next round came'); same(r.after, false, 'over at its next turn'); same(r.back, r.full, 'full damage again'); same(r.again, true, 'always ready: blocks again'); same(r.ended, false, 'the battle over, it ends');
+    });
+    check('not on top of SHELL GUARD: braced and blocking, a blow is half, not a quarter', () => {
+        const r = J(`(function(){ __fresh(1); const f = followers[0]; f.health = f.maxHealth = 1e5; f.spawnProtection = 0; const hit = () => { const h = f.health; applyDamage(f, 40, null, null, false, true); const d = h - f.health; f.health = f.maxHealth; return +d.toFixed(2); };
+            const full = hit(); f._guardUntil = frame + 999; f._blockUntil = frame + 999; const both = hit(); f._guardUntil = 0; const block = hit(); f._blockUntil = 0; return { full, both, block }; })()`);
+        ok(r.full > 0 && Math.abs(r.both - r.full / 2) < 0.01, 'both: ' + r.both + ' of ' + r.full); ok(Math.abs(r.block - r.full / 2) < 0.01, 'block alone: ' + r.block);
+    });
+    group('BLOCK AND STEP BACK IN REAL TIME (the owner, 2026-11-27: "Merge into TANK", "Some escape some block", "2 s, then a gap", "CAUTIOUS steps back")');
+    run(`globalThis.__rt = (style) => { __fresh(1); CARD_BATTLE.on = false; const f = followers[0]; f.playStyle = style; f.role = 'brawler'; f.health = f.maxHealth = 1e5; f.stance = 'follow'; f.post = null;
+        const a = __ant(f.x + 1.0, f.y); a.provoked = true; a.state = 'hunt'; a.health = a.maxHealth = 1e5; f._enemyCacheFrame = 0; f._nearestEnemy = null; return { f, a }; };
+        globalThis.__rtStep = (f, n) => { for (let i = 0; i < n; i++) { frame++; updateRTSNPC(f); } };`);
+    check('a TANK next to an enemy blocks: 2 s rooted at half damage, then fights at least 2 s before it blocks again', () => {
+        const r = J(`(function(){ const { f, a } = __rt('tank'); const d0 = +Math.hypot(a.x - f.x, a.y - f.y).toFixed(2); __rtStep(f, 1); const x0 = f.x, y0 = f.y;
+            const o = { d0, on: followerBlocking(f), left: f._blockUntil - frame }; __rtStep(f, 60); o.moved = Math.hypot(f.x - x0, f.y - y0); o.still = followerBlocking(f);
+            const h = f.health; applyDamage(f, 40, null, null, false, true); o.took = h - f.health; f.health = f.maxHealth;
+            __rtStep(f, 61); o.over = followerBlocking(f); __rtStep(f, 100); o.gap = followerBlocking(f); __rtStep(f, 30); o.again = followerBlocking(f); return o; })()`);
+        ok(r.d0 <= 1.6, 'next to it: ' + r.d0); same(r.on, true, 'it blocks'); same(r.left, 120, 'for 2 s'); same(r.moved, 0, 'rooted'); same(r.still, true, 'still blocking at 1 s');
+        ok(Math.abs(r.took - 20) < 0.01, 'half: ' + r.took); same(r.over, false, 'over after 2 s'); same(r.gap, false, 'not again within 2 s'); same(r.again, true, 'again after the gap');
+    });
+    check('a CAUTIOUS follower next to an enemy steps back, up to 3 tiles away from it, then waits before it steps back again; BALANCED and RECKLESS do neither', () => {
+        const r = J(`(function(){ const { f, a } = __rt('defensive'); const d0 = Math.hypot(a.x - f.x, a.y - f.y); __rtStep(f, 1); const o = { backing: f._backUntil > frame, blocking: followerBlocking(f) };
+            __rtStep(f, 120); const d1 = Math.hypot(a.x - f.x, a.y - f.y); o.gained = +(d1 - d0).toFixed(2); o.done = !(f._backUntil > frame); o.cd = f._backReadyAt > frame;
+            const others = ['balanced', 'aggressive'].map(s => { const { f: g } = __rt(s); __rtStep(g, 30); return !!(g._backUntil || g._blockUntil); }); o.others = others.join(); return o; })()`);
+        same(r.backing, true, 'it steps back'); same(r.blocking, false, 'no block'); ok(r.gained > 0.5 && r.gained <= 3.2, 'farther from it: +' + r.gained); same(r.done, true, 'then stops'); same(r.cd, true, 'and waits');
+        same(r.others, 'false,false', 'the others as before');
+    });
+    check('one of yours in the card battle that is on is left to its cards (no real-time block or step back)', () => {
+        const r = J(`(function(){ CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const { f, a } = __one('brawler'); f.playStyle = 'tank'; const t = followerTactic(f, a, 1); f.playStyle = 'defensive'; const c = followerTactic(f, a, 1); return { t, c, held: cardBattleSquadHeld(f) }; })()`);
+        same(r.held, true, 'held'); same(r.t, false, 'a TANK does not block on its own'); same(r.c, false, 'a CAUTIOUS one does not step back');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

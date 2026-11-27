@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-27
+
+### Build `2026-11-17dm` · branch `claude/zen-cerf-3m8mq5` · BLOCK in card battles; in real time a TANK blocks and a CAUTIOUS follower steps back
+- **The ask** (the owner, 2026-11-27): a block action beside the attacks and MOVE: no moving, half damage until the next turn; "this sort of tactic would also apply to real battles". Asked: "Merge into TANK", "Some escape some block", "CAUTIOUS steps back", "Always ready", "2 s, then a gap" (`CARD-BATTLES.md` §2.82).
+- **Card battles:** every follower has a BLOCK card, always ready; played, its turn is over and until its next turn it takes half damage and holds its square (no push moves it). BLOCK and MOVE share one slot, stacked.
+- **Real time:** a TANK next to an enemy blocks for 2 s (rooted, half damage), then fights at least 2 s; a CAUTIOUS one next to an enemy steps back up to 3 tiles, then 3 s before the next. Blocking is not on top of SHELL GUARD.
+- `js/cardbattle.js`, `js/npc.js`, `js/helpers.js`, `game.html` (the stacked slot), `tests/cardbattle.js`; the stamp's own files.
+- **Verified:** `tests/cardbattle.js` (new: BLOCK, BLOCK AND STEP BACK IN REAL TIME; four older checks now expect the BLOCK card) and the full run in the handoff; the battle's cards seen in a real browser at 1024 × 768 and 768 × 1024. **Not playtested; not seen on an iPad.**
+
 ## 2026-11-23
 
 ### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
