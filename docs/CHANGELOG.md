@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17do` · branch `claude/start-game-project-HSh7Z` · a hex grid on the floor
+- **The ask** (the owner, 2026-11-27): after the mock-ups of hex-edged and hexagon rooms, "What about just a hex grid, and then we keep the current layout just with the straight walls?"
+- **What it does:** in the 3D view the plate floor of every room is drawn as hex tiles a tile across, on the same world-fixed grid as the card battles, so a battle's hexes sit on the floor's. Rooms, walls and walking are unchanged; wood and grate floors and the sewer skin keep their own pictures. `VIEW-3D.md`. `design/style-evolution/live/floor.js`, generated files.
+- **Verified:** seen in a real browser in both cameras and in a battle (the MOVE card's hexes on the floor's); the suites in the handoff. **The line's look provisional; not seen on an iPad.**
+
 ### Build `2026-11-17dn` · branch `claude/start-game-project-HSh7Z` · battles on hexes
 - **The ask** (the owner, 2026-11-27): a hexagon tile system for all battles; of the approval page, "Approve all, outline only while dragging, keep the ground".
 - **What it does:** card battles are fought on hexes a tile across instead of squares: standing, walking (6 neighbours), "next to", every card's and Ultimate's area, lines, zigzags, pushes and pulls, the lit cells and the words. Sizes are the attacks' own, so areas cover the same ground. The hexes are outlined faintly only while a card is dragged. `CARD-BATTLES.md` §2.82. `js/cardbattle.js`, `js/cardshapes.js`, `js/cardults.js`, `js/elements.js`, `tests/cardbattle.js`, generated files.
