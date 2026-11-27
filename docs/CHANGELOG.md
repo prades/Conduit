@@ -4,6 +4,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17do` · branch `claude/start-game-project-HSh7Z` · a hex grid on the floor
+- **The ask** (the owner, 2026-11-27): after the mock-ups of hex-edged and hexagon rooms, "What about just a hex grid, and then we keep the current layout just with the straight walls?"
+- **What it does:** in the 3D view the plate floor of every room is drawn as hex tiles a tile across, on the same world-fixed grid as the card battles, so a battle's hexes sit on the floor's. Rooms, walls and walking are unchanged; wood and grate floors and the sewer skin keep their own pictures. `VIEW-3D.md`. `design/style-evolution/live/floor.js`, generated files.
+- **Verified:** seen in a real browser in both cameras and in a battle (the MOVE card's hexes on the floor's); the suites in the handoff. **The line's look provisional; not seen on an iPad.**
+
+### Build `2026-11-17dn` · branch `claude/start-game-project-HSh7Z` · battles on hexes
+- **The ask** (the owner, 2026-11-27): a hexagon tile system for all battles; of the approval page, "Approve all, outline only while dragging, keep the ground".
+- **What it does:** card battles are fought on hexes a tile across instead of squares: standing, walking (6 neighbours), "next to", every card's and Ultimate's area, lines, zigzags, pushes and pulls, the lit cells and the words. Sizes are the attacks' own, so areas cover the same ground. The hexes are outlined faintly only while a card is dragged. `CARD-BATTLES.md` §2.82. `js/cardbattle.js`, `js/cardshapes.js`, `js/cardults.js`, `js/elements.js`, `tests/cardbattle.js`, generated files.
+- **Verified:** `tests/cardbattle.js` passing on hexes; a battle seen in a real browser with a card and MOVE dragged; the suites in the handoff. **The outline's look provisional; not seen on an iPad; not playtested.**
+
+### Build `2026-11-17dm` · branch `claude/start-game-project-HSh7Z` · no tile lines on the floor; hex battles proposed
+- **The ask** (the owner, 2026-11-27): "Can we remove this visible floor tiles on the map and make a hexagon tile system for all battles?"; asked, "Everywhere", "About one tile", "Approval page first".
+- **What it does:** in the 3D view every room's floor is one smooth surface in its own colour: no line or shine round each tile, no border on the grate, no tile shaded apart from its neighbours (`design/style-evolution/live/floor.js`; `VIEW-3D.md`). The sewer skin's own floor pictures (`view3d/sewerdress.js`) are unchanged. The 2D game is unchanged.
+- **Proposed, not built:** a hex grid for card battles, one hex a tile across; every card and Ultimate drawn on squares and on hexes for approval in `design/battle/hex/shapes.html` (`CARD-BATTLES.md` §2.82).
+- **Verified:** seen in a real browser (the arena); the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
 - **The ask** (the owner, 2026-11-24): "Make the pictures and cards".
 - **What it is:** SHOCK ZAP's card in the card battles shows the Manta Ray (it showed the Hover Shell): its own 3-D model in the approved Technician style, inside a whole ring of yellow crystals, raising its wings, its crystals flaring and its tails spread behind it, the storm's world behind (`docs/ATTACK-CARD-ART.md` §4, 2026-11-24; the agent's picture, provisional, for the owner's look). It was the last picture of the Hover Shell in the game: its sprites, its 3-D body and the Bible's picture changed in `2026-11-17de`; the basic attack cards are by attack type and no Ultimate card has a picture.

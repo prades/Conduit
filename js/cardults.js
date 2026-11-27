@@ -53,7 +53,7 @@ function cardUltShape(def, S, C) {
     switch (def.kind) {
     case "rush": {   // (OVERDRIVE: it lands 0.8 short of the enemy, as its rush does; every enemy on the squares round where it lands)
         if (!_csWalks(A[0], A[1], q[0], q[1])) return bad("NO WAY STRAIGHT TO IT");
-        const L = Math.hypot(q[0] - A[0], q[1] - A[1]) || 1, s = Math.max(0, L - 0.8), land = [Math.round(A[0] + (q[0] - A[0]) / L * s), Math.round(A[1] + (q[1] - A[1]) / L * s)];
+        const L = Math.hypot(q[0] - A[0], q[1] - A[1]) || 1, s = Math.max(0, L - 0.8), land = cardHex(A[0] + (q[0] - A[0]) / L * s, A[1] + (q[1] - A[1]) / L * s);
         S.land = land; S.hit = _csDisc(land[0], land[1], V(def.r), true).filter(c => floorSees(land, c) && !(c[0] === A[0] && c[1] === A[1]));
         S.main = E; S.mask = _csOn(foes, S.hit); if (S.mask.indexOf(E) < 0) S.mask.push(E); S.aim = [E];
         break; }
@@ -61,7 +61,7 @@ function cardUltShape(def, S, C) {
         const W = ULT_WAVE, L = Math.hypot(q[0] - A[0], q[1] - A[1]) || 1, ux = (q[0] - A[0]) / L, uy = (q[1] - A[1]) / L, seen = new Set();
         for (let k = 0; k < W.waves; k++) {
             const px = A[0] + ux * W.step * k, py = A[1] + uy * W.step * k;
-            for (const c of _csDisc(Math.round(px), Math.round(py), W.len + 1, false)) {
+            for (const c of _csDisc(px, py, W.len + 1, false)) {
                 const dx = c[0] - px, dy = c[1] - py, d = Math.hypot(dx, dy), key = _csK(c[0], c[1]);
                 if (seen.has(key) || d < 1e-6 || d > W.len + 1e-6 || (dx * ux + dy * uy) / d < W.cos - 1e-6 || (c[0] === A[0] && c[1] === A[1]) || !_csFloor(c[0], c[1]) || !_csWalks(A[0], A[1], c[0], c[1])) continue;
                 seen.add(key); S.hit.push(c);
@@ -72,7 +72,7 @@ function cardUltShape(def, S, C) {
     case "drift": {   // (DRIFT SLASH: its own oval round the enemy; the squares its blade reaches along it lit; every enemy in its reach glitched, dashed)
         if (!_csWalks(A[0], A[1], q[0], q[1])) return bad("NO WAY STRAIGHT TO IT");
         const D = ULT_DRIFT, path = typeof _ultDriftPath === "function" ? _ultDriftPath({ x: A[0], y: A[1] }, q[0], q[1]) : [[q[0], q[1]]], seen = new Set();
-        for (const p of path) for (const c of _csDisc(Math.round(p[0]), Math.round(p[1]), D.cut + 1, false)) { const key = _csK(c[0], c[1]); if (seen.has(key) || Math.hypot(c[0] - p[0], c[1] - p[1]) > D.cut || (c[0] === A[0] && c[1] === A[1]) || !_csFloor(c[0], c[1])) continue; seen.add(key); S.hit.push(c); }
+        for (const p of path) for (const c of _csDisc(p[0], p[1], D.cut + 1, false)) { const key = _csK(c[0], c[1]); if (seen.has(key) || Math.hypot(c[0] - p[0], c[1] - p[1]) > D.cut || (c[0] === A[0] && c[1] === A[1]) || !_csFloor(c[0], c[1])) continue; seen.add(key); S.hit.push(c); }
         const near = foes.filter(a => { const s = _csSq(a); return Math.hypot(s[0] - A[0], s[1] - A[1]) <= V(def.reach) + 0.05 && _csWalks(A[0], A[1], s[0], s[1]); });
         S.path = path; S.main = E; S.mask = near.indexOf(E) < 0 ? near.concat([E]) : near; S.aim = [E];
         S.eff = S.mask.map(_csSq).filter(c => !seen.has(_csK(c[0], c[1])));
@@ -89,7 +89,7 @@ function cardUltShape(def, S, C) {
         const pods = CARD_ULT.netPods.map(o => [T[0] + o[0], T[1] + o[1]]).filter(c => floorSees(T, c)); if (pods.length < 2) return bad("NO ROOM FOR ITS PODS");
         const segs = []; for (let i = 0; i < pods.length; i++) for (let j = i + 1; j < pods.length; j++) segs.push([pods[i], pods[j]]);
         const seen = new Set();
-        for (const s of segs) for (const c of _csDisc(Math.round((s[0][0] + s[1][0]) / 2), Math.round((s[0][1] + s[1][1]) / 2), 4, false)) { const key = _csK(c[0], c[1]); if (seen.has(key) || !_csFloor(c[0], c[1]) || _cuSegDist(c, s[0], s[1]) > ULT_NETWORK.touch + 1e-6) continue; seen.add(key); S.hit.push(c); }
+        for (const s of segs) for (const c of _csDisc((s[0][0] + s[1][0]) / 2, (s[0][1] + s[1][1]) / 2, 4, false)) { const key = _csK(c[0], c[1]); if (seen.has(key) || !_csFloor(c[0], c[1]) || _cuSegDist(c, s[0], s[1]) > ULT_NETWORK.touch + 1e-6) continue; seen.add(key); S.hit.push(c); }
         S.tile = T; S.pods = pods; S.segs = segs; S.mask = _csOn(foes, S.hit); S.aim = [];
         break; }
     case "swallow": {   // (ABSOLUTE ZERO: the nearest in its reach that it sees, not a boss, up to its number; its reach dashed)
@@ -113,10 +113,10 @@ function cardUltShape(def, S, C) {
         S.mask = near; S.aim = near.slice();
         break; }
     case "wall": {   // (REEF PILLAR: its giant spike on the line to the enemy, a square in front of it as its own rule has it, a lesser one either side: three squares in a row)
-        const P = TECH_AB.pillar, D = Math.hypot(q[0] - A[0], q[1] - A[1]) || 1, ux = (q[0] - A[0]) / D, uy = (q[1] - A[1]) / D, k = D >= 2 * P.gap ? D - P.gap : D / 2, mid = [Math.round(A[0] + ux * k), Math.round(A[1] + uy * k)];
+        const P = TECH_AB.pillar, D = Math.hypot(q[0] - A[0], q[1] - A[1]) || 1, ux = (q[0] - A[0]) / D, uy = (q[1] - A[1]) / D, k = D >= 2 * P.gap ? D - P.gap : D / 2, mid = cardHex(A[0] + ux * k, A[1] + uy * k);
         const taken = _cuTaken(null), free = c => _csFloor(c[0], c[1]) && !taken.has(_csK(c[0], c[1]));
         if (!free(mid) || !_csWalks(A[0], A[1], mid[0], mid[1])) return bad("NO ROOM FOR ITS WALL");
-        const wall = [mid]; for (const sg of [-1, 1]) { const c = [Math.round(mid[0] - uy * P.spread * sg), Math.round(mid[1] + ux * P.spread * sg)]; if (free(c) && !(c[0] === mid[0] && c[1] === mid[1]) && _csWalks(mid[0], mid[1], c[0], c[1])) wall.push(c); }
+        const wall = [mid]; for (const sg of [-1, 1]) { const c = cardHex(mid[0] - uy * P.spread * sg, mid[1] + ux * P.spread * sg); if (free(c) && _csK(c[0], c[1]) !== _csK(mid[0], mid[1]) && _csWalks(mid[0], mid[1], c[0], c[1])) wall.push(c); }
         const set = new Set(wall.map(c => _csK(c[0], c[1])));
         S.wall = wall; S.hit = wall.slice(); for (const w of wall) for (const c of _csDisc(w[0], w[1], P.mendReach, true)) { const key = _csK(c[0], c[1]); if (!set.has(key) && _csFloor(c[0], c[1])) { set.add(key); S.eff.push(c); } }
         S.main = E; S.mask = []; S.aim = [E];
@@ -130,8 +130,8 @@ function _cuSegDist(c, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx
 // the squares fighters stand on (and the battle's decoys and walls), but `skip`'s own
 function _cuTaken(skip) {
     const out = new Set(); if (typeof _cb === "undefined") return out;
-    for (const [a, s] of _cb.slots) { if (!a || a === skip || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; out.add(_csK(Math.round(s.x), Math.round(s.y))); }
-    if (typeof rotDecoys !== "undefined") for (const d of rotDecoys) if (d && !d.dead) out.add(_csK(Math.round(d.x), Math.round(d.y)));
+    for (const [a, s] of _cb.slots) { if (!a || a === skip || a.dead || !(a.health > 0) || _cb.out.has(a)) continue; out.add(_csK(s.x, s.y)); }
+    if (typeof rotDecoys !== "undefined") for (const d of rotDecoys) if (d && !d.dead) out.add(_csK(d.x, d.y));
     for (const c of cardUltWalls()) out.add(_csK(c[0], c[1]));
     return out;
 }
@@ -245,7 +245,7 @@ function cardUltHeldFoe(a) { return !!a && !a.dead && a.health > 0 && !!a._swall
 // the squares a battle's wall stands on (REEF PILLAR's spikes): nobody walks through them (js/cardbattle.js _cbGrid)
 function cardUltWalls() {
     const out = []; if (typeof techReefs === "undefined") return out;
-    for (const O of techReefs) if (O._cbTurns > 0) for (const c of O.parts) out.push([Math.round(c.x), Math.round(c.y)]);
+    for (const O of techReefs) if (O._cbTurns > 0) for (const c of O.parts) out.push(cardHex(c.x, c.y));
     return out;
 }
 // the battle is over (js/cardbattle.js cardBattleEnd, cardBattleReset): its fields close, its holds let go, its shields, copies and walls go
@@ -279,7 +279,7 @@ function cardUltShown(e) {
     return T.who === "foe" && !!T.field && e._cbUlt === "win" && e._cbLive > 0;
 }
 function cardUltSquares(e) {
-    if (e.on) { const k = Math.round(e.x) + "," + Math.round(e.y); if (e._cbSqK !== k) { e._cbSqK = k; e._cbSq = _csDisc(Math.round(e.x), Math.round(e.y), e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(Math.round(e.x), Math.round(e.y), c[0], c[1])); } }
+    if (e.on) { const k = cardHexKey(e.x, e.y); if (e._cbSqK !== k) { e._cbSqK = k; const h = cardHex(e.x, e.y); e._cbSq = _csDisc(h[0], h[1], e.radius || 0, true).filter(c => _csFloor(c[0], c[1]) && _csSees(h[0], h[1], c[0], c[1])); } }
     return e._cbSq || null;
 }
 // A FIELD WHOSE OWN LOOK FILLS ITS SQUARES is not washed over with the faint ones (the faint squares were for "right now", till the fields' own animation was in the battle's view: the owner,
@@ -288,7 +288,7 @@ function cardUltSquares(e) {
 const _CU_OWN_LOOK = { eventhorizon: 1 };
 function cardUltDraw(V) {
     if (typeof _cb === "undefined" || _cb.phase !== "on" || typeof ctx === "undefined" || typeof elementEffects === "undefined") return;
-    const quad = (x, y) => { const h = 0.44, L = typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0; ctx.beginPath(); for (let i = 0; i < 4; i++) { const q = V.screenNow(x + (i === 0 || i === 3 ? -h : h), y + (i < 2 ? -h : h), L);   // (L: the square's floor height, js/cardbattle.js cardBattleLift)
+    const quad = (x, y) => { const L = typeof cardBattleLift === "function" ? cardBattleLift(x, y) : 0, P = cardHexCorners(x, y, 0.06); ctx.beginPath(); for (let i = 0; i < P.length; i++) { const q = V.screenNow(P[i][0], P[i][1], L);   // (L: the hex's floor height, js/cardbattle.js cardBattleLift)
         if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); } ctx.closePath(); };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = 1.5;
     for (const e of elementEffects) { if (e._cbUlt !== "win" || !(e.life > 0) || !cardUltShown(e)) continue; if (_CU_OWN_LOOK[e.type] && typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (its own look fills its squares: below)
@@ -323,29 +323,29 @@ function cardUltPace(u) {
 
 // ── THE WORDS on an Ultimate's card in a battle (js/cardshapes.js cardShapeSays): its squares and what a turn of it does, short enough for the card's four lines ──
 function _cuTurns(frames) { const n = Math.max(1, Math.ceil(frames / _cuTurn() - 1e-9)); return n + (n === 1 ? " turn" : " turns"); }
-function _cuSq(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " square" : " squares"); }
+function _cuSq(tiles) { const n = Math.max(1, Math.ceil(tiles - 1e-6)); return n + (n === 1 ? " hex" : " hexes"); }
 const CARD_ULT_SAYS = {
-    quillstone:   () => ULT_QUILLSTORM.count + " quills all round it, " + ULT_QUILLSTORM.reach + " squares long · each the first enemy on its line",
-    staticorb:    () => "Rushes to an enemy within " + ULT_OVERDRIVE.reach + " · the " + _csSquares(ULT_OVERDRIVE.radius, true) + " squares round it pushed " + _cuSq(ULT_OVERDRIVE.knock),
-    hammerslug:   () => "The " + _csSquares(ULT_SLAM.radius, true) + " squares round it · thrown " + _cuSq(ULT_SLAM.knock) + ", stunned " + _cuTurns(ULT_SLAM.stun),
-    seeper:       () => "The " + _csSquares(ULT_UNDERTOW.radius, true) + " squares round it · thrown " + _cuSq(ULT_UNDERTOW.thrown) + ", weakened " + _cuTurns(ULT_UNDERTOW.weak),
-    hornshell:    () => ULT_WAVE.waves + " waves at an enemy within " + ULT_WAVE.reach + ", " + ULT_WAVE.len + " squares deep · each throws " + _cuSq(ULT_WAVE.knock) + " back; it moves up",
+    quillstone:   () => ULT_QUILLSTORM.count + " quills all round it, " + ULT_QUILLSTORM.reach + " hexes long · each the first enemy on its line",
+    staticorb:    () => "Rushes to an enemy within " + ULT_OVERDRIVE.reach + " · the " + _csSquares(ULT_OVERDRIVE.radius, true) + " hexes round it pushed " + _cuSq(ULT_OVERDRIVE.knock),
+    hammerslug:   () => "The " + _csSquares(ULT_SLAM.radius, true) + " hexes round it · thrown " + _cuSq(ULT_SLAM.knock) + ", stunned " + _cuTurns(ULT_SLAM.stun),
+    seeper:       () => "The " + _csSquares(ULT_UNDERTOW.radius, true) + " hexes round it · thrown " + _cuSq(ULT_UNDERTOW.thrown) + ", weakened " + _cuTurns(ULT_UNDERTOW.weak),
+    hornshell:    () => ULT_WAVE.waves + " waves at an enemy within " + ULT_WAVE.reach + ", " + ULT_WAVE.len + " hexes deep · each throws " + _cuSq(ULT_WAVE.knock) + " back; it moves up",
     hovershell:   () => "An oval round an enemy within " + ULT_DRIFT.reach + " · slashed; all in reach glitched; squad faster " + _cuTurns(ULT_DRIFT.frames),
-    thermite:     () => "A line of " + TECH_AB.fault.maxLen + " squares through an enemy · each on it spiked once; it comes up at its end",
-    thunderhead:  () => "The " + _csSquares(ULT_STORM.radius, true) + " squares round it, moving with it · " + Math.round(_cuTurn() / ULT_STORM.tick) + " bolts a turn, " + _cuTurns(ULT_STORM.frames),
-    rimestar:     () => "The " + _csSquares(ULT_WHITEOUT.radius, true) + " squares round it, moving with it · bitten and slowed, " + _cuTurns(ULT_WHITEOUT.frames),
-    igloo:        () => "The " + _csSquares(ULT_RINK.radius, true) + " squares round it · enemies bitten and slowed, yours faster, " + _cuTurns(ULT_RINK.frames),
-    mimic:        () => "The " + _csSquares(ULT_VORTEX.radius, true) + " squares round it · pulled in and bitten, " + _cuTurns(ULT_VORTEX.frames) + "; heals it",
-    voidstar:     () => "Every square within " + ULT_HORIZON.radius + " of a tile in reach · dragged in and crushed, " + _cuTurns(ULT_HORIZON.frames),
-    embercowl:    () => ULT_METEOR.count + " rocks on the " + _csSquares(ULT_METEOR.radius, false) + " squares round a tile · each a 3×3 blast; burning " + _cuTurns(ULT_METEOR.burn),
-    rotshard:     () => "The " + _csSquares(ULT_PUDDLE.radius, false) + " squares round a tile in reach · shards and poison, " + _cuTurns(ULT_PUDDLE.frames),
-    shrub:        () => "The " + _csSquares(ULT_THICKET.radius, false) + " squares round an enemy · held and bitten " + _cuTurns(ULT_THICKET.frames) + "; heals yours in it",
-    electroskink: () => "A ring round " + _csSquares(ULT_CIRCUIT.radius, false) + " squares · shocked inside, " + _cuTurns(ULT_CIRCUIT.frames) + "; crossing it stuns " + _cuTurns(ULT_CIRCUIT.stun),
+    thermite:     () => "A line of " + TECH_AB.fault.maxLen + " hexes through an enemy · each on it spiked once; it comes up at its end",
+    thunderhead:  () => "The " + _csSquares(ULT_STORM.radius, true) + " hexes round it, moving with it · " + Math.round(_cuTurn() / ULT_STORM.tick) + " bolts a turn, " + _cuTurns(ULT_STORM.frames),
+    rimestar:     () => "The " + _csSquares(ULT_WHITEOUT.radius, true) + " hexes round it, moving with it · bitten and slowed, " + _cuTurns(ULT_WHITEOUT.frames),
+    igloo:        () => "The " + _csSquares(ULT_RINK.radius, true) + " hexes round it · enemies bitten and slowed, yours faster, " + _cuTurns(ULT_RINK.frames),
+    mimic:        () => "The " + _csSquares(ULT_VORTEX.radius, true) + " hexes round it · pulled in and bitten, " + _cuTurns(ULT_VORTEX.frames) + "; heals it",
+    voidstar:     () => "Every hex within " + ULT_HORIZON.radius + " of a tile in reach · dragged in and crushed, " + _cuTurns(ULT_HORIZON.frames),
+    embercowl:    () => ULT_METEOR.count + " rocks on the " + _csSquares(ULT_METEOR.radius, false) + " hexes round a tile · each a 3×3 blast; burning " + _cuTurns(ULT_METEOR.burn),
+    rotshard:     () => "The " + _csSquares(ULT_PUDDLE.radius, false) + " hexes round a tile in reach · shards and poison, " + _cuTurns(ULT_PUDDLE.frames),
+    shrub:        () => "The " + _csSquares(ULT_THICKET.radius, false) + " hexes round an enemy · held and bitten " + _cuTurns(ULT_THICKET.frames) + "; heals yours in it",
+    electroskink: () => "A ring round " + _csSquares(ULT_CIRCUIT.radius, false) + " hexes · shocked inside, " + _cuTurns(ULT_CIRCUIT.frames) + "; crossing it stuns " + _cuTurns(ULT_CIRCUIT.stun),
     blightspider: () => "3 pods round a tile, strands between · on a strand: bitten, poisoned " + _cuTurns(ULT_NETWORK.poison) + "; " + _cuTurns(ULT_NETWORK.frames),
-    maw:          () => "Swallows the " + ULT_ZERO.max + " nearest within " + ULT_ZERO.reach + " squares (not a boss) · out of the fight " + _cuTurns(ULT_ZERO.frames),
+    maw:          () => "Swallows the " + ULT_ZERO.max + " nearest within " + ULT_ZERO.reach + " hexes (not a boss) · out of the fight " + _cuTurns(ULT_ZERO.frames),
     sundew:       () => "Swallows an enemy within " + ULT_CONSUME.reach + " (not a boss) · " + Math.floor(ULT_CONSUME.frames / ULT_CONSUME.tick) + " bites over " + _cuTurns(ULT_CONSUME.frames) + "; it holds still",
     jellyram:     () => "Shields on it and 2 of the squad · each soaks " + Math.round(ULT_JELLY.soak * 100) + "% health, " + _cuTurns(ULT_JELLY.frames) + "; attackers thrown back",
     gooproxy:     () => ULT_PROXY.count + " copies next to it · enemies within " + ULT_PROXY.reach + " go for them, " + _cuTurns(ULT_PROXY.frames) + "; then each bursts",
-    coralcrab:    () => "A wall of 3 squares before an enemy · none pass, " + _cuTurns(TECH_AB.pillar.life) + "; mends yours near it",
+    coralcrab:    () => "A wall of 3 hexes before an enemy · none pass, " + _cuTurns(TECH_AB.pillar.life) + "; mends yours near it",
 };
 function cardUltSays(f) { const fn = f && f.evolved ? CARD_ULT_SAYS[f.evolved] : null; try { return fn ? fn(f) : null; } catch (e) { return null; } }
