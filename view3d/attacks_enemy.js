@@ -21,12 +21,16 @@ function view3dEnemyForms(K) {
   const { seg, stroke, arc3, padd, path, CR, CU, CB } = BEAM;
   const M = K.enemy || {}, BITE = M.bite || { windup: 18, reach: 1.5 }, BK = M.backup || { color: '#ffb347', windup: 30, near: [1.2, 2.8] };
   const LP = M.leap || { color: '#ff6a4a', windup: 24, duration: 22, peakLift: 34, land: 0.75, hitR: 1.0 }, SL = M.slam || { color: '#ffb347', windup: 42, radius: 1.6 };
+  const FZ = M.frenzy || { color: '#aa55ff', windup: 24, duration: 72, interval: 12, radius: 1.6 }, ES = M.escape || { color: '#ffdd44', windup: 20, duration: 26, peakLift: 30 }, PO = M.pounce || { windup: 14, air: 22, lift: 34 };
   const LUNGE = 0.18;   // (the lunge's step a frame, js/predator.js _biteTick: attackAnim from 0.01 to π)
   const PI = Math.PI, pxU = px => px / UPX;
   const hexC = h => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
   // ── THE COLOURS (as the screen shows them): the enemy's red of the bite's telegraph #ff4a3a (js/combat.js); its pale snap; the specials' own (the scout's call and the tank's slam #ffb347,
   // the striker's leap #ff6a4a: js/abilities.js); the slam's dust #c9a060 (its five puffs); the floor's earth and stone ──
   const RED = hexC('#ff4a3a'), PALE = [1, 0.93, 0.86], AMBER = hexC(SL.color || '#ffb347'), CALL = hexC(BK.color || '#ffb347'), LEAPC = hexC(LP.color || '#ff6a4a'), SAND = hexC('#c9a060');
+  // YOURS (your ant clone's, view3d/attacks_enemy.js's clone entries): the teal of your side, as the 2D's telegraph has a bite of yours (js/combat.js drawBiteTelegraphs, #19e6c1); its specials' own
+  // colours (MANDIBLE FRENZY #aa55ff, the scout's LEAP #ffdd44: js/abilities.js; POUNCE #c06bff, its word's: js/mutator.js)
+  const OURS = hexC('#19e6c1'), FRZ = hexC(FZ.color || '#aa55ff'), ESC = hexC(ES.color || '#ffdd44'), POU = hexC('#c06bff'), CCOL = new Map(), colOf = h => { let c = CCOL.get(h); if (!c && /^#[0-9a-f]{6}$/i.test(h || '')) CCOL.set(h, c = hexC(h)); return c || PALE; };
   const DUST = [0.66, 0.57, 0.45], EARTH = [0.34, 0.25, 0.17], STONE = [0.5, 0.41, 0.31];
   const glow = (x, y, z, s, c, a) => put(FIRE, x, y, z, c[0], c[1], c[2], a, -s);                                  // (a round glowing blob)
   const glint = (x, y, z, s, c, a) => put(GLINT, x, y, z, c[0], c[1], c[2], a, s);
@@ -40,8 +44,12 @@ function view3dEnemyForms(K) {
 
   // ── WHICH ENEMIES: an enemy ant the view draws (not yours, not a clone, not a nymph or a boss: view3d/gameview.js ant()), by its class ──
   const CLASSES = { worker: 1, scout: 1, striker: 1, tank: 1 };
-  K.enemyKid = f => f && !f.isClone && f.team !== 'green' && !f.isNymph && f.speciesName === 'ant' && CLASSES[f.className] && GM.bugStyle(f) === 'ant' ? 'ant_' + f.className : null;
+  // ...and YOUR ANT CLONE (one of yours, mark C: the same body), by its class: 'clone_ant_' + its class (the owner, 2026-11-27: "Push then clones")
+  const mine = f => !!f.isClone || f.team === 'green';
+  K.enemyKid = f => f && !f.isNymph && f.speciesName === 'ant' && CLASSES[f.className] && GM.bugStyle(f) === 'ant' ? (mine(f) ? 'clone_ant_' : 'ant_') + f.className : null;
   const foeOf = a => !!a && !a.dead && !(a.health <= 0) && a.team === 'green' && !a._swallowedBy;   // (one of yours: what an enemy's bite and specials hurt)
+  const preyOf = a => !!a && !a.dead && !(a.health <= 0) && a.team !== 'green' && !a.isClone && !a._swallowedBy && GM.isCreature(a);   // (a creature: what your clone's bite and specials hurt)
+  const hurts = (f, a) => mine(f) ? preyOf(a) : foeOf(a);
 
   // ── THE BODIES: an ant's measures (its front, its back, its height: from its poses' shapes, once), its forward way, the point of its jaws ──
   const BX = new T.Box3();
@@ -62,12 +70,15 @@ function view3dEnemyForms(K) {
   // ── WHAT THE VIEW REMEMBERS of each ant (its own memory, never the game's): the one it rears back at and those in its reach with their health then, when its bite landed and on whom;
   // the one it leapt at, when it landed and whether it was hit. A unit's mark falls when it is hurt: its health (you: the frame of your last hit, js/helpers.js hurtPlayer) ──
   const MEM = new WeakMap(); let seq = 0;
-  function mem(f) { let D = MEM.get(f); if (!D) MEM.set(f, D = { seed: (seq++ % 997) + 1, armed: false, cand: [], mk: [], landAt: -1e9, vic: null, vx: 0, vz: 0, dx: 1, dz: 0, air: false, lt: null, ltMk: 0, lAt: -1e9, lVic: null, ldx: 1, ldz: 0, lx: 0, lz: 0 }); return D; }
+  function mem(f) { let D = MEM.get(f); if (!D) MEM.set(f, D = { seed: (seq++ % 997) + 1, armed: false, cand: [], mk: [], landAt: -1e9, vic: null, vx: 0, vz: 0, dx: 1, dz: 0, air: false, lt: null, ltMk: 0, lAt: -1e9, lVic: null, ldx: 1, ldz: 0, lx: 0, lz: 0,
+    fc: [], fm: [], fv: [], fAt: -1e9, fx: 0, fz: 0, pAir: false, pt: null, ptMk: 0, pAt: -1e9, pVic: null, pdx: 1, pdz: 0, pfx: 0, pfz: 0, ptx: 0, ptz: 0 }); return D; }   // (fc, fm, fv: MANDIBLE FRENZY's: those in its reach, their marks, those its last strike hurt; p…: POUNCE's)
   const markOf = u => u === GM.player ? -((u && u.lastHitAt) || -1e9) : (u && u.health) || 0;
   function watch(f, D) { D.cand.length = 0; D.mk.length = 0; const R = (f.biteReach || BITE.reach || 1.5) + 0.6, t = f.biteTarget;
-    if (t && (t === GM.player || foeOf(t))) { D.cand.push(t); D.mk.push(markOf(t)); }
-    const L = GM.actors || []; for (let i = 0; i < L.length && D.cand.length < 8; i++) { const a = L[i]; if (a === t || !foeOf(a) || Math.abs(a.x - f.x) > R || Math.abs(a.y - f.y) > R) continue; D.cand.push(a); D.mk.push(markOf(a)); }
-    const P = GM.player; if (P && P !== t && Math.hypot(P.x - f.x, P.y - f.y) <= R) { D.cand.push(P); D.mk.push(markOf(P)); } }
+    if (t && ((t === GM.player && !mine(f)) || hurts(f, t))) { D.cand.push(t); D.mk.push(markOf(t)); }
+    const L = GM.actors || []; for (let i = 0; i < L.length && D.cand.length < 8; i++) { const a = L[i]; if (a === t || !hurts(f, a) || Math.abs(a.x - f.x) > R || Math.abs(a.y - f.y) > R) continue; D.cand.push(a); D.mk.push(markOf(a)); }
+    const P = GM.player; if (P && P !== t && !mine(f) && Math.hypot(P.x - f.x, P.y - f.y) <= R) { D.cand.push(P); D.mk.push(markOf(P)); } }
+  // MANDIBLE FRENZY's reach (your clone's): those of the other side in it and their marks, refreshed each frame of its wind-up and its strikes
+  function watchR(f, D, R) { D.fc.length = 0; D.fm.length = 0; const L = GM.actors || []; for (let i = 0; i < L.length && D.fc.length < 8; i++) { const a = L[i]; if (!hurts(f, a) || Math.hypot(a.x - f.x, a.y - f.y) > R) continue; D.fc.push(a); D.fm.push(markOf(a)); } }
   function hitOf(D) { for (let i = 0; i < D.cand.length; i++) if (markOf(D.cand[i]) < D.mk[i] - 1e-9) return D.cand[i]; return null; }
   // what the ant's state says this frame (read before its body is posed): the bite's landing, the leap's
   function track(f, f0, D) {
@@ -75,30 +86,39 @@ function view3dEnemyForms(K) {
     else if ((f.attackAnim || 0) > 0 && D.armed) { const g = Math.max(0, Math.round((f.attackAnim - 0.01) / LUNGE)); D.armed = false; D.landAt = f0 - g; const v = hitOf(D); D.vic = v;
       if (v) { const p = placeOf(v); D.vx = p.x; D.vz = p.z; } const dx = (v ? D.vx : f.x + (f.dirX || 1)) - f.x, dz = (v ? D.vz : f.y + (f.dirY || 0)) - f.y, L = Math.hypot(dx, dz) || 1; D.dx = dx / L; D.dz = dz / L; }
     else if (!((f.attackAnim || 0) > 0)) D.armed = false;
-    if (f.abilityKey === 'LEAP_STRIKE') {
+    // MANDIBLE FRENZY (your striker or tank clone): a strike every `interval` frames while it is active (the game's own rule, js/abilities.js _abRunActive: its timer on a multiple of its interval): the ones it hurt
+    if (f.abilityKey === 'MANDIBLE_FRENZY' && (f.abilityPhase === 'winding' || f.abilityPhase === 'active')) {
+      if (f.abilityPhase === 'active' && (f.abilityTimer || 0) % (FZ.interval || 12) === 0 && D.fAt !== f0) { D.fv.length = 0; for (let i = 0; i < D.fc.length; i++) if (markOf(D.fc[i]) < D.fm[i] - 1e-9 && D.fv.length < 6) D.fv.push(D.fc[i]); D.fAt = f0; D.fx = f.x; D.fz = f.y; }
+      watchR(f, D, (FZ.radius || 1.6) + 0.6); }
+    // POUNCE (your clone, with the upgrade: js/mutator.js clonePounceTick): its leap's ends and its target while in the air; landed, whether that one was hurt
+    const PP = f.pounce;
+    if (PP && PP.phase === 'air') { const t = PP.target; if (t && !t.dead) { if (t !== D.pt) D.ptMk = markOf(t); D.pt = t; } D.pAir = true; D.pfx = PP.fx; D.pfz = PP.fy; D.ptx = PP.tx; D.ptz = PP.ty; }
+    else if (D.pAir && !PP) { D.pAir = false; D.pAt = f0; const t = D.pt; D.pVic = t && markOf(t) < D.ptMk - 1e-9 ? t : null; if (D.pVic) { const p = placeOf(D.pVic), dx = p.x - f.x, dz = p.z - f.y, L = Math.hypot(dx, dz) || 1; D.pdx = dx / L; D.pdz = dz / L; } D.pt = null; }
+    else if (!PP) D.pAir = false;
+    if (f.abilityKey === 'LEAP_STRIKE' || f.abilityKey === 'LEAP') {
       if (f.abilityPhase === 'active') { const t = f.strikeTarget; if (t && !t.dead) { if (t !== D.lt) D.ltMk = markOf(t); D.lt = t; } D.air = true; }
       else if (D.air) { D.air = false; D.lAt = f0; const t = D.lt; D.lVic = t && markOf(t) < D.ltMk - 1e-9 ? t : null; D.lx = f.x; D.lz = f.y;
         if (D.lVic) { const p = placeOf(D.lVic), dx = p.x - f.x, dz = p.z - f.y, L = Math.hypot(dx, dz) || 1; D.ldx = dx / L; D.ldz = dz / L; } D.lt = null; } } }
 
   // ── THE STROKES ──
   // two (or three) cuts across a victim at (X, Z), seen from the way the blow came (dx, dz): drawn in 3 frames, gone by 16; sparks thrown on; a flash; dust at its feet. big: the attacker's size
-  function cuts(X, Z, dx, dz, a, s, n, big, vh) { if (a < 0 || a > 24) return; const Yf = floorY(X, Z), Y0 = Yf + clamp(vh || 0.35, 0.15, 0.8), cx = X + CB.x * 0.35 - dx * 0.1, cz = Z + CB.z * 0.35 - dz * 0.1, Y = Y0 + CB.y * 0.35;   // (laid across it as the camera sees it, a little in front of it)
+  function cuts(X, Z, dx, dz, a, s, n, big, vh, col) { col = col || RED; if (a < 0 || a > 24) return; const Yf = floorY(X, Z), Y0 = Yf + clamp(vh || 0.35, 0.15, 0.8), cx = X + CB.x * 0.35 - dx * 0.1, cz = Z + CB.z * 0.35 - dz * 0.1, Y = Y0 + CB.y * 0.35;   // (laid across it as the camera sees it, a little in front of it)
     const grow = clamp((a + 1) / 3, 0, 1), fade = a < 7 ? 1 : clamp(1 - (a - 7) / 16, 0, 1), L = 0.5 * big;
-    if (a < 12) glow(cx, Y, cz, 0.16 * big, RED, 0.45 * (1 - a / 12)); if (a < 4) { glow(cx, Y, cz, 0.12 + 0.2 * big * (1 - a / 4), PALE, 0.9 * (1 - a / 4)); glint(cx, Y + 0.02, cz, 0.4 + 0.25 * big, PALE, 1 - a / 4); }
+    if (a < 12) glow(cx, Y, cz, 0.16 * big, col, 0.45 * (1 - a / 12)); if (a < 4) { glow(cx, Y, cz, 0.12 + 0.2 * big * (1 - a / 4), PALE, 0.9 * (1 - a / 4)); glint(cx, Y + 0.02, cz, 0.4 + 0.25 * big, PALE, 1 - a / 4); }
     const sd = (CR.x * dx + CR.z * dz) >= 0 ? 1 : -1;   // (the cuts slant the way the blow came, as the camera sees it)
     for (let i = 0; i < n; i++) { const ph = sd * (0.55 + (i - (n - 1) / 2) * 0.5) + (H(i, s, 1) - 0.5) * 0.25, c = Math.cos(ph), sn = Math.sin(ph), ex = CR.x * c + CU.x * sn, ey = CR.y * c + CU.y * sn, ez = CR.z * c + CU.z * sn, off = (i - (n - 1) / 2) * 0.09;
       const ox = -CR.x * sn + CU.x * c, oy = -CR.y * sn + CU.y * c, oz = -CR.z * sn + CU.z * c;   // (across the cut, in the picture's plane: the cuts side by side, each bowed)
       path(); for (let j = 0; j <= 6; j++) { const t = -0.5 + grow * j / 6, bow = 0.06 * (1 - 4 * t * t) + off; padd(cx + ex * t * L + ox * bow, Y + ey * t * L + oy * bow, cz + ez * t * L + oz * bow); }
-      stroke(0.02, 0.085 * fade + 0.02, RED, 0.95 * fade, 0.95 * fade); }
+      stroke(0.02, 0.085 * fade + 0.02, col, 0.95 * fade, 0.95 * fade); }
     if (a < 12) for (let i = 0; i < (low() ? 3 : 6); i++) { const an = Math.atan2(dz, dx) + (H(i, s, 2) - 0.5) * 2.2, up = 0.2 + 0.8 * H(i, s, 3), v = (0.03 + 0.025 * H(i, s, 4)) * big, t = a + 1, k = 1 - a / 12;
       const x = cx + Math.cos(an) * v * t, y = Y + up * v * t * 0.8 - 0.002 * t * t, z = cz + Math.sin(an) * v * t;
-      seg(x, y, z, x - Math.cos(an) * 0.07, y - up * 0.04, z - Math.sin(an) * 0.07, 0.014, 0.004, i % 2 ? PALE : RED, 0.9 * k, 0.2 * k); }
+      seg(x, y, z, x - Math.cos(an) * 0.07, y - up * 0.04, z - Math.sin(an) * 0.07, 0.014, 0.004, i % 2 ? PALE : col, 0.9 * k, 0.2 * k); }
     if (a < 20) for (let i = 0; i < (low() ? 2 : 4); i++) { const an = H(i, s, 5) * TAU, r = 0.08 + 0.012 * a, k = 1 - a / 20; lump(X + Math.cos(an) * r, Yf + 0.03 + 0.006 * a, Z + Math.sin(an) * r, 0.07 + 0.004 * a, DUST, 0.55 * k); } }
   // the snap of its sickle jaws at its jaws' point (a in frames since the bite landed): each sickle sweeping in from its side to meet the other, a pale crescent behind it, and a flash as they meet
-  function snap(b, a, s) { if (a < 0 || a > 8) return; const P = jaws(b), F = fwdOf(b), sz = P.s, close = outC(clamp((a + 1) / 3, 0, 1)), k = a < 3 ? 1 : clamp(1 - (a - 3) / 5, 0, 1);
+  function snap(b, a, s, col) { col = col || RED; if (a < 0 || a > 8) return; const P = jaws(b), F = fwdOf(b), sz = P.s, close = outC(clamp((a + 1) / 3, 0, 1)), k = a < 3 ? 1 : clamp(1 - (a - 3) / 5, 0, 1);
     AF.x = F.x; AF.z = F.z; AP.x = -F.z; AP.z = F.x; const r = 0.15 * sz, cx = P.x - F.x * r, cz = P.z - F.z * r;
     for (const sd of [-1, 1]) { const a0 = sd * 1.75, a1 = sd * (1.75 - 1.6 * close); arc3(cx, P.y, cz, r, AF, AP, a0, a1 - a0, 8); stroke(0.006, 0.03 * sz * k + 0.006, PALE, 0.25 * k, 0.95 * k); }
-    if (a < 4) { glow(P.x, P.y, P.z, 0.06 + 0.1 * sz * (1 - a / 4), RED, 0.8 * (1 - a / 4)); glint(P.x, P.y + 0.02, P.z, 0.32 + 0.18 * sz, PALE, 0.9 * (1 - a / 4)); } }
+    if (a < 4) { glow(P.x, P.y, P.z, 0.06 + 0.1 * sz * (1 - a / 4), col, 0.8 * (1 - a / 4)); glint(P.x, P.y + 0.02, P.z, 0.32 + 0.18 * sz, PALE, 0.9 * (1 - a / 4)); } }
   // a flare of a special's colour c round its body at (X, Z), at height y (a: frames since the game's impact appeared)
   function flare(X, Z, y, a, s, c) { if (a > 16) return; const k = 1 - a / 16; glow(X, y, Z, 0.08 + 0.12 * (1 - k), c, 0.75 * k);
     for (let i = 0; i < (low() ? 2 : 4); i++) { const an = H(i, s, 1) * TAU, r = 0.05 + 0.03 * a, up = (H(i, s, 2) - 0.3) * 0.5; seg(X + Math.cos(an) * r, y + up * r, Z + Math.sin(an) * r, X + Math.cos(an) * (r + 0.08), y + up * (r + 0.08), Z + Math.sin(an) * (r + 0.08), 0.014, 0.004, c, 0.9 * k, 0.3 * k); }
@@ -119,34 +139,45 @@ function view3dEnemyForms(K) {
       if (ph === 'winding') { const k = 1 - (f.abilityTimer || 0) / Math.max(1, SL.windup || 42), r = ease(clamp(k / 0.8, 0, 1)); pose(b, 0.5 * r + (k > 0.8 ? 0.04 * Math.sin(f0 * 1.9) : 0), 0.04 * r, -0.04 * r, -0.08 * r); return; }
       if (a >= 0 && a < 16) { if (a < 2) pose(b, lerp(0.5, -0.1, a / 2), 0, 0.02, 0.4 * a / 2); else { const u = (a - 2) / 14; pose(b, -0.1 * (1 - ease(u)), 0, 0.02 * (1 - u), 0.8 * (1 - u) * (1 - u) - 0.1 * Math.sin(u * PI)); } return; } }
     // LEAP STRIKE: crouched, quivering, through its wind-up; in the air its nose up as it rises and down as it falls, stretched; squashed as it lands
-    if (key === 'LEAP_STRIKE') { const a = f0 - D.lAt;
-      if (ph === 'winding') { const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, LP.windup || 24)); pose(b, -0.12 * k, 0, -0.05 * k, 0.55 * k + (k > 0.7 ? 0.06 * Math.sin(f0 * 2.3) : 0)); return; }
+    if (key === 'LEAP_STRIKE' || key === 'LEAP') { const a = f0 - D.lAt;   // (and your scout clone's LEAP, its escape: the same crouch, arc and landing)
+      if (ph === 'winding') { const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, (key === 'LEAP' ? ES.windup : LP.windup) || 24)); pose(b, -0.12 * k, 0, -0.05 * k, 0.55 * k + (k > 0.7 ? 0.06 * Math.sin(f0 * 2.3) : 0)); return; }
       if (ph === 'active') { const t = clamp(f.leapT || 0, 0, 1); pose(b, 0.34 * Math.cos(PI * t) - 0.04, 0, 0, -0.25 * Math.sin(PI * t)); return; }
       if (a >= 0 && a < 12) { const u = a / 12; pose(b, -0.12 * (1 - u), 0, 0, 0.7 * (1 - u) * (1 - u)); return; } }
     // CALL FOR BACKUP: its head thrown up, calling (a quick shake), through its wind-up
     if (key === 'BACKUP_CALL' && ph === 'winding') { const k = 1 - (f.abilityTimer || 0) / Math.max(1, BK.windup || 30), r = ease(clamp(k / 0.3, 0, 1)); pose(b, 0.32 * r + 0.05 * Math.sin(f0 * 1.6) * r, 0, -0.03 * r, -0.06 * r * (0.5 + 0.5 * Math.sin(f0 * 0.8))); return; }
+    // MANDIBLE FRENZY (your clone): hunched with its jaws up through its wind-up, trembling; its strikes are its lunges (below)
+    if (key === 'MANDIBLE_FRENZY' && ph === 'winding') { const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, FZ.windup || 24)); pose(b, 0.22 * k + (k > 0.6 ? 0.05 * Math.sin(f0 * 2.6) : 0), 0, -0.06 * k, 0.25 * k); return; }
+    // POUNCE (your clone): drawn back and low as it winds up; in the air on its arc, nose up then down; then its bite's lunge as it lands (below)
+    const PQ = f.pounce;
+    if (PQ && PQ.phase === 'wind') { const k = ease(clamp(1 - PQ.t / Math.max(1, PO.windup || 14), 0, 1)); pose(b, 0.18 * k, 0, -0.08 * k, 0.4 * k + (k > 0.7 ? 0.05 * Math.sin(f0 * 2.4) : 0)); return; }
+    if (PQ && PQ.phase === 'air') { const t = clamp(PQ.t / Math.max(1, PO.air || 22), 0, 1); pose(b, 0.34 * Math.cos(PI * t) - 0.04, 0, 0, -0.25 * Math.sin(PI * t)); return; }
     // THE BITE: reared back as it winds up (trembling at the end); thrown forward with its head down as it lands, a squash, and back
     const W = f.attackWindup || 0, aa = f.attackAnim || 0;
     if (W > 0) { const k = 1 - W / Math.max(1, BITE.windup || 18), r = ease(k); pose(b, 0.28 * r + (k > 0.72 ? 0.035 * Math.sin(f0 * 2.4) : 0), 0, -0.07 * r, -0.05 * r); return; }
-    if (aa > 0 && f.state === 'attack') { const u = clamp(aa / PI, 0, 1), g = (aa - 0.01) / LUNGE, fromBite = Math.abs(f0 - D.landAt - g) < 1.5, p0 = fromBite ? 0.28 : 0;
+    if (aa > 0 && (f.state === 'attack' || mine(f))) { const u = clamp(aa / PI, 0, 1), g = (aa - 0.01) / LUNGE, fromBite = Math.abs(f0 - D.landAt - g) < 1.5, p0 = fromBite ? 0.28 : 0;
       const pitch = u < 0.2 ? lerp(p0, -0.18, outC(u / 0.2)) : -0.18 * (1 - ease((u - 0.2) / 0.8)); pose(b, pitch, 0, 0.1 * Math.sin(PI * Math.min(1, u * 1.6)) * (1 - u), u < 0.4 ? 0.45 * Math.sin(u / 0.4 * PI) : 0); } }
 
   // ── WHAT IT CARRIES (each frame, its own state): the bite's snap and cuts; the wind-ups' marks and calls; the leap's take-off, trail and the cuts on the one it landed on ──
   function onAnt(f, b, f0) { const D = mem(f), s = D.seed, key = f.abilityKey, ph = f.abilityPhase, h = b.holder, d = dims(b), sc = h.scale.x;
     // the bite
-    const a = f0 - D.landAt; if (a >= 0 && a <= 26) { snap(b, a, s); if (D.vic) { const v = D.vic; if (!v.dead) { const p = placeOf(v); D.vx = p.x; D.vz = p.z; } cuts(D.vx, D.vz, D.dx, D.dz, a, s, 2, clamp(d.front * sc / 0.45, 0.8, 1.6), heightOf(v) * 0.5); } }
+    const BC = mine(f) ? OURS : RED, big = clamp(d.front * sc / 0.45, 0.8, 1.6);   // (a bite of yours in your side's teal, an enemy's in its red: the 2D telegraph's two colours)
+    const a = f0 - D.landAt; if (a >= 0 && a <= 26) { snap(b, a, s, BC); if (D.vic) { const v = D.vic; if (!v.dead) { const p = placeOf(v); D.vx = p.x; D.vz = p.z; } cuts(D.vx, D.vz, D.dx, D.dz, a, s, 2, big, heightOf(v) * 0.5, BC); } }
+    // MANDIBLE FRENZY (your clone): each strike its snap, a ring of its reach swept on the floor, and the cuts on each it hurt
+    const fa = f0 - D.fAt; if (fa >= 0 && fa <= 24) { snap(b, fa, s + 3, BC); const X = D.fx, Z = D.fz, Yf = floorY(X, Z), R = FZ.radius || 1.6;
+      if (fa < 10) { const u = fa / 10; arc3(X, Yf + 0.04, Z, R * (0.55 + 0.45 * outC(u)), HX, HZ, 0, TAU, low() ? 28 : 44); stroke(0.035 * (1 - u) + 0.008, 0.035 * (1 - u) + 0.008, BC, 0.9 * (1 - u), 0.9 * (1 - u)); }
+      for (let i = 0; i < D.fv.length; i++) { const v = D.fv[i], p = placeOf(v), dx = p.x - X, dz = p.z - Z, L = Math.hypot(dx, dz) || 1; cuts(p.x, p.z, dx / L, dz / L, fa, s + 11 * i + (D.fAt % 97), 2, big, heightOf(v) * 0.5, BC); } }
+    // POUNCE (your clone): dust at its take-off, a streak of its colour along its arc, haze behind; the cuts on the one it landed on
+    if (f.pounce && f.pounce.phase === 'air') { const P = f.pounce, t = clamp(P.t / Math.max(1, PO.air || 22), 0, 1); trail(P.fx, P.fy, P.tx, P.ty, t, PO.lift || 34, d.h * sc * 0.5, POU, s); }
+    const pa = f0 - D.pAt; if (pa >= 0 && pa <= 26) { snap(b, pa, s + 5, BC); if (D.pVic) { const v = D.pVic, p = v.dead ? null : placeOf(v); cuts(p ? p.x : f.x + D.pdx, p ? p.z : f.y + D.pdz, D.pdx, D.pdz, pa, s + 5, 2, big, heightOf(v) * 0.5, BC); } }
     // GROUND SLAM's reach, marked on the floor as it rears up (the 2D's ring: claimed)
     if (key === 'GROUND_SLAM' && ph === 'winding') { claimK('abilityMark', f); const k = clamp(1 - (f.abilityTimer || 0) / Math.max(1, SL.windup || 42), 0, 1), X = h.position.x, Z = h.position.z, Yf = floorY(X, Z);
       floorMark(X, Z, SL.radius || 1.6, k, AMBER, f0);
       if (k > 0.45) for (let i = 0; i < (low() ? 4 : 8); i++) { const an = H(i, s, 11) * TAU, r = (0.35 + 0.6 * H(i, s, 12)) * (SL.radius || 1.6), hop = Math.abs(Math.sin(f0 * (0.5 + 0.3 * H(i, s, 13)) + i)) * 0.06 * (k - 0.45) / 0.55; grit(X + Math.cos(an) * r, Yf + hop, Z + Math.sin(an) * r, 0.05 + 0.03 * H(i, s, 14), an + f0 * 0.1, EARTH); } }
     // LEAP STRIKE: where it will land, marked as it crouches (the 2D's mark: claimed); in the air, dust at its take-off and a trail behind it; the cuts on the one it landed on
+    if (key === 'LEAP' && ph === 'active') trail(f.leapFromX, f.leapFromY, f.leapToX, f.leapToY, clamp(f.leapT || 0, 0, 1), ES.peakLift || 30, d.h * sc * 0.5, ESC, s);   // (your scout clone's escape: its arc)
     if (key === 'LEAP_STRIKE') {
       if (ph === 'winding') { const L = GM.strikeLanding(f); if (L) { claimK('abilityMark', f); floorMark(L[0], L[1], 0.55, clamp(1 - (f.abilityTimer || 0) / Math.max(1, LP.windup || 24), 0, 1), LEAPC, f0); } }
-      if (ph === 'active') { const t = clamp(f.leapT || 0, 0, 1), x0 = f.leapFromX, z0 = f.leapFromY, x1 = f.leapToX, z1 = f.leapToY, at = u => { AT.x = lerp(x0, x1, u); AT.z = lerp(z0, z1, u); AT.y = floorY(AT.x, AT.z) + pxU(Math.sin(u * PI) * (LP.peakLift || 34)) + d.h * sc * 0.5; return AT; };
-        if (Number.isFinite(x0) && Number.isFinite(x1)) {
-          if (t < 0.45) { const k = 1 - t / 0.45; for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 21) * TAU, r = 0.12 + 0.5 * t; lump(x0 + Math.cos(an) * r, floorY(x0, z0) + 0.03 + 0.2 * t * H(i, s, 22), z0 + Math.sin(an) * r, 0.08 + 0.08 * t, DUST, 0.6 * k); } }
-          path(); for (let i = 0; i <= 6; i++) { const u = Math.max(0, t - 0.28 + 0.28 * i / 6), P = at(u); padd(P.x, P.y, P.z); } stroke(0.006, 0.07, LEAPC, 0.0, 0.8 * Math.sin(PI * t));
-          for (let i = 1; i <= (low() ? 2 : 4); i++) { const u = t - i * 0.07; if (u <= 0) continue; const P = at(u); haze(P.x, P.y - 0.05, P.z, 0.16 + 0.04 * i, DUST, 0.35 * (1 - i / 5)); } } }
+      if (ph === 'active') trail(f.leapFromX, f.leapFromY, f.leapToX, f.leapToY, clamp(f.leapT || 0, 0, 1), LP.peakLift || 34, d.h * sc * 0.5, LEAPC, s);
       const la = f0 - D.lAt; if (la >= 0 && la <= 26 && D.lVic) { const v = D.lVic, p = v.dead ? null : placeOf(v); cuts(p ? p.x : D.lx + D.ldx, p ? p.z : D.lz + D.ldz, D.ldx, D.ldz, la, s + 7, 2, 1.2, heightOf(v) * 0.5); } }
     // CALL FOR BACKUP: calls going out from its head as it calls, one every 8 frames, rising and spreading
     if (key === 'BACKUP_CALL' && ph === 'winding') { const el = (BK.windup || 30) - (f.abilityTimer || 0), P = jaws(b), y0 = floorY(h.position.x, h.position.z) + d.h * sc * 0.9;
@@ -154,30 +185,47 @@ function view3dEnemyForms(K) {
         arc3(P.x, y0 + 0.08 + 0.3 * u, P.z, r, HX, HZ, 0, TAU, low() ? 18 : 30); stroke(0.04 * k + 0.012, 0.04 * k + 0.012, CALL, k, k); }
       if (el % 8 < 3) glint(P.x, y0 + 0.06, P.z, 0.3, CALL, 0.8); } }
 
+  // a leap's arc from (x0, z0) to (x1, z1), t of the way, `lift` px at its top, its body's middle `mid` up: dust at its take-off, a streak of colour c behind it, haze (LEAP STRIKE, LEAP, POUNCE)
+  function trail(x0, z0, x1, z1, t, lift, mid, c, s) { if (!Number.isFinite(x0) || !Number.isFinite(x1) || !Number.isFinite(z0) || !Number.isFinite(z1)) return;
+    const at = u => { AT.x = lerp(x0, x1, u); AT.z = lerp(z0, z1, u); AT.y = floorY(AT.x, AT.z) + pxU(Math.sin(u * PI) * lift) + mid; return AT; };
+    if (t < 0.45) { const k = 1 - t / 0.45; for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 21) * TAU, r = 0.12 + 0.5 * t; lump(x0 + Math.cos(an) * r, floorY(x0, z0) + 0.03 + 0.2 * t * H(i, s, 22), z0 + Math.sin(an) * r, 0.08 + 0.08 * t, DUST, 0.6 * k); } }
+    path(); for (let i = 0; i <= 6; i++) { const u = Math.max(0, t - 0.28 + 0.28 * i / 6), P = at(u); padd(P.x, P.y, P.z); } stroke(0.006, 0.07, c, 0.0, 0.8 * Math.sin(PI * t));
+    for (let i = 1; i <= (low() ? 2 : 4); i++) { const u = t - i * 0.07; if (u <= 0) continue; const P = at(u); haze(P.x, P.y - 0.05, P.z, 0.16 + 0.04 * i, DUST, 0.35 * (1 - i / 5)); } }
+
   // ── THE GAME'S EFFECTS an ant makes (js/abilities.js _abBurst: impacts that name no maker; GROUND SLAM's ring): which ant made each, and what it is ──
   const KINDS = new WeakMap(), near = (e, f, r) => Math.hypot(e.x - f.x, e.y - f.y) <= r, isR = (e, r) => Math.abs((e.radius || 0) - r) < 1e-6;
-  function kindOf(e, f) { const k0 = KINDS.get(e); if (k0) return k0; let k = null; const c = e.color, key = f.abilityKey, ph = f.abilityPhase, fresh = e.life >= 14;
-    if (!c || !key || !fresh) return null;
+  function kindOf(e, f) { const k0 = KINDS.get(e); if (k0) return k0.f === f ? k0.k : null;   // (an effect is the one ant's that made it: never claimed by another found first)
+    let k = null; const c = e.color, key = f.abilityKey, ph = f.abilityPhase, fresh = e.life >= 12;
+    if (!c || !fresh) return null;
+    if (mine(f)) {   // (your clone's: MANDIBLE FRENZY's flare and its strikes, its scout's LEAP's flare and landing, POUNCE's bite as it lands: js/abilities.js _abBurst, js/mutator.js)
+      if (c === FZ.color && key === 'MANDIBLE_FRENZY' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8)) k = 'flare';
+      else if (c === FZ.color && key === 'MANDIBLE_FRENZY' && isR(e, 0.45) && ph === 'active' && near(e, f, 0.7)) k = 'strike';
+      else if (c === ES.color && key === 'LEAP' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8)) k = 'flare';
+      else if (c === ES.color && key === 'LEAP' && isR(e, 0.4) && ph !== 'winding' && ph !== 'active' && near(e, f, 0.6)) k = 'land';
+      else if (isR(e, 0.8) && e.life >= 17 && !f.pounce && (f.pounceReady || 0) > GM.frame && near(e, f, (f.biteReach || BITE.reach || 1.5) + 1.4)) k = 'pounce';
+      if (k) KINDS.set(e, { k, f }); return k; }
+    if (!key) return null;
     if (c === SL.color && key === 'GROUND_SLAM' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8)) k = 'flare';
     else if (c === '#c9a060' && key === 'GROUND_SLAM' && isR(e, 0.7) && ph !== 'winding' && near(e, f, 1.0)) k = 'dust';
     else if (c === LP.color && key === 'LEAP_STRIKE' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8)) k = 'flare';
     else if (c === LP.color && key === 'LEAP_STRIKE' && isR(e, 0.45) && ph !== 'winding' && ph !== 'active' && near(e, f, 0.7)) k = 'land';
     else if (c === BK.color && key === 'BACKUP_CALL' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8)) k = 'flare';
     else if (c === BK.color && key === 'BACKUP_CALL' && isR(e, 0.4) && ph !== 'winding' && f.calledBackup && near(e, f, (BK.near ? BK.near[1] : 2.8) + 0.8)) k = 'rise';
-    if (k) KINDS.set(e, k); return k; }
+    if (k) KINDS.set(e, { k, f }); return k; }
   const isSlamRing = (e, f) => e.type === 'ring' && e.color === SL.color && isR(e, SL.radius || 1.6) && f.abilityKey === 'GROUND_SLAM' && near(e, f, 0.3);
 
   // an impact of the ant's, drawn as its kind: a FLARE round it as a special begins; the slam's DUST; the leap's LANDING; one who answers the call RISING out of the floor
-  function drawImpact(m, age, f0, b) { const e = m.o, kind = (m.data && m.data.kind) || KINDS.get(e); if (!kind) return; const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), h = b.holder, d = dims(b), sc = h.scale.x;
-    if (kind === 'flare') flare(X, Z, Yf + d.h * sc * 0.6 + 0.06, age, s, e.color === LP.color ? LEAPC : AMBER);
+  function drawImpact(m, age, f0, b) { const e = m.o, kind = (m.data && m.data.kind) || kindOf(e, m.owner); if (!kind) return; const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), h = b.holder, d = dims(b), sc = h.scale.x;
+    if (kind === 'flare' || kind === 'strike') flare(X, Z, Yf + d.h * sc * 0.6 + 0.06, kind === 'strike' ? age + 4 : age, s, colOf(e.color));
+    else if (kind === 'pounce') { if (age > 16) return; const k = 1 - age / 16; flat(GLOWF, X, Yf, Z, 0.5, POU[0], POU[1], POU[2], 0.5 * k); arc3(X, Yf + 0.04, Z, 0.15 + 0.45 * outC(clamp(age / 10, 0, 1)), HX, HZ, 0, TAU, 24); stroke(0.03 * k + 0.006, 0.03 * k + 0.006, POU, 0.85 * k, 0.85 * k); }
     else if (kind === 'dust') { if (age > 30) return; const k = 1 - age / 30;
       for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 1) * TAU, u = clamp(age / 16, 0, 1), r = 0.06 + 0.3 * outC(u) * (0.6 + 0.4 * H(i, s, 2)); lump(X + Math.cos(an) * r, Yf + 0.04 + 0.28 * Math.sin(PI * u) * H(i, s, 3) + 0.004 * age, Z + Math.sin(an) * r, 0.09 + 0.07 * u, i % 3 ? SAND : DUST, 0.75 * k); }
       haze(X, Yf + 0.18 + 0.006 * age, Z, 0.35 + 0.012 * age, SAND, 0.28 * k);
       for (let i = 0; i < (low() ? 1 : 2); i++) { const an = H(i, s, 4) * TAU, t = Math.min(age, 18), v = 0.02 + 0.015 * H(i, s, 5), y = Yf + Math.max(0, 0.05 * t - 0.0028 * t * t); grit(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, 0.06 * Math.min(1, k * 2), an + age * 0.3, EARTH); } }
     else if (kind === 'land') { if (age > 24) return; const k = 1 - age / 24, u = clamp(age / 12, 0, 1);
-      arc3(X, Yf + 0.03, Z, 0.15 + 0.5 * outC(u), HX, HZ, 0, TAU, 24); stroke(0.03 * (1 - u) + 0.006, 0.03 * (1 - u) + 0.006, LEAPC, 0.8 * (1 - u), 0.8 * (1 - u));
+      arc3(X, Yf + 0.03, Z, 0.15 + 0.5 * outC(u), HX, HZ, 0, TAU, 24); stroke(0.03 * (1 - u) + 0.006, 0.03 * (1 - u) + 0.006, colOf(e.color), 0.8 * (1 - u), 0.8 * (1 - u));
       for (let i = 0; i < (low() ? 3 : 6); i++) { const an = H(i, s, 1) * TAU, r = 0.1 + 0.4 * outC(u) * (0.7 + 0.3 * H(i, s, 2)); lump(X + Math.cos(an) * r, Yf + 0.03 + 0.16 * Math.sin(PI * u) * H(i, s, 3), Z + Math.sin(an) * r, 0.08 + 0.06 * u, DUST, 0.7 * k); }
-      if (age < 8) glint(X, Yf + 0.2, Z, 0.35, LEAPC, 1 - age / 8);
+      if (age < 8) glint(X, Yf + 0.2, Z, 0.35, colOf(e.color), 1 - age / 8);
       for (let i = 0; i < (low() ? 1 : 2); i++) { const an = H(i, s, 4) * TAU, t = Math.min(age, 16), v = 0.025, y = Yf + Math.max(0, 0.045 * t - 0.003 * t * t); grit(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, 0.05 * Math.min(1, k * 2), an + age * 0.3, EARTH); } }
     else if (kind === 'rise') { if (age > 26) return; const k = 1 - age / 26, u = clamp(age / 14, 0, 1);
       flat(DISCF, X, Yf, Z, 0.32 * outC(clamp(age / 4, 0, 1)), EARTH[0] * 0.6, EARTH[1] * 0.6, EARTH[2] * 0.6, 0.6 * k);   // (the floor broken open where it comes up)
@@ -202,11 +250,12 @@ function view3dEnemyForms(K) {
   function entry() {
     return { tilts: true, body: bodyAnt, on: onAnt,
       fx: {
-        impact: { pre(e, f) { return kindOf(e, f) === 'land'; }, find(e, f) { return !!kindOf(e, f); }, claim(e, f) { return !!KINDS.get(e); }, span: 32,
-          begin(m) { if (!m.data) m.data = { kind: KINDS.get(m.o) || null }; }, draw(m, age, f0, b) { drawImpact(m, age, f0, b); } },
+        impact: { pre(e, f) { return kindOf(e, f) === 'land'; }, find(e, f) { return !!kindOf(e, f); }, claim(e, f) { return !!kindOf(e, f); }, span: 32,
+          begin(m) { if (!m.data) m.data = { kind: kindOf(m.o, m.owner) }; }, draw(m, age, f0, b) { drawImpact(m, age, f0, b); } },
         ring: { pre(e, f) { return isSlamRing(e, f); }, find(e, f) { return isSlamRing(e, f); }, claim() { return true; }, span: 40,
           draw(m, age, f0, b) { drawSlam(m, age, f0, b); } },
       } };
   }
-  return { ant_worker: entry(), ant_scout: entry(), ant_striker: entry(), ant_tank: entry() };
+  return { ant_worker: entry(), ant_scout: entry(), ant_striker: entry(), ant_tank: entry(),
+    clone_ant_worker: entry(), clone_ant_scout: entry(), clone_ant_striker: entry(), clone_ant_tank: entry() };   // (your ant clones, mark C: the same body and kit, in your side's colours)
 }

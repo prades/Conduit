@@ -25619,7 +25619,7 @@ const VIEW3D_GAME = (0, eval)(`({
   // the enemy line's (view3d/attacks_enemy.js): the measures its looks follow (read once: the game's own constants: a creature's bite, the wild ants' specials, js/combat.js COMBAT.bite and
   // js/abilities.js ABILITY_DEFS), and where a striker's LEAP STRIKE will land (js/abilities.js _abStrikeLanding, read: the game's own rule, as its 2D mark has it)
   get enemyMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } }, A = v("ABILITY_DEFS", null) || {}, C = v("COMBAT", null);
-    return { bite: C && C.bite ? C.bite : null, backup: A.BACKUP_CALL || null, leap: A.LEAP_STRIKE || null, slam: A.GROUND_SLAM || null }; },
+    return { bite: C && C.bite ? C.bite : null, backup: A.BACKUP_CALL || null, leap: A.LEAP_STRIKE || null, slam: A.GROUND_SLAM || null, frenzy: A.MANDIBLE_FRENZY || null, escape: A.LEAP || null, pounce: v("MUTATOR", null) ? MUTATOR.pounce : null }; },   // (frenzy, escape, pounce: your ant clone's specials, js/abilities.js, and the POUNCE upgrade's leap, js/mutator.js)
   strikeLanding(a) { if (!a || typeof _abStrikeLanding !== "function" || typeof ABILITY_DEFS === "undefined") return null; const t = a.strikeTarget; if (!t || t.dead) return null; return _abStrikeLanding(a, t, ABILITY_DEFS.LEAP_STRIKE); }
 })`);
 const VIEW3D_LAB = ['crystal_chamber', 'teleport_room_1', 'front_lobby', 'security_room', 'show_room', 'lab_hallway', 'lounge', 'lab_passage'];
@@ -38873,10 +38873,13 @@ function view3dEnemyForms(K) {
     const { seg, stroke, arc3, padd, path, CR, CU, CB } = BEAM;
     const M = K.enemy || {}, BITE = M.bite || { windup: 18, reach: 1.5 }, BK = M.backup || { color: '#ffb347', windup: 30, near: [1.2, 2.8] };
     const LP = M.leap || { color: '#ff6a4a', windup: 24, duration: 22, peakLift: 34, land: 0.75, hitR: 1.0 }, SL = M.slam || { color: '#ffb347', windup: 42, radius: 1.6 };
+    const FZ = M.frenzy || { color: '#aa55ff', windup: 24, duration: 72, interval: 12, radius: 1.6 }, ES = M.escape || { color: '#ffdd44', windup: 20, duration: 26, peakLift: 30 }, PO = M.pounce || { windup: 14, air: 22, lift: 34 };
     const LUNGE = 0.18;
     const PI = Math.PI, pxU = px => px / UPX;
     const hexC = h => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
     const RED = hexC('#ff4a3a'), PALE = [1, 0.93, 0.86], AMBER = hexC(SL.color || '#ffb347'), CALL = hexC(BK.color || '#ffb347'), LEAPC = hexC(LP.color || '#ff6a4a'), SAND = hexC('#c9a060');
+    const OURS = hexC('#19e6c1'), FRZ = hexC(FZ.color || '#aa55ff'), ESC = hexC(ES.color || '#ffdd44'), POU = hexC('#c06bff'), CCOL = new Map(), colOf = h => { let c = CCOL.get(h); if (!c && /^#[0-9a-f]{6}$/i.test(h || ''))
+        CCOL.set(h, c = hexC(h)); return c || PALE; };
     const DUST = [0.66, 0.57, 0.45], EARTH = [0.34, 0.25, 0.17], STONE = [0.5, 0.41, 0.31];
     const glow = (x, y, z, s, c, a) => put(FIRE, x, y, z, c[0], c[1], c[2], a, -s);
     const glint = (x, y, z, s, c, a) => put(GLINT, x, y, z, c[0], c[1], c[2], a, s);
@@ -38888,8 +38891,11 @@ function view3dEnemyForms(K) {
     const grit = (x, y, z, sz, spin, c) => solid(GRITS, x, y, z, Math.sin(spin) * 0.6, 1, Math.cos(spin) * 0.6, spin * 1.7, sz, sz, c[0], c[1], c[2], 0, 0, 0);
     const rock = (x, y, z, sz, spin) => solid(ROCKS, x, y, z, Math.sin(spin) * 0.4, 1, Math.cos(spin) * 0.4, spin, sz * 0.5, sz * 0.5, STONE[0], STONE[1], STONE[2], 0, 0, 0);
     const CLASSES = { worker: 1, scout: 1, striker: 1, tank: 1 };
-    K.enemyKid = f => f && !f.isClone && f.team !== 'green' && !f.isNymph && f.speciesName === 'ant' && CLASSES[f.className] && GM.bugStyle(f) === 'ant' ? 'ant_' + f.className : null;
+    const mine = f => !!f.isClone || f.team === 'green';
+    K.enemyKid = f => f && !f.isNymph && f.speciesName === 'ant' && CLASSES[f.className] && GM.bugStyle(f) === 'ant' ? (mine(f) ? 'clone_ant_' : 'ant_') + f.className : null;
     const foeOf = a => !!a && !a.dead && !(a.health <= 0) && a.team === 'green' && !a._swallowedBy;
+    const preyOf = a => !!a && !a.dead && !(a.health <= 0) && a.team !== 'green' && !a.isClone && !a._swallowedBy && GM.isCreature(a);
+    const hurts = (f, a) => mine(f) ? preyOf(a) : foeOf(a);
     const BX = new T.Box3();
     function dims(b) {
         if (b._enD)
@@ -38936,31 +38942,43 @@ function view3dEnemyForms(K) {
     } return UP; }
     const MEM = new WeakMap();
     let seq = 0;
-    function mem(f) { let D = MEM.get(f); if (!D)
-        MEM.set(f, D = { seed: (seq++ % 997) + 1, armed: false, cand: [], mk: [], landAt: -1e9, vic: null, vx: 0, vz: 0, dx: 1, dz: 0, air: false, lt: null, ltMk: 0, lAt: -1e9, lVic: null, ldx: 1, ldz: 0, lx: 0, lz: 0 }); return D; }
+    function mem(f) {
+        let D = MEM.get(f);
+        if (!D)
+            MEM.set(f, D = { seed: (seq++ % 997) + 1, armed: false, cand: [], mk: [], landAt: -1e9, vic: null, vx: 0, vz: 0, dx: 1, dz: 0, air: false, lt: null, ltMk: 0, lAt: -1e9, lVic: null, ldx: 1, ldz: 0, lx: 0, lz: 0,
+                fc: [], fm: [], fv: [], fAt: -1e9, fx: 0, fz: 0, pAir: false, pt: null, ptMk: 0, pAt: -1e9, pVic: null, pdx: 1, pdz: 0, pfx: 0, pfz: 0, ptx: 0, ptz: 0 });
+        return D;
+    }
     const markOf = u => u === GM.player ? -((u && u.lastHitAt) || -1e9) : (u && u.health) || 0;
     function watch(f, D) {
         D.cand.length = 0;
         D.mk.length = 0;
         const R = (f.biteReach || BITE.reach || 1.5) + 0.6, t = f.biteTarget;
-        if (t && (t === GM.player || foeOf(t))) {
+        if (t && ((t === GM.player && !mine(f)) || hurts(f, t))) {
             D.cand.push(t);
             D.mk.push(markOf(t));
         }
         const L = GM.actors || [];
         for (let i = 0; i < L.length && D.cand.length < 8; i++) {
             const a = L[i];
-            if (a === t || !foeOf(a) || Math.abs(a.x - f.x) > R || Math.abs(a.y - f.y) > R)
+            if (a === t || !hurts(f, a) || Math.abs(a.x - f.x) > R || Math.abs(a.y - f.y) > R)
                 continue;
             D.cand.push(a);
             D.mk.push(markOf(a));
         }
         const P = GM.player;
-        if (P && P !== t && Math.hypot(P.x - f.x, P.y - f.y) <= R) {
+        if (P && P !== t && !mine(f) && Math.hypot(P.x - f.x, P.y - f.y) <= R) {
             D.cand.push(P);
             D.mk.push(markOf(P));
         }
     }
+    function watchR(f, D, R) { D.fc.length = 0; D.fm.length = 0; const L = GM.actors || []; for (let i = 0; i < L.length && D.fc.length < 8; i++) {
+        const a = L[i];
+        if (!hurts(f, a) || Math.hypot(a.x - f.x, a.y - f.y) > R)
+            continue;
+        D.fc.push(a);
+        D.fm.push(markOf(a));
+    } }
     function hitOf(D) { for (let i = 0; i < D.cand.length; i++)
         if (markOf(D.cand[i]) < D.mk[i] - 1e-9)
             return D.cand[i]; return null; }
@@ -38986,7 +39004,47 @@ function view3dEnemyForms(K) {
         }
         else if (!((f.attackAnim || 0) > 0))
             D.armed = false;
-        if (f.abilityKey === 'LEAP_STRIKE') {
+        if (f.abilityKey === 'MANDIBLE_FRENZY' && (f.abilityPhase === 'winding' || f.abilityPhase === 'active')) {
+            if (f.abilityPhase === 'active' && (f.abilityTimer || 0) % (FZ.interval || 12) === 0 && D.fAt !== f0) {
+                D.fv.length = 0;
+                for (let i = 0; i < D.fc.length; i++)
+                    if (markOf(D.fc[i]) < D.fm[i] - 1e-9 && D.fv.length < 6)
+                        D.fv.push(D.fc[i]);
+                D.fAt = f0;
+                D.fx = f.x;
+                D.fz = f.y;
+            }
+            watchR(f, D, (FZ.radius || 1.6) + 0.6);
+        }
+        const PP = f.pounce;
+        if (PP && PP.phase === 'air') {
+            const t = PP.target;
+            if (t && !t.dead) {
+                if (t !== D.pt)
+                    D.ptMk = markOf(t);
+                D.pt = t;
+            }
+            D.pAir = true;
+            D.pfx = PP.fx;
+            D.pfz = PP.fy;
+            D.ptx = PP.tx;
+            D.ptz = PP.ty;
+        }
+        else if (D.pAir && !PP) {
+            D.pAir = false;
+            D.pAt = f0;
+            const t = D.pt;
+            D.pVic = t && markOf(t) < D.ptMk - 1e-9 ? t : null;
+            if (D.pVic) {
+                const p = placeOf(D.pVic), dx = p.x - f.x, dz = p.z - f.y, L = Math.hypot(dx, dz) || 1;
+                D.pdx = dx / L;
+                D.pdz = dz / L;
+            }
+            D.pt = null;
+        }
+        else if (!PP)
+            D.pAir = false;
+        if (f.abilityKey === 'LEAP_STRIKE' || f.abilityKey === 'LEAP') {
             if (f.abilityPhase === 'active') {
                 const t = f.strikeTarget;
                 if (t && !t.dead) {
@@ -39012,13 +39070,14 @@ function view3dEnemyForms(K) {
             }
         }
     }
-    function cuts(X, Z, dx, dz, a, s, n, big, vh) {
+    function cuts(X, Z, dx, dz, a, s, n, big, vh, col) {
+        col = col || RED;
         if (a < 0 || a > 24)
             return;
         const Yf = floorY(X, Z), Y0 = Yf + clamp(vh || 0.35, 0.15, 0.8), cx = X + CB.x * 0.35 - dx * 0.1, cz = Z + CB.z * 0.35 - dz * 0.1, Y = Y0 + CB.y * 0.35;
         const grow = clamp((a + 1) / 3, 0, 1), fade = a < 7 ? 1 : clamp(1 - (a - 7) / 16, 0, 1), L = 0.5 * big;
         if (a < 12)
-            glow(cx, Y, cz, 0.16 * big, RED, 0.45 * (1 - a / 12));
+            glow(cx, Y, cz, 0.16 * big, col, 0.45 * (1 - a / 12));
         if (a < 4) {
             glow(cx, Y, cz, 0.12 + 0.2 * big * (1 - a / 4), PALE, 0.9 * (1 - a / 4));
             glint(cx, Y + 0.02, cz, 0.4 + 0.25 * big, PALE, 1 - a / 4);
@@ -39032,13 +39091,13 @@ function view3dEnemyForms(K) {
                 const t = -0.5 + grow * j / 6, bow = 0.06 * (1 - 4 * t * t) + off;
                 padd(cx + ex * t * L + ox * bow, Y + ey * t * L + oy * bow, cz + ez * t * L + oz * bow);
             }
-            stroke(0.02, 0.085 * fade + 0.02, RED, 0.95 * fade, 0.95 * fade);
+            stroke(0.02, 0.085 * fade + 0.02, col, 0.95 * fade, 0.95 * fade);
         }
         if (a < 12)
             for (let i = 0; i < (low() ? 3 : 6); i++) {
                 const an = Math.atan2(dz, dx) + (H(i, s, 2) - 0.5) * 2.2, up = 0.2 + 0.8 * H(i, s, 3), v = (0.03 + 0.025 * H(i, s, 4)) * big, t = a + 1, k = 1 - a / 12;
                 const x = cx + Math.cos(an) * v * t, y = Y + up * v * t * 0.8 - 0.002 * t * t, z = cz + Math.sin(an) * v * t;
-                seg(x, y, z, x - Math.cos(an) * 0.07, y - up * 0.04, z - Math.sin(an) * 0.07, 0.014, 0.004, i % 2 ? PALE : RED, 0.9 * k, 0.2 * k);
+                seg(x, y, z, x - Math.cos(an) * 0.07, y - up * 0.04, z - Math.sin(an) * 0.07, 0.014, 0.004, i % 2 ? PALE : col, 0.9 * k, 0.2 * k);
             }
         if (a < 20)
             for (let i = 0; i < (low() ? 2 : 4); i++) {
@@ -39046,7 +39105,8 @@ function view3dEnemyForms(K) {
                 lump(X + Math.cos(an) * r, Yf + 0.03 + 0.006 * a, Z + Math.sin(an) * r, 0.07 + 0.004 * a, DUST, 0.55 * k);
             }
     }
-    function snap(b, a, s) {
+    function snap(b, a, s, col) {
+        col = col || RED;
         if (a < 0 || a > 8)
             return;
         const P = jaws(b), F = fwdOf(b), sz = P.s, close = outC(clamp((a + 1) / 3, 0, 1)), k = a < 3 ? 1 : clamp(1 - (a - 3) / 5, 0, 1);
@@ -39061,7 +39121,7 @@ function view3dEnemyForms(K) {
             stroke(0.006, 0.03 * sz * k + 0.006, PALE, 0.25 * k, 0.95 * k);
         }
         if (a < 4) {
-            glow(P.x, P.y, P.z, 0.06 + 0.1 * sz * (1 - a / 4), RED, 0.8 * (1 - a / 4));
+            glow(P.x, P.y, P.z, 0.06 + 0.1 * sz * (1 - a / 4), col, 0.8 * (1 - a / 4));
             glint(P.x, P.y + 0.02, P.z, 0.32 + 0.18 * sz, PALE, 0.9 * (1 - a / 4));
         }
     }
@@ -39114,10 +39174,10 @@ function view3dEnemyForms(K) {
                 return;
             }
         }
-        if (key === 'LEAP_STRIKE') {
+        if (key === 'LEAP_STRIKE' || key === 'LEAP') {
             const a = f0 - D.lAt;
             if (ph === 'winding') {
-                const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, LP.windup || 24));
+                const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, (key === 'LEAP' ? ES.windup : LP.windup) || 24));
                 pose(b, -0.12 * k, 0, -0.05 * k, 0.55 * k + (k > 0.7 ? 0.06 * Math.sin(f0 * 2.3) : 0));
                 return;
             }
@@ -39137,13 +39197,29 @@ function view3dEnemyForms(K) {
             pose(b, 0.32 * r + 0.05 * Math.sin(f0 * 1.6) * r, 0, -0.03 * r, -0.06 * r * (0.5 + 0.5 * Math.sin(f0 * 0.8)));
             return;
         }
+        if (key === 'MANDIBLE_FRENZY' && ph === 'winding') {
+            const k = ease(1 - (f.abilityTimer || 0) / Math.max(1, FZ.windup || 24));
+            pose(b, 0.22 * k + (k > 0.6 ? 0.05 * Math.sin(f0 * 2.6) : 0), 0, -0.06 * k, 0.25 * k);
+            return;
+        }
+        const PQ = f.pounce;
+        if (PQ && PQ.phase === 'wind') {
+            const k = ease(clamp(1 - PQ.t / Math.max(1, PO.windup || 14), 0, 1));
+            pose(b, 0.18 * k, 0, -0.08 * k, 0.4 * k + (k > 0.7 ? 0.05 * Math.sin(f0 * 2.4) : 0));
+            return;
+        }
+        if (PQ && PQ.phase === 'air') {
+            const t = clamp(PQ.t / Math.max(1, PO.air || 22), 0, 1);
+            pose(b, 0.34 * Math.cos(PI * t) - 0.04, 0, 0, -0.25 * Math.sin(PI * t));
+            return;
+        }
         const W = f.attackWindup || 0, aa = f.attackAnim || 0;
         if (W > 0) {
             const k = 1 - W / Math.max(1, BITE.windup || 18), r = ease(k);
             pose(b, 0.28 * r + (k > 0.72 ? 0.035 * Math.sin(f0 * 2.4) : 0), 0, -0.07 * r, -0.05 * r);
             return;
         }
-        if (aa > 0 && f.state === 'attack') {
+        if (aa > 0 && (f.state === 'attack' || mine(f))) {
             const u = clamp(aa / PI, 0, 1), g = (aa - 0.01) / LUNGE, fromBite = Math.abs(f0 - D.landAt - g) < 1.5, p0 = fromBite ? 0.28 : 0;
             const pitch = u < 0.2 ? lerp(p0, -0.18, outC(u / 0.2)) : -0.18 * (1 - ease((u - 0.2) / 0.8));
             pose(b, pitch, 0, 0.1 * Math.sin(PI * Math.min(1, u * 1.6)) * (1 - u), u < 0.4 ? 0.45 * Math.sin(u / 0.4 * PI) : 0);
@@ -39151,9 +39227,10 @@ function view3dEnemyForms(K) {
     }
     function onAnt(f, b, f0) {
         const D = mem(f), s = D.seed, key = f.abilityKey, ph = f.abilityPhase, h = b.holder, d = dims(b), sc = h.scale.x;
+        const BC = mine(f) ? OURS : RED, big = clamp(d.front * sc / 0.45, 0.8, 1.6);
         const a = f0 - D.landAt;
         if (a >= 0 && a <= 26) {
-            snap(b, a, s);
+            snap(b, a, s, BC);
             if (D.vic) {
                 const v = D.vic;
                 if (!v.dead) {
@@ -39161,7 +39238,33 @@ function view3dEnemyForms(K) {
                     D.vx = p.x;
                     D.vz = p.z;
                 }
-                cuts(D.vx, D.vz, D.dx, D.dz, a, s, 2, clamp(d.front * sc / 0.45, 0.8, 1.6), heightOf(v) * 0.5);
+                cuts(D.vx, D.vz, D.dx, D.dz, a, s, 2, big, heightOf(v) * 0.5, BC);
+            }
+        }
+        const fa = f0 - D.fAt;
+        if (fa >= 0 && fa <= 24) {
+            snap(b, fa, s + 3, BC);
+            const X = D.fx, Z = D.fz, Yf = floorY(X, Z), R = FZ.radius || 1.6;
+            if (fa < 10) {
+                const u = fa / 10;
+                arc3(X, Yf + 0.04, Z, R * (0.55 + 0.45 * outC(u)), HX, HZ, 0, TAU, low() ? 28 : 44);
+                stroke(0.035 * (1 - u) + 0.008, 0.035 * (1 - u) + 0.008, BC, 0.9 * (1 - u), 0.9 * (1 - u));
+            }
+            for (let i = 0; i < D.fv.length; i++) {
+                const v = D.fv[i], p = placeOf(v), dx = p.x - X, dz = p.z - Z, L = Math.hypot(dx, dz) || 1;
+                cuts(p.x, p.z, dx / L, dz / L, fa, s + 11 * i + (D.fAt % 97), 2, big, heightOf(v) * 0.5, BC);
+            }
+        }
+        if (f.pounce && f.pounce.phase === 'air') {
+            const P = f.pounce, t = clamp(P.t / Math.max(1, PO.air || 22), 0, 1);
+            trail(P.fx, P.fy, P.tx, P.ty, t, PO.lift || 34, d.h * sc * 0.5, POU, s);
+        }
+        const pa = f0 - D.pAt;
+        if (pa >= 0 && pa <= 26) {
+            snap(b, pa, s + 5, BC);
+            if (D.pVic) {
+                const v = D.pVic, p = v.dead ? null : placeOf(v);
+                cuts(p ? p.x : f.x + D.pdx, p ? p.z : f.y + D.pdz, D.pdx, D.pdz, pa, s + 5, 2, big, heightOf(v) * 0.5, BC);
             }
         }
         if (key === 'GROUND_SLAM' && ph === 'winding') {
@@ -39174,6 +39277,8 @@ function view3dEnemyForms(K) {
                     grit(X + Math.cos(an) * r, Yf + hop, Z + Math.sin(an) * r, 0.05 + 0.03 * H(i, s, 14), an + f0 * 0.1, EARTH);
                 }
         }
+        if (key === 'LEAP' && ph === 'active')
+            trail(f.leapFromX, f.leapFromY, f.leapToX, f.leapToY, clamp(f.leapT || 0, 0, 1), ES.peakLift || 30, d.h * sc * 0.5, ESC, s);
         if (key === 'LEAP_STRIKE') {
             if (ph === 'winding') {
                 const L = GM.strikeLanding(f);
@@ -39182,31 +39287,8 @@ function view3dEnemyForms(K) {
                     floorMark(L[0], L[1], 0.55, clamp(1 - (f.abilityTimer || 0) / Math.max(1, LP.windup || 24), 0, 1), LEAPC, f0);
                 }
             }
-            if (ph === 'active') {
-                const t = clamp(f.leapT || 0, 0, 1), x0 = f.leapFromX, z0 = f.leapFromY, x1 = f.leapToX, z1 = f.leapToY, at = u => { AT.x = lerp(x0, x1, u); AT.z = lerp(z0, z1, u); AT.y = floorY(AT.x, AT.z) + pxU(Math.sin(u * PI) * (LP.peakLift || 34)) + d.h * sc * 0.5; return AT; };
-                if (Number.isFinite(x0) && Number.isFinite(x1)) {
-                    if (t < 0.45) {
-                        const k = 1 - t / 0.45;
-                        for (let i = 0; i < (low() ? 3 : 6); i++) {
-                            const an = H(i, s, 21) * TAU, r = 0.12 + 0.5 * t;
-                            lump(x0 + Math.cos(an) * r, floorY(x0, z0) + 0.03 + 0.2 * t * H(i, s, 22), z0 + Math.sin(an) * r, 0.08 + 0.08 * t, DUST, 0.6 * k);
-                        }
-                    }
-                    path();
-                    for (let i = 0; i <= 6; i++) {
-                        const u = Math.max(0, t - 0.28 + 0.28 * i / 6), P = at(u);
-                        padd(P.x, P.y, P.z);
-                    }
-                    stroke(0.006, 0.07, LEAPC, 0.0, 0.8 * Math.sin(PI * t));
-                    for (let i = 1; i <= (low() ? 2 : 4); i++) {
-                        const u = t - i * 0.07;
-                        if (u <= 0)
-                            continue;
-                        const P = at(u);
-                        haze(P.x, P.y - 0.05, P.z, 0.16 + 0.04 * i, DUST, 0.35 * (1 - i / 5));
-                    }
-                }
-            }
+            if (ph === 'active')
+                trail(f.leapFromX, f.leapFromY, f.leapToX, f.leapToY, clamp(f.leapT || 0, 0, 1), LP.peakLift || 34, d.h * sc * 0.5, LEAPC, s);
             const la = f0 - D.lAt;
             if (la >= 0 && la <= 26 && D.lVic) {
                 const v = D.lVic, p = v.dead ? null : placeOf(v);
@@ -39227,14 +39309,56 @@ function view3dEnemyForms(K) {
                 glint(P.x, y0 + 0.06, P.z, 0.3, CALL, 0.8);
         }
     }
+    function trail(x0, z0, x1, z1, t, lift, mid, c, s) {
+        if (!Number.isFinite(x0) || !Number.isFinite(x1) || !Number.isFinite(z0) || !Number.isFinite(z1))
+            return;
+        const at = u => { AT.x = lerp(x0, x1, u); AT.z = lerp(z0, z1, u); AT.y = floorY(AT.x, AT.z) + pxU(Math.sin(u * PI) * lift) + mid; return AT; };
+        if (t < 0.45) {
+            const k = 1 - t / 0.45;
+            for (let i = 0; i < (low() ? 3 : 6); i++) {
+                const an = H(i, s, 21) * TAU, r = 0.12 + 0.5 * t;
+                lump(x0 + Math.cos(an) * r, floorY(x0, z0) + 0.03 + 0.2 * t * H(i, s, 22), z0 + Math.sin(an) * r, 0.08 + 0.08 * t, DUST, 0.6 * k);
+            }
+        }
+        path();
+        for (let i = 0; i <= 6; i++) {
+            const u = Math.max(0, t - 0.28 + 0.28 * i / 6), P = at(u);
+            padd(P.x, P.y, P.z);
+        }
+        stroke(0.006, 0.07, c, 0.0, 0.8 * Math.sin(PI * t));
+        for (let i = 1; i <= (low() ? 2 : 4); i++) {
+            const u = t - i * 0.07;
+            if (u <= 0)
+                continue;
+            const P = at(u);
+            haze(P.x, P.y - 0.05, P.z, 0.16 + 0.04 * i, DUST, 0.35 * (1 - i / 5));
+        }
+    }
     const KINDS = new WeakMap(), near = (e, f, r) => Math.hypot(e.x - f.x, e.y - f.y) <= r, isR = (e, r) => Math.abs((e.radius || 0) - r) < 1e-6;
     function kindOf(e, f) {
         const k0 = KINDS.get(e);
         if (k0)
-            return k0;
+            return k0.f === f ? k0.k : null;
         let k = null;
-        const c = e.color, key = f.abilityKey, ph = f.abilityPhase, fresh = e.life >= 14;
-        if (!c || !key || !fresh)
+        const c = e.color, key = f.abilityKey, ph = f.abilityPhase, fresh = e.life >= 12;
+        if (!c || !fresh)
+            return null;
+        if (mine(f)) {
+            if (c === FZ.color && key === 'MANDIBLE_FRENZY' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8))
+                k = 'flare';
+            else if (c === FZ.color && key === 'MANDIBLE_FRENZY' && isR(e, 0.45) && ph === 'active' && near(e, f, 0.7))
+                k = 'strike';
+            else if (c === ES.color && key === 'LEAP' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8))
+                k = 'flare';
+            else if (c === ES.color && key === 'LEAP' && isR(e, 0.4) && ph !== 'winding' && ph !== 'active' && near(e, f, 0.6))
+                k = 'land';
+            else if (isR(e, 0.8) && e.life >= 17 && !f.pounce && (f.pounceReady || 0) > GM.frame && near(e, f, (f.biteReach || BITE.reach || 1.5) + 1.4))
+                k = 'pounce';
+            if (k)
+                KINDS.set(e, { k, f });
+            return k;
+        }
+        if (!key)
             return null;
         if (c === SL.color && key === 'GROUND_SLAM' && isR(e, 0.5) && ph === 'winding' && near(e, f, 0.8))
             k = 'flare';
@@ -39249,17 +39373,25 @@ function view3dEnemyForms(K) {
         else if (c === BK.color && key === 'BACKUP_CALL' && isR(e, 0.4) && ph !== 'winding' && f.calledBackup && near(e, f, (BK.near ? BK.near[1] : 2.8) + 0.8))
             k = 'rise';
         if (k)
-            KINDS.set(e, k);
+            KINDS.set(e, { k, f });
         return k;
     }
     const isSlamRing = (e, f) => e.type === 'ring' && e.color === SL.color && isR(e, SL.radius || 1.6) && f.abilityKey === 'GROUND_SLAM' && near(e, f, 0.3);
     function drawImpact(m, age, f0, b) {
-        const e = m.o, kind = (m.data && m.data.kind) || KINDS.get(e);
+        const e = m.o, kind = (m.data && m.data.kind) || kindOf(e, m.owner);
         if (!kind)
             return;
         const s = m.seed, X = m.x, Z = m.y, Yf = floorY(X, Z), h = b.holder, d = dims(b), sc = h.scale.x;
-        if (kind === 'flare')
-            flare(X, Z, Yf + d.h * sc * 0.6 + 0.06, age, s, e.color === LP.color ? LEAPC : AMBER);
+        if (kind === 'flare' || kind === 'strike')
+            flare(X, Z, Yf + d.h * sc * 0.6 + 0.06, kind === 'strike' ? age + 4 : age, s, colOf(e.color));
+        else if (kind === 'pounce') {
+            if (age > 16)
+                return;
+            const k = 1 - age / 16;
+            flat(GLOWF, X, Yf, Z, 0.5, POU[0], POU[1], POU[2], 0.5 * k);
+            arc3(X, Yf + 0.04, Z, 0.15 + 0.45 * outC(clamp(age / 10, 0, 1)), HX, HZ, 0, TAU, 24);
+            stroke(0.03 * k + 0.006, 0.03 * k + 0.006, POU, 0.85 * k, 0.85 * k);
+        }
         else if (kind === 'dust') {
             if (age > 30)
                 return;
@@ -39279,13 +39411,13 @@ function view3dEnemyForms(K) {
                 return;
             const k = 1 - age / 24, u = clamp(age / 12, 0, 1);
             arc3(X, Yf + 0.03, Z, 0.15 + 0.5 * outC(u), HX, HZ, 0, TAU, 24);
-            stroke(0.03 * (1 - u) + 0.006, 0.03 * (1 - u) + 0.006, LEAPC, 0.8 * (1 - u), 0.8 * (1 - u));
+            stroke(0.03 * (1 - u) + 0.006, 0.03 * (1 - u) + 0.006, colOf(e.color), 0.8 * (1 - u), 0.8 * (1 - u));
             for (let i = 0; i < (low() ? 3 : 6); i++) {
                 const an = H(i, s, 1) * TAU, r = 0.1 + 0.4 * outC(u) * (0.7 + 0.3 * H(i, s, 2));
                 lump(X + Math.cos(an) * r, Yf + 0.03 + 0.16 * Math.sin(PI * u) * H(i, s, 3), Z + Math.sin(an) * r, 0.08 + 0.06 * u, DUST, 0.7 * k);
             }
             if (age < 8)
-                glint(X, Yf + 0.2, Z, 0.35, LEAPC, 1 - age / 8);
+                glint(X, Yf + 0.2, Z, 0.35, colOf(e.color), 1 - age / 8);
             for (let i = 0; i < (low() ? 1 : 2); i++) {
                 const an = H(i, s, 4) * TAU, t = Math.min(age, 16), v = 0.025, y = Yf + Math.max(0, 0.045 * t - 0.003 * t * t);
                 grit(X + Math.cos(an) * v * t, y, Z + Math.sin(an) * v * t, 0.05 * Math.min(1, k * 2), an + age * 0.3, EARTH);
@@ -39349,14 +39481,15 @@ function view3dEnemyForms(K) {
     function entry() {
         return { tilts: true, body: bodyAnt, on: onAnt,
             fx: {
-                impact: { pre(e, f) { return kindOf(e, f) === 'land'; }, find(e, f) { return !!kindOf(e, f); }, claim(e, f) { return !!KINDS.get(e); }, span: 32,
+                impact: { pre(e, f) { return kindOf(e, f) === 'land'; }, find(e, f) { return !!kindOf(e, f); }, claim(e, f) { return !!kindOf(e, f); }, span: 32,
                     begin(m) { if (!m.data)
-                        m.data = { kind: KINDS.get(m.o) || null }; }, draw(m, age, f0, b) { drawImpact(m, age, f0, b); } },
+                        m.data = { kind: kindOf(m.o, m.owner) }; }, draw(m, age, f0, b) { drawImpact(m, age, f0, b); } },
                 ring: { pre(e, f) { return isSlamRing(e, f); }, find(e, f) { return isSlamRing(e, f); }, claim() { return true; }, span: 40,
                     draw(m, age, f0, b) { drawSlam(m, age, f0, b); } },
             } };
     }
-    return { ant_worker: entry(), ant_scout: entry(), ant_striker: entry(), ant_tank: entry() };
+    return { ant_worker: entry(), ant_scout: entry(), ant_striker: entry(), ant_tank: entry(),
+        clone_ant_worker: entry(), clone_ant_scout: entry(), clone_ant_striker: entry(), clone_ant_tank: entry() };
 }
 ;
 /* view3d/attacks.js */
