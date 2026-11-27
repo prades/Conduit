@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17dq` · branch `claude/start-game-project-HSh7Z` · technicians stand beside you
+- **The ask** (the owner, 2026-11-27): "The technicians are still in this thing where they rotate around the player. You don't need to do that. You can just have them sit to the side of the player and protect them."
+- **What it does:** a following Technician no longer circles you; it stands beside you, 1.6 tiles out across the way ahead (the first on your right, a second on your left, more farther out), hits what comes within reach and goes back to its place. `COMBAT.md`, `bible.html`. `js/formation.js`, `tests/formation.js`, generated files.
+- **Verified:** `tests/formation.js` (a Technician beside you, not going round; two on opposite sides); the suites in the handoff. **1.6 tiles provisional; not playtested.**
+
 ### Build `2026-11-17dp` · branch `claude/start-game-project-HSh7Z` · props on the hexes' middles; hazard zones as hexes
 - **The ask** (the owner, 2026-11-27): "reposition some of the props to make them where they rest on the middle of the tiles, and make it to where the things like the turret's highlighted tile zone are correct on the low camera view".
 - **What it does:** 34 free-standing one-tile props (lounge beanbags (4), a lounge plant, a teleporter, a beanbag, floodlights (16), a crate stack, hazard containers (4), the two turrets, chests (4)) are moved, up to half a tile, onto the middle of a hex of the floor's grid, in the map itself, so where they block and where they are drawn agree; props against walls, beside doors or among others stay put. The striped hazard zones (the one the Crystal Chamber's turret stands in, the doorways') are drawn as the whole hexes they cover, edged along the hexes, so they sit on the hex floor in every camera. `VIEW-3D.md`. `js/facilitymap.js`, `design/style-evolution/round2/chamber.js`, `design/style-evolution/live/floor.js`, generated files.
