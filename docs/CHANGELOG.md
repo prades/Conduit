@@ -21,6 +21,42 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-23
 
+### Build `2026-11-17ds` · branch `claude/start-game-project-HSh7Z` · the Sewers' rubble: bigger, one pile, in the Sewers' own stone
+- **The ask** (the owner, 2026-11-27, of `2026-11-17dr`'s heaps): "The rubble should match the color of the walls and walking area, and it should be larger and should piece together with other clumps."
+- **What it does:** each of the three rubble patches in the Sewers is one pile of broken stones heaped end to end along the line it chokes, about 1.15 tiles high and 1.7 through, in the tan-grey of the Sewers' walls and walkways; drilled through, a few low stones are left at its foot. One mesh a state. `VIEW-3D.md`. `view3d/gameview.js`, generated files.
+- **Verified:** in a real browser with the low camera at two patches; the suites in the handoff. **Sizes and colours provisional; not seen on an iPad.**
+
+### Build `2026-11-17dr` · branch `claude/start-game-project-HSh7Z` · the Sewers' rubble as real 3D heaps
+- **The ask** (the owner, 2026-11-27, with a screenshot): "The rubble patches in the sewers are messed up. We need to go ahead and fix that pattern before we update the sewers"; "It's not drilled through, it's the low cam view".
+- **What it does:** the three rubble patches of the Sewers (the choked tunnel, the rock fall by the bank, the rubble on the way to the dam) are drawn in the 3D view as the kit's approved RUBBLE heaps, one to two tiles along each, whole until drilled through and cleared after. They were a flat 2D pile, painted for one camera angle, that stood up as arches seen from another side or through the low camera. The drilling's glowing seams are no longer shown on them. `VIEW-3D.md`. `view3d/gameview.js`, `view3d/gamemap.js`, generated files.
+- **Verified:** in a real browser with the low camera from all four quarter turns at two patches; the suites in the handoff. **Not seen on an iPad.**
+
+### Build `2026-11-17dq` · branch `claude/start-game-project-HSh7Z` · technicians stand beside you
+- **The ask** (the owner, 2026-11-27): "The technicians are still in this thing where they rotate around the player. You don't need to do that. You can just have them sit to the side of the player and protect them."
+- **What it does:** a following Technician no longer circles you; it stands beside you, 1.6 tiles out across the way ahead (the first on your right, a second on your left, more farther out), hits what comes within reach and goes back to its place. `COMBAT.md`, `bible.html`. `js/formation.js`, `tests/formation.js`, generated files.
+- **Verified:** `tests/formation.js` (a Technician beside you, not going round; two on opposite sides); the suites in the handoff. **1.6 tiles provisional; not playtested.**
+
+### Build `2026-11-17dp` · branch `claude/start-game-project-HSh7Z` · props on the hexes' middles; hazard zones as hexes
+- **The ask** (the owner, 2026-11-27): "reposition some of the props to make them where they rest on the middle of the tiles, and make it to where the things like the turret's highlighted tile zone are correct on the low camera view".
+- **What it does:** 34 free-standing one-tile props (lounge beanbags (4), a lounge plant, a teleporter, a beanbag, floodlights (16), a crate stack, hazard containers (4), the two turrets, chests (4)) are moved, up to half a tile, onto the middle of a hex of the floor's grid, in the map itself, so where they block and where they are drawn agree; props against walls, beside doors or among others stay put. The striped hazard zones (the one the Crystal Chamber's turret stands in, the doorways') are drawn as the whole hexes they cover, edged along the hexes, so they sit on the hex floor in every camera. `VIEW-3D.md`. `js/facilitymap.js`, `design/style-evolution/round2/chamber.js`, `design/style-evolution/live/floor.js`, generated files.
+- **Verified:** seen in a real browser with the low camera; the full test run in the handoff. **Not seen on an iPad; the 2D game draws the moved props where they now are (up to half a tile off its squares).**
+
+### Build `2026-11-17do` · branch `claude/start-game-project-HSh7Z` · a hex grid on the floor
+- **The ask** (the owner, 2026-11-27): after the mock-ups of hex-edged and hexagon rooms, "What about just a hex grid, and then we keep the current layout just with the straight walls?"
+- **What it does:** in the 3D view the plate floor of every room is drawn as hex tiles a tile across, on the same world-fixed grid as the card battles, so a battle's hexes sit on the floor's. Rooms, walls and walking are unchanged; wood and grate floors and the sewer skin keep their own pictures. `VIEW-3D.md`. `design/style-evolution/live/floor.js`, generated files.
+- **Verified:** seen in a real browser in both cameras and in a battle (the MOVE card's hexes on the floor's); the suites in the handoff. **The line's look provisional; not seen on an iPad.**
+
+### Build `2026-11-17dn` · branch `claude/start-game-project-HSh7Z` · battles on hexes
+- **The ask** (the owner, 2026-11-27): a hexagon tile system for all battles; of the approval page, "Approve all, outline only while dragging, keep the ground".
+- **What it does:** card battles are fought on hexes a tile across instead of squares: standing, walking (6 neighbours), "next to", every card's and Ultimate's area, lines, zigzags, pushes and pulls, the lit cells and the words. Sizes are the attacks' own, so areas cover the same ground. The hexes are outlined faintly only while a card is dragged. `CARD-BATTLES.md` §2.82. `js/cardbattle.js`, `js/cardshapes.js`, `js/cardults.js`, `js/elements.js`, `tests/cardbattle.js`, generated files.
+- **Verified:** `tests/cardbattle.js` passing on hexes; a battle seen in a real browser with a card and MOVE dragged; the suites in the handoff. **The outline's look provisional; not seen on an iPad; not playtested.**
+
+### Build `2026-11-17dm` · branch `claude/start-game-project-HSh7Z` · no tile lines on the floor; hex battles proposed
+- **The ask** (the owner, 2026-11-27): "Can we remove this visible floor tiles on the map and make a hexagon tile system for all battles?"; asked, "Everywhere", "About one tile", "Approval page first".
+- **What it does:** in the 3D view every room's floor is one smooth surface in its own colour: no line or shine round each tile, no border on the grate, no tile shaded apart from its neighbours (`design/style-evolution/live/floor.js`; `VIEW-3D.md`). The sewer skin's own floor pictures (`view3d/sewerdress.js`) are unchanged. The 2D game is unchanged.
+- **Proposed, not built:** a hex grid for card battles, one hex a tile across; every card and Ultimate drawn on squares and on hexes for approval in `design/battle/hex/shapes.html` (`CARD-BATTLES.md` §2.82).
+- **Verified:** seen in a real browser (the arena); the suites in the handoff. **Not seen on an iPad.**
+
 ### Build `2026-11-17dl` · branch `claude/friendly-thompson-w581x0` · the Manta Ray's SHOCK ZAP card
 - **The ask** (the owner, 2026-11-24): "Make the pictures and cards".
 - **What it is:** SHOCK ZAP's card in the card battles shows the Manta Ray (it showed the Hover Shell): its own 3-D model in the approved Technician style, inside a whole ring of yellow crystals, raising its wings, its crystals flaring and its tails spread behind it, the storm's world behind (`docs/ATTACK-CARD-ART.md` §4, 2026-11-24; the agent's picture, provisional, for the owner's look). It was the last picture of the Hover Shell in the game: its sprites, its 3-D body and the Bible's picture changed in `2026-11-17de`; the basic attack cards are by attack type and no Ultimate card has a picture.

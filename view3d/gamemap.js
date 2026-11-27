@@ -31,6 +31,7 @@ const VIEW3D_GAME = (0, eval)(`({
   ultHidden(e) { return !!e && !!e._cbUlt && typeof cardUltShown === "function" && !cardUltShown(e); },   // CARD BATTLES: an Ultimate's field not seen now, outside its caster's turn (docs/CARD-BATTLES.md §2.68): the attacks' registry leaves it out then, as view3d/fields.js does
   get focusCam() { return typeof view3dFocusCam === "function" ? view3dFocusCam() : null; },   // THE FOLLOWER'S CLOSE-UP (js/view3d.js): the camera on a squad member, or null
   get battleCam() { return typeof cardBattleCam === "function" ? cardBattleCam() : null; },   // CARD BATTLES (js/cardbattle.js): the battle's camera, or null
+  rubble(id) { const r = typeof _techRubble === "function" ? _techRubble(id) : null; return r ? { room: r.room, open: typeof techRubbleOpen === "function" && techRubbleOpen(r) } : null; },   // A RUBBLE PATCH (js/techabilities.js): its room, and whether it is drilled through (the Sewers' rubble in 3D: view3d/gameview.js)
   get lightOn() { return typeof _fp !== "undefined" && !!_fp && !!_fp.light; },
   // the sewers (js/facilitysewers.js): their water's colours as the 2D has them, the toxic green clearing as the purification runs; the Nest's state; its eggs, junk and rim where the
   // 2D puts them; the dam's pools
