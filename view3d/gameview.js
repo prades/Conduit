@@ -38,16 +38,32 @@ const GAMEVIEW = (function () {
   // ── THE CAMERA: the game's projection (_fpP), as a camera. A world unit is a tile; the game's (x, y) is three's (x, z); a height of h of the game's px is h / UPX ──
   const TW = GM.TILE_W, TH = GM.TILE_H, UNIT = TW * Math.SQRT2, ELV = Math.asin(TH / TW), UPX = UNIT * Math.cos(ELV);   // (ELV: not EL, which is the forms' element)   // (UNIT: px across the screen a unit; UPX: px up the screen a unit of height)
   // THE SEWERS' RUBBLE IN 3D (the owner, 2026-11-27: "The rubble patches in the sewers are messed up", then "it's the low cam view"): a patch of rubble was the game's 2D drawing, a pile painted
-  // in the plane of the line it chokes, its picture made for the first quarter turn; seen from the other side, or through the low camera, its flat stones stood up as arches. In the Sewers it is
-  // now the kit's own RUBBLE (design/props/models/_sewer.js rubble_heap, through PROPS.sewer, approved 2026-11-21: two tiles, whole or cleared), one heap to two tiles along its line, stretched to fit, standing on the
-  // floor; whole till it is drilled through, then cleared (GM.rubble, each frame in draw). The game no longer draws these patches over the picture (keeps). The Nest's rubble is as it was.
+  // in the plane of the line it chokes, its picture made for the first quarter turn; seen from the other side, or through the low camera, its flat stones stood up as arches. In the Sewers the
+  // view now builds its own pile (then: "The rubble should match the color of the walls and walking area, and it should be larger and should piece together with other clumps"): broken
+  // stones in the Sewers' own concrete, as its walls and walkways are seen lit (RUBBLE_PILE.cols), heaped along the whole line it chokes, end to end, about RUBBLE_PILE.h tiles high and RUBBLE_PILE.deep
+  // tiles through, the stones overlapping into one fall; whole till it is drilled through, then a few low stones left at its foot (GM.rubble, each frame in draw). One mesh a state. The game no
+  // longer draws these patches over the picture (keeps). The Nest's rubble is as it was. The sizes and the colours' mix: the agent's, provisional.
+  const RUBBLE_PILE = { h: 1.15, deep: 1.7, per: 16, cols: ['#5f5c4f', '#58564b', '#666252', '#545249', '#615e51', '#6a6553', '#4c4b43', '#6f6a58'] };   // (the walls' and the walkway's concrete as they are seen lit in the Sewers: darker and warmer than their pictures' own greys)
   const RUBBLE3D = new Map();
-  try { if (typeof PROPS !== 'undefined' && PROPS.sewer) for (const it of ((GM.fp && GM.fp.items) || [])) { if (it.fp !== 'wdecor' || it.kind !== 'rubble' || !it.rubble || !it.a || !it.b) continue; const R = GM.rubble(it.rubble); if (!R || !/^sewers/.test(R.room || '')) continue;
-      const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1, n = Math.max(1, Math.round(L / 2)), holder = new T.Group(), states = { whole: new T.Group(), cleared: new T.Group() };
-      for (let k = 0; k < n; k++) { const t = (k + 0.5) / n, x = it.a[0] + dx * t, y = it.a[1] + dy * t;
-        for (const st of ['whole', 'cleared']) { const m = PROPS.sewer.build('rubble_heap.2x1.' + st).g; m.position.set(x, GM.liftPx(x, y) / UPX, y); m.rotation.y = -Math.atan2(dy, dx); m.scale.x = (L / n) / 2; m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); states[st].add(m); } }
+  function rubblePile(it, cleared) {
+    const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux, P = RUBBLE_PILE;
+    let sd = 0; for (const ch of String(it.id)) sd = (sd * 31 + ch.charCodeAt(0)) >>> 0; const rnd = () => { sd = (sd * 1664525 + 1013904223) >>> 0; return sd / 4294967296; };
+    const base = new T.IcosahedronGeometry(1, 0), bp = base.attributes.position, pos = [], col = [], M = new T.Matrix4(), Q = new T.Quaternion(), E = new T.Euler(), V = new T.Vector3(), Sv = new T.Vector3(), C = new T.Color();
+    const n = Math.round(L * P.per * (cleared ? 0.22 : 1));
+    for (let i = 0; i < n; i++) {
+      const t = -0.02 + rnd() * 1.04, ac = (rnd() + rnd() + rnd() - 1.5) / 1.5 * (P.deep / 2) * (cleared ? 1.2 : 1), edge = Math.min(1, Math.min(t, 1 - t) * L / 0.8 + 0.35);   // (along it, a little past its ends; across it, most near the middle; lower at its ends)
+      const hump = cleared ? 0 : Math.max(0, 1 - Math.pow(ac / (P.deep / 2), 2)) * P.h * Math.max(0.25, Math.min(1, edge)), y = cleared ? 0.02 : rnd() * hump;
+      const r = cleared ? 0.07 + rnd() * 0.1 : (0.16 + rnd() * 0.22) * (1.25 - 0.5 * y / P.h), x = it.a[0] + ux * t * L + nx * ac, z = it.a[1] + uy * t * L + ny * ac;
+      E.set(rnd() * 6.28, rnd() * 6.28, rnd() * 6.28); Q.setFromEuler(E); Sv.set(r * (0.8 + rnd() * 0.7), r * (0.55 + rnd() * 0.45), r * (0.8 + rnd() * 0.7)); V.set(x, GM.liftPx(x, z) / UPX + y + r * 0.25, z); M.compose(V, Q, Sv);
+      C.set(P.cols[Math.floor(rnd() * P.cols.length)]).convertSRGBToLinear(); const sh = 0.9 + rnd() * 0.2;
+      for (let k = 0; k < bp.count; k++) { V.fromBufferAttribute(bp, k).applyMatrix4(M); pos.push(V.x, V.y, V.z); col.push(C.r * sh, C.g * sh, C.b * sh); } }
+    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new T.Float32BufferAttribute(col, 3)); g.computeVertexNormals();
+    const m = new T.Mesh(g, new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0.02, flatShading: true })); m.castShadow = true; m.receiveShadow = true; return m;
+  }
+  try { for (const it of ((GM.fp && GM.fp.items) || [])) { if (it.fp !== 'wdecor' || it.kind !== 'rubble' || !it.rubble || !it.a || !it.b) continue; const R = GM.rubble(it.rubble); if (!R || !/^sewers/.test(R.room || '')) continue;
+      const holder = new T.Group(), states = { whole: new T.Group(), cleared: new T.Group() }; states.whole.add(rubblePile(it, false)); states.cleared.add(rubblePile(it, true));
       for (const st of ['whole', 'cleared']) holder.add(states[st]); states.cleared.visible = false; world.g.add(holder); if (!world.props) world.props = {};
-      world.props['rubble:' + it.id] = { g: holder, s: { kind: 'rubble_heap', state: 'whole' }, states }; RUBBLE3D.set(it.id, { rubble: it.rubble, states, open: null }); } } catch (e) { RUBBLE3D.clear(); world.rubbleError = String((e && e.stack) || e); if (typeof console !== 'undefined') console.error('the sewer rubble: ' + world.rubbleError); }
+      world.props['rubble:' + it.id] = { g: holder, s: { kind: 'rubble', state: 'whole' }, states }; RUBBLE3D.set(it.id, { rubble: it.rubble, states, open: null }); } } catch (e) { RUBBLE3D.clear(); world.rubbleError = String((e && e.stack) || e); if (typeof console !== 'undefined') console.error('the sewer rubble: ' + world.rubbleError); }
   function rubbleTick() { for (const r of RUBBLE3D.values()) { const R = GM.rubble(r.rubble), open = !!(R && R.open); if (open === r.open) continue; r.open = open; r.states.whole.visible = !open; r.states.cleared.visible = open; } }
   const DIR = new T.Vector3(Math.cos(ELV) * Math.SQRT1_2, Math.sin(ELV), Math.cos(ELV) * Math.SQRT1_2), UPV = new T.Vector3(-Math.sin(ELV) * Math.SQRT1_2, Math.cos(ELV), -Math.sin(ELV) * Math.SQRT1_2);
   const cam = LOW ? new T.PerspectiveCamera(LOWCAM.fov, 1, LOWCAM.near, LOWCAM.far) : new T.OrthographicCamera(-1, 1, 1, -1, 10, 90), BACK = 40, at = new T.Vector3(), SCR = new T.Vector3(); CORE.SEE(cam);   // (SCR: screenNow's point, kept)
