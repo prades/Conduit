@@ -42,7 +42,7 @@ const TUT_STEPS = [
         hint: () => "SIDE QUEST WAITS IN THE ARENA, UNDER THE CATWALKS ON ITS EAST SIDE: HE CAN FLY. TALK TO HIM.", done: () => tutModuleGot() },
     { id: "repair", title: "REPAIR THE JUNCTION", text: () => "TAKE THE POWER MODULE TO THE JUNCTION IN THE SERVER ROOM AND INSTALL IT.",
         hint: () => "STAND AT THE JUNCTION AND PRESS E (OR TAP IT), AND STAY AT IT WHILE THE MODULE GOES IN: EVERY RELAY COMES ON.", done: () => typeof junctionRepaired === "function" && junctionRepaired() },
-    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS.",
+    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof recruitFreeNow === "function" && recruitFreeNow() ? "YOUR FIRST IS FREE." : (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS."),   // (the first is free: the owner, 2026-11-24, "First recruit free"; js/clone.js recruitFreeNow)
         hint: () => "EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD POSTS A FOLLOWER IN THE ROOM IT IS IN: IT PATROLS THE ROOM AND FIGHTS ANYTHING THAT COMES IN. COME CALLS IT BACK TO YOUR SQUAD (THREE AT A TIME).", done: () => tutHeld() >= TUT.holdNeeded },

@@ -48,7 +48,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('WHO MAKES ROOM (a recruit or an egg with the squad full)');
     check('+ RECRUIT with the squad full asks first and pays nothing until a choice: a member makes room (it holds the nearest room with a place, the recruit takes its card); NOBODY (the recruit holds a room); CANCEL (nothing happens); one question at a time', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; shardCount = 500; const s0 = shardCount;
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; shardCount = 500; const s0 = shardCount; _fp.tut.script.freeUsed = true;   /* (the paid price: the tutorial's free first recruit used, js/clone.js recruitFreeNow) */
             o.asked = recruitDo(); o.busy = partyPickBusy(); o.paid = s0 - shardCount; o.again = recruitDo(); o.n = followers.length;
             const m = partyOrdered()[1], slot = m.partySlot; partyPickChoose(m); __sweep();
             o.member = [m.post, partyIsMember(m)]; const newest = followers[followers.length - 1]; o.recruit = [partyIsMember(newest), newest.partySlot === slot, s0 - shardCount, followers.length];

@@ -14,6 +14,16 @@ This is the index for significant approved design and technical decisions. Detai
 
 Decisions made before 2026-11-01's framework have not been migrated: their rules remain in the current feature documents, `CHANGELOG.md` and `OPEN-QUESTIONS.md`. The entries below start with the framework itself and the card decisions made the same day; add new ones as the framework is used.
 
+## DECISION: The tutorial's first recruit is free
+
+- **Date:** 2026-11-24 · **Branch/build:** `claude/remove-recruit-posts` (from main `e480e741`, build `2026-11-17dl`); no build of its own (not stamped), not pushed by the agent
+- **Status:** approved; **implemented** and checked by tests (`tests/followerspots.js`, the full `node tests/run.js`). Not seen on an iPad; not playtested.
+- **Context:** with the recruitment posts removed (the entry below), a new player reaches the tutorial's RECRUIT step with 100 shards and + RECRUIT costs 200 (measured; `OPEN-QUESTIONS.md`, Open 2026-11-24).
+- **Decision (the owner's words, 2026-11-24):** **"First recruit free"**.
+- **Rules:** while the tutorial is in progress and its RECRUIT step is not done, + RECRUIT costs nothing; once one recruit has been made in the tutorial the price is `RECRUIT_COST` (200) again. A free recruit asks who makes room when the squad is full, as + RECRUIT does. After the tutorial, or past its RECRUIT step, nothing changes. Whether it has been used is saved (`script.fr`); a save without it loads as before (not used). The step reads `OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: YOUR FIRST IS FREE.`; the button says FREE in place of the price.
+- **Alternatives** (offered when the question was raised; not chosen): a starting sum, a tutorial reward, leaving it.
+- **Docs/code:** `FOLLOWER-PROGRESSION.md` §1; `TUTORIAL.md`; `OPEN-QUESTIONS.md`; `CHANGELOG.md` 2026-11-24; `js/clone.js` (`recruitFreeNow`, `recruitPrice`), `js/facilitysave.js`, `js/commandcenter.js`, `js/tutorial.js`; `tests/followerspots.js`.
+
 ## DECISION: The follower recruitment posts are removed entirely; recruiting is the roster's + RECRUIT
 
 - **Date:** 2026-11-24 · **Branch/build:** `claude/remove-recruit-posts` (from main `e480e741`, build `2026-11-17dl`); no build of its own (not stamped), not pushed by the agent
@@ -23,7 +33,7 @@ Decisions made before 2026-11-01's framework have not been migrated: their rules
 - **Rules:** the eight recruitment posts (`spot_lobby` … `spot_cold`) and their eggs are gone, in the 2D game and the 3D view: no pads, eggs or labels, and no claiming. Recruiting is only the roster's + RECRUIT (`RECRUIT_COST`, 200 shards, unchanged); breeding stays. The tutorial's RECRUIT step drops the egg part of its text (its hint the sentence on the eggs and pads); no number changed. A saved game's claimed-posts list is ignored on load; followers already recruited from posts stay as they are.
 - **Alternatives:** the pads only, keeping the posts in another form (not chosen: "Remove posts entirely").
 - **Supersedes:** the posts as built (2026-10-31: claimed once; "Free, once", `OPEN-QUESTIONS.md` §1f), kept as history in `FOLLOWER-PROGRESSION.md` §1. The staircases in the same remark are not decided and stay.
-- **Found on the way, open:** a new player reaches the RECRUIT step with 100 shards and + RECRUIT costs 200 (`OPEN-QUESTIONS.md`, Open 2026-11-24); a post's free egg had finished that step. Prices and rewards unchanged.
+- **Found on the way:** a new player reaches the RECRUIT step with 100 shards and + RECRUIT costs 200; a post's free egg had finished that step. *(Answered the same day, "First recruit free": the entry above.)*
 - **Docs/code:** `FOLLOWER-PROGRESSION.md` §1; `TUTORIAL.md`; `FACILITY.md`; `VIEW-3D.md`; `ENERGY-CARDS.md`; `OPEN-QUESTIONS.md`; `CHANGELOG.md` 2026-11-24; `bible.html`; `js/followerspots.js` (removed), `js/facilitymap.js`, `js/facility.js`, `js/facilitysave.js`, `js/facilityplay.js`, `js/facilitystyle.js`, `js/facilitytutorial.js`, `js/facilitygrow.js`, `js/fluxmove.js`, `js/draw.js`, `js/tutorial.js`, `js/infodex.js`, `game.html`; `tests/followerspots.js` and the suites that used the posts.
 
 ## DECISION: The low follow camera and the rolling world (draft B of the cozy camera)

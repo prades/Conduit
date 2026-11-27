@@ -641,13 +641,24 @@ const CSORTS = [
 // The price is the archive's (the Next Major Update Framework's follow-up scope, 2026-10-31: "Directly purchasing a recruit costs exactly 200 shards"); it was 30. This button is the one way to recruit
 // (the free, once-each recruitment posts were removed, the owner, 2026-11-24: "Remove posts entirely"); it is not limited (open: docs/OPEN-QUESTIONS.md). Breeding a bonded pair's offspring is the cheaper paid way in (js/breeding.js, BREED.price).
 const RECRUIT_COST = 200;
+// THE TUTORIAL'S FIRST RECRUIT IS FREE (the owner, 2026-11-24, of a new player at the RECRUIT step with ◆100 and the price ◆200: "First recruit free"). While the tutorial is in progress and its RECRUIT
+// step is not done, the first + RECRUIT costs nothing; once one recruit has been made in the tutorial (S.freeUsed, kept in the save: js/facilitysave.js `script.fr`) the price is RECRUIT_COST again.
+// Past that step, after the tutorial, or with no tutorial (the website's background, a test room): RECRUIT_COST, as ever.
+function recruitFreeNow() {
+    const S = typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script; if (!S || S.doneAt || S.freeUsed || typeof TUT_STEPS === "undefined") return false;
+    const ri = TUT_STEPS.findIndex(s => s.id === "recruit"); return ri >= 0 && (S.step | 0) <= ri;
+}
+// what + RECRUIT costs now: 0 for the tutorial's first, else RECRUIT_COST
+function recruitPrice() { return recruitFreeNow() ? 0 : RECRUIT_COST; }
 // The type of a recruit that is not asked for one: an even draw of the three.
 function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random() * FOLLOWER_TYPE_ORDER.length)]; }
 // `type`, `element`: for a test or a scripted recruit (an element asked for comes with its energy card, free: js/helpers.js spawnFollowerAtCrystal); none is a draw of the type, and NO ELEMENT:
 // a recruit starts elementless (docs/ENERGY-CARDS.md rule 12) until you give it an energy card (the roster's ENERGY slot, js/cardsui.js).
 function recruitFollower(type, element) {
-    if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
-    shardCount -= RECRUIT_COST;
+    const cost = recruitPrice();
+    if (shardCount < cost) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + cost + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
+    shardCount -= cost;
+    { const S = typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script; if (S && !S.doneAt) S.freeUsed = true; }   // (one recruit made in the tutorial, free or paid: the next pays)
     const none = typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : null;
     const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) && element !== none ? element : none || modulationPick() || "fire";
     spawnFollowerAtCrystal(e, t);
@@ -661,7 +672,7 @@ function recruitDo() {
     const after = (f) => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); if (f && typeof ccShowNew === "function") ccShowNew(f); };
     const made = () => { const n0 = followers.length; return recruitFollower() && followers.length > n0 ? followers[followers.length - 1] : null; };   // (the recruit is the last one made: js/helpers.js spawnFollowerAtCrystal)
     if (typeof partyPickBusy === "function" && partyPickBusy()) return false;
-    if (shardCount >= RECRUIT_COST && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
+    if (shardCount >= recruitPrice() && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
         partyPickOpen("A RECRUIT", [crystal.x, crystal.y], () => { after(made()); }, null);
         return true;
     }

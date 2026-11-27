@@ -22,6 +22,7 @@ The code: `js/followerspots.js` (the posts; removed 2026-11-24), `js/breeding.js
 - **Recruiting** is the roster's + RECRUIT (js/clone.js, `RECRUIT_COST` ◆200, unchanged), and breeding (§2).
 - **The tutorial's RECRUIT step** says only `OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: 200 SHARDS.`; its hint lost the sentence on the eggs and pads (docs/TUTORIAL.md).
 - **Old saves**: a save's `spots` (the posts claimed) is read past and not written again; a follower recruited from a post is an ordinary follower and loads as it was saved; an egg out on its pad and a squad-full question open for one were never part of a save. `tests/followerspots.js` loads a save made by build `2026-11-17dl` with a post claimed, an egg's question open and eggs out.
+- **The tutorial's first recruit is free** (the owner, 2026-11-24: "First recruit free"): while the tutorial is in progress and its RECRUIT step is not done, + RECRUIT costs nothing; after one recruit in the tutorial it is ◆200 again (`recruitFreeNow`, `recruitPrice`, js/clone.js; saved as `script.fr`). Everywhere else ◆200, unchanged (docs/TUTORIAL.md).
 - **Measured**: a new game reaches the RECRUIT step with **100 shards** (`STARTING_SHARDS`): no step before it pays any, so + RECRUIT's ◆200 needs 100 more from kills first: thirteen ant workers (8 each) or fifty nymphs (2 each), the early arena's kinds (docs/OPEN-QUESTIONS.md).
 
 The record of the posts as they were built (2026-10-31 to 2026-11-24):

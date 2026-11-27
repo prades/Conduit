@@ -12037,13 +12037,27 @@ const CSORTS = [
     { id: "specials", label: "SPECIALS" },
 ];
 const RECRUIT_COST = 200;
+function recruitFreeNow() {
+    const S = typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script;
+    if (!S || S.doneAt || S.freeUsed || typeof TUT_STEPS === "undefined")
+        return false;
+    const ri = TUT_STEPS.findIndex(s => s.id === "recruit");
+    return ri >= 0 && (S.step | 0) <= ri;
+}
+function recruitPrice() { return recruitFreeNow() ? 0 : RECRUIT_COST; }
 function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random() * FOLLOWER_TYPE_ORDER.length)]; }
 function recruitFollower(type, element) {
-    if (shardCount < RECRUIT_COST) {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 });
+    const cost = recruitPrice();
+    if (shardCount < cost) {
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + cost + " SHARDS", color: "#f44", life: 90, vy: -0.2 });
         return false;
     }
-    shardCount -= RECRUIT_COST;
+    shardCount -= cost;
+    {
+        const S = typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script;
+        if (S && !S.doneAt)
+            S.freeUsed = true;
+    }
     const none = typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : null;
     const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) && element !== none ? element : none || modulationPick() || "fire";
     spawnFollowerAtCrystal(e, t);
@@ -12059,7 +12073,7 @@ function recruitDo() {
     const made = () => { const n0 = followers.length; return recruitFollower() && followers.length > n0 ? followers[followers.length - 1] : null; };
     if (typeof partyPickBusy === "function" && partyPickBusy())
         return false;
-    if (shardCount >= RECRUIT_COST && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
+    if (shardCount >= recruitPrice() && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
         partyPickOpen("A RECRUIT", [crystal.x, crystal.y], () => { after(made()); }, null);
         return true;
     }
@@ -18973,11 +18987,11 @@ function ccRender() {
         ccShardsUpdate(shp, car);
     if (rec) {
         rec.style.display = ccOpenTab === "roster" && !car ? "" : "none";
-        const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost;
+        const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost;
         rec.classList.toggle("dim", !can);
         const rs = rec.querySelector(".cc-rs");
         if (rs)
-            rs.textContent = "\u25c6" + cost;
+            rs.textContent = cost ? "\u25c6" + cost : "FREE";
     }
     const sum = document.getElementById("ccSummary");
     if (sum)
@@ -19157,9 +19171,9 @@ function _ccRecruitTile(grid) {
             recruitDo(); const fresh = ccUnits({}).filter(u => !had.has(u)); if (fresh.length === 1)
             ccFocusSet(fresh[0]); });
     }
-    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, can = have >= cost;
+    const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, can = have >= cost;
     t.classList.toggle("dim", !can);
-    const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = "RECRUIT ◆" + cost, tb = can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";
+    const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = cost ? "RECRUIT ◆" + cost : "RECRUIT FREE", tb = !cost ? "YOUR FIRST IS FREE" : can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";
     if (a.textContent !== ta)
         a.textContent = ta;
     if (b.textContent !== tb)
@@ -19842,14 +19856,14 @@ function _ccDrawYourSquad(body) {
     _ccDrawSquadOrders(body);
 }
 function ccShardsUpdate(el, car) {
-    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = Math.floor(have / cost);
+    const cost = typeof recruitPrice === "function" ? recruitPrice() : typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = cost ? Math.floor(have / cost) : 0;
     const sig = have + "|" + cost + "|" + !!car;
     if (el._sig === sig)
         return;
     el._sig = sig;
     el.classList.toggle("short", have < cost && !car);
     el.querySelector(".cc-sh-n").textContent = "\u25c6 " + have;
-    el.querySelector(".cc-sh-c").textContent = car ? "YOUR SHARDS" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
+    el.querySelector(".cc-sh-c").textContent = car ? "YOUR SHARDS" : !cost ? "YOUR FIRST RECRUIT IS FREE" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
 }
 function _ccSqSig() {
     return partyOrdered().map(m => [m.partySlot, m.level || 1, Math.round((m.health || 0) / Math.max(1, m.maxHealth || 1) * 20), m.evolved || "", m.element, selectedUnits.has(m) ? "*" : "", (typeof unitStatus === "function" && unitStatus(m) || {}).text || ""].join(",")).join("|") + "#" + selectedUnits.size + "/" + partyMembers().length;
@@ -32086,7 +32100,7 @@ const TUT_STEPS = [
         hint: () => "SIDE QUEST WAITS IN THE ARENA, UNDER THE CATWALKS ON ITS EAST SIDE: HE CAN FLY. TALK TO HIM.", done: () => tutModuleGot() },
     { id: "repair", title: "REPAIR THE JUNCTION", text: () => "TAKE THE POWER MODULE TO THE JUNCTION IN THE SERVER ROOM AND INSTALL IT.",
         hint: () => "STAND AT THE JUNCTION AND PRESS E (OR TAP IT), AND STAY AT IT WHILE THE MODULE GOES IN: EVERY RELAY COMES ON.", done: () => typeof junctionRepaired === "function" && junctionRepaired() },
-    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS.",
+    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof recruitFreeNow === "function" && recruitFreeNow() ? "YOUR FIRST IS FREE." : (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS."),
         hint: () => "EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD POSTS A FOLLOWER IN THE ROOM IT IS IN: IT PATROLS THE ROOM AND FIGHTS ANYTHING THAT COMES IN. COME CALLS IT BACK TO YOUR SQUAD (THREE AT A TIME).", done: () => tutHeld() >= TUT.holdNeeded },
@@ -36389,7 +36403,7 @@ function facilitySaveCollect() {
         classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp && !i.respawn).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
-        script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills,
+        script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, fr: S.freeUsed ? 1 : 0, said: S.said, kills: S.kills,
             cv: 2, cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,
         followers: followerRosterSnapshot(),
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,
@@ -36533,6 +36547,7 @@ function facilitySaveApply(d) {
         S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
         if (!d.script.sid && (d.script.step | 0) >= 2 && typeof facilityJunctionRepair === "function")
             facilityJunctionRepair(true);
+        S.freeUsed = d.script.fr === 1 || d.script.fr === true;
         S.doneAt = d.script.done ? 1 : 0;
         S.said = d.script.said || {};
         S.kills = d.script.kills || 0;
