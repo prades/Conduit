@@ -3851,6 +3851,8 @@ function drawBudsOnTile(tx, ty, px, py) {
         const e = it.e, R = e.radius;
         if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75)
             continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e))
+            continue;
         if (!roomKnown) {
             room = _sfRoomAt(tx, ty);
             roomKnown = true;
@@ -4040,6 +4042,8 @@ function drawThicketOnTile(tx, ty, px, py) {
     for (const it of _thList) {
         const e = it.e, R = e.radius;
         if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75)
+            continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e))
             continue;
         if (!roomKnown) {
             room = _sfRoomAt(tx, ty);
@@ -52044,7 +52048,7 @@ function techDrawOnTile(tx, ty, px, py) {
         g.restore();
     }
     for (const O of techReefs) {
-        if (!_techReefOn(O, f0))
+        if (!_techReefOn(O, f0) || (typeof view3dOwnsFx === "function" && view3dOwnsFx(O, "reef")))
             continue;
         const a = Math.min(1, (f0 - O.t0) / 12, (O.until - f0) / 60);
         for (const c of O.parts) {
@@ -52292,6 +52296,8 @@ function _techDrawClimb(g, o, px, py, f0) {
     }
 }
 function techDrawItem(o, px, py) {
+    if (typeof view3dOwnsFx === "function" && ((o.kind === "spike" && view3dOwnsFx(o.S, "stakespike")) || (o.kind === "reef" && view3dOwnsFx(o.O, "reef"))))
+        return;
     const g = ctx, f0 = _techFrame();
     g.save();
     if (o.kind === "reef")
@@ -52571,7 +52577,7 @@ function techDrawOverlay() {
             });
         };
         for (const O of techReefs)
-            if (f0 < O.t0)
+            if (f0 < O.t0 && !(typeof view3dOwnsFx === "function" && view3dOwnsFx(O, "reef")))
                 shards(O.from, O.parts.map(c => [c.x, c.y]), O.t0, O.id);
         for (const C of techClimbs)
             if (f0 < C.t0)

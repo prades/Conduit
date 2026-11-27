@@ -1936,6 +1936,7 @@ function drawBudsOnTile(tx, ty, px, py) {
     let room, roomKnown = false;
     for (const it of _bdList) {
         const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (THE 3D VIEW grows these buds itself: view3d/attacks_bloom.js)
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const age = e.maxLife - e.life, wilt = Math.min(1, e.life / 40), sd = { x: 0, y: 0 };
@@ -2041,6 +2042,7 @@ function drawThicketOnTile(tx, ty, px, py) {
     let room, roomKnown = false;
     for (const it of _thList) {
         const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (typeof view3dOwnsFx === "function" && view3dOwnsFx(e)) continue;   // (THE 3D VIEW grows this thicket itself: view3d/attacks_bloom.js)
         if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
         if (room !== it.room) continue;   // (a tile of another room shows none of it)
         const age = e.maxLife - e.life, grow = Math.min(1, age / 24, e.life / 30), pulse = e.healAt != null ? Math.max(0, 1 - (f0 - e.healAt) / 20) : 0;

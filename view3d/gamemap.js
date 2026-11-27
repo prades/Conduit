@@ -65,7 +65,13 @@ const VIEW3D_GAME = (0, eval)(`({
       vortex: v("ULT_VORTEX", null), horizon: v("ULT_HORIZON", null), proxy: v("ULT_PROXY", null), whirl: v("SHARD_WHIRL", null) }; },
   // the core line's (view3d/attacks_core.js): the measures its looks follow (read once: the game's own constants)
   get coreMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
-    return { rollStep: v("ROLL_STEP", 0.08), rollBand: v("ROLL_BAND", 0.8), guardLure: v("GUARD_LURE", 3), wobbleR: v("WOBBLE_RADIUS", 1.5), echoR: v("ECHO_RADIUS", 4), slam: v("ULT_SLAM", null), wave: v("ULT_WAVE", null), jelly: v("ULT_JELLY", null) }; }
+    return { rollStep: v("ROLL_STEP", 0.08), rollBand: v("ROLL_BAND", 0.8), guardLure: v("GUARD_LURE", 3), wobbleR: v("WOBBLE_RADIUS", 1.5), echoR: v("ECHO_RADIUS", 4), slam: v("ULT_SLAM", null), wave: v("ULT_WAVE", null), jelly: v("ULT_JELLY", null) }; },
+  // the bloom line's (view3d/attacks_bloom.js): the measures its looks follow (read once: the game's own constants), and two lists of the game's own its Stonepetal draws: STAKE RING's spikes and
+  // REEF PILLAR's outcrops (js/techabilities.js techSpikes, techReefs: read each frame, never written)
+  get bloomMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } };
+    return { budR: v("BUD_RADIUS", 1.5), budTick: v("BUD_TICK", 30), briarR: v("BRIAR_RADIUS", 2), scentR: v("SCENT_RADIUS", 5), scentHealR: v("SCENT_HEAL_R", 3), scentStun: v("SCENT_STUN", 60), stakeR: v("STAKE_RADIUS", 1.8),
+      thicket: v("ULT_THICKET", null), consume: v("ULT_CONSUME", null), pillar: v("TECH_AB", null) ? TECH_AB.pillar : null, reefShards: v("TECH_AB", null) ? TECH_AB.reef.shards : 16, quillArc: v("QUILL_ARC", 16) }; },
+  get spikes() { return typeof techSpikes !== "undefined" ? techSpikes : null; }, get reefs() { return typeof techReefs !== "undefined" ? techReefs : null; }
 })`);
 
 // the lab's ground floor: the eight rooms on the Crystal Chamber's level (the test page's, and the game's 3D view's first, docs/VIEW-3D.md stage 1)

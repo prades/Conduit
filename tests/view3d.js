@@ -28,7 +28,11 @@
 //                 hurricane of blades), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D; in a card battle EVENT HORIZON the registry's alone
 //                 The core line's ten (the Hammer Slug's, the Jelly Ram's, the Hornshell's): each made by the game's own functions, drawn and claimed (the core hit and its pulse, SHELL GUARD's
 //                 ring and its ring of crystals, the rolled-up ball and its slices, the slam, the jelly hit, the wobble, a jelly bubble on each wearer and a blow on one, the goo ring and its splash,
-//                 the waves of water), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D; in a card battle PINK THICKET still the fields' draft
+//                 the waves of water), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D
+//                 The bloom line's ten (the Thornwhip's, the Sundew's, the Stonepetal's): each made by the game's own functions, drawn and claimed (the seed shot and its burst, the buds, the whip
+//                 and its leaves, the big seed and the thicket, the sting, the scent's puff and its heal, CONSUME and the one pulled in, the crushing hit, STAKE RING's ring and spikes, REEF PILLAR's
+//                 shards and outcrop), within the budget and halved on LOW, nothing written, a fault sending one form's back to 2D; in a card battle PINK THICKET the registry's, the fields' draft
+//                 drawing it only when the Thornwhip's entry has failed
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -804,6 +808,81 @@ if (COR !== null) {
     check('the game\'s side: the core pulse round a unit on its hit asks the view first (js/draw.js)', () => { ok(/view3dOwnsFx\(actor, "corePulse"\)/.test(rd('js/draw.js')), 'js/draw.js'); });
 }
 
+group('STAGE 5, THE BLOOM LINE IN 3D (the owner, 2026-11-27: "Create the bloom, followers, attacks in 3D."): the Thornwhip, the Sundew and the Stonepetal');
+// The three BLOOM forms beside three ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes); each attack fired by the game's own code.
+const BLM = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var mk = function (ev, role, x, y) { spawnFollowerAtCrystal('blossom'); var f = followers[followers.length - 1]; f.element = 'blossom'; f.role = role; f.evolved = ev; f._moltAt = -9999; f.level = 20; _applyFollowerLevel(f, true); if (typeof energyFill === 'function') energyFill(f);
+    f.x = x; f.y = y; f.returningToCrystal = false; f.update = function () {}; f.currentWill = 999; f.attackCooldown = 1e6; return f; };
+  var tw = mk('shrub', 'sniper', 12.0, 18.6), sd = mk('sundew', 'brawler', 13.4, 19.5), cc = mk('coralcrab', 'camper', 12.6, 19.4);
+  var ant = spawnCreature({ species: 'ant', className: 'scout' }); ant.health = ant.maxHealth = 1e6; ant.spawnProtection = 0;
+  var ant2 = spawnCreature({ species: 'ant', className: 'scout' }); ant2.health = ant2.maxHealth = 1e6; ant2.spawnProtection = 0;
+  var ant3 = spawnCreature({ species: 'ant', className: 'scout' }); ant3.health = ant3.maxHealth = 1e6; ant3.spawnProtection = 0;
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; });
+  var ants = function () { ant.x = 14.5; ant.y = 19.5; ant2.x = 15.5; ant2.y = 19.0; ant3.x = 15.3; ant3.y = 20.2; [ant, ant2, ant3].forEach(function (a) { a.kbVX = a.kbVY = 0; a.stunned = 0; a.health = a.maxHealth; a._scentBy = null; }); [tw, sd, cc].forEach(function (f) { f.attackCooldown = 1e6; f.state = 'idle'; f.attackAnim = 0; }); };
+  ants(); step(3); out.types = A.types(); out.bodies = [V.has(tw), V.has(sd), V.has(cc)];
+  var snap = function () { var keep = function (q) { var r = {}; Object.keys(q).forEach(function (k) { var v = q[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep), p: followerProjectiles.map(keep), s: techSpikes.map(keep), r: techReefs.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { beams: 0, smoke: 0, puff: 0, glint: 0, fire: 0, solids: 0, flats: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var of = function (type, k, v) { return elementEffects.filter(function (e) { return e.type === type && (!k || e[k] === v); })[0]; }, col = function (type, c, r) { return elementEffects.filter(function (e) { return e.type === type && e.color === c && (r === undefined || Math.abs(e.radius - r) < 1e-6); })[0]; }, R = out.r = {};
+  var low = function (o) { gfxLow = true; V.draw(null); o.low = st(); gfxLow = false; V.draw(null); };
+  // THE THORNWHIP: SEED SHOT (its plain shot, and its burst), SEEDFALL (its buds), BRIAR SWEEP, PINK THICKET (its big seed, then the thicket)
+  var ss = spawnFollowerProjectile(tw, ant, '#ff7ab8', 1, 5, null, null); step(3); R.shot = { owned: !!ss && view3dOwnsFx(ss), solids: A.stats.solids, same: same() }; pk();
+  for (var i = 0; i < 80 && followerProjectiles.indexOf(ss) >= 0; i++) step(1); step(3); R.shot.burst = A.memos().some(function (m) { return /^plain:/.test(m); }) && A.stats.solids > 0; pk(); step(30); elementEffects.length = 0; ants(); step(2);
+  R.fall = { fired: seedfall(tw) }; var bu = of('buds', 'by', tw); step(4); R.fall.owned = !!bu && view3dOwnsFx(bu); step(40); R.fall.st = st(); R.fall.same = same(); pk(); low(R.fall); step(10); elementEffects.length = 0; ants(); step(2);
+  ant.x = 13.2; ant.y = 18.9; R.briar = { fired: briarSweep(tw) }; var bb = of('briarburst'); step(5); R.briar.owned = !!bb && view3dOwnsFx(bb); R.briar.st = st(); R.briar.same = same(); pk(); low(R.briar); step(40); elementEffects.length = 0; ants(); step(2);
+  tw.ultimateCharge = 100; R.thicket = { fired: followerUltFire(tw) }; var bs = followerProjectiles.filter(function (p) { return p.kind === 'bigseed'; })[0]; step(3); R.thicket.seed = !!bs && view3dOwnsFx(bs);
+  for (var i = 0; i < 120 && !of('thicket'); i++) step(1); var th = of('thicket', 'by', tw); step(30); R.thicket.owned = !!th && view3dOwnsFx(th); R.thicket.st = st(); R.thicket.same = same(); pk(); low(R.thicket); if (th) th.life = 1; step(30); elementEffects.length = 0; ants(); step(2);
+  // THE SUNDEW: NECTAR STING (the bloom hit), SWEET SCENT (the puff, and the heal with its stockpile full), CONSUME (one pulled in, then held)
+  sd.state = 'attack'; sd.attackAnim = 0; ELEMENT_ATTACKS.blossom.physical(sd, ant); var si = col('impact', '#ff7ab8', 0.6); step(5); R.sting = { owned: !!si && view3dOwnsFx(si), body: V.has(sd), same: same() }; R.sting.st = st(); pk(); step(30); elementEffects.length = 0; ants(); step(2);
+  sd._nectar = 0; R.puff = { fired: sweetScent(sd) }; var pr = col('ring', '#ffb8dc', SCENT_RADIUS), pi = col('impact', '#ffb8dc', 1.4); R.puff.lured = [ant, ant2, ant3].filter(function (a) { return a._scentBy === sd; }).length; step(20); R.puff.owned = !!pr && view3dOwnsFx(pr) && !!pi && view3dOwnsFx(pi); R.puff.st = st(); R.puff.same = same(); pk(); low(R.puff); step(60); elementEffects.length = 0; ants(); step(2);
+  sd._nectar = 100; sd.health = sd.maxHealth * 0.5; R.heal = { fired: sweetScent(sd) }; var hr = col('ring', '#ff9ccc', SCENT_HEAL_R); step(8); R.heal.owned = !!hr && view3dOwnsFx(hr); R.heal.st = st(); R.heal.same = same(); pk(); step(40); elementEffects.length = 0; ants(); step(2);
+  ant.x = 14.3; ant.y = 19.6; sd.ultimateCharge = 100; R.consume = { fired: followerUltFire(sd) }; var ce = of('consume', 'by', sd), hp = 0; for (var i = 0; i < 10; i++) { step(1); hp = Math.max(hp, A.stats.held); } R.consume.pulled = hp;
+  step(60); R.consume.owned = !!ce && view3dOwnsFx(ce); R.consume.st = st(); R.consume.same = same(); pk(); low(R.consume); for (var i = 0; i < 320 && ce && ce.life > 0; i++) step(1); step(10); R.consume.out = !ant._swallowedBy; elementEffects.length = 0; sd._consume = null; ants(); step(2);
+  // THE STONEPETAL: its hit (the bloom hit, its head), STAKE RING (its ring and its spikes), REEF PILLAR (its shards, then its outcrop)
+  cc.state = 'attack'; cc.attackAnim = 0; ELEMENT_ATTACKS.blossom.physical(cc, ant); var ci = col('impact', '#ff7ab8', 0.6); step(5); R.hit = { owned: !!ci && view3dOwnsFx(ci), body: V.has(cc), same: same() }; R.hit.st = st(); pk(); step(30); elementEffects.length = 0; ants(); step(2);
+  ant.x = 13.8; ant.y = 19.6; R.stake = { fired: stakeRing(cc) }; var sk = col('ring', '#ff9ccc', STAKE_RADIUS); step(6); R.stake.owned = !!sk && view3dOwnsFx(sk); R.stake.spikes = techSpikes.length; R.stake.spikesOwned = techSpikes.filter(function (q) { return view3dOwnsFx(q, 'stakespike'); }).length; R.stake.st = st(); R.stake.same = same(); pk(); low(R.stake); step(50); elementEffects.length = 0; ants(); step(2);
+  var n0 = techReefs.length; cc.ultimateCharge = 100; R.pillar = { fired: followerUltFire(cc) }; var O = techReefs[techReefs.length - 1]; step(4); R.pillar.n = techReefs.length - n0; R.pillar.shards = !!O && view3dOwnsFx(O, 'reef') && A.stats.solids > 0; step(30); R.pillar.owned = !!O && view3dOwnsFx(O, 'reef'); R.pillar.parts = O ? O.parts.length : 0; R.pillar.st = st(); R.pillar.same = same(); pk(); low(R.pillar); if (O) O.until = frame; step(20); R.pillar.gone = techReefs.indexOf(O) < 0;
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the Sundew's entry made to fail: its puff is the game's 2D drawing again, the view and the other forms go on
+  elementEffects.length = 0; ants(); step(2); sd._nectar = 0; sweetScent(sd); var pr2 = col('ring', '#ffb8dc', SCENT_RADIUS); step(2); A.breakFor('sundew'); step(2);
+  out.fault = { bad: A.bad(), owned: !!pr2 && view3dOwnsFx(pr2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(sd), others: V.has(cc) }; A.mend('sundew'); step(2);`));
+if (BLM !== null) {
+    check('the registry: the bloom line\'s entries (the Thornwhip, the Sundew, the Stonepetal), their effects and shots; their bodies the view\'s', () => {
+        ok(!BLM.none, 'the page left no result'); ok(!BLM.threw, BLM.threw); same(BLM.errs.join(' | '), '', 'errors'); same(BLM.state, 'ready', 'the view');
+        same(JSON.stringify([BLM.types.shrub, BLM.types.sundew, BLM.types.coralcrab]), JSON.stringify([['buds', 'briarburst', 'thicket', 'shot:plain', 'shot:bigseed'], ['impact', 'ring', 'consume'], ['impact', 'ring']]), 'what each draws');
+        same(JSON.stringify(BLM.bodies), '[true,true,true]', 'their bodies the view\'s');
+    });
+    check('THE THORNWHIP: SEED SHOT (its seed, its burst), SEEDFALL (its buds), BRIAR SWEEP and PINK THICKET (its big seed, its thicket): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = BLM.r; same(JSON.stringify([R.shot.owned, R.shot.solids > 0, R.shot.burst]), '[true,true,true]', 'the seed and its burst: ' + JSON.stringify(R.shot));
+        same(JSON.stringify([R.fall.fired, R.fall.owned]), '[true,true]', 'SEEDFALL'); ok(R.fall.st.solids >= 9 && R.fall.low.solids < R.fall.st.solids, 'its buds, and LOW: ' + JSON.stringify(R.fall.st) + ' / ' + JSON.stringify(R.fall.low));
+        same(JSON.stringify([R.briar.fired, R.briar.owned]), '[true,true]', 'BRIAR SWEEP'); ok(R.briar.st.solids >= 10 && R.briar.st.beams > 0 && R.briar.low.solids < R.briar.st.solids, 'its whip and leaves, and LOW: ' + JSON.stringify(R.briar.st) + ' / ' + JSON.stringify(R.briar.low));
+        same(JSON.stringify([R.thicket.fired, R.thicket.seed, R.thicket.owned]), '[true,true,true]', 'PINK THICKET: ' + JSON.stringify(R.thicket)); ok(R.thicket.st.solids >= 20 && R.thicket.low.solids < R.thicket.st.solids, 'its bushes and vines, and LOW: ' + JSON.stringify(R.thicket.st) + ' / ' + JSON.stringify(R.thicket.low));
+    });
+    check('THE SUNDEW: NECTAR STING, SWEET SCENT (the puff that lures, and the heal) and CONSUME (the one swallowed seen pulled in, then held, then let go): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = BLM.r; same(JSON.stringify([R.sting.owned, R.sting.body, R.sting.st.beams > 0]), '[true,true,true]', 'the sting: ' + JSON.stringify(R.sting));
+        same(JSON.stringify([R.puff.fired, R.puff.lured > 0, R.puff.owned]), '[true,true,true]', 'the puff: ' + JSON.stringify(R.puff)); ok(R.puff.st.smoke > 4 && R.puff.low.smoke < R.puff.st.smoke, 'its scent, and LOW: ' + JSON.stringify(R.puff.st) + ' / ' + JSON.stringify(R.puff.low));
+        same(JSON.stringify([R.heal.fired, R.heal.owned, R.heal.st.beams > 0]), '[true,true,true]', 'the heal: ' + JSON.stringify(R.heal));
+        same(JSON.stringify([R.consume.fired, R.consume.pulled > 0, R.consume.owned, R.consume.out]), '[true,true,true,true]', 'CONSUME: ' + JSON.stringify(R.consume)); ok(R.consume.low.puff <= R.consume.st.puff, 'LOW: ' + JSON.stringify(R.consume.low) + ' of ' + JSON.stringify(R.consume.st));
+    });
+    check('THE STONEPETAL: its hit, STAKE RING (its ring and its spikes, the 2D\'s left out) and REEF PILLAR (its shards, its outcrop of three, the 2D\'s left out; it crumbles when taken away): each the view\'s, drawn in 3D; LOW graphics halves them', () => {
+        const R = BLM.r; same(JSON.stringify([R.hit.owned, R.hit.body, R.hit.st.solids > 0]), '[true,true,true]', 'the hit: ' + JSON.stringify(R.hit));
+        same(JSON.stringify([R.stake.fired, R.stake.owned, R.stake.spikes > 0, R.stake.spikesOwned === R.stake.spikes]), '[true,true,true,true]', 'STAKE RING: ' + JSON.stringify(R.stake)); ok(R.stake.low.smoke < R.stake.st.smoke, 'LOW: ' + JSON.stringify(R.stake.low) + ' of ' + JSON.stringify(R.stake.st));
+        same(JSON.stringify([R.pillar.fired, R.pillar.n, R.pillar.shards, R.pillar.owned, R.pillar.parts >= 1, R.pillar.gone]), '[true,1,true,true,true,true]', 'REEF PILLAR: ' + JSON.stringify(R.pillar)); ok(R.pillar.st.solids >= 10 && R.pillar.low.solids < R.pillar.st.solids, 'its stone and crystals, and LOW: ' + JSON.stringify(R.pillar.st) + ' / ' + JSON.stringify(R.pillar.low));
+    });
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit, effect, shot, spike and outcrop as it was)', () => {
+        const P = BLM.peak, C = BLM.cap; ok(P.beams <= C.beam && P.smoke <= C.smoke && P.puff <= C.puff && P.glint <= C.glint && P.fire <= C.fire, 'over the budget: ' + JSON.stringify(P));
+        const R = BLM.r; same(JSON.stringify([R.shot.same, R.fall.same, R.briar.same, R.thicket.same, R.sting.same, R.puff.same, R.heal.same, R.consume.same, R.hit.same, R.stake.same, R.pillar.same]), JSON.stringify(new Array(11).fill(true)), 'unchanged');
+    });
+    check('A FAULT in one bloom form\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
+        const F = BLM.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['sundew'], false, 'ready', true, true, true]), 'after the fault');
+    });
+    check('the game\'s side: STAKE RING\'s spikes, REEF PILLAR\'s outcrop, its shards and its reach, SEEDFALL\'s buds and PINK THICKET\'s bushes ask the view first (js/techabilities.js, js/elements.js)', () => {
+        const T = rd('js/techabilities.js'), E = rd('js/elements.js'); ok(/view3dOwnsFx\(o\.S, "stakespike"\)/.test(T) && /view3dOwnsFx\(o\.O, "reef"\)/.test(T) && (T.match(/view3dOwnsFx\(O, "reef"\)/g) || []).length >= 2, 'js/techabilities.js');
+        ok((E.match(/view3dOwnsFx\(e\)\) continue;   \/\/ \(THE 3D VIEW grows/g) || []).length === 2, 'js/elements.js');
+    });
+}
+
 group('APPROVED LOOKS WIN (the owner, 2026-11-21): in a card battle an Ultimate the attacks\' registry draws is not drawn again by the battle\'s fields (view3d/fields.js); one it does not draw still is');
 const WON = realPage('dev&cards&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; window.requestAnimationFrame = function () { return 0; }; gfxLow = false; _fp.gfxSaved = 'high'; classPickerOpen = false; crystalMenuOpen = false; selectedUnits.clear();
   actors = actors.filter(function (a) { return !(a instanceof Predator) && !a.isClone && !a.isFollower; }); followers.length = 0; for (var k in followerByElement) followerByElement[k].length = 0;
@@ -820,9 +899,9 @@ const WON = realPage('dev&cards&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A 
   for (var g = 0; g < 1400 && !(thicket && R.thicket); g++) { tick(1); if (cardBattlePhase() !== 'on' || cardBattleTurn() !== 'you') continue; var cur = _cbCurrent();
     if (cur === th && !storm) { th.ultimateCharge = 100; R.thPlayed = cardBattlePlay(th, 'ult', null, foes[0]); tick(20); storm = of('thunderstorm'); if (storm) R.storm = see(storm); }
     else if (cur === vs && storm && !hole) { R.hidden = see(storm); vs.ultimateCharge = 100; R.vsPlayed = cardBattlePlay(vs, 'ult', null, foes[0]); tick(20); hole = of('eventhorizon'); if (hole) { R.hole = see(hole); R.stormThen = see(storm); } }
-    else if (cur === tw && hole && !thicket) { if (!R.holeHidden) { R.holeHidden = see(hole); tw.ultimateCharge = 100; R.twPlayed = cardBattlePlay(tw, 'ult', null, foes[0]); } tick(20); thicket = of('thicket'); if (thicket) R.thicket = see(thicket); }
+    else if (cur === tw && hole && !thicket) { if (!R.holeHidden) { R.holeHidden = see(hole); tw.ultimateCharge = 100; R.twPlayed = cardBattlePlay(tw, 'ult', null, foes[0]); } tick(20); thicket = of('thicket'); if (thicket) { R.thicket = see(thicket); A.breakFor('shrub'); tick(2); R.broken = see(thicket); R.bad = A.bad(); A.mend('shrub'); tick(1); R.mended = see(thicket); } }
     else if (cur && cur !== player) { _cb.acted.add(cur); _cbAfterAct(_cbF()); } }`));
-if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and the Void Star\'s, the registry\'s): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; PINK THICKET (the Thornwhip\'s, not in the registry) drawn by the fields', () => {
+if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and the Void Star\'s, the registry\'s): handed to the fields but drawn by the registry alone; outside its caster\'s turn (§2.68) neither draws it; PINK THICKET (the Thornwhip\'s, the bloom line\'s since 2026-11-27) the registry\'s alone too; with the Thornwhip\'s entry failed, the fields\' draft draws it', () => {
     ok(!WON.none, 'the page left no result'); ok(!WON.threw, WON.threw); same(WON.errs.join(' | '), '', 'errors'); same(WON.state, 'ready', 'the view'); same(WON.chose, true, 'the battle');
     const R = WON.won; same(JSON.stringify([R.thPlayed, R.vsPlayed, R.twPlayed]), '[true,true,true]', 'the three Ultimates played');
     same(JSON.stringify(R.storm), JSON.stringify({ owned: true, shown: true, list: 'thunderstorm', fields: 0 }), 'the storm in its turn: the registry\'s, handed to the fields, none of theirs drawn');
@@ -830,7 +909,9 @@ if (WON !== null) check('THUNDERSTORM and EVENT HORIZON (the Thunderhead\'s and 
     same(JSON.stringify(R.hole), JSON.stringify({ owned: true, shown: true, list: 'eventhorizon', fields: 0 }), 'the black hole in its turn: the registry\'s (the flux line), none of the fields\' drawn');
     same(JSON.stringify([R.stormThen.owned, R.stormThen.shown]), '[false,false]', 'the storm meanwhile');
     same(JSON.stringify(R.holeHidden), JSON.stringify({ owned: false, shown: false, list: '', fields: 0 }), 'the black hole in the Thornwhip\'s turn: drawn by neither');
-    same(JSON.stringify([R.thicket.owned, R.thicket.shown, R.thicket.fields >= 1, /thicket/.test(R.thicket.list)]), '[false,true,true,true]', 'the thicket: not the registry\'s, drawn by the fields: ' + JSON.stringify(R.thicket));
+    same(JSON.stringify(R.thicket), JSON.stringify({ owned: true, shown: true, list: 'thicket', fields: 0 }), 'the thicket in its turn: the registry\'s (the bloom line), none of the fields\' drawn');
+    same(JSON.stringify([R.bad, R.broken.owned, R.broken.shown, R.broken.fields >= 1, /thicket/.test(R.broken.list)]), JSON.stringify([['shrub'], false, true, true, true]), 'the Thornwhip\'s entry failed: the thicket drawn by the fields\' draft: ' + JSON.stringify(R.broken));
+    same(JSON.stringify([R.mended.owned, R.mended.fields]), '[true,0]', 'mended, the registry\'s again: ' + JSON.stringify(R.mended));
     ok(/battleFieldsMake\(scene, [^\n]*ATT\.owns\(e\)[^\n]*ATT\.covers\(f\.evolved\)/.test(rd('view3d/gameview.js')) && /if \(!mk \|\| \(left && left\(e\)\)\) continue;/.test(rd('view3d/fields.js')), 'the fields ask the registry');
 });
 
