@@ -111,6 +111,7 @@ function moreFittings(P, acc) {
 // the wall's things the 3D builds (round2/chamber.js and moreFittings above; the game's view, view3d/gameview.js, leaves the others undrawn): only these keep a rock face flat
 const BUILT_WALL_DECOR = new Set(['board', 'cable_run', 'exit_sign', 'graffiti', 'monitor_bank', 'portal_door', 'poster', 'hazard_sign', 'panel', 'pipe', 'relay_node', 'screen', 'vent', 'wall_light']);
 function buildLabFloor(lab, P0, how) {
+  if (typeof HEX_ZONES !== 'undefined') HEX_ZONES = !!(how && how.live);   // (the hazard zones on the hexes of the floor: design/style-evolution/round2/chamber.js hexHazard)
   const live = !!(how && how.live), liveDoors = live, g = new T.Group(), rest = new T.Group(), recs = lab.rooms, rooms = {}, roomAt = new Map(), K = cellKey, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]], WHITE = [1, 1, 1], vD = DOOR_H / WALL_H;
   const B0 = live ? -0.5 : -0.12, cellH = new Map();   // (B0: how far under the floor a wall's face and a floor's edge go; cellH: a tile higher or lower than its room, in world units)
   g.add(rest);   // (what belongs to no one room: the stubs, the aprons, the ground)
