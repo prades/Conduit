@@ -18,7 +18,7 @@ function view3dAttacks(env) {
   const H = (i, s, k) => { const x = Math.sin(i * 12.9898 + s * 78.233 + k * 37.719) * 43758.5453; return x - Math.floor(x); };   // (a fixed number in [0, 1) for a particle i of an effect s)
   const low = () => !!GM.gfxLow, floorY = (x, y) => GM.liftPx(x, y) / UPX;
   // the agent's budget (provisional): points a frame, crystals a frame; halved on LOW graphics
-  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260, beam: 300, gem: 48, blade: 24, slab: 40, coregem: 40, coremodel: 10, petal: 90, thorn: 48, bgem: 48, bud: 24, stem: 120, stone: 32 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments; strand: the toxic line's strands of goo and smoke, view3d/attacks_toxic.js, their segments; beam, gem, blade, slab: the flux line's strands of light, crystals, black blades and glitch bars, view3d/attacks_flux.js; petal, thorn, bgem, bud, stem, stone: the bloom line's leaves and petals, thorns, pink crystals, buds, stems and stones, view3d/attacks_bloom.js)
+  const CAP = { puff: 140, glint: 90, ice: 64, fire: 160, smoke: 90, solid: 40, flat: 40, bolt: 420, strand: 260, beam: 300, gem: 48, blade: 24, slab: 40, coregem: 40, coremodel: 10, petal: 90, thorn: 48, bgem: 48, bud: 24, stem: 120, stone: 32, grit: 40 };   // (fire, smoke, solid, flat: the fire line's, view3d/attacks_fire.js; solid and flat a kind each; the ice line's, view3d/attacks_ice.js, shares them all; bolt: the electric line's lightning, view3d/attacks_electric.js, its segments; strand: the toxic line's strands of goo and smoke, view3d/attacks_toxic.js, their segments; beam, gem, blade, slab: the flux line's strands of light, crystals, black blades and glitch bars, view3d/attacks_flux.js; petal, thorn, bgem, bud, stem, stone: the bloom line's leaves and petals, thorns, pink crystals, buds, stems and stones, view3d/attacks_bloom.js; grit: the enemy line's chips of earth and stone, view3d/attacks_enemy.js)
 
   // ── THE POOLS ──
   const VS = 'attribute vec4 aCol; attribute float aSize; uniform float uScale; varying vec4 vCol; varying float vRim; void main() { vCol = aCol; vRim = aSize < 0.0 ? 0.0 : 1.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = max(1.0, abs(aSize) * uScale); }';   // (a size below 0: a puff with no rim)
@@ -152,6 +152,11 @@ function view3dAttacks(env) {
   const stats = { memos: 0, puff: 0, glint: 0, ice: 0, rings: 0, fire: 0, smoke: 0, solids: 0, flats: 0, ribbons: 0, bolts: 0, props: 0, strands: 0, models: 0, beams: 0, fluxModels: 0, coreModels: 0, claimed: 0, held: 0, ms: 0, bad: [] };   // (bolts, props: the electric line's lightning segments and the models it stands, view3d/attacks_electric.js; strands, models: the toxic line's, view3d/attacks_toxic.js)   // (held: the swallowed drawn this frame, being pulled in)
   // ── THE REGISTRY ──
   const FORMS = {};
+  // A UNIT'S ENTRY (its key in FORMS): an evolved form's id, or an enemy's kind (the enemy line, view3d/attacks_enemy.js: an enemy ant, by its class, 'ant_worker' and so on; KIT.enemyKid);
+  // null for any other. A creature's kind is kept once found (its species and class never change), the view's own memory
+  const KIDS = new WeakMap();
+  function kid(f) { if (!f || typeof f !== 'object') return null; if (f.evolved) return f.evolved; if (!GM.isCreature(f) || typeof KIT.enemyKid !== 'function') return null;
+    let k = KIDS.get(f); if (k === undefined) { try { k = KIT.enemyKid(f) || null; } catch (x) { k = null; } KIDS.set(f, k); } return k; }
 
   // ════════ THE FROST MAW (id maw; the agent's looks, provisional) ════════
   // (its sheet's own poses are the base: the action block's lunge-bite and CHOMP's two blocks, design/evolutions/bake.js 'maw'; here they are played smoothly and given their anticipation and follow-through)
@@ -283,7 +288,7 @@ function view3dAttacks(env) {
   const KIT = { T, GM, env, TAU, clamp, ease, outC, lerp, H, low, floorY, put, PUFF, GLINT, FIRE, SMOKE, solid, QUILLS, ROCKS, SPIKES, CRATERS, HEXC, MOUNDS, VENTS, BLOBS, flat, RINGF, DISCF, GLOWF, ribbon, fwdOf,
     curOf, claimK: (k, o) => claimK(k, o), UPX, measures: null,
     crystal, flatK, RINGS, DISCS, SNOW, FROST, COLD, GLOW, iceHit: FORMS.maw.fx.impact.draw, ice: null,   // (the ice line's: the Maw's crystals, rings, discs and colours, and his bite's burst)
-    CAP, stats, hooks: [], elec: null, toxic: null, flux: null, core: null, bloom: null, solidKind, hid: o => hid(o) };   // (core: the core line's measures, view3d/attacks_core.js; hid: whether a card battle's Ultimate is out of sight now)   // (flux: the flux line's measures, view3d/attacks_flux.js; solidKind: a kind of solid of its own, made with the rest)   // (toxic: the toxic line's measures, view3d/attacks_toxic.js)   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
+    CAP, stats, hooks: [], elec: null, toxic: null, flux: null, core: null, bloom: null, enemy: null, enemyKid: null, solidKind, hid: o => hid(o) };   // (enemy, enemyKid: the enemy line's measures and its kinds of enemy, view3d/attacks_enemy.js)   // (core: the core line's measures, view3d/attacks_core.js; hid: whether a card battle's Ultimate is out of sight now)   // (flux: the flux line's measures, view3d/attacks_flux.js; solidKind: a kind of solid of its own, made with the rest)   // (toxic: the toxic line's measures, view3d/attacks_toxic.js)   // (the electric line's: its own pool of lightning is emptied, sent and put away with the rest, through hooks: { begin, finish, clear })
   try { KIT.measures = GM.fireMeasures; } catch (e) { KIT.measures = {}; }
   if (typeof view3dFireForms === 'function') Object.assign(FORMS, view3dFireForms(KIT));
   // THE ICE LINE (view3d/attacks_ice.js): the Igloo Skater and the Rimestar, from the same kit (and the fire line's body helpers). Made apart: a fault in making them leaves them to the 2D, the rest going on
@@ -304,6 +309,9 @@ function view3dAttacks(env) {
   // THE BLOOM LINE (view3d/attacks_bloom.js): the Thornwhip, the Sundew and the Stonepetal, from the same kit and the flux line's strips of light (K.beam). Made apart, as the ice line
   try { KIT.bloom = GM.bloomMeasures; } catch (e) { KIT.bloom = {}; }
   if (typeof view3dBloomForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dBloomForms(KIT)); } catch (x) { KIT.hooks.length = nh; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the bloom line\'s attacks in 2D: ' + lastErr); } }
+  // THE ENEMY LINE (view3d/attacks_enemy.js): the enemies the view has bodies for (the ants: worker, scout, striker, tank), from the same kit and the flux line's strips of light. Made apart, as the ice line
+  try { KIT.enemy = GM.enemyMeasures; } catch (e) { KIT.enemy = {}; }
+  if (typeof view3dEnemyForms === 'function') { const nh = KIT.hooks.length; try { Object.assign(FORMS, view3dEnemyForms(KIT)); } catch (x) { KIT.hooks.length = nh; KIT.enemyKid = null; lastErr = String((x && x.message) || x); if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws the enemies\' attacks in 2D: ' + lastErr); } }
   const hook = k => { for (const h of KIT.hooks) if (h[k]) h[k](); };
 
   // ── EACH FRAME ──
@@ -313,15 +321,15 @@ function view3dAttacks(env) {
   const HP = { x: 0, y: 0, up: 0, k: 1, spin: 0 };
   // an effect that names no maker (a hit, a ring, a spike): the form with an entry, its body the view's, that made it (its entry's find), or the one it was found for before
   function makerOf(e, set) { const mm = memos.get(e); if (mm) return set.has(mm.owner) ? mm.owner : null;
-    for (const f of set) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || !X.find) continue; try { if (X.find(e, f)) return f; } catch (x) { fail(f.evolved, x); } } return null; }
+    for (const f of set) { const id = kid(f); if (!id) continue; const E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X || !X.find) continue; try { if (X.find(e, f)) return f; } catch (x) { fail(id, x); } } return null; }
   // before the bodies: the pools emptied; the effects of this frame read, the new ones remembered (ABSOLUTE ZERO's swallowed, where they stood), each form's effects that its body follows found
   function begin(f0) { live.clear(); for (const M of CUR.values()) M.clear(); frostNow.clear(); stats.held = 0; PUFF.n = 0; GLINT.n = 0; FIRE.n = 0; SMOKE.n = 0; iceN = 0; RINGS.n = 0; DISCS.n = 0; ribN = 0; claimed.clear();
     for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; for (const C of claimedK.values()) C.clear(); hook('begin');
-    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0) || hid(e)) continue; const f = e.by && e.by.evolved ? e.by : makerOf(e, lastShown); if (!f || !f.evolved) continue;
-      const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved)) continue; const X = E.fx[e.type]; if (!X || !(X.held || X.pre)) continue;
-      try { if (typeof X.pre === 'function' && !X.pre(e, f)) continue; if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = (e.maxLife || m.l0) - e.life; m.now = m.age; m.seen = f0; m.gone = false; if (X.begin) X.begin(m, f0); curMap(e.type).set(f, m); } catch (x) { fail(f.evolved, x); } }
+    const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0) || hid(e)) continue; const f = e.by && kid(e.by) ? e.by : makerOf(e, lastShown), id = kid(f); if (!id) continue;
+      const E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X || !(X.held || X.pre)) continue;
+      try { if (typeof X.pre === 'function' && !X.pre(e, f)) continue; if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = (e.maxLife || m.l0) - e.life; m.now = m.age; m.seen = f0; m.gone = false; if (X.begin) X.begin(m, f0); curMap(e.type).set(f, m); } catch (x) { fail(id, x); } }
     // (an effect the game has ended that a body still follows, played on to its own end: its age now)
-    for (const m of memos.values()) { if (m.shot || m.seen === f0 || !m.owner || !m.owner.evolved || hid(m.o)) continue; const E = FORMS[m.owner.evolved], X = E && E.fx[m.type]; if (!X || !X.pre || bad.has(m.owner.evolved)) continue;
+    for (const m of memos.values()) { const mid = kid(m.owner); if (m.shot || m.seen === f0 || !mid || hid(m.o)) continue; const E = FORMS[mid], X = E && E.fx[m.type]; if (!X || !X.pre || bad.has(mid)) continue;
       const M = curMap(m.type); if (M.has(m.owner)) continue; const age = m.age + (f0 - m.seen), span = typeof X.span === 'function' ? X.span(m) : X.span || 0; if (age > span) continue;
       try { if (typeof X.pre === 'function' && !X.pre(m.o, m.owner)) continue; } catch (x) { continue; } m.now = age; M.set(m.owner, m); } }
   function fail(id, x) { bad.add(id); errs++; lastErr = String((x && x.message) || x); stats.bad = [...bad]; if (typeof console !== 'undefined' && console.warn) console.warn('the 3D view draws ' + id + '\'s attacks in 2D: ' + ((x && x.stack) || x)); }
@@ -342,25 +350,25 @@ function view3dAttacks(env) {
     const list = GM.fx; if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (e && e.life > 0) live.add(e); }
     // the forms with an entry whose bodies are the view's: their effects found (an effect with no maker named is matched by its entry: the Maw's ice hit, the Burrower's spikes), drawn and claimed
     if (list) for (let i = 0; i < list.length; i++) { const e = list[i]; if (!e || !(e.life > 0) || hid(e)) continue;
-      const f = e.by && e.by.evolved ? e.by : makerOf(e, shown);
-      if (!f || !shown.has(f)) continue; const id = f.evolved, E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X) continue;
+      const f = e.by && kid(e.by) ? e.by : makerOf(e, shown);
+      if (!f || !shown.has(f)) continue; const id = kid(f), E = FORMS[id]; if (!E || bad.has(id)) continue; const X = E.fx[e.type]; if (!X) continue;
       const b = env.bodyOf(f) || (X.bodyless ? NOBODY : null); if (!b) continue;   // (bodyless: an effect drawn while its maker's body is not, the Skink's swirl: it is in the swirl)
       try { if (!X.claim(e, f)) continue; const m = memo(e, e.type, f, f0); m.age = e.maxLife ? e.maxLife - e.life : m.l0 - e.life; m.seen = f0; m.gone = false; m.x = e.x; m.y = e.y; if (X.begin) X.begin(m, f0);
         X.draw(m, m.age, f0, b); claimed.add(e); } catch (x) { fail(id, x); } }
     // their shots in flight (the game's follower shots, by kind: a quill, a fireball): drawn and claimed
-    const sh = GM.shots; if (sh) for (let i = 0; i < sh.length; i++) { const p = sh[i]; if (!p) continue; const kind = p.kind || 'plain', f = p.source; if (!f || !f.evolved || !shown.has(f)) continue; const id = f.evolved, E = FORMS[id];   // (plain: a shot of no kind, its element's own: the Thornwhip's SEED SHOT)
+    const sh = GM.shots; if (sh) for (let i = 0; i < sh.length; i++) { const p = sh[i]; if (!p) continue; const kind = p.kind || 'plain', f = p.source, id = kid(f); if (!id || !shown.has(f)) continue; const E = FORMS[id];   // (plain: a shot of no kind, its element's own: the Thornwhip's SEED SHOT)
       if (!E || !E.shots || bad.has(id)) continue; const X = E.shots[kind]; if (!X) continue; const b = env.bodyOf(f); if (!b) continue; live.add(p);
       try { const m = memo(p, kind, f, f0); m.shot = true; m.age = p.frame || 0; m.seen = f0; m.gone = false; m.x = p.x; m.y = p.y; m.life = p.life; X.draw(m, m.age, f0, b); claimed.add(p); } catch (x) { fail(id, x); } }
     // his icicles (js/draw.js, an actor's icicleAttack): left out while his body and his bite are the view's
     for (const f of shown) { if (!f || !f.evolved || !f.icicleAttack) continue; const E = FORMS[f.evolved]; if (!E || bad.has(f.evolved) || !E.fx.icicle) continue; try { if (E.fx.icicle.claim(f.icicleAttack, f)) claimed.add(f.icicleAttack); } catch (x) { fail(f.evolved, x); } }
     // what a form's own state carries (the Quillstone's orbiting fireballs, the Burrower's mound): its entry's `on`
-    for (const f of shown) { if (!f || !f.evolved) continue; const E = FORMS[f.evolved]; if (!E || !E.on || bad.has(f.evolved)) continue; const b = env.bodyOf(f); if (!b) continue; try { E.on(f, b, f0); } catch (x) { fail(f.evolved, x); } }
+    for (const f of shown) { const id = kid(f); if (!id) continue; const E = FORMS[id]; if (!E || !E.on || bad.has(id)) continue; const b = env.bodyOf(f); if (!b) continue; try { E.on(f, b, f0); } catch (x) { fail(id, x); } }
     // the effects and shots gone from the game this frame: played on to their end (their afterglow, a shot's burst where it struck), from their last age (a card battle's field outside its caster's turn is not gone: kept, not drawn)
-    for (const m of memos.values()) { const o = m.o; if (live.has(o) && (m.seen === f0 || hid(o))) continue; const E = FORMS[m.owner.evolved], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
+    for (const m of memos.values()) { const o = m.o, mid = kid(m.owner); if (live.has(o) && (m.seen === f0 || hid(o))) continue; const E = FORMS[mid], X = E && (m.shot ? E.shots && E.shots[m.type] : E.fx[m.type]);
       const span = X ? (typeof X.span === 'function' ? X.span(m) : X.span || 0) : 0, age = m.age + (f0 - m.seen);
-      if (!X || bad.has(m.owner.evolved) || age > span || m.owner.dead) { memos.delete(o); continue; }
+      if (!X || bad.has(mid) || age > span || m.owner.dead) { memos.delete(o); continue; }
       const b = shown.has(m.owner) ? env.bodyOf(m.owner) || (X.bodyless ? NOBODY : null) : null; if (!b) { memos.delete(o); continue; }
-      m.gone = true; try { X.draw(m, age, f0, b); } catch (x) { fail(m.owner.evolved, x); memos.delete(o); } }
+      m.gone = true; try { X.draw(m, age, f0, b); } catch (x) { fail(mid, x); memos.delete(o); } }
     // a Maw no longer frosted: his own glow back
     for (const L of tint.values()) if (L.k > 0 && !frostNow.has(L.b)) frostBody(L.b, 0);
     lastShown.clear(); for (const f of shown) lastShown.add(f);
@@ -379,7 +387,7 @@ function view3dAttacks(env) {
   // nothing drawn (the view hidden, a frame with no picture): all put away
   function clear() { PUFF.n = GLINT.n = FIRE.n = SMOKE.n = iceN = RINGS.n = DISCS.n = ribN = 0; for (const S of SOLIDS) S.n = 0; for (const F of FLATK) F.n = 0; claimed.clear(); for (const C of claimedK.values()) C.clear(); for (const L of tint.values()) if (L.k > 0) frostBody(L.b, 0); hook('clear'); finish(); }
   return {
-    stats, FORMS, CAP, begin, body, held, draw, clear, burrows, smokes,
+    stats, FORMS, CAP, begin, body, held, draw, clear, burrows, smokes, kid,   // (kid: a unit's entry here, an evolved form's id or an enemy's kind: view3d/gameview.js poses an enemy ant's body with it)
     owns(o, k) { if (k) { const C = claimedK.get(k); return !!C && C.has(o); } return claimed.has(o); },
     // whether a form has an entry here that works (its looks the owner's approved ones: view3d/fields.js leaves that form's Ultimates to it, "Approved looks win", the owner, 2026-11-21)
     covers(id) { return !!id && !!FORMS[id] && !bad.has(id); },
