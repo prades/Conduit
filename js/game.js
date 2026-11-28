@@ -896,6 +896,7 @@ function render() {
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
             if (_a._flight || _b._flight) continue;   // (one in the air, thrown by a Kinetic Launcher, is not jostled: js/techabilities.js)
             if (typeof cardBattleWalking === "function" && (cardBattleWalking(_a) || cardBattleWalking(_b))) continue;   // (nor one a card battle walks: js/cardbattle.js)
+            if (typeof hexStepping === "function" && (hexStepping(_a) || hexStepping(_b))) continue;   // (nor one stepping onto its hex's middle: js/formation.js hexSettle, the hexes a tile apart)
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= _SEP2 || _d2 < 0.000001) continue;

@@ -444,7 +444,10 @@ function updateRTSNPC(actor) {
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist > Math.max(0.8, (nearestEnemy.bodyR || 0) + 0.2)) {   // (a huge body, THE ANT QUEEN's, bodyR: it stops at her edge, not in her middle: js/bosses.js; a brawler's 1.4 is her edge already)
+                // ON THE HEXES (docs/CARD-BATTLES.md §2.85; the owner, 2026-11-28, of Technicians fighting up close off the hexes: "Let them operate"): in the 3D game, out of your card battles, it
+                // strikes from the hex next to its enemy, HEX_SETTLE.techReach (1.4, a Brawler's reach), and steps onto that hex's middle (js/formation.js hexSettle); else from 0.8 as before
+                const _hexed = typeof hexWalkOn === "function" && hexWalkOn() && typeof HEX_SETTLE !== "undefined" && !(typeof cardBattleActive === "function" && cardBattleActive() && typeof partyIsMember === "function" && partyIsMember(actor));
+                if (dist > Math.max(_hexed ? HEX_SETTLE.techReach : 0.8, (nearestEnemy.bodyR || 0) + 0.2)) {   // (a huge body, THE ANT QUEEN's, bodyR: it stops at her edge, not in her middle: js/bosses.js; a brawler's 1.4 is her edge already)
                     actor.x+=(dx/dist)*actor.moveSpeed*0.8;
                     actor.y+=(dy/dist)*actor.moveSpeed*0.8;
                 } else {

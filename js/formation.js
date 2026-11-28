@@ -88,10 +88,12 @@ function _fmHex(f, s, px, py) {
 }
 // SETTLING ONTO A HEX (the owner, 2026-11-28, asked whether followers fighting in real time and those patrolling a room they hold should stand on hexes too: "Yes"): in the 3D game a follower
 // standing still where its own mind left it (striking or shooting at an enemy, resting at a stop of its room's round, idle) steps onto the middle of the nearest free hex within HEX_SETTLE.look
-// tiles: never yours or another's, not where a creature stands, in a straight step, and when it is fighting, no farther from its enemy than it is (and in its sight if it sees it now), so it
-// stays in reach and does not walk back. Not one going to a place of its own this step (following you, holding where it was sent, to a healing spot, blocking: _hexOwn), one winding a shot or
+// tiles: never yours or another's, not where a creature stands, in a straight step, and when it is fighting, within its reach of its enemy (_hexReach, or no farther than it is), in its sight if it
+// sees it now, so its own mind does not walk it back. Not one going to a place of its own this step (following you, holding where it was sent, to a healing spot, blocking: _hexOwn), one winding a shot or
 // blocking (rooted), one in a card battle, a clone. The hex is chosen again every HEX_SETTLE.every frames (js/npc.js updateNPC calls this after each follower's step).
-const HEX_SETTLE = { still: 0.002, look: 1.2, every: 15, body: 0.6, keepOff: 2.5, mageFar: 4 };   // (a Mage shoots from between keepOff and mageFar of its enemy, js/npc.js SNIPER_MIN and SNIPER_PREFERRED: a hex nearer it would back off from, one farther it would walk in from)
+const HEX_SETTLE = { still: 0.002, look: 1.2, every: 15, body: 0.6, keepOff: 2.5, mageFar: 4, techReach: 1.4 };
+// how near its enemy it must be to fight it, as js/npc.js has each role walk in: a Mage shoots from mageFar, a Technician strikes from techReach, a Brawler (and the rest) from 1.4; a huge body from its edge
+function _hexReach(a, foe) { const edge = (foe && foe.bodyR || 0) + 0.2; return a.role === "sniper" ? HEX_SETTLE.mageFar : a.role === "camper" ? Math.max(HEX_SETTLE.techReach, edge) : Math.max(1.4, edge); }   // (techReach: in the 3D game a Technician strikes from this near, the hex next to its enemy, as a Brawler does: js/npc.js)   // (a Mage shoots from between keepOff and mageFar of its enemy, js/npc.js SNIPER_MIN and SNIPER_PREFERRED: a hex nearer it would back off from, one farther it would walk in from)
 function hexSettle(a, x0, y0) {
     if (!a || a.dead || !a.isFollower || a.isClone || a.team !== "green" || typeof hexWalkOn !== "function" || !hexWalkOn() || typeof cardHexStand !== "function") return;
     const f0 = typeof frame !== "undefined" ? frame : 0;
@@ -107,8 +109,8 @@ function hexSettle(a, x0, y0) {
             if (hexTaken(a, k)) return true;
             if (typeof facilityLosFrom === "function" && !facilityLosFrom(a.x, a.y, m[0], m[1])) return true;
             if (foe) { const dm = Math.hypot(foe.x - m[0], foe.y - m[1]);
-                const mage = a.role === "sniper", far = mage ? Math.max(fd, HEX_SETTLE.mageFar) : fd;
-                if (dm > far + 1e-6 || (mage && fd >= HEX_SETTLE.keepOff && dm < HEX_SETTLE.keepOff) || (sees && !facilitySeesFrom(m[0], m[1], foe.x, foe.y))) return true; }   // (no farther than it is (a Mage: than it shoots from), a Mage not nearer than it keeps off, in its sight)
+                const mage = a.role === "sniper", far = Math.max(fd, _hexReach(a, foe) - 0.01);
+                if (dm > far + 1e-6 || (mage && fd >= HEX_SETTLE.keepOff && dm < HEX_SETTLE.keepOff) || (sees && !facilitySeesFrom(m[0], m[1], foe.x, foe.y))) return true; }   // (within its reach, or no farther than it is; a Mage not nearer than it keeps off; in its sight)
             for (const o of (typeof actors !== "undefined" ? actors : [])) if (o && !o.dead && o.team !== "green" && Number.isFinite(o.x) && Math.hypot(o.x - m[0], o.y - m[1]) < Math.max(HEX_SETTLE.body, (o.bodyR || 0) + 0.3)) return true;
             return false;
         });
@@ -116,8 +118,9 @@ function hexSettle(a, x0, y0) {
     }
     if (!Number.isFinite(S.x)) return;
     const dx = S.x - a.x, dy = S.y - a.y, d = Math.hypot(dx, dy), s = Math.min(a.moveSpeed || 0.02, d);
-    if (d > 1e-9) { a.x += dx / d * s; a.y += dy / d * s; }
+    if (d > 1e-9) { a.x += dx / d * s; a.y += dy / d * s; a._hexStep = f0; }   // (stepping onto its hex: the squad's spacing leaves it be this frame, js/game.js; the hexes are a tile apart)
 }
+function hexStepping(a) { return !!a && a._hexStep === (typeof frame !== "undefined" ? frame : 0); }
 // the place: as far out as it can be on floor you can walk to straight, coming in toward you; failing that, turned to a diagonal, then to a side (a wall ahead: beside you); failing all, where you stand
 const _fmTurns = [0, 0.785, -0.785, 1.571, -1.571];
 function _fmPlace(px, py, ox, oy) {

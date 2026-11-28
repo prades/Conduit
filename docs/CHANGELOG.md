@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-28
 
+### Build `2026-11-17eg` · branch `claude/friendly-thompson-w581x0` · Technicians strike from the hex next to their enemy
+- **The ask** (the owner, 2026-11-28, told Technicians fighting up close mostly stood off the hexes): "Why do the technicians mostly stay off [hexes]? Let them operate." (`CARD-BATTLES.md` §2.85)
+- **Why they did:** a Technician walked in to 0.8 tiles before striking; hexes' middles are a tile apart, so there was rarely a free one that near its enemy, and the settling rule took no hex farther off.
+- **What it does (the 3D game, out of your card battles):** a Technician fighting in real time stops 1.4 tiles from its enemy (a Brawler's reach) and steps onto that hex's middle; its hit lands from there (fire's ring reaches 1.5). Every fighter now settles onto any free hex within its own reach of its enemy (a Brawler 1.4, a Technician 1.4, a Mage 2.5 to 4), where before only one no farther than it stood. A follower stepping onto its hex is not pushed by the squad's spacing. The 2D game keeps 0.8.
+- `js/npc.js` (the Technician's reach), `js/formation.js` (`HEX_SETTLE.techReach`, `_hexReach`, `hexStepping`), `js/game.js` (the spacing), `tests/cardbattle.js`.
+- **Verified:** `tests/cardbattle.js` (THE HEXES OUT OF A BATTLE, 5 checks now; the real-time fight with a Brawler, a Mage and a Technician passed 20 runs of 20) and the suites in the handoff. **Not seen in a real browser; not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ef` · branch `claude/friendly-thompson-w581x0` · out of a battle, you and your squad stop on a hex's middle
 - **The ask** (the owner, 2026-11-28): "Need to make it to where whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers." (`CARD-BATTLES.md` §2.85)
 - **What it does (the 3D game, either mode):** a tap walks you to the middle of the battles' hex under your finger and you stop exactly there (the nearest one when that is not floor). The step cut short by an enemy near, and a run an enemy stops, end on a hex's middle too. Your squad, following you, comes to rest each on the middle of its own hex near its formation place, never on yours; a follower sent with MOVE TO holds on one. Asked whether followers fighting in real time and patrolling a room they hold should too: **"Yes"**: one left standing (striking, shooting, resting at a stop) steps onto the nearest free hex's middle, no farther from its enemy than it stood (a Mage: within its 2.5 to 4 tiles), so it stays in reach. The walk itself, the game's own walks, the 2D game and the website's background are unchanged.
