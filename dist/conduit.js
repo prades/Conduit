@@ -37488,6 +37488,29 @@ function facilitySolidSet(id, open) {
     }
     return true;
 }
+let _fpRawShift = null;
+function facilityPropRawMid(id) {
+    if (!_fp || !_fp.F || typeof FACILITY_MAP === "undefined")
+        return null;
+    const sc = facilityScale(), F = _fp.F;
+    if (!_fpRawShift)
+        for (const pr of FACILITY_MAP.props || []) {
+            if (!pr.rect)
+                continue;
+            const cx = (pr.rect[0] + pr.rect[2]) / 2 / sc, cy = (pr.rect[1] + pr.rect[3]) / 2 / sc;
+            if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6 || pr.rect[2] - pr.rect[0] !== sc || pr.rect[3] - pr.rect[1] !== sc)
+                continue;
+            const so = F.solids.find(q => q.id === pr.id);
+            if (!so || !so.bb || (_fp.moved || []).some(m => m.id === pr.id))
+                continue;
+            _fpRawShift = [(so.bb[0] + so.bb[2]) / 2 - cx, (so.bb[1] + so.bb[3]) / 2 - cy];
+            break;
+        }
+    const pr = (FACILITY_MAP.props || []).find(q => q.id === id);
+    if (!pr || !pr.rect || !_fpRawShift)
+        return null;
+    return [(pr.rect[0] + pr.rect[2]) / 2 / sc + _fpRawShift[0], (pr.rect[1] + pr.rect[3]) / 2 / sc + _fpRawShift[1]];
+}
 function facilitySolidMove(id, x0, y0, w, h, turned) {
     if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP)
         return { ok: false, why: "NO MAP" };
@@ -53557,31 +53580,7 @@ function fluxTwo(s) { if (!s || !s.flux)
 } return s.flux.two; }
 function _fluxHexTile(h) { return [Math.round(h[0]), Math.round(h[1])]; }
 function fluxHexB(at, dir) { const d = _FLUX_HEX_DIR[((dir | 0) % 6 + 6) % 6]; return cardHex(at[0] + d[0], at[1] + d[1]); }
-let _fluxShift = null;
-function _fluxRaw(id) {
-    if (typeof FACILITY_MAP === "undefined" || typeof facilityScale !== "function")
-        return null;
-    const sc = facilityScale(), F = _fluxF();
-    if (!F)
-        return null;
-    if (!_fluxShift)
-        for (const pr of FACILITY_MAP.props || []) {
-            if (!pr.rect)
-                continue;
-            const cx = (pr.rect[0] + pr.rect[2]) / 2 / sc, cy = (pr.rect[1] + pr.rect[3]) / 2 / sc;
-            if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6 || pr.rect[2] - pr.rect[0] !== sc || pr.rect[3] - pr.rect[1] !== sc)
-                continue;
-            const so = F.solids.find(q => q.id === pr.id);
-            if (!so || !so.bb || (_fp.moved || []).some(m => m.id === pr.id))
-                continue;
-            _fluxShift = [(so.bb[0] + so.bb[2]) / 2 - cx, (so.bb[1] + so.bb[3]) / 2 - cy];
-            break;
-        }
-    const pr = (FACILITY_MAP.props || []).find(q => q.id === id);
-    if (!pr || !pr.rect || !_fluxShift)
-        return null;
-    return [(pr.rect[0] + pr.rect[2]) / 2 / sc + _fluxShift[0], (pr.rect[1] + pr.rect[3]) / 2 / sc + _fluxShift[1]];
-}
+function _fluxRaw(id) { return typeof facilityPropRawMid === "function" ? facilityPropRawMid(id) : null; }
 function fluxHexOf(s) {
     if (!s || !fluxHexOn())
         return null;

@@ -42599,12 +42599,12 @@ const GAMEVIEW = (function () {
         lastF = f0;
         stamp++;
         rubbleTick();
-        fit(f0);
-        place(dt);
         try {
             fluxSync();
         }
         catch (e) { }
+        fit(f0);
+        place(dt);
         seeThrough(f0);
         lights();
         doors();
