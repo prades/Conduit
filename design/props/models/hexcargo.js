@@ -168,9 +168,12 @@
     for (const y of [px(8), px(28)]) { const p = cyl(0.022, 0.022, 0.2, steel, 8); p.rotation.z = PI / 2; g.add(at(p, 0, y, 0.0)); }
     g.add(at(cbox(0.14, px(24), 0.06, 0.01, S.std('#4a525e', 0.85, 0.4)), 0, px(18), 0.14));
     for (const x of [-0.5, 0.5]) g.add(at(rx(torus(0.05, 0.01, steel, 12), PI / 2), x, H + px(1.5), 0));
-    // an amber warning lamp on a post at the near end, and cyan-white reflectors on the front face
-    const px0 = 0.74; g.add(at(cyl(0.02, 0.02, px(15), steel, 8), px0, H + px(7), 0.0)); g.add(at(cyl(0.065, 0.065, px(5), mt.amberGlow, 6), px0, H + px(16.5), 0)); g.add(at(cyl(0.07, 0.05, px(1.6), mt.steelDk, 6), px0, H + px(19.6), 0)); g.add(at(cyl(0.07, 0.07, px(1.4), mt.steelDk, 6), px0, H + px(13.4), 0));
+    // an amber warning lamp on a post at the near end (its own group, kept at its own size when the barrier is made bigger: below), and cyan-white reflectors on the front face
+    const px0 = 0.74, lamp = G(); lamp.position.set(px0, H, 0); g.add(lamp); lamp.add(at(cyl(0.02, 0.02, px(15), steel, 8), 0, px(7), 0.0)); lamp.add(at(cyl(0.065, 0.065, px(5), mt.amberGlow, 6), 0, px(16.5), 0)); lamp.add(at(cyl(0.07, 0.05, px(1.6), mt.steelDk, 6), 0, px(19.6), 0)); lamp.add(at(cyl(0.07, 0.07, px(1.4), mt.steelDk, 6), 0, px(13.4), 0));
     for (const x of [-0.7, -0.2, 0.2, 0.7]) g.add(at(cbox(0.1, px(2.6), 0.014, 0.004, S.glow('#dff8ff', 0.9)), x, px(20), 0.128));
+    // BIGGER (the owner, 2026-11-28, of the barriers in the arena: "too small. You can increase the size of those"): half as tall again (38 px to 57: up to the cube's chest) and as much thicker (its foot
+    // 0.6 of a tile to 0.87: the width of its hexes), its length its two hexes' (1.92 to 2). The lamp and the lifting loops' steel keep their own size. The numbers are the agent's, provisional.
+    const BIG = [2 / 1.92, 1.5, 1.45]; g.scale.set(BIG[0], BIG[1], BIG[2]); lamp.scale.set(1 / BIG[0], 1 / BIG[1], 1 / BIG[2]);
     return { g };
   }
 

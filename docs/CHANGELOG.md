@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-28
 
+### Build `2026-11-17ed` · branch `claude/zen-cerf-3m8mq5` · the arena's barriers bigger; the new props sheet preloaded
+- **The ask** (the owner, 2026-11-28): "those barricades that are located in the arena are too small. You can increase the size of those".
+- **What it does:** the six-sided barrier is half as tall again and as much thicker, 2 tiles long (`design/props/models/hexcargo.js`); it blocks the same two tiles. **A fix:** `game.html` preloads the new sheet `img/props/hexcargo` with the others (`tests/startup.js` failed on `2026-11-17ec` without it).
+- **Verified:** the suites in the handoff. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ec` · branch `claude/zen-cerf-3m8mq5` · the cargo FLUX MOVE can move is six-sided, on the hexes
 - **The ask** (the owner, 2026-11-27): "when the player wants to move an object, it's an object that has that hexagonal look already to it"; of draft 3 (the game's own crates, barrels, stacks and barrier rebuilt six-sided), 2026-11-28: "It's right", then "go ahead and add the approved ones to the game [...] I like the simple way of objects blocking the floor".
 - **What it does:** the arena's nine movable pieces (three crates, a crate stack, three barrels, two barriers) are drawn six-sided, in the 3D view and the 2D game, and stand on the middles of the floor's hexes; each blocks the square tile its middle lies in, as before. Cargo that does not move is unchanged. FLUX MOVE's rules are unchanged (its hex rules are the next step). `FOLLOWER-UTILITIES.md` §4.2.
