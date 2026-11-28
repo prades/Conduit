@@ -29022,38 +29022,39 @@ function buildLabFloor(lab, P0, how) {
             }
         return list.sort();
     };
-    if (live && SD_HI > -1e8) {
-        const sdR = recs.filter(r => isSd(r.id)), skip = new Set();
-        let bx = [1e9, 1e9, -1e9, -1e9];
-        for (const r of sdR) {
-            for (const c of r.cells)
-                bx = [Math.min(bx[0], c[0]), Math.min(bx[1], c[1]), Math.max(bx[2], c[0]), Math.max(bx[3], c[1])];
-            const P = r.poly || [];
-            for (let i = 0; i < P.length; i++) {
-                const a = P[i], b = P[(i + 1) % P.length];
-                if (Math.abs(a[0] - b[0]) < 1e-6 || Math.abs(a[1] - b[1]) < 1e-6)
-                    continue;
-                for (let x = Math.round(Math.min(a[0], b[0]) + 0.5); x <= Math.round(Math.max(a[0], b[0]) - 0.5); x++)
-                    for (let y = Math.round(Math.min(a[1], b[1]) + 0.5); y <= Math.round(Math.max(a[1], b[1]) - 0.5); y++)
-                        skip.add(K(x, y));
+    for (const fam of [isSd, id => slants(id) && !isSd(id)])
+        if (live && recs.some(r => fam(r.id))) {
+            const sdR = recs.filter(r => fam(r.id)), skip = new Set();
+            let bx = [1e9, 1e9, -1e9, -1e9];
+            for (const r of sdR) {
+                for (const c of r.cells)
+                    bx = [Math.min(bx[0], c[0]), Math.min(bx[1], c[1]), Math.max(bx[2], c[0]), Math.max(bx[3], c[1])];
+                const P = r.poly || [];
+                for (let i = 0; i < P.length; i++) {
+                    const a = P[i], b = P[(i + 1) % P.length];
+                    if (Math.abs(a[0] - b[0]) < 1e-6 || Math.abs(a[1] - b[1]) < 1e-6)
+                        continue;
+                    for (let x = Math.round(Math.min(a[0], b[0]) + 0.5); x <= Math.round(Math.max(a[0], b[0]) - 0.5); x++)
+                        for (let y = Math.round(Math.min(a[1], b[1]) + 0.5); y <= Math.round(Math.max(a[1], b[1]) - 0.5); y++)
+                            skip.add(K(x, y));
+                }
+            }
+            bx = [bx[0] - 3, bx[1] - 3, bx[2] + 3, bx[3] + 3];
+            let front = [...band.values()].filter(b => fam(b.own) && !b.header);
+            while (front.length) {
+                const next = [];
+                for (const s0 of front)
+                    for (const [dx, dy] of DIRS) {
+                        const x = s0.x + dx, y = s0.y + dy, k = K(x, y);
+                        if (x < bx[0] || y < bx[1] || x > bx[2] || y > bx[3] || band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k))
+                            continue;
+                        const b = { x, y, own: s0.own, rock: false, fill: true, lo: s0.lo, hi: s0.hi, cutTop: s0.cutTop };
+                        band.set(k, b);
+                        next.push(b);
+                    }
+                front = next;
             }
         }
-        bx = [bx[0] - 3, bx[1] - 3, bx[2] + 3, bx[3] + 3];
-        let front = [...band.values()].filter(b => isSd(b.own) && !b.header);
-        while (front.length) {
-            const next = [];
-            for (const s0 of front)
-                for (const [dx, dy] of DIRS) {
-                    const x = s0.x + dx, y = s0.y + dy, k = K(x, y);
-                    if (x < bx[0] || y < bx[1] || x > bx[2] || y > bx[3] || band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k))
-                        continue;
-                    const b = { x, y, own: s0.own, rock: false, fill: true, lo: s0.lo, hi: s0.hi, cutTop: s0.cutTop };
-                    band.set(k, b);
-                    next.push(b);
-                }
-            front = next;
-        }
-    }
     for (const b of band.values()) {
         b.hides = TURNS.map(t => { const s = hideOf(b.x, b.y, t); if (live)
             hideMore(b, t, s); return s.sort(); });
@@ -29234,10 +29235,8 @@ function buildLabFloor(lab, P0, how) {
         }
     }
     for (const { w, rec, wi } of diag) {
-        const P = rec.poly;
+        const P = rec.poly, HI0 = isSd(rec.id) ? SD_HI : baseOf(rec.id);
         let n = w.n.slice();
-        if (inP(w.mid[0] + n[0] * 0.3, w.mid[1] + n[1] * 0.3, P))
-            n = [-n[0], -n[1]];
         const endAt = (E, other) => {
             const sq = { o: [E[0] + n[0], E[1] + n[1]] }, e1 = [(other[0] - E[0]) / w.L, (other[1] - E[1]) / w.L];
             const k = rec.walls.findIndex((w2, j) => j !== wi && w2.kind !== 'open' && w2.kind !== 'deck_rail' && w2.kind !== 'railing_wall' && w2.kind !== 'spill' && Math.hypot(w2.b[0] - w2.a[0], w2.b[1] - w2.a[1]) > 1e-6 && (Math.hypot(w2.a[0] - E[0], w2.a[1] - E[1]) < 0.02 || Math.hypot(w2.b[0] - E[0], w2.b[1] - E[1]) < 0.02));
@@ -29260,14 +29259,14 @@ function buildLabFloor(lab, P0, how) {
         for (let i = 0; i < N; i++) {
             const a = lerp(w.a, w.b, i / N), b = lerp(w.a, w.b, (i + 1) / N), oa = lerp(eA.o, eB.o, i / N), ob = lerp(eA.o, eB.o, (i + 1) / N), pm = lerp(a, b, 0.5);
             const ci = [Math.round(pm[0] - n[0] * 0.5), Math.round(pm[1] - n[1] * 0.5)], z = roomAt.get(K(ci[0], ci[1])) === rec.id ? hAt(ci[0], ci[1]) : baseOf(rec.id);
-            const pb = { x: Math.round(pm[0] + n[0] * 0.5), y: Math.round(pm[1] + n[1] * 0.5), hi: SD_HI, rock: false }, hides = TURNS.map(t => hideMore(pb, t, hideOf(pb.x, pb.y, t)).sort()), G = groupOf(hides);
+            const pb = { x: Math.round(pm[0] + n[0] * 0.5), y: Math.round(pm[1] + n[1] * 0.5), hi: HI0, rock: false }, hides = TURNS.map(t => hideMore(pb, t, hideOf(pb.x, pb.y, t)).sort()), G = groupOf(hides);
             G.sink = Math.max(G.sink || 0, WALL_H - B0 + 0.16);
             pcs.push({ a, b, oa, ob, pm, z, G, stub: hides.some(h => h.length) });
         }
         const away = (p, q, from) => { const dx = q[0] - p[0], dy = q[1] - p[1], L2 = Math.hypot(dx, dy) || 1; let nn = [dy / L2, -dx / L2]; if (nn[0] * ((p[0] + q[0]) / 2 - from[0]) + nn[1] * ((p[1] + q[1]) / 2 - from[1]) < 0)
             nn = [-nn[0], -nn[1]]; return nn; };
         pcs.forEach((pc, i) => {
-            const { a, b, oa, ob, pm, z, G } = pc, top = SD_HI + WALL_H, zc = z + SD_CUT, mid = [(a[0] + b[0] + oa[0] + ob[0]) / 4, (a[1] + b[1] + oa[1] + ob[1]) / 4], plans = [[a, b, ob, oa]], outs = [[oa, ob, n]];
+            const { a, b, oa, ob, pm, z, G } = pc, top = HI0 + WALL_H, zc = z + (isSd(rec.id) ? SD_CUT : CUT_H), mid = [(a[0] + b[0] + oa[0] + ob[0]) / 4, (a[1] + b[1] + oa[1] + ob[1]) / 4], plans = [[a, b, ob, oa]], outs = [[oa, ob, n]];
             for (const [e, E, O, end, nbr, ue] of [[eA, a, oa, i === 0, pcs[i - 1], ua], [eB, b, ob, i === N - 1, pcs[i + 1], ub]]) {
                 if (!end) {
                     if (nbr.G !== G || Math.abs(nbr.z - z) > 1e-4)
@@ -29406,7 +29405,7 @@ function buildLabFloor(lab, P0, how) {
         const rm = rooms[rec.id], st = rm.style, kind = (rec.floor && rec.floor.style) || 'plate', own = kind === 'wood' || kind === 'grate', top = quads(), side = quads(), base = live && isSd(rec.id) && rec.floor && rec.floor.colour ? lin(rec.floor.colour) : lin(hexMix(st.fa, st.fb, 0.4)), cliff = { rface: quads() };
         const mat = own ? (floorMats[rec.id] = new T.MeshStandardMaterial({ map: kind === 'wood' ? plankTexture(st.fa, st.fb) : grateTexture(st.fa, st.fb), roughness: 0.5, metalness: 0.05, vertexColors: true })) : plate, k = own ? [1, 1, 1] : [base.r / F0.r, base.g / F0.g, base.b / F0.b];
         const cut = new Map();
-        if (live && isSd(rec.id) && rec.poly && !(rec.cells.length && rec.cells.every(c => wet.has(K(c[0], c[1]))))) {
+        if (live && slants(rec.id) && rec.poly && !(rec.cells.length && rec.cells.every(c => wet.has(K(c[0], c[1]))))) {
             const P = rec.poly;
             for (let i = 0; i < P.length; i++) {
                 const a = P[i], b = P[(i + 1) % P.length];
