@@ -1,6 +1,6 @@
 # Follower utilities and the hex grid (getting around the map)
 
-- **Status:** **Proposed / in design.** Nothing in this page is built yet except where it says so. The owner's decisions of 2026-11-27 are marked as such; everything copied from Notion keeps the status Notion gave it.
+- **Status:** **In progress.** Built: the six-sided cargo in the game (§4.2, build `2026-11-17ec`). Everything else is proposed or in design, except where it says so. The owner's decisions of 2026-11-27 are marked as such; everything copied from Notion keeps the status Notion gave it.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-27, branch `claude/zen-cerf-3m8mq5`, over main's build `2026-11-17dx`
 - **Related docs:** `TECHNICIANS.md` (the technicians' abilities as built: FLUX MOVE, REEF, the Kinetic Launcher, Frost Patch, the Blight Spider), `FLUX-MOVEMENT.md` (FLUX MOVE's rules), `SEWER-DUNGEON.md` (the dungeon's toolkit: on branch `claude/sewer-dungeon-spec`, not on main), `SEWER-PROPS.md`, `CARD-BATTLES.md` §2.82 (the hexes), `VIEW-3D.md` (the hex floor).
@@ -66,6 +66,20 @@ The owner, of drafts 1 and 2: "I need polished looking designs those look like t
 - Sheets, each prop of today beside its six-sided draft, rendered sharp from the models (`node design/hex-objects/render.js <three-dir> design/hex-objects 3`): `design/hex-objects/draft3-crates.png`, `draft3-barrels.png`, `draft3-stacks-barrier.png`. **Not in the game.**
 - No cue for "it moves" is drawn on them (draft 1's violet seam is dropped with it); how a movable object is told apart is open, with the highlighted hexes (§2.1).
 - **Still to redo in this direction:** the destructibles (the rubble, the door, the vines, the machine): from the game's own rubble heaps, doors and machines, not draft 1's.
+
+### 4.2 In the game (build `2026-11-17ec`; the owner, 2026-11-28: "go ahead and add the approved ones to the game")
+- **Implemented:** the cargo FLUX MOVE can move (a crate, a crate stack, a barrel or a barrier with a `flux` field: the arena's nine) is drawn six-sided, in the 3D view and the 2D game alike, from `design/props/models/hexcargo.js` (its sprites `img/props/hexcargo.png`). The kind a prop is drawn as is `psKind` (`js/propsprites.js`): its own, or `hex` + its own; cargo that does not move, and every other prop, is as before. The hazard flasks keep their own look (hex armour already).
+- **On the hexes' middles:** those nine stand on the middles of the floor's hexes in the map (`js/facilitymap.js`), as the free-standing props since `2026-11-17dp`; the barriers on two hexes side by side.
+- **Blocking: the simple way** (the owner, 2026-11-28: "I like the simple way of objects blocking the floor"; passed over: converting walking to hexes): a six-sided object blocks the square tile of the game's grid its middle lies in (a barrier, its two), as the map's loader already places every prop.
+- **Not built yet:** FLUX MOVE's own rules on the hexes (§2.1, §2.2: highlighted hexes, a reach of 2 hexes, 60° turns). FLUX MOVE works as before (squares, a quarter turn: a turned barrier is drawn from `hexbarrier.1x2`), and a moved object stands on a square's middle afterwards.
+- **Tests:** `tests/fluxmove.js`, "THE SIX-SIDED CARGO". Seen in a real browser in the 3D view (the barrels, the barriers) and the 2D game (the barrels). **Not playtested; not seen on an iPad.**
+
+### 4.3 Draft 4: the breakable states (2026-11-28, for the owner's look; not in the game)
+From the finding that the breakable things mostly exist already as approved models (the sewer kit's rubble heap and doors, the lab's generator): what was missing is their broken states, and the vines. `design/props/drafts/hexbreak.js`; sheets by `node design/hex-objects/render-break.js <three-dir> design/hex-objects 3`:
+- `draft4-door.png`: the approved subway door, LOCKED, and BREACHED (Quillstone's Charged Door Breach): the frame standing, the shutter torn open wide enough to walk through, bent slats, the hazard bar snapped on the floor, the key switch sheared, scorch and skid marks.
+- `draft4-machine.png`: the game's generator, FROZEN (Frost Maw's Cryo-Fracture: an ice skin, rime, icicles, cold lamps, crack lines), then SHATTERED (its base left, frosted chunks and shards round it).
+- `draft4-vines-rubble.png`: the sewer's heavy vines (new), WHOLE and DISSOLVED (Seaper's Biological Dissolution: melted stumps, a toxic-green puddle, the way open); and the approved rubble heap, whole and cleared, as it is.
+- **Known weak points (the agent's):** the vines read as a barrier but are bushier and plainer than the finished props; the frozen generator's stack comes out teal; the shattered base is cut by the renderer (it would need a real cut model to be baked).
 
 ## 5. What is built today (for reference; unchanged by this page)
 FLUX MOVE moves 9 arena objects up to 2 squares, 90° turns (`js/fluxmove.js`); REEF picks the nearest glowing ledge; the launcher throws from fixed sites; Frost Patch and the Blight Spider's pool are tapped onto any floor; each technician ability waits 60 s (`TECHNICIANS.md`). The floor is drawn as hexes in the 3D view and 34 free-standing props stand on hex middles (main's `2026-11-17do` and `dp`); walking and the map stay on square cells.

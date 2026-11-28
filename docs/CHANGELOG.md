@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-28
+
+### Build `2026-11-17ec` · branch `claude/zen-cerf-3m8mq5` · the cargo FLUX MOVE can move is six-sided, on the hexes
+- **The ask** (the owner, 2026-11-27): "when the player wants to move an object, it's an object that has that hexagonal look already to it"; of draft 3 (the game's own crates, barrels, stacks and barrier rebuilt six-sided), 2026-11-28: "It's right", then "go ahead and add the approved ones to the game [...] I like the simple way of objects blocking the floor".
+- **What it does:** the arena's nine movable pieces (three crates, a crate stack, three barrels, two barriers) are drawn six-sided, in the 3D view and the 2D game, and stand on the middles of the floor's hexes; each blocks the square tile its middle lies in, as before. Cargo that does not move is unchanged. FLUX MOVE's rules are unchanged (its hex rules are the next step). `FOLLOWER-UTILITIES.md` §4.2.
+- **Also, drafts only:** the breakable states (a breached door, a frozen and a shattered generator, the sewer's vines whole and dissolved): `design/hex-objects/draft4-*.png`, §4.3.
+- `design/props/models/hexcargo.js` (new), `img/props/hexcargo.png`, `js/propsprites.js` (`psKind`), `view3d/gamemap.js`, `js/facilitymap.js`, `tests/fluxmove.js`; generated files.
+- **Verified:** `tests/fluxmove.js` and the full run in the handoff; seen in a real browser in both views. **Not playtested; not seen on an iPad.**
+
 ## 2026-11-27
 
 ### No build · branch `claude/zen-cerf-3m8mq5` · follower utilities and the hex grid: the plan, the Notion notes, draft 1 of the hex objects

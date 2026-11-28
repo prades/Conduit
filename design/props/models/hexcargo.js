@@ -1,10 +1,9 @@
-// DRAFT 3 (2026-11-28), for the owner; not baked into the game. The owner, of drafts 1 and 2: "I need polished looking designs those look like the wrong direction"; asked: the look "Today's props,
-// hex-shaped", and what was off: "Too plain". So: THE GAME'S OWN CARGO (design/props/models/cargo.js: the crates s0..s3, the barrels s0..s3, the two crate stacks, the barrier), each rebuilt SIX-SIDED with
-// every detail the finished square one has (the planks and brace, the ribs, the hazard band, the medical stripe and cross, corner posts, rails, latches, the handle, the stencils; the drum's chimes, hoops,
-// painted band, label, bungs; the pallet, straps and tarp; the barrier's profile, band, pins, loops, reflectors and lamp), in the same materials and sizes.
+// THE SIX-SIDED CARGO (build 2026-11-17ec; the owner, 2026-11-27: "when the player wants to move an object, it's an object that has that hexagonal look already to it"; of draft 3, 2026-11-28: "It's right";
+// docs/FOLLOWER-UTILITIES.md §4.1): the cargo FLUX MOVE can move (a crate, a barrel, a crate stack, a barrier with a `flux` field: js/propsprites.js psKind) is drawn six-sided, standing on a hex of
+// the floor's grid. Each is the game's own piece (cargo.js) rebuilt on a hex with every detail it has, in its materials and sizes.
 // One hex of the floor's grid (js/cardbattle.js THE HEXES): a tile across its flats (its flat faces at +x and -x, its points along z); a prop's hex is a little inside it. The camera looks from +x,+z:
 // it sees the face between +z and +x best (FACE 0, where the fronts go), the +x face (FACE 1) next, and a sliver of the face left of +z (FACE 5).
-//   hexcrate.s0..s3   hexdrum.s0..s3   hexstack.s0/s1   hexbarrier (two hexes side by side along x)
+//   hexcrate.s0..s3   hexbarrel.s0..s3   hexcrate_stack.s0/s1   hexbarrier (2x1: two hexes side by side along x)   hexbarrier.1x2 (turned a quarter, as cargo.js's barrier.1x2)
 (function () {
   const S = STY, mt = S.mat;
   const at = (m, x, y, z) => { m.position.set(x, y, z); return m; };
@@ -175,13 +174,13 @@
     return { g };
   }
 
-  const variants = ['hexcrate.s0', 'hexcrate.s1', 'hexcrate.s2', 'hexcrate.s3', 'hexdrum.s0', 'hexdrum.s1', 'hexdrum.s2', 'hexdrum.s3', 'hexstack.s0', 'hexstack.s1', 'hexbarrier'];
+  const variants = ['hexcrate.s0', 'hexcrate.s1', 'hexcrate.s2', 'hexcrate.s3', 'hexbarrel.s0', 'hexbarrel.s1', 'hexbarrel.s2', 'hexbarrel.s3', 'hexcrate_stack.s0', 'hexcrate_stack.s1', 'hexbarrier', 'hexbarrier.1x2'];
   PROPS.hexcargo = { variants, canvas: [700, 700], exposure: 0.95, build(name) {
     const [kind, style] = name.split('.');
     if (kind === 'hexcrate') return { g: crate(STYLES[style], 0.5).g };
-    if (kind === 'hexdrum') return barrel(BARRELS[style]);
-    if (kind === 'hexstack') return stack(style === 's0' ? 0 : 1);
-    if (kind === 'hexbarrier') return barrier();
+    if (kind === 'hexbarrel') return barrel(BARRELS[style]);
+    if (kind === 'hexcrate_stack') return stack(style === 's0' ? 0 : 1);
+    if (kind === 'hexbarrier') { const b = barrier(); if (style !== '1x2') return b; const g = G(); b.g.rotation.y = PI / 2; g.add(b.g); g.scale.set(1, 1, -1); return { g }; }   // (x, z) -> (z, x), as cargo.js's
     throw new Error('no such hexcargo variant ' + name);
   } };
 })();

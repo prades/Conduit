@@ -191,6 +191,7 @@ const IMG_MAP = {
     "img/props/crystalpad.png": "img/props/crystalpad.webp?v=a50a5231",
     "img/props/crystaltank.png": "img/props/crystaltank.webp?v=3eb79cad",
     "img/props/hazard.png": "img/props/hazard.webp?v=f80c76fb",
+    "img/props/hexcargo.png": "img/props/hexcargo.webp?v=071affa5",
     "img/props/holdtank.png": "img/props/holdtank.webp?v=a6c8c68f",
     "img/props/itemicons.png": "img/props/itemicons.webp?v=9ed6c2a2",
     "img/props/lab.png": "img/props/lab.webp?v=bac30920",

@@ -129,6 +129,25 @@ async function boot(store) {
         same(r.range.join(), '2', 'the reach'); same(r.turn.join(), 'barrier_1,barrier_2,sewer_pump_1,sewer_pump_2,sewer_pump_3', 'what turns (the barriers, and the sewer pumps since build 2026-11-07b)'); same(r.sizes, '1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x1,1x2,2x1,2x1,2x1,2x1,2x1', 'the sizes'); same(r.refused.join(), 'true,true,true', 'an immovable object picked, or not said so');
     });
 
+    group('THE SIX-SIDED CARGO (build 2026-11-17ec; the owner, 2026-11-27: "an object that has that hexagonal look already to it"; draft 3: "It\'s right")');
+    check('a crate, a crate stack, a barrel or a barrier FLUX MOVE can move is drawn as its six-sided kind, from the hexcargo sheet, a look for each; one it cannot move, and every other kind, as before', () => {
+        const r = J(`(function(){ const F = _fp.F, o = {}; const mov = F.solids.filter(s => s.flux && PS_HEX_KINDS[s.kind]); o.n = mov.length; o.kinds = [...new Set(mov.map(psKind))].sort().join();
+            o.fam = [...new Set(mov.map(s => PS_FAMILY[psKind(s)]))].join(); o.named = mov.every(s => { const S = _psSolid(s.id); return !!_psResolve('hexcargo', psKind(s), S.dims, null, _psHash(String(s.id))); });
+            const plain = F.solids.find(s => s.kind === 'crate' && !s.flux), flask = F.solids.find(s => s.kind === 'hazard_explosive' && s.flux); o.plain = plain ? psKind(plain) : 'none'; o.flask = flask ? psKind(flask) : 'none';
+            o.sheet = Object.keys(PROP_ATLAS.hexcargo.cells).sort().join(); o.turned = !!PROP_ATLAS.hexcargo.cells['hexbarrier.1x2']; return o; })()`);
+        same(r.n, 9, 'the arena\'s movable cargo'); same(r.kinds, 'hexbarrel,hexbarrier,hexcrate,hexcrate_stack', 'their drawn kinds'); same(r.fam, 'hexcargo', 'their sheet'); same(r.named, true, 'each has a picture on it');
+        same(r.plain, 'crate', 'a crate that does not move'); same(r.flask, 'hazard_explosive', 'a flask (its own hex armour already)');
+        same(r.sheet, 'hexbarrel.s0,hexbarrel.s1,hexbarrel.s2,hexbarrel.s3,hexbarrier,hexbarrier.1x2,hexcrate.s0,hexcrate.s1,hexcrate.s2,hexcrate.s3,hexcrate_stack.s0,hexcrate_stack.s1', 'the sheet\'s pictures'); same(r.turned, true, 'the barrier turned');
+    });
+    check('they stand on the middles of the floor\'s hexes in the map (as the free-standing props since 2026-11-17dp), each on its own tile of the game\'s grid', () => {
+        const m = rd('js/facilitymap.js'), H = Math.sqrt(3) / 2, ids = ['barrier_1', 'barrier_2', 'barrel_5', 'barrel_6', 'barrel_7', 'crate_4', 'crate_5', 'crate_6', 'crate_stack_3'], bad = [];
+        for (const id of ids) { const q = new RegExp('id: "' + id + '"[^\\n]*?rect: \\[([^\\]]+)\\]').exec(m); if (!q) { bad.push(id + ' not found'); continue; } const r = q[1].split(',').map(Number), cy = (r[1] + r[3]) / 40 + 1, row = cy / H, wide = r[2] - r[0] > 20, cx = (r[0] + r[2]) / 40;
+            if (Math.abs(row - Math.round(row)) > 0.01) bad.push(id + ' is not on a row of hexes (' + cy.toFixed(2) + ')'); const odd = Math.abs(Math.round(row)) % 2, fx = (cx - (wide ? 0.5 : 0) - odd * 0.5); if (Math.abs(fx - Math.round(fx)) > 0.01) bad.push(id + ' is not on a hex\'s middle (' + cx + ')'); }
+        same(bad.join('; '), '', 'off the hexes');
+        const r = J(`(function(){ const mov = _fp.F.solids.filter(s => s.flux && PS_HEX_KINDS[s.kind]), seen = new Set(); let dup = 0; for (const s of mov) for (const k of fluxCellsOf(fluxHere(s).x0, fluxHere(s).y0, fluxHere(s).w, fluxHere(s).h)) { if (seen.has(k)) dup++; seen.add(k); } return dup; })()`);
+        same(r, 0, 'two on one tile');
+    });
+
     group('THE REACH: 2 TILES, A SQUARE, FROM WHERE IT STANDS');
     check('a one-tile object reaches a 5 x 5 square round it (a diagonal two away is in reach; three along a line is not); a barrier\'s reach is 6 x 5; every tile of a place must be in it', () => {
         const r = J(`(function(){ const o = {}, c = fluxObject('crate_stack_3'), H = fluxHere(c), b = fluxObject('barrier_2'), B = fluxHere(b); o.region = [fluxRegion(c).size, fluxRegion(b).size];

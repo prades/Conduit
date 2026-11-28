@@ -3915,3 +3915,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's choices (provisional): the spots are the game's own healing areas and BLOOM followers; "nearby" its room within 12 tiles; it holds still in the spot; not in a card battle; an attack order wins.
 - Status: Implemented (build `2026-11-17dx`); verified by `tests/cardbattle.js`; not playtested. `COMBAT.md` §10, `CHANGELOG.md`.
 
+## DECISION: The map's interactions go through the hex grid; movable cargo is six-sided (2026-11-27/28, build `2026-11-17ec`, branch `claude/zen-cerf-3m8mq5`)
+- The owner, 2026-11-27: "the interactable systems within the map, like moving objects around and jumping to higher instances, is all relayed through the hexagon tile grid. So when the player wants to move an object, it's an object that has that hexagonal look already to it, and the player can maneuver the object or find a highlighted hexagon tile under whenever they activate their utility ability."
+- Chosen: FLUX MOVE, climbs and jumps, and the floor-targeted tools all through the hexes; 2 hexes and 60° turns; a follower utility costs both a dungeon charge and, for bigger actions, energy cards; the look by drafts.
+- The look: drafts 1 and 2 (plain hex shapes) rejected ("I need polished looking designs those look like the wrong direction"); chosen **"Today's props, hex-shaped"** (passed over: sleek lab tech; crystal / energy), what was off **"Too plain"**; draft 3 approved, 2026-11-28: **"It's right"**.
+- Blocking: **the simple way** (a six-sided object blocks the square tile its middle lies in; passed over: walking on hexes).
+- Status: the six-sided cargo Implemented (build `2026-11-17ec`), verified by `tests/fluxmove.js`; FLUX MOVE's hex rules, the climbs and the floor tools Designed, not built; the breakable states drafted (draft 4), not approved. `FOLLOWER-UTILITIES.md`, `CHANGELOG.md`.
+

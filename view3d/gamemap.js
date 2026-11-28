@@ -10,7 +10,7 @@ const VIEW3D_GAME = (0, eval)(`({
   get canvas() { return canvas; }, get TILE_W() { return TILE_W; }, get TILE_H() { return TILE_H; }, get wallH() { return FP_WALL_H; }, get wallT() { return typeof FP_WALL_T !== "undefined" ? FP_WALL_T : 1; },
   get pal() { return typeof FP_PAL !== "undefined" ? FP_PAL : null; }, get tank() { return typeof FP_TANK !== "undefined" ? FP_TANK : null; }, get roomStyle() { return typeof FP_ROOM_STYLE !== "undefined" ? FP_ROOM_STYLE : {}; },
   get antColour() { return typeof SPECIES !== "undefined" && SPECIES.ant ? SPECIES.ant.color : null; }, get species() { return typeof SPECIES !== "undefined" ? SPECIES : {}; },
-  get psFamily() { return PS_FAMILY; }, psHash(s) { return _psHash(s); }, psResolve(fam, kind, dims, st, seed) { return _psResolve(fam, kind, dims, st, seed); },
+  get psFamily() { return PS_FAMILY; }, psKind(s) { return typeof psKind === "function" ? psKind(s) : s.kind; }, psHash(s) { return _psHash(s); }, psResolve(fam, kind, dims, st, seed) { return _psResolve(fam, kind, dims, st, seed); },
   psStates(fam, kind, dims) { return typeof _psStates === "function" ? _psStates(fam, kind, dims) : []; }, propState(id) { return typeof facilityPropState === "function" ? facilityPropState(id) : null; },   // THE SEWER KIT's states (js/propsprites.js; docs/SEWER-PROPS.md §10)
   roomAt(x, y, F) { return facilityRoomAt(x, y, F); }, wallOut(w, F) { return _fpWallOut(w, w.a, w.b, F); }, heightAt(x, y, F) { return typeof facilityHeightAt === "function" ? facilityHeightAt(x, y, F) : 0; },
   get elevPx() { return typeof FP_ELEV_PX !== "undefined" ? FP_ELEV_PX : 0; }, roomHeight(id, F) { return typeof facilityRoomHeight === "function" ? facilityRoomHeight(id, F) : 0; }, liftPx(x, y) { return typeof facilityLiftPx === "function" ? facilityLiftPx(x, y) : 0; }, get camLift() { return typeof _fpCam !== "undefined" ? _fpCam : 0; },
@@ -99,11 +99,11 @@ function view3dRoomRecord(F, R, lab, live) {
   const strip = o => JSON.parse(JSON.stringify(o, (k, v) => k === 'raw' || k === 'note' ? undefined : v));
   const solid = s => {   // a prop, with the family and the variant of its model the game draws it from (js/propsprites.js)
     const circle = s.shape === 'circle', c = circle ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2];
-    const fam = G.psFamily[s.kind] || null, seed = G.psHash(String(s.id)), dims = circle ? 'r' + Math.round(s.r * 100) : Math.round(s.bb[2] - s.bb[0]) + 'x' + Math.round(s.bb[3] - s.bb[1]);
+    const dk = G.psKind(s), fam = G.psFamily[dk] || null, seed = G.psHash(String(s.id)), dims = circle ? 'r' + Math.round(s.r * 100) : Math.round(s.bb[2] - s.bb[0]) + 'x' + Math.round(s.bb[3] - s.bb[1]);
     let variant = null;
     if (s.kind === 'plant') variant = seed % 3 === 0 ? 'd' + (seed % 2) : 'p' + (seed % 4);
     else if (s.kind === 'sentry') variant = 'a00';
-    else if (fam) variant = G.psResolve(fam, s.kind, dims, s.kind === 'relay' || s.kind === 'charger' ? 'on' : null, seed);
+    else if (fam) variant = G.psResolve(fam, dk, dims, s.kind === 'relay' || s.kind === 'charger' ? 'on' : null, seed);   // (dk: the kind it is drawn as, six-sided for the cargo FLUX MOVE can move)
     // (a prop of THE SEWER KIT that has states: every state's model is built, and the one the game last set is the one shown: design/style-evolution/round2/chamber.js, view3d/gameview.js propState)
     const sts = fam === 'sewer' ? G.psStates(fam, s.kind, dims) : [], state = sts.length ? (sts.indexOf(G.propState(s.id)) >= 0 ? G.propState(s.id) : sts[0]) : null; if (state) variant = G.psResolve(fam, s.kind, dims, state, seed);
     const o = { id: s.id, kind: s.kind, room: s.room, bb: s.bb, c, fam, variant, cover: !!s.cover, low: !!s.low }; if (state) { o.state = state; o.states = sts.map(st => [st, G.psResolve(fam, s.kind, dims, st, seed)]); } if (lab && circle) o.r = s.r; if (s.poly && /^(river|pool|gate|boss_gate)$/.test(s.kind)) o.poly = s.poly.map(q => q.slice()); return o;   // (the lab floor's: a round prop's radius, for where one can walk)

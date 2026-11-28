@@ -1,4 +1,4 @@
-// A SHARP REVIEW SHEET for the hex cargo drafts (design/props/drafts/hexcargo.js): each of the game's own props (design/props/models/cargo.js) beside its six-sided draft, rendered straight from the 3D
+// A SHARP REVIEW SHEET for the hex cargo drafts (design/props/models/hexcargo.js): each of the game's own props (design/props/models/cargo.js) beside its six-sided draft, rendered straight from the 3D
 // models at K times game size (not a sprite blown up), in the baker's own light and camera (design/props/bake_props.js), each standing on its floor cell (a square tile; a hex of the floor's grid).
 //   node design/hex-objects/render.js <three-dir> <out-dir> [K]
 const { chromium } = (() => { try { return require('playwright'); } catch (e) { return require('/opt/node22/lib/node_modules/playwright'); } })();
@@ -8,8 +8,8 @@ const rd = f => fs.readFileSync(path.join(REPO, f), 'utf8');
 const PX = 60 / Math.sin(Math.PI / 4), UH = PX * Math.cos(Math.asin(0.5));
 const SHEETS = [
   { file: 'draft3-crates.png', title: 'The crates: today (left of each pair) and six-sided (right)', pairs: [['cargo', 'crate.s0', 'hexcargo', 'hexcrate.s0'], ['cargo', 'crate.s1', 'hexcargo', 'hexcrate.s1'], ['cargo', 'crate.s2', 'hexcargo', 'hexcrate.s2'], ['cargo', 'crate.s3', 'hexcargo', 'hexcrate.s3']] },
-  { file: 'draft3-barrels.png', title: 'The barrels: today and six-sided', pairs: [['cargo', 'barrel.s0', 'hexcargo', 'hexdrum.s0'], ['cargo', 'barrel.s1', 'hexcargo', 'hexdrum.s1'], ['cargo', 'barrel.s2', 'hexcargo', 'hexdrum.s2'], ['cargo', 'barrel.s3', 'hexcargo', 'hexdrum.s3']] },
-  { file: 'draft3-stacks-barrier.png', title: 'The crate stacks and the barrier: today and six-sided', pairs: [['cargo', 'crate_stack.s0', 'hexcargo', 'hexstack.s0'], ['cargo', 'crate_stack.s1', 'hexcargo', 'hexstack.s1'], ['cargo', 'barrier', 'hexcargo', 'hexbarrier']] },
+  { file: 'draft3-barrels.png', title: 'The barrels: today and six-sided', pairs: [['cargo', 'barrel.s0', 'hexcargo', 'hexbarrel.s0'], ['cargo', 'barrel.s1', 'hexcargo', 'hexbarrel.s1'], ['cargo', 'barrel.s2', 'hexcargo', 'hexbarrel.s2'], ['cargo', 'barrel.s3', 'hexcargo', 'hexbarrel.s3']] },
+  { file: 'draft3-stacks-barrier.png', title: 'The crate stacks and the barrier: today and six-sided', pairs: [['cargo', 'crate_stack.s0', 'hexcargo', 'hexcrate_stack.s0'], ['cargo', 'crate_stack.s1', 'hexcargo', 'hexcrate_stack.s1'], ['cargo', 'barrier', 'hexcargo', 'hexbarrier']] },
 ];
 const page = `<!doctype html><html><body style="margin:0;background:#10151d"><script src="three.min.js"></script><script>
 window.__render = async function (SHEETS, PX0, UH0, K) {
@@ -21,7 +21,7 @@ window.__render = async function (SHEETS, PX0, UH0, K) {
   const PROPS = {};
   ${rd('design/props/models/_style.js')}
   ${rd('design/props/models/cargo.js')}
-  ${rd('design/props/drafts/hexcargo.js')}
+  ${rd('design/props/models/hexcargo.js')}
   const elev = Math.asin(0.5), D = 40, CW = 150 * K, CH = 150 * K, S = PX * K;
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
   renderer.setPixelRatio(1); renderer.setSize(CW, CH, false); renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95; renderer.setClearColor(0x000000, 0);
