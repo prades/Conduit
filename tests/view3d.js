@@ -35,7 +35,9 @@
 //                 drawing it only when the Thornwhip's entry has failed
 //                 The enemies (the owner, 2026-11-27: "Start enemy attacks"): the wild ants' bite (every class), CALL FOR BACKUP, LEAP STRIKE and GROUND SLAM, each made by the game's own
 //                 functions, drawn and claimed (the snap and the cuts on the one hit, the wind-ups' floor marks, the flares, the slam's ring and dust, the leap's landing, the backup coming up), within
-//                 the budget and halved on LOW, nothing written, a clone no enemy, a fault sending one class's back to 2D
+//                 the budget and halved on LOW, nothing written, a clone not an enemy, a fault sending one class's back to 2D
+//                 Your ant clones (the owner, 2026-11-27: "Push then clones"): the bite, MANDIBLE FRENZY, the scout's LEAP and POUNCE, made by the game's own functions, drawn and claimed in
+//                 your side's colours, within the budget and halved on LOW, nothing written, a fault sending one clone class's back to 2D
 //   A FAILURE     with its script missing the game starts and runs in 2D, and says why
 // What no test here can say: how it looks to the owner, or how fast it is on an iPad.
 const fs = require('fs'), path = require('path'), os = require('os'), crypto = require('crypto');
@@ -931,7 +933,7 @@ const ENM = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.at
   sc.update = function () {}; actors.forEach(function (u) { if (u.backup) { u.update = function () {}; u.dead = true; } }); step(30); elementEffects.length = 0; home(); step(2);
   out.peak = peak; out.cap = A.CAP;
   // A CLONE (one of yours) is no enemy here: its kind is none, and the view draws its attacks as before
-  var cl = spawnCreature({ species: 'ant', className: 'striker' }); cl.isClone = true; cl.team = 'green'; out.clone = A.kid(cl); cl.dead = true;
+  var cl = spawnCreature({ species: 'ant', className: 'striker' }); cl.isClone = true; cl.team = 'green'; out.clone = A.kid(cl); cl.dead = true;   /* (a clone is drawn by its own entry: below, YOUR ANT CLONES IN 3D) */
   // A FAULT: the tank's entry made to fail: its slam is the game's 2D drawing again, the view and the other ants go on
   tk.x = 14.3; tk.y = 19.4; tk.abilityCharge = 100; tk.update = function () { abilityTick(this); }; for (var i = 0; i < 60 && tk.abilityPhase !== 'charging' || i < 3; i++) step(1); var rg2 = col('ring', '#ffb347', ABILITY_DEFS.GROUND_SLAM.radius)[0]; A.breakFor('ant_tank'); step(2);
   out.fault = { bad: A.bad(), owned: !!rg2 && view3dOwnsFx(rg2), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(tk), others: V.has(wk) }; A.mend('ant_tank'); tk.update = function () {}; step(2);`));
@@ -957,15 +959,79 @@ if (ENM !== null) {
         const R = ENM.r.call; same(JSON.stringify([R.phase, R.fl, R.rear > 0.1, R.st0.beams > 0]), '["winding",true,true,true]', 'the call: ' + JSON.stringify(R));
         ok(R.came >= 1 && R.rise === R.came * 2 && R.riseOwned === R.rise, 'those who came: ' + JSON.stringify(R)); ok(R.st.smoke > 4 && R.low.smoke < R.st.smoke, 'their earth, and LOW: ' + JSON.stringify(R.st) + ' / ' + JSON.stringify(R.low));
     });
-    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit and effect as it was); a clone of yours is no enemy here', () => {
+    check('THE BUDGET: at their busiest within it; DRAWING WRITES NOTHING (four more drawings of the same frame leave every unit and effect as it was); a clone of yours is not an enemy here (its kind its own)', () => {
         const P = ENM.peak, C = ENM.cap; ok(P.beams <= C.beam && P.smoke <= C.smoke && P.puff <= C.puff && P.glint <= C.glint && P.fire <= C.fire && P.flats <= C.flat, 'over the budget: ' + JSON.stringify(P));
-        const R = ENM.r; same(JSON.stringify([R.bite.same, R.slam.same, R.leap.same, R.call.same]), '[true,true,true,true]', 'unchanged'); same(ENM.clone, null, 'a clone\'s kind');
+        const R = ENM.r; same(JSON.stringify([R.bite.same, R.slam.same, R.leap.same, R.call.same]), '[true,true,true,true]', 'unchanged'); same(ENM.clone, 'clone_ant_striker', 'a clone\'s kind (its own, not an enemy\'s)');
     });
     check('A FAULT in one enemy class\'s 3D drawing: its effects go back to the game\'s 2D drawing, the view and the other bodies go on', () => {
         const F = ENM.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others]), JSON.stringify([['ant_tank'], false, 'ready', true, true, true]), 'after the fault');
     });
     check('the game\'s side: the 2D marks of GROUND SLAM\'s reach and LEAP STRIKE\'s landing ask the view first (js/abilities.js drawAbilityCharge)', () => {
         ok(/view3dOwnsFx\(actor, 'abilityMark'\)/.test(rd('js/abilities.js')), 'js/abilities.js');
+    });
+}
+
+group('STAGE 5, YOUR ANT CLONES IN 3D (the owner, 2026-11-27: "Push then clones"): the bite, MANDIBLE FRENZY, the scout\'s LEAP and POUNCE, in your side\'s colours');
+// Your ant clones (mark C) beside two enemy ants in the Crystal Chamber (their own updates stopped, so each attack is only what the game's own function makes: js/predator.js _biteTick,
+// js/abilities.js abilityTick, js/mutator.js clonePounceTick).
+const CLN = realPage('dev&engine=3d', RUN(SETUP + `var V = VIEW3D.view, A = V.attacks; gfxLow = false; _fp.gfxSaved = 'high'; put(13, 19); step(3);
+  var foe = function (c, x, y) { var a = spawnCreature({ species: 'ant', className: c }); a.health = a.maxHealth = 1e6; a.spawnProtection = 0; a.x = x; a.y = y; return a; };
+  var e1 = foe('scout', 15.4, 19.5), e2 = foe('scout', 15.0, 20.6);
+  var cl = function (c, x, y) { var a = makeClone('ant', c, x, y, 'hunt', { level: 6, xp: 0 }); a.health = a.maxHealth = 1e6; a.spawnProtection = 0; a.x = x; a.y = y; a.update = function () {}; return a; };
+  var cw = cl('worker', 14.4, 19.5), cs = cl('striker', 14.2, 20.1), cc = cl('scout', 13.2, 18.4);
+  actors.forEach(function (u) { if (u !== player) u.update = function () {}; });
+  var home = function () { cw.x = 14.4; cw.y = 19.5; cs.x = 14.2; cs.y = 20.1; cc.x = 13.2; cc.y = 18.4; e1.x = 15.4; e1.y = 19.5; e2.x = 15.0; e2.y = 20.6; [cw, cs, cc, e1, e2].forEach(function (a) { a.attackWindup = 0; a.attackAnim = 0; a.abilityPhase = 'charging'; a.abilityCharge = 0; a.leapLift = 0; a.health = a.maxHealth; a.update = function () {}; }); };
+  home(); step(3); out.kids = [A.kid(cw), A.kid(cs), A.kid(cc), A.kid(e1)]; out.bodies = [V.has(cw), V.has(cs), V.has(cc)]; out.keys = [cw.abilityKey || null, cs.abilityKey, cc.abilityKey];
+  var snap = function () { var keep = function (q) { var r = {}; Object.keys(q).forEach(function (k) { var v = q[k]; if (/^_(evo|hd)/.test(k)) return; if (v === null || typeof v !== 'object' && typeof v !== 'function') r[k] = v; }); return r; };
+    return JSON.stringify({ a: actors.map(keep), e: elementEffects.map(keep) }); };
+  var same = function () { var s1 = snap(); for (var i = 0; i < 4; i++) V.draw(null); return snap() === s1; };
+  var st = function () { return JSON.parse(JSON.stringify(A.stats)); }, peak = { beams: 0, smoke: 0, puff: 0, glint: 0, fire: 0, solids: 0, flats: 0 }, pk = function () { for (var k in peak) peak[k] = Math.max(peak[k], A.stats[k] || 0); };
+  var low = function (o) { gfxLow = true; V.draw(null); o.low = st(); gfxLow = false; V.draw(null); };
+  var col = function (type, c, r) { return elementEffects.filter(function (e) { return e.type === type && e.color === c && (r === undefined || Math.abs(e.radius - r) < 1e-6); }); }, R = out.r = {};
+  var rz = function (a) { var h = V.bodyOf(a); return h ? +h.rotation.z.toFixed(3) : null; };
+  // THE BITE (the worker clone's, at an enemy scout: the game's bite lands on one of the two in its reach): its rear-back, its snap and the cuts on the one it hurt
+  cw.update = function () { this._biteTick(e1); }; cw.attackCooldown = 0; var h0 = e1.health, h2 = e2.health; for (var i = 0; i < 40 && !(cw.attackWindup > 0 && cw.attackWindup <= 3); i++) step(1); R.bite = { rear: rz(cw), wind: cw.attackWindup };
+  for (var i = 0; i < 12 && !(cw.attackAnim > 0); i++) step(1); R.bite.hurt = e1.health < h0 || e2.health < h2; step(2); R.bite.st = st(); R.bite.same = same(); pk(); low(R.bite); cw.update = function () {}; step(30); home(); step(2);
+  // MANDIBLE FRENZY (the striker clone, both enemies within its reach): its wind-up and flare, its strikes (the game's impacts the view's) and the cuts on those hurt
+  cs.abilityCharge = 100; cs.update = function () { abilityTick(this); }; step(3); R.fz = { phase: cs.abilityPhase, fl: col('impact', '#aa55ff', 0.5).some(function (e) { return view3dOwnsFx(e); }) }; step(14); R.fz.rear = rz(cs);
+  for (var i = 0; i < 30 && cs.abilityPhase === 'winding'; i++) step(1); var ha = e1.health, hb = e2.health, sk = [], sto = 0; for (var i = 0; i < 40; i++) { step(1); col('impact', '#aa55ff', 0.45).forEach(function (e) { if (sk.indexOf(e) < 0) sk.push(e); }); sto += sk.filter(function (e) { return e.life > 0 && view3dOwnsFx(e); }).length > 0 ? 1 : 0; if (i === 13) { R.fz.st = st(); R.fz.same = same(); pk(); low(R.fz); } }
+  R.fz.hurt = (e1.health < ha ? 1 : 0) + (e2.health < hb ? 1 : 0); R.fz.strikes = sk.length; R.fz.owned = sto; cs.update = function () {}; for (var i = 0; i < 60 && cs.abilityPhase !== 'charging'; i++) step(1); step(20); elementEffects.length = 0; home(); step(2);
+  // LEAP (the scout clone, under 40% of its health, an enemy near): its crouch, its flare, its arc away, its landing (the game's impacts the view's)
+  cc.x = 14.3; cc.y = 19.2; cc.health = cc.maxHealth * 0.3; cc.abilityCharge = 100; cc.update = function () { abilityTick(this); }; step(3); R.lp = { phase: cc.abilityPhase, fl: col('impact', '#ffdd44', 0.5).some(function (e) { return view3dOwnsFx(e); }) }; step(12); R.lp.crouch = rz(cc);
+  for (var i = 0; i < 30 && cc.abilityPhase !== 'active'; i++) step(1); step(10); R.lp.air = { lift: cc.leapLift, st: st() }; for (var i = 0; i < 30 && cc.abilityPhase === 'active'; i++) step(1); var ld = col('impact', '#ffdd44', 0.4); step(2);
+  R.lp.land = ld.length; R.lp.landOwned = ld.filter(function (e) { return view3dOwnsFx(e); }).length; R.lp.st = st(); R.lp.same = same(); pk(); low(R.lp); cc.update = function () {}; step(20); elementEffects.length = 0; home(); step(2);
+  // POUNCE (the worker clone with the upgrade, an enemy past its reach): crouched, in the air, landed: its bite's cuts, the game's impact the view's
+  cw.x = 12.6; cw.y = 19.5; cw.pounceRange = 4; cw.pounceReady = 0; cw._nearestEnemy = e1; cw.update = function () { this._nearestEnemy = e1; clonePounceTick(this); }; step(2); R.po = { started: !!cw.pounce }; step(8); R.po.wind = rz(cw);
+  for (var i = 0; i < 30 && cw.pounce && cw.pounce.phase !== 'air'; i++) step(1); step(10); R.po.air = { lift: cw.leapLift, st: st() }; var hp0 = e1.health; for (var i = 0; i < 30 && cw.pounce; i++) step(1); var pi = elementEffects.filter(function (e) { return e.type === 'impact' && Math.abs(e.radius - 0.8) < 1e-6; }); step(3);
+  R.po.hurt = e1.health < hp0; R.po.imp = pi.length; R.po.impOwned = pi.filter(function (e) { return view3dOwnsFx(e); }).length; R.po.st = st(); R.po.same = same(); pk(); low(R.po); cw.update = function () {}; step(20); elementEffects.length = 0; home(); step(2);
+  out.peak = peak; out.cap = A.CAP;
+  // A FAULT: the striker clone's entry made to fail: its frenzy's strikes are the game's 2D drawing again; the enemies' entries and the view go on
+  cs.abilityCharge = 100; cs.update = function () { abilityTick(this); }; for (var i = 0; i < 40 && cs.abilityPhase !== 'active'; i++) step(1); step(13); var fi = col('impact', '#aa55ff', 0.45).filter(function (e) { return e.life > 0; })[0]; A.breakFor('clone_ant_striker'); step(1);
+  out.fault = { bad: A.bad(), owned: !!fi && view3dOwnsFx(fi), state: VIEW3D.state, showing: VIEW3D.showing, body: V.has(cs), others: V.has(e1), enemy: A.covers('ant_striker') }; A.mend('clone_ant_striker'); cs.update = function () {}; step(2);`));
+if (CLN !== null) {
+    check('the registry: your ant clones\' entries (worker, striker, scout), apart from the enemies\'; their specials the game\'s own (none, MANDIBLE FRENZY, LEAP); their bodies the view\'s', () => {
+        ok(!CLN.none, 'the page left no result'); ok(!CLN.threw, CLN.threw); same(CLN.errs.join(' | '), '', 'errors'); same(CLN.state, 'ready', 'the view');
+        same(JSON.stringify(CLN.kids), JSON.stringify(['clone_ant_worker', 'clone_ant_striker', 'clone_ant_scout', 'ant_scout']), 'their kinds'); same(JSON.stringify(CLN.keys), JSON.stringify([null, 'MANDIBLE_FRENZY', 'LEAP']), 'their specials');
+        same(JSON.stringify(CLN.bodies), '[true,true,true]', 'their bodies the view\'s');
+    });
+    check('YOUR CLONE\'S BITE: reared back, its snap and the cuts on the creature it hurt (in your side\'s teal); LOW graphics halves it', () => {
+        const R = CLN.r.bite; ok(R.wind > 0 && R.rear > 0.1 && R.hurt, 'the rear-back and the bite: ' + JSON.stringify(R)); ok(R.st.beams > 4 && R.low.beams < R.st.beams, 'the snap and cuts, and LOW: ' + JSON.stringify(R.st) + ' / ' + JSON.stringify(R.low));
+    });
+    check('MANDIBLE FRENZY (your striker clone): its wind-up and flare; its strikes the view\'s, the cuts on both enemies in its reach; LOW graphics halves it', () => {
+        const R = CLN.r.fz; same(JSON.stringify([R.phase, R.fl, R.rear > 0.1]), '["winding",true,true]', 'the wind-up: ' + JSON.stringify(R));
+        ok(R.strikes >= 3 && R.owned > 0 && R.hurt === 2, 'its strikes: ' + JSON.stringify(R)); ok(R.st.beams > 8 && R.low.beams < R.st.beams, 'its cuts and ring, and LOW: ' + JSON.stringify(R.st) + ' / ' + JSON.stringify(R.low));
+    });
+    check('LEAP (your scout clone\'s escape): crouched, its flare, its arc on the game\'s lift, its landing\'s impacts the view\'s', () => {
+        const R = CLN.r.lp; same(JSON.stringify([R.phase, R.fl, R.crouch < 0]), '["winding",true,true]', 'the crouch: ' + JSON.stringify(R));
+        ok(R.air.lift > 5 && R.air.st.beams > 0, 'in the air: ' + JSON.stringify(R.air)); same(JSON.stringify([R.land, R.landOwned]), '[2,2]', 'the landing: ' + JSON.stringify(R));
+    });
+    check('POUNCE (your clone with the upgrade): crouched, in the air, its bite as it lands (the cuts; the game\'s impact the view\'s)', () => {
+        const R = CLN.r.po; same(JSON.stringify([R.started, R.air.lift > 5, R.hurt, R.imp, R.impOwned]), '[true,true,true,1,1]', 'POUNCE: ' + JSON.stringify(R)); ok(R.st.beams > 4, 'its cuts: ' + JSON.stringify(R.st));
+    });
+    check('THE BUDGET within it; DRAWING WRITES NOTHING; A FAULT in one clone\'s entry sends its effects back to the 2D, the enemies\' entries and the view going on', () => {
+        const P = CLN.peak, C = CLN.cap; ok(P.beams <= C.beam && P.smoke <= C.smoke && P.puff <= C.puff && P.glint <= C.glint && P.fire <= C.fire && P.flats <= C.flat, 'over the budget: ' + JSON.stringify(P));
+        const R = CLN.r; same(JSON.stringify([R.bite.same, R.fz.same, R.lp.same, R.po.same]), '[true,true,true,true]', 'unchanged');
+        const F = CLN.fault; same(JSON.stringify([F.bad, F.owned, F.state, F.showing, F.body, F.others, F.enemy]), JSON.stringify([['clone_ant_striker'], false, 'ready', true, true, true, true]), 'after the fault: ' + JSON.stringify(F.dbg));
     });
 }
 

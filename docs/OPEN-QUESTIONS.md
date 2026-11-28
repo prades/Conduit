@@ -15,7 +15,7 @@ The first version of this file listed fifteen choices I had made that the briefs
 4. **CALL FOR BACKUP's calls** (amber rings rising from its head) and **the ground breaking open** where each that answers comes up: the 2D has only the word and a few hit circles.
 5. **GROUND SLAM's stones and cracks**, and **LEAP STRIKE's streak** along its arc: not in the 2D.
 6. **Bodies for the rest:** the nymphs, THE ANT QUEEN and the Toxic Ant Queen, Voltwyrm, the roly-poly and the other species have no 3D body, so their attacks stay 2D (in a battle drawn without their effects). Which next, and in what look, is the owner's.
-7. **Your ant clones** (3D bodies in mark C): whether their bite and specials (MANDIBLE FRENZY, LEAP) should be drawn the same way, in their teal.
+7. **Your ant clones** (built 2026-11-27 after "Push then clones", looks proposed): their bite's snap and cuts in your side's teal (`#19e6c1`, the 2D telegraph's); MANDIBLE FRENZY's teal ring swept to its reach on each strike (not in the 2D) and its flare in the game's purple; the scout's LEAP in its own yellow with no floor mark (the 2D has none); POUNCE's streak in the Mutator's violet and its impact as a violet ring. Whether a clone's effects should all be teal instead of its specials' own colours.
 8. **The bite's telegraph** (ring, BITE, the mark over its target: `js/combat.js`) is 2D over the plate and wiped in a battle: whether to draw it in 3D there.
 
 **Open 2026-11-27, the bloom line's attacks in 3D** (built on branch `claude/battle-anims-bloom`, no build yet; `VIEW-3D.md` §4.7; videos for the owner). The looks are proposed, not approved. The agent's choices, to confirm or change:

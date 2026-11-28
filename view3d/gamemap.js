@@ -78,7 +78,7 @@ const VIEW3D_GAME = (0, eval)(`({
   // the enemy line's (view3d/attacks_enemy.js): the measures its looks follow (read once: the game's own constants: a creature's bite, the wild ants' specials, js/combat.js COMBAT.bite and
   // js/abilities.js ABILITY_DEFS), and where a striker's LEAP STRIKE will land (js/abilities.js _abStrikeLanding, read: the game's own rule, as its 2D mark has it)
   get enemyMeasures() { const v = (n, d) => { try { const x = (0, eval)(n); return x === undefined ? d : x; } catch (e) { return d; } }, A = v("ABILITY_DEFS", null) || {}, C = v("COMBAT", null);
-    return { bite: C && C.bite ? C.bite : null, backup: A.BACKUP_CALL || null, leap: A.LEAP_STRIKE || null, slam: A.GROUND_SLAM || null }; },
+    return { bite: C && C.bite ? C.bite : null, backup: A.BACKUP_CALL || null, leap: A.LEAP_STRIKE || null, slam: A.GROUND_SLAM || null, frenzy: A.MANDIBLE_FRENZY || null, escape: A.LEAP || null, pounce: v("MUTATOR", null) ? MUTATOR.pounce : null }; },   // (frenzy, escape, pounce: your ant clone's specials, js/abilities.js, and the POUNCE upgrade's leap, js/mutator.js)
   strikeLanding(a) { if (!a || typeof _abStrikeLanding !== "function" || typeof ABILITY_DEFS === "undefined") return null; const t = a.strikeTarget; if (!t || t.dead) return null; return _abStrikeLanding(a, t, ABILITY_DEFS.LEAP_STRIKE); }
 })`);
 
