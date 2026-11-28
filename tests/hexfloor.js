@@ -67,7 +67,22 @@ check('its stairs come in pairs that lead to each other, each on floor', () => {
         on: facilityWalkable((p.rect[0] + p.rect[2]) / 2, (p.rect[1] + p.rect[3]) / 2, F) && facilityWalkable(p.arrive[0], p.arrive[1], F) }))); })()`));
     same(r.length, 4, 'stair ends'); for (const p of r) { ok(p.back, p.id + ' leads back'); ok(p.on, p.id + ' on floor'); }
 });
-check('the game starts you in its Main Hallway (hexFloorStart); the electrical domain, whose door was in today\'s Server Room, is left out for now', () => { ok(on('JSON.stringify(FACILITY_MAP._hexCut || [])').includes('elec_servers'), 'left out'); });
+check('nothing of the map is left out: the electrical domain is reached by its door by the junction', () => { same(on('JSON.stringify(FACILITY_MAP._hexCut || [])'), '[]', 'left out'); });
+check('its furnishing is in (approved 2026-11-28): every piece a kind with a sheet; the junction, mech bay, charger and tuning bench back with their stations; the electrical domain\'s door by the junction, shut until it is repaired', () => {
+    const r = JSON.parse(on(`(() => { const F = facilityBuild({ snap: true }), fur = HEX_FLOOR_MAP.props.map(p => p.id), S = F.solids.filter(s => fur.includes(s.id));
+        return JSON.stringify({ n: fur.length, built: S.length, nosheet: S.filter(s => !PS_FAMILY[s.kind]).map(s => s.kind), st: ['st_junction', 'st_mech_bay', 'st_charger', 'st_tune_bench'].filter(id => !F.stations.some(x => x.id === id)),
+            door: (F.portals.find(p => p.id === 'portal_lobby_elec') || {}).needs || null, domain: !!F.byId.get('elec_servers') && !(FACILITY_MAP._hexCut || []).length }); })()`));
+    ok(r.n >= 80, 'pieces: ' + r.n); same(r.built, r.n, 'pieces in the built map'); same(r.nosheet.join(), '', 'kinds with no sheet'); same(r.st.join(), '', 'stations missing'); same(r.door, 'junction', 'the domain\'s door'); ok(r.domain, 'the domain');
+});
+check('the furniture walls nothing off: from the Main Hallway\'s middle a walk reaches nearly every floor tile of the floor\'s rooms (no piece seals a corner or a way)', () => {
+    const r = JSON.parse(on(`(() => { const F = facilityBuild({ snap: true }), ids = ${JSON.stringify(ROOMS)}, cells = new Set(), K = (x, y) => x + ',' + y;
+        for (const R of F.rooms) if (ids.includes(R.id)) { const b = R.poly.reduce((a, p) => [Math.min(a[0], p[0]), Math.min(a[1], p[1]), Math.max(a[2], p[0]), Math.max(a[3], p[1])], [1e9, 1e9, -1e9, -1e9]);
+            for (let x = Math.floor(b[0]); x <= Math.ceil(b[2]); x++) for (let y = Math.floor(b[1]); y <= Math.ceil(b[3]); y++) if (facilityPointInPoly(x, y, R.poly) && facilityWalkable(x, y, F)) cells.add(K(x, y)); }
+        const H = F.byId.get('lab_hallway'), c = H.poly.reduce((a, p) => [a[0] + p[0] / H.poly.length, a[1] + p[1] / H.poly.length], [0, 0]); let st = null, bd = 1e9; for (const k of cells) { const [x, y] = k.split(',').map(Number), d = Math.hypot(x - c[0], y - c[1]); if (d < bd) { bd = d; st = k; } }
+        const seen = new Set([st]), q = [st]; while (q.length) { const [x, y] = q.shift().split(',').map(Number); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = K(x + dx, y + dy); if (cells.has(k) && !seen.has(k)) { seen.add(k); q.push(k); } } }
+        return JSON.stringify({ all: cells.size, reached: seen.size }); })()`));
+    ok(r.reached >= r.all * 0.97, 'reached ' + r.reached + ' of ' + r.all);
+});
 check('hexFloorStart is there', () => { ok(on('typeof hexFloorStart') === 'function', 'hexFloorStart'); });
 
 console.log(failures ? `\n${failures} failure(s)` : '\nall checks passed');

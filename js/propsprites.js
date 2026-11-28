@@ -167,6 +167,8 @@ const PS_FAMILY = {
     drain_valve: "sewer", drain_valve_turned: "sewer", sluice_gate: "sewer", sluice_switch: "sewer", sluice_switch_turned: "sewer", floor_drain: "sewer", subway_door: "sewer", shortcut_door: "sewer",
     rubble_heap: "sewer", secret_door: "sewer", loose_slab: "sewer",
 };
+// THE HEXAGON GROUND FLOOR'S NEW EQUIPMENT (design/props/models/hexequip.js; docs/FACILITY.md, "The hexagon ground floor"): every kind on its sheet, the corner pieces among them (each baked turned to its corner)
+if (typeof PROP_ATLAS !== "undefined" && PROP_ATLAS.hexequip) for (const n of Object.keys(PROP_ATLAS.hexequip.cells)) PS_FAMILY[n.split(".")[0]] = "hexequip";
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }
     if (_psIndex[fam]) return _psIndex[fam];

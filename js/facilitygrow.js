@@ -24,7 +24,7 @@ function hexFloorApply(M, H) {
         M[k] = M[k].filter(o => !o || typeof o !== "object" || keep.has(o.id) || (k === "floors" ? !gone.has(o.room) : k === "interiors" ? !gone.has(o.id) : !names(o).some(hit)));
     }
     if (M.candidates) for (const k of Object.keys(M.candidates)) if (Array.isArray(M.candidates[k])) M.candidates[k] = M.candidates[k].filter(o => !names(o).some(hit));
-    for (const k of ["interiors", "openings", "connections", "portals"]) for (const e of H[k] || []) M[k].push(Object.assign({}, e));
+    for (const k of ["interiors", "openings", "connections", "portals", "props", "stations"]) for (const e of H[k] || []) M[k].push(Object.assign({}, e, e.poly ? { poly: e.poly.map(q => q.slice()) } : {}));   /* (props and stations: its furnishing) */
     // (and what named what went: a station of a prop that is gone, a doorway whose other end is gone, a connection of an opening, a portal or a ramp that is gone)
     const props = new Set(M.props.map(p => p.id)), ports = new Set(M.portals.map(p => p.id));
     M.stations = M.stations.filter(s => !s.prop || props.has(s.prop));

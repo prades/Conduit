@@ -194,12 +194,21 @@
 
   const KINDS = { hexrack: rack, hexpallet: pallet, hexsofa: sofa, hextable: table, hexcoffee: coffee, hexbench: bench, hexrail: rail, hexhatch: hatch };
   const CORNERS = { hexcool: cool, hexshelf: shelf, hexplanter: planter, hexrelay: relay, hexflood: flood };
-  const variants = Object.keys(KINDS).concat(['hexstairs', 'hexstairs.barred']).concat(...Object.keys(CORNERS).map(k => [k + '.c60', k + '.c120']));
+  // THE GAME'S CORNER PIECES (design/maps/hex-ground-floor/furnishing.json cornerKinds): kind + its corner's angle (60 or 120) + 'r' + its turn in twelfths of a round, so the floor's 2D sprite is
+  // baked already turned to the corner it fills. Built with its corner at the origin opening along +x, turned, then moved so the middle of its outline's box is the origin (where the game draws it).
+  const USED = ['hexcool120r3', 'hexcool120r5', 'hexflood120r5', 'hexplanter120r1', 'hexplanter120r11', 'hexplanter120r5', 'hexplanter120r7', 'hexrelay120r1', 'hexshelf120r1', 'hexshelf120r7'];
+  function turnedCorner(kind, foot, r12) {
+    const inner = CORNERS[kind](foot).g, phi = r12 * PI / 6, F = FOOT[foot].map(([x, z]) => [x * Math.cos(phi) - z * Math.sin(phi), x * Math.sin(phi) + z * Math.cos(phi)]);
+    const xs = F.map(p => p[0]), zs = F.map(p => p[1]), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+    const t = G(); t.rotation.y = -phi; t.add(inner); const g = G(); t.position.set(-cx, 0, -cz); g.add(t); return { g };
+  }
+  const variants = Object.keys(KINDS).concat(['hexsofa.2x1', 'hexbench.2x1', 'hexstairs']).filter(v => v !== 'hexsofa' && v !== 'hexbench').concat(USED);
   PROPS.hexequip = { variants, canvas: [700, 700], exposure: 0.95, build(name) {
     const [kind, v] = name.split('.');
     if (KINDS[kind]) return KINDS[kind]();
-    if (kind === 'hexstairs') return stairs(v === 'barred');
-    if (CORNERS[kind]) return CORNERS[kind](v || 'c60');
+    if (kind === 'hexstairs') return stairs(v !== 'open');   // (the game's: barred, the floor above is not built)
+    if (CORNERS[kind]) return CORNERS[kind](v || 'c60');      // (the drafts' sheets: unturned)
+    const m = /^(hex[a-z]+)(60|120)r(\d+)$/.exec(kind); if (m && CORNERS[m[1]]) return turnedCorner(m[1], 'c' + m[2], +m[3]);
     throw new Error('no such hexequip variant ' + name);
   } };
 })();

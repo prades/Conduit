@@ -8,7 +8,7 @@ const rd = f => fs.readFileSync(path.join(REPO, f), 'utf8');
 const PX = 60 / Math.sin(Math.PI / 4), UH = PX * Math.cos(Math.asin(0.5));
 const SHEETS = [
   { file: 'equip-draft1-server-lounge.png', title: 'Server Room and Lounge: the server rack, the stair door down; sofa, coffee table, coffee machine', shots: [['hexrack', 1], ['hexhatch', 1], ['hexsofa', 2], ['hextable', 1], ['hexcoffee', 1]] },
-  { file: 'equip-draft1-warehouse-halls.png', title: 'Warehouse and hallways: pallet rack, bench, railing, the stairs up (open, and barred)', shots: [['hexpallet', 1], ['hexbench', 2], ['hexrail', 1], ['hexstairs', 'stairs'], ['hexstairs.barred', 'stairs']] },
+  { file: 'equip-draft1-warehouse-halls.png', title: 'Warehouse and hallways: pallet rack, bench, railing, the stairs up (open, and barred)', shots: [['hexpallet', 1], ['hexbench', 2], ['hexrail', 1], ['hexstairs.open', 'stairs'], ['hexstairs.barred', 'stairs']] },
   { file: 'equip-draft1-corners-60.png', title: 'Corner pieces for a 60 degree corner: cooling unit, shelving, planter, relay cabinet, floodlight', shots: [['hexcool.c60', 'c60'], ['hexshelf.c60', 'c60'], ['hexplanter.c60', 'c60'], ['hexrelay.c60', 'c60'], ['hexflood.c60', 'c60']] },
   { file: 'equip-draft1-corners-120.png', title: 'Corner pieces for a 120 degree corner', shots: [['hexcool.c120', 'c120'], ['hexshelf.c120', 'c120'], ['hexplanter.c120', 'c120'], ['hexrelay.c120', 'c120'], ['hexflood.c120', 'c120']] },
 ];
