@@ -153,7 +153,7 @@ function _ccApplyStanceUnits(units, stance) {
     let n = 0;
     for (const a of units) {
         if (!a || a.dead) continue;
-        if (stance === "hold") { a.attackOrder = null; a.job = { type: "move", target: { x: a.x, y: a.y } }; a.stance = "hold"; n++; }
+        if (stance === "hold") { a.attackOrder = null; a.job = { type: "move", target: { x: a.x, y: a.y }, hex: true }; a.stance = "hold"; n++; }   // (hex: in the 3D game, the nearest hex's middle, js/npc.js, §2.85 of docs/CARD-BATTLES.md)
         else if (stance === "follow") { a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; a._pocketHold = null; n++; }   // (either one ends an ATTACK order from the enemy card, js/mixtool.js; COME also lets go of a wait on a launcher's landing, js/techabilities.js _techPocketTick: it comes down the broken edge)
     }
     return n;

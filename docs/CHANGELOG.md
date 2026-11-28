@@ -2,9 +2,18 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-28
+
+### Build `2026-11-17ec` · branch `claude/friendly-thompson-w581x0` · out of a battle, you and your squad stop on a hex's middle
+- **The ask** (the owner, 2026-11-28): "Need to make it to where whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers." (`CARD-BATTLES.md` §2.85)
+- **What it does (the 3D game, either mode):** a tap walks you to the middle of the battles' hex under your finger and you stop exactly there (the nearest one when that is not floor). The step cut short by an enemy near, and a run an enemy stops, end on a hex's middle too. Your squad, following you, comes to rest each on the middle of its own hex near its formation place, never on yours; a follower sent with MOVE TO holds on one. The walk itself, the game's own walks, the 2D game and the website's background are unchanged.
+- **The agent's, provisional:** how far to look for a hex (1.2 tiles at a tap, 1.8 round a follower's place), your hex kept free, the background left out (`CARD-BATTLES.md` §11.37).
+- `js/cardbattle.js` (`hexWalkOn`, `cardHexStand`), `js/input.js`, `js/facilityplay.js`, `js/formation.js`, `js/npc.js`, `js/squadfly.js`, `js/commands.js`, `js/commandcenter.js`, `tests/cardbattle.js`.
+- **Verified:** `tests/cardbattle.js` (new: THE HEXES OUT OF A BATTLE, 3 checks) and the suites in the handoff. **Not seen in a real browser; not playtested; not seen on an iPad.**
+
 ## 2026-11-27
 
-### Build `2026-11-17dy` · branch `claude/friendly-thompson-w581x0` · the ants' limit in card battles: twice, then they leave you be
+### Build `2026-11-17ec` · branch `claude/friendly-thompson-w581x0` · the ants' limit in card battles: twice, then they leave you be
 - **The ask** (the owner, 2026-11-27): "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes." "Only attacked twice this is just to keep from the player, endlessly being attacked" (`CARD-BATTLES.md` §2.84).
 - **What it does:** an ant's blow on you or your squad starts a card battle at most twice. After that ants walk past you and your squad (they still go for the Crystal and for followers holding rooms), and a stray ant blow on you or yours starts nothing and does not land. The count starts again when you go into another place (another room; the Ant Nest's chambers count as one place, the sewer dungeon's rooms as one, the Sewers' Nest as its own) or 5 minutes after the last of those battles ended. A fight you pick yourself with an ant is always allowed and does not count; other creatures, THE ANT QUEEN and the real-time mode are unchanged.
 - **The agent's, provisional:** the places, the 5 minutes from the battle's end, your squad counting as you, the count not saved, nothing on screen saying the ants hold back (`CARD-BATTLES.md` §11.36).

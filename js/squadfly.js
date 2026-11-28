@@ -100,7 +100,7 @@ function partyFlyTapUnit(f) {
 function partyFlyMoveTap(tile) {
     const f = _sfMoveTo; if (!f) return false; _sfMoveTo = null;
     if (f.dead || !tile) { partyFlyRender(true); return !!tile; }
-    f.job = { type: "move", target: tile }; f.stance = "hold"; f._fpPath = null;
+    f.job = { type: "move", target: tile, hex: true }; f.stance = "hold"; f._fpPath = null;   // (hex: in the 3D game, a hex's middle there, js/npc.js, §2.85)
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HOLDING THERE", color: "#8fe3ff", size: 12, life: 50, vy: -0.03 });
     partyFlyRender(true); return true;
 }

@@ -481,6 +481,21 @@ function _cbHexesOf(room, x, y) {
     for (let pass = 0; pass < 3; pass++) { let cut = false; for (let i = cells.length - 1; i >= 0; i--) { const c = cells[i]; let n = 0; for (const d of cardHexNb(c[0], c[1])) if (keys.has(cardHexKey(d[0], d[1]))) n++; if (n < 2) { keys.delete(cardHexKey(c[0], c[1])); cells.splice(i, 1); cut = true; } } if (!cut) break; }   // (no pocket of one hex at a ragged edge: one with fewer than 2 of the room's round it is not the battle's)
     H = { cp: P, cells, keys }; _cbHexRooms.set(key, H); if (_cbHexRooms.size > 40) _cbHexRooms.delete(_cbHexRooms.keys().next().value); return H;
 }
+// THE HEXES OUT OF A BATTLE (§2.85; the owner, 2026-11-28: "Need to make it to where whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the
+// followers"): where you come to rest after a tap, and where each of your squad stands while it follows you or holds where you sent it, is the middle of one of the battle's own hexes (the room's:
+// _cbHexesOf), so a battle that starts finds everyone on one already. On wherever the 3D view draws the room or the card battles are on (the game players get, either mode); the 2D game as it was.
+function hexWalkOn() { if (typeof attractOn === "function" && attractOn()) return false; return (typeof view3dShowing === "function" && view3dShowing()) || cardBattleOn(); }
+// the middle of the battle's hex of the room at (x, y) nearest to it, within r tiles (1.2 if not given), passing over one skip(key, middle) says no to; null for none (no floor, no facility)
+function cardHexStand(x, y, r, skip) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(x, y) : null; if (!room) return null;
+    const H = _cbHexesOf(room, x, y); if (!H) return null;
+    const R = r || 1.2, near = [];
+    for (const c of cardHexDisc(x, y, R + 0.6)) { const d = Math.hypot(c[0] - x, c[1] - y); if (d <= R && H.keys.has(cardHexKey(c[0], c[1]))) near.push([d, c]); }
+    near.sort((p, q) => p[0] - q[0]);
+    for (const [, c] of near) if (!skip || !skip(cardHexKey(c[0], c[1]), c)) return c;
+    return null;
+}
 // the battle's hexes (its room's), once it is lined up
 function cardHexRoom() { const L = _cb.lay; return L ? _cbHexesOf(L.room, L.mx, L.my) : null; }
 // the nearest of a room's hexes to a point (null: none)

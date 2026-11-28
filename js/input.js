@@ -157,13 +157,17 @@ const handleInput=(ex,ey)=>{
     const dx=_ux-canvas.width/2, dy=_uy+facilityPickLift(_ux, _uy)-canvas.height/2-TILE_H;
     const _bk=isoBack(dx/TILE_W,dy/TILE_H);   // (the screen back to the world, through the view's turn: js/config.js)
     const _lw = typeof view3dTapWorld === "function" ? view3dTapWorld(_ux, _uy) : null;   // (THE LOW CAMERA: the floor under the tap, through its projection: js/view3d.js)
-    const gx=Math.round(_lw ? _lw.x : _bk[0]+player.visualX);
-    const gy=Math.round(_lw ? _lw.y : _bk[1]+player.visualY);
+    const _wx = _lw ? _lw.x : _bk[0]+player.visualX, _wy = _lw ? _lw.y : _bk[1]+player.visualY;   // (the point under the finger)
+    const gx=Math.round(_wx);
+    const gy=Math.round(_wy);
     // Only the room you are in and the rooms next door, sharing a doorway with it (js/facilityplay.js facilityTapAllowed, facilityNextDoor: 2026-11-27): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
     if (typeof partyFlyMoveArmed === "function" && partyFlyMoveArmed()) { const _mt = getTile(gx, gy); if (_mt && !_mt.type.includes("wall") && partyFlyMoveTap(_mt)) return; }   /* (THE FOLLOWER'S CLOSE-UP: MOVE TO's spot, js/squadfly.js) */
     if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off a walk to a fallen clone's body: js/mutator.js)
-    facilityWalkTo(gx, gy);
+    // THE HEXES OUT OF A BATTLE (js/cardbattle.js hexWalkOn, cardHexStand; docs/CARD-BATTLES.md §2.85): in the 3D game the walk ends on the middle of the battle's hex under the finger (the
+    // nearest of its room's, when that one is not floor a body can stand on); else, or none near, on the middle of the floor's square as before
+    const _hx = typeof hexWalkOn === "function" && hexWalkOn() && typeof cardHexStand === "function" ? cardHexStand(_wx, _wy, 1.2) : null;
+    if (_hx) facilityWalkTo(_hx[0], _hx[1], true); else facilityWalkTo(gx, gy);
     if (typeof facilityTapCap === "function") facilityTapCap();   // (in a fight, five tiles at a time: the prototype, js/facilityplay.js FP_MOVE)
     player.selectedFollower=null;
 };

@@ -231,8 +231,14 @@ function updateRTSNPC(actor) {
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
         else {
-            const t=actor.job.target;
+            let t=actor.job.target;
             if (!t) { actor.job=null; return; }
+            // THE HEXES OUT OF A BATTLE (§2.85 of docs/CARD-BATTLES.md): a spot you sent it to or told it to hold (job.hex) is, in the 3D game, the middle of the nearest of the battle's hexes there
+            // that is neither yours nor another of your squad's (js/formation.js hexTaken), worked out once; it walks onto that middle
+            if (actor.job.hex && !actor.job.hexDone && typeof hexWalkOn === "function" && hexWalkOn() && typeof cardHexStand === "function") {
+                actor.job.hexDone = true; const h = cardHexStand(t.x, t.y, 1.8, k => typeof hexTaken === "function" && hexTaken(actor, k));
+                if (h) { t = actor.job.target = { x: h[0], y: h[1] }; actor.job.onHex = true; actor._hexKey = cardHexKey(h[0], h[1]); }
+            }
             // Refresh nearby-enemy cache every 10 frames
             if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
                 // Only real enemies (isHostileTarget): a neutral recruit wandering
@@ -253,7 +259,8 @@ function updateRTSNPC(actor) {
             } else {
                 // No threat — hold position
                 const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist>0.6) _walkStep(actor, dx, dy, dist);
+                if (actor.job.onHex) { if (dist <= actor.moveSpeed) { actor.x = t.x; actor.y = t.y; } else _walkStep(actor, dx, dy, dist); }   // (onto the hex's middle)
+                else if (dist>0.6) _walkStep(actor, dx, dy, dist);
             }
             return;
         }
@@ -484,10 +491,10 @@ function followPlayer(actor) {
     // floor you can see), an EMPATHETIC one's FORMATION.empathetic of the way nearer you, the squad's middle.
     const spot = typeof formationSpot === "function" ? formationSpot(actor) : null;
     if (spot) {
-        tx = spot[0]; ty = spot[1]; stop = FORMATION.stop;
+        tx = spot[0]; ty = spot[1]; stop = spot.hex ? 1e-6 : FORMATION.stop;   // (a hex's middle, its nudge in it already, is walked onto: js/formation.js _fmHex, §2.85)
         const ox = tx - player.x, oy = ty - player.y, L = Math.hypot(ox, oy);
-        if (actor.wanderRadius && L > 1e-6) { const wx = tx + ox / L * FORMATION.loneWolf, wy = ty + oy / L * FORMATION.loneWolf; if (facilityFloorAt(wx, wy) && facilityLosFrom(player.x, player.y, wx, wy)) { tx = wx; ty = wy; } }
-        else if (actor.preferGroup) { tx = player.x + ox * (1 - FORMATION.empathetic); ty = player.y + oy * (1 - FORMATION.empathetic); }
+        if (!spot.hex && actor.wanderRadius && L > 1e-6) { const wx = tx + ox / L * FORMATION.loneWolf, wy = ty + oy / L * FORMATION.loneWolf; if (facilityFloorAt(wx, wy) && facilityLosFrom(player.x, player.y, wx, wy)) { tx = wx; ty = wy; } }
+        else if (!spot.hex && actor.preferGroup) { tx = player.x + ox * (1 - FORMATION.empathetic); ty = player.y + oy * (1 - FORMATION.empathetic); }
     }
     const baseX = tx, baseY = ty;
     if (actor.preferGroup && !spot) {
@@ -505,7 +512,7 @@ function followPlayer(actor) {
     // A wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
     { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
-    if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
+    if (dist > stop) { const s = Math.min(actor.moveSpeed, dist); actor.x += (dx / dist) * s; actor.y += (dy / dist) * s; }   // (no step past where it is going: onto a hex's middle, not round it)
 }
 
 // A step of a follower's mind, with two card attacks' marks (cardAttackTry): WRAITHFIRE's ghost moves itself (wraithfireTick), and a VOLTAGE FIELD's mark makes it faster for this step

@@ -1366,6 +1366,46 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.area, 'sewers:nest_area', 'the Sewers\' Nest, a place of its own'); same(r.reset, 0, 'cardBattleReset clears it');
     });
 
+    group('THE HEXES OUT OF A BATTLE (§2.85; the owner, 2026-11-28: "whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers")');
+    run(`globalThis.__tapW = (wx, wy) => { const ex = isoSX(wx, wy) + canvas.width / 2, ey = isoSY(wx, wy) + canvas.height / 2 + TILE_H; floatingTexts.length = 0; _fp.tapNoAt = 0; handleInput(ex, ey); };   // (a real tap on a point of the floor, as a finger's)
+        globalThis.__onHex = (x, y) => { const h = cardHex(x, y); return Math.hypot(h[0] - x, h[1] - y) < 1e-6 && !!_cbHexesOf(facilityRoomIdAt(x, y), x, y).keys.has(cardHexKey(x, y)); };
+        globalThis.__arrive = (n) => { for (let i = 0; i < n && player.fpPath && player.fpPath.length; i++) _simStep(false); };
+        globalThis.__spot = (d0, d1) => partyRoomCells('crystal_chamber').find(q => { const d = Math.hypot(q[0] - player.x, q[1] - player.y); return d > d0 && d < d1 && Math.hypot(q[0] - crystal.x, q[1] - crystal.y) > 3 && !followers.some(f => Math.hypot(f.x - q[0], f.y - q[1]) < 1.5); });`);
+    check('a tap off a square\'s middle: you walk to the middle of the battle\'s hex under it, and stand exactly there; your squad, following, comes to rest each on the middle of a hex of its own, none on yours', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; player.lastHitAt = 0; const o = { on: hexWalkOn(), pressed: facilityUnderPressure() };
+            const c = __spot(4, 7), wx = c[0] + 0.32, wy = c[1] - 0.27, h = cardHex(wx, wy); o.tapHex = _cbHexesOf('crystal_chamber').keys.has(cardHexKey(wx, wy));
+            __tapW(wx, wy); o.target = [player.targetX, player.targetY].map(v => +v.toFixed(4)).join(); o.hex = h.map(v => +v.toFixed(4)).join(); o.hexWalk = !!player._hexWalk;
+            __arrive(900); o.arrived = !(player.fpPath && player.fpPath.length); o.at = __onHex(player.x, player.y);
+            for (let i = 0; i < 480; i++) _simStep(false);
+            const fs = followers.filter(f => formationFollowing(f)), keys = fs.map(f => cardHexKey(f.x, f.y));
+            o.n = fs.length; o.squad = fs.map(f => __onHex(f.x, f.y)).join(); o.apart = new Set(keys).size === keys.length; o.notYours = keys.indexOf(cardHexKey(player.x, player.y)) < 0; o.still = __onHex(player.x, player.y);
+            o.near = fs.map(f => +Math.hypot(f.x - player.x, f.y - player.y).toFixed(2)).join(); return o; })()`);
+        same(r.on, true, 'in the 3D game with card battles (the test\'s stand-in for the 3D view)'); same(r.pressed, false, 'no enemy near, no hit just now (a whole walk, not the cut step)');
+        ok(r.tapHex, 'the tap is on one of the room\'s battle hexes (the fixture)'); same(r.target, r.hex, 'where the walk goes: that hex\'s middle'); same(r.hexWalk, true, 'a hex walk');
+        same(r.arrived + ',' + r.at, 'true,true', 'arrived, standing on the hex\'s middle');
+        same(r.n, 3, 'three following'); same(r.squad, 'true,true,true', 'each on a hex\'s middle (of the room\'s battle hexes)'); same(r.apart, true, 'each its own hex'); same(r.notYours, true, 'none on yours');
+        same(r.still, true, 'and you are still on yours'); ok(r.near.split(',').every(d => +d < 4.5), 'round you, near their formation places: ' + r.near);
+    });
+    check('the step cut short with an enemy near ends on a hex\'s middle; a run stopped by an enemy steps onto the nearest; a follower sent to a spot (MOVE TO) holds on the middle of a hex there', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; FP_MOVE.cap = true; const o = {};
+            const c = __spot(5, 9); player.lastHitAt = frame; __tapW(c[0] + 0.3, c[1] + 0.2); o.cut = __onHex(player.targetX, player.targetY); o.cutLen = +Math.hypot(player.targetX - player.x, player.targetY - player.y).toFixed(2);
+            __arrive(900); o.cutAt = __onHex(player.x, player.y); player.lastHitAt = 0;
+            const c2 = __spot(5, 9); __tapW(c2[0] + 0.1, c2[1] - 0.3); o.free = !!player._tapRun; for (let i = 0; i < 20; i++) _simStep(false); player.lastHitAt = frame; o.stopped = facilityRunCheck();
+            o.stopTo = __onHex(player.targetX, player.targetY); __arrive(300); o.stopAt = __onHex(player.x, player.y); player.lastHitAt = 0;
+            const f = followers[0], s = __spot(2, 6); _sfMoveTo = f; o.sent = partyFlyMoveTap({ x: s[0] + 0.3, y: s[1] + 0.3 }); for (let i = 0; i < 600; i++) _simStep(false);
+            o.held = [f.stance, !!(f.job && f.job.onHex), __onHex(f.x, f.y), cardHexKey(f.x, f.y) !== cardHexKey(player.x, player.y)].join(); return o; })()`);
+        same(r.cut, true, 'the cut step\'s end: a hex\'s middle'); ok(r.cutLen > 0 && r.cutLen <= 4.3, 'about the step\'s 3 tiles: ' + r.cutLen); same(r.cutAt, true, 'standing there');
+        same(r.free + ',' + r.stopped, 'true,true', 'a free run, stopped by the enemy'); same(r.stopTo + ',' + r.stopAt, 'true,true', 'onto the nearest hex\'s middle, and standing there');
+        same(r.sent, true, 'MOVE TO taken'); same(r.held, 'hold,true,true,true', 'holding, on a hex, on its middle, not yours');
+    });
+    check('in the 2D game (no 3D view, no card battles) nothing changes: a tap walks to the middle of the floor\'s square, the squad\'s places are as they were', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = false; CARD_BATTLE.force3d = false; playerAttackMode = false; player.lastHitAt = 0; const o = { on: hexWalkOn() };
+            const c = __spot(4, 7); __tapW(c[0] + 0.32, c[1] - 0.27); o.target = [player.targetX, player.targetY].join() === [c[0], c[1]].join(); o.hexWalk = !!player._hexWalk;
+            for (let i = 0; i < 60; i++) _simStep(false); o.spots = followers.filter(f => formationFollowing(f)).map(f => { const s = formationSpot(f); return !!(s && s.hex); }).join();
+            CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; return o; })()`);
+        same(r.on, false, 'off'); same(r.target + ',' + r.hexWalk, 'true,false', 'the square\'s middle, no hex walk'); same(r.spots, 'false,false,false', 'no place a hex');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

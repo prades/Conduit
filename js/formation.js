@@ -58,7 +58,28 @@ function formationSpot(f) {
     if (role === "camper") { const s = i % 2 ? -1 : 1, d = FORMATION.side + Math.floor(i / 2) * FORMATION.spread; ox = -F.y * s * d; oy = F.x * s * d; }   // beside you: across the way ahead, right then left
     else { const d = role === "sniper" ? -FORMATION.back : FORMATION.front, k = (i - (n - 1) / 2) * FORMATION.spread; ox = F.x * d - F.y * k; oy = F.y * d + F.x * k; }   // ahead or behind, side by side across the way ahead
     f._fmSpot = _fmPlace(px, py, ox, oy); f._fmAt = f0;
+    if (typeof hexWalkOn === "function" && hexWalkOn()) { const h = _fmHex(f, f._fmSpot, px, py); if (h) f._fmSpot = h; }   // (in the 3D game: a hex's middle, §2.85)
     return f._fmSpot;
+}
+// THE HEXES OUT OF A BATTLE (js/cardbattle.js hexWalkOn, cardHexStand; docs/CARD-BATTLES.md §2.85; the owner, 2026-11-28: "whenever the player clicks to a new location, it assumes the middle of one
+// of the hex tiles. And so do the followers"): in the 3D game a place is the middle of one of the battle's hexes, the nearest to the place with its trait's nudge in it (js/npc.js followPlayer's,
+// moved here), on floor you can see and walk to straight, and neither yours (where you stand, where you are going) nor another of your squad's (its _hexKey, while it follows you or holds where
+// it was sent). Null: none near (the place as it was).
+function hexTaken(f, key) {
+    if (typeof player !== "undefined" && player) {
+        if (Number.isFinite(player.x) && key === cardHexKey(player.x, player.y)) return true;
+        if (Number.isFinite(player.targetX) && Number.isFinite(player.targetY) && key === cardHexKey(player.targetX, player.targetY)) return true;
+    }
+    for (const o of (typeof followers !== "undefined" ? followers : [])) if (o && o !== f && !o.dead && o._hexKey === key && (formationFollowing(o) || (o.job && o.job.type === "move"))) return true;
+    return false;
+}
+function _fmHex(f, s, px, py) {
+    if (typeof cardHexStand !== "function" || !s) return null;
+    let x = s[0], y = s[1]; const ox = x - px, oy = y - py, L = Math.hypot(ox, oy);
+    if (f.wanderRadius && L > 1e-6) { const wx = x + ox / L * FORMATION.loneWolf, wy = y + oy / L * FORMATION.loneWolf; if (_fmOk(px, py, wx, wy)) { x = wx; y = wy; } }
+    else if (f.preferGroup) { x = px + ox * (1 - FORMATION.empathetic); y = py + oy * (1 - FORMATION.empathetic); }
+    const h = cardHexStand(x, y, 1.8, (k, m) => hexTaken(f, k) || !_fmOk(px, py, m[0], m[1])); if (!h) return null;
+    const out = [h[0], h[1]]; out.hex = true; f._hexKey = cardHexKey(h[0], h[1]); return out;
 }
 // the place: as far out as it can be on floor you can walk to straight, coming in toward you; failing that, turned to a diagonal, then to a side (a wall ahead: beside you); failing all, where you stand
 const _fmTurns = [0, 0.785, -0.785, 1.571, -1.571];
