@@ -49,9 +49,9 @@ add('crystal_chamber', 'R', 'tuning bench (was Teleport Room 1)', [(2.1, 8.0), (
 add('crystal_chamber', 'R', 'sentry', [(8.6, 9.6)])
 add('crystal_chamber', 'C', 'corner relay cabinet', [(1.0, 5.6)])
 # 2 THE SERVER ROOM
-for y in (2.4, 5.0, 7.6):
-    add('front_lobby', 'N', 'server racks', [(x, y) for x in (14, 15, 16, 17)])
-    add('front_lobby', 'N', 'server racks', [(x, y) for x in (20, 21, 22, 23)])
+# (the owner, 2026-11-28, drawing four strokes across the room: "Diagonal server rack like this": four rows down the floor's 60 degree line, as its slanted walls run)
+for (x0, y0, n) in ((12.3, 4.4, 7), (14.4, 3.7, 8), (18.3, 3.1, 6), (22.0, 3.4, 5)):
+    add('front_lobby', 'N', 'server racks (a diagonal row)', [(x0 + 0.5 * i, y0 + H * i) for i in range(n)])
 add('front_lobby', 'R', 'junction (the electrical domain\'s door beside it)', [(18.5, 0.9)])
 add('front_lobby', 'N', 'stair door down to the electrical domain', [(19.5, 0.9)])
 add('front_lobby', 'R', 'console', [(24.5, 10.3)])
