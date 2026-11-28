@@ -1405,6 +1405,24 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; return o; })()`);
         same(r.on, false, 'off'); same(r.target + ',' + r.hexWalk, 'true,false', 'the square\'s middle, no hex walk'); same(r.spots, 'false,false,false', 'no place a hex');
     });
+    check('followers fighting in real time (holding a room, outside your battles) stand on a hex\'s middle as they strike or shoot, still in reach; one patrolling the room it holds rests on one (the owner, asked: "Yes")', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; player.lastHitAt = 0; const o = {};
+            const [b, s] = followers; b.role = 'brawler'; s.role = 'sniper'; partyApplyStance([b, s], 'hold'); o.posted = [!!b.post, !!s.post, partyIsMember(b), partyIsMember(s)].join();
+            const far = partyRoomCells('crystal_chamber').filter(q => Math.hypot(q[0] - player.x, q[1] - player.y) > 6 && Math.hypot(q[0] - crystal.x, q[1] - crystal.y) > 3)[0];
+            player.x = player.targetX = player.visualX = far[0]; player.y = player.targetY = player.visualY = far[1];
+            const a = __ant(b.x + 2.6, b.y + 0.4); a.noBite = true; a.health = a.maxHealth = 1e6; a.abdomenAttack = false; a.rangeDamage = 0; a.stunned = 1e6;   /* (it calls no backup, leaps at no one) */
+            let on = 0; for (let i = 0; i < 900; i++) { _simStep(false); if (cardBattleActive()) on++; }
+            let nb = 0, ns = 0, reach = 0, sight = 0; for (let i = 0; i < 120; i++) { _simStep(false); if (__onHex(b.x, b.y)) nb++; if (__onHex(s.x, s.y)) ns++; if (Math.hypot(b.x - a.x, b.y - a.y) <= Math.max(1.4, (a.bodyR || 0) + 0.2) + 0.05) reach++; if (facilitySeesFrom(s.x, s.y, a.x, a.y) && Math.hypot(s.x - a.x, s.y - a.y) < 10) sight++; }
+            o.battle = on; o.hurt = 1e6 - a.health > 0; o.b = [nb, reach].join(); o.s = [ns, sight].join();
+            o.apart = cardHexKey(b.x, b.y) !== cardHexKey(s.x, s.y); a.dead = true; a.health = 0;
+            let rest = 0, at = null; for (let i = 0; i < 4000 && at === null; i++) { _simStep(false); const p = s._patrol; rest = p && p.wait > 0 ? rest + 1 : 0; if (rest === 50) at = __onHex(s.x, s.y); }
+            o.rest = at; return o; })()`);
+        same(r.posted, 'true,true,false,false', 'both holding the room, out of your squad');
+        same(r.battle, 0, 'no card battle (they fight in real time)'); same(r.hurt, true, 'the ant took their blows');
+        const [nb, reach] = r.b.split(',').map(Number), [ns, sight] = r.s.split(',').map(Number);
+        ok(nb >= 108 && reach === 120, 'the Brawler, of the last 120 frames: on a hex\'s middle ' + nb + ', in strike reach ' + reach); ok(ns >= 108 && sight === 120, 'the Mage: on a hex\'s middle ' + ns + ', the ant in sight and range ' + sight); same(r.apart, true, 'each its own hex');
+        same(r.rest, true, 'patrolling, 50 frames into a rest: on a hex\'s middle');
+    });
 
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
