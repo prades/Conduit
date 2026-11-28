@@ -35203,64 +35203,6 @@ const FACILITY_MAP = {
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
-function hexFloorApply(M, H) {
-    const gone = new Set(H.removes), repl = new Set(H.replaces), keep = new Set(H.keep), byId = new Map(H.rooms.map(r => [r.id, r]));
-    M.rooms = M.rooms.filter(r => !gone.has(r.id)).map(r => repl.has(r.id) ? Object.assign({}, r, { objects: [] }, byId.get(r.id)) : r);
-    for (const r of H.rooms)
-        if (!repl.has(r.id))
-            M.rooms.push(Object.assign({}, r));
-    const hit = id => gone.has(id) || repl.has(id);
-    const names = o => [o.room, o.toRoom, o.via].concat(o.rooms || []).filter(x => typeof x === "string");
-    for (const k of Object.keys(M)) {
-        if (k === "rooms" || k === "levels" || !Array.isArray(M[k]))
-            continue;
-        M[k] = M[k].filter(o => !o || typeof o !== "object" || keep.has(o.id) || (k === "floors" ? !gone.has(o.room) : k === "interiors" ? !gone.has(o.id) : !names(o).some(hit)));
-    }
-    if (M.candidates)
-        for (const k of Object.keys(M.candidates))
-            if (Array.isArray(M.candidates[k]))
-                M.candidates[k] = M.candidates[k].filter(o => !names(o).some(hit));
-    for (const k of ["interiors", "openings", "connections", "portals"])
-        for (const e of H[k] || [])
-            M[k].push(Object.assign({}, e));
-    const props = new Set(M.props.map(p => p.id)), ports = new Set(M.portals.map(p => p.id));
-    M.stations = M.stations.filter(s => !s.prop || props.has(s.prop));
-    M.portals = M.portals.filter(p => ports.has(p.to));
-    const ops = new Set(M.openings.map(o => o.id)), ramps = new Set(M.ramps.map(r => r.id));
-    ports.clear();
-    for (const p of M.portals)
-        ports.add(p.id);
-    M.connections = M.connections.filter(c => (!c.opening || ops.has(c.opening)) && (!c.portal || ports.has(c.portal)) && (!c.ramp || ramps.has(c.ramp)));
-    const group = new Map();
-    for (const i of M.interiors) {
-        const k = String(i.offset);
-        if (!group.has(k))
-            group.set(k, []);
-        group.get(k).push(i.id);
-    }
-    const cut = new Set();
-    for (const ids of group.values())
-        if (!M.portals.some(p => ids.includes(p.room)))
-            for (const id of ids)
-                cut.add(id);
-    if (cut.size) {
-        M.rooms = M.rooms.filter(r => !cut.has(r.id));
-        M.interiors = M.interiors.filter(i => !cut.has(i.id));
-        for (const k of Object.keys(M))
-            if (k !== "rooms" && k !== "levels" && Array.isArray(M[k]))
-                M[k] = M[k].filter(o => !o || typeof o !== "object" || !names(o).some(id => cut.has(id)));
-        const pk = new Set(M.props.map(p => p.id));
-        M.stations = M.stations.filter(s => !s.prop || pk.has(s.prop));
-        M._hexCut = Array.from(cut);
-    }
-    for (const s of ["experiment_lab"])
-        if (!M.rooms.some(r => r.id === s))
-            throw new Error("hexFloorApply: " + s + " is missing");
-    M._hexFloor = new Set(H.rooms.map(r => r.id));
-    return M;
-}
-if (HEX_FLOOR_ON && typeof HEX_FLOOR_MAP !== "undefined")
-    hexFloorApply(FACILITY_MAP, HEX_FLOOR_MAP);
 const FP_NEST_ROOMS = new Set(FACILITY_MAP.rooms.filter(r => r.id === "nest_area" || r.nest).map(r => r.id));
 const FP_NEST_TAGS = Object.fromEntries(FACILITY_MAP.rooms.filter(r => r.nest).map(r => [r.id, r.tag || r.label]));
 const FLUX_LAB_MAP = {
@@ -35325,11 +35267,69 @@ const TEST_CHAMBER_MAP = {
 };
 ;
 /* js/facilitygrow.js */
+function hexFloorApply(M, H) {
+    const gone = new Set(H.removes), repl = new Set(H.replaces), keep = new Set(H.keep), byId = new Map(H.rooms.map(r => [r.id, r]));
+    M.rooms = M.rooms.filter(r => !gone.has(r.id)).map(r => repl.has(r.id) ? Object.assign({}, r, { objects: [] }, byId.get(r.id)) : r);
+    for (const r of H.rooms)
+        if (!repl.has(r.id))
+            M.rooms.push(Object.assign({}, r));
+    const hit = id => gone.has(id) || repl.has(id);
+    const names = o => [o.room, o.toRoom, o.via].concat(o.rooms || []).filter(x => typeof x === "string");
+    for (const k of Object.keys(M)) {
+        if (k === "rooms" || k === "levels" || !Array.isArray(M[k]))
+            continue;
+        M[k] = M[k].filter(o => !o || typeof o !== "object" || keep.has(o.id) || (k === "floors" ? !gone.has(o.room) : k === "interiors" ? !gone.has(o.id) : !names(o).some(hit)));
+    }
+    if (M.candidates)
+        for (const k of Object.keys(M.candidates))
+            if (Array.isArray(M.candidates[k]))
+                M.candidates[k] = M.candidates[k].filter(o => !names(o).some(hit));
+    for (const k of ["interiors", "openings", "connections", "portals"])
+        for (const e of H[k] || [])
+            M[k].push(Object.assign({}, e));
+    const props = new Set(M.props.map(p => p.id)), ports = new Set(M.portals.map(p => p.id));
+    M.stations = M.stations.filter(s => !s.prop || props.has(s.prop));
+    M.portals = M.portals.filter(p => ports.has(p.to));
+    const ops = new Set(M.openings.map(o => o.id)), ramps = new Set(M.ramps.map(r => r.id));
+    ports.clear();
+    for (const p of M.portals)
+        ports.add(p.id);
+    M.connections = M.connections.filter(c => (!c.opening || ops.has(c.opening)) && (!c.portal || ports.has(c.portal)) && (!c.ramp || ramps.has(c.ramp)));
+    const group = new Map();
+    for (const i of M.interiors) {
+        const k = String(i.offset);
+        if (!group.has(k))
+            group.set(k, []);
+        group.get(k).push(i.id);
+    }
+    const cut = new Set();
+    for (const ids of group.values())
+        if (!M.portals.some(p => ids.includes(p.room)))
+            for (const id of ids)
+                cut.add(id);
+    if (cut.size) {
+        M.rooms = M.rooms.filter(r => !cut.has(r.id));
+        M.interiors = M.interiors.filter(i => !cut.has(i.id));
+        for (const k of Object.keys(M))
+            if (k !== "rooms" && k !== "levels" && Array.isArray(M[k]))
+                M[k] = M[k].filter(o => !o || typeof o !== "object" || !names(o).some(id => cut.has(id)));
+        const pk = new Set(M.props.map(p => p.id));
+        M.stations = M.stations.filter(s => !s.prop || pk.has(s.prop));
+        M._hexCut = Array.from(cut);
+    }
+    for (const s of ["experiment_lab"])
+        if (!M.rooms.some(r => r.id === s))
+            throw new Error("hexFloorApply: " + s + " is missing");
+    M._hexFloor = new Set(H.rooms.map(r => r.id));
+    return M;
+}
 (function () {
     if (typeof FACILITY_MAP === "undefined" || FACILITY_MAP._grown)
         return;
     const M = FACILITY_MAP, G = 20;
     M._grown = true;
+    if (typeof HEX_FLOOR_ON !== "undefined" && HEX_FLOOR_ON && typeof HEX_FLOOR_MAP !== "undefined")
+        hexFloorApply(M, HEX_FLOOR_MAP);
     if (typeof FLUX_LAB_MAP !== "undefined" && typeof window !== "undefined" && window.location && /[?&]fluxlab\b/.test(window.location.search || "")) {
         const L = FLUX_LAB_MAP;
         M.rooms.push(L.room);
@@ -47270,7 +47270,7 @@ function _netZoneRect() {
     }
 }
 function facilityRoomName(id) {
-    if (typeof id === "string" && (id.slice(0, 3) === "sd_" || id.slice(0, 3) === "hx_" || (typeof FACILITY_MAP !== "undefined" && FACILITY_MAP._hexFloor && FACILITY_MAP._hexFloor.has(id))) && typeof sewerDungeonRoomName === "function")
+    if (typeof id === "string" && (id.slice(0, 3) === "sd_" || id.slice(0, 3) === "hx_" || (typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.byId && _fp.F.byId.get(id) && _fp.F.byId.get(id).raw && _fp.F.byId.get(id).raw.hex_floor)) && typeof sewerDungeonRoomName === "function")
         return sewerDungeonRoomName(id);
     return FP_ROOM_TAG[id] || String(id || "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
