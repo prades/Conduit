@@ -117,8 +117,12 @@ json.dump([{'room': a, 'kind': b, 'label': c, 'hexes': d} for a, b, c, d in P], 
 S = 22; W = 54 * S; Hh = 40 * S; T = lambda p: ((p[0] + 2) * S, (p[1] + 2) * S)
 COL = {'R': '#4fb3ff', 'X': '#ffb347', 'N': '#7ee08a', 'C': '#ff7ac8'}
 o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{Hh}"><rect width="100%" height="100%" fill="#0b1226"/>']
-for rid, poly in ROOMS.items():
-    o.append('<polygon points="%s" fill="#3a4458" stroke="#e9f2f4" stroke-width="2"/>' % ' '.join('%.1f,%.1f' % T(p) for p in poly.exterior.coords))
+# the floor as one (no border between rooms: they run into each other), its outline the outer walls, and the owner's two walls inside it
+from shapely.ops import unary_union
+FL = unary_union([p.buffer(0.001) for p in ROOMS.values()]).buffer(-0.001)
+o.append('<polygon points="%s" fill="#3a4458" stroke="#e9f2f4" stroke-width="4" stroke-linejoin="round"/>' % ' '.join('%.1f,%.1f' % T(p) for p in FL.exterior.coords))
+_W = json.load(open(__import__('os').path.join(__import__('os').path.dirname(__import__('os').path.abspath(__file__)), 'draft-5-chosen.json')))['walls']
+for wl in _W: o.append('<polyline points="%s" fill="none" stroke="#e9f2f4" stroke-width="4" stroke-linecap="round"/>' % ' '.join('%.1f,%.1f' % T(p) for p in wl))
 # the floor's hexes, faint
 for rr in range(int(DY / H) - 2, int((34 + DY) / H) + 2):
     for q in range(-1, 52):
