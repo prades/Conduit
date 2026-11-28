@@ -19,6 +19,7 @@
 // `status` says how sure the tracing is: "traced" (read straight off the sketch), "approximate" (drawn loosely), "unconfirmed" (a guess about what it is).
 // THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md; the owner, 2026-11-21: "build it"): its rooms are in the map only with ?sewerdungeon in the address, a builder's look at it.
 // The owner chose "Replace outright": when its first stage is whole the old Sewers go and this switch with them.
+const HEX_FLOOR_ON = typeof location !== "undefined" && /[?&]hexfloor\b/.test(location.search || "");   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md; js/hexfloormap.js, tools/hexfloor.js)
 const SEWER_DUNGEON_ON = typeof location !== "undefined" && /[?&]sewerdungeon\b/.test(location.search || "");
 const FACILITY_MAP = {
     id: "conduit_facility_01",
@@ -39,6 +40,7 @@ const FACILITY_MAP = {
     ],
 
     rooms: [
+        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.rooms : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.rooms : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "crystal_chamber", label: "Crystal Chamber", level: 0, status: "traced", wall_material: "solid",
           polygon: [[185, 262], [370, 262], [370, 500], [185, 500]],
@@ -240,6 +242,7 @@ const FACILITY_MAP = {
     // the map of its own, `offset` sketch pixels from there (64 tiles east), where nothing else is, and you reach it through a doorway (a PORTAL): walking into the doorway fades to black, loads you in the other room's
     // doorway and fades back (js/facilityportals.js). A room is a unit of the map; an interior is a room you have to go into.
     interiors: [
+        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.interiors : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.interiors : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
         { id: "cold_storage", under: "experiment_lab", offset: [-1920, 0] },   // (96 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen; out here
@@ -269,6 +272,7 @@ const FACILITY_MAP = {
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
     portals: [
+        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.portals : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         { id: "portal_arena_armory", room: "arena", rect: [320, 1090, 340, 1130], arrive: [385, 1110], to: "portal_armory_arena", label: "ARMORY", kind: "door",
           note: "The Armory's steel door onto the arena, in an alcove in the west cave wall just south of the two garage doors." },
         { id: "portal_armory_arena", room: "armory", rect: [200, 930, 240, 950], arrive: [220, 985], to: "portal_arena_armory", label: "ARENA", kind: "door",
@@ -1321,6 +1325,7 @@ const FACILITY_MAP = {
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until the user has checked them in the game.
     openings: [
+        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.openings : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.openings : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "door_chamber_teleport_1", a: [225, 500], b: [265, 500], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
           note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },
@@ -1375,6 +1380,7 @@ const FACILITY_MAP = {
           note: "THE SUBWAY: the steps down from the platform's east end to the track bed (three tiles across), an open mouth with no door." },
     ],
     connections: [
+        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.connections : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.connections : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
         { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck", ramp: "r_deck_door_steps" },

@@ -569,6 +569,7 @@ function facilityPlayStart() {
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     if (chamber && typeof testChamberStart === "function") testChamberStart(F);   // the test chamber: the tutorial over, the player and the squad in the room, every energy card in stock (js/testchamber.js)
     if (lab && typeof fluxLabStart === "function") fluxLabStart(F);   // the test room: the tutorial over, the player and the squad in the room, its creatures (js/fluxlab.js)
+    if (typeof hexFloorStart === "function") hexFloorStart(F);   // the hexagon ground floor while it is built (?hexfloor): you start in its Main Hallway (hexFloorStart, below)
     if (typeof sewerDungeonStart === "function") sewerDungeonStart(F);   // the sewer dungeon while it is built (?sewerdungeon): you start at its West Entrance (sewerDungeonStart, below)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
     else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
@@ -905,6 +906,21 @@ function initFacilityPlay() {
     facilityPlayChip();
 }
 try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }
+
+// THE HEXAGON GROUND FLOOR, WHILE IT IS BUILT (docs/FACILITY.md, "The hexagon ground floor"): with ?hexfloor in the address its rooms are in the map (js/facilitymap.js HEX_FLOOR_ON) and the game starts you
+//   in the middle of its Main Hallway, with the tutorial passed, as the sewer dungeon's start does. Stage 1: walls and floor only; its stairs go down to the Experiment Lab and up to the Observation Deck.
+function hexFloorStart(F) {
+    if (typeof HEX_FLOOR_ON === "undefined" || !HEX_FLOOR_ON || !_fp || !F || !F.byId || !F.byId.has("hx_main_hallway") || typeof partyRoomCells !== "function") return false;
+    if (typeof facilityBlackoutSet === "function") facilityBlackoutSet(false);
+    const S = _fp.tut && _fp.tut.script; if (S && typeof TUT_STEPS !== "undefined") { S.step = TUT_STEPS.length; S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1); }
+    const cs = partyRoomCells("hx_main_hallway"); if (!cs.length) return false;
+    let mx = 0, my = 0; for (const c of cs) { mx += c[0]; my += c[1]; } mx /= cs.length; my /= cs.length;
+    let s = cs[0]; for (const c of cs) if (Math.hypot(c[0] - mx, c[1] - my) < Math.hypot(s[0] - mx, s[1] - my)) s = c;   // (the cell nearest its middle)
+    player.x = player.targetX = player.visualX = s[0]; player.y = player.targetY = player.visualY = s[1]; player.fpPath = null;
+    followers.forEach((f, i) => { const c = cs.find(q => Math.hypot(q[0] - s[0] - 1 - i, q[1] - s[1]) < 0.6) || s; f.x = c[0]; f.y = c[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
+    _fp.zoneRoom = "hx_main_hallway";
+    return true;
+}
 
 // THE SEWER DUNGEON, WHILE IT IS BUILT (docs/SEWER-DUNGEON.md): with ?sewerdungeon in the address its rooms are in the map (js/facilitymap.js SEWER_DUNGEON_ON) and the game starts you at its West
 // Entrance, the tutorial over, your squad beside you: a builder's look, with no way in or out yet and nothing to do in it. Gone when the dungeon takes the old Sewers' place. False when not in the mode.

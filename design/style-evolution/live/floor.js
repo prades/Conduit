@@ -141,6 +141,7 @@ function buildLabFloor(lab, P0, how) {
   // and posts, and the floor under it as a zigzag. For a room of the dungeon (id sd_), live: a slanted wall is one straight wall along its line, a tile thick, mitred into the walls beside it;
   // the floor is cut along the room's own outline, tile by tile. Nothing of any other room changes.
   const isSd = id => typeof id === 'string' && id.slice(0, 3) === 'sd_', diag = [];
+  const slants = id => isSd(id) || (typeof id === 'string' && id.slice(0, 3) === 'hx_');   // (rooms whose slanted walls are built straight, not in blocks: the sewer dungeon's and THE HEXAGON GROUND FLOOR's, docs/FACILITY.md)
   const inP = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
   // a wall's face on any line: from p0 to p1, seen from nrm's side
   const segQuad = (q, p0, p1, nrm, y0, y1, col, v0, v1) => { if ((p1[0] - p0[0]) * nrm[1] - (p1[1] - p0[1]) * nrm[0] < 0) { const t = p0; p0 = p1; p1 = t; }
@@ -158,7 +159,7 @@ function buildLabFloor(lab, P0, how) {
   // the walls: a block a tile of the gap between rooms (band), or a thin wall on the line where two rooms touch (thin)
   const band = new Map(), thin = [], thinSeen = new Set(), rails = [], spills = [];
   for (const rec of recs) { const R = rooms[rec.id].R; rec.walls.forEach((w0, wi) => { if (w0.kind === 'open') return; const w = R.WALLS[wi]; if (live && w0.kind === 'spill') { spills.push({ w, room: rec.id }); return; }   /* (a spill lip: the sewers' own, below) */ if (live && (w0.kind === 'deck_rail' || w0.kind === 'railing_wall')) { rails.push({ w, room: rec.id }); return; }
-    if (live && isSd(rec.id)) { if (!(w.L > 1e-6)) return; if (Math.abs(w.u[0]) > 1e-6 && Math.abs(w.u[1]) > 1e-6) { diag.push({ w, rec, wi }); return; } }   /* (a slanted wall: one straight wall, below) */
+    if (live && slants(rec.id)) { if (!(w.L > 1e-6)) return; if (Math.abs(w.u[0]) > 1e-6 && Math.abs(w.u[1]) > 1e-6) { diag.push({ w, rec, wi }); return; } }   /* (a slanted wall: one straight wall, below) */
     for (let i = 0, n = Math.round(w.L); i < n; i++) { const m = [w.a[0] + w.u[0] * (i + 0.5), w.a[1] + w.u[1] * (i + 0.5)], bx = Math.round(m[0] + w.n[0] * 0.5), by = Math.round(m[1] + w.n[1] * 0.5);
       if (roomAt.has(K(bx, by))) { const k = m[0] + ',' + m[1]; if (!thinSeen.has(k)) { thinSeen.add(k); thin.push({ m, u: [Math.abs(w.u[0]), Math.abs(w.u[1])], glass: !!w0.window && !w0.divider }); } }
       else if (!band.has(K(bx, by))) band.set(K(bx, by), { x: bx, y: by, own: rec.id, rock: live && w0.kind === 'rock' }); } }); }
@@ -323,9 +324,10 @@ function buildLabFloor(lab, P0, how) {
       for (const [e, E, O, end, nbr, ue] of [[eA, a, oa, i === 0, pcs[i - 1], ua], [eB, b, ob, i === N - 1, pcs[i + 1], ub]]) {
         if (!end) { if (nbr.G !== G || Math.abs(nbr.z - z) > 1e-4) outs.push([E, O, ue]); continue; }
         if (e.wedge) { plans.push([E, e.o, e.wedge]); outs.push([e.o, e.wedge, away(e.o, e.wedge, mid)], [e.wedge, E, away(e.wedge, E, mid)]); } else outs.push([E, e.o, away(E, e.o, mid)]); }
-      face2(G.face, a, b, m1, z + B0, top, c, z, body); for (const [p, q, nn] of outs) segQuad(G.sdCap || (G.sdCap = quads()), p, q, nn, minH + B0, top, WHITE, 0, 1);
-      for (const pl of plans) { polyTop(G.sdCap || (G.sdCap = quads()), pl, top, WHITE); if (pc.stub) polyTop(sdTop, pl, zc, WHITE); }
-      if (pc.stub) { segQuad(sdFace, a, b, m1, z + B0, zc, WHITE, 0, 1); for (const [p, q, nn] of outs) segQuad(sdTop, p, q, nn, minH + B0, zc, WHITE, 0, 1); }
+      const sdW = isSd(rec.id), cap = sdW ? G.sdCap || (G.sdCap = quads()) : G.cap, sTop2 = sdW ? sdTop : labTop, sFace2 = sdW ? sdFace : labFace;   // (THE HEXAGON GROUND FLOOR's: the lab's pale cut, not the sewers' dark concrete)
+      face2(G.face, a, b, m1, z + B0, top, c, z, body); for (const [p, q, nn] of outs) segQuad(cap, p, q, nn, minH + B0, top, WHITE, 0, 1);
+      for (const pl of plans) { polyTop(cap, pl, top, WHITE); if (pc.stub) polyTop(sTop2, pl, zc, WHITE); }
+      if (pc.stub) { segQuad(sFace2, a, b, m1, z + B0, zc, WHITE, 0, 1); for (const [p, q, nn] of outs) segQuad(sTop2, p, q, nn, minH + B0, zc, WHITE, 0, 1); }
       const L1 = Math.hypot(b[0] - a[0], b[1] - a[1]), sm = new T.Mesh(new T.BoxGeometry(L1, 0.028, 0.03), seamOf(rec.id)); sm.rotation.y = -Math.atan2(w.u[1], w.u[0]); sm.position.set(pm[0] - n[0] * 0.012, z + WALL_H * 0.2 + 0.012, pm[1] - n[1] * 0.012); sm.userData.noInk = true; G.g.add(sm); }); }
 
   // thin walls: glass or a divider, on the line; each sinks when the room behind it (to its north or west) is opened
