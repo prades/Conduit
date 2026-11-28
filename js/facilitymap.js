@@ -422,14 +422,15 @@ const FACILITY_MAP = {
         { id: "floodlight_1", room: "arena", shape: "rect", rect: [530, 801.38, 550, 821.38], status: "placed", kind: "floodlight" },
         { id: "floodlight_3", room: "arena", shape: "rect", rect: [910, 1147.79, 930, 1167.79], status: "placed", kind: "floodlight" },
         { id: "floodlight_4", room: "arena", shape: "rect", rect: [530, 1147.79, 550, 1167.79], status: "placed", kind: "floodlight" },
-        { id: "barrier_1", room: "arena", shape: "rect", rect: [590, 910, 630, 930], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
-        { id: "barrier_2", room: "arena", shape: "rect", rect: [670, 1050, 710, 1070], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
-        { id: "barrel_5", room: "arena", shape: "rect", rect: [490, 1090, 510, 1110], status: "placed", kind: "barrel", flux: { range: 2 } },   // (the three FLUX drums stood in the north-east corner until build 2026-11-12v: the Catwalk Spur is there now; they stand south of the truck, west of the Nest's rubble)
-        { id: "barrel_6", room: "arena", shape: "rect", rect: [512, 1092, 532, 1112], status: "placed", kind: "barrel", flux: { range: 2 } },
-        { id: "barrel_7", room: "arena", shape: "rect", rect: [502, 1114, 522, 1134], status: "placed", kind: "barrel", flux: { range: 2 } },
-        { id: "crate_4", room: "arena", shape: "rect", rect: [950, 1110, 970, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
-        { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1110, 990, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
-        { id: "crate_6", room: "arena", shape: "rect", rect: [970, 1130, 990, 1150], status: "placed", kind: "crate", flux: { range: 2 } },
+        // (build 2026-11-17ec: the arena's cargo that FLUX MOVE can move stands on the middles of the floor's hexes, as the free-standing props since 2026-11-17dp, and is drawn six-sided: js/propsprites.js psKind)
+        { id: "barrier_1", room: "arena", shape: "rect", rect: [590, 905.31, 630, 925.31], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
+        { id: "barrier_2", room: "arena", shape: "rect", rect: [670, 1043.87, 710, 1063.87], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
+        { id: "barrel_5", room: "arena", shape: "rect", rect: [480, 1095.83, 500, 1115.83], status: "placed", kind: "barrel", flux: { range: 2 } },   // (the three FLUX drums stood in the north-east corner until build 2026-11-12v: the Catwalk Spur is there now; they stand south of the truck, west of the Nest's rubble)
+        { id: "barrel_6", room: "arena", shape: "rect", rect: [500, 1095.83, 520, 1115.83], status: "placed", kind: "barrel", flux: { range: 2 } },
+        { id: "barrel_7", room: "arena", shape: "rect", rect: [490, 1113.15, 510, 1133.15], status: "placed", kind: "barrel", flux: { range: 2 } },
+        { id: "crate_4", room: "arena", shape: "rect", rect: [950, 1113.15, 970, 1133.15], status: "placed", kind: "crate", flux: { range: 2 } },
+        { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1113.15, 990, 1133.15], status: "placed", kind: "crate", flux: { range: 2 } },
+        { id: "crate_6", room: "arena", shape: "rect", rect: [960, 1130.47, 980, 1150.47], status: "placed", kind: "crate", flux: { range: 2 } },
         { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 974.59, 990, 994.59], status: "placed", kind: "crate_stack", flux: { range: 2 } },
         // THE HAZARD CONTAINERS (build 2026-11-09yy; the owner, 2026-11-10: "two explosive ones in the arena"; js/hazards.js): flasks in hex armour that FLUX MOVE carries like a crate; a shot sets one off
         { id: "hazard_x1", room: "arena", shape: "rect", rect: [690, 905.31, 710, 925.31], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the north barrier and the north reserve." },

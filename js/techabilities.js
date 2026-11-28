@@ -956,6 +956,10 @@ function techFluxPick(s) {
     const A = _techFluxAim(); if (!A) return false;
     if (!s) { _techSay("TAP AN OBJECT · THE OUTLINED ONES MOVE", "#8aa0c8"); return true; }
     if (typeof fluxMovable !== "function" || !fluxMovable(s)) { _techSay("✦ THE " + _fluxName(s) + " DOES NOT MOVE", "#ff8a6a"); return true; }
+    if (typeof fluxHexOn === "function" && fluxHexOn()) {   // ON THE HEXES (js/fluxmove.js; build 2026-11-17ee): its reach and its places are hexes of the floor, its turn a sixth at a time
+        const H = fluxHexOf(s); A.flux.s = s; A.flux.hex = true; A.flux.dir = H.dir; A.flux.at = null; A.flux.region = null; A.flux.grid = [null, null]; A.flux.hreg = fluxHexRegion(s); A.flux.hgrid = {}; A.flux.hgrid[H.dir] = fluxHexGrid(s, H.dir);
+        A.picks.object = s; A.step = 1; _techAimShow(); return true;
+    }
     A.flux.s = s; A.flux.turn = false; A.flux.at = null; A.flux.region = fluxRegion(s); A.flux.grid = [null, null]; A.flux.grid[0] = fluxGrid(s, false);
     A.picks.object = s; A.step = 1; _techAimShow();
     return true;
@@ -963,15 +967,31 @@ function techFluxPick(s) {
 // a tap on the grid: the tile it goes to (its first tile); a tap on another movable object picks that one; a tap off the reach says so
 function techFluxTile(x, y) {
     const A = _techFluxAim(); if (!A || !A.flux.s) return false;
+    if (A.flux.hex) { const h = cardHex(x, y); return techFluxHex(h[0], h[1]); }   // (on the hexes: the hex that point is on)
     const R = fluxRegion(A.flux.s);
     if (!R.has(x + "," + y)) { _techSay("TOO FAR · " + A.flux.s.flux.range + " TILES AT MOST", "#ff8a6a"); return true; }
     A.flux.at = [x, y]; _techAimShow();
     const c = fluxCheck(A.flux.s, x, y, A.flux.turn); if (!c.ok) _techSay(c.why, "#ff8a6a");
     return true;
 }
-// ⟳ ROTATE (the prompt's button, R): a quarter turn of the place shown (a two-tile object only)
+// a tap on the hexes: the hex it goes to (its first hex); off the reach says so
+function techFluxHex(hx, hy) {
+    const A = _techFluxAim(); if (!A || !A.flux.s || !A.flux.hex) return false;
+    const h = cardHex(hx, hy);
+    if (!A.flux.hreg.has(cardHexKey(h[0], h[1]))) { _techSay("TOO FAR · " + A.flux.s.flux.range + " HEXES AT MOST", "#ff8a6a"); return true; }
+    A.flux.at = h; _techAimShow();
+    const c = fluxCheckHex(A.flux.s, h[0], h[1], A.flux.dir); if (!c.ok) _techSay(c.why, "#ff8a6a");
+    return true;
+}
+// ⟳ ROTATE (the prompt's button, R): a quarter turn of the place shown (a two-tile object only); on the hexes a sixth of a turn (a two-hex object only)
 function techFluxRotate() {
     const A = _techFluxAim(); if (!A || !A.flux.s) return false;
+    if (A.flux.hex) {
+        if (!fluxTwo(A.flux.s)) { _techSay("THE " + _fluxName(A.flux.s) + " LOOKS THE SAME TURNED", "#8aa0c8"); return false; }
+        A.flux.dir = (A.flux.dir + 1) % 6; if (!A.flux.hgrid[A.flux.dir]) A.flux.hgrid[A.flux.dir] = fluxHexGrid(A.flux.s, A.flux.dir);
+        if (!A.flux.at) A.flux.at = fluxHexOf(A.flux.s).at.slice();   // (turned where it stands, until another hex is tapped)
+        _techAimShow(); return true;
+    }
     if (!fluxCanTurn(A.flux.s)) { _techSay("THE " + _fluxName(A.flux.s) + " LOOKS THE SAME TURNED", "#8aa0c8"); return false; }
     A.flux.turn = !A.flux.turn; const i = A.flux.turn ? 1 : 0; if (!A.flux.grid[i]) A.flux.grid[i] = fluxGrid(A.flux.s, A.flux.turn);
     _techAimShow(); return true;
@@ -980,13 +1000,15 @@ function techFluxRotate() {
 function techFluxPlace() {
     const A = _techFluxAim(); if (!A || !A.flux.s) return false;
     if (!A.flux.at) { _techSay("TAP WHERE IT GOES FIRST", "#8aa0c8"); return false; }
+    if (A.flux.hex) return _techAimLast("place", { hx: A.flux.at[0], hy: A.flux.at[1], dir: A.flux.dir });
     return _techAimLast("place", { x: A.flux.at[0], y: A.flux.at[1], turn: A.flux.turn });
 }
 // THE USE (techAbilityUse, the one way in): the object to its place, or why not ({ again: true }: the aim stays up)
 function techFluxMoveAt(tech, s, place) {
     if (!s || typeof fluxMovable !== "function" || !fluxMovable(s)) return { ok: false, why: "PICK AN OBJECT THAT MOVES", again: true };
-    if (!place || !Number.isInteger(place.x) || !Number.isInteger(place.y)) return { ok: false, why: "TAP WHERE IT GOES", again: true };
-    const r = fluxMoveTo(s, place.x, place.y, !!place.turn);
+    const onHex = !!place && Number.isFinite(place.hx) && Number.isFinite(place.hy) && typeof fluxMoveToHex === "function";   // (a place on the hexes: js/fluxmove.js ON THE HEXES)
+    if (!onHex && (!place || !Number.isInteger(place.x) || !Number.isInteger(place.y))) return { ok: false, why: "TAP WHERE IT GOES", again: true };
+    const r = onHex ? fluxMoveToHex(s, place.hx, place.hy, place.dir | 0) : fluxMoveTo(s, place.x, place.y, !!place.turn);
     if (!r.ok) return { ok: false, why: r.why, again: true };
     tech._abReadyAt = _techFrame() + techCooldown(tech, TECH_AB.flux.cooldown);
     _techSay("✦ FLUX MOVE · THE " + _fluxName(s), "#c77dff");
@@ -1352,7 +1374,7 @@ function techAimPrompt() {
     const need = techAimNeed();
     if (A.flux) {   // FLUX MOVE: what to do next, as it goes
         if (!A.flux.s) return "FLUX MOVE · TAP AN OBJECT TO MOVE: THE OUTLINED ONES";
-        return "FLUX MOVE · THE " + _fluxName(A.flux.s) + (A.flux.at ? " · ✓ PLACE IT" : " · TAP WHERE IT GOES");   // (short: ⟳ ROTATE and ✓ PLACE stand beside it)
+        return "FLUX MOVE · THE " + _fluxName(A.flux.s) + (A.flux.at ? " · ✓ PLACE IT" : A.flux.hex ? " · TAP A LIT HEX" : " · TAP WHERE IT GOES");   // (short: ⟳ ROTATE and ✓ PLACE stand beside it)
     }
     return A.ab.name + " · " + (need && A.ab.ask ? A.ab.ask(need, A.picks) : "");
 }
@@ -1361,7 +1383,7 @@ function _techAimShow() {
     document.body.classList.toggle("tech-aiming", !!techAim);
     const X = techAim && techAim.flux;   // FLUX MOVE's buttons in the prompt: ✓ PLACE once an object is picked, ⟳ ROTATE for one that turns
     document.body.classList.toggle("tech-flux-place", !!(X && X.s));
-    document.body.classList.toggle("tech-flux-turn", !!(X && X.s && typeof fluxCanTurn === "function" && fluxCanTurn(X.s)));
+    document.body.classList.toggle("tech-flux-turn", !!(X && X.s && (X.hex ? fluxTwo(X.s) : typeof fluxCanTurn === "function" && fluxCanTurn(X.s))));
     const el = document.getElementById ? document.getElementById("techAim") : null, t = el && el.querySelector ? el.querySelector(".ta-t") : null;
     if (t) t.textContent = techAimPrompt();
     if (typeof partyBarRender === "function") partyBarRender(true);
@@ -1442,6 +1464,7 @@ function techAimTap(x, y) {
     if (need === "spot") return techAimPickSpot(techAim.ab && techAim.ab.id === "reef" ? techReefScreenToWorld(x, y) : techScreenToWorld(x, y));   // (REEF's: the floor drawn in front)
     if (need === "object") return techFluxPick(typeof fluxPropAtScreen === "function" ? fluxPropAtScreen(x, y) : null);   // FLUX MOVE: the object
     if (need === "place") {   // FLUX MOVE: its place (a tap on another movable object, off the reach, picks that one instead)
+        if (techAim.flux.hex) { const h = fluxHexAtScreen(x, y), A = techAim; if (h && !A.flux.hreg.has(cardHexKey(h[0], h[1]))) { const o = fluxPropAtScreen(x, y); if (o && o !== A.flux.s && fluxMovable(o)) return techFluxPick(o); } return h ? techFluxHex(h[0], h[1]) : true; }
         const t = fluxTileAtScreen(x, y), A = techAim, R = A.flux.s ? fluxRegion(A.flux.s) : null;
         if (t && R && !R.has(t[0] + "," + t[1])) { const o = fluxPropAtScreen(x, y); if (o && o !== A.flux.s && fluxMovable(o)) return techFluxPick(o); }
         return t ? techFluxTile(t[0], t[1]) : true;
@@ -1530,7 +1553,7 @@ function techAbilityInfo(f) {
     if (ab.id === "flux_move") {
         wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
         return { h: "ABILITY · " + ab.name, note: "From the ✦ chip on its squad card: tap an object on the screen (the ones that move are outlined), tap where it goes on its grid, and ✓ PLACE. A barrier can be turned (⟳ ROTATE). Nothing moves until it is placed; ✕ CALL OFF leaves it where it was.",
-                 rows: [["REACH", "2 tiles from where it stands, any way (a diagonal counts as one)"], ["OBJECTS", typeof fluxLabOn === "function" && fluxLabOn() ? "the arena's and the test room's loose crates, barrels and barriers" : "the arena's loose crates, barrels and barriers"], ["IT MAY NOT", "go under anyone, onto a doorway or an item, or shut a way through"]].concat(wait) };
+                 rows: [["REACH", "2 hexes from where it stands, any way"], ["OBJECTS", typeof fluxLabOn === "function" && fluxLabOn() ? "the arena's and the test room's loose crates, barrels and barriers" : "the arena's loose crates, barrels and barriers"], ["IT MAY NOT", "go under anyone, onto a doorway or an item, or shut a way through"]].concat(wait) };
     }
     return { h: "ABILITY · " + ab.name, note: "", rows: [["READY", ready]] };
 }

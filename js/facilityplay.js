@@ -165,6 +165,17 @@ function facilitySolidSet(id, open) {
 // pieces and its sprite's caches, the stretches of floor (relabelled only where they changed: a whole relabelling costs tens of ms), the cached routes and spawn spots, and every route in flight (each unit plans
 // again round it). Nothing here can fail part way: the arguments are checked before the first change. The object stands on the w x h cells from (x0, y0) (whole tiles); turned: along the other axis.
 // Returns { ok, covered, freed } (the cells it now covers, the floor it gave back), or { ok: false, why } when nothing was changed.
+// A PROP'S OWN MIDDLE IN THE MAP, in the game's grid (js/fluxmove.js ON THE HEXES, build 2026-11-17ee): the map draws a prop where its author put it (the movable cargo on hexes' middles); the game's
+// grid snaps it to a tile. The raw middle, moved by the map's shift to the game's grid (found once, from a one-tile prop that stands on a tile's middle and has not been moved). Null for one not in the map.
+let _fpRawShift = null;
+function facilityPropRawMid(id) {
+    if (!_fp || !_fp.F || typeof FACILITY_MAP === "undefined") return null;
+    const sc = facilityScale(), F = _fp.F;
+    if (!_fpRawShift) for (const pr of FACILITY_MAP.props || []) { if (!pr.rect) continue; const cx = (pr.rect[0] + pr.rect[2]) / 2 / sc, cy = (pr.rect[1] + pr.rect[3]) / 2 / sc; if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6 || pr.rect[2] - pr.rect[0] !== sc || pr.rect[3] - pr.rect[1] !== sc) continue;
+        const so = F.solids.find(q => q.id === pr.id); if (!so || !so.bb || (_fp.moved || []).some(m => m.id === pr.id)) continue; _fpRawShift = [(so.bb[0] + so.bb[2]) / 2 - cx, (so.bb[1] + so.bb[3]) / 2 - cy]; break; }
+    const pr = (FACILITY_MAP.props || []).find(q => q.id === id); if (!pr || !pr.rect || !_fpRawShift) return null;
+    return [(pr.rect[0] + pr.rect[2]) / 2 / sc + _fpRawShift[0], (pr.rect[1] + pr.rect[3]) / 2 / sc + _fpRawShift[1]];
+}
 function facilitySolidMove(id, x0, y0, w, h, turned) {
     if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP) return { ok: false, why: "NO MAP" };
     const F = _fp.F, P = _fp.P, s = F.solids.find(q => q.id === id), p = P ? P.solids.find(q => q.id === id) : null;
@@ -343,11 +354,13 @@ function facilityConstrain(a, px, py) {
 }
 
 // ── the player ──
-function facilityWalkTo(gx, gy) {
+// `exact`: to that very point (a hex's middle: a tap's, js/input.js, §2.85 of docs/CARD-BATTLES.md), not the middle of the floor's square it is in
+function facilityWalkTo(gx, gy, exact) {
     if (!_fp || (typeof facilityPortalBusy === "function" && facilityPortalBusy()) || player._flight) return false;   // (nobody is told where to walk while the screen fades through a doorway, nor while a Kinetic Launcher has you in the air)
-    const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
+    const c0 = _fpNearestCell(gx, gy); if (!c0 || Math.hypot(c0[0] - gx, c0[1] - gy) > 1.6) return false;
+    const c = exact && facilityWalkable(gx, gy, _fp.F) ? [gx, gy] : c0;
     const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
-    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._launchLoad = null; player._dropSite = null; player._climbGo = null;   // (a new destination calls off a walk to a launcher's pad, to a ledge or to a REEF climb: js/techabilities.js techSiteRide, techLedgeJump, techClimbGo)
+    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._hexWalk = c !== c0; player._launchLoad = null; player._dropSite = null; player._climbGo = null;   // (a new destination calls off a walk to a launcher's pad, to a ledge or to a REEF climb: js/techabilities.js techSiteRide, techLedgeJump, techClimbGo)
     player._tapRun = null;   // (a walk of the game's own is never stopped by an enemy near; a tap's makes itself a free run after this: facilityTapCap)
     return true;
 }
@@ -439,7 +452,9 @@ function facilityCapPath(max) {
     let x = player.x, y = player.y, left = max;
     for (let i = 0; i < p.length; i++) {
         const d = Math.hypot(p[i][0] - x, p[i][1] - y);
-        if (d > left) { const t = left / d, q = [x + (p[i][0] - x) * t, y + (p[i][1] - y) * t]; p.length = i; p.push(q); player.targetX = q[0]; player.targetY = q[1]; return true; }
+        if (d > left) { const t = left / d; let q = [x + (p[i][0] - x) * t, y + (p[i][1] - y) * t];
+            if (player._hexWalk && typeof cardHexStand === "function") { const h = cardHexStand(q[0], q[1], 1.2, (k, m) => !_fpLos(x, y, m[0], m[1])); if (h) q = [h[0], h[1]]; }   // (a tap's walk: the step ends on a hex's middle too, §2.85)
+            p.length = i; p.push(q); player.targetX = q[0]; player.targetY = q[1]; return true; }
         left -= d; x = p[i][0]; y = p[i][1];
     }
     return false;
@@ -458,6 +473,7 @@ function facilityRunCheck() {
     if (player.fpPath !== run || !run.length || !FP_MOVE.cap) { player._tapRun = null; return false; }
     if (!facilityUnderPressure()) return false;
     player.fpPath = null; player.targetX = player.x; player.targetY = player.y; player._tapRun = null;
+    if (player._hexWalk && typeof cardHexStand === "function") { const h = cardHexStand(player.x, player.y, 1.2, (k, m) => !_fpLos(player.x, player.y, m[0], m[1])); if (h) { player.fpPath = [[h[0], h[1]]]; player.targetX = h[0]; player.targetY = h[1]; } }   // (a tap's walk stopped: onto the nearest hex's middle, §2.85)
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 + (typeof TILE_H !== "undefined" ? TILE_H : 16) - 46, text: "!", color: "#ffb347", life: 45, vy: -0.25, size: 20 });
     return true;
 }

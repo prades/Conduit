@@ -101,6 +101,10 @@ const GAMEVIEW = (function () {
     seeList = seeList.filter(o => { if (o.geometry.attributes.position && o.geometry.attributes.position.array) return true; if (o.geometry.boundingBox) { o.updateMatrixWorld(); seeBoxes.push({ o, box: o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld) }); } return false; }); }
   function seeRestore() { for (const [o, m] of faded) o.material = m; faded.clear(); for (const [k, v] of cut) { v.o.setMatrixAt(v.i, v.m); v.o.instanceMatrix.needsUpdate = true; } cut.clear(); seeList = seeSets = seeBoxes = null; }
   let seeBroke = false;   // (a failure here turns it off and puts everything back: it never stops the view)
+  // FLUX MOVE ON THE HEXES (js/fluxmove.js; build 2026-11-17ee): a prop the Flux technician moved is put on its hex's middle and turned by sixths, when the game says something moved (its stamp)
+  let fluxSeen = -1;
+  function fluxSync() { const st = GM.fluxStamp * 1000 + GM.fluxMoves; if (st === fluxSeen || !world.props) return; fluxSeen = st;
+    for (const id of Object.keys(world.props)) { const p = world.props[id]; if (!p || !p.moves) continue; const fp = GM.fluxPlace(id); if (!fp) continue; p.g.position.x = fp.x; p.g.position.z = fp.y; p.g.rotation.y = -(fp.two ? fp.dir : 0) * Math.PI / 3 + (p.s.along ? Math.PI / 2 : 0); p.g.updateMatrixWorld(true); } }
   function seeThrough(f0) { if (seeBroke) return; try { seeThroughStep(f0); } catch (e) { seeBroke = true; try { seeRestore(); } catch (x) {} if (typeof console !== 'undefined' && console.warn) console.warn('the battle\'s see-through is off: ' + ((e && e.stack) || e)); } }
   // THE FOLLOWER'S CLOSE-UP (the owner, 2026-11-27: "all sorts of objects on the map should disappear if they're obstructing the creature"): out of a battle, while the camera holds on a member
   // (js/view3d.js view3dFocusCam), that member is kept in sight the same way; what may stand in the way is found again when it walks into another room (seeRoom).
@@ -313,7 +317,7 @@ const GAMEVIEW = (function () {
   const SEWER_GM = { col: h => GM.sewerCol(h), tone: (a, b) => GM.sewerTone(a, b), nest: f => GM.nestTone(f), culvert: id => GM.culvertShut(id), waterLow: id => GM.waterLow(id) };   // (the sewers' colours as the 2D has them, as the purification runs, and the Nest's state: js/facilitysewers.js)
   // ONE FRAME: the world and everyone where the game's step left them, drawn. floorMarks(g): the game's own marks on the floor, drawn into g
   function draw(floorMarks) { const t0 = performance.now(), f0 = GM.frame, dt = snap || lastF === null ? 0 : Math.min(0.1, Math.max(0, (f0 - lastF) / 60)); lastF = f0; stamp++; rubbleTick();   // (dt: of the game's own clock, its steps of a sixtieth, as its animations go)
-    fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
+    try { fluxSync(); } catch (e) {} fit(f0); place(dt); seeThrough(f0); lights(); doors(); crystal(f0); if (world.sewer && world.sewer.tick) world.sewer.tick(f0, SEWER_GM);   // (the sewers' water and falls: their colours and their current)
     const pr = GM.roomAt(GM.player.visualX, GM.player.visualY, GM.fp.F), room = pr && world.rooms[pr.id] ? pr.id : roomWas; if (LOW) LOW.room(room); if (room) { CORE.openRoom(world, room, dt, (((GM.viewTurn || 0) + Math.round(twist() / (Math.PI / 2))) % 4 + 4) % 4, LOW ? lowSinks(f0, room) : undefined); roomWas = room; }   // (twisted: the walls in front from the quarter turn it is nearest)
     ATT.begin(f0); shown.clear(); cube(f0, dt);
     for (const a of GM.actors) { if (a._swallowedBy) { const hp = GM.isCreature(a) ? ATT.held(a) : null; if (hp) ant(a, hp); continue; }   // (swallowed: drawn only while it is pulled in)

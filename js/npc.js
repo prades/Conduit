@@ -231,8 +231,15 @@ function updateRTSNPC(actor) {
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
         else {
-            const t=actor.job.target;
+            let t=actor.job.target;
             if (!t) { actor.job=null; return; }
+            // THE HEXES OUT OF A BATTLE (§2.85 of docs/CARD-BATTLES.md): a spot you sent it to or told it to hold (job.hex) is, in the 3D game, the middle of the nearest of the battle's hexes there
+            // that is neither yours nor another of your squad's (js/formation.js hexTaken), worked out once; it walks onto that middle
+            if (actor.job.hex && !actor.job.hexDone && typeof hexWalkOn === "function" && hexWalkOn() && typeof cardHexStand === "function") {
+                actor.job.hexDone = true; const h = cardHexStand(t.x, t.y, 1.8, k => typeof hexTaken === "function" && hexTaken(actor, k));
+                if (h) { t = actor.job.target = { x: h[0], y: h[1] }; actor.job.onHex = true; if (typeof hexClaim === "function") hexClaim(actor, h); }
+            }
+            actor._hexOwn = frame;   // (going to, or holding, a place of its own: js/formation.js hexSettle leaves it be)
             // Refresh nearby-enemy cache every 10 frames
             if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
                 // Only real enemies (isHostileTarget): a neutral recruit wandering
@@ -253,7 +260,8 @@ function updateRTSNPC(actor) {
             } else {
                 // No threat — hold position
                 const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist>0.6) _walkStep(actor, dx, dy, dist);
+                if (actor.job.onHex) { if (dist <= actor.moveSpeed) { actor.x = t.x; actor.y = t.y; } else _walkStep(actor, dx, dy, dist); }   // (onto the hex's middle)
+                else if (dist>0.6) _walkStep(actor, dx, dy, dist);
             }
             return;
         }
@@ -344,8 +352,8 @@ function updateRTSNPC(actor) {
         const nearestEnemy = actor._nearestEnemy;
         const nearestEnemyDist = nearestEnemy
             ? Math.hypot(nearestEnemy.x - actor.x, nearestEnemy.y - actor.y) : Infinity;
-        if (actor.isFollower && !_ord && followerSeekHeal(actor, nearestEnemy)) return;   // SEEKING HEALING (above): hurt and not RECKLESS, to the nearest healing spot in its room
-        if (actor.isFollower && !_ord && followerTactic(actor, nearestEnemy, nearestEnemyDist)) return;   // BLOCK AND STEP BACK by play style (above): a TANK blocks, a CAUTIOUS one steps back (an attack order wins)
+        if (actor.isFollower && !_ord && followerSeekHeal(actor, nearestEnemy)) { actor._hexOwn = frame; return; }   // SEEKING HEALING (above): hurt and not RECKLESS, to the nearest healing spot in its room
+        if (actor.isFollower && !_ord && followerTactic(actor, nearestEnemy, nearestEnemyDist)) { actor._hexOwn = frame; return; }   // BLOCK AND STEP BACK by play style (above): a TANK blocks, a CAUTIOUS one steps back (an attack order wins)
         const _reach = _ord ? 1e3 : (typeof playReach === "function" ? playReach(actor) : 1);   // PLAY STYLE scales how far a unit goes after an enemy (js/commandcenter.js); one sent at a creature goes the whole way
 
         // ── BRAWLER: chase nearest enemy aggressively, stand and strike when in range ──
@@ -477,6 +485,7 @@ function attackOrderTarget(actor) {
 // Both used to be defined and never read, so the traits did nothing.
 const EMPATHETIC_RANGE = 5;
 function followPlayer(actor) {
+    actor._hexOwn = typeof frame !== "undefined" ? frame : 0;   // (following you: its place is its own, js/formation.js; hexSettle leaves it be)
     const nt = actor.naturalTrait && NATURAL_TRAITS[actor.naturalTrait];
     if (nt && nt.onIdle) nt.onIdle(actor);
     let tx = player.x, ty = player.y, stop = actor.wanderRadius || FOLLOW_STOP;
@@ -484,10 +493,10 @@ function followPlayer(actor) {
     // floor you can see), an EMPATHETIC one's FORMATION.empathetic of the way nearer you, the squad's middle.
     const spot = typeof formationSpot === "function" ? formationSpot(actor) : null;
     if (spot) {
-        tx = spot[0]; ty = spot[1]; stop = FORMATION.stop;
+        tx = spot[0]; ty = spot[1]; stop = spot.hex ? 1e-6 : FORMATION.stop;   // (a hex's middle, its nudge in it already, is walked onto: js/formation.js _fmHex, §2.85)
         const ox = tx - player.x, oy = ty - player.y, L = Math.hypot(ox, oy);
-        if (actor.wanderRadius && L > 1e-6) { const wx = tx + ox / L * FORMATION.loneWolf, wy = ty + oy / L * FORMATION.loneWolf; if (facilityFloorAt(wx, wy) && facilityLosFrom(player.x, player.y, wx, wy)) { tx = wx; ty = wy; } }
-        else if (actor.preferGroup) { tx = player.x + ox * (1 - FORMATION.empathetic); ty = player.y + oy * (1 - FORMATION.empathetic); }
+        if (!spot.hex && actor.wanderRadius && L > 1e-6) { const wx = tx + ox / L * FORMATION.loneWolf, wy = ty + oy / L * FORMATION.loneWolf; if (facilityFloorAt(wx, wy) && facilityLosFrom(player.x, player.y, wx, wy)) { tx = wx; ty = wy; } }
+        else if (!spot.hex && actor.preferGroup) { tx = player.x + ox * (1 - FORMATION.empathetic); ty = player.y + oy * (1 - FORMATION.empathetic); }
     }
     const baseX = tx, baseY = ty;
     if (actor.preferGroup && !spot) {
@@ -505,17 +514,17 @@ function followPlayer(actor) {
     // A wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
     { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
-    if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
+    if (dist > stop) { const s = Math.min(actor.moveSpeed, dist); actor.x += (dx / dist) * s; actor.y += (dy / dist) * s; }   // (no step past where it is going: onto a hex's middle, not round it)
 }
 
 // A step of a follower's mind, with two card attacks' marks (cardAttackTry): WRAITHFIRE's ghost moves itself (wraithfireTick), and a VOLTAGE FIELD's mark makes it faster for this step
 function updateNPC(actor) {
     if (typeof cardBattleHolds === "function" && cardBattleHolds(actor)) return;   // CARD BATTLES' turns: everyone in the battle but the one whose turn it is holds still (js/cardbattle.js)
     if (actor && actor._wraith && typeof wraithfireTick === "function") { wraithfireTick(actor); return; }
-    const v = actor && actor._voltUntil > (typeof frame !== "undefined" ? frame : 0) ? actor._voltMove || 1 : 1;
-    if (v === 1) return _updateNPCStep(actor);
-    const s0 = actor.moveSpeed; actor.moveSpeed = s0 * v;
-    try { return _updateNPCStep(actor); } finally { actor.moveSpeed = s0; }
+    const v = actor && actor._voltUntil > (typeof frame !== "undefined" ? frame : 0) ? actor._voltMove || 1 : 1, x0 = actor ? actor.x : 0, y0 = actor ? actor.y : 0;
+    if (v === 1) _updateNPCStep(actor);
+    else { const s0 = actor.moveSpeed; actor.moveSpeed = s0 * v; try { _updateNPCStep(actor); } finally { actor.moveSpeed = s0; } }
+    if (typeof hexSettle === "function") hexSettle(actor, x0, y0);   // THE HEXES OUT OF A BATTLE: a follower left standing steps onto a hex's middle (js/formation.js)
 }
 function _updateNPCStep(actor) {
     if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)

@@ -72,7 +72,7 @@ function fluxCheck(s, x0, y0, turn, opts) {
     opts = opts || {};
     const F = _fluxF(), P = _fp && _fp.P; if (!F || !fluxMovable(s)) return { ok: false, why: "IT DOES NOT MOVE", cells: [] };
     if (!Number.isInteger(x0) || !Number.isInteger(y0)) return { ok: false, why: "NOT A PLACE", cells: [] };
-    const sz = fluxSize(s, turn), cells = fluxCellsOf(x0, y0, sz.w, sz.h), H = fluxHere(s), turned = turn && fluxCanTurn(s) ? !s.flux.turned : !!s.flux.turned;
+    const sz = opts.size ? { w: opts.size[0], h: opts.size[1] } : fluxSize(s, turn), cells = fluxCellsOf(x0, y0, sz.w, sz.h), H = fluxHere(s), turned = opts.size ? sz.h > sz.w : turn && fluxCanTurn(s) ? !s.flux.turned : !!s.flux.turned;   // (opts.size: the tiles under its hexes, ON THE HEXES below)
     const res = (why) => ({ ok: false, why, cells, w: sz.w, h: sz.h, turned });
     if (x0 === H.x0 && y0 === H.y0 && sz.w === H.w && sz.h === H.h) return res("IT IS THERE NOW");
     if (opts.reach !== false) { const R = fluxRegion(s); if (!cells.every(k => R.has(k))) return res("TOO FAR · " + s.flux.range + " TILES AT MOST"); }
@@ -154,12 +154,13 @@ function fluxMoveTo(s, x0, y0, turn, opts) {
     if (!r.ok) return { ok: false, why: r.why, cells: c.cells };
     if (!_fp.moved) _fp.moved = [];
     _fp.moved = _fp.moved.filter(m => m.id !== s.id); _fp.moved.push({ id: s.id, x: x0, y: y0, t: c.turned ? 1 : 0 });
+    _fluxHexSet(s, null);   // (moved by tiles: its hex is its tile's from now, fluxHexOf)
     if (typeof elementEffects !== "undefined" && !(opts && opts.quiet)) for (const q of [[from.x0 + (from.w - 1) / 2, from.y0 + (from.h - 1) / 2], [x0 + (c.w - 1) / 2, y0 + (c.h - 1) / 2]]) elementEffects.push({ type: "ring", x: q[0], y: q[1], radius: 0.6 + 0.3 * Math.max(c.w, c.h), color: FLUX.col, life: 30 });
     return { ok: true, cells: c.cells, turned: c.turned, from };
 }
 
 // ── THE SAVE (js/facilitysave.js): each moved object's place and turn, in the order they were moved; put back before the player's spot ──
-function fluxSnapshot() { return typeof _fp !== "undefined" && _fp && Array.isArray(_fp.moved) ? _fp.moved.map(m => ({ id: m.id, x: m.x, y: m.y, t: m.t ? 1 : 0 })) : []; }
+function fluxSnapshot() { return typeof _fp !== "undefined" && _fp && Array.isArray(_fp.moved) ? _fp.moved.map(m => Number.isFinite(m.hx) ? { id: m.id, x: m.x, y: m.y, t: m.t ? 1 : 0, hx: m.hx, hy: m.hy, d: m.d | 0 } : { id: m.id, x: m.x, y: m.y, t: m.t ? 1 : 0 }) : []; }   // (hx, hy, d: its hex's middle and its turn, ON THE HEXES)
 // a saved game's places: each checked as a move is (its room's floor, kept spots, the floor's stretches), but from anywhere in its room, and without the bodies (nobody stands anywhere yet). One that cannot
 // go where it was saved stays where it was built. A few passes, so two objects that changed places both come back.
 function fluxApply(list) {
@@ -171,6 +172,9 @@ function fluxApply(list) {
     for (let pass = 0; pass < 3 && todo.length; pass++) {
         todo = todo.filter(m => {   // (kept for the next pass while it does not fit)
             const s = fluxObject(m.id); if (!s) return false;
+            if (Number.isFinite(m.hx) && Number.isFinite(m.hy) && fluxHexOn()) {   // (a place on the hexes: ON THE HEXES below)
+                const r = fluxMoveToHex(s, m.hx, m.hy, m.d | 0, { reach: false, bodies: false, quiet: true, same: true });
+                if (r.ok) { n++; return false; } return true; }
             const turn = !!m.t !== !!s.flux.turned, H = fluxHere(s), sz = fluxSize(s, turn);   // (t: turned from how it was built; turn it when it is not so now)
             if (H.x0 === m.x && H.y0 === m.y && sz.w === H.w && sz.h === H.h) { _fp.moved.push({ id: s.id, x: m.x, y: m.y, t: m.t ? 1 : 0 }); n++; return false; }
             const r = fluxMoveTo(s, m.x, m.y, turn, { reach: false, bodies: false, quiet: true });
@@ -180,6 +184,84 @@ function fluxApply(list) {
     }
     return n;
 }
+
+// ── ON THE HEXES (build 2026-11-17ee; the owner, 2026-11-27: "the interactable systems within the map, like moving objects around [...] is all relayed through the hexagon tile grid [...] the player can
+// maneuver the object or find a highlighted hexagon tile under whenever they activate their utility ability"; asked: "2 hexes, turn 60°"; 2026-11-28: "I like the simple way of objects blocking the floor";
+// docs/FOLLOWER-UTILITIES.md §2, §4.4). FLUX MOVE as the player uses it works on the floor's hexes (js/cardbattle.js THE HEXES, fixed to the world), over the tiles' rules above:
+//   WHERE IT STANDS  on a hex's middle (`hexAt`), a two-hex object (a barrier) on that hex and the one beside it in one of the six ways (`hexDir`, 0 = along x, each next a sixth of a turn).
+//   WHAT IT BLOCKS   THE SIMPLE WAY: the tile of the game's grid under each of its hexes' middles (one tile; a barrier two in a row or a column, or one where both middles lie over the same tile; where
+//                    they lie over tiles corner to corner, the second is taken in the first's column). Everything a place must be (its room's floor, the kept spots, bodies, never cutting the floor in
+//                    two) is asked of those tiles by fluxCheck, as ever.
+//   HOW FAR          every hex it would stand on is within `range` (2) hexes of one it stands on now, counted hex to hex (the six round each).
+//   TURNING          a two-hex object turns a sixth of a turn at a time (⟳ ROTATE), six ways; a one-hex object has nothing to turn.
+//   KEPT             its hex and its turn with its tiles (the save's `moved`: hx, hy, d); a save from before has tiles only and loads as it was.
+const _FLUX_HEX_DIR = [0, 1, 2, 3, 4, 5].map(i => [Math.cos(i * Math.PI / 3), Math.sin(i * Math.PI / 3)]);
+function fluxHexOn() { return typeof cardHex === "function" && typeof cardHexNb === "function" && typeof cardHexKey === "function"; }
+function fluxTwo(s) { if (!s || !s.flux) return false; if (s.flux.two === undefined) { const H = fluxHere(s); s.flux.two = H.w * H.h === 2; } return s.flux.two; }   // (a barrier: two hexes; asked first as it is built)
+function _fluxHexTile(h) { return [Math.round(h[0]), Math.round(h[1])]; }
+function fluxHexB(at, dir) { const d = _FLUX_HEX_DIR[((dir | 0) % 6 + 6) % 6]; return cardHex(at[0] + d[0], at[1] + d[1]); }   // a two-hex object's second hex
+// the map's own place for it (the movable cargo stands on hexes' middles in the map; the game's grid snaps it to a tile): asked of the facility (js/facilityplay.js facilityPropRawMid)
+function _fluxRaw(id) { return typeof facilityPropRawMid === "function" ? facilityPropRawMid(id) : null; }
+// where it stands: { at: [x, y] its (first) hex's middle, dir, b: its second hex's middle or null }
+function fluxHexOf(s) {
+    if (!s || !fluxHexOn()) return null;
+    if (!s.hexAt) {
+        const H = fluxHere(s), two = fluxTwo(s), raw = s.hexSq ? null : _fluxRaw(s.id); let at, dir = 0;
+        if (two) { dir = H.w >= H.h ? 0 : 1; const mid = raw && H.w >= H.h ? raw : null; at = mid ? cardHex(mid[0] - 0.5, mid[1]) : cardHex(H.x0, H.y0); }
+        else at = raw ? cardHex(raw[0], raw[1]) : cardHex(H.x0, H.y0);
+        s.hexAt = at; s.hexDir = dir;
+    }
+    return { at: s.hexAt, dir: s.hexDir | 0, b: fluxTwo(s) ? fluxHexB(s.hexAt, s.hexDir) : null };
+}
+function _fluxHexSet(s, at, dir) { const P = _fp && _fp.P, p = P ? P.solids.find(q => q.id === s.id) : null; for (const q of [s, p]) if (q) { q.hexAt = at ? at.slice() : null; q.hexDir = dir | 0; q.hexSq = !at; } if (_fp) { _fp._pss = null; _fp._psc = null; _fp.fluxStamp = (_fp.fluxStamp || 0) + 1; } }   // (fluxStamp: the 3D view places it again, view3d/gameview.js)
+// the tiles under a place on the hexes: { x0, y0, w, h }
+function fluxHexRect(s, at, dir) {
+    const a = _fluxHexTile(at); if (!fluxTwo(s)) return { x0: a[0], y0: a[1], w: 1, h: 1 };
+    const b = _fluxHexTile(fluxHexB(at, dir)); if (b[0] !== a[0] && b[1] !== a[1]) b[0] = a[0];   // (corner to corner: the second in the first's column)
+    return { x0: Math.min(a[0], b[0]), y0: Math.min(a[1], b[1]), w: Math.abs(a[0] - b[0]) + 1, h: Math.abs(a[1] - b[1]) + 1 };
+}
+// THE REACH on the hexes: every hex within `range` hexes of one it stands on. A Map of its key to its middle.
+function fluxHexRegion(s) {
+    const out = new Map(), H = fluxHexOf(s); if (!H) return out; let ring = [H.at].concat(H.b ? [H.b] : []);
+    for (const h of ring) out.set(cardHexKey(h[0], h[1]), h);
+    for (let i = 0; i < s.flux.range; i++) { const next = []; for (const h of ring) for (const n of cardHexNb(h[0], h[1])) { const k = cardHexKey(n[0], n[1]); if (!out.has(k)) { out.set(k, n); next.push(n); } } ring = next; }
+    return out;
+}
+// THE CHECK of a place on the hexes: its (first) hex's middle and its turn. { ok, at, dir, b, rect, cells } or { ok: false, why, ... }. opts as fluxCheck's; opts.same: where it stands now is a place (a save).
+function fluxCheckHex(s, hx, hy, dir, opts) {
+    opts = opts || {};
+    if (!fluxHexOn() || !fluxMovable(s)) return { ok: false, why: "IT DOES NOT MOVE", cells: [] };
+    if (!Number.isFinite(hx) || !Number.isFinite(hy)) return { ok: false, why: "NOT A PLACE", cells: [] };
+    const two = fluxTwo(s), at = cardHex(hx, hy), d = two ? ((dir | 0) % 6 + 6) % 6 : 0, b = two ? fluxHexB(at, d) : null, cur = fluxHexOf(s), rect = fluxHexRect(s, at, d), cells = fluxCellsOf(rect.x0, rect.y0, rect.w, rect.h);
+    const res = (why) => ({ ok: false, why, at, dir: d, b, rect, cells }), key = h => cardHexKey(h[0], h[1]);
+    if (key(at) === key(cur.at) && d === cur.dir) return opts.same ? { ok: true, at, dir: d, b, rect, cells, stay: true } : res("IT IS THERE NOW");
+    if (opts.reach !== false) { const R = fluxHexRegion(s); if (!R.has(key(at)) || (b && !R.has(key(b)))) return res("TOO FAR · " + s.flux.range + " HEXES AT MOST"); }
+    const H = fluxHere(s);
+    if (rect.x0 === H.x0 && rect.y0 === H.y0 && rect.w === H.w && rect.h === H.h) {   // (another hex over its own tiles: nothing of the floor changes)
+        return { ok: true, at, dir: d, b, rect, cells, stay: true };
+    }
+    const c = fluxCheck(s, rect.x0, rect.y0, false, { reach: false, bodies: opts.bodies, size: [rect.w, rect.h] });
+    if (!c.ok) return res(c.why === "IT IS THERE NOW" ? "NOT A PLACE" : c.why);
+    return { ok: true, at, dir: d, b, rect, cells };
+}
+// THE MOVE on the hexes: checked again, its tiles moved in one transaction when they change (facilitySolidMove), its hex and its turn set, kept for the save
+function fluxMoveToHex(s, hx, hy, dir, opts) {
+    const c = fluxCheckHex(s, hx, hy, dir, opts); if (!c.ok) return c;
+    const from = fluxHexOf(s), fromAt = from.at.slice();
+    if (!c.stay) { const r = typeof facilitySolidMove === "function" ? facilitySolidMove(s.id, c.rect.x0, c.rect.y0, c.rect.w, c.rect.h, c.rect.h > c.rect.w) : { ok: false, why: "NO MAP" }; if (!r.ok) return { ok: false, why: r.why, cells: c.cells }; }
+    _fluxHexSet(s, c.at, c.dir);
+    if (_fp.items && typeof _fpPropItems === "function") { _fp.items = _fp.items.filter(it => !(it.fp === "prop" && it.id === s.id)); for (const it of _fpPropItems(s)) _fp.items.push(it); }
+    if (!_fp.moved) _fp.moved = [];
+    _fp.moved = _fp.moved.filter(m => m.id !== s.id); _fp.moved.push({ id: s.id, x: c.rect.x0, y: c.rect.y0, t: c.rect.h > c.rect.w ? 1 : 0, hx: c.at[0], hy: c.at[1], d: c.dir });
+    if (typeof elementEffects !== "undefined" && !(opts && opts.quiet)) for (const q of [fromAt, c.at]) elementEffects.push({ type: "ring", x: q[0], y: q[1], radius: 0.7, color: FLUX.col, life: 30 });
+    return { ok: true, at: c.at, dir: c.dir, cells: c.cells, from: fromAt };
+}
+// THE GRID on the hexes, for one turn: every hex of the reach it could be put on (its first hex), and whether it could go there (the bodies are asked live as it is drawn). A Map of the hex's key to its check.
+function fluxHexGrid(s, dir) { const out = new Map(); for (const [k, h] of fluxHexRegion(s)) out.set(k, fluxCheckHex(s, h[0], h[1], dir, { bodies: false })); return out; }
+// where the 3D view and the sprites draw it: the middle of its hex (of its two hexes), and its turn in sixths
+function fluxPlace(s) { const H = fluxHexOf(s); if (!H) return null; return H.b ? { x: (H.at[0] + H.b[0]) / 2, y: (H.at[1] + H.b[1]) / 2, dir: H.dir, two: true } : { x: H.at[0], y: H.at[1], dir: 0, two: false }; }
+// the hex of the floor under a tap
+function fluxHexAtScreen(ex, ey) { if (typeof techScreenToWorld !== "function" || !fluxHexOn()) return null; const p = techScreenToWorld(ex, ey); return p && Number.isFinite(p.x) ? cardHex(p.x, p.y) : null; }
 
 // ── picking one on the screen: the prop under a tap (its tiles, or its body standing over them), movable or not; the nearest when two are close ──
 function fluxPropAtScreen(ex, ey) {
@@ -234,8 +316,34 @@ function _fluxTile(g, x, y, fill, stroke, lw, dash) {
     if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw || 1.5; if (dash) g.setLineDash(dash); g.stroke(); if (dash) g.setLineDash([]); }
 }
 // the movable objects on the screen, outlined in violet (the first pick); the one picked, its reach, the places it can go and cannot, where it stands, and the place chosen (a two-tile object's second tile flashing)
+// ON THE HEXES: a point of the floor on the screen (through the 3D view's camera where it draws the frame, else the game's own), and a hex drawn there
+function _fluxHexPath(g, h, V) {
+    const L = V && typeof facilityLiftPx === "function" ? facilityLiftPx(h[0], h[1]) || 0 : 0, C = cardHexCorners(h[0], h[1], 0.03);
+    g.beginPath(); for (let i = 0; i < 6; i++) { let x, y; if (V) { const q = V.screenNow(C[i][0], C[i][1], L); x = q[0]; y = q[1]; } else { const q = _techScr(C[i][0], C[i][1]); x = q.x; y = q.y + TILE_H; } if (!Number.isFinite(x) || !Number.isFinite(y)) return false; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); return true;
+}
+function _fluxHexDraw(g, h, V, fill, stroke, lw, dash) { if (!_fluxHexPath(g, h, V)) return; if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw || 1.5; if (dash) g.setLineDash(dash); g.stroke(); if (dash) g.setLineDash([]); } }
+// the aim on the hexes: the movable objects' hexes outlined in violet (the first pick); then the picked one's reach (every hex of it edged), the hexes it can go to filled violet and those it cannot red,
+// where it stands (white, dashed) and the place chosen (bright; a two-hex object's second hex flashing)
+function fluxDrawAimHex(g, A, f0) {
+    const X = A.flux, V = typeof VIEW3D !== "undefined" && VIEW3D.showing && VIEW3D.view && typeof VIEW3D.view.screenNow === "function" ? VIEW3D.view : null, pulse = 0.55 + 0.45 * Math.sin(f0 * 0.15);
+    g.save(); if (V) g.setTransform(1, 0, 0, 1, 0, 0); g.lineJoin = "round";
+    if (!X.s) {
+        for (const s of fluxObjects()) { const H = fluxHexOf(s); if (!H || Math.hypot(H.at[0] - player.visualX, H.at[1] - player.visualY) > 16) continue; for (const h of [H.at].concat(H.b ? [H.b] : [])) _fluxHexDraw(g, h, V, "rgba(199,125,255," + (0.14 + 0.14 * pulse).toFixed(3) + ")", "#e2c4ff", 2); }
+        g.restore(); return;
+    }
+    const s = X.s, grid = X.hgrid && X.hgrid[X.dir]; if (!grid) { g.restore(); return; }
+    for (const [k, h] of X.hreg) { const c = grid.get(k); if (c && c.stay) { _fluxHexDraw(g, h, V, null, "rgba(199,125,255,0.4)", 1); continue; }
+        const ok = !!c && c.ok && !fluxBodyOn(c.cells); _fluxHexDraw(g, h, V, ok ? "rgba(199,125,255,0.3)" : c ? "rgba(255,74,74,0.16)" : null, ok ? "rgba(226,196,255,0.9)" : c ? "rgba(255,110,110,0.55)" : "rgba(199,125,255,0.3)", ok ? 2 : 1); }
+    const H = fluxHexOf(s); for (const h of [H.at].concat(H.b ? [H.b] : [])) _fluxHexDraw(g, h, V, null, "#ffffff", 2.5, [6, 5]);   // where it stands now
+    if (X.at) {
+        const c = fluxCheckHex(s, X.at[0], X.at[1], X.dir, { bodies: false }), ok = c.ok && !fluxBodyOn(c.cells), col = ok ? "#f0dcff" : "#ff6a6a";
+        [c.at].concat(c.b ? [c.b] : []).forEach((h, i) => { if (!h) return; const a = i === 0 ? 0.6 : 0.25 + 0.4 * pulse; _fluxHexDraw(g, h, V, ok ? "rgba(199,125,255," + a.toFixed(3) + ")" : "rgba(255,74,74," + a.toFixed(3) + ")", col, 3, i === 0 ? null : [5, 4]); });
+    }
+    g.restore();
+}
 function fluxDrawAim(g, A, f0) {
     const X = A && A.flux; if (!X) return;
+    if (typeof fluxHexOn === "function" && fluxHexOn() && (X.hex || !X.s)) return fluxDrawAimHex(g, A, f0);   // (ON THE HEXES)
     const pulse = 0.55 + 0.45 * Math.sin(f0 * 0.15);
     g.save();
     if (!X.s) {

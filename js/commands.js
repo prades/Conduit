@@ -7,7 +7,7 @@
 
 // POSITION: the command pool (js/helpers.js getCommandPool) holds the tile
 function issueMoveCommand(tile) {
-    getCommandPool().forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
+    getCommandPool().forEach(a => { a.job={ type:"move", target:tile, hex:true }; a.stance="hold"; });   // (hex: in the 3D game, a hex's middle there, js/npc.js, §2.85 of docs/CARD-BATTLES.md)
 }
 
 // ── INFO PANEL (js/infodex.js draws it) ──

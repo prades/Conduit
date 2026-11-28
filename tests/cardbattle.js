@@ -1313,6 +1313,117 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/if \(D\.kind === "pass" \|\| D\.kind === "serum"( \|\| D\.kind === "block")?\) return true;/.test(cb), 'the drag'); ok(/if \(off \|\| D\.kind === "pass"\) cardBattlePlay/.test(cb), 'a tap plays a serum'); ok(/if \(!run\) _cbSerumDose\(\);/.test(cb), 'the enemies\' turn'); ok(/T\.kind === "serum" \? "HEALING SERUM"/.test(cb), 'the banner');
     });
 
+    group('THE ANTS\' LIMIT (§2.84; the owner, 2026-11-27: "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes", "Only attacked twice")');
+    check('two ants\' blows start two battles; then an ant\'s blow on you or a follower starts none and does not land, and the ants go for neither; another creature still starts one; you may still choose a fight with an ant, and it counts for nothing', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = { most: CARD_BATTLE.ants.most, reset: CARD_BATTLE.ants.reset, blows: [] };
+            for (let i = 0; i < 3; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); const hp = health, ret = hurtPlayer(1, 4, a); o.blows.push([cardBattleActive(), hp - health, ret, cardBattleAnts().n].join()); cardBattleEnd(); if (i < 2) a.dead = true; else o.a3 = a; }
+            const a3 = o.a3; delete o.a3; const f = followers[0], fh = f.health; applyDamage(f, 5, a3); o.onF = [cardBattleActive(), fh - f.health].join();
+            o.prey = [predatorPreyOk(a3, player), predatorPreyOk(a3, f), cardBattleBars(a3, player), cardBattleAnts().capped].join();
+            const sp = Object.keys(SPECIES).find(s => s !== 'ant' && SPECIES[s].scout), b = spawnCreature({ species: sp, className: 'scout' }); { const c = _fpNearestCellOpen(player.x + 1.5, player.y - 1); b.x = c[0]; b.y = c[1]; } b.moveSpeed = b.baseMoveSpeed = 0;
+            o.other = [sp, cardBattleBars(b, player), (player.invuln = 0, hurtPlayer(1, 4, b)), cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd(); b.dead = true;
+            _cb.calmUntil = -1e9; o.chose = [cardBattleChoose(a3), cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd();
+            _cb.calmUntil = -1e9; CARD_BATTLE.on = false; o.off = cardBattleBars(a3, player); CARD_BATTLE.on = true; return o; })()`);
+        same(r.most + ',' + r.reset, '2,18000', 'the limit: 2 battles, 5 minutes (18000 frames)');
+        same(r.blows.join(' | '), 'true,0,false,1 | true,0,false,2 | false,0,false,2', 'each ant\'s blow on you: a battle on, your health lost, what the blow did, the count');
+        same(r.onF, 'false,0', 'the third ant\'s blow on a follower: no battle, no health lost');
+        same(r.prey, 'false,false,true,true', 'the third ant goes for you, for a follower; barred; the limit reached');
+        ok(/,false,false,true,2$/.test(r.other), 'another creature (' + r.other.split(',')[0] + '): not barred, its blow starts a battle, the count unchanged: ' + r.other);
+        same(r.chose, 'true,true,2', 'you choose a fight with that ant: started, on, the count unchanged');
+        same(r.off, false, 'with card battles off, nothing is barred (they fight in real time)');
+    });
+    check('the world running: after two ants\' battles a hunting ant beside you and your squad for 10 seconds starts no battle and hurts no one; once you are in another room, one does', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = {};
+            for (let i = 0; i < 2; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); cardBattleEnd(); a.dead = true; } _cb.calmUntil = -1e9;
+            const hunt = () => { const a = __ant(player.x + 1.2, player.y + 0.4); a.moveSpeed = a.baseMoveSpeed = 0.02; a.spawnProtection = 0; a.provoked = true; a.state = 'hunt'; a.health = a.maxHealth = 1e6; return a; };
+            const a = hunt(), hp = health, fh = followers.map(f => f.health); let on = 0; for (let i = 0; i < 600; i++) { _simStep(false); if (cardBattleActive()) on++; }
+            o.capped = [on, hp - health, followers.every((f, i) => !f.dead && f.health >= fh[i]), cardBattleAnts().n].join(); a.dead = true;
+            const other = _fp.F.rooms.map(q => q.id).find(id => id !== 'crystal_chamber' && !FP_NEST_ROOMS.has(id) && !/^sd_/.test(id) && partyRoomCells(id).length >= 30);
+            const c = __cell(other); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null; for (const f of followers) { f.x = player.x + 0.5; f.y = player.y + 0.5; }
+            for (let i = 0; i < 30; i++) _simStep(false); o.reset = cardBattleAnts().n;
+            const b = hunt(); let at = -1; for (let i = 0; i < 600 && at < 0; i++) { _simStep(false); if (cardBattleActive()) at = i; } o.after = [at >= 0, cardBattleAnts().n].join(); cardBattleReset(); b.dead = true; return o; })()`);
+        ok(/^0,0,true,2$/.test(r.capped), 'frames a battle was on, your health lost, your squad unhurt, the count: ' + r.capped);
+        same(r.reset, 0, 'in another room the count is none'); same(r.after, 'true,1', 'there a hunting ant starts a battle, the first of two');
+    });
+    check('the count starts again at none once you go into another place, or 5 minutes after the last of those battles ended; the Ant Nest\'s chambers are one place; staying put keeps it', () => {
+        const r = J(`(function(){ __fresh(0); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; const o = {};
+            const at = (room) => { const c = __cell(room); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; };
+            const two = () => { for (let i = 0; i < 2; i++) { player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); cardBattleEnd(); a.dead = true; } _cb.calmUntil = -1e9; return cardBattleAnts().n; };
+            o.place = _cbAntPlace(); o.two = two(); __ticks(600); o.stay = cardBattleAnts().n;
+            const other = _fp.F.rooms.map(q => q.id).find(id => id !== 'crystal_chamber' && !FP_NEST_ROOMS.has(id) && !/^sd_/.test(id) && partyRoomCells(id).length);
+            at(other); __ticks(30); o.moved = [other, cardBattleAnts().n].join();
+            player.invuln = 0; const a = __ant(player.x + 1.5, player.y); hurtPlayer(1, 4, a); o.again = [cardBattleActive(), cardBattleAnts().n].join(); cardBattleEnd(); a.dead = true; _cb.calmUntil = -1e9;
+            two(); frame += CARD_BATTLE.ants.reset - 100; __ticks(30); o.early = cardBattleAnts().n; __ticks(120); o.late = cardBattleAnts().n;
+            const nest = [...FP_NEST_ROOMS].filter(id => partyRoomCells(id).length); o.nestN = nest.length; at(nest[0]); o.nestPlace = _cbAntPlace(); two(); at(nest[1]); __ticks(60); o.inNest = cardBattleAnts().n; at('sewers'); __ticks(30); o.toSewers = cardBattleAnts().n;
+            const sw = _fp.F.decor.find(d => d.kind === 'area' && d.room === 'sewers'); o.area = sw ? (() => { const x0 = player.x, y0 = player.y; player.x = (sw.rect[0] + sw.rect[2]) / 2; player.y = (sw.rect[1] + sw.rect[3]) / 2; const p = _cbAntPlace(); player.x = x0; player.y = y0; return p; })() : 'none';
+            cardBattleReset(); o.reset = cardBattleAnts().n; return o; })()`);
+        same(r.place, 'crystal_chamber', 'the place: the room you are in');
+        same(r.two + ',' + r.stay, '2,2', 'two ants\' battles; 10 seconds later in the same room');
+        ok(/,0$/.test(r.moved), 'into another room (' + r.moved.split(',')[0] + '): none');
+        same(r.again, 'true,1', 'there an ant\'s blow starts a battle again, the first of two');
+        same(r.early + ',' + r.late, '2,0', 'just short of 5 minutes after the second ended; just past');
+        ok(r.nestN >= 2, 'the Ant Nest has chambers: ' + r.nestN); same(r.nestPlace, 'nest', 'a Nest chamber\'s place');
+        same(r.inNest + ',' + r.toSewers, '2,0', 'from one Nest chamber to another: kept; into the Sewers: none');
+        same(r.area, 'sewers:nest_area', 'the Sewers\' Nest, a place of its own'); same(r.reset, 0, 'cardBattleReset clears it');
+    });
+
+    group('THE HEXES OUT OF A BATTLE (§2.85; the owner, 2026-11-28: "whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers")');
+    run(`globalThis.__tapW = (wx, wy) => { const ex = isoSX(wx, wy) + canvas.width / 2, ey = isoSY(wx, wy) + canvas.height / 2 + TILE_H; floatingTexts.length = 0; _fp.tapNoAt = 0; handleInput(ex, ey); };   // (a real tap on a point of the floor, as a finger's)
+        globalThis.__onHex = (x, y) => { const h = cardHex(x, y); return Math.hypot(h[0] - x, h[1] - y) < 1e-6 && !!_cbHexesOf(facilityRoomIdAt(x, y), x, y).keys.has(cardHexKey(x, y)); };
+        globalThis.__arrive = (n) => { for (let i = 0; i < n && player.fpPath && player.fpPath.length; i++) _simStep(false); };
+        globalThis.__spot = (d0, d1) => partyRoomCells('crystal_chamber').find(q => { const d = Math.hypot(q[0] - player.x, q[1] - player.y); return d > d0 && d < d1 && Math.hypot(q[0] - crystal.x, q[1] - crystal.y) > 3 && !followers.some(f => Math.hypot(f.x - q[0], f.y - q[1]) < 1.5); });`);
+    check('a tap off a square\'s middle: you walk to the middle of the battle\'s hex under it, and stand exactly there; your squad, following, comes to rest each on the middle of a hex of its own, none on yours', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; player.lastHitAt = 0; const o = { on: hexWalkOn(), pressed: facilityUnderPressure() };
+            const c = __spot(4, 7), wx = c[0] + 0.32, wy = c[1] - 0.27, h = cardHex(wx, wy); o.tapHex = _cbHexesOf('crystal_chamber').keys.has(cardHexKey(wx, wy));
+            __tapW(wx, wy); o.target = [player.targetX, player.targetY].map(v => +v.toFixed(4)).join(); o.hex = h.map(v => +v.toFixed(4)).join(); o.hexWalk = !!player._hexWalk;
+            __arrive(900); o.arrived = !(player.fpPath && player.fpPath.length); o.at = __onHex(player.x, player.y);
+            for (let i = 0; i < 480; i++) _simStep(false);
+            const fs = followers.filter(f => formationFollowing(f)), keys = fs.map(f => cardHexKey(f.x, f.y));
+            o.n = fs.length; o.squad = fs.map(f => __onHex(f.x, f.y)).join(); o.apart = new Set(keys).size === keys.length; o.notYours = keys.indexOf(cardHexKey(player.x, player.y)) < 0; o.still = __onHex(player.x, player.y);
+            o.near = fs.map(f => +Math.hypot(f.x - player.x, f.y - player.y).toFixed(2)).join(); return o; })()`);
+        same(r.on, true, 'in the 3D game with card battles (the test\'s stand-in for the 3D view)'); same(r.pressed, false, 'no enemy near, no hit just now (a whole walk, not the cut step)');
+        ok(r.tapHex, 'the tap is on one of the room\'s battle hexes (the fixture)'); same(r.target, r.hex, 'where the walk goes: that hex\'s middle'); same(r.hexWalk, true, 'a hex walk');
+        same(r.arrived + ',' + r.at, 'true,true', 'arrived, standing on the hex\'s middle');
+        same(r.n, 3, 'three following'); same(r.squad, 'true,true,true', 'each on a hex\'s middle (of the room\'s battle hexes)'); same(r.apart, true, 'each its own hex'); same(r.notYours, true, 'none on yours');
+        same(r.still, true, 'and you are still on yours'); ok(r.near.split(',').every(d => +d < 4.5), 'round you, near their formation places: ' + r.near);
+    });
+    check('the step cut short with an enemy near ends on a hex\'s middle; a run stopped by an enemy steps onto the nearest; a follower sent to a spot (MOVE TO) holds on the middle of a hex there', () => {
+        const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; FP_MOVE.cap = true; const o = {};
+            const c = __spot(5, 9); player.lastHitAt = frame; __tapW(c[0] + 0.3, c[1] + 0.2); o.cut = __onHex(player.targetX, player.targetY); o.cutLen = +Math.hypot(player.targetX - player.x, player.targetY - player.y).toFixed(2);
+            __arrive(900); o.cutAt = __onHex(player.x, player.y); player.lastHitAt = 0;
+            const c2 = __spot(5, 9); __tapW(c2[0] + 0.1, c2[1] - 0.3); o.free = !!player._tapRun; for (let i = 0; i < 20; i++) _simStep(false); player.lastHitAt = frame; o.stopped = facilityRunCheck();
+            o.stopTo = __onHex(player.targetX, player.targetY); __arrive(300); o.stopAt = __onHex(player.x, player.y); player.lastHitAt = 0;
+            const f = followers[0], s = __spot(2, 6); _sfMoveTo = f; o.sent = partyFlyMoveTap({ x: s[0] + 0.3, y: s[1] + 0.3 }); for (let i = 0; i < 600; i++) _simStep(false);
+            o.held = [f.stance, !!(f.job && f.job.onHex), __onHex(f.x, f.y), cardHexKey(f.x, f.y) !== cardHexKey(player.x, player.y)].join(); return o; })()`);
+        same(r.cut, true, 'the cut step\'s end: a hex\'s middle'); ok(r.cutLen > 0 && r.cutLen <= 4.3, 'about the step\'s 3 tiles: ' + r.cutLen); same(r.cutAt, true, 'standing there');
+        same(r.free + ',' + r.stopped, 'true,true', 'a free run, stopped by the enemy'); same(r.stopTo + ',' + r.stopAt, 'true,true', 'onto the nearest hex\'s middle, and standing there');
+        same(r.sent, true, 'MOVE TO taken'); same(r.held, 'hold,true,true,true', 'holding, on a hex, on its middle, not yours');
+    });
+    check('in the 2D game (no 3D view, no card battles) nothing changes: a tap walks to the middle of the floor\'s square, the squad\'s places are as they were', () => {
+        const r = J(`(function(){ __fresh(3); CARD_BATTLE.on = false; CARD_BATTLE.force3d = false; playerAttackMode = false; player.lastHitAt = 0; const o = { on: hexWalkOn() };
+            const c = __spot(4, 7); __tapW(c[0] + 0.32, c[1] - 0.27); o.target = [player.targetX, player.targetY].join() === [c[0], c[1]].join(); o.hexWalk = !!player._hexWalk;
+            for (let i = 0; i < 60; i++) _simStep(false); o.spots = followers.filter(f => formationFollowing(f)).map(f => { const s = formationSpot(f); return !!(s && s.hex); }).join();
+            CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; return o; })()`);
+        same(r.on, false, 'off'); same(r.target + ',' + r.hexWalk, 'true,false', 'the square\'s middle, no hex walk'); same(r.spots, 'false,false,false', 'no place a hex');
+    });
+    check('followers fighting in real time (holding a room, outside your battles) stand on a hex\'s middle as they strike or shoot, still in reach; one patrolling the room it holds rests on one (the owner, asked: "Yes")', () => {
+        const r = J(`(function(){ __fresh(2); CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; playerAttackMode = false; player.lastHitAt = 0; const o = {};
+            const [b, s] = followers; b.role = 'brawler'; s.role = 'sniper'; partyApplyStance([b, s], 'hold'); o.posted = [!!b.post, !!s.post, partyIsMember(b), partyIsMember(s)].join();
+            const far = partyRoomCells('crystal_chamber').filter(q => Math.hypot(q[0] - player.x, q[1] - player.y) > 6 && Math.hypot(q[0] - crystal.x, q[1] - crystal.y) > 3)[0];
+            player.x = player.targetX = player.visualX = far[0]; player.y = player.targetY = player.visualY = far[1];
+            const a = __ant(b.x + 2.6, b.y + 0.4); a.noBite = true; a.health = a.maxHealth = 1e6; a.abdomenAttack = false; a.rangeDamage = 0; a.stunned = 1e6;   /* (it calls no backup, leaps at no one) */
+            let on = 0; for (let i = 0; i < 900; i++) { _simStep(false); if (cardBattleActive()) on++; }
+            let nb = 0, ns = 0, reach = 0, sight = 0; for (let i = 0; i < 120; i++) { _simStep(false); if (__onHex(b.x, b.y)) nb++; if (__onHex(s.x, s.y)) ns++; if (Math.hypot(b.x - a.x, b.y - a.y) <= Math.max(1.4, (a.bodyR || 0) + 0.2) + 0.05) reach++; if (facilitySeesFrom(s.x, s.y, a.x, a.y) && Math.hypot(s.x - a.x, s.y - a.y) < 10) sight++; }
+            o.battle = on; o.hurt = 1e6 - a.health > 0; o.b = [nb, reach].join(); o.s = [ns, sight].join();
+            o.apart = cardHexKey(b.x, b.y) !== cardHexKey(s.x, s.y); a.dead = true; a.health = 0;
+            let rest = 0, at = null; for (let i = 0; i < 4000 && at === null; i++) { _simStep(false); const p = s._patrol; rest = p && p.wait > 0 ? rest + 1 : 0; if (rest === 50) at = __onHex(s.x, s.y); }
+            o.rest = at; return o; })()`);
+        same(r.posted, 'true,true,false,false', 'both holding the room, out of your squad');
+        same(r.battle, 0, 'no card battle (they fight in real time)'); same(r.hurt, true, 'the ant took their blows');
+        const [nb, reach] = r.b.split(',').map(Number), [ns, sight] = r.s.split(',').map(Number);
+        ok(nb >= 108 && reach === 120, 'the Brawler, of the last 120 frames: on a hex\'s middle ' + nb + ', in strike reach ' + reach); ok(ns >= 108 && sight === 120, 'the Mage: on a hex\'s middle ' + ns + ', the ant in sight and range ' + sight); same(r.apart, true, 'each its own hex');
+        same(r.rest, true, 'patrolling, 50 frames into a rest: on a hex\'s middle');
+    });
+
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {
         const html = rd('game.html'), view = rd('view3d/gameview.js') + rd('view3d/gamemap.js');

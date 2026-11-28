@@ -35,6 +35,10 @@ const CARD_BATTLE = {
     intro: { frames: 110, pitch: 9, zoom: 3.4, bars: 0.11 },   /* THE ATTACK'S MOMENT (the owner, 2026-11-23: "a dramatic cutscene or whatever whenever a creature or predator attacks the player"; of four offered: "Battle intro"): when an enemy's blow starts the battle, before the first turn: frames it lasts, how low the camera looks at the attacker (degrees down: from the ground), how near, the dark bars' height (of the screen's). Its first try, a white flash and a red edge, was not it: the owner, the same day: "I was not imagining a red flash at all. I was more imagining a 3D view of the predator as a camera would be like on the ground looking at the predator itself". The agent's numbers, provisional */
     leave: 14,                  // tiles: you walking this far from the fight ends it
     calm: 240,                  // frames after a battle ends (RUN, or it is over) in which the creatures that were in it go for nobody and start nothing (4 s)
+    // THE ANTS' LIMIT (§2.84; the owner, 2026-11-27: "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers
+    // or the ant nests, or 5 minutes passes", "Only attacked twice this is just to keep from the player, endlessly being attacked"): the battles an ant's blow may start (most); then the ants
+    // leave you and yours be until you go into another place (_cbAntPlace), or `reset` frames (5 minutes) after the last of those battles ended. A battle you start yourself counts for nothing.
+    ants: { most: 2, reset: 5 * 60 * 60 },
     turnSec: 2,                 // seconds of today's wait times a turn (§2.21, the owner's: "2 seconds = 1 turn"); a part of a turn counts as a whole one (the agent's, open: §11.6)
     every: 15,                  // frames between two refreshes of the battle screen (4 a second)
     lineGap: 2,                 // tiles from the middle of the line to the first of each side (lined up: the agent's)
@@ -70,6 +74,28 @@ const CARD_BATTLE = {
 const _cb = { phase: "off", foes: [], k: 0, t: 0, cx: 0, cy: 0, target: null, black: 0, ranAt: -1e9, calm: [], calmUntil: -1e9 };   // calm: the creatures of the battle just ended, quiet until calmUntil   // phase: off, walk, black, on, end
 
 function _cbF() { return typeof frame !== "undefined" ? frame : 0; }
+// THE ANTS' LIMIT (CARD_BATTLE.ants, §2.84): n, the battles an ant's blow has started; at, when the last of them ended (or began, while it is on); place, where you were when it ended. Not saved:
+// a game loaded starts at none. An ant is one of the ant species that is not a boss (THE ANT QUEEN's fights are her own).
+const _cbAnts = { n: 0, at: -1e9, place: null };
+function _cbIsAnt(a) { return !!a && a.speciesName === "ant" && !a.bossId; }
+function _cbAntsCapped(a) { const L = CARD_BATTLE.ants; return !!L && _cbAnts.n >= L.most && _cbIsAnt(a) && cardBattleOn(); }
+// the place you are in, for the limit: your room; the Ant Nest's chambers one place, the sewer dungeon's rooms one place; a named part of a room (the Sewers' Nest) a place of its own
+function _cbAntPlace() {
+    if (typeof player === "undefined" || typeof facilityRoomIdAt !== "function") return null;
+    const id = facilityRoomIdAt(player.x, player.y); if (!id) return null;
+    if (typeof FP_NEST_ROOMS !== "undefined" && FP_NEST_ROOMS.has(id)) return "nest";
+    if (/^sd_/.test(id)) return "sewer_dungeon";
+    const ar = typeof facilityAreaAt === "function" ? facilityAreaAt(player.x, player.y, id) : null;
+    return ar ? id + ":" + (ar.id || ar.label) : id;
+}
+// out of a battle, a quarter of a second at a time while there is a count: another place, or the 5 minutes run, and it starts again at none
+function _cbAntsTick(f) {
+    if (!_cbAnts.n || cardBattleActive() || f % 15 !== 0) return;
+    const L = CARD_BATTLE.ants, p = _cbAntPlace();
+    if (!_cbAnts.place) _cbAnts.place = p;
+    if ((p && _cbAnts.place && p !== _cbAnts.place) || (L && f - _cbAnts.at >= L.reset)) { _cbAnts.n = 0; _cbAnts.place = null; }
+}
+function cardBattleAnts() { return { n: _cbAnts.n, at: _cbAnts.at, place: _cbAnts.place, capped: !!CARD_BATTLE.ants && _cbAnts.n >= CARD_BATTLE.ants.most }; }
 function _cbSmooth(k) { return k * k * (3 - 2 * k); }
 // is the switch on, with the 3D view drawing the room?
 // THE MODE BUTTON (the owner, 2026-11-23: "two different modes. One where you can use the card battles and it's turn-based, or if it's too slow for you, you can turn off the card battles and followers
@@ -129,7 +155,7 @@ function _cbSettle() {
 }
 function _cbBegin(foe, far) {
     _cbBlockClear(); _cb.squad = _cbSquadNow(); _cb.out = new Set(); _cb.slots = new Map(); _cb.lay = null; _cb.snap = false; _cb.grudge = new Map(); _cb.pushQ = [];
-    _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cbCentre(); _cbSettle();
+    _cb.foes = _cbGroup(foe); _cb.target = foe; _cb.t = _cbF(); _cb.startHit = false; _cb.antStart = false; _cbCentre(); _cbSettle();
     if (typeof battleViewDrop === "function") battleViewDrop();
     if (far) { _cb.phase = "walk"; if (typeof facilityWalkTo === "function") facilityWalkTo(foe.x, foe.y); }
     else _cb.phase = "on";
@@ -162,11 +188,13 @@ function cardBattleHit(target, source) {
     if (cardBattleActive()) return !!(ours && _cb.startHit && src === _cb.target && _cb.t === _cbF());
     if (!ours || !_cbFoeOk(src)) return false;
     if (_cbF() < _cb.calmUntil && _cb.calm.indexOf(src) >= 0) return false;   // (the battle just ended: its creatures' last blows start nothing)
-    _cbBegin(src, false); _cb.startHit = true; _cb.intro = { foe: src, t0: _cbF(), name: typeof targetName === "function" ? String(targetName(src) || "") : "" };   /* (the attack's moment: cardBattleIntro) */
+    if (_cbAntsCapped(src)) return true;   // (THE ANTS' LIMIT, §2.84: the ants have had their battles; a stray blow of theirs starts none and does not land: either a battle or none, §2.35)
+    const ant = _cbIsAnt(src) && !!CARD_BATTLE.ants;
+    _cbBegin(src, false); if (ant) { _cbAnts.n++; _cbAnts.at = _cbF(); _cbAnts.place = null; } _cb.antStart = ant; _cb.startHit = true;_cb.intro = { foe: src, t0: _cbF(), name: typeof targetName === "function" ? String(targetName(src) || "") : "" };   /* (the attack's moment: cardBattleIntro) */
     return true;
 }
 // is `a` (a creature) shut out of going for you and yours? (js/predator.js predatorPreyOk): in a battle, every creature not in it
-function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0); }   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
+function cardBattleBars(p, a) { if (a !== undefined && !_cbMine(a)) return false; return (cardBattleActive() && _cb.foes.indexOf(p) < 0) || (_cbF() < _cb.calmUntil && _cb.calm.indexOf(p) >= 0) || (!cardBattleActive() && _cbAntsCapped(p)); }   // (and out of a battle, an ant once the ants have had theirs: §2.84)   // (`a`, its prey: only you and your squad are kept out of reach; followers holding rooms stay in the world's real-time fights, §2.28)
 // may your squad or your gun go for this creature? (js/npc.js, js/targeting.js): in a battle, only those in it
 function cardBattleMayTarget(a, who) { if (who !== undefined && who !== null && !_cbMine(who)) return true; if (!cardBattleActive()) return !cardBattleOn();   /* (out of a battle your squad and your gun go for nothing: §2.35) */ if (_cb.foes.indexOf(a) < 0) return false;
     const T = _cb.turn; if (!T) return true; return T.who === "act" && who === T.f && T.kind !== "ult" && (a === T.target || T.kind !== "basic"); }   /* (an Ultimate's turn is its Ultimate alone: no everyday hit goes with it, §2.64) */   // (the turns: only the one doing its card, at its target; the gun holds its fire, §2.10)   // (`who`, the one choosing: a follower holding a room goes for what is in its room, battle or not, §2.28)
@@ -217,6 +245,7 @@ function _cbLand() {
 function cardBattleTick() {
     const f = _cbF(), el = f - _cb.t;
     if (f % 15 === 0) _cbModeButton();   /* (THE MODE BUTTON: shown, its word) */
+    _cbAntsTick(f);   // (THE ANTS' LIMIT, §2.84: another place, or the 5 minutes run)
     if (_cb.phase !== "off") {
         _cbKillText();   // (a creature of the battle down: its +N XP rises from it)
         const live = _cb.foes.some(_cbFoeIn);   // (one held inside one of yours is still in it: §2.64)
@@ -271,6 +300,7 @@ function _cbKillText() {
         const n = killXp(a); if (n > 0) floatingTexts.push({ world: true, x: a.x, y: a.y, text: "+" + n + " XP", color: "#ffe733", size: CARD_BATTLE.killText.size, life: CARD_BATTLE.killText.life, vy: -0.02, _cbBig: true }); }
 }
 function cardBattleEnd() { if (_cb.phase === "off" || _cb.phase === "end") return false; _cb.intro = null; _cbBlockClear();
+    if (_cb.antStart) { _cb.antStart = false; _cbAnts.at = _cbF(); _cbAnts.place = _cbAntPlace(); }   // (THE ANTS' LIMIT, §2.84: its 5 minutes from here, and the place it left you in)
     _cbKillText();   // (the last kill's experience, as the battle ends)
     if (typeof cardShapeStays === "function") cardShapeStays("end");   // (the areas that stay close, and the draws and bracing end: §2.48)
     if (typeof cardUltEnd === "function") cardUltEnd();   // (and what the Ultimates left: §2.64)
@@ -450,6 +480,21 @@ function _cbHexesOf(room, x, y) {
     for (let r = Math.floor(y0 / CB_HEX_H) - 1; r <= Math.ceil(y1 / CB_HEX_H) + 1; r++) for (let q = Math.floor(x0) - 1; q <= Math.ceil(x1) + 1; q++) { const c = cardHexAt(q, r); if (ok(c[0], c[1]) && ok(c[0] - 0.2, c[1]) && ok(c[0] + 0.2, c[1]) && (typeof facilityLosFrom !== "function" || facilityLosFrom(c[0], c[1], c[0], c[1]))) { cells.push(c); keys.add(q + "," + r); } }
     for (let pass = 0; pass < 3; pass++) { let cut = false; for (let i = cells.length - 1; i >= 0; i--) { const c = cells[i]; let n = 0; for (const d of cardHexNb(c[0], c[1])) if (keys.has(cardHexKey(d[0], d[1]))) n++; if (n < 2) { keys.delete(cardHexKey(c[0], c[1])); cells.splice(i, 1); cut = true; } } if (!cut) break; }   // (no pocket of one hex at a ragged edge: one with fewer than 2 of the room's round it is not the battle's)
     H = { cp: P, cells, keys }; _cbHexRooms.set(key, H); if (_cbHexRooms.size > 40) _cbHexRooms.delete(_cbHexRooms.keys().next().value); return H;
+}
+// THE HEXES OUT OF A BATTLE (§2.85; the owner, 2026-11-28: "Need to make it to where whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the
+// followers"): where you come to rest after a tap, and where each of your squad stands while it follows you or holds where you sent it, is the middle of one of the battle's own hexes (the room's:
+// _cbHexesOf), so a battle that starts finds everyone on one already. On wherever the 3D view draws the room or the card battles are on (the game players get, either mode); the 2D game as it was.
+function hexWalkOn() { if (typeof attractOn === "function" && attractOn()) return false; return (typeof view3dShowing === "function" && view3dShowing()) || cardBattleOn(); }
+// the middle of the battle's hex of the room at (x, y) nearest to it, within r tiles (1.2 if not given), passing over one skip(key, middle) says no to; null for none (no floor, no facility)
+function cardHexStand(x, y, r, skip) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const room = typeof facilityRoomIdAt === "function" ? facilityRoomIdAt(x, y) : null; if (!room) return null;
+    const H = _cbHexesOf(room, x, y); if (!H) return null;
+    const R = r || 1.2, near = [];
+    for (const c of cardHexDisc(x, y, R + 0.6)) { const d = Math.hypot(c[0] - x, c[1] - y); if (d <= R && H.keys.has(cardHexKey(c[0], c[1]))) near.push([d, c]); }
+    near.sort((p, q) => p[0] - q[0]);
+    for (const [, c] of near) if (!skip || !skip(cardHexKey(c[0], c[1]), c)) return c;
+    return null;
 }
 // the battle's hexes (its room's), once it is lined up
 function cardHexRoom() { const L = _cb.lay; return L ? _cbHexesOf(L.room, L.mx, L.my) : null; }
@@ -1498,4 +1543,4 @@ function _cbYouThumb(cv, col) {
     g.fillStyle = "#3dffb0"; g.fillRect(w * 0.28, h * 0.42, w * 0.16, h * 0.07); g.fillRect(w * 0.56, h * 0.42, w * 0.16, h * 0.07);   // (its two eyes)
     g.fillStyle = col || "#ffb347"; g.fillRect(w * 0.4, h * 0.78, w * 0.2, h * 0.08);   // (its neck)
 }
-function cardBattleReset() { _cbBlockClear(); _cb.intro = null; _cb.youActed = false; _cb.shooting = false; _cb.serums = []; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }
+function cardBattleReset() { _cbBlockClear(); _cb.intro = null; _cb.antStart = false; _cbAnts.n = 0; _cbAnts.at = -1e9; _cbAnts.place = null; _cb.youActed = false; _cb.shooting = false; _cb.serums = []; _cb.snap = false; if (typeof cardShapeStays === "function") cardShapeStays("end"); if (typeof cardUltEnd === "function") cardUltEnd(); _cbActEnd(); _cb.turn = null; _cb.pushQ = []; _cb.grudge = new Map(); _cb.cd.clear(); _cb.round = 0; if (_cb.acted) _cb.acted.clear(); if (_cb.charge) _cb.charge.clear(); _cb.slots = new Map(); _cb.lay = null; _cb.squad = null; _cb.out = new Set(); _cb.phase = "off"; _cb.foes = []; _cb.k = 0; _cb.black = 0; _cb.target = null; _cbDom(); }

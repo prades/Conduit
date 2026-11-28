@@ -58,7 +58,65 @@ function formationSpot(f) {
     if (role === "camper") { const s = i % 2 ? -1 : 1, d = FORMATION.side + Math.floor(i / 2) * FORMATION.spread; ox = -F.y * s * d; oy = F.x * s * d; }   // beside you: across the way ahead, right then left
     else { const d = role === "sniper" ? -FORMATION.back : FORMATION.front, k = (i - (n - 1) / 2) * FORMATION.spread; ox = F.x * d - F.y * k; oy = F.y * d + F.x * k; }   // ahead or behind, side by side across the way ahead
     f._fmSpot = _fmPlace(px, py, ox, oy); f._fmAt = f0;
+    if (typeof hexWalkOn === "function" && hexWalkOn()) { const h = _fmHex(f, f._fmSpot, px, py); if (h) f._fmSpot = h; }   // (in the 3D game: a hex's middle, §2.85)
     return f._fmSpot;
+}
+// THE HEXES OUT OF A BATTLE (js/cardbattle.js hexWalkOn, cardHexStand; docs/CARD-BATTLES.md §2.85; the owner, 2026-11-28: "whenever the player clicks to a new location, it assumes the middle of one
+// of the hex tiles. And so do the followers"): in the 3D game a place is the middle of one of the battle's hexes, the nearest to the place with its trait's nudge in it (js/npc.js followPlayer's,
+// moved here), on floor you can see and walk to straight, and neither yours (where you stand, where you are going) nor another of your squad's (its _hexKey, while it follows you or holds where
+// it was sent). Null: none near (the place as it was).
+function hexTaken(f, key) {
+    if (typeof player !== "undefined" && player) {
+        if (Number.isFinite(player.x) && key === cardHexKey(player.x, player.y)) return true;
+        if (Number.isFinite(player.targetX) && Number.isFinite(player.targetY) && key === cardHexKey(player.targetX, player.targetY)) return true;
+    }
+    for (const o of (typeof followers !== "undefined" ? followers : [])) {
+        if (!o || o === f || o.dead) continue;
+        if (o._hexKey === key && o._hexXY && Math.hypot(o.x - o._hexXY[0], o.y - o._hexXY[1]) < 2) return true;   // (its claim, while it is there or on its way: 2 tiles; one gone off to fight has let it go)
+        if (cardHexKey(o.x, o.y) === key) { const m = cardHex(o.x, o.y); if (Math.hypot(m[0] - o.x, m[1] - o.y) < 0.05) return true; }   // (one standing on its middle)
+    }
+    return false;
+}
+function hexClaim(f, m) { f._hexKey = cardHexKey(m[0], m[1]); f._hexXY = [m[0], m[1]]; }
+function _fmHex(f, s, px, py) {
+    if (typeof cardHexStand !== "function" || !s) return null;
+    let x = s[0], y = s[1]; const ox = x - px, oy = y - py, L = Math.hypot(ox, oy);
+    if (f.wanderRadius && L > 1e-6) { const wx = x + ox / L * FORMATION.loneWolf, wy = y + oy / L * FORMATION.loneWolf; if (_fmOk(px, py, wx, wy)) { x = wx; y = wy; } }
+    else if (f.preferGroup) { x = px + ox * (1 - FORMATION.empathetic); y = py + oy * (1 - FORMATION.empathetic); }
+    const h = cardHexStand(x, y, 1.8, (k, m) => hexTaken(f, k) || !_fmOk(px, py, m[0], m[1])); if (!h) return null;
+    const out = [h[0], h[1]]; out.hex = true; hexClaim(f, h); return out;
+}
+// SETTLING ONTO A HEX (the owner, 2026-11-28, asked whether followers fighting in real time and those patrolling a room they hold should stand on hexes too: "Yes"): in the 3D game a follower
+// standing still where its own mind left it (striking or shooting at an enemy, resting at a stop of its room's round, idle) steps onto the middle of the nearest free hex within HEX_SETTLE.look
+// tiles: never yours or another's, not where a creature stands, in a straight step, and when it is fighting, no farther from its enemy than it is (and in its sight if it sees it now), so it
+// stays in reach and does not walk back. Not one going to a place of its own this step (following you, holding where it was sent, to a healing spot, blocking: _hexOwn), one winding a shot or
+// blocking (rooted), one in a card battle, a clone. The hex is chosen again every HEX_SETTLE.every frames (js/npc.js updateNPC calls this after each follower's step).
+const HEX_SETTLE = { still: 0.002, look: 1.2, every: 15, body: 0.6, keepOff: 2.5, mageFar: 4 };   // (a Mage shoots from between keepOff and mageFar of its enemy, js/npc.js SNIPER_MIN and SNIPER_PREFERRED: a hex nearer it would back off from, one farther it would walk in from)
+function hexSettle(a, x0, y0) {
+    if (!a || a.dead || !a.isFollower || a.isClone || a.team !== "green" || typeof hexWalkOn !== "function" || !hexWalkOn() || typeof cardHexStand !== "function") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (a._hexOwn === f0 || a._flight || a._pinball || a._burrow || a._consume || a._fault || a._wraith || a._shotWind > 0 || (a._blockUntil || 0) > f0) { a._settle = null; return; }
+    if (typeof cardBattleActive === "function" && cardBattleActive() && typeof partyIsMember === "function" && partyIsMember(a)) { a._settle = null; return; }   // (the battle places its own)
+    if (Math.hypot(a.x - x0, a.y - y0) > HEX_SETTLE.still) { a._settle = null; return; }   // (its own step moved it)
+    const m0 = cardHex(a.x, a.y); if (Math.hypot(m0[0] - a.x, m0[1] - a.y) < 1e-6) return;   // (on a middle already)
+    let S = a._settle;
+    if (!S || f0 - S.at >= HEX_SETTLE.every || f0 < S.at) {
+        const foe = a._nearestEnemy && !a._nearestEnemy.dead ? a._nearestEnemy : null, fd = foe ? Math.hypot(foe.x - a.x, foe.y - a.y) : 0;
+        const sees = foe && typeof facilitySeesFrom === "function" ? facilitySeesFrom(a.x, a.y, foe.x, foe.y) : false;
+        const h = cardHexStand(a.x, a.y, HEX_SETTLE.look, (k, m) => {
+            if (hexTaken(a, k)) return true;
+            if (typeof facilityLosFrom === "function" && !facilityLosFrom(a.x, a.y, m[0], m[1])) return true;
+            if (foe) { const dm = Math.hypot(foe.x - m[0], foe.y - m[1]);
+                const mage = a.role === "sniper", far = mage ? Math.max(fd, HEX_SETTLE.mageFar) : fd;
+                if (dm > far + 1e-6 || (mage && fd >= HEX_SETTLE.keepOff && dm < HEX_SETTLE.keepOff) || (sees && !facilitySeesFrom(m[0], m[1], foe.x, foe.y))) return true; }   // (no farther than it is (a Mage: than it shoots from), a Mage not nearer than it keeps off, in its sight)
+            for (const o of (typeof actors !== "undefined" ? actors : [])) if (o && !o.dead && o.team !== "green" && Number.isFinite(o.x) && Math.hypot(o.x - m[0], o.y - m[1]) < Math.max(HEX_SETTLE.body, (o.bodyR || 0) + 0.3)) return true;
+            return false;
+        });
+        S = a._settle = h ? { x: h[0], y: h[1], at: f0 } : { x: NaN, y: NaN, at: f0 }; if (h) hexClaim(a, h);
+    }
+    if (!Number.isFinite(S.x)) return;
+    const dx = S.x - a.x, dy = S.y - a.y, d = Math.hypot(dx, dy), s = Math.min(a.moveSpeed || 0.02, d);
+    if (d > 1e-9) { a.x += dx / d * s; a.y += dy / d * s; }
 }
 // the place: as far out as it can be on floor you can walk to straight, coming in toward you; failing that, turned to a diagonal, then to a side (a wall ahead: beside you); failing all, where you stand
 const _fmTurns = [0, 0.785, -0.785, 1.571, -1.571];

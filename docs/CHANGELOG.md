@@ -2,7 +2,47 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-28
+
+### Build `2026-11-17ef` · branch `claude/friendly-thompson-w581x0` · out of a battle, you and your squad stop on a hex's middle
+- **The ask** (the owner, 2026-11-28): "Need to make it to where whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers." (`CARD-BATTLES.md` §2.85)
+- **What it does (the 3D game, either mode):** a tap walks you to the middle of the battles' hex under your finger and you stop exactly there (the nearest one when that is not floor). The step cut short by an enemy near, and a run an enemy stops, end on a hex's middle too. Your squad, following you, comes to rest each on the middle of its own hex near its formation place, never on yours; a follower sent with MOVE TO holds on one. Asked whether followers fighting in real time and patrolling a room they hold should too: **"Yes"**: one left standing (striking, shooting, resting at a stop) steps onto the nearest free hex's middle, no farther from its enemy than it stood (a Mage: within its 2.5 to 4 tiles), so it stays in reach. The walk itself, the game's own walks, the 2D game and the website's background are unchanged.
+- **The agent's, provisional:** how far to look for a hex (1.2 tiles at a tap, 1.8 round a follower's place), your hex kept free, the background left out (`CARD-BATTLES.md` §11.37).
+- `js/cardbattle.js` (`hexWalkOn`, `cardHexStand`), `js/input.js`, `js/facilityplay.js`, `js/formation.js` (with `hexSettle`), `js/npc.js`, `js/squadfly.js`, `js/commands.js`, `js/commandcenter.js`, `tests/cardbattle.js`.
+- **Verified:** `tests/cardbattle.js` (new: THE HEXES OUT OF A BATTLE, 4 checks) and the suites in the handoff. **Known gap:** a Technician fighting up close stops 0.8 tiles off, less than a hex, so it mostly stands off one (`CARD-BATTLES.md` §11.37). **Not seen in a real browser; not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ee` · branch `claude/zen-cerf-3m8mq5` · FLUX MOVE on the hexes; the 3D view follows a moved object
+- **The ask** (the owner, 2026-11-27): "the player can maneuver the object or find a highlighted hexagon tile under whenever they activate their utility ability"; asked, "2 hexes, turn 60°"; 2026-11-28, of the drafts and the next step: "all the [drafts] look good [...] work the flux move".
+- **What it does:** FLUX MOVE works on the floor's hexes: the picked object's reach (2 hexes) is lit on the floor, violet where it can go and red where it cannot; a tap on a lit hex, ✓ PLACE, and it stands on that hex's middle; a barrier turns a sixth of a turn at a time. It blocks the tile under each of its hexes' middles. `FOLLOWER-UTILITIES.md` §4.4.
+- **A fix with it:** in the 3D view a moved object now moves in the picture; it never did there (the object moved in the game, the view kept drawing it where it was built).
+- **Also:** draft 4, the breakable states, approved by the owner ("all the [drafts] look good"); not in the game.
+- `js/fluxmove.js`, `js/techabilities.js`, `js/propsprites.js`, `view3d/gamemap.js`, `view3d/gameview.js`, `design/style-evolution/round2/chamber.js`, `tests/fluxmove.js`, `tests/fluxlab.js`; generated files.
+- **Verified:** the two suites and the full run in the handoff; seen in a real browser in the 3D view in both cameras. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ed` · branch `claude/zen-cerf-3m8mq5` · the arena's barriers bigger; the new props sheet preloaded
+- **The ask** (the owner, 2026-11-28): "those barricades that are located in the arena are too small. You can increase the size of those".
+- **What it does:** the six-sided barrier is half as tall again and as much thicker, 2 tiles long (`design/props/models/hexcargo.js`); it blocks the same two tiles. **A fix:** `game.html` preloads the new sheet `img/props/hexcargo` with the others (`tests/startup.js` failed on `2026-11-17ec` without it).
+- **Verified:** the suites in the handoff. **Not playtested; not seen on an iPad.**
+
+### Build `2026-11-17ec` · branch `claude/zen-cerf-3m8mq5` · the cargo FLUX MOVE can move is six-sided, on the hexes
+- **The ask** (the owner, 2026-11-27): "when the player wants to move an object, it's an object that has that hexagonal look already to it"; of draft 3 (the game's own crates, barrels, stacks and barrier rebuilt six-sided), 2026-11-28: "It's right", then "go ahead and add the approved ones to the game [...] I like the simple way of objects blocking the floor".
+- **What it does:** the arena's nine movable pieces (three crates, a crate stack, three barrels, two barriers) are drawn six-sided, in the 3D view and the 2D game, and stand on the middles of the floor's hexes; each blocks the square tile its middle lies in, as before. Cargo that does not move is unchanged. FLUX MOVE's rules are unchanged (its hex rules are the next step). `FOLLOWER-UTILITIES.md` §4.2.
+- **Also, drafts only:** the breakable states (a breached door, a frozen and a shattered generator, the sewer's vines whole and dissolved): `design/hex-objects/draft4-*.png`, §4.3.
+- `design/props/models/hexcargo.js` (new), `img/props/hexcargo.png`, `js/propsprites.js` (`psKind`), `view3d/gamemap.js`, `js/facilitymap.js`, `tests/fluxmove.js`; generated files.
+- **Verified:** `tests/fluxmove.js` and the full run in the handoff; seen in a real browser in both views. **Not playtested; not seen on an iPad.**
+
 ## 2026-11-27
+
+### Build `2026-11-17ef` · branch `claude/friendly-thompson-w581x0` · the ants' limit in card battles: twice, then they leave you be
+- **The ask** (the owner, 2026-11-27): "The player can only be attacked by a group of ants in the card battles. And then it will reset if they go into another room, like the sewers or the ant nests, or 5 minutes passes." "Only attacked twice this is just to keep from the player, endlessly being attacked" (`CARD-BATTLES.md` §2.84).
+- **What it does:** an ant's blow on you or your squad starts a card battle at most twice. After that ants walk past you and your squad (they still go for the Crystal and for followers holding rooms), and a stray ant blow on you or yours starts nothing and does not land. The count starts again when you go into another place (another room; the Ant Nest's chambers count as one place, the sewer dungeon's rooms as one, the Sewers' Nest as its own) or 5 minutes after the last of those battles ended. A fight you pick yourself with an ant is always allowed and does not count; other creatures, THE ANT QUEEN and the real-time mode are unchanged.
+- **The agent's, provisional:** the places, the 5 minutes from the battle's end, your squad counting as you, the count not saved, nothing on screen saying the ants hold back (`CARD-BATTLES.md` §11.36).
+- `js/cardbattle.js` (`CARD_BATTLE.ants`, `_cbAnts`, `_cbAntPlace`, `cardBattleHit`, `cardBattleBars`), `tests/cardbattle.js`.
+- **Verified:** `tests/cardbattle.js` (new: THE ANTS' LIMIT, 3 checks, one with the world running) and the suites in the handoff. **Not seen in a real browser; not playtested; not seen on an iPad.**
+
+### No build · branch `claude/zen-cerf-3m8mq5` · follower utilities and the hex grid: the plan, the Notion notes, draft 1 of the hex objects
+- **The ask** (the owner, 2026-11-27): the map's interactions (moving objects, jumping to higher places) through the hex grid, with objects that already look hexagonal and highlighted hexes when a utility is activated; most followers to get a utility; drafts of hex objects for today's movables and new destructibles.
+- **What it is:** `docs/FOLLOWER-UTILITIES.md` (the owner's decisions and the Notion notes translated: charges, energy costs, the Brawlers' utilities, the launcher's rules); `design/props/drafts/hexobj.js` and its sheet `design/hex-objects/draft1.png`. **Nothing in the game changes.**
 
 ### Build `2026-11-17eb` · branch `claude/start-game-project-HSh7Z` · the low camera trimmed for the iPad
 - **The ask** (the owner, 2026-11-27): optimize the game for the low camera; of the ways offered, "Trim what's far".
