@@ -1367,7 +1367,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE HEXES OUT OF A BATTLE (§2.85; the owner, 2026-11-28: "whenever the player clicks to a new location, it assumes the middle of one of the hex tiles. And so do the followers")');
-    run(`globalThis.__tapW = (wx, wy) => { const ex = isoSX(wx, wy) + canvas.width / 2, ey = isoSY(wx, wy) + canvas.height / 2 + TILE_H; floatingTexts.length = 0; _fp.tapNoAt = 0; handleInput(ex, ey); };   // (a real tap on a point of the floor, as a finger's)
+    run(`globalThis.__spawn0 = facilitySpawnTick; facilitySpawnTick = () => {};   /* (no creature comes in while these checks stand and watch: as the other suites do; put back after them) */
+        globalThis.__tapW = (wx, wy) => { const ex = isoSX(wx, wy) + canvas.width / 2, ey = isoSY(wx, wy) + canvas.height / 2 + TILE_H; floatingTexts.length = 0; _fp.tapNoAt = 0; handleInput(ex, ey); };   // (a real tap on a point of the floor, as a finger's)
         globalThis.__onHex = (x, y) => { const h = cardHex(x, y); return Math.hypot(h[0] - x, h[1] - y) < 1e-6 && !!_cbHexesOf(facilityRoomIdAt(x, y), x, y).keys.has(cardHexKey(x, y)); };
         globalThis.__arrive = (n) => { for (let i = 0; i < n && player.fpPath && player.fpPath.length; i++) _simStep(false); };
         globalThis.__spot = (d0, d1) => partyRoomCells('crystal_chamber').find(q => { const d = Math.hypot(q[0] - player.x, q[1] - player.y); return d > d0 && d < d1 && Math.hypot(q[0] - crystal.x, q[1] - crystal.y) > 3 && !followers.some(f => Math.hypot(f.x - q[0], f.y - q[1]) < 1.5); });`);
@@ -1379,11 +1380,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             for (let i = 0; i < 480; i++) _simStep(false);
             const fs = followers.filter(f => formationFollowing(f)), keys = fs.map(f => cardHexKey(f.x, f.y));
             o.n = fs.length; o.squad = fs.map(f => __onHex(f.x, f.y)).join(); o.apart = new Set(keys).size === keys.length; o.notYours = keys.indexOf(cardHexKey(player.x, player.y)) < 0; o.still = __onHex(player.x, player.y);
-            o.near = fs.map(f => +Math.hypot(f.x - player.x, f.y - player.y).toFixed(2)).join(); return o; })()`);
+            o.near = fs.map(f => +Math.hypot(f.x - player.x, f.y - player.y).toFixed(2)).join(); o.about = [cardBattlePhase(), actors.filter(q => q instanceof Predator && !q.isClone && q.team !== 'green' && !q.dead).length].join(); return o; })()`);
         same(r.on, true, 'in the 3D game with card battles (the test\'s stand-in for the 3D view)'); same(r.pressed, false, 'no enemy near, no hit just now (a whole walk, not the cut step)');
         ok(r.tapHex, 'the tap is on one of the room\'s battle hexes (the fixture)'); same(r.target, r.hex, 'where the walk goes: that hex\'s middle'); same(r.hexWalk, true, 'a hex walk');
         same(r.arrived + ',' + r.at, 'true,true', 'arrived, standing on the hex\'s middle');
-        same(r.n, 3, 'three following'); same(r.squad, 'true,true,true', 'each on a hex\'s middle (of the room\'s battle hexes)'); same(r.apart, true, 'each its own hex'); same(r.notYours, true, 'none on yours');
+        same(r.n, 3, 'three following'); same(r.squad, 'true,true,true', 'each on a hex\'s middle (of the room\'s battle hexes; the battle and creatures about: ' + r.about + ')'); same(r.apart, true, 'each its own hex'); same(r.notYours, true, 'none on yours');
         same(r.still, true, 'and you are still on yours'); ok(r.near.split(',').every(d => +d < 4.5), 'round you, near their formation places: ' + r.near);
     });
     check('the step cut short with an enemy near ends on a hex\'s middle; a run stopped by an enemy steps onto the nearest; a follower sent to a spot (MOVE TO) holds on the middle of a hex there', () => {
@@ -1417,14 +1418,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.battle = on; o.hurt = 1e6 - a.health > 0; o.b = [nb, reach].join(); o.s = [ns, sight].join(); o.t = [nt, treach].join();
             const tHurt = a.health; t.attackCooldown = 0; for (let i = 0; i < 200 && a.health === tHurt; i++) { const c0 = t.attackCooldown; _simStep(false); if (t.attackCooldown > c0 && t.state === 'attack') break; } o.tHit = t.state === 'attack' || a.health < tHurt;
             o.apart = new Set([b, s, t].map(f => cardHexKey(f.x, f.y))).size === 3; a.dead = true; a.health = 0;
-            let rest = 0, at = null; for (let i = 0; i < 4000 && at === null; i++) { _simStep(false); const p = s._patrol; rest = p && p.wait > 0 ? rest + 1 : 0; if (rest === 65) at = __onHex(s.x, s.y); }   /* (a rest is 70 to 200 frames, js/party.js PARTY.rest; the step onto a hex up to 1.2 tiles, about 52 frames) */
-            o.rest = at; return o; })()`);
+            const ends = []; let resting = false, last = false; for (let i = 0; i < 6000 && ends.length < 3; i++) { _simStep(false); const p = s._patrol, now = !!(p && p.wait > 0); if (resting && !now) ends.push(last); resting = now; if (now) last = __onHex(s.x, s.y); }   /* (each rest's last frame: a rest is 70 to 200 frames, js/party.js PARTY.rest) */
+            o.rest = ends.join(); return o; })()`);
         same(r.posted, 'true,true,true,false,false,false', 'all three holding the room, out of your squad');
         same(r.battle, 0, 'no card battle (they fight in real time)'); same(r.hurt, true, 'the ant took their blows');
         const [nb, reach] = r.b.split(',').map(Number), [ns, sight] = r.s.split(',').map(Number);
         ok(nb >= 108 && reach === 120, 'the Brawler, of the last 120 frames: on a hex\'s middle ' + nb + ', in strike reach ' + reach); ok(ns >= 108 && sight === 120, 'the Mage: on a hex\'s middle ' + ns + ', the ant in sight and range ' + sight);
         const [nt, treach] = r.t.split(',').map(Number); ok(nt >= 108 && treach === 120, 'the Technician: on a hex\'s middle ' + nt + ', within ' + 1.4 + ' of the ant ' + treach); same(r.tHit, true, 'and striking from there'); same(r.apart, true, 'each its own hex');
-        same(r.rest, true, 'patrolling, 65 frames into a rest: on a hex\'s middle');
+        same(r.rest, 'true,true,true', 'patrolling: at the end of each of its first three rests, on a hex\'s middle');
     });
     check('in the 2D game a Technician fighting in real time still closes to 0.8 tiles to strike, as before', () => {
         const r = J(`(function(){ __fresh(1); CARD_BATTLE.on = false; CARD_BATTLE.force3d = false; playerAttackMode = false; player.lastHitAt = 0; const t = followers[0]; t.role = 'camper'; partyApplyStance([t], 'hold');
@@ -1433,6 +1434,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             for (let i = 0; i < 600; i++) _simStep(false); const d = Math.hypot(t.x - a.x, t.y - a.y), o = { on: hexWalkOn(), d: +d.toFixed(3), hurt: a.health < 1e6 }; a.dead = true; a.health = 0; CARD_BATTLE.on = true; CARD_BATTLE.force3d = true; return o; })()`);
         same(r.on, false, 'off'); ok(r.d <= 0.85, 'within 0.8 of its enemy: ' + r.d); same(r.hurt, true, 'striking it');
     });
+
+    run('facilitySpawnTick = __spawn0;');
 
     group('THE PIECES');
     check('the page loads js/cardbattle.js (and its boot check); the tap, the hit, the prey, the squad, the gun, the step and the edges ask it; the 3D view\'s camera reads it', () => {

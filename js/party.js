@@ -236,7 +236,9 @@ function partyPatrol(a) {
     let p = a._patrol;
     if (p && p.back) p = a._patrol = null;
     if (p && p.wait > 0) { if (--p.wait <= 0) a._patrol = null; return; }   // resting at a stop; then on to the next
-    if (!p) p = a._patrol = partyPickStop(a);
+    if (!p) { p = a._patrol = partyPickStop(a);
+        // ON THE HEXES (docs/CARD-BATTLES.md §2.85; the owner, 2026-11-28, of followers patrolling a room they hold: "Yes"): in the 3D game the stop is the middle of the nearest free hex there
+        if (p && typeof hexWalkOn === "function" && hexWalkOn() && typeof cardHexStand === "function") { const h = cardHexStand(p.x, p.y, 1.2, k => typeof hexTaken === "function" && hexTaken(a, k)); if (h) { p.x = h[0]; p.y = h[1]; if (typeof hexClaim === "function") hexClaim(a, h); } } }
     if (!p) return;
     const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy);
     if (d < 0.45 || ++p.age > 900) { p.wait = PARTY.rest[0] + Math.floor(Math.random() * (PARTY.rest[1] - PARTY.rest[0])); return; }

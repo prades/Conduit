@@ -100,7 +100,7 @@ function hexSettle(a, x0, y0) {
     if (a._hexOwn === f0 || a._flight || a._pinball || a._burrow || a._consume || a._fault || a._wraith || a._shotWind > 0 || (a._blockUntil || 0) > f0) { a._settle = null; return; }
     if (typeof cardBattleActive === "function" && cardBattleActive() && typeof partyIsMember === "function" && partyIsMember(a)) { a._settle = null; return; }   // (the battle places its own)
     if (Math.hypot(a.x - x0, a.y - y0) > HEX_SETTLE.still) { a._settle = null; return; }   // (its own step moved it)
-    const m0 = cardHex(a.x, a.y); if (Math.hypot(m0[0] - a.x, m0[1] - a.y) < 1e-6) return;   // (on a middle already)
+    const m0 = cardHex(a.x, a.y); if (Math.hypot(m0[0] - a.x, m0[1] - a.y) < 1e-6) { a._hexHeld = f0; return; }   // (on a middle already: it holds it, and the squad's spacing moves the other one, js/game.js)
     let S = a._settle;
     if (!S || f0 - S.at >= HEX_SETTLE.every || f0 < S.at) {
         const foe = a._nearestEnemy && !a._nearestEnemy.dead ? a._nearestEnemy : null, fd = foe ? Math.hypot(foe.x - a.x, foe.y - a.y) : 0;
@@ -120,7 +120,6 @@ function hexSettle(a, x0, y0) {
     const dx = S.x - a.x, dy = S.y - a.y, d = Math.hypot(dx, dy), s = Math.min(a.moveSpeed || 0.02, d);
     if (d > 1e-9) { a.x += dx / d * s; a.y += dy / d * s; a._hexStep = f0; }   // (stepping onto its hex: the squad's spacing leaves it be this frame, js/game.js; the hexes are a tile apart)
 }
-function hexStepping(a) { return !!a && a._hexStep === (typeof frame !== "undefined" ? frame : 0); }
 // the place: as far out as it can be on floor you can walk to straight, coming in toward you; failing that, turned to a diagonal, then to a side (a wall ahead: beside you); failing all, where you stand
 const _fmTurns = [0, 0.785, -0.785, 1.571, -1.571];
 function _fmPlace(px, py, ox, oy) {

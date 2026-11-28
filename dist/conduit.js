@@ -8517,8 +8517,10 @@ function hexSettle(a, x0, y0) {
         return;
     }
     const m0 = cardHex(a.x, a.y);
-    if (Math.hypot(m0[0] - a.x, m0[1] - a.y) < 1e-6)
+    if (Math.hypot(m0[0] - a.x, m0[1] - a.y) < 1e-6) {
+        a._hexHeld = f0;
         return;
+    }
     let S = a._settle;
     if (!S || f0 - S.at >= HEX_SETTLE.every || f0 < S.at) {
         const foe = a._nearestEnemy && !a._nearestEnemy.dead ? a._nearestEnemy : null, fd = foe ? Math.hypot(foe.x - a.x, foe.y - a.y) : 0;
@@ -8552,7 +8554,6 @@ function hexSettle(a, x0, y0) {
         a._hexStep = f0;
     }
 }
-function hexStepping(a) { return !!a && a._hexStep === (typeof frame !== "undefined" ? frame : 0); }
 const _fmTurns = [0, 0.785, -0.785, 1.571, -1.571];
 function _fmPlace(px, py, ox, oy) {
     for (const s of [1, 0.75, 0.5, 0.25]) {
@@ -48510,8 +48511,18 @@ function partyPatrol(a) {
             a._patrol = null;
         return;
     }
-    if (!p)
+    if (!p) {
         p = a._patrol = partyPickStop(a);
+        if (p && typeof hexWalkOn === "function" && hexWalkOn() && typeof cardHexStand === "function") {
+            const h = cardHexStand(p.x, p.y, 1.2, k => typeof hexTaken === "function" && hexTaken(a, k));
+            if (h) {
+                p.x = h[0];
+                p.y = h[1];
+                if (typeof hexClaim === "function")
+                    hexClaim(a, h);
+            }
+        }
+    }
     if (!p)
         return;
     const dx = p.x - a.x, dy = p.y - a.y, d = Math.hypot(dx, dy);
@@ -60753,11 +60764,9 @@ function render() {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP)
                 break;
-            if (_a._flight || _b._flight)
+            if (_a._flight || _b._flight || _a._hexStep === frame || _b._hexStep === frame)
                 continue;
             if (typeof cardBattleWalking === "function" && (cardBattleWalking(_a) || cardBattleWalking(_b)))
-                continue;
-            if (typeof hexStepping === "function" && (hexStepping(_a) || hexStepping(_b)))
                 continue;
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx * _dx + _dy * _dy;
@@ -60765,10 +60774,17 @@ function render() {
                 continue;
             const _d = Math.sqrt(_d2);
             const _p = (1 / _d) * (FOLLOWER_SEP - _d) * 0.5;
-            _a.x -= _dx * _p;
-            _a.y -= _dy * _p;
-            _b.x += _dx * _p;
-            _b.y += _dy * _p;
+            const _ha = _a._hexHeld === frame, _hb = _b._hexHeld === frame;
+            if (!_ha) {
+                const k = _hb ? 2 : 1;
+                _a.x -= _dx * _p * k;
+                _a.y -= _dy * _p * k;
+            }
+            if (!_hb) {
+                const k = _ha ? 2 : 1;
+                _b.x += _dx * _p * k;
+                _b.y += _dy * _p * k;
+            }
             facilityConstrain(_a, _ax0, _ay0);
             facilityConstrain(_b, _bx0, _by0);
         }
