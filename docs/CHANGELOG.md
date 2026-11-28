@@ -7,6 +7,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 ### No build · branch `claude/zen-cerf-3m8mq5` · follower utilities and the hex grid: the plan, the Notion notes, draft 1 of the hex objects
 - **The ask** (the owner, 2026-11-27): the map's interactions (moving objects, jumping to higher places) through the hex grid, with objects that already look hexagonal and highlighted hexes when a utility is activated; most followers to get a utility; drafts of hex objects for today's movables and new destructibles.
 - **What it is:** `docs/FOLLOWER-UTILITIES.md` (the owner's decisions and the Notion notes translated: charges, energy costs, the Brawlers' utilities, the launcher's rules); `design/props/drafts/hexobj.js` and its sheet `design/hex-objects/draft1.png`. **Nothing in the game changes.**
+
 ### Build `2026-11-17eb` · branch `claude/start-game-project-HSh7Z` · the low camera trimmed for the iPad
 - **The ask** (the owner, 2026-11-27): optimize the game for the low camera; of the ways offered, "Trim what's far".
 - **What it does:** the low camera draws nothing past 16 tiles (was 22) and nothing of another room past 8 (was 12), and cuts long pieces for its curve every 2.2 tiles (was 1.5). Draw calls about a quarter fewer in the arena and the hallway, a little fewer elsewhere; triangles 5% to 19% fewer. Up close the picture is the same; far things in the next room show a little later. `VIEW-3D.md` §8. `view3d/lowcam.js`, generated files.
