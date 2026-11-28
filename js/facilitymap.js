@@ -628,7 +628,11 @@ const FACILITY_MAP = {
     // `at`: where the launcher stands (on `room`'s floor); `land`: where a follower it throws comes down (on `to`'s floor). The way back down is the room's LEDGE (`ledges`, below; the catwalks' broken section, a site's
     // `drop`/`dropTo`, went in build 2026-11-07qq). Each is the middle of a tile (sketch pixels: 20 to a tile).
     launchSites: [
-        { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000],
+        // A LIFT (`lift`; build 2026-11-17ef; the owner, 2026-11-28: "The launcher needs to be redesigned to only propel the player upwards like an elevator, but it will launch them still"; asked: "You and
+        //   followers", "Arena only for now"; the Notion note of 2026-11-20: "the launcher can only launch vertically and one cell over"): it stands on the arena floor under the catwalks' edge and launches
+        //   you straight up onto the catwalks' first tile, one cell over; your squad follows you up, one after another (js/techabilities.js _techLiftFollow). It stood 3 tiles out and threw a follower 5 tiles
+        //   across until then (at [940, 1000], land [1040, 1000]). Nobody is posted up there: they are your squad still.
+        { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", lift: true, rider: true, at: [1000, 1000], land: [1020, 1000],
           note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' LEDGE (ledge_catwalks) is the way back down into the arena. (Its broken section, the old way down, went in build 2026-11-07qq: the owner chose \"Only its way back\".)" },
         // A POCKET SITE (`pocket`): the landing is a cut-off part of the SAME room, not another room, so a follower sent there keeps its place in the squad (no room post) and waits there for you. `rider`: the launcher carries
         //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide). A floor up there with a LEDGE (`ledges`, below) is left by it, one way (techLedgeJump); a pocket with none,

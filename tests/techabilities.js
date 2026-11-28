@@ -43,22 +43,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     function $$cards(){ return Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot.has-ab')).length; }
     t._abReadyAt = frame; step(7); partyTick();
     out.chip1 = chip ? chip.textContent : null;
-    // an enemy in sight that stands still and does not fight back
-    actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'ant', className: 'tank' }); e.x = player.x + 3.5; e.y = player.y + 1; e.update = function(){}; e.health = e.maxHealth = 5000; e.reflectDamage = 0;
-    var g = followers[1]; g.health = g.maxHealth = 400; g.spawnProtection = 0;   // (a big one: no hit takes more than a third of a follower's health, which would cap the set amount)
-    var hp0 = g.health; step(2);
-    chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(2);
-    out.aim = { on: document.body.classList.contains('tech-aiming'), shown: getComputedStyle($('#techAim')).display, prompt: $('#techAim .ta-t').textContent, chip: chip.textContent, box: rect($('#techAim')) };
-    var q = followerPickPoint(g); tapAt(q.x, q.y); step(2);
-    out.aim2 = $('#techAim .ta-t').textContent;
-    var ex = (e.x - player.visualX - (e.y - player.visualY)) * TILE_W + canvas.width/2, ey = (e.x - player.visualX + (e.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H - facilityLiftRel(e.x, e.y) - 55;
-    tapAt(ex, ey); step(1);
-    out.issued = { aiming: document.body.classList.contains('tech-aiming'), going: !!(g._launchLoad || g._flight) };
-    for (var i = 0; i < 600 && (g._launchLoad || g._flight); i++) step(1);
-    var lost = Math.round(hp0 - g.health); partyTick();   // (measured as it lands: it mends a little as it goes on)
-    out.combat = { foeLost: Math.round(5000 - e.health), followerLost: lost, cooldown: Math.ceil(techReadyIn(t) / 60), chip: chip.textContent };   // (the flight's frames have run off it)
+    // the chip away from any site: no aim, and it says why (the throw at an enemy is removed: build 2026-11-17ef)
+    floatingTexts.length = 0; chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(2);
+    out.aim = { on: document.body.classList.contains('tech-aiming'), said: floatingTexts.map(function(q){ return q.text; }).join(' | '), chip: chip.textContent };
     // THE SITE: near it, its label; a tap on the label and the technician sets a launcher up
-    e.dead = true; var s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null;
+    actors = actors.filter(function(a){ return !(a instanceof Predator); }); var s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null;
     for (var k = 0; k < followers.length; k++) { followers[k].x = player.x + 0.4 * k; followers[k].y = player.y + 1; followers[k].attackOrder = null; }
     step(3);
     var L = _techLabels[s.id]; out.label = !!L;
@@ -67,8 +56,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     for (var j = 0; j < 1600 && !techLauncherAt(s.id); j++) step(1);
     out.installed = techLauncherAt(s.id); out.saved = facilitySaveCollect().launchers;
     step(2); L = _techLabels[s.id]; if (L) tapAt(L.x + L.w / 2, L.y + L.h / 2); step(1);
-    out.preview = { mode: techAim && techAim.mode, prompt: $('#techAim .ta-t').textContent };
-    techAimCancel(true);
+    out.preview = { mode: techAim && techAim.mode, riding: !!(player._launchLoad || player._flight) };   // (A LIFT: the tag again and you ride it)
+    for (var u = 0; u < 900 && !(partyRoomAt(player.x, player.y) === 'catwalks' && !player._flight); u++) step(1);
+    out.up = partyRoomAt(player.x, player.y); techAimCancel(true);
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__ta'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -113,28 +103,13 @@ function measure(w, h) {
         same(r.wait, 3600, 'the first wait (frames)'); ok(/READY IN 60 S/.test(r.can), 'it can be used at once: ' + r.can); same(r.ready, true, 'after the wait'); same(r.posted, 'NOT IN THE SQUAD', 'a posted technician'); same(r.back, 60, 'back in the squad: the wait again');
     });
 
-    group('THE KINETIC LAUNCHER: COMBAT');
-    check('a throw: the follower runs to the technician and is thrown in an arc at the enemy; the enemy takes 3× its power (through the game\'s damage, armour and element and all), the follower a set 10, it lands beside the enemy and fights it; the technician gets the XP of a kill of it, once; the cooldown is 60 s from the throw', () => {
-        const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1]; t._abReadyAt = frame; const e = __foe(t.x + 3, t.y + 0.4);
-            const ref = __foe(t.x + 3.2, t.y + 0.8); applyDamage(ref, g.power * TECH_AB.launch.powerMult, g, null, false, false, DMG_HIT_LAUNCH); const want = Math.round(5000 - ref.health); ref.dead = true; actors.splice(actors.indexOf(ref), 1);
-            g.spawnProtection = 0; const hp0 = g.health, xp0 = t.xp || 0, o = {}; o.use = techAbilityUse(t, { follower: g, enemy: e });
-            let flew = false, peak = 0; for (let i = 0; i < 400 && (g._launchLoad || g._flight || !flew); i++) { __step(1); if (g._flight) { flew = true; peak = Math.max(peak, techFlightLift(g)); } }
-            o.flew = flew; o.peak = Math.round(peak); o.foeLost = Math.round(5000 - e.health); o.want = want; o.followerLost = Math.round(hp0 - g.health); o.near = Math.hypot(g.x - e.x, g.y - e.y) < 1.7; o.order = !!(g.attackOrder && g.attackOrder.target === e);
-            o.xp = (t.xp || 0) - xp0; o.killXp = killXp(e); o.cool = techReadyIn(t); o.chip = techChipState(t).text; o.busy = !!t._abBusy; return o; })()`);
-        same(r.use.ok, true, 'issued: ' + JSON.stringify(r.use)); same(r.flew, true, 'it never flew'); ok(r.peak > 40, 'no arc: ' + r.peak);
-        same(r.foeLost, r.want, 'the enemy\'s damage is not 3× the follower\'s power through applyDamage'); same(r.followerLost, 10, 'the follower\'s set damage'); same(r.near, true, 'it did not land beside the enemy'); same(r.order, true, 'it does not fight the enemy it was thrown at');
-        same(r.xp, r.killXp, 'the technician\'s XP'); ok(r.cool > 3500 && r.cool <= 3600, 'the cooldown ' + r.cool); same(r.chip, '⚡ 60 S', 'the chip'); same(r.busy, false, 'still busy');
-    });
-    check('a throw that cannot be: at the technician itself, at an enemy it cannot see, during the cooldown; a throw called off (the enemy died first) costs no cooldown and gives no XP', () => {
-        const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1]; t._abReadyAt = frame; const o = {};
-            const e = __foe(t.x + 3, t.y + 0.4); o.self = techAbilityUse(t, { follower: t, enemy: e }).why;
-            const hid = __foe(__cell('lab_hallway')[0], __cell('lab_hallway')[1]); o.hidden = techAbilityUse(t, { follower: g, enemy: hid }).why;
-            g.x = t.x + 6; g.y = t.y; const xp0 = t.xp || 0; o.use = techAbilityUse(t, { follower: g, enemy: e }).ok; e.dead = true; __step(30);
-            o.off = { load: !!g._launchLoad, flight: !!g._flight, cool: techReadyIn(t), busy: !!t._abBusy, xp: (t.xp || 0) - xp0 };
-            t._abReadyAt = frame + 100; o.cooling = techAbilityUse(t, { follower: g, enemy: hid }).why; return o; })()`);
-        same(r.self, 'IT CANNOT THROW ITSELF', 'itself'); same(r.hidden, 'THE TECHNICIAN CANNOT SEE IT', 'behind a wall'); same(r.use, true, 'the throw');
-        same(r.off.load || r.off.flight, false, 'still going after the enemy died'); same(r.off.cool, 0, 'a called-off throw cost a cooldown'); same(r.off.busy, false, 'still busy'); same(r.off.xp, 0, 'XP for nothing');
-        ok(/READY IN 2 S/.test(r.cooling), 'during the cooldown: ' + r.cooling);
+    group('THE KINETIC LAUNCHER: NO THROW AT ENEMIES');
+    check('THE THROW AT AN ENEMY IS REMOVED (build 2026-11-17ef; the owner, 2026-11-28: "Remove it"; the note of 2026-11-20: "Combat mode [...] is removed entirely"): the ability has no aim; asked to throw, it refuses, nobody flies, the enemy is not hurt and no wait is set; its chip with no site near says so and puts no aim up', () => {
+        const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1]; t._abReadyAt = frame; const e = __foe(t.x + 3, t.y + 0.4), o = {}, h0 = e.health;
+            o.aim = TECH_ABILITIES.electric.aim.length; o.old = techLaunchAt(t, g, e); o.use = techAbilityUse(t, { follower: g, enemy: e }); __step(40);
+            o.fly = !!(g._launchLoad || g._flight); o.hurt = h0 - e.health; o.cool = techReadyIn(t); floatingTexts.length = 0; o.chip = techChipTap(t); o.aimUp = techAimActive(); o.said = floatingTexts.map(q => q.text).join(' | '); return o; })()`);
+        same(r.aim, 0, 'its aim'); same(r.old.ok, false, 'the old call'); ok(/NO LONGER THROWS AT ENEMIES/.test(r.old.why), r.old.why); same(r.use.ok, false, 'used'); same(r.fly, false, 'someone flew'); same(r.hurt, 0, 'the enemy'); same(r.cool, 0, 'a wait');
+        same(r.chip, false, 'the chip'); same(r.aimUp, false, 'an aim'); ok(/NO LAUNCHER SITE NEAR/.test(r.said), 'what it says: ' + r.said);
     });
 
     group('THE KINETIC LAUNCHER: EXPLORATION (a launcher site, the Arena Catwalk, the catwalks\' LEDGE: the one way down since build 2026-11-07qq)');
@@ -156,17 +131,20 @@ function measure(w, h) {
         same(r.installed, true, 'not set up'); same(r.xp, 100, 'its XP'); same(r.saved.join(), 'site_arena_catwalk', 'the save'); same(r.again, 'A LAUNCHER IS ALREADY HERE', 'a second one');
         same(r.cleared, false, 'a save without it'); same(r.applied.join(), 'site_arena_catwalk', 'a save with it (and an unknown site left out)');
     });
-    check('the launcher sends a follower up: it runs to the launcher and is thrown in an arc up onto the catwalks, where it holds them; called back (COME), it walks to the LEDGE and jumps down into the arena where the ledge lands, one way, and follows again; one posted up there that is not (back from the dead) is let go of the post', () => {
-        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1];
-            player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; g.x = player.x + 0.5; g.y = player.y + 0.5;
-            o.use = techSiteLaunch(s, g).ok; let up = 0; for (let i = 0; i < 900 && (g._launchLoad || g._flight || !up); i++) { __step(1); if (g._flight) up = Math.max(up, techFlightLift(g)); }
-            o.peak = Math.round(up); o.post = g.post; o.room = partyRoomAt(g.x, g.y); o.again = techSiteLaunch(s, g).why;
-            partyCall(g, true); let dropped = false, from = null; const L = _fp.F.ledges[0]; for (let i = 0; i < 2400 && !(dropped && !g._flight); i++) { __step(1); if (g._flight && g._flight.kind === 'drop' && !dropped) { dropped = true; from = Math.hypot(g.x - L.at[0], g.y - L.at[1]); } }
-            o.dropped = dropped; o.from = from; o.down = partyRoomAt(g.x, g.y); o.sameFloor = _pComp(g.x, g.y) === _pComp(player.x, player.y);
-            partyPost(g, 'catwalks', true); g.x = player.x; g.y = player.y; _techDropScan(); o.stale = g.post; return o; })()`);
-        same(r.use, true, 'the launch'); ok(r.peak > 100, 'the arc up is not drawn high: ' + r.peak); same(r.post, 'catwalks', 'it does not hold the catwalks'); same(r.room, 'catwalks', 'where it came down'); same(r.again, 'IT IS UP THERE ALREADY', 'sent up again');
-        same(r.dropped, true, 'it never jumped from the ledge'); ok(r.from !== null && r.from < 0.8, 'it did not jump from the ledge: ' + r.from); same(r.down, 'arena', 'where it came down'); same(r.sameFloor, true, 'not back on the player\'s floor');
-        same(r.stale, null, 'a post up there it cannot walk to');
+    check('THE LIFT (build 2026-11-17ef; the owner, 2026-11-28: "only propel the player upwards like an elevator, but it will launch them still"; "You and followers"): the arena\'s launcher stands at the foot of the catwalks and lands one cell over, a floor up; you ride it in an arc; your squad follows you up one at a time and is your squad still (nobody posted); up there it will not take you again; you jump down by the LEDGE and they come after you', () => {
+        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core', 'fire']);
+            o.geo = [s.lift, s.rider, s.pocket, Math.hypot(s.land[0] - s.at[0], s.land[1] - s.at[1]), partyRoomAt(s.at[0], s.at[1]), partyRoomAt(s.land[0], s.land[1]), facilityHeightAt(s.land[0], s.land[1], _fp.F) > facilityHeightAt(s.at[0], s.at[1], _fp.F)];
+            player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1]; player.fpPath = null; fs.forEach((f, i) => { f.x = player.x - 0.5 * i; f.y = player.y + 1; f.health = f.maxHealth = 1e5; });
+            const up = _pComp(s.land[0], s.land[1]); o.ride = techSiteRide(s).ok; let peak = 0, t = 0; for (; t < 1200 && !(_pComp(player.x, player.y) === up && !player._flight); t++) { _simStep(false); if (player._flight) peak = Math.max(peak, techFlightLift(player)); }
+            o.youUp = partyRoomAt(player.x, player.y); o.peak = Math.round(peak); o.again = techSiteRide(s).why; let one = 0;
+            for (t = 0; t < 4000 && !partyMembers().every(f => _pComp(f.x, f.y) === up && !f._flight); t++) { _simStep(false); one = Math.max(one, partyMembers().filter(f => f._flight && f._flight.kind === 'site').length); }
+            o.squad = partyMembers().map(f => partyRoomAt(f.x, f.y) + (f.post ? ':posted' : '')).join(); o.n = partyMembers().length; o.oneAtATime = one;
+            const L = _fp.F.ledges.find(q => q.id === 'ledge_catwalks'); o.jump = techLedgeJump(L).ok; for (t = 0; t < 2400 && !(partyRoomAt(player.x, player.y) === 'arena' && !player._flight); t++) _simStep(false);
+            for (t = 0; t < 6000 && !partyMembers().every(f => partyRoomAt(f.x, f.y) === 'arena' && !f._flight); t++) _simStep(false); o.down = partyMembers().map(f => partyRoomAt(f.x, f.y)).join(); return o; })()`);
+        same(JSON.stringify(r.geo), JSON.stringify([true, true, false, 1, 'arena', 'catwalks', true]), 'the site: a lift with a rider, one cell over, from the arena up to the catwalks');
+        same(r.ride, true, 'the ride'); same(r.youUp, 'catwalks', 'where you came down'); ok(r.peak > 100, 'the arc: ' + r.peak); same(r.again, 'YOU ARE UP THERE ALREADY', 'again from up there');
+        same(r.n, 3, 'the squad'); same(r.squad, 'catwalks,catwalks,catwalks', 'the squad up, nobody posted'); same(r.oneAtATime, 1, 'in the air at once');
+        same(r.jump, true, 'the ledge'); same(r.down, 'arena,arena,arena', 'the squad down after you');
     });
 
     check('THE LEDGE for you (the owner: "a ledge that goes down that the player can only move to jump off of to get down"): up on the catwalks, walking onto it jumps you down to where it lands, one way; its tag (▼ LEDGE) shows only up there, near it, and a tap on it walks you there; down in the arena it does nothing; it is drawn: the deck\'s rail stops for it and arrows point down', () => {
@@ -183,34 +161,30 @@ function measure(w, h) {
         same(r.belowStays, 'arena', 'the ledge did something from below'); same(r.tag, true, 'no tag up there'); same(r.tap, true, 'the tag did not take the tap'); same(r.going, 'ledge_catwalks', 'the tap did not send you to the ledge'); same(r.tapJump, true, 'the tap did not end in the jump'); same(r.noTagBelow, true, 'a tag down in the arena');
         same(r.item, true, 'the ledge is not drawn'); same(r.gap, true, 'the deck\'s rail does not stop for the ledge');
     });
-    check('THE LAUNCHER IS SUBTLE (asked: "it shouldn\'t automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive"): coming near a site says nothing; its tag is small and still; only a tap on the tag is the site\'s (a tap on the floor round it walks); the launcher\'s aim never holds you: a tap that is not on a follower puts it away and is an ordinary tap', () => {
+    check('THE LAUNCHER IS SUBTLE (asked: "it shouldn\'t automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive"): coming near a site says nothing; its tag is small and still; only a tap on the tag is the site\'s (a tap on the floor round it walks); the launcher never holds you: its tag sends you to ride it, and a walk anywhere else calls that off', () => {
         const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1]; techAimCancel(true);
             player.x = player.targetX = player.visualX = s.at[0] - 9; player.y = player.targetY = player.visualY = s.at[1]; __step(2); floatingTexts.length = 0;
             player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null; g.x = player.x + 0.5; g.y = player.y + 0.5; __step(3);
             o.said = floatingTexts.map(t => t.text).filter(t => /LAUNCHER|SITE|TAP/.test(t)).join(' | ');
             techDrawOverlay(); const L = _techLabels[s.id], p = _techScr(s.at[0], s.at[1]); o.tag = L ? [L.h, L.w < 200] : null;
             o.floor = techSiteTap(p.x, p.y - 10); o.floorAim = techAimActive();
-            o.onTag = techSiteTap(L.x + L.w / 2, L.y + L.h / 2); o.aim = techAim && techAim.mode;
-            o.stray = techAimTap(p.x + 300, p.y + 200); o.after = techAimActive();
-            techSiteTap(L.x + L.w / 2, L.y + L.h / 2); const gp = _techScr(g.x, g.y); o.pick = techAimTap(gp.x, gp.y - 30); o.going = !!(g._launchLoad || g._flight || g._siteWork || g._launchGo); techAimCancel(true); return o; })()`);
+            o.onTag = techSiteTap(L.x + L.w / 2, L.y + L.h / 2); o.aim = techAim && techAim.mode; o.riding = !!(player._launchLoad && player._launchLoad.site === s.id);   /* (A LIFT, build 2026-11-17ef: its tag, one tap, and you ride it: no aim to hold you) */
+            o.walkOff = facilityWalkTo(s.at[0] - 4, s.at[1] + 2); o.off = !player._launchLoad; player._launchLoad = null; player.fpPath = null; return o; })()`);
         same(r.said, '', 'something was said coming near the site'); same(JSON.stringify(r.tag), '[20,true]', 'the tag is not small');
         same(r.floor, false, 'a tap on the floor at the site was taken'); same(r.floorAim, false, 'a tap on the floor aimed the launcher');
-        same(r.onTag, true, 'a tap on the tag was not taken'); same(r.aim, 'site', 'the tag does not aim the launcher');
-        same(r.stray, false, 'a stray tap was held by the launcher\'s aim'); same(r.after, false, 'the launcher\'s aim is still up after a stray tap');
-        same(r.pick, true, 'a tap on a follower did not send it'); 
+        same(r.onTag, true, 'a tap on the tag was not taken'); same(r.aim, null, 'the tag put an aim up'); same(r.riding, true, 'the tag did not send you to the lift');
+        same(r.walkOff, true, 'a walk elsewhere'); same(r.off, true, 'a walk elsewhere did not call the ride off');
         ok(/techAimTap\(_ax, _ay\) === false\) handleInput\(_ax, _ay\)/.test(rd('js/input.js')), 'the stray tap is not an ordinary tap afterwards');
         ok(!/TAP THE MARKED SPOT/.test(rd('js/techabilities.js')), 'the approach notice is still in the code');
     });
 
     group('THE AIM AND THE CODE THAT CARRIES IT');
-    check('the chip aims (a follower, then an enemy); a tap on the chip again, ✕ or Escape calls it off; while it aims, a tap on a squad card picks that follower', () => {
-        const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1], o = {}; t._abReadyAt = frame; const e = __foe(t.x + 3, t.y + 0.4);
-            o.start = techChipTap(t); o.need0 = techAimNeed(); o.chip = techChipState(t).text; o.prompt0 = techAimPrompt();
-            o.pick = techAimPickFollower(g); o.need1 = techAimNeed(); o.prompt1 = techAimPrompt();
-            techChipTap(t); o.off = techAimActive();
-            techChipTap(t); techAimPickFollower(g); techAimPickEnemy(e); o.thrown = !!(g._launchLoad || g._flight) && !techAimActive(); return o; })()`);
-        same(r.start, true, 'aimed'); same(r.need0, 'follower', 'first'); same(r.chip, '✕ AIMING', 'the chip'); ok(/TAP A FOLLOWER TO THROW/.test(r.prompt0), r.prompt0);
-        same(r.need1, 'enemy', 'then'); ok(/TAP AN ENEMY TO THROW CORE /.test(r.prompt1), r.prompt1); same(r.off, false, 'the chip again did not call it off'); same(r.thrown, true, 'the third aim did not throw');
+    check('a launcher that sends followers (the Sewers\', not a lift) aims: its aim asks for a follower, a tap on a squad card picks one, the aim again or Escape calls it off; the launcher\'s own chip puts no aim up (build 2026-11-17ef)', () => {
+        const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1], o = {}; t._abReadyAt = frame; const s = _fp.F.launchSites.find(q => !q.lift);
+            o.chip = techChipTap(t); o.chipAim = techAimActive(); o.text = techChipState(t).text;
+            techAim = { mode: 'site', f: null, ab: TECH_ABILITIES.electric, site: s.id, step: 0, picks: {} }; o.need0 = techAimNeed(); o.prompt0 = techAimPrompt();
+            techAimCancel(true); o.off = techAimActive(); return o; })()`);
+        same(r.chip, false, 'the chip'); same(r.chipAim, false, 'the chip put an aim up'); same(r.text, '⚡ LAUNCH', 'the chip reads'); same(r.need0, 'follower', 'the site\'s aim'); ok(/KINETIC LAUNCHER/.test(r.prompt0), r.prompt0); same(r.off, false, 'called off');
         const P = rd('js/party.js'), T = rd('js/techabilities.js');
         ok(/if \(f && hit\.ab\) \{[^\n]*\n[^\n]*else if \(typeof techChipTap === "function"\) techChipTap\(f\)/.test(P) && /techAimActive\(\) && typeof techAimPickFollower === "function" && techAimPickFollower\(f\)/.test(P), 'the squad card does not route to the aim');
         ok(/e\.key === "Escape" && techAim\) techAimCancel\(\)/.test(T), 'Escape');
@@ -237,14 +211,12 @@ function measure(w, h) {
             check('the electric technician\'s card has the chip, waiting 60 s at first, then LAUNCH; the other cards have none', () => {
                 ok(r.chip0 && /⚡ 60 S/.test(r.chip0[0]) && /wait/.test(r.chip0[1]), 'the chip at first: ' + JSON.stringify(r.chip0)); same(r.chip0[2], 1, 'cards with a chip'); same(r.chip1, '⚡ LAUNCH', 'ready');
             });
-            check('a tap on the chip puts up the prompt (what to tap, and ✕ CALL OFF); a tap on a follower and then on the enemy, on the canvas, throws it: the enemy is hit, the follower takes its set 10, the cooldown is 60 s', () => {
-                same(r.aim.on, true, 'aiming'); same(r.aim.shown, 'flex', 'the prompt'); ok(/TAP A FOLLOWER TO THROW/.test(r.aim.prompt), r.aim.prompt); same(r.aim.chip, '✕ AIMING', 'the chip');
-                ok(/TAP AN ENEMY/.test(r.aim2), 'after the follower: ' + r.aim2); same(r.issued.aiming, false, 'still aiming'); same(r.issued.going, true, 'no throw');
-                ok(r.combat.foeLost > 0, 'the enemy was not hit'); same(r.combat.followerLost, 10, 'the follower\'s damage'); same(r.combat.cooldown, 60, 'the cooldown'); same(r.combat.chip, '⚡ 60 S', 'the chip');
+            check('a tap on the chip away from any launcher site puts no aim up and says there is none near (the throw at an enemy is removed, build 2026-11-17ef)', () => {
+                same(r.aim.on, false, 'aiming'); ok(/NO LAUNCHER SITE NEAR/.test(r.aim.said), 'what it says: ' + r.aim.said); same(r.aim.chip, '⚡ LAUNCH', 'the chip');
             });
-            check('near the launcher site its label shows; a tap on it sends the technician to set a launcher up, there for good and saved; a tap on it then aims the launcher (a follower to send up to the Arena Catwalk)', () => {
+            check('near the launcher site its label shows; a tap on it sends the technician to set a launcher up, there for good and saved; a tap on it then is the ride: you are launched up onto the Arena Catwalk (a lift, build 2026-11-17ef)', () => {
                 same(r.label, true, 'no label near the site'); same(r.setup0, true, 'the tap did not start the set-up'); same(r.installed, true, 'not set up'); same((r.saved || []).join(), 'site_arena_catwalk', 'the save');
-                same(r.preview.mode, 'site', 'the launcher\'s aim'); ok(/SEND UP TO THE ARENA CATWALK/.test(r.preview.prompt), r.preview.prompt);
+                same(r.preview.mode, null, 'an aim'); same(r.preview.riding, true, 'the ride'); same(r.up, 'catwalks', 'where you came down');
             });
         }
     }

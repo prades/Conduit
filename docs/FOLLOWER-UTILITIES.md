@@ -44,6 +44,7 @@ The experience: every way of changing or getting around the map is read on the s
 ### 3.4 Other classes — proposed examples (Notion)
 - **Technicians:** machinery and engineering: pumps, valves, panels, lifts; their element's utilities as built (`TECHNICIANS.md`).
 - **Mages:** elemental manipulation: freeze water, burn organic obstructions, authored elemental devices.
+- **Built in part, `2026-11-17ef`** (the owner, 2026-11-28): the arena's launcher is a lift for you and your squad and the combat throw is removed (`TECHNICIANS.md`); the Sewers' is unchanged.
 - **The Kinetic Launcher** (approved 2026-11-20, to be built with the sewer rebuild, `SEWER-DUNGEON.md` on its branch): launches **only straight up and one cell over**, up to 2 stories, at authored spots only, landing only on authored ledges or upper floors; its combat throw is removed. Open: the electric technician's new combat ability.
 - **The Accelerator Bug's Ramp** (Notion, 2026-11-05, name open): an escalator-like path to higher ground.
 

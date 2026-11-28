@@ -44,6 +44,7 @@ const TECH_AB = {
         siteFlight: 64, sitePeak: 120,   // and up into a site's room
         dropFlight: 28,                  // frames to fall through a broken section
         near: 6,            // tiles: how near a site the player is when it shows
+        follow: 14,         // tiles: how near a lift's pad a squad member down there is, to be launched up after you (the agent's, provisional)
         setupWalk: 1200,    // frames the technician has to get to the site
         setup: 120,         // frames it works there
     },
@@ -130,8 +131,9 @@ const TECH_AB = {
 
 // The ability of each element's technician: its name, the word and the mark on its chip, what the player picks for it (in order), what the prompt asks for each pick, and what it does with them.
 const TECH_ABILITIES = {
-    electric: { id: "kinetic_launcher", name: "KINETIC LAUNCHER", short: "LAUNCH", icon: "⚡", col: "#ffe733", aim: ["follower", "enemy"], use: (f, p) => techLaunchAt(f, p.follower, p.enemy),
-                ask: (need, p) => need === "follower" ? "TAP A FOLLOWER TO THROW" : "TAP AN ENEMY TO THROW " + _techName(p.follower) + " AT" },
+    // (the Kinetic Launcher has no aim since build 2026-11-17ef: its throw at an enemy is removed, the owner, 2026-11-28, "Remove it"; its chip works the launcher site near you: techChipTap, techLauncherChip)
+    electric: { id: "kinetic_launcher", name: "KINETIC LAUNCHER", short: "LAUNCH", icon: "⚡", col: "#ffe733", aim: [], use: (f) => techLauncherChip(f),
+                ask: () => "THE LAUNCHER WORKS AT ITS SITES" },
     core:     { id: "photonic_shield", name: "PHOTONIC SHIELD", short: "SHIELD", icon: "◈", col: "#5ff7e0", aim: ["enemy"], use: (f, p) => techShieldAt(f, p.enemy),
                 ask: () => "TAP THE CREATURE (OR ITS CARD) TO SHIELD AGAINST" },
     fire:     { id: "thermite_drill", name: "THERMITE DRILL", short: "DRILL", icon: "✹", col: "#ff8a3a", aim: ["enemy"], use: (f, p) => p.rubble ? _techDrillRubble(f, p.rubble) : techDrillFoe(f, p.enemy),
@@ -221,16 +223,19 @@ function _techSettingUp(s) { return typeof followers !== "undefined" && follower
 // ── COMBAT: throw a follower at an enemy ──
 function _techThrowable(g, by) { return !!g && !g.dead && g.isFollower === true && !g.isClone && g.team === "green" && g !== by && !g._flight && !g._launchLoad && !g._siteWork && !g.returningToCrystal; }
 function _techFoeOk(foe) { return !!foe && !foe.dead && foe.team !== "green" && !foe.isClone && !(typeof isHostileTarget === "function" && !isHostileTarget(foe)); }
+// REMOVED (build 2026-11-17ef; the owner, 2026-11-28, of throwing a follower at an enemy for damage: "Remove it"; the Notion note of 2026-11-20: "Combat mode [...] is removed entirely"): the launcher
+// is a way up only. The call is kept so nothing that asks it breaks: it refuses, and says so. (A new combat ability for the electric technician is open: docs/TECHNICIANS.md.)
 function techLaunchAt(tech, who, foe) {
-    if (!_techThrowable(who, tech)) return { ok: false, why: who === tech ? "IT CANNOT THROW ITSELF" : "PICK A FOLLOWER TO THROW" };
-    if (!_techFoeOk(foe)) return { ok: false, why: "PICK AN ENEMY" };
-    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT" };   // (thrown only at what it sees: never over a wall into another room; over a low object, yes)
-    tech._abBusy = { kind: "combat", who };
-    who._launchLoad = { kind: "combat", by: tech, foe, t0: _techFrame() }; who.job = null; who.attackOrder = null;
-    _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
-    return { ok: true };
+    return { ok: false, why: "THE LAUNCHER NO LONGER THROWS AT ENEMIES · IT LIFTS YOU AT ITS SITES" };
 }
-
+// THE CHIP (⚡ LAUNCH): the launcher site near you. None near: it says so. One with no launcher yet: the technician sets it up. One with a launcher that carries you: you ride it.
+function techLauncherChip(tech) {
+    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO LAUNCH" };
+    let s = null, bd = TECH_AB.launch.near * 2; for (const q of _techSites()) { const d = Math.hypot(q.at[0] - p.x, q.at[1] - p.y); if (d <= bd) { bd = d; s = q; } }
+    if (!s) return { ok: false, why: "NO LAUNCHER SITE NEAR · THE LAUNCHER LIFTS YOU AT ITS SITES" };
+    if (!techLauncherAt(s.id)) { const r = techSiteSetup(s); if (r.ok) _techSay("⚡ " + _techName(r.tech) + " IS SETTING UP A KINETIC LAUNCHER", "#ffe733"); return r; }
+    return s.rider ? techSiteRide(s) : { ok: false, why: "TAP ITS TAG, THEN A FOLLOWER TO SEND UP" };
+}
 // ── EXPLORATION: set a launcher up at a site; send a follower up from it ──
 function techSiteSetup(s) {
     if (!s) return { ok: false, why: "NO SITE" };
@@ -249,7 +254,7 @@ function techSiteLaunch(s, who) {
     if (!_techThrowable(who, null)) return { ok: false, why: "PICK " + _techOnlyName(s) + " TO SEND " + (s.pocket ? "IN" : "UP") };
     if (s.only && !(techAbilityOf(who) && techAbilityOf(who).id === s.only)) return { ok: false, why: "ONLY " + _techOnlyName(s) + " GOES IN THERE · PICK ONE" };   // (a pocket is for the ability that opens it: anyone else would be shut in)
     if (_techComp(who.x, who.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: s.pocket ? "IT IS IN THERE ALREADY" : "IT IS UP THERE ALREADY" };
-    if (!s.pocket && typeof partyRoomFree === "function" && !partyRoomFree(s.to)) return { ok: false, why: "THE " + String(s.label || s.to).toUpperCase() + " IS FULL · " + partyRoomCap(s.to) + " OF " + partyRoomCap(s.to) };   // (a room's cap: js/party.js; a pocket is no post)
+    if (!s.pocket && !s.lift && typeof partyRoomFree === "function" && !partyRoomFree(s.to)) return { ok: false, why: "THE " + String(s.label || s.to).toUpperCase() + " IS FULL · " + partyRoomCap(s.to) + " OF " + partyRoomCap(s.to) };   // (a room's cap: js/party.js; a pocket is no post)
     who._launchLoad = { kind: "site", site: s.id, t0: _techFrame() }; who.job = null; who.attackOrder = null;
     _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
     return { ok: true };
@@ -271,7 +276,7 @@ function techSiteRide(s) {
     if (_techComp(p.x, p.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: "YOU ARE UP THERE ALREADY" };
     if (Math.hypot(s.at[0] - p.x, s.at[1] - p.y) > TECH_AB.launch.loadReach && !(typeof facilityWalkTo === "function" && facilityWalkTo(s.at[0], s.at[1]))) return { ok: false, why: "NO WAY TO THE LAUNCHER FROM HERE" };
     p._dropSite = null; p._launchLoad = { kind: "site", site: s.id, t0: _techFrame() };   // (set after the walk: a new destination clears it, js/facilityplay.js facilityWalkTo)
-    _techSay("⚡ TO THE LAUNCHER · IT THROWS YOU OVER", "#ffe733");
+    _techSay(s.lift ? "⚡ TO THE LAUNCHER · IT LAUNCHES YOU UP" : "⚡ TO THE LAUNCHER · IT THROWS YOU OVER", "#ffe733");
     return { ok: true };
 }
 // you, up on a raised floor: walk to its LEDGE and jump down from it (a tap on the ledge's tag; walking onto it does the same: _techRiderTick)
@@ -285,6 +290,19 @@ function techLedgeJump(L) {
     p._launchLoad = null; p._dropSite = L.id; p._dropT0 = _techFrame();
     _techSay("▼ TO THE LEDGE · YOU JUMP DOWN FROM IT", "#ffe733");
     return { ok: true };
+}
+// YOUR SQUAD FOLLOWS YOU UP A LIFT (build 2026-11-17ef; the owner, 2026-11-28: "You and followers"): while you stand on the floor a lift launches to, each member of your squad still down on the
+// launcher's floor (within TECH_AB.launch.follow tiles of it) goes to the pad and is launched after you, one at a time (the launcher takes one). Posted followers stay where they hold. They come down
+// after you by the floor's ledge, as ever (the squad's own way: below).
+function _techLiftFollow() {
+    const p = _techRider(); if (!p || p._flight || typeof partyMembers !== "function") return;
+    for (const s of _techSites()) {
+        if (!s.lift || !techLauncherAt(s.id) || _techSiteBusy(s)) continue;
+        const up = _techComp(s.land[0], s.land[1]); if (up === undefined || _techComp(p.x, p.y) !== up) continue;
+        const down = _techComp(s.at[0], s.at[1]), R = TECH_AB.launch.follow;
+        const f = partyMembers().find(a => _techThrowable(a, null) && !a._dropSite && _techComp(a.x, a.y) === down && Math.hypot(a.x - s.at[0], a.y - s.at[1]) <= R);
+        if (f) { f._launchLoad = { kind: "site", site: s.id, t0: _techFrame() }; f.job = null; f.attackOrder = null; }
+    }
 }
 // each frame: you on your way to a launcher's pad, or to a ledge; at it, the flight (a ledge you walk onto takes you down too: "the player can only move to jump off of to get down")
 function _techRiderTick(f0) {
@@ -1229,6 +1247,7 @@ function _techLand(a, F) {
         const s = _techSite(F.site), where = s ? String(s.label || s.to).toUpperCase() : "";
         if (F.rider || a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; if (s) _techSay("⚡ YOU ARE ON THE " + where + (_techLedgeFrom(a.x, a.y) ? " · ITS LEDGE (▼) IS THE WAY BACK DOWN" : ""), "#ffe733"); }   // you, carried over
         else if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · IT WAITS THERE FOR YOU" + (_techLedgeFrom(a.x, a.y) ? " · COME BRINGS IT DOWN THE LEDGE" : " UNTIL THE WAY IS OPEN"), "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until you are up there too, the way is open, or it is called
+        else if (s && s.lift) { /* (A LIFT: it came up after you and is your squad still: no post, no wait) */ }
         else {
             if (s && typeof partyPost === "function") partyPost(a, s.to, true);   // it holds the room up there until it is called back
             if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · COME BRINGS IT BACK", "#ffe733");
@@ -1327,6 +1346,7 @@ function techAbilityTick() {
         if (f._pocketHold) _techPocketTick(f);
     }
     _techRiderTick(f0);   // you, to a launcher's pad or a ledge
+    _techLiftFollow();    // your squad after you, up a lift
     if (f0 % 15 === 3) _techDropScan();
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
@@ -1392,6 +1412,7 @@ function _techAimShow() {
 function techChipTap(f) {
     if (techAim && techAim.f === f && techAim.ab === techAbilityOf(f)) { techAimCancel(); return false; }   // (its own aim again calls it off; FAULTLINE's aim is its other chip's, and this one takes its place)
     const c = techAbilityCan(f); if (!c.ok) { _techSay(c.why, "#ff8a6a"); return false; }
+    if (c.ab.id === "kinetic_launcher") { const r = techLauncherChip(f); if (!r.ok) _techSay(r.why, "#ff8a6a"); return !!r.ok; }   // (no aim: its site near you, build 2026-11-17ef)
     techAim = { mode: "combat", f, ab: c.ab, site: null, step: 0, picks: {} };
     if (c.ab.id === "flux_move") techAim.flux = { s: null, turn: false, at: null, grid: [null, null] };   // (FLUX MOVE: the object and its place are kept here, in the aim, until ✓ PLACE)
     _techAimShow();
@@ -1485,6 +1506,7 @@ function techSiteTap(ex, ey) {
         if (!nearAt || !_techOnLabel(s.id, ex, ey)) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
         if (techLauncherAt(s.id)) {
             if (_techSiteBusy(s)) { _techSay("THE LAUNCHER IS IN USE", "#ff8a6a"); return true; }
+            if (s.lift) { const r = techSiteRide(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // (A LIFT: one tap and you ride it up; your squad follows, _techLiftFollow)
             if (s.rider && techAim && techAim.mode === "site" && techAim.site === s.id) { techAimCancel(true); const r = techSiteRide(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // (its tag again, with its aim up: you ride it)
             techAim = { mode: "site", f: null, ab: TECH_ABILITIES.electric, site: s.id, step: 0, picks: {} }; _techAimShow();
             return true;
@@ -1519,8 +1541,8 @@ function techAbilityInfo(f) {
     const w = techReadyIn(f), ready = f._abBusy ? "BUSY" : w > 0 ? "IN " + Math.ceil(w / 60) + " S" : _techMember(f) ? "NOW" : "IN THE SQUAD ONLY";
     if (ab.id === "kinetic_launcher") {
         const T = TECH_AB.launch;
-        return { h: "ABILITY · " + ab.name, note: "From the ⚡ chip on its squad card: throw a follower at an enemy it can see. At a launcher site it sets a launcher up for good, which sends followers up to where nobody can walk (the Arena Catwalk); the one at the Sewers' collapsed tunnel carries you too (tap its tag twice).",
-                 rows: [["DAMAGE", T.powerMult + "× the thrown follower's power"], ["THE THROWN FOLLOWER TAKES", String(T.selfDamage)], ["COOLDOWN", Math.round(T.cooldown / 60) + " s"], ["FIRST WAIT", Math.round(TECH_AB.joinWait / 60) + " s after it joins the squad"], ["READY", ready]] };
+        return { h: "ABILITY · " + ab.name, note: "At a launcher site it sets a launcher up for good (the ⚡ chip on its squad card, or the site's tag). The launcher is a way up: the one under the Arena Catwalk launches you straight up onto it, and your squad after you; the one in the Sewers carries you over the river. It no longer throws a follower at an enemy.",
+                 rows: [["LAUNCHES", "you, then your squad, straight up"], ["FIRST WAIT", Math.round(TECH_AB.joinWait / 60) + " s after it joins the squad"], ["READY", ready]] };
     }
     if (ab.id === "photonic_shield") {
         const S = TECH_AB.shield;
@@ -1939,7 +1961,7 @@ function techDrawOverlay() {
         const work = (typeof followers !== "undefined" ? followers : []).find(q => q && !q.dead && q._siteWork && q._siteWork.site === s.id && q._siteWork.workAt !== null);
         if (work) { const k = Math.min(1, (f0 - work._siteWork.workAt) / T.setup); g.globalAlpha = 1; g.strokeStyle = "#ffe733"; g.lineWidth = 4; g.beginPath(); g.arc(p.x, p.y - 30, 16, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); g.stroke(); }
         // its TAG: small and quiet (ASKED: "it should remain subtle and uninterruptive"); a tap on it is the only tap the site takes
-        const txt = on ? (s.rider ? "⚡ LAUNCHER · RIDE IT · SEND A FOLLOWER" : s.pocket ? "⚡ LAUNCHER · SEND IN" : "⚡ LAUNCHER · SEND UP") : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
+        const txt = on ? (s.lift ? "⚡ LAUNCHER · RIDE IT UP" : s.rider ? "⚡ LAUNCHER · RIDE IT · SEND A FOLLOWER" : s.pocket ? "⚡ LAUNCHER · SEND IN" : "⚡ LAUNCHER · SEND UP") : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
         g.globalAlpha = a * 0.85; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 16, y = p.y - 70;
         g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(p.x - w / 2, y - 10, w, 20); g.strokeStyle = "rgba(255,231,51,0.55)"; g.lineWidth = 1; g.strokeRect(p.x - w / 2 + 0.5, y - 9.5, w - 1, 19); g.fillStyle = "rgba(255,231,51,0.9)"; g.fillText(txt, p.x, y + 1);

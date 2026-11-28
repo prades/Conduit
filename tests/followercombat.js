@@ -426,10 +426,10 @@ function measure(w, h) {
 
     // ── HOVER SHELL ─────────────────────────────────────────
     group('HOVER SHELL (electric Technician) and its KINETIC LAUNCHER: unchanged');
-    check('the Kinetic Launcher is as it was: its id, name, chip, colour and aim (a follower, then an enemy), and every one of its numbers', () => {
+    check('the Kinetic Launcher keeps its id, name, chip and colour; since build 2026-11-17ef it has no aim (its throw at an enemy is removed, the owner, 2026-11-28) and one new number (how near a lift a squad member is launched after you)', () => {
         const r = J(`(function(){ const a = TECH_ABILITIES.electric, o = {}; for (const k in a) o[k] = typeof a[k] === 'function' ? 'fn' : a[k]; return { ab: o, launch: TECH_AB.launch }; })()`);
-        same(JSON.stringify(r.ab), JSON.stringify({ id: 'kinetic_launcher', name: 'KINETIC LAUNCHER', short: 'LAUNCH', icon: '⚡', col: '#ffe733', aim: ['follower', 'enemy'], use: 'fn', ask: 'fn' }), 'the ability');
-        same(JSON.stringify(r.launch), JSON.stringify({ cooldown: 3600, selfDamage: 10, powerMult: 3, siteXp: 100, hitReach: 1.6, loadReach: 1.3, loadWait: 480, flight: 40, peak: 70, siteFlight: 64, sitePeak: 120, dropFlight: 28, near: 6, setupWalk: 1200, setup: 120 }), 'its numbers');
+        same(JSON.stringify(r.ab), JSON.stringify({ id: 'kinetic_launcher', name: 'KINETIC LAUNCHER', short: 'LAUNCH', icon: '⚡', col: '#ffe733', aim: [], use: 'fn', ask: 'fn' }), 'the ability');
+        same(JSON.stringify(r.launch), JSON.stringify({ cooldown: 3600, selfDamage: 10, powerMult: 3, siteXp: 100, hitReach: 1.6, loadReach: 1.3, loadWait: 480, flight: 40, peak: 70, siteFlight: 64, sitePeak: 120, dropFlight: 28, near: 6, follow: 14, setupWalk: 1200, setup: 120 }), 'its numbers');
     });
     check('the electric technician (the MANTA RAY since build 2026-11-17de, the Hover Shell before: a new body under the same id) is otherwise as it was: SHOCK ZAP its only move (BASH until build 2026-11-09c, the owner\'s pick in its place; the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Mollusk since build 2026-11-17df, the owner: "This creature is mollusk type"; the Hover Shell was a Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
         const r = J(`({ form: EVOLUTIONS.hovershell, dmg: DMG_FORM.hovershell, sub: EQUIP_FORM_SUBCLASS.hovershell })`);

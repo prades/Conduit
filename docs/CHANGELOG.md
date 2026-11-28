@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-28
 
+### Build `2026-11-17ef` · branch `claude/zen-cerf-3m8mq5` · the launcher is a lift; its throw at enemies removed
+- **The ask** (the owner, 2026-11-28): "The launcher needs to be redesigned to only propel the player upwards like an elevator, but it will launch them still." Asked: "You and followers", "Remove it" (the throw at an enemy), "Arena only for now".
+- **What it does:** the arena's launcher stands at the foot of the catwalks and launches you straight up onto them, one cell over; your squad follows you up one at a time and stays your squad; the ledge is the way down, your squad after you. One tap on its tag rides it. The electric technician no longer throws a follower at an enemy; its chip works the launcher site near you. The Sewers' launcher is unchanged. `TECHNICIANS.md`.
+- `js/techabilities.js`, `js/facilitymap.js`, `js/facility.js`, `tests/techabilities.js`, `tests/rooms.js`, `tests/followercombat.js`.
+- **Verified:** those suites and the full run in the handoff. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ee` · branch `claude/zen-cerf-3m8mq5` · FLUX MOVE on the hexes; the 3D view follows a moved object
 - **The ask** (the owner, 2026-11-27): "the player can maneuver the object or find a highlighted hexagon tile under whenever they activate their utility ability"; asked, "2 hexes, turn 60°"; 2026-11-28, of the drafts and the next step: "all the [drafts] look good [...] work the flux move".
 - **What it does:** FLUX MOVE works on the floor's hexes: the picked object's reach (2 hexes) is lit on the floor, violet where it can go and red where it cannot; a tap on a lit hex, ✓ PLACE, and it stands on that hex's middle; a barrier turns a sixth of a turn at a time. It blocks the tile under each of its hexes' middles. `FOLLOWER-UTILITIES.md` §4.4.

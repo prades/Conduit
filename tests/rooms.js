@@ -125,9 +125,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.far.join(), 'true,squad,squad,teleport_room_1,nest,nest,squad,teleport_room_1,2,2,3', 'from the full Nest with one from a full room elsewhere: the member takes that room');
         same(r.none.slice(0, 2).join(), 'false,squad,squad,squad', 'one on its way (no room held), every room full: nothing changes'); ok(/EVERY ROOM IS FULL · .* STAYS IN THE SQUAD/.test(r.none[2]), 'said ' + r.none[2]);
     });
-    check('the catwalks hold two too: the launcher will not send a third up', () => {
-        const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.why = techSiteLaunch(s, fs[2]).why; techLaunchersApply([]); return o; })()`);
-        same(r.why, 'THE ARENA CATWALK IS FULL · 2 OF 2', 'a third up');
+    check('the catwalks hold two (posted there); the launcher under them is a lift since build 2026-11-17ef, and your squad going up it after you is not posted, so the room\'s two are not what it asks', () => {
+        const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.cap = partyRoomCap('catwalks'); o.free = partyRoomFree('catwalks'); o.lift = s.lift; o.send = techSiteLaunch(s, fs[2]).ok; fs[2]._launchLoad = null; techLaunchersApply([]); return o; })()`);
+        same(r.cap, 2, 'the room\'s cap'); same(r.free, false, 'the room is full'); same(r.lift, true, 'a lift'); same(r.send, true, 'a squad member up the lift');
     });
     check('the code: every way of posting asks partyPlace (HOLD, REMOVE, DISBAND, the squad over-full); + RECRUIT asks who makes room; the picker is in the page (the recruitment posts\' eggs asked too until they were removed, 2026-11-24)', () => {
         const P = rd('js/party.js'), C = rd('js/clone.js'), H = rd('game.html');

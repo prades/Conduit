@@ -3922,3 +3922,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Blocking: **the simple way** (a six-sided object blocks the square tile its middle lies in; passed over: walking on hexes).
 - Status: the six-sided cargo Implemented (build `2026-11-17ec`), verified by `tests/fluxmove.js`; FLUX MOVE's hex rules, the climbs and the floor tools Designed, not built; the breakable states drafted (draft 4), not approved. `FOLLOWER-UTILITIES.md`, `CHANGELOG.md`.
 
+
+## DECISION: The launcher is a lift; its throw at enemies is removed (2026-11-28, build `2026-11-17ef`, branch `claude/zen-cerf-3m8mq5`)
+- The owner: "The launcher needs to be redesigned to only propel the player upwards like an elevator, but it will launch them still." (The Notion note of 2026-11-20 had it: vertical only, one cell over, the combat throw removed, to be built with the sewer rebuild.)
+- Chosen: **"You and followers"** ride (passed over: only you; you choose each time); the throw at an enemy **"Remove it"** (passed over: keep it for now); **"Arena only for now"** (passed over: the Sewers' removed; both made lifts).
+- Supersedes the Kinetic Launcher's combat use (2026-10-30) and the Arena Catwalk as a place followers were sent to hold.
+- Open: a new combat ability for the electric technician; the Sewers' launcher (with the sewer rebuild).
+- Status: Implemented (build `2026-11-17ef`); verified by `tests/techabilities.js`, `tests/rooms.js`, `tests/followercombat.js`; not playtested. `TECHNICIANS.md`, `CHANGELOG.md`.

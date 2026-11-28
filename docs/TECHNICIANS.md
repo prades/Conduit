@@ -28,6 +28,16 @@ All six are built, and the Thermite Burrower's FAULTLINE (build `2026-11-06a`). 
 
 ## The Kinetic Launcher (electric)
 
+**A LIFT since build `2026-11-17ef`** (the owner, 2026-11-28: "The launcher needs to be redesigned to only propel the player upwards like an elevator, but it will launch them still"; the Notion note of 2026-11-20: "the launcher can only launch vertically and one cell over"). Asked, of what was offered: who rides, **"You and followers"** (passed over: only you; you choose each time); the throw at an enemy, **"Remove it"** (passed over: keep it for now); the two spots, **"Arena only for now"** (passed over: the Sewers' removed; both made lifts).
+- **The throw at an enemy is removed.** The ability has no aim; `techLaunchAt` refuses ("THE LAUNCHER NO LONGER THROWS AT ENEMIES"). *Everything under "Combat" below, and its numbers (damage, the thrown follower's 10, the 60 s cooldown), is superseded and kept as history.* **Open:** a new combat ability for the electric technician.
+- **The arena's launcher is a lift** (`lift` on its site, `js/facilitymap.js`): it stands on the arena floor at the foot of the catwalks (it stood 3 tiles out) and launches **you** straight up, landing one cell over on the catwalks' first tile, in the same arc. Its tag reads ⚡ LAUNCHER · RIDE IT UP; **one tap on the tag and you walk to it and ride** (no aim; a walk anywhere else calls it off).
+- **Your squad follows you up**, one at a time, while you stand up there: each member still down within 14 tiles of the pad goes to it and is launched after you (`_techLiftFollow`). They are your squad still: **nobody is posted on the catwalks** (the room's cap of two is for followers posted there). Posted followers stay where they hold.
+- **The way down** is the catwalks' LEDGE, as before: you jump, and your squad comes after you.
+- **The chip** (⚡ LAUNCH) works the launcher site near you (within 12 tiles): none near, it says so; one with no launcher, the technician sets it up; one with a launcher, you ride it.
+- **Not changed (the owner: "Arena only for now"):** the Sewers' launcher still throws you, or a follower, over the river. A launcher still has to be set up once by an electric technician, for good.
+- **The agent's, provisional:** 14 tiles for the squad to follow; 12 for the chip to find a site; the same arc as before (64 frames, 120 px).
+- **Tests:** `tests/techabilities.js` ("THE LIFT", "THE THROW AT AN ENEMY IS REMOVED", the tag and the chip in a real page), `tests/rooms.js`, `tests/followercombat.js`. **Not playtested; not seen on an iPad.**
+
 ASKED: two modes, Combat and Secret Access; then "the kinetic launcher should do a set amount of damage to the follower, but a more proportionate damage to the enemy. It should also have the map exploration mode as a secondary feature that is permanent, and you need to have some sort of check for a spot where it can be deployed [...] have a little notification or highlighted area near the catwalk, or in the future any sort of secret area, and have it be clickable, and the player can engage with the electric technician, and he can set up the kinetic launcher."
 
 ### Combat
