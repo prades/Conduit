@@ -28970,6 +28970,15 @@ function buildLabFloor(lab, P0, how) {
     for (const rec of recs)
         if (isSd(rec.id))
             SD_HI = Math.max(SD_HI, baseOf(rec.id));
+    if (live) {
+        const hx = recs.filter(r => slants(r.id) && !isSd(r.id) && r.poly);
+        if (hx.length)
+            for (const [k, b] of [...band.entries()]) {
+                const pts = [[-0.45, -0.45], [0.45, -0.45], [0.45, 0.45], [-0.45, 0.45], [0, 0]].map(d => [b.x + d[0], b.y + d[1]]);
+                if (hx.some(r => pts.some(q => inP(q[0], q[1], r.poly))))
+                    band.delete(k);
+            }
+    }
     for (const b of band.values()) {
         let lo = 1e9, hi = -1e9;
         const see = list => { for (const [dx, dy] of list)
@@ -29034,6 +29043,20 @@ function buildLabFloor(lab, P0, how) {
                     const a = P[i], b = P[(i + 1) % P.length];
                     if (Math.abs(a[0] - b[0]) < 1e-6 || Math.abs(a[1] - b[1]) < 1e-6)
                         continue;
+                    if (fam !== isSd) {
+                        const L = Math.hypot(b[0] - a[0], b[1] - a[1]), u = [(b[0] - a[0]) / L, (b[1] - a[1]) / L];
+                        let n = [u[1], -u[0]];
+                        if (inP((a[0] + b[0]) / 2 + n[0] * 0.3, (a[1] + b[1]) / 2 + n[1] * 0.3, P))
+                            n = [-n[0], -n[1]];
+                        const rr = 0.5 * (Math.abs(n[0]) + Math.abs(n[1])) + 0.02;
+                        for (let x = Math.floor(Math.min(a[0], b[0])) - 2; x <= Math.ceil(Math.max(a[0], b[0])) + 2; x++)
+                            for (let y = Math.floor(Math.min(a[1], b[1])) - 2; y <= Math.ceil(Math.max(a[1], b[1])) + 2; y++) {
+                                const sN = (x - a[0]) * n[0] + (y - a[1]) * n[1], tU = (x - a[0]) * u[0] + (y - a[1]) * u[1];
+                                if (tU > -rr && tU < L + rr && sN + rr > 0 && sN - rr < 1)
+                                    skip.add(K(x, y));
+                            }
+                        continue;
+                    }
                     for (let x = Math.round(Math.min(a[0], b[0]) + 0.5); x <= Math.round(Math.max(a[0], b[0]) - 0.5); x++)
                         for (let y = Math.round(Math.min(a[1], b[1]) + 0.5); y <= Math.round(Math.max(a[1], b[1]) - 0.5); y++)
                             skip.add(K(x, y));
@@ -29041,6 +29064,18 @@ function buildLabFloor(lab, P0, how) {
             }
             bx = [bx[0] - 3, bx[1] - 3, bx[2] + 3, bx[3] + 3];
             let front = [...band.values()].filter(b => fam(b.own) && !b.header);
+            if (fam !== isSd && front.length) {
+                const s0 = front[0];
+                for (let x = bx[0]; x <= bx[2]; x++)
+                    for (let y = bx[1]; y <= bx[3]; y++) {
+                        const k = K(x, y);
+                        if (band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k))
+                            continue;
+                        const b = { x, y, own: s0.own, rock: false, fill: true, lo: s0.lo, hi: s0.lo + CUT_H - WALL_H, cutTop: s0.lo + CUT_H };
+                        band.set(k, b);
+                    }
+                front = [];
+            }
             while (front.length) {
                 const next = [];
                 for (const s0 of front)
@@ -29237,8 +29272,9 @@ function buildLabFloor(lab, P0, how) {
     for (const { w, rec, wi } of diag) {
         const P = rec.poly, HI0 = isSd(rec.id) ? SD_HI : baseOf(rec.id);
         let n = w.n.slice();
+        const far = roomAt.get(K(Math.round(w.mid[0] + n[0] * 0.6), Math.round(w.mid[1] + n[1] * 0.6))), TH = isSd(rec.id) ? 1 : far && far !== rec.id ? 0.12 : 2.5;
         const endAt = (E, other) => {
-            const sq = { o: [E[0] + n[0], E[1] + n[1]] }, e1 = [(other[0] - E[0]) / w.L, (other[1] - E[1]) / w.L];
+            const sq = { o: [E[0] + n[0] * TH, E[1] + n[1] * TH] }, e1 = [(other[0] - E[0]) / w.L, (other[1] - E[1]) / w.L];
             const k = rec.walls.findIndex((w2, j) => j !== wi && w2.kind !== 'open' && w2.kind !== 'deck_rail' && w2.kind !== 'railing_wall' && w2.kind !== 'spill' && Math.hypot(w2.b[0] - w2.a[0], w2.b[1] - w2.a[1]) > 1e-6 && (Math.hypot(w2.a[0] - E[0], w2.a[1] - E[1]) < 0.02 || Math.hypot(w2.b[0] - E[0], w2.b[1] - E[1]) < 0.02));
             if (k < 0)
                 return sq;
@@ -29251,7 +29287,7 @@ function buildLabFloor(lab, P0, how) {
             const kk = 1 + n[0] * nO[0] + n[1] * nO[1];
             if (kk < 0.3)
                 return sq;
-            const o = [E[0] + (n[0] + nO[0]) / kk, E[1] + (n[1] + nO[1]) / kk], axis = Math.abs(d[0]) < 1e-6 || Math.abs(d[1]) < 1e-6;
+            const o = [E[0] + (n[0] + nO[0]) / kk * TH, E[1] + (n[1] + nO[1]) / kk * TH], axis = Math.abs(d[0]) < 1e-6 || Math.abs(d[1]) < 1e-6;
             return { o, mitred: true, wedge: nd < 0 && axis && band.has(K(Math.round(E[0] + d[0] * 0.5 + nO[0] * 0.5), Math.round(E[1] + d[1] * 0.5 + nO[1] * 0.5))) ? [E[0] + nO[0], E[1] + nO[1]] : null };
         };
         const eA = endAt(w.a, w.b), eB = endAt(w.b, w.a), N = Math.max(1, Math.round(w.L)), lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], c = wain(rec.id), body = bodyOf(rec.id), m1 = [-n[0], -n[1]], ua = [(w.a[0] - w.b[0]) / w.L, (w.a[1] - w.b[1]) / w.L], ub = [-ua[0], -ua[1]];
