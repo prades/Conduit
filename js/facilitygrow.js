@@ -37,7 +37,8 @@
     };
     // an INTERIOR (js/facilitymap.js `interiors`) is not slid but carried: to a part of the map of its own, `offset` sketch pixels from where the data draws it
     const INTERIOR = {}; for (const i of (M.interiors || [])) INTERIOR[i.id] = [i.offset[0] / G, i.offset[1] / G];
-    const sh = (id) => INTERIOR[id] || SHIFT[id] || [0, 0];
+    const HEXR = M._hexFloor || new Set();   // (THE HEXAGON GROUND FLOOR's rooms, with ?hexfloor: js/facilitymap.js hexFloorApply. They are drawn where they stand, a tile off the arena; none slides or is re-drawn)
+    const sh = (id) => INTERIOR[id] || (HEXR.has(id) ? null : SHIFT[id]) || [0, 0];
     const mv = (p, t) => [p[0] + t[0] * G, p[1] + t[1] * G];
 
     // outlines that are re-drawn rather than slid (their shapes change): Teleport Room 1 loses the nub beside the lab; the passage is one tile shorter; the hallway gives up a row at its
@@ -60,12 +61,12 @@
 
     for (const r of M.rooms) {
         const t = sh(r.id);
-        if (POLY[r.id]) r.polygon = POLY[r.id].map(p => p.slice()); else r.polygon = r.polygon.map(p => mv(p, t));
+        if (POLY[r.id] && !HEXR.has(r.id)) r.polygon = POLY[r.id].map(p => p.slice()); else r.polygon = r.polygon.map(p => mv(p, t));
         for (const o of (r.objects || [])) if (o.at) o.at = mv(o.at, t);
     }
     // the kinds of the edges of an outline re-drawn above (one for each edge, from its first point): the warehouse's and Teleport Room 2's shared line (build 2026-11-09uu)
     const EDGE = { teleport_room_2: ["deck_rail", "wall", "wall", "wall"], show_room: ["wall", "wall", "open", "wall", "wall"] };
-    for (const r of M.rooms) if (EDGE[r.id]) r.edge_kinds = EDGE[r.id].slice();
+    for (const r of M.rooms) if (EDGE[r.id] && !HEXR.has(r.id)) r.edge_kinds = EDGE[r.id].slice();
     for (const p of M.props) { const t = sh(p.room); if (p.rect) p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; if (p.at) p.at = mv(p.at, t); if (p.poly) p.poly = p.poly.map(q => mv(q, t)); }
     for (const d of (M.decor || [])) {
         const t = sh(d.room); if (!t[0] && !t[1]) continue;

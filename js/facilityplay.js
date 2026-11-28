@@ -910,15 +910,15 @@ try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }
 // THE HEXAGON GROUND FLOOR, WHILE IT IS BUILT (docs/FACILITY.md, "The hexagon ground floor"): with ?hexfloor in the address its rooms are in the map (js/facilitymap.js HEX_FLOOR_ON) and the game starts you
 //   in the middle of its Main Hallway, with the tutorial passed, as the sewer dungeon's start does. Stage 1: walls and floor only; its stairs go down to the Experiment Lab and up to the Observation Deck.
 function hexFloorStart(F) {
-    if (typeof HEX_FLOOR_ON === "undefined" || !HEX_FLOOR_ON || !_fp || !F || !F.byId || !F.byId.has("hx_main_hallway") || typeof partyRoomCells !== "function") return false;
+    if (typeof HEX_FLOOR_ON === "undefined" || !HEX_FLOOR_ON || !_fp || !F || !F.byId || !F.byId.has("hx_stairs_hallway") || typeof partyRoomCells !== "function") return false;
     if (typeof facilityBlackoutSet === "function") facilityBlackoutSet(false);
     const S = _fp.tut && _fp.tut.script; if (S && typeof TUT_STEPS !== "undefined") { S.step = TUT_STEPS.length; S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1); }
-    const cs = partyRoomCells("hx_main_hallway"); if (!cs.length) return false;
+    const cs = partyRoomCells("lab_hallway"); if (!cs.length) return false;
     let mx = 0, my = 0; for (const c of cs) { mx += c[0]; my += c[1]; } mx /= cs.length; my /= cs.length;
     let s = cs[0]; for (const c of cs) if (Math.hypot(c[0] - mx, c[1] - my) < Math.hypot(s[0] - mx, s[1] - my)) s = c;   // (the cell nearest its middle)
     player.x = player.targetX = player.visualX = s[0]; player.y = player.targetY = player.visualY = s[1]; player.fpPath = null;
     followers.forEach((f, i) => { const c = cs.find(q => Math.hypot(q[0] - s[0] - 1 - i, q[1] - s[1]) < 0.6) || s; f.x = c[0]; f.y = c[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
-    _fp.zoneRoom = "hx_main_hallway";
+    _fp.zoneRoom = "lab_hallway";
     return true;
 }
 

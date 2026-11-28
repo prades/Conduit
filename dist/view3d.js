@@ -26067,6 +26067,8 @@ function view3dRoomRecord(F, R, lab, live) {
     const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
         fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
         solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || (R.slice(0, 3) === 'sd_' ? G.roomStyle.sewers || null : R.slice(0, 3) === 'hx_' ? G.roomStyle[R.slice(3)] || G.roomStyle.lab_hallway || null : null) };
+    if (room.raw && room.raw.hex_floor)
+        rec.hex = true;
     if (lab)
         rec.label = room.label || R;
     if (live)
@@ -26081,6 +26083,8 @@ function view3dRoomRecord(F, R, lab, live) {
 }
 function view3dMap(F, ids, live) {
     const G = VIEW3D_GAME, out = { chamber: view3dRoomRecord(F, 'crystal_chamber', false), wallH: G.wallH, wallT: G.wallT, pal: G.pal, tile: [G.TILE_W, G.TILE_H], antColour: G.antColour, tank: G.tank };
+    if (ids)
+        ids = ids.filter(id => F.byId ? F.byId.has(id) : F.rooms.some(r => r.id === id));
     if (ids)
         out.lab = { rooms: ids.map(id => view3dRoomRecord(F, id, true, live)), openings: (F.openings || []).filter(o => o.rooms && o.rooms.some(x => ids.includes(x))).map(o => ({ id: o.id, a: o.a, b: o.b, rooms: o.rooms, door: o.door || null, open: !!o.open })) };
     if (live) {
@@ -28790,7 +28794,7 @@ function buildLabFloor(lab, P0, how) {
         minH = Math.min(minH, v);
     const at = (x, y) => roomAt.get(K(Math.round(x), Math.round(y))) || null;
     const isSd = id => typeof id === 'string' && id.slice(0, 3) === 'sd_', diag = [];
-    const slants = id => isSd(id) || (typeof id === 'string' && id.slice(0, 3) === 'hx_');
+    const hexIds = new Set(recs.filter(r => r.hex || (typeof r.id === 'string' && r.id.slice(0, 3) === 'hx_')).map(r => r.id)), slants = id => isSd(id) || hexIds.has(id);
     const inP = (x, y, P) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
         const a = P[i], b = P[j];
         if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])
@@ -29069,7 +29073,11 @@ function buildLabFloor(lab, P0, how) {
                 for (let x = bx[0]; x <= bx[2]; x++)
                     for (let y = bx[1]; y <= bx[3]; y++) {
                         const k = K(x, y);
-                        if (band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k))
+                        if (band.has(k) || roomAt.has(k) || skip.has(k) || aprons.has(k) || sdR.some(r => { const q = clipCell(r.poly, x, y); if (!q)
+                            return false; let A2 = 0; for (let i = 0; i < q.length; i++) {
+                            const j = (i + 1) % q.length;
+                            A2 += q[i][0] * q[j][1] - q[j][0] * q[i][1];
+                        } return Math.abs(A2) > 0.002; }))
                             continue;
                         const b = { x, y, own: s0.own, rock: false, fill: true, lo: s0.lo, hi: s0.lo + CUT_H - WALL_H, cutTop: s0.lo + CUT_H };
                         band.set(k, b);
@@ -29272,7 +29280,19 @@ function buildLabFloor(lab, P0, how) {
     for (const { w, rec, wi } of diag) {
         const P = rec.poly, HI0 = isSd(rec.id) ? SD_HI : baseOf(rec.id);
         let n = w.n.slice();
-        const far = roomAt.get(K(Math.round(w.mid[0] + n[0] * 0.6), Math.round(w.mid[1] + n[1] * 0.6))), TH = isSd(rec.id) ? 1 : far && far !== rec.id ? 0.12 : 2.5;
+        const far = roomAt.get(K(Math.round(w.mid[0] + n[0] * 0.6), Math.round(w.mid[1] + n[1] * 0.6))), TH0 = isSd(rec.id) ? 1 : far && far !== rec.id ? 0.12 : 2.5;
+        let TH = TH0;
+        if (!isSd(rec.id) && TH > 0.12) {
+            const others = recs.filter(r => r.id !== rec.id && r.poly), N2 = Math.max(2, Math.ceil(w.L * 2));
+            for (let i = 0; i <= N2; i++) {
+                const t = i / N2, px0 = w.a[0] + (w.b[0] - w.a[0]) * t, py0 = w.a[1] + (w.b[1] - w.a[1]) * t;
+                for (let d = 0.1; d < TH; d += 0.1)
+                    if (others.some(r => inP(px0 + n[0] * d, py0 + n[1] * d, r.poly))) {
+                        TH = Math.max(0.12, d - 0.15);
+                        break;
+                    }
+            }
+        }
         const endAt = (E, other) => {
             const sq = { o: [E[0] + n[0] * TH, E[1] + n[1] * TH] }, e1 = [(other[0] - E[0]) / w.L, (other[1] - E[1]) / w.L];
             const k = rec.walls.findIndex((w2, j) => j !== wi && w2.kind !== 'open' && w2.kind !== 'deck_rail' && w2.kind !== 'railing_wall' && w2.kind !== 'spill' && Math.hypot(w2.b[0] - w2.a[0], w2.b[1] - w2.a[1]) > 1e-6 && (Math.hypot(w2.a[0] - E[0], w2.a[1] - E[1]) < 0.02 || Math.hypot(w2.b[0] - E[0], w2.b[1] - E[1]) < 0.02));

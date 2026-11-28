@@ -120,6 +120,7 @@ function view3dRoomRecord(F, R, lab, live) {
   const rec = { id: R, poly: room.poly, bb: room.bb, cells, walls, doors, crystal: obj ? obj.at : null,
     fixtures: (F.fixtures || []).filter(f => f.room === R).map(strip), decor: (F.decor || []).filter(d => d.room === R).map(strip), floor: (F.floors || []).find(f => f.room === R) || null,
     solids: F.solids.filter(s => s.room === R).map(solid), style: G.roomStyle[R] || (R.slice(0, 3) === 'sd_' ? G.roomStyle.sewers || null : R.slice(0, 3) === 'hx_' ? G.roomStyle[R.slice(3)] || G.roomStyle.lab_hallway || null : null) };   // (THE HEXAGON GROUND FLOOR's: the look of today's room of its name, else the hallway's)   // (THE SEWER DUNGEON's rooms: the Sewers' own look in 3D, the damp concrete and the checker plate)
+  if (room.raw && room.raw.hex_floor) rec.hex = true;   // (THE HEXAGON GROUND FLOOR's: its slanted walls built straight, design/style-evolution/live/floor.js)
   if (lab) rec.label = room.label || R; if (live) rec.base = G.roomHeight(R, F) * G.elevPx;
   if (live && (rec.solids.some(s => s.kind === 'river' || s.kind === 'pool') || rec.decor.some(d => d.kind === 'egg_cluster' || d.kind === 'junk'))) {   // (the Nest's eggs, the dam's junk and its rim, where the 2D puts them: js/facilitysewers.js)
     rec.nest = G.sewerItems(F).filter(it => it.room === R && (it.what === 'egg' || it.what === 'junk' || it.what === 'rim')).map(it => ({ what: it.what, x: it.x, y: it.y, s: it.s, seed: it.seed, u: it.u, w: it.w, half: it.half }));
@@ -131,6 +132,7 @@ function view3dRoomRecord(F, R, lab, live) {
 // an opening the game hangs no door in (a stairway, a way left open, a mouth in the rock: js/facilityplay.js) has none here either.
 function view3dMap(F, ids, live) {
   const G = VIEW3D_GAME, out = { chamber: view3dRoomRecord(F, 'crystal_chamber', false), wallH: G.wallH, wallT: G.wallT, pal: G.pal, tile: [G.TILE_W, G.TILE_H], antColour: G.antColour, tank: G.tank };
+  if (ids) ids = ids.filter(id => F.byId ? F.byId.has(id) : F.rooms.some(r => r.id === id));   // (only the rooms the map has: with ?hexfloor today's ground floor's are not all there, docs/FACILITY.md)
   if (ids) out.lab = { rooms: ids.map(id => view3dRoomRecord(F, id, true, live)), openings: (F.openings || []).filter(o => o.rooms && o.rooms.some(x => ids.includes(x))).map(o => ({ id: o.id, a: o.a, b: o.b, rooms: o.rooms, door: o.door || null, open: !!o.open })) };
   if (live) { const at = [G.crystal.x, G.crystal.y]; out.chamber.crystal = at; out.live = true;
     if (out.lab) { for (const r of out.lab.rooms) if (r.id === 'crystal_chamber') r.crystal = at;

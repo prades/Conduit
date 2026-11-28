@@ -32,9 +32,10 @@ CUTS = [   # (from, to, kind)
 LOUNGE = (P1[0] + 3.2, 16.0, LEND[0] - 0.4, LEND[1])    # the Lounge: north of the lounge wall (its size provisional)
 CUTS += [((LOUNGE[0], LOUNGE[1]), (LOUNGE[2], LOUNGE[1]), 'open'), ((LOUNGE[0], LOUNGE[1]), (LOUNGE[0], LOUNGE[3]), 'open'), ((LOUNGE[2], LOUNGE[1]), (LOUNGE[2], LOUNGE[3]), 'open')]
 AREAS = [   # id, label, a point inside
-    ('hx_crystal_chamber', 'Crystal Chamber', (5, 6)), ('hx_server_room', 'Server Room', (20, 6)), ('hx_warehouse', 'Warehouse', (41, 8)),
-    ('hx_stairs_up', 'Stairs Up', (43, 25)), ('hx_main_hallway', 'Main Hallway', (25, 25)), ('hx_observation_way', 'Way to the Observation Deck', (5, 29)),
-    ('hx_stairs_hallway', 'Stairs Hallway', (7, 18)), ('hx_lounge', 'Lounge', (24, 18)),
+    # (the areas the owner named after today's rooms take those rooms' ids, so what the game knows of them, the Crystal's room, the hallway's door down to the arena, holds; the others are new, hx_)
+    ('crystal_chamber', 'Crystal Chamber', (5, 6)), ('front_lobby', 'Server Room', (20, 6)), ('show_room', 'Warehouse', (41, 8)),
+    ('hx_stairs_up', 'Stairs Up', (43, 25)), ('lab_hallway', 'Main Hallway', (25, 25)), ('hx_observation_way', 'Way to the Observation Deck', (5, 29)),
+    ('hx_stairs_hallway', 'Stairs Hallway', (7, 18)), ('lounge', 'Lounge', (24, 18)),
 ]
 def ext(a, b, e=0.02):   # a cut a little longer at both ends, so it meets the outline
     dx, dy = b[0] - a[0], b[1] - a[1]; L = math.hypot(dx, dy); return LineString([(a[0] - dx / L * e, a[1] - dy / L * e), (b[0] + dx / L * e, b[1] + dy / L * e)])

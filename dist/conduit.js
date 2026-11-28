@@ -33916,61 +33916,57 @@ const SEWER_DUNGEON_MAP = {
 ;
 /* js/hexfloormap.js */
 const HEX_FLOOR_MAP = {
+    place: [0, 86.48000000000002],
     rooms: [
-        { "id": "hx_crystal_chamber", "label": "Crystal Chamber", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[175.8, 108.84], [135.88, 39.7], [42.7, 39.7], [0, 113.66], [63.48, 223.6], [232, 223.6]], "edge_kinds": ["wall", "wall", "wall", "wall", "open", "open"] },
-        { "id": "hx_server_room", "label": "Server Room", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[687.06, 258.82], [567.76, 258.82], [521.82, 179.26], [569.2, 97.2], [513.08, 0], [238.64, 0], [175.8, 108.84], [232, 223.6], [278.18, 303.6], [330.5, 394.2], [342.18, 394.2], [342.18, 320], [600.6, 320], [600.6, 394.2], [608.6, 394.2], [687.06, 394.2]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "wall", "open", "wall", "wall", "wall", "open", "open", "open", "wall", "open", "open"] },
-        { "id": "hx_warehouse", "label": "Warehouse", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[917.26, 394.2], [912.92, 386.68], [1005.62, 226.1], [927.68, 91.12], [875.92, 0], [741.74, 0], [685.62, 97.2], [733, 179.26], [687.06, 258.82], [687.06, 394.2]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "open", "open"] },
-        { "id": "hx_stairs_up", "label": "Stairs Up", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[727.86, 583.82], [767.76, 652.94], [925.74, 652.94], [996.2, 530.92], [917.26, 394.2], [727.86, 394.2]], "edge_kinds": ["wall", "wall", "wall", "wall", "open", "open"] },
-        { "id": "hx_main_hallway", "label": "Main Hallway", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[330.5, 394.2], [218.4, 588.34], [267.6, 673.52], [466.26, 673.52], [518.04, 583.82], [727.86, 583.82], [727.86, 394.2], [608.6, 394.2]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "open", "open", "wall"] },
-        { "id": "hx_observation_way", "label": "Way to the Observation Deck", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[37.06, 497.74], [0.56, 560.94], [57.92, 660.3], [154.56, 660.3], [207.24, 569.02], [166.1, 497.74]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "open"] },
-        { "id": "hx_stairs_hallway", "label": "Stairs Hallway", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[166.1, 497.74], [278.18, 303.6], [232, 223.6], [63.48, 223.6], [129.4, 337.78], [37.06, 497.74]], "edge_kinds": ["wall", "wall", "open", "wall", "wall", "open"] },
-        { "id": "hx_lounge", "label": "Lounge", "level": 0, "status": "placed", "wall_material": "solid", "interior": true, "hex_floor": true, "polygon": [[342.18, 394.2], [600.6, 394.2], [600.6, 320], [342.18, 320]], "edge_kinds": ["wall", "open", "open", "open"] }
+        { "id": "crystal_chamber", "label": "Crystal Chamber", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[175.8, 195.32], [135.88, 126.18], [42.7, 126.18], [0, 200.14], [63.48, 310.08], [232, 310.08]], "edge_kinds": ["wall", "wall", "wall", "wall", "open", "open"], "objects": [{ "id": "crystal", "type": "objective", "at": [108, 224], "radius": 40, "status": "placed" }] },
+        { "id": "front_lobby", "label": "Server Room", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[687.06, 345.3], [567.76, 345.3], [521.82, 265.74], [569.2, 183.68], [513.08, 86.48], [238.64, 86.48], [175.8, 195.32], [232, 310.08], [278.18, 390.08], [330.5, 480.68], [342.18, 480.68], [342.18, 406.48], [600.6, 406.48], [600.6, 480.68], [608.6, 480.68], [687.06, 480.68]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "wall", "open", "wall", "wall", "wall", "open", "open", "open", "wall", "open", "open"] },
+        { "id": "show_room", "label": "Warehouse", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[917.26, 480.68], [912.92, 473.16], [1005.62, 312.58], [927.68, 177.6], [875.92, 86.48], [741.74, 86.48], [685.62, 183.68], [733, 265.74], [687.06, 345.3], [687.06, 480.68]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "open", "open"] },
+        { "id": "hx_stairs_up", "label": "Stairs Up", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[727.86, 670.3], [767.76, 739.42], [925.74, 739.42], [996.2, 617.4], [917.26, 480.68], [727.86, 480.68]], "edge_kinds": ["wall", "wall", "wall", "wall", "open", "open"] },
+        { "id": "lab_hallway", "label": "Main Hallway", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[330.5, 480.68], [218.4, 674.82], [267.6, 760], [466.26, 760], [518.04, 670.3], [727.86, 670.3], [727.86, 480.68], [608.6, 480.68]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "open", "open", "wall"] },
+        { "id": "hx_observation_way", "label": "Way to the Observation Deck", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[37.06, 584.22], [0.56, 647.42], [57.92, 746.78], [154.56, 746.78], [207.24, 655.5], [166.1, 584.22]], "edge_kinds": ["wall", "wall", "wall", "wall", "wall", "open"] },
+        { "id": "hx_stairs_hallway", "label": "Stairs Hallway", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[166.1, 584.22], [278.18, 390.08], [232, 310.08], [63.48, 310.08], [129.4, 424.26], [37.06, 584.22]], "edge_kinds": ["wall", "wall", "open", "wall", "wall", "open"] },
+        { "id": "lounge", "label": "Lounge", "level": 0, "status": "placed", "wall_material": "solid", "hex_floor": true, "polygon": [[342.18, 480.68], [600.6, 480.68], [600.6, 406.48], [342.18, 406.48]], "edge_kinds": ["wall", "open", "open", "open"] }
     ],
     interiors: [
-        { "id": "hx_crystal_chamber", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_server_room", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_warehouse", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_stairs_up", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_main_hallway", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_observation_way", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_stairs_hallway", "under": "crystal_chamber", "offset": [0, -2000] },
-        { "id": "hx_lounge", "under": "crystal_chamber", "offset": [0, -2000] }
+        { "id": "experiment_lab", "under": "hx_stairs_hallway", "offset": [-3840, 0] }
     ],
     openings: [
-        { "id": "open_hx_crystal_chamber__hx_server_room", "a": [232, 223.6], "b": [175.8, 108.84], "rooms": ["hx_crystal_chamber", "hx_server_room"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_crystal_chamber__hx_stairs_hallway", "a": [63.48, 223.6], "b": [232, 223.6], "rooms": ["hx_crystal_chamber", "hx_stairs_hallway"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_server_room__hx_warehouse", "a": [687.06, 394.2], "b": [687.06, 258.82], "rooms": ["hx_server_room", "hx_warehouse"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_server_room__hx_main_hallway", "a": [608.6, 394.2], "b": [687.06, 394.2], "rooms": ["hx_server_room", "hx_main_hallway"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_server_room__hx_lounge", "a": [342.18, 394.2], "b": [342.18, 320], "rooms": ["hx_server_room", "hx_lounge"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_server_room__hx_lounge_", "a": [342.18, 320], "b": [600.6, 320], "rooms": ["hx_server_room", "hx_lounge"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_server_room__hx_lounge__", "a": [600.6, 320], "b": [600.6, 394.2], "rooms": ["hx_server_room", "hx_lounge"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_warehouse__hx_stairs_up", "a": [727.86, 394.2], "b": [917.26, 394.2], "rooms": ["hx_warehouse", "hx_stairs_up"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_warehouse__hx_main_hallway", "a": [687.06, 394.2], "b": [727.86, 394.2], "rooms": ["hx_warehouse", "hx_main_hallway"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_stairs_up__hx_main_hallway", "a": [727.86, 394.2], "b": [727.86, 583.82], "rooms": ["hx_stairs_up", "hx_main_hallway"], "door": null, "open": true, "position_status": "placed" },
-        { "id": "open_hx_observation_way__hx_stairs_hallway", "a": [166.1, 497.74], "b": [37.06, 497.74], "rooms": ["hx_observation_way", "hx_stairs_hallway"], "door": null, "open": true, "position_status": "placed" }
+        { "id": "open_hx_crystal_chamber__front_lobby", "a": [232, 310.08], "b": [175.8, 195.32], "rooms": ["crystal_chamber", "front_lobby"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_crystal_chamber__hx_stairs_hallway", "a": [63.48, 310.08], "b": [232, 310.08], "rooms": ["crystal_chamber", "hx_stairs_hallway"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_front_lobby__show_room", "a": [687.06, 480.68], "b": [687.06, 345.3], "rooms": ["front_lobby", "show_room"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_front_lobby__lab_hallway", "a": [608.6, 480.68], "b": [687.06, 480.68], "rooms": ["front_lobby", "lab_hallway"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_front_lobby__lounge", "a": [342.18, 480.68], "b": [342.18, 406.48], "rooms": ["front_lobby", "lounge"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_front_lobby__lounge_", "a": [342.18, 406.48], "b": [600.6, 406.48], "rooms": ["front_lobby", "lounge"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_front_lobby__lounge__", "a": [600.6, 406.48], "b": [600.6, 480.68], "rooms": ["front_lobby", "lounge"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_show_room__hx_stairs_up", "a": [727.86, 480.68], "b": [917.26, 480.68], "rooms": ["show_room", "hx_stairs_up"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_show_room__lab_hallway", "a": [687.06, 480.68], "b": [727.86, 480.68], "rooms": ["show_room", "lab_hallway"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_hx_stairs_up__lab_hallway", "a": [727.86, 480.68], "b": [727.86, 670.3], "rooms": ["hx_stairs_up", "lab_hallway"], "door": null, "open": true, "position_status": "placed" },
+        { "id": "open_hx_hx_observation_way__hx_stairs_hallway", "a": [166.1, 584.22], "b": [37.06, 584.22], "rooms": ["hx_observation_way", "hx_stairs_hallway"], "door": null, "open": true, "position_status": "placed" }
     ],
     connections: [
-        { "id": "conn_hx_crystal_chamber__hx_server_room", "rooms": ["hx_crystal_chamber", "hx_server_room"], "opening": "open_hx_crystal_chamber__hx_server_room" },
-        { "id": "conn_hx_crystal_chamber__hx_stairs_hallway", "rooms": ["hx_crystal_chamber", "hx_stairs_hallway"], "opening": "open_hx_crystal_chamber__hx_stairs_hallway" },
-        { "id": "conn_hx_server_room__hx_warehouse", "rooms": ["hx_server_room", "hx_warehouse"], "opening": "open_hx_server_room__hx_warehouse" },
-        { "id": "conn_hx_server_room__hx_main_hallway", "rooms": ["hx_server_room", "hx_main_hallway"], "opening": "open_hx_server_room__hx_main_hallway" },
-        { "id": "conn_hx_server_room__hx_lounge", "rooms": ["hx_server_room", "hx_lounge"], "opening": "open_hx_server_room__hx_lounge" },
-        { "id": "conn_hx_server_room__hx_lounge_", "rooms": ["hx_server_room", "hx_lounge"], "opening": "open_hx_server_room__hx_lounge_" },
-        { "id": "conn_hx_server_room__hx_lounge__", "rooms": ["hx_server_room", "hx_lounge"], "opening": "open_hx_server_room__hx_lounge__" },
-        { "id": "conn_hx_warehouse__hx_stairs_up", "rooms": ["hx_warehouse", "hx_stairs_up"], "opening": "open_hx_warehouse__hx_stairs_up" },
-        { "id": "conn_hx_warehouse__hx_main_hallway", "rooms": ["hx_warehouse", "hx_main_hallway"], "opening": "open_hx_warehouse__hx_main_hallway" },
-        { "id": "conn_hx_stairs_up__hx_main_hallway", "rooms": ["hx_stairs_up", "hx_main_hallway"], "opening": "open_hx_stairs_up__hx_main_hallway" },
-        { "id": "conn_hx_observation_way__hx_stairs_hallway", "rooms": ["hx_observation_way", "hx_stairs_hallway"], "opening": "open_hx_observation_way__hx_stairs_hallway" },
+        { "id": "conn_hx_crystal_chamber__front_lobby", "rooms": ["crystal_chamber", "front_lobby"], "opening": "open_hx_crystal_chamber__front_lobby" },
+        { "id": "conn_hx_crystal_chamber__hx_stairs_hallway", "rooms": ["crystal_chamber", "hx_stairs_hallway"], "opening": "open_hx_crystal_chamber__hx_stairs_hallway" },
+        { "id": "conn_hx_front_lobby__show_room", "rooms": ["front_lobby", "show_room"], "opening": "open_hx_front_lobby__show_room" },
+        { "id": "conn_hx_front_lobby__lab_hallway", "rooms": ["front_lobby", "lab_hallway"], "opening": "open_hx_front_lobby__lab_hallway" },
+        { "id": "conn_hx_front_lobby__lounge", "rooms": ["front_lobby", "lounge"], "opening": "open_hx_front_lobby__lounge" },
+        { "id": "conn_hx_front_lobby__lounge_", "rooms": ["front_lobby", "lounge"], "opening": "open_hx_front_lobby__lounge_" },
+        { "id": "conn_hx_front_lobby__lounge__", "rooms": ["front_lobby", "lounge"], "opening": "open_hx_front_lobby__lounge__" },
+        { "id": "conn_hx_show_room__hx_stairs_up", "rooms": ["show_room", "hx_stairs_up"], "opening": "open_hx_show_room__hx_stairs_up" },
+        { "id": "conn_hx_show_room__lab_hallway", "rooms": ["show_room", "lab_hallway"], "opening": "open_hx_show_room__lab_hallway" },
+        { "id": "conn_hx_hx_stairs_up__lab_hallway", "rooms": ["hx_stairs_up", "lab_hallway"], "opening": "open_hx_hx_stairs_up__lab_hallway" },
+        { "id": "conn_hx_hx_observation_way__hx_stairs_hallway", "rooms": ["hx_observation_way", "hx_stairs_hallway"], "opening": "open_hx_hx_observation_way__hx_stairs_hallway" },
         { "id": "conn_hx_lab", "rooms": ["hx_stairs_hallway", "experiment_lab"], "portal": "portal_hx_lab" },
         { "id": "conn_hx_deck", "rooms": ["hx_observation_way", "observation_deck"], "portal": "portal_hx_deck" }
     ],
     portals: [
-        { "id": "portal_hx_lab", "room": "hx_stairs_hallway", "rect": [130, 360, 200, 400], "arrive": [160, 450], "to": "portal_lab_hx", "label": "EXPERIMENT LAB", "kind": "stairs_down", "well": true, "note": "The stairs down to the Experiment Lab, in the stairs hallway (area 8 of the owner's map)." },
-        { "id": "portal_lab_hx", "room": "experiment_lab", "rect": [130, 700, 170, 740], "arrive": [150, 680], "to": "portal_hx_lab", "label": "GROUND FLOOR", "kind": "stairs_up", "well": true, "note": "The stairs up to the hexagon ground floor, in the Experiment Lab's south-east corner (while the floor is built: ?hexfloor)." },
-        { "id": "portal_hx_deck", "room": "hx_observation_way", "rect": [70, 628, 140, 652], "arrive": [104, 588], "to": "portal_deck_hx", "label": "OBSERVATION DECK", "kind": "stairs_up", "well": true, "note": "The way up to the Observation Deck, at the far end of area 7 of the owner's map." },
-        { "id": "portal_deck_hx", "room": "observation_deck", "rect": [230, 790, 270, 820], "arrive": [250, 845], "to": "portal_hx_deck", "label": "GROUND FLOOR", "kind": "stairs_down", "well": true, "note": "The way back down to the hexagon ground floor, at the north of the Observation Deck (while the floor is built: ?hexfloor)." }
+        { "id": "portal_hx_lab", "room": "hx_stairs_hallway", "rect": [130, 446.48, 200, 486.48], "arrive": [160, 536.48], "to": "portal_lab_hx", "label": "EXPERIMENT LAB", "kind": "stairs_down", "well": true, "note": "The stairs down to the Experiment Lab, in the stairs hallway (area 8 of the owner's map)." },
+        { "id": "portal_lab_hx", "room": "experiment_lab", "rect": [130, 700, 170, 740], "arrive": [150, 680], "to": "portal_hx_lab", "label": "GROUND FLOOR", "kind": "stairs_up", "well": true, "note": "The stairs up to the ground floor, in the Experiment Lab's south-east corner (while the hexagon floor is built: ?hexfloor)." },
+        { "id": "portal_hx_deck", "room": "hx_observation_way", "rect": [70, 714.48, 140, 738.48], "arrive": [104, 674.48], "to": "portal_deck_hx", "label": "OBSERVATION DECK", "kind": "stairs_up", "well": true, "note": "The way up to the Observation Deck, at the far end of area 7 of the owner's map." },
+        { "id": "portal_deck_hx", "room": "observation_deck", "rect": [230, 790, 270, 820], "arrive": [250, 845], "to": "portal_hx_deck", "label": "GROUND FLOOR", "kind": "stairs_down", "well": true, "note": "The way back down to the ground floor, at the north of the Observation Deck (while the hexagon floor is built: ?hexfloor)." }
     ],
-    lounge: [342.18802153517004, 320, 600.6, 394.20000000000005]
+    removes: ["teleport_room_1", "security_room", "lab_passage", "teleport_stair_room", "teleport_room_2"],
+    replaces: ["crystal_chamber", "front_lobby", "show_room", "lab_hallway", "lounge"],
+    keep: ["door_arena_hallway", "conn_arena_hallway", "r_arena_steps"]
 };
 ;
 /* js/facilitymap.js */
@@ -33989,7 +33985,6 @@ const FACILITY_MAP = {
         { id: 2, label: "high", height: 3.2 },
     ],
     rooms: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.rooms : []),
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.rooms : []),
         { id: "crystal_chamber", label: "Crystal Chamber", level: 0, status: "traced", wall_material: "solid",
             polygon: [[185, 262], [370, 262], [370, 500], [185, 500]],
@@ -34136,7 +34131,6 @@ const FACILITY_MAP = {
             edge_kinds: ["wall", "open", "wall", "wall", "wall", "wall"] },
     ],
     interiors: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.interiors : []),
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.interiors : []),
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
         { id: "cold_storage", under: "experiment_lab", offset: [-1920, 0] },
@@ -34163,7 +34157,6 @@ const FACILITY_MAP = {
         { id: "cold_annex", under: "experiment_lab", offset: [-1920, 0] },
     ],
     portals: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.portals : []),
         { id: "portal_arena_armory", room: "arena", rect: [320, 1090, 340, 1130], arrive: [385, 1110], to: "portal_armory_arena", label: "ARMORY", kind: "door",
             note: "The Armory's steel door onto the arena, in an alcove in the west cave wall just south of the two garage doors." },
         { id: "portal_armory_arena", room: "armory", rect: [200, 930, 240, 950], arrive: [220, 985], to: "portal_arena_armory", label: "ARENA", kind: "door",
@@ -35061,7 +35054,6 @@ const FACILITY_MAP = {
             note: "The power / battery pack area on the Crystal Chamber's north wall (somewhere on the wall: this is a first placement). The wall power unit's cells and machine go here." },
     ],
     openings: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.openings : []),
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.openings : []),
         { id: "door_chamber_teleport_1", a: [225, 500], b: [265, 500], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
             note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },
@@ -35115,7 +35107,6 @@ const FACILITY_MAP = {
             note: "THE SUBWAY: the steps down from the platform's east end to the track bed (three tiles across), an open mouth with no door." },
     ],
     connections: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.connections : []),
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.connections : []),
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
         { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck", ramp: "r_deck_door_steps" },
@@ -35212,6 +35203,64 @@ const FACILITY_MAP = {
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
+function hexFloorApply(M, H) {
+    const gone = new Set(H.removes), repl = new Set(H.replaces), keep = new Set(H.keep), byId = new Map(H.rooms.map(r => [r.id, r]));
+    M.rooms = M.rooms.filter(r => !gone.has(r.id)).map(r => repl.has(r.id) ? Object.assign({}, r, { objects: [] }, byId.get(r.id)) : r);
+    for (const r of H.rooms)
+        if (!repl.has(r.id))
+            M.rooms.push(Object.assign({}, r));
+    const hit = id => gone.has(id) || repl.has(id);
+    const names = o => [o.room, o.toRoom, o.via].concat(o.rooms || []).filter(x => typeof x === "string");
+    for (const k of Object.keys(M)) {
+        if (k === "rooms" || k === "levels" || !Array.isArray(M[k]))
+            continue;
+        M[k] = M[k].filter(o => !o || typeof o !== "object" || keep.has(o.id) || (k === "floors" ? !gone.has(o.room) : k === "interiors" ? !gone.has(o.id) : !names(o).some(hit)));
+    }
+    if (M.candidates)
+        for (const k of Object.keys(M.candidates))
+            if (Array.isArray(M.candidates[k]))
+                M.candidates[k] = M.candidates[k].filter(o => !names(o).some(hit));
+    for (const k of ["interiors", "openings", "connections", "portals"])
+        for (const e of H[k] || [])
+            M[k].push(Object.assign({}, e));
+    const props = new Set(M.props.map(p => p.id)), ports = new Set(M.portals.map(p => p.id));
+    M.stations = M.stations.filter(s => !s.prop || props.has(s.prop));
+    M.portals = M.portals.filter(p => ports.has(p.to));
+    const ops = new Set(M.openings.map(o => o.id)), ramps = new Set(M.ramps.map(r => r.id));
+    ports.clear();
+    for (const p of M.portals)
+        ports.add(p.id);
+    M.connections = M.connections.filter(c => (!c.opening || ops.has(c.opening)) && (!c.portal || ports.has(c.portal)) && (!c.ramp || ramps.has(c.ramp)));
+    const group = new Map();
+    for (const i of M.interiors) {
+        const k = String(i.offset);
+        if (!group.has(k))
+            group.set(k, []);
+        group.get(k).push(i.id);
+    }
+    const cut = new Set();
+    for (const ids of group.values())
+        if (!M.portals.some(p => ids.includes(p.room)))
+            for (const id of ids)
+                cut.add(id);
+    if (cut.size) {
+        M.rooms = M.rooms.filter(r => !cut.has(r.id));
+        M.interiors = M.interiors.filter(i => !cut.has(i.id));
+        for (const k of Object.keys(M))
+            if (k !== "rooms" && k !== "levels" && Array.isArray(M[k]))
+                M[k] = M[k].filter(o => !o || typeof o !== "object" || !names(o).some(id => cut.has(id)));
+        const pk = new Set(M.props.map(p => p.id));
+        M.stations = M.stations.filter(s => !s.prop || pk.has(s.prop));
+        M._hexCut = Array.from(cut);
+    }
+    for (const s of ["experiment_lab"])
+        if (!M.rooms.some(r => r.id === s))
+            throw new Error("hexFloorApply: " + s + " is missing");
+    M._hexFloor = new Set(H.rooms.map(r => r.id));
+    return M;
+}
+if (HEX_FLOOR_ON && typeof HEX_FLOOR_MAP !== "undefined")
+    hexFloorApply(FACILITY_MAP, HEX_FLOOR_MAP);
 const FP_NEST_ROOMS = new Set(FACILITY_MAP.rooms.filter(r => r.id === "nest_area" || r.nest).map(r => r.id));
 const FP_NEST_TAGS = Object.fromEntries(FACILITY_MAP.rooms.filter(r => r.nest).map(r => [r.id, r.tag || r.label]));
 const FLUX_LAB_MAP = {
@@ -35306,7 +35355,8 @@ const TEST_CHAMBER_MAP = {
     const INTERIOR = {};
     for (const i of (M.interiors || []))
         INTERIOR[i.id] = [i.offset[0] / G, i.offset[1] / G];
-    const sh = (id) => INTERIOR[id] || SHIFT[id] || [0, 0];
+    const HEXR = M._hexFloor || new Set();
+    const sh = (id) => INTERIOR[id] || (HEXR.has(id) ? null : SHIFT[id]) || [0, 0];
     const mv = (p, t) => [p[0] + t[0] * G, p[1] + t[1] * G];
     const POLY = {
         teleport_room_1: [[165, 500], [350, 500], [350, 550], [290, 550], [290, 760], [165, 760]],
@@ -35319,7 +35369,7 @@ const TEST_CHAMBER_MAP = {
     const edgeKinds = (room) => room.edge_kinds;
     for (const r of M.rooms) {
         const t = sh(r.id);
-        if (POLY[r.id])
+        if (POLY[r.id] && !HEXR.has(r.id))
             r.polygon = POLY[r.id].map(p => p.slice());
         else
             r.polygon = r.polygon.map(p => mv(p, t));
@@ -35329,7 +35379,7 @@ const TEST_CHAMBER_MAP = {
     }
     const EDGE = { teleport_room_2: ["deck_rail", "wall", "wall", "wall"], show_room: ["wall", "wall", "open", "wall", "wall"] };
     for (const r of M.rooms)
-        if (EDGE[r.id])
+        if (EDGE[r.id] && !HEXR.has(r.id))
             r.edge_kinds = EDGE[r.id].slice();
     for (const p of M.props) {
         const t = sh(p.room);
@@ -39300,7 +39350,7 @@ try {
 }
 catch (e) { }
 function hexFloorStart(F) {
-    if (typeof HEX_FLOOR_ON === "undefined" || !HEX_FLOOR_ON || !_fp || !F || !F.byId || !F.byId.has("hx_main_hallway") || typeof partyRoomCells !== "function")
+    if (typeof HEX_FLOOR_ON === "undefined" || !HEX_FLOOR_ON || !_fp || !F || !F.byId || !F.byId.has("hx_stairs_hallway") || typeof partyRoomCells !== "function")
         return false;
     if (typeof facilityBlackoutSet === "function")
         facilityBlackoutSet(false);
@@ -39309,7 +39359,7 @@ function hexFloorStart(F) {
         S.step = TUT_STEPS.length;
         S.doneAt = Math.max(1, typeof frame !== "undefined" ? frame : 1);
     }
-    const cs = partyRoomCells("hx_main_hallway");
+    const cs = partyRoomCells("lab_hallway");
     if (!cs.length)
         return false;
     let mx = 0, my = 0;
@@ -39327,7 +39377,7 @@ function hexFloorStart(F) {
     player.y = player.targetY = player.visualY = s[1];
     player.fpPath = null;
     followers.forEach((f, i) => { const c = cs.find(q => Math.hypot(q[0] - s[0] - 1 - i, q[1] - s[1]) < 0.6) || s; f.x = c[0]; f.y = c[1]; f.returningToCrystal = false; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; });
-    _fp.zoneRoom = "hx_main_hallway";
+    _fp.zoneRoom = "lab_hallway";
     return true;
 }
 function sewerDungeonStart(F) {
@@ -47220,7 +47270,7 @@ function _netZoneRect() {
     }
 }
 function facilityRoomName(id) {
-    if (typeof id === "string" && (id.slice(0, 3) === "sd_" || id.slice(0, 3) === "hx_") && typeof sewerDungeonRoomName === "function")
+    if (typeof id === "string" && (id.slice(0, 3) === "sd_" || id.slice(0, 3) === "hx_" || (typeof FACILITY_MAP !== "undefined" && FACILITY_MAP._hexFloor && FACILITY_MAP._hexFloor.has(id))) && typeof sewerDungeonRoomName === "function")
         return sewerDungeonRoomName(id);
     return FP_ROOM_TAG[id] || String(id || "").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }

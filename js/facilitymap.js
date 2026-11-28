@@ -40,7 +40,6 @@ const FACILITY_MAP = {
     ],
 
     rooms: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.rooms : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.rooms : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "crystal_chamber", label: "Crystal Chamber", level: 0, status: "traced", wall_material: "solid",
           polygon: [[185, 262], [370, 262], [370, 500], [185, 500]],
@@ -242,7 +241,6 @@ const FACILITY_MAP = {
     // the map of its own, `offset` sketch pixels from there (64 tiles east), where nothing else is, and you reach it through a doorway (a PORTAL): walking into the doorway fades to black, loads you in the other room's
     // doorway and fades back (js/facilityportals.js). A room is a unit of the map; an interior is a room you have to go into.
     interiors: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.interiors : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.interiors : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
         { id: "cold_storage", under: "experiment_lab", offset: [-1920, 0] },   // (96 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen; out here
@@ -272,7 +270,6 @@ const FACILITY_MAP = {
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
     portals: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.portals : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         { id: "portal_arena_armory", room: "arena", rect: [320, 1090, 340, 1130], arrive: [385, 1110], to: "portal_armory_arena", label: "ARMORY", kind: "door",
           note: "The Armory's steel door onto the arena, in an alcove in the west cave wall just south of the two garage doors." },
         { id: "portal_armory_arena", room: "armory", rect: [200, 930, 240, 950], arrive: [220, 985], to: "portal_arena_armory", label: "ARENA", kind: "door",
@@ -1325,7 +1322,6 @@ const FACILITY_MAP = {
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
     // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until the user has checked them in the game.
     openings: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.openings : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.openings : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "door_chamber_teleport_1", a: [225, 500], b: [265, 500], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
           note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },
@@ -1380,7 +1376,6 @@ const FACILITY_MAP = {
           note: "THE SUBWAY: the steps down from the platform's east end to the track bed (three tiles across), an open mouth with no door." },
     ],
     connections: [
-        ...(typeof HEX_FLOOR_MAP !== "undefined" && HEX_FLOOR_ON ? HEX_FLOOR_MAP.connections : []),   // THE HEXAGON GROUND FLOOR while it is built (docs/FACILITY.md): made from its rooms, js/hexfloormap.js
         ...(typeof SEWER_DUNGEON_MAP !== "undefined" && SEWER_DUNGEON_ON ? SEWER_DUNGEON_MAP.connections : []),   // THE SEWER DUNGEON (docs/SEWER-DUNGEON.md): made from its trace, js/sewerdungeonmap.js
         { id: "conn_chamber_teleport_1", rooms: ["crystal_chamber", "teleport_room_1"], opening: "door_chamber_teleport_1" },
         { id: "conn_teleport_1_deck", rooms: ["teleport_room_1", "observation_deck"], opening: "door_teleport_1_deck", ramp: "r_deck_door_steps" },
@@ -1483,6 +1478,40 @@ const FACILITY_MAP = {
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
+
+// THE HEXAGON GROUND FLOOR, WHILE IT IS BUILT (docs/FACILITY.md, "The hexagon ground floor"; js/hexfloormap.js, made by tools/hexfloor.js): with ?hexfloor in the address the floor stands IN PLACE OF
+// today's ground floor, before the building pass (js/facilitygrow.js) runs. Today's rooms it has no place for go, with everything that names them; the rooms it takes the ids of (the Crystal Chamber,
+// the Server Room, the Warehouse, the hallway, the Lounge) get its outlines, and everything that stood in them goes but what it keeps (the hallway's door and steps down into the arena) and the
+// rooms' floor looks; its own new rooms, ways, stairs and the Experiment Lab's new place are added. Without the switch the map is exactly as it was.
+function hexFloorApply(M, H) {
+    const gone = new Set(H.removes), repl = new Set(H.replaces), keep = new Set(H.keep), byId = new Map(H.rooms.map(r => [r.id, r]));
+    M.rooms = M.rooms.filter(r => !gone.has(r.id)).map(r => repl.has(r.id) ? Object.assign({}, r, { objects: [] }, byId.get(r.id)) : r);
+    for (const r of H.rooms) if (!repl.has(r.id)) M.rooms.push(Object.assign({}, r));
+    const hit = id => gone.has(id) || repl.has(id);
+    const names = o => [o.room, o.toRoom, o.via].concat(o.rooms || []).filter(x => typeof x === "string");
+    for (const k of Object.keys(M)) {
+        if (k === "rooms" || k === "levels" || !Array.isArray(M[k])) continue;
+        M[k] = M[k].filter(o => !o || typeof o !== "object" || keep.has(o.id) || (k === "floors" ? !gone.has(o.room) : k === "interiors" ? !gone.has(o.id) : !names(o).some(hit)));
+    }
+    if (M.candidates) for (const k of Object.keys(M.candidates)) if (Array.isArray(M.candidates[k])) M.candidates[k] = M.candidates[k].filter(o => !names(o).some(hit));
+    for (const k of ["interiors", "openings", "connections", "portals"]) for (const e of H[k] || []) M[k].push(Object.assign({}, e));
+    // (and what named what went: a station of a prop that is gone, a doorway whose other end is gone, a connection of an opening, a portal or a ramp that is gone)
+    const props = new Set(M.props.map(p => p.id)), ports = new Set(M.portals.map(p => p.id));
+    M.stations = M.stations.filter(s => !s.prop || props.has(s.prop));
+    M.portals = M.portals.filter(p => ports.has(p.to));
+    const ops = new Set(M.openings.map(o => o.id)), ramps = new Set(M.ramps.map(r => r.id)); ports.clear(); for (const p of M.portals) ports.add(p.id);
+    M.connections = M.connections.filter(c => (!c.opening || ops.has(c.opening)) && (!c.portal || ports.has(c.portal)) && (!c.ramp || ramps.has(c.ramp)));
+    // (a part of the map of its own whose every way in is gone, the electrical domain's, whose door was in today's Server Room: left out too, for now, with all it holds)
+    const group = new Map(); for (const i of M.interiors) { const k = String(i.offset); if (!group.has(k)) group.set(k, []); group.get(k).push(i.id); }
+    const cut = new Set(); for (const ids of group.values()) if (!M.portals.some(p => ids.includes(p.room))) for (const id of ids) cut.add(id);
+    if (cut.size) { M.rooms = M.rooms.filter(r => !cut.has(r.id)); M.interiors = M.interiors.filter(i => !cut.has(i.id));
+        for (const k of Object.keys(M)) if (k !== "rooms" && k !== "levels" && Array.isArray(M[k])) M[k] = M[k].filter(o => !o || typeof o !== "object" || !names(o).some(id => cut.has(id)));
+        const pk = new Set(M.props.map(p => p.id)); M.stations = M.stations.filter(s => !s.prop || pk.has(s.prop)); M._hexCut = Array.from(cut); }
+    for (const s of ["experiment_lab"]) if (!M.rooms.some(r => r.id === s)) throw new Error("hexFloorApply: " + s + " is missing");
+    M._hexFloor = new Set(H.rooms.map(r => r.id));
+    return M;
+}
+if (HEX_FLOOR_ON && typeof HEX_FLOOR_MAP !== "undefined") hexFloorApply(FACILITY_MAP, HEX_FLOOR_MAP);
 // THE ANT NEST'S ROOMS (docs/DOMAINS.md §2, 10): the queen's cavern and every room of the Nest grown out (`nest: true`), one place: the tables that colour, name and light a room, the Nest's console and
 // the arming of THE ANT QUEEN take them all (THE ANT QUEEN herself keeps to her cavern, `nest_area`).
 const FP_NEST_ROOMS = new Set(FACILITY_MAP.rooms.filter(r => r.id === "nest_area" || r.nest).map(r => r.id));

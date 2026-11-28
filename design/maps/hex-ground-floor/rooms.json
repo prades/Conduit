@@ -1,7 +1,7 @@
 {
  "rooms": [
   {
-   "id": "hx_crystal_chamber",
+   "id": "crystal_chamber",
    "label": "Crystal Chamber",
    "polygon": [
     [
@@ -39,7 +39,7 @@
    ]
   },
   {
-   "id": "hx_server_room",
+   "id": "front_lobby",
    "label": "Server Room",
    "polygon": [
     [
@@ -127,7 +127,7 @@
    ]
   },
   {
-   "id": "hx_warehouse",
+   "id": "show_room",
    "label": "Warehouse",
    "polygon": [
     [
@@ -223,7 +223,7 @@
    ]
   },
   {
-   "id": "hx_main_hallway",
+   "id": "lab_hallway",
    "label": "Main Hallway",
    "polygon": [
     [
@@ -347,7 +347,7 @@
    ]
   },
   {
-   "id": "hx_lounge",
+   "id": "lounge",
    "label": "Lounge",
    "polygon": [
     [
