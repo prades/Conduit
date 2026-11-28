@@ -14,6 +14,20 @@ A **rundown facility that used to be a 2010s tech startup's headquarters**. The 
 - **Glass windows:** a window now draws a solid sill, glass with a reflection streak, a top rail and a mullion post every two tiles. The **Observation Deck** looks down into the arena through glass on its whole east wall (solid to movement, like every window). The **Show Room's west window** (`show_window_west`) names BOTH rooms, as the lab's windows do, so the hallway's own pieces of that edge are glass too: they used to be an opaque wall standing in front of the glass, with a one-tile top running over the show room's floor. The walls, glass and doors are drawn procedurally (`_fpDrawWall`, js/facilitystyle.js); the furniture began as flat drawings (`_fpDrawProp`) and is now 3D models baked to sprites (docs/TUTORIAL.md, "3D props" and "Every prop in 3D").
 - Props are data (`props` in `facilitymap.js`: `kind`, `rect` / `circle`): add a piece by adding a line. A new `kind` needs a model in its family (design/props/BRIEF.md) or, failing that, a flat drawing in `_fpDrawProp`.
 
+## The hexagon ground floor (designed in part 2026-11-28; nothing built)
+- **The ask** (the owner, 2026-11-28, with a pencil sketch, `design/maps/hex-ground-floor/owner-sketch-2026-11-28.jpg`): "This should be the new map for the facility. I think this would suit the new hexagon world." The ground floor (level 0) redrawn as hexagon-shaped rooms joined into one outline, walls at 0°, 60° and 120°, the floor's hex tiles under it (`VIEW-3D.md`).
+- **The areas, as the owner named them** (numbered on the sketch; the first clean draft: `design/maps/hex-ground-floor/draft-1-names.png`):
+  1. the Crystal Chamber;
+  2. the Server Room;
+  3. blocked off: nothing there;
+  4. the Warehouse;
+  5. a new staircase up to a new floor, which replaces Teleport Room 2 (its floor to be designed);
+  6. the Main Hallway, a bigger version of today's; the Lounge along its wall (the owner: "The lounge goes alongside that wall in the main hallway");
+  7. the way to the Observation Deck;
+  8. a hexagon-shaped hallway with the stairs (the hatching in the sketch) and the way down to the Experiment Lab, and through it, as now, to everything below (the arena, the Sewers, the Nest, Cold Storage: "Same way, via 8").
+- **The double lines** in the sketch are walls with no way through, where the Security Room was; the Security Room is removed ("we really don't need the security room moving forward").
+- **Open:** Teleport Room 1 (no area given); the exact sizes, the doorways between areas, the props of each room and where the Lounge's wall is; the new floor up area 5's stairs. Nothing of today's map changes until the plan is approved.
+
 ## Data (`FACILITY_MAP`)
 - Coordinates are **sketch pixels** (the photo, origin top-left). `scale.px_per_tile` (20) turns them into world tiles: calibrating is one number. The **main hallway round the lab is 6 tiles wide** (120 px), wide enough to fight in: the lab keeps its size and every other room was pushed outward to make room for it (the passage to Teleport Room 1 is 2 tiles wide and 6 long). The sketch grid is not a tile size.
 - `rooms`: explicit polygons with a `level` and a `status` (`traced` / `approximate` / `unconfirmed`). Every edge is a wall unless a CONFIRMED opening is cut into it.
