@@ -54,10 +54,10 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     slots = document.querySelectorAll('#squadBar .sb-slot.has-ab .sb-ab'); slots[2].dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
     var bp = _techScr(BH.x0, BH.y0); tapAt(bp.x, bp.y + TILE_H - 20); step(1);
     out.fluxPicked = techAim && techAim.flux && techAim.flux.s ? techAim.flux.s.id : null;
-    var g0 = techAim && techAim.flux && techAim.flux.grid[0], to = null; if (g0) g0.forEach(function(c, k){ if (!to && c.ok && !fluxBodyOn(c.cells)) to = k.split(',').map(Number); });
+    var g0 = techAim && techAim.flux && techAim.flux.hgrid && techAim.flux.hgrid[techAim.flux.dir], to = null; if (g0) g0.forEach(function(c){ if (!to && c.ok && !c.stay && !fluxBodyOn(c.cells)) to = c.at; });   // (ON THE HEXES, build 2026-11-17ee: a lit hex of its reach)
     if (to) { var tp = _techScr(to[0], to[1]); tapAt(tp.x, tp.y + TILE_H); step(1); }
     var place = document.querySelector('#techAim .ta-p'); out.placeShown = !!place && getComputedStyle(place).display !== 'none'; if (place) place.click(); step(1);
-    var BH2 = fluxHere(B5); out.fluxMoved = !!to && BH2.x0 === to[0] && BH2.y0 === to[1]; out.fluxAim = !!techAim;
+    var BH2 = fluxHexOf(B5).at; out.fluxMoved = !!to && Math.hypot(BH2[0] - to[0], BH2[1] - to[1]) < 0.01; out.fluxAim = !!techAim;
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__tl'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -316,8 +316,8 @@ function measure(w, h) {
         const r = J(`(function(){ const fs = __fresh(['flux', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; o.chip = techChipState(t).text;
             const b = fluxObject('barrel_5'), H = fluxHere(b); techChipTap(t); o.need = techAimNeed(); o.prompt = techAimPrompt();
             techFluxPick(_fp.F.solids.find(s => s.id === 'floodlight_1')); o.flood = techAim.flux.s; techFluxPick(b); o.need2 = techAimNeed();
-            const to = [...techAim.flux.grid[0]].find(([k, c]) => c.ok && !fluxBodyOn(c.cells))[0].split(',').map(Number); techFluxTile(to[0], to[1]); o.prompt2 = techAimPrompt();
-            o.placed = techFluxPlace(); o.aim = techAimActive(); const H2 = fluxHere(b); o.moved = H2.x0 === to[0] && H2.y0 === to[1]; o.cool = techReadyIn(t); o.chip2 = techChipState(t).text;
+            const to = [...techAim.flux.hgrid[techAim.flux.dir].values()].find(c => c.ok && !c.stay && !fluxBodyOn(c.cells)).at; techFluxHex(to[0], to[1]); o.prompt2 = techAimPrompt();   /* (ON THE HEXES, build 2026-11-17ee) */
+            o.placed = techFluxPlace(); o.aim = techAimActive(); const H2 = fluxHexOf(b).at; o.moved = Math.hypot(H2[0] - to[0], H2[1] - to[1]) < 0.01; o.cool = techReadyIn(t); o.chip2 = techChipState(t).text;
             t._abReadyAt = frame; techChipTap(t); o.miss = techAimTap(5, 5) && techAimActive(); techAimCancel(true); return o; })()`);
         same(r.id, 'flux_move', 'the ability'); same(r.chip, '✦ MOVE', 'the chip'); same(r.need, 'object', 'the first pick'); ok(/^FLUX MOVE · TAP AN OBJECT/.test(r.prompt), r.prompt);
         same(r.flood, null, 'a floodlight was picked'); same(r.need2, 'place', 'the second pick'); ok(/^FLUX MOVE · THE BARREL · ✓ PLACE IT$/.test(r.prompt2), r.prompt2);

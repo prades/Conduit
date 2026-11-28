@@ -157,6 +157,7 @@ const PS_FAMILY = {
     lab_bench: "lab", fume_hood: "lab", test_chamber: "lab", cart: "lab", generator: "lab", toolbox: "lab", speaker: "lab", spool: "lab",
     teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech", junction: "tech",
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo", pallet_rack: "cargo",
+    hexcrate: "hexcargo", hexcrate_stack: "hexcargo", hexbarrel: "hexcargo", hexbarrier: "hexcargo",   // (the cargo FLUX MOVE can move, six-sided: psKind below)
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
     hazard_explosive: "hazard", hazard_corrosive: "hazard", chest: "chest",
     holding_tank: "holdtank", whiteboard_stand: "whiteboard",   // THE NEW EXPERIMENT LAB's giant holding tanks and THE LOUNGE's whiteboard on its stand (build 2026-11-13a)
@@ -176,6 +177,11 @@ function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, 
     }
     return (_psIndex[fam] = out);
 }
+// THE SIX-SIDED CARGO (build 2026-11-17ec; the owner, 2026-11-27: "when the player wants to move an object, it's an object that has that hexagonal look already to it"; draft 3 approved 2026-11-28,
+// docs/FOLLOWER-UTILITIES.md §4.1): a crate, a crate stack, a barrel or a barrier that FLUX MOVE can move (a prop with a `flux` field, js/fluxmove.js) is drawn from its six-sided model
+// (design/props/models/hexcargo.js), in the 2D game and the 3D view alike; every other one as before. The kind a prop is DRAWN as: its own, or "hex" + its own.
+const PS_HEX_KINDS = { crate: 1, crate_stack: 1, barrel: 1, barrier: 1 };
+function psKind(s) { return s && s.flux && PS_HEX_KINDS[s.kind] && PS_FAMILY["hex" + s.kind] ? "hex" + s.kind : s ? s.kind : null; }
 function _psResolve(fam, kind, dims, state, seed) {
     let c = _psNames(fam)[kind]; if (!c || !c.length) return null;
     const pick = (list, key, want) => { const exact = list.filter(e => e[key] === want); return exact.length ? exact : list.filter(e => e[key] === null).length ? list.filter(e => e[key] === null) : list; };
@@ -203,7 +209,8 @@ function facilityPropStateSet(id, state) {
     return true;
 }
 function _psSolid(id) {
-    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0 }); } }
+    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0, dk: psKind(s) });
+            if (s.flux && s.shape !== "circle" && w === 1 && l === 1 && typeof fluxPlace === "function") { const fp = fluxPlace(s); if (fp) _fp._pss.get(s.id).c = [fp.x, fp.y]; } } }   // (a one-hex prop FLUX MOVE can move: drawn on its hex's middle, js/fluxmove.js)
     return _fp._pss.get(id) || null;
 }
 
@@ -220,7 +227,7 @@ function _psShadow(it) { if (typeof gfxLow !== "undefined" && gfxLow) return; /*
 // draw one cell of a prop from its sprite (the start of the prop drawing, js/facilityplay.js _fpDrawProp): true when it drew it (the floor under it first: a solid tile is not drawn by itself), false to let the flat drawing do it
 // `whole`: the battle view draws a fading object of many tiles as its whole picture, once (js/battleview.js battleDrawsWhole): each tile's column of it overlapping the next stacks a ghost back up to nearly solid
 function facilitySpriteDraw(it, whole) {
-    const k = it.kind, fam = PS_FAMILY[k]; if (!fam) return false;
+    const S0 = PS_HEX_KINDS[it.kind] && typeof _fp !== "undefined" && _fp && _fp.F ? _psSolid(it.id) : null, k = S0 && S0.dk ? S0.dk : it.kind, fam = PS_FAMILY[k]; if (!fam) return false;   // (a prop FLUX MOVE can move: its six-sided kind, psKind)
     if (k === "bridge") return !!_psBlit("bridge", it.variant, it.x, it.y);
     if (!_psImg(fam)) return false;
     const f = typeof frame !== "undefined" ? frame : 0, S = _psSolid(it.id), seed = _psHash(String(it.id));

@@ -165,6 +165,17 @@ function facilitySolidSet(id, open) {
 // pieces and its sprite's caches, the stretches of floor (relabelled only where they changed: a whole relabelling costs tens of ms), the cached routes and spawn spots, and every route in flight (each unit plans
 // again round it). Nothing here can fail part way: the arguments are checked before the first change. The object stands on the w x h cells from (x0, y0) (whole tiles); turned: along the other axis.
 // Returns { ok, covered, freed } (the cells it now covers, the floor it gave back), or { ok: false, why } when nothing was changed.
+// A PROP'S OWN MIDDLE IN THE MAP, in the game's grid (js/fluxmove.js ON THE HEXES, build 2026-11-17ee): the map draws a prop where its author put it (the movable cargo on hexes' middles); the game's
+// grid snaps it to a tile. The raw middle, moved by the map's shift to the game's grid (found once, from a one-tile prop that stands on a tile's middle and has not been moved). Null for one not in the map.
+let _fpRawShift = null;
+function facilityPropRawMid(id) {
+    if (!_fp || !_fp.F || typeof FACILITY_MAP === "undefined") return null;
+    const sc = facilityScale(), F = _fp.F;
+    if (!_fpRawShift) for (const pr of FACILITY_MAP.props || []) { if (!pr.rect) continue; const cx = (pr.rect[0] + pr.rect[2]) / 2 / sc, cy = (pr.rect[1] + pr.rect[3]) / 2 / sc; if (Math.abs(cx - Math.round(cx)) > 1e-6 || Math.abs(cy - Math.round(cy)) > 1e-6 || pr.rect[2] - pr.rect[0] !== sc || pr.rect[3] - pr.rect[1] !== sc) continue;
+        const so = F.solids.find(q => q.id === pr.id); if (!so || !so.bb || (_fp.moved || []).some(m => m.id === pr.id)) continue; _fpRawShift = [(so.bb[0] + so.bb[2]) / 2 - cx, (so.bb[1] + so.bb[3]) / 2 - cy]; break; }
+    const pr = (FACILITY_MAP.props || []).find(q => q.id === id); if (!pr || !pr.rect || !_fpRawShift) return null;
+    return [(pr.rect[0] + pr.rect[2]) / 2 / sc + _fpRawShift[0], (pr.rect[1] + pr.rect[3]) / 2 / sc + _fpRawShift[1]];
+}
 function facilitySolidMove(id, x0, y0, w, h, turned) {
     if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP) return { ok: false, why: "NO MAP" };
     const F = _fp.F, P = _fp.P, s = F.solids.find(q => q.id === id), p = P ? P.solids.find(q => q.id === id) : null;

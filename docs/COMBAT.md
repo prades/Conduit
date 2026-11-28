@@ -205,7 +205,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **Ahead** is toward the enemy you have locked, else the way you last walked. A place in a wall or out of your sight comes in toward you, then turns to a diagonal or a side, else is where you stand.
 - **No trait moves a place** since build `2026-11-14f` (the traits are gone, the owner: "Remove all four"). Until then the natural traits nudged it: a LONE WOLF stood 1.2 tiles farther out, an EMPATHETIC one a quarter nearer you (they kept 4 tiles out, and leaned 60% toward allies, which would have undone the formation: every follower has one of the two).
 - HOLD, a posted room, an order, a clone and the way home to the Crystal are as they were. Every number is the agent's, provisional (`OPEN-QUESTIONS.md`).
-- **On hexes** (build `2026-11-17ec`; the owner, 2026-11-28: "And so do the followers"): in the 3D game a place is the middle of the nearest free hex of the battles' grid (not yours, not another follower's), and the follower walks exactly onto it: `CARD-BATTLES.md` §2.85.
+- **On hexes** (build `2026-11-17ef`; the owner, 2026-11-28: "And so do the followers"): in the 3D game a place is the middle of the nearest free hex of the battles' grid (not yours, not another follower's), and the follower walks exactly onto it: `CARD-BATTLES.md` §2.85.
 
 | Form | Class · element | Main attack | Alternates |
 |---|---|---|---|

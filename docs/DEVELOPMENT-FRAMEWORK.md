@@ -176,7 +176,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The electric breed: the roly-poly (an electric mech species of the electrical domain: immune to Crushing and Slashing's physical half, resists Piercing, curls up to defend, clone potential) and its boss, a diving beetle larva in The Circuitry (big; SICKLE SNAP and SHOCK RING on THE ANT QUEEN's pattern) (the roly-poly built in `2026-11-13aa`, the larva in `2026-11-14e`) | `ELECTRIC-BREED.md` |
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |
-| Follower utilities and the hex grid (the owner, 2026-11-27: the map's interactions through the hexes, FLUX MOVE, climbs and floor tools; most followers to get a utility; the Notion notes on charges, energy costs and the Brawlers' utilities translated; draft 1 of the hex objects; proposed, nothing built) | `FOLLOWER-UTILITIES.md` |
+| Follower utilities and the hex grid (the owner, 2026-11-27: the map's interactions through the hexes, FLUX MOVE, climbs and floor tools; most followers to get a utility; the Notion notes on charges, energy costs and the Brawlers' utilities translated; the six-sided cargo approved and in the game since `2026-11-17ec`; FLUX MOVE's hex rules and the breakable states not built) | `FOLLOWER-UTILITIES.md` |
 | Series 2 cards | `SERIES-2.md` |
 | Class card families and Player cards | `UNIVERSAL-AND-PLAYER-CARDS.md` |
 | Specimens | `SPECIMENS.md` |
