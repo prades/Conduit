@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-28
 
+### Build `2026-11-17ee` · branch `claude/zen-cerf-3m8mq5` · FLUX MOVE on the hexes; the 3D view follows a moved object
+- **The ask** (the owner, 2026-11-27): "the player can maneuver the object or find a highlighted hexagon tile under whenever they activate their utility ability"; asked, "2 hexes, turn 60°"; 2026-11-28, of the drafts and the next step: "all the [drafts] look good [...] work the flux move".
+- **What it does:** FLUX MOVE works on the floor's hexes: the picked object's reach (2 hexes) is lit on the floor, violet where it can go and red where it cannot; a tap on a lit hex, ✓ PLACE, and it stands on that hex's middle; a barrier turns a sixth of a turn at a time. It blocks the tile under each of its hexes' middles. `FOLLOWER-UTILITIES.md` §4.4.
+- **A fix with it:** in the 3D view a moved object now moves in the picture; it never did there (the object moved in the game, the view kept drawing it where it was built).
+- **Also:** draft 4, the breakable states, approved by the owner ("all the [drafts] look good"); not in the game.
+- `js/fluxmove.js`, `js/techabilities.js`, `js/propsprites.js`, `view3d/gamemap.js`, `view3d/gameview.js`, `design/style-evolution/round2/chamber.js`, `tests/fluxmove.js`, `tests/fluxlab.js`; generated files.
+- **Verified:** the two suites and the full run in the handoff; seen in a real browser in the 3D view in both cameras. **Not playtested; not seen on an iPad.**
+
 ### Build `2026-11-17ed` · branch `claude/zen-cerf-3m8mq5` · the arena's barriers bigger; the new props sheet preloaded
 - **The ask** (the owner, 2026-11-28): "those barricades that are located in the arena are too small. You can increase the size of those".
 - **What it does:** the six-sided barrier is half as tall again and as much thicker, 2 tiles long (`design/props/models/hexcargo.js`); it blocks the same two tiles. **A fix:** `game.html` preloads the new sheet `img/props/hexcargo` with the others (`tests/startup.js` failed on `2026-11-17ec` without it).

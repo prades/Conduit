@@ -209,7 +209,8 @@ function facilityPropStateSet(id, state) {
     return true;
 }
 function _psSolid(id) {
-    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0, dk: psKind(s) }); } }
+    if (!_fp._pss) { _fp._pss = new Map(); for (const s of _fp.F.solids) { const w = s.shape === "circle" ? 0 : Math.round(s.bb[2] - s.bb[0]), l = s.shape === "circle" ? 0 : Math.round(s.bb[3] - s.bb[1]); _fp._pss.set(s.id, { c: s.shape === "circle" ? [s.at[0], s.at[1]] : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], dims: s.shape === "circle" ? "r" + Math.round(s.r * 100) : w + "x" + l, multi: s.shape === "circle" || w > 1 || l > 1, bb: s.bb, round: s.shape === "circle" ? s.r : 0, dk: psKind(s) });
+            if (s.flux && s.shape !== "circle" && w === 1 && l === 1 && typeof fluxPlace === "function") { const fp = fluxPlace(s); if (fp) _fp._pss.get(s.id).c = [fp.x, fp.y]; } } }   // (a one-hex prop FLUX MOVE can move: drawn on its hex's middle, js/fluxmove.js)
     return _fp._pss.get(id) || null;
 }
 

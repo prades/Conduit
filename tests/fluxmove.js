@@ -50,12 +50,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.first = { need: techAimNeed(), prompt: techAimPrompt(), rotate: shown('.ta-r'), place: shown('.ta-p') };
     var s0 = _techScr(H.x0, H.y0); tapAt(s0.x, s0.y + TILE_H - 20); step(2);
     out.picked = { id: techAim && techAim.flux && techAim.flux.s ? techAim.flux.s.id : null, need: techAimNeed(), rotate: shown('.ta-r'), place: shown('.ta-p') };
-    var t1 = _techScr(H.x0 + 1, H.y0 + 1); tapAt(t1.x, t1.y + TILE_H); step(1);
-    document.querySelector('#techAim .ta-r').click(); step(2);
-    var c1 = _techScr(H.x0 + 1, H.y0 + 1), g = px(c1.x, c1.y + TILE_H + 2); out.gridPixel = g;
-    out.preview = { at: techAim.flux.at, turn: techAim.flux.turn, prompt: techAimPrompt() };
+    document.querySelector('#techAim .ta-r').click(); step(1);   // (ON THE HEXES: a sixth of a turn first, then a lit hex of that turn's grid)
+    var tg = null; techAim.flux.hgrid[techAim.flux.dir].forEach(function(c){ if (!tg && c.ok && !c.stay && !fluxBodyOn(c.cells)) tg = c.at; });
+    var t1 = _techScr(tg[0], tg[1]); tapAt(t1.x, t1.y + TILE_H); step(2);
+    var c1 = _techScr(tg[0], tg[1]), g = px(c1.x, c1.y + TILE_H + 2); out.gridPixel = g;
+    out.preview = { at: techAim.flux.at, turn: techAim.flux.dir === 1, prompt: techAimPrompt(), rect: (function(){ var c = fluxCheckHex(bar, techAim.flux.at[0], techAim.flux.at[1], techAim.flux.dir); return c.ok ? [c.rect.x0, c.rect.y0, c.rect.w, c.rect.h].join(' ') : c.why; })() };   // (ON THE HEXES: a sixth of a turn; the tiles under its two hexes)
     document.querySelector('#techAim .ta-p').click(); step(2);
-    var H2 = fluxHere(bar); out.placed = { aim: !!techAim, at: [H2.x0, H2.y0, H2.w, H2.h], turned: bar.flux.turned, chip: chip.textContent };
+    var H2 = fluxHere(bar); out.placed = { aim: !!techAim, at: [H2.x0, H2.y0, H2.w, H2.h], turned: fluxHexOf(bar).dir === 1, chip: chip.textContent };
     // the keys: a barrel, R (it does not turn), a tile, Enter
     var bl = fluxObject('barrel_5'), BH = fluxHere(bl); player.x = player.targetX = player.visualX = BH.x0 - 3; player.y = player.targetY = player.visualY = BH.y0 + 2; player.fpPath = null;
     followers.forEach(function(f){ f.x = player.x - 1; f.y = player.y + 1; f._abReadyAt = frame; }); step(3);
@@ -63,10 +64,10 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var b0 = _techScr(BH.x0, BH.y0); tapAt(b0.x, b0.y + TILE_H - 20); step(1);
     out.barrel = { id: techAim && techAim.flux && techAim.flux.s ? techAim.flux.s.id : null, rotate: shown('.ta-r'), place: shown('.ta-p') };
     if (typeof dialogueClear === 'function') dialogueClear();   // (a line of dialogue up takes Enter: js/dialogue.js; a player taps it away first)
-    key('r'); out.barrel.turn = techAim.flux.turn;
-    var to = null; techAim.flux.grid[0].forEach(function(c, k){ if (!to && c.ok && !fluxBodyOn(c.cells)) to = k.split(',').map(Number); });
+    key('r'); out.barrel.turn = techAim.flux.dir !== 0;
+    var to = null; techAim.flux.hgrid[0].forEach(function(c){ if (!to && c.ok && !c.stay && !fluxBodyOn(c.cells)) to = c.at; });
     var tp = _techScr(to[0], to[1]); tapAt(tp.x, tp.y + TILE_H); step(1); key('Enter'); step(1);
-    var BH2 = fluxHere(bl); out.barrel.moved = BH2.x0 === to[0] && BH2.y0 === to[1]; out.barrel.aim = !!techAim;
+    var BH2 = fluxHexOf(bl).at; out.barrel.moved = Math.hypot(BH2[0] - to[0], BH2[1] - to[1]) < 0.01; out.barrel.aim = !!techAim;
     // Escape: an aim called off leaves everything as it was
     var c4 = fluxObject('crate_4'), CH = fluxHere(c4); followers[0]._abReadyAt = frame; chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1); techFluxPick(c4); techFluxTile(CH.x0 - 1, CH.y0); key('Escape'); step(1);
     var CH2 = fluxHere(c4); out.escape = { aim: !!techAim, same: CH2.x0 === CH.x0 && CH2.y0 === CH.y0, ready: techReadyIn(followers[0]) };
@@ -146,6 +147,34 @@ async function boot(store) {
         same(bad.join('; '), '', 'off the hexes');
         const r = J(`(function(){ const mov = _fp.F.solids.filter(s => s.flux && PS_HEX_KINDS[s.kind]), seen = new Set(); let dup = 0; for (const s of mov) for (const k of fluxCellsOf(fluxHere(s).x0, fluxHere(s).y0, fluxHere(s).w, fluxHere(s).h)) { if (seen.has(k)) dup++; seen.add(k); } return dup; })()`);
         same(r, 0, 'two on one tile');
+    });
+
+    group('ON THE HEXES (build 2026-11-17ee; the owner, 2026-11-27: "relayed through the hexagon tile grid", "2 hexes, turn 60°"; 2026-11-28: "the simple way of objects blocking the floor")');
+    check('each of the arena\'s nine stands on a hex\'s middle (the map\'s own), its tiles the ones under its hexes; its reach is the 19 hexes within 2 of its hex (a barrier\'s: of its two)', () => {
+        const r = J(`(function(){ const o = { bad: [] }; for (const s of fluxObjects().filter(q => PS_HEX_KINDS[q.kind])) { const H = fluxHexOf(s), m = cardHex(H.at[0], H.at[1]);
+            if (Math.hypot(m[0] - H.at[0], m[1] - H.at[1]) > 1e-6) o.bad.push(s.id + ' off a middle'); if (JSON.stringify(fluxHexRect(s, H.at, H.dir)) !== JSON.stringify(fluxHere(s))) o.bad.push(s.id + ' tiles');
+            const R = fluxHexRegion(s); if (!fluxTwo(s) && R.size !== 19) o.bad.push(s.id + ' reach ' + R.size); if (fluxTwo(s) && (R.size !== 24 || !H.b)) o.bad.push(s.id + ' reach ' + R.size); }
+            o.two = fluxObjects().filter(q => PS_HEX_KINDS[q.kind]).filter(fluxTwo).map(s => s.kind).sort().join(); return o; })()`);
+        same(r.bad.join('; '), '', 'wrong'); same(r.two, 'barrier,barrier', 'the two-hex objects');
+    });
+    check('a move to a hex in reach: it stands on that hex\'s middle, blocks the tile under it and frees the one it left; three hexes off is too far; where it stands is no place; the save keeps its hex and a load puts it back', () => {
+        const r = J(`(function(){ const o = {}, s = fluxObject('barrel_7'), H0 = fluxHexOf(s).at.slice(), c0 = fluxHere(s), G = fluxHexGrid(s, 0); const c = [...G.values()].find(q => q.ok && !q.stay && (q.rect.x0 !== c0.x0 || q.rect.y0 !== c0.y0) && !fluxBodyOn(q.cells));
+            const far = [H0[0] + 3, H0[1]]; o.far = fluxCheckHex(s, far[0], far[1], 0).why; o.here = fluxCheckHex(s, H0[0], H0[1], 0).why;
+            const m = fluxMoveToHex(s, c.at[0], c.at[1], 0); o.ok = m.ok; const H1 = fluxHexOf(s).at; o.at = Math.hypot(H1[0] - c.at[0], H1[1] - c.at[1]) < 1e-9; o.tile = fluxHere(s).x0 === Math.round(c.at[0]) && fluxHere(s).y0 === Math.round(c.at[1]);
+            o.blocked = !facilityWalkable(fluxHere(s).x0, fluxHere(s).y0, _fp.F); o.freed = facilityWalkable(c0.x0, c0.y0, _fp.F); const P = fluxPlace(s); o.place = Math.hypot(P.x - c.at[0], P.y - c.at[1]) < 1e-9;
+            const snap = fluxSnapshot(), e = snap.find(q => q.id === 'barrel_7'); o.saved = !!e && Number.isFinite(e.hx) && Number.isFinite(e.hy) && Number.isInteger(e.x);
+            o.back = fluxMoveToHex(s, H0[0], H0[1], 0, { reach: false }).ok; o.n = fluxApply(snap); const H2 = fluxHexOf(fluxObject('barrel_7')).at; o.loaded = Math.hypot(H2[0] - c.at[0], H2[1] - c.at[1]) < 1e-9;
+            fluxMoveToHex(fluxObject('barrel_7'), H0[0], H0[1], 0, { reach: false }); _fp.moved = []; return o; })()`);
+        ok(/^TOO FAR · 2 HEXES/.test(r.far), 'three hexes off: ' + r.far); same(r.here, 'IT IS THERE NOW', 'where it stands'); same(r.ok, true, 'moved'); same(r.at, true, 'on the hex\'s middle'); same(r.tile, true, 'its tile under the hex');
+        same(r.blocked, true, 'the tile blocked'); same(r.freed, true, 'the tile it left'); same(r.place, true, 'where it is drawn'); same(r.saved, true, 'the save'); same(r.back, true, 'put back'); ok(r.n >= 1, 'applied'); same(r.loaded, true, 'a load puts it on its hex');
+    });
+    check('a barrier turns a sixth at a time, six ways, each its own two hexes; turned where it stands it is placed there; an old save (tiles only) still loads', () => {
+        const r = J(`(function(){ const o = {}, s = fluxObject('barrier_1'), H = fluxHexOf(s), keys = new Set(); o.rects = []; for (let d = 0; d < 6; d++) { const b = fluxHexB(H.at, d); keys.add(cardHexKey(b[0], b[1])); const q = fluxHexRect(s, H.at, d); o.rects.push(q.w + 'x' + q.h); }
+            o.six = keys.size; const c = [1, 2, 3, 4, 5].map(d => fluxCheckHex(s, H.at[0], H.at[1], d)).find(q => q.ok); o.turnOk = !!c; if (c) { const m = fluxMoveToHex(s, c.at[0], c.at[1], c.dir); o.turned = m.ok && fluxHexOf(s).dir === c.dir; o.place = fluxPlace(s).dir === c.dir; fluxMoveToHex(s, H.at[0], H.at[1], 0, { reach: false }); }
+            _fp.moved = []; const b7 = fluxObject('barrel_7'), B = fluxHere(b7), G = fluxGrid(b7, false); let to = null; G.forEach((q, k) => { if (!to && q.ok && !fluxBodyOn(q.cells)) to = k.split(',').map(Number); });
+            o.old = fluxApply([{ id: 'barrel_7', x: to[0], y: to[1], t: 0 }]); const B2 = fluxHere(fluxObject('barrel_7')); o.oldAt = B2.x0 === to[0] && B2.y0 === to[1]; fluxMoveTo(fluxObject('barrel_7'), B.x0, B.y0, false, { reach: false, bodies: false, quiet: true }); _fp.moved = []; fluxObject('barrel_7').hexAt = null; fluxObject('barrel_7').hexSq = false; return o; })()`);
+        same(r.six, 6, 'six second hexes'); ok(r.rects.every(q => /^[12]x[12]$/.test(q) && q !== '2x2'), 'its tiles each way: ' + r.rects); same(r.turnOk, true, 'a turn it can make'); same(r.turned, true, 'turned'); same(r.place, true, 'drawn turned');
+        same(r.old, 1, 'an old save applied'); same(r.oldAt, true, 'on its tile');
     });
 
     group('THE REACH: 2 TILES, A SQUARE, FROM WHERE IT STANDS');
@@ -245,9 +274,9 @@ async function boot(store) {
         const r = J(`(function(){ const o = {}, b = fluxObject('barrier_2'), B = fluxHere(b); __put(B.x0 + 1, B.y0 + 4); const t = __fresh(['flux'])[0];
             techChipTap(t); techAimCancel(true); techChipTap(t); techFluxPick(b); techChipTap(t); o.chipAgain = techAimActive();
             techChipTap(t); techFluxPick(b); techFluxTile(B.x0, B.y0 - 1); techAimCancel(); o.cancel = [JSON.stringify(fluxHere(b)) === JSON.stringify(B), techReadyIn(t)];
-            techChipTap(t); techFluxPick(b); const bad = [B.x0, B.y0]; const c0 = fluxCheck(b, bad[0], bad[1], false); techFluxTile(bad[0], bad[1]); o.badPlace = [c0.ok, techFluxPlace(), techAimActive(), techReadyIn(t)];
-            o.turn = [techFluxRotate(), techAim.flux.turn, !!techAim.flux.grid[1], techAim.flux.grid[0] !== techAim.flux.grid[1]]; techAimCancel(true);
-            techChipTap(t); techFluxPick(fluxObject('crate_4')); o.crateTurn = [techFluxRotate(), techAim.flux.turn]; techAimCancel(true); return o; })()`);
+            techChipTap(t); techFluxPick(b); const HX = fluxHexOf(b), bad = HX.at; const c0 = fluxCheckHex(b, bad[0], bad[1], HX.dir); techFluxHex(bad[0], bad[1]); o.badPlace = [c0.ok, techFluxPlace(), techAimActive(), techReadyIn(t)];   /* (ON THE HEXES, build 2026-11-17ee: where it stands now, as it is turned, is no place to go) */
+            const d0 = techAim.flux.dir; o.turn = [techFluxRotate(), techAim.flux.dir === (d0 + 1) % 6, !!techAim.flux.hgrid[techAim.flux.dir], techAim.flux.hgrid[d0] !== techAim.flux.hgrid[techAim.flux.dir]]; techAimCancel(true);
+            techChipTap(t); techFluxPick(fluxObject('crate_4')); o.crateTurn = [techFluxRotate(), techAim.flux.dir !== 0]; techAimCancel(true); return o; })()`);
         same(r.chipAgain, false, 'the chip again did not call it off'); same(r.cancel.join(), 'true,0', 'cancelled');
         ok(r.badPlace[0] === false, 'fixture: a bad place (' + r.badPlace + ')'); same(r.badPlace.slice(1).join(), 'true,true,0', 'a refused place');
         same(r.turn.join(), 'true,true,true,true', 'the turn'); same(r.crateTurn.join(), 'false,false', 'a crate turned');
@@ -297,14 +326,14 @@ async function boot(store) {
     for (const [w, h] of [[1180, 820], [390, 844]]) {
         const b = measure(w, h);
         if (b === null) { console.log('  (no Chromium here: skipped)'); break; }
-        check(w + 'x' + h + ': the instrument ran', () => { ok(b, 'the probe produced nothing'); same(b.err, undefined, 'the probe threw: ' + (b && b.err)); });
+        check(w + 'x' + h + ': the instrument ran', () => { ok(b, 'the probe produced nothing'); same(b.err, undefined, 'the probe threw: ' + (b && b.err) + ' :: ' + JSON.stringify(b)); });
         if (!b || b.err) continue;
         check(w + 'x' + h + ': the chip (✦ MOVE); the first prompt has no buttons; a tap on the barrier picks it and shows ⟳ ROTATE and ✓ PLACE; the grid is drawn in violet; a tile, ⟳ ROTATE, ✓ PLACE: the barrier is there, turned, and the chip waits', () => {
             same(b.chip, '✦ MOVE', 'the chip'); same([b.first.need, b.first.rotate, b.first.place].join(), 'object,false,false', 'the first step'); ok(/^FLUX MOVE · TAP AN OBJECT/.test(b.first.prompt), b.first.prompt);
             same([b.picked.id, b.picked.need, b.picked.rotate, b.picked.place].join(), 'barrier_1,place,true,true', 'the barrier picked');
             ok(b.gridPixel[0] > 70 && b.gridPixel[2] > 90 && b.gridPixel[2] >= b.gridPixel[1], 'the grid\'s violet: ' + b.gridPixel);
             same([b.preview.turn, /✓ PLACE IT$/.test(b.preview.prompt)].join(), 'true,true', 'the preview: ' + b.preview.prompt);
-            same([b.placed.aim, b.placed.at.join(' '), b.placed.turned, b.placed.chip].join(), 'false,31 48 1 2,true,✦ 60 S', 'placed');
+            same([b.placed.aim, b.placed.at.join(' '), b.placed.turned, b.placed.chip].join(), 'false,' + b.preview.rect + ',true,✦ 60 S', 'placed (on the tiles under the two hexes it was shown on, a sixth turned)'); ok(/^\d+ \d+ [12] [12]$/.test(b.preview.rect), 'the place shown: ' + b.preview.rect);
         });
         check(w + 'x' + h + ': by the keys: a barrel has no ⟳ ROTATE and R does not turn it; Enter places it; Escape calls an aim off and nothing moves', () => {
             same([b.barrel.id, b.barrel.rotate, b.barrel.place, b.barrel.turn].join(), 'barrel_5,false,true,false', 'the barrel'); same([b.barrel.moved, b.barrel.aim].join(), 'true,false', 'Enter');

@@ -57,7 +57,7 @@ window.addEventListener('load', function(){ setTimeout(async function(){
     chip.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(2);
     var s0 = _techScr(H.x0, H.y0 + 1); tapAt(s0.x, s0.y + TILE_H - 20); step(2);
     out.picked = { id: techAim && techAim.flux && techAim.flux.s ? techAim.flux.s.id : null, rotate: shown('.ta-r'), place: shown('.ta-p') };
-    var to = null; techAim.flux.grid[0].forEach(function(c, k){ var p = k.split(',').map(Number); if (!to && c.ok && !fluxBodyOn(c.cells) && p[0] < H.x0) to = p; });
+    var to = null; techAim.flux.hgrid[techAim.flux.dir].forEach(function(c){ if (c.ok && !c.stay && !fluxBodyOn(c.cells) && c.rect.x0 + c.rect.w - 1 < H.x0 && (!to || c.rect.x0 < to.x0)) { to = c.at.slice(); to.x0 = c.rect.x0; } });   // (ON THE HEXES, build 2026-11-17ee: a lit hex whose tiles lie west of where it stands)
     var tp = _techScr(to[0], to[1]); tapAt(tp.x, tp.y + TILE_H); step(1);
     document.querySelector('#techAim .ta-p').click(); step(2);
     var H2 = fluxHere(b1), comp = function(p){ var t = T(p); return _fpComps().get(t[0] + ',' + t[1]); };
