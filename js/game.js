@@ -894,14 +894,16 @@ function render() {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
-            if (_a._flight || _b._flight || _a._hexStep === frame || _b._hexStep === frame) continue;   // (in the air: js/techabilities.js; onto its hex: js/formation.js)
+            if (_a._flight || _b._flight) continue;   // (one in the air, thrown by a Kinetic Launcher, is not jostled: js/techabilities.js)
             if (typeof cardBattleWalking === "function" && (cardBattleWalking(_a) || cardBattleWalking(_b))) continue;   // (nor one a card battle walks: js/cardbattle.js)
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= _SEP2 || _d2 < 0.000001) continue;
             const _d = Math.sqrt(_d2);
             const _p = (1/_d) * (FOLLOWER_SEP - _d) * 0.5;
-            // ON THE HEXES (js/formation.js hexSettle): one standing on its hex's middle holds it, and the other is moved the whole way (two holding are a tile apart: never here)
+            // ON THE HEXES (js/formation.js hexSettle): one stepping onto its hex is not jostled; one standing on its hex's middle holds it, and the other is moved the whole way (two holding
+            // are a tile apart: never here)
+            if (_a._hexStep === frame || _b._hexStep === frame) continue;
             const _ha = _a._hexHeld === frame, _hb = _b._hexHeld === frame;
             if (!_ha) { const k = _hb ? 2 : 1; _a.x -= _dx*_p*k; _a.y -= _dy*_p*k; }
             if (!_hb) { const k = _ha ? 2 : 1; _b.x += _dx*_p*k; _b.y += _dy*_p*k; }

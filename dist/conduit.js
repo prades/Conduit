@@ -60764,7 +60764,7 @@ function render() {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP)
                 break;
-            if (_a._flight || _b._flight || _a._hexStep === frame || _b._hexStep === frame)
+            if (_a._flight || _b._flight)
                 continue;
             if (typeof cardBattleWalking === "function" && (cardBattleWalking(_a) || cardBattleWalking(_b)))
                 continue;
@@ -60774,6 +60774,8 @@ function render() {
                 continue;
             const _d = Math.sqrt(_d2);
             const _p = (1 / _d) * (FOLLOWER_SEP - _d) * 0.5;
+            if (_a._hexStep === frame || _b._hexStep === frame)
+                continue;
             const _ha = _a._hexHeld === frame, _hb = _b._hexHeld === frame;
             if (!_ha) {
                 const k = _hb ? 2 : 1;
